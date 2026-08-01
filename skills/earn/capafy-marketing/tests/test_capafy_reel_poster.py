@@ -12,6 +12,8 @@ from capafy_reel_poster import BrowserChallenge, PostRequest, post_reel  # noqa:
 class FakeCdp:
     def __init__(self):
         self.handle = "capafy.skills25042"
+        self.post_handle = None
+        self.handle_reads = 0
         self.pre_urls = set()
         self.post_urls = set()
         self.actions = []
@@ -22,7 +24,8 @@ class FakeCdp:
     def active_handle(self):
         if self.challenge:
             raise BrowserChallenge("challenge page")
-        return self.handle
+        self.handle_reads += 1
+        return self.post_handle if self.handle_reads > 1 and self.post_handle else self.handle
 
     def reel_urls(self):
         return self.post_urls if "share" in self.actions else self.pre_urls
@@ -42,7 +45,7 @@ def media(tmp_path):
     return path
 
 
-def request(media, live=False, capability="noncommercial_post", handle="capafy.skills25042"):
+def request(media, live=False, capability="publish_probe", handle="capafy.skills25042"):
     return PostRequest(media, "Exact caption", handle, 9555, "tab-1", capability, live)
 
 
@@ -56,13 +59,25 @@ def test_dry_reaches_share_then_discards_without_clicking_share(media):
     assert browser.actions[-1] == "discard"
 
 
-def test_live_requires_noncommercial_capability_and_one_new_public_reel(media):
+def test_live_requires_publish_probe_new_reel_and_post_write_owner_session(media):
     browser = FakeCdp()
     browser.pre_urls = {"https://www.instagram.com/reel/OLD123/"}
     browser.post_urls = browser.pre_urls | {"https://www.instagram.com/reel/NEW456/"}
     result = post_reel(request(media, live=True), browser)
     assert result["published"] is True
     assert result["reel_url"] == "https://www.instagram.com/reel/NEW456/"
+    assert result["owner_session_verified"] is True
+    assert browser.handle_reads == 2
+
+
+def test_post_write_owner_mismatch_refuses_publish_claim(media):
+    browser = FakeCdp()
+    browser.post_urls = {"https://www.instagram.com/reel/NEW456/"}
+    browser.post_handle = "capafy.someone-else"
+    result = post_reel(request(media, live=True), browser)
+    assert result["status"] == "post_write_session_mismatch"
+    assert result["published"] is False
+    assert result["owner_session_verified"] is False
 
 
 def test_share_click_without_new_url_is_unconfirmed_failure(media):
@@ -89,7 +104,7 @@ def test_post_urls_are_not_accepted_as_reels(media):
     assert post_reel(request(media, live=True), browser)["status"] == "share_unconfirmed"
 
 
-@pytest.mark.parametrize("capability", ["none", "warmup_only", "commercial_post"])
+@pytest.mark.parametrize("capability", ["none", "warmup_only", "noncommercial_post", "commercial_post"])
 def test_live_refuses_capability_mismatch(media, capability):
     browser = FakeCdp()
     result = post_reel(request(media, live=True, capability=capability), browser)

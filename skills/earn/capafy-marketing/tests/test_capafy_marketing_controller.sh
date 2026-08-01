@@ -29,7 +29,8 @@ echo "$*" >>"$POST_CALLS"
 case "${POSTER_MODE:-published}" in
  challenge) echo '{"status":"challenge","published":false}'; exit 2;;
  dry) echo '{"status":"dry_verified","published":false}';;
- *) echo '{"status":"published_verified","published":true,"reel_url":"https://www.instagram.com/reel/NEW456/"}';;
+ unverified) echo '{"status":"published_verified","published":true,"reel_url":"https://www.instagram.com/reel/NEW456/","owner_session_verified":false}';;
+ *) echo '{"status":"published_verified","published":true,"reel_url":"https://www.instagram.com/reel/NEW456/","owner_session_verified":true}';;
 esac
 SH
 cat >"$T/bin/sender" <<'SH'
@@ -56,23 +57,21 @@ import json,sys
 json.dump([{"handle":"capafy.skills25042","status":"warming","session_owner":"browser","browser_identity":"instagram:capafy-provision","port":9555,"created":"2026-08-01"}],open(sys.argv[1],"w"))
 PY
 }
-warms(){ python3 - "$HOME/.cloak/ig-warmup-capafy.skills25042.json" "$1" <<'PY'
-import json,sys
-n=int(sys.argv[2]);json.dump({"log":[{"date":f"2026-08-{d:02d}","verified":{"reels_played":6},"actions":{"scrolls":5}} for d in range(1,n+1)]},open(sys.argv[1],"w"))
-PY
-}
 case_setup needed; bash "$DAILY" >/dev/null 2>&1
 eq "needed does not call creative" "$(wc -l <"$RUN_CALLS" | tr -d ' ')" 0; eq "needed wakes manager" "$(wc -l <"$KICKS" | tr -d ' ')" 1
-case_setup warming; active; warms 1; bash "$DAILY" >/dev/null 2>&1
-eq "warming does not call creative" "$(wc -l <"$RUN_CALLS" | tr -d ' ')" 0; eq "warming does not call poster" "$(wc -l <"$POST_CALLS" | tr -d ' ')" 0; has "warming is truthful" "$MESSAGES" "waiting"
-case_setup commercial; active; warms 2; export CANDIDATE_MODE=commercial; bash "$DAILY" >/dev/null 2>&1; rc=$?
+case_setup immediate; active; export CAPAFY_MARKETING_MODE=dry POSTER_MODE=dry; bash "$DAILY" >/dev/null 2>&1
+eq "verified session immediately calls creative" "$(wc -l <"$RUN_CALLS" | tr -d ' ')" 1; has "immediate probe reaches poster" "$POST_CALLS" "--expected-capability publish_probe"
+case_setup commercial; active; export CANDIDATE_MODE=commercial; bash "$DAILY" >/dev/null 2>&1; rc=$?
 [ "$rc" -ne 0 ] && ok "commercial candidate refused" || bad "commercial candidate accepted"; eq "commercial candidate not posted" "$(wc -l <"$POST_CALLS" | tr -d ' ')" 0
-case_setup missing; active; warms 2; export CANDIDATE_MODE=missing; bash "$DAILY" >/dev/null 2>&1; rc=$?
+case_setup missing; active; export CANDIDATE_MODE=missing; bash "$DAILY" >/dev/null 2>&1; rc=$?
 [ "$rc" -ne 0 ] && ok "missing candidate field refused" || bad "missing field accepted"; eq "missing candidate not posted" "$(wc -l <"$POST_CALLS" | tr -d ' ')" 0
-case_setup dry; active; warms 2; export CAPAFY_MARKETING_MODE=dry POSTER_MODE=dry; bash "$DAILY" >/dev/null 2>&1
+case_setup dry; active; export CAPAFY_MARKETING_MODE=dry POSTER_MODE=dry; bash "$DAILY" >/dev/null 2>&1
 eq "ready calls marketing agent" "$(grep -Fc -- '--task-class marketing-agent' "$RUN_CALLS")" 1; has "dry calls poster dry" "$POST_CALLS" "--dry"; has "dry never claims published" "$MESSAGES" "not posted"
-case_setup live; active; warms 2; bash "$DAILY" >/dev/null 2>&1; eq "live terminal succeeds" "$?" 0
+case_setup live; active; bash "$DAILY" >/dev/null 2>&1; eq "live terminal succeeds" "$?" 0
 has "live reports verified Reel" "$MESSAGES" "https://www.instagram.com/reel/NEW456/"; eq "live records Reel" "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["last_public_reel_url"])' "$CAPAFY_IG_LIFECYCLE_STATE")" https://www.instagram.com/reel/NEW456/
-case_setup challenge; active; warms 2; export POSTER_MODE=challenge; bash "$DAILY" >/dev/null 2>&1; rc=$?
+eq "live records owner session proof" "$(python3 -c 'import json,sys;print(str(json.load(open(sys.argv[1]))["post_write_session_verified"]).lower())' "$CAPAFY_IG_LIFECYCLE_STATE")" true
+case_setup unverified; active; export POSTER_MODE=unverified; bash "$DAILY" >/dev/null 2>&1; rc=$?
+[ "$rc" -ne 0 ] && ok "missing owner proof fails terminal" || bad "missing owner proof accepted"; recorded_unverified="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1])).get("last_public_reel_url") or "")' "$CAPAFY_IG_LIFECYCLE_STATE" 2>/dev/null || true)"; [ -z "$recorded_unverified" ] && ok "unverified owner records no Reel" || bad "unverified owner recorded Reel"
+case_setup challenge; active; export POSTER_MODE=challenge; bash "$DAILY" >/dev/null 2>&1; rc=$?
 [ "$rc" -ne 0 ] && ok "poster challenge fails terminal" || bad "challenge accepted"; eq "poster challenge retires account" "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))[0]["status"])' "$CAPAFY_IG_ACCOUNTS_FILE")" session_failed; eq "poster challenge wakes manager" "$(wc -l <"$KICKS" | tr -d ' ')" 1
 echo "=== test_capafy_marketing_controller: $P passed $F failed ==="; [ "$F" -eq 0 ]

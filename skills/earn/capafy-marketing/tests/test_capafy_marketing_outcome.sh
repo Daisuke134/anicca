@@ -49,7 +49,7 @@ echo "(C) public success requires every evidence field"
 setup_case
 python3 - "$RESULT" "$MEDIA" <<'PY'
 import json,sys
-json.dump({"result":"published","title":"Portfolio Tracker — Daily Position Review","agent_id":"9480246345","reel_url":"https://www.instagram.com/reel/REAL123/","listing_url":"https://capafy.ai/agent/9480246345","campaign_url":"https://capafy-skills-daily.netlify.app/go/9480246345?utm_source=instagram&utm_medium=reel","caption":"Your portfolio changed today.","media_path":sys.argv[2]},open(sys.argv[1],"w"))
+json.dump({"result":"published","title":"Portfolio Tracker — Daily Position Review","agent_id":"9480246345","reel_url":"https://www.instagram.com/reel/REAL123/","listing_url":"https://capafy.ai/agent/9480246345","campaign_url":"https://capafy-skills-daily.netlify.app/go/9480246345?utm_source=instagram&utm_medium=reel","caption":"Your portfolio changed today.","media_path":sys.argv[2],"owner_session_verified":True},open(sys.argv[1],"w"))
 PY
 bash "$HANDOFF" 0 "$T/evidence" >/dev/null 2>&1; rc=$?; body="$(cat "$MSG")"
 eq "published evidence exits zero" "$rc" "0"
@@ -57,6 +57,7 @@ has "published contains Reel URL" "$body" "https://www.instagram.com/reel/REAL12
 has "published contains skill URL" "$body" "https://capafy.ai/agent/9480246345"
 has "published contains campaign URL" "$body" "utm_medium=reel"
 has "published contains media artifact" "$body" "$MEDIA"
+has "published contains post-write owner proof" "$body" "owner session was re-verified"
 bash "$HANDOFF" 0 "$T/evidence" >/dev/null 2>&1
 eq "same published envelope sends once" "$(cat "$COUNT")" "1"
 rm -rf "$T"

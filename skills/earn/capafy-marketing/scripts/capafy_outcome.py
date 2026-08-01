@@ -97,6 +97,8 @@ def validate_outcome(data: dict) -> list[str]:
             errors.append("caption is required")
         if not data.get("media_path"):
             errors.append("media_path is required")
+        if data.get("owner_session_verified") is not True:
+            errors.append("owner_session_verified must be true after publishing")
     elif kind == "marketing_dry":
         if not _is_https_url(data.get("listing_url"), host_suffix="capafy.ai"):
             errors.append("listing_url must be a real https://capafy.ai URL")
@@ -354,6 +356,7 @@ def render_outcome(data: dict) -> str:
             f"Campaign link: {data['campaign_url']}",
             f"Media artifact: {data['media_path']}",
             f"Caption: {data['caption']}",
+            "The browser owner session was re-verified after publishing.",
         ]
     )
 

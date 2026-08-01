@@ -42,9 +42,12 @@ if [ -f "$RESULT" ] && [ -f "$STATE" ] && [ "$(python3 -c 'import json,sys;print
   pending_reel="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1])).get("reel_url",""))' "$RESULT")"
   pending_handle="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1])).get("handle", "") or json.load(open(sys.argv[2])).get("handle", ""))' "$RESULT" "$STATE" 2>/dev/null || true)"
   recorded_reel="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1])).get("last_public_reel_url","") or "")' "$STATE" 2>/dev/null || true)"
-  if [ -n "$pending_reel" ] && [ "$pending_reel" != "$recorded_reel" ] && [ -n "$pending_handle" ]; then
+  pending_owner="$(python3 -c 'import json,sys;print(str(json.load(open(sys.argv[1])).get("owner_session_verified",False)).lower())' "$RESULT" 2>/dev/null || true)"
+  if [ -n "$pending_reel" ] && [ -n "$pending_handle" ] && [ "$pending_owner" = true ]; then
+    if [ "$pending_reel" != "$recorded_reel" ]; then
+      python3 "$LIFECYCLE" record-reel --state "$STATE" --handle "$pending_handle" --reel-url "$pending_reel" --owner-session-verified >/dev/null || exit 2
+    fi
     CAPAFY_MARKETING_RESULT="$RESULT" bash "$HANDOFF" 0 recovery || exit $?
-    python3 "$LIFECYCLE" record-reel --state "$STATE" --handle "$pending_handle" --reel-url "$pending_reel" >/dev/null || exit 2
     rm -f "$RESULT"; exit 0
   fi
 fi
@@ -58,9 +61,7 @@ PY
   exit $?
 }
 handle="$(resolve_capafy_ig_handle "$ACCOUNTS")"
-warmup="${handle:+$HOME/.cloak/ig-warmup-$handle.json}"
-if [ -z "$handle" ]; then warmup="$STATE_DIR/capafy-empty-warmup.json"; [ -f "$warmup" ] || printf '{"log":[]}\n' >"$warmup"; fi
-python3 "$LIFECYCLE" snapshot --accounts "$ACCOUNTS" --warmup "$warmup" --state "$STATE" >/dev/null || fail "could not derive marketing lifecycle state"
+python3 "$LIFECYCLE" snapshot --accounts "$ACCOUNTS" --state "$STATE" >/dev/null || fail "could not derive marketing lifecycle state"
 replacement="$(python3 -c 'import json,sys;print(str(json.load(open(sys.argv[1]))["replacement_requested"]).lower())' "$STATE")"
 if [ "$replacement" = true ]; then
   "$KICKSTART" kickstart -k "gui/$(id -u)/ai.anicca.capafy-ig-account-manager" >/dev/null 2>&1 || true
@@ -68,16 +69,7 @@ if [ "$replacement" = true ]; then
 fi
 status="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$STATE")"
 capability="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["capability"])' "$STATE")"
-successes="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["warmup_successes"])' "$STATE")"
-if [ "$capability" = warmup_only ]; then
-  python3 - "$RESULT" "$handle" "$status" "$successes" <<'PY'
-import json,sys
-json.dump({"result":"lifecycle_waiting","handle":sys.argv[2],"status":sys.argv[3],"warmup_successes":int(sys.argv[4]),"capability":"warmup_only","public_post_url":None,"next_action":"run the next automatic verified browser warmup"},open(sys.argv[1],"w"))
-PY
-  CAPAFY_MARKETING_RESULT="$RESULT" bash "$HANDOFF" 0 controller
-  exit $?
-fi
-[ "$capability" = noncommercial_post ] || fail "unsupported marketing capability: $capability"
+[ "$capability" = publish_probe ] || fail "unsupported marketing capability in state $status: $capability"
 identity="$(_resolve_capafy_ig_account_field "$ACCOUNTS" browser_identity)"; [ -n "$identity" ] || fail "active account has no browser identity"
 cdp="$(bash "$BROWSER" "$identity")" || fail "active account browser did not start"; port="${cdp##*:}"
 case "$port" in ''|*[!0-9]*) fail "active browser returned no numeric port";; esac
@@ -90,8 +82,8 @@ PY
 )"
 fi
 [ -n "$tid" ] || fail "active Instagram browser tab is missing"
-prompt="Select one verified public Capafy listing and create one 9:16 MP4 plus exact caption.
-This pass is non-commercial: no offer CTA and no bio-link instruction.
+prompt="Select one verified public Capafy listing and create one original product-education 9:16 MP4 plus exact caption.
+This first publish probe is low-pressure: no hard offer CTA and no bio-link mutation.
 Write one creative candidate JSON to $CANDIDATE with schema_version, title, agent_id,
 listing_url, campaign_url, caption, media_path, and commercial_intent=false.
 Do not provision accounts, warm sessions, publish, verify publication, or send Telegram."
@@ -112,7 +104,7 @@ if u.path.rstrip("/")!=f"/agent/{aid}": raise SystemExit("listing_url does not m
 d["campaign_url"]=f"https://capafy-skills-daily.netlify.app/go/{urllib.parse.quote(aid,safe='')}?utm_source=instagram&utm_medium=reel&utm_campaign=capafy-skill"
 print(json.dumps(d))
 PY
-)" || fail "creative candidate failed the non-commercial evidence contract"
+)" || fail "creative candidate failed the original publish-probe evidence contract"
 caption_file="$STATE_DIR/capafy-caption.txt"; printf '%s' "$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["caption"])' "$normalized")" >"$caption_file"
 video="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["media_path"])' "$normalized")"
 mode_flag=--live; [ "$MODE" = dry ] && mode_flag=--dry
@@ -134,15 +126,15 @@ if mode=="dry":
  if r.get("status")!="dry_verified" or r.get("published"): raise SystemExit(2)
  out={"result":"dry",**{k:c[k] for k in ("title","agent_id","listing_url","caption","media_path")}}
 else:
- if r.get("status")!="published_verified" or r.get("published") is not True or not r.get("reel_url"): raise SystemExit(2)
- out={"result":"published",**{k:c[k] for k in ("title","agent_id","listing_url","campaign_url","caption","media_path")},"reel_url":r["reel_url"]}
+ if r.get("status")!="published_verified" or r.get("published") is not True or not r.get("reel_url") or r.get("owner_session_verified") is not True: raise SystemExit(2)
+ out={"result":"published",**{k:c[k] for k in ("title","agent_id","listing_url","campaign_url","caption","media_path")},"reel_url":r["reel_url"],"owner_session_verified":True}
 json.dump(out,open(p,"w"))
 PY
 [ -f "$RESULT" ] || fail "poster result could not produce a terminal outcome"
-CAPAFY_MARKETING_RESULT="$RESULT" bash "$HANDOFF" 0 "$evidence" || exit $?
 if [ "$MODE" = live ]; then
   reel="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["reel_url"])' "$RESULT")"
-  python3 "$LIFECYCLE" record-reel --state "$STATE" --handle "$handle" --reel-url "$reel" >/dev/null || exit 2
+  python3 "$LIFECYCLE" record-reel --state "$STATE" --handle "$handle" --reel-url "$reel" --owner-session-verified >/dev/null || exit 2
 fi
+CAPAFY_MARKETING_RESULT="$RESULT" bash "$HANDOFF" 0 "$evidence" || exit $?
 rm -f "$RESULT"
 exit 0

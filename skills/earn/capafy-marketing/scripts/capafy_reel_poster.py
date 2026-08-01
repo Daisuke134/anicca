@@ -35,6 +35,7 @@ class PostResult:
     reached: str
     published: bool
     reel_url: str | None
+    owner_session_verified: bool
     pre_urls: tuple[str, ...]
     post_urls: tuple[str, ...]
     screenshots: tuple[str, ...]
@@ -62,8 +63,8 @@ def _reel_url(value: str) -> str | None:
     return f"https://www.instagram.com/reel/{parts[1]}/"
 
 
-def _result(status: str, reached: str, browser: BrowserAci, pre=(), post=(), url=None, published=False):
-    return asdict(PostResult(status, reached, published, url, tuple(sorted(pre)), tuple(sorted(post)), tuple(getattr(browser, "screenshots", ()))))
+def _result(status: str, reached: str, browser: BrowserAci, pre=(), post=(), url=None, published=False, owner_session_verified=False):
+    return asdict(PostResult(status, reached, published, url, owner_session_verified, tuple(sorted(pre)), tuple(sorted(post)), tuple(getattr(browser, "screenshots", ()))))
 
 
 def _valid_mp4(path: Path) -> bool:
@@ -78,7 +79,7 @@ def _valid_mp4(path: Path) -> bool:
 def post_reel(request: PostRequest, browser: BrowserAci) -> dict:
     if not _valid_mp4(request.video):
         return _result("invalid_media", "preflight", browser)
-    if request.live and request.capability != "noncommercial_post":
+    if request.live and request.capability != "publish_probe":
         return _result("capability_refused", "preflight", browser)
     try:
         if browser.active_handle().lstrip("@").lower() != request.handle.lstrip("@").lower():
@@ -109,7 +110,18 @@ def post_reel(request: PostRequest, browser: BrowserAci) -> dict:
     new = post - pre
     if len(new) == 1:
         url = next(iter(new))
-        return _result("published_verified", "public_readback", browser, pre, post, url, True)
+        try:
+            owner_verified = (
+                browser.active_handle().lstrip("@").lower()
+                == request.handle.lstrip("@").lower()
+            )
+        except BrowserChallenge:
+            return _result("challenge", "post_write_session", browser, pre, post, url)
+        except Exception:
+            return _result("post_write_session_unverified", "post_write_session", browser, pre, post, url)
+        if not owner_verified:
+            return _result("post_write_session_mismatch", "post_write_session", browser, pre, post, url)
+        return _result("published_verified", "post_write_session", browser, pre, post, url, True, True)
     if len(new) > 1:
         return _result("share_ambiguous", "public_readback", browser, pre, post)
     return _result("share_unconfirmed", "public_readback", browser, pre, post)
