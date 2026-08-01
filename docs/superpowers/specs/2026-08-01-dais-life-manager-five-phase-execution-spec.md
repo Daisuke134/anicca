@@ -47,14 +47,14 @@ serendipityを根拠付き評価するところまで完成した。実Calendar�
 2026-08-02〜2026-08-22の初回coverage snapshotは、後続のCalendar/event照合前なので21日すべて
 `open`である。これは「イベントがない」という意味ではない。
 
-現在の実装優先は最新指示による`O1C-00 Life Manager startup context正本化`である。
-Connectorの再開位置は`O1B-25`に固定し、context修復後に戻る。残作業は、途中へ別trackを混ぜず
+`O1C-00 Life Manager startup context正本化`は2026-08-02に実装・監査・pushまで完了した。
+現在の実装優先は、保持していたConnectorの再開位置`O1B-25`である。残作業は、途中へ別trackを混ぜず
 次の順序で進める。
 
 ```text
 完了: O1B-20〜24 source handoff、候補継続、Calendar・移動時間・支出gate
-いま: O1C-00 Life Manager startup context正本化（旧Anicca product提出防止）
-  → O1B-25 21日coverageのTelegram報告を同じ位置から再開
+完了: O1C-00 Life Manager startup context正本化（旧Anicca product提出防止）
+いま: O1B-25 21日coverageのTelegram報告を同じ位置から再開
   → O1C-01〜27 Fundraising / acceleratorの探索・提出・返信・面談追跡
   → O2-01〜12 Job Hunterの統合・実応募・返信・面接追跡
   → O3A-01〜07 壊れたCFO runtime loopを復旧
@@ -1327,7 +1327,7 @@ agentが本文と履歴を読んで判断し、keyword/regexの固定分類へ�
 - [x] O1C-00C root READMEの日英first-viewをLife Managerのphysical / mental / financial product storyへ統一
 - [x] O1C-00D 旧application-kitの日英answers、deck、one-pager、asset manifestをLife Manager正本から再生成
 - [x] O1C-00E `apply-to-funder`のYC/company configをLife Manager正本参照へ変更し、旧Anicca product値をsubmit不可にする
-- [ ] O1C-00F startup context freshness / contradiction / old-product regression gateを実装し、previewで検証
+- [x] O1C-00F startup context freshness / contradiction / old-product regression gateを実装し、previewで検証
 
 O1C-00A実装実測（2026-08-02 JST）: `.agents/startup-context.json`へexact facts、
 `.agents/product-marketing-context.md`へ意味的positioningを分離し、
@@ -1363,6 +1363,13 @@ previewはcontext digestとapplication digestへbindし、旧product field、sta
 揃えば旧Anicca pitchを提出できることを確認した。新skillは現在preview-onlyで、未確認founder videoを
 blockerとして表示し、旧submit scriptへのfallbackを禁止する。OpenClaw exportはallowlist fileだけを
 専用Life Manager directoryへ出し、`submitted/**`を拒否する。関連testは23/23 pass、skill validatorもpass。
+
+O1C-00F最終監査（2026-08-02 JST）: install isolation 1件と、OSS / startup context / export /
+apply-to-funder 34件の合計35/35 testがpass。canonical 3導線はHTTP 200とLife Manager本文一致、
+application kitは2回連続生成で同一、skill validatorもpassした。YC previewはcontext / application digestへ
+bindされ、未確認founder videoをexpected blockerとして保持し`submit_allowed: false`である。監査証拠は
+`docs/evidence/fundraising/2026-08-02-startup-context-audit.json`。O1C-00は完了し、現在地をO1B-25へ戻す。
+
 - [ ] O1C-01 repository-owned startup contextを全funder applicationのcompany facts正本として接続
 - [ ] O1C-02 funder/accelerator registryを再構築
 - [ ] O1C-03 MUFG運営/CVC deny gateとpartner確認を実装
