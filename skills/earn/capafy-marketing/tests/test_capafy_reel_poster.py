@@ -1,0 +1,118 @@
+import sys
+from pathlib import Path
+
+import pytest
+
+
+SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
+sys.path.insert(0, str(SCRIPTS))
+from capafy_reel_poster import BrowserChallenge, PostRequest, post_reel  # noqa: E402
+
+
+class FakeCdp:
+    def __init__(self):
+        self.handle = "capafy.skills25042"
+        self.pre_urls = set()
+        self.post_urls = set()
+        self.actions = []
+        self.destructive_actions = []
+        self.challenge = False
+        self.screenshots = ["before.png", "share.png"]
+
+    def active_handle(self):
+        if self.challenge:
+            raise BrowserChallenge("challenge page")
+        return self.handle
+
+    def reel_urls(self):
+        return self.post_urls if "share" in self.actions else self.pre_urls
+
+    def open_composer(self): self.actions.append("open_composer")
+    def upload_video(self, _path): self.actions.append("upload_video")
+    def advance_to_caption(self): self.actions.append("advance_to_caption")
+    def enter_caption(self, _caption): self.actions.append("enter_caption")
+    def share(self): self.actions.append("share"); self.destructive_actions.append("share")
+    def discard(self): self.actions.append("discard")
+
+
+@pytest.fixture
+def media(tmp_path):
+    path = tmp_path / "reel.mp4"
+    path.write_bytes(b"\x00\x00\x00\x18ftypmp42fixture")
+    return path
+
+
+def request(media, live=False, capability="noncommercial_post", handle="capafy.skills25042"):
+    return PostRequest(media, "Exact caption", handle, 9555, "tab-1", capability, live)
+
+
+def test_dry_reaches_share_then_discards_without_clicking_share(media):
+    browser = FakeCdp()
+    result = post_reel(request(media, live=False), browser)
+    assert result["status"] == "dry_verified"
+    assert result["reached"] == "share"
+    assert result["published"] is False
+    assert "share" not in browser.destructive_actions
+    assert browser.actions[-1] == "discard"
+
+
+def test_live_requires_noncommercial_capability_and_one_new_public_reel(media):
+    browser = FakeCdp()
+    browser.pre_urls = {"https://www.instagram.com/reel/OLD123/"}
+    browser.post_urls = browser.pre_urls | {"https://www.instagram.com/reel/NEW456/"}
+    result = post_reel(request(media, live=True), browser)
+    assert result["published"] is True
+    assert result["reel_url"] == "https://www.instagram.com/reel/NEW456/"
+
+
+def test_share_click_without_new_url_is_unconfirmed_failure(media):
+    browser = FakeCdp()
+    browser.pre_urls = {"https://www.instagram.com/reel/OLD123/"}
+    browser.post_urls = set(browser.pre_urls)
+    assert post_reel(request(media, live=True), browser)["status"] == "share_unconfirmed"
+
+
+def test_multiple_new_urls_are_ambiguous(media):
+    browser = FakeCdp()
+    browser.post_urls = {
+        "https://www.instagram.com/reel/NEW1/",
+        "https://www.instagram.com/reel/NEW2/",
+    }
+    result = post_reel(request(media, live=True), browser)
+    assert result["status"] == "share_ambiguous"
+    assert result["published"] is False
+
+
+def test_post_urls_are_not_accepted_as_reels(media):
+    browser = FakeCdp()
+    browser.post_urls = {"https://www.instagram.com/p/NOTAREEL/"}
+    assert post_reel(request(media, live=True), browser)["status"] == "share_unconfirmed"
+
+
+@pytest.mark.parametrize("capability", ["none", "warmup_only", "commercial_post"])
+def test_live_refuses_capability_mismatch(media, capability):
+    browser = FakeCdp()
+    result = post_reel(request(media, live=True, capability=capability), browser)
+    assert result["status"] == "capability_refused"
+    assert browser.actions == []
+
+
+def test_wrong_active_handle_is_refused(media):
+    browser = FakeCdp(); browser.handle = "capafy.someone-else"
+    result = post_reel(request(media), browser)
+    assert result["status"] == "session_handle_mismatch"
+    assert browser.actions == []
+
+
+def test_challenge_page_is_typed_failure(media):
+    browser = FakeCdp(); browser.challenge = True
+    result = post_reel(request(media), browser)
+    assert result["status"] == "challenge"
+
+
+@pytest.mark.parametrize("kind", ["missing", "wrong_suffix", "invalid_header"])
+def test_missing_or_invalid_mp4_is_refused(tmp_path, kind):
+    path = tmp_path / ("video.mov" if kind == "wrong_suffix" else "video.mp4")
+    if kind != "missing": path.write_bytes(b"not an mp4")
+    result = post_reel(request(path), FakeCdp())
+    assert result["status"] == "invalid_media"
