@@ -10,12 +10,16 @@ const { encodeWakeClientState } = require("./telnyx-webhook.js");
 
 const TELNYX = "https://api.telnyx.com/v2";
 
-function authHeaders() {
-  return { Authorization: `Bearer ${process.env.TELNYX_API_KEY}`, "Content-Type": "application/json" };
+function authHeaders(apiKey) {
+  return { Authorization: `Bearer ${apiKey || process.env.TELNYX_API_KEY}`, "Content-Type": "application/json" };
 }
 
-async function txPost(path, body) {
-  const r = await fetch(`${TELNYX}${path}`, { method: "POST", headers: authHeaders(), body: JSON.stringify(body) });
+// `opts` lets a caller inject the transport (fetchImpl) and the credential (apiKey) instead of
+// reaching for globals — the same style lib/late-notice.js uses, so a Telnyx action can be proven
+// without a network or a mutated process.env. Omitted, both fall back to production exactly as before.
+async function txPost(path, body, opts = {}) {
+  const f = opts.fetchImpl || fetch;
+  const r = await f(`${TELNYX}${path}`, { method: "POST", headers: authHeaders(opts.apiKey), body: JSON.stringify(body) });
   const j = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(`telnyx ${path} ${r.status}: ${JSON.stringify(j).slice(0, 200)}`);
   return j;
@@ -87,4 +91,26 @@ async function startRecording(ccid) {
   }
 }
 
-module.exports = { placeCall, startRecording, telnyxStreamingStartBody, balanceUsd, amdDialOptions };
+// End a call in progress. spec §3 row 2b / §5.2.1: AMD says the far end is a recording, and without
+// this NOTHING in this service ever hangs up — measured, `hangup_source` was `callee` on all 43
+// correlated wake calls, i.e. every one of them ran until the carrier's 120-second recording limit
+// cut it off, ~$0.05 of Gemini Live spoken into a voicemail nobody plays back.
+//
+// Same shape as startRecording: returns { ok } | { ok:false, error } and NEVER throws, so the caller
+// can log it. A hangup is a cost saving; it must not be able to take out the amd_result write that
+// tells a voicemail apart from a webhook that never arrived (§1.3).
+// Path per Telnyx: POST /v2/calls/{call_control_id}/actions/hangup (team-telnyx/telnyx-node
+// src/resources/calls/actions.ts → `path`/calls/${callControlID}/actions/hangup``).
+async function hangupCall(ccid, opts = {}) {
+  if (!ccid) return { ok: false, error: "no ccid" };
+  try {
+    // encodeURIComponent because a call_control_id is opaque base64url-ish text ("v2:T02llQ…") that
+    // can carry `/` and `+`; unencoded, it would walk straight out of the actions path.
+    await txPost(`/calls/${encodeURIComponent(ccid)}/actions/hangup`, {}, opts);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: String((e && e.message) || e) };
+  }
+}
+
+module.exports = { placeCall, startRecording, hangupCall, telnyxStreamingStartBody, balanceUsd, amdDialOptions };

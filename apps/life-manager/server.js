@@ -295,8 +295,13 @@ const server = http.createServer((req, res) => {
       // spec §3 row 2: persist EVERY detection, not only human ones. amd_result='machine' is a
       // voicemail we reached; amd_result IS NULL is a webhook that never arrived. Before this, both
       // were answered_at IS NULL and a rotated signing key would have gone unnoticed forever.
+      // spec §3 row 2b / §5.2.1: the same event that tells us it is a machine also carries the handle
+      // needed to end the call. `data.payload.call_control_id` is on every call.machine.detection.ended
+      // (Telnyx sample webhook, team-telnyx/demo-node-telnyx voicemail-detection/contentful.md) — the
+      // same identifier placeCall returns as `ccid` and the bridge already uses for record_start.
       const detection = await applyAmdDetection(wake.wakeUid, wake.wakeEventKey, {
         result: payload.result, supaUrl: SUPA_URL, supaKey: SUPA_KEY,
+        callControlId: payload.call_control_id,
       });
       const tag = `wake=${wake.wakeUid.slice(0, 12)} result=${detection.result || "missing"}`;
       // The three outcomes get three different lines, and only one of them is routine. A write that
@@ -308,6 +313,15 @@ const server = http.createServer((req, res) => {
       };
       report("amd_result", detection.amd);
       if (detection.answered) report("answered_at", detection.answered);
+      // The hangup is best-effort and is logged apart from the writes above, because it fails for a
+      // different reason (Telnyx, not Supabase) and costs a different thing: money, never evidence.
+      // Silence here would put us back where we started — paying for two minutes of voicemail with
+      // nothing anywhere saying we tried to stop it.
+      if (detection.hangup && !detection.hangup.ok) {
+        console.error(`[telnyx-events] hangup FAILED (${detection.hangup.error}) ${tag} — still speaking to a machine`);
+      } else if (detection.hangup) {
+        console.log(`[telnyx-events] hung up on a ${detection.result} ${tag}`);
+      }
       const outcome = !detection.amd.ok ? "record failed"
         : detection.answered ? (detection.answered.matched > 0 ? "answered" : "answered_at unchanged")
         : "recorded";
