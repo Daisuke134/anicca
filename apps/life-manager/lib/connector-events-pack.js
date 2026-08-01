@@ -15,6 +15,11 @@ const {
 } = require("./calendar-candidate-gate.js");
 const { inspectGoogleCalendarBusyInventory } = require("./google-calendar-busy-inventory.js");
 const { syncVerifiedRegistrationToGoogleCalendar } = require("./connector-calendar-sync.js");
+const {
+  buildEventSpendSequence,
+  eventSpendDecisionForSequence,
+  inspectSavedLumaPaymentMethod,
+} = require("./event-spend-policy.js");
 const { createConnpassApiClient } = require("./connpass-api-client.js");
 const {
   createEventSourceCapabilities,
@@ -56,6 +61,8 @@ function createConnectorEventsPack(options = {}) {
   const inspectBusyCalendar = options.inspectBusyCalendar || inspectGoogleCalendarBusyInventory;
   const evaluateCalendarGate = options.evaluateCalendarGate || evaluateCalendarCandidateGate;
   const syncRegistrationCalendar = options.syncRegistrationCalendar || syncVerifiedRegistrationToGoogleCalendar;
+  const planSpendSequence = options.planSpendSequence || buildEventSpendSequence;
+  const spendDecisionForSequence = options.spendDecisionForSequence || eventSpendDecisionForSequence;
   const authAwareDriver = createAuthAwareDriver({ dailyDriver, auth });
   if (!authAwareDriver || typeof authAwareDriver.withLumaPage !== "function") throw invalid();
   const provider = createProvider({
@@ -98,12 +105,33 @@ function createConnectorEventsPack(options = {}) {
     evaluateDateGoals(dateInventory, preferenceRanking, goals, extra = {}) {
       return evaluateGoalSerendipity({ dateInventory, preferenceRanking, goals }, extra);
     },
+    readSavedPaymentMethod() {
+      if (typeof provider.inspectSavedPaymentMethod !== "function") throw invalid();
+      return inspectSavedLumaPaymentMethod({ inspect: () => provider.inspectSavedPaymentMethod() });
+    },
     runSameDayCandidates(candidates, attempt) {
       return runCandidateSequence({ candidates, attempt });
     },
     runCalendarGatedSameDay(dateInventory, calendarGate, attempt) {
       const candidates = selectCalendarEligibleCandidates(dateInventory, calendarGate);
       return runCandidateSequence({ candidates, attempt });
+    },
+    planDateSpend(policy, dateInventory, calendarGate, goalDecision) {
+      return planSpendSequence({ policy, dateInventory, calendarGate, goalDecision });
+    },
+    runSpendGatedSameDay(spendSequence, attempt) {
+      if (!spendSequence || !Array.isArray(spendSequence.ordered_candidates)) throw invalid();
+      const candidates = spendSequence.ordered_candidates.map((candidate) => Object.freeze({
+        event_ref: candidate.event_ref,
+        canonical_url: candidate.canonical_url,
+      }));
+      return runCandidateSequence({
+        candidates,
+        attempt: (candidate) => attempt(
+          candidate,
+          spendDecisionForSequence(spendSequence, candidate.event_ref),
+        ),
+      });
     },
     readBusyCalendar(calendar, window = {}) {
       return inspectBusyCalendar({ calendar, ...window });

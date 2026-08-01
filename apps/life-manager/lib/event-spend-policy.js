@@ -11,6 +11,7 @@ const POLICIES = new WeakSet();
 const METHODS = new WeakSet();
 const DECISIONS = new WeakSet();
 const SEQUENCES = new WeakSet();
+const SEQUENCE_DECISIONS = new WeakMap();
 
 function invalid() { throw new Error("Event spend policy invalid"); }
 function unavailable() { throw new Error("Event spend policy unavailable"); }
@@ -152,6 +153,33 @@ function isVerifiedEventSpendDecision(value) {
   return Boolean(value && typeof value === "object" && DECISIONS.has(value));
 }
 
+function authorizeEventSpendEffect(input = {}) {
+  const decision = input.decision;
+  const detail = input.eventDetail;
+  if (
+    !isVerifiedEventSpendDecision(decision)
+    || !detail || typeof detail !== "object" || Array.isArray(detail)
+    || decision.allowed !== true
+    || detail.event_ref !== decision.event_ref
+  ) invalid();
+  if (
+    detail.ticket_price_status === "free"
+    && detail.ticket_price_minor === 0
+    && decision.amount_minor === 0
+    && decision.payment_mode === "none"
+  ) return Object.freeze({ mode: "free", event_spend_decision_id: decision.event_spend_decision_id });
+  if (
+    detail.ticket_price_status === "paid"
+    && Number.isSafeInteger(detail.ticket_price_minor)
+    && detail.ticket_price_minor > 0
+    && detail.ticket_price_minor === decision.amount_minor
+    && detail.ticket_currency === decision.currency
+    && decision.payment_mode === "saved"
+    && /^payment-method:\/\/luma\/saved\/[0-9a-f]{64}$/.test(String(decision.payment_method_ref || ""))
+  ) return Object.freeze({ mode: "saved", event_spend_decision_id: decision.event_spend_decision_id });
+  invalid();
+}
+
 function buildEventSpendSequence(input = {}) {
   const policy = input.policy;
   const inventory = input.dateInventory;
@@ -180,6 +208,7 @@ function buildEventSpendSequence(input = {}) {
   const free = [];
   const paid = [];
   const skipped = [];
+  const sequenceDecisions = new Map();
   const reservedByCurrency = new Map();
   for (const ranked of goal.ranked_events) {
     const event = events.get(ranked.event_ref);
@@ -207,6 +236,7 @@ function buildEventSpendSequence(input = {}) {
       event_spend_decision_id: decision.event_spend_decision_id,
       payment_mode: decision.payment_mode,
     });
+    sequenceDecisions.set(event.event_ref, decision);
     (decision.payment_mode === "none" ? free : paid).push(row);
   }
   const core = {
@@ -223,6 +253,7 @@ function buildEventSpendSequence(input = {}) {
     ...core,
   });
   SEQUENCES.add(sequence);
+  SEQUENCE_DECISIONS.set(sequence, sequenceDecisions);
   return sequence;
 }
 
@@ -230,11 +261,20 @@ function isVerifiedEventSpendSequence(value) {
   return Boolean(value && typeof value === "object" && SEQUENCES.has(value));
 }
 
+function eventSpendDecisionForSequence(sequence, eventRef) {
+  if (!isVerifiedEventSpendSequence(sequence)) invalid();
+  const decision = SEQUENCE_DECISIONS.get(sequence).get(String(eventRef));
+  if (!isVerifiedEventSpendDecision(decision)) invalid();
+  return decision;
+}
+
 module.exports = {
   authorizeEventSpend,
+  authorizeEventSpendEffect,
   buildEventSpendSequence,
   createEventSpendPolicy,
   inspectSavedLumaPaymentMethod,
+  eventSpendDecisionForSequence,
   isVerifiedEventSpendDecision,
   isVerifiedEventSpendPolicy,
   isVerifiedEventSpendSequence,

@@ -13,8 +13,10 @@ const { validateEventPreferenceRanking } = require("./event-preference-ranking.j
 const { validateEventGoalSerendipity } = require("./event-goal-serendipity.js");
 const {
   authorizeEventSpend,
+  authorizeEventSpendEffect,
   buildEventSpendSequence,
   createEventSpendPolicy,
+  eventSpendDecisionForSequence,
   inspectSavedLumaPaymentMethod,
   isVerifiedEventSpendDecision,
   isVerifiedEventSpendPolicy,
@@ -172,6 +174,18 @@ test("the execution sequence tries free first, then allowed paid, while preservi
     { event_ref: "luma-event://event/unknown", reason: "price_unknown" },
   ]);
   assert.doesNotMatch(JSON.stringify(sequence.ordered_candidates), /payment-method/);
+  const paidDecision = eventSpendDecisionForSequence(sequence, "luma-event://event/paid");
+  const paidDetail = dateInventory.days.flatMap((day) => day.events)
+    .find((event) => event.event_ref === "luma-event://event/paid");
+  assert.deepEqual(authorizeEventSpendEffect({ decision: paidDecision, eventDetail: paidDetail }), {
+    mode: "saved", event_spend_decision_id: paidDecision.event_spend_decision_id,
+  });
+  assert.throws(() => authorizeEventSpendEffect({
+    decision: structuredClone(paidDecision), eventDetail: paidDetail,
+  }), /event spend policy invalid/i);
+  assert.throws(() => authorizeEventSpendEffect({
+    decision: paidDecision, eventDetail: { ...paidDetail, ticket_price_minor: 2501 },
+  }), /event spend policy invalid/i);
 });
 
 test("the zero-yen execution sequence keeps only free calendar-eligible candidates", async () => {

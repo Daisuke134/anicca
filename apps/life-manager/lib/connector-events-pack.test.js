@@ -186,6 +186,67 @@ test("the pack runs only calendar-eligible candidates through the same-day state
   ]);
 });
 
+test("the pack plans and runs the free-first spend-gated sequence with its private decision", async () => {
+  const calls = [];
+  const spendSequence = {
+    ordered_candidates: [
+      { event_ref: "luma-event://event/free", canonical_url: "https://luma.com/free", payment_mode: "none" },
+      { event_ref: "luma-event://event/paid", canonical_url: "https://luma.com/paid", payment_mode: "saved" },
+    ],
+  };
+  const pack = createConnectorEventsPack({
+    dailyDriver: { withLumaPage: async () => {} },
+    auth: { ensureAuthenticated: async () => ({ status: "authenticated" }) },
+    evidenceStore: { record: async () => {} },
+    createAuthAwareDriver: () => ({ withLumaPage: async () => {} }),
+    createProvider: () => ({ inspectRegistration: async () => {}, submitRegistration: async () => {} }),
+    planSpendSequence(input) { calls.push(["plan", input]); return spendSequence; },
+    spendDecisionForSequence(sequence, eventRef) {
+      assert.equal(sequence, spendSequence);
+      return `decision:${eventRef}`;
+    },
+    async runCandidateSequence(input) {
+      calls.push(["run", input.candidates]);
+      for (const candidate of input.candidates) {
+        await input.attempt(candidate);
+      }
+      return "spend-sequence-result";
+    },
+  });
+  assert.equal(pack.planDateSpend("policy", "inventory", "gate", "goal"), spendSequence);
+  const attempt = async (candidate, decision) => { calls.push(["attempt", candidate.event_ref, decision]); };
+  assert.equal(await pack.runSpendGatedSameDay(spendSequence, attempt), "spend-sequence-result");
+  assert.deepEqual(calls, [
+    ["plan", { policy: "policy", dateInventory: "inventory", calendarGate: "gate", goalDecision: "goal" }],
+    ["run", [
+      { event_ref: "luma-event://event/free", canonical_url: "https://luma.com/free" },
+      { event_ref: "luma-event://event/paid", canonical_url: "https://luma.com/paid" },
+    ]],
+    ["attempt", "luma-event://event/free", "decision:luma-event://event/free"],
+    ["attempt", "luma-event://event/paid", "decision:luma-event://event/paid"],
+  ]);
+});
+
+test("the pack turns browser-only saved-card evidence into an opaque verified method", async () => {
+  const pack = createConnectorEventsPack({
+    dailyDriver: { withLumaPage: async () => {} },
+    auth: { ensureAuthenticated: async () => ({ status: "authenticated" }) },
+    evidenceStore: { record: async () => {} },
+    createAuthAwareDriver: () => ({ withLumaPage: async () => {} }),
+    createProvider: () => ({
+      inspectRegistration: async () => {},
+      submitRegistration: async () => {},
+      inspectSavedPaymentMethod: async () => ({
+        status: "saved", provider_binding: "sha256:" + "c".repeat(64),
+      }),
+    }),
+  });
+  const method = await pack.readSavedPaymentMethod();
+  assert.equal(method.status, "saved");
+  assert.match(method.payment_method_ref, /^payment-method:\/\/luma\/saved\/[0-9a-f]{64}$/);
+  assert.doesNotMatch(JSON.stringify(method), /provider_binding|cccccccc/);
+});
+
 test("the pack owns exhaustive busy-calendar read and travel-aware gate operations", async () => {
   const calls = [];
   const pack = createConnectorEventsPack({
