@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-08-01T16:03:10Z",
+  "track": "connector",
+  "step": "O1B-11",
+  "official_sources": {
+    "api_help": "https://help.connpass.com/api/",
+    "api_v2_reference": "https://connpass.com/about/api/v2/",
+    "api_terms": "https://help.connpass.com/api/api-term",
+    "application_form": "https://docs.google.com/forms/d/e/1FAIpQLScLAulm95yER9bppbDRiR6ZiVVDf1P4-PiIqNdzWJGc001ncQ/viewform"
+  },
+  "application": {
+    "classification": "personal_noncommercial_local_read_only",
+    "submitted": true,
+    "receipt": "official_google_form_formResponse_transition",
+    "review_eta": "approximately_five_business_days",
+    "raw_identity_persisted": false,
+    "api_key_persisted": false
+  },
+  "access_policy": {
+    "before_key": "zero_automated_connpass_network_access",
+    "after_key": "official_v2_get_discovery_only",
+    "minimum_request_interval_ms": 5000,
+    "browser_registration": "forbidden",
+    "commercial_web_reuse": "forbidden"
+  },
+  "retired_openclaw_jobs": [
+    "anicca-meetup-discover-daily",
+    "anicca-meetup-apply-tokyo-weekly",
+    "connpass-lt-apply-daily",
+    "anicca-booking-daily"
+  ],
+  "guardrail_job_preserved": "anicca-cron-auto-disable",
+  "openclaw_jobs_sha256": "1179a71a1557e8afb9edcb501d8b17da2d4b34acde08d5b5e44ad33705d74a9c",
+  "verification": {
+    "focused_tests": { "passed": 7, "failed": 0 },
+    "outbound_tests": { "passed": 117, "failed": 0 }
+  }
+}

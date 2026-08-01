@@ -77,8 +77,7 @@ def per_domain_query(domain, slot):
     """Build a Firecrawl query for a (domain, slot) combo."""
     date_str = slot["date"]
     if domain == "AI_LT":
-        # connpass の event detail page を主体に狙う
-        return f"AI 東京 LT {date_str} inurl:connpass.com/event OR inurl:peatix.com/event OR inurl:lu.ma"
+        return f"AI 東京 LT {date_str} inurl:lu.ma"
     if domain == "comedy":
         return f"お笑い ライブ 出演者募集 {date_str} site:twoplus.tokyo OR site:tokyocomedybar.com OR site:pechka.tokyo"
     if domain == "research":
