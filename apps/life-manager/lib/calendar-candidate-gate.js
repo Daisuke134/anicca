@@ -181,7 +181,33 @@ function isVerifiedCalendarCandidateGate(value) {
   return Boolean(value && typeof value === "object" && VERIFIED.has(value));
 }
 
+function calendarEligibleLumaCandidates(dateInventory, gate) {
+  if (
+    !isVerifiedLumaDateInventory(dateInventory)
+    || !isVerifiedCalendarCandidateGate(gate)
+    || gate.status !== "evaluated"
+    || gate.inventory_snapshot_id !== dateInventory.inventory_snapshot_id
+  ) invalid();
+  const day = dateInventory.days.find((candidate) => candidate.date === gate.date);
+  if (!day || gate.candidates.length !== day.events.length) invalid();
+  const events = new Map(day.events.map((event) => [event.event_ref, event]));
+  const seen = new Set();
+  const selected = [];
+  for (const row of gate.candidates) {
+    const event = events.get(row.event_ref);
+    if (!event || seen.has(row.event_ref)) invalid();
+    seen.add(row.event_ref);
+    if (row.eligible) selected.push(Object.freeze({
+      event_ref: event.event_ref,
+      canonical_url: event.canonical_url,
+    }));
+  }
+  if (seen.size !== events.size) invalid();
+  return Object.freeze(selected);
+}
+
 module.exports = {
+  calendarEligibleLumaCandidates,
   evaluateCalendarCandidateGate,
   isVerifiedCalendarCandidateGate,
 };

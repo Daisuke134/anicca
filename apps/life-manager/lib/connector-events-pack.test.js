@@ -186,6 +186,27 @@ test("the pack runs only calendar-eligible candidates through the same-day state
   ]);
 });
 
+test("the pack owns exhaustive busy-calendar read and travel-aware gate operations", async () => {
+  const calls = [];
+  const pack = createConnectorEventsPack({
+    dailyDriver: { withLumaPage: async () => {} },
+    auth: { ensureAuthenticated: async () => ({ status: "authenticated" }) },
+    evidenceStore: { record: async () => {} },
+    createAuthAwareDriver: () => ({ withLumaPage: async () => {} }),
+    createProvider: () => ({ inspectRegistration: async () => {}, submitRegistration: async () => {} }),
+    inspectBusyCalendar(input) { calls.push(["read", input]); return "busy"; },
+    evaluateCalendarGate(input) { calls.push(["gate", input]); return "gate"; },
+  });
+  const calendar = { kind: "gog" };
+  assert.equal(await pack.readBusyCalendar(calendar, { timeMin: "min", timeMax: "max", timeZone: "tz", now: "now" }), "busy");
+  const routeMinutes = async () => 10;
+  assert.equal(await pack.gateDateCalendar("inventory", "busy", "date", "home", routeMinutes), "gate");
+  assert.deepEqual(calls, [
+    ["read", { calendar, timeMin: "min", timeMax: "max", timeZone: "tz", now: "now" }],
+    ["gate", { dateInventory: "inventory", busyInventory: "busy", date: "date", homeLocation: "home", routeMinutes }],
+  ]);
+});
+
 test("pack construction fails closed without auth, driver, or evidence store", () => {
   assert.throws(() => createConnectorEventsPack({}), /events pack configuration unavailable/i);
   assert.throws(() => createConnectorEventsPack({
