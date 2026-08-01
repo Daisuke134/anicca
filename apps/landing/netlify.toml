@@ -14,6 +14,11 @@
 # [functions."life-travel"]
 #   schedule = "0 21 * * *"   # ← disabled; do not re-enable (use the cloud loop)
 
+[[redirects]]
+  from = "/go/*"
+  to = "/.netlify/functions/marketing-go/:splat"
+  status = 200
+
 # B-ask: NO Netlify schedule. The daily question round is driven by the LOCAL
 # cron job "anicca-life-ask" (~/.openclaw/cron/jobs.json, 06:00 JST) which runs
 # node ~/anicca/skills/life/ask/ask.js --action question. That local sender does
