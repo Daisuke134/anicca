@@ -248,7 +248,7 @@ YC公式pageでlate application受付を当日再確認
 | order | 残っている成果 | 次へ進める条件 |
 |---|---|---|
 | 1A | 共通応募runtime、Guardian、証拠、再試行、Telegram | 強制停止から自動検知・復旧し、偽の成功を作らない |
-| 1B | Luma中心の東京対面event/LT探索・申込・QR・rolling 21日coverage | 今後21日間に未処理の空き枠がなく、予約と既存予定が衝突しない |
+| 1B | 東京対面eventの21日coverage、LT、事前接触、follow-up、次回面談 | 未処理の空き枠がなく、実eventでcontact→reply/meetingまで同じ関係履歴につながる |
 | 1C | accelerator/VC/grantの継続探索・応募・返信・面談 | 実提出、確認mail、追跡、Calendar、面談資料が一つにつながる |
 | 2 | 高年収job探索・応募・返信・面接 | Ashby/Workday実応募と面接mail→Calendarが成立 |
 | 3A | CFO runtime database、executor、launchd、失敗復旧 | enqueue→実行→財務報告が止まらず動く |
@@ -293,6 +293,16 @@ YC公式pageでlate application受付を当日再確認
 - [ ] O1B-23 Google Calendarの全calendarからbusy intervalを読み、前後移動時間を含むfree intervalだけへ予約
 - [ ] O1B-24 無料を優先し、有料eventは一度設定した自動支出policy内で保存済み決済手段を使い、都度承認を要求しない
 - [ ] O1B-25 21日coverage、既存予定、新規予約、残り空き、申込証拠、選定理由をTelegramへ一通で報告
+- [ ] O1B-26 開催前に主催者、公開参加者、登壇者、会社、関心をagentが読み、会う価値が高い人を選ぶ
+- [ ] O1B-27 各eventに「会いたい人」「話す理由」「自然な会話の入口」「望む次行動」を持つconnection planを作る
+- [ ] O1B-28 公開contact channelと文脈がある相手には、参加前に個別化した短い挨拶を送信し、送信証拠を残す
+- [ ] O1B-29 開催時刻と実経路から出発時刻を計算し、地図、QR、会いたい人、会話の入口をTelegramへ送る
+- [ ] O1B-30 check-in、ticket、Calendar、mail等から参加状態を照合し、証拠なしに`attended`へしない
+- [ ] O1B-31 主催者・登壇者・接触相手への個別follow-upを24時間以内に送り、同じ文面の一斉送信を禁止
+- [ ] O1B-32 返信をGmail等で追跡し、具体的な次行動が合意されたらCalendarへ次回meetingを登録
+- [ ] O1B-33 `identified → contacted → replied → meeting_scheduled → met → opportunity`のrelationship funnelを保存
+- [ ] O1B-34 eventごとのuser、顧客、採用、投資家、友人、協業、登壇機会をattribution ledgerへ結合
+- [ ] O1B-35 返信率、次回面談率、実参加率、機会創出を学習し、次のevent・人・文面のrankingを改善
 
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
@@ -334,6 +344,41 @@ free intervalへ参加できるeventを探す。`unavailable`は、候補event�
 同じ壊れた申込画面を無限に繰り返さない。失敗した候補は記録し、同じ日の別候補へ進む。
 「0件」「検索した」「時間切れ」を正常終了にせず、`open=0`になるまで継続状態を次のjobへ渡す。
 認証challenge等で一候補を完了できなくても人間の操作待ちでloop全体を止めず、別候補へ進む。
+
+Connectorの完了は予約で終わらない。
+
+```text
+Calendarの空きを埋める
+  → event内で会う価値が高い人をagentが調査
+  → 文脈がある相手へ個別の事前挨拶
+  → 出発時刻、地図、QR、会話の入口をDaisへ通知
+  → 参加状態を証拠で照合
+  → 24時間以内に個別follow-up
+  → replyを追跡
+  → 次回meetingをCalendarへ登録
+  → 顧客、採用、投資、協業、友人等の実機会へ接続
+```
+
+公開参加者一覧に存在するだけでは`met`にしない。実送信だけなら`contacted`、相手の返答があれば
+`replied`、日時合意とCalendar eventがあれば`meeting_scheduled`とする。会った事実の証拠がない
+相手を「会った人」と報告しない。
+
+Connector内部構成:
+
+```text
+Connector Lead（21日coverageと関係成果を所有）
+  ├─ Calendar Tool       gogで予定を取得・作成、重複と時刻を計算
+  ├─ Event Scout         Luma本文を読み、候補とserendipityをagent判断
+  ├─ Registration Tool   CloakBrowser :9222で申込、完了画面・mail・QRを取得
+  ├─ People Scout        主催者・登壇者・公開参加者を調査し、会う相手をagent判断
+  ├─ Outreach Agent      相手ごとに挨拶・follow-upを作成し、利用可能なchannelで送信
+  ├─ Reply Tracker       gog Gmail等で返信を追い、次回meetingをCalendarへ接続
+  ├─ Routes Tool         出発地点、前後予定、移動時間、出発時刻を計算
+  └─ Relationship Ledger identified→contacted→replied→meeting→opportunityを記録
+```
+
+Calendar/Routesの時刻計算、dedup、状態遷移、証拠照合はdeterministicに行う。event、人、会話、
+文面、次行動の選択はagentが本文と履歴を読んで判断し、keyword/regexの固定分類へ戻さない。
 
 ### 5.3 Order 1C — 資金調達・アクセラレーター
 
@@ -856,6 +901,114 @@ Telegram添付または認証済みpanel linkから実物を開けることを�
 [今日の実行を止める]({{pause_confirmation_url}})
 ```
 
+### 10.1A Connectorの24時間UX
+
+Connectorは一日一回の検索cronではなく、固定時刻とevent-relative triggerを組み合わせた連続loopである。
+内部処理が走るたびに通知してuserを疲れさせず、Daisの行動が変わる時と現実成果が生まれた時だけ送る。
+
+| 時刻 / trigger | 裏側で行うこと | Daisへ届くもの |
+|---|---|---|
+| 00:05 | 日付を一日進め、今日〜20日後の全Calendar、cancel、変更を再照合 | 通常は無通知 |
+| 00:15〜06:00 | `open`日を日付順にLuma中心で探索・申込・mail/QR/Calendar照合。失敗候補は捨てて次へ進む | 緊急の予定衝突以外は無通知 |
+| 06:30 | 21日coverageと今日のevent、出発時刻を生成 | 朝のConnector briefingを一通 |
+| 新規予約成立時 | そのrunで成立した複数eventをまとめて保存 | 3週間の空きを何件埋めたかを一通。eventとCalendarの直接link付き |
+| event開始6時間前まで | 主催者、登壇者、公開参加者、会社をagentが調査。会う相手と会話の入口を決め、適切な公開channelがあれば個別挨拶 | 通常は無通知。送信履歴は詳細画面で見られる |
+| `depart_at` | 現在地または直前予定からの経路、遅延、QR、地図を再計算 | 出発通知を一通 |
+| event終了後 | check-in等を照合し、相手別follow-upを送信。reply watcherを開始 | 実replyまたは次回meetingが成立した時だけ通知 |
+| 21:30 | 当日の実成果を集計 | 接触、返信、次回面談、機会を人間の言葉で一通 |
+| 23:45 | 未処理の空き、未確認申込、返信待ちを再投入 | 正常時は無通知。翌日も同じ状態から継続 |
+
+固定時刻はschedulerの起動契機であり、agent判断をhardcodeするものではない。event時刻が朝なら
+事前調査と出発通知を前倒しする。新規予約が06:30以降に成立すれば、翌日まで隠さず成立時に送る。
+
+現在の次の文面は禁止する。
+
+```text
+🔌 Connector 日報 {{date}}
+本日の新規登録なし（none: 対面AI/crypto候補が見つからなかった or horizon埋済）
+```
+
+禁止理由:
+
+- 「候補がない」と「すでに埋まっている」という別状態を`none`へ潰している
+- AI/cryptoをhard filterにし、startup、founder、VC、product、finance、serendipityを捨てている
+- 21日間のどの日に空きがあるか分からない
+- 予約、会う相手、接触、返信、次回meetingの成果が分からない
+- Daisの次の現実行動を何も変えない
+
+朝のConnector briefing:
+
+```text
+🔌 Connector 3週間計画 {{date}}
+
+確認期間: {{window_start}}〜{{window_end}}
+既存の対面予定: {{covered_existing_count}}日
+新しく予約済み: {{covered_new_count}}日
+固定予定で追加不可: {{unavailable_count}}日
+未処理の空き: 0日
+
+今日の予定:
+{{event_time}} {{event_name}}
+場所: {{event_location}}
+出発: {{depart_at}}
+
+今日会いたい人:
+{{target_people_with_reason}}
+
+今日つくる接点:
+{{desired_connection_outcome}}
+
+[今日のイベント]({{canonical_event_url}})
+[地図を開く]({{route_url}})
+[QRを開く]({{ticket_url}})
+[3週間のCalendar]({{calendar_coverage_url}})
+```
+
+出発通知:
+
+```text
+🚶 {{depart_at}}に出発してください。
+
+{{event_name}} — {{event_start_at}}
+場所: {{event_location}}
+所要時間: {{travel_minutes}}分
+
+会いたい人:
+1. {{target_person_1}} — {{why_person_1}}
+2. {{target_person_2}} — {{why_person_2}}
+
+会話の入口:
+・{{conversation_opener_1}}
+・{{conversation_opener_2}}
+
+[経路を開く]({{route_url}})
+[QRを開く]({{ticket_url}})
+[イベントページ]({{canonical_event_url}})
+```
+
+夜の成果報告:
+
+```text
+🤝 今日のConnector成果
+
+参加確認: {{attendance_status}}
+事前に連絡した人: {{contacted_count}}人
+返信があった人: {{replied_count}}人
+次回の面談が決まった人: {{meeting_scheduled_count}}人
+新しく生まれた機会: {{opportunity_summary}}
+
+次にLife Managerが行うこと:
+{{next_actions}}
+
+[送ったメッセージを見る]({{outreach_history_url}})
+[返信を見る]({{reply_threads_url}})
+[次の面談をCalendarで見る]({{next_meetings_url}})
+```
+
+接触や返信が0の場合も「何もできなかった」で閉じない。誰へ、どのchannelで、いつ次の個別接触を
+行うかを`next_actions`へ残し、次のrunへ継続する。ただし、送っていないmessage、得ていないreply、
+証明できない面会を創作しない。
+
 ### 10.2 イベント登録
 
 ```text
@@ -878,19 +1031,9 @@ Telegram添付または認証済みpanel linkから実物を開けることを�
 [申込内容を見る]({{application_detail_url}})
 ```
 
-証拠不足時:
-
-```text
-⚠️ イベント登録を完了確認できませんでした。
-イベント: {{event_name}}
-状況: {{human_readable_blocker}}
-
-相手から完了画面または確認メールが届いていないため、申込済みにはしていません。
-次回は{{retry_at}}にもう一度試します。
-
-[イベントページを開く]({{canonical_event_url}})
-[技術詳細を見る]({{technical_detail_url}})
-```
+一候補の証拠が不足した場合は、通常Telegramへ失敗報告を送らない。未確認候補をCalendarへ
+登録せず、同じ日の次候補へ進む。account lock、予期しない課金、identity不一致のようにDaisの
+資産・accountへ影響する例外だけを即時警告し、Connector本体は安全な別候補で継続する。
 
 LT・登壇応募:
 
