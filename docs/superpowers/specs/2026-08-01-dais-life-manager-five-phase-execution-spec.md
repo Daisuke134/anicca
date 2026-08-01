@@ -1043,6 +1043,16 @@ handoffする。focused 12/12、outbound全回帰180/180成功。証拠:
 `docs/evidence/outbound/2026-08-02-o1b21-same-day-candidate-loop.json`。次は`O1B-22`で、検索一巡、
 一件の操作失敗、一sourceの失敗をrolling coverage loop全体の終了条件から除外する。
 
+O1B-22開始（2026-08-02）: `open=0`だけを完了条件とするcoverage continuation state machineを追加する。
+検索一巡、一件の操作失敗、一source失敗、結果なしはinventory refresh、復旧要求はsource recovery、
+unknown effectはeffect reconciliationを次actionとしてdurableな次回時刻を持たせる。設計:
+`docs/superpowers/specs/2026-08-02-connector-o1b22-coverage-continuation-design.md`。実装plan:
+`docs/superpowers/plans/2026-08-02-connector-o1b22-coverage-continuation.md`。
+
+O1B-22進捗1（RED）: search exhaustion、一操作失敗、一source失敗でも5分後のinventory refreshを予定し、
+reconciliation/recoveryを優先し、open 0だけがcomplete、plain coverage・未知status・window外dateを拒否する
+4 testを追加した。production module不存在のため期待どおり失敗する段階である。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
