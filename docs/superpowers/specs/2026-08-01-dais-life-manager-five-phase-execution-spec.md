@@ -915,6 +915,10 @@ O1B-17進捗1（RED）: provenanceのないcloneを拒否し、discovery URLとd
 変換しないtestを追加した。production moduleと2つのprovenance verifierが未実装のため3件が期待どおり
 失敗し、既存10件は成功した。
 
+O1B-17進捗2（pack RED）: 認証済みevents packへ全detail読取を一つの操作として公開し、host側
+read-only entrypointが21日coverageを作ってその操作だけを呼ぶ契約を追加した。未実装のため新規2件が
+期待どおり失敗し、既存の構成拒否2件は成功した。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
