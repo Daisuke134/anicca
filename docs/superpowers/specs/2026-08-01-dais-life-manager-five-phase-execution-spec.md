@@ -243,6 +243,10 @@ YC公式pageでlate application受付を当日再確認
 
 ## 5. 残作業 — 必ず番号順
 
+実行中: `O1A-04`。`apps/life-manager`の完全な`npm test`を現在のdependencyで実行し、
+不足module、壊れたtest wiring、今回のoutbound回帰を実測する。失敗があれば最初のroot causeから
+一件ずつTDDで修復し、全suiteが最後まで走るまで完了にしない。
+
 完了: `O1A-03`。events・funders・jobs共通の成功条件を`E1 AND E2 AND E3`としてmodule化した。
 callerの成功booleanやDOM本文は信用せず、外部receipt reader、immutable artifact reader、実HEADを
 gate自身が呼ぶ。E1はreference schemeと結果kindを一致させ、E2は実bytesのPNG signature、5000 bytes、
