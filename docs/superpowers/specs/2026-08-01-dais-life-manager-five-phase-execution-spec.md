@@ -1352,6 +1352,15 @@ eventは、Calendar writeが初回`created`でもretry`existing`でもConnector�
 `covered_new`へ修正した。focused 10/10、Connector全回帰239/239、runtime 36/36成功。次はcommit/push、deploy後、
 queued continuationを実行して最新snapshotが`covered_new=1`を維持することを実測する。
 
+O1B-25進捗24（covered_new LIVE）: image `sha256:9528012776c5...`を配備し、前runがenqueueした
+continuationを実workerで実行した。attempt 1はcompleted、receiptは`continue / open_date_count=20`。
+最新coverage `event-coverage:493305719f16...`は`open=20 / covered_existing=0 / covered_new=1 /
+unavailable=0`となり、Connectorが応募した8月15日eventをretry後も正しく新規予約として保持した。次jobは
+5分後へdurable enqueueされたが、現在のrefreshはopen日に新規`outbound.event.apply`をenqueueしないため、同じ
+inventory再計算を繰り返すだけである。workerを停止し、次は既存ranking→goal/serendipity→Calendar/route gate→
+zero-yen spend policyから、日付の早いopen日についてdurable応募jobを作る配線を実装する。coverage workerは応募effectを
+直接実行せず、応募workerのverified receiptを次runで回収する。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
