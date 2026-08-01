@@ -377,6 +377,13 @@ pageの実buttonは`ワンクリックで参加登録`であり、旧adapterはu
 detail availabilityとbrowser submit selectorを日本語実DOMへ対応し、focused 12/12、outbound 72/72。
 次は新imageをworkerへ配備し、durable runtime jobを一度だけ実行する。
 
+O1B-04進捗5: 新imageをworkerへ配備し、対象jobがDBに未存在であることを確認して初回enqueueを試したが、
+外部操作前に`runtime effect class invalid`で停止した。真因は`enqueueEventApplication`が
+`buildRuntimeJob`のcanonical snake_case出力を、そのままcamelCase入力専用だった`enqueueJob`へ再投入する
+shape mismatch。DB行0、Luma click 0を確認した。canonical jobを実`enqueueJob`へ渡すREDを追加し、
+runtime storeが曖昧なmixed shapeを拒否しつつ自身のcanonical出力を受理するよう修正した。
+runtime-job 14/14、outbound 72/72。次のenqueueが引き続き同jobの実初回となる。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。

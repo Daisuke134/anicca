@@ -99,6 +99,23 @@ test("enqueue is idempotent by job id and rejects a cross-tenant collision", asy
   );
 });
 
+test("enqueue accepts the canonical job returned by buildRuntimeJob", async () => {
+  const canonical = buildRuntimeJob(sampleJob({
+    loopId: "marketing.anicca.slideshow",
+  }));
+  const result = await enqueueJob(canonical, {
+    query: async (sql) => ({
+      rows: /INSERT INTO public\.lm_runtime_jobs/i.test(sql)
+        ? [{ ...canonical, status: "queued" }]
+        : [],
+    }),
+  });
+
+  assert.equal(result.created, true);
+  assert.equal(result.job.job_id, canonical.job_id);
+  assert.equal(result.job.effect_class, "publish");
+});
+
 test("claim filters capabilities, has a bounded lease, and uses one narrow atomic RPC", async () => {
   const calls = [];
   const rows = [{ job_id: "job-001", tenant_id: "tenant-a", attempt: 1 }];
