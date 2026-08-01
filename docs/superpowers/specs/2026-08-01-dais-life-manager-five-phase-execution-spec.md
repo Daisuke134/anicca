@@ -436,6 +436,12 @@ OpenClaw自身のowner-only `/tmp/openclaw` media rootへ修正後の一回だ�
 実測証拠: `docs/evidence/outbound/2026-08-01-o1b07-live-telegram-ticket-delivery.json`。
 次は固定順序どおりO1B-08で、agentがevent本文から一般参加とLT/CFP/demo枠を判断するevalを通す。
 
+O1B-08開始: 専用plan
+`docs/superpowers/plans/2026-08-01-connector-o1b08-talk-slot-agent-eval.md`を追加した。固定keywordで
+`LT`を探すclassifierには戻さない。event本文全体をGemini structured outputで読み、公開応募中、締切済み、
+招待制、単なるspeaker紹介、一般参加のみを区別する。agentの根拠は本文中の連続substringであることを
+deterministicに検証し、公開応募URLとopen statusが揃う場合だけtalk application entityを作る。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
