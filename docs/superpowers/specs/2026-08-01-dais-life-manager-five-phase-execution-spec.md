@@ -339,6 +339,12 @@ route、fresh healthを確認し、同じCloakBrowserへCDP接続した実Luma r
 `docs/evidence/outbound/2026-08-01-o1b03-luma-daily-driver-adapter.json`。次はO1B-04で同じprofileの
 Luma認証を復旧し、実イベント一件の登録をverified receiptまで成立させる。
 
+O1B-04開始: 専用plan
+`docs/superpowers/plans/2026-08-01-connector-o1b04-live-luma-registration.md`を追加した。既存
+`keiodaisuke@gmail.com`の`gog` OAuthはGmail/Calendarともread可能で、過去Luma sign-in code mailも
+実在する。新しいcodeは同じ`:9222` pageから要求し、request後に届いた新着mailだけを自動照合する。
+code値、mail本文、cookie、tokenは正本やlogへ残さない。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
