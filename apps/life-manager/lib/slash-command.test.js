@@ -326,7 +326,42 @@ test("/status projects only real local data: stage, connections, payout, locatio
   assert.ok(/Subscription: active/.test(text));
   assert.ok(/Payout: not set/.test(text));
   assert.ok(/observed 9s ago/.test(text));
-  assert.ok(!/call|cron|daemon/i.test(text), "nothing the webhook cannot read is claimed");
+  assert.ok(/no missed call recorded/.test(text), "a healthy loop says so rather than staying silent");
+  assert.ok(!/cron|daemon/i.test(text), "nothing the webhook cannot read is claimed");
+});
+
+// spec 2026-08-01-lm-daily-organ-design.md §3 row 1b + §5.5: /status must show 直近の失敗. This
+// REVERSES the older "call health is unreachable from here" note above statusMessage — lm_wake_miss
+// is a plain Supabase read, exactly like the live-location read this handler already performs.
+test("/status names the last missed call, its clock time, and why it did not ring", async () => {
+  const { sent, deps } = harness({
+    getLastWakeMiss: async () => ({
+      reason: "dial_failed", detail: "telnyx balance too low",
+      due_at: "2026-07-30T08:15:00+09:00", occurred_at: "2026-07-30T08:15:04+09:00",
+    }),
+  });
+  await handleSlashCommand(parseSlashCommand("/status"), { ...ROW, call_time_zone: "Asia/Tokyo" }, deps);
+  const text = sent[0].text;
+  assert.ok(/08:15/.test(text), "the user reads the clock time they were owed a call at");
+  assert.ok(/could not be dialled/i.test(text));
+  assert.ok(/telnyx balance too low/.test(text), "the reason is shown, not hidden behind a log");
+});
+
+test("/status reports a missed call in UTC rather than guessing a zone the row does not carry", async () => {
+  const { sent, deps } = harness({
+    getLastWakeMiss: async () => ({
+      reason: "no_call_before_departure", due_at: "2026-07-30T08:15:00+09:00",
+    }),
+  });
+  await handleSlashCommand(parseSlashCommand("/status"), ROW, deps);
+  assert.ok(/23:15 UTC/.test(sent[0].text));
+  assert.ok(/never rang/i.test(sent[0].text));
+});
+
+test("/status says 'no missed call' rather than inventing health when the ledger is unreachable", async () => {
+  const { sent, deps } = harness({ getLastWakeMiss: async () => null });
+  await handleSlashCommand(parseSlashCommand("/status"), ROW, deps);
+  assert.ok(/no missed call recorded/.test(sent[0].text));
 });
 
 test("/status stays honest for the sparse row and the missing location", async () => {
