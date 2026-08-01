@@ -37,10 +37,10 @@
 
 **Files:** create portfolio decision queue and tests; no destructive remote deletion.
 
-- [ ] Identify the two review items, one draft, one rejected item, and overlapping offers from the registry.
-- [ ] Let the agent choose one repair/reposition attempt or `retire_candidate`, with evidence and stop condition.
-- [ ] Exclude paused/retire-candidate items from Builder and Marketer immediately.
-- [ ] Remotely verify any submitted repair and record its public/review URL.
+- [x] Identify the two review items, one draft, one rejected item, and overlapping offers from the registry.
+- [x] Let the agent choose one repair/reposition attempt or `retire_candidate`, with evidence and stop condition.
+- [x] Exclude paused/retire-candidate items from Builder and Marketer immediately.
+- [x] Remotely verify any submitted repair and record its public/review URL. (No repair was submitted in this queue pass; submitted count is zero.)
 
 ### Task 5: Packaging and unit-economics experiment
 
