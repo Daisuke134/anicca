@@ -75,7 +75,8 @@ claude doctor: Remote Control セクションに失敗チェック無し
 | 4 | 通知: sentinel が立ったら Dais へ「`claude auth login` が必要」を送る (18時間ルールは人間しか解けない = 正当な human-loop) | **done 2026-08-01 17:52** (§4.4) |
 | 5 | 有線化: Mac mini 背面 Ethernet にLANケーブル → ルーター。**Dais の物理作業**。優先度最下位 | pending (Dais) |
 | 6 | 掃除: 重複 tailscale LaunchAgent (exit 1) 削除 / orphaned npm `@anthropic-ai/claude-code` 削除 / `~/.openclaw` 14G 回収 | **done 2026-08-01 18:02** (§4.6) |
-| 7 | **回帰修正**: `health-check.sh` がラッパー PID を見て毎分 `kickstart -k` を撃っていた (#1 が引き起こした) | in_progress (§4.7) |
+| 7 | **回帰修正**: `health-check.sh` がラッパー PID を見て毎分 `kickstart -k` を撃っていた (#1 が引き起こした) | **done 2026-08-01 17:49** (§4.7) |
+| 8 | ディスク出血の追跡 (colima VM / codex sqlite)。**本 spec の範囲外**、別タスク | pending (§4.8) |
 
 ---
 
@@ -282,6 +283,31 @@ child=61391   → ESTABLISHED 1
 | sentinel があるときは復帰させず `DOWN_401_needs_login` と表示するだけ | **これが無いと health-check が毎分 bootstrap し直し、#3 のサーキットブレーカが完全に無効化される** |
 
 **一般法則**: 常駐プロセスにラッパーを噛ませたら、**そのジョブの PID を見ている監視側を必ず洗う**。「ジョブの PID = 実体の PID」を暗黙に仮定した監視は、ラッパー導入の瞬間に全部壊れる。
+
+修正後の実測 (10秒間隔サンプリング):
+
+```
+17:37:41 pid=63436 etime=00:22
+...                              ← 同一 PID が途切れない
+17:41:23 pid=63436 etime=04:04
+17:48:49 pid=63436 etime=11:30   ← 修正前は 78 秒で必ず死んでいた
+
+health.log (毎分):
+2026-08-01 17:47:08 net=ok ts=ok codex2=connected claude=ok
+2026-08-01 17:48:22 net=ok ts=ok codex2=connected claude=ok
+```
+
+### 4.8 範囲外の発見 — ディスクが別口で出血している
+
+作業中に空きが **9.6GB → 5.4GB へ約10分で減少**。remote-control ではない（`~/.claude/logs` は 76K）。継続的に書かれている大物:
+
+| 対象 | 状態 |
+|---|---|
+| `~/.colima/_lima/colima/disk` / `_disks/colima/datadisk` | colima VM が**稼働中で成長し続けている**。停止は稼働中ワークロードへの介入なので本 spec では触らない |
+| `~/.codex/logs_2.sqlite` (464M) | 継続的に書き込みあり |
+| Chromium `code_sign_clone` 13個 | `du` は 4.5G と表示するが **APFS の共有ブロックで実容量はほぼゼロ**。稼働中 Chromium が1つも参照していないことを2手法で確認して削除したが、**空きは 6GB → 6GB で変化なし**。`du` の数字を実容量と読んだのは誤り |
+
+→ タスク #8 として分離。**「ストレージが原因では?」という当初の問いへの答えは変わらず No** — 電話が切れていた原因は 401 と kickstart ループであり、ディスクではない。ただしディスク自体は別途手当てが要る。
 
 ---
 
