@@ -400,7 +400,14 @@ function createWorkerHandlers(env, capabilities, dependencies = {}) {
   const handlers = {};
   const servicesByAdapter = {};
   if (capabilities.includes("connector.coverage.refresh")) {
-    const services = dependencies.connectorCoverageServices;
+    const factory = dependencies.createConnectorCoverageRuntimeServices || (
+      require("../lib/connector-coverage-runtime-services.js")
+        .createConnectorCoverageRuntimeServices
+    );
+    const services = dependencies.connectorCoverageServices || factory(env, {
+      query: dependencies.query,
+      connect: dependencies.connect,
+    });
     if (!services || typeof services !== "object" || Array.isArray(services)) {
       throw new Error("Connector coverage refresh services are unavailable");
     }
@@ -676,6 +683,7 @@ async function runCapabilityWorker(env = process.env) {
   const opts = { query: pool.query.bind(pool) };
   const handlers = createWorkerHandlers(env, capabilities, {
     query: opts.query,
+    connect: pool.connect.bind(pool),
   });
   const state = {
     role: "worker",

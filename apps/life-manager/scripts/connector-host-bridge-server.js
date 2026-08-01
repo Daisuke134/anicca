@@ -82,6 +82,8 @@ function runConnectorHostBridgeServer(env = process.env, dependencies = {}) {
   });
   const routeMinutes = dependencies.routeMinutes || createConnectorRouteMinutes({
     mapsKey: requiredEnv(env, "GOOGLE_API_KEY_DIRECTIONS"),
+    homeRef: "home://dais-local",
+    homeLocation: requiredEnv(env, "LIFE_HOME_ADDRESS"),
   });
   const server = createConnectorHostBridgeServer({
     token: requiredEnv(env, "LM_CONNECTOR_BRIDGE_TOKEN"),

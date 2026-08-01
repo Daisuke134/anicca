@@ -9,11 +9,13 @@ test("Connector route delegates inbound and outbound anchors to the existing Lif
   const calls = [];
   const routeMinutes = createConnectorRouteMinutes({
     mapsKey: "maps-key-ref-value",
+    homeRef: "home://dais-local",
+    homeLocation: "東京駅",
     now: () => 1_800_000_000_000,
     async directionsMinutes(...args) { calls.push(args); return 27; },
   });
   assert.equal(await routeMinutes({
-    direction: "inbound", from: "東京駅", to: "渋谷駅", anchor_at: "2026-08-05T12:00:00+09:00",
+    direction: "inbound", from: "home://dais-local", to: "渋谷駅", anchor_at: "2026-08-05T12:00:00+09:00",
   }), 27);
   assert.equal(await routeMinutes({
     direction: "outbound", from: "渋谷駅", to: "東京駅", anchor_at: "2026-08-05T13:00:00+09:00",
@@ -40,5 +42,13 @@ test("Connector route fails closed for missing key, malformed contract, or unava
   }), /route invalid/i);
   await assert.rejects(routeMinutes({
     direction: "inbound", from: "A", to: "B", anchor_at: "2026-08-05T12:00:00+09:00",
+  }), /route unavailable/i);
+  const unresolvedHome = createConnectorRouteMinutes({
+    mapsKey: "key",
+    homeRef: "home://dais-local",
+    async directionsMinutes() { return 1; },
+  });
+  await assert.rejects(unresolvedHome({
+    direction: "inbound", from: "home://dais-local", to: "B", anchor_at: "2026-08-05T12:00:00+09:00",
   }), /route unavailable/i);
 });
