@@ -28,6 +28,9 @@ function maybeStartLoops(env, starters) {
   }
 
   starters.startScheduler();
+  // The dial runs on its own timer (spec §3.1 method A). Starting it here rather than inside
+  // startScheduler keeps the two loops independently startable and independently stoppable.
+  starters.startWakeLoop();
   starters.startTravelLoop();
   starters.startAskLoop();
   starters.startOnboardLoop();

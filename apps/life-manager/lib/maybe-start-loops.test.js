@@ -5,9 +5,12 @@ const assert = require("node:assert");
 const { maybeStartLoops } = require("./maybe-start-loops.js");
 
 function counters() {
-  const c = { startScheduler: 0, startTravelLoop: 0, startAskLoop: 0, startOnboardLoop: 0, startDiscoveryLoop: 0 };
+  // startWakeLoop is tracked like every other loop: the dial runs on its own timer (spec §3.1
+  // method A), so "the scheduler process started its loops" is only true if the dial started too.
+  const c = { startScheduler: 0, startWakeLoop: 0, startTravelLoop: 0, startAskLoop: 0, startOnboardLoop: 0, startDiscoveryLoop: 0 };
   const starters = {
     startScheduler: () => c.startScheduler++,
+    startWakeLoop: () => c.startWakeLoop++,
     startTravelLoop: () => c.startTravelLoop++,
     startAskLoop: () => c.startAskLoop++,
     startOnboardLoop: () => c.startOnboardLoop++,
@@ -20,7 +23,7 @@ test("default standalone process keeps the current Railway behavior during migra
   const { c, starters } = counters();
   const r = maybeStartLoops({}, starters);
   assert.strictEqual(r.started, true);
-  assert.deepStrictEqual(c, { startScheduler: 1, startTravelLoop: 1, startAskLoop: 1, startOnboardLoop: 1, startDiscoveryLoop: 1 });
+  assert.deepStrictEqual(c, { startScheduler: 1, startWakeLoop: 1, startTravelLoop: 1, startAskLoop: 1, startOnboardLoop: 1, startDiscoveryLoop: 1 });
 });
 
 test("the scheduler deployment starts all loops only with an explicit owner", () => {
@@ -32,7 +35,7 @@ test("the scheduler deployment starts all loops only with an explicit owner", ()
   }, starters);
   assert.strictEqual(r.started, true);
   assert.equal(r.owner, "local-primary");
-  assert.deepStrictEqual(c, { startScheduler: 1, startTravelLoop: 1, startAskLoop: 1, startOnboardLoop: 1, startDiscoveryLoop: 1 });
+  assert.deepStrictEqual(c, { startScheduler: 1, startWakeLoop: 1, startTravelLoop: 1, startAskLoop: 1, startOnboardLoop: 1, startDiscoveryLoop: 1 });
 });
 
 for (const off of ["false", "FALSE", " False ", "0", "off"]) {
@@ -42,7 +45,7 @@ for (const off of ["false", "FALSE", " False ", "0", "off"]) {
     assert.strictEqual(r.started, false, "started=false");
     assert.match(r.reason, /disabled|deployment/i);
     assert.doesNotMatch(r.reason, /openclaw/i);
-    assert.deepStrictEqual(c, { startScheduler: 0, startTravelLoop: 0, startAskLoop: 0, startOnboardLoop: 0, startDiscoveryLoop: 0 },
+    assert.deepStrictEqual(c, { startScheduler: 0, startWakeLoop: 0, startTravelLoop: 0, startAskLoop: 0, startOnboardLoop: 0, startDiscoveryLoop: 0 },
       "ZERO loops started when off — single writer");
   });
 }
