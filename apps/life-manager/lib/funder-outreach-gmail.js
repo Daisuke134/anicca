@@ -8,6 +8,7 @@ const { isVerifiedInvestorOutreachReservation } = require("./funder-investor-out
 const { isVerifiedFunderOutreachBatch } = require("./funder-outreach.js");
 
 const HEX_ID = /^[0-9a-f]{16,32}$/i;
+const VERIFIED_V2_RECEIPTS = new WeakSet();
 
 function parseIds(result) {
   let value = result;
@@ -30,7 +31,7 @@ async function sendGog(message, options = {}) {
     const result = (options.spawnSync || spawnSync)("gog", [
       "gmail", "send", "--account", account, "--to", message.recipient,
       "--subject", message.subject, "--body-file", bodyPath, "--json",
-    ], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+    ], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: 30_000 });
     if (!result || result.status !== 0) throw new Error(String(result && result.stderr || "Gmail send failed").trim());
     return String(result.stdout || "");
   } finally {
@@ -67,14 +68,17 @@ async function deliverFunderOutreachBatch(batch, dependencies = {}) {
   } else {
     throw new Error("funder outreach delivery invalid");
   }
+  const sentMs = Date.parse(String((dependencies.observedAt || (() => new Date().toISOString()))()));
+  if (!Number.isFinite(sentMs) || !Number.isFinite(Date.parse(batch.strategy_valid_until))
+    || sentMs >= Date.parse(batch.strategy_valid_until)) {
+    throw new Error("funder outreach strategy expired before delivery");
+  }
   const send = dependencies.send || sendGog;
   const receipts = [];
   for (const message of batch.messages) {
     const response = await send(message, { account: dependencies.account });
     const ids = parseIds(response);
-    const sentMs = Date.parse(String((dependencies.observedAt || (() => new Date().toISOString()))()));
-    if (!Number.isFinite(sentMs)) throw new Error("funder outreach delivery time invalid");
-    receipts.push(Object.freeze({
+    const receipt = Object.freeze({
       schema_version: batch.schema_version,
       outreach_id: message.outreach_id,
       batch_id: batch.batch_id,
@@ -93,15 +97,33 @@ async function deliverFunderOutreachBatch(batch, dependencies = {}) {
         company_evidence_sha256: message.company_evidence_sha256,
         personalization_sha256: message.personalization_sha256,
         daily_slot: message.daily_slot,
+        ...(message.reflection_id ? {
+          reflection_id: message.reflection_id,
+          reflection_week_key: message.reflection_week_key,
+          ranking_position: message.ranking_position,
+          pitch_directive_sha256: message.pitch_directive_sha256,
+          reflection_outcome_result_ids: message.reflection_outcome_result_ids,
+        } : {}),
       } : {}),
       subject_sha256: message.subject_sha256,
       body_sha256: message.body_sha256,
       sent_at: new Date(sentMs).toISOString(),
       provider_message_id: ids.messageId,
       provider_thread_id: ids.threadId,
-    }));
+    });
+    if (receipt.schema_version === 2) VERIFIED_V2_RECEIPTS.add(receipt);
+    receipts.push(receipt);
   }
   return Object.freeze(receipts);
 }
 
-module.exports = { parseIds, sendGog, deliverFunderOutreachBatch };
+function isVerifiedFunderReflectionOutreachReceipt(value) {
+  return Boolean(value && VERIFIED_V2_RECEIPTS.has(value));
+}
+
+module.exports = {
+  parseIds,
+  sendGog,
+  deliverFunderOutreachBatch,
+  isVerifiedFunderReflectionOutreachReceipt,
+};

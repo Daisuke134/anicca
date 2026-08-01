@@ -84,6 +84,7 @@ services:
         -f /migrations/2026-08-02-lm-funder-followup-ledger.sql
         -f /migrations/2026-08-02-lm-funder-inbound-status-ledger.sql
         -f /migrations/2026-08-02-lm-funder-meeting-ledger.sql
+        -f /migrations/2026-08-02-lm-funder-weekly-reflection-ledger.sql
     depends_on:
       postgres:
         condition: service_healthy
@@ -141,6 +142,8 @@ services:
       LM_SCHEDULER_OWNER: local-primary
       LM_SCHEDULER_LEASE_KEY: primary
       LM_RUNTIME_TENANT_ID: ${LM_RUNTIME_TENANT_ID:-}
+      LM_FUNDRAISING_TENANT_ID: ${LM_FUNDRAISING_TENANT_ID:-dais-local}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       LM_FINANCIAL_REPORT_FORCE_ON_START: ${LM_FINANCIAL_REPORT_FORCE_ON_START:-}
       LM_FINANCIAL_REPORT_POLL_MS: ${LM_FINANCIAL_REPORT_POLL_MS:-300000}
       LM_TELEGRAM_TOKEN_REF: ${LM_TELEGRAM_TOKEN_REF:-secret://telegram/bot-token}

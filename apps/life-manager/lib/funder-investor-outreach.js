@@ -1,6 +1,7 @@
 "use strict";
 
 const { createHash } = require("node:crypto");
+const { isVerifiedFunderWeeklyReflection } = require("./funder-weekly-reflection.js");
 
 const TENANT = /^[a-z0-9][a-z0-9._-]{0,127}$/i;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -15,6 +16,15 @@ const VERIFIED_RESERVATIONS = new WeakSet();
 const sha = (value) => createHash("sha256").update(String(value), "utf8").digest("hex");
 const fail = () => { throw new Error("funder investor outreach invalid"); };
 const wordCount = (value) => String(value || "").trim().split(/\s+/).filter(Boolean).length;
+
+function strategyValidUntil(observedMs) {
+  const { tokyoReflectionWeek } = require("./funder-weekly-reflection.js");
+  let week = tokyoReflectionWeek(new Date(observedMs).toISOString());
+  if (Date.parse(week.week_end) <= observedMs) {
+    week = tokyoReflectionWeek(new Date(Date.parse(week.week_start) + (7 * 86_400_000)).toISOString());
+  }
+  return new Date(Date.parse(week.week_end) - (5 * 60_000)).toISOString();
+}
 
 function exactObject(value, keys) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
@@ -42,6 +52,29 @@ function validateCandidate(candidate, context) {
     || PLACEHOLDER.test(candidate.subject) || PLACEHOLDER.test(candidate.body)
     || !/https:\/\/aniccaai\.com(?:[\s/]|$)/i.test(candidate.body)
     || !/(15-minute|15 min|15分)/i.test(candidate.body)) fail();
+
+  let reflectionProof = null;
+  if (context.reflection && context.reflection.decision === "change") {
+    const position = context.reflection.ranked_candidate_ids.indexOf(candidate.candidateId) + 1;
+    const directive = context.reflection.pitch_directives.find(
+      (item) => item.candidate_id === candidate.candidateId,
+    );
+    const applied = candidate.reflectionApplication;
+    if (position < 1 || !directive || candidate.rank !== position
+      || !exactObject(applied, [
+        "reflection_id", "ranking_position", "pitch_directive", "outcome_result_ids",
+      ]) || applied.reflection_id !== context.reflection.reflection_id
+      || applied.ranking_position !== position || applied.pitch_directive !== directive.directive
+      || !candidate.body.includes(directive.directive)
+      || JSON.stringify(applied.outcome_result_ids) !== JSON.stringify(directive.outcome_result_ids)) fail();
+    reflectionProof = {
+      reflection_id: context.reflection.reflection_id,
+      reflection_week_key: context.reflection.week_key,
+      ranking_position: position,
+      pitch_directive_sha256: directive.directive_sha256,
+      reflection_outcome_result_ids: [...directive.outcome_result_ids],
+    };
+  } else if (candidate.reflectionApplication !== undefined) fail();
 
   const email = String(candidate.email).trim().toLowerCase();
   if (context.sent.has(sha(email))) fail();
@@ -97,7 +130,36 @@ function validateCandidate(candidate, context) {
     thesisEvidenceHash: sha(JSON.stringify(thesisEvidence)),
     companyEvidenceHash: sha(JSON.stringify(companyEvidence)),
     personalizationHash: sha(JSON.stringify(personalization)),
+    reflectionProof,
   };
+}
+
+function applyWeeklyReflection(candidates, reflection) {
+  if (!reflection || reflection.decision !== "change") return candidates;
+  return candidates.map((candidate) => {
+    const position = reflection.ranked_candidate_ids.indexOf(candidate.candidateId) + 1;
+    const directive = reflection.pitch_directives.find(
+      (item) => item.candidate_id === candidate.candidateId,
+    );
+    if (position < 1 || !directive) fail();
+    let body = String(candidate.body || "");
+    if (!body.includes(directive.directive)) {
+      const match = /(?:Would a 15-minute|Would a 15 min|15分)/i.exec(body);
+      if (!match) fail();
+      body = `${body.slice(0, match.index)}${directive.directive} ${body.slice(match.index)}`;
+    }
+    return {
+      ...candidate,
+      rank: position,
+      body,
+      reflectionApplication: {
+        reflection_id: reflection.reflection_id,
+        ranking_position: position,
+        pitch_directive: directive.directive,
+        outcome_result_ids: [...directive.outcome_result_ids],
+      },
+    };
+  });
 }
 
 async function buildInvestorOutreachPlan(input = {}, dependencies = {}) {
@@ -106,8 +168,14 @@ async function buildInvestorOutreachPlan(input = {}, dependencies = {}) {
   if (!TENANT.test(String(input.tenantId || "")) || !DATE.test(String(input.tokyoDate || ""))
     || !Number.isFinite(observedMs) || !Number.isInteger(target) || target < 3 || target > 5
     || !Array.isArray(input.candidates) || typeof dependencies.query !== "function"
+    || typeof dependencies.ensureWeeklyReflection !== "function"
+    || typeof dependencies.loadLatestReflection !== "function"
     || !input.applicationKitProvider || typeof input.applicationKitProvider.snapshot !== "function"
     || typeof input.applicationKitProvider.readCompanyFacts !== "function") fail();
+  const candidateIds = input.candidates.map((item) => item && item.candidateId);
+  if (candidateIds.some((id) => !ID.test(String(id || "")))
+    || new Set(candidateIds).size !== candidateIds.length
+    || input.candidates.some((item) => wordCount(item && item.body) > 90)) fail();
 
   const dayResult = await dependencies.query(`
     SELECT recipient_sha256, (tokyo_date=$2::date) AS same_day
@@ -134,6 +202,7 @@ async function buildInvestorOutreachPlan(input = {}, dependencies = {}) {
       existing_count: dayState.sameDayCount,
       daily_target: target,
       projected_total: dayState.sameDayCount,
+      strategy_valid_until: strategyValidUntil(observedMs),
       reserved: false,
       messages: Object.freeze([]),
     });
@@ -153,10 +222,35 @@ async function buildInvestorOutreachPlan(input = {}, dependencies = {}) {
     || snapshotAfter.answer_count !== snapshot.answer_count || snapshotAfter.asset_count !== snapshot.asset_count
     || !companyFacts) fail();
 
-  const context = { observedMs, sent: new Set(dayState.hashes), companyFacts, kitDigest: snapshot.kit_digest };
+  const ensured = await dependencies.ensureWeeklyReflection({
+    tenantId: input.tenantId,
+    reflectedAt: new Date(observedMs).toISOString(),
+    candidateIds,
+  });
+  if (!ensured || !new Set(["skipped", "recorded", "duplicate"]).has(ensured.status)
+    || !DATE.test(String(ensured.week_key || ""))) fail();
+  const reflection = await dependencies.loadLatestReflection({
+    tenantId: input.tenantId,
+    before: new Date(observedMs).toISOString(),
+  });
+  if (reflection !== null && (!isVerifiedFunderWeeklyReflection(reflection)
+    || reflection.tenant_id !== input.tenantId
+    || Date.parse(reflection.week_end) > observedMs
+    || Date.parse(reflection.reflected_at) > observedMs)) fail();
+  if (reflection && reflection.decision === "change"
+    && (reflection.ranked_candidate_ids.length !== input.candidates.length
+      || !reflection.ranked_candidate_ids.every((id) => input.candidates.some((item) => item.candidateId === id)))) fail();
+  const candidates = applyWeeklyReflection(input.candidates, reflection);
+  const context = {
+    observedMs,
+    sent: new Set(dayState.hashes),
+    companyFacts,
+    kitDigest: snapshot.kit_digest,
+    reflection,
+  };
   const seenEmails = new Set();
   const seenRanks = new Set();
-  const valid = input.candidates.map((item) => {
+  const valid = candidates.map((item) => {
     const normalized = validateCandidate(item, context);
     if (seenEmails.has(normalized.email) || seenRanks.has(item.rank)) fail();
     seenEmails.add(normalized.email);
@@ -197,6 +291,7 @@ async function buildInvestorOutreachPlan(input = {}, dependencies = {}) {
       thesis_evidence_sha256: normalized.thesisEvidenceHash,
       company_evidence_sha256: normalized.companyEvidenceHash,
       personalization_sha256: normalized.personalizationHash,
+      ...(normalized.reflectionProof || {}),
       subject: item.subject.trim(),
       subject_sha256: subjectHash,
       body: item.body.trim(),
@@ -212,11 +307,30 @@ async function buildInvestorOutreachPlan(input = {}, dependencies = {}) {
     existing_count: dayState.sameDayCount,
     daily_target: target,
     projected_total: dayState.sameDayCount + messages.length,
+    strategy_valid_until: strategyValidUntil(observedMs),
     reserved: false,
+    reflection_id: reflection && reflection.decision === "change" ? reflection.reflection_id : null,
     messages: Object.freeze(messages),
   });
   VERIFIED_PLANS.add(plan);
   return plan;
+}
+
+async function buildAutonomousInvestorOutreachPlan(input = {}, options = {}) {
+  if (typeof options.query !== "function") fail();
+  const { createFunderReflectionMaterializer } = require("./funder-weekly-reflection-runtime.js");
+  const { loadLatestFunderWeeklyReflection } = require("./funder-weekly-reflection-store.js");
+  return buildInvestorOutreachPlan(input, {
+    query: options.query,
+    ensureWeeklyReflection: createFunderReflectionMaterializer({
+      query: options.query,
+      apiKey: options.apiKey,
+      fetchImpl: options.fetchImpl,
+    }),
+    loadLatestReflection: (request) => loadLatestFunderWeeklyReflection(request, {
+      query: options.query,
+    }),
+  });
 }
 
 async function reserveInvestorOutreachPlan(plan, dependencies = {}) {
@@ -248,4 +362,9 @@ function isVerifiedInvestorOutreachReservation(value) {
   return Boolean(value && VERIFIED_RESERVATIONS.has(value));
 }
 
-module.exports = { buildInvestorOutreachPlan, reserveInvestorOutreachPlan, isVerifiedInvestorOutreachReservation };
+module.exports = {
+  buildInvestorOutreachPlan,
+  buildAutonomousInvestorOutreachPlan,
+  reserveInvestorOutreachPlan,
+  isVerifiedInvestorOutreachReservation,
+};

@@ -35,6 +35,7 @@ function maybeStartLoops(env, starters) {
   starters.startAskLoop();
   starters.startOnboardLoop();
   starters.startDiscoveryLoop();
+  starters.startFunderReflectionLoop();
   return {
     started: true,
     owner: role === "scheduler" ? owner : "standalone-transition",

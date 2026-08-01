@@ -29,6 +29,7 @@ const {
   parseGeminiTranscripts,
 } = require("./lib/call-logic.js");
 const { startScheduler, startWakeLoop, startTravelLoop, startAskLoop, startOnboardLoop, startDiscoveryLoop, buildStreamUrl, langForPhone } = require("./scheduler.js");
+const { startFunderWeeklyReflectionLoop } = require("./lib/funder-weekly-reflection-loop.js");
 const { openingTurnForLang, resolveCallLang } = require("./lib/call-language.js");
 const { maybeStartLoops } = require("./lib/maybe-start-loops.js");
 const { compBootLog } = require("./lib/comp-window.js");
@@ -894,6 +895,7 @@ if (require.main === module) {
     // As an OpenClaw voice daemon, set LIFE_RUN_LOOPS=false so the cron-COMMAND jobs (B2) own the loops.
     const loops = maybeStartLoops(process.env, {
       startScheduler, startWakeLoop, startTravelLoop, startAskLoop, startOnboardLoop, startDiscoveryLoop,
+      startFunderReflectionLoop: () => startFunderWeeklyReflectionLoop({ env: process.env }),
     });
     console.log(`[life-call] ${loops.started ? "loops ON (standalone)" : "VOICE DAEMON (loops OFF)"} — ${loops.reason}`);
     const browserJobs = startBrowserJobLoop({

@@ -1,6 +1,9 @@
 "use strict";
 
 const DIGEST = /^[0-9a-f]{64}$/;
+const {
+  isVerifiedFunderReflectionOutreachReceipt,
+} = require("./funder-outreach-gmail.js");
 
 function valid(receipt) {
   const investorValues = receipt && [receipt.investor_kind, receipt.thesis_evidence_sha256,
@@ -12,7 +15,20 @@ function valid(receipt) {
     && Number.isInteger(receipt.daily_slot) && receipt.daily_slot >= 1 && receipt.daily_slot <= 5;
   const versionMatches = receipt && ((receipt.schema_version === 1 && investorAbsent)
     || (receipt.schema_version === 2 && investorPresent));
+  const reflectionValues = receipt && [receipt.reflection_id, receipt.reflection_week_key,
+    receipt.ranking_position, receipt.pitch_directive_sha256,
+    receipt.reflection_outcome_result_ids];
+  const reflectionAbsent = reflectionValues && reflectionValues.every((value) => value === undefined);
+  const reflectionPresent = reflectionValues
+    && /^funder-weekly-reflection:[0-9a-f]{64}$/.test(String(receipt.reflection_id || ""))
+    && /^\d{4}-\d{2}-\d{2}$/.test(String(receipt.reflection_week_key || ""))
+    && Number.isInteger(receipt.ranking_position) && receipt.ranking_position >= 1
+    && DIGEST.test(String(receipt.pitch_directive_sha256 || ""))
+    && Array.isArray(receipt.reflection_outcome_result_ids)
+    && receipt.reflection_outcome_result_ids.length >= 1
+    && receipt.reflection_outcome_result_ids.every((id) => /^[a-z0-9][a-z0-9._:-]{0,191}$/i.test(String(id || "")));
   return versionMatches
+    && (reflectionAbsent || (receipt.schema_version === 2 && reflectionPresent))
     && /^funder-outreach:[0-9a-f]{64}$/.test(String(receipt.outreach_id || ""))
     && /^funder-outreach-batch:[0-9a-f]{64}$/.test(String(receipt.batch_id || ""))
     && typeof receipt.tenant_id === "string" && receipt.tenant_id.length > 0
@@ -29,7 +45,8 @@ function valid(receipt) {
 }
 
 async function appendFunderOutreachReceipt(receipt, options = {}) {
-  if (!valid(receipt) || typeof options.query !== "function") throw new Error("funder outreach store invalid");
+  if (!valid(receipt) || (receipt.schema_version === 2 && !isVerifiedFunderReflectionOutreachReceipt(receipt))
+    || typeof options.query !== "function") throw new Error("funder outreach store invalid");
   const investor = receipt.investor_kind !== undefined;
   const values = [
     receipt.tenant_id, receipt.outreach_id, receipt.batch_id, receipt.tokyo_date,
@@ -40,6 +57,56 @@ async function appendFunderOutreachReceipt(receipt, options = {}) {
   ];
   if (investor) values.push(receipt.investor_kind, receipt.thesis_evidence_sha256,
     receipt.company_evidence_sha256, receipt.personalization_sha256, receipt.daily_slot);
+  if (receipt.reflection_id) {
+    const reflectedValues = [...values, receipt.reflection_id, receipt.reflection_week_key,
+      receipt.ranking_position, receipt.pitch_directive_sha256,
+      JSON.stringify(receipt.reflection_outcome_result_ids)];
+    const reflected = await options.query(`
+      WITH outreach_inserted AS (
+        INSERT INTO public.lm_funder_outreach_ledger (
+          tenant_id,outreach_id,batch_id,tokyo_date,candidate_id,funder_name,
+          recipient_sha256,source_url,source_observed_at,source_digest,
+          fit_summary_sha256,subject_sha256,body_sha256,sent_at,
+          provider_message_id,provider_thread_id,investor_kind,thesis_evidence_sha256,
+          company_evidence_sha256,personalization_sha256,daily_slot
+        ) VALUES ($1,$2,$3,$4::date,$5,$6,$7,$8,$9::timestamptz,$10,$11,$12,$13,
+          $14::timestamptz,$15,$16,$17,$18,$19,$20,$21)
+        ON CONFLICT DO NOTHING RETURNING outreach_id,true AS inserted
+      ), outreach_replay AS (
+        SELECT outreach_id,false AS inserted FROM public.lm_funder_outreach_ledger
+        WHERE tenant_id=$1 AND outreach_id=$2 AND batch_id=$3 AND tokyo_date=$4::date
+          AND candidate_id=$5 AND funder_name=$6 AND recipient_sha256=$7
+          AND source_url=$8 AND source_observed_at=$9::timestamptz AND source_digest=$10
+          AND fit_summary_sha256=$11 AND subject_sha256=$12 AND body_sha256=$13
+          AND sent_at=$14::timestamptz AND provider_message_id=$15 AND provider_thread_id=$16
+          AND investor_kind=$17 AND thesis_evidence_sha256=$18 AND company_evidence_sha256=$19
+          AND personalization_sha256=$20 AND daily_slot=$21
+      ), outreach_row AS (
+        SELECT * FROM outreach_inserted UNION ALL
+        SELECT * FROM outreach_replay WHERE NOT EXISTS (SELECT 1 FROM outreach_inserted)
+      ), application_inserted AS (
+        INSERT INTO public.lm_funder_outreach_reflection_application (
+          tenant_id,outreach_id,reflection_id,week_key,ranking_position,
+          pitch_directive_sha256,outcome_result_ids
+        ) SELECT $1,$2,$22,$23::date,$24,$25,$26::jsonb FROM outreach_row
+        ON CONFLICT DO NOTHING RETURNING outreach_id
+      ), application_replay AS (
+        SELECT outreach_id FROM public.lm_funder_outreach_reflection_application
+        WHERE tenant_id=$1 AND outreach_id=$2 AND reflection_id=$22 AND week_key=$23::date
+          AND ranking_position=$24 AND pitch_directive_sha256=$25
+          AND outcome_result_ids=$26::jsonb
+      ), application_row AS (
+        SELECT * FROM application_inserted UNION ALL
+        SELECT * FROM application_replay WHERE NOT EXISTS (SELECT 1 FROM application_inserted)
+      )
+      SELECT o.outreach_id,o.inserted FROM outreach_row o
+      JOIN application_row a USING (outreach_id)
+    `, reflectedValues);
+    if (!reflected || !Array.isArray(reflected.rows) || reflected.rows.length !== 1) {
+      throw new Error("funder outreach store conflict");
+    }
+    return Object.freeze({ ...reflected.rows[0] });
+  }
   const result = await options.query(investor ? `
     WITH inserted AS (
       INSERT INTO public.lm_funder_outreach_ledger (
