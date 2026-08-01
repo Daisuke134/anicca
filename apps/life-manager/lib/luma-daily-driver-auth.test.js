@@ -49,6 +49,21 @@ test("an authenticated shared Luma session is reused without requesting mail", a
   ]);
 });
 
+test("live Japanese Luma home protected navigation is an authenticated marker", async () => {
+  const { inspectDailyDriverLumaAuth } = require("./luma-daily-driver-auth.js");
+  const page = {
+    async evaluate() {
+      return {
+        origin: "https://luma.com",
+        path: "/home",
+        authenticated: true,
+        loginRequired: false,
+      };
+    },
+  };
+  assert.deepEqual(await inspectDailyDriverLumaAuth(page), { status: "authenticated" });
+});
+
 test("a logged-out session is recovered with only a fresh six-digit Gmail code", async () => {
   const fx = fixture([
     { status: "login_required" },
@@ -114,13 +129,31 @@ test("the auth-aware driver never starts an event task before authentication suc
 
   const ready = createAuthAwareLumaDailyDriver({
     dailyDriver,
-    auth: { async ensureAuthenticated() { calls.push(["auth"]); } },
+    auth: { async ensureAuthenticated() { calls.push(["auth"]); return { status: "authenticated" }; } },
   });
   assert.equal(
     await ready.withLumaPage("https://luma.com/event-one", async () => "effect"),
     "effect",
   );
   assert.deepEqual(calls, [["auth"], ["task", "https://luma.com/event-one"]]);
+});
+
+test("the worker read-only gate accepts only an already authenticated shared session", async () => {
+  const { createReadOnlyLumaSessionAuth } = require("./luma-daily-driver-auth.js");
+  for (const [status, accepted] of [["authenticated", true], ["login_required", false], ["unknown", false]]) {
+    const auth = createReadOnlyLumaSessionAuth({
+      dailyDriver: { async withLumaPage(_url, task) { return task({}); } },
+      inspectAuth: async () => ({ status }),
+    });
+    if (accepted) {
+      assert.deepEqual(await auth.ensureAuthenticated(), {
+        status: "authenticated",
+        recovered: false,
+      });
+    } else {
+      await assert.rejects(auth.ensureAuthenticated(), /authentication unavailable/i);
+    }
+  }
 });
 
 test("concurrent callers share one login recovery attempt", async () => {

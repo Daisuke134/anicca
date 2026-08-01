@@ -8,7 +8,7 @@ const { createConnectorEventsPack } = require("./connector-events-pack.js");
 test("the pack gives discovery and RSVP one auth-aware daily-driver", async () => {
   const calls = [];
   const dailyDriver = { withLumaPage: async () => {} };
-  const auth = { ensureAuthenticated: async () => {} };
+  const auth = { ensureAuthenticated: async () => ({ status: "authenticated" }) };
   const pack = createConnectorEventsPack({
     dailyDriver,
     auth,
@@ -45,6 +45,6 @@ test("pack construction fails closed without auth, driver, or evidence store", (
   assert.throws(() => createConnectorEventsPack({}), /events pack configuration unavailable/i);
   assert.throws(() => createConnectorEventsPack({
     dailyDriver: { withLumaPage: async () => {} },
-    auth: { ensureAuthenticated: async () => {} },
+    auth: { ensureAuthenticated: async () => ({ status: "authenticated" }) },
   }), /events pack configuration unavailable/i);
 });
