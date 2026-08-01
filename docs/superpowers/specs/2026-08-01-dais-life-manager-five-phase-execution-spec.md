@@ -535,6 +535,15 @@ run 26、last exit 0、workerはrunning/healthyで`outbound.event.apply`を保�
 実測証拠: `docs/evidence/outbound/2026-08-01-o1b10-live-legacy-retirement.json`。
 次は固定順序どおりO1B-11で、connpassの現行公式API提供・申請経路を確認し、key取得まで自動アクセスを禁止する。
 
+O1B-11開始: 専用plan
+`docs/superpowers/plans/2026-08-01-connector-o1b11-connpass-api-application.md`を追加した。2026-08-01の
+connpass公式help、v2 reference、利用規約を再調査した。v2は全endpointでAPI key必須、1秒1request、
+個人・コミュニティは無料審査制でkey 1本、審査約5営業日、個人申請は非商用同意必須である。企業利用は
+月額297,000円または年額3,564,000円。v2には参加申込みendpointがなく、events/groups/users等のGETだけである。
+さらに公式API以外の自動crawler/scraper等は規約で禁止される。よって個人keyはDais本人のローカル・非商用・
+read-only event discoveryだけに使い、Life Manager Webへ転用しない。connpass browser自動申込みは行わず、
+Lumaを実予約sourceとしてcoverageを埋める。key受領まではconnpassへの全自動network accessをcodeで0にする。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
@@ -669,7 +678,7 @@ identity/browser/calendar reference検証を追加し、新規4件と既存runti
 - [ ] O1B-17 Luma mainの東京・対面inventoryを日付ごとに最後まで読み、表示上位数件だけで探索を終えない
 - [ ] O1B-18 AI/crypto/英語等は優先順位にだけ使い、eventを捨てるhard category filterにはしない
 - [ ] O1B-19 agentがevent本文・参加者・主催者・場所・時間を読み、Daisの目標とserendipityを自然言語で評価
-- [ ] O1B-20 Lumaでその日の実参加を確保できない場合だけ、connpassの東京・対面inventoryへ進む
+- [ ] O1B-20 Lumaで実参加を確保できない場合、許諾済みsourceを探索する。connpassはkey取得後の公式API read-only discoveryだけとし、自動申込み・coverage達成には使わない
 - [ ] O1B-21 一つの候補で申込失敗・満席・不適格になっても同じ日の次候補へ進み、予約確認までloopを継続
 - [ ] O1B-22 「検索一巡」「一件の操作失敗」「一sourceの失敗」を終了条件にしない
 - [ ] O1B-23 Google Calendarの全calendarからbusy intervalを読み、前後移動時間を含むfree intervalだけへ予約
