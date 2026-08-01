@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-> Status: 実装中。
+> Status: 完了。次はO1B-11 connpass API key申請。
 
 **Goal:** `profitable-claude`の旧Connector fill-gapsと旧Telegram日報を停止し、正本`life-manager`のevents pack、durable worker、Guardianだけを実行系として残す。
 
@@ -33,8 +33,8 @@
 
 ### Task 3: Live retirement and verification
 
-- [ ] 実2 labelをbootout + disableし、plistをowner-only archiveへ移す。
-- [ ] `launchctl print`不在、original plist不在、archive/checksum、disabled stateを確認する。
-- [ ] 正規Guardian launchd、worker health、events pack live read-onlyが正常なことを確認する。
-- [ ] secretなしevidence JSONを保存しO1B-10を完了する。
-- [ ] Commit and push.
+- [x] 実2 labelをbootout + disableし、plistをowner-only archiveへ移す。
+- [x] `launchctl print`不在、original plist不在、archive/checksum、disabled stateを確認する。
+- [x] 正規Guardian launchd、worker health、events pack live read-onlyが正常なことを確認する。
+- [x] secretなしevidence JSONを保存しO1B-10を完了する。
+- [x] Commit and push.

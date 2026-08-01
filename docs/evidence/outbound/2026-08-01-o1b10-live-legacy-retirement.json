@@ -1,0 +1,63 @@
+{
+  "schema_version": "life-manager.connector.legacy-retirement-live.v1",
+  "observed_at": "2026-08-01T15:50:20.000Z",
+  "repository": "Daisuke134/life-manager",
+  "branch": "main",
+  "implementation_commit": "69246b9de80824f85a6fbf6c5fc1627b1e8f3e67",
+  "legacy_registry_commit": "a5eab2e",
+  "scope": "O1B-10 retirement of duplicate legacy Connector launchd execution and reporting",
+  "retired_labels": [
+    {
+      "label": "ai.anicca.connector-fill-gaps",
+      "loaded": false,
+      "disabled": true,
+      "original_plist_present": false,
+      "archive_sha256": "d61a07c51e7a9f1076cfb7a5f3eaadbeea6e56718a66c2deac1c6ae10fa55469"
+    },
+    {
+      "label": "ai.anicca.connector-daily-report",
+      "loaded": false,
+      "disabled": true,
+      "original_plist_present": false,
+      "archive_sha256": "4d204ccb77b8117e5e1edf61f5237ec8b13b546db5fc8c73158137f149808772"
+    }
+  ],
+  "archive": {
+    "directory_mode": "0700",
+    "file_mode": "0600",
+    "manifest_present": true,
+    "rollback_documented": true,
+    "source": "verified fallback reconstructed from the pre-retirement plutil readback after live plist files were absent following the first bootout"
+  },
+  "canonical_runtime": {
+    "guardian_label": "ai.anicca.outbound-runtime-healthcheck",
+    "guardian_runs": 26,
+    "guardian_last_exit_code": 0,
+    "worker_container_status": "running",
+    "worker_container_health": "healthy",
+    "worker_capabilities": [
+      "runtime.noop",
+      "outbound.event.apply"
+    ],
+    "events_pack_authenticated": true,
+    "events_pack_recovered": false,
+    "luma_inventory_complete": true,
+    "luma_inventory_rounds": 7,
+    "luma_candidate_count": 35
+  },
+  "verification": {
+    "retirement_tests": 4,
+    "outbound_tests": 110,
+    "runtime_tests": 33,
+    "legacy_inventory_tests": 22,
+    "all_exit_codes": 0
+  },
+  "preserved": {
+    "postgres": true,
+    "runtime_volume": true,
+    "docker_worker": true,
+    "cloakbrowser_daily_driver": true,
+    "unrelated_launchd_jobs": true,
+    "unrelated_dirty_worktree_changes": true
+  }
+}
