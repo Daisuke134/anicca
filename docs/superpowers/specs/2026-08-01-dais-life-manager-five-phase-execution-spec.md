@@ -558,6 +558,19 @@ outbound 135件、runtime-up 33件、diff checkが全成功。実装plan:
 `docs/evidence/outbound/2026-08-02-o1b16-rolling-coverage-goal.json`。残作業は121件。
 次はO1B-17でLuma mainの東京・対面inventoryを日付ごとに最後まで読む。
 
+完了: `O1B-17`。Luma Tokyo/In Person mainのvirtualized timelineをstable height + atEnd + no-newの
+複数roundで末尾証明し、消えるcardもMapへ累積した後、rolling coverageの21日すべてへpartitionするcontractを
+TDDで追加した。live DOM監査で当日見出しが日付ではなく`今日`になるため現行regexが当日dateを空にする欠陥を発見し、
+cardごとのdate DOMを取得して`今日 / 明日 / M月D日`をAsia/Tokyo ISO dateへ変換、年跨ぎも扱うよう修正した。
+日付未解決event、global end未証明、非21日coverageはcompleteにしない。候補0の日もglobal end proofへ束縛して
+complete dayとして明示する。shared :9222でlive exhaustive readbackし、6 rounds、全33候補、21日内27、外6、
+unresolved 0、2026-08-02〜08-22の21/21日completeを確認した。新browserは起動していない。
+detail eligibility、ranking、Calendar空き、全候補登録は後続itemであり未達を捏造しない。fresh verificationは
+focused 7件、outbound 137件、runtime-up 33件、diff checkが全成功。実装plan:
+`docs/superpowers/plans/2026-08-02-connector-o1b17-luma-daily-inventory.md`。実測証拠:
+`docs/evidence/outbound/2026-08-02-o1b17-live-luma-daily-inventory.json`。残作業は120件。
+次はO1B-18でAI/crypto/英語等をpriorityだけに使いhard category filterを禁止する。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
@@ -689,7 +702,7 @@ identity/browser/calendar reference検証を追加し、新規4件と既存runti
 - [x] O1B-14 accepted後にslide締切、登壇日、会場、QR、follow-upを一つのtimelineで追跡
 - [x] O1B-15 登壇応募ごとの`submitted / accepted / rejected / presented`を応募ledgerへ記録
 - [x] O1B-16 今日を含む21日間（今日〜20日後）を毎日再計算するrolling coverage goalを実装
-- [ ] O1B-17 Luma mainの東京・対面inventoryを日付ごとに最後まで読み、表示上位数件だけで探索を終えない
+- [x] O1B-17 Luma mainの東京・対面inventoryを日付ごとに最後まで読み、表示上位数件だけで探索を終えない
 - [ ] O1B-18 AI/crypto/英語等は優先順位にだけ使い、eventを捨てるhard category filterにはしない
 - [ ] O1B-19 agentがevent本文・参加者・主催者・場所・時間を読み、Daisの目標とserendipityを自然言語で評価
 - [ ] O1B-20 Lumaでその日の実参加を確保できない場合だけ、connpassの東京・対面inventoryへ進む

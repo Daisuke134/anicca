@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "task": "O1B-17",
+  "observed_at": "2026-08-01T16:20:00.649Z",
+  "result": "verified",
+  "implementation_commit": "da6890e2ea7fb21e44e07c5abe450f35804197cf",
+  "browser": {
+    "transport": "cloakbrowser-daily-driver",
+    "cdp_endpoint": "http://127.0.0.1:9222",
+    "new_browser_started": false,
+    "source_url": "https://luma.com/tokyo?k=p",
+    "source_scope": "tokyo_in_person_main"
+  },
+  "exhaustive_readback": {
+    "global_end_proven": true,
+    "rounds": 6,
+    "stable_end_rounds": 3,
+    "total_candidates": 33,
+    "window_start": "2026-08-02",
+    "window_end": "2026-08-22",
+    "day_count": 21,
+    "all_days_complete": true,
+    "in_window_candidates": 27,
+    "out_of_window_candidates": 6,
+    "unresolved_dates": 0,
+    "daily_counts": {
+      "2026-08-02": 5,
+      "2026-08-03": 2,
+      "2026-08-04": 1,
+      "2026-08-05": 4,
+      "2026-08-06": 0,
+      "2026-08-07": 4,
+      "2026-08-08": 7,
+      "2026-08-09": 1,
+      "2026-08-10": 0,
+      "2026-08-11": 0,
+      "2026-08-12": 0,
+      "2026-08-13": 1,
+      "2026-08-14": 0,
+      "2026-08-15": 1,
+      "2026-08-16": 0,
+      "2026-08-17": 0,
+      "2026-08-18": 1,
+      "2026-08-19": 0,
+      "2026-08-20": 0,
+      "2026-08-21": 0,
+      "2026-08-22": 0
+    }
+  },
+  "date_contract": {
+    "labels_supported": ["今日", "明日", "M月D日"],
+    "timezone": "Asia/Tokyo",
+    "year_rollover_tested": true,
+    "unresolved_event_fails_daily_completion": true
+  },
+  "verification": {
+    "focused_discovery_tests": { "passed": 7, "failed": 0 },
+    "outbound_tests": { "passed": 137, "failed": 0 },
+    "runtime_up_tests": { "passed": 33, "failed": 0 },
+    "git_diff_check": "passed"
+  },
+  "claim_boundary": "This proves the live Luma Tokyo/In Person main virtualized timeline was accumulated to a stable page-end proof and partitioned into all 21 rolling dates, including zero-candidate days. It does not claim detail-page eligibility, ranking, Calendar availability, or registration for every candidate; those remain later O1B items."
+}
