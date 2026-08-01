@@ -33,4 +33,4 @@
 - [x] 実`:9222`で認証済みreadback、共有context 1、既存page count不変を確認する。
 - [x] secretなしevidence JSONを追加する。
 - [x] O1B-09を完了へ更新し、残数を再計算する。
-- [ ] commitしてfeature branchをpushする。
+- [x] commitしてfeature branchをpushする。

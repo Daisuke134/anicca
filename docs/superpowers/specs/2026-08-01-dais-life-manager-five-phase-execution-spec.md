@@ -462,6 +462,8 @@ focused 5件、outbound 91件が成功した。実測証拠:
 `login_required`の時だけ復旧を一度呼び、同じevent contractをfresh pageで再検査する。復旧失敗は
 `login_required`のままfail closedし、submit境界では復旧を開始しないため二重応募しない。実profileは
 人工的にlogoutせずread-onlyで`authenticated /home`、共有context 1、page数`7→7`、probe後CDP生存を確認。
+同じsourceからruntime imageをbuildして既存workerだけをrecreateし、container内からも
+`authenticated /home`、page数`7→7`、health HTTP 200、`outbound.event.apply` capabilityを再読出しした。
 fresh verificationはoutbound 98件、runtime-up 33件、browser-auth 75件、diff checkが全成功した。
 実装plan: `docs/superpowers/plans/2026-08-02-connector-o1b09-login-recovery.md`。実測証拠:
 `docs/evidence/outbound/2026-08-02-o1b09-live-login-recovery.json`。残作業は128件。次はO1B-10で、

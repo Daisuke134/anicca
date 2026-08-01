@@ -22,6 +22,22 @@
     "artificial_logout_performed": false,
     "secret_material_persisted": false
   },
+  "deployment": {
+    "worker_container": "life-manager-local-worker-1",
+    "image_id": "sha256:cdac08b6ca93d7700a6bab6cb48755a960c3940bd3c9367e8391523a849fff8f",
+    "source_commit": "e10e92613ab3961a0dca7f0dde75a78d0cb0bd15",
+    "health_http": 200,
+    "role": "worker",
+    "capabilities": ["runtime.noop", "outbound.event.apply"],
+    "container_readback": {
+      "status": "authenticated",
+      "path": "/home",
+      "recovered": false,
+      "context_count": 1,
+      "pages_before": 7,
+      "pages_after": 7
+    }
+  },
   "legacy_connector_audit": {
     "application_rows": 30,
     "failure_shape": "one bounded agent per open day repeated the same global login or timeout failure",
