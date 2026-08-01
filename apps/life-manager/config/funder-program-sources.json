@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "schedule": {
+    "cron": "30 6 * * *",
+    "timezone": "Asia/Tokyo"
+  },
+  "allow_agent_discovered_official_sources": true,
+  "sources": [
+    { "source_id": "yc-apply", "url": "https://www.ycombinator.com/apply", "kind": "official_program" },
+    { "source_id": "spc-founder-fellowship", "url": "https://www.southparkcommons.com/news/f26-founder-fellowship", "kind": "official_program" },
+    { "source_id": "a16z-speedrun", "url": "https://speedrun.a16z.com/faq", "kind": "official_program" },
+    { "source_id": "entrepreneurs-first", "url": "https://apply.joinef.com/", "kind": "official_program" },
+    { "source_id": "techstars-founders", "url": "https://www.techstars.com/for/founders", "kind": "official_index" },
+    { "source_id": "antler-japan", "url": "https://www.antler.co/location/japan", "kind": "official_program" }
+  ]
+}
