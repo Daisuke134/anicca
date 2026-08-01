@@ -39,16 +39,16 @@ JST today〜+20、New York DST、翌日slide、default open、resolved evidence�
 Run: `node --test lib/rolling-event-coverage.test.js`
 Expected: module path不存在でFAIL。
 
-- [ ] **Step 3: minimal implementationを書く**
+- [x] **Step 3: minimal implementationを書く**
 
 Intlでlocal todayを得て、date keyをUTC上の暦演算へ写して0〜20日を生成する。snapshot IDはcanonical content hash。
 
-- [ ] **Step 4: GREENとoutbound全回帰を確認する**
+- [x] **Step 4: GREENとoutbound全回帰を確認する**
 
 Run: `node --test lib/rolling-event-coverage.test.js && npm run test:outbound`
 Expected: 全件PASS。
 
-- [ ] **Step 5: commitする**
+- [x] **Step 5: commitする**
 
 ```bash
 git add apps/life-manager/lib/rolling-event-coverage.js apps/life-manager/lib/rolling-event-coverage.test.js apps/life-manager/package.json
