@@ -51,6 +51,10 @@ cat >"$T/bin/launchctl" <<'SH'
 #!/usr/bin/env bash
 printf '%s\n' "$*" >>"$KICKSTART_CALLS"
 SH
+cat >"$T/bin/guard" <<'SH'
+#!/usr/bin/env bash
+printf '%s\n' "$*" >>"$GUARD_CALLS"
+SH
 chmod +x "$T/bin/"*
 
 probe="$(CAPAFY_IG_ACCOUNT_MANAGER_PROBE_ONLY=1 bash "$MANAGER" 2>&1)"; probe_rc=$?
@@ -61,12 +65,13 @@ done
 
 new_case(){
   CASE="$T/$1"; mkdir -p "$CASE/home/.cloak" "$CASE/state"
-  printf '[]\n' >"$CASE/accounts.json"; : >"$CASE/runner.calls"; : >"$CASE/telegram.body"; : >"$CASE/kick.calls"
+  printf '[]\n' >"$CASE/accounts.json"; : >"$CASE/runner.calls"; : >"$CASE/telegram.body"; : >"$CASE/kick.calls"; : >"$CASE/guard.calls"
   export HOME="$CASE/home" CAPAFY_IG_ACCOUNTS_FILE="$CASE/accounts.json"
   export CAPAFY_IG_LIFECYCLE_STATE="$CASE/state/lifecycle.json" CAPAFY_OUTCOME_STATE_DIR="$CASE/state"
   export CAPAFY_MARKETING_RESULT="$CASE/state/manager-result.json" CAPAFY_RUN_AGENT="$T/bin/runner"
   export CAPAFY_PROVISION_BROWSER="$T/bin/browser" CAPAFY_IG_SESSION_VERIFY="$T/bin/verify"
   export CAPAFY_TELEGRAM_SENDER="$T/bin/sender" CAPAFY_LAUNCHCTL="$T/bin/launchctl"
+  export CAPAFY_BROWSER_GUARD="$T/bin/guard" GUARD_CALLS="$CASE/guard.calls"
   export RUNNER_CALLS="$CASE/runner.calls" TELEGRAM_BODY="$CASE/telegram.body" KICKSTART_CALLS="$CASE/kick.calls"
   export CAPAFY_ACCOUNT_MANAGER_LOCK_DIR="$CASE/manager.lock" CAPAFY_IG_LIFECYCLE="$LIFECYCLE"
   unset FAKE_PROVISION_MODE FAKE_VERIFY_MODE FAKE_SENDER_MODE
@@ -76,6 +81,7 @@ new_case success
 bash "$MANAGER" >/dev/null 2>&1; rc=$?
 eq "created account exits zero" "$rc" 0
 eq "one provision invocation" "$(wc -l <"$RUNNER_CALLS" | tr -d ' ')" 1
+eq "browser lease released after provisioning" "$(grep -Fc 'release instagram:capafy-provision' "$GUARD_CALLS")" 1
 has "runner uses marketing lane" "$RUNNER_CALLS" "--task-class marketing-agent"
 has "message has new handle" "$TELEGRAM_BODY" "@capafy.skills25042"
 has "message says browser session" "$TELEGRAM_BODY" "browser session"

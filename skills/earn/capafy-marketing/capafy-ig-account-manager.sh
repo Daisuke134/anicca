@@ -25,6 +25,7 @@ RESULT="${CAPAFY_MARKETING_RESULT:-$STATE_DIR/capafy-account-manager-result.json
 HANDOFF="${CAPAFY_MARKETING_HANDOFF:-$HERE/capafy-marketing-handoff.sh}"
 RUN_AGENT="${CAPAFY_RUN_AGENT:-$ENGINE/run_agent.sh}"
 BROWSER="${CAPAFY_PROVISION_BROWSER:-$HERE/../../browser/ensure_provision_browser.sh}"
+GUARD="${CAPAFY_BROWSER_GUARD:-$HOME/.config/ai/bin/browser-guard.sh}"
 VERIFY_SESSION="${CAPAFY_IG_SESSION_VERIFY:-$HERE/scripts/capafy_ig_session_verify.py}"
 LOCK="${CAPAFY_ACCOUNT_MANAGER_LOCK_DIR:-$STATE_DIR/capafy-ig-account-manager.lock}"
 IDENTITY="${CAPAFY_PROVISION_BROWSER_IDENTITY:-instagram:capafy-provision}"
@@ -65,7 +66,13 @@ if ! mkdir "$LOCK" 2>/dev/null; then
   fi
 fi
 printf '%s\n' "$$" >"$LOCK/pid"
-cleanup(){ rm -f "$LOCK/pid"; rmdir "$LOCK" 2>/dev/null || true; }
+browser_leased=0
+cleanup(){
+  if [ "$browser_leased" = "1" ]; then
+    bash "$GUARD" release "$IDENTITY" >/dev/null 2>&1 || true
+  fi
+  rm -f "$LOCK/pid"; rmdir "$LOCK" 2>/dev/null || true
+}
 trap cleanup EXIT
 
 # A failed sender leaves the verified result for this pass to retry without
@@ -89,7 +96,8 @@ with open(t,"w") as f: json.dump(d,f,indent=2); f.write("\n"); f.flush(); os.fsy
 os.replace(t,p)
 PY
 before_count="$(python3 -c 'import json,sys;print(len(json.load(open(sys.argv[1]))))' "$ACCOUNTS")" || fail "account registry is not a valid JSON list"
-cdp="$(bash "$BROWSER" "$IDENTITY")" || fail "isolated provisioning browser did not start"
+cdp="$(AI_BROWSER_HOLDER_PID=$$ AI_BROWSER_GUARD="$GUARD" bash "$BROWSER" "$IDENTITY")" || fail "isolated provisioning browser did not start"
+browser_leased=1
 port="${cdp##*:}"
 case "$port" in ''|*[!0-9]*) fail "isolated provisioning browser returned no numeric port";; esac
 context="capafy-account-manager-$$"
