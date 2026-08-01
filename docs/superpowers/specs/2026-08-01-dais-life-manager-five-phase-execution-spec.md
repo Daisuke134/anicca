@@ -495,6 +495,20 @@ capabilityもkey wiringもない。fresh verificationはoutbound 106件、runtim
 `docs/evidence/outbound/2026-08-02-o1b11-connpass-api-application.json`。残作業は126件。
 次はO1B-12で一般参加とLT/CFP/demo登壇応募を別entityとしてdiscover・追跡する。
 
+完了: `O1B-12`。O1B-08のvalidated decisionから、一般参加`audience_registration`と
+登壇応募`talk_application`を別stable hash IDで作り、同じcanonical event refだけを共有するcontractを
+TDDで追加した。audience-only、talk-only、bothを分離し、closed、invite-only、unknownからopenな
+talk applicationを捏造しない。audienceは`discovered→queued→registered`、talkは
+`discovered→drafted→submitted→accepted→presented`の別state machineを持ち、外部成果statusはreceipt必須。
+current entity tableとappend-only transition tableをtenant-bound/RLS/service-onlyで追加し、discoveryは
+stable IDでdedup、transitionはtenant/kind/from-status/versionのcompare-and-setを履歴insertと一文で行う。
+local PostgreSQLへmigrationを適用し、controlled tenantの同じevent refから2 entityを実保存した。
+readbackはaudience=`queued/v2`、talk=`drafted/v2`、別ID、transition 2行で、外部clickは0。
+fresh verificationはfocused 8件、outbound 114件、runtime-up 33件、diff checkが全成功した。
+実装plan: `docs/superpowers/plans/2026-08-02-connector-o1b12-separate-event-entities.md`。実測証拠:
+`docs/evidence/outbound/2026-08-02-o1b12-separate-event-entities.json`。残作業は125件。
+次はO1B-13でLife Managerの実測demoに合うtalk title、5分outline、応募理由をagent生成する。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
@@ -621,7 +635,7 @@ identity/browser/calendar reference検証を追加し、新規4件と既存runti
 - [x] O1B-09 旧Connector loginを復旧しevents packへ統合
 - [x] O1B-10 重複旧実装を退役
 - [x] O1B-11 connpass API keyを申請。取得まで自動アクセス禁止
-- [ ] O1B-12 一般参加とLT/CFP/demo登壇応募を別entityとしてdiscover・追跡
+- [x] O1B-12 一般参加とLT/CFP/demo登壇応募を別entityとしてdiscover・追跡
 - [ ] O1B-13 Life Managerの実測demoに合うtalk title、5分outline、応募理由をagent生成
 - [ ] O1B-14 accepted後にslide締切、登壇日、会場、QR、follow-upを一つのtimelineで追跡
 - [ ] O1B-15 登壇応募ごとの`submitted / accepted / rejected / presented`を応募ledgerへ記録

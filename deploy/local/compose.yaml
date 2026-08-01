@@ -73,6 +73,7 @@ services:
         psql "$$DATABASE_URL" -v ON_ERROR_STOP=1
         -f /migrations/20260729_runtime_jobs.sql
         -f /migrations/20260729_runtime_scheduler_lease.sql
+        -f /migrations/2026-08-02-lm-event-participation-entities.sql
     depends_on:
       postgres:
         condition: service_healthy

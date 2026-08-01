@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "task": "O1B-12",
+  "observed_at": "2026-08-01T15:58:01.000Z",
+  "result": "verified",
+  "contract": {
+    "shared_event_ref": "luma-event://event/o1b12-separate-entities",
+    "entity_count": 2,
+    "distinct_entity_ids": 2,
+    "raw_identity_persisted": false,
+    "event_body_persisted": false,
+    "cross_kind_status_transitions_allowed": false,
+    "external_outcome_receipt_required": true
+  },
+  "postgres_readback": {
+    "tenant_id": "o1b12-live-proof",
+    "entities": [
+      {
+        "entity_id": "event-entity:4a161be5f952f346bf28cd78ccf506ac6d1171e01c790f8b618f8174e000a37d",
+        "kind": "audience_registration",
+        "status": "queued",
+        "version": 2
+      },
+      {
+        "entity_id": "event-entity:308e4d845707c28a4d1467fd370f9f3fd5ca31b8228f268faedfc7d1485cfddf",
+        "kind": "talk_application",
+        "status": "drafted",
+        "version": 2
+      }
+    ],
+    "transition_rows": 2,
+    "audience_transition": "discovered->queued",
+    "talk_transition": "discovered->drafted",
+    "receipt_refs": [null, null]
+  },
+  "deployment": {
+    "worker_container": "life-manager-local-worker-1",
+    "image_id": "sha256:439a1c0d7f90e6f80dc031c37b5585759d7f37df6fed245a2c5b303f5ea99859",
+    "health_http": 200,
+    "role": "worker",
+    "capabilities": ["runtime.noop", "outbound.event.apply"]
+  },
+  "verification": {
+    "focused_entity_and_store_tests": { "passed": 8, "failed": 0 },
+    "outbound_tests": { "passed": 114, "failed": 0 },
+    "runtime_up_tests": { "passed": 33, "failed": 0 },
+    "git_diff_check": "passed"
+  }
+}
