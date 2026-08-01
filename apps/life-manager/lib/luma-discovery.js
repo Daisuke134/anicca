@@ -11,6 +11,7 @@ const RESERVED_SLUGS = new Set([
 ]);
 const SLUG = /^[A-Za-z0-9_-]+$/;
 const TOKYO_DISCOVER_URL = "https://luma.com/tokyo?k=p";
+const VERIFIED = new WeakSet();
 
 function boundedText(value, max) {
   const text = String(value == null ? "" : value).replace(/\s+/g, " ").trim();
@@ -104,14 +105,20 @@ async function collectLumaInventory(options = {}) {
     }
     previousHeight = Number.isFinite(height) ? height : null;
     if (stableRounds >= stableEndRounds) {
-      return Object.freeze({
+      const inventory = Object.freeze({
         complete: true,
         rounds: round,
         candidates: Object.freeze([...candidates.values()]),
       });
+      VERIFIED.add(inventory);
+      return inventory;
     }
   }
   throw new Error("Luma inventory end unproven");
+}
+
+function isVerifiedLumaInventory(value) {
+  return Boolean(value && typeof value === "object" && VERIFIED.has(value));
 }
 
 async function readLumaTimelineSnapshot(page) {
@@ -174,6 +181,7 @@ async function discoverLumaTokyo(options = {}) {
 module.exports = {
   collectLumaInventory,
   discoverLumaTokyo,
+  isVerifiedLumaInventory,
   lumaEventIdentity,
   normalizeLumaCandidate,
   readLumaTimelineSnapshot,

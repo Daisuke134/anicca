@@ -32,12 +32,11 @@ test("the pack gives discovery and RSVP one auth-aware daily-driver", async () =
       calls.push(["inspect", options.dailyDriver, options.canonicalUrl]);
       return "detail";
     },
-    inspectDateInventory(options) {
+    async inspectDateInventory(options) {
       calls.push(["date-inventory", options.coverage, options.now]);
-      return options.discoverTokyo().then(async (inventory) => {
-        await options.inspectEvent(inventory.candidates[0].canonical_url);
-        return "date-inventory";
-      });
+      const inventory = await options.discoverTokyo();
+      await options.inspectEvent(inventory.candidates[0].canonical_url);
+      return "date-inventory";
     },
   });
 

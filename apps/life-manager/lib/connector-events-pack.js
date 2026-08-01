@@ -3,6 +3,7 @@
 const { createAuthAwareLumaDailyDriver } = require("./luma-daily-driver-auth.js");
 const { discoverLumaTokyo } = require("./luma-discovery.js");
 const { inspectLumaEvent } = require("./luma-event-detail.js");
+const { inspectLumaDateInventory } = require("./luma-date-inventory.js");
 const { createLumaBrowserProvider } = require("./luma-browser-provider.js");
 
 function invalid() {
@@ -26,6 +27,7 @@ function createConnectorEventsPack(options = {}) {
   const createProvider = options.createProvider || createLumaBrowserProvider;
   const discover = options.discover || discoverLumaTokyo;
   const inspect = options.inspect || inspectLumaEvent;
+  const inspectDateInventory = options.inspectDateInventory || inspectLumaDateInventory;
   const authAwareDriver = createAuthAwareDriver({ dailyDriver, auth });
   if (!authAwareDriver || typeof authAwareDriver.withLumaPage !== "function") throw invalid();
   const provider = createProvider({
@@ -46,6 +48,21 @@ function createConnectorEventsPack(options = {}) {
     },
     inspectEvent(canonicalUrl, extra = {}) {
       return inspect({ ...extra, dailyDriver: authAwareDriver, canonicalUrl });
+    },
+    readDateInventory(coverage, extra = {}) {
+      return inspectDateInventory({
+        coverage,
+        now: extra.now,
+        discoverTokyo: () => discover({
+          dailyDriver: authAwareDriver,
+          maxRounds: extra.maxRounds,
+          stableEndRounds: extra.stableEndRounds,
+        }),
+        inspectEvent: (canonicalUrl) => inspect({
+          dailyDriver: authAwareDriver,
+          canonicalUrl,
+        }),
+      });
     },
   });
 }

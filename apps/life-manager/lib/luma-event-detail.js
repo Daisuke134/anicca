@@ -13,6 +13,7 @@ const EVENT_STATUS = new Map([
   ["https://schema.org/EventPostponed", "postponed"],
   ["https://schema.org/EventRescheduled", "rescheduled"],
 ]);
+const VERIFIED = new WeakSet();
 
 function bounded(value, max = 500) {
   const text = String(value == null ? "" : value).replace(/\s+/g, " ").trim();
@@ -95,7 +96,7 @@ function normalizeLumaEventDetail(input = {}) {
   const authStatus = includesAny(controls, ["ログイン", "sign in", "log in"])
     ? "login_required"
     : "unknown";
-  return Object.freeze({
+  const detail = Object.freeze({
     provider: "luma",
     canonical_url: identity.canonicalUrl,
     event_ref: `luma-event://event/${identity.slug}`,
@@ -109,6 +110,12 @@ function normalizeLumaEventDetail(input = {}) {
     rsvp_status: rsvpStatus(controls),
     capacity_status: "availability_control_only",
   });
+  VERIFIED.add(detail);
+  return detail;
+}
+
+function isVerifiedLumaEventDetail(value) {
+  return Boolean(value && typeof value === "object" && VERIFIED.has(value));
 }
 
 async function readRawLumaEventDetail(page, canonicalUrl) {
@@ -165,6 +172,7 @@ async function inspectLumaEvent(options = {}) {
 
 module.exports = {
   inspectLumaEvent,
+  isVerifiedLumaEventDetail,
   normalizeLumaEventDetail,
   readRawLumaEventDetail,
 };

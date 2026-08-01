@@ -6,6 +6,7 @@ const { createCloakBrowserDailyDriver } = require("../lib/cloakbrowser-daily-dri
 const { createLumaDailyDriverAuth } = require("../lib/luma-daily-driver-auth.js");
 const { createGogLumaCodeReader } = require("../lib/gog-luma-code-reader.js");
 const { createConnectorEventsPack } = require("../lib/connector-events-pack.js");
+const { buildRollingEventCoverage } = require("../lib/rolling-event-coverage.js");
 
 function required(value) {
   return String(value == null ? "" : value).trim();
@@ -43,13 +44,22 @@ async function runConnectorEventsPackReadonly({ env = process.env, deps = {} } =
     },
   });
   const authResult = await auth.ensureAuthenticated();
-  const inventory = await pack.discoverTokyo();
+  const now = (deps.now || (() => new Date().toISOString()))();
+  const coverage = buildRollingEventCoverage({
+    tenantId: "dais-local",
+    timeZone: "Asia/Tokyo",
+    now,
+    resolvedDays: [],
+  });
+  const inventory = await pack.readDateInventory(coverage, { now });
   if (
     !authResult
     || authResult.status !== "authenticated"
     || !inventory
     || inventory.complete !== true
-    || !Array.isArray(inventory.candidates)
+    || !inventory.counts
+    || inventory.counts.discovered !== inventory.counts.inspected
+    || inventory.counts.dates_with_candidates + inventory.counts.dates_without_candidates !== 21
   ) throw new Error("Connector events pack unavailable");
   return Object.freeze({
     provider: "luma",
@@ -57,8 +67,15 @@ async function runConnectorEventsPackReadonly({ env = process.env, deps = {} } =
     authenticated: true,
     recovered: authResult.recovered === true,
     inventory_complete: true,
-    inventory_rounds: inventory.rounds,
-    candidate_count: inventory.candidates.length,
+    window_start_date: inventory.window_start_date,
+    window_end_date: inventory.window_end_date,
+    inventory_rounds: inventory.source_inventory_rounds,
+    discovered_candidate_count: inventory.counts.discovered,
+    inspected_detail_count: inventory.counts.inspected,
+    scheduled_in_person_in_window_count: inventory.counts.scheduled_in_person_in_window,
+    excluded_detail_count: inventory.counts.excluded,
+    dates_with_candidates: inventory.counts.dates_with_candidates,
+    dates_without_candidates: inventory.counts.dates_without_candidates,
   });
 }
 
