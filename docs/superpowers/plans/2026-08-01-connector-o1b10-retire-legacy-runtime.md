@@ -19,9 +19,9 @@
 
 ### Task 1: Deterministic retirement contract
 
-- [ ] 固定2 label以外を拒否し、dry fixtureでbootout/disable/archiveをRED→GREENにする。
-- [ ] 二回目実行が成功し、archiveを上書きしないidempotencyを確認する。
-- [ ] rollback手順をmanifestへ残す。
+- [x] 固定2 label以外を拒否し、dry fixtureでbootout/disable/archiveをRED→GREENにする。
+- [x] 二回目実行が成功し、archiveを上書きしないidempotencyを確認する。
+- [x] rollback手順をmanifestへ残す。
 - [ ] Commit and push.
 
 ### Task 2: Prevent resurrection
