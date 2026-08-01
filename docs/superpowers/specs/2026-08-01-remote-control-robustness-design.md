@@ -71,7 +71,7 @@ claude doctor: Remote Control セクションに失敗チェック無し
 |---|---|---|
 | 1 | ログ回転: plist を `perl` ANSI除去 + `rotatelogs -n 5 10M` パイプに (上限50MB) | **done 2026-08-01 17:22** (§4.1) |
 | 2 | plist 衛生: `zsh -l` 廃止 / `EnvironmentVariables.PATH` 明示 / `ProcessType` / `ExitTimeOut=30` / `ThrottleInterval=60` / `RunAtLoad` 削除 | **done 2026-08-01 17:35** (§4.2) |
-| 3 | 401 サーキットブレーカ: ログに `Authentication failed (401)` 検知 → 20秒後に1回だけリトライ → まだ401なら `launchctl bootout` + sentinel 書いて停止 | pending |
+| 3 | 401 サーキットブレーカ: ログに `Authentication failed (401)` 検知 → 20秒後に1回だけリトライ → まだ401なら `launchctl bootout` + sentinel 書いて停止 | **done 2026-08-01 17:48** (§4.3) |
 | 4 | 通知: sentinel が立ったら Dais へ「`claude auth login` が必要」を送る (18時間ルールは人間しか解けない = 正当な human-loop) | pending |
 | 5 | 有線化: Mac mini 背面 Ethernet にLANケーブル → ルーター。**Dais の物理作業**。優先度最下位 | pending (Dais) |
 | 6 | 掃除: 重複 tailscale LaunchAgent (exit 1) 削除 / orphaned npm `@anthropic-ai/claude-code` 削除 / `~/.openclaw` 14G 回収 | pending |
@@ -148,6 +148,61 @@ boot.err                 →  0 bytes
 ```
 
 **運用上の注意**: `ThrottleInterval=60` を入れたので、`bootout` 直後の `bootstrap` では最大60秒プロセスが上がらない。この間 `launchctl list` は PID 欄が `-` になる。**壊れたと誤認しないこと。**
+
+---
+
+### 4.3 実測ログ — #3 401 サーキットブレーカ (2026-08-01 17:48 完了)
+
+設置先は supervisor スクリプト本体（別プロセスの watchdog にしない — パイプの終了を直接見られる方が確実で、監視対象と監視者がずれない）。
+
+判定ロジック:
+
+```
+claude 終了
+  ├ 直近400行に 401 パターン無し
+  │    └ 600秒以上動いていたら計数と sentinel をリセット → 通常終了 (launchd が再起動)
+  └ 401 あり
+       ├ 窓(600秒)内 1回目 → 20秒待ってから終了。launchd が1回だけ再試行
+       └ 窓内 2回目      → sentinel 書く → 通知呼ぶ → launchctl bootout で自分を降ろす
+```
+
+設計上の要点:
+
+| 判断 | 理由 |
+|---|---|
+| 検知は**ログパターン**、`claude auth status` ではない | `auth status` は `/bridge`・code-session を叩かないので **401 中でも green を返す**（gh #78453「他の認証接続は正常、401 は code-session/bridge だけで単独発生」）。実際 401 の最中に `loggedIn=true, subscriptionType=max` が返っていた |
+| 1回目は**即再起動せず20秒待つ** | gh #78453 の報告者「CLI 起動直後の自動接続は失敗するが、数秒後の手動リトライは 3/3 で成功」 |
+| 2回目で**自分を bootout** | `KeepAlive=true` はどんな終了コードでも再起動する。止める手段は自分を降ろすことだけ |
+| 諦める閾値は 2 | 83回リトライして一度も直らなかった実績。2回で十分 |
+
+sandbox 検証（$HOME ごと隔離、偽 claude が 401 を吐く、`launchctl bootout` はスタブに置換して本番を巻き込まない）:
+
+```
+--- run 1 ---  rc=1
+  [supervise] 401 detected (hit 1/2 in 600s window) after 0s: ...
+  [supervise] backing off 20s, then letting launchd respawn once
+--- run 2 ---  rc=1
+  STUB-BOOTOUT  gui/501/com.anicca.claude-remote-control      ← bootout が呼ばれた
+  [supervise] CIRCUIT BREAKER OPEN — booting out the job
+  sentinel: hits=2 in 600s / last_error=...(401 の実文言)... / fix=claude auth login
+
+--- 誤爆しないことの確認 (401 を含まず exit 7 する偽 claude) ---
+  rc=7 (終了コードが透過している)
+  sentinel: 無し
+  [supervise] exit rc=7 after 0s, no 401 in log — letting launchd restart
+```
+
+本番反映後の実測:
+
+```
+launchctl list  →  32091  0  com.anicca.claude-remote-control
+プロセス3本      →  supervise.sh 32091 / claude remote-control 32106 / rotatelogs 32108
+ログ            →  ·✔︎· Connected
+~/.claude/state →  401 関連ファイル無し (誤爆していない)
+supervise.log   →  空 (インシデント無し)
+```
+
+新しく増えたファイル: `~/.claude/logs/remote-control.supervise.log`（監視側の判断ログ。TUI 出力とは別系統。**回転対象外なので行数は極小に保つこと**）、`~/.claude/state/remote-control-401.{count,sentinel}`。
 
 ---
 
