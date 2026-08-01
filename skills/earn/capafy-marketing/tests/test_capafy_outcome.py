@@ -137,6 +137,46 @@ def test_calendar_day_three_is_account_age_not_warmup_completion() -> None:
     assert "warmup complete" not in result.stdout.lower()
 
 
+def test_account_created_renders_verified_browser_session_without_live_claim() -> None:
+    payload = {
+        "schema_version": 1,
+        "kind": "account_created",
+        "owner": "marketer",
+        "handle": "capafy.skills25042",
+        "session_owner": "browser",
+        "session_established": True,
+        "warmup_successes": 0,
+        "public_post_url": None,
+        "next_action": "Run the first automatic browser warmup",
+    }
+
+    result = run_cli("render", payload)
+
+    assert result.returncode == 0, result.stderr
+    assert "@capafy.skills25042" in result.stdout
+    assert "browser session" in result.stdout.lower()
+    assert "0/2" in result.stdout
+    assert "no public post" in result.stdout.lower()
+    assert "live" not in result.stdout.lower()
+
+
+def test_account_created_requires_independently_verified_session() -> None:
+    payload = {
+        "schema_version": 1,
+        "kind": "account_created",
+        "owner": "marketer",
+        "handle": "capafy.skills25042",
+        "session_owner": "browser",
+        "session_established": False,
+        "warmup_successes": 0,
+        "public_post_url": None,
+        "next_action": "Run warmup",
+    }
+    result = run_cli("validate", payload)
+    assert result.returncode != 0
+    assert "session_established" in result.stderr
+
+
 def test_money_dimensions_remain_separate_in_rendered_message() -> None:
     result = run_cli("render", builder_submission())
 

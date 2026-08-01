@@ -109,6 +109,19 @@ def validate_outcome(data: dict) -> list[str]:
         public_url = data.get("public_post_url")
         if public_url is not None and not _is_https_url(public_url):
             errors.append("public_post_url must be a real HTTPS URL")
+    elif kind == "account_created":
+        if not data.get("handle"):
+            errors.append("handle is required")
+        if data.get("session_owner") != "browser":
+            errors.append("session_owner must be browser")
+        if data.get("session_established") is not True:
+            errors.append("session_established must be true")
+        if data.get("warmup_successes") != 0:
+            errors.append("warmup_successes must be zero for a fresh account")
+        if data.get("public_post_url") is not None:
+            errors.append("a fresh account cannot have a public_post_url")
+        if not data.get("next_action"):
+            errors.append("next_action is required")
     elif kind == "incident_unresolved":
         for field in (
             "incident_id",
@@ -189,6 +202,17 @@ def render_outcome(data: dict) -> str:
         raise ValueError("; ".join(errors))
 
     kind = data["kind"]
+    if kind == "account_created":
+        return "\n".join(
+            [
+                "Capafy Marketer — replacement account created and verified",
+                f"Account: @{data['handle']}",
+                "The isolated browser session is established and independently verified.",
+                "Verified warmups: 0/2.",
+                "No public post exists yet.",
+                f"Next automatic action: {data['next_action']}.",
+            ]
+        )
     if kind == "account_state":
         schedule = (
             "The scheduler is loaded."
