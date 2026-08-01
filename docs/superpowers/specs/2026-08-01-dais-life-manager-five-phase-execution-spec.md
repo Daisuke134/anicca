@@ -903,7 +903,20 @@ tenant isolation・8 events・3 rolesとoutbound replay/conflict/source拒否、
 review fix `9fdf4560f`。設計: `docs/superpowers/specs/2026-08-02-o1c18-fundraising-funnel-web-design.md`。実装plan:
 `docs/superpowers/plans/2026-08-02-connector-o1c18-fundraising-funnel-web.md`。実測証拠:
 `docs/evidence/funding/2026-08-02-o1c18-fundraising-funnel-web.json`。残作業は94件。
-次はO1C-19で、accelerator以外のVC/angelをthesis一致時だけ1日3〜5件へpersonalized outreachする。
+完了: `O1C-19`。既存O1C-09送信ledgerを唯一の正本として、agent-ownedのVC/angel種別・thesis一致判断を
+fresh公式HTTPS本文のexact quoteへ、personalized target/company claimを公式本文とcurrent application-kitのread前後一致snapshotへ
+束縛した。東京日付の既存全送信数と全期間recipient dedupを読み、外部送信前にSECURITY DEFINER RPCがtenant/date advisory lock下で
+append-only slot 1〜5を予約する。service roleの表直接INSERT、部分NULL proof、未予約receipt、date/recipient/kind/proof差替え、plain/JSON
+plan・reservation、v2→v1 downgradeを全て拒否する。予約のない旧schema v1外部送信は停止し、既存receipt exact replayだけ維持する。
+実runは同日既存3件を確認し、Scion Ventures公式のseed/pre-seed・agentic systems thesisをagentがVC一致と判断、current kit事実で
+個別化した1通をslot 4としてGmail送信した。fresh Sent readbackはmessage/thread、recipient、subject、CRLF正規化body hashが一致し、
+live ledger合計4件、複合reservation一致1件。返信・面談・投資関心・fundingは未観測。fresh verificationはfocused 11件、outbound
+257件、Life Manager full `npm test`、legacy upgrade、3並列でsuccess 2/cap拒否1、proof/date FK、partial/null/direct-insert拒否、3 role、
+syntax/diff、独立review Critical/Important 0が成功。実装commit `90938bbf3`。設計:
+`docs/superpowers/specs/2026-08-02-o1c19-vc-angel-personalized-outreach-design.md`。実装plan:
+`docs/superpowers/plans/2026-08-02-connector-o1c19-vc-angel-personalized-outreach.md`。実測証拠:
+`docs/evidence/funding/2026-08-02-o1c19-vc-angel-personalized-outreach.json`。残作業は93件。
+次はO1C-20で、採択・面談結果を次のpitchとtarget rankingへ反映する週次reflectionを実装する。
 
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
@@ -1123,7 +1136,7 @@ agentが本文と履歴を読んで判断し、keyword/regexの固定分類へ�
 - [x] O1C-16 会社facts、traction、MRR、deck、videoのfreshness gateを実装
 - [x] O1C-17 `gog`でconfirmation/replyをthread ID単位に取得し、Job Hunter ledgerへ統合
 - [x] O1C-18 application→confirmation→interview→offer/reject→fundedのfunnelをWebへ投影
-- [ ] O1C-19 accelerator以外のVC/angelはthesis一致時だけ1日3〜5件へpersonalized outreach
+- [x] O1C-19 accelerator以外のVC/angelはthesis一致時だけ1日3〜5件へpersonalized outreach
 - [ ] O1C-20 採択・面談の結果を次のpitchとtarget rankingへ反映する週次reflection
 - [ ] O1C-21 旧`apply-to-yc`のfield/video/progress知識を後継YC providerへ移植
 - [ ] O1C-22 古いSummer application IDがFall 2026へ継続可能かYC home実画面で確認

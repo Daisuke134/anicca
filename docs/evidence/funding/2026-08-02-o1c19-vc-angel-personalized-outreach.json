@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "task": "O1C-19",
+  "observed_at": "2026-08-01T21:51:20.088Z",
+  "result": "verified_vc_thesis_matched_personalized_outreach",
+  "implementation_commits": [
+    "90938bbf303186e79150d6d74d246df2259207cc"
+  ],
+  "architecture": {
+    "send_source_of_truth": "public.lm_funder_outreach_ledger",
+    "separate_send_ledger_created": false,
+    "pre_send_fence": "public.lm_funder_investor_outreach_reservation",
+    "fence_append_only": true,
+    "tenant_and_tokyo_date_lock": true,
+    "maximum_daily_total": 5,
+    "recipient_dedup_scope": "all tenant history",
+    "legacy_o1c09_receipt_replay_supported": true,
+    "legacy_o1c09_external_delivery_enabled": false,
+    "raw_recipient_or_message_body_persisted_in_repository": false
+  },
+  "official_target": {
+    "candidate_id": "scion-ventures",
+    "source_url": "https://scion-ventures.co/",
+    "source_observed_at": "2026-08-01T21:41:35Z",
+    "source_digest": "008942ec82c55306e8d6f54604ab1482d06a9a3b3e09e46d1ded484375a25439",
+    "agent_judgment": {
+      "investor_kind": "vc",
+      "accelerator": false,
+      "thesis_match": true,
+      "official_target_quotes_bound": 2,
+      "target_claims_bound": 1,
+      "thesis_evidence_sha256": "d4633167e16965c58030f2ebc4d5c77208e8e0ae9f6aa5829ed5ea0a084b9ecb"
+    }
+  },
+  "company_evidence": {
+    "source_ref": "application-kit://KIT.md",
+    "kit_digest": "b27e5882b3c434c6405030f26ae3db5c0c3aa030c3dd2482f9083edb8db24f94",
+    "company_claims_bound": 2,
+    "company_evidence_sha256": "d539c68106ef97ca2d4bdc4aef6fc7475354e5d605a463962a403ed7d4b1b213",
+    "personalization_sha256": "59902a483ca44062b9f6f53a039314ae79240e48fe75821ee164cc176573b013"
+  },
+  "live_delivery": {
+    "tenant_id": "dais-local",
+    "tokyo_date": "2026-08-02",
+    "existing_count_before": 3,
+    "sent_count": 1,
+    "total_after": 4,
+    "daily_slot": 4,
+    "outreach_id": "funder-outreach:03de012021e21efde4813bbcab6d39fac4a6c597aea9eec65d91058e2c0ab3b3",
+    "recipient_sha256": "410cc91149fac5d1da7250bc6769794f08b89fa9967a796755314be7ff8b798f",
+    "subject_sha256": "f496fe8f1745c7f7610521f281c21ba6436e355c6f2c57725f74af7d8c62a850",
+    "body_sha256": "eef2861e2ddb591c993ed07c9a8bf2128fa226095f9b366e5faabdf3e0b160e0",
+    "sent_at": "2026-08-01T21:51:20.088Z",
+    "provider_message_id": "19fbf4f66516e051",
+    "provider_thread_id": "19fbf4f66516e051",
+    "ledger_inserted": true
+  },
+  "fresh_readback": {
+    "gmail_label": "SENT",
+    "message_id_matches": true,
+    "thread_id_matches": true,
+    "recipient_matches": true,
+    "subject_hash_matches": true,
+    "body_hash_matches_after_crlf_normalization": true,
+    "reservation_matches_ledger": true,
+    "live_same_day_total": 4,
+    "live_same_day_investor_total": 1,
+    "recipient_rows_all_history": 1
+  },
+  "verification": {
+    "focused_node_tests": "11/11 passed",
+    "life_manager_full_npm_test": "passed",
+    "outbound_tests": "257/257 passed",
+    "postgres_integration": "legacy_upgrade=1 replay=2 old=3 concurrent=3 success=2 cap=5 receipt_fk=1 proof_fk=1 partial_null=blocked null_input=blocked direct_insert=blocked dates=4 tenants=3 roles=3 passed",
+    "independent_review": "0 Critical and 0 Important; merge ready",
+    "syntax_and_diff_check": "passed"
+  },
+  "observed_external_outcome": {
+    "reply": false,
+    "meeting": false,
+    "investment_interest": false,
+    "funded": false
+  },
+  "claim_boundary": "This proves one official-source, agent-judged VC thesis match was personalized from the current application kit, reserved before send, delivered through Gmail, and recorded as the fourth Tokyo-date outreach. It does not claim a reply, meeting, investment interest, acceptance, or funding."
+}
