@@ -47,11 +47,12 @@ serendipityを根拠付き評価するところまで完成した。実Calendar�
 2026-08-02〜2026-08-22の初回coverage snapshotは、後続のCalendar/event照合前なので21日すべて
 `open`である。これは「イベントがない」という意味ではない。
 
-現在の唯一の実行対象は`O1B-20`である。残作業は、途中へ別trackを混ぜず次の順序で進める。
+現在の唯一の実行対象は`O1B-21`である。残作業は、途中へ別trackを混ぜず次の順序で進める。
 
 ```text
-いま: O1B-20 Lumaで確保不能な日を許諾済みsourceへ継続
-  → O1B-21〜25 候補継続、停止条件、Calendar衝突、有料policy、Telegram
+完了: O1B-20 Lumaで確保不能な日を許諾済みsourceへ継続
+いま: O1B-21 同日の次候補へ進み予約確認まで継続
+  → O1B-22〜25 停止条件、Calendar衝突、有料policy、Telegram
   → O1C-01〜27 Fundraising / acceleratorの探索・提出・返信・面談追跡
   → O2-01〜12 Job Hunterの統合・実応募・返信・面接追跡
   → O3A-01〜07 壊れたCFO runtime loopを復旧
@@ -896,7 +897,7 @@ identity/browser/calendar reference検証を追加し、新規4件と既存runti
 - [x] O1B-17 Luma mainの東京・対面inventoryを日付ごとに最後まで読み、表示上位数件だけで探索を終えない
 - [x] O1B-18 AI/crypto/英語等は優先順位にだけ使い、eventを捨てるhard category filterにはしない
 - [x] O1B-19 agentがevent本文・参加者・主催者・場所・時間を読み、Daisの目標とserendipityを自然言語で評価
-- [ ] O1B-20 Lumaで実参加を確保できない場合、許諾済みsourceを探索する。connpassはkey取得後の公式API read-only discoveryだけとし、自動申込み・coverage達成には使わない
+- [x] O1B-20 Lumaで実参加を確保できない場合、許諾済みsourceを探索する。connpassはkey取得後の公式API read-only discoveryだけとし、自動申込み・coverage達成には使わない
 - [ ] O1B-21 一つの候補で申込失敗・満席・不適格になっても同じ日の次候補へ進み、予約確認までloopを継続
 - [ ] O1B-22 「検索一巡」「一件の操作失敗」「一sourceの失敗」を終了条件にしない
 - [ ] O1B-23 Google Calendarの全calendarからbusy intervalを読み、前後移動時間を含むfree intervalだけへ予約
@@ -1015,6 +1016,17 @@ coverage creditは常に禁止、source error・empty inventoryでもdateは`ope
 O1B-20進捗2（core GREEN / pack RED）: verified source handoff coreを実装しfocused 8/8成功。次に既存の
 認証済みevents packがcapability作成、handoff plan、必要時だけconnpass client作成、handoff実行を一つの
 操作として公開する契約を追加した。pack method未実装のため新規2件が期待どおり失敗する段階である。
+
+O1B-20進捗3（pack GREEN）: events packへ`handoffEventSource`を追加した。key未配備ならconnpass clientを
+作らず、key配備時だけ既存の5秒間隔公式v2 clientを生成する。source handoff、Luma sequence、packの
+focused 11/11成功。新規handoff suiteをoutbound全回帰へ追加した。次は実環境のnetwork 0証拠と全回帰である。
+
+O1B-20完了: 実構成監査ではconnpass key未配備、公式返信0、credential-like返信0。missing-key executionは
+connpass clientを作らず独立counterでもnetwork 0、registration 0、coverage credit 0、dateは`open`のまま
+key watcherとLuma再探索へ戻った。key配備後の経路も公式v2 GET全page discoveryだけで、候補を予約済みへ
+昇格できない。focused 11/11、outbound全回帰179/179成功。証拠:
+`docs/evidence/outbound/2026-08-02-o1b20-authorized-source-handoff.json`。次は固定順序どおり`O1B-21`で、
+同日の一候補が満席・不適格・申込不能でも次候補へ進み、verified registrationまでloopを継続する。
 
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
