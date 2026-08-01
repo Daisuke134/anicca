@@ -31,13 +31,19 @@ async function balanceUsd() {
   return Number(j && j.data && j.data.balance);
 }
 
-function amdDialOptions(streamUrl, env = process.env) {
+// spec §3 row 2d: `opts.clientState` exists because reading the state out of the stream URL only ever
+// worked for wake calls — /test-call builds its URL with empty wakeUid/wakeEventKey, so the dial body
+// carried no client_state and the detection webhook had nothing to correlate. The kind is passed in
+// rather than added to the URL: buildStreamUrl signs its query with signCtx([...]) and the bridge
+// verifies the SAME ordered array, so a new query item changes what the signature means on both ends.
+// An argument costs nothing and cannot desync from a signature.
+function amdDialOptions(streamUrl, env = process.env, opts = {}) {
   if (!amdEnabled(env)) return {};
   const url = new URL(streamUrl);
   const wakeUid = url.searchParams.get("wakeUid") || "";
   const wakeEventKey = url.searchParams.get("wakeEventKey") || "";
   const webhookProtocol = url.protocol === "ws:" ? "http:" : "https:";
-  const clientState = encodeWakeClientState({ wakeUid, wakeEventKey });
+  const clientState = opts.clientState || encodeWakeClientState({ wakeUid, wakeEventKey });
   return {
     answering_machine_detection: "detect",
     webhook_url: `${webhookProtocol}//${url.host}/telnyx-events`,
@@ -47,8 +53,10 @@ function amdDialOptions(streamUrl, env = process.env) {
 }
 
 // to: E.164 callee. streamUrl: wss://<this-svc>/ws?summary=...&dateTime=...&location=...&urgency=...
+// clientState: OPTIONAL, for a caller whose identity is not in the stream URL (/test-call). Omitted,
+// the wake path derives it from the URL exactly as before.
 // Returns the call_control_id so the caller can issue record_start / streaming_start.
-async function placeCall({ to, streamUrl }) {
+async function placeCall({ to, streamUrl, clientState }) {
   const API = process.env.TELNYX_API_KEY;
   const CONN = process.env.TELNYX_CONNECTION_ID;
   const FROM = process.env.TELNYX_PHONE_NUMBER;
@@ -61,7 +69,7 @@ async function placeCall({ to, streamUrl }) {
 
   const dialBody = {
     ...telnyxDialBody({ connectionId: CONN, to, from: FROM, streamUrl }),
-    ...amdDialOptions(streamUrl),
+    ...amdDialOptions(streamUrl, process.env, { clientState }),
   };
   let call;
   try {
