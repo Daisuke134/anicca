@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "task": "O1B-18",
+  "observed_at": "2026-08-01T16:23:33.867Z",
+  "result": "verified",
+  "implementation_commit": "f01033e24cb593214cb5f9169bd78c0de0aed1a9",
+  "policy": {
+    "name": "priority_only_no_category_filter",
+    "preference_examples": ["AI", "crypto", "英語", "founder", "serendipity"],
+    "preferences_may_change_order": true,
+    "preferences_may_remove_candidate": false,
+    "score_range": [0, 100],
+    "score_zero_retained": true,
+    "excluded_eligible_filter_fields_allowed": false,
+    "assessment_candidate_cardinality": "exactly_one_to_one"
+  },
+  "live_readback": {
+    "source": "https://luma.com/tokyo?k=p",
+    "inventory_complete": true,
+    "inventory_rounds": 6,
+    "input_candidate_count": 35,
+    "output_candidate_count": 35,
+    "dropped_candidate_count": 0,
+    "event_ref_set_equal": true,
+    "neutral_unassessed_category_candidates_retained": true
+  },
+  "verification": {
+    "focused_priority_tests": { "passed": 4, "failed": 0 },
+    "outbound_tests": { "passed": 141, "failed": 0 },
+    "runtime_up_tests": { "passed": 33, "failed": 0 },
+    "git_diff_check": "passed"
+  },
+  "claim_boundary": "This proves category or preference assessment can only order candidates and cannot change candidate cardinality or identity. The live complete inventory retained all 35 candidates. It does not prove semantic goal evaluation quality; that is O1B-19."
+}

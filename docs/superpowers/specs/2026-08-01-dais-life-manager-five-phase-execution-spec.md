@@ -571,6 +571,17 @@ focused 7件、outbound 137件、runtime-up 33件、diff checkが全成功。実
 `docs/evidence/outbound/2026-08-02-o1b17-live-luma-daily-inventory.json`。残作業は120件。
 次はO1B-18でAI/crypto/英語等をpriorityだけに使いhard category filterを禁止する。
 
+完了: `O1B-18`。inventory candidateと意味assessmentをevent_refで完全な1:1へ束縛し、0〜100の
+priority scoreで順番だけを変えるlossless rank contractをTDDで追加した。score 0、preferred signalなし、
+直接分野外、serendipity候補も必ず出力へ残る。`excluded / eligible / filter` field、missing/extra/duplicate
+assessment、範囲外scoreを拒否し、input/output countとevent_ref setを完全一致させる。同点はcategoryではなく
+event_refで決定的に並ぶ。shared :9222で再取得したcomplete live inventory 35件をneutral assessmentでrankし、
+input 35、output 35、drop 0、event_ref set一致を確認した。意味評価品質はO1B-19であり未達を捏造しない。
+fresh verificationはfocused 4件、outbound 141件、runtime-up 33件、diff checkが全成功。
+実装plan: `docs/superpowers/plans/2026-08-02-connector-o1b18-priority-no-hard-filter.md`。実測証拠:
+`docs/evidence/outbound/2026-08-02-o1b18-live-priority-no-hard-filter.json`。残作業は119件。
+次はO1B-19でevent本文・参加者・主催者・場所・時間をDaisの目標とserendipityに対してagent評価する。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
@@ -703,7 +714,7 @@ identity/browser/calendar reference検証を追加し、新規4件と既存runti
 - [x] O1B-15 登壇応募ごとの`submitted / accepted / rejected / presented`を応募ledgerへ記録
 - [x] O1B-16 今日を含む21日間（今日〜20日後）を毎日再計算するrolling coverage goalを実装
 - [x] O1B-17 Luma mainの東京・対面inventoryを日付ごとに最後まで読み、表示上位数件だけで探索を終えない
-- [ ] O1B-18 AI/crypto/英語等は優先順位にだけ使い、eventを捨てるhard category filterにはしない
+- [x] O1B-18 AI/crypto/英語等は優先順位にだけ使い、eventを捨てるhard category filterにはしない
 - [ ] O1B-19 agentがevent本文・参加者・主催者・場所・時間を読み、Daisの目標とserendipityを自然言語で評価
 - [ ] O1B-20 Lumaでその日の実参加を確保できない場合だけ、connpassの東京・対面inventoryへ進む
 - [ ] O1B-21 一つの候補で申込失敗・満席・不適格になっても同じ日の次候補へ進み、予約確認までloopを継続
