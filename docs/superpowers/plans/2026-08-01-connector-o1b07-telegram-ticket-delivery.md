@@ -1,6 +1,6 @@
 # Connector O1B-07 Telegram Ticket Delivery Implementation Plan
 
-> Status: 実行中。O1B-06のverified QR artifactだけをDaisへ一度送る。
+> Status: 完了。O1B-06のverified QR artifactだけをDaisへ一度送り、positive message IDを得た。
 
 **Goal:** `Engineer BAR`の公式QR PNGを、event名・日時・会場・選定理由・event/Calendar直接linkと一緒に既存OpenClaw Telegram transportで実送信し、positive message IDをreceiptへ保存する。
 
@@ -26,6 +26,6 @@
 
 ### Task 3: Proof and handoff
 
-- [ ] secretなしlive evidenceを保存する。
-- [ ] O1B-07完了、spec更新、commit、push。
-- [ ] O1B-08へ進む。
+- [x] secretなしlive evidenceを保存する。
+- [x] O1B-07完了、spec更新、commit、push。
+- [x] O1B-08へ進む。

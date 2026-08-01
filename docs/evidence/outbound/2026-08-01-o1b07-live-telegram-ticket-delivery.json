@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "evidence_kind": "live_connector_telegram_ticket_delivery",
+  "observed_at": "2026-08-01T15:11:50.886Z",
+  "timezone": "Asia/Tokyo",
+  "repository": "Daisuke134/life-manager",
+  "branch": "main",
+  "implementation_commit": "7fe538a5e2343beb655b8f1ccf346c5ad7ba7760",
+  "event": {
+    "provider": "luma",
+    "title": "Engineer BAR",
+    "canonical_url": "https://luma.com/a879ax7k",
+    "starts_at": "2026-08-15T18:00:00+09:00",
+    "ends_at": "2026-08-15T23:00:00+09:00",
+    "venue": "Bar Layover (Tokyo, Shinjuku)",
+    "calendar_url": "https://www.google.com/calendar/event?eid=cTM5cWI2OWFwMnVlY2s0YTJyZTJwcTUxZmMga2Vpb2RhaXN1a2VAbQ"
+  },
+  "ticket_artifact": {
+    "artifact_ref": "object://sha256/5a10d00d85bc6a0e6e16c94e65c757b6b5e95d3817d33f4b8e2362673d60a7ca",
+    "source_receipt_ref": "ticket://dais-local/afae319eb76e063e83c58ca409002521eb550f559c6a5d17c6bdddeb8c1fdc7f",
+    "read_from_runtime_volume": true,
+    "png_signature_verified": true,
+    "png_size_bytes": 10140
+  },
+  "telegram": {
+    "transport": "existing OpenClaw 2026.6.1 Telegram account",
+    "chat_id_sha256": "ae8d45da4675d2cf4894f3ccc91da9f296cc2c0b0f286f76bcf21376d27b0f32",
+    "provider_message_id": "5103",
+    "positive_message_id_verified": true,
+    "media_send_count": 1,
+    "caption_language": "ja",
+    "event_link_is_direct": true,
+    "calendar_link_is_direct": true,
+    "official_qr_attached": true,
+    "technical_terms_present": false,
+    "placeholder_present": false,
+    "raw_chat_id_persisted": false,
+    "bot_token_persisted": false,
+    "guest_key_persisted": false
+  },
+  "pre_delivery_rejections": {
+    "count": 2,
+    "reason": "OpenClaw rejected media staging paths outside its allowlisted /tmp/openclaw root before delivery.",
+    "telegram_side_effect_started": false,
+    "fix": "Use the existing OpenClaw preferred media root, require owner-only permissions, and delete the temporary PNG after send."
+  },
+  "verification": {
+    "focused_tests": { "passed": 5, "failed": 0 },
+    "outbound_tests": { "passed": 86, "failed": 0 }
+  },
+  "claim_boundary": "This proves one real Telegram photo message containing the exact official Luma QR and a human-readable Japanese caption with direct event and Calendar links was delivered to the existing Dais target and returned positive message ID 5103. It does not claim rolling 21-day coverage or LT classification; those remain O1B-08 onward."
+}
