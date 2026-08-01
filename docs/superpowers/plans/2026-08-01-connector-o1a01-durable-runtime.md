@@ -31,27 +31,27 @@
 - Consumes: `buildRuntimeJob(input)`と`enqueueJob(input, opts)` from `apps/life-manager/lib/runtime-job-store.js`
 - Produces: `buildEventApplicationJob(input)`、`enqueueEventApplication(input, opts)`、`CAPABILITY="outbound.event.apply"`、`LOOP_ID="outbound.events"`
 
-- [ ] **Step 1: failing contract testを書く**
+- [x] **Step 1: failing contract testを書く**
 
   `outbound-event-job.test.js`で、Luma event URL、start ISO、`identity://`、`browser-profile://`から、secretを含まないreference-only jobが作られること、同じ入力が同じjob/effect keyになること、異なるeventは異なるkeyになること、raw identityを拒否すること、injected `enqueueJob`へ正確なjobを渡すことを検証する。
 
-- [ ] **Step 2: REDを確認する**
+- [x] **Step 2: REDを確認する**
 
   Run: `node --test lib/outbound-event-job.test.js`
 
   Expected: `Cannot find module './outbound-event-job.js'`でFAIL。
 
-- [ ] **Step 3: 最小実装を書く**
+- [x] **Step 3: 最小実装を書く**
 
   `outbound-event-job.js`へ、canonical Luma URLのslug抽出、ISO検証、許可されたreference scheme検証、SHA-256による安定job/effect key、既存storeへのenqueueだけを実装する。browser操作、Calendar、Telegram、候補rankingは入れない。
 
-- [ ] **Step 4: GREENと回帰testを確認する**
+- [x] **Step 4: GREENと回帰testを確認する**
 
   Run: `node --test lib/outbound-event-job.test.js lib/runtime-job-store.test.js`
 
   Expected: 全test PASS、warning/errorなし。
 
-- [ ] **Step 5: package testと正本仕様を更新する**
+- [x] **Step 5: package testと正本仕様を更新する**
 
   `test:outbound`へ新testを追加する。仕様のO1A-01を「既存`lm_runtime_jobs`を唯一のruntimeとしてevent application job contractへ接続」に修正し、実test結果とcommit evidenceを記録してcheckboxを完了にする。
 

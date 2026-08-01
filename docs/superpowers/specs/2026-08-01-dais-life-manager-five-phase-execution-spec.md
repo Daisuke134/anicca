@@ -243,10 +243,12 @@ YC公式pageでlate application受付を当日再確認
 
 ## 5. 残作業 — 必ず番号順
 
-実行中: `O1A-01`。既存`lm_runtime_jobs`がenqueue、claim、lease、heartbeat、retry、dead-letter、
+完了: `O1A-01`。既存`lm_runtime_jobs`がenqueue、claim、lease、heartbeat、retry、dead-letter、
 idempotency、immutable receiptを既に持つことを2026-08-01に再確認した。別worktreeの独立outbound
-engineは第二runtimeになるため取り込まず、Connector event applicationを既存runtimeへ接続する。
-実装plan: `docs/superpowers/plans/2026-08-01-connector-o1a01-durable-runtime.md`。
+engineは第二runtimeになるため取り込まず、Connector event applicationをreference-only job contractで
+既存runtimeへ接続した。`outbound.event.apply`、安定job/effect key、tenant境界、Luma URL・時刻・
+identity/browser/calendar reference検証を追加し、新規4件と既存runtime 8件の計12件が成功した。
+実装plan: `docs/superpowers/plans/2026-08-01-connector-o1a01-durable-runtime.md`。次は`O1A-02`。
 
 最後までのmaster checklist:
 
@@ -264,7 +266,7 @@ engineは第二runtimeになるため取り込まず、Connector event applicati
 
 ### 5.1 Order 1A — 共通応募基盤
 
-- [ ] O1A-01 既存`lm_runtime_jobs`を唯一のdurable runtimeとしてConnector event application job contractへ接続
+- [x] O1A-01 既存`lm_runtime_jobs`を唯一のdurable runtimeとしてConnector event application job contractへ接続
 - [ ] O1A-02 enqueue、claim、heartbeat、retry、dead-letter、idempotencyを接続
 - [ ] O1A-03 Evidence E1/E2/E3を共通module化
 - [ ] O1A-04 不足dependencyを解消し全testを実行
