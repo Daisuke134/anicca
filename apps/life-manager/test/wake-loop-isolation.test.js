@@ -1,0 +1,120 @@
+"use strict";
+// spec 2026-08-01-lm-daily-organ-design.md §3 row 1c — the done receipt.
+//
+// The measured failure (§3.1): late and mental ran BEFORE the dial inside one 90s per-user budget, so
+// two slow organs abandoned the user before a call was ever attempted. These tests pin the property
+// that fixes it — the dial does not run the organs at all — and pin the constraint that made method A
+// worth choosing: the split must not double Composio calls.
+//
+// Run: node --test test/wake-loop-isolation.test.js
+const { test } = require("node:test");
+const assert = require("node:assert");
+
+process.env.LM_CALL_SECRET = "unit_secret";
+process.env.PUBLIC_WSS = "wss://life-call.invalid";
+
+const {
+  wakeCallOnce, organsUserOnce, WAKE_USER_TIMEOUT_MS, forEachUserSafe,
+} = require("../scheduler.js");
+const { clearEvents, getEvents } = require("../lib/event-cache.js");
+
+const MINUTE = 60_000;
+const EVENT_START_ISO = "2026-08-05T14:00:00+09:00";
+const EVENT_START_MS = Date.parse(EVENT_START_ISO);
+const TRAVEL_MIN = 35; // + resolveDeparture's 5-min buffer → departure = start − 40 min
+const DEPARTURE_MS = EVENT_START_MS - 40 * MINUTE;
+
+const USER = {
+  uid: "iso-user",
+  name: "Iso User",
+  phone: "+810000000000",
+  home_address: "東京都渋谷区",
+  call_language: "ja",
+  daily_automation_enabled: true,
+  call_enabled: true,
+  notifications_enabled: false,
+};
+
+const EVENT = {
+  id: "iso-event",
+  summary: "新宿で打ち合わせ",
+  location: "新宿",
+  startMs: EVENT_START_MS,
+  startIso: EVENT_START_ISO,
+  endMs: EVENT_START_MS + 60 * MINUTE,
+};
+
+function deps({ slowOrganMs = 0, fetches } = {}) {
+  const dialed = [];
+  const held = new Set();
+  const stall = async () => { if (slowOrganMs) await new Promise((r) => setTimeout(r, slowOrganMs)); return null; };
+  return {
+    dialed,
+    deps: {
+      recordDailyPoll: async () => true,
+      fetchUpcomingEvents: async () => { if (fetches) fetches.push(1); return [{ ...EVENT }]; },
+      directionsMinutes: async () => TRAVEL_MIN,
+      mapsKey: "iso-maps-key",
+      claimWake: async (_uid, key) => { if (held.has(key)) return false; held.add(key); return true; },
+      placeCall: async () => { dialed.push(Date.now()); return { ok: true, ccid: "iso-1" }; },
+      releaseWake: async () => {},
+      alertLowBalance: async () => {},
+      recordWakeMiss: async () => ({ ok: true }),
+      wakeWasClaimed: async (_uid, key) => held.has(key),
+      // every organ stalls
+      lateNotice: stall, mental: stall, care: stall, diet: stall, dietNudge: stall,
+      preceptsMirror: stall, precepts: stall, relations: stall,
+      log: () => {},
+    },
+  };
+}
+
+test("the dial half does not run a single organ — a stalled organ cannot reach it", async () => {
+  clearEvents();
+  const h = deps({ slowOrganMs: 5000 });
+  const started = Date.now();
+  await wakeCallOnce(USER, DEPARTURE_MS - 5 * MINUTE, h.deps);
+  const elapsed = Date.now() - started;
+  assert.equal(h.dialed.length, 1, "the call is placed");
+  assert.ok(elapsed < 1000, `the dial path must not wait on organs (took ${elapsed}ms)`);
+});
+
+test("the wake loop's per-user budget is its own, and far below the organ budget", () => {
+  assert.equal(WAKE_USER_TIMEOUT_MS, 20000);
+  assert.ok(WAKE_USER_TIMEOUT_MS < 90000, "the shared 90s budget was sized for the care organ, not the dial");
+});
+
+test("the dial publishes the calendar so the organ tick does not fetch it again", async () => {
+  clearEvents();
+  const fetches = [];
+  const h = deps({ fetches });
+  const now = DEPARTURE_MS - 5 * MINUTE;
+  await wakeCallOnce(USER, now, h.deps);
+  assert.equal(fetches.length, 1, "the wake half fetches once");
+  assert.ok(getEvents(USER.uid, now), "and publishes what it fetched");
+
+  await organsUserOnce(USER, now, h.deps);
+  assert.equal(fetches.length, 1, "the organ half reuses it — the split must not double Composio calls");
+});
+
+test("the organ half still fetches when nothing was published (first tick after a restart)", async () => {
+  clearEvents();
+  const fetches = [];
+  const h = deps({ fetches });
+  await organsUserOnce(USER, DEPARTURE_MS - 5 * MINUTE, h.deps);
+  assert.equal(fetches.length, 1, "a cache miss falls back to a real fetch rather than skipping the organs");
+});
+
+test("one user blowing the wake budget does not stop the next user's dial", async () => {
+  const order = [];
+  await forEachUserSafe(
+    [{ uid: "slow" }, { uid: "fast" }],
+    "wake",
+    async (u) => {
+      if (u.uid === "slow") await new Promise((r) => setTimeout(r, 200));
+      order.push(u.uid);
+    },
+    50, // a 50ms budget stands in for the real 20s one
+  );
+  assert.deepEqual(order, ["fast"], "the slow user is abandoned; the fast user is still served");
+});
