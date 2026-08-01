@@ -568,6 +568,14 @@ ConnectorはLumaで継続する。実測証拠:
 `docs/evidence/outbound/2026-08-01-o1b11-connpass-api-application.json`。次は固定順序どおりO1B-12で、
 一般参加eventとLT/CFP/demo登壇応募を別entity・別状態機械として実装する。
 
+O1B-12開始: 専用plan
+`docs/superpowers/plans/2026-08-01-connector-o1b12-separate-participation-entities.md`を追加した。
+event本体だけを共有し、一般参加は`audience_registration`、登壇応募は`talk_application`として別ID・
+別action URL・別state・別証拠で保存する。一般参加は`discovered / registration_queued / registered /
+waitlist / cancelled`、登壇応募は`discovered / submission_queued / submitted / accepted / rejected /
+withdrawn / presented`とする。登壇応募がclosed/invite-onlyでも候補entityとして追跡するが送信可能にはしない。
+O1B-14のtimelineとO1B-15のimmutable transition ledgerを先取りせず、まず混同不能なdurable current-stateを作る。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
