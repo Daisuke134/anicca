@@ -16,6 +16,10 @@ const {
 const { inspectGoogleCalendarBusyInventory } = require("./google-calendar-busy-inventory.js");
 const { syncVerifiedRegistrationToGoogleCalendar } = require("./connector-calendar-sync.js");
 const {
+  buildConnectorCoverageTelegramMessage,
+  deliverConnectorCoverageTelegram,
+} = require("./connector-coverage-telegram.js");
+const {
   buildEventSpendSequence,
   eventSpendDecisionForSequence,
   inspectSavedLumaPaymentMethod,
@@ -63,6 +67,8 @@ function createConnectorEventsPack(options = {}) {
   const syncRegistrationCalendar = options.syncRegistrationCalendar || syncVerifiedRegistrationToGoogleCalendar;
   const planSpendSequence = options.planSpendSequence || buildEventSpendSequence;
   const spendDecisionForSequence = options.spendDecisionForSequence || eventSpendDecisionForSequence;
+  const buildCoverageTelegram = options.buildCoverageTelegram || buildConnectorCoverageTelegramMessage;
+  const deliverCoverageTelegram = options.deliverCoverageTelegram || deliverConnectorCoverageTelegram;
   const authAwareDriver = createAuthAwareDriver({ dailyDriver, auth });
   if (!authAwareDriver || typeof authAwareDriver.withLumaPage !== "function") throw invalid();
   const provider = createProvider({
@@ -143,6 +149,12 @@ function createConnectorEventsPack(options = {}) {
     },
     syncRegistrationCalendar(input) {
       return syncRegistrationCalendar(input);
+    },
+    buildCoverageTelegram(input) {
+      return buildCoverageTelegram(input);
+    },
+    deliverCoverageTelegram(input, dependencies = {}) {
+      return deliverCoverageTelegram(input, dependencies);
     },
     planCoverageContinuation(coverage, observedOutcomes, now) {
       return planCoverageContinuation({ coverage, observedOutcomes, now });

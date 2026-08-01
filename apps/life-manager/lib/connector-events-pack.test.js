@@ -286,6 +286,25 @@ test("the pack syncs only a verified registration through the connector calendar
   assert.deepEqual(calls, [input]);
 });
 
+test("the pack owns one human coverage message and its Telegram delivery", async () => {
+  const calls = [];
+  const pack = createConnectorEventsPack({
+    dailyDriver: { withLumaPage: async () => {} },
+    auth: { ensureAuthenticated: async () => ({ status: "authenticated" }) },
+    evidenceStore: { record: async () => {} },
+    createAuthAwareDriver: () => ({ withLumaPage: async () => {} }),
+    createProvider: () => ({ inspectRegistration: async () => {}, submitRegistration: async () => {} }),
+    buildCoverageTelegram(input) { calls.push(["build", input]); return "message"; },
+    deliverCoverageTelegram(input, dependencies) { calls.push(["deliver", input, dependencies]); return "receipt"; },
+  });
+  assert.equal(pack.buildCoverageTelegram("report-input"), "message");
+  assert.equal(await pack.deliverCoverageTelegram("report-input", { send: "transport" }), "receipt");
+  assert.deepEqual(calls, [
+    ["build", "report-input"],
+    ["deliver", "report-input", { send: "transport" }],
+  ]);
+});
+
 test("pack construction fails closed without auth, driver, or evidence store", () => {
   assert.throws(() => createConnectorEventsPack({}), /events pack configuration unavailable/i);
   assert.throws(() => createConnectorEventsPack({

@@ -1150,6 +1150,25 @@ Tokyo inventoryは20候補、free 14、paid 6、USD 14、JPY 6。課金action 0�
 全回帰203/203成功。証拠: `docs/evidence/outbound/2026-08-02-o1b24-live-event-spend-policy.json`。
 次は`O1B-25`で、21日分の状態と直接tapできるevent/Calendar linkを一通の人間向けTelegramへまとめる。
 
+O1B-25進捗1（report RED）: verified 21日coverageから、既存対面予定、新規予約、固定予定で追加不可、
+未処理の空きを日本語で区別する4 testを追加した。`open > 0`は失敗終了でなく対象日を示して探索・申込継続中、
+`open = 0 / covered_new = 0`は全日が既存予定または固定予定で解決済みの時だけ二重予約しないと説明する。
+Google Calendarへ直接tapでき、runner/bounded/none等を出さず、positive Telegram message IDだけを成功にする。
+composer未実装のため期待どおりmodule missingで失敗する段階である。
+
+O1B-25進捗2（report GREEN）: verified coverageだけを入力とし、`open > 0`は空き日一覧と「予約成立まで
+探索・申込継続」、`open = 0 / covered_new = 0`は解決済み根拠を日本語で出す。新規予約はverified
+Calendar sync、inventory、goal判断、coverage evidenceを同一eventへ照合し、名前・時刻・場所・選定理由・
+Luma/Google Calendar完全URLを表示する。OpenClaw CLIはparse mode指定を持たないため、HTML tagでなく
+Telegramが直接tap可能な完全URLを使う。positive message IDだけをdelivery成功にし、targetはhashだけ返す。
+composer/pack focused 16/16成功。実送信先は既存launchdに存在するが、現在保存済みcoverageはCalendar/event
+照合前の21日openなので完成通知はまだ送らない。次は実coverage再構成後の一通をdry-run→実送信する。
+
+O1B-25進捗3（transport dry-run）: 既存launchdのTelegram宛先を値を表示せず再利用し、現在の21日open
+snapshotを人間向け365文字へ変換してOpenClaw `--dry-run --json`に通した。完全Calendar URLあり、宛先返却なし、
+outbound常設回帰209/209成功。これは表示/transport検証であり実送信receiptではないためO1B-25は未完了。
+証拠: `docs/evidence/outbound/2026-08-02-o1b25-coverage-telegram-dry-run.json`。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
