@@ -546,6 +546,18 @@ runtime-up 33件、diff checkが全成功。実装plan:
 `docs/evidence/outbound/2026-08-02-o1b15-talk-application-ledger.json`。残作業は122件。
 次はO1B-16で今日を含む21日間のrolling coverage goalを毎日再計算する。
 
+完了: `O1B-16`。明示`now`をAsia/Tokyoの暦日へ変換し、今日〜20日後の連続exact 21日を毎回
+作り直すrolling coverage goalをTDDで追加した。current observationに証拠がある日だけ
+`covered_existing / covered_new / unavailable`へ置き、残りは保存済みstatusではなく`open`として導出する。
+explicit open、未知status、重複日、証拠なし、暗黙wall clockを拒否し、21日のopenが0の場合だけcompleteになる。
+cancel等でobservationが消えれば次runでopenへ戻る。controlled readbackはJST 2026-08-02〜08-22の21日から、
+翌JST日に08-03〜08-23へ一日rollし、旧先頭を落として新末尾を追加、goal IDも変化した。
+全Calendar分類、inventory、実21日予約は後続itemであり未達を捏造しない。fresh verificationはfocused 5件、
+outbound 135件、runtime-up 33件、diff checkが全成功。実装plan:
+`docs/superpowers/plans/2026-08-02-connector-o1b16-rolling-coverage-goal.md`。実測証拠:
+`docs/evidence/outbound/2026-08-02-o1b16-rolling-coverage-goal.json`。残作業は121件。
+次はO1B-17でLuma mainの東京・対面inventoryを日付ごとに最後まで読む。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
@@ -676,7 +688,7 @@ identity/browser/calendar reference検証を追加し、新規4件と既存runti
 - [x] O1B-13 Life Managerの実測demoに合うtalk title、5分outline、応募理由をagent生成
 - [x] O1B-14 accepted後にslide締切、登壇日、会場、QR、follow-upを一つのtimelineで追跡
 - [x] O1B-15 登壇応募ごとの`submitted / accepted / rejected / presented`を応募ledgerへ記録
-- [ ] O1B-16 今日を含む21日間（今日〜20日後）を毎日再計算するrolling coverage goalを実装
+- [x] O1B-16 今日を含む21日間（今日〜20日後）を毎日再計算するrolling coverage goalを実装
 - [ ] O1B-17 Luma mainの東京・対面inventoryを日付ごとに最後まで読み、表示上位数件だけで探索を終えない
 - [ ] O1B-18 AI/crypto/英語等は優先順位にだけ使い、eventを捨てるhard category filterにはしない
 - [ ] O1B-19 agentがevent本文・参加者・主催者・場所・時間を読み、Daisの目標とserendipityを自然言語で評価

@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "task": "O1B-16",
+  "observed_at": "2026-08-01T16:15:17.075Z",
+  "result": "verified",
+  "implementation_commit": "89e896239a77e70da1de85721c303960ae0879d2",
+  "contract": {
+    "timezone": "Asia/Tokyo",
+    "window_days": 21,
+    "start_offset_days": 0,
+    "end_offset_days": 20,
+    "derived_status": "open",
+    "evidence_statuses": ["covered_existing", "covered_new", "unavailable"],
+    "complete_only_when_open_zero": true,
+    "implicit_wall_clock_allowed": false
+  },
+  "controlled_readback": {
+    "current": {
+      "window_start": "2026-08-02",
+      "window_end": "2026-08-22",
+      "day_count": 21,
+      "covered_existing": 1,
+      "open": 20
+    },
+    "next_jst_day": {
+      "window_start": "2026-08-03",
+      "window_end": "2026-08-23",
+      "day_count": 21,
+      "covered_existing": 0,
+      "open": 21
+    },
+    "rolled_out_date": "2026-08-02",
+    "new_tail_date": "2026-08-23",
+    "goal_id_changed": true,
+    "stale_observation_reused": false
+  },
+  "verification": {
+    "focused_tests": { "passed": 5, "failed": 0 },
+    "outbound_tests": { "passed": 135, "failed": 0 },
+    "runtime_up_tests": { "passed": 33, "failed": 0 },
+    "git_diff_check": "passed"
+  },
+  "claim_boundary": "This proves the coverage goal is recalculated from an explicit instant into exactly 21 Tokyo calendar days, rolls by one date at the next JST day, derives missing current observations as open, and completes only at zero open days. It does not prove full Calendar classification, Luma inventory coverage, or 21 actual bookings; those remain later O1B items."
+}
