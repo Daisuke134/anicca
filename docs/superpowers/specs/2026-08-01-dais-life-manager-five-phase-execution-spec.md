@@ -1361,6 +1361,14 @@ inventory再計算を繰り返すだけである。workerを停止し、次は�
 zero-yen spend policyから、日付の早いopen日についてdurable応募jobを作る配線を実装する。coverage workerは応募effectを
 直接実行せず、応募workerのverified receiptを次runで回収する。
 
+O1B-26開始（open日→応募job配線）: Gemini keyは実環境に配備済みだがevent preferences/goalsのruntime設定は
+未配備だった。会話中にDaisが明示した「東京対面で毎日人に会う」「AI/crypto等は順位例で除外条件ではない」
+「serendipityとLife Managerの事業機会を評価」「自動支出0円」をsecret-free versioned profileへ保存する。
+最も早いopen日だけをagent ranking→goal/serendipity→Calendar/往復移動→zero-yen policyへ通し、既存job状態を
+確認して同日の候補を最大1件だけ`outbound.event.apply`へenqueueする。設計:
+`docs/superpowers/specs/2026-08-02-connector-o1b26-open-date-application-planner-design.md`。実装plan:
+`docs/superpowers/plans/2026-08-02-connector-o1b26-open-date-application-planner.md`。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
