@@ -419,8 +419,8 @@ Immediate-publish delta execution log:
 | Task | Status | Verification evidence | Commit |
 |---|---|---|---|
 | 1. Publish-probe lifecycle | Verified | RED: `15 failed, 2 passed` against the old four-argument warmup lifecycle. GREEN: lifecycle pytest `17 passed`; Python compile and diff check passed. The state no longer reads warmup evidence, requires post-write owner-session proof when recording a Reel, and preserves commercial capability only after Reel/session/reach evidence. | `35026d96a` |
-| 2. Account-to-publish handoff | In progress | Tests and implementation not yet changed. | — |
-| 3. Immediate controller and post-write proof | Not started | — | — |
+| 2. Account-to-publish handoff | Verified | RED: outcome pytest `2 failed, 13 passed`; manager integration `15 passed, 30 failed` because the old warmup CLI and message contract remained. GREEN: outcome pytest `15 passed`; manager integration `45 passed`; shell syntax and diff check passed. A verified account now persists `publish_probe_ready`, reports no wait/warmup language, and wakes the daily publisher exactly once, including idempotent sender recovery. | `41472bf89` |
+| 3. Immediate controller and post-write proof | In progress | Tests and implementation not yet changed. | — |
 | 4. Scheduler/report cleanup | Not started | — | — |
 | 5. Production proof | Not started | — | — |
 
