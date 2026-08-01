@@ -5,10 +5,11 @@ const test = require("node:test");
 
 const {
   createLumaBrowserProvider,
+  readSavedLumaPaymentMethodOnPage,
   submitLumaOnPage,
 } = require("./luma-browser-provider.js");
 
-function eventJson() {
+function eventJson(offers = { price: 0, priceCurrency: "JPY", availability: "https://schema.org/InStock" }) {
   return [{
     "@type": "Event",
     name: "Tokyo Agent Night",
@@ -17,6 +18,7 @@ function eventJson() {
     eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
     eventStatus: "https://schema.org/EventScheduled",
     location: { "@type": "Place", name: "Tokyo" },
+    offers,
   }];
 }
 
@@ -28,7 +30,7 @@ function contract() {
   };
 }
 
-function fixture(controls) {
+function fixture(controls, offers) {
   const calls = [];
   const page = {
     async screenshot(options) {
@@ -47,7 +49,7 @@ function fixture(controls) {
     },
     readRawDetail: async (seenPage, url) => {
       assert.equal(seenPage, page);
-      return { canonicalUrl: url, jsonLd: eventJson(), controls };
+      return { canonicalUrl: url, jsonLd: eventJson(offers), controls };
     },
     evidenceStore: {
       async record(input) {
@@ -177,4 +179,69 @@ test("submits the live Japanese one-click registration control", async () => {
     effect_started: true,
   });
   assert.deepEqual(calls, ["click"]);
+});
+
+test("paid registration cannot click without a matching verified spend authorization", async () => {
+  const paidOffer = { price: 2500, priceCurrency: "JPY", availability: "https://schema.org/InStock" };
+  const blocked = fixture(["参加登録"], paidOffer);
+  let blockedSubmits = 0;
+  const blockedProvider = createLumaBrowserProvider({
+    ...blocked,
+    submitOnPage: async () => { blockedSubmits += 1; },
+  });
+  await assert.rejects(blockedProvider.submitRegistration(contract()), (error) => {
+    assert.equal(error.code, "LUMA_SPEND_AUTHORIZATION_UNAVAILABLE");
+    assert.equal(error.unknownEffect, false);
+    return true;
+  });
+  assert.equal(blockedSubmits, 0);
+
+  const allowed = fixture(["参加登録"], paidOffer);
+  const decision = Object.freeze({ opaque: "verified-by-policy-module" });
+  let authorizedInput;
+  const allowedProvider = createLumaBrowserProvider({
+    ...allowed,
+    authorizeSpendEffect(input) { authorizedInput = input; return { mode: "saved" }; },
+    submitOnPage: async () => ({ status: "registered", effect_started: true }),
+  });
+  await allowedProvider.submitRegistration(contract(), decision);
+  assert.equal(authorizedInput.decision, decision);
+  assert.equal(authorizedInput.eventDetail.ticket_price_minor, 2500);
+  assert.equal(authorizedInput.eventDetail.ticket_currency, "JPY");
+});
+
+test("saved payment inspection returns only a browser-side hash", async () => {
+  const binding = "sha256:" + "b".repeat(64);
+  const page = {
+    async evaluate(task) {
+      assert.equal(typeof task, "function");
+      return { status: "saved", provider_binding: binding };
+    },
+  };
+  assert.deepEqual(await readSavedLumaPaymentMethodOnPage(page), {
+    status: "saved", provider_binding: binding,
+  });
+  await assert.rejects(readSavedLumaPaymentMethodOnPage({
+    async evaluate() { return { status: "saved", provider_binding: "card-number" }; },
+  }), (error) => {
+    assert.equal(error.code, "LUMA_SAVED_PAYMENT_UNAVAILABLE");
+    assert.equal(error.unknownEffect, false);
+    return true;
+  });
+
+  const fx = fixture(["参加登録"]);
+  let seenUrl;
+  const provider = createLumaBrowserProvider({
+    ...fx,
+    dailyDriver: {
+      async withLumaPage(url, task) {
+        seenUrl = url;
+        return task(page);
+      },
+    },
+  });
+  assert.deepEqual(await provider.inspectSavedPaymentMethod(), {
+    status: "saved", provider_binding: binding,
+  });
+  assert.equal(seenUrl, "https://luma.com/settings/payment");
 });

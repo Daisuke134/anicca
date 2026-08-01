@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "observed_at": "2026-08-01T18:59:20Z",
+  "scope": "connector-o1b24-live-read-only-event-spend-policy",
+  "provider": "luma",
+  "transport": "cloakbrowser-daily-driver",
+  "inventory": {
+    "candidate_count": 20,
+    "free_count": 14,
+    "paid_count": 6,
+    "currency_counts": {
+      "JPY": 6,
+      "USD": 14
+    }
+  },
+  "saved_payment_method": {
+    "observed": true,
+    "opaque_ref_valid": true,
+    "raw_payment_fields_returned": 0
+  },
+  "spend_effect": {
+    "payment_actions_started": 0,
+    "paid_click_requires_verified_matching_decision": true,
+    "free_first": true,
+    "unknown_price_fails_closed": true
+  },
+  "verification": {
+    "focused_tests_passed": 22,
+    "focused_tests_failed": 0,
+    "outbound_tests_passed": 203,
+    "outbound_tests_failed": 0
+  },
+  "sources": [
+    "https://help.luma.com/p/creating-a-paid-event",
+    "https://help.luma.com/p/payment-methods",
+    "https://help.luma.com/p/merging-luma-accounts"
+  ]
+}

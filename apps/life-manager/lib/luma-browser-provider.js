@@ -4,6 +4,7 @@ const {
   normalizeLumaEventDetail,
   readRawLumaEventDetail,
 } = require("./luma-event-detail.js");
+const { authorizeEventSpendEffect } = require("./event-spend-policy.js");
 
 function providerError(message, code, unknownEffect) {
   const error = new Error(message);
@@ -94,11 +95,54 @@ async function submitLumaOnPage(page) {
   }
 }
 
+async function readSavedLumaPaymentMethodOnPage(page) {
+  if (!page || typeof page.evaluate !== "function") {
+    throw providerError("Luma payment settings unavailable", "LUMA_PAYMENT_SETTINGS_UNAVAILABLE", false);
+  }
+  let observed;
+  try {
+    if (typeof page.waitForFunction === "function") {
+      await page.waitForFunction(() => (
+        location.pathname === "/settings/payment"
+        && [...document.querySelectorAll("span")].some((element) => (
+          /^(?:[•*]\s*){4}$/.test(String(element.textContent || "").trim())
+        ))
+      ), null, { timeout: 5_000 });
+    }
+    observed = await page.evaluate(async () => {
+      if (location.pathname !== "/settings/payment") return { status: "unavailable" };
+      const mask = [...document.querySelectorAll("span")].find((element) => (
+        /^(?:[•*]\s*){4}$/.test(String(element.textContent || "").trim())
+      ));
+      if (!mask) return { status: "unavailable" };
+      let container = mask.parentElement;
+      for (let depth = 0; container && depth < 3; depth += 1, container = container.parentElement) {
+        const display = String(container.innerText || container.textContent || "").replace(/\s+/g, " ").trim();
+        if (!/(?:[•*]\s*){4}/.test(display) || !/\b\d{4}\b/.test(display)) continue;
+        if (/\b\d{13,19}\b/.test(display)) return { status: "unavailable" };
+        const bytes = new TextEncoder().encode(display);
+        const hash = [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))]
+          .map((value) => value.toString(16).padStart(2, "0")).join("");
+        return { status: "saved", provider_binding: `sha256:${hash}` };
+      }
+      return { status: "unavailable" };
+    });
+  } catch {
+    throw providerError("Luma payment settings unavailable", "LUMA_PAYMENT_SETTINGS_UNAVAILABLE", false);
+  }
+  if (
+    !observed || observed.status !== "saved"
+    || !/^sha256:[0-9a-f]{64}$/.test(String(observed.provider_binding || ""))
+  ) throw providerError("Luma saved payment method unavailable", "LUMA_SAVED_PAYMENT_UNAVAILABLE", false);
+  return Object.freeze(observed);
+}
+
 function createLumaBrowserProvider(options = {}) {
   const dailyDriver = options.dailyDriver;
   const evidenceStore = options.evidenceStore;
   const readRawDetail = options.readRawDetail || readRawLumaEventDetail;
   const submitOnPage = options.submitOnPage || submitLumaOnPage;
+  const authorizeSpendEffect = options.authorizeSpendEffect || authorizeEventSpendEffect;
   const now = options.now || (() => new Date().toISOString());
   if (!dailyDriver || typeof dailyDriver.withLumaPage !== "function") {
     throw new Error("Luma browser provider daily-driver unavailable");
@@ -137,6 +181,12 @@ function createLumaBrowserProvider(options = {}) {
   }
 
   return Object.freeze({
+    inspectSavedPaymentMethod() {
+      return dailyDriver.withLumaPage(
+        "https://luma.com/settings/payment",
+        readSavedLumaPaymentMethodOnPage,
+      );
+    },
     inspectRegistration(contract) {
       return dailyDriver.withLumaPage(contract.canonical_url, async (page) => {
         const value = await detail(page, contract);
@@ -157,7 +207,7 @@ function createLumaBrowserProvider(options = {}) {
       });
     },
 
-    submitRegistration(contract) {
+    submitRegistration(contract, spendDecision = null) {
       return dailyDriver.withLumaPage(contract.canonical_url, async (page) => {
         const before = await detail(page, contract);
         if (!before) throw providerError("Luma detail unavailable", "LUMA_DETAIL_UNAVAILABLE", false);
@@ -167,6 +217,17 @@ function createLumaBrowserProvider(options = {}) {
         if (before.rsvp_status === "registered") return proof(page, contract);
         if (before.rsvp_status !== "available" || before.event_status !== "scheduled") {
           throw providerError("Luma RSVP unavailable", "LUMA_RSVP_UNAVAILABLE", false);
+        }
+        if (before.ticket_price_status !== "free" || before.ticket_price_minor !== 0) {
+          try {
+            authorizeSpendEffect({ decision: spendDecision, eventDetail: before });
+          } catch {
+            throw providerError(
+              "Luma paid RSVP spend authorization unavailable",
+              "LUMA_SPEND_AUTHORIZATION_UNAVAILABLE",
+              false,
+            );
+          }
         }
         let outcome;
         try {
@@ -192,5 +253,6 @@ function createLumaBrowserProvider(options = {}) {
 
 module.exports = {
   createLumaBrowserProvider,
+  readSavedLumaPaymentMethodOnPage,
   submitLumaOnPage,
 };

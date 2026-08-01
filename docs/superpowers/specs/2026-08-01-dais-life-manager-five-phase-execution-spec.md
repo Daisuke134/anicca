@@ -41,18 +41,17 @@ Life Managerは「検索した」「分析した」「失敗した」と報告�
 ### 0.2 現在地と残りの一本道（2026-08-02 JST）
 
 正本実装は`/Users/operator/Projects/life-manager-main`の`main`である。`O1A-01〜06`と
-`O1B-01〜19`は実装・実測・証拠化・push済み。21日coverageの器に加え、実Luma Tokyoを終端まで読み、
+`O1B-01〜24`は実装・実測・証拠化・push済み。21日coverageの器に加え、実Luma Tokyoを終端まで読み、
 全candidateを21日へ投影し、好みで候補を捨てず、本文・主催者・参加者・場所・時間からgoalと
 serendipityを根拠付き評価するところまで完成した。実Calendarを読んだ
 2026-08-02〜2026-08-22の初回coverage snapshotは、後続のCalendar/event照合前なので21日すべて
 `open`である。これは「イベントがない」という意味ではない。
 
-現在の唯一の実行対象は`O1B-24`である。残作業は、途中へ別trackを混ぜず次の順序で進める。
+現在の唯一の実行対象は`O1B-25`である。残作業は、途中へ別trackを混ぜず次の順序で進める。
 
 ```text
-完了: O1B-20〜23 source handoff、候補継続、全Calendar・移動時間gate
-いま: O1B-24 無料優先・有料event自動支出policy
-  → O1B-25 21日coverageのTelegram報告
+完了: O1B-20〜24 source handoff、候補継続、Calendar・移動時間・支出gate
+いま: O1B-25 21日coverageのTelegram報告
   → O1C-01〜27 Fundraising / acceleratorの探索・提出・返信・面談追跡
   → O2-01〜12 Job Hunterの統合・実応募・返信・面接追跡
   → O3A-01〜07 壊れたCFO runtime loopを復旧
@@ -901,7 +900,7 @@ identity/browser/calendar reference検証を追加し、新規4件と既存runti
 - [x] O1B-21 一つの候補で申込失敗・満席・不適格になっても同じ日の次候補へ進み、予約確認までloopを継続
 - [x] O1B-22 「検索一巡」「一件の操作失敗」「一sourceの失敗」を終了条件にしない
 - [x] O1B-23 Google Calendarの全calendarからbusy intervalを読み、前後移動時間を含むfree intervalだけへ予約
-- [ ] O1B-24 無料を優先し、有料eventは一度設定した自動支出policy内で保存済み決済手段を使い、都度承認を要求しない
+- [x] O1B-24 無料を優先し、有料eventは一度設定した自動支出policy内で保存済み決済手段を使い、都度承認を要求しない
 - [ ] O1B-25 21日coverage、既存予定、新規予約、残り空き、申込証拠、選定理由をTelegramへ一通で報告
 
 O1B-17開始（2026-08-02）: discovery cardの日本語日付labelは証拠に使わない。仮想scroll終端を
@@ -1142,6 +1141,14 @@ O1B-24進捗5（sequence GREEN）: verified Calendar gateとverified goal/serend
 指す場合だけ実行列を作る。目標順位のfree群内・paid群内の順序は保ちつつfreeを必ず先にし、paidは保存済み
 決済手段とcurrency別上限内だけ後続へ置く。同一列のpaid累積も30日残額を超えない。unknown、上限外、
 Calendar衝突は理由付きskipとなり、列にはpayment method refを含めない。料金・inventory focused 19/19成功。
+
+O1B-24完了（2026-08-02）: Luma設定画面の動的描画を待ち、保存済み決済表示をブラウザ内でhash化する。
+Node側へcard番号、brand、下4桁、期限を返さず、verified opaque payment method refだけを作る実readbackに成功。
+有料登録はverified decisionとevent ref・金額・通貨が直前detailに一致しなければclick前に既知失敗となる。
+events packはfree-first列とprivate decisionをattemptへ渡し、unknown/上限外/Calendar衝突をskipする。実Luma
+Tokyo inventoryは20候補、free 14、paid 6、USD 14、JPY 6。課金action 0、focused 22/22、常設outbound
+全回帰203/203成功。証拠: `docs/evidence/outbound/2026-08-02-o1b24-live-event-spend-policy.json`。
+次は`O1B-25`で、21日分の状態と直接tapできるevent/Calendar linkを一通の人間向けTelegramへまとめる。
 
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
