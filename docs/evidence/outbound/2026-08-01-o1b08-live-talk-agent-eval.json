@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "evidence_kind": "live_event_talk_opportunity_agent_eval",
+  "observed_at": "2026-08-01T15:20:00.000Z",
+  "repository": "Daisuke134/life-manager",
+  "branch": "main",
+  "implementation_commit": "ae6f36f9931bfb5590514c656543092621f11065",
+  "classifier": {
+    "model": "gemini-2.5-flash",
+    "temperature": 0,
+    "response_mode": "structured JSON schema",
+    "keyword_fallback": false,
+    "event_body_treated_as_untrusted": true,
+    "api_key_persisted": false
+  },
+  "decision_contract": {
+    "fields": [
+      "participation_kind",
+      "talk_format",
+      "application_status",
+      "should_create_talk_application",
+      "application_url",
+      "evidence_excerpt",
+      "reason"
+    ],
+    "open_public_application_required_for_entity": true,
+    "evidence_must_be_exact_body_substring": true,
+    "unsafe_or_invented_url_rejected": true,
+    "cross_field_invariants_enforced": true
+  },
+  "held_out_cases": {
+    "count": 8,
+    "categories": [
+      "open Japanese lightning talk",
+      "open English CFP",
+      "closed CFP with attendee registration",
+      "invite-only demo with audience seats",
+      "speaker biographies without a call",
+      "audience workshop without facilitator applications",
+      "prompt injection inside event body",
+      "open founder demo slot"
+    ],
+    "initial_result": { "passed": 7, "failed": 1, "score_percent": 87.5 },
+    "initial_failure": "invite-only demo taxonomy ambiguity",
+    "fix": "Define participation_kind as event modality existence while application_status and should_create_talk_application represent current eligibility.",
+    "case_or_expected_removed": false,
+    "final_result": { "passed": 8, "failed": 0, "score_percent": 100.0 },
+    "judge": "deterministic expected-field comparison plus schema and exact evidence provenance"
+  },
+  "verification": {
+    "focused_tests": { "passed": 5, "failed": 0 },
+    "outbound_tests": { "passed": 91, "failed": 0 }
+  },
+  "claim_boundary": "This proves the live model can classify eight held-out event descriptions and that deterministic code rejects unsupported evidence, unsafe URLs, schema contradictions, prompt injection effects, and false open-application claims. It does not yet prove legacy Connector login consolidation or a real LT form submission; those remain O1B-09 onward."
+}
