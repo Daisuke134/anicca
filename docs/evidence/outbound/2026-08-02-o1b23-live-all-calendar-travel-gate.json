@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "objective": "O1B-23 all-calendar travel-aware registration gate",
+  "observed_at": "2026-08-02",
+  "live_read_only": {
+    "busy_inventory_id": "google-calendar-busy-inventory:ba44cf69eeb010ca90099f15d2a61931f45edf9bc6e3e7c95bfee43173f987f2",
+    "verified_in_process": true,
+    "calendar_count": 5,
+    "source_event_count": 124,
+    "busy_event_count": 123,
+    "excluded_event_count": 1,
+    "timed_busy_count": 123,
+    "all_day_busy_count": 0,
+    "raw_title_or_location_fields_present": false
+  },
+  "implemented_contracts": {
+    "calendar_list_all_pages": true,
+    "events_all_calendars_all_pages": true,
+    "transparent_and_cancelled_excluded": true,
+    "timed_and_all_day_normalized": true,
+    "inbound_and_outbound_travel_minutes_gated": true,
+    "five_minute_never_late_buffer_each_direction": true,
+    "short_appointment_does_not_block_whole_day": true,
+    "route_failure_is_recovery_not_unavailable": true,
+    "only_eligible_candidates_reach_registration_loop": true,
+    "verified_registration_only_calendar_sync": true,
+    "calendar_private_property_idempotency": true
+  },
+  "verification": {
+    "focused_tests_passed": 32,
+    "focused_tests_failed": 0,
+    "additional_boundary_tests_passed": 12,
+    "additional_boundary_tests_failed": 0,
+    "outbound_tests_passed": 184,
+    "outbound_tests_failed": 0
+  }
+}

@@ -47,12 +47,12 @@ serendipityを根拠付き評価するところまで完成した。実Calendar�
 2026-08-02〜2026-08-22の初回coverage snapshotは、後続のCalendar/event照合前なので21日すべて
 `open`である。これは「イベントがない」という意味ではない。
 
-現在の唯一の実行対象は`O1B-23`である。残作業は、途中へ別trackを混ぜず次の順序で進める。
+現在の唯一の実行対象は`O1B-24`である。残作業は、途中へ別trackを混ぜず次の順序で進める。
 
 ```text
-完了: O1B-20〜22 source handoff、同日次候補、coverage継続
-いま: O1B-23 全Calendar・移動時間を含む衝突防止
-  → O1B-24〜25 有料policy、Telegram
+完了: O1B-20〜23 source handoff、候補継続、全Calendar・移動時間gate
+いま: O1B-24 無料優先・有料event自動支出policy
+  → O1B-25 21日coverageのTelegram報告
   → O1C-01〜27 Fundraising / acceleratorの探索・提出・返信・面談追跡
   → O2-01〜12 Job Hunterの統合・実応募・返信・面接追跡
   → O3A-01〜07 壊れたCFO runtime loopを復旧
@@ -900,7 +900,7 @@ identity/browser/calendar reference検証を追加し、新規4件と既存runti
 - [x] O1B-20 Lumaで実参加を確保できない場合、許諾済みsourceを探索する。connpassはkey取得後の公式API read-only discoveryだけとし、自動申込み・coverage達成には使わない
 - [x] O1B-21 一つの候補で申込失敗・満席・不適格になっても同じ日の次候補へ進み、予約確認までloopを継続
 - [x] O1B-22 「検索一巡」「一件の操作失敗」「一sourceの失敗」を終了条件にしない
-- [ ] O1B-23 Google Calendarの全calendarからbusy intervalを読み、前後移動時間を含むfree intervalだけへ予約
+- [x] O1B-23 Google Calendarの全calendarからbusy intervalを読み、前後移動時間を含むfree intervalだけへ予約
 - [ ] O1B-24 無料を優先し、有料eventは一度設定した自動支出policy内で保存済み決済手段を使い、都度承認を要求しない
 - [ ] O1B-25 21日coverage、既存予定、新規予約、残り空き、申込証拠、選定理由をTelegramへ一通で報告
 
@@ -1102,6 +1102,18 @@ transport契約2 testを追加した。新method未実装でRED段階。
 O1B-23進捗8（write transport GREEN / sync RED）: private property検索とprovider ID/link付き作成をgog transportへ
 実装し20/20成功。次にin-process verifier provenanceのあるLuma registration receiptとcalendar-eligible gateだけを
 受け、同一eventを一度だけ作成しexact retryは既存eventを返すsync契約2 testを追加した。module未実装でRED段階。
+
+O1B-23進捗9（sync GREEN / final pack RED）: verified outbound receipt、同一canonical Luma URL、eligible gateを
+全て照合してからだけCalendarを検索・作成するsyncを実装した。exact retryは既存eventを返し、provider IDは
+opaque ref化する。sync + transport 18/18成功。events packへsync境界を公開する契約を追加した。
+
+O1B-23完了: events packへ全calendar busy read、移動込みgate、eligible-only same-day sequence、verified
+registration後の冪等Calendar syncを接続した。実production read-onlyは5 calendar、124 source event、
+123 busy、transparent 1除外で、raw予定名・場所fieldはsnapshotに0。短い予定の前後へ候補を残し、
+direct/all-day/travel-expanded conflictだけをopaque event ref付きで落とす。focused 32/32、追加境界12/12、
+outbound全回帰184/184成功。証拠:
+`docs/evidence/outbound/2026-08-02-o1b23-live-all-calendar-travel-gate.json`。次は`O1B-24`で、無料候補を
+優先し、有料候補は一度設定した自動支出policy内だけ保存済み決済手段を使い、都度承認なしで進める。
 
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。

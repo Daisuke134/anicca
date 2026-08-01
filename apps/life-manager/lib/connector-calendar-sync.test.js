@@ -33,7 +33,7 @@ async function registrationReceipt() {
     artifactRef: `object://sha256/${hash}`,
     canonicalUrl: "https://luma.com/founder-night",
   }, {
-    readExternalReceipt: async () => ({ kind: "luma_registration", provider_id: "fixture", observed_at: "2026-08-02T01:00:00.000Z" }),
+    readExternalReceipt: async () => ({ kind: "provider_response", provider_id: "fixture", observed_at: "2026-08-02T01:00:00.000Z" }),
     readArtifact: async () => bytes,
     fetchImpl: async () => ({ status: 200 }),
   });
