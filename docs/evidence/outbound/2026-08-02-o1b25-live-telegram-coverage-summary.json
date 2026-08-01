@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "task": "O1B-25",
+  "observed_at": "2026-08-01T16:51:12.719Z",
+  "result": "verified_live_delivery",
+  "implementation_commit": "9343b1b5ab6d82f42581d3dd2dca3e6d34341aca",
+  "summary_contract": {
+    "window_start": "2026-08-02",
+    "window_end": "2026-08-22",
+    "day_line_count": 21,
+    "message_count": 1,
+    "includes_existing_count": true,
+    "includes_new_reservation": true,
+    "includes_open_count": true,
+    "includes_application_receipt": true,
+    "includes_selection_reason": true,
+    "covered_new_reservation_binding": "exact_date_1_to_1"
+  },
+  "live_coverage_reported": {
+    "covered_existing": 0,
+    "covered_new": 1,
+    "unavailable": 0,
+    "open": 20,
+    "new_event": "Engineer BAR",
+    "new_event_date": "2026-08-15",
+    "new_event_receipt_bound": true,
+    "calendar_incompleteness_hidden": false,
+    "open_days_falsely_closed": false
+  },
+  "telegram": {
+    "transport": "existing OpenClaw Telegram account",
+    "provider_message_id": "5129",
+    "positive_message_id_verified": true,
+    "send_count": 1,
+    "chat_id_sha256": "ae8d45da4675d2cf4894f3ccc91da9f296cc2c0b0f286f76bcf21376d27b0f32",
+    "summary_sha256": "e7629a598d88c23caa46217da2c7d6dd0d634d419872324ac06525ed38db12d0",
+    "raw_chat_id_persisted": false
+  },
+  "verification": {
+    "focused_summary_tests": { "passed": 4, "failed": 0 },
+    "outbound_tests": { "passed": 169, "failed": 0 },
+    "runtime_up_tests": { "passed": 33, "failed": 0 },
+    "git_diff_check": "passed"
+  },
+  "claim_boundary": "This proves one real Japanese Telegram message reported all 21 dates, the verified Engineer BAR reservation with receipt and selection reason, and the remaining 20 open dates, then returned positive message ID 5129. It does not claim Order 1B's open-zero completion condition: live all-calendar availability is still incomplete and the rolling window intentionally remains open on 20 dates."
+}

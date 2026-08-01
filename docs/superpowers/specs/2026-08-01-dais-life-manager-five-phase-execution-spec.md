@@ -657,6 +657,18 @@ payment receiptは主張しない。fresh verificationはfocused 4件、outbound
 `docs/evidence/outbound/2026-08-02-o1b24-event-spend-policy.json`。残作業は113件。
 次はO1B-25で、21日coverage・予約・空き・証拠・選定理由をTelegram一通へまとめる。
 
+完了: `O1B-25`。exact 21日coverageとcountsを検証し、全`covered_new`日へ同日reservation、正規provider
+receipt、選定理由を1:1で要求する日本語summary builderとOpenClaw deliveryをTDDで追加した。21日すべてを
+4096文字以内の一通へ収め、sendは一回だけ、positive message IDだけを配信成功にする。delivery receiptには
+raw chat ID、event title、選定理由を保存しない。既存Dais targetへ実送信し、2026-08-02〜08-22の21行、
+Engineer BARの8月15日新規予約1件、receipt、選定理由、残りopen 20件を一通で報告、provider message ID
+`5129`を取得した。O1B-23の一calendar `notFound`を隠さず、既存0・unavailable 0・open 20と報告して
+未確認日を閉じていない。したがってO1B-25の報告は完了したが、Order 1B全体のopen 0完了条件はまだ未達である。
+fresh verificationはfocused 4件、outbound 169件、runtime-up 33件、diff checkが全成功。実装plan:
+`docs/superpowers/plans/2026-08-02-connector-o1b25-telegram-coverage-summary.md`。実測証拠:
+`docs/evidence/outbound/2026-08-02-o1b25-live-telegram-coverage-summary.json`。残作業は112件。
+次はO1C-01で、`application-kit`をcompany factsの正本として接続する。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
@@ -796,7 +808,7 @@ identity/browser/calendar reference検証を追加し、新規4件と既存runti
 - [x] O1B-22 「検索一巡」「一件の操作失敗」「一sourceの失敗」を終了条件にしない
 - [x] O1B-23 Google Calendarの全calendarからbusy intervalを読み、前後移動時間を含むfree intervalだけへ予約
 - [x] O1B-24 無料を優先し、有料eventは一度設定した自動支出policy内で保存済み決済手段を使い、都度承認を要求しない
-- [ ] O1B-25 21日coverage、既存予定、新規予約、残り空き、申込証拠、選定理由をTelegramへ一通で報告
+- [x] O1B-25 21日coverage、既存予定、新規予約、残り空き、申込証拠、選定理由をTelegramへ一通で報告
 
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
