@@ -3,6 +3,7 @@
 status: ACTIVE
 owner: Dais / Life Manager
 created: 2026-08-01 JST
+updated: 2026-08-02 JST
 scope: 応募基盤、イベント、資金調達、求人、個人CFO、暗号資産、法定通貨投資・NISA
 
 ## 0. この文書の権限
@@ -36,6 +37,32 @@ Life Managerは「検索した」「分析した」「失敗した」と報告�
 「no action」が安全上正しい場面はある。たとえばrisk条件を満たさないcrypto取引は実行しない。
 その場合も、何もせず閉じるのではなく、停止理由、次の観測、改善案、次回判断時刻という現実の
 次行動を残す。Connectorではno-eventを正常終了にせず、実参加予約までloopを継続する。
+
+### 0.2 現在地と残りの一本道（2026-08-02 JST）
+
+正本実装は`/Users/anicca/Projects/life-manager-main`の`main`である。`O1A-01〜06`と
+`O1B-01〜16`は実装・実測・証拠化・push済み。直近の検証済みcheckpointは`7d6c7616a`で、
+今日を含む21日間を毎日再計算して`open / covered_existing / covered_new / unavailable`へ
+分類する器まで完成した。実Calendarを読んだ2026-08-02〜2026-08-22の初回snapshotは、
+後続のevent照合前なので21日すべて`open`である。これは「イベントがない」という意味ではない。
+
+現在の唯一の実行対象は`O1B-17`である。残作業は、途中へ別trackを混ぜず次の順序で進める。
+
+```text
+いま: O1B-17 Luma Tokyo inventoryを終端まで読み、ISO日時で21日へ投影
+  → O1B-18〜25 ranking、serendipity判断、候補継続、Calendar衝突、有料policy、Telegram
+  → O1C-01〜27 Fundraising / acceleratorの探索・提出・返信・面談追跡
+  → O2-01〜12 Job Hunterの統合・実応募・返信・面接追跡
+  → O3A-01〜07 壊れたCFO runtime loopを復旧
+  → O3B-01〜24 Moneytree / Binance / walletを統一財務台帳へ接続しCFOを完成
+  → O4-01〜16 Cryptoをpaper→小額canary→risk制御付き運用へ進める
+  → O5-01〜14 Fiat / NISAを生活防衛資金・制度・risk制約付きで接続
+  → OW-01〜12 同じcoreをWebへtenant化し、Dais以外のpilotで実証
+```
+
+各checkboxの完了条件は「codeを書いた」ではない。fresh test、実serviceでのreadbackまたは
+許可された実action、receipt/ledger、Telegramで人間が理解できる報告、commit、pushが揃った時だけ
+`[x]`にする。
 
 ## 1. 固定実行順序
 
@@ -1811,6 +1838,37 @@ NISA利用額: ¥{{nisa_used}}
 ```
 
 ## 11. 最終利用体験
+
+### 11.0 全実装後の一枚図
+
+```text
+                         Life Manager
+                              │
+                  goal・権限・risk policy・予算
+                              │
+       ┌──────────────┬───────┴────────┬──────────────┐
+       ▼              ▼                ▼              ▼
+  Connector       Fundraising      Job Hunter    Financial Organ
+  21日を埋める     応募→返信→面談    応募→面接→offer  CFO Lead
+  Calendar/QR      accelerator/VC    給与改善          │
+       │              │                │        ┌─────┼────────┐
+       │              │                │        ▼     ▼        ▼
+       │              │                │      支出   Crypto   Fiat/NISA
+       │              │                │      改善   運用      長期運用
+       └──────────────┴────────┬───────┴──────────────┘
+                               ▼
+                共通runtime + decision/receipt ledger
+                               │
+                    ┌──────────┴──────────┐
+                    ▼                     ▼
+             Telegram（毎日の行動面）   Web（資産・履歴・証拠）
+```
+
+このsystemが増やす対象は一つではない。Connectorは出会いと機会、Fundraisingは提出・面談・資金、
+Job Hunterはofferと給与、CFOは可視性・費用削減・資金配分、CryptoとFiat/NISAはrisk調整後の資産形成を
+担当する。すべてを同じdecision IDとreceiptで測り、給与、調達額、含み益、元本をMRRへ混ぜない。
+利益、採択、offer、10M MRR、billionaire到達は保証値にしない。毎日の実行と結果を測り、失敗した仮説を
+縮小し、証拠上よい経路へ時間とrisk budgetを段階配分する。
 
 毎朝:
 
