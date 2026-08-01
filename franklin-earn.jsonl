@@ -3519,3 +3519,4 @@
 {"ts":1785564067,"source":"cook","task":"explore: Solana microtask platform paying USDC for compute work","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MS9YQMFQF1E143E4415B43C9"}
 {"ts":1785566116,"source":"cook","task":"explore: Solana paid data annotation jobs USDC","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MS9ZYKF0C335AB8CA12049C5"}
 {"ts":1785566245,"source":"cook","task":"explore: Solana platform paying USDC for microtasks or data annotation gigs","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSA01AFH9DB537819D4F4320"}
+{"ts":1785566884,"source":"cook","task":"explore: Solana DeFi liquidity mining programs paying USDC with low minimum deposit","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSA0F1PA9434341CD00D4C47"}
