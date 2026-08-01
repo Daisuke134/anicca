@@ -509,6 +509,18 @@ fresh verificationはfocused 8件、outbound 114件、runtime-up 33件、diff ch
 `docs/evidence/outbound/2026-08-02-o1b12-separate-event-entities.json`。残作業は125件。
 次はO1B-13でLife Managerの実測demoに合うtalk title、5分outline、応募理由をagent生成する。
 
+完了: `O1B-13`。イベント要件と、Agent Registry 16 role、実Luma登録、Gmail確認、公式QR、
+Telegram配信、一般参加/登壇entity分離の6件の実測factだけをGemini 2.5 Flashへ渡し、日本語のtalk title、
+応募理由、5場面のdemo outlineを実生成するagent contractをTDDで追加した。入力blockはuntrusted dataとして扱い、
+出力はexact schemaへ閉じる。outlineは0〜300秒を隙間・重複なく覆い、各場面が既知evidence IDを1件以上参照する。
+未知ID、危険なevidence path、余分なfield、placeholder、入力factにない数値claim、API/model/JSON failureを
+validatorで拒否し、fallbackで成功を偽装しない。実生成は、registry→Engineer BAR実登録とCalendar→Gmail確認と
+公式QR→Telegram配信→参加/登壇entity分離を各60秒で見せる構成になり、gap 0、overlap 0、未知evidence 0、
+未検証数値0だった。fresh verificationはfocused 5件、outbound 119件、runtime-up 33件、diff checkが全成功。
+実装plan: `docs/superpowers/plans/2026-08-02-connector-o1b13-talk-proposal.md`。実測証拠:
+`docs/evidence/outbound/2026-08-02-o1b13-live-talk-proposal.json`。残作業は124件。
+次はO1B-14でaccepted後のslide締切、登壇日、会場、QR、follow-upを一つのtimelineで追跡する。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
@@ -636,7 +648,7 @@ identity/browser/calendar reference検証を追加し、新規4件と既存runti
 - [x] O1B-10 重複旧実装を退役
 - [x] O1B-11 connpass API keyを申請。取得まで自動アクセス禁止
 - [x] O1B-12 一般参加とLT/CFP/demo登壇応募を別entityとしてdiscover・追跡
-- [ ] O1B-13 Life Managerの実測demoに合うtalk title、5分outline、応募理由をagent生成
+- [x] O1B-13 Life Managerの実測demoに合うtalk title、5分outline、応募理由をagent生成
 - [ ] O1B-14 accepted後にslide締切、登壇日、会場、QR、follow-upを一つのtimelineで追跡
 - [ ] O1B-15 登壇応募ごとの`submitted / accepted / rejected / presented`を応募ledgerへ記録
 - [ ] O1B-16 今日を含む21日間（今日〜20日後）を毎日再計算するrolling coverage goalを実装
