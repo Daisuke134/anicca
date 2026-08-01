@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "task": "O1B-20",
+  "observed_at": "2026-08-01T16:33:35Z",
+  "result": "verified",
+  "implementation_commit": "679def1faa4d1ae51f542e62bf424112a0611ecc",
+  "routing_contract": {
+    "connpass_trigger": "next_provider_required/luma_candidates_exhausted",
+    "luma_booked_connpass_calls": 0,
+    "luma_recovery_required_connpass_calls": 0,
+    "luma_reconciliation_required_connpass_calls": 0,
+    "connpass_unknown_effect_result": "reconciliation_required",
+    "connpass_no_key_result": "coverage_open"
+  },
+  "controlled_no_key_readback": {
+    "date": "2026-08-10",
+    "luma_candidate_count": 2,
+    "luma_attempt_count": 2,
+    "connpass_attempt_count": 1,
+    "result": {
+      "status": "coverage_open",
+      "reason": "api_key_unavailable",
+      "luma_candidates_exhausted": true,
+      "connpass_attempted": true
+    },
+    "provider_request_created": false,
+    "coverage_falsely_completed": false
+  },
+  "verification": {
+    "focused_provider_routing_tests": { "passed": 5, "failed": 0 },
+    "outbound_tests": { "passed": 151, "failed": 0 },
+    "runtime_up_tests": { "passed": 33, "failed": 0 },
+    "git_diff_check": "passed"
+  },
+  "claim_boundary": "This proves connpass is invoked only after every supplied Luma candidate ends in a known non-booking outcome. A Luma booking, recovery requirement, or unknown effect stops provider fallback. Because the connpass API key is still unavailable, the controlled readback created no external connpass request and left coverage open; it does not prove live connpass inventory retrieval or booking."
+}

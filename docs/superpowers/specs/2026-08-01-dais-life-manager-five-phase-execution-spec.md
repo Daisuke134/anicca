@@ -594,7 +594,19 @@ organizer 20、place/time 70、serendipity 80と評価した。全6 excerptはso
 runtime-up 33件、diff checkが全成功。実装plan:
 `docs/superpowers/plans/2026-08-02-connector-o1b19-semantic-event-agent.md`。実測証拠:
 `docs/evidence/outbound/2026-08-02-o1b19-live-semantic-event-evaluation.json`。残作業は118件。
-次はO1B-20で日ごとの候補をagent評価し、最上位から順に処理する。
+次はO1B-20で、Lumaでその日の実参加を確保できない場合だけconnpassへ進むprovider境界を実装する。
+
+完了: `O1B-20`。既存Luma candidate sequenceの結果を唯一の分岐sourceとし、その日の全Luma候補が
+既知の非成立理由で尽きて`next_provider_required/luma_candidates_exhausted`になった場合だけconnpassを
+一度呼ぶprovider routerをTDDで追加した。Lumaで予約済み、login復旧待ち、unknown effect照合待ちなら
+connpass callは0で止まり、providerを跨ぐ二重操作を防ぐ。connpass予約はprovider receipt必須、unknown effectは
+reconciliation、復旧待ちはrecoveryへfail closedする。API key未発行の現行policyを使ったcontrolled readbackでは、
+Luma 2候補を既知理由で尽くした後だけconnpass policyを一度評価し、外部requestを作らず`coverage_open /
+api_key_unavailable`のまま残した。したがってconnpass実inventory取得・予約は未実証であり、成功を捏造しない。
+fresh verificationはfocused 5件、outbound 151件、runtime-up 33件、diff checkが全成功。実装plan:
+`docs/superpowers/plans/2026-08-02-connector-o1b20-provider-fallback.md`。実測証拠:
+`docs/evidence/outbound/2026-08-02-o1b20-provider-fallback.json`。残作業は117件。
+次はO1B-21で、一候補の失敗・満席・不適格後も同じ日の次候補へ進み、予約確認までloopを継続する。
 
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
@@ -730,7 +742,7 @@ identity/browser/calendar reference検証を追加し、新規4件と既存runti
 - [x] O1B-17 Luma mainの東京・対面inventoryを日付ごとに最後まで読み、表示上位数件だけで探索を終えない
 - [x] O1B-18 AI/crypto/英語等は優先順位にだけ使い、eventを捨てるhard category filterにはしない
 - [x] O1B-19 agentがevent本文・参加者・主催者・場所・時間を読み、Daisの目標とserendipityを自然言語で評価
-- [ ] O1B-20 Lumaでその日の実参加を確保できない場合だけ、connpassの東京・対面inventoryへ進む
+- [x] O1B-20 Lumaでその日の実参加を確保できない場合だけ、connpassの東京・対面inventoryへ進む
 - [ ] O1B-21 一つの候補で申込失敗・満席・不適格になっても同じ日の次候補へ進み、予約確認までloopを継続
 - [ ] O1B-22 「検索一巡」「一件の操作失敗」「一sourceの失敗」を終了条件にしない
 - [ ] O1B-23 Google Calendarの全calendarからbusy intervalを読み、前後移動時間を含むfree intervalだけへ予約
