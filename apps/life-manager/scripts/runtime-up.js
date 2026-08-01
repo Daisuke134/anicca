@@ -399,6 +399,13 @@ async function executeCapabilityJob(job, services) {
 function createWorkerHandlers(env, capabilities, dependencies = {}) {
   const handlers = {};
   const servicesByAdapter = {};
+  if (capabilities.includes("connector.coverage.refresh")) {
+    const services = dependencies.connectorCoverageServices;
+    if (!services || typeof services !== "object" || Array.isArray(services)) {
+      throw new Error("Connector coverage refresh services are unavailable");
+    }
+    servicesByAdapter["connector-coverage-refresh"] = services;
+  }
   if (capabilities.includes("report.financial.telegram")) {
     const { readUsdcBalance } = require("../lib/base-usdc-balance.js");
     const secretProvider = createScopedEnvironmentSecretProvider(env);
