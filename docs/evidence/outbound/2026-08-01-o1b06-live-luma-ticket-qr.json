@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "evidence_kind": "live_luma_official_ticket_qr",
+  "observed_at": "2026-08-01T15:03:43.653Z",
+  "timezone": "Asia/Tokyo",
+  "repository": "Daisuke134/life-manager",
+  "branch": "main",
+  "implementation_commit": "9ba6c4917d921ca710d01dbe1ee8412ff90930e3",
+  "event_binding": {
+    "provider": "luma",
+    "title": "Engineer BAR",
+    "canonical_url": "https://luma.com/a879ax7k",
+    "tenant_id": "dais-local",
+    "job_id": "outbound-event:989aa4eaa8c15496dc4ddda66b76230362d50fd62563d03bc1c470723e0192bd",
+    "provider_message_id": "19fbdc3478265ec8"
+  },
+  "guest_binding": {
+    "source": "same verified Gmail confirmation message, memory only",
+    "guest_key_sha256": "407c94059cd781333569254a1b81465c03888be207e86bcf07aa8cbd6a4f39cf",
+    "mail_guest_key_hash_matches_qr": true,
+    "raw_guest_key_persisted": false,
+    "ticket_url_persisted": false,
+    "mail_body_persisted": false
+  },
+  "official_qr": {
+    "source": "Luma My Ticket control in existing CloakBrowser :9222 shared session",
+    "provider_shape": "200x200 SVG",
+    "captured_media_type": "image/png",
+    "png_size_bytes": 10140,
+    "png_sha256": "5a10d00d85bc6a0e6e16c94e65c757b6b5e95d3817d33f4b8e2362673d60a7ca",
+    "decoded_https": true,
+    "decoded_luma_host": true,
+    "decoded_path_kind": "check-in/<opaque>",
+    "decoded_guest_key_hash_matches_mail": true,
+    "self_generated_qr": false
+  },
+  "durable_artifact": {
+    "ticket_receipt_ref": "ticket://dais-local/afae319eb76e063e83c58ca409002521eb550f559c6a5d17c6bdddeb8c1fdc7f",
+    "artifact_ref": "object://sha256/5a10d00d85bc6a0e6e16c94e65c757b6b5e95d3817d33f4b8e2362673d60a7ca",
+    "stored_in_runtime_volume": "life-manager-local_runtime-data",
+    "receipt_read_back": true,
+    "artifact_read_back": true,
+    "artifact_hash_reverified": true,
+    "decoded_after_readback": true,
+    "cross_tenant_read_rejected": true
+  },
+  "verification": {
+    "focused_tests": { "passed": 4, "failed": 0 },
+    "outbound_tests": { "passed": 81, "failed": 0 }
+  },
+  "claim_boundary": "This proves the provider-generated Luma QR for the exact registered event was decoded, matched by guest-key hash to the exact verified Gmail confirmation, stored tenant-bound, and independently read back. It does not claim Telegram delivery or an on-site venue scanner result; those are O1B-07 and the first attended-event check-in observation."
+}

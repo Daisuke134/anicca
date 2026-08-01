@@ -1,6 +1,6 @@
 # Connector O1B-06 Luma Ticket QR Implementation Plan
 
-> Status: 実行中。O1B-04/O1B-05と同一の`Engineer BAR` ticketだけをQR artifactへ結ぶ。
+> Status: 完了。O1B-04/O1B-05と同一の`Engineer BAR`公式QRだけを検証・保存・再読出しした。
 
 **Goal:** 照合済みGmail confirmationからguest-specific ticketをmemory内だけで取得し、Daisが会場で開ける実QR PNGをtenant/job/eventへboundして保存する。
 
@@ -24,12 +24,12 @@
 
 ### Task 2: Exact extraction and QR artifact
 
-- [ ] 同一event以外、異なるguest key、guest key欠落を拒否するfixture testをRED→GREENにする。
-- [ ] guest-specific ticketをopaque secretとしてmemory内だけで扱う。
-- [ ] 実QR PNGをtenant/job/event bound objectとして保存・再読出しする。
+- [x] 同一event以外、異なるguest key、guest key欠落を拒否するfixture testをRED→GREENにする。
+- [x] guest-specific ticketをopaque secretとしてmemory内だけで扱う。
+- [x] 実QR PNGをtenant/job/event bound objectとして保存・再読出しする。
 
 ### Task 3: Proof and handoff
 
-- [ ] secretなしlive evidenceを保存する。
-- [ ] O1B-06完了、spec更新、commit、push。
-- [ ] O1B-07へ実QR artifact refだけを渡す。
+- [x] secretなしlive evidenceを保存する。
+- [x] O1B-06完了、spec更新、commit、push。
+- [x] O1B-07へ実QR artifact refだけを渡す。
