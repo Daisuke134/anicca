@@ -227,4 +227,54 @@ launchctl list | grep autoprune                          →  -  0  ai.anicca.di
 |---|---|---|
 | 13 | 保留した worktree 12件 — WIP を各 branch に commit してから削除する | 3.97 GB |
 | — | `~/.openclaw/agents/anicca` 1.9GB / `~/profitable-claude/skills/bounty-hunter/state` 1.2GB は state 扱いで未着手 | 3.1 GB |
-| — | `disk-janitor` / `disk-cleaner` の要否判定 (今は autoprune 1本に絞っている) | — |
+| — | ~~`disk-janitor` / `disk-cleaner` の要否判定~~ | **done (§5.10)** |
+
+---
+
+## 7. §5.10 無効化されていた残り2本の判定 (2026-08-01)
+
+「掃除役は1本に絞る」と最初に書いたが、**中身を読んだら結論が割れた**。片方は地雷、片方は autoprune が拾えていない穴を埋めていた。
+
+### `com.anicca.disk-cleaner` → ★ 無効のまま + 地雷を撤去 ★
+
+139行目にこれがあった:
+
+```bash
+if ! docker ps >/dev/null 2>&1; then rm -rf "$HOME/.colima" "$HOME/.lima" 2>/dev/null; fi
+```
+
+| 問題 | 中身 |
+|---|---|
+| 判定が誤爆する | `docker ps` は VM が不要なときだけでなく、**colima の起動途中・socket 混雑・daemon 再起動中**でも失敗する |
+| 頻度 | このスクリプトは `StartInterval 300` = **5分ごと**に走る |
+| 被害が復旧不能 | コメントは「colima start が作り直す」と書くが、作り直されるのは**VM の殻だけ**。中のデータボリュームは戻らない。現に **life-manager の postgres と minio がこの VM の中で本番稼働中** |
+
+→ 該当行を削除し、なぜ危険かを注記として残した。**一度の誤判定で復旧不能な破壊が起きる操作を、無人ループに置いてはいけない。** ジョブ自体は無効のまま (他にも `~/Downloads` の30日超を無条件 `rm -rf` する等、人間のデータに手を出す行が多い)。
+
+### `ai.anicca.disk-janitor` → ★ 再有効化 (間隔だけ 300秒 → 3600秒) ★
+
+設計が素直で安全:
+- `is_protected()` の**許可リスト方式** — camofox/cloakbrowser プロファイル、`.openclaw/.env`、`cron/`、`identity/`、`workspace/`、`skills/*/state/`、`.codex/auth.json`、`.config/gh/`、`*.sqlite`/`*.db`、whisper/huggingface キャッシュ、`LaunchAgents/ai.*.plist` を除外
+- `-type f` のみ削除。ディレクトリを `rm -rf` しない
+- 全対象に日数の下限がある
+
+そして **autoprune が触らない実容量を持っていた**:
+
+| janitor の対象 | 実サイズ |
+|---|---|
+| `~/.cache/codex-runtimes` (+14d) | 1547 MB |
+| `~/.cache/anicca-clones` (+0d) | 435 MB ← HARD RULE #-1 が「読了後即削除」を義務づけている場所 |
+| `~/.openclaw/agents/anicca/agent/codex-home/sessions` (+7d) | 199 MB |
+| `/private/tmp/claude-501` `/private/tmp` (+1d) | 7 MB |
+
+→ autoprune (パッケージキャッシュ + シミュレータ + fstrim) と**重複せず補完している**ので2本立てにした。ただし5分ごとは無駄なので**毎時**に変更。手動実走で **+955MB** 回収を実測。
+
+```
+launchctl print-disabled gui/501 | grep disk-janitor  →  disabled
+launchctl enable gui/501/ai.anicca.disk-janitor
+launchctl bootstrap ...                               →  rc=0
+launchctl list                                        →  13204  0  ai.anicca.disk-janitor
+                                                          -      0  ai.anicca.disk-autoprune
+```
+
+**教訓**: 「掃除役が3つは危ない → 1本に絞る」は**読む前の仮説**であって結論ではなかった。実際に必要だったのは「地雷を持つ1本を止め、補完しあう2本を残す」。数を減らすことが目的化すると、穴を塞いでいた方まで捨てる。
