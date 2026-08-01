@@ -3,20 +3,32 @@
 "use strict";
 
 const DEFAULT_TTL_MS = 5 * 60_000;
-const MINUTE_MS = 60_000;
 
 function configuredTtlMs(explicitTtlMs) {
   const candidate = explicitTtlMs == null ? Number(process.env.LM_CAL_CACHE_TTL_MS) : Number(explicitTtlMs);
   return Number.isFinite(candidate) && candidate >= 0 ? candidate : DEFAULT_TTL_MS;
 }
 
-function minuteBucket(value) {
+// The key's resolution IS the TTL — one number decides both, deliberately (spec §3.2). It used to
+// bucket by a hardcoded minute while the TTL was five, and callers derive timeMin/timeMax from
+// `now` (lib/events.js:37), so every 60-second scheduler tick minted a key the TTL's own answer
+// could never be found under: a cache that structurally never hit. Two knobs will always drift back
+// into that bug, so there is no separate bucket-width setting and there must never be one.
+//
+// widthMs <= 0 (TTL of 0 = "no caching", which configuredTtlMs accepts on purpose) means NO
+// bucketing: the exact instant is the key. That is the honest reading of a zero-width bucket, and
+// it avoids both the divide-by-zero (Infinity/NaN) and the opposite failure of collapsing every
+// window into one key — a key that, with caching off, would be a lie waiting to be served.
+function timeBucket(value, widthMs) {
   const epochMs = Date.parse(value);
-  return Number.isFinite(epochMs) ? Math.floor(epochMs / MINUTE_MS) : String(value == null ? "" : value);
+  if (!Number.isFinite(epochMs)) return String(value == null ? "" : value); // unparseable → raw
+  return widthMs > 0 ? Math.floor(epochMs / widthMs) : epochMs;
 }
 
-function cacheKey(uid, { timeMin, timeMax } = {}) {
-  return [uid, minuteBucket(timeMin), minuteBucket(timeMax)].join("|");
+function cacheKey(uid, { timeMin, timeMax } = {}, ttlMs) {
+  // Same resolver as makeCachedCalendar, so a standalone call and the wrapper agree by construction.
+  const widthMs = configuredTtlMs(ttlMs);
+  return [uid, timeBucket(timeMin, widthMs), timeBucket(timeMax, widthMs)].join("|");
 }
 
 function makeCachedCalendar(inner, opts = {}) {
@@ -33,7 +45,8 @@ function makeCachedCalendar(inner, opts = {}) {
   return {
     ...inner,
     async listEventsRaw(uid, input = {}) {
-      const key = cacheKey(uid, input);
+      // The SAME resolved ttlMs that decides expiry below also sets the key's width — one number.
+      const key = cacheKey(uid, input, ttlMs);
       const timestamp = now();
       const hit = entries.get(key);
       if (hit && timestamp - hit.fetchedAt < ttlMs) return hit.promise;
