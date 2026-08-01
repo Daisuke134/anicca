@@ -582,6 +582,20 @@ fresh verificationはfocused 4件、outbound 141件、runtime-up 33件、diff ch
 `docs/evidence/outbound/2026-08-02-o1b18-live-priority-no-hard-filter.json`。残作業は119件。
 次はO1B-19でevent本文・参加者・主催者・場所・時間をDaisの目標とserendipityに対してagent評価する。
 
+完了: `O1B-19`。event本文、公開参加者context、主催者context、会場、開始、終了と、Daisの自然言語goal・
+preferencesをuntrusted dataとしてGemini 2.5 Flashへ渡すsemantic evaluation agentをTDDで追加した。
+judgmentはmodelに置き、goal alignment、people、organizer、place/time、serendipityを各0〜100と自然言語根拠で
+評価する。deterministic codeはschema、score範囲、event binding、body/participants/organizer/venue/start/endの
+6 exact excerpt grounding、O1B-18 assessment形状だけを検証し、keyword/regex score fallbackを持たない。
+missing factor、捏造excerpt、event不一致、API/model/JSON failureはfail closed。shared browserで読んだ実Lumaの
+公開contextを実Geminiへ渡し、直接topic外のラン/交流eventをhard filterせずpriority 54、goal 40、people 60、
+organizer 20、place/time 70、serendipity 80と評価した。全6 excerptはsource exact一致、ranker接続も成功。
+公開本文・参加者名・account identityはevidenceへ保存しない。fresh verificationはfocused 5件、outbound 146件、
+runtime-up 33件、diff checkが全成功。実装plan:
+`docs/superpowers/plans/2026-08-02-connector-o1b19-semantic-event-agent.md`。実測証拠:
+`docs/evidence/outbound/2026-08-02-o1b19-live-semantic-event-evaluation.json`。残作業は118件。
+次はO1B-20で日ごとの候補をagent評価し、最上位から順に処理する。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
@@ -715,7 +729,7 @@ identity/browser/calendar reference検証を追加し、新規4件と既存runti
 - [x] O1B-16 今日を含む21日間（今日〜20日後）を毎日再計算するrolling coverage goalを実装
 - [x] O1B-17 Luma mainの東京・対面inventoryを日付ごとに最後まで読み、表示上位数件だけで探索を終えない
 - [x] O1B-18 AI/crypto/英語等は優先順位にだけ使い、eventを捨てるhard category filterにはしない
-- [ ] O1B-19 agentがevent本文・参加者・主催者・場所・時間を読み、Daisの目標とserendipityを自然言語で評価
+- [x] O1B-19 agentがevent本文・参加者・主催者・場所・時間を読み、Daisの目標とserendipityを自然言語で評価
 - [ ] O1B-20 Lumaでその日の実参加を確保できない場合だけ、connpassの東京・対面inventoryへ進む
 - [ ] O1B-21 一つの候補で申込失敗・満席・不適格になっても同じ日の次候補へ進み、予約確認までloopを継続
 - [ ] O1B-22 「検索一巡」「一件の操作失敗」「一sourceの失敗」を終了条件にしない

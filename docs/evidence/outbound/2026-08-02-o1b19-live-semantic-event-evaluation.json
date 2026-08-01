@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "task": "O1B-19",
+  "observed_at": "2026-08-01T16:30:01Z",
+  "result": "verified",
+  "implementation_commit": "9187931e8808babcf6b492a783b18ec0d2c7e8c6",
+  "agent": {
+    "model": "gemini-2.5-flash",
+    "judgment_mode": "natural_language_semantic_evaluation",
+    "keyword_or_regex_score_fallback": false,
+    "provider_context_treated_as_untrusted_data": true,
+    "structured_output_validated": true
+  },
+  "live_event": {
+    "provider": "luma",
+    "event_ref": "luma-event://event/h8157e6c",
+    "title": "HYPER COASTER BEER RUN",
+    "public_participant_count_present": true,
+    "public_host_present": true,
+    "venue_present": true,
+    "start_end_present": true,
+    "body_or_identity_persisted": false
+  },
+  "evaluation": {
+    "priority_score": 54,
+    "factor_scores": {
+      "goal_alignment": 40,
+      "people": 60,
+      "organizer": 20,
+      "place_time": 70,
+      "serendipity": 80
+    },
+    "interpretation": "The event is outside the direct Life Manager/agent topic but remains a medium-priority Tokyo social opportunity because its open, casual format can create serendipity.",
+    "lossless_ranker_compatible": true,
+    "hard_filtered": false
+  },
+  "grounding": {
+    "body_excerpt_exact": true,
+    "participants_excerpt_exact": true,
+    "organizer_excerpt_exact": true,
+    "venue_excerpt_exact": true,
+    "start_excerpt_exact": true,
+    "end_excerpt_exact": true,
+    "invented_excerpt_count": 0
+  },
+  "verification": {
+    "focused_semantic_tests": { "passed": 5, "failed": 0 },
+    "outbound_tests": { "passed": 146, "failed": 0 },
+    "runtime_up_tests": { "passed": 33, "failed": 0 },
+    "git_diff_check": "passed"
+  },
+  "claim_boundary": "This proves a live Gemini evaluation read supplied public event body, participant context, organizer context, venue, and start/end time, grounded every field with exact excerpts, evaluated five semantic dimensions including serendipity, and emitted an O1B-18-compatible assessment without hard filtering. It does not prove ranking or registration of the complete inventory; later O1B items own those steps."
+}
