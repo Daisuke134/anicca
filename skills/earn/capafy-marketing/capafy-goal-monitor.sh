@@ -13,6 +13,11 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PY=/opt/homebrew/bin/python3
 OUTCOME_SCRIPT="$SCRIPT_DIR/scripts/capafy_outcome.py"
+TELEGRAM_SENDER="${CAPAFY_TELEGRAM_SENDER:-$SCRIPT_DIR/../../_shared/send-telegram.sh}"
+EVENT_SYNC="${CAPAFY_EVENT_SYNC:-$SCRIPT_DIR/scripts/capafy_event_sync.py}"
+EVENT_PROJECTION="${CAPAFY_EVENT_PROJECTION:-$SCRIPT_DIR/scripts/capafy_event_projection.py}"
+EVENT_LEDGER="${CAPAFY_EVENT_LEDGER:-$HOME/.openclaw/state/capafy-revenue-events.jsonl}"
+EVENT_EVIDENCE_DIR="${CAPAFY_EVENT_EVIDENCE_DIR:-$HOME/.openclaw/state/capafy-revenue-evidence}"
 STATE="$HOME/.openclaw/state/capafy-goal-monitor.json"
 mkdir -p "$(dirname "$STATE")"
 
@@ -43,11 +48,36 @@ PY
   exit 0
 fi
 
+# Refresh canonical writers before reading the projection. Failure cannot fall through
+# to the legacy report path.
+TMP_ROOT="${CAPAFY_GOAL_MONITOR_TMP_DIR:-/tmp}"
+PROJECTION_FILE="$TMP_ROOT/capafy_company_projection.json"
+REPORT_FILE="$TMP_ROOT/capafy_goal_monitor.json"
+BODY_FILE="$TMP_ROOT/capafy_goal_monitor_body.txt"
+PARITY_FILE="$TMP_ROOT/capafy_goal_monitor_parity_error.txt"
+rm -f "$PROJECTION_FILE" "$REPORT_FILE" "$BODY_FILE" "$PARITY_FILE"
+if ! "$PY" "$EVENT_SYNC" sync-all \
+  --ledger "$EVENT_LEDGER" --evidence-dir "$EVENT_EVIDENCE_DIR" >/dev/null; then
+  "$PY" "$OUTCOME_SCRIPT" start-incident \
+    --owner company --summary "Canonical revenue source sync failed." \
+    --fingerprint goal-monitor-event-sync-failed >/dev/null 2>&1 || true
+  exit 2
+fi
+if ! "$PY" "$EVENT_PROJECTION" project --ledger "$EVENT_LEDGER" > "$PROJECTION_FILE"; then
+  "$PY" "$OUTCOME_SCRIPT" start-incident \
+    --owner company --summary "Canonical company projection failed." \
+    --fingerprint goal-monitor-projection-failed >/dev/null 2>&1 || true
+  exit 2
+fi
+
 # ── the rest (goal a/b/d parsing + state + telegram body) is one python pass (read+append only). ──
-$PY - "$STATE" "$DAILY_LOG" "$EARN_LEDGER" "$KEY_GATE" "$IG_LABEL" "$IG_HANDLE" "$LIFECYCLE_STATE" "$OUTCOME_SCRIPT" <<'PY' > /tmp/capafy_goal_monitor.json
+$PY - "$STATE" "$DAILY_LOG" "$EARN_LEDGER" "$KEY_GATE" "$IG_LABEL" "$IG_HANDLE" "$LIFECYCLE_STATE" "$OUTCOME_SCRIPT" "$EVENT_PROJECTION" "$PROJECTION_FILE" "$PARITY_FILE" "$BODY_FILE" <<'PY' > "$REPORT_FILE"
 import json, os, re, subprocess, sys, datetime
 (state_p, daily_log, earn_ledger, key_gate, ig_label, ig_handle,
- lifecycle_state_path, outcome_script) = sys.argv[1:9]
+ lifecycle_state_path, outcome_script, projection_script, projection_path,
+ parity_path, body_path) = sys.argv[1:13]
+sys.path.insert(0, os.path.dirname(projection_script))
+from capafy_event_projection import parity_errors
 try:
     lifecycle = json.load(open(lifecycle_state_path))
 except Exception:
@@ -172,8 +202,6 @@ def load_json(path):
     except Exception:
         return {}
 
-builder_terminal = load_json(os.path.join(home, ".openclaw/state/capafy-builder-terminal.json"))
-builder_outcome = builder_terminal.get("outcome") or {}
 marketing_terminal = load_json(os.path.join(home, ".openclaw/state/capafy-marketing-terminal.json"))
 marketing_outcome = marketing_terminal.get("outcome") or {}
 active_incidents = []
@@ -186,10 +214,7 @@ active_incidents.sort(key=lambda item: item.get("updated_at", ""), reverse=True)
 incident = active_incidents[0] if active_incidents else None
 
 realized = money.get("capafy_realized_payout_usd", 0.0)
-company = {
-    "schema_version": 1,
-    "kind": "company_state",
-    "date": today.isoformat(),
+independent = {
     "inventory": inventory,
     "orders": int(money.get("capafy_lifetime_orders", orders or 0)),
     "gross_usd": money.get("capafy_lifetime_gross_usd", gross or 0.0),
@@ -207,16 +232,22 @@ company = {
         "account_status": "replacement requested" if lifecycle.get("replacement_requested") else "clean",
     },
     "marketing": {
-        "scheduler_loaded": health["ig_marketing_loaded"],
+        "state": "reach_observing" if marketing_outcome.get("kind") == "marketing_published" else "not_published",
         "public_post_url": marketing_outcome.get("reel_url") if marketing_outcome.get("kind") == "marketing_published" else None,
+        "campaign_url": marketing_outcome.get("campaign_url") if marketing_outcome.get("kind") == "marketing_published" else None,
     },
     "incident": ({
+        "incident_id": incident.get("incident_id"), "owner": incident.get("owner"),
         "summary": incident.get("summary"), "phase": incident.get("phase"),
         "next_retry_at": incident.get("next_retry_at"),
     } if incident else None),
-    "listing_url": builder_outcome.get("listing_url"),
-    "dashboard_url": "https://capafy-skills-daily.netlify.app",
 }
+projection = load_json(projection_path)
+errors = parity_errors(projection, independent)
+if errors:
+    open(parity_path, "w").write("\n".join(errors) + "\n")
+    raise SystemExit(3)
+company = projection
 report["company_state"] = company
 # append to state (history), keep last 60
 hist = []
@@ -231,15 +262,22 @@ rendered = subprocess.run(
     capture_output=True, text=True, timeout=30,
 )
 body = rendered.stdout.strip() if rendered.returncode == 0 else ""
-open("/tmp/capafy_goal_monitor_body.txt","w").write(body)
+open(body_path,"w").write(body)
 print(json.dumps(report, ensure_ascii=False))
 PY
 
 RC=$?
-BODY="$(cat /tmp/capafy_goal_monitor_body.txt 2>/dev/null)"
+if [ "$RC" -ne 0 ]; then
+  "$PY" "$OUTCOME_SCRIPT" start-incident \
+    --owner company --summary "Ledger projection did not match independent Capafy source reads." \
+    --fingerprint goal-monitor-projection-parity-mismatch >/dev/null 2>&1 || true
+  cat "$PARITY_FILE" >&2 2>/dev/null || true
+  exit "$RC"
+fi
+BODY="$(cat "$BODY_FILE" 2>/dev/null)"
 # telegram daily report (best-effort; never blocks the monitor)
 if [ -n "$BODY" ]; then
-  bash "$SCRIPT_DIR/../../_shared/send-telegram.sh" "$BODY" >/dev/null 2>&1 || true
+  bash "$TELEGRAM_SENDER" "$BODY" >/dev/null 2>&1 || true
 fi
-cat /tmp/capafy_goal_monitor.json 2>/dev/null
-exit 0
+cat "$REPORT_FILE" 2>/dev/null
+exit "$RC"

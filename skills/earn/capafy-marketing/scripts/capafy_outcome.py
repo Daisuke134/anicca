@@ -164,6 +164,30 @@ def validate_outcome(data: dict) -> list[str]:
             errors.append("account.handle is required")
         if not isinstance(marketing, dict):
             errors.append("marketing is required")
+        else:
+            for field in ("public_post_url", "campaign_url"):
+                if marketing.get(field) is not None and not _is_https_url(
+                    marketing[field]
+                ):
+                    errors.append(f"marketing.{field} must be a real HTTPS URL")
+        metrics = data.get("metrics")
+        if not isinstance(metrics, dict) or any(
+            isinstance(value, bool) or not isinstance(value, int) or value < 0
+            for value in metrics.values()
+        ):
+            errors.append("metrics must contain non-negative integer values")
+        if not re.fullmatch(r"sha256:[0-9a-f]{64}", str(data.get("projection_id") or "")):
+            errors.append("projection_id must be sha256:<64 lowercase hex>")
+        if not data.get("last_event_id"):
+            errors.append("last_event_id is required")
+        try:
+            parsed_as_of = datetime.fromisoformat(
+                str(data.get("as_of") or "").replace("Z", "+00:00")
+            )
+            if parsed_as_of.utcoffset() is None:
+                raise ValueError
+        except ValueError:
+            errors.append("as_of must be an RFC3339 timestamp")
         for field in MONEY_FIELDS:
             if field not in data:
                 errors.append(f"{field} is required and must remain separate")
@@ -311,6 +335,7 @@ def render_outcome(data: dict) -> str:
             marketing_line = "Marketing is not scheduled; no public post is verified."
         lines = [
             f"Capafy — Consolidated company state, {data['date']}",
+            f"Projection: {data['projection_id'].removeprefix('sha256:')[:12]}",
             (
                 f"Products: {inventory['online']} online, "
                 f"{inventory['under_review']} under review, {inventory['draft']} "
@@ -327,6 +352,22 @@ def render_outcome(data: dict) -> str:
             ),
             marketing_line,
         ]
+        metrics = data.get("metrics") or {}
+        metric_labels = {
+            "views": "Views",
+            "likes": "Likes",
+            "comments": "Comments",
+            "clicks": "Attributed clicks",
+        }
+        measured = [
+            f"{metric_labels[field]}: {metrics[field]}"
+            for field in ("views", "likes", "comments", "clicks")
+            if field in metrics
+        ]
+        if measured:
+            lines.append("Marketing measurements — " + "; ".join(measured) + ".")
+        if marketing.get("campaign_url"):
+            lines.append(f"Attributed campaign: {marketing['campaign_url']}")
         incident = data.get("incident")
         if isinstance(incident, dict):
             lines.append(
