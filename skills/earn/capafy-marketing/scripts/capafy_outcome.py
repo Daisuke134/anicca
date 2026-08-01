@@ -101,6 +101,17 @@ def validate_outcome(data: dict) -> list[str]:
         public_url = data.get("public_post_url")
         if public_url is not None and not _is_https_url(public_url):
             errors.append("public_post_url must be a real HTTPS URL")
+    elif kind == "incident_unresolved":
+        for field in (
+            "incident_id",
+            "owner",
+            "detected_summary",
+            "repair_summary",
+            "blocker",
+            "next_retry_at",
+        ):
+            if not data.get(field):
+                errors.append(f"{field} is required")
     else:
         errors.append(f"unsupported kind: {kind!r}")
     return errors
@@ -174,6 +185,18 @@ def render_outcome(data: dict) -> str:
             f"Next: {data['next_action']}",
         ]
         return "\n".join(lines)
+
+    if kind == "incident_unresolved":
+        return "\n".join(
+            [
+                "Capafy incident remains unresolved — automatic retry scheduled",
+                f"Detected: {data['detected_summary']}",
+                f"Repair attempted: {data['repair_summary']}",
+                f"Remaining blocker: {data['blocker']}",
+                f"Next automatic retry: {data['next_retry_at']}",
+                "Human action required: none.",
+            ]
+        )
 
     if kind == "builder_submitted":
         return "\n".join(
@@ -326,6 +349,17 @@ def get_active_incident(owner: str) -> dict:
     return max(matches, key=lambda item: item.get("updated_at", ""))
 
 
+def get_incident(incident_id: str) -> dict:
+    path = _incident_dir() / f"{incident_id}.json"
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError as exc:
+        raise ValueError(f"incident not found: {incident_id}") from exc
+    if not isinstance(value, dict):
+        raise ValueError(f"incident is not a JSON object: {incident_id}")
+    return value
+
+
 def load_json_stdin() -> dict:
     value = json.load(sys.stdin)
     if not isinstance(value, dict):
@@ -363,6 +397,13 @@ def main(argv: list[str] | None = None) -> int:
             except (ValueError, IndexError) as exc:
                 raise ValueError("--owner is required") from exc
             print(json.dumps(get_active_incident(owner), ensure_ascii=False, sort_keys=True))
+            return 0
+        if command == "get-incident":
+            try:
+                incident_id = args[args.index("--incident-id") + 1]
+            except (ValueError, IndexError) as exc:
+                raise ValueError("--incident-id is required") from exc
+            print(json.dumps(get_incident(incident_id), ensure_ascii=False, sort_keys=True))
             return 0
         if command == "transition-incident":
             print(
