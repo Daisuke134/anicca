@@ -297,6 +297,13 @@ sign-in表示を返したため、**現在のLuma loginはexpired**と確定し�
 いない。adapterはこの状態を成功にせず`login_required`として分類し、既存daily-driver上のGoogle/Luma
 認証を復旧してから実submitへ進む。
 
+O1B-03進捗2: CloakBrowser daily-driver transportをTDDで正本へ追加した。REDはmodule不存在、GREENは
+新規4件とoutbound全体42件成功。CDP endpointを`127.0.0.1:9222`だけに固定し、Luma HTTPS origin、
+credentialなし、共有context 1つを必須にした。既存pageをtaskへ渡さず、自分で作ったpageだけを例外時も
+closeし、browser自体はcloseしない。実moduleを`:9222`へ接続したread-only確認でも
+`existing_page_count=1`、`login_required`、path `/signin`を返し、その後もdaily-driver生存を確認した。
+次は東京対面Luma inventoryのdiscovery契約。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
