@@ -8,6 +8,7 @@ const GEMINI = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2
 const PARTICIPATION_KINDS = Object.freeze(["audience_only", "talk_application", "both", "unknown"]);
 const TALK_FORMATS = Object.freeze(["lightning_talk", "cfp", "demo", "pitch", "workshop", "other"]);
 const APPLICATION_STATUSES = Object.freeze(["open", "closed", "invite_only", "not_offered", "unknown"]);
+const VERIFIED_OPPORTUNITIES = new WeakSet();
 const DECISION_KEYS = Object.freeze([
   "application_status",
   "application_url",
@@ -39,7 +40,7 @@ function invalid(label = "schema") {
 function sourceInput(input = {}) {
   const canonicalUrl = canonicalEventUrl(input.canonicalUrl);
   const title = String(input.title == null ? "" : input.title).trim();
-  const body = String(input.body == null ? "" : input.body).trim();
+  const body = String(input.body == null ? "" : input.body).replace(/\s+/g, " ").trim();
   const now = String(input.now == null ? "" : input.now).trim();
   if (!canonicalUrl || !title || title.length > 300 || !body || body.length > 20_000) invalid("source");
   const nowMs = Date.parse(now);
@@ -81,6 +82,7 @@ function validateEventTalkOpportunity(value, sourceValue) {
   const excerpt = boundedText(value.evidence_excerpt, "evidence", 240);
   const reason = boundedText(value.reason, "reason", 400);
   if (!source.body.includes(excerpt)) invalid("evidence");
+  if (applicationUrl !== null && !source.body.includes(applicationUrl)) invalid("application URL");
 
   const talkKind = value.participation_kind === "talk_application"
     || value.participation_kind === "both";
@@ -100,7 +102,7 @@ function validateEventTalkOpportunity(value, sourceValue) {
     && (value.talk_format !== null || value.application_status !== "unknown")
   ) invalid("invariant");
 
-  return Object.freeze({
+  const decision = Object.freeze({
     participation_kind: value.participation_kind,
     talk_format: value.talk_format,
     application_status: value.application_status,
@@ -109,6 +111,12 @@ function validateEventTalkOpportunity(value, sourceValue) {
     evidence_excerpt: excerpt,
     reason,
   });
+  VERIFIED_OPPORTUNITIES.add(decision);
+  return decision;
+}
+
+function isVerifiedEventTalkOpportunity(value) {
+  return Boolean(value && typeof value === "object" && VERIFIED_OPPORTUNITIES.has(value));
 }
 
 async function inferEventTalkOpportunity(input, options = {}) {
@@ -163,5 +171,6 @@ module.exports = {
   PARTICIPATION_KINDS,
   TALK_FORMATS,
   inferEventTalkOpportunity,
+  isVerifiedEventTalkOpportunity,
   validateEventTalkOpportunity,
 };

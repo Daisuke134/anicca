@@ -580,6 +580,22 @@ O1B-12進捗1（RED）: `both` eventから別ID・別action URLの2 entity、aud
 closed talkの追跡、classifier provenance必須、reference-only input、atomic insert、失敗時rollbackを固定する
 test 5件を追加した。production `event-participation-entities.js`はまだ存在しないためmodule path不在でREDになる。
 
+O1B-12進捗2: classifierが検証済みdecisionへin-process provenanceを付け、plain objectの偽判定を拒否する。
+`event-participation-entities.js`はtenant、canonical Luma event、開始時刻、evidence refだけからkind別の
+stable IDを生成する。`both`なら一般参加と登壇応募をexactly 2行にし、一般参加actionはevent URL、登壇actionは
+本文中に実在する公開応募URLだけに固定する。PostgreSQL migrationはkind別state CHECK、unique key、RLSを持つ。
+実DB前の監査で`Pool.query`のtransactionが同じconnectionに固定されない欠陥を発見し、`pool.connect()`で
+一つのclientをBEGINからCOMMITまでleaseし、失敗時ROLLBACK、finally releaseする形へ修正した。
+
+完了: `O1B-12`。実CloakBrowserの`Codex Meetup Tokyo #2`ページを再読し、ログイン欄の本人情報を除いた
+公開本文だけを実Geminiへ渡した。実判定は`participation_kind=both`、`application_status=open`、
+`talk_format=lightning_talk`。production migrationを実runtime PostgreSQLへ適用し、同じeventについて
+`audience_registration`と`talk_application`を別ID・別action refの2 rowとしてatomic保存した。DB readbackは
+rows=2、distinct IDs=2、distinct kinds=2、distinct actions=2、raw identity=false。まだ参加申込、LT応募、
+Telegram送信の外部effectは起こしていない。outbound全回帰125件が成功した。実測証拠:
+`docs/evidence/outbound/2026-08-01-o1b12-live-separated-participation-entities.json`。次はO1B-13で、
+Life Managerの実測に基づくtalk title、5分outline、応募理由をagent生成し、このtalk entityへreferenceで接続する。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
@@ -706,7 +722,7 @@ identity/browser/calendar reference検証を追加し、新規4件と既存runti
 - [x] O1B-09 旧Connector loginを復旧しevents packへ統合
 - [x] O1B-10 重複旧実装を退役
 - [x] O1B-11 connpass API keyを申請。取得まで自動アクセス禁止
-- [ ] O1B-12 一般参加とLT/CFP/demo登壇応募を別entityとしてdiscover・追跡
+- [x] O1B-12 一般参加とLT/CFP/demo登壇応募を別entityとしてdiscover・追跡
 - [ ] O1B-13 Life Managerの実測demoに合うtalk title、5分outline、応募理由をagent生成
 - [ ] O1B-14 accepted後にslide締切、登壇日、会場、QR、follow-upを一つのtimelineで追跡
 - [ ] O1B-15 登壇応募ごとの`submitted / accepted / rejected / presented`を応募ledgerへ記録

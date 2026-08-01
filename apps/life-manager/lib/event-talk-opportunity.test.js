@@ -33,6 +33,14 @@ test("公開中の登壇枠だけをtyped decisionとして受理する", () => 
   assert.equal(Object.isFrozen(validateEventTalkOpportunity(openDecision(), SOURCE)), true);
 });
 
+test("実pageの改行は入力境界で正規化し、本文由来の連続した証拠だけを受理する", () => {
+  const source = {
+    ...SOURCE,
+    body: "一般参加者を募集しています。\n5分間のライトニングトーク登壇者も募集中です。\n8月10日までに https://forms.example.com/speaker から応募してください。",
+  };
+  assert.deepEqual(validateEventTalkOpportunity(openDecision(), source), openDecision());
+});
+
 test("cross-field矛盾、本文にない根拠、架空・危険URLを拒否する", () => {
   assert.throws(() => validateEventTalkOpportunity(openDecision({
     application_status: "closed",
@@ -42,6 +50,9 @@ test("cross-field矛盾、本文にない根拠、架空・危険URLを拒否す
   }), SOURCE), /evidence/i);
   assert.throws(() => validateEventTalkOpportunity(openDecision({
     application_url: "http://127.0.0.1/steal",
+  }), SOURCE), /URL/i);
+  assert.throws(() => validateEventTalkOpportunity(openDecision({
+    application_url: "https://forms.example.com/invented",
   }), SOURCE), /URL/i);
   assert.throws(() => validateEventTalkOpportunity(openDecision({
     unexpected: true,
