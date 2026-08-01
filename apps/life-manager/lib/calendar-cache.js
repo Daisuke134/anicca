@@ -45,6 +45,11 @@ function makeCachedCalendar(inner, opts = {}) {
   return {
     ...inner,
     async listEventsRaw(uid, input = {}) {
+      // ttlMs=0 is "no caching", so store nothing at all. Without this the entries Map would take a
+      // row per call that no later call can ever read (a zero TTL expires instantly) and nothing
+      // evicts — a slow leak in the one mode whose whole point is to keep no state.
+      if (ttlMs <= 0) return inner.listEventsRaw(uid, input);
+
       // The SAME resolved ttlMs that decides expiry below also sets the key's width — one number.
       const key = cacheKey(uid, input, ttlMs);
       const timestamp = now();

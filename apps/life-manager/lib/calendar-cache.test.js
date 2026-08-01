@@ -110,6 +110,17 @@ test("ttlMs=0 means no caching: every call reaches the transport", async () => {
   assert.equal(calls.list, 3);
 });
 
+test("ttlMs=0 keeps no state: concurrent identical calls are not deduped either", async () => {
+  const { inner, calls } = fakeCalendar();
+  const calendar = makeCachedCalendar(inner, { now: () => TICK_0, ttlMs: 0 });
+  const window = tickWindow(TICK_0);
+
+  // In-flight sharing IS a cache. With caching off, nothing may be retained between these two.
+  await Promise.all([calendar.listEventsRaw("u1", window), calendar.listEventsRaw("u1", window)]);
+
+  assert.equal(calls.list, 2);
+});
+
 test("ttlMs=0 buckets nothing: distinct instants keep distinct keys (no divide-by-zero collapse)", () => {
   const a = cacheKey("u1", tickWindow(TICK_0), 0);
   const b = cacheKey("u1", tickWindow(TICK_0 + 1_000), 0);
