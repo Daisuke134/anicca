@@ -351,8 +351,8 @@ The $10M product is not an individual skill. It is the platform that continuousl
 - **Active priority:** P0 — Truthful outcomes and repair closure.
 - **Implementation plan:** [`../plans/2026-08-01-capafy-p0-truthful-outcomes.md`](../plans/2026-08-01-capafy-p0-truthful-outcomes.md)
 - **Execution rule:** complete and verify one numbered task at a time; after each task, append the command evidence and commit hash here before beginning the next task.
-- **Current state (2026-08-01):** Tasks 1-5 verified. Builder and Marketer now hand terminal classification to deterministic code; Marketing explicitly separates scheduled, dry, challenge, technical failure, and verified public Reel states.
-- **Next action:** Task 6, replace the cryptic goal dump with a natural-language 09:30 consolidated company report using the same truthful labels.
+- **Current state (2026-08-01):** Tasks 1-6 verified offline. The goal monitor preserves machine JSON but renders a natural-language company report from server inventory, reconciled money, cost, account state, terminals, and incidents; the installed/source schedule is 09:30.
+- **Next action:** Task 7, strengthen business-outcome health, load/reload all jobs, run the complete suite, and prove the seeded detect-to-closure lifecycle plus read-only production reconciliation.
 
 #### P0 execution log
 
@@ -363,7 +363,7 @@ The $10M product is not an individual skill. It is the platform that continuousl
 | 3. Repair closure monitor | Verified | RED: monitor absent, 15 contract failures; GREEN: monitor integration `19 passed`, outcome regression `12 passed`, plist `OK` | `59b39d0a4` |
 | 4. Builder handoff | Verified | RED: handoff/probe absent; GREEN: Builder integration `17 passed`, outcome `12 passed`, self-fix `23 passed`, loop `7 passed` | `f78446b62` |
 | 5. Marketer handoff | Verified | RED: 17 missing-handoff failures; GREEN: Marketer `23 passed`, related pytest `22 passed`, account lifecycle `38 passed` | `cda11e4be` |
-| 6. 09:30 report | Not started | — | — |
+| 6. 09:30 report | Verified offline | RED: unsupported `company_state`; GREEN: report/outcome `13 passed`, account lifecycle `38 passed`, source+installed plist lint `OK`; runtime reload deferred to Task 7 | `feat(capafy): render natural company report at 0930` |
 | 7. Watchdogs + end-to-end proof | Not started | — | — |
 
 ### P0 — Truthful outcomes and repair closure

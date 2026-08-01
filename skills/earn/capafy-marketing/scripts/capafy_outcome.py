@@ -131,6 +131,29 @@ def validate_outcome(data: dict) -> list[str]:
                     Decimal(str(data[field]))
                 except (InvalidOperation, TypeError, ValueError):
                     errors.append(f"{field} must be numeric")
+    elif kind == "company_state":
+        inventory = data.get("inventory")
+        account = data.get("account")
+        marketing = data.get("marketing")
+        if not isinstance(inventory, dict):
+            errors.append("inventory is required")
+        else:
+            for field in ("online", "under_review", "draft", "rejected"):
+                if not isinstance(inventory.get(field), int):
+                    errors.append(f"inventory.{field} must be an integer")
+        if not isinstance(account, dict) or not account.get("handle"):
+            errors.append("account.handle is required")
+        if not isinstance(marketing, dict):
+            errors.append("marketing is required")
+        for field in MONEY_FIELDS:
+            if field not in data:
+                errors.append(f"{field} is required and must remain separate")
+        if not _is_https_url(data.get("dashboard_url")):
+            errors.append("dashboard_url must be a real HTTPS URL")
+        if data.get("listing_url") and not _is_https_url(
+            data.get("listing_url"), host_suffix="capafy.ai"
+        ):
+            errors.append("listing_url must be a real https://capafy.ai URL")
     else:
         errors.append(f"unsupported kind: {kind!r}")
     return errors
@@ -238,6 +261,52 @@ def render_outcome(data: dict) -> str:
                 "Current result: creative verified locally; no public post exists.",
             ]
         )
+
+    if kind == "company_state":
+        inventory = data["inventory"]
+        account = data["account"]
+        marketing = data["marketing"]
+        orders = int(data.get("orders") or 0)
+        order_word = "order" if orders == 1 else "orders"
+        session = (
+            "The posting session is established."
+            if account.get("session_established")
+            else "The posting session is not established."
+        )
+        if marketing.get("public_post_url"):
+            marketing_line = f"Verified public post: {marketing['public_post_url']}"
+        elif marketing.get("scheduler_loaded"):
+            marketing_line = "Marketing is scheduled; no public post is verified."
+        else:
+            marketing_line = "Marketing is not scheduled; no public post is verified."
+        lines = [
+            f"Capafy — Consolidated company state, {data['date']}",
+            (
+                f"Products: {inventory['online']} online, "
+                f"{inventory['under_review']} under review, {inventory['draft']} drafts, "
+                f"{inventory['rejected']} rejected."
+            ),
+            f"Sales: {orders} lifetime {order_word} / {_money(data['gross_usd'])} gross.",
+            *_money_lines(data)[1:],
+            (
+                f"Instagram @{account['handle']} — Calendar age: day "
+                f"{account.get('calendar_day', 0)}. {session} "
+                f"Ban status: {account.get('ban_state', 'unproven')}."
+            ),
+            marketing_line,
+        ]
+        incident = data.get("incident")
+        if isinstance(incident, dict):
+            lines.append(
+                "Open incident: "
+                f"{incident.get('summary', 'unspecified')} "
+                f"[{incident.get('phase', 'unknown')}]; next retry: "
+                f"{incident.get('next_retry_at') or 'automatic retry pending'}."
+            )
+        if data.get("listing_url"):
+            lines.append(f"Latest Builder evidence: {data['listing_url']}")
+        lines.append(f"Dashboard: {data['dashboard_url']}")
+        return "\n".join(lines)
 
     if kind == "builder_submitted":
         return "\n".join(
