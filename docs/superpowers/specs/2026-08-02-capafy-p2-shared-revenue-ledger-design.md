@@ -53,7 +53,7 @@ Backfill/current-state sync ────┘        v
 ```
 
 - `capafy_event_store.py` owns schema validation, deterministic identifiers, locked append, conflict detection, sidecar writes, and ledger reads. It makes no business or creative judgments.
-- `capafy_event_bridge.py` translates already-verified producer outcomes into canonical events. Translation is deterministic because the producer has already established the business observable.
+- `capafy_event_adapters.py` translates already-verified producer outcomes into canonical events. Translation is deterministic because the producer has already established the business observable.
 - `capafy_event_projection.py` folds events into current company state and a stable `projection_id`. It performs bookkeeping and money arithmetic only.
 - `build_company_dashboard.py` renders a dependency-free, public-safe HTML/JSON projection. It never reads private sidecars.
 - Existing agents continue to choose products, positioning, and creative actions. P2 does not add keyword, regex, or if/else business judgment.
@@ -127,6 +127,8 @@ The store obtains an exclusive file lock, scans existing identifiers, and then a
 1. new identifier and valid event: append one compact JSON line, flush, and `fsync`;
 2. identical identifier and identical canonical payload: return `appended=false` with success;
 3. identical identifier and different payload: return an explicit conflict and write nothing.
+
+Producer adapters do not choose `recorded_at`. On the first successful append the store stamps that field once in UTC. Retry equality and `source_digest` cover the semantic payload and explicitly exclude `recorded_at`, so the same verified observable retried later is a no-op rather than a false conflict. Persisted rows always contain `recorded_at`; changing any other canonical field under the same identifier remains a conflict.
 
 If a technical sidecar is supplied, it is written atomically at mode `0600` before the event append. A failed event append cannot create a public claim. A sidecar without a canonical event is safe orphan evidence and may be reused on retry.
 

@@ -1,7 +1,7 @@
 # Capafy Self-Improving Revenue Loop Design
 
 **Date:** 2026-08-01  
-**Status:** P0 verified; P1 Tasks 1-7 verified; P1 Task 8 in progress  
+**Status:** P0-P1 production-verified; P2 shared revenue ledger active
 **Objective:** Turn the existing Capafy Builder and Marketer into one autonomous, self-healing, self-improving revenue system that reports verified outcomes and links in natural language.
 
 ## 1. Current verified baseline
