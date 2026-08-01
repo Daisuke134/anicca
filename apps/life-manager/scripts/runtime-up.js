@@ -360,6 +360,12 @@ async function executeCapabilityJob(job, services) {
     if (!execution || !execution.receipt) {
       throw new Error("capability adapter returned no receipt");
     }
+    if (job.capability === "outbound.event.apply") {
+      const {
+        assertVerifiedOutboundReceipt,
+      } = require("../lib/outbound-success.js");
+      assertVerifiedOutboundReceipt(execution.receipt, job);
+    }
   } catch (error) {
     executionError = error;
     unknownEffect = error && error.unknownEffect === true;

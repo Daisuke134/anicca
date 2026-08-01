@@ -7,6 +7,7 @@ const EXTERNAL_REF = /^(?:provider-receipt|gmail-message|ticket):\/\/[a-z0-9._-]
 const OBJECT_REF = /^object:\/\/sha256\/([0-9a-f]{64})$/;
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 const RECEIPT_KINDS = new Set(["provider_response", "confirmation_mail", "ticket"]);
+const PRODUCED_EVIDENCE = new WeakSet();
 
 function text(value) {
   return String(value == null ? "" : value).trim();
@@ -150,9 +151,16 @@ async function verifyOutboundEvidence(input = {}, dependencies = {}) {
   const evidenceHash = createHash("sha256")
     .update(JSON.stringify(result), "utf8")
     .digest("hex");
-  return deepFreeze({ ...result, evidence_hash: evidenceHash });
+  const produced = deepFreeze({ ...result, evidence_hash: evidenceHash });
+  PRODUCED_EVIDENCE.add(produced);
+  return produced;
+}
+
+function isVerifierProducedEvidence(value) {
+  return Boolean(value && typeof value === "object" && PRODUCED_EVIDENCE.has(value));
 }
 
 module.exports = {
   verifyOutboundEvidence,
+  isVerifierProducedEvidence,
 };

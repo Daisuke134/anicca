@@ -15,7 +15,7 @@
     "test:panel-score": "node --test lib/panel-score-semantics.test.js lib/panel-api-score-semantics.test.js lib/panel-score-migration.test.js scripts/independent-panel-score-readback.test.js",
     "test:panel-score:postgres": "test/postgres/panel-score-postgres.integration.sh",
     "test:runtime-job": "node --test lib/runtime-job-store.test.js lib/effect-reconciler.test.js",
-    "test:outbound": "node --test lib/outbound-event-job.test.js lib/runtime-lease-heartbeat.test.js lib/outbound-evidence.test.js lib/outbound-guardian.test.js",
+    "test:outbound": "node --test lib/outbound-event-job.test.js lib/runtime-lease-heartbeat.test.js lib/outbound-evidence.test.js lib/outbound-guardian.test.js lib/outbound-success.test.js",
     "test:runtime-job:postgres": "test/postgres/runtime-job-protocol.integration.sh",
     "test:runtime-up": "node --test scripts/runtime-up.test.js lib/maybe-start-loops.test.js",
     "test:openclaw-classification": "node --test scripts/classify-legacy-jobs.test.js",
