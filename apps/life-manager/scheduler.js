@@ -674,17 +674,51 @@ async function forEachUserSafe(users, label, fn, timeoutMs = USER_TICK_TIMEOUT_M
 // future revert to a raw for-loop would then fail the test, not pass silently.
 async function tick(deps = {}) {
   const listUsers = deps.listUsers || supaUsers;
-  const wake = deps.wake || wakeUserOnce;
+  // The organ half only. The dial moved to wakeTick above, on its own timer and its own deadline.
+  // `deps.wake` stays accepted as the legacy name for THIS tick's per-user fn — the isolation and
+  // runtime-gate suites inject it to prove tick() still routes every tenant through forEachUserSafe,
+  // and that assertion is about the tick's fan-out, not about which half it now drives.
+  const organs = deps.organs || deps.wake || organsUserOnce;
   const users = await listUsers();
   const now = deps.now !== undefined ? deps.now : Date.now();
-  await forEachUserSafe(users.filter(u => u.daily_automation_enabled !== false && u.call_enabled !== false), "scheduler", (u) => wake(u, now));
+  await forEachUserSafe(users.filter(u => u.daily_automation_enabled !== false && u.call_enabled !== false), "scheduler", (u) => organs(u, now));
+}
+
+// The wake call gets its own timer and its own budget. 20 seconds is sized to what wakeCallOnce
+// actually does — one calendar fetch, one departure resolve, one dial — where 90s was sized for the
+// care organ's browser work. A user who blows 20s here still cannot delay the next user's dial.
+const WAKE_USER_TIMEOUT_MS = Number(process.env.LIFE_WAKE_USER_TIMEOUT_MS) || 20000;
+
+async function wakeTick(deps = {}) {
+  const listUsers = deps.listUsers || supaUsers;
+  const wake = deps.wake || wakeCallOnce;
+  const users = await listUsers();
+  const now = deps.now !== undefined ? deps.now : Date.now();
+  await forEachUserSafe(
+    users.filter(u => u.daily_automation_enabled !== false && u.call_enabled !== false),
+    "wake", (u) => wake(u, now), WAKE_USER_TIMEOUT_MS,
+  );
+}
+
+// Fixed 60s, deliberately NOT schedulerPollInterval(): the Composio budget degradation that slows the
+// organ tick to 5 minutes must not slow the dial (that defect is spec row #1d, tracked separately).
+// The wake tick owns the calendar fetch, so this loop's call volume equals the old combined tick's.
+function startWakeLoop() {
+  console.log(`[wake] started — dedicated tick every ${TICK_MS / 1000}s, ${WAKE_USER_TIMEOUT_MS / 1000}s per user, wakes at T-${WAKE_LEVELS.map((l) => l.min).join("/")}min`);
+  let timer;
+  const run = async () => {
+    try { await wakeTick(); } catch (e) { console.error("[wake] tick err", e.message); }
+    timer = setTimeout(run, TICK_MS);
+  };
+  run();
+  return { close: () => clearTimeout(timer) };
 }
 
 function startScheduler() {
   if (!process.env.PUBLIC_WSS) {
     console.warn("[scheduler] PUBLIC_WSS not set — calls would have no media bridge URL; loop still runs but won't dial");
   }
-  console.log(`[scheduler] started — tick every ${TICK_MS / 1000}s, escalating wakes at T-${WAKE_LEVELS.map((l) => l.min).join("/")}min`);
+  console.log(`[scheduler] started — organ tick every ${TICK_MS / 1000}s (wake runs on its own loop)`);
   let timer;
   const run = async () => {
     try { await tick(); } catch (e) { console.error("[scheduler] tick err", e.message); }
@@ -869,8 +903,10 @@ async function getUserByUid(uid) {
 }
 
 module.exports = {
-  startScheduler, startTravelLoop, startAskLoop, startOnboardLoop, startDiscoveryLoop,
-  tick, travelTick, askTickAll, onboardTick, discoveryTick,
+  startScheduler, startWakeLoop, startTravelLoop, startAskLoop, startOnboardLoop, startDiscoveryLoop,
+  tick, wakeTick, travelTick, askTickAll, onboardTick, discoveryTick,
+  // the wake loop's own per-user budget — exported so a revert to the shared 90s is test-caught
+  WAKE_USER_TIMEOUT_MS,
   // per-user single-invocation functions (for Inngest fan-out + testing)
   wakeUserOnce, travelUserOnce, askUserOnce,
   // the two halves of the old wakeUserOnce — separate timers drive them (spec §3.1 method A)
