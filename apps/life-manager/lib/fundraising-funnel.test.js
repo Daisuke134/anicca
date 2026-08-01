@@ -106,4 +106,18 @@ test("closed DTO validator rejects inconsistent stage labels and chronology", ()
     mutate(copy);
     assert.throws(() => validateFundraisingFunnel(copy), /fundraising funnel invalid/);
   }
+
+  const rejectedBeforeConfirmation = structuredClone(buildFundraisingFunnel({
+    schema_version: 1,
+    events: [event("application", 1), event("confirmation", 2), event("rejected", 3)],
+  }));
+  rejectedBeforeConfirmation.summary.confirmation = 0;
+  rejectedBeforeConfirmation.applications[0].current_stage = "application";
+  rejectedBeforeConfirmation.applications[0].stages[1] = {
+    id: "confirmation", state: "pending", occurred_at: null,
+  };
+  assert.throws(
+    () => validateFundraisingFunnel(rejectedBeforeConfirmation),
+    /fundraising funnel invalid/,
+  );
 });

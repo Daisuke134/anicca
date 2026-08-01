@@ -189,6 +189,7 @@ function validateFundraisingFunnel(value) {
     if (applicationStage.state !== "reached"
       || (interview.state === "reached" && confirmation.state !== "reached")
       || (decision.outcome === "offer_received" && interview.state !== "reached")
+      || (decision.outcome === "rejected" && confirmation.state !== "reached")
       || (funded.state === "reached" && decision.outcome !== "offer_received")
       || (decision.outcome === "rejected" && funded.state === "reached")
       || (decision.state === "pending") !== (decision.outcome === null)

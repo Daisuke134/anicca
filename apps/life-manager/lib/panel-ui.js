@@ -820,6 +820,7 @@ function renderPanelPage(options = {}) {
         if (application.stages[0].state !== "reached"
           || (interview.state === "reached" && confirmation.state !== "reached")
           || (decision.outcome === "offer_received" && interview.state !== "reached")
+          || (decision.outcome === "rejected" && confirmation.state !== "reached")
           || (funded.state === "reached" && decision.outcome !== "offer_received")
           || (decision.state === "pending") !== (decision.outcome === null)
           || (application.terminal_outcome === "rejected") !== (decision.outcome === "rejected")

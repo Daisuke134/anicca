@@ -154,6 +154,33 @@ test("PANEL-8h: emitted loader renders only the fixed error for every closed sec
   }
 });
 
+test("O1C-18 emitted browser rejects a rejection before confirmation", async () => {
+  const occurredAt = "2026-08-01T18:00:00.000Z";
+  const captured = {
+    status: 200,
+    body: {
+      schema_version: 1,
+      summary: { application: 1, confirmation: 0, interview: 0, offer: 0, rejected: 1, funded: 0 },
+      applications: [{
+        program: "YC Fall 2026",
+        current_stage: "application",
+        terminal_outcome: "rejected",
+        last_event_at: occurredAt,
+        stages: [
+          { id: "application", state: "reached", occurred_at: "2026-08-01T17:00:00.000Z" },
+          { id: "confirmation", state: "pending", occurred_at: null },
+          { id: "interview", state: "pending", occurred_at: null },
+          { id: "decision", state: "reached", outcome: "rejected", occurred_at: occurredAt },
+          { id: "funded", state: "pending", occurred_at: null },
+        ],
+      }],
+    },
+  };
+  const browser = await emittedPanelRuntime(captured, "fundraising").load();
+  assert.equal(browser.state, "error");
+  assert.equal(browser.html, `<p class="error">${BROWSER_LOAD_ERROR_COPY}</p>`);
+});
+
 test("PANEL-8h: emitted browser never displays internal names, raw objects, stacks, identity, or the 19 synthetic secrets", async () => {
   const rendered = [];
   for (const section of [...MIRROR_SECTIONS, "control-center"]) {
