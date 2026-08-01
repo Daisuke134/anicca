@@ -4,6 +4,7 @@
 
 const { isHelperBlock } = require("./wake-filter.js");
 const { shouldMarkAnswered } = require("./answered.js");
+const { hangupCall } = require("./dial.js");
 
 const NO_DESTINATION_MESSAGE = "⚠️ 先方の連絡先が見つからず、遅刻連絡は送れていません";
 const MAIL_FAILURE_MESSAGE = "⚠️ 遅刻連絡メールを送信できませんでした";
@@ -230,16 +231,36 @@ async function recordAmdResult(uid, key, opts = {}) {
 }
 
 // The whole of what a call.machine.detection.ended means for the wake row, in one testable place:
-// record the raw result always, latch answered_at only for a human. server.js owns the transport
-// (signature, decode, HTTP reply); this owns the decision, so the three outcomes are provable
-// without booting the server or reaching for global fetch.
+// record the raw result always, latch answered_at only for a human, and hang up on anything AMD
+// says is not a human. server.js owns the transport (signature, decode, HTTP reply); this owns the
+// decision, so the outcomes are provable without booting the server or reaching for global fetch.
+//
+// spec §3 row 2b / §5.2.1 — why the hangup lives here and why it is second:
+//   * Measured, this service never hung up at all: `hangup_source` was `callee` on all 43 correlated
+//     events, so every voicemail ran to the carrier's 120s recording limit at ~$0.05 of Gemini Live.
+//     17 machines against 3 humans, and four straight days of nothing but voicemail.
+//   * `not_sure` hangs up too. Telnyx's docs recommend treating it as human; the measured ratio says
+//     otherwise, and the asymmetry settles it — being wrong here costs one missed nudge, being wrong
+//     the other way costs two minutes of paid speech into a recording nobody plays back.
+//   * A result we could not read at all (empty/missing) hangs up on NOBODY. That is not an AMD
+//     verdict, it is a payload we failed to parse, and hanging up on it would turn one Telnyx schema
+//     change into "no wake call ever completes again" — the silent-total-failure class of §1.3.
+//   * The record is written FIRST. The hangup is a cost saving; amd_result is the evidence that tells
+//     a voicemail apart from a webhook that never arrived, and it must not be hostage to Telnyx.
+//
+// `hangup` mirrors `answered`'s vocabulary: null = deliberately not attempted, { ok:false, error } =
+// we meant to and could not, which is a thing to log rather than a thing to skip.
 async function applyAmdDetection(uid, key, opts = {}) {
   const result = typeof opts.result === "string" ? opts.result.trim() : "";
   const amd = await recordAmdResult(uid, key, opts);
-  if (!shouldMarkAnswered({ amdEnabled: true, signal: "amd", result })) {
-    return { result, amd, answered: null };
+  if (shouldMarkAnswered({ amdEnabled: true, signal: "amd", result })) {
+    return { result, amd, answered: await markAnswered(uid, key, opts), hangup: null };
   }
-  return { result, amd, answered: await markAnswered(uid, key, opts) };
+  if (!result) return { result, amd, answered: null, hangup: null };
+  const hangup = await hangupCall(opts.callControlId, {
+    fetchImpl: opts.fetchImpl, apiKey: opts.telnyxApiKey,
+  });
+  return { result, amd, answered: null, hangup };
 }
 
 module.exports = {
