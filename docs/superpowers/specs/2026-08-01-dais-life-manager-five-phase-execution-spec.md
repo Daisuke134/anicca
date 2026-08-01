@@ -243,9 +243,10 @@ YC公式pageでlate application受付を当日再確認
 
 ## 5. 残作業 — 必ず番号順
 
-実行中: `O1A-04`。`apps/life-manager`の完全な`npm test`を現在のdependencyで実行し、
-不足module、壊れたtest wiring、今回のoutbound回帰を実測する。失敗があれば最初のroot causeから
-一件ずつTDDで修復し、全suiteが最後まで走るまで完了にしない。
+完了: `O1A-04`。`apps/life-manager`の完全な`npm test`を現在のlockfileとinstallで実行し、
+2026-08-01にexit 0を確認した。不足moduleはなく、新しいoutbound 11件、runtime worker 30件、
+runtime adapter 120件、browser auth 75件、legacy path Node 18件 + Python 8件を含む全commandが
+最後まで成功した。dependency追加やproduction変更は不要だった。次は`O1A-05`。
 
 完了: `O1A-03`。events・funders・jobs共通の成功条件を`E1 AND E2 AND E3`としてmodule化した。
 callerの成功booleanやDOM本文は信用せず、外部receipt reader、immutable artifact reader、実HEADを
@@ -291,7 +292,7 @@ identity/browser/calendar reference検証を追加し、新規4件と既存runti
 - [x] O1A-01 既存`lm_runtime_jobs`を唯一のdurable runtimeとしてConnector event application job contractへ接続
 - [x] O1A-02 enqueue、claim、heartbeat、retry、dead-letter、idempotencyを接続
 - [x] O1A-03 Evidence E1/E2/E3を共通module化
-- [ ] O1A-04 不足dependencyを解消し全testを実行
+- [x] O1A-04 不足dependencyを解消し全testを実行
 - [ ] O1A-05 Guardianを接続
 - [ ] O1A-06 強制停止→検知→Telegram警告→復旧を実証
 
