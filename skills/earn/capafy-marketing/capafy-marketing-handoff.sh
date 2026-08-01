@@ -12,6 +12,9 @@ LIFECYCLE="${CAPAFY_IG_LIFECYCLE:-$HERE/scripts/capafy_ig_lifecycle.py}"
 ACCOUNTS="${CAPAFY_IG_ACCOUNTS_FILE:-$HOME/.cloak/clip-accounts-capafy.json}"
 LIFECYCLE_STATE="${CAPAFY_IG_LIFECYCLE_STATE:-$STATE/capafy-ig-lifecycle.json}"
 KICKSTART="${CAPAFY_LAUNCHCTL:-launchctl}"
+EVENT_ADAPTER="${CAPAFY_EVENT_ADAPTER:-$HERE/scripts/capafy_event_adapters.py}"
+EVENT_LEDGER="${CAPAFY_EVENT_LEDGER:-$STATE/capafy-revenue-events.jsonl}"
+EVENT_EVIDENCE_DIR="${CAPAFY_EVENT_EVIDENCE_DIR:-$STATE/capafy-revenue-evidence}"
 TERMINAL="$STATE/capafy-marketing-terminal.json"
 mkdir -p "$STATE"
 
@@ -93,15 +96,16 @@ PY
   *) incident "unsupported marketing terminal result=$KIND" "The technical repair owner will repair the outcome contract" "the next repair cycle"; exit $? ;;
 esac
 
-if [ -f "$TERMINAL" ] && python3 - "$TERMINAL" "$ENVELOPE" <<'PY'
+if [ "$KIND" = published ]; then
+  ENVELOPE="$(python3 - "$ENVELOPE" "$LIFECYCLE_STATE" <<'PY'
 import json,sys
-try:
- old=json.load(open(sys.argv[1])); new=json.loads(sys.argv[2]); msg=str(old.get("telegram_message_id") or "")
- raise SystemExit(0 if msg.isdigit() and old.get("outcome")==new else 1)
-except Exception: raise SystemExit(1)
+envelope=json.loads(sys.argv[1])
+if not envelope.get("handle"):
+    try: envelope["handle"]=json.load(open(sys.argv[2])).get("handle")
+    except Exception: envelope["handle"]=None
+print(json.dumps(envelope))
 PY
-then
-  exit 0
+)" || exit 2
 fi
 
 MEDIA_PATH="$(python3 - "$ENVELOPE" <<'PY'
@@ -113,6 +117,20 @@ if [ -n "$MEDIA_PATH" ] && [ ! -f "$MEDIA_PATH" ]; then
   incident "marketing media artifact is missing: $MEDIA_PATH" "The content pass cannot claim completion without its real media" "the next repair cycle"; exit $?
 fi
 BODY="$(printf '%s' "$ENVELOPE"|python3 "$OUTCOME" render)" || { incident "marketing terminal outcome failed validation" "Missing evidence prevents a publish claim" "the next repair cycle"; exit $?; }
+printf '%s' "$ENVELOPE" | python3 "$EVENT_ADAPTER" append-outcome \
+  --outcome-stdin --source "$RESULT" --ledger "$EVENT_LEDGER" \
+  --evidence-dir "$EVENT_EVIDENCE_DIR" --technical-evidence-dir "$EVIDENCE_DIR" \
+  >/dev/null || exit 2
+if [ -f "$TERMINAL" ] && python3 - "$TERMINAL" "$ENVELOPE" <<'PY'
+import json,sys
+try:
+ old=json.load(open(sys.argv[1])); new=json.loads(sys.argv[2]); msg=str(old.get("telegram_message_id") or "")
+ raise SystemExit(0 if msg.isdigit() and old.get("outcome")==new else 1)
+except Exception: raise SystemExit(1)
+PY
+then
+  exit 0
+fi
 MSG_ID="$(send_receipt "$BODY")" || exit 2
 record_terminal "$MSG_ID" "$ENVELOPE"
 exit 0

@@ -11,6 +11,9 @@ RESULT="${CAPAFY_BUILDER_RESULT:-$STATE/capafy-builder-result.json}"
 OUTCOME="${CAPAFY_OUTCOME_SCRIPT:-$HERE/../../earn/capafy-marketing/scripts/capafy_outcome.py}"
 SENDER="${CAPAFY_TELEGRAM_SENDER:-$HERE/../../_shared/send-telegram.sh}"
 FIXER="${CAPAFY_SELF_FIX:-$HERE/../self-fix.sh}"
+EVENT_ADAPTER="${CAPAFY_EVENT_ADAPTER:-$HERE/../../earn/capafy-marketing/scripts/capafy_event_adapters.py}"
+EVENT_LEDGER="${CAPAFY_EVENT_LEDGER:-$STATE/capafy-revenue-events.jsonl}"
+EVENT_EVIDENCE_DIR="${CAPAFY_EVENT_EVIDENCE_DIR:-$STATE/capafy-revenue-evidence}"
 TERMINAL="$STATE/capafy-builder-terminal.json"
 mkdir -p "$STATE"
 
@@ -147,6 +150,10 @@ PY
 fi
 
 BODY="$(printf '%s' "$ENVELOPE" | python3 "$OUTCOME" render)" || { start_failure "Builder terminal outcome failed validation"; exit $?; }
+printf '%s' "$ENVELOPE" | python3 "$EVENT_ADAPTER" append-outcome \
+  --outcome-stdin --source "$RESULT" --ledger "$EVENT_LEDGER" \
+  --evidence-dir "$EVENT_EVIDENCE_DIR" --technical-evidence-dir "$EVIDENCE_DIR" \
+  >/dev/null || exit 2
 KEY="$(printf '%s' "$ENVELOPE" | python3 "$OUTCOME" delivery-key)" || exit 2
 if [ -f "$TERMINAL" ] && python3 - "$TERMINAL" "$KEY" <<'PY'
 import json, sys

@@ -5,6 +5,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 HANDOFF="$ROOT/skills/self/capafy-loop/capafy-builder-handoff.sh"
 DAILY="$ROOT/skills/self/capafy-loop/capafy-loop-daily.sh"
 OUTCOME="$ROOT/skills/earn/capafy-marketing/scripts/capafy_outcome.py"
+EVENT_ADAPTER="$ROOT/skills/earn/capafy-marketing/scripts/capafy_event_adapters.py"
 PASS=0; FAIL=0
 ok(){ echo "  ok $1"; PASS=$((PASS+1)); }
 bad(){ echo "  FAIL $1: $2"; FAIL=$((FAIL+1)); }
@@ -20,6 +21,7 @@ setup_case(){
   SENDER="$T/send.sh"
   printf '%s\n' '#!/usr/bin/env bash' \
     'n=$(cat "$COUNT"); printf "%s\n" "$((n+1))" > "$COUNT"' \
+    '[ "${FAIL_FIRST_SEND:-0}" = 1 ] && [ "$n" = 0 ] && exit 1' \
     'printf "%s\n" "$1" >> "$MESSAGES"' \
     'printf "TELEGRAM_SENT=true MSGID=5511\n"' > "$SENDER"
   chmod +x "$SENDER"
@@ -31,7 +33,10 @@ setup_case(){
   export CAPAFY_OUTCOME_STATE_DIR="$STATE" CAPAFY_BUILDER_RESULT="$CANDIDATE"
   export CAPAFY_REMOTE_STATUS_JSON="$REMOTE" CAPAFY_MONEY_JSON="$MONEY"
   export CAPAFY_TELEGRAM_SENDER="$SENDER" CAPAFY_SELF_FIX="$FIXER" CAPAFY_OUTCOME_SCRIPT="$OUTCOME"
+  export CAPAFY_EVENT_ADAPTER="$EVENT_ADAPTER" CAPAFY_EVENT_LEDGER="$STATE/capafy-revenue-events.jsonl"
+  export CAPAFY_EVENT_EVIDENCE_DIR="$STATE/capafy-revenue-evidence"
   export COUNT MESSAGES FIX_CALLS
+  unset FAIL_FIRST_SEND
 }
 
 seed_submitted(){
@@ -49,6 +54,20 @@ has "message contains agent id" "$body" "9480246345"
 has "message contains remote state" "$body" "status 1; skill/config confirmed"
 has "message contains review URL" "$body" "https://capafy.ai/developer/createAgent?source=temp-link&token=2082974745565622272&page=review"
 has "terminal state records message id" "$(cat "$STATE/capafy-builder-terminal.json")" '"telegram_message_id": "5511"'
+eq "verified submission appends one listing event" "$(wc -l < "$CAPAFY_EVENT_LEDGER" | tr -d ' ')" "1"
+has "listing event has stable identity" "$(cat "$CAPAFY_EVENT_LEDGER")" "capafy:listing.submitted:9480246345:status-1"
+rm -rf "$T"
+
+echo "(G) sender retry reuses the already-appended Builder event"
+setup_case; seed_submitted
+printf '%s\n' '{"latest_version":{"agentId":"9480246345","status":1,"isConfirmedSkills":1,"isConfirmedConfigKeys":1,"title":"Portfolio Tracker — Daily Position Review"}}' > "$REMOTE"
+export FAIL_FIRST_SEND=1
+bash "$HANDOFF" 0 "$T/evidence" >/dev/null 2>&1; first_rc=$?
+bash "$HANDOFF" 0 "$T/evidence" >/dev/null 2>&1; second_rc=$?
+[ "$first_rc" -ne 0 ] && ok "first sender failure returns nonzero" || bad "first sender failure returns nonzero" "rc=$first_rc"
+eq "sender retry succeeds" "$second_rc" "0"
+eq "sender retry keeps one listing event" "$(wc -l < "$CAPAFY_EVENT_LEDGER" | tr -d ' ')" "1"
+eq "sender was attempted twice" "$(cat "$COUNT")" "2"
 rm -rf "$T"
 
 echo "(B) runner rc=0 without verified remote readback is failure"
@@ -79,12 +98,22 @@ eq "bounded no-op exits zero" "$rc" "0"
 has "no-op is named" "$body" "completed without a new submission"
 has "no-op preserves zero realized revenue" "$body" 'Realized bank payout: $0.00'
 not_has "no-op never claims submitted" "$body" "submitted and verified"
+[ ! -f "$CAPAFY_EVENT_LEDGER" ] && ok "no-op emits no success event" || bad "no-op emits no success event" "ledger exists"
 rm -rf "$T"
 
 echo "(E) daily loop exposes deterministic reporting ownership"
 probe="$(CAPAFY_LOOP_REPORTING_PROBE_ONLY=1 bash "$DAILY")"
 has "shell owns terminal classification" "$probe" "terminal_owner=capafy-builder-handoff.sh"
 has "agent Telegram is disabled" "$probe" "agent_telegram=false"
+
+echo "(F) event append failure blocks the Builder success Telegram"
+setup_case; seed_submitted
+printf '%s\n' '{"latest_version":{"agentId":"9480246345","status":1,"isConfirmedSkills":1,"isConfirmedConfigKeys":1,"title":"Portfolio Tracker — Daily Position Review"}}' > "$REMOTE"
+printf '%s' '{"event_id":"truncated"' > "$CAPAFY_EVENT_LEDGER"
+bash "$HANDOFF" 0 "$T/evidence" >/dev/null 2>&1; rc=$?
+[ "$rc" -ne 0 ] && ok "event append failure returns nonzero" || bad "event append failure returns nonzero" "rc=$rc"
+eq "event append failure sends no success Telegram" "$(cat "$COUNT")" "0"
+rm -rf "$T"
 
 echo "=== capafy builder outcome: $PASS passed $FAIL failed ==="
 [ "$FAIL" -eq 0 ] || exit 1

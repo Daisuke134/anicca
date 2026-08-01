@@ -158,11 +158,11 @@ git commit -m "feat(capafy): add canonical revenue event store"
 
 **Interfaces:**
 - Consumes: Task 1 `append_event`
-- Produces: `events_from_outcome(outcome: dict, correlation_id: str | None) -> list[dict]`
-- Produces: `events_from_lifecycle(before: dict, after: dict) -> list[dict]`
+- Produces: `events_from_outcome(outcome: dict, occurred_at: str, correlation_id: str | None) -> list[dict]`
+- Produces: `events_from_lifecycle(before: dict, after: dict, occurred_at: str) -> list[dict]`
 - Produces CLI: `capafy_event_adapters.py append-outcome|append-lifecycle --ledger PATH`
 
-- [ ] **Step 1: Write failing adapter tests**
+- [x] **Step 1: Write failing adapter tests**
 
 Fixtures and expected event identifiers:
 
@@ -177,15 +177,17 @@ account_created capability -> capafy:account.publish_probe_ready:capafy.skills8m
 
 Assert that `marketing_dry`, `builder_noop`, a missing owner proof, or a non-HTTPS URL never emits a success event.
 
-- [ ] **Step 2: Run adapter tests and verify RED**
+- [x] **Step 2: Run adapter tests and verify RED**
 
 Expected: import failure for `capafy_event_adapters`.
 
-- [ ] **Step 3: Implement pure adapters and append CLI**
+- [x] **Step 3: Implement pure adapters and append CLI**
 
 Build event identifiers from verified immutable fields. Source digests are SHA-256 of canonical source envelopes. Technical evidence contains the full source envelope and evidence directory; the public event contains only safe URLs and labels.
 
-- [ ] **Step 4: Write failing handoff integration tests**
+The handoff passes a stable `occurred_at` derived from the unchanged result artifact mtime, not the retry wall clock. For a published Reel, the handoff enriches a missing `handle` from the already-persisted lifecycle state before adapter validation, so `account.post_verified` has an owner-scoped identity without trusting creative output to choose the account.
+
+- [x] **Step 4: Write failing handoff integration tests**
 
 Extend fake outcomes so each successful Builder/Marketer/account envelope writes the expected event before Telegram. Assert:
 
@@ -194,7 +196,7 @@ Extend fake outcomes so each successful Builder/Marketer/account envelope writes
 - a recovered terminal can deliver Telegram from the already-appended event;
 - a Marketer failure or challenge emits no `content.published` event.
 
-- [ ] **Step 5: Run handoff tests and verify RED**
+- [x] **Step 5: Run handoff tests and verify RED**
 
 ```bash
 bash skills/earn/capafy-marketing/tests/test_capafy_marketing_outcome.sh
@@ -203,7 +205,7 @@ bash skills/earn/capafy-marketing/tests/test_capafy_marketing_controller.sh
 
 Expected: new ledger assertions fail.
 
-- [ ] **Step 6: Wire Builder and Marketer handoffs**
+- [x] **Step 6: Wire Builder and Marketer handoffs**
 
 Add environment seams:
 
@@ -215,11 +217,11 @@ EVENT_EVIDENCE_DIR="${CAPAFY_EVENT_EVIDENCE_DIR:-$STATE/capafy-revenue-evidence}
 
 Builder resolves the Marketer script path through `../../earn/capafy-marketing/scripts`. Append the verified envelope before `send_with_receipt`/`send_receipt`; duplicate append is success. Account-created envelopes emit all three lifecycle events in one adapter call.
 
-- [ ] **Step 7: Run adapter/handoff/full P1 regressions**
+- [x] **Step 7: Run adapter/handoff/full P1 regressions**
 
 Run adapter pytest, Builder handoff tests, Marketer outcome/controller tests, account manager tests, and `bash -n` on modified scripts.
 
-- [ ] **Step 8: Update spec and commit**
+- [x] **Step 8: Update spec and commit**
 
 ```bash
 git commit -m "feat(capafy): emit verified outcome events"

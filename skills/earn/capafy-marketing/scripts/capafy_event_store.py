@@ -338,9 +338,14 @@ def append_event(
                 raise ValueError(f"event_id conflict: {prepared['event_id']}")
             evidence_path = None
             if evidence is not None:
-                evidence_path = str(
-                    _write_sidecar(evidence_dir, prepared["event_id"], evidence)
-                )
+                prior_sidecar = evidence_dir / f"{prepared['event_id']}.json"
+                if prior_sidecar.exists():
+                    os.chmod(prior_sidecar, 0o600)
+                    evidence_path = str(prior_sidecar)
+                else:
+                    evidence_path = str(
+                        _write_sidecar(evidence_dir, prepared["event_id"], evidence)
+                    )
             return AppendResult(prepared["event_id"], False, len(existing), evidence_path)
 
         evidence_path = None

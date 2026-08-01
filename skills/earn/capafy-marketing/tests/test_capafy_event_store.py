@@ -215,6 +215,21 @@ def test_private_sidecar_is_mode_0600_and_not_embedded_in_public_ledger(tmp_path
     assert "cookie" not in ledger.read_text()
 
 
+def test_duplicate_event_reuses_first_private_sidecar_across_retry_contexts(
+    tmp_path: Path,
+) -> None:
+    ledger = tmp_path / "capafy-revenue-events.jsonl"
+    evidence_dir = tmp_path / "evidence"
+    event = valid_event()
+
+    first = store.append_event(ledger, event, {"attempt": "original"}, evidence_dir)
+    retry = store.append_event(ledger, event, {"attempt": "sender-retry"}, evidence_dir)
+
+    assert retry.appended is False
+    assert retry.evidence_path == first.evidence_path
+    assert json.loads(Path(first.evidence_path or "").read_text()) == {"attempt": "original"}
+
+
 def test_canonical_event_bytes_are_compact_sorted_and_stable() -> None:
     event = valid_event()
     reordered = dict(reversed(list(event.items())))

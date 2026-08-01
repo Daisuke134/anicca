@@ -130,7 +130,7 @@ The store obtains an exclusive file lock, scans existing identifiers, and then a
 
 Producer adapters do not choose `recorded_at`. On the first successful append the store stamps that field once in UTC. Retry equality and `source_digest` cover the semantic payload and explicitly exclude `recorded_at`, so the same verified observable retried later is a no-op rather than a false conflict. Persisted rows always contain `recorded_at`; changing any other canonical field under the same identifier remains a conflict.
 
-If a technical sidecar is supplied, it is written atomically at mode `0600` before the event append. A failed event append cannot create a public claim. A sidecar without a canonical event is safe orphan evidence and may be reused on retry.
+If a technical sidecar is supplied, it is written atomically at mode `0600` before the event append. A failed event append cannot create a public claim. A sidecar without a canonical event is safe orphan evidence and may be reused on retry. Once the identical canonical event exists, its first sidecar is retained as first-write evidence: later sender/runner retries may have a different execution-directory label, but they reuse the existing sidecar rather than converting an identical public observable into a false conflict. A different semantic event payload under the same `event_id` still fails closed.
 
 ## 5. Producer integration
 
