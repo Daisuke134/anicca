@@ -243,12 +243,14 @@ YC公式pageでlate application受付を当日再確認
 
 ## 5. 残作業 — 必ず番号順
 
-実行中: `O1B-01`。追加実測で、E1/E2/E3 verifierは存在するが、runtime workerは
+完了: `O1B-01`。追加実測で、E1/E2/E3 verifierは存在するが、runtime workerは
 `outbound.event.apply` handlerが返した任意の`receipt`をそのままcompletedへ保存できると判明した。
 bare `{status:"success"}`、DOM自己申告、verifier結果のJSON copyを成功にしない。現在のprocessで実際に
 E1/E2/E3 verifierが生成したverified objectから作られ、同じtenant/job/attemptへboundされたreceiptだけを
 完了可能にする。証拠不成立は外部効果の有無が不明なため`unknownEffect=true`でreconciliationへ渡す。
-実装plan: `docs/superpowers/plans/2026-08-01-connector-o1b01-remove-fake-success.md`。
+fresh verificationはoutbound 31件、runtime worker回帰31件が成功した。実装commit: `4ea9e931a`。
+実装plan: `docs/superpowers/plans/2026-08-01-connector-o1b01-remove-fake-success.md`。evidence:
+`docs/evidence/outbound/2026-08-01-o1b01-fake-success-gate.json`。次は`O1B-02`。
 
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
@@ -365,7 +367,7 @@ identity/browser/calendar reference検証を追加し、新規4件と既存runti
 
 ### 5.2 Order 1B — イベント
 
-- [ ] O1B-01 偽物の成功判定を削除
+- [x] O1B-01 偽物の成功判定を削除
 - [ ] O1B-02 event URLの2不具合を修正
 - [ ] O1B-03 既存CloakBrowser daily-driverを使うLuma discover + RSVP adapterを完成
 - [ ] O1B-04 実イベント一件へ登録
