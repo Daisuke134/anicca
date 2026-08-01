@@ -532,6 +532,20 @@ fresh verificationはfocused 6件、outbound 125件、runtime-up 33件、diff ch
 `docs/evidence/outbound/2026-08-02-o1b14-accepted-talk-timeline.json`。残作業は123件。
 次はO1B-15で登壇応募ごとのsubmitted/accepted/rejected/presentedを応募ledgerへ記録する。
 
+完了: `O1B-15`。talk applicationの正規transitionだけから、`submitted / accepted / rejected /
+presented`を外部receiptへ束縛したappend-only ledger entryへ変換するcontractをTDDで追加した。
+既存state machineでreceiptなしでも通っていた`rejected`も外部状態としてfail-closedへ修正した。
+ledger IDはtenant、entity、version、status、receiptから決定し、tenant内のapplication+statusとreceiptを一意にする。
+PostgreSQL tableはRLS、外部key、status/from-status checkを持ち、service runtimeへSELECT/INSERTだけを許可する。
+稼働中local PostgreSQLではcontrolled 2応募を使い、`submitted→accepted→presented`と
+`submitted→rejected`の2 route、5 row、5 distinct receiptを再読出しし、全行exact replayはinsert 0だった。
+途中の集計SQL失敗は保存失敗ではなく同一query level aggregateが原因と切り分け、保存済み5 rowを変えずCTE集計へ
+修正してreadbackした。実organizer outcomeは捏造しない。fresh verificationはfocused 9件、outbound 130件、
+runtime-up 33件、diff checkが全成功。実装plan:
+`docs/superpowers/plans/2026-08-02-connector-o1b15-talk-application-ledger.md`。実測証拠:
+`docs/evidence/outbound/2026-08-02-o1b15-talk-application-ledger.json`。残作業は122件。
+次はO1B-16で今日を含む21日間のrolling coverage goalを毎日再計算する。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
@@ -661,7 +675,7 @@ identity/browser/calendar reference検証を追加し、新規4件と既存runti
 - [x] O1B-12 一般参加とLT/CFP/demo登壇応募を別entityとしてdiscover・追跡
 - [x] O1B-13 Life Managerの実測demoに合うtalk title、5分outline、応募理由をagent生成
 - [x] O1B-14 accepted後にslide締切、登壇日、会場、QR、follow-upを一つのtimelineで追跡
-- [ ] O1B-15 登壇応募ごとの`submitted / accepted / rejected / presented`を応募ledgerへ記録
+- [x] O1B-15 登壇応募ごとの`submitted / accepted / rejected / presented`を応募ledgerへ記録
 - [ ] O1B-16 今日を含む21日間（今日〜20日後）を毎日再計算するrolling coverage goalを実装
 - [ ] O1B-17 Luma mainの東京・対面inventoryを日付ごとに最後まで読み、表示上位数件だけで探索を終えない
 - [ ] O1B-18 AI/crypto/英語等は優先順位にだけ使い、eventを捨てるhard category filterにはしない

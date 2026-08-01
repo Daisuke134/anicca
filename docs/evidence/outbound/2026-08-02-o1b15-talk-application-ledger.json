@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "task": "O1B-15",
+  "observed_at": "2026-08-01T16:12:24Z",
+  "result": "verified",
+  "implementation_commit": "727e5dde1c78856f811e93ecb87041de8b61b1bb",
+  "contract": {
+    "statuses": ["submitted", "accepted", "rejected", "presented"],
+    "receipt_required_for_all": true,
+    "append_only_runtime_permissions": true,
+    "stable_content_addressed_ledger_id": true,
+    "exact_replay_idempotent": true,
+    "tenant_scoped_unique_application_status": true,
+    "tenant_scoped_unique_receipt": true
+  },
+  "postgres_readback": {
+    "tenant_id": "o1b15-live-proof",
+    "application_count": 2,
+    "row_count": 5,
+    "distinct_receipt_count": 5,
+    "routes": ["submitted->accepted->presented", "submitted->rejected"],
+    "exact_replay_inserted_rows": 0,
+    "raw_identity_persisted": false
+  },
+  "database": {
+    "migration_applied": true,
+    "rls_enabled": true,
+    "public_anon_authenticated_revoked": true,
+    "service_role_permissions": ["SELECT", "INSERT"],
+    "service_role_update_delete_granted": false
+  },
+  "verification": {
+    "focused_entity_and_ledger_tests": { "passed": 9, "failed": 0 },
+    "outbound_tests": { "passed": 130, "failed": 0 },
+    "runtime_up_tests": { "passed": 33, "failed": 0 },
+    "git_diff_check": "passed"
+  },
+  "claim_boundary": "This proves controlled talk applications can record receipt-bound submitted-to-accepted-to-presented and submitted-to-rejected routes exactly once in the local PostgreSQL ledger. It does not claim a real organizer submission, acceptance, rejection, or presentation."
+}
