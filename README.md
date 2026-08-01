@@ -50,6 +50,60 @@ Life Manager is one product in one repository. “Local Life Manager” and the 
 
 Some internal package names, environment variables, service labels, and older documents still use `anicca`. In this repository, **Anicca is the company/technical namespace; Life Manager is the product**. A remaining `anicca` identifier does not imply a second product or another canonical repository.
 
+<!-- AGENT-REGISTRY:START -->
+## Agent organization
+
+Life Manager is the orchestrator of specialist agents. This table is generated from [`agents/registry.json`](agents/registry.json); skills, schedulers, and workers are intentionally not counted as agents.
+
+### Executive
+
+| Status | Agent | Objective | Surface |
+|---|---|---|---|
+| 🟢 Live | **Life Manager Orchestrator** | Turn the user's goals and current state into bounded work for the right specialist agents, then reconcile their receipts into one honest answer. | local + cloud |
+
+### Health
+
+| Status | Agent | Objective | Surface |
+|---|---|---|---|
+| ⚪ Planned | **Mental Health Agent** | Provide bounded mental-health support, reflection, and escalation while keeping deterministic safety policy outside the model. | local + cloud |
+| ⚪ Planned | **Physical Health Agent** | Coordinate sleep, exercise, diet, appointments, and physical aftercare without inventing medical facts. | local + cloud |
+
+### Finance / CFO
+
+| Status | Agent | Objective | Surface |
+|---|---|---|---|
+| 🟠 Legacy live | **Capafy Agent** | Choose, build, publish, verify, and improve Capafy marketplace listings toward real subscriber revenue. | local |
+| ⚪ Planned | **CFO Lead Agent** | Choose the financial question, delegate only the needed specialists, and explain reconciled personal and agent-economy results to the user. | local + cloud |
+| 🟠 Legacy live | **Gig Work Agent** | Find feasible remote gigs, apply, communicate, deliver, and learn from verified marketplace outcomes. | local |
+| 🟢 Live | **Polymarket Agent** | Analyze prediction markets, choose market, side, and size, and execute only through bounded trading controls. | local |
+| 🟢 Live | **Solana Trading Agent** | Research, size, execute, or explicitly wait on Solana opportunities within independent spend and kill-switch controls. | local |
+| 🟠 Legacy live | **Writer Agent** | Research, draft, challenge, publish, and improve cited writing for readers, customers, and enterprises. | local |
+
+### Growth
+
+| Status | Agent | Objective | Surface |
+|---|---|---|---|
+| 🟠 Legacy live | **Clip / Affiliate Agent** | Choose clip opportunities, publish through isolated accounts, verify reach, and improve from measured outcomes. | local |
+| 🟠 Legacy live | **Marketing Agent** | Select product-specific messages and channels, publish bounded campaigns, observe real outcomes, and revise the next pass. | local |
+
+### Technology / CTO
+
+| Status | Agent | Objective | Surface |
+|---|---|---|---|
+| 🟢 Live | **Development Agent** | Take one privacy-safe Life Manager issue through a fresh coding-agent pass, tests, independent gates, and a reviewable pull request. | local |
+| ⚪ Planned | **Mobile App Builder Agent** | Design, build, test, ship, and improve mobile applications as a bounded software-delivery specialist. | local + cloud |
+
+### Opportunity
+
+| Status | Agent | Objective | Surface |
+|---|---|---|---|
+| ⚪ Planned | **Event Agent** | Discover relevant events, judge fit and conflicts, apply, track confirmations, and connect accepted events to the calendar. | local + cloud |
+| ⚪ Planned | **Fundraising Agent** | Continuously discover and qualify funders, prepare truthful applications, track replies, and support meetings without treating capital as revenue. | local + cloud |
+| 🟡 Shadow | **Job Application Agent** | Discover and rank roles, tailor truthful materials, submit through supported ATS surfaces, and follow replies through interview scheduling. | local + cloud |
+
+See the generated [full agent catalog](docs/agent-catalog.md) for capabilities, effects, runtime-family mappings, and evidence. Runtime health is receipt-derived; a registry lifecycle is not a claim that the last run succeeded.
+<!-- AGENT-REGISTRY:END -->
+
 ---
 
 ## Why this exists

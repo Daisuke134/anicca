@@ -7,6 +7,10 @@ scope: 応募基盤、イベント、資金調達、求人、個人CFO、暗号�
 
 ## 0. この文書の権限
 
+エージェントの名称、organ、lifecycle、能力・runtime familyとの対応は、専用正本
+[`2026-08-01-life-manager-agent-registry-design.md`](2026-08-01-life-manager-agent-registry-design.md)
+と`agents/registry.json`が所有する。本specは5段階の実行順と各organの完成条件を所有し、agent名簿を複製しない。
+
 この文書は、上記scopeだけの実行順序、残作業、完了条件、採用する外部部品の
 **専用正本**である。
 
