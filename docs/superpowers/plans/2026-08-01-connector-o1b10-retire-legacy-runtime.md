@@ -22,14 +22,14 @@
 - [x] 固定2 label以外を拒否し、dry fixtureでbootout/disable/archiveをRED→GREENにする。
 - [x] 二回目実行が成功し、archiveを上書きしないidempotencyを確認する。
 - [x] rollback手順をmanifestへ残す。
-- [ ] Commit and push.
+- [x] Commit and push.
 
 ### Task 2: Prevent resurrection
 
-- [ ] 旧launchd inventory/reconcilerがplistを再生成する経路を確認する。
-- [ ] 正本側tombstoneまたは旧inventoryの安全な変更で2 labelの再登録を防ぐ。
-- [ ] 他legacy job classification回帰を通す。
-- [ ] Commit and push.
+- [x] 旧launchd inventory/reconcilerがplistを再生成する経路を確認する。
+- [x] 正本側tombstoneまたは旧inventoryの安全な変更で2 labelの再登録を防ぐ。
+- [x] 他legacy job classification回帰を通す。
+- [x] Commit and push.
 
 ### Task 3: Live retirement and verification
 
