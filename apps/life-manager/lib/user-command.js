@@ -1,6 +1,7 @@
 "use strict";
 
 const crypto = require("node:crypto");
+const { DEFAULTS: RUNTIME_DEFAULTS } = require("./runtime-preferences.js");
 
 const BOOLEAN_SETTINGS = new Set(["call_enabled", "notifications_enabled", "daily_automation_enabled"]);
 const USER_SETTINGS = new Set(["call_language", "wake_policy"]);
@@ -84,7 +85,12 @@ async function buildControlCenter(scope, deps = {}) {
   if (!store) throw new Error("store_required");
   const user = await store.readUser(scope);
   if (!user || String(user.telegram_chat_id) !== String(scope.chatId)) throw new Error("scope_mismatch");
-  const prefs = { call_enabled: true, notifications_enabled: true, daily_automation_enabled: true, call_time_zone: "Asia/Tokyo", ...(await store.readPreferences(scope)) };
+  // The runtime defaults are the ONE source (lib/runtime-preferences.js). This used to hardcode its
+  // own copy, and when the wake call became opt-in (§5.2.1) that copy still said `call_enabled: true`
+  // — so a user with a phone and no preference row was told "Calls are enabled" while the scheduler
+  // placed none, and the only action offered was to turn them off. A panel that contradicts the
+  // scheduler is worse than a panel that says nothing.
+  const prefs = { ...RUNTIME_DEFAULTS, call_time_zone: "Asia/Tokyo", ...(await store.readPreferences(scope)) };
   delete prefs.delegation_enabled;
   const location = await store.readLocation(scope);
   const locationLive = Boolean(location && (!location.expires_at || Date.parse(location.expires_at) > (deps.nowMs == null ? Date.now() : deps.nowMs)));

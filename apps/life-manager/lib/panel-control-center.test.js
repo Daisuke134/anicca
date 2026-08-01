@@ -254,3 +254,40 @@ test("PANEL-0 migration and rollback are additive and user keyed", () => {
   for (const table of ["lm_panel_preferences", "lm_panel_command_receipts", "lm_panel_oauth_states"]) { assert.match(migration, new RegExp(`CREATE TABLE IF NOT EXISTS public\\.${table}`, "i")); assert.match(rollback, new RegExp(`DROP TABLE IF EXISTS public\\.${table}`, "i")); }
   assert.match(migration, /uid text NOT NULL REFERENCES public\.lm_users\(uid\)/i); assert.doesNotMatch(rollback, /DROP TABLE[^;]*lm_users/i);
 });
+
+// spec §5.2.1 + §3 row 2b: the wake call became opt-in (RUNTIME_DEFAULTS.call_enabled = false), but
+// buildControlCenter carried its OWN hardcoded `call_enabled: true`. A user with a phone and no
+// preference row was therefore told "Calls are enabled" while the scheduler placed none, and the only
+// action offered was to turn them OFF — no way to turn on the thing they were told was already on.
+// One default, one source: lib/runtime-preferences.js.
+const { DEFAULTS: PREF_DEFAULTS } = require("./runtime-preferences.js");
+
+test("a user with no preference row is told calls are off, and offered the switch to turn them on", async () => {
+  const scope = { chatId: "555", uid: "u-nopref" };
+  const panel = await buildControlCenter(scope, {
+    store: {
+      readUser: async () => ({ uid: "u-nopref", telegram_chat_id: "555", phone: "+810000000000", calendar_provider: null }),
+      readPreferences: async () => ({}), // no row: every value comes from the shared default
+      readLocation: async () => null,
+    },
+    nowMs: 0,
+  });
+  assert.equal(PREF_DEFAULTS.call_enabled, false, "the shared default is the one being reflected");
+  assert.equal(panel.connections.call.state, "action_required");
+  assert.match(panel.connections.call.reason, /turned off/);
+  assert.deepEqual(panel.connections.call.actions, ["setting.set:call_enabled:true"],
+    "the person who now needs to opt in must be offered the way to do it");
+});
+
+test("a user who explicitly opted in is still shown as enabled", async () => {
+  const panel = await buildControlCenter({ chatId: "556", uid: "u-optin" }, {
+    store: {
+      readUser: async () => ({ uid: "u-optin", telegram_chat_id: "556", phone: "+810000000000", calendar_provider: null }),
+      readPreferences: async () => ({ call_enabled: true }),
+      readLocation: async () => null,
+    },
+    nowMs: 0,
+  });
+  assert.equal(panel.connections.call.state, "connected");
+  assert.match(panel.connections.call.reason, /enabled/);
+});
