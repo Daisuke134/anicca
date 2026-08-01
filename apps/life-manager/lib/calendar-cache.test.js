@@ -3,7 +3,7 @@
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
 
-const { makeCachedCalendar } = require("./calendar-cache.js");
+const { makeCachedCalendar, cacheKey, DEFAULT_TTL_MS } = require("./calendar-cache.js");
 
 const WINDOW = {
   timeMin: "2026-07-18T09:00:20.000Z",
@@ -31,6 +31,111 @@ function fakeCalendar() {
   };
   return { inner, calls };
 }
+
+// ── The bug this file exists to prevent ─────────────────────────────────────────────────────────
+// The 60-second scheduler tick derives timeMin/timeMax from `now` (lib/events.js:37). While the key
+// bucketed by MINUTE, every tick minted a fresh key, so a 5-minute TTL could never be reached and
+// this cache never hit once in production (spec §3.2: 20,488 composio_call in 2026-07, over the
+// DEGRADE_AT budget). The key's resolution must equal the TTL, so consecutive ticks share a key.
+function isoZ(ms) {
+  return new Date(ms).toISOString().replace(/\.\d{3}Z$/, "Z");
+}
+
+// Exactly what fetchUpcomingEvents builds for a given tick: an 18-hour horizon anchored on `now`.
+function tickWindow(nowMs, horizonH = 18) {
+  return { timeMin: isoZ(nowMs), timeMax: isoZ(nowMs + horizonH * 3600 * 1000), maxResults: 50 };
+}
+
+const TICK_0 = Date.parse("2026-08-01T09:00:20.000Z");
+
+test("★ two scheduler ticks 60s apart hit the transport ONCE, not twice", async () => {
+  const { inner, calls } = fakeCalendar();
+  let now = TICK_0;
+  const calendar = makeCachedCalendar(inner, { now: () => now, ttlMs: DEFAULT_TTL_MS });
+
+  await calendar.listEventsRaw("u1", tickWindow(now));
+  now += 60_000;
+  await calendar.listEventsRaw("u1", tickWindow(now));
+
+  assert.equal(calls.list, 1, "the second tick must reuse the first tick's answer within the TTL");
+});
+
+test("★ five consecutive 60s ticks inside one 5-minute TTL hit the transport ONCE", async () => {
+  const { inner, calls } = fakeCalendar();
+  let now = TICK_0;
+  const calendar = makeCachedCalendar(inner, { now: () => now, ttlMs: DEFAULT_TTL_MS });
+
+  for (let i = 0; i < 5; i += 1) {
+    await calendar.listEventsRaw("u1", tickWindow(now));
+    now += 60_000;
+  }
+
+  assert.equal(calls.list, 1);
+});
+
+test("ticks further apart than the TTL do fetch again", async () => {
+  const { inner, calls } = fakeCalendar();
+  let now = TICK_0;
+  const calendar = makeCachedCalendar(inner, { now: () => now, ttlMs: DEFAULT_TTL_MS });
+
+  await calendar.listEventsRaw("u1", tickWindow(now));
+  now += DEFAULT_TTL_MS + 60_000;
+  await calendar.listEventsRaw("u1", tickWindow(now));
+
+  assert.equal(calls.list, 2, "a stale-by-more-than-TTL window must be refetched");
+});
+
+test("different horizons at the same instant stay different cache entries", async () => {
+  const { inner, calls } = fakeCalendar();
+  const now = TICK_0;
+  const calendar = makeCachedCalendar(inner, { now: () => now, ttlMs: DEFAULT_TTL_MS });
+
+  await calendar.listEventsRaw("u1", tickWindow(now, 6));
+  await calendar.listEventsRaw("u1", tickWindow(now, 18));
+
+  assert.equal(calls.list, 2, "a 6h caller must never be served an 18h answer, or vice versa");
+  assert.notEqual(cacheKey("u1", tickWindow(now, 6), DEFAULT_TTL_MS), cacheKey("u1", tickWindow(now, 18), DEFAULT_TTL_MS));
+});
+
+test("ttlMs=0 means no caching: every call reaches the transport", async () => {
+  const { inner, calls } = fakeCalendar();
+  let now = TICK_0;
+  const calendar = makeCachedCalendar(inner, { now: () => now, ttlMs: 0 });
+
+  await calendar.listEventsRaw("u1", tickWindow(now));
+  await calendar.listEventsRaw("u1", tickWindow(now)); // same instant, same window
+  now += 1_000;
+  await calendar.listEventsRaw("u1", tickWindow(now));
+
+  assert.equal(calls.list, 3);
+});
+
+test("ttlMs=0 buckets nothing: distinct instants keep distinct keys (no divide-by-zero collapse)", () => {
+  const a = cacheKey("u1", tickWindow(TICK_0), 0);
+  const b = cacheKey("u1", tickWindow(TICK_0 + 1_000), 0);
+  const same = cacheKey("u1", tickWindow(TICK_0), 0);
+
+  assert.equal(a, same);
+  assert.notEqual(a, b);
+  for (const key of [a, b]) {
+    assert.ok(!/NaN|Infinity/.test(key), `ttl=0 key must not contain NaN/Infinity: ${key}`);
+  }
+});
+
+test("an unparseable date falls back to its raw string instead of NaN", () => {
+  const key = cacheKey("u1", { timeMin: "not-a-date", timeMax: undefined }, DEFAULT_TTL_MS);
+
+  assert.equal(key, "u1|not-a-date|");
+});
+
+test("the key's bucket width follows the TTL it is given, with no second knob", () => {
+  // Same pair of instants: 60s apart. A 5-minute TTL must collapse them; a 30-second TTL must not.
+  const w1 = tickWindow(TICK_0);
+  const w2 = tickWindow(TICK_0 + 60_000);
+
+  assert.equal(cacheKey("u1", w1, 300_000), cacheKey("u1", w2, 300_000));
+  assert.notEqual(cacheKey("u1", w1, 30_000), cacheKey("u1", w2, 30_000));
+});
 
 test("same uid and minute-rounded window is fetched once within TTL", async () => {
   const { inner, calls } = fakeCalendar();
