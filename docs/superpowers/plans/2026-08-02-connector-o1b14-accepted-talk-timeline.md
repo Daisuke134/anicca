@@ -29,25 +29,25 @@
 - Consumes: `{acceptedAt,eventStartAt,eventEndAt,ticketRef,sourceRefs,sourceText,now}`
 - Produces: `inferAcceptedTalkTimeline(input, deps)`、`validateAcceptedTalkTimeline(value, input)`
 
-- [ ] **Step 1: RED testを書く**
+- [x] **Step 1: RED testを書く**
 
 `known/pending`、timestamp ordering、source ref subset、ticket ref、secret拒否、model failure no-fallbackをliteral fixtureで固定する。
 
-- [ ] **Step 2: REDを確認する**
+- [x] **Step 2: REDを確認する**
 
 Run: `node --test lib/accepted-talk-timeline.test.js`
 Expected: `Cannot find module './accepted-talk-timeline.js'`
 
-- [ ] **Step 3: minimal implementationを書く**
+- [x] **Step 3: minimal implementationを書く**
 
 Gemini response schemaはslide、venue、follow-upだけをmodel出力にし、accepted/event/ticketはtrusted inputから合成する。
 
-- [ ] **Step 4: GREENを確認する**
+- [x] **Step 4: GREENを確認する**
 
 Run: `node --test lib/accepted-talk-timeline.test.js`
 Expected: 全件PASS。
 
-- [ ] **Step 5: commitする**
+- [x] **Step 5: commitする**
 
 ```bash
 git add apps/life-manager/lib/accepted-talk-timeline.js apps/life-manager/lib/accepted-talk-timeline.test.js apps/life-manager/package.json

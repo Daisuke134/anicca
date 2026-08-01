@@ -19,7 +19,7 @@ const INPUT = Object.freeze({
     "evidence://connector/luma-event-detail",
     "evidence://connector/luma-ticket",
   ],
-  sourceText: "登壇採択です。スライドは8月5日18時までに提出してください。会場は六本木ヒルズ森タワー26F Event Spaceです。QRは別途発行します。",
+  sourceText: "登壇採択です。スライドは8月5日18時までに提出してください。会場は六本木ヒルズ森タワー26F Event Space、住所は東京都港区六本木6丁目10-1です。QRは別途発行します。",
   now: "2026-08-02T01:00:00.000Z",
 });
 
@@ -31,7 +31,7 @@ function decision(overrides = {}) {
     venue_status: "known",
     venue_name: "六本木ヒルズ森タワー 26F Event Space",
     venue_address: "東京都港区六本木6丁目10-1",
-    venue_evidence_excerpt: "会場は六本木ヒルズ森タワー26F Event Spaceです。",
+    venue_evidence_excerpt: "会場は六本木ヒルズ森タワー26F Event Space、住所は東京都港区六本木6丁目10-1です。",
     ticket_requirement: "required",
     follow_up_at: "2026-08-05T10:00:00.000Z",
     follow_up_purpose: "スライド提出後に受領確認を行う",
@@ -100,6 +100,7 @@ test("timestamp contradictions, invented refs, inconsistent fields, and raw secr
     [decision({ source_refs: ["evidence://connector/invented"] }), INPUT],
     [decision({ slide_status: "pending", slide_due_at: "2026-08-05T09:00:00.000Z" }), INPUT],
     [decision({ venue_status: "pending" }), INPUT],
+    [decision({ venue_address: "東京都港区赤坂1丁目1-1" }), INPUT],
     [decision({ ticket_requirement: "not_required" }), INPUT],
     [decision(), { ...INPUT, sourceText: "contact person@example.com password=secret" }],
   ];
