@@ -248,7 +248,8 @@ idempotency、immutable receiptを既に持つことを2026-08-01に再確認し
 engineは第二runtimeになるため取り込まず、Connector event applicationをreference-only job contractで
 既存runtimeへ接続した。`outbound.event.apply`、安定job/effect key、tenant境界、Luma URL・時刻・
 identity/browser/calendar reference検証を追加し、新規4件と既存runtime 8件の計12件が成功した。
-実装plan: `docs/superpowers/plans/2026-08-01-connector-o1a01-durable-runtime.md`。次は`O1A-02`。
+実装commit: `7aeed4098`。実装plan:
+`docs/superpowers/plans/2026-08-01-connector-o1a01-durable-runtime.md`。次は`O1A-02`。
 
 最後までのmaster checklist:
 

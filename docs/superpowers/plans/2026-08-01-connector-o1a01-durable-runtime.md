@@ -55,8 +55,11 @@
 
   `test:outbound`へ新testを追加する。仕様のO1A-01を「既存`lm_runtime_jobs`を唯一のruntimeとしてevent application job contractへ接続」に修正し、実test結果とcommit evidenceを記録してcheckboxを完了にする。
 
-- [ ] **Step 6: 全verification後にcommit・pushする**
+- [x] **Step 6: 全verification後にcommit・pushする**
 
   Run: `npm run test:outbound && git diff --check`
 
   Expected: exit 0。その後、対象4ファイルとplan/specだけをcommitし、`origin/main`へpushしてlocal/remote hash一致を確認する。
+
+  Evidence: `npm run test:outbound` 4/4 PASS、`npm run test:runtime-job` 13/13 PASS、
+  `git diff --check` PASS。実装commit `7aeed4098`を`origin/main`へpush済み。
