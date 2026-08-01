@@ -818,6 +818,14 @@ proof while retaining rollback history. The complete Writer suite now passes
 real-provider replay, matched published canary, same-age external measurements,
 decision, and later production consumption remain required for Task 14 DONE.
 
+Runtime correction `8b4b5f1` separates a byte-verified candidate draft from a
+published canary. `record-application` now reserves the one-use assignment as
+`PREPARED`; the close worker reports `AWAITING_CANARY_PUBLICATION` until the
+canonical money ledger contains the exact note run/artifact hash, and only that
+external publication receipt advances it to `APPLIED` and starts the 24-hour
+window. Focused learning/strategy verification passes (`19 passed`); this
+correction does not claim that the real canary has been published.
+
 ### 9.1 Task 13 production receipt — 2026-08-02 JST
 
 The writing itself is the product. No template, course, checklist, or separate
