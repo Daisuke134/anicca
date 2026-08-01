@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "task": "O1C-18",
+  "observed_at": "2026-08-01T21:29:34Z",
+  "result": "verified_fundraising_funnel_web_projection",
+  "implementation_commits": [
+    "a957ef8df759e074e36d2022a9a3ff153869e067",
+    "9fdf4560f2c89acef1c55e6928994c58cf02aac3"
+  ],
+  "architecture": {
+    "funnel_source_of_truth": "existing append-only submission and common outbound result ledgers",
+    "separate_funnel_ledger_created": false,
+    "single_snapshot_rpc": true,
+    "rpc_security": "SECURITY INVOKER; service_role execute only",
+    "tenant_bound": true,
+    "unobserved_stages_inferred": false,
+    "server_and_browser_closed_validators": true,
+    "provider_ids_or_content_in_web_dto": false
+  },
+  "live_local_readback": {
+    "tenant_id": "dais-local",
+    "program": "YC Fall 2026",
+    "source_count": 1,
+    "event_count": 2,
+    "summary": {
+      "application": 1,
+      "confirmation": 1,
+      "interview": 0,
+      "offer": 0,
+      "rejected": 0,
+      "funded": 0
+    },
+    "current_stage": "confirmation",
+    "terminal_outcome": null,
+    "invented_events": 0
+  },
+  "visual_evidence": {
+    "desktop": {
+      "path": "docs/evidence/funding/o1c18-funnel-desktop.png",
+      "width": 1440,
+      "height": 1800,
+      "sha256": "b472c1ebe84594c1892f6411b3d0300c80007e066d97bd189577ceab24d34758"
+    },
+    "mobile": {
+      "path": "docs/evidence/funding/o1c18-funnel-mobile.png",
+      "width": 390,
+      "height": 1900,
+      "sha256": "3f485f008585a3ffc427b68f6ab3811101a447b496c1cce31b63f793b2aa1cde"
+    },
+    "rendered_summary_matches_live_rpc": true,
+    "mobile_document_scroll_width": 390,
+    "mobile_horizontal_overflow": false,
+    "render_errors": 0
+  },
+  "verification": {
+    "life_manager_full_npm_test": "passed",
+    "life_manager_outbound_tests": "250/250 passed",
+    "panel_tests": "53/53 passed",
+    "runtime_job_tests": "14/14 passed",
+    "job_search_tests": "203/203 passed",
+    "panel_privacy_eval": "api=197 browser=83 recipes=19 channels=10 passed",
+    "panel_smoke": "API 6/6 and DOM 7/7 passed",
+    "fundraising_postgres_integration": "replay=2 tenants=2 events=8 roles=3 passed",
+    "outbound_postgres_integration": "insert=2 replay=2 conflict=1 source_reject=1 roles=3 passed",
+    "syntax_and_diff_check": "passed",
+    "independent_review": "0 unresolved Critical or Important"
+  },
+  "tracked_preexisting_dependency": {
+    "item": "funder gate signing key still defaults to the legacy secret vault",
+    "owner": "Order 6",
+    "treatment": "two exact file-and-line allowlist entries; no silent broad exclusion"
+  },
+  "claim_boundary": "This proves that the authenticated Web panel projects verified fundraising events for the exact tenant. It proves one YC application and one confirmation only; no interview, offer, rejection, or funding event is claimed."
+}

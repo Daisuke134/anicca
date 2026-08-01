@@ -114,5 +114,5 @@
 - [x] **Step 1** — migrationをlive local DBへreplayし、YC application=1/confirmation=1/他=0をreadbackする。
 - [x] **Step 2** — authenticated fixtureで実panel HTMLをrenderし、desktop/mobile screenshotとDOM countを検証する。
 - [x] **Step 3** — full panel/outbound/runtime regression、syntax、diff checkをfresh実行する。
-- [ ] **Step 4** — independent reviewのCritical/Importantを0にする。
-- [ ] **Step 5** — implementation commit、evidence、正本checkbox、残94件、push、local/remote HEAD一致を証拠化する。
+- [x] **Step 4** — independent reviewのCritical/Importantを0にする。
+- [x] **Step 5** — implementation commit、evidence、正本checkbox、残94件、push、local/remote HEAD一致を証拠化する。

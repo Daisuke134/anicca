@@ -891,7 +891,19 @@ confirmation `outbound-result:1aef6d49f70ca1a31a18845e80b45adb45a2853b1249424c36
 独立reviewが全成功。実装commit `55107635f`。設計: `docs/superpowers/specs/2026-08-02-o1c17-common-outbound-result-tracker-design.md`。
 実装plan: `docs/superpowers/plans/2026-08-02-connector-o1c17-common-outbound-result-tracker.md`。実測証拠:
 `docs/evidence/funding/2026-08-02-o1c17-common-outbound-results.json`。残作業は95件。
-次はO1C-18で、application→confirmation→interview→offer/reject→fundedのfunnelをWebへ投影する。
+完了: `O1C-18`。既存のappend-only submission/result ledgerを唯一の正本とし、tenant別の単一MVCC snapshotから
+application→confirmation→interview→offer/reject→fundedを導出するservice-role-only RPC、closed Node projector、
+authenticated Panel API、server/browser二重validator、responsive Web railを追加した。未観測stageは逆算せず、現在のlive local
+`dais-local` readbackと実画面はいずれもYC Fall 2026のapplication 1、confirmation 1、interview/offer/rejected/funded 0で一致する。
+provider message/thread、sender、subject、本文、quote、digest、source IDはWeb DTOへ出さない。desktop 1440pxは横rail、mobile 390pxは
+横overflowなしの縦railとして実画像を保存した。独立reviewで発見したconfirmation前rejectのvalidator gapはserver/browser両方へ
+RED→GREEN回帰を追加して修正し、残Critical/Important 0。fresh verificationはLife Manager full `npm test`、outbound 250件、panel
+53件、runtime-job 14件、Job Search 203件、privacy api 197/browser 83、API smoke 6/6、DOM 7/7、PostgreSQLのmigration replay・
+tenant isolation・8 events・3 rolesとoutbound replay/conflict/source拒否、syntax/diff checkが全成功。実装commit `a957ef8df`、
+review fix `9fdf4560f`。設計: `docs/superpowers/specs/2026-08-02-o1c18-fundraising-funnel-web-design.md`。実装plan:
+`docs/superpowers/plans/2026-08-02-connector-o1c18-fundraising-funnel-web.md`。実測証拠:
+`docs/evidence/funding/2026-08-02-o1c18-fundraising-funnel-web.json`。残作業は94件。
+次はO1C-19で、accelerator以外のVC/angelをthesis一致時だけ1日3〜5件へpersonalized outreachする。
 
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
@@ -1110,7 +1122,7 @@ agentが本文と履歴を読んで判断し、keyword/regexの固定分類へ�
 - [x] O1C-15 deadline、location、solo可否、terms、eligibilityを提出当日に再検証
 - [x] O1C-16 会社facts、traction、MRR、deck、videoのfreshness gateを実装
 - [x] O1C-17 `gog`でconfirmation/replyをthread ID単位に取得し、Job Hunter ledgerへ統合
-- [ ] O1C-18 application→confirmation→interview→offer/reject→fundedのfunnelをWebへ投影
+- [x] O1C-18 application→confirmation→interview→offer/reject→fundedのfunnelをWebへ投影
 - [ ] O1C-19 accelerator以外のVC/angelはthesis一致時だけ1日3〜5件へpersonalized outreach
 - [ ] O1C-20 採択・面談の結果を次のpitchとtarget rankingへ反映する週次reflection
 - [ ] O1C-21 旧`apply-to-yc`のfield/video/progress知識を後継YC providerへ移植
