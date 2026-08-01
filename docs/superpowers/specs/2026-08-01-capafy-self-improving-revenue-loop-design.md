@@ -405,7 +405,7 @@ Pre-implementation baseline (2026-08-02): outcome/report pytest `14 passed`; Mar
 
 | Task | Status | Verification evidence | Commit |
 |---|---|---|---|
-| 1. Lifecycle controller | Verified | RED: module collection failed with `ModuleNotFoundError`; GREEN: lifecycle pytest `21 passed`, controller `py_compile` passed; P0/runner regressions remained green (`14`, `23`, `38`, and `4 + 7 subtests`) | task commit pending |
+| 1. Lifecycle controller | Verified | RED: module collection failed with `ModuleNotFoundError`; GREEN: lifecycle pytest `21 passed`, controller `py_compile` passed; P0/runner regressions remained green (`14`, `23`, `38`, and `4 + 7 subtests`) | `f09ea06f2` |
 | 2. 900-second marketing lane | Not started | — | — |
 | 3. Immediate account manager | Not started | — | — |
 | 4. Verified warmup capabilities | Not started | — | — |
