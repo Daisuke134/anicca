@@ -74,7 +74,8 @@ claude doctor: Remote Control セクションに失敗チェック無し
 | 3 | 401 サーキットブレーカ: ログに `Authentication failed (401)` 検知 → 20秒後に1回だけリトライ → まだ401なら `launchctl bootout` + sentinel 書いて停止 | **done 2026-08-01 17:48** (§4.3) |
 | 4 | 通知: sentinel が立ったら Dais へ「`claude auth login` が必要」を送る (18時間ルールは人間しか解けない = 正当な human-loop) | **done 2026-08-01 17:52** (§4.4) |
 | 5 | 有線化: Mac mini 背面 Ethernet にLANケーブル → ルーター。**Dais の物理作業**。優先度最下位 | pending (Dais) |
-| 6 | 掃除: 重複 tailscale LaunchAgent (exit 1) 削除 / orphaned npm `@anthropic-ai/claude-code` 削除 / `~/.openclaw` 14G 回収 | pending |
+| 6 | 掃除: 重複 tailscale LaunchAgent (exit 1) 削除 / orphaned npm `@anthropic-ai/claude-code` 削除 / `~/.openclaw` 14G 回収 | **done 2026-08-01 18:02** (§4.6) |
+| 7 | **回帰修正**: `health-check.sh` がラッパー PID を見て毎分 `kickstart -k` を撃っていた (#1 が引き起こした) | in_progress (§4.7) |
 
 ---
 
@@ -227,6 +228,60 @@ STUB-NOTIFY called with: .../remote-control-401.sentinel      ← bootout の前
 ```
 
 **なぜここだけ人を呼ぶのか**: 401 の解除は対話セッションでの `claude auth login`（Trusted Devices 下では生体認証つき）が要る。機械では解けない。黙って諦めるのは「2時間気づかない」の再現なので、必ず届ける。
+
+---
+
+### 4.6 実測ログ — #6 掃除 (2026-08-01 18:02 完了)
+
+| 対象 | 判断根拠 (自分で確認したこと) | 結果 |
+|---|---|---|
+| orphaned npm `@anthropic-ai/claude-code` (28M) | 稼働中の claude は `~/.local/bin/claude → ~/.local/share/claude/versions/2.1.210` (native installer)。`/opt/homebrew/bin/claude` は**存在しない** = この node_modules を指す経路が無い | 削除。削除後 `claude --version` → `2.1.210 (Claude Code)` |
+| 重複 tailscale LaunchAgent | system 側 `/Library/LaunchDaemons/homebrew.mxcl.tailscale.plist` が `state = running` (PID 313 = tailscaled 本体)。user 側 `gui/501` は `state = spawn scheduled` で **2本目の tailscaled を spawn し続けて失敗** (exit 1) | bootout + plist 削除。削除後も PID 313 健在、`tailscale status` 正常 |
+| `~/.openclaw/logs/article-daily.log` 204M + `article-resume.log` 132M | remote-control と**同じ病気** (launchd の無制限 stdout)。書き手が fd を握っているので `rm` せず **in-place で末尾200KBに切り詰め** | 336M → 390K |
+| `~/.openclaw/tmp` の7日超ファイル 6264個 | playwright の `.crdownload` 残骸、node コンパイルキャッシュ等、全て再生成可能 | 56M → 4K |
+
+`~/.claude/logs` は 186M → 36K。ディスク空きは **セッション開始時 7.1GB → 9.6GB**。
+
+`~/.openclaw/.git` が 3.3G あるが、稼働中リポジトリの `gc` は別件として残す（本 spec の範囲外）。
+
+### 4.7 回帰 — #7 health-check がラッパーを殺していた
+
+**#1 で自分が壊した。** 全部直したはずなのに PID が入れ替わり続けたので追った。
+
+```
+17:35:30 pid=56846 etime=00:53
+17:35:51 pid=56846 etime=01:14
+17:36:01 pid=61377 etime=00:03     ← 交代
+17:37:11 pid=61377 etime=01:13
+17:37:21 pid=63436 etime=00:02     ← 交代 (約78秒周期)
+```
+
+`supervise.log` が空 = スクリプトの終了処理に到達していない = 外から SIGTERM されている。犯人は `~/recovery-setup/health-check.sh:75`:
+
+```sh
+cpid=$(launchctl list | awk '/com.anicca.claude-remote-control/{print $1}')
+conns=$(lsof -nP -p "$cpid" | grep -c ESTABLISHED)
+[ "$conns" -ge 1 ] || launchctl kickstart -k gui/501/com.anicca.claude-remote-control
+```
+
+`launchctl list` が返すのは**ジョブの PID**。#1 より前はそれが `claude` 自身だった（旧 plist が `exec` していたため）。今はラッパー zsh なので、ソケットは子が持つ:
+
+```
+wrapper=54828 → ESTABLISHED 0
+child=61391   → ESTABLISHED 1
+```
+
+→ 毎回 `no_conn` と判定 → `kickstart -k` (= SIGTERM) → `StartInterval=60` + `ThrottleInterval=60` で約78秒周期。**元の 90 秒ループを別の原因で再現していた。**
+
+修正 (`health-check.sh`):
+
+| 変更 | 理由 |
+|---|---|
+| 子 `claude remote-control` の PID も lsof 対象に加える | ソケットの所在に判定を合わせる |
+| PID が `-` = `restarting` として扱い bootstrap を撃たない | ThrottleInterval の待ち中を DOWN と誤認して正常な再起動と競合するのを防ぐ |
+| sentinel があるときは復帰させず `DOWN_401_needs_login` と表示するだけ | **これが無いと health-check が毎分 bootstrap し直し、#3 のサーキットブレーカが完全に無効化される** |
+
+**一般法則**: 常駐プロセスにラッパーを噛ませたら、**そのジョブの PID を見ている監視側を必ず洗う**。「ジョブの PID = 実体の PID」を暗黙に仮定した監視は、ラッパー導入の瞬間に全部壊れる。
 
 ---
 
