@@ -69,7 +69,7 @@ done = 以下がすべて真
 | 9 | `~/Projects` の worktree と動画出力 | 2.4 GB | **done** (§5.8) |
 | 10 | `~/.openclaw/workspace/runs` の古い run | 1.1 GB | **done** 106件削除 (§5.8) |
 | 11 | orca の Codex セッション履歴 (14日超) | 0.3 GB | **done** (§5.8) |
-| 12 | 再発防止: 無制限に太るログ/キャッシュに上限を入れる | — | pending |
+| 12 | 再発防止 | — | **done — 既存の自動掃除が切られていた (§5.9)** |
 | 13 | 保留中の worktree 12件 (3.97GB) — WIP を commit してから削除 | 3.97 GB | pending |
 
 ### 現在地
@@ -184,3 +184,47 @@ life-manager-local-object-store-1  Up 25 hours (healthy)  (minio)
 | `~/gig/projects` | 2.60 GB | LaunchAgent から参照あり |
 | `~/Projects/.worktrees/life-manager/taskmarket-work-loop` | 1.07 GB | LaunchAgent から参照あり |
 | colima の VM ディスク | 4.5 GB | life-manager 本番スタックが稼働中 |
+
+### 5.9 ★ 再発防止 — 自動掃除は元からあって、切られていた ★
+
+新しく作る前に既存を探したら、**ディスク掃除の launchd ジョブが3つ、全部無効化されていた**:
+
+| ジョブ | 無効化日 | 判断 |
+|---|---|---|
+| `ai.anicca.disk-autoprune` (mac-health skill) | **2026-07-25** | ★ 再有効化した ★ |
+| `ai.anicca.disk-janitor` | 2026-07-04 | 無効のまま。掃除役が3つ重なる方が危ない |
+| `com.anicca.disk-cleaner` | 2026-07-25 | 無効のまま。同上 |
+
+`disk-autoprune.sh` を読んだ上での再有効化判断:
+
+- 発動条件は **空きが 30GB 未満のときだけ**（それ以上なら何もせず exit 0）
+- やることは **ゼロリスク側だけ**: 使用不能な iOS シミュレータランタイム削除 / `mo` clean / npm・pip・brew キャッシュ / `docker system prune -f` (dangling のみ) / **`colima ssh -- sudo fstrim -a`** / `/private/tmp/claude-*` の7日超
+- スクリプト冒頭に保護対象が明記されている — 「Never touches project data, VM volumes, or the protected stores (`~/.cloak`, `~/anicca-rtdash`, `~/anicca-monk-factory`, `~/.openclaw`, memory)」
+- 空きが 15GB を切ったら通知 + インシデントファイルを書く
+
+`colima ssh -- sudo fstrim -a` を含んでいるのが重要で、**VM 内で消してもホストのスパースディスクが縮まない問題を正しく解決している**。
+
+強制実行して実測: **21GB → 23GB、`actions: mo-clean npm-cache pip-cache brew-cleanup docker-prune colima-fstrim claude-tmp`**。
+
+再有効化の手順で1つ引っかかった: plist をリネームしただけでは `launchctl bootstrap` が `5: Input/output error` で失敗する。**launchd の永続データベース側でラベルが `disable` されていた**ため。
+
+```
+launchctl print-disabled gui/501 | grep disk-autoprune   →  "ai.anicca.disk-autoprune" => disabled
+launchctl enable gui/501/ai.anicca.disk-autoprune
+launchctl bootstrap gui/501 ~/Library/LaunchAgents/ai.anicca.disk-autoprune.plist   →  rc=0
+launchctl list | grep autoprune                          →  -  0  ai.anicca.disk-autoprune   (毎時 :17)
+```
+
+**一般法則**: `.plist.disabled-<日付>` にリネームされているジョブは、**ファイル名だけでなく `launchctl print-disabled` 側にも無効フラグが残っている**ことがある。戻すときは `launchctl enable` が要る。`bootstrap` の `Input/output error` はまずこれを疑う。
+
+同ログには `{"phase":"panic","free_gb":2}` (2026-07-21) が残っており、**この機構が切られていた期間にディスク枯渇が慢性化していた**ことが読み取れる。
+
+---
+
+## 6. 残件
+
+| # | 件 | サイズ |
+|---|---|---|
+| 13 | 保留した worktree 12件 — WIP を各 branch に commit してから削除する | 3.97 GB |
+| — | `~/.openclaw/agents/anicca` 1.9GB / `~/profitable-claude/skills/bounty-hunter/state` 1.2GB は state 扱いで未着手 | 3.1 GB |
+| — | `disk-janitor` / `disk-cleaner` の要否判定 (今は autoprune 1本に絞っている) | — |
