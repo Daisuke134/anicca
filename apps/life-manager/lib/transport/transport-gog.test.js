@@ -83,6 +83,26 @@ test("connector calendar lookup and create use one private idempotency property 
   assert.ok(calls[1].includes("--no-input"));
 });
 
+test("connector calendar accepts the www.google.com event URL returned by gog 0.17.0", async () => {
+  const cal = makeGogCalendar({
+    account: ACCT,
+    run: () => JSON.stringify({
+      event: {
+        id: "created-by-gog",
+        htmlLink: "https://www.google.com/calendar/event?eid=created-by-gog",
+      },
+    }),
+  });
+  assert.deepEqual(await cal.createConnectorEvent({
+    calendarId: "primary", idempotencyValue: "b".repeat(64), title: "AI Founder Night",
+    startAt: "2026-08-05T12:00:00+09:00", endAt: "2026-08-05T13:00:00+09:00",
+    location: "Shibuya", canonicalUrl: "https://luma.com/founder-night",
+  }), {
+    id: "created-by-gog",
+    htmlLink: "https://www.google.com/calendar/event?eid=created-by-gog",
+  });
+});
+
 test("connector calendar methods reject malformed IDs, URLs, times, and ambiguous provider receipts", async () => {
   let calls = 0;
   const cal = makeGogCalendar({ account: ACCT, run: () => { calls += 1; return "{}"; } });
