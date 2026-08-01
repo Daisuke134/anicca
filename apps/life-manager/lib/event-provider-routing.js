@@ -9,7 +9,7 @@ async function runEventProviderRouting(options = {}) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || typeof options.runConnpass !== "function") {
     throw new Error("event provider routing invalid");
   }
-  const luma = await runLumaCandidateSequence({ candidates: options.lumaCandidates, attempt: options.attemptLuma });
+  const luma = await runLumaCandidateSequence({ date, candidates: options.lumaCandidates, attempt: options.attemptLuma });
   if (luma.status === "booked") {
     return Object.freeze({ ...luma, provider: "luma", date, connpass_attempted: false });
   }

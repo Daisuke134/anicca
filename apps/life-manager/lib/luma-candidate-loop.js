@@ -1,6 +1,7 @@
 "use strict";
 
 const CONTINUE = new Set([
+  "application_failed",
   "approval_required",
   "cancelled",
   "conflict",
@@ -16,9 +17,10 @@ const RECOVER = new Set([
 const EVENT_REF = /^luma-event:\/\/event\/[A-Za-z0-9_-]+$/;
 const RECEIPT_REF = /^provider-receipt:\/\/luma\/[A-Za-z0-9._:~-]+$/;
 
-function validCandidate(candidate) {
+function validCandidate(candidate, date) {
   if (!candidate || typeof candidate !== "object") return false;
   if (!EVENT_REF.test(String(candidate.event_ref || ""))) return false;
+  if (candidate.event_date !== date) return false;
   try {
     const url = new URL(String(candidate.canonical_url || ""));
     return url.protocol === "https:"
@@ -29,13 +31,14 @@ function validCandidate(candidate) {
 }
 
 async function runLumaCandidateSequence(options = {}) {
+  const date = String(options.date || "").trim();
   const candidates = options.candidates;
   const attempt = options.attempt;
-  if (!Array.isArray(candidates) || typeof attempt !== "function") {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !Array.isArray(candidates) || typeof attempt !== "function") {
     throw new Error("Luma candidate sequence invalid");
   }
-  if (candidates.some((candidate) => !validCandidate(candidate))) {
-    throw new Error("Luma candidate invalid");
+  if (candidates.some((candidate) => !validCandidate(candidate, date))) {
+    throw new Error("Luma candidate date invalid");
   }
 
   const skipped = [];
@@ -43,7 +46,19 @@ async function runLumaCandidateSequence(options = {}) {
     let outcome;
     try {
       outcome = await attempt(candidate);
-    } catch {
+    } catch (error) {
+      if (error && error.unknownEffect === false) {
+        skipped.push(Object.freeze({ event_ref: candidate.event_ref, reason: "application_failed" }));
+        continue;
+      }
+      if (error && error.unknownEffect === true) {
+        return Object.freeze({
+          status: "reconciliation_required",
+          reason: "unknown_effect",
+          candidate,
+          skipped: Object.freeze([...skipped]),
+        });
+      }
       return Object.freeze({
         status: "recovery_required",
         reason: "adapter_failure",

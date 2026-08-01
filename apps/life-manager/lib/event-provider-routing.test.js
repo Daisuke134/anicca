@@ -6,8 +6,8 @@ const test = require("node:test");
 const { runEventProviderRouting } = require("./event-provider-routing.js");
 
 const candidates = [
-  { event_ref: "luma-event://event/a", canonical_url: "https://luma.com/a" },
-  { event_ref: "luma-event://event/b", canonical_url: "https://luma.com/b" },
+  { event_ref: "luma-event://event/a", canonical_url: "https://luma.com/a", event_date: "2026-08-10" },
+  { event_ref: "luma-event://event/b", canonical_url: "https://luma.com/b", event_date: "2026-08-10" },
 ];
 
 test("Lumaでbookedならconnpassを呼ばない", async () => {
