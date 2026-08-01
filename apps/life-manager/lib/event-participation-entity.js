@@ -24,7 +24,7 @@ const TALK_TRANSITIONS = Object.freeze({
   presented: Object.freeze([]),
   closed: Object.freeze([]),
 });
-const RECEIPT_REQUIRED = new Set(["registered", "submitted", "accepted", "presented"]);
+const RECEIPT_REQUIRED = new Set(["registered", "submitted", "accepted", "rejected", "presented"]);
 
 function invalid(label = "contract") {
   throw new Error(`event entity ${label} invalid`);

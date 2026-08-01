@@ -114,4 +114,12 @@ test("kind別status machineはcross-kind遷移とreceiptなし外部成果を拒
     () => transitionEventEntity(drafted.entity, "submitted", { at: "2026-08-02T00:01:00.000Z" }),
     /event entity transition invalid/,
   );
+  const submitted = transitionEventEntity(drafted.entity, "submitted", {
+    at: "2026-08-02T00:01:00.000Z",
+    receiptRef: "provider-receipt://talk/submitted-1",
+  });
+  assert.throws(
+    () => transitionEventEntity(submitted.entity, "rejected", { at: "2026-08-03T00:01:00.000Z" }),
+    /event entity transition invalid/,
+  );
 });

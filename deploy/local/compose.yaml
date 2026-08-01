@@ -75,6 +75,7 @@ services:
         -f /migrations/20260729_runtime_scheduler_lease.sql
         -f /migrations/2026-08-02-lm-event-participation-entities.sql
         -f /migrations/2026-08-02-lm-event-talk-timelines.sql
+        -f /migrations/2026-08-02-lm-event-talk-application-ledger.sql
     depends_on:
       postgres:
         condition: service_healthy
