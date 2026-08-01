@@ -99,6 +99,13 @@ product homepageではない。
 現行funder定義/application stateには5ファイル・21箇所残る。過去提出の3ファイルは監査証跡なので
 書き換えず、current source / generated artifact / active form configだけを移行対象にする。
 
+O1C-00の承認済み子設計は
+`docs/superpowers/specs/2026-08-02-life-manager-startup-context-design.md`、実装順序は
+`docs/superpowers/plans/2026-08-02-life-manager-startup-context.md`を正本とする。機械的事実は
+`.agents/startup-context.json`、意味的なproduct positioningは`.agents/product-marketing-context.md`、
+生成物は`fundraising/application-kit/`へ置く。旧OpenClaw kitは互換export先へ降格し、
+`submitted/**`は変更しない。
+
 ## 1. 固定実行順序
 
 ```text
@@ -1315,7 +1322,7 @@ agentが本文と履歴を読んで判断し、keyword/regexの固定分類へ�
 
 ### 5.3 Order 1C — 資金調達・アクセラレーター
 
-- [ ] O1C-00A Life Manager startup contextのrepository-owned正本を設計し、product/companyの境界を固定
+- [x] O1C-00A Life Manager startup contextのrepository-owned正本を設計し、product/companyの境界を固定
 - [ ] O1C-00B current production URL、GitHub、Telegram、demo、founder videoを実readbackしてcanonical link setを作成
 - [ ] O1C-00C root READMEの日英first-viewをLife Managerのphysical / mental / financial product storyへ統一
 - [ ] O1C-00D 旧application-kitの日英answers、deck、one-pager、asset manifestをLife Manager正本から再生成
