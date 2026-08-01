@@ -13,7 +13,8 @@ test("deploy entrypoint sources the owner-only token and requires both Connector
   assert.match(source, /compose\.connector\.yaml/);
   assert.match(source, /outbound\.event\.apply/);
   assert.match(source, /connector\.coverage\.refresh/);
-  assert.match(source, /--build/);
+  assert.match(source, /build["']? worker/);
+  assert.match(source, /--force-recreate/);
   assert.match(source, /--wait/);
   assert.doesNotMatch(source, /[0-9a-f]{64}|GOG_KEYRING_PASSWORD|GOOGLE_API_KEY_DIRECTIONS|LIFE_HOME_ADDRESS/);
 });

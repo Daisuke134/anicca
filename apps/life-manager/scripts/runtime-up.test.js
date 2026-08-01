@@ -245,6 +245,7 @@ test("committed local compose is self-contained and never references a legacy ru
     compose,
     /LM_WORKER_CAPABILITIES: \$\{LM_WORKER_CAPABILITIES:-runtime\.noop\}/,
   );
+  assert.match(compose, /^  worker:\n(?:.*\n){0,4}    build: \*runtime-build/m);
   assert.match(compose, /LM_TELEGRAM_BOT_TOKEN: \$\{LM_TELEGRAM_BOT_TOKEN:-\}/);
   assert.doesNotMatch(
     compose,
