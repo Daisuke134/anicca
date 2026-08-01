@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "task": "O1C-07",
+  "observed_at": "2026-08-01T17:31:30Z",
+  "result": "submitted_in_review",
+  "draft_id": "0b61fe42-e383-490d-b60e-04f1ad7ec5df",
+  "batch": "Fall 2026",
+  "company": "Anicca",
+  "description": "Self-funding Buddhist AI. Ends suffering.",
+  "founder": "Daisuke Narita",
+  "effect_confirm_clicks": 1,
+  "pre_effect_modal_opens": 2,
+  "fresh_home_status": "In review",
+  "late_application_notice_present": true,
+  "verification": {
+    "profile_complete": true,
+    "founder_video_present": true,
+    "description_unicode_length": 41,
+    "submit_enabled_before_effect": true,
+    "fresh_home_readback": "passed"
+  },
+  "claim_boundary": "This proves the exact Fall 2026 Anicca application received one external confirmation click and now appears on the authenticated YC home page as In review. O1C-08 still owns confirmation-mail, durable ledger, and Telegram correlation."
+}

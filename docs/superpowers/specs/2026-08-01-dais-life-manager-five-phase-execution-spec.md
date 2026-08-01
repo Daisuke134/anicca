@@ -743,6 +743,13 @@ focused 2件、outbound 188件、runtime-up 33件、browser readback、diff chec
 `docs/evidence/funding/2026-08-02-o1c06-yc-founder-profile.json`。残作業は106件。
 次はO1C-07で、YC Fall 2026へ実提出する。
 
+完了: `O1C-07`。同一fresh pageでFall 2026、Profile complete、58秒video、正本41文字description、
+validation blocker 0、Submit enabledを再確認した。最初のmodal control名の想定違いはconfirm前に停止し、
+正規control `Yes, submit`を確認後、外部effectをexact 1回だけ実行した。YC homeのfresh readbackは
+Anicca / Fall 2026 / `In review` / Daisuke Naritaであり、late application noticeも表示された。実測証拠:
+`docs/evidence/funding/2026-08-02-o1c07-yc-fall-2026-submit.json`。残作業は105件。
+次はO1C-08で、完了画面、確認mail、ledger、Telegramを照合する。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
@@ -949,7 +956,7 @@ agentが本文と履歴を読んで判断し、keyword/regexの固定分類へ�
 - [x] O1C-04 YC descriptionを制約内へ修正
 - [x] O1C-05 58秒founder videoを検証してupload
 - [x] O1C-06 founder profileを完了
-- [ ] O1C-07 YC Fall 2026へ実提出
+- [x] O1C-07 YC Fall 2026へ実提出
 - [ ] O1C-08 完了画面、確認mail、ledger、Telegramを照合
 - [ ] O1C-09 cold outreachを1日3〜5通で再開
 - [ ] O1C-10 follow-up最大2回を自動実行
