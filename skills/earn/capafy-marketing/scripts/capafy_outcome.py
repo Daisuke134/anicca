@@ -108,6 +108,10 @@ def validate_outcome(data: dict) -> list[str]:
     elif kind == "account_state":
         if not data.get("handle"):
             errors.append("handle is required")
+        if not data.get("lifecycle_status"):
+            errors.append("lifecycle_status is required")
+        if not data.get("capability"):
+            errors.append("capability is required")
         public_url = data.get("public_post_url")
         if public_url is not None and not _is_https_url(public_url):
             errors.append("public_post_url must be a real HTTPS URL")
@@ -234,7 +238,7 @@ def render_outcome(data: dict) -> str:
         return "\n".join(
             [
                 f"Capafy Instagram account @{data['handle']}",
-                f"Calendar age: day {data.get('calendar_warmup_day', 0)}.",
+                f"Lifecycle: {data['lifecycle_status']}; capability: {data['capability'].replace('_', '-')}.",
                 schedule,
                 session,
                 post,
@@ -316,9 +320,10 @@ def render_outcome(data: dict) -> str:
             f"Sales: {orders} lifetime {order_word} / {_money(data['gross_usd'])} gross.",
             *_money_lines(data)[1:],
             (
-                f"Instagram @{account['handle']} — Calendar age: day "
-                f"{account.get('calendar_day', 0)}. {session} "
-                f"Ban status: {account.get('ban_state', 'unproven')}."
+                f"Instagram @{account['handle']} — Lifecycle: "
+                f"{account.get('lifecycle_status', 'unknown')}; capability: "
+                f"{str(account.get('capability', 'none')).replace('_', '-')}. {session} "
+                f"Account status: {account.get('account_status', 'unknown')}."
             ),
             marketing_line,
         ]

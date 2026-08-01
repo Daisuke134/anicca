@@ -83,7 +83,7 @@ case "$KIND" in
   scheduled)
     ENVELOPE="$(python3 - "$(field handle)" <<'PY'
 import json,sys
-print(json.dumps({"schema_version":1,"kind":"account_state","owner":"marketer","handle":sys.argv[1] or "unknown","scheduler_loaded":True,"calendar_warmup_day":0,"session_established":False,"public_post_url":None}))
+print(json.dumps({"schema_version":1,"kind":"account_state","owner":"marketer","handle":sys.argv[1] or "unknown","scheduler_loaded":True,"lifecycle_status":"unknown","capability":"none","session_established":False,"public_post_url":None}))
 PY
 )" ;;
   dry)

@@ -104,7 +104,8 @@ def test_loaded_scheduler_never_renders_as_live_or_published() -> None:
         "owner": "marketer",
         "handle": "capafy.skills10491",
         "scheduler_loaded": True,
-        "calendar_warmup_day": 3,
+        "lifecycle_status": "replacement_requested",
+        "capability": "none",
         "session_established": False,
         "public_post_url": None,
     }
@@ -118,23 +119,26 @@ def test_loaded_scheduler_never_renders_as_live_or_published() -> None:
     assert "published" not in rendered
 
 
-def test_calendar_day_three_is_account_age_not_warmup_completion() -> None:
+def test_account_state_reports_verified_lifecycle_not_calendar_age() -> None:
     payload = {
         "schema_version": 1,
         "kind": "account_state",
         "owner": "marketer",
         "handle": "capafy.skills10491",
         "scheduler_loaded": True,
-        "calendar_warmup_day": 3,
-        "session_established": False,
+        "lifecycle_status": "publish_probe_ready",
+        "capability": "publish_probe",
+        "session_established": True,
         "public_post_url": None,
     }
 
     result = run_cli("render", payload)
 
     assert result.returncode == 0, result.stderr
-    assert "calendar age: day 3" in result.stdout.lower()
-    assert "warmup complete" not in result.stdout.lower()
+    assert "publish_probe_ready" in result.stdout
+    assert "publish-probe" in result.stdout
+    assert "calendar" not in result.stdout.lower()
+    assert "warmup" not in result.stdout.lower()
 
 
 def test_account_created_renders_verified_browser_session_without_live_claim() -> None:

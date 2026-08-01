@@ -1,14 +1,13 @@
 #!/usr/bin/env bash
-# capafy-goal-monitor.sh — daily AUTONOMOUS audit of goal (a)-(d) + idempotent auto go-live.
+# capafy-goal-monitor.sh — daily autonomous audit of money, lifecycle, and loop health.
 #
 # This is the "zero parent intervention" implementation: instead of a human tracking the
-# time-dependent goal gates (7-day BLOCKED-free streak, sales reconcile, warmup-day-3 go-live,
-# self-heal health), this deterministic monitor does it daily and reports to Dais on telegram.
+# business goals (7-day BLOCKED-free streak, sales reconciliation, verified Instagram lifecycle,
+# self-heal health), this deterministic monitor does it daily and reports to Dais on Telegram.
 #
 # HARD RULES: NO LLM. read + append ONLY (never destroys prod state/ledgers). launchd auto-load is
-# IDEMPOTENT (checks launchctl list first, never double-loads). NO secrets in output. go-live gate
-# uses the REAL warmup-ledger day (NO date hardcode). Self-heal check is NON-DESTRUCTIVE (never kills
-# a prod loop). Emits one JSON object on stdout + one telegram summary.
+# NO secrets in output. Self-heal checks are non-destructive. Scheduler presence is never treated
+# as a published post. Emits one JSON object on stdout plus one natural-language Telegram summary.
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin:$PATH"
 set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -20,123 +19,39 @@ mkdir -p "$(dirname "$STATE")"
 DAILY_LOG="$HOME/.openclaw/skills/capafy-autopublish/state/daily_loop.log"
 EARN_LEDGER="$HOME/anicca/skills/self/capafy-loop/state/capafy-earn-ledger.jsonl"
 KEY_GATE="$HOME/.openclaw/skills/capafy-autopublish/scripts/key_health_gate.sh"
-IG_SCRIPT="$HOME/anicca/skills/earn/capafy-marketing/capafy-ig-marketing-daily.sh"
 ACCOUNT_STATE_HELPER="${CAPAFY_ACCOUNT_STATE_HELPER:-$HOME/anicca/skills/earn/capafy-marketing/account_state.sh}"
 # shellcheck source=account_state.sh
 . "$ACCOUNT_STATE_HELPER"
 ACCOUNTS_FILE="$(capafy_ig_accounts_file)"
 IG_HANDLE="$(resolve_capafy_ig_handle "$ACCOUNTS_FILE")"
 IG_PORT="$(resolve_capafy_ig_port "$ACCOUNTS_FILE")"
-IG_SESSION_OWNER="$(resolve_capafy_ig_session_owner "$ACCOUNTS_FILE")"
-IG_STARTED_WARMING="$(resolve_capafy_ig_started_warming "$ACCOUNTS_FILE")"
-ACCOUNT_DAY="$(capafy_ig_warming_day "$IG_STARTED_WARMING")"
-WARMUP="$HOME/.cloak/ig-warmup-${IG_HANDLE:-no-active-account}.json"
-IG_PLIST="$HOME/Library/LaunchAgents/ai.anicca.capafy-ig-marketing-daily.plist"
 IG_LABEL="ai.anicca.capafy-ig-marketing-daily"
-INSTA_PY="$HOME/.cache/instagrapi-venv/bin/python"
-INSTA_POSTER="$HOME/anicca/skills/earn/marketing-engine/poster.py"
-COOKED_MARKER="$HOME/.openclaw/state/.capafy-ig-account-cooked"
-# Dais decision 2026-07-18: don't wait a full 7d — early NON-COMMERCIAL test post at day>=3 to
-# MEASURE reach (the only real shadowban test), then go commercial only if reach is healthy.
-WARMUP_DAYS_REQUIRED=3
+LIFECYCLE_STATE="${CAPAFY_IG_LIFECYCLE_STATE:-$HOME/.openclaw/state/capafy-ig-lifecycle.json}"
 if [ "${CAPAFY_GOAL_MONITOR_PROBE_ONLY:-0}" = "1" ]; then
   printf 'active_handle=%s active_port=%s accounts_path=%s\n' \
     "${IG_HANDLE:-none}" "${IG_PORT:-none}" "$ACCOUNTS_FILE"
   exit 0
 fi
 
-# ── goal(c) go-live: create + load the IG launchd ONLY when account day>=3. Idempotent. ──
-ig_loaded() { launchctl list 2>/dev/null | grep -q "$IG_LABEL"; }
-write_ig_plist() {
-  cat > "$IG_PLIST" <<PLIST
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0"><dict>
-  <key>Label</key><string>$IG_LABEL</string>
-  <key>ProgramArguments</key><array><string>/bin/bash</string><string>$IG_SCRIPT</string></array>
-  <key>EnvironmentVariables</key><dict><key>HOME</key><string>$HOME</string><key>PATH</key><string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string></dict>
-  <key>StartCalendarInterval</key><dict><key>Hour</key><integer>16</integer><key>Minute</key><integer>30</integer></dict>
-  <key>RunAtLoad</key><false/>
-  <key>StandardOutPath</key><string>$HOME/.openclaw/logs/capafy-ig-marketing-daily.out</string>
-  <key>StandardErrorPath</key><string>$HOME/.openclaw/logs/capafy-ig-marketing-daily.err</string>
-</dict></plist>
-PLIST
-}
-
-# NO-HUMAN-LOOP (Dais approved 2026-07-18): NO freeze/approval gate. At day>=3 (the clip 3-day
-# floor — loop self-pacing, NOT a human gate) the monitor auto-loads the IG launchd itself, which
-# then posts live daily. Safety pacing that remains is all LOOP-DRIVEN (day1-2 warmup only, day3+
-# NON-COMMERCIAL first posts, reach-gated commercial via .capafy-ig-reach-healthy that the LOOP
-# writes) — zero human approval anywhere. Idempotent: never double-loads.
-WDAY="$ACCOUNT_DAY"
-
-# Read-only account health probe. Only an aged instagrapi-owned account has a golden session to
-# verify. browser-owned/day1-2 accounts are intentionally sessionless and must never be cooked.
-VERIFY_ELIGIBLE="no"
-if [ "$IG_SESSION_OWNER" = "instagrapi" ] && [ "${ACCOUNT_DAY:-0}" -ge "$WARMUP_DAYS_REQUIRED" ]; then
-  VERIFY_ELIGIBLE="yes"
-fi
-VERIFY_JSON=""
-VERIFY_RC=0
-if [ "$VERIFY_ELIGIBLE" != "yes" ]; then
-  VERIFY_JSON="{\"ok\":true,\"skipped\":true,\"poisoned\":false,\"reason\":\"session not established\",\"session_owner\":\"${IG_SESSION_OWNER:-none}\",\"account_day\":${ACCOUNT_DAY:-0}}"
-elif [ -z "$IG_HANDLE" ]; then
-  VERIFY_JSON='{"ok":false,"error":"IG_HANDLE unresolved from Capafy account state"}'
-  VERIFY_RC=2
-elif [ -z "$IG_PORT" ]; then
-  VERIFY_JSON='{"ok":false,"error":"IG_PORT unresolved from Capafy account state"}'
-  VERIFY_RC=2
-elif [ ! -x "$INSTA_PY" ]; then
-  VERIFY_JSON='{"ok":false,"error":"instagrapi venv missing"}'
-  VERIFY_RC=2
-else
-  VERIFY_JSON="$(CDP_PORT="$IG_PORT" "$INSTA_PY" "$INSTA_POSTER" --handle "$IG_HANDLE" --port "$IG_PORT" --accounts-path "$ACCOUNTS_FILE" --verify-only 2>>"$HOME/.openclaw/logs/capafy-goal-monitor.err.log")"
-  VERIFY_RC=$?
-fi
-ACCOUNT_COOKED="$($PY - "$VERIFY_JSON" <<'PY' 2>/dev/null
-import json, sys
-raw = sys.argv[1]
-try:
-    data = json.loads(raw)
-except Exception:
-    data = {}
-print("yes" if data.get("poisoned") is True or "ChallengeRequired" in raw else "no")
-PY
-)"
-if [ "$ACCOUNT_COOKED" = "yes" ]; then
-  touch "$COOKED_MARKER"
-elif [ "$VERIFY_ELIGIBLE" != "yes" ] && [ -n "$IG_HANDLE" ] && [ -f "$COOKED_MARKER" ]; then
-  rm -f "$COOKED_MARKER"
-fi
-
 if [ "${CAPAFY_GOAL_MONITOR_VERIFY_PROBE_ONLY:-0}" = "1" ]; then
-  printf 'verify_eligible=%s session_owner=%s account_day=%s verify_rc=%s cooked_marker=%s verify_json=%s\n' \
-    "$VERIFY_ELIGIBLE" "${IG_SESSION_OWNER:-none}" "${ACCOUNT_DAY:-0}" "$VERIFY_RC" \
-    "$([ -f "$COOKED_MARKER" ] && printf present || printf absent)" "$VERIFY_JSON"
+  "$PY" - "$LIFECYCLE_STATE" <<'PY'
+import json,sys
+try: d=json.load(open(sys.argv[1]))
+except Exception: d={}
+print(f"lifecycle_status={d.get('status','unknown')} capability={d.get('capability','none')} session_established={str(bool(d.get('session_established'))).lower()} public_post_url={d.get('last_public_reel_url') or 'none'}")
+PY
   exit 0
 fi
 
-GO_LIVE_ACTION="not_yet"
-if [ "${WDAY:-0}" -ge "$WARMUP_DAYS_REQUIRED" ]; then
-  if ig_loaded; then
-    GO_LIVE_ACTION="already_live"
-  else
-    write_ig_plist
-    launchctl load "$IG_PLIST" 2>/dev/null && GO_LIVE_ACTION="LOADED_NOW" || GO_LIVE_ACTION="load_failed"
-  fi
-fi
-
 # ── the rest (goal a/b/d parsing + state + telegram body) is one python pass (read+append only). ──
-$PY - "$STATE" "$DAILY_LOG" "$EARN_LEDGER" "$WARMUP" "$KEY_GATE" "$IG_PLIST" "$IG_LABEL" "$WDAY" "$WARMUP_DAYS_REQUIRED" "$GO_LIVE_ACTION" "$IG_HANDLE" "$VERIFY_JSON" "$VERIFY_RC" "$COOKED_MARKER" "$OUTCOME_SCRIPT" <<'PY' > /tmp/capafy_goal_monitor.json
+$PY - "$STATE" "$DAILY_LOG" "$EARN_LEDGER" "$KEY_GATE" "$IG_LABEL" "$IG_HANDLE" "$LIFECYCLE_STATE" "$OUTCOME_SCRIPT" <<'PY' > /tmp/capafy_goal_monitor.json
 import json, os, re, subprocess, sys, datetime
-(state_p, daily_log, earn_ledger, warmup, key_gate, ig_plist, ig_label, wday, wreq,
- golive, ig_handle, verify_raw, verify_rc, cooked_marker, outcome_script) = sys.argv[1:16]
-wday = int(wday or 0); wreq = int(wreq); verify_rc = int(verify_rc)
+(state_p, daily_log, earn_ledger, key_gate, ig_label, ig_handle,
+ lifecycle_state_path, outcome_script) = sys.argv[1:9]
 try:
-    verify = json.loads(verify_raw)
+    lifecycle = json.load(open(lifecycle_state_path))
 except Exception:
-    verify = {"ok": False, "error": "verify-only returned invalid JSON"}
-account_cooked = verify.get("poisoned") is True or "ChallengeRequired" in verify_raw
+    lifecycle = {}
 now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
 today = now.date()
 
@@ -183,7 +98,6 @@ def loaded(label):
     except: return False
 health = {
     "capafy_loop_daily_loaded": loaded("ai.anicca.capafy-loop-daily"),
-    "ig_warmup_loaded": loaded("ai.anicca.capafy-marketing-warmup"),
     "ig_marketing_loaded": loaded(ig_label),
 }
 gate_ok = None
@@ -199,11 +113,18 @@ report = {
     "goal_a": {"blocked_free_streak_days": streak, "required": 7, "pass": goal_a_pass},
     "goal_b": {"last_sales_date": last_sales_date, "orders": orders, "gross_usd": gross,
                "reconcile_age_hours": reconcile_age_h, "fresh": goal_b_ok},
-    "goal_c": {"warmup_day": wday, "required": wreq, "go_live_action": golive,
+    "goal_c": {"lifecycle_status": lifecycle.get("status", "unknown"),
+               "capability": lifecycle.get("capability", "none"),
+               "session_established": bool(lifecycle.get("session_established")),
+               "public_post_url": lifecycle.get("last_public_reel_url"),
                "ig_marketing_loaded": health["ig_marketing_loaded"]},
     "goal_d": {**health, "key_health_gate_ok": gate_ok},
-    "account_health": {"handle": ig_handle, "verify_rc": verify_rc, "verify": verify,
-                       "poisoned": account_cooked, "cooked_marker": os.path.exists(cooked_marker)},
+    "account_health": {"handle": ig_handle,
+                       "lifecycle_status": lifecycle.get("status", "unknown"),
+                       "capability": lifecycle.get("capability", "none"),
+                       "session_established": bool(lifecycle.get("session_established")),
+                       "post_write_session_verified": bool(lifecycle.get("post_write_session_verified")),
+                       "replacement_requested": bool(lifecycle.get("replacement_requested"))},
 }
 
 # Consolidated company projection. Each value comes from deterministic state or a fresh
@@ -279,9 +200,11 @@ company = {
     "contribution_usd": realized - cost,
     "account": {
         "handle": ig_handle or "no-active-account",
-        "calendar_day": wday,
-        "session_established": bool(verify.get("ok") and not verify.get("skipped")),
-        "ban_state": "challenge confirmed" if account_cooked else "unproven",
+        "lifecycle_status": lifecycle.get("status", "unknown"),
+        "capability": lifecycle.get("capability", "none"),
+        "session_established": bool(lifecycle.get("session_established")),
+        "post_write_session_verified": bool(lifecycle.get("post_write_session_verified")),
+        "account_status": "replacement requested" if lifecycle.get("replacement_requested") else "clean",
     },
     "marketing": {
         "scheduler_loaded": health["ig_marketing_loaded"],

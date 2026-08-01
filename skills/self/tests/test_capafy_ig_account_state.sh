@@ -12,7 +12,6 @@ ENGINE_STATE="$ROOT/earn/marketing-engine/account_state.sh"
 ENGINE_PROMPT="$ROOT/earn/marketing-engine/provision_prompt.sh"
 DAILY="$ROOT/earn/capafy-marketing/capafy-ig-marketing-daily.sh"
 ACCOUNT_MANAGER="$ROOT/earn/capafy-marketing/capafy-ig-account-manager.sh"
-WARM="$ROOT/earn/capafy-marketing/warm_jitter.sh"
 GOAL="$ROOT/earn/capafy-marketing/capafy-goal-monitor.sh"
 CLIP_PASS="$ROOT/earn/clip/clip_pass.sh"
 CLIP_DAILY="$ROOT/earn/clip/clip_daily.sh"
@@ -102,15 +101,15 @@ GOAL_PROBE="$(HOME="$TMP/home-active" CAPAFY_IG_ACCOUNTS_FILE="$TMP/active.json"
   && ok "goal monitor resolves handle and port from account state" \
   || fail "goal-monitor state probe output: $GOAL_PROBE"
 
-if ! grep -q 'useclaudeskills' "$DAILY" "$WARM"; then
-  ok "daily and warmup scripts contain no baked handle"
+if ! grep -q 'useclaudeskills' "$DAILY"; then
+  ok "daily script contains no baked handle"
 else
-  fail "daily or warmup script still bakes useclaudeskills"
+  fail "daily script still bakes useclaudeskills"
 fi
 if grep -Fq 'resolve_capafy_ig_handle "$ACCOUNTS_FILE"' "$GOAL" \
-  && grep -Fq -- '--accounts-path "$ACCOUNTS_FILE"' "$GOAL" \
+  && grep -Fq 'CAPAFY_IG_LIFECYCLE_STATE' "$GOAL" \
   && ! grep -Fq "sed -nE 's/^IG_HANDLE=" "$GOAL"; then
-  ok "goal monitor uses account state instead of parsing daily source"
+  ok "goal monitor uses account and lifecycle state instead of parsing daily source"
 else
   fail "goal monitor is not fully wired to account state"
 fi
@@ -136,12 +135,12 @@ if ! grep -Fq 'DURABLE GOLDEN SESSION' "$ENGINE_PROMPT" \
 else
   fail "shared provision still commands day1 golden-session creation"
 fi
-if grep -Fq 'IG_SESSION_OWNER' "$GOAL" \
-  && grep -Fq 'ACCOUNT_DAY' "$GOAL" \
-  && grep -Fq 'VERIFY_ELIGIBLE' "$GOAL"; then
-  ok "goal monitor gates verify-only by session owner and account day"
+if grep -Fq 'CAPAFY_IG_LIFECYCLE_STATE' "$GOAL" \
+  && ! grep -Fq 'WARMUP_DAYS_REQUIRED' "$GOAL" \
+  && ! grep -Fq 'already_live' "$GOAL"; then
+  ok "goal monitor reports verified lifecycle without a time gate"
 else
-  fail "goal monitor lacks owner/day verify-only gate"
+  fail "goal monitor still depends on a time gate"
 fi
 
 RENDERED_PROMPT="$(

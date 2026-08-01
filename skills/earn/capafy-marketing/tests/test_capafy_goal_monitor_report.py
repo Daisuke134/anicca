@@ -22,9 +22,11 @@ def test_august_first_company_state_is_natural_and_truthful() -> None:
         "contribution_usd": -4.777,
         "account": {
             "handle": "capafy.skills10491",
-            "calendar_day": 3,
-            "session_established": False,
-            "ban_state": "unproven",
+            "lifecycle_status": "publish_probe_ready",
+            "capability": "publish_probe",
+            "session_established": True,
+            "post_write_session_verified": False,
+            "account_status": "clean",
         },
         "marketing": {"scheduler_loaded": True, "public_post_url": None},
         "incident": {
@@ -53,9 +55,11 @@ def test_august_first_company_state_is_natural_and_truthful() -> None:
     assert "MRR: $0.00" in report
     assert "Model/tool cost: $4.78" in report
     assert "Contribution after recorded cost: -$4.78" in report
-    assert "Calendar age: day 3" in report
-    assert "posting session is not established" in report
-    assert "Ban status: unproven" in report
+    assert "publish_probe_ready" in report
+    assert "posting session is established" in report
+    assert "Account status: clean" in report
+    assert "calendar" not in report.lower()
+    assert "warmup" not in report.lower()
     assert "Marketing is scheduled" in report
     assert "no public post is verified" in report
     assert "repair_started" in report
@@ -79,7 +83,7 @@ def test_singular_inventory_nouns_are_grammatical() -> None:
         "mrr_usd": 0,
         "cost_usd": 0,
         "contribution_usd": 0,
-        "account": {"handle": "no-active-account", "calendar_day": 0, "session_established": False, "ban_state": "unproven"},
+        "account": {"handle": "no-active-account", "lifecycle_status": "replacement_requested", "capability": "none", "session_established": False, "post_write_session_verified": False, "account_status": "replacement requested"},
         "marketing": {"scheduler_loaded": True, "public_post_url": None},
         "incident": None,
         "listing_url": None,
