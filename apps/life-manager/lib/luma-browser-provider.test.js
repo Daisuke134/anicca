@@ -93,6 +93,16 @@ test("inspection separates login, absence, unavailability, and existing registra
   assert.equal(registered.calls.some(([name]) => name === "record"), true);
 });
 
+test("Japanese Luma My Ticket readback is an existing registration", async () => {
+  const fx = fixture(["マイチケット"]);
+  const provider = createLumaBrowserProvider(fx);
+
+  const result = await provider.inspectRegistration(contract());
+
+  assert.equal(result.state, "registered");
+  assert.equal(fx.calls.some((call) => call[0] === "record"), true);
+});
+
 test("submit rechecks the page, performs one bounded action, and records readback evidence", async () => {
   const fx = fixture(["参加登録"]);
   const provider = createLumaBrowserProvider({

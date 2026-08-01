@@ -111,7 +111,7 @@ test("Tokyo discovery uses the shared daily-driver page and the exhaustive colle
     stableEndRounds: 2,
   });
 
-  assert.deepEqual(calls, [["withLumaPage", "https://luma.com/discover/tokyo"]]);
+  assert.deepEqual(calls, [["withLumaPage", "https://luma.com/tokyo?k=p"]]);
   assert.equal(rounds, 3);
   assert.equal(result.complete, true);
   assert.equal(result.candidates.length, 1);

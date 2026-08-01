@@ -36,7 +36,15 @@ function includesAny(controls, values) {
 }
 
 function rsvpStatus(controls) {
-  if (includesAny(controls, ["参加予定", "登録済み", "you're going", "you’re going", "going"])) {
+  if (includesAny(controls, [
+    "参加予定",
+    "登録済み",
+    "マイチケット",
+    "my ticket",
+    "you're going",
+    "you’re going",
+    "going",
+  ])) {
     return "registered";
   }
   const inPersonTickets = [...controls].filter((value) => (
