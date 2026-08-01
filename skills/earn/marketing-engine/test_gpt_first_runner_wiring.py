@@ -18,9 +18,10 @@ CONSUMERS = (
 )
 
 EXPECTED_TASK_CLASSES = {
-    # capafy drives the Capafy CP1/CP2/CP3 publish UI; a measured read-only
-    # pass is already 229s, so 180s (tool-agent) SIGKILLed it daily (X23).
-    ROOT / "self" / "capafy-loop" / "capafy-loop-daily.sh": "browser-lane-agent",
+    # capafy drives three sequential browser checkpoints plus skill design;
+    # measured 900s browser lanes timed out repeatedly, so it uses the existing
+    # 3600s application lane with a hard Phase A/B split.
+    ROOT / "self" / "capafy-loop" / "capafy-loop-daily.sh": "application-lane-agent",
     ROOT / "earn" / "capafy-marketing" / "capafy-ig-marketing-daily.sh": "tool-agent",
     ROOT / "earn" / "clip" / "clip_daily.sh": "tool-agent",
     ENGINE / "spawn-marketing-loop.sh": "repeatable-agent",

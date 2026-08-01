@@ -401,7 +401,7 @@ The $10M product is not an individual skill. It is the platform that continuousl
 
 Design commit: `36c4007ea`. Implementation plan commit: `6a199cf51`.
 
-Pre-implementation baseline (2026-08-02): outcome/report pytest `14 passed`; Marketer outcome shell `23 passed`; account-state shell `38 passed`; shared runner wiring pytest `4 passed, 7 subtests`. These tests prove the P0 boundary is green before P1 changes; they do not satisfy any P1 task by themselves.
+Pre-implementation baseline (2026-08-02): outcome/report pytest `14 passed`; Marketer outcome shell `23 passed`; account-state shell `38 passed`; shared runner wiring pytest `4 passed, 7 subtests`. The isolated worktree initially exposed one stale expectation: commit `55ebece00` had moved the Builder from `browser-lane-agent` to `application-lane-agent`, but its shared wiring test still expected the old lane. The expectation was synchronized to the already-committed runtime design and the complete baseline above then passed. These tests prove the P0 boundary is green before P1 changes; they do not satisfy any P1 task by themselves.
 
 | Task | Status | Verification evidence | Commit |
 |---|---|---|---|
