@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://capafy.ai/schemas/capafy-portfolio.schema.json",
+  "title": "Private Capafy Portfolio Registry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "kind", "observed_at", "inventory_source_digest", "company_projection_id", "inventory", "products"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "kind": {"const": "capafy_portfolio"},
+    "observed_at": {"type": "string", "format": "date-time"},
+    "inventory_source_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "company_projection_id": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "inventory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["online", "under_review", "draft", "rejected"],
+      "properties": {
+        "online": {"type": "integer", "minimum": 0},
+        "under_review": {"type": "integer", "minimum": 0},
+        "draft": {"type": "integer", "minimum": 0},
+        "rejected": {"type": "integer", "minimum": 0}
+      }
+    },
+    "products": {"type": "array", "items": {"$ref": "#/$defs/product"}}
+  },
+  "$defs": {
+    "nullableMoney": {"type": ["string", "null"], "pattern": "^-?(0|[1-9][0-9]*)\\.[0-9]{2}$"},
+    "product": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["agent_id", "name", "description", "product_type", "observed_status", "updated_at", "public_url", "platform_sales", "recurring_mechanism", "purchase_model", "value_metric", "target_customer", "next_best_alternative", "renewal_reason", "evidence", "unit_economics", "decision", "decision_reason", "experiment"],
+      "properties": {
+        "agent_id": {"type": "string", "minLength": 1},
+        "name": {"type": "string"},
+        "description": {"type": "string"},
+        "product_type": {"type": "string", "minLength": 1},
+        "observed_status": {"enum": ["online", "under_review", "draft", "rejected"]},
+        "updated_at": {"type": "string", "format": "date-time"},
+        "public_url": {"type": ["string", "null"], "format": "uri"},
+        "platform_sales": {"type": ["number", "null"], "minimum": 0},
+        "recurring_mechanism": {"type": ["string", "null"], "enum": ["repeated_workflow", "scheduled_refresh", "ongoing_monitoring", "collaboration", "metered_execution", null]},
+        "purchase_model": {"enum": ["subscription", "usage", "one_time", "hybrid", "undecided"]},
+        "value_metric": {"type": ["string", "null"]},
+        "target_customer": {"type": ["string", "null"]},
+        "next_best_alternative": {"type": ["string", "null"]},
+        "renewal_reason": {"type": ["string", "null"]},
+        "evidence": {"type": "array"},
+        "unit_economics": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["gross_usd", "cost_usd", "contribution_usd"],
+          "properties": {"gross_usd": {"$ref": "#/$defs/nullableMoney"}, "cost_usd": {"$ref": "#/$defs/nullableMoney"}, "contribution_usd": {"$ref": "#/$defs/nullableMoney"}}
+        },
+        "decision": {"enum": ["unaudited", "promote", "repair", "reposition", "pause", "retire_candidate"]},
+        "decision_reason": {"type": ["string", "null"]},
+        "experiment": {"type": ["object", "null"]}
+      }
+    }
+  }
+}
