@@ -1,0 +1,104 @@
+{
+  "schema_version": 1,
+  "context_version": "2026-08-02.1",
+  "updated_at": "2026-08-02T12:00:00+09:00",
+  "product": {
+    "name": "Life Manager",
+    "usage": "Use as the product name in every public product and fundraising field.",
+    "one_liner": "A personal manager that manages your body, mind, and money, acts within delegated boundaries, and reports evidence in Telegram.",
+    "organs": [
+      {
+        "id": "daily",
+        "label": "Daily Organ",
+        "responsibility": "Coordinates schedules, applications, priorities, and completed actions."
+      },
+      {
+        "id": "physical_mental",
+        "label": "Physical / Mental Organ",
+        "responsibility": "Supports physical routines, mental wellbeing, and continuity of care."
+      },
+      {
+        "id": "financial",
+        "label": "Financial Organ",
+        "responsibility": "Tracks net worth, cash flow, expenses, income opportunities, and risk-managed investing."
+      }
+    ]
+  },
+  "company": {
+    "legal_name": "Anicca",
+    "usage": "Use only when a form explicitly asks for the company or legal entity name; state the current legal status truthfully."
+  },
+  "links": {
+    "product": {
+      "url": "https://aniccaai.com/lm",
+      "status": "verified",
+      "verified_at": "2026-08-02T12:00:00+09:00",
+      "evidence": "HTTP 200 and Life Manager page title read back on 2026-08-02 JST."
+    },
+    "repository": {
+      "url": "https://github.com/Daisuke134/life-manager",
+      "status": "verified",
+      "verified_at": "2026-08-02T12:00:00+09:00",
+      "evidence": "Public repository returned HTTP 200 on 2026-08-02 JST."
+    },
+    "telegram": {
+      "url": "https://t.me/LifeManagerBotbot?start=lp",
+      "status": "verified",
+      "verified_at": "2026-08-02T12:00:00+09:00",
+      "evidence": "Telegram start page returned HTTP 200 on 2026-08-02 JST."
+    },
+    "dashboard": {
+      "url": "https://aniccaai.com/dashboard",
+      "status": "verified",
+      "verified_at": "2026-08-02T12:00:00+09:00",
+      "evidence": "Dashboard entry returned HTTP 200 on 2026-08-02 JST."
+    },
+    "demo": {
+      "url": null,
+      "status": "unverified",
+      "verified_at": null,
+      "evidence": "No canonical public demo was verified yet."
+    },
+    "founder_video": {
+      "url": null,
+      "status": "unverified",
+      "verified_at": null,
+      "evidence": "The candidate founder video must be read back before use."
+    }
+  },
+  "claims": [
+    {
+      "id": "public-repository",
+      "statement": "Life Manager is developed in a public repository.",
+      "verified_at": "2026-08-02T12:00:00+09:00",
+      "evidence": [
+        "https://github.com/Daisuke134/life-manager"
+      ]
+    },
+    {
+      "id": "telegram-entry",
+      "statement": "Life Manager has a public Telegram entry point.",
+      "verified_at": "2026-08-02T12:00:00+09:00",
+      "evidence": [
+        "https://t.me/LifeManagerBotbot?start=lp"
+      ]
+    }
+  ],
+  "forbidden_exact_values": {
+    "product_names": [
+      "Anicca"
+    ],
+    "repositories": [
+      "https://github.com/Daisuke134/anicca-oss"
+    ],
+    "homepages": [
+      "https://life-call-production.up.railway.app"
+    ]
+  },
+  "public_field_allowlist": [
+    "product",
+    "company.legal_name",
+    "links",
+    "claims"
+  ]
+}
