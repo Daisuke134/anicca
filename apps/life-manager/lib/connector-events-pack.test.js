@@ -19,7 +19,10 @@ test("the pack gives discovery and RSVP one auth-aware daily-driver", async () =
     },
     createProvider(input) {
       calls.push(["provider", input.dailyDriver]);
-      return { submitRegistration: async () => "registered" };
+      return {
+        inspectRegistration: async () => "absent",
+        submitRegistration: async () => "registered",
+      };
     },
     discover(options) {
       calls.push(["discover", options.dailyDriver]);

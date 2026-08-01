@@ -21,12 +21,12 @@
 
 - [x] 旧Connector、`anicca-booking`、O1B-03〜08の重複と採用境界を表にする。
 - [x] 認証済み、復旧成功、復旧不能、応募effect開始後の4経路をRED testで固定する。
-- [ ] events packの唯一のproduction composition surfaceを追加する。
+- [x] events packの唯一のproduction composition surfaceを追加する。
 - [ ] Commit and push.
 
 ### Task 2: Gmail-backed daily-driver recovery
 
-- [ ] O1B-04のemail-code flowをsecret非出力componentへ移す。
+- [x] O1B-04のemail-code flowをsecret非出力componentへ移す。
 - [ ] request開始時刻より古いmail、別sender、別account、6桁でないcodeを拒否する。
 - [ ] 同じdaily-driver pageでcode入力後、authenticated markerを再読出しする。
 - [ ] focused testとoutbound regressionを通す。
