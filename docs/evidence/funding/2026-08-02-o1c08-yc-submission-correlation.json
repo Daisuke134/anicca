@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "task": "O1C-08",
+  "observed_at": "2026-08-01T17:38:08.249Z",
+  "result": "verified_correlated_submission",
+  "implementation_commit": "d51a6295f",
+  "submission": {
+    "tenant_id": "dais-local",
+    "funder_id": "yc-fall-2026",
+    "draft_id": "0b61fe42-e383-490d-b60e-04f1ad7ec5df",
+    "provider_status": "in_review",
+    "home_observed_at": "2026-08-01T17:32:00.000Z"
+  },
+  "confirmation_mail": {
+    "message_id": "19fbe6135cf98bd4",
+    "thread_id": "19fbe6135cf98bd4",
+    "internal_date": "2026-08-01T17:31:05.000Z",
+    "sender": "apply@ycombinator.com",
+    "subject": "YC Fall 2026 Application Submitted",
+    "dkim_pass": true,
+    "spf_pass": true,
+    "dmarc_pass": true,
+    "body_persisted": false,
+    "recipient_persisted": false,
+    "raw_auth_headers_persisted": false
+  },
+  "ledger": {
+    "ledger_id": "funder-ledger:6081800e3e6a55f373b422bcf88e8d8f6921cd4b962c819303f781b694165a80",
+    "evidence_digest": "6081800e3e6a55f373b422bcf88e8d8f6921cd4b962c819303f781b694165a80",
+    "database": "life-manager-local-postgres",
+    "append_result": "inserted",
+    "inserted": true,
+    "readback": {
+      "status": "submitted",
+      "provider_status": "in_review",
+      "official_sender": true,
+      "all_mail_auth_pass": true
+    },
+    "append_only": true,
+    "exact_replay_only": true
+  },
+  "telegram": {
+    "transport": "existing OpenClaw Telegram account",
+    "provider_message_id": "5134",
+    "positive_message_id_verified": true,
+    "send_count": 1,
+    "chat_id_sha256": "ae8d45da4675d2cf4894f3ccc91da9f296cc2c0b0f286f76bcf21376d27b0f32",
+    "message_sha256": "1dd1a2b75a7660ebaa619affda8432df0cca7feec3f7813520b9ccbad4b02c9a",
+    "raw_chat_id_persisted": false
+  },
+  "verification": {
+    "focused_tests": { "passed": 4, "failed": 0 },
+    "outbound_tests": { "passed": 192, "failed": 0 },
+    "runtime_up_tests": { "passed": 33, "failed": 0 },
+    "migration_applied": true,
+    "database_readback": "passed",
+    "git_diff_check": "passed"
+  },
+  "claim_boundary": "This proves the same YC Fall 2026 draft was observed In review, matched to one authenticated official confirmation email within 55 seconds, appended once to the local Life Manager ledger, and reported in exactly one Japanese Telegram message with positive provider ID 5134. It does not claim acceptance, interview scheduling, funding, or any second YC submission."
+}

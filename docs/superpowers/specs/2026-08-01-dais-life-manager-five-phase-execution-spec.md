@@ -750,6 +750,17 @@ Anicca / Fall 2026 / `In review` / Daisuke Naritaであり、late application no
 `docs/evidence/funding/2026-08-02-o1c07-yc-fall-2026-submit.json`。残作業は105件。
 次はO1C-08で、完了画面、確認mail、ledger、Telegramを照合する。
 
+完了: `O1C-08`。YC homeの`In review`と、公式sender、exact subject/body、同一draft、Gmail internalDate、
+DKIM/SPF/DMARC passを要求する相関receiptをTDDで追加した。mailは提出確認の55秒前後で一致し、本文、recipient、
+raw認証headerはledgerへ保存しない。tenant-boundな`lm_funder_submission_ledger`へ新規1行をappendし、
+DB readbackで`submitted / in_review / official sender / 3 auth pass`を確認した。既存Dais targetへ日本語通知を
+exact 1回だけ送り、positive provider message ID `5134`を取得した。YC Submitは再実行していない。fresh verificationは
+focused 4件、outbound 192件、runtime-up 33件、migration、DB readback、diff checkが全成功。実装commit
+`d51a6295f`はremoteへpush済み。実装plan:
+`docs/superpowers/plans/2026-08-02-connector-o1c08-yc-submission-correlation.md`。実測証拠:
+`docs/evidence/funding/2026-08-02-o1c08-yc-submission-correlation.json`。残作業は104件。
+次はO1C-09で、cold outreachを1日3〜5通で再開する。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
@@ -957,7 +968,7 @@ agentが本文と履歴を読んで判断し、keyword/regexの固定分類へ�
 - [x] O1C-05 58秒founder videoを検証してupload
 - [x] O1C-06 founder profileを完了
 - [x] O1C-07 YC Fall 2026へ実提出
-- [ ] O1C-08 完了画面、確認mail、ledger、Telegramを照合
+- [x] O1C-08 完了画面、確認mail、ledger、Telegramを照合
 - [ ] O1C-09 cold outreachを1日3〜5通で再開
 - [ ] O1C-10 follow-up最大2回を自動実行
 - [ ] O1C-11 Gmail reply/rejection/meetingを型付きstatusへ反映
