@@ -65,6 +65,31 @@ serendipityを根拠付き評価するところまで完成した。実Calendar�
 許可された実action、receipt/ledger、Telegramで人間が理解できる報告、commit、pushが揃った時だけ
 `[x]`にする。
 
+### 0.3 2026-08-02 Fundraising正本の緊急修正
+
+Daisの最新指示により、次の実行対象を一時的に`O1C-00 Life Manager startup context正本化`へ置く。
+これは別trackへの脱線ではなく、Fundraising agentが旧Anicca productを再提出する事故を防ぐための
+前提修復である。現在のConnector `O1B-25`のcode、DB、spec位置は保持し、`O1C-00`完了後に同じ位置から
+再開する。その後の実応募順は`O1B-25完了 → O1C-01以降 → O2`を維持する。
+
+Fundraisingで使う名称と導線のcontract:
+
+| 項目 | 正本contract |
+|---|---|
+| product name | **Life Manager**。Aniccaをproduct名として提出しない |
+| company name | formが法人・会社名を明示的に要求する時だけAniccaを会社名として使い、未設立状態も正確に答える |
+| product story | userのphysical / mental / financial lifeを、委任範囲内で実行しTelegramへ報告するLife Manager |
+| financial story | CFO、支出改善、収入機会、資産管理をFinancial Organとして説明する。旧13事業pitchを現productとして出さない |
+| repository | `https://github.com/Daisuke134/life-manager` |
+| public product URL | 提出直前に実production/deploymentからreadbackしたLife Manager URLだけを使う。旧URLを推測で流用しない |
+| evidence | 現在のcode、実動作、実user数、実revenueだけ。旧Anicca tractionをLife Manager tractionへ偽装しない |
+
+2026-08-02のread-only auditでは、root `README.md`は「Life Managerがproduct、Aniccaはcompany name only」と
+明記する一方、`~/.openclaw/identity/application-kit/KIT.md`、日英answers、deck、one-pager、logo、GitHub導線は
+旧Anicca / `anicca-oss` / 13 product pitch中心である。さらに`apply-to-funder/funders/yc-w26.json`も
+company/product説明、homepage、GitHub、動画が旧値で、別の`yc-answers-lifemanager-2026fall.*`だけがLife Manager
+pitchを持つ。正本が二重化しているため、旧application-kitや旧form configから直接submitすることを禁止する。
+
 ## 1. 固定実行順序
 
 ```text
@@ -1281,7 +1306,13 @@ agentが本文と履歴を読んで判断し、keyword/regexの固定分類へ�
 
 ### 5.3 Order 1C — 資金調達・アクセラレーター
 
-- [ ] O1C-01 `application-kit`をcompany factsの正本として接続
+- [ ] O1C-00A Life Manager startup contextのrepository-owned正本を設計し、product/companyの境界を固定
+- [ ] O1C-00B current production URL、GitHub、Telegram、demo、founder videoを実readbackしてcanonical link setを作成
+- [ ] O1C-00C root READMEの日英first-viewをLife Managerのphysical / mental / financial product storyへ統一
+- [ ] O1C-00D 旧application-kitの日英answers、deck、one-pager、asset manifestをLife Manager正本から再生成
+- [ ] O1C-00E `apply-to-funder`のYC/company configをLife Manager正本参照へ変更し、旧Anicca product値をsubmit不可にする
+- [ ] O1C-00F startup context freshness / contradiction / old-product regression gateを実装し、previewで検証
+- [ ] O1C-01 repository-owned startup contextを全funder applicationのcompany facts正本として接続
 - [ ] O1C-02 funder/accelerator registryを再構築
 - [ ] O1C-03 MUFG運営/CVC deny gateとpartner確認を実装
 - [ ] O1C-04 YC descriptionを制約内へ修正
