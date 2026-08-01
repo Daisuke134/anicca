@@ -1375,6 +1375,25 @@ AI/crypto等は順位例で除外条件にしない、serendipityとLife Manager
 自然言語長、secret-like text不在、空の支出limitを検証し、plain copyへprovenanceを渡さない。focused 2/2成功。
 次は最も早いopen日のjob状態を読み、active wait / terminal skip / 最大1件enqueueを行うplannerをREDから作る。
 
+O1B-26進捗2（open日応募planner RED→GREEN）: verified coverageの最も早いopen日だけを対象に、既存の
+preference ranking、goal/serendipity評価、Google Calendar全予定、往復移動時間、zero-yen spend policyを同じ順序で
+通すplannerを追加した。候補ごとにtenant-boundな既存応募jobをDBから読む。`queued/running/reconciling/completed`なら
+同じ候補の完了を待ち、`dead_letter`なら同日の次候補へ進み、未作成候補だけを一回のcoverage処理につき最大1件
+`outbound.event.apply`へdurable enqueueする。候補なし、または全候補がterminal failureなら、その日をopenのまま保持し、
+応募済みや参加不能を捏造しない。coverage処理自身はbrowser submitを行わない。
+
+O1B-26進捗3（runtime配線 / report contract RED→GREEN）: coverage再構築後にだけplannerを呼ぶようrefresh serviceへ配線し、
+planner失敗は本文やcredentialを保存せず`CONNECTOR_COVERAGE_APPLICATION_PLAN_FAILED`として段階を識別できるようにした。
+adapter receipt/reportへopaqueな`open_date_plan_ref`、対象日、状態、応募job refを追加し、coverage ID・open日・tenantとの
+不一致を拒否する。production factoryはversioned profile、runtime DB reader、既存ranking/evaluator/gate/spend policy、
+既存応募job builder/enqueuerだけを組み立てる。deployはowner-only env fileを読み、`GEMINI_API_KEY`とprofile pathが
+存在しなければ起動前にfail closedする。secret値はcompose、仕様書、出力へ埋め込まない。
+
+O1B-26進捗4（常設回帰 GREEN / LIVE配備待ち）: 新規profile/planner/job-reader 7/7、Connector 241/241、
+runtime-up 36/36、runtime adapter 125/125、合計409件が成功し失敗0件。次はこのcommitをpushして新imageを配備し、
+実Luma inventoryから最も早いopen日の応募jobが1件だけ作られること、応募workerが実登録すること、Google Calendarと
+次回coverageへ同じeventが`covered_new`として戻ることを外部receiptで確認する。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 

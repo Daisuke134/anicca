@@ -21,6 +21,11 @@ function productionFactories() {
   const { createLumaEvidenceStore } = require("./luma-evidence-store.js");
   const { createRollingEventCoverageStore } = require("./rolling-event-coverage-store.js");
   const { createVerifiedOutboundReceiptReader } = require("./verified-outbound-receipt-reader.js");
+  const { readConnectorProfile } = require("./connector-profile.js");
+  const { createConnectorOpenDateApplicationPlanner } = require("./connector-open-date-planner.js");
+  const { createOutboundApplicationJobReader } = require("./outbound-application-job-reader.js");
+  const { createEventSpendPolicy } = require("./event-spend-policy.js");
+  const { buildEventApplicationJob, enqueueEventApplication } = require("./outbound-event-job.js");
   return {
     createAuth: createReadOnlyLumaSessionAuth,
     createBridge: createConnectorHostBridgeClient,
@@ -37,6 +42,12 @@ function productionFactories() {
     createPack: createConnectorEventsPack,
     createReceiptReader: createVerifiedOutboundReceiptReader,
     createRefreshService: createConnectorCoverageRefreshService,
+    readProfile: readConnectorProfile,
+    createOpenDatePlanner: createConnectorOpenDateApplicationPlanner,
+    createJobReader: createOutboundApplicationJobReader,
+    createSpendPolicy: createEventSpendPolicy,
+    buildApplicationJob: buildEventApplicationJob,
+    enqueueApplication: enqueueEventApplication,
   };
 }
 
@@ -46,6 +57,8 @@ function createConnectorCoverageRuntimeServices(env = {}, runtime = {}, override
   const dataDir = path.resolve(required(env, "LM_DATA_DIR"));
   const bridgeUrl = required(env, "LM_CONNECTOR_BRIDGE_URL");
   const bridgeToken = required(env, "LM_CONNECTOR_BRIDGE_TOKEN");
+  const profilePath = required(env, "LM_CONNECTOR_PROFILE_PATH");
+  const apiKey = required(env, "GEMINI_API_KEY");
   const factories = { ...productionFactories(), ...overrides };
   const now = overrides.now || (() => new Date().toISOString());
   const fetchImpl = overrides.fetchImpl || globalThis.fetch;
@@ -69,6 +82,18 @@ function createConnectorCoverageRuntimeServices(env = {}, runtime = {}, override
       readArtifact: evidenceStore.readArtifact,
       fetchImpl,
     });
+    const profile = factories.readProfile({ path: profilePath, tenantId });
+    const jobReader = factories.createJobReader({ query: runtime.query });
+    const planOpenDate = factories.createOpenDatePlanner({
+      rankDatePreferences: (...args) => pack.rankDatePreferences(...args),
+      evaluateDateGoals: (...args) => pack.evaluateDateGoals(...args),
+      gateDateCalendar: (...args) => pack.gateDateCalendar(...args),
+      createSpendPolicy: factories.createSpendPolicy,
+      buildSpendSequence: (...args) => pack.planDateSpend(...args),
+      buildApplicationJob: factories.buildApplicationJob,
+      readApplicationJob: (job) => jobReader.read(job),
+      enqueueApplication: (input) => factories.enqueueApplication(input, { query: runtime.query }),
+    });
     const refreshCoverage = factories.createRefreshService({
       receiptReader,
       calendar: bridge.calendar,
@@ -91,6 +116,9 @@ function createConnectorCoverageRuntimeServices(env = {}, runtime = {}, override
       buildRegistrationCoverageEvidence: (input) => pack.buildRegistrationCoverageEvidence(input),
       proveUnavailableDay: (input) => pack.proveUnavailableDay(input),
       rebuildCoverage: (input) => pack.rebuildCoverage(input),
+      planOpenDate,
+      profile,
+      apiKey,
     });
     return Object.freeze({
       coverageStore,

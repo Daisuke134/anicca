@@ -16,7 +16,8 @@ test("runtime assembly keeps evidence in Docker and sends only Calendar, route, 
   const pack = {
     readDateInventory() {}, readBusyCalendar() {}, gateDateCalendar() {},
     syncRegistrationCalendar() {}, buildRegistrationCoverageEvidence() {},
-    proveUnavailableDay() {}, rebuildCoverage() {},
+    proveUnavailableDay() {}, rebuildCoverage() {}, rankDatePreferences() {},
+    evaluateDateGoals() {}, planDateSpend() {},
   };
   const coverageStore = { read() {}, save() {} };
   const receiptReader = { listForCoverage() {} };
@@ -26,6 +27,8 @@ test("runtime assembly keeps evidence in Docker and sends only Calendar, route, 
     LM_DATA_DIR: "/var/lib/life-manager/data",
     LM_CONNECTOR_BRIDGE_URL: "http://host.docker.internal:18793",
     LM_CONNECTOR_BRIDGE_TOKEN: "a".repeat(64),
+    LM_CONNECTOR_PROFILE_PATH: "/app/apps/life-manager/config/connector/dais-local.json",
+    GEMINI_API_KEY: "fixture-gemini-key",
   }, { query, connect }, {
     createBridge(options) { observed.bridge = options; return bridge; },
     createEvidenceStore(options) { observed.evidence = options; return evidenceStore; },
@@ -34,6 +37,12 @@ test("runtime assembly keeps evidence in Docker and sends only Calendar, route, 
     createPack(options) { observed.pack = options; return pack; },
     createCoverageStore(options) { observed.coverageStore = options; return coverageStore; },
     createReceiptReader(options) { observed.receiptReader = options; return receiptReader; },
+    readProfile(options) { observed.profile = options; return { tenant_id: "dais-local" }; },
+    createJobReader(options) { observed.jobReader = options; return { read() {} }; },
+    createOpenDatePlanner(options) { observed.planner = options; return async () => {}; },
+    createSpendPolicy() {},
+    buildApplicationJob() {},
+    enqueueApplication() {},
     createRefreshService(options) { observed.refresh = options; return refreshCoverage; },
     fetchImpl: async () => {},
     now: () => "2026-08-02T01:00:00.000Z",
@@ -52,6 +61,16 @@ test("runtime assembly keeps evidence in Docker and sends only Calendar, route, 
   assert.equal(observed.refresh.routeMinutes, bridge.routeMinutes);
   assert.equal(observed.refresh.homeLocation, "home://dais-local");
   assert.equal(observed.refresh.calendarId, "primary");
+  assert.deepEqual(observed.profile, {
+    path: "/app/apps/life-manager/config/connector/dais-local.json",
+    tenantId: "dais-local",
+  });
+  assert.equal(observed.jobReader.query, query);
+  assert.equal(typeof observed.planner.rankDatePreferences, "function");
+  assert.equal(typeof observed.planner.enqueueApplication, "function");
+  assert.equal(observed.refresh.profile.tenant_id, "dais-local");
+  assert.equal(observed.refresh.apiKey, "fixture-gemini-key");
+  assert.equal(typeof observed.refresh.planOpenDate, "function");
   assert.equal(services.coverageStore, coverageStore);
   assert.equal(services.refreshCoverage, refreshCoverage);
   assert.deepEqual(services.storeOptions, { query });
@@ -63,6 +82,8 @@ test("runtime assembly fails before browser or network when its tenant, stores, 
     LM_DATA_DIR: "/var/lib/life-manager/data",
     LM_CONNECTOR_BRIDGE_URL: "http://host.docker.internal:18793",
     LM_CONNECTOR_BRIDGE_TOKEN: "a".repeat(64),
+    LM_CONNECTOR_PROFILE_PATH: "/app/apps/life-manager/config/connector/dais-local.json",
+    GEMINI_API_KEY: "fixture-gemini-key",
   };
   const runtime = { query: async () => {}, connect: async () => {} };
   for (const name of Object.keys(base)) {
