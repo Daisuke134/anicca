@@ -233,7 +233,64 @@ async function ackNudge(uid, eventKey, reason, opts = {}) {
   return { ok: true, matched: patched.length };
 }
 
+// Give a rung back when the message it was claimed for was never delivered — the counterpart of
+// releaseWake after a failed dial. The claim exists to prevent a SECOND send; when there was no
+// first send, letting it stand costs the user that rung for nothing.
+//
+// `last_level_min=eq.<level>` is the ownership guard, and it does the job releaseWake needed a
+// claim_token for: if a later tick has already moved the ladder on, this stale release matches
+// nothing instead of dragging the ladder backwards. acked_at=is.null is the second guard — a user
+// who tapped [了解] in the meantime must not have the ladder reopened by a failed send.
+//
+// ★ The one imprecision in this module, named rather than hidden ★: when the rung was an advance
+// (not the opening one) we cannot know the exact value it replaced — PostgREST returns the row AFTER
+// the update, not before — so the row is restored to the NEXT COARSER rung. As a gate that is exact:
+// `level` becomes claimable again and everything coarser stays blocked, which is the entire job.
+// As history it reads "the ladder got at least this far", which is true but rounded, and only ever
+// on the failure path. Fixing it properly means a prev_level_min column written by a BEFORE UPDATE
+// trigger; that is more schema than one retry is worth.
+async function releaseNudgeLevel(uid, eventKey, levelMin, opts = {}) {
+  const f = opts.fetchImpl || fetch;
+  if (!uid || !eventKey || !Number.isFinite(Number(levelMin))) {
+    return { ok: false, matched: 0, error: "missing_args" };
+  }
+  if (!opts.supaUrl || !opts.supaKey) return { ok: false, matched: 0, error: "no_credentials" };
+  const level = Number(levelMin);
+  const url = `${opts.supaUrl}/rest/v1/lm_departure_nudge?${rowFilter(uid, eventKey)}`
+    + `&last_level_min=eq.${encodeURIComponent(String(level))}`
+    + "&acked_at=is.null&select=uid,event_key";
+
+  // The opening rung had no row before it, so the faithful undo is to remove the one it created.
+  const coarser = NUDGE_LEVELS[NUDGE_LEVELS.indexOf(level) - 1];
+  const request = opts.opened || coarser === undefined
+    ? { method: "DELETE", body: undefined }
+    : {
+      method: "PATCH",
+      body: JSON.stringify({
+        last_level_min: coarser,
+        updated_at: new Date(opts.nowMs == null ? Date.now() : opts.nowMs).toISOString(),
+      }),
+    };
+
+  let response;
+  try {
+    response = await f(url, {
+      method: request.method,
+      headers: supaHeaders(opts.supaKey, "return=representation"),
+      ...(request.body === undefined ? {} : { body: request.body }),
+    });
+  } catch (e) {
+    return { ok: false, matched: 0, error: String((e && e.message) || e) };
+  }
+  if (!response || !response.ok) {
+    return { ok: false, matched: 0, error: `http_${(response && response.status) || "unknown"}` };
+  }
+  const rows = await response.json().catch(() => null);
+  if (!Array.isArray(rows)) return { ok: false, matched: 0, error: "unreadable_response" };
+  return { ok: true, matched: rows.length };
+}
+
 module.exports = {
-  NUDGE_LEVELS, NUDGE_ACK_REASONS, claimNudgeLevel, ackNudge, buildNudgeMessage,
-  departureCallbackData,
+  NUDGE_LEVELS, NUDGE_ACK_REASONS, claimNudgeLevel, ackNudge, releaseNudgeLevel,
+  buildNudgeMessage, departureCallbackData,
 };

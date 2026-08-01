@@ -27,6 +27,9 @@ const { placeCall } = require("./lib/dial.js");
 const {
   WAKE_MISS_REASONS, recordWakeMiss, claimWakeMissNotice, wakeMissNotice,
 } = require("./lib/wake-miss.js");
+const {
+  NUDGE_LEVELS, NUDGE_ACK_REASONS, claimNudgeLevel, ackNudge, releaseNudgeLevel, buildNudgeMessage,
+} = require("./lib/departure-nudge.js");
 const { putEvents, getEvents } = require("./lib/event-cache.js");
 const { runOrgan } = require("./lib/organ-run.js");
 const { fillTravel, directionsMinutes } = require("./lib/travel.js");
@@ -207,6 +210,124 @@ async function wakeWasClaimed(uid, eventKey) {
   const rows = await response.json().catch(() => null);
   return Array.isArray(rows) && rows.length > 0;
 }
+
+// D5 ③: did the user PICK UP a call for this event? answered_at is only ever set from the Telnyx
+// webhook on a `human` detection, so it is the strongest "they reacted" signal available — and
+// pushing more Telegram at someone who just spoke to us is exactly the harassment §5.2.1 forbids.
+//
+// lm_wake_log is keyed per LEVEL (`<uid>|<startIso>|<min>`), so answering either call has to count:
+// the prefix match covers every level of one event without hard-coding WAKE_LEVELS here.
+//
+// The failure direction is the OPPOSITE of wakeWasClaimed's, on purpose. There, an unreadable answer
+// must not accuse the loop of missing a call, so it returns true. Here, an unreadable answer must not
+// silence a ladder that is the whole product for this user, so it returns false. Both pick the side
+// whose wrong answer is survivable.
+async function wakeWasAnswered(uid, eventStartIso, opts = {}) {
+  const { url, key } = SUPA();
+  if (!url || !key) return false;
+  const f = opts.fetchImpl || fetch;
+  const prefix = `${uid}|${eventStartIso}|`;
+  const response = await f(
+    `${url}/rest/v1/lm_wake_log?uid=eq.${encodeURIComponent(uid)}`
+    + `&event_key=like.${encodeURIComponent(`${prefix}*`)}`
+    + "&answered_at=not.is.null&select=event_key&limit=1",
+    { headers: { apikey: key, Authorization: `Bearer ${key}` } },
+  ).catch(() => null);
+  if (!response || !response.ok) return false;
+  const rows = await response.json().catch(() => null);
+  return Array.isArray(rows) && rows.length > 0;
+}
+
+// One rung of the departure ladder, or nothing. spec §5.2.1 / §5.2.2 (#2c).
+//
+// The order of the three gates below is the design. The cheap local checks come first; the claim —
+// which is also the STOP check, because D4 fuses them into one PATCH — comes before the send, so a
+// second tick that overlaps this one cannot deliver the same rung; and the "did they answer the
+// phone" read happens only AFTER a rung was won, which bounds it to six reads per event instead of
+// one per tick.
+//
+// Returns the level sent, or null. Never throws: this runs inside the deadline-critical wake tick,
+// and a push failing must not cost the user their call.
+async function maybeNudgeDeparture(u, ev, depMs, mins, nowMs, deps = {}) {
+  if (u.daily_automation_enabled === false || u.notifications_enabled === false) return null;
+  const telegramToken = deps.telegramToken !== undefined ? deps.telegramToken : process.env.LM_TELEGRAM_BOT_TOKEN;
+  if (!telegramToken || !u.telegram_chat_id) return null;
+  // D5 ②: past the cutoff the event belongs to the late-notice organ. The ladder does not follow it
+  // there — T+7 is the terminal rung, and a stop condition that never triggers is not a stop.
+  if (!(mins > LATE_CUTOFF_MIN)) return null;
+
+  // Most urgent rung first, same catch-up rule the phone ladder uses: a tick that fell behind owes
+  // ONE message, the one that matches how little time is actually left.
+  const due = NUDGE_LEVELS.filter((lvl) => mins <= lvl + 0.5).sort((a, b) => a - b);
+  if (due.length === 0) return null;
+  const level = due[0];
+  // No rung in the key (D3): one row per event, and last_level_min carries the position. That
+  // monotonicity is also why the coarser rungs this one supersedes need no explicit claim — they can
+  // never satisfy `last_level_min > <coarser>` again.
+  const eventKey = `${u.uid}|${ev.startIso}`;
+
+  let claim;
+  try {
+    claim = await (deps.claimNudgeLevel || claimNudgeLevelRow)(u.uid, eventKey, level, nowMs);
+  } catch (e) {
+    console.error(`[nudge] claim uid=${String(u.uid).slice(0, 12)} T${level} err ${e && e.message}`);
+    return null;
+  }
+  if (!claim || !claim.ok) {
+    console.error(`[nudge] claim uid=${String(u.uid).slice(0, 12)} T${level} unresolved: ${claim && claim.error}`);
+    return null;
+  }
+  if (!claim.claimed) return null; // stopped, or this rung is already spent
+
+  if (u.call_enabled === true) {
+    const answered = await (deps.wakeWasAnswered || wakeWasAnswered)(u.uid, ev.startIso).catch(() => false);
+    if (answered) {
+      // Record WHY the ladder ended, so every remaining rung is stopped by the claim itself rather
+      // than by repeating this read on each tick.
+      await (deps.ackNudge || ackNudgeRow)(u.uid, eventKey, NUDGE_ACK_REASONS.CALL_ANSWERED, nowMs)
+        .catch((e) => console.error(`[nudge] ack uid=${String(u.uid).slice(0, 12)} err ${e && e.message}`));
+      return null;
+    }
+  }
+
+  const message = buildNudgeMessage({
+    level, ev, departureIso: new Date(depMs).toISOString(), lang: langForUser(u),
+  });
+  if (!message) return null;
+  let result;
+  try {
+    result = await (deps.sendMessage || sendMessage)(telegramToken, u.telegram_chat_id, message.text, message.extra);
+  } catch (e) {
+    result = { ok: false, error: String((e && e.message) || e) };
+  }
+  if (result && result.ok) {
+    console.log(`[nudge] T${level} uid=${u.uid.slice(0, 12)} "${ev.summary}" tg_message_id=${result.result && result.result.message_id}`);
+    return level;
+  }
+  // Nothing was delivered, so the claim must not survive as though something had been — the same
+  // reasoning as releaseWake after a failed dial. Give the rung back and let the next tick retry it.
+  const released = await (deps.releaseNudgeLevel || releaseNudgeLevelRow)(
+    u.uid, eventKey, level, { opened: !!claim.opened, nowMs },
+  ).catch((e) => ({ ok: false, error: String((e && e.message) || e) }));
+  console.error(`[nudge] send failed T${level} uid=${u.uid.slice(0, 12)}: ${result && (result.error || result.description)}`);
+  // A release that did not land leaves a rung burned for a message nobody got. That is a silent
+  // hole of exactly the kind 1b exists to end, so it is said out loud rather than swallowed.
+  if (!released || !released.ok || released.matched === 0) {
+    console.error(`[nudge] rung T${level} NOT released uid=${u.uid.slice(0, 12)}: ${(released && released.error) || "no row matched"}`);
+  }
+  return null;
+}
+
+const nudgeOpts = (nowMs) => {
+  const { url, key } = SUPA();
+  return { supaUrl: url, supaKey: key, nowMs };
+};
+const claimNudgeLevelRow = (uid, eventKey, level, nowMs) =>
+  claimNudgeLevel(uid, eventKey, level, nudgeOpts(nowMs));
+const ackNudgeRow = (uid, eventKey, reason, nowMs) =>
+  ackNudge(uid, eventKey, reason, nudgeOpts(nowMs));
+const releaseNudgeLevelRow = (uid, eventKey, level, opts = {}) =>
+  releaseNudgeLevel(uid, eventKey, level, { ...nudgeOpts(opts.nowMs), opened: opts.opened });
 
 // Low-balance alert (issue#10 root cause: pre-event calls silently never fire when the Telnyx
 // balance drops below the $0.50 preflight in lib/dial.js). Ping the admin's Telegram so the balance
@@ -420,17 +541,28 @@ async function wakeCallOnce(u, nowMs, deps = {}) {
   // event is called before they must leave. resolveDeparture uses the [Travel] block if present, else
   // computes the leave time inline (never-late even before the 30-min travel loop inserts the block).
   const mapsKey = deps.mapsKey || process.env.LIFE_MAPS_KEY || process.env.GOOGLE_API_KEY;
-  // spec §5.2.1: `=== true`, not `!== false`. The phone is opt-IN now, and three different shapes all
-  // mean "expressed no preference" — no row, a SQL NULL column, and an unmerged undefined. `!== false`
-  // dialled all three. This gate is also the LAST one on the Inngest per-user path, which reaches
-  // wakeCallOnce through wakeUserOnce and never passes wakeTick's filter.
-  if (u.call_enabled === true) {
-    for (const ev of futureEvents.filter((e) => shouldWake(e, u.home_address, u.wake_policy))) {
-      const depMs = await resolveDeparture(ev, futureEvents, {
-        home: u.home_address, mapsKey, nowMs: now, bufferMin: 5,
-        directionsFn: deps.directionsMinutes || directionsMinutes,
-      });
-      const mins = (depMs - now) / 60000;
+  for (const ev of futureEvents.filter((e) => shouldWake(e, u.home_address, u.wake_policy))) {
+    // ONE resolveDeparture per event, shared by both ladders. Calling it a second time for the
+    // Telegram rungs would re-run the inline directions lookup — the exact per-tick Composio growth
+    // 1d was opened to remove.
+    const depMs = await resolveDeparture(ev, futureEvents, {
+      home: u.home_address, mapsKey, nowMs: now, bufferMin: 5,
+      directionsFn: deps.directionsMinutes || directionsMinutes,
+    });
+    const mins = (depMs - now) / 60000;
+
+    // ── the departure ladder (§5.2.1) ────────────────────────────────────────────────────────────
+    // Deliberately OUTSIDE the call_enabled gate: this is the push now, and the phone is the opt-in
+    // extra. A user who never gave a number (#6, and the default since 2026-08-01) gets every rung.
+    // One HTTP send at ~200ms, at most one per tick, so the 20s per-user budget 1c bought is safe.
+    await maybeNudgeDeparture(u, ev, depMs, mins, now, deps);
+
+    // ── the phone ladder (opt-in) ────────────────────────────────────────────────────────────────
+    // spec §5.2.1: `=== true`, not `!== false`. The phone is opt-IN now, and three different shapes all
+    // mean "expressed no preference" — no row, a SQL NULL column, and an unmerged undefined. `!== false`
+    // dialled all three. This gate is also the LAST one on the Inngest per-user path, which reaches
+    // wakeCallOnce through wakeUserOnce and never passes wakeTick's filter.
+    if (u.call_enabled === true) {
       // A level is DUE once its threshold has passed, not only while the tick sits inside a ~2-min
       // window: this tick is not periodic (the organs above share the per-user timeout, and a redeploy
       // restarts the loop), so a window-bound level was lost FOREVER whenever a tick landed outside it.
