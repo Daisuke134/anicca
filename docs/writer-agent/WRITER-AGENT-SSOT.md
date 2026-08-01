@@ -254,6 +254,13 @@ verified, and zero eligible pitches. The zero is evidence of correct refusal,
 not simulated progress: all five were `VALUE_UNKNOWN`, so the Agent generated
 nothing and advanced nothing.
 
+Runtime commit `912074b` prevents unavailable high-value index entries from
+starving unseen programs. A failed candidate waits at least twenty-four hours,
+is attempted at most three times, and then becomes `EXHAUSTED` with its reason
+preserved. The immediate live wake therefore skipped the same-day unavailable
+rows, verified five unseen official pages, and exited `0`: Okta and Algolia
+became `VALUE_UNKNOWN`; Bugsnag, Honeycomb, and Teleport became `CLOSED`.
+
 The opportunity subsystem is a stateful loop, not a periodic search report:
 
 ```text
