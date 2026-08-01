@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "objective": "O1C-14",
+  "observed_at": "2026-08-01T18:51:09Z",
+  "implementation_commit": "0d2768d07",
+  "live_discovery": {
+    "discovery_run_id": "funder-discovery:315ea975729fc7175f0bf907a648de3a77b504810644643ff5b47459d2608825",
+    "tokyo_day": "2026-08-02",
+    "source_count": 7,
+    "candidate_count": 6,
+    "appended_count": 6,
+    "appended_funder_ids": [
+      "yc-f26",
+      "spc-founder-fellowship-f26",
+      "a16z-speedrun-sr008",
+      "ef-london-f26",
+      "techstars-founder-catalyst-f26",
+      "antler-japan-inception"
+    ],
+    "agent_discovered_beyond_seed": {
+      "funder_id": "techstars-founder-catalyst-f26",
+      "source_url": "https://www.techstars.com/blog/program-news/applications-are-open-for-3-techstars-founder-catalyst-programs",
+      "status": "open",
+      "next_deadline": "2026-08-07"
+    }
+  },
+  "source_receipts": [
+    { "source_id": "yc-apply", "sha256": "7098a80db123403ba24e10ffca1dc6a95a7ce2244513d342966bb27c7f2a7a8c", "link_count": 6 },
+    { "source_id": "spc-founder-fellowship", "sha256": "28dcebdf6cdc7cf5a15e810712540377bac69157d015b91cd0eb58cd56cf1e08", "link_count": 25 },
+    { "source_id": "a16z-speedrun", "sha256": "311ca366791b76852d78763193a158b0c4e4a8d54bdda6cb3b8460384899345f", "link_count": 5 },
+    { "source_id": "entrepreneurs-first", "sha256": "84025e1a8d5f21fb4333490e0a4e28035ce392a7b8846ee2331dd88ef7baad2a", "link_count": 7 },
+    { "source_id": "techstars-founders", "sha256": "38853e29d504a48b1d3a48adc158a51a258e0310c28cdcd783af25ba308034c8", "link_count": 1 },
+    { "source_id": "antler-japan", "sha256": "3e21eb85773d7e04ea035a9f2d3945dcba0d2d25a016a8de1bf141dcc5c0c57f", "link_count": 35 },
+    { "source_id": "agent-discovered-1", "sha256": "e9793aacee4240a7e20cdda82baab3474c8fac9ddfa866ee42addfa75c13fbf7", "link_count": 50 }
+  ],
+  "scheduler": {
+    "job_id": "d0730170-9805-439b-a18b-b9cb0b815ced",
+    "name": "o1c14-funder-program-discovery-daily",
+    "enabled": true,
+    "cron": "30 6 * * *",
+    "timezone": "Asia/Tokyo",
+    "session": "isolated",
+    "delivery": "none",
+    "next_run_at": "2026-08-01T21:30:00Z"
+  },
+  "persistence": {
+    "railway_registry_schema": "applied",
+    "railway_discovery_schema": "applied",
+    "append_only": true,
+    "rls_enabled": true,
+    "public_privileges_revoked": true,
+    "live_readback_rows": 6
+  },
+  "verification": {
+    "red": "focused suite initially failed because funder-program-discovery.js did not exist",
+    "focused_tests": "8/8 pass",
+    "outbound_tests": "219/219 pass",
+    "runtime_up_tests": "33/33 pass",
+    "shell_and_node_syntax": "pass",
+    "git_diff_check": "pass"
+  },
+  "claim_boundary": "This proves a fresh seven-source daily discovery run, one official source found outside the committed seeds, six append-only registry entries, and an enabled 06:30 JST scheduler. It does not prove submission-day eligibility or fact freshness; O1C-15 and O1C-16 own those gates."
+}

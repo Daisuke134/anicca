@@ -834,6 +834,22 @@ fresh verificationはfocused 8件、outbound 211件、runtime-up 33件、active 
 `docs/evidence/funding/2026-08-02-o1c13-funder-daily-driver.json`。残作業は99件。
 次はO1C-14で、公式program pageを毎日探索し、固定list外の新規募集をregistryへ追加する。
 
+完了: `O1C-14`。毎朝06:30 Asia/Tokyoのisolated OpenClaw job
+`d0730170-9805-439b-a18b-b9cb0b815ced`を登録し、固定6 official sourceに加えてagentが発見したofficial pageも
+同じ日次runへ追加する。agentはfull sourceを読んで候補、status、deadline、solo可否、location、exact excerptを判断し、
+deterministic gateは26時間以内のfreshness、HTTPS、content hash、excerpt包含、official link、全source accounting、重複、
+identity collisionをfail closedする。unknown factは`unknown`/`null`のまま保存し、提出可否を推測しない。
+Railwayへappend-only registry拡張とtenant-bound discovery receiptを適用した。live run
+`funder-discovery:315ea975729fc7175f0bf907a648de3a77b504810644643ff5b47459d2608825`はofficial 7 sourceを読み、
+YC F26、SPC F26、a16z SR008、EF London F26、Techstars Founder Catalyst F26、Antler Japanの6件を追加した。
+このうちTechstars募集記事は固定seed外から発見したcurrent official sourceである。fresh verificationはfocused 8件、
+outbound 219件、runtime-up 33件、shell/Node syntax、Railway migration・run・6 row readback、cron readback、diff checkが全成功。
+実装commit `0d2768d07`はremoteへpush済み。設計:
+`docs/superpowers/specs/2026-08-02-o1c14-funder-program-discovery-design.md`。実装plan:
+`docs/superpowers/plans/2026-08-02-connector-o1c14-funder-program-discovery.md`。実測証拠:
+`docs/evidence/funding/2026-08-02-o1c14-funder-program-discovery.json`。残作業は98件。
+次はO1C-15で、deadline、location、solo可否、terms、eligibilityを提出当日に再検証する。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
@@ -1047,7 +1063,7 @@ agentが本文と履歴を読んで判断し、keyword/regexの固定分類へ�
 - [x] O1C-11 Gmail reply/rejection/meetingを型付きstatusへ反映
 - [x] O1C-12 meetingをCalendarへ登録し面談資料を生成
 - [x] O1C-13 全form送信を既存CloakBrowser daily-driverで行い、新browserを起動しない
-- [ ] O1C-14 公式program pageを毎日探索し、固定list外の新規募集をregistryへ追加
+- [x] O1C-14 公式program pageを毎日探索し、固定list外の新規募集をregistryへ追加
 - [ ] O1C-15 deadline、location、solo可否、terms、eligibilityを提出当日に再検証
 - [ ] O1C-16 会社facts、traction、MRR、deck、videoのfreshness gateを実装
 - [ ] O1C-17 `gog`でconfirmation/replyをthread ID単位に取得し、Job Hunter ledgerへ統合
