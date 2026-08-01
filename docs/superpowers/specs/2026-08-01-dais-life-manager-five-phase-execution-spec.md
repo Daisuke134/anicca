@@ -682,6 +682,18 @@ deckから古い行を削除、one-pagerは実在する`views.weekly_total`へ�
 `docs/evidence/funding/2026-08-02-o1c01-application-kit-ssot.json`。残作業は111件。
 次はO1C-02で、funder/accelerator registryを再構築する。
 
+完了: `O1C-02`。旧portfolioとexact 5 specをschema検証付きで読み、stable entry ID、priority、program URL、
+application URL、auth requirement、captcha presence、automation gateを持つtenant-bound registryへ正規化した。
+旧verified・amount・deadlineは現在事実へ昇格せず、全5件を`needs_reverification`、旧値を
+`legacy_claims.fact_status=stale_claim`へ隔離した。CAPTCHA 1件は`captcha_blocked`、institutional 2FA 2件は
+`auth_blocked`、残り2件は`review_required`とし、append-only store、RLS、public revokeも追加した。
+controlled importは5件、重複priority 0、current deadline claim 0、registry digest `3e155625…`。
+fresh verificationはfocused 4件、outbound 176件、runtime-up 33件、diff checkが全成功。実装commit
+`7fa174cdf`はremoteへpush済み。実装plan:
+`docs/superpowers/plans/2026-08-02-connector-o1c02-funder-registry.md`。実測証拠:
+`docs/evidence/funding/2026-08-02-o1c02-funder-registry.json`。残作業は110件。
+次はO1C-03で、MUFG運営/CVC deny gateとpartner確認を実装する。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
@@ -883,7 +895,7 @@ agentが本文と履歴を読んで判断し、keyword/regexの固定分類へ�
 ### 5.3 Order 1C — 資金調達・アクセラレーター
 
 - [x] O1C-01 `application-kit`をcompany factsの正本として接続
-- [ ] O1C-02 funder/accelerator registryを再構築
+- [x] O1C-02 funder/accelerator registryを再構築
 - [ ] O1C-03 MUFG運営/CVC deny gateとpartner確認を実装
 - [ ] O1C-04 YC descriptionを制約内へ修正
 - [ ] O1C-05 58秒founder videoを検証してupload

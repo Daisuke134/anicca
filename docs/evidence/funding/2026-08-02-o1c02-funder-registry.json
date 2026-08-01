@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "task": "O1C-02",
+  "observed_at": "2026-08-01T17:02:25Z",
+  "result": "verified",
+  "life_manager_commit": "7fa174cdfe1683c3741f04795e2c53232d8a28c9",
+  "controlled_import": {
+    "entry_count": 5,
+    "registry_digest": "3e15562500bddde5be6aac4113c6181fc89425cdc785e406bd9ab0415a78e2e9",
+    "ordered_ids": [
+      "yc-w26",
+      "anthropic-builder",
+      "a16z-start-26",
+      "jsps-grant-in-aid",
+      "jst-create"
+    ],
+    "verification_statuses": ["needs_reverification"],
+    "automation_gate_counts": {
+      "review_required": 2,
+      "captcha_blocked": 1,
+      "auth_blocked": 2
+    },
+    "stale_claim_count": 5,
+    "current_deadline_claim_count": 0
+  },
+  "registry_contract": {
+    "tenant_bound": true,
+    "append_only": true,
+    "https_url_required": true,
+    "unique_priority_required": true,
+    "legacy_claims_are_current_facts": false,
+    "rls_enabled": true,
+    "public_privileges_revoked": true
+  },
+  "verification": {
+    "focused_funder_registry_tests": { "passed": 4, "failed": 0 },
+    "outbound_tests": { "passed": 176, "failed": 0 },
+    "runtime_up_tests": { "passed": 33, "failed": 0 },
+    "git_diff_check": "passed"
+  },
+  "claim_boundary": "This proves a normalized, tenant-bound, append-only registry can import the five exact legacy records while quarantining their historical verified, amount, and deadline fields as stale claims and assigning explicit automation gates. It does not prove that any program, eligibility rule, amount, operator, partner, or deadline is currently valid; O1C-03 and submission-day verification in O1C-15 own those outcomes."
+}
