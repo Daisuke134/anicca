@@ -346,6 +346,26 @@ The $10M product is not an individual skill. It is the platform that continuousl
 
 ## 12. Remaining implementation backlog
 
+### Execution status
+
+- **Active priority:** P0 — Truthful outcomes and repair closure.
+- **Implementation plan:** [`../plans/2026-08-01-capafy-p0-truthful-outcomes.md`](../plans/2026-08-01-capafy-p0-truthful-outcomes.md)
+- **Execution rule:** complete and verify one numbered task at a time; after each task, append the command evidence and commit hash here before beginning the next task.
+- **Current state (2026-08-01):** design approved and P0 plan written; runtime implementation has not started.
+- **Next action:** Task 1, lock the truthful reporting contract with failing tests.
+
+#### P0 execution log
+
+| Task | Status | Verification evidence | Commit |
+|---|---|---|---|
+| 1. Reporting contract | Not started | — | — |
+| 2. Incident identity | Not started | — | — |
+| 3. Repair closure monitor | Not started | — | — |
+| 4. Builder handoff | Not started | — | — |
+| 5. Marketer handoff | Not started | — | — |
+| 6. 09:30 report | Not started | — | — |
+| 7. Watchdogs + end-to-end proof | Not started | — | — |
+
 ### P0 — Truthful outcomes and repair closure
 
 - Replace metric labels that confuse loaded schedulers with successful business outcomes.
