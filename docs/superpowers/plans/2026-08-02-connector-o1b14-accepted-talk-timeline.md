@@ -65,11 +65,11 @@ git commit -m "feat(connector): validate accepted talk timeline"
 - Consumes: validated timeline object、`tenantId`、`participationId`
 - Produces: `buildTalkTimelineSnapshot(...)`、`createAcceptedTalkTimelineStore({connect}).save(snapshot)`
 
-- [ ] **Step 1: RED testを書く**
+- [x] **Step 1: RED testを書く**
 
 stable hash、reference-only row、accepted talk gate、idempotent insert、cross-tenant failure、immutable migration contractを固定する。
 
-- [ ] **Step 2: REDを確認する**
+- [x] **Step 2: REDを確認する**
 
 Run: `node --test lib/accepted-talk-timeline-store.test.js`
 Expected: module不存在でFAIL。
