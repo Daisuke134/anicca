@@ -19,8 +19,8 @@
 
 ### Task 1: Inventory and pack contract
 
-- [ ] 旧Connector、`anicca-booking`、O1B-03〜08の重複と採用境界を表にする。
-- [ ] 認証済み、復旧成功、復旧不能、応募effect開始後の4経路をRED testで固定する。
+- [x] 旧Connector、`anicca-booking`、O1B-03〜08の重複と採用境界を表にする。
+- [x] 認証済み、復旧成功、復旧不能、応募effect開始後の4経路をRED testで固定する。
 - [ ] events packの唯一のproduction composition surfaceを追加する。
 - [ ] Commit and push.
 
