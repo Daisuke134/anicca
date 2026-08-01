@@ -392,10 +392,25 @@ The $10M product is not an individual skill. It is the platform that continuousl
 ### Execution status
 
 - **Active priority:** P1 — Make the Marketer complete reliably. P0 is complete and remains the enforced reporting/repair boundary.
-- **Implementation plans:** P0 [`../plans/2026-08-01-capafy-p0-truthful-outcomes.md`](../plans/2026-08-01-capafy-p0-truthful-outcomes.md); P1 plan is the next artifact and must implement Section 8 without pulling P2's shared ledger into scope.
+- **Implementation plans:** P0 [`../plans/2026-08-01-capafy-p0-truthful-outcomes.md`](../plans/2026-08-01-capafy-p0-truthful-outcomes.md); P1 [`../plans/2026-08-02-capafy-p1-reliable-marketer.md`](../plans/2026-08-02-capafy-p1-reliable-marketer.md). P1 implements Section 8 without pulling P2's shared ledger into scope.
 - **Execution rule:** complete and verify one numbered task at a time; after each task, append the command evidence and commit hash here before beginning the next task.
 - **Current state (2026-08-02):** P0 Tasks 1-7 are implemented and verified. P1 design is approved: the account registry contains one poisoned and two `session_failed` rows, no active session is selectable, the content runner is still incorrectly wired to the 180-second `tool-agent`, and the existing warmup promotion still relies on calendar day/private-session creation instead of verified-success capabilities.
-- **Next action:** Write and execute the P1 implementation plan task by task. The first production action after offline verification is replacement-account provisioning; never retry the failed `@capafy.skills10491` login.
+- **Next action:** Execute P1 Task 1, the deterministic lifecycle controller. The first production action remains deferred until Tasks 1-7 pass offline; it will be replacement-account provisioning, never another login attempt against `@capafy.skills10491`.
+
+#### P1 execution log
+
+Design commit: `36c4007ea`. Implementation plan commit: `6a199cf51`.
+
+| Task | Status | Verification evidence | Commit |
+|---|---|---|---|
+| 1. Lifecycle controller | Not started | — | — |
+| 2. 900-second marketing lane | Not started | — | — |
+| 3. Immediate account manager | Not started | — | — |
+| 4. Verified warmup capabilities | Not started | — | — |
+| 5. Browser-direct Reel adapter | Not started | — | — |
+| 6. Creative/publish controller | Not started | — | — |
+| 7. P1 LaunchAgents and repair wiring | Not started | — | — |
+| 8. Fresh production lifecycle | Not started | — | — |
 
 #### P0 execution log
 
