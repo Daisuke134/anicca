@@ -666,6 +666,37 @@ test("outbound event worker wires the Luma browser provider and tenant evidence 
   assert.equal(services.now, now);
 });
 
+test("outbound event worker obtains its provider from the canonical events pack", () => {
+  const dailyDriver = { withLumaPage: async () => {} };
+  const auth = { ensureAuthenticated: async () => ({ status: "authenticated" }) };
+  const provider = { inspectRegistration: async () => {}, submitRegistration: async () => {} };
+  let composition;
+  let services;
+  createWorkerHandlers({
+    LM_RUNTIME_TENANT_ID: "tenant-a",
+    LM_DATA_DIR: "/var/lib/life-manager/data",
+  }, ["outbound.event.apply"], {
+    lumaDailyDriver: dailyDriver,
+    lumaAuth: auth,
+    lumaEvidenceStore: {
+      record: async () => {},
+      readExternalReceipt: async () => {},
+      readArtifact: async () => {},
+    },
+    createConnectorEventsPack(input) {
+      composition = input;
+      return { provider };
+    },
+    createRegistry({ servicesByAdapter }) {
+      services = servicesByAdapter["outbound-luma-rsvp"];
+      return { hasCapability: () => false };
+    },
+  });
+  assert.equal(composition.dailyDriver, dailyDriver);
+  assert.equal(composition.auth, auth);
+  assert.equal(services.provider, provider);
+});
+
 test("marketing observation worker reads one tenant receipt and preserves empty analytics as unavailable", async () => {
   const publicationJobId = `marketing-daily:${"a".repeat(64)}`;
   const calls = [];

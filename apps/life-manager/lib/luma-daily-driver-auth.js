@@ -43,10 +43,20 @@ async function inspectDailyDriverLumaAuth(page) {
       .some((element) => /^(?:sign\s*in|log\s*in|login)$/i.test(
         String(element.innerText || element.getAttribute("aria-label") || "").trim(),
       ));
+    const protectedPaths = new Set(
+      Array.from(document.querySelectorAll("a[href]"))
+        .filter(visible)
+        .map((element) => {
+          try { return new URL(element.href, location.href).pathname; } catch { return ""; }
+        }),
+    );
+    const protectedNavigation = location.pathname === "/home"
+      && protectedPaths.has("/create")
+      && protectedPaths.has("/home/calendars");
     return {
       origin: location.origin,
       path: location.pathname,
-      authenticated: Boolean(marker) && !authInput && !authAction,
+      authenticated: (Boolean(marker) || protectedNavigation) && !authInput && !authAction,
       loginRequired: authInput || authAction || /(?:^|\/)(?:login|signin|sign-in)(?:\/|$)/i.test(location.pathname),
     };
   });
@@ -136,8 +146,26 @@ function createAuthAwareLumaDailyDriver(options = {}) {
   return Object.freeze({
     async withLumaPage(url, task) {
       if (typeof task !== "function") throw new Error("CloakBrowser daily-driver task unavailable");
-      await auth.ensureAuthenticated();
+      const result = await auth.ensureAuthenticated();
+      if (!result || result.status !== "authenticated") throw unavailable();
       return dailyDriver.withLumaPage(url, task);
+    },
+  });
+}
+
+function createReadOnlyLumaSessionAuth(options = {}) {
+  const dailyDriver = options.dailyDriver;
+  const inspectAuth = options.inspectAuth || inspectDailyDriverLumaAuth;
+  if (
+    !dailyDriver
+    || typeof dailyDriver.withLumaPage !== "function"
+    || typeof inspectAuth !== "function"
+  ) throw unavailable();
+  return Object.freeze({
+    async ensureAuthenticated() {
+      const result = await dailyDriver.withLumaPage(LUMA_HOME_URL, inspectAuth);
+      if (!result || result.status !== "authenticated") throw unavailable();
+      return Object.freeze({ status: "authenticated", recovered: false });
     },
   });
 }
@@ -146,5 +174,6 @@ module.exports = {
   LUMA_HOME_URL,
   createAuthAwareLumaDailyDriver,
   createLumaDailyDriverAuth,
+  createReadOnlyLumaSessionAuth,
   inspectDailyDriverLumaAuth,
 };

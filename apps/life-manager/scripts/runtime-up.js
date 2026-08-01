@@ -605,9 +605,6 @@ function createWorkerHandlers(env, capabilities, dependencies = {}) {
       const {
         createCloakBrowserDailyDriver,
       } = require("../lib/cloakbrowser-daily-driver.js");
-      const {
-        createLumaBrowserProvider,
-      } = require("../lib/luma-browser-provider.js");
       const lookup = dependencies.lookupHost || dns.promises.lookup;
       const dailyDriver = dependencies.lumaDailyDriver || createCloakBrowserDailyDriver({
         connectOverCDP: dependencies.connectOverCDP
@@ -618,11 +615,20 @@ function createWorkerHandlers(env, capabilities, dependencies = {}) {
           return `http://${address}:9222`;
         }),
       });
-      provider = createLumaBrowserProvider({
+      const {
+        createReadOnlyLumaSessionAuth,
+      } = require("../lib/luma-daily-driver-auth.js");
+      const {
+        createConnectorEventsPack,
+      } = require("../lib/connector-events-pack.js");
+      const auth = dependencies.lumaAuth || createReadOnlyLumaSessionAuth({ dailyDriver });
+      const pack = (dependencies.createConnectorEventsPack || createConnectorEventsPack)({
         dailyDriver,
+        auth,
         evidenceStore,
         now: dependencies.now,
       });
+      provider = pack.provider;
     }
     servicesByAdapter["outbound-luma-rsvp"] = {
       provider,
