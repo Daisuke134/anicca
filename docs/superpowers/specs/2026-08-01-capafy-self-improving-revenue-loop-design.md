@@ -358,7 +358,7 @@ The $10M product is not an individual skill. It is the platform that continuousl
 
 | Task | Status | Verification evidence | Commit |
 |---|---|---|---|
-| 1. Reporting contract | Verified | `python3 -m py_compile .../capafy_outcome.py`; `python3 -m pytest -q .../test_capafy_outcome.py` → `8 passed in 0.39s`; RED was `8 failed` before implementation | `feat(capafy): define truthful outcome contract` |
+| 1. Reporting contract | Verified | `python3 -m py_compile .../capafy_outcome.py`; `python3 -m pytest -q .../test_capafy_outcome.py` → `8 passed in 0.39s`; RED was `8 failed` before implementation | `548b382e1` |
 | 2. Incident identity | Not started | — | — |
 | 3. Repair closure monitor | Not started | — | — |
 | 4. Builder handoff | Not started | — | — |
