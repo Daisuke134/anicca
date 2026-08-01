@@ -243,6 +243,13 @@ YC公式pageでlate application受付を当日再確認
 
 ## 5. 残作業 — 必ず番号順
 
+実行中: `O1B-01`。追加実測で、E1/E2/E3 verifierは存在するが、runtime workerは
+`outbound.event.apply` handlerが返した任意の`receipt`をそのままcompletedへ保存できると判明した。
+bare `{status:"success"}`、DOM自己申告、verifier結果のJSON copyを成功にしない。現在のprocessで実際に
+E1/E2/E3 verifierが生成したverified objectから作られ、同じtenant/job/attemptへboundされたreceiptだけを
+完了可能にする。証拠不成立は外部効果の有無が不明なため`unknownEffect=true`でreconciliationへ渡す。
+実装plan: `docs/superpowers/plans/2026-08-01-connector-o1b01-remove-fake-success.md`。
+
 完了: `O1A-06`。実機workerを意図的に停止し、Guardianの異常判定、DaisへのTelegram
 停止警告のpositive message ID、Docker workerの決定論的再起動、boundedな`/health`再確認、復旧通知の
 positive message ID、incident state clearまでを一続きで実証した。再起動で戻らない場合だけ既存
