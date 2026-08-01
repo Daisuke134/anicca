@@ -19,10 +19,10 @@
 
 ### Task 1: Existing-account authentication
 
-- [ ] 新しいLuma sign-in codeを同じdaily-driverから要求する。
-- [ ] `gog`でrequest後の新着Luma mailだけを読み、codeを出力せず入力する。
-- [ ] authenticated readbackを確認する。
-- [ ] spec更新、commit、push。
+- [x] 新しいLuma sign-in codeを同じdaily-driverから要求する。
+- [x] `gog`でrequest後の新着Luma mailだけを読み、codeを出力せず入力する。
+- [x] authenticated readbackを確認する。
+- [x] spec更新、commit、push。
 
 ### Task 2: Conflict-free live candidate
 
