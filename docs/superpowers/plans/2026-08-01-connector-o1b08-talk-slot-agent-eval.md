@@ -1,6 +1,6 @@
 # Connector O1B-08 Talk Slot Agent Eval Implementation Plan
 
-> Status: 実行中。event本文をagentが読み、一般参加とLT/CFP/demo応募を区別する。
+> Status: 完了。event本文を実Geminiが読み、一般参加とLT/CFP/demo応募を8/8で区別した。
 
 **Goal:** keyword listではなくevent本文全体の意味から、公開中の登壇応募枠、締切済み、招待制、単なる登壇者紹介、一般参加だけを区別し、5件以上のheld-out evalを実Geminiで通す。
 
@@ -33,6 +33,6 @@
 
 ### Task 3: Proof
 
-- [ ] secretなしeval evidenceを保存する。
-- [ ] O1B-08完了、spec更新、commit、push。
-- [ ] O1B-09へ進む。
+- [x] secretなしeval evidenceを保存する。
+- [x] O1B-08完了、spec更新、commit、push。
+- [x] O1B-09へ進む。

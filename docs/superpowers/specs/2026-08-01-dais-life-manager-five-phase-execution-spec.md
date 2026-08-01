@@ -442,6 +442,16 @@ O1B-08開始: 専用plan
 招待制、単なるspeaker紹介、一般参加のみを区別する。agentの根拠は本文中の連続substringであることを
 deterministicに検証し、公開応募URLとopen statusが揃う場合だけtalk application entityを作る。
 
+完了: `O1B-08`。Gemini 2.5 Flashのstructured output classifier、厳格schema、cross-field invariant、
+本文中の連続substring根拠、HTTPS application URL検証を追加した。keyword fallbackはなく、model/schema失敗を
+登壇枠ありへ変換しない。held-out 8件は公開LT、公開CFP、締切済みCFP、招待制demo、speaker紹介だけ、
+一般参加workshop、event本文内prompt injection、公開demoである。初回は招待制demoのtaxonomy曖昧さにより
+7/8だった。`participation_kind`はevent内の枠の存在、`application_status`と
+`should_create_talk_application`は今の応募可否と明確化し、caseや期待値を削らず再実行して8/8になった。
+focused 5件、outbound 91件が成功した。実測証拠:
+`docs/evidence/outbound/2026-08-01-o1b08-live-talk-agent-eval.json`。次はO1B-09で旧Connector loginと
+既存events packの実装を棚卸しし、正本runtimeへ必要知識だけを統合する。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
@@ -564,7 +574,7 @@ identity/browser/calendar reference検証を追加し、新規4件と既存runti
 - [x] O1B-05 確認mailをGmailで読み、同一attemptへ照合
 - [x] O1B-06 同一eventのLuma公式QRをguest key hashで照合して保存
 - [x] O1B-07 人間向け説明と直接link付きでTelegramへ実QRを送る
-- [ ] O1B-08 agentが本文からLT/CFPを判断するevalを通す
+- [x] O1B-08 agentが本文からLT/CFP/demoを判断する実Gemini evalを8/8で通す
 - [ ] O1B-09 旧Connector loginを復旧しevents packへ統合
 - [ ] O1B-10 重複旧実装を退役
 - [ ] O1B-11 connpass API keyを申請。取得まで自動アクセス禁止
