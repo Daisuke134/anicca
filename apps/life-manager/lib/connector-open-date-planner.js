@@ -13,6 +13,16 @@ const ALL_STATUSES = new Set([...ACTIVE, "dead_letter"]);
 
 function invalid() { throw new Error("Connector open-date planner invalid"); }
 
+async function stage(code, operation) {
+  try {
+    return await operation();
+  } catch {
+    const error = new Error("Connector open-date planning unavailable");
+    error.code = code;
+    throw error;
+  }
+}
+
 function stableJson(value) {
   if (Array.isArray(value)) return `[${value.map(stableJson).join(",")}]`;
   if (value && typeof value === "object") {
@@ -62,20 +72,28 @@ function createConnectorOpenDateApplicationPlanner(dependencies = {}) {
     });
     const day = dateInventory.days.find((candidate) => candidate.date === open.date);
     if (!day || day.inventory_status !== "complete") invalid();
-    const ranking = await dependencies.rankDatePreferences(
-      dateInventory, open.date, profile.preferences, { apiKey: input.apiKey },
-    );
-    const goals = await dependencies.evaluateDateGoals(
-      dateInventory, ranking, profile.goals, { apiKey: input.apiKey },
-    );
-    const gate = await dependencies.gateDateCalendar(
-      dateInventory, busyInventory, open.date, input.homeLocation, input.routeMinutes,
-    );
-    const policy = dependencies.createSpendPolicy({
-      tenantId: profile.tenant_id,
-      limits: profile.spend_policy.limits,
+    const ranking = await stage("CONNECTOR_COVERAGE_APPLICATION_RANKING_FAILED", () => (
+      dependencies.rankDatePreferences(
+        dateInventory, open.date, profile.preferences, { apiKey: input.apiKey },
+      )
+    ));
+    const goals = await stage("CONNECTOR_COVERAGE_APPLICATION_GOAL_EVALUATION_FAILED", () => (
+      dependencies.evaluateDateGoals(
+        dateInventory, ranking, profile.goals, { apiKey: input.apiKey },
+      )
+    ));
+    const gate = await stage("CONNECTOR_COVERAGE_APPLICATION_CALENDAR_GATE_FAILED", () => (
+      dependencies.gateDateCalendar(
+        dateInventory, busyInventory, open.date, input.homeLocation, input.routeMinutes,
+      )
+    ));
+    const sequence = await stage("CONNECTOR_COVERAGE_APPLICATION_SPEND_PLAN_FAILED", async () => {
+      const policy = await dependencies.createSpendPolicy({
+        tenantId: profile.tenant_id,
+        limits: profile.spend_policy.limits,
+      });
+      return dependencies.buildSpendSequence(policy, dateInventory, gate, goals);
     });
-    const sequence = dependencies.buildSpendSequence(policy, dateInventory, gate, goals);
     if (!sequence || !Array.isArray(sequence.ordered_candidates)) invalid();
     const eventByRef = new Map(day.events.map((event) => [event.event_ref, event]));
     const candidates = sequence.ordered_candidates.map((candidate) => {
@@ -102,8 +120,12 @@ function createConnectorOpenDateApplicationPlanner(dependencies = {}) {
         browserProfileRef: profile.browser_profile_ref,
         calendarRef: profile.calendar_ref,
       };
-      const job = dependencies.buildApplicationJob(application);
-      const stored = await dependencies.readApplicationJob(job);
+      const job = await stage("CONNECTOR_COVERAGE_APPLICATION_JOB_BUILD_FAILED", () => (
+        dependencies.buildApplicationJob(application)
+      ));
+      const stored = await stage("CONNECTOR_COVERAGE_APPLICATION_JOB_READ_FAILED", () => (
+        dependencies.readApplicationJob(job)
+      ));
       if (stored != null) {
         if (!stored || !ALL_STATUSES.has(stored.status)) invalid();
         if (ACTIVE.has(stored.status)) return result({
@@ -112,7 +134,9 @@ function createConnectorOpenDateApplicationPlanner(dependencies = {}) {
         });
         continue;
       }
-      const enqueued = await dependencies.enqueueApplication(application);
+      const enqueued = await stage("CONNECTOR_COVERAGE_APPLICATION_JOB_ENQUEUE_FAILED", () => (
+        dependencies.enqueueApplication(application)
+      ));
       if (
         !enqueued || enqueued.created !== true || !enqueued.job
         || enqueued.job.job_id !== job.job_id || enqueued.job.status !== "queued"

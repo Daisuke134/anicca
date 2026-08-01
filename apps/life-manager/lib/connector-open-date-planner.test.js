@@ -69,7 +69,7 @@ async function sources() {
   };
 }
 
-function planner(statuses = new Map()) {
+function planner(statuses = new Map(), overrides = {}) {
   const calls = [];
   const instance = createConnectorOpenDateApplicationPlanner({
     async rankDatePreferences(_inventory, date) { calls.push(["rank", date]); return { date }; },
@@ -91,6 +91,7 @@ function planner(statuses = new Map()) {
       calls.push(["enqueue", job.input_refs.event_ref.split("?")[0]]);
       return { created: true, job: { ...job, status: "queued" } };
     },
+    ...overrides,
   });
   return { instance, calls };
 }
@@ -106,6 +107,24 @@ test("earliest open date enqueues only its first absent candidate", async () => 
   assert.equal(calls.some(([, value]) => value === "2026-08-03"), false);
   assert.equal(isVerifiedConnectorOpenDatePlan(result), true);
   assert.equal(isVerifiedConnectorOpenDatePlan(structuredClone(result)), false);
+});
+
+test("dependency failures expose only their bounded application-planning stage", async () => {
+  const stages = [
+    ["rankDatePreferences", "CONNECTOR_COVERAGE_APPLICATION_RANKING_FAILED"],
+    ["evaluateDateGoals", "CONNECTOR_COVERAGE_APPLICATION_GOAL_EVALUATION_FAILED"],
+    ["gateDateCalendar", "CONNECTOR_COVERAGE_APPLICATION_CALENDAR_GATE_FAILED"],
+    ["createSpendPolicy", "CONNECTOR_COVERAGE_APPLICATION_SPEND_PLAN_FAILED"],
+    ["readApplicationJob", "CONNECTOR_COVERAGE_APPLICATION_JOB_READ_FAILED"],
+    ["enqueueApplication", "CONNECTOR_COVERAGE_APPLICATION_JOB_ENQUEUE_FAILED"],
+  ];
+  for (const [name, code] of stages) {
+    const input = await sources();
+    const { instance } = planner(new Map(), { [name]: async () => { throw new Error("private provider failure"); } });
+    await assert.rejects(instance(input), (error) => (
+      error.code === code && error.message === "Connector open-date planning unavailable"
+    ));
+  }
 });
 
 test("active or completed first candidate waits and never enqueues the next candidate", async () => {
