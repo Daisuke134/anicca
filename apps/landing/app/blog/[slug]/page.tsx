@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import WriterUnlock from "../../../components/blog/WriterUnlock";
 
 type Mirrors = { x?: string; substack?: string; newsletter?: string };
 
@@ -14,9 +15,66 @@ type ResearchPost = {
   word_count: number;
   markdown: string;
   mirrors?: Mirrors;
+  access_model?: "one_time" | "archive" | "both";
+  paid_sha256?: string;
+  run_id?: string;
+  artifact_id?: string;
+  lang?: "ja" | "en";
+  writer_manifest?: string;
 };
 
+type PrivateWriterArticle = {
+  slug: string;
+  run_id: string;
+  artifact_id: string;
+  lang: "ja" | "en";
+  title: string;
+  preview_markdown: string;
+  paid_markdown: string;
+  paid_sha256: string;
+  access_model: "one_time" | "archive" | "both";
+};
+
+function privatePostPath(slug: string): string {
+  return path.join(process.cwd(), "private", "writer-articles", `${slug}.json`);
+}
+
+function loadPrivatePost(slug: string): ResearchPost | null {
+  const file = privatePostPath(slug);
+  if (!fs.existsSync(file)) return null;
+  // Netlify Functions and the build share this deterministic contract. An
+  // invalid private article aborts the build instead of silently falling back
+  // to a different public file with the same slug.
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { validateWriterArticle, publicPreview, publicManifestJson } = require(
+    "../../../netlify/functions/_lib/writer-article-contract.js"
+  );
+  const privateValue = validateWriterArticle(
+    JSON.parse(fs.readFileSync(file, "utf-8"))
+  ) as PrivateWriterArticle;
+  const visible = publicPreview(privateValue);
+  const day = privateValue.run_id.slice(0, 8);
+  return {
+    slug: visible.slug,
+    title: visible.title,
+    date: `${day.slice(0, 4)}-${day.slice(4, 6)}-${day.slice(6, 8)}`,
+    project: "Writer Agent",
+    n_papers_cited: 0,
+    word_count: `${privateValue.preview_markdown} ${privateValue.paid_markdown}`
+      .trim().split(/\s+/).length,
+    markdown: visible.preview_markdown,
+    access_model: visible.access_model,
+    paid_sha256: visible.paid_sha256,
+    run_id: visible.run_id,
+    artifact_id: visible.artifact_id,
+    lang: visible.lang,
+    writer_manifest: publicManifestJson(privateValue),
+  };
+}
+
 function loadPost(slug: string): ResearchPost | null {
+  const privatePost = loadPrivatePost(slug);
+  if (privatePost) return privatePost;
   const file = path.join(process.cwd(), "data", "research", `${slug}.json`);
   if (!fs.existsSync(file)) return null;
   try {
@@ -115,11 +173,14 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 
 export async function generateStaticParams() {
   const dir = path.join(process.cwd(), "data", "research");
-  if (!fs.existsSync(dir)) return [];
-  return fs
-    .readdirSync(dir)
-    .filter((f) => f.endsWith(".json"))
-    .map((f) => ({ slug: f.replace(/\.json$/, "") }));
+  const privateDir = path.join(process.cwd(), "private", "writer-articles");
+  const files = [
+    ...(fs.existsSync(dir) ? fs.readdirSync(dir) : []),
+    ...(fs.existsSync(privateDir) ? fs.readdirSync(privateDir) : []),
+  ];
+  return [...new Set(
+    files.filter((f) => f.endsWith(".json")).map((f) => f.replace(/\.json$/, ""))
+  )].map((slug) => ({ slug }));
 }
 
 export default function ResearchPostPage({ params }: { params: { slug: string } }) {
@@ -131,6 +192,13 @@ export default function ResearchPostPage({ params }: { params: { slug: string } 
 
   return (
     <main className="bg-cream">
+      {post.writer_manifest && (
+        <script
+          id="writer-public-contract"
+          type="application/json"
+          dangerouslySetInnerHTML={{ __html: post.writer_manifest }}
+        />
+      )}
       <article className="mx-auto max-w-3xl px-5 pt-32 pb-20">
         <Link
           href="/blog"
@@ -148,6 +216,17 @@ export default function ResearchPostPage({ params }: { params: { slug: string } 
           className="mt-6"
           dangerouslySetInnerHTML={{ __html: html }}
         />
+
+        {post.access_model && post.paid_sha256 && post.run_id && post.artifact_id && post.lang && (
+          <WriterUnlock
+            slug={post.slug}
+            runId={post.run_id}
+            artifactId={post.artifact_id}
+            lang={post.lang}
+            accessModel={post.access_model}
+            paidSha256={post.paid_sha256}
+          />
+        )}
 
         {/* Mirrors strip */}
         {hasMirrors && (

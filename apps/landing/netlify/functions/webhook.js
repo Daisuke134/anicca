@@ -2,30 +2,84 @@
 // look up the lang via session metadata and email the buyer the PDF link via Resend.
 const crypto = require('crypto');
 
-exports.handler = async (event) => {
-  const STRIPE_KEY = process.env.STRIPE_SECRET_KEY;
-  const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
-  const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const WRITER_EVENT_TYPES = new Set([
+  'checkout.session.completed',
+  'customer.subscription.created',
+  'customer.subscription.updated',
+  'customer.subscription.deleted',
+  'invoice.paid',
+  'charge.refunded',
+]);
 
-  if (!STRIPE_KEY || !WEBHOOK_SECRET || !RESEND_API_KEY) {
+function validStripeSignature(body, header, secret, nowSeconds) {
+  if (typeof body !== 'string' || typeof header !== 'string' || typeof secret !== 'string') return false;
+  let timestamp = null;
+  const signatures = [];
+  for (const part of header.split(',')) {
+    const index = part.indexOf('=');
+    if (index < 0) continue;
+    const key = part.slice(0, index).trim();
+    const value = part.slice(index + 1).trim();
+    if (key === 't' && /^\d+$/.test(value)) timestamp = Number(value);
+    if (key === 'v1' && /^[a-f0-9]{64}$/.test(value)) signatures.push(value);
+  }
+  if (!Number.isSafeInteger(timestamp) || Math.abs(nowSeconds - timestamp) > 300 || signatures.length === 0) return false;
+  const expected = crypto.createHmac('sha256', secret).update(`${timestamp}.${body}`).digest();
+  return signatures.some((value) => {
+    const actual = Buffer.from(value, 'hex');
+    return actual.length === expected.length && crypto.timingSafeEqual(actual, expected);
+  });
+}
+
+function writerMetadata(payload) {
+  const object = payload && payload.data && payload.data.object;
+  return object && (
+    object.metadata
+    || (object.subscription_details && object.subscription_details.metadata)
+    || (object.parent && object.parent.subscription_details && object.parent.subscription_details.metadata)
+  );
+}
+
+function isWriterEvent(payload) {
+  if (payload && typeof payload.type === 'string' && payload.type.startsWith('payout.')) return true;
+  if (!payload || !WRITER_EVENT_TYPES.has(payload.type)) return false;
+  const metadata = writerMetadata(payload);
+  return metadata && (metadata.product === 'writer_article' || metadata.product === 'writer_archive');
+}
+
+async function webhookHandler(event, dependencies = {}) {
+  const env = dependencies.env || process.env;
+  const WEBHOOK_SECRET = env.STRIPE_WEBHOOK_SECRET;
+
+  if (!WEBHOOK_SECRET) {
     return { statusCode: 500, body: 'missing config' };
   }
 
   // Verify Stripe signature
   const sigHeader = event.headers['stripe-signature'] || event.headers['Stripe-Signature'];
   if (!sigHeader) return { statusCode: 400, body: 'no sig' };
-  const parts = Object.fromEntries(sigHeader.split(',').map(s => s.split('=')));
-  const t = parts.t;
-  const v1 = parts.v1;
-  const signedPayload = `${t}.${event.body}`;
-  const expected = crypto.createHmac('sha256', WEBHOOK_SECRET).update(signedPayload).digest('hex');
-  if (expected !== v1) return { statusCode: 400, body: 'bad sig' };
+  const nowSeconds = dependencies.nowSeconds || Math.floor(Date.now() / 1000);
+  if (!validStripeSignature(event.body, sigHeader, WEBHOOK_SECRET, nowSeconds)) {
+    return { statusCode: 400, body: 'bad sig' };
+  }
 
   let payload;
   try { payload = JSON.parse(event.body); } catch { return { statusCode: 400, body: 'bad json' }; }
 
-  const SUPABASE_URL = process.env.SUPABASE_URL;
-  const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  // Writer fulfillment is the signed Checkout entitlement itself. Do not run
+  // ebook/Letter email or buyer-store side effects; the read-only collector
+  // independently turns Stripe objects into accounting receipts.
+  if (isWriterEvent(payload)) return { statusCode: 200, body: 'ok writer' };
+
+  const STRIPE_KEY = env.STRIPE_SECRET_KEY;
+  const RESEND_API_KEY = env.RESEND_API_KEY;
+  if (!STRIPE_KEY || !RESEND_API_KEY) return { statusCode: 500, body: 'missing config' };
+  const fetchImpl = dependencies.fetchImpl || fetch;
+  const sendEmail = dependencies.sendEmail
+    || ((key, email, subject, html) => sendResend(key, email, subject, html, fetchImpl));
+
+  const SUPABASE_URL = env.SUPABASE_URL;
+  const SUPABASE_SERVICE_ROLE_KEY = env.SUPABASE_SERVICE_ROLE_KEY;
 
   // ────────── checkout.session.completed ──────────
   if (payload.type === 'checkout.session.completed') {
@@ -39,7 +93,7 @@ exports.handler = async (event) => {
     // Subscription = letter newsletter — upsert into subscribers as paid tier
     if (mode === 'subscription' && product === 'letter') {
       if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
-        await fetch(`${SUPABASE_URL}/rest/v1/subscribers`, {
+        await fetchImpl(`${SUPABASE_URL}/rest/v1/subscribers`, {
           method: 'POST',
           headers: {
             apikey: SUPABASE_SERVICE_ROLE_KEY,
@@ -59,13 +113,13 @@ exports.handler = async (event) => {
       }
       const subject = lang === 'jp' ? '無常の手紙へようこそ' : 'Welcome to the Daily Anicca Letter';
       const html = lang === 'jp' ? jpLetterWelcomeHtml(session.customer) : enLetterWelcomeHtml(session.customer);
-      await sendResend(RESEND_API_KEY, email, subject, html);
+      await sendEmail(RESEND_API_KEY, email, subject, html);
       return { statusCode: 200, body: 'ok subscription' };
     }
 
     // Payment (ebook) — original flow
     if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
-      await fetch(`${SUPABASE_URL}/rest/v1/buyers`, {
+      await fetchImpl(`${SUPABASE_URL}/rest/v1/buyers`, {
         method: 'POST',
         headers: {
           apikey: SUPABASE_SERVICE_ROLE_KEY,
@@ -89,7 +143,7 @@ exports.handler = async (event) => {
       : `https://aniccaai.com/ebooks/anicca-reset-en.pdf`;
     const subject = lang === 'jp' ? '『アニッチャ・リセット』お届けします' : 'Your copy of The Anicca Reset';
     const html = lang === 'jp' ? jpDeliverHtml(PDF_URL) : enDeliverHtml(PDF_URL);
-    await sendResend(RESEND_API_KEY, email, subject, html);
+    await sendEmail(RESEND_API_KEY, email, subject, html);
     return { statusCode: 200, body: 'ok ebook' };
   }
 
@@ -97,7 +151,7 @@ exports.handler = async (event) => {
   if (payload.type === 'customer.subscription.deleted') {
     const sub = payload.data.object;
     if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
-      await fetch(
+      await fetchImpl(
         `${SUPABASE_URL}/rest/v1/subscribers?stripe_subscription_id=eq.${encodeURIComponent(sub.id)}`,
         {
           method: 'PATCH',
@@ -118,7 +172,7 @@ exports.handler = async (event) => {
     const sub = payload.data.object;
     const tier = (sub.status === 'active' || sub.status === 'trialing') ? 'paid' : 'expired';
     if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
-      await fetch(
+      await fetchImpl(
         `${SUPABASE_URL}/rest/v1/subscribers?stripe_subscription_id=eq.${encodeURIComponent(sub.id)}`,
         {
           method: 'PATCH',
@@ -135,10 +189,13 @@ exports.handler = async (event) => {
   }
 
   return { statusCode: 200, body: 'ignored' };
-};
+}
 
-async function sendResend(key, email, subject, html) {
-  await fetch('https://api.resend.com/emails', {
+exports.webhookHandler = webhookHandler;
+exports.handler = (event) => webhookHandler(event);
+
+async function sendResend(key, email, subject, html, fetchImpl = fetch) {
+  await fetchImpl('https://api.resend.com/emails', {
     method: 'POST',
     headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ from: 'Anicca <onboarding@resend.dev>', to: email, subject, html }),
