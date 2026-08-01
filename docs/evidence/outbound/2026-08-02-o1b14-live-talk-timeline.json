@@ -1,0 +1,31 @@
+{
+  "evidence_version": "o1b14-live-talk-timeline-v1",
+  "observed_date_jst": "2026-08-02",
+  "runtime_database": "life-manager-local-postgres-1/life_manager",
+  "migration": "apps/life-manager/migrations/2026-08-02-lm-talk-timeline-snapshots.sql",
+  "migration_applied": true,
+  "rollback_fixture": {
+    "accepted_talk_entity_inserted": 1,
+    "timeline_snapshot_inserted": 1,
+    "current_view_rows": 1,
+    "immutable_update_rejected": true,
+    "unchanged_rows_after_rejected_update": 1,
+    "rows_after_rollback": 0
+  },
+  "real_talk": {
+    "canonical_event_ref": "https://luma.com/p9kfepcf",
+    "unaccepted_talk_entities": 1,
+    "timeline_rows": 0,
+    "state_mutated_for_test": false
+  },
+  "verification": {
+    "focused_tests_passed": 5,
+    "outbound_tests_passed": 140,
+    "outbound_tests_failed": 0
+  },
+  "privacy": {
+    "raw_mail_body_stored": false,
+    "raw_ticket_or_guest_key_stored": false,
+    "personal_contact_stored": false
+  }
+}
