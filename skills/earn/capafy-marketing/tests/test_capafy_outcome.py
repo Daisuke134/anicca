@@ -177,6 +177,26 @@ def test_account_created_requires_independently_verified_session() -> None:
     assert "session_established" in result.stderr
 
 
+def test_warmup_progress_reports_verified_count_and_capability() -> None:
+    payload = {
+        "schema_version": 1,
+        "kind": "lifecycle_progress",
+        "owner": "marketer",
+        "handle": "capafy.skills25042",
+        "before_status": "warmup_1_of_2",
+        "status": "noncommercial_ready",
+        "warmup_successes": 2,
+        "capability": "noncommercial_post",
+        "public_post_url": None,
+        "next_action": "Create the first non-commercial Reel",
+    }
+    result = run_cli("render", payload)
+    assert result.returncode == 0, result.stderr
+    assert "2 verified" in result.stdout.lower()
+    assert "non-commercial" in result.stdout.lower()
+    assert "no public post" in result.stdout.lower()
+
+
 def test_money_dimensions_remain_separate_in_rendered_message() -> None:
     result = run_cli("render", builder_submission())
 

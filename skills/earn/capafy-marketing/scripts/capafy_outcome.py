@@ -122,6 +122,14 @@ def validate_outcome(data: dict) -> list[str]:
             errors.append("a fresh account cannot have a public_post_url")
         if not data.get("next_action"):
             errors.append("next_action is required")
+    elif kind == "lifecycle_progress":
+        for field in ("handle", "before_status", "status", "capability", "next_action"):
+            if not data.get(field):
+                errors.append(f"{field} is required")
+        if not isinstance(data.get("warmup_successes"), int) or data.get("warmup_successes", -1) < 1:
+            errors.append("warmup_successes must be a positive integer")
+        if data.get("public_post_url") is not None:
+            errors.append("warmup progress cannot claim a public post")
     elif kind == "incident_unresolved":
         for field in (
             "incident_id",
@@ -209,6 +217,18 @@ def render_outcome(data: dict) -> str:
                 f"Account: @{data['handle']}",
                 "The isolated browser session is established and independently verified.",
                 "Verified warmups: 0/2.",
+                "No public post exists yet.",
+                f"Next automatic action: {data['next_action']}.",
+            ]
+        )
+    if kind == "lifecycle_progress":
+        capability = data["capability"].replace("_", "-")
+        return "\n".join(
+            [
+                "Capafy Marketer — verified warmup progress",
+                f"Account: @{data['handle']}",
+                f"State: {data['before_status']} -> {data['status']}",
+                f"{data['warmup_successes']} verified warmups; capability: {capability}.",
                 "No public post exists yet.",
                 f"Next automatic action: {data['next_action']}.",
             ]
