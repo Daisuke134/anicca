@@ -87,11 +87,14 @@ eq "browser lease released after provisioning" "$(grep -Fc 'release instagram:ca
 has "runner uses marketing lane" "$RUNNER_CALLS" "--task-class marketing-agent"
 has "message has new handle" "$TELEGRAM_BODY" "@capafy.skills25042"
 has "message says browser session" "$TELEGRAM_BODY" "browser session"
-has "message says zero warmups" "$TELEGRAM_BODY" "0/2"
+has "message says publish starts now" "$TELEGRAM_BODY" "starts now"
+if grep -Eqi 'warmup|waiting' "$TELEGRAM_BODY"; then bad "account-created message still waits"; else ok "account-created message has no wait gate"; fi
+eq "created account wakes daily publisher once" "$(grep -Fc 'ai.anicca.capafy-ig-marketing-daily' "$KICKSTART_CALLS")" 1
 bash "$MANAGER" >/dev/null 2>&1; rc=$?
 eq "second pass exits zero" "$rc" 0
 eq "second pass does not reprovision" "$(wc -l <"$RUNNER_CALLS" | tr -d ' ')" 1
 eq "second pass does not resend" "$(grep -Fc 'replacement account created and verified' "$TELEGRAM_BODY")" 1
+eq "second pass does not re-kick publisher" "$(grep -Fc 'ai.anicca.capafy-ig-marketing-daily' "$KICKSTART_CALLS")" 1
 
 new_case missing-credential; export FAKE_PROVISION_MODE=missing_credential
 bash "$MANAGER" >/dev/null 2>&1; rc=$?
@@ -129,6 +132,7 @@ bash "$MANAGER" >/dev/null 2>&1; second_rc=$?
 eq "sender retry exits zero" "$second_rc" 0
 eq "sender retry does not reprovision" "$(wc -l <"$RUNNER_CALLS" | tr -d ' ')" 1
 eq "sender retry delivers once" "$(grep -Fc 'replacement account created and verified' "$TELEGRAM_BODY")" 1
+eq "sender retry wakes publisher once" "$(grep -Fc 'ai.anicca.capafy-ig-marketing-daily' "$KICKSTART_CALLS")" 1
 
 new_case challenge
 python3 - "$CAPAFY_IG_ACCOUNTS_FILE" <<'PY'
@@ -145,8 +149,9 @@ if grep -Eqi 'Client\(\)\.login|login_by_sessionid|password.*login' "$KICKSTART_
 bash "$MANAGER" >/dev/null 2>&1; replacement_rc=$?
 eq "challenge chain provisions replacement" "$replacement_rc" 0
 eq "replacement row is appended after retired history" "$(python3 -c 'import json,sys;d=json.load(open(sys.argv[1]));print(len(d))' "$CAPAFY_IG_ACCOUNTS_FILE")" 2
-eq "replacement becomes created_session_verified" "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$CAPAFY_IG_LIFECYCLE_STATE")" created_session_verified
+eq "replacement becomes publish_probe_ready" "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$CAPAFY_IG_LIFECYCLE_STATE")" publish_probe_ready
 eq "replacement lifecycle closure is delivered once" "$(grep -Fc 'replacement account created and verified' "$TELEGRAM_BODY")" 1
+eq "replacement completion wakes daily publisher" "$(grep -Fc 'ai.anicca.capafy-ig-marketing-daily' "$KICKSTART_CALLS")" 1
 
 printf '=== test_capafy_ig_account_manager: %s passed %s failed ===\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]

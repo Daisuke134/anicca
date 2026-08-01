@@ -145,9 +145,9 @@ def test_account_created_renders_verified_browser_session_without_live_claim() -
         "handle": "capafy.skills25042",
         "session_owner": "browser",
         "session_established": True,
-        "warmup_successes": 0,
+        "capability": "publish_probe",
         "public_post_url": None,
-        "next_action": "Run the first automatic browser warmup",
+        "next_action": "Start the first original Reel now",
     }
 
     result = run_cli("render", payload)
@@ -155,7 +155,10 @@ def test_account_created_renders_verified_browser_session_without_live_claim() -
     assert result.returncode == 0, result.stderr
     assert "@capafy.skills25042" in result.stdout
     assert "browser session" in result.stdout.lower()
-    assert "0/2" in result.stdout
+    assert "publish probe" in result.stdout.lower()
+    assert "starts now" in result.stdout.lower()
+    assert "warmup" not in result.stdout.lower()
+    assert "waiting" not in result.stdout.lower()
     assert "no public post" in result.stdout.lower()
     assert "live" not in result.stdout.lower()
 
@@ -168,16 +171,16 @@ def test_account_created_requires_independently_verified_session() -> None:
         "handle": "capafy.skills25042",
         "session_owner": "browser",
         "session_established": False,
-        "warmup_successes": 0,
+        "capability": "publish_probe",
         "public_post_url": None,
-        "next_action": "Run warmup",
+        "next_action": "Start the first original Reel now",
     }
     result = run_cli("validate", payload)
     assert result.returncode != 0
     assert "session_established" in result.stderr
 
 
-def test_warmup_progress_reports_verified_count_and_capability() -> None:
+def test_removed_warmup_progress_kind_is_rejected() -> None:
     payload = {
         "schema_version": 1,
         "kind": "lifecycle_progress",
@@ -190,11 +193,9 @@ def test_warmup_progress_reports_verified_count_and_capability() -> None:
         "public_post_url": None,
         "next_action": "Create the first non-commercial Reel",
     }
-    result = run_cli("render", payload)
-    assert result.returncode == 0, result.stderr
-    assert "2 verified" in result.stdout.lower()
-    assert "non-commercial" in result.stdout.lower()
-    assert "no public post" in result.stdout.lower()
+    result = run_cli("validate", payload)
+    assert result.returncode != 0
+    assert "unsupported kind" in result.stderr.lower()
 
 
 def test_money_dimensions_remain_separate_in_rendered_message() -> None:

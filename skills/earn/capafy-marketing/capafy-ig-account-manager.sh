@@ -27,6 +27,7 @@ RUN_AGENT="${CAPAFY_RUN_AGENT:-$ENGINE/run_agent.sh}"
 BROWSER="${CAPAFY_PROVISION_BROWSER:-$HERE/../../browser/ensure_provision_browser.sh}"
 GUARD="${CAPAFY_BROWSER_GUARD:-$HOME/.config/ai/bin/browser-guard.sh}"
 VERIFY_SESSION="${CAPAFY_IG_SESSION_VERIFY:-$HERE/scripts/capafy_ig_session_verify.py}"
+KICKSTART="${CAPAFY_LAUNCHCTL:-launchctl}"
 LOCK="${CAPAFY_ACCOUNT_MANAGER_LOCK_DIR:-$STATE_DIR/capafy-ig-account-manager.lock}"
 IDENTITY="${CAPAFY_PROVISION_BROWSER_IDENTITY:-instagram:capafy-provision}"
 mkdir -p "$STATE_DIR" "$(dirname "$ACCOUNTS")"
@@ -80,12 +81,11 @@ trap cleanup EXIT
 if [ -f "$RESULT" ] && [ "$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("result", ""))' "$RESULT" 2>/dev/null)" = "account_created" ]; then
   CAPAFY_MARKETING_RESULT="$RESULT" CAPAFY_IG_LIFECYCLE_STATE="$STATE" bash "$HANDOFF" 0 account-manager || exit $?
   rm -f "$RESULT"
+  "$KICKSTART" kickstart -k "gui/$(id -u)/ai.anicca.capafy-ig-marketing-daily" >/dev/null 2>&1 || true
   exit 0
 fi
 
-WARMUP_EMPTY="$STATE_DIR/capafy-empty-warmup.json"
-[ -f "$WARMUP_EMPTY" ] || printf '{"log":[]}\n' >"$WARMUP_EMPTY"
-python3 "$LIFECYCLE" snapshot --accounts "$ACCOUNTS" --warmup "$WARMUP_EMPTY" --state "$STATE" >/dev/null || fail "could not derive the Instagram lifecycle snapshot"
+python3 "$LIFECYCLE" snapshot --accounts "$ACCOUNTS" --state "$STATE" >/dev/null || fail "could not derive the Instagram lifecycle snapshot"
 replacement="$(python3 -c 'import json,sys;print(str(json.load(open(sys.argv[1])).get("replacement_requested",False)).lower())' "$STATE")"
 [ "$replacement" = "true" ] || exit 0
 
@@ -133,16 +133,17 @@ fi
 
 python3 - "$STATE" "$readback" <<'PY' || replacement_fail "verified session state could not be persisted" "$readback"
 import datetime,json,os,sys
-p,h=sys.argv[1:3]; d=json.load(open(p)); d.update(schema_version=1,status="created_session_verified",handle=h,session_owner="browser",session_established=True,warmup_success_dates=[],warmup_successes=0,capability="warmup_only",last_public_reel_url=None,reach_healthy=False,replacement_requested=False,updated_at=datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00","Z")); t=p+".tmp"
+p,h=sys.argv[1:3]; d=json.load(open(p)); d.update(schema_version=1,status="publish_probe_ready",handle=h,session_owner="browser",session_established=True,capability="publish_probe",last_public_reel_url=None,post_write_session_verified=False,reach_healthy=False,replacement_requested=False,updated_at=datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00","Z")); d.pop("warmup_success_dates",None); d.pop("warmup_successes",None); t=p+".tmp"
 with open(t,"w") as f: json.dump(d,f,indent=2); f.write("\n"); f.flush(); os.fsync(f.fileno())
 os.replace(t,p)
 PY
 python3 - "$RESULT" "$readback" <<'PY' || replacement_fail "verified account terminal could not be persisted" "$readback"
 import json,os,sys
-p,h=sys.argv[1:3]; t=p+".tmp"; value={"result":"account_created","handle":h,"session_owner":"browser","session_established":True,"warmup_successes":0,"public_post_url":None,"next_action":"run the first automatic browser warmup"}
+p,h=sys.argv[1:3]; t=p+".tmp"; value={"result":"account_created","handle":h,"session_owner":"browser","session_established":True,"capability":"publish_probe","public_post_url":None,"next_action":"publish and verify the first original product-education Reel"}
 with open(t,"w") as f: json.dump(value,f); f.write("\n"); f.flush(); os.fsync(f.fileno())
 os.replace(t,p)
 PY
 CAPAFY_MARKETING_RESULT="$RESULT" CAPAFY_IG_LIFECYCLE_STATE="$STATE" bash "$HANDOFF" 0 "$evidence" || exit $?
 rm -f "$RESULT"
+"$KICKSTART" kickstart -k "gui/$(id -u)/ai.anicca.capafy-ig-marketing-daily" >/dev/null 2>&1 || true
 exit 0

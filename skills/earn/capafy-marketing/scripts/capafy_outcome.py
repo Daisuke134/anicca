@@ -116,28 +116,12 @@ def validate_outcome(data: dict) -> list[str]:
             errors.append("session_owner must be browser")
         if data.get("session_established") is not True:
             errors.append("session_established must be true")
-        if data.get("warmup_successes") != 0:
-            errors.append("warmup_successes must be zero for a fresh account")
+        if data.get("capability") != "publish_probe":
+            errors.append("capability must be publish_probe for a verified fresh account")
         if data.get("public_post_url") is not None:
             errors.append("a fresh account cannot have a public_post_url")
         if not data.get("next_action"):
             errors.append("next_action is required")
-    elif kind == "lifecycle_progress":
-        for field in ("handle", "before_status", "status", "capability", "next_action"):
-            if not data.get(field):
-                errors.append(f"{field} is required")
-        if not isinstance(data.get("warmup_successes"), int) or data.get("warmup_successes", -1) < 1:
-            errors.append("warmup_successes must be a positive integer")
-        if data.get("public_post_url") is not None:
-            errors.append("warmup progress cannot claim a public post")
-    elif kind == "lifecycle_waiting":
-        for field in ("handle", "status", "capability", "next_action"):
-            if not data.get(field):
-                errors.append(f"{field} is required")
-        if not isinstance(data.get("warmup_successes"), int):
-            errors.append("warmup_successes must be an integer")
-        if data.get("public_post_url") is not None:
-            errors.append("lifecycle waiting cannot claim a public post")
     elif kind == "incident_unresolved":
         for field in (
             "incident_id",
@@ -224,31 +208,9 @@ def render_outcome(data: dict) -> str:
                 "Capafy Marketer — replacement account created and verified",
                 f"Account: @{data['handle']}",
                 "The isolated browser session is established and independently verified.",
-                "Verified warmups: 0/2.",
+                "Publish probe capability is verified; no elapsed-day gate applies.",
                 "No public post exists yet.",
-                f"Next automatic action: {data['next_action']}.",
-            ]
-        )
-    if kind == "lifecycle_progress":
-        capability = data["capability"].replace("_", "-")
-        return "\n".join(
-            [
-                "Capafy Marketer — verified warmup progress",
-                f"Account: @{data['handle']}",
-                f"State: {data['before_status']} -> {data['status']}",
-                f"{data['warmup_successes']} verified warmups; capability: {capability}.",
-                "No public post exists yet.",
-                f"Next automatic action: {data['next_action']}.",
-            ]
-        )
-    if kind == "lifecycle_waiting":
-        return "\n".join(
-            [
-                "Capafy Marketer — waiting for verified warmup evidence",
-                f"Account: @{data['handle']}",
-                f"State: {data['status']}; {data['warmup_successes']} verified warmups.",
-                "No public post exists yet.",
-                f"Next automatic action: {data['next_action']}.",
+                f"The first original Reel starts now. Next automatic action: {data['next_action']}.",
             ]
         )
     if kind == "account_state":

@@ -78,10 +78,6 @@ if [ "$RUNNER_RC" -ne 0 ] || [ "$KIND" = "failure" ]; then
 fi
 
 case "$KIND" in
-  lifecycle_waiting)
-    ENVELOPE="$(cat "$RESULT"|python3 -c 'import json,sys;d=json.load(sys.stdin);d["schema_version"]=1;d["kind"]="lifecycle_waiting";d["owner"]="marketer";d.pop("result",None);print(json.dumps(d))')" ;;
-  lifecycle_progress)
-    ENVELOPE="$(cat "$RESULT"|python3 -c 'import json,sys;d=json.load(sys.stdin);d["schema_version"]=1;d["kind"]="lifecycle_progress";d["owner"]="marketer";d.pop("result",None);print(json.dumps(d))')" ;;
   account_created)
     ENVELOPE="$(cat "$RESULT"|python3 -c 'import json,sys;d=json.load(sys.stdin);d["schema_version"]=1;d["kind"]="account_created";d["owner"]="marketer";d.pop("result",None);print(json.dumps(d))')" ;;
   scheduled)
