@@ -70,7 +70,7 @@ done = 以下がすべて真
 | 10 | `~/.openclaw/workspace/runs` の古い run | 1.1 GB | **done** 106件削除 (§5.8) |
 | 11 | orca の Codex セッション履歴 (14日超) | 0.3 GB | **done** (§5.8) |
 | 12 | 再発防止 | — | **done — 既存の自動掃除が切られていた (§5.9)** |
-| 13 | 保留中の worktree 12件 (3.97GB) — WIP を commit してから削除 | 3.97 GB | pending |
+| 13 | 保留中の worktree 12件 — WIP を commit してから削除 | **3.29 GB** | **done** 3.97GB → 685MB (§8) |
 
 ### 現在地
 
@@ -225,7 +225,7 @@ launchctl list | grep autoprune                          →  -  0  ai.anicca.di
 
 | # | 件 | サイズ |
 |---|---|---|
-| 13 | 保留した worktree 12件 — WIP を各 branch に commit してから削除する | 3.97 GB |
+| ~~13~~ | ~~保留した worktree 12件~~ | **done (§8)** |
 | — | `~/.openclaw/agents/anicca` 1.9GB / `~/profitable-claude/skills/bounty-hunter/state` 1.2GB は state 扱いで未着手 | 3.1 GB |
 | — | ~~`disk-janitor` / `disk-cleaner` の要否判定~~ | **done (§5.10)** |
 
@@ -278,3 +278,48 @@ launchctl list                                        →  13204  0  ai.anicca.d
 ```
 
 **教訓**: 「掃除役が3つは危ない → 1本に絞る」は**読む前の仮説**であって結論ではなかった。実際に必要だったのは「地雷を持つ1本を止め、補完しあう2本を残す」。数を減らすことが目的化すると、穴を塞いでいた方まで捨てる。
+
+---
+
+## 8. §8 保留 worktree の退避と削除 (2026-08-01) — 3.97GB → 685MB
+
+方針: **消す前に、失われうるものを branch に固定する。** 未コミット変更を `wip: 自動退避` として commit するだけ (push はしない) → worktree ディレクトリを削除 → `git worktree prune`。commit してあれば `git worktree add` でいつでも開き直せるので、他エージェントの作業は1バイトも失われない。
+
+### 分類
+
+| 区分 | 対象 | 処理 |
+|---|---|---|
+| 空殻 | `coralos-work` `job-search-loop` | **ファイル0個・`.git` 無し**。`git -C` が親リポジトリまで遡って anicca-project の status を返していたため、最初の調査で「dirty あり」に見えていた。実体は空ディレクトリ → 即削除 |
+| WIP 退避 → 削除 | `cloud-agent-todo-01` `anicca-gig-ifu-v4-run41` `job-profile-targets` `lm-p0-order8d` `perxona-life-manager` `shelter-nosana-independence` `sol-panel-8h-ux-privacy` | commit → 削除 (計 3.29GB) |
+| 残す | `release-1.9.5` (451MB) | memory `feedback_worktrees_release195_agent_economy_are_active` により現役 |
+| 残す | `steel-browser-ephemeral` (207MB) | 独立 clone (`Daisuke134/steel-browser`)。working tree は clean だが **remote に無い commit が4つある** (`git log --branches --not --remotes`)。消すと失われるので温存。push するかは別判断 |
+| 残す | `life-manager-8i-cutover-evidence` (27MB) | **孤児**。`.git` が指す親 `~/.cache/codex-repos/life-manager.git` が既に存在しない → git では中身を判定できない。復元元が無いので触らない |
+
+### 途中で1件 hook に弾かれた
+
+`sol-panel-8h-ux-privacy` の commit が pre-commit で停止:
+
+```
+❌ branch名 'sol/panel-8h-ux-privacy' が規約外。
+   dev / feature/<x> / fix/<x> / chore/<x> / docs/<x> / app-factory/<x> を使う。
+```
+
+`--no-verify` は使わない。**規約に合う名前へ改名して正面から通した** (`sol/panel-8h-ux-privacy` → `feature/panel-8h-ux-privacy`)。remote を持たないローカル branch なので改名の影響は無い。
+
+### 安全論拠の検証 (削除後に実施)
+
+「worktree を消しても branch は残る」が本当かを、**削除した7件すべてについて確認した**:
+
+| branch | 生存先 | WIP commit |
+|---|---|---|
+| `docs/cloud-agent-todo-02` | anicca-project | 958f5a4d |
+| `fix/ifu-v4-durable-run41` | **~/gig** | 2f29d8d8 |
+| `feat/job-profile-targets` | anicca-project | 6bc4a2b1 |
+| `feature/lm33d-daily-preflight` | anicca-project | 5be7f409 |
+| `feature/perxona-life-manager` | anicca-project | d5cc35c7 |
+| `feature/shelter-nosana-independence-20260725` | anicca-project | f7208760 |
+| `feature/panel-8h-ux-privacy` | anicca-project | 024574e1 |
+
+`fix/ifu-v4-durable-run41` だけ anicca-project / life-manager-main / anicca のどれにも無く、**639MB の gig evidence を失ったかと思ったが `~/gig` にあった**。worktree の親リポジトリは想像で決めず、必ず全 repo を横断して確認すること。
+
+**失われたデータ: ゼロ。**
