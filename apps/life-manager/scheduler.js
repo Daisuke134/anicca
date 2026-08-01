@@ -735,7 +735,12 @@ async function tick(deps = {}) {
   const organs = deps.organs || deps.wake || organsUserOnce;
   const users = await listUsers();
   const now = deps.now !== undefined ? deps.now : Date.now();
-  await forEachUserSafe(users.filter(u => u.daily_automation_enabled !== false && u.call_enabled !== false), "scheduler", (u) => organs(u, now));
+  // No `call_enabled` filter here (spec §3 row 1e). It was inherited from the days when the dial ran
+  // inside this tick; the dial now has its own loop and applies that filter itself. Keeping a copy
+  // here meant a user who never gave a phone number got NO organs at all — care, diet, mental,
+  // precepts and relations have nothing to do with a phone, and §5.3 promises that user the same
+  // product over Telegram. `daily_automation_enabled` is the real opt-out and still applies.
+  await forEachUserSafe(users.filter(u => u.daily_automation_enabled !== false), "scheduler", (u) => organs(u, now));
 }
 
 // The wake call gets its own timer and its own budget. 20 seconds is sized to what wakeCallOnce

@@ -157,3 +157,47 @@ test("one user blowing the wake budget does not stop the next user's dial", asyn
   );
   assert.deepEqual(order, ["fast"], "the slow user is abandoned; the fast user is still served");
 });
+
+// spec §3 row 1e. The organ tick inherited `call_enabled !== false` from the days when the dial lived
+// inside it. Now that the dial has its own loop (which filters on `call_enabled` itself), that copy
+// only does harm: care/diet/mental/precepts/relations have nothing to do with a phone, and spec §5.3
+// promises the phone-less user the same product over Telegram. The organ tick's own care comment says
+// so — "Still runs for call-disabled users" — while the filter above it said otherwise.
+const { tick, wakeTick } = require("../scheduler.js");
+
+test("the organ tick serves a user who gave no phone number", async () => {
+  const served = [];
+  await tick({
+    listUsers: async () => [
+      { uid: "has-phone", daily_automation_enabled: true, call_enabled: true },
+      { uid: "no-phone", daily_automation_enabled: true, call_enabled: false },
+    ],
+    organs: async (u) => { served.push(u.uid); },
+    now: 0,
+  });
+  assert.deepEqual(served, ["has-phone", "no-phone"],
+    "organs are not a phone feature — spec §5.3 promises this user the same product over Telegram");
+});
+
+test("the organ tick still respects the one switch that means 'run nothing for me'", async () => {
+  const served = [];
+  await tick({
+    listUsers: async () => [{ uid: "opted-out", daily_automation_enabled: false, call_enabled: true }],
+    organs: async (u) => { served.push(u.uid); },
+    now: 0,
+  });
+  assert.deepEqual(served, [], "daily_automation_enabled=false is the real opt-out and still holds");
+});
+
+test("the wake tick keeps its own call_enabled filter — dialing a user with no phone is nonsense", async () => {
+  const dialled = [];
+  await wakeTick({
+    listUsers: async () => [
+      { uid: "has-phone", daily_automation_enabled: true, call_enabled: true },
+      { uid: "no-phone", daily_automation_enabled: true, call_enabled: false },
+    ],
+    wake: async (u) => { dialled.push(u.uid); },
+    now: 0,
+  });
+  assert.deepEqual(dialled, ["has-phone"], "the filter belongs to the dial, and stays there");
+});
