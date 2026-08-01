@@ -39,6 +39,15 @@ function rsvpStatus(controls) {
   if (includesAny(controls, ["参加予定", "登録済み", "you're going", "you’re going", "going"])) {
     return "registered";
   }
+  const inPersonTickets = [...controls].filter((value) => (
+    /(?:会場参加|現地参加|in[ -]?person|on[ -]?site)/i.test(value)
+  ));
+  if (
+    inPersonTickets.length > 0
+    && inPersonTickets.every((value) => /(?:売り切れ|満席|sold out)/i.test(value))
+  ) {
+    return "full";
+  }
   if (includesAny(controls, ["sold out", "満席"])) return "full";
   if (includesAny(controls, ["join waitlist", "キャンセル待ちに登録", "キャンセル待ち"])) {
     return "waitlist";
