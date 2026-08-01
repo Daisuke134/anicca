@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "objective": "O1C-22",
+  "recorded_at": "2026-08-01T23:48:31.411Z",
+  "result": "verified_separate_historical_application",
+  "implementation_commit": "97752e77fff1a94b76107520ef604a8c4d38178f",
+  "decision": "separate_historical_application",
+  "same_application": false,
+  "legacy_application_id": "99b966b0-7e90-4856-ab0d-93651488a4ea",
+  "current_application_id": "0b61fe42-e383-490d-b60e-04f1ad7ec5df",
+  "current_home": {
+    "url": "https://apply.ycombinator.com/home",
+    "observed_at": "2026-08-01T23:48:04.468Z",
+    "authenticated": true,
+    "body_sha256": "d04a4233e62ab987fe5b6e14641e212a49222b19f0e782274f7fc340990cbcda",
+    "body_length": 518,
+    "application_ids": [
+      "0b61fe42-e383-490d-b60e-04f1ad7ec5df"
+    ],
+    "application_link_count": 2,
+    "application_link_inventory_sha256": "9733b09e55d0d8f5596710781964fea95ec6955d49338b87ce75c6243f7d3ed6",
+    "current_link_present": true,
+    "legacy_link_present": false,
+    "batch": "Fall 2026",
+    "status": "In review"
+  },
+  "legacy_preview": {
+    "url": "https://apply.ycombinator.com/apps/99b966b0-7e90-4856-ab0d-93651488a4ea",
+    "observed_at": "2026-08-01T23:48:30.812Z",
+    "accessible": true,
+    "body_sha256": "164a52d36b400f111920bdd89ce74a3a11cb5b3d013f4927dee0447ed838d348",
+    "body_length": 9443,
+    "application_ids": [
+      "99b966b0-7e90-4856-ab0d-93651488a4ea"
+    ],
+    "application_link_count": 8,
+    "application_link_inventory_sha256": "489518b35e0e8ec8c47f1f1a141b0188365681f9fd0b63362ee0f8534014382c",
+    "batch": "Summer 2026"
+  },
+  "assessment_proof": {
+    "decision_owner": "agent",
+    "excerpt_sha256": {
+      "home_batch": "2b86404a3d133d092dd909c067137dd4f4b9dcd14ae8d4c5b3544c2ca0ac5fcd",
+      "home_status": "c39059141ced2ea71d38d312b6bdaa6da1da299820b4021169382a2e54f57672",
+      "legacy_batch": "081cc61fc1fa0c4191c2dadf49495ece1bee1c3bec846c7721b1fdd8867d911c"
+    },
+    "reason_sha256": "83a514229ef4f3e4431bc09aa4fd3e2a141ebc2b73f2745e5cf49da88b731370",
+    "continuation_control_observed": false
+  },
+  "safe_operational_action": "keep_current_application_no_duplicate",
+  "effects": {
+    "browser_ref": "browser-profile://cloakbrowser/daily-driver",
+    "endpoint": "http://127.0.0.1:9222",
+    "existing_page_count": 47,
+    "created_owned_pages": 1,
+    "closed_owned_pages": 1,
+    "browser_close_operations": 0,
+    "write_operations": 0,
+    "submit_operations": 0
+  },
+  "artifacts": {
+    "implementation_sha256": "b3b394006b687f76cf010f4b6dd937a6b6415942d03ee0c051332b7976d12e48",
+    "test_sha256": "05a6948264c3fb62520b109885c155ae6d37c9e3754e8302abeb182ab9adc909",
+    "package_sha256": "d04ac94fa48262265079b580280fb6a5a9e3960649c4d82d12ba6e97547836be",
+    "design_sha256": "de1adc940ca9763a0f2833acc47abcf4a214130398c2da526bb20098e792c8b6",
+    "plan_sha256": "2940a0df6e2f1fe6b4fb399fc729bf482dfeacf40689097f914281d86be84e92",
+    "receipt_digest": "bbd3a306684b8c1e55779fbbef3a3e1929307179096651bd884b733917a8af82"
+  },
+  "privacy": {
+    "raw_bodies_persisted": false,
+    "raw_excerpts_persisted": false,
+    "cookies_persisted": false,
+    "headers_persisted": false
+  },
+  "verification": {
+    "focused_tests": {
+      "passed": 4,
+      "failed": 0
+    },
+    "outbound_tests": {
+      "passed": 271,
+      "failed": 0
+    },
+    "runtime_up_tests": {
+      "passed": 59,
+      "failed": 0
+    },
+    "life_manager_full_npm_test": "passed",
+    "node_syntax": "passed",
+    "git_diff_check": "passed",
+    "yc_owned_page_count_after_readback": 0,
+    "independent_review_initial_critical": 0,
+    "independent_review_initial_important": 3,
+    "independent_review_final_critical": 0,
+    "independent_review_final_important": 0,
+    "independent_review_verdict": "merge_ready"
+  },
+  "submission_performed": false,
+  "claim_boundary": "This proves that the authenticated YC Home exposed only the current application identity while the old ID remained an accessible, separate historical Summer application, and that no continuation control for the old ID was observed. It supports keeping the current application and avoiding a duplicate or resubmission. It does not claim that an undocumented YC backend conversion is impossible. O1C-23 through O1C-26 own current batch facts, transport, preview, and submit behavior."
+}

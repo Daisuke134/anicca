@@ -941,7 +941,21 @@ diff checkが成功。独立reviewの初回Critical 1/Important 3を全て反例
 実装commit `3b92a0b63`。設計: `docs/superpowers/specs/2026-08-02-o1c21-yc-provider-knowledge-port-design.md`。実装plan:
 `docs/superpowers/plans/2026-08-02-o1c21-yc-provider-knowledge-port.md`。実測証拠:
 `docs/evidence/funding/2026-08-02-o1c21-yc-provider-knowledge-port.json`。残作業は91件。
-次はO1C-22で、古いSummer application IDがFall 2026へ継続可能かYC home実画面で確認する。
+完了: `O1C-22`。稼働中のCloakBrowser daily-driver `:9222`へ接続し、所有する一時page 1枚だけを使って
+authenticated YC Homeと旧application previewをGET/read-onlyで実測した。Homeは現行ID
+`0b61fe42-e383-490d-b60e-04f1ad7ec5df`、`Fall 2026`、`In review`だけを示し、旧ID
+`99b966b0-7e90-4856-ab0d-93651488a4ea`を含まない。一方、旧ID previewはアクセス可能で`Summer 2026`を示し、
+現行IDを含まない。このため旧IDは現行Fall申請へ継続された同一identityではなく、別のhistorical applicationと判定した。
+継続controlは観測されず、安全な運用は現行申請を維持し、duplicate/resubmitしないこと。未公開backend変換が不可能とは断定しない。
+deterministic receipt builderはYC origin/pathからUUID inventoryを導出し、body/link digest、label-excerpt binding、15分以内の観測順、
+5分以内のreceipt鮮度、read-only effectをfail closedで検証する。batch/statusの意味判断はagent所有のままO1C-23境界を守る。
+raw body、excerpt、cookie、headerは保存せず、所有pageは閉じ、browser close/write/save/submitは0。fresh verificationはfocused 4件、
+outbound 271件、runtime-up 59件、Life Manager full `npm test`、syntax、diff check、YC所有tab 0が成功。独立review初回Important
+3件を反例testで修正し、最終Critical/Important 0、Merge可。実装commit `97752e77f`。設計:
+`docs/superpowers/specs/2026-08-02-o1c22-yc-legacy-continuation-readback-design.md`。実装plan:
+`docs/superpowers/plans/2026-08-02-o1c22-yc-legacy-continuation-readback.md`。実測証拠:
+`docs/evidence/funding/2026-08-02-o1c22-yc-legacy-continuation.json`。残作業は90件。
+次はO1C-23で、現行batch・締切・$500,000・応募URLを公式一次情報から再確認する。
 
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
@@ -1164,7 +1178,7 @@ agentが本文と履歴を読んで判断し、keyword/regexの固定分類へ�
 - [x] O1C-19 accelerator以外のVC/angelはthesis一致時だけ1日3〜5件へpersonalized outreach
 - [x] O1C-20 採択・面談の結果を次のpitchとtarget rankingへ反映する週次reflection
 - [x] O1C-21 旧`apply-to-yc`のfield/video/progress知識を後継YC providerへ移植
-- [ ] O1C-22 古いSummer application IDがFall 2026へ継続可能かYC home実画面で確認
+- [x] O1C-22 古いSummer application IDがFall 2026へ継続可能かYC home実画面で確認
 - [ ] O1C-23 `yc-w26.json`のbatch、deadline、amount、URLをcurrent official factsへ更新
 - [ ] O1C-24 YC操作を別Chrome `9223`から既存CloakBrowser daily-driver `:9222`へ移行
 - [ ] O1C-25 current company facts、founder profile、58秒動画、demo、progressをpreviewで全確認
