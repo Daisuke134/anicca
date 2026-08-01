@@ -1426,6 +1426,13 @@ plannerはallowlistした`EVENT_GOAL_SERENDIPITY_*_FAILED`だけを
 `CONNECTOR_COVERAGE_APPLICATION_GOAL_*_FAILED`へ写し、それ以外は従来のgeneric codeへ閉じる。focused 16/16、
 Connector 242/242成功、失敗0件。次はcommit/push、再配備後のLIVE codeでmodel契約の真因を確定する。
 
+O1B-26進捗9（goal evaluator transport timeout LIVE / RED→GREEN）: commit `f9c9b27c9`、image
+`5bd2536d85dd`を配備した11回目は`CONNECTOR_COVERAGE_APPLICATION_GOAL_TRANSPORT_FAILED`となった。
+順位付けは通過し、全候補×5根拠のgoal/serendipity structured outputが従来30秒のHTTP境界を超えたことが真因で、
+validationやJSON捏造ではない。goal evaluatorだけをbounded 120秒へ延長し、Connector job全体の15分lease内に保持する。
+他のprovider timeout、応募effect fence、0円spend policyは変更しない。focused 10/10、Connector 243/243成功、失敗0件。
+次はcommit/push、再配備後にLIVE goal評価、応募job enqueueを確認する。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 

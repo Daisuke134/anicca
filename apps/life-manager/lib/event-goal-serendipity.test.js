@@ -9,10 +9,15 @@ const { normalizeLumaEventDetail } = require("./luma-event-detail.js");
 const { buildLumaDateInventory } = require("./luma-date-inventory.js");
 const { validateEventPreferenceRanking } = require("./event-preference-ranking.js");
 const {
+  GOAL_EVALUATION_TIMEOUT_MS,
   inferEventGoalSerendipity,
   isVerifiedEventGoalSerendipity,
   validateEventGoalSerendipity,
 } = require("./event-goal-serendipity.js");
+
+test("full grounded goal evaluation has a bounded two-minute model window", () => {
+  assert.equal(GOAL_EVALUATION_TIMEOUT_MS, 120_000);
+});
 
 const GOALS = "Life Managerを成長させ、founder、engineer、investorとの接点を増やし、毎日東京で新しい経験を得る。";
 

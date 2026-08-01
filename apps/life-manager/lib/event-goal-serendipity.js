@@ -6,6 +6,7 @@ const { isVerifiedEventPreferenceRanking } = require("./event-preference-ranking
 const { isVerifiedLumaDateInventory } = require("./luma-date-inventory.js");
 
 const GEMINI = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+const GOAL_EVALUATION_TIMEOUT_MS = 120_000;
 const GOAL_ALIGNMENTS = Object.freeze(["strong", "moderate", "weak", "unknown"]);
 const SERENDIPITY_LEVELS = Object.freeze(["high", "medium", "low", "unknown"]);
 const FACTORS = Object.freeze(["description", "organizers", "participants", "place", "time"]);
@@ -228,7 +229,7 @@ async function inferEventGoalSerendipity(input, options = {}) {
           temperature: 0,
         },
       }),
-      signal: AbortSignal.timeout(30_000),
+      signal: AbortSignal.timeout(GOAL_EVALUATION_TIMEOUT_MS),
     });
   } catch { unavailable("TRANSPORT"); }
   if (!response || response.ok !== true) unavailable("HTTP");
@@ -243,6 +244,7 @@ async function inferEventGoalSerendipity(input, options = {}) {
 
 module.exports = {
   FACTORS,
+  GOAL_EVALUATION_TIMEOUT_MS,
   GOAL_ALIGNMENTS,
   SERENDIPITY_LEVELS,
   inferEventGoalSerendipity,
