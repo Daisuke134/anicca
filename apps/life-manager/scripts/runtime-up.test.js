@@ -5,6 +5,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
+const { createHash } = require("node:crypto");
 const {
   parseRuntimeCommand,
   validateComposeModel,
@@ -27,6 +28,12 @@ const {
 const {
   importContentObject,
 } = require("../lib/content-object-store.js");
+const {
+  verifyOutboundEvidence,
+} = require("../lib/outbound-evidence.js");
+const {
+  buildVerifiedOutboundReceipt,
+} = require("../lib/outbound-success.js");
 
 const ROOT = path.join(__dirname, "../../..");
 const COMPOSE_PATH = path.join(ROOT, "deploy/local/compose.yaml");
@@ -81,6 +88,33 @@ function validModel() {
       "runtime-data": {},
     },
   };
+}
+
+async function verifiedOutboundReceipt(job) {
+  const bytes = Buffer.alloc(5000, 0x61);
+  Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(bytes);
+  const digest = createHash("sha256").update(bytes).digest("hex");
+  const evidence = await verifyOutboundEvidence({
+    tenantId: job.tenant_id,
+    attemptRef: `runtime-attempt://${job.tenant_id}/${job.job_id}/${job.attempt}`,
+    externalReceiptRef: `provider-receipt://${job.tenant_id}/receipt-1`,
+    artifactRef: `object://sha256/${digest}`,
+    canonicalUrl: "https://lu.ma/tokyo-agent-night",
+  }, {
+    readExternalReceipt: async () => ({
+      kind: "provider_response",
+      provider_id: "receipt-1",
+      observed_at: "2026-08-01T09:00:00.000Z",
+    }),
+    readArtifact: async () => bytes,
+    fetchImpl: async () => ({ status: 200 }),
+  });
+  return buildVerifiedOutboundReceipt({
+    tenantId: job.tenant_id,
+    jobId: job.job_id,
+    attempt: job.attempt,
+    verifiedAt: "2026-08-01T09:00:01.000Z",
+  }, evidence);
 }
 
 test("runtime command accepts only the explicit local up contract", () => {
@@ -406,18 +440,20 @@ test("a registered no-effect capability executes its adapter instead of becoming
 test("external-effect execution heartbeats its lease before recording completion", async () => {
   const calls = [];
   let scheduledHeartbeat;
-  await executeCapabilityJob({
+  const job = {
     tenant_id: "dais",
     job_id: `outbound-event:${"d".repeat(64)}`,
     attempt: 1,
     capability: "outbound.event.apply",
     effect_class: "publish",
-  }, {
+  };
+  const receipt = await verifiedOutboundReceipt(job);
+  await executeCapabilityJob(job, {
     workerId: "connector-local",
     handlers: {
       "outbound.event.apply": async () => {
         await scheduledHeartbeat();
-        return { receipt: { kind: "event_application", status: "submitted" } };
+        return { receipt };
       },
     },
     heartbeatJob: async (input) => calls.push({ kind: "heartbeat", input }),
@@ -441,6 +477,29 @@ test("external-effect execution heartbeats its lease before recording completion
     workerId: "connector-local",
     leaseSeconds: 90,
   });
+});
+
+test("outbound handlerのbare successはcompletedにせずunknown effectへ落とす", async () => {
+  const calls = [];
+  await executeCapabilityJob({
+    tenant_id: "dais",
+    job_id: `outbound-event:${"1".repeat(64)}`,
+    attempt: 1,
+    capability: "outbound.event.apply",
+    effect_class: "publish",
+  }, {
+    workerId: "connector-local",
+    handlers: {
+      "outbound.event.apply": async () => ({
+        receipt: { status: "success" },
+      }),
+    },
+    completeJob: async (input) => calls.push({ kind: "complete", input }),
+    failJob: async (input) => calls.push({ kind: "fail", input }),
+  });
+  assert.deepEqual(calls.map(({ kind }) => kind), ["fail"]);
+  assert.equal(calls[0].input.errorCode, "CAPABILITY_EXECUTION_FAILED");
+  assert.equal(calls[0].input.unknownEffect, true);
 });
 
 test("a lost heartbeat fails an external-effect attempt as unknown", async () => {

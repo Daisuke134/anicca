@@ -29,10 +29,10 @@
 - Consumes: `verifyOutboundEvidence(input, dependencies)` result。
 - Produces: `buildVerifiedOutboundReceipt(input, evidence)`、`assertVerifiedOutboundReceipt(receipt, job)`。
 
-- [ ] Write tests proving verified evidence is accepted while failed evidence, plain object copies, JSON roundtrips, and mismatched attempts are rejected.
-- [ ] Run the tests and observe RED because the success module/provenance API does not exist.
-- [ ] Implement the private provenance set and minimal receipt builder/assertion.
-- [ ] Run outbound tests and observe GREEN.
+- [x] Write tests proving verified evidence is accepted while failed evidence, plain object copies, JSON roundtrips, and mismatched attempts are rejected.
+- [x] Run the tests and observe RED because the success module/provenance API does not exist.
+- [x] Implement the private provenance set and minimal receipt builder/assertion.
+- [x] Run outbound tests and observe GREEN.
 - [ ] Commit and push.
 
 ### Task 2: Runtime completion gate
@@ -45,10 +45,10 @@
 - Consumes: `assertVerifiedOutboundReceipt(receipt, job)`。
 - Produces: completed receipt only for verified outbound application; otherwise failed receipt with `unknownEffect=true`。
 
-- [ ] Add a failing test where an outbound handler returns bare `{status:"success"}` and assert `completeJob` is never called.
-- [ ] Add a passing test using a real verifier-derived receipt for the exact tenant/job/attempt.
-- [ ] Implement the capability-specific completion gate immediately before `completeJob`.
-- [ ] Run outbound and runtime worker regression tests.
+- [x] Add a failing test where an outbound handler returns bare `{status:"success"}` and assert `completeJob` is never called.
+- [x] Add a passing test using a real verifier-derived receipt for the exact tenant/job/attempt.
+- [x] Implement the capability-specific completion gate immediately before `completeJob`.
+- [x] Run outbound and runtime worker regression tests.
 - [ ] Commit and push.
 
 ### Task 3: Evidence and canonical spec
@@ -61,4 +61,3 @@
 - [ ] Run fresh tests, JSON validation, git diff check, and local/remote equality.
 - [ ] Mark O1B-01 complete only after every verification succeeds; leave O1B-02 untouched.
 - [ ] Commit and push.
-

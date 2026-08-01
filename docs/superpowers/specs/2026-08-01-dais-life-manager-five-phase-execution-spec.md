@@ -250,6 +250,14 @@ E1/E2/E3 verifierが生成したverified objectから作られ、同じtenant/jo
 完了可能にする。証拠不成立は外部効果の有無が不明なため`unknownEffect=true`でreconciliationへ渡す。
 実装plan: `docs/superpowers/plans/2026-08-01-connector-o1b01-remove-fake-success.md`。
 
+O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
+`outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
+再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
+missing tier、plain object copy、JSON roundtrip receipt、別attempt、bare successを拒否する。
+証拠不成立は`CAPABILITY_EXECUTION_FAILED`かつ`unknownEffect=true`となり、retryによる二重応募を防いで
+既存reconciliationへ渡す。fresh verificationはoutbound 31件、runtime worker回帰31件が成功した。
+次は実装commitと非secret evidence JSON。
+
 完了: `O1A-06`。実機workerを意図的に停止し、Guardianの異常判定、DaisへのTelegram
 停止警告のpositive message ID、Docker workerの決定論的再起動、boundedな`/health`再確認、復旧通知の
 positive message ID、incident state clearまでを一続きで実証した。再起動で戻らない場合だけ既存
