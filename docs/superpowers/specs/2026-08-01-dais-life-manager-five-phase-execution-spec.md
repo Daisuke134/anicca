@@ -632,6 +632,19 @@ diff checkが全成功。実装plan:
 `docs/evidence/outbound/2026-08-02-o1b22-rolling-orchestration.json`。残作業は115件。
 次はO1B-23で、Google Calendar全calendarのbusy intervalと前後移動時間から予約可能枠だけを導出する。
 
+完了: `O1B-23`。local `gog 0.17.0` transportへprimary限定ではない`calendar freebusy --all`のstrict readを
+追加し、全calendar responseを一つのbusy unionへmergeするavailability evaluatorをTDDで実装した。候補eventの
+開始から`travel_before_minutes`を引き、終了へ`travel_after_minutes`を足した全占有区間がwindow内かつbusyと
+非衝突の場合だけeligibleにする。前buffer衝突、後buffer衝突、window超過を拒否し、重なるbusyはmergeする。
+一calendarでもprovider errorなら「空き」に変換せずavailability全体をincompleteでfail closedする。privacy-safeな
+実Google readbackでは5 calendar、51 busy intervalを確認したが、1 calendarが`notFound`を返したため、実free枠や
+予約成功は主張せず停止した。calendar ID・event本文はevidenceへ保存していない。controlled 2-calendar評価ではbusy 2、
+buffer衝突2、eligible 1を確認した。fresh verificationはfocused 16件、outbound 161件、runtime-up 33件、
+diff checkが全成功。実装plan:
+`docs/superpowers/plans/2026-08-02-connector-o1b23-all-calendar-availability.md`。実測証拠:
+`docs/evidence/outbound/2026-08-02-o1b23-all-calendar-availability.json`。残作業は114件。
+次はO1B-24で、無料優先と保存済み自動支出policy内の有料event処理を実装する。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
@@ -769,7 +782,7 @@ identity/browser/calendar reference検証を追加し、新規4件と既存runti
 - [x] O1B-20 Lumaでその日の実参加を確保できない場合だけ、connpassの東京・対面inventoryへ進む
 - [x] O1B-21 一つの候補で申込失敗・満席・不適格になっても同じ日の次候補へ進み、予約確認までloopを継続
 - [x] O1B-22 「検索一巡」「一件の操作失敗」「一sourceの失敗」を終了条件にしない
-- [ ] O1B-23 Google Calendarの全calendarからbusy intervalを読み、前後移動時間を含むfree intervalだけへ予約
+- [x] O1B-23 Google Calendarの全calendarからbusy intervalを読み、前後移動時間を含むfree intervalだけへ予約
 - [ ] O1B-24 無料を優先し、有料eventは一度設定した自動支出policy内で保存済み決済手段を使い、都度承認を要求しない
 - [ ] O1B-25 21日coverage、既存予定、新規予約、残り空き、申込証拠、選定理由をTelegramへ一通で報告
 

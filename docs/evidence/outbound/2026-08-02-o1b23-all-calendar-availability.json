@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "task": "O1B-23",
+  "observed_at": "2026-08-01T16:43:49Z",
+  "result": "verified_with_live_provider_incomplete",
+  "implementation_commit": "4b4e9b6d59e561a35fc3440b6ff11f73624ee505",
+  "transport_contract": {
+    "provider": "gog_0.17.0",
+    "operation": "calendar freebusy --all",
+    "primary_only": false,
+    "strict_read": true,
+    "provider_error_fails_closed": true
+  },
+  "live_privacy_safe_shape": {
+    "window_start": "2026-08-02T00:00:00+09:00",
+    "window_end": "2026-08-23T00:00:00+09:00",
+    "calendar_count": 5,
+    "busy_interval_count": 51,
+    "calendar_error_count": 1,
+    "error_reasons": ["notFound"],
+    "calendar_ids_or_event_text_persisted": false,
+    "availability_status": "incomplete",
+    "free_time_falsely_invented": false
+  },
+  "controlled_availability": {
+    "calendar_count": 2,
+    "busy_interval_count": 2,
+    "travel_before_participates": true,
+    "travel_after_participates": true,
+    "conflicting_candidate_count": 2,
+    "eligible_event_refs": ["luma-event://event/free"],
+    "overlapping_busy_intervals_merged": true,
+    "window_overflow_rejected": true
+  },
+  "verification": {
+    "focused_availability_and_transport_tests": { "passed": 16, "failed": 0 },
+    "outbound_tests": { "passed": 161, "failed": 0 },
+    "runtime_up_tests": { "passed": 33, "failed": 0 },
+    "git_diff_check": "passed"
+  },
+  "claim_boundary": "This proves the local Google Calendar transport queries all calendars, the availability evaluator unions every returned busy interval, applies both travel buffers, and refuses to invent free time if any calendar returns an error. The live account currently has one notFound calendar, so this evidence does not claim a live eligible interval or booking; the provider state remains incomplete until a later run returns all calendars successfully."
+}
