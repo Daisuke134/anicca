@@ -855,6 +855,21 @@ experiment: zero views cannot form a positive canary sample, and the real
 provider replay, matched publication, externally refreshed same-age window,
 decision, and later KEEP consumption remain required.
 
+Runtime correction `1372c85` prevents a second timing error in those receipts.
+Because note exposes its own `last_calculate_at` instead of real-time views, the
+money sync now reconstructs CTA visits, purchases, refunds, net received money,
+and generation wall time at that exact first-party view timestamp. The canary
+reader anchors every dynamic metric and compute cost to the same timestamp,
+records `measurement_age_seconds` from publication, and refuses baseline and
+candidate snapshots whose ages differ by more than 3,900 seconds. The live
+baseline is now byte-for-byte aligned at `2026-08-01T20:42:00Z`: views `0`, CTA
+visits `0`, purchases `0`, refunds `JPY 0`, net received `JPY 0`, and generation
+cost `2741.860675 wall_seconds`; the reader resolves eight receipt IDs and
+truthfully remains insufficient only because a zero-view sample cannot define a
+CTA rate. The complete Writer suite passes `643 passed`. This is a real unknown,
+not a request to wait idly: the daily collector continues taking first-party
+snapshots while the remaining replay/canary work proceeds.
+
 ### 9.1 Task 13 production receipt — 2026-08-02 JST
 
 The writing itself is the product. No template, course, checklist, or separate
