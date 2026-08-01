@@ -43,5 +43,7 @@ test("publishing again replaces the entry and restarts its freshness", () => {
   clearEvents();
   putEvents("u1", [{ id: "old" }], 1000);
   putEvents("u1", [{ id: "new" }], 1000 + EVENT_CACHE_TTL_MS);
-  assert.deepEqual(getEvents("u1", 1000 + EVENT_CACHE_TTL_MS), [{ id: "new" }]);
+  // Read PAST the first entry's expiry: had the republish kept the original timestamp, this would
+  // now be stale and return null. So this pins BOTH halves — the value swapped AND the clock reset.
+  assert.deepEqual(getEvents("u1", 1000 + EVENT_CACHE_TTL_MS + 1), [{ id: "new" }]);
 });
