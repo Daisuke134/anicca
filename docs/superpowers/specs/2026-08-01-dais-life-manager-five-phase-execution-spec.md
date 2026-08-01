@@ -910,6 +910,11 @@ URL集合不一致、重複、終端未証明ならfail closedする。0候補�
 `docs/superpowers/specs/2026-08-02-connector-o1b17-luma-date-inventory-design.md`。実装plan:
 `docs/superpowers/plans/2026-08-02-connector-o1b17-luma-date-inventory.md`。
 
+O1B-17進捗1（RED）: provenanceのないcloneを拒否し、discovery URLとdetail URLの完全一致を要求し、
+一件欠落・重複・別URLをfail closedにし、JSTで21日すべてへ投影し、0候補日をcoverage完了へ
+変換しないtestを追加した。production moduleと2つのprovenance verifierが未実装のため3件が期待どおり
+失敗し、既存10件は成功した。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
