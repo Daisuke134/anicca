@@ -301,9 +301,13 @@ async function executeCapabilityJob(job, services) {
   const {
     workerId,
     handlers = {},
+    heartbeatJob,
     completeJob,
     failJob,
     storeOptions,
+    leaseSeconds = 300,
+    setIntervalFn,
+    clearIntervalFn,
   } = services;
   const identity = {
     tenantId: job.tenant_id,
@@ -331,22 +335,58 @@ async function executeCapabilityJob(job, services) {
     }, storeOptions);
     return;
   }
+  let leaseHeartbeat;
+  if (typeof heartbeatJob === "function") {
+    const {
+      startRuntimeLeaseHeartbeat,
+    } = require("../lib/runtime-lease-heartbeat.js");
+    leaseHeartbeat = startRuntimeLeaseHeartbeat({
+      ...identity,
+      leaseSeconds,
+    }, {
+      heartbeatJob,
+      storeOptions,
+      setIntervalFn,
+      clearIntervalFn,
+    });
+  }
+
+  let execution;
+  let executionError;
+  let heartbeatFailed = false;
+  let unknownEffect = false;
   try {
-    const execution = await handler(job);
+    execution = await handler(job);
     if (!execution || !execution.receipt) {
       throw new Error("capability adapter returned no receipt");
     }
-    await completeJob({
-      ...identity,
-      receipt: execution.receipt,
-    }, storeOptions);
   } catch (error) {
+    executionError = error;
+    unknownEffect = error && error.unknownEffect === true;
+  }
+  if (leaseHeartbeat) {
+    try {
+      await leaseHeartbeat.stop();
+    } catch (error) {
+      executionError = executionError || error;
+      heartbeatFailed = true;
+      unknownEffect = unknownEffect || job.effect_class !== "none";
+    }
+  }
+  if (executionError) {
     await failJob({
       ...identity,
-      errorCode: "CAPABILITY_EXECUTION_FAILED",
-      unknownEffect: error && error.unknownEffect === true,
+      errorCode: heartbeatFailed
+        ? "CAPABILITY_HEARTBEAT_FAILED"
+        : "CAPABILITY_EXECUTION_FAILED",
+      unknownEffect,
     }, storeOptions);
+    return;
   }
+  await completeJob({
+    ...identity,
+    receipt: execution.receipt,
+  }, storeOptions);
 }
 
 function createWorkerHandlers(env, capabilities, dependencies = {}) {
@@ -563,6 +603,7 @@ async function runCapabilityWorker(env = process.env) {
   const { Pool } = require("pg");
   const {
     claimJobs,
+    heartbeatJob,
     completeJob,
     failJob,
   } = require("../lib/runtime-job-store.js");
@@ -587,6 +628,7 @@ async function runCapabilityWorker(env = process.env) {
     lastPollAt: null,
   };
   const health = createHealthServer(Number(env.LM_WORKER_HEALTH_PORT || 8790), state);
+  const leaseSeconds = Number(env.LM_WORKER_LEASE_SECONDS || 300);
   let active = false;
 
   async function tick() {
@@ -598,15 +640,17 @@ async function runCapabilityWorker(env = process.env) {
         workerId,
         capabilities,
         limit: 1,
-        leaseSeconds: Number(env.LM_WORKER_LEASE_SECONDS || 300),
+        leaseSeconds,
       }, opts);
       for (const job of jobs) {
         await executeCapabilityJob(job, {
           workerId,
           handlers,
+          heartbeatJob,
           completeJob,
           failJob,
           storeOptions: opts,
+          leaseSeconds,
         });
       }
       state.ready = true;

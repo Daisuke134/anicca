@@ -136,6 +136,30 @@ insert_job "bounded-retry" "integration.bounded-retry" "none" "NULL" "2"
 [[ "$(scalar "SELECT status FROM public.fail_lm_runtime_job('tenant-a', 'bounded-retry', 2, 'retry-worker', 'FIXTURE_FAILURE', false);")" == "dead_letter" ]]
 [[ "$(scalar "SELECT count(*) FROM public.lm_runtime_job_receipts WHERE job_id='bounded-retry';")" == "2" ]]
 
+# Connector event application uses the same durable state machine. A failure that is
+# known to happen before submit is retryable, but max_attempts is a hard bound.
+insert_job \
+  "outbound-event-integration" \
+  "outbound.event.apply" \
+  "publish" \
+  "event-application:luma:integration" \
+  "2"
+insert_job \
+  "outbound-event-integration" \
+  "outbound.event.apply" \
+  "publish" \
+  "event-application:luma:integration" \
+  "2"
+[[ "$(scalar "SELECT count(*) FROM public.lm_runtime_jobs WHERE job_id='outbound-event-integration';")" == "1" ]]
+[[ "$(scalar "SELECT attempt FROM public.claim_lm_runtime_jobs('connector-worker', ARRAY['outbound.event.apply'], 'tenant-a', 1, 60);")" == "1" ]]
+[[ "$(scalar "SELECT attempt FROM public.heartbeat_lm_runtime_job('tenant-a', 'outbound-event-integration', 1, 'connector-worker', 60);")" == "1" ]]
+[[ "$(scalar "SELECT status FROM public.fail_lm_runtime_job('tenant-a', 'outbound-event-integration', 1, 'connector-worker', 'FORM_NOT_SUBMITTED', false);")" == "queued" ]]
+[[ "$(scalar "SELECT attempt FROM public.claim_lm_runtime_jobs('connector-worker', ARRAY['outbound.event.apply'], 'tenant-a', 1, 60);")" == "2" ]]
+[[ "$(scalar "SELECT attempt FROM public.heartbeat_lm_runtime_job('tenant-a', 'outbound-event-integration', 2, 'connector-worker', 60);")" == "2" ]]
+[[ "$(scalar "SELECT status FROM public.fail_lm_runtime_job('tenant-a', 'outbound-event-integration', 2, 'connector-worker', 'FORM_NOT_SUBMITTED', false);")" == "dead_letter" ]]
+[[ "$(scalar "SELECT count(*) FROM public.lm_runtime_job_receipts WHERE job_id='outbound-event-integration' AND outcome='failed';")" == "2" ]]
+printf '%s\n' 'connector event enqueue/idempotency/claim/heartbeat/retry/dead-letter: ok'
+
 insert_job \
   "unknown-effect" \
   "integration.unknown-effect" \
