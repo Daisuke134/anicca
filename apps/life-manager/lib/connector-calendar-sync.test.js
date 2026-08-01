@@ -139,3 +139,54 @@ test("unverified receipts, ineligible candidates, and ambiguous existing events 
     eventRef: "luma-event://event/founder-night", registrationReceipt: receipt, registrationJob: JOB,
   }), /connector calendar sync unavailable/i);
 });
+
+test("an exact existing Connector event remains idempotent even when the fresh busy gate sees that event", async () => {
+  const { dateInventory } = await inventoryAndGate();
+  const receipt = await registrationReceipt();
+  const busyGate = await evaluateCalendarCandidateGate({
+    dateInventory,
+    busyInventory: await inspectGoogleCalendarBusyInventory({
+      calendar: {
+        async listCalendarsRaw() { return [{ id: "primary" }]; },
+        async listAllEventsRaw() {
+          return [{
+            CalendarID: "primary",
+            id: "existing-connector-event",
+            status: "confirmed",
+            start: { dateTime: "2026-08-05T12:00:00+09:00" },
+            end: { dateTime: "2026-08-05T13:00:00+09:00" },
+          }];
+        },
+      },
+      timeMin: "2026-08-02T00:00:00+09:00",
+      timeMax: "2026-08-23T00:00:00+09:00",
+      timeZone: "Asia/Tokyo",
+      now: "2026-08-02T01:00:00.000Z",
+    }),
+    date: "2026-08-05",
+    homeLocation: "Home",
+    routeMinutes: async () => 20,
+  });
+  assert.equal(busyGate.candidates[0].eligible, false);
+  let creates = 0;
+  const result = await syncVerifiedRegistrationToGoogleCalendar({
+    calendar: {
+      async findConnectorEvents() {
+        return [{
+          id: "existing-connector-event",
+          htmlLink: "https://calendar.google.com/calendar/event?eid=existing",
+        }];
+      },
+      async createConnectorEvent() { creates += 1; },
+    },
+    calendarId: "primary",
+    dateInventory,
+    calendarGate: busyGate,
+    eventRef: "luma-event://event/founder-night",
+    registrationReceipt: receipt,
+    registrationJob: JOB,
+  });
+
+  assert.equal(result.status, "existing");
+  assert.equal(creates, 0);
+});

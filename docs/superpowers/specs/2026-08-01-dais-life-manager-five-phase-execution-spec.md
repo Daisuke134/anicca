@@ -1207,6 +1207,20 @@ worker healthは正常だがadvertise capabilityは`runtime.noop,outbound.event.
 `connector.coverage.refresh`はまだ実workerへ配線されていない。したがってO1B-25は未完了のまま、次は
 実refresh serviceを組み立て、adapter manifest・worker capability・初回jobを接続する。
 
+O1B-25進捗10（stored receipt再検証 RED→GREEN）: runtime DBのcompleted応募receiptをそのまま成功証拠へ
+使わず、tenant、canonical job lineage、21日window、attemptを照合し、保存済みreferenceからE1/E2/E3を
+fresh再検証してin-process verified receiptへ戻すreaderをTDDで追加した。別tenant、改ざんjob、証拠欠落は
+Calendarへ到達せずfail-closed。focused 2/2成功。
+
+O1B-25進捗11（Calendar再実行修復 / refresh service RED→GREEN）: Calendar同期の順序を修正し、同じ
+idempotencyのConnector予定が既に存在する場合は、fresh busy inventoryでその予定自身がconflictに見えても
+重複作成せず`existing`として証明する。未存在時だけfresh Calendar gateを通して作成する。続いてruntime
+receipt再検証、fresh exhaustive Luma inventory、全Google Calendar busy read、Calendar同期、verified
+registration evidence、all-day unavailable evidence、rolling coverage再構築を一回で行うrefresh serviceを
+TDDで追加した。verified RSVP 1日 + 実all-day blocker 1日のfixtureで`covered_new 1 / unavailable 1 /
+open 19`、inventoryにないreceiptではCalendar作成0を確認。calendar focused 3/3、refresh focused 2/2成功。
+次はこのserviceをworker registryへ依存注入し、`connector.coverage.refresh` capabilityを実containerへ配備する。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 

@@ -52,11 +52,11 @@ function sourceEvent(input) {
   ) invalid();
   const eventRef = String(input.eventRef == null ? "" : input.eventRef).trim();
   const gateRow = input.calendarGate.candidates.find((row) => row.event_ref === eventRef);
-  if (!gateRow || gateRow.eligible !== true) invalid();
+  if (!gateRow) invalid();
   const events = input.dateInventory.days.flatMap((day) => day.events);
   const event = events.find((candidate) => candidate.event_ref === eventRef);
   if (!event) invalid();
-  return event;
+  return Object.freeze({ event, eligible: gateRow.eligible === true });
 }
 
 async function syncVerifiedRegistrationToGoogleCalendar(input = {}) {
@@ -66,7 +66,8 @@ async function syncVerifiedRegistrationToGoogleCalendar(input = {}) {
     || typeof calendar.findConnectorEvents !== "function"
     || typeof calendar.createConnectorEvent !== "function"
   ) invalid();
-  const event = sourceEvent(input);
+  const source = sourceEvent(input);
+  const event = source.event;
   let receipt;
   try { receipt = assertVerifiedOutboundReceipt(input.registrationReceipt, input.registrationJob); }
   catch { invalid(); }
@@ -87,6 +88,7 @@ async function syncVerifiedRegistrationToGoogleCalendar(input = {}) {
     provider = providerEvent(found[0]);
     status = "existing";
   } else {
+    if (!source.eligible) invalid();
     let created;
     try {
       created = await calendar.createConnectorEvent({
