@@ -1,6 +1,7 @@
 "use strict";
 
 const path = require("node:path");
+const fs = require("node:fs");
 const { spawnSync } = require("node:child_process");
 
 const OUTBOUND_CAPABILITY = "outbound.event.apply";
@@ -58,15 +59,137 @@ async function invokeSelfFix(loopName, blocker, options = {}) {
   return String(result.stdout || "").trim();
 }
 
+function parseOpenClawMessageId(output) {
+  let value = output;
+  if (typeof output === "string") {
+    try { value = JSON.parse(output); } catch { value = null; }
+  }
+  const raw = value && value.messageId;
+  const numeric = Number(raw);
+  if (!Number.isSafeInteger(numeric) || numeric <= 0) {
+    throw new Error("Telegram delivery needs a positive message ID");
+  }
+  return String(numeric);
+}
+
+function incidentAlert(verdict) {
+  return [
+    "⚠️ Connectorの応募処理が停止しました",
+    "イベント応募を処理するLife Manager workerを正常に確認できません。",
+    `状態: ${verdict.code}`,
+    "自動復旧を開始しました。確認できていない応募を応募済みとは報告しません。",
+  ].join("\n");
+}
+
+function recoveryAlert() {
+  return [
+    "✅ Connectorの応募処理が復旧しました",
+    "イベント応募workerへの接続と定期処理を再確認しました。",
+    "停止中に未確認だった応募は、証拠を確認してから処理を再開します。",
+  ].join("\n");
+}
+
+function notificationMessageId(receipt) {
+  if (typeof receipt === "string") return parseOpenClawMessageId(receipt);
+  return parseOpenClawMessageId(JSON.stringify(receipt || {}));
+}
+
+function createFileIncidentStore(filePath) {
+  const target = path.resolve(filePath);
+  return {
+    async load() {
+      try { return JSON.parse(fs.readFileSync(target, "utf8")); } catch { return null; }
+    },
+    async save(value) {
+      fs.mkdirSync(path.dirname(target), { recursive: true });
+      const temp = `${target}.${process.pid}.tmp`;
+      fs.writeFileSync(temp, `${JSON.stringify(value)}\n`, { mode: 0o600 });
+      fs.renameSync(temp, target);
+    },
+    async clear() {
+      try { fs.unlinkSync(target); } catch (error) {
+        if (error && error.code !== "ENOENT") throw error;
+      }
+    },
+  };
+}
+
+async function notifyOpenClaw(message, options = {}) {
+  const target = String(options.telegramTarget || "").trim();
+  if (!target) throw new Error("Telegram target is required");
+  const spawn = options.spawnSync || spawnSync;
+  const result = spawn("openclaw", [
+    "message", "send", "--channel", "telegram", "--target", target,
+    "--message", message, "--json",
+  ], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+  if (!result || result.status !== 0) {
+    throw new Error(String(result && result.stderr || "Telegram delivery failed").trim());
+  }
+  return { messageId: parseOpenClawMessageId(String(result.stdout || "")) };
+}
+
 async function runOutboundGuardian(options = {}) {
   const healthUrl = String(options.healthUrl || DEFAULT_HEALTH_URL);
   const observation = await (options.fetchHealth || fetchWorkerHealth)(healthUrl, options);
   const verdict = classifyOutboundWorkerHealth({ ...observation, nowMs: options.nowMs, maxPollAgeMs: options.maxPollAgeMs });
-  if (!verdict.ok) {
-    const blocker = `Connector runtime Guardian ${verdict.code} at ${healthUrl}: ${verdict.detail}. Inspect the existing Life Manager worker, database, and outbound.event.apply wiring; fix and verify the real /health endpoint.`;
-    await (options.selfFix || invokeSelfFix)("connector-outbound", blocker, options);
+  const blocker = `Connector runtime Guardian ${verdict.code} at ${healthUrl}: ${verdict.detail}. Inspect the existing Life Manager worker, database, and outbound.event.apply wiring; fix and verify the real /health endpoint.`;
+  const managedIncident = options.incidentStore && typeof options.notify === "function";
+  if (!managedIncident) {
+    if (!verdict.ok) await (options.selfFix || invokeSelfFix)("connector-outbound", blocker, options);
+    return verdict;
   }
-  return verdict;
+
+  const incident = await options.incidentStore.load();
+  if (verdict.ok) {
+    if (!incident) return verdict;
+    const recoveryMessageId = notificationMessageId(await options.notify(recoveryAlert()));
+    await options.incidentStore.clear();
+    return {
+      ...verdict,
+      recovered: true,
+      telegram: {
+        alertMessageId: String(incident.alert_message_id),
+        recoveryMessageId,
+      },
+    };
+  }
+
+  let alertMessageId = incident && String(incident.alert_message_id || "");
+  if (!alertMessageId) {
+    alertMessageId = notificationMessageId(await options.notify(incidentAlert(verdict)));
+    await options.incidentStore.save({
+      code: verdict.code,
+      alert_message_id: alertMessageId,
+      opened_at: new Date(Number.isFinite(options.nowMs) ? options.nowMs : Date.now()).toISOString(),
+    });
+  }
+
+  const restartAttempted = typeof options.recover === "function"
+    ? await options.recover(verdict)
+    : false;
+  if (restartAttempted) {
+    const after = await (options.fetchHealth || fetchWorkerHealth)(healthUrl, options);
+    const recoveredVerdict = classifyOutboundWorkerHealth({
+      ...after,
+      nowMs: options.nowMs,
+      maxPollAgeMs: options.maxPollAgeMs,
+    });
+    if (recoveredVerdict.ok) {
+      const recoveryMessageId = notificationMessageId(await options.notify(recoveryAlert()));
+      await options.incidentStore.clear();
+      return {
+        ...verdict,
+        recovered: true,
+        telegram: { alertMessageId, recoveryMessageId },
+      };
+    }
+  }
+  await (options.selfFix || invokeSelfFix)("connector-outbound", blocker, options);
+  return {
+    ...verdict,
+    recovered: false,
+    telegram: { alertMessageId, recoveryMessageId: null },
+  };
 }
 
 async function main(env = process.env) {
@@ -83,5 +206,15 @@ if (require.main === module) main().catch((error) => {
   process.exitCode = 1;
 });
 
-module.exports = { OUTBOUND_CAPABILITY, DEFAULT_HEALTH_URL, DEFAULT_MAX_POLL_AGE_MS, classifyOutboundWorkerHealth, fetchWorkerHealth, invokeSelfFix, runOutboundGuardian };
-
+module.exports = {
+  OUTBOUND_CAPABILITY,
+  DEFAULT_HEALTH_URL,
+  DEFAULT_MAX_POLL_AGE_MS,
+  classifyOutboundWorkerHealth,
+  fetchWorkerHealth,
+  invokeSelfFix,
+  parseOpenClawMessageId,
+  createFileIncidentStore,
+  notifyOpenClaw,
+  runOutboundGuardian,
+};

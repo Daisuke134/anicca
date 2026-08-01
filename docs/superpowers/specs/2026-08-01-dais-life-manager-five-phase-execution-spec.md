@@ -249,6 +249,12 @@ positive message ID、incident state clearまでを一続きで実証する。�
 `self-fix.sh`へ昇格する。現在のHonne JA shadow設定とvolumeを保持し、健康な実行では通知しない。
 実装plan: `docs/superpowers/plans/2026-08-01-connector-o1a06-live-recovery.md`。
 
+O1A-06進捗1: Telegram incident契約をTDDで追加した。REDは13件中4件がmessage ID検証、停止警告、
+重複防止、復旧通知の未実装理由で失敗した。GREENはGuardian 13件を含むoutbound 24件とruntime
+worker回帰30件が成功した。警告文は非技術的な停止状態、自動復旧開始、未確認応募を応募済みと
+報告しないことを明示する。positive message ID取得後だけincidentを保存し、同じincidentを再通知せず、
+復旧通知のpositive message ID取得後だけincidentをclearする。次はlaunchdとcomposeの実機配線。
+
 O1A-06着手時の追加実測: 現workerの`LM_WORKER_CAPABILITIES`は
 `runtime.noop,marketing.video.generate`で、host health portは未公開。さらに
 `outbound.event.apply`はjob/lease test用handler注入では動くが、production adapter manifestにはまだ無い。

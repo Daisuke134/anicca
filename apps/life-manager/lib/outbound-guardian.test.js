@@ -6,6 +6,7 @@ const assert = require("node:assert/strict");
 const {
   OUTBOUND_CAPABILITY,
   classifyOutboundWorkerHealth,
+  parseOpenClawMessageId,
   runOutboundGuardian,
 } = require("./outbound-guardian.js");
 
@@ -120,3 +121,88 @@ test("Guardianは異常理由とURLを既存self-fixへ一度だけ渡す", asyn
   assert.match(calls[0][1], /127\.0\.0\.1:18790/);
 });
 
+test("OpenClaw receiptはpositive message IDだけを配信成功にする", () => {
+  assert.equal(parseOpenClawMessageId('{"messageId":"4312"}'), "4312");
+  for (const value of ["{}", '{"messageId":0}', '{"messageId":"no"}', "not-json"]) {
+    assert.throws(() => parseOpenClawMessageId(value), /message ID/);
+  }
+});
+
+function memoryIncident(initial = null) {
+  let value = initial;
+  return {
+    async load() { return value; },
+    async save(next) { value = { ...next }; },
+    async clear() { value = null; },
+    value() { return value; },
+  };
+}
+
+test("停止を一度だけ警告し、自動再起動後に復旧通知してincidentをclearする", async () => {
+  const incidentStore = memoryIncident();
+  const messages = [];
+  const health = [
+    { error: new Error("connect ECONNREFUSED") },
+    { httpStatus: 200, body: healthyBody() },
+  ];
+  const selfFixCalls = [];
+  const result = await runOutboundGuardian({
+    healthUrl: "http://127.0.0.1:18790/health",
+    nowMs: NOW,
+    fetchHealth: async () => health.shift(),
+    incidentStore,
+    notify: async (message) => {
+      messages.push(message);
+      return { messageId: String(7000 + messages.length) };
+    },
+    recover: async () => true,
+    selfFix: async (...args) => selfFixCalls.push(args),
+  });
+  assert.equal(result.code, "UNREACHABLE");
+  assert.equal(result.recovered, true);
+  assert.deepEqual(result.telegram, { alertMessageId: "7001", recoveryMessageId: "7002" });
+  assert.equal(messages.length, 2);
+  assert.match(messages[0], /Connectorの応募処理が停止/);
+  assert.match(messages[0], /自動復旧/);
+  assert.match(messages[0], /応募済みとは報告しません/);
+  assert.match(messages[1], /Connectorの応募処理が復旧/);
+  assert.equal(incidentStore.value(), null);
+  assert.deepEqual(selfFixCalls, []);
+});
+
+test("同じ未復旧incidentでは警告を重複送信せずself-fixへ昇格する", async () => {
+  const incidentStore = memoryIncident({
+    code: "UNREACHABLE",
+    alert_message_id: "6001",
+    opened_at: "2026-08-01T02:58:00.000Z",
+  });
+  const messages = [];
+  const selfFixCalls = [];
+  const result = await runOutboundGuardian({
+    healthUrl: "http://127.0.0.1:18790/health",
+    nowMs: NOW,
+    fetchHealth: async () => ({ error: new Error("still down") }),
+    incidentStore,
+    notify: async (message) => { messages.push(message); return { messageId: "7001" }; },
+    recover: async () => false,
+    selfFix: async (...args) => selfFixCalls.push(args),
+  });
+  assert.equal(result.recovered, false);
+  assert.deepEqual(messages, []);
+  assert.equal(selfFixCalls.length, 1);
+  assert.equal(incidentStore.value().alert_message_id, "6001");
+});
+
+test("Telegramがmessage IDを返さなければincidentを保存せず成功扱いしない", async () => {
+  const incidentStore = memoryIncident();
+  await assert.rejects(() => runOutboundGuardian({
+    healthUrl: "http://127.0.0.1:18790/health",
+    nowMs: NOW,
+    fetchHealth: async () => ({ error: new Error("down") }),
+    incidentStore,
+    notify: async () => ({}),
+    recover: async () => true,
+    selfFix: async () => {},
+  }), /message ID/);
+  assert.equal(incidentStore.value(), null);
+});
