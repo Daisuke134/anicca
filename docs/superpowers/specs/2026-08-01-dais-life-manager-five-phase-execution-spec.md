@@ -788,6 +788,19 @@ focused 5件、outbound 201件、runtime-up 33件、Gmail thread readback、DB r
 `docs/evidence/funding/2026-08-02-o1c10-funder-followups.json`。残作業は102件。
 次はO1C-11で、Gmail reply/rejection/meetingを型付きstatusへ反映する。
 
+完了: `O1C-11`。fresh sanitized Gmail full messageを元outreachのthread ID、message ID、送信時刻へ
+束縛し、`delivery_failed / reply_received / rejected / meeting_requested`の4型へ反映する境界を追加した。
+意味は本文のexact quoteを根拠にした`agent_judgment`が所有し、捏造quote、owner outbound、別thread、
+初回送信前、未知statusはfail closedする。保存するのはsender/subject/body/evidence/rationaleのhashと
+provider IDだけ。append-only ledgerから最新観測を導出する`lm_funder_current_status` viewを追加した。
+実GmailではEvio/J-Seedにinbound 0、YeetVCだけmessage `19fbe72a5b2cc4e7`を
+`delivery_failed`として1行保存し、reply/rejection/meetingは各0件。fresh verificationはfocused 3件、
+outbound 204件、runtime-up 33件、Gmail full sanitized readback、DB current view、diff checkが全成功。
+実装commit `9f1ebe1b1`はremoteへpush済み。実装plan:
+`docs/superpowers/plans/2026-08-02-connector-o1c11-funder-inbound-status.md`。実測証拠:
+`docs/evidence/funding/2026-08-02-o1c11-funder-inbound-status.json`。残作業は101件。
+次はO1C-12で、meetingをCalendarへ登録し面談資料を生成する。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
@@ -998,7 +1011,7 @@ agentが本文と履歴を読んで判断し、keyword/regexの固定分類へ�
 - [x] O1C-08 完了画面、確認mail、ledger、Telegramを照合
 - [x] O1C-09 cold outreachを1日3〜5通で再開
 - [x] O1C-10 follow-up最大2回を自動実行
-- [ ] O1C-11 Gmail reply/rejection/meetingを型付きstatusへ反映
+- [x] O1C-11 Gmail reply/rejection/meetingを型付きstatusへ反映
 - [ ] O1C-12 meetingをCalendarへ登録し面談資料を生成
 - [ ] O1C-13 全form送信を既存CloakBrowser daily-driverで行い、新browserを起動しない
 - [ ] O1C-14 公式program pageを毎日探索し、固定list外の新規募集をregistryへ追加

@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "task": "O1C-11",
+  "observed_at": "2026-08-01T18:13:00.000Z",
+  "result": "one_real_delivery_failure_typed",
+  "implementation_commit": "9f1ebe1b1",
+  "status_model": [
+    "delivery_failed",
+    "reply_received",
+    "rejected",
+    "meeting_requested"
+  ],
+  "classification_contract": {
+    "meaning_owner": "agent_judgment",
+    "exact_body_quote_required": true,
+    "same_outreach_thread_required": true,
+    "inbound_only": true,
+    "after_initial_send_only": true,
+    "raw_sender_persisted": false,
+    "raw_subject_persisted": false,
+    "raw_body_persisted": false,
+    "raw_quote_persisted": false
+  },
+  "fresh_threads": [
+    {
+      "candidate_id": "evio",
+      "provider_thread_id": "19fbe729ab0133d6",
+      "message_count": 1,
+      "typed_inbound_count": 0
+    },
+    {
+      "candidate_id": "yeetvc",
+      "provider_thread_id": "19fbe729f4bfc3f2",
+      "message_count": 2,
+      "typed_inbound_count": 1,
+      "provider_message_id": "19fbe72a5b2cc4e7",
+      "status": "delivery_failed",
+      "observation_id": "funder-inbound-status:8eec83986ed7f4040283bb4d9af8709db902586f6405325b6c99dc8dd84c4dc4"
+    },
+    {
+      "candidate_id": "j-seed",
+      "provider_thread_id": "19fbe72a2beb47f0",
+      "message_count": 1,
+      "typed_inbound_count": 0
+    }
+  ],
+  "database": {
+    "ledger_rows": 1,
+    "current_view_rows": 1,
+    "delivery_failed": 1,
+    "reply_received": 0,
+    "rejected": 0,
+    "meeting_requested": 0,
+    "append_only": true,
+    "exact_replay_only": true
+  },
+  "verification": {
+    "focused_tests": { "passed": 3, "failed": 0 },
+    "outbound_tests": { "passed": 204, "failed": 0 },
+    "runtime_up_tests": { "passed": 33, "failed": 0 },
+    "gmail_full_sanitized_readback": "passed",
+    "database_current_view_readback": "passed",
+    "git_diff_check": "passed"
+  },
+  "claim_boundary": "This proves one real Gmail delivery failure was bound to its original outreach and reflected as a privacy-safe typed current status. No human reply, rejection, meeting request, meeting, or investment is claimed."
+}
