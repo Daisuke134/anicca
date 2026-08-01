@@ -58,3 +58,25 @@ def test_provision_accepts_dedicated_context():
         capture_output=True, text=True,
     )
     assert result.returncode == 0
+
+
+def test_provision_requires_idempotent_cdp_field_replacement():
+    script = ROOT / "provision_prompt.sh"
+    env = {
+        "IG_PROVISION_ACCOUNT_STATE_FILE": "/tmp/accounts.json",
+        "IG_PROVISION_HANDLE_PREFIX": "capafy.skills",
+        "IG_PROVISION_INSTANCE": "capafy",
+        "IG_PROVISION_GMAIL_PLUS_TAG_PREFIX": "capafy",
+        "IG_PROVISION_BIO_TEXT": "bio",
+        "IG_PROVISION_BROWSER_INSTRUCTIONS": "Attach to isolated CDP.",
+        "IG_PROVISION_PORT": "9331",
+        "IG_PROVISION_CONTEXT_ID": "dedicated-1",
+    }
+    command = f"source {script!s}; render_ig_provision_prompt"
+    result = subprocess.run(
+        ["bash", "-c", command], capture_output=True, text=True, env=env,
+    )
+    assert result.returncode == 0
+    assert "cdp.py replace" in result.stdout
+    assert "Never retry a field with insert" in result.stdout
+    assert "read the field value length back" in result.stdout
