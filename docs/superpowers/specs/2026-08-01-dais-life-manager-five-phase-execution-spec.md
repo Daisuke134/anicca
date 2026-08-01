@@ -608,6 +608,18 @@ fresh verificationはfocused 5件、outbound 151件、runtime-up 33件、diff ch
 `docs/evidence/outbound/2026-08-02-o1b20-provider-fallback.json`。残作業は117件。
 次はO1B-21で、一候補の失敗・満席・不適格後も同じ日の次候補へ進み、予約確認までloopを継続する。
 
+完了: `O1B-21`。candidate sequenceへ対象日を明示し、全候補の`event_date`が同日であることを操作前に
+検証するcontractをTDDで追加した。別日の候補混入はattempt 0で拒否する。既知のeffect開始前申込失敗は
+`application_failed`としてskipし、満席・不適格等と同様に次候補へ進む。一方、effect有無が不明な例外は
+即reconciliation、loginやtransport等のglobal failureはrecoveryで止め、重複申込を防ぐ。controlled readbackでは
+同じ2026-08-10の4候補を`application_failed → full → not_eligible → verified_registered`の順で処理し、
+attempt 4、skip 3件を保持して、4件目の正規provider receiptでのみ`booked`になった。これは外部登録を作らない
+contract実測であり、実Luma登録・mail・QR・Telegramの証拠はO1B-04〜07が所有する。fresh verificationは
+focused 12件、outbound 154件、runtime-up 33件、diff checkが全成功。実装plan:
+`docs/superpowers/plans/2026-08-02-connector-o1b21-same-day-candidate-loop.md`。実測証拠:
+`docs/evidence/outbound/2026-08-02-o1b21-same-day-candidate-loop.json`。残作業は116件。
+次はO1B-22で、検索一巡・一件の操作失敗・一sourceの失敗を終了条件にしないrolling orchestrationを実装する。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
@@ -743,7 +755,7 @@ identity/browser/calendar reference検証を追加し、新規4件と既存runti
 - [x] O1B-18 AI/crypto/英語等は優先順位にだけ使い、eventを捨てるhard category filterにはしない
 - [x] O1B-19 agentがevent本文・参加者・主催者・場所・時間を読み、Daisの目標とserendipityを自然言語で評価
 - [x] O1B-20 Lumaでその日の実参加を確保できない場合だけ、connpassの東京・対面inventoryへ進む
-- [ ] O1B-21 一つの候補で申込失敗・満席・不適格になっても同じ日の次候補へ進み、予約確認までloopを継続
+- [x] O1B-21 一つの候補で申込失敗・満席・不適格になっても同じ日の次候補へ進み、予約確認までloopを継続
 - [ ] O1B-22 「検索一巡」「一件の操作失敗」「一sourceの失敗」を終了条件にしない
 - [ ] O1B-23 Google Calendarの全calendarからbusy intervalを読み、前後移動時間を含むfree intervalだけへ予約
 - [ ] O1B-24 無料を優先し、有料eventは一度設定した自動支出policy内で保存済み決済手段を使い、都度承認を要求しない

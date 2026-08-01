@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "task": "O1B-21",
+  "observed_at": "2026-08-01T16:36:56Z",
+  "result": "verified",
+  "implementation_commit": "01f813e015d59ecee811a8135e023250ade06641",
+  "same_day_contract": {
+    "date": "2026-08-10",
+    "cross_day_candidate_rejected_before_attempt": true,
+    "known_pre_effect_failure_advances": true,
+    "unknown_effect_advances": false,
+    "completion_requires_verified_provider_receipt": true
+  },
+  "controlled_readback": {
+    "candidate_count": 4,
+    "attempt_count": 4,
+    "ordered_outcomes": [
+      "application_failed",
+      "full",
+      "not_eligible",
+      "verified_registered"
+    ],
+    "result": "booked",
+    "booked_event_ref": "luma-event://event/d",
+    "receipt_ref": "provider-receipt://luma/day-proof",
+    "skipped": [
+      { "event_ref": "luma-event://event/a", "reason": "application_failed" },
+      { "event_ref": "luma-event://event/b", "reason": "full" },
+      { "event_ref": "luma-event://event/c", "reason": "not_eligible" }
+    ]
+  },
+  "verification": {
+    "focused_candidate_and_provider_tests": { "passed": 12, "failed": 0 },
+    "outbound_tests": { "passed": 154, "failed": 0 },
+    "runtime_up_tests": { "passed": 33, "failed": 0 },
+    "git_diff_check": "passed"
+  },
+  "claim_boundary": "This proves the deterministic same-day sequence continues across known pre-effect application failure, full, and ineligible outcomes until a valid Luma provider receipt is returned; a cross-day candidate is rejected before any attempt and an unknown effect stops for reconciliation. The four-outcome readback was controlled and created no external registration; prior O1B-04 through O1B-07 evidence owns the live Luma registration, mail, QR, and Telegram proof."
+}
