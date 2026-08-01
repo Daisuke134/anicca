@@ -381,11 +381,15 @@ async function executeCapabilityJob(job, services) {
     }
   }
   if (executionError) {
+    const connectorCoverageCode = job.capability === "connector.coverage.refresh"
+      && /^CONNECTOR_COVERAGE_[A-Z_]+$/.test(String(executionError.code || ""))
+      ? executionError.code
+      : null;
     await failJob({
       ...identity,
       errorCode: heartbeatFailed
         ? "CAPABILITY_HEARTBEAT_FAILED"
-        : "CAPABILITY_EXECUTION_FAILED",
+        : connectorCoverageCode || "CAPABILITY_EXECUTION_FAILED",
       unknownEffect,
     }, storeOptions);
     return;

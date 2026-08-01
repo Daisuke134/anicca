@@ -1328,6 +1328,15 @@ Connector全回帰238/238、runtime 35/35成功。
 残りretryで既存1件としてCalendar同期→`covered_new`→continuationを実測する。Luma詳細の全件再走査依存は別途、
 応募時snapshotを後続へ渡す不変証跡へ置換し、長時間retryを解消する。
 
+O1B-25進捗21（coverage段階別failure code / RED→GREEN）: 初回jobは旧generic failureのまま20/20で
+dead letterになったため、最新empty coverageから新しいcontinuationを正規store経由でenqueueした。新jobは
+attempt 1〜3が各約30秒で同じ失敗になった時点でworkerを停止し、残り17回を保全した。CDP read-only healthは
+HTTP 200、15 page、Luma host 3 pageで、単なるbrowser停止ではなかった。refresh境界をrebuild、Luma inventory、
+Calendar read、receipt read、readback validation、assemblyの安全なcodeへ分割し、runtimeは
+`connector.coverage.refresh`に限って`CONNECTOR_COVERAGE_*`だけをreceiptへ保存する。provider本文、URL、秘密値、
+例外本文は保存しない。focused 29/29、Connector全回帰239/239、runtime 36/36成功。次はcommit/push、
+新image deploy後に同じjobを再開し、1回のreceipt codeで残存境界を確定する。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
