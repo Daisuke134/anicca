@@ -666,6 +666,51 @@ test("outbound event worker wires the Luma browser provider and tenant evidence 
   assert.equal(services.now, now);
 });
 
+test("outbound event worker wires one daily-driver login recovery into the Luma provider", async () => {
+  const dailyDriver = { async withLumaPage() {} };
+  let recoveries = 0;
+  const loginRecovery = { async recover() { recoveries += 1; } };
+  const provider = { async inspectRegistration() {}, async submitRegistration() {} };
+  const evidenceStore = {
+    async readExternalReceipt() {},
+    async readArtifact() {},
+    async record() {},
+  };
+  const calls = [];
+
+  createWorkerHandlers({
+    LM_RUNTIME_TENANT_ID: "tenant-a",
+    LM_DATA_DIR: "/var/lib/life-manager/data",
+    LM_LUMA_GOOGLE_ACCOUNT: "browser-owner@example.test",
+  }, ["outbound.event.apply"], {
+    lumaDailyDriver: dailyDriver,
+    lumaEvidenceStore: evidenceStore,
+    createLumaLoginRecovery(options) {
+      calls.push(["recovery", options]);
+      return loginRecovery;
+    },
+    createLumaBrowserProvider(options) {
+      calls.push(["provider", options]);
+      return provider;
+    },
+    createRegistry() {
+      return {
+        hasCapability: () => true,
+        getByCapability: () => ({ execute: async () => ({ receipt: { kind: "fixture" } }) }),
+      };
+    },
+  });
+
+  assert.equal(calls[0][0], "recovery");
+  assert.equal(calls[0][1].dailyDriver, dailyDriver);
+  assert.equal(calls[0][1].account, "browser-owner@example.test");
+  assert.equal(calls[1][0], "provider");
+  assert.equal(calls[1][1].dailyDriver, dailyDriver);
+  assert.equal(typeof calls[1][1].recoverLogin, "function");
+  await calls[1][1].recoverLogin();
+  assert.equal(recoveries, 1);
+});
+
 test("marketing observation worker reads one tenant receipt and preserves empty analytics as unavailable", async () => {
   const publicationJobId = `marketing-daily:${"a".repeat(64)}`;
   const calls = [];

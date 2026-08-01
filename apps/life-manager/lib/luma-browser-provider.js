@@ -99,6 +99,7 @@ function createLumaBrowserProvider(options = {}) {
   const evidenceStore = options.evidenceStore;
   const readRawDetail = options.readRawDetail || readRawLumaEventDetail;
   const submitOnPage = options.submitOnPage || submitLumaOnPage;
+  const recoverLogin = options.recoverLogin;
   const now = options.now || (() => new Date().toISOString());
   if (!dailyDriver || typeof dailyDriver.withLumaPage !== "function") {
     throw new Error("Luma browser provider daily-driver unavailable");
@@ -136,9 +137,8 @@ function createLumaBrowserProvider(options = {}) {
     });
   }
 
-  return Object.freeze({
-    inspectRegistration(contract) {
-      return dailyDriver.withLumaPage(contract.canonical_url, async (page) => {
+  async function inspectRegistrationOnce(contract) {
+    return dailyDriver.withLumaPage(contract.canonical_url, async (page) => {
         const value = await detail(page, contract);
         if (!value) return { state: "unknown" };
         if (value.auth_status === "login_required") return { state: "login_required" };
@@ -154,7 +154,21 @@ function createLumaBrowserProvider(options = {}) {
         }
         if (value.rsvp_status === "available") return { state: "absent" };
         return { state: "unknown" };
-      });
+    });
+  }
+
+  return Object.freeze({
+    async inspectRegistration(contract) {
+      const before = await inspectRegistrationOnce(contract);
+      if (before.state !== "login_required" || typeof recoverLogin !== "function") {
+        return before;
+      }
+      try {
+        await recoverLogin();
+      } catch {
+        return before;
+      }
+      return inspectRegistrationOnce(contract);
     },
 
     submitRegistration(contract) {

@@ -602,12 +602,15 @@ function createWorkerHandlers(env, capabilities, dependencies = {}) {
     let provider = dependencies.lumaProvider;
     if (!provider) {
       const { chromium } = require("playwright-core");
-      const {
-        createCloakBrowserDailyDriver,
-      } = require("../lib/cloakbrowser-daily-driver.js");
-      const {
-        createLumaBrowserProvider,
-      } = require("../lib/luma-browser-provider.js");
+      const createCloakBrowserDailyDriver = dependencies.createCloakBrowserDailyDriver || (
+        require("../lib/cloakbrowser-daily-driver.js").createCloakBrowserDailyDriver
+      );
+      const createLumaBrowserProvider = dependencies.createLumaBrowserProvider || (
+        require("../lib/luma-browser-provider.js").createLumaBrowserProvider
+      );
+      const createLumaLoginRecovery = dependencies.createLumaLoginRecovery || (
+        require("../lib/luma-login-recovery.js").createLumaLoginRecovery
+      );
       const lookup = dependencies.lookupHost || dns.promises.lookup;
       const dailyDriver = dependencies.lumaDailyDriver || createCloakBrowserDailyDriver({
         connectOverCDP: dependencies.connectOverCDP
@@ -618,9 +621,14 @@ function createWorkerHandlers(env, capabilities, dependencies = {}) {
           return `http://${address}:9222`;
         }),
       });
+      const loginRecovery = dependencies.lumaLoginRecovery || createLumaLoginRecovery({
+        dailyDriver,
+        account: env.LM_LUMA_GOOGLE_ACCOUNT,
+      });
       provider = createLumaBrowserProvider({
         dailyDriver,
         evidenceStore,
+        recoverLogin: () => loginRecovery.recover(),
         now: dependencies.now,
       });
     }

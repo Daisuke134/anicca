@@ -242,6 +242,7 @@ test("Connector compose overlayはworkerへoutbound capabilityを追加できる
   assert.match(overlay, /^  worker:/m);
   assert.match(overlay, /LM_CONNECTOR_WORKER_CAPABILITIES/);
   assert.match(overlay, /outbound\.event\.apply/);
+  assert.match(overlay, /LM_LUMA_GOOGLE_ACCOUNT/);
 });
 
 test("Docker recoveryは指定workerだけをrestartしhealth復帰までboundedに待つ", async () => {

@@ -2,3 +2,4 @@ services:
   worker:
     environment:
       LM_WORKER_CAPABILITIES: ${LM_CONNECTOR_WORKER_CAPABILITIES:-runtime.noop,outbound.event.apply}
+      LM_LUMA_GOOGLE_ACCOUNT: ${LM_LUMA_GOOGLE_ACCOUNT:-}

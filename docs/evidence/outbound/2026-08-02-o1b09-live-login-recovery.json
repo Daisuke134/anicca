@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "task": "O1B-09",
+  "observed_at": "2026-08-01T15:34:44.531Z",
+  "result": "verified",
+  "runtime": {
+    "browser_transport": "cloakbrowser-daily-driver",
+    "cdp_endpoint": "http://127.0.0.1:9222",
+    "browser": "Chrome",
+    "protocol_version": "1.3",
+    "context_count": 1,
+    "pages_before": 7,
+    "pages_after": 7,
+    "existing_pages_preserved": true,
+    "cdp_alive_after_probe": true
+  },
+  "authentication": {
+    "status": "authenticated",
+    "origin": "https://luma.com",
+    "path": "/home",
+    "recovery_action_taken": false,
+    "artificial_logout_performed": false,
+    "secret_material_persisted": false
+  },
+  "legacy_connector_audit": {
+    "application_rows": 30,
+    "failure_shape": "one bounded agent per open day repeated the same global login or timeout failure",
+    "knowledge_integrated": [
+      "reuse_cdp_9222_shared_context",
+      "existing_google_session_login",
+      "single_flight_recovery",
+      "same_event_fresh_reinspection",
+      "never_retry_after_submit"
+    ]
+  },
+  "verification": {
+    "outbound_tests": { "passed": 98, "failed": 0 },
+    "runtime_up_tests": { "passed": 33, "failed": 0 },
+    "browser_auth_tests": { "passed": 75, "failed": 0 },
+    "git_diff_check": "passed"
+  }
+}

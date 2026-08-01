@@ -94,6 +94,54 @@ test("inspection separates login, absence, unavailability, and existing registra
   assert.equal(registered.calls.some(([name]) => name === "record"), true);
 });
 
+test("login_requiredは一度だけ復旧し同じeventをfresh pageで再検査する", async () => {
+  const fx = fixture(["ログイン", "参加登録"]);
+  const controls = [["ログイン", "参加登録"], ["参加登録"]];
+  let recoveries = 0;
+  const provider = createLumaBrowserProvider({
+    ...fx,
+    readRawDetail: async (page, url) => ({
+      canonicalUrl: url,
+      jsonLd: eventJson(),
+      controls: controls.shift(),
+    }),
+    recoverLogin: async () => { recoveries += 1; },
+  });
+
+  assert.deepEqual(await provider.inspectRegistration(contract()), { state: "absent" });
+  assert.equal(recoveries, 1);
+  assert.equal(fx.calls.filter(([name]) => name === "withLumaPage").length, 2);
+});
+
+test("login復旧が失敗しても成功を偽装せずlogin_requiredを返す", async () => {
+  const fx = fixture(["ログイン", "参加登録"]);
+  const provider = createLumaBrowserProvider({
+    ...fx,
+    recoverLogin: async () => { throw new Error("private provider detail"); },
+  });
+
+  assert.deepEqual(
+    await provider.inspectRegistration(contract()),
+    { state: "login_required" },
+  );
+});
+
+test("submit境界はlogin recoveryを開始せず外部効果なしで停止する", async () => {
+  const fx = fixture(["ログイン", "参加登録"]);
+  let recoveries = 0;
+  const provider = createLumaBrowserProvider({
+    ...fx,
+    recoverLogin: async () => { recoveries += 1; },
+  });
+
+  await assert.rejects(provider.submitRegistration(contract()), (error) => {
+    assert.equal(error.code, "LUMA_LOGIN_REQUIRED");
+    assert.equal(error.unknownEffect, false);
+    return true;
+  });
+  assert.equal(recoveries, 0);
+});
+
 test("Japanese Luma My Ticket readback is an existing registration", async () => {
   const fx = fixture(["マイチケット"]);
   const provider = createLumaBrowserProvider(fx);
