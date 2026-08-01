@@ -243,11 +243,15 @@ YC公式pageでlate application受付を当日再確認
 
 ## 5. 残作業 — 必ず番号順
 
-実行中: `O1A-06`。実機workerを一度だけ意図的に停止し、Guardianの異常判定、DaisへのTelegram
+完了: `O1A-06`。実機workerを意図的に停止し、Guardianの異常判定、DaisへのTelegram
 停止警告のpositive message ID、Docker workerの決定論的再起動、boundedな`/health`再確認、復旧通知の
-positive message ID、incident state clearまでを一続きで実証する。再起動で戻らない場合だけ既存
+positive message ID、incident state clearまでを一続きで実証した。再起動で戻らない場合だけ既存
 `self-fix.sh`へ昇格する。現在のHonne JA shadow設定とvolumeを保持し、健康な実行では通知しない。
-実装plan: `docs/superpowers/plans/2026-08-01-connector-o1a06-live-recovery.md`。
+passing retestの警告message IDは`5016`、復旧message IDは`5017`、Guardian exit 0、launchd last exit 0。
+fresh verificationはoutbound 28件、runtime worker回帰30件、evidence JSON、live health、plist、launchd、
+incident clear、self-fix未起動がすべて成功した。実装commit: `a7c01157e`、`df1ac3495`、`43d9134fc`。
+実装plan: `docs/superpowers/plans/2026-08-01-connector-o1a06-live-recovery.md`。live evidence:
+`docs/evidence/outbound/2026-08-01-o1a06-live-recovery.json`。次は`O1B-01`。
 
 O1A-06進捗1: Telegram incident契約をTDDで追加した。REDは13件中4件がmessage ID検証、停止警告、
 重複防止、復旧通知の未実装理由で失敗した。GREENはGuardian 13件を含むoutbound 24件とruntime
@@ -342,7 +346,7 @@ identity/browser/calendar reference検証を追加し、新規4件と既存runti
 - [x] O1A-03 Evidence E1/E2/E3を共通module化
 - [x] O1A-04 不足dependencyを解消し全testを実行
 - [x] O1A-05 Guardianを接続
-- [ ] O1A-06 強制停止→検知→Telegram警告→復旧を実証
+- [x] O1A-06 強制停止→検知→Telegram警告→復旧を実証
 
 ### 5.2 Order 1B — イベント
 

@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "evidence_kind": "outbound_guardian_live_recovery",
+  "observed_at": "2026-08-01T08:47:18Z",
+  "timezone": "Asia/Tokyo",
+  "repository": "Daisuke134/life-manager",
+  "branch": "main",
+  "implementation_commits": [
+    "a7c01157e",
+    "df1ac3495",
+    "43d9134fc"
+  ],
+  "target": {
+    "launchd_label": "ai.anicca.outbound-runtime-healthcheck",
+    "worker_container": "life-manager-local-worker-1",
+    "health_url": "http://127.0.0.1:18790/health",
+    "required_capability": "outbound.event.apply"
+  },
+  "preserved_runtime": {
+    "tenant_id": "dais-local",
+    "honne_shadow_capability": "marketing.video.generate",
+    "deleted_volumes": false,
+    "deleted_databases": false
+  },
+  "baseline": {
+    "http_status": 200,
+    "worker_status": "running",
+    "docker_health": "healthy",
+    "guardian_exit_code": 0,
+    "incident_state": "clear",
+    "false_alert_sent": false
+  },
+  "first_run_finding": {
+    "started_at": "2026-08-01T08:46:02Z",
+    "ended_at": "2026-08-01T08:46:12Z",
+    "worker_after_stop": "exited",
+    "guardian_code": "UNREACHABLE",
+    "alert_message_id": "5014",
+    "recovery_message_id": "5015",
+    "worker_recovered": true,
+    "incident_state": "clear",
+    "guardian_exit_code": 1,
+    "defect": "main checked the original verdict.ok after recovered=true",
+    "resolution_commit": "43d9134fc"
+  },
+  "passing_retest": {
+    "started_at": "2026-08-01T08:47:05Z",
+    "ended_at": "2026-08-01T08:47:18Z",
+    "worker_after_stop": "exited",
+    "guardian_code": "UNREACHABLE",
+    "alert_message_id": "5016",
+    "recovery_message_id": "5017",
+    "guardian_recovered": true,
+    "guardian_exit_code": 0,
+    "worker_status": "running",
+    "docker_health": "healthy",
+    "health_http_status": 200,
+    "health_role": "worker",
+    "health_capabilities": [
+      "runtime.noop",
+      "marketing.video.generate",
+      "outbound.event.apply"
+    ],
+    "incident_state": "clear"
+  },
+  "launchd_readback": {
+    "runs": 2,
+    "last_exit_code": 0,
+    "interval_seconds": 300,
+    "last_output_code": "HEALTHY"
+  },
+  "claim_boundary": "This proves Guardian detection, Telegram delivery, worker restart, health recovery, and incident clearing. It does not claim that the O1B-03 Luma application adapter is implemented or that an event was registered."
+}
