@@ -135,13 +135,13 @@ DB には痕跡が一切残らない。**これは #1b と同じ「失敗が存�
 | 1e | ~~organ tick の `call_enabled !== false` filter を外す~~ ✅ **DONE 2026-08-01** | dial が別 loop に出た今、**電話番号を出さない人（#6）に care/diet/mental/precepts/relations が1つも届かない**。`organsUserOnce` の care コメント「Still runs for call-disabled users」と実コードが矛盾していた | 実装: `tick()` の filter を `daily_automation_enabled !== false` のみへ（`call_enabled` は dial が自分の loop で見る）。検証（自分で実行）: `test/wake-loop-isolation.test.js` に3件追加し **RED を先に踏んだ**（「the organ tick serves a user who gave no phone number」だけが落ちる）→ 修正 → `node --test` 11 files で **tests 116 / pass 116 / fail 0**。pin した3点 = ①電話無効ユーザーにも organ が走る ②`daily_automation_enabled=false` は依然として全停止 ③**wake tick 側の `call_enabled` filter は残る**（電話の無い人に架電しようとしない）。`lib/panel-corrective-red.test.js` の1件は本変更を stash しても同じく落ちる **既存 baseline**（spec 文書の文字列 assertion で scheduler 無関係） |
 | 1d | ~~Composio 予算超過で tick が5分に落ちるのを止める~~ ✅ **コード DONE 2026-08-01 / 本番実測は deploy 待ち**（設計 = §3.2） | 7月は実測 20,488 で既に劣化済。8月も現ペースで約5日で再劣化 = 製品が毎月半分は5分刻みで動く | 実装: `lib/calendar-cache.js` の `cacheKey(uid, window, ttlMs)` がバケット幅に **TTL そのもの**を使う（`minuteBucket` 廃止）。幅と失効を1つの数字が決めるので二度とズレない。`ttlMs<=0`（= キャッシュ無効）は key を作らず transport へ直行（幅0の除算・全窓の1キーへの潰れ・読まれない `entries` 行の蓄積を回避）。検証（自分で実行）: `node --test lib/calendar-cache.test.js test/wake-catchup.test.js test/wake-loop-isolation.test.js lib/events.test.js` → **tests 39 / pass 39 / fail 0**、および実 `fetchUpcomingEvents` を 60秒刻みで5回呼ぶ E2E で **transport hits = 1**（修正前は 5）。`wake-catchup` が緑 = 発火は `now` と `startMs` の差で決まり fetch 時刻に依存しない = **精度据え置き**。★未検証★ 本番 `lm_api_cost` の実減少は deploy 後1日数えるまで確認できない（この branch は未 merge・未 deploy） |
 | **2** | ~~`answered_at` が常に null の判別~~ ✅ **DONE 2026-08-01**（判別 = §1.3、記録経路は健全だった） | ①応答なし ②留守電 ③webhook が来ていない（本物の故障）が **すべて `answered_at IS NULL`** で見分けられなかった。署名鍵ローテートで全滅しても痕跡ゼロ | 実装: migration `2026-08-01-lm-wake-log-amd-result.sql` で `amd_result` 追加（本番適用済 `http=201` / `read_http=200`）。`call.machine.detection.ended` を受けたら**必ず**行を PATCH、`answered_at` は `human` の時だけ。★2つの書き込みは冪等性の規則が逆★ なので `markAnswered`（`answered_at=is.null` フィルタ必須 = 一度きりのラッチ）と `recordAmdResult`（フィルタ無し = 最終観測が勝つ）を**別関数**にし、`applyAmdDetection` が合成（1つの PATCH に融合すると、応答済みの行に後から来た検知が filter で捨てられて**また記録漏れになる**）。0行一致と HTTP 失敗を `{ok, matched, error}` で分離し、webhook 側で別々の stderr 行に。bridge 側（戻り値を捨てていた）も同じ2分類をログするように。★backfill 21行★ = Telnyx `call_events` を handler と同じ `client_state` 復号で再導出し、**書く前に**全21行が実在行に解決し矛盾ゼロ（human↔SET 3/3、machine/not_sure↔NULL 18/18）を確認してから投入。Telnyx の保持期間が 07-25 までなので残りは**推測せず NULL のまま**。検証（自分で実行）: `node --test` 4 file → **tests 51 / pass 51 / fail 0**、`node --check server.js` OK、本番 `lm_wake_log` の実 census = **machine 17 / human 3 / not_sure 1** |
-| **2b** | 留守電に2分間しゃべるのを止める | AMD が `machine` と判定しても bridge はしゃべり続け、キャリアの録音上限（120秒）で切られている（`hangup_source` は43件すべて `callee`）。1本あたり約 $0.05 の Gemini Live を留守電に払っている | `machine` 判定で即 hangup。通話秒数と Gemini 課金が落ちることを実測 |
+| **2b** | ★ 留守電への発話を止める + 電話を既定 OFF にする ★（Dais 2026-08-01、正本 = §5.2.1） | AMD が `machine` でも bridge は喋り続け、キャリアの録音上限120秒で切られている（`hangup_source` 43件すべて `callee`）。1本 約$0.05 の Gemini Live を**人に届かない留守電**に払っている。実測 `human` 3 / `machine` 17 | `machine` 判定で即 hangup（`amd_result` の記録は残す）。`call_enabled` の既定を OFF に。留守電への通話秒数が 0 になり Gemini 課金が落ちることを実測 |
 | **2a** | webhook の PATCH 失敗時に Telnyx へ 200 を返すのをやめる | Supabase が落ちている間、大声でログは出るが Telnyx には「受け取った」と答えるので**再送の権利を捨てている**。記録は永久に失われる | PATCH 失敗時は 5xx を返し、Telnyx の再送で行が埋まることを実測 |
-| **2c** | ★ 起床コールが人に届いていない ★ を製品として扱う | 直近4日の7本が全部留守電 = **Dais は一度も出ていない**。「出るまで鳴る」という §5.2 の約束が成立していない | 原因の切り分け（着信拒否 / 集中モード / 番号が未登録扱い / 時刻）を実測し、`amd_result` の実データで「人が出る率」を継続的に見る |
+| **2c** | ★ 出発の押し切りを Telegram 連投にする ★（正本 = §5.2.1） | 電話は「出る」という動作を要求し、実測で一度も人に届いていない。Telegram は**画面に残り続ける**ので出発という行動に直接効く（Dais 実感） | T-25 / T-10 / T-5 / T-0 / T+3 / T+7 の段階送信が実予定1件で実配信。★`[了解]` タップ / 位置移動（#3）/ late organ 移行 のいずれかで**即停止**★（停止条件の無い連投は嫌がらせであって製品ではない）。連投中も経路1通・承認1通は増やさない |
 | **3** | 位置を「家を出た」判定に接続（鮮度は `observed_at`） | 位置が来ていても使わなければ案内が始まらない | 実予定1件で出発検知 → 出発直後の1通が実配信。`updated_at` を鮮度に使う箇所が 0 |
 | **4** | 乗換ステップ + 出口番号 | **これが無いと Google Maps を消せない** = 商品の主張が嘘になる | 実イベント1件で経路1通が届き、Maps を開かずに着いた。出口が取れない駅は**黙って省く**（推測で書かない） |
 | **5** | 1タップ承認 | 無断で相手にメールが飛ぶ。友達に渡した瞬間に事故る | 押すまで送信0・押したら実送信、両方確認 |
-| **6** | 電話番号なしでも動く | 3人のうち少なくとも1人は番号を出さない。今はその人に何も起きない | 番号未登録の test user で、出発通知 → 経路 → 承認まで全部 Telegram に届く |
+| **6** | 電話番号なしでも動く → **2026-08-01 以降これが既定**（§5.2.1 / §5.3） | 3人のうち少なくとも1人は番号を出さない。加えて実測で、番号を出した Dais 本人にも電話は届いていなかった | 番号未登録の test user で、出発の連投 → 経路 → 承認まで全部 Telegram に届く。2b + 2c が入れば大半が満たされるので、残るのは**番号未登録の実 user での E2E 1本**だけ |
 
 **運用規則（今回の教訓）**: ★試験中に本番へ env を設定しない★ — Railway では変数設定が再デプロイを誘発し、
 発火窓を破壊する。試験の前後30分は本番の設定変更を行わない。
@@ -299,7 +299,7 @@ panel、context-graph）は `timeMax` が違うので別キーのまま。1d が
  │ 8:05 に出て。あと 25分                     │
  │ [ 了解 ]        [ 15分ずらす ]             │
  └────────────────────────────────────────────┘
-   電話番号を登録した人は同時に📞（出るまで鳴る）
+   ★ 反応が無ければ Telegram を連投して押し切る（下の 5.2.1）★
    → ここで「カレンダーを開く」という行為が消える
 
  08:06  家を出た（位置で検知）───────────────────  #3 + #4
@@ -325,17 +325,53 @@ panel、context-graph）は `timeMax` が違うので別キーのまま。1d が
    押すまで1通も飛ばない。既定は送らない側
 ```
 
-**予定1件につき最大3通。** これを超えたら設計の失敗（通知が多い製品は消される）。
+**「最大3通」は "3種類の場面" の話であって、出発の押し切りは別枠**（下の 5.2.1）。経路と承認は
+それぞれ1通のままで、増やしたら設計の失敗。
 
-### 5.3 電話番号を出さない人（#6）
+### 5.2.1 ★出発の押し切りは Telegram の連投で行う（電話ではない）★ — Dais 2026-08-01
+
+**Dais verbatim**: "No meaning in rusuden no meaning. We must stop. Life manager can just message him on
+telegram. that is much better. 連投もそこら辺いいしね。逆に better yes i think. posted a lot to telegram to
+send me message is much better since it would hit me to actually leave to the place more!!"
+
+**この決定を生んだ実測（§1.3）**: 直近4日の起床コール7本は**全部留守電**。全履歴でも `human` は3件、
+`machine` は17件。Charon は毎回2分間留守電に向かって喋り、1本あたり約 $0.05 の Gemini Live を払っていた
+（`hangup_source` は43件すべて `callee` = キャリアの録音上限で切られていた）。**人に一度も届かず、金だけ出ていた。**
+
+| | 旧（廃止） | 新 |
+|---|---|---|
+| 出発の押し切り | 📞 電話（出るまで鳴る） | 💬 **Telegram 連投**。反応があるまで間隔を詰めて送る |
+| 留守電に当たったら | 2分喋り続ける | **即切る**（そもそも既定では架けない） |
+| 電話 | 既定 ON | **既定 OFF**。`call_enabled` を明示的に立てた人だけの追加チャンネル |
+| 理由 | — | 電話は「出る」という1つの動作を要求する。Telegram は**画面に残り続ける**ので、出発という行動に直接効く（Dais の実感） |
+
+**連投の形**（うるささではなく "残り続けること" が効く）
 
 ```text
-       電話あり                    電話なし
- 07:40  📞 着信（出るまで鳴る）     🔔 通知（既読まで再送 3回）
- 08:06  💬 経路1通                  💬 同じ経路1通
- 09:02  💬 承認カード               💬 同じ承認カード
+ T-25  ⏰ 9:00 打合せ / 渋谷スクランブルスクエア
+       8:05 に出て。あと 25分   [ 了解 ] [ 15分ずらす ]
+ T-10  ⏰ あと10分で出る時間。8:05 出発
+ T-5   ⏰ あと5分。そろそろ支度を終えて
+ T-0   🚨 いま出る時間。8:05
+ T+3   🚨 3分オーバー。今出れば 09:03 着（3分遅れ）
+ T+7   🚨 7分オーバー。相手に連絡しますか?  [ 送る ] [ まだ ]
  ─────────────────────────────────────────────────
-   判定エンジンは1つ。届け先が2つ。片方だけ動く実装にしない。
+  [ 了解 ] を押した / 位置が動いた 時点で★即停止★
+  停止条件が無い連投は嫌がらせであって製品ではない
+```
+
+**止め方が設計の本体**: ①`[ 了解 ]` を押す ②位置が動いて出発が検知される（#3）③予定時刻を過ぎて
+late organ の領域に入る — のいずれかで打ち切る。押し切りは「反応が無い間だけ」続く。
+
+### 5.3 電話番号を出さない人（#6）→ **もはや既定がこちら**
+
+```text
+       既定（電話なし）                電話を明示的に有効にした人
+ 07:40  💬 連投で押し切る（5.2.1）      同じ連投 ＋ 📞（留守電なら即切る）
+ 08:06  💬 経路1通                      💬 同じ経路1通
+ 09:02  💬 承認カード                   💬 同じ承認カード
+ ─────────────────────────────────────────────────
+   判定エンジンは1つ。届け先が2つ。★電話は付加であって前提ではない★
 ```
 
 ### 5.4 うまく行かない日（ここが信頼を決める）
