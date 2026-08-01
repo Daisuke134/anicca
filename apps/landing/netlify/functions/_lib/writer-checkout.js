@@ -1,6 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { validateWriterArticle } = require('./writer-article-contract.js');
+const { bundledWriterArticle } = require('./writer-article-registry.generated.js');
 
 const PRODUCTS = new Set(['writer_article', 'writer_archive']);
 const REQUEST_FIELDS = new Set([
@@ -12,6 +13,8 @@ function loadWriterArticle(slug, root = path.resolve(__dirname, '../../..')) {
   if (typeof slug !== 'string' || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
     return null;
   }
+  const bundled = bundledWriterArticle(slug);
+  if (bundled) return validateWriterArticle(bundled);
   const file = path.join(root, 'private', 'writer-articles', `${slug}.json`);
   if (!fs.existsSync(file)) return null;
   return validateWriterArticle(JSON.parse(fs.readFileSync(file, 'utf8')));

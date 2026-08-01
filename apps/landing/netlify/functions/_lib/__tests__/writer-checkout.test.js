@@ -5,6 +5,7 @@ const { spawnSync } = require('node:child_process');
 
 const {
   buildWriterCheckout,
+  loadWriterArticle,
 } = require('../writer-checkout.js');
 const { checkoutHandler } = require('../../checkout.js');
 
@@ -199,4 +200,12 @@ test('bundled Writer lookup is independent of the Lambda working directory', () 
     slug: 'aipass5',
     run_id: '20260731-213927',
   });
+});
+
+test('bundled Writer registry survives absent included_files at runtime', () => {
+  const article = loadWriterArticle('aipass5', '/definitely/not/a/runtime/root');
+
+  assert.equal(article.slug, 'aipass5');
+  assert.equal(article.run_id, '20260731-213927');
+  assert.equal(article.artifact_id, '20260731-213927__self-owned__ja');
 });
