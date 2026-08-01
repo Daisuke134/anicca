@@ -484,7 +484,10 @@ async function organsUserOnce(u, nowMs, deps = {}) {
         calendar: deps.calendar, gmailAccountId: u.gmail_account_id,
       });
       (deps.putEvents || putEvents)(u.uid, events, now);
-    } catch {
+    } catch (e) {
+      // This return silently stands down EVERY organ for this user this tick. The whole point of
+      // this work is that failures stop being invisible, so say which user and why before leaving.
+      console.error(`[scheduler] organ calendar fetch uid=${String(u.uid).slice(0, 12)} err ${e && e.message}`);
       return;
     }
   }
