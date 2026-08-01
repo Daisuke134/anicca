@@ -13,6 +13,9 @@ const {
   deleteLiveLocation,
   claimLateEvent,
   processLocationLateNotice,
+  markAnswered,
+  recordAmdResult,
+  applyAmdDetection,
 } = require("./late-notice.js");
 const { sendLateNotice } = require("./notify.js");
 
@@ -277,4 +280,139 @@ test("a Telegram send that returns no id leaves the field absent rather than inv
   }, deps);
   assert.equal(result.sent, true);
   assert.equal("telegramMessageId" in result, false);
+});
+
+// ---------------------------------------------------------------------------
+// spec 2026-08-01-lm-daily-organ-design.md §1.3 + §3 row 2 — AMD detection telemetry.
+//
+// Measured over every Telnyx call event correlated to lm_wake_log: human → answered_at set, 10/10;
+// machine/not_sure → null, 33/33. The recording path is healthy; the TABLE is the defect. Four
+// different realities ("a person answered", "rang unanswered", "voicemail", "the webhook never
+// arrived") collapse into one reading, so a rotated Telnyx signing key would make every call fail
+// silently forever with nothing anywhere recording it. These tests pin the column that separates
+// them, and pin that a PATCH matching zero rows is not the same value as a PATCH that never landed.
+// ---------------------------------------------------------------------------
+
+const SUPA = { supaUrl: "https://supa.invalid", supaKey: "service-role-key" };
+
+function stubFetch(handler) {
+  const calls = [];
+  const fetchImpl = async (url, init) => {
+    calls.push({ url: String(url), init: init || {}, body: JSON.parse((init || {}).body || "null") });
+    return handler(String(url), init || {});
+  };
+  return { fetchImpl, calls };
+}
+
+const patchedRows = (rows) => async () => ({ ok: true, status: 200, json: async () => rows });
+
+test("AMD human writes both the raw result and answered_at", async () => {
+  const { fetchImpl, calls } = stubFetch(patchedRows([{ event_key: "k" }]));
+  const out = await applyAmdDetection("lm_u", "k", {
+    result: "human", nowMs: Date.parse("2026-08-01T00:10:00Z"), ...SUPA, fetchImpl,
+  });
+
+  assert.equal(out.result, "human");
+  assert.equal(out.amd.ok, true);
+  assert.equal(out.amd.matched, 1);
+  assert.equal(out.answered.ok, true);
+  assert.equal(out.answered.matched, 1);
+
+  const amdWrite = calls.find((c) => c.body && "amd_result" in c.body);
+  const answeredWrite = calls.find((c) => c.body && "answered_at" in c.body);
+  assert.ok(amdWrite, "the raw AMD result must be persisted");
+  assert.ok(answeredWrite, "a human detection must still set answered_at");
+  assert.equal(amdWrite.body.amd_result, "human");
+  assert.equal(answeredWrite.body.answered_at, "2026-08-01T00:10:00.000Z");
+  // The amd_result write must NOT inherit the answered_at=is.null latch: a detection arriving after
+  // a row is already answered would otherwise be dropped, i.e. unrecorded again.
+  assert.doesNotMatch(amdWrite.url, /answered_at=is\.null/);
+  assert.match(answeredWrite.url, /answered_at=is\.null/);
+});
+
+test("AMD machine records the voicemail as itself and never sets answered_at", async () => {
+  const { fetchImpl, calls } = stubFetch(patchedRows([{ event_key: "k" }]));
+  const out = await applyAmdDetection("lm_u", "k", { result: "machine", ...SUPA, fetchImpl });
+
+  assert.equal(out.amd.ok, true);
+  assert.equal(out.amd.matched, 1);
+  assert.equal(out.answered, null, "no answered_at write may be attempted for a machine");
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].body.amd_result, "machine");
+  assert.equal("answered_at" in calls[0].body, false);
+  assert.equal(calls.some((c) => /answered_at=is\.null/.test(c.url)), false);
+});
+
+test("AMD not_sure is recorded as itself, not folded into machine or dropped", async () => {
+  const { fetchImpl, calls } = stubFetch(patchedRows([{ event_key: "k" }]));
+  const out = await applyAmdDetection("lm_u", "k", { result: "not_sure", ...SUPA, fetchImpl });
+
+  assert.equal(out.amd.matched, 1);
+  assert.equal(out.answered, null);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].body.amd_result, "not_sure");
+  assert.equal("answered_at" in calls[0].body, false);
+});
+
+// The defect §1.3 names outright: markAnswered returned false for "matched zero rows" AND for "the
+// request never landed", so a rotated signing key looked exactly like a user who did not pick up.
+test("a PATCH matching zero rows is distinguishable from a PATCH whose request failed", async () => {
+  const zeroRows = await markAnswered("lm_u", "k", {
+    ...SUPA, fetchImpl: async () => ({ ok: true, status: 200, json: async () => [] }),
+  });
+  assert.deepEqual(
+    { ok: zeroRows.ok, matched: zeroRows.matched },
+    { ok: true, matched: 0 },
+    "the write reached Supabase and correctly matched nothing",
+  );
+
+  const httpFail = await markAnswered("lm_u", "k", {
+    ...SUPA, fetchImpl: async () => ({ ok: false, status: 503, json: async () => ({}) }),
+  });
+  assert.equal(httpFail.ok, false, "a 5xx is a failure to record, not a zero match");
+  assert.equal(httpFail.matched, 0);
+  assert.ok(httpFail.error, "the failure must name itself");
+
+  const thrown = await markAnswered("lm_u", "k", {
+    ...SUPA, fetchImpl: async () => { throw new Error("ECONNRESET"); },
+  });
+  assert.equal(thrown.ok, false);
+  assert.ok(thrown.error);
+
+  // Same contract on the amd_result write, or the new column inherits the old blindness.
+  const amdZero = await recordAmdResult("lm_u", "k", {
+    result: "machine", ...SUPA, fetchImpl: async () => ({ ok: true, status: 200, json: async () => [] }),
+  });
+  assert.deepEqual({ ok: amdZero.ok, matched: amdZero.matched }, { ok: true, matched: 0 });
+  const amdFail = await recordAmdResult("lm_u", "k", {
+    result: "machine", ...SUPA, fetchImpl: async () => ({ ok: false, status: 403, json: async () => ({}) }),
+  });
+  assert.equal(amdFail.ok, false);
+  assert.equal(amdFail.matched, 0);
+});
+
+// server.js:816 (the media bridge, LM_AMD=off fallback) calls markAnswered with no new options.
+// It must keep issuing exactly the one latched answered_at PATCH it always did.
+test("the media bridge caller still issues one latched answered_at PATCH and nothing else", async () => {
+  const { fetchImpl, calls } = stubFetch(patchedRows([{ event_key: "k" }]));
+  const out = await markAnswered("lm_u", "k", { ...SUPA, nowMs: Date.parse("2026-08-01T00:10:00Z"), fetchImpl });
+
+  assert.equal(out.matched, 1);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].init.method, "PATCH");
+  assert.match(calls[0].url, /\/rest\/v1\/lm_wake_log\?/);
+  assert.match(calls[0].url, /answered_at=is\.null/);
+  assert.deepEqual(calls[0].body, { answered_at: "2026-08-01T00:10:00.000Z" });
+});
+
+// `answered: null` is reserved for "not a human, so not attempted". A human we could not correlate
+// must report a FAILED write, not the same null — otherwise an undecodable client_state reads as a
+// deliberate skip, which is exactly the ambiguity this change exists to remove.
+test("a detection with no wake identifiers writes nothing and says so", async () => {
+  const explode = async () => { throw new Error("must not be called"); };
+  const out = await applyAmdDetection("", "", { result: "human", ...SUPA, fetchImpl: explode });
+  assert.equal(out.amd.ok, false);
+  assert.equal(out.amd.error, "missing_args");
+  assert.equal(out.answered.ok, false);
+  assert.equal(out.answered.error, "missing_args");
 });
