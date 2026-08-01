@@ -1060,6 +1060,13 @@ events packへ接続した。`open>0`なら結果なしを含め必ず5分後の
 証拠: `docs/evidence/outbound/2026-08-02-o1b22-coverage-continuation.json`。次は`O1B-23`で、Google
 Calendarの全calendarと移動時間を申込前gateにして、衝突しないfree intervalだけへ予約する。
 
+O1B-23開始（2026-08-02）: 既存`gog` account/keyringは利用可能で追加credential不要。実Google Calendarは
+5個、2026-08-02〜2026-08-22には全calendar合計124 event、eventを持つcalendarは3個だった。本文・identityは
+出力していない。全calendar/全pageをverified busy inventoryへ正規化し、候補の前後移動時間まで含むintervalを
+申込前gateにする。設計:
+`docs/superpowers/specs/2026-08-02-connector-o1b23-calendar-free-interval-gate-design.md`。実装plan:
+`docs/superpowers/plans/2026-08-02-connector-o1b23-calendar-free-interval-gate.md`。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
