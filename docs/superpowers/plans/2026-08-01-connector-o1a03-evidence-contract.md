@@ -55,6 +55,9 @@
 
   Expected: 全test PASS、warning/errorなし。
 
-- [ ] **Step 5: package・spec・verificationを閉じる**
+- [x] **Step 5: package・spec・verificationを閉じる**
 
   `test:outbound`へ新testを追加し、O1A-03を完了へ変更する。Run: `npm run test:outbound && npm run test:runtime-up && git diff --check`。全command exit 0後、対象ファイルとplan/specだけをcommitし、`origin/main`へpushしてlocal/remote hashを一致させる。
+
+  Evidence: `test:outbound` 11/11 PASS、`test:runtime-up` 30/30 PASS、
+  `git diff --check` PASS。実装commit `fce82564c`。
