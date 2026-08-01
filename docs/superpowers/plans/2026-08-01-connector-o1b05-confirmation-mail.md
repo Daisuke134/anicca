@@ -1,6 +1,6 @@
 # Connector O1B-05 Confirmation Mail Implementation Plan
 
-> Status: 実行中。O1B-04の同一eventだけをGmail確認mailへ結ぶ。
+> Status: 完了。O1B-04の同一eventだけをGmail確認mailへ結合し、runtime volumeから再読出しした。
 
 **Goal:** `Engineer BAR`の実Luma登録後に届いた確認mailを既存`gog` Gmail OAuthで取得し、message ID・受信時刻・送信元・event URLをregistration receiptへ照合する。
 
@@ -16,11 +16,11 @@
 ### Task 1: Mail discovery and exact match
 
 - [x] 同一registration attempt内のLuma mailをGmailで検索する。
-- [ ] message metadataとsanitized contentからevent URL/titleを照合する。
-- [ ] 同一event以外を拒否するfixture testをRED→GREENにする。
+- [x] message metadataとsanitized contentからevent URL/titleを照合する。
+- [x] 同一event以外を拒否するfixture testをRED→GREENにする。
 
 ### Task 2: Durable evidence
 
-- [ ] tenant/job/eventへboundしたconfirmation-mail receiptを保存する。
-- [ ] secretなしlive evidenceを保存する。
-- [ ] O1B-05完了、spec更新、commit、push。
+- [x] tenant/job/eventへboundしたconfirmation-mail receiptを保存する。
+- [x] secretなしlive evidenceを保存する。
+- [x] O1B-05完了、spec更新、commit、push。
