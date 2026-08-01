@@ -114,3 +114,16 @@ def test_verified_marketing_terminal_is_measured_without_legacy_ig_ledger(
     snapshot = json.loads(metrics.read_text().splitlines()[0])
     assert snapshot["agent_id"] == "4866150011"
     assert calls.exists()
+
+
+def test_browser_read_failure_is_not_recorded_as_zero_engagement(
+    monkeypatch, tmp_path: Path
+) -> None:
+    metrics, calls = _setup(monkeypatch, tmp_path, 0)
+    monkeypatch.setattr(ig_metrics, "_read", lambda _url: {})
+
+    result = ig_metrics.main()
+
+    assert result != 0
+    assert not metrics.exists()
+    assert not calls.exists()

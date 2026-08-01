@@ -141,7 +141,7 @@ Producer wiring occurs only after the producer's existing verification gate:
 - Account manager emits only after independent owner-session verification and records lifecycle transitions separately.
 - Sales reconciliation emits one `order.received` event per immutable sales row, `balance.reconciled` for pending-balance deltas, and `payout.received` only for a positive increase in realized payout.
 - Cost reconciliation emits `cost.measured` from immutable provider usage records, not from a mutable prose total.
-- Instagram measurement reads both the legacy Reel ledger and the P0 verified marketing terminal, so a browser-direct P1 Reel cannot disappear from measurement merely because an older posting adapter ledger was not updated.
+- Instagram measurement reads both the legacy Reel ledger and the P0 verified marketing terminal, so a browser-direct P1 Reel cannot disappear from measurement merely because an older posting adapter ledger was not updated. A browser read must return the complete `views`/`likes`/`comments` object for every selected Reel before any snapshot is appended; `{}` or a partial read fails the pass instead of fabricating zero engagement.
 - Incident transitions emit the exact phase written by `capafy_outcome.py`; phase retries reuse the same phase event identifier and conflict if evidence changes silently.
 
 Every writer is allowed to retry indefinitely. Duplicate execution must not create duplicate revenue, cost, content, Telegram, or incident events.

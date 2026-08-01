@@ -76,15 +76,22 @@ def main():
         pass
     if not reels:
         print(json.dumps({"ok": True, "measured": 0, "note": "no reel_url rows yet — no-op"})); return 0
-    os.makedirs(os.path.dirname(METRICS), exist_ok=True)
-    measured = 0
+    snapshots = []
     for url, r in reels.items():
         s = _read(url)
+        if not isinstance(s, dict) or set(("views", "likes", "comments")) - set(s):
+            print(
+                json.dumps({"ok": False, "error": f"browser metrics read failed for {url}"}),
+                file=sys.stderr,
+            )
+            return 1
         row = {"ts": int(time.time()), "reel_url": url, "agent_id": r.get("agent_id"),
                "listing_name": r.get("listing_name"), **{k: s.get(k, 0) for k in ("views", "likes", "comments")}}
+        snapshots.append(row)
+    os.makedirs(os.path.dirname(METRICS), exist_ok=True)
+    for row in snapshots:
         with open(METRICS, "a") as f:
             f.write(json.dumps(row, ensure_ascii=False) + "\n")
-        measured += 1
         print(json.dumps({"snapshot": row}, ensure_ascii=False))
     event_sync = os.environ.get(
         "CAPAFY_EVENT_SYNC", os.path.join(os.path.dirname(__file__), "capafy_event_sync.py")
@@ -115,7 +122,7 @@ def main():
             file=sys.stderr,
         )
         return 1
-    print(json.dumps({"ok": True, "measured": measured}))
+    print(json.dumps({"ok": True, "measured": len(snapshots)}))
     return 0
 
 
