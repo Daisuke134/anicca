@@ -30,6 +30,7 @@ render_ig_provision_prompt() {
   local telegram_target="${IG_PROVISION_TELEGRAM_TARGET:-}"
   local isolated_port="${IG_PROVISION_PORT:?IG_PROVISION_PORT is required}"
   local context_id="${IG_PROVISION_CONTEXT_ID:?IG_PROVISION_CONTEXT_ID is required}"
+  local browser_identity="${IG_PROVISION_BROWSER_IDENTITY:-$context_id}"
   require_ig_isolated_context "$isolated_port" "$context_id" || return
 
   cat <<EOF
@@ -41,7 +42,7 @@ CREDENTIAL DURABILITY: Stage credentials before the first Instagram field mutati
 
 DAY 1 SIGNUP ONLY: account creation day is day1. Do not run Client().login. Do not run login_by_sessionid. Do not call get_timeline_feed() or dump_settings(). Do not create ~/.cloak/instagrapi-<handle>.json. The isolated browser session is the only session owner on day1. warmer.py creates the one-and-only golden instagrapi session after the account reaches day3.
 
-STATE WRITE: use ${state_file} only and preserve every existing row. Use the preflight-validated dedicated port ${isolated_port} and context id ${context_id}, and a unique profile beginning with ${profile_prefix}. After signup and profile setup prove the account is LIVE in the browser, atomically append {"handle":"<handle>","profile":"<profile>","port":${isolated_port},"context_id":"${context_id}","lang":"en","status":"warming","session_owner":"browser","instance":"${instance}","created":"<today YYYY-MM-DD>","started_warming":"<today YYYY-MM-DD>"}. Parse the full JSON after writing, confirm row count increased by one and the final row matches the new handle. Signup + profile + credential file + warming state row is the complete day1 success condition.
+STATE WRITE: use ${state_file} only and preserve every existing row. Use the preflight-validated dedicated port ${isolated_port}, context id ${context_id}, browser identity ${browser_identity}, and a unique profile beginning with ${profile_prefix}. After signup and profile setup prove the account is LIVE in the browser, atomically append {"handle":"<handle>","profile":"<profile>","port":${isolated_port},"context_id":"${context_id}","browser_identity":"${browser_identity}","lang":"en","status":"warming","session_owner":"browser","instance":"${instance}","created":"<today YYYY-MM-DD>","started_warming":"<today YYYY-MM-DD>"}. Parse the full JSON after writing, confirm row count increased by one and the final row matches the new handle. Signup + profile + credential file + warming state row is the complete day1 success condition.
 EOF
 
   if [ -n "$cooked_marker" ]; then

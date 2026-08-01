@@ -30,6 +30,8 @@ path, home, mode = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2]), sys.arg
 rows=json.loads(path.read_text()) if path.exists() else []
 if mode == "malformed":
     rows.append({"handle":"capafy.skills25042","status":"warming","session_owner":"private_api"})
+elif mode == "missing_identity":
+    rows.append({"handle":"capafy.skills25042","profile":"capafy-mkt-25042","port":9444,"context_id":"capafy-test","status":"warming","session_owner":"browser","instance":"capafy","created":"2026-08-02","started_warming":"2026-08-02"})
 else:
     rows.append({"handle":"capafy.skills25042","profile":"capafy-mkt-25042","port":9444,"context_id":"capafy-test","browser_identity":"instagram:capafy-provision","status":"warming","session_owner":"browser","instance":"capafy","created":"2026-08-02","started_warming":"2026-08-02"})
 path.parent.mkdir(parents=True, exist_ok=True); path.write_text(json.dumps(rows))
@@ -108,6 +110,12 @@ bash "$MANAGER" >/dev/null 2>&1; rc=$?
 [ "$rc" -ne 0 ] && ok "malformed appended row fails" || bad "malformed row accepted"
 has "malformed row writes replacement terminal" "$CAPAFY_MARKETING_RESULT" '"result": "replacement_waiting"'
 eq "malformed row retires candidate" "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))[-1]["status"])' "$CAPAFY_IG_ACCOUNTS_FILE")" session_failed
+
+new_case missing-identity; export FAKE_PROVISION_MODE=missing_identity
+bash "$MANAGER" >/dev/null 2>&1; rc=$?
+[ "$rc" -ne 0 ] && ok "missing browser identity fails" || bad "missing browser identity accepted"
+has "missing identity writes replacement terminal" "$CAPAFY_MARKETING_RESULT" '"result": "replacement_waiting"'
+eq "missing identity retires candidate" "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))[-1]["status"])' "$CAPAFY_IG_ACCOUNTS_FILE")" session_failed
 
 new_case stale-lock; mkdir -p "$CAPAFY_ACCOUNT_MANAGER_LOCK_DIR"; printf '999999\n' >"$CAPAFY_ACCOUNT_MANAGER_LOCK_DIR/pid"
 bash "$MANAGER" >/dev/null 2>&1; rc=$?

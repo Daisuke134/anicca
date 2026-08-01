@@ -101,7 +101,7 @@ browser_leased=1
 port="${cdp##*:}"
 case "$port" in ''|*[!0-9]*) fail "isolated provisioning browser returned no numeric port";; esac
 context="capafy-account-manager-$$"
-prompt="$(IG_PROVISION_ACCOUNT_STATE_FILE="$ACCOUNTS" IG_PROVISION_HANDLE_PREFIX=capafy.skills IG_PROVISION_INSTANCE=capafy IG_PROVISION_GMAIL_PLUS_TAG_PREFIX=capafy IG_PROVISION_BIO_TEXT='AI skills that solve recurring work, no link' IG_PROVISION_BROWSER_INSTRUCTIONS="Attach only to $cdp for $IDENTITY." IG_PROVISION_PROFILE_PREFIX=capafy-mkt IG_PROVISION_REASON=replacement IG_PROVISION_PORT="$port" IG_PROVISION_CONTEXT_ID="$context" IG_PROVISION_TELEGRAM_TARGET= render_ig_provision_prompt)" || fail "account provisioning prompt failed isolation validation"
+prompt="$(IG_PROVISION_ACCOUNT_STATE_FILE="$ACCOUNTS" IG_PROVISION_HANDLE_PREFIX=capafy.skills IG_PROVISION_INSTANCE=capafy IG_PROVISION_GMAIL_PLUS_TAG_PREFIX=capafy IG_PROVISION_BIO_TEXT='AI skills that solve recurring work, no link' IG_PROVISION_BROWSER_INSTRUCTIONS="Attach only to $cdp for $IDENTITY." IG_PROVISION_BROWSER_IDENTITY="$IDENTITY" IG_PROVISION_PROFILE_PREFIX=capafy-mkt IG_PROVISION_REASON=replacement IG_PROVISION_PORT="$port" IG_PROVISION_CONTEXT_ID="$context" IG_PROVISION_TELEGRAM_TARGET= render_ig_provision_prompt)" || fail "account provisioning prompt failed isolation validation"
 prompt="$prompt
 The shell caller exclusively owns Telegram and lifecycle reporting. Do not send messages and do not attempt any password, private-API, Client().login, or login_by_sessionid recovery."
 evidence="$STATE_DIR/agent-runner-evidence/capafy-account-manager/$(date +%s)-$$"
@@ -113,12 +113,12 @@ rows=json.load(open(sys.argv[1])); before=int(sys.argv[2])
 print(rows[-1].get("handle", "") if len(rows)==before+1 and isinstance(rows[-1],dict) else "")
 PY
 )" || candidate=""
-readback="$(python3 - "$ACCOUNTS" "$before_count" "$port" <<'PY'
+readback="$(python3 - "$ACCOUNTS" "$before_count" "$port" "$IDENTITY" <<'PY'
 import json,sys
-rows=json.load(open(sys.argv[1])); before=int(sys.argv[2]); port=int(sys.argv[3])
+rows=json.load(open(sys.argv[1])); before=int(sys.argv[2]); port=int(sys.argv[3]); identity=sys.argv[4]
 if len(rows)!=before+1: raise SystemExit(2)
 r=rows[-1]
-required=(r.get("handle") and r.get("status")=="warming" and r.get("session_owner")=="browser" and int(r.get("port") or 0)==port and r.get("context_id"))
+required=(r.get("handle") and r.get("status")=="warming" and r.get("session_owner")=="browser" and int(r.get("port") or 0)==port and r.get("context_id") and r.get("browser_identity")==identity)
 if not required: raise SystemExit(2)
 print(r["handle"])
 PY

@@ -125,7 +125,7 @@ for caller in "$ACCOUNT_MANAGER" "$CLIP_PASS" "$CLIP_DAILY"; do
     && ok "caller uses shared provision renderer: $(basename "$caller")" \
     || fail "caller bypasses shared provision renderer: $(basename "$caller")"
 done
-for needle in 'DAY 1 SIGNUP ONLY' 'Do not run Client().login' 'Do not run login_by_sessionid' 'Do not create ~/.cloak/instagrapi-<handle>.json' '"status":"warming"' '"session_owner":"browser"' '"started_warming":"<today YYYY-MM-DD>"' 'provision-blocked:'; do
+for needle in 'DAY 1 SIGNUP ONLY' 'Do not run Client().login' 'Do not run login_by_sessionid' 'Do not create ~/.cloak/instagrapi-<handle>.json' '"status":"warming"' '"session_owner":"browser"' '"browser_identity":"' '"started_warming":"<today YYYY-MM-DD>"' 'provision-blocked:'; do
   grep -Fq "$needle" "$ENGINE_PROMPT" \
     && ok "shared prompt wires $needle" \
     || fail "shared prompt missing $needle"
@@ -151,11 +151,12 @@ RENDERED_PROMPT="$(
   IG_PROVISION_GMAIL_PLUS_TAG_PREFIX="testtag" \
   IG_PROVISION_BIO_TEXT="test bio, NO link" \
   IG_PROVISION_BROWSER_INSTRUCTIONS="test isolated browser context" \
+  IG_PROVISION_BROWSER_IDENTITY="instagram:test-provision" \
   IG_PROVISION_PORT="9339" \
   IG_PROVISION_CONTEXT_ID="test-dedicated" \
   render_ig_provision_prompt
 )"
-for needle in "$TMP/shared-state.json" 'testhandle' 'test-instance' 'keiodaisuke+testtag<random-tag>@gmail.com' 'test bio, NO link' 'test isolated browser context' '"status":"warming"' '"session_owner":"browser"' '"started_warming":"<today YYYY-MM-DD>"'; do
+for needle in "$TMP/shared-state.json" 'testhandle' 'test-instance' 'keiodaisuke+testtag<random-tag>@gmail.com' 'test bio, NO link' 'test isolated browser context' '"status":"warming"' '"session_owner":"browser"' '"browser_identity":"instagram:test-provision"' '"started_warming":"<today YYYY-MM-DD>"'; do
   grep -Fq "$needle" <<<"$RENDERED_PROMPT" \
     && ok "shared prompt renders parameter: $needle" \
     || fail "shared prompt omitted parameter: $needle"
