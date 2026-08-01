@@ -1,0 +1,48 @@
+{
+  "evidence_version": "o1b16-live-rolling-coverage-v1",
+  "observed_at": "2026-08-01T17:12:39.798Z",
+  "timezone": "Asia/Tokyo",
+  "calendar_read": {
+    "provider": "gog Google Calendar",
+    "all_calendars": true,
+    "all_pages": true,
+    "window_start_date": "2026-08-02",
+    "window_end_date": "2026-08-22",
+    "event_count": 124,
+    "timed_event_count": 123,
+    "all_day_event_count": 1,
+    "raw_event_fields_emitted": false
+  },
+  "runtime_snapshot": {
+    "database": "life-manager-local-postgres-1/life_manager",
+    "saved": true,
+    "current_view_rows": 1,
+    "window_start_date": "2026-08-02",
+    "window_end_date": "2026-08-22",
+    "horizon_days": 21,
+    "day_count": 21,
+    "open_count": 21,
+    "covered_existing_count": 0,
+    "covered_new_count": 0,
+    "unavailable_count": 0,
+    "immutable_update_rejected": true
+  },
+  "open_dates_for_o1b17": [
+    "2026-08-02", "2026-08-03", "2026-08-04", "2026-08-05", "2026-08-06",
+    "2026-08-07", "2026-08-08", "2026-08-09", "2026-08-10", "2026-08-11",
+    "2026-08-12", "2026-08-13", "2026-08-14", "2026-08-15", "2026-08-16",
+    "2026-08-17", "2026-08-18", "2026-08-19", "2026-08-20", "2026-08-21",
+    "2026-08-22"
+  ],
+  "interpretation_boundary": {
+    "calendar_presence_used_as_coverage": false,
+    "missing_candidate_used_as_unavailable": false,
+    "resolution_deferred_to_o1b17_through_o1b24": true
+  },
+  "verification": {
+    "builder_tests_passed": 5,
+    "store_tests_passed": 4,
+    "outbound_tests_passed": 159,
+    "outbound_tests_failed": 0
+  }
+}
