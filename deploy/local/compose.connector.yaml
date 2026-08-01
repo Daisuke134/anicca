@@ -1,0 +1,4 @@
+services:
+  worker:
+    environment:
+      LM_WORKER_CAPABILITIES: ${LM_CONNECTOR_WORKER_CAPABILITIES:-runtime.noop,outbound.event.apply}
