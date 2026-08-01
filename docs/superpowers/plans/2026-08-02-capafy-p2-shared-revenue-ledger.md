@@ -313,7 +313,7 @@ git commit -m "feat(capafy): join money and marketing metrics"
 - Produces: `event_from_incident(record: dict) -> dict`
 - `transition_incident(update: dict, event_writer: Callable | None = None) -> dict` writes the incident record first, then the idempotent canonical phase event.
 
-- [ ] **Step 1: Write failing phase-mapping tests**
+- [x] **Step 1: Write failing phase-mapping tests**
 
 For incident `capafy-marketer-20260801T201313Z-6b646dbe`, assert exact identifiers:
 
@@ -326,23 +326,23 @@ capafy:incident.verified:capafy-marketer-20260801T201313Z-6b646dbe
 
 `unresolved` maps similarly and includes next owner/retry. `verified` requires a concrete `verification` object.
 
-- [ ] **Step 2: Run tests and verify RED**
+- [x] **Step 2: Run tests and verify RED**
 
 Expected: incident event mapping is absent.
 
-- [ ] **Step 3: Implement transition event emission**
+- [x] **Step 3: Implement transition event emission**
 
 Keep `capafy_outcome.py` outcome validation/render functions pure. Inject the writer into `transition_incident`; the CLI supplies the production writer unless `CAPAFY_EVENT_WRITE_DISABLED=1`. If state write succeeds and event append fails, return nonzero; retrying the same phase is legal and completes the missing event without moving state backwards.
 
-- [ ] **Step 4: Add failure/closure integration tests**
+- [x] **Step 4: Add failure/closure integration tests**
 
 Seed a failed event append, retry the incident phase, then verify the canonical event exists exactly once and Telegram closure is sent exactly once only after `incident.verified` evidence.
 
-- [ ] **Step 5: Run incident and P0 self-heal regressions**
+- [x] **Step 5: Run incident and P0 self-heal regressions**
 
 Run outcome pytest, outcome monitor shell, Builder outcome shell, both Capafy verify-loop audit shells, goal monitor tests, and syntax checks.
 
-- [ ] **Step 6: Update spec and commit**
+- [x] **Step 6: Update spec and commit**
 
 ```bash
 git commit -m "feat(capafy): trace repair phases in revenue ledger"
