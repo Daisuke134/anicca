@@ -826,6 +826,11 @@ external publication receipt advances it to `APPLIED` and starts the 24-hour
 window. Focused learning/strategy verification passes (`19 passed`); this
 correction does not claim that the real canary has been published.
 
+Runtime correction `8e09ee4` also rejects a canary comparison when baseline
+and candidate compute-cost observations use different currencies/units. Such a
+window remains `MEASUREMENT_INSUFFICIENT`; it cannot silently omit cost from a
+KEEP decision.
+
 ### 9.1 Task 13 production receipt — 2026-08-02 JST
 
 The writing itself is the product. No template, course, checklist, or separate
