@@ -402,13 +402,23 @@ mailを送るため、同一attempt開始後〜完了30分後を因果windowと�
 boundしたimmutable `gmail-message://` receiptだけをruntime volumeへ保存し、別processで再読出しした。
 focused 5件、outbound 77件が成功した。実測証拠:
 `docs/evidence/outbound/2026-08-01-o1b05-live-luma-confirmation-mail.json`。次はO1B-06で、
-同じeventのguest keyをsecret storeからのみ読み、実QRを生成する。
+同じeventの照合済みGmail messageからguest keyを同一processのmemoryにだけ読み、実QRを取得する。
 
 O1B-06開始: 専用plan
 `docs/superpowers/plans/2026-08-01-connector-o1b06-luma-ticket-qr.md`を追加した。O1B-05で照合した
 同一Gmail messageだけからguest-specific ticketを同一processのmemoryへ読み、guest key、ticket URL、
 mail本文を永続化しない。まず既存CloakBrowser `:9222`の`マイチケット`を実測し、Luma公式QRがあるなら
 payloadを推測した自作QRへ置き換えない。完成物はtenant/job/eventへboundしたhash検証済みPNGだけである。
+
+完了: `O1B-06`。既存CloakBrowser `:9222`の同一sessionで`Engineer BAR`の`マイチケット`を開いた。
+Lumaは200×200 SVGの公式QRを表示し、そのdecode payloadは旧specが想定したevent URLではなく、
+Luma公式`check-in/<opaque>` URLだった。QR内guest keyとO1B-05の確認mail内guest keyを平文を残さず
+SHA-256で照合し一致した。公式SVGを10,140-byte PNGへcaptureし、tenant/job/event boundのticket receiptと
+objectへruntime volume内で保存した。別processからreceiptとPNGを再読出しし、PNG hash、公式check-in path、
+guest-key hashを再検証した。guest key、ticket URL、mail本文は永続化していない。focused 4件、outbound
+81件が成功した。実測証拠:
+`docs/evidence/outbound/2026-08-01-o1b06-live-luma-ticket-qr.json`。次はO1B-07でこのartifact refだけを読み、
+人間向けevent名・日時・会場・event link・Calendar linkと一緒にTelegramへ実送信し、positive message IDを得る。
 
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
@@ -530,7 +540,7 @@ identity/browser/calendar reference検証を追加し、新規4件と既存runti
 - [x] O1B-03 既存CloakBrowser daily-driverを使うLuma discover + RSVP adapterを完成
 - [x] O1B-04 実イベント一件へ登録
 - [x] O1B-05 確認mailをGmailで読み、同一attemptへ照合
-- [ ] O1B-06 guest keyからQRを生成
+- [x] O1B-06 同一eventのLuma公式QRをguest key hashで照合して保存
 - [ ] O1B-07 Telegramへ実QRを送る
 - [ ] O1B-08 agentが本文からLT/CFPを判断するevalを通す
 - [ ] O1B-09 旧Connector loginを復旧しevents packへ統合
