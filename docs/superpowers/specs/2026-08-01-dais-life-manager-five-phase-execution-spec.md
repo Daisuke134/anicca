@@ -281,6 +281,15 @@ O1B-02完了実測: Web検索と公式connpass group inventoryから得たgroup 
 `profitable-claude`新規URL回帰4件、既存Calendar回帰7件、旧配備監査5/5が成功した。
 証拠: `docs/evidence/outbound/2026-08-01-o1b02-canonical-event-urls.json`。次は`O1B-03`。
 
+実行中: `O1B-03`。2026-08-01の着手実測で、既存CloakBrowser daily-driver
+`http://127.0.0.1:9222`はChrome 145 / CDP 1.3として応答した。一方、production
+`config/loop-adapters.json`は5 adapterだけで`outbound.event.apply`が存在せず、workerはcapabilityを
+広告しても実handlerを持たない。既存Luma auth bootstrapはSteel transport向けであり、今回の唯一の
+daily-driver transportではない。第二browserや第二runtimeを作らず、CDP read-only契約、Luma discovery、
+effect-fenced RSVP、E1/E2/E3 completionを順番に既存registryへ接続する。実イベントsubmitは次の
+`O1B-04`まで行わない。実装plan:
+`docs/superpowers/plans/2026-08-01-connector-o1b03-luma-daily-driver-adapter.md`。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
