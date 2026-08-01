@@ -243,6 +243,18 @@ YC公式pageでlate application受付を当日再確認
 
 ## 5. 残作業 — 必ず番号順
 
+実行中: `O1A-06`。実機workerを一度だけ意図的に停止し、Guardianの異常判定、DaisへのTelegram
+停止警告のpositive message ID、Docker workerの決定論的再起動、boundedな`/health`再確認、復旧通知の
+positive message ID、incident state clearまでを一続きで実証する。再起動で戻らない場合だけ既存
+`self-fix.sh`へ昇格する。現在のHonne JA shadow設定とvolumeを保持し、健康な実行では通知しない。
+実装plan: `docs/superpowers/plans/2026-08-01-connector-o1a06-live-recovery.md`。
+
+O1A-06着手時の追加実測: 現workerの`LM_WORKER_CAPABILITIES`は
+`runtime.noop,marketing.video.generate`で、host health portは未公開。さらに
+`outbound.event.apply`はjob/lease test用handler注入では動くが、production adapter manifestにはまだ無い。
+O1A-06ではGuardianのprocess/capability claimと復旧を実証し、実応募adapterそのものは番号どおり
+`O1B-03`で完成させる。Guardian healthyを「実イベント応募成功」と読み替えることは禁止する。
+
 完了: `O1A-05`。Connector専用の第二監視系やheartbeat fileは作らず、既存runtime workerの
 `/health`を既存Guardianと`self-fix.sh`へ接続した。HTTP 200に加え、`role=worker`、
 `outbound.event.apply` capability、freshな`last_poll_at`を必須条件とし、到達不能、不正JSON、
