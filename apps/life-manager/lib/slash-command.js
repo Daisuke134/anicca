@@ -26,6 +26,8 @@ const { getLiveLocation, deleteLiveLocation } = require("./late-notice.js");
 const { computeStage, setStage } = require("./telegram-onboard.js");
 const { askPayoutQuestion } = require("./payout-question.js");
 const { compActive, compUntilMs } = require("./comp-window.js");
+const { getLastWakeMiss, wakeMissLine } = require("./wake-miss.js");
+const { TZ_ROW_KEYS } = require("./user-tz.js");
 
 // Every /command this bot understands. start/panel are listed for /help but owned elsewhere.
 const KNOWN_COMMANDS = Object.freeze([
@@ -131,10 +133,23 @@ function subscriptionLine(row, env, nowMs) {
   return `complimentary until ${new Date(compUntilMs(env)).toISOString()}`;
 }
 
+// The IANA zone this row carries, or null. Deliberately no fallback: lib/user-tz.js' rule is that a
+// zone we do not have is not evidence the user lives in Tokyo, so wakeMissLine labels the time UTC
+// instead of printing a wall clock that belongs to somebody else.
+function rowTimeZone(row) {
+  for (const key of TZ_ROW_KEYS) {
+    const value = row && row[key];
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return null;
+}
+
 // The health snapshot is a projection of what the webhook can actually read: the lm_users row it was
-// handed and one live-location read. Legacy /status also reported cron/last-call health; those live
-// in stores this HTTP path cannot cheaply reach, so they are OMITTED rather than fabricated.
-function statusMessage(row, location, nowMs, env) {
+// handed, one live-location read, and one lm_wake_miss read. Cron/daemon health still lives in stores
+// this HTTP path cannot cheaply reach and stays OMITTED rather than fabricated — but the missed-call
+// line is NOT in that category (spec §3 row 1b, §5.5): it is a plain Supabase read like the location
+// one, and leaving it out is what let three days of unrung calls look like nothing had happened.
+function statusMessage(row, location, nowMs, env, miss) {
   // Same env + clock as the subscription line, so the stage and the paywall never disagree.
   const stage = computeStage(row, { env, now: nowMs });
   return [
@@ -147,6 +162,7 @@ function statusMessage(row, location, nowMs, env) {
     location
       ? `📍 Location: fresh (observed ${secondsAgo(location.observed_at, nowMs)}s ago)`
       : "📍 Location: not available (share Live Location in Telegram)",
+    wakeMissLine(miss, nowMs, { timeZone: rowTimeZone(row) }),
   ].join("\n");
 }
 
@@ -265,7 +281,11 @@ async function handleSlashCommand(parsed, row, deps = {}) {
 
   // /status
   const location = await (deps.getLiveLocation || ((uid) => getLiveLocation(uid, nowMs, deps)))(row.uid);
-  await send(deps.token, chatId, statusMessage(row, location, nowMs, env));
+  // A ledger read we could not complete returns null, which prints "no missed call recorded". That is
+  // the one honesty compromise here and it is bounded: the scheduler ALSO logs every miss, so an
+  // unreachable ledger degrades this line to silence rather than to a fabricated failure.
+  const miss = await (deps.getLastWakeMiss || ((uid) => getLastWakeMiss(uid, deps)))(row.uid);
+  await send(deps.token, chatId, statusMessage(row, location, nowMs, env, miss));
   return { handled: true, action: "status", ok: true };
 }
 

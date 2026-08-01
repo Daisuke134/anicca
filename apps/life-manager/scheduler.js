@@ -24,6 +24,9 @@ const { readMentalSendState, recordMentalSend } = require("./lib/mental-send-log
 // 12c: TROUGH_AFTER_MS (30 min) plus margin — how far back the tick looks for ended events.
 const MENTAL_LOOKBACK_MS = 35 * 60000;
 const { placeCall } = require("./lib/dial.js");
+const {
+  WAKE_MISS_REASONS, recordWakeMiss, claimWakeMissNotice, wakeMissNotice,
+} = require("./lib/wake-miss.js");
 const { fillTravel, directionsMinutes } = require("./lib/travel.js");
 const { formatTravelAutofillMessage } = require("./lib/i18n.js");
 const { askTick } = require("./lib/ask.js");
@@ -114,6 +117,60 @@ async function releaseWake(uid, eventKey) {
     method: "DELETE",
     headers: { apikey: key, Authorization: `Bearer ${key}`, Prefer: "return=minimal" },
   }).catch(() => {});
+}
+
+// 1b: releaseWake above is what makes a failed call INVISIBLE — it deletes the only row that said we
+// were about to ring. lm_wake_miss is the counter-ledger: every wake we owed and did not deliver
+// leaves a reasoned row that /status reads back. Best-effort by contract, because a ledger outage
+// must never cost the user the retry (spec §3 row 1b, §5.4「沈黙で失敗しない」).
+async function recordWakeMissRow(uid, miss) {
+  const { url, key } = SUPA();
+  return recordWakeMiss(uid, miss, { supaUrl: url, supaKey: key });
+}
+
+async function claimWakeMissNoticeRow(uid, eventKey, nowMs) {
+  const { url, key } = SUPA();
+  return claimWakeMissNotice(uid, eventKey, { supaUrl: url, supaKey: key, nowMs });
+}
+
+// Record the miss AND tell the user about it — §5.4「沈黙で失敗しない」: a row nobody reads still
+// leaves the user to discover the failure themselves, which is the exact experience 1b exists to end.
+// The notice is claimed through notified_at so a dial that keeps failing on every 60s tick produces
+// one message, not a stream. Entirely best-effort: this is bookkeeping, and the caller's retry path
+// must never depend on it (spec §3 row 1b).
+async function noteWakeMiss(u, miss, deps, nowMs) {
+  try {
+    await (deps.recordWakeMiss || recordWakeMissRow)(u.uid, { ...miss, nowMs });
+  } catch (e) {
+    console.error(`[wake-miss] record uid=${String(u.uid).slice(0, 12)} err ${e && e.message}`);
+    return;
+  }
+  const telegramToken = deps.telegramToken !== undefined ? deps.telegramToken : process.env.LM_TELEGRAM_BOT_TOKEN;
+  // Same gate as every other Telegram leg: a user who turned notifications off still gets the truth,
+  // in /status, rather than a message they asked not to receive.
+  if (u.notifications_enabled === false || !telegramToken || !u.telegram_chat_id) return;
+  try {
+    const claimed = await (deps.claimWakeMissNotice || claimWakeMissNoticeRow)(u.uid, miss.eventKey, nowMs);
+    if (!claimed) return; // an earlier tick already told them
+    const text = wakeMissNotice(claimed, { lang: langForUser(u), timeZone: u.call_time_zone || u.time_zone || null });
+    if (text) await (deps.sendMessage || sendMessage)(telegramToken, u.telegram_chat_id, text);
+  } catch (e) {
+    console.error(`[wake-miss] notify uid=${String(u.uid).slice(0, 12)} err ${e && e.message}`);
+  }
+}
+
+// Did this (event, level) ever get claimed? A claim is written immediately before the dial, so its
+// ABSENCE once departure has passed means nothing was ever attempted for that event.
+async function wakeWasClaimed(uid, eventKey) {
+  const { url, key } = SUPA();
+  if (!url || !key) return false;
+  const response = await fetch(
+    `${url}/rest/v1/lm_wake_log?uid=eq.${encodeURIComponent(uid)}&event_key=eq.${encodeURIComponent(eventKey)}&select=event_key&limit=1`,
+    { headers: { apikey: key, Authorization: `Bearer ${key}` } },
+  ).catch(() => null);
+  if (!response || !response.ok) return true; // unknown ≠ missed: never accuse the loop on a read failure
+  const rows = await response.json().catch(() => null);
+  return Array.isArray(rows) && rows.length > 0;
 }
 
 // Low-balance alert (issue#10 root cause: pre-event calls silently never fire when the Telnyx
@@ -341,6 +398,29 @@ async function wakeUserOnce(u, nowMs, deps = {}) {
       const due = WAKE_LEVELS
         .filter((lvl) => mins <= lvl.min + 0.5 && mins > LATE_CUTOFF_MIN)
         .sort((a, b) => a.min - b.min);
+      // 1b: the moment departure crosses the cutoff, this event can never ring again. If the finest
+      // level was never even claimed, nothing was ever attempted — the exact failure that looked like
+      // a non-event in lm_wake_log. Record it once, in the two ticks just past the cutoff: later ticks
+      // belong to the late-notice organ, and re-recording would keep restamping an old failure as new.
+      if (mins <= LATE_CUTOFF_MIN && mins > LATE_CUTOFF_MIN - 2) {
+        const finest = WAKE_LEVELS.reduce((a, b) => (a.min <= b.min ? a : b));
+        const finestKey = `${u.uid}|${ev.startIso}|${finest.min}`;
+        try {
+          const everClaimed = await (deps.wakeWasClaimed || wakeWasClaimed)(u.uid, finestKey);
+          if (!everClaimed) {
+            await noteWakeMiss(u, {
+              eventKey: `${u.uid}|${ev.startIso}|departure`,
+              eventStartIso: ev.startIso,
+              dueAtIso: new Date(depMs).toISOString(),
+              reason: WAKE_MISS_REASONS.NO_CALL_BEFORE_DEPARTURE,
+              eventSummary: ev.summary,
+            }, deps, now);
+            console.error(`[scheduler] wake never rang uid=${u.uid.slice(0, 12)} "${ev.summary}" departure passed`);
+          }
+        } catch (e) {
+          console.error(`[wake-miss] uid=${String(u.uid).slice(0, 12)} err ${e && e.message}`);
+        }
+      }
       for (const lvl of due) {
         const eventKey = `${u.uid}|${ev.startIso}|${lvl.min}`;
         const fresh = await (deps.claimWake || claimWake)(u.uid, eventKey);
@@ -359,6 +439,17 @@ async function wakeUserOnce(u, nowMs, deps = {}) {
           console.log(`[scheduler] WAKE T-${lvl.min} uid=${u.uid.slice(0, 12)} "${ev.summary}" ccid=${res.ccid}`);
         } else {
           console.error(`[scheduler] dial failed T-${lvl.min} uid=${u.uid.slice(0, 12)}: ${res.error}`);
+          // 1b: record BEFORE releasing, because releasing is what erases the evidence. Wrapped so a
+          // ledger outage can never skip the release below — the retry outranks the bookkeeping.
+          await noteWakeMiss(u, {
+            eventKey,
+            eventStartIso: ev.startIso,
+            dueAtIso: new Date(depMs - lvl.min * 60000).toISOString(),
+            levelMin: lvl.min,
+            reason: WAKE_MISS_REASONS.DIAL_FAILED,
+            detail: res.error,
+            eventSummary: ev.summary,
+          }, deps, now);
           // Don't burn the retry: release the claim so the next 60s tick tries again while the event
           // is still in its window (the claim-before-dial order stays intact as the dedup guard).
           await (deps.releaseWake || releaseWake)(u.uid, eventKey);
