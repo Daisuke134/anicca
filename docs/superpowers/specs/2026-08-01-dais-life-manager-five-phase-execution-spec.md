@@ -248,7 +248,7 @@ YC公式pageでlate application受付を当日再確認
 | order | 残っている成果 | 次へ進める条件 |
 |---|---|---|
 | 1A | 共通応募runtime、Guardian、証拠、再試行、Telegram | 強制停止から自動検知・復旧し、偽の成功を作らない |
-| 1B | 東京対面eventの21日coverage、LT、事前接触、follow-up、次回面談 | 未処理の空き枠がなく、実eventでcontact→reply/meetingまで同じ関係履歴につながる |
+| 1B | 東京対面eventの21日coverage、一般参加、LT応募、確認mail、QR、Calendar | 未処理の空き枠がなく、実申込と確認証拠がCalendarまでつながる |
 | 1C | accelerator/VC/grantの継続探索・応募・返信・面談 | 実提出、確認mail、追跡、Calendar、面談資料が一つにつながる |
 | 2 | 高年収job探索・応募・返信・面接 | Ashby/Workday実応募と面接mail→Calendarが成立 |
 | 3A | CFO runtime database、executor、launchd、失敗復旧 | enqueue→実行→財務報告が止まらず動く |
@@ -282,7 +282,7 @@ YC公式pageでlate application受付を当日再確認
 - [ ] O1B-12 一般参加とLT/CFP/demo登壇応募を別entityとしてdiscover・追跡
 - [ ] O1B-13 Life Managerの実測demoに合うtalk title、5分outline、応募理由をagent生成
 - [ ] O1B-14 accepted後にslide締切、登壇日、会場、QR、follow-upを一つのtimelineで追跡
-- [ ] O1B-15 登壇後に参加者数、商談、顧客、採用、投資家接点をattribution ledgerへ記録
+- [ ] O1B-15 登壇応募ごとの`submitted / accepted / rejected / presented`を応募ledgerへ記録
 - [ ] O1B-16 今日を含む21日間（今日〜20日後）を毎日再計算するrolling coverage goalを実装
 - [ ] O1B-17 Luma mainの東京・対面inventoryを日付ごとに最後まで読み、表示上位数件だけで探索を終えない
 - [ ] O1B-18 AI/crypto/英語等は優先順位にだけ使い、eventを捨てるhard category filterにはしない
@@ -293,16 +293,6 @@ YC公式pageでlate application受付を当日再確認
 - [ ] O1B-23 Google Calendarの全calendarからbusy intervalを読み、前後移動時間を含むfree intervalだけへ予約
 - [ ] O1B-24 無料を優先し、有料eventは一度設定した自動支出policy内で保存済み決済手段を使い、都度承認を要求しない
 - [ ] O1B-25 21日coverage、既存予定、新規予約、残り空き、申込証拠、選定理由をTelegramへ一通で報告
-- [ ] O1B-26 開催前に主催者、公開参加者、登壇者、会社、関心をagentが読み、会う価値が高い人を選ぶ
-- [ ] O1B-27 各eventに「会いたい人」「話す理由」「自然な会話の入口」「望む次行動」を持つconnection planを作る
-- [ ] O1B-28 公開contact channelと文脈がある相手には、参加前に個別化した短い挨拶を送信し、送信証拠を残す
-- [ ] O1B-29 開催時刻と実経路から出発時刻を計算し、地図、QR、会いたい人、会話の入口をTelegramへ送る
-- [ ] O1B-30 check-in、ticket、Calendar、mail等から参加状態を照合し、証拠なしに`attended`へしない
-- [ ] O1B-31 主催者・登壇者・接触相手への個別follow-upを24時間以内に送り、同じ文面の一斉送信を禁止
-- [ ] O1B-32 返信をGmail等で追跡し、具体的な次行動が合意されたらCalendarへ次回meetingを登録
-- [ ] O1B-33 `identified → contacted → replied → meeting_scheduled → met → opportunity`のrelationship funnelを保存
-- [ ] O1B-34 eventごとのuser、顧客、採用、投資家、友人、協業、登壇機会をattribution ledgerへ結合
-- [ ] O1B-35 返信率、次回面談率、実参加率、機会創出を学習し、次のevent・人・文面のrankingを改善
 
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
@@ -345,40 +335,21 @@ free intervalへ参加できるeventを探す。`unavailable`は、候補event�
 「0件」「検索した」「時間切れ」を正常終了にせず、`open=0`になるまで継続状態を次のjobへ渡す。
 認証challenge等で一候補を完了できなくても人間の操作待ちでloop全体を止めず、別候補へ進む。
 
-Connectorの完了は予約で終わらない。
-
-```text
-Calendarの空きを埋める
-  → event内で会う価値が高い人をagentが調査
-  → 文脈がある相手へ個別の事前挨拶
-  → 出発時刻、地図、QR、会話の入口をDaisへ通知
-  → 参加状態を証拠で照合
-  → 24時間以内に個別follow-up
-  → replyを追跡
-  → 次回meetingをCalendarへ登録
-  → 顧客、採用、投資、協業、友人等の実機会へ接続
-```
-
-公開参加者一覧に存在するだけでは`met`にしない。実送信だけなら`contacted`、相手の返答があれば
-`replied`、日時合意とCalendar eventがあれば`meeting_scheduled`とする。会った事実の証拠がない
-相手を「会った人」と報告しない。
-
 Connector内部構成:
 
 ```text
-Connector Lead（21日coverageと関係成果を所有）
+Connector Lead（21日coverageと応募完了を所有）
   ├─ Calendar Tool       gogで予定を取得・作成、重複と時刻を計算
   ├─ Event Scout         Luma本文を読み、候補とserendipityをagent判断
   ├─ Registration Tool   CloakBrowser :9222で申込、完了画面・mail・QRを取得
-  ├─ People Scout        主催者・登壇者・公開参加者を調査し、会う相手をagent判断
-  ├─ Outreach Agent      相手ごとに挨拶・follow-upを作成し、利用可能なchannelで送信
-  ├─ Reply Tracker       gog Gmail等で返信を追い、次回meetingをCalendarへ接続
-  ├─ Routes Tool         出発地点、前後予定、移動時間、出発時刻を計算
-  └─ Relationship Ledger identified→contacted→replied→meeting→opportunityを記録
+  ├─ Confirmation Tool   gog Gmailで確認mail、承認、cancelを照合
+  ├─ Routes Tool         前後予定と移動時間を使い、申込可能か計算
+  └─ Application Ledger  discovered→attempted→confirmed→calendar_addedを記録
 ```
 
-Calendar/Routesの時刻計算、dedup、状態遷移、証拠照合はdeterministicに行う。event、人、会話、
-文面、次行動の選択はagentが本文と履歴を読んで判断し、keyword/regexの固定分類へ戻さない。
+Calendar/Routesの時刻計算、dedup、状態遷移、証拠照合はdeterministicに行う。どのeventへ応募するかは
+agentが本文と履歴を読んで判断し、keyword/regexの固定分類へ戻さない。現地参加、参加者への連絡、
+返信、follow-up、次回面談はこのConnectorのscopeへ含めない。
 
 ### 5.3 Order 1C — 資金調達・アクセラレーター
 
@@ -903,23 +874,22 @@ Telegram添付または認証済みpanel linkから実物を開けることを�
 
 ### 10.1A Connectorの24時間UX
 
-Connectorは一日一回の検索cronではなく、固定時刻とevent-relative triggerを組み合わせた連続loopである。
-内部処理が走るたびに通知してuserを疲れさせず、Daisの行動が変わる時と現実成果が生まれた時だけ送る。
+Connectorは一日一回の検索cronではなく、21日間の空きを継続的に埋めるevent application loopである。
+責務はdiscover、申込、確認mail、QR、Calendar登録までで終わる。現地参加後の連絡や関係管理はしない。
 
 | 時刻 / trigger | 裏側で行うこと | Daisへ届くもの |
 |---|---|---|
 | 00:05 | 日付を一日進め、今日〜20日後の全Calendar、cancel、変更を再照合 | 通常は無通知 |
-| 00:15〜06:00 | `open`日を日付順にLuma中心で探索・申込・mail/QR/Calendar照合。失敗候補は捨てて次へ進む | 緊急の予定衝突以外は無通知 |
-| 06:30 | 21日coverageと今日のevent、出発時刻を生成 | 朝のConnector briefingを一通 |
+| 00:15〜06:00 | `open`日を日付順にLuma中心で探索・申込・mail/QR/Calendar照合。失敗候補は捨てて次へ進む | 通常は無通知 |
+| 06:30 | 21日coverage、既存予約、今回の新規予約、未処理の空きを集計 | 朝のConnector briefingを一通 |
 | 新規予約成立時 | そのrunで成立した複数eventをまとめて保存 | 3週間の空きを何件埋めたかを一通。eventとCalendarの直接link付き |
-| event開始6時間前まで | 主催者、登壇者、公開参加者、会社をagentが調査。会う相手と会話の入口を決め、適切な公開channelがあれば個別挨拶 | 通常は無通知。送信履歴は詳細画面で見られる |
-| `depart_at` | 現在地または直前予定からの経路、遅延、QR、地図を再計算 | 出発通知を一通 |
-| event終了後 | check-in等を照合し、相手別follow-upを送信。reply watcherを開始 | 実replyまたは次回meetingが成立した時だけ通知 |
-| 21:30 | 当日の実成果を集計 | 接触、返信、次回面談、機会を人間の言葉で一通 |
-| 23:45 | 未処理の空き、未確認申込、返信待ちを再投入 | 正常時は無通知。翌日も同じ状態から継続 |
+| 09:00 | 夜間に届いたLuma/connpassの確認、承認、cancel mailを再照合 | 状態が変わったeventだけ通知 |
+| 12:00 | 残っている`open`日と、朝以降に公開されたeventを再探索 | 新規予約成立時だけ通知 |
+| 18:00 | cancelや予定変更で再び空いた日を検知し、同日の別候補へ申込 | 置換予約が成立した時だけ通知 |
+| 23:45 | 未確認申込と未処理の空きを次runへ再投入 | 正常時は無通知。翌日も同じ状態から継続 |
 
-固定時刻はschedulerの起動契機であり、agent判断をhardcodeするものではない。event時刻が朝なら
-事前調査と出発通知を前倒しする。新規予約が06:30以降に成立すれば、翌日まで隠さず成立時に送る。
+固定時刻はschedulerの起動契機であり、event選択をhardcodeするものではない。新規予約が06:30以降に
+成立すれば、翌日まで隠さず成立時に送る。候補単位の失敗は通知せず、別候補へ進む。
 
 現在の次の文面は禁止する。
 
@@ -933,8 +903,8 @@ Connectorは一日一回の検索cronではなく、固定時刻とevent-relativ
 - 「候補がない」と「すでに埋まっている」という別状態を`none`へ潰している
 - AI/cryptoをhard filterにし、startup、founder、VC、product、finance、serendipityを捨てている
 - 21日間のどの日に空きがあるか分からない
-- 予約、会う相手、接触、返信、次回meetingの成果が分からない
-- Daisの次の現実行動を何も変えない
+- どのeventへ申し込み、確認mailとCalendar登録が完了したか分からない
+- event名、日時、場所、申込link、QRへ直接移動できない
 
 朝のConnector briefing:
 
@@ -950,64 +920,50 @@ Connectorは一日一回の検索cronではなく、固定時刻とevent-relativ
 今日の予定:
 {{event_time}} {{event_name}}
 場所: {{event_location}}
-出発: {{depart_at}}
-
-今日会いたい人:
-{{target_people_with_reason}}
-
-今日つくる接点:
-{{desired_connection_outcome}}
+申込状態: {{registration_status}}
 
 [今日のイベント]({{canonical_event_url}})
-[地図を開く]({{route_url}})
 [QRを開く]({{ticket_url}})
 [3週間のCalendar]({{calendar_coverage_url}})
 ```
 
-出発通知:
+新規予約成立時:
 
 ```text
-🚶 {{depart_at}}に出発してください。
+🎟️ 3週間の空きを{{covered_new_count}}件埋めました。
 
-{{event_name}} — {{event_start_at}}
-場所: {{event_location}}
-所要時間: {{travel_minutes}}分
+確認期間: {{window_start}}〜{{window_end}}
+未処理の空き: {{open_count}}日
 
-会いたい人:
-1. {{target_person_1}} — {{why_person_1}}
-2. {{target_person_2}} — {{why_person_2}}
+今回予約したevent:
+{{confirmed_event_rows}}
 
-会話の入口:
-・{{conversation_opener_1}}
-・{{conversation_opener_2}}
+各eventについて申込完了画面または確認mailを取得し、Calendarへ登録しました。
 
-[経路を開く]({{route_url}})
-[QRを開く]({{ticket_url}})
-[イベントページ]({{canonical_event_url}})
+[予約したeventを開く]({{confirmed_event_list_url}})
+[3週間のCalendarを開く]({{calendar_coverage_url}})
 ```
 
-夜の成果報告:
+新規予約0件が許される文面:
 
 ```text
-🤝 今日のConnector成果
+✅ 今後3週間のevent予定はすでに埋まっています。
 
-参加確認: {{attendance_status}}
-事前に連絡した人: {{contacted_count}}人
-返信があった人: {{replied_count}}人
-次回の面談が決まった人: {{meeting_scheduled_count}}人
-新しく生まれた機会: {{opportunity_summary}}
+確認期間: {{window_start}}〜{{window_end}}
+既存予約でcovered: {{covered_existing_count}}日
+固定予定により追加不可: {{unavailable_count}}日
+未処理の空き: 0日
+今回の新規予約: 0件
 
-次にLife Managerが行うこと:
-{{next_actions}}
+理由: 21日間に申込可能な空きが残っていないため、二重予約しませんでした。
 
-[送ったメッセージを見る]({{outreach_history_url}})
-[返信を見る]({{reply_threads_url}})
-[次の面談をCalendarで見る]({{next_meetings_url}})
+[3週間のCalendarを開く]({{calendar_coverage_url}})
+[予約済みeventを開く]({{confirmed_event_list_url}})
 ```
 
-接触や返信が0の場合も「何もできなかった」で閉じない。誰へ、どのchannelで、いつ次の個別接触を
-行うかを`next_actions`へ残し、次のrunへ継続する。ただし、送っていないmessage、得ていないreply、
-証明できない面会を創作しない。
+「見つからなかった」だけを理由に新規予約0件を送ってはならない。`open`が残る限り探索と申込を
+継続する。Connectorの報告対象はevent applicationだけであり、現地参加、相手への連絡、返信、
+次回面談を実行・報告しない。
 
 ### 10.2 イベント登録
 
