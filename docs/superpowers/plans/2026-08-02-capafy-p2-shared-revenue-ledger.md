@@ -366,23 +366,23 @@ git commit -m "feat(capafy): trace repair phases in revenue ledger"
 - Produces CLI: `capafy_event_projection.py project --ledger PATH`
 - Projection fields: `schema_version`, `kind`, `as_of`, `last_event_id`, `projection_id`, `inventory`, all six money totals, `orders`, `account`, `marketing`, `metrics`, `incident`, `listing_url`, `dashboard_url`.
 
-- [ ] **Step 1: Write failing projection tests**
+- [x] **Step 1: Write failing projection tests**
 
 Cover ordered folding, duplicate protection, daily aggregate orders, gross/pending/realized/cost/contribution separation, latest entity metric replacement, current account/Reel state, active versus verified incidents, deterministic projection identifiers, and different identifier after one new event.
 
-- [ ] **Step 2: Run projection tests and verify RED**
+- [x] **Step 2: Run projection tests and verify RED**
 
 Expected: import failure.
 
-- [ ] **Step 3: Implement the projection**
+- [x] **Step 3: Implement the projection**
 
 Fold only validated events in ledger order. Inventory is the latest event per listing entity. Metrics are the latest `content.measured` snapshot per content entity. Money is summed with `Decimal` and serialized to two digits. The projection identifier is a SHA-256 of ordered event identifiers plus the public projection before adding the identifier.
 
-- [ ] **Step 4: Write failing Telegram parity tests**
+- [x] **Step 4: Write failing Telegram parity tests**
 
 Render a fixture projection through `capafy_outcome.py render` and assert every money value, public URL, account state, active incident, and short projection identifier appears exactly as represented by the projection. Seed a contradictory legacy terminal and assert it is ignored after the parity gate switches to ledger mode.
 
-- [ ] **Step 5: Migrate the goal monitor behind a parity gate**
+- [x] **Step 5: Migrate the goal monitor behind a parity gate**
 
 Add:
 
@@ -393,11 +393,11 @@ PROJECTION="${CAPAFY_EVENT_PROJECTION:-$SCRIPT_DIR/scripts/capafy_event_projecti
 
 The monitor runs `sync-all`, projects the ledger, compares it with independently read money/account/content/incident values, and refuses Telegram/dashboard publication on mismatch. After parity passes, the projected object becomes the only Telegram input.
 
-- [ ] **Step 6: Run projection, renderer, and goal-monitor suites**
+- [x] **Step 6: Run projection, renderer, and goal-monitor suites**
 
 Expected: all pass; seeded mismatch exits nonzero and creates an incident rather than sending a contradictory report.
 
-- [ ] **Step 7: Update spec and commit**
+- [x] **Step 7: Update spec and commit**
 
 ```bash
 git commit -m "feat(capafy): render Telegram from event projection"
