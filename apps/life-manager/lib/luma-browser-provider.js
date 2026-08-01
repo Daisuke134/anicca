@@ -21,7 +21,15 @@ async function exactControlState(page) {
     )).map((value) => value.replace(/\s+/g, " ").trim().toLowerCase()).filter(Boolean);
     const controls = new Set(values);
     return {
-      registered: ["参加予定", "登録済み", "you're going", "you’re going", "going"]
+      registered: [
+        "参加予定",
+        "登録済み",
+        "マイチケット",
+        "my ticket",
+        "you're going",
+        "you’re going",
+        "going",
+      ]
         .some((value) => controls.has(value)),
     };
   });

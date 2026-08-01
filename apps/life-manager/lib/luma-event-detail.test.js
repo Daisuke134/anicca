@@ -62,6 +62,7 @@ test("keeps online events visible but marks them as not in-person", () => {
 
 test("classifies registered, waitlist, full, approval, and unknown controls exactly", () => {
   assert.equal(normalizeLumaEventDetail(fixture({ controls: ["参加予定"] })).rsvp_status, "registered");
+  assert.equal(normalizeLumaEventDetail(fixture({ controls: ["マイチケット"] })).rsvp_status, "registered");
   assert.equal(normalizeLumaEventDetail(fixture({ controls: ["Join Waitlist"] })).rsvp_status, "waitlist");
   assert.equal(normalizeLumaEventDetail(fixture({ controls: ["Sold Out"] })).rsvp_status, "full");
   assert.equal(normalizeLumaEventDetail(fixture({ controls: ["Request to Join"] })).rsvp_status, "approval_required");

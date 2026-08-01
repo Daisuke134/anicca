@@ -10,7 +10,7 @@ const RESERVED_SLUGS = new Set([
   "signin",
 ]);
 const SLUG = /^[A-Za-z0-9_-]+$/;
-const TOKYO_DISCOVER_URL = "https://luma.com/discover/tokyo";
+const TOKYO_DISCOVER_URL = "https://luma.com/tokyo?k=p";
 
 function boundedText(value, max) {
   const text = String(value == null ? "" : value).replace(/\s+/g, " ").trim();

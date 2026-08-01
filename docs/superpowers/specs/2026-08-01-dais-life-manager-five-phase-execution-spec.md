@@ -361,6 +361,14 @@ O1B-04進捗2: Google Calendarを2026-08-01〜08-21、全calendar、全pageで�
 会場参加ticketが全て売切なら`rsvp_status=full`を優先するよう修正した。focused 6/6、outbound 69/69。
 まだ実登録は0。Luma内の追加検索とweb indexへ探索範囲を広げ、Calendar非競合の対面eventまで継続する。
 
+O1B-04進捗3: Lumaの正しいTokyo place pageは`https://luma.com/tokyo?k=p`であり、終端7 rounds、
+35件だった。旧`/discover/tokyo`の27件より8件多いため、正本discovery URLも後続で置換する。
+追加候補のSupabase Meetup Tokyo #1（8/5 19:00–22:00）は既存予定が17:10までで競合しないが、
+実pageはすでに`参加確定 / Ticket: Standard / マイチケット`を表示した。現adapterが日本語の
+`マイチケット`を登録済みmarkerとして認識しない二重登録riskをREDで再現し、detailとsubmit後readbackの
+両方へmarkerを追加した。focused 10/10、outbound 70/70。既存登録はverified receiptへ回収し、
+O1B-04の実submit用には別の未登録・非競合候補を探索する。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
