@@ -9,6 +9,7 @@ const { inferEventPreferenceRanking } = require("./event-preference-ranking.js")
 const { inferEventGoalSerendipity } = require("./event-goal-serendipity.js");
 const { runLumaCandidateSequence } = require("./luma-candidate-loop.js");
 const { planConnectorCoverageContinuation } = require("./connector-coverage-continuation.js");
+const { calendarEligibleLumaCandidates } = require("./calendar-candidate-gate.js");
 const { createConnpassApiClient } = require("./connpass-api-client.js");
 const {
   createEventSourceCapabilities,
@@ -46,6 +47,7 @@ function createConnectorEventsPack(options = {}) {
   const createConnpassClient = options.createConnpassClient || createConnpassApiClient;
   const runCandidateSequence = options.runCandidateSequence || runLumaCandidateSequence;
   const planCoverageContinuation = options.planCoverageContinuation || planConnectorCoverageContinuation;
+  const selectCalendarEligibleCandidates = options.selectCalendarEligibleCandidates || calendarEligibleLumaCandidates;
   const authAwareDriver = createAuthAwareDriver({ dailyDriver, auth });
   if (!authAwareDriver || typeof authAwareDriver.withLumaPage !== "function") throw invalid();
   const provider = createProvider({
@@ -89,6 +91,10 @@ function createConnectorEventsPack(options = {}) {
       return evaluateGoalSerendipity({ dateInventory, preferenceRanking, goals }, extra);
     },
     runSameDayCandidates(candidates, attempt) {
+      return runCandidateSequence({ candidates, attempt });
+    },
+    runCalendarGatedSameDay(dateInventory, calendarGate, attempt) {
+      const candidates = selectCalendarEligibleCandidates(dateInventory, calendarGate);
       return runCandidateSequence({ candidates, attempt });
     },
     planCoverageContinuation(coverage, observedOutcomes, now) {
