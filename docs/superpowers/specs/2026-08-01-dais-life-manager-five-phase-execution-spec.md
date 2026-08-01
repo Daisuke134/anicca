@@ -960,6 +960,15 @@ exclude/eligible fieldはなく、`weak / unknown`も残る。focused 7/7、outb
 証拠: `docs/evidence/outbound/2026-08-02-o1b18-live-preference-ranking.json`。次は固定順序どおり
 `O1B-19`で、本文・主催者・参加者・場所・時間・Daisの目標・serendipityを自然言語で評価する。
 
+O1B-19開始（2026-08-02）: 実Luma Tokyoは終端6round、32候補。確認した公式JSON-LDは
+description 913文字、organizer 2件、会場住所・緯度経度・開始終了を持つ一方、attendee/performerは
+0件だった。公開profile link 2件はorganizer数と一致するため参加者とは扱わない。providerが明示する
+description、organizer、attendee、place、timeだけをverified sourceとして、全候補を保持したまま
+Daisのgoal alignmentとserendipity potentialをGeminiが評価する。5 factorをexactly once返し、
+参加者非公開は`unavailable`、sourceにないexcerpt・欠落・重複・model failureはfail closedする。
+設計: `docs/superpowers/specs/2026-08-02-connector-o1b19-grounded-serendipity-design.md`。実装plan:
+`docs/superpowers/plans/2026-08-02-connector-o1b19-grounded-serendipity.md`。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
