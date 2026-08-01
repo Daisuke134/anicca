@@ -998,6 +998,14 @@ runで、description、organizer、住所を正規化し、attendee 0を`partici
 174/174成功。証拠: `docs/evidence/outbound/2026-08-02-o1b19-live-grounded-serendipity.json`。
 次は固定順序どおり`O1B-20`で、Lumaで実参加を確保できない日だけ許諾済みsourceへ継続する。
 
+O1B-20開始（2026-08-02）: connpass keyは未配備で、提出日以後の公式API返信mail 0件、credential-like
+value 0件。公式v2はkey必須のGET discoveryだけに使い、API外access、browser申込み、coverage creditを
+禁止する。MeetupはPro OAuth審査、Eventbriteは第三者eventのparticipant registration endpointを確認
+できないためactive sourceへ追加しない。verified Luma exhaustion後、keyありならconnpass公式GET、keyなし
+ならnetwork 0のままkey watcherとLuma retryへ進み、dateを`open`に保つ。設計:
+`docs/superpowers/specs/2026-08-02-connector-o1b20-source-handoff-design.md`。実装plan:
+`docs/superpowers/plans/2026-08-02-connector-o1b20-source-handoff.md`。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
