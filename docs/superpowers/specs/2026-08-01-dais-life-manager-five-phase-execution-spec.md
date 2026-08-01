@@ -1337,6 +1337,21 @@ Calendar read、receipt read、readback validation、assemblyの安全なcodeへ
 例外本文は保存しない。focused 29/29、Connector全回帰239/239、runtime 36/36成功。次はcommit/push、
 新image deploy後に同じjobを再開し、1回のreceipt codeで残存境界を確定する。
 
+O1B-25進捗22（CloakBrowser owner復旧 / LIVE）: 新imageでattempt 4・5のreceiptがともに
+`CONNECTOR_COVERAGE_INVENTORY_FAILED`となり、Calendar以前のLuma inventory境界を確定した。`:9222`は
+HTTP 200でも、旧five-phase worktreeから5時間以上残留したNode CDP client 4本と、8時間以上稼働した
+`ai.anicca.cdp-daily-driver-owner`が新Playwright clientを約25〜30秒で終了させていた。旧worktreeの4 processだけを
+SIGTERMし、launchd ownerだけを`kickstart -k`した。profile/cookie/dataは削除していない。復旧後、同じ
+Luma Tokyo read-only navigationは1.33秒、33 linksで成功。workerのattempt 7は3分弱でcompletedし、
+Calendar exact eventを1件のまま維持、coverage open 21→20、continuation `continue`、次jobをdurable enqueueした。
+
+O1B-25進捗23（Connector登録の再試行分類 RED→GREEN）: attempt 7のCalendar同期は冪等再試行のため`existing`を返し、
+assemblerがConnector自身の新規登録を`covered_existing=1`へ誤分類した。verified outbound registration receiptがある
+eventは、Calendar writeが初回`created`でもretry`existing`でもConnector起因の`covered_new`である。`covered_existing`は
+応募receiptなしで事前に確認された参加予定専用とする。既存Calendar exact eventを使うretry testをREDにし、assemblerを
+`covered_new`へ修正した。focused 10/10、Connector全回帰239/239、runtime 36/36成功。次はcommit/push、deploy後、
+queued continuationを実行して最新snapshotが`covered_new=1`を維持することを実測する。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 

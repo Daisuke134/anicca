@@ -48,7 +48,9 @@ function buildVerifiedRegistrationCoverageEvidence(input = {}) {
   if (!event || event.canonical_url !== calendarSync.canonical_event_url) invalid();
   const core = {
     date: localDate(event.starts_at, dateInventory.timezone),
-    status: calendarSync.status === "created" ? "covered_new" : "covered_existing",
+    // A verified outbound registration receipt proves Connector ownership. Calendar
+    // "existing" only means a prior retry already wrote the same idempotent event.
+    status: "covered_new",
     event_ref: event.event_ref,
     inventory_snapshot_id: dateInventory.inventory_snapshot_id,
     calendar_sync_id: calendarSync.calendar_sync_id,

@@ -175,7 +175,7 @@ test("verified RSVP becomes a Calendar event and coverage while a real all-day b
   assert.deepEqual(result.observedOutcomes, [{ date: "2026-08-05", observed_status: "booked" }]);
 });
 
-test("an existing exact Calendar registration rebuilds coverage without calling travel routing", async () => {
+test("a retried Connector registration remains covered_new when its exact Calendar event already exists", async () => {
   const coverage = currentCoverage();
   const inventory = await dateInventory(coverage);
   const registration = await completedRegistration();
@@ -197,7 +197,8 @@ test("an existing exact Calendar registration rebuilds coverage without calling 
   });
 
   const result = await refresh({ coverage, tenantId: TENANT });
-  assert.equal(result.coverage.counts.covered_existing, 1);
+  assert.equal(result.coverage.counts.covered_existing, 0);
+  assert.equal(result.coverage.counts.covered_new, 1);
   assert.equal(result.coverage.counts.unavailable, 1);
   assert.equal(result.coverage.counts.open, 19);
   assert.equal(routeCalls, 0);
