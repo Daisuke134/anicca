@@ -237,12 +237,9 @@ git commit -m "feat(capafy): emit verified outcome events"
 - Modify: `skills/self/capafy-loop/capafy_earn_reconcile.py`
 - Modify: `skills/earn/capafy-marketing/scripts/pull_attribution.py`
 - Modify: `skills/earn/capafy-marketing/scripts/ig_metrics.py`
-- Modify: `skills/self/capafy-loop/loop.sh`
 - Create: `skills/self/capafy-loop/tests/test_capafy_earn_reconcile.py`
 - Create: `skills/earn/capafy-marketing/tests/test_ig_metrics.py`
 - Modify: `skills/earn/capafy-marketing/tests/test_pull_attribution.py`
-- Modify: `skills/earn/capafy-marketing/tests/test_build_landing.py`
-- Modify: `skills/self/capafy-loop/test-loop.sh`
 - Modify: `docs/superpowers/specs/2026-08-01-capafy-self-improving-revenue-loop-design.md`
 
 **Interfaces:**
@@ -254,7 +251,7 @@ git commit -m "feat(capafy): emit verified outcome events"
 - Produces: `events_from_ig_metrics(rows: list[dict]) -> list[dict]`
 - Produces CLI: `capafy_event_sync.py sync-money|sync-attribution|sync-metrics|sync-all`
 
-- [ ] **Step 1: Write failing money adapter tests**
+- [x] **Step 1: Write failing money adapter tests**
 
 Verify the production fixture maps to:
 
@@ -267,32 +264,32 @@ cost.measured: cost_delta=4.78 and contribution_delta=-4.78 across immutable usa
 
 Assert repeated mutable cumulative totals do not double-count and an older snapshot cannot move money backwards without a refund/correction source event.
 
-- [ ] **Step 2: Write failing metric adapter tests**
+- [x] **Step 2: Write failing metric adapter tests**
 
 For agent `4866150011`, subtract the two recorded deployment-verification clicks before emitting organic clicks. Assert negative organic counts clamp to zero with a public label that verification traffic was excluded, and subsequent metric snapshots replace rather than add cumulative values.
 
-- [ ] **Step 3: Run sync tests and verify RED**
+- [x] **Step 3: Run sync tests and verify RED**
 
 Expected: import failure for the sync module.
 
-- [ ] **Step 4: Implement source readers and event builders**
+- [x] **Step 4: Implement source readers and event builders**
 
 Source record identities use canonical source digests and stable dates/shortcodes. The sync CLI accepts explicit fixture paths for tests and defaults to the production files only when paths are omitted. It prints counts for `observed`, `appended`, `duplicates`, and `conflicts` by source.
 
-- [ ] **Step 5: Add direct producer hooks**
+- [x] **Step 5: Add direct producer hooks**
 
 - `capafy_earn_reconcile.py` invokes `sync-money` after its atomic source-ledger write.
 - `pull_attribution.py` invokes `sync-attribution` after its dated row append.
 - `ig_metrics.py` invokes `sync-metrics` after its snapshot append.
-- `loop.sh` invokes `sync-money` after cost/sales reconciliation so cost events do not wait for the daily report.
+- `capafy_earn_reconcile.py` passes both its newly persisted money ledger and the current cost log to one `sync-money` call. Because `loop.sh` already invokes that reconciler synchronously, it inherits the same nonzero terminal and does not make a redundant second sync call.
 
 Each producer has `CAPAFY_EVENT_SYNC` and `CAPAFY_EVENT_LEDGER` test seams. A sync failure makes the producer terminal nonzero but does not rewrite or delete source evidence.
 
-- [ ] **Step 6: Run producer, sync, and legacy ledger tests**
+- [x] **Step 6: Run producer, sync, and legacy ledger tests**
 
 Run `test_capafy_event_sync.py`, `test_capafy_earn_reconcile.py`, `test_ig_metrics.py`, `test_pull_attribution.py`, the direct-hook assertions in `test_build_landing.py`, and `skills/self/capafy-loop/test-loop.sh`.
 
-- [ ] **Step 7: Update spec and commit**
+- [x] **Step 7: Update spec and commit**
 
 ```bash
 git commit -m "feat(capafy): join money and marketing metrics"

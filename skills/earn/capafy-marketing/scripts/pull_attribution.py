@@ -14,6 +14,7 @@ CAPAFY_HTTP = os.path.expanduser(
 )
 DEFAULT_STATS_URL = "https://capafy-skills-daily.netlify.app/go-stats"
 OUTPUT_FILE = Path(os.path.expanduser("~/.openclaw/state/capafy-attribution.jsonl"))
+EVENT_SYNC = Path(__file__).with_name("capafy_event_sync.py")
 
 
 def _find_agent_list(value):
@@ -62,10 +63,15 @@ def pull(
     stats_url: str = DEFAULT_STATS_URL,
     output_file: Path = OUTPUT_FILE,
     today: date | None = None,
+    event_sync: Path | None = None,
+    event_ledger: Path | None = None,
+    evidence_dir: Path | None = None,
 ):
     day = (today or date.today()).isoformat()
     existing = _existing_row(output_file, day)
     if existing is not None:
+        if event_sync is not None:
+            _sync_events(event_sync, output_file, event_ledger, evidence_dir)
         return existing
 
     stats_request = request.Request(
@@ -99,12 +105,54 @@ def pull(
     output_file.parent.mkdir(parents=True, exist_ok=True)
     with output_file.open("a", encoding="utf-8") as ledger:
         ledger.write(json.dumps(row, ensure_ascii=False, separators=(",", ":")) + "\n")
+    if event_sync is not None:
+        _sync_events(event_sync, output_file, event_ledger, evidence_dir)
     return row
+
+
+def _sync_events(
+    event_sync: Path,
+    output_file: Path,
+    event_ledger: Path | None,
+    evidence_dir: Path | None,
+) -> None:
+    command = [
+        sys.executable,
+        str(event_sync),
+        "sync-attribution",
+        "--attribution-ledger",
+        str(output_file),
+        "--verification-clicks-json",
+        os.environ.get("CAPAFY_VERIFICATION_CLICKS_JSON", '{"4866150011":2}'),
+    ]
+    if event_ledger is not None:
+        command.extend(["--ledger", str(event_ledger)])
+    if evidence_dir is not None:
+        command.extend(["--evidence-dir", str(evidence_dir)])
+    result = subprocess.run(command, capture_output=True, text=True, check=False)
+    if result.returncode != 0:
+        raise RuntimeError(f"event sync failed rc={result.returncode}: {result.stderr.strip()}")
 
 
 def main() -> int:
     try:
-        row = pull(stats_url=os.environ.get("CAPAFY_GO_STATS_URL", DEFAULT_STATS_URL))
+        row = pull(
+            stats_url=os.environ.get("CAPAFY_GO_STATS_URL", DEFAULT_STATS_URL),
+            output_file=Path(os.environ.get("CAPAFY_ATTRIBUTION_LEDGER", OUTPUT_FILE)),
+            event_sync=Path(os.environ.get("CAPAFY_EVENT_SYNC", EVENT_SYNC)),
+            event_ledger=Path(
+                os.environ.get(
+                    "CAPAFY_EVENT_LEDGER",
+                    os.path.expanduser("~/.openclaw/state/capafy-revenue-events.jsonl"),
+                )
+            ),
+            evidence_dir=Path(
+                os.environ.get(
+                    "CAPAFY_EVENT_EVIDENCE_DIR",
+                    os.path.expanduser("~/.openclaw/state/capafy-revenue-evidence"),
+                )
+            ),
+        )
     except Exception as exc:  # noqa: BLE001
         print(json.dumps({"ok": False, "error": str(exc)}), file=sys.stderr)
         return 1

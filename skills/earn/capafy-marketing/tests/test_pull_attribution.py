@@ -2,6 +2,7 @@
 import importlib.util
 import io
 import json
+import os
 import tempfile
 import unittest
 from datetime import date
@@ -61,6 +62,58 @@ class PullAttributionTests(unittest.TestCase):
 
             self.assertEqual(result, existing)
             self.assertEqual(len(output.read_text(encoding="utf-8").splitlines()), 1)
+
+    def test_failed_event_sync_keeps_row_and_next_pull_retries_without_refetch(self):
+        stats_response = io.BytesIO(json.dumps({"4866150011": 2}).encode())
+        sales_payload = {
+            "data": [
+                {"agentId": "4866150011", "name": "Decision Debate", "sales": None}
+            ]
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            output = root / "capafy-attribution.jsonl"
+            calls = root / "calls.jsonl"
+            sync = root / "event-sync.py"
+            sync.write_text(
+                "#!/usr/bin/env python3\n"
+                "import json,os,sys\n"
+                "with open(os.environ['SYNC_CALLS'],'a') as f: f.write(json.dumps(sys.argv[1:])+'\\n')\n"
+                "raise SystemExit(int(os.environ.get('SYNC_EXIT','0')))\n"
+            )
+            sync.chmod(0o755)
+            environment = {
+                "SYNC_CALLS": str(calls),
+                "SYNC_EXIT": "7",
+            }
+            with (
+                patch.dict(os.environ, environment, clear=False),
+                patch.object(pull_attribution.request, "urlopen", return_value=stats_response) as urlopen,
+                patch.object(pull_attribution, "_fetch_agents", return_value=sales_payload),
+            ):
+                with self.assertRaisesRegex(RuntimeError, "event sync failed"):
+                    pull_attribution.pull(
+                        stats_url="https://landing.example/go-stats",
+                        output_file=output,
+                        today=date(2026, 8, 2),
+                        event_sync=sync,
+                        event_ledger=root / "events.jsonl",
+                        evidence_dir=root / "evidence",
+                    )
+                os.environ["SYNC_EXIT"] = "0"
+                result = pull_attribution.pull(
+                    stats_url="https://landing.example/go-stats",
+                    output_file=output,
+                    today=date(2026, 8, 2),
+                    event_sync=sync,
+                    event_ledger=root / "events.jsonl",
+                    evidence_dir=root / "evidence",
+                )
+
+            self.assertEqual(result["date"], "2026-08-02")
+            self.assertEqual(len(output.read_text().splitlines()), 1)
+            self.assertEqual(len(calls.read_text().splitlines()), 2)
+            urlopen.assert_called_once()
 
 
 if __name__ == "__main__":

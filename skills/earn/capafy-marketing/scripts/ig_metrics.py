@@ -5,8 +5,7 @@ B6 (IG variant) — Instagram Reel metrics (deterministic TOOL, browser-direct r
 IG sibling of x_metrics.py. For each Capafy marketing Reel in the IG ledger, opens its
 permalink on the CloakBrowser daily-driver (:9222, @useclaudeskills) and reads the PUBLIC
 engagement IG renders (likes / comments; views/plays when shown). Appends a dated snapshot
-to `capafy-marketing-ig-metrics.jsonl`. Empty ledger (no Reels yet — account still warming)
-= clean no-op.
+to `capafy-marketing-ig-metrics.jsonl`. Empty ledger (no verified Reels yet) = clean no-op.
 
 IG attribution is handled separately by pull_attribution.py, which pulls the landing redirect
 counter after this metrics pass and joins it to the Capafy sales snapshot.
@@ -17,6 +16,7 @@ CDP = os.path.expanduser("~/.agents/skills/ig-account-create/scripts/cdp.py")
 PY = "/opt/homebrew/bin/python3"
 IGLEDGER = os.path.expanduser("~/.openclaw/state/capafy-marketing-ig-ledger.jsonl")
 METRICS = os.path.expanduser("~/.openclaw/state/capafy-marketing-ig-metrics.jsonl")
+MARKETING_TERMINAL = os.path.expanduser("~/.openclaw/state/capafy-marketing-terminal.json")
 
 READ_JS = r'''(() => {
   const a=document.querySelector('article'); if(!a) return '{}';
@@ -46,19 +46,34 @@ def _read(url):
 
 
 def main():
-    if not os.path.exists(IGLEDGER):
-        print(json.dumps({"ok": True, "measured": 0, "note": "no IG Reels yet (account warming) — no-op"})); return 0
     reels = {}
-    for line in open(IGLEDGER):
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            r = json.loads(line)
-        except Exception:
-            continue
-        if r.get("reel_url"):
-            reels[r["reel_url"]] = r
+    if os.path.exists(IGLEDGER):
+        for line in open(IGLEDGER):
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                r = json.loads(line)
+            except Exception:
+                continue
+            if r.get("reel_url"):
+                reels[r["reel_url"]] = r
+    try:
+        terminal = json.load(open(MARKETING_TERMINAL))
+        outcome = terminal.get("outcome") or {}
+        if (
+            str(terminal.get("telegram_message_id") or "").isdigit()
+            and outcome.get("kind") == "marketing_published"
+            and outcome.get("owner_session_verified") is True
+            and outcome.get("reel_url")
+        ):
+            reels[outcome["reel_url"]] = {
+                "reel_url": outcome["reel_url"],
+                "agent_id": outcome.get("agent_id"),
+                "listing_name": outcome.get("title"),
+            }
+    except Exception:
+        pass
     if not reels:
         print(json.dumps({"ok": True, "measured": 0, "note": "no reel_url rows yet — no-op"})); return 0
     os.makedirs(os.path.dirname(METRICS), exist_ok=True)
@@ -71,6 +86,35 @@ def main():
             f.write(json.dumps(row, ensure_ascii=False) + "\n")
         measured += 1
         print(json.dumps({"snapshot": row}, ensure_ascii=False))
+    event_sync = os.environ.get(
+        "CAPAFY_EVENT_SYNC", os.path.join(os.path.dirname(__file__), "capafy_event_sync.py")
+    )
+    command = [
+        sys.executable,
+        event_sync,
+        "sync-metrics",
+        "--metrics-ledger",
+        METRICS,
+        "--ledger",
+        os.environ.get(
+            "CAPAFY_EVENT_LEDGER",
+            os.path.expanduser("~/.openclaw/state/capafy-revenue-events.jsonl"),
+        ),
+        "--evidence-dir",
+        os.environ.get(
+            "CAPAFY_EVENT_EVIDENCE_DIR",
+            os.path.expanduser("~/.openclaw/state/capafy-revenue-evidence"),
+        ),
+    ]
+    synced = subprocess.run(command, capture_output=True, text=True, check=False)
+    if synced.returncode != 0:
+        print(
+            json.dumps(
+                {"ok": False, "error": f"event sync failed rc={synced.returncode}: {synced.stderr.strip()}"}
+            ),
+            file=sys.stderr,
+        )
+        return 1
     print(json.dumps({"ok": True, "measured": measured}))
     return 0
 

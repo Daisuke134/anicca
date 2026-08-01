@@ -32,6 +32,7 @@ import argparse
 import datetime as dt
 import json
 import os
+import subprocess
 import sys
 import urllib.request
 
@@ -221,6 +222,41 @@ def main() -> int:
     new_rows.append(payout_row)
 
     atomic_write(args.ledger, new_rows)
+
+    event_sync = os.environ.get(
+        "CAPAFY_EVENT_SYNC",
+        os.path.abspath(os.path.join(HERE, "../../earn/capafy-marketing/scripts/capafy_event_sync.py")),
+    )
+    if not (os.environ.get("CAPAFY_TEST") == "1" and "CAPAFY_EVENT_SYNC" not in os.environ):
+        sync_command = [
+            sys.executable,
+            event_sync,
+            "sync-money",
+            "--money-ledger",
+            args.ledger,
+            "--cost-log",
+            os.environ.get(
+                "CAPAFY_EVENT_COST_LOG",
+                os.path.expanduser("~/.openclaw/logs/capafy-loop-daily.log"),
+            ),
+            "--ledger",
+            os.environ.get(
+                "CAPAFY_EVENT_LEDGER",
+                os.path.expanduser("~/.openclaw/state/capafy-revenue-events.jsonl"),
+            ),
+            "--evidence-dir",
+            os.environ.get(
+                "CAPAFY_EVENT_EVIDENCE_DIR",
+                os.path.expanduser("~/.openclaw/state/capafy-revenue-evidence"),
+            ),
+        ]
+        synced = subprocess.run(sync_command, capture_output=True, text=True, check=False)
+        if synced.returncode != 0:
+            print(
+                f"event sync failed rc={synced.returncode}: {synced.stderr.strip()}",
+                file=sys.stderr,
+            )
+            return 1
 
     sale_rows = [r for r in new_rows if isinstance(r, dict) and r.get("source") == "capafy-sales"]
     lifetime_gross = round(sum(float(r.get("gross_usd", 0)) for r in sale_rows), 2)
