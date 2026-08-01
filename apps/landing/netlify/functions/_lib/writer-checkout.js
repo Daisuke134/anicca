@@ -8,7 +8,7 @@ const REQUEST_FIELDS = new Set([
 ]);
 const CLIENT_REFERENCE = /^[A-Za-z0-9_-]{16,64}$/;
 
-function loadWriterArticle(slug, root = process.cwd()) {
+function loadWriterArticle(slug, root = path.resolve(__dirname, '../../..')) {
   if (typeof slug !== 'string' || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
     return null;
   }

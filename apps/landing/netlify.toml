@@ -2,6 +2,9 @@
 [functions.writer-content]
   included_files = ["private/writer-articles/**"]
 
+[functions.checkout]
+  included_files = ["private/writer-articles/**"]
+
 # Private CFO behind basic auth (Dais only)
 # Visit /private with Authorization: Basic <base64 of "dais:<password>">
 # Password in Netlify env: PRIVATE_CFO_PASSWORD

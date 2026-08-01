@@ -168,6 +168,8 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   return {
     title: `${post.title} | Anicca Articles`,
     description: post.markdown.slice(0, 200).replace(/[#*`]/g, ""),
+    alternates: { canonical: `https://aniccaai.com/blog/${post.slug}` },
+    robots: { index: true, follow: true },
   };
 }
 
