@@ -1067,6 +1067,10 @@ O1B-23開始（2026-08-02）: 既存`gog` account/keyringは利用可能で追�
 `docs/superpowers/specs/2026-08-02-connector-o1b23-calendar-free-interval-gate-design.md`。実装plan:
 `docs/superpowers/plans/2026-08-02-connector-o1b23-calendar-free-interval-gate.md`。
 
+O1B-23進捗1（transport RED）: 既存`listEventsRaw`は`--all-pages`でもcalendar指定省略によりprimaryだけを
+読む経路だった。calendar listを`--all`で終端まで読み、eventsを明示的`--all --all-pages`で読む2操作と、
+provider failureを空予定へ変換しない契約testを追加した。新method未実装のため2件が期待どおり失敗する段階。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
