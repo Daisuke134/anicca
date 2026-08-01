@@ -1,5 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const path = require('node:path');
+const { spawnSync } = require('node:child_process');
 
 const {
   buildWriterCheckout,
@@ -177,4 +179,24 @@ test('legacy ebook checkout keeps its existing product and language mapping', as
   assert.equal(sent.get('metadata[product]'), 'ebook');
   assert.equal(sent.get('metadata[lang]'), 'jp');
   assert.equal(sent.get('line_items[0][price]'), 'price_ebook_jp');
+});
+
+test('bundled Writer lookup is independent of the Lambda working directory', () => {
+  const modulePath = path.resolve(__dirname, '../writer-checkout.js');
+  const script = `
+    const { loadWriterArticle } = require(${JSON.stringify(modulePath)});
+    const article = loadWriterArticle('aipass5');
+    if (!article) process.exit(2);
+    process.stdout.write(JSON.stringify({ slug: article.slug, run_id: article.run_id }));
+  `;
+  const result = spawnSync(process.execPath, ['-e', script], {
+    cwd: path.resolve(__dirname, '..'),
+    encoding: 'utf8',
+  });
+
+  assert.equal(result.status, 0, result.stderr || 'Writer contract was not found');
+  assert.deepEqual(JSON.parse(result.stdout), {
+    slug: 'aipass5',
+    run_id: '20260731-213927',
+  });
 });
