@@ -30,4 +30,4 @@
 
 - [x] live cron/launchdが全disabledのまま、正本workerにconnpass capabilityがないことを再確認する。
 - [x] O1B-11完了、残数126件へspecを更新する。
-- [ ] 回帰、commit、pushを完了する。
+- [x] 回帰、commit、pushを完了する。
