@@ -79,7 +79,7 @@
 
   Run `plutil -lint`、`bash -n`、`docker compose ... config --quiet` and targeted Node tests。
 
-- [ ] **Step 5: Commit and push**
+- [x] **Step 5: Commit and push**
 
   Commit wiring only, then push `main`。
 
@@ -93,19 +93,19 @@
 - Consumes: installed launchd job、running local worker、Telegram target。
 - Produces: before/alert/recovery health observations、Telegram message IDs、launchd state、timestamps。
 
-- [ ] **Step 1: Deploy without losing existing state**
+- [x] **Step 1: Deploy without losing existing state**
 
   Rebuild only current runtime services using base compose + existing Honne shadow override + Connector overlay. Verify worker health includes `outbound.event.apply` and fresh `last_poll_at`。
 
-- [ ] **Step 2: Install and verify Guardian**
+- [x] **Step 2: Install and verify Guardian**
 
   Install the launchd plist with the local Dais Telegram target. Kick once while healthy and prove no false alert。
 
-- [ ] **Step 3: Force one real stop**
+- [x] **Step 3: Force one real stop**
 
   Stop exactly `life-manager-local-worker-1`, immediately run Guardian, and capture the unhealthy verdict and alert message ID。
 
-- [ ] **Step 4: Verify autonomous recovery**
+- [x] **Step 4: Verify autonomous recovery**
 
   Prove the worker container is running, `/health` is 200 with fresh poll, recovery Telegram has a positive message ID, and incident state is cleared。
 
