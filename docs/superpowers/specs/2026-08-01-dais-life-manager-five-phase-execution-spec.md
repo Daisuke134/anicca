@@ -850,6 +850,22 @@ outbound 219件、runtime-up 33件、shell/Node syntax、Railway migration・run
 `docs/evidence/funding/2026-08-02-o1c14-funder-program-discovery.json`。残作業は98件。
 次はO1C-15で、deadline、location、solo可否、terms、eligibilityを提出当日に再検証する。
 
+完了: `O1C-15`。formを開く前に、同じTokyo日のcurrent official sourceと
+`application-kit://KIT.md`をattemptへ束縛し、deadline、location、solo可否、terms、eligibilityの5項目すべてに
+agent judgmentとexact evidence excerptを要求するgateを追加した。deterministic boundaryは6時間freshness、content/KIT hash、
+official root/link、全source accounting、registry identityと既知fact drift、deadline instantを検証する。closed deadline、solo no/unknown、
+eligibility unknown/ineligible、既知registry factとの矛盾は`submit_allowed=false`。raw page/KITは保存せずhashだけを
+tenant/attempt-bound append-only ledgerへ保存する。CloakBrowser funder pageとactive `apply-to-funder` form fillerもallow gateなしでは
+browser access前に拒否し、missing gateはexit 11とした。live SPC gate
+`funder-day-gate:edc222186fd0b19f5660c84a02789a16d5a6a139b65314e37d29decf9cc925b8`は2026-08-02 Tokyo日に
+deadline 2026-08-03T06:59Z、SF/NYC/Bangalore、solo yes、terms hash、eligibleをofficial sourceとcurrent KITから検証して
+Railwayへ1行保存したが、Submitは実行していない。fresh verificationはfocused gate 4件、gate+browser 12件、outbound 223件、
+runtime-up 33件、active script syntax/refusal、Railway migration/readback、diff checkが全成功。実装commit `494af9277`はremoteへpush済み。
+設計: `docs/superpowers/specs/2026-08-02-o1c15-submission-day-verification-design.md`。実装plan:
+`docs/superpowers/plans/2026-08-02-connector-o1c15-submission-day-verification.md`。実測証拠:
+`docs/evidence/funding/2026-08-02-o1c15-submission-day-verification.json`。残作業は97件。
+次はO1C-16で、会社facts、traction、MRR、deck、videoのfreshness gateを実装する。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
@@ -1064,7 +1080,7 @@ agentが本文と履歴を読んで判断し、keyword/regexの固定分類へ�
 - [x] O1C-12 meetingをCalendarへ登録し面談資料を生成
 - [x] O1C-13 全form送信を既存CloakBrowser daily-driverで行い、新browserを起動しない
 - [x] O1C-14 公式program pageを毎日探索し、固定list外の新規募集をregistryへ追加
-- [ ] O1C-15 deadline、location、solo可否、terms、eligibilityを提出当日に再検証
+- [x] O1C-15 deadline、location、solo可否、terms、eligibilityを提出当日に再検証
 - [ ] O1C-16 会社facts、traction、MRR、deck、videoのfreshness gateを実装
 - [ ] O1C-17 `gog`でconfirmation/replyをthread ID単位に取得し、Job Hunter ledgerへ統合
 - [ ] O1C-18 application→confirmation→interview→offer/reject→fundedのfunnelをWebへ投影

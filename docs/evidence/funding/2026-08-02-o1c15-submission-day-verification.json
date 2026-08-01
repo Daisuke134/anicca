@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "objective": "O1C-15",
+  "observed_at": "2026-08-01T19:00:37Z",
+  "implementation_commit": "494af9277",
+  "live_gate": {
+    "gate_id": "funder-day-gate:edc222186fd0b19f5660c84a02789a16d5a6a139b65314e37d29decf9cc925b8",
+    "attempt_id": "2ced0f00-83d3-4adb-bd56-c0c83dfdbb56",
+    "registry_id": "funder-registry:2f9e235d19eeed32d53e0c719265a294d5e511bff722d58eac661c8a3b225c88",
+    "funder_id": "spc-founder-fellowship-f26",
+    "tokyo_day": "2026-08-02",
+    "decision": "allow",
+    "submit_allowed": true,
+    "deadline_status": "open",
+    "deadline_at": "2026-08-03T06:59:00.000Z",
+    "location": "San Francisco / New York City / Bangalore",
+    "solo_allowed": "yes",
+    "eligibility": "eligible",
+    "terms_hash": "bac511c2a20ed12d39afde689f1d8780a3d1f514697478de94dc2a3fbc64e01d",
+    "application_submitted": false
+  },
+  "provenance": {
+    "official_source_url": "https://www.southparkcommons.com/news/f26-founder-fellowship",
+    "official_source_fetched_at": "2026-08-01T18:41:44.002Z",
+    "official_source_sha256": "28dcebdf6cdc7cf5a15e810712540377bac69157d015b91cd0eb58cd56cf1e08",
+    "official_link_count": 25,
+    "kit_ref": "application-kit://KIT.md",
+    "kit_content_sha256": "2043315e1b5690099af95d56cb88668995afa209687ed91193f14c57704a35b0",
+    "five_exact_evidence_hashes_present": true,
+    "raw_page_or_kit_persisted": false
+  },
+  "active_form_boundary": {
+    "script": "/Users/anicca/.openclaw/skills/apply-to-funder/scripts/lib/form_filler.sh",
+    "script_sha256": "3aac6fac8218d44f424b663f2dc1af2f44a65b1f8427c7bc3e1d942dc253f5d6",
+    "missing_gate_exit_code": 11,
+    "browser_access_before_gate": false
+  },
+  "persistence": {
+    "railway_migration": "applied",
+    "live_gate_rows": 1,
+    "append_only": true,
+    "tenant_attempt_bound": true,
+    "rls_enabled": true,
+    "public_privileges_revoked": true
+  },
+  "verification": {
+    "red": "focused suite initially failed because funder-submission-day.js did not exist; browser boundary RED failed before the new gate argument existed",
+    "focused_gate_tests": "4/4 pass",
+    "focused_gate_and_browser_tests": "12/12 pass",
+    "outbound_tests": "223/223 pass",
+    "runtime_up_tests": "33/33 pass",
+    "active_script_syntax_and_missing_gate_refusal": "pass",
+    "railway_live_readback": "pass",
+    "git_diff_check": "pass"
+  },
+  "claim_boundary": "This proves that the current SPC facts and current application-kit can produce one same-day immutable allow receipt and that active form access refuses a missing receipt. No SPC application was submitted. O1C-16 owns company-fact and asset freshness, and later action/receipt items own submission."
+}
