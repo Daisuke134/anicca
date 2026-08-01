@@ -46,10 +46,10 @@
 
 **Files:** add purchase-model/value-metric experiment contract and event types/tests.
 
-- [ ] Support `subscription`, `usage`, `one_time`, and `hybrid` proposals without hardcoded price points.
-- [ ] Require renewal reason for subscription, metered unit for usage, bounded deliverable for one-time, and both for hybrid.
-- [ ] Calculate projected and observed contribution after platform fees and recorded model/tool cost.
-- [ ] Activate one highest-evidence bounded experiment and record success/stop observables.
+- [x] Support `subscription`, `usage`, `one_time`, and `hybrid` proposals without hardcoded price points.
+- [x] Require renewal reason for subscription, metered unit for usage, bounded deliverable for one-time, and both for hybrid.
+- [x] Calculate projected and observed contribution after platform fees and recorded model/tool cost.
+- [x] Activate one highest-evidence bounded experiment and record success/stop observables.
 
 ### Task 6: Verified handoff, reporting, and P3 production closure
 
