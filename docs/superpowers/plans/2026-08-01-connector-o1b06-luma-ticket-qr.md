@@ -15,8 +15,12 @@
 
 ### Task 1: Provider ticket inspection
 
-- [ ] 既存CloakBrowser `:9222`の同一sessionで`マイチケット`を開く。
-- [ ] provider生成QRの有無と取得可能なartifact形を、secretを表示せず実測する。
+- [x] 既存CloakBrowser `:9222`の同一sessionで`マイチケット`を開く。
+- [x] provider生成QRの有無と取得可能なartifact形を、secretを表示せず実測する。
+
+実測: Lumaは200×200 SVGの公式QRを表示する。decode payloadはイベントURLではなく
+`https://luma.com/check-in/<opaque>?pk=<guest key>`で、確認mail内guest keyとSHA-256が一致した。
+したがって旧specの「event URLを自前QR化」は採用せず、公式SVGをPNG captureして検証する。
 
 ### Task 2: Exact extraction and QR artifact
 
