@@ -260,6 +260,13 @@ connpass subdomainについても`~/.openclaw`配備版は検索結果のURLを�
 `life-manager`へTDDで置き、E3 verifierと旧配備監査を同じ契約へ揃える。実装plan:
 `docs/superpowers/plans/2026-08-01-connector-o1b02-canonical-event-url.md`。
 
+O1B-02進捗1: `life-manager`正本にprovider非依存のcanonical event URL境界をTDDで追加した。
+REDはmodule不存在で失敗した。GREENではHTTPS・credentialなし・一回性URL拒否を共通化し、connpassは
+検索結果のgroup subdomainとevent IDを保持したまま末尾slashへ正規化し、tracking queryとfragmentを
+除去する。E3 verifierもこの境界へ接続し、正規化後のgroup URLへredirectなしHEADを行う。freshの
+canonical/E3 9件とoutbound全体36件を通してから実装commitを作る。次は配備版と古いvendor copyの
+回帰監査。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。

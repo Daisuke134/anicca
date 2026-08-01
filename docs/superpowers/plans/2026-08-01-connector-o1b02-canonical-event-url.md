@@ -28,10 +28,10 @@
 - Modify: `apps/life-manager/lib/outbound-evidence.js`
 - Modify: `apps/life-manager/package.json`
 
-- [ ] connpass group subdomain保持、末尾slash、fragment除去、一回性URL拒否のRED testを書く。
-- [ ] 最小canonicalizerを実装しGREENにする。
-- [ ] E3 verifierを同じcanonicalizerへ接続しoutbound回帰testを通す。
-- [ ] Commit and push.
+- [x] connpass group subdomain保持、末尾slash、fragment除去、一回性URL拒否のRED testを書く。
+- [x] 最小canonicalizerを実装しGREENにする。
+- [x] E3 verifierを同じcanonicalizerへ接続しoutbound回帰testを通す。
+- [x] Commit and push.
 
 ### Task 2: Deployed legacy regression audit
 
