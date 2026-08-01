@@ -6,11 +6,17 @@
 // per-user budget, and `tenant timeout 90000ms` named the user but never the organ that ate it.
 // runOrgan is that missing measurement, and it keeps the existing swallow-and-continue contract.
 
-async function runOrgan({ label, uid, run, log, now }) {
-  // `log` defaults rather than being required: this wrapper's entire job is to never take down its
-  // caller, and a missing logger would otherwise throw from the catch block and propagate — the
-  // exact failure the wrapper exists to prevent.
+async function runOrgan({ label, uid, run, log, logError, now }) {
+  // `log`/`logError` default rather than being required: this wrapper's entire job is to never take
+  // down its caller, and a missing logger would otherwise throw from the catch block and propagate —
+  // the exact failure the wrapper exists to prevent.
+  //
+  // A FAILURE GOES TO stderr, A SUCCESS DOES NOT. Every organ's own catch block used console.error
+  // before this wrapper existed; routing both outcomes through one `log` quietly demoted organ
+  // failures to stdout, so anything watching stderr saw nothing when an organ broke. Measuring how
+  // long an organ took must not cost the ability to notice that it died.
   const write = log || console.log;
+  const writeError = logError || console.error;
   const clock = now || Date.now;
   const started = clock();
   const who = `uid=${String(uid || "?").slice(0, 12)}`;
@@ -19,7 +25,7 @@ async function runOrgan({ label, uid, run, log, now }) {
     write(`[${label}] ${who} ms=${clock() - started}`);
     return value;
   } catch (e) {
-    write(`[${label}] ${who} ms=${clock() - started} err ${e && e.message}`);
+    writeError(`[${label}] ${who} ms=${clock() - started} err ${e && e.message}`);
     return null;
   }
 }
