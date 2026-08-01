@@ -1292,6 +1292,12 @@ O1B-25進捗16（既存route再利用 / launchd配備 RED→GREEN）: 実環境�
 埋め込まず既存OpenClaw envをboot時に読むlaunchd installerを追加。route/HTTP/install focused 6/6成功し、
 常設Connector testへ登録した。次は実launchdをloadし、Docker clientからreadbackする。
 
+O1B-25進捗17（host bridge LIVE）: `ai.anicca.life-manager-connector-host-bridge`を実launchdへinstallし、
+state=running、`127.0.0.1:18793`のnode listenerを確認した。owner-only tokenを値非表示で用い、host内Calendar
+readbackはHTTP 200 / 5 calendars、既存Docker workerから`host.docker.internal`経由の同じ認証readbackも
+HTTP 200 / 5 calendars。証拠は`docs/evidence/connector/2026-08-02-host-bridge-live.json`。次はDocker workerで
+coverage serviceを実assemblyし、capabilityと初回jobを配備する。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
