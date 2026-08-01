@@ -16,4 +16,4 @@
 
 ### Task 3: Daily runtime
 - [x] Commit official seed sources and install one 06:30 Asia/Tokyo OpenClaw discovery job.
-- [ ] Run live source readback, record evidence, mark O1C-14, count 98 remaining, push, and verify remote equality.
+- [x] Run live source readback, record evidence, mark O1C-14, count 98 remaining, push, and verify remote equality.
