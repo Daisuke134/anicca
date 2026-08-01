@@ -33,21 +33,21 @@
 - Produces: `startRuntimeLeaseHeartbeat(input, dependencies)` returning `{ stop(): Promise<void> }`
 - `executeCapabilityJob(job, services)` starts heartbeat before adapter execution and stops it before completion/failure mutation.
 
-- [ ] **Step 1: failing heartbeat testsを書く**
+- [x] **Step 1: failing heartbeat testsを書く**
 
   `runtime-lease-heartbeat.test.js`へ、制御可能なtimerで一回pulseさせた時に正確なtenant/job/attempt/worker/leaseが既存`heartbeatJob`へ渡ること、同時pulseが直列化されること、`stop()`がtimerを解除し最後のpulseを待つことを書く。`runtime-up.test.js`へ、外部効果handler実行中のheartbeat失敗を`unknownEffect=true`として`failJob`へ渡すtestを書く。
 
-- [ ] **Step 2: REDを確認する**
+- [x] **Step 2: REDを確認する**
 
   Run: `node --test lib/runtime-lease-heartbeat.test.js scripts/runtime-up.test.js`
 
   Expected: `Cannot find module './runtime-lease-heartbeat.js'`または未接続heartbeat assertionでFAIL。
 
-- [ ] **Step 3: 最小実装を書く**
+- [x] **Step 3: 最小実装を書く**
 
   `startRuntimeLeaseHeartbeat`は固定machine identityだけを扱い、intervalは`leaseSeconds * 1000 / 3`、最小1000msとする。pulseはpromise chainで直列化し、最初の失敗を保存する。`stop()`はinterval解除後にin-flight pulseを待ち、保存した失敗をthrowする。`runtime-up.js`のproduction workerは既存`heartbeatJob`と同じlease秒を`executeCapabilityJob`へ渡す。
 
-- [ ] **Step 4: GREENとworker回帰testを確認する**
+- [x] **Step 4: GREENとworker回帰testを確認する**
 
   Run: `node --test lib/runtime-lease-heartbeat.test.js scripts/runtime-up.test.js`
 
@@ -66,22 +66,22 @@
 - Consumes: `outbound.event.apply` job contract and existing SQL functions `claim_lm_runtime_jobs`、`heartbeat_lm_runtime_job`、`fail_lm_runtime_job`
 - Produces: one reproducible integration proof that a duplicate enqueue stays one row and bounded known-before-submit failures end in `dead_letter`.
 
-- [ ] **Step 1: Connector lifecycle characterizationを追加する**
+- [x] **Step 1: Connector lifecycle characterizationを追加する**
 
   integration scriptに`outbound.event.apply`、`effect_class=publish`、安定effect key、`max_attempts=2`のjobを二回enqueueし、一行だけになることを要求する。claim後heartbeatが同じattemptを維持し、`unknown_effect=false`の失敗一回目が`queued`、二回目が`dead_letter`、failed receiptが二行になることを要求する。
 
-- [ ] **Step 2: 既存SQL protocolでlifecycleを実測する**
+- [x] **Step 2: 既存SQL protocolでlifecycleを実測する**
 
   Run: `npm run test:runtime-job:postgres`
 
   Expected: Connector固有scenarioを含めてPASS。ここは既存SQL state machineのcharacterizationであり、
   production変更のTDD REDはTask 1で実施する。
 
-- [ ] **Step 3: lifecycle wiringを完成する**
+- [x] **Step 3: lifecycle wiringを完成する**
 
   新しいtable/functionを作らず、既存SQL APIだけでConnector scenarioを通す。packageの`test:outbound`へheartbeat unit testを追加し、正本specへ実行証拠を記録する。
 
-- [ ] **Step 4: fresh verificationを実行する**
+- [x] **Step 4: fresh verificationを実行する**
 
   Run: `npm run test:outbound && npm run test:runtime-up && npm run test:runtime-job:postgres && git diff --check`
 
