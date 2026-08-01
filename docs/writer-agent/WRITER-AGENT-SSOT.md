@@ -803,6 +803,21 @@ schedules or future data.
 | 27 | $1M | Autonomously scale cloud/network distribution and retention to $1M MRR | Active recurring receipts, staged-promotion receipts, bounded spend, rollback proof | TODO |
 | 28 | $10M | Reach $100M network GMV at 10% fee, or another fully receipted equivalent, through the autonomous scale controller | $10M active recurring receipts; no internal/self payments; no routine human operation; legal/KYC exceptions explicit | TODO |
 
+Task 14 cumulative implementation update (`fe215fc`): promotion now publishes
+the content-addressed candidate into the existing daily `strategy_runtime`
+active manifest. The next wrapper verifies and records that hash before
+generation; the Writer reads the immutable strategy and applies it to both
+languages; and a separate worker requires the exact experiment, strategy hash,
+changed field, byte-present JA/EN excerpts, and both frozen article hashes
+before creating a production-consumption receipt. Repeated recording is
+idempotent. A completed assignment rolls into the next experiment without
+deleting evidence, the next baseline accumulates prior active rules, and a
+later KEEP may supersede the previous strategy only after production-consumption
+proof while retaining rollback history. The complete Writer suite now passes
+`636 passed`. This proves the executable contract, not a real KEEP result; the
+real-provider replay, matched published canary, same-age external measurements,
+decision, and later production consumption remain required for Task 14 DONE.
+
 ### 9.1 Task 13 production receipt — 2026-08-02 JST
 
 The writing itself is the product. No template, course, checklist, or separate
