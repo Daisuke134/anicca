@@ -114,6 +114,7 @@ async function routeCallbackData(data, handlers = {}, log = console.log) {
   if (prefix === "payout" && typeof handlers.payout === "function") return handlers.payout(data);
   if (prefix === "diet" && typeof handlers.diet === "function") return handlers.diet(data);
   if (prefix === "precepts" && typeof handlers.precepts === "function") return handlers.precepts(data);
+  if (prefix === "depart" && typeof handlers.depart === "function") return handlers.depart(data);
   log(`[telegram] ignoring unknown callback prefix: ${String(data || "").slice(0, 40)}`);
   return { ignored: true };
 }

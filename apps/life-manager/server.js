@@ -59,6 +59,7 @@ const { mailAvailable } = require("./lib/mail-availability.js");
 const {
   markAnswered, applyAmdDetection, applyTestCallDetection, upsertLiveLocation,
 } = require("./lib/late-notice.js");
+const { handleDepartureCallback } = require("./lib/departure-nudge.js");
 const { handleDiscoveryCallback } = require("./lib/feature-discovery.js");
 const { handlePayoutCallback } = require("./lib/payout-question.js");
 const { handleDietCallback } = require("./lib/diet-runtime.js");
@@ -490,6 +491,27 @@ const server = http.createServer((req, res) => {
                   supaUrl: SUPA_URL, supaKey: SUPA_KEY, composioKey: COMPOSIO_KEY,
                   gmailAccountId: row && row.gmail_account_id,
                 });
+              }, depart: async (data) => {
+                // §5.2.1 の [了解] — the primary stop for the departure ladder. The row lookup IS the
+                // tenant boundary: callback_data carries only the event start (D7), so the uid can
+                // only come from the chat that tapped, never from the payload.
+                const row = await rowByChatId(u.chatId, SUPA_URL, SUPA_KEY);
+                const outcome = await handleDepartureCallback(data, {
+                  uid: row && row.uid, chatId: u.chatId, actorId: u.userId,
+                  // CB-1 (§10.0-15 ①): the handler edits the tapped rung into its answered state,
+                  // which needs the bot token and the original text. No follow-up message — the
+                  // ladder going quiet IS the response, and another message would undo the tap.
+                  token: LM_TG_TOKEN, messageId: u.messageId, messageText: u.messageText,
+                  lang: row && row.call_language,
+                  supaUrl: SUPA_URL, supaKey: SUPA_KEY,
+                });
+                // ok and matched logged apart, the distinction 2a established: matched=0 is a second
+                // tap on an already-stopped ladder, ok=false is a write that never landed — and a
+                // ladder we believe we stopped but did not is the one failure that keeps pushing.
+                if (outcome && outcome.handled) {
+                  console.log(`[nudge] callback ack ok=${outcome.ok} matched=${outcome.matched}${outcome.error ? ` error=${outcome.error}` : ""}`);
+                }
+                return outcome;
               }, gmail: async (data) => {
                 const row = await rowByChatId(u.chatId, SUPA_URL, SUPA_KEY);
                 return handleGmailCallback(data, row, {

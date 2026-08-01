@@ -13,6 +13,7 @@
 // unique constraint, restated for a value that only ever decreases.
 
 const { clockLabel, escapeHtml } = require("./i18n.js");
+const { reflectAnswer } = require("./telegram-callback-visibility.js");
 
 // The rungs, in minutes from DEPARTURE (positive = before, negative = after) — §5.2.1's ladder
 // verbatim. Separate from scheduler.js' WAKE_LEVELS on purpose (D2): the phone is opt-in extra now,
@@ -290,7 +291,43 @@ async function releaseNudgeLevel(uid, eventKey, levelMin, opts = {}) {
   return { ok: true, matched: rows.length };
 }
 
+// The [了解] tap — §5.2.1's primary stop condition, and therefore the one path here whose failure
+// turns the product into harassment. Shaped like handleAskCallback (lib/ask.js:544): verify the
+// scope, write, then reflect the tap onto the message so the button cannot be pressed into silence.
+//
+// ★ The uid comes from OPTS — the chat that tapped — and never from the callback data ★. D7 keeps
+// uid out of the payload for the 64-byte limit, and that constraint turns out to be the security
+// property too: the event key is assembled from a uid this process looked up, so two users with a
+// 09:00 meeting tap two different rows and neither can address the other's.
+async function handleDepartureCallback(data, opts = {}) {
+  const match = String(data || "").match(/^depart:ack:(.+)$/);
+  if (!match) return { ok: false, ignored: true };
+  const startIso = match[1];
+  const chatId = String(opts.chatId || "");
+  const actorId = String(opts.actorId || "");
+  // Same scope check the ask callback uses: in a private chat the tapper's user id IS the chat id,
+  // so a mismatch means the tap did not come from the person this ladder belongs to.
+  if (!opts.uid || !chatId || !actorId || actorId !== chatId || !opts.supaUrl || !opts.supaKey) {
+    return { ok: false, reason: "callback scope mismatch" };
+  }
+
+  const eventKey = `${opts.uid}|${startIso}`;
+  const result = await ackNudge(opts.uid, eventKey, NUDGE_ACK_REASONS.TAP, opts);
+  // Best-effort, and deliberately AFTER the write: the stop is already persisted, so a Telegram
+  // outage here costs the visual confirmation, never the stop itself.
+  if (opts.token && chatId && opts.messageId) {
+    await (opts.reflectAnswer || reflectAnswer)({
+      token: opts.token, chatId, messageId: opts.messageId, messageText: opts.messageText,
+      label: (opts.lang === "en" ? NUDGE_COPY.en : NUDGE_COPY.ja).ack,
+      fetchImpl: opts.fetchImpl,
+    });
+  }
+  // matched === 0 is not a failure: it is a second tap on a ladder that already stopped, which is
+  // exactly what the latch is for. The caller logs ok and matched separately.
+  return { ok: result.ok, handled: true, matched: result.matched, eventKey, error: result.error };
+}
+
 module.exports = {
   NUDGE_LEVELS, NUDGE_ACK_REASONS, claimNudgeLevel, ackNudge, releaseNudgeLevel,
-  buildNudgeMessage, departureCallbackData,
+  buildNudgeMessage, departureCallbackData, handleDepartureCallback,
 };
