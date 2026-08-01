@@ -1076,6 +1076,11 @@ O1B-23進捗2（transport GREEN / inventory RED）: `listCalendarsRaw`を`--all`
 正規化し、transparent/cancelledを除外、provider failure・未知calendar・重複・壊れた時刻をfail closedにする
 3 testを追加した。production inventory module不存在のため期待どおり失敗する段階である。
 
+O1B-23進捗3（inventory GREEN）: 全calendarを一度列挙し、全page eventsのCalendarIDが列挙集合に属する
+ことを検証するcontent-addressed busy inventoryを実装した。timedとall-dayを保持し、transparent/cancelledを
+busyから除外する。calendar ID、event ID、予定名、場所はsnapshotへ出さずopaque hash refだけを保持する。
+provider failureは空予定へ変換しない。transport + inventory focused 17/17成功。次は移動込みcandidate gate。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
