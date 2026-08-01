@@ -15,6 +15,13 @@ const RECOVER = new Set([
 ]);
 const EVENT_REF = /^luma-event:\/\/event\/[A-Za-z0-9_-]+$/;
 const RECEIPT_REF = /^provider-receipt:\/\/luma\/[A-Za-z0-9._:~-]+$/;
+const VERIFIED = new WeakSet();
+
+function verified(value) {
+  const result = Object.freeze(value);
+  VERIFIED.add(result);
+  return result;
+}
 
 function validCandidate(candidate) {
   if (!candidate || typeof candidate !== "object") return false;
@@ -44,7 +51,7 @@ async function runLumaCandidateSequence(options = {}) {
     try {
       outcome = await attempt(candidate);
     } catch {
-      return Object.freeze({
+      return verified({
         status: "recovery_required",
         reason: "adapter_failure",
         candidate,
@@ -55,7 +62,7 @@ async function runLumaCandidateSequence(options = {}) {
     if (status === "verified_registered" && RECEIPT_REF.test(
       String(outcome.receipt_ref || ""),
     )) {
-      return Object.freeze({
+      return verified({
         status: "booked",
         candidate,
         receipt_ref: String(outcome.receipt_ref),
@@ -67,27 +74,32 @@ async function runLumaCandidateSequence(options = {}) {
       continue;
     }
     if (RECOVER.has(status)) {
-      return Object.freeze({
+      return verified({
         status: "recovery_required",
         reason: status,
         candidate,
         skipped: Object.freeze([...skipped]),
       });
     }
-    return Object.freeze({
+    return verified({
       status: "reconciliation_required",
       reason: status === "unknown_effect" ? "unknown_effect" : "unverified_result",
       candidate,
       skipped: Object.freeze([...skipped]),
     });
   }
-  return Object.freeze({
+  return verified({
     status: "next_provider_required",
     reason: "luma_candidates_exhausted",
     skipped: Object.freeze([...skipped]),
   });
 }
 
+function isVerifiedLumaCandidateSequence(value) {
+  return Boolean(value && typeof value === "object" && VERIFIED.has(value));
+}
+
 module.exports = {
+  isVerifiedLumaCandidateSequence,
   runLumaCandidateSequence,
 };

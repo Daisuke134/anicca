@@ -46,6 +46,22 @@ test("the pack gives discovery and RSVP one auth-aware daily-driver", async () =
       calls.push(["goal-serendipity", input, options]);
       return "goal-serendipity";
     },
+    createSourceCapabilities(input) {
+      calls.push(["source-capabilities", input]);
+      return "source-capabilities";
+    },
+    planSourceHandoff(input) {
+      calls.push(["source-handoff-plan", input]);
+      return "source-handoff-plan";
+    },
+    executeSourceHandoff(input) {
+      calls.push(["source-handoff-execute", input]);
+      return "source-handoff-result";
+    },
+    createConnpassClient(input) {
+      calls.push(["connpass-client", input]);
+      return "connpass-client";
+    },
   });
 
   assert.deepEqual(await pack.discoverTokyo(), {
@@ -59,11 +75,15 @@ test("the pack gives discovery and RSVP one auth-aware daily-driver", async () =
   assert.equal(await pack.evaluateDateGoals(
     "date-inventory", "preference-ranking", "Dais goals", { apiKey: "fixture" },
   ), "goal-serendipity");
+  assert.equal(await pack.handoffEventSource(
+    "2026-08-05", "luma-exhaustion", { connpassApiKey: "fixture-secret-api-key-1234567890" },
+  ), "source-handoff-result");
   assert.equal(await pack.provider.submitRegistration({}), "registered");
   assert.equal(calls[1][1], calls[2][1]);
   assert.equal(calls[2][1], calls[3][1]);
   assert.deepEqual(calls.slice(4).map((call) => call[0]), [
     "date-inventory", "discover", "inspect", "rank-preferences", "goal-serendipity",
+    "source-capabilities", "source-handoff-plan", "connpass-client", "source-handoff-execute",
   ]);
   assert.deepEqual(calls.at(-2)[1], {
     dateInventory: "date-inventory",
@@ -71,10 +91,36 @@ test("the pack gives discovery and RSVP one auth-aware daily-driver", async () =
     preferences: "AIを優先し全候補を残す",
   });
   assert.deepEqual(calls.at(-1)[1], {
-    dateInventory: "date-inventory",
-    preferenceRanking: "preference-ranking",
-    goals: "Dais goals",
+    plan: "source-handoff-plan",
+    connpassClient: "connpass-client",
   });
+  assert.deepEqual(calls.at(-4)[1], { connpassApiKey: "fixture-secret-api-key-1234567890" });
+  assert.deepEqual(calls.at(-3)[1], {
+    date: "2026-08-05",
+    lumaOutcome: "luma-exhaustion",
+    capabilities: "source-capabilities",
+  });
+  assert.deepEqual(calls.at(-2)[1], { apiKey: "fixture-secret-api-key-1234567890" });
+});
+
+test("source handoff with no connpass key never constructs an API client", async () => {
+  let clientCreated = false;
+  const pack = createConnectorEventsPack({
+    dailyDriver: { withLumaPage: async () => {} },
+    auth: { ensureAuthenticated: async () => ({ status: "authenticated" }) },
+    evidenceStore: { record: async () => {} },
+    createAuthAwareDriver: () => ({ withLumaPage: async () => {} }),
+    createProvider: () => ({ inspectRegistration: async () => {}, submitRegistration: async () => {} }),
+    createSourceCapabilities: () => "missing-key-capabilities",
+    planSourceHandoff: () => "missing-key-plan",
+    createConnpassClient() { clientCreated = true; },
+    executeSourceHandoff(input) {
+      assert.deepEqual(input, { plan: "missing-key-plan", connpassClient: undefined });
+      return "open";
+    },
+  });
+  assert.equal(await pack.handoffEventSource("2026-08-05", "exhausted", { connpassApiKey: "" }), "open");
+  assert.equal(clientCreated, false);
 });
 
 test("pack construction fails closed without auth, driver, or evidence store", () => {
