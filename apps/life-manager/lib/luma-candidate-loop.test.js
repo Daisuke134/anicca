@@ -4,6 +4,7 @@ const assert = require("node:assert/strict");
 const test = require("node:test");
 
 const {
+  isVerifiedLumaCandidateSequence,
   runLumaCandidateSequence,
 } = require("./luma-candidate-loop.js");
 
@@ -29,6 +30,8 @@ test("continues to the next same-day candidate until registration is verified", 
   });
 
   assert.equal(result.status, "booked");
+  assert.equal(isVerifiedLumaCandidateSequence(result), true);
+  assert.equal(isVerifiedLumaCandidateSequence(structuredClone(result)), false);
   assert.equal(result.candidate.event_ref, candidates[2].event_ref);
   assert.equal(result.receipt_ref, "provider-receipt://luma/guest-c");
   assert.deepEqual(calls, candidates.map(({ event_ref }) => event_ref));

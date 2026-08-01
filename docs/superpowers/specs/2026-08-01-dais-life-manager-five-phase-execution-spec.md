@@ -1006,6 +1006,12 @@ value 0件。公式v2はkey必須のGET discoveryだけに使い、API外access�
 `docs/superpowers/specs/2026-08-02-connector-o1b20-source-handoff-design.md`。実装plan:
 `docs/superpowers/plans/2026-08-02-connector-o1b20-source-handoff.md`。
 
+O1B-20進捗1（RED）: Luma exhaustionとsource capabilityへin-process provenanceを要求し、key未配備時は
+network 0、key配備時もconnpass公式v2の全page GET discoveryだけ、候補はadvisory-only、registrationと
+coverage creditは常に禁止、source error・empty inventoryでもdateは`open`のままLuma再探索へ戻す契約を
+5 testで定義した。production handoff moduleとLuma provenance verifierが未実装のため2件が期待どおり
+失敗し、既存3件は成功した。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
