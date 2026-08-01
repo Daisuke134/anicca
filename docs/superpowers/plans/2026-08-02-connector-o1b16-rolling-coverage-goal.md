@@ -30,11 +30,11 @@
 - Consumes: `{tenantId,timeZone,now,resolvedDays}`
 - Produces: `buildRollingEventCoverage(input)`
 
-- [ ] **Step 1: RED testを書く**
+- [x] **Step 1: RED testを書く**
 
 JST today〜+20、New York DST、翌日slide、default open、resolved evidence、conflict/out-of-window/secret拒否をliteral fixtureで固定する。
 
-- [ ] **Step 2: REDを確認する**
+- [x] **Step 2: REDを確認する**
 
 Run: `node --test lib/rolling-event-coverage.test.js`
 Expected: module path不存在でFAIL。
