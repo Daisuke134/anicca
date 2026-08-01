@@ -100,23 +100,23 @@ git commit -m "feat(connector): persist immutable talk timelines"
 - Consumes: production migrationとstore
 - Produces: rollback済みaccepted fixtureのDB証拠、未採択real talk非変更証拠
 
-- [ ] **Step 1: migrationを実runtime DBへ適用する**
+- [x] **Step 1: migrationを実runtime DBへ適用する**
 
 固定container `life-manager-local-postgres-1`へ`psql -v ON_ERROR_STOP=1`で適用する。
 
-- [ ] **Step 2: transaction fixtureを実行する**
+- [x] **Step 2: transaction fixtureを実行する**
 
 同一transactionでaccepted talk fixtureを作り、snapshot保存、current view readback、UPDATE拒否を確認してROLLBACKする。
 
-- [ ] **Step 3: real talk非捏造を確認する**
+- [x] **Step 3: real talk非捏造を確認する**
 
 `https://luma.com/p9kfepcf`のtalk entityが未採択でtimeline row 0であることをcountだけreadbackする。
 
-- [ ] **Step 4: evidence/specを更新する**
+- [x] **Step 4: evidence/specを更新する**
 
 O1B14を完了にし、次をO1B15へ更新する。raw ID、mail body、secretは記録しない。
 
-- [ ] **Step 5: final verificationとpush**
+- [x] **Step 5: final verificationとpush**
 
 ```bash
 npm run test:outbound
