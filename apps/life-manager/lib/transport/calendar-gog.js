@@ -30,6 +30,38 @@ function makeGogCalendar({ bin, account, keyring, calId = "primary", run } = {})
   return {
     kind: "gog",
     ready: () => !!acct,
+    async listCalendarsRaw({ strict } = {}) {
+      if (!acct) {
+        if (strict) throw new Error("calendar transport not ready (missing gog account)");
+        return [];
+      }
+      try {
+        const data = JSON.parse(exec(["calendar", "calendars", "-j", "--all", "--no-input"]));
+        return Array.isArray(data) ? data : (data.calendars || data.items || []);
+      } catch (error) {
+        if (strict) throw error;
+        return [];
+      }
+    },
+    async listAllEventsRaw(_uid, { timeMin, timeMax, maxResults, strict } = {}) {
+      if (!acct) {
+        if (strict) throw new Error("calendar transport not ready (missing gog account)");
+        return [];
+      }
+      const args = [
+        "calendar", "events", "--all", "-j", "--all-pages", "--no-input",
+        opt("--max", String(maxResults || 2500)),
+      ];
+      if (timeMin) args.push(opt("--from", timeMin));
+      if (timeMax) args.push(opt("--to", timeMax));
+      try {
+        const data = JSON.parse(exec(args));
+        return Array.isArray(data) ? data : (data.events || data.items || []);
+      } catch (error) {
+        if (strict) throw error;
+        return [];
+      }
+    },
     // Raw Google-Calendar-shaped items for [timeMin, timeMax]. gog --from/--to accept RFC3339 directly.
     // strict (history path): failure throws instead of masquerading as an empty calendar — see
     // calendar-composio.js listEventsRaw for the rationale. Default (wake path) swallows to [].

@@ -1071,6 +1071,11 @@ O1B-23進捗1（transport RED）: 既存`listEventsRaw`は`--all-pages`でもcal
 読む経路だった。calendar listを`--all`で終端まで読み、eventsを明示的`--all --all-pages`で読む2操作と、
 provider failureを空予定へ変換しない契約testを追加した。新method未実装のため2件が期待どおり失敗する段階。
 
+O1B-23進捗2（transport GREEN / inventory RED）: `listCalendarsRaw`を`--all`、`listAllEventsRaw`を明示的
+`--all --all-pages`で実装し14/14成功。次に全calendarのtimed/all-day busyをopaque calendar/event refだけへ
+正規化し、transparent/cancelledを除外、provider failure・未知calendar・重複・壊れた時刻をfail closedにする
+3 testを追加した。production inventory module不存在のため期待どおり失敗する段階である。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
