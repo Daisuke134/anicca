@@ -257,6 +257,7 @@ test("Connector compose overlayは応募とcoverage能力をhost bridge付きで
   assert.match(overlay, /LM_CONNECTOR_WORKER_CAPABILITIES/);
   assert.match(overlay, /outbound\.event\.apply/);
   assert.match(overlay, /connector\.coverage\.refresh/);
+  assert.match(overlay, /LM_WORKER_LEASE_SECONDS:\s*\$\{LM_CONNECTOR_WORKER_LEASE_SECONDS:-900\}/);
   assert.match(overlay, /LM_CONNECTOR_BRIDGE_URL/);
   assert.match(overlay, /LM_CONNECTOR_BRIDGE_TOKEN/);
   assert.doesNotMatch(overlay, /LIFE_HOME_ADDRESS|GOOGLE_API_KEY_DIRECTIONS|GOG_KEYRING_PASSWORD/);

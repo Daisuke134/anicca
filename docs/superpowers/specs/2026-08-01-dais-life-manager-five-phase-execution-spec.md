@@ -1394,6 +1394,14 @@ runtime-up 36/36、runtime adapter 125/125、合計409件が成功し失敗0件�
 実Luma inventoryから最も早いopen日の応募jobが1件だけ作られること、応募workerが実登録すること、Google Calendarと
 次回coverageへ同じeventが`covered_new`として戻ることを外部receiptで確認する。
 
+O1B-26進捗5（LIVE探索時間境界の真因 / lease RED→GREEN）: commit `2b224955b`、image
+`f33dcecb116f`を配備した。旧5分leaseでは、21日分のLuma候補を最後まで読み詳細を順次検証する処理が5分を超え、
+最初のheartbeat後も約6分40秒でleaseが切れて同じjobが再取得された。Luma session自体は、残存したConnector所有の
+Luma tabだけを閉じた後、read-only認証を単独実測して1.4秒で`authenticated`を確認した。他作業のbrowser tabは
+閉じていない。Connector worker overlayへ`LM_WORKER_LEASE_SECONDS=900`を固定し、完全探索に15分の実行枠を与える。
+worker crash時は同じdurable jobを15分後に回収し、外部応募effectは別jobのeffect fenceで重複を防ぐ。focused 18/18、
+Connector 241/241、runtime-up 36/36成功、失敗0件。次はcommit/push、再配備後にLIVE応募計画を再実測する。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
