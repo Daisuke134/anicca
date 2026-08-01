@@ -831,6 +831,30 @@ and candidate compute-cost observations use different currencies/units. Such a
 window remains `MEASUREMENT_INSUFFICIENT`; it cannot silently omit cost from a
 KEEP decision.
 
+Runtime commit `1755b87` wires the previously missing production measurement
+path instead of satisfying Task 14 with fixtures. The installed hourly sales
+collector now reads note's authenticated, paginated first-party endpoint
+`/api/v1/stats/pv?filter=all&page=N&sort=pv`, joins an article by exact note key
+and owner, requires the terminal page and a dashboard calculation later than
+publication, and hashes the complete page set. An absent key becomes zero only
+when every returned row has a positive `read_count`, which is the observed API
+contract; otherwise it remains unknown. The live baseline artifact
+`20260731-213927__note__ja` produced an artifact-scoped `views=0` receipt at
+note's stated calculation time `2026-08-02 05:42 JST` with receipt SHA-256
+`069a7d99ee462cba580a9dcfacbc62a68c2234b0abd59f1e670c943fee069a6c`.
+The five-minute money sync now derives only from canonical rows: verified CTA
+visits, positive external purchase receipts, currency-matched refunds and fees,
+nonnegative net received money, and the sum of real generation-attempt wall
+seconds. Its live baseline snapshot contains `qualified_cta_clicks=0`,
+`purchases=0`, `refunds_JPY=0`, `net_received_JPY=0`, and
+`compute_cost_wall_seconds=2741.860675`; price and paywall receipts were already
+present. Refund evidence is now mandatory and stale dynamic observations are
+rejected rather than treated as a completed 24-hour window. The complete Writer
+suite passes `641 passed`. This closes the production metric wiring, not the
+experiment: zero views cannot form a positive canary sample, and the real
+provider replay, matched publication, externally refreshed same-age window,
+decision, and later KEEP consumption remain required.
+
 ### 9.1 Task 13 production receipt — 2026-08-02 JST
 
 The writing itself is the product. No template, course, checklist, or separate
