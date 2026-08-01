@@ -368,6 +368,10 @@ def test_goal_monitor_reports_projection_ignores_legacy_builder_and_blocks_misma
         "CAPAFY_EVENT_EVIDENCE_DIR": str(evidence),
         "CAPAFY_EVENT_SYNC": str(fake_sync),
         "CAPAFY_EVENT_PROJECTION": str(SCRIPTS / "capafy_event_projection.py"),
+        "CAPAFY_COMPANY_DASHBOARD_BUILDER": str(
+            SCRIPTS / "build_company_dashboard.py"
+        ),
+        "CAPAFY_COMPANY_DASHBOARD_DIR": str(tmp_path / "site/company"),
         "CAPAFY_GOAL_MONITOR_TMP_DIR": str(tmp),
         "CAPAFY_TELEGRAM_SENDER": str(sender),
     }
@@ -381,6 +385,7 @@ def test_goal_monitor_reports_projection_ignores_legacy_builder_and_blocks_misma
     report = json.loads(clean.stdout)
     expected = projection.project_company(fixture_events())
     assert report["company_state"] == expected
+    assert json.loads((tmp_path / "site/company/state.json").read_text()) == expected
     assert "wrong-legacy-value" not in sent.read_text()
     assert expected["projection_id"].removeprefix("sha256:")[:12] in sent.read_text()
 

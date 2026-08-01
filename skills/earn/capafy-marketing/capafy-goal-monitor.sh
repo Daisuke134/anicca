@@ -16,6 +16,8 @@ OUTCOME_SCRIPT="$SCRIPT_DIR/scripts/capafy_outcome.py"
 TELEGRAM_SENDER="${CAPAFY_TELEGRAM_SENDER:-$SCRIPT_DIR/../../_shared/send-telegram.sh}"
 EVENT_SYNC="${CAPAFY_EVENT_SYNC:-$SCRIPT_DIR/scripts/capafy_event_sync.py}"
 EVENT_PROJECTION="${CAPAFY_EVENT_PROJECTION:-$SCRIPT_DIR/scripts/capafy_event_projection.py}"
+COMPANY_DASHBOARD_BUILDER="${CAPAFY_COMPANY_DASHBOARD_BUILDER:-$SCRIPT_DIR/scripts/build_company_dashboard.py}"
+COMPANY_DASHBOARD_DIR="${CAPAFY_COMPANY_DASHBOARD_DIR:-$SCRIPT_DIR/site/company}"
 EVENT_LEDGER="${CAPAFY_EVENT_LEDGER:-$HOME/.openclaw/state/capafy-revenue-events.jsonl}"
 EVENT_EVIDENCE_DIR="${CAPAFY_EVENT_EVIDENCE_DIR:-$HOME/.openclaw/state/capafy-revenue-evidence}"
 STATE="$HOME/.openclaw/state/capafy-goal-monitor.json"
@@ -273,6 +275,13 @@ if [ "$RC" -ne 0 ]; then
     --fingerprint goal-monitor-projection-parity-mismatch >/dev/null 2>&1 || true
   cat "$PARITY_FILE" >&2 2>/dev/null || true
   exit "$RC"
+fi
+if ! "$PY" "$COMPANY_DASHBOARD_BUILDER" \
+  --projection "$PROJECTION_FILE" --output-dir "$COMPANY_DASHBOARD_DIR" >/dev/null; then
+  "$PY" "$OUTCOME_SCRIPT" start-incident \
+    --owner company --summary "Event-backed company dashboard generation failed." \
+    --fingerprint goal-monitor-dashboard-generation-failed >/dev/null 2>&1 || true
+  exit 2
 fi
 BODY="$(cat "$BODY_FILE" 2>/dev/null)"
 # telegram daily report (best-effort; never blocks the monitor)
