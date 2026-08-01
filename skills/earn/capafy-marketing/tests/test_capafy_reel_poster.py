@@ -6,7 +6,12 @@ import pytest
 
 SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(SCRIPTS))
-from capafy_reel_poster import BrowserChallenge, PostRequest, post_reel  # noqa: E402
+from capafy_reel_poster import (  # noqa: E402
+    BrowserChallenge,
+    PostRequest,
+    post_reel,
+    resolve_active_handle,
+)
 
 
 class FakeCdp:
@@ -47,6 +52,19 @@ def media(tmp_path):
 
 def request(media, live=False, capability="publish_probe", handle="capafy.skills25042"):
     return PostRequest(media, "Exact caption", handle, 9555, "tab-1", capability, live)
+
+
+def test_active_handle_falls_back_to_exact_profile_link_when_username_input_is_absent():
+    assert resolve_active_handle(
+        None,
+        ["/explore/", "/capafy.skills25042/"],
+        "capafy.skills25042",
+    ) == "capafy.skills25042"
+
+
+def test_active_handle_refuses_foreign_profile_link_fallback():
+    with pytest.raises(RuntimeError, match="ownership evidence"):
+        resolve_active_handle(None, ["/capafy.someone-else/"], "capafy.skills25042")
 
 
 def test_dry_reaches_share_then_discards_without_clicking_share(media):

@@ -76,6 +76,25 @@ def _valid_mp4(path: Path) -> bool:
         return False
 
 
+def resolve_active_handle(
+    username_value: object,
+    profile_hrefs: list[object],
+    expected_handle: str,
+) -> str:
+    if isinstance(username_value, str) and username_value.strip():
+        return username_value.strip().lstrip("@")
+    expected = expected_handle.strip().lstrip("@").lower()
+    expected_path = f"/{expected}/"
+    for value in profile_hrefs:
+        try:
+            path = urlparse(str(value)).path
+        except ValueError:
+            continue
+        if path.lower() == expected_path:
+            return expected
+    raise RuntimeError("active account ownership evidence is unavailable")
+
+
 def post_reel(request: PostRequest, browser: BrowserAci) -> dict:
     if not _valid_mp4(request.video):
         return _result("invalid_media", "preflight", browser)
@@ -157,9 +176,12 @@ class RawCdpBrowser:
 
     def active_handle(self) -> str:
         self.cdp.navigate(self.request.tid, "https://www.instagram.com/accounts/edit/"); time.sleep(4); self._guard()
-        value = self._eval("(()=>{const e=document.querySelector('input[name=username]');return e&&e.value})()")
-        if not value: raise RuntimeError("username field unavailable")
-        return str(value)
+        evidence = self._eval("(()=>{const e=document.querySelector('input[name=username]');return {username:e&&e.value,profile_hrefs:[...document.querySelectorAll('a[href]')].map(a=>a.getAttribute('href')).filter(Boolean)}})()") or {}
+        return resolve_active_handle(
+            evidence.get("username") if isinstance(evidence, dict) else None,
+            evidence.get("profile_hrefs", []) if isinstance(evidence, dict) else [],
+            self.request.handle,
+        )
 
     def reel_urls(self) -> set[str]:
         self.cdp.navigate(self.request.tid, f"https://www.instagram.com/{self.request.handle}/reels/"); time.sleep(5); self._guard()
