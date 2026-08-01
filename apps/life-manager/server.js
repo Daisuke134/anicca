@@ -28,7 +28,7 @@ const {
   buildGeminiTurn,
   parseGeminiTranscripts,
 } = require("./lib/call-logic.js");
-const { startScheduler, startWakeLoop, startTravelLoop, startAskLoop, startOnboardLoop, startDiscoveryLoop, buildStreamUrl, langForPhone } = require("./scheduler.js");
+const { startScheduler, startWakeLoop, startTravelLoop, startAskLoop, startOnboardLoop, startDiscoveryLoop, buildStreamUrl, langForPhone, langForUser } = require("./scheduler.js");
 const { openingTurnForLang, resolveCallLang } = require("./lib/call-language.js");
 const { maybeStartLoops } = require("./lib/maybe-start-loops.js");
 const { compBootLog } = require("./lib/comp-window.js");
@@ -502,7 +502,10 @@ const server = http.createServer((req, res) => {
                   // which needs the bot token and the original text. No follow-up message — the
                   // ladder going quiet IS the response, and another message would undo the tap.
                   token: LM_TG_TOKEN, messageId: u.messageId, messageText: u.messageText,
-                  lang: row && row.call_language,
+                  // langForUser, not the raw column: it normalises and falls back to langForPhone,
+                  // and it is the SAME function the scheduler used to choose the language of the rung
+                  // this tap is answering. Two sources of truth for one question is how 2b happened.
+                  lang: langForUser(row || {}),
                   supaUrl: SUPA_URL, supaKey: SUPA_KEY,
                 });
                 // ok and matched logged apart, the distinction 2a established: matched=0 is a second

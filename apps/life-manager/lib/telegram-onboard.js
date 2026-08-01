@@ -89,7 +89,11 @@ async function sendStage(token, chatId, row, base, opts = {}) {
 
 // payout_destination rides along so the webhook can see a pending wallet-address intake (13d-a)
 // without a second round trip on every typed message.
-const SEL = "uid,name,telegram_chat_id,tg_onboard_stage,calendar_provider,gmail_account_id,gmail_skipped,email,phone,paid,payout_destination";
+// call_language rides along so a callback handler can run langForUser() on this row and reach the SAME
+// answer the scheduler did when it wrote the message being replied to. Without it langForUser falls
+// through to langForPhone, and a user whose chosen language disagrees with their phone number gets a
+// confirmation in the other language from the message it confirms.
+const SEL = "uid,name,telegram_chat_id,tg_onboard_stage,calendar_provider,gmail_account_id,gmail_skipped,email,phone,paid,payout_destination,call_language";
 async function saveField(uid, patch, supaUrl, supaKey) {
   await fetch(`${supaUrl}/rest/v1/lm_users?uid=eq.${encodeURIComponent(uid)}`, {
     method: "PATCH",

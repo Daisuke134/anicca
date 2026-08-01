@@ -189,17 +189,42 @@ test("the organ tick still respects the one switch that means 'run nothing for m
   assert.deepEqual(served, [], "daily_automation_enabled=false is the real opt-out and still holds");
 });
 
-test("the wake tick keeps its own call_enabled filter — dialing a user with no phone is nonsense", async () => {
+// Build the tick's user on top of USER without letting USER's own `call_enabled: true` leak into a
+// fixture that is meant to have NO preference at all — "the key is absent" is one of the three shapes
+// 2b had to enumerate, and a spread cannot express it.
+function asUser(u) {
+  const merged = { ...USER, ...u };
+  if (!("call_enabled" in u)) delete merged.call_enabled;
+  return merged;
+}
+
+// REWRITTEN 2026-08-02 (#2c). This used to assert that wakeTick filtered on `call_enabled`, which was
+// true when wakeCallOnce was ONLY the dial. It now also pushes the departure ladder (§5.2.1), and
+// §5.3 makes the phone-less user the DEFAULT cohort — so that filter shipped the ladder to nobody.
+// What is true now: EVERY automated user enters the tick, and only phone opt-ins are dialled.
+test("every automated user enters the wake tick, and only phone users are dialled", async () => {
+  const entered = [];
   const dialled = [];
   await wakeTick({
     listUsers: async () => [
       { uid: "has-phone", daily_automation_enabled: true, call_enabled: true },
       { uid: "no-phone", daily_automation_enabled: true, call_enabled: false },
     ],
-    wake: async (u) => { dialled.push(u.uid); },
+    // Drive the REAL wakeCallOnce and count actual placeCall hits: an entry counter alone cannot
+    // tell "everyone is served" apart from "everyone is phoned", and both regressions matter.
+    wake: async (u) => {
+      entered.push(u.uid);
+      clearEvents();
+      const h = deps();
+      await wakeCallOnce(asUser(u), DEPARTURE_MS - 5 * MINUTE, h.deps);
+      if (h.dialed.length > 0) dialled.push(u.uid);
+    },
     now: 0,
   });
-  assert.deepEqual(dialled, ["has-phone"], "the filter belongs to the dial, and stays there");
+  assert.deepEqual(entered, ["has-phone", "no-phone"],
+    "the ladder is the product for the phone-less — the tick must not filter them out (§5.3)");
+  assert.deepEqual(dialled, ["has-phone"],
+    "and the dial gate still belongs to the dial: no phone, no call");
 });
 
 // spec §5.2.1 / §5.3 — the phone is opt-IN now, not opt-out.
@@ -210,6 +235,7 @@ test("the wake tick keeps its own call_enabled filter — dialing a user with no
 // SQL NULL, and (before RUNTIME_DEFAULTS flips) a merged default of true. Only `=== true` refuses
 // all three while still honouring the person who deliberately switched calls on.
 test("a user who never asked for calls is not dialled; an explicit opt-in still is", async () => {
+  const entered = [];
   const dialled = [];
   await wakeTick({
     listUsers: async () => [
@@ -218,9 +244,19 @@ test("a user who never asked for calls is not dialled; an explicit opt-in still 
       { uid: "null-column", daily_automation_enabled: true, call_enabled: null },
       { uid: "opted-out", daily_automation_enabled: true, call_enabled: false },
     ],
-    wake: async (u) => { dialled.push(u.uid); },
+    // The three "expressed no preference" shapes are counted at the DIAL, not at the tick door:
+    // since #2c they all enter the tick to receive the Telegram ladder, and the property that must
+    // hold is that none of them is phoned.
+    wake: async (u) => {
+      entered.push(u.uid);
+      clearEvents();
+      const h = deps();
+      await wakeCallOnce(asUser(u), DEPARTURE_MS - 5 * MINUTE, h.deps);
+      if (h.dialed.length > 0) dialled.push(u.uid);
+    },
     now: 0,
   });
+  assert.equal(entered.length, 4, "all four are served by the tick — the ladder does not need a phone");
   assert.deepEqual(dialled, ["opted-in"],
     "silence is not consent to be phoned — §5.2.1 makes the phone an extra, and Telegram the default");
 });

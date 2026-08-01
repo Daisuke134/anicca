@@ -182,7 +182,18 @@ async function geocodeAddress(addr, mapsKey) {
     const u = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(addr)}&key=${mapsKey}`;
     const j = await (await fetch(u)).json();
     const loc = j && j.results && j.results[0] && j.results[0].geometry && j.results[0].geometry.location;
-    return loc ? { lat: loc.lat, lon: loc.lng } : null;
+    if (!loc) return null;
+    const geo = { lat: loc.lat, lon: loc.lng };
+    // The `.set` this function was missing: the `has` check above had no counterpart, so the memo
+    // never once prevented a geocode and every 60s tick re-billed both addresses. Found 2026-08-02
+    // while measuring #2c, which removed wakeTick's call_enabled filter and so made this path run for
+    // the whole fleet rather than only for phone users.
+    //
+    // SUCCESSES only, deliberately. Caching a transient failure for the life of the process would pin
+    // an address to "unresolvable" until the next deploy — and an address we could not resolve is
+    // exactly the one whose travel time we most need to retry on the following tick.
+    _geoMemo.set(addr, geo);
+    return geo;
   } catch { return null; }
 }
 

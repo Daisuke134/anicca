@@ -15,7 +15,7 @@ const assert = require("node:assert");
 process.env.LM_CALL_SECRET = "unit_secret";
 process.env.PUBLIC_WSS = "wss://life-call.invalid";
 
-const { wakeCallOnce, LATE_CUTOFF_MIN } = require("../scheduler.js");
+const { wakeCallOnce, wakeTick, LATE_CUTOFF_MIN } = require("../scheduler.js");
 const { NUDGE_LEVELS } = require("../lib/departure-nudge.js");
 
 const MINUTE = 60_000;
@@ -188,4 +188,58 @@ test("the phone ladder is untouched: still exactly T-10 and T-5", async () => {
   }
   assert.deepEqual(dialed, ["10", "5"], "two calls, exactly the two WAKE_LEVELS — no more, no fewer");
   assert.equal(h.sent.length, 6, "and the six Telegram rungs ran alongside them, independently (D2)");
+});
+
+// ── the cohort (§5.3) ────────────────────────────────────────────────────────────────────────────
+
+// ★ THE test this file was missing ★. Every case above calls wakeCallOnce directly — one layer BELOW
+// where the cohort is chosen — so they all stayed green while wakeTick's own `call_enabled === true`
+// filter kept the ladder from reaching a single user it was built for. §5.3 makes phone-less the
+// DEFAULT cohort, so that filter shipped the feature to nobody.
+//
+// The three shapes below are the ones 2b had to enumerate for the opposite reason: no preference row,
+// a SQL NULL column, and an explicit false. All three mean "no phone", and all three must get rungs.
+test("every automated user enters the wake tick, not just the ones with a phone", async () => {
+  const entered = [];
+  await wakeTick({
+    listUsers: async () => [
+      { uid: "no-pref-row", daily_automation_enabled: true },                      // no call_enabled at all
+      { uid: "null-column", daily_automation_enabled: true, call_enabled: null },  // SQL NULL
+      { uid: "opted-out-of-calls", daily_automation_enabled: true, call_enabled: false },
+      { uid: "caller", daily_automation_enabled: true, call_enabled: true },
+    ],
+    wake: async (u) => { entered.push(u.uid); },
+    now: 0,
+  });
+  assert.deepEqual(entered.sort(), ["caller", "no-pref-row", "null-column", "opted-out-of-calls"],
+    "the ladder is the product for phone-less users — the tick must not filter them out");
+});
+
+test("the one switch that means 'run nothing for me' still empties the tick", async () => {
+  const entered = [];
+  await wakeTick({
+    listUsers: async () => [{ uid: "opted-out", daily_automation_enabled: false, call_enabled: true }],
+    wake: async (u) => { entered.push(u.uid); },
+    now: 0,
+  });
+  assert.deepEqual(entered, [], "daily_automation_enabled=false is the real opt-out and still holds");
+});
+
+// ── budget order (§3 row 1c) ─────────────────────────────────────────────────────────────────────
+
+// scheduler.js:509 records the failure this pins: bookkeeping placed in front of placeCall "spent the
+// user's entire wake budget and the phone never rang". The ladder is up to three sequential HTTP
+// calls with no timeout of their own, so for a phone user it must run AFTER the dial. Row 1c bought
+// that 20s budget for the dial; the ladder does not get to spend it first.
+test("for a phone user the dial goes out before the ladder spends any of the budget", async () => {
+  const order = [];
+  const h = harness();
+  const caller = { ...NO_PHONE_USER, phone: "+810000000000", call_enabled: true };
+  h.deps.claimWake = async () => "claim-token";
+  h.deps.placeCall = async () => { order.push("dial"); return { ok: true, ccid: "order-1" }; };
+  const claim = h.deps.claimNudgeLevel;
+  h.deps.claimNudgeLevel = async (...args) => { order.push("nudge"); return claim(...args); };
+
+  await wakeCallOnce(caller, DEPARTURE_MS - 5 * MINUTE, h.deps);
+  assert.deepEqual(order, ["dial", "nudge"], "the phone rings first; the ladder's I/O comes after");
 });

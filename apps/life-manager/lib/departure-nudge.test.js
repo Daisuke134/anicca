@@ -13,7 +13,7 @@ const { test } = require("node:test");
 const assert = require("node:assert");
 
 const {
-  claimNudgeLevel, ackNudge, buildNudgeMessage, NUDGE_ACK_REASONS,
+  claimNudgeLevel, ackNudge, releaseNudgeLevel, buildNudgeMessage, NUDGE_ACK_REASONS,
 } = require("./departure-nudge.js");
 
 const SUPA = { supaUrl: "https://supa.invalid", supaKey: "service-role-key" };
@@ -197,6 +197,24 @@ test("an event title cannot inject markup into the message", () => {
   assert.match(m.text, /&lt;b&gt;/);
 });
 
+// The 8-character title above passes even when the order is wrong, because nothing is ever cut. A
+// LONG title is where escaping and truncating fight: escape-then-slice can cut "&amp;" into "&am",
+// and sendMessage posts with parse_mode HTML. Telegram rejecting that entity is not cosmetic — the
+// send fails, the rung is released, the next tick renders the identical text and fails identically,
+// so the event goes silent for good on a title the user did not write. Truncate first, then escape.
+test("a long title is truncated before it is escaped, never mid-entity", () => {
+  for (const pad of [76, 77, 78, 79, 80]) {
+    const ev = {
+      summary: `${"x".repeat(pad)}R&D 会議`,
+      startIso: "2026-08-02T09:00:00+09:00",
+      location: "渋谷",
+    };
+    const m = buildNudgeMessage({ level: 25, ev, departureIso: "2026-08-02T08:05:00+09:00", lang: "ja" });
+    assert.doesNotMatch(m.text, /&(?!amp;|lt;|gt;|quot;|#)/,
+      `pad=${pad} produced a partial HTML entity: ${JSON.stringify(m.text.split("\n")[0].slice(-14))}`);
+  }
+});
+
 // ── the stop that does NOT exist yet (§5.2.2 D5) ─────────────────────────────────────────────────
 
 // 5.2.1 lists THREE stops: the tap, location movement, and the late organ. Only two are built.
@@ -235,4 +253,35 @@ test("nothing in the codebase claims to detect leaving home", () => {
     }
   }
   assert.deepEqual(callers, [], "location-based departure detection is #3, and it is not built yet");
+});
+
+// ── opening the ladder vs advancing it (release correctness) ─────────────────────────────────────
+
+// The two claim paths undo differently, so the caller has to be able to tell them apart. It could
+// not: `opened` was read by scheduler.js and never emitted here, so every release took the "advance"
+// branch and only reached DELETE by the accident that level 25 has no coarser rung. An event first
+// seen inside T-25 — an ordinary same-morning entry — opens at 10 or 5 and would have been rewound
+// to a rung that never happened, leaving a phantom row instead of being removed.
+test("the claim says whether it OPENED the ladder or advanced it", async () => {
+  const opening = stubFetch({ patch: () => rows([]), post: () => status(201) });
+  const first = await claimNudgeLevel(UID, EVENT_KEY, 10, { ...SUPA, fetchImpl: opening.fetchImpl, nowMs: NOW });
+  assert.equal(first.claimed, true);
+  assert.equal(first.opened, true, "an INSERT opened the ladder — undoing it means removing the row");
+
+  const advancing = stubFetch({ patch: () => rows([{ uid: UID, event_key: EVENT_KEY, last_level_min: 5 }]) });
+  const later = await claimNudgeLevel(UID, EVENT_KEY, 5, { ...SUPA, fetchImpl: advancing.fetchImpl, nowMs: NOW });
+  assert.equal(later.claimed, true);
+  assert.equal(later.opened, false, "a PATCH advanced an existing ladder");
+});
+
+test("a ladder that opened at a middle rung is deleted, not rewound to a rung that never happened", async () => {
+  const { fetchImpl, calls } = stubFetch({
+    patch: () => rows([{ uid: UID, event_key: EVENT_KEY }]),
+    post: () => status(201),
+  });
+  // Same-morning entry: the ladder's FIRST rung is T-10, so there is no T-25 to fall back to.
+  await releaseNudgeLevel(UID, EVENT_KEY, 10, { ...SUPA, fetchImpl, nowMs: NOW, opened: true });
+  assert.equal(calls[0].init.method, "DELETE");
+  assert.match(calls[0].url, /last_level_min=eq\.10/, "and only if it still owns the rung");
+  assert.match(calls[0].url, /acked_at=is\.null/, "and only if the user has not tapped meanwhile");
 });

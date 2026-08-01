@@ -68,9 +68,14 @@ const NUDGE_CALLBACK_LIMIT = 64;
 const departureCallbackData = (startIso) => `depart:ack:${startIso}`;
 
 // A calendar title is written by whoever created the event, and sendMessage posts with parse_mode
-// HTML — so it is untrusted input on a markup channel. Escaped, then bounded: a 300-character title
-// in a header is not a message, it is a wall.
-const headline = (value, limit) => escapeHtml(String(value || "").replace(/\s+/g, " ").trim()).slice(0, limit);
+// HTML — so it is untrusted input on a markup channel. Bounded first, THEN escaped: a 300-character
+// title in a header is not a message, it is a wall.
+//
+// ★ The order is load-bearing ★. Escaping first and slicing after cuts "&amp;" into "&am", and
+// Telegram rejects the malformed entity — the send fails, the rung is released, and the next tick
+// renders the identical text and fails identically, so one "R&D" in a title the user did not write
+// silences that event's entire ladder. Truncating first can only ever drop whole characters.
+const headline = (value, limit) => escapeHtml(String(value || "").replace(/\s+/g, " ").trim().slice(0, limit));
 
 // One rung, rendered. Pure — the tick decides WHETHER to send (claimNudgeLevel), this decides WHAT.
 // Returns { text, extra } in the shape sendMessage's trailing argument expects; `extra` is absent on
@@ -168,7 +173,9 @@ async function claimNudgeLevel(uid, eventKey, levelMin, opts = {}) {
   // it as "no match" would fall through to the INSERT and, on a 409, silently report a clean refusal
   // for a claim we might already own.
   if (!Array.isArray(patched)) return { ok: false, claimed: false, error: "unreadable_response" };
-  if (patched.length > 0) return { ok: true, claimed: true };
+  // `opened` tells the caller which undo applies. An advance can only be rewound; an INSERT has to be
+  // removed, because before it there was no ladder at all.
+  if (patched.length > 0) return { ok: true, claimed: true, opened: false };
 
   // No row to advance. Either the ladder has not started, or it has stopped/passed this rung.
   const insertBody = {
@@ -189,7 +196,7 @@ async function claimNudgeLevel(uid, eventKey, levelMin, opts = {}) {
   } catch (e) {
     return { ok: false, claimed: false, error: String((e && e.message) || e) };
   }
-  if (inserted && inserted.status === 201) return { ok: true, claimed: true };
+  if (inserted && inserted.status === 201) return { ok: true, claimed: true, opened: true };
   // 409 = another tick opened this ladder first, or the row is stopped/ahead of us. Nothing is
   // broken; there is simply nothing for us to send.
   if (inserted && inserted.status === 409) return { ok: true, claimed: false };
@@ -242,6 +249,11 @@ async function ackNudge(uid, eventKey, reason, opts = {}) {
 // claim_token for: if a later tick has already moved the ladder on, this stale release matches
 // nothing instead of dragging the ladder backwards. acked_at=is.null is the second guard — a user
 // who tapped [了解] in the meantime must not have the ladder reopened by a failed send.
+//
+// Which undo applies comes from the claim's own `opened` flag, NOT from guessing. A ladder that
+// opens at a middle rung — an event first seen inside T-25, i.e. an ordinary same-morning entry — is
+// DELETEd like any other opening rung. Inferring it from `coarser === undefined` would be right only
+// for level 25 and would leave a phantom row for every other opening rung.
 //
 // ★ The one imprecision in this module, named rather than hidden ★: when the rung was an advance
 // (not the opening one) we cannot know the exact value it replaced — PostgREST returns the row AFTER

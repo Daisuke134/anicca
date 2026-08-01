@@ -70,3 +70,38 @@ test("directionsMinutes: repeated ticks (same event) call the provider ONCE — 
   await travel.directionsMinutes("新宿区A", "渋谷区B", "k", at, Date.now() + 60000, false, opts); // next tick, same event
   assert.equal(transitCalls, 1); // second tick is a cache hit
 });
+
+// C3 REGRESSION (2026-08-02, found while wiring #2c): the address→geo memo above directionsMinutes
+// was READ but never WRITTEN — `_geoMemo.has()` with no matching `.set()` — so it never once
+// prevented a geocode. Every other test in this file injects `_geocode`, which is precisely why a
+// dead cache could sit here unnoticed; this one drives the REAL geocodeAddress.
+//
+// It matters now because #2c removed wakeTick's `call_enabled` filter (§5.3 makes phone-less the
+// default cohort), so resolveDeparture — and these two geocodes per event — runs for the WHOLE fleet
+// on every 60s tick instead of only for phone users.
+test("directionsMinutes geocodes a repeated address ONCE (the C3 memo must actually memoize)", async () => {
+  const originalFetch = global.fetch;
+  let geocodes = 0;
+  const unique = `渋谷区メモ試験-${Date.now()}`; // the memo is process-lifetime; never reuse a key
+  global.fetch = async (u) => {
+    const s = String(u);
+    if (s.includes("/geocode/")) {
+      geocodes++;
+      return { ok: true, json: async () => ({ results: [{ geometry: { location: { lat: 35.66, lng: 139.70 } } }] }) };
+    }
+    return { ok: true, json: async () => ({}) };
+  };
+  try {
+    const at = Date.now() + 3600000;
+    for (let i = 0; i < 5; i++) {
+      await travel.directionsMinutes(unique, `${unique}-dst`, "mapsKey", at, Date.now(), false, {
+        _transitFetch: async () => null,
+        _directionsMinutesGoogle: async () => 30,
+        _routeCache: freshCache(), // a fresh route cache each tick, so ONLY the geo memo is under test
+      });
+    }
+    assert.equal(geocodes, 2, "two distinct addresses, geocoded once each — not once per tick");
+  } finally {
+    global.fetch = originalFetch;
+  }
+});

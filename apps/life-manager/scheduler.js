@@ -551,12 +551,6 @@ async function wakeCallOnce(u, nowMs, deps = {}) {
     });
     const mins = (depMs - now) / 60000;
 
-    // ── the departure ladder (§5.2.1) ────────────────────────────────────────────────────────────
-    // Deliberately OUTSIDE the call_enabled gate: this is the push now, and the phone is the opt-in
-    // extra. A user who never gave a number (#6, and the default since 2026-08-01) gets every rung.
-    // One HTTP send at ~200ms, at most one per tick, so the 20s per-user budget 1c bought is safe.
-    await maybeNudgeDeparture(u, ev, depMs, mins, now, deps);
-
     // ── the phone ladder (opt-in) ────────────────────────────────────────────────────────────────
     // spec §5.2.1: `=== true`, not `!== false`. The phone is opt-IN now, and three different shapes all
     // mean "expressed no preference" — no row, a SQL NULL column, and an unmerged undefined. `!== false`
@@ -637,6 +631,18 @@ async function wakeCallOnce(u, nowMs, deps = {}) {
         }
       }
     }
+
+    // ── the departure ladder (§5.2.1) ────────────────────────────────────────────────────────────
+    // OUTSIDE the call_enabled gate — this is the push now, and the phone is the opt-in extra, so a
+    // user who never gave a number (§5.3, the default) still gets every rung.
+    //
+    // ★ AFTER the dial, not before ★. This costs up to three sequential HTTP calls with no timeout
+    // of their own (claim PATCH → answered GET → Telegram send, plus a release PATCH on failure),
+    // and :509 already records what happens when bookkeeping runs in front of placeCall: "a slow
+    // store spent the user's entire wake budget and the phone never rang". Row 1c bought a 20s
+    // per-user budget for the dial; spending it on the ladder first would hand it straight back.
+    // The order costs the ladder nothing — depMs and mins are already computed above.
+    await maybeNudgeDeparture(u, ev, depMs, mins, now, deps);
   }
 }
 
@@ -890,10 +896,16 @@ async function wakeTick(deps = {}) {
   const users = await listUsers();
   const now = deps.now !== undefined ? deps.now : Date.now();
   await forEachUserSafe(
-    // `call_enabled === true` (spec §5.2.1): the phone is an extra someone opts into, not the default.
+    // §5.3 / #2c: this tick no longer only dials — it also pushes the departure ladder, and §5.3
+    // makes the phone-LESS user the DEFAULT cohort. A `call_enabled` filter here therefore shipped
+    // the ladder to nobody (measured 2026-08-02: of four automated users, one entered). Same
+    // correction row 1e made to the organ tick, for the same reason: the dial's gate belongs to the
+    // dial, not to the tick that now carries two jobs.
+    //
     // `daily_automation_enabled !== false` keeps its opt-OUT sense — that switch means "run nothing
-    // for me", and it is not the thing §5.2.1 flipped.
-    users.filter(u => u.daily_automation_enabled !== false && u.call_enabled === true),
+    // for me". The phone gate (`call_enabled === true`, §5.2.1) lives inside wakeCallOnce and stays
+    // there, so a user with no phone enters this tick and is simply never dialled.
+    users.filter(u => u.daily_automation_enabled !== false),
     "wake", (u) => wake(u, now), WAKE_USER_TIMEOUT_MS,
   );
 }
