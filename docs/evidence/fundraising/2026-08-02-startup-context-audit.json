@@ -1,0 +1,82 @@
+{
+  "evidence_type": "life_manager_startup_context_regression_gate",
+  "verified_at": "2026-08-02T05:17:14+09:00",
+  "source_commit": "0d0f4d4d414ef37518c6980dcf9133f0b34fb9d8",
+  "context_version": "2026-08-02.1",
+  "context_digest": "acfe35f5209b76f419f510bc66597c405f7a208d2d1aacd23eb09729bbac647b",
+  "checks": {
+    "node_tests": {
+      "status": "pass",
+      "passed": 35,
+      "failed": 0,
+      "suites": [
+        "install isolation",
+        "OSS self-contained contract",
+        "startup context",
+        "OpenClaw export boundary",
+        "apply-to-funder context gate"
+      ]
+    },
+    "skill_validation": {
+      "status": "pass",
+      "skill": "skills/apply-to-funder"
+    },
+    "canonical_links": {
+      "status": "pass",
+      "requirements": [
+        "HTTP 200",
+        "response body contains Life Manager"
+      ],
+      "verified": [
+        "product",
+        "repository",
+        "telegram"
+      ],
+      "excluded": [
+        {
+          "type": "dashboard",
+          "reason": "legacy Anicca identity"
+        },
+        {
+          "type": "demo",
+          "reason": "unverified"
+        },
+        {
+          "type": "founder_video",
+          "reason": "unverified"
+        }
+      ]
+    },
+    "application_kit": {
+      "status": "pass",
+      "consecutive_builds": 2,
+      "deterministic": true,
+      "files": 6
+    },
+    "yc_preview": {
+      "status": "pass_with_expected_blocker",
+      "mode": "preview",
+      "submit_allowed": false,
+      "application_digest": "4267f8123bdc111aae2e69700f9959652684fe6846fe828763cd0768562f9b0d",
+      "blockers": [
+        "required asset is not verified: founder_video"
+      ]
+    },
+    "forbidden_content": {
+      "status": "pass",
+      "blocked": [
+        "old product assignment",
+        "old repository",
+        "old backend homepage",
+        "private email",
+        "phone number",
+        "unresolved placeholder",
+        "stale context",
+        "digest mismatch",
+        "unverified requested media"
+      ]
+    }
+  },
+  "result": "green",
+  "next_ordered_task": "O1B-25"
+}
