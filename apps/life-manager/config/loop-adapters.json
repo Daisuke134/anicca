@@ -60,6 +60,16 @@
       ],
       "module_ref": "lib/luma-rsvp-adapter.js",
       "factory_export": "createLumaRsvpLoopAdapter"
+    },
+    {
+      "adapter_id": "connector-coverage-refresh",
+      "loop_id": "connector.coverage",
+      "capability": "connector.coverage.refresh",
+      "effect_classes": [
+        "none"
+      ],
+      "module_ref": "lib/connector-coverage-adapter.js",
+      "factory_export": "createConnectorCoverageLoopAdapter"
     }
   ]
 }

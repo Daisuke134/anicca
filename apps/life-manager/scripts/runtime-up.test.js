@@ -129,6 +129,27 @@ test("runtime command accepts only the explicit local up contract", () => {
   assert.throws(() => parseRuntimeCommand(["up"]), /usage/i);
 });
 
+test("coverage worker capability receives the assembled Connector refresh services", () => {
+  const connectorCoverageServices = Object.freeze({
+    coverageStore: { read: async () => {}, save: async () => {} },
+    refreshCoverage: async () => {},
+  });
+  let observedServices;
+  const handlers = createWorkerHandlers({}, ["connector.coverage.refresh"], {
+    connectorCoverageServices,
+    createRegistry({ servicesByAdapter }) {
+      observedServices = servicesByAdapter["connector-coverage-refresh"];
+      return {
+        hasCapability(capability) { return capability === "connector.coverage.refresh"; },
+        getByCapability() { return { execute: async () => "coverage-executed" }; },
+      };
+    },
+  });
+
+  assert.equal(observedServices, connectorCoverageServices);
+  assert.equal(typeof handlers["connector.coverage.refresh"], "function");
+});
+
 test("compose topology has durable stores, health checks, distinct roles, and one scheduler owner", () => {
   assert.deepEqual(validateComposeModel(validModel()), {
     schedulerService: "scheduler",

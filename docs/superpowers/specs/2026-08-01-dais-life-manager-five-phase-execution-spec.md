@@ -1262,6 +1262,12 @@ TDDで追加した。verified RSVP 1日 + 実all-day blocker 1日のfixtureで`c
 open 19`、inventoryにないreceiptではCalendar作成0を確認。calendar focused 3/3、refresh focused 2/2成功。
 次はこのserviceをworker registryへ依存注入し、`connector.coverage.refresh` capabilityを実containerへ配備する。
 
+O1B-25進捗12（worker registry配線 RED→GREEN）: committed adapter manifestへ
+`connector-coverage-refresh`を追加し、worker capabilityが明示された場合だけ、組み立て済みcoverage serviceを
+adapterへ依存注入する境界を追加した。service未注入時は起動時にfail-closedとする。manifest / runtime / adapterの
+focused回帰40/40成功。実Docker workerにはGoogle Calendarを読むhost側`gog`が存在しないため、capability名だけを
+containerへ追加して動作済みに見せない。次はhost側coverage workerをruntime DBへ安全に接続し、初回jobを登録する。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
