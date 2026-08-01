@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import WriterUnlock from "../../../components/blog/WriterUnlock";
 
 type Mirrors = { x?: string; substack?: string; newsletter?: string };
 
@@ -16,6 +17,9 @@ type ResearchPost = {
   mirrors?: Mirrors;
   access_model?: "one_time" | "archive" | "both";
   paid_sha256?: string;
+  run_id?: string;
+  artifact_id?: string;
+  lang?: "ja" | "en";
 };
 
 type PrivateWriterArticle = {
@@ -60,6 +64,9 @@ function loadPrivatePost(slug: string): ResearchPost | null {
     markdown: visible.preview_markdown,
     access_model: visible.access_model,
     paid_sha256: visible.paid_sha256,
+    run_id: visible.run_id,
+    artifact_id: visible.artifact_id,
+    lang: visible.lang,
   };
 }
 
@@ -201,15 +208,15 @@ export default function ResearchPostPage({ params }: { params: { slug: string } 
           dangerouslySetInnerHTML={{ __html: html }}
         />
 
-        {post.access_model && (
-          <section className="mt-10 border border-ink/20 bg-bone/30 px-6 py-7">
-            <p className="font-mono-ui text-[10px] uppercase tracking-[0.24em] text-mist">
-              Verified paid section
-            </p>
-            <p className="mt-3 text-[16px] leading-relaxed text-ink-soft">
-              The public preview ends here. The paid body is not included in this page&apos;s HTML.
-            </p>
-          </section>
+        {post.access_model && post.paid_sha256 && post.run_id && post.artifact_id && post.lang && (
+          <WriterUnlock
+            slug={post.slug}
+            runId={post.run_id}
+            artifactId={post.artifact_id}
+            lang={post.lang}
+            accessModel={post.access_model}
+            paidSha256={post.paid_sha256}
+          />
         )}
 
         {/* Mirrors strip */}
