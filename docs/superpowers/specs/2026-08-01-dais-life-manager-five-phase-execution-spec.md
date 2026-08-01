@@ -1012,6 +1012,10 @@ coverage creditは常に禁止、source error・empty inventoryでもdateは`ope
 5 testで定義した。production handoff moduleとLuma provenance verifierが未実装のため2件が期待どおり
 失敗し、既存3件は成功した。
 
+O1B-20進捗2（core GREEN / pack RED）: verified source handoff coreを実装しfocused 8/8成功。次に既存の
+認証済みevents packがcapability作成、handoff plan、必要時だけconnpass client作成、handoff実行を一つの
+操作として公開する契約を追加した。pack method未実装のため新規2件が期待どおり失敗する段階である。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
