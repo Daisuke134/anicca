@@ -1,16 +1,20 @@
 "use strict";
-const { createHash } = require("node:crypto");
+const fs=require("node:fs"),path=require("node:path"),os=require("node:os");
+const { createHash,createHmac,timingSafeEqual } = require("node:crypto");
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const REGISTRY=/^funder-registry:[0-9a-f]{64}$/; const SHA=/^[0-9a-f]{64}$/; const ID=/^[a-z0-9][a-z0-9._-]{1,99}$/;
+const REGISTRY=/^funder-registry:[0-9a-f]{64}$/; const SHA=/^[0-9a-f]{64}$/; const TENANT=/^[A-Za-z0-9._-]{1,128}$/; const ID=/^[a-z0-9][a-z0-9._-]{1,99}$/;
 const sha=(x)=>createHash("sha256").update(String(x)).digest("hex");
+function signingKey(options={}){let value=options.signingKey;if(!value){try{value=fs.readFileSync(options.signingKeyFile||path.join(os.homedir(),".openclaw/secrets/funder-gate-signing-key"));}catch{fail("signing key");}}const key=Buffer.isBuffer(value)?value:Buffer.from(String(value));if(key.length<32)fail("signing key");return key;}
 function stable(v){if(Array.isArray(v))return`[${v.map(stable).join(",")}]`;if(v&&typeof v==="object")return`{${Object.keys(v).sort().map(k=>`${JSON.stringify(k)}:${stable(v[k])}`).join(",")}}`;return JSON.stringify(v);}
 function fail(x){throw new Error(`funder submission-day ${x} invalid`);}
 function url(v){let x;try{x=new URL(String(v||""));}catch{fail("URL");}if(x.protocol!=="https:"||x.username||x.password||!x.hostname.includes("."))fail("URL");x.hash="";return x.toString();}
 function day(ms){const p=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Tokyo",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date(ms));const g=t=>p.find(x=>x.type===t).value;return`${g("year")}-${g("month")}-${g("day")}`;}
 function evidence(claim,sources,field){if(!claim||!sources.has(claim.source_id)){fail("evidence");}const excerpt=String(claim[field]||"").trim();if(!excerpt||excerpt.length>1500||!sources.get(claim.source_id).content.includes(excerpt))fail("evidence");return{source_id:claim.source_id,evidence_sha256:sha(excerpt)};}
-function buildFunderSubmissionDayGate(input={}){
+const GATE_KEYS=["schema_version","tenant_id","attempt_id","registry_id","funder_id","evaluated_at","tokyo_day","decision","submit_allowed","reason","deadline_status","deadline_at","deadline_display_date","location","solo_allowed","eligibility","terms_hash","kit_ref","kit_digest","company_fact_evidence_sha256","rationale_sha256","evidence_refs","source_receipts","gate_id","gate_digest","attestation_signature"];
+function validateFunderSubmissionDayGate(gate,options={}){if(!gate||typeof gate!=="object"||Array.isArray(gate)||JSON.stringify(Object.keys(gate).sort())!==JSON.stringify([...GATE_KEYS].sort())||gate.schema_version!==1||!TENANT.test(String(gate.tenant_id||""))||!UUID.test(String(gate.attempt_id||""))||!ID.test(String(gate.funder_id||""))||!/^\d{4}-\d{2}-\d{2}$/.test(String(gate.tokyo_day||""))||!/^funder-day-gate:[0-9a-f]{64}$/.test(String(gate.gate_id||""))||gate.gate_digest!==gate.gate_id.slice(16)||!SHA.test(String(gate.attestation_signature||"")))fail("gate");const core={...gate};delete core.gate_id;delete core.gate_digest;delete core.attestation_signature;const digest=sha(stable(core)),expected=Buffer.from(createHmac("sha256",signingKey(options)).update(digest).digest("hex"),"hex"),actual=Buffer.from(gate.attestation_signature,"hex");if(digest!==gate.gate_digest||actual.length!==expected.length||!timingSafeEqual(actual,expected)||gate.submit_allowed!==(gate.decision==="allow")||day(Date.parse(gate.evaluated_at))!==gate.tokyo_day)fail("gate digest");return Object.freeze(gate);}
+function buildFunderSubmissionDayGate(input={},options={}){
  const tenant=String(input.tenantId||"").trim(), attempt=String(input.attemptId||"").toLowerCase(), evaluated=Date.parse(String(input.evaluatedAt||"")), reg=input.registryEntry||{};
- if(!tenant||tenant.length>128||!UUID.test(attempt)||!Number.isFinite(evaluated)||!REGISTRY.test(String(reg.registry_id||""))||!ID.test(String(reg.funder_id||""))||!Array.isArray(input.officialSources)||!input.assessment)fail("input");
+ if(!TENANT.test(tenant)||!UUID.test(attempt)||!Number.isFinite(evaluated)||!REGISTRY.test(String(reg.registry_id||""))||!ID.test(String(reg.funder_id||""))||!Array.isArray(input.officialSources)||!input.assessment)fail("input");
  const rootUrls=new Set([url(reg.official_url),url(reg.source_url)]), sources=new Map(), roots=[];
  for(const raw of input.officialSources){const id=String(raw&&raw.source_id||""),u=url(raw&&raw.url),f=Date.parse(String(raw&&raw.fetched_at||"")),content=String(raw&&raw.content||"");
   if(!ID.test(id)||sources.has(id)||!Number.isFinite(f)||f>evaluated||evaluated-f>6*3600000||day(f)!==day(evaluated)||!content||content.length>2_000_000||!SHA.test(String(raw.content_sha256||""))||sha(content)!==raw.content_sha256||!Array.isArray(raw.links))fail("source");
@@ -32,6 +36,6 @@ function buildFunderSubmissionDayGate(input={}){
  else if(a.solo.value!=="yes"){decision="solo_not_verified";reason="solo founder acceptance is not verified";}
  else if(a.eligibility.value!=="eligible"){decision="eligibility_not_verified";reason="current eligibility is not verified";}
  const core={schema_version:1,tenant_id:tenant,attempt_id:attempt,registry_id:reg.registry_id,funder_id:reg.funder_id,evaluated_at:new Date(evaluated).toISOString(),tokyo_day:day(evaluated),decision,submit_allowed:decision==="allow",reason,deadline_status:a.deadline.status,deadline_at:Number.isFinite(closes)?new Date(closes).toISOString():null,deadline_display_date:a.deadline.display_date,location,solo_allowed:a.solo.value,eligibility:a.eligibility.value,terms_hash:termsHash,kit_ref:kit.ref,kit_digest:kit.digest,company_fact_evidence_sha256:sha(factExcerpt),rationale_sha256:sha(a.eligibility.rationale),evidence_refs:refs,source_receipts:[...sources.values()].map(({content,links,...x})=>({...x,link_count:links.length})).sort((x,y)=>x.source_id.localeCompare(y.source_id))};
- const digest=sha(stable(core));return Object.freeze({...core,gate_id:`funder-day-gate:${digest}`,gate_digest:digest});
+ const digest=sha(stable(core)),attestation_signature=createHmac("sha256",signingKey(options)).update(digest).digest("hex");return validateFunderSubmissionDayGate({...core,gate_id:`funder-day-gate:${digest}`,gate_digest:digest,attestation_signature},options);
 }
-module.exports={buildFunderSubmissionDayGate};
+module.exports={buildFunderSubmissionDayGate,validateFunderSubmissionDayGate};

@@ -1,4 +1,5 @@
 "use strict";
+const { verifyPersistedFunderGates } = require("./funder-persisted-gate-verifier.js");
 
 const DAILY_DRIVER_CDP = "http://127.0.0.1:9222";
 const LUMA_HOSTS = new Set(["luma.com", "www.luma.com", "lu.ma"]);
@@ -38,17 +39,35 @@ function funderUrl(value, policy = {}) {
   return url.toString();
 }
 
-function submissionDayGate(value, policy) {
+function tokyoDay(milliseconds) {
+  const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date(milliseconds));
+  const get = (type) => parts.find((part) => part.type === type).value;
+  return `${get("year")}-${get("month")}-${get("day")}`;
+}
+
+function submissionDayGate(value, policy, now) {
   if (!value || value.schema_version !== 1 || value.decision !== "allow" || value.submit_allowed !== true
-    || value.funder_id !== policy.funder_id || !/^funder-day-gate:[0-9a-f]{64}$/.test(String(value.gate_id || ""))) {
+    || value.funder_id !== policy.funder_id || value.tenant_id !== policy.tenant_id || value.attempt_id !== policy.attempt_id
+    || !String(value.tenant_id || "").trim()
+    || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value.attempt_id || ""))
+    || !/^funder-day-gate:[0-9a-f]{64}$/.test(String(value.gate_id || ""))
+    || value.gate_digest !== value.gate_id.slice(value.gate_id.indexOf(":") + 1)
+    || value.tokyo_day !== tokyoDay(now)) {
     throw new Error("Funder submission-day gate invalid");
   }
   return value;
 }
 
-function assetFreshnessGate(value, policy) {
+function assetFreshnessGate(value, policy, now) {
+  const evaluated = Date.parse(String(value && value.evaluated_at || ""));
+  const expires = Date.parse(String(value && value.expires_at || ""));
   if (!value || value.schema_version !== 1 || value.decision !== "allow" || value.submit_allowed !== true
-    || value.funder_id !== policy.funder_id || !/^funder-freshness-gate:[0-9a-f]{64}$/.test(String(value.gate_id || ""))) {
+    || value.funder_id !== policy.funder_id || value.tenant_id !== policy.tenant_id || value.attempt_id !== policy.attempt_id
+    || !String(value.tenant_id || "").trim()
+    || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value.attempt_id || ""))
+    || !/^funder-freshness-gate:[0-9a-f]{64}$/.test(String(value.gate_id || ""))
+    || value.gate_digest !== value.gate_id.slice(value.gate_id.indexOf(":") + 1)
+    || !Number.isFinite(evaluated) || !Number.isFinite(expires) || evaluated > now || expires <= now) {
     throw new Error("Funder asset freshness gate invalid");
   }
   return value;
@@ -109,10 +128,11 @@ function resolvedDailyDriverEndpoint(value) {
   return url.origin;
 }
 
-function createCloakBrowserDailyDriver(options = {}) {
+function createDriver(options = {}, persistedVerifier) {
   const endpoint = String(options.endpoint || DAILY_DRIVER_CDP).trim();
   const connectOverCDP = options.connectOverCDP;
   const resolveEndpoint = options.resolveEndpoint || (async () => endpoint);
+  const now = options.now || (() => Date.now());
   if (endpoint !== DAILY_DRIVER_CDP) {
     throw new Error("CloakBrowser daily-driver endpoint invalid");
   }
@@ -127,10 +147,23 @@ function createCloakBrowserDailyDriver(options = {}) {
     async withLumaPage(value, task) {
       return withOwnedPage(lumaUrl(value), task);
     },
-    async withFunderPage(value, policy, gate, freshnessGate, task) {
-      submissionDayGate(gate, policy);
-      assetFreshnessGate(freshnessGate, policy);
-      return withOwnedPage(funderUrl(value, policy), task);
+    async withFunderPage(value, policy, gate, freshnessGate, submission, task) {
+      const evaluatedNow = now();
+      const verifiedDayGate = submissionDayGate(gate, policy, evaluatedNow);
+      const verifiedFreshnessGate = assetFreshnessGate(freshnessGate, policy, evaluatedNow);
+      if (verifiedDayGate.tenant_id !== verifiedFreshnessGate.tenant_id
+        || verifiedDayGate.attempt_id !== verifiedFreshnessGate.attempt_id) {
+        throw new Error("Funder gate attempt binding invalid");
+      }
+      const persisted = await persistedVerifier(verifiedDayGate, verifiedFreshnessGate, submission);
+      if (!persisted || !persisted.submission || typeof persisted.cleanup !== "function") {
+        throw new Error("Funder persisted gate verification invalid");
+      }
+      try {
+        return await withOwnedPage(funderUrl(value, policy), (page, metadata) => task(page, Object.freeze({ ...metadata, submission: persisted.submission })));
+      } finally {
+        persisted.cleanup();
+      }
     },
   });
 
@@ -167,9 +200,19 @@ function createCloakBrowserDailyDriver(options = {}) {
   }
 }
 
+function createCloakBrowserDailyDriver(options = {}) {
+  return createDriver(options, verifyPersistedFunderGates);
+}
+
+function createCloakBrowserDailyDriverForTest(options = {}, persistedVerifier) {
+  if (typeof persistedVerifier !== "function") throw new Error("test persisted gate verifier unavailable");
+  return createDriver(options, persistedVerifier);
+}
+
 module.exports = {
   DAILY_DRIVER_CDP,
   classifyLumaLogin,
   createCloakBrowserDailyDriver,
+  createCloakBrowserDailyDriverForTest,
   resolvedDailyDriverEndpoint,
 };

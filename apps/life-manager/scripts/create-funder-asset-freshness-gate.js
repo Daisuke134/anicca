@@ -1,0 +1,6 @@
+#!/usr/bin/env node
+"use strict";
+const fs=require("node:fs"),{collectFunderAssetFreshnessGate}=require("../lib/funder-asset-freshness.js");
+function arg(name,required=true){const i=process.argv.indexOf(`--${name}`),v=i>=0?process.argv[i+1]:null;if(required&&!v)throw new Error(`--${name} required`);return v;}
+async function main(){const kit=arg("kit"),assessmentFile=arg("assessment"),output=arg("output"),deck=arg("deck",false)||"deck/deck-en.pdf",video=arg("video"),evaluatedAt=arg("evaluated-at",false)||new Date().toISOString(),assessment=JSON.parse(fs.readFileSync(assessmentFile,"utf8")),gate=await collectFunderAssetFreshnessGate({tenantId:arg("tenant"),attemptId:arg("attempt"),funderId:arg("funder"),evaluatedAt,applicationKitRoot:kit,submissionSpecPath:arg("spec"),payloadPath:arg("payload"),dashboardUrl:"https://aniccaai.com/dashboard.json",assessment,assets:[{kind:"deck",ref:`application-kit://${deck}`,source_ref:`application-kit://${deck.replace(/\.pdf$/,".md")}`},{kind:"video",ref:`application-kit://${video}`}]});fs.writeFileSync(output,`${JSON.stringify(gate,null,2)}\n`,{mode:0o600});process.stdout.write(`${gate.gate_id}\t${gate.decision}\t${gate.submit_allowed}\n`);}
+main().catch(error=>{process.stderr.write(`${error.message}\n`);process.exitCode=1;});

@@ -4,7 +4,7 @@ const { createHash, randomUUID } = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
 const test = require("node:test");
-const { buildFunderSubmissionDayGate } = require("./funder-submission-day.js");
+const { buildFunderSubmissionDayGate, validateFunderSubmissionDayGate } = require("./funder-submission-day.js");
 const { appendFunderSubmissionDayGate } = require("./funder-submission-day-store.js");
 const SQL = fs.readFileSync(path.join(__dirname, "../migrations/2026-08-02-lm-funder-submission-day.sql"), "utf8");
 const sha = (x) => createHash("sha256").update(x).digest("hex");
@@ -30,6 +30,7 @@ test("all five same-day official facts create one submit-allowed receipt",()=>{
   assert.match(gate.gate_id,/^funder-day-gate:[0-9a-f]{64}$/); assert.match(gate.terms_hash,/^[0-9a-f]{64}$/);
   assert.equal(JSON.stringify(gate).includes("Applications close"),false);
 });
+test("signed canonical validator rejects copied gates, altered fields, and wrong keys",()=>{const gate=buildFunderSubmissionDayGate(fixture());assert.throws(()=>validateFunderSubmissionDayGate({...gate,tokyo_day:"2026-08-03"}),/digest/i);assert.throws(()=>validateFunderSubmissionDayGate({...gate,funder_id:"other-funder"}),/digest/i);assert.throws(()=>validateFunderSubmissionDayGate(gate,{signingKey:Buffer.alloc(32,9)}),/digest/i);});
 test("stale, fabricated, unlinked, and registry-drift evidence fail closed",()=>{
   const stale=fixture(); stale.officialSources[0].fetched_at="2026-08-01T00:00:00Z"; assert.throws(()=>buildFunderSubmissionDayGate(stale),/source/i);
   const fake=fixture(); fake.assessment.solo.evidence_excerpt="invented"; assert.throws(()=>buildFunderSubmissionDayGate(fake),/evidence/i);
