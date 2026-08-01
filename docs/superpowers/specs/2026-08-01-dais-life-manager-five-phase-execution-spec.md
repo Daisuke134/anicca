@@ -1402,6 +1402,14 @@ Luma tabだけを閉じた後、read-only認証を単独実測して1.4秒で`au
 worker crash時は同じdurable jobを15分後に回収し、外部応募effectは別jobのeffect fenceで重複を防ぐ。focused 18/18、
 Connector 241/241、runtime-up 36/36成功、失敗0件。次はcommit/push、再配備後にLIVE応募計画を再実測する。
 
+O1B-26進捗6（Guardianによる長時間job誤停止の真因 / RED→GREEN）: 15分lease配備後も、Guardianがworkerの
+`last_poll_at`を「job完了後のDB poll時刻」として見ていたため、正常な完全探索が3分を超えるとworker停止と誤判定し、
+containerを再起動していた。DBではjobが15分lease中の`running`として残る一方、新containerのhealth pollだけが進む
+状態を実測した。workerの1秒tick開始時に、job処理中でもevent loopが生きていればliveness時刻を更新するよう修正した。
+`active=true`の間は2件目をclaimせず、event loop自体が固まればtickも更新されないためGuardianの停止検知は維持する。
+runtime-up 37/37、Guardian 18/18成功、失敗0件。次はcommit/push、再配備、ghost leaseを正規failure関数で一件だけ
+回収して、修正後workerによるLIVE実行を確認する。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
