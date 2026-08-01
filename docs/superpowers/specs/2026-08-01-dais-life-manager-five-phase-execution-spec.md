@@ -1133,6 +1133,16 @@ O1B-24進捗3（policy RED）: 現在の0円policyがfreeだけを許可しpaid/
 saved methodとcurrency別per-event/rolling capが揃う時だけpaidを都度承認なしで許可すること、clone・負数・
 重複currencyを拒否する3 testを追加した。production policy module不存在のため期待どおり失敗する段階である。
 
+O1B-24進捗4（policy GREEN / sequence RED）: verified saved methodを生のcard情報なしのopaque refへ変換し、
+0円policy、currency別per-event/rolling cap、free/paid/unknownのfail-closed判定を実装した。focused 3/3成功。
+次に、agentの目標順位がpaid/unknown/freeの順でも、Calendar適格候補の実行順をfree first→policy許可paidへ
+安定並べ替えし、unknownと上限外をskipする2 testを追加した。実行列関数未実装のため期待どおり2件失敗する。
+
+O1B-24進捗5（sequence GREEN）: verified Calendar gateとverified goal/serendipity判断が同じinventory/dateを
+指す場合だけ実行列を作る。目標順位のfree群内・paid群内の順序は保ちつつfreeを必ず先にし、paidは保存済み
+決済手段とcurrency別上限内だけ後続へ置く。同一列のpaid累積も30日残額を超えない。unknown、上限外、
+Calendar衝突は理由付きskipとなり、列にはpayment method refを含めない。料金・inventory focused 19/19成功。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
