@@ -19,6 +19,7 @@ class BrowserChallenge(RuntimeError):
 
 
 COMPOSER_LABELS = ("New post", "Create", "新規投稿", "新しい投稿", "作成")
+CAPTION_EDITOR_SELECTOR = "textarea,[contenteditable='true'][role='textbox']"
 
 
 @dataclass(frozen=True)
@@ -96,6 +97,15 @@ def resolve_active_handle(
         if path.lower() == expected_path:
             return expected
     raise RuntimeError("active account ownership evidence is unavailable")
+
+
+def resolve_share_progress(dialog_exists: bool, text: str) -> str:
+    if not dialog_exists:
+        return "complete"
+    normalized = str(text).strip().lower()
+    if any(marker in normalized for marker in ("has been shared", "シェアされました", "シェアしました")):
+        return "complete"
+    return "processing"
 
 
 def post_reel(request: PostRequest, browser: BrowserAci) -> dict:
@@ -211,22 +221,33 @@ class RawCdpBrowser:
         time.sleep(5); self._guard()
 
     def advance_to_caption(self) -> None:
+        selector = json.dumps(CAPTION_EDITOR_SELECTOR)
         for _ in range(3):
-            if self._eval("!!document.querySelector('textarea')"): self._shot("caption"); return
+            if self._eval(f"(()=>{{const r=document.querySelector('[role=dialog]')||document;return !!r.querySelector({selector})}})()"): self._shot("caption"); return
             clicked = self._eval("(()=>{const b=[...document.querySelectorAll('button,[role=button]')].find(x=>['Next','次へ'].includes((x.textContent||'').trim()));if(!b)return false;b.click();return true})()")
             if not clicked: raise RuntimeError("next control unavailable")
             time.sleep(3); self._guard()
         raise RuntimeError("caption step unavailable")
 
     def enter_caption(self, caption: str) -> None:
-        changed = self._eval(f"(()=>{{const e=document.querySelector('textarea');if(!e)return false;const s=Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set;s.call(e,{json.dumps(caption)});e.dispatchEvent(new Event('input',{{bubbles:true}}));return true}})()")
-        if not changed: raise RuntimeError("caption field unavailable")
+        selector = json.dumps(CAPTION_EDITOR_SELECTOR)
+        value = json.dumps(caption)
+        changed = self._eval(f"(()=>{{const r=document.querySelector('[role=dialog]')||document;const e=r.querySelector({selector});if(!e)return false;e.focus();if(e instanceof HTMLTextAreaElement){{const s=Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set;s.call(e,{value});e.dispatchEvent(new Event('input',{{bubbles:true}}));return true}}const range=document.createRange();range.selectNodeContents(e);const selection=getSelection();selection.removeAllRanges();selection.addRange(range);return document.execCommand('insertText',false,{value})}})()")
+        time.sleep(1)
+        verified = self._eval(f"(()=>{{const r=document.querySelector('[role=dialog]')||document;const e=r.querySelector({selector});return !!e&&((e.value??e.textContent)||'')==={value}}})()")
+        if not changed or not verified: raise RuntimeError("caption field unavailable")
         self._shot("share-ready")
 
     def share(self) -> None:
         clicked = self._eval("(()=>{const b=[...document.querySelectorAll('button,[role=button]')].find(x=>['Share','シェア'].includes((x.textContent||'').trim()));if(!b)return false;b.click();return true})()")
         if not clicked: raise RuntimeError("share control unavailable")
-        time.sleep(8); self._guard(); self._shot("shared")
+        for _ in range(40):
+            time.sleep(3); self._guard()
+            evidence = self._eval("(()=>{const d=document.querySelector('[role=dialog]');return {dialog_exists:!!d,text:(d&&d.textContent)||''}})()") or {}
+            if resolve_share_progress(bool(evidence.get("dialog_exists")), str(evidence.get("text", ""))) == "complete":
+                self._shot("shared"); return
+        self._shot("share-timeout")
+        raise RuntimeError("share completion unavailable")
 
     def discard(self) -> None:
         self._eval("(()=>{const b=[...document.querySelectorAll('button,[role=button]')].find(x=>['Close','閉じる'].includes(x.getAttribute('aria-label')||(x.textContent||'').trim()));if(b)b.click();return true})()")

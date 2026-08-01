@@ -8,15 +8,35 @@ SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 from capafy_reel_poster import (  # noqa: E402
     BrowserChallenge,
+    CAPTION_EDITOR_SELECTOR,
     COMPOSER_LABELS,
     PostRequest,
     post_reel,
     resolve_active_handle,
+    resolve_share_progress,
 )
 
 
 def test_composer_labels_cover_current_japanese_instagram_ui():
     assert "新しい投稿" in COMPOSER_LABELS
+
+
+def test_caption_selector_covers_current_lexical_contenteditable_ui():
+    assert "contenteditable='true'" in CAPTION_EDITOR_SELECTOR
+    assert "role='textbox'" in CAPTION_EDITOR_SELECTOR
+
+
+def test_share_progress_waits_while_instagram_is_still_uploading():
+    assert resolve_share_progress(True, "シェア中") == "processing"
+
+
+@pytest.mark.parametrize("text", ["リール動画がシェアされました", "Your reel has been shared"])
+def test_share_progress_accepts_explicit_completion(text):
+    assert resolve_share_progress(True, text) == "complete"
+
+
+def test_share_progress_accepts_modal_close_after_share_started():
+    assert resolve_share_progress(False, "") == "complete"
 
 
 class FakeCdp:
