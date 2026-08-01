@@ -1094,6 +1094,11 @@ O1B-23進捗6（candidate pack GREEN / calendar pack RED）: verified gateと同
 照合し、eligibleだけを既存same-day sequenceへ渡す`runCalendarGatedSameDay`を実装、focused 13/13成功。
 次にbusy readとtravel gate自体もevents packの一操作として所有する契約を追加した。2 method未実装でRED段階。
 
+O1B-23進捗7（calendar pack GREEN / write transport RED）: events packへbusy read、travel gate、eligible-only
+same-day sequenceを接続しfocused 27/27成功。既存Calendar writeはsuccess booleanだけでevent IDと冪等keyを
+残さないため、固定private propertyで既存eventを先に検索し、未作成時だけprovider ID/link付きで作成する
+transport契約2 testを追加した。新method未実装でRED段階。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
