@@ -20,8 +20,14 @@ import json,sys
 p,m,mode=sys.argv[1:];d={"schema_version":1,"title":"Portfolio Tracker","agent_id":"9480246345","listing_url":"https://capafy.ai/agent/9480246345","campaign_url":"https://capafy-skills-daily.netlify.app/go/9480246345?utm_source=instagram&utm_medium=reel&utm_campaign=portfolio-tracker-launch","caption":"Your portfolio changed today.","media_path":m,"commercial_intent":False}
 if mode=="commercial":d["commercial_intent"]=True
 if mode=="missing":d.pop("campaign_url")
+if mode=="foreign":d.update(agent_id="1657185274",listing_url="https://capafy.ai/agent/1657185274")
 json.dump(d,open(p,"w"))
 PY
+SH
+cat >"$T/bin/selector" <<'SH'
+#!/usr/bin/env bash
+echo call >>"$SELECT_CALLS"
+echo '{"ok":true,"agent_id":"9480246345","name":"Portfolio Tracker","desc":"Review fresh positions across fixed dimensions.","url":"https://capafy.ai/agent/9480246345","online_pool":27}'
 SH
 cat >"$T/bin/poster" <<'SH'
 #!/usr/bin/env bash
@@ -48,6 +54,7 @@ case_setup(){
  MEDIA="$C/reel.mp4"; printf '\0\0\0\30ftypmp42fixture' >"$MEDIA"
  export HOME="$C/home" CAPAFY_IG_ACCOUNTS_FILE="$C/accounts" CAPAFY_IG_LIFECYCLE_STATE="$C/state/lifecycle.json" CAPAFY_OUTCOME_STATE_DIR="$C/state"
  export CAPAFY_MARKETING_RESULT="$C/state/result.json" CAPAFY_CREATIVE_CANDIDATE="$C/state/candidate.json" CAPAFY_RUN_AGENT="$T/bin/runner" CAPAFY_REEL_POSTER="$T/bin/poster"
+ export CAPAFY_LISTING_SELECTOR="$T/bin/selector" SELECT_CALLS="$C/select.calls"; : >"$SELECT_CALLS"
  export CAPAFY_MARKETING_BROWSER="$T/bin/browser" CAPAFY_TELEGRAM_SENDER="$T/bin/sender" CAPAFY_LAUNCHCTL="$T/bin/launchctl" CAPAFY_IG_LIFECYCLE="$LIFECYCLE"
  export CAPAFY_IG_TID=tab-1 CAPAFY_MARKETING_MODE=live RUN_CALLS="$C/runs" POST_CALLS="$C/posts" MESSAGES="$C/messages" KICKS="$C/kicks" MEDIA
  unset CANDIDATE_MODE POSTER_MODE
@@ -61,6 +68,9 @@ case_setup needed; bash "$DAILY" >/dev/null 2>&1
 eq "needed does not call creative" "$(wc -l <"$RUN_CALLS" | tr -d ' ')" 0; eq "needed wakes manager" "$(wc -l <"$KICKS" | tr -d ' ')" 1
 case_setup immediate; active; export CAPAFY_MARKETING_MODE=dry POSTER_MODE=dry; bash "$DAILY" >/dev/null 2>&1
 eq "verified session immediately calls creative" "$(wc -l <"$RUN_CALLS" | tr -d ' ')" 1; has "immediate probe reaches poster" "$POST_CALLS" "--expected-capability publish_probe"
+eq "immediate probe selects from seller inventory" "$(wc -l <"$SELECT_CALLS" | tr -d ' ')" 1
+case_setup foreign; active; export CANDIDATE_MODE=foreign; bash "$DAILY" >/dev/null 2>&1; rc=$?
+[ "$rc" -ne 0 ] && ok "foreign public listing refused" || bad "foreign public listing accepted"; eq "foreign listing not posted" "$(wc -l <"$POST_CALLS" | tr -d ' ')" 0
 case_setup commercial; active; export CANDIDATE_MODE=commercial; bash "$DAILY" >/dev/null 2>&1; rc=$?
 [ "$rc" -ne 0 ] && ok "commercial candidate refused" || bad "commercial candidate accepted"; eq "commercial candidate not posted" "$(wc -l <"$POST_CALLS" | tr -d ' ')" 0
 case_setup missing; active; export CANDIDATE_MODE=missing; bash "$DAILY" >/dev/null 2>&1; rc=$?

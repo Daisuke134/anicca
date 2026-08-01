@@ -16,6 +16,7 @@ ENGINE="$HERE/../marketing-engine"
 RUN_AGENT="${CAPAFY_RUN_AGENT:-$ENGINE/run_agent.sh}"
 LIFECYCLE="${CAPAFY_IG_LIFECYCLE:-$HERE/scripts/capafy_ig_lifecycle.py}"
 POSTER="${CAPAFY_REEL_POSTER:-$HERE/scripts/capafy_reel_poster.py}"
+SELECTOR="${CAPAFY_LISTING_SELECTOR:-$HERE/scripts/select_listing.py}"
 BROWSER="${CAPAFY_MARKETING_BROWSER:-$HERE/../../browser/ensure_provision_browser.sh}"
 HANDOFF="${CAPAFY_MARKETING_HANDOFF:-$HERE/capafy-marketing-handoff.sh}"
 KICKSTART="${CAPAFY_LAUNCHCTL:-launchctl}"
@@ -82,7 +83,23 @@ PY
 )"
 fi
 [ -n "$tid" ] || fail "active Instagram browser tab is missing"
-prompt="Select one verified public Capafy listing and create one original product-education 9:16 MP4 plus exact caption.
+if [ -x "$SELECTOR" ]; then
+  selection_raw="$("$SELECTOR" 2>&1)"; selection_rc=$?
+else
+  selection_raw="$(python3 "$SELECTOR" 2>&1)"; selection_rc=$?
+fi
+[ "$selection_rc" -eq 0 ] || fail "owned listing selector failed"
+selection="$(python3 - "$selection_raw" <<'PY'
+import json,sys,urllib.parse
+d=json.loads(sys.argv[1]); required=("agent_id","name","desc","url")
+if d.get("ok") is not True or any(d.get(k) in (None,"") for k in required): raise SystemExit(2)
+aid=str(d["agent_id"]); u=urllib.parse.urlparse(str(d["url"]))
+if u.scheme!="https" or (u.hostname or "") not in {"capafy.ai","www.capafy.ai"} or u.path.rstrip("/")!=f"/agent/{aid}": raise SystemExit(2)
+print(json.dumps({k:d[k] for k in required},ensure_ascii=False,separators=(",",":")))
+PY
+)" || fail "owned listing selector returned invalid evidence"
+prompt="Create one original product-education 9:16 MP4 plus exact caption for the seller-owned Capafy listing in this JSON: $selection
+Use exactly this listing; do not search for or substitute another public Capafy agent.
 This first publish probe is low-pressure: no hard offer CTA and no bio-link mutation.
 Write one creative candidate JSON to $CANDIDATE with schema_version, title, agent_id,
 listing_url, campaign_url, caption, media_path, and commercial_intent=false.
@@ -90,9 +107,9 @@ Do not provision accounts, warm sessions, publish, verify publication, or send T
 evidence="$STATE_DIR/agent-runner-evidence/capafy-ig-marketing/$(date +%s)-$$"
 CAPAFY_CREATIVE_CANDIDATE="$CANDIDATE" printf '%s\n' "$prompt" | "$RUN_AGENT" --task-class marketing-agent --evidence-dir "$evidence" --task-label capafy-ig-marketing-daily --loop capafy >/dev/null 2>&1 || fail "creative agent did not complete"
 [ -f "$CANDIDATE" ] || fail "creative agent wrote no candidate"
-normalized="$(python3 - "$CANDIDATE" <<'PY'
+normalized="$(python3 - "$CANDIDATE" "$selection" <<'PY'
 import json,pathlib,sys,urllib.parse
-d=json.load(open(sys.argv[1])); required=("schema_version","title","agent_id","listing_url","campaign_url","caption","media_path","commercial_intent")
+d=json.load(open(sys.argv[1])); selected=json.loads(sys.argv[2]); required=("schema_version","title","agent_id","listing_url","campaign_url","caption","media_path","commercial_intent")
 missing=[x for x in required if x not in d or d[x] in (None,"")]
 if missing: raise SystemExit("missing candidate fields: "+",".join(missing))
 u=urllib.parse.urlparse(str(d["listing_url"]));
@@ -101,6 +118,8 @@ if d["commercial_intent"] is not False: raise SystemExit("commercial creative is
 if not pathlib.Path(d["media_path"]).is_file(): raise SystemExit("media_path is missing")
 aid=str(d["agent_id"])
 if u.path.rstrip("/")!=f"/agent/{aid}": raise SystemExit("listing_url does not match agent_id")
+if aid!=str(selected["agent_id"]) or str(d["listing_url"]).rstrip("/")!=str(selected["url"]).rstrip("/"): raise SystemExit("candidate is not the seller-owned selected listing")
+if str(d["title"]).strip()!=str(selected["name"]).strip(): raise SystemExit("candidate title does not match the seller listing")
 d["campaign_url"]=f"https://capafy-skills-daily.netlify.app/go/{urllib.parse.quote(aid,safe='')}?utm_source=instagram&utm_medium=reel&utm_campaign=capafy-skill"
 print(json.dumps(d))
 PY
