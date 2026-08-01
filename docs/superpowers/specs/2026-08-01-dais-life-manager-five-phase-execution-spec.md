@@ -1273,6 +1273,12 @@ Luma応募receiptと同じidempotencyのGoogle Calendar eventを照合するよ�
 一度も呼ばず`covered_existing`へ復元し、未存在なら従来どおりfresh travel-aware gateが成功しない限りCalendarを
 作らない。focused 8/8、Connector全体220/220成功。次はこのservice一式をhost workerで組み立てる。
 
+O1B-25進捗14（既存gog Maps経路adapter RED→GREEN）: 新しい経路サービスを増やさず、Macに導入済みの
+`gog 0.17.0 maps directions`をtransit専用・read-only・no-inputで呼ぶadapterを追加した。公式v0.17.0 sourceの
+`directions.routes[0].legs[].duration.value`契約に合わせ、全leg秒数を切上げ分へ変換する。引数注入、壊れたJSON、
+経路なし、異常durationはfail-closed。focused 19/19成功し、常設Connector testへ登録した。実Macでは
+Maps/Places API key未設定を実測したため、キーが入るまでは新規Calendar作成を成功扱いにしない。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
