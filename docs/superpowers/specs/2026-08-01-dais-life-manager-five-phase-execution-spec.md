@@ -940,6 +940,10 @@ fail closedし、keyword fallbackを作らない。本文・主催者・参加�
 設計: `docs/superpowers/specs/2026-08-02-connector-o1b18-preference-ranking-design.md`。実装plan:
 `docs/superpowers/plans/2026-08-02-connector-o1b18-preference-ranking.md`。
 
+O1B-18進捗1（RED）: 全candidate保持、`weak / unknown`保持、exact permutation、immutable provenance、
+exclude-shaped output拒否、model failure時のfallback禁止、0候補日のmodel非呼出しを5 testで定義した。
+production module不存在のため期待どおり失敗した。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
