@@ -150,6 +150,20 @@ test("the pack exposes the one verified same-day candidate state machine", async
   assert.deepEqual(calls, [{ candidates, attempt }]);
 });
 
+test("the pack exposes the rolling coverage continuation state machine", () => {
+  const calls = [];
+  const pack = createConnectorEventsPack({
+    dailyDriver: { withLumaPage: async () => {} },
+    auth: { ensureAuthenticated: async () => ({ status: "authenticated" }) },
+    evidenceStore: { record: async () => {} },
+    createAuthAwareDriver: () => ({ withLumaPage: async () => {} }),
+    createProvider: () => ({ inspectRegistration: async () => {}, submitRegistration: async () => {} }),
+    planCoverageContinuation(input) { calls.push(input); return "continuation"; },
+  });
+  assert.equal(pack.planCoverageContinuation("coverage", ["outcome"], "now"), "continuation");
+  assert.deepEqual(calls, [{ coverage: "coverage", observedOutcomes: ["outcome"], now: "now" }]);
+});
+
 test("pack construction fails closed without auth, driver, or evidence store", () => {
   assert.throws(() => createConnectorEventsPack({}), /events pack configuration unavailable/i);
   assert.throws(() => createConnectorEventsPack({
