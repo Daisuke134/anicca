@@ -5,6 +5,7 @@
 "use strict";
 
 const { execFileSync } = require("node:child_process");
+const { canonicalEventUrl } = require("../canonical-event-url.js");
 
 function isoZ(ms) {
   return new Date(ms).toISOString().replace(/\.\d{3}Z$/, "Z");
@@ -15,6 +16,54 @@ function isoZ(ms) {
 // passed as a single glued `--flag=value` token (see opt()) so a leading "-" can never smuggle a flag.
 const isFlaglike = (s) => /^-/.test(String(s == null ? "" : s));
 const opt = (flag, value) => `${flag}=${value}`;
+const CONNECTOR_KEY = "lm_connector_event";
+
+function connectorInvalid() { throw new Error("Connector calendar invalid"); }
+function connectorUnavailable() { throw new Error("Connector calendar unavailable"); }
+
+function connectorInstant(value) {
+  const text = String(value == null ? "" : value).trim();
+  if (!Number.isFinite(Date.parse(text)) || !/[zZ]|[+-]\d\d:\d\d$/.test(text)) connectorInvalid();
+  return text;
+}
+
+function connectorText(value, max) {
+  const text = String(value == null ? "" : value).replace(/\s+/g, " ").trim();
+  if (!text || text.length > max || /[\x00-\x1f\x7f]/.test(text)) connectorInvalid();
+  return text;
+}
+
+function connectorCalendarId(value) {
+  const text = connectorText(value, 1_024);
+  if (isFlaglike(text)) connectorInvalid();
+  return text;
+}
+
+function connectorIdempotency(value) {
+  const text = String(value == null ? "" : value).trim();
+  if (!/^[0-9a-f]{64}$/.test(text)) connectorInvalid();
+  return text;
+}
+
+function connectorCanonicalUrl(value) {
+  const url = canonicalEventUrl(value);
+  if (!url || !["luma.com", "www.luma.com", "lu.ma"].includes(new URL(url).hostname.toLowerCase())) {
+    connectorInvalid();
+  }
+  return url;
+}
+
+function connectorProviderReceipt(value) {
+  const source = value && value.event && typeof value.event === "object" ? value.event : value;
+  const id = source && connectorText(source.id, 1_024);
+  let link;
+  try { link = new URL(connectorText(source && source.htmlLink, 2_000)); } catch { connectorUnavailable(); }
+  if (
+    !id || isFlaglike(id) || link.protocol !== "https:" || link.hostname !== "calendar.google.com"
+    || link.username || link.password
+  ) connectorUnavailable();
+  return Object.freeze({ id, htmlLink: link.toString() });
+}
 
 function makeGogCalendar({ bin, account, keyring, calId = "primary", run } = {}) {
   const gogBin = bin || process.env.GOG_BIN || "gog";
@@ -61,6 +110,47 @@ function makeGogCalendar({ bin, account, keyring, calId = "primary", run } = {})
         if (strict) throw error;
         return [];
       }
+    },
+    async findConnectorEvents(input = {}) {
+      if (!acct) connectorUnavailable();
+      const calendarId = connectorCalendarId(input.calendarId);
+      const idempotencyValue = connectorIdempotency(input.idempotencyValue);
+      const timeMin = connectorInstant(input.timeMin);
+      const timeMax = connectorInstant(input.timeMax);
+      if (Date.parse(timeMax) <= Date.parse(timeMin)) connectorInvalid();
+      let data;
+      try {
+        data = JSON.parse(exec([
+          "calendar", "events", calendarId, "-j", "--all-pages", "--no-input",
+          opt("--from", timeMin), opt("--to", timeMax),
+          opt("--private-prop-filter", `${CONNECTOR_KEY}=${idempotencyValue}`),
+        ]));
+      } catch { connectorUnavailable(); }
+      const events = Array.isArray(data) ? data : (data.events || data.items || []);
+      if (!Array.isArray(events)) connectorUnavailable();
+      return Object.freeze(events.map(connectorProviderReceipt));
+    },
+    async createConnectorEvent(input = {}) {
+      if (!acct) connectorUnavailable();
+      const calendarId = connectorCalendarId(input.calendarId);
+      const idempotencyValue = connectorIdempotency(input.idempotencyValue);
+      const title = connectorText(input.title, 500);
+      const startAt = connectorInstant(input.startAt);
+      const endAt = connectorInstant(input.endAt);
+      const location = connectorText(input.location, 2_000);
+      const canonicalUrl = connectorCanonicalUrl(input.canonicalUrl);
+      if (Date.parse(endAt) <= Date.parse(startAt)) connectorInvalid();
+      let data;
+      try {
+        data = JSON.parse(exec([
+          "calendar", "create", calendarId, "-j", "--no-input",
+          opt("--summary", title), opt("--from", startAt), opt("--to", endAt),
+          opt("--location", location), opt("--description", canonicalUrl),
+          opt("--source-url", canonicalUrl), opt("--source-title", "Luma"),
+          opt("--private-prop", `${CONNECTOR_KEY}=${idempotencyValue}`),
+        ], 30_000));
+      } catch { connectorUnavailable(); }
+      return connectorProviderReceipt(data);
     },
     // Raw Google-Calendar-shaped items for [timeMin, timeMax]. gog --from/--to accept RFC3339 directly.
     // strict (history path): failure throws instead of masquerading as an empty calendar — see
