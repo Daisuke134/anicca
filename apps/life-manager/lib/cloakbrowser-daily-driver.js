@@ -28,7 +28,7 @@ function funderUrl(value, policy = {}) {
   try { url = new URL(String(value == null ? "" : value).trim()); }
   catch { throw new Error("Funder form URL invalid"); }
   const origins = policy.allowed_origins;
-  if (url.protocol !== "https:" || url.username || url.password
+  if (url.protocol !== "https:" || url.username || url.password || !/^[a-z0-9][a-z0-9._-]{1,99}$/.test(String(policy.funder_id || ""))
     || !Array.isArray(origins) || origins.length < 1 || origins.length > 50
     || origins.some((origin) => {
       try { const allowed = new URL(origin); return allowed.origin !== origin || allowed.protocol !== "https:" || allowed.username || allowed.password; }
@@ -36,6 +36,14 @@ function funderUrl(value, policy = {}) {
     }) || !origins.includes(url.origin)) throw new Error("Funder form URL invalid");
   url.hash = "";
   return url.toString();
+}
+
+function submissionDayGate(value, policy) {
+  if (!value || value.schema_version !== 1 || value.decision !== "allow" || value.submit_allowed !== true
+    || value.funder_id !== policy.funder_id || !/^funder-day-gate:[0-9a-f]{64}$/.test(String(value.gate_id || ""))) {
+    throw new Error("Funder submission-day gate invalid");
+  }
+  return value;
 }
 
 function safePath(value) {
@@ -111,7 +119,8 @@ function createCloakBrowserDailyDriver(options = {}) {
     async withLumaPage(value, task) {
       return withOwnedPage(lumaUrl(value), task);
     },
-    async withFunderPage(value, policy, task) {
+    async withFunderPage(value, policy, gate, task) {
+      submissionDayGate(gate, policy);
       return withOwnedPage(funderUrl(value, policy), task);
     },
   });

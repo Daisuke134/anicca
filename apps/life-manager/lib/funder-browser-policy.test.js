@@ -16,7 +16,8 @@ function fixture(contextCount = 1) {
 test("official funder form uses only :9222 shared context and closes only its owned page", async () => {
   const fx = fixture();
   const driver = createCloakBrowserDailyDriver({ connectOverCDP: fx.connectOverCDP });
-  const result = await driver.withFunderPage("https://apply.ycombinator.com/home", { allowed_origins: ["https://apply.ycombinator.com"] }, async (page, metadata) => {
+  const gate = { schema_version: 1, gate_id: `funder-day-gate:${"a".repeat(64)}`, funder_id: "yc-f26", decision: "allow", submit_allowed: true };
+  const result = await driver.withFunderPage("https://apply.ycombinator.com/home", { funder_id: "yc-f26", allowed_origins: ["https://apply.ycombinator.com"] }, gate, async (page, metadata) => {
     assert.equal(page, fx.page); assert.equal(metadata.endpoint, "http://127.0.0.1:9222"); return "ready";
   });
   assert.equal(result, "ready");
@@ -26,10 +27,14 @@ test("official funder form uses only :9222 shared context and closes only its ow
 
 test("funder page rejects origin drift, credentials, and multiple shared contexts", async () => {
   const driver = createCloakBrowserDailyDriver({ connectOverCDP: fixture().connectOverCDP });
-  await assert.rejects(driver.withFunderPage("https://evil.example/form", { allowed_origins: ["https://apply.ycombinator.com"] }, async () => {}), /funder/i);
-  await assert.rejects(driver.withFunderPage("https://u:p@apply.ycombinator.com/home", { allowed_origins: ["https://apply.ycombinator.com"] }, async () => {}), /funder/i);
+  const policy = { funder_id: "yc-f26", allowed_origins: ["https://apply.ycombinator.com"] };
+  const gate = { schema_version: 1, gate_id: `funder-day-gate:${"a".repeat(64)}`, funder_id: "yc-f26", decision: "allow", submit_allowed: true };
+  await assert.rejects(driver.withFunderPage("https://evil.example/form", policy, gate, async () => {}), /funder/i);
+  await assert.rejects(driver.withFunderPage("https://u:p@apply.ycombinator.com/home", policy, gate, async () => {}), /funder/i);
+  await assert.rejects(driver.withFunderPage("https://apply.ycombinator.com/home", policy, null, async () => {}), /submission-day/i);
+  await assert.rejects(driver.withFunderPage("https://apply.ycombinator.com/home", policy, { ...gate, submit_allowed: false }, async () => {}), /submission-day/i);
   const many = createCloakBrowserDailyDriver({ connectOverCDP: fixture(2).connectOverCDP });
-  await assert.rejects(many.withFunderPage("https://apply.ycombinator.com/home", { allowed_origins: ["https://apply.ycombinator.com"] }, async () => {}), /shared context/i);
+  await assert.rejects(many.withFunderPage("https://apply.ycombinator.com/home", policy, gate, async () => {}), /shared context/i);
 });
 
 test("every active funder route is bound to the one daily-driver and never launches a browser", () => {
