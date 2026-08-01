@@ -7,15 +7,19 @@
 // runOrgan is that missing measurement, and it keeps the existing swallow-and-continue contract.
 
 async function runOrgan({ label, uid, run, log, now }) {
+  // `log` defaults rather than being required: this wrapper's entire job is to never take down its
+  // caller, and a missing logger would otherwise throw from the catch block and propagate — the
+  // exact failure the wrapper exists to prevent.
+  const write = log || console.log;
   const clock = now || Date.now;
   const started = clock();
   const who = `uid=${String(uid || "?").slice(0, 12)}`;
   try {
     const value = await run();
-    log(`[${label}] ${who} ms=${clock() - started}`);
+    write(`[${label}] ${who} ms=${clock() - started}`);
     return value;
   } catch (e) {
-    log(`[${label}] ${who} ms=${clock() - started} err ${e && e.message}`);
+    write(`[${label}] ${who} ms=${clock() - started} err ${e && e.message}`);
     return null;
   }
 }
