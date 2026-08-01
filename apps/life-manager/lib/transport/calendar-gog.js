@@ -80,7 +80,16 @@ function makeGogCalendar({ bin, account, keyring, calId = "primary", run } = {})
         opt("--from", isoZ(startMs)), opt("--to", isoZ(startMs + durMs))];
       if (args.location) a.push(opt("--location", args.location));
       if (args.description) a.push(opt("--description", args.description));
-      try { exec(a, 30000); return { successful: true }; } catch { return { successful: false }; }
+      try {
+        const raw = JSON.parse(exec(a, 30000));
+        const event = raw && (raw.event || raw.result || raw);
+        const eventId = String(event && (event.id || event.event_id) || "").trim();
+        const htmlLink = String(event && (event.htmlLink || event.html_link) || "").trim();
+        if (!eventId || !/^https:\/\/calendar\.google\.com\//.test(htmlLink)) {
+          return { successful: false };
+        }
+        return { successful: true, event_id: eventId, html_link: htmlLink };
+      } catch { return { successful: false }; }
     },
     // Accepts {calendar_id, event_id, location, ...} (Composio dialect) → gog calendar update.
     async patchEvent(_uid, args = {}) {

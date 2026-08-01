@@ -47,19 +47,27 @@ test("readAllCalendarFreeBusy uses strict freebusy --all for the exact window", 
 });
 
 test("createEvent translates Composio dialect → gog --from/--to/--summary/--location", async () => {
-  const { run, calls } = recorder("{}");
+  const { run, calls } = recorder('{"event":{"id":"evt-123","htmlLink":"https://calendar.google.com/calendar/event?eid=abc"}}');
   const cal = makeGogCalendar({ account: ACCT, run });
   const r = await cal.createEvent("u", {
     summary: "[Travel] 🚆 A→B", start_datetime: "2026-06-21T05:00:00", event_duration_hour: 0,
     event_duration_minutes: 20, calendar_id: "primary", location: "東京駅", description: "auto",
   });
   assert.equal(r.successful, true);
+  assert.equal(r.event_id, "evt-123");
+  assert.equal(r.html_link, "https://calendar.google.com/calendar/event?eid=abc");
   const a = calls[0];
   assert.deepEqual(a.slice(0, 3), ["calendar", "create", "primary"]);
   assert.ok(a.includes("--from=2026-06-21T05:00:00Z"));      // appended Z, glued
   assert.ok(a.includes("--to=2026-06-21T05:20:00Z"));        // +20 min
   assert.ok(a.includes("--summary=[Travel] 🚆 A→B"));
   assert.ok(a.includes("--location=東京駅"));
+});
+
+test("createEvent never reports success when gog omits the positive event ID or URL", async () => {
+  assert.deepEqual(await makeGogCalendar({ account: ACCT, run: () => "{}" }).createEvent("u", {
+    start_datetime: "2026-06-21T05:00:00", event_duration_minutes: 20,
+  }), { successful: false });
 });
 
 test("createEvent: bad start_datetime → {successful:false}, no run", async () => {
