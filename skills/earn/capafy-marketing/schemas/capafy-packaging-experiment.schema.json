@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object", "additionalProperties": false,
+  "required": ["schema_version", "kind", "portfolio_source_digest", "experiment_id", "agent_id", "owner", "purchase_model", "price_usd", "billing_interval", "metered_unit", "bounded_deliverable", "value_metric", "renewal_reason", "projected_units", "platform_fee_rate", "model_cost_per_unit_usd", "projected_gross_usd", "projected_platform_fee_usd", "projected_cost_usd", "projected_contribution_usd", "observed_gross_usd", "observed_cost_usd", "observed_contribution_usd", "success_metric", "stop_condition", "activated_at", "evidence"],
+  "properties": {
+    "schema_version": {"type": "integer", "const": 1},
+    "kind": {"type": "string", "const": "capafy_packaging_experiment"},
+    "portfolio_source_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "experiment_id": {"type": "string", "minLength": 1},
+    "agent_id": {"type": "string", "pattern": "^[0-9]+$"},
+    "owner": {"type": "string", "enum": ["builder", "marketer"]},
+    "purchase_model": {"type": "string", "enum": ["subscription", "usage", "one_time", "hybrid"]},
+    "price_usd": {"type": "string", "pattern": "^(0|[1-9][0-9]*)\\.[0-9]{2}$"},
+    "billing_interval": {"type": ["string", "null"], "enum": ["day", "week", "month", null]},
+    "metered_unit": {"type": ["string", "null"]},
+    "bounded_deliverable": {"type": ["string", "null"]},
+    "value_metric": {"type": "string", "minLength": 1},
+    "renewal_reason": {"type": ["string", "null"]},
+    "projected_units": {"type": "integer", "minimum": 1},
+    "platform_fee_rate": {"type": "string", "pattern": "^(0|1)\\.[0-9]{4}$"},
+    "model_cost_per_unit_usd": {"type": "string", "pattern": "^(0|[1-9][0-9]*)\\.[0-9]{2}$"},
+    "projected_gross_usd": {"type": "string"},
+    "projected_platform_fee_usd": {"type": "string"},
+    "projected_cost_usd": {"type": "string"},
+    "projected_contribution_usd": {"type": "string"},
+    "observed_gross_usd": {"type": ["string", "null"]},
+    "observed_cost_usd": {"type": ["string", "null"]},
+    "observed_contribution_usd": {"type": ["string", "null"]},
+    "success_metric": {"type": "string", "minLength": 1},
+    "stop_condition": {"type": "string", "minLength": 1},
+    "activated_at": {"type": "string"},
+    "evidence": {
+      "type": "array", "minItems": 2,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["url", "observed_at", "claim", "confidence"],
+        "properties": {
+          "url": {"type": "string", "pattern": "^https://"},
+          "observed_at": {"type": "string"},
+          "claim": {"type": "string", "minLength": 1},
+          "confidence": {"type": "string", "enum": ["high", "medium", "low"]}
+        }
+      }
+    }
+  }
+}

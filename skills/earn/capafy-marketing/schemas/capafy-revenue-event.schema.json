@@ -17,7 +17,8 @@
         "listing.submitted", "listing.approved", "listing.observed", "content.published", "content.measured",
         "account.created", "account.session_ready", "account.publish_probe_ready",
         "account.post_verified", "order.received", "balance.reconciled", "payout.received",
-        "cost.measured", "incident.detected", "incident.repair_started", "incident.repaired",
+        "cost.measured", "experiment.activated", "experiment.measured", "experiment.stopped",
+        "incident.detected", "incident.repair_started", "incident.repaired",
         "incident.verified", "incident.unresolved"
       ]
     },
