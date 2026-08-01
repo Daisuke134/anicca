@@ -349,11 +349,22 @@ function mentalDeps(u, events, deps = {}) {
 async function wakeCallOnce(u, nowMs, deps = {}) {
   if (u && u.daily_automation_enabled === false) return;
   const now = nowMs !== undefined ? nowMs : Date.now();
+  // LM-7: calendar polling is represented once per UTC day/user. The helper checks today's row
+  // in Supabase on every tick; no in-memory counter is used, so restarts preserve aggregation.
+  //
+  // DETACHED ON PURPOSE. This is 1-2 Supabase round trips with no timeout and no AbortController,
+  // and it is pure accounting — nothing below reads its result. Awaited, it was the same failure
+  // this whole split exists to end ("something slow sits in front of the dial"), surviving in
+  // miniature: a slow store spent the user's entire wake budget and the phone never rang. Tightening
+  // that budget from 90s to 20s made the exposure worse, not better. So the write still happens; it
+  // just no longer gates the call. The .catch is mandatory rather than tidy — an un-caught detached
+  // rejection is an unhandled rejection, which can take the whole scheduler process down — and it
+  // LOGS, because a silently swallowed ledger failure is the invisibility spec §1.2 is about.
+  Promise.resolve()
+    .then(() => (deps.recordDailyPoll || recordDailyComposioPoll)(u.uid, { nowMs: now }))
+    .catch((e) => console.error(`[wake] daily poll ledger uid=${String(u.uid).slice(0, 12)} err ${e && e.message}`));
   let events;
   try {
-    // LM-7: calendar polling is represented once per UTC day/user. The helper checks today's row
-    // in Supabase on every tick; no in-memory counter is used, so restarts preserve aggregation.
-    await (deps.recordDailyPoll || recordDailyComposioPoll)(u.uid, { nowMs: now });
     // 6h horizon: a long-travel event AND its [Travel] block must both be visible at the moment we
     // wake 15 min before DEPARTURE, which can be hours before the event itself.
     // 12c: fetch once with a lookback wide enough for the MENTAL trough (an intense block that

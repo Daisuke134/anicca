@@ -79,6 +79,45 @@ test("the dial half does not run a single organ — a stalled organ cannot reach
   assert.ok(elapsed < 1000, `the dial path must not wait on organs (took ${elapsed}ms)`);
 });
 
+test("a hung bookkeeping write cannot hold the dial — the daily poll ledger is not awaited", async () => {
+  // Same failure class as the test above, in miniature and easier to miss: recordDailyComposioPoll
+  // is 1-2 Supabase round trips with no timeout and no AbortController, and it sat AWAITED in front
+  // of the dial. It records that a calendar poll happened today — accounting, not a precondition —
+  // so a slow store must cost the ledger, never the phone call. Narrowing the budget from 90s to 20s
+  // made this worse, not better: the same stall now abandons the user 4.5x sooner.
+  clearEvents();
+  const h = deps();
+  h.deps.recordDailyPoll = () => new Promise(() => {}); // never resolves, never rejects
+  const started = Date.now();
+  await wakeCallOnce(USER, DEPARTURE_MS - 5 * MINUTE, h.deps);
+  const elapsed = Date.now() - started;
+  assert.equal(h.dialed.length, 1, "the call is still placed");
+  assert.ok(elapsed < 1000, `the dial path must not wait on bookkeeping (took ${elapsed}ms)`);
+});
+
+test("a failing daily-poll ledger is logged, not swallowed, and never crashes the dial", async () => {
+  // Fire-and-forget without a .catch turns a Supabase blip into an unhandled rejection that can take
+  // the whole scheduler process down — a worse outcome than the blocking call it replaced. And a
+  // .catch that swallows silently recreates the invisibility this whole spec exists to end.
+  clearEvents();
+  const h = deps();
+  h.deps.recordDailyPoll = async () => { throw new Error("supabase 503"); };
+  const errors = [];
+  const originalError = console.error;
+  console.error = (...args) => errors.push(args.join(" "));
+  try {
+    await wakeCallOnce(USER, DEPARTURE_MS - 5 * MINUTE, h.deps);
+    await new Promise((r) => setImmediate(r)); // let the detached rejection settle
+  } finally {
+    console.error = originalError;
+  }
+  assert.equal(h.dialed.length, 1, "the call is still placed");
+  assert.ok(
+    errors.some((line) => /supabase 503/.test(line)),
+    `the ledger failure is reported, not hidden (saw ${JSON.stringify(errors)})`,
+  );
+});
+
 test("the wake loop's per-user budget is its own, and far below the organ budget", () => {
   assert.equal(WAKE_USER_TIMEOUT_MS, 20000);
   assert.ok(WAKE_USER_TIMEOUT_MS < 90000, "the shared 90s budget was sized for the care organ, not the dial");
