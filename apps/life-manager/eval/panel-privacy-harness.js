@@ -131,6 +131,15 @@ function panelFetch(source, hostileValue) {
         rows_by_organ: { daily: [], physical: [], mental: [], financial: [] },
       });
     }
+    if (url.pathname.endsWith("/rpc/lm_panel_fundraising_funnel")) {
+      assert.equal(init.method, "POST");
+      return jsonResponse({ schema_version: 1, events: [{
+        funder_id: "yc-fall-2026",
+        source_id: `funder-ledger:${"a".repeat(64)}`,
+        event_kind: "application",
+        occurred_at: "2026-08-01T17:31:05.000Z",
+      }] });
+    }
     throw new Error(`unexpected panel privacy fixture request: ${url.pathname}`);
   };
 }
@@ -153,6 +162,7 @@ function panelCalendar(source, hostileValue) {
 }
 
 function malformedCandidate(section) {
+  if (section === "fundraising") return { schema_version: 1, applications: [], summary: {} };
   if (section === "scores") return { organs: {} };
   if (section === "gates") return { gates: [{ id: "location", unlocked: "yes" }] };
   if (section === "settings") return { call_language: "fr" };
@@ -191,7 +201,12 @@ async function capturePanelResponse({
     commandStore: store,
     calendarStatus: async () => "MISSING",
     responseCandidateTransform: responseCandidateTransform
-      || (malformed ? candidateTransform(section) : undefined),
+      || (malformed ? candidateTransform(section)
+        : source === "fundraising-program"
+          ? (candidateSection, candidate) => candidateSection === "fundraising"
+            ? { ...candidate, applications: candidate.applications.map((item) => ({ ...item, program: hostileValue })) }
+            : candidate
+          : undefined),
   };
 
   if (section === "control-center") {
@@ -322,6 +337,7 @@ function assertContractShape() {
     assert.match(recipe.value, RECIPE_PATTERNS[recipe.id], `${recipe.id}: pinned semantic shape`);
   }
   assert.deepEqual(CHANNELS.map((channel) => channel.id), [
+    "api-fundraising-program",
     "api-timeline-text",
     "api-ledger-href",
     "api-settings-call-language",
@@ -333,12 +349,13 @@ function assertContractShape() {
     "browser-control-center-identity",
   ]);
   assert.deepEqual(MALFORMED_CASES.map((testCase) => testCase.section), [
+    "fundraising",
     "scores",
     "gates",
     "settings",
     "control-center",
   ]);
-  assert.deepEqual(EXPECTED_COUNTS, { api: 177, browser: 63 });
+  assert.deepEqual(EXPECTED_COUNTS, { api: 197, browser: 83 });
 }
 
 function assertSettingsNull(body) {

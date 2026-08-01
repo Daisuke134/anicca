@@ -11,7 +11,8 @@ CREATE TABLE IF NOT EXISTS public.lm_outbound_result_ledger (
   entity_id text NOT NULL,
   result_type text NOT NULL CHECK (result_type IN ('confirmation', 'reply')),
   status text NOT NULL CHECK (status IN (
-    'confirmed', 'reply_received', 'rejected', 'meeting_requested'
+    'confirmed', 'reply_received', 'rejected', 'meeting_requested',
+    'offer_received', 'funded'
   )),
   provider_message_id text NOT NULL CHECK (provider_message_id ~ '^[0-9a-f]{16,32}$'),
   provider_thread_id text NOT NULL CHECK (provider_thread_id ~ '^[0-9a-f]{16,32}$'),
@@ -27,7 +28,8 @@ CREATE TABLE IF NOT EXISTS public.lm_outbound_result_ledger (
   UNIQUE (tenant_id, provider_message_id),
   CHECK ((result_type = 'confirmation' AND status = 'confirmed') OR
          (result_type = 'reply' AND status IN (
-           'reply_received', 'rejected', 'meeting_requested'
+           'reply_received', 'rejected', 'meeting_requested',
+           'offer_received', 'funded'
          ))),
   CONSTRAINT lm_outbound_fundraising_content_check CHECK (organ <> 'fundraising' OR
     (sender_sha256 IS NOT NULL AND subject_sha256 IS NOT NULL AND body_sha256 IS NOT NULL)),
@@ -40,6 +42,22 @@ ALTER TABLE public.lm_outbound_result_ledger
   ALTER COLUMN sender_sha256 DROP NOT NULL,
   ALTER COLUMN subject_sha256 DROP NOT NULL,
   ALTER COLUMN body_sha256 DROP NOT NULL;
+
+-- Upgrade the O1C-17 status contract without changing any existing row.
+ALTER TABLE public.lm_outbound_result_ledger
+  DROP CONSTRAINT IF EXISTS lm_outbound_result_ledger_status_check,
+  DROP CONSTRAINT IF EXISTS lm_outbound_result_ledger_check;
+ALTER TABLE public.lm_outbound_result_ledger
+  ADD CONSTRAINT lm_outbound_result_ledger_status_check CHECK (status IN (
+    'confirmed', 'reply_received', 'rejected', 'meeting_requested',
+    'offer_received', 'funded'
+  )),
+  ADD CONSTRAINT lm_outbound_result_ledger_check CHECK (
+    (result_type = 'confirmation' AND status = 'confirmed') OR
+    (result_type = 'reply' AND status IN (
+      'reply_received', 'rejected', 'meeting_requested', 'offer_received', 'funded'
+    ))
+  );
 
 DO $$
 BEGIN

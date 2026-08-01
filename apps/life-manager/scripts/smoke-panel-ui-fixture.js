@@ -10,6 +10,9 @@ const { handlePanelApiRequest } = require("../lib/panel-api.js");
 const NOW = Date.parse("2026-07-21T12:00:00.000Z");
 const SESSION = Buffer.alloc(32, 0x7c).toString("base64url");
 const SESSION_HASH = crypto.createHash("sha256").update(SESSION).digest("hex");
+const FUNNEL_SNAPSHOT = process.env.PANEL_FUNNEL_SNAPSHOT_JSON
+  ? JSON.parse(process.env.PANEL_FUNNEL_SNAPSHOT_JSON)
+  : { schema_version: 1, events: [] };
 
 function response(body, status = 200) {
   return { ok: status >= 200 && status < 300, status, json: async () => body };
@@ -20,6 +23,16 @@ async function fixtureFetch(input, init = {}) {
   if (url.pathname.endsWith("/rpc/resolve_lm_panel_session")) return response(JSON.parse(init.body).p_session_hash === SESSION_HASH ? [{ uid: "fixture-u1", chat_id: "101", rotated: false }] : []);
   if (url.pathname.endsWith("/lm_panel_sessions")) {
     return response(url.searchParams.get("session_hash") === `eq.${SESSION_HASH}` ? [{ uid: "fixture-u1", chat_id: "101" }] : []);
+  }
+  if (url.pathname.endsWith("/rpc/lm_panel_fundraising_funnel")) {
+    assert.deepEqual(JSON.parse(init.body), { p_uid: "fixture-u1" });
+    return response(structuredClone(FUNNEL_SNAPSHOT));
+  }
+  if (url.pathname.endsWith("/rpc/lm_panel_score_outcome_snapshot")) {
+    assert.equal(JSON.parse(init.body).p_uid, "fixture-u1");
+    return response({ overflow: false, rows_by_organ: {
+      daily: [], physical: [], mental: [], financial: [],
+    } });
   }
   assert.equal(url.searchParams.get("uid"), "eq.fixture-u1", `tenant filter missing: ${url}`);
   if (url.pathname.endsWith("/lm_users")) return response([{
@@ -57,6 +70,7 @@ const calendar = {
 let fixturePreferences = { call_enabled: true, notifications_enabled: true, daily_automation_enabled: true, delegation_enabled: false, call_time_zone: "Asia/Tokyo" };
 const fixtureReceipts = new Map();
 const commandStore = {
+  assertCurrentScope: async (scope) => scope.uid === "fixture-u1" && scope.chatId === "101",
   readUser: async () => ({ uid: "fixture-u1", name: "Fixture User", telegram_chat_id: "101", phone: "+810000000000", call_language: "ja", wake_policy: "travel-only", calendar_provider: "composio_gcal", gmail_account_id: null, payout_destination: null }),
   readPreferences: async () => ({ ...fixturePreferences }),
   readLocation: async () => ({ observed_at: "2026-07-21T11:00:00.000Z", expires_at: "2099-01-01T00:00:00.000Z" }),
@@ -117,7 +131,7 @@ async function assertShell(base) {
   const result = await fetch(`${base}/panel`, { headers: { Cookie: `lm_panel_session=${SESSION}` } });
   assert.equal(result.status, 200);
   const html = await result.text();
-  const sections = ["timeline", "scores", "ledger", "gates", "settings", "control-center"];
+  const sections = ["fundraising", "timeline", "scores", "ledger", "gates", "settings", "control-center"];
   let previous = -1;
   for (const section of sections) {
     const position = html.indexOf(`data-panel-section="${section}"`);
@@ -127,7 +141,7 @@ async function assertShell(base) {
   }
   assert.match(html, /<button\b/i);
   assert.match(html, /addEventListener\("click"/);
-  console.log("panel DOM assert: 6/6 sections present; semantic controls wired");
+  console.log("panel DOM assert: 7/7 sections present; semantic controls wired");
 }
 
 async function main() {

@@ -7,8 +7,9 @@ const { roundedScoreValue } = require("./panel-score-semantics.js");
 
 let renderPanelPage = null;
 let renderScoreCards = null;
+let renderFundraisingFunnel = null;
 try {
-  ({ renderPanelPage, renderScoreCards } = require("./panel-ui.js"));
+  ({ renderPanelPage, renderScoreCards, renderFundraisingFunnel } = require("./panel-ui.js"));
 } catch (error) {
   if (error.code !== "MODULE_NOT_FOUND") throw error;
 }
@@ -41,19 +42,56 @@ test("PANEL-8h: panel shell identifies the product only as Life Manager", () => 
   assert.doesNotMatch(html, /\bAnicca\b/i);
 });
 
-test("LM-33c: panel renders the five mirror sections in spec order", () => {
+test("LM-33c: panel renders the mirror sections in spec order", () => {
   assert.equal(typeof renderPanelPage, "function");
   const html = renderPanelPage();
   assert.match(html, /<html lang="ja">/);
   assert.match(html, /<meta name="viewport" content="width=device-width,initial-scale=1">/);
 
-  const sections = ["timeline", "scores", "ledger", "gates", "settings"];
+  const sections = ["fundraising", "timeline", "scores", "ledger", "gates", "settings"];
   let previous = -1;
   for (const section of sections) {
     const position = html.indexOf(`data-panel-section="${section}"`);
     assert.ok(position > previous, `${section} must exist after the previous section`);
     previous = position;
   }
+});
+
+test("O1C-18 fundraising funnel renders six observed counts and one accessible stage rail", () => {
+  assert.equal(typeof renderFundraisingFunnel, "function");
+  const html = renderFundraisingFunnel({
+    schema_version: 1,
+    summary: {
+      application: 1, confirmation: 1, interview: 0,
+      offer: 0, rejected: 0, funded: 0,
+    },
+    applications: [{
+      program: "YC Fall 2026", current_stage: "confirmation", terminal_outcome: null,
+      last_event_at: "2026-08-01T17:31:05.000Z",
+      stages: [
+        { id: "application", state: "reached", occurred_at: "2026-08-01T17:31:05.000Z" },
+        { id: "confirmation", state: "reached", occurred_at: "2026-08-01T17:31:05.000Z" },
+        { id: "interview", state: "pending", occurred_at: null },
+        { id: "decision", state: "pending", outcome: null, occurred_at: null },
+        { id: "funded", state: "pending", occurred_at: null },
+      ],
+    }],
+  });
+  for (const label of ["応募", "確認", "面談", "オファー", "不採択", "資金受領"]) {
+    assert.match(html, new RegExp(`>${label}<`));
+  }
+  assert.equal((html.match(/data-funnel-stage=/g) || []).length, 5);
+  assert.equal((html.match(/class="funnel-count"/g) || []).length, 6);
+  assert.match(html, /YC Fall 2026/);
+  assert.doesNotMatch(html, /funder-ledger:|provider_message|thread_id|sha256/);
+});
+
+test("O1C-18 panel loads fundraising same-origin and collapses its rail vertically on mobile", () => {
+  const html = renderPanelPage();
+  assert.match(html, /fundraising:\s*"\/api\/panel\/fundraising"/);
+  assert.match(html, /validateFundraisingData\(data\)/);
+  assert.match(html, /renderFundraising/);
+  assert.match(html, /\.funnel-rail\s*\{[^}]*grid-template-columns:\s*1fr/s);
 });
 
 test("PANEL-0: panel includes a real control center and keeps read APIs same-origin", () => {

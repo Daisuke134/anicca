@@ -97,7 +97,24 @@ const PATTERNS = [
 // tracked pre-migration holes so a moved or edited line is no longer allowed.
 // order (optional): the Order that owns eliminating the tracked hole.
 const ALLOWLIST = [
-  // ---- EXPLICITLY TRACKED pre-Order-12 holes (visible, not silent passes) --
+  // ---- EXPLICITLY TRACKED migration holes (visible, not silent passes) ----
+  // The funder gates still read the shared signing key from the legacy secret
+  // vault. Order 6 owns provisioning the portable replacement and removing
+  // these two defaults; pin both exact lines until that cutover is proven.
+  {
+    file: "apps/life-manager/lib/funder-asset-freshness.js",
+    line: 19,
+    lineIncludes: "funder-gate-signing-key",
+    reason: "funder freshness gate still reads its signing key from the legacy secret vault",
+    order: "Order 6",
+  },
+  {
+    file: "apps/life-manager/lib/funder-submission-day.js",
+    line: 7,
+    lineIncludes: "funder-gate-signing-key",
+    reason: "submission-day gate still reads its signing key from the legacy secret vault",
+    order: "Order 6",
+  },
   // The x402-sell / taskmarket / payout earn loops are NOT yet migrated; their
   // boot defaults still point at the legacy anicca code roots. Order 12
   // (resume of loop migration per spec section 12.1) owns removing these.

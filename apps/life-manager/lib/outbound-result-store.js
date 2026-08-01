@@ -6,7 +6,9 @@ const { isVerifiedJobHunterOutboundResult } = require("./job-hunter-outbound-res
 const DIGEST = /^[0-9a-f]{64}$/;
 const RESULT_ID = /^outbound-result:[0-9a-f]{64}$/;
 const GMAIL_ID = /^[0-9a-f]{16,32}$/i;
-const STATUSES = new Set(["confirmed", "reply_received", "rejected", "meeting_requested"]);
+const STATUSES = new Set([
+  "confirmed", "reply_received", "rejected", "meeting_requested", "offer_received", "funded",
+]);
 const FIELDS = Object.freeze([
   "schema_version", "tenant_id", "organ", "workflow", "source_kind", "source_id",
   "source_fence", "entity_id", "result_type", "status", "provider_message_id",

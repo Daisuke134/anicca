@@ -98,6 +98,23 @@ function makeFixture() {
       const body = JSON.parse(init.body);
       return jsonResponse(body.p_session_hash === SESSION_HASH ? [{ uid: "u1", chat_id: "101", rotated: false }] : []);
     }
+    if (url.pathname.endsWith("/rpc/lm_panel_fundraising_funnel")) {
+      const request = JSON.parse(init.body);
+      return jsonResponse({ schema_version: 1, events: request.p_uid === "u1" ? [
+        {
+          funder_id: "yc-fall-2026",
+          source_id: `funder-ledger:${"a".repeat(64)}`,
+          event_kind: "application",
+          occurred_at: "2026-08-01T17:31:05+00:00",
+        },
+        {
+          funder_id: "yc-fall-2026",
+          source_id: `funder-ledger:${"a".repeat(64)}`,
+          event_kind: "confirmation",
+          occurred_at: "2026-08-01T17:31:05+00:00",
+        },
+      ] : [] });
+    }
     if (url.pathname.endsWith("/lm_panel_sessions")) {
       return jsonResponse(url.searchParams.get("session_hash") === `eq.${SESSION_HASH}` ? [{ uid: "u1", chat_id: "101" }] : []);
     }
@@ -138,7 +155,7 @@ function makeFixture() {
   return { calls, calendarUids, fetchImpl, calendar, byUid };
 }
 
-async function withApiServer(fixture, run) {
+async function withApiServer(fixture, run, overrides = {}) {
   const server = http.createServer((req, res) => {
     Promise.resolve(handlePanelApiRequest(req, res, {
       supaUrl: "https://db.example",
@@ -147,6 +164,7 @@ async function withApiServer(fixture, run) {
       calendar: fixture.calendar,
       nowMs: NOW,
       timeZone: "UTC",
+      ...overrides,
     })).catch((error) => {
       res.writeHead(500, { "content-type": "application/json" });
       res.end(JSON.stringify({ error: error.message }));
@@ -159,6 +177,37 @@ async function withApiServer(fixture, run) {
     await new Promise((resolve) => server.close(resolve));
   }
 }
+
+test("O1C-18 authenticated fundraising endpoint projects only the scoped RPC snapshot", async () => {
+  const fixture = makeFixture();
+  await withApiServer(fixture, async (base) => {
+    const { response, body } = await getJson(base, "fundraising");
+    assert.equal(response.status, 200);
+    assert.deepEqual(body.summary, {
+      application: 1, confirmation: 1, interview: 0,
+      offer: 0, rejected: 0, funded: 0,
+    });
+    assert.equal(body.applications[0].program, "YC Fall 2026");
+    assert.equal(body.applications[0].current_stage, "confirmation");
+    assert.equal(JSON.stringify(body).includes("funder-ledger:"), false);
+  });
+  const call = fixture.calls.find(({ url }) =>
+    url.pathname.endsWith("/rpc/lm_panel_fundraising_funnel"));
+  assert.deepEqual(JSON.parse(call.init.body), { p_uid: "u1" });
+});
+
+test("O1C-18 fundraising presentation fails its section closed on transformed extra or secret data", async () => {
+  const fixture = makeFixture();
+  await withApiServer(fixture, async (base) => {
+    const { response, body } = await getJson(base, "fundraising");
+    assert.equal(response.status, 422);
+    assert.deepEqual(body, { error: "section_unavailable", section: "fundraising" });
+  }, {
+    responseCandidateTransform: (section, candidate) => section === "fundraising"
+      ? { ...candidate, provider_message_id: "19fbe6135cf98bd4" }
+      : candidate,
+  });
+});
 
 async function getJson(base, endpoint, init = {}) {
   const response = await fetch(`${base}/api/panel/${endpoint}${init.query || ""}`, {

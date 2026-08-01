@@ -192,6 +192,52 @@ test("confirmation is deterministic while reply meaning requires exact agent evi
     } }), /thread result/i);
 });
 
+test("agent-owned offer and funded judgments become verified reply results without keyword routing", async () => {
+  const receipt = submission();
+  const offer = reply({
+    id: "19fc000000000003",
+    body: wrapped("body-offer", "The partnership approved an investment offer for Anicca."),
+  });
+  const funded = reply({
+    id: "19fc000000000004",
+    internalDate: Date.parse("2026-08-02T02:00:00.000Z"),
+    body: wrapped("body-funded", "The investment funds have reached the company account."),
+  });
+  const normalized = normalizeFunderApplicationThread(
+    await trusted(rawThread([offer, funded])),
+    { submissionReceipt: receipt, ownerEmail: "keiodaisuke@gmail.com" },
+  );
+  const offerResult = buildFunderReplyResult({
+    submissionReceipt: receipt,
+    message: normalized.replies[0],
+    judgment: {
+      kind: "agent_judgment", status: "offer_received",
+      rationale: "The sender explicitly communicates an approved investment offer.",
+      evidence_quotes: ["approved an investment offer"],
+    },
+  });
+  const fundedResult = buildFunderReplyResult({
+    submissionReceipt: receipt,
+    message: normalized.replies[1],
+    judgment: {
+      kind: "agent_judgment", status: "funded",
+      rationale: "The sender explicitly confirms receipt of investment funds.",
+      evidence_quotes: ["funds have reached the company account"],
+    },
+  });
+  assert.equal(offerResult.status, "offer_received");
+  assert.equal(fundedResult.status, "funded");
+  assert.equal("body" in offerResult, false);
+  assert.equal("rationale" in fundedResult, false);
+  assert.throws(() => buildFunderReplyResult({
+    submissionReceipt: receipt, message: normalized.replies[0],
+    judgment: {
+      kind: "agent_judgment", status: "accepted",
+      rationale: "Unknown funnel state.", evidence_quotes: ["approved an investment offer"],
+    },
+  }), /thread result/i);
+});
+
 test("common ledger is source-bound, fenced, append-only, RLS protected, and exact-replay only", async () => {
   assert.match(SQL, /CREATE TABLE IF NOT EXISTS public\.lm_outbound_result_ledger/i);
   assert.match(SQL, /organ IN \('job_hunter', 'fundraising'\)/i);

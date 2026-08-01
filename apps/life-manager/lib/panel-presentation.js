@@ -10,6 +10,7 @@ const {
   SCORE_NAMES,
   validScoreOrgan,
 } = require("./panel-score-display-contract.js");
+const { validateFundraisingFunnel } = require("./fundraising-funnel.js");
 
 const SAFE_TIMELINE_SENTENCE = "予定の詳細を安全に表示できず、次はカレンダーで開始時刻を確認してください。";
 const CONNECTION_NAMES = Object.freeze(["calendar", "telegram", "location", "call", "email", "wallet"]);
@@ -354,6 +355,9 @@ function validateControlCenter(candidate) {
 }
 
 function presentPanelSection(section, candidate) {
+  if (section === "fundraising") {
+    try { return validateFundraisingFunnel(candidate); } catch { fail("fundraising"); }
+  }
   if (section === "timeline") return projectTimeline(candidate);
   if (section === "ledger") return projectLedger(candidate);
   if (section === "scores") return validateScores(candidate);

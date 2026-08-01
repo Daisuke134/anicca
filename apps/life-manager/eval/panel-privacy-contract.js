@@ -88,6 +88,10 @@ const API_ORACLES = Object.freeze({
     path: Object.freeze(["identity", "name"]),
     equals: "Life Manager user",
   }),
+  "fundraising-unavailable": Object.freeze({
+    status: 422,
+    body: Object.freeze({ error: "section_unavailable", section: "fundraising" }),
+  }),
 });
 
 const BROWSER_ORACLES = Object.freeze({
@@ -103,9 +107,14 @@ const BROWSER_ORACLES = Object.freeze({
     state: "loaded",
     includes: "Life Manager user",
   }),
+  "fixed-load-error": Object.freeze({
+    state: "error",
+    includes: BROWSER_LOAD_ERROR_COPY,
+  }),
 });
 
 const CHANNELS = Object.freeze([
+  Object.freeze({ id: "api-fundraising-program", section: "fundraising", source: "fundraising-program", apiOracle: "fundraising-unavailable", browserOracle: "fixed-load-error" }),
   Object.freeze({ id: "api-timeline-text", section: "timeline", source: "timeline-text", apiOracle: "safe-timeline-sentence" }),
   Object.freeze({ id: "api-ledger-href", section: "ledger", source: "ledger-href", apiOracle: "null-ledger-link" }),
   Object.freeze({ id: "api-settings-call-language", section: "settings", source: "settings-call-language", apiOracle: "settings-unavailable" }),
@@ -133,6 +142,7 @@ const POSITIVE_CASES = Object.freeze([
 ]);
 
 const MALFORMED_CASES = Object.freeze([
+  Object.freeze({ id: "malformed-fundraising", section: "fundraising" }),
   Object.freeze({ id: "malformed-scores", section: "scores" }),
   Object.freeze({ id: "malformed-gates", section: "gates" }),
   Object.freeze({ id: "malformed-settings", section: "settings" }),

@@ -13,7 +13,7 @@ const {
 } = require("../eval/panel-privacy-harness.js");
 const { renderPanelPage } = require("./panel-ui.js");
 
-const MIRROR_SECTIONS = Object.freeze(["timeline", "scores", "ledger", "gates", "settings"]);
+const MIRROR_SECTIONS = Object.freeze(["fundraising", "timeline", "scores", "ledger", "gates", "settings"]);
 const INTERNAL_DISPLAY_MARKERS = Object.freeze([
   "lm_",
   "prompt",
@@ -84,7 +84,7 @@ function withDailyScore(candidate, mutate) {
   return next;
 }
 
-test("PANEL-8h: emitted loadPanelSection renders five projected sections as human-readable content in order", async () => {
+test("PANEL-8h: emitted loadPanelSection renders all projected sections as human-readable content in order", async () => {
   const page = renderPanelPage();
   let previous = -1;
   for (const section of MIRROR_SECTIONS) {
@@ -94,6 +94,7 @@ test("PANEL-8h: emitted loadPanelSection renders five projected sections as huma
   }
 
   const expectedCopy = {
+    fundraising: "YC Fall 2026",
     timeline: "開始の予定です。詳細はカレンダーで確認してください。",
     scores: "根拠 0件",
     ledger: "USD 10.00",
@@ -143,7 +144,7 @@ test("PANEL-8h: emitted settings and control center preserve closed null placeho
 });
 
 test("PANEL-8h: emitted loader renders only the fixed error for every closed section HTTP 422", async () => {
-  for (const section of ["scores", "gates", "settings", "control-center"]) {
+  for (const section of ["fundraising", "scores", "gates", "settings", "control-center"]) {
     const { captured, browser } = await loadCaptured(section, { malformed: true });
     assert.equal(captured.status, 422);
     assert.deepEqual(captured.body, { error: "section_unavailable", section });
@@ -177,8 +178,9 @@ test("PANEL-8h: emitted browser never displays internal names, raw objects, stac
 test("PANEL-8h: emitted page has desktop grid structure and a 375px one-column no-overflow contract", () => {
   const page = renderPanelPage();
   assert.match(page, /\.panel-grid\s*\{[^}]*grid-template-columns:\s*repeat\(12,\s*minmax\(0,\s*1fr\)\)/s);
-  assert.match(page, /\.panel-section:nth-child\(1\)\s*\{[^}]*grid-column:\s*span 7/s);
-  assert.match(page, /\.panel-section:nth-child\(2\)\s*\{[^}]*grid-column:\s*span 5/s);
+  assert.match(page, /\.panel-section:nth-child\(1\)\s*\{[^}]*grid-column:\s*span 12/s);
+  assert.match(page, /\.panel-section:nth-child\(2\)\s*\{[^}]*grid-column:\s*span 7/s);
+  assert.match(page, /\.panel-section:nth-child\(3\)\s*\{[^}]*grid-column:\s*span 5/s);
   assert.match(page, /@media\s*\(max-width:\s*640px\)\s*\{[\s\S]*?\.panel-grid\s*\{[^}]*grid-template-columns:\s*1fr/s);
   assert.match(page, /@media\s*\(max-width:\s*640px\)\s*\{[\s\S]*?\.panel-section:nth-child\(n\)\s*\{[^}]*grid-column:\s*1/s);
   assert.match(page, /body\s*\{[^}]*overflow-x:\s*hidden/s);

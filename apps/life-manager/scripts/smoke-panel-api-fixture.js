@@ -22,6 +22,16 @@ async function fixtureFetch(input, init = {}) {
   if (url.pathname.endsWith("/lm_panel_sessions")) {
     return response(url.searchParams.get("session_hash") === `eq.${SESSION_HASH}` ? [{ uid: "fixture-u1", chat_id: "101" }] : []);
   }
+  if (url.pathname.endsWith("/rpc/lm_panel_fundraising_funnel")) {
+    assert.deepEqual(JSON.parse(init.body), { p_uid: "fixture-u1" });
+    return response({ schema_version: 1, events: [] });
+  }
+  if (url.pathname.endsWith("/rpc/lm_panel_score_outcome_snapshot")) {
+    assert.equal(JSON.parse(init.body).p_uid, "fixture-u1");
+    return response({ overflow: false, rows_by_organ: {
+      daily: [], physical: [], mental: [], financial: [],
+    } });
+  }
   assert.equal(url.searchParams.get("uid"), "eq.fixture-u1", `tenant filter missing: ${url}`);
   if (url.pathname.endsWith("/lm_users")) return response([{
     uid: "fixture-u1", call_language: "ja", wake_policy: "travel-only",
@@ -72,7 +82,7 @@ async function main() {
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
   try {
     const base = `http://127.0.0.1:${server.address().port}`;
-    const endpoints = ["timeline", "scores", "ledger", "gates", "settings"];
+    const endpoints = ["fundraising", "timeline", "scores", "ledger", "gates", "settings"];
     for (const endpoint of endpoints) {
       const result = await fetch(`${base}/api/panel/${endpoint}?uid=foreign-u2`, {
         headers: { Cookie: `lm_panel_session=${SESSION}` },
@@ -82,7 +92,7 @@ async function main() {
       assert.doesNotMatch(JSON.stringify(body), /foreign-u2|secret-u2/);
       console.log(`${endpoint}: HTTP ${result.status}`);
     }
-    console.log("panel fixture smoke: 5/5 endpoints HTTP 200");
+    console.log("panel fixture smoke: 6/6 endpoints HTTP 200");
   } finally {
     await new Promise((resolve) => server.close(resolve));
   }

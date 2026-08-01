@@ -2,6 +2,7 @@
 "use strict";
 
 const { SECRET_PATTERNS } = require("./panel-display-policy.js");
+const { validateFundraisingFunnel } = require("./fundraising-funnel.js");
 const { roundedScoreValue } = require("./panel-score-semantics.js");
 const {
   SCORE_COMPONENT_KEYS,
@@ -56,6 +57,59 @@ function renderScoreCards(data) {
     return '<article class="score-item" data-score-organ="' + name + '"><p class="score-name">' + SCORE_LABELS[name] + '</p>' + value + '<p class="score-caption">outcomes ' + scoreEscapeHtml(ratio) + '</p><p class="score-reason">' + scoreEscapeHtml(organ.reason) + '</p><p class="score-period">' + scoreEscapeHtml(period) + '</p>' + renderScoreComponents(name, organ) + '<p class="score-sources">根拠 ' + organ.source_outcome_ids.length + '件</p></article>';
   }).join("");
   return '<div class="score-grid">' + rows + '</div>';
+}
+
+function funnelEscapeHtml(value) {
+  return String(value == null ? "" : value).replace(/[&<>"']/g, function (character) {
+    return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[character];
+  });
+}
+
+function formatFunnelDate(value) {
+  if (value === null) return "未到達";
+  return new Intl.DateTimeFormat("ja-JP", {
+    year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
+  }).format(new Date(value));
+}
+
+function renderFundraisingFunnel(data) {
+  validateFundraisingFunnel(data);
+  const summaryLabels = {
+    application: "応募", confirmation: "確認", interview: "面談",
+    offer: "オファー", rejected: "不採択", funded: "資金受領",
+  };
+  const summary = Object.keys(summaryLabels).map(function (key) {
+    return '<article class="funnel-count"><span>' + summaryLabels[key]
+      + '</span><strong>' + data.summary[key] + '</strong></article>';
+  }).join("");
+  if (!data.applications.length) {
+    return '<div class="funnel-summary">' + summary
+      + '</div><p class="empty">まだ検証済みの資金調達応募はありません。</p>';
+  }
+  const applications = data.applications.map(function (application) {
+    const stageLabels = {
+      application: "応募", confirmation: "確認", interview: "面談",
+      funded: "資金受領",
+    };
+    const stages = application.stages.map(function (item) {
+      const label = item.id === "decision"
+        ? (item.outcome === "rejected" ? "不採択" : item.outcome === "offer_received" ? "オファー" : "決定待ち")
+        : stageLabels[item.id];
+      return '<li class="funnel-stage ' + (item.state === "reached" ? "is-reached" : "is-pending")
+        + (item.outcome === "rejected" ? " is-rejected" : "")
+        + (item.id === "funded" && item.state === "reached" ? " is-funded" : "")
+        + '" data-funnel-stage="' + funnelEscapeHtml(item.id) + '"><span class="funnel-node" aria-hidden="true"></span><strong>'
+        + funnelEscapeHtml(label) + '</strong><small>' + funnelEscapeHtml(formatFunnelDate(item.occurred_at)) + '</small></li>';
+    }).join("");
+    const terminal = application.terminal_outcome === "rejected" ? "不採択"
+      : application.terminal_outcome === "funded" ? "資金受領済み" : "進行中";
+    return '<article class="funnel-application"><header><div><p class="funnel-program">'
+      + funnelEscapeHtml(application.program) + '</p><p class="funnel-updated">最終更新 '
+      + funnelEscapeHtml(formatFunnelDate(application.last_event_at))
+      + '</p></div><span class="funnel-terminal">' + terminal
+      + '</span></header><ol class="funnel-rail">' + stages + '</ol></article>';
+  }).join("");
+  return '<div class="funnel-summary">' + summary + '</div>' + applications;
 }
 
 function renderPanelPage(options = {}) {
@@ -195,12 +249,13 @@ function renderPanelPage(options = {}) {
       animation: reveal 540ms ease-out both;
     }
 
-    .panel-section:nth-child(1) { grid-column: span 7; animation-delay: 120ms; }
-    .panel-section:nth-child(2) { grid-column: span 5; animation-delay: 170ms; }
-    .panel-section:nth-child(3) { grid-column: span 7; animation-delay: 220ms; }
-    .panel-section:nth-child(4) { grid-column: span 5; animation-delay: 270ms; }
-    .panel-section:nth-child(5) { grid-column: span 12; animation-delay: 320ms; }
+    .panel-section:nth-child(1) { grid-column: span 12; animation-delay: 120ms; }
+    .panel-section:nth-child(2) { grid-column: span 7; animation-delay: 170ms; }
+    .panel-section:nth-child(3) { grid-column: span 5; animation-delay: 220ms; }
+    .panel-section:nth-child(4) { grid-column: span 7; animation-delay: 270ms; }
+    .panel-section:nth-child(5) { grid-column: span 5; animation-delay: 320ms; }
     .panel-section:nth-child(6) { grid-column: span 12; animation-delay: 360ms; }
+    .panel-section:nth-child(7) { grid-column: span 12; animation-delay: 400ms; }
 
     .section-head {
       display: flex;
@@ -246,6 +301,55 @@ function renderPanelPage(options = {}) {
     }
 
     .error { color: #8d3527; }
+
+    .funnel-summary {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      border: 1px solid var(--line);
+      border-width: 1px 0;
+    }
+
+    .funnel-count {
+      display: flex;
+      min-width: 0;
+      padding: 12px;
+      border-left: 1px solid var(--line);
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .funnel-count:first-child { border-left: 0; }
+    .funnel-count span { color: var(--ink-soft); font-size: .68rem; font-weight: 700; }
+    .funnel-count strong { font: 500 1.65rem/1 "Iowan Old Style", "YuMincho", serif; }
+
+    .funnel-application { padding-top: 22px; }
+    .funnel-application > header { display: flex; align-items: start; justify-content: space-between; gap: 18px; }
+    .funnel-program { margin: 0; font: 600 1.18rem/1.3 "Iowan Old Style", "YuMincho", serif; }
+    .funnel-updated { margin: 5px 0 0; color: var(--ink-soft); font-size: .72rem; }
+    .funnel-terminal { padding: 5px 8px; border: 1px solid var(--line-dark); font-size: .68rem; font-weight: 800; }
+
+    .funnel-rail {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      margin: 20px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .funnel-stage { position: relative; display: grid; gap: 5px; padding: 0 12px 0 25px; color: var(--ink-soft); }
+    .funnel-stage::before { content: ""; position: absolute; top: 7px; left: 0; right: 0; height: 1px; background: var(--line-dark); }
+    .funnel-stage:first-child::before { left: 12px; }
+    .funnel-stage:last-child::before { right: calc(100% - 13px); }
+    .funnel-node { position: absolute; z-index: 1; top: 2px; left: 8px; width: 11px; height: 11px; border: 2px solid var(--line-dark); border-radius: 50%; background: var(--paper-bright); }
+    .funnel-stage strong { font-size: .76rem; }
+    .funnel-stage small { font-size: .64rem; line-height: 1.45; }
+    .funnel-stage.is-reached { color: var(--ink); }
+    .funnel-stage.is-reached .funnel-node { border-color: var(--accent); background: var(--accent); }
+    .funnel-stage.is-rejected { color: #8d3527; }
+    .funnel-stage.is-rejected .funnel-node { border-color: #8d3527; background: #8d3527; }
+    .funnel-stage.is-funded { color: var(--success); }
+    .funnel-stage.is-funded .funnel-node { border-color: var(--success); background: var(--success); }
 
     .timeline-list,
     .gate-list,
@@ -510,6 +614,13 @@ function renderPanelPage(options = {}) {
       .score-grid { grid-template-columns: 1fr; }
       .score-item { border-left: 0; border-top: 1px solid var(--line); }
       .score-item:first-child { border-top: 0; }
+      .funnel-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .funnel-count:nth-child(odd) { border-left: 0; }
+      .funnel-count { border-top: 1px solid var(--line); }
+      .funnel-rail { grid-template-columns: 1fr; gap: 0; padding-left: 6px; }
+      .funnel-stage { min-height: 58px; padding-left: 30px; }
+      .funnel-stage::before { top: 0; bottom: 0; left: 12px !important; right: auto !important; width: 1px; height: auto; }
+      .funnel-node { top: 3px; }
       .ledger-empty { grid-template-columns: 1fr; }
       .ledger-cost { text-align: left; }
       .settings-grid { grid-template-columns: 1fr; }
@@ -541,6 +652,11 @@ function renderPanelPage(options = {}) {
     <p class="mirror-note"><strong>あなたの状態と接続だけを表示しています。</strong><span>対応している設定はここでも Telegram でも同じように変更できます。</span></p>
 
     <main class="panel-grid">
+      <section class="panel-section" data-panel-section="fundraising" data-state="loading" aria-labelledby="fundraising-title">
+        <header class="section-head"><h2 id="fundraising-title">資金調達 funnel</h2><span class="section-kicker">Fundraising</span></header>
+        <div class="section-body" data-panel-body aria-live="polite"><p class="loading">応募結果を確認しています。</p></div>
+      </section>
+
       <section class="panel-section" data-panel-section="timeline" data-state="loading" aria-labelledby="timeline-title">
         <header class="section-head"><h2 id="timeline-title">今日の timeline</h2><span class="section-kicker">Today</span></header>
         <div class="section-body" data-panel-body aria-live="polite"><p class="loading">今日の予定を確認しています。</p></div>
@@ -577,6 +693,7 @@ function renderPanelPage(options = {}) {
     "use strict";
 
     const panelEndpoints = Object.freeze({
+      fundraising: "/api/panel/fundraising",
       timeline: "/api/panel/timeline",
       scores: "/api/panel/scores",
       ledger: "/api/panel/ledger",
@@ -659,6 +776,68 @@ function renderPanelPage(options = {}) {
             || !displaySafeText(item.status, false);
         })
       ) throw new Error("invalid timeline payload");
+      return data;
+    }
+
+    function validateFundraisingData(data) {
+      const summaryKeys = ["application", "confirmation", "interview", "offer", "rejected", "funded"];
+      if (!displayExactKeys(data, ["schema_version", "summary", "applications"])
+        || data.schema_version !== 1
+        || !displayExactKeys(data.summary, summaryKeys)
+        || summaryKeys.some(function (key) { return !Number.isSafeInteger(data.summary[key]) || data.summary[key] < 0; })
+        || !Array.isArray(data.applications)
+        || data.applications.length !== data.summary.application
+        || displayContainsSensitiveValue(data)) throw new Error("invalid fundraising payload");
+      const counts = { confirmation: 0, interview: 0, offer: 0, rejected: 0, funded: 0 };
+      data.applications.forEach(function (application) {
+        if (!displayExactKeys(application, ["program", "current_stage", "terminal_outcome", "last_event_at", "stages"])
+          || !displaySafeText(application.program, false)
+          || !["application", "confirmation", "interview", "offer", "funded"].includes(application.current_stage)
+          || ![null, "rejected", "funded"].includes(application.terminal_outcome)
+          || !displaySafeText(application.last_event_at, false)
+          || !Number.isFinite(Date.parse(application.last_event_at))
+          || new Date(application.last_event_at).toISOString() !== application.last_event_at
+          || !Array.isArray(application.stages) || application.stages.length !== 5) throw new Error("invalid fundraising payload");
+        const ids = ["application", "confirmation", "interview", "decision", "funded"];
+        application.stages.forEach(function (item, index) {
+          const keys = item && item.id === "decision"
+            ? ["id", "state", "outcome", "occurred_at"] : ["id", "state", "occurred_at"];
+          if (!displayExactKeys(item, keys) || item.id !== ids[index]
+            || !["pending", "reached"].includes(item.state)
+            || (item.state === "pending" ? item.occurred_at !== null
+              : !Number.isFinite(Date.parse(item.occurred_at)) || new Date(item.occurred_at).toISOString() !== item.occurred_at)) throw new Error("invalid fundraising payload");
+          if (item.id === "decision" && ![null, "offer_received", "rejected"].includes(item.outcome)) throw new Error("invalid fundraising payload");
+        });
+        const confirmation = application.stages[1], interview = application.stages[2];
+        const decision = application.stages[3], funded = application.stages[4];
+        const expectedCurrentStage = funded.state === "reached" ? "funded"
+          : decision.outcome === "offer_received" ? "offer"
+            : interview.state === "reached" ? "interview"
+              : confirmation.state === "reached" ? "confirmation" : "application";
+        const reachedTimes = application.stages.filter(function (item) { return item.state === "reached"; })
+          .map(function (item) { return item.occurred_at; });
+        const lastObservedAt = reachedTimes.slice().sort(function (left, right) { return Date.parse(right) - Date.parse(left); })[0];
+        if (application.stages[0].state !== "reached"
+          || (interview.state === "reached" && confirmation.state !== "reached")
+          || (decision.outcome === "offer_received" && interview.state !== "reached")
+          || (funded.state === "reached" && decision.outcome !== "offer_received")
+          || (decision.state === "pending") !== (decision.outcome === null)
+          || (application.terminal_outcome === "rejected") !== (decision.outcome === "rejected")
+          || (application.terminal_outcome === "funded") !== (funded.state === "reached")
+          || application.current_stage !== expectedCurrentStage
+          || application.last_event_at !== lastObservedAt) throw new Error("invalid fundraising payload");
+        for (let index = 1; index < reachedTimes.length; index += 1) {
+          if (Date.parse(reachedTimes[index]) < Date.parse(reachedTimes[index - 1])) throw new Error("invalid fundraising payload");
+        }
+        if (confirmation.state === "reached") counts.confirmation += 1;
+        if (interview.state === "reached") counts.interview += 1;
+        if (decision.outcome === "offer_received") counts.offer += 1;
+        if (decision.outcome === "rejected") counts.rejected += 1;
+        if (funded.state === "reached") counts.funded += 1;
+      });
+      Object.keys(counts).forEach(function (key) {
+        if (counts[key] !== data.summary[key]) throw new Error("invalid fundraising payload");
+      });
       return data;
     }
 
@@ -830,6 +1009,10 @@ function renderPanelPage(options = {}) {
       return summary + '<ol class="timeline-list">' + rows + '</ol>';
     }
 
+    ${funnelEscapeHtml.toString()}
+    ${formatFunnelDate.toString()}
+    ${renderFundraisingFunnel.toString()}
+
     const SCORE_LABELS = Object.freeze({ daily: "DAILY", physical: "PHYSICAL", mental: "MENTAL", financial: "FINANCIAL" });
     const SCORE_PERIOD_KINDS = Object.freeze(${JSON.stringify(SCORE_PERIOD_KINDS)});
     const SCORE_COMPONENT_KEYS = Object.freeze(${JSON.stringify(SCORE_COMPONENT_KEYS)});
@@ -962,7 +1145,8 @@ function renderPanelPage(options = {}) {
       return '<p><strong>' + escapeHtml((data.identity || {}).name || "Life Manager user") + '</strong></p><div class="control-grid" id="connection-cards">' + cards + '</div><div class="settings-controls" id="settings-controls">' + switches + '</div><p class="action-status" id="action-status" aria-live="polite"></p>';
     }
 
-    const renderers = Object.freeze({ timeline: renderTimeline, scores: renderScores, ledger: renderLedger, gates: renderGates, settings: renderSettings, "control-center": renderControlCenter });
+    const validateFundraisingFunnel = validateFundraisingData;
+    const renderers = Object.freeze({ fundraising: renderFundraisingFunnel, timeline: renderTimeline, scores: renderScores, ledger: renderLedger, gates: renderGates, settings: renderSettings, "control-center": renderControlCenter });
 
     async function loadPanelSection(name) {
       const response = await fetch(panelEndpoints[name], { credentials: "same-origin", headers: { Accept: "application/json" } });
@@ -1037,4 +1221,4 @@ function renderPanelPage(options = {}) {
 </html>`;
 }
 
-module.exports = { renderPanelPage, renderScoreCards };
+module.exports = { renderPanelPage, renderScoreCards, renderFundraisingFunnel };

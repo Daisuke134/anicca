@@ -5,7 +5,9 @@ const { buildFunderSubmissionReceipt } = require("./funder-submission-receipt.js
 const { isTrustedFunderGogThread } = require("./funder-gog-thread-reader.js");
 
 const GMAIL_ID = /^[0-9a-f]{16,32}$/i;
-const RESULT_STATUS = new Set(["reply_received", "rejected", "meeting_requested"]);
+const RESULT_STATUS = new Set([
+  "reply_received", "rejected", "meeting_requested", "offer_received", "funded",
+]);
 const WRAPPED = /^<<<EXTERNAL_UNTRUSTED_CONTENT id="[^"]+">>>\nSource: google_api\n---\n([\s\S]*)\n<<<END_EXTERNAL_UNTRUSTED_CONTENT id="[^"]+">>>$/;
 const CONFIRMATION_BODY = "Your application to the Fall 2026 batch for Anicca has been submitted.";
 const sha = (value) => createHash("sha256").update(String(value), "utf8").digest("hex");

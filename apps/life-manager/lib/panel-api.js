@@ -9,8 +9,9 @@ const { lockedDiscoveryGates } = require("./feature-discovery.js");
 const { DISCOVERY_STRINGS } = require("./i18n.js");
 const { buildScorePeriods, computePanelScores } = require("./panel-score-semantics.js");
 const { presentPanelSection } = require("./panel-presentation.js");
+const { buildFundraisingFunnel } = require("./fundraising-funnel.js");
 
-const ENDPOINTS = new Set(["timeline", "scores", "ledger", "gates", "settings"]);
+const ENDPOINTS = new Set(["fundraising", "timeline", "scores", "ledger", "gates", "settings"]);
 const CALL_MINUTES_BEFORE = Object.freeze([10, 5]);
 const SCORE_ORGANS = Object.freeze(["daily", "physical", "mental", "financial"]);
 const SORTED_SCORE_ORGANS = Object.freeze([...SCORE_ORGANS].sort());
@@ -295,6 +296,25 @@ async function settings(uid, opts) {
   };
 }
 
+async function fundraising(uid, opts) {
+  if (!opts.supaUrl || !opts.supaKey) throw new Error("panel database is not configured");
+  const response = await (opts.fetchImpl || fetch)(
+    `${String(opts.supaUrl).replace(/\/$/, "")}/rest/v1/rpc/lm_panel_fundraising_funnel`,
+    {
+      method: "POST",
+      headers: { ...headers(opts.supaKey), "content-type": "application/json" },
+      body: JSON.stringify({ p_uid: uid }),
+    },
+  );
+  if (!response.ok) {
+    await jsonOr(response, {});
+    throw new Error("panel fundraising funnel unavailable");
+  }
+  let snapshot = await jsonOr(response, null);
+  if (Array.isArray(snapshot) && snapshot.length === 1) snapshot = snapshot[0];
+  return buildFundraisingFunnel(snapshot);
+}
+
 function sendJson(res, status, body, extraHeaders = {}) {
   res.writeHead(status, {
     "content-type": "application/json; charset=utf-8",
@@ -522,7 +542,7 @@ async function handlePanelApiRequest(req, res, opts = {}) {
     sendPanelSection(res, endpoint, { ...model, csrf: scope.csrf || csrfToken(session) }, opts);
     return;
   }
-  const readers = { timeline, scores, ledger, gates, settings };
+  const readers = { fundraising, timeline, scores, ledger, gates, settings };
   try {
     const candidate = await readers[endpoint](scope.uid, { ...opts, nowMs, scope });
     sendPanelSection(res, endpoint, candidate, opts);
