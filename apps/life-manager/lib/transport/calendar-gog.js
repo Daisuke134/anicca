@@ -30,6 +30,24 @@ function makeGogCalendar({ bin, account, keyring, calId = "primary", run } = {})
   return {
     kind: "gog",
     ready: () => !!acct,
+    async readAllCalendarFreeBusy(_uid, { timeMin, timeMax, strict } = {}) {
+      const empty = { calendars: {} };
+      if (!acct || !Number.isFinite(Date.parse(String(timeMin || ""))) || !Number.isFinite(Date.parse(String(timeMax || "")))) {
+        if (strict) throw new Error("calendar freebusy transport invalid");
+        return empty;
+      }
+      const args = ["calendar", "freebusy", "--all", "-j", opt("--from", timeMin), opt("--to", timeMax)];
+      try {
+        const value = JSON.parse(exec(args));
+        if (!value || typeof value !== "object" || Array.isArray(value) || !value.calendars || typeof value.calendars !== "object") {
+          throw new Error("calendar freebusy response invalid");
+        }
+        return value;
+      } catch (error) {
+        if (strict) throw error;
+        return empty;
+      }
+    },
     // Raw Google-Calendar-shaped items for [timeMin, timeMax]. gog --from/--to accept RFC3339 directly.
     // strict (history path): failure throws instead of masquerading as an empty calendar — see
     // calendar-composio.js listEventsRaw for the rationale. Default (wake path) swallows to [].

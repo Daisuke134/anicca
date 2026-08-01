@@ -33,6 +33,19 @@ test("listEventsRaw tolerates {events:[...]} and non-JSON (→ [])", async () =>
   assert.deepEqual(await makeGogCalendar({ account: ACCT, run: () => "not json" }).listEventsRaw("u", {}), []);
 });
 
+test("readAllCalendarFreeBusy uses strict freebusy --all for the exact window", async () => {
+  const response = { calendars: { primary: { busy: [{ start: "2026-08-10T01:00:00Z", end: "2026-08-10T02:00:00Z" }] } } };
+  const { run, calls } = recorder(JSON.stringify(response));
+  const actual = await makeGogCalendar({ account: ACCT, run }).readAllCalendarFreeBusy("ignored", {
+    timeMin: "2026-08-10T00:00:00Z", timeMax: "2026-08-11T00:00:00Z", strict: true,
+  });
+  assert.deepEqual(actual, response);
+  assert.deepEqual(calls[0], [
+    "calendar", "freebusy", "--all", "-j",
+    "--from=2026-08-10T00:00:00Z", "--to=2026-08-11T00:00:00Z",
+  ]);
+});
+
 test("createEvent translates Composio dialect → gog --from/--to/--summary/--location", async () => {
   const { run, calls } = recorder("{}");
   const cal = makeGogCalendar({ account: ACCT, run });
