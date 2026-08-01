@@ -261,6 +261,21 @@ preserved. The immediate live wake therefore skipped the same-day unavailable
 rows, verified five unseen official pages, and exited `0`: Okta and Algolia
 became `VALUE_UNKNOWN`; Bugsnag, Honeycomb, and Teleport became `CLOSED`.
 
+Runtime commit `80eb909` adds the first live compatible replacement program.
+The TECHi Author Program is verified from its official application, editorial
+standards, and publication-principles pages as open, paid by a flat rate per
+accepted piece plus traffic revenue share, and paid monthly through Stripe.
+Its official rules permit writers to use workflow software, require material
+automation disclosure, and require human editorial review before publication.
+The exact flat rate is set in later payment terms, so the Writer may spend one
+bounded pitch to obtain those terms but may not begin the article without an
+acceptance receipt. The live state advanced through `POLICY_CLEAR` to a
+deduplicated `PITCH_READY` bound to GitHub's official stacked-Copilot-sessions
+claim. The Agent generated a free TECHi account credential in its local auth
+vault and reached the official email-verification screen; the Gmail read-only
+check currently has no delivered message, so the opportunity remains
+`PITCH_READY` and is not falsely marked `SUBMITTED`.
+
 The opportunity subsystem is a stateful loop, not a periodic search report:
 
 ```text
