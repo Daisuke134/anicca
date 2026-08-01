@@ -12,7 +12,7 @@
 const { test } = require("node:test");
 const assert = require("node:assert");
 
-const { claimNudgeLevel, ackNudge } = require("./departure-nudge.js");
+const { claimNudgeLevel, ackNudge, buildNudgeMessage } = require("./departure-nudge.js");
 
 const SUPA = { supaUrl: "https://supa.invalid", supaKey: "service-role-key" };
 const UID = "lm_784ad279";
@@ -140,4 +140,57 @@ test("the stop is a latch: a second tap cannot rewrite why the ladder ended", as
   const second = await ackNudge(UID, EVENT_KEY, "call_answered", { ...SUPA, fetchImpl, nowMs: NOW });
   assert.equal(second.ok, true);    // the write landed and correctly changed nothing
   assert.equal(second.matched, 0);
+});
+
+// ── the six rungs (§5.2.1 / §5.2.2「送る文」) ────────────────────────────────────────────────────
+
+// 段ごとに文が変わり、T+7 以外には [了解] が付く（T+7 は梯子の終端 = spec §5.2.2 D6）。
+// callback data は 'depart:ack:<startIso>' の形（D7。64 byte 上限があるので uid は載せない）。
+test("each rung says something different and carries the acknowledge button", () => {
+  const ev = { summary: "打合せ", startIso: "2026-08-02T09:00:00+09:00", location: "渋谷" };
+  const at = (level) => buildNudgeMessage({ level, ev, departureIso: "2026-08-02T08:05:00+09:00", lang: "ja" });
+
+  assert.match(at(25).text, /8:05/);
+  assert.match(at(25).text, /25/);
+  assert.notEqual(at(10).text, at(5).text);
+  assert.match(at(0).text, /🚨/);
+  assert.equal(
+    at(0).extra.reply_markup.inline_keyboard[0][0].callback_data,
+    "depart:ack:2026-08-02T09:00:00+09:00",
+  );
+  assert.equal(at(-7).extra, undefined);   // 終端に押すものは無い
+});
+
+test("english users get english", () => {
+  const ev = { summary: "Standup", startIso: "2026-08-02T09:00:00+09:00", location: "Shibuya" };
+  const m = buildNudgeMessage({ level: 0, ev, departureIso: "2026-08-02T08:05:00+09:00", lang: "en" });
+  assert.match(m.text, /leave/i);
+  assert.doesNotMatch(m.text, /[ぁ-んァ-ン一-龯]/);
+});
+
+test("the callback data stays inside Telegram's 64-byte limit", () => {
+  const ev = { summary: "x".repeat(300), startIso: "2026-08-02T09:00:00+09:00", location: "y".repeat(300) };
+  const m = buildNudgeMessage({ level: 25, ev, departureIso: "2026-08-02T08:05:00+09:00", lang: "ja" });
+  const data = m.extra.reply_markup.inline_keyboard[0][0].callback_data;
+  assert.equal(Buffer.byteLength(data, "utf8") <= 64, true, `callback_data is ${Buffer.byteLength(data, "utf8")} bytes`);
+});
+
+// The ladder's whole job is to move someone at a specific minute, so the LATE rungs have to say what
+// being late now costs. T+3 is the first rung where the answer is no longer "you can still make it".
+test("the overtime rungs name the arrival the user is now buying", () => {
+  const ev = { summary: "打合せ", startIso: "2026-08-02T09:00:00+09:00", location: "渋谷" };
+  const late = buildNudgeMessage({ level: -3, ev, departureIso: "2026-08-02T08:05:00+09:00", lang: "ja" });
+  assert.match(late.text, /09:03/);          // 3 minutes past departure = 3 minutes past arrival
+  assert.match(late.text, /3/);
+  const lateEn = buildNudgeMessage({ level: -3, ev, departureIso: "2026-08-02T08:05:00+09:00", lang: "en" });
+  assert.match(lateEn.text, /09:03/);
+  assert.doesNotMatch(lateEn.text, /[ぁ-んァ-ン一-龯]/);
+});
+
+// sendMessage posts with parse_mode HTML, so a calendar entry someone else wrote is untrusted input.
+test("an event title cannot inject markup into the message", () => {
+  const ev = { summary: "<b>x</b>", startIso: "2026-08-02T09:00:00+09:00", location: "<i>y</i>" };
+  const m = buildNudgeMessage({ level: 25, ev, departureIso: "2026-08-02T08:05:00+09:00", lang: "ja" });
+  assert.doesNotMatch(m.text, /<b>|<i>/);
+  assert.match(m.text, /&lt;b&gt;/);
 });

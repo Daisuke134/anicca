@@ -12,6 +12,8 @@
 // ticks lose, and losing it means the user gets the same rung twice. This is claimWake's bet on a
 // unique constraint, restated for a value that only ever decreases.
 
+const { clockLabel, escapeHtml } = require("./i18n.js");
+
 // The rungs, in minutes from DEPARTURE (positive = before, negative = after) — §5.2.1's ladder
 // verbatim. Separate from scheduler.js' WAKE_LEVELS on purpose (D2): the phone is opt-in extra now,
 // so sharing one array would make a user's ladder depend on whether they enabled calls.
@@ -25,6 +27,87 @@ const NUDGE_ACK_REASONS = {
   CALL_ANSWERED: "call_answered",
   LEFT_HOME: "left_home",
 };
+
+// §5.2.1 / §5.2.2「送る文」, verbatim. Held here rather than in lib/i18n.js for the same reason
+// wake-miss.js holds its own notice copy: this text only means anything alongside the rung logic it
+// belongs to. {placeholder} substitution matches i18n.js' formatter idiom.
+//
+// The shape is deliberate. The opening rung carries the whole context — time, title, place — because
+// it is the one that arrives while the user can still change plans. The middle rungs are one line:
+// by then the user knows what this is about and a paragraph is just something to scroll past. The
+// overtime rungs switch ⏰ for 🚨 and name the arrival being bought, which is the only new fact left.
+//
+// T+7 is the terminal rung and says almost nothing on purpose (D6). Contacting the other party is
+// the late organ's job — lm_late_notice_log already guarantees one notice per event — and a second
+// organ offering the same thing is the duplicated-owner failure §0.17 exists to prevent.
+const NUDGE_COPY = Object.freeze({
+  ja: Object.freeze({
+    ack: "了解",
+    "25": "⏰ {start} {header}\n{departure} に出て。あと{over}分",
+    "10": "⏰ あと{over}分で出る時間。{departure} 出発",
+    "5": "⏰ あと{over}分。そろそろ支度を終えて",
+    "0": "🚨 いま出る時間。{departure}",
+    "-3": "🚨 {over}分オーバー。今出れば {arrival} 着（{over}分遅れ）",
+    "-7": "🚨 {over}分オーバー。",
+  }),
+  en: Object.freeze({
+    ack: "OK",
+    "25": "⏰ {start} {header}\nLeave at {departure} — {over} min to go",
+    "10": "⏰ {over} min until you leave. Departure {departure}",
+    "5": "⏰ {over} min left. Start wrapping up",
+    "0": "🚨 Time to leave. {departure}",
+    "-3": "🚨 {over} min over. Leave now and you arrive {arrival} ({over} min late)",
+    "-7": "🚨 {over} min over.",
+  }),
+});
+
+// Telegram rejects callback_data over 64 bytes, so D7 keeps uid out of it (the webhook already knows
+// which chat tapped) and carries only the event's start.
+const NUDGE_CALLBACK_LIMIT = 64;
+const departureCallbackData = (startIso) => `depart:ack:${startIso}`;
+
+// A calendar title is written by whoever created the event, and sendMessage posts with parse_mode
+// HTML — so it is untrusted input on a markup channel. Escaped, then bounded: a 300-character title
+// in a header is not a message, it is a wall.
+const headline = (value, limit) => escapeHtml(String(value || "").replace(/\s+/g, " ").trim()).slice(0, limit);
+
+// One rung, rendered. Pure — the tick decides WHETHER to send (claimNudgeLevel), this decides WHAT.
+// Returns { text, extra } in the shape sendMessage's trailing argument expects; `extra` is absent on
+// the terminal rung, because a button on the last message would promise a ladder that has ended.
+function buildNudgeMessage({ level, ev, departureIso, lang } = {}) {
+  const copy = NUDGE_COPY[lang === "en" ? "en" : "ja"];
+  const template = copy[String(level)];
+  if (!template || !ev) return null;
+
+  // Every clock reading is rendered against the EVENT's own UTC offset, so a user travelling (or a
+  // server in another zone) still reads the times their calendar shows them.
+  const referenceIso = ev.startIso;
+  const startMs = Date.parse(ev.startIso);
+  const departureMs = Date.parse(departureIso);
+  const over = Math.abs(Number(level));
+  const summary = headline(ev.summary, 80);
+  const location = headline(ev.location, 80);
+  const values = {
+    start: clockLabel(startMs, referenceIso),
+    header: location ? `${summary} / ${location}` : summary,
+    departure: Number.isFinite(departureMs) ? clockLabel(departureMs, referenceIso) : "",
+    over,
+    // Past departure, every minute of delay is a minute of lateness: this is the arrival the user is
+    // buying by still being at home, not a fresh routing estimate.
+    arrival: clockLabel(startMs + over * 60_000, referenceIso),
+  };
+  const text = template.replace(/\{(\w+)\}/g, (_match, key) => String(values[key]));
+
+  if (Number(level) === NUDGE_LEVELS[NUDGE_LEVELS.length - 1]) return { text };
+  const callbackData = departureCallbackData(ev.startIso);
+  // Refuse to attach a button Telegram would reject outright — an inline keyboard that fails to
+  // render takes the whole message down with it, and the message matters more than the button.
+  if (Buffer.byteLength(callbackData, "utf8") > NUDGE_CALLBACK_LIMIT) return { text };
+  return {
+    text,
+    extra: { reply_markup: { inline_keyboard: [[{ text: copy.ack, callback_data: callbackData }]] } },
+  };
+}
 
 function supaHeaders(key, prefer) {
   const headers = {
@@ -150,4 +233,7 @@ async function ackNudge(uid, eventKey, reason, opts = {}) {
   return { ok: true, matched: patched.length };
 }
 
-module.exports = { NUDGE_LEVELS, NUDGE_ACK_REASONS, claimNudgeLevel, ackNudge };
+module.exports = {
+  NUDGE_LEVELS, NUDGE_ACK_REASONS, claimNudgeLevel, ackNudge, buildNudgeMessage,
+  departureCallbackData,
+};

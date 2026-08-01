@@ -389,7 +389,11 @@ module.exports = {
   PRECEPTS_STRINGS,
   RELATIONS_STRINGS,
   WEEKDAY_JA,
+  // Exported for the departure ladder (§5.2.1): its rungs quote wall-clock times and untrusted
+  // calendar titles, and both must render exactly the way every other Life Manager message does.
+  clockLabel,
   elapsedLabel,
+  escapeHtml,
   formatCareBookingReport,
   formatRelationSuggestion,
   formatTravelAutofillMessage,
