@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-> Status: 実装中。
+> Status: 完了。次はO1B-10の重複旧実装退役。
 
 **Goal:** O1B-04で実証したDaisのLuma email-code認証復旧を再利用可能な正規componentにし、既存CloakBrowser daily-driver、Luma discovery、`outbound.event.apply`を一つのConnector events packとして接続する。
 
@@ -37,12 +37,12 @@
 - [x] packを既存`outbound.event.apply` production compositionへ接続する。
 - [x] login切れなら一回だけ復旧してinspect/applyへ戻り、復旧不能ならsubmit前failureにする。
 - [x] worker health、runtime adapter、effect fenceの回帰を通す。
-- [ ] Commit and push.
+- [x] Commit and push.
 
 ### Task 4: Live verification and evidence
 
 - [x] 現在の`:9222` Dais Luma sessionをsecretなしでread-only確認する。
 - [x] pack経由でLuma Tokyo inventoryまたは既存event detailを読み、同じ認証contextを使ったことを確認する。
-- [ ] secretなしevidence JSONを保存する。
-- [ ] O1B-09を完了にし、O1B-10の旧実装退役へ進む。
+- [x] secretなしevidence JSONを保存する。
+- [x] O1B-09を完了にし、O1B-10の旧実装退役へ進む。
 - [ ] Commit and push.
