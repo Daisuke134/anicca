@@ -9,7 +9,7 @@
 - Revenue: 1 lifetime order, $9.99 lifetime gross, $8.00 pending seller balance, $0.00 realized payout, $0 MRR.
 - Supply: 27 listings online; 31 listings tracked across online, review, rejected, and draft states.
 - 2026-08-01 Builder: initial browser identity collision was repaired by the existing self-fixer. `Portfolio Tracker — Daily Position Review` (`agent_id=9480246345`) reached `status=1`, `isConfirmedSkills=1`, `isConfirmedConfigKeys=1`; its verified review URL is `https://capafy.ai/developer/createAgent?source=temp-link&token=2082974745565622272&page=review`.
-- Instagram: the stale `@capafy.skills10491` session has been replaced. `@capafy.skills8m4q2z` was created with durable `contact@aniccaai.com` recovery, its isolated browser-owned session and owner-only controls were independently verified, and its credential artifact is mode `0600`. It is at `warmup_0_of_2`; no public Reel or healthy reach is claimed yet.
+- Instagram: the stale `@capafy.skills10491` session has been replaced. `@capafy.skills8m4q2z` was created with durable `contact@aniccaai.com` recovery, its isolated browser-owned session and owner-only controls were independently verified, and its credential artifact is mode `0600`. The registry still carries the legacy label `warming`, but the lifecycle is now `publish_probe_ready`; no public Reel or healthy reach is claimed yet.
 - Marketing execution: the 2026-07-30 and 2026-07-31 passes both timed out at 180 seconds because the multi-step video/post job still uses the short `tool-agent` lane.
 - Reporting defect: Telegram reported the Builder failure but did not report the later verified repair and submission. `already_live` currently means the LaunchAgent is loaded, not that a post is live.
 - OpenRouter: approximately $4.777 lifetime usage, approximately $20.223 remaining, recent measured increments below $0.001/day, host key capped at $2/day, account key caps totaling $5/day, auto-top-up off.
@@ -83,7 +83,7 @@ Minimum event types:
 - `opportunity.observed`, `opportunity.selected`, `experiment.started`, `experiment.decided`
 - `listing.created`, `listing.submitted`, `listing.approved`, `listing.rejected`, `listing.retired`
 - `content.created`, `content.published`, `content.measured`
-- `account.created`, `account.warmup_completed`, `account.session_ready`, `account.challenge_detected`, `account.replacement_started`
+- `account.created`, `account.session_ready`, `account.publish_probe_ready`, `account.post_verified`, `account.challenge_detected`, `account.replacement_started`
 - `order.received`, `subscription.started`, `subscription.cancelled`, `refund.received`, `payout.received`
 - `cost.measured`, `cost.breaker_triggered`
 - `incident.detected`, `incident.repair_started`, `incident.repaired`, `incident.verified`, `incident.unresolved`
@@ -160,16 +160,18 @@ Hard guardrails:
 
 ### 8.1 P1 architecture decision
 
-P1 uses a deterministic lifecycle controller around bounded agent/tool adapters. It does not keep account provisioning, warmup, creative work, private-session creation, posting, and verification inside one long agent prompt.
+P1 uses a deterministic lifecycle controller around bounded agent/tool adapters. It does not keep account provisioning, creative work, posting, health readback, and verification inside one long agent prompt.
 
-- **Lifecycle controller:** reads the Capafy account registry and verified warmup/post evidence, emits one state snapshot, enforces legal transitions, and performs atomic bookkeeping. It does not make creative or marketplace judgments.
+- **Lifecycle controller:** reads the Capafy account registry and verified post/health evidence, emits one state snapshot, enforces legal transitions, and performs atomic bookkeeping. It does not make creative or marketplace judgments.
 - **Account manager:** uses the existing isolated CloakBrowser provisioning flow through the 900-second `marketing-agent` lane. The lane already reserves 49,152 tokens. A candidate is accepted only after the browser session, profile, credential file, and appended account row are independently verified.
-- **Warmup adapter:** uses the browser-owned session and the `ig-account-warmer` evidence log. A warmup counts only when the log contains real verified actions and no later abort/ban signal. Calendar age alone never increments the success count.
+- **Immediate publish probe:** once the account manager independently verifies the browser-owned session and durable credential, the controller permits one low-frequency original Reel immediately. Capafy does not run scripted Reel watching, scrolling, liking, following, or commenting to imitate a human.
 - **Creative agent:** selects the listing and creates the caption/video using model judgment and current evidence. It cannot promote an account, declare publication, send Telegram, or alter lifecycle evidence.
 - **Reel poster/verifier:** uses the browser-direct Reel flow. It may publish only after the controller grants the correct capability, and it returns a publicly readable Reel URL or a typed failure. An agent exit code or `--live` flag is not publication evidence.
 - **Outcome handoff:** P0 remains the only Telegram owner. It validates the Reel, skill, and campaign URLs and records the terminal delivery receipt idempotently.
 
-The browser session remains the owner during P1. The old day-3 private-API “golden session” login is not a promotion requirement because it produced terminal `ChallengeRequired` failures on the last two Capafy accounts. Commercial behavior is more conservative than the first non-commercial post: two verified passive warmups permit one non-commercial Reel, while a commercial CTA or bio link requires seven verified warmups plus healthy measured reach.
+The browser session remains the owner during P1. The old day-3 private-API “golden session” login is prohibited because it produced terminal `ChallengeRequired` failures on fresh accounts. No elapsed-day or synthetic-activity gate exists. The first Reel is an original, low-pressure product education post; a hard CTA or bio-link mutation requires a verified public Reel, a still-established owner session, no challenge/account-status signal, and real reach readback.
+
+This decision supersedes the two-date warmup design on 2026-08-02. The earlier warmup requirement was introduced after `instagrapi` rejected five day-zero accounts, but P1 no longer uses `instagrapi`; it posts through the already-authenticated browser session. Instagram publishes no required warmup duration, while its Terms prohibit unauthorized automated account creation/access and Meta warns that repetitive or inauthentic signals can be restricted even at lower frequencies. Therefore extra synthetic activity adds surface area without proving safety. Relevant evidence: historical pivots `e07752128`, `c232c2198`, `c012f6254`; [Instagram Terms of Use](https://help.instagram.com/581066165581870); [Meta Spam Policy](https://transparency.meta.com/policies/community-standards/spam/); [Instagram creator best practices](https://about.fb.com/news/2024/10/best-practices-education-hub-creators-instagram/).
 
 ### 8.2 States and transitions
 
@@ -177,9 +179,8 @@ The Instagram account state machine is:
 
 ```text
 needed -> provisioning -> created_session_verified
-       -> warmup_0_of_2 -> warmup_1_of_2 -> noncommercial_ready
-       -> first_noncommercial_post_verified -> reach_observing
-       -> warmup_7_verified + reach_healthy -> commercial_ready -> healthy
+       -> publish_probe_ready -> first_publish_probe_verified
+       -> reach_observing -> commercial_ready -> healthy
 ```
 
 Failure transitions:
@@ -193,26 +194,26 @@ challenge/session failure/verified zero-reach pattern
 Transition rules:
 
 1. At most one account may hold an active lifecycle capability.
-2. `warmup_N` is derived from distinct successful evidence dates, not `created` or `started_warming` age.
-3. Two verified warmups grant only `noncommercial_ready`; no offer CTA, bio link, or commercial claim is allowed.
-4. `first_noncommercial_post_verified` requires a public Instagram URL that survives readback.
-5. Seven verified warmups do not grant commercial capability without non-zero, non-fabricated reach evidence.
+2. A verified browser-owned session grants only `publish_probe`; elapsed account age and scripted engagement grant nothing.
+3. `first_publish_probe_verified` requires a newly observed public Instagram Reel URL that survives readback. A click, `--live`, or zero exit code is insufficient.
+4. The probe uses original Capafy content at low frequency and performs no synthetic watch/scroll/like/follow/comment sequence.
+5. Commercial CTA/bio-link capability requires the verified Reel plus clean session/account readback and non-fabricated reach evidence; time alone grants nothing.
 6. A challenge or failed session retires the account for this lifecycle. Password/private-API relogin is not retried.
 7. Replacement is requested in the same incident chain and the account manager is woken immediately; it does not wait for the next 16:00 content pass.
 8. `live` is reserved for a verified public post. `healthy` requires an established session, a recent verified public outcome, and no overdue lifecycle incident.
 
 ### 8.3 P1 runtime and reporting contract
 
-The existing 16:00 Marketer LaunchAgent remains the content cadence owner. Account provisioning/replacement and warmup are independent bounded passes so one slow stage cannot consume the next stage's runtime. Normal passes are silent; Telegram is sent only for a lifecycle transition, terminal blocker, verified Reel, or repair closure.
+The existing 16:00 Marketer LaunchAgent remains the daily cadence owner, but it may also be kickstarted immediately when a verified account or newly approved skill makes useful work possible. Account provisioning/replacement remains an independent bounded pass. The Capafy warmup LaunchAgent is removed. Normal health checks are silent; Telegram is sent only for a lifecycle transition, terminal blocker, verified Reel, measured business outcome, or repair closure.
 
-The production starting state on 2026-08-02 is `needed`: all three recorded Capafy accounts are terminally unusable (`poisoned` or `session_failed`), no active posting session exists, and no public Capafy Reel is verified. The first P1 production mutation must therefore be a replacement-account pass, not a content pass or another login attempt against `@capafy.skills10491`.
+P1 production started on 2026-08-02 in `needed`: the three accounts then recorded were terminally unusable (`poisoned` or `session_failed`). The account manager subsequently created and independently verified `@capafy.skills8m4q2z`; the current state is `publish_probe_ready`, and the next production mutation is the immediate content pass rather than another login attempt against `@capafy.skills10491`.
 
 P1 acceptance requires all of the following in one fresh lifecycle:
 
 - the creative lane resolves to a configured timeout of at least 900 seconds and a token reservation of at least 49,152;
 - account creation returns one independently verified browser-owned session;
-- two distinct warmup successes are recorded while calendar age alone cannot advance the gate;
-- the first post is non-commercial and publicly readable;
+- no scripted warmup activity or elapsed-day wait occurs before the first post;
+- the immediate original publish probe is publicly readable and the account remains owner-accessible afterward;
 - Telegram contains the real Reel URL, public Capafy skill URL, and attributed campaign URL;
 - a repeated terminal handoff does not send twice;
 - a seeded challenge retires the affected account and wakes replacement without reusing its credentials;
@@ -241,7 +242,6 @@ All published skills, articles, videos, Reels, landing pages, and review pages i
 | 08:10 | Builder starts silently. |
 | On Builder terminal state | Immediate verified listing result with real URL. |
 | 09:30 | Consolidated company state after any Builder repair. Replaces the misleading 09:00 goal dump. |
-| 11:20-14:20 | Warmup runs silently. Report only a lifecycle transition, terminal failure, or verified replacement. |
 | 16:00 | Marketer starts silently. |
 | On Marketing terminal state | Immediate content/post result with public URL, media, caption, promoted listing URL, and attribution link. |
 | 20:00 | Only if content was published: first performance snapshot with views, clicks, buyers, and interpretation. |
@@ -293,7 +293,7 @@ The examples below are message contracts. Braced values such as `{verified_reel_
 ### 9.6 Exact example: Reel published
 
 > **Capafy Marketer — Reel published**  
-> I published the first non-commercial Reel for **Portfolio Tracker — Daily Position Review** on `@capafy.skills10491`.  
+> I published the first original product-education Reel for **Portfolio Tracker — Daily Position Review** on `@capafy.skills8m4q2z`.
 >  
 > Watch the Reel: {verified_reel_url}  
 > Open the skill: https://capafy.ai/agent/9480246345  
@@ -302,7 +302,7 @@ The examples below are message contracts. Braced values such as `{verified_reel_
 > Caption:  
 > “Your portfolio changed today. Your old review did not. This skill checks the positions and notes you paste across eight fixed risk and thesis dimensions—without pretending it has live market data.”  
 >  
-> Current result: public and verified. Views/clicks/buyers will be measured at 20:00. Commercial bio link remains off until reach is proven healthy.
+> Current result: public and verified. The owner session was rechecked after posting. Views/clicks/buyers will be measured at 20:00; the next promotion decision uses that evidence rather than account age.
 
 ### 9.7 Exact example: sale
 
@@ -327,7 +327,7 @@ The examples below are message contracts. Braced values such as `{verified_reel_
 >  
 > Attempts completed: session verification, one clean reattach, challenge confirmation.  
 > Current containment: no posting or login retries on the affected account.  
-> Next automatic action: create the replacement account at {next_retry_time_jst}, then begin the two-successful-warmups lifecycle.  
+> Next automatic action: create and independently verify the replacement account, then run one immediate original publish probe.
 > Human action required: none. I will send the replacement handle when creation is verified.
 
 ## 10. User experience
@@ -394,8 +394,8 @@ The $10M product is not an individual skill. It is the platform that continuousl
 - **Active priority:** P1 — Make the Marketer complete reliably. P0 is complete and remains the enforced reporting/repair boundary.
 - **Implementation plans:** P0 [`../plans/2026-08-01-capafy-p0-truthful-outcomes.md`](../plans/2026-08-01-capafy-p0-truthful-outcomes.md); P1 [`../plans/2026-08-02-capafy-p1-reliable-marketer.md`](../plans/2026-08-02-capafy-p1-reliable-marketer.md). P1 implements Section 8 without pulling P2's shared ledger into scope.
 - **Execution rule:** complete and verify one numbered task at a time; after each task, append the command evidence and commit hash here before beginning the next task.
-- **Current state (2026-08-02):** P0 Tasks 1-7 and P1 Tasks 1-7 are implemented and verified. The replacement manager created `@capafy.skills8m4q2z` without human intervention using `contact@aniccaai.com`; an official email recovery repaired the one production run whose generated signup password was lost before persistence. Independent verification proved the exact isolated browser session still owns the profile, the credential artifact is mode `0600`, and the registry row is `warming`. The account manager is loaded every 300 seconds, its latest exit is `0`, no manager lock or browser lease remains, and the account-created terminal was delivered exactly once to Telegram as message `5131`.
-- **Next action:** Run and verify the first real passive browser warmup for `@capafy.skills8m4q2z` on 2026-08-02. Task 8 remains gated on a second success on a genuinely different date; after that, publish and read back one non-commercial Reel with no CTA or bio link.
+- **Current state (2026-08-02):** P0 Tasks 1-7 and P1 Tasks 1-7 are implemented and verified. The replacement manager created `@capafy.skills8m4q2z` without human intervention using `contact@aniccaai.com`; an official email recovery repaired the one production run whose generated signup password was lost before persistence. Independent verification proved the exact isolated browser session still owns the profile, the credential artifact is mode `0600`, and the registry row retains the legacy label `warming`; that label is historical storage, not a posting gate, and will migrate to `publish_probe_ready`. The account manager is loaded every 300 seconds, its latest exit is `0`, no manager lock or browser lease remains, and the account-created terminal was delivered exactly once to Telegram as message `5131`.
+- **Next action:** Remove the obsolete warmup scheduler and gates, then kickstart the Marketer immediately for one original browser-direct Reel on `@capafy.skills8m4q2z`; accept success only with a public Reel URL, post-write owner-session verification, and exactly-once Telegram delivery.
 
 #### P1 execution log
 
@@ -408,11 +408,11 @@ Pre-implementation baseline (2026-08-02): outcome/report pytest `14 passed`; Mar
 | 1. Lifecycle controller | Verified | RED: module collection failed with `ModuleNotFoundError`; GREEN: lifecycle pytest `21 passed`, controller `py_compile` passed; P0/runner regressions remained green (`14`, `23`, `38`, and `4 + 7 subtests`) | `f09ea06f2` |
 | 2. 900-second marketing lane | Verified | RED: routing expected `marketing-agent` but found `tool-agent`; token budget exports were absent. GREEN: combined lane/runner/lifecycle/P0 pytest `41 passed, 7 subtests`; Marketer `23`, account-state `38`; shell syntax, controller compile, and diff check passed | `e37ebe9f7` |
 | 3. Immediate account manager | Verified | RED: manager/plist absent and `account_created` unsupported (`20` shell failures, `2` outcome failures). GREEN: combined pytest `46 passed, 7 subtests`; manager integration `32`, Marketer `23`, account-state `38`; plist, shell/Python syntax, and diff check passed | `f03d7dd76` |
-| 4. Verified warmup capabilities | Verified | RED: `lifecycle_progress` was unsupported and the old script ignored injected jitter while calling private-session `warmer.py`. GREEN: warmup integration `15`, account-state `38`, combined pytest `47 passed, 7 subtests`, manager `32`, Marketer `23`; plist, syntax, and diff check passed | `6d3430208` |
+| 4. Verified warmup capabilities | Superseded | The evidence-counting implementation was correct for its former contract, but the contract was invalidated on 2026-08-02: the five-account failure evidence concerned fresh-account `instagrapi`, while current P1 uses the established browser session. Synthetic warmup is being removed rather than treated as a safety signal. | `6d3430208` (historical) |
 | 5. Browser-direct Reel adapter | Verified | RED: source module collection failed with `ModuleNotFoundError`. GREEN: Reel adapter `13` cases; combined pytest `60 passed, 7 subtests`, warmup `15`, manager `32`, Marketer `23`, account-state `38`; compile and diff check passed | `28caa8b22` |
 | 6. Creative/publish controller | Verified | RED: controller fixture had `10` failures under the monolith. GREEN: controller `18`, P0 handoff `24`, account-state `38`, combined pytest `60 passed, 7 subtests`, warmup `15`, manager `32`; shell/Python syntax and diff check passed | `f413cd5b7` |
 | 7. P1 LaunchAgents and repair wiring | Verified | Offline GREEN: combined pytest `56 passed`; account manager later `40 passed`, warmup `15`, controller `18`, Marketer handoff `24`, outcome monitor `19`, account-state `40`; all three source plists lint `OK`. Production exposed and repaired idempotent field replacement, browser-lease cleanup, rejected Gmail aliases, fresh-email fallback, atomic credential staging, trusted-click races, and missing browser-identity handoff (`b7d5b5678` through `dcb01f9ce`; shared skill commits `853b3c0`, `c4cc8b4`, `502daff`). Final runtime proof: `@capafy.skills8m4q2z`, `contact@aniccaai.com`, exact isolated session verification true, credential mode `0600`, registry `warming`, Telegram account-created message `5131`, manager loaded at 300 seconds with latest exit `0`, result consumed, lock clear, lease holder empty. | `dfc459174` + repair commits |
-| 8. Fresh production lifecycle | In progress | Account/session prerequisite is verified. Preflight found the created row lacked `browser_identity`, which would have made warmup exit safely without activity; `dcb01f9ce` now persists and requires that field, and the live row resolves `instagram:capafy-provision` on port `65063`. Remaining acceptance is two real distinct-date browser warmups and one verified public non-commercial Reel; no dates may be fabricated. First scheduled window: 2026-08-02 at 11:20-14:20 JST. | `dcb01f9ce` (preflight repair) |
+| 8. Fresh production lifecycle | In progress | Account/session prerequisite is verified and the live row resolves `instagram:capafy-provision` on port `65063`. The warmup LaunchAgent was unloaded before its first run. Remaining acceptance is removal of the obsolete gates plus one immediate verified original Reel, post-write session readback, all three Telegram URLs, and first reach/click/order measurement. | `dcb01f9ce`; redesign commit will be recorded after verification |
 
 #### P0 execution log
 
@@ -478,12 +478,12 @@ Dashboard: https://capafy-skills-daily.netlify.app
 
 - Route the IG workflow to the 900-second marketing/browser lane and arm its token budget.
 - Split deterministic account/session/post verification from creative judgment.
-- Make warmup completion count verified successful sessions/actions, not calendar age.
+- Remove synthetic warmup and permit one immediate original publish probe after independent session verification.
 - Reserve `live` for a verified public content URL.
 - Implement the explicit account lifecycle and immediate replacement transition.
-- Add a Marketing outcome gate: public URL or explicit dry/warmup terminal state.
+- Add a Marketing outcome gate: public URL or an explicit account/publish blocker.
 
-**Done when:** a fresh test lifecycle reaches one verified public non-commercial Reel and Telegram contains the Reel, skill, and campaign URLs.
+**Done when:** a fresh browser-owned lifecycle immediately reaches one verified public original Reel, retains its owner session, and Telegram contains the Reel, skill, and campaign URLs.
 
 ### P2 — Shared revenue event ledger and renderer
 
@@ -557,7 +557,7 @@ Dashboard: https://capafy-skills-daily.netlify.app
 5. Telegram never leaves a failure as the final message when the repair later succeeds.
 6. Telegram reports are natural language, contain real links, and distinguish gross/pending/realized/MRR/cost.
 7. Dashboard and Telegram agree because both use the same event ledger.
-8. Account health distinguishes calendar age, warmup completion, session readiness, public live state, and reach health.
+8. Account health distinguishes session readiness, public live state, account-status signals, and reach health; calendar age and synthetic activity are not health evidence.
 9. Every hosted product has a hard loss cap and measurable contribution margin.
 10. The next product and marketing action are chosen from fresh evidence and prior experiment outcomes.
 11. Routine operation, account replacement, retries, and repair require no babysitting.
