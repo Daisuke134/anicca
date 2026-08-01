@@ -30,7 +30,7 @@ test("deploy entrypoint passes a token to compose without printing it", () => {
   fs.writeFileSync(tokenPath, `${token}\n`, { mode: 0o600 });
   fs.chmodSync(tokenPath, 0o600);
   const fakeDocker = path.join(bin, "docker");
-  fs.writeFileSync(fakeDocker, `#!/bin/bash\nset -e\nif [[ -z "\${LM_CONNECTOR_BRIDGE_TOKEN:-}" ]]; then exit 9; fi\nif [[ "$*" == *"exec -T worker node"* ]]; then printf '{"ready":true,"capabilities":["runtime.noop","outbound.event.apply","connector.coverage.refresh"]}'; fi\n`, { mode: 0o700 });
+  fs.writeFileSync(fakeDocker, `#!/bin/bash\nset -e\nif [[ -z "\${LM_CONNECTOR_BRIDGE_TOKEN:-}" ]]; then exit 9; fi\nif [[ "$*" == *"exec -T worker node"* ]]; then printf '{"ok":true,"capabilities":["runtime.noop","outbound.event.apply","connector.coverage.refresh"]}'; fi\n`, { mode: 0o700 });
   const result = spawnSync("/bin/bash", [path.join(__dirname, "deploy-connector-runtime.sh")], {
     cwd: path.resolve(__dirname, ".."),
     env: {

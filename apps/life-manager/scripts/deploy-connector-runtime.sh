@@ -41,7 +41,7 @@ fetch("http://127.0.0.1:8790/health", {signal: AbortSignal.timeout(5000)})
 "$NODE_BIN" -e '
 const value = JSON.parse(process.argv[1]);
 const required = ["outbound.event.apply", "connector.coverage.refresh"];
-if (value.ready !== true || !Array.isArray(value.capabilities) || !required.every((item) => value.capabilities.includes(item))) {
+if (value.ok !== true || !Array.isArray(value.capabilities) || !required.every((item) => value.capabilities.includes(item))) {
   process.exit(1);
 }
 ' "$HEALTH"
