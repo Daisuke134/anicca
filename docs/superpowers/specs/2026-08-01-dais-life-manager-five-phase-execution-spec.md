@@ -576,6 +576,10 @@ waitlist / cancelled`、登壇応募は`discovered / submission_queued / submitt
 withdrawn / presented`とする。登壇応募がclosed/invite-onlyでも候補entityとして追跡するが送信可能にはしない。
 O1B-14のtimelineとO1B-15のimmutable transition ledgerを先取りせず、まず混同不能なdurable current-stateを作る。
 
+O1B-12進捗1（RED）: `both` eventから別ID・別action URLの2 entity、audience-only/talk-only、
+closed talkの追跡、classifier provenance必須、reference-only input、atomic insert、失敗時rollbackを固定する
+test 5件を追加した。production `event-participation-entities.js`はまだ存在しないためmodule path不在でREDになる。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
