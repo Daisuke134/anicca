@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "task": "O1C-20",
+  "observed_at": "2026-08-02T12:00:00.000Z",
+  "result": "verified_weekly_funder_reflection_hold",
+  "implementation_commits": [
+    "c409d02ecd28d86e103779b8b29848510cc17927"
+  ],
+  "architecture": {
+    "timezone": "Asia/Tokyo",
+    "week_window": "Monday 00:00 JST inclusive through Sunday 20:15 JST exclusive",
+    "reflection_ledger": "public.lm_funder_weekly_reflection_ledger",
+    "application_ledger": "public.lm_funder_outreach_reflection_application",
+    "append_only": true,
+    "human_approval_required": false,
+    "learnable_statuses": [
+      "reply_received",
+      "rejected",
+      "meeting_requested",
+      "offer_received",
+      "funded"
+    ],
+    "late_commit_policy": "carry each previously unreflected learnable result into the oldest missing week",
+    "backlog_policy": "materialize every missing week oldest-first and retain the latest unapplied change across later holds",
+    "planner_application": "candidate IDs -> materialize -> load unapplied change -> rank overlay -> exact directive injection -> closed validation",
+    "directive_limit": "one line, at most 24 whitespace-delimited words and 240 characters",
+    "delivery_race_fence": "plan expires five minutes before the next weekly cutoff and is checked before Gmail send",
+    "plain_schema_v2_receipt_allowed": false,
+    "database_requires_unapplied_change_application": true,
+    "raw_recipient_subject_body_or_provider_id_in_evidence": false
+  },
+  "live_reflection": {
+    "tenant_id": "dais-local",
+    "reflection_id": "funder-weekly-reflection:5e2fdcfffe24361038a3645b1993389848dd8419bd36bf30904854fbbe3e2c9b",
+    "week_key": "2026-07-27",
+    "week_start": "2026-07-26T15:00:00.000Z",
+    "week_end": "2026-08-02T11:15:00.000Z",
+    "reflected_at": "2026-08-02T12:00:00.000Z",
+    "decision": "hold",
+    "reason": "insufficient_outcomes",
+    "outcome_count": 0,
+    "ranked_candidate_count": 0,
+    "pitch_directive_count": 0,
+    "exact_replay": "duplicate",
+    "reflection_rows_after_replay": 1,
+    "application_rows": 0
+  },
+  "fresh_typed_result_readback": {
+    "outbound_confirmed": 1,
+    "inbound_delivery_failed": 1,
+    "reply_received": 0,
+    "rejected": 0,
+    "meeting_requested": 0,
+    "offer_received": 0,
+    "funded": 0
+  },
+  "verification": {
+    "focused_tests": "50/50 passed",
+    "outbound_tests": "263/263 passed",
+    "runtime_up_tests": "58/58 passed",
+    "life_manager_full_npm_test": "passed",
+    "postgres_integration": "replay=2 valid_application=1 missing=blocked tampered=blocked immutable=blocked roles=2 passed",
+    "local_live_migration_replay": "applied twice with one reflection row, zero application rows, and one current deferred trigger",
+    "independent_review": "0 Critical and 0 Important",
+    "syntax_and_diff_check": "passed"
+  },
+  "claim_boundary": "This proves the no-HITL weekly reflection, backlog/cutoff handling, append-only lineage, next-plan rank and pitch enforcement, pre-send expiry fence, and database application constraints. The live ledger had no reply, rejection, meeting, offer, or funding result, so the only truthful live decision is hold/insufficient_outcomes; no pitch improvement, investor interest, acceptance, or funding is claimed."
+}

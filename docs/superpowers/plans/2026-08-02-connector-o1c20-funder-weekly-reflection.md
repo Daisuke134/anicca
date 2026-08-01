@@ -37,4 +37,4 @@
 
 - [x] focused/full/PostgreSQL/runtime/outbound regressionとmigration replayをfresh実行する。
 - [x] independent reviewでCritical/Importantを0にする。
-- [ ] evidence JSON、正本spec、残件数を更新し、commit/push/local-remote HEAD一致を確認する。
+- [x] evidence JSON、正本spec、残件数を更新し、commit/push/local-remote HEAD一致を確認する。

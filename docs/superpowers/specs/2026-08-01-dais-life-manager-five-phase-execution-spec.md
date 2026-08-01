@@ -916,7 +916,20 @@ syntax/diff、独立review Critical/Important 0が成功。実装commit `90938bb
 `docs/superpowers/specs/2026-08-02-o1c19-vc-angel-personalized-outreach-design.md`。実装plan:
 `docs/superpowers/plans/2026-08-02-connector-o1c19-vc-angel-personalized-outreach.md`。実測証拠:
 `docs/evidence/funding/2026-08-02-o1c19-vc-angel-personalized-outreach.json`。残作業は93件。
-次はO1C-20で、採択・面談結果を次のpitchとtarget rankingへ反映する週次reflectionを実装する。
+完了: `O1C-20`。Asia/Tokyoの月曜00:00〜日曜20:15半開週でsubmission/outreachとtyped resultを読み、
+reply/reject/meeting/offer/fundedだけをagent-owned判断へ渡すappend-only週次reflectionを実装した。候補ID確定後に停止期間の
+未記録週を古い順で全てmaterializeし、cutoff直前の遅延commit resultは未反映なら次週へcarryする。後続holdに隠された
+未適用changeも次のplannerが読み、順位を自動overlayし、24語/240文字以内のexact directiveを90語以内の原稿へ注入して
+120語上限・result lineageを再検証する。全schema v2 receiptはdelivery provenanceを要求し、DB deferred constraintは未適用changeの
+application欠落・順位・directive digest・result ID改ざんを拒否する。planは次cutoffの5分前に失効し、Gmail送信前に検査する。
+実`dais-local` readbackはconfirmation 1、delivery_failed 1、reply/reject/meeting/offer/funded 0で、週`2026-07-27`は正直に
+`hold / insufficient_outcomes`を1行だけ保存しexact replayはduplicate、application 0。fresh verificationはfocused 50件、outbound
+263件、runtime-up 58件、Life Manager full `npm test`、PostgreSQL migration replay・valid application・missing/tampered/immutable/2 role拒否、
+local live migration replay、diff check、独立review Critical/Important 0が成功。実装commit `c409d02ec`。設計:
+`docs/superpowers/specs/2026-08-02-o1c20-funder-weekly-reflection-design.md`。実装plan:
+`docs/superpowers/plans/2026-08-02-connector-o1c20-funder-weekly-reflection.md`。実測証拠:
+`docs/evidence/funding/2026-08-02-o1c20-funder-weekly-reflection.json`。残作業は92件。
+次はO1C-21で、旧`apply-to-yc`のfield/video/progress知識を後継YC providerへ移植する。
 
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
@@ -1137,7 +1150,7 @@ agentが本文と履歴を読んで判断し、keyword/regexの固定分類へ�
 - [x] O1C-17 `gog`でconfirmation/replyをthread ID単位に取得し、Job Hunter ledgerへ統合
 - [x] O1C-18 application→confirmation→interview→offer/reject→fundedのfunnelをWebへ投影
 - [x] O1C-19 accelerator以外のVC/angelはthesis一致時だけ1日3〜5件へpersonalized outreach
-- [ ] O1C-20 採択・面談の結果を次のpitchとtarget rankingへ反映する週次reflection
+- [x] O1C-20 採択・面談の結果を次のpitchとtarget rankingへ反映する週次reflection
 - [ ] O1C-21 旧`apply-to-yc`のfield/video/progress知識を後継YC providerへ移植
 - [ ] O1C-22 古いSummer application IDがFall 2026へ継続可能かYC home実画面で確認
 - [ ] O1C-23 `yc-w26.json`のbatch、deadline、amount、URLをcurrent official factsへ更新
