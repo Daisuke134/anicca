@@ -944,6 +944,11 @@ O1B-18進捗1（RED）: 全candidate保持、`weak / unknown`保持、exact perm
 exclude-shaped output拒否、model failure時のfallback禁止、0候補日のmodel非呼出しを5 testで定義した。
 production module不存在のため期待どおり失敗した。
 
+O1B-18進捗2（GREEN）: verified O1B-17 snapshotと対象日だけを入力にし、Geminiのstrict JSONを
+全event refのexact permutationとして検証するmoduleを追加した。schemaにexclude/eligibleを持たず、
+`strong / moderate / weak / unknown`と理由だけを返す。好み本文はhashだけをsnapshotへ残し、model failure、
+invalid JSON、欠落、重複、未知refにfallbackしない。focused 5/5成功。次は実Gemini 8-case eval。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
