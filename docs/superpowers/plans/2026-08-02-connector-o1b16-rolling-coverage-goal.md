@@ -67,11 +67,11 @@ git commit -m "feat(connector): build rolling event coverage"
 - Consumes: in-process verified coverage snapshot
 - Produces: `createRollingEventCoverageStore({connect}).save(snapshot)`
 
-- [ ] **Step 1: RED testを書く**
+- [x] **Step 1: RED testを書く**
 
 verified provenance、tenant-bound insert、idempotent retry、collision rollback、immutable trigger、current viewを固定する。
 
-- [ ] **Step 2: REDを確認する**
+- [x] **Step 2: REDを確認する**
 
 Run: `node --test lib/rolling-event-coverage-store.test.js`
 Expected: module path不存在でFAIL。
