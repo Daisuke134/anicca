@@ -159,6 +159,7 @@ def test_projection_folds_money_inventory_account_urls_and_latest_metrics() -> N
     }
     assert result["account"]["handle"] == "capafy.skills8m4q2z"
     assert result["account"]["lifecycle_status"] == "reach_observing"
+    assert result["account"]["capability"] == "none"
     assert result["account"]["session_established"] is True
     assert result["account"]["post_write_session_verified"] is True
     assert result["marketing"]["public_post_url"] == (
@@ -317,7 +318,7 @@ def test_goal_monitor_reports_projection_ignores_legacy_builder_and_blocks_misma
             {
                 "handle": "capafy.skills8m4q2z",
                 "status": "reach_observing",
-                "capability": "publish_probe",
+                "capability": "none",
                 "session_established": True,
                 "post_write_session_verified": True,
                 "replacement_requested": False,

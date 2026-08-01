@@ -172,6 +172,107 @@ def test_ig_metric_snapshot_does_not_turn_unavailable_engagement_into_zero() -> 
     assert events[0]["metrics"] == {"views": 95}
 
 
+def test_inventory_snapshot_emits_one_stable_observation_per_listing() -> None:
+    agents = [
+        {
+            "agentId": "4866150011",
+            "name": "Decision Debate",
+            "agentStatus": "online",
+            "updatedAt": 1785120576575,
+        },
+        {
+            "agentId": "9480246345",
+            "name": "Portfolio Tracker",
+            "agentStatus": "under_review",
+            "updatedAt": 1785460544396,
+        },
+        {
+            "agentId": "3098034209",
+            "name": "Sales Objection Reply Builder",
+            "agentStatus": "review_rejected",
+            "updatedAt": 1785293824499,
+        },
+    ]
+
+    events = sync.events_from_inventory_agents(agents)
+
+    assert [event["status"]["after"] for event in events] == [
+        "online",
+        "under_review",
+        "rejected",
+    ]
+    assert all(event["event_type"] == "listing.observed" for event in events)
+    assert events[0]["public_evidence"]["urls"] == [
+        "https://capafy.ai/agent/4866150011"
+    ]
+    assert events[1]["public_evidence"]["urls"] == []
+    assert sync.events_from_inventory_agents(agents) == events
+
+
+def test_verified_runtime_artifacts_backfill_outcomes_and_honest_incident_phases() -> None:
+    builder = {
+        "recorded_at": "2026-08-01T13:07:44+00:00",
+        "outcome": {
+            "schema_version": 1,
+            "kind": "builder_submitted",
+            "owner": "builder",
+            "title": "Portfolio Tracker",
+            "agent_id": "9480246345",
+            "remote_status": 1,
+            "skills_confirmed": True,
+            "config_confirmed": True,
+            "listing_url": "https://capafy.ai/agent/9480246345",
+            "gross_usd": 9.99,
+            "pending_usd": 8,
+            "realized_usd": 0,
+            "mrr_usd": 0,
+            "cost_usd": 4.78,
+            "contribution_usd": -4.78,
+            "next_action": "market it",
+        },
+    }
+    marketing = {
+        "recorded_at": "2026-08-01T20:32:54+00:00",
+        "outcome": {
+            "schema_version": 1,
+            "kind": "marketing_published",
+            "owner": "marketer",
+            "handle": "capafy.skills8m4q2z",
+            "title": "Decision Debate",
+            "agent_id": "4866150011",
+            "listing_url": "https://capafy.ai/agent/4866150011",
+            "campaign_url": "https://capafy-skills-daily.netlify.app/go/4866150011?utm_source=instagram",
+            "caption": "Make the tradeoff visible.",
+            "media_path": "/private/tmp/reel.mp4",
+            "reel_url": "https://www.instagram.com/reel/DbgsvEbo5kd/",
+            "owner_session_verified": True,
+        },
+    }
+    incident = {
+        "schema_version": 1,
+        "incident_id": "capafy-marketer-20260801T201313Z-6b646dbe",
+        "owner": "marketer",
+        "phase": "verified",
+        "detected_at": "2026-08-01T20:13:13Z",
+        "updated_at": "2026-08-01T20:40:03Z",
+        "summary": "Reel readback failed.",
+        "repair_summary": "Recovered the owner-scoped Reel URL.",
+        "verification": {"owner_session_verified": True},
+    }
+
+    events = sync.events_from_verified_runtime(builder, marketing, [incident])
+
+    assert [event["event_type"] for event in events] == [
+        "listing.submitted",
+        "content.published",
+        "account.post_verified",
+        "incident.detected",
+        "incident.verified",
+    ]
+    assert events[-2]["public_evidence"]["urls"] == []
+    assert events[-1]["status"]["after"] == "verified"
+
+
 def test_sync_all_cli_backfills_once_and_keeps_exact_cost_private(tmp_path: Path) -> None:
     money = tmp_path / "capafy-earn-ledger.jsonl"
     cost = tmp_path / "capafy-loop.log"
@@ -245,6 +346,7 @@ def test_sync_all_cli_backfills_once_and_keeps_exact_cost_private(tmp_path: Path
         sys.executable,
         str(SCRIPTS / "capafy_event_sync.py"),
         "sync-all",
+        "--skip-runtime",
         "--money-ledger",
         str(money),
         "--cost-log",

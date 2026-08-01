@@ -21,6 +21,7 @@ from urllib.parse import urlparse
 EVENT_TYPES = {
     "listing.submitted",
     "listing.approved",
+    "listing.observed",
     "content.published",
     "content.measured",
     "account.created",

@@ -63,11 +63,7 @@ def _account_projection(event: dict | None) -> dict:
         "account.publish_probe_ready",
         "account.post_verified",
     }
-    capability = (
-        "publish_probe"
-        if event_type in {"account.publish_probe_ready", "account.post_verified"}
-        else "none"
-    )
+    capability = "publish_probe" if event_type == "account.publish_probe_ready" else "none"
     if event_type == "account.post_verified":
         status = "reach_observing"
     return {

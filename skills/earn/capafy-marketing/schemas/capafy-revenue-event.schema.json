@@ -14,7 +14,7 @@
     "event_id": {"type": "string", "minLength": 1},
     "event_type": {
       "enum": [
-        "listing.submitted", "listing.approved", "content.published", "content.measured",
+        "listing.submitted", "listing.approved", "listing.observed", "content.published", "content.measured",
         "account.created", "account.session_ready", "account.publish_probe_ready",
         "account.post_verified", "order.received", "balance.reconciled", "payout.received",
         "cost.measured", "incident.detected", "incident.repair_started", "incident.repaired",

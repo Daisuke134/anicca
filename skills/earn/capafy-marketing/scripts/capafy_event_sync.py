@@ -4,9 +4,11 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import hashlib
 import json
 import os
+import subprocess
 import sys
 from datetime import datetime, timezone
 from decimal import Decimal, ROUND_HALF_UP
@@ -15,6 +17,7 @@ from typing import Any
 from urllib.parse import urlparse
 
 from capafy_event_store import append_event
+from capafy_event_adapters import event_from_incident, events_from_outcome
 
 
 CENT = Decimal("0.01")
@@ -57,6 +60,12 @@ def _timestamp(value: Any) -> str:
     )
 
 
+def _timestamp_ms(value: Any) -> str:
+    return datetime.fromtimestamp(
+        int(value) / 1000, timezone.utc
+    ).isoformat(timespec="seconds").replace("+00:00", "Z")
+
+
 def _date_timestamp(value: str) -> str:
     return f"{value}T00:00:00Z"
 
@@ -85,6 +94,8 @@ def _event(
     source_producer: str,
     source_id: str,
     source_row: Any,
+    before: str | None = None,
+    after: str = "measured",
 ) -> dict:
     return {
         "schema_version": 1,
@@ -95,7 +106,7 @@ def _event(
         "entity": {"type": entity_type, "id": entity_id},
         "correlation_id": None,
         "summary": summary,
-        "status": {"before": None, "after": "measured"},
+        "status": {"before": before, "after": after},
         "money": {**ZERO_MONEY, **(money or {})},
         "metrics": metrics or {},
         "public_evidence": {"urls": urls or [], "labels": labels or []},
@@ -107,6 +118,119 @@ def _event(
         },
         "next": {"owner": "company", "retry_at": None},
     }
+
+
+def events_from_inventory_agents(agents: list[dict]) -> list[dict]:
+    events: list[dict] = []
+    statuses = {
+        "online": "online",
+        "approved": "online",
+        "under_review": "under_review",
+        "draft": "draft",
+        "review_rejected": "rejected",
+        "rejected": "rejected",
+        "banned": "rejected",
+    }
+    for agent in agents:
+        agent_id = str(agent.get("agentId") or "")
+        raw_status = str(agent.get("agentStatus") or "")
+        status = statuses.get(raw_status)
+        updated_at = int(agent.get("updatedAt") or 0)
+        if not agent_id or not status or updated_at <= 0:
+            continue
+        events.append(
+            _event(
+                event_id=f"capafy:listing.observed:{agent_id}:{status}:{updated_at}",
+                event_type="listing.observed",
+                occurred_at=_timestamp_ms(updated_at),
+                loop="builder",
+                entity_type="listing",
+                entity_id=agent_id,
+                summary=f"Observed Capafy listing {agent_id} in remote status {status}.",
+                urls=(
+                    [f"https://capafy.ai/agent/{agent_id}"]
+                    if status == "online"
+                    else []
+                ),
+                labels=["fresh platform inventory read"],
+                source_producer="capafy-inventory-reconcile",
+                source_id=f"inventory:{agent_id}:{status}:{updated_at}",
+                source_row=agent,
+                after=status,
+            )
+        )
+    return events
+
+
+def _utc_text(value: Any) -> str | None:
+    if not isinstance(value, str) or not value:
+        return None
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if parsed.utcoffset() is None:
+        return None
+    return parsed.astimezone(timezone.utc).isoformat(timespec="seconds").replace(
+        "+00:00", "Z"
+    )
+
+
+def events_from_verified_runtime(
+    builder_terminal: dict,
+    marketing_terminal: dict,
+    incidents: list[dict],
+) -> list[dict]:
+    """Backfill only terminal outcomes and incident phases with persisted proof."""
+
+    events: list[dict] = []
+    for terminal in (builder_terminal, marketing_terminal):
+        outcome = terminal.get("outcome")
+        occurred_at = _utc_text(terminal.get("recorded_at"))
+        if isinstance(outcome, dict) and occurred_at:
+            events.extend(events_from_outcome(outcome, occurred_at))
+
+    for source in sorted(
+        incidents, key=lambda item: str(item.get("detected_at") or "")
+    ):
+        incident_id = source.get("incident_id")
+        owner = source.get("owner")
+        detected_at = _utc_text(source.get("detected_at"))
+        current_phase = source.get("phase")
+        current_at = _utc_text(source.get("updated_at"))
+        if not incident_id or not owner or not detected_at:
+            continue
+
+        detected = copy.deepcopy(source)
+        detected["phase"] = "detected"
+        detected["phase_timestamps"] = {"detected": detected_at}
+        for field in ("outcome", "verification", "repair_summary", "next_retry_at"):
+            detected.pop(field, None)
+        events.append(event_from_incident(detected))
+
+        if current_phase == "detected" or not current_at:
+            continue
+        current = copy.deepcopy(source)
+        current["phase_timestamps"] = {
+            "detected": detected_at,
+            str(current_phase): current_at,
+        }
+        if current_phase == "verified" and not isinstance(
+            current.get("verification"), dict
+        ):
+            outcome = current.get("outcome")
+            if not isinstance(outcome, dict):
+                continue
+            from capafy_outcome import validate_outcome
+
+            if validate_outcome(outcome):
+                continue
+            current["verification"] = {
+                "legacy_business_outcome_validated": True,
+                "telegram_message_id": current.get("telegram_message_id"),
+            }
+        events.append(event_from_incident(current))
+    return events
 
 
 def events_from_sales_rows(rows: list[dict]) -> list[dict]:
@@ -326,7 +450,48 @@ def _read_jsonl(path: Path) -> list[dict]:
     return rows
 
 
+def _read_json_object(path: Path) -> dict:
+    if not path.exists():
+        return {}
+    value = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(value, dict):
+        raise ValueError(f"JSON source is not an object: {path}")
+    return value
+
+
+def _read_incident_dir(path: Path) -> list[dict]:
+    if not path.exists():
+        return []
+    return [_read_json_object(source) for source in sorted(path.glob("*.json"))]
+
+
+def _read_inventory(args: argparse.Namespace) -> tuple[list[dict], Path]:
+    if args.inventory_json is not None:
+        source_path = args.inventory_json
+        payload = _read_json_object(source_path)
+    else:
+        source_path = args.inventory_command_dir / "packager.py"
+        completed = subprocess.run(
+            [sys.executable, "packager.py", "publish-list"],
+            cwd=args.inventory_command_dir,
+            capture_output=True,
+            text=True,
+            timeout=90,
+            check=True,
+        )
+        payload = json.loads(completed.stdout, strict=False)
+    agents = ((payload.get("agents") or {}).get("list"))
+    if not isinstance(agents, list) or not all(isinstance(agent, dict) for agent in agents):
+        raise ValueError("inventory source does not contain agents.list")
+    return agents, source_path
+
+
 def _match_source_row(event: dict, candidates: list[dict]) -> dict:
+    if event["source"]["producer"] == "capafy-outcome":
+        incident_id = event["entity"]["id"]
+        return next(
+            (row for row in candidates if row.get("incident_id") == incident_id), {}
+        )
     wanted = event["source"]["source_digest"]
     return next((row for row in candidates if _digest(row) == wanted), {})
 
@@ -342,8 +507,26 @@ def _parser() -> argparse.ArgumentParser:
         "metrics": Path(os.path.expanduser("~/.openclaw/state/capafy-marketing-ig-metrics.jsonl")),
         "ledger": Path(os.path.expanduser("~/.openclaw/state/capafy-revenue-events.jsonl")),
         "evidence": Path(os.path.expanduser("~/.openclaw/state/capafy-revenue-evidence")),
+        "builder_terminal": Path(
+            os.path.expanduser("~/.openclaw/state/capafy-builder-terminal.json")
+        ),
+        "marketing_terminal": Path(
+            os.path.expanduser("~/.openclaw/state/capafy-marketing-terminal.json")
+        ),
+        "incident_dir": Path(os.path.expanduser("~/.openclaw/state/capafy-incidents")),
+        "inventory_command_dir": Path(
+            os.path.expanduser(
+                "~/.openclaw/skills/capafy-autopublish/vendor/capafy-publisher"
+            )
+        ),
     }
-    for name in ("sync-money", "sync-attribution", "sync-metrics", "sync-all"):
+    for name in (
+        "sync-money",
+        "sync-attribution",
+        "sync-metrics",
+        "sync-runtime",
+        "sync-all",
+    ):
         command = commands.add_parser(name)
         command.add_argument("--money-ledger", type=Path, default=defaults["money"])
         command.add_argument("--cost-log", type=Path, default=defaults["cost"])
@@ -352,6 +535,20 @@ def _parser() -> argparse.ArgumentParser:
         command.add_argument("--verification-clicks-json", default='{"4866150011":2}')
         command.add_argument("--ledger", type=Path, default=defaults["ledger"])
         command.add_argument("--evidence-dir", type=Path, default=defaults["evidence"])
+        command.add_argument(
+            "--builder-terminal", type=Path, default=defaults["builder_terminal"]
+        )
+        command.add_argument(
+            "--marketing-terminal", type=Path, default=defaults["marketing_terminal"]
+        )
+        command.add_argument("--incident-dir", type=Path, default=defaults["incident_dir"])
+        command.add_argument("--inventory-json", type=Path)
+        command.add_argument(
+            "--inventory-command-dir",
+            type=Path,
+            default=defaults["inventory_command_dir"],
+        )
+        command.add_argument("--skip-runtime", action="store_true")
     return parser
 
 
@@ -392,6 +589,33 @@ def _main() -> int:
                 events_from_ig_metrics(metric_rows),
                 metric_rows,
                 args.metrics_ledger,
+            )
+        if args.command == "sync-runtime" or (
+            args.command == "sync-all" and not args.skip_runtime
+        ):
+            agents, inventory_source = _read_inventory(args)
+            groups["inventory"] = (
+                events_from_inventory_agents(agents),
+                agents,
+                inventory_source,
+            )
+            builder_terminal = _read_json_object(args.builder_terminal)
+            marketing_terminal = _read_json_object(args.marketing_terminal)
+            outcome_candidates = [
+                terminal.get("outcome")
+                for terminal in (builder_terminal, marketing_terminal)
+                if isinstance(terminal.get("outcome"), dict)
+            ]
+            groups["outcomes"] = (
+                events_from_verified_runtime(builder_terminal, marketing_terminal, []),
+                outcome_candidates,
+                args.builder_terminal.parent,
+            )
+            incidents = _read_incident_dir(args.incident_dir)
+            groups["incidents"] = (
+                events_from_verified_runtime({}, {}, incidents),
+                incidents,
+                args.incident_dir,
             )
 
         source_counts: dict[str, dict[str, int]] = {}
