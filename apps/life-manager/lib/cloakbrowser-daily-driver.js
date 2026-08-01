@@ -23,6 +23,21 @@ function lumaUrl(value) {
   return url.toString();
 }
 
+function funderUrl(value, policy = {}) {
+  let url;
+  try { url = new URL(String(value == null ? "" : value).trim()); }
+  catch { throw new Error("Funder form URL invalid"); }
+  const origins = policy.allowed_origins;
+  if (url.protocol !== "https:" || url.username || url.password
+    || !Array.isArray(origins) || origins.length < 1 || origins.length > 50
+    || origins.some((origin) => {
+      try { const allowed = new URL(origin); return allowed.origin !== origin || allowed.protocol !== "https:" || allowed.username || allowed.password; }
+      catch { return true; }
+    }) || !origins.includes(url.origin)) throw new Error("Funder form URL invalid");
+  url.hash = "";
+  return url.toString();
+}
+
 function safePath(value) {
   const path = String(value == null ? "" : value).trim();
   return path.startsWith("/") && path.length <= 500 ? path : "/";
@@ -94,7 +109,14 @@ function createCloakBrowserDailyDriver(options = {}) {
 
   return Object.freeze({
     async withLumaPage(value, task) {
-      const url = lumaUrl(value);
+      return withOwnedPage(lumaUrl(value), task);
+    },
+    async withFunderPage(value, policy, task) {
+      return withOwnedPage(funderUrl(value, policy), task);
+    },
+  });
+
+  async function withOwnedPage(url, task) {
       if (typeof task !== "function") {
         throw new Error("CloakBrowser daily-driver task unavailable");
       }
@@ -124,8 +146,7 @@ function createCloakBrowserDailyDriver(options = {}) {
       } finally {
         if (page && typeof page.close === "function") await page.close();
       }
-    },
-  });
+  }
 }
 
 module.exports = {

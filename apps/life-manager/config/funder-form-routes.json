@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "browser_ref": "browser-profile://cloakbrowser/daily-driver",
+  "endpoint": "http://127.0.0.1:9222",
+  "connection_mode": "connect_over_cdp",
+  "shared_context_count": 1,
+  "routes": [
+    { "route_id": "yc-application", "provider_id": "yc-fall-2026", "origin_binding": "exact", "form_origin": "https://apply.ycombinator.com" },
+    { "route_id": "official-accelerator-form", "provider_id": "registry-funder", "origin_binding": "registry_official_form_url", "form_origin": null }
+  ]
+}
