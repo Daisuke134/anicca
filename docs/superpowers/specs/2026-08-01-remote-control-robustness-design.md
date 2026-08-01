@@ -72,7 +72,7 @@ claude doctor: Remote Control セクションに失敗チェック無し
 | 1 | ログ回転: plist を `perl` ANSI除去 + `rotatelogs -n 5 10M` パイプに (上限50MB) | **done 2026-08-01 17:22** (§4.1) |
 | 2 | plist 衛生: `zsh -l` 廃止 / `EnvironmentVariables.PATH` 明示 / `ProcessType` / `ExitTimeOut=30` / `ThrottleInterval=60` / `RunAtLoad` 削除 | **done 2026-08-01 17:35** (§4.2) |
 | 3 | 401 サーキットブレーカ: ログに `Authentication failed (401)` 検知 → 20秒後に1回だけリトライ → まだ401なら `launchctl bootout` + sentinel 書いて停止 | **done 2026-08-01 17:48** (§4.3) |
-| 4 | 通知: sentinel が立ったら Dais へ「`claude auth login` が必要」を送る (18時間ルールは人間しか解けない = 正当な human-loop) | pending |
+| 4 | 通知: sentinel が立ったら Dais へ「`claude auth login` が必要」を送る (18時間ルールは人間しか解けない = 正当な human-loop) | **done 2026-08-01 17:52** (§4.4) |
 | 5 | 有線化: Mac mini 背面 Ethernet にLANケーブル → ルーター。**Dais の物理作業**。優先度最下位 | pending (Dais) |
 | 6 | 掃除: 重複 tailscale LaunchAgent (exit 1) 削除 / orphaned npm `@anthropic-ai/claude-code` 削除 / `~/.openclaw` 14G 回収 | pending |
 
@@ -203,6 +203,30 @@ supervise.log   →  空 (インシデント無し)
 ```
 
 新しく増えたファイル: `~/.claude/logs/remote-control.supervise.log`（監視側の判断ログ。TUI 出力とは別系統。**回転対象外なので行数は極小に保つこと**）、`~/.claude/state/remote-control-401.{count,sentinel}`。
+
+---
+
+### 4.4 実測ログ — #4 通知 (2026-08-01 17:52 完了)
+
+**通知経路は新設していない。** 停電通知 `~/recovery-setup/boot-notify.sh` が既に使っている Telegram bot をそのまま再利用する（`~/.openclaw/.env` の `TELEGRAM_BOT_TOKEN` / `TELEGRAM_ALERT_CHAT_ID`、送信前にネット復帰を待つ形も踏襲）。Dais が見る場所を増やさないため。
+
+`~/.claude/scripts/remote-control-notify.sh` — sentinel の中身をそのまま本文に載せ、直し方（`claude auth login` → `launchctl bootstrap`）を添えて送る。
+
+実配信で検証（Dais 自身のアラート channel に、テストと明記した1通）:
+
+```
+notify: telegram http=200
+rc=0
+```
+
+supervisor からの呼び出し配線も sandbox で確認（実送信を重ねないようスタブに差し替え）:
+
+```
+[supervise] CIRCUIT BREAKER OPEN — booting out the job. see .../remote-control-401.sentinel
+STUB-NOTIFY called with: .../remote-control-401.sentinel      ← bootout の前に発火している
+```
+
+**なぜここだけ人を呼ぶのか**: 401 の解除は対話セッションでの `claude auth login`（Trusted Devices 下では生体認証つき）が要る。機械では解けない。黙って諦めるのは「2時間気づかない」の再現なので、必ず届ける。
 
 ---
 
