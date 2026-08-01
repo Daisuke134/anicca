@@ -28,6 +28,35 @@ test("listEventsRaw → gog calendar events list with --from/--to/--max, returns
   assert.ok(a.includes("--max=50"));
 });
 
+test("listCalendarsRaw and listAllEventsRaw explicitly exhaust every Google Calendar", async () => {
+  const calls = [];
+  const run = (args) => {
+    calls.push(args);
+    if (args[1] === "calendars") return JSON.stringify({ calendars: [{ id: "primary" }, { id: "team" }] });
+    return JSON.stringify({ events: [{ id: "e1", CalendarID: "team" }] });
+  };
+  const cal = makeGogCalendar({ account: ACCT, run });
+  assert.deepEqual(await cal.listCalendarsRaw({ strict: true }), [{ id: "primary" }, { id: "team" }]);
+  assert.deepEqual(await cal.listAllEventsRaw("u", {
+    timeMin: "2026-08-02T00:00:00+09:00",
+    timeMax: "2026-08-23T00:00:00+09:00",
+    maxResults: 2500,
+    strict: true,
+  }), [{ id: "e1", CalendarID: "team" }]);
+  assert.deepEqual(calls[0].slice(0, 4), ["calendar", "calendars", "-j", "--all"]);
+  assert.ok(calls[0].includes("--no-input"));
+  assert.deepEqual(calls[1].slice(0, 5), ["calendar", "events", "--all", "-j", "--all-pages"]);
+  assert.ok(calls[1].includes("--no-input"));
+  assert.ok(calls[1].includes("--from=2026-08-02T00:00:00+09:00"));
+  assert.ok(calls[1].includes("--to=2026-08-23T00:00:00+09:00"));
+});
+
+test("strict all-calendar reads fail closed instead of returning an empty schedule", async () => {
+  const cal = makeGogCalendar({ account: ACCT, run: () => { throw new Error("provider down"); } });
+  await assert.rejects(cal.listCalendarsRaw({ strict: true }), /provider down/);
+  await assert.rejects(cal.listAllEventsRaw("u", { strict: true }), /provider down/);
+});
+
 test("listEventsRaw tolerates {events:[...]} and non-JSON (→ [])", async () => {
   assert.deepEqual(await makeGogCalendar({ account: ACCT, run: () => '{"events":[{"id":"e2"}]}' }).listEventsRaw("u", {}), [{ id: "e2" }]);
   assert.deepEqual(await makeGogCalendar({ account: ACCT, run: () => "not json" }).listEventsRaw("u", {}), []);
