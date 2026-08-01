@@ -1,6 +1,14 @@
 "use strict";
 
-const DEFAULTS = Object.freeze({ call_enabled: true, notifications_enabled: true, daily_automation_enabled: true });
+// spec §5.2.1 — the phone is OPT-IN. Measured, it reached a human 3 times against 17 voicemails, and
+// Telegram is what actually pushes someone out the door, so a user who has expressed no preference
+// gets no call. Only `call_enabled` flipped: notifications and the daily automation are how the
+// product now reaches everyone (§5.3), and they keep their opt-OUT semantics.
+//
+// A default alone cannot enforce this — a preference row that exists for some OTHER setting returns
+// call_enabled as SQL NULL, which spreads straight over this object. Consumers must test `=== true`,
+// never `!== false`. See scheduler.js wakeTick / wakeCallOnce.
+const DEFAULTS = Object.freeze({ call_enabled: false, notifications_enabled: true, daily_automation_enabled: true });
 
 async function readRuntimePreferences(uid, opts = {}) {
   if (!uid || !opts.supaUrl || !opts.supaKey) return null;
