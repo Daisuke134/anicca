@@ -1418,6 +1418,14 @@ goal/serendipity、Calendar/route gate、spend plan、job build/read/enqueueを�
 `CONNECTOR_COVERAGE_APPLICATION_*_FAILED`だけを保存する。focused 11/11、Connector 242/242、runtime-up 37/37成功、
 失敗0件。次はcommit/push、再配備後のLIVE codeで失敗箇所を一点に確定する。
 
+O1B-26進捗8（goal evaluator真因の絞込 / RED→GREEN）: commit `73b8d7645`、image
+`16b61f929f20`を配備した9回目は、順位付けを通過後
+`CONNECTOR_COVERAGE_APPLICATION_GOAL_EVALUATION_FAILED`となり、応募effect 0件で終了した。goal evaluatorが既に内部で
+区別していたconfig、transport、HTTP、body、JSON、validationを、秘密本文やstatus本文を保存せずbounded codeへ変換する。
+plannerはallowlistした`EVENT_GOAL_SERENDIPITY_*_FAILED`だけを
+`CONNECTOR_COVERAGE_APPLICATION_GOAL_*_FAILED`へ写し、それ以外は従来のgeneric codeへ閉じる。focused 16/16、
+Connector 242/242成功、失敗0件。次はcommit/push、再配備後のLIVE codeでmodel契約の真因を確定する。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 

@@ -55,6 +55,12 @@ const RESPONSE_SCHEMA = Object.freeze({
 
 function invalid() { throw new Error("event goal serendipity invalid"); }
 
+function unavailable(code) {
+  const error = new Error("event goal serendipity unavailable");
+  error.code = `EVENT_GOAL_SERENDIPITY_${code}_FAILED`;
+  throw error;
+}
+
 function safeText(value, max) {
   const text = String(value == null ? "" : value).replace(/\s+/g, " ").trim();
   if (!text || text.length > max || UNSAFE.test(text)) invalid();
@@ -188,7 +194,7 @@ async function inferEventGoalSerendipity(input, options = {}) {
   }
   const apiKey = String(options.apiKey || process.env.GEMINI_API_KEY || "").trim();
   const fetchImpl = options.fetchImpl || globalThis.fetch;
-  if (!apiKey || typeof fetchImpl !== "function") throw new Error("event goal serendipity unavailable");
+  if (!apiKey || typeof fetchImpl !== "function") unavailable("CONFIG");
   const eventData = source.preferenceRanking.ranked_events.map((ranking, index) => {
     const eventSource = source.events.get(ranking.event_ref);
     return {
@@ -224,15 +230,15 @@ async function inferEventGoalSerendipity(input, options = {}) {
       }),
       signal: AbortSignal.timeout(30_000),
     });
-  } catch { throw new Error("event goal serendipity unavailable (transport)"); }
-  if (!response || response.ok !== true) throw new Error(`event goal serendipity unavailable (http ${response ? response.status : "none"})`);
+  } catch { unavailable("TRANSPORT"); }
+  if (!response || response.ok !== true) unavailable("HTTP");
   let body;
-  try { body = await response.json(); } catch { throw new Error("event goal serendipity unavailable (body)"); }
+  try { body = await response.json(); } catch { unavailable("BODY"); }
   let parsed;
   try { parsed = JSON.parse(body?.candidates?.[0]?.content?.parts?.[0]?.text || ""); }
-  catch { throw new Error("event goal serendipity unavailable (json)"); }
+  catch { unavailable("JSON"); }
   try { return validateEventGoalSerendipity(parsed, source); }
-  catch { throw new Error("event goal serendipity unavailable (validation)"); }
+  catch { unavailable("VALIDATION"); }
 }
 
 module.exports = {

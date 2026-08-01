@@ -191,12 +191,12 @@ test("model failure and invalid JSON never become an ungrounded fallback", async
   const input = { ...await sources(), goals: GOALS };
   await assert.rejects(inferEventGoalSerendipity(input, {
     apiKey: "fixture-key", fetchImpl: async () => ({ ok: false, status: 503 }),
-  }), /event goal serendipity unavailable/i);
+  }), (error) => error.code === "EVENT_GOAL_SERENDIPITY_HTTP_FAILED");
   await assert.rejects(inferEventGoalSerendipity(input, {
     apiKey: "fixture-key",
     fetchImpl: async () => ({
       ok: true,
       json: async () => ({ candidates: [{ content: { parts: [{ text: "not json" }] } }] }),
     }),
-  }), /event goal serendipity unavailable/i);
+  }), (error) => error.code === "EVENT_GOAL_SERENDIPITY_JSON_FAILED");
 });
