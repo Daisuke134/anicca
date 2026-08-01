@@ -113,6 +113,16 @@ def test_live_requires_publish_probe_new_reel_and_post_write_owner_session(media
     assert browser.handle_reads == 2
 
 
+def test_profile_scoped_reel_url_is_normalized_and_verified(media):
+    browser = FakeCdp()
+    browser.post_urls = {
+        "https://www.instagram.com/capafy.skills25042/reel/NEW456/"
+    }
+    result = post_reel(request(media, live=True), browser)
+    assert result["status"] == "published_verified"
+    assert result["reel_url"] == "https://www.instagram.com/reel/NEW456/"
+
+
 def test_post_write_owner_mismatch_refuses_publish_claim(media):
     browser = FakeCdp()
     browser.post_urls = {"https://www.instagram.com/reel/NEW456/"}

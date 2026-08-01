@@ -62,9 +62,13 @@ def _reel_url(value: str) -> str | None:
     if parsed.scheme != "https" or parsed.hostname not in {"instagram.com", "www.instagram.com"}:
         return None
     parts = [part for part in parsed.path.split("/") if part]
-    if len(parts) < 2 or parts[0] != "reel" or not parts[1]:
+    if len(parts) >= 2 and parts[0] == "reel":
+        shortcode = parts[1]
+    elif len(parts) >= 3 and parts[1] == "reel":
+        shortcode = parts[2]
+    else:
         return None
-    return f"https://www.instagram.com/reel/{parts[1]}/"
+    return f"https://www.instagram.com/reel/{shortcode}/"
 
 
 def _result(status: str, reached: str, browser: BrowserAci, pre=(), post=(), url=None, published=False, owner_session_verified=False):
