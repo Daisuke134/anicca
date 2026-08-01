@@ -4,7 +4,6 @@ const { createHash } = require("node:crypto");
 
 const { canonicalEventUrl } = require("./canonical-event-url.js");
 const { isVerifiedLumaDateInventory } = require("./luma-date-inventory.js");
-const { isVerifiedCalendarCandidateGate } = require("./calendar-candidate-gate.js");
 const { assertVerifiedOutboundReceipt } = require("./outbound-success.js");
 
 const VERIFIED = new WeakSet();
@@ -54,21 +53,6 @@ function sourceEvent(input) {
   return event;
 }
 
-async function eligibleSource(input, event) {
-  let gate = input.calendarGate;
-  if (!gate && typeof input.resolveCalendarGate === "function") {
-    try { gate = await input.resolveCalendarGate(); } catch { unavailable(); }
-  }
-  if (
-    !isVerifiedCalendarCandidateGate(gate)
-    || gate.status !== "evaluated"
-    || gate.inventory_snapshot_id !== input.dateInventory.inventory_snapshot_id
-  ) invalid();
-  const gateRow = gate.candidates.find((row) => row.event_ref === event.event_ref);
-  if (!gateRow || gateRow.eligible !== true) invalid();
-  return event;
-}
-
 async function syncVerifiedRegistrationToGoogleCalendar(input = {}) {
   const calendar = input.calendar;
   if (
@@ -97,7 +81,6 @@ async function syncVerifiedRegistrationToGoogleCalendar(input = {}) {
     provider = providerEvent(found[0]);
     status = "existing";
   } else {
-    await eligibleSource(input, event);
     let created;
     try {
       created = await calendar.createConnectorEvent({

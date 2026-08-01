@@ -149,6 +149,7 @@ test("verified RSVP becomes a Calendar event and coverage while a real all-day b
   const refresh = makeService({
     receiptReader: { async listForCoverage() { return [registration]; } },
     readDateInventory: async () => inventory,
+    routeMinutes: async () => { throw new Error("route must not run after registration"); },
     calendar: {
       async findConnectorEvents() { return []; },
       async createConnectorEvent(input) {

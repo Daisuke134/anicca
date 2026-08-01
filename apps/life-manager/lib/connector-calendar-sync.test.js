@@ -108,13 +108,16 @@ test("verified Luma registration creates one idempotent Google Calendar event an
   assert.doesNotMatch(JSON.stringify(first), /google-event-private-id|primary/);
 });
 
-test("unverified receipts, ineligible candidates, and ambiguous existing events fail before create", async () => {
+test("unverified receipts and ambiguous existing events fail, while a verified commitment is recorded despite a conflict", async () => {
   const { dateInventory, gate } = await inventoryAndGate();
   const receipt = await registrationReceipt();
   let creates = 0;
   const calendar = {
     async findConnectorEvents() { return []; },
-    async createConnectorEvent() { creates += 1; return {}; },
+    async createConnectorEvent() {
+      creates += 1;
+      return { id: "created", htmlLink: "https://calendar.google.com/calendar/event?eid=created" };
+    },
   };
   await assert.rejects(syncVerifiedRegistrationToGoogleCalendar({
     calendar, calendarId: "primary", dateInventory, calendarGate: gate,
@@ -128,11 +131,12 @@ test("unverified receipts, ineligible candidates, and ambiguous existing events 
     }),
     date: "2026-08-05", homeLocation: "Home", routeMinutes: async () => 20,
   });
-  await assert.rejects(syncVerifiedRegistrationToGoogleCalendar({
+  const conflicted = await syncVerifiedRegistrationToGoogleCalendar({
     calendar, calendarId: "primary", dateInventory, calendarGate: blockedGate,
     eventRef: "luma-event://event/founder-night", registrationReceipt: receipt, registrationJob: JOB,
-  }), /connector calendar sync invalid/i);
-  assert.equal(creates, 0);
+  });
+  assert.equal(conflicted.status, "created");
+  assert.equal(creates, 1);
   const ambiguous = { ...calendar, async findConnectorEvents() { return [{ id: "a", htmlLink: "https://calendar.google.com/calendar/event?eid=a" }, { id: "b", htmlLink: "https://calendar.google.com/calendar/event?eid=b" }]; } };
   await assert.rejects(syncVerifiedRegistrationToGoogleCalendar({
     calendar: ambiguous, calendarId: "primary", dateInventory, calendarGate: gate,
@@ -219,21 +223,27 @@ test("an exact existing Connector event is recovered before a travel gate is req
   assert.equal(creates, 0);
 });
 
-test("a missing Connector event still fails closed when no travel gate can be resolved", async () => {
+test("a missing Connector event records the verified commitment without resolving a travel gate", async () => {
   const { dateInventory } = await inventoryAndGate();
   const receipt = await registrationReceipt();
   let creates = 0;
-  await assert.rejects(syncVerifiedRegistrationToGoogleCalendar({
+  let gateCalls = 0;
+  const result = await syncVerifiedRegistrationToGoogleCalendar({
     calendar: {
       async findConnectorEvents() { return []; },
-      async createConnectorEvent() { creates += 1; },
+      async createConnectorEvent() {
+        creates += 1;
+        return { id: "created", htmlLink: "https://calendar.google.com/calendar/event?eid=created" };
+      },
     },
     calendarId: "primary",
     dateInventory,
-    resolveCalendarGate: async () => { throw new Error("route unavailable"); },
+    resolveCalendarGate: async () => { gateCalls += 1; throw new Error("route unavailable"); },
     eventRef: "luma-event://event/founder-night",
     registrationReceipt: receipt,
     registrationJob: JOB,
-  }), /connector calendar sync unavailable/i);
-  assert.equal(creates, 0);
+  });
+  assert.equal(result.status, "created");
+  assert.equal(gateCalls, 0);
+  assert.equal(creates, 1);
 });

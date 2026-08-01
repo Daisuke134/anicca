@@ -38,7 +38,6 @@ function dependenciesContract(dependencies) {
   const requiredFunctions = [
     "readDateInventory",
     "readBusyCalendar",
-    "gateDateCalendar",
     "syncRegistrationCalendar",
     "buildRegistrationCoverageEvidence",
     "proveUnavailableDay",
@@ -51,10 +50,8 @@ function dependenciesContract(dependencies) {
     || typeof dependencies.calendar.findConnectorEvents !== "function"
     || typeof dependencies.calendar.createConnectorEvent !== "function"
     || requiredFunctions.some((name) => typeof dependencies[name] !== "function")
-    || typeof dependencies.routeMinutes !== "function"
     || typeof dependencies.now !== "function"
     || !String(dependencies.calendarId || "").trim()
-    || !String(dependencies.homeLocation || "").trim()
   ) invalid();
 }
 
@@ -109,13 +106,6 @@ function createConnectorCoverageRefreshService(dependencies = {}) {
           calendar: dependencies.calendar,
           calendarId: dependencies.calendarId,
           dateInventory,
-          resolveCalendarGate: () => dependencies.gateDateCalendar({
-            dateInventory,
-            busyInventory,
-            date,
-            homeLocation: dependencies.homeLocation,
-            routeMinutes: dependencies.routeMinutes,
-          }),
           eventRef,
           registrationReceipt: completedRegistration.receipt,
           registrationJob: completedRegistration.job,

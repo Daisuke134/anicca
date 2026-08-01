@@ -1305,6 +1305,15 @@ workerはquery/connectからserviceを自動assemblyし、compose overlayは応�
 Calendar IDを渡す。tokenを0600 state fileからのみ読む専用deploy entrypointを追加。focused 48/48、deploy 2/2成功。
 rendered composeでhome/Maps key不在を確認した。次はcommit済みimageを実deployしてworker healthをreadbackする。
 
+O1B-25進捗19（LIVE worker / Calendar同期真因修復 RED→GREEN）: worker自身へbuild定義を追加し、専用deployを
+明示build→force recreate→実health readbackへ修正した。新image内coverage module、worker `ok=true`、応募＋coverage
+capability、Docker→bridge route 28分、応募receipt/PNG再読取を確認し、初回coverage jobをdurable enqueueした。
+attempt 1は全Luma inventory完了後に失敗したためretry消費前にworkerを一時停止して境界診断。coverage store、receipt、
+Calendar 5件/123 busy、Luma auth、inventory 35/35、往復route 37/34分は成功。応募済み8月15日eventが既存予定1件と
+直接衝突し、応募後Calendar同期にも応募前gateを再適用していたことを真因確定した。応募前gateは申込可否、応募後同期は
+成立済みの現実を衝突込みでCalendarへ記録する責務へ分離し、verified receiptなら重複照合後に必ずCalendar作成する。
+Connector 237/237、runtime 35/35成功。次は新imageを再deployし、同じjobのretryでCalendar/coverage/continuationを実測する。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
