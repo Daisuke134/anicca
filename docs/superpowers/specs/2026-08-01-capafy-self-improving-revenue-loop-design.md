@@ -407,7 +407,7 @@ Pre-implementation baseline (2026-08-02): outcome/report pytest `14 passed`; Mar
 |---|---|---|---|
 | 1. Lifecycle controller | Verified | RED: module collection failed with `ModuleNotFoundError`; GREEN: lifecycle pytest `21 passed`, controller `py_compile` passed; P0/runner regressions remained green (`14`, `23`, `38`, and `4 + 7 subtests`) | `f09ea06f2` |
 | 2. 900-second marketing lane | Verified | RED: routing expected `marketing-agent` but found `tool-agent`; token budget exports were absent. GREEN: combined lane/runner/lifecycle/P0 pytest `41 passed, 7 subtests`; Marketer `23`, account-state `38`; shell syntax, controller compile, and diff check passed | `e37ebe9f7` |
-| 3. Immediate account manager | Verified | RED: manager/plist absent and `account_created` unsupported (`20` shell failures, `2` outcome failures). GREEN: combined pytest `46 passed, 7 subtests`; manager integration `32`, Marketer `23`, account-state `38`; plist, shell/Python syntax, and diff check passed | task commit pending |
+| 3. Immediate account manager | Verified | RED: manager/plist absent and `account_created` unsupported (`20` shell failures, `2` outcome failures). GREEN: combined pytest `46 passed, 7 subtests`; manager integration `32`, Marketer `23`, account-state `38`; plist, shell/Python syntax, and diff check passed | `f03d7dd76` |
 | 4. Verified warmup capabilities | Not started | — | — |
 | 5. Browser-direct Reel adapter | Not started | — | — |
 | 6. Creative/publish controller | Not started | — | — |
