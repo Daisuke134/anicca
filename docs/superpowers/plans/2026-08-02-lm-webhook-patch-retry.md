@@ -41,7 +41,7 @@
 
 既存の `test/testcall-amd-hangup-http-contract.test.js` が同じことをやっている（`http.createServer` を差し替えて実 `server.js` を require し、実 Ed25519 鍵で署名した body を投げる）。**その file を読んで、同じ骨格で書くこと。** 署名・鍵・envelope の組み立てを自分で発明しない。
 
-- [ ] **Step 1: 落ちるテストを書く**
+- [x] **Step 1: 落ちるテストを書く**
 
 `test/telnyx-events-retry-http-contract.test.js`。4 ケース:
 
@@ -102,12 +102,12 @@ test("a test call answers 200 even when the hangup fails", async () => {
 
 `postSignedAmdEvent` は既存 contract test の helper と同じ作りにする。fake `global.fetch` は **未知の host / path で throw する**こと（既存 file と同じ）。そうしないと「Supabase に書いていない」が主張になってしまう。
 
-- [ ] **Step 2: 落ちることを確認**
+- [x] **Step 2: 落ちることを確認**
 
 Run: `cd apps/life-manager && node --test test/telnyx-events-retry-http-contract.test.js`
 Expected: ケース1と2が FAIL（`expected 5xx, got 200`）。3・4・5 は PASS（現状の挙動）。
 
-- [ ] **Step 3: 最小実装**
+- [x] **Step 3: 最小実装**
 
 `server.js` の `/telnyx-events`、`outcome` を組み立てている箇所を差し替える:
 
@@ -137,12 +137,12 @@ Expected: ケース1と2が FAIL（`expected 5xx, got 200`）。3・4・5 は PA
 
 `detection.answered` 側の PATCH 失敗も同じ扱いにするかは**しない**: `answered_at` の書き込みは `amd_result` が成功した後にしか走らず、その時点で行の存在は確認できている。ここで 5xx を返すと、成功した `amd_result` の write を再送のたびに繰り返すことになる。失敗は既存の `report()` が stderr に出す。
 
-- [ ] **Step 4: 通ることを確認**
+- [x] **Step 4: 通ることを確認**
 
 Run: `cd apps/life-manager && node --test test/telnyx-events-retry-http-contract.test.js test/testcall-amd-hangup-http-contract.test.js test/testcall-amd-hangup.test.js lib/late-notice.test.js`
 Expected: すべて PASS、`fail 0`
 
-- [ ] **Step 5: commit**
+- [x] **Step 5: commit**
 
 ```bash
 git add apps/life-manager/server.js apps/life-manager/test/telnyx-events-retry-http-contract.test.js
@@ -158,7 +158,7 @@ git commit -m "fix(life-manager): let Telnyx resend a detection we failed to rec
 
 再送は同一 payload で来る。この plan は「再処理しても壊れない」に依存しているので、依存を明文化する。
 
-- [ ] **Step 1: 落ちるテストを書く**
+- [x] **Step 1: 落ちるテストを書く**
 
 ```javascript
 // 同じ event が2回届いた時（= Telnyx の再送そのもの）に何が起きるか。
@@ -183,12 +183,12 @@ test("the same event delivered twice records once and never rewrites answered_at
 });
 ```
 
-- [ ] **Step 2: 落ちるか確認**
+- [x] **Step 2: 落ちるか確認**
 
 Run: `cd apps/life-manager && node --test test/telnyx-events-retry-http-contract.test.js`
 Expected: このテストは既存実装で **通る可能性が高い**（ラッチは既にある）。通った場合は「characterization test = 番人」だと明記し、`markAnswered` から `filter: "&answered_at=is.null"` を一時的に外して**赤くなることを実測**してから戻す。赤くならないなら、その assertion は無意味なので書き直すこと。
 
-- [ ] **Step 3: commit**
+- [x] **Step 3: commit**
 
 ```bash
 git add apps/life-manager/test/telnyx-events-retry-http-contract.test.js
@@ -202,15 +202,15 @@ git commit -m "test(life-manager): pin that a resent detection is safe to proces
 **Files:**
 - Modify: `docs/superpowers/specs/2026-08-01-lm-daily-organ-design.md`
 
-- [ ] **Step 1: §3 の row 2a を DONE にする**
+- [x] **Step 1: §3 の row 2a を DONE にする**
 
 隣の DONE 行と同じ密度で。実装内容 + 一時的/恒久的をどう分けたか + 実際に走らせたテスト数。
 
-- [ ] **Step 2: Telnyx の再送仕様を spec 本文に残す**
+- [x] **Step 2: Telnyx の再送仕様を spec 本文に残す**
 
 §1.3（沈黙する全断のクラス）か §5.2.1 に、上の引用表をそのまま置く（URL 付き）。**特に「2秒で timeout」は次以降の作業に効く**: この handler は Supabase の PATCH を2本 + Telnyx の hangup を待ってから応答している。2秒を超えれば Telnyx は失敗扱いで再送する = 我々の応答コードに関係なく再送が起きうる。これは今回の変更で壊れるものではないが、spec に書いておかないと「なぜか毎回2回書かれている」の原因究明をまた1から始めることになる。
 
-- [ ] **Step 3: commit**
+- [x] **Step 3: commit**
 
 ```bash
 git add docs/superpowers/specs/2026-08-01-lm-daily-organ-design.md
