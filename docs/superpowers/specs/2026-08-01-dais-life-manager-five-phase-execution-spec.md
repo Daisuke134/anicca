@@ -243,12 +243,14 @@ YC公式pageでlate application受付を当日再確認
 
 ## 5. 残作業 — 必ず番号順
 
-実行中: `O1A-02`。`O1A-01`で既存`lm_runtime_jobs`へのreference-only enqueueは完了した。
-既存runtimeにはclaim、retry、dead-letter、idempotencyがある一方、worker実行中のlease heartbeatが
-未接続だった。新runtimeや第二queueは作らず、既存workerへscoped heartbeatを接続し、
-`outbound.event.apply`固有のPostgreSQL lifecycle testでenqueueからdead-letterまでを実証する。
-イベント選定やLuma画面操作はこの共通基盤へ入れず、`O1B-03`のagent/tool adapterで実装する。
-実装plan: `docs/superpowers/plans/2026-08-01-connector-o1a02-runtime-execution.md`。
+完了: `O1A-02`。新runtimeや第二queueを作らず、既存workerへtenant・job・attempt・workerで
+scopedされた定期lease heartbeatを接続した。pulseを直列化し、停止時にin-flight更新を待つ。
+heartbeat喪失とadapter失敗が重なった外部効果jobもretry可能にせず、`unknownEffect=true`で
+既存reconciliationへ渡す。`outbound.event.apply`固有の実PostgreSQL testで二重enqueueが一行、
+claim、heartbeat、既知の送信前失敗による一回のretry、上限到達後のdead-letter、immutable failed
+receipt二行を確認した。fresh verificationはoutbound 7件、worker回帰30件、PostgreSQL lifecycleが
+すべて成功した。実装plan:
+`docs/superpowers/plans/2026-08-01-connector-o1a02-runtime-execution.md`。次は`O1A-03`。
 
 完了済み: `O1A-01`。既存`lm_runtime_jobs`がenqueue、claim、lease、heartbeat、retry、dead-letter、
 idempotency、immutable receiptを既に持つことを2026-08-01に再確認した。別worktreeの独立outbound
@@ -256,7 +258,7 @@ engineは第二runtimeになるため取り込まず、Connector event applicati
 既存runtimeへ接続した。`outbound.event.apply`、安定job/effect key、tenant境界、Luma URL・時刻・
 identity/browser/calendar reference検証を追加し、新規4件と既存runtime 8件の計12件が成功した。
 実装commit: `7aeed4098`。実装plan:
-`docs/superpowers/plans/2026-08-01-connector-o1a01-durable-runtime.md`。次は`O1A-02`。
+`docs/superpowers/plans/2026-08-01-connector-o1a01-durable-runtime.md`。
 
 最後までのmaster checklist:
 
@@ -275,7 +277,7 @@ identity/browser/calendar reference検証を追加し、新規4件と既存runti
 ### 5.1 Order 1A — 共通応募基盤
 
 - [x] O1A-01 既存`lm_runtime_jobs`を唯一のdurable runtimeとしてConnector event application job contractへ接続
-- [ ] O1A-02 enqueue、claim、heartbeat、retry、dead-letter、idempotencyを接続
+- [x] O1A-02 enqueue、claim、heartbeat、retry、dead-letter、idempotencyを接続
 - [ ] O1A-03 Evidence E1/E2/E3を共通module化
 - [ ] O1A-04 不足dependencyを解消し全testを実行
 - [ ] O1A-05 Guardianを接続
