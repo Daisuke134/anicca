@@ -15,14 +15,14 @@
 
 ### Task 1: Human-readable report contract
 
-- [ ] exact event dataから日本語captionと直接linkを組み立てるtestをRED→GREENにする。
-- [ ] placeholder、技術語、secret、未実装linkを拒否する。
+- [x] exact event dataから日本語captionと直接linkを組み立てるtestをRED→GREENにする。
+- [x] placeholder、技術語、secret、未実装linkを拒否する。
 
 ### Task 2: Existing OpenClaw delivery
 
-- [ ] runtime volumeのverified QRを読み、0600 temporary PNGだけをOpenClawへ渡す。
-- [ ] 実Telegramへ一度送信し、positive message IDを検証する。
-- [ ] chat IDはSHA-256だけをreceiptへ残す。
+- [x] runtime volumeのverified QRを読み、0600 temporary PNGだけをOpenClawへ渡す。
+- [x] 実Telegramへ一度送信し、positive message IDを検証する。
+- [x] chat IDはSHA-256だけをreceiptへ残す。
 
 ### Task 3: Proof and handoff
 
