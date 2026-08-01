@@ -14,6 +14,16 @@ if [ "${CAPAFY_IG_REPORTING_PROBE_ONLY:-0}" = "1" ]; then
   printf 'terminal_owner=capafy-marketing-handoff.sh agent_telegram=false\n'
   exit 0
 fi
+
+# Arm the agent-runner breaker for this lane. Historical charged usage was
+# normally tens of thousands of tokens; these ceilings leave ample room for a
+# complete 900-second creative pass while preventing an unbounded retry spiral.
+export ANICCA_BUDGET_SCOPE_ID="${CAPAFY_MARKETING_PASS_ID:-$(date +%s)-$$}"
+export ANICCA_PASS_TOKEN_BUDGET="${CAPAFY_MARKETING_PASS_TOKEN_BUDGET:-1048576}"
+export ANICCA_LOOP_DAILY_TOKEN_BUDGET="${CAPAFY_MARKETING_DAILY_TOKEN_BUDGET:-2097152}"
+export ANICCA_BUDGET_DAILY_SCOPE="${CAPAFY_MARKETING_BUDGET_DAILY_SCOPE:-capafy-ig-marketing-daily}"
+export ANICCA_TOKEN_BUDGET_LEDGER="${CAPAFY_TOKEN_BUDGET_LEDGER:-$HOME/.local/state/anicca/telemetry/token-budget.jsonl}"
+
 MARKETING_RESULT="${CAPAFY_MARKETING_RESULT:-$HOME/.openclaw/state/capafy-marketing-result.json}"
 MARKETING_HANDOFF="$SCRIPT_DIR/capafy-marketing-handoff.sh"
 rm -f "$MARKETING_RESULT"
@@ -222,7 +232,7 @@ Only write published after public URL verification. Scheduler load, --live mode,
 
 EVIDENCE_DIR="$HOME/.openclaw/state/agent-runner-evidence/${INSTANCE}-ig-marketing/$(date +%s)-$$"
 printf '%s\n' "$PROMPT" | "$RUN_AGENT" \
-  --task-class tool-agent \
+  --task-class marketing-agent \
   --evidence-dir "$EVIDENCE_DIR" \
   --task-label "${INSTANCE}-ig-marketing-daily" \
   --loop capafy >>"$LOG" 2>&1

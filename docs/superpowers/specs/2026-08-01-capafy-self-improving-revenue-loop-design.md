@@ -394,8 +394,8 @@ The $10M product is not an individual skill. It is the platform that continuousl
 - **Active priority:** P1 — Make the Marketer complete reliably. P0 is complete and remains the enforced reporting/repair boundary.
 - **Implementation plans:** P0 [`../plans/2026-08-01-capafy-p0-truthful-outcomes.md`](../plans/2026-08-01-capafy-p0-truthful-outcomes.md); P1 [`../plans/2026-08-02-capafy-p1-reliable-marketer.md`](../plans/2026-08-02-capafy-p1-reliable-marketer.md). P1 implements Section 8 without pulling P2's shared ledger into scope.
 - **Execution rule:** complete and verify one numbered task at a time; after each task, append the command evidence and commit hash here before beginning the next task.
-- **Current state (2026-08-02):** P0 Tasks 1-7 and P1 Task 1 are implemented and verified. The deterministic controller now selects only active browser-owned accounts, counts distinct verified warmup dates, prevents cross-account Reel/reach inheritance, gates noncommercial/commercial capabilities, retires failed accounts atomically, and exposes atomic lifecycle CLI operations. Runtime remains unchanged: the registry still has one poisoned and two `session_failed` rows, no active session is selectable, and the content runner is still incorrectly wired to the 180-second `tool-agent`.
-- **Next action:** Execute P1 Task 2, routing bounded creative work through the existing 900-second `marketing-agent` lane with its 49,152-token reservation. The first production action remains deferred until Tasks 1-7 pass offline; it will be replacement-account provisioning, never another login attempt against `@capafy.skills10491`.
+- **Current state (2026-08-02):** P0 Tasks 1-7 and P1 Tasks 1-2 are implemented and verified. The deterministic controller owns lifecycle capabilities, and the Marketer now declares the existing `marketing-agent` route (900-second timeout, 49,152-token reservation). Its previously disabled runaway breaker is armed at 1,048,576 charged tokens per pass and 2,097,152 per day. Runtime account state is unchanged: the registry still has one poisoned and two `session_failed` rows and no active session is selectable.
+- **Next action:** Execute P1 Task 3, the immediate replacement account manager with independent browser-session, credential-file, and appended-row verification. The first production action remains deferred until Tasks 1-7 pass offline; it will be replacement-account provisioning, never another login attempt against `@capafy.skills10491`.
 
 #### P1 execution log
 
@@ -406,7 +406,7 @@ Pre-implementation baseline (2026-08-02): outcome/report pytest `14 passed`; Mar
 | Task | Status | Verification evidence | Commit |
 |---|---|---|---|
 | 1. Lifecycle controller | Verified | RED: module collection failed with `ModuleNotFoundError`; GREEN: lifecycle pytest `21 passed`, controller `py_compile` passed; P0/runner regressions remained green (`14`, `23`, `38`, and `4 + 7 subtests`) | `f09ea06f2` |
-| 2. 900-second marketing lane | Not started | — | — |
+| 2. 900-second marketing lane | Verified | RED: routing expected `marketing-agent` but found `tool-agent`; token budget exports were absent. GREEN: combined lane/runner/lifecycle/P0 pytest `41 passed, 7 subtests`; Marketer `23`, account-state `38`; shell syntax, controller compile, and diff check passed | task commit pending |
 | 3. Immediate account manager | Not started | — | — |
 | 4. Verified warmup capabilities | Not started | — | — |
 | 5. Browser-direct Reel adapter | Not started | — | — |

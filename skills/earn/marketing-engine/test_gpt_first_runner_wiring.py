@@ -22,7 +22,7 @@ EXPECTED_TASK_CLASSES = {
     # measured 900s browser lanes timed out repeatedly, so it uses the existing
     # 3600s application lane with a hard Phase A/B split.
     ROOT / "self" / "capafy-loop" / "capafy-loop-daily.sh": "application-lane-agent",
-    ROOT / "earn" / "capafy-marketing" / "capafy-ig-marketing-daily.sh": "tool-agent",
+    ROOT / "earn" / "capafy-marketing" / "capafy-ig-marketing-daily.sh": "marketing-agent",
     ROOT / "earn" / "clip" / "clip_daily.sh": "tool-agent",
     ENGINE / "spawn-marketing-loop.sh": "repeatable-agent",
     ROOT / "self" / "self-fix.sh": "high-value-agent",
