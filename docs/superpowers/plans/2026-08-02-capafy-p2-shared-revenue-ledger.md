@@ -38,7 +38,7 @@
 - Produces CLI: `capafy_event_store.py validate|append|read --ledger PATH [--evidence-dir PATH]`
 - `AppendResult` fields: `event_id: str`, `appended: bool`, `ledger_count: int`, `evidence_path: str | None`
 
-- [ ] **Step 1: Write failing schema-validation tests**
+- [x] **Step 1: Write failing schema-validation tests**
 
 Add fixtures that use exact public evidence and all six decimal money fields:
 
@@ -75,7 +75,7 @@ VALID = {
 
 Assert rejection of a missing `event_id`, unsupported event type, HTTP URL, absolute local path anywhere in the public event, a money value `"9.9"`, negative metrics, and an invalid timestamp.
 
-- [ ] **Step 2: Run the validation tests and verify RED**
+- [x] **Step 2: Run the validation tests and verify RED**
 
 Run:
 
@@ -85,7 +85,7 @@ python3 -m pytest -q skills/earn/capafy-marketing/tests/test_capafy_event_store.
 
 Expected: collection fails because `capafy_event_store` does not exist.
 
-- [ ] **Step 3: Implement the event model and validator**
+- [x] **Step 3: Implement the event model and validator**
 
 Use a fixed set of machine event types from the design, `Decimal` quantization for two-digit money, `datetime.fromisoformat` for timestamps, `urlparse` for HTTPS evidence, recursive string-value inspection to reject values beginning with `/Users/`, `/private/`, `~`, or `file:`, and recursive key inspection to reject credential-bearing keys such as `password`, `token`, `secret`, `cookie`, and `authorization`. This is fixed-format safety validation, not business judgment.
 
@@ -95,7 +95,7 @@ The JSON Schema mirrors the Python contract and sets `additionalProperties: fals
 ["impressions", "views", "clicks", "likes", "comments", "orders"]
 ```
 
-- [ ] **Step 4: Write failing append/idempotency/durability tests**
+- [x] **Step 4: Write failing append/idempotency/durability tests**
 
 Cover:
 
@@ -109,17 +109,17 @@ def test_private_sidecar_is_mode_0600_and_not_embedded(tmp_path): ...
 
 Use `multiprocessing` for the concurrency test and verify exactly one compact JSON line exists.
 
-- [ ] **Step 5: Run append tests and verify RED**
+- [x] **Step 5: Run append tests and verify RED**
 
 Run the full Task 1 test file. Expected: validator tests pass and append tests fail because storage behavior is missing.
 
-- [ ] **Step 6: Implement locked append and CLI**
+- [x] **Step 6: Implement locked append and CLI**
 
 Use `fcntl.flock(LOCK_EX)` on `ledger.with_suffix(".lock")`, parse and validate every existing non-empty line while locked, and compare semantic event bytes with store-owned `recorded_at` excluded. Adapters omit `recorded_at`; the store stamps it once for a new event, while a retry carrying a different `recorded_at` remains identical when every semantic field matches. Append through `os.open(..., O_APPEND|O_CREAT|O_WRONLY, 0o600)`, then flush and `os.fsync`. Write sidecars through temporary-file plus `os.replace`, followed by `chmod(0o600)`.
 
 CLI `append` reads one event object from stdin and optionally one technical-evidence object from `CAPAFY_EVENT_EVIDENCE_JSON`; it prints only the serialized `AppendResult`.
 
-- [ ] **Step 7: Run Task 1 and P0/P1 regression tests**
+- [x] **Step 7: Run Task 1 and P0/P1 regression tests**
 
 ```bash
 python3 -m pytest -q \
@@ -131,7 +131,7 @@ git diff --check
 
 Expected: all pass with no diff errors.
 
-- [ ] **Step 8: Update the living spec and commit**
+- [x] **Step 8: Update the living spec and commit**
 
 Record RED/GREEN counts and the event-store contract under a new P2 execution log, then commit:
 

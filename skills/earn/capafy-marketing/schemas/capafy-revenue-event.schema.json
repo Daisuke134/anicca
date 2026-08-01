@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://capafy.ai/schemas/capafy-revenue-event.schema.json",
+  "title": "Capafy Revenue Event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "event_id", "event_type", "occurred_at", "recorded_at",
+    "loop", "entity", "correlation_id", "summary", "status", "money", "metrics",
+    "public_evidence", "technical_evidence_ref", "source", "next"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "event_id": {"type": "string", "minLength": 1},
+    "event_type": {
+      "enum": [
+        "listing.submitted", "listing.approved", "content.published", "content.measured",
+        "account.created", "account.session_ready", "account.publish_probe_ready",
+        "account.post_verified", "order.received", "balance.reconciled", "payout.received",
+        "cost.measured", "incident.detected", "incident.repair_started", "incident.repaired",
+        "incident.verified", "incident.unresolved"
+      ]
+    },
+    "occurred_at": {"type": "string", "format": "date-time", "pattern": "Z$"},
+    "recorded_at": {"type": "string", "format": "date-time", "pattern": "Z$"},
+    "loop": {"type": "string", "minLength": 1},
+    "entity": {
+      "type": "object", "additionalProperties": false, "required": ["type", "id"],
+      "properties": {"type": {"type": "string", "minLength": 1}, "id": {"type": "string", "minLength": 1}}
+    },
+    "correlation_id": {"type": ["string", "null"], "minLength": 1},
+    "summary": {"type": "string", "minLength": 1},
+    "status": {
+      "type": "object", "additionalProperties": false, "required": ["before", "after"],
+      "properties": {"before": {"type": ["string", "null"]}, "after": {"type": ["string", "null"]}}
+    },
+    "money": {
+      "type": "object", "additionalProperties": false,
+      "required": ["currency", "gross_delta", "pending_delta", "realized_delta", "mrr_delta", "cost_delta", "contribution_delta"],
+      "properties": {
+        "currency": {"const": "USD"},
+        "gross_delta": {"$ref": "#/$defs/money"},
+        "pending_delta": {"$ref": "#/$defs/money"},
+        "realized_delta": {"$ref": "#/$defs/money"},
+        "mrr_delta": {"$ref": "#/$defs/money"},
+        "cost_delta": {"$ref": "#/$defs/money"},
+        "contribution_delta": {"$ref": "#/$defs/money"}
+      }
+    },
+    "metrics": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "impressions": {"$ref": "#/$defs/metric"}, "views": {"$ref": "#/$defs/metric"},
+        "clicks": {"$ref": "#/$defs/metric"}, "likes": {"$ref": "#/$defs/metric"},
+        "comments": {"$ref": "#/$defs/metric"}, "orders": {"$ref": "#/$defs/metric"}
+      }
+    },
+    "public_evidence": {
+      "type": "object", "additionalProperties": false, "required": ["urls", "labels"],
+      "properties": {
+        "urls": {"type": "array", "items": {"type": "string", "format": "uri", "pattern": "^https://"}},
+        "labels": {"type": "array", "items": {"type": "string", "minLength": 1}}
+      }
+    },
+    "technical_evidence_ref": {"type": "string", "minLength": 1},
+    "source": {
+      "type": "object", "additionalProperties": false, "required": ["producer", "source_id", "source_digest"],
+      "properties": {
+        "producer": {"type": "string", "minLength": 1}, "source_id": {"type": "string", "minLength": 1},
+        "source_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+      }
+    },
+    "next": {
+      "type": "object", "additionalProperties": false, "required": ["owner", "retry_at"],
+      "properties": {"owner": {"type": "string", "minLength": 1}, "retry_at": {"type": ["string", "null"], "format": "date-time"}}
+    }
+  },
+  "$defs": {
+    "money": {"type": "string", "pattern": "^-?(0|[1-9][0-9]*)\\.[0-9]{2}$"},
+    "metric": {"type": "integer", "minimum": 0}
+  }
+}
