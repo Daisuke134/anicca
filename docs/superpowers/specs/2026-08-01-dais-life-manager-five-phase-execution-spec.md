@@ -527,6 +527,14 @@ O1B-10進捗4: 初回live retirementは成功扱いせずexit 3で停止した�
 archive確保してからlaunchdを変更する順へ修正し、今回すでに消えた実体にはpreflightで読んだLabel、command、
 log path、scheduleをXML plistとして正本に固定したverified fallbackを使う。次は追加回帰後に再実行する。
 
+完了: `O1B-10`。旧fill-gapsと旧daily-reportは両方ともlaunchctlから不在、persistent disabled、元plist不在、
+owner-only archiveとSHA-256 manifestありになった。初回のarchive順序欠陥を直し、消失後のplistは直前の
+`plutil`実測内容からverified fallbackを正本化した。旧registryも両方retired/disabledへ移した。正規Guardianは
+run 26、last exit 0、workerはrunning/healthyで`outbound.event.apply`を保持する。events pack live read-onlyも
+認証済み、inventory終端7 rounds、35候補で成功した。outbound 110件、runtime 33件、旧inventory 22件が成功。
+実測証拠: `docs/evidence/outbound/2026-08-01-o1b10-live-legacy-retirement.json`。
+次は固定順序どおりO1B-11で、connpassの現行公式API提供・申請経路を確認し、key取得まで自動アクセスを禁止する。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
@@ -651,7 +659,7 @@ identity/browser/calendar reference検証を追加し、新規4件と既存runti
 - [x] O1B-07 人間向け説明と直接link付きでTelegramへ実QRを送る
 - [x] O1B-08 agentが本文からLT/CFP/demoを判断する実Gemini evalを8/8で通す
 - [x] O1B-09 旧Connector loginを復旧しevents packへ統合
-- [ ] O1B-10 重複旧実装を退役
+- [x] O1B-10 重複旧実装を退役
 - [ ] O1B-11 connpass API keyを申請。取得まで自動アクセス禁止
 - [ ] O1B-12 一般参加とLT/CFP/demo登壇応募を別entityとしてdiscover・追跡
 - [ ] O1B-13 Life Managerの実測demoに合うtalk title、5分outline、応募理由をagent生成
