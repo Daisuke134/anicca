@@ -170,6 +170,10 @@ function readRawBody(req) {
   });
 }
 
+// One tag, two readers (/health and the boot line). It was written out twice before, so a deploy
+// could report one build to curl and another to the logs — the pair of them is the only way to tell
+// live code apart from a deploy that never happened, and a pair that can disagree proves nothing.
+const BUILD_TAG = "lm2d-testcall-hangup-v1";
 const PORT = Number(process.env.PORT) || 8788;
 const GEMINI_KEY = process.env.GEMINI_API_KEY;
 const DEBUG_TRANSCRIPTS = process.env.DEBUG_TRANSCRIPTS === "1";
@@ -258,7 +262,7 @@ const server = http.createServer((req, res) => {
   if (path === "/health" || path === "/") {
     res.writeHead(200, { "content-type": "application/json" });
     // `build` lets any deploy be verified from outside (curl /health) — proves new code is live.
-    res.end(JSON.stringify({ ok: true, service: "life-call", ws: "/ws", build: "lm27-voicemail-v1" }));
+    res.end(JSON.stringify({ ok: true, service: "life-call", ws: "/ws", build: BUILD_TAG }));
     return;
   }
   // Telnyx Call Control webhook. Standard AMD produces call.machine.detection.ended with
@@ -911,7 +915,7 @@ wss.on("connection", (carrierWs, req) => {
 // This allows test files to import inngestServeAllowed without starting the HTTP server.
 if (require.main === module) {
   server.listen(PORT, () => {
-    console.log(`[life-call] listening ${PORT} ws=/ws build=lm27-voicemail-v1`);
+    console.log(`[life-call] listening ${PORT} ws=/ws build=${BUILD_TAG}`);
     // A comp window silently changes who gets past the paywall and who the scheduler picks up, so it
     // announces itself once at boot — an operator must never have to guess whether it is on.
     const compBanner = compBootLog(process.env);
