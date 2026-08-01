@@ -134,6 +134,18 @@ function decision(overrides = {}) {
   };
 }
 
+function modelDecision() {
+  return {
+    ranked_events: decision().ranked_events.map((row) => ({
+      event_ref: row.event_ref,
+      goal_alignment: row.goal_alignment,
+      serendipity_potential: row.serendipity_potential,
+      goal_reason: row.goal_reason,
+      serendipity_reason: row.serendipity_reason,
+    })),
+  };
+}
+
 test("accepts a grounded immutable ranking with all five factors and every candidate", async () => {
   const input = await sources();
   const result = validateEventGoalSerendipity(decision(), { ...input, goals: GOALS });
@@ -177,7 +189,7 @@ test("Gemini receives goals and provider factors as untrusted data with no missi
       return {
         ok: true,
         json: async () => ({
-          candidates: [{ content: { parts: [{ text: JSON.stringify(decision()) }] } }],
+          candidates: [{ content: { parts: [{ text: JSON.stringify(modelDecision()) }] } }],
         }),
       };
     },
@@ -190,6 +202,14 @@ test("Gemini receives goals and provider factors as untrusted data with no missi
   assert.match(prompt, /Life Managerを成長させ/);
   assert.equal(request.options.headers["x-goog-api-key"], "fixture-key");
   assert.equal(request.body.generationConfig.responseMimeType, "application/json");
+  const eventSchema = request.body.generationConfig.responseSchema
+    .properties.ranked_events.items.properties;
+  assert.equal(Object.hasOwn(eventSchema, "factor_assessments"), false);
+  assert.deepEqual(result.ranked_events[0].factor_assessments.map((row) => row.factor), [
+    "description", "organizers", "participants", "place", "time",
+  ]);
+  assert.equal(result.ranked_events[0].factor_assessments[0].evidence_excerpt,
+    "AI founders demonstrate products and discuss company building with engineers.");
 });
 
 test("model failure and invalid JSON never become an ungrounded fallback", async () => {
