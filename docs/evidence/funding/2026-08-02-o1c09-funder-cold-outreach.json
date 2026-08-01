@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "task": "O1C-09",
+  "observed_at": "2026-08-01T17:50:11.861Z",
+  "result": "verified_live_daily_batch",
+  "implementation_commit": "4dd04f5f4",
+  "research": {
+    "agent_reach_used": true,
+    "exa_backend": "unavailable_unknown_mcp_server",
+    "fallback": "web_search_plus_jina_and_direct_official_page_readback",
+    "official_source_freshness_hours_max": 24,
+    "past_funder_ledger_duplicate_count": 0,
+    "gmail_sent_duplicate_count": 0
+  },
+  "batch": {
+    "batch_id": "funder-outreach-batch:74ac51016258c8afc85ffe3f4ba3b351aa6dadb8a4dd04635b3e7ce43f4dc822",
+    "tokyo_date": "2026-08-02",
+    "daily_min": 3,
+    "daily_max": 5,
+    "selected_count": 3,
+    "held_for_next_run": "scion",
+    "raw_recipient_persisted": false,
+    "raw_body_persisted": false,
+    "attachment_sent": false,
+    "followup_sent": false
+  },
+  "deliveries": [
+    {
+      "candidate_id": "evio",
+      "funder_name": "Evio VC",
+      "source_url": "https://evio.vc/",
+      "recipient_sha256": "bb65126db9fa84a9b2040ad05d6418a1e2ea8d7b0e7d98fbbad997e1c381d1a4",
+      "provider_message_id": "19fbe729ab0133d6",
+      "provider_thread_id": "19fbe729ab0133d6",
+      "sent_label_verified": true
+    },
+    {
+      "candidate_id": "yeetvc",
+      "funder_name": "YeetVC",
+      "source_url": "https://www.yeetvc.com/",
+      "recipient_sha256": "4106a73c8410d39e616381eca0627e93ae6c3b48c82ae2d92f1d835f0b19843c",
+      "provider_message_id": "19fbe729f4bfc3f2",
+      "provider_thread_id": "19fbe729f4bfc3f2",
+      "sent_label_verified": true,
+      "thread_message_count_observed": 2,
+      "thread_meaning_classified": false
+    },
+    {
+      "candidate_id": "j-seed",
+      "funder_name": "J-Seed Ventures",
+      "source_url": "https://www.j-seed.com/",
+      "recipient_sha256": "bcfeab78275a895e8d74437a338da1310b4c04f0ea432425c2d2db40def52c07",
+      "provider_message_id": "19fbe72a2beb47f0",
+      "provider_thread_id": "19fbe72a2beb47f0",
+      "sent_label_verified": true
+    }
+  ],
+  "ledger": {
+    "database": "life-manager-local-postgres",
+    "inserted_count": 3,
+    "readback_count": 3,
+    "distinct_recipient_hash_count": 3,
+    "distinct_provider_message_id_count": 3,
+    "append_only": true,
+    "exact_replay_only": true
+  },
+  "verification": {
+    "focused_tests": { "passed": 4, "failed": 0 },
+    "outbound_tests": { "passed": 196, "failed": 0 },
+    "runtime_up_tests": { "passed": 33, "failed": 0 },
+    "gog_dry_run_contract": "passed",
+    "gmail_sent_readback": "passed",
+    "database_readback": "passed",
+    "git_diff_check": "passed"
+  },
+  "claim_boundary": "This proves one real 2026-08-02 JST batch sent exactly three source-bound first-touch funder emails through gog, obtained three distinct Gmail message/thread IDs, and appended three privacy-safe ledger rows. It does not classify the second message already visible in the YeetVC thread, send any follow-up, promise daily candidate replenishment, or claim a reply, meeting, investment, or acceptance."
+}
