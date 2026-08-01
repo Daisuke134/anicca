@@ -267,6 +267,14 @@ REDはmodule不存在で失敗した。GREENではHTTPS・credentialなし・一
 canonical/E3 9件とoutbound全体36件を通してから実装commitを作る。次は配備版と古いvendor copyの
 回帰監査。
 
+O1B-02進捗2: 再配備元の`profitable-claude/main`にも2件を反映した。Calendarはcanonical event URLを
+独立引数で受け、一回性URLを拒否し、description先頭をタップ可能なcanonical URLにするcommit
+`d75c19f`。connpassは検索snapshotからevent IDとgroup hostを一緒に保持し、root domainへ再構築しない
+commit `c901bab`。新規Python回帰4件と既存Calendar回帰7件が成功した。`life-manager`側には配備版と
+再配備元を5条件でfail closed監査するscriptを追加し、監査2件とoutbound全体38件が成功した。
+実配備版にだけ存在する「証拠経路のない旧connpass submit停止」は保持し、古い応募処理で上書きして
+いない。次は現行canonical URL 10件の実HEAD 200証拠化。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。

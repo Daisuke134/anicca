@@ -39,10 +39,10 @@
 - Create: `apps/life-manager/scripts/audit-legacy-event-urls.js`
 - Create: `apps/life-manager/scripts/audit-legacy-event-urls.test.js`
 
-- [ ] 配備版が検索結果URLを保持し、root connpass URLを再構築しないことを検査するRED testを書く。
-- [ ] 古いvendor copyの退行を明示し、正本への移植対象として報告するauditを実装する。
-- [ ] 配備版と正本contractの回帰testを通す。
-- [ ] Commit and push.
+- [x] 配備版が検索結果URLを保持し、root connpass URLを再構築しないことを検査するRED testを書く。
+- [x] 古いvendor copyの退行を明示し、正本への移植対象として報告するauditを実装する。
+- [x] 配備版と正本contractの回帰testを通す。
+- [x] Commit and push.
 
 ### Task 3: Ten live URL proofs and canonical spec
 
