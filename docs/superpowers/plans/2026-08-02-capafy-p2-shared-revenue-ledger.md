@@ -421,23 +421,23 @@ git commit -m "feat(capafy): render Telegram from event projection"
 - Produces CLI: `build_company_dashboard.py --projection PATH --output-dir PATH`
 - Produces public `index.html` and byte-stable `state.json` with the same `projection_id`.
 
-- [ ] **Step 1: Write failing dashboard tests**
+- [x] **Step 1: Write failing dashboard tests**
 
 Assert deterministic output, escaped titles, real clickable Reel/listing URLs, separate money labels, lifecycle/incident visibility, projection identifier parity, no absolute paths, no credential keys, no technical evidence, and unchanged root landing output.
 
-- [ ] **Step 2: Run dashboard tests and verify RED**
+- [x] **Step 2: Run dashboard tests and verify RED**
 
 Expected: generator import failure.
 
-- [ ] **Step 3: Implement dependency-free dashboard generation**
+- [x] **Step 3: Implement dependency-free dashboard generation**
 
 Use `html.escape`, embedded CSS, semantic HTML, and no client-side dependencies. `state.json` is the exact public projection. Dashboard generation writes a temporary directory and atomically replaces only the two files inside `site/company`; it never rewrites `site/index.html` or `allowed-agents.json`.
 
-- [ ] **Step 4: Wire generation after projection**
+- [x] **Step 4: Wire generation after projection**
 
 Goal monitor generates the dashboard before Telegram and records the local dashboard projection identifier. A generation failure starts/resumes an incident and leaves the previous dashboard visibly stale.
 
-- [ ] **Step 5: Run all dashboard/parity tests and Netlify build**
+- [x] **Step 5: Run all dashboard/parity tests and Netlify build**
 
 ```bash
 python3 -m pytest -q \
@@ -447,7 +447,7 @@ python3 -m pytest -q \
 cd skills/earn/capafy-marketing && npm ci && netlify build --site 41c8e52e-b163-442a-84ff-fd866269bf6c
 ```
 
-- [ ] **Step 6: Update spec and commit**
+- [x] **Step 6: Update spec and commit**
 
 ```bash
 git commit -m "feat(capafy): publish event-backed company dashboard"
