@@ -2,6 +2,8 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> Status: 完了。実装commit `a7c01157e`、`df1ac3495`、`43d9134fc`。live evidenceは`docs/evidence/outbound/2026-08-01-o1a06-live-recovery.json`。
+
 **Goal:** Connector runtime workerの実停止をGuardianが検知し、DaisへTelegram警告を届け、自動再起動し、復旧通知まで実message ID付きで証明する。
 
 **Architecture:** O1A-05の`/health`判定を維持し、異常時は既存OpenClaw Telegram transportへ警告を送り、local Docker workerを再起動してboundedにhealthを再確認する。復旧できない場合だけ既存`self-fix.sh`へ昇格する。通知receiptとincident stateはlocal runtime stateへ保存し、同じincidentの警告spamを防ぐ。
@@ -109,10 +111,10 @@
 
   Prove the worker container is running, `/health` is 200 with fresh poll, recovery Telegram has a positive message ID, and incident state is cleared。
 
-- [ ] **Step 5: Record and verify evidence**
+- [x] **Step 5: Record and verify evidence**
 
   Write only non-secret evidence, run JSON parse validation, targeted tests, `launchctl print`, `/health`, and local/remote git equality checks。
 
-- [ ] **Step 6: Update canonical spec, commit, and push**
+- [x] **Step 6: Update canonical spec, commit, and push**
 
   Mark O1A-06 complete only when every live proof exists. Otherwise leave it unchecked with the exact failed gate.
