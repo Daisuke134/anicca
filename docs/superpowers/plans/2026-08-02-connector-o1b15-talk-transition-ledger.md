@@ -38,16 +38,16 @@ canonical graph、source excerpt、future timestamp、source ref subset、secret
 Run: `node --test lib/talk-application-transition.test.js`
 Expected: module path不存在でFAIL。
 
-- [ ] **Step 3: minimal implementationを書く**
+- [x] **Step 3: minimal implementationを書く**
 
 Gemini response schemaは`to_state/evidence_excerpt/reason/source_refs`。validatorはtrusted current stateとobserved timeを合成し、in-process provenanceを付ける。
 
-- [ ] **Step 4: GREENを確認する**
+- [x] **Step 4: GREENを確認する**
 
 Run: `node --test lib/talk-application-transition.test.js`
 Expected: 全件PASS。
 
-- [ ] **Step 5: commitする**
+- [x] **Step 5: commitする**
 
 ```bash
 git add apps/life-manager/lib/talk-application-transition.js apps/life-manager/lib/talk-application-transition.test.js apps/life-manager/package.json
