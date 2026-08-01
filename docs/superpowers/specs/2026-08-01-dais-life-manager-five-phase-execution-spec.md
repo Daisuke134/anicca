@@ -1325,7 +1325,7 @@ agentが本文と履歴を読んで判断し、keyword/regexの固定分類へ�
 - [x] O1C-00A Life Manager startup contextのrepository-owned正本を設計し、product/companyの境界を固定
 - [x] O1C-00B current production URL、GitHub、Telegram、demo、founder videoを実readbackしてcanonical link setを作成
 - [x] O1C-00C root READMEの日英first-viewをLife Managerのphysical / mental / financial product storyへ統一
-- [ ] O1C-00D 旧application-kitの日英answers、deck、one-pager、asset manifestをLife Manager正本から再生成
+- [x] O1C-00D 旧application-kitの日英answers、deck、one-pager、asset manifestをLife Manager正本から再生成
 - [ ] O1C-00E `apply-to-funder`のYC/company configをLife Manager正本参照へ変更し、旧Anicca product値をsubmit不可にする
 - [ ] O1C-00F startup context freshness / contradiction / old-product regression gateを実装し、previewで検証
 
@@ -1347,6 +1347,12 @@ O1C-00C実装実測（2026-08-02 JST）: `README.md` / `README.ja.md`のfirst-vi
 旧`Anicca Dashboard` badgeを削除し、product / Telegram / repositoryの検証済み導線へ置換した。
 資産増加・投資収益を保証せず、self-funding / x402はFinancial Organの技術文脈として後段に保持する。
 startup context testは12/12 pass。
+
+O1C-00D実装実測（2026-08-02 JST）: `scripts/startup-context/build-kit.mjs`が
+`fundraising/application-kit/`へREADME、日英answers、10-section deck、one-pager、assets manifestを
+同じcontext version / SHA-256 digest付きで生成する。2回連続buildは同じfile setと内容になり、旧repo、
+旧backend homepage、private email、電話、未置換placeholderをvalidatorが遮断する。legacy dashboardと
+未確認demo / founder videoはmanifestの`excluded`へ入り、添付assetにならない。testは15/15 pass。
 - [ ] O1C-01 repository-owned startup contextを全funder applicationのcompany facts正本として接続
 - [ ] O1C-02 funder/accelerator registryを再構築
 - [ ] O1C-03 MUFG運営/CVC deny gateとpartner確認を実装

@@ -1,0 +1,38 @@
+{
+  "context_version": "2026-08-02.1",
+  "context_digest": "acfe35f5209b76f419f510bc66597c405f7a208d2d1aacd23eb09729bbac647b",
+  "assets": [
+    {
+      "type": "product",
+      "status": "verified",
+      "url": "https://aniccaai.com/lm"
+    },
+    {
+      "type": "repository",
+      "status": "verified",
+      "url": "https://github.com/Daisuke134/life-manager"
+    },
+    {
+      "type": "telegram",
+      "status": "verified",
+      "url": "https://t.me/LifeManagerBotbot?start=lp"
+    }
+  ],
+  "excluded": [
+    {
+      "type": "dashboard",
+      "status": "legacy",
+      "reason": "HTTP 200, but the page title is Anicca Dashboard and the body is not verified as the Life Manager product dashboard. Do not attach."
+    },
+    {
+      "type": "demo_video",
+      "status": "unverified",
+      "reason": "No canonical public demo was verified yet."
+    },
+    {
+      "type": "founder_video",
+      "status": "unverified",
+      "reason": "The candidate founder video must be read back before use."
+    }
+  ]
+}
