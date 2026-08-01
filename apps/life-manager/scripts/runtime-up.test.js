@@ -485,6 +485,27 @@ test("a registered no-effect capability executes its adapter instead of becoming
   assert.equal(calls[0].input.receipt.kind, "marketing_daily_generation");
 });
 
+test("coverage worker persists a bounded stage code without raw provider errors", async () => {
+  const calls = [];
+  const error = new Error("Connector coverage refresh unavailable");
+  error.code = "CONNECTOR_COVERAGE_INVENTORY_FAILED";
+  await executeCapabilityJob({
+    tenant_id: "dais-local",
+    job_id: `connector-coverage:${"c".repeat(64)}`,
+    attempt: 1,
+    capability: "connector.coverage.refresh",
+    effect_class: "none",
+  }, {
+    workerId: "connector-local",
+    handlers: { "connector.coverage.refresh": async () => { throw error; } },
+    completeJob: async (input) => calls.push({ kind: "complete", input }),
+    failJob: async (input) => calls.push({ kind: "fail", input }),
+  });
+  assert.deepEqual(calls.map(({ kind }) => kind), ["fail"]);
+  assert.equal(calls[0].input.errorCode, "CONNECTOR_COVERAGE_INVENTORY_FAILED");
+  assert.equal(calls[0].input.unknownEffect, false);
+});
+
 test("external-effect execution heartbeats its lease before recording completion", async () => {
   const calls = [];
   let scheduledHeartbeat;

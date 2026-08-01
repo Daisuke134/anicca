@@ -8,7 +8,11 @@ const { isVerifiedRollingEventCoverage } = require("./rolling-event-coverage.js"
 const BASE_EVENT_REF = /^luma-event:\/\/event\/[A-Za-z0-9_-]+$/;
 
 function invalid() { throw new Error("Connector coverage refresh invalid"); }
-function unavailable() { throw new Error("Connector coverage refresh unavailable"); }
+function unavailable(code) {
+  const error = new Error("Connector coverage refresh unavailable");
+  if (/^CONNECTOR_COVERAGE_[A-Z_]+$/.test(String(code || ""))) error.code = code;
+  throw error;
+}
 
 function nextDate(dateKey) {
   const [year, month, day] = String(dateKey).split("-").map(Number);
@@ -78,7 +82,11 @@ function createConnectorCoverageRefreshService(dependencies = {}) {
         registrations: [],
         unavailableDays: [],
       });
+    } catch { unavailable("CONNECTOR_COVERAGE_REBUILD_FAILED"); }
+    try {
       dateInventory = await dependencies.readDateInventory({ coverage: working, now });
+    } catch { unavailable("CONNECTOR_COVERAGE_INVENTORY_FAILED"); }
+    try {
       busyInventory = await dependencies.readBusyCalendar({
         calendar: dependencies.calendar,
         timeMin: midnight(working.window_start_date, working.timezone),
@@ -86,15 +94,17 @@ function createConnectorCoverageRefreshService(dependencies = {}) {
         timeZone: working.timezone,
         now,
       });
+    } catch { unavailable("CONNECTOR_COVERAGE_CALENDAR_READ_FAILED"); }
+    try {
       completed = await dependencies.receiptReader.listForCoverage({ tenantId, coverage: working });
-    } catch { unavailable(); }
+    } catch { unavailable("CONNECTOR_COVERAGE_RECEIPT_READ_FAILED"); }
     if (
       !isVerifiedRollingEventCoverage(working)
       || !isVerifiedLumaDateInventory(dateInventory)
       || dateInventory.coverage_snapshot_id !== working.coverage_snapshot_id
       || !isVerifiedGoogleCalendarBusyInventory(busyInventory)
       || !Array.isArray(completed)
-    ) unavailable();
+    ) unavailable("CONNECTOR_COVERAGE_READBACK_INVALID");
 
     const registrations = [];
     const observedOutcomes = [];
@@ -142,7 +152,7 @@ function createConnectorCoverageRefreshService(dependencies = {}) {
         coverage,
         observedOutcomes: Object.freeze(observedOutcomes),
       });
-    } catch { unavailable(); }
+    } catch { unavailable("CONNECTOR_COVERAGE_ASSEMBLY_FAILED"); }
   };
 }
 

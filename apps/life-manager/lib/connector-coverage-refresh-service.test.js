@@ -226,3 +226,20 @@ test("a completed receipt absent from the fresh exhaustive inventory cannot crea
   }), /coverage refresh unavailable/i);
   assert.equal(creates, 0);
 });
+
+test("inventory failure exposes only a stable operational stage code", async () => {
+  const refresh = makeService({
+    receiptReader: { async listForCoverage() { throw new Error("must not reach receipts"); } },
+    readDateInventory: async () => { throw new Error("private browser detail"); },
+    calendar: {
+      async findConnectorEvents() { return []; },
+      async createConnectorEvent() { throw new Error("must not create"); },
+    },
+  });
+  await assert.rejects(
+    refresh({ coverage: currentCoverage(), tenantId: TENANT }),
+    (error) => error.message === "Connector coverage refresh unavailable"
+      && error.code === "CONNECTOR_COVERAGE_INVENTORY_FAILED"
+      && !JSON.stringify(error).includes("private browser detail"),
+  );
+});
