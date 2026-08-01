@@ -7,14 +7,15 @@
 ## Constraints
 
 - `redacted@example.invalid`の既存OAuthを使い、別mail transportを作らない。
-- 登録完了時刻より前のmail、別event、曖昧な件名を証拠にしない。
+- 同一registration attempt開始前、完了から30分超、別event、曖昧な件名を証拠にしない。
+- Lumaはsubmit受理時にmailを送り、その後workerが完了画面を検証してjobを完了する。したがってmail受信がjob完了より数秒早い正常系を拒否しない。
 - code、mail本文、cookie、token、guest keyをspec/evidenceへ保存しない。
 - Gmail queryは全pageまたはterminal cursorまで読む。
 - O1B-05ではQR生成やTelegram送信を先取りしない。
 
 ### Task 1: Mail discovery and exact match
 
-- [ ] 登録時刻以降のLuma mailをGmailで検索する。
+- [x] 同一registration attempt内のLuma mailをGmailで検索する。
 - [ ] message metadataとsanitized contentからevent URL/titleを照合する。
 - [ ] 同一event以外を拒否するfixture testをRED→GREENにする。
 
