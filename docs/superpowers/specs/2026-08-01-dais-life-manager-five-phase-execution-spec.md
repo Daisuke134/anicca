@@ -392,6 +392,11 @@ E2 497,151-byte PNG、E3 canonical URLを同一attemptで検証した`status=ver
 `docs/evidence/outbound/2026-08-01-o1b04-live-luma-registration.json`。次は固定順序どおりO1B-05で、
 この同じeventの確認mailをGmailから照合する。
 
+O1B-05開始: 専用plan
+`docs/superpowers/plans/2026-08-01-connector-o1b05-confirmation-mail.md`を追加した。既存`gog` Gmail
+OAuthだけを使い、O1B-04 completed時刻より後のLuma mailからmessage ID、受信時刻、送信元、
+`Engineer BAR` event URLを照合する。mail本文、code、cookie、token、guest keyは正本へ保存しない。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
