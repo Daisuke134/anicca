@@ -355,23 +355,37 @@ const server = http.createServer((req, res) => {
       // a detection: the retry was ours to take and we declined it, and the row stayed NULL forever —
       // indistinguishable from a webhook that never arrived, which is the §1.3 failure class.
       //
-      // The split is "a failure that another delivery might survive" vs "a failure no delivery can":
-      //   * the PATCH 5xx'd or threw = transient → 5xx, and Telnyx brings the same event back.
-      //     Reprocessing is safe because the payload is identical apart from meta.attempt: amd_result
-      //     is written with no filter (last observation wins) and answered_at is an is.null latch
-      //     (the first human proof wins), so a second pass changes neither answer.
-      //   * matched === 0 = there is no row for this uid+event_key → no future delivery can fill it.
-      //     200 closes it. Retrying would spend six deliveries on nothing and mask the real outages
-      //     above, which is a worse loss than the log line we already print here.
+      // The line drawn here is ONLY "did the write land" vs "did it land and match nothing", because
+      // that is the only distinction patchWakeLog gives us. Be honest about how coarse that is:
+      // {ok:false} folds together the transient (5xx, thrown fetch) and the permanent — an http_400
+      // from schema drift, an http_401 from a rotated service-role key, unreadable_response,
+      // missing_args, and recordAmdResult's missing_result (an empty AMD result, which late-notice.js
+      // argues at length is OUR parse failure and not a verdict). All of those now ask for a resend
+      // and will fail identically on all six attempts. The price of that bluntness: a wasted delivery
+      // budget, the failover URL rung for nothing, and a schema typo that looks exactly like an
+      // outage. It is accepted for now because the alternative — 200 on a real outage — destroys the
+      // only copy of a detection, and a wasted retry destroys nothing. The proper fix is to make
+      // patchWakeLog say WHICH kind of failure it had (retryable vs permanent) and to escalate only
+      // the first; do that there, not by widening this branch, or the two will drift.
+      //   * !ok → 5xx, and Telnyx brings the same event back. Reprocessing is safe because the
+      //     payload is identical apart from meta.attempt: amd_result is written with no filter (last
+      //     observation wins) and answered_at is an is.null latch (the first human proof wins).
+      //   * matched === 0 = the write LANDED and correctly changed nothing: there is no row for this
+      //     uid+event_key, and no future delivery can conjure one. 200 closes it. Retrying would
+      //     spend six deliveries on nothing and bury the real outages above.
       if (!detection.amd.ok) {
         res.writeHead(503, { "content-type": "text/plain" });
         res.end("record failed; send it again");
         return;
       }
-      // A failed answered_at write deliberately does NOT ask for a retry. It only runs after
-      // amd_result succeeded, so the row provably exists and the detection is already recorded;
-      // asking Telnyx again would rewrite that good amd_result once per attempt to chase a column
-      // whose own latch means a late write is a no-op anyway. report() above has it in stderr.
+      // A failed answered_at write deliberately does NOT ask for a retry — and NOT because a later
+      // write would be a no-op. It would not be: the latch is answered_at=is.null, so if the first
+      // write never landed the column is still NULL and a resent write lands perfectly well. The real
+      // reasons are three: (1) this only runs after amd_result succeeded, so a retry rewrites that
+      // good amd_result once per attempt to chase a second column; (2) the timestamp it would write
+      // is the retry's clock, minutes off down the exponential backoff — a worse answer than none;
+      // (3) amd_result='human' already records that a human picked up, so the fact is not lost, only
+      // its exact second is. report() above puts the failure in stderr.
       const outcome = detection.answered
         ? (detection.answered.matched > 0 ? "answered" : "answered_at unchanged")
         : "recorded";
