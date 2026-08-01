@@ -30,4 +30,4 @@
 
 - [x] O1B-10完了、残数127件へspecを更新する。
 - [x] focused/full回帰とdiff checkを通す。
-- [ ] evidenceをcommitし、累積feature branchへpushする。
+- [x] evidenceをcommitし、累積feature branchへpushする。
