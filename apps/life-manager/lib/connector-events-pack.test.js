@@ -128,6 +128,28 @@ test("source handoff with no connpass key never constructs an API client", async
   assert.equal(clientCreated, false);
 });
 
+test("the pack exposes the one verified same-day candidate state machine", async () => {
+  const calls = [];
+  const candidates = [
+    { event_ref: "luma-event://event/a", canonical_url: "https://luma.com/a" },
+    { event_ref: "luma-event://event/b", canonical_url: "https://luma.com/b" },
+  ];
+  const attempt = async () => ({ status: "not_eligible" });
+  const pack = createConnectorEventsPack({
+    dailyDriver: { withLumaPage: async () => {} },
+    auth: { ensureAuthenticated: async () => ({ status: "authenticated" }) },
+    evidenceStore: { record: async () => {} },
+    createAuthAwareDriver: () => ({ withLumaPage: async () => {} }),
+    createProvider: () => ({ inspectRegistration: async () => {}, submitRegistration: async () => {} }),
+    runCandidateSequence(input) {
+      calls.push(input);
+      return "verified-sequence-result";
+    },
+  });
+  assert.equal(await pack.runSameDayCandidates(candidates, attempt), "verified-sequence-result");
+  assert.deepEqual(calls, [{ candidates, attempt }]);
+});
+
 test("pack construction fails closed without auth, driver, or evidence store", () => {
   assert.throws(() => createConnectorEventsPack({}), /events pack configuration unavailable/i);
   assert.throws(() => createConnectorEventsPack({
