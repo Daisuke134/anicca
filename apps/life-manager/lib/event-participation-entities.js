@@ -16,6 +16,7 @@ const TALK_STATES = Object.freeze([
 const LUMA_HOSTS = new Set(["lu.ma", "luma.com", "www.luma.com"]);
 const TENANT = /^[a-z0-9][a-z0-9._-]{0,199}$/;
 const EVIDENCE_REF = /^evidence:\/\/event\/[a-z0-9._~:/?#@!$&'()*+,;=%-]{1,900}$/i;
+const TALK_PACK_REF = /^artifact:\/\/connector-talk-pack\/sha256\/[0-9a-f]{64}$/;
 const ENTITY_KEYS = Object.freeze([
   "action_ref", "availability", "event_ref", "event_start_at", "evidence_ref", "kind",
   "participation_id", "state", "talk_format", "tenant_id",
@@ -173,6 +174,30 @@ function createEventParticipationStore(options = {}) {
         return Object.freeze(expected.map((row) => Object.freeze(row)));
       } catch {
         try { if (client) await client.query("ROLLBACK"); } catch { /* preserve generic failure */ }
+        throw new Error("event participation store unavailable");
+      } finally {
+        if (client) client.release();
+      }
+    },
+    async attachTalkPack(input = {}) {
+      const tenantId = String(input.tenantId == null ? "" : input.tenantId).trim();
+      const participationId = String(input.participationId == null ? "" : input.participationId).trim();
+      const artifactRef = String(input.artifactRef == null ? "" : input.artifactRef).trim();
+      if (!TENANT.test(tenantId) || !/^event-participation:[0-9a-f]{64}$/.test(participationId) || !TALK_PACK_REF.test(artifactRef)) invalid();
+      let client;
+      try {
+        client = await connect();
+        if (!client || typeof client.query !== "function" || typeof client.release !== "function") invalid();
+        const rows = (await client.query(`
+          UPDATE public.lm_event_participations
+          SET talk_pack_ref = $3, updated_at = clock_timestamp()
+          WHERE tenant_id = $1 AND participation_id = $2 AND kind = 'talk_application'
+            AND (talk_pack_ref IS NULL OR talk_pack_ref = $3)
+          RETURNING participation_id, tenant_id, kind, talk_pack_ref
+        `, [tenantId, participationId, artifactRef])).rows;
+        if (rows.length !== 1 || rows[0].kind !== "talk_application" || rows[0].talk_pack_ref !== artifactRef) invalid();
+        return Object.freeze({ ...rows[0] });
+      } catch {
         throw new Error("event participation store unavailable");
       } finally {
         if (client) client.release();

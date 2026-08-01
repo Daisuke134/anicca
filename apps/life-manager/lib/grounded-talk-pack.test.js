@@ -21,8 +21,8 @@ const INPUT = Object.freeze({
 
 function validPack() {
   return {
-    title: "Codexで作る、証拠付き自律イベントConnector",
-    abstract: "検索だけで終わらず、参加登録、確認、Calendar、QR、Telegramまでを証拠で結ぶ実装を紹介します。",
+    title: "Codexで作る、Life Managerの証拠付き自律イベントConnector",
+    abstract: "Life Managerが検索だけで終わらず、参加登録、確認、Calendar、QR、Telegramまでを証拠で結ぶ実装を紹介します。",
     application_reason: "Codexの実装事例を共有する5分LTに合い、失敗を成功と表示しない設計を具体的に示せるためです。",
     product_demo_summary: "実Luma登録からCalendarとTelegramのQR通知まで、同一イベントとして照合した流れを見せます。",
     outline: [
@@ -50,6 +50,7 @@ test("rejects gaps, overlaps, unknown evidence, placeholders, secrets, and wealt
     p => { p.title = "TODO: title"; },
     p => { p.abstract = "contact me at person@example.com"; },
     p => { p.product_demo_summary = "誰でも必ず億万長者にします"; },
+    p => { p.title = "証拠付き自律イベントConnector"; p.abstract = "登録から通知までを紹介します"; p.product_demo_summary = "実装デモです"; },
   ];
   for (const mutate of mutations) {
     const pack = structuredClone(validPack());
