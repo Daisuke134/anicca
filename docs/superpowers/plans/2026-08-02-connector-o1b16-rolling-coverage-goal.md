@@ -102,23 +102,23 @@ git commit -m "feat(connector): persist rolling event coverage"
 - Consumes: current `gog` OAuth、production migration/store contract
 - Produces: PII-free Calendar count、live coverage snapshot readback、O1B17 open dates
 
-- [ ] **Step 1: migrationを実runtime DBへ適用する**
+- [x] **Step 1: migrationを実runtime DBへ適用する**
 
 Run migration against fixed `life-manager-local-postgres-1/life_manager` with `ON_ERROR_STOP=1`。
 
-- [ ] **Step 2: Google Calendarをread-only取得する**
+- [x] **Step 2: Google Calendarをread-only取得する**
 
 今日〜20日後を`--all --all-pages`で取得し、stdoutへraw eventを出さず、countだけ保持する。
 
-- [ ] **Step 3: initial open snapshotを保存・再読出しする**
+- [x] **Step 3: initial open snapshotを保存・再読出しする**
 
 O1B23前なのでCalendar eventをresolvedへ推測せず、21 open daysを実storeへ保存しcurrent view/hashを確認する。
 
-- [ ] **Step 4: evidence/specを更新する**
+- [x] **Step 4: evidence/specを更新する**
 
 O1B-16を完了し、次をO1B-17へ更新する。
 
-- [ ] **Step 5: final verification、commit、push**
+- [x] **Step 5: final verification、commit、push**
 
 Run: focused tests、`npm run test:outbound`、DB readback、`git diff --check`。
 Expected: origin/mainとHEAD一致、unrelated dirty 2件だけ残る。
