@@ -69,12 +69,49 @@ claude doctor: Remote Control セクションに失敗チェック無し
 
 | # | タスク | 状態 |
 |---|---|---|
-| 1 | ログ回転: plist を `perl` ANSI除去 + `rotatelogs -n 5 10M` パイプに (上限50MB) | pending |
+| 1 | ログ回転: plist を `perl` ANSI除去 + `rotatelogs -n 5 10M` パイプに (上限50MB) | **done 2026-08-01 17:22** (§4.1) |
 | 2 | plist 衛生: `zsh -l` 廃止 / `EnvironmentVariables.PATH` 明示 / `ProcessType=Background` / `ExitTimeOut=30` / `ThrottleInterval=60` / `RunAtLoad` 削除 | pending |
 | 3 | 401 サーキットブレーカ: ログに `Authentication failed (401)` 検知 → 20秒後に1回だけリトライ → まだ401なら `launchctl bootout` + sentinel 書いて停止 | pending |
 | 4 | 通知: sentinel が立ったら Dais へ「`claude auth login` が必要」を送る (18時間ルールは人間しか解けない = 正当な human-loop) | pending |
 | 5 | 有線化: Mac mini 背面 Ethernet にLANケーブル → ルーター。**Dais の物理作業**。優先度最下位 | pending (Dais) |
 | 6 | 掃除: 重複 tailscale LaunchAgent (exit 1) 削除 / orphaned npm `@anthropic-ai/claude-code` 削除 / `~/.openclaw` 14G 回収 | pending |
+
+---
+
+### 4.1 実測ログ — #1 ログ回転 (2026-08-01 17:22 完了)
+
+やったこと: `~/.claude/scripts/remote-control-supervise.sh` を新設し、plist の `ProgramArguments` をそれ1本に置換。`StandardOutPath` は**削除**（残すと launchd と rotatelogs が二重に書く）。`StandardErrorPath` は `remote-control.boot.err` に退避（exec 前のエラー専用）。
+
+途中で見つけた不具合と修正:
+
+| 事象 | 対処 |
+|---|---|
+| `perl` の CSI 除去だけでは ESC が4行残った | この TUI は **OSC 8 ハイパーリンク** (`ESC]8;;URL BEL text ESC]8;; BEL`) も吐く。OSC を別ルールで剥がし、URI は診断用に本文として残す形に変更 |
+| `launchctl bootstrap` が `5: Input/output error` で失敗 | bootout 直後は domain が落ち着いていない。数秒空けて再実行で `rc=0`。**plist は `plutil -lint` で OK、原因は plist ではない** |
+
+実測 (自分の目で確認):
+
+```
+# 稼働プロセス3本
+8669 /bin/zsh /Users/anicca/.claude/scripts/remote-control-supervise.sh
+8681 /Users/anicca/.local/bin/claude remote-control --name Mac mini
+8683 /usr/sbin/rotatelogs -n 3 -f /Users/anicca/.claude/logs/remote-control.log 10M
+
+# ANSI 残存
+grep -ac $'\e' ~/.claude/logs/remote-control.log  →  0
+
+# サービス状態
+launchctl list | grep claude-remote-control  →  14737  0  com.anicca.claude-remote-control
+ログ本文                                      →  ·✔︎· Connected / ·✔︎· Ready
+
+# 回転上限の独立検証 (scratchpad, -n 3 / 100K)
+6000行 (~294KB) 投入 → rt.log 4,628B + rt.log.1 102,440B + rt.log.2 102,440B = 216K で頭打ち
+→ 本番の -n 5 / 10M = 合計 50MB 上限
+```
+
+副次効果: 肥大した旧ログを削除して `~/.claude/logs` が **186M → 4K**、ディスク空きが **7.1GB → 8.6GB**。401 の証拠行だけ `remote-control.401-evidence.txt` に退避済み。
+
+**注意 (ソースの二重化)**: 実体は `~/.claude/scripts/remote-control-supervise.sh`（ブランチに依存させないため）。`scripts/runtime/remote-control-supervise.sh` はリポジトリ側のミラー。触ったら必ず `diff` で一致を確認すること。
 
 ---
 
