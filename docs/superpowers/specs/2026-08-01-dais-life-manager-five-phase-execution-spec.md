@@ -314,6 +314,13 @@ scroll heightと新規候補0件が3回連続安定した場合だけ`complete=t
 `capacity_status=availability_control_only`とした。新規discovery 5件、detail 5件、outbound全体52件が
 成功。次は同日次候補へ進む失敗分類。
 
+O1B-03進捗4: 同日candidate sequenceをTDDで追加した。満席、waitlist、承認制、不適格、競合、cancelは
+同日の次candidateへ進み、実verifier receiptを伴う`verified_registered`だけでbookedになる。
+login切れ・transport停止・inventory未完了は全candidateを無駄に消費せず復旧へ移し、submit後の
+`unknown_effect`や未検証successは二重応募せずreconciliationへ止める。Luma候補を最後まで使い切った
+場合だけ`next_provider_required`として同日をconnpassへ渡す。新規sequence 4件、outbound全体56件が
+成功。Task 2完了。次はproduction RSVP adapterとeffect fence。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
