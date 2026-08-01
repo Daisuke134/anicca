@@ -363,7 +363,7 @@ The $10M product is not an individual skill. It is the platform that continuousl
 | 3. Repair closure monitor | Verified | RED: monitor absent, 15 contract failures; GREEN: monitor integration `19 passed`, outcome regression `12 passed`, plist `OK` | `59b39d0a4` |
 | 4. Builder handoff | Verified | RED: handoff/probe absent; GREEN: Builder integration `17 passed`, outcome `12 passed`, self-fix `23 passed`, loop `7 passed` | `f78446b62` |
 | 5. Marketer handoff | Verified | RED: 17 missing-handoff failures; GREEN: Marketer `23 passed`, related pytest `22 passed`, account lifecycle `38 passed` | `cda11e4be` |
-| 6. 09:30 report | Verified offline | RED: unsupported `company_state`; GREEN: report/outcome `13 passed`, account lifecycle `38 passed`, source+installed plist lint `OK`; runtime reload deferred to Task 7 | `feat(capafy): render natural company report at 0930` |
+| 6. 09:30 report | Verified offline | RED: unsupported `company_state`; GREEN: report/outcome `13 passed`, account lifecycle `38 passed`, source+installed plist lint `OK`; runtime reload deferred to Task 7 | `a6139d48b` |
 | 7. Watchdogs + end-to-end proof | Not started | — | — |
 
 ### P0 — Truthful outcomes and repair closure
