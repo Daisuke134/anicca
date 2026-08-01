@@ -68,4 +68,8 @@ function publicPreview(input) {
   });
 }
 
-module.exports = { validateWriterArticle, publicPreview, sha256 };
+function publicManifestJson(input) {
+  return JSON.stringify(publicPreview(input)).replace(/</g, '\\u003c');
+}
+
+module.exports = { validateWriterArticle, publicPreview, publicManifestJson, sha256 };
