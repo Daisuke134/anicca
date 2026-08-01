@@ -1314,6 +1314,20 @@ Calendar 5件/123 busy、Luma auth、inventory 35/35、往復route 37/34分は�
 成立済みの現実を衝突込みでCalendarへ記録する責務へ分離し、verified receiptなら重複照合後に必ずCalendar作成する。
 Connector 237/237、runtime 35/35成功。次は新imageを再deployし、同じjobのretryでCalendar/coverage/continuationを実測する。
 
+O1B-25進捗20（実Google Calendar返却URLの真因確定 / RED→GREEN）: worker再開時にcoverage jobが
+attempt 17まで同じgeneric failureを消費したため、workerを再停止して応募effectを再実行せず境界を単独実測した。
+応募済みevent `luma-event://event/a879ax7k` は公開JSON-LD上で2026-08-15 18:00〜23:00 JSTの東京対面event。
+`gog 0.17.0`によるCalendar create自体は成功したが、実返却は`{event:{...}}`かつevent URL hostが
+`www.google.com/calendar/event`だった。transportとCalendar syncが`calendar.google.com`だけを許可していたため、
+成功済み作成を`unavailable`へ誤分類していたことを真因確定した。両境界へ実返却形式のRED testを追加し、HTTPS、
+Googleの2 host、exact `/calendar/event` path、非空`eid`を満たすURLだけを許可した。focused 23/23、
+Connector全回帰238/238、runtime 35/35成功。
+診断中に「Google側成功・返却検証失敗」の1件を見落として直接作成を再試行し、一時的に同じ冪等keyが2件になった。
+同じtitle、source URL、開始終了時刻、private propertyの2件だけを検証し、新しい重複1件をGoogle Calendarの
+ゴミ箱へ削除した。再起動後host bridgeのexact findはHTTP 200 / 1件。次は全回帰、commit/push、新image deploy後、
+残りretryで既存1件としてCalendar同期→`covered_new`→continuationを実測する。Luma詳細の全件再走査依存は別途、
+応募時snapshotを後続へ渡す不変証跡へ置換し、長時間retryを解消する。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 

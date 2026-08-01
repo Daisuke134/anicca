@@ -31,14 +31,20 @@ function stableJson(value) {
   return JSON.stringify(value);
 }
 
+function googleCalendarEventUrl(url) {
+  return url.protocol === "https:"
+    && !url.username
+    && !url.password
+    && ["calendar.google.com", "www.google.com"].includes(url.hostname)
+    && url.pathname === "/calendar/event"
+    && Boolean(url.searchParams.get("eid"));
+}
+
 function providerEvent(value) {
   const id = safeId(value && value.id);
   let url;
   try { url = new URL(String(value && value.htmlLink || "")); } catch { unavailable(); }
-  if (
-    url.protocol !== "https:" || url.hostname !== "calendar.google.com"
-    || url.username || url.password
-  ) unavailable();
+  if (!googleCalendarEventUrl(url)) unavailable();
   return Object.freeze({ id, url: url.toString() });
 }
 

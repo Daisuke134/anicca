@@ -247,3 +247,26 @@ test("a missing Connector event records the verified commitment without resolvin
   assert.equal(gateCalls, 0);
   assert.equal(creates, 1);
 });
+
+test("calendar sync accepts the www.google.com event URL returned by gog", async () => {
+  const { dateInventory } = await inventoryAndGate();
+  const receipt = await registrationReceipt();
+  const result = await syncVerifiedRegistrationToGoogleCalendar({
+    calendar: {
+      async findConnectorEvents() {
+        return [{
+          id: "gog-created",
+          htmlLink: "https://www.google.com/calendar/event?eid=gog-created",
+        }];
+      },
+      async createConnectorEvent() { throw new Error("must not create"); },
+    },
+    calendarId: "primary",
+    dateInventory,
+    eventRef: "luma-event://event/founder-night",
+    registrationReceipt: receipt,
+    registrationJob: JOB,
+  });
+  assert.equal(result.status, "existing");
+  assert.equal(result.calendar_event_url, "https://www.google.com/calendar/event?eid=gog-created");
+});

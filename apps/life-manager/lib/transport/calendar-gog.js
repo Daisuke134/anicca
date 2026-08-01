@@ -53,15 +53,21 @@ function connectorCanonicalUrl(value) {
   return url;
 }
 
+function googleCalendarEventUrl(url) {
+  return url.protocol === "https:"
+    && !url.username
+    && !url.password
+    && ["calendar.google.com", "www.google.com"].includes(url.hostname)
+    && url.pathname === "/calendar/event"
+    && Boolean(url.searchParams.get("eid"));
+}
+
 function connectorProviderReceipt(value) {
   const source = value && value.event && typeof value.event === "object" ? value.event : value;
   const id = source && connectorText(source.id, 1_024);
   let link;
   try { link = new URL(connectorText(source && source.htmlLink, 2_000)); } catch { connectorUnavailable(); }
-  if (
-    !id || isFlaglike(id) || link.protocol !== "https:" || link.hostname !== "calendar.google.com"
-    || link.username || link.password
-  ) connectorUnavailable();
+  if (!id || isFlaglike(id) || !googleCalendarEventUrl(link)) connectorUnavailable();
   return Object.freeze({ id, htmlLink: link.toString() });
 }
 
