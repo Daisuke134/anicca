@@ -53,4 +53,17 @@ out="$(HOME="$D2" SELF_FIX_NO_ALERT=1 SELF_FIX_DRYRUN=1 bash "$SF" gig hint 2>&1
 [ "$rc" -eq 0 ] && { echo "  ok REQUIRED unset → budget-less caller unaffected"; P=$((P+1)); } || { echo "  FAIL budget-less caller aborted: $out"; F=$((F+1)); }
 rm -rf "$D2"
 
+echo "(F) Capafy incident association — sidecar only; compatibility result marker remains untouched"
+D3="$(mktemp -d)"; mkdir -p "$D3/.openclaw/state"
+RESULT3="$D3/.openclaw/state/.self-fix-capafy-loop.result"
+printf 'SUCCESS 2026-08-01T00:00:00Z existing evidence\n' > "$RESULT3"
+before3="$(cat "$RESULT3")"
+out="$(HOME="$D3" CAPAFY_INCIDENT_ID=capafy-builder-20260801T081400Z-a1b2c3d4 SELF_FIX_ASSOCIATE_ONLY=1 bash "$SF" capafy hint 2>&1)"; rc=$?
+[ "$rc" -eq 0 ] && { echo "  ok incident association seam exits zero"; P=$((P+1)); } || { echo "  FAIL incident association seam rc=$rc: $out"; F=$((F+1)); }
+SIDE3="$D3/.openclaw/state/.self-fix-capafy-loop.incident.json"
+a "sidecar carries exact incident id" "$(cat "$SIDE3" 2>/dev/null)" '"incident_id":"capafy-builder-20260801T081400Z-a1b2c3d4"'
+a "sidecar carries normalized loop" "$(cat "$SIDE3" 2>/dev/null)" '"loop":"capafy-loop"'
+eq "existing one-line result marker unchanged" "$(cat "$RESULT3")" "$before3"
+rm -rf "$D3"
+
 echo "=== self-fix: $P passed $F failed ==="; [ "$F" = 0 ]&&echo GREEN||exit 1

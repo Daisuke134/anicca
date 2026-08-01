@@ -17,6 +17,20 @@ def run_cli(command: str, payload: dict) -> subprocess.CompletedProcess[str]:
     )
 
 
+def run_cli_args(
+    *args: str, payload: dict | None = None, state_dir: Path
+) -> subprocess.CompletedProcess[str]:
+    env = {"CAPAFY_OUTCOME_STATE_DIR": str(state_dir)}
+    return subprocess.run(
+        [sys.executable, str(SCRIPT), *args],
+        input=json.dumps(payload) if payload is not None else None,
+        text=True,
+        capture_output=True,
+        check=False,
+        env=env,
+    )
+
+
 def builder_submission() -> dict:
     return {
         "schema_version": 1,
@@ -161,3 +175,107 @@ def test_same_outcome_has_stable_delivery_key() -> None:
     assert second.returncode == 0, second.stderr
     assert first.stdout.strip() == second.stdout.strip()
     assert len(first.stdout.strip()) == 64
+
+
+def test_start_incident_creates_atomic_record_and_returns_id(tmp_path: Path) -> None:
+    result = run_cli_args(
+        "start-incident",
+        "--owner",
+        "builder",
+        "--summary",
+        "Browser ownership collided",
+        "--fingerprint",
+        "browser-owner-collision",
+        "--repair-result-path",
+        "/tmp/.self-fix-capafy-loop.result",
+        state_dir=tmp_path,
+    )
+
+    assert result.returncode == 0, result.stderr
+    created = json.loads(result.stdout)
+    assert created["incident_id"].startswith("capafy-builder-")
+    assert created["phase"] == "detected"
+    record_path = tmp_path / "capafy-incidents" / f"{created['incident_id']}.json"
+    assert json.loads(record_path.read_text()) == created
+    assert list(record_path.parent.glob("*.tmp")) == []
+
+
+def test_same_active_fingerprint_reuses_incident_id(tmp_path: Path) -> None:
+    args = (
+        "start-incident",
+        "--owner",
+        "builder",
+        "--summary",
+        "Browser ownership collided",
+        "--fingerprint",
+        "browser-owner-collision",
+        "--repair-result-path",
+        "/tmp/.self-fix-capafy-loop.result",
+    )
+
+    first = run_cli_args(*args, state_dir=tmp_path)
+    second = run_cli_args(*args, state_dir=tmp_path)
+
+    assert first.returncode == 0, first.stderr
+    assert second.returncode == 0, second.stderr
+    assert json.loads(first.stdout)["incident_id"] == json.loads(second.stdout)["incident_id"]
+    assert len(list((tmp_path / "capafy-incidents").glob("*.json"))) == 1
+
+
+def test_incident_phase_cannot_move_backwards(tmp_path: Path) -> None:
+    started = run_cli_args(
+        "start-incident",
+        "--owner",
+        "builder",
+        "--summary",
+        "Browser ownership collided",
+        "--fingerprint",
+        "browser-owner-collision",
+        state_dir=tmp_path,
+    )
+    incident_id = json.loads(started.stdout)["incident_id"]
+    moved = run_cli_args(
+        "transition-incident",
+        payload={"incident_id": incident_id, "phase": "repair_started"},
+        state_dir=tmp_path,
+    )
+    backwards = run_cli_args(
+        "transition-incident",
+        payload={"incident_id": incident_id, "phase": "detected"},
+        state_dir=tmp_path,
+    )
+
+    assert moved.returncode == 0, moved.stderr
+    assert json.loads(moved.stdout)["phase"] == "repair_started"
+    assert backwards.returncode != 0
+    assert "backwards" in backwards.stderr.lower()
+
+
+def test_get_active_incident_returns_same_unresolved_story(tmp_path: Path) -> None:
+    started = run_cli_args(
+        "start-incident",
+        "--owner",
+        "marketer",
+        "--summary",
+        "Instagram returned a challenge",
+        "--fingerprint",
+        "instagram-challenge",
+        state_dir=tmp_path,
+    )
+    incident_id = json.loads(started.stdout)["incident_id"]
+    unresolved = run_cli_args(
+        "transition-incident",
+        payload={
+            "incident_id": incident_id,
+            "phase": "unresolved",
+            "next_retry_at": "2026-08-01T18:00:00+09:00",
+        },
+        state_dir=tmp_path,
+    )
+    active = run_cli_args(
+        "get-active-incident", "--owner", "marketer", state_dir=tmp_path
+    )
+
+    assert unresolved.returncode == 0, unresolved.stderr
+    assert active.returncode == 0, active.stderr
+    assert json.loads(active.stdout)["incident_id"] == incident_id

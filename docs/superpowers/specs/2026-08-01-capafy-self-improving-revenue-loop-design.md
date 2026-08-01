@@ -351,15 +351,15 @@ The $10M product is not an individual skill. It is the platform that continuousl
 - **Active priority:** P0 — Truthful outcomes and repair closure.
 - **Implementation plan:** [`../plans/2026-08-01-capafy-p0-truthful-outcomes.md`](../plans/2026-08-01-capafy-p0-truthful-outcomes.md)
 - **Execution rule:** complete and verify one numbered task at a time; after each task, append the command evidence and commit hash here before beginning the next task.
-- **Current state (2026-08-01):** design and P0 plan approved; Task 1 reporting contract implemented and independently verified.
-- **Next action:** Task 2, carry one incident identity from detection through the detached self-fixer without breaking generic self-fix callers.
+- **Current state (2026-08-01):** Tasks 1-2 verified. Capafy failures now have an atomic, reusable incident identity that survives detached self-fix association without changing the compatibility result marker.
+- **Next action:** Task 3, watch terminal self-fix results and deliver one evidence-gated Telegram repair closure exactly once.
 
 #### P0 execution log
 
 | Task | Status | Verification evidence | Commit |
 |---|---|---|---|
 | 1. Reporting contract | Verified | `python3 -m py_compile .../capafy_outcome.py`; `python3 -m pytest -q .../test_capafy_outcome.py` → `8 passed in 0.39s`; RED was `8 failed` before implementation | `548b382e1` |
-| 2. Incident identity | Not started | — | — |
+| 2. Incident identity | Verified | RED: 4 incident tests + 2 sidecar assertions failed; GREEN: outcome `12 passed`, self-fix `23 passed`, Capafy loop `7 passed` | `feat(capafy): preserve incident identity through repair` |
 | 3. Repair closure monitor | Not started | — | — |
 | 4. Builder handoff | Not started | — | — |
 | 5. Marketer handoff | Not started | — | — |

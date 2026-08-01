@@ -41,6 +41,16 @@ STATE="$HOME/.openclaw/state"; mkdir -p "$STATE"
 LOG="$HOME/.openclaw/logs/self-fix-$LOOP.log"; mkdir -p "$(dirname "$LOG")"
 RESULT="$STATE/.self-fix-$LOOP.result"       # the fixer writes SUCCESS/FAIL + evidence here (FIND-003)
 STARTMARK="$STATE/.self-fix-$LOOP.started"    # epoch when the current fixer was spawned (FIND-005 stale-guard)
+INCIDENT_SIDECAR="$STATE/.self-fix-$LOOP.incident.json"
+sf_write_incident_association(){
+  local incident_id="${CAPAFY_INCIDENT_ID:-}" tmp
+  [ -n "$incident_id" ] || return 0
+  case "$incident_id" in *[!A-Za-z0-9._:-]*) echo "invalid CAPAFY_INCIDENT_ID" >&2; return 2 ;; esac
+  tmp="$INCIDENT_SIDECAR.tmp"
+  printf '{"schema_version":1,"incident_id":"%s","loop":"%s","result_path":"%s"}\n' \
+    "$incident_id" "$LOOP" "$RESULT" > "$tmp"
+  mv "$tmp" "$INCIDENT_SIDECAR"
+}
 # A18 PREFLIGHT (2026-08-01, gig 4-day silent outage 07-28→08-01): agent_runner is fail-closed on
 # token budgets — if the caller's env carries ANICCA_BUDGET_REQUIRED=1 without the FULL
 # scope/pass/daily trio, the spawned runner aborts at startup, AFTER this script already logged
@@ -58,6 +68,11 @@ if [ "${ANICCA_BUDGET_REQUIRED:-}" = "1" ] && { [ -z "${ANICCA_BUDGET_SCOPE_ID:-
 fi
 # FIND-028 test seam: print the normalized identity + derived paths and exit BEFORE any tmux/side-effect.
 if [ "${SELF_FIX_DRYRUN:-}" = "1" ]; then printf 'LOOP=%s SESSION=%s SOCK=%s RESULT=%s\n' "$LOOP" "$SESSION" "$SOCK" "$RESULT"; exit 0; fi
+if [ "${SELF_FIX_ASSOCIATE_ONLY:-0}" = "1" ]; then
+  sf_write_incident_association || exit $?
+  printf 'INCIDENT_SIDECAR=%s\n' "$INCIDENT_SIDECAR"
+  exit 0
+fi
 MAX_FIXER_MIN=180                             # FIND-023: a fixer older than 3h is presumed hung → kill+respawn. Set
                                               # ABOVE any legitimate fix duration (a real fix rarely needs >3h) so the
                                               # 6h audit re-invocation cannot kill an in-progress long fix; only a
@@ -114,6 +129,7 @@ fi
 # FIND-003/004: the fixer MUST verify a real side-effect, commit in the CORRECT repo (the one the edited file lives
 # in — discovered via git rev-parse, NOT guessed), and write a result marker the caller/healthcheck can check.
 printf 'RUNNING %s\n' "$(date -u +%FT%TZ)" > "$RESULT"
+sf_write_incident_association || exit $?
 TASK="AUTONOMOUS SELF-FIX for the ${LOOP} loop. You are a high-value autonomous dev with browser (CloakBrowser daily-driver CDP :9222), Bash, Edit. NEVER ask a human and NEVER present a menu — a blocker is not stop. BLOCKER + HINT: ${BLOCKER}.
 DO, in order:
 (0) CHECK FOR PRIOR DIAGNOSIS FIRST (2026-07-13 fix — a prior self-fix spawn burned 400-1400min re-discovering an already-known external blocker from scratch): before any expensive live reproduction, search for an existing diagnosis of THIS exact blocker — tail the loop's own lessons/audit files under its state dir (e.g. ~/gig/lessons.jsonl, ~/gig/audit.jsonl) for recent matching entries, and run 'gh issue list -R Daisuke134/anicca --label gig-lesson --search \"<keyword from the blocker>\"' to find prior write-ups. If a recent (last ~24h) prior diagnosis already concluded this is a genuine external/physical blocker (e.g. a real-world device state, a third-party account lock needing a human's physical action, an outage) — do ONE cheap, fast confirmation that the same condition still holds (a single live check, not a repeat of the full multi-hour investigation), then write FAIL citing the existing issue/lesson instead of re-running the whole diagnosis. Only do a full fresh investigation when no matching prior diagnosis exists or the prior one looks stale/resolved.
@@ -123,6 +139,9 @@ DO, in order:
 (4) COMMIT IN THE CORRECT REPO: for EACH file you changed, cd into its directory, run 'git rev-parse --show-toplevel' and 'git remote -v' to confirm which repo it is, then commit+push THERE. Ground truth: the Capafy publish pipeline lives under ~/.openclaw (remote = anicca-dais, PRIVATE) — commit those there, NOT to anicca-products. The loop harness lives under ~/anicca (remote = anicca, public). Never commit ~/.openclaw runtime state or secrets.
 (5) Write the outcome to ${RESULT} as a single line: 'SUCCESS <utc> <one-line real evidence, e.g. published URL>' or 'FAIL <utc> <why + what is still blocked>'. If the fix resolved a selfheal-request json, rm it.
 If after honest effort the fix is genuinely impossible (e.g. an external service is down), write FAIL with a precise diagnosis to ${RESULT} and invoke self/issue-dev — still never ask a human. Report what you fixed + the real evidence at the end."
+if [ -n "${CAPAFY_INCIDENT_ID:-}" ]; then
+  TASK="${TASK} This repair belongs to incident ${CAPAFY_INCIDENT_ID}. Preserve that exact incident id in all evidence and final reporting."
+fi
 TASK="${TASK} 重要な結果（数字・IDを含む成果、realized P&L、致命的エラー）が出たら PushNotification ツールで Dais へ verbatim 送信してから終了する。narration・定常報告には使わない。"
 PROMPT_FILE="$STATE/.self-fix-$LOOP.prompt"
 EVIDENCE_DIR="$STATE/agent-runner-evidence/self-fix-$LOOP/$(date +%s)-$$"
