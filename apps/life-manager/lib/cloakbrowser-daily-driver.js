@@ -46,6 +46,14 @@ function submissionDayGate(value, policy) {
   return value;
 }
 
+function assetFreshnessGate(value, policy) {
+  if (!value || value.schema_version !== 1 || value.decision !== "allow" || value.submit_allowed !== true
+    || value.funder_id !== policy.funder_id || !/^funder-freshness-gate:[0-9a-f]{64}$/.test(String(value.gate_id || ""))) {
+    throw new Error("Funder asset freshness gate invalid");
+  }
+  return value;
+}
+
 function safePath(value) {
   const path = String(value == null ? "" : value).trim();
   return path.startsWith("/") && path.length <= 500 ? path : "/";
@@ -119,8 +127,9 @@ function createCloakBrowserDailyDriver(options = {}) {
     async withLumaPage(value, task) {
       return withOwnedPage(lumaUrl(value), task);
     },
-    async withFunderPage(value, policy, gate, task) {
+    async withFunderPage(value, policy, gate, freshnessGate, task) {
       submissionDayGate(gate, policy);
+      assetFreshnessGate(freshnessGate, policy);
       return withOwnedPage(funderUrl(value, policy), task);
     },
   });
