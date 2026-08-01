@@ -46,17 +46,27 @@ function providerEvent(value) {
 function sourceEvent(input) {
   if (
     !isVerifiedLumaDateInventory(input.dateInventory)
-    || !isVerifiedCalendarCandidateGate(input.calendarGate)
-    || input.calendarGate.status !== "evaluated"
-    || input.calendarGate.inventory_snapshot_id !== input.dateInventory.inventory_snapshot_id
   ) invalid();
   const eventRef = String(input.eventRef == null ? "" : input.eventRef).trim();
-  const gateRow = input.calendarGate.candidates.find((row) => row.event_ref === eventRef);
-  if (!gateRow) invalid();
   const events = input.dateInventory.days.flatMap((day) => day.events);
   const event = events.find((candidate) => candidate.event_ref === eventRef);
   if (!event) invalid();
-  return Object.freeze({ event, eligible: gateRow.eligible === true });
+  return event;
+}
+
+async function eligibleSource(input, event) {
+  let gate = input.calendarGate;
+  if (!gate && typeof input.resolveCalendarGate === "function") {
+    try { gate = await input.resolveCalendarGate(); } catch { unavailable(); }
+  }
+  if (
+    !isVerifiedCalendarCandidateGate(gate)
+    || gate.status !== "evaluated"
+    || gate.inventory_snapshot_id !== input.dateInventory.inventory_snapshot_id
+  ) invalid();
+  const gateRow = gate.candidates.find((row) => row.event_ref === event.event_ref);
+  if (!gateRow || gateRow.eligible !== true) invalid();
+  return event;
 }
 
 async function syncVerifiedRegistrationToGoogleCalendar(input = {}) {
@@ -66,8 +76,7 @@ async function syncVerifiedRegistrationToGoogleCalendar(input = {}) {
     || typeof calendar.findConnectorEvents !== "function"
     || typeof calendar.createConnectorEvent !== "function"
   ) invalid();
-  const source = sourceEvent(input);
-  const event = source.event;
+  const event = sourceEvent(input);
   let receipt;
   try { receipt = assertVerifiedOutboundReceipt(input.registrationReceipt, input.registrationJob); }
   catch { invalid(); }
@@ -88,7 +97,7 @@ async function syncVerifiedRegistrationToGoogleCalendar(input = {}) {
     provider = providerEvent(found[0]);
     status = "existing";
   } else {
-    if (!source.eligible) invalid();
+    await eligibleSource(input, event);
     let created;
     try {
       created = await calendar.createConnectorEvent({

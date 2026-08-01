@@ -105,18 +105,17 @@ function createConnectorCoverageRefreshService(dependencies = {}) {
       for (const completedRegistration of completed) {
         const eventRef = baseEventRef(completedRegistration.event_ref);
         const date = eventDate(dateInventory, eventRef);
-        const calendarGate = await dependencies.gateDateCalendar({
-          dateInventory,
-          busyInventory,
-          date,
-          homeLocation: dependencies.homeLocation,
-          routeMinutes: dependencies.routeMinutes,
-        });
         const calendarSync = await dependencies.syncRegistrationCalendar({
           calendar: dependencies.calendar,
           calendarId: dependencies.calendarId,
           dateInventory,
-          calendarGate,
+          resolveCalendarGate: () => dependencies.gateDateCalendar({
+            dateInventory,
+            busyInventory,
+            date,
+            homeLocation: dependencies.homeLocation,
+            routeMinutes: dependencies.routeMinutes,
+          }),
           eventRef,
           registrationReceipt: completedRegistration.receipt,
           registrationJob: completedRegistration.job,

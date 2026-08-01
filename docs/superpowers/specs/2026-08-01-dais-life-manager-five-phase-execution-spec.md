@@ -1268,6 +1268,11 @@ adapterへ依存注入する境界を追加した。service未注入時は起動
 focused回帰40/40成功。実Docker workerにはGoogle Calendarを読むhost側`gog`が存在しないため、capability名だけを
 containerへ追加して動作済みに見せない。次はhost側coverage workerをruntime DBへ安全に接続し、初回jobを登録する。
 
+O1B-25進捗13（既存Calendar復元順序 RED→GREEN）: refreshが実移動時間を解決する前に、同じverified
+Luma応募receiptと同じidempotencyのGoogle Calendar eventを照合するよう修正した。既存eventならroute providerを
+一度も呼ばず`covered_existing`へ復元し、未存在なら従来どおりfresh travel-aware gateが成功しない限りCalendarを
+作らない。focused 8/8、Connector全体220/220成功。次はこのservice一式をhost workerで組み立てる。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 

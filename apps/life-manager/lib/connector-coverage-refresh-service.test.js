@@ -129,7 +129,7 @@ function makeService(input) {
     calendar: input.calendar,
     calendarId: "primary",
     homeLocation: "Tokyo",
-    routeMinutes: async () => 20,
+    routeMinutes: input.routeMinutes || (async () => 20),
     now: () => NOW,
     readDateInventory: input.readDateInventory,
     readBusyCalendar: async () => busyInventory(),
@@ -172,6 +172,35 @@ test("verified RSVP becomes a Calendar event and coverage while a real all-day b
   assert.equal(result.coverage.counts.unavailable, 1);
   assert.equal(result.coverage.counts.open, 19);
   assert.deepEqual(result.observedOutcomes, [{ date: "2026-08-05", observed_status: "booked" }]);
+});
+
+test("an existing exact Calendar registration rebuilds coverage without calling travel routing", async () => {
+  const coverage = currentCoverage();
+  const inventory = await dateInventory(coverage);
+  const registration = await completedRegistration();
+  let routeCalls = 0;
+  let creates = 0;
+  const refresh = makeService({
+    receiptReader: { async listForCoverage() { return [registration]; } },
+    readDateInventory: async () => inventory,
+    routeMinutes: async () => { routeCalls += 1; throw new Error("route unavailable"); },
+    calendar: {
+      async findConnectorEvents() {
+        return [{
+          id: "existing-event",
+          htmlLink: "https://calendar.google.com/calendar/event?eid=existing",
+        }];
+      },
+      async createConnectorEvent() { creates += 1; },
+    },
+  });
+
+  const result = await refresh({ coverage, tenantId: TENANT });
+  assert.equal(result.coverage.counts.covered_existing, 1);
+  assert.equal(result.coverage.counts.unavailable, 1);
+  assert.equal(result.coverage.counts.open, 19);
+  assert.equal(routeCalls, 0);
+  assert.equal(creates, 0);
 });
 
 test("a completed receipt absent from the fresh exhaustive inventory cannot create Calendar or coverage", async () => {
