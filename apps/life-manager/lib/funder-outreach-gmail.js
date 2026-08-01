@@ -4,6 +4,8 @@ const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 const { spawnSync } = require("node:child_process");
+const { isVerifiedInvestorOutreachReservation } = require("./funder-investor-outreach.js");
+const { isVerifiedFunderOutreachBatch } = require("./funder-outreach.js");
 
 const HEX_ID = /^[0-9a-f]{16,32}$/i;
 
@@ -38,8 +40,31 @@ async function sendGog(message, options = {}) {
 }
 
 async function deliverFunderOutreachBatch(batch, dependencies = {}) {
-  if (!batch || batch.schema_version !== 1 || !Array.isArray(batch.messages)
-    || batch.messages.length !== batch.daily_target || batch.messages.length < 3 || batch.messages.length > 5) {
+  if (!batch || !Array.isArray(batch.messages)) {
+    throw new Error("funder outreach delivery invalid");
+  }
+  if (batch.schema_version === 1) {
+    if (!isVerifiedFunderOutreachBatch(batch) || batch.messages.length !== batch.daily_target
+      || batch.messages.length < 3 || batch.messages.length > 5) {
+      throw new Error("funder outreach delivery invalid");
+    }
+    throw new Error("funder outreach legacy delivery retired");
+  } else if (batch.schema_version === 2) {
+    if (batch.reserved !== true || !isVerifiedInvestorOutreachReservation(batch)) {
+      throw new Error("funder outreach reservation required");
+    }
+    if (!Number.isInteger(batch.existing_count) || !Number.isInteger(batch.daily_target)
+      || batch.daily_target < 3 || batch.daily_target > 5
+      || batch.messages.length !== Math.max(0, batch.daily_target - batch.existing_count)
+      || batch.existing_count + batch.messages.length > 5
+      || batch.messages.some((message) => !["vc", "angel"].includes(message.investor_kind)
+        || !Number.isInteger(message.daily_slot) || message.daily_slot < 1 || message.daily_slot > 5
+        || !Number.isFinite(Date.parse(message.reserved_at))
+        || ![message.thesis_evidence_sha256, message.company_evidence_sha256,
+          message.personalization_sha256].every((value) => /^[0-9a-f]{64}$/.test(String(value || ""))))) {
+      throw new Error("funder outreach delivery invalid");
+    }
+  } else {
     throw new Error("funder outreach delivery invalid");
   }
   const send = dependencies.send || sendGog;
@@ -50,7 +75,7 @@ async function deliverFunderOutreachBatch(batch, dependencies = {}) {
     const sentMs = Date.parse(String((dependencies.observedAt || (() => new Date().toISOString()))()));
     if (!Number.isFinite(sentMs)) throw new Error("funder outreach delivery time invalid");
     receipts.push(Object.freeze({
-      schema_version: 1,
+      schema_version: batch.schema_version,
       outreach_id: message.outreach_id,
       batch_id: batch.batch_id,
       tenant_id: batch.tenant_id,
@@ -62,6 +87,13 @@ async function deliverFunderOutreachBatch(batch, dependencies = {}) {
       source_observed_at: message.source_observed_at,
       source_digest: message.source_digest,
       fit_summary_sha256: message.fit_summary_sha256,
+      ...(batch.schema_version === 2 ? {
+        investor_kind: message.investor_kind,
+        thesis_evidence_sha256: message.thesis_evidence_sha256,
+        company_evidence_sha256: message.company_evidence_sha256,
+        personalization_sha256: message.personalization_sha256,
+        daily_slot: message.daily_slot,
+      } : {}),
       subject_sha256: message.subject_sha256,
       body_sha256: message.body_sha256,
       sent_at: new Date(sentMs).toISOString(),

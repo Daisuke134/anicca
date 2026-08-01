@@ -8,6 +8,7 @@ const ID = /^[a-z0-9][a-z0-9._-]{1,127}$/i;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const DIGEST = /^[0-9a-f]{64}$/;
 const PLACEHOLDER = /\{\{|\}\}|TODO|TBD|<placeholder>/i;
+const VERIFIED_BATCHES = new WeakSet();
 
 const sha = (value) => createHash("sha256").update(value, "utf8").digest("hex");
 
@@ -92,7 +93,7 @@ function buildFunderOutreachBatch(input = {}) {
       body_sha256: bodyHash,
     });
   });
-  return Object.freeze({
+  const batch = Object.freeze({
     schema_version: 1,
     batch_id: batchId,
     tenant_id: input.tenantId,
@@ -101,6 +102,12 @@ function buildFunderOutreachBatch(input = {}) {
     daily_target: target,
     messages: Object.freeze(messages),
   });
+  VERIFIED_BATCHES.add(batch);
+  return batch;
 }
 
-module.exports = { buildFunderOutreachBatch };
+function isVerifiedFunderOutreachBatch(value) {
+  return Boolean(value && VERIFIED_BATCHES.has(value));
+}
+
+module.exports = { buildFunderOutreachBatch, isVerifiedFunderOutreachBatch };

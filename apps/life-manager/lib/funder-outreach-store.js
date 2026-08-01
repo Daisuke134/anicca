@@ -3,7 +3,16 @@
 const DIGEST = /^[0-9a-f]{64}$/;
 
 function valid(receipt) {
-  return receipt && receipt.schema_version === 1
+  const investorValues = receipt && [receipt.investor_kind, receipt.thesis_evidence_sha256,
+    receipt.company_evidence_sha256, receipt.personalization_sha256, receipt.daily_slot];
+  const investorAbsent = investorValues && investorValues.every((value) => value === undefined);
+  const investorPresent = investorValues && ["vc", "angel"].includes(receipt.investor_kind)
+    && [receipt.thesis_evidence_sha256, receipt.company_evidence_sha256,
+      receipt.personalization_sha256].every((value) => DIGEST.test(String(value || "")))
+    && Number.isInteger(receipt.daily_slot) && receipt.daily_slot >= 1 && receipt.daily_slot <= 5;
+  const versionMatches = receipt && ((receipt.schema_version === 1 && investorAbsent)
+    || (receipt.schema_version === 2 && investorPresent));
+  return versionMatches
     && /^funder-outreach:[0-9a-f]{64}$/.test(String(receipt.outreach_id || ""))
     && /^funder-outreach-batch:[0-9a-f]{64}$/.test(String(receipt.batch_id || ""))
     && typeof receipt.tenant_id === "string" && receipt.tenant_id.length > 0
@@ -21,6 +30,7 @@ function valid(receipt) {
 
 async function appendFunderOutreachReceipt(receipt, options = {}) {
   if (!valid(receipt) || typeof options.query !== "function") throw new Error("funder outreach store invalid");
+  const investor = receipt.investor_kind !== undefined;
   const values = [
     receipt.tenant_id, receipt.outreach_id, receipt.batch_id, receipt.tokyo_date,
     receipt.candidate_id, receipt.funder_name, receipt.recipient_sha256,
@@ -28,7 +38,34 @@ async function appendFunderOutreachReceipt(receipt, options = {}) {
     receipt.fit_summary_sha256, receipt.subject_sha256, receipt.body_sha256,
     receipt.sent_at, receipt.provider_message_id, receipt.provider_thread_id,
   ];
-  const result = await options.query(`
+  if (investor) values.push(receipt.investor_kind, receipt.thesis_evidence_sha256,
+    receipt.company_evidence_sha256, receipt.personalization_sha256, receipt.daily_slot);
+  const result = await options.query(investor ? `
+    WITH inserted AS (
+      INSERT INTO public.lm_funder_outreach_ledger (
+        tenant_id, outreach_id, batch_id, tokyo_date, candidate_id, funder_name,
+        recipient_sha256, source_url, source_observed_at, source_digest,
+        fit_summary_sha256, subject_sha256, body_sha256, sent_at,
+        provider_message_id, provider_thread_id, investor_kind, thesis_evidence_sha256,
+        company_evidence_sha256, personalization_sha256, daily_slot
+      ) VALUES ($1,$2,$3,$4::date,$5,$6,$7,$8,$9::timestamptz,$10,$11,$12,$13,$14::timestamptz,$15,$16,$17,$18,$19,$20,$21)
+      ON CONFLICT DO NOTHING
+      RETURNING outreach_id, true AS inserted
+    ), replay AS (
+      SELECT outreach_id, false AS inserted
+      FROM public.lm_funder_outreach_ledger
+      WHERE tenant_id=$1 AND outreach_id=$2 AND batch_id=$3 AND tokyo_date=$4::date
+        AND candidate_id=$5 AND funder_name=$6 AND recipient_sha256=$7
+        AND source_url=$8 AND source_observed_at=$9::timestamptz AND source_digest=$10
+        AND fit_summary_sha256=$11 AND subject_sha256=$12 AND body_sha256=$13
+        AND sent_at=$14::timestamptz AND provider_message_id=$15 AND provider_thread_id=$16
+        AND investor_kind=$17 AND thesis_evidence_sha256=$18 AND company_evidence_sha256=$19
+        AND personalization_sha256=$20 AND daily_slot=$21
+    )
+    SELECT * FROM inserted
+    UNION ALL
+    SELECT * FROM replay WHERE NOT EXISTS (SELECT 1 FROM inserted)
+  ` : `
     WITH inserted AS (
       INSERT INTO public.lm_funder_outreach_ledger (
         tenant_id, outreach_id, batch_id, tokyo_date, candidate_id, funder_name,
@@ -46,6 +83,9 @@ async function appendFunderOutreachReceipt(receipt, options = {}) {
         AND source_url=$8 AND source_observed_at=$9::timestamptz AND source_digest=$10
         AND fit_summary_sha256=$11 AND subject_sha256=$12 AND body_sha256=$13
         AND sent_at=$14::timestamptz AND provider_message_id=$15 AND provider_thread_id=$16
+        AND investor_kind IS NULL AND thesis_evidence_sha256 IS NULL
+        AND company_evidence_sha256 IS NULL AND personalization_sha256 IS NULL
+        AND daily_slot IS NULL
     )
     SELECT * FROM inserted
     UNION ALL

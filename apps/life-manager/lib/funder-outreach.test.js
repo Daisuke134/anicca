@@ -63,23 +63,44 @@ test("daily cap, duplicates, stale/unofficial evidence, placeholders, and long c
   assert.throws(() => batch({ candidates: [placeholder, candidate(2), candidate(3)] }), /funder outreach/i);
 });
 
-test("delivery sends each selected message once and requires Gmail message/thread IDs", async () => {
+test("legacy schema v1 external delivery is retired while the builder remains readable", async () => {
   let calls = 0;
-  const receipts = await deliverFunderOutreachBatch(batch(), { send: async () => {
-    calls += 1;
-    return { message_id: `19fbe${String(calls).padStart(11, "0")}`, thread_id: `19fbe${String(calls).padStart(11, "0")}` };
-  }, observedAt: () => "2026-08-01T18:12:00Z" });
-  assert.equal(calls, 3);
-  assert.equal(receipts.length, 3);
-  assert.equal(receipts[0].provider_message_id, "19fbe00000000001");
-  await assert.rejects(() => deliverFunderOutreachBatch(batch(), { send: async () => ({ ok: true }) }), /Gmail message\/thread ID/i);
+  await assert.rejects(() => deliverFunderOutreachBatch(batch(), {
+    send: async () => { calls += 1; return {}; },
+  }), /legacy delivery retired/i);
+  assert.equal(calls, 0);
+  let copiedCalls = 0;
+  await assert.rejects(() => deliverFunderOutreachBatch(JSON.parse(JSON.stringify(batch())), {
+    send: async () => { copiedCalls += 1; return {}; },
+  }), /delivery invalid/i);
+  assert.equal(copiedCalls, 0);
 });
 
 test("migration and store are tenant-bound append-only exact replay", async () => {
   assert.match(SQL, /CREATE TABLE IF NOT EXISTS public\.lm_funder_outreach_ledger/i);
   assert.match(SQL, /ENABLE ROW LEVEL SECURITY/i);
   assert.doesNotMatch(SQL, /UPDATE public\.lm_funder_outreach_ledger/i);
-  const [receipt] = await deliverFunderOutreachBatch(batch(), { send: async () => ({ message_id: "19fbe00000000001", thread_id: "19fbe00000000001" }), observedAt: () => "2026-08-01T18:12:00Z" });
+  const sourceBatch = batch();
+  const message = sourceBatch.messages[0];
+  const receipt = {
+    schema_version: 1,
+    outreach_id: message.outreach_id,
+    batch_id: sourceBatch.batch_id,
+    tenant_id: sourceBatch.tenant_id,
+    tokyo_date: sourceBatch.tokyo_date,
+    candidate_id: message.candidate_id,
+    funder_name: message.funder_name,
+    recipient_sha256: message.recipient_sha256,
+    source_url: message.source_url,
+    source_observed_at: message.source_observed_at,
+    source_digest: message.source_digest,
+    fit_summary_sha256: message.fit_summary_sha256,
+    subject_sha256: message.subject_sha256,
+    body_sha256: message.body_sha256,
+    sent_at: "2026-08-01T18:12:00Z",
+    provider_message_id: "19fbe00000000001",
+    provider_thread_id: "19fbe00000000001",
+  };
   const calls = [];
   const saved = await appendFunderOutreachReceipt(receipt, { query: async (sql, params) => (calls.push({ sql, params }), { rows: [{ outreach_id: params[1], inserted: true }] }) });
   assert.equal(saved.outreach_id, receipt.outreach_id);
