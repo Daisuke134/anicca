@@ -78,6 +78,8 @@ if [ "$RUNNER_RC" -ne 0 ] || [ "$KIND" = "failure" ]; then
 fi
 
 case "$KIND" in
+  lifecycle_waiting)
+    ENVELOPE="$(cat "$RESULT"|python3 -c 'import json,sys;d=json.load(sys.stdin);d["schema_version"]=1;d["kind"]="lifecycle_waiting";d["owner"]="marketer";d.pop("result",None);print(json.dumps(d))')" ;;
   lifecycle_progress)
     ENVELOPE="$(cat "$RESULT"|python3 -c 'import json,sys;d=json.load(sys.stdin);d["schema_version"]=1;d["kind"]="lifecycle_progress";d["owner"]="marketer";d.pop("result",None);print(json.dumps(d))')" ;;
   account_created)
@@ -94,6 +96,17 @@ PY
     ENVELOPE="$(cat "$RESULT"|python3 -c 'import json,sys;d=json.load(sys.stdin);d["schema_version"]=1;d["kind"]="marketing_published";d["owner"]="marketer";d.pop("result",None);print(json.dumps(d))')" ;;
   *) incident "unsupported marketing terminal result=$KIND" "The technical repair owner will repair the outcome contract" "the next repair cycle"; exit $? ;;
 esac
+
+if [ -f "$TERMINAL" ] && python3 - "$TERMINAL" "$ENVELOPE" <<'PY'
+import json,sys
+try:
+ old=json.load(open(sys.argv[1])); new=json.loads(sys.argv[2]); msg=str(old.get("telegram_message_id") or "")
+ raise SystemExit(0 if msg.isdigit() and old.get("outcome")==new else 1)
+except Exception: raise SystemExit(1)
+PY
+then
+  exit 0
+fi
 
 MEDIA_PATH="$(python3 - "$ENVELOPE" <<'PY'
 import json,sys

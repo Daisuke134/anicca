@@ -130,6 +130,14 @@ def validate_outcome(data: dict) -> list[str]:
             errors.append("warmup_successes must be a positive integer")
         if data.get("public_post_url") is not None:
             errors.append("warmup progress cannot claim a public post")
+    elif kind == "lifecycle_waiting":
+        for field in ("handle", "status", "capability", "next_action"):
+            if not data.get(field):
+                errors.append(f"{field} is required")
+        if not isinstance(data.get("warmup_successes"), int):
+            errors.append("warmup_successes must be an integer")
+        if data.get("public_post_url") is not None:
+            errors.append("lifecycle waiting cannot claim a public post")
     elif kind == "incident_unresolved":
         for field in (
             "incident_id",
@@ -229,6 +237,16 @@ def render_outcome(data: dict) -> str:
                 f"Account: @{data['handle']}",
                 f"State: {data['before_status']} -> {data['status']}",
                 f"{data['warmup_successes']} verified warmups; capability: {capability}.",
+                "No public post exists yet.",
+                f"Next automatic action: {data['next_action']}.",
+            ]
+        )
+    if kind == "lifecycle_waiting":
+        return "\n".join(
+            [
+                "Capafy Marketer — waiting for verified warmup evidence",
+                f"Account: @{data['handle']}",
+                f"State: {data['status']}; {data['warmup_successes']} verified warmups.",
                 "No public post exists yet.",
                 f"Next automatic action: {data['next_action']}.",
             ]

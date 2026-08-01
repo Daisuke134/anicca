@@ -11,6 +11,7 @@ HELPER="$ROOT/earn/capafy-marketing/account_state.sh"
 ENGINE_STATE="$ROOT/earn/marketing-engine/account_state.sh"
 ENGINE_PROMPT="$ROOT/earn/marketing-engine/provision_prompt.sh"
 DAILY="$ROOT/earn/capafy-marketing/capafy-ig-marketing-daily.sh"
+ACCOUNT_MANAGER="$ROOT/earn/capafy-marketing/capafy-ig-account-manager.sh"
 WARM="$ROOT/earn/capafy-marketing/warm_jitter.sh"
 GOAL="$ROOT/earn/capafy-marketing/capafy-goal-monitor.sh"
 CLIP_PASS="$ROOT/earn/clip/clip_pass.sh"
@@ -85,15 +86,15 @@ touch "$MARKER"
 mkdir -p "$TMP/home-empty" "$TMP/home-active"
 printf '[]\n' > "$TMP/empty.json"
 EMPTY_PROBE="$(HOME="$TMP/home-empty" CAPAFY_IG_ACCOUNTS_FILE="$TMP/empty.json" CAPAFY_IG_PROBE_ONLY=1 bash "$DAILY")"
-[ "$EMPTY_PROBE" = "active_handle=none provision_needed=yes reason=no-active-account" ] \
-  && ok "daily dry probe enters PROVISION with empty state" \
+[ "$EMPTY_PROBE" = "active_handle=none lifecycle_owner=account-manager" ] \
+  && ok "daily delegates empty state to account manager" \
   || fail "empty-state dry probe output: $EMPTY_PROBE"
 cat > "$TMP/active.json" <<'JSON'
-[{"handle":"fresh_warming","profile":"capafy-mkt-fresh","port":9247,"status":"warming","session_owner":"instagrapi"}]
+[{"handle":"fresh_warming","profile":"capafy-mkt-fresh","port":9247,"status":"warming","session_owner":"browser","browser_identity":"instagram:capafy-provision"}]
 JSON
 ACTIVE_PROBE="$(HOME="$TMP/home-active" CAPAFY_IG_ACCOUNTS_FILE="$TMP/active.json" CAPAFY_IG_PROBE_ONLY=1 bash "$DAILY")"
-[ "$ACTIVE_PROBE" = "active_handle=fresh_warming provision_needed=no reason=none" ] \
-  && ok "daily dry probe resolves active handle" \
+[ "$ACTIVE_PROBE" = "active_handle=fresh_warming lifecycle_owner=controller" ] \
+  && ok "daily controller resolves active browser handle" \
   || fail "active-state dry probe output: $ACTIVE_PROBE"
 GOAL_PROBE="$(HOME="$TMP/home-active" CAPAFY_IG_ACCOUNTS_FILE="$TMP/active.json" \
   CAPAFY_ACCOUNT_STATE_HELPER="$HELPER" CAPAFY_GOAL_MONITOR_PROBE_ONLY=1 bash "$GOAL")"
@@ -114,10 +115,12 @@ else
   fail "goal monitor is not fully wired to account state"
 fi
 
-grep -Fq 'PROVISION_NEEDED' "$DAILY" \
-  && ok "daily keeps PROVISION gate" \
-  || fail "daily lost PROVISION gate"
-for caller in "$DAILY" "$CLIP_PASS" "$CLIP_DAILY"; do
+if grep -Fq 'ai.anicca.capafy-ig-account-manager' "$DAILY" && ! grep -Fq 'render_ig_provision_prompt' "$DAILY"; then
+  ok "daily delegates provisioning instead of owning it"
+else
+  fail "daily provisioning ownership is not separated"
+fi
+for caller in "$ACCOUNT_MANAGER" "$CLIP_PASS" "$CLIP_DAILY"; do
   grep -Fq 'render_ig_provision_prompt' "$caller" \
     && ok "caller uses shared provision renderer: $(basename "$caller")" \
     || fail "caller bypasses shared provision renderer: $(basename "$caller")"

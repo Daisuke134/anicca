@@ -57,6 +57,8 @@ has "published contains Reel URL" "$body" "https://www.instagram.com/reel/REAL12
 has "published contains skill URL" "$body" "https://capafy.ai/agent/9480246345"
 has "published contains campaign URL" "$body" "utm_medium=reel"
 has "published contains media artifact" "$body" "$MEDIA"
+bash "$HANDOFF" 0 "$T/evidence" >/dev/null 2>&1
+eq "same published envelope sends once" "$(cat "$COUNT")" "1"
 rm -rf "$T"
 
 echo "(D) challenge is an account lifecycle incident, not a ban claim"
