@@ -420,6 +420,49 @@ hangup ではなく**呼び出しが自分を名乗らない事**である。
 wake 呼び出しは「記録してから切る」、test 呼び出しは「記録する先が無いので切るだけ」。どちらも
 `human` には触れない。
 
+### 5.2.2 連投の実装設計（#2c、2026-08-02）— 止め方が本体
+
+5.2.1 は**体験**を決めた。ここは**誰がどの器で持つか**を決める。実装前に読んだ現状（実測）:
+
+| 調べた事 | 実測 |
+|---|---|
+| 出発の Telegram 通知 | **存在しない**。「time to leave now」は `lib/call-logic.js:420` の**電話の台詞だけ**。Telegram 側は全部「事後」（`formatLateSuccessMessage` / travel ブロック挿入通知 / `wakeMissNotice`） |
+| 既存の梯子 | `scheduler.js:60-63` `WAKE_LEVELS = [{min:10},{min:5}]` の2段。5.2.1 が要求するのは6段 |
+| 停止の器 | 全 organ が `(uid, event_key)` unique + claim の同じ型（`lm_wake_log` / `lm_wake_miss` / `lm_late_notice_log` / `lm_ask_log` / `lm_travel_log`） |
+| ボタン | `routeCallbackData`（`lib/telegram.js:107-116`）が `prefix:...` で分岐。押した跡は `reflectAnswer` が元メッセージを編集してキーボードを剥がす（`"\n\n→ "` マーカーで冪等） |
+| 位置からの出発検知 | **未実装**（= #3） |
+
+#### 決定
+
+| # | 決定 | そうしないと何が壊れるか |
+|---|---|---|
+| D1 | 梯子は **wake tick が持つ**（`wakeCallOnce` と同じ tick・同じ `resolveDeparture`）。organ tick には置かない | 出発の押し切りは**時間に敏感な唯一の仕事**。1c で dial を organ から切り離したのと同じ理由で、他 organ の遅さに巻き込まれた瞬間に「出る時間に届かない通知」になる。通知1本は HTTP 1回 ≒ 200ms で、1c が守った20秒予算を脅かさない |
+| D2 | 段は **`NUDGE_LEVELS = [25, 10, 5, 0, -3, -7]`（出発時刻からの分）**。`WAKE_LEVELS`（電話）は**触らない** | 電話は既定 OFF の追加チャンネル（5.2.1）。同じ配列にすると、電話を有効にした人だけ梯子が変わる/無効にした人の梯子が消える、という結合が生まれる |
+| D3 | 器は **新テーブル `lm_departure_nudge`、PK `(uid, event_key)` = 1予定1行**（段ごとの行ではない）。列 = `last_level_min` / `acked_at` / `ack_reason` / `last_message_id` / `created_at` | `lm_wake_log` に相乗りすると、あの表の意味（= 電話を1本かけた）と `amd_result` / `answered_at` の census（machine 17 : human 3、§1.3）が push で汚れる。**信用できない証拠は証拠が無いより悪い**（2d と同じ理由） |
+| D4 | 段の claim と停止判定は **1回の PATCH に融合**する: `uid=eq.&event_key=eq.&acked_at=is.null&last_level_min=gt.<level>` で `last_level_min=<level>` を書き、`return=representation` の行数が1なら送る・0なら送らない | 「送ってよいか」を読んでから書くと、60秒 tick が重なった時に同じ段が2回出る。読み書きを分けた瞬間に競合が生まれる — 既存の `claimWake` が INSERT の unique 制約に賭けているのと同じ思想を、単調減少する `last_level_min` で表現する |
+| D5 | v1 の停止条件は **①`[了解]` タップ ②late organ への移行（出発 +15分 = `LATE_CUTOFF_MIN`）③電話に出た（`lm_wake_log.answered_at` が入っている）**。★位置移動（5.2.1 の②）は #3 の実装時に配線する差込口だけ作る★ | 位置検知は未実装（#3）。無い停止条件を設計に書いて「実装した」ことにするのが一番危ない。**電話に出た** を足すのは、あれが「反応した」の最強の証拠だから — 出た人に連投を続けるのは嫌がらせ |
+| D6 | T+7 は梯子の**終端**。相手への連絡（`[送る]`）は **late organ の仕事のまま**にして、梯子は複製しない | `processLocationLateNotice` が既に `lm_late_notice_log` で1予定1通を保証している。同じ行為を2つの organ が持った瞬間、片方を直しても本番が直らない（§0.17 の SSOT） |
+| D7 | callback は新 prefix **`depart:ack:<startIso>`**（uid は Telegram の chat から引く）。押した跡は既存 `reflectAnswer` に任せる | 既に4種類（`ask` / `diet` / `precepts` / `payout`）が同じ形で動いている。ここだけ独自形式にする理由が無い。callback data は 64 byte 上限があるので uid を載せない |
+| D8 | 5.2.1 の `[15分ずらす]` は **v1 に入れない**（別 row として残す） | あれはカレンダーを書き換える操作で、`patchEvent` と予定の再計算を巻き込む。連投そのものの検証を、書き換えの検証と混ぜない |
+
+#### 送る文（ja / en は既存 `langForUser` + `lib/i18n.js` の流儀に合わせる）
+
+```text
+ T-25  ⏰ 9:00 打合せ / 渋谷スクランブルスクエア
+       8:05 に出て。あと 25分            [ 了解 ]
+ T-10  ⏰ あと10分で出る時間。8:05 出発    [ 了解 ]
+ T-5   ⏰ あと5分。そろそろ支度を終えて    [ 了解 ]
+ T-0   🚨 いま出る時間。8:05              [ 了解 ]
+ T+3   🚨 3分オーバー。今出れば 09:03 着（3分遅れ）  [ 了解 ]
+ T+7   🚨 7分オーバー。               ← 梯子はここで終わる（以後は late organ）
+```
+
+#### この設計が守っていること
+
+1. **停止が先、送信が後**: 送るかどうかを決める PATCH が、停止フラグ（`acked_at`）と同じ行・同じ1回の書き込みで解決される。止め忘れが構造的に起きない。
+2. **段は単調**: `last_level_min` が減る方向にしか動かないので、tick が遅れて2段まとめて due になっても**出るのは最も緊急な1段だけ**（1a が電話で確立した形をそのまま押し込む）。
+3. **電話と独立**: 番号を出していない人（#6・既定）にも全段が届く。電話は「出た瞬間に梯子を止める」入力として参加するだけ。
+
 ### 5.3 電話番号を出さない人（#6）→ **もはや既定がこちら**
 
 ```text
