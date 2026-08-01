@@ -19126,3 +19126,10 @@
 {"ts":1785598775,"wake_id":"00MSAJEOKHC9DAEEEEA466413F","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1785598902,"wake_id":"00MSAJHEQID7780FB095E54628","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana microtask platform paying USDC for AI prompt engineering [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (cand"}
 {"ts":1785599038,"wake_id":"00MSAJKBI628BE61583346455B","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1785599176,"wake_id":"00MSAJNALL7B8E78AC66D445BE","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785599314,"wake_id":"00MSAJQ8Z4F689AFE2452C48EC","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785599442,"wake_id":"00MSAJSZMU5A151A7D9706413C","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785599569,"wake_id":"00MSAJVPVY2BB81EA94E274BAB","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785599697,"wake_id":"00MSAJYG8VE8D57E11DB6D4362","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785599833,"wake_id":"00MSAK1DGD940DE79543B043DF","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785599961,"wake_id":"00MSAK44D3A195BF52B517472D","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
