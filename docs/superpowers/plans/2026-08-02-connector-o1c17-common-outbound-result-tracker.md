@@ -6,25 +6,25 @@
 
 ## Task 1: Exact read-only Gmail boundary
 
-- [ ] malformed/cross-thread/duplicate/pre-submission/outbound message を拒否するRED testを書く。
-- [ ] `gog --gmail-no-send --no-input ... thread get <exact-id>` adapter とnormalizerを実装する。
-- [ ] focused testをGREENにする。
+- [x] malformed/cross-thread/duplicate/pre-submission/outbound message を拒否するRED testを書く。
+- [x] `gog --gmail-no-send --no-input ... thread get <exact-id>` adapter とnormalizerを実装する。
+- [x] focused testをGREENにする。
 
 ## Task 2: Model-owned reply semantics
 
-- [ ] deterministic confirmation と agent-owned reply のRED testを書く。
-- [ ] exact quote proof、allowed status、raw-data-free result builderを実装する。
-- [ ] mutation casesを追加してfocused testをGREENにする。
+- [x] deterministic confirmation と agent-owned reply のRED testを書く。
+- [x] exact quote proof、allowed status、raw-data-free result builderを実装する。
+- [x] mutation casesを追加してfocused testをGREENにする。
 
 ## Task 3: Common append-only ledger
 
-- [ ] source revalidation、fence、tenant、dedup、conflict、RLS、derived current viewのRED testを書く。
-- [ ] migration/storeを実装しlocal Compose migration listへ追加する。
-- [ ] focused/outbound/runtime regressionをGREENにする。
+- [x] source revalidation、fence、tenant、dedup、conflict、RLS、derived current viewのRED testを書く。
+- [x] migration/storeを実装しlocal Compose migration listへ追加する。
+- [x] focused/outbound/runtime regressionをGREENにする。
 
 ## Task 4: Live proof and closeout
 
-- [ ] 実YC threadをread-only fresh readし、存在するresultだけを生成する。
-- [ ] migration適用、insert、exact replay、DB readbackを行う。
-- [ ] 非secret evidence、正本spec、remaining countを更新する。
-- [ ] independent reviewを解消し、commit/push、local/remote HEAD一致を確認する。
+- [x] 実YC threadをread-only fresh readし、存在するresultだけを生成する。
+- [x] migration適用、insert、exact replay、DB readbackを行う。
+- [x] 非secret evidence、正本spec、remaining countを更新する。
+- [x] independent reviewを解消し、commit/push、local/remote HEAD一致を確認する。

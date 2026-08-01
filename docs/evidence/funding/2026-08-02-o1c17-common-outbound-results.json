@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "task": "O1C-17",
+  "observed_at": "2026-08-01T20:58:03Z",
+  "result": "verified_common_confirmation_tracking",
+  "implementation_commit": "55107635f1452c627c792c82f59229fadc1a7e37",
+  "architecture": {
+    "exact_read_only_gog_thread": true,
+    "model_owned_reply_semantics": true,
+    "raw_sender_subject_body_or_quotes_persisted": false,
+    "job_hunter_source_fence_preserved": true,
+    "append_only_common_ledger": true
+  },
+  "live_fundraising": {
+    "source_id": "funder-ledger:6081800e3e6a55f373b422bcf88e8d8f6921cd4b962c819303f781b694165a80",
+    "provider_thread_id": "19fbe6135cf98bd4",
+    "provider_message_id": "19fbe6135cf98bd4",
+    "thread_message_count": 1,
+    "result_id": "outbound-result:1aef6d49f70ca1a31a18845e80b45adb45a2853b1249424c365fb6a1531e53a6",
+    "result_type": "confirmation",
+    "status": "confirmed",
+    "first_insert": true,
+    "exact_replay_inserted": false,
+    "reply_count": 0,
+    "pending_judgment_count": 0
+  },
+  "live_job_hunter": {
+    "source_ledger": "job-search/ledger.sqlite3",
+    "source_confirmation_count": 0,
+    "imported_result_count": 0,
+    "invented_rows": 0
+  },
+  "database_readback": {
+    "ledger_row_count": 1,
+    "current_view_row_count": 1,
+    "row_level_security_enabled": true,
+    "update_rejected": true,
+    "delete_rejected": true,
+    "truncate_rejected": true,
+    "public_mutation_privilege": false,
+    "migration_replay_succeeded": true
+  },
+  "verification": {
+    "life_manager_outbound_tests": "244/244 passed",
+    "runtime_job_tests": "14/14 passed",
+    "job_hunter_tests": "203/203 passed",
+    "focused_tests": "10/10 passed",
+    "postgres_integration": "insert=2 replay=2 conflict=1 source_reject=1 roles=3 passed",
+    "syntax_and_diff_check": "passed",
+    "independent_review": "0 unresolved Critical or Important"
+  },
+  "claim_boundary": "This proves the actual YC submission confirmation and both shared ingestion paths. No reply, interview, offer, rejection, funding, or Job Hunter confirmation is claimed."
+}

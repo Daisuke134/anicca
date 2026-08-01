@@ -880,7 +880,18 @@ shell/Node syntax、署名偽造・payload差替え・MRR誇張・未証明uploa
 設計: `docs/superpowers/specs/2026-08-02-o1c16-funder-asset-freshness-design.md`。実装plan:
 `docs/superpowers/plans/2026-08-02-connector-o1c16-funder-asset-freshness.md`。実測証拠:
 `docs/evidence/funding/2026-08-02-o1c16-funder-asset-freshness.json`。残作業は96件。
-次はO1C-17で、`gog`のconfirmation/replyをthread ID単位でJob Hunter ledgerへ統合する。
+完了: `O1C-17`。`gog --gmail-no-send --no-input`のexact thread readだけを許可し、確認mailと後続replyを
+thread ID単位で正規化する。confirmationは決定論的に、replyはagent judgmentと本文中のexact quoteが一致する時だけ型付きresultへ変換する。
+sender、subject、body、quote、rationaleの生値は保存せずdigestだけを、tenant・source・fenceへ束縛した共通append-only
+`lm_outbound_result_ledger`へ記録する。Job Hunterは既存SQLiteのconfirmationとsubmit intentをmessage/thread/intent/fence/
+application/evidence/元のPython ISO timestampで再照合して同じledgerへ橋渡しする。実YC threadのfresh readはmessage 1件、reply 0件で、
+confirmation `outbound-result:1aef6d49f70ca1a31a18845e80b45adb45a2853b1249424c365fb6a1531e53a6`だけを保存し、exact replayは
+`inserted=false`。実Job Hunter sourceは0件のため行を捏造していない。fresh verificationはfocused 10件、outbound 244件、runtime-job
+14件、Job Hunter 203件、PostgreSQLの実builder/store insert・replay・collision・source拒否・3 role権限、migration replay、live DB readback、
+独立reviewが全成功。実装commit `55107635f`。設計: `docs/superpowers/specs/2026-08-02-o1c17-common-outbound-result-tracker-design.md`。
+実装plan: `docs/superpowers/plans/2026-08-02-connector-o1c17-common-outbound-result-tracker.md`。実測証拠:
+`docs/evidence/funding/2026-08-02-o1c17-common-outbound-results.json`。残作業は95件。
+次はO1C-18で、application→confirmation→interview→offer/reject→fundedのfunnelをWebへ投影する。
 
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
@@ -1098,7 +1109,7 @@ agentが本文と履歴を読んで判断し、keyword/regexの固定分類へ�
 - [x] O1C-14 公式program pageを毎日探索し、固定list外の新規募集をregistryへ追加
 - [x] O1C-15 deadline、location、solo可否、terms、eligibilityを提出当日に再検証
 - [x] O1C-16 会社facts、traction、MRR、deck、videoのfreshness gateを実装
-- [ ] O1C-17 `gog`でconfirmation/replyをthread ID単位に取得し、Job Hunter ledgerへ統合
+- [x] O1C-17 `gog`でconfirmation/replyをthread ID単位に取得し、Job Hunter ledgerへ統合
 - [ ] O1C-18 application→confirmation→interview→offer/reject→fundedのfunnelをWebへ投影
 - [ ] O1C-19 accelerator以外のVC/angelはthesis一致時だけ1日3〜5件へpersonalized outreach
 - [ ] O1C-20 採択・面談の結果を次のpitchとtarget rankingへ反映する週次reflection
