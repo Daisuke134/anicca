@@ -3505,3 +3505,4 @@
 {"ts":1785547971,"source":"cook","task":"explore: Solana microtask platforms paying USDC for AI tasks","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MS9P5MWPAB960382DBE34F41"}
 {"ts":1785548747,"source":"cook","task":"explore: Solana AI microtask platforms paying USDC for prompt engineering or data labeling","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MS9PMB76E1490EF63F2E4627"}
 {"ts":1785549002,"source":"cook","task":"explore: Solana microtask platform paying USDC for AI data labeling","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MS9PRQHL9CA2E0BC5B44436C"}
+{"ts":1785550949,"source":"cook","task":"explore: Solana bounty platform paying USDC for smart contract audits or bug bounties","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MS9QXGA69B9FAD7A460146C0"}
