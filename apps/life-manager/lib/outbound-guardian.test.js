@@ -246,7 +246,7 @@ test("launchd installerは宛先必須で、renderへhealth・宛先・workerを
   assert.match(rendered.stdout, /http:\/\/127\.0\.0\.1:18790\/health/);
 });
 
-test("Connector compose overlayはworkerへoutbound capabilityを追加できる", () => {
+test("Connector compose overlayは応募とcoverage能力をhost bridge付きで追加できる", () => {
   const repoRoot = path.resolve(__dirname, "../../..");
   const overlay = fs.readFileSync(
     path.join(repoRoot, "deploy/local/compose.connector.yaml"),
@@ -256,6 +256,10 @@ test("Connector compose overlayはworkerへoutbound capabilityを追加できる
   assert.match(overlay, /^  worker:/m);
   assert.match(overlay, /LM_CONNECTOR_WORKER_CAPABILITIES/);
   assert.match(overlay, /outbound\.event\.apply/);
+  assert.match(overlay, /connector\.coverage\.refresh/);
+  assert.match(overlay, /LM_CONNECTOR_BRIDGE_URL/);
+  assert.match(overlay, /LM_CONNECTOR_BRIDGE_TOKEN/);
+  assert.doesNotMatch(overlay, /LIFE_HOME_ADDRESS|GOOGLE_API_KEY_DIRECTIONS|GOG_KEYRING_PASSWORD/);
 });
 
 test("Docker recoveryは指定workerだけをrestartしhealth復帰までboundedに待つ", async () => {

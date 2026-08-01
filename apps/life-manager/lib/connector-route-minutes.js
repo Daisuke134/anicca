@@ -18,11 +18,21 @@ function createConnectorRouteMinutes(options = {}) {
   if (!mapsKey) unavailable();
   const directionsMinutes = options.directionsMinutes || productionDirectionsMinutes;
   const now = options.now || Date.now;
+  const homeRef = String(options.homeRef == null ? "" : options.homeRef).trim();
+  const homeLocation = String(options.homeLocation == null ? "" : options.homeLocation).trim();
   if (typeof directionsMinutes !== "function" || typeof now !== "function") invalid();
   return async function routeMinutes(input = {}) {
     if (!['inbound', 'outbound'].includes(input.direction)) invalid();
-    const from = safeLocation(input.from);
-    const to = safeLocation(input.to);
+    const resolveLocation = (value) => {
+      const location = safeLocation(value);
+      if (homeRef && location === homeRef) {
+        if (!homeLocation) unavailable();
+        return safeLocation(homeLocation);
+      }
+      return location;
+    };
+    const from = resolveLocation(input.from);
+    const to = resolveLocation(input.to);
     const anchorAt = String(input.anchor_at == null ? "" : input.anchor_at).trim();
     const anchorMs = Date.parse(anchorAt);
     if (!Number.isFinite(anchorMs) || !/[zZ]|[+-]\d\d:\d\d$/.test(anchorAt)) invalid();

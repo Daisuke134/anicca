@@ -1,4 +1,7 @@
 services:
   worker:
     environment:
-      LM_WORKER_CAPABILITIES: ${LM_CONNECTOR_WORKER_CAPABILITIES:-runtime.noop,outbound.event.apply}
+      LM_WORKER_CAPABILITIES: ${LM_CONNECTOR_WORKER_CAPABILITIES:-runtime.noop,outbound.event.apply,connector.coverage.refresh}
+      LM_CONNECTOR_BRIDGE_URL: ${LM_CONNECTOR_BRIDGE_URL:-http://host.docker.internal:18793}
+      LM_CONNECTOR_BRIDGE_TOKEN: ${LM_CONNECTOR_BRIDGE_TOKEN:-}
+      LM_CONNECTOR_CALENDAR_ID: ${LM_CONNECTOR_CALENDAR_ID:-primary}

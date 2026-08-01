@@ -150,6 +150,32 @@ test("coverage worker capability receives the assembled Connector refresh servic
   assert.equal(typeof handlers["connector.coverage.refresh"], "function");
 });
 
+test("coverage worker assembles production services from its query and connect boundaries", () => {
+  const query = async () => {};
+  const connect = async () => {};
+  const assembled = { coverageStore: {}, refreshCoverage: async () => {} };
+  let observedRuntime;
+  let observedServices;
+  createWorkerHandlers({ LM_RUNTIME_TENANT_ID: "dais-local" }, ["connector.coverage.refresh"], {
+    query,
+    connect,
+    createConnectorCoverageRuntimeServices(env, runtime) {
+      assert.equal(env.LM_RUNTIME_TENANT_ID, "dais-local");
+      observedRuntime = runtime;
+      return assembled;
+    },
+    createRegistry({ servicesByAdapter }) {
+      observedServices = servicesByAdapter["connector-coverage-refresh"];
+      return {
+        hasCapability() { return true; },
+        getByCapability() { return { execute: async () => ({ receipt: {} }) }; },
+      };
+    },
+  });
+  assert.deepEqual(observedRuntime, { query, connect });
+  assert.equal(observedServices, assembled);
+});
+
 test("compose topology has durable stores, health checks, distinct roles, and one scheduler owner", () => {
   assert.deepEqual(validateComposeModel(validModel()), {
     schedulerService: "scheduler",
