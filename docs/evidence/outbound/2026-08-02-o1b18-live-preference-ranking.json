@@ -1,0 +1,24 @@
+{
+  "evidence_type": "o1b18-live-preference-ranking",
+  "observed_date": "2026-08-02 JST",
+  "model_provider": "gemini",
+  "mode": "semantic_ranking_eval",
+  "case_count": 8,
+  "full_candidate_preservation_count": 8,
+  "candidate_preservation_rate": 1,
+  "expected_top_match_count": 8,
+  "expected_top_match_rate": 1,
+  "failed_top_case_indexes": [],
+  "hard_filter_field_present": false,
+  "keyword_fallback_present": false,
+  "runtime_pack_wired": true,
+  "verification": {
+    "focused_tests": "7/7",
+    "outbound_tests": "169/169"
+  },
+  "privacy": {
+    "api_key_recorded": false,
+    "model_reasons_recorded": false,
+    "user_identity_recorded": false
+  }
+}
