@@ -16,6 +16,11 @@ const { verifyOutboundEvidence } = require("./outbound-evidence.js");
 const { buildVerifiedOutboundReceipt } = require("./outbound-success.js");
 const { syncVerifiedRegistrationToGoogleCalendar } = require("./connector-calendar-sync.js");
 const {
+  buildVerifiedRegistrationCoverageEvidence,
+  proveAllDayCalendarUnavailable,
+  rebuildRollingEventCoverage,
+} = require("./connector-coverage-assembler.js");
+const {
   buildConnectorCoverageTelegramMessage,
   deliverConnectorCoverageTelegram,
 } = require("./connector-coverage-telegram.js");
@@ -93,27 +98,65 @@ async function verifiedNewEventReportInput() {
   const receipt = buildVerifiedOutboundReceipt({
     tenantId: "dais-local", jobId: job.job_id, attempt: 1, verifiedAt: "2026-08-02T01:00:01.000Z",
   }, evidence);
-  const calendarSync = await syncVerifiedRegistrationToGoogleCalendar({
-    calendar: {
-      async findConnectorEvents() { return []; },
-      async createConnectorEvent() { return { id: "private-id", htmlLink: "https://calendar.google.com/calendar/event?eid=opaque" }; },
+  let existingCalendarEvents = [];
+  const calendar = {
+    async findConnectorEvents() { return existingCalendarEvents; },
+    async createConnectorEvent() {
+      const created = { id: "private-id", htmlLink: "https://calendar.google.com/calendar/event?eid=opaque" };
+      existingCalendarEvents = [created];
+      return created;
     },
+  };
+  const syncInput = {
+    calendar,
     calendarId: "primary", dateInventory, calendarGate, eventRef: detail.event_ref,
     registrationReceipt: receipt, registrationJob: job,
-  });
-  const coverage = buildRollingEventCoverage({
+  };
+  const calendarSync = await syncVerifiedRegistrationToGoogleCalendar(syncInput);
+  const existingCalendarSync = await syncVerifiedRegistrationToGoogleCalendar(syncInput);
+  const registration = buildVerifiedRegistrationCoverageEvidence({ dateInventory, calendarSync });
+  const coverage = rebuildRollingEventCoverage({
     tenantId: "dais-local", timeZone: "Asia/Tokyo", now: "2026-08-01T16:00:00.000Z",
-    resolvedDays: [{
-      date: "2026-08-05", status: "covered_new",
-      evidence_refs: [calendarSync.registration_receipt_ref, calendarSync.calendar_event_ref],
-    }],
+    registrations: [registration], unavailableDays: [],
+  });
+  const existingCoverage = rebuildRollingEventCoverage({
+    tenantId: "dais-local", timeZone: "Asia/Tokyo", now: "2026-08-01T16:00:00.000Z",
+    registrations: [buildVerifiedRegistrationCoverageEvidence({ dateInventory, calendarSync: existingCalendarSync })],
+    unavailableDays: [],
   });
   return {
     coverage,
     newEvents: [{ eventRef: detail.event_ref, dateInventory, goalDecision, calendarSync }],
     calendarCoverageUrl: "https://calendar.google.com/calendar/u/0/r",
+    existingCoverage,
   };
 }
+
+test("verified all-day busyだけがunavailableを作り、候補なしやplain copyは作れない", async () => {
+  const busyInventory = await inspectGoogleCalendarBusyInventory({
+    calendar: {
+      async listCalendarsRaw() { return [{ id: "primary" }]; },
+      async listAllEventsRaw() { return [{
+        CalendarID: "primary", id: "all-day", status: "confirmed",
+        start: { date: "2026-08-07" }, end: { date: "2026-08-08" },
+      }]; },
+    },
+    timeMin: "2026-08-02T00:00:00+09:00", timeMax: "2026-08-23T00:00:00+09:00",
+    timeZone: "Asia/Tokyo", now: "2026-08-02T01:00:00.000Z",
+  });
+  const unavailable = proveAllDayCalendarUnavailable({ busyInventory, date: "2026-08-07" });
+  const coverage = rebuildRollingEventCoverage({
+    tenantId: "dais-local", timeZone: "Asia/Tokyo", now: "2026-08-01T16:00:00.000Z",
+    registrations: [], unavailableDays: [unavailable],
+  });
+  assert.deepEqual(coverage.counts, { open: 20, covered_existing: 0, covered_new: 0, unavailable: 1 });
+  assert.equal(coverage.days.find((day) => day.date === "2026-08-07").evidence_refs.length, 1);
+  assert.throws(() => rebuildRollingEventCoverage({
+    tenantId: "dais-local", timeZone: "Asia/Tokyo", now: "2026-08-01T16:00:00.000Z",
+    registrations: [], unavailableDays: [structuredClone(unavailable)],
+  }), /Connector coverage assembler invalid/i);
+  assert.throws(() => proveAllDayCalendarUnavailable({ busyInventory, date: "2026-08-06" }), /not unavailable/i);
+});
 
 test("未処理日がある報告は失敗終了にせず、21日と継続中の予約作業を人間の言葉で示す", () => {
   const message = buildConnectorCoverageTelegramMessage({
@@ -150,13 +193,17 @@ test("openが0なら新規0件でも、全日が既存予定か固定予定で�
 });
 
 test("verified新規予約は名前・時刻・場所・選定理由とevent/Calendarの直接URLを同じ行に出す", async () => {
-  const message = buildConnectorCoverageTelegramMessage(await verifiedNewEventReportInput());
+  const input = await verifiedNewEventReportInput();
+  const message = buildConnectorCoverageTelegramMessage(input);
   assert.match(message, /Founder Night/);
   assert.match(message, /19:00〜21:00 \/ Shibuya Hall/);
   assert.match(message, /理由: Life Managerをfounderへ見せ/);
   assert.match(message, /イベントページ:\n   https:\/\/luma\.com\/founder-night/);
   assert.match(message, /Calendar:\n   https:\/\/calendar\.google\.com\/calendar\/event\?eid=opaque/);
   assert.match(message, /未処理の空き: 20日/);
+  assert.deepEqual(input.existingCoverage.counts, {
+    open: 20, covered_existing: 1, covered_new: 0, unavailable: 0,
+  });
 });
 
 test("clone coverage、不正Calendar URL、Telegram message ID欠落を成功にしない", async () => {

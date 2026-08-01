@@ -20,6 +20,11 @@ const {
   deliverConnectorCoverageTelegram,
 } = require("./connector-coverage-telegram.js");
 const {
+  buildVerifiedRegistrationCoverageEvidence,
+  proveAllDayCalendarUnavailable,
+  rebuildRollingEventCoverage,
+} = require("./connector-coverage-assembler.js");
+const {
   buildEventSpendSequence,
   eventSpendDecisionForSequence,
   inspectSavedLumaPaymentMethod,
@@ -69,6 +74,10 @@ function createConnectorEventsPack(options = {}) {
   const spendDecisionForSequence = options.spendDecisionForSequence || eventSpendDecisionForSequence;
   const buildCoverageTelegram = options.buildCoverageTelegram || buildConnectorCoverageTelegramMessage;
   const deliverCoverageTelegram = options.deliverCoverageTelegram || deliverConnectorCoverageTelegram;
+  const buildRegistrationCoverageEvidence = options.buildRegistrationCoverageEvidence
+    || buildVerifiedRegistrationCoverageEvidence;
+  const proveUnavailableDay = options.proveUnavailableDay || proveAllDayCalendarUnavailable;
+  const rebuildCoverage = options.rebuildCoverage || rebuildRollingEventCoverage;
   const authAwareDriver = createAuthAwareDriver({ dailyDriver, auth });
   if (!authAwareDriver || typeof authAwareDriver.withLumaPage !== "function") throw invalid();
   const provider = createProvider({
@@ -155,6 +164,15 @@ function createConnectorEventsPack(options = {}) {
     },
     deliverCoverageTelegram(input, dependencies = {}) {
       return deliverCoverageTelegram(input, dependencies);
+    },
+    buildRegistrationCoverageEvidence(input) {
+      return buildRegistrationCoverageEvidence(input);
+    },
+    proveUnavailableDay(input) {
+      return proveUnavailableDay(input);
+    },
+    rebuildCoverage(input) {
+      return rebuildCoverage(input);
     },
     planCoverageContinuation(coverage, observedOutcomes, now) {
       return planCoverageContinuation({ coverage, observedOutcomes, now });

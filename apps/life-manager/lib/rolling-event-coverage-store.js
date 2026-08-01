@@ -1,7 +1,10 @@
 "use strict";
 
 const { isDeepStrictEqual } = require("node:util");
-const { isVerifiedRollingEventCoverage } = require("./rolling-event-coverage.js");
+const {
+  buildRollingEventCoverage,
+  isVerifiedRollingEventCoverage,
+} = require("./rolling-event-coverage.js");
 
 const KEYS = Object.freeze([
   "calculated_at", "counts", "coverage_snapshot_id", "days", "horizon_days",
@@ -11,6 +14,7 @@ const SNAPSHOT_ID = /^event-coverage:[0-9a-f]{64}$/;
 const TENANT = /^[a-z0-9][a-z0-9._-]{0,199}$/;
 const DATE_KEY = /^\d{4}-\d{2}-\d{2}$/;
 const STATUSES = new Set(["open", "covered_existing", "covered_new", "unavailable"]);
+const SNAPSHOT_REF = /^event-coverage:\/\/([a-z0-9][a-z0-9._-]{0,199})\/([0-9a-f]{64})$/;
 
 function invalid() { throw new Error("rolling coverage snapshot invalid"); }
 
@@ -48,6 +52,38 @@ const RETURNING = `
 function createRollingEventCoverageStore(options = {}) {
   if (typeof options.connect !== "function") throw new Error("rolling coverage store unavailable");
   return Object.freeze({
+    async read(snapshotRef) {
+      const match = SNAPSHOT_REF.exec(String(snapshotRef == null ? "" : snapshotRef).trim());
+      if (!match) invalid();
+      const tenantId = match[1];
+      const snapshotId = `event-coverage:${match[2]}`;
+      let client;
+      try {
+        client = await options.connect();
+        if (!client || typeof client.query !== "function" || typeof client.release !== "function") invalid();
+        const rows = (await client.query(`
+          SELECT ${RETURNING}
+          FROM public.lm_event_coverage_snapshots
+          WHERE coverage_snapshot_id = $1 AND tenant_id = $2
+          LIMIT 1
+        `, [snapshotId, tenantId])).rows;
+        if (rows.length !== 1) invalid();
+        const stored = normalizeRow(rows[0]);
+        if (stored.tenant_id !== tenantId || stored.coverage_snapshot_id !== snapshotId) invalid();
+        const restored = buildRollingEventCoverage({
+          tenantId: stored.tenant_id,
+          timeZone: stored.timezone,
+          now: stored.calculated_at,
+          resolvedDays: stored.days.filter((day) => day.status !== "open"),
+        });
+        if (!isDeepStrictEqual(normalizeRow(restored), stored)) invalid();
+        return restored;
+      } catch {
+        throw new Error("rolling coverage store unavailable");
+      } finally {
+        if (client) client.release();
+      }
+    },
     async save(snapshot) {
       if (!isVerifiedRollingEventCoverage(snapshot)) invalid();
       const expected = normalizeRow(snapshot);
