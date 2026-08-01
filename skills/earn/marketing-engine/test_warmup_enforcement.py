@@ -95,3 +95,5 @@ def test_provision_requires_idempotent_cdp_field_replacement():
     assert "contact@aniccaai.com" in result.stdout
     assert "to:contact@aniccaai.com" in result.stdout
     assert "QR-device gate" in result.stdout
+    assert "Stage credentials before the first Instagram field mutation" in result.stdout
+    assert "Do not use status as a zsh variable" in result.stdout
