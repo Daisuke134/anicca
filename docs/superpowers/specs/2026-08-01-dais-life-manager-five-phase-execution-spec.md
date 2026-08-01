@@ -345,6 +345,14 @@ O1B-04開始: 専用plan
 実在する。新しいcodeは同じ`:9222` pageから要求し、request後に届いた新着mailだけを自動照合する。
 code値、mail本文、cookie、tokenは正本やlogへ残さない。
 
+O1B-04進捗1: 既存CloakBrowser daily-driverの共有context 1つだけを使い、
+`keiodaisuke@gmail.com`へ新しいLuma sign-in codeを要求した。最初のpollは英語件名に限定したため、
+実際に届いた日本語件名を見落とした。検索を`support@luma.com`送信元と今回要求の直近時刻へ修正し、
+直近15分の今回要求分だけを同じOTP pageへ入力した。code値は保存・spec記載・最終出力していない。
+認証後readbackは`https://luma.com/home`、auth inputなし、共有context 1、既存browser維持。
+実event `https://luma.com/h8157e6c`のread-only再確認は`login_required`ではなく、
+`scheduled / in_person / rsvp_status=available`を返した。次はCalendar全pageとLuma inventoryを照合する。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
