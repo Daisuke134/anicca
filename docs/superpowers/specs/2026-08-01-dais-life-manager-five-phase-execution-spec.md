@@ -331,6 +331,14 @@ CloakBrowser daily-driverを使う。Docker内では`host.docker.internal`をpri
 owner portは`:9222`から変更できず、public IP・別port・第二browserを拒否する。fresh verificationは
 outbound 68件、runtime-up 32件、runtime-adapters 121件が成功した。実Luma登録はO1B-04まで行わない。
 
+完了: `O1B-03`。正本Dockerfileからimageをbuildし、base compose + Connector overlayだけでworker一台を
+recreateした。runtime volume、PostgreSQL、object storeは削除せず、Honneの
+`marketing.video.generate`を含む既存3能力を保持した。production worker内でadapter file、manifest
+route、fresh healthを確認し、同じCloakBrowserへCDP接続した実Luma read-only handlerは
+`login_required / unknown_effect=false`を返した。submitと成功報告は0。live evidence:
+`docs/evidence/outbound/2026-08-01-o1b03-luma-daily-driver-adapter.json`。次はO1B-04で同じprofileの
+Luma認証を復旧し、実イベント一件の登録をverified receiptまで成立させる。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
@@ -448,7 +456,7 @@ identity/browser/calendar reference検証を追加し、新規4件と既存runti
 
 - [x] O1B-01 偽物の成功判定を削除
 - [x] O1B-02 event URLの2不具合を修正
-- [ ] O1B-03 既存CloakBrowser daily-driverを使うLuma discover + RSVP adapterを完成
+- [x] O1B-03 既存CloakBrowser daily-driverを使うLuma discover + RSVP adapterを完成
 - [ ] O1B-04 実イベント一件へ登録
 - [ ] O1B-05 確認mailをGmailで読む
 - [ ] O1B-06 guest keyからQRを生成

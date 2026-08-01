@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "evidence_kind": "luma_daily_driver_adapter_read_only",
+  "observed_at": "2026-08-01T14:12:09.578Z",
+  "timezone": "Asia/Tokyo",
+  "repository": "Daisuke134/life-manager",
+  "branch": "main",
+  "implementation_commit": "23f7cc5fe75f92a1d0dd397bf2769460877300da",
+  "target": {
+    "worker_container": "life-manager-local-worker-1",
+    "health_url": "http://127.0.0.1:18790/health",
+    "adapter_id": "outbound-luma-rsvp",
+    "capability": "outbound.event.apply",
+    "logical_browser_endpoint": "http://127.0.0.1:9222"
+  },
+  "deployment": {
+    "image": "sha256:c6b4124a88685a11e4629d09bc6d563199aac146f47b1ed81dce04e3304ffb96",
+    "docker_health": "healthy",
+    "health_role": "worker",
+    "health_capabilities": [
+      "runtime.noop",
+      "marketing.video.generate",
+      "outbound.event.apply"
+    ],
+    "adapter_file_present": true,
+    "manifest_route_present": true,
+    "compose_inputs": [
+      "deploy/local/compose.yaml",
+      "deploy/local/compose.connector.yaml"
+    ],
+    "runtime_volume": "life-manager-local_runtime-data:/var/lib/life-manager",
+    "deleted_volumes": false,
+    "deleted_databases": false,
+    "preserved_honne_shadow_capability": true
+  },
+  "shared_browser": {
+    "reachable_from_worker": true,
+    "browser": "Chrome/145.0.7632.109",
+    "cdp_protocol": "1.3",
+    "fixed_owner_port": 9222,
+    "second_browser_created": false
+  },
+  "live_read_only": {
+    "canonical_url": "https://luma.com/h8157e6c",
+    "handler_present": true,
+    "result": "login_required",
+    "unknown_effect": false,
+    "submit_performed": false,
+    "success_claimed": false
+  },
+  "discovery_readback": {
+    "virtual_scroll_rounds": 7,
+    "candidate_count": 27,
+    "inventory_end_proven": true,
+    "hard_category_filter_used": false
+  },
+  "verification": {
+    "outbound_tests": { "passed": 68, "failed": 0 },
+    "runtime_up_tests": { "passed": 32, "failed": 0 },
+    "runtime_adapter_tests": { "passed": 121, "failed": 0 }
+  },
+  "claim_boundary": "This proves the production worker route, shared CloakBrowser transport, exhaustive Luma discovery contract, and read-only login classification. It does not claim that Luma authentication was restored or that any event was registered. Those begin at O1B-04."
+}
