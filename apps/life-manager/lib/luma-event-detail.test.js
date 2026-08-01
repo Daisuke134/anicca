@@ -22,7 +22,17 @@ function fixture(overrides = {}) {
       location: {
         "@type": "Place",
         name: "コースター・クラフトビール＆キッチン",
+        address: {
+          "@type": "PostalAddress",
+          streetAddress: "1-2-3 Jingumae",
+          addressLocality: "Shibuya",
+          addressRegion: "Tokyo",
+          addressCountry: "JP",
+        },
       },
+      description: "AI builders and founders meet for demos and conversation.",
+      organizer: [{ "@type": "Organization", name: "Tokyo Builders" }],
+      attendee: [{ "@type": "Person", name: "Public Guest" }],
     }],
     controls: ["ログイン", "参加登録", "ホストに連絡"],
     ...overrides,
@@ -40,6 +50,11 @@ test("normalizes scheduled in-person detail and separates login from RSVP availa
     ends_at: "2026-08-02T03:00:00.000Z",
     attendance_mode: "in_person",
     venue_name: "コースター・クラフトビール＆キッチン",
+    venue_address: "1-2-3 Jingumae, Shibuya, Tokyo, JP",
+    description: "AI builders and founders meet for demos and conversation.",
+    organizer_names: ["Tokyo Builders"],
+    participant_descriptors: ["Public Guest"],
+    participant_visibility: "public_metadata",
     event_status: "scheduled",
     auth_status: "login_required",
     rsvp_status: "available",
@@ -62,6 +77,18 @@ test("keeps online events visible but marks them as not in-person", () => {
   assert.equal(normalizeLumaEventDetail(online).attendance_mode, "online");
   assert.equal(normalizeLumaEventDetail(online).rsvp_status, "available");
   assert.equal(normalizeLumaEventDetail(online).auth_status, "unknown");
+});
+
+test("missing public attendee metadata remains explicitly unavailable without invention", () => {
+  const source = fixture();
+  const detail = normalizeLumaEventDetail({
+    ...source,
+    jsonLd: [{ ...source.jsonLd[0], attendee: undefined }],
+  });
+  assert.deepEqual(detail.participant_descriptors, []);
+  assert.equal(detail.participant_visibility, "unavailable");
+  assert.equal(detail.organizer_names[0], "Tokyo Builders");
+  assert.match(detail.venue_address, /Shibuya/);
 });
 
 test("classifies registered, waitlist, full, approval, and unknown controls exactly", () => {

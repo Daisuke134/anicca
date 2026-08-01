@@ -51,6 +51,9 @@ function detail(slug, overrides = {}) {
       eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
       eventStatus: "https://schema.org/EventScheduled",
       location: { "@type": "Place", name: "Tokyo venue" },
+      description: `Public description for ${slug}`,
+      organizer: [{ "@type": "Organization", name: `Organizer ${slug}` }],
+      attendee: [],
       ...overrides,
     }],
     controls: ["Register"],
@@ -81,6 +84,9 @@ test("projects every verified detail into all 21 dates using the coverage timezo
   assert.equal(snapshot.days.length, 21);
   assert.deepEqual(snapshot.days.map((day) => day.date), COVERAGE.days.map((day) => day.date));
   assert.equal(snapshot.days[0].events[0].event_ref, "luma-event://event/tokyo-one");
+  assert.equal(snapshot.days[0].events[0].description, "Public description for tokyo-one");
+  assert.deepEqual(snapshot.days[0].events[0].organizer_names, ["Organizer tokyo-one"]);
+  assert.equal(snapshot.days[0].events[0].participant_visibility, "unavailable");
   assert.equal(snapshot.days.at(-1).events[0].event_ref, "luma-event://event/tokyo-two");
   assert.deepEqual(snapshot.counts, {
     discovered: 3,

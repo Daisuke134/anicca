@@ -969,6 +969,10 @@ Daisのgoal alignmentとserendipity potentialをGeminiが評価する。5 factor
 設計: `docs/superpowers/specs/2026-08-02-connector-o1b19-grounded-serendipity-design.md`。実装plan:
 `docs/superpowers/plans/2026-08-02-connector-o1b19-grounded-serendipity.md`。
 
+O1B-19進捗1（source RED）: 公式description、organizer、attendee、住所の正規化、attendee欠落時の
+`unavailable`、日付snapshotへのsource伝播をtestで固定した。未実装の3件が期待どおり失敗し、既存9件は
+成功した。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
