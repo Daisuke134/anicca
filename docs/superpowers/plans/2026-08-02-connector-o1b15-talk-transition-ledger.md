@@ -75,16 +75,16 @@ stable ID、reference-only row、accepted graph、same-client lock、idempotent 
 Run: `node --test lib/talk-application-transition-store.test.js`
 Expected: module path不存在でFAIL。
 
-- [ ] **Step 3: storeとmigrationを書く**
+- [x] **Step 3: storeとmigrationを書く**
 
 composite FK、pair CHECK、BEFORE current-state gate、AFTER projection、UPDATE/DELETE拒否、tenant indexを実装する。
 
-- [ ] **Step 4: GREENと全outboundを確認する**
+- [x] **Step 4: GREENと全outboundを確認する**
 
 Run: `node --test lib/talk-application-transition-store.test.js && npm run test:outbound`
 Expected: 全件PASS。
 
-- [ ] **Step 5: commitする**
+- [x] **Step 5: commitする**
 
 ```bash
 git add apps/life-manager/lib/talk-application-transition-store.js apps/life-manager/lib/talk-application-transition-store.test.js apps/life-manager/migrations/2026-08-02-lm-talk-application-transitions.sql apps/life-manager/package.json
