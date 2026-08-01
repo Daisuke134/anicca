@@ -243,6 +243,11 @@ YC公式pageでlate application受付を当日再確認
 
 ## 5. 残作業 — 必ず番号順
 
+実行中: `O1A-03`。events・funders・jobs共通の成功条件を`E1 AND E2 AND E3`としてmodule化する。
+callerの成功booleanやDOM本文は信用せず、外部receipt reader、immutable artifact reader、実HEADを
+gate自身が呼ぶ。実装plan:
+`docs/superpowers/plans/2026-08-01-connector-o1a03-evidence-contract.md`。
+
 完了: `O1A-02`。新runtimeや第二queueを作らず、既存workerへtenant・job・attempt・workerで
 scopedされた定期lease heartbeatを接続した。pulseを直列化し、停止時にin-flight更新を待つ。
 heartbeat喪失とadapter失敗が重なった外部効果jobもretry可能にせず、`unknownEffect=true`で
