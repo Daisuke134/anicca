@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "task": "O1C-03",
+  "observed_at": "2026-08-01T17:09:24Z",
+  "result": "verified",
+  "life_manager_commit": "4aa5fd3d097a7a991ba008eafb936f4f2938b977",
+  "policy": {
+    "restricted_conflict_group": "mufg_family",
+    "denied_roles": ["operator", "cvc", "corporate_partner"],
+    "allowed_role": "lp_only",
+    "maximum_source_age_hours": 24,
+    "incomplete_partner_roster_submit_allowed": false,
+    "unknown_relationship_submit_allowed": false,
+    "name_token_matching_is_decision_authority": false
+  },
+  "official_source_readback": [
+    {
+      "program_id": "mucap",
+      "official_url": "https://www.mucap.co.jp/corporateinfo/overview/",
+      "official_fact": "Mitsubishi UFJ Capital is the program operator; MUFG Bank and MUFG group companies are listed among principal shareholders.",
+      "source_sha256": "0ee124f1283ff33426a615a8313c9bf1c7669e470fea5137657aed8c297ac906",
+      "relationship_count": 1,
+      "restricted_relationship_count": 1,
+      "decision": "deny_conflict",
+      "decision_digest": "982bb998aa95abee9e596fe2ee46d36eb26d869e62367ed448c3b169883e0e89"
+    },
+    {
+      "program_id": "muip",
+      "official_url": "https://www.ip.mufg.jp/en/about-us/",
+      "official_fact": "MUIP identifies itself as MUFG's CVC arm and as 100 percent owned by Mitsubishi UFJ Financial Group.",
+      "source_sha256": "aececa538d8a2e9d2b06eb04fb1f221edd2c7e1aa2f8cde35ad2906323675461",
+      "relationship_count": 1,
+      "restricted_relationship_count": 1,
+      "decision": "deny_conflict",
+      "decision_digest": "fbabffba544b81a1fea1187fec11eabe8544b5dd37936053510ed5f7a49a0777"
+    },
+    {
+      "program_id": "1stround",
+      "official_url": "https://www.1stround.jp/",
+      "official_fact": "The current official page exposes one operator and 19 corporate-partner links; the complete observed roster contains no MUFG-family entity.",
+      "source_sha256": "0878081a5d2d41bdf5a7b140b8d235f630844a0e89fbb178d20500ec68d135da",
+      "relationship_count": 20,
+      "restricted_relationship_count": 0,
+      "decision": "allow",
+      "decision_digest": "433e66de1b8a83f58214a1bcf8c2fb014b017cc52b2b6fd98cda990fbca2fd98"
+    },
+    {
+      "program_id": "hax",
+      "official_url": "https://www.hax.tokyo/",
+      "official_fact": "The current official page identifies SOSV, Sumitomo Corporation, and SCSK; no MUFG-family operator, CVC, or corporate partner is present in the observed roster.",
+      "source_sha256": "8324ad8a190c40f714403a2476f13a002f91bf5765dc91ea07f7e82c5234a52d",
+      "relationship_count": 3,
+      "restricted_relationship_count": 0,
+      "decision": "allow",
+      "decision_digest": "ce8d8e2bd5f8d1193a0095919a2b437b0feabe120385dd3f5d1c7bc5684ca3a0"
+    }
+  ],
+  "verification": {
+    "focused_conflict_gate_tests": { "passed": 5, "failed": 0 },
+    "outbound_tests": { "passed": 181, "failed": 0 },
+    "runtime_up_tests": { "passed": 33, "failed": 0 },
+    "controlled_official_readbacks": { "passed": 4, "failed": 0 },
+    "git_diff_check": "passed"
+  },
+  "claim_boundary": "This proves current official-page evidence can be converted by explicit agent judgment into source-bound relationships and that the deterministic gate denies MUFG-family operator, CVC, and corporate-partner involvement while not denying LP-only involvement. The two allow decisions are snapshot decisions, not permanent clearance; every submission must repeat a complete partner check using sources no more than 24 hours old."
+}

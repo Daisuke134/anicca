@@ -694,6 +694,18 @@ fresh verificationはfocused 4件、outbound 176件、runtime-up 33件、diff ch
 `docs/evidence/funding/2026-08-02-o1c02-funder-registry.json`。残作業は110件。
 次はO1C-03で、MUFG運営/CVC deny gateとpartner確認を実装する。
 
+完了: `O1C-03`。公式page本文をagentが意味で読み、operator、CVC、corporate partner、LP-onlyを
+source refs付きrelationshipへ分類する境界と、`mufg_family`のoperator/CVC/corporate partnerを必ず拒否する
+決定的gateをTDDで追加した。名称tokenだけでは判定せず、LP-onlyは既存決定どおり許可する一方、partner名簿不完全、
+unknown relationship、非HTTPS、24時間超のsourceは`research_required`としてsubmitをfail closedする。
+当日公式snapshotではMUCAPとMUIPを`deny_conflict`、1stRoundのoperator+19 partnerとHAX Tokyoの
+SOSV/住友商事/SCSKを完全確認して`allow`とした。ただしallowは永続許可でなく提出前24時間以内の再確認が必要。
+source本文SHA-256とdecision digestを保存した。fresh verificationはfocused 5件、outbound 181件、
+runtime-up 33件、controlled official readback 4件、diff checkが全成功。実装commit `4aa5fd3d0`はremoteへ
+push済み。実装plan: `docs/superpowers/plans/2026-08-02-connector-o1c03-mufg-conflict-gate.md`。実測証拠:
+`docs/evidence/funding/2026-08-02-o1c03-mufg-conflict-gate.json`。残作業は109件。
+次はO1C-04で、YC descriptionを制約内へ修正する。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
@@ -896,7 +908,7 @@ agentが本文と履歴を読んで判断し、keyword/regexの固定分類へ�
 
 - [x] O1C-01 `application-kit`をcompany factsの正本として接続
 - [x] O1C-02 funder/accelerator registryを再構築
-- [ ] O1C-03 MUFG運営/CVC deny gateとpartner確認を実装
+- [x] O1C-03 MUFG運営/CVC deny gateとpartner確認を実装
 - [ ] O1C-04 YC descriptionを制約内へ修正
 - [ ] O1C-05 58秒founder videoを検証してupload
 - [ ] O1C-06 founder profileを完了
