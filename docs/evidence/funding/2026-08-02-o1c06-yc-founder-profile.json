@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "task": "O1C-06",
+  "observed_at": "2026-08-01T17:29:01Z",
+  "result": "verified_complete",
+  "life_manager_commit": "68402f327b74696699456785b060fad52fcfb6df",
+  "draft_id": "0b61fe42-e383-490d-b60e-04f1ad7ec5df",
+  "bio_id": "721f696b-0566-4a16-bda7-a9c368b1eac1",
+  "source_binding": {
+    "profile_digest": "f08f538543f2abc6d73375b4fe87a817c57086466932d2a7d73352aaf46d94ac",
+    "kit_digest": "2043315e1b5690099af95d56cb88668995afa209687ed91193f14c57704a35b0",
+    "patch_digest": "ae2b92e8b1eba1fbfe60ec6f8cc8dfc4a4fda01074c07bd6a216f7a4a58e0aa8",
+    "commitment_source": "execution-spec://O1C-07+application-kit://KIT.md#where"
+  },
+  "saved_facts": {
+    "date_of_birth": "2002-01-30",
+    "city": "Tokyo Japan",
+    "role": "Founder",
+    "equity_percent": 100,
+    "technical_founder": true,
+    "currently_in_school": true,
+    "commit_exclusive_if_accepted": true,
+    "education": [
+      "NAIST | MS | Information Science | 2024-04..2027-03",
+      "Keio University | BA | Politics | 2020-04..2024-03"
+    ]
+  },
+  "repair": {
+    "duplicate_education_rows_deleted": 4,
+    "wrong_row_deleted_during_first_pass": true,
+    "corrective_keio_edit_and_save": true,
+    "final_january_duplicate_present": false,
+    "final_degree_error_count": 0,
+    "final_required_error_count": 0,
+    "submit_click_count": 0
+  },
+  "fresh_application_readback": {
+    "profile_complete": true,
+    "profile_incomplete": false,
+    "completed_profile_submit_block": false
+  },
+  "verification": {
+    "focused_yc_founder_profile_tests": { "passed": 2, "failed": 0 },
+    "outbound_tests": { "passed": 188, "failed": 0 },
+    "runtime_up_tests": { "passed": 33, "failed": 0 },
+    "fresh_browser_readback": "passed",
+    "git_diff_check": "passed"
+  },
+  "claim_boundary": "This proves the YC founder bio now has all required facts, exactly two canonical education rows, no degree or required-field errors, and the application page reports Profile complete without its former submit blocker. The exclusive-commitment answer is an intent inference from the explicit Fall 2026 submission and SF participation plan. This does not prove application submission; O1C-07 owns that external effect."
+}

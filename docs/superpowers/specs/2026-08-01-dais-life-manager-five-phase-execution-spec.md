@@ -730,6 +730,19 @@ push済み。実装plan: `docs/superpowers/plans/2026-08-02-connector-o1c05-yc-f
 `docs/evidence/funding/2026-08-02-o1c05-yc-founder-video.json`。残作業は107件。
 次はO1C-06で、founder profileを完了する。
 
+完了: `O1C-06`。profile.jsonとapplication-kitのdigestへ束縛し、DOB、Tokyo、Founder、期待持分100%、
+technical founder、在学中、YC採択時の1年間専念、exact 2学歴を持つprofile patchをTDDで追加した。
+専念回答はFall 2026実提出とSF参加の明示目標からのintent推論として別sourceを保持する。実bioではDOB、City、
+Role、Equity、school、commitmentを補完し、NAISTを2027-03修了予定へ訂正、重複学歴4行を削除した。
+初回整理で正しい慶應行を誤って削除し不完全な重複行が残ったため隠さず検出し、その行をKeio/BA/Politics/
+2020-04〜2024-03へcorrective saveした。最終readbackはNAISTとKeioの2行、旧Jan重複0、degree error 0、
+required error 0、application page `Profile complete`、旧submit blockerなし。Submitは0回。fresh verificationは
+focused 2件、outbound 188件、runtime-up 33件、browser readback、diff checkが全成功。実装commit
+`68402f327`はremoteへpush済み。実装plan:
+`docs/superpowers/plans/2026-08-02-connector-o1c06-yc-founder-profile.md`。実測証拠:
+`docs/evidence/funding/2026-08-02-o1c06-yc-founder-profile.json`。残作業は106件。
+次はO1C-07で、YC Fall 2026へ実提出する。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
@@ -935,7 +948,7 @@ agentが本文と履歴を読んで判断し、keyword/regexの固定分類へ�
 - [x] O1C-03 MUFG運営/CVC deny gateとpartner確認を実装
 - [x] O1C-04 YC descriptionを制約内へ修正
 - [x] O1C-05 58秒founder videoを検証してupload
-- [ ] O1C-06 founder profileを完了
+- [x] O1C-06 founder profileを完了
 - [ ] O1C-07 YC Fall 2026へ実提出
 - [ ] O1C-08 完了画面、確認mail、ledger、Telegramを照合
 - [ ] O1C-09 cold outreachを1日3〜5通で再開
