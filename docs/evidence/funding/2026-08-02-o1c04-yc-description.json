@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "task": "O1C-04",
+  "observed_at": "2026-08-01T17:15:50Z",
+  "result": "verified_saved",
+  "life_manager_commit": "19222e6ef74173618d3d7ab37695f8d9415f6a39",
+  "yc_draft": {
+    "draft_id": "0b61fe42-e383-490d-b60e-04f1ad7ec5df",
+    "field_name": "describe",
+    "before_unicode_length": 46,
+    "after_value": "Self-funding Buddhist AI. Ends suffering.",
+    "after_unicode_length": 41,
+    "maximum_exclusive": 50,
+    "save_click_count": 1,
+    "submit_click_count": 0,
+    "fresh_readback_operation": "no_op"
+  },
+  "source_binding": {
+    "source_ref": "application-kit://KIT.md#english-one-liner",
+    "source_digest": "2043315e1b5690099af95d56cb88668995afa209687ed91193f14c57704a35b0",
+    "patch_digest": "a1241c5d2e58de55ee24ed8bcc214e78e7f3d49b78a99769b3cf3a640e8f0dd1",
+    "legacy_w26_payload_is_authority": false
+  },
+  "browser_boundary": {
+    "cdp_port": 9222,
+    "shared_context_count": 1,
+    "authentication_recovered": true,
+    "existing_tabs_closed": false,
+    "browser_closed": false,
+    "own_pages_closed": true,
+    "application_submitted": false
+  },
+  "verification": {
+    "focused_yc_description_tests": { "passed": 3, "failed": 0 },
+    "outbound_tests": { "passed": 184, "failed": 0 },
+    "runtime_up_tests": { "passed": 33, "failed": 0 },
+    "fresh_browser_readback": "passed",
+    "git_diff_check": "passed"
+  },
+  "claim_boundary": "This proves the existing Fall 2026 YC draft description was saved once from the application-kit SSOT, is 41 Unicode characters under the exclusive 50-character limit, and persisted on a fresh authenticated readback. It does not prove founder video upload, founder-profile completion, or application submission; O1C-05 through O1C-07 own those outcomes."
+}

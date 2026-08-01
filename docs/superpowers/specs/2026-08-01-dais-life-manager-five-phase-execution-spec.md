@@ -706,6 +706,18 @@ push済み。実装plan: `docs/superpowers/plans/2026-08-02-connector-o1c03-mufg
 `docs/evidence/funding/2026-08-02-o1c03-mufg-conflict-gate.json`。残作業は109件。
 次はO1C-04で、YC descriptionを制約内へ修正する。
 
+完了: `O1C-04`。旧W26 payloadを正本にせず、`application-kit://KIT.md#english-one-liner`へsource digestで
+束縛したYC description patch builderをTDDで追加した。Unicode 1〜49文字だけを許可し、50文字、空、改行、
+前後空白、placeholder、別sourceをfail closedする。現行`:9222`でYC sessionを自動復旧し、Fall 2026 draft
+`0b61fe42-e383-490d-b60e-04f1ad7ec5df`の46文字値を正本の
+`Self-funding Buddhist AI. Ends suffering.`（41文字）へ一度だけSaveした。fresh pageでexact valueを再読取し、
+次操作が`no_op`になることを確認した。Save 1回、Submit 0回であり提出はしていない。fresh verificationは
+focused 3件、outbound 184件、runtime-up 33件、browser readback、diff checkが全成功。実装commit
+`19222e6ef`はremoteへpush済み。実装plan:
+`docs/superpowers/plans/2026-08-02-connector-o1c04-yc-description.md`。実測証拠:
+`docs/evidence/funding/2026-08-02-o1c04-yc-description.json`。残作業は108件。
+次はO1C-05で、58秒founder videoを検証してuploadする。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
@@ -909,7 +921,7 @@ agentが本文と履歴を読んで判断し、keyword/regexの固定分類へ�
 - [x] O1C-01 `application-kit`をcompany factsの正本として接続
 - [x] O1C-02 funder/accelerator registryを再構築
 - [x] O1C-03 MUFG運営/CVC deny gateとpartner確認を実装
-- [ ] O1C-04 YC descriptionを制約内へ修正
+- [x] O1C-04 YC descriptionを制約内へ修正
 - [ ] O1C-05 58秒founder videoを検証してupload
 - [ ] O1C-06 founder profileを完了
 - [ ] O1C-07 YC Fall 2026へ実提出
