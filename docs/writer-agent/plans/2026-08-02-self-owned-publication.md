@@ -35,11 +35,13 @@
 - Consumes: JSON `{slug,run_id,artifact_id,lang,title,source_sha256,preview_markdown,preview_sha256,paid_markdown,paid_sha256,access_model}`.
 - Produces: `validateWriterArticle(value)`, `publicPreview(value)`, and private files bundled only into `writer-content`.
 
-- [ ] Write a failing Node test that rejects a changed hash, missing lineage, unsupported language, a preview duplicated inside the paid body, and an access model outside `one_time|archive|both`; assert a valid fixture returns metadata without `paid_markdown`.
-- [ ] Run `node --test apps/landing/netlify/functions/_lib/__tests__/writer-article-contract.test.js`; require the missing-module failure.
-- [ ] Implement exact SHA-256 validation and `publicPreview`, configure Netlify `included_files = ["private/writer-articles/**"]`, and make the blog route render only `preview_markdown` for a paid article.
-- [ ] Re-run the Node test and `npm --prefix apps/landing run build`; require both to pass and inspect generated HTML to prove the paid body is absent.
-- [ ] Commit only Task 1 files.
+- [x] Write a failing Node test that rejects a changed hash, missing lineage, unsupported language, a preview duplicated inside the paid body, and an access model outside `one_time|archive|both`; assert a valid fixture returns metadata without `paid_markdown`.
+- [x] Run `node --test apps/landing/netlify/functions/_lib/__tests__/writer-article-contract.test.js`; require the missing-module failure.
+- [x] Implement exact SHA-256 validation and `publicPreview`, configure Netlify `included_files = ["private/writer-articles/**"]` only for `writer-content`, and make the blog route render only `preview_markdown` for a paid article.
+- [x] Re-run the Node test and `npm --prefix apps/landing run build`; require both to pass and inspect generated HTML to prove the paid body is absent.
+- [x] Commit only Task 1 files.
+
+Task 1 receipt: product commit `c5782d72d` is pushed to both product remotes. The focused contract suite passes 3/3 and the existing Netlify suite passes 284/284. A production Next build passed; a temporary paid sentinel appeared in neither the generated article HTML, RSC payload, nor static chunks, while the public preview appeared in HTML and RSC. The temporary fixture was removed before commit. Netlify's per-function configuration scopes private article files to `writer-content`, not every function.
 
 ### Task 2: Checkout Sessions with exact Writer lineage
 
