@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "task": "O1B-22",
+  "observed_at": "2026-08-01T16:39:51Z",
+  "result": "verified",
+  "implementation_commit": "fd808806e0359018c3ac936624cf41f30e778c13",
+  "termination_contract": {
+    "search_round_is_terminal": false,
+    "single_operation_failure_is_terminal": false,
+    "single_source_failure_is_terminal": false,
+    "only_open_zero_is_complete": true,
+    "booked_day_requires_provider_bound_receipt": true
+  },
+  "controlled_round": {
+    "window_start": "2026-08-02",
+    "window_end": "2026-08-22",
+    "initial_open_count": 3,
+    "run_day_calls": 3,
+    "ordered_outcomes": [
+      "operation_failure",
+      "provider_candidates_exhausted",
+      "booked"
+    ],
+    "round_completed": true,
+    "result": "continue_required",
+    "booked_count": 1,
+    "remaining_open_count": 2,
+    "next_run_required": true,
+    "coverage_falsely_completed": false
+  },
+  "verification": {
+    "focused_orchestration_tests": { "passed": 4, "failed": 0 },
+    "outbound_tests": { "passed": 158, "failed": 0 },
+    "runtime_up_tests": { "passed": 33, "failed": 0 },
+    "git_diff_check": "passed"
+  },
+  "claim_boundary": "This proves one deterministic 21-day orchestration round processes every open day even when an operation or source fails, and that finishing the round cannot complete coverage while open days remain. It does not prove the Calendar free-interval computation, paid-event policy, or Telegram summary owned by O1B-23 through O1B-25."
+}

@@ -620,6 +620,18 @@ focused 12件、outbound 154件、runtime-up 33件、diff checkが全成功。�
 `docs/evidence/outbound/2026-08-02-o1b21-same-day-candidate-loop.json`。残作業は116件。
 次はO1B-22で、検索一巡・一件の操作失敗・一sourceの失敗を終了条件にしないrolling orchestrationを実装する。
 
+完了: `O1B-22`。O1B-16のexact 21日coverageを入力に、`open`の日を一巡しても局所結果を全体終了へ
+変換しないrolling orchestratorをTDDで追加した。一日のoperation例外、source失敗、recovery、reconciliation、
+provider候補枯渇はその日をopenに残しながら後続日を処理する。正規providerと一致するreceipt付き`booked`だけを
+新規coverageとして数え、一巡が終わってもopenが1件以上なら必ず`continue_required / next_run_required`を返す。
+`complete`は初期または処理後のopen 0だけである。controlled 21日roundではopen 3日の順にsource例外、候補枯渇、
+検証済みLuma予約を与え、runDay 3回、booked 1、open 2となり、一巡後も`continue_required`を確認した。
+不正receiptでもその日を閉じず後続日へ進む。fresh verificationはfocused 4件、outbound 158件、runtime-up 33件、
+diff checkが全成功。実装plan:
+`docs/superpowers/plans/2026-08-02-connector-o1b22-rolling-orchestration.md`。実測証拠:
+`docs/evidence/outbound/2026-08-02-o1b22-rolling-orchestration.json`。残作業は115件。
+次はO1B-23で、Google Calendar全calendarのbusy intervalと前後移動時間から予約可能枠だけを導出する。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
@@ -756,7 +768,7 @@ identity/browser/calendar reference検証を追加し、新規4件と既存runti
 - [x] O1B-19 agentがevent本文・参加者・主催者・場所・時間を読み、Daisの目標とserendipityを自然言語で評価
 - [x] O1B-20 Lumaでその日の実参加を確保できない場合だけ、connpassの東京・対面inventoryへ進む
 - [x] O1B-21 一つの候補で申込失敗・満席・不適格になっても同じ日の次候補へ進み、予約確認までloopを継続
-- [ ] O1B-22 「検索一巡」「一件の操作失敗」「一sourceの失敗」を終了条件にしない
+- [x] O1B-22 「検索一巡」「一件の操作失敗」「一sourceの失敗」を終了条件にしない
 - [ ] O1B-23 Google Calendarの全calendarからbusy intervalを読み、前後移動時間を含むfree intervalだけへ予約
 - [ ] O1B-24 無料を優先し、有料eventは一度設定した自動支出policy内で保存済み決済手段を使い、都度承認を要求しない
 - [ ] O1B-25 21日coverage、既存予定、新規予約、残り空き、申込証拠、選定理由をTelegramへ一通で報告
