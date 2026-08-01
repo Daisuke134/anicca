@@ -2,6 +2,8 @@
 
 const test = require("node:test");
 const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
 
 const { validateEventTalkOpportunity } = require("./event-talk-opportunity.js");
 const {
@@ -54,7 +56,7 @@ test("both event becomes two immutable entities with distinct IDs, actions, and 
   assert.equal(talk.talk_format, "lightning_talk");
   assert.equal(Object.isFrozen(audience), true);
   assert.equal(Object.isFrozen(talk), true);
-  assert.doesNotMatch(JSON.stringify(entities), /gmail|cookie|password|Dais/i);
+  assert.doesNotMatch(JSON.stringify(entities), /@|gmail|cookie|password|080-\d/i);
 });
 
 test("audience-only and talk-only discoveries never invent the other entity", () => {
@@ -144,4 +146,45 @@ test("store rolls back a cross-tenant or partial insert instead of splitting a b
   });
   await assert.rejects(store.saveDiscovered(entities), /participation store unavailable/i);
   assert.match(calls.at(-1), /ROLLBACK/);
+});
+
+test("production transaction leases one database client through commit and releases it", async () => {
+  const calls = [];
+  let released = 0;
+  const entities = buildEventParticipationEntities({ ...BASE, opportunity: decision() });
+  const store = createEventParticipationStore({
+    async connect() {
+      return {
+        async query(sql, params = []) {
+          calls.push(sql);
+          if (/INSERT INTO/.test(sql)) return { rows: JSON.parse(params[0]) };
+          return { rows: [] };
+        },
+        release() { released += 1; },
+      };
+    },
+  });
+  await store.saveDiscovered(entities);
+  assert.deepEqual(calls.map((sql) => sql.trim().split(/\s+/)[0]), ["BEGIN", "INSERT", "COMMIT"]);
+  assert.equal(released, 1);
+});
+
+test("migration enforces the two disjoint state machines without raw identity columns", () => {
+  const sql = fs.readFileSync(
+    path.join(__dirname, "../migrations/2026-08-01-lm-event-participations.sql"),
+    "utf8",
+  );
+  for (const required of [
+    "audience_registration",
+    "talk_application",
+    "registration_queued",
+    "submission_queued",
+    "registered",
+    "submitted",
+    "accepted",
+    "rejected",
+    "presented",
+    "ENABLE ROW LEVEL SECURITY",
+  ]) assert.match(sql, new RegExp(required));
+  assert.doesNotMatch(sql, /email|phone|password|cookie|form_answer/i);
 });

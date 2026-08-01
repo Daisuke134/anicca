@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-08-01T16:23:53Z",
+  "track": "connector",
+  "step": "O1B-12",
+  "source": {
+    "provider": "luma",
+    "canonical_url": "https://luma.com/p9kfepcf",
+    "title": "Codex Meetup Tokyo #2",
+    "live_authenticated_page": true,
+    "public_talk_call_observed": true,
+    "raw_page_body_persisted": false,
+    "raw_identity_persisted": false
+  },
+  "agent_decision": {
+    "participation_kind": "both",
+    "application_status": "open",
+    "talk_format": "lightning_talk",
+    "public_application_ref_present": true
+  },
+  "runtime_database": {
+    "migration_applied": "2026-08-01-lm-event-participations.sql",
+    "rows": 2,
+    "distinct_participation_ids": 2,
+    "distinct_kinds": 2,
+    "distinct_action_refs": 2,
+    "kinds": ["audience_registration", "talk_application"],
+    "states": ["discovered", "discovered"],
+    "raw_identity_detected": false,
+    "atomic_single_client_transaction": true,
+    "row_level_security_enabled": true
+  },
+  "external_effects": {
+    "audience_registration_submitted": false,
+    "talk_application_submitted": false,
+    "telegram_sent": false
+  },
+  "verification": {
+    "outbound_tests_passed": 125,
+    "outbound_tests_failed": 0
+  }
+}
