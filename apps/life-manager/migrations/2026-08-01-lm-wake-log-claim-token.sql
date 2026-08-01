@@ -1,0 +1,27 @@
+-- spec 2026-08-01-lm-daily-organ-design.md §3 row 1c, §3.1.
+--
+-- WHY: a release must be able to PROVE it owns the row it deletes.
+--
+-- lm_wake_log is the dedup ledger: claimWake INSERTs (uid, event_key) and leans on the unique
+-- constraint, so 201 means "this tick owns the dial" and 409 means "someone already rang". When a
+-- dial fails, releaseWake DELETEs that row so a later tick can retry. Until now that DELETE was
+-- keyed on (uid, event_key) alone — with nothing tying it to the claim the caller actually made.
+--
+-- forEachUserSafe's per-user timeout does NOT abort the work it abandons (no AbortController), so a
+-- hung placeCall outlives its own tick. That makes this sequence reachable, and it rings the user
+-- TWICE:
+--   1. tick N claims K, dials, and hangs
+--   2. at the deadline tick N's user is abandoned — its placeCall keeps running
+--   3. tick N+1 tries K, gets 409, correctly skips
+--   4. tick N's dial finally fails and it calls releaseWake(K)
+--   5. but tick N+2 had already claimed K and SUCCESSFULLY rung the user
+--   6. tick N's late release deletes that successful row
+--   7. tick N+3 re-claims K and rings the user a second time
+-- Shrinking the wake budget from 90s to 20s made step 2 ~4.5x more likely, not less.
+--
+-- claim_token is the identity that closes it: each claim carries its own uuid, and a release filters
+-- on it, so a stale release matches nothing and a successful claim by someone else is untouchable.
+-- Nullable and backfill-free on purpose — rows claimed before this column existed simply release the
+-- way they always did, and no in-flight claim is invalidated by the migration itself.
+
+ALTER TABLE public.lm_wake_log ADD COLUMN IF NOT EXISTS claim_token text;

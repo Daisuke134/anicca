@@ -158,14 +158,22 @@ test("[INTEGRATION] re-running fillTravel does NOT double-create — 2nd run's c
 });
 
 // ── issue#10: releaseWake — a dial failure must not permanently burn the (uid,event,level) slot ──
-test("claimWake: 201 → true (fresh), 409 → false (already called); POSTs lm_wake_log", async () => {
+// 201 now hands back the CLAIM TOKEN rather than a bare `true` (see test/wake-claim-token.test.js
+// for why: a release must prove it owns the row it deletes, or it can erase a later tick's
+// successful claim and the user gets a second phone call). The property this test has always
+// existed to pin is unchanged and is asserted harder — fresh is truthy AND now carries an identity
+// that reaches the row, duplicate is still falsy, which is what every caller's `if (!fresh)` reads.
+test("claimWake: 201 → a claim token (fresh), 409 → falsy (already called); POSTs lm_wake_log", async () => {
   let s = stubFetch([201]);
-  assert.strictEqual(await claimWake("u1", "u1|2026-07-17T09:00:00+09:00|10"), true);
+  const token = await claimWake("u1", "u1|2026-07-17T09:00:00+09:00|10");
+  assert.strictEqual(typeof token, "string");
+  assert.ok(token.length > 0, "a fresh claim is truthy — every caller gates the dial on that");
   assert.match(s.calls[0].url, /lm_wake_log/);
   assert.strictEqual(s.calls[0].method, "POST");
+  assert.strictEqual(JSON.parse(s.calls[0].body).claim_token, token, "the token is written to the row");
   s.restore();
   s = stubFetch([409]);
-  assert.strictEqual(await claimWake("u1", "u1|2026-07-17T09:00:00+09:00|10"), false);
+  assert.ok(!(await claimWake("u1", "u1|2026-07-17T09:00:00+09:00|10")), "409 → not claimed");
   s.restore();
 });
 
@@ -181,17 +189,20 @@ test("[INTEGRATION] claim→dial-fail→release→re-claim: a failed dial is ret
   const eventKey = "u1|2026-07-17T09:00:00+09:00|10";
   // 1st tick: claim succeeds (201) — simulates claimWake before a placeCall that then fails.
   let s = stubFetch([201]);
-  assert.strictEqual(await claimWake("u1", eventKey), true, "1st claim succeeds");
+  const token = await claimWake("u1", eventKey);
+  assert.ok(token, "1st claim succeeds");
   s.restore();
-  // dial failed → release the claim (as wakeUserOnce now does on !res.ok).
+  // dial failed → release the claim (as wakeUserOnce now does on !res.ok), carrying the token it
+  // claimed with so a release arriving late cannot delete a different tick's successful claim.
   s = stubFetch([200]);
-  await releaseWake("u1", eventKey);
+  await releaseWake("u1", eventKey, token);
   assert.strictEqual(s.calls[0].method, "DELETE", "release issues a DELETE");
+  assert.match(s.calls[0].url, /claim_token=eq\./, "and it names the claim it is releasing");
   s.restore();
   // 2nd tick (after balance topped up): claim succeeds again because the row was released — this is
   // the exact bug this fix closes (without releaseWake, this 2nd claim would 409 forever).
   s = stubFetch([201]);
-  assert.strictEqual(await claimWake("u1", eventKey), true, "released claim can be re-claimed next tick");
+  assert.ok(await claimWake("u1", eventKey), "released claim can be re-claimed next tick");
   s.restore();
 });
 

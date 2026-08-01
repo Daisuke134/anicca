@@ -95,27 +95,60 @@ async function supaUsers() {
   return users.map(u => ({ ...RUNTIME_DEFAULTS, ...u, ...(byUid.get(u.uid) || {}) }));
 }
 
-// Returns true if this (uid,event_key) was NOT already called — and records it atomically.
-// Relies on the unique(uid,event_key) constraint: a duplicate insert 409s → already called.
-async function claimWake(uid, eventKey) {
+// Claims this (uid,event_key) atomically and returns the CLAIM TOKEN identifying it — a truthy
+// string, so every caller's `if (!fresh) continue` gate is unchanged. Falsy means someone already
+// called: relies on the unique(uid,event_key) constraint, so a duplicate insert 409s.
+//
+// The token exists because a release must be able to prove it owns the row it deletes. See
+// releaseWake below and migrations/2026-08-01-lm-wake-log-claim-token.sql for the double-call this
+// closes.
+async function claimWake(uid, eventKey, opts = {}) {
   const { url, key } = SUPA();
   if (!url || !key) return false;
-  const r = await fetch(`${url}/rest/v1/lm_wake_log`, {
-    method: "POST",
-    headers: { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/json", Prefer: "return=minimal" },
-    body: JSON.stringify({ uid, event_key: eventKey }),
-  });
-  return r.status === 201; // 201 = inserted (first time); 409 = duplicate (already called)
+  const f = opts.fetchImpl || fetch;
+  const headers = { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/json", Prefer: "return=minimal" };
+  const claimToken = crypto.randomUUID();
+  const insert = (body) => f(`${url}/rest/v1/lm_wake_log`, { method: "POST", headers, body: JSON.stringify(body) });
+
+  const r = await insert({ uid, event_key: eventKey, claim_token: claimToken });
+  if (r.status === 201) return claimToken; // 201 = inserted (first time); 409 = already called
+  // FAIL-SAFE, same posture as supaUsers' wake_policy fallback: deploy order is not atomic, and if
+  // the code ships before the column exists PostgREST 400s on the unknown column — which would
+  // silence EVERY wake call fleet-wide. Retry without it and fall back to the pre-token behaviour: a
+  // claim with no identity (`true`), which releaseWake then deletes unconditionally, exactly as it
+  // did before. Degraded, and honest about being degraded.
+  if (r.status === 400) {
+    const retry = await insert({ uid, event_key: eventKey });
+    if (retry.status === 201) {
+      console.error("[scheduler] lm_wake_log.claim_token missing — claimed without one (run migrations/2026-08-01-lm-wake-log-claim-token.sql)");
+      return true;
+    }
+    return false;
+  }
+  return false;
 }
 
 // Release a claim when placeCall failed, so a LATER tick retries while the event is still in its
 // window (claim→dial→unclaim-on-failure — mirrors unclaimTravel in lib/travel.js). Without this, a
 // dial failure (e.g. Telnyx balance too low) permanently burns the (uid,event,level) slot: the row
 // stays in lm_wake_log forever and claimWake 409s on every future tick even after the fix lands.
-async function releaseWake(uid, eventKey) {
+//
+// CONDITIONAL ON THE CLAIM TOKEN. forEachUserSafe's per-user timeout abandons a tick without
+// aborting its work, so a hung placeCall outlives its own tick and reaches this line LATE — by which
+// time a later tick may have claimed the same key and successfully rung the user. Deleting by
+// (uid,event_key) alone would erase that success, and the tick after it would re-claim and ring the
+// user a SECOND time. Filtering on the token means a stale release matches nothing.
+//
+// With no token (a row claimed before the column existed, or the degraded path above) the delete
+// stays unconditional: `claim_token=eq.<x>` never matches NULL, and refusing to release those rows
+// would strand them forever — the exact bug this function was written to fix.
+async function releaseWake(uid, eventKey, claimToken, opts = {}) {
   const { url, key } = SUPA();
   if (!url || !key) return;
-  await fetch(`${url}/rest/v1/lm_wake_log?uid=eq.${encodeURIComponent(uid)}&event_key=eq.${encodeURIComponent(eventKey)}`, {
+  const f = opts.fetchImpl || fetch;
+  let filter = `uid=eq.${encodeURIComponent(uid)}&event_key=eq.${encodeURIComponent(eventKey)}`;
+  if (typeof claimToken === "string" && claimToken) filter += `&claim_token=eq.${encodeURIComponent(claimToken)}`;
+  await f(`${url}/rest/v1/lm_wake_log?${filter}`, {
     method: "DELETE",
     headers: { apikey: key, Authorization: `Bearer ${key}`, Prefer: "return=minimal" },
   }).catch(() => {});
@@ -427,6 +460,9 @@ async function wakeCallOnce(u, nowMs, deps = {}) {
       }
       for (const lvl of due) {
         const eventKey = `${u.uid}|${ev.startIso}|${lvl.min}`;
+        // `fresh` is the CLAIM TOKEN (a truthy string) when this tick won the claim — the gate below
+        // is unchanged because falsy still means "someone already called". It is carried all the way
+        // to releaseWake so a release that arrives late can only delete ITS OWN claim.
         const fresh = await (deps.claimWake || claimWake)(u.uid, eventKey);
         if (!fresh) continue; // already called for this (event, level)
         // A coarser level the call above superseded must never ring later, so it is CLAIMED here and
@@ -456,7 +492,11 @@ async function wakeCallOnce(u, nowMs, deps = {}) {
           }, deps, now);
           // Don't burn the retry: release the claim so the next 60s tick tries again while the event
           // is still in its window (the claim-before-dial order stays intact as the dedup guard).
-          await (deps.releaseWake || releaseWake)(u.uid, eventKey);
+          // Released with the token this tick claimed with: this line can run LONG after its own
+          // tick was abandoned (the per-user timeout does not abort placeCall), and by then a later
+          // tick may have claimed the same key and actually rung the user. An untargeted delete
+          // would erase that success and the next tick would ring them a second time.
+          await (deps.releaseWake || releaseWake)(u.uid, eventKey, fresh);
           await (deps.alertLowBalance || maybeAlertLowBalance)(res.error);
         }
       }
