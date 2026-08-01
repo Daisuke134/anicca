@@ -152,8 +152,8 @@ export default function WriterUnlock({ slug, runId, artifactId, lang, accessMode
       <h2 className="mt-4 font-display text-[27px] leading-tight text-ink">{busy ? (ja ? "購入状態を確認しています" : "Checking your access") : (ja ? "続きを読む" : "Continue reading")}</h2>
       <p className="mt-3 text-[16px] leading-relaxed text-ink-soft">{message || (ja ? "Stripeの安全な決済画面で購入できます。このサイトのアカウント登録は不要です。" : "Pay securely with Stripe. No account on this site is required.")}</p>
       {!busy && <div className="mt-6 flex min-w-0 flex-col gap-3 sm:flex-row">
-        {(accessModel === "one_time" || accessModel === "both") && <button type="button" onClick={() => void begin("writer_article")} className="w-full whitespace-normal bg-primary px-5 py-3 text-center font-mono-ui text-[11px] uppercase tracking-[0.18em] text-primary-foreground sm:w-auto">{ja ? "この記事を ¥500 で読む" : "Buy this article"}</button>}
-        {(accessModel === "archive" || accessModel === "both") && <button type="button" onClick={() => void begin("writer_archive")} className="w-full whitespace-normal border border-border px-5 py-3 text-center font-mono-ui text-[11px] uppercase tracking-[0.18em] text-foreground sm:w-auto">{ja ? "有料アーカイブを購読" : "Subscribe to the paid archive"}</button>}
+        {(accessModel === "one_time" || accessModel === "both") && <button type="button" onClick={() => void begin("writer_article")} className="w-full whitespace-normal bg-primary px-5 py-3 text-center font-mono-ui text-[11px] uppercase tracking-[0.18em] text-primary-foreground sm:w-auto">{ja ? "この記事を ¥500 で読む" : "Buy this article — $5"}</button>}
+        {(accessModel === "archive" || accessModel === "both") && <button type="button" onClick={() => void begin("writer_archive")} className="w-full whitespace-normal border border-border px-5 py-3 text-center font-mono-ui text-[11px] uppercase tracking-[0.18em] text-foreground sm:w-auto">{ja ? "有料アーカイブを月額 ¥980 で購読" : "Subscribe — $9.99/month"}</button>}
       </div>}
     </section>
   );
