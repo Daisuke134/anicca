@@ -1,4 +1,5 @@
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -239,3 +240,120 @@ def test_full_backfill_is_idempotent_and_one_projection_drives_both_outputs(
     public = built.index_path.read_text() + built.state_path.read_text() + telegram
     assert "/private/evidence" not in public
     assert "technical_evidence" not in public
+
+
+def test_corrupt_writer_incident_repairs_and_closes_once_through_normal_monitor(
+    tmp_path: Path,
+) -> None:
+    outcome_script = SCRIPTS / "capafy_outcome.py"
+    monitor = SCRIPTS.parent / "capafy-outcome-monitor.sh"
+    ledger = tmp_path / "capafy-revenue-events.jsonl"
+    ledger.write_text("not-json\n")
+    env = os.environ | {
+        "CAPAFY_OUTCOME_STATE_DIR": str(tmp_path),
+        "CAPAFY_EVENT_LEDGER": str(ledger),
+        "CAPAFY_EVENT_EVIDENCE_DIR": str(tmp_path / "evidence"),
+        "CAPAFY_OUTCOME_SCRIPT": str(outcome_script),
+    }
+    start = [
+        sys.executable,
+        str(outcome_script),
+        "start-incident",
+        "--owner",
+        "builder",
+        "--summary",
+        "Canonical writer failed on a corrupt tail",
+        "--fingerprint",
+        "p2-corrupt-writer",
+        "--repair-result-path",
+        str(tmp_path / "repair.result"),
+    ]
+
+    failed = subprocess.run(start, env=env, text=True, capture_output=True, check=False)
+
+    assert failed.returncode == 2
+    record_path = next((tmp_path / "capafy-incidents").glob("*.json"))
+    incident_id = json.loads(record_path.read_text())["incident_id"]
+    ledger.unlink()
+    healed = subprocess.run(start, env=env, text=True, capture_output=True, check=False)
+    assert healed.returncode == 0, healed.stderr
+
+    def transition(payload: dict) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            [sys.executable, str(outcome_script), "transition-incident"],
+            input=json.dumps(payload),
+            env=env,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+
+    assert transition(
+        {"incident_id": incident_id, "phase": "repair_started"}
+    ).returncode == 0
+    closure = {
+        "schema_version": 1,
+        "kind": "repair_closure",
+        "incident_id": incident_id,
+        "owner": "builder",
+        "title": "Portfolio Tracker",
+        "agent_id": "9480246345",
+        "remote_status": 1,
+        "skills_confirmed": True,
+        "config_confirmed": True,
+        "listing_url": "https://capafy.ai/agent/9480246345",
+        "gross_usd": 9.99,
+        "pending_usd": 8,
+        "realized_usd": 0,
+        "mrr_usd": 0,
+        "cost_usd": 4.78,
+        "contribution_usd": -4.78,
+        "detected_summary": "Canonical writer failed on a corrupt tail",
+        "repair_summary": "Removed the corrupt tail and retried the same append.",
+        "next_action": "Continue autonomous operation",
+    }
+    repaired = transition(
+        {"incident_id": incident_id, "phase": "repaired", "outcome": closure}
+    )
+    assert repaired.returncode == 0, repaired.stderr
+    result_path = tmp_path / "repair.result"
+    result_path.write_text("SUCCESS 2026-08-02T12:00:00Z canonical append verified\n")
+    (tmp_path / ".self-fix-capafy-loop.incident.json").write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "incident_id": incident_id,
+                "loop": "capafy-loop",
+                "result_path": str(result_path),
+            }
+        )
+    )
+    messages = tmp_path / "messages.txt"
+    sender = tmp_path / "send.sh"
+    sender.write_text(
+        f"printf '%s\\n' \"$1\" >> '{messages}'\n"
+        "printf '%s\\n' 'TELEGRAM_SENT=true MSGID=888'\n"
+    )
+    env["CAPAFY_TELEGRAM_SENDER"] = str(sender)
+
+    first = subprocess.run(
+        ["bash", str(monitor)], env=env, text=True, capture_output=True, check=False
+    )
+    retry = subprocess.run(
+        ["bash", str(monitor)], env=env, text=True, capture_output=True, check=False
+    )
+
+    assert first.returncode == 0, first.stderr
+    assert retry.returncode == 0, retry.stderr
+    events = [json.loads(line) for line in ledger.read_text().splitlines()]
+    assert [event["event_type"] for event in events] == [
+        "incident.detected",
+        "incident.repair_started",
+        "incident.repaired",
+        "incident.verified",
+    ]
+    assert len({event["event_id"] for event in events}) == 4
+    assert messages.read_text().count("Capafy incident resolved") == 1
+    final = json.loads(record_path.read_text())
+    assert final["phase"] == "verified"
+    assert final["telegram_message_id"] == "888"
