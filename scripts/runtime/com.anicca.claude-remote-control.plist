@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.anicca.claude-remote-control</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/anicca/.claude/scripts/remote-control-supervise.sh</string>
+  </array>
+  <key>WorkingDirectory</key><string>/Users/anicca/anicca-project</string>
+  <!-- KeepAlive は RunAtLoad を暗黙に含む (man 5 launchd.plist)。RunAtLoad は書かない。 -->
+  <key>KeepAlive</key><true/>
+  <!-- 既定 10 秒では 401 時に 90 秒周期の無限リトライになった (2026-08-01, 83回)。
+       launchd 自体に指数バックオフは無いので、ここは下限を上げるだけ。
+       諦める判断は supervisor 側のサーキットブレーカが持つ。 -->
+  <key>ThrottleInterval</key><integer>60</integer>
+  <!-- SIGTERM から SIGKILL までの猶予。0 は無限を意味するので使わない。 -->
+  <key>ExitTimeOut</key><integer>30</integer>
+  <!-- 未指定だと launchd が CPU と I/O を絞る。これは Dais が電話から叩く
+       対話経路であり、配下で Claude Code セッションがビルド/テストを回す。 -->
+  <key>ProcessType</key><string>Interactive</string>
+  <!-- zsh -lc をやめた結果 PATH が痩せた (~/.local/bin 等が消え、claude 自身が
+       PATH から引けなくなった)。launchd は PATH を設定しないので明示する。 -->
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/Users/anicca/.local/bin:/Users/anicca/.local/share/solana/install/active_release/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Library/Apple/usr/bin:/Library/TeX/texbin:/Applications/quarto/bin:/Users/anicca/.cargo/bin:/Users/anicca/.foundry/bin:/Users/anicca/.radicle/bin</string>
+  </dict>
+  <key>StandardErrorPath</key><string>/Users/anicca/.claude/logs/remote-control.boot.err</string>
+</dict>
+</plist>

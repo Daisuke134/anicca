@@ -70,7 +70,7 @@ claude doctor: Remote Control セクションに失敗チェック無し
 | # | タスク | 状態 |
 |---|---|---|
 | 1 | ログ回転: plist を `perl` ANSI除去 + `rotatelogs -n 5 10M` パイプに (上限50MB) | **done 2026-08-01 17:22** (§4.1) |
-| 2 | plist 衛生: `zsh -l` 廃止 / `EnvironmentVariables.PATH` 明示 / `ProcessType=Background` / `ExitTimeOut=30` / `ThrottleInterval=60` / `RunAtLoad` 削除 | pending |
+| 2 | plist 衛生: `zsh -l` 廃止 / `EnvironmentVariables.PATH` 明示 / `ProcessType` / `ExitTimeOut=30` / `ThrottleInterval=60` / `RunAtLoad` 削除 | **done 2026-08-01 17:35** (§4.2) |
 | 3 | 401 サーキットブレーカ: ログに `Authentication failed (401)` 検知 → 20秒後に1回だけリトライ → まだ401なら `launchctl bootout` + sentinel 書いて停止 | pending |
 | 4 | 通知: sentinel が立ったら Dais へ「`claude auth login` が必要」を送る (18時間ルールは人間しか解けない = 正当な human-loop) | pending |
 | 5 | 有線化: Mac mini 背面 Ethernet にLANケーブル → ルーター。**Dais の物理作業**。優先度最下位 | pending (Dais) |
@@ -112,6 +112,42 @@ launchctl list | grep claude-remote-control  →  14737  0  com.anicca.claude-re
 副次効果: 肥大した旧ログを削除して `~/.claude/logs` が **186M → 4K**、ディスク空きが **7.1GB → 8.6GB**。401 の証拠行だけ `remote-control.401-evidence.txt` に退避済み。
 
 **注意 (ソースの二重化)**: 実体は `~/.claude/scripts/remote-control-supervise.sh`（ブランチに依存させないため）。`scripts/runtime/remote-control-supervise.sh` はリポジトリ側のミラー。触ったら必ず `diff` で一致を確認すること。
+
+---
+
+### 4.2 実測ログ — #2 plist 衛生 (2026-08-01 17:35 完了)
+
+`man 5 launchd.plist` を実物で読んでから決めた。verbatim 引用:
+
+| キー | man の記述 | 採用値 |
+|---|---|---|
+| `RunAtLoad` | "The default is false. **This key should be avoided**, as speculative job launches have an adverse effect on system-boot and user-login scenarios." / KeepAlive 側: "**The use of this key implicitly implies RunAtLoad**" | **削除** |
+| `ThrottleInterval` | "jobs will not be spawned more than once every **10 seconds**" (既定) | `60` |
+| `ProcessType` | "**If left unspecified, the system will apply light resource limits to the job, throttling its CPU usage and I/O bandwidth.**" / Interactive: "run with the same resource limitations as apps, that is to say, none… should only be used if an app's ability to be responsive depends on it" | **`Interactive`** — Background だと disk I/O が絞られる。これは Dais が電話から叩く対話経路であり、配下で Claude Code がビルド/テストを回すため |
+| `ExitTimeOut` | SIGTERM→SIGKILL の猶予。`0` は無限を意味する | `30` |
+
+**途中で見つけた実害 (#1 の副作用)**: `zsh -lc` をやめた結果、`~/.zshenv` しか読まれなくなり **PATH が痩せた**。
+
+```
+before (旧 plist, PID 44122): 21 vars / PATH に ~/.local/bin, solana, homebrew/sbin, Cryptexes, TeX, quarto あり
+after  (#1 直後,  PID 19358): 16 vars / PATH = ~/.cargo/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:...
+                               ← ★ ~/.local/bin が消滅 = claude 自身が PATH から引けない ★
+```
+
+スクリプトは絶対パスで claude を起動するので起動自体は成功していたが、**セッション内から `claude` や `gh` を呼ぶ経路が壊れる**ところだった。`EnvironmentVariables.PATH` に旧 PATH を明示して復旧。
+
+実測 (リロード後):
+
+```
+launchctl list           →  24158  -15  com.anicca.claude-remote-control   (-15 は bootout の SIGTERM、正常)
+プロセス3本               →  supervise.sh 24158 / claude remote-control 24182 / rotatelogs 24184
+PATH                     →  /opt/homebrew/bin:...:/Users/anicca/.local/bin:... ★復帰★
+ログ本文                  →  ·✔︎· Connected / ·✔︎· Ready
+grep -ac $'\e' log       →  0
+boot.err                 →  0 bytes
+```
+
+**運用上の注意**: `ThrottleInterval=60` を入れたので、`bootout` 直後の `bootstrap` では最大60秒プロセスが上がらない。この間 `launchctl list` は PID 欄が `-` になる。**壊れたと誤認しないこと。**
 
 ---
 
