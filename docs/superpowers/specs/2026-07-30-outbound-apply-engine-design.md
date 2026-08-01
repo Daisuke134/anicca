@@ -2,6 +2,12 @@
 
 status: ACTIVE / 実装未着手 (P0 から番号順)
 owner: Life Manager (canonical runtime = `/Users/anicca/Projects/life-manager-main`)
+親trackとphase順序の専用正本:
+`2026-08-01-dais-life-manager-five-phase-execution-spec.md`
+
+この文書はevents / funders / jobs内部の実装順だけを所有する。CFO、crypto、
+fiat/NISAを含むtrack全体の順序は親trackを上書きしない。
+
 関連 spec: `2026-07-19-anicca-one-repo-consolidation-spec.md` (repo layout / OSS 不変条件),
 `.worktrees/job-profile-targets/docs/superpowers/specs/2026-07-28-job-search-loop-design.md` (Job pack)
 

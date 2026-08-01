@@ -126,8 +126,12 @@ DB には痕跡が一切残らない。**これは #1b と同じ「失敗が存�
 
 ## 3. 残 TODO（1 から順。番号 = 実行順。飛ばさない）
 
+★ **この表の「DONE」は "branch に入った" という意味であって "本番で効いている" ではない。両者を混同すると、
+2026-08-01 16:56 の実測（下の #0）と同じ嘘を繰り返す。** ★
+
 | # | 作業 | 無いと何が起きるか | done（実 receipt） |
 |---:|---|---|---|
+| **0** | ★ 1a〜2b の 35 commit を `main` へ merge して Railway へ deploy ★ | **2026-08-01 16:56 実測**: live の `life-call` は `main` の `fce82564c`（deploy 10:13 JST）で、daily organ の修正は **1つも本番に無い**（`git merge-base --is-ancestor` で `da7dec52b` / `1eb594fe7` / `a42746699` / `7e077d132` すべて NO）。証拠 = 16:47 JST に実架電があり `amd_result` が `null`（AMD 記録コードが未 deploy）。**留守電に2分喋って課金する挙動はこの瞬間も生きている**。1d の Composio 減も deploy 前は測れない | live deploy の commit が 2b を含む。deploy 後の実架電行に `amd_result` が入り、`machine` なら通話が数秒で終わる |
 | **1** | ~~呼び出し不発の原因究明~~ → **原因特定済（§1.2）。残りは修正3点** | 呼び出しが静かに消える = 製品が存在しない | ①窓を「取りこぼさない」形に変更（下記 1a）②逃した呼び出しを記録（1b）③時間に敏感な loop を他 organ から分離（1c）。実予定で T-10/T-5 が両方 `lm_wake_log` に載る |
 | 1a | ~~発火条件を「2分の窓」から**追い付き方式**へ~~ ✅ **DONE 2026-08-01**（commit `da7dec52b`、merge `9873e0ce9`） | tick が遅れた瞬間に永久に失われる | 実装: `scheduler.js` の窓判定を撤廃し `mins <= lvl.min+0.5 && mins > LATE_CUTOFF_MIN(-15)` で due 判定 → **最も緊急な1件だけ発信**、超えられた粗いレベルは claim だけして鳴らさない。検証（自分で実行）: `node --test test/wake-catchup.test.js` → `tests 5 / pass 5 / fail 0`、`node test/scheduler.test.js` → PASS。cases = ①T-5 を5分過ぎた tick でも1本鳴る ②通常は T-10 → T-5 の2本 ③両方 due の tick でも1本 ④出発を15分超過なら鳴らさない ⑤発信失敗で claim が解放され次 tick が再試行 |
 | 1b | ~~「鳴るはずだったのに鳴らなかった」を記録~~ ✅ **DONE 2026-08-01** | 失敗が**存在しない事象**に見える（今回の3日を溶かした原因） | 実装: 新 ledger `lm_wake_miss`（`migrations/2026-08-01-lm-wake-miss.sql`、本番 Supabase に適用済 = `http=201`、PostgREST 読み取り `http=200`）+ `lib/wake-miss.js` + `scheduler.js` の `noteWakeMiss()` + `/status` の1行。記録する2事象 = ①`dial_failed`（`releaseWake` が claim を消す**前**に理由を残す）②`no_call_before_departure`（departure が `LATE_CUTOFF_MIN` を越えた時点で最細レベルの claim が無い = 一度も試みていない）。`(uid,event_key)` 主キー + merge-duplicates upsert なので 60秒 tick の連続失敗は1行を更新するだけ。`first_seen_at` は payload に入れないので「いつ壊れ始めたか」が保持される（実測: first_seen_at=01:04:57.5 / occurred_at=01:04:58.9）。★§5.4 の「自分から言う」も実装★ = `notified_at IS NULL` を条件にした PATCH を lock にして**1 miss につき Telegram 1通だけ**送る（retry tick は無言）。検証（自分で実行）: `node --test lib/wake-miss.test.js lib/slash-command.test.js test/wake-miss-record.test.js test/wake-catchup.test.js test/telegram-slash-http-contract.test.js` → **tests 55 / pass 55 / fail 0**（1a の回帰5件を含む）+ 本番 Supabase への実 round-trip（write → upsert → read → `/status` 行 `🔔 Missed: the 13:15 call could not be dialled (...)` → 検証行を DELETE、表は空に戻した） |

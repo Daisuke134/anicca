@@ -11,6 +11,47 @@
 
 ---
 
+## One product, two execution surfaces
+
+Life Manager is one product in one repository. “Local Life Manager” and the web app are not separate products or repositories; they are two execution surfaces that share capabilities and state contracts.
+
+```text
+                              LIFE MANAGER
+                    one product · one repository
+                                 │
+             ┌───────────────────┴───────────────────┐
+             │                                       │
+     LOCAL / SELF-HOSTED                      WEB / CLOUD
+     install.sh                               apps/landing
+          │                                  onboarding UI
+          ▼                                       │
+     runtime/loop                                  ▼
+     think → act → ledger                 apps/life-manager
+          │                               Telegram · voice
+          ▼                               scheduler · /panel
+        skills/*                                    │
+     earn · self · report                           ▼
+             │                              user-scoped services
+             └───────────────────┬───────────────────┘
+                                 │
+                shared economy and infrastructure
+        runtime/compute-proxy · services/x402-* · dashboard
+```
+
+| Path | Role | What it is not |
+|---|---|---|
+| `runtime/loop/`, `install.sh`, `start-local.sh` | Local autonomous agent and self-hosted runtime | Not a separate “local edition” product |
+| `apps/life-manager/` | Always-on cloud service: Telegram, scheduling, calls, authenticated `/panel`, billing, and user workflows | Not the whole repository |
+| `apps/landing/` | The Life Manager onboarding web subset | Not the old multi-product Anicca website |
+| `runtime/compute-proxy/`, `services/` | Self-pay inference and x402 settlement/API infrastructure | Not user-facing apps |
+| `skills/` | Shared capabilities used by local and cloud execution | Not independent products |
+| `apps/job-search-loop/`, `control-room/`, `adapters/` | Supporting operations, fleet documentation, and integrations | Not another Life Manager codebase |
+| `docs/`, `specs/` | Current SSOT, evidence, and retained architecture history | Historical files are not automatically current authority |
+
+Some internal package names, environment variables, service labels, and older documents still use `anicca`. In this repository, **Anicca is the company/technical namespace; Life Manager is the product**. A remaining `anicca` identifier does not imply a second product or another canonical repository.
+
+---
+
 ## Why this exists
 
 YC's RFS says *"the next trillion users on the internet won't be people, they'll be AI agents."* That only comes true if agents hold their **own** money. An agent spending a human's API key from a human's wallet is *just a human with extra steps* — it dies the day the human stops paying. **Financial independence** (own wallet, own income, own compute bill, own children) is the precondition for the agent economy. Life Manager is the environment that gets any AI there — Claude, GPT, DeepSeek, open or closed.

@@ -399,6 +399,118 @@ test("a registered no-effect capability executes its adapter instead of becoming
   assert.equal(calls[0].input.receipt.kind, "marketing_daily_generation");
 });
 
+test("external-effect execution heartbeats its lease before recording completion", async () => {
+  const calls = [];
+  let scheduledHeartbeat;
+  await executeCapabilityJob({
+    tenant_id: "dais",
+    job_id: `outbound-event:${"d".repeat(64)}`,
+    attempt: 1,
+    capability: "outbound.event.apply",
+    effect_class: "publish",
+  }, {
+    workerId: "connector-local",
+    handlers: {
+      "outbound.event.apply": async () => {
+        await scheduledHeartbeat();
+        return { receipt: { kind: "event_application", status: "submitted" } };
+      },
+    },
+    heartbeatJob: async (input) => calls.push({ kind: "heartbeat", input }),
+    completeJob: async (input) => calls.push({ kind: "complete", input }),
+    failJob: async (input) => calls.push({ kind: "fail", input }),
+    leaseSeconds: 90,
+    setIntervalFn(callback) {
+      scheduledHeartbeat = callback;
+      return "heartbeat-timer";
+    },
+    clearIntervalFn(timer) {
+      calls.push({ kind: "clear", timer });
+    },
+  });
+
+  assert.deepEqual(calls.map(({ kind }) => kind), ["heartbeat", "clear", "complete"]);
+  assert.deepEqual(calls[0].input, {
+    tenantId: "dais",
+    jobId: `outbound-event:${"d".repeat(64)}`,
+    attempt: 1,
+    workerId: "connector-local",
+    leaseSeconds: 90,
+  });
+});
+
+test("a lost heartbeat fails an external-effect attempt as unknown", async () => {
+  const calls = [];
+  let scheduledHeartbeat;
+  await executeCapabilityJob({
+    tenant_id: "dais",
+    job_id: `outbound-event:${"e".repeat(64)}`,
+    attempt: 1,
+    capability: "outbound.event.apply",
+    effect_class: "publish",
+  }, {
+    workerId: "connector-local",
+    handlers: {
+      "outbound.event.apply": async () => {
+        await scheduledHeartbeat();
+        return { receipt: { kind: "event_application", status: "submitted" } };
+      },
+    },
+    heartbeatJob: async () => {
+      throw new Error("runtime heartbeat lost lease");
+    },
+    completeJob: async (input) => calls.push({ kind: "complete", input }),
+    failJob: async (input) => calls.push({ kind: "fail", input }),
+    leaseSeconds: 90,
+    setIntervalFn(callback) {
+      scheduledHeartbeat = callback;
+      return "heartbeat-timer";
+    },
+    clearIntervalFn(timer) {
+      calls.push({ kind: "clear", timer });
+    },
+  });
+
+  assert.deepEqual(calls.map(({ kind }) => kind), ["clear", "fail"]);
+  assert.equal(calls[1].input.errorCode, "CAPABILITY_HEARTBEAT_FAILED");
+  assert.equal(calls[1].input.unknownEffect, true);
+});
+
+test("adapter failure cannot make a simultaneous lost heartbeat retryable", async () => {
+  const calls = [];
+  let scheduledHeartbeat;
+  await executeCapabilityJob({
+    tenant_id: "dais",
+    job_id: `outbound-event:${"f".repeat(64)}`,
+    attempt: 1,
+    capability: "outbound.event.apply",
+    effect_class: "publish",
+  }, {
+    workerId: "connector-local",
+    handlers: {
+      "outbound.event.apply": async () => {
+        await scheduledHeartbeat();
+        throw new Error("browser result unavailable");
+      },
+    },
+    heartbeatJob: async () => {
+      throw new Error("runtime heartbeat lost lease");
+    },
+    completeJob: async (input) => calls.push({ kind: "complete", input }),
+    failJob: async (input) => calls.push({ kind: "fail", input }),
+    leaseSeconds: 90,
+    setIntervalFn(callback) {
+      scheduledHeartbeat = callback;
+      return "heartbeat-timer";
+    },
+    clearIntervalFn() {},
+  });
+
+  assert.deepEqual(calls.map(({ kind }) => kind), ["fail"]);
+  assert.equal(calls[0].input.errorCode, "CAPABILITY_HEARTBEAT_FAILED");
+  assert.equal(calls[0].input.unknownEffect, true);
+});
+
 test("environment secret provider is tenant-scoped and resolves only declared refs", async () => {
   const provider = createScopedEnvironmentSecretProvider({
     LM_RUNTIME_TENANT_ID: "tenant-a",
