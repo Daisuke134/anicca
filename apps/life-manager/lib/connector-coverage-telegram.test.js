@@ -202,7 +202,7 @@ test("verified新規予約は名前・時刻・場所・選定理由とevent/Cal
   assert.match(message, /Calendar:\n   https:\/\/calendar\.google\.com\/calendar\/event\?eid=opaque/);
   assert.match(message, /未処理の空き: 20日/);
   assert.deepEqual(input.existingCoverage.counts, {
-    open: 20, covered_existing: 1, covered_new: 0, unavailable: 0,
+    open: 20, covered_existing: 0, covered_new: 1, unavailable: 0,
   });
 });
 
