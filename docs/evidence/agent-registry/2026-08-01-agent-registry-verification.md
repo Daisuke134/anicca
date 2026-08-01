@@ -22,7 +22,7 @@ claimed complete by this slice.
 | 9 | Detailed catalog | generated `docs/agent-catalog.md` | proven |
 | 10 | Existing-spec references | five-phase and portable finance/marketing specs link to the dedicated SSOT | proven |
 | 11 | Chat projection contract | `docs/chat-agent-projection-contract.md` | proven |
-| 12 | Tests, verification, commit, push | focused/OSS evidence below; commit and remote SHA recorded after push | pending remote proof |
+| 12 | Tests, verification, commit, push | focused/OSS evidence below; implementation commit local/remote SHA matched | proven |
 
 ## Fresh focused verification
 
@@ -101,11 +101,26 @@ Agent Registry roles:          16
   shadow:                       1
   planned:                      6
 
-Agent Registry deliverables:   12 total
+Agent Registry deliverables:   12 complete / 0 remaining
 Five-phase unchecked work:    133 remaining
 ```
 
 ## Remote proof
 
-To be filled only after the final branch is pushed and `git ls-remote` matches
-the local commit.
+Branch: `feat/agent-registry`
+
+Implementation commit local SHA:
+
+```text
+e876b1c94df77980bbd1eec81ab5c4555e346a9f
+```
+
+Observed immediately after push:
+
+```text
+e876b1c94df77980bbd1eec81ab5c4555e346a9f refs/heads/feat/agent-registry
+```
+
+The documentation-closure commit that checks deliverable 12 is pushed after
+this evidence update; final handoff independently compares the branch tip with
+`git ls-remote`.

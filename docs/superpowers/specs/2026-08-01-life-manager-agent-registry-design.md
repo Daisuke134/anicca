@@ -284,7 +284,7 @@ Agent Registryは承認を実行する場所ではない。承認policyの参照
 - [x] 9. `docs/agent-catalog.md`
 - [x] 10. 既存2本の正本specから本specへの参照
 - [x] 11. chat projection契約
-- [ ] 12. tests、verification evidence、commit、push
+- [x] 12. tests、verification evidence、commit、push
 
 完了とは、12項目すべてにrepo内の証拠があり、validator、renderer drift check、専用testsがfresh runで成功し、READMEとcatalogが同一registryから再生成できる状態をいう。
 
