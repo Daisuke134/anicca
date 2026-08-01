@@ -284,9 +284,12 @@ def events_from_ig_metrics(rows: list[dict]) -> list[dict]:
             continue
         ts = int(row.get("ts") or 0)
         metrics = {
-            field: max(0, int(row.get(field) or 0))
+            field: max(0, int(row[field]))
             for field in ("views", "likes", "comments")
+            if row.get(field) is not None
         }
+        if not metrics:
+            continue
         events.append(
             _event(
                 event_id=f"capafy:content.measured:instagram:{shortcode}:{ts}",

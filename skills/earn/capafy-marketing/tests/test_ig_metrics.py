@@ -39,8 +39,12 @@ def _setup(monkeypatch, tmp_path: Path, sync_exit: int) -> tuple[Path, Path]:
     sync, calls = _sync_stub(tmp_path, sync_exit)
     monkeypatch.setattr(ig_metrics, "IGLEDGER", str(source))
     monkeypatch.setattr(ig_metrics, "METRICS", str(metrics))
+    monkeypatch.setattr(ig_metrics, "MARKETING_TERMINAL", str(tmp_path / "missing-terminal.json"))
+    monkeypatch.setattr(ig_metrics, "ACCOUNTS", str(tmp_path / "missing-accounts.json"))
     monkeypatch.setattr(
-        ig_metrics, "_read", lambda _url: {"views": 3, "likes": 1, "comments": 0}
+        ig_metrics,
+        "_read",
+        lambda _url, _handle, _port: {"views": 3, "likes": 1, "comments": 0},
     )
     monkeypatch.setenv("CAPAFY_EVENT_SYNC", str(sync))
     monkeypatch.setenv("CAPAFY_EVENT_LEDGER", str(tmp_path / "events.jsonl"))
@@ -77,6 +81,7 @@ def test_verified_marketing_terminal_is_measured_without_legacy_ig_ledger(
 ) -> None:
     missing_legacy = tmp_path / "missing-ig-ledger.jsonl"
     terminal = tmp_path / "capafy-marketing-terminal.json"
+    accounts = tmp_path / "capafy-accounts.json"
     metrics = tmp_path / "ig-metrics.jsonl"
     terminal.write_text(
         json.dumps(
@@ -84,6 +89,7 @@ def test_verified_marketing_terminal_is_measured_without_legacy_ig_ledger(
                 "telegram_message_id": "5166",
                 "outcome": {
                     "kind": "marketing_published",
+                    "handle": "capafy.skills8m4q2z",
                     "agent_id": "4866150011",
                     "title": "Decision Debate",
                     "reel_url": "https://www.instagram.com/reel/DbgsvEbo5kd/",
@@ -92,15 +98,28 @@ def test_verified_marketing_terminal_is_measured_without_legacy_ig_ledger(
             }
         )
     )
+    accounts.write_text(
+        json.dumps(
+            [
+                {
+                    "handle": "capafy.skills8m4q2z",
+                    "port": 65063,
+                    "session_owner": "browser",
+                }
+            ]
+        )
+    )
     sync, calls = _sync_stub(tmp_path, 0)
     read_urls = []
     monkeypatch.setattr(ig_metrics, "IGLEDGER", str(missing_legacy))
     monkeypatch.setattr(ig_metrics, "MARKETING_TERMINAL", str(terminal))
+    monkeypatch.setattr(ig_metrics, "ACCOUNTS", str(accounts))
     monkeypatch.setattr(ig_metrics, "METRICS", str(metrics))
     monkeypatch.setattr(
         ig_metrics,
         "_read",
-        lambda url: read_urls.append(url) or {"views": 3, "likes": 1, "comments": 0},
+        lambda url, handle, port: read_urls.append((url, handle, port))
+        or {"views": 95, "likes": None, "comments": None},
     )
     monkeypatch.setenv("CAPAFY_EVENT_SYNC", str(sync))
     monkeypatch.setenv("CAPAFY_EVENT_LEDGER", str(tmp_path / "events.jsonl"))
@@ -110,9 +129,14 @@ def test_verified_marketing_terminal_is_measured_without_legacy_ig_ledger(
     result = ig_metrics.main()
 
     assert result == 0
-    assert read_urls == ["https://www.instagram.com/reel/DbgsvEbo5kd/"]
+    assert read_urls == [
+        ("https://www.instagram.com/reel/DbgsvEbo5kd/", "capafy.skills8m4q2z", 65063)
+    ]
     snapshot = json.loads(metrics.read_text().splitlines()[0])
     assert snapshot["agent_id"] == "4866150011"
+    assert snapshot["views"] == 95
+    assert snapshot["likes"] is None
+    assert snapshot["comments"] is None
     assert calls.exists()
 
 
@@ -120,7 +144,7 @@ def test_browser_read_failure_is_not_recorded_as_zero_engagement(
     monkeypatch, tmp_path: Path
 ) -> None:
     metrics, calls = _setup(monkeypatch, tmp_path, 0)
-    monkeypatch.setattr(ig_metrics, "_read", lambda _url: {})
+    monkeypatch.setattr(ig_metrics, "_read", lambda _url, _handle, _port: {})
 
     result = ig_metrics.main()
 

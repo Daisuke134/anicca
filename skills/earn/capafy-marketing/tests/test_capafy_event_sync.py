@@ -155,6 +155,23 @@ def test_ig_metric_snapshots_remain_snapshots_instead_of_additive_deltas() -> No
     ]
 
 
+def test_ig_metric_snapshot_does_not_turn_unavailable_engagement_into_zero() -> None:
+    rows = [
+        {
+            "ts": 1785619491,
+            "reel_url": "https://www.instagram.com/reel/DbgsvEbo5kd/",
+            "agent_id": "4866150011",
+            "views": 95,
+            "likes": None,
+            "comments": None,
+        }
+    ]
+
+    events = sync.events_from_ig_metrics(rows)
+
+    assert events[0]["metrics"] == {"views": 95}
+
+
 def test_sync_all_cli_backfills_once_and_keeps_exact_cost_private(tmp_path: Path) -> None:
     money = tmp_path / "capafy-earn-ledger.jsonl"
     cost = tmp_path / "capafy-loop.log"

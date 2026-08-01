@@ -10,37 +10,62 @@ to `capafy-marketing-ig-metrics.jsonl`. Empty ledger (no verified Reels yet) = c
 IG attribution is handled separately by pull_attribution.py, which pulls the landing redirect
 counter after this metrics pass and joins it to the Capafy sales snapshot.
 """
-import json, os, subprocess, sys, time
+import json, os, re, subprocess, sys, time
 
 CDP = os.path.expanduser("~/.agents/skills/ig-account-create/scripts/cdp.py")
 PY = "/opt/homebrew/bin/python3"
 IGLEDGER = os.path.expanduser("~/.openclaw/state/capafy-marketing-ig-ledger.jsonl")
 METRICS = os.path.expanduser("~/.openclaw/state/capafy-marketing-ig-metrics.jsonl")
 MARKETING_TERMINAL = os.path.expanduser("~/.openclaw/state/capafy-marketing-terminal.json")
+ACCOUNTS = os.path.expanduser("~/.cloak/clip-accounts-capafy.json")
 
-READ_JS = r'''(() => {
-  const a=document.querySelector('article'); if(!a) return '{}';
-  const num=(s)=>{ if(!s) return 0; s=s.replace(/[,\s]/g,''); const m=s.match(/([\d\.]+)([KMkm]?)/); if(!m) return 0;
-    let n=parseFloat(m[1]); if(/[Kk]/.test(m[2]))n*=1000; if(/[Mm]/.test(m[2]))n*=1e6; return Math.round(n); };
-  const out={likes:0,comments:0,views:0};
-  for (const el of a.querySelectorAll('[aria-label],span,a')){
-    const t=(el.getAttribute('aria-label')||el.innerText||'');
-    let m;
-    if((m=t.match(/([\d,\.KMkm]+)\s*(likes|いいね)/i))) out.likes=Math.max(out.likes,num(m[1]));
-    if((m=t.match(/([\d,\.KMkm]+)\s*(comments|コメント)/i))) out.comments=Math.max(out.comments,num(m[1]));
-    if((m=t.match(/([\d,\.KMkm]+)\s*(views|plays|回視聴|再生)/i))) out.views=Math.max(out.views,num(m[1]));
-  }
-  return JSON.stringify(out);
-})()'''
-
-
-def _read(url):
-    tid = subprocess.run([PY, CDP, "new", url], capture_output=True, text=True, timeout=60).stdout.strip().strip('"')
-    time.sleep(7)
-    r = subprocess.run([PY, CDP, "eval", tid, "-"], input=READ_JS, capture_output=True, text=True, timeout=60).stdout.strip().strip('"').replace('\\"', '"')
-    subprocess.run([PY, CDP, "close", tid], capture_output=True, text=True, timeout=30)
+def _parse_count(value):
+    match = re.search(r"([\d,.]+)\s*(万|億|K|M|k|m)?", str(value or ""))
+    if not match:
+        return None
+    number, unit = match.groups()
     try:
-        return json.loads(r)
+        base = float(number.replace(",", "")) if unit else float(re.sub(r"[,.]", "", number))
+    except ValueError:
+        return None
+    return int(base * {"万": 1e4, "億": 1e8, "K": 1e3, "k": 1e3, "M": 1e6, "m": 1e6}.get(unit, 1))
+
+
+def _resolve_port(handle):
+    try:
+        rows = json.load(open(ACCOUNTS))
+    except Exception:
+        return 9222
+    matches = [
+        row for row in rows
+        if row.get("handle") == handle and row.get("session_owner") == "browser"
+        and int(row.get("port") or 0) > 0
+    ]
+    return int(matches[-1]["port"]) if matches else 9222
+
+
+def _read(url, handle, port):
+    code_match = re.search(r"/(?:reel|reels)/([^/?#]+)", url)
+    if not code_match or not handle:
+        return {}
+    code = code_match.group(1)
+    profile_url = f"https://www.instagram.com/{handle}/reels/"
+    env = {**os.environ, "CDP_PORT": str(port)}
+    tid = subprocess.run([PY, CDP, "new", profile_url], capture_output=True, text=True, timeout=60, env=env).stdout.strip().strip('"')
+    if not tid:
+        return {}
+    time.sleep(7)
+    expression = """(()=>{const code=%s;const links=[...document.querySelectorAll('a[href*="/reel/"]')];const a=links.find(x=>x.href.includes('/reel/'+code+'/'));return JSON.stringify({found:!!a,text:a?(a.innerText||a.textContent||''):''});})()""" % json.dumps(code)
+    raw = subprocess.run([PY, CDP, "eval", tid, "-"], input=expression, capture_output=True, text=True, timeout=60, env=env).stdout.strip()
+    subprocess.run([PY, CDP, "close", tid], capture_output=True, text=True, timeout=30, env=env)
+    try:
+        value = json.loads(raw)
+        if isinstance(value, str):
+            value = json.loads(value)
+        views = _parse_count(value.get("text")) if isinstance(value, dict) and value.get("found") else None
+        if views is None:
+            return {}
+        return {"views": views, "likes": None, "comments": None}
     except Exception:
         return {}
 
@@ -67,19 +92,27 @@ def main():
             and outcome.get("owner_session_verified") is True
             and outcome.get("reel_url")
         ):
-            reels[outcome["reel_url"]] = {
+            handle = outcome.get("handle")
+            reels = {outcome["reel_url"]: {
                 "reel_url": outcome["reel_url"],
                 "agent_id": outcome.get("agent_id"),
                 "listing_name": outcome.get("title"),
-            }
+                "handle": handle,
+                "port": _resolve_port(handle),
+            }}
     except Exception:
         pass
     if not reels:
         print(json.dumps({"ok": True, "measured": 0, "note": "no reel_url rows yet — no-op"})); return 0
     snapshots = []
     for url, r in reels.items():
-        s = _read(url)
-        if not isinstance(s, dict) or set(("views", "likes", "comments")) - set(s):
+        handle = r.get("handle") or r.get("account")
+        port = int(r.get("port") or _resolve_port(handle))
+        s = _read(url, handle, port)
+        values = [s.get(field) for field in ("views", "likes", "comments")] if isinstance(s, dict) else []
+        if not isinstance(s, dict) or set(("views", "likes", "comments")) - set(s) or not any(
+            isinstance(value, int) and value >= 0 for value in values
+        ):
             print(
                 json.dumps({"ok": False, "error": f"browser metrics read failed for {url}"}),
                 file=sys.stderr,
