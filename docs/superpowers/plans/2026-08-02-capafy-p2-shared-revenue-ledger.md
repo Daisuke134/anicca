@@ -467,7 +467,7 @@ git commit -m "feat(capafy): publish event-backed company dashboard"
 - Consumes all P2 components and production source paths.
 - Produces production ledger, private sidecars, public dashboard, Telegram projection, and verification artifact `~/.openclaw/state/capafy-p2-verification.json`.
 
-- [ ] **Step 1: Write the production-contract test**
+- [x] **Step 1: Write the production-contract test**
 
 The test accepts explicit fixture paths and proves:
 
@@ -477,7 +477,7 @@ The test accepts explicit fixture paths and proves:
 - dashboard and Telegram render the same identifier;
 - private evidence is absent from public output.
 
-- [ ] **Step 2: Run the complete offline P0-P2 suite**
+- [x] **Step 2: Run the complete offline P0-P2 suite**
 
 ```bash
 python3 -m pytest -q \
@@ -498,19 +498,19 @@ bash skills/self/tests/test_capafy_ig_account_state.sh
 git diff --check
 ```
 
-- [ ] **Step 3: Backfill production twice**
+- [x] **Step 3: Backfill production twice**
 
 Run `sync-all` against the real sources with an initially absent canonical ledger. Capture first-run counts and SHA-256, rerun, and require `appended=0` with unchanged ledger SHA-256 on the second pass.
 
-- [ ] **Step 4: Verify local projection parity before switching**
+- [x] **Step 4: Verify local projection parity before switching**
 
 Compare every inventory, order, gross, pending, realized, MRR, cost, contribution, account, Reel, and incident field with independent source reads. Stop and repair on any mismatch.
 
-- [ ] **Step 5: Kickstart goal monitor and verify exactly-once Telegram**
+- [x] **Step 5: Kickstart goal monitor and verify exactly-once Telegram**
 
 Record the Telegram message identifier and body. It must contain natural language, the real Reel/listing/dashboard URLs, all separated money values, no local path, and the same short projection identifier as the local projection.
 
-- [ ] **Step 6: Deploy the existing Capafy Netlify site explicitly**
+- [x] **Step 6: Deploy the existing Capafy Netlify site explicitly**
 
 ```bash
 cd skills/earn/capafy-marketing
@@ -524,15 +524,15 @@ netlify deploy --prod \
 
 Do not use the repository root's unrelated linked Netlify project.
 
-- [ ] **Step 7: Verify public dashboard parity**
+- [x] **Step 7: Verify public dashboard parity**
 
 Require HTTP 200 from `/company/` and `/company/state.json`; compare remote `projection_id` and every business value with the local projection. Recheck `/go/4866150011` UTM preservation and the existing Reel/listing HTTP status.
 
-- [ ] **Step 8: Seed and close one writer incident**
+- [x] **Step 8: Seed and close one writer incident**
 
 Using isolated fixture state and the normal outcome monitor, force one canonical append failure, verify `incident.detected` and `incident.repair_started`, repair the tail, retry the original append, and require `incident.repaired` then `incident.verified`. No production Reel, listing, sale, or Telegram success is repeated.
 
-- [ ] **Step 9: Update living spec and commit P2 closure**
+- [x] **Step 9: Update living spec and commit P2 closure**
 
 Change the parent spec status to `P0-P2 verified; P3 active`, add exact test counts, event counts, ledger digest, production projection identifier, Telegram ID, Netlify deploy ID, URLs, and seeded self-heal incident chain.
 
@@ -540,6 +540,6 @@ Change the parent spec status to `P0-P2 verified; P3 active`, add exact test cou
 git commit -m "docs(capafy): verify shared revenue ledger in production"
 ```
 
-- [ ] **Step 10: Run verification-before-completion audit**
+- [x] **Step 10: Run verification-before-completion audit**
 
 Re-run the full commands from Step 2 and all runtime checks from Steps 3-8. P2 is complete only if every item in the P2 design's ten-point verification strategy has direct current evidence.
