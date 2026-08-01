@@ -18,6 +18,7 @@ LIFECYCLE="${CAPAFY_IG_LIFECYCLE:-$HERE/scripts/capafy_ig_lifecycle.py}"
 POSTER="${CAPAFY_REEL_POSTER:-$HERE/scripts/capafy_reel_poster.py}"
 SELECTOR="${CAPAFY_LISTING_SELECTOR:-$HERE/scripts/select_listing.py}"
 BROWSER="${CAPAFY_MARKETING_BROWSER:-$HERE/../../browser/ensure_provision_browser.sh}"
+GUARD="${CAPAFY_BROWSER_GUARD:-$HOME/.config/ai/bin/browser-guard.sh}"
 HANDOFF="${CAPAFY_MARKETING_HANDOFF:-$HERE/capafy-marketing-handoff.sh}"
 KICKSTART="${CAPAFY_LAUNCHCTL:-launchctl}"
 ACCOUNTS="${CAPAFY_IG_ACCOUNTS_FILE:-$(capafy_ig_accounts_file)}"
@@ -37,6 +38,14 @@ if [ "${CAPAFY_IG_PROBE_ONLY:-0}" = "1" ]; then
 fi
 case "$MODE" in dry|live) ;; *) printf 'invalid CAPAFY_MARKETING_MODE=%s\n' "$MODE" >&2; exit 2;; esac
 mkdir -p "$STATE_DIR"
+browser_leased=0
+identity=""
+cleanup(){
+  if [ "$browser_leased" = "1" ] && [ -n "$identity" ]; then
+    bash "$GUARD" release "$identity" >/dev/null 2>&1 || true
+  fi
+}
+trap cleanup EXIT
 # Crash recovery: delivery may succeed immediately before lifecycle bookkeeping.
 # Reconcile that exact receipt without creating or sharing a second Reel.
 if [ -f "$RESULT" ] && [ -f "$STATE" ] && [ "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1])).get("result",""))' "$RESULT" 2>/dev/null)" = published ]; then
@@ -72,7 +81,7 @@ status="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status
 capability="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["capability"])' "$STATE")"
 [ "$capability" = publish_probe ] || fail "unsupported marketing capability in state $status: $capability"
 identity="$(_resolve_capafy_ig_account_field "$ACCOUNTS" browser_identity)"; [ -n "$identity" ] || fail "active account has no browser identity"
-cdp="$(bash "$BROWSER" "$identity")" || fail "active account browser did not start"; port="${cdp##*:}"
+cdp="$(AI_BROWSER_HOLDER_PID=$$ AI_BROWSER_GUARD="$GUARD" bash "$BROWSER" "$identity")" || fail "active account browser did not start"; browser_leased=1; port="${cdp##*:}"
 case "$port" in ''|*[!0-9]*) fail "active browser returned no numeric port";; esac
 tid="${CAPAFY_IG_TID:-}"
 if [ -z "$tid" ]; then

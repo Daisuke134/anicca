@@ -47,15 +47,20 @@ cat >"$T/bin/launchctl" <<'SH'
 #!/usr/bin/env bash
 echo "$*" >>"$KICKS"
 SH
+cat >"$T/bin/guard" <<'SH'
+#!/usr/bin/env bash
+echo "$*" >>"$GUARD_CALLS"
+SH
 chmod +x "$T/bin/"*
 case_setup(){
  C="$T/$1"; mkdir -p "$C/home/.cloak" "$C/state"; echo '[]' >"$C/accounts"
- : >"$C/runs"; : >"$C/posts"; : >"$C/messages"; : >"$C/kicks"
+ : >"$C/runs"; : >"$C/posts"; : >"$C/messages"; : >"$C/kicks"; : >"$C/guard.calls"
  MEDIA="$C/reel.mp4"; printf '\0\0\0\30ftypmp42fixture' >"$MEDIA"
  export HOME="$C/home" CAPAFY_IG_ACCOUNTS_FILE="$C/accounts" CAPAFY_IG_LIFECYCLE_STATE="$C/state/lifecycle.json" CAPAFY_OUTCOME_STATE_DIR="$C/state"
  export CAPAFY_MARKETING_RESULT="$C/state/result.json" CAPAFY_CREATIVE_CANDIDATE="$C/state/candidate.json" CAPAFY_RUN_AGENT="$T/bin/runner" CAPAFY_REEL_POSTER="$T/bin/poster"
  export CAPAFY_LISTING_SELECTOR="$T/bin/selector" SELECT_CALLS="$C/select.calls"; : >"$SELECT_CALLS"
  export CAPAFY_MARKETING_BROWSER="$T/bin/browser" CAPAFY_TELEGRAM_SENDER="$T/bin/sender" CAPAFY_LAUNCHCTL="$T/bin/launchctl" CAPAFY_IG_LIFECYCLE="$LIFECYCLE"
+ export CAPAFY_BROWSER_GUARD="$T/bin/guard" GUARD_CALLS="$C/guard.calls"
  export CAPAFY_IG_TID=tab-1 CAPAFY_MARKETING_MODE=live RUN_CALLS="$C/runs" POST_CALLS="$C/posts" MESSAGES="$C/messages" KICKS="$C/kicks" MEDIA
  unset CANDIDATE_MODE POSTER_MODE
 }
@@ -71,6 +76,7 @@ eq "verified session immediately calls creative" "$(wc -l <"$RUN_CALLS" | tr -d 
 eq "immediate probe selects from seller inventory" "$(wc -l <"$SELECT_CALLS" | tr -d ' ')" 1
 case_setup foreign; active; export CANDIDATE_MODE=foreign; bash "$DAILY" >/dev/null 2>&1; rc=$?
 [ "$rc" -ne 0 ] && ok "foreign public listing refused" || bad "foreign public listing accepted"; eq "foreign listing not posted" "$(wc -l <"$POST_CALLS" | tr -d ' ')" 0
+eq "foreign failure releases browser lease" "$(grep -Fc 'release instagram:capafy-provision' "$GUARD_CALLS")" 1
 case_setup commercial; active; export CANDIDATE_MODE=commercial; bash "$DAILY" >/dev/null 2>&1; rc=$?
 [ "$rc" -ne 0 ] && ok "commercial candidate refused" || bad "commercial candidate accepted"; eq "commercial candidate not posted" "$(wc -l <"$POST_CALLS" | tr -d ' ')" 0
 case_setup missing; active; export CANDIDATE_MODE=missing; bash "$DAILY" >/dev/null 2>&1; rc=$?
@@ -80,6 +86,7 @@ eq "ready calls marketing agent" "$(grep -Fc -- '--task-class marketing-agent' "
 case_setup live; active; bash "$DAILY" >/dev/null 2>&1; eq "live terminal succeeds" "$?" 0
 has "live reports verified Reel" "$MESSAGES" "https://www.instagram.com/reel/NEW456/"; eq "live records Reel" "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["last_public_reel_url"])' "$CAPAFY_IG_LIFECYCLE_STATE")" https://www.instagram.com/reel/NEW456/
 eq "live records owner session proof" "$(python3 -c 'import json,sys;print(str(json.load(open(sys.argv[1]))["post_write_session_verified"]).lower())' "$CAPAFY_IG_LIFECYCLE_STATE")" true
+eq "successful pass releases browser lease" "$(grep -Fc 'release instagram:capafy-provision' "$GUARD_CALLS")" 1
 case_setup unverified; active; export POSTER_MODE=unverified; bash "$DAILY" >/dev/null 2>&1; rc=$?
 [ "$rc" -ne 0 ] && ok "missing owner proof fails terminal" || bad "missing owner proof accepted"; recorded_unverified="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1])).get("last_public_reel_url") or "")' "$CAPAFY_IG_LIFECYCLE_STATE" 2>/dev/null || true)"; [ -z "$recorded_unverified" ] && ok "unverified owner records no Reel" || bad "unverified owner recorded Reel"
 case_setup challenge; active; export POSTER_MODE=challenge; bash "$DAILY" >/dev/null 2>&1; rc=$?
