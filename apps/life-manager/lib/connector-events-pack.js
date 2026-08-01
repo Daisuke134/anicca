@@ -7,6 +7,7 @@ const { inspectLumaDateInventory } = require("./luma-date-inventory.js");
 const { createLumaBrowserProvider } = require("./luma-browser-provider.js");
 const { inferEventPreferenceRanking } = require("./event-preference-ranking.js");
 const { inferEventGoalSerendipity } = require("./event-goal-serendipity.js");
+const { runLumaCandidateSequence } = require("./luma-candidate-loop.js");
 const { createConnpassApiClient } = require("./connpass-api-client.js");
 const {
   createEventSourceCapabilities,
@@ -42,6 +43,7 @@ function createConnectorEventsPack(options = {}) {
   const planSourceHandoff = options.planSourceHandoff || planEventSourceHandoff;
   const executeSourceHandoff = options.executeSourceHandoff || executeEventSourceHandoff;
   const createConnpassClient = options.createConnpassClient || createConnpassApiClient;
+  const runCandidateSequence = options.runCandidateSequence || runLumaCandidateSequence;
   const authAwareDriver = createAuthAwareDriver({ dailyDriver, auth });
   if (!authAwareDriver || typeof authAwareDriver.withLumaPage !== "function") throw invalid();
   const provider = createProvider({
@@ -83,6 +85,9 @@ function createConnectorEventsPack(options = {}) {
     },
     evaluateDateGoals(dateInventory, preferenceRanking, goals, extra = {}) {
       return evaluateGoalSerendipity({ dateInventory, preferenceRanking, goals }, extra);
+    },
+    runSameDayCandidates(candidates, attempt) {
+      return runCandidateSequence({ candidates, attempt });
     },
     handoffEventSource(date, lumaOutcome, extra = {}) {
       const connpassApiKey = String(extra.connpassApiKey == null ? "" : extra.connpassApiKey);

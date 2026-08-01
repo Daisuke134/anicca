@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "objective": "O1B-21 same-day candidate continuation",
+  "observed_at": "2026-08-02",
+  "implementation": {
+    "single_state_machine": "apps/life-manager/lib/luma-candidate-loop.js",
+    "events_pack_entrypoint": "runSameDayCandidates",
+    "verified_success_only": true,
+    "same_day_continue_statuses": [
+      "approval_required",
+      "cancelled",
+      "conflict",
+      "full",
+      "not_eligible",
+      "waitlist"
+    ],
+    "recovery_statuses": [
+      "inventory_incomplete",
+      "login_required",
+      "transport_unavailable"
+    ],
+    "unknown_effect_requires_reconciliation": true,
+    "exhaustion_hands_to_next_provider": true
+  },
+  "verification": {
+    "focused_tests_passed": 12,
+    "focused_tests_failed": 0,
+    "outbound_tests_passed": 180,
+    "outbound_tests_failed": 0
+  }
+}
