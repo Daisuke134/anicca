@@ -174,7 +174,7 @@ function readRawBody(req) {
 // One tag, two readers (/health and the boot line). It was written out twice before, so a deploy
 // could report one build to curl and another to the logs — the pair of them is the only way to tell
 // live code apart from a deploy that never happened, and a pair that can disagree proves nothing.
-const BUILD_TAG = "lm2a-webhook-retry-v1";
+const BUILD_TAG = "lm2c-departure-ladder-v1";
 const PORT = Number(process.env.PORT) || 8788;
 const GEMINI_KEY = process.env.GEMINI_API_KEY;
 const DEBUG_TRANSCRIPTS = process.env.DEBUG_TRANSCRIPTS === "1";
