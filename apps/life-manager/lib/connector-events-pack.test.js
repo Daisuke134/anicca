@@ -164,6 +164,28 @@ test("the pack exposes the rolling coverage continuation state machine", () => {
   assert.deepEqual(calls, [{ coverage: "coverage", observedOutcomes: ["outcome"], now: "now" }]);
 });
 
+test("the pack runs only calendar-eligible candidates through the same-day state machine", async () => {
+  const calls = [];
+  const attempt = async () => ({ status: "not_eligible" });
+  const pack = createConnectorEventsPack({
+    dailyDriver: { withLumaPage: async () => {} },
+    auth: { ensureAuthenticated: async () => ({ status: "authenticated" }) },
+    evidenceStore: { record: async () => {} },
+    createAuthAwareDriver: () => ({ withLumaPage: async () => {} }),
+    createProvider: () => ({ inspectRegistration: async () => {}, submitRegistration: async () => {} }),
+    selectCalendarEligibleCandidates(dateInventory, calendarGate) {
+      calls.push(["select", dateInventory, calendarGate]);
+      return [{ event_ref: "luma-event://event/free", canonical_url: "https://luma.com/free" }];
+    },
+    runCandidateSequence(input) { calls.push(["run", input]); return "sequence"; },
+  });
+  assert.equal(await pack.runCalendarGatedSameDay("inventory", "gate", attempt), "sequence");
+  assert.deepEqual(calls, [
+    ["select", "inventory", "gate"],
+    ["run", { candidates: [{ event_ref: "luma-event://event/free", canonical_url: "https://luma.com/free" }], attempt }],
+  ]);
+});
+
 test("pack construction fails closed without auth, driver, or evidence store", () => {
   assert.throws(() => createConnectorEventsPack({}), /events pack configuration unavailable/i);
   assert.throws(() => createConnectorEventsPack({
