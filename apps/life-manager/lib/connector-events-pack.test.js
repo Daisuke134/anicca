@@ -207,6 +207,24 @@ test("the pack owns exhaustive busy-calendar read and travel-aware gate operatio
   ]);
 });
 
+test("the pack syncs only a verified registration through the connector calendar boundary", async () => {
+  const calls = [];
+  const pack = createConnectorEventsPack({
+    dailyDriver: { withLumaPage: async () => {} },
+    auth: { ensureAuthenticated: async () => ({ status: "authenticated" }) },
+    evidenceStore: { record: async () => {} },
+    createAuthAwareDriver: () => ({ withLumaPage: async () => {} }),
+    createProvider: () => ({ inspectRegistration: async () => {}, submitRegistration: async () => {} }),
+    syncRegistrationCalendar(input) { calls.push(input); return "calendar-sync"; },
+  });
+  const input = {
+    calendar: "calendar", calendarId: "primary", dateInventory: "inventory", calendarGate: "gate",
+    eventRef: "event-ref", registrationReceipt: "receipt", registrationJob: "job",
+  };
+  assert.equal(await pack.syncRegistrationCalendar(input), "calendar-sync");
+  assert.deepEqual(calls, [input]);
+});
+
 test("pack construction fails closed without auth, driver, or evidence store", () => {
   assert.throws(() => createConnectorEventsPack({}), /events pack configuration unavailable/i);
   assert.throws(() => createConnectorEventsPack({

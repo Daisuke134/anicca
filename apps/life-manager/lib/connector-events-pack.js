@@ -14,6 +14,7 @@ const {
   evaluateCalendarCandidateGate,
 } = require("./calendar-candidate-gate.js");
 const { inspectGoogleCalendarBusyInventory } = require("./google-calendar-busy-inventory.js");
+const { syncVerifiedRegistrationToGoogleCalendar } = require("./connector-calendar-sync.js");
 const { createConnpassApiClient } = require("./connpass-api-client.js");
 const {
   createEventSourceCapabilities,
@@ -54,6 +55,7 @@ function createConnectorEventsPack(options = {}) {
   const selectCalendarEligibleCandidates = options.selectCalendarEligibleCandidates || calendarEligibleLumaCandidates;
   const inspectBusyCalendar = options.inspectBusyCalendar || inspectGoogleCalendarBusyInventory;
   const evaluateCalendarGate = options.evaluateCalendarGate || evaluateCalendarCandidateGate;
+  const syncRegistrationCalendar = options.syncRegistrationCalendar || syncVerifiedRegistrationToGoogleCalendar;
   const authAwareDriver = createAuthAwareDriver({ dailyDriver, auth });
   if (!authAwareDriver || typeof authAwareDriver.withLumaPage !== "function") throw invalid();
   const provider = createProvider({
@@ -110,6 +112,9 @@ function createConnectorEventsPack(options = {}) {
       return evaluateCalendarGate({
         dateInventory, busyInventory, date, homeLocation, routeMinutes,
       });
+    },
+    syncRegistrationCalendar(input) {
+      return syncRegistrationCalendar(input);
     },
     planCoverageContinuation(coverage, observedOutcomes, now) {
       return planCoverageContinuation({ coverage, observedOutcomes, now });
