@@ -3537,3 +3537,4 @@
 {"ts":1785586662,"source":"cook","task":"explore: Solana bounty platform paying USDC for AI model training data contribution","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSAC6XA77E12A2FC4AA34C19"}
 {"ts":1785588585,"source":"cook","task":"explore: Solana low-fee microtask platform paying USDC for data labeling or AI training data contributions","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSADC69M8D179EF320564133"}
 {"ts":1785588724,"source":"cook","task":"explore: Solana crowdsource data annotation platform paying USDC for labeling tasks","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSADEXJ0A4B7F3BB21D64FD3"}
+{"ts":1785590660,"source":"cook","task":"explore: Solana API marketplace paying per request USDC microtasks","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSAEKLR2345586C491584267"}
