@@ -32,6 +32,32 @@ function normalizedControls(value) {
   return new Set(value.map((item) => bounded(item, 200).toLowerCase()).filter(Boolean));
 }
 
+function publicNames(value) {
+  const rows = Array.isArray(value) ? value : value == null ? [] : [value];
+  const result = [];
+  for (const row of rows.slice(0, 100)) {
+    const name = bounded(row && typeof row === "object" ? row.name : row, 300);
+    if (name && !result.includes(name)) result.push(name);
+  }
+  return Object.freeze(result);
+}
+
+function venueAddress(location) {
+  const address = location && location.address;
+  if (typeof address === "string") return bounded(address, 1_000);
+  if (!address || typeof address !== "object" || Array.isArray(address)) return "";
+  const country = address.addressCountry && typeof address.addressCountry === "object"
+    ? address.addressCountry.name
+    : address.addressCountry;
+  return [
+    address.streetAddress,
+    address.addressLocality,
+    address.addressRegion,
+    address.postalCode,
+    country,
+  ].map((part) => bounded(part, 300)).filter(Boolean).join(", ");
+}
+
 function includesAny(controls, values) {
   return values.some((value) => controls.has(value));
 }
@@ -93,6 +119,8 @@ function normalizeLumaEventDetail(input = {}) {
     return null;
   }
   const controls = normalizedControls(input.controls);
+  const organizerNames = publicNames(event.organizer);
+  const participantDescriptors = publicNames(event.attendee);
   const authStatus = includesAny(controls, ["ログイン", "sign in", "log in"])
     ? "login_required"
     : "unknown";
@@ -105,6 +133,11 @@ function normalizeLumaEventDetail(input = {}) {
     ends_at: endsAt,
     attendance_mode: attendanceMode,
     venue_name: venueName,
+    venue_address: venueAddress(event.location),
+    description: bounded(event.description, 20_000),
+    organizer_names: organizerNames,
+    participant_descriptors: participantDescriptors,
+    participant_visibility: participantDescriptors.length > 0 ? "public_metadata" : "unavailable",
     event_status: eventStatus,
     auth_status: authStatus,
     rsvp_status: rsvpStatus(controls),
@@ -137,9 +170,23 @@ async function readRawLumaEventDetail(page, canonicalUrl) {
             endDate: value.endDate,
             eventAttendanceMode: value.eventAttendanceMode,
             eventStatus: value.eventStatus,
+            description: value.description,
+            organizer: (Array.isArray(value.organizer) ? value.organizer : [value.organizer])
+              .filter(Boolean).slice(0, 100).map((row) => ({ name: row && row.name || row })),
+            attendee: (Array.isArray(value.attendee) ? value.attendee : [value.attendee])
+              .filter(Boolean).slice(0, 100).map((row) => ({ name: row && row.name || row })),
             location: value.location && {
               "@type": value.location["@type"],
               name: value.location.name,
+              address: value.location.address && typeof value.location.address === "object" ? {
+                streetAddress: value.location.address.streetAddress,
+                addressLocality: value.location.address.addressLocality,
+                addressRegion: value.location.address.addressRegion,
+                postalCode: value.location.address.postalCode,
+                addressCountry: value.location.address.addressCountry && typeof value.location.address.addressCountry === "object"
+                  ? { name: value.location.address.addressCountry.name }
+                  : value.location.address.addressCountry,
+              } : value.location.address,
             },
           });
         }
