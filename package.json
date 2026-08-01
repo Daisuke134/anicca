@@ -2,6 +2,7 @@
   "name": "life-manager",
   "private": true,
   "scripts": {
+    "audit:startup-context": "node scripts/startup-context/audit.mjs",
     "test:install": "node --test test/install-isolation.test.mjs",
     "test:oss": "node --test test/oss-self-contained.test.mjs",
     "verify:oss": "node scripts/verify-oss-self-contained.mjs"

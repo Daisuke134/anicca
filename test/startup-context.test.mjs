@@ -3,6 +3,7 @@ import test from "node:test";
 import { readFile } from "node:fs/promises";
 
 import {
+  auditStartupContext,
   contextDigest,
   loadStartupContext,
   validateStartupContext,
@@ -84,4 +85,66 @@ test("context digest is stable and changes with the facts", async () => {
   assert.equal(contextDigest(context), contextDigest(sameFacts));
   assert.notEqual(contextDigest(context), contextDigest(changedFacts));
   assert.match(contextDigest(context), /^[a-f0-9]{64}$/);
+});
+
+test("audit detects stale facts and reports unverified optional media", async () => {
+  const context = clone(await loadStartupContext(contextPath));
+  const result = await auditStartupContext(context, {
+    now: new Date("2026-10-02T00:00:00+09:00"),
+    maxAgeDays: 30,
+    checkLinks: false,
+  });
+
+  assert.equal(result.ok, false);
+  assert.match(result.errors.join("\n"), /stale/i);
+  assert.match(result.warnings.join("\n"), /links\.demo.*unverified/i);
+  assert.match(result.warnings.join("\n"), /links\.founder_video.*unverified/i);
+  assert.match(result.warnings.join("\n"), /links\.dashboard.*legacy/i);
+});
+
+test("audit rejects forbidden legacy exact values", async () => {
+  const context = clone(await loadStartupContext(contextPath));
+  context.links.repository.url = context.forbidden_exact_values.repositories[0];
+
+  const result = await auditStartupContext(context, {
+    now: new Date("2026-08-02T13:00:00+09:00"),
+    checkLinks: false,
+  });
+
+  assert.equal(result.ok, false);
+  assert.match(result.errors.join("\n"), /forbidden.*repository/i);
+});
+
+test("audit reads back every verified canonical link", async () => {
+  const context = clone(await loadStartupContext(contextPath));
+  const requested = [];
+  const fetchImpl = async (url) => {
+    requested.push(url);
+    return new Response("Life Manager", { status: 200 });
+  };
+
+  const result = await auditStartupContext(context, {
+    now: new Date("2026-08-02T13:00:00+09:00"),
+    fetchImpl,
+  });
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(
+    requested.sort(),
+    ["product", "repository", "telegram"]
+      .map((key) => context.links[key].url)
+      .sort(),
+  );
+  assert.equal(result.link_checks.every((check) => check.ok), true);
+});
+
+test("audit rejects a 200 page that does not contain the expected product identity", async () => {
+  const context = clone(await loadStartupContext(contextPath));
+  const result = await auditStartupContext(context, {
+    now: new Date("2026-08-02T13:00:00+09:00"),
+    fetchImpl: async () => new Response("Unrelated legacy product", { status: 200 }),
+  });
+
+  assert.equal(result.ok, false);
+  assert.match(result.errors.join("\n"), /expected text/i);
 });

@@ -1,7 +1,8 @@
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 
-const REQUIRED_LINKS = ["product", "repository", "telegram", "dashboard"];
+const REQUIRED_LINKS = ["product", "repository", "telegram"];
+const OPTIONAL_LINKS = ["dashboard", "demo", "founder_video"];
 
 function isNonEmptyString(value) {
   return typeof value === "string" && value.trim().length > 0;
@@ -48,6 +49,7 @@ export function validateStartupContext(context) {
     }
     if (!isNonEmptyString(link.url)) errors.push(`links.${key}.url is required`);
     if (link.status !== "verified") errors.push(`links.${key}.status must be verified`);
+    if (!isNonEmptyString(link.expected_text)) errors.push(`links.${key}.expected_text is required`);
     if (!isNonEmptyString(link.verified_at)) errors.push(`links.${key}.verified_at is required`);
     if (!isNonEmptyString(link.evidence)) errors.push(`links.${key}.evidence is required`);
   }
@@ -78,4 +80,104 @@ export function validateStartupContext(context) {
 export function contextDigest(context) {
   const canonical = JSON.stringify(stableValue(context));
   return createHash("sha256").update(canonical).digest("hex");
+}
+
+function ageInDays(value, now) {
+  const timestamp = Date.parse(value);
+  if (!Number.isFinite(timestamp)) return Number.POSITIVE_INFINITY;
+  return (now.getTime() - timestamp) / 86_400_000;
+}
+
+export async function auditStartupContext(
+  context,
+  {
+    now = new Date(),
+    maxAgeDays = 30,
+    checkLinks = true,
+    fetchImpl = globalThis.fetch,
+  } = {},
+) {
+  const errors = validateStartupContext(context);
+  const warnings = [];
+  const linkChecks = [];
+
+  if (ageInDays(context?.updated_at, now) > maxAgeDays) {
+    errors.push(`startup context is stale: updated_at exceeds ${maxAgeDays} days`);
+  }
+
+  for (const key of REQUIRED_LINKS) {
+    const link = context?.links?.[key];
+    if (link && ageInDays(link.verified_at, now) > maxAgeDays) {
+      errors.push(`links.${key} is stale: verified_at exceeds ${maxAgeDays} days`);
+    }
+  }
+
+  for (const key of OPTIONAL_LINKS) {
+    const link = context?.links?.[key];
+    if (!link || link.status !== "verified") {
+      warnings.push(`links.${key} is ${link?.status ?? "missing"} and cannot be attached`);
+    }
+  }
+
+  const forbiddenProductNames = context?.forbidden_exact_values?.product_names ?? [];
+  if (forbiddenProductNames.includes(context?.product?.name)) {
+    errors.push(`forbidden product name: ${context.product.name}`);
+  }
+
+  const forbiddenRepositories = context?.forbidden_exact_values?.repositories ?? [];
+  if (forbiddenRepositories.includes(context?.links?.repository?.url)) {
+    errors.push("forbidden repository URL is configured as canonical");
+  }
+
+  const forbiddenHomepages = context?.forbidden_exact_values?.homepages ?? [];
+  if (forbiddenHomepages.includes(context?.links?.product?.url)) {
+    errors.push("forbidden homepage URL is configured as canonical");
+  }
+
+  if (checkLinks) {
+    if (typeof fetchImpl !== "function") {
+      errors.push("link audit requires a fetch implementation");
+    } else {
+      for (const key of REQUIRED_LINKS) {
+        const url = context?.links?.[key]?.url;
+        if (!isNonEmptyString(url)) continue;
+        try {
+          const response = await fetchImpl(url, {
+            method: "GET",
+            redirect: "follow",
+            headers: { "user-agent": "life-manager-startup-context-audit/1.0" },
+          });
+          const body = await response.text();
+          const expectedText = context.links[key].expected_text;
+          const identityMatches = body.toLocaleLowerCase().includes(expectedText.toLocaleLowerCase());
+          const check = {
+            key,
+            url,
+            ok: response.ok && identityMatches,
+            status: response.status,
+            final_url: response.url || url,
+            identity_matches: identityMatches,
+          };
+          linkChecks.push(check);
+          if (!response.ok) errors.push(`links.${key} readback returned HTTP ${response.status}`);
+          if (response.ok && !identityMatches) {
+            errors.push(`links.${key} did not contain expected text: ${expectedText}`);
+          }
+        } catch (error) {
+          linkChecks.push({ key, url, ok: false, error: error.message });
+          errors.push(`links.${key} readback failed: ${error.message}`);
+        }
+      }
+    }
+  }
+
+  return {
+    ok: errors.length === 0,
+    context_version: context?.context_version ?? null,
+    context_digest: contextDigest(context),
+    audited_at: now.toISOString(),
+    errors,
+    warnings,
+    link_checks: linkChecks,
+  };
 }
