@@ -426,6 +426,16 @@ verified artifact refだけを読み、技術語やhashではなくevent名・�
 eventとCalendarはplaceholder buttonではなく実URLをcaptionへ入れ、Telegramから直接tapできる形にする。
 既存OpenClaw Telegram transportで一度だけ送信し、positive message ID以外を成功にしない。
 
+完了: `O1B-07`。O1B-06のtenant-bound QR PNGをruntime volumeから読み、非技術者向け日本語captionを
+組み立てた。captionは`Engineer BAR`、8月15日18:00〜23:00、新宿の会場、Dais名義、選定理由、
+Luma確認mail済み、Google Calendar済みを説明し、eventとCalendarの実URLを直接tapできる形で含む。
+既存OpenClaw Telegram accountからQR photoを一度だけ実送信し、positive message ID `5103`を得た。
+最初の2回は許可外temporary pathをOpenClawがdelivery前に拒否したためTelegram side effectは0であり、
+OpenClaw自身のowner-only `/tmp/openclaw` media rootへ修正後の一回だけが配信された。temporary PNGは送信後に
+削除し、chat IDはhashだけ、bot tokenとguest keyは保存しない。focused 5件、outbound 86件が成功した。
+実測証拠: `docs/evidence/outbound/2026-08-01-o1b07-live-telegram-ticket-delivery.json`。
+次は固定順序どおりO1B-08で、agentがevent本文から一般参加とLT/CFP/demo枠を判断するevalを通す。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
@@ -547,7 +557,7 @@ identity/browser/calendar reference検証を追加し、新規4件と既存runti
 - [x] O1B-04 実イベント一件へ登録
 - [x] O1B-05 確認mailをGmailで読み、同一attemptへ照合
 - [x] O1B-06 同一eventのLuma公式QRをguest key hashで照合して保存
-- [ ] O1B-07 Telegramへ実QRを送る
+- [x] O1B-07 人間向け説明と直接link付きでTelegramへ実QRを送る
 - [ ] O1B-08 agentが本文からLT/CFPを判断するevalを通す
 - [ ] O1B-09 旧Connector loginを復旧しevents packへ統合
 - [ ] O1B-10 重複旧実装を退役
