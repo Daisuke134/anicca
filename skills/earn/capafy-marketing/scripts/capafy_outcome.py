@@ -283,7 +283,8 @@ def render_outcome(data: dict) -> str:
             f"Capafy — Consolidated company state, {data['date']}",
             (
                 f"Products: {inventory['online']} online, "
-                f"{inventory['under_review']} under review, {inventory['draft']} drafts, "
+                f"{inventory['under_review']} under review, {inventory['draft']} "
+                f"{'draft' if inventory['draft'] == 1 else 'drafts'}, "
                 f"{inventory['rejected']} rejected."
             ),
             f"Sales: {orders} lifetime {order_word} / {_money(data['gross_usd'])} gross.",

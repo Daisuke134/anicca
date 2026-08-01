@@ -348,11 +348,11 @@ The $10M product is not an individual skill. It is the platform that continuousl
 
 ### Execution status
 
-- **Active priority:** P0 — Truthful outcomes and repair closure.
+- **Active priority:** P1 — Make the Marketer complete reliably. P0 is complete and remains the enforced reporting/repair boundary.
 - **Implementation plan:** [`../plans/2026-08-01-capafy-p0-truthful-outcomes.md`](../plans/2026-08-01-capafy-p0-truthful-outcomes.md)
 - **Execution rule:** complete and verify one numbered task at a time; after each task, append the command evidence and commit hash here before beginning the next task.
-- **Current state (2026-08-01):** Tasks 1-6 verified offline. The goal monitor preserves machine JSON but renders a natural-language company report from server inventory, reconciled money, cost, account state, terminals, and incidents; the installed/source schedule is 09:30.
-- **Next action:** Task 7, strengthen business-outcome health, load/reload all jobs, run the complete suite, and prove the seeded detect-to-closure lifecycle plus read-only production reconciliation.
+- **Current state (2026-08-01):** P0 Tasks 1-7 are implemented and verified. Builder, Marketer, repairs, and the 09:30 company brief terminate through deterministic outcome contracts; business health is based on recent terminal outcomes rather than scheduler/tmux presence; repair closure is idempotent; and all user-facing success claims require evidence. The current production account source of truth has no active Instagram session, so the report says `@no-active-account`, `Ban status: unproven`, and does not repeat the stale `day 3/3 -> already_live` claim.
+- **Next action:** Execute P1 as the next single priority: make the Marketer reliably establish or replace an account, complete bounded warmup, publish one verified public non-commercial Reel, and report the Reel, skill, and campaign URLs. P1 is not part of the P0 completion claim.
 
 #### P0 execution log
 
@@ -364,7 +364,44 @@ The $10M product is not an individual skill. It is the platform that continuousl
 | 4. Builder handoff | Verified | RED: handoff/probe absent; GREEN: Builder integration `17 passed`, outcome `12 passed`, self-fix `23 passed`, loop `7 passed` | `f78446b62` |
 | 5. Marketer handoff | Verified | RED: 17 missing-handoff failures; GREEN: Marketer `23 passed`, related pytest `22 passed`, account lifecycle `38 passed` | `cda11e4be` |
 | 6. 09:30 report | Verified offline | RED: unsupported `company_state`; GREEN: report/outcome `13 passed`, account lifecycle `38 passed`, source+installed plist lint `OK`; runtime reload deferred to Task 7 | `a6139d48b` |
-| 7. Watchdogs + end-to-end proof | Not started | — | — |
+| 7. Watchdogs + end-to-end proof | Verified | RED: scheduler-only health, overdue retries, repaired-but-unverified incidents, and older stale incidents were not enforced. Final GREEN: combined pytest `22 passed`; outcome monitor `19`; Builder `17`; Marketer `23`; health shell `5`; loop `7`; self-fix `23`; account lifecycle `38`; shared Telegram pytest `9` plus unittest `3`. Runtime after explicit kickstart: health watchdog `runs>=7`, outcome monitor `runs>=34`, goal monitor `runs>=1`; all latest exit `0`; intervals `300s`/`60s`, brief at `09:30`. Production reconciliation: Builder Telegram `5063`; incident `capafy-builder-20260801T131506Z-062735e9` reached `verified` and delivered exactly-once closure Telegram `5065`. | Pending Task 7 commit |
+
+#### P0 final runtime evidence
+
+The live Builder outcome recovered **Portfolio Tracker — Daily Position Review** (`9480246345`) and verified remote status `1`, skill/config presence, and the review URL below. Telegram delivery `5063` contains that successful terminal outcome. The browser-ownership collision was then reconciled under one incident id through `detected -> repair_started -> repaired -> verified`; the outcome monitor delivered the following closure as Telegram message `5065` and stored its terminal delivery key, so later monitor passes remain silent:
+
+```text
+Capafy incident resolved — no action needed
+The Builder could not submit because browser ownership collided.
+Separated browser ownership, reacquired the correct session, resumed the same submission, and verified the remote result.
+Recovered skill: Portfolio Tracker — Daily Position Review (9480246345)
+Verified remote state: status 1; skill/config confirmed
+Evidence: https://capafy.ai/developer/createAgent?source=temp-link&token=2082974745565622272&page=review
+Lifetime gross: $9.99
+Pending seller balance: $8.00
+Realized bank payout: $0.00
+MRR: $0.00
+Model/tool cost: $4.78
+Contribution after recorded cost: -$4.78
+Next: Watch for approval and hand the public listing to Marketing
+```
+
+The same production reconciliation rendered the 09:30 brief from machine state without using scheduler presence as a business result:
+
+```text
+Capafy — Consolidated company state, 2026-08-01
+Products: 27 online, 2 under review, 1 draft, 1 rejected.
+Sales: 1 lifetime order / $9.99 gross.
+Pending seller balance: $8.00
+Realized bank payout: $0.00
+MRR: $0.00
+Model/tool cost: $4.78
+Contribution after recorded cost: -$4.78
+Instagram @no-active-account — Calendar age: day 0. The posting session is not established. Ban status: unproven.
+Marketing is scheduled; no public post is verified.
+Latest Builder evidence: https://capafy.ai/developer/createAgent?source=temp-link&token=2082974745565622272&page=review
+Dashboard: https://capafy-skills-daily.netlify.app
+```
 
 ### P0 — Truthful outcomes and repair closure
 

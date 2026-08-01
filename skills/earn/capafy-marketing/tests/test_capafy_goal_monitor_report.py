@@ -64,3 +64,29 @@ def test_august_first_company_state_is_natural_and_truthful() -> None:
     assert "goal(a)" not in report
     assert "already_live" not in report
     assert "goal(d) health" not in report
+
+
+def test_singular_inventory_nouns_are_grammatical() -> None:
+    payload = {
+        "schema_version": 1,
+        "kind": "company_state",
+        "date": "2026-08-01",
+        "inventory": {"online": 1, "under_review": 1, "draft": 1, "rejected": 1},
+        "orders": 0,
+        "gross_usd": 0,
+        "pending_usd": 0,
+        "realized_usd": 0,
+        "mrr_usd": 0,
+        "cost_usd": 0,
+        "contribution_usd": 0,
+        "account": {"handle": "no-active-account", "calendar_day": 0, "session_established": False, "ban_state": "unproven"},
+        "marketing": {"scheduler_loaded": True, "public_post_url": None},
+        "incident": None,
+        "listing_url": None,
+        "dashboard_url": "https://capafy-skills-daily.netlify.app",
+    }
+    result = subprocess.run([sys.executable, str(SCRIPT), "render"], input=json.dumps(payload), text=True, capture_output=True, check=False)
+
+    assert result.returncode == 0, result.stderr
+    assert "1 online, 1 under review, 1 draft, 1 rejected" in result.stdout
+    assert "1 drafts" not in result.stdout

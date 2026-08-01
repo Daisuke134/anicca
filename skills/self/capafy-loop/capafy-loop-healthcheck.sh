@@ -1,12 +1,46 @@
 #!/usr/bin/env bash
-# capafy-loop healthcheck — thin wrapper over the shared supervisor (FIND-011). launchd runs this every 5min.
+# Capafy healthcheck: launchd presence + recent business outcome/contained incident.
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 set -uo pipefail
-source "$HOME/anicca/skills/self/healthcheck-lib.sh"
-HC_LOOP="capafy-loop" \
-HC_SOCK="/tmp/anicca-capafy-loop-tmux.sock" HC_SESSION="anicca-capafy-loop" \
-HC_HB="$HOME/.openclaw/state/.capafy-loop-last-pass" HC_START="$HOME/.openclaw/state/.capafy-loop-last-start" \
-HC_STALE_MIN=1560 HC_CLI="$HOME/anicca/skills/self/capafy-loop/capafy-loop-cli.sh" \
-HC_OUTPUT="$HOME/.openclaw/skills/capafy-autopublish/state/.capafy-healthy-pass" HC_OUTPUT_STALE_HRS=30 \
-HC_SELFFIX_HINT="capafy publish loop reached NO healthy terminal state in >30h. daily_loop.sh touches .capafy-healthy-pass on every healthy pass — a real publish OR a correctly-drained/cap-full idle run (this is a DRAIN-ONLY loop over finite inventory; 'no new skill' is NOT itself a bug). A stale marker means the loop is genuinely stuck: daily_loop.sh not running, Capafy auth/network down (SERVER_UNREADABLE), or a PUBLISHABLE item whose publish keeps failing (CP1 cp1_agent.py -> CP2 -> CP3). Read state/daily_loop.log for the last verdict; do NOT assume drive_cp1.py is broken." \
-hc_run
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ "${CAPAFY_HEALTH_PROBE_ONLY:-0}" = "1" ]; then
+  printf 'business_health=%s scheduler_only=false repair_sla_minutes=5\n' "$HERE/capafy_business_health.py"
+  exit 0
+fi
+CHECKER="${CAPAFY_BUSINESS_HEALTH_CMD:-$HERE/capafy_business_health.py}"
+FIXER="${CAPAFY_SELF_FIX:-$HERE/../self-fix.sh}"
+LOG="${CAPAFY_HEALTH_LOG:-$HOME/.openclaw/logs/capafy-loop-healthcheck.log}"
+mkdir -p "$(dirname "$LOG")"
+if [[ "$CHECKER" = *.py ]]; then
+  BUSINESS_HEALTH_JSON="$(python3 "$CHECKER")"; BUSINESS_HEALTH_RC=$?
+else
+  BUSINESS_HEALTH_JSON="$(bash "$CHECKER")"; BUSINESS_HEALTH_RC=$?
+fi
+if [ "$BUSINESS_HEALTH_RC" -ne 0 ]; then
+  INCIDENT_ID="$(python3 - "$BUSINESS_HEALTH_JSON" <<'PY'
+import json,sys
+try: print(json.loads(sys.argv[1]).get("incident_id") or "")
+except Exception: print("")
+PY
+)"
+  REASON="$(python3 - "$BUSINESS_HEALTH_JSON" <<'PY'
+import json,sys
+try: print(json.loads(sys.argv[1]).get("reason") or "business outcome health failed")
+except Exception: print("business outcome health returned invalid JSON")
+PY
+)"
+  echo "$(date '+%F %T') unhealthy $BUSINESS_HEALTH_JSON" >> "$LOG"
+  CAPAFY_INCIDENT_ID="$INCIDENT_ID" bash "$FIXER" capafy \
+    "Capafy business-outcome watchdog: $REASON. Evidence: $BUSINESS_HEALTH_JSON" >> "$LOG" 2>&1 || true
+  exit 1
+fi
+if [ "${CAPAFY_HEALTH_SKIP_SCHEDULER_CHECK:-0}" != "1" ]; then
+  if ! launchctl print "gui/$(id -u)/ai.anicca.capafy-loop-daily" >/dev/null 2>&1; then
+    echo "$(date '+%F %T') unhealthy scheduler_not_loaded" >> "$LOG"
+    CAPAFY_INCIDENT_ID="" bash "$FIXER" capafy \
+      "Capafy business-outcome watchdog: daily LaunchAgent is not loaded. Restore ai.anicca.capafy-loop-daily and verify a terminal outcome." >> "$LOG" 2>&1 || true
+    exit 1
+  fi
+fi
+echo "$(date '+%F %T') healthy $BUSINESS_HEALTH_JSON" >> "$LOG"
+exit 0
