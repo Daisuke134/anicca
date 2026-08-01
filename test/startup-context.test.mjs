@@ -148,3 +148,27 @@ test("audit rejects a 200 page that does not contain the expected product identi
   assert.equal(result.ok, false);
   assert.match(result.errors.join("\n"), /expected text/i);
 });
+
+test("English README first view explains the Life Manager product experience", async () => {
+  const readme = (await readFile(new URL("../README.md", import.meta.url), "utf8")).slice(0, 4_000);
+
+  assert.match(readme, /body, mind, and money/i);
+  assert.match(readme, /Telegram/);
+  assert.match(readme, /acts? within/i);
+  assert.match(readme, /same core/i);
+  assert.match(readme, /https:\/\/aniccaai\.com\/lm/);
+  assert.doesNotMatch(readme, /Live Dashboard/);
+});
+
+test("Japanese README first view explains the Life Manager product experience", async () => {
+  const readme = (await readFile(new URL("../README.ja.md", import.meta.url), "utf8")).slice(0, 4_000);
+
+  assert.match(readme, /身体/);
+  assert.match(readme, /心/);
+  assert.match(readme, /お金/);
+  assert.match(readme, /Telegram/);
+  assert.match(readme, /委任された範囲/);
+  assert.match(readme, /同じcore/);
+  assert.match(readme, /https:\/\/aniccaai\.com\/lm/);
+  assert.doesNotMatch(readme, /Live Dashboard/);
+});
