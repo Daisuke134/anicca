@@ -47,12 +47,12 @@ serendipityを根拠付き評価するところまで完成した。実Calendar�
 2026-08-02〜2026-08-22の初回coverage snapshotは、後続のCalendar/event照合前なので21日すべて
 `open`である。これは「イベントがない」という意味ではない。
 
-現在の唯一の実行対象は`O1B-21`である。残作業は、途中へ別trackを混ぜず次の順序で進める。
+現在の唯一の実行対象は`O1B-22`である。残作業は、途中へ別trackを混ぜず次の順序で進める。
 
 ```text
-完了: O1B-20 Lumaで確保不能な日を許諾済みsourceへ継続
-いま: O1B-21 同日の次候補へ進み予約確認まで継続
-  → O1B-22〜25 停止条件、Calendar衝突、有料policy、Telegram
+完了: O1B-20〜21 許諾source handoff、同日の次候補へ継続
+いま: O1B-22 検索一巡・一操作・一source失敗を終了条件から除外
+  → O1B-23〜25 Calendar衝突、有料policy、Telegram
   → O1C-01〜27 Fundraising / acceleratorの探索・提出・返信・面談追跡
   → O2-01〜12 Job Hunterの統合・実応募・返信・面接追跡
   → O3A-01〜07 壊れたCFO runtime loopを復旧
@@ -898,7 +898,7 @@ identity/browser/calendar reference検証を追加し、新規4件と既存runti
 - [x] O1B-18 AI/crypto/英語等は優先順位にだけ使い、eventを捨てるhard category filterにはしない
 - [x] O1B-19 agentがevent本文・参加者・主催者・場所・時間を読み、Daisの目標とserendipityを自然言語で評価
 - [x] O1B-20 Lumaで実参加を確保できない場合、許諾済みsourceを探索する。connpassはkey取得後の公式API read-only discoveryだけとし、自動申込み・coverage達成には使わない
-- [ ] O1B-21 一つの候補で申込失敗・満席・不適格になっても同じ日の次候補へ進み、予約確認までloopを継続
+- [x] O1B-21 一つの候補で申込失敗・満席・不適格になっても同じ日の次候補へ進み、予約確認までloopを継続
 - [ ] O1B-22 「検索一巡」「一件の操作失敗」「一sourceの失敗」を終了条件にしない
 - [ ] O1B-23 Google Calendarの全calendarからbusy intervalを読み、前後移動時間を含むfree intervalだけへ予約
 - [ ] O1B-24 無料を優先し、有料eventは一度設定した自動支出policy内で保存済み決済手段を使い、都度承認を要求しない
@@ -1035,6 +1035,13 @@ O1B-21開始（2026-08-02）: O1B-03で実装済みのverified candidate sequenc
 
 O1B-21進捗1（pack RED）: events packが順序付き同日候補とattempt関数を既存verified sequenceへそのまま
 渡す契約を追加した。`runSameDayCandidates`未実装のため新規1件が期待どおり失敗する段階である。
+
+O1B-21完了: O1B-03のverified candidate sequenceをevents packの`runSameDayCandidates`へ接続した。
+満席、waitlist、承認制、不適格、競合、cancelは同日次候補へ進み、login・transport・inventory異常は
+候補を消費せず復旧、unknown effectは二重申込せずreconciliation、全候補exhaustionだけが次sourceへ
+handoffする。focused 12/12、outbound全回帰180/180成功。証拠:
+`docs/evidence/outbound/2026-08-02-o1b21-same-day-candidate-loop.json`。次は`O1B-22`で、検索一巡、
+一件の操作失敗、一sourceの失敗をrolling coverage loop全体の終了条件から除外する。
 
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
