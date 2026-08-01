@@ -262,6 +262,18 @@ base compose + Connector overlay configが成功した。Telegram targetはrepos
 local plistだけへ入る。Docker recoveryは指定された一つのcontainerだけをrestartし、最大30回・1秒間隔で
 同じ`/health`契約を再確認する。次は既存Honne shadow設定を保持した実機deploy。
 
+O1A-06進捗3: base compose + 既存Honne JA shadow override + Connector overlayでworker一つだけを
+recreateした。PostgreSQL、object store、runtime volumeは削除していない。`/health`は200、
+`role=worker`、`runtime.noop,marketing.video.generate,outbound.event.apply`、fresh pollを返した。
+Guardian launchdを5分cadenceで登録し、健康なkickはexit 0、incidentなし、Telegram誤送信なしだった。
+一回目の実停止では警告message ID `5014`、復旧message ID `5015`、worker復旧、incident clearまで
+成功したが、元の異常verdictを保持した結果へ`verdict.ok`だけを見たmainがexit 1を返す欠陥を発見した。
+root causeをpure exit判定testでREDにし、`ok=true OR recovered=true`だけexit 0へ修正した。再実証では
+2026-08-01T08:47:05Zにworkerが`exited`、警告message ID `5016`、自動restart後に復旧message ID
+`5017`、2026-08-01T08:47:18ZにGuardian exit 0、worker `running/healthy`、fresh poll、incident clearを
+確認した。その後のlaunchd kickもrun count 2、last exit code 0、healthy出力だった。次は証拠JSONと
+最終fresh verification。
+
 O1A-06着手時の追加実測: 現workerの`LM_WORKER_CAPABILITIES`は
 `runtime.noop,marketing.video.generate`で、host health portは未公開。さらに
 `outbound.event.apply`はjob/lease test用handler注入では動くが、production adapter manifestにはまだ無い。

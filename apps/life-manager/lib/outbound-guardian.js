@@ -217,6 +217,10 @@ async function runOutboundGuardian(options = {}) {
   };
 }
 
+function guardianExitCode(verdict) {
+  return verdict && (verdict.ok === true || verdict.recovered === true) ? 0 : 1;
+}
+
 async function main(env = process.env) {
   const healthUrl = env.LM_OUTBOUND_WORKER_HEALTH_URL || DEFAULT_HEALTH_URL;
   const stateRoot = env.LM_OUTBOUND_STATE_DIR
@@ -237,7 +241,7 @@ async function main(env = process.env) {
     }),
   });
   process.stdout.write(`${JSON.stringify(verdict)}\n`);
-  if (!verdict.ok) process.exitCode = 1;
+  process.exitCode = guardianExitCode(verdict);
 }
 
 if (require.main === module) main().catch((error) => {
@@ -257,4 +261,5 @@ module.exports = {
   notifyOpenClaw,
   recoverDockerWorker,
   runOutboundGuardian,
+  guardianExitCode,
 };

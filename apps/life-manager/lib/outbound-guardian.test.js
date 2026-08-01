@@ -9,6 +9,7 @@ const { spawnSync } = require("node:child_process");
 const {
   OUTBOUND_CAPABILITY,
   classifyOutboundWorkerHealth,
+  guardianExitCode,
   parseOpenClawMessageId,
   recoverDockerWorker,
   runOutboundGuardian,
@@ -266,4 +267,10 @@ test("Docker recoveryは指定workerだけをrestartしhealth復帰までbounded
   assert.equal(recovered, true);
   assert.deepEqual(spawns, [["docker", ["restart", "life-manager-local-worker-1"]]]);
   assert.deepEqual(sleeps, [1000]);
+});
+
+test("Guardian processはhealthyまたは復旧済みならexit 0、未復旧だけexit 1", () => {
+  assert.equal(guardianExitCode({ ok: true, code: "HEALTHY" }), 0);
+  assert.equal(guardianExitCode({ ok: false, code: "UNREACHABLE", recovered: true }), 0);
+  assert.equal(guardianExitCode({ ok: false, code: "UNREACHABLE", recovered: false }), 1);
 });
