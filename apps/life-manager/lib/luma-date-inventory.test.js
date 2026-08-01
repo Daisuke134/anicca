@@ -87,6 +87,8 @@ test("projects every verified detail into all 21 dates using the coverage timezo
   assert.equal(snapshot.days[0].events[0].description, "Public description for tokyo-one");
   assert.deepEqual(snapshot.days[0].events[0].organizer_names, ["Organizer tokyo-one"]);
   assert.equal(snapshot.days[0].events[0].participant_visibility, "unavailable");
+  assert.equal(snapshot.days[0].events[0].ticket_price_status, "unknown");
+  assert.equal(snapshot.days[0].events[0].ticket_price_minor, null);
   assert.equal(snapshot.days.at(-1).events[0].event_ref, "luma-event://event/tokyo-two");
   assert.deepEqual(snapshot.counts, {
     discovered: 3,
