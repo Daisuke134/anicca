@@ -1561,11 +1561,13 @@ O1B-26進捗26（open日scanをLIVE配備）: 後続日scan修正をcommit `1ef5
 `445f8b1f97da`を10:17 JSTに配備した。次のdurable coverage jobは10:19:41 JST開始予定でqueuedを維持している。
 次runで8月4日をopenのまま保持しながら、8月5日以降の最初の実行可能候補を一件だけenqueueすることを確認する。
 
-O1B-26進捗27（後続日scan LIVE実行中）: 予定どおり10:19:42 JSTにcoverage job attempt 1が開始した。
-10:22:14 JST時点でworkerはrunning、error codeなし、15分lease内でLuma inventoryと後続open日を処理中である。
-完了receiptはまだ無いため、後続日のenqueue成功とは表示しない。最新確定coverageは引き続き
-`open=18 / covered_new=1 / unavailable=2`。次はこのattemptのreceiptを確認し、実応募job、Luma確認、Calendar、
-Telegramまで同じ順序で継続する。
+O1B-26進捗27（後続日scan LIVE / goal validation再試行中）: 予定どおり10:19:42 JSTにcoverage job
+attempt 1が開始し、8月4日のdead letter候補を越えて後続open日のgoal/serendipity評価まで進んだ。10:22:49 JSTに
+`CONNECTOR_COVERAGE_APPLICATION_GOAL_VALIDATION_FAILED`で停止し、応募jobと外部effectは作っていない。runtimeは
+attempt 2を自動開始し、10:23:04 JST時点で15分lease内をrunning、errorなし。後続日scanの配線はLIVE到達したが、
+後続日のmodel output検証は未完了である。最新確定coverageは引き続き`open=18 / covered_new=1 / unavailable=2`。
+次は再現結果を見てgoal outputのどのcontractが不安定かを秘密本文なしで切り分け、RED→GREEN後に実応募job、Luma確認、
+Calendar、Telegramまで同じ順序で継続する。
 
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
