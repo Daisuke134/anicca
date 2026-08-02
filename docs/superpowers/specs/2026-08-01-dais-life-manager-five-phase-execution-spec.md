@@ -909,10 +909,32 @@ identity/browser/calendar reference検証を追加し、新規4件と既存runti
 | 5 | Fiat/NISA data、余剰資金、提案、注文、税/fee | NISA/課税/現金/cryptoを分け、約定からCFOまで照合 |
 | Web | 同じcoreのtenant化、認証、secret、panel、課金 | ローカルで実証した同じjob/ledger/reportを別userが安全に使える |
 
+### 5.0.1 ローカル実行方式の正本（2026-08-02訂正）
+
+Dais個人用Life Managerの各agentは、Mac mini上の`launchd → repository-owned OpenClaw skill/runbook →
+agent runner → CloakBrowser daily-driver → provider → local state → Telegram`を正本とする。Connectorも
+Gig Work Loopと同じcontrol-plane patternへ揃える。ここでいうlocalは、Mac上で直接動くlaunchd/OpenClaw
+processであり、Connector専用Docker worker/imageを日常実行の正本にしない。
+
+既存Gig Work Loopの実測根拠:
+
+- `~/Library/LaunchAgents/ai.anicca.hf-gig-browser.plist`
+- `/Users/anicca/profitable-claude/skills/gig-work/gig_pass.sh`
+- `/Users/anicca/profitable-claude/skills/gig-work/scripts/launch_gig_browser.sh`
+- `/Users/anicca/profitable-claude/skills/connector/connector_fill_gaps.sh`
+
+Dockerで実装済みの候補探索、receipt検証、Calendar同期、Telegram整形の純粋moduleとtestは捨てず、native
+OpenClaw skillから再利用する。Docker runtime/database/imageのclaim・deployは移植対象にしない。現在動く
+local Docker Connectorはnative parity確認までrollback専用として保持し、新規build/deployを停止する。
+native launchdで一巡の実登録・Calendar・Telegramが成功してからDocker Connectorを退役する。Docker/Web
+runtimeは、ローカル完成後にPCを持たない一般userへLife Manager Webを提供するOrder Webで扱う。
+この節は、それ以前の進捗記録にある「`lm_runtime_jobs`をConnectorの唯一のruntimeとする」という判断を上書きする。
+過去の進捗は監査履歴として残すが、今後の実装判断には使わない。
+
 ### 5.1 Order 1A — 共通応募基盤
 
-- [x] O1A-01 既存`lm_runtime_jobs`を唯一のdurable runtimeとしてConnector event application job contractへ接続
-- [x] O1A-02 enqueue、claim、heartbeat、retry、dead-letter、idempotencyを接続
+- [x] O1A-01 reusableな応募job/receipt contractを実装済み。Connector native実行ownerにはしない
+- [x] O1A-02 enqueue、heartbeat、retry、dead-letter、idempotencyの検証済みmoduleをnative設計の参考として保持
 - [x] O1A-03 Evidence E1/E2/E3を共通module化
 - [x] O1A-04 不足dependencyを解消し全testを実行
 - [x] O1A-05 Guardianを接続
@@ -944,7 +966,29 @@ identity/browser/calendar reference検証を追加し、新規4件と既存runti
 - [x] O1B-22 「検索一巡」「一件の操作失敗」「一sourceの失敗」を終了条件にしない
 - [x] O1B-23 Google Calendarの全calendarからbusy intervalを読み、前後移動時間を含むfree intervalだけへ予約
 - [x] O1B-24 無料を優先し、有料eventは一度設定した自動支出policy内で保存済み決済手段を使い、都度承認を要求しない
-- [ ] O1B-25 21日coverage、既存予定、新規予約、残り空き、申込証拠、選定理由をTelegramへ一通で報告
+- [ ] O1B-25A Connector専用Docker build/deployを停止し、動作中containerはnative切替までrollback専用に固定
+- [ ] O1B-25B canonical repoへConnector OpenClaw skill/runbookとnative boot scriptを置く
+- [ ] O1B-25C launchdからnative Connectorを起動し、single-instance lock、heartbeat、healthcheck、self-healを接続
+- [ ] O1B-25D 既存CloakBrowser daily-driverを所有権付きで直接使い、他agentのtab/contextを触らない
+- [ ] O1B-25E `gog`でGoogle Calendar全calendarを読み、21日coverageと二重予約防止をnative実行
+- [ ] O1B-25F Luma探索→実登録→確認mail/QR→Calendarをnative一巡で実証
+- [ ] O1B-25G 21日coverage、既存予定、新規予約、残り空き、申込証拠、選定理由をTelegramへ一通で報告
+- [ ] O1B-25H native parity後にConnector Docker worker、host bridge、queue scheduleを退役
+
+Native Connector acceptance test list（この順で実測）:
+
+- [ ] NT-C01 `launchd`がcanonical `life-manager-main`内のnative bootだけを起動し、legacy checkoutを参照しない
+- [ ] NT-C02 同時起動してもsingle-instance lockにより一巡だけがCloakBrowserを操作する
+- [ ] NT-C03 Connector所有tab/contextだけを開閉し、Gig・Job Hunter・他agentのtab/contextを変更しない
+- [ ] NT-C04 `gog`で全Google Calendarを読み、既存予定と移動時間に重なる候補を申込まない
+- [ ] NT-C05 rolling 21日の最初のopen日から候補を探し、満席・受付終了なら同日次候補へ進む
+- [ ] NT-C06 実Luma登録、確認mail、QR、Calendar eventが同一canonical eventとして照合される
+- [ ] NT-C07 Calendar再実行で同一eventを重複作成しない
+- [ ] NT-C08 一候補・一sourceの失敗でpassを終了せず、21日のopenが0になるまで次候補・次日へ進む
+- [ ] NT-C09 Telegramがevent名、日時、場所、選定理由、Luma直接link、Calendar直接link、21日進捗を人間の言葉で送る
+- [ ] NT-C10 Telegramに`runner`、job ID、内部error codeだけの説明を出さない
+- [ ] NT-C11 Mac再起動後にlaunchdが自動復帰し、heartbeat/healthcheck/self-healが機能する
+- [ ] NT-C12 native一巡のreceipt保存後だけDocker Connectorを停止し、次回もnativeだけで成功する
 
 O1B-17開始（2026-08-02）: discovery cardの日本語日付labelは証拠に使わない。仮想scroll終端を
 証明したTokyo inventoryの全canonical URLについて公式JSON-LD detailを読み、ISO開始時刻を
@@ -1653,6 +1697,15 @@ mainへpushし、image `f1bc7705ac03`を12:57 JSTに配備した。fresh coverag
 auth-aware daily driverを`AUTH`（shared sessionの認証確認・回復）と`TARGET`（認証後の東京一覧tab作成・遷移・task）へ分離し、
 内部例外本文は外へ出さない。auth/target分類と上位伝播の回帰testは修正前RED、実装後34/34 GREEN。次は
 commit/push/deploy後、LIVE exact page substageだけを修復する。
+
+O1B-26進捗38（実行architecture訂正 / Docker配備中止）: Daisの指摘を受け、Gig Work Loopと旧Connectorを
+実ファイル・実launchdで再監査した。GigはMac mini上のlaunchd、agent runner、CloakBrowser、local stateで直接動き、
+旧`connector_fill_gaps.sh`もGoogle Calendarを先に読み、日付ごとのagentをCloakBrowserへ直接接続する同じlocal patternだった。
+ConnectorだけをDocker queue/imageへ寄せたことは「まず全agentを同じMac mini/OpenClaw方式で完成し、その後Webへ移す」
+product architectureと不一致だった。進捗37のsource/testは安全な診断moduleとして保持するが、新imageの配備は行わない。
+進行中deploy親processを停止し、既存healthy containerはnative parityまでrollback専用とする。O1B-25をA〜Hへ再定義し、
+canonical repo-owned OpenClaw skill、native launchd、shared CloakBrowser ownership、`gog` Calendar、Luma receipt、Telegramの
+一巡を先に完成させる。native一巡成功後にだけConnector Docker/host bridge/queue scheduleを退役する。
 
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
