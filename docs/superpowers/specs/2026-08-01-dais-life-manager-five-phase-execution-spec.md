@@ -1499,6 +1499,17 @@ O1B-26進捗18（8月3日へ前進LIVE / Calendar gate内の再切分け）: com
 route/衝突評価と、全候補衝突を日付証拠へ変える処理を分離し、後者を`CALENDAR_UNAVAILABLE_PROOF_FAILED`にした。
 focused 7/7成功。次はcommit/push、LIVE再試行で二者のどちらかを確定する。
 
+O1B-26進捗19（Calendar満杯証拠の過剰収集 / RED→GREEN、LIVE再試行中）: commit `69068248f`、image
+`8d09e8bf149e`を09:51 JSTに配備し、Calendar gateとunavailable証明のfailure code分離を実workerへ反映した。
+再起動前のattempt 5は`REGISTRATION_RESTORE_FAILED`、attempt 6は副作用なしのcoverage read中に停滞したため、exact
+tenant/job/attempt/workerを確認して`WORKER_REPLACED`として再queueし、古いworker processを終了した。新imageのattempt 7は
+8月2日の解決状態を維持して8月3日を再検証中であり、完了前なので成功扱いしない。並行したcode-level診断では、全候補が
+Calendar衝突した場合に、候補ごとに一件の実blockerで十分なのに全重複event refの和集合を保存し、20件超で証明を拒否する
+境界を確認した。21件の実予定が2候補すべてに重なる回帰testは修正前RED、各未被覆候補を最も多く覆う実event refを
+決定的に選ぶ最小被覆へ変更後GREEN。選んだrefは必ずverified busy inventoryに存在し、全候補が少なくとも一件で覆われ、
+20件を超える場合は引き続きfail closedする。outbound 248/248、runtime adapters 125/125、失敗0件。次はattempt 7の
+分離済みLIVE codeを確定し、この修正をcommit/push/deployして8月3日を解決、直後に次のopen日へ進める。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 

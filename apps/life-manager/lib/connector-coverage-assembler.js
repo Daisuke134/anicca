@@ -115,11 +115,25 @@ function proveCalendarGateUnavailable(input = {}) {
     || candidate.conflict_event_refs.length === 0
   ))) throw new Error("Connector calendar day not unavailable");
   const busyRefs = new Set(busyInventory.busy_intervals.map((interval) => interval.event_ref));
-  const evidenceRefs = [...new Set(gate.candidates.flatMap((candidate) => candidate.conflict_event_refs))].sort();
-  if (
-    evidenceRefs.length < 1 || evidenceRefs.length > 20
-    || evidenceRefs.some((ref) => !busyRefs.has(ref))
-  ) invalid();
+  const candidateBlockers = gate.candidates.map((candidate) => (
+    new Set(candidate.conflict_event_refs)
+  ));
+  if (candidateBlockers.some((refs) => [...refs].some((ref) => !busyRefs.has(ref)))) invalid();
+  const evidenceRefs = [];
+  let uncovered = candidateBlockers;
+  while (uncovered.length > 0) {
+    const counts = new Map();
+    for (const refs of uncovered) {
+      for (const ref of refs) counts.set(ref, (counts.get(ref) || 0) + 1);
+    }
+    const selected = [...counts].sort((left, right) => (
+      right[1] - left[1] || left[0].localeCompare(right[0])
+    ))[0];
+    if (!selected) invalid();
+    evidenceRefs.push(selected[0]);
+    if (evidenceRefs.length > 20) invalid();
+    uncovered = uncovered.filter((refs) => !refs.has(selected[0]));
+  }
   const core = {
     date,
     busy_inventory_id: busyInventory.busy_inventory_id,

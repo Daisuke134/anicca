@@ -158,6 +158,34 @@ test("travel expansion and all-day events block candidates with exact opaque con
   assert.equal(unavailable.evidence_refs.length, 1);
 });
 
+test("unavailable proof keeps a minimal exact blocker set when many events overlap", async () => {
+  const inventory = await dateInventory();
+  const busyInventory = await busy(Array.from({ length: 21 }, (_, index) => timed(
+    `overlap-${String(index).padStart(2, "0")}`,
+    "2026-08-05T09:00:00+09:00",
+    "2026-08-05T14:00:00+09:00",
+  )));
+  const gate = await evaluateCalendarCandidateGate({
+    dateInventory: inventory,
+    busyInventory,
+    date: "2026-08-05",
+    homeLocation: "Home",
+    routeMinutes: async () => 0,
+  });
+  assert.equal(gate.candidates.every((row) => row.conflict_event_refs.length === 21), true);
+
+  const unavailable = proveCalendarGateUnavailable({
+    dateInventory: inventory,
+    busyInventory,
+    calendarGate: gate,
+    date: "2026-08-05",
+  });
+  assert.equal(unavailable.evidence_refs.length, 1);
+  assert.equal(gate.candidates.every((row) => (
+    row.conflict_event_refs.includes(unavailable.evidence_refs[0])
+  )), true);
+});
+
 test("route failure requests recovery and fake inventories fail closed", async () => {
   const inventory = await dateInventory();
   const busyInventory = await busy([]);
