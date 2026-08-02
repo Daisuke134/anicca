@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "kind", "queue_source_digest", "assessed_at", "items"],
+  "properties": {
+    "schema_version": {"type": "integer", "const": 1},
+    "kind": {"type": "string", "const": "capafy_cleanup_execution"},
+    "queue_source_digest": {"type": "string"},
+    "assessed_at": {"type": "string"},
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["agent_id", "decision", "reason", "proposed_title", "proposed_description", "evidence", "observable_success"],
+        "properties": {
+          "agent_id": {"type": "string"},
+          "decision": {"enum": ["already_satisfied", "submit_once", "stop", "retire"]},
+          "reason": {"type": "string"},
+          "proposed_title": {"type": ["string", "null"]},
+          "proposed_description": {"type": ["string", "null"]},
+          "evidence": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["url", "observed_at", "claim", "confidence"],
+              "properties": {
+                "url": {"type": "string"},
+                "observed_at": {"type": "string"},
+                "claim": {"type": "string"},
+                "confidence": {"enum": ["high", "medium", "low"]}
+              }
+            }
+          },
+          "observable_success": {"type": "string"}
+        }
+      }
+    }
+  }
+}
