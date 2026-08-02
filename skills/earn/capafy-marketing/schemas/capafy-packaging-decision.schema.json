@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "kind", "portfolio_source_digest", "decided_at", "agent_id", "purchase_model", "price_usd", "billing_interval", "included_units", "metered_unit", "bounded_deliverable", "value_metric", "renewal_reason", "platform_fee_rate", "input_tokens_per_unit", "output_tokens_per_unit", "input_price_per_million_usd", "output_price_per_million_usd", "compute_assumption", "gross_usd", "platform_fee_usd", "cost_usd", "contribution_usd", "resolved_unknowns", "evidence"],
+  "properties": {
+    "schema_version": {"type": "integer", "const": 1},
+    "kind": {"type": "string", "const": "capafy_packaging_decision"},
+    "portfolio_source_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "decided_at": {"type": "string"},
+    "agent_id": {"type": "string", "pattern": "^[0-9]+$"},
+    "purchase_model": {"type": "string", "enum": ["subscription", "usage", "one_time", "hybrid"]},
+    "price_usd": {"type": "string", "pattern": "^(0|[1-9][0-9]*)\\.[0-9]{2}$"},
+    "billing_interval": {"type": ["string", "null"], "enum": ["day", "week", "month", null]},
+    "included_units": {"type": "integer", "minimum": 1},
+    "metered_unit": {"type": "string", "minLength": 1},
+    "bounded_deliverable": {"type": ["string", "null"]},
+    "value_metric": {"type": "string", "minLength": 1},
+    "renewal_reason": {"type": ["string", "null"]},
+    "platform_fee_rate": {"type": "string", "pattern": "^(0|1)\\.[0-9]{4}$"},
+    "input_tokens_per_unit": {"type": "integer", "minimum": 0},
+    "output_tokens_per_unit": {"type": "integer", "minimum": 0},
+    "input_price_per_million_usd": {"type": "string", "pattern": "^(0|[1-9][0-9]*)\\.[0-9]{2}$"},
+    "output_price_per_million_usd": {"type": "string", "pattern": "^(0|[1-9][0-9]*)\\.[0-9]{2}$"},
+    "compute_assumption": {"type": "string", "minLength": 1},
+    "gross_usd": {"type": "string", "pattern": "^(0|[1-9][0-9]*)\\.[0-9]{2}$"},
+    "platform_fee_usd": {"type": "string", "pattern": "^(0|[1-9][0-9]*)\\.[0-9]{2}$"},
+    "cost_usd": {"type": "string", "pattern": "^(0|[1-9][0-9]*)\\.[0-9]{2}$"},
+    "contribution_usd": {"type": "string", "pattern": "^(0|[1-9][0-9]*)\\.[0-9]{2}$"},
+    "resolved_unknowns": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+    "evidence": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["url", "observed_at", "claim", "confidence", "supports"],
+        "properties": {
+          "url": {"type": "string", "pattern": "^https://"},
+          "observed_at": {"type": "string"},
+          "claim": {"type": "string", "minLength": 1},
+          "confidence": {"type": "string", "enum": ["high", "medium", "low"]},
+          "supports": {"type": "array", "minItems": 1, "items": {"type": "string", "enum": ["purchase_model", "price_usd", "included_units", "value_metric", "renewal_reason", "platform_fee_rate", "model_pricing", "bounded_deliverable"]}}
+        }
+      }
+    }
+  }
+}
