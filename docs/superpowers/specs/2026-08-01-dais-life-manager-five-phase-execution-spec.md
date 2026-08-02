@@ -1537,6 +1537,15 @@ O1B-26進捗23（8月3日解決 / 次open日へLIVE前進）: 新imageのattempt
 和集合、登録復元の一時failureを越え、8月4日以降へ自動前進した。次は新jobのplan結果を追い、最初の実応募job enqueue、
 Luma登録、確認mail、Calendar、Telegramまで継続する。
 
+O1B-26進捗24（初の実応募job enqueue / provider code境界 RED→GREEN）: 次coverage job attempt 1はcompletedし、
+`open_date_count=18 / open_date_plan_status=enqueued`を返した。Calendar、往復移動、goal/serendipity、0円policyを通過した
+同日の候補1件について、初めてdurable `outbound.event.apply` jobを作成した。応募jobは約14秒で5 attemptsを消費して
+dead letterとなり、全receiptがgeneric `CAPABILITY_EXECUTION_FAILED`だったため、登録成功とは扱わない。coverageは5分後に
+同日の次候補へ進む。runtimeがadapterの安全な状態codeまで潰していたので、exact allowlistの`LUMA_LOGIN_REQUIRED`、
+`LUMA_RSVP_UNAVAILABLE`、`LUMA_EFFECT_UNKNOWN`だけをreceiptへ保存し、任意の`LUMA_*`やpage本文は従来どおりgenericへ閉じる。
+RED→GREEN後、runtime-up 38/38、runtime adapters 125/125、失敗0件。次はcommit/push/deployし、次候補の応募receiptで
+ログイン、申込可否、外部effect不明のどれかを確定する。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
