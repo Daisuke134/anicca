@@ -1475,6 +1475,12 @@ in-process証拠をcoverageへ反映し、planを新coverage snapshotへ再bind�
 Connector 246/246、runtime adapters 125/125、失敗0件。次はcommit/push、LIVEで8月2日を証拠付き解決し、8月3日の
 応募候補へ自動遷移することを確認する。
 
+O1B-26進捗15（unavailable反映後のgeneric assembly failure / 診断境界GREEN）: commit `1d9833920`、image
+`08518dca1322`の最初のclean LIVE attemptは、候補5件すべてのCalendar衝突判定後に
+`CONNECTOR_COVERAGE_ASSEMBLY_FAILED`となった。成功扱いせず再試行を維持している。証拠readback、coverage rebuild、
+plan rebindをそれぞれ`UNAVAILABLE_EVIDENCE_READ / UNAVAILABLE_REBUILD / UNAVAILABLE_REBIND`の秘密本文なしcodeへ分割した。
+focused 8/8、Connector 246/246、失敗0件。次はcommit/push、再配備後の一回で失敗点を確定して修復する。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
