@@ -51,13 +51,21 @@
 - [x] Calculate projected and observed contribution after platform fees and recorded model/tool cost.
 - [x] Activate one highest-evidence bounded experiment and record success/stop observables.
 
-### Task 6: Verified handoff, reporting, and P3 production closure
+### Task 6: Verified handoff, reporting, and runtime-path closure
 
 **Files:** extend the event projection, Telegram renderer, company dashboard, production contract, and living spec.
 
-- [ ] Builder remotely verifies the chosen product change and hands the real URL to Marketer.
-- [ ] Marketer uses the immediate owner-verified publication path; no warmup or duplicate publication.
-- [ ] Telegram and `/company/` show the same active experiment and projection ID.
-- [ ] Seed one failed registry/experiment write and prove autonomous repair and exactly-once closure.
-- [ ] Run the full P0-P3 suite and runtime parity audit; write a mode-`0600` verification artifact.
-- [ ] Update status to `P0-P3 verified; P4 active` and commit closure.
+- [x] Builder remotely verifies the chosen product mutation or stops it honestly and submits a compatible successor with a real URL.
+- [x] Marketer uses the immediate owner-verified publication path; no warmup or duplicate publication.
+- [x] Telegram and `/company/` show the same terminal experiment truth and projection ID.
+- [x] Seed failed account/experiment/reporting paths and prove autonomous repair and exactly-once closure.
+- [x] Run the full P0-P3 suite and runtime parity audit; write a mode-`0600` verification artifact.
+- [x] Record Task 6 production verification without falsely closing the unmet portfolio-wide P3 gate.
+
+### Remaining P3 catalog migration
+
+- [ ] Refresh the governed portfolio from 31 to 32 products while preserving all cited audit decisions.
+- [ ] Execute and remotely verify the queued repair/reposition attempts; retain one-attempt stop conditions.
+- [ ] Replace `undecided` packaging on promoted products with cited purchase-model/value-metric decisions and bounded unit economics.
+- [ ] Activate the Download successor only after remote status becomes online; do not treat review time as a human approval gate.
+- [ ] Re-run the portfolio-wide completion gate, then update status to `P0-P3 verified; P4 active`.

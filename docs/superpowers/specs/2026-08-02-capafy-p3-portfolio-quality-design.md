@@ -1,7 +1,7 @@
 # Capafy P3 Portfolio Quality Design
 
 **Date:** 2026-08-02  
-**Status:** Approved for autonomous execution  
+**Status:** Runtime path verified; portfolio-wide completion gate active
 **Parent:** [`2026-08-01-capafy-self-improving-revenue-loop-design.md`](2026-08-01-capafy-self-improving-revenue-loop-design.md)
 
 ## Objective
@@ -100,5 +100,5 @@ P3 is complete only when:
 - draft/rejected and overlapping products have evidence-backed repair/reposition/pause decisions;
 - selection refuses unaudited or paused products;
 - one bounded experiment is remotely verified and handed to Marketing with a real URL;
-- Telegram and the public company state identify the same active experiment and projection;
+- Telegram and the public company state identify the same terminal experiment truth—active, measured, or stopped—and projection;
 - retry and seeded-failure tests prove no duplicate listing, post, or report.
