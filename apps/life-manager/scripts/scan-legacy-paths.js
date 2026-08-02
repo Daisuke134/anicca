@@ -200,6 +200,16 @@ const ALLOWLIST = [
     reason: "fail-loud guard names the legacy dev-state dir only to refuse silent empty-state starts",
   },
   {
+    file: "apps/life-manager/lib/yc-browser-route-migration.js",
+    lineIncludes: "const EXPECTED_COMMAND =",
+    reason: "O1C-24 migration evidence validates the exact disabled legacy cron command without executing it",
+  },
+  {
+    file: "apps/life-manager/lib/yc-browser-route-migration.js",
+    lineIncludes: "deployment.recovery_ref !==",
+    reason: "O1C-24 migration evidence validates an owner-only recovery archive outside active skills",
+  },
+  {
     file: "skills/video/daily-lm-video/generate.py",
     lineIncludes: "LM_LEGACY_STATE_ROOT",
     reason: "fail-loud guard names the legacy lm-video state only to refuse silent empty-state starts",

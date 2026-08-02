@@ -164,7 +164,7 @@ jq -n \\
 }
 
 function runShim(fx, { args = [], env = {} } = {}) {
-  return spawnSync("/bin/bash", [fx.shimPath, ...args], {
+  return spawnSync(fx.shimPath, args, {
     encoding: "utf8",
     env: {
       PATH: process.env.PATH,
@@ -191,13 +191,15 @@ test("compatibility shim resolves its sibling successor instead of trusting call
   }
 });
 
-test("compatibility shim removes shell startup overrides before the successor handoff", () => {
+test("compatibility launcher never evaluates shell startup overrides", () => {
   const fx = fixture();
-  const harmlessBashEnv = path.join(fx.home, "harmless-bash-env.sh");
-  fs.writeFileSync(harmlessBashEnv, ":\n");
+  const hostileBashEnv = path.join(fx.home, "hostile-bash-env.sh");
+  const marker = path.join(fx.home, "bash-env-executed");
+  fs.writeFileSync(hostileBashEnv, ': > "$BASH_ENV_MARKER"\n');
   try {
-    const result = runShim(fx, { env: { BASH_ENV: harmlessBashEnv, ENV: "/tmp/ignored-env" } });
+    const result = runShim(fx, { env: { BASH_ENV: hostileBashEnv, BASH_ENV_MARKER: marker, ENV: "/tmp/ignored-env" } });
     assert.equal(result.status, 0, result.stderr);
+    assert.equal(fs.existsSync(marker), false);
     const receipt = JSON.parse(fs.readFileSync(fx.receiptPath, "utf8"));
     assert.equal(receipt.BASH_ENV, "");
     assert.equal(receipt.ENV, "");

@@ -1,5 +1,5 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/bin/sh
+set -eu
 
 if [ "$#" -ne 0 ]; then
   echo "apply-to-yc compatibility shim requires zero arguments" >&2
@@ -33,5 +33,5 @@ fi
 
 export BU_CDP_URL="http://127.0.0.1:9222"
 export HOME="$TRUSTED_HOME"
-unset BASH_ENV ENV SKILL_DIR
-exec /bin/bash "$SUCCESSOR" --funder yc-w26
+unset SKILL_DIR
+exec /usr/bin/env -u BASH_ENV -u ENV /bin/bash "$SUCCESSOR" --funder yc-w26

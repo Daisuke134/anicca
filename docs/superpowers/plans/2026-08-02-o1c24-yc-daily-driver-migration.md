@@ -4,7 +4,7 @@
 
 **Goal:** Retire the deprecated YC `:9223` browser path and route its compatibility entry through the repository-owned `apply-to-funder --funder yc-w26` successor on the existing CloakBrowser daily-driver `:9222`.
 
-**Architecture:** Check in an inert legacy skill tombstone and a minimal shell compatibility shim, then validate the entire migration with a content-addressed deterministic receipt. Deploy those exact assets with a recovery archive, remove obsolete active helpers, reconcile the disabled cron's durable state, and prove the route using controlled dry-run and read-only live observations. No YC field, file, save control, or submit control is touched.
+**Architecture:** Check in an inert legacy skill tombstone and a minimal directly executed POSIX compatibility launcher, then validate the entire migration with a content-addressed deterministic receipt. Deploy those exact assets with a recovery archive, remove obsolete active helpers, reconcile the disabled cron's durable state, and prove the route using controlled dry-run and read-only live observations. No YC field, file, save control, or submit control is touched.
 
 **Tech Stack:** Node.js CommonJS, `node:test`, Bash, SHA-256, JSON, OpenClaw cron CLI, Playwright Core CDP, Git.
 
@@ -33,7 +33,7 @@
 
 **Interfaces:**
 - Consumes: zero positional arguments plus optional existing `MODE`, `DRY_RUN`, and `BU_CDP_URL` environment values.
-- Produces: one exact `exec bash "$HOME/.openclaw/skills/apply-to-funder/scripts/run.sh" --funder yc-w26`, or a non-zero refusal before the successor is invoked.
+- Produces: one exact sanitized `/bin/bash` handoff to the sibling `apply-to-funder/scripts/run.sh --funder yc-w26`, or a non-zero refusal before the successor is invoked.
 
 - [ ] **Step 1: Write the shim behavior tests first**
 
@@ -63,11 +63,11 @@ Expected: fail because `runtime-assets/apply-to-yc/scripts/apply.sh` does not ex
 
 - [ ] **Step 3: Add refusal tests before implementation**
 
-Assert the fake successor receipt remains absent when any of these are supplied: endpoint `:9223`, public/alternate host, URL credentials/query/fragment, positional argument, `DRAFT_ID`, `FOUNDER_VIDEO`, `DEMO_VIDEO`, caller-controlled `SKILL_DIR`, missing successor, or non-executable successor. Also prove that an attacker-controlled `HOME` cannot replace the sibling successor, and sanitize `BASH_ENV`/`ENV` before the fixed `/bin/bash` handoff. Assert each refusal exits non-zero with a bounded message that contains no environment values.
+Assert the fake successor receipt remains absent when any of these are supplied: endpoint `:9223`, public/alternate host, URL credentials/query/fragment, positional argument, `DRAFT_ID`, `FOUNDER_VIDEO`, `DEMO_VIDEO`, caller-controlled `SKILL_DIR`, missing successor, or non-executable successor. Also prove that an attacker-controlled `HOME` cannot replace the sibling successor, and that hostile `BASH_ENV`/`ENV` startup files are never evaluated by the directly executed launcher or successor handoff. Assert each refusal exits non-zero with a bounded message that contains no environment values.
 
 - [ ] **Step 4: Implement the minimal real shim and tombstone**
 
-The shell script uses `set -euo pipefail`, validates exact zero arguments and exact endpoint string, checks legacy overrides are unset, requires the exact successor to be executable, exports exact `BU_CDP_URL`, and uses `exec bash ... --funder yc-w26`. The skill document names the successor, supported invocation, safety boundary, and recovery status only. It contains no field values, credentials, direct YC browser steps, `:9223`, browser launch command, save command, or submit command.
+The POSIX launcher uses `set -eu`, validates exact zero arguments and exact endpoint string, checks legacy overrides are unset, derives the trusted sibling skill root and home from its real path, refuses caller `SKILL_DIR`, requires the exact successor to be executable, exports exact `BU_CDP_URL`, and uses `env -u BASH_ENV -u ENV /bin/bash ... --funder yc-w26`. The skill document names the direct supported invocation, successor, safety boundary, and recovery status only. It contains no field values, credentials, direct YC browser steps, `:9223`, browser launch command, save command, or submit command.
 
 - [ ] **Step 5: Verify GREEN and wire outbound regression**
 

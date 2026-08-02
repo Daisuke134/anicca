@@ -25,7 +25,7 @@ Rejected. It removes the unsafe code, but old manual or agent invocations would 
 
 ### C. Versioned delegating tombstone plus closed migration receipt
 
-Selected. Check in the exact legacy skill tombstone and shell shim as deployable runtime assets. The shim owns no browser or YC form logic: it accepts the old zero-argument invocation, rejects legacy content overrides and any endpoint other than exact `:9222`, then `exec`s `apply-to-funder/scripts/run.sh --funder yc-w26`. Existing `MODE` and `DRY_RUN` semantics pass through to the successor; all live access remains subject to the successor's persisted gates.
+Selected. Check in the exact legacy skill tombstone and directly executed POSIX launcher as deployable runtime assets. The launcher owns no browser or YC form logic: it accepts the old zero-argument invocation, rejects legacy content overrides and any endpoint other than exact `:9222`, then hands off to `apply-to-funder/scripts/run.sh --funder yc-w26` with shell-startup overrides removed. Direct execution prevents caller `BASH_ENV` from running before its gates. Existing `MODE` and `DRY_RUN` semantics pass through to the successor; all live access remains subject to the successor's persisted gates.
 
 ## Architecture
 
@@ -33,7 +33,7 @@ Selected. Check in the exact legacy skill tombstone and shell shim as deployable
 legacy apply-to-yc invocation
           |
           v
-checked-in compatibility shim
+checked-in POSIX compatibility launcher
   - exact :9222 only
   - no DRAFT_ID/video overrides
   - no browser launch/form logic
@@ -53,7 +53,7 @@ The checked-in migration contract validates the complete artifact set rather tha
 ### Checked-in compatibility assets
 
 - `apps/life-manager/runtime-assets/apply-to-yc/SKILL.md` is a tombstone that names only the successor and the migration boundary. It does not advertise direct browser driving, field filling, saving, or submitting.
-- `apps/life-manager/runtime-assets/apply-to-yc/scripts/apply.sh` is the only retained executable compatibility entry. It never sources credentials, generates answers, launches Chrome, navigates YC, or writes state itself.
+- `apps/life-manager/runtime-assets/apply-to-yc/scripts/apply.sh` is the only retained executable compatibility entry. It is invoked directly, refuses caller skill-root substitution, and removes `BASH_ENV`/`ENV` before the fixed successor Bash handoff. It never sources credentials, generates answers, launches Chrome, navigates YC, or writes state itself.
 - The retired `fill.js` and `progress.js` are removed from the active installed skill after an exact recovery archive is made. They are not copied into the public repository because they contain stale operational knowledge already ported and verified in O1C-21.
 
 ### Deterministic migration contract

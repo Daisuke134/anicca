@@ -13,7 +13,7 @@ The former standalone implementation is retired. YC application knowledge, curre
 Compatibility invocation:
 
 ```bash
-bash "$HOME/.openclaw/skills/apply-to-yc/scripts/apply.sh"
+env -u BASH_ENV -u ENV "$HOME/.openclaw/skills/apply-to-yc/scripts/apply.sh"
 ```
 
 The shim accepts no positional arguments. It routes only `yc-w26` to the current successor, requires the existing CloakBrowser daily-driver, and refuses legacy draft or media overrides. Existing `MODE` and `DRY_RUN` environment values pass through to the successor.
@@ -21,7 +21,7 @@ The shim accepts no positional arguments. It routes only `yc-w26` to the current
 For new work, invoke:
 
 ```bash
-bash "$HOME/.openclaw/skills/apply-to-funder/scripts/run.sh" --funder yc-w26
+env -u BASH_ENV -u ENV /bin/bash "$HOME/.openclaw/skills/apply-to-funder/scripts/run.sh" --funder yc-w26
 ```
 
 The retired implementation is preserved only in the content-addressed recovery archive recorded by the O1C-24 evidence.
