@@ -136,6 +136,143 @@ O1C-00の承認済み子設計は
 生成物は`fundraising/application-kit/`へ置く。旧OpenClaw kitは互換export先へ降格し、
 `submitted/**`は変更しない。
 
+### 0.5 並列agentの実行protocol（fresh session用）
+
+各organは将来は並列に動くが、現在の実装を無制限に並列化しない。同じbrowser accountへの書込み、
+同じCalendar、同じapplication、同じfinancial ledger、同じsource fileを触る作業は直列にする。
+並列agentに許すのは、独立したread-only監査、test実測、専用report作成までである。
+
+#### 0.5.1 所有権とmerge gate
+
+| 役割 | 許されること | 禁止 |
+|---|---|---|
+| primary agent | `main`の正本spec更新、現在のO1B-25実装、実CloakBrowser/Calendar/Luma操作、統合判断 | 他agentの専用worktreeを書き換えない |
+| parallel audit agent | fresh worktreeでcode/history/testをread-only監査し、指定されたreport一本だけをcommit/push | master spec、production code、secret、launchd、browser、外部form/APIを変更しない |
+| primary integration | agentのreportとcommitをreviewし、事実をfresh再検証してから必要部分だけを正本へ反映 | reportを検証せずまるごとmergeしない |
+
+全parallel agentは開始時に次を実行する。
+
+```bash
+cd /Users/anicca/Projects/life-manager-main
+git fetch origin
+git status --short
+git worktree list --porcelain
+git rev-parse origin/main
+```
+
+`main`に未commit変更がある、指定worktree/branchが既に存在する、またはbaseが指定commitより古い場合は
+勝手にreset/rebase/stashせず停止して報告する。他worktreeのdirty changeはDaisまたは別agentの所有物として保護する。
+
+2026-08-02実測の保護対象:
+
+- `/Users/anicca/Projects/life-manager-main/.worktrees/five-phase-autonomous`は
+  `feat/five-phase-autonomous` / `d4e078bfb`でYC関連の未commit変更がある。新agentは触らない。
+- `/Users/anicca/Projects/life-manager-main/.worktrees/outbound-engine`は
+  `feat/outbound-engine` / `b20372bfd`でLuma関連の未commit変更がある。新agentは触らない。
+- `/Users/anicca/lm-financial-shadow-order4b`は別branchの既存worktreeであり、CFO監査agentの作業場所に再利用しない。
+
+#### 0.5.2 今すぐ並列に渡せる三作業
+
+| priority | branch | fresh worktree | 書込み可能な唯一の成果物 | 目的 |
+|---:|---|---|---|---|
+| P1 | `audit/o1b25-local-readiness-20260802` | `/Users/anicca/Projects/.worktrees/life-manager/audit-o1b25-local-readiness-20260802` | `docs/evidence/connector/2026-08-02-o1b25-local-readiness-audit.md` | O1B-25A〜Hの再利用file、欠落file、test、順序を読取りだけで確定 |
+| P2 | `audit/job-order2-readiness-20260802` | `/Users/anicca/Projects/.worktrees/life-manager/audit-job-order2-readiness-20260802` | `docs/evidence/job-search-loop/2026-08-02-order2-readiness-audit.md` | 多数のjob branchとcurrent mainを比較し、O2-01〜12の未統合・済み・test状態を確定 |
+| P3 | `audit/cfo-order3-readiness-20260802` | `/Users/anicca/Projects/.worktrees/life-manager/audit-cfo-order3-readiness-20260802` | `docs/evidence/runtime/2026-08-02-order3-cfo-readiness-audit.md` | CFOのenv名、boot、executor、launchd、schema、testを秘密値なしで監査しO3Aを開始可能にする |
+
+P1は現在のO1Bを直接速めるため最優先である。P2/P3は後続Orderの実装や外部actionを行わず、
+開始時の迷子を防ぐ事実監査に限定する。Fundraisingは次Orderだが、現在dirtyな専用worktreeがあるため、
+新しい第二のFundraising agentを開始しない。まず既存ownerの成果とdirty stateを回収する。
+
+#### 0.5.3 parallel agentの共通終了条件
+
+parallel agentは「調べた」だけで終わらない。reportに次を必須とする。
+
+1. base commit、branch、worktree、実行日時。
+2. 読んだsource file、branch/commit、test command、実測exit code。
+3. master specの対象checkboxごとの`verified_done / missing / stale / blocked`。
+4. 次に変更すべき正確なfileと変更理由。ただしagent自身は変更しない。
+5. 秘密値、個人情報、email本文、cookie、tokenを一切含めない。
+6. 指定report一本だけをcommitし、自分のbranchへpushし、commit hashと要約を返す。
+7. `main`へmerge、cherry-pick、pushしない。統合はprimary agentだけが行う。
+
+#### 0.5.4 fresh sessionへそのまま渡すprompt
+
+P1 Connector local readiness audit:
+
+```text
+あなたはLife Managerの並列監査agentです。返答とreportは日本語にしてください。
+
+目的: O1B-25A〜HのMac mini local切替に必要な既存file、再利用module、欠落、test、実行順序をread-onlyで確定する。
+
+開始:
+1. cd /Users/anicca/Projects/life-manager-main
+2. AGENTS.mdとdocs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.mdの§0、§5.0.1〜5.0.3、§5.2を読む。
+3. git fetch origin
+4. branch audit/o1b25-local-readiness-20260802 またはworktree /Users/anicca/Projects/.worktrees/life-manager/audit-o1b25-local-readiness-20260802 が既に存在する場合は何も変更せず停止する。
+5. git worktree add -b audit/o1b25-local-readiness-20260802 /Users/anicca/Projects/.worktrees/life-manager/audit-o1b25-local-readiness-20260802 origin/main
+6. 以降はそのfresh worktreeだけで作業する。
+
+監査対象: start-local.sh、runtime/loop、skills/browser、Connector関連module/test、launchd template、Gig Work Loopの既存local pattern。
+必要なfocused testは実行してよいが、CloakBrowser、Luma、Gmail、Calendar、launchctl、外部APIの書込みは禁止。
+
+書いてよいfileは docs/evidence/connector/2026-08-02-o1b25-local-readiness-audit.md 一本だけ。
+O1B-25A〜HとNT-C01〜12を一項ずつ verified_done / missing / stale / blocked で分類し、根拠file:line、test command/exit code、次の正確な変更fileを書く。
+production code、master spec、secret、他worktreeは変更しない。five-phase-autonomousとoutbound-engineのdirty worktreeに触らない。
+
+最後にreport一本だけをcommitし、git push -u origin audit/o1b25-local-readiness-20260802を実行する。mainへmerge/pushしない。
+返答はbase commit、audit commit、test結果、最大5件の発見、primary agentが次に行う順序を含める。
+```
+
+P2 Job Hunter readiness audit:
+
+```text
+あなたはLife Managerの並列監査agentです。返答とreportは日本語にしてください。
+
+目的: Order 2の実装は始めず、current mainと既存job関連branch/commit/testの事実を監査し、O2-01〜12の開始状態を確定する。
+
+開始:
+1. cd /Users/anicca/Projects/life-manager-main
+2. AGENTS.md、master specの§0、§5.4、apps/job-search-loop/README.mdを読む。
+3. git fetch origin
+4. branch audit/job-order2-readiness-20260802 またはworktree /Users/anicca/Projects/.worktrees/life-manager/audit-job-order2-readiness-20260802 がすでに存在する場合は停止する。
+5. git worktree add -b audit/job-order2-readiness-20260802 /Users/anicca/Projects/.worktrees/life-manager/audit-job-order2-readiness-20260802 origin/main
+6. 以降はそのfresh worktreeだけで作業する。
+
+apps/job-search-loop、job関連のlocal/remote branches、対応するplans/specs/evidenceをread-onlyで比較する。
+testはnetwork・browser・email・実応募なしの範囲だけ実行する。CloakBrowser、Gmail、Calendar、ATS、launchdに触らない。
+
+書いてよいfileは docs/evidence/job-search-loop/2026-08-02-order2-readiness-audit.md 一本だけ。
+O2-01〜12ごとに verified_done / missing / stale / blocked、根拠commit/file:line、必要なcherry-pick候補、不要/危険なcherry-pick、test command/exit codeを書く。実際のcherry-pick/rebase/mergeは禁止。
+
+最後にreport一本だけをcommitし、git push -u origin audit/job-order2-readiness-20260802を実行する。mainへmerge/pushしない。
+返答はbase commit、audit commit、test結果、O2の本当の残作業、branch統合リスクを含める。
+```
+
+P3 CFO readiness audit:
+
+```text
+あなたはLife Managerの並列監査agentです。返答とreportは日本語にしてください。
+
+目的: Order 3の実装や口座接続は始めず、CFOのenv名、boot、executor、launchd、schema、testを秘密値なしで監査し、O3A-01〜07とO3Bの開始条件を確定する。
+
+開始:
+1. cd /Users/anicca/Projects/life-manager-main
+2. AGENTS.md、master specの§0、§5.5、§5.6を読む。
+3. git fetch origin
+4. branch audit/cfo-order3-readiness-20260802 またはworktree /Users/anicca/Projects/.worktrees/life-manager/audit-cfo-order3-readiness-20260802 が既に存在する場合は停止する。
+5. git worktree add -b audit/cfo-order3-readiness-20260802 /Users/anicca/Projects/.worktrees/life-manager/audit-cfo-order3-readiness-20260802 origin/main
+6. 以降はそのfresh worktreeだけで作業する。
+
+runtime-job-store、financial-report boot/runtime、launchd template、migration/schema、financial tests、既存financial shadow branchのcommit差分をread-onlyで調べる。
+envは変数名と「設定済み/未設定」だけを扱い、値を読み出さない・表示しない。launchctl list等のread-only確認は可、load/unload/restartは禁止。Moneytree/Binance/walletに接続しない。取引・送金・注文は当然禁止。
+
+書いてよいfileは docs/evidence/runtime/2026-08-02-order3-cfo-readiness-audit.md 一本だけ。
+O3A-01〜07を verified_done / missing / stale / blockedで分類し、O3Bに必要なschema/API/credential categoryを秘密値なしで列挙する。根拠file:line、test command/exit code、次の正確な変更fileを書く。production code/master spec/既存worktreeは変更しない。
+
+最後にreport一本だけをcommitし、git push -u origin audit/cfo-order3-readiness-20260802を実行する。mainへmerge/pushしない。
+返答はbase commit、audit commit、test結果、O3Aの真因、必要credential category、次の実装順を含める。
+```
+
 ## 1. 固定実行順序
 
 ```text
