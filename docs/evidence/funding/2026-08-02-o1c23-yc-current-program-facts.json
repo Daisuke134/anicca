@@ -1,0 +1,206 @@
+{
+  "schema_version": 1,
+  "objective_id": "O1C-23",
+  "objective": "yc-w26.jsonのbatch、deadline、amount、URLをcurrent official factsへ更新",
+  "result": "current_official_facts_verified",
+  "recorded_at": "2026-08-02T00:21:12.928Z",
+  "implementation": {
+    "commit": "fafc0d3ef0069873ed2c295e5915d2d88a4bad37",
+    "design_commit": "a29dbf474cd6dad7a3e74ee301b4bee84f457b43",
+    "design": "docs/superpowers/specs/2026-08-02-o1c23-yc-current-program-facts-design.md",
+    "plan": "docs/superpowers/plans/2026-08-02-o1c23-yc-current-program-facts.md",
+    "manifest": "apps/life-manager/config/yc-w26.json",
+    "manifest_sha256": "b82cf7ee9f1c9574ec75b0244bd310837926853af1f46c42a63d4c9333fa13a0",
+    "builder_sha256": "a81d004173bcb4845ccbeae47e1cfd731846835e564232854caf6926310c18a3",
+    "test_sha256": "362a1e6094e00bb99b1b6b2d660a7fa09ca3bdf0f9906e8250493d21303122c5",
+    "plan_sha256": "4ef6de9e129e21341c31fd69fd4503e6ad0eb4b6b9288e0d8f1afec5ce008040",
+    "design_sha256": "c1b96ad945e6d6e0f3926da9c4ee40e20d9978f9e288b3d2be7ed9e079e31552"
+  },
+  "current_official_facts": {
+    "legacy_config_id": "yc-w26",
+    "program_id": "yc-fall-2026",
+    "program_name": "Y Combinator Fall 2026",
+    "official_url": "https://www.ycombinator.com/apply",
+    "application_url": "https://apply.ycombinator.com/home",
+    "verified_at": "2026-08-02T00:21:12.928Z",
+    "batch": {
+      "label": "Fall 2026",
+      "starts_month": "2026-10",
+      "ends_month": "2026-12",
+      "location": "San Francisco"
+    },
+    "deadline": {
+      "status": "late_applications_open",
+      "display": "July 27 at 8pm PT",
+      "on_time_at": "2026-07-28T03:00:00.000Z",
+      "timezone": "America/Los_Angeles",
+      "late_applications_open": true,
+      "legacy_compatibility_deadline_kind": "rolling",
+      "legacy_compatibility_next_deadline": null
+    },
+    "investment": {
+      "currency": "USD",
+      "total_amount": 500000,
+      "fixed_safe_amount": 125000,
+      "fixed_equity_percent": 7,
+      "mfn_safe_amount": 375000,
+      "mfn_uncapped": true,
+      "most_favored_nation": true
+    },
+    "fact_receipt_digest": "562a89965860c28a52133bc32aaa43388d3cff5bbc417dd7ca2a74e31c7e9049"
+  },
+  "official_source_receipts": [
+    {
+      "role": "apply",
+      "official_url": "https://www.ycombinator.com/apply",
+      "retrieval_url": "https://r.jina.ai/https://www.ycombinator.com/apply",
+      "observed_at": "2026-08-02T00:21:11.901Z",
+      "reader_body_sha256": "7098a80db123403ba24e10ffca1dc6a95a7ce2244513d342966bb27c7f2a7a8c",
+      "reader_body_length": 3556,
+      "reader_link_count": 7,
+      "reader_link_inventory_sha256": "059bb17c17ac31b2bc58d8ab9af2d12ec15564e5b482d55140e1afdbdb0502f2",
+      "direct_origin": {
+        "status": 200,
+        "content_type": "text/html; charset=utf-8",
+        "date": "Sun, 02 Aug 2026 00:21:12 GMT",
+        "etag": "W/\"aaa8e124fcb975c2fc76e04a8301b100\"",
+        "body_length": 54021,
+        "body_sha256": "aaa8e124fcb975c2fc76e04a8301b100ee2aa01fc97907ce25aa5835b20a8175"
+      }
+    },
+    {
+      "role": "deal",
+      "official_url": "https://www.ycombinator.com/deal",
+      "retrieval_url": "https://r.jina.ai/https://www.ycombinator.com/deal",
+      "observed_at": "2026-08-02T00:21:12.791Z",
+      "reader_body_sha256": "32ce2b3ded38a05aadd403a6490974412efc7e46a7d4f40402234c3fe452b498",
+      "reader_body_length": 5019,
+      "reader_link_count": 1,
+      "reader_link_inventory_sha256": "300a360335d7ed6b793e336b3555eb79fbff206a29b7798223e70be0d3bf6c1c",
+      "direct_origin": {
+        "status": 200,
+        "content_type": "text/html; charset=utf-8",
+        "date": "Sun, 02 Aug 2026 00:21:12 GMT",
+        "etag": "W/\"b1d7ac091ad913fddfed95b1730bcd63\"",
+        "body_length": 87038,
+        "body_sha256": "b1d7ac091ad913fddfed95b1730bcd63b44e0e6bf907abe9e22b80285f67c2e6"
+      }
+    }
+  ],
+  "assessment_proof": {
+    "decision_owner": "agent",
+    "full_source_bodies_content_addressed": true,
+    "selected_text_bound_to_source_excerpts": true,
+    "current_fact_literals_absent_from_production_validator": true,
+    "source_span_within_15_minutes": true,
+    "receipt_age_within_5_minutes_when_built": true
+  },
+  "legacy_runtime_sync": {
+    "path": "/Users/anicca/.openclaw/skills/apply-to-funder/funders/yc-w26.json",
+    "backup_path": "/Users/anicca/.openclaw/skills/apply-to-funder/funders/yc-w26.json.o1c23-before-2de79470422def2d83f93ae4ff4ea49afff929af6bada91f30f203246aa15f3e.bak",
+    "backup_sha256": "2de79470422def2d83f93ae4ff4ea49afff929af6bada91f30f203246aa15f3e",
+    "installed_sha256": "f2e4483a99411dceba9051a90096cfa86cbbfc47c24c8f8a51541f3071f957ca",
+    "same_process_branded_receipt": true,
+    "before_non_fact_digest": "7a77e20fad2d1fd62a838f1dfa21c4b27c637f6996ce6752c81a52d5fe6f3d6c",
+    "after_non_fact_digest": "7a77e20fad2d1fd62a838f1dfa21c4b27c637f6996ce6752c81a52d5fe6f3d6c",
+    "projected_structure_sha256": "0793c8873c8286892d961fe154f8dad77663e05c578f5758a62f2ba5f111baac",
+    "readback_exact": true,
+    "changed_paths": [
+      "application_url",
+      "amount_range",
+      "current_batch",
+      "deadline",
+      "deadline_kind",
+      "fact_receipt_digest",
+      "fact_sources",
+      "facts_verified_at",
+      "name",
+      "next_deadline",
+      "official_url",
+      "standard_deal"
+    ],
+    "loader_readback": {
+      "name": "Y Combinator Fall 2026",
+      "application_url": "https://apply.ycombinator.com/home",
+      "deadline": "",
+      "currency": "USD"
+    },
+    "recoverable": true
+  },
+  "effects": {
+    "official_reads": 4,
+    "repository_writes": [
+      "apps/life-manager/config/yc-w26.json"
+    ],
+    "external_writes": [
+      "bounded legacy fact paths with exact backup"
+    ],
+    "browser_operations": 0,
+    "application_prepare_operations": 0,
+    "application_save_operations": 0,
+    "application_submit_operations": 0
+  },
+  "privacy": {
+    "raw_source_bodies_persisted": false,
+    "source_excerpts_persisted": false,
+    "cookies_persisted": false,
+    "credentials_persisted": false,
+    "full_response_headers_persisted": false,
+    "selected_public_response_metadata_persisted": true,
+    "company_answers_persisted_in_manifest": false,
+    "founder_data_persisted_in_manifest": false
+  },
+  "verification": {
+    "focused": {
+      "command": "node --test lib/yc-current-program-facts.test.js",
+      "passed": 8,
+      "failed": 0
+    },
+    "outbound": {
+      "command": "npm run test:outbound",
+      "passed": 279,
+      "failed": 0
+    },
+    "runtime_up": {
+      "command": "npm run test:runtime-up",
+      "passed": 59,
+      "failed": 0
+    },
+    "full_suite": {
+      "command": "NODE_OPTIONS=--test-reporter=dot npm test",
+      "exit_code": 0
+    },
+    "syntax_check": true,
+    "json_parse": true,
+    "git_diff_check": true,
+    "external_readback": true
+  },
+  "independent_review": {
+    "reviewer": "/root/review_o1c17",
+    "initial_findings_converted_to_regressions": [
+      "source age and observation span",
+      "exact legacy ID and same-process receipt provenance",
+      "real calendar date and offset-bearing RFC3339",
+      "legacy deadline enum compatibility",
+      "legacy currency and equity compatibility",
+      "agent-owned MFN semantics and structural caps"
+    ],
+    "final": {
+      "critical": 0,
+      "important": 0,
+      "minor": 0,
+      "verdict": "mergeable"
+    }
+  },
+  "claim_boundary": {
+    "completed": [
+      "O1C-23 current batch, deadline, amount, and URL facts"
+    ],
+    "not_claimed": [
+      "O1C-24 browser transport migration",
+      "O1C-25 company/founder/video/demo/progress preview",
+      "O1C-26 submission and confirmation",
+      "O1C-27 reply/interview tracking"
+    ]
+  }
+}
