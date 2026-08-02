@@ -1441,6 +1441,13 @@ factor_assessmentsはverified inventoryのdescription/organizers/participants/pl
 availabilityを確定的に付与する契約へ縮小した。agent判断をhardcodeせず、引用捏造の余地を削る。focused 10/10、
 Connector 243/243成功、失敗0件。次はcommit/push、再配備後にLIVE応募job enqueueを確認する。
 
+O1B-26進捗11（Calendar route逐次処理の真因 / RED→GREEN）: commit `2d16704ed`、image
+`5a8e44da7eaf`を配備した15回目はgoal評価を越えた後も、同日の全候補についてinbound/outbound経路を一件ずつ
+逐次取得し、20分超でlease回収になった。候補を省略せず、最大4候補を同時に経路検証し、結果は元のcandidate順へ
+安定して戻すbounded concurrencyへ変更した。direct conflict候補は従来どおりrouteを呼ばず、いずれかのrouteが
+検証不能なら元順で最初のeventを`recovery_required`にする。focused 4/4、Connector 244/244成功、失敗0件。
+次はcommit/push、再配備後にLIVE応募job enqueueを確認する。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
