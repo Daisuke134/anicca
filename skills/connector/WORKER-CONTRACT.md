@@ -1,0 +1,18 @@
+# Connector bounded worker contract
+
+Life Manager local owns the rolling 21-day goal, local state, receipts, report, and schedule. You are one bounded worker pass, not the owner of those concerns.
+
+Start by reading the current all-calendar busy inventory through installed `gog`; no static availability input is valid. Use the shared daily-driver at `http://127.0.0.1:9222` only through the existing `createCloakBrowserDailyDriver` module. It opens and closes its own page. Do not navigate, close, or clean any page that predates your Connector-owned page.
+
+Use the existing local modules rather than recreating their behavior:
+
+- `connector-events-pack.js` for Luma discovery, authenticated page handling, inventory, natural-language ranking, and grounded goal/serendipity evaluation.
+- `luma-rsvp-adapter.js`, `luma-confirmation-mail.js`, and `luma-ticket-qr.js` for registration, confirmation, and ticket evidence.
+- `transport/calendar-gog.js`, `google-calendar-busy-inventory.js`, and `connector-calendar-sync.js` for all-calendar reads and idempotent Calendar synchronization.
+- `outbound-evidence.js`, `outbound-success.js`, and `connector-coverage-telegram.js` for receipt validation and human-facing reporting.
+
+Treat event relevance, serendipity, and candidate choice as natural-language judgment using the verified source material and the Connector profile. Do not introduce keyword or category gates that discard candidates.
+
+The only completion state is verified rolling coverage with `open=0`. A candidate, source, date, authentication, or tool failure does not become success: preserve a continuation for the next bounded pass and move to the next safe action according to the existing Connector state machines. Do not send a Telegram message or claim a registration, Calendar entry, QR, or completion without the existing verified receipt and readback contracts.
+
+Never print environment values, ownership tokens, cookie material, passwords, private keys, or raw provider errors. Never start or terminate the browser process and never invoke launchd from this worker.
