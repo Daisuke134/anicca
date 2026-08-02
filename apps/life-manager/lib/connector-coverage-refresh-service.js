@@ -14,6 +14,13 @@ function unavailable(code) {
   throw error;
 }
 
+function inventoryUnavailable(error) {
+  const code = String(error && error.code || "");
+  return /^CONNECTOR_COVERAGE_INVENTORY_(?:DISCOVERY|DETAIL|BUILD)_FAILED$/.test(code)
+    ? code
+    : "CONNECTOR_COVERAGE_INVENTORY_FAILED";
+}
+
 function nextDate(dateKey) {
   const [year, month, day] = String(dateKey).split("-").map(Number);
   return new Date(Date.UTC(year, month - 1, day + 1)).toISOString().slice(0, 10);
@@ -100,7 +107,7 @@ function createConnectorCoverageRefreshService(dependencies = {}) {
         now,
         requiredCanonicalUrls,
       });
-    } catch { unavailable("CONNECTOR_COVERAGE_INVENTORY_FAILED"); }
+    } catch (error) { unavailable(inventoryUnavailable(error)); }
     try {
       busyInventory = await dependencies.readBusyCalendar({
         calendar: dependencies.calendar,

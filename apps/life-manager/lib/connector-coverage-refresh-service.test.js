@@ -307,6 +307,24 @@ test("inventory failure exposes only a stable operational stage code", async () 
   );
 });
 
+test("preserves a safe exact Luma inventory substage code", async () => {
+  const refresh = makeService({
+    receiptReader: { async listForCoverage() { return []; } },
+    calendar: { async findConnectorEvents() { return []; }, async createConnectorEvent() {} },
+    readDateInventory: async () => {
+      const error = new Error("private browser detail");
+      error.code = "CONNECTOR_COVERAGE_INVENTORY_DETAIL_FAILED";
+      throw error;
+    },
+  });
+  await assert.rejects(
+    refresh({ coverage: currentCoverage(), tenantId: TENANT }),
+    (error) => error.message === "Connector coverage refresh unavailable"
+      && error.code === "CONNECTOR_COVERAGE_INVENTORY_DETAIL_FAILED"
+      && !JSON.stringify(error).includes("private browser detail"),
+  );
+});
+
 test("open-date planning runs only after verified registrations are rebuilt into coverage", async () => {
   const coverage = currentCoverage();
   const inventory = await dateInventory(coverage);
