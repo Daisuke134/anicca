@@ -298,6 +298,19 @@ test("policy-mandatory safety issues cannot be omitted from the blocking subset"
   }
 });
 
+test("stale and missing statuses require their canonical safety issue codes", () => {
+  const cases = [
+    (x) => { x.scopes[0].status = "stale"; x.scopes[0].issue_codes = ["company_review_note"]; },
+    (x) => { x.sources = x.sources.filter(({ role }) => role !== "demo_source"); x.scopes[3] = { scope: "demo", status: "missing", observed_at: "2026-08-02T05:01:10.000Z", source_roles: [], issue_codes: ["demo_review_note"], observation: { dedicated_source_role: null, remote: null } }; },
+    (x) => { x.scopes[4].status = "stale"; x.scopes[4].issue_codes = ["progress_review_note"]; },
+  ];
+  for (const mutate of cases) {
+    const input = fixture();
+    mutate(input);
+    assert.throws(() => build(input));
+  }
+});
+
 test("semantic status and issue bookkeeping cannot contradict readiness", () => {
   const cases = [
     (x) => { x.scopes[0].status = "stale"; },

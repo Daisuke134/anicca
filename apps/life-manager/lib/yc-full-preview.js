@@ -48,6 +48,11 @@ const MANDATORY_BLOCKING_ISSUES = Object.freeze(new Set([
   "demo_missing",
   "progress_stale",
 ]));
+const STATUS_REQUIRED_ISSUES = Object.freeze({
+  company_facts: Object.freeze({ stale: "company_facts_stale" }),
+  demo: Object.freeze({ missing: "demo_missing" }),
+  progress: Object.freeze({ stale: "progress_stale" }),
+});
 
 function fail(reason) {
   throw new Error(`YC full preview ${reason} invalid`);
@@ -287,6 +292,8 @@ function parseScopes(value, sources) {
     const expectedRoles = item.scope === "demo" && item.status === "present" ? ["demo_source"] : SCOPE_SOURCE_ROLES[item.scope];
     if (stable(roles) !== stable(expectedRoles)) fail(`${item.scope} source roles`);
     if (!allowed || !allowed.has(item.status)) fail(`${item.scope} status`);
+    const requiredIssue = STATUS_REQUIRED_ISSUES[item.scope]?.[item.status];
+    if (requiredIssue && !issues.includes(requiredIssue)) fail(`${item.scope} canonical issue`);
     const good = item.status === "current" || item.status === "present";
     if ((good && issues.length !== 0) || (!good && issues.length === 0)) fail(`${item.scope} issue consistency`);
     return {
