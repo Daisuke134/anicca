@@ -86,8 +86,34 @@ test("fails closed when the virtualized inventory end cannot be proven", async (
       maxRounds: 3,
       stableEndRounds: 2,
     }),
-    /inventory end unproven/i,
+    (error) => error.code === "LUMA_DISCOVERY_END_UNPROVEN"
+      && error.message === "Luma discovery unavailable",
   );
+});
+
+test("classifies snapshot and advance failures without provider text", async () => {
+  const privateText = "private page and account detail";
+  const cases = [
+    {
+      code: "LUMA_DISCOVERY_SNAPSHOT_FAILED",
+      readSnapshot: async () => { throw new Error(privateText); },
+      advance: async () => ({ atEnd: true, scrollHeight: 1 }),
+    },
+    {
+      code: "LUMA_DISCOVERY_ADVANCE_FAILED",
+      readSnapshot: async () => [],
+      advance: async () => { throw new Error(privateText); },
+    },
+  ];
+  for (const item of cases) {
+    await assert.rejects(collectLumaInventory({
+      readSnapshot: item.readSnapshot,
+      advance: item.advance,
+      maxRounds: 1,
+    }), (error) => error.code === item.code
+      && error.message === "Luma discovery unavailable"
+      && !JSON.stringify(error).includes(privateText));
+  }
 });
 
 test("Tokyo discovery uses the shared daily-driver page and the exhaustive collector", async () => {
