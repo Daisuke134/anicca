@@ -1481,6 +1481,18 @@ O1B-26進捗15（unavailable反映後のgeneric assembly failure / 診断境界G
 plan rebindをそれぞれ`UNAVAILABLE_EVIDENCE_READ / UNAVAILABLE_REBUILD / UNAVAILABLE_REBIND`の秘密本文なしcodeへ分割した。
 focused 8/8、Connector 246/246、失敗0件。次はcommit/push、再配備後の一回で失敗点を確定して修復する。
 
+O1B-26進捗16（LIVE unavailable成功 / 次runで解決状態を破棄する真因）: attempt 3は成功し、2026-08-02を
+候補5件・Calendar衝突5件の証拠で`unavailable`へ変更、`open=19 / covered_new=1 / unavailable=1`、次runを1秒後に
+作成した。しかし次runは開始時に前coverageの`unavailable`を捨てて同じ8月2日を再びopenにし、再度同じ日を
+`unavailable`へ戻したため、件数は19のまま8月3日へ進まなかった。generic assemblyの追加切分けとして、既存予約復元、
+終日Calendar証明、初期coverage rebuildも個別codeへ分割した。
+
+O1B-26進捗17（同一rolling windowのunavailable継承 / RED→GREEN）: verified previous coverageが同じtenant、timezone、
+window start/endの場合だけ、`unavailable`の日付とopaque evidence refsを次のrebuildへ引き継ぐ。実応募receiptは従来どおり
+毎回再検証し、`covered_new`をこの継承で捏造しない。翌日になって21日windowが変われば継承せず、fresh Calendarで再計算する。
+回帰testは修正前に8月2日が`open`へ戻ってRED、修正後`unavailable`維持でGREEN。Connector 247/247、runtime adapters
+125/125、失敗0件。次はcommit/push、LIVEで8月2日を維持したまま8月3日のplanへ進むことを確認する。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
