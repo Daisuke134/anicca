@@ -148,6 +148,31 @@ test("reads every discovered detail sequentially before building the snapshot", 
   assert.equal(snapshot.counts.inspected, 2);
 });
 
+test("re-inspects verified registration URLs missing from the Tokyo feed", async () => {
+  const inventory = await verifiedInventory(["tokyo-one"]);
+  const calls = [];
+  const snapshot = await inspectLumaDateInventory({
+    coverage: COVERAGE,
+    now: "2026-08-02T01:00:00.000Z",
+    requiredCanonicalUrls: ["https://luma.com/registered-event"],
+    discoverTokyo: async () => inventory,
+    inspectEvent: async (url) => {
+      calls.push(url);
+      return detail(url.split("/").at(-1));
+    },
+  });
+
+  assert.deepEqual(calls, [
+    "https://luma.com/tokyo-one",
+    "https://luma.com/registered-event",
+  ]);
+  assert.equal(snapshot.counts.discovered, 2);
+  assert.equal(snapshot.counts.inspected, 2);
+  assert.equal(snapshot.days[0].events.some((event) => (
+    event.canonical_url === "https://luma.com/registered-event"
+  )), true);
+});
+
 test("does not convert a fully read zero-candidate date into coverage resolution", async () => {
   const inventory = await verifiedInventory(["tokyo-one"]);
   const snapshot = buildLumaDateInventory({

@@ -88,7 +88,18 @@ function createConnectorCoverageRefreshService(dependencies = {}) {
       });
     } catch { unavailable("CONNECTOR_COVERAGE_REBUILD_FAILED"); }
     try {
-      dateInventory = await dependencies.readDateInventory({ coverage: working, now });
+      completed = await dependencies.receiptReader.listForCoverage({ tenantId, coverage: working });
+    } catch { unavailable("CONNECTOR_COVERAGE_RECEIPT_READ_FAILED"); }
+    if (!Array.isArray(completed)) unavailable("CONNECTOR_COVERAGE_RECEIPT_READ_FAILED");
+    const requiredCanonicalUrls = [...new Set(completed.map((registration) => (
+      String(registration && registration.receipt && registration.receipt.canonical_url || "").trim()
+    )))];
+    try {
+      dateInventory = await dependencies.readDateInventory({
+        coverage: working,
+        now,
+        requiredCanonicalUrls,
+      });
     } catch { unavailable("CONNECTOR_COVERAGE_INVENTORY_FAILED"); }
     try {
       busyInventory = await dependencies.readBusyCalendar({
@@ -99,15 +110,11 @@ function createConnectorCoverageRefreshService(dependencies = {}) {
         now,
       });
     } catch { unavailable("CONNECTOR_COVERAGE_CALENDAR_READ_FAILED"); }
-    try {
-      completed = await dependencies.receiptReader.listForCoverage({ tenantId, coverage: working });
-    } catch { unavailable("CONNECTOR_COVERAGE_RECEIPT_READ_FAILED"); }
     if (
       !isVerifiedRollingEventCoverage(working)
       || !isVerifiedLumaDateInventory(dateInventory)
       || dateInventory.coverage_snapshot_id !== working.coverage_snapshot_id
       || !isVerifiedGoogleCalendarBusyInventory(busyInventory)
-      || !Array.isArray(completed)
     ) unavailable("CONNECTOR_COVERAGE_READBACK_INVALID");
 
     const registrations = [];
