@@ -16,11 +16,11 @@ from contextlib import contextmanager
 import fcntl
 import json
 import os
+import secrets
 import sys
 import tempfile
 import time
 import urllib.request
-import uuid
 from urllib.parse import urlparse
 
 try:
@@ -122,20 +122,26 @@ def _read_ledger_locked():
     try:
         with open(_leases_path(), encoding="utf-8") as handle:
             raw = json.load(handle)
-    except Exception:
+    except FileNotFoundError:
         raw = {}
     if not isinstance(raw, dict):
-        raw = {}
+        raise ValueError("lease ledger must be a JSON object")
 
     meta = raw.get(_LEDGER_META_KEY, {})
-    generations = meta.get("generations", {}) if isinstance(meta, dict) else {}
+    if not isinstance(meta, dict):
+        raise ValueError("lease ledger metadata must be an object")
+    generations = meta.get("generations", {})
     if not isinstance(generations, dict):
-        generations = {}
-    leases = {
-        task: held
-        for task, held in raw.items()
-        if task != _LEDGER_META_KEY and isinstance(held, dict)
-    }
+        raise ValueError("lease ledger generations must be an object")
+    if any(not _valid_generation(generation) for generation in generations.values()):
+        raise ValueError("lease ledger contains an invalid generation")
+    leases = {}
+    for task, held in raw.items():
+        if task == _LEDGER_META_KEY:
+            continue
+        if not isinstance(held, dict):
+            raise ValueError("lease ledger contains an invalid lease row")
+        leases[task] = held
     return {"leases": leases, "generations": generations}
 
 
@@ -234,7 +240,7 @@ def _next_identity(ledger, task):
         _generation_value(held.get("generation")),
     ) + 1
     ledger["generations"][task] = generation
-    return uuid.uuid4().hex, generation
+    return secrets.token_hex(16), generation
 
 
 def _refresh_held_locked(ledger, task, held, now):
@@ -251,6 +257,59 @@ def _refresh_held_locked(ledger, task, held, now):
     held.setdefault("ts", now)
     held["heartbeat_at"] = now
     return held
+
+
+def _is_dispose_pending(held):
+    return bool(held.get("dispose_pending"))
+
+
+def _release_is_authorized(held, token, generation):
+    """Fenced rows require their fence; credentialless release is legacy-only."""
+    if "token" not in held and "generation" not in held:
+        return token is None
+    return token is not None and _matches_identity(held, token, generation)
+
+
+def _already_disposed(error):
+    """CDP's authoritative absence response makes a pending row recoverable."""
+    message = str(error).lower()
+    return any(
+        phrase in message
+        for phrase in (
+            "browser context not found",
+            "no browser context with given id",
+            "cannot find browser context",
+        )
+    )
+
+
+def _mark_dispose_pending_locked(ledger, task, expected, idle_min=None):
+    """Pin a matching row durably before its browser context can be disposed."""
+    current = ledger["leases"].get(task)
+    if not current or not _same_lease(current, expected):
+        return None
+    if not _is_dispose_pending(current):
+        if idle_min is not None and not _stale(current, time.time(), idle_min):
+            return None
+        current["dispose_pending"] = True
+        _save_ledger_locked(ledger)
+    return dict(current)
+
+
+def _finalize_disposal(task, expected):
+    """Delete only the exact durable pending row after disposal is authoritative."""
+    with _ledger_lock():
+        ledger = _read_ledger_locked()
+        current = ledger["leases"].get(task)
+        if (
+            not current
+            or not _same_lease(current, expected)
+            or not _is_dispose_pending(current)
+        ):
+            return False
+        del ledger["leases"][task]
+        _save_ledger_locked(ledger)
+        return True
 
 
 def _dispose(held):
@@ -278,6 +337,8 @@ def acquire(task, url="about:blank", no_seed=False):
         ledger = _read_ledger_locked()
         held = ledger["leases"].get(task)
         if held:
+            if _is_dispose_pending(held):
+                return {"ok": False, "reason": "lease disposal pending", "task": task}
             held = _refresh_held_locked(ledger, task, held, time.time())
             _save_ledger_locked(ledger)
             return {"ok": True, "reused": True, **held}
@@ -309,9 +370,12 @@ def acquire(task, url="about:blank", no_seed=False):
         ledger = _read_ledger_locked()
         held = ledger["leases"].get(task)
         if held:
-            held = _refresh_held_locked(ledger, task, held, time.time())
-            _save_ledger_locked(ledger)
-            result = {"ok": True, "reused": True, **held}
+            if _is_dispose_pending(held):
+                result = {"ok": False, "reason": "lease disposal pending", "task": task}
+            else:
+                held = _refresh_held_locked(ledger, task, held, time.time())
+                _save_ledger_locked(ledger)
+                result = {"ok": True, "reused": True, **held}
             discarded = candidate
         else:
             token, generation = _next_identity(ledger, task)
@@ -336,7 +400,11 @@ def heartbeat(task, token, generation):
     with _ledger_lock():
         ledger = _read_ledger_locked()
         held = ledger["leases"].get(task)
-        if not held or not _matches_identity(held, token, generation):
+        if (
+            not held
+            or _is_dispose_pending(held)
+            or not _matches_identity(held, token, generation)
+        ):
             return {"ok": False, "reason": "stale or missing lease"}
         held["heartbeat_at"] = time.time()
         _save_ledger_locked(ledger)
@@ -358,7 +426,7 @@ def _stale(held, now, idle_min):
 
 
 def release(task, token=None, generation=None):
-    """Compare-delete a fenced lease, then dispose it under the target lock."""
+    """Fence and durably mark a lease before disposing its browser context."""
     if (token is None) != (generation is None):
         return {"ok": False, "reason": "token and generation must be provided together"}
 
@@ -369,8 +437,8 @@ def release(task, token=None, generation=None):
             if token is None:
                 return {"ok": True, "note": f"{task} held no context"}
             return {"ok": False, "reason": "stale or missing lease"}
-        if token is not None and not _matches_identity(held, token, generation):
-            return {"ok": False, "reason": "stale or missing lease"}
+        if not _release_is_authorized(held, token, generation):
+            return {"ok": False, "reason": "fence credentials required or stale"}
         pinned = dict(held)
 
     with _target_operation_lock(pinned["target_id"]):
@@ -379,23 +447,23 @@ def release(task, token=None, generation=None):
             current = ledger["leases"].get(task)
             if not current or not _same_lease(current, pinned):
                 return {"ok": False, "reason": "stale or missing lease"}
-            if token is not None and not _matches_identity(current, token, generation):
+            if not _release_is_authorized(current, token, generation):
+                return {"ok": False, "reason": "fence credentials required or stale"}
+            pending = _mark_dispose_pending_locked(ledger, task, pinned)
+            if not pending:
                 return {"ok": False, "reason": "stale or missing lease"}
-            del ledger["leases"][task]
-            _save_ledger_locked(ledger)
         try:
-            _dispose(pinned)
+            _dispose(pending)
         except Exception as exc:
-            return {
-                "ok": False,
-                "reason": f"dispose failed: {exc}",
-                "released_from_ledger": task,
-            }
-    return {"ok": True, "released": task, "context_id": pinned["context_id"]}
+            if not _already_disposed(exc):
+                return {"ok": False, "reason": f"dispose failed: {exc}", "dispose_pending": True}
+        if not _finalize_disposal(task, pending):
+            return {"ok": False, "reason": "lease changed while finalizing disposal"}
+    return {"ok": True, "released": task, "context_id": pending["context_id"]}
 
 
 def gc(idle_min=45):
-    """Reap only a still-stale pinned lease; never a refreshed/replaced one."""
+    """Reap only still-stale (or previously pending) exact lease identities."""
     with _ledger_lock():
         ledger = _read_ledger_locked()
         now = time.time()
@@ -404,7 +472,7 @@ def gc(idle_min=45):
             for task, held in ledger["leases"].items()
             if held.get("context_id")
             and held.get("target_id")
-            and _stale(held, now, idle_min)
+            and (_is_dispose_pending(held) or _stale(held, now, idle_min))
         ]
 
     reaped = []
@@ -413,23 +481,26 @@ def gc(idle_min=45):
         with _target_operation_lock(pinned["target_id"]):
             with _ledger_lock():
                 ledger = _read_ledger_locked()
-                current = ledger["leases"].get(task)
-                if (
-                    not current
-                    or not _same_lease(current, pinned)
-                    or not _stale(current, time.time(), idle_min)
-                ):
+                pending = _mark_dispose_pending_locked(
+                    ledger, task, pinned, idle_min=idle_min
+                )
+                if not pending:
                     continue
-                del ledger["leases"][task]
-                _save_ledger_locked(ledger)
             try:
-                _dispose(pinned)
-            except Exception:
+                _dispose(pending)
+            except Exception as exc:
+                if _already_disposed(exc):
+                    pass
+                else:
+                    dispose_failed.append(task)
+                    continue
+            if not _finalize_disposal(task, pending):
                 dispose_failed.append(task)
+                continue
             reaped.append(task)
 
     return {
-        "ok": True,
+        "ok": not dispose_failed,
         "reaped": reaped,
         "still_held": list(_leases()),
         "dispose_failed": dispose_failed,

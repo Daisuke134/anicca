@@ -32,7 +32,10 @@ def test_release_waits_for_active_target_operation(monkeypatch, tmp_path):
     leases_path = tmp_path / "gig-leases.json"
     monkeypatch.setenv("CLOAK_CONTEXT_LEASES_FILE", str(leases_path))
     leases_path.write_text(
-        '{"gig":{"context_id":"context-1","target_id":"target-1"}}',
+        (
+            '{"gig":{"context_id":"context-1","target_id":"target-1",'
+            '"token":"a-token","generation":1}}'
+        ),
         encoding="utf-8",
     )
     calls = []
@@ -49,7 +52,7 @@ def test_release_waits_for_active_target_operation(monkeypatch, tmp_path):
     result = {}
 
     worker = threading.Thread(
-        target=lambda: result.update(lease.release("gig")),
+        target=lambda: result.update(lease.release("gig", "a-token", 1)),
         daemon=True,
     )
     worker.start()
