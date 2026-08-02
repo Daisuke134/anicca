@@ -385,11 +385,19 @@ async function executeCapabilityJob(job, services) {
       && /^CONNECTOR_COVERAGE_[A-Z_]+$/.test(String(executionError.code || ""))
       ? executionError.code
       : null;
+    const outboundLumaCode = job.capability === "outbound.event.apply"
+      && new Set([
+        "LUMA_LOGIN_REQUIRED",
+        "LUMA_RSVP_UNAVAILABLE",
+        "LUMA_EFFECT_UNKNOWN",
+      ]).has(String(executionError.code || ""))
+      ? executionError.code
+      : null;
     await failJob({
       ...identity,
       errorCode: heartbeatFailed
         ? "CAPABILITY_HEARTBEAT_FAILED"
-        : connectorCoverageCode || "CAPABILITY_EXECUTION_FAILED",
+        : connectorCoverageCode || outboundLumaCode || "CAPABILITY_EXECUTION_FAILED",
       unknownEffect,
     }, storeOptions);
     return;

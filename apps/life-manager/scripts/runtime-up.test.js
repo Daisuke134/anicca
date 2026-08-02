@@ -515,6 +515,36 @@ test("coverage worker persists a bounded stage code without raw provider errors"
   assert.equal(calls[0].input.unknownEffect, false);
 });
 
+test("outbound Luma worker persists only an allowlisted provider state code", async () => {
+  for (const [providerCode, expectedCode, unknownEffect] of [
+    ["LUMA_LOGIN_REQUIRED", "LUMA_LOGIN_REQUIRED", false],
+    ["LUMA_RSVP_UNAVAILABLE", "LUMA_RSVP_UNAVAILABLE", false],
+    ["LUMA_EFFECT_UNKNOWN", "LUMA_EFFECT_UNKNOWN", true],
+    ["LUMA_PRIVATE_PROVIDER_DETAIL", "CAPABILITY_EXECUTION_FAILED", false],
+  ]) {
+    const calls = [];
+    const error = new Error("private page text");
+    error.code = providerCode;
+    error.unknownEffect = unknownEffect;
+    await executeCapabilityJob({
+      tenant_id: "dais-local",
+      job_id: `outbound-event:${"d".repeat(64)}`,
+      attempt: 1,
+      capability: "outbound.event.apply",
+      effect_class: "publish",
+    }, {
+      workerId: "connector-local",
+      handlers: { "outbound.event.apply": async () => { throw error; } },
+      completeJob: async (input) => calls.push({ kind: "complete", input }),
+      failJob: async (input) => calls.push({ kind: "fail", input }),
+    });
+    assert.deepEqual(calls.map(({ kind }) => kind), ["fail"]);
+    assert.equal(calls[0].input.errorCode, expectedCode);
+    assert.equal(calls[0].input.unknownEffect, unknownEffect);
+    assert.doesNotMatch(JSON.stringify(calls), /private page text/);
+  }
+});
+
 test("external-effect execution heartbeats its lease before recording completion", async () => {
   const calls = [];
   let scheduledHeartbeat;
