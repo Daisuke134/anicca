@@ -44,6 +44,14 @@ def test_instagram_redirected_to_login_is_logged_out_even_without_cookie_check()
     assert sv._logged_out_for(url, final, cookies) is True
 
 
+def test_instagram_suspended_account_is_not_reported_recovered():
+    """A restored sessionid cannot make an account-suspension page operational."""
+    url = "https://www.instagram.com/"
+    final = "https://www.instagram.com/accounts/suspended/?next=%2F"
+    cookies = [_cookie("sessionid", ".instagram.com")]
+    assert sv._logged_out_for(url, final, cookies) is True
+
+
 def test_non_instagram_domain_uses_url_redirect_only_sessionid_irrelevant():
     """coconala etc keep the old behavior: sessionid check must not fire off-instagram."""
     url = "https://coconala.com/mypage"
