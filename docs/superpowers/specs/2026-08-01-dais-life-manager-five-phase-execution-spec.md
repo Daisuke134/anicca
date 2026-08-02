@@ -1578,6 +1578,14 @@ root shape、候補数、event ref、理由文、deterministic groundingを一�
 errorへ反射しない。outbound 250/250、runtime-up 38/38、runtime adapters 125/125、失敗0件。次はcommit/push/deploy後、
 最新verified coverageから新しいdurable continuationを正規APIでenqueueし、一回のLIVE codeで真因を確定する。
 
+O1B-26進捗29（分類image LIVE / fresh continuation queued）: 進捗28の分類修正をcommit `310660977`として
+mainへpushし、image `1ae29666775f`を11:15 JSTに配備した。worker healthは
+`outbound.event.apply / connector.coverage.refresh`を含めて正常。dead letter済みjobのattemptを復活させず、
+最新verified coverage `open=18 / covered_new=1 / unavailable=2`から正規continuation APIで新job
+`connector-coverage:5fe9cad74d584ca61eec2601be1ec1eb38c7b1e1bb85b197d981365855a6dedf`を作成した。
+11:20:36 JST開始予定でqueuedであり、次のLIVE receiptでは本文を保存せず
+`SHAPE / COUNT / EVENT_REF / TEXT / GROUNDED`のどれか、または実応募enqueue成功を確定する。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
