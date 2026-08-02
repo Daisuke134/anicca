@@ -216,3 +216,22 @@ test("all-calendar-conflict plan resolves the day with bounded aggregate evidenc
   assert.equal(rebound.status, "unavailable");
   assert.equal(isVerifiedConnectorOpenDatePlan(rebound), true);
 });
+
+test("calendar unavailable proof failure has its own bounded stage", async () => {
+  const input = await sources();
+  const { instance } = planner(new Map(), {
+    buildSpendSequence() {
+      return {
+        ordered_candidates: [],
+        skipped: input.dateInventory.days[0].events.map((event) => ({
+          event_ref: event.event_ref, reason: "calendar_conflict",
+        })),
+      };
+    },
+    proveCalendarUnavailable() { throw new Error("private calendar detail"); },
+  });
+  await assert.rejects(instance(input), (error) => (
+    error.code === "CONNECTOR_COVERAGE_APPLICATION_CALENDAR_UNAVAILABLE_PROOF_FAILED"
+    && !JSON.stringify(error).includes("private calendar detail")
+  ));
+});

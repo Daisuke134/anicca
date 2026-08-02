@@ -1493,6 +1493,12 @@ window start/endの場合だけ、`unavailable`の日付とopaque evidence refs�
 回帰testは修正前に8月2日が`open`へ戻ってRED、修正後`unavailable`維持でGREEN。Connector 247/247、runtime adapters
 125/125、失敗0件。次はcommit/push、LIVEで8月2日を維持したまま8月3日のplanへ進むことを確認する。
 
+O1B-26進捗18（8月3日へ前進LIVE / Calendar gate内の再切分け）: commit `3a290138a`、image
+`4d8415369196`を配備したclean attemptで、8月2日の`unavailable`を維持したまま8月3日へ進んだ。これは同じ日を
+再処理する無限loopが解消した実証である。8月3日は`CONNECTOR_COVERAGE_APPLICATION_CALENDAR_GATE_FAILED`で停止したため、
+route/衝突評価と、全候補衝突を日付証拠へ変える処理を分離し、後者を`CALENDAR_UNAVAILABLE_PROOF_FAILED`にした。
+focused 7/7成功。次はcommit/push、LIVE再試行で二者のどちらかを確定する。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 

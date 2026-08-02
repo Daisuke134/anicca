@@ -152,7 +152,7 @@ function createConnectorOpenDateApplicationPlanner(dependencies = {}) {
       && aggregate.skip_reason_counts.length === 1
       && aggregate.skip_reason_counts[0].reason === "calendar_conflict"
     ) {
-      const unavailableEvidence = await stage("CONNECTOR_COVERAGE_APPLICATION_CALENDAR_GATE_FAILED", () => (
+      const unavailableEvidence = await stage("CONNECTOR_COVERAGE_APPLICATION_CALENDAR_UNAVAILABLE_PROOF_FAILED", () => (
         dependencies.proveCalendarUnavailable({
           dateInventory, busyInventory, calendarGate: gate, date: open.date,
         })
