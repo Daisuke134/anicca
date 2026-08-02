@@ -2,11 +2,13 @@
 import json
 import os
 import re
+import signal
 import stat
 import subprocess
 import sys
 import textwrap
 import threading
+import time
 import types
 from pathlib import Path
 
@@ -89,6 +91,26 @@ def _write_lease(leases_path, task, held, generation):
     )
 
 
+def _valid_held(**overrides):
+    held = {
+        "context_id": "context-1",
+        "target_id": "target-1",
+        "ws": "ws://127.0.0.1/devtools/page/target-1",
+        "token": "a" * 32,
+        "generation": 1,
+        "ts": 1.0,
+        "heartbeat_at": 1.0,
+    }
+    held.update(overrides)
+    return held
+
+
+def _shell_function(source, name, next_name):
+    start = source.index(f"{name}(){{")
+    end = source.index(f"\n{next_name}(){{", start)
+    return source[start:end]
+
+
 def test_acquire_reuse_refreshes_heartbeat_and_next_generation(monkeypatch, tmp_path):
     _set_lease_path(monkeypatch, tmp_path)
     calls = _install_fake_cdp(monkeypatch)
@@ -139,6 +161,145 @@ def test_acquire_uses_full_128_bit_token_hex(monkeypatch, tmp_path):
 
     assert held["token"] == "f" * 32
     assert token_sizes == [16]
+
+
+@pytest.mark.parametrize("failure_stage", ["seed", "target"])
+def test_acquire_disposes_created_context_when_setup_fails(
+    monkeypatch, tmp_path, failure_stage
+):
+    leases_path = _set_lease_path(monkeypatch, tmp_path)
+    calls = []
+    if failure_stage == "seed":
+        vault_path = tmp_path / "auth-state.json"
+        vault_path.write_text('{"cookies":[{"name":"sid"}]}', encoding="utf-8")
+        monkeypatch.setenv("CLOAK_SESSION_VAULT_FILE", str(vault_path))
+
+    async def fake_calls(pairs):
+        calls.extend(pairs)
+        if pairs[0][0] == "Target.createBrowserContext":
+            return [{"browserContextId": "context-1"}]
+        for method, _params in pairs:
+            if method == "Storage.setCookies" and failure_stage == "seed":
+                raise RuntimeError("cookie seed failed")
+            if method == "Target.createTarget" and failure_stage == "target":
+                raise RuntimeError("target creation failed")
+        return [{} for _method, _params in pairs]
+
+    monkeypatch.setattr(lease, "_calls", fake_calls)
+
+    with pytest.raises(RuntimeError):
+        lease.acquire("gig", no_seed=failure_stage == "target")
+
+    assert (
+        "Target.disposeBrowserContext",
+        {"browserContextId": "context-1"},
+    ) in calls
+    assert not leases_path.exists()
+
+
+def test_acquire_disposes_untracked_context_when_ledger_write_fails(monkeypatch, tmp_path):
+    leases_path = _set_lease_path(monkeypatch, tmp_path)
+    calls = _install_fake_cdp(monkeypatch)
+    operation_targets = []
+    original_operation_lock_path = lease._operation_lock_path
+
+    def record_operation_lock(target_id):
+        operation_targets.append(target_id)
+        return original_operation_lock_path(target_id)
+
+    def write_fails(_ledger):
+        raise OSError("ledger write failed")
+
+    monkeypatch.setattr(lease, "_operation_lock_path", record_operation_lock)
+    monkeypatch.setattr(lease, "_save_ledger_locked", write_fails)
+
+    with pytest.raises(OSError, match="ledger write failed"):
+        lease.acquire("gig", no_seed=True)
+
+    assert (
+        "Target.disposeBrowserContext",
+        {"browserContextId": "context-1"},
+    ) in calls
+    assert operation_targets == ["target-1"]
+    assert not leases_path.exists()
+
+
+def test_acquire_keeps_exact_durable_candidate_after_directory_fsync_error(
+    monkeypatch, tmp_path
+):
+    leases_path = _set_lease_path(monkeypatch, tmp_path)
+    calls = _install_fake_cdp(monkeypatch)
+    real_fsync = lease.os.fsync
+
+    def fail_after_directory_replace(fd):
+        if stat.S_ISDIR(os.fstat(fd).st_mode):
+            real_fsync(fd)
+            raise OSError("directory fsync interrupted")
+        return real_fsync(fd)
+
+    monkeypatch.setattr(lease.os, "fsync", fail_after_directory_replace)
+
+    with pytest.raises(OSError, match="directory fsync interrupted"):
+        lease.acquire("gig", no_seed=True)
+
+    durable = _read_lease(leases_path)
+    assert durable["context_id"] == "context-1"
+    assert durable["target_id"] == "target-1"
+    assert [method for method, _params in calls].count(
+        "Target.disposeBrowserContext"
+    ) == 0
+
+
+@pytest.mark.parametrize(
+    "invalid_row",
+    [
+        _valid_held(context_id=""),
+        _valid_held(target_id=""),
+        _valid_held(ws=""),
+        _valid_held(ts="not-a-timestamp"),
+        _valid_held(ts=float("nan")),
+        _valid_held(ts=float("inf")),
+        _valid_held(ts=-1),
+        _valid_held(heartbeat_at="not-a-timestamp"),
+        _valid_held(heartbeat_at=float("nan")),
+        _valid_held(heartbeat_at=float("inf")),
+        _valid_held(heartbeat_at=-1),
+        _valid_held(dispose_pending="yes"),
+        _valid_held(token=""),
+        _valid_held(generation=0),
+        {key: value for key, value in _valid_held().items() if key != "generation"},
+        {key: value for key, value in _valid_held().items() if key != "token"},
+    ],
+)
+def test_invalid_ledger_row_blocks_new_acquire_without_write_or_cdp(
+    monkeypatch, tmp_path, invalid_row
+):
+    leases_path = _set_lease_path(monkeypatch, tmp_path)
+    calls = _install_fake_cdp(monkeypatch)
+    _write_lease(leases_path, "other", invalid_row, 1)
+    before = leases_path.read_text(encoding="utf-8")
+
+    with pytest.raises(ValueError):
+        lease.acquire("gig", no_seed=True)
+
+    assert leases_path.read_text(encoding="utf-8") == before
+    assert calls == []
+
+
+def test_acquire_upgrades_a_complete_legacy_row(monkeypatch, tmp_path):
+    leases_path = _set_lease_path(monkeypatch, tmp_path)
+    _install_fake_cdp(monkeypatch)
+    legacy = _valid_held()
+    del legacy["token"]
+    del legacy["generation"]
+    _write_lease(leases_path, "gig", legacy, 1)
+
+    upgraded = lease.acquire("gig", no_seed=True)
+
+    assert upgraded["ok"] is True
+    assert upgraded["reused"] is True
+    assert re.fullmatch(r"[0-9a-f]{32}", upgraded["token"])
+    assert upgraded["generation"] == 2
 
 
 def test_heartbeat_requires_exact_current_identity(monkeypatch, tmp_path):
@@ -225,6 +386,7 @@ def test_fenced_release_cannot_delete_a_replacement_seen_after_its_snapshot(
     old = {
         "context_id": "context-old",
         "target_id": "target-old",
+        "ws": "ws://127.0.0.1/devtools/page/target-old",
         "token": "a" * 32,
         "generation": 1,
         "ts": 1.0,
@@ -233,6 +395,7 @@ def test_fenced_release_cannot_delete_a_replacement_seen_after_its_snapshot(
     replacement = {
         "context_id": "context-new",
         "target_id": "target-new",
+        "ws": "ws://127.0.0.1/devtools/page/target-new",
         "token": "b" * 32,
         "generation": 2,
         "ts": 2.0,
@@ -285,6 +448,7 @@ def test_gc_does_not_reap_a_lease_refreshed_after_stale_snapshot(monkeypatch, tm
     held = {
         "context_id": "context-1",
         "target_id": "target-1",
+        "ws": "ws://127.0.0.1/devtools/page/target-1",
         "token": "a" * 32,
         "generation": 1,
         "ts": 0.0,
@@ -322,6 +486,7 @@ def test_gc_does_not_reap_a_replacement_generation(monkeypatch, tmp_path):
     old = {
         "context_id": "context-old",
         "target_id": "target-old",
+        "ws": "ws://127.0.0.1/devtools/page/target-old",
         "token": "a" * 32,
         "generation": 1,
         "ts": 0.0,
@@ -330,6 +495,7 @@ def test_gc_does_not_reap_a_replacement_generation(monkeypatch, tmp_path):
     replacement = {
         "context_id": "context-new",
         "target_id": "target-new",
+        "ws": "ws://127.0.0.1/devtools/page/target-new",
         "token": "b" * 32,
         "generation": 2,
         "ts": 0.0,
@@ -400,6 +566,7 @@ def test_gc_keeps_pending_lease_when_dispose_fails_and_retries(monkeypatch, tmp_
     held = {
         "context_id": "context-1",
         "target_id": "target-1",
+        "ws": "ws://127.0.0.1/devtools/page/target-1",
         "token": "a" * 32,
         "generation": 1,
         "ts": 0.0,
@@ -439,6 +606,7 @@ def test_gc_finalizes_a_pending_lease_when_cdp_confirms_it_is_already_disposed(
     held = {
         "context_id": "context-1",
         "target_id": "target-1",
+        "ws": "ws://127.0.0.1/devtools/page/target-1",
         "token": "a" * 32,
         "generation": 1,
         "ts": 1_000.0,
@@ -486,6 +654,7 @@ def test_ledger_rmw_is_serialized_across_processes(monkeypatch, tmp_path):
     held = {
         "context_id": "context-1",
         "target_id": "target-1",
+        "ws": "ws://127.0.0.1/devtools/page/target-1",
         "token": "a" * 32,
         "generation": 1,
         "ts": 1.0,
@@ -566,6 +735,183 @@ def test_cli_heartbeat_and_partial_release_identity(monkeypatch, capsys):
 
     assert lease.main(["release", "gig", "--token", "tok"]) == 1
     assert json.loads(capsys.readouterr().out)["ok"] is False
+
+
+@pytest.mark.parametrize(
+    ("relative_path", "lease_prefix"),
+    [
+        ("skills/earn/gig/gig_pass.sh", "GIG_LEASE"),
+        ("skills/earn/clip/clip_daily.sh", "CLIP_LEASE"),
+        ("skills/earn/clip/clip_pass.sh", "CLIP_LEASE"),
+    ],
+)
+def test_shell_parse_keeps_owned_fence_for_cleanup_when_ws_is_invalid(
+    tmp_path, relative_path, lease_prefix
+):
+    root = Path(__file__).resolve().parents[3]
+    source = (root / relative_path).read_text(encoding="utf-8")
+    parse_lease = _shell_function(source, "parse_lease", "heartbeat_lease")
+    release_lease = _shell_function(
+        source, "release_lease", "lease_heartbeat_loop"
+    )
+    calls_path = tmp_path / "lease-calls.txt"
+    lease_cli = tmp_path / "lease-cli.sh"
+    lease_cli.write_text(
+        "import os\nimport sys\n"
+        "open(os.environ['HARNESS_CALLS'], 'w', encoding='utf-8').write("
+        "' '.join(sys.argv[1:]) + '\\n')\n",
+        encoding="utf-8",
+    )
+    lease_cli.chmod(0o755)
+    malformed_owned = json.dumps(
+        {"ok": True, "ws": 7, "token": "owned-token", "generation": 7}
+    )
+    shell = textwrap.dedent(
+        f"""\
+        set -uo pipefail
+        {parse_lease}
+        {release_lease}
+        {lease_prefix}="shell-parse"
+        {lease_prefix}_WS=""
+        {lease_prefix}_TOKEN=""
+        {lease_prefix}_GENERATION=""
+        LEASE_SCRIPT="$HARNESS_LEASE_SCRIPT"
+        if parse_lease "$HARNESS_LEASE_JSON"; then
+          exit 19
+        fi
+        release_lease
+        """
+    )
+    completed = subprocess.run(
+        ["bash", "-c", shell],
+        env={
+            **os.environ,
+            "HARNESS_CALLS": str(calls_path),
+            "HARNESS_LEASE_JSON": malformed_owned,
+            "HARNESS_LEASE_SCRIPT": str(lease_cli),
+        },
+        text=True,
+        capture_output=True,
+        timeout=5,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    assert calls_path.read_text(encoding="utf-8") == (
+        "release shell-parse --token owned-token --generation 7\n"
+    )
+
+
+def test_heartbeat_failure_waits_for_foreground_child_before_fenced_release(tmp_path):
+    root = Path(__file__).resolve().parents[3]
+    gig_pass = root / "skills/earn/gig/gig_pass.sh"
+    functions = tmp_path / "gig-functions.sh"
+    functions.write_text(
+        gig_pass.read_text(encoding="utf-8").split(
+            "# ── deterministic prelude", 1
+        )[0],
+        encoding="utf-8",
+    )
+    events_path = tmp_path / "events.txt"
+    child_pid_path = tmp_path / "child.pid"
+    lease_cli = tmp_path / "lease-cli.sh"
+    agent = tmp_path / "agent.sh"
+    lease_cli.write_text(
+        textwrap.dedent(
+            """\
+            import os
+            import sys
+
+            command = sys.argv[1]
+            if command == "heartbeat":
+                child_pid_path = os.environ["HARNESS_CHILD_PID"]
+                raise SystemExit(
+                    1 if os.path.exists(child_pid_path) and os.path.getsize(child_pid_path) else 0
+                )
+            if command == "release":
+                with open(os.environ["HARNESS_CHILD_PID"], encoding="utf-8") as handle:
+                    child_pid = int(handle.read())
+                try:
+                    os.kill(child_pid, 0)
+                except ProcessLookupError:
+                    event = "release_after_child_exit"
+                else:
+                    event = "release_while_child_alive"
+                with open(os.environ["HARNESS_EVENTS"], "a", encoding="utf-8") as handle:
+                    handle.write(event + "\\n")
+                raise SystemExit(0)
+            raise SystemExit(64)
+            """
+        ),
+        encoding="utf-8",
+    )
+    agent.write_text(
+        textwrap.dedent(
+            """\
+            #!/usr/bin/env bash
+            echo "$$" > "$HARNESS_CHILD_PID"
+            trap 'echo child_exit >> "$HARNESS_EVENTS"; exit 0' TERM INT
+            while :; do /bin/sleep 0.02; done
+            """
+        ),
+        encoding="utf-8",
+    )
+    lease_cli.chmod(0o755)
+    agent.chmod(0o755)
+    harness = textwrap.dedent(
+        """\
+        set -uo pipefail
+        source "$HARNESS_GIG_FUNCTIONS"
+        LEASE_SCRIPT="$HARNESS_LEASE_SCRIPT"
+        CLAUDE="$HARNESS_AGENT"
+        GIG_LEASE="gig-harness"
+        GIG_LEASE_WS="ws://harness"
+        GIG_LEASE_TOKEN="harness-token"
+        GIG_LEASE_GENERATION=1
+        LEASE_HEARTBEAT_SECONDS=0.02
+        LOCKD="$HARNESS_LOCK"
+        mkdir -p "$LOCKD"
+        trap cleanup EXIT
+        if declare -F install_lease_signal_handlers >/dev/null; then
+          install_lease_signal_handlers
+        fi
+        start_lease_heartbeat
+        step "harness" "wait for heartbeat failure"
+        """
+    )
+    completed = subprocess.Popen(
+        ["bash", "-c", harness],
+        env={
+            **os.environ,
+            "HARNESS_AGENT": str(agent),
+            "HARNESS_CHILD_PID": str(child_pid_path),
+            "HARNESS_EVENTS": str(events_path),
+            "HARNESS_GIG_FUNCTIONS": str(functions),
+            "HARNESS_LEASE_SCRIPT": str(lease_cli),
+            "HARNESS_LOCK": str(tmp_path / "lock"),
+        },
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    try:
+        completed.wait(timeout=5)
+        stderr = ""
+    except subprocess.TimeoutExpired:
+        completed.kill()
+        completed.wait(timeout=1)
+        pytest.fail("launcher did not exit after its heartbeat failed")
+    finally:
+        if child_pid_path.exists():
+            child_pid = int(child_pid_path.read_text(encoding="utf-8"))
+            try:
+                os.kill(child_pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+
+    assert events_path.exists(), stderr
+    events = events_path.read_text(encoding="utf-8")
+    assert completed.returncode != 0, stderr
+    assert "release_after_child_exit" in events
+    assert "release_while_child_alive" not in events
 
 
 def test_owned_callers_release_the_exact_fence_credentials():

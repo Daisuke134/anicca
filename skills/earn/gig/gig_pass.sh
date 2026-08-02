@@ -17,32 +17,110 @@ GIG_LEASE_WS=""
 GIG_LEASE_TOKEN=""
 GIG_LEASE_GENERATION=""
 LEASE_HEARTBEAT_PID=""
+LEASE_HEARTBEAT_SECONDS="${LEASE_HEARTBEAT_SECONDS:-300}"
+MAIN_PARENT_PID="$$"
+ACTIVE_STEP_PID=""
+ACTIVE_STEP_PGID=""
+LEASE_SIGNAL_HANDLING=0
+
+start_active_step(){ # every agent step gets a private session/process group on macOS
+  python3 -c 'import os
+import sys
+os.setsid()
+os.execvp(sys.argv[1], sys.argv[1:])' "$@" &
+  ACTIVE_STEP_PID=$!
+  ACTIVE_STEP_PGID=$ACTIVE_STEP_PID
+}
+
+wait_for_active_step(){
+  local pid="${ACTIVE_STEP_PID:-}"
+  local rc=0
+  [ -n "$pid" ] || return 0
+  wait "$pid" || rc=$?
+  ACTIVE_STEP_PID=""
+  ACTIVE_STEP_PGID=""
+  return "$rc"
+}
+
+run_active_step(){
+  start_active_step "$@"
+  wait_for_active_step
+}
+
+terminate_active_step(){
+  local pid="${ACTIVE_STEP_PID:-}"
+  local pgid="${ACTIVE_STEP_PGID:-}"
+  local attempts=20
+  [ -n "$pid" ] || return 0
+  [ -n "$pgid" ] || pgid="$pid"
+  kill -TERM -- "-$pgid" 2>/dev/null || true
+  while [ "$attempts" -gt 0 ] && kill -0 "$pid" 2>/dev/null; do
+    command sleep 0.05
+    attempts=$((attempts - 1))
+  done
+  if kill -0 "$pid" 2>/dev/null; then
+    kill -KILL -- "-$pgid" 2>/dev/null || true
+  fi
+  wait "$pid" 2>/dev/null || true
+  ACTIVE_STEP_PID=""
+  ACTIVE_STEP_PGID=""
+}
+
+handle_lease_signal(){
+  local received_signal="$1"
+  [ "${LEASE_SIGNAL_HANDLING:-0}" = "1" ] && return
+  LEASE_SIGNAL_HANDLING=1
+  log "received $received_signal; terminating active step before fenced lease release"
+  terminate_active_step
+  [ "$received_signal" = "INT" ] && exit 130
+  exit 143
+}
+
+install_lease_signal_handlers(){
+  trap 'handle_lease_signal TERM' TERM
+  trap 'handle_lease_signal INT' INT
+}
 
 parse_lease(){ # $1=acquire JSON; reject partial or malformed lease identities
-  local fields
-  fields="$(printf '%s' "$1" | python3 -c '
+  local parse_status ws_valid
+  {
+    IFS= read -r parse_status
+    IFS= read -r GIG_LEASE_TOKEN
+    IFS= read -r GIG_LEASE_GENERATION
+    IFS= read -r ws_valid
+    IFS= read -r GIG_LEASE_WS || true
+  } < <(printf '%s' "$1" | python3 -c '
 import json
 import sys
 
-lease = json.load(sys.stdin)
+try:
+    lease = json.load(sys.stdin)
+    token = lease.get("token")
+    generation = lease.get("generation")
+    if (
+        not lease.get("ok")
+        or not isinstance(token, str)
+        or not token
+        or any(char.isspace() or char == "\x1f" for char in token)
+        or isinstance(generation, bool)
+        or not isinstance(generation, int)
+        or generation < 1
+    ):
+        raise ValueError("invalid fenced lease acquire response")
+except (ValueError, TypeError, json.JSONDecodeError):
+    print("0")
+    raise SystemExit(0)
+
 ws = lease.get("ws")
-token = lease.get("token")
-generation = lease.get("generation")
-if (
-    not lease.get("ok")
-    or not isinstance(ws, str)
-    or not ws
-    or not isinstance(token, str)
-    or not token
-    or isinstance(generation, bool)
-    or not isinstance(generation, int)
-    or generation < 1
-):
-    raise SystemExit("invalid fenced lease acquire response")
-print(f"{ws}\t{token}\t{generation}")
-')" || return 1
-  IFS=$'\t' read -r GIG_LEASE_WS GIG_LEASE_TOKEN GIG_LEASE_GENERATION <<<"$fields"
-  [ -n "$GIG_LEASE_WS" ] && [ -n "$GIG_LEASE_TOKEN" ] && [ -n "$GIG_LEASE_GENERATION" ]
+ws_valid = isinstance(ws, str) and bool(ws) and not any(char.isspace() for char in ws)
+print("1")
+print(token)
+print(generation)
+print(int(ws_valid))
+if ws_valid:
+    print(ws)
+')
+  [ "$parse_status" = "1" ] && [ -n "$GIG_LEASE_TOKEN" ] && [ -n "$GIG_LEASE_GENERATION" ] && [ "$ws_valid" = "1" ] && [ -n "$GIG_LEASE_WS" ]
 }
 
 heartbeat_lease(){
@@ -55,17 +133,17 @@ release_lease(){
 }
 
 lease_heartbeat_loop(){
-  while sleep 300; do
+  while command sleep "$LEASE_HEARTBEAT_SECONDS"; do
     heartbeat_lease || {
       log "lease heartbeat failed; terminating pass before stale browser work"
-      kill -TERM "$$"
+      kill -TERM "$MAIN_PARENT_PID" 2>/dev/null || true
       return 1
     }
   done
 }
 
 start_lease_heartbeat(){
-  lease_heartbeat_loop &
+  ( lease_heartbeat_loop ) &
   LEASE_HEARTBEAT_PID=$!
 }
 
@@ -78,7 +156,9 @@ stop_lease_heartbeat(){
 
 cleanup(){
   local rc=$?
+  trap - TERM INT
   stop_lease_heartbeat
+  terminate_active_step
   release_lease || log "fenced lease release failed; gc will retry the durable pending row"
   rmdir "$LOCKD" 2>/dev/null || true
   trap - EXIT
@@ -91,7 +171,7 @@ step(){ # $1=label  $2=prompt
   heartbeat_lease || { log "lease heartbeat failed before STEP $1"; exit 1; }
   log "STEP $1 start"
   local rc
-  CLAUDE_CODE_SKIP_PROMPT_HISTORY=1 env -u ANTHROPIC_API_KEY timeout 900 "$CLAUDE" --model sonnet --dangerously-skip-permissions --no-session-persistence --add-dir "$HOME" \
+  run_active_step env CLAUDE_CODE_SKIP_PROMPT_HISTORY=1 env -u ANTHROPIC_API_KEY timeout 900 "$CLAUDE" --model sonnet --dangerously-skip-permissions --no-session-persistence --add-dir "$HOME" \
     -p "You are the Anicca Coconala gig earn-core (mtdc). set -a; . ~/.openclaw/.env; set +a. The launcher already acquired fenced CDP context '$GIG_LEASE' at ws '$GIG_LEASE_WS'; it retains the exact token/generation and alone owns heartbeats and release. Drive ONLY that ws, never invoke cdp_context_lease.py acquire/release, and never read the lease ledger. Do EXACTLY this ONE step, fully, then stop. Detail/rules are in $RB. $2" >/dev/null 2>&1
   rc=$?
   heartbeat_lease || { log "lease heartbeat failed after STEP $1"; exit 1; }
@@ -104,6 +184,7 @@ GIG_LEASE="gig-$$"; export GIG_LEASE   # per-pass lease name, NOT the shared "gi
 [ -d "$LOCKD" ] && [ $(( $(date +%s) - $(stat -f %m "$LOCKD" 2>/dev/null||echo 0) )) -gt 7200 ] && rmdir "$LOCKD" 2>/dev/null   # reap a crashed holder (>120min). 7200s (was 1800s): detached passes now survive well past the old 30min window (B1/PROFILE can run ~90min), so a 30min reaper would rmdir a LIVE pass's lock and let the next hourly tick start a 2nd concurrent pass -> duplicate real-market applications. 120min > worst-case pass.
 mkdir "$LOCKD" 2>/dev/null || { log "another pass holds the lock — exit"; exit 0; }   # mkdir = atomic on macOS; only ONE gig_pass.sh runs
 trap cleanup EXIT
+install_lease_signal_handlers
 bash "$HOME/anicca/skills/browser/ensure_browser.sh" >/dev/null 2>&1
 python3 "$B/cdp_tab_gc.py" >/dev/null 2>&1
 python3 "$B/session_vault.py" restore >/dev/null 2>&1

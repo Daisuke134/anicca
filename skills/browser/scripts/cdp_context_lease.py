@@ -15,6 +15,7 @@ import asyncio
 from contextlib import contextmanager
 import fcntl
 import json
+import math
 import os
 import secrets
 import sys
@@ -117,6 +118,43 @@ def _target_operation_lock(target_id):
             fcntl.flock(operation_lock.fileno(), fcntl.LOCK_UN)
 
 
+def _valid_generation(value):
+    return isinstance(value, int) and not isinstance(value, bool) and value > 0
+
+
+def _valid_text(value):
+    return isinstance(value, str) and bool(value)
+
+
+def _valid_timestamp(value):
+    if not isinstance(value, (int, float)) or isinstance(value, bool):
+        return False
+    try:
+        return math.isfinite(value) and value >= 0
+    except OverflowError:
+        return False
+
+
+def _valid_lease_row(held):
+    """Accept only complete current rows or complete credentialless legacy rows."""
+    if not isinstance(held, dict):
+        return False
+    if any(not _valid_text(held.get(field)) for field in ("context_id", "target_id", "ws")):
+        return False
+    if any(not _valid_timestamp(held.get(field)) for field in ("ts", "heartbeat_at")):
+        return False
+    has_token = "token" in held
+    has_generation = "generation" in held
+    if has_token != has_generation:
+        return False
+    if has_token and (
+        not _valid_text(held["token"])
+        or not _valid_generation(held["generation"])
+    ):
+        return False
+    return "dispose_pending" not in held or isinstance(held["dispose_pending"], bool)
+
+
 def _read_ledger_locked():
     """Read the legacy-flat ledger while holding _ledger_lock()."""
     try:
@@ -139,7 +177,7 @@ def _read_ledger_locked():
     for task, held in raw.items():
         if task == _LEDGER_META_KEY:
             continue
-        if not isinstance(held, dict):
+        if not _valid_lease_row(held):
             raise ValueError("lease ledger contains an invalid lease row")
         leases[task] = held
     return {"leases": leases, "generations": generations}
@@ -184,11 +222,15 @@ def _leases():
 
 def _save(leases):
     """Compatibility helper for callers that previously saved a flat lease map."""
+    if not isinstance(leases, dict):
+        raise ValueError("lease ledger must be a JSON object")
     with _ledger_lock():
         ledger = _read_ledger_locked()
-        ledger["leases"] = {
-            task: held for task, held in leases.items() if isinstance(held, dict)
-        }
+        ledger["leases"] = {}
+        for task, held in leases.items():
+            if not _valid_lease_row(held):
+                raise ValueError("lease ledger contains an invalid lease row")
+            ledger["leases"][task] = dict(held)
         for task, held in ledger["leases"].items():
             ledger["generations"][task] = max(
                 _generation_value(ledger["generations"].get(task)),
@@ -196,15 +238,10 @@ def _save(leases):
             )
         _save_ledger_locked(ledger)
 
-
-def _valid_generation(value):
-    return isinstance(value, int) and not isinstance(value, bool) and value > 0
-
-
 def _identity(held):
     token = held.get("token") if isinstance(held, dict) else None
     generation = held.get("generation") if isinstance(held, dict) else None
-    if isinstance(token, str) and token and _valid_generation(generation):
+    if _valid_text(token) and _valid_generation(generation):
         return token, generation
     return None
 
@@ -260,7 +297,7 @@ def _refresh_held_locked(ledger, task, held, now):
 
 
 def _is_dispose_pending(held):
-    return bool(held.get("dispose_pending"))
+    return held.get("dispose_pending", False) is True
 
 
 def _release_is_authorized(held, token, generation):
@@ -336,6 +373,49 @@ def _dispose_discarded_context(held):
         _dispose(held)
 
 
+def _candidate_is_durably_current(task, candidate):
+    """Check the persisted row after a write error without trusting in-memory state."""
+    with _ledger_lock():
+        ledger = _read_ledger_locked()
+        current = ledger["leases"].get(task)
+        if current is None:
+            return False
+        return _same_lease(current, candidate) and all(
+            current.get(field) == candidate.get(field)
+            for field in (
+                "context_id",
+                "target_id",
+                "ws",
+                "token",
+                "generation",
+                "ts",
+                "heartbeat_at",
+            )
+        )
+
+
+def _rollback_untracked_candidate(task, candidate):
+    """Dispose a failed acquire only when its exact durable row is absent."""
+    context_id = candidate["context_id"]
+    target_id = candidate.get("target_id")
+    if target_id:
+        try:
+            if _candidate_is_durably_current(task, candidate):
+                return
+        except Exception:
+            # A damaged ledger cannot prove this candidate is untracked.  Prefer a
+            # recoverable leaked context over disposing a potentially live lease.
+            return
+    try:
+        if target_id:
+            _dispose_discarded_context(candidate)
+        else:
+            _dispose({"context_id": context_id})
+    except Exception:
+        # Preserve the primary acquire failure; the caller must never receive OK.
+        pass
+
+
 def acquire(task, url="about:blank", no_seed=False):
     """Acquire or heartbeat a task lease; every result carries a fence identity."""
     with _ledger_lock():
@@ -355,41 +435,59 @@ def acquire(task, url="about:blank", no_seed=False):
             cookies = json.load(handle).get("cookies", [])
 
     (ctx,) = asyncio.run(_calls([("Target.createBrowserContext", {})]))
-    ctx_id = ctx["browserContextId"]
-    calls = []
-    if cookies:
-        calls.append(("Storage.setCookies", {"cookies": cookies, "browserContextId": ctx_id}))
-    calls.append(("Target.createTarget", {"url": url, "browserContextId": ctx_id}))
-    results = asyncio.run(_calls(calls))
-    target_id = results[-1]["targetId"]
-    candidate = {
-        "context_id": ctx_id,
-        "target_id": target_id,
-        "ws": _page_ws(target_id),
-        "ts": time.time(),
-        "cookies_seeded": len(cookies),
-    }
+    candidate = {"context_id": ctx["browserContextId"]}
+    try:
+        calls = []
+        if cookies:
+            calls.append(
+                (
+                    "Storage.setCookies",
+                    {"cookies": cookies, "browserContextId": candidate["context_id"]},
+                )
+            )
+        calls.append(
+            (
+                "Target.createTarget",
+                {"url": url, "browserContextId": candidate["context_id"]},
+            )
+        )
+        results = asyncio.run(_calls(calls))
+        candidate["target_id"] = results[-1]["targetId"]
+        candidate.update(
+            {
+                "ws": _page_ws(candidate["target_id"]),
+                "ts": time.time(),
+                "cookies_seeded": len(cookies),
+            }
+        )
 
-    discarded = None
-    with _ledger_lock():
-        ledger = _read_ledger_locked()
-        held = ledger["leases"].get(task)
-        if held:
-            if _is_dispose_pending(held):
-                result = {"ok": False, "reason": "lease disposal pending", "task": task}
+        discarded = None
+        with _ledger_lock():
+            ledger = _read_ledger_locked()
+            held = ledger["leases"].get(task)
+            if held:
+                if _is_dispose_pending(held):
+                    result = {
+                        "ok": False,
+                        "reason": "lease disposal pending",
+                        "task": task,
+                    }
+                else:
+                    held = _refresh_held_locked(ledger, task, held, time.time())
+                    _save_ledger_locked(ledger)
+                    result = {"ok": True, "reused": True, **held}
+                discarded = candidate
             else:
-                held = _refresh_held_locked(ledger, task, held, time.time())
+                token, generation = _next_identity(ledger, task)
+                candidate["token"] = token
+                candidate["generation"] = generation
+                candidate["heartbeat_at"] = candidate["ts"]
+                ledger["leases"][task] = candidate
                 _save_ledger_locked(ledger)
-                result = {"ok": True, "reused": True, **held}
-            discarded = candidate
-        else:
-            token, generation = _next_identity(ledger, task)
-            candidate["token"] = token
-            candidate["generation"] = generation
-            candidate["heartbeat_at"] = candidate["ts"]
-            ledger["leases"][task] = candidate
-            _save_ledger_locked(ledger)
-            result = {"ok": True, "reused": False, **candidate}
+                result = {"ok": True, "reused": False, **candidate}
+    except BaseException:
+        _rollback_untracked_candidate(task, candidate)
+        raise
 
     if discarded:
         try:
@@ -423,10 +521,9 @@ def heartbeat(task, token, generation):
 
 
 def _stale(held, now, idle_min):
-    try:
-        heartbeat_at = float(held.get("heartbeat_at", held.get("ts", 0)))
-    except (TypeError, ValueError):
-        heartbeat_at = 0
+    heartbeat_at = held.get("heartbeat_at", held.get("ts", 0))
+    if not _valid_timestamp(heartbeat_at):
+        return True
     return now - heartbeat_at > idle_min * 60
 
 
@@ -436,7 +533,10 @@ def release(task, token=None, generation=None):
         return {"ok": False, "reason": "token and generation must be provided together"}
 
     with _ledger_lock():
-        ledger = _read_ledger_locked()
+        try:
+            ledger = _read_ledger_locked()
+        except ValueError:
+            return {"ok": False, "reason": "invalid lease ledger"}
         held = ledger["leases"].get(task)
         if not held:
             if token is None:
@@ -448,7 +548,10 @@ def release(task, token=None, generation=None):
 
     with _target_operation_lock(pinned["target_id"]):
         with _ledger_lock():
-            ledger = _read_ledger_locked()
+            try:
+                ledger = _read_ledger_locked()
+            except ValueError:
+                return {"ok": False, "reason": "invalid lease ledger"}
             current = ledger["leases"].get(task)
             if not current or not _same_lease(current, pinned):
                 return {"ok": False, "reason": "stale or missing lease"}

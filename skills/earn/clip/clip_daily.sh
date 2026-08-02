@@ -24,32 +24,116 @@ CLIP_LEASE_WS=""
 CLIP_LEASE_TOKEN=""
 CLIP_LEASE_GENERATION=""
 LEASE_HEARTBEAT_PID=""
+LEASE_HEARTBEAT_SECONDS="${LEASE_HEARTBEAT_SECONDS:-300}"
+MAIN_PARENT_PID="$$"
+ACTIVE_STEP_PID=""
+ACTIVE_STEP_PGID=""
+LEASE_SIGNAL_HANDLING=0
+
+start_active_step(){ # every agent step gets a private session/process group on macOS
+  python3 -c 'import os
+import sys
+os.setsid()
+os.execvp(sys.argv[1], sys.argv[1:])' "$@" &
+  ACTIVE_STEP_PID=$!
+  ACTIVE_STEP_PGID=$ACTIVE_STEP_PID
+}
+
+wait_for_active_step(){
+  local pid="${ACTIVE_STEP_PID:-}"
+  local rc=0
+  [ -n "$pid" ] || return 0
+  wait "$pid" || rc=$?
+  ACTIVE_STEP_PID=""
+  ACTIVE_STEP_PGID=""
+  return "$rc"
+}
+
+run_active_step_with_stdin(){
+  local input="$1"
+  shift
+  start_active_step bash -c '
+input=$1
+shift
+printf "%s\\n" "$input" | "$@"
+' bash "$input" "$@"
+  wait_for_active_step
+}
+
+terminate_active_step(){
+  local pid="${ACTIVE_STEP_PID:-}"
+  local pgid="${ACTIVE_STEP_PGID:-}"
+  local attempts=20
+  [ -n "$pid" ] || return 0
+  [ -n "$pgid" ] || pgid="$pid"
+  kill -TERM -- "-$pgid" 2>/dev/null || true
+  while [ "$attempts" -gt 0 ] && kill -0 "$pid" 2>/dev/null; do
+    command sleep 0.05
+    attempts=$((attempts - 1))
+  done
+  if kill -0 "$pid" 2>/dev/null; then
+    kill -KILL -- "-$pgid" 2>/dev/null || true
+  fi
+  wait "$pid" 2>/dev/null || true
+  ACTIVE_STEP_PID=""
+  ACTIVE_STEP_PGID=""
+}
+
+handle_lease_signal(){
+  local received_signal="$1"
+  [ "${LEASE_SIGNAL_HANDLING:-0}" = "1" ] && return
+  LEASE_SIGNAL_HANDLING=1
+  log "received $received_signal; terminating active step before fenced lease release"
+  terminate_active_step
+  [ "$received_signal" = "INT" ] && exit 130
+  exit 143
+}
+
+install_lease_signal_handlers(){
+  trap 'handle_lease_signal TERM' TERM
+  trap 'handle_lease_signal INT' INT
+}
 
 parse_lease(){ # $1=acquire JSON; reject partial or malformed lease identities
-  local fields
-  fields="$(printf '%s' "$1" | python3 -c '
+  local parse_status ws_valid
+  {
+    IFS= read -r parse_status
+    IFS= read -r CLIP_LEASE_TOKEN
+    IFS= read -r CLIP_LEASE_GENERATION
+    IFS= read -r ws_valid
+    IFS= read -r CLIP_LEASE_WS || true
+  } < <(printf '%s' "$1" | python3 -c '
 import json
 import sys
 
-lease = json.load(sys.stdin)
+try:
+    lease = json.load(sys.stdin)
+    token = lease.get("token")
+    generation = lease.get("generation")
+    if (
+        not lease.get("ok")
+        or not isinstance(token, str)
+        or not token
+        or any(char.isspace() or char == "\x1f" for char in token)
+        or isinstance(generation, bool)
+        or not isinstance(generation, int)
+        or generation < 1
+    ):
+        raise ValueError("invalid fenced lease acquire response")
+except (ValueError, TypeError, json.JSONDecodeError):
+    print("0")
+    raise SystemExit(0)
+
 ws = lease.get("ws")
-token = lease.get("token")
-generation = lease.get("generation")
-if (
-    not lease.get("ok")
-    or not isinstance(ws, str)
-    or not ws
-    or not isinstance(token, str)
-    or not token
-    or isinstance(generation, bool)
-    or not isinstance(generation, int)
-    or generation < 1
-):
-    raise SystemExit("invalid fenced lease acquire response")
-print(f"{ws}\t{token}\t{generation}")
-')" || return 1
-  IFS=$'\t' read -r CLIP_LEASE_WS CLIP_LEASE_TOKEN CLIP_LEASE_GENERATION <<<"$fields"
-  [ -n "$CLIP_LEASE_WS" ] && [ -n "$CLIP_LEASE_TOKEN" ] && [ -n "$CLIP_LEASE_GENERATION" ]
+ws_valid = isinstance(ws, str) and bool(ws) and not any(char.isspace() for char in ws)
+print("1")
+print(token)
+print(generation)
+print(int(ws_valid))
+if ws_valid:
+    print(ws)
+')
+  [ "$parse_status" = "1" ] && [ -n "$CLIP_LEASE_TOKEN" ] && [ -n "$CLIP_LEASE_GENERATION" ] && [ "$ws_valid" = "1" ] && [ -n "$CLIP_LEASE_WS" ]
 }
 
 heartbeat_lease(){
@@ -62,17 +146,17 @@ release_lease(){
 }
 
 lease_heartbeat_loop(){
-  while sleep 300; do
+  while command sleep "$LEASE_HEARTBEAT_SECONDS"; do
     heartbeat_lease || {
       log "lease heartbeat failed; terminating pass before stale browser work"
-      kill -TERM "$$"
+      kill -TERM "$MAIN_PARENT_PID" 2>/dev/null || true
       return 1
     }
   done
 }
 
 start_lease_heartbeat(){
-  lease_heartbeat_loop &
+  ( lease_heartbeat_loop ) &
   LEASE_HEARTBEAT_PID=$!
 }
 
@@ -85,7 +169,9 @@ stop_lease_heartbeat(){
 
 cleanup(){
   local rc=$?
+  trap - TERM INT
   stop_lease_heartbeat
+  terminate_active_step
   release_lease || log "fenced lease release failed; gc will retry the durable pending row"
   rmdir "$LOCKD" 2>/dev/null || true
   trap - EXIT
@@ -97,9 +183,9 @@ step(){ # $1=label  $2=prompt
   log "STEP $1 start"
   local out="$HOME/.openclaw/logs/clip-step-last.out"
   local evidence="$HOME/.openclaw/state/agent-runner-evidence/clip-daily/$(date +%s)-$$-$1"
-  printf '%s\n' "You are the Anicca clip earn-core (IG @aiclipsvault, niche = AI / money / wealth). set -a; . ~/.openclaw/.env 2>/dev/null; set +a. The launcher already acquired fenced CDP context '$CLIP_LEASE' at ws '$CLIP_LEASE_WS'; it retains the exact token/generation and alone owns heartbeats and release. Drive ONLY that ws, never invoke cdp_context_lease.py acquire/release, and never read the lease ledger. Do EXACTLY this ONE step, fully, then stop. $2" | \
+  run_active_step_with_stdin "You are the Anicca clip earn-core (IG @aiclipsvault, niche = AI / money / wealth). set -a; . ~/.openclaw/.env 2>/dev/null; set +a. The launcher already acquired fenced CDP context '$CLIP_LEASE' at ws '$CLIP_LEASE_WS'; it retains the exact token/generation and alone owns heartbeats and release. Drive ONLY that ws, never invoke cdp_context_lease.py acquire/release, and never read the lease ledger. Do EXACTLY this ONE step, fully, then stop. $2" \
     "$RUN_AGENT" --task-class tool-agent --evidence-dir "$evidence" --task-label "clip-daily-$1" --loop clip \
-      >"$out" 2>>"$HOME/.openclaw/logs/clip-steps.err.log"
+    >"$out" 2>>"$HOME/.openclaw/logs/clip-steps.err.log"
   local rc=$?
   heartbeat_lease || { log "lease heartbeat failed after STEP $1"; exit 1; }
   [ "$rc" -ne 0 ] && log "STEP $1 FAIL stdout-tail: $(tail -c 800 "$out" 2>/dev/null | tr '\n' ' ')"
@@ -112,6 +198,7 @@ CLIP_LEASE="clip-$$"; export CLIP_LEASE
 [ -d "$LOCKD" ] && [ $(( $(date +%s) - $(stat -f %m "$LOCKD" 2>/dev/null||echo 0) )) -gt 1800 ] && rmdir "$LOCKD" 2>/dev/null
 mkdir "$LOCKD" 2>/dev/null || { log "another clip pass holds the lock — exit"; exit 0; }
 trap cleanup EXIT
+install_lease_signal_handlers
 FREE=$(df -g / | tail -1 | awk '{print $4}')
 [ "${FREE:-99}" -lt 5 ] && { log "disk <5GB free — abort to protect the session"; exit 0; }
 LEASE_JSON=$(python3 "$LEASE_SCRIPT" acquire "$CLIP_LEASE" --no-seed) || { log "fenced lease acquire failed; aborting pass"; exit 1; }
