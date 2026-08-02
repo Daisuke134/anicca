@@ -21,7 +21,7 @@ async function stage(code, operation) {
   } catch (cause) {
     const error = new Error("Connector open-date planning unavailable");
     const goalMatch = code === "CONNECTOR_COVERAGE_APPLICATION_GOAL_EVALUATION_FAILED"
-      ? /^EVENT_GOAL_SERENDIPITY_(CONFIG|TRANSPORT|HTTP|BODY|JSON|VALIDATION)_FAILED$/.exec(
+      ? /^EVENT_GOAL_SERENDIPITY_(CONFIG|TRANSPORT|HTTP|BODY|JSON|VALIDATION(?:_(?:SHAPE|COUNT|EVENT_REF|TEXT|GROUNDED))?)_FAILED$/.exec(
         String(cause && cause.code || ""),
       )
       : null;

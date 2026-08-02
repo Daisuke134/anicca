@@ -47,6 +47,12 @@ const RESPONSE_SCHEMA = Object.freeze({
 
 function invalid() { throw new Error("event goal serendipity invalid"); }
 
+function modelInvalid(reason) {
+  const error = new Error("event goal serendipity model invalid");
+  error.validationReason = reason;
+  throw error;
+}
+
 function unavailable(code) {
   const error = new Error("event goal serendipity unavailable");
   error.code = `EVENT_GOAL_SERENDIPITY_${code}_FAILED`;
@@ -156,24 +162,34 @@ function groundedFactorAssessments(sourceFactors) {
 }
 
 function groundModelDecision(value, source) {
-  if (!value || typeof value !== "object" || Array.isArray(value)) invalid();
-  if (Object.keys(value).sort().join(",") !== [...DECISION_KEYS].sort().join(",")) invalid();
-  if (!Array.isArray(value.ranked_events) || value.ranked_events.length !== source.events.size) invalid();
+  if (!value || typeof value !== "object" || Array.isArray(value)) modelInvalid("SHAPE");
+  if (Object.keys(value).sort().join(",") !== [...DECISION_KEYS].sort().join(",")) modelInvalid("SHAPE");
+  if (!Array.isArray(value.ranked_events) || value.ranked_events.length !== source.events.size) {
+    modelInvalid("COUNT");
+  }
   const seen = new Set();
   return {
     ranked_events: value.ranked_events.map((row) => {
-      if (!row || typeof row !== "object" || Array.isArray(row)) invalid();
-      if (Object.keys(row).sort().join(",") !== [...MODEL_EVENT_KEYS].sort().join(",")) invalid();
+      if (!row || typeof row !== "object" || Array.isArray(row)) modelInvalid("SHAPE");
+      if (Object.keys(row).sort().join(",") !== [...MODEL_EVENT_KEYS].sort().join(",")) {
+        modelInvalid("SHAPE");
+      }
       const eventRef = String(row.event_ref || "").trim();
       const eventSource = source.events.get(eventRef);
-      if (!eventSource || seen.has(eventRef)) invalid();
+      if (!eventSource || seen.has(eventRef)) modelInvalid("EVENT_REF");
       seen.add(eventRef);
+      let goalReason;
+      let serendipityReason;
+      try {
+        goalReason = safeText(row.goal_reason, 700);
+        serendipityReason = safeText(row.serendipity_reason, 700);
+      } catch { modelInvalid("TEXT"); }
       return {
         event_ref: eventRef,
         goal_alignment: row.goal_alignment,
         serendipity_potential: row.serendipity_potential,
-        goal_reason: row.goal_reason,
-        serendipity_reason: row.serendipity_reason,
+        goal_reason: goalReason,
+        serendipity_reason: serendipityReason,
         factor_assessments: groundedFactorAssessments(eventSource.factors),
       };
     }),
@@ -271,8 +287,16 @@ async function inferEventGoalSerendipity(input, options = {}) {
   let parsed;
   try { parsed = JSON.parse(body?.candidates?.[0]?.content?.parts?.[0]?.text || ""); }
   catch { unavailable("JSON"); }
-  try { return validateEventGoalSerendipity(groundModelDecision(parsed, source), source); }
-  catch { unavailable("VALIDATION"); }
+  let grounded;
+  try { grounded = groundModelDecision(parsed, source); }
+  catch (error) {
+    const reason = String(error && error.validationReason || "");
+    unavailable(["SHAPE", "COUNT", "EVENT_REF", "TEXT"].includes(reason)
+      ? `VALIDATION_${reason}`
+      : "VALIDATION");
+  }
+  try { return validateEventGoalSerendipity(grounded, source); }
+  catch { unavailable("VALIDATION_GROUNDED"); }
 }
 
 module.exports = {
