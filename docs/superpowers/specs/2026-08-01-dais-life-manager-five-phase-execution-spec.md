@@ -2014,6 +2014,15 @@ receipt、Telegram moduleは既に存在する。したがって最初の未完�
 Mac mini上で直接呼ぶConnector capability、native boot、single-instance/heartbeat/healthcheckをcanonical
 `skills/`へ置くO1B-25B/Cである。native一巡を実receiptで確認するまで、rollback用container/bridgeは停止しない。
 
+O1B-25進捗40（native lifecycle scaffold RED→GREEN / 本体未接続）: canonical `skills/connector/`へ
+動的repo解決、既存env loader、single-instance lock、heartbeat、continuation、read-only healthcheck、render-only
+launchd templateを追加した。stale lockを同時回収した際に新ownerのlockを削除できる競合をテストで再現し、隣接する
+exclusive reclaim guardとowner再照合で修復した。launchd相当の最小PATHで`node` / `gog`を発見できない問題も再現し、
+`run.sh`と同じ明示PATHへ統一した。focused 12/12、既存Connector/outbound 260/260、Bash/Node構文、render後plist 2件の
+lintがGREENで、fresh reviewerは`ship`。ただしこの進捗はlifecycle scaffoldだけであり、現在のbounded workerは
+`worker_finished_unverified`を残す。Luma探索・登録、receipt照合、Calendar同期、Telegram報告の直接module合成は未実装なので、
+O1B-25B/Cは未完了のままにする。次は`connector-native-runtime`を既存moduleだけで合成し、外部writeなしの契約testを通す。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
