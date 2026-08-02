@@ -64,7 +64,7 @@
 
 ### Remaining P3 catalog migration
 
-- [ ] Refresh the governed portfolio from 31 to 32 products while preserving all cited audit decisions.
+- [x] Refresh the governed portfolio from 31 to 32 products while preserving all cited audit decisions.
 - [ ] Execute and remotely verify the queued repair/reposition attempts; retain one-attempt stop conditions.
 - [ ] Replace `undecided` packaging on promoted products with cited purchase-model/value-metric decisions and bounded unit economics.
 - [ ] Activate the Download successor only after remote status becomes online; do not treat review time as a human approval gate.
