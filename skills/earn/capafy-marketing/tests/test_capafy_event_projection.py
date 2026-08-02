@@ -238,6 +238,31 @@ def test_projection_reports_stopped_experiment_and_reason_honestly() -> None:
     assert result["experiment"]["observed_contribution_usd"] is None
 
 
+def test_latest_listing_status_overrides_stale_experiment_evidence_url() -> None:
+    value = experiment_proposal("one_time")
+    activated = capafy_experiment.activation_event(value, "2026-08-02T13:31:00Z")
+    stopped = capafy_experiment.stopped_event(
+        value, "The live Agent cannot change to Download.", "2026-08-02T13:40:00Z"
+    )
+    draft = sync.events_from_inventory_agents(
+        [
+            {
+                "agentId": value["agent_id"],
+                "agentStatus": "draft",
+                "updatedAt": 1785678600000,
+            }
+        ]
+    )[0]
+
+    result = projection.project_company(
+        fixture_events()
+        + [activated, stopped, stored(draft, "2026-08-02T13:50:01Z")]
+    )
+
+    assert result["experiment"]["status"] == "stopped"
+    assert result["experiment"]["public_url"] is None
+
+
 def test_verified_publication_advances_account_to_immediate_commercial_capability() -> None:
     result = projection.project_company(fixture_events())
     assert result["account"]["lifecycle_status"] == "commercial_ready"
