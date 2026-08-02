@@ -1610,6 +1610,22 @@ Calendarを作らず失敗する。feed欠落済み登録のdirect再読取と�
 outbound 252/252、runtime-up 38/38、runtime adapters 125/125、失敗0件。次はcommit/push/deployし、8月15日復元後に
 goal判断、応募job、Luma登録へ進むことをLIVE確認する。
 
+O1B-26進捗33（fresh detail修正LIVE / 初のpost-plan reconciliation）: 進捗32をcommit `1e2680456`としてmainへpushし、
+image `6ed8059f031c`を12:01 JSTに配備した。配備直前の旧attempt 13はcompletedし、coverageは
+`open=18 / covered_new=1 / unavailable=2`を保持したまま、新規outbound job
+`outbound-event:05a2c4e339ee14cefdead23fbec1781ce3f8f09b9842330d7dd2276bc62b765a`を一件作成した。
+jobはattempt 1で`LUMA_EFFECT_UNKNOWN`となりreconcilingへ入り、重複submitを停止した。次coverageは12:05:33 JSTに
+completedして8月15日のfeed欠落登録を安定復元し、進捗32のLIVE配線を確認した。
+
+O1B-26進捗34（Luma非buttonの受付終了表示 / RED→GREEN）: reconciling jobをread-onlyで再照合するとprovider stateは
+`unknown`だった。exact event画面を視覚実測した結果、対象は2026-08-05の東京対面eventで、ボタンではないpanelに
+「参加登録受付終了」と表示され、登録済み表示はなかった。旧readerはbutton/linkだけをcontrolとして読み、この終了表示を
+unknown effectへ誤分類していた。日本語/英語のexact受付終了noticeを`closed`へ正規化し、providerはknown unavailable、
+reconciliationはeffect absent、plannerは`available`以外のclosed/unknown/full/waitlist/approval候補をjob作成前にskipして
+同日次候補・後続日へ進む。non-button終了notice、absent reconciliation、planner skipの回帰testは修正前RED、実装後GREEN。
+outbound 254/254、runtime-up 38/38、runtime adapters 125/125、失敗0件。診断screenshotはゴミ箱へ移動済み。
+次はcommit/push/deploy後、このjobをabsentへ解決し、次の実行可能候補へ進む。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 

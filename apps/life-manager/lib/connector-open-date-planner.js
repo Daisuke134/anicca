@@ -133,14 +133,25 @@ function createConnectorOpenDateApplicationPlanner(dependencies = {}) {
       });
       return dependencies.buildSpendSequence(policy, dateInventory, gate, goals);
     });
-    if (!sequence || !Array.isArray(sequence.ordered_candidates)) invalid();
-    const aggregate = aggregateSequence(day, sequence);
     const eventByRef = new Map(day.events.map((event) => [event.event_ref, event]));
-    const candidates = sequence.ordered_candidates.map((candidate) => {
+    if (!sequence || !Array.isArray(sequence.ordered_candidates) || !Array.isArray(sequence.skipped)) invalid();
+    const runnable = [];
+    const unavailable = [];
+    for (const candidate of sequence.ordered_candidates) {
       const event = eventByRef.get(candidate && candidate.event_ref);
       if (!event || candidate.canonical_url !== event.canonical_url) invalid();
-      return event;
-    });
+      if (event.rsvp_status === "available") runnable.push(candidate);
+      else unavailable.push({
+        event_ref: event.event_ref,
+        reason: `rsvp_${String(event.rsvp_status || "unknown")}`,
+      });
+    }
+    const effectiveSequence = {
+      ordered_candidates: runnable,
+      skipped: [...sequence.skipped, ...unavailable],
+    };
+    const aggregate = aggregateSequence(day, effectiveSequence);
+    const candidates = runnable.map((candidate) => eventByRef.get(candidate.event_ref));
     if (new Set(candidates.map((event) => event.event_ref)).size !== candidates.length) invalid();
     const base = {
       coverage_snapshot_id: coverage.coverage_snapshot_id,

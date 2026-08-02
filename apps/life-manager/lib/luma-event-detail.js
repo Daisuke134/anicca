@@ -136,6 +136,13 @@ function rsvpStatus(controls) {
   ])) {
     return "registered";
   }
+  if (includesAny(controls, [
+    "参加登録受付終了",
+    "registration closed",
+    "registration has ended",
+    "registration is closed",
+    "rsvp closed",
+  ])) return "closed";
   const inPersonTickets = [...controls].filter((value) => (
     /(?:会場参加|現地参加|in[ -]?person|on[ -]?site)/i.test(value)
   ));
@@ -271,8 +278,15 @@ async function readRawLumaEventDetail(page, canonicalUrl) {
       'button, a[role="button"], input[type="submit"]',
     )].map((element) => (
       element.innerText || element.value || element.getAttribute("aria-label") || ""
-    )).map((value) => value.replace(/\s+/g, " ").trim()).filter(Boolean).slice(0, 100);
-    return { canonicalUrl: eventUrl, jsonLd: rows, controls };
+    )).map((value) => value.replace(/\s+/g, " ").trim()).filter(Boolean);
+    const closedNotices = [...document.querySelectorAll("div, span, p")]
+      .map((element) => String(element.innerText || element.textContent || "").replace(/\s+/g, " ").trim())
+      .filter((value) => /^(?:参加登録受付終了|registration closed|registration has ended|registration is closed|rsvp closed)$/i.test(value));
+    return {
+      canonicalUrl: eventUrl,
+      jsonLd: rows,
+      controls: [...new Set([...controls, ...closedNotices])].slice(0, 100),
+    };
   }, canonicalUrl);
 }
 

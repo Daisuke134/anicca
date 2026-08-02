@@ -195,7 +195,7 @@ function createLumaBrowserProvider(options = {}) {
         if (value.rsvp_status === "registered") return proof(page, contract);
         if (
           value.event_status !== "scheduled"
-          || ["full", "waitlist", "approval_required"].includes(value.rsvp_status)
+          || ["closed", "full", "waitlist", "approval_required"].includes(value.rsvp_status)
         ) {
           return {
             state: "unavailable",
