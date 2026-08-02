@@ -71,7 +71,7 @@ It performs fixed-format integrity, routing, lifecycle, and bookkeeping validati
 
 ### Runtime deployment
 
-The installed legacy directory is backed up to a content-addressed recovery directory before mutation. Only `SKILL.md` and `scripts/apply.sh` are replaced; `scripts/fill.js` and `scripts/progress.js` are retired from the active directory. OpenClaw cron ID `accelerator-application-monthly-1777948324077` is disabled through the OpenClaw CLI and verified both through the live CLI readback and durable JSON store. The unrelated `:9223` process is observed before and after and is never signalled.
+The installed legacy directory is backed up to a content-addressed, owner-only recovery directory under `~/.openclaw/recovery/apply-to-yc/`, outside every active skill subtree, before mutation. Only `SKILL.md` and `scripts/apply.sh` are replaced; `scripts/fill.js` and `scripts/progress.js` are retired from the active directory. OpenClaw cron ID `accelerator-application-monthly-1777948324077` is disabled through the OpenClaw CLI and verified both through the live CLI readback and durable JSON store. The unrelated `:9223` process is observed before and after and is never signalled.
 
 ## Contracts and failure behavior
 
