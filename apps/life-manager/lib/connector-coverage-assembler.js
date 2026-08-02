@@ -2,7 +2,10 @@
 
 const { createHash } = require("node:crypto");
 
-const { buildRollingEventCoverage } = require("./rolling-event-coverage.js");
+const {
+  buildRollingEventCoverage,
+  isVerifiedRollingEventCoverage,
+} = require("./rolling-event-coverage.js");
 const { isVerifiedLumaDateInventory } = require("./luma-date-inventory.js");
 const { isVerifiedConnectorCalendarSync } = require("./connector-calendar-sync.js");
 const { isVerifiedGoogleCalendarBusyInventory } = require("./google-calendar-busy-inventory.js");
@@ -153,6 +156,26 @@ function rebuildRollingEventCoverage(input = {}) {
     }
     if (registration.status === "covered_new") existing.status = "covered_new";
     existing.evidence_refs.push(...registration.evidence_refs);
+  }
+  const previous = input.previousCoverage;
+  if (previous != null) {
+    if (
+      !isVerifiedRollingEventCoverage(previous)
+      || previous.tenant_id !== empty.tenant_id
+      || previous.timezone !== empty.timezone
+    ) invalid();
+    if (
+      previous.window_start_date === empty.window_start_date
+      && previous.window_end_date === empty.window_end_date
+    ) {
+      for (const day of previous.days) {
+        if (day.status !== "unavailable" || !allowedDates.has(day.date) || byDate.has(day.date)) continue;
+        byDate.set(day.date, {
+          status: "unavailable",
+          evidence_refs: [...day.evidence_refs],
+        });
+      }
+    }
   }
   for (const unavailable of input.unavailableDays) {
     if (!UNAVAILABLE.has(unavailable) || !allowedDates.has(unavailable.date) || byDate.has(unavailable.date)) invalid();

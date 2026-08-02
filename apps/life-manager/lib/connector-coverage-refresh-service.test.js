@@ -373,3 +373,19 @@ test("a planner-proven calendar conflict resolves the day before returning cover
   });
   assert.equal(result.openDatePlan.coverage_snapshot_id, result.coverage.coverage_snapshot_id);
 });
+
+test("a verified unavailable day remains resolved inside the same rolling window", () => {
+  const previous = buildRollingEventCoverage({
+    tenantId: TENANT, timeZone: "Asia/Tokyo", now: NOW,
+    resolvedDays: [{
+      date: "2026-08-02", status: "unavailable",
+      evidence_refs: [`calendar-evidence://google/event/${"a".repeat(64)}`],
+    }],
+  });
+  const rebuilt = rebuildRollingEventCoverage({
+    tenantId: TENANT, timeZone: "Asia/Tokyo", now: NOW,
+    previousCoverage: previous, registrations: [], unavailableDays: [],
+  });
+  assert.equal(rebuilt.days[0].status, "unavailable");
+  assert.deepEqual(rebuilt.days[0].evidence_refs, previous.days[0].evidence_refs);
+});

@@ -82,6 +82,7 @@ function createConnectorCoverageRefreshService(dependencies = {}) {
         tenantId,
         timeZone: current.timezone,
         now,
+        previousCoverage: current,
         registrations: [],
         unavailableDays: [],
       });
@@ -113,21 +114,23 @@ function createConnectorCoverageRefreshService(dependencies = {}) {
     const observedOutcomes = [];
     try {
       for (const completedRegistration of completed) {
-        const eventRef = baseEventRef(completedRegistration.event_ref);
-        const date = eventDate(dateInventory, eventRef);
-        const calendarSync = await dependencies.syncRegistrationCalendar({
-          calendar: dependencies.calendar,
-          calendarId: dependencies.calendarId,
-          dateInventory,
-          eventRef,
-          registrationReceipt: completedRegistration.receipt,
-          registrationJob: completedRegistration.job,
-        });
-        registrations.push(dependencies.buildRegistrationCoverageEvidence({
-          dateInventory,
-          calendarSync,
-        }));
-        observedOutcomes.push(Object.freeze({ date, observed_status: "booked" }));
+        try {
+          const eventRef = baseEventRef(completedRegistration.event_ref);
+          const date = eventDate(dateInventory, eventRef);
+          const calendarSync = await dependencies.syncRegistrationCalendar({
+            calendar: dependencies.calendar,
+            calendarId: dependencies.calendarId,
+            dateInventory,
+            eventRef,
+            registrationReceipt: completedRegistration.receipt,
+            registrationJob: completedRegistration.job,
+          });
+          registrations.push(dependencies.buildRegistrationCoverageEvidence({
+            dateInventory,
+            calendarSync,
+          }));
+          observedOutcomes.push(Object.freeze({ date, observed_status: "booked" }));
+        } catch { unavailable("CONNECTOR_COVERAGE_REGISTRATION_RESTORE_FAILED"); }
       }
 
       const registeredDates = new Set(registrations.map((item) => item.date));
@@ -139,18 +142,26 @@ function createConnectorCoverageRefreshService(dependencies = {}) {
           && interval.start_date <= day.date
           && day.date < interval.end_date
         ));
-        if (blocked) unavailableDays.push(dependencies.proveUnavailableDay({
-          busyInventory,
-          date: day.date,
-        }));
+        if (blocked) {
+          try {
+            unavailableDays.push(dependencies.proveUnavailableDay({
+              busyInventory,
+              date: day.date,
+            }));
+          } catch { unavailable("CONNECTOR_COVERAGE_CALENDAR_PROOF_FAILED"); }
+        }
       }
-      let coverage = dependencies.rebuildCoverage({
-        tenantId,
-        timeZone: working.timezone,
-        now,
-        registrations,
-        unavailableDays,
-      });
+      let coverage;
+      try {
+        coverage = dependencies.rebuildCoverage({
+          tenantId,
+          timeZone: working.timezone,
+          now,
+          previousCoverage: working,
+          registrations,
+          unavailableDays,
+        });
+      } catch { unavailable("CONNECTOR_COVERAGE_ASSEMBLY_REBUILD_FAILED"); }
       let openDatePlan;
       try {
         openDatePlan = await dependencies.planOpenDate({
@@ -179,6 +190,7 @@ function createConnectorCoverageRefreshService(dependencies = {}) {
             tenantId,
             timeZone: working.timezone,
             now,
+            previousCoverage: working,
             registrations,
             unavailableDays,
           });
