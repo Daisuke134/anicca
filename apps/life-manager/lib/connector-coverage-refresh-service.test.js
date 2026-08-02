@@ -134,8 +134,9 @@ function makeService(input) {
     readDateInventory: input.readDateInventory,
     readBusyCalendar: input.readBusyCalendar || (async () => busyInventory()),
     gateDateCalendar: evaluateCalendarCandidateGate,
-    syncRegistrationCalendar: syncVerifiedRegistrationToGoogleCalendar,
-    buildRegistrationCoverageEvidence: buildVerifiedRegistrationCoverageEvidence,
+    syncRegistrationCalendar: input.syncRegistrationCalendar || syncVerifiedRegistrationToGoogleCalendar,
+    buildRegistrationCoverageEvidence: input.buildRegistrationCoverageEvidence
+      || buildVerifiedRegistrationCoverageEvidence,
     proveUnavailableDay: proveAllDayCalendarUnavailable,
     rebuildCoverage: rebuildRollingEventCoverage,
     readUnavailablePlanEvidence: input.readUnavailablePlanEvidence || (() => {
@@ -242,8 +243,46 @@ test("a completed receipt absent from the fresh exhaustive inventory cannot crea
     identityRef: "identity://dais-local/luma",
     browserProfileRef: "browser-profile://cloakbrowser/daily-driver",
     calendarRef: "calendar://google/primary",
-  }), /coverage refresh unavailable/i);
+  }), (error) => (
+    error.code === "CONNECTOR_COVERAGE_REGISTRATION_INVENTORY_MATCH_FAILED"
+    && error.message === "Connector coverage refresh unavailable"
+  ));
   assert.equal(creates, 0);
+});
+
+test("registration restore separates Calendar sync from coverage evidence without private text", async () => {
+  const coverage = currentCoverage();
+  const inventory = await dateInventory(coverage);
+  const registration = await completedRegistration();
+  const privateText = "private provider response";
+  const cases = [
+    {
+      code: "CONNECTOR_COVERAGE_REGISTRATION_CALENDAR_SYNC_FAILED",
+      overrides: {
+        async syncRegistrationCalendar() { throw new Error(privateText); },
+      },
+    },
+    {
+      code: "CONNECTOR_COVERAGE_REGISTRATION_EVIDENCE_FAILED",
+      overrides: {
+        async syncRegistrationCalendar() { return Object.freeze({ verified: true }); },
+        buildRegistrationCoverageEvidence() { throw new Error(privateText); },
+      },
+    },
+  ];
+  for (const item of cases) {
+    const refresh = makeService({
+      receiptReader: { async listForCoverage() { return [registration]; } },
+      readDateInventory: async () => inventory,
+      calendar: { async findConnectorEvents() { return []; }, async createConnectorEvent() {} },
+      ...item.overrides,
+    });
+    await assert.rejects(refresh({ coverage, tenantId: TENANT }), (error) => (
+      error.code === item.code
+      && error.message === "Connector coverage refresh unavailable"
+      && !JSON.stringify(error).includes(privateText)
+    ));
+  }
 });
 
 test("inventory failure exposes only a stable operational stage code", async () => {

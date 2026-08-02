@@ -114,10 +114,16 @@ function createConnectorCoverageRefreshService(dependencies = {}) {
     const observedOutcomes = [];
     try {
       for (const completedRegistration of completed) {
+        let eventRef;
+        let date;
+        let calendarSync;
+        let registrationEvidence;
         try {
-          const eventRef = baseEventRef(completedRegistration.event_ref);
-          const date = eventDate(dateInventory, eventRef);
-          const calendarSync = await dependencies.syncRegistrationCalendar({
+          eventRef = baseEventRef(completedRegistration.event_ref);
+          date = eventDate(dateInventory, eventRef);
+        } catch { unavailable("CONNECTOR_COVERAGE_REGISTRATION_INVENTORY_MATCH_FAILED"); }
+        try {
+          calendarSync = await dependencies.syncRegistrationCalendar({
             calendar: dependencies.calendar,
             calendarId: dependencies.calendarId,
             dateInventory,
@@ -125,12 +131,15 @@ function createConnectorCoverageRefreshService(dependencies = {}) {
             registrationReceipt: completedRegistration.receipt,
             registrationJob: completedRegistration.job,
           });
-          registrations.push(dependencies.buildRegistrationCoverageEvidence({
+        } catch { unavailable("CONNECTOR_COVERAGE_REGISTRATION_CALENDAR_SYNC_FAILED"); }
+        try {
+          registrationEvidence = dependencies.buildRegistrationCoverageEvidence({
             dateInventory,
             calendarSync,
-          }));
-          observedOutcomes.push(Object.freeze({ date, observed_status: "booked" }));
-        } catch { unavailable("CONNECTOR_COVERAGE_REGISTRATION_RESTORE_FAILED"); }
+          });
+        } catch { unavailable("CONNECTOR_COVERAGE_REGISTRATION_EVIDENCE_FAILED"); }
+        registrations.push(registrationEvidence);
+        observedOutcomes.push(Object.freeze({ date, observed_status: "booked" }));
       }
 
       const registeredDates = new Set(registrations.map((item) => item.date));

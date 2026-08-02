@@ -1516,6 +1516,15 @@ image `5eaa4ad8fd11`を10:00 JSTに配備した。配備で中断された副作
 いずれも完了前なのでdoneにしない。次はattempt 8のreceiptと最新coverageを実測し、成功なら次のopen日を継続、失敗なら
 分離済みcodeの一点だけをRED→GREENで修復する。
 
+O1B-26進捗21（既存登録復元のfailure境界 / RED→GREEN）: 新imageのattempt 8・9はいずれも約73秒で
+`CONNECTOR_COVERAGE_REGISTRATION_RESTORE_FAILED`となり、8月3日のCalendar gateより前に、8月15日のverified既存登録を
+fresh coverageへ戻す処理で再現性高く停止している。応募effectは実行されていない。旧codeは、fresh Luma inventoryとの
+event照合、冪等Google Calendar同期、coverage evidence生成の三段階を一つのcodeへ潰していた。各段階を
+`REGISTRATION_INVENTORY_MATCH_FAILED`、`REGISTRATION_CALENDAR_SYNC_FAILED`、`REGISTRATION_EVIDENCE_FAILED`へ分割し、
+provider本文やevent本文をreceiptへ保存しない。fresh inventoryに存在しないcompleted receipt、Calendar同期のprivate
+failure、evidence生成failureを独立したRED testで固定し、実装後GREEN。outbound 249/249、runtime adapters 125/125、
+失敗0件。次はcommit/push/deploy後の一回で真因を一点に確定する。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
