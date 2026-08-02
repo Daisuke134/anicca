@@ -116,10 +116,10 @@ function makeMigrationInput() {
     effects: {
       browser_launch: 0,
       owned_read_only_navigation: 1,
-      form_write: 0,
-      file_write: 0,
-      save: 0,
-      submit: 0,
+      yc_form_field_write: 0,
+      yc_file_input_write: 0,
+      yc_save_control: 0,
+      yc_submit_control: 0,
       browser_close: 0,
       owned_page_close: 1,
       gig_process_signal: 0,
@@ -129,11 +129,15 @@ function makeMigrationInput() {
 
 function fixture({ successor = "executable" } = {}) {
   const home = fs.mkdtempSync(path.join(os.tmpdir(), "yc-browser-route-"));
+  const shimPath = path.join(home, ".openclaw/skills/apply-to-yc/scripts/apply.sh");
   const successorPath = path.join(
     home,
     ".openclaw/skills/apply-to-funder/scripts/run.sh",
   );
   const receiptPath = path.join(home, "successor-receipt.json");
+  fs.mkdirSync(path.dirname(shimPath), { recursive: true });
+  fs.copyFileSync(SHIM, shimPath);
+  fs.chmodSync(shimPath, 0o755);
   if (successor !== "missing") {
     fs.mkdirSync(path.dirname(successorPath), { recursive: true });
     fs.writeFileSync(successorPath, `#!/usr/bin/env bash
@@ -144,18 +148,23 @@ jq -n \\
   --arg endpoint "\${BU_CDP_URL:-}" \\
   --arg mode "\${MODE:-}" \\
   --arg dry_run "\${DRY_RUN:-}" \\
-  '{argv:[$first,$second],BU_CDP_URL:$endpoint,MODE:$mode,DRY_RUN:$dry_run}' > "$RECEIPT_PATH"
+  --arg home "\${HOME:-}" \\
+  --arg bash_env "\${BASH_ENV:-}" \\
+  --arg env "\${ENV:-}" \\
+  --arg skill_dir "\${SKILL_DIR:-}" \\
+  '{argv:[$first,$second],BU_CDP_URL:$endpoint,MODE:$mode,DRY_RUN:$dry_run,HOME:$home,BASH_ENV:$bash_env,ENV:$env,SKILL_DIR:$skill_dir}' > "$RECEIPT_PATH"
 `, { mode: successor === "executable" ? 0o755 : 0o644 });
   }
   return {
     cleanup: () => fs.rmSync(home, { recursive: true, force: true }),
     home,
     receiptPath,
+    shimPath,
   };
 }
 
 function runShim(fx, { args = [], env = {} } = {}) {
-  return spawnSync("bash", [SHIM, ...args], {
+  return spawnSync("/bin/bash", [fx.shimPath, ...args], {
     encoding: "utf8",
     env: {
       PATH: process.env.PATH,
@@ -165,6 +174,49 @@ function runShim(fx, { args = [], env = {} } = {}) {
     },
   });
 }
+
+test("compatibility shim resolves its sibling successor instead of trusting caller HOME", () => {
+  const fx = fixture();
+  const attackerHome = fs.mkdtempSync(path.join(os.tmpdir(), "yc-attacker-home-"));
+  try {
+    const attackerSuccessor = path.join(attackerHome, ".openclaw/skills/apply-to-funder/scripts/run.sh");
+    fs.mkdirSync(path.dirname(attackerSuccessor), { recursive: true });
+    fs.writeFileSync(attackerSuccessor, "#!/bin/sh\nexit 99\n", { mode: 0o755 });
+    const result = runShim(fx, { env: { HOME: attackerHome } });
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(JSON.parse(fs.readFileSync(fx.receiptPath, "utf8")).HOME, fs.realpathSync(fx.home));
+  } finally {
+    fx.cleanup();
+    fs.rmSync(attackerHome, { recursive: true, force: true });
+  }
+});
+
+test("compatibility shim removes shell startup overrides before the successor handoff", () => {
+  const fx = fixture();
+  const harmlessBashEnv = path.join(fx.home, "harmless-bash-env.sh");
+  fs.writeFileSync(harmlessBashEnv, ":\n");
+  try {
+    const result = runShim(fx, { env: { BASH_ENV: harmlessBashEnv, ENV: "/tmp/ignored-env" } });
+    assert.equal(result.status, 0, result.stderr);
+    const receipt = JSON.parse(fs.readFileSync(fx.receiptPath, "utf8"));
+    assert.equal(receipt.BASH_ENV, "");
+    assert.equal(receipt.ENV, "");
+    assert.equal(receipt.SKILL_DIR, "");
+  } finally {
+    fx.cleanup();
+  }
+});
+
+test("compatibility shim refuses caller-controlled SKILL_DIR before successor execution", () => {
+  const fx = fixture();
+  try {
+    const result = runShim(fx, { env: { SKILL_DIR: "/tmp/stale-skill-tree" } });
+    assert.notEqual(result.status, 0);
+    assert.equal(fs.existsSync(fx.receiptPath), false);
+  } finally {
+    fx.cleanup();
+  }
+});
 
 test("legacy zero-argument entry delegates exact yc-w26 route to the :9222 successor", () => {
   const fx = fixture();
@@ -178,6 +230,10 @@ test("legacy zero-argument entry delegates exact yc-w26 route to the :9222 succe
       BU_CDP_URL: "http://127.0.0.1:9222",
       MODE: "prepare",
       DRY_RUN: "true",
+      HOME: fs.realpathSync(fx.home),
+      BASH_ENV: "",
+      ENV: "",
+      SKILL_DIR: "",
     });
   } finally {
     fx.cleanup();
@@ -200,6 +256,10 @@ test("caller mode and dry-run survive an explicit exact daily-driver endpoint", 
       BU_CDP_URL: "http://127.0.0.1:9222",
       MODE: "submit",
       DRY_RUN: "true",
+      HOME: fs.realpathSync(fx.home),
+      BASH_ENV: "",
+      ENV: "",
+      SKILL_DIR: "",
     });
   } finally {
     fx.cleanup();
@@ -367,10 +427,10 @@ test("freshness, exact zero effects, schema closure, and receipt digest are enfo
     (x) => { x.artifacts[0].observed_at = "2026-08-02T00:40:00.000Z"; },
     (x) => { x.cron.observed_at = "2026-08-02T01:01:00.000Z"; },
     (x) => { x.effects.browser_launch = 1; },
-    (x) => { x.effects.form_write = 1; },
-    (x) => { x.effects.file_write = 1; },
-    (x) => { x.effects.save = 1; },
-    (x) => { x.effects.submit = 1; },
+    (x) => { x.effects.yc_form_field_write = 1; },
+    (x) => { x.effects.yc_file_input_write = 1; },
+    (x) => { x.effects.yc_save_control = 1; },
+    (x) => { x.effects.yc_submit_control = 1; },
     (x) => { x.effects.browser_close = 1; },
     (x) => { x.effects.gig_process_signal = 1; },
     (x) => { x.effects.owned_read_only_navigation = 0; },
@@ -411,6 +471,26 @@ test("structural readback rejects correctly re-signed owner, role, and deploymen
     },
     (x) => { x.deployment.installed_readback_exact = false; },
     (x) => { x.deployment.gig_driver_pid_after += 1; },
+  ];
+  for (const forge of forgeries) {
+    const mutated = structuredClone(receipt);
+    forge(mutated);
+    assert.throws(() => validate(resign(mutated)), /YC browser route migration/i);
+  }
+});
+
+test("structural readback re-enforces receipt chronology after a valid re-sign", () => {
+  const {
+    buildYcBrowserRouteMigrationReceipt: build,
+    validateYcBrowserRouteMigrationReceiptStructure: validate,
+  } = migrationModule();
+  const receipt = structuredClone(build(makeMigrationInput(), {
+    now: () => Date.parse("2026-08-02T01:01:00.000Z"),
+  }));
+  const forgeries = [
+    (x) => { x.artifacts[0].observed_at = "2026-08-02T00:40:00.000Z"; },
+    (x) => { x.artifacts[0].observed_at = "2026-08-02T01:00:31.000Z"; },
+    (x) => { x.cron.observed_at = "2026-08-02T00:44:59.000Z"; },
   ];
   for (const forge of forgeries) {
     const mutated = structuredClone(receipt);

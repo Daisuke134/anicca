@@ -37,7 +37,7 @@
 
 - [ ] **Step 1: Write the shim behavior tests first**
 
-Create a temporary `$HOME` with a fake executable successor that writes its received argv and selected environment values to a temporary receipt. Execute the real checked-in shim and assert literal output:
+Create a temporary `.openclaw/skills` tree, copy the real shim into its `apply-to-yc` location, and place a fake executable sibling successor under `apply-to-funder` that writes its received argv and selected environment values to a temporary receipt. Execute that exact shim copy and assert literal output:
 
 ```json
 {
@@ -63,7 +63,7 @@ Expected: fail because `runtime-assets/apply-to-yc/scripts/apply.sh` does not ex
 
 - [ ] **Step 3: Add refusal tests before implementation**
 
-Assert the fake successor receipt remains absent when any of these are supplied: endpoint `:9223`, public/alternate host, URL credentials/query/fragment, positional argument, `DRAFT_ID`, `FOUNDER_VIDEO`, `DEMO_VIDEO`, missing successor, or non-executable successor. Assert each command exits non-zero with a bounded message that contains no environment values.
+Assert the fake successor receipt remains absent when any of these are supplied: endpoint `:9223`, public/alternate host, URL credentials/query/fragment, positional argument, `DRAFT_ID`, `FOUNDER_VIDEO`, `DEMO_VIDEO`, caller-controlled `SKILL_DIR`, missing successor, or non-executable successor. Also prove that an attacker-controlled `HOME` cannot replace the sibling successor, and sanitize `BASH_ENV`/`ENV` before the fixed `/bin/bash` handoff. Assert each refusal exits non-zero with a bounded message that contains no environment values.
 
 - [ ] **Step 4: Implement the minimal real shim and tombstone**
 
@@ -81,7 +81,7 @@ Run the focused test, then add `lib/yc-browser-route-migration.test.js` to `test
 
 **Interfaces:**
 - Consumes: `buildYcBrowserRouteMigrationReceipt(input, { now })`, where `input` contains fresh repository/runtime artifact observations, exact route and provider manifests, two live browser-owner observations, one cron observation, a deployment observation, and effect counts.
-- Produces: a frozen privacy-minimal receipt with exact identities, artifact hashes/lengths, route, owner, cron, deployment, effects, and `migration_receipt_digest`.
+- Produces: a frozen privacy-minimal receipt with exact identities, artifact hashes/lengths, route, owner, cron, deployment, effects, and `migration_receipt_digest`. The digest is a deterministic structural checksum, not an authenticity signature; direct same-run readbacks remain the evidence source.
 
 - [ ] **Step 1: Write a literal valid-receipt test**
 

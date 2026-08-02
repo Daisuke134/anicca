@@ -21,10 +21,10 @@ const ARTIFACT_REFS = Object.freeze({
 const EFFECT_KEYS = Object.freeze([
   "browser_launch",
   "owned_read_only_navigation",
-  "form_write",
-  "file_write",
-  "save",
-  "submit",
+  "yc_form_field_write",
+  "yc_file_input_write",
+  "yc_save_control",
+  "yc_submit_control",
   "browser_close",
   "owned_page_close",
   "gig_process_signal",
@@ -207,10 +207,18 @@ function validateEffects(effects) {
   return structuredClone(effects);
 }
 
+function validateObservationChronology(observedTimes, verifiedAt) {
+  if (observedTimes.length === 0
+    || observedTimes.some((observed) => observed > verifiedAt)
+    || verifiedAt - Math.min(...observedTimes) > MAX_SOURCE_SPAN_MS
+    || Math.max(...observedTimes) - Math.min(...observedTimes) > MAX_SOURCE_SPAN_MS) fail();
+}
+
 function validateReceiptCore(receipt) {
   exactKeys(receipt, ["schema_version", "verified_at", "route", "artifacts", "browsers", "cron", "deployment", "effects", "migration_receipt_digest"]);
   if (receipt.schema_version !== 1 || !SHA.test(receipt.migration_receipt_digest)) fail();
-  canonicalTime(receipt.verified_at);
+  const verifiedAt = canonicalTime(receipt.verified_at);
+  const observedTimes = [];
   exactKeys(receipt.route, ["browser_ref", "endpoint", "connection_mode", "shared_context_count", "route_id", "provider_id", "form_origin", "successor", "funder_id", "route_manifest_sha256", "provider_manifest_sha256"]);
   if (receipt.route.browser_ref !== "browser-profile://cloakbrowser/daily-driver"
     || receipt.route.endpoint !== "http://127.0.0.1:9222"
@@ -232,17 +240,18 @@ function validateReceiptCore(receipt) {
       || item.ref !== ARTIFACT_REFS[item.role] || !SHA.test(item.body_sha256)
       || !Number.isSafeInteger(item.body_length) || item.body_length < 1
       || item.body_length > MAX_BODY_BYTES) fail();
-    canonicalTime(item.observed_at);
+    observedTimes.push(canonicalTime(item.observed_at));
     artifactRoles.add(item.role);
     artifactsByRole.set(item.role, item);
   }
   if (artifactRoles.size !== Object.keys(ARTIFACT_REFS).length
     || artifactsByRole.get("checked_in_skill").body_sha256 !== artifactsByRole.get("installed_skill").body_sha256
     || artifactsByRole.get("checked_in_shim").body_sha256 !== artifactsByRole.get("installed_shim").body_sha256) fail();
-  const browsers = validateBrowsers(receipt.browsers, []);
-  validateCron(receipt.cron, []);
+  const browsers = validateBrowsers(receipt.browsers, observedTimes);
+  validateCron(receipt.cron, observedTimes);
   validateDeployment(receipt.deployment, artifactsByRole, browsers.byRole);
   validateEffects(receipt.effects);
+  validateObservationChronology(observedTimes, verifiedAt);
   const { migration_receipt_digest: claimed, ...core } = receipt;
   if (digest(core) !== claimed) fail();
   return receipt;
@@ -262,10 +271,7 @@ function buildYcBrowserRouteMigrationReceipt(input = {}, options = {}) {
   const cron = validateCron(input.cron, observedTimes);
   const deployment = validateDeployment(input.deployment, artifacts.byRole, browsers.byRole);
   const effects = validateEffects(input.effects);
-  if (observedTimes.length === 0
-    || observedTimes.some((observed) => observed > verifiedAt)
-    || verifiedAt - Math.min(...observedTimes) > MAX_SOURCE_SPAN_MS
-    || Math.max(...observedTimes) - Math.min(...observedTimes) > MAX_SOURCE_SPAN_MS) fail();
+  validateObservationChronology(observedTimes, verifiedAt);
 
   const core = {
     schema_version: 1,

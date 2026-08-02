@@ -46,7 +46,7 @@ apply-to-funder --funder yc-w26
           +--> existing CloakBrowser daily-driver :9222
 ```
 
-The checked-in migration contract validates the complete artifact set rather than trusting prose. It binds the repository route manifest, YC provider manifest, legacy shim, tombstone skill document, successor runtime files, live port ownership observations, cron observation, backup inventory, operation counts, and content digests into a privacy-minimal receipt.
+The checked-in migration contract validates the complete artifact set rather than trusting prose. It binds the repository route manifest, YC provider manifest, legacy shim, tombstone skill document, successor runtime files, live port ownership observations, cron observation, backup inventory, operation counts, and content digests into a privacy-minimal receipt. Its public SHA-256 digest proves deterministic structure and accidental-tamper detection, not hostile-source authenticity: the evidence therefore records the same-run direct readbacks separately, and does not present `validateYcBrowserRouteMigrationReceiptStructure` as a signature or HMAC verifier.
 
 ## Components
 
@@ -83,7 +83,7 @@ The installed legacy directory is backed up to a content-addressed, owner-only r
 - `DRY_RUN=true` is preserved and proves routing without browser access.
 - Default live mode may reach the successor only; without current persisted gates it must fail before browser access. This design does not create or weaken those gates.
 - The shared browser process is never closed. The `gig-daily-driver :9223` process is not modified.
-- Any artifact digest, runtime owner, cron identity/state, effect count, or route drift invalidates the migration receipt.
+- Any artifact digest, runtime owner, cron identity/state, effect count, or route drift from the closed receipt contract invalidates its structural validation. Authenticity of the observed values comes from the documented direct readbacks and Git history, not the self-digest alone.
 
 ## Verification and evidence
 
