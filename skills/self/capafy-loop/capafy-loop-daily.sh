@@ -25,6 +25,22 @@ LOG="$HOME/.openclaw/logs/capafy-loop-daily.log"
 mkdir -p "$(dirname "$LOG")"
 echo "=== capafy-loop-daily run $(date '+%F %T %Z') ===" >>"$LOG"
 
+# Live preflight for incident capafy-builder-20260802T231418Z-a1558bd0.
+# Never launch the expensive builder when Capafy already rejects new agents.
+INVENTORY_STATUS="$HOME/.openclaw/skills/capafy-autopublish/scripts/inventory_status.py"
+BUILDER_RESULT="${CAPAFY_BUILDER_RESULT:-$HOME/.openclaw/state/capafy-builder-result.json}"
+if [ -f "$INVENTORY_STATUS" ]; then
+  CAP_VERDICT="$(python3 "$INVENTORY_STATUS" 2>>"$LOG" | sed -n 's/^VERDICT=//p' | head -1)"
+  if [ "$CAP_VERDICT" = "CAP_FULL" ]; then
+    ONLINE_COUNT="$(python3 "$INVENTORY_STATUS" 2>>"$LOG" | tail -1 | python3 -c 'import json,sys; print(json.load(sys.stdin).get("online_count", "?"))' 2>>"$LOG" || printf '?')"
+    printf '{"result":"no-op","reason":"Capafy publish cap full: live inventory verdict CAP_FULL; no addAgent attempted; online_count=%s"}\n' "$ONLINE_COUNT" >"$BUILDER_RESULT"
+    echo "=== capafy-loop-daily no-op: live CAP_FULL; skipped model and addAgent (online_count=$ONLINE_COUNT) ===" >>"$LOG"
+    touch "$HOME/.openclaw/state/.capafy-loop-last-pass" 2>/dev/null || true
+    CAPAFY_BUILDER_RESULT="$BUILDER_RESULT" bash "$SCRIPT_DIR/capafy-builder-handoff.sh" 0 "cap-preflight" >>"$LOG" 2>&1
+    exit $?
+  fi
+fi
+
 # ── TOKEN BUDGET BREAKER (2026-07-30) ─────────────────────────────────────────
 # Every pass of this loop used to record {"status":"disabled","reason":
 # "budget_not_configured"} in its attempts.jsonl: the runner's breaker only arms
