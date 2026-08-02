@@ -87,7 +87,7 @@ Run the packaging scan against a disposable local state using only `OPENCLAW_CON
 - Produces: bounded JSON containing only the matched target ID, current URL, non-secret field metadata, buttons, validation colors, and command outcome.
 - `fill --env-name GEMINI_API_KEY` reads the secret internally and reports only its final length.
 
-- [ ] **Step 1: Write failing pure-selection and redaction tests**
+- [x] **Step 1: Write failing pure-selection and redaction tests**
 
 ```python
 def test_select_target_requires_exact_token():
@@ -105,17 +105,17 @@ def test_secret_result_reports_length_only():
     assert target_cdp.redact_field_value("password", "abc123") == "<set len=6>"
 ```
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
 Run: `uv run --with pytest pytest -q /Users/anicca/.openclaw/skills/capafy-autopublish/tests/test_capafy_target_cdp.py`
 
 Expected: import or missing-function failure.
 
-- [ ] **Step 3: Implement target selection, one-target websocket calls, state, trusted click, and trusted fill**
+- [x] **Step 3: Implement target selection, one-target websocket calls, state, trusted click, and trusted fill**
 
 The implementation must fetch `/json/list`, require exactly one `type=page` URL containing `token=<exact token>`, connect to `/devtools/page/<target id>`, and use `Input.dispatchMouseEvent` / `Input.insertText`. It must never call whole-browser Playwright and never return a password value.
 
-- [ ] **Step 4: Run GREEN and static checks**
+- [x] **Step 4: Run GREEN and static checks**
 
 Run: `uv run --with pytest pytest -q /Users/anicca/.openclaw/skills/capafy-autopublish/tests`
 
@@ -123,7 +123,7 @@ Run: `python3 -m py_compile /Users/anicca/.openclaw/skills/capafy-autopublish/sc
 
 Expected: all tests and compilation pass without warnings.
 
-- [ ] **Step 5: Run a read-only live integration against the current Performance Review review token**
+- [x] **Step 5: Run a read-only live integration against the current Performance Review review token**
 
 Acquire `interactive:dais`, call `state` with the exact token, assert the returned URL contains only that token and the output contains no credential value, then release the lease. Do not navigate or click during this integration check.
 
