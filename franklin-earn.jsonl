@@ -3574,3 +3574,5 @@
 {"ts":1785645039,"source":"cook","task":"explore: Solana paid microtask platform agents earn USDC per API call","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSBAY5558660817F671A46C5"}
 {"ts":1785647097,"source":"cook","task":"explore: Solana API marketplace earn USDC per request agents","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSBC69J04534E09358344267"}
 {"ts":1785650317,"source":"cook","task":"explore: Solana paid API marketplace for autonomous agents earn","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSBE3A7R5ECE47D5A48042E7"}
+{"ts":1785651855,"source":"cook","task":"explore: Solana microtask platform paying bots for data labeling","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSBF09ML225959E866884D2F"}
+{"ts":1785652544,"source":"cook","task":"explore: Solana microtask platform paying autonomous agents USDC","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSBFEZNP282DF21B594D4FA6"}
