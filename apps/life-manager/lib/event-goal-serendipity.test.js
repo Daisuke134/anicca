@@ -21,7 +21,7 @@ test("full grounded goal evaluation has a bounded two-minute model window", () =
 
 const GOALS = "Life Managerを成長させ、founder、engineer、investorとの接点を増やし、毎日東京で新しい経験を得る。";
 
-async function sources() {
+async function sources(options = {}) {
   const coverage = buildRollingEventCoverage({
     tenantId: "dais-local",
     timeZone: "Asia/Tokyo",
@@ -49,7 +49,8 @@ async function sources() {
       jsonLd: [{
         "@type": "Event",
         name: "AI Founder Night",
-        description: "AI founders demonstrate products and discuss company building with engineers.",
+        description: options.aiDescription
+          || "AI founders demonstrate products and discuss company building with engineers.",
         startDate: "2026-08-02T09:00:00.000Z",
         endDate: "2026-08-02T11:00:00.000Z",
         eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
@@ -210,6 +211,41 @@ test("Gemini receives goals and provider factors as untrusted data with no missi
   ]);
   assert.equal(result.ranked_events[0].factor_assessments[0].evidence_excerpt,
     "AI founders demonstrate products and discuss company building with engineers.");
+});
+
+test("provider contact text cannot make the system reject its own grounded excerpt", async () => {
+  const input = await sources({
+    aiDescription: "Contact host@example.com. AI founders demonstrate products and discuss company building.",
+  });
+  const result = await inferEventGoalSerendipity({ ...input, goals: GOALS }, {
+    apiKey: "fixture-key",
+    fetchImpl: async () => ({
+      ok: true,
+      json: async () => ({
+        candidates: [{ content: { parts: [{ text: JSON.stringify(modelDecision()) }] } }],
+      }),
+    }),
+  });
+  const excerpt = result.ranked_events[0].factor_assessments[0].evidence_excerpt;
+  assert.equal(excerpt, "AI founders demonstrate products and discuss company building.");
+  assert.doesNotMatch(excerpt, /host@example\.com/i);
+
+  const contactOnlyInput = await sources({ aiDescription: "host@example.com" });
+  const contactOnlyResult = await inferEventGoalSerendipity({ ...contactOnlyInput, goals: GOALS }, {
+    apiKey: "fixture-key",
+    fetchImpl: async () => ({
+      ok: true,
+      json: async () => ({
+        candidates: [{ content: { parts: [{ text: JSON.stringify(modelDecision()) }] } }],
+      }),
+    }),
+  });
+  assert.deepEqual(contactOnlyResult.ranked_events[0].factor_assessments[0], {
+    factor: "description",
+    status: "redacted",
+    evidence_excerpt: null,
+    assessment: "公開されたdescription情報は安全上の理由で根拠表示から除外しました。",
+  });
 });
 
 test("model failure and invalid JSON never become an ungrounded fallback", async () => {

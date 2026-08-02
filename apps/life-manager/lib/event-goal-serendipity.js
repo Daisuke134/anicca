@@ -10,7 +10,7 @@ const GOAL_EVALUATION_TIMEOUT_MS = 120_000;
 const GOAL_ALIGNMENTS = Object.freeze(["strong", "moderate", "weak", "unknown"]);
 const SERENDIPITY_LEVELS = Object.freeze(["high", "medium", "low", "unknown"]);
 const FACTORS = Object.freeze(["description", "organizers", "participants", "place", "time"]);
-const FACTOR_STATUSES = Object.freeze(["used", "unavailable"]);
+const FACTOR_STATUSES = Object.freeze(["used", "unavailable", "redacted"]);
 const DECISION_KEYS = Object.freeze(["ranked_events"]);
 const EVENT_KEYS = Object.freeze([
   "event_ref", "factor_assessments", "goal_alignment", "goal_reason",
@@ -63,6 +63,34 @@ function safeText(value, max) {
   const text = String(value == null ? "" : value).replace(/\s+/g, " ").trim();
   if (!text || text.length > max || UNSAFE.test(text)) invalid();
   return text;
+}
+
+function safeEvidenceExcerpt(value, max) {
+  const source = String(value == null ? "" : value).replace(/\s+/g, " ").trim();
+  if (!source) return null;
+  const spans = [];
+  let cursor = 0;
+  while (cursor < source.length) {
+    const match = UNSAFE.exec(source.slice(cursor));
+    if (!match) {
+      spans.push(source.slice(cursor));
+      break;
+    }
+    const start = cursor + match.index;
+    if (start > cursor) spans.push(source.slice(cursor, start));
+    cursor = start + match[0].length;
+  }
+  const candidates = spans.map((span) => span
+    .replace(/^[\s,;:.!?()[\]{}<>|/\\-]+/, "")
+    .replace(/[\s,;:()[\]{}<>|/\\-]+$/, "")
+    .trim())
+    .filter(Boolean)
+    .sort((left, right) => right.length - left.length);
+  for (const candidate of candidates) {
+    try { return safeText(candidate.slice(0, max), max); }
+    catch { /* try the next contiguous provider span */ }
+  }
+  return null;
 }
 
 function stableJson(value) {
@@ -131,7 +159,9 @@ function validateFactors(rows, sourceFactors) {
       if (!source || row.evidence_excerpt == null) invalid();
       evidenceExcerpt = safeText(row.evidence_excerpt, 500);
       if (!source.includes(evidenceExcerpt)) invalid();
-    } else if (source || row.evidence_excerpt !== null) invalid();
+    } else if (status === "unavailable") {
+      if (source || row.evidence_excerpt !== null) invalid();
+    } else if (!source || row.evidence_excerpt !== null) invalid();
     return Object.freeze({
       factor,
       status,
@@ -152,10 +182,17 @@ function groundedFactorAssessments(sourceFactors) {
       evidence_excerpt: null,
       assessment: `公開された${factor}情報はありません。`,
     };
+    const evidenceExcerpt = safeEvidenceExcerpt(source, 500);
+    if (!evidenceExcerpt) return {
+      factor,
+      status: "redacted",
+      evidence_excerpt: null,
+      assessment: `公開された${factor}情報は安全上の理由で根拠表示から除外しました。`,
+    };
     return {
       factor,
       status: "used",
-      evidence_excerpt: source.slice(0, 500),
+      evidence_excerpt: evidenceExcerpt,
       assessment: `公開された${factor}情報を根拠として使用しました。`,
     };
   });
