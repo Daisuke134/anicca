@@ -89,9 +89,9 @@ Life Managerは「検索した」「分析した」「失敗した」と報告�
 - `ai.anicca.connector-fill-gaps`と`ai.anicca.connector-daily-report`は既にlaunchd登録済み。
   ただし前者は大半のday taskが180秒timeoutで失敗し、後者はTelegram応答のJSON parseで
   `SEND-ERR`になる。新規Connectorを作るのではなく、この既存loopを修復する。
-- `apply-to-yc`はdeprecatedで、後継は`apply-to-funder`。しかし実stateは
-  `yc-2026-summer.json = ready_to_submit`、`yc-w26-latest.json = dry_run_planned`であり、
-  YC本体の提出receiptはまだ無い。
+- `apply-to-yc`はdeprecatedで、後継は`apply-to-funder`。YC Fall 2026 applicationは
+  O1C-07で提出済み、O1C-08でYC homeの`In review`、確認mail、ledger、Telegramまで照合済みである。
+  application本体の再Submitは恒久的に禁止し、提出後の変更は型付きupdateとして別管理する。
 - `anicca-meetup-talk-applier`にはAI Tinkerers Tokyo/SFの過去提出stateがある。
   一方、connpassは偽陽性防止のため最終click直前で意図的に停止し、accept watcherも
   Gmailを読まず手順を表示するだけである。
@@ -1004,6 +1004,18 @@ Life Manager full `npm test`、Node/JSON/source SHA/privacy/diff checkが全成�
 `docs/evidence/funding/2026-08-02-o1c25-yc-full-preview.json`。56/143完了、残作業は87件。
 次はO1C-26で上記blockerを先に解消してfresh previewを再生成し、`submit_ready:true`の場合だけ別種updateをexactly-onceで実行する。
 
+O1C-26進捗1（未完了）: current Life Manager factsに合わせたApplication Kitとtyped update payload、
+effect fence、readback、CloakBrowser daily-driver `:9222`のowned-page transportを実装中。YC向けproduct demoは
+50.833333秒、1920x1080、H.264/AAC、SHA-256
+`9aee0d5bc4e20776cc6b8a77763a42fc8def4f47b71646c37b468c4fe19879af`として生成し、
+`demo_update` 1件はactivation 1回、remote playable readback一致で`confirmed`。一方、Progressは各operation identityを
+一度だけ実行して全件`not_applied`、remote値不変、update mutation 0を確認した。同一identityの再試行は無い。
+原因はYCの`Submit update`が即時送信ではなく確認modalを開く第1段階で、正規confirm処理が未実行だったこと。
+Team updateとFounder Profile updateはまだactivation 0、application再Submitも0である。次は二段階confirmをTDDで固定し、
+新しいProgress operationを一度だけ実行してreadback後にTeam/Profileを順番に処理する。その後、5 scopeのfresh preview、
+privacy-minimal evidence、全test、独立review、commit/pushを完了して初めてO1C-26を`[x]`にする。
+現時点の集計は56/143完了、残作業87件のまま。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
@@ -1319,7 +1331,7 @@ agentが本文と履歴を読んで判断し、keyword/regexの固定分類へ�
 - [ ] O5-04 Daisの証券会社と正式execution APIを実測
 - [ ] O5-05 NISA口座でAPI注文可能かを口座・商品別に検証
 - [ ] O5-06 allocation、積立、rebalance proposal
-- [ ] O5-07 approval/signing policy
+- [ ] O5-07 verified account dataと生活防衛資金から自動導出するautonomous signing policyを実装し、注文ごとのhuman approvalを要求しない
 - [ ] O5-08 order→fill→receipt→CFOを実証
 - [ ] O5-09 fee、配当、税、FX込みperformance
 - [ ] O5-10 monthly Telegram report
@@ -1335,18 +1347,18 @@ agentが本文と履歴を読んで判断し、keyword/regexの固定分類へ�
 - [ ] OW-01 localのjob、specialist contract、ledger、report templateをshared coreとして切り出す
 - [ ] OW-02 全financial row、decision、secret、artifactへtenant境界を追加
 - [ ] OW-03 tenant別Google OAuth、Moneytree OAuth、exchange/broker credential vault
-- [ ] OW-04 tenant別browser profile、scheduler、worker、rate limit、cost budget
+- [ ] OW-04 tenant別browser profile、scheduler、worker、rate limit、自動導出cost budget
 - [ ] OW-05 Telegram account connectionと同じ直接link/添付UXを再現
 - [ ] OW-06 Web panelへnet worth、cash flow、1/3/12か月、応募funnel、agent別成果を表示
-- [ ] OW-07 user自身がpermission、budget、risk cap、停止を確認・変更できる設定画面
+- [ ] OW-07 verified account data、残高、固定費、生活防衛資金、行動履歴からpermission、budget、risk cap、停止条件を自動導出し、初回質問や実行ごとの承認を要求しない。Web画面は任意の確認・訂正・即時停止だけを提供
 - [ ] OW-08 data export、account disconnect、token revoke、全data削除を実装
 - [ ] OW-09 security review、tenant isolation test、secret leak test、financial action audit
 - [ ] OW-10 Stripe subscriptionとtrue MRR、churn、active paidを計測
 - [ ] OW-11 Dais以外のpilot user一人でbank接続からTelegram月次報告まで実証
 - [ ] OW-12 pilotの誤分類・誤通知・離脱理由をevalへ戻し、10人→100人へ段階拡大
 
-完了条件: Daisローカル版を書き直さず、同じcoreを別userが自分の口座・Telegram・risk policyで
-安全に使い、最初の有料継続利用と月次reportまで成立する。
+完了条件: Daisローカル版を書き直さず、同じcoreを別userが自分の口座・Telegramへ一度接続した後、
+Life Managerがrisk policyを自動導出して安全に使い、追加設定質問なしで最初の有料継続利用と月次reportまで成立する。
 
 ## 6. agent判断とdeterministic処理の境界
 
@@ -1372,6 +1384,22 @@ deterministic codeが担当する:
 - 口座残高、複式/振替照合、JPY換算、tax lot、fee、PnL、NISA枠
 - permission、allowlist、loss cap、生活防衛資金、署名、注文の最終gate
 - source timestamp、freshness、decision ID、監査履歴、Telegram delivery
+
+### 6.1 zero-question policy
+
+Life Managerは、オンボーディングでuserへ予算、権限、損失上限、停止条件の入力を要求しない。
+OAuth・金融機関・OSが本人による認証や法的同意を必須にする場合の一度の接続は、Life Managerが代行できない
+bootstrapであり、日常のhuman-in-the-loopには数えない。接続後の通常運用では、次を自動で行う。
+
+1. verified account data、残高、収入、固定費、債務、予定、既存の行動履歴から現在状態を理解する。
+2. versioned deterministic policyが生活防衛資金、使用可能額、rate limit、risk cap、allowlistを導出する。
+3. 十分な根拠がある可逆・低影響操作は、都度承認なしで実行してreceiptを残す。
+4. 低確信かつ高影響の操作は、userへ質問して全体を止めず、`observe / shadow / wait`へ移して他の安全な仕事を続ける。
+5. Agent、自己改善code、多数決はpolicy値を直接変更できない。policy変更はversioned code、test、replay、canaryを通す。
+6. user向け画面には任意の訂正、account disconnect、data削除、緊急停止を常備するが、初期設定wizardにはしない。
+
+成功条件は「userが設定項目を全部理解すること」ではなく、Life Managerが現実のdataからuserを継続的に理解し、
+説明可能な既定値で動き、誤りをreceiptと結果から自動修正できることである。
 
 意味判断をregexやkeywordだけで実装しない。固定形式のparseだけにregexを許可する。
 specialist agentの合議、多数決、CFO Leadの指示のいずれも、deterministic policy gateを
@@ -1402,10 +1430,45 @@ specialist agentの合議、多数決、CFO Leadの指示のいずれも、deter
 
 ローカル版で得た実装を捨ててWeb版を書き直さない。Webアプリは同じcoreの別表示・別配置である。
 
-### 7.1 画面の役割
+### 7.1 配備先の正本
 
-- Telegram: 朝の要約、完了報告、例外警告、承認、停止
-- Web panel: 全資産、1か月・3か月推移、応募funnel、receipt、agent別P&L、設定
+Life Managerのsource、Local runtime、Web UI、Cloud runtime、data storeを混同しない。
+
+| 対象 | 正式な場所 | 責務 |
+|---|---|---|
+| source / open source配布 | GitHub `Daisuke134/life-manager` | code、spec、release、deploy sourceの唯一の正本 |
+| Local / self-hosted runtime | user自身のMac・Linux machine、またはuser所有server/container | `install.sh`、`start-local.sh`、`runtime/loop/`、local scheduler、local toolsを実行。中央SaaSへ移さなくても動く |
+| 公開Web入口 | `https://aniccaai.com/lm` | signup、最小接続、Telegram link、Web panelへの入口。現行`apps/landing`はNetlify Functions契約を持つ |
+| Cloud Life Manager backend | Railway上の`apps/life-manager/` | 常時稼働Node service、Telegram、scheduler、voice、authenticated `/panel`、tenant workflow。現行runtime URLは`life-call-production.up.railway.app` |
+| Cloud data / auth | Supabase Postgres/Auth | tenant-bound ledger、user state、receipt、OAuth接続状態。RLSとservice-only write境界を持つ |
+| email / domain edge | `aniccaai.com`とCloudflare email/domain routing | public domain、reply routing、必要なedge service |
+| 将来のsovereign compute | Akash等のuser/agent-owned container host | 主SaaSの置換ではなく、Local instanceのcloud移住・自己ホスト・vendor lock-in回避。実証前に「現在のhost」と主張しない |
+
+したがって、非技術userが使うWeb版の標準構成は
+`aniccaai.com → Railway apps/life-manager → Supabase`である。open source版はGitHubから取得し、userのmachineで
+実行する。両者は別codebaseではなく、同じshared core、agent registry、job contract、ledger contract、receipt schemaを使う。
+
+```text
+GitHub: Daisuke134/life-manager
+              │
+       shared core / skills
+         ┌────┴────────────────────┐
+         │                         │
+ LOCAL / OPEN SOURCE          WEB / MANAGED CLOUD
+ user Mac・Linux・server       aniccaai.com/lm
+ runtime/loop                       │
+ local data/tool                    ▼
+         │                   Railway apps/life-manager
+         │                         │
+         └──── common contract ────┤
+                                   ▼
+                           Supabase tenant ledger
+```
+
+### 7.2 画面の役割
+
+- Telegram: 朝の要約、完了報告、例外警告、任意の訂正、停止。日常操作の承認queueにはしない
+- Web panel: 全資産、1か月・3か月推移、応募funnel、receipt、agent別P&L、自動導出policyの説明、任意の訂正・停止
 - CloakBrowser daily-driver: ローカルの外部Web操作。ユーザー画面ではない
 - ledger: TelegramとWeb panelの唯一の数値正本
 
@@ -1587,7 +1650,7 @@ POLICY GATE
   金額、権限、生活防衛資金、NISA枠、loss cap、allowlistをcodeで検査
      ↓
 EXECUTE
-  読取、応募、通知、承認済み注文など許可されたtoolだけを実行
+  読取、応募、通知、自動policy gate通過済み注文など許可されたtoolだけを実行
      ↓
 VERIFY
   providerの完了結果、mail、fill、残高変化を元のdecisionへ結合
@@ -2379,7 +2442,7 @@ local完成後
 | U06 | YC動画・demo・tractionが現在の真実か | application-kit、dashboard、動画実体、production URLを提出当日に照合 |
 | U07 | SPC 8/2までに必要field/動画を揃えられるか | formをread-only captureし、missing field listと所要時間を出す |
 | U08 | a16zの旧`START` specと現SPEEDRUNの差 | 旧specを無効化し、公式current formから新specを生成 |
-| U09 | 各programがagentによるform入力を許容するか | terms/robots/form表示を提出直前に確認。CAPTCHA/明示禁止はhuman handoff |
+| U09 | 各programがagentによるform入力を許容するか | terms/robots/form表示を提出直前に確認。CAPTCHA/明示禁止はそのproviderを`unavailable`として記録し、人へ作業を戻さず別候補へ進む |
 | U10 | Gmail検索がconfirmationと営業mailを誤結合しないか | nonce/domain/thread/time fenceと送信attempt IDで結合、spoof testを追加 |
 | U11 | 返信分類の型とCalendar timezone | confirmation/interview/offer/reject/request_infoをschema化し、JST/現地TZを保持 |
 | U12 | MUITとの利益相反 | MUFG/MUIT運営・CVCをdeny。LPだけの関与と業務外応募の線引きを確認 |
@@ -2400,7 +2463,7 @@ local完成後
 | U27 | self-improvementが過学習やrisk増加を起こさないか | time-split replay、shadow、canary、rollbackを必須にし、permission/capを対象外にする |
 | U28 | 多数agentのcostとlatencyが日次利用に耐えるか | 必要なspecialistだけ起動し、single-agent baseline比の有用性/cost/時間を計測 |
 | U29 | Luma mainの各日inventoryを「最後まで読んだ」とどう証明するか | pagination、infinite scroll、日付・東京・対面条件、取得件数と最終cursorを探索証跡へ保存 |
-| U30 | 都度承認なしで自動予約してよい有料eventの支出policy | 日次・月次上限と対象を一度だけ設定し、範囲内は自動決済、範囲外は無料の別候補へ進む |
+| U30 | 都度承認なしで自動予約してよい有料eventの支出policy | verified cash flow、固定費、既存予定、event実績からversioned deterministic policyが日次・月次上限と対象を自動導出する。範囲内は自動決済、範囲外は無料の別候補へ進む |
 | U31 | rolling 21日のeventが勤務・学校・既存予定・移動時間と両立するか | 全Calendarと経路時間を申込前gateにし、重複時は同日の別時間・別候補へ進む |
 | U32 | Summer 2026のYC applicationをFall 2026へ継続できるか | 現行YC homeをread-only確認し、継続不可なら既存回答を新applicationへ安全に移す |
 | U33 | 既存YC回答・動画・tractionが現在も正確か | production、dashboard、application-kit、動画実体を照合し、古い主張を修正してからsubmit |
