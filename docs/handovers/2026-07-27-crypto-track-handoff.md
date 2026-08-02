@@ -41,9 +41,9 @@ launchd実発火exit 0、候補/verified/production rowはすべて0。これは
 
 Railway x402 live-payment evidence:
 `docs/evidence/agent-economy/2026-07-28-x402-railway-live-payment.json`。
-8/8 paid routeの402、Franklin 2自己支払`$0.008 + $0.005`、商品HTTP 200、Base exact Transferを実証。self-payなので収益0。
-PR #374/#1196 + commit `54e68aa5d`でingressを本番接続。2件目はfeed/candidate 1、finalized verifierでself-pay拒否、
-ledger 0を実測した。次はcolony外buyer/jobの累計`$1.00` gate。
+9/9 paid routeの402、Franklin 2自己支払`$0.008 + $0.005 + $0.010`、商品HTTP 200、Base exact Transferを実証。self-payなので収益0。
+PR #374/#1196/#1197 + commit `54e68aa5d`でPOST/GET ingressを本番接続。3件目は公開APIだけで動くDeFi
+`GET /funding-rates`で、feed 2件中の新規candidate 1を記録した。次はcolony外buyer/jobの累計`$1.00` gate。
 
 13c-WORK bridge evidence:
 `docs/evidence/agent-economy/2026-07-27-the402-work-ledger.json`。

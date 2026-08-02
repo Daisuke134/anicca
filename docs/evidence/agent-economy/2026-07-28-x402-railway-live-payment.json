@@ -1,19 +1,20 @@
 {
   "schema": "anicca.agent-economy.x402-railway-live-payment.v1",
-  "observed_at": "2026-07-28T07:50:33+09:00",
+  "observed_at": "2026-07-28T08:06:36+09:00",
   "status": "live_payment_and_ingress_proven_self_payment_excluded_from_revenue",
   "service": {
     "url": "https://x402-agents-production.up.railway.app",
     "railway_service": "x402-agents",
-    "deployment_id": "dcd24b5e-af71-44ba-a119-74a19d0f6ab7",
+    "deployment_id": "3fb246d1-fceb-4b79-83dd-e56e672d29ab",
+    "settlement_feed_deployment_id": "dcd24b5e-af71-44ba-a119-74a19d0f6ab7",
     "runtime_node_major": 24,
     "runtime_fix_pull_request": "https://github.com/Daisuke134/anicca-products/pull/373",
     "runtime_fix_merge_commit": "2fa8f00159fcb593a8c9f2ffdb68c90f6e2e5a30",
     "settlement_feed_pull_request": "https://github.com/Daisuke134/anicca-products/pull/374",
     "settlement_feed_merge_commit": "e428a731eb90565d4a2d277ac8842fd9220f0651",
     "health_status": 200,
-    "paid_routes_challenged": 8,
-    "paid_routes_402": 8
+    "paid_routes_challenged": 9,
+    "paid_routes_402": 9
   },
   "payment": {
     "route": "POST /context-compressor",
@@ -55,6 +56,33 @@
     "settlement_feed_match_count": 1,
     "settlement_feed_public_fields_only": true
   },
+  "funding_rates_payment": {
+    "route": "GET /funding-rates?symbol=BTC",
+    "product_pull_request": "https://github.com/Daisuke134/anicca-products/pull/375",
+    "product_merge_commit": "80b3d2cae05b2e9d9c345ad48319879b476aa806",
+    "deployment_id": "3fb246d1-fceb-4b79-83dd-e56e672d29ab",
+    "amount_atomic": "10000",
+    "amount_usd": "0.01",
+    "http_status": 200,
+    "payment_response_success": true,
+    "transaction_hash": "0xaeb450ef8b9fa1930468bb6d4424dc52df4435ecb1b7bca6a2388cad761cbefd",
+    "receipt_status": "success",
+    "block_number": "49201946",
+    "buyer_balance_before_usdc": "0.029",
+    "buyer_balance_after_usdc": "0.019",
+    "seller_balance_before_usdc": "0.618",
+    "seller_balance_after_usdc": "0.628",
+    "settlement_feed_match_count": 1,
+    "settlement_method": "GET",
+    "product_rows": 4,
+    "product_exchanges": [
+      "Binance",
+      "Bybit",
+      "Hyperliquid"
+    ],
+    "product_degraded": false,
+    "top_divergence_bps": 478.3
+  },
   "classification": {
     "buyer": "Franklin 2 colony wallet",
     "seller": "Anicca-controlled x402 seller wallet",
@@ -72,6 +100,8 @@
     "observer": {
       "pull_request": "https://github.com/Daisuke134/life-manager/pull/1196",
       "merge_commit": "daca9d26e",
+      "funding_rates_pull_request": "https://github.com/Daisuke134/life-manager/pull/1197",
+      "funding_rates_merge_commit": "d685ea5643e1d0bcd69ae160f91795361e904a44",
       "full_tests_passed": 221,
       "full_tests_failed": 0
     },
@@ -116,5 +146,5 @@
     "problem": "The payment and accounting path is live, but no colony-external buyer or completed external job has paid.",
     "done": "A colony-external payer reaches the existing finalized-chain verifier and earnings ledger exactly once; cumulative verified external SELL/WORK receipts reach at least $1.00."
   },
-  "evidence_limit": "This proves two real mainnet x402 payments, product execution, exact Base USDC settlement, a durable Railway settlement feed, candidate ingestion, and live self-payment rejection. It does not prove external demand or revenue. Both payments came from Franklin 2, so verified external income remains $0.00."
+  "evidence_limit": "This proves three real mainnet x402 payments totaling $0.023, product execution including a public-credential-free DeFi funding-rate product, exact Base USDC settlement, a durable Railway settlement feed, and candidate ingestion. It does not prove external demand or revenue. All three payments came from Franklin 2, so verified external income remains $0.00."
 }
