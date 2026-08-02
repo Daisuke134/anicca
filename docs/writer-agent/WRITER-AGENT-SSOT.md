@@ -803,18 +803,19 @@ schedules or future data.
 | 27 | $1M | Autonomously scale cloud/network distribution and retention to $1M MRR | Active recurring receipts, staged-promotion receipts, bounded spend, rollback proof | TODO |
 | 28 | $10M | Reach $100M network GMV at 10% fee, or another fully receipted equivalent, through the autonomous scale controller | $10M active recurring receipts; no internal/self payments; no routine human operation; legal/KYC exceptions explicit | TODO |
 
-Task 1 runtime reporting correction (`68550b9`): the daily wrapper no longer
-calls every incomplete run recoverable by the publication pending worker. A
-hash-bound `block_freeze` with no publication state now reports, in both the
-runtime log and natural-language Telegram message, that the run stopped before
-publication, has zero public URLs, and cannot be recovered by the publication
-worker. Only a run with an actual publication state is handed to that worker;
-other pre-publication failures are truthfully assigned to the bounded same-run
-generation reconciler. The old resumable fixture had been passing on the false
-message even though its publication initialization crashed. It now creates
-real create-once media receipts, canonical JA/EN drafts, distinct measurable
-CTAs, a publication state, and all eight stable intents before proving the
-handoff. The complete Writer suite passes `662 passed`.
+Task 1 handoff correction (`bb4779a`, superseding the reporting text introduced
+by `68550b9`): `article-resume-pending.sh` is the installed same-run reconciler,
+not merely a publication-state worker. When a hash-bound `block_freeze` has no
+publication state, its bounded quality-feedback phase owns the run, researches
+the exact failed feedback against primary evidence, rewrites the same JA/EN
+artifacts, reruns the gates, and may continue to publication only after
+`ready_to_freeze`. A run with publication state instead enters its publication
+resume phase. The daily log and natural-language Telegram message now state the
+actual owner, current zero-publication truth, and bounded recovery action; they
+no longer claim that the worker cannot recover the run. The resumable fixture
+also creates real create-once media receipts, canonical JA/EN drafts, distinct
+measurable CTAs, a publication state, and all eight stable intents before
+proving the publication handoff. The complete Writer suite passes `662 passed`.
 
 Task 14 cumulative implementation update (`fe215fc`): promotion now publishes
 the content-addressed candidate into the existing daily `strategy_runtime`
