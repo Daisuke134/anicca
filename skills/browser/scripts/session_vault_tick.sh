@@ -13,10 +13,10 @@ ACCOUNTS="$HOME/.cloak/clip-accounts.json"
 log(){ echo "$(date '+%F %T') session_vault_tick: $*" >&2; }
 . "$HOME/.openclaw/skills/_shared/scripts/telegram-notify.sh" 2>/dev/null || true
 
-# ── daily-driver (:9222) — unchanged behavior ──
-log "daily-driver: dump"
-python3 "$V" dump || true
-log "daily-driver: keepalive"
+# ── daily-driver (:9222) ──
+# Recovery MUST run before dump. After a browser restart, the live cookie jar can be partial;
+# dumping that partial jar first destroys the known-good recovery source.
+log "daily-driver: recover-before-dump"
 # x.com added task #75 (2026-07-17): the article-writer loop's X session died silently for
 # hours because nothing warmed/watched it here -- only coconala+instagram were on this list.
 # x.com/home relies on the "Something went wrong" content-check fix in session_vault.py.
@@ -27,7 +27,7 @@ log "daily-driver: keepalive"
 # real session to warm or watch, and keepalive's "logged_out" check was reporting a permanent
 # false alarm (zenn.dev/dashboard needs a login that this loop never uses or needs). Read the
 # base skill's publish mechanism BEFORE adding a platform to this list.
-KA_OUT="$(python3 "$V" keepalive \
+KA_OUT="$(python3 "$V" recover \
   "https://coconala.com/mypage/dashboard" \
   "https://www.instagram.com/" \
   "https://x.com/home" || true)"
@@ -41,13 +41,30 @@ try:
     d = json.load(sys.stdin)
 except Exception:
     sys.exit(0)
-dead = [p['url'] for p in d.get('pages', []) if p.get('logged_out')]
+dead = [p['url'] for p in d.get('verification', {}).get('pages', []) if p.get('logged_out')]
 print(','.join(dead))
 " 2>/dev/null || true)"
+RECOVERED="$(printf '%s' "$KA_OUT" | python3 -c "
+import json,sys
+try:
+    d = json.load(sys.stdin)
+except Exception:
+    sys.exit(0)
+print(','.join(site for site,state in d.get('sites', {}).items() if state.get('recovered')))
+" 2>/dev/null || true)"
+if [ -n "$RECOVERED" ]; then
+  log "RECOVERED: $RECOVERED"
+  telegram_notify "session_vault self-heal recovered: $RECOVERED (daily-driver :9222). Coconala revenue loop can continue; unrelated site failures remain isolated." || true
+fi
 if [ -n "$DEAD" ]; then
   log "ALERT: session dead for: $DEAD"
   telegram_notify "session_vault keepalive: session DEAD for: $DEAD (daily-driver :9222). Will keep retrying every 30min; if a real pass needs it, it will self-heal or report failed per its own STEP 8." || true
 fi
+
+# Bank only after recovery and verification. SITE_HEALTH_REQUIRED also splices any still-dead
+# site's newest known-good cookies from backups, so one platform cannot poison the others.
+log "daily-driver: dump-after-recovery"
+python3 "$V" dump || true
 
 # password re-login self-heal for X specifically (task #75): X does not offer a passwordless
 # recovery path this loop can drive, but it DOES offer a normal username+password login that

@@ -12,6 +12,7 @@ Run: python3 -m pytest test_session_vault.py -v
 """
 import os
 import sys
+import json
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import session_vault as sv  # noqa: E402
@@ -74,3 +75,87 @@ def test_read_only_targets_are_hidden_and_backgrounded():
         "hidden": True,
         "background": True,
     }
+
+
+def test_degraded_coconala_dump_preserves_prior_authenticated_cookies(tmp_path, monkeypatch):
+    """A restarted browser must not replace Coconala auth with analytics-only cookies."""
+    vault = tmp_path / "auth-state.json"
+    vault.write_text(json.dumps({"cookies": [
+        _cookie("_coconala_session", ".coconala.com"),
+        _cookie("_coconala_session_private", ".coconala.com"),
+        _cookie("other", ".example.com"),
+    ]}))
+    monkeypatch.setattr(sv, "VAULT", str(vault))
+
+    guarded, degraded = sv._guard_degraded_site_cookies([
+        _cookie("_ga", ".coconala.com"),
+        _cookie("fresh", ".example.net"),
+    ])
+
+    assert degraded == ["coconala.com"]
+    assert {(c["name"], c["domain"]) for c in guarded} == {
+        ("_coconala_session", ".coconala.com"),
+        ("_coconala_session_private", ".coconala.com"),
+        ("fresh", ".example.net"),
+    }
+
+
+def test_degraded_instagram_dump_preserves_prior_sessionid(tmp_path, monkeypatch):
+    """A restarted browser must not bank an Instagram snapshot without sessionid."""
+    vault = tmp_path / "auth-state.json"
+    vault.write_text(json.dumps({"cookies": [
+        _cookie("sessionid", ".instagram.com"),
+        _cookie("csrftoken", ".instagram.com"),
+    ]}))
+    monkeypatch.setattr(sv, "VAULT", str(vault))
+
+    guarded, degraded = sv._guard_degraded_site_cookies([
+        _cookie("csrftoken", ".instagram.com"),
+    ])
+
+    assert degraded == ["instagram.com"]
+    assert {c["name"] for c in guarded} == {"sessionid", "csrftoken"}
+
+
+def test_latest_healthy_snapshot_skips_newer_degraded_files(tmp_path):
+    """Recovery selects the newest complete site snapshot, not merely the newest backup."""
+    healthy = tmp_path / "auth-state.100.json"
+    degraded = tmp_path / "auth-state.200.json"
+    healthy.write_text(json.dumps({"cookies": [
+        _cookie("_coconala_session", ".coconala.com"),
+        _cookie("_coconala_session_private", ".coconala.com"),
+    ]}))
+    degraded.write_text(json.dumps({"cookies": [_cookie("_ga", ".coconala.com")]}))
+    os.utime(healthy, (100, 100))
+    os.utime(degraded, (200, 200))
+
+    selected = sv._latest_healthy_snapshot("coconala.com", [str(healthy), str(degraded)])
+
+    assert selected == str(healthy)
+
+
+def test_recover_reports_coconala_success_independently_of_instagram_failure(monkeypatch):
+    """An unrelated Instagram failure must not hide a recovered Coconala revenue session."""
+    calls = []
+    keepalive_results = iter([
+        {"ok": False, "logged_out": True, "pages": [
+            {"url": "https://coconala.com/mypage/dashboard", "final": "https://coconala.com/login", "logged_out": True},
+            {"url": "https://www.instagram.com/", "final": "https://www.instagram.com/", "logged_out": True},
+        ]},
+        {"ok": False, "logged_out": True, "pages": [
+            {"url": "https://coconala.com/mypage/dashboard", "final": "https://coconala.com/mypage/dashboard", "logged_out": False},
+            {"url": "https://www.instagram.com/", "final": "https://www.instagram.com/", "logged_out": True},
+        ]},
+    ])
+    monkeypatch.setattr(sv, "keepalive", lambda urls: next(keepalive_results))
+    monkeypatch.setattr(sv, "restore_site", lambda site: calls.append(site) or {"ok": True, "site": site})
+
+    result = sv.recover([
+        "https://coconala.com/mypage/dashboard",
+        "https://www.instagram.com/",
+    ])
+
+    assert calls == ["coconala.com", "instagram.com"]
+    assert result["sites"]["coconala.com"]["recovered"] is True
+    assert result["sites"]["instagram.com"]["recovered"] is False
+    assert result["revenue_ready"] is True
