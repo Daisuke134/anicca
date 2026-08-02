@@ -331,6 +331,105 @@ def test_concurrent_acquire_loser_dispose_failure_is_journaled_and_never_returns
     assert json.loads(journal_path.read_text(encoding="utf-8")) == []
 
 
+@pytest.mark.parametrize(
+    ("reconciliation_save_failures", "expect_recovery"),
+    [(1, True), (2, False)],
+    ids=["transient", "persistent"],
+)
+def test_concurrent_loser_handles_reconciliation_save_failures_after_dispose_failure(
+    monkeypatch, tmp_path, reconciliation_save_failures, expect_recovery
+):
+    """A failed dispose needs a durable retry, or an explicit unrecoverable failure."""
+    leases_path = _set_lease_path(monkeypatch, tmp_path)
+    monkeypatch.setattr(lease.time, "time", lambda: 100.0)
+    loser_target_created = threading.Event()
+    let_loser_continue = threading.Event()
+    dispose_context_ids = []
+    loser_outcome = {}
+    original_save_reconciliation = lease._save_reconciliation_locked
+    reconciliation_save_attempts = 0
+
+    def fail_configured_reconciliation_saves(entries):
+        nonlocal reconciliation_save_attempts
+        reconciliation_save_attempts += 1
+        if reconciliation_save_attempts <= reconciliation_save_failures:
+            raise OSError("transient reconciliation journal write failure")
+        return original_save_reconciliation(entries)
+
+    async def fake_calls(pairs):
+        method, params = pairs[0]
+        is_loser = threading.current_thread().name == "loser-acquire"
+        if method == "Target.createBrowserContext":
+            return [{"browserContextId": "context-loser" if is_loser else "context-winner"}]
+        if method == "Target.createTarget":
+            if is_loser:
+                loser_target_created.set()
+                assert let_loser_continue.wait(timeout=5), "winner did not acquire in time"
+                return [{"targetId": "target-loser"}]
+            return [{"targetId": "target-winner"}]
+        if method == "Target.disposeBrowserContext":
+            context_id = params["browserContextId"]
+            dispose_context_ids.append(context_id)
+            if context_id == "context-loser" and dispose_context_ids.count(context_id) == 1:
+                raise RuntimeError("temporary CDP disconnect")
+            if context_id != "context-loser":
+                raise AssertionError("GC must not dispose the durable winner")
+            return [{}]
+        raise AssertionError(f"unexpected CDP method: {method}")
+
+    monkeypatch.setattr(lease, "_save_reconciliation_locked", fail_configured_reconciliation_saves)
+    monkeypatch.setattr(lease, "_calls", fake_calls)
+
+    def acquire_loser():
+        try:
+            loser_outcome["result"] = lease.acquire("gig", no_seed=True)
+        except BaseException as exc:  # surface an unexpected acquire failure in this test
+            loser_outcome["error"] = exc
+
+    loser = threading.Thread(target=acquire_loser, name="loser-acquire")
+    loser.start()
+    assert loser_target_created.wait(timeout=5), "loser did not reach its race window"
+
+    winner = lease.acquire("gig", no_seed=True)
+    assert winner["ok"] is True
+    assert winner["context_id"] == "context-winner"
+
+    let_loser_continue.set()
+    loser.join(timeout=5)
+    assert not loser.is_alive(), "loser acquire did not finish"
+    assert "error" not in loser_outcome
+    assert loser_outcome["result"]["ok"] is False
+    assert reconciliation_save_attempts == 2, "reconciliation retry must be bounded"
+
+    journal_path = Path(f"{leases_path}.reconcile.json")
+    if not expect_recovery:
+        assert loser_outcome["result"].get("reconciliation_pending") is False
+        assert "could not be durably reconciled" in loser_outcome["result"]["reason"]
+        assert not journal_path.exists()
+        assert dispose_context_ids == ["context-loser"]
+        assert _read_lease(leases_path)["context_id"] == "context-winner"
+        return
+
+    assert loser_outcome["result"].get("reconciliation_pending") is True
+    assert journal_path.exists(), "dispose failure must leave a durable reconciliation record"
+    assert json.loads(journal_path.read_text(encoding="utf-8")) == [
+        {
+            "task": "gig",
+            "context_id": "context-loser",
+            "target_id": "target-loser",
+        }
+    ]
+    assert _read_lease(leases_path)["context_id"] == "context-winner"
+
+    recovered = lease.gc(idle_min=45)
+
+    assert recovered["ok"] is True
+    assert recovered["reaped"] == ["gig"]
+    assert dispose_context_ids == ["context-loser", "context-loser"]
+    assert _read_lease(leases_path)["context_id"] == "context-winner"
+    assert json.loads(journal_path.read_text(encoding="utf-8")) == []
+
+
 def test_acquire_keeps_exact_durable_candidate_after_directory_fsync_error(
     monkeypatch, tmp_path
 ):

@@ -489,13 +489,15 @@ def _reconciliation_entry(task, candidate):
     return entry
 
 
-def _record_reconciliation_candidate(task, candidate):
-    """Durably remember an untracked context before retrying its disposal."""
+def _record_reconciliation_candidate(task, candidate, force=False):
+    """Durably remember an untracked context, optionally forcing a fresh fsync write."""
     entry = _reconciliation_entry(task, candidate)
     with _ledger_lock():
         entries = _read_reconciliation_locked()
-        if entry not in entries:
+        changed = entry not in entries
+        if changed:
             entries.append(entry)
+        if changed or force:
             _save_reconciliation_locked(entries)
     return entry
 
@@ -511,7 +513,7 @@ def _finalize_reconciliation_candidate(entry):
 
 
 def _rollback_untracked_candidate_while_locked(task, candidate):
-    """Record then dispose a failed candidate while its target operation is serialized."""
+    """Return True if gone, False if journaled, or None if durable recovery is unavailable."""
     try:
         if _candidate_is_durably_current(task, candidate):
             return True
@@ -521,7 +523,7 @@ def _rollback_untracked_candidate_while_locked(task, candidate):
         try:
             _record_reconciliation_candidate(task, candidate)
         except Exception:
-            pass
+            return None
         return False
 
     try:
@@ -535,6 +537,14 @@ def _rollback_untracked_candidate_while_locked(task, candidate):
         # GC will retry; an independent journal avoids an untracked context when
         # the original ledger save was the failing operation.
         if not _already_disposed(exc):
+            if entry is None:
+                # A failed write can occur after replacement but before the directory
+                # fsync.  Force exactly one new atomic/fsync write before claiming
+                # that GC can recover this still-live context.
+                try:
+                    _record_reconciliation_candidate(task, candidate, force=True)
+                except Exception:
+                    return None
             return False
     if entry is not None:
         try:
@@ -545,7 +555,7 @@ def _rollback_untracked_candidate_while_locked(task, candidate):
 
 
 def _rollback_untracked_candidate(task, candidate):
-    """Dispose or durably reconcile a failed acquire that never became current."""
+    """Return True if gone, False if journaled, or None if durable recovery is unavailable."""
     target_id = candidate.get("target_id")
     try:
         if target_id:
@@ -559,7 +569,7 @@ def _rollback_untracked_candidate(task, candidate):
         try:
             _record_reconciliation_candidate(task, candidate)
         except Exception:
-            pass
+            return None
         return False
 
 
@@ -637,11 +647,17 @@ def acquire(task, url="about:blank", no_seed=False):
         raise
 
     if discarded:
-        if not _rollback_untracked_candidate(task, discarded):
+        cleanup_state = _rollback_untracked_candidate(task, discarded)
+        if cleanup_state is not True:
             return {
                 "ok": False,
-                "reason": "discarded context cleanup failed",
+                "reason": (
+                    "discarded context cleanup failed; reconciliation pending"
+                    if cleanup_state is False
+                    else "discarded context cleanup failed; could not be durably reconciled"
+                ),
                 "task": task,
+                "reconciliation_pending": cleanup_state is False,
             }
     return result
 
