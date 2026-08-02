@@ -44,8 +44,10 @@ Life Managerは「検索した」「分析した」「失敗した」と報告�
 `O1B-01〜24`は実装・実測・証拠化・push済み。21日coverageの器に加え、実Luma Tokyoを終端まで読み、
 全candidateを21日へ投影し、好みで候補を捨てず、本文・主催者・参加者・場所・時間からgoalと
 serendipityを根拠付き評価するところまで完成した。実Calendarを読んだ
-2026-08-02〜2026-08-22の初回coverage snapshotは、後続のCalendar/event照合前なので21日すべて
-`open`である。これは「イベントがない」という意味ではない。
+2026-08-02〜2026-08-22の最新verified coverageは`open=18 / covered_existing=0 /
+covered_new=1 / unavailable=2`である。8月15日の実Luma登録は確認mailとGoogle Calendarを伴う
+`covered_new`、8月2日・3日は実Calendar blocker付き`unavailable`である。残り18日は未処理であり、
+「イベントがない」「完了した」という意味ではない。
 
 `O1C-00 Life Manager startup context正本化`は2026-08-02に実装・監査・pushまで完了した。
 現在の実装優先は、保持していたConnectorの再開位置`O1B-25`である。残作業は、途中へ別trackを混ぜず
@@ -54,7 +56,7 @@ serendipityを根拠付き評価するところまで完成した。実Calendar�
 ```text
 完了: O1B-20〜24 source handoff、候補継続、Calendar・移動時間・支出gate
 完了: O1C-00 Life Manager startup context正本化（旧Anicca product提出防止）
-いま: O1B-25 21日coverageのTelegram報告を同じ位置から再開
+いま: O1B-25/26 21日coverageを埋め、実登録・Calendar・Telegram報告を一つのloopとして完成
   → O1C-01〜27 Fundraising / acceleratorの探索・提出・返信・面談追跡
   → O2-01〜12 Job Hunterの統合・実応募・返信・面接追跡
   → O3A-01〜07 壊れたCFO runtime loopを復旧
@@ -1558,6 +1560,12 @@ O1B-26進捗25（最初のopen日が後続日を塞ぐ真因 / RED→GREEN）: �
 O1B-26進捗26（open日scanをLIVE配備）: 後続日scan修正をcommit `1ef5b2215`としてmainへpushし、image
 `445f8b1f97da`を10:17 JSTに配備した。次のdurable coverage jobは10:19:41 JST開始予定でqueuedを維持している。
 次runで8月4日をopenのまま保持しながら、8月5日以降の最初の実行可能候補を一件だけenqueueすることを確認する。
+
+O1B-26進捗27（後続日scan LIVE実行中）: 予定どおり10:19:42 JSTにcoverage job attempt 1が開始した。
+10:22:14 JST時点でworkerはrunning、error codeなし、15分lease内でLuma inventoryと後続open日を処理中である。
+完了receiptはまだ無いため、後続日のenqueue成功とは表示しない。最新確定coverageは引き続き
+`open=18 / covered_new=1 / unavailable=2`。次はこのattemptのreceiptを確認し、実応募job、Luma確認、Calendar、
+Telegramまで同じ順序で継続する。
 
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
