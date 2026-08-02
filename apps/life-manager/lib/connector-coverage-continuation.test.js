@@ -55,6 +55,16 @@ test("reconciliation and recovery take priority without ending the coverage loop
   assert.equal(recover.next_action, "recover_source");
 });
 
+test("a newly proven unavailable day advances to the next open day immediately", () => {
+  const result = planConnectorCoverageContinuation({
+    coverage: coverage([{ date: "2026-08-02", status: "unavailable", evidence_refs: [`evidence://calendar/${"a".repeat(64)}`] }]),
+    observedOutcomes: [{ observed_status: "calendar_unavailable", date: "2026-08-02" }],
+    now: "2026-08-02T01:00:00.000Z",
+  });
+  assert.equal(result.next_action, "refresh_inventory");
+  assert.equal(result.next_run_at, "2026-08-02T01:00:01.000Z");
+});
+
 test("only zero open dates completes the rolling loop", () => {
   const statuses = ["covered_existing", "covered_new", "unavailable"];
   const resolved = Array.from({ length: 21 }, (_, index) => ({

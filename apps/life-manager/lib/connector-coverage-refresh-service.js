@@ -47,6 +47,8 @@ function dependenciesContract(dependencies) {
     "proveUnavailableDay",
     "rebuildCoverage",
     "planOpenDate",
+    "readUnavailablePlanEvidence",
+    "rebindUnavailablePlan",
   ];
   if (
     !dependencies.receiptReader
@@ -142,7 +144,7 @@ function createConnectorCoverageRefreshService(dependencies = {}) {
           date: day.date,
         }));
       }
-      const coverage = dependencies.rebuildCoverage({
+      let coverage = dependencies.rebuildCoverage({
         tenantId,
         timeZone: working.timezone,
         now,
@@ -165,6 +167,22 @@ function createConnectorCoverageRefreshService(dependencies = {}) {
         unavailable(/^CONNECTOR_COVERAGE_APPLICATION_[A-Z_]+_FAILED$/.test(code)
           ? code
           : "CONNECTOR_COVERAGE_APPLICATION_PLAN_FAILED");
+      }
+      if (openDatePlan.status === "unavailable") {
+        const unavailable = dependencies.readUnavailablePlanEvidence(openDatePlan);
+        unavailableDays.push(unavailable);
+        coverage = dependencies.rebuildCoverage({
+          tenantId,
+          timeZone: working.timezone,
+          now,
+          registrations,
+          unavailableDays,
+        });
+        openDatePlan = dependencies.rebindUnavailablePlan(openDatePlan, coverage);
+        observedOutcomes.push(Object.freeze({
+          date: unavailable.date,
+          observed_status: "calendar_unavailable",
+        }));
       }
       return Object.freeze({
         coverage,

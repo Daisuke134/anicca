@@ -8,6 +8,7 @@ const { collectLumaInventory } = require("./luma-discovery.js");
 const { normalizeLumaEventDetail } = require("./luma-event-detail.js");
 const { buildLumaDateInventory } = require("./luma-date-inventory.js");
 const { inspectGoogleCalendarBusyInventory } = require("./google-calendar-busy-inventory.js");
+const { proveCalendarGateUnavailable } = require("./connector-coverage-assembler.js");
 const {
   calendarEligibleLumaCandidates,
   evaluateCalendarCandidateGate,
@@ -137,17 +138,24 @@ test("travel expansion and all-day events block candidates with exact opaque con
   assert.equal(travelConflict.candidates[0].eligible, false);
   assert.equal(travelConflict.candidates[0].conflict_event_refs.length, 1);
 
+  const allDayBusy = await busy([{
+    CalendarID: "primary", id: "all-day", status: "confirmed",
+    start: { date: "2026-08-05" }, end: { date: "2026-08-06" },
+  }]);
   const allDay = await evaluateCalendarCandidateGate({
     dateInventory: inventory,
-    busyInventory: await busy([{
-      CalendarID: "primary", id: "all-day", status: "confirmed",
-      start: { date: "2026-08-05" }, end: { date: "2026-08-06" },
-    }]),
+    busyInventory: allDayBusy,
     date: "2026-08-05", homeLocation: "Home",
     routeMinutes: async () => { throw new Error("must not route a blocked candidate"); },
   });
   assert.equal(allDay.candidates.every((row) => row.eligible === false), true);
   assert.equal(allDay.candidates.every((row) => row.conflict_event_refs.length === 1), true);
+  const unavailable = proveCalendarGateUnavailable({
+    dateInventory: inventory, busyInventory: allDayBusy,
+    calendarGate: allDay, date: "2026-08-05",
+  });
+  assert.equal(unavailable.date, "2026-08-05");
+  assert.equal(unavailable.evidence_refs.length, 1);
 });
 
 test("route failure requests recovery and fake inventories fail closed", async () => {

@@ -1465,6 +1465,16 @@ O1B-26進捗13（全候補skipの不可視性 / RED→GREEN）: 18回目の`exha
 `undefined`でRED、実装後GREEN。Connector 245/245、runtime adapters 125/125、失敗0件。次のLIVE refreshで
 `calendar_conflict / price_unknown / paid_disabled / cap`等のどのpolicyが0件を作ったかを確定して修正する。
 
+O1B-26進捗14（証明済みCalendar衝突日の無限再試行 / RED→GREEN）: commit `feb9663ea`、image
+`f1e6c8f947e4`を配備した次回LIVEで、2026-08-02は候補5件、応募可能0件、`calendar_conflict=5`と確定した。
+旧実装は全候補が予定・前後移動時間と衝突していても日付を`open`のまま残し、同じ5件を5分ごとに再評価していた。
+verified date inventory、busy inventory、Calendar gateが同一snapshot/dateで、候補が1件以上あり、全候補が不適格かつ
+各候補に実Google Calendar event refがある場合だけ、最大20件の実blocker refで`unavailable`証拠を作る。plannerの
+in-process証拠をcoverageへ反映し、planを新coverage snapshotへ再bindする。`calendar_unavailable`結果は5分待たず1秒後に
+次の空き日へ進む。候補なし、route不能、一部候補が空いている場合は`unavailable`にしない。focused 41/41、
+Connector 246/246、runtime adapters 125/125、失敗0件。次はcommit/push、LIVEで8月2日を証拠付き解決し、8月3日の
+応募候補へ自動遷移することを確認する。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 

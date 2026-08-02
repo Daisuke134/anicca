@@ -8,6 +8,7 @@ const { isVerifiedGoogleCalendarBusyInventory } = require("./google-calendar-bus
 const { isVerifiedConnectorProfile } = require("./connector-profile.js");
 
 const VERIFIED = new WeakSet();
+const UNAVAILABLE_EVIDENCE = new WeakMap();
 const ACTIVE = new Set(["queued", "running", "reconciling", "completed"]);
 const ALL_STATUSES = new Set([...ACTIVE, "dead_letter"]);
 const SKIP_REASON = /^[a-z][a-z0-9_]{0,99}$/;
@@ -39,12 +40,13 @@ function stableJson(value) {
   return JSON.stringify(value);
 }
 
-function result(core) {
+function result(core, unavailableEvidence = null) {
   const value = Object.freeze({
     open_date_plan_id: `connector-open-date-plan:${createHash("sha256").update(stableJson(core), "utf8").digest("hex")}`,
     ...core,
   });
   VERIFIED.add(value);
+  if (unavailableEvidence != null) UNAVAILABLE_EVIDENCE.set(value, unavailableEvidence);
   return value;
 }
 
@@ -78,7 +80,7 @@ function dependenciesContract(dependencies) {
   const names = [
     "rankDatePreferences", "evaluateDateGoals", "gateDateCalendar",
     "createSpendPolicy", "buildSpendSequence", "buildApplicationJob",
-    "readApplicationJob", "enqueueApplication",
+    "readApplicationJob", "enqueueApplication", "proveCalendarUnavailable",
   ];
   if (names.some((name) => typeof dependencies[name] !== "function")) invalid();
 }
@@ -144,6 +146,19 @@ function createConnectorOpenDateApplicationPlanner(dependencies = {}) {
       date: open.date,
       ...aggregate,
     };
+    if (
+      aggregate.candidate_count > 0
+      && aggregate.runnable_candidate_count === 0
+      && aggregate.skip_reason_counts.length === 1
+      && aggregate.skip_reason_counts[0].reason === "calendar_conflict"
+    ) {
+      const unavailableEvidence = await stage("CONNECTOR_COVERAGE_APPLICATION_CALENDAR_GATE_FAILED", () => (
+        dependencies.proveCalendarUnavailable({
+          dateInventory, busyInventory, calendarGate: gate, date: open.date,
+        })
+      ));
+      return result({ ...base, status: "unavailable", event_ref: null, job_ref: null }, unavailableEvidence);
+    }
     if (candidates.length === 0) return result({
       ...base, status: day.events.length === 0 ? "no_candidates" : "exhausted",
       event_ref: null, job_ref: null,
@@ -191,7 +206,28 @@ function isVerifiedConnectorOpenDatePlan(value) {
   return Boolean(value && typeof value === "object" && VERIFIED.has(value));
 }
 
+function unavailableEvidenceForConnectorOpenDatePlan(value) {
+  if (!isVerifiedConnectorOpenDatePlan(value) || value.status !== "unavailable") invalid();
+  const evidence = UNAVAILABLE_EVIDENCE.get(value);
+  if (!evidence) invalid();
+  return evidence;
+}
+
+function rebindUnavailableConnectorOpenDatePlan(value, coverage) {
+  if (
+    !isVerifiedConnectorOpenDatePlan(value)
+    || value.status !== "unavailable"
+    || !isVerifiedRollingEventCoverage(coverage)
+    || !coverage.days.some((day) => day.date === value.date && day.status === "unavailable")
+  ) invalid();
+  const evidence = unavailableEvidenceForConnectorOpenDatePlan(value);
+  const { open_date_plan_id: _ignored, ...core } = value;
+  return result({ ...core, coverage_snapshot_id: coverage.coverage_snapshot_id }, evidence);
+}
+
 module.exports = {
   createConnectorOpenDateApplicationPlanner,
   isVerifiedConnectorOpenDatePlan,
+  rebindUnavailableConnectorOpenDatePlan,
+  unavailableEvidenceForConnectorOpenDatePlan,
 };

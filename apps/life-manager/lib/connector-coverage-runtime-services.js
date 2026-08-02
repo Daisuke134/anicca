@@ -22,7 +22,11 @@ function productionFactories() {
   const { createRollingEventCoverageStore } = require("./rolling-event-coverage-store.js");
   const { createVerifiedOutboundReceiptReader } = require("./verified-outbound-receipt-reader.js");
   const { readConnectorProfile } = require("./connector-profile.js");
-  const { createConnectorOpenDateApplicationPlanner } = require("./connector-open-date-planner.js");
+  const {
+    createConnectorOpenDateApplicationPlanner,
+    rebindUnavailableConnectorOpenDatePlan,
+    unavailableEvidenceForConnectorOpenDatePlan,
+  } = require("./connector-open-date-planner.js");
   const { createOutboundApplicationJobReader } = require("./outbound-application-job-reader.js");
   const { createEventSpendPolicy } = require("./event-spend-policy.js");
   const { buildEventApplicationJob, enqueueEventApplication } = require("./outbound-event-job.js");
@@ -48,6 +52,8 @@ function productionFactories() {
     createSpendPolicy: createEventSpendPolicy,
     buildApplicationJob: buildEventApplicationJob,
     enqueueApplication: enqueueEventApplication,
+    readUnavailablePlanEvidence: unavailableEvidenceForConnectorOpenDatePlan,
+    rebindUnavailablePlan: rebindUnavailableConnectorOpenDatePlan,
   };
 }
 
@@ -93,6 +99,7 @@ function createConnectorCoverageRuntimeServices(env = {}, runtime = {}, override
       buildApplicationJob: factories.buildApplicationJob,
       readApplicationJob: (job) => jobReader.read(job),
       enqueueApplication: (input) => factories.enqueueApplication(input, { query: runtime.query }),
+      proveCalendarUnavailable: (input) => pack.proveCalendarGateUnavailable(input),
     });
     const refreshCoverage = factories.createRefreshService({
       receiptReader,
@@ -117,6 +124,8 @@ function createConnectorCoverageRuntimeServices(env = {}, runtime = {}, override
       proveUnavailableDay: (input) => pack.proveUnavailableDay(input),
       rebuildCoverage: (input) => pack.rebuildCoverage(input),
       planOpenDate,
+      readUnavailablePlanEvidence: factories.readUnavailablePlanEvidence,
+      rebindUnavailablePlan: factories.rebindUnavailablePlan,
       profile,
       apiKey,
     });
