@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "legacy_config_id": "yc-w26",
+  "program_id": "yc-fall-2026",
+  "program_name": "Y Combinator Fall 2026",
+  "official_url": "https://www.ycombinator.com/apply",
+  "application_url": "https://apply.ycombinator.com/home",
+  "verified_at": "2026-08-02T00:21:12.928Z",
+  "batch": {
+    "label": "Fall 2026",
+    "starts_month": "2026-10",
+    "ends_month": "2026-12",
+    "location": "San Francisco"
+  },
+  "deadline": {
+    "status": "late_applications_open",
+    "display": "July 27 at 8pm PT",
+    "on_time_at": "2026-07-28T03:00:00.000Z",
+    "timezone": "America/Los_Angeles",
+    "late_applications_open": true,
+    "compatibility_deadline_kind": "rolling",
+    "compatibility_next_deadline": null
+  },
+  "investment": {
+    "currency": "USD",
+    "total_amount": 500000,
+    "fixed_safe_amount": 125000,
+    "fixed_equity_percent": 7,
+    "mfn_safe_amount": 375000,
+    "mfn_uncapped": true,
+    "most_favored_nation": true
+  },
+  "source_receipts": [
+    {
+      "role": "apply",
+      "official_url": "https://www.ycombinator.com/apply",
+      "retrieval_url": "https://r.jina.ai/https://www.ycombinator.com/apply",
+      "observed_at": "2026-08-02T00:21:11.901Z",
+      "body_sha256": "7098a80db123403ba24e10ffca1dc6a95a7ce2244513d342966bb27c7f2a7a8c",
+      "body_length": 3556,
+      "link_count": 7,
+      "link_inventory_sha256": "059bb17c17ac31b2bc58d8ab9af2d12ec15564e5b482d55140e1afdbdb0502f2"
+    },
+    {
+      "role": "deal",
+      "official_url": "https://www.ycombinator.com/deal",
+      "retrieval_url": "https://r.jina.ai/https://www.ycombinator.com/deal",
+      "observed_at": "2026-08-02T00:21:12.791Z",
+      "body_sha256": "32ce2b3ded38a05aadd403a6490974412efc7e46a7d4f40402234c3fe452b498",
+      "body_length": 5019,
+      "link_count": 1,
+      "link_inventory_sha256": "300a360335d7ed6b793e336b3555eb79fbff206a29b7798223e70be0d3bf6c1c"
+    }
+  ],
+  "assessment_proof": {
+    "decision_owner": "agent",
+    "excerpt_sha256": {
+      "batch": "dab35011a6aa931e329f0752d1b2759fa727e1fcc6c51e6d9d61b284bdf25199",
+      "deadline": "8f32b70810be1ae2c54b9932c8b228fa8e99c97f3f0745dbc78c3a6f2b45785c",
+      "application": "4f998edf90fc005fd67c50054580f4d0ac0397f8796bbc22e4c7cb4255e090bf",
+      "investment": "60b9bc15591da9381a0330c114c3207bcaecf6d72f6948d5db8b19113d3cfa7a"
+    },
+    "selected_text_sha256": {
+      "batch": [
+        "2b86404a3d133d092dd909c067137dd4f4b9dcd14ae8d4c5b3544c2ca0ac5fcd",
+        "fdd791787b64d22386b9e4fe2fa037792bb86d9b2905f245626eda8e7450c4d4",
+        "8fb204ca460968479407fe3f09b85a7500b2f4a20ca644e5f7822f53161f331a",
+        "5aa34886f7f3741de8460690b636f4c8b7c2044df88e2e8adbb4f7e6f8534931"
+      ],
+      "deadline": [
+        "531a532a8ae53c587d06bb81d3f15ca3ac090925db0bd128e34b4d2611d5778d",
+        "2ae40d255f97dd9249469e948512bcd130dfe217ea1dc7faf1eff0851a4000ec"
+      ],
+      "application": [
+        "f734035df70ec93ca45ecc49dd2c34496d0b2fff71335495b87180a4be5058d9"
+      ],
+      "investment": [
+        "5449b8ac9aa675f9cd0764bcaacd0d6b0e0d8db56ae3db1a2788b47e2bc721f4",
+        "f8ff9f153fc0f4137a7a96c70919d2a96d9dc0ea8101114a971bc657f740e85f",
+        "9f753044ad98962e40225692a334009ac3280bb88d182a9e0b90212f3e79a629",
+        "0fbffe1bfec123dad14c5a73793ef882aaba53514f9abef3c7f1fa241d046d54",
+        "57afc57521bca9436fc70fcace2db90a602f6c79405905004eefc24dae1813bd",
+        "581e24ee1fab0d6d03d904e48fb47292d56d739ee2d769af5384860ff84cd2cf"
+      ]
+    },
+    "rationale_sha256": "18ec912d4b3c93810eb99e8bd0315a0c7245e9c263182d592e19e1f11bea694b"
+  },
+  "effects": {
+    "read_operations": 4,
+    "write_operations": 0,
+    "submit_operations": 0
+  },
+  "fact_receipt_digest": "562a89965860c28a52133bc32aaa43388d3cff5bbc417dd7ca2a74e31c7e9049"
+}
