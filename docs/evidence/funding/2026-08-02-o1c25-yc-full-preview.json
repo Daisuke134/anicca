@@ -1,0 +1,239 @@
+{
+  "schema_version": 1,
+  "objective": "O1C-25",
+  "generated_at": "2026-08-02T01:33:58.995Z",
+  "result": {
+    "preview_complete": true,
+    "submit_ready": false,
+    "next_effect": "blocked"
+  },
+  "direct_readback": {
+    "application": {
+      "origin": "https://apply.ycombinator.com",
+      "path": "/apps/0b61fe42-e383-490d-b60e-04f1ad7ec5df",
+      "state": "In review",
+      "profile_complete_visible": true,
+      "demo_absent_visible": true,
+      "heading_count": 2,
+      "read_only_text_sha256": "79a94f190c7687f1491c4c57e4f558b864849c4517a19db37ab738b07320de68"
+    },
+    "founder_profile": {
+      "origin": "https://apply.ycombinator.com",
+      "path": "/bio/721f696b-0566-4a16-bda7-a9c368b1eac1/edit",
+      "structurally_complete": true,
+      "section_count": 1,
+      "public_profile_count": 3,
+      "value_set_sha256": "720b7c0c15dc33278374df0bb4981425f766b9cb5de14eb01e40c87020837c9c"
+    },
+    "founder_video": {
+      "origin": "https://apply.ycombinator.com",
+      "path": "/apps/0b61fe42-e383-490d-b60e-04f1ad7ec5df/edit/video",
+      "video_count": 1,
+      "ready_state": 4,
+      "duration_seconds": 57.856667,
+      "width": 720,
+      "height": 1280,
+      "storage_origin": "https://yc-app-vids.s3.us-west-2.amazonaws.com",
+      "source_path_sha256": "d281c34415944367578f4d2d1b701b52572cb30add0601eb39a7cfb72d4ed756",
+      "local_source_sha256": "34881787eb93e240049f92ea72d471f3d457f00ddb4e228b1b8c1729fa0e5fe6"
+    },
+    "demo": {
+      "origin": "https://apply.ycombinator.com",
+      "path": "/apps/0b61fe42-e383-490d-b60e-04f1ad7ec5df/edit/demo",
+      "video_count": 0,
+      "file_input_count": 1,
+      "dedicated_source_artifact_present": false,
+      "observed_at": "2026-08-02T01:33:56.881Z"
+    },
+    "progress": {
+      "origin": "https://apply.ycombinator.com",
+      "path": "/apps/0b61fe42-e383-490d-b60e-04f1ad7ec5df/edit/progress",
+      "field_count": 5,
+      "value_set_sha256": "1b1a53ac6e31960e16dec94948fa846152f78de08d7189ab44b6fd7439837421",
+      "update_control_present": true,
+      "file_input_count": 1,
+      "observed_at": "2026-08-02T01:33:58.849Z"
+    }
+  },
+  "preview_receipt": {
+    "schema_version": 1,
+    "verified_at": "2026-08-02T01:33:58.995Z",
+    "application": {
+      "id": "0b61fe42-e383-490d-b60e-04f1ad7ec5df",
+      "batch": "Fall 2026",
+      "state": "In review",
+      "prior_application_submit_count": 1,
+      "origin": "https://apply.ycombinator.com",
+      "path": "/apps/0b61fe42-e383-490d-b60e-04f1ad7ec5df",
+      "observed_at": "2026-08-02T01:33:50.005Z"
+    },
+    "sources": [
+      {
+        "role": "readme_en",
+        "ref": "repo://README.md",
+        "observed_at": "2026-08-02T01:33:43.887Z",
+        "sha256": "a71d502739985497c88688e6957bef0c1ccf88a2861a8ff7cd2c21296740c3fb",
+        "bytes": 18052
+      },
+      {
+        "role": "readme_ja",
+        "ref": "repo://README.ja.md",
+        "observed_at": "2026-08-02T01:33:43.896Z",
+        "sha256": "58e9d555d1cdfefede5cd5cabbeb30cf253f3f8b0d71120619a9ba8802204125",
+        "bytes": 18852
+      },
+      {
+        "role": "agent_registry",
+        "ref": "repo://agents/registry.json",
+        "observed_at": "2026-08-02T01:33:43.896Z",
+        "sha256": "30784d1ac1b44a4602497c475e7f760c1bda91e24aa5c3d9082b7dead261366e",
+        "bytes": 16070
+      },
+      {
+        "role": "provider_manifest",
+        "ref": "repo://apps/life-manager/config/yc-application-provider.json",
+        "observed_at": "2026-08-02T01:33:43.897Z",
+        "sha256": "546f37064b9e25b5450a9d0fe2a8386b85f25d0f3807a3dcc891c3e3be351a13",
+        "bytes": 7610
+      },
+      {
+        "role": "answer_draft",
+        "ref": "workspace://funders/results/FT-YC/yc-answers-lifemanager-2026fall.json",
+        "observed_at": "2026-08-02T01:33:43.897Z",
+        "sha256": "417a6f0d713946459cad53e575be73bb6c52c6def43f85787525bd4916241e4b",
+        "bytes": 7090
+      },
+      {
+        "role": "application_kit",
+        "ref": "application-kit://KIT.md",
+        "observed_at": "2026-08-02T01:33:43.898Z",
+        "sha256": "2ed65ef43d0800420aaa58ad26afaecf8999787ef4c1ba7c151728497101c863",
+        "bytes": 14540
+      },
+      {
+        "role": "founder_video_source",
+        "ref": "application-kit://videos/Anicca_intro_EN.mp4",
+        "observed_at": "2026-08-02T01:33:43.913Z",
+        "sha256": "34881787eb93e240049f92ea72d471f3d457f00ddb4e228b1b8c1729fa0e5fe6",
+        "bytes": 22291622
+      }
+    ],
+    "scopes": [
+      {
+        "scope": "company_facts",
+        "status": "stale",
+        "observed_at": "2026-08-02T01:33:50.005Z",
+        "source_roles": ["readme_en", "readme_ja", "agent_registry", "answer_draft", "application_kit", "provider_manifest"],
+        "issue_codes": ["company_facts_stale", "provider_route_drift"],
+        "observation": {
+          "field_count": 20,
+          "value_set_digest": "79a94f190c7687f1491c4c57e4f558b864849c4517a19db37ab738b07320de68"
+        }
+      },
+      {
+        "scope": "founder_profile",
+        "status": "needs_review",
+        "observed_at": "2026-08-02T01:33:53.020Z",
+        "source_roles": ["application_kit"],
+        "issue_codes": ["founder_narratives_stale", "founder_source_conflict"],
+        "observation": {
+          "structurally_complete": true,
+          "section_count": 1,
+          "value_set_digest": "720b7c0c15dc33278374df0bb4981425f766b9cb5de14eb01e40c87020837c9c"
+        }
+      },
+      {
+        "scope": "founder_video",
+        "status": "present",
+        "observed_at": "2026-08-02T01:33:55.054Z",
+        "source_roles": ["founder_video_source"],
+        "issue_codes": [],
+        "observation": {
+          "remote": {
+            "ready_state": 4,
+            "duration_seconds": 57.856667,
+            "width": 720,
+            "height": 1280,
+            "storage_origin": "https://yc-app-vids.s3.us-west-2.amazonaws.com",
+            "source_path_sha256": "d281c34415944367578f4d2d1b701b52572cb30add0601eb39a7cfb72d4ed756"
+          },
+          "local": {
+            "duration_seconds": 57.835,
+            "bytes": 22291622,
+            "container": "mp4",
+            "video_codec": "h264",
+            "audio_codec": "aac",
+            "width": 720,
+            "height": 1280
+          }
+        }
+      },
+      {
+        "scope": "demo",
+        "status": "missing",
+        "observed_at": "2026-08-02T01:33:56.881Z",
+        "source_roles": [],
+        "issue_codes": ["demo_missing"],
+        "observation": {
+          "dedicated_source_role": null,
+          "remote": null
+        }
+      },
+      {
+        "scope": "progress",
+        "status": "stale",
+        "observed_at": "2026-08-02T01:33:58.849Z",
+        "source_roles": ["readme_en", "answer_draft", "provider_manifest"],
+        "issue_codes": ["progress_stale", "provider_route_drift"],
+        "observation": {
+          "field_count": 5,
+          "value_set_digest": "1b1a53ac6e31960e16dec94948fa846152f78de08d7189ab44b6fd7439837421",
+          "update_control_present": true
+        }
+      }
+    ],
+    "decision_owner": "agent",
+    "preview_complete": true,
+    "submit_ready": false,
+    "blocking_issue_codes": ["company_facts_stale", "provider_route_drift", "founder_narratives_stale", "founder_source_conflict", "demo_missing", "progress_stale"],
+    "effects": {
+      "read_only_navigations": 5,
+      "owned_page_closes": 5,
+      "form_field_writes": 0,
+      "option_selections": 0,
+      "file_attachments": 0,
+      "save_controls": 0,
+      "update_submissions": 0,
+      "application_submissions": 0,
+      "browser_closes": 0
+    },
+    "preview_receipt_digest": "3cfffeeefffd2d89023c93d047d4479a2946a711c57c5f3f1e8c54323ad1491a"
+  },
+  "privacy": {
+    "raw_answers_persisted": false,
+    "personal_contact_persisted": false,
+    "birth_date_persisted": false,
+    "authentication_material_persisted": false,
+    "signed_media_url_persisted": false
+  },
+  "claim_boundary": {
+    "yc_fields_changed": false,
+    "files_attached": false,
+    "save_or_update_clicked": false,
+    "application_resubmitted": false,
+    "confirmation_mail_checked": false,
+    "reply_tracking_performed": false
+  },
+  "verification": {
+    "focused_tests": {
+      "command": "node --test lib/yc-full-preview.test.js",
+      "passed": 8,
+      "failed": 0
+    },
+    "outbound_tests": {
+      "command": "npm run test:outbound",
+      "passed": 302,
+      "failed": 0
+    }
+  }
+}
