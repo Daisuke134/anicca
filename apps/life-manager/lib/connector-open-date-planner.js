@@ -100,13 +100,15 @@ function createConnectorOpenDateApplicationPlanner(dependencies = {}) {
       || dateInventory.window_start_date !== coverage.window_start_date
       || dateInventory.window_end_date !== coverage.window_end_date
     ) invalid();
-    const open = coverage.days.find((day) => day.status === "open");
-    if (!open) return result({
+    const openDays = coverage.days.filter((day) => day.status === "open");
+    if (openDays.length === 0) return result({
       coverage_snapshot_id: coverage.coverage_snapshot_id,
       inventory_snapshot_id: dateInventory.inventory_snapshot_id,
       date: null, status: "complete", event_ref: null, job_ref: null,
       candidate_count: 0, runnable_candidate_count: 0, skip_reason_counts: Object.freeze([]),
     });
+    let lastExhausted;
+    for (const open of openDays) {
     const day = dateInventory.days.find((candidate) => candidate.date === open.date);
     if (!day || day.inventory_status !== "complete") invalid();
     const ranking = await stage("CONNECTOR_COVERAGE_APPLICATION_RANKING_FAILED", () => (
@@ -159,10 +161,13 @@ function createConnectorOpenDateApplicationPlanner(dependencies = {}) {
       ));
       return result({ ...base, status: "unavailable", event_ref: null, job_ref: null }, unavailableEvidence);
     }
-    if (candidates.length === 0) return result({
+    if (candidates.length === 0) {
+      lastExhausted = {
       ...base, status: day.events.length === 0 ? "no_candidates" : "exhausted",
       event_ref: null, job_ref: null,
-    });
+      };
+      continue;
+    }
     for (const event of candidates) {
       const application = {
         tenantId: profile.tenant_id,
@@ -198,7 +203,9 @@ function createConnectorOpenDateApplicationPlanner(dependencies = {}) {
         job_ref: `runtime-job://${profile.tenant_id}/${job.job_id.replace(/^outbound-event:/, "")}`,
       });
     }
-    return result({ ...base, status: "exhausted", event_ref: null, job_ref: null });
+    lastExhausted = { ...base, status: "exhausted", event_ref: null, job_ref: null };
+    }
+    return result(lastExhausted);
   };
 }
 

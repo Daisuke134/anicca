@@ -1546,6 +1546,15 @@ dead letterとなり、全receiptがgeneric `CAPABILITY_EXECUTION_FAILED`だっ�
 RED→GREEN後、runtime-up 38/38、runtime adapters 125/125、失敗0件。次はcommit/push/deployし、次候補の応募receiptで
 ログイン、申込可否、外部effect不明のどれかを確定する。
 
+O1B-26進捗25（最初のopen日が後続日を塞ぐ真因 / RED→GREEN）: 安全code image配備後、次coverage runは
+`candidate_count=1 / runnable_candidate_count=1 / status=exhausted / open=18`だった。8月4日の唯一の候補jobがdead letterのため、
+旧plannerは8月4日をopenのまま5分ごとに再確認し、8月5日以降を一切処理しなかった。これは「gapを保持して再探索」と
+「21日window全体を前進」を両立できていない。plannerをopen日順のscanへ変更し、ある日が候補0件または全候補dead letterでも
+その日はopenのまま残して、同じrunで次のopen日へ進む。active/completed job、実enqueue、Calendar unavailableを見つけた
+時点で一件だけ返すため、同時応募数と副作用fenceは変えない。8月2日の2候補がdead letterなら8月3日の候補をenqueueする
+回帰testを修正前RED、実装後GREEN。outbound 249/249、runtime-up 38/38、runtime adapters 125/125、失敗0件。
+次はcommit/push/deployし、queued coverage runで8月4日を保持したまま後続日の応募jobが作られることをLIVE確認する。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
