@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import copy
+import hashlib
 import json
 import os
 import re
@@ -18,7 +19,8 @@ import capafy_portfolio as portfolio
 
 
 FIELDS = {
-    "schema_version", "kind", "portfolio_source_digest", "decided_at", "agent_id",
+    "schema_version", "kind", "portfolio_source_digest", "remote_source_digest",
+    "decided_at", "agent_id", "provider_name", "provider_model",
     "purchase_model", "price_usd", "billing_interval", "included_units", "metered_unit",
     "bounded_deliverable", "value_metric", "renewal_reason", "platform_fee_rate",
     "input_tokens_per_unit", "output_tokens_per_unit", "input_price_per_million_usd",
@@ -33,6 +35,8 @@ SUPPORTS = {
 MONEY = re.compile(r"^(?:0|[1-9][0-9]*)\.[0-9]{2}$")
 RATE = re.compile(r"^(?:0|1)\.[0-9]{4}$")
 MODELS = {"subscription", "usage", "one_time", "hybrid"}
+GOOGLE_PROVIDER = "publisher_google_official"
+GOOGLE_MODEL = "gemini-3.5-flash-lite"
 
 
 def _money(value: Any) -> Decimal | None:
@@ -60,7 +64,97 @@ def _quantize(value: Decimal) -> Decimal:
     return value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 
-def validate_decision(snapshot: dict, value: dict) -> list[str]:
+def remote_fact(remote: dict) -> dict:
+    latest = remote.get("latest_version") if isinstance(remote, dict) else None
+    if not isinstance(latest, dict):
+        return {}
+    credentials = latest.get("requiredCredentials")
+    if isinstance(credentials, str):
+        try:
+            credentials = json.loads(credentials)
+        except json.JSONDecodeError:
+            credentials = {}
+    if not isinstance(credentials, dict):
+        credentials = {}
+    url_proxies = credentials.get("url_proxy")
+    if not isinstance(url_proxies, list):
+        url_proxies = []
+    generic_credentials = credentials.get("generic")
+    if not isinstance(generic_credentials, list):
+        generic_credentials = []
+    billings = latest.get("billings")
+    if not isinstance(billings, list):
+        billings = []
+    providers = []
+    for item in url_proxies:
+        if not isinstance(item, dict):
+            continue
+        providers.append({
+            key: item.get(key)
+            for key in ("provider_name", "vendor_name", "model", "api_format")
+        })
+    providers.sort(key=lambda item: json.dumps(item, sort_keys=True, separators=(",", ":")))
+    return {
+        "agent_id": str(latest.get("agentId") or ""),
+        "product_type": latest.get("agentType"),
+        "status": latest.get("status"),
+        "billings": [
+            {
+                "billing_mode": item.get("billingMode"),
+                "cycle_type": item.get("cycleType"),
+                "cycle_price": item.get("cyclePrice"),
+                "one_time_fee": item.get("oneTimeFee"),
+                "included_units": item.get("cycleMaxMessageCount"),
+                "currency": item.get("currency"),
+            }
+            for item in billings
+            if isinstance(item, dict)
+        ],
+        "providers": providers,
+        "generic_credential_count": len([
+            item for item in generic_credentials if isinstance(item, dict)
+        ]),
+    }
+
+
+def remote_source_digest(remote: dict) -> str:
+    payload = json.dumps(
+        remote_fact(remote), ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    ).encode()
+    return "sha256:" + hashlib.sha256(payload).hexdigest()
+
+
+def _configured_billing_matches(fact: dict, value: dict) -> bool:
+    price = _money(value.get("price_usd"))
+    units = value.get("included_units")
+    if price is None or not _positive_int(units):
+        return False
+    for billing in fact.get("billings", []):
+        if value.get("purchase_model") == "subscription":
+            remote_price = billing.get("cycle_price")
+            try:
+                same_price = Decimal(str(remote_price)) == price
+            except InvalidOperation:
+                same_price = False
+            if (
+                billing.get("billing_mode") == "subscription"
+                and billing.get("cycle_type") == value.get("billing_interval")
+                and billing.get("included_units") == units
+                and same_price
+            ):
+                return True
+        elif value.get("purchase_model") == "one_time":
+            remote_price = billing.get("one_time_fee")
+            try:
+                same_price = Decimal(str(remote_price)) == price
+            except InvalidOperation:
+                same_price = False
+            if billing.get("billing_mode") == "one_time" and units == 1 and same_price:
+                return True
+    return False
+
+
+def validate_decision(snapshot: dict, value: dict, remote: dict) -> list[str]:
     errors: list[str] = []
     if not isinstance(value, dict) or set(value) != FIELDS:
         return ["decision has unsupported or missing fields"]
@@ -68,6 +162,31 @@ def validate_decision(snapshot: dict, value: dict) -> list[str]:
         errors.append("decision identity is invalid")
     if value.get("portfolio_source_digest") != portfolio.snapshot_digest(snapshot):
         errors.append("portfolio source digest does not match")
+    fact = remote_fact(remote)
+    if value.get("remote_source_digest") != remote_source_digest(remote):
+        errors.append("remote source digest does not match")
+    if fact.get("agent_id") != value.get("agent_id"):
+        errors.append("remote agent_id does not match")
+    if fact.get("product_type") != "run_online" or fact.get("status") != 4:
+        errors.append("remote product is not an online hosted Agent")
+    providers = fact.get("providers", [])
+    if len(providers) != 1:
+        errors.append("remote product must expose exactly one hosted provider")
+        provider = {}
+    else:
+        provider = providers[0]
+    if provider.get("provider_name") != value.get("provider_name"):
+        errors.append("declared provider name does not match remote provider")
+    if provider.get("model") != value.get("provider_model"):
+        errors.append("declared provider model does not match remote provider model")
+    if provider.get("vendor_name") == "OpenRouter" or provider.get("provider_name") != GOOGLE_PROVIDER:
+        errors.append("OpenRouter or unsupported hosted provider must be migrated before packaging")
+    if provider.get("model") != GOOGLE_MODEL or provider.get("api_format") != "google-generative-ai":
+        errors.append("remote provider model is unsupported for Google pricing")
+    if fact.get("generic_credential_count") != 0:
+        errors.append("remote product has ambiguous generic credentials")
+    if not _configured_billing_matches(fact, value):
+        errors.append("decision does not match any configured billing package")
     if not portfolio._utc(value.get("decided_at")):
         errors.append("decided_at is invalid")
 
@@ -110,6 +229,8 @@ def validate_decision(snapshot: dict, value: dict) -> list[str]:
         errors.append("price_usd must be a positive two-decimal string")
     if input_rate is None or output_rate is None:
         errors.append("model prices must be non-negative two-decimal strings")
+    elif input_rate != Decimal("0.30") or output_rate != Decimal("2.50"):
+        errors.append("model prices do not match the supported Google provider")
     if fee_rate is None:
         errors.append("platform_fee_rate must be 0.0000 through 1.0000")
     elif fee_rate != Decimal("0.2000"):
@@ -190,8 +311,8 @@ def validate_decision(snapshot: dict, value: dict) -> list[str]:
     return errors
 
 
-def apply_decision(snapshot: dict, value: dict) -> dict:
-    errors = validate_decision(snapshot, value)
+def apply_decision(snapshot: dict, value: dict, remote: dict) -> dict:
+    errors = validate_decision(snapshot, value, remote)
     if errors:
         raise ValueError("; ".join(errors))
     result = copy.deepcopy(snapshot)
@@ -238,12 +359,14 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--portfolio", type=Path, required=True)
     parser.add_argument("--decision", type=Path, required=True)
+    parser.add_argument("--remote-json", type=Path, required=True)
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
     try:
         snapshot = json.loads(args.portfolio.read_text(encoding="utf-8"))
         value = json.loads(args.decision.read_text(encoding="utf-8"))
-        result = apply_decision(snapshot, value)
+        remote = json.loads(args.remote_json.read_text(encoding="utf-8"))
+        result = apply_decision(snapshot, value, remote)
         _atomic_write(args.output or args.portfolio, result)
         print(json.dumps({"valid": True, "agent_id": value["agent_id"]}))
         return 0

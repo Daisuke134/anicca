@@ -7,31 +7,12 @@ import argparse
 import json
 from pathlib import Path
 
+import capafy_packaging_decision as packaging
 import capafy_portfolio as portfolio
 
 
 def _remote_fact(remote: dict) -> dict:
-    latest = remote.get("latest_version") if isinstance(remote, dict) else None
-    if not isinstance(latest, dict):
-        return {}
-    return {
-        "agent_id": str(latest.get("agentId") or ""),
-        "product_type": latest.get("agentType"),
-        "title": latest.get("title"),
-        "short_description": latest.get("shortDescription"),
-        "billings": [
-            {
-                "billing_mode": item.get("billingMode"),
-                "cycle_type": item.get("cycleType"),
-                "cycle_price": item.get("cyclePrice"),
-                "one_time_fee": item.get("oneTimeFee"),
-                "included_units": item.get("cycleMaxMessageCount"),
-                "currency": item.get("currency"),
-            }
-            for item in latest.get("billings", [])
-            if isinstance(item, dict)
-        ],
-    }
+    return packaging.remote_fact(remote)
 
 
 def build_prompt(snapshot: dict, agent_id: str, remote: dict) -> str:
@@ -51,9 +32,14 @@ def build_prompt(snapshot: dict, agent_id: str, remote: dict) -> str:
     }
     product["remote_fact"] = _remote_fact(remote)
     digest = portfolio.snapshot_digest(snapshot)
+    remote_digest = packaging.remote_source_digest(remote)
     return f"""Make one evidence-bound packaging decision for exactly the supplied Capafy product.
 Do not change, publish, market, buy, or activate an experiment. Return only the requested JSON.
 Bind it to portfolio_source_digest {digest} and use the actual UTC time for decided_at.
+Bind it to remote_source_digest {remote_digest}. Copy the sole remote provider_name and provider_model
+exactly. If the remote product is not online, has OpenRouter, has generic credentials, or is not the
+supported Google Gemini 3.5 Flash-Lite provider, do not invent economics: the deterministic gate will
+reject it so provider migration can happen first.
 
 The model, value metric, renewal reason, and conservative compute assumption are your commercial
 judgment. Deterministic code will verify eligibility, evidence coverage, exact decimal arithmetic,

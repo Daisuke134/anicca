@@ -1,4 +1,5 @@
 import copy
+import json
 import sys
 from pathlib import Path
 
@@ -60,14 +61,53 @@ def snapshot() -> dict:
     }
 
 
+def remote(provider: str = "google") -> dict:
+    if provider == "google":
+        credential = {
+            "provider_name": "publisher_google_official",
+            "vendor_name": "Google Gemini",
+            "model": "gemini-3.5-flash-lite",
+            "api_format": "google-generative-ai",
+        }
+        generic = []
+    else:
+        credential = {
+            "provider_name": "publisher_openai_official",
+            "vendor_name": "OpenRouter",
+            "model": "anthropic/claude-sonnet-4.6",
+            "api_format": "openai-responses",
+        }
+        generic = [{"field": "baseUrl"}]
+    return {
+        "latest_version": {
+            "agentId": "5051239796",
+            "agentType": "run_online",
+            "status": 4,
+            "title": "Cold Email Writer",
+            "billings": [{
+                "billingMode": "subscription",
+                "cycleType": "month",
+                "cyclePrice": 5.99,
+                "cycleMaxMessageCount": 60,
+                "currency": "usd",
+            }],
+            "requiredCredentials": json.dumps({"url_proxy": [credential], "generic": generic}),
+        }
+    }
+
+
 def decision() -> dict:
     source = snapshot()
+    remote_value = remote()
     return {
         "schema_version": 1,
         "kind": "capafy_packaging_decision",
         "portfolio_source_digest": capafy_portfolio.snapshot_digest(source),
+        "remote_source_digest": packaging.remote_source_digest(remote_value),
         "decided_at": "2026-08-02T02:00:00Z",
         "agent_id": "5051239796",
+        "provider_name": "publisher_google_official",
+        "provider_model": "gemini-3.5-flash-lite",
         "purchase_model": "subscription",
         "price_usd": "5.99",
         "billing_interval": "month",
@@ -115,7 +155,7 @@ def decision() -> dict:
 
 def test_apply_records_packaging_without_activating_an_experiment() -> None:
     source = snapshot()
-    result = packaging.apply_decision(source, decision())
+    result = packaging.apply_decision(source, decision(), remote())
 
     chosen = result["products"][0]
     assert chosen["purchase_model"] == "subscription"
@@ -134,7 +174,7 @@ def test_exact_package_economics_use_unrounded_token_cost() -> None:
     value["cost_usd"] = "0.60"
     value["contribution_usd"] = "4.19"
 
-    errors = packaging.validate_decision(snapshot(), value)
+    errors = packaging.validate_decision(snapshot(), value, remote())
 
     assert any("cost_usd does not match" in error for error in errors)
 
@@ -145,7 +185,42 @@ def test_official_platform_fee_must_be_exactly_twenty_percent() -> None:
     value["platform_fee_usd"] = "1.22"
     value["contribution_usd"] = "3.99"
 
-    assert any("official 0.2000" in error for error in packaging.validate_decision(snapshot(), value))
+    assert any("official 0.2000" in error for error in packaging.validate_decision(snapshot(), value, remote()))
+
+
+def test_remote_provider_and_configured_package_are_authoritative() -> None:
+    assert any(
+        "OpenRouter" in error
+        for error in packaging.validate_decision(snapshot(), decision(), remote("openrouter"))
+    )
+
+    value = decision()
+    value["included_units"] = 30
+    assert any(
+        "configured billing" in error
+        for error in packaging.validate_decision(snapshot(), value, remote())
+    )
+
+
+def test_remote_digest_and_declared_provider_must_match_fresh_readback() -> None:
+    value = decision()
+    value["remote_source_digest"] = "sha256:" + "d" * 64
+    assert any("remote source digest" in error for error in packaging.validate_decision(snapshot(), value, remote()))
+
+    value = decision()
+    value["provider_model"] = "different-model"
+    assert any("provider model" in error for error in packaging.validate_decision(snapshot(), value, remote()))
+
+
+def test_malformed_remote_credentials_fail_closed_without_crashing() -> None:
+    malformed = remote()
+    malformed["latest_version"]["requiredCredentials"] = "not-json"
+    malformed["latest_version"]["billings"] = None
+
+    errors = packaging.validate_decision(snapshot(), decision(), malformed)
+
+    assert any("hosted provider" in error for error in errors)
+    assert any("configured billing" in error for error in errors)
 
 
 @pytest.mark.parametrize("field", ["price_usd", "included_units", "purchase_model", "value_metric", "renewal_reason", "platform_fee_rate", "model_pricing"])
@@ -155,41 +230,41 @@ def test_every_commercial_assertion_requires_field_specific_evidence(field: str)
         if field in item["supports"]:
             item["supports"].remove(field)
 
-    assert any(field in error and "evidence" in error for error in packaging.validate_decision(snapshot(), value))
+    assert any(field in error and "evidence" in error for error in packaging.validate_decision(snapshot(), value, remote()))
 
 
 def test_decision_rejects_stale_ineligible_or_already_decided_products() -> None:
     stale = decision()
     stale["portfolio_source_digest"] = "sha256:" + "c" * 64
-    assert any("digest" in error for error in packaging.validate_decision(snapshot(), stale))
+    assert any("digest" in error for error in packaging.validate_decision(snapshot(), stale, remote()))
 
     ineligible = snapshot()
     ineligible["products"][0]["decision"] = "pause"
     candidate = decision()
     candidate["portfolio_source_digest"] = capafy_portfolio.snapshot_digest(ineligible)
-    assert any("eligible" in error for error in packaging.validate_decision(ineligible, candidate))
+    assert any("eligible" in error for error in packaging.validate_decision(ineligible, candidate, remote()))
 
     decided = snapshot()
     decided["products"][0]["purchase_model"] = "subscription"
     candidate = decision()
     candidate["portfolio_source_digest"] = capafy_portfolio.snapshot_digest(decided)
-    assert any("undecided" in error for error in packaging.validate_decision(decided, candidate))
+    assert any("undecided" in error for error in packaging.validate_decision(decided, candidate, remote()))
 
 
 def test_resolved_unknowns_must_be_an_exact_subset_of_the_selected_product() -> None:
     value = decision()
     value["resolved_unknowns"] = ["Not present"]
 
-    assert any("resolved_unknowns" in error for error in packaging.validate_decision(snapshot(), value))
+    assert any("resolved_unknowns" in error for error in packaging.validate_decision(snapshot(), value, remote()))
 
 
 def test_apply_rejects_a_second_packaging_write() -> None:
-    first = packaging.apply_decision(snapshot(), decision())
+    first = packaging.apply_decision(snapshot(), decision(), remote())
     retry = copy.deepcopy(decision())
     retry["portfolio_source_digest"] = capafy_portfolio.snapshot_digest(first)
 
     with pytest.raises(ValueError, match="undecided"):
-        packaging.apply_decision(first, retry)
+        packaging.apply_decision(first, retry, remote())
 
 
 def test_prompt_scopes_one_product_and_sanitizes_remote_commercial_facts() -> None:
