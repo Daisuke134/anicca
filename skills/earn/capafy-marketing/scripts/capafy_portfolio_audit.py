@@ -10,7 +10,7 @@ import os
 import sys
 import tempfile
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 import capafy_portfolio as portfolio
 
@@ -69,7 +69,12 @@ def _validate_evidence(prefix: str, evidence: Any) -> tuple[list[str], set[str]]
     return errors, supported
 
 
-def validate_audit(snapshot: dict, audit: dict) -> list[str]:
+def validate_audit(
+    snapshot: dict,
+    audit: dict,
+    *,
+    expected_ids: Optional[list[str]] = None,
+) -> list[str]:
     errors: list[str] = []
     if not isinstance(audit, dict):
         return ["audit must be an object"]
@@ -82,7 +87,8 @@ def validate_audit(snapshot: dict, audit: dict) -> list[str]:
     if not portfolio._utc(audit.get("audited_at")):
         errors.append("audited_at is invalid")
     products = audit.get("products")
-    expected_ids = [product["agent_id"] for product in snapshot.get("products", [])]
+    if expected_ids is None:
+        expected_ids = [product["agent_id"] for product in snapshot.get("products", [])]
     if not isinstance(products, list):
         return errors + ["products must be a list"]
     received_ids = [item.get("agent_id") for item in products if isinstance(item, dict)]
@@ -138,6 +144,47 @@ def apply_audit(snapshot: dict, audit: dict) -> dict:
     return result
 
 
+def validate_residual_audit(snapshot: dict, audit: dict) -> list[str]:
+    """Validate an audit constrained to the snapshot's exact unaudited set."""
+    if not isinstance(audit, dict):
+        return ["audit must be an object"]
+    products = audit.get("products")
+    if not isinstance(products, list):
+        return ["products must be a list"]
+    expected_ids = {
+        product["agent_id"]
+        for product in snapshot.get("products", [])
+        if product.get("decision") == "unaudited"
+    }
+    received_ids = [
+        item.get("agent_id")
+        for item in products
+        if isinstance(item, dict)
+    ]
+    if len(received_ids) != len(set(received_ids)) or set(received_ids) != expected_ids:
+        return ["residual audit must contain the exact unaudited agent_id set"]
+    return validate_audit(snapshot, audit, expected_ids=sorted(expected_ids))
+
+
+def apply_residual_audit(snapshot: dict, audit: dict) -> dict:
+    errors = validate_residual_audit(snapshot, audit)
+    if errors:
+        raise ValueError("; ".join(errors))
+    by_id = {item["agent_id"]: item for item in audit["products"]}
+    result = copy.deepcopy(snapshot)
+    result["observed_at"] = audit["audited_at"]
+    for product in result["products"]:
+        item = by_id.get(product["agent_id"])
+        if item is None:
+            continue
+        for field in AUDIT_PRODUCT_FIELDS - {"agent_id"}:
+            product[field] = copy.deepcopy(item[field])
+    validation = portfolio.validate_snapshot(result)
+    if validation:
+        raise ValueError("applied portfolio is invalid: " + "; ".join(validation))
+    return result
+
+
 def _atomic_write(path: Path, value: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     descriptor, temporary_name = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
@@ -160,11 +207,16 @@ def _main() -> int:
     parser.add_argument("--portfolio", type=Path, required=True)
     parser.add_argument("--audit", type=Path, required=True)
     parser.add_argument("--output", type=Path)
+    parser.add_argument("--residual", action="store_true")
     args = parser.parse_args()
     try:
         snapshot = json.loads(args.portfolio.read_text(encoding="utf-8"))
         value = json.loads(args.audit.read_text(encoding="utf-8"))
-        result = apply_audit(snapshot, value)
+        result = (
+            apply_residual_audit(snapshot, value)
+            if args.residual
+            else apply_audit(snapshot, value)
+        )
         destination = args.output or args.portfolio
         _atomic_write(destination, result)
         print(json.dumps({"valid": True, "product_count": len(result["products"])}))

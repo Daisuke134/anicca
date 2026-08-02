@@ -108,6 +108,80 @@ def test_source_digest_must_match_exact_portfolio() -> None:
         audit.apply_audit(snapshot, value)
 
 
+def residual_snapshot() -> dict:
+    original = base_snapshot()
+    governed = audit.apply_audit(original, complete_audit(original))
+    agents = inventory_agents() + [
+        {
+            "agentId": "5648342153",
+            "name": "Amazon Listing Images — 7-Slot Kit",
+            "desc": "Create a bounded buyer-run image brief.",
+            "agentType": "download",
+            "agentStatus": "under_review",
+            "updatedAt": 1785631800000,
+            "sales": None,
+        }
+    ]
+    return portfolio.refresh_snapshot(
+        governed, agents, company_projection(), "2026-08-02T12:45:00Z"
+    )
+
+
+def residual_audit(snapshot: dict) -> dict:
+    return {
+        "schema_version": 1,
+        "kind": "capafy_portfolio_audit",
+        "portfolio_source_digest": portfolio.snapshot_digest(snapshot),
+        "audited_at": "2026-08-02T13:00:00Z",
+        "products": [
+            audit_product(product)
+            for product in snapshot["products"]
+            if product["decision"] == "unaudited"
+        ],
+    }
+
+
+def test_residual_audit_updates_only_exact_unaudited_set() -> None:
+    snapshot = residual_snapshot()
+    before = copy.deepcopy(snapshot)
+
+    result = audit.apply_residual_audit(snapshot, residual_audit(snapshot))
+
+    assert audit.validate_residual_audit(before, residual_audit(before)) == []
+    old_by_id = {product["agent_id"]: product for product in before["products"]}
+    new_by_id = {product["agent_id"]: product for product in result["products"]}
+    assert new_by_id["5648342153"]["decision"] == "pause"
+    for agent_id, old in old_by_id.items():
+        if agent_id != "5648342153":
+            assert new_by_id[agent_id] == old
+
+
+def test_residual_audit_rejects_missing_or_already_governed_ids() -> None:
+    snapshot = residual_snapshot()
+    missing = residual_audit(snapshot)
+    missing["products"] = []
+    governed = residual_audit(snapshot)
+    governed["products"] = [audit_product(snapshot["products"][0])]
+
+    assert any("exact unaudited" in error for error in audit.validate_residual_audit(snapshot, missing))
+    assert any("exact unaudited" in error for error in audit.validate_residual_audit(snapshot, governed))
+
+
+def test_residual_audit_does_not_revalidate_preserved_legacy_evidence() -> None:
+    snapshot = residual_snapshot()
+    governed = next(product for product in snapshot["products"] if product["decision"] != "unaudited")
+    governed["evidence"] = [
+        {
+            "url": f"https://capafy.ai/agent/{governed['agent_id']}",
+            "observed_at": "2026-08-02T12:50:00Z",
+            "claim": "Terminal cleanup evidence intentionally has no audit supports field.",
+            "confidence": "high",
+        }
+    ]
+
+    assert audit.validate_residual_audit(snapshot, residual_audit(snapshot)) == []
+
+
 def test_prompt_binds_all_products_and_forbids_uncited_business_defaults() -> None:
     snapshot = base_snapshot()
 
@@ -119,3 +193,39 @@ def test_prompt_binds_all_products_and_forbids_uncited_business_defaults() -> No
     assert "exactly 31" in prompt
     assert "supports" in prompt
     assert "unknowns" in prompt
+
+
+def test_residual_prompt_binds_only_exact_unaudited_products() -> None:
+    snapshot = residual_snapshot()
+
+    prompt = audit_prompt.build_residual_prompt(snapshot)
+
+    assert portfolio.snapshot_digest(snapshot) in prompt
+    assert "exactly 1" in prompt
+    assert "5648342153" in prompt
+    assert snapshot["products"][0]["agent_id"] not in prompt
+
+
+def test_residual_prompt_includes_only_sanitized_remote_commercial_facts() -> None:
+    snapshot = residual_snapshot()
+    remote = {
+        "latest_version": {
+            "agentId": "5648342153",
+            "agentVersionId": "version-1",
+            "agentType": "download",
+            "status": 1,
+            "auditStatus": 2,
+            "isConfirmedSkills": 1,
+            "title": "Amazon Listing Images — 7-Slot Kit",
+            "shortDescription": "A bounded local seven-slot image-gallery kit.",
+            "detailedDescription": "Buyer supplies local image-generation access.",
+            "billings": [{"billingMode": "download", "oneTimeFee": 49.0, "currency": "usd"}],
+            "requiredCredentials": "must-not-enter-prompt",
+        }
+    }
+
+    prompt = audit_prompt.build_residual_prompt(snapshot, {"5648342153": remote})
+
+    assert '"one_time_fee":49.0' in prompt
+    assert '"is_confirmed_skills":1' in prompt
+    assert "must-not-enter-prompt" not in prompt
