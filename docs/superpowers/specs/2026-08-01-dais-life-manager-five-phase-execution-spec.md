@@ -1510,6 +1510,12 @@ Calendar衝突した場合に、候補ごとに一件の実blockerで十分な�
 20件を超える場合は引き続きfail closedする。outbound 248/248、runtime adapters 125/125、失敗0件。次はattempt 7の
 分離済みLIVE codeを確定し、この修正をcommit/push/deployして8月3日を解決、直後に次のopen日へ進める。
 
+O1B-26進捗20（最小blocker証拠をLIVE配備）: 最小被覆修正と進捗19をcommit `1e77265b1`としてmainへpushし、
+image `5eaa4ad8fd11`を10:00 JSTに配備した。配備で中断された副作用なしのattempt 7だけを`WORKER_REPLACED`として
+正規failure関数で回収し、新workerがattempt 8を開始した。現在は8月3日の再検証中であり、応募、日付解決、次日遷移の
+いずれも完了前なのでdoneにしない。次はattempt 8のreceiptと最新coverageを実測し、成功なら次のopen日を継続、失敗なら
+分離済みcodeの一点だけをRED→GREENで修復する。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
