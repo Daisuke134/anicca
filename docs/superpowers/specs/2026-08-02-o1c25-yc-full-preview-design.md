@@ -96,7 +96,7 @@ It does not contain raw YC answers, raw draft answers, personal contact data, au
 - Unknown keys, invalid digest/byte count, non-canonical timestamp, stale observation, or chronology inversion fails closed.
 - A claimed present founder video without valid remote readiness/duration/dimensions and local artifact metadata fails closed.
 - A claimed present demo without both remote observation and a dedicated source artifact fails closed.
-- `blocking_issue_codes` must be an agent-selected subset of observed issues; any selected blocker with `submit_ready: true`, or any non-zero mutation effect, fails closed.
+- `blocking_issue_codes` is an agent-selected subset of observed issues, but deterministic safety policy requires observed company-facts staleness, provider-route drift, founder-source conflict, missing demo, and progress staleness to remain blockers. Any required/selected blocker with `submit_ready: true`, or any non-zero mutation effect, fails closed. The agent owns whether those observed conditions apply; code owns the post-judgment gate.
 - Each scope accepts only its exact required source-role set; substituting another known source fails closed.
 - The historical submit count is derived from the content-bound O1C-07 receipt, not a caller assertion.
 - Any attempt to claim a second application submit fails closed independently of readiness.

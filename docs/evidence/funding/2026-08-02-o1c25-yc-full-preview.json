@@ -271,12 +271,12 @@
   "verification": {
     "focused_tests": {
       "command": "node --test lib/yc-full-preview.test.js",
-      "passed": 12,
+      "passed": 13,
       "failed": 0
     },
     "outbound_tests": {
       "command": "npm run test:outbound",
-      "passed": 306,
+      "passed": 307,
       "failed": 0
     }
   }

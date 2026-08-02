@@ -41,6 +41,13 @@ const EFFECT_KEYS = Object.freeze([
   "browser_closes",
 ]);
 const MUTATION_EFFECTS = Object.freeze(EFFECT_KEYS.slice(2));
+const MANDATORY_BLOCKING_ISSUES = Object.freeze(new Set([
+  "company_facts_stale",
+  "provider_route_drift",
+  "founder_source_conflict",
+  "demo_missing",
+  "progress_stale",
+]));
 
 function fail(reason) {
   throw new Error(`YC full preview ${reason} invalid`);
@@ -303,7 +310,10 @@ function parseAssessment(value, scopes) {
   if (value.decision_owner !== "agent" || value.preview_complete !== true || typeof value.submit_ready !== "boolean") fail("assessment");
   const blocking = issueCodes(value.blocking_issue_codes, "blocking issues");
   const observed = new Set(scopes.flatMap(({ value: scope }) => scope.issue_codes));
-  if (blocking.some((code) => !observed.has(code)) || value.submit_ready !== (blocking.length === 0)) fail("submit readiness");
+  const blockingSet = new Set(blocking);
+  if (blocking.some((code) => !observed.has(code))
+    || [...observed].some((code) => MANDATORY_BLOCKING_ISSUES.has(code) && !blockingSet.has(code))
+    || value.submit_ready !== (blocking.length === 0)) fail("submit readiness");
   return { decision_owner: "agent", preview_complete: true, submit_ready: value.submit_ready, blocking_issue_codes: blocking };
 }
 

@@ -277,6 +277,27 @@ test("agent may classify a reviewed issue as non-blocking without validator sema
   assert.deepEqual(receipt.scopes[1].issue_codes, ["founder_copy_reviewed_nonblocking"]);
 });
 
+test("policy-mandatory safety issues cannot be omitted from the blocking subset", () => {
+  const input = fixture();
+  input.sources = input.sources.filter(({ role }) => role !== "demo_source");
+  input.scopes[0].status = "stale";
+  input.scopes[0].issue_codes = ["company_facts_stale", "provider_route_drift"];
+  input.scopes[1].status = "needs_review";
+  input.scopes[1].issue_codes = ["founder_source_conflict"];
+  input.scopes[3] = { scope: "demo", status: "missing", observed_at: "2026-08-02T05:01:10.000Z", source_roles: [], issue_codes: ["demo_missing"], observation: { dedicated_source_role: null, remote: null } };
+  input.scopes[4].status = "stale";
+  input.scopes[4].issue_codes = ["progress_stale", "provider_route_drift"];
+  const mandatory = ["company_facts_stale", "provider_route_drift", "founder_source_conflict", "demo_missing", "progress_stale"];
+  input.assessment.submit_ready = false;
+  input.assessment.blocking_issue_codes = [...mandatory];
+  assert.equal(build(input).submit_ready, false);
+  for (const omitted of mandatory) {
+    const mutation = structuredClone(input);
+    mutation.assessment.blocking_issue_codes = mandatory.filter((code) => code !== omitted);
+    assert.throws(() => build(mutation), omitted);
+  }
+});
+
 test("semantic status and issue bookkeeping cannot contradict readiness", () => {
   const cases = [
     (x) => { x.scopes[0].status = "stale"; },
