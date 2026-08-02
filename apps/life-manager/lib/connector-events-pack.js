@@ -22,6 +22,7 @@ const {
 const {
   buildVerifiedRegistrationCoverageEvidence,
   proveAllDayCalendarUnavailable,
+  proveCalendarGateUnavailable,
   rebuildRollingEventCoverage,
 } = require("./connector-coverage-assembler.js");
 const {
@@ -170,6 +171,9 @@ function createConnectorEventsPack(options = {}) {
     },
     proveUnavailableDay(input) {
       return proveUnavailableDay(input);
+    },
+    proveCalendarGateUnavailable(input) {
+      return proveCalendarGateUnavailable(input);
     },
     rebuildCoverage(input) {
       return rebuildCoverage(input);

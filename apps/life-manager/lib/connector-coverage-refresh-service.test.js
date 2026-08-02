@@ -132,12 +132,18 @@ function makeService(input) {
     routeMinutes: input.routeMinutes || (async () => 20),
     now: () => NOW,
     readDateInventory: input.readDateInventory,
-    readBusyCalendar: async () => busyInventory(),
+    readBusyCalendar: input.readBusyCalendar || (async () => busyInventory()),
     gateDateCalendar: evaluateCalendarCandidateGate,
     syncRegistrationCalendar: syncVerifiedRegistrationToGoogleCalendar,
     buildRegistrationCoverageEvidence: buildVerifiedRegistrationCoverageEvidence,
     proveUnavailableDay: proveAllDayCalendarUnavailable,
     rebuildCoverage: rebuildRollingEventCoverage,
+    readUnavailablePlanEvidence: input.readUnavailablePlanEvidence || (() => {
+      throw new Error("unexpected unavailable plan");
+    }),
+    rebindUnavailablePlan: input.rebindUnavailablePlan || (() => {
+      throw new Error("unexpected unavailable plan");
+    }),
     planOpenDate: input.planOpenDate || (async ({ coverage }) => ({
       open_date_plan_id: `connector-open-date-plan:${"a".repeat(64)}`,
       coverage_snapshot_id: coverage.coverage_snapshot_id,
@@ -326,4 +332,44 @@ test("application planning preserves a bounded substage code without provider te
     && caught.message === "Connector coverage refresh unavailable"
     && !JSON.stringify(caught).includes("private model response")
   ));
+});
+
+test("a planner-proven calendar conflict resolves the day before returning coverage", async () => {
+  const coverage = currentCoverage();
+  const inventory = await dateInventory(coverage);
+  const unavailable = proveAllDayCalendarUnavailable({
+    busyInventory: await busyInventory(), date: "2026-08-06",
+  });
+  const emptyBusy = await inspectGoogleCalendarBusyInventory({
+    calendar: {
+      async listCalendarsRaw() { return [{ id: "primary" }]; },
+      async listAllEventsRaw() { return []; },
+    },
+    timeMin: "2026-08-01T15:00:00.000Z", timeMax: "2026-08-22T15:00:00.000Z",
+    timeZone: "Asia/Tokyo", now: NOW,
+  });
+  const service = makeService({
+    receiptReader: { async listForCoverage() { return []; } },
+    calendar: { async findConnectorEvents() { return []; }, async createConnectorEvent() {} },
+    readDateInventory: async () => inventory,
+    readBusyCalendar: async () => emptyBusy,
+    planOpenDate: async ({ coverage: source }) => ({
+      open_date_plan_id: `connector-open-date-plan:${"f".repeat(64)}`,
+      coverage_snapshot_id: source.coverage_snapshot_id,
+      inventory_snapshot_id: inventory.inventory_snapshot_id,
+      date: "2026-08-06", status: "unavailable", event_ref: null, job_ref: null,
+      candidate_count: 1, runnable_candidate_count: 0,
+      skip_reason_counts: [{ reason: "calendar_conflict", count: 1 }],
+    }),
+    readUnavailablePlanEvidence: () => unavailable,
+    rebindUnavailablePlan: (plan, resolved) => ({
+      ...plan, coverage_snapshot_id: resolved.coverage_snapshot_id,
+    }),
+  });
+  const result = await service({ coverage, tenantId: TENANT });
+  assert.equal(result.coverage.days.find((day) => day.date === "2026-08-06").status, "unavailable");
+  assert.deepEqual(result.observedOutcomes.at(-1), {
+    date: "2026-08-06", observed_status: "calendar_unavailable",
+  });
+  assert.equal(result.openDatePlan.coverage_snapshot_id, result.coverage.coverage_snapshot_id);
 });

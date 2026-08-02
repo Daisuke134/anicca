@@ -14,6 +14,8 @@ const { buildEventApplicationJob } = require("./outbound-event-job.js");
 const {
   createConnectorOpenDateApplicationPlanner,
   isVerifiedConnectorOpenDatePlan,
+  rebindUnavailableConnectorOpenDatePlan,
+  unavailableEvidenceForConnectorOpenDatePlan,
 } = require("./connector-open-date-planner.js");
 
 const NOW = "2026-08-01T16:00:00.000Z";
@@ -93,6 +95,12 @@ function planner(statuses = new Map(), overrides = {}) {
       const job = buildEventApplicationJob(input);
       calls.push(["enqueue", job.input_refs.event_ref.split("?")[0]]);
       return { created: true, job: { ...job, status: "queued" } };
+    },
+    proveCalendarUnavailable() {
+      return Object.freeze({
+        date: "2026-08-02",
+        evidence_refs: Object.freeze([`calendar-evidence://google/event/${"e".repeat(64)}`]),
+      });
     },
     ...overrides,
   });
@@ -175,7 +183,7 @@ test("dead-letter candidate advances to the next candidate while all terminal fa
   assert.equal(terminal.calls.some(([kind]) => kind === "enqueue"), false);
 });
 
-test("exhausted plan exposes only bounded aggregate skip reasons", async () => {
+test("all-calendar-conflict plan resolves the day with bounded aggregate evidence", async () => {
   const input = await sources();
   const { instance } = planner(new Map(), {
     buildSpendSequence() {
@@ -189,9 +197,22 @@ test("exhausted plan exposes only bounded aggregate skip reasons", async () => {
     },
   });
   const result = await instance(input);
-  assert.equal(result.status, "exhausted");
+  assert.equal(result.status, "unavailable");
   assert.equal(result.candidate_count, 2);
   assert.equal(result.runnable_candidate_count, 0);
   assert.deepEqual(result.skip_reason_counts, [{ reason: "calendar_conflict", count: 2 }]);
   assert.doesNotMatch(JSON.stringify(result), /first-a|first-b|https:\/\//);
+  assert.equal(unavailableEvidenceForConnectorOpenDatePlan(result).date, "2026-08-02");
+
+  const resolvedCoverage = buildRollingEventCoverage({
+    tenantId: "dais-local", timeZone: "Asia/Tokyo", now: NOW,
+    resolvedDays: [{
+      date: "2026-08-02", status: "unavailable",
+      evidence_refs: [`calendar-evidence://google/event/${"e".repeat(64)}`],
+    }],
+  });
+  const rebound = rebindUnavailableConnectorOpenDatePlan(result, resolvedCoverage);
+  assert.equal(rebound.coverage_snapshot_id, resolvedCoverage.coverage_snapshot_id);
+  assert.equal(rebound.status, "unavailable");
+  assert.equal(isVerifiedConnectorOpenDatePlan(rebound), true);
 });

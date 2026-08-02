@@ -6,6 +6,7 @@ const { isVerifiedRollingEventCoverage } = require("./rolling-event-coverage.js"
 
 const OUTCOMES = new Set([
   "booked",
+  "calendar_unavailable",
   "operation_failed",
   "reconciliation_required",
   "recovery_required",
@@ -66,7 +67,9 @@ function planConnectorCoverageContinuation(input = {}) {
     status: complete ? "complete" : "continue",
     open_date_count: coverage.counts.open,
     next_action: nextAction,
-    next_run_at: complete ? null : new Date(Date.parse(now) + 300_000).toISOString(),
+    next_run_at: complete ? null : new Date(Date.parse(now) + (
+      outcomes.some((outcome) => outcome.observed_status === "calendar_unavailable") ? 1_000 : 300_000
+    )).toISOString(),
   };
   const digest = createHash("sha256").update(stableJson({ ...core, outcomes }), "utf8").digest("hex");
   const result = Object.freeze({

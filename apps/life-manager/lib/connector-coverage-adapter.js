@@ -15,7 +15,7 @@ const JOB_KEYS = Object.freeze([
   "coverage_snapshot_ref", "identity_ref",
 ]);
 const COVERAGE_REF = /^event-coverage:\/\/([a-z0-9][a-z0-9._-]{0,199})\/([0-9a-f]{64})$/;
-const PLAN_STATUSES = new Set(["complete", "enqueued", "waiting", "exhausted", "no_candidates"]);
+const PLAN_STATUSES = new Set(["complete", "enqueued", "waiting", "unavailable", "exhausted", "no_candidates"]);
 const PLAN_KEYS = Object.freeze([
   "candidate_count", "coverage_snapshot_id", "date", "event_ref", "inventory_snapshot_id",
   "job_ref", "open_date_plan_id", "runnable_candidate_count", "skip_reason_counts", "status",
@@ -78,7 +78,7 @@ function openDatePlanContract(value, coverage) {
   }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value.date || ""))) invalid();
   const day = coverage.days.find((candidate) => candidate.date === value.date);
-  if (!day || day.status !== "open") invalid();
+  if (!day || (value.status === "unavailable" ? day.status !== "unavailable" : day.status !== "open")) invalid();
   const hasJob = ["enqueued", "waiting"].includes(value.status);
   if (hasJob) {
     const job = /^runtime-job:\/\/([a-z0-9][a-z0-9._-]{0,199})\/([0-9a-f]{64})$/.exec(String(value.job_ref || ""));

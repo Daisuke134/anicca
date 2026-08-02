@@ -6,6 +6,7 @@ const { buildRollingEventCoverage } = require("./rolling-event-coverage.js");
 const { isVerifiedLumaDateInventory } = require("./luma-date-inventory.js");
 const { isVerifiedConnectorCalendarSync } = require("./connector-calendar-sync.js");
 const { isVerifiedGoogleCalendarBusyInventory } = require("./google-calendar-busy-inventory.js");
+const { isVerifiedCalendarCandidateGate } = require("./calendar-candidate-gate.js");
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const REGISTRATIONS = new WeakSet();
@@ -88,6 +89,48 @@ function proveAllDayCalendarUnavailable(input = {}) {
   return evidence;
 }
 
+function proveCalendarGateUnavailable(input = {}) {
+  const dateInventory = input.dateInventory;
+  const busyInventory = input.busyInventory;
+  const gate = input.calendarGate;
+  const date = String(input.date == null ? "" : input.date).trim();
+  if (
+    !isVerifiedLumaDateInventory(dateInventory)
+    || !isVerifiedGoogleCalendarBusyInventory(busyInventory)
+    || !isVerifiedCalendarCandidateGate(gate)
+    || !DATE.test(date)
+    || gate.status !== "evaluated"
+    || gate.date !== date
+    || gate.inventory_snapshot_id !== dateInventory.inventory_snapshot_id
+    || gate.busy_inventory_id !== busyInventory.busy_inventory_id
+  ) invalid();
+  const day = dateInventory.days.find((candidate) => candidate.date === date);
+  if (!day || day.events.length === 0 || gate.candidates.length !== day.events.length) invalid();
+  if (gate.candidates.some((candidate) => (
+    candidate.eligible === true
+    || !Array.isArray(candidate.conflict_event_refs)
+    || candidate.conflict_event_refs.length === 0
+  ))) throw new Error("Connector calendar day not unavailable");
+  const busyRefs = new Set(busyInventory.busy_intervals.map((interval) => interval.event_ref));
+  const evidenceRefs = [...new Set(gate.candidates.flatMap((candidate) => candidate.conflict_event_refs))].sort();
+  if (
+    evidenceRefs.length < 1 || evidenceRefs.length > 20
+    || evidenceRefs.some((ref) => !busyRefs.has(ref))
+  ) invalid();
+  const core = {
+    date,
+    busy_inventory_id: busyInventory.busy_inventory_id,
+    calendar_gate_id: gate.calendar_gate_id,
+    evidence_refs: Object.freeze(evidenceRefs),
+  };
+  const evidence = Object.freeze({
+    calendar_unavailable_evidence_id: `calendar-unavailable-evidence:${digest(core)}`,
+    ...core,
+  });
+  UNAVAILABLE.add(evidence);
+  return evidence;
+}
+
 function rebuildRollingEventCoverage(input = {}) {
   if (!Array.isArray(input.registrations) || !Array.isArray(input.unavailableDays)) invalid();
   const empty = buildRollingEventCoverage({
@@ -134,5 +177,6 @@ function rebuildRollingEventCoverage(input = {}) {
 module.exports = {
   buildVerifiedRegistrationCoverageEvidence,
   proveAllDayCalendarUnavailable,
+  proveCalendarGateUnavailable,
   rebuildRollingEventCoverage,
 };
