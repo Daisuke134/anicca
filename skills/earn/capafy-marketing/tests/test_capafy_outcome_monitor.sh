@@ -172,5 +172,34 @@ record="$(incident_record)"
 assert_has "delivery key remains null" "$record" '"terminal_message_key": null'
 rm -rf "$CASE_DIR"
 
+echo "(F) stale code-only sidecar cannot reopen a verified incident"
+setup_case
+seed_incident
+for phase in repair_started repaired verified; do
+  printf '%s' "$(python3 - "$INCIDENT_ID" "$phase" <<'PY'
+import json, sys
+payload = {"incident_id": sys.argv[1], "phase": sys.argv[2]}
+if sys.argv[2] == "verified":
+    payload.update({
+        "terminal_message_key": "marketing-published-verified-reel",
+        "telegram_message_id": "5166",
+        "verification": {
+            "owner_session_verified": True,
+            "reel_url": "https://www.instagram.com/reel/DbgsvEbo5kd/",
+        },
+    })
+print(json.dumps(payload))
+PY
+)" | python3 "$OUTCOME" transition-incident >/dev/null
+done
+before="$(incident_record)"
+printf 'SUCCESS 2026-08-01T19:23:04Z code work complete without attached outcome\n' > "$STATE/.self-fix-capafy-loop.result"
+bash "$MONITOR" >/dev/null 2>&1; rc=$?
+after="$(incident_record)"
+assert_eq "verified stale sidecar exits cleanly" "$rc" "0"
+assert_eq "verified stale sidecar sends zero messages" "$(cat "$FAKE_COUNT")" "0"
+assert_eq "verified stale sidecar preserves terminal incident" "$after" "$before"
+rm -rf "$CASE_DIR"
+
 echo "=== capafy outcome monitor: $PASS passed $FAIL failed ==="
 [ "$FAIL" -eq 0 ] || exit 1

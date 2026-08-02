@@ -50,6 +50,15 @@ case "$RESULT_STATUS" in
 esac
 
 RECORD="$(python3 "$OUTCOME" get-incident --incident-id "$INCIDENT_ID")" || exit 2
+CURRENT_PHASE="$(python3 - "$RECORD" <<'PY'
+import json, sys
+print(json.loads(sys.argv[1])["phase"])
+PY
+)" || exit 2
+# A verified incident is terminal even when an old self-fix sidecar still points
+# at a code-only SUCCESS marker.  The verified business evidence is authoritative;
+# never rebuild an unresolved envelope or resend Telegram from stale repair state.
+[ "$CURRENT_PHASE" = "verified" ] && exit 0
 ENVELOPE="$(python3 - "$RECORD" "$RESULT_STATUS" "$RESULT_LINE" <<'PY'
 import json, sys
 record = json.loads(sys.argv[1])
@@ -96,12 +105,6 @@ import json, sys
 print(json.loads(sys.argv[1])["kind"])
 PY
 )"
-CURRENT_PHASE="$(python3 - "$RECORD" <<'PY'
-import json, sys
-print(json.loads(sys.argv[1])["phase"])
-PY
-)"
-
 transition() {
   local phase="$1" extra="${2:-}"
   [ -n "$extra" ] || extra='{}'
