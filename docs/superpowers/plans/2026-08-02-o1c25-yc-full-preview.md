@@ -28,7 +28,7 @@
 - Modify: `apps/life-manager/package.json`
 
 **Interface:**
-- Consumes: `buildYcFullPreviewReceipt(input, { now })`, where input contains exact application identity/state, seven required content-addressed source artifacts plus an optional dedicated demo artifact, five fresh scope observations with explicit agent verdicts/issues, and exact effect counts.
+- Consumes: `buildYcFullPreviewReceipt(input, { now })`, where input contains exact application identity/state, eight required content-addressed source artifacts including the O1C-07 submit receipt plus an optional dedicated demo artifact, five fresh scope observations with explicit agent verdicts/issues, and exact effect counts.
 - Produces: a recursively frozen, privacy-minimal receipt with one entry per scope, a deterministic `preview_receipt_digest`, `preview_complete:true`, and a consistent `submit_ready` verdict.
 
 - [ ] **Step 1: Write the valid closed-receipt test first**
@@ -41,7 +41,7 @@ Run `node --test lib/yc-full-preview.test.js`. Expected: module-not-found failur
 
 - [ ] **Step 3: Add adversarial tests before implementation**
 
-Reject one mutation per case: unknown/missing/duplicate scope or source role; extra key; bad digest/byte count/path/ref; application identity/state drift; invalid or stale timestamp; observation after receipt; preview older than five minutes; company/founder/progress currentness contradiction; founder-video present without playable remote media or valid local H.264/AAC metadata; demo present without dedicated artifact and remote media; blocker with `submit_ready:true`; readiness false without a blocker; non-zero write/select/attach/save/update-submit/application-submit/browser-close effect; attempted application submit count above the historical one-submit boundary; forged digest; input mutation.
+Reject one mutation per case: unknown/missing/duplicate or scope-incompatible source role; extra key; recomputed digest/byte mismatch/path/ref; application identity/state drift; O1C-07 application/effect mismatch; invalid or stale timestamp; observation after receipt; preview older than five minutes; company/founder/progress currentness contradiction; founder-video present without playable remote media or source-bound local SHA/bytes/H.264/AAC metadata; demo present without dedicated artifact and remote media; agent-selected blocker with `submit_ready:true`; readiness false without a blocker; non-zero write/select/attach/save/update-submit/application-submit/browser-close effect; attempted application submit count above the historical one-submit boundary; forged digest; input mutation.
 
 - [ ] **Step 4: Implement the minimal validator/builder**
 

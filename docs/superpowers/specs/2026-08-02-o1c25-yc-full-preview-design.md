@@ -6,7 +6,7 @@ Read and assess the current Fall 2026 YC application across exactly five scopesâ
 
 ## Verified starting state
 
-- The Fall 2026 application is already submitted and is `In review`; O1C-07 is the only application-submit receipt.
+- The Fall 2026 application is already submitted and is `In review`; O1C-07 is the only application-submit receipt and is a required content-bound preview source.
 - The read-only application still presents the old Anicca pitch, including the old company description, product narrative, URL, cofounder story, and progress answers. It does not present the current Life Manager product facts.
 - The repository README and agent registry now define Life Manager as one product with local/self-hosted and cloud/Web execution surfaces, with Anicca as the company name only.
 - A 2026-07-31 Life Manager answer draft exists and explicitly supersedes the old pitch, but it covers only 18 answer fields and contains facts that require current-source review.
@@ -56,7 +56,7 @@ Each scope is observed exactly once in the receipt and contains only bounded sta
 |---|---|---|
 | Company facts | submitted read-only application plus current repo/draft digests | `current` only if the visible pitch agrees with current Life Manager facts and every required field has a current source |
 | Founder profile | live profile completeness and bounded section inventory | structural completeness and semantic currentness are separate; personal contact and birth-date values are never persisted |
-| Founder video | remote media readiness/duration/dimensions plus local artifact digest/codec metadata | present only when remote media is playable and duration is at most 60 seconds; identical-byte upload is not claimed from URL metadata alone |
+| Founder video | remote media readiness/duration/dimensions plus local artifact digest/codec metadata | present only when remote media is playable, duration is at most 60 seconds, and local bytes/digest match the bound source artifact; identical-byte remote upload is not claimed from URL metadata alone |
 | Demo | remote media presence plus a source-bound current demo artifact | absent is an explicit blocker; an unrelated marketing/founder video cannot be relabelled as a product demo |
 | Progress | current update-page field hashes plus present product/revenue/user facts | current only when source-backed product, user, revenue, and traction claims match the visible update values |
 
@@ -96,7 +96,9 @@ It does not contain raw YC answers, raw draft answers, personal contact data, au
 - Unknown keys, invalid digest/byte count, non-canonical timestamp, stale observation, or chronology inversion fails closed.
 - A claimed present founder video without valid remote readiness/duration/dimensions and local artifact metadata fails closed.
 - A claimed present demo without both remote observation and a dedicated source artifact fails closed.
-- Any blocking issue with `submit_ready: true`, or any non-zero mutation effect, fails closed.
+- `blocking_issue_codes` must be an agent-selected subset of observed issues; any selected blocker with `submit_ready: true`, or any non-zero mutation effect, fails closed.
+- Each scope accepts only its exact required source-role set; substituting another known source fails closed.
+- The historical submit count is derived from the content-bound O1C-07 receipt, not a caller assertion.
 - Any attempt to claim a second application submit fails closed independently of readiness.
 - Input mutation after construction cannot mutate the frozen receipt.
 

@@ -237,9 +237,10 @@ YC公式pageでlate application受付を当日再確認
   → 既存application IDがFall 2026へ継続可能か実画面で確認
   → application-kit、production、dashboardから会社factsを再生成
   → 20項目、founder profile、動画、demo、progressを現在値で更新
-  → 全回答と添付をpreviewで保存
-  → 一度だけSubmit
-  → 完了画面とconfirmation mailを取得
+  → 全回答と添付をread-only preview receiptで確認
+  → O1C-07で提出済みのapplicationは再Submitしない
+  → submit-readyな別種updateだけをexactly-onceで実行しreadbackを取得
+  → original completion/confirmationはO1C-07/O1C-08のreceiptを再利用する
   → Gmail thread、application URL、提出内容を同じdecisionへ保存
   → Telegramへ応募内容、動画、deck、確認mailの直接linkを送る
   → reply/interviewを毎日追跡
@@ -1211,7 +1212,7 @@ agentが本文と履歴を読んで判断し、keyword/regexの固定分類へ�
 - [x] O1C-23 `yc-w26.json`のbatch、deadline、amount、URLをcurrent official factsへ更新
 - [x] O1C-24 YC操作を別Chrome `9223`から既存CloakBrowser daily-driver `:9222`へ移行
 - [ ] O1C-25 current company facts、founder profile、58秒動画、demo、progressをpreviewで全確認
-- [ ] O1C-26 Submitを一度だけ実行し、完了画面とconfirmation mailを取得
+- [ ] O1C-26 O1C-07のapplication再Submitを禁止し、O1C-25が`submit_ready:true`の時だけ別種updateを一度実行してreadbackを取得
 - [ ] O1C-27 YC reply/interviewを毎日追跡し、Calendarと面談準備へ接続
 
 完了条件: 実accelerator提出と確認receipt、reply追跡、面談calendar経路が動く。

@@ -22,18 +22,22 @@ const REQUIRED_SOURCES = Object.freeze({
   provider_manifest: "repo://apps/life-manager/config/yc-application-provider.json",
   answer_draft: "workspace://funders/results/FT-YC/yc-answers-lifemanager-2026fall.json",
   application_kit: "application-kit://KIT.md",
+  application_submit_receipt: "repo://docs/evidence/funding/2026-08-02-o1c07-yc-fall-2026-submit.json",
   founder_video_source: "application-kit://videos/Anicca_intro_EN.mp4",
   demo_source: "workspace://funders/assets/life-manager-demo.mp4",
 });
 
 function source(role, observedAt = "2026-08-02T05:00:10.000Z") {
-  const body = `fixture-${role}`;
+  const body = role === "application_submit_receipt"
+    ? JSON.stringify({ schema_version: 1, task: "O1C-07", result: "submitted_in_review", draft_id: "0b61fe42-e383-490d-b60e-04f1ad7ec5df", batch: "Fall 2026", effect_confirm_clicks: 1, fresh_home_status: "In review" })
+    : `fixture-${role}`;
   return {
     role,
     ref: REQUIRED_SOURCES[role],
     observed_at: observedAt,
     sha256: sha(body),
     bytes: Buffer.byteLength(body),
+    body,
   };
 }
 
@@ -45,6 +49,7 @@ function fixture() {
       batch: "Fall 2026",
       state: "In review",
       prior_application_submit_count: 1,
+      submission_source_role: "application_submit_receipt",
       origin: "https://apply.ycombinator.com",
       path: "/apps/0b61fe42-e383-490d-b60e-04f1ad7ec5df",
       observed_at: "2026-08-02T05:00:30.000Z",
@@ -55,7 +60,7 @@ function fixture() {
         scope: "company_facts",
         status: "current",
         observed_at: "2026-08-02T05:00:40.000Z",
-        source_roles: ["readme_en", "readme_ja", "agent_registry", "answer_draft", "application_kit"],
+        source_roles: ["readme_en", "readme_ja", "agent_registry", "answer_draft", "application_kit", "provider_manifest"],
         issue_codes: [],
         observation: { field_count: 20, value_set_digest: sha("company-values") },
       },
@@ -75,7 +80,7 @@ function fixture() {
         issue_codes: [],
         observation: {
           remote: { ready_state: 4, duration_seconds: 57.856667, width: 720, height: 1280, storage_origin: "https://yc-app-vids.s3.us-west-2.amazonaws.com", source_path_sha256: sha("remote-founder-video-path") },
-          local: { duration_seconds: 57.835, bytes: 22291622, container: "mp4", video_codec: "h264", audio_codec: "aac", width: 720, height: 1280 },
+          local: { duration_seconds: 57.835, bytes: source("founder_video_source").bytes, sha256: source("founder_video_source").sha256, container: "mp4", video_codec: "h264", audio_codec: "aac", width: 720, height: 1280 },
         },
       },
       {
@@ -179,11 +184,14 @@ test("scope and source sets fail closed on omission, duplication, unknown fields
     (x) => { x.sources[1].role = "readme_en"; },
     (x) => { x.sources[0].ref = "file:///Users/private/README.md"; },
     (x) => { x.sources[0].sha256 = "not-a-sha256"; },
+    (x) => { x.sources[0].sha256 = sha("valid-but-different-content"); },
     (x) => { x.sources[0].bytes = 0; },
+    (x) => { x.sources[0].bytes += 1; },
     (x) => { x.scopes[0].source_roles.push("unknown_source"); },
     (x) => { x.application.id = "99b966b0-7e90-4856-ab0d-93651488a4ea"; },
     (x) => { x.application.state = "Draft"; },
     (x) => { x.application.path += "?token=secret"; },
+    (x) => { x.application.submission_source_role = "application_kit"; },
     (x) => { x.application.extra = true; },
   ];
   for (const mutate of cases) {
@@ -191,6 +199,31 @@ test("scope and source sets fail closed on omission, duplication, unknown fields
     mutate(input);
     assert.throws(() => build(input));
   }
+});
+
+test("each semantic scope requires its exact source-role set", () => {
+  const cases = [
+    (x) => { x.scopes[0].source_roles = ["founder_video_source"]; },
+    (x) => { x.scopes[1].source_roles = ["provider_manifest"]; },
+    (x) => { x.scopes[4].source_roles = ["founder_video_source"]; },
+    (x) => { x.scopes[0].source_roles.push("founder_video_source"); },
+  ];
+  for (const mutate of cases) {
+    const input = fixture();
+    mutate(input);
+    assert.throws(() => build(input));
+  }
+});
+
+test("prior application submit count is bound to the O1C-07 source body", () => {
+  const input = fixture();
+  const prior = input.sources.find(({ role }) => role === "application_submit_receipt");
+  const forged = JSON.parse(prior.body);
+  forged.effect_confirm_clicks = 2;
+  prior.body = JSON.stringify(forged);
+  prior.sha256 = sha(prior.body);
+  prior.bytes = Buffer.byteLength(prior.body);
+  assert.throws(() => build(input));
 });
 
 test("timestamps must be canonical, fresh, and chronologically bound", () => {
@@ -214,6 +247,8 @@ test("media presence requires bounded playable remote media and valid dedicated 
     (x) => { x.scopes[2].observation.remote.width = 0; },
     (x) => { x.scopes[2].observation.local.video_codec = "vp9"; },
     (x) => { x.scopes[2].observation.local.audio_codec = "opus"; },
+    (x) => { x.scopes[2].observation.local.bytes += 1; },
+    (x) => { x.scopes[2].observation.local.sha256 = sha("another-founder-video"); },
     (x) => { x.scopes[2].source_roles = []; },
     (x) => { x.scopes[3].observation.remote = null; },
     (x) => { x.scopes[3].observation.dedicated_source_role = "founder_video_source"; },
@@ -224,6 +259,22 @@ test("media presence requires bounded playable remote media and valid dedicated 
     mutate(input);
     assert.throws(() => build(input));
   }
+});
+
+test("demo duration is not subjected to the founder video's 60-second rule", () => {
+  const input = fixture();
+  input.scopes[3].observation.remote.duration_seconds = 120;
+  assert.equal(build(input).scopes[3].observation.remote.duration_seconds, 120);
+});
+
+test("agent may classify a reviewed issue as non-blocking without validator semantic override", () => {
+  const input = fixture();
+  input.scopes[1].status = "needs_review";
+  input.scopes[1].issue_codes = ["founder_copy_reviewed_nonblocking"];
+  const receipt = build(input);
+  assert.equal(receipt.submit_ready, true);
+  assert.deepEqual(receipt.blocking_issue_codes, []);
+  assert.deepEqual(receipt.scopes[1].issue_codes, ["founder_copy_reviewed_nonblocking"]);
 });
 
 test("semantic status and issue bookkeeping cannot contradict readiness", () => {

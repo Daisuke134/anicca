@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "objective": "O1C-25",
-  "generated_at": "2026-08-02T01:33:58.995Z",
+  "generated_at": "2026-08-02T01:49:00.434Z",
   "result": {
     "preview_complete": true,
     "submit_ready": false,
@@ -11,19 +11,20 @@
     "application": {
       "origin": "https://apply.ycombinator.com",
       "path": "/apps/0b61fe42-e383-490d-b60e-04f1ad7ec5df",
-      "state": "In review",
+      "heading_count": 2,
       "profile_complete_visible": true,
       "demo_absent_visible": true,
-      "heading_count": 2,
-      "read_only_text_sha256": "79a94f190c7687f1491c4c57e4f558b864849c4517a19db37ab738b07320de68"
+      "value_set_sha256": "79a94f190c7687f1491c4c57e4f558b864849c4517a19db37ab738b07320de68",
+      "observed_at": "2026-08-02T01:48:55.904Z",
+      "state": "In review"
     },
     "founder_profile": {
       "origin": "https://apply.ycombinator.com",
       "path": "/bio/721f696b-0566-4a16-bda7-a9c368b1eac1/edit",
-      "structurally_complete": true,
       "section_count": 1,
       "public_profile_count": 3,
-      "value_set_sha256": "720b7c0c15dc33278374df0bb4981425f766b9cb5de14eb01e40c87020837c9c"
+      "value_set_sha256": "720b7c0c15dc33278374df0bb4981425f766b9cb5de14eb01e40c87020837c9c",
+      "observed_at": "2026-08-02T01:48:56.715Z"
     },
     "founder_video": {
       "origin": "https://apply.ycombinator.com",
@@ -35,6 +36,7 @@
       "height": 1280,
       "storage_origin": "https://yc-app-vids.s3.us-west-2.amazonaws.com",
       "source_path_sha256": "d281c34415944367578f4d2d1b701b52572cb30add0601eb39a7cfb72d4ed756",
+      "observed_at": "2026-08-02T01:48:58.688Z",
       "local_source_sha256": "34881787eb93e240049f92ea72d471f3d457f00ddb4e228b1b8c1729fa0e5fe6"
     },
     "demo": {
@@ -43,7 +45,7 @@
       "video_count": 0,
       "file_input_count": 1,
       "dedicated_source_artifact_present": false,
-      "observed_at": "2026-08-02T01:33:56.881Z"
+      "observed_at": "2026-08-02T01:48:59.610Z"
     },
     "progress": {
       "origin": "https://apply.ycombinator.com",
@@ -52,68 +54,76 @@
       "value_set_sha256": "1b1a53ac6e31960e16dec94948fa846152f78de08d7189ab44b6fd7439837421",
       "update_control_present": true,
       "file_input_count": 1,
-      "observed_at": "2026-08-02T01:33:58.849Z"
+      "observed_at": "2026-08-02T01:49:00.418Z"
     }
   },
   "preview_receipt": {
     "schema_version": 1,
-    "verified_at": "2026-08-02T01:33:58.995Z",
+    "verified_at": "2026-08-02T01:49:00.434Z",
     "application": {
       "id": "0b61fe42-e383-490d-b60e-04f1ad7ec5df",
       "batch": "Fall 2026",
       "state": "In review",
       "prior_application_submit_count": 1,
+      "submission_source_role": "application_submit_receipt",
       "origin": "https://apply.ycombinator.com",
       "path": "/apps/0b61fe42-e383-490d-b60e-04f1ad7ec5df",
-      "observed_at": "2026-08-02T01:33:50.005Z"
+      "observed_at": "2026-08-02T01:48:55.904Z"
     },
     "sources": [
       {
         "role": "readme_en",
         "ref": "repo://README.md",
-        "observed_at": "2026-08-02T01:33:43.887Z",
+        "observed_at": "2026-08-02T01:48:51.417Z",
         "sha256": "a71d502739985497c88688e6957bef0c1ccf88a2861a8ff7cd2c21296740c3fb",
         "bytes": 18052
       },
       {
         "role": "readme_ja",
         "ref": "repo://README.ja.md",
-        "observed_at": "2026-08-02T01:33:43.896Z",
+        "observed_at": "2026-08-02T01:48:51.418Z",
         "sha256": "58e9d555d1cdfefede5cd5cabbeb30cf253f3f8b0d71120619a9ba8802204125",
         "bytes": 18852
       },
       {
         "role": "agent_registry",
         "ref": "repo://agents/registry.json",
-        "observed_at": "2026-08-02T01:33:43.896Z",
+        "observed_at": "2026-08-02T01:48:51.418Z",
         "sha256": "30784d1ac1b44a4602497c475e7f760c1bda91e24aa5c3d9082b7dead261366e",
         "bytes": 16070
       },
       {
         "role": "provider_manifest",
         "ref": "repo://apps/life-manager/config/yc-application-provider.json",
-        "observed_at": "2026-08-02T01:33:43.897Z",
+        "observed_at": "2026-08-02T01:48:51.418Z",
         "sha256": "546f37064b9e25b5450a9d0fe2a8386b85f25d0f3807a3dcc891c3e3be351a13",
         "bytes": 7610
       },
       {
         "role": "answer_draft",
         "ref": "workspace://funders/results/FT-YC/yc-answers-lifemanager-2026fall.json",
-        "observed_at": "2026-08-02T01:33:43.897Z",
+        "observed_at": "2026-08-02T01:48:51.418Z",
         "sha256": "417a6f0d713946459cad53e575be73bb6c52c6def43f85787525bd4916241e4b",
         "bytes": 7090
       },
       {
         "role": "application_kit",
         "ref": "application-kit://KIT.md",
-        "observed_at": "2026-08-02T01:33:43.898Z",
+        "observed_at": "2026-08-02T01:48:51.418Z",
         "sha256": "2ed65ef43d0800420aaa58ad26afaecf8999787ef4c1ba7c151728497101c863",
         "bytes": 14540
       },
       {
+        "role": "application_submit_receipt",
+        "ref": "repo://docs/evidence/funding/2026-08-02-o1c07-yc-fall-2026-submit.json",
+        "observed_at": "2026-08-02T01:48:51.419Z",
+        "sha256": "71886a8f7d73377ef2b43796adfe8ac20bc1726619072fecbdc4100a629eb0c6",
+        "bytes": 920
+      },
+      {
         "role": "founder_video_source",
         "ref": "application-kit://videos/Anicca_intro_EN.mp4",
-        "observed_at": "2026-08-02T01:33:43.913Z",
+        "observed_at": "2026-08-02T01:48:51.442Z",
         "sha256": "34881787eb93e240049f92ea72d471f3d457f00ddb4e228b1b8c1729fa0e5fe6",
         "bytes": 22291622
       }
@@ -122,9 +132,19 @@
       {
         "scope": "company_facts",
         "status": "stale",
-        "observed_at": "2026-08-02T01:33:50.005Z",
-        "source_roles": ["readme_en", "readme_ja", "agent_registry", "answer_draft", "application_kit", "provider_manifest"],
-        "issue_codes": ["company_facts_stale", "provider_route_drift"],
+        "observed_at": "2026-08-02T01:48:55.904Z",
+        "source_roles": [
+          "readme_en",
+          "readme_ja",
+          "agent_registry",
+          "answer_draft",
+          "application_kit",
+          "provider_manifest"
+        ],
+        "issue_codes": [
+          "company_facts_stale",
+          "provider_route_drift"
+        ],
         "observation": {
           "field_count": 20,
           "value_set_digest": "79a94f190c7687f1491c4c57e4f558b864849c4517a19db37ab738b07320de68"
@@ -133,9 +153,14 @@
       {
         "scope": "founder_profile",
         "status": "needs_review",
-        "observed_at": "2026-08-02T01:33:53.020Z",
-        "source_roles": ["application_kit"],
-        "issue_codes": ["founder_narratives_stale", "founder_source_conflict"],
+        "observed_at": "2026-08-02T01:48:56.715Z",
+        "source_roles": [
+          "application_kit"
+        ],
+        "issue_codes": [
+          "founder_narratives_stale",
+          "founder_source_conflict"
+        ],
         "observation": {
           "structurally_complete": true,
           "section_count": 1,
@@ -145,8 +170,10 @@
       {
         "scope": "founder_video",
         "status": "present",
-        "observed_at": "2026-08-02T01:33:55.054Z",
-        "source_roles": ["founder_video_source"],
+        "observed_at": "2026-08-02T01:48:58.688Z",
+        "source_roles": [
+          "founder_video_source"
+        ],
         "issue_codes": [],
         "observation": {
           "remote": {
@@ -160,6 +187,7 @@
           "local": {
             "duration_seconds": 57.835,
             "bytes": 22291622,
+            "sha256": "34881787eb93e240049f92ea72d471f3d457f00ddb4e228b1b8c1729fa0e5fe6",
             "container": "mp4",
             "video_codec": "h264",
             "audio_codec": "aac",
@@ -171,9 +199,11 @@
       {
         "scope": "demo",
         "status": "missing",
-        "observed_at": "2026-08-02T01:33:56.881Z",
+        "observed_at": "2026-08-02T01:48:59.610Z",
         "source_roles": [],
-        "issue_codes": ["demo_missing"],
+        "issue_codes": [
+          "demo_missing"
+        ],
         "observation": {
           "dedicated_source_role": null,
           "remote": null
@@ -182,9 +212,16 @@
       {
         "scope": "progress",
         "status": "stale",
-        "observed_at": "2026-08-02T01:33:58.849Z",
-        "source_roles": ["readme_en", "answer_draft", "provider_manifest"],
-        "issue_codes": ["progress_stale", "provider_route_drift"],
+        "observed_at": "2026-08-02T01:49:00.418Z",
+        "source_roles": [
+          "readme_en",
+          "answer_draft",
+          "provider_manifest"
+        ],
+        "issue_codes": [
+          "progress_stale",
+          "provider_route_drift"
+        ],
         "observation": {
           "field_count": 5,
           "value_set_digest": "1b1a53ac6e31960e16dec94948fa846152f78de08d7189ab44b6fd7439837421",
@@ -195,7 +232,14 @@
     "decision_owner": "agent",
     "preview_complete": true,
     "submit_ready": false,
-    "blocking_issue_codes": ["company_facts_stale", "provider_route_drift", "founder_narratives_stale", "founder_source_conflict", "demo_missing", "progress_stale"],
+    "blocking_issue_codes": [
+      "company_facts_stale",
+      "provider_route_drift",
+      "founder_narratives_stale",
+      "founder_source_conflict",
+      "demo_missing",
+      "progress_stale"
+    ],
     "effects": {
       "read_only_navigations": 5,
       "owned_page_closes": 5,
@@ -207,7 +251,7 @@
       "application_submissions": 0,
       "browser_closes": 0
     },
-    "preview_receipt_digest": "3cfffeeefffd2d89023c93d047d4479a2946a711c57c5f3f1e8c54323ad1491a"
+    "preview_receipt_digest": "52e50ff8df2faf8a7c054dee26ecdff9f8faa26bf28cb9b57aec40ff8493e9ce"
   },
   "privacy": {
     "raw_answers_persisted": false,
@@ -227,12 +271,12 @@
   "verification": {
     "focused_tests": {
       "command": "node --test lib/yc-full-preview.test.js",
-      "passed": 8,
+      "passed": 12,
       "failed": 0
     },
     "outbound_tests": {
       "command": "npm run test:outbound",
-      "passed": 302,
+      "passed": 306,
       "failed": 0
     }
   }

@@ -17,10 +17,18 @@ const SOURCE_REFS = Object.freeze({
   provider_manifest: "repo://apps/life-manager/config/yc-application-provider.json",
   answer_draft: "workspace://funders/results/FT-YC/yc-answers-lifemanager-2026fall.json",
   application_kit: "application-kit://KIT.md",
+  application_submit_receipt: "repo://docs/evidence/funding/2026-08-02-o1c07-yc-fall-2026-submit.json",
   founder_video_source: "application-kit://videos/Anicca_intro_EN.mp4",
   demo_source: "workspace://funders/assets/life-manager-demo.mp4",
 });
 const REQUIRED_SOURCE_ROLES = Object.freeze(Object.keys(SOURCE_REFS).filter((role) => role !== "demo_source"));
+const SCOPE_SOURCE_ROLES = Object.freeze({
+  company_facts: Object.freeze(["readme_en", "readme_ja", "agent_registry", "answer_draft", "application_kit", "provider_manifest"]),
+  founder_profile: Object.freeze(["application_kit"]),
+  founder_video: Object.freeze(["founder_video_source"]),
+  demo: Object.freeze([]),
+  progress: Object.freeze(["readme_en", "answer_draft", "provider_manifest"]),
+});
 const EFFECT_KEYS = Object.freeze([
   "read_only_navigations",
   "owned_page_closes",
@@ -98,18 +106,29 @@ function digest(value, label) {
 }
 
 function issueCodes(value, label) {
-  if (!Array.isArray(value) || new Set(value).size !== value.length) fail(label);
-  const codes = value.map(String);
+  if (!Array.isArray(value) || value.some((code) => typeof code !== "string")) fail(label);
+  const codes = [...value];
+  if (new Set(codes).size !== codes.length) fail(label);
   if (codes.some((code) => !ISSUE_CODE.test(code))) fail(label);
   return codes;
 }
 
-function parseApplication(value) {
-  exactKeys(value, ["id", "batch", "state", "prior_application_submit_count", "origin", "path", "observed_at"], "application");
+function parseApplication(value, sources, { verifySubmissionBody = false } = {}) {
+  exactKeys(value, ["id", "batch", "state", "prior_application_submit_count", "submission_source_role", "origin", "path", "observed_at"], "application");
   if (!UUID.test(String(value.id || "")) || String(value.id).toLowerCase() !== APPLICATION_ID
     || value.batch !== "Fall 2026" || value.state !== "In review"
     || value.prior_application_submit_count !== 1
+    || value.submission_source_role !== "application_submit_receipt"
     || value.origin !== APPLICATION_ORIGIN || value.path !== APPLICATION_PATH) fail("application identity");
+  const submissionSource = sources.find(({ value: source }) => source.role === "application_submit_receipt");
+  if (!submissionSource) fail("application submission source");
+  if (verifySubmissionBody) {
+    let prior;
+    try { prior = JSON.parse(submissionSource.body.toString("utf8")); } catch { fail("application submission receipt"); }
+    if (!prior || prior.task !== "O1C-07" || prior.result !== "submitted_in_review"
+      || String(prior.draft_id || "").toLowerCase() !== APPLICATION_ID || prior.batch !== "Fall 2026"
+      || prior.effect_confirm_clicks !== 1 || prior.fresh_home_status !== "In review") fail("application submission receipt");
+  }
   const observed = timestamp(value.observed_at, "application observation");
   return {
     value: {
@@ -117,6 +136,7 @@ function parseApplication(value) {
       batch: "Fall 2026",
       state: "In review",
       prior_application_submit_count: 1,
+      submission_source_role: "application_submit_receipt",
       origin: APPLICATION_ORIGIN,
       path: APPLICATION_PATH,
       observed_at: observed.text,
@@ -125,16 +145,23 @@ function parseApplication(value) {
   };
 }
 
-function parseSources(value) {
+function parseSources(value, { withBody = false } = {}) {
   if (!Array.isArray(value) || value.length < REQUIRED_SOURCE_ROLES.length || value.length > REQUIRED_SOURCE_ROLES.length + 1) fail("source set");
-  const roles = value.map(({ role }) => String(role || ""));
+  if (value.some(({ role }) => typeof role !== "string")) fail("source set");
+  const roles = value.map(({ role }) => role);
   if (new Set(roles).size !== roles.length || REQUIRED_SOURCE_ROLES.some((role) => !roles.includes(role))
     || roles.some((role) => !Object.hasOwn(SOURCE_REFS, role))) fail("source set");
   const parsed = value.map((item) => {
-    exactKeys(item, ["role", "ref", "observed_at", "sha256", "bytes"], "source");
+    exactKeys(item, withBody ? ["role", "ref", "observed_at", "sha256", "bytes", "body"] : ["role", "ref", "observed_at", "sha256", "bytes"], "source");
     const role = String(item.role || "");
     if (item.ref !== SOURCE_REFS[role]) fail("source ref");
     const observed = timestamp(item.observed_at, "source observation");
+    let body;
+    if (withBody) {
+      if (typeof item.body !== "string" && !Buffer.isBuffer(item.body)) fail("source body");
+      body = Buffer.isBuffer(item.body) ? Buffer.from(item.body) : Buffer.from(item.body, "utf8");
+      if (body.length !== item.bytes || sha(body) !== item.sha256) fail("source content binding");
+    }
     return {
       value: {
         role,
@@ -144,6 +171,7 @@ function parseSources(value) {
         bytes: safePositiveInteger(item.bytes, "source bytes"),
       },
       observedMs: observed.milliseconds,
+      body,
     };
   });
   parsed.sort((a, b) => Object.keys(SOURCE_REFS).indexOf(a.value.role) - Object.keys(SOURCE_REFS).indexOf(b.value.role));
@@ -151,18 +179,19 @@ function parseSources(value) {
 }
 
 function parseRoleSet(value, knownRoles, label) {
-  if (!Array.isArray(value) || new Set(value).size !== value.length) fail(label);
-  const roles = value.map(String);
+  if (!Array.isArray(value) || value.some((role) => typeof role !== "string")) fail(label);
+  const roles = [...value];
+  if (new Set(roles).size !== roles.length) fail(label);
   if (roles.some((role) => !knownRoles.has(role))) fail(label);
   return roles;
 }
 
-function parseRemoteMedia(value, label) {
+function parseRemoteMedia(value, label, maximumDuration = Number.MAX_SAFE_INTEGER) {
   exactKeys(value, ["ready_state", "duration_seconds", "width", "height", "storage_origin", "source_path_sha256"], label);
   if (value.ready_state !== 4 || value.storage_origin !== "https://yc-app-vids.s3.us-west-2.amazonaws.com") fail(label);
   return {
     ready_state: 4,
-    duration_seconds: finitePositive(value.duration_seconds, `${label} duration`, 60),
+    duration_seconds: finitePositive(value.duration_seconds, `${label} duration`, maximumDuration),
     width: safePositiveInteger(value.width, `${label} width`),
     height: safePositiveInteger(value.height, `${label} height`),
     storage_origin: value.storage_origin,
@@ -181,15 +210,20 @@ function parseFounderObservation(value) {
   return { structurally_complete: value.structurally_complete, section_count: safePositiveInteger(value.section_count, "founder section count"), value_set_digest: digest(value.value_set_digest, "founder value digest") };
 }
 
-function parseFounderVideoObservation(value) {
+function parseFounderVideoObservation(value, sources) {
   exactKeys(value, ["remote", "local"], "founder video observation");
-  exactKeys(value.local, ["duration_seconds", "bytes", "container", "video_codec", "audio_codec", "width", "height"], "founder video local");
+  exactKeys(value.local, ["duration_seconds", "bytes", "sha256", "container", "video_codec", "audio_codec", "width", "height"], "founder video local");
   if (value.local.container !== "mp4" || value.local.video_codec !== "h264" || value.local.audio_codec !== "aac") fail("founder video local");
+  const source = sources.find(({ value: item }) => item.role === "founder_video_source")?.value;
+  const localBytes = safePositiveInteger(value.local.bytes, "founder video local bytes");
+  const localSha256 = digest(value.local.sha256, "founder video local digest");
+  if (!source || source.bytes !== localBytes || source.sha256 !== localSha256) fail("founder video source binding");
   return {
-    remote: parseRemoteMedia(value.remote, "founder video remote"),
+    remote: parseRemoteMedia(value.remote, "founder video remote", 60),
     local: {
       duration_seconds: finitePositive(value.local.duration_seconds, "founder video local duration", 60),
-      bytes: safePositiveInteger(value.local.bytes, "founder video local bytes"),
+      bytes: localBytes,
+      sha256: localSha256,
       container: "mp4",
       video_codec: "h264",
       audio_codec: "aac",
@@ -228,24 +262,23 @@ function parseScopes(value, sources) {
     let observation;
     if (item.scope === "company_facts") {
       allowed = new Set(["current", "stale"]);
-      if (roles.length < 1) fail("company source roles");
       observation = parseCompanyObservation(item.observation);
     } else if (item.scope === "founder_profile") {
       allowed = new Set(["current", "needs_review"]);
-      if (roles.length < 1) fail("founder source roles");
       observation = parseFounderObservation(item.observation);
     } else if (item.scope === "founder_video") {
       allowed = new Set(["present"]);
       if (roles.length !== 1 || roles[0] !== "founder_video_source") fail("founder video provenance");
-      observation = parseFounderVideoObservation(item.observation);
+      observation = parseFounderVideoObservation(item.observation, sources);
     } else if (item.scope === "demo") {
       allowed = new Set(["present", "missing"]);
       observation = parseDemoObservation(item.observation, item.status, roles);
     } else if (item.scope === "progress") {
       allowed = new Set(["current", "stale"]);
-      if (roles.length < 1) fail("progress source roles");
       observation = parseProgressObservation(item.observation);
     }
+    const expectedRoles = item.scope === "demo" && item.status === "present" ? ["demo_source"] : SCOPE_SOURCE_ROLES[item.scope];
+    if (stable(roles) !== stable(expectedRoles)) fail(`${item.scope} source roles`);
     if (!allowed || !allowed.has(item.status)) fail(`${item.scope} status`);
     const good = item.status === "current" || item.status === "present";
     if ((good && issues.length !== 0) || (!good && issues.length === 0)) fail(`${item.scope} issue consistency`);
@@ -269,9 +302,8 @@ function parseAssessment(value, scopes) {
   exactKeys(value, ["decision_owner", "preview_complete", "submit_ready", "blocking_issue_codes"], "assessment");
   if (value.decision_owner !== "agent" || value.preview_complete !== true || typeof value.submit_ready !== "boolean") fail("assessment");
   const blocking = issueCodes(value.blocking_issue_codes, "blocking issues");
-  const observed = [];
-  for (const { value: scope } of scopes) for (const code of scope.issue_codes) if (!observed.includes(code)) observed.push(code);
-  if (stable(blocking) !== stable(observed) || value.submit_ready !== (blocking.length === 0)) fail("submit readiness");
+  const observed = new Set(scopes.flatMap(({ value: scope }) => scope.issue_codes));
+  if (blocking.some((code) => !observed.has(code)) || value.submit_ready !== (blocking.length === 0)) fail("submit readiness");
   return { decision_owner: "agent", preview_complete: true, submit_ready: value.submit_ready, blocking_issue_codes: blocking };
 }
 
@@ -281,8 +313,8 @@ function parseCore(value, { input = false } = {}) {
     : ["schema_version", "verified_at", "application", "sources", "scopes", "decision_owner", "preview_complete", "submit_ready", "blocking_issue_codes", "effects"], input ? "input" : "receipt");
   if (!input && value.schema_version !== 1) fail("schema version");
   const verified = timestamp(value.verified_at, "verified timestamp");
-  const application = parseApplication(value.application);
-  const sources = parseSources(value.sources);
+  const sources = parseSources(value.sources, { withBody: input });
+  const application = parseApplication(value.application, sources, { verifySubmissionBody: input });
   const scopes = parseScopes(value.scopes, sources);
   const assessmentInput = input ? value.assessment : {
     decision_owner: value.decision_owner,
