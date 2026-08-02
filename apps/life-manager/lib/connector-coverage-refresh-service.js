@@ -169,18 +169,25 @@ function createConnectorCoverageRefreshService(dependencies = {}) {
           : "CONNECTOR_COVERAGE_APPLICATION_PLAN_FAILED");
       }
       if (openDatePlan.status === "unavailable") {
-        const unavailable = dependencies.readUnavailablePlanEvidence(openDatePlan);
-        unavailableDays.push(unavailable);
-        coverage = dependencies.rebuildCoverage({
-          tenantId,
-          timeZone: working.timezone,
-          now,
-          registrations,
-          unavailableDays,
-        });
-        openDatePlan = dependencies.rebindUnavailablePlan(openDatePlan, coverage);
+        let unavailableEvidence;
+        try {
+          unavailableEvidence = dependencies.readUnavailablePlanEvidence(openDatePlan);
+        } catch { unavailable("CONNECTOR_COVERAGE_UNAVAILABLE_EVIDENCE_READ_FAILED"); }
+        unavailableDays.push(unavailableEvidence);
+        try {
+          coverage = dependencies.rebuildCoverage({
+            tenantId,
+            timeZone: working.timezone,
+            now,
+            registrations,
+            unavailableDays,
+          });
+        } catch { unavailable("CONNECTOR_COVERAGE_UNAVAILABLE_REBUILD_FAILED"); }
+        try {
+          openDatePlan = dependencies.rebindUnavailablePlan(openDatePlan, coverage);
+        } catch { unavailable("CONNECTOR_COVERAGE_UNAVAILABLE_REBIND_FAILED"); }
         observedOutcomes.push(Object.freeze({
-          date: unavailable.date,
+          date: unavailableEvidence.date,
           observed_status: "calendar_unavailable",
         }));
       }
