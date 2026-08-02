@@ -26,11 +26,41 @@ CLIP_LEASE_GENERATION=""
 LEASE_HEARTBEAT_PID=""
 LEASE_HEARTBEAT_SECONDS="${LEASE_HEARTBEAT_SECONDS:-300}"
 MAIN_PARENT_PID="$$"
+MAIN_PARENT_PGID="$(ps -o pgid= -p "$MAIN_PARENT_PID" | tr -d '[:space:]')"
 ACTIVE_STEP_PID=""
 ACTIVE_STEP_PGID=""
 LEASE_SIGNAL_HANDLING=0
 
+active_step_group_is_safe(){
+  local pgid="${1:-}"
+  case "$pgid" in
+    ''|0|*[!0-9]*) return 1 ;;
+  esac
+  [ -n "${MAIN_PARENT_PGID:-}" ] && [ "$pgid" != "$MAIN_PARENT_PGID" ]
+}
+
+active_step_group_alive(){
+  local pgid="${1:-}"
+  active_step_group_is_safe "$pgid" && kill -0 -- "-$pgid" 2>/dev/null
+}
+
+clear_active_step(){
+  ACTIVE_STEP_PID=""
+  ACTIVE_STEP_PGID=""
+}
+
 start_active_step(){ # every agent step gets a private session/process group on macOS
+  if [ -n "${ACTIVE_STEP_PGID:-}" ]; then
+    if ! active_step_group_is_safe "$ACTIVE_STEP_PGID"; then
+      log "refusing to replace an unsafe active step process group"
+      return 1
+    fi
+    if active_step_group_alive "$ACTIVE_STEP_PGID"; then
+      log "refusing to replace a still-live active step process group"
+      return 1
+    fi
+    clear_active_step
+  fi
   python3 -c 'import os
 import sys
 os.setsid()
@@ -45,7 +75,18 @@ wait_for_active_step(){
   [ -n "$pid" ] || return 0
   wait "$pid" || rc=$?
   ACTIVE_STEP_PID=""
-  ACTIVE_STEP_PGID=""
+  if ! active_step_group_is_safe "$ACTIVE_STEP_PGID"; then
+    log "active step process group is unsafe; retaining fenced lease"
+    [ "$rc" -eq 0 ] && rc=1
+    return "$rc"
+  elif active_step_group_alive "$ACTIVE_STEP_PGID"; then
+    terminate_active_step || {
+      [ "$rc" -eq 0 ] && rc=1
+      return "$rc"
+    }
+  else
+    clear_active_step
+  fi
   return "$rc"
 }
 
@@ -57,6 +98,7 @@ input=$1
 shift
 printf "%s\\n" "$input" | "$@"
 ' bash "$input" "$@"
+  [ -n "${ACTIVE_STEP_PID:-}" ] || return 1
   wait_for_active_step
 }
 
@@ -64,19 +106,30 @@ terminate_active_step(){
   local pid="${ACTIVE_STEP_PID:-}"
   local pgid="${ACTIVE_STEP_PGID:-}"
   local attempts=20
-  [ -n "$pid" ] || return 0
-  [ -n "$pgid" ] || pgid="$pid"
+  [ -n "$pgid" ] || { clear_active_step; return 0; }
+  if ! active_step_group_is_safe "$pgid"; then
+    log "refusing to signal an unsafe active step process group"
+    return 1
+  fi
   kill -TERM -- "-$pgid" 2>/dev/null || true
-  while [ "$attempts" -gt 0 ] && kill -0 "$pid" 2>/dev/null; do
+  while [ "$attempts" -gt 0 ] && active_step_group_alive "$pgid"; do
     command sleep 0.05
     attempts=$((attempts - 1))
   done
-  if kill -0 "$pid" 2>/dev/null; then
+  if active_step_group_alive "$pgid"; then
     kill -KILL -- "-$pgid" 2>/dev/null || true
   fi
-  wait "$pid" 2>/dev/null || true
-  ACTIVE_STEP_PID=""
-  ACTIVE_STEP_PGID=""
+  attempts=20
+  while [ "$attempts" -gt 0 ] && active_step_group_alive "$pgid"; do
+    command sleep 0.05
+    attempts=$((attempts - 1))
+  done
+  [ -z "$pid" ] || wait "$pid" 2>/dev/null || true
+  if active_step_group_alive "$pgid"; then
+    log "active step process group survived termination; retaining fenced lease"
+    return 1
+  fi
+  clear_active_step
 }
 
 handle_lease_signal(){
@@ -171,8 +224,12 @@ cleanup(){
   local rc=$?
   trap - TERM INT
   stop_lease_heartbeat
-  terminate_active_step
-  release_lease || log "fenced lease release failed; gc will retry the durable pending row"
+  if terminate_active_step; then
+    release_lease || log "fenced lease release failed; gc will retry the durable pending row"
+  else
+    log "active step process group remains; retaining fenced lease for recovery"
+    [ "$rc" -eq 0 ] && rc=1
+  fi
   rmdir "$LOCKD" 2>/dev/null || true
   trap - EXIT
   exit "$rc"

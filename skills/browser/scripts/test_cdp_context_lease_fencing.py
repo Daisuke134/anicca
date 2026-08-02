@@ -96,6 +96,7 @@ def _valid_held(**overrides):
         "context_id": "context-1",
         "target_id": "target-1",
         "ws": "ws://127.0.0.1/devtools/page/target-1",
+        "cookies_seeded": 0,
         "token": "a" * 32,
         "generation": 1,
         "ts": 1.0,
@@ -224,6 +225,35 @@ def test_acquire_disposes_untracked_context_when_ledger_write_fails(monkeypatch,
     assert not leases_path.exists()
 
 
+def test_acquire_journals_untracked_context_when_dispose_fails_then_gc_retries(
+    monkeypatch, tmp_path
+):
+    _set_lease_path(monkeypatch, tmp_path)
+    _calls, state = _install_flaky_dispose(monkeypatch)
+    original_save = lease._save_ledger_locked
+    save_attempts = 0
+
+    def fail_only_the_initial_normal_lease_save(ledger):
+        nonlocal save_attempts
+        save_attempts += 1
+        if save_attempts == 1:
+            raise OSError("ledger write failed")
+        return original_save(ledger)
+
+    monkeypatch.setattr(
+        lease, "_save_ledger_locked", fail_only_the_initial_normal_lease_save
+    )
+
+    with pytest.raises(OSError, match="ledger write failed"):
+        lease.acquire("gig", no_seed=True)
+
+    recovered = lease.gc(idle_min=1)
+
+    assert recovered["ok"] is True
+    assert recovered["reaped"] == ["gig"]
+    assert state["dispose_attempts"] == 2
+
+
 def test_acquire_keeps_exact_durable_candidate_after_directory_fsync_error(
     monkeypatch, tmp_path
 ):
@@ -265,6 +295,9 @@ def test_acquire_keeps_exact_durable_candidate_after_directory_fsync_error(
         _valid_held(heartbeat_at=float("inf")),
         _valid_held(heartbeat_at=-1),
         _valid_held(dispose_pending="yes"),
+        _valid_held(cookies_seeded=True),
+        _valid_held(cookies_seeded=-1),
+        _valid_held(counter=0),
         _valid_held(token=""),
         _valid_held(generation=0),
         {key: value for key, value in _valid_held().items() if key != "generation"},
@@ -286,12 +319,16 @@ def test_invalid_ledger_row_blocks_new_acquire_without_write_or_cdp(
     assert calls == []
 
 
-def test_acquire_upgrades_a_complete_legacy_row(monkeypatch, tmp_path):
+def test_acquire_upgrades_the_actual_historical_legacy_row(monkeypatch, tmp_path):
     leases_path = _set_lease_path(monkeypatch, tmp_path)
     _install_fake_cdp(monkeypatch)
-    legacy = _valid_held()
-    del legacy["token"]
-    del legacy["generation"]
+    legacy = {
+        "context_id": "context-1",
+        "target_id": "target-1",
+        "ws": "ws://127.0.0.1/devtools/page/target-1",
+        "ts": 1.0,
+        "cookies_seeded": 0,
+    }
     _write_lease(leases_path, "gig", legacy, 1)
 
     upgraded = lease.acquire("gig", no_seed=True)
@@ -300,6 +337,7 @@ def test_acquire_upgrades_a_complete_legacy_row(monkeypatch, tmp_path):
     assert upgraded["reused"] is True
     assert re.fullmatch(r"[0-9a-f]{32}", upgraded["token"])
     assert upgraded["generation"] == 2
+    assert upgraded["heartbeat_at"] >= legacy["ts"]
 
 
 def test_heartbeat_requires_exact_current_identity(monkeypatch, tmp_path):
@@ -387,6 +425,7 @@ def test_fenced_release_cannot_delete_a_replacement_seen_after_its_snapshot(
         "context_id": "context-old",
         "target_id": "target-old",
         "ws": "ws://127.0.0.1/devtools/page/target-old",
+        "cookies_seeded": 0,
         "token": "a" * 32,
         "generation": 1,
         "ts": 1.0,
@@ -396,6 +435,7 @@ def test_fenced_release_cannot_delete_a_replacement_seen_after_its_snapshot(
         "context_id": "context-new",
         "target_id": "target-new",
         "ws": "ws://127.0.0.1/devtools/page/target-new",
+        "cookies_seeded": 0,
         "token": "b" * 32,
         "generation": 2,
         "ts": 2.0,
@@ -449,6 +489,7 @@ def test_gc_does_not_reap_a_lease_refreshed_after_stale_snapshot(monkeypatch, tm
         "context_id": "context-1",
         "target_id": "target-1",
         "ws": "ws://127.0.0.1/devtools/page/target-1",
+        "cookies_seeded": 0,
         "token": "a" * 32,
         "generation": 1,
         "ts": 0.0,
@@ -487,6 +528,7 @@ def test_gc_does_not_reap_a_replacement_generation(monkeypatch, tmp_path):
         "context_id": "context-old",
         "target_id": "target-old",
         "ws": "ws://127.0.0.1/devtools/page/target-old",
+        "cookies_seeded": 0,
         "token": "a" * 32,
         "generation": 1,
         "ts": 0.0,
@@ -496,6 +538,7 @@ def test_gc_does_not_reap_a_replacement_generation(monkeypatch, tmp_path):
         "context_id": "context-new",
         "target_id": "target-new",
         "ws": "ws://127.0.0.1/devtools/page/target-new",
+        "cookies_seeded": 0,
         "token": "b" * 32,
         "generation": 2,
         "ts": 0.0,
@@ -567,6 +610,7 @@ def test_gc_keeps_pending_lease_when_dispose_fails_and_retries(monkeypatch, tmp_
         "context_id": "context-1",
         "target_id": "target-1",
         "ws": "ws://127.0.0.1/devtools/page/target-1",
+        "cookies_seeded": 0,
         "token": "a" * 32,
         "generation": 1,
         "ts": 0.0,
@@ -607,6 +651,7 @@ def test_gc_finalizes_a_pending_lease_when_cdp_confirms_it_is_already_disposed(
         "context_id": "context-1",
         "target_id": "target-1",
         "ws": "ws://127.0.0.1/devtools/page/target-1",
+        "cookies_seeded": 0,
         "token": "a" * 32,
         "generation": 1,
         "ts": 1_000.0,
@@ -655,11 +700,11 @@ def test_ledger_rmw_is_serialized_across_processes(monkeypatch, tmp_path):
         "context_id": "context-1",
         "target_id": "target-1",
         "ws": "ws://127.0.0.1/devtools/page/target-1",
+        "cookies_seeded": 0,
         "token": "a" * 32,
         "generation": 1,
         "ts": 1.0,
         "heartbeat_at": 1.0,
-        "counter": 0,
     }
     _write_lease(leases_path, "gig", held, 1)
     worker = textwrap.dedent(
@@ -674,10 +719,9 @@ def test_ledger_rmw_is_serialized_across_processes(monkeypatch, tmp_path):
         for _ in range(8):
             with lease._ledger_lock():
                 ledger = lease._read_ledger_locked()
-                row = ledger["leases"]["gig"]
-                value = row["counter"]
+                value = ledger["generations"]["gig"]
                 time.sleep(0.01)
-                row["counter"] = value + 1
+                ledger["generations"]["gig"] = value + 1
                 lease._save_ledger_locked(ledger)
         """
     )
@@ -699,7 +743,9 @@ def test_ledger_rmw_is_serialized_across_processes(monkeypatch, tmp_path):
         _stdout, stderr = process.communicate(timeout=15)
         assert process.returncode == 0, stderr.decode()
 
-    assert _read_lease(leases_path)["counter"] == 16
+    assert json.loads(leases_path.read_text(encoding="utf-8"))["_lease_fence_meta"][
+        "generations"
+    ]["gig"] == 17
 
 
 def test_ledger_write_fsyncs_data_file_and_parent_directory(monkeypatch, tmp_path):
@@ -912,6 +958,146 @@ def test_heartbeat_failure_waits_for_foreground_child_before_fenced_release(tmp_
     assert completed.returncode != 0, stderr
     assert "release_after_child_exit" in events
     assert "release_while_child_alive" not in events
+
+
+@pytest.mark.parametrize(
+    ("relative_path", "lease_prefix"),
+    [
+        ("skills/earn/gig/gig_pass.sh", "GIG_LEASE"),
+        ("skills/earn/clip/clip_daily.sh", "CLIP_LEASE"),
+        ("skills/earn/clip/clip_pass.sh", "CLIP_LEASE"),
+    ],
+)
+def test_cleanup_kills_surviving_active_process_group_before_release(
+    tmp_path, relative_path, lease_prefix
+):
+    root = Path(__file__).resolve().parents[3]
+    source = (root / relative_path).read_text(encoding="utf-8")
+    active_start = source.index(
+        "active_step_group_is_safe(){"
+        if "active_step_group_is_safe(){" in source
+        else "start_active_step(){"
+    )
+    functions = tmp_path / "launcher-functions.sh"
+    functions.write_text(
+        source[active_start : source.index("\nparse_lease(){", active_start)]
+        + "\n"
+        + _shell_function(source, "cleanup", "step")
+        + "\n"
+        + _shell_function(source, "release_lease", "lease_heartbeat_loop"),
+        encoding="utf-8",
+    )
+    events_path = tmp_path / "events.txt"
+    descendant_pid_path = tmp_path / "descendant.pid"
+    descendant_ready_path = tmp_path / "descendant.ready"
+    lease_cli = tmp_path / "lease-cli.py"
+    leader = tmp_path / "leader.sh"
+    descendant = tmp_path / "descendant.sh"
+    lease_cli.write_text(
+        textwrap.dedent(
+            """\
+            import os
+            import sys
+
+            if sys.argv[1] != "release":
+                raise SystemExit(64)
+            with open(os.environ["HARNESS_DESCENDANT_PID"], encoding="utf-8") as handle:
+                descendant_pid = int(handle.read())
+            try:
+                os.kill(descendant_pid, 0)
+            except ProcessLookupError:
+                event = "release_after_descendant_exit"
+            else:
+                event = "release_while_descendant_alive"
+            with open(os.environ["HARNESS_EVENTS"], "a", encoding="utf-8") as handle:
+                handle.write(event + "\\n")
+            """
+        ),
+        encoding="utf-8",
+    )
+    descendant.write_text(
+        textwrap.dedent(
+            """\
+            #!/usr/bin/env bash
+            trap "" TERM INT
+            echo "$$" > "$HARNESS_DESCENDANT_PID"
+            : > "$HARNESS_DESCENDANT_READY"
+            while :; do /bin/sleep 0.02; done
+            """
+        ),
+        encoding="utf-8",
+    )
+    leader.write_text(
+        textwrap.dedent(
+            """\
+            #!/usr/bin/env bash
+            "$HARNESS_DESCENDANT" </dev/null >/dev/null 2>&1 &
+            while [ ! -e "$HARNESS_DESCENDANT_READY" ]; do /bin/sleep 0.01; done
+            exit 0
+            """
+        ),
+        encoding="utf-8",
+    )
+    leader.chmod(0o755)
+    descendant.chmod(0o755)
+    harness = textwrap.dedent(
+        f"""\
+        set -uo pipefail
+        log() {{ printf '%s\\n' "$*" >&2; }}
+        source "$HARNESS_FUNCTIONS"
+        stop_lease_heartbeat() {{ :; }}
+        LEASE_SCRIPT="$HARNESS_LEASE_SCRIPT"
+        {lease_prefix}="group-harness"
+        {lease_prefix}_WS="ws://harness"
+        {lease_prefix}_TOKEN="harness-token"
+        {lease_prefix}_GENERATION=1
+        LEASE_HEARTBEAT_PID=""
+        MAIN_PARENT_PID="$$"
+        MAIN_PARENT_PGID="$(ps -o pgid= -p "$MAIN_PARENT_PID" | tr -d '[:space:]')"
+        ACTIVE_STEP_PID=""
+        ACTIVE_STEP_PGID=""
+        LEASE_SIGNAL_HANDLING=0
+        LOCKD="$HARNESS_LOCK"
+        mkdir -p "$LOCKD"
+        start_active_step "$HARNESS_LEADER"
+        for _ in $(seq 1 100); do
+          [ -s "$HARNESS_DESCENDANT_PID" ] && break
+          command sleep 0.01
+        done
+        [ -s "$HARNESS_DESCENDANT_PID" ] || exit 88
+        wait_for_active_step || true
+        cleanup
+        """
+    )
+    try:
+        completed = subprocess.run(
+            ["bash", "-c", harness],
+            env={
+                **os.environ,
+                "HARNESS_DESCENDANT": str(descendant),
+                "HARNESS_DESCENDANT_PID": str(descendant_pid_path),
+                "HARNESS_DESCENDANT_READY": str(descendant_ready_path),
+                "HARNESS_EVENTS": str(events_path),
+                "HARNESS_FUNCTIONS": str(functions),
+                "HARNESS_LEASE_SCRIPT": str(lease_cli),
+                "HARNESS_LEADER": str(leader),
+                "HARNESS_LOCK": str(tmp_path / "lock"),
+            },
+            text=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+            timeout=8,
+        )
+    finally:
+        if descendant_pid_path.exists():
+            descendant_pid = int(descendant_pid_path.read_text(encoding="utf-8"))
+            try:
+                os.kill(descendant_pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+
+    assert completed.returncode == 0, completed.stderr
+    assert events_path.read_text(encoding="utf-8") == "release_after_descendant_exit\n"
 
 
 def test_owned_callers_release_the_exact_fence_credentials():

@@ -61,6 +61,10 @@ def _ledger_lock_path():
     return _leases_path() + ".lock"
 
 
+def _reconciliation_path():
+    return _leases_path() + ".reconcile.json"
+
+
 def _operation_lock_path(target_id):
     return os.path.join(_leases_dir(), "operations", f"{target_id}.lock")
 
@@ -135,24 +139,97 @@ def _valid_timestamp(value):
         return False
 
 
+def _valid_cookie_count(value):
+    return isinstance(value, int) and not isinstance(value, bool) and value >= 0
+
+
+_CURRENT_LEASE_REQUIRED_FIELDS = frozenset(
+    {
+        "context_id",
+        "target_id",
+        "ws",
+        "ts",
+        "cookies_seeded",
+        "token",
+        "generation",
+        "heartbeat_at",
+    }
+)
+_CURRENT_LEASE_ALLOWED_FIELDS = _CURRENT_LEASE_REQUIRED_FIELDS | {"dispose_pending"}
+_LEGACY_LEASE_REQUIRED_FIELDS = frozenset(
+    {"context_id", "target_id", "ws", "ts", "cookies_seeded"}
+)
+_LEGACY_LEASE_ALLOWED_FIELDS = _LEGACY_LEASE_REQUIRED_FIELDS | {
+    "heartbeat_at",
+    "dispose_pending",
+}
+
+
+def _valid_common_lease_fields(held):
+    return (
+        _valid_text(held.get("context_id"))
+        and _valid_text(held.get("target_id"))
+        and _valid_text(held.get("ws"))
+        and _valid_timestamp(held.get("ts"))
+        and _valid_cookie_count(held.get("cookies_seeded"))
+        and (
+            "dispose_pending" not in held
+            or isinstance(held["dispose_pending"], bool)
+        )
+    )
+
+
 def _valid_lease_row(held):
-    """Accept only complete current rows or complete credentialless legacy rows."""
+    """Accept only one explicit current or credentialless historical schema."""
     if not isinstance(held, dict):
         return False
-    if any(not _valid_text(held.get(field)) for field in ("context_id", "target_id", "ws")):
-        return False
-    if any(not _valid_timestamp(held.get(field)) for field in ("ts", "heartbeat_at")):
-        return False
-    has_token = "token" in held
-    has_generation = "generation" in held
-    if has_token != has_generation:
-        return False
-    if has_token and (
-        not _valid_text(held["token"])
-        or not _valid_generation(held["generation"])
+    fields = set(held)
+    if _CURRENT_LEASE_REQUIRED_FIELDS <= fields and fields <= _CURRENT_LEASE_ALLOWED_FIELDS:
+        return (
+            _valid_common_lease_fields(held)
+            and _valid_text(held["token"])
+            and _valid_generation(held["generation"])
+            and _valid_timestamp(held["heartbeat_at"])
+        )
+    if not (
+        _LEGACY_LEASE_REQUIRED_FIELDS <= fields
+        and fields <= _LEGACY_LEASE_ALLOWED_FIELDS
     ):
         return False
-    return "dispose_pending" not in held or isinstance(held["dispose_pending"], bool)
+    return _valid_common_lease_fields(held) and (
+        "heartbeat_at" not in held or _valid_timestamp(held["heartbeat_at"])
+    )
+
+
+def _valid_reconciliation_entry(entry):
+    if not isinstance(entry, dict) or set(entry) - {"task", "context_id", "target_id"}:
+        return False
+    if not _valid_text(entry.get("task")) or not _valid_text(entry.get("context_id")):
+        return False
+    return "target_id" not in entry or _valid_text(entry["target_id"])
+
+
+def _read_reconciliation_locked():
+    """Read pending cleanup records while holding _ledger_lock()."""
+    try:
+        with open(_reconciliation_path(), encoding="utf-8") as handle:
+            entries = json.load(handle)
+    except FileNotFoundError:
+        return []
+    if not isinstance(entries, list) or any(
+        not _valid_reconciliation_entry(entry) for entry in entries
+    ):
+        raise ValueError("lease reconciliation journal is invalid")
+    return entries
+
+
+def _save_reconciliation_locked(entries):
+    """Persist pending cleanup records with the same durability as the lease ledger."""
+    if not isinstance(entries, list) or any(
+        not _valid_reconciliation_entry(entry) for entry in entries
+    ):
+        raise ValueError("lease reconciliation journal is invalid")
+    _atomic_write_json(_reconciliation_path(), entries)
 
 
 def _read_ledger_locked():
@@ -166,7 +243,7 @@ def _read_ledger_locked():
         raise ValueError("lease ledger must be a JSON object")
 
     meta = raw.get(_LEDGER_META_KEY, {})
-    if not isinstance(meta, dict):
+    if not isinstance(meta, dict) or set(meta) - {"generations"}:
         raise ValueError("lease ledger metadata must be an object")
     generations = meta.get("generations", {})
     if not isinstance(generations, dict):
@@ -183,21 +260,20 @@ def _read_ledger_locked():
     return {"leases": leases, "generations": generations}
 
 
-def _atomic_write_ledger(data):
-    """Replace the ledger durably; callers hold _ledger_lock() for the RMW."""
-    leases_path = _leases_path()
-    leases_dir = _leases_dir()
-    os.makedirs(leases_dir, exist_ok=True)
+def _atomic_write_json(path, data):
+    """Replace a small JSON state file durably while its caller holds the lock."""
+    directory = os.path.dirname(os.path.abspath(path))
+    os.makedirs(directory, exist_ok=True)
     fd, tmp_path = tempfile.mkstemp(
-        prefix=f".{os.path.basename(leases_path)}.", suffix=".tmp", dir=leases_dir
+        prefix=f".{os.path.basename(path)}.", suffix=".tmp", dir=directory
     )
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as handle:
             json.dump(data, handle, indent=2)
             handle.flush()
             os.fsync(handle.fileno())
-        os.replace(tmp_path, leases_path)
-        directory_fd = os.open(leases_dir, os.O_RDONLY)
+        os.replace(tmp_path, path)
+        directory_fd = os.open(directory, os.O_RDONLY)
         try:
             os.fsync(directory_fd)
         finally:
@@ -207,10 +283,25 @@ def _atomic_write_ledger(data):
             os.unlink(tmp_path)
 
 
+def _atomic_write_ledger(data):
+    """Replace the ledger durably; callers hold _ledger_lock() for the RMW."""
+    _atomic_write_json(_leases_path(), data)
+
+
 def _save_ledger_locked(ledger):
     """Persist a normalized ledger while its flock is held."""
-    data = dict(ledger["leases"])
-    data[_LEDGER_META_KEY] = {"generations": dict(ledger["generations"])}
+    if not isinstance(ledger, dict):
+        raise ValueError("lease ledger must be a JSON object")
+    leases = ledger.get("leases")
+    generations = ledger.get("generations")
+    if not isinstance(leases, dict) or not isinstance(generations, dict):
+        raise ValueError("lease ledger has invalid normalized fields")
+    if any(not _valid_lease_row(held) for held in leases.values()) or any(
+        not _valid_generation(generation) for generation in generations.values()
+    ):
+        raise ValueError("lease ledger contains an invalid row")
+    data = dict(leases)
+    data[_LEDGER_META_KEY] = {"generations": dict(generations)}
     _atomic_write_ledger(data)
 
 
@@ -390,30 +481,90 @@ def _candidate_is_durably_current(task, candidate):
                 "generation",
                 "ts",
                 "heartbeat_at",
+                "cookies_seeded",
             )
         )
 
 
-def _rollback_untracked_candidate(task, candidate):
-    """Dispose a failed acquire only when its exact durable row is absent."""
-    context_id = candidate["context_id"]
-    target_id = candidate.get("target_id")
-    if target_id:
-        try:
-            if _candidate_is_durably_current(task, candidate):
-                return
-        except Exception:
-            # A damaged ledger cannot prove this candidate is untracked.  Prefer a
-            # recoverable leaked context over disposing a potentially live lease.
+def _reconciliation_entry(task, candidate):
+    entry = {"task": task, "context_id": candidate["context_id"]}
+    if _valid_text(candidate.get("target_id")):
+        entry["target_id"] = candidate["target_id"]
+    if not _valid_reconciliation_entry(entry):
+        raise ValueError("cannot journal an invalid failed lease candidate")
+    return entry
+
+
+def _record_reconciliation_candidate(task, candidate):
+    """Durably remember an untracked context before retrying its disposal."""
+    entry = _reconciliation_entry(task, candidate)
+    with _ledger_lock():
+        entries = _read_reconciliation_locked()
+        if entry not in entries:
+            entries.append(entry)
+            _save_reconciliation_locked(entries)
+    return entry
+
+
+def _finalize_reconciliation_candidate(entry):
+    """Forget a journal entry only after CDP confirms its context is gone."""
+    with _ledger_lock():
+        entries = _read_reconciliation_locked()
+        if entry not in entries:
+            return False
+        _save_reconciliation_locked([item for item in entries if item != entry])
+        return True
+
+
+def _rollback_untracked_candidate_while_locked(task, candidate):
+    """Record then dispose a failed candidate while its target operation is serialized."""
+    try:
+        if _candidate_is_durably_current(task, candidate):
             return
+    except Exception:
+        # A damaged ledger cannot prove this candidate is untracked.  Keep a
+        # durable recovery record, but do not risk disposing a live context.
+        try:
+            _record_reconciliation_candidate(task, candidate)
+        except Exception:
+            pass
+        return
+
+    try:
+        entry = _record_reconciliation_candidate(task, candidate)
+    except Exception:
+        entry = None
+    try:
+        _dispose(candidate)
+    except Exception:
+        # Preserve the primary acquire failure.  If the journal write succeeded,
+        # GC will retry; an independent journal avoids an untracked context when
+        # the original ledger save was the failing operation.
+        return
+    if entry is not None:
+        try:
+            _finalize_reconciliation_candidate(entry)
+        except Exception:
+            pass
+
+
+def _rollback_untracked_candidate(task, candidate):
+    """Dispose or durably reconcile a failed acquire that never became current."""
+    target_id = candidate.get("target_id")
     try:
         if target_id:
-            _dispose_discarded_context(candidate)
+            with _target_operation_lock(target_id):
+                _rollback_untracked_candidate_while_locked(task, candidate)
         else:
-            _dispose({"context_id": context_id})
+            _rollback_untracked_candidate_while_locked(task, candidate)
     except Exception:
-        # Preserve the primary acquire failure; the caller must never receive OK.
-        pass
+        # Never replace the original acquire failure with a cleanup failure.  If
+        # the target-operation lock itself failed, still attempt the independent
+        # durable journal so a later GC can reconcile the context.
+        try:
+            _record_reconciliation_candidate(task, candidate)
+        except Exception:
+            pass
 
 
 def acquire(task, url="about:blank", no_seed=False):
@@ -570,6 +721,34 @@ def release(task, token=None, generation=None):
     return {"ok": True, "released": task, "context_id": pending["context_id"]}
 
 
+def _gc_reconciliation_entry_while_locked(entry):
+    with _ledger_lock():
+        entries = _read_reconciliation_locked()
+        if entry not in entries:
+            return None
+        ledger = _read_ledger_locked()
+        if any(
+            held.get("context_id") == entry["context_id"]
+            for held in ledger["leases"].values()
+        ):
+            _save_reconciliation_locked([item for item in entries if item != entry])
+            return None
+    try:
+        _dispose(entry)
+    except Exception as exc:
+        if not _already_disposed(exc):
+            return False
+    return _finalize_reconciliation_candidate(entry)
+
+
+def _gc_reconciliation_entry(entry):
+    target_id = entry.get("target_id")
+    if target_id:
+        with _target_operation_lock(target_id):
+            return _gc_reconciliation_entry_while_locked(entry)
+    return _gc_reconciliation_entry_while_locked(entry)
+
+
 def gc(idle_min=45):
     """Reap only still-stale (or previously pending) exact lease identities."""
     with _ledger_lock():
@@ -582,6 +761,7 @@ def gc(idle_min=45):
             and held.get("target_id")
             and (_is_dispose_pending(held) or _stale(held, now, idle_min))
         ]
+        reconciliation_candidates = list(_read_reconciliation_locked())
 
     reaped = []
     dispose_failed = []
@@ -607,10 +787,26 @@ def gc(idle_min=45):
                 continue
             reaped.append(task)
 
+    for entry in reconciliation_candidates:
+        result = _gc_reconciliation_entry(entry)
+        if result is None:
+            continue
+        if result:
+            reaped.append(entry["task"])
+        else:
+            dispose_failed.append(entry["task"])
+
+    with _ledger_lock():
+        ledger = _read_ledger_locked()
+        still_held = list(ledger["leases"])
+        for entry in _read_reconciliation_locked():
+            if entry["task"] not in still_held:
+                still_held.append(entry["task"])
+
     return {
         "ok": not dispose_failed,
         "reaped": reaped,
-        "still_held": list(_leases()),
+        "still_held": still_held,
         "dispose_failed": dispose_failed,
     }
 

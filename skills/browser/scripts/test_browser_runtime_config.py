@@ -35,7 +35,7 @@ def test_release_waits_for_active_target_operation(monkeypatch, tmp_path):
         (
             '{"gig":{"context_id":"context-1","target_id":"target-1",'
             '"ws":"ws://127.0.0.1/devtools/page/target-1",'
-            '"token":"a-token","generation":1,"ts":1.0,'
+            '"cookies_seeded":0,"token":"a-token","generation":1,"ts":1.0,'
             '"heartbeat_at":1.0}}'
         ),
         encoding="utf-8",
