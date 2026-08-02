@@ -1636,6 +1636,16 @@ O1B-26進捗35（初の新規実登録成功 / inventory失敗を三段階へ分
 account情報をerrorへ含めない。substageを保存する回帰testは修正前RED、実装後GREEN。Connector/Luma/runtime関連188/188、
 adapter関連64/64、失敗0件。次はcommit/push/deployし、fresh jobのexact substageを実測してCalendar同期を完了する。
 
+O1B-26進捗36（Luma東京一覧discoveryへ真因を限定 / 内部四段階 RED→GREEN）: 進捗35をcommit `d7cee56ab`として
+mainへpushし、image `b07b911632f3`を12:45 JSTに配備した。旧coverage jobは配備前に20回上限へ達したため、同じverified
+coverageからcanonical builder/storeでfresh job
+`connector-coverage:24fe695d77e5d4bc8bc13d101a8b7e7bacffaad6f9324d3f9cb20535cc6def8e`を作成した。
+attempt 1のLIVE receiptは`CONNECTOR_COVERAGE_INVENTORY_DISCOVERY_FAILED`であり、個別event detail、Calendar、coverage build
+ではなくLuma東京一覧取得を真因境界として確定した。次にdiscovery内部を`PAGE`（認証済みpage取得）、`SNAPSHOT`（event card読取）、
+`ADVANCE`（scroll）、`END_UNPROVEN`（virtualized一覧の終端未証明）へ分離し、private provider/account本文を保存しない。
+snapshot/advance/endと上位伝播の回帰testは修正前RED、実装後24/24 GREEN。次はcommit/push/deployし、LIVE exact substageを
+取得してその一箇所だけを修復する。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 

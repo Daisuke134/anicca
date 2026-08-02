@@ -202,6 +202,20 @@ test("reports the exact safe inventory stage without leaking provider details", 
   }
 });
 
+test("preserves an allowlisted exact discovery substage", async () => {
+  await assert.rejects(inspectLumaDateInventory({
+    coverage: COVERAGE,
+    now: "2026-08-02T01:00:00.000Z",
+    discoverTokyo: async () => {
+      const error = new Error("private provider text");
+      error.code = "LUMA_DISCOVERY_END_UNPROVEN";
+      throw error;
+    },
+    inspectEvent: async () => { throw new Error("must not inspect"); },
+  }), (error) => error.code === "CONNECTOR_COVERAGE_INVENTORY_DISCOVERY_END_UNPROVEN_FAILED"
+    && !JSON.stringify(error).includes("private provider text"));
+});
+
 test("does not convert a fully read zero-candidate date into coverage resolution", async () => {
   const inventory = await verifiedInventory(["tokyo-one"]);
   const snapshot = buildLumaDateInventory({

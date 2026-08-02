@@ -13,6 +13,12 @@ const SLUG = /^[A-Za-z0-9_-]+$/;
 const TOKYO_DISCOVER_URL = "https://luma.com/tokyo?k=p";
 const VERIFIED = new WeakSet();
 
+function unavailable(code) {
+  const error = new Error("Luma discovery unavailable");
+  error.code = code;
+  throw error;
+}
+
 function boundedText(value, max) {
   const text = String(value == null ? "" : value).replace(/\s+/g, " ").trim();
   return text && text.length <= max ? text : "";
@@ -85,7 +91,12 @@ async function collectLumaInventory(options = {}) {
   let stableRounds = 0;
   let previousHeight = null;
   for (let round = 1; round <= maxRounds; round += 1) {
-    const snapshot = await readSnapshot();
+    let snapshot;
+    try {
+      snapshot = await readSnapshot();
+    } catch {
+      unavailable("LUMA_DISCOVERY_SNAPSHOT_FAILED");
+    }
     if (!Array.isArray(snapshot)) throw new Error("Luma discovery snapshot invalid");
     let added = 0;
     for (const raw of snapshot) {
@@ -95,7 +106,12 @@ async function collectLumaInventory(options = {}) {
       added += 1;
     }
 
-    const state = await advance();
+    let state;
+    try {
+      state = await advance();
+    } catch {
+      unavailable("LUMA_DISCOVERY_ADVANCE_FAILED");
+    }
     const height = Number(state && state.scrollHeight);
     const stableHeight = Number.isFinite(height) && height === previousHeight;
     if (state && state.atEnd === true && added === 0 && stableHeight) {
@@ -114,7 +130,7 @@ async function collectLumaInventory(options = {}) {
       return inventory;
     }
   }
-  throw new Error("Luma inventory end unproven");
+  unavailable("LUMA_DISCOVERY_END_UNPROVEN");
 }
 
 function isVerifiedLumaInventory(value) {
@@ -170,12 +186,19 @@ async function discoverLumaTokyo(options = {}) {
   }
   const readSnapshot = options.readSnapshot || readLumaTimelineSnapshot;
   const advance = options.advance || advanceLumaTimeline;
-  return dailyDriver.withLumaPage(TOKYO_DISCOVER_URL, (page) => collectLumaInventory({
-    readSnapshot: () => readSnapshot(page),
-    advance: () => advance(page),
-    maxRounds: options.maxRounds,
-    stableEndRounds: options.stableEndRounds,
-  }));
+  try {
+    return await dailyDriver.withLumaPage(TOKYO_DISCOVER_URL, (page) => collectLumaInventory({
+      readSnapshot: () => readSnapshot(page),
+      advance: () => advance(page),
+      maxRounds: options.maxRounds,
+      stableEndRounds: options.stableEndRounds,
+    }));
+  } catch (error) {
+    if (/^LUMA_DISCOVERY_(?:SNAPSHOT|ADVANCE)_FAILED$|^LUMA_DISCOVERY_END_UNPROVEN$/.test(String(error && error.code || ""))) {
+      throw error;
+    }
+    unavailable("LUMA_DISCOVERY_PAGE_FAILED");
+  }
 }
 
 module.exports = {
