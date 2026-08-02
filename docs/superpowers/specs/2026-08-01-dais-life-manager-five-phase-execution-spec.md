@@ -1454,7 +1454,16 @@ Luma event detailを一件読むたび同じCloakBrowser `:9222`へ`connectOverC
 経路を確認した。「2ページを逐次読んでもCDP接続は1回、作業用pageは2枚とも閉じ、browser本体と既存pageは
 閉じない」回帰testを追加し、修正前2接続でRED、driver内のlive connection再利用後GREENにした。切断済み接続は
 `isConnected()`で破棄し、次回だけ再接続する。CloakBrowser、日付inventory、runtime assembly focused 12/12成功。
-次はcommit/push、再配備し、18回目で資源使用、応募job enqueue、Calendar、coverage receiptをLIVE確認する。
+commit `dd8f33a6d`、image `80949e9e07ab`を配備した。18回目は約2分で完了し、実測資源は旧版の約2GB・
+600MB超networkから約127MB・約12MBへ低下した。coverageは`covered_new=1 / open=20`、応募planは
+`exhausted`で新しい応募job 0件だったため、O1B-26は未完了のまま次の真因へ進む。
+
+O1B-26進捗13（全候補skipの不可視性 / RED→GREEN）: 18回目の`exhausted` receiptは候補数とskip理由を
+保持せず、「なぜ応募0件か」をopaque plan refから診断できなかった。event ref、URL、本文をreceiptへ出さず、
+`candidate_count`、`runnable_candidate_count`、reason別件数だけをverified planへ追加する。候補とskipが同日の
+全eventを重複なくexact partitionし、reasonはbounded lower-snake-caseだけを許す。新回帰testは修正前に件数
+`undefined`でRED、実装後GREEN。Connector 245/245、runtime adapters 125/125、失敗0件。次のLIVE refreshで
+`calendar_conflict / price_unknown / paid_disabled / cap`等のどのpolicyが0件を作ったかを確定して修正する。
 
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。

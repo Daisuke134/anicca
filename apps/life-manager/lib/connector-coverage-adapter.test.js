@@ -51,6 +51,9 @@ function openDatePlan(coverage, status = "enqueued") {
     status,
     event_ref: hasJob ? "luma-event://event/first" : null,
     job_ref: hasJob ? `runtime-job://dais-local/${"d".repeat(64)}` : null,
+    candidate_count: active ? 1 : 0,
+    runnable_candidate_count: active ? 1 : 0,
+    skip_reason_counts: [],
   };
 }
 
@@ -143,7 +146,13 @@ test("adapter exposes plan, execute, reconcile, verify, and report", async () =>
   assert.deepEqual(adapter.report({
     kind: "connector_coverage_refresh", status: "continue", open_date_count: 21,
     open_date_plan_status: "waiting",
+    open_date_candidate_count: 1,
+    open_date_runnable_candidate_count: 1,
+    open_date_skip_reason_counts: [],
   }), {
     status: "continue", open_date_count: 21, open_date_plan_status: "waiting",
+    open_date_candidate_count: 1,
+    open_date_runnable_candidate_count: 1,
+    open_date_skip_reason_counts: [],
   });
 });

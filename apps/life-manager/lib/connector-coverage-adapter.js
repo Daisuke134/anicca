@@ -17,8 +17,8 @@ const JOB_KEYS = Object.freeze([
 const COVERAGE_REF = /^event-coverage:\/\/([a-z0-9][a-z0-9._-]{0,199})\/([0-9a-f]{64})$/;
 const PLAN_STATUSES = new Set(["complete", "enqueued", "waiting", "exhausted", "no_candidates"]);
 const PLAN_KEYS = Object.freeze([
-  "coverage_snapshot_id", "date", "event_ref", "inventory_snapshot_id",
-  "job_ref", "open_date_plan_id", "status",
+  "candidate_count", "coverage_snapshot_id", "date", "event_ref", "inventory_snapshot_id",
+  "job_ref", "open_date_plan_id", "runnable_candidate_count", "skip_reason_counts", "status",
 ]);
 
 function invalid() { throw new Error("Connector coverage adapter invalid"); }
@@ -56,9 +56,24 @@ function openDatePlanContract(value, coverage) {
     || value.coverage_snapshot_id !== coverage.coverage_snapshot_id
     || !/^luma-date-inventory:[0-9a-f]{64}$/.test(String(value.inventory_snapshot_id || ""))
     || !PLAN_STATUSES.has(value.status)
+    || !Number.isInteger(value.candidate_count) || value.candidate_count < 0
+    || !Number.isInteger(value.runnable_candidate_count) || value.runnable_candidate_count < 0
+    || value.runnable_candidate_count > value.candidate_count
+    || !Array.isArray(value.skip_reason_counts)
+    || value.skip_reason_counts.some((row) => (
+      !row || typeof row !== "object" || Array.isArray(row)
+      || Object.keys(row).sort().join(",") !== "count,reason"
+      || !/^[a-z][a-z0-9_]{0,99}$/.test(String(row.reason || ""))
+      || !Number.isInteger(row.count) || row.count < 1
+    ))
+    || value.skip_reason_counts.reduce((sum, row) => sum + row.count, 0)
+      !== value.candidate_count - value.runnable_candidate_count
   ) invalid();
   if (value.status === "complete") {
-    if (coverage.counts.open !== 0 || value.date !== null || value.event_ref !== null || value.job_ref !== null) invalid();
+    if (
+      coverage.counts.open !== 0 || value.date !== null || value.event_ref !== null || value.job_ref !== null
+      || value.candidate_count !== 0 || value.runnable_candidate_count !== 0
+    ) invalid();
     return value;
   }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value.date || ""))) invalid();
@@ -141,6 +156,9 @@ function createConnectorCoverageLoopAdapter(dependencies = {}) {
         next_run_at: continuation.next_run_at,
         open_date_plan_ref: `connector-open-date-plan://${contract.tenantId}/${openDatePlan.open_date_plan_id.replace(/^connector-open-date-plan:/, "")}`,
         open_date_plan_status: openDatePlan.status,
+        open_date_candidate_count: openDatePlan.candidate_count,
+        open_date_runnable_candidate_count: openDatePlan.runnable_candidate_count,
+        open_date_skip_reason_counts: openDatePlan.skip_reason_counts,
       });
       RECEIPTS.add(receipt);
       return Object.freeze({ receipt });
@@ -160,11 +178,18 @@ function createConnectorCoverageLoopAdapter(dependencies = {}) {
         || !["continue", "complete"].includes(receipt.status)
         || !Number.isInteger(receipt.open_date_count) || receipt.open_date_count < 0 || receipt.open_date_count > 21
         || !PLAN_STATUSES.has(receipt.open_date_plan_status)
+        || !Number.isInteger(receipt.open_date_candidate_count) || receipt.open_date_candidate_count < 0
+        || !Number.isInteger(receipt.open_date_runnable_candidate_count) || receipt.open_date_runnable_candidate_count < 0
+        || receipt.open_date_runnable_candidate_count > receipt.open_date_candidate_count
+        || !Array.isArray(receipt.open_date_skip_reason_counts)
       ) invalid();
       return Object.freeze({
         status: receipt.status,
         open_date_count: receipt.open_date_count,
         open_date_plan_status: receipt.open_date_plan_status,
+        open_date_candidate_count: receipt.open_date_candidate_count,
+        open_date_runnable_candidate_count: receipt.open_date_runnable_candidate_count,
+        open_date_skip_reason_counts: receipt.open_date_skip_reason_counts,
       });
     },
   });

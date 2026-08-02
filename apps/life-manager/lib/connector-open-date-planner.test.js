@@ -78,7 +78,10 @@ function planner(statuses = new Map(), overrides = {}) {
     createSpendPolicy() { return { policy: "free-only" }; },
     buildSpendSequence(_policy, inventory, _gate, goal) {
       const day = inventory.days.find((row) => row.date === goal.date);
-      return { ordered_candidates: day.events.map(({ event_ref, canonical_url }) => ({ event_ref, canonical_url })) };
+      return {
+        ordered_candidates: day.events.map(({ event_ref, canonical_url }) => ({ event_ref, canonical_url })),
+        skipped: [],
+      };
     },
     buildApplicationJob: buildEventApplicationJob,
     async readApplicationJob(job) {
@@ -170,4 +173,25 @@ test("dead-letter candidate advances to the next candidate while all terminal fa
   assert.equal(exhausted.status, "exhausted");
   assert.equal(exhausted.event_ref, null);
   assert.equal(terminal.calls.some(([kind]) => kind === "enqueue"), false);
+});
+
+test("exhausted plan exposes only bounded aggregate skip reasons", async () => {
+  const input = await sources();
+  const { instance } = planner(new Map(), {
+    buildSpendSequence() {
+      return {
+        ordered_candidates: [],
+        skipped: [
+          { event_ref: "luma-event://event/first-a", reason: "calendar_conflict" },
+          { event_ref: "luma-event://event/first-b", reason: "calendar_conflict" },
+        ],
+      };
+    },
+  });
+  const result = await instance(input);
+  assert.equal(result.status, "exhausted");
+  assert.equal(result.candidate_count, 2);
+  assert.equal(result.runnable_candidate_count, 0);
+  assert.deepEqual(result.skip_reason_counts, [{ reason: "calendar_conflict", count: 2 }]);
+  assert.doesNotMatch(JSON.stringify(result), /first-a|first-b|https:\/\//);
 });

@@ -10,6 +10,7 @@ const { isVerifiedConnectorProfile } = require("./connector-profile.js");
 const VERIFIED = new WeakSet();
 const ACTIVE = new Set(["queued", "running", "reconciling", "completed"]);
 const ALL_STATUSES = new Set([...ACTIVE, "dead_letter"]);
+const SKIP_REASON = /^[a-z][a-z0-9_]{0,99}$/;
 
 function invalid() { throw new Error("Connector open-date planner invalid"); }
 
@@ -47,6 +48,32 @@ function result(core) {
   return value;
 }
 
+function aggregateSequence(day, sequence) {
+  if (!Array.isArray(sequence.ordered_candidates) || !Array.isArray(sequence.skipped)) invalid();
+  const expected = new Set(day.events.map((event) => event.event_ref));
+  const seen = new Set();
+  const counts = new Map();
+  for (const candidate of sequence.ordered_candidates) {
+    const ref = String(candidate && candidate.event_ref || "");
+    if (!expected.has(ref) || seen.has(ref)) invalid();
+    seen.add(ref);
+  }
+  for (const skipped of sequence.skipped) {
+    const ref = String(skipped && skipped.event_ref || "");
+    const reason = String(skipped && skipped.reason || "");
+    if (!expected.has(ref) || seen.has(ref) || !SKIP_REASON.test(reason)) invalid();
+    seen.add(ref);
+    counts.set(reason, (counts.get(reason) || 0) + 1);
+  }
+  if (seen.size !== expected.size) invalid();
+  return Object.freeze({
+    candidate_count: day.events.length,
+    runnable_candidate_count: sequence.ordered_candidates.length,
+    skip_reason_counts: Object.freeze([...counts.entries()].sort(([left], [right]) => left.localeCompare(right))
+      .map(([reason, count]) => Object.freeze({ reason, count }))),
+  });
+}
+
 function dependenciesContract(dependencies) {
   const names = [
     "rankDatePreferences", "evaluateDateGoals", "gateDateCalendar",
@@ -76,6 +103,7 @@ function createConnectorOpenDateApplicationPlanner(dependencies = {}) {
       coverage_snapshot_id: coverage.coverage_snapshot_id,
       inventory_snapshot_id: dateInventory.inventory_snapshot_id,
       date: null, status: "complete", event_ref: null, job_ref: null,
+      candidate_count: 0, runnable_candidate_count: 0, skip_reason_counts: Object.freeze([]),
     });
     const day = dateInventory.days.find((candidate) => candidate.date === open.date);
     if (!day || day.inventory_status !== "complete") invalid();
@@ -102,6 +130,7 @@ function createConnectorOpenDateApplicationPlanner(dependencies = {}) {
       return dependencies.buildSpendSequence(policy, dateInventory, gate, goals);
     });
     if (!sequence || !Array.isArray(sequence.ordered_candidates)) invalid();
+    const aggregate = aggregateSequence(day, sequence);
     const eventByRef = new Map(day.events.map((event) => [event.event_ref, event]));
     const candidates = sequence.ordered_candidates.map((candidate) => {
       const event = eventByRef.get(candidate && candidate.event_ref);
@@ -113,6 +142,7 @@ function createConnectorOpenDateApplicationPlanner(dependencies = {}) {
       coverage_snapshot_id: coverage.coverage_snapshot_id,
       inventory_snapshot_id: dateInventory.inventory_snapshot_id,
       date: open.date,
+      ...aggregate,
     };
     if (candidates.length === 0) return result({
       ...base, status: day.events.length === 0 ? "no_candidates" : "exhausted",
