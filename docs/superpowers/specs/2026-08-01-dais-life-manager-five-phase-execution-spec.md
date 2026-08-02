@@ -1569,6 +1569,15 @@ attempt 2を自動開始し、10:23:04 JST時点で15分lease内をrunning、err
 次は再現結果を見てgoal outputのどのcontractが不安定かを秘密本文なしで切り分け、RED→GREEN後に実応募job、Luma確認、
 Calendar、Telegramまで同じ順序で継続する。
 
+O1B-26進捗28（goal validation 20回dead letter / 診断境界RED→GREEN）: 自動再試行は20 attemptsを使い切り、
+coverage jobは`GOAL_VALIDATION_FAILED`でdead letterになった。attempt 17・19・20は同code、attempt 18だけ
+`REGISTRATION_INVENTORY_MATCH_FAILED`で、新規応募・Calendar・Telegram effectは0。旧goal evaluatorはmodel出力の
+root shape、候補数、event ref、理由文、deterministic groundingを一つの`VALIDATION`へ潰していた。model本文やevent本文を
+保存せず、`VALIDATION_SHAPE / COUNT / EVENT_REF / TEXT / GROUNDED`だけをexact allowlistでruntime codeへ伝える。
+候補欠落、未知event ref、emailを含むunsafe理由文を別codeにする回帰testは修正前RED、実装後GREEN。provider本文は
+errorへ反射しない。outbound 250/250、runtime-up 38/38、runtime adapters 125/125、失敗0件。次はcommit/push/deploy後、
+最新verified coverageから新しいdurable continuationを正規APIでenqueueし、一回のLIVE codeで真因を確定する。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 

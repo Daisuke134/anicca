@@ -225,3 +225,44 @@ test("model failure and invalid JSON never become an ungrounded fallback", async
     }),
   }), (error) => error.code === "EVENT_GOAL_SERENDIPITY_JSON_FAILED");
 });
+
+test("model validation failures expose only bounded contract stages", async () => {
+  const input = { ...await sources(), goals: GOALS };
+  const cases = [
+    {
+      value: { ranked_events: modelDecision().ranked_events.slice(0, 1) },
+      code: "EVENT_GOAL_SERENDIPITY_VALIDATION_COUNT_FAILED",
+    },
+    {
+      value: {
+        ranked_events: modelDecision().ranked_events.map((row, index) => (
+          index === 0 ? { ...row, event_ref: "luma-event://event/unknown" } : row
+        )),
+      },
+      code: "EVENT_GOAL_SERENDIPITY_VALIDATION_EVENT_REF_FAILED",
+    },
+    {
+      value: {
+        ranked_events: modelDecision().ranked_events.map((row, index) => (
+          index === 0 ? { ...row, goal_reason: "contact person@example.com" } : row
+        )),
+      },
+      code: "EVENT_GOAL_SERENDIPITY_VALIDATION_TEXT_FAILED",
+    },
+  ];
+  for (const item of cases) {
+    await assert.rejects(inferEventGoalSerendipity(input, {
+      apiKey: "fixture-key",
+      fetchImpl: async () => ({
+        ok: true,
+        json: async () => ({
+          candidates: [{ content: { parts: [{ text: JSON.stringify(item.value) }] } }],
+        }),
+      }),
+    }), (error) => (
+      error.code === item.code
+      && error.message === "event goal serendipity unavailable"
+      && !JSON.stringify(error).includes("person@example.com")
+    ));
+  }
+});
