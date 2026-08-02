@@ -1446,7 +1446,15 @@ O1B-26進捗11（Calendar route逐次処理の真因 / RED→GREEN）: commit `2
 逐次取得し、20分超でlease回収になった。候補を省略せず、最大4候補を同時に経路検証し、結果は元のcandidate順へ
 安定して戻すbounded concurrencyへ変更した。direct conflict候補は従来どおりrouteを呼ばず、いずれかのrouteが
 検証不能なら元順で最初のeventを`recovery_required`にする。focused 4/4、Connector 244/244成功、失敗0件。
-次はcommit/push、再配備後にLIVE応募job enqueueを確認する。
+commit `b7b9a72f1`、image `18651f8e5bf2`として配備し、17回目のLIVE処理を開始した。
+
+O1B-26進捗12（Luma detailごとのCDP再接続リーク / RED→GREEN）: 17回目は9分超にわたり応募jobを作らず、
+workerが100%超CPU、約2GB memory、600MB超networkを消費した。コード追跡で、21日inventoryを作る際に
+Luma event detailを一件読むたび同じCloakBrowser `:9222`へ`connectOverCDP`し直し、接続を再利用していない
+経路を確認した。「2ページを逐次読んでもCDP接続は1回、作業用pageは2枚とも閉じ、browser本体と既存pageは
+閉じない」回帰testを追加し、修正前2接続でRED、driver内のlive connection再利用後GREENにした。切断済み接続は
+`isConnected()`で破棄し、次回だけ再接続する。CloakBrowser、日付inventory、runtime assembly focused 12/12成功。
+次はcommit/push、再配備し、18回目で資源使用、応募job enqueue、Calendar、coverage receiptをLIVE確認する。
 
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。

@@ -92,6 +92,20 @@ function createCloakBrowserDailyDriver(options = {}) {
     throw new Error("CloakBrowser daily-driver resolver unavailable");
   }
 
+  let browserPromise = null;
+  async function liveBrowser(connectionEndpoint) {
+    if (browserPromise) {
+      const current = await browserPromise;
+      if (typeof current.isConnected !== "function" || current.isConnected()) return current;
+      browserPromise = null;
+    }
+    browserPromise = Promise.resolve(connectOverCDP(connectionEndpoint)).catch((error) => {
+      browserPromise = null;
+      throw error;
+    });
+    return browserPromise;
+  }
+
   return Object.freeze({
     async withLumaPage(value, task) {
       const url = lumaUrl(value);
@@ -99,7 +113,7 @@ function createCloakBrowserDailyDriver(options = {}) {
         throw new Error("CloakBrowser daily-driver task unavailable");
       }
       const connectionEndpoint = resolvedDailyDriverEndpoint(await resolveEndpoint(endpoint));
-      const browser = await connectOverCDP(connectionEndpoint);
+      const browser = await liveBrowser(connectionEndpoint);
       const contexts = browser && typeof browser.contexts === "function"
         ? browser.contexts()
         : [];
