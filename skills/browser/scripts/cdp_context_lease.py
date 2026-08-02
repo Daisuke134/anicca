@@ -15,9 +15,11 @@ the same trick as Playwright's storageState ("reuse this state and start already
     python3 cdp_context_lease.py list
 """
 import asyncio
+import contextlib
 import fcntl
 import json
 import os
+import secrets
 import sys
 import time
 import urllib.request
@@ -52,6 +54,22 @@ def _leases_path():
 def _operation_lock_path(target_id):
     leases_dir = os.path.dirname(_leases_path())
     return os.path.join(leases_dir, "operations", f"{target_id}.lock")
+
+
+def _ledger_lock_path():
+    return _leases_path() + ".lock"
+
+
+@contextlib.contextmanager
+def _ledger_lock():
+    lock_path = _ledger_lock_path()
+    os.makedirs(os.path.dirname(lock_path), exist_ok=True)
+    with open(lock_path, "a+", encoding="utf-8") as handle:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
 
 
 def _page_ws(target_id):
@@ -102,65 +120,104 @@ def _save(d):
 
 
 def acquire(task, url="about:blank", no_seed=False):
-    leases = _leases()
-    held = leases.get(task)
-    if held:  # a task holds at most one context; reuse it rather than piling up
-        return {"ok": True, "reused": True, **held}
+    with _ledger_lock():
+        leases = _leases()
+        held = leases.get(task)
+        if held:  # one task owns one durable fence until release
+            changed = False
+            if not isinstance(held.get("token"), str):
+                held["token"] = secrets.token_hex(16)
+                changed = True
+            if isinstance(held.get("generation"), bool) or not isinstance(held.get("generation"), int):
+                held["generation"] = 1
+                changed = True
+            held["ts"] = int(time.time())
+            changed = True
+            if changed:
+                leases[task] = held
+                _save(leases)
+            return {"ok": True, "reused": True, **held}
 
-    cookies = []
-    vault_path = _vault_path()
-    if not no_seed and os.path.exists(vault_path):
-        with open(vault_path, encoding="utf-8") as handle:
-            cookies = json.load(handle).get("cookies", [])
+        cookies = []
+        vault_path = _vault_path()
+        if not no_seed and os.path.exists(vault_path):
+            with open(vault_path, encoding="utf-8") as handle:
+                cookies = json.load(handle).get("cookies", [])
 
-    (ctx,) = asyncio.run(_calls([("Target.createBrowserContext", {})]))
-    ctx_id = ctx["browserContextId"]
+        (ctx,) = asyncio.run(_calls([("Target.createBrowserContext", {})]))
+        ctx_id = ctx["browserContextId"]
 
-    calls = []
-    if cookies:
-        # a fresh context starts logged out; seed it from the vault
-        calls.append(("Storage.setCookies", {"cookies": cookies, "browserContextId": ctx_id}))
-    calls.append(("Target.createTarget", {"url": url, "browserContextId": ctx_id}))
-    results = asyncio.run(_calls(calls))
-    target_id = results[-1]["targetId"]
+        calls = []
+        if cookies:
+            calls.append(("Storage.setCookies", {"cookies": cookies, "browserContextId": ctx_id}))
+        calls.append(("Target.createTarget", {"url": url, "browserContextId": ctx_id}))
+        results = asyncio.run(_calls(calls))
+        target_id = results[-1]["targetId"]
 
-    lease = {
-        "context_id": ctx_id,
-        "target_id": target_id,
-        "ws": _page_ws(target_id),
-        "ts": int(time.time()),
-        "cookies_seeded": len(cookies),
-    }
-    leases[task] = lease
-    _save(leases)
-    return {"ok": True, "reused": False, **lease}
+        lease = {
+            "context_id": ctx_id,
+            "target_id": target_id,
+            "ws": _page_ws(target_id),
+            "ts": int(time.time()),
+            "cookies_seeded": len(cookies),
+            "token": secrets.token_hex(16),
+            "generation": 1,
+        }
+        leases[task] = lease
+        _save(leases)
+        return {"ok": True, "reused": False, **lease}
 
 
-def release(task):
-    leases = _leases()
-    held = leases.pop(task, None)
-    if not held:
-        return {"ok": True, "note": f"{task} held no context"}
-    lock_path = _operation_lock_path(held["target_id"])
-    os.makedirs(os.path.dirname(lock_path), exist_ok=True)
-    with open(lock_path, "a+", encoding="utf-8") as operation_lock:
-        fcntl.flock(operation_lock.fileno(), fcntl.LOCK_EX)
-        try:
-            asyncio.run(_calls([(
-                "Target.disposeBrowserContext",
-                {"browserContextId": held["context_id"]},
-            )]))
-        except Exception as e:
-            _save(leases)
-            return {
-                "ok": False,
-                "reason": f"dispose failed: {e}",
-                "released_from_ledger": task,
-            }
-        finally:
-            fcntl.flock(operation_lock.fileno(), fcntl.LOCK_UN)
-    _save(leases)
-    return {"ok": True, "released": task, "context_id": held["context_id"]}
+def _fence_matches(held, token, generation):
+    if token is None and generation is None:  # legacy callers remain supported
+        return True
+    return token == held.get("token") and generation == held.get("generation")
+
+
+def heartbeat(task, token=None, generation=None):
+    with _ledger_lock():
+        leases = _leases()
+        held = leases.get(task)
+        if not held:
+            return {"ok": False, "reason": "lease_not_found"}
+        if not _fence_matches(held, token, generation):
+            return {"ok": False, "reason": "lease_fence_mismatch"}
+        held["ts"] = int(time.time())
+        leases[task] = held
+        _save(leases)
+        return {
+            "ok": True,
+            "task": task,
+            "token": held.get("token"),
+            "generation": held.get("generation"),
+            "ts": held["ts"],
+        }
+
+
+def release(task, token=None, generation=None):
+    with _ledger_lock():
+        leases = _leases()
+        held = leases.get(task)
+        if not held:
+            return {"ok": True, "note": f"{task} held no context"}
+        if not _fence_matches(held, token, generation):
+            return {"ok": False, "reason": "lease_fence_mismatch"}
+        lock_path = _operation_lock_path(held["target_id"])
+        os.makedirs(os.path.dirname(lock_path), exist_ok=True)
+        with open(lock_path, "a+", encoding="utf-8") as operation_lock:
+            fcntl.flock(operation_lock.fileno(), fcntl.LOCK_EX)
+            try:
+                asyncio.run(_calls([(
+                    "Target.disposeBrowserContext",
+                    {"browserContextId": held["context_id"]},
+                )]))
+            except Exception as e:
+                return {"ok": False, "reason": f"dispose failed: {e}"}
+            finally:
+                fcntl.flock(operation_lock.fileno(), fcntl.LOCK_UN)
+        leases.pop(task, None)
+        _save(leases)
+        return {"ok": True, "released": task, "context_id": held["context_id"]}
 
 
 def gc(idle_min=45):
@@ -184,10 +241,14 @@ if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else "list"
     arg = sys.argv[2] if len(sys.argv) > 2 else None
     try:
+        token = sys.argv[sys.argv.index("--token") + 1] if "--token" in sys.argv else None
+        generation = int(sys.argv[sys.argv.index("--generation") + 1]) if "--generation" in sys.argv else None
         if cmd == "acquire":
             out = acquire(arg or "unnamed", no_seed="--no-seed" in sys.argv)
+        elif cmd == "heartbeat":
+            out = heartbeat(arg or "unnamed", token=token, generation=generation)
         elif cmd == "release":
-            out = release(arg or "unnamed")
+            out = release(arg or "unnamed", token=token, generation=generation)
         elif cmd == "gc":
             idle = int(sys.argv[sys.argv.index("--idle-min") + 1]) if "--idle-min" in sys.argv else 45
             out = gc(idle)

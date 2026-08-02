@@ -1,6 +1,9 @@
 """Configuration seams required for one persistent browser per business loop."""
 import fcntl
+import json
 import os
+import re
+import subprocess
 import sys
 import threading
 import time
@@ -64,6 +67,108 @@ def test_release_waits_for_active_target_operation(monkeypatch, tmp_path):
 
     assert result["ok"] is True
     assert calls[0][0] == "Target.disposeBrowserContext"
+
+
+def test_acquire_returns_durable_fence_and_reuse_keeps_it(monkeypatch, tmp_path):
+    leases_path = tmp_path / "gig-leases.json"
+    monkeypatch.setenv("CLOAK_CONTEXT_LEASES_FILE", str(leases_path))
+    monkeypatch.setenv("CLOAK_SESSION_VAULT_FILE", str(tmp_path / "missing.json"))
+
+    responses = iter([
+        [{"browserContextId": "context-1"}],
+        [{"targetId": "target-1"}],
+    ])
+
+    async def fake_calls(_pairs):
+        return next(responses)
+
+    monkeypatch.setattr(lease, "_calls", fake_calls)
+    first = lease.acquire("gig")
+    second = lease.acquire("gig")
+
+    assert re.fullmatch(r"[0-9a-f]{32}", first["token"])
+    assert first["generation"] == 1
+    assert second["reused"] is True
+    assert second["token"] == first["token"]
+    assert second["generation"] == first["generation"]
+    stored = json.loads(leases_path.read_text(encoding="utf-8"))["gig"]
+    assert stored["token"] == first["token"]
+    assert stored["generation"] == 1
+
+
+def test_heartbeat_and_release_reject_stale_fence(monkeypatch, tmp_path):
+    leases_path = tmp_path / "gig-leases.json"
+    monkeypatch.setenv("CLOAK_CONTEXT_LEASES_FILE", str(leases_path))
+    leases_path.write_text(
+        json.dumps({
+            "gig": {
+                "context_id": "context-1",
+                "target_id": "target-1",
+                "ws": "ws://127.0.0.1:9223/devtools/page/target-1",
+                "ts": 1,
+                "token": "a" * 32,
+                "generation": 3,
+            }
+        }),
+        encoding="utf-8",
+    )
+    calls = []
+
+    async def fake_calls(pairs):
+        calls.extend(pairs)
+        return [{}]
+
+    monkeypatch.setattr(lease, "_calls", fake_calls)
+
+    stale_beat = lease.heartbeat("gig", token="b" * 32, generation=3)
+    stale_release = lease.release("gig", token="a" * 32, generation=2)
+    current_beat = lease.heartbeat("gig", token="a" * 32, generation=3)
+    current_release = lease.release("gig", token="a" * 32, generation=3)
+
+    assert stale_beat == {"ok": False, "reason": "lease_fence_mismatch"}
+    assert stale_release == {"ok": False, "reason": "lease_fence_mismatch"}
+    assert current_beat["ok"] is True
+    assert current_release["ok"] is True
+    assert calls == [("Target.disposeBrowserContext", {"browserContextId": "context-1"})]
+
+
+def test_cli_heartbeat_accepts_parent_fence_flags(tmp_path):
+    leases_path = tmp_path / "gig-leases.json"
+    leases_path.write_text(
+        json.dumps({
+            "gig": {
+                "context_id": "context-1",
+                "target_id": "target-1",
+                "ws": "ws://127.0.0.1:9223/devtools/page/target-1",
+                "ts": 1,
+                "token": "c" * 32,
+                "generation": 4,
+            }
+        }),
+        encoding="utf-8",
+    )
+    script = Path(lease.__file__)
+    env = {**os.environ, "CLOAK_CONTEXT_LEASES_FILE": str(leases_path)}
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            str(script),
+            "heartbeat",
+            "gig",
+            "--token",
+            "c" * 32,
+            "--generation",
+            "4",
+        ],
+        text=True,
+        capture_output=True,
+        env=env,
+        check=False,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    assert json.loads(completed.stdout)["generation"] == 4
 
 
 def test_browser_guard_passes_owner_to_recovery_gc():
