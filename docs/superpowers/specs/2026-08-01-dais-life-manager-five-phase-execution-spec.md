@@ -2005,6 +2005,15 @@ OpenClawをcontrol planeと書いたことも不正確だった。正しくはLi
 product ownerではない。§5.0.0へ理由と不採用結論、§5.0.1へlocal→open-source self-host→phone向けcloud/Steelの順序、
 §5.0.2へ7境界のalignment gateを追加した。
 
+O1B-25再開実測（native local切替開始）: canonical `main`と`origin/main`は`8a92801e8`で一致し、旧
+`ai.anicca.connector-fill-gaps` / `ai.anicca.connector-daily-report`はlaunchdから退役済みである。一方、
+`ai.anicca.life-manager-connector-host-bridge`とDocker workerはrollback用の旧実行経路としてまだ稼働し、
+canonical repoにはConnector専用のnative boot / launchd ownerがまだ存在しない。Life Manager local loop、
+Gigのsingle-instance pattern、CloakBrowser `:9222`、`gog` Calendar、Luma discovery/registration、coverage、
+receipt、Telegram moduleは既に存在する。したがって最初の未完了は新systemの再実装ではなく、既存moduleを
+Mac mini上で直接呼ぶConnector capability、native boot、single-instance/heartbeat/healthcheckをcanonical
+`skills/`へ置くO1B-25B/Cである。native一巡を実receiptで確認するまで、rollback用container/bridgeは停止しない。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
