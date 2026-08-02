@@ -30,7 +30,7 @@
 - Consumes: `OPENCLAW_CONFIG_PATH`, optional `OPENCLAW_STATE_DIR`.
 - Produces: `resolve_openclaw_state_root(openclaw_root: Path = OPENCLAW_ROOT) -> Path` with explicit-state, config-parent, default-root precedence.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```python
 def test_config_path_parent_is_implicit_state_root(monkeypatch, tmp_path):
@@ -45,13 +45,13 @@ def test_explicit_state_root_overrides_config_parent(monkeypatch, tmp_path):
     assert workspace_common.resolve_openclaw_state_root() == tmp_path / "explicit"
 ```
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
 Run: `uv run --with pytest pytest -q /Users/anicca/.openclaw/skills/capafy-autopublish/tests/test_openclaw_profile_binding.py`
 
 Expected: the config-only case returns the main OpenClaw root instead of the profile parent.
 
-- [ ] **Step 3: Implement the minimal precedence rule**
+- [x] **Step 3: Implement the minimal precedence rule**
 
 ```python
 def resolve_openclaw_state_root(*, openclaw_root: Path = OPENCLAW_ROOT) -> Path:
@@ -64,13 +64,13 @@ def resolve_openclaw_state_root(*, openclaw_root: Path = OPENCLAW_ROOT) -> Path:
     return safe_expanduser_path(openclaw_root)
 ```
 
-- [ ] **Step 4: Run GREEN and the publisher regression tests**
+- [x] **Step 4: Run GREEN and the publisher regression tests**
 
 Run: `uv run --with pytest pytest -q /Users/anicca/.openclaw/skills/capafy-autopublish/tests`
 
 Expected: all tests pass with no warnings.
 
-- [ ] **Step 5: Verify a Google-only dry configure boundary**
+- [x] **Step 5: Verify a Google-only dry configure boundary**
 
 Run the packaging scan against a disposable local state using only `OPENCLAW_CONFIG_PATH`; assert the staged `.env` source is the config parent, the reviewed contract has exactly one Google `url_proxy`, and `generic=0`. Do not call a remote mutation command.
 
