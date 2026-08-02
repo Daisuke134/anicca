@@ -458,12 +458,6 @@ def _dispose(held):
     )
 
 
-def _dispose_discarded_context(held):
-    """Clean up a concurrent acquire loser without holding the ledger lock."""
-    with _target_operation_lock(held["target_id"]):
-        _dispose(held)
-
-
 def _candidate_is_durably_current(task, candidate):
     """Check the persisted row after a write error without trusting in-memory state."""
     with _ledger_lock():
@@ -520,7 +514,7 @@ def _rollback_untracked_candidate_while_locked(task, candidate):
     """Record then dispose a failed candidate while its target operation is serialized."""
     try:
         if _candidate_is_durably_current(task, candidate):
-            return
+            return True
     except Exception:
         # A damaged ledger cannot prove this candidate is untracked.  Keep a
         # durable recovery record, but do not risk disposing a live context.
@@ -528,7 +522,7 @@ def _rollback_untracked_candidate_while_locked(task, candidate):
             _record_reconciliation_candidate(task, candidate)
         except Exception:
             pass
-        return
+        return False
 
     try:
         entry = _record_reconciliation_candidate(task, candidate)
@@ -536,16 +530,18 @@ def _rollback_untracked_candidate_while_locked(task, candidate):
         entry = None
     try:
         _dispose(candidate)
-    except Exception:
+    except Exception as exc:
         # Preserve the primary acquire failure.  If the journal write succeeded,
         # GC will retry; an independent journal avoids an untracked context when
         # the original ledger save was the failing operation.
-        return
+        if not _already_disposed(exc):
+            return False
     if entry is not None:
         try:
             _finalize_reconciliation_candidate(entry)
         except Exception:
             pass
+    return True
 
 
 def _rollback_untracked_candidate(task, candidate):
@@ -554,9 +550,8 @@ def _rollback_untracked_candidate(task, candidate):
     try:
         if target_id:
             with _target_operation_lock(target_id):
-                _rollback_untracked_candidate_while_locked(task, candidate)
-        else:
-            _rollback_untracked_candidate_while_locked(task, candidate)
+                return _rollback_untracked_candidate_while_locked(task, candidate)
+        return _rollback_untracked_candidate_while_locked(task, candidate)
     except Exception:
         # Never replace the original acquire failure with a cleanup failure.  If
         # the target-operation lock itself failed, still attempt the independent
@@ -565,6 +560,7 @@ def _rollback_untracked_candidate(task, candidate):
             _record_reconciliation_candidate(task, candidate)
         except Exception:
             pass
+        return False
 
 
 def acquire(task, url="about:blank", no_seed=False):
@@ -641,11 +637,12 @@ def acquire(task, url="about:blank", no_seed=False):
         raise
 
     if discarded:
-        try:
-            _dispose_discarded_context(discarded)
-        except Exception:
-            # The current lease remains usable; do not overwrite it to record a loser.
-            pass
+        if not _rollback_untracked_candidate(task, discarded):
+            return {
+                "ok": False,
+                "reason": "discarded context cleanup failed",
+                "task": task,
+            }
     return result
 
 
