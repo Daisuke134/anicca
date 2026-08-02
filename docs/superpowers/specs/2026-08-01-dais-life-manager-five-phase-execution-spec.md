@@ -1595,6 +1595,12 @@ provider本文を保存・表示せず、連続した安全なprovider原文span
 修正後GREEN。outbound 251/251、runtime-up 38/38、runtime adapters 125/125、失敗0件。次はcommit/push/deployし、
 新imageでgoal判断を通過して一件の実応募jobがenqueueされるかをLIVE確認する。
 
+O1B-26進捗31（unsafe excerpt修正をLIVE配備）: 修正をcommit `96c7f554b`としてmainへpushし、image
+`3a968c20aa2e`を11:35 JSTに配備した。旧imageは同じGROUNDED failureをattempt 5でも再現したため、
+副作用なしの同一coverage jobだけを停止し、exact tenant/job/attempt/leaseを`WORKER_REPLACED`としてimmutable receiptへ
+記録してから切り替えた。workerはhealthy。新imageのattempt 8・9は一時的なinventory read failureから自動再試行し、
+attempt 10は11:35:04 JSTからrunning。次はgoal validation通過後の応募job enqueueまたは次のbounded stageを確認する。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
