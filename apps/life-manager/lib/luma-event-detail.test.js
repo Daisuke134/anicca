@@ -135,13 +135,36 @@ test("missing public attendee metadata remains explicitly unavailable without in
   assert.match(detail.venue_address, /Shibuya/);
 });
 
-test("classifies registered, waitlist, full, approval, and unknown controls exactly", () => {
+test("classifies registered, closed, waitlist, full, approval, and unknown controls exactly", () => {
   assert.equal(normalizeLumaEventDetail(fixture({ controls: ["参加予定"] })).rsvp_status, "registered");
   assert.equal(normalizeLumaEventDetail(fixture({ controls: ["マイチケット"] })).rsvp_status, "registered");
+  assert.equal(normalizeLumaEventDetail(fixture({ controls: ["参加登録受付終了"] })).rsvp_status, "closed");
+  assert.equal(normalizeLumaEventDetail(fixture({ controls: ["Registration Closed"] })).rsvp_status, "closed");
   assert.equal(normalizeLumaEventDetail(fixture({ controls: ["Join Waitlist"] })).rsvp_status, "waitlist");
   assert.equal(normalizeLumaEventDetail(fixture({ controls: ["Sold Out"] })).rsvp_status, "full");
   assert.equal(normalizeLumaEventDetail(fixture({ controls: ["Request to Join"] })).rsvp_status, "approval_required");
   assert.equal(normalizeLumaEventDetail(fixture({ controls: ["ホストに連絡"] })).rsvp_status, "unknown");
+});
+
+test("raw reader captures a non-button registration-closed notice", async () => {
+  const page = {
+    async evaluate(callback, canonicalUrl) {
+      const originalDocument = global.document;
+      global.document = {
+        querySelectorAll(selector) {
+          if (selector === 'script[type="application/ld+json"]') return [];
+          if (selector === 'button, a[role="button"], input[type="submit"]') return [];
+          if (selector === "div, span, p") return [{ innerText: "参加登録受付終了" }];
+          return [];
+        },
+      };
+      try { return callback(canonicalUrl); }
+      finally { global.document = originalDocument; }
+    },
+  };
+  const { readRawLumaEventDetail } = require("./luma-event-detail.js");
+  const raw = await readRawLumaEventDetail(page, "https://luma.com/tokyo-one");
+  assert.deepEqual(raw.controls, ["参加登録受付終了"]);
 });
 
 test("hybrid event with a sold-out venue ticket is full even when online registration remains", () => {

@@ -194,6 +194,30 @@ test("submit errors and post-submit evidence gaps become unknown effects", async
   });
 });
 
+test("reconciliation treats a verified unavailable page as no registration effect", async () => {
+  const adapter = createLumaRsvpLoopAdapter({
+    provider: {
+      async inspectRegistration() { return { state: "unavailable", reason: "closed" }; },
+    },
+  });
+  const proof = await adapter.reconcile({
+    tenantId: "dais-local",
+    loopId: "outbound.events",
+    effectClass: "publish",
+    effectKey: claimedJob().effect_key,
+    jobId: claimedJob().job_id,
+    attempt: 1,
+  });
+  assert.deepEqual(proof, {
+    state: "absent",
+    receipt: {
+      kind: "outbound_event_reconciliation",
+      status: "absent",
+      effect_key: claimedJob().effect_key,
+    },
+  });
+});
+
 test("adapter exposes the full runtime contract and plans the existing durable job", async () => {
   const adapter = createLumaRsvpLoopAdapter({});
   for (const method of ["plan", "execute", "reconcile", "verify", "report"]) {

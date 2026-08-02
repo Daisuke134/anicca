@@ -21,7 +21,7 @@ const {
 const NOW = "2026-08-01T16:00:00.000Z";
 const PROFILE = path.join(__dirname, "../config/connector/dais-local.json");
 
-async function sources() {
+async function sources(options = {}) {
   const coverage = buildRollingEventCoverage({
     tenantId: "dais-local", timeZone: "Asia/Tokyo", now: NOW, resolvedDays: [],
   });
@@ -45,7 +45,7 @@ async function sources() {
       location: { name: "Tokyo Hall", address: "Tokyo" },
       offers: { price: 0, priceCurrency: "JPY", availability: "https://schema.org/InStock" },
     }],
-    controls: ["Register"],
+    controls: options.controlsBySlug && options.controlsBySlug[slug] || ["Register"],
   });
   const dateInventory = buildLumaDateInventory({
     coverage,
@@ -182,6 +182,23 @@ test("dead-letter candidates advance across candidates and then across open date
   assert.match(advanced.event_ref, /later/);
   assert.equal(advanced.date, "2026-08-03");
   assert.deepEqual(terminal.calls.filter(([kind]) => kind === "enqueue"), [
+    ["enqueue", "luma-event://event/later"],
+  ]);
+});
+
+test("closed and unknown RSVP pages are skipped before an application job is built", async () => {
+  const input = await sources({
+    controlsBySlug: {
+      "first-a": ["参加登録受付終了"],
+      "first-b": ["ホストに連絡"],
+      later: ["Register"],
+    },
+  });
+  const { instance, calls } = planner();
+  const result = await instance(input);
+  assert.equal(result.status, "enqueued");
+  assert.equal(result.event_ref, "luma-event://event/later");
+  assert.deepEqual(calls.filter(([kind]) => kind === "enqueue"), [
     ["enqueue", "luma-event://event/later"],
   ]);
 });

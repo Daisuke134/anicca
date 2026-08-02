@@ -222,6 +222,16 @@ function createLumaRsvpLoopAdapter(deps = {}) {
           },
         };
       }
+      if (proof.state === "unavailable") {
+        return {
+          state: "absent",
+          receipt: {
+            kind: "outbound_event_reconciliation",
+            status: "absent",
+            effect_key: contract.effect_key,
+          },
+        };
+      }
       try {
         return { state: "present", receipt: await verifiedReceipt(contract, proof, deps) };
       } catch {

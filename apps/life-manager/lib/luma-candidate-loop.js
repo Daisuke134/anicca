@@ -3,6 +3,7 @@
 const CONTINUE = new Set([
   "approval_required",
   "cancelled",
+  "closed",
   "conflict",
   "full",
   "not_eligible",
