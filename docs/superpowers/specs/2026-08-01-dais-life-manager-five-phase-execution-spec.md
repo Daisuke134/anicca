@@ -142,9 +142,11 @@ Daisの最新指示により、primary agentはConnectorを継続し、file所�
 CFO、Crypto、Fiat/NISAはfresh sessionとfresh worktreeで**production codeまで並列実装する**。
 以前の「read-only監査だけ」という制限は撤回する。
 
-並列化するのは設計、code、fixture、unit/integration test、paper simulationまでである。実browser、
-実応募、実Calendar、実口座、実exchange、実broker、実送金・注文のような共有外部stateは、primaryが
-review・mergeした後に固定順序で有効化してreceiptを検証する。これにより開発速度と二重実行防止を両立する。
+並列化するのは設計、code、unit/integration test、CFOの実read-only provider接続、Crypto/Fiatの
+安全gate用paper simulationまでである。fake/mock/dry-runだけをlane完了の証拠にしない。実browser、実応募、
+実Calendar、実exchange、実broker、実送金・注文のような共有外部stateは、primaryがreview・mergeした後に
+固定順序で有効化してreceiptを検証する。CFOのMoneytree/Binance/walletは資金を動かさないread-only権限に
+限定し、専用laneで実残高・実明細のreadbackまで進めてよい。
 
 #### 0.5.1 所有権とworktree
 
@@ -176,20 +178,23 @@ Fundraisingは`five-phase-autonomous`にYC関連の未commit変更があるた�
 3. source/history/testを実測し、lane専用の詳細implementation planを新規作成してcommitする。
 4. failing testを先に書き、最小実装、refactorの順で小さくcommitする。
 5. agentの意味判断はLLM prompt/evalへ置き、計算、ledger、policy、idempotency、receipt検証だけを決定論codeにする。
-6. fixture/mock/paper adapterで失敗、再開、重複、timeout、partial successを検証する。
+6. unit/integration testに加え、利用可能な実serviceで失敗、再開、重複、timeout、partial successを検証する。
+   fake/mock/dry-runの成功だけで実接続済み、実応募済み、実取引済みと報告しない。
 7. focused testとlane全testをfresh実行し、command・exit code・未検証範囲をevidenceへ残す。
 8. 自分のbranchへpushする。`main`へのmerge/rebase/push、master specのcheckbox更新はしない。
 
 #### 0.5.3 lane完了とlocal完成の違い
 
-並列laneの`branch ready`は、code、test、plan、evidence、commit、pushが揃った状態である。
+並列laneの`branch ready`は、code、test、plan、evidence、commit、pushに加え、CFOでは実providerの
+read-only readbackが揃った状態である。
 これは実世界のOrder完了ではない。primaryがreviewし、mainへ統合し、local runtimeへ接続し、許可された
 実serviceでreadback/receipt/Telegramを確認した時だけmaster checkboxを`[x]`にする。
 
-2026-08-02中に並列完了を狙えるのは、Job software、CFO runtime/schema/adapters、Crypto paper/risk、
-Fiat/NISA paper/policyの実装とfixture検証である。一方、Moneytree等のproduction API利用条件、実口座の
-OAuth、Binance/brokerの権限、実資金canary、7日連続稼働は外部条件と経過時間が必要であり、未実測のまま
-「全検証完了」とはしない。
+2026-08-02中に並列完了を狙えるのは、Job software、CFO runtime/schemaと利用可能な実read-only rail、
+Crypto paper/risk、Fiat/NISA paper/policyである。Moneytree LINK本番は原則契約後に`client_id`、
+`client_secret`、登録済み`redirect_uri`が提供されるため、未契約なら同日API開通を捏造しない。その場合は
+Moneytree Webの公式CSV/Excel exportという実データrailを先に接続し、LINK契約を並行申請する。実資金canaryと
+7日連続稼働は外部条件と経過時間が必要であり、未実測のまま「全検証完了」とはしない。
 
 #### 0.5.4 fresh sessionへ渡す実装prompt
 
@@ -219,9 +224,14 @@ branch feat/cfo-local-organ-20260802、worktree
 /Users/anicca/Projects/.worktrees/life-manager/cfo-local-organ-20260802をorigin/mainから作成してください。
 master spec §0.5、§5.5、§5.6、runtime-job-store/financial-report関連code/test/historyを実測し、まず
 docs/superpowers/plans/2026-08-02-cfo-local-organ.mdへ詳細planを書いてcommitしてください。
+code変更前にMoneytree LINK、Moneytree Web export、Binance Japan API、対象chainの公式current docsを検索し、
+既存環境ではsecret値を表示せずcredentialの有無だけを監査してください。必要credential、scope、発行画面、
+契約条件をDaisへ一度に質問し、回答後に実read-only接続を行ってください。Moneytree LINK契約済みならOAuth、
+未契約ならMoneytree Web公式CSV/Excel exportを実railとして使い、架空adapter、mock、dry-runを完成証拠にしません。
 TDDでruntime DB env/boot/executor/launchd templateを修復し、account/transaction/balance/category/JPY/FX/
-budget/baseline/anomaly/receiptの統一財務台帳と、Moneytree・Binance・wallet adapter contractを実装してください。
-providerはfake fixture/contract testで検証し、実OAuth・実口座接続・実取引・launchctl変更はしません。
+budget/baseline/anomaly/receiptの統一財務台帳へ実残高・実明細をimportしてください。BinanceはEnable Readingのみ、
+trade/withdrawal無効、可能ならMac mini IP allowlistを使います。walletはpublic addressだけを要求し、private keyや
+seed phraseを要求しません。実送金・実取引は禁止です。
 許可fileは§0.5.1 lane Cだけです。専用evidenceを作成し全変更をcommit/pushして共通末尾で返してください。
 ```
 
@@ -252,6 +262,25 @@ fee/tax、paper performance、提案→risk review→order→receipt state machi
 実broker/J-Quants key・実注文は禁止。CFO file、package/lockfile、共有migrationを変更せず、専用evidenceと
 全commitをpushして共通末尾で返してください。
 ```
+
+#### 0.5.5 CFO実接続credential contract
+
+CFO agentはcode変更前に公式current docsとlocal環境を調べ、次の質問を一度にDaisへ返す。secret値をchat、
+Telegram、log、commitへ貼らせない。既存secret storeへagentが保存し、表示は設定済み/未設定だけにする。
+
+| provider | Daisから必要なもの | agentが確認・実行すること |
+|---|---|---|
+| Moneytree LINK | 契約済みか、production `client_id` / `client_secret`を保有するか、登録済み`redirect_uri`、Moneytree accountのOAuth同意 | LINKはMoneytree営業/CSがclientを発行し、本番情報は原則契約後。scopeは最小の`guest_read accounts_read transactions_read request_refresh`から開始 |
+| Moneytree Web export | Moneytree Webへlogin可能か、銀行/card/証券が登録済みか、CSV/Excel export対応planか | `https://app.getmoneytree.com/login`を既存CloakBrowserで開き、公式exportから実残高・明細を取得。銀行passwordをchatへ要求しない |
+| Binance | Binance Japan accountでAPI keyを発行できるか、専用API keyとsecret | `Enable Reading`だけを有効化し、Spot/Margin/Futures tradingとwithdrawalを無効化。可能ならMac mini public IPだけをallowlist。balance、trade、deposit、withdraw historyをreadback |
+| on-chain wallet | 対象networkとpublic address | Base/Ethereum等の公式RPCまたはexplorer APIで実残高・token・transactionを取得。private key、seed phrase、wallet passwordは要求しない |
+| runtime DB | `LM_RUNTIME_DATABASE_URL`または承認された後継secret ref | 値を表示せず接続、migration、enqueue→executor→receiptを実証。未設定なら保存先と生成手順だけ質問 |
+| Telegram | 既存Life Manager宛先を再利用できるか | token/chat ID値を表示せず、実財務briefingのmessage receiptを確認 |
+
+Moneytree LINK credentialが無い場合、CFO agentは待機してfake adapterを作るのではなく、Moneytree Webの公式
+export railで実データimportを完成させ、同時にLINK契約に必要な申込み先・費用・審査・redirect URIを報告する。
+Moneytreeの金融機関再認証やOAuth同意は、既存browser sessionでDais本人の同意画面が必須なら、その正確な画面で
+一度だけhandoffし、完了後agentが自動継続する。銀行やMoneytreeのpasswordをchatへ貼らせない。
 
 ## 1. 固定実行順序
 
@@ -2143,10 +2172,11 @@ bindされ、未確認founder videoをexpected blockerとして保持し`submit_
 
 ### 5.6 Order 3B — Dais個人CFO
 
+- [ ] O3B-00 公式current docsとlocal secret有無を監査し、必要credential/scope/契約をDaisへ一括質問
 - [ ] O3B-01 account、transaction、position、liability schema
 - [ ] O3B-02 JPY、original currency、FX provenance
-- [ ] O3B-03 Moneytree OAuth read connection
-- [ ] O3B-04 銀行・card・証券の残高と明細をimport
+- [ ] O3B-03 Moneytree LINK契約済みならproduction OAuth、未契約ならMoneytree Web公式exportへ実接続
+- [ ] O3B-04 銀行・card・証券の実残高と実明細をimportし、fake/mock/dry-runを完了証拠にしない
 - [ ] O3B-05 Binance read-only接続
 - [ ] O3B-06 Daisのon-chain walletをread-only取得
 - [ ] O3B-07 内部振替の二重計上防止
@@ -3294,8 +3324,8 @@ local完成後
 | U10 | Gmail検索がconfirmationと営業mailを誤結合しないか | nonce/domain/thread/time fenceと送信attempt IDで結合、spoof testを追加 |
 | U11 | 返信分類の型とCalendar timezone | confirmation/interview/offer/reject/request_infoをschema化し、JST/現地TZを保持 |
 | U12 | MUITとの利益相反 | MUFG/MUIT運営・CVCをdeny。LPだけの関与と業務外応募の線引きを確認 |
-| U13 | Moneytree LINKの契約、client ID、本番利用審査、料金 | Moneytreeへ正式確認。OAuth client取得前は「接続可能」とdoneにしない |
-| U14 | MoneytreeがDaisの全銀行/card/証券と必要履歴を返すか | sandbox→本人同意→1口座で残高・1/3/12か月明細・categoryを実測 |
+| U13 | Moneytree LINKの契約、client ID、本番利用審査、料金 | Moneytreeへ正式確認。OAuth client取得前はLINK接続済みにせず、公式Web exportの実データrailを先行 |
+| U14 | MoneytreeがDaisの全銀行/card/証券と必要履歴を返すか | production本人同意または公式Web exportで、実1口座から残高・1/3/12か月明細・categoryを実測 |
 | U15 | Binance Japan口座で使えるendpointと履歴範囲 | read-only `USER_DATA` keyをIP制限し、balance/trades/deposit/withdraw履歴を実測 |
 | U16 | Binance Earnやwallet外資産を総資産へ含められるか | product別endpointを列挙し、unsupportedは手動snapshotとして明示 |
 | U17 | JPY換算の価格sourceと時刻 | original currencyを保存し、FX/crypto quote sourceとtimestampを全行へ付与 |
