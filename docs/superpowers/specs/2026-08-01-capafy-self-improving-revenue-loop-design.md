@@ -543,6 +543,32 @@ The $10M product is not an individual skill. It is the platform that continuousl
 
 The truthful incident closure, company projection parity, current Instagram publication path, portfolio snapshot/audit, packaging schemas, and one bounded packaging decision are already verified foundations. They are not remaining work. The remaining work is the integration below; no item means that Codex should operate an individual Capafy product manually.
 
+#### Immediate hardcoded-packaging removal: exact file map
+
+This is the first implementation slice and must finish before the broader autonomous-resume work. The three invalid defaults are duplicated across the daily Builder prompt and the installed publisher documentation, while the existing packaging-decision engine already supports evidence-backed `subscription`, `usage`, `one_time`, and `hybrid` decisions.
+
+| Order | File | Exact change | Verification |
+|---|---|---|---|
+| 1 | `skills/self/capafy-loop/test_capafy_loop_recovery_prompt.py` | Add RED assertions rejecting subscription-only, categorical Download refusal, fixed `$9.99/week`, and mandatory-new-listing language. | Current production prompt fails for all four intended reasons. |
+| 2 | `/Users/anicca/.openclaw/.worktrees/capafy-a1-provider-fix/skills/capafy-autopublish/tests/test_packaging_policy_docs.py` | Add the durable publisher-source contract: both policy documents must allow all four purchase models, require cited price/economics evidence, forbid a universal price/mode, and require no human approval. | New source tests fail before document changes. |
+| 3 | `/Users/anicca/.openclaw/.worktrees/capafy-a1-provider-fix/skills/capafy-autopublish/BEST_PRACTICES.md` | Replace packaging defaults with a decision matrix: recurring value plus bounded positive economics may use subscription/hybrid; a bounded buyer-run deliverable with no honest renewal reason may use one-time; a measurable unit may use usage; price comes from cited comparables plus unit economics. | Source contract passes and no categorical mode/price remains. |
+| 4 | `/Users/anicca/.openclaw/.worktrees/capafy-a1-provider-fix/skills/capafy-autopublish/references/pricing.md` | Remove base-LLM→subscription default, Download-last-resort assumption, fixed price bands as commands, and the human-final-approval gate. Make `capafy_packaging_decision.py` evidence and the hard economic cap the authority. | Source contract passes for mode, price, economics, and no-human rules. |
+| 5 | `skills/self/capafy-loop/capafy-loop-daily.sh` | Delete the monolithic `PACKAGING DEFAULT` command and mandatory-new-listing command; require one reconciled action and an evidence-backed decision validated by the existing packaging schema/validator. | Item 1 turns GREEN; recovery, budget, terminal-owner, and browser-lease probes remain GREEN. |
+| 6 | `skills/earn/capafy-marketing/scripts/capafy_packaging_decision.py` and `skills/earn/capafy-marketing/tests/test_capafy_packaging_decision.py` | Reuse rather than replace. Add only missing boundary tests proving no implicit model/price is injected when evidence is absent and all four models remain eligible. | Focused suite passes with fail-closed unknowns and exact economics. |
+| 7 | `/Users/anicca/.openclaw/skills/capafy-autopublish/BEST_PRACTICES.md` and `/Users/anicca/.openclaw/skills/capafy-autopublish/references/pricing.md` | Deploy byte-equivalent copies from the tested durable publisher source; never patch installed policy as the sole source of truth. | Source/installed SHA-256 values match and installed publisher regressions pass. |
+
+The replacement rule is intentionally short:
+
+```text
+evidence + buyer value shape + exact unit economics
+                         |
+                         v
+       subscription | usage | one_time | hybrid
+                         |
+                         v
+       cited price + hard cost/loss cap, or fail closed
+```
+
 1. **Add an ownership regression test.** Extend `skills/self/capafy-loop/test_capafy_loop_recovery_prompt.py` so it fails while the daily Builder prompt forces a brand-new listing, forces subscription-only packaging, forbids Download categorically, contains a fixed product queue, or assigns routine Capafy form operation to Codex/human. **Done when:** the RED assertions fail against the current prompt for the expected ownership violations.
 2. **Create the deterministic portfolio reconciler.** Add `skills/self/capafy-loop/capafy_builder_reconcile.py` plus focused tests. Reuse the existing governed portfolio snapshot and fresh remote-status reader. Classify every product as exactly one of `incomplete_candidate`, `under_review`, `online`, `rejected`, or `draft`, preserving unknown fields. **Done when:** fixtures covering the current 32-row portfolio classify losslessly and a second identical run produces byte-equivalent output.
 3. **Define one-action selection precedence.** In the reconciler, select exactly one next action in this order: resume or safely stop one incomplete candidate; observe one changed review result; apply one eligible post-approval packaging decision; otherwise ask the Builder judgment plane to select one sourced opportunity; otherwise return a truthful no-op. **Done when:** table-driven tests prove one and only one action and no fixed product name or catalog order controls selection.
