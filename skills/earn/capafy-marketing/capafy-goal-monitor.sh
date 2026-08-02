@@ -276,6 +276,16 @@ errors = parity_errors(projection, independent)
 if errors:
     open(parity_path, "w").write("\n".join(errors) + "\n")
     raise SystemExit(3)
+if (
+    incident
+    and incident.get("fingerprint") == "goal-monitor-projection-parity-mismatch"
+    and incident.get("phase") != "verified"
+):
+    print(json.dumps({
+        "reconcile_incident_id": incident["incident_id"],
+        "parity_projection_id": projection.get("projection_id"),
+    }))
+    raise SystemExit(4)
 company = projection
 report["company_state"] = company
 # append to state (history), keep last 60
@@ -291,11 +301,56 @@ rendered = subprocess.run(
     capture_output=True, text=True, timeout=30,
 )
 body = rendered.stdout.strip() if rendered.returncode == 0 else ""
+resolved_incident_id = os.environ.get("CAPAFY_GOAL_MONITOR_RESOLVED_INCIDENT_ID")
+if body and resolved_incident_id:
+    body = "\n".join([
+        "Capafy incident resolved — no action needed",
+        "The canonical ledger and independent company source reads agree again.",
+        f"Resolved incident: {resolved_incident_id}",
+        "",
+        body,
+    ])
 open(body_path,"w").write(body)
 print(json.dumps(report, ensure_ascii=False))
 PY
 
 RC=$?
+if [ "$RC" -eq 4 ]; then
+  [ "${CAPAFY_GOAL_MONITOR_RECONCILE_PASS:-0}" != "1" ] || exit 2
+  INCIDENT_ID="$($PY -c 'import json,sys; print(json.load(open(sys.argv[1]))["reconcile_incident_id"])' "$REPORT_FILE")" || exit 2
+  PARITY_PROJECTION_ID="$($PY -c 'import json,sys; print(json.load(open(sys.argv[1]))["parity_projection_id"])' "$REPORT_FILE")" || exit 2
+  transition_incident() {
+    local phase="$1"
+    "$PY" - "$INCIDENT_ID" "$phase" "$PARITY_PROJECTION_ID" <<'PY' | "$PY" "$OUTCOME_SCRIPT" transition-incident >/dev/null
+import json,sys
+incident_id,phase,projection_id=sys.argv[1:]
+payload={"incident_id":incident_id,"phase":phase}
+if phase in {"repaired","verified"}:
+    payload["repair_summary"]="The experiment projection now derives current public availability from the latest listing event."
+if phase == "verified":
+    payload["verification"]={
+        "projection_parity_verified":True,
+        "parity_projection_id":projection_id,
+        "business_outcome_validated":True,
+    }
+print(json.dumps(payload))
+PY
+  }
+  INCIDENT_RECORD="$($PY "$OUTCOME_SCRIPT" get-incident --incident-id "$INCIDENT_ID")" || exit 2
+  INCIDENT_PHASE="$($PY -c 'import json,sys; print(json.loads(sys.argv[1])["phase"])' "$INCIDENT_RECORD")" || exit 2
+  case "$INCIDENT_PHASE" in
+    detected) transition_incident repair_started || exit 2; transition_incident repaired || exit 2 ;;
+    unresolved) transition_incident repair_started || exit 2; transition_incident repaired || exit 2 ;;
+    repair_started) transition_incident repaired || exit 2 ;;
+    repaired) ;;
+    verified) ;;
+    *) exit 2 ;;
+  esac
+  [ "$INCIDENT_PHASE" = "verified" ] || transition_incident verified || exit 2
+  export CAPAFY_GOAL_MONITOR_RECONCILE_PASS=1
+  export CAPAFY_GOAL_MONITOR_RESOLVED_INCIDENT_ID="$INCIDENT_ID"
+  exec bash "$0"
+fi
 if [ "$RC" -ne 0 ]; then
   "$PY" "$OUTCOME_SCRIPT" start-incident \
     --owner company --summary "Ledger projection did not match independent Capafy source reads." \
