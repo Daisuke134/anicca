@@ -220,6 +220,24 @@ def project_company(events: list[dict]) -> dict:
         }
     latest_experiment = max(experiment_states.values(), default=None, key=lambda item: item[0])
     experiment = _experiment_projection(latest_experiment[1] if latest_experiment else None)
+    if experiment is not None:
+        current_listing = listings.get(experiment["agent_id"])
+        if current_listing is not None:
+            experiment["public_url"] = (
+                next(
+                    (
+                        url
+                        for url in current_listing["public_evidence"]["urls"]
+                        if _url_for_host([url], "capafy.ai")
+                        and urlparse(url).path.rstrip("/").endswith(
+                            f"/{experiment['agent_id']}"
+                        )
+                    ),
+                    None,
+                )
+                if current_listing["status"]["after"] == "online"
+                else None
+            )
 
     as_of = events[-1]["recorded_at"] if events else "1970-01-01T00:00:00Z"
     company = {
