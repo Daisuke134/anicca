@@ -1,0 +1,280 @@
+{
+  "schema_version": 1,
+  "objective_id": "O1C-24",
+  "objective": "YC操作を別Chrome 9223から既存CloakBrowser daily-driver 9222へ移行",
+  "result": "daily_driver_migration_verified",
+  "recorded_at": "2026-08-02T01:09:23.413Z",
+  "implementation": {
+    "design_commit": "8e29a3e03db07284b06421af5e8bc88752b512a7",
+    "implementation_commit": "d6b5b93410de3c6141a4f4cf436307128d155840",
+    "hardening_commits": [
+      "3eede5dd23fffa3c8ac5cbdaf0cc28923eb1b2c1",
+      "2318c954adc9963f2e67737eff580e2fd92bf673"
+    ],
+    "design": "docs/superpowers/specs/2026-08-02-o1c24-yc-daily-driver-migration-design.md",
+    "plan": "docs/superpowers/plans/2026-08-02-o1c24-yc-daily-driver-migration.md",
+    "builder": "apps/life-manager/lib/yc-browser-route-migration.js",
+    "test": "apps/life-manager/lib/yc-browser-route-migration.test.js",
+    "checked_in_skill": "apps/life-manager/runtime-assets/apply-to-yc/SKILL.md",
+    "checked_in_launcher": "apps/life-manager/runtime-assets/apply-to-yc/scripts/apply.sh"
+  },
+  "migration_receipt": {
+    "schema_version": 1,
+    "verified_at": "2026-08-02T01:09:23.413Z",
+    "route": {
+      "browser_ref": "browser-profile://cloakbrowser/daily-driver",
+      "endpoint": "http://127.0.0.1:9222",
+      "connection_mode": "connect_over_cdp",
+      "shared_context_count": 1,
+      "route_id": "yc-application",
+      "provider_id": "yc-fall-2026",
+      "form_origin": "https://apply.ycombinator.com",
+      "successor": "apply-to-funder",
+      "funder_id": "yc-w26",
+      "route_manifest_sha256": "ccaf5df33b28319c4ea290ab34752f867c7ffed6a30a4e415386da1d8718507d",
+      "provider_manifest_sha256": "82a93abdd2514b465ffce1749c005278e325e3f21469e89ea9ff3ffc4b687d2d"
+    },
+    "artifacts": [
+      {
+        "role": "checked_in_skill",
+        "ref": "repo://apps/life-manager/runtime-assets/apply-to-yc/SKILL.md",
+        "observed_at": "2026-08-02T01:09:23.413Z",
+        "body_sha256": "453d67fafb49aa913358959bd302f3c5f2ea42155a591e6a086895d697aae0d6",
+        "body_length": 1198
+      },
+      {
+        "role": "checked_in_shim",
+        "ref": "repo://apps/life-manager/runtime-assets/apply-to-yc/scripts/apply.sh",
+        "observed_at": "2026-08-02T01:09:23.413Z",
+        "body_sha256": "8c84c42a350e774016eff4a96fd8d8b3ab17400792542b469197e5666d35a36b",
+        "body_length": 1044
+      },
+      {
+        "role": "installed_skill",
+        "ref": "openclaw://skills/apply-to-yc/SKILL.md",
+        "observed_at": "2026-08-02T01:09:23.413Z",
+        "body_sha256": "453d67fafb49aa913358959bd302f3c5f2ea42155a591e6a086895d697aae0d6",
+        "body_length": 1198
+      },
+      {
+        "role": "installed_shim",
+        "ref": "openclaw://skills/apply-to-yc/scripts/apply.sh",
+        "observed_at": "2026-08-02T01:09:23.413Z",
+        "body_sha256": "8c84c42a350e774016eff4a96fd8d8b3ab17400792542b469197e5666d35a36b",
+        "body_length": 1044
+      },
+      {
+        "role": "successor_run",
+        "ref": "openclaw://skills/apply-to-funder/scripts/run.sh",
+        "observed_at": "2026-08-02T01:09:23.413Z",
+        "body_sha256": "6c04549a67767292076444fe07a3bf4530dfb60ece3e7100c54b9a0b853a4c7a",
+        "body_length": 2568
+      },
+      {
+        "role": "successor_form_filler",
+        "ref": "openclaw://skills/apply-to-funder/scripts/lib/form_filler.sh",
+        "observed_at": "2026-08-02T01:09:23.413Z",
+        "body_sha256": "d68b5c388f0f1cf6afae021988e5e4aa3fe556066000bcdb883b9a45fd50c39d",
+        "body_length": 11603
+      },
+      {
+        "role": "recovery_inventory",
+        "ref": "recovery://apply-to-yc/inventory.json",
+        "observed_at": "2026-08-02T01:09:23.413Z",
+        "body_sha256": "719cab741b780256b59e51904edaecbb5562b79adc557bc8f8886f4a7c20180a",
+        "body_length": 943
+      }
+    ],
+    "browsers": [
+      {
+        "role": "daily_driver",
+        "endpoint": "http://127.0.0.1:9222",
+        "pid": 27542,
+        "preserved_pid": 27542,
+        "profile_ref": "cloak-profile://daily-driver",
+        "browser": "Chrome/145.0.7632.109",
+        "protocol_version": "1.3",
+        "observed_at": "2026-08-02T01:09:23.413Z"
+      },
+      {
+        "role": "gig_driver",
+        "endpoint": "http://127.0.0.1:9223",
+        "pid": 707,
+        "preserved_pid": 707,
+        "profile_ref": "cloak-profile://gig-daily-driver",
+        "browser": "Chrome/145.0.7632.109",
+        "protocol_version": "1.3",
+        "observed_at": "2026-08-02T01:09:23.413Z"
+      }
+    ],
+    "cron": {
+      "id": "accelerator-application-monthly-1777948324077",
+      "name": "accelerator-application-monthly",
+      "enabled": false,
+      "command": "bash $HOME/.openclaw/skills/_dispatcher/scripts/cron-bash.sh apply-to-funder/scripts/run.sh --funder yc-w26",
+      "live_readback": true,
+      "durable_readback": true,
+      "observed_at": "2026-08-02T01:09:23.413Z"
+    },
+    "deployment": {
+      "recovery_ref": "~/.openclaw/recovery/apply-to-yc/o1c24-719cab741b780256b59e51904edaecbb5562b79adc557bc8f8886f4a7c20180a",
+      "recovery_inventory_sha256": "719cab741b780256b59e51904edaecbb5562b79adc557bc8f8886f4a7c20180a",
+      "installed_skill_sha256": "453d67fafb49aa913358959bd302f3c5f2ea42155a591e6a086895d697aae0d6",
+      "installed_shim_sha256": "8c84c42a350e774016eff4a96fd8d8b3ab17400792542b469197e5666d35a36b",
+      "retired_helpers": [
+        "scripts/fill.js",
+        "scripts/progress.js"
+      ],
+      "installed_readback_exact": true,
+      "gig_driver_pid_before": 707,
+      "gig_driver_pid_after": 707
+    },
+    "effects": {
+      "browser_launch": 0,
+      "owned_read_only_navigation": 1,
+      "yc_form_field_write": 0,
+      "yc_file_input_write": 0,
+      "yc_save_control": 0,
+      "yc_submit_control": 0,
+      "browser_close": 0,
+      "owned_page_close": 1,
+      "gig_process_signal": 0
+    },
+    "migration_receipt_digest": "ecbe0c65816f202e61cce4f79aec54c0ae06ed29624a2465d2dd5c66a6b67fa4"
+  },
+  "direct_readbacks": {
+    "installed_assets_equal_checked_in": true,
+    "active_script_count": 1,
+    "active_fill_js": false,
+    "active_progress_js": false,
+    "successor_skill": {
+      "before_backup_sha256": "aed38da4287766c502f1e8a7bec7a2be740c5901776a1c55a42df595f2d3be19",
+      "installed_sha256": "e5cb63ee7ba9aa2cd6f9d7c7e4b0153802eb56b438e34aeb377754d5a20fbfef",
+      "standalone_predecessor_claim_removed": true
+    },
+    "cron": {
+      "backup_sha256": "1179a71a1557e8afb9edcb501d8b17da2d4b34acde08d5b5e44ad33705d74a9c",
+      "durable_store_sha256": "2e99f07ac948073b8fa35071a31d8036958f826c83a8a572a6419b99e0e72bce",
+      "only_target_row_fields_changed": [
+        "enabled",
+        "payload.message"
+      ],
+      "live_and_durable_equal": true
+    },
+    "controlled_prepare_dry_run": {
+      "exit_code": 0,
+      "browser_probe_invocations": 0,
+      "daily_driver_pid_before": 27542,
+      "daily_driver_pid_after": 27542,
+      "gig_driver_pid_before": 707,
+      "gig_driver_pid_after": 707,
+      "private_log_sha256": "f0b4cf576a0cbc78a7ec4d9ac729d6fb51292e295d54f523393d898564740775",
+      "private_log_length": 3350
+    },
+    "yc_home_read_only": {
+      "observed_at": "2026-08-02T00:49:17.258Z",
+      "status": 200,
+      "final_origin": "https://apply.ycombinator.com",
+      "final_path": "/home",
+      "password_inputs": 0,
+      "sign_in_forms": 0,
+      "application_links": 1,
+      "owned_page_close_awaited": true,
+      "browser_close_operations": 0
+    }
+  },
+  "recovery": {
+    "directory": "/Users/anicca/.openclaw/recovery/apply-to-yc/o1c24-719cab741b780256b59e51904edaecbb5562b79adc557bc8f8886f4a7c20180a",
+    "parent_mode": "0700",
+    "directory_mode": "0700",
+    "inventory_sha256": "719cab741b780256b59e51904edaecbb5562b79adc557bc8f8886f4a7c20180a",
+    "original_modes_preserved": true,
+    "active_skill_subtree": false,
+    "restore": "restore the four inventory-verified original files from this directory if rollback is required"
+  },
+  "effect_accounting": {
+    "temporary_filesystem_writes": "controlled payload and private logs under /tmp only",
+    "external_runtime_writes": [
+      "recoverable compatibility asset deployment",
+      "owner-only recovery archive",
+      "disabled cron durable-state reconciliation",
+      "successor SKILL retirement wording"
+    ],
+    "yc_form_or_file_writes": 0,
+    "yc_save_or_submit_controls": 0,
+    "browser_launches": 0,
+    "browser_closes": 0,
+    "gig_process_signals": 0
+  },
+  "privacy": {
+    "raw_yc_body_persisted": false,
+    "application_answers_persisted": false,
+    "cookies_persisted": false,
+    "credentials_persisted": false,
+    "websocket_ids_persisted": false,
+    "full_process_environment_persisted": false,
+    "private_dry_run_log_content_persisted": false
+  },
+  "verification": {
+    "focused": {
+      "command": "node --test lib/yc-browser-route-migration.test.js",
+      "passed": 15,
+      "failed": 0
+    },
+    "outbound": {
+      "command": "npm run test:outbound",
+      "passed": 294,
+      "failed": 0
+    },
+    "runtime_up": {
+      "command": "npm run test:runtime-up",
+      "passed": 59,
+      "failed": 0
+    },
+    "legacy_path_scanner": {
+      "command": "node --test scripts/scan-legacy-paths.test.js",
+      "passed": 10,
+      "failed": 0
+    },
+    "full_suite": {
+      "command": "NODE_OPTIONS=--test-reporter=dot npm test",
+      "exit_code": 0
+    },
+    "posix_syntax": true,
+    "node_syntax": true,
+    "json_parse": true,
+    "git_diff_check": true,
+    "external_readback": true
+  },
+  "independent_review": {
+    "reviewer": "/root/review_o1c17",
+    "initial_findings_converted_to_regressions": [
+      "caller HOME and SKILL_DIR successor substitution",
+      "structural receipt chronology re-sign bypass",
+      "filesystem-write effect naming ambiguity",
+      "self-digest authenticity overclaim",
+      "pre-shim BASH_ENV execution"
+    ],
+    "final": {
+      "critical": 0,
+      "important": 0,
+      "minor": 0,
+      "verdict": "ready"
+    }
+  },
+  "receipt_trust_boundary": {
+    "self_digest_is_structural_checksum": true,
+    "self_digest_is_authenticity_signature": false,
+    "observed_values_supported_by_direct_readbacks": true
+  },
+  "claim_boundary": {
+    "completed": [
+      "O1C-24 transport ownership migration and deprecated route retirement"
+    ],
+    "not_claimed": [
+      "O1C-25 company/founder/video/demo/progress preview",
+      "O1C-26 submission and confirmation",
+      "O1C-27 reply/interview tracking"
+    ]
+  }
+}

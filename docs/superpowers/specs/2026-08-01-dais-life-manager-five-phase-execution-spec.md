@@ -969,6 +969,23 @@ syntax、JSON、diff check、external readbackが成功。独立review最終Crit
 `docs/evidence/funding/2026-08-02-o1c23-yc-current-program-facts.json`。54/143完了、残作業は89件。
 次はO1C-24で、YC操作経路を別Chrome `9223`から既存CloakBrowser daily-driver `:9222`へ移行する。
 
+O1C-24完了: 旧`apply-to-yc`の独立browser/form実装を退役し、active executableを直接実行するPOSIX互換launcher
+1本へ縮小した。launcherは自身の実pathからtrusted sibling `apply-to-funder`とHOMEを導出し、caller `HOME`で
+successorを差し替えず、`SKILL_DIR`を拒否し、hostile `BASH_ENV`/`ENV`を評価せず固定`/bin/bash` handoffで
+`--funder yc-w26`へ委譲する。installed SKILL/launcherはchecked-in bytesと一致し、旧`fill.js`/`progress.js`は
+active subtree外のowner-only content-addressed recoveryへ退役した。disabled cron
+`accelerator-application-monthly-1777948324077`はlive/durableともexact successor commandへ一致し、`:9222`は
+daily-driver PID 27542、無関係の`:9223` gig-daily-driver PID 707を前後不変で保持した。controlled prepare dry-runは
+browser invocation 0、YC Homeはowned page 1枚のread-only確認だけで、field/file/save/submit/browser close/process signalは
+全て0。receiptのself-SHAは構造checksumであり真正性署名とは主張せず、same-run direct readbackを別証拠として保持する。
+fresh verificationはfocused 15件、outbound 294件、runtime-up 59件、legacy scanner 10件、Life Manager full
+`npm test`、POSIX/Node/JSON/diff/external readbackが全成功。独立review最終Critical/Important/Minor 0、Ready Yes。
+実装commit `d6b5b9341`、hardening `3eede5dd2` / `2318c954a`。設計:
+`docs/superpowers/specs/2026-08-02-o1c24-yc-daily-driver-migration-design.md`。実装plan:
+`docs/superpowers/plans/2026-08-02-o1c24-yc-daily-driver-migration.md`。実測証拠:
+`docs/evidence/funding/2026-08-02-o1c24-yc-daily-driver-migration.json`。55/143完了、残作業は88件。
+次はO1C-25で、current company facts、founder profile、58秒動画、demo、progressをpreviewで全確認する。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
@@ -1192,7 +1209,7 @@ agentが本文と履歴を読んで判断し、keyword/regexの固定分類へ�
 - [x] O1C-21 旧`apply-to-yc`のfield/video/progress知識を後継YC providerへ移植
 - [x] O1C-22 古いSummer application IDがFall 2026へ継続可能かYC home実画面で確認
 - [x] O1C-23 `yc-w26.json`のbatch、deadline、amount、URLをcurrent official factsへ更新
-- [ ] O1C-24 YC操作を別Chrome `9223`から既存CloakBrowser daily-driver `:9222`へ移行
+- [x] O1C-24 YC操作を別Chrome `9223`から既存CloakBrowser daily-driver `:9222`へ移行
 - [ ] O1C-25 current company facts、founder profile、58秒動画、demo、progressをpreviewで全確認
 - [ ] O1C-26 Submitを一度だけ実行し、完了画面とconfirmation mailを取得
 - [ ] O1C-27 YC reply/interviewを毎日追跡し、Calendarと面談準備へ接続
