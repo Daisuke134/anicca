@@ -7,6 +7,7 @@ const { isVerifiedLumaEventDetail } = require("./luma-event-detail.js");
 const { isVerifiedRollingEventCoverage } = require("./rolling-event-coverage.js");
 
 const VERIFIED = new WeakSet();
+const LUMA_CANONICAL_URL = /^https:\/\/luma\.com\/[A-Za-z0-9_-]+$/;
 
 function invalid() { throw new Error("Luma date inventory invalid"); }
 
@@ -36,6 +37,14 @@ function stableJson(value) {
     )).join(",")}}`;
   }
   return JSON.stringify(value);
+}
+
+function requiredCanonicalUrls(value) {
+  if (value == null) return [];
+  if (!Array.isArray(value) || value.length > 500) invalid();
+  const urls = value.map((item) => String(item == null ? "" : item).trim());
+  if (urls.some((url) => !LUMA_CANONICAL_URL.test(url)) || new Set(urls).size !== urls.length) invalid();
+  return urls;
 }
 
 function projectedEvent(detail) {
@@ -73,8 +82,10 @@ function buildLumaDateInventory(input = {}) {
   ) invalid();
   const calculatedAt = exactInstant(input.now);
   const candidateUrls = inventory.candidates.map((candidate) => candidate.canonical_url);
-  if (candidateUrls.length !== new Set(candidateUrls).size || details.length !== candidateUrls.length) invalid();
-  const expected = new Set(candidateUrls);
+  const requiredUrls = requiredCanonicalUrls(input.requiredCanonicalUrls);
+  const expectedUrls = [...candidateUrls, ...requiredUrls.filter((url) => !candidateUrls.includes(url))];
+  if (candidateUrls.length !== new Set(candidateUrls).size || details.length !== expectedUrls.length) invalid();
+  const expected = new Set(expectedUrls);
   const actual = new Set();
   for (const detail of details) {
     if (!isVerifiedLumaEventDetail(detail) || actual.has(detail.canonical_url)) invalid();
@@ -105,7 +116,7 @@ function buildLumaDateInventory(input = {}) {
   }));
   const datesWithCandidates = days.filter((day) => day.events.length > 0).length;
   const counts = Object.freeze({
-    discovered: candidateUrls.length,
+    discovered: expectedUrls.length,
     inspected: details.length,
     scheduled_in_person_in_window: included,
     excluded: details.length - included,
@@ -136,14 +147,24 @@ async function inspectLumaDateInventory(options = {}) {
     || typeof options.inspectEvent !== "function"
   ) invalid();
   const inventory = await options.discoverTokyo();
+  const requiredUrls = requiredCanonicalUrls(options.requiredCanonicalUrls);
+  const discoveredUrls = new Set(
+    inventory && Array.isArray(inventory.candidates)
+      ? inventory.candidates.map((candidate) => candidate.canonical_url)
+      : [],
+  );
   const details = [];
   for (const candidate of inventory && Array.isArray(inventory.candidates) ? inventory.candidates : []) {
     details.push(await options.inspectEvent(candidate.canonical_url));
+  }
+  for (const canonicalUrl of requiredUrls) {
+    if (!discoveredUrls.has(canonicalUrl)) details.push(await options.inspectEvent(canonicalUrl));
   }
   return buildLumaDateInventory({
     coverage: options.coverage,
     inventory,
     details,
+    requiredCanonicalUrls: requiredUrls,
     now: options.now,
   });
 }

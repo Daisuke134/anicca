@@ -1601,6 +1601,15 @@ O1B-26進捗31（unsafe excerpt修正をLIVE配備）: 修正をcommit `96c7f554
 記録してから切り替えた。workerはhealthy。新imageのattempt 8・9は一時的なinventory read failureから自動再試行し、
 attempt 10は11:35:04 JSTからrunning。次はgoal validation通過後の応募job enqueueまたは次のbounded stageを確認する。
 
+O1B-26進捗32（登録済みeventがTokyo feedから消える真因 / RED→GREEN）: 新imageではGROUNDED failureは再発せず、
+attempt 11が`REGISTRATION_INVENTORY_MATCH_FAILED`へ進んだ。8月15日のverified登録receiptは有効でも、Luma Tokyo mainの
+virtualized一覧がrunごとにそのcardを返さないため、fresh一覧だけではCalendar/coverage復元が不安定だった。先にE1/E2/E3を
+再検証したcompleted receiptを読み、そのexact `https://luma.com/<slug>`だけをmain一覧にない場合もdaily-driverでfresh再読取し、
+verified detailとして同じdate inventoryへ加える。receiptだけでevent情報を捏造せず、direct fresh detailが取れない場合は従来どおり
+Calendarを作らず失敗する。feed欠落済み登録のdirect再読取と、未検証欠落を拒否する回帰testは修正前RED、実装後GREEN。
+outbound 252/252、runtime-up 38/38、runtime adapters 125/125、失敗0件。次はcommit/push/deployし、8月15日復元後に
+goal判断、応募job、Luma登録へ進むことをLIVE確認する。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 

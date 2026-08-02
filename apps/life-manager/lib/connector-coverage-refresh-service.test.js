@@ -165,9 +165,13 @@ test("verified RSVP becomes a Calendar event and coverage while a real all-day b
   const inventory = await dateInventory(coverage);
   const registration = await completedRegistration();
   const created = [];
+  let requiredCanonicalUrls;
   const refresh = makeService({
     receiptReader: { async listForCoverage() { return [registration]; } },
-    readDateInventory: async () => inventory,
+    readDateInventory: async (input) => {
+      requiredCanonicalUrls = input.requiredCanonicalUrls;
+      return inventory;
+    },
     routeMinutes: async () => { throw new Error("route must not run after registration"); },
     calendar: {
       async findConnectorEvents() { return []; },
@@ -187,6 +191,7 @@ test("verified RSVP becomes a Calendar event and coverage while a real all-day b
   });
 
   assert.equal(created.length, 1);
+  assert.deepEqual(requiredCanonicalUrls, ["https://luma.com/founder-night"]);
   assert.equal(created[0].canonicalUrl, "https://luma.com/founder-night");
   assert.equal(result.coverage.counts.covered_new, 1);
   assert.equal(result.coverage.counts.unavailable, 1);
@@ -287,7 +292,7 @@ test("registration restore separates Calendar sync from coverage evidence withou
 
 test("inventory failure exposes only a stable operational stage code", async () => {
   const refresh = makeService({
-    receiptReader: { async listForCoverage() { throw new Error("must not reach receipts"); } },
+    receiptReader: { async listForCoverage() { return []; } },
     readDateInventory: async () => { throw new Error("private browser detail"); },
     calendar: {
       async findConnectorEvents() { return []; },

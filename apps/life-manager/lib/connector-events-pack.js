@@ -113,6 +113,7 @@ function createConnectorEventsPack(options = {}) {
           dailyDriver: authAwareDriver,
           canonicalUrl,
         }),
+        requiredCanonicalUrls: extra.requiredCanonicalUrls,
       });
     },
     rankDatePreferences(dateInventory, date, preferences, extra = {}) {
