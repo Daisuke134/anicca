@@ -271,7 +271,11 @@ def _release_is_authorized(held, token, generation):
 
 
 def _already_disposed(error):
-    """CDP's authoritative absence response makes a pending row recoverable."""
+    """Treat CDP's authoritative context-absence responses as recoverable.
+
+    Chromium TargetHandler emits ``Failed to find context with id <id>`` when the
+    context is already gone, so retaining that pending ledger row would leak it.
+    """
     message = str(error).lower()
     return any(
         phrase in message
@@ -279,6 +283,7 @@ def _already_disposed(error):
             "browser context not found",
             "no browser context with given id",
             "cannot find browser context",
+            "failed to find context with id",
         )
     )
 

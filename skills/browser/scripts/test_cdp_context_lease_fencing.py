@@ -423,8 +423,15 @@ def test_gc_keeps_pending_lease_when_dispose_fails_and_retries(monkeypatch, tmp_
     assert "gig" not in json.loads(leases_path.read_text(encoding="utf-8"))
 
 
+@pytest.mark.parametrize(
+    "dispose_error",
+    [
+        "Target.disposeBrowserContext: Browser context not found",
+        "Target.disposeBrowserContext: Failed to find context with id context-1",
+    ],
+)
 def test_gc_finalizes_a_pending_lease_when_cdp_confirms_it_is_already_disposed(
-    monkeypatch, tmp_path
+    monkeypatch, tmp_path, dispose_error
 ):
     leases_path = _set_lease_path(monkeypatch, tmp_path)
     calls = []
@@ -442,7 +449,7 @@ def test_gc_finalizes_a_pending_lease_when_cdp_confirms_it_is_already_disposed(
 
     async def already_disposed(pairs):
         calls.extend(pairs)
-        raise RuntimeError("Target.disposeBrowserContext: Browser context not found")
+        raise RuntimeError(dispose_error)
 
     monkeypatch.setattr(lease, "_calls", already_disposed)
 
@@ -451,6 +458,26 @@ def test_gc_finalizes_a_pending_lease_when_cdp_confirms_it_is_already_disposed(
     assert result["ok"] is True
     assert result["reaped"] == ["gig"]
     assert calls[0][0] == "Target.disposeBrowserContext"
+    assert "gig" not in json.loads(leases_path.read_text(encoding="utf-8"))
+
+
+def test_release_finalizes_when_chromium_reports_failed_to_find_context_id(
+    monkeypatch, tmp_path
+):
+    leases_path = _set_lease_path(monkeypatch, tmp_path)
+    _install_fake_cdp(monkeypatch)
+    held = lease.acquire("gig", no_seed=True)
+
+    async def already_disposed(_pairs):
+        raise RuntimeError(
+            "Target.disposeBrowserContext: Failed to find context with id context-1"
+        )
+
+    monkeypatch.setattr(lease, "_calls", already_disposed)
+
+    released = lease.release("gig", held["token"], held["generation"])
+
+    assert released["ok"] is True
     assert "gig" not in json.loads(leases_path.read_text(encoding="utf-8"))
 
 
@@ -539,3 +566,30 @@ def test_cli_heartbeat_and_partial_release_identity(monkeypatch, capsys):
 
     assert lease.main(["release", "gig", "--token", "tok"]) == 1
     assert json.loads(capsys.readouterr().out)["ok"] is False
+
+
+def test_owned_callers_release_the_exact_fence_credentials():
+    root = Path(__file__).resolve().parents[3]
+    caller_paths = [
+        "skills/browser/SKILL.md",
+        "skills/earn/gig/gig_pass.sh",
+        "skills/earn/gig/GIG_PASS_RUNBOOK.md",
+        "skills/earn/clip/clip_daily.sh",
+        "skills/earn/clip/clip_pass.sh",
+        "skills/earn/clip/clip-cli.sh",
+        "skills/earn/video/video-cli.sh",
+    ]
+    release_prefix = re.compile(
+        r"(?:cdp_context_lease\.py|LEASE_SCRIPT)[\"']?\s+release\b"
+    )
+    fenced_release = re.compile(
+        r"(?:cdp_context_lease\.py|LEASE_SCRIPT)[\"']?\s+release\s+\S+"
+        r"\s+--token(?:\s|=)\S+\s+--generation(?:\s|=)\S+"
+    )
+
+    for relative_path in caller_paths:
+        source = (root / relative_path).read_text()
+        releases = list(release_prefix.finditer(source))
+        assert releases, relative_path
+        for release in releases:
+            assert fenced_release.match(source, release.start()), relative_path

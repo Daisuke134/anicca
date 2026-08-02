@@ -19,15 +19,89 @@ mkdir -p "$STATE"
 source "$C/_instance_paths.sh"   # resolves CLIP_ACCTS (respects ANICCA_INSTANCE, same as run.sh)
 PY="/opt/homebrew/bin/python3"
 log(){ echo "$(date '+%F %T') clip_daily: $*" >&2; }
+LEASE_SCRIPT="$C/../../browser/scripts/cdp_context_lease.py"
+CLIP_LEASE_WS=""
+CLIP_LEASE_TOKEN=""
+CLIP_LEASE_GENERATION=""
+LEASE_HEARTBEAT_PID=""
+
+parse_lease(){ # $1=acquire JSON; reject partial or malformed lease identities
+  local fields
+  fields="$(printf '%s' "$1" | python3 -c '
+import json
+import sys
+
+lease = json.load(sys.stdin)
+ws = lease.get("ws")
+token = lease.get("token")
+generation = lease.get("generation")
+if (
+    not lease.get("ok")
+    or not isinstance(ws, str)
+    or not ws
+    or not isinstance(token, str)
+    or not token
+    or isinstance(generation, bool)
+    or not isinstance(generation, int)
+    or generation < 1
+):
+    raise SystemExit("invalid fenced lease acquire response")
+print(f"{ws}\t{token}\t{generation}")
+')" || return 1
+  IFS=$'\t' read -r CLIP_LEASE_WS CLIP_LEASE_TOKEN CLIP_LEASE_GENERATION <<<"$fields"
+  [ -n "$CLIP_LEASE_WS" ] && [ -n "$CLIP_LEASE_TOKEN" ] && [ -n "$CLIP_LEASE_GENERATION" ]
+}
+
+heartbeat_lease(){
+  python3 "$LEASE_SCRIPT" heartbeat "$CLIP_LEASE" --token "$CLIP_LEASE_TOKEN" --generation "$CLIP_LEASE_GENERATION" >/dev/null 2>&1
+}
+
+release_lease(){
+  [ -n "${CLIP_LEASE_TOKEN:-}" ] && [ -n "${CLIP_LEASE_GENERATION:-}" ] || return 0
+  python3 "$LEASE_SCRIPT" release "$CLIP_LEASE" --token "$CLIP_LEASE_TOKEN" --generation "$CLIP_LEASE_GENERATION" >/dev/null 2>&1
+}
+
+lease_heartbeat_loop(){
+  while sleep 300; do
+    heartbeat_lease || {
+      log "lease heartbeat failed; terminating pass before stale browser work"
+      kill -TERM "$$"
+      return 1
+    }
+  done
+}
+
+start_lease_heartbeat(){
+  lease_heartbeat_loop &
+  LEASE_HEARTBEAT_PID=$!
+}
+
+stop_lease_heartbeat(){
+  [ -n "${LEASE_HEARTBEAT_PID:-}" ] || return 0
+  kill "$LEASE_HEARTBEAT_PID" 2>/dev/null || true
+  wait "$LEASE_HEARTBEAT_PID" 2>/dev/null || true
+  LEASE_HEARTBEAT_PID=""
+}
+
+cleanup(){
+  local rc=$?
+  stop_lease_heartbeat
+  release_lease || log "fenced lease release failed; gc will retry the durable pending row"
+  rmdir "$LOCKD" 2>/dev/null || true
+  trap - EXIT
+  exit "$rc"
+}
 
 step(){ # $1=label  $2=prompt
+  heartbeat_lease || { log "lease heartbeat failed before STEP $1"; exit 1; }
   log "STEP $1 start"
   local out="$HOME/.openclaw/logs/clip-step-last.out"
   local evidence="$HOME/.openclaw/state/agent-runner-evidence/clip-daily/$(date +%s)-$$-$1"
-  printf '%s\n' "You are the Anicca clip earn-core (IG @aiclipsvault, niche = AI / money / wealth). set -a; . ~/.openclaw/.env 2>/dev/null; set +a. Do EXACTLY this ONE step, fully, then stop. $2" | \
+  printf '%s\n' "You are the Anicca clip earn-core (IG @aiclipsvault, niche = AI / money / wealth). set -a; . ~/.openclaw/.env 2>/dev/null; set +a. The launcher already acquired fenced CDP context '$CLIP_LEASE' at ws '$CLIP_LEASE_WS'; it retains the exact token/generation and alone owns heartbeats and release. Drive ONLY that ws, never invoke cdp_context_lease.py acquire/release, and never read the lease ledger. Do EXACTLY this ONE step, fully, then stop. $2" | \
     "$RUN_AGENT" --task-class tool-agent --evidence-dir "$evidence" --task-label "clip-daily-$1" --loop clip \
       >"$out" 2>>"$HOME/.openclaw/logs/clip-steps.err.log"
   local rc=$?
+  heartbeat_lease || { log "lease heartbeat failed after STEP $1"; exit 1; }
   [ "$rc" -ne 0 ] && log "STEP $1 FAIL stdout-tail: $(tail -c 800 "$out" 2>/dev/null | tr '\n' ' ')"
   log "STEP $1 done (rc=$rc)"
 }
@@ -37,10 +111,14 @@ LOCKD=/tmp/anicca-clip-daily.lock.d
 CLIP_LEASE="clip-$$"; export CLIP_LEASE
 [ -d "$LOCKD" ] && [ $(( $(date +%s) - $(stat -f %m "$LOCKD" 2>/dev/null||echo 0) )) -gt 1800 ] && rmdir "$LOCKD" 2>/dev/null
 mkdir "$LOCKD" 2>/dev/null || { log "another clip pass holds the lock — exit"; exit 0; }
-trap 'rmdir "$LOCKD" 2>/dev/null; python3 "$C/../../browser/scripts/cdp_context_lease.py" release "$CLIP_LEASE" >/dev/null 2>&1' EXIT
+trap cleanup EXIT
 FREE=$(df -g / | tail -1 | awk '{print $4}')
 [ "${FREE:-99}" -lt 5 ] && { log "disk <5GB free — abort to protect the session"; exit 0; }
-python3 "$C/../../browser/scripts/cdp_context_lease.py" acquire "$CLIP_LEASE" --no-seed >/dev/null 2>&1 || true
+LEASE_JSON=$(python3 "$LEASE_SCRIPT" acquire "$CLIP_LEASE" --no-seed) || { log "fenced lease acquire failed; aborting pass"; exit 1; }
+parse_lease "$LEASE_JSON" || { log "fenced lease response malformed; aborting pass"; exit 1; }
+export CLIP_LEASE CLIP_LEASE_WS
+heartbeat_lease || { log "fenced lease heartbeat rejected after acquire; aborting pass"; exit 1; }
+start_lease_heartbeat
 
 # ── PROVISION (1-loop-1-acc, replace-on-cold, NO HUMAN). v38 root-cause fix: the live loop had
 # NO account-creation step, so once its only account went cold (poisoned) it just gave up every

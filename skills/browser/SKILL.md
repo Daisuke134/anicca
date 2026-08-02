@@ -84,10 +84,23 @@ through filling, and neither could tell. Take a context instead: CDP `Target.cre
 reach into it.
 
 ```bash
-LEASE=$(python3 ~/anicca/skills/browser/scripts/cdp_context_lease.py acquire gig)   # your own space
-WS=$(echo "$LEASE" | python3 -c 'import sys,json;print(json.load(sys.stdin)["ws"])') # drive this tab
+LEASE_JSON=$(python3 ~/anicca/skills/browser/scripts/cdp_context_lease.py acquire gig) || exit 1
+LEASE_FIELDS=$(printf '%s' "$LEASE_JSON" | python3 -c '
+import json, sys
+lease = json.load(sys.stdin)
+ws, token, generation = lease.get("ws"), lease.get("token"), lease.get("generation")
+if not lease.get("ok") or not isinstance(ws, str) or not ws or not isinstance(token, str) or not token or isinstance(generation, bool) or not isinstance(generation, int) or generation < 1:
+    raise SystemExit("invalid fenced lease response")
+print(f"{ws}\t{token}\t{generation}")
+') || exit 1
+IFS=$'\t' read -r WS LEASE_TOKEN LEASE_GENERATION <<<"$LEASE_FIELDS"
+cleanup(){
+  python3 ~/anicca/skills/browser/scripts/cdp_context_lease.py release gig --token "$LEASE_TOKEN" --generation "$LEASE_GENERATION"
+}
+trap cleanup EXIT
+python3 ~/anicca/skills/browser/scripts/cdp_context_lease.py heartbeat gig --token "$LEASE_TOKEN" --generation "$LEASE_GENERATION" || exit 1
 # ... do the work over $WS ...
-python3 ~/anicca/skills/browser/scripts/cdp_context_lease.py release gig            # tabs die with it
+# For work that can exceed 45 minutes, heartbeat the same token/generation at least every 15 minutes.
 ```
 
 A fresh context starts logged out, so `acquire` seeds it from the vault's cookies — verified live:
@@ -95,4 +108,6 @@ a leased context reaches `coconala.com/mypage/dashboard` already authenticated. 
 never releases, so run `cdp_context_lease.py gc --idle-min 45` from the healthcheck to reap what it
 left holding.
 
-Rules: one context per task, always `release` when done, never touch another task's context.
+Rules: one context per task; retain the `token` and `generation` returned by `acquire`; heartbeat and
+release only with those exact values; never look up the current ledger during cleanup; never touch another
+task's context.

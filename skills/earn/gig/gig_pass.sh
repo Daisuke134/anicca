@@ -12,14 +12,90 @@ B="$HOME/anicca/skills/browser/scripts"; G="$HOME/anicca/skills/earn/gig"
 CLAUDE="$(command -v claude || echo "$HOME/.local/bin/claude")"
 RB="$HOME/anicca/skills/earn/gig/GIG_PASS_RUNBOOK.md"
 log(){ echo "$(date '+%F %T') gig_pass: $*" >&2; }
+LEASE_SCRIPT="$B/cdp_context_lease.py"
+GIG_LEASE_WS=""
+GIG_LEASE_TOKEN=""
+GIG_LEASE_GENERATION=""
+LEASE_HEARTBEAT_PID=""
+
+parse_lease(){ # $1=acquire JSON; reject partial or malformed lease identities
+  local fields
+  fields="$(printf '%s' "$1" | python3 -c '
+import json
+import sys
+
+lease = json.load(sys.stdin)
+ws = lease.get("ws")
+token = lease.get("token")
+generation = lease.get("generation")
+if (
+    not lease.get("ok")
+    or not isinstance(ws, str)
+    or not ws
+    or not isinstance(token, str)
+    or not token
+    or isinstance(generation, bool)
+    or not isinstance(generation, int)
+    or generation < 1
+):
+    raise SystemExit("invalid fenced lease acquire response")
+print(f"{ws}\t{token}\t{generation}")
+')" || return 1
+  IFS=$'\t' read -r GIG_LEASE_WS GIG_LEASE_TOKEN GIG_LEASE_GENERATION <<<"$fields"
+  [ -n "$GIG_LEASE_WS" ] && [ -n "$GIG_LEASE_TOKEN" ] && [ -n "$GIG_LEASE_GENERATION" ]
+}
+
+heartbeat_lease(){
+  python3 "$LEASE_SCRIPT" heartbeat "$GIG_LEASE" --token "$GIG_LEASE_TOKEN" --generation "$GIG_LEASE_GENERATION" >/dev/null 2>&1
+}
+
+release_lease(){
+  [ -n "${GIG_LEASE_TOKEN:-}" ] && [ -n "${GIG_LEASE_GENERATION:-}" ] || return 0
+  python3 "$LEASE_SCRIPT" release "$GIG_LEASE" --token "$GIG_LEASE_TOKEN" --generation "$GIG_LEASE_GENERATION" >/dev/null 2>&1
+}
+
+lease_heartbeat_loop(){
+  while sleep 300; do
+    heartbeat_lease || {
+      log "lease heartbeat failed; terminating pass before stale browser work"
+      kill -TERM "$$"
+      return 1
+    }
+  done
+}
+
+start_lease_heartbeat(){
+  lease_heartbeat_loop &
+  LEASE_HEARTBEAT_PID=$!
+}
+
+stop_lease_heartbeat(){
+  [ -n "${LEASE_HEARTBEAT_PID:-}" ] || return 0
+  kill "$LEASE_HEARTBEAT_PID" 2>/dev/null || true
+  wait "$LEASE_HEARTBEAT_PID" 2>/dev/null || true
+  LEASE_HEARTBEAT_PID=""
+}
+
+cleanup(){
+  local rc=$?
+  stop_lease_heartbeat
+  release_lease || log "fenced lease release failed; gc will retry the durable pending row"
+  rmdir "$LOCKD" 2>/dev/null || true
+  trap - EXIT
+  exit "$rc"
+}
 
 # focused sub-call: run ONE step as its own agent. Short prompt + a pointer to the runbook for detail.
 # env -u ANTHROPIC_API_KEY = subscription login (no interactive key prompt). Bounded so it cannot hang forever.
 step(){ # $1=label  $2=prompt
+  heartbeat_lease || { log "lease heartbeat failed before STEP $1"; exit 1; }
   log "STEP $1 start"
+  local rc
   CLAUDE_CODE_SKIP_PROMPT_HISTORY=1 env -u ANTHROPIC_API_KEY timeout 900 "$CLAUDE" --model sonnet --dangerously-skip-permissions --no-session-persistence --add-dir "$HOME" \
-    -p "You are the Anicca Coconala gig earn-core (mtdc). set -a; . ~/.openclaw/.env; set +a. Your CDP browser-context lease is named '$GIG_LEASE' (use EXACTLY that name for any cdp_context_lease.py acquire/release the runbook calls for; this pass owns it, never acquire/release the bare name gig). Do EXACTLY this ONE step, fully, then stop. Detail/rules are in $RB. $2" >/dev/null 2>&1
-  log "STEP $1 done (rc=$?)"
+    -p "You are the Anicca Coconala gig earn-core (mtdc). set -a; . ~/.openclaw/.env; set +a. The launcher already acquired fenced CDP context '$GIG_LEASE' at ws '$GIG_LEASE_WS'; it retains the exact token/generation and alone owns heartbeats and release. Drive ONLY that ws, never invoke cdp_context_lease.py acquire/release, and never read the lease ledger. Do EXACTLY this ONE step, fully, then stop. Detail/rules are in $RB. $2" >/dev/null 2>&1
+  rc=$?
+  heartbeat_lease || { log "lease heartbeat failed after STEP $1"; exit 1; }
+  log "STEP $1 done (rc=$rc)"
 }
 
 # ── deterministic prelude ───────────────────────────────────────────────────
@@ -27,13 +103,17 @@ LOCKD=/tmp/anicca-gig-pass.lock.d
 GIG_LEASE="gig-$$"; export GIG_LEASE   # per-pass lease name, NOT the shared "gig": the EXIT trap releases ONLY this pass's own context, so an interrupt/overlap of one pass never tears down another pass's (or another loop's) browser context. Sub-agent steps inherit GIG_LEASE (env + injected into their prompt) and reuse the same lease.
 [ -d "$LOCKD" ] && [ $(( $(date +%s) - $(stat -f %m "$LOCKD" 2>/dev/null||echo 0) )) -gt 7200 ] && rmdir "$LOCKD" 2>/dev/null   # reap a crashed holder (>120min). 7200s (was 1800s): detached passes now survive well past the old 30min window (B1/PROFILE can run ~90min), so a 30min reaper would rmdir a LIVE pass's lock and let the next hourly tick start a 2nd concurrent pass -> duplicate real-market applications. 120min > worst-case pass.
 mkdir "$LOCKD" 2>/dev/null || { log "another pass holds the lock — exit"; exit 0; }   # mkdir = atomic on macOS; only ONE gig_pass.sh runs
-trap 'rmdir "$LOCKD" 2>/dev/null; python3 "$B/cdp_context_lease.py" release "$GIG_LEASE" >/dev/null 2>&1' EXIT
+trap cleanup EXIT
 bash "$HOME/anicca/skills/browser/ensure_browser.sh" >/dev/null 2>&1
 python3 "$B/cdp_tab_gc.py" >/dev/null 2>&1
 python3 "$B/session_vault.py" restore >/dev/null 2>&1
 PREP=$(python3 "$G/passprep.py" 2>/dev/null); log "passprep: ${PREP:0:120}"
 python3 "$B/cdp_context_lease.py" gc --idle-min 45 >/dev/null 2>&1   # reap per-pass leases a crashed/killed prior pass left behind (per-pass names would otherwise pile up in leases.json)
-python3 "$B/cdp_context_lease.py" acquire "$GIG_LEASE" >/dev/null 2>&1
+LEASE_JSON=$(python3 "$LEASE_SCRIPT" acquire "$GIG_LEASE") || { log "fenced lease acquire failed; aborting pass"; exit 1; }
+parse_lease "$LEASE_JSON" || { log "fenced lease response malformed; aborting pass"; exit 1; }
+export GIG_LEASE GIG_LEASE_WS
+heartbeat_lease || { log "fenced lease heartbeat rejected after acquire; aborting pass"; exit 1; }
+start_lease_heartbeat
 
 # ── the chain: every step runs, in order, as its own bounded agent ──────────
 step "LEARN"   "STEP 0.5 LEARN: first read the LAST line of ~/gig/reflection.jsonl (the previous pass verbal reflection — what was tried and what to adjust) and let it steer this pass. Then read ~/gig/.selfimprove-todo.json and do any 'missing' steps. Then crwl a best-practice source + scout.py 2-3 TOP-SELLING listings in a target category, extract the generalized winning patterns and MERGE them into ~/gig/playbook.json (general[]+components{}; 3+ winners => tier=core)."
