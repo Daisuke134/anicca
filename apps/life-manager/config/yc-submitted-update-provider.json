@@ -1,0 +1,65 @@
+{
+  "schema_version": 2,
+  "provider_id": "yc-submitted-update",
+  "browser_route_id": "yc-application",
+  "mode": "typed_update",
+  "application_submit_operations": 0,
+  "operations": [
+    {
+      "operation_type": "demo_update",
+      "route_template": "/apps/{application_id}/edit/demo",
+      "atomic": true,
+      "fields": [
+        {
+          "name": "demo_video",
+          "kind": "file",
+          "locator": { "strategy": "css_exact", "selector": "input[type=file][accept=\"video/*\"]", "cardinality": 1 }
+        }
+      ],
+      "activation": { "kind": "button_exact_text", "text": "Save & back", "count": 1 },
+      "readback": { "required": true, "strategy": "remote_media_ready_and_remove_control" }
+    },
+    {
+      "operation_type": "progress_update",
+      "route_template": "/apps/{application_id}/edit/progress",
+      "atomic": true,
+      "fields": [
+        { "name": "productLink", "kind": "text", "locator": { "strategy": "css_exact", "selector": "[name=productLink]", "cardinality": 1 }, "setter": { "strategy": "native_value_setter", "events": ["input", "change", "blur"] } },
+        { "name": "productCreds", "kind": "text", "locator": { "strategy": "css_exact", "selector": "[name=productCreds]", "cardinality": 1 }, "setter": { "strategy": "native_value_setter", "events": ["input", "change", "blur"] } },
+        { "name": "howfar", "kind": "textarea", "locator": { "strategy": "css_exact", "selector": "[name=howfar]", "cardinality": 1 }, "setter": { "strategy": "native_value_setter", "events": ["input", "change", "blur"] } },
+        { "name": "worked", "kind": "textarea", "locator": { "strategy": "css_exact", "selector": "[name=worked]", "cardinality": 1 }, "setter": { "strategy": "native_value_setter", "events": ["input", "change", "blur"] } },
+        { "name": "techstack", "kind": "textarea", "locator": { "strategy": "css_exact", "selector": "[name=techstack]", "cardinality": 1 }, "setter": { "strategy": "native_value_setter", "events": ["input", "change", "blur"] } },
+        { "name": "people_using", "kind": "choice", "locator": { "strategy": "question_scoped_option", "question_text": "Are people using your product?", "option_values": ["Yes", "No"], "cardinality": 1 } },
+        { "name": "have_revenue", "kind": "choice", "locator": { "strategy": "question_scoped_option", "question_text": "Do you have revenue?", "option_values": ["Yes", "No"], "cardinality": 1 } }
+      ],
+      "activation": { "kind": "button_exact_text", "text": "Submit update", "count": 1 },
+      "readback": { "required": true, "strategy": "exact_value_and_selected_option_after_submit" }
+    },
+    {
+      "operation_type": "team_update",
+      "route_template": "/apps/{application_id}/edit/cofounder",
+      "atomic": true,
+      "fields": [
+        { "name": "others2", "kind": "textarea", "locator": { "strategy": "css_exact", "selector": "[name=others2]", "cardinality": 1 }, "setter": { "strategy": "native_value_setter", "events": ["input", "change", "blur"] } },
+        { "name": "cofounder", "kind": "textarea", "locator": { "strategy": "css_exact", "selector": "[name=cofounder]", "cardinality": 1 }, "setter": { "strategy": "native_value_setter", "events": ["input", "change", "blur"] } }
+      ],
+      "activation": { "kind": "button_exact_text", "text": "Submit update", "count": 1 },
+      "readback": { "required": true, "strategy": "exact_value_after_submit" }
+    },
+    {
+      "operation_type": "founder_profile_update",
+      "route_template": "/bio/721f696b-0566-4a16-bda7-a9c368b1eac1/edit",
+      "atomic": true,
+      "fields": [
+        { "name": "fhack", "kind": "textarea", "locator": { "strategy": "css_exact", "selector": "[name=fhack]", "cardinality": 1 }, "setter": { "strategy": "native_value_setter", "events": ["input", "change", "blur"] } },
+        { "name": "fability", "kind": "textarea", "locator": { "strategy": "css_exact", "selector": "[name=fability]", "cardinality": 1 }, "setter": { "strategy": "native_value_setter", "events": ["input", "change", "blur"] } },
+        { "name": "projects", "kind": "textarea", "locator": { "strategy": "css_exact", "selector": "[name=projects]", "cardinality": 1 }, "setter": { "strategy": "native_value_setter", "events": ["input", "change", "blur"] } },
+        { "name": "awards", "kind": "textarea", "locator": { "strategy": "css_exact", "selector": "[name=awards]", "cardinality": 1 }, "setter": { "strategy": "native_value_setter", "events": ["input", "change", "blur"] } },
+        { "name": "testScores", "kind": "textarea", "locator": { "strategy": "css_exact", "selector": "[name=testScores]", "cardinality": 1 }, "setter": { "strategy": "native_value_setter", "events": ["input", "change", "blur"] } },
+        { "name": "clubs", "kind": "textarea", "locator": { "strategy": "css_exact", "selector": "[name=clubs]", "cardinality": 1 }, "setter": { "strategy": "native_value_setter", "events": ["input", "change", "blur"] } }
+      ],
+      "activation": { "kind": "button_exact_text", "text": "Save founder profile", "count": 1 },
+      "readback": { "required": true, "strategy": "exact_value_after_save" }
+    }
+  ]
+}
