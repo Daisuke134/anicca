@@ -174,6 +174,7 @@ daily journey を完成させ、友人・家族を含む利用者へ通常どお
 | 必須 | 名前 · 言語 · 自宅 · Google Calendar | daily journey を開始しない。どの予定を、誰に、どこから案内するか決められない |
 | 任意（推奨） | Telegram Live Location | 時刻ベースの連投と予定経路は動く。ただし「家を出た」自動停止・現在地ETA・実測の遅刻判定は行わず、知っているふりをしない |
 | 任意（追加 channel） | 電話 | 無くても daily 全体が Telegram で動く。有効化した人だけ Telegram と同じ判定に電話が追加され、留守電なら即切る |
+| 任意（recipient evidence） | Gmail / Google Contacts | Calendarのorganizer/attendeeで宛先が一意なら不要。不明・曖昧な時だけ接続を提案し、許可された範囲で関連thread/contactを検索する |
 
 **2026-08-02 のコード実測**:
 
@@ -190,17 +191,72 @@ daily journey を完成させ、友人・家族を含む利用者へ通常どお
   Railway deploy → production receipt が必要。
 - ★row #5 は未完成で、現 `lib/late-notice.js` は遅刻判定後に `sendLateNotice()` を自動実行する★。
   これは「宛先・本文を表示し、`[送る]` まで外部送信0」という製品契約に反するため、promotion 前の blocker。
+- ★hard-code audit★ `田中さん` / `tanaka@…` / `19:12` / `12分` 等の§5表示は説明用fixtureであり、
+  runtime値ではない。一方、branchの `NUDGE_LEVELS = [25, 10, 5, 0, -3, -7]` は実際のhard-codeで、
+  現 `externalAttendees()` / `notify.js` はCalendar attendeeだけを読み、organizerを除外する。Gmail・Contacts・
+  Webの人物探索は宛先解決に未接続。したがって2cと#5はこのまま完成扱いにしない。
+
+### 3.0.1 hard-code禁止契約（2026-08-02追加）
+
+**禁止するもの**:
+
+- 人名、メールアドレス、会社名、イベント名、場所、時刻、遅刻分数をsource codeのproduct dataとして埋め込む。
+- `T-25`等の固定配列を全user・全eventへ適用する。
+- event titleの姓名から `first.last@company.com` のようなメール形式を推測して送る。
+- Web検索の同姓同名を、Calendar/Gmail/Contactsとのidentity一致なしに宛先へ採用する。
+- spec・test fixture・prompt exampleの文字列をruntime fallbackとして使う。
+
+**許可するもの**: test fixtureの架空値、UI説明例、version付きpolicy/schema。ただしfixtureは `example.invalid` または
+`<recipient_email>` のように実データでないと明示する。policy値はsource literalではなく、`lm_daily_policy` の
+user/tenant設定とversion付きdefault rowから読み、いつ・なぜその値になったかをreceiptに残す。
+
+#### 動的nudge plan
+
+eventごとに `nudge_plan` を生成・永続化し、固定 `NUDGE_LEVELS` を廃止する。入力はevent start、routeから得た
+departure time / travel duration、userの支度時間・過去のack/出発反応、event重要度、Live Locationの有無と鮮度、
+現在時刻、user/tenant policy。出力は単調増加する実送信timestampと各messageの目的。送信本数・最小間隔・
+quiet hours・lateへのhandoffもpolicy dataであり、source codeの数字にしない。
+
+遅刻分数は `route ETA - event start` から毎回算出する。`now - planned departure`をそのまま遅刻分へ足す近似を
+確定値として表示しない。Live Locationなしでは「自宅を今出た場合の推定」と明示する。
+
+#### 動的recipient resolver
+
+`recipient resolver` は次のevidenceをuserごと・eventごとに検索し、candidateを同一人物へentity resolutionする。
+
+1. **Google Calendar**: `event.organizer` と `event.attendees[]` の氏名・email・self/resource・response status。
+   organizerを一律除外しない。self、会議室resource、declined attendeeは除外する。
+2. **接続済みGmail（任意）**: event title、organizer、参加者名、会社/domain、descriptionの識別子で関連threadを
+   検索し、実message headerのFrom/To/Ccと署名contextをevidence化する。無関係なmailbox全体をpromptへ渡さない。
+3. **Google Contacts / People（任意・別read permission）**: 許可済みcontactのname、nickname、email、organizationを
+   検索する。Gmail接続済みだからContacts権限もある、とみなさない。
+4. **公開Web検索**: event/会社/人物の公式page・公開professional contactを確認する。非公開メールや推測emailを
+   作らない。Web単独のcandidateは自動確定しない。
+5. **本人確認**: evidenceが衝突する、複数人が同score、送信可能なemailが無い場合はTelegramで候補を表示して
+   本人に1回選ばせる。選択はevent/関係性memoryへ保存し、次回から再利用する。
+
+resolverの出力は `{display_name, email, source, evidence_refs, confidence, event_role}`。承認cardはこの実値と、
+どのsourceで確定したかを表示する。宛先0件/曖昧ならsend buttonを出さない。宛先決定と送信承認は別の権限で、
+resolverが確信しても自動送信してはならない。
+
+公式契約: Calendar eventは`organizer`と`attendees[]`（email/displayName/self/organizer/resource/responseStatus）を返す。
+People `people.searchContacts` はContacts read scopeでname/email/organization等を検索する。Gmail
+`users.messages.list`は接続userのmailboxを`q`で絞る。出典:
+https://developers.google.com/workspace/calendar/api/v3/reference/events ·
+https://developers.google.com/people/api/rest/v1/people/searchContacts ·
+https://developers.google.com/workspace/gmail/api/reference/rest/v1/users.messages/list
 
 **ここからの実行順**:
 
 1. re-reviewを通す（B1とgeocodeコストの独立検算）。
-2. `feature/lm-departure-nudge` のdaily差分だけを、newer `main` を巻き戻さずmergeする。
-3. Railway deploy後、電話なし実userへの6段連投・`[了解]`停止・電話opt-in・留守電切断・API costを実測する。
-4. #3 家を出た検知と、位置なし縮退 UX を完成する。
-5. #4 乗換ステップを完成し、実予定で地図アプリを開かず到着する。
-6. #5 自動メール送信を廃止し、宛先 + 正確な本文 + `[送る][送らない]` の承認カードへ置き換える。
-7. #6 電話なし・位置なしを含む実user E2Eと、全failure UXを通す。
-8. 友人・家族へ通常のlaunch済み製品として案内し、実利用feedbackを回収して継続改善する。
+2. 固定 `NUDGE_LEVELS` を動的・永続化されたevent別 `nudge_plan`へ置き換える。B1/cache等の安全修正は維持する。
+3. 自動メール送信を止め、Calendar→Gmail→Contacts→公開Web→本人確認のrecipient resolverと承認ledgerを作る。
+4. daily差分だけを、newer `main` を巻き戻さずmergeする。
+5. Railway deploy後、電話なし実userへの動的連投・ack停止・電話opt-in・留守電切断・API costを実測する。
+6. #3 家を出た検知と、位置なし縮退 UX を完成する。
+7. #4 乗換ステップを完成し、実予定で地図アプリを開かず到着する。
+8. #6 電話なし・位置なし・Gmail/Contactsなしを含む実user E2Eと、全failure UXを通す。
+9. 友人・家族へ通常のlaunch済み製品として案内し、実利用feedbackを回収して継続改善する。
 
 ★ **この表の「DONE」は "branch に入った" という意味であって "本番で効いている" ではない。両者を混同すると、
 2026-08-01 16:56 の実測（下の #0）と同じ嘘を繰り返す。** ★
@@ -218,10 +274,10 @@ daily journey を完成させ、友人・家族を含む利用者へ通常どお
 | **2b** | ~~留守電への発話を止める + 電話を既定 OFF~~ ✅ **コード DONE 2026-08-01 / 課金減は deploy 待ち**（Dais 2026-08-01、正本 = §5.2.1） | AMD が `machine` でも bridge は喋り続け、キャリアの録音上限120秒で切られていた（`hangup_source` 43件すべて `callee`）。1本 約$0.05 の Gemini Live を**人に届かない留守電**に払っていた。実測 `human` 3 / `machine` 17 | 実装: `amd_result` を先に永続化し、`human` 以外をhangup。電話defaultはfalse、panel表示も同じdefaultを使う。★2c後の最終境界★ `wakeTick` は電話なしuserにもTelegram連投するため電話filterを持たず、実dial直前の `wakeCallOnce` だけが `call_enabled === true` を要求する。検証15 file 192/192、branchのB1回帰46/46。本番で留守電秒数を実測して閉じる |
 | **2d** | ~~`/test-call` も留守電に当たったら切る~~ ✅ **コード DONE 2026-08-02 / 実架電の receipt は別途**（正本 = §5.2.1） | `server.js` の `/test-call` は `wakeUid`/`wakeEventKey` を積まないので `client_state` が空になり、webhook が `"no wake context"` で早期 return して **hangup 経路に到達しない**。AMD は動き課金も出る。ユーザー起点かつ rate limit 付きだが、**まだ留守電に金を払える最後の場所** | 実装: ①原因は 2b の hangup が壊れていた事ではなく **`/test-call` が自分を名乗らなかった**事。`client_state` に**呼び出しの「種類」**を持たせ（wake = `{wakeUid, wakeEventKey}` / test = `{testUid}`）、`decodeCallClientState` 1本が両方を返して webhook が `kind` で分岐する ②★stream URL には触っていない★ — `buildStreamUrl` の query は `signCtx([summary,dateTime,location,urgency,lang,name,wakeUid,wakeEventKey])` で署名され `/ws` bridge が**同じ順序の配列**で検証するので、種類を query 項目で運ぶと署名の意味が片側だけ変わる。代わりに `placeCall({to, streamUrl, clientState})` に任意引数を1つ足して透過（`amdDialOptions(url, env, {clientState})` は明示値が URL 由来に勝つ。wake 経路は無変更）③★test 呼び出しは Supabase に一切書かない★ — scheduler が作る `lm_wake_log` 行が**存在しない**ので、`applyAmdDetection` を流用すると全 test call が `matched=0` を返し、「本物の wake 行が消えた」を意味するはずの §1.3 の警報が**恒常ノイズに化ける**。よって `applyTestCallDetection` は記録せず hangup だけを行う ④★hangup 条件は wake と完全に同一★ — `human` は切らない / `not_sure` は切る（実測 machine 17 : human 3、外すコストは「1回の nudge を逃す」対「2分の課金発話」で非対称）/ **空・読めない result は誰も切らない**（あれは AMD の判定ではなく payload の解析失敗。ここで切ると Telnyx の schema 変更1つが「全 test call が応答直後に死ぬ」に化ける = §1.3 の無音全損クラス）。同一性は両者が `shouldMarkAnswered()` を共有する事で担保（人間の定義を変えたら両方が一緒に動く）。検証（自分で実行）: `node --test lib/telnyx-webhook.test.js` → **tests 5 / pass 5 / fail 0**、`lib/dial.test.js + test/scheduler.test.js + lib/answered.test.js` → **tests 13 / pass 13 / fail 0**、`test/testcall-amd-hangup.test.js + lib/late-notice.test.js` → **tests 31 / pass 31 / fail 0**、実 `server.js` を実 HTTP + 実 Ed25519 署名で叩く `test/testcall-amd-hangup-http-contract.test.js` → **tests 1 / pass 1 / fail 0**（fake fetch が未知の host/path で throw するので「Supabase に書かない」が主張でなく物理制約。dial body の `client_state` が `kind:"test"` に戻る事と、stream URL の query 項目が9個から増えていない事を pin）、`node --check server.js` OK。全 suite: 変更前 **tests 2037 / pass 2031 / fail 6** → 変更後 **tests 2052 / pass 2046 / fail 6** で**失敗は同一の6 file**（`event-participation-entities` / `panel-corrective-red` / `panel-corrective3-four-blockers` / `panel-corrective4-logout` / `panel-display-policy` / `browser-task-telegram-http-contract` = 本変更と無関係の既知 baseline。`git stash` して `panel-corrective-red` 単体が同じ **tests 11 / pass 10 / fail 1** で落ちる事も確認済、直していない）。★未検証★: 実架電の通話秒数は deploy 後に Telnyx 側で実測する（下の 0-receipt と同じ receipt 欄で閉じる） |
 | **2a** | ~~webhook の PATCH 失敗時に Telnyx へ 200 を返すのをやめる~~ ✅ **コード DONE 2026-08-02 / 実再送の receipt は別途**（根拠 = §1.3.1） | Supabase が落ちている間、大声でログは出るが Telnyx には「受け取った」と答えるので**再送の権利を自分から捨てている**。落ちていたのは数秒でも、失われるのはその検知そのもの。しかも痕跡は stderr にしか残らず DB は永久に NULL = §1.3 と同じ「失敗が存在しない事象に見える」クラス | 実装: `server.js` の `/telnyx-events` 末尾で `outcome` を 200 に畳んでいた三項を分解し、**`!detection.amd.ok` の時だけ 503**（body = `record failed; send it again`）。★実際に引けた線は「書き込みが着地したか」対「着地して0行だったか」の**1本だけ**★ = ①`!ok` → 5xx を返して Telnyx に再送させる（§1.3.1 の「2xx 以外 = 受け取っていない」。primary 3 + failover 3 の指数バックオフ）。★この線の粗さを正直に書く★ — `patchWakeLog`（`lib/late-notice.js:196-207`）は**あらゆる失敗を同じ `{ok:false}` に畳む**ので、一時的なもの（5xx / fetch の throw）だけでなく**恒久的なものまで再送を要求してしまう**。実測（`node -e` で直接呼んで確認）= `http_400`（schema drift）· `http_401`（service-role 鍵ローテート）· `http_404` · `unreadable_response` · `missing_args` · `recordAmdResult` の **`missing_result`** が全部 `{ok:false,matched:0}` → 全部 503 → 6配送すべてで同じように失敗する。★`missing_result` が一番痛い★ — `lib/late-notice.js:245-247` は「読めない result は AMD の判定ではなく**我々の** parse 失敗だから誰も切らない」と長々と論じているのに、同じ入力が今度は**6配送を焼く**。代償 = 配送予算の空焼き + failover URL を無意味に鳴らす + **本物の障害と schema の typo が見分けられない**。当面それでも受け入れる理由 = 逆側の誤り（本物の障害に 200）は検知**そのもの**を消すが、無駄な再送は何も消さないから。★本来の直し方★ = `patchWakeLog` に retryable / permanent を返させ前者だけ escalate する（この分岐を広げるのではなく**あちら**を直す。でないと2つが drift する）。振る舞い変更なので**今回はやらない** = 別 TODO ②`matched === 0` = 書き込みは**着地して**正しく0行だった = その `uid+event_key` の行が存在しない → 再送しても永久に埋まらないので **200 で閉じる**（ここで 5xx を返すと6回の配送を焼いた上、本物の障害と見分けがつかなくなる = §1.3 の警報をノイズに変える 2d と同じ罠）③★`answered_at` の PATCH 失敗は 5xx にしない★ — ただし理由は「ラッチのせいでどうせ no-op だから」では**ない**（それは誤り。ラッチは `answered_at=is.null` なので、最初の書き込みが着地していなければ列は NULL のままで、再送された書き込みは**普通に着地する**）。本当の理由は3つ = (1) この書き込みは `amd_result` が成功した**後**にしか走らないので、再送を頼むと成功済みの `amd_result` を配送のたびに書き直す (2) 書かれる時刻は**再送時の時計**で指数バックオフの分だけズレる = 「無い」より悪い答えになる (3) `amd_result='human'` が「人が出た」事実を既に記録しているので、失うのは事実ではなく**その秒**だけ（失敗は既存の `report()` が stderr に残す）④★`/test-call` 分岐は常に 200★ — 書く先が無く、唯一の副作用である hangup は**再送できない**（最初のバックオフが明ける頃には通話がキャリアの録音上限で終わっており、切る相手がいない）。検証（自分で実行）: 新規 `test/telnyx-events-retry-http-contract.test.js` = 実 `server.js` を実 HTTP + 実 Ed25519 署名で叩き、fake fetch が未知の host/path で throw する（= 「Supabase に届く前に答えた」が緑にならない物理制約）。**先に RED を踏んだ** → `tests 5 / pass 3 / fail 2`（`expected 5xx, got 200` が Supabase 500 と ECONNREFUSED の2件だけ。`matched=0` / 正常系 / test call の3件は現状どおり緑 = 変えてはいけない所を変えていない証拠）→ 実装 → `test/telnyx-events-retry-http-contract.test.js + test/testcall-amd-hangup-http-contract.test.js + test/testcall-amd-hangup.test.js + lib/late-notice.test.js` で **tests 38 / pass 38 / fail 0**（下の characterization test を足した後の再実測値。実装直後の 37/37 は当該 test を書く前の数）。★再送安全性を characterization test で固定★（§1.3.1 の帰結1）= 同一 event を2回配送し「1回目 Supabase 500 → 5xx / 2回目 200 + `answered`」を pin した上で、`answered_at` の全 PATCH が `answered_at=is.null` を**持つ**事と `amd_result` の全 PATCH が**持たない**事を assert → **mutation で kill 確認済**: `markAnswered` から `filter: "&answered_at=is.null"` を外すと当該1件だけが `tests 6 / pass 5 / fail 1`（`answered_at must be latched so a resent event cannot rewrite the first human proof`、actual URL に `answered_at=is.null` 無し）で落ち、戻すと `tests 6 / pass 6 / fail 0`。全 suite `node --test lib/*.test.js test/*.test.js` = **tests 2080 / pass 2075 / fail 5**、失敗は既知 baseline の部分集合（`panel-corrective-red` / `panel-corrective3-four-blockers` / `panel-corrective4-logout` / `panel-display-policy` / `browser-task-telegram-http-contract`。6件目の `event-participation-entities` は単体で `tests 8 / pass 8 / fail 0` = 今回緑）。★未検証★: **実際の再送で行が埋まる**所は本番でしか見えない。本番の `SUPABASE_URL` を壊す実験は**しない**（生きている書き込みを落とすので）。deploy 後に `/health` の build tag 更新を確認し、実 AMD event が 200 で処理され続けている事をログで見る |
-| **2c** | ★ 出発の押し切りを Telegram 連投にする ★（branch実装済・re-review/deploy待ち、正本 = §5.2.1） | `wakeTick` の外側で電話userだけに絞ると、電話なしが既定なのに誰にも届かない | T-25 / T-10 / T-5 / T-0 / T+3 / T+7 が電話設定に関係なく実配信。`[了解]` / #3の出発検知 / late移行で即停止。B1修正とgeocode成功cacheを含む46/46を維持し、本番receiptを取る |
+| **2c** | ★ 出発の押し切りをTelegram連投にする。branchの固定6段はinterimで、event別 `nudge_plan`へ置換 ★（§3.0.1 / §5.2.1） | 電話filterでは電話なしuserへ届かず、固定 `[25,10,5,0,-3,-7]` では予定・移動・支度・反応履歴が違うuserを同じ時刻で扱う | `wakeTick` cohortはdaily-enabled全員、dialだけopt-in。event start / route departure / user policy / ack history / locationから送信timestampを生成・永続化。ack / 出発 / late handoffで停止。sourceにuser固有時刻や固定rung配列0。B1/cacheの46/46を維持し動的plan testを追加 |
 | **3** | 位置を「家を出た」判定に接続し、**位置なし縮退 UX**も完成（鮮度は `observed_at`） | 位置userには追従できず、位置なしuserに知っているふりをすると信頼を失う | 位置あり: 実予定で出発検知 → 連投停止 → 現在地ETA。位置なし: 時刻ベース連投 + `[出た][了解]` で停止、現在地ETAや出発検知を主張しない。`updated_at` を鮮度に使う箇所0 |
 | **4** | 乗換ステップ + 取得できる出口番号 | **これが無いと地図アプリを消せない** = 商品の主張が嘘になる | 実イベント1件で徒歩・路線・行先・乗換・乗降時刻・到着ETAを1通で受信し、地図アプリを開かず到着。番線/出口は実dataがある時だけ表示し、推測しない |
-| **5** | ★ 自動送信を廃止し、宛先・本文を見せる1タップ承認へ ★ | 現コードは `sendLateNotice()` を自動実行するため、相手も遅れている・既に連絡済み・私的contextがある場合に誤送信する | Calendarの外部attendeeから **送信先の氏名/メール**、ETAと既知contextから**送る本文全文**を表示。選択は `[送る][送らない]`。押すまで外部送信0、送るはexactly-once + delivery receipt、送らないは永久終了。複数宛先は全員を明示し、宛先なしは送れないと明示 |
+| **5** | ★ 自動送信を廃止し、動的recipient resolver + 宛先・本文を見せる1タップ承認へ ★ | 現コードは自動送信し、Calendar attendeeしか見ずorganizerを落とす。Gmail/Contacts/Web evidenceを使わず、相手も遅れている・連絡済み・私的contextがある場合に誤送信する | Calendar organizer/attendees → 接続Gmail → 許可済みContacts → 公開Web → 必要なら本人選択で実在recipientを解決。氏名/email/source evidenceと本文全文を表示し `[送る][送らない]`。押すまで0、送るexactly-once + receipt、送らない永久終了。推測email禁止 |
 | **6** | 電話なし・位置なしでもdaily coreが動く（両方任意、推奨機能） | 任意permissionを必須にすると通常利用できず、逆にpermissionなしで現在地を知るふりをすると嘘になる | 実userで4 matrix（位置×電話）をE2E。全員に連投・予定経路・承認が届く。位置ONだけ出発自動検知/現在地ETA、電話ONだけ追加架電。留守電即切断。失敗時は沈黙せずTelegramで説明 |
 
 **運用規則（今回の教訓）**: ★試験中に本番へ env を設定しない★ — Railway では変数設定が再デプロイを誘発し、
@@ -369,7 +425,8 @@ daily journey の必須入力は **名前・言語・自宅・Google Calendar**�
         ▼
    ✅ daily core開始
    ├─ Live Location（任意・推奨）→ 出発自動検知 / 現在地ETA / 実測遅刻判定を追加
-   └─ 電話（任意）              → Telegramに追加するreminder channel。明示ONだけ
+   ├─ 電話（任意）              → Telegramに追加するreminder channel。明示ONだけ
+   └─ Gmail / Contacts（任意・必要時）→ Calendarだけで宛先不明の時にrecipient evidenceを追加
 ```
 
 **この後、ユーザーが操作を覚える必要は無い。** コマンドは存在するが、知らなくても製品は成立する。
@@ -389,50 +446,57 @@ flowchart TD
     H --> I
     I -->|はい| J[Telegram + 追加電話]
     I -->|いいえ| K[Telegramのみ]
-    J --> L[予定を検知し出発時刻を計算]
+    J --> L[予定・route・user policyから出発時刻と動的nudge planを生成]
     K --> L
-    L --> M[Telegram出発ladder]
+    L --> M[計算済みtimestampでTelegram出発ladder]
     M --> N{了解 / 出発を検知?}
     N -->|まだ| M
     N -->|はい| O[ladder停止]
     O --> P[徒歩・路線・乗換・到着ETAを1通]
     P --> Q{到着が遅れる?}
     Q -->|いいえ| R[以後は黙る]
-    Q -->|はい| S[宛先氏名・メール・本文全文を表示]
-    S --> T{ユーザーの1判断}
+    Q -->|はい| S[Calendar・Gmail・Contacts・公開Webからrecipient候補を解決]
+    S --> W{identityとemailは一意?}
+    W -->|いいえ| X[候補とevidenceを本人に確認]
+    W -->|はい| Y[宛先氏名・メール・source・本文全文を表示]
+    X --> Y
+    Y --> T{ユーザーの1判断}
     T -->|送る| U[exactly-once送信 + delivery receipt]
     T -->|送らない| V[外部送信0で終了]
 ```
 
-### 5.2 いつもの1日（届くのは最大3通）
+### 5.2 いつもの1日（3種類の場面。値はすべてruntime data）
+
+下記の `<…>` は表示契約を示すplaceholderであり、実名・実email・実時刻・分数はCalendar / route / location /
+recipient resolver / user policyから毎回生成する。specの例示値をruntime defaultへコピーしてはならない。
 
 ```text
- 07:40  出発前 ─────────────────────────────────────  #1
+ <nudge_at>  出発前 ──────────────────────────────────  #1
  ┌────────────────────────────────────────────┐
- │ ⏰ 9:00 打合せ / 渋谷スクランブルスクエア    │
- │ 8:05 に出て。あと 25分                     │
- │ [ 了解 ]        [ 15分ずらす ]             │
+ │ ⏰ <event_start> <event_title> / <location> │
+ │ <departure_at> に出て。あと <remaining>分  │
+ │ [ 了解 ]        [ 出発を変更 ]             │
  └────────────────────────────────────────────┘
    ★ 反応が無ければ Telegram を連投して押し切る（下の 5.2.1）★
    → ここで「カレンダーを開く」という行為が消える
 
- 08:06  家を出た（位置で検知）───────────────────  #3 + #4
+ <left_at>  家を出た（位置ON時）──────────────────  #3 + #4
  ┌────────────────────────────────────────────┐
- │ 🚶 中目黒まで徒歩7分                        │
- │ 08:12 中目黒 日比谷線・北千住行             │
- │ 08:21 霞ケ関で乗換                          │
- │ 08:31 渋谷 着 → ★ B2出口 ★ → 徒歩3分        │
- │ 到着 08:44 / 予定 09:00（16分 余裕）        │
+ │ 🚶 <walk_to_origin>                         │
+ │ <board_at> <line>・<headsign>               │
+ │ <transfer_at> <station>で乗換               │
+ │ <alight_at> <station> → <verified_exit>     │
+ │ 到着 <route_eta> / 予定 <event_start>       │
  └────────────────────────────────────────────┘
    → ここで「地図アプリを開く」という行為が消える
    ★この1通で経路が完結する。以後は黙る★
 
- 09:02  遅れ確定（到着予定 > 予定時刻）─────────  #5
+ <decision_at>  route ETA > event start ─────────  #5
  ┌────────────────────────────────────────────┐
- │ ⚠️ 5分ほど遅れます                          │
- │ 田中さん（tanaka@…）に送りますか?           │
- │「お世話になっております。交通事情により     │
- │  5分ほど遅れます。申し訳ございません。」    │
+ │ ⚠️ <late_minutes>分ほど遅れる見込みです      │
+ │ <recipient_name>（<recipient_email>）        │
+ │ source: <Calendar/Gmail/Contacts/Web/確認済> │
+ │「<generated_message_body>」                 │
  │ [ 送る ]             [ 送らない ]            │
  └────────────────────────────────────────────┘
    → ここで「気まずい謝罪の文面を考える」が消える
@@ -440,8 +504,8 @@ flowchart TD
    相手も遅れている・既に伝達済み・本人しか知らない事情は推測せず、最終判断を本人に残す
 ```
 
-**「最大3通」は "3種類の場面" の話であって、出発の押し切りは別枠**（下の 5.2.1）。経路と承認は
-それぞれ1通のままで、増やしたら設計の失敗。
+**「3種類」は出発促進・経路・承認という場面の分類**であり、通知本数のhard-codeではない。出発促進の回数と
+timestampはevent別 `nudge_plan`、経路/承認の再通知条件もuser policyとdelivery stateから決める。
 
 ### 5.2.1 ★出発の押し切りは Telegram の連投で行う（電話ではない）★ — Dais 2026-08-01
 
@@ -460,20 +524,21 @@ send me message is much better since it would hit me to actually leave to the pl
 | 電話 | 既定 ON | **既定 OFF**。`call_enabled` を明示的に立てた人だけの追加チャンネル |
 | 理由 | — | 電話は「出る」という1つの動作を要求する。Telegram は**画面に残り続ける**ので、出発という行動に直接効く（Dais の実感） |
 
-**連投の形**（うるささではなく "残り続けること" が効く）
+**連投の形**（固定rungではなく、eventごとに生成する）
 
 ```text
- T-25  ⏰ 9:00 打合せ / 渋谷スクランブルスクエア
-       8:05 に出て。あと 25分   [ 了解 ] [ 15分ずらす ]
- T-10  ⏰ あと10分で出る時間。8:05 出発
- T-5   ⏰ あと5分。そろそろ支度を終えて
- T-0   🚨 いま出る時間。8:05
- T+3   🚨 3分オーバー。今出れば 09:03 着（3分遅れ）
- T+7   🚨 7分オーバー。遅刻連絡の確認へ     [ 確認 ] [ 不要 ]
+ <plan[0].at>  予定・場所・計算済み出発時刻を含むopening     [ 了解 ]
+ <plan[1].at>  未ack/在宅/残時間に合わせたfollow-up
+ <plan[n].at>  route ETAを再計算したaction message
+ <handoff_at>  route ETAが予定を越えたら遅刻承認cardへhandoff
  ─────────────────────────────────────────────────
-  [ 了解 ] を押した / 位置が動いた 時点で★即停止★
+  [ 了解 ] / 出発検知 / event取消・変更 / late handoffで★即停止★
   停止条件が無い連投は嫌がらせであって製品ではない
 ```
+
+branchの `[25,10,5,0,-3,-7]` は最初のbehaviorを証明したinterim fixtureであり、production contractではない。
+実装は `lm_daily_policy` + event/user dataから `nudge_plan` を生成し、同じeventでもuser・場所・移動時間・
+反応履歴が変われば送信timestampも変わる。
 
 **止め方が設計の本体**: ①`[ 了解 ]` を押す ②位置が動いて出発が検知される（#3）③予定時刻を過ぎて
 late organ の領域に入る — のいずれかで打ち切る。押し切りは「反応が無い間だけ」続く。
@@ -510,16 +575,20 @@ wake 呼び出しは「記録してから切る」、test 呼び出しは「記�
 
 ### 5.3.1 遅刻連絡の権限境界（#5）
 
-Calendarの外部attendeeを候補にするが、Life Managerは他人も遅れているか、既に口頭で合意したか、本人だけが
-知る私的contextを推測できない。したがって card に **送信先の氏名・メールアドレス・送る本文全文・根拠となる
-ETA** を表示し、操作は `[送る] [送らない]` の1判断に固定する。
+§3.0.1のrecipient resolverがCalendar organizer/attendees、接続済みGmail、許可済みContacts、公開Web evidenceを
+event contextに対して検索する。ただしLife Managerは他人も遅れているか、既に口頭で合意したか、本人だけが知る
+私的contextを推測できない。したがって card に **送信先の氏名・メールアドレス・source/evidence・送る本文全文・
+根拠となるETA** を表示し、操作は `[送る] [送らない]` の1判断に固定する。
 
 - `[送る]`: 表示した宛先へ表示した本文をexactly once送信し、delivery receiptをTelegramへ返す。
 - `[送らない]`: 外部送信0で永久終了。別tickで同じ確認を再表示しない。
 - 複数宛先: 全員を隠さず列挙する。誰に飛ぶか不明な状態では送信buttonを出さない。
 - 宛先なし: 「Calendarに連絡先がありません」と伝え、送信しない。
+- identity曖昧: 候補とevidenceを本人へ示して選んでもらう。Web検索だけで見つけた推測emailには送らない。
+- Gmail/Contacts未接続: Calendarだけで解決できれば動く。解決できなければ接続を提案するか本人へ尋ねる。
 - ★現コードとの差★: `processLocationLateNotice()` は現在承認前に `sendLateNotice()` を呼ぶ。row #5ではこの
   side effectを durable approval claim の**後**へ移し、callback以外の経路から呼べないようtestで封じる。
+  `externalAttendees()`のorganizer一律除外も廃止し、resolverのevent role判定へ一本化する。
 
 ### 5.4 うまく行かない日（ここが信頼を決める）
 
@@ -543,7 +612,7 @@ ETA** を表示し、操作は `[送る] [送らない]` の1判断に固定す�
 
 ### 5.6 この後 chat の中に増えていく物（同じ形を守る）
 
-daily が閉じたら、同じ「チャットで完結・承認は1タップ・最大3通」の型のまま面を増やす。
+daily が閉じたら、同じ「チャットで完結・外部actionの承認は1タップ・通知量はuser policyと状況から決める」型のまま面を増やす。
 
 | 順 | 何 | 体験（形は同じ） |
 |---|---|---|
