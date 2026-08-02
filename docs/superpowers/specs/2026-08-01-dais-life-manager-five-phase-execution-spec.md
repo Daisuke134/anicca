@@ -909,12 +909,49 @@ identity/browser/calendar reference検証を追加し、新規4件と既存runti
 | 5 | Fiat/NISA data、余剰資金、提案、注文、税/fee | NISA/課税/現金/cryptoを分け、約定からCFOまで照合 |
 | Web | 同じcoreのtenant化、認証、secret、panel、課金 | ローカルで実証した同じjob/ledger/reportを別userが安全に使える |
 
-### 5.0.1 ローカル実行方式の正本（2026-08-02訂正）
+### 5.0.0 Docker判断の監査と結論
 
-Dais個人用Life Managerの各agentは、Mac mini上の`launchd → repository-owned OpenClaw skill/runbook →
-agent runner → CloakBrowser daily-driver → provider → local state → Telegram`を正本とする。Connectorも
-Gig Work Loopと同じcontrol-plane patternへ揃える。ここでいうlocalは、Mac上で直接動くlaunchd/OpenClaw
-processであり、Connector専用Docker worker/imageを日常実行の正本にしない。
+DockerはDaisの要求やREADMEのlocal-first契約から出たものではない。2026-08-01のagent-authored commit
+`19804a34c`が、既存`lm_runtime_jobs`のenqueue、lease、retry、dead-letter、idempotency、immutable receiptを
+再利用する`O1A-01`をspecへ追加し、commit `c722bbd6f`がConnector coverageを既存Docker workerへ配備した。
+その判断には次の論理があった。
+
+1. 外部申込みは二重送信防止、再試行、receipt、再起動耐性が必要だった。
+2. CFO診断でもqueue consumer不在が停止原因だったため、一つのdurable executorへ統合する価値があると判断した。
+3. `apps/life-manager`にPostgreSQL runtimeとDocker composeが既にあり、新しい第二queueを作らず再利用できた。
+4. 将来のWeb/cloud移行でも同じjob contractを使えると考えた。
+
+しかし結論は不採用である。判断時にREADMEの実行面境界を読まず、`apps/life-manager`はWeb/cloud面、
+`runtime/loop`・`start-local.sh`・`skills/`がlocal/self-host面である事実を見落とした。共有すべきものはjob、
+receipt、evidence、idempotency等のcore contractであり、Docker executorそのものではない。将来cloudで役立つことと、
+今localでそれをexecution ownerにすることを混同した。さらにGig Work Loopと旧Connectorの実行経路を先に監査せず、
+実装しやすい既存cloud部品からarchitectureを逆算した。したがってこれは合理的な信頼性要件から始まったが、指定された
+順序と実行面を外したarchitecture errorである。specにDockerが書かれていたのはDaisが要求したからではなく、agentが
+途中で追加した判断をagent自身が根拠として進めてしまったためである。
+
+### 5.0.1 ローカル実行方式の正本（2026-08-02再訂正）
+
+Dais個人用Life Managerの正本は、Mac mini上のLife Manager local runtimeである。
+
+```text
+launchd
+  → Life Manager local control plane (`start-local.sh` / `runtime/loop`)
+    → Connector capability (`skills/` + deterministic orchestration)
+      → bounded worker agent (`agent runner`が一仕事ごとに別agentを起動)
+        → CloakBrowser daily-driver
+          → Luma / Gmail / Google Calendar
+    → Life Manager local state・evidence ledger
+      → Telegram
+```
+
+Life Managerがgoal、21日coverage、順序、lock、state、receipt、reportのownerである。実際の候補探索、page読取、
+応募操作はGig Work Loopと同様に別のshort-lived worker agentへ委譲できるが、そのworkerは全体scheduleや正本stateを
+所有しない。OpenClawは既存環境でtransportやtool compatibilityとして呼ばれる場合があっても、Life Manager productの
+control plane、仕様正本、business logic ownerではない。Connectorを「OpenClaw上の別製品」として作らない。
+
+ここでいうlocalはMac上で直接動くLife Manager processであり、Connector専用Docker worker/imageを日常実行の正本にしない。
+同じcanonical repositoryをopen source self-hostとして他のPCでも起動できるようにする。その後、PCを持たずphoneだけのuser向けに、
+同じcore contractを`apps/life-manager`のcloud schedulerとSteel browserへ接続する。localとcloudで別business logicを作らない。
 
 既存Gig Work Loopの実測根拠:
 
@@ -923,13 +960,36 @@ processであり、Connector専用Docker worker/imageを日常実行の正本に
 - `/Users/operator/profitable-claude/skills/gig-work/scripts/launch_gig_browser.sh`
 - `/Users/operator/profitable-claude/skills/connector/connector_fill_gaps.sh`
 
-Dockerで実装済みの候補探索、receipt検証、Calendar同期、Telegram整形の純粋moduleとtestは捨てず、native
-OpenClaw skillから再利用する。Docker runtime/database/imageのclaim・deployは移植対象にしない。現在動く
+Dockerで実装済みの候補探索、receipt検証、Calendar同期、Telegram整形の純粋moduleとtestは捨てず、Life Managerの
+local capabilityから再利用する。Docker runtime/database/imageのclaim・deployは移植対象にしない。現在動く
 local Docker Connectorはnative parity確認までrollback専用として保持し、新規build/deployを停止する。
 native launchdで一巡の実登録・Calendar・Telegramが成功してからDocker Connectorを退役する。Docker/Web
 runtimeは、ローカル完成後にPCを持たない一般userへLife Manager Webを提供するOrder Webで扱う。
 この節は、それ以前の進捗記録にある「`lm_runtime_jobs`をConnectorの唯一のruntimeとする」という判断を上書きする。
 過去の進捗は監査履歴として残すが、今後の実装判断には使わない。
+
+### 5.0.2 Architecture alignment gate
+
+各Orderの実装開始前に、次を同じspecへ記録してからcodeへ触る。
+
+1. Daisが指定した固定順序と、そのOrderの完了条件を読む。
+2. `README.ja.md`の「1つの製品、2つの実行面」と、このmaster specの該当節を読む。
+3. 既に動く最も近いloopを実ファイル・launchd・実processで監査する。名称や過去specだけで推測しない。
+4. `product owner / scheduler / worker agent / browser / state / report / local-cloud surface`の7境界を表にする。
+5. 新しいqueue、database、container、browser process/port、repository、cloud dependencyを増やす場合は、必要理由、既存方式を
+   再利用できない証拠、rollback、local→cloud順序をspecへ先に書く。Daisの明示したarchitectureと異なる場合は実装しない。
+6. spec変更を先にcommit・pushし、そのcommitを実装planの入力にする。chatだけでarchitectureを変更しない。
+7. worker agentやsubagentへ渡すtaskはこの境界を含め、workerが独自runtimeや別正本を追加することを禁止する。
+
+| 境界 | Connector localの正本 |
+|---|---|
+| product owner | Life Manager |
+| scheduler/control plane | `launchd` → `start-local.sh` / `runtime/loop` |
+| work executor | 一仕事ごとのbounded worker agent |
+| browser | Mac miniのCloakBrowser daily-driver。所有tab/contextだけを操作 |
+| state/evidence | Life Manager local state・ledger。worker transcriptを正本にしない |
+| user report | Life ManagerからTelegramへ人間向けに送信 |
+| later cloud | 同じcoreをcloud scheduler + tenant別Steelへ接続。local完成後に着手 |
 
 ### 5.1 Order 1A — 共通応募基盤
 
@@ -967,8 +1027,8 @@ runtimeは、ローカル完成後にPCを持たない一般userへLife Manager 
 - [x] O1B-23 Google Calendarの全calendarからbusy intervalを読み、前後移動時間を含むfree intervalだけへ予約
 - [x] O1B-24 無料を優先し、有料eventは一度設定した自動支出policy内で保存済み決済手段を使い、都度承認を要求しない
 - [ ] O1B-25A Connector専用Docker build/deployを停止し、動作中containerはnative切替までrollback専用に固定
-- [ ] O1B-25B canonical repoへConnector OpenClaw skill/runbookとnative boot scriptを置く
-- [ ] O1B-25C launchdからnative Connectorを起動し、single-instance lock、heartbeat、healthcheck、self-healを接続
+- [ ] O1B-25B canonical repoのLife Manager `skills/`へConnector capability、worker contract、native bootを置く
+- [ ] O1B-25C `launchd`→Life Manager local control planeからConnectorを起動し、single-instance lock、heartbeat、healthcheck、self-healを接続
 - [ ] O1B-25D 既存CloakBrowser daily-driverを所有権付きで直接使い、他agentのtab/contextを触らない
 - [ ] O1B-25E `gog`でGoogle Calendar全calendarを読み、21日coverageと二重予約防止をnative実行
 - [ ] O1B-25F Luma探索→実登録→確認mail/QR→Calendarをnative一巡で実証
@@ -1701,11 +1761,21 @@ commit/push/deploy後、LIVE exact page substageだけを修復する。
 O1B-26進捗38（実行architecture訂正 / Docker配備中止）: Daisの指摘を受け、Gig Work Loopと旧Connectorを
 実ファイル・実launchdで再監査した。GigはMac mini上のlaunchd、agent runner、CloakBrowser、local stateで直接動き、
 旧`connector_fill_gaps.sh`もGoogle Calendarを先に読み、日付ごとのagentをCloakBrowserへ直接接続する同じlocal patternだった。
-ConnectorだけをDocker queue/imageへ寄せたことは「まず全agentを同じMac mini/OpenClaw方式で完成し、その後Webへ移す」
+ConnectorだけをDocker queue/imageへ寄せたことは「まずLife Manager local runtimeとworker agentをMac miniで完成し、その後Webへ移す」
 product architectureと不一致だった。進捗37のsource/testは安全な診断moduleとして保持するが、新imageの配備は行わない。
 進行中deploy親processを停止し、既存healthy containerはnative parityまでrollback専用とする。O1B-25をA〜Hへ再定義し、
-canonical repo-owned OpenClaw skill、native launchd、shared CloakBrowser ownership、`gog` Calendar、Luma receipt、Telegramの
+canonical Life Manager capability、native launchd、bounded worker agent、shared CloakBrowser ownership、`gog` Calendar、Luma receipt、Telegramの
 一巡を先に完成させる。native一巡成功後にだけConnector Docker/host bridge/queue scheduleを退役する。
+
+O1B-26進捗39（Docker導入理由のgit監査 / Life Manager ownership再訂正）: git historyでDocker判断の起点を
+commit `19804a34c`、coverage配備を`c722bbd6f`と確定した。論理は既存PostgreSQL job queueのretry、lease、dead-letter、
+idempotency、receiptを再利用し、CFOを含む共通executorと将来Web parityを得ることだった。しかしREADMEは当初から
+`runtime/loop`・`start-local.sh`をlocal/self-host、`apps/life-manager`をWeb/cloud面と定義していた。agentがこの境界と
+Gig/旧Connectorの実processを先に読まず、cloud部品の存在から実行architectureを逆算したことが真因である。さらに前回訂正で
+OpenClawをcontrol planeと書いたことも不正確だった。正しくはLife Managerがscheduler/state/reportを所有し、agent runnerが
+一仕事ごとのbounded worker agentを起動し、CloakBrowserで実作業する。OpenClawは必要に応じたtransport/tool compatibilityであり
+product ownerではない。§5.0.0へ理由と不採用結論、§5.0.1へlocal→open-source self-host→phone向けcloud/Steelの順序、
+§5.0.2へ7境界のalignment gateを追加した。
 
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
