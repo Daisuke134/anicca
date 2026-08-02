@@ -136,141 +136,121 @@ O1C-00の承認済み子設計は
 生成物は`fundraising/application-kit/`へ置く。旧OpenClaw kitは互換export先へ降格し、
 `submitted/**`は変更しない。
 
-### 0.5 並列agentの実行protocol（fresh session用）
+### 0.5 並列実装protocol（fresh session用）
 
-各organは将来は並列に動くが、現在の実装を無制限に並列化しない。同じbrowser accountへの書込み、
-同じCalendar、同じapplication、同じfinancial ledger、同じsource fileを触る作業は直列にする。
-並列agentに許すのは、独立したread-only監査、test実測、専用report作成までである。
+Daisの最新指示により、primary agentはConnectorを継続し、file所有権が分離できるJob Hunter、
+CFO、Crypto、Fiat/NISAはfresh sessionとfresh worktreeで**production codeまで並列実装する**。
+以前の「read-only監査だけ」という制限は撤回する。
 
-#### 0.5.1 所有権とmerge gate
+並列化するのは設計、code、fixture、unit/integration test、paper simulationまでである。実browser、
+実応募、実Calendar、実口座、実exchange、実broker、実送金・注文のような共有外部stateは、primaryが
+review・mergeした後に固定順序で有効化してreceiptを検証する。これにより開発速度と二重実行防止を両立する。
 
-| 役割 | 許されること | 禁止 |
-|---|---|---|
-| primary agent | `main`の正本spec更新、現在のO1B-25実装、実CloakBrowser/Calendar/Luma操作、統合判断 | 他agentの専用worktreeを書き換えない |
-| parallel audit agent | fresh worktreeでcode/history/testをread-only監査し、指定されたreport一本だけをcommit/push | master spec、production code、secret、launchd、browser、外部form/APIを変更しない |
-| primary integration | agentのreportとcommitをreviewし、事実をfresh再検証してから必要部分だけを正本へ反映 | reportを検証せずまるごとmergeしない |
+#### 0.5.1 所有権とworktree
 
-全parallel agentは開始時に次を実行する。
+| lane | owner / scope | branch / fresh worktree | 書込み可能範囲 | 並列中の禁止 |
+|---|---|---|---|---|
+| A | primary: Connector O1B-25/26、master spec、統合 | `main` / `/Users/anicca/Projects/life-manager-main` | Connector local runtime、`runtime/loop/**`、`skills/browser/**`、`start-local.sh`、このspec | 他laneのworktree・専用fileを変更しない |
+| B | Job Hunter O2-01〜12 | `feat/job-hunter-local-completion-20260802` / `/Users/anicca/Projects/.worktrees/life-manager/job-hunter-local-completion-20260802` | `apps/job-search-loop/**`、Job専用plan/evidence | 実ATS応募、Gmail/Calendar書込み、launchd有効化、共有file |
+| C | CFO O3A + O3B | `feat/cfo-local-organ-20260802` / `/Users/anicca/Projects/.worktrees/life-manager/cfo-local-organ-20260802` | `runtime-job-store*`、`financial-report*`、Financial専用script/launchd template、`financial-organ/**`、`20260802_financial_organ_*` migration、専用plan/evidence | 実口座OAuth、秘密値出力、実取引、実launchctl変更、共有file |
+| D | Crypto O4のpure/paper/risk engine | `feat/crypto-organ-paper-risk-20260802` / `/Users/anicca/Projects/.worktrees/life-manager/crypto-organ-paper-risk-20260802` | 新規`apps/life-manager/lib/crypto-organ/**`とtest、専用config/eval/plan/evidence | CFO file、`skills/earn/**`、実key、実注文・送金、共有migration |
+| E | Fiat/NISA O5のpure/paper/risk engine | `feat/fiat-nisa-organ-20260802` / `/Users/anicca/Projects/.worktrees/life-manager/fiat-nisa-organ-20260802` | 新規`apps/life-manager/lib/fiat-nisa-organ/**`とtest、専用config/eval/plan/evidence | CFO file、実broker key・注文、共有migration |
 
-```bash
-cd /Users/anicca/Projects/life-manager-main
-git fetch origin
-git status --short
-git worktree list --porcelain
-git rev-parse origin/main
-```
+共有fileとは`package.json`、lockfile、このmaster spec、既存の共通migration、Connector fileを指す。
+laneが共有file変更を必要と判断した場合、勝手に変更せず「必要interface、理由、期待するsignature」を
+evidenceへ記録しprimaryへ返す。primaryが統合時に一度だけ実装する。
 
-`main`に未commit変更がある、指定worktree/branchが既に存在する、またはbaseが指定commitより古い場合は
-勝手にreset/rebase/stashせず停止して報告する。他worktreeのdirty changeはDaisまたは別agentの所有物として保護する。
+保護対象として、既存dirty worktree
+`five-phase-autonomous`と`outbound-engine`、既存`/Users/anicca/lm-financial-shadow-order4b`には触らない。
+Fundraisingは`five-phase-autonomous`にYC関連の未commit変更があるため、第二の実装laneを新設せず、
+既存ownerの成果を回収してからprimaryがO1Cへ統合する。
 
-2026-08-02実測の保護対象:
+#### 0.5.2 全laneの開始・開発contract
 
-- `/Users/anicca/Projects/life-manager-main/.worktrees/five-phase-autonomous`は
-  `feat/five-phase-autonomous` / `d4e078bfb`でYC関連の未commit変更がある。新agentは触らない。
-- `/Users/anicca/Projects/life-manager-main/.worktrees/outbound-engine`は
-  `feat/outbound-engine` / `b20372bfd`でLuma関連の未commit変更がある。新agentは触らない。
-- `/Users/anicca/lm-financial-shadow-order4b`は別branchの既存worktreeであり、CFO監査agentの作業場所に再利用しない。
+各fresh sessionは、最初にroot `AGENTS.md`、このspecの§0と自分のOrder、Superpowersの
+`using-superpowers`、`brainstorming`、`using-git-worktrees`、`writing-plans`、`building-agents`、
+`test-driven-development`、`verification-before-completion`を読む。その後に次を行う。
 
-#### 0.5.2 今すぐ並列に渡せる三作業
+1. `git fetch origin`し、指定branch/worktreeの不存在を確認する。既に存在する場合は上書きせず報告する。
+2. 指定worktreeを`origin/main`から作り、以後そこだけで作業する。
+3. source/history/testを実測し、lane専用の詳細implementation planを新規作成してcommitする。
+4. failing testを先に書き、最小実装、refactorの順で小さくcommitする。
+5. agentの意味判断はLLM prompt/evalへ置き、計算、ledger、policy、idempotency、receipt検証だけを決定論codeにする。
+6. fixture/mock/paper adapterで失敗、再開、重複、timeout、partial successを検証する。
+7. focused testとlane全testをfresh実行し、command・exit code・未検証範囲をevidenceへ残す。
+8. 自分のbranchへpushする。`main`へのmerge/rebase/push、master specのcheckbox更新はしない。
 
-| priority | branch | fresh worktree | 書込み可能な唯一の成果物 | 目的 |
-|---:|---|---|---|---|
-| P1 | `audit/o1b25-local-readiness-20260802` | `/Users/anicca/Projects/.worktrees/life-manager/audit-o1b25-local-readiness-20260802` | `docs/evidence/connector/2026-08-02-o1b25-local-readiness-audit.md` | O1B-25A〜Hの再利用file、欠落file、test、順序を読取りだけで確定 |
-| P2 | `audit/job-order2-readiness-20260802` | `/Users/anicca/Projects/.worktrees/life-manager/audit-job-order2-readiness-20260802` | `docs/evidence/job-search-loop/2026-08-02-order2-readiness-audit.md` | 多数のjob branchとcurrent mainを比較し、O2-01〜12の未統合・済み・test状態を確定 |
-| P3 | `audit/cfo-order3-readiness-20260802` | `/Users/anicca/Projects/.worktrees/life-manager/audit-cfo-order3-readiness-20260802` | `docs/evidence/runtime/2026-08-02-order3-cfo-readiness-audit.md` | CFOのenv名、boot、executor、launchd、schema、testを秘密値なしで監査しO3Aを開始可能にする |
+#### 0.5.3 lane完了とlocal完成の違い
 
-P1は現在のO1Bを直接速めるため最優先である。P2/P3は後続Orderの実装や外部actionを行わず、
-開始時の迷子を防ぐ事実監査に限定する。Fundraisingは次Orderだが、現在dirtyな専用worktreeがあるため、
-新しい第二のFundraising agentを開始しない。まず既存ownerの成果とdirty stateを回収する。
+並列laneの`branch ready`は、code、test、plan、evidence、commit、pushが揃った状態である。
+これは実世界のOrder完了ではない。primaryがreviewし、mainへ統合し、local runtimeへ接続し、許可された
+実serviceでreadback/receipt/Telegramを確認した時だけmaster checkboxを`[x]`にする。
 
-#### 0.5.3 parallel agentの共通終了条件
+2026-08-02中に並列完了を狙えるのは、Job software、CFO runtime/schema/adapters、Crypto paper/risk、
+Fiat/NISA paper/policyの実装とfixture検証である。一方、Moneytree等のproduction API利用条件、実口座の
+OAuth、Binance/brokerの権限、実資金canary、7日連続稼働は外部条件と経過時間が必要であり、未実測のまま
+「全検証完了」とはしない。
 
-parallel agentは「調べた」だけで終わらない。reportに次を必須とする。
+#### 0.5.4 fresh sessionへ渡す実装prompt
 
-1. base commit、branch、worktree、実行日時。
-2. 読んだsource file、branch/commit、test command、実測exit code。
-3. master specの対象checkboxごとの`verified_done / missing / stale / blocked`。
-4. 次に変更すべき正確なfileと変更理由。ただしagent自身は変更しない。
-5. 秘密値、個人情報、email本文、cookie、tokenを一切含めない。
-6. 指定report一本だけをcommitし、自分のbranchへpushし、commit hashと要約を返す。
-7. `main`へmerge、cherry-pick、pushしない。統合はprimary agentだけが行う。
+共通末尾: 「日本語で返答する。secret値を読出し・表示・commitしない。他worktreeを変更しない。
+mainへmerge/pushしない。完了時はbranch、worktree、base/HEAD、commit一覧、test command/exit code、
+未検証の実service gate、primaryへ要求する共有interfaceを返す。」
 
-#### 0.5.4 fresh sessionへそのまま渡すprompt
-
-P1 Connector local readiness audit:
-
-```text
-あなたはLife Managerの並列監査agentです。返答とreportは日本語にしてください。
-
-目的: O1B-25A〜HのMac mini local切替に必要な既存file、再利用module、欠落、test、実行順序をread-onlyで確定する。
-
-開始:
-1. cd /Users/anicca/Projects/life-manager-main
-2. AGENTS.mdとdocs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.mdの§0、§5.0.1〜5.0.3、§5.2を読む。
-3. git fetch origin
-4. branch audit/o1b25-local-readiness-20260802 またはworktree /Users/anicca/Projects/.worktrees/life-manager/audit-o1b25-local-readiness-20260802 が既に存在する場合は何も変更せず停止する。
-5. git worktree add -b audit/o1b25-local-readiness-20260802 /Users/anicca/Projects/.worktrees/life-manager/audit-o1b25-local-readiness-20260802 origin/main
-6. 以降はそのfresh worktreeだけで作業する。
-
-監査対象: start-local.sh、runtime/loop、skills/browser、Connector関連module/test、launchd template、Gig Work Loopの既存local pattern。
-必要なfocused testは実行してよいが、CloakBrowser、Luma、Gmail、Calendar、launchctl、外部APIの書込みは禁止。
-
-書いてよいfileは docs/evidence/connector/2026-08-02-o1b25-local-readiness-audit.md 一本だけ。
-O1B-25A〜HとNT-C01〜12を一項ずつ verified_done / missing / stale / blocked で分類し、根拠file:line、test command/exit code、次の正確な変更fileを書く。
-production code、master spec、secret、他worktreeは変更しない。five-phase-autonomousとoutbound-engineのdirty worktreeに触らない。
-
-最後にreport一本だけをcommitし、git push -u origin audit/o1b25-local-readiness-20260802を実行する。mainへmerge/pushしない。
-返答はbase commit、audit commit、test結果、最大5件の発見、primary agentが次に行う順序を含める。
-```
-
-P2 Job Hunter readiness audit:
+**B — Job Hunter:**
 
 ```text
-あなたはLife Managerの並列監査agentです。返答とreportは日本語にしてください。
-
-目的: Order 2の実装は始めず、current mainと既存job関連branch/commit/testの事実を監査し、O2-01〜12の開始状態を確定する。
-
-開始:
-1. cd /Users/anicca/Projects/life-manager-main
-2. AGENTS.md、master specの§0、§5.4、apps/job-search-loop/README.mdを読む。
-3. git fetch origin
-4. branch audit/job-order2-readiness-20260802 またはworktree /Users/anicca/Projects/.worktrees/life-manager/audit-job-order2-readiness-20260802 がすでに存在する場合は停止する。
-5. git worktree add -b audit/job-order2-readiness-20260802 /Users/anicca/Projects/.worktrees/life-manager/audit-job-order2-readiness-20260802 origin/main
-6. 以降はそのfresh worktreeだけで作業する。
-
-apps/job-search-loop、job関連のlocal/remote branches、対応するplans/specs/evidenceをread-onlyで比較する。
-testはnetwork・browser・email・実応募なしの範囲だけ実行する。CloakBrowser、Gmail、Calendar、ATS、launchdに触らない。
-
-書いてよいfileは docs/evidence/job-search-loop/2026-08-02-order2-readiness-audit.md 一本だけ。
-O2-01〜12ごとに verified_done / missing / stale / blocked、根拠commit/file:line、必要なcherry-pick候補、不要/危険なcherry-pick、test command/exit codeを書く。実際のcherry-pick/rebase/mergeは禁止。
-
-最後にreport一本だけをcommitし、git push -u origin audit/job-order2-readiness-20260802を実行する。mainへmerge/pushしない。
-返答はbase commit、audit commit、test結果、O2の本当の残作業、branch統合リスクを含める。
+Life Manager Order 2の実装ownerです。repoは/Users/anicca/Projects/life-manager-main。
+branch feat/job-hunter-local-completion-20260802、worktree
+/Users/anicca/Projects/.worktrees/life-manager/job-hunter-local-completion-20260802をorigin/mainから作成してください。
+master spec §0.5と§5.4、apps/job-search-loop/README.md、関連history/branch/testを実測し、まず
+docs/superpowers/plans/2026-08-02-job-hunter-local-completion.mdへ詳細planを書いてcommitしてください。
+その後TDDでO2-01〜12をapps/job-search-loop/**だけに実装してください。検索→適合判断→resume/cover letter→
+応募state→receipt→返信/面接追跡→非技術Telegramリンクの契約をfixture/mockでend-to-end検証します。
+既存job branchは比較し、安全と確認したcommitだけ自branch内で採用してよいです。実応募、Gmail/Calendar書込み、
+launchd有効化は禁止。専用evidenceを作成し、全変更をcommit/pushして共通末尾の形式で返してください。
 ```
 
-P3 CFO readiness audit:
+**C — CFO / Financial Organ:**
 
 ```text
-あなたはLife Managerの並列監査agentです。返答とreportは日本語にしてください。
+Life Manager Order 3A/3Bの実装ownerです。repoは/Users/anicca/Projects/life-manager-main。
+branch feat/cfo-local-organ-20260802、worktree
+/Users/anicca/Projects/.worktrees/life-manager/cfo-local-organ-20260802をorigin/mainから作成してください。
+master spec §0.5、§5.5、§5.6、runtime-job-store/financial-report関連code/test/historyを実測し、まず
+docs/superpowers/plans/2026-08-02-cfo-local-organ.mdへ詳細planを書いてcommitしてください。
+TDDでruntime DB env/boot/executor/launchd templateを修復し、account/transaction/balance/category/JPY/FX/
+budget/baseline/anomaly/receiptの統一財務台帳と、Moneytree・Binance・wallet adapter contractを実装してください。
+providerはfake fixture/contract testで検証し、実OAuth・実口座接続・実取引・launchctl変更はしません。
+許可fileは§0.5.1 lane Cだけです。専用evidenceを作成し全変更をcommit/pushして共通末尾で返してください。
+```
 
-目的: Order 3の実装や口座接続は始めず、CFOのenv名、boot、executor、launchd、schema、testを秘密値なしで監査し、O3A-01〜07とO3Bの開始条件を確定する。
+**D — Crypto Organ:**
 
-開始:
-1. cd /Users/anicca/Projects/life-manager-main
-2. AGENTS.md、master specの§0、§5.5、§5.6を読む。
-3. git fetch origin
-4. branch audit/cfo-order3-readiness-20260802 またはworktree /Users/anicca/Projects/.worktrees/life-manager/audit-cfo-order3-readiness-20260802 が既に存在する場合は停止する。
-5. git worktree add -b audit/cfo-order3-readiness-20260802 /Users/anicca/Projects/.worktrees/life-manager/audit-cfo-order3-readiness-20260802 origin/main
-6. 以降はそのfresh worktreeだけで作業する。
+```text
+Life Manager Order 4のpure/paper/risk engine実装ownerです。repoは/Users/anicca/Projects/life-manager-main。
+branch feat/crypto-organ-paper-risk-20260802、worktree
+/Users/anicca/Projects/.worktrees/life-manager/crypto-organ-paper-risk-20260802をorigin/mainから作成してください。
+master spec §0.5と§5.7、building-agentsのcontractを読み、まず
+docs/superpowers/plans/2026-08-02-crypto-organ-paper-risk.mdへ詳細planを書いてcommitしてください。
+新規apps/life-manager/lib/crypto-organ/**だけで、Anicca/Dais資産分離、position/P&L/fee/slippage、paper/backtest、
+risk cap、emergency stop、提案→承認policy→order→receipt state machine、analyst/debate promptとevalをTDD実装します。
+実exchange/wallet key、実注文、実送金は禁止。CFO file、skills/earn/**、package/lockfile、共有migrationを変更せず、
+fake market/exchangeで検証し、専用evidenceと全commitをpushして共通末尾で返してください。
+```
 
-runtime-job-store、financial-report boot/runtime、launchd template、migration/schema、financial tests、既存financial shadow branchのcommit差分をread-onlyで調べる。
-envは変数名と「設定済み/未設定」だけを扱い、値を読み出さない・表示しない。launchctl list等のread-only確認は可、load/unload/restartは禁止。Moneytree/Binance/walletに接続しない。取引・送金・注文は当然禁止。
+**E — Fiat/NISA Organ:**
 
-書いてよいfileは docs/evidence/runtime/2026-08-02-order3-cfo-readiness-audit.md 一本だけ。
-O3A-01〜07を verified_done / missing / stale / blockedで分類し、O3Bに必要なschema/API/credential categoryを秘密値なしで列挙する。根拠file:line、test command/exit code、次の正確な変更fileを書く。production code/master spec/既存worktreeは変更しない。
-
-最後にreport一本だけをcommitし、git push -u origin audit/cfo-order3-readiness-20260802を実行する。mainへmerge/pushしない。
-返答はbase commit、audit commit、test結果、O3Aの真因、必要credential category、次の実装順を含める。
+```text
+Life Manager Order 5のpure/paper/risk engine実装ownerです。repoは/Users/anicca/Projects/life-manager-main。
+branch feat/fiat-nisa-organ-20260802、worktree
+/Users/anicca/Projects/.worktrees/life-manager/fiat-nisa-organ-20260802をorigin/mainから作成してください。
+master spec §0.5と§5.8、building-agentsのcontractを読み、まず
+docs/superpowers/plans/2026-08-02-fiat-nisa-organ.mdへ詳細planを書いてcommitしてください。
+新規apps/life-manager/lib/fiat-nisa-organ/**だけで、生活防衛資金、NISA上限/枠、asset allocation、JPY/FX、
+fee/tax、paper performance、提案→risk review→order→receipt state machine、fake broker adapterとevalをTDD実装します。
+実broker/J-Quants key・実注文は禁止。CFO file、package/lockfile、共有migrationを変更せず、専用evidenceと
+全commitをpushして共通末尾で返してください。
 ```
 
 ## 1. 固定実行順序
@@ -289,7 +269,8 @@ local完成gateの後だけ:
   → W  同じcoreをDais以外のuserへ提供
 ```
 
-前段階の完了条件を満たすまで、次段階へ着手しない。
+実装branchは§0.5の所有権内で先行並列着手してよい。mainへのmerge、local runtimeへの有効化、実serviceへの
+外部action、receiptによるOrder完了判定は上記順序を守る。
 
 ## 2. scope外
 
