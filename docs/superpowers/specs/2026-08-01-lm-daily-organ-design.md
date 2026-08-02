@@ -1,7 +1,8 @@
 # Life Manager — DAILY organ 設計・残作業・UX（handover 可能な形で）
 
-**Date**: 2026-08-01 · **Status**: 実装中 · **Repo**: canonical `Daisuke134/life-manager`
-· **Branch**: `docs/two-earning-loops` · **Worktree**: `~/anicca/.worktrees/spec-two-loops`
+**Date**: 2026-08-01 · **Updated**: 2026-08-02 · **Status**: launch 済み製品の daily 完成作業中
+· **Repo**: canonical `Daisuke134/life-manager`
+· **Active daily branch**: `origin/feature/lm-departure-nudge`（re-review → merge → deploy 待ち）
 · **App**: `apps/life-manager/`
 
 **親 spec**: `2026-07-29-life-manager-finance-marketing-platform-design.md`（platform 全体・§7.4 Telegram
@@ -14,8 +15,8 @@ UI/UX・§10.2 Today・§12 Order 表）。あの Order 表は **runtime 移行�
 
 | 質問 | 答え |
 |---|---|
-| これは何の製品か | **Telegram で完結する生活エージェント**。予定の時刻に呼び出し、家を出てから着くまで案内し、遅れたら相手に断りを入れる。ユーザーが持つ必要があるのは **スマホ1台だけ** |
-| 誰が使うか | Dais（本人）→ 友達3人 → 有料の一般ユーザー。全員 **Telegram の中だけ**で完結する |
+| これは何の製品か | **Telegram で完結する生活エージェント**。出発時刻を知らせ、家を出てから着くまで案内し、遅れる時は宛先と本文を提示して本人の1タップ承認後だけ相手へ連絡する。ユーザーが日常で持つ必要があるのは **スマホ1台だけ** |
+| 誰が使うか | Dais（本人）→ 友人・家族 → 一般ユーザー。これは private beta ではなく **launch 済みの実製品**。daily の完成度を上げながら実利用者を増やす。全員 **Telegram の中だけ**で日常利用が完結する |
 | コードはどこか | `apps/life-manager/`。`scheduler.js`（60秒 tick・呼び出し）· `lib/wake-filter.js`（鳴らす予定の選別・出発時刻の解決）· `lib/travel.js`（`[Travel]` block 生成）· `lib/late-notice.js`（遅刻連絡）· `lib/slash-command.js`（Telegram コマンド router） |
 | **本番はどこで動くか** | ★ **Railway の `life-call` service** ★（`railway logs -s life-call`、link は `~/anicca-project` から）。ローカル compose（`life-manager-local-*` コンテナ）は **credential を持たない空の器**で、本番ではない（§1 参照）。全体図と folder tree = **§8** |
 | データはどこか | Supabase。`lm_users` `lm_wake_log` `lm_travel_log` `lm_ask_log` `lm_user_locations` |
@@ -160,6 +161,47 @@ Telnyx は「届いた」と解釈して**二度と送ってこない**。落ち
 
 ## 3. 残 TODO（1 から順。番号 = 実行順。飛ばさない）
 
+### 3.0 2026-08-02 最新 checkpoint（これより古い行と矛盾したらこちらが勝つ）
+
+**製品の位置づけ**: private beta / beta ではない。Life Manager は既に launch 済みで、登録・Google
+Calendar 接続後に実利用できる。ここでいう「出荷」は新製品の公開ではなく、**launch 済み製品が約束している
+daily journey を完成させ、友人・家族を含む利用者へ通常どおり案内・promotion できる状態にすること**。
+
+**登録契約**:
+
+| 種類 | 項目 | 無い場合 |
+|---|---|---|
+| 必須 | 名前 · 言語 · 自宅 · Google Calendar | daily journey を開始しない。どの予定を、誰に、どこから案内するか決められない |
+| 任意（推奨） | Telegram Live Location | 時刻ベースの連投と予定経路は動く。ただし「家を出た」自動停止・現在地ETA・実測の遅刻判定は行わず、知っているふりをしない |
+| 任意（追加 channel） | 電話 | 無くても daily 全体が Telegram で動く。有効化した人だけ Telegram と同じ判定に電話が追加され、留守電なら即切る |
+
+**2026-08-02 のコード実測**:
+
+- `origin/feature/lm-departure-nudge` に 2c の6段連投、`[了解]` 停止、電話なし cohort 修正がある。
+- B1 修正後、`wakeTick` の外側 filter は `daily_automation_enabled !== false` のみ。電話 gate
+  `call_enabled === true` は `wakeCallOnce` 内に残り、Telegram 連投は電話設定から独立する。
+- `lib/travel.js` の `_geoMemo` は従来 `has()` しかなく cache が一度も成立していなかった。成功時だけ
+  `_geoMemo.set(addr, geo)` する修正が branch にある。実測は travel block あり = geocode 0 / route 0、
+  block なし10 tick = geocode 2 / route 3、同一経路 user を20人追加しても増加0（修正前は geocode +20）。
+- B1/S1–S4/geocode 回帰の検証 receipt は新規3 file + wake 回帰2 fileで
+  **tests 46 / pass 46 / fail 0**、対象2 fileの `node --check` は両方 OK。全 suite は
+  **2198 / 2193 / fail 5**で、5件は既知 baseline のみ。
+- ★現在の `main` はまだ上記 branch の完成形ではない★。re-review → newer `main` を巻き戻さない merge →
+  Railway deploy → production receipt が必要。
+- ★row #5 は未完成で、現 `lib/late-notice.js` は遅刻判定後に `sendLateNotice()` を自動実行する★。
+  これは「宛先・本文を表示し、`[送る]` まで外部送信0」という製品契約に反するため、promotion 前の blocker。
+
+**ここからの実行順**:
+
+1. re-reviewを通す（B1とgeocodeコストの独立検算）。
+2. `feature/lm-departure-nudge` のdaily差分だけを、newer `main` を巻き戻さずmergeする。
+3. Railway deploy後、電話なし実userへの6段連投・`[了解]`停止・電話opt-in・留守電切断・API costを実測する。
+4. #3 家を出た検知と、位置なし縮退 UX を完成する。
+5. #4 乗換ステップを完成し、実予定で地図アプリを開かず到着する。
+6. #5 自動メール送信を廃止し、宛先 + 正確な本文 + `[送る][送らない]` の承認カードへ置き換える。
+7. #6 電話なし・位置なしを含む実user E2Eと、全failure UXを通す。
+8. 友人・家族へ通常のlaunch済み製品として案内し、実利用feedbackを回収して継続改善する。
+
 ★ **この表の「DONE」は "branch に入った" という意味であって "本番で効いている" ではない。両者を混同すると、
 2026-08-01 16:56 の実測（下の #0）と同じ嘘を繰り返す。** ★
 
@@ -170,17 +212,17 @@ Telnyx は「届いた」と解釈して**二度と送ってこない**。落ち
 | 1a | ~~発火条件を「2分の窓」から**追い付き方式**へ~~ ✅ **DONE 2026-08-01**（commit `da7dec52b`、merge `9873e0ce9`） | tick が遅れた瞬間に永久に失われる | 実装: `scheduler.js` の窓判定を撤廃し `mins <= lvl.min+0.5 && mins > LATE_CUTOFF_MIN(-15)` で due 判定 → **最も緊急な1件だけ発信**、超えられた粗いレベルは claim だけして鳴らさない。検証（自分で実行）: `node --test test/wake-catchup.test.js` → `tests 5 / pass 5 / fail 0`、`node test/scheduler.test.js` → PASS。cases = ①T-5 を5分過ぎた tick でも1本鳴る ②通常は T-10 → T-5 の2本 ③両方 due の tick でも1本 ④出発を15分超過なら鳴らさない ⑤発信失敗で claim が解放され次 tick が再試行 |
 | 1b | ~~「鳴るはずだったのに鳴らなかった」を記録~~ ✅ **DONE 2026-08-01** | 失敗が**存在しない事象**に見える（今回の3日を溶かした原因） | 実装: 新 ledger `lm_wake_miss`（`migrations/2026-08-01-lm-wake-miss.sql`、本番 Supabase に適用済 = `http=201`、PostgREST 読み取り `http=200`）+ `lib/wake-miss.js` + `scheduler.js` の `noteWakeMiss()` + `/status` の1行。記録する2事象 = ①`dial_failed`（`releaseWake` が claim を消す**前**に理由を残す）②`no_call_before_departure`（departure が `LATE_CUTOFF_MIN` を越えた時点で最細レベルの claim が無い = 一度も試みていない）。`(uid,event_key)` 主キー + merge-duplicates upsert なので 60秒 tick の連続失敗は1行を更新するだけ。`first_seen_at` は payload に入れないので「いつ壊れ始めたか」が保持される（実測: first_seen_at=01:04:57.5 / occurred_at=01:04:58.9）。★§5.4 の「自分から言う」も実装★ = `notified_at IS NULL` を条件にした PATCH を lock にして**1 miss につき Telegram 1通だけ**送る（retry tick は無言）。検証（自分で実行）: `node --test lib/wake-miss.test.js lib/slash-command.test.js test/wake-miss-record.test.js test/wake-catchup.test.js test/telegram-slash-http-contract.test.js` → **tests 55 / pass 55 / fail 0**（1a の回帰5件を含む）+ 本番 Supabase への実 round-trip（write → upsert → read → `/status` 行 `🔔 Missed: the 13:15 call could not be dialled (...)` → 検証行を DELETE、表は空に戻した） |
 | 1c | ~~呼び出し loop を care / diet / mental / late から分離~~ ✅ **DONE 2026-08-01**（設計 = §3.1 方式A） | 他 organ の遅さが呼び出しを殺す。ユーザーが増えるほど悪化 | 実装: `wakeUserOnce` を **`wakeCallOnce`（poll + fetch + event 公開 + 発信のみ）** と **`organsUserOnce`（8 organ）** に分割し、`wakeUserOnce` は両者の合成として温存（Inngest `makeWakeUserHandler` と既存 suite がこの名前を呼ぶ）。新規 `lib/event-cache.js` = wake tick が fetch を所有し organ tick は読むだけ（`calendar-cache` のキーが分単位で回るため、素朴に2ループへ分けると Composio が倍増する）。新規 `lib/organ-run.js` = 全 organ を `[organ:<name>] uid=… ms=…` で計測（成功は stdout・失敗は stderr）。`startWakeLoop()` = **固定60秒・user 毎 20秒**（`WAKE_USER_TIMEOUT_MS`）、`schedulerPollInterval()` を意図的に使わない（#1d の劣化を dial に波及させない）。`tick()` は organ 側へ。`maybe-start-loops.js` + `server.js` で本番起動に配線。★review 指摘の修正込み★: H-1 dial 前の `recordDailyComposioPoll` await を fire-and-forget 化（20秒予算を会計処理が食う = 潰したはずの構造の縮小版だった）/ H-2 `claimWake` に `claim_token` を持たせ `releaseWake` を所有権付きに（migration `2026-08-01-lm-wake-log-claim-token.sql` を本番 Supabase へ適用済 `http=201` / `read_http=200`。放棄された tick が後続の**成功した** claim を消して**二重架電**する経路を封鎖）/ M-4 organ の失敗ログを stderr へ戻す。検証（自分で実行）: `node --test` 10 files → **tests 104 / pass 104 / fail 0**、`node -e` で `startWakeLoop / wakeTick / wakeCallOnce / organsUserOnce = function` + `WAKE_USER_TIMEOUT_MS = 20000`。★最重要 assertion は mutation で kill 確認済★ = 全 organ を 5000ms stall させて `wakeCallOnce` が 1.5ms で完走（分割前の順序を復元した mutant では 5007ms で RED） |
-| 1e | ~~organ tick の `call_enabled !== false` filter を外す~~ ✅ **DONE 2026-08-01** | dial が別 loop に出た今、**電話番号を出さない人（#6）に care/diet/mental/precepts/relations が1つも届かない**。`organsUserOnce` の care コメント「Still runs for call-disabled users」と実コードが矛盾していた | 実装: `tick()` の filter を `daily_automation_enabled !== false` のみへ（`call_enabled` は dial が自分の loop で見る）。検証（自分で実行）: `test/wake-loop-isolation.test.js` に3件追加し **RED を先に踏んだ**（「the organ tick serves a user who gave no phone number」だけが落ちる）→ 修正 → `node --test` 11 files で **tests 116 / pass 116 / fail 0**。pin した3点 = ①電話無効ユーザーにも organ が走る ②`daily_automation_enabled=false` は依然として全停止 ③**wake tick 側の `call_enabled` filter は残る**（電話の無い人に架電しようとしない）。`lib/panel-corrective-red.test.js` の1件は本変更を stash しても同じく落ちる **既存 baseline**（spec 文書の文字列 assertion で scheduler 無関係） |
+| 1e | ~~organ tick の `call_enabled !== false` filter を外す~~ ✅ **DONE 2026-08-01** / **2cでwake側も更新** | dial が別 loop に出た今、**電話番号を出さない人（#6）に care/diet/mental/precepts/relations が1つも届かない**。さらに2cをwake loopへ載せた後は、wake外側の電話filterがTelegram連投まで消してしまう | 最終形: `tick()` と `wakeTick()` のcohort filterは `daily_automation_enabled !== false` のみ。電話無効userにもorgansとTelegram連投が走る。実dialだけを `wakeCallOnce` 内の `call_enabled === true` でgateし、`daily_automation_enabled=false` は全停止のまま。2c/B1回帰46/46でpin |
 | 1d | ~~Composio 予算超過で tick が5分に落ちるのを止める~~ ✅ **コード DONE 2026-08-01 / 本番実測は deploy 待ち**（設計 = §3.2） | 7月は実測 20,488 で既に劣化済。8月も現ペースで約5日で再劣化 = 製品が毎月半分は5分刻みで動く | 実装: `lib/calendar-cache.js` の `cacheKey(uid, window, ttlMs)` がバケット幅に **TTL そのもの**を使う（`minuteBucket` 廃止）。幅と失効を1つの数字が決めるので二度とズレない。`ttlMs<=0`（= キャッシュ無効）は key を作らず transport へ直行（幅0の除算・全窓の1キーへの潰れ・読まれない `entries` 行の蓄積を回避）。検証（自分で実行）: `node --test lib/calendar-cache.test.js test/wake-catchup.test.js test/wake-loop-isolation.test.js lib/events.test.js` → **tests 39 / pass 39 / fail 0**、および実 `fetchUpcomingEvents` を 60秒刻みで5回呼ぶ E2E で **transport hits = 1**（修正前は 5）。`wake-catchup` が緑 = 発火は `now` と `startMs` の差で決まり fetch 時刻に依存しない = **精度据え置き**。★未検証★ 本番 `lm_api_cost` の実減少は deploy 後1日数えるまで確認できない（この branch は未 merge・未 deploy） |
 | **2** | ~~`answered_at` が常に null の判別~~ ✅ **DONE 2026-08-01**（判別 = §1.3、記録経路は健全だった） | ①応答なし ②留守電 ③webhook が来ていない（本物の故障）が **すべて `answered_at IS NULL`** で見分けられなかった。署名鍵ローテートで全滅しても痕跡ゼロ | 実装: migration `2026-08-01-lm-wake-log-amd-result.sql` で `amd_result` 追加（本番適用済 `http=201` / `read_http=200`）。`call.machine.detection.ended` を受けたら**必ず**行を PATCH、`answered_at` は `human` の時だけ。★2つの書き込みは冪等性の規則が逆★ なので `markAnswered`（`answered_at=is.null` フィルタ必須 = 一度きりのラッチ）と `recordAmdResult`（フィルタ無し = 最終観測が勝つ）を**別関数**にし、`applyAmdDetection` が合成（1つの PATCH に融合すると、応答済みの行に後から来た検知が filter で捨てられて**また記録漏れになる**）。0行一致と HTTP 失敗を `{ok, matched, error}` で分離し、webhook 側で別々の stderr 行に。bridge 側（戻り値を捨てていた）も同じ2分類をログするように。★backfill 21行★ = Telnyx `call_events` を handler と同じ `client_state` 復号で再導出し、**書く前に**全21行が実在行に解決し矛盾ゼロ（human↔SET 3/3、machine/not_sure↔NULL 18/18）を確認してから投入。Telnyx の保持期間が 07-25 までなので残りは**推測せず NULL のまま**。検証（自分で実行）: `node --test` 4 file → **tests 51 / pass 51 / fail 0**、`node --check server.js` OK、本番 `lm_wake_log` の実 census = **machine 17 / human 3 / not_sure 1** |
-| **2b** | ~~留守電への発話を止める + 電話を既定 OFF~~ ✅ **コード DONE 2026-08-01 / 課金減は deploy 後に実測**（Dais 2026-08-01、正本 = §5.2.1） | AMD が `machine` でも bridge は喋り続け、キャリアの録音上限120秒で切られていた（`hangup_source` 43件すべて `callee`）。1本 約$0.05 の Gemini Live を**人に届かない留守電**に払っていた。実測 `human` 3 / `machine` 17 | 実装: ①`amd_result` を**先に**永続化してから、`human` 以外の判定で Telnyx `POST /calls/{ccid}/actions/hangup` を発行（`call_control_id` は `data.payload.call_control_id`。Telnyx 公式 repo の実 webhook サンプルと `telnyx-node` の hangup path で確認）。hangup 失敗は記録を壊さない ②`RUNTIME_DEFAULTS.call_enabled` を **false** に ③★発見★ default を倒すだけでは不十分だった — 他設定を触った結果 `lm_panel_preferences` の行が存在し `call_enabled` が **`null`** の場合、`null` が default の上に spread され `null !== false` が真になって**依然として架電される**。`wakeTick` の filter と `wakeCallOnce` の dial gate（= Inngest 経路の最後の関門）を `=== true` に変更 ④`buildControlCenter` が**独自に `call_enabled: true` を hardcode** していたため、電話ありで pref 行なしの人に「Calls are enabled」と表示しつつ実際は架けない = **UI が嘘をつく**状態になった。`RUNTIME_DEFAULTS` を単一の出所に統一（commit `7e077d132`）。検証（自分で実行）: `node --test` 15 file → **tests 192 / pass 192 / fail 0**、`node --check server.js` OK。★本番影響の実測★: `lm_panel_preferences` は1行のみで `lm_784ad279` が `call_enabled=true` を**明示済** = Dais の架電は既定変更では止まらない（留守電の浪費だけが止まる）。もう1人は行が無いので新既定どおり架電されなくなる |
+| **2b** | ~~留守電への発話を止める + 電話を既定 OFF~~ ✅ **コード DONE 2026-08-01 / 課金減は deploy 待ち**（Dais 2026-08-01、正本 = §5.2.1） | AMD が `machine` でも bridge は喋り続け、キャリアの録音上限120秒で切られていた（`hangup_source` 43件すべて `callee`）。1本 約$0.05 の Gemini Live を**人に届かない留守電**に払っていた。実測 `human` 3 / `machine` 17 | 実装: `amd_result` を先に永続化し、`human` 以外をhangup。電話defaultはfalse、panel表示も同じdefaultを使う。★2c後の最終境界★ `wakeTick` は電話なしuserにもTelegram連投するため電話filterを持たず、実dial直前の `wakeCallOnce` だけが `call_enabled === true` を要求する。検証15 file 192/192、branchのB1回帰46/46。本番で留守電秒数を実測して閉じる |
 | **2d** | ~~`/test-call` も留守電に当たったら切る~~ ✅ **コード DONE 2026-08-02 / 実架電の receipt は別途**（正本 = §5.2.1） | `server.js` の `/test-call` は `wakeUid`/`wakeEventKey` を積まないので `client_state` が空になり、webhook が `"no wake context"` で早期 return して **hangup 経路に到達しない**。AMD は動き課金も出る。ユーザー起点かつ rate limit 付きだが、**まだ留守電に金を払える最後の場所** | 実装: ①原因は 2b の hangup が壊れていた事ではなく **`/test-call` が自分を名乗らなかった**事。`client_state` に**呼び出しの「種類」**を持たせ（wake = `{wakeUid, wakeEventKey}` / test = `{testUid}`）、`decodeCallClientState` 1本が両方を返して webhook が `kind` で分岐する ②★stream URL には触っていない★ — `buildStreamUrl` の query は `signCtx([summary,dateTime,location,urgency,lang,name,wakeUid,wakeEventKey])` で署名され `/ws` bridge が**同じ順序の配列**で検証するので、種類を query 項目で運ぶと署名の意味が片側だけ変わる。代わりに `placeCall({to, streamUrl, clientState})` に任意引数を1つ足して透過（`amdDialOptions(url, env, {clientState})` は明示値が URL 由来に勝つ。wake 経路は無変更）③★test 呼び出しは Supabase に一切書かない★ — scheduler が作る `lm_wake_log` 行が**存在しない**ので、`applyAmdDetection` を流用すると全 test call が `matched=0` を返し、「本物の wake 行が消えた」を意味するはずの §1.3 の警報が**恒常ノイズに化ける**。よって `applyTestCallDetection` は記録せず hangup だけを行う ④★hangup 条件は wake と完全に同一★ — `human` は切らない / `not_sure` は切る（実測 machine 17 : human 3、外すコストは「1回の nudge を逃す」対「2分の課金発話」で非対称）/ **空・読めない result は誰も切らない**（あれは AMD の判定ではなく payload の解析失敗。ここで切ると Telnyx の schema 変更1つが「全 test call が応答直後に死ぬ」に化ける = §1.3 の無音全損クラス）。同一性は両者が `shouldMarkAnswered()` を共有する事で担保（人間の定義を変えたら両方が一緒に動く）。検証（自分で実行）: `node --test lib/telnyx-webhook.test.js` → **tests 5 / pass 5 / fail 0**、`lib/dial.test.js + test/scheduler.test.js + lib/answered.test.js` → **tests 13 / pass 13 / fail 0**、`test/testcall-amd-hangup.test.js + lib/late-notice.test.js` → **tests 31 / pass 31 / fail 0**、実 `server.js` を実 HTTP + 実 Ed25519 署名で叩く `test/testcall-amd-hangup-http-contract.test.js` → **tests 1 / pass 1 / fail 0**（fake fetch が未知の host/path で throw するので「Supabase に書かない」が主張でなく物理制約。dial body の `client_state` が `kind:"test"` に戻る事と、stream URL の query 項目が9個から増えていない事を pin）、`node --check server.js` OK。全 suite: 変更前 **tests 2037 / pass 2031 / fail 6** → 変更後 **tests 2052 / pass 2046 / fail 6** で**失敗は同一の6 file**（`event-participation-entities` / `panel-corrective-red` / `panel-corrective3-four-blockers` / `panel-corrective4-logout` / `panel-display-policy` / `browser-task-telegram-http-contract` = 本変更と無関係の既知 baseline。`git stash` して `panel-corrective-red` 単体が同じ **tests 11 / pass 10 / fail 1** で落ちる事も確認済、直していない）。★未検証★: 実架電の通話秒数は deploy 後に Telnyx 側で実測する（下の 0-receipt と同じ receipt 欄で閉じる） |
 | **2a** | ~~webhook の PATCH 失敗時に Telnyx へ 200 を返すのをやめる~~ ✅ **コード DONE 2026-08-02 / 実再送の receipt は別途**（根拠 = §1.3.1） | Supabase が落ちている間、大声でログは出るが Telnyx には「受け取った」と答えるので**再送の権利を自分から捨てている**。落ちていたのは数秒でも、失われるのはその検知そのもの。しかも痕跡は stderr にしか残らず DB は永久に NULL = §1.3 と同じ「失敗が存在しない事象に見える」クラス | 実装: `server.js` の `/telnyx-events` 末尾で `outcome` を 200 に畳んでいた三項を分解し、**`!detection.amd.ok` の時だけ 503**（body = `record failed; send it again`）。★実際に引けた線は「書き込みが着地したか」対「着地して0行だったか」の**1本だけ**★ = ①`!ok` → 5xx を返して Telnyx に再送させる（§1.3.1 の「2xx 以外 = 受け取っていない」。primary 3 + failover 3 の指数バックオフ）。★この線の粗さを正直に書く★ — `patchWakeLog`（`lib/late-notice.js:196-207`）は**あらゆる失敗を同じ `{ok:false}` に畳む**ので、一時的なもの（5xx / fetch の throw）だけでなく**恒久的なものまで再送を要求してしまう**。実測（`node -e` で直接呼んで確認）= `http_400`（schema drift）· `http_401`（service-role 鍵ローテート）· `http_404` · `unreadable_response` · `missing_args` · `recordAmdResult` の **`missing_result`** が全部 `{ok:false,matched:0}` → 全部 503 → 6配送すべてで同じように失敗する。★`missing_result` が一番痛い★ — `lib/late-notice.js:245-247` は「読めない result は AMD の判定ではなく**我々の** parse 失敗だから誰も切らない」と長々と論じているのに、同じ入力が今度は**6配送を焼く**。代償 = 配送予算の空焼き + failover URL を無意味に鳴らす + **本物の障害と schema の typo が見分けられない**。当面それでも受け入れる理由 = 逆側の誤り（本物の障害に 200）は検知**そのもの**を消すが、無駄な再送は何も消さないから。★本来の直し方★ = `patchWakeLog` に retryable / permanent を返させ前者だけ escalate する（この分岐を広げるのではなく**あちら**を直す。でないと2つが drift する）。振る舞い変更なので**今回はやらない** = 別 TODO ②`matched === 0` = 書き込みは**着地して**正しく0行だった = その `uid+event_key` の行が存在しない → 再送しても永久に埋まらないので **200 で閉じる**（ここで 5xx を返すと6回の配送を焼いた上、本物の障害と見分けがつかなくなる = §1.3 の警報をノイズに変える 2d と同じ罠）③★`answered_at` の PATCH 失敗は 5xx にしない★ — ただし理由は「ラッチのせいでどうせ no-op だから」では**ない**（それは誤り。ラッチは `answered_at=is.null` なので、最初の書き込みが着地していなければ列は NULL のままで、再送された書き込みは**普通に着地する**）。本当の理由は3つ = (1) この書き込みは `amd_result` が成功した**後**にしか走らないので、再送を頼むと成功済みの `amd_result` を配送のたびに書き直す (2) 書かれる時刻は**再送時の時計**で指数バックオフの分だけズレる = 「無い」より悪い答えになる (3) `amd_result='human'` が「人が出た」事実を既に記録しているので、失うのは事実ではなく**その秒**だけ（失敗は既存の `report()` が stderr に残す）④★`/test-call` 分岐は常に 200★ — 書く先が無く、唯一の副作用である hangup は**再送できない**（最初のバックオフが明ける頃には通話がキャリアの録音上限で終わっており、切る相手がいない）。検証（自分で実行）: 新規 `test/telnyx-events-retry-http-contract.test.js` = 実 `server.js` を実 HTTP + 実 Ed25519 署名で叩き、fake fetch が未知の host/path で throw する（= 「Supabase に届く前に答えた」が緑にならない物理制約）。**先に RED を踏んだ** → `tests 5 / pass 3 / fail 2`（`expected 5xx, got 200` が Supabase 500 と ECONNREFUSED の2件だけ。`matched=0` / 正常系 / test call の3件は現状どおり緑 = 変えてはいけない所を変えていない証拠）→ 実装 → `test/telnyx-events-retry-http-contract.test.js + test/testcall-amd-hangup-http-contract.test.js + test/testcall-amd-hangup.test.js + lib/late-notice.test.js` で **tests 38 / pass 38 / fail 0**（下の characterization test を足した後の再実測値。実装直後の 37/37 は当該 test を書く前の数）。★再送安全性を characterization test で固定★（§1.3.1 の帰結1）= 同一 event を2回配送し「1回目 Supabase 500 → 5xx / 2回目 200 + `answered`」を pin した上で、`answered_at` の全 PATCH が `answered_at=is.null` を**持つ**事と `amd_result` の全 PATCH が**持たない**事を assert → **mutation で kill 確認済**: `markAnswered` から `filter: "&answered_at=is.null"` を外すと当該1件だけが `tests 6 / pass 5 / fail 1`（`answered_at must be latched so a resent event cannot rewrite the first human proof`、actual URL に `answered_at=is.null` 無し）で落ち、戻すと `tests 6 / pass 6 / fail 0`。全 suite `node --test lib/*.test.js test/*.test.js` = **tests 2080 / pass 2075 / fail 5**、失敗は既知 baseline の部分集合（`panel-corrective-red` / `panel-corrective3-four-blockers` / `panel-corrective4-logout` / `panel-display-policy` / `browser-task-telegram-http-contract`。6件目の `event-participation-entities` は単体で `tests 8 / pass 8 / fail 0` = 今回緑）。★未検証★: **実際の再送で行が埋まる**所は本番でしか見えない。本番の `SUPABASE_URL` を壊す実験は**しない**（生きている書き込みを落とすので）。deploy 後に `/health` の build tag 更新を確認し、実 AMD event が 200 で処理され続けている事をログで見る |
-| **2c** | ★ 出発の押し切りを Telegram 連投にする ★（正本 = §5.2.1） | 電話は「出る」という動作を要求し、実測で一度も人に届いていない。Telegram は**画面に残り続ける**ので出発という行動に直接効く（Dais 実感） | T-25 / T-10 / T-5 / T-0 / T+3 / T+7 の段階送信が実予定1件で実配信。★`[了解]` タップ / 位置移動（#3）/ late organ 移行 のいずれかで**即停止**★（停止条件の無い連投は嫌がらせであって製品ではない）。連投中も経路1通・承認1通は増やさない |
-| **3** | 位置を「家を出た」判定に接続（鮮度は `observed_at`） | 位置が来ていても使わなければ案内が始まらない | 実予定1件で出発検知 → 出発直後の1通が実配信。`updated_at` を鮮度に使う箇所が 0 |
-| **4** | 乗換ステップ + 出口番号 | **これが無いと Google Maps を消せない** = 商品の主張が嘘になる | 実イベント1件で経路1通が届き、Maps を開かずに着いた。出口が取れない駅は**黙って省く**（推測で書かない） |
-| **5** | 1タップ承認 | 無断で相手にメールが飛ぶ。友達に渡した瞬間に事故る | 押すまで送信0・押したら実送信、両方確認 |
-| **6** | 電話番号なしでも動く → **2026-08-01 以降これが既定**（§5.2.1 / §5.3） | 3人のうち少なくとも1人は番号を出さない。加えて実測で、番号を出した Dais 本人にも電話は届いていなかった | 番号未登録の test user で、出発の連投 → 経路 → 承認まで全部 Telegram に届く。2b + 2c が入れば大半が満たされるので、残るのは**番号未登録の実 user での E2E 1本**だけ |
+| **2c** | ★ 出発の押し切りを Telegram 連投にする ★（branch実装済・re-review/deploy待ち、正本 = §5.2.1） | `wakeTick` の外側で電話userだけに絞ると、電話なしが既定なのに誰にも届かない | T-25 / T-10 / T-5 / T-0 / T+3 / T+7 が電話設定に関係なく実配信。`[了解]` / #3の出発検知 / late移行で即停止。B1修正とgeocode成功cacheを含む46/46を維持し、本番receiptを取る |
+| **3** | 位置を「家を出た」判定に接続し、**位置なし縮退 UX**も完成（鮮度は `observed_at`） | 位置userには追従できず、位置なしuserに知っているふりをすると信頼を失う | 位置あり: 実予定で出発検知 → 連投停止 → 現在地ETA。位置なし: 時刻ベース連投 + `[出た][了解]` で停止、現在地ETAや出発検知を主張しない。`updated_at` を鮮度に使う箇所0 |
+| **4** | 乗換ステップ + 取得できる出口番号 | **これが無いと地図アプリを消せない** = 商品の主張が嘘になる | 実イベント1件で徒歩・路線・行先・乗換・乗降時刻・到着ETAを1通で受信し、地図アプリを開かず到着。番線/出口は実dataがある時だけ表示し、推測しない |
+| **5** | ★ 自動送信を廃止し、宛先・本文を見せる1タップ承認へ ★ | 現コードは `sendLateNotice()` を自動実行するため、相手も遅れている・既に連絡済み・私的contextがある場合に誤送信する | Calendarの外部attendeeから **送信先の氏名/メール**、ETAと既知contextから**送る本文全文**を表示。選択は `[送る][送らない]`。押すまで外部送信0、送るはexactly-once + delivery receipt、送らないは永久終了。複数宛先は全員を明示し、宛先なしは送れないと明示 |
+| **6** | 電話なし・位置なしでもdaily coreが動く（両方任意、推奨機能） | 任意permissionを必須にすると通常利用できず、逆にpermissionなしで現在地を知るふりをすると嘘になる | 実userで4 matrix（位置×電話）をE2E。全員に連投・予定経路・承認が届く。位置ONだけ出発自動検知/現在地ETA、電話ONだけ追加架電。留守電即切断。失敗時は沈黙せずTelegramで説明 |
 
 **運用規則（今回の教訓）**: ★試験中に本番へ env を設定しない★ — Railway では変数設定が再デプロイを誘発し、
 発火窓を破壊する。試験の前後30分は本番の設定変更を行わない。
@@ -307,27 +349,60 @@ panel、context-graph）は `timeMax` が違うので別キーのまま。1d が
 ```
  ① もう遅刻しない        出発時刻は向こうから来る。予定表を開く必要が無い
  ② もう道に迷わない      経路は出た瞬間に届く。地図アプリを開く必要が無い
- ③ もう気まずくならない  遅れる時は、着く前に相手へ話が通っている
+ ③ もう気まずくならない  遅れる時は、宛先と文面を確認して1タップすれば相手へ話が通る
 ```
 
-**ユーザーが用意する物 = スマホ1台と Telegram だけ。** それ以外を要求したら設計の失敗。
-アプリのインストール不要・アカウント作成不要・地図アプリ不要・乗換アプリ不要・カレンダーを開く習慣も不要。
+**日常利用でユーザーが用意する物 = スマホ1台と Telegram。** 初回だけ Google Calendar OAuth のため
+browserを開く。別のLife Managerアプリ・地図アプリ・乗換アプリ・カレンダーを開く習慣は不要。
+
+daily journey の必須入力は **名前・言語・自宅・Google Calendar**。**Telegram Live Location と電話は任意**。
+任意permissionを渡さない人にもcore journeyを届け、渡した人には精度/channelを追加する。
 
 ### 5.1 登録（1回だけ、チャットの中で終わる）
 
 ```text
  /start
    ├─ 名前（チャットに直接入力）
-   ├─ 予定をつなぐ         → ボタン → /lm?tg=<chat_id>（OAuth はブラウザが1回開くだけ）
-   ├─ メールをつなぐ       → ボタン
-   ├─ 電話番号（任意）★#6★ → 未入力なら「Telegram だけで届けます」と明示
-   ├─ ライブ位置を共有 ★#3★ 📎 → 位置情報 → ライブ位置情報（無期限）
-   └─ 支払い               → ボタン
+   ├─ 言語
+   ├─ 自宅
+   └─ Google Calendar      → ボタン → /lm?tg=<chat_id>（OAuth はブラウザが1回開くだけ）
         ▼
-   🎉「明日の朝から始めます。何もしなくていいです」
+   ✅ daily core開始
+   ├─ Live Location（任意・推奨）→ 出発自動検知 / 現在地ETA / 実測遅刻判定を追加
+   └─ 電話（任意）              → Telegramに追加するreminder channel。明示ONだけ
 ```
 
 **この後、ユーザーが操作を覚える必要は無い。** コマンドは存在するが、知らなくても製品は成立する。
+
+### 5.1.1 完成後の user journey（Mermaid正本）
+
+```mermaid
+flowchart TD
+    A[Telegramでstart] --> B[必須: 名前]
+    B --> C[必須: 言語]
+    C --> D[必須: 自宅]
+    D --> E[必須: Google Calendar接続]
+    E --> F{Live Locationを共有?}
+    F -->|はい| G[出発自動検知・現在地ETAを有効化]
+    F -->|いいえ| H[時刻ベースで動作・現在地を知るふりはしない]
+    G --> I{電話を明示ON?}
+    H --> I
+    I -->|はい| J[Telegram + 追加電話]
+    I -->|いいえ| K[Telegramのみ]
+    J --> L[予定を検知し出発時刻を計算]
+    K --> L
+    L --> M[Telegram出発ladder]
+    M --> N{了解 / 出発を検知?}
+    N -->|まだ| M
+    N -->|はい| O[ladder停止]
+    O --> P[徒歩・路線・乗換・到着ETAを1通]
+    P --> Q{到着が遅れる?}
+    Q -->|いいえ| R[以後は黙る]
+    Q -->|はい| S[宛先氏名・メール・本文全文を表示]
+    S --> T{ユーザーの1判断}
+    T -->|送る| U[exactly-once送信 + delivery receipt]
+    T -->|送らない| V[外部送信0で終了]
+```
 
 ### 5.2 いつもの1日（届くのは最大3通）
 
@@ -358,10 +433,11 @@ panel、context-graph）は `timeMax` が違うので別キーのまま。1d が
  │ 田中さん（tanaka@…）に送りますか?           │
  │「お世話になっております。交通事情により     │
  │  5分ほど遅れます。申し訳ございません。」    │
- │ [ 送る ]  [ 文面を直す ]  [ やめる ]        │
+ │ [ 送る ]             [ 送らない ]            │
  └────────────────────────────────────────────┘
    → ここで「気まずい謝罪の文面を考える」が消える
-   押すまで1通も飛ばない。既定は送らない側
+   押すまで1通も飛ばない。既定は送らない側。
+   相手も遅れている・既に伝達済み・本人しか知らない事情は推測せず、最終判断を本人に残す
 ```
 
 **「最大3通」は "3種類の場面" の話であって、出発の押し切りは別枠**（下の 5.2.1）。経路と承認は
@@ -393,7 +469,7 @@ send me message is much better since it would hit me to actually leave to the pl
  T-5   ⏰ あと5分。そろそろ支度を終えて
  T-0   🚨 いま出る時間。8:05
  T+3   🚨 3分オーバー。今出れば 09:03 着（3分遅れ）
- T+7   🚨 7分オーバー。相手に連絡しますか?  [ 送る ] [ まだ ]
+ T+7   🚨 7分オーバー。遅刻連絡の確認へ     [ 確認 ] [ 不要 ]
  ─────────────────────────────────────────────────
   [ 了解 ] を押した / 位置が動いた 時点で★即停止★
   停止条件が無い連投は嫌がらせであって製品ではない
@@ -420,16 +496,30 @@ hangup ではなく**呼び出しが自分を名乗らない事**である。
 wake 呼び出しは「記録してから切る」、test 呼び出しは「記録する先が無いので切るだけ」。どちらも
 `human` には触れない。
 
-### 5.3 電話番号を出さない人（#6）→ **もはや既定がこちら**
+### 5.3 任意permissionの4状態（#3 / #6）— coreは全員同じ、追加精度だけが違う
 
-```text
-       既定（電話なし）                電話を明示的に有効にした人
- 07:40  💬 連投で押し切る（5.2.1）      同じ連投 ＋ 📞（留守電なら即切る）
- 08:06  💬 経路1通                      💬 同じ経路1通
- 09:02  💬 承認カード                   💬 同じ承認カード
- ─────────────────────────────────────────────────
-   判定エンジンは1つ。届け先が2つ。★電話は付加であって前提ではない★
-```
+| Live Location | 電話 | 必ず届くcore | 追加されるもの |
+|---|---|---|---|
+| OFF | OFF | 時刻ベース連投 · 予定経路 · 遅刻可能性の承認カード | なし。現在地・出発済みを知るふりはしない |
+| ON | OFF | 同じcore | 出発自動検知 · 連投自動停止 · 現在地ETA · 実測遅刻判定 |
+| OFF | ON | 同じcore | 追加電話。Telegramは減らさない。留守電なら即切る |
+| ON | ON | 同じcore | 位置精度 + 追加電話の両方 |
+
+**電話は付加であって前提ではない。位置は精度であって前提ではない。** 判定engineとTelegram journeyは1つ。
+位置OFFの承認カードは「現在地から遅刻確定」ではなく、予定出発時刻からの**推定**だと明示する。
+
+### 5.3.1 遅刻連絡の権限境界（#5）
+
+Calendarの外部attendeeを候補にするが、Life Managerは他人も遅れているか、既に口頭で合意したか、本人だけが
+知る私的contextを推測できない。したがって card に **送信先の氏名・メールアドレス・送る本文全文・根拠となる
+ETA** を表示し、操作は `[送る] [送らない]` の1判断に固定する。
+
+- `[送る]`: 表示した宛先へ表示した本文をexactly once送信し、delivery receiptをTelegramへ返す。
+- `[送らない]`: 外部送信0で永久終了。別tickで同じ確認を再表示しない。
+- 複数宛先: 全員を隠さず列挙する。誰に飛ぶか不明な状態では送信buttonを出さない。
+- 宛先なし: 「Calendarに連絡先がありません」と伝え、送信しない。
+- ★現コードとの差★: `processLocationLateNotice()` は現在承認前に `sendLateNotice()` を呼ぶ。row #5ではこの
+  side effectを durable approval claim の**後**へ移し、callback以外の経路から呼べないようtestで封じる。
 
 ### 5.4 うまく行かない日（ここが信頼を決める）
 
@@ -480,15 +570,15 @@ daily が閉じたら、同じ「チャットで完結・承認は1タップ・�
 
 ---
 
-## 7. 出荷までに起きること
+## 7. launch済み製品のdaily完成とpromotionまでに起きること
 
 | 段 | 条件 | 判定 |
 |---:|---|---|
 | 1 | #1（1a/1b/1c）+ #2 + #3 | 実予定で呼び出しが鳴り、出たかが記録され、出発が検知される。**逃した時は自分から言う** |
 | 2 | #4 | ★ Dais が Google Maps を消す ★ = daily の合格判定。他の指標は見ない |
 | 3 | #5 + #6 | 他人に渡しても事故らない（無断送信0・番号なしでも全部届く） |
-| 4 | 友達3人に配る | 見るのは1つ:「Maps を消したか」。消さないなら理由を聞き、その1点だけ直す |
-| 5 | 公開 | 3人中2人以上が1週間 Maps を消したまま過ごしたら出す。売り文句は「乗換案内アプリの代わり」ではなく **「もう調べなくていい」** |
+| 4 | 友人・家族へ通常の製品として案内する | beta/testerと呼ばない。見るのは1つ:「地図アプリを開いたか」。開いたなら理由を聞き、そのjourney gapを直す |
+| 5 | promotionを拡大 | 利用receiptとfeedbackを根拠に案内先を増やす。売り文句は「乗換案内アプリの代わり」ではなく **「もう調べなくていい」** |
 
 ---
 
@@ -565,7 +655,7 @@ marketing-engine / product-packs …）は**目標形**で、現状は既存慣�
  単一テナント運用                   →  月額の multi-tenant（Order 25）・1,000 tenant 検証（Order 26）
 ```
 
-**daily の出荷はこの移行を待たない。** 今の Railway + Supabase で段5（公開）まで到達できる。
+**daily の完成とpromotion拡大はこの移行を待たない。** launch済みの現行Railway + Supabaseで§7の段5まで到達できる。
 
 ## 9. 更新規律
 
