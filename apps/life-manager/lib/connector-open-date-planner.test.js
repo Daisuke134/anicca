@@ -164,7 +164,7 @@ test("active or completed first candidate waits and never enqueues the next cand
   }
 });
 
-test("dead-letter candidate advances to the next candidate while all terminal failures remain open", async () => {
+test("dead-letter candidates advance across candidates and then across open dates", async () => {
   const input = await sources();
   const [first, second] = input.dateInventory.days[0].events.map((event) => event.event_ref);
   const next = planner(new Map([[first, { status: "dead_letter" }]]));
@@ -177,10 +177,13 @@ test("dead-letter candidate advances to the next candidate while all terminal fa
     [first, { status: "dead_letter" }],
     [second, { status: "dead_letter" }],
   ]));
-  const exhausted = await terminal.instance(input);
-  assert.equal(exhausted.status, "exhausted");
-  assert.equal(exhausted.event_ref, null);
-  assert.equal(terminal.calls.some(([kind]) => kind === "enqueue"), false);
+  const advanced = await terminal.instance(input);
+  assert.equal(advanced.status, "enqueued");
+  assert.match(advanced.event_ref, /later/);
+  assert.equal(advanced.date, "2026-08-03");
+  assert.deepEqual(terminal.calls.filter(([kind]) => kind === "enqueue"), [
+    ["enqueue", "luma-event://event/later"],
+  ]);
 });
 
 test("all-calendar-conflict plan resolves the day with bounded aggregate evidence", async () => {
