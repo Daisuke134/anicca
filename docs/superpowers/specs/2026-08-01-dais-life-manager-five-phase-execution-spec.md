@@ -1646,6 +1646,14 @@ attempt 1のLIVE receiptは`CONNECTOR_COVERAGE_INVENTORY_DISCOVERY_FAILED`であ
 snapshot/advance/endと上位伝播の回帰testは修正前RED、実装後24/24 GREEN。次はcommit/push/deployし、LIVE exact substageを
 取得してその一箇所だけを修復する。
 
+O1B-26進捗37（discovery page境界へ限定 / auth・target分離 RED→GREEN）: 進捗36をcommit `dc6afcfb9`として
+mainへpushし、image `f1bc7705ac03`を12:57 JSTに配備した。fresh coverage job
+`connector-coverage:d53d0e15a854af3f0a364f6099ec8f58e7a07c932ebff1260649cdce3abb36bb`のattempt 1は
+`CONNECTOR_COVERAGE_INVENTORY_DISCOVERY_PAGE_FAILED`となり、snapshot/scroll/end以前のpage境界を確定した。
+auth-aware daily driverを`AUTH`（shared sessionの認証確認・回復）と`TARGET`（認証後の東京一覧tab作成・遷移・task）へ分離し、
+内部例外本文は外へ出さない。auth/target分類と上位伝播の回帰testは修正前RED、実装後34/34 GREEN。次は
+commit/push/deploy後、LIVE exact page substageだけを修復する。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 

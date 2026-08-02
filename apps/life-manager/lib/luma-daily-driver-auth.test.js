@@ -123,7 +123,8 @@ test("the auth-aware driver never starts an event task before authentication suc
   });
   await assert.rejects(
     blocked.withLumaPage("https://luma.com/event-one", async () => "effect"),
-    /authentication unavailable/i,
+    (error) => error.code === "LUMA_PAGE_AUTH_FAILED"
+      && error.message === "Luma page unavailable",
   );
   assert.deepEqual(calls, []);
 
@@ -136,6 +137,19 @@ test("the auth-aware driver never starts an event task before authentication suc
     "effect",
   );
   assert.deepEqual(calls, [["auth"], ["task", "https://luma.com/event-one"]]);
+});
+
+test("auth-aware driver separates target page failure without leaking provider text", async () => {
+  const privateText = "private browser target detail";
+  const ready = createAuthAwareLumaDailyDriver({
+    dailyDriver: { async withLumaPage() { throw new Error(privateText); } },
+    auth: { async ensureAuthenticated() { return { status: "authenticated" }; } },
+  });
+  await assert.rejects(ready.withLumaPage("https://luma.com/event-one", async () => {}), (error) => (
+    error.code === "LUMA_PAGE_TARGET_FAILED"
+    && error.message === "Luma page unavailable"
+    && !JSON.stringify(error).includes(privateText)
+  ));
 });
 
 test("the worker read-only gate accepts only an already authenticated shared session", async () => {
