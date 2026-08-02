@@ -50,6 +50,21 @@ function finish(core) {
   return result;
 }
 
+async function mapWithConcurrency(values, limit, operation) {
+  if (!Array.isArray(values) || !Number.isInteger(limit) || limit < 1 || typeof operation !== "function") invalid();
+  const results = new Array(values.length);
+  let next = 0;
+  async function worker() {
+    while (next < values.length) {
+      const index = next;
+      next += 1;
+      results[index] = await operation(values[index], index);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, values.length) }, worker));
+  return results;
+}
+
 function directConflicts(event, inventory) {
   const start = Date.parse(event.starts_at);
   const end = Date.parse(event.ends_at);
@@ -106,11 +121,10 @@ async function evaluateCalendarCandidateGate(input = {}) {
   const day = dateInventory.days.find((candidate) => candidate.date === date);
   if (!day || day.inventory_status !== "complete") invalid();
   const home = safeLocation(input.homeLocation);
-  const candidates = [];
-  for (const event of day.events) {
+  const evaluated = await mapWithConcurrency(day.events, 4, async (event) => {
     const direct = directConflicts(event, busyInventory);
     if (direct.length > 0) {
-      candidates.push(Object.freeze({
+      return Object.freeze({ kind: "candidate", candidate: Object.freeze({
         event_ref: event.event_ref,
         eligible: false,
         expanded_start_at: event.starts_at,
@@ -118,8 +132,7 @@ async function evaluateCalendarCandidateGate(input = {}) {
         inbound_minutes: null,
         outbound_minutes: null,
         conflict_event_refs: Object.freeze(direct.map((busy) => busy.event_ref)),
-      }));
-      continue;
+      }) });
     }
     const venue = safeLocation(event.venue_address || event.venue_name);
     const origin = adjacentLocation(event, busyInventory, "inbound", home);
@@ -128,35 +141,19 @@ async function evaluateCalendarCandidateGate(input = {}) {
       direction: "inbound", from: origin, to: venue,
       event_ref: event.event_ref, anchor_at: event.starts_at,
     });
-    if (inbound === null) return finish({
-      date,
-      busy_inventory_id: busyInventory.busy_inventory_id,
-      inventory_snapshot_id: dateInventory.inventory_snapshot_id,
-      status: "recovery_required",
-      reason: "route_unavailable",
-      failed_event_ref: event.event_ref,
-      candidates: Object.freeze([]),
-    });
+    if (inbound === null) return Object.freeze({ kind: "recovery", event_ref: event.event_ref });
     const outbound = await routeDuration(input.routeMinutes, {
       direction: "outbound", from: venue, to: destination,
       event_ref: event.event_ref, anchor_at: event.ends_at,
     });
-    if (outbound === null) return finish({
-      date,
-      busy_inventory_id: busyInventory.busy_inventory_id,
-      inventory_snapshot_id: dateInventory.inventory_snapshot_id,
-      status: "recovery_required",
-      reason: "route_unavailable",
-      failed_event_ref: event.event_ref,
-      candidates: Object.freeze([]),
-    });
+    if (outbound === null) return Object.freeze({ kind: "recovery", event_ref: event.event_ref });
     const expandedStart = Date.parse(event.starts_at) - (inbound + BUFFER_MINUTES) * 60_000;
     const expandedEnd = Date.parse(event.ends_at) + (outbound + BUFFER_MINUTES) * 60_000;
     const conflicts = busyInventory.busy_intervals.filter((busy) => (
       busy.kind === "timed"
       && overlaps(expandedStart, expandedEnd, Date.parse(busy.start_at), Date.parse(busy.end_at))
     ));
-    candidates.push(Object.freeze({
+    return Object.freeze({ kind: "candidate", candidate: Object.freeze({
       event_ref: event.event_ref,
       eligible: conflicts.length === 0,
       expanded_start_at: new Date(expandedStart).toISOString(),
@@ -164,8 +161,19 @@ async function evaluateCalendarCandidateGate(input = {}) {
       inbound_minutes: inbound,
       outbound_minutes: outbound,
       conflict_event_refs: Object.freeze(conflicts.map((busy) => busy.event_ref)),
-    }));
-  }
+    }) });
+  });
+  const recovery = evaluated.find((row) => row.kind === "recovery");
+  if (recovery) return finish({
+    date,
+    busy_inventory_id: busyInventory.busy_inventory_id,
+    inventory_snapshot_id: dateInventory.inventory_snapshot_id,
+    status: "recovery_required",
+    reason: "route_unavailable",
+    failed_event_ref: recovery.event_ref,
+    candidates: Object.freeze([]),
+  });
+  const candidates = evaluated.map((row) => row.candidate);
   return finish({
     date,
     busy_inventory_id: busyInventory.busy_inventory_id,
@@ -210,4 +218,5 @@ module.exports = {
   calendarEligibleLumaCandidates,
   evaluateCalendarCandidateGate,
   isVerifiedCalendarCandidateGate,
+  mapWithConcurrency,
 };

@@ -12,7 +12,22 @@ const {
   calendarEligibleLumaCandidates,
   evaluateCalendarCandidateGate,
   isVerifiedCalendarCandidateGate,
+  mapWithConcurrency,
 } = require("./calendar-candidate-gate.js");
+
+test("route work is bounded to four concurrent candidates and preserves source order", async () => {
+  let active = 0;
+  let peak = 0;
+  const result = await mapWithConcurrency([0, 1, 2, 3, 4, 5, 6], 4, async (value) => {
+    active += 1;
+    peak = Math.max(peak, active);
+    await new Promise((resolve) => setTimeout(resolve, (7 - value) * 2));
+    active -= 1;
+    return value * 2;
+  });
+  assert.equal(peak, 4);
+  assert.deepEqual(result, [0, 2, 4, 6, 8, 10, 12]);
+});
 
 async function dateInventory() {
   const coverage = buildRollingEventCoverage({
