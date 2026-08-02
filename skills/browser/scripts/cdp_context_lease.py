@@ -1,26 +1,26 @@
 #!/usr/bin/env python3
-"""Give each loop its own browser space so they stop destroying each other's work.
+"""Give each loop a fenced browser context lease.
 
-Every loop drives the same Chromium. When gig is halfway through a 応募 form and the clip loop
-navigates "the" tab, gig's work is gone — and neither loop can tell that it happened.
+Every loop drives the same Chromium.  A BrowserContext gives a task private tabs,
+but context disposal must also be fenced: an old process must never dispose a
+context that a newer process has acquired under the same task name.
 
-CDP has the answer already: Target.createBrowserContext is "Similar to an incognito profile but you
-can have more than one". So each task leases its own context, and nothing another loop does can reach
-into it. Contexts do not share cookies, so the lease seeds the fresh context from the session vault —
-the same trick as Playwright's storageState ("reuse this state and start already authenticated").
-
-    python3 cdp_context_lease.py acquire gig            # -> {"context_id":..., "target_id":..., "ws":...}
-    python3 cdp_context_lease.py release gig            # dispose the context (tabs die with it)
-    python3 cdp_context_lease.py gc --idle-min 45       # reap contexts a crashed loop left behind
+    python3 cdp_context_lease.py acquire gig
+    python3 cdp_context_lease.py heartbeat gig --token TOKEN --generation N
+    python3 cdp_context_lease.py release gig --token TOKEN --generation N
+    python3 cdp_context_lease.py gc --idle-min 45
     python3 cdp_context_lease.py list
 """
 import asyncio
+from contextlib import contextmanager
 import fcntl
 import json
 import os
 import sys
+import tempfile
 import time
 import urllib.request
+import uuid
 from urllib.parse import urlparse
 
 try:
@@ -28,6 +28,9 @@ try:
 except ImportError:
     print(json.dumps({"ok": False, "reason": "pip install websockets"}))
     sys.exit(1)
+
+
+_LEDGER_META_KEY = "_lease_fence_meta"
 
 
 def _cdp_base():
@@ -49,9 +52,16 @@ def _leases_path():
     )
 
 
+def _leases_dir():
+    return os.path.dirname(os.path.abspath(_leases_path()))
+
+
+def _ledger_lock_path():
+    return _leases_path() + ".lock"
+
+
 def _operation_lock_path(target_id):
-    leases_dir = os.path.dirname(_leases_path())
-    return os.path.join(leases_dir, "operations", f"{target_id}.lock")
+    return os.path.join(_leases_dir(), "operations", f"{target_id}.lock")
 
 
 def _page_ws(target_id):
@@ -81,31 +91,196 @@ async def _calls(pairs):
     return out
 
 
-def _leases():
-    leases_path = _leases_path()
-    if os.path.exists(leases_path):
+@contextmanager
+def _ledger_lock():
+    """Serialize a short lease-ledger read/modify/write transaction."""
+    lock_path = _ledger_lock_path()
+    os.makedirs(os.path.dirname(os.path.abspath(lock_path)), exist_ok=True)
+    with open(lock_path, "a+", encoding="utf-8") as lock_handle:
+        fcntl.flock(lock_handle.fileno(), fcntl.LOCK_EX)
         try:
-            with open(leases_path, encoding="utf-8") as handle:
-                return json.load(handle)
-        except Exception:
-            pass
-    return {}
+            yield
+        finally:
+            fcntl.flock(lock_handle.fileno(), fcntl.LOCK_UN)
 
 
-def _save(d):
+@contextmanager
+def _target_operation_lock(target_id):
+    """Keep disposal mutually exclusive with a caller using this target."""
+    lock_path = _operation_lock_path(target_id)
+    os.makedirs(os.path.dirname(lock_path), exist_ok=True)
+    with open(lock_path, "a+", encoding="utf-8") as operation_lock:
+        fcntl.flock(operation_lock.fileno(), fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(operation_lock.fileno(), fcntl.LOCK_UN)
+
+
+def _read_ledger_locked():
+    """Read the legacy-flat ledger while holding _ledger_lock()."""
+    try:
+        with open(_leases_path(), encoding="utf-8") as handle:
+            raw = json.load(handle)
+    except Exception:
+        raw = {}
+    if not isinstance(raw, dict):
+        raw = {}
+
+    meta = raw.get(_LEDGER_META_KEY, {})
+    generations = meta.get("generations", {}) if isinstance(meta, dict) else {}
+    if not isinstance(generations, dict):
+        generations = {}
+    leases = {
+        task: held
+        for task, held in raw.items()
+        if task != _LEDGER_META_KEY and isinstance(held, dict)
+    }
+    return {"leases": leases, "generations": generations}
+
+
+def _atomic_write_ledger(data):
+    """Replace the ledger durably; callers hold _ledger_lock() for the RMW."""
     leases_path = _leases_path()
-    os.makedirs(os.path.dirname(leases_path), exist_ok=True)
-    tmp = leases_path + f".{os.getpid()}.tmp"
-    with open(tmp, "w", encoding="utf-8") as f:
-        json.dump(d, f, indent=2)
-    os.replace(tmp, leases_path)
+    leases_dir = _leases_dir()
+    os.makedirs(leases_dir, exist_ok=True)
+    fd, tmp_path = tempfile.mkstemp(
+        prefix=f".{os.path.basename(leases_path)}.", suffix=".tmp", dir=leases_dir
+    )
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            json.dump(data, handle, indent=2)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(tmp_path, leases_path)
+        directory_fd = os.open(leases_dir, os.O_RDONLY)
+        try:
+            os.fsync(directory_fd)
+        finally:
+            os.close(directory_fd)
+    finally:
+        if os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+
+
+def _save_ledger_locked(ledger):
+    """Persist a normalized ledger while its flock is held."""
+    data = dict(ledger["leases"])
+    data[_LEDGER_META_KEY] = {"generations": dict(ledger["generations"])}
+    _atomic_write_ledger(data)
+
+
+def _leases():
+    """Return active leases without exposing fence metadata to legacy callers."""
+    with _ledger_lock():
+        return _read_ledger_locked()["leases"]
+
+
+def _save(leases):
+    """Compatibility helper for callers that previously saved a flat lease map."""
+    with _ledger_lock():
+        ledger = _read_ledger_locked()
+        ledger["leases"] = {
+            task: held for task, held in leases.items() if isinstance(held, dict)
+        }
+        for task, held in ledger["leases"].items():
+            ledger["generations"][task] = max(
+                _generation_value(ledger["generations"].get(task)),
+                _generation_value(held.get("generation")),
+            )
+        _save_ledger_locked(ledger)
+
+
+def _valid_generation(value):
+    return isinstance(value, int) and not isinstance(value, bool) and value > 0
+
+
+def _identity(held):
+    token = held.get("token") if isinstance(held, dict) else None
+    generation = held.get("generation") if isinstance(held, dict) else None
+    if isinstance(token, str) and token and _valid_generation(generation):
+        return token, generation
+    return None
+
+
+def _matches_identity(held, token, generation):
+    return (
+        isinstance(token, str)
+        and bool(token)
+        and _valid_generation(generation)
+        and _identity(held) == (token, generation)
+    )
+
+
+def _same_lease(current, expected):
+    """Compare a pinned lease, including legacy rows that predate fencing."""
+    expected_identity = _identity(expected)
+    if expected_identity is not None:
+        return _identity(current) == expected_identity
+    return all(
+        current.get(field) == expected.get(field)
+        for field in ("context_id", "target_id", "ws", "ts")
+    )
+
+
+def _generation_value(value):
+    return value if _valid_generation(value) else 0
+
+
+def _next_identity(ledger, task):
+    held = ledger["leases"].get(task, {})
+    generation = max(
+        _generation_value(ledger["generations"].get(task)),
+        _generation_value(held.get("generation")),
+    ) + 1
+    ledger["generations"][task] = generation
+    return uuid.uuid4().hex, generation
+
+
+def _refresh_held_locked(ledger, task, held, now):
+    """Give legacy rows a fence and refresh a current holder's liveness."""
+    identity = _identity(held)
+    if identity is None:
+        token, generation = _next_identity(ledger, task)
+        held["token"] = token
+        held["generation"] = generation
+    else:
+        ledger["generations"][task] = max(
+            _generation_value(ledger["generations"].get(task)), identity[1]
+        )
+    held.setdefault("ts", now)
+    held["heartbeat_at"] = now
+    return held
+
+
+def _dispose(held):
+    asyncio.run(
+        _calls(
+            [
+                (
+                    "Target.disposeBrowserContext",
+                    {"browserContextId": held["context_id"]},
+                )
+            ]
+        )
+    )
+
+
+def _dispose_discarded_context(held):
+    """Clean up a concurrent acquire loser without holding the ledger lock."""
+    with _target_operation_lock(held["target_id"]):
+        _dispose(held)
 
 
 def acquire(task, url="about:blank", no_seed=False):
-    leases = _leases()
-    held = leases.get(task)
-    if held:  # a task holds at most one context; reuse it rather than piling up
-        return {"ok": True, "reused": True, **held}
+    """Acquire or heartbeat a task lease; every result carries a fence identity."""
+    with _ledger_lock():
+        ledger = _read_ledger_locked()
+        held = ledger["leases"].get(task)
+        if held:
+            held = _refresh_held_locked(ledger, task, held, time.time())
+            _save_ledger_locked(ledger)
+            return {"ok": True, "reused": True, **held}
 
     cookies = []
     vault_path = _vault_path()
@@ -115,87 +290,211 @@ def acquire(task, url="about:blank", no_seed=False):
 
     (ctx,) = asyncio.run(_calls([("Target.createBrowserContext", {})]))
     ctx_id = ctx["browserContextId"]
-
     calls = []
     if cookies:
-        # a fresh context starts logged out; seed it from the vault
         calls.append(("Storage.setCookies", {"cookies": cookies, "browserContextId": ctx_id}))
     calls.append(("Target.createTarget", {"url": url, "browserContextId": ctx_id}))
     results = asyncio.run(_calls(calls))
     target_id = results[-1]["targetId"]
-
-    lease = {
+    candidate = {
         "context_id": ctx_id,
         "target_id": target_id,
         "ws": _page_ws(target_id),
-        "ts": int(time.time()),
+        "ts": time.time(),
         "cookies_seeded": len(cookies),
     }
-    leases[task] = lease
-    _save(leases)
-    return {"ok": True, "reused": False, **lease}
 
+    discarded = None
+    with _ledger_lock():
+        ledger = _read_ledger_locked()
+        held = ledger["leases"].get(task)
+        if held:
+            held = _refresh_held_locked(ledger, task, held, time.time())
+            _save_ledger_locked(ledger)
+            result = {"ok": True, "reused": True, **held}
+            discarded = candidate
+        else:
+            token, generation = _next_identity(ledger, task)
+            candidate["token"] = token
+            candidate["generation"] = generation
+            candidate["heartbeat_at"] = candidate["ts"]
+            ledger["leases"][task] = candidate
+            _save_ledger_locked(ledger)
+            result = {"ok": True, "reused": False, **candidate}
 
-def release(task):
-    leases = _leases()
-    held = leases.pop(task, None)
-    if not held:
-        return {"ok": True, "note": f"{task} held no context"}
-    lock_path = _operation_lock_path(held["target_id"])
-    os.makedirs(os.path.dirname(lock_path), exist_ok=True)
-    with open(lock_path, "a+", encoding="utf-8") as operation_lock:
-        fcntl.flock(operation_lock.fileno(), fcntl.LOCK_EX)
+    if discarded:
         try:
-            asyncio.run(_calls([(
-                "Target.disposeBrowserContext",
-                {"browserContextId": held["context_id"]},
-            )]))
-        except Exception as e:
-            _save(leases)
+            _dispose_discarded_context(discarded)
+        except Exception:
+            # The current lease remains usable; do not overwrite it to record a loser.
+            pass
+    return result
+
+
+def heartbeat(task, token, generation):
+    """Refresh only the exact current lease identity."""
+    with _ledger_lock():
+        ledger = _read_ledger_locked()
+        held = ledger["leases"].get(task)
+        if not held or not _matches_identity(held, token, generation):
+            return {"ok": False, "reason": "stale or missing lease"}
+        held["heartbeat_at"] = time.time()
+        _save_ledger_locked(ledger)
+        return {
+            "ok": True,
+            "task": task,
+            "token": token,
+            "generation": generation,
+            "heartbeat_at": held["heartbeat_at"],
+        }
+
+
+def _stale(held, now, idle_min):
+    try:
+        heartbeat_at = float(held.get("heartbeat_at", held.get("ts", 0)))
+    except (TypeError, ValueError):
+        heartbeat_at = 0
+    return now - heartbeat_at > idle_min * 60
+
+
+def release(task, token=None, generation=None):
+    """Compare-delete a fenced lease, then dispose it under the target lock."""
+    if (token is None) != (generation is None):
+        return {"ok": False, "reason": "token and generation must be provided together"}
+
+    with _ledger_lock():
+        ledger = _read_ledger_locked()
+        held = ledger["leases"].get(task)
+        if not held:
+            if token is None:
+                return {"ok": True, "note": f"{task} held no context"}
+            return {"ok": False, "reason": "stale or missing lease"}
+        if token is not None and not _matches_identity(held, token, generation):
+            return {"ok": False, "reason": "stale or missing lease"}
+        pinned = dict(held)
+
+    with _target_operation_lock(pinned["target_id"]):
+        with _ledger_lock():
+            ledger = _read_ledger_locked()
+            current = ledger["leases"].get(task)
+            if not current or not _same_lease(current, pinned):
+                return {"ok": False, "reason": "stale or missing lease"}
+            if token is not None and not _matches_identity(current, token, generation):
+                return {"ok": False, "reason": "stale or missing lease"}
+            del ledger["leases"][task]
+            _save_ledger_locked(ledger)
+        try:
+            _dispose(pinned)
+        except Exception as exc:
             return {
                 "ok": False,
-                "reason": f"dispose failed: {e}",
+                "reason": f"dispose failed: {exc}",
                 "released_from_ledger": task,
             }
-        finally:
-            fcntl.flock(operation_lock.fileno(), fcntl.LOCK_UN)
-    _save(leases)
-    return {"ok": True, "released": task, "context_id": held["context_id"]}
+    return {"ok": True, "released": task, "context_id": pinned["context_id"]}
 
 
 def gc(idle_min=45):
-    """A loop killed with -9 never releases. Reap whatever it left holding."""
-    leases = _leases()
-    now = time.time()
+    """Reap only a still-stale pinned lease; never a refreshed/replaced one."""
+    with _ledger_lock():
+        ledger = _read_ledger_locked()
+        now = time.time()
+        candidates = [
+            (task, dict(held))
+            for task, held in ledger["leases"].items()
+            if held.get("context_id")
+            and held.get("target_id")
+            and _stale(held, now, idle_min)
+        ]
+
     reaped = []
-    for task, held in list(leases.items()):
-        if now - held.get("ts", 0) > idle_min * 60:
+    dispose_failed = []
+    for task, pinned in candidates:
+        with _target_operation_lock(pinned["target_id"]):
+            with _ledger_lock():
+                ledger = _read_ledger_locked()
+                current = ledger["leases"].get(task)
+                if (
+                    not current
+                    or not _same_lease(current, pinned)
+                    or not _stale(current, time.time(), idle_min)
+                ):
+                    continue
+                del ledger["leases"][task]
+                _save_ledger_locked(ledger)
             try:
-                asyncio.run(_calls([("Target.disposeBrowserContext", {"browserContextId": held["context_id"]})]))
+                _dispose(pinned)
             except Exception:
-                pass
-            leases.pop(task, None)
+                dispose_failed.append(task)
             reaped.append(task)
-    _save(leases)
-    return {"ok": True, "reaped": reaped, "still_held": list(leases)}
+
+    return {
+        "ok": True,
+        "reaped": reaped,
+        "still_held": list(_leases()),
+        "dispose_failed": dispose_failed,
+    }
+
+
+def _parse_cli(argv):
+    if not argv:
+        return "list", [], {}
+    command = argv[0]
+    positionals = []
+    options = {}
+    index = 1
+    while index < len(argv):
+        argument = argv[index]
+        if argument == "--no-seed":
+            options["no_seed"] = True
+            index += 1
+        elif argument in ("--token", "--generation", "--idle-min"):
+            if index + 1 >= len(argv):
+                raise ValueError(f"{argument} requires a value")
+            key = argument[2:].replace("-", "_")
+            options[key] = argv[index + 1]
+            index += 2
+        elif argument.startswith("--"):
+            raise ValueError(f"unknown option {argument}")
+        else:
+            positionals.append(argument)
+            index += 1
+    return command, positionals, options
+
+
+def main(argv=None):
+    """CLI adapter kept small so command parsing is testable without a browser."""
+    try:
+        command, positionals, options = _parse_cli(list(sys.argv[1:] if argv is None else argv))
+        if command == "acquire":
+            out = acquire(
+                positionals[0] if positionals else "unnamed",
+                no_seed=options.get("no_seed", False),
+            )
+        elif command == "heartbeat":
+            if not positionals or "token" not in options or "generation" not in options:
+                out = {"ok": False, "reason": "heartbeat requires TASK --token TOKEN --generation N"}
+            else:
+                out = heartbeat(positionals[0], options["token"], int(options["generation"]))
+        elif command == "release":
+            task = positionals[0] if positionals else "unnamed"
+            token = options.get("token")
+            generation = options.get("generation")
+            if (token is None) != (generation is None):
+                out = {"ok": False, "reason": "token and generation must be provided together"}
+            else:
+                out = release(task, token, int(generation) if generation is not None else None)
+        elif command == "gc":
+            out = gc(idle_min=int(options.get("idle_min", 45)))
+        elif command == "list":
+            out = {"ok": True, "leases": _leases()}
+        else:
+            out = {"ok": False, "reason": f"unknown command {command}"}
+    except Exception as exc:
+        out = {"ok": False, "reason": f"{type(exc).__name__}: {exc}"}
+    print(json.dumps(out, ensure_ascii=False))
+    return 0 if out.get("ok") else 1
 
 
 if __name__ == "__main__":
-    cmd = sys.argv[1] if len(sys.argv) > 1 else "list"
-    arg = sys.argv[2] if len(sys.argv) > 2 else None
-    try:
-        if cmd == "acquire":
-            out = acquire(arg or "unnamed", no_seed="--no-seed" in sys.argv)
-        elif cmd == "release":
-            out = release(arg or "unnamed")
-        elif cmd == "gc":
-            idle = int(sys.argv[sys.argv.index("--idle-min") + 1]) if "--idle-min" in sys.argv else 45
-            out = gc(idle)
-        elif cmd == "list":
-            out = {"ok": True, "leases": _leases()}
-        else:
-            out = {"ok": False, "reason": f"unknown command {cmd}"}
-    except Exception as e:
-        out = {"ok": False, "reason": f"{type(e).__name__}: {e}"}
-    print(json.dumps(out, ensure_ascii=False))
-    sys.exit(0 if out.get("ok") else 1)
+    sys.exit(main())
