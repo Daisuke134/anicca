@@ -137,20 +137,20 @@ Acquire `interactive:dais`, call `state` with the exact token, assert the return
 - Consumes: Playwright attachment timeout or profile-boundary error text.
 - Produces: deterministic next action naming `capafy_target_cdp.py` and the paired-profile rule; no `self-fix` dispatch for these now-known recoverable cases.
 
-- [ ] **Step 1: Add a failing prompt-contract test**
+- [x] **Step 1: Add a failing prompt-contract test**
 
 Extend the existing Capafy loop wiring test to require the exact-target fallback command, exact token requirement, and the paired `OPENCLAW_CONFIG_PATH` / `OPENCLAW_STATE_DIR` safety rule.
 
-- [ ] **Step 2: Run RED, then update only the recovery paragraph**
+- [x] **Step 2: Run RED, then update only the recovery paragraph**
 
 Do not rewrite pricing, renewal, Telegram, or business-outcome instructions. Add the two deterministic recovery rules beside the existing browser lease rule.
 
-- [ ] **Step 3: Run the focused wiring test and full Capafy suite**
+- [x] **Step 3: Run the focused wiring test and full Capafy suite**
 
 Run: `uv run --with pytest pytest -q skills/earn/capafy-marketing/tests`
 
 Expected: the complete suite passes.
 
-- [ ] **Step 4: Poll Agent `4886968609` and update the living spec**
+- [x] **Step 4: Poll Agent `4886968609` and update the living spec**
 
 If `status=4`, generate and apply its provider-bound packaging decision. If it remains `status=1`, record automatic review as the external machine condition and no human action. Include command evidence, browser lease state, test counts, and commit identifiers.
