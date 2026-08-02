@@ -73,6 +73,20 @@ DECISIONS = {
     "pause",
     "retire_candidate",
 }
+GOVERNED_PRODUCT_FIELDS = {
+    "recurring_mechanism",
+    "purchase_model",
+    "value_metric",
+    "target_customer",
+    "next_best_alternative",
+    "renewal_reason",
+    "evidence",
+    "unit_economics",
+    "decision",
+    "decision_reason",
+    "experiment",
+    "unknowns",
+}
 MONEY_RE = re.compile(r"^-?(?:0|[1-9][0-9]*)\.[0-9]{2}$")
 DIGEST_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
 
@@ -167,6 +181,32 @@ def build_snapshot(
         "inventory": inventory,
         "products": products,
     }
+
+
+def refresh_snapshot(
+    existing: dict,
+    agents: list[dict],
+    company_projection: dict,
+    observed_at: str,
+) -> dict:
+    """Refresh remote facts while preserving cited governance for matching products."""
+    existing_errors = validate_snapshot(existing)
+    if existing_errors:
+        raise ValueError("existing portfolio is invalid: " + "; ".join(existing_errors))
+    refreshed = build_snapshot(agents, company_projection, observed_at)
+    governed_by_id = {
+        product["agent_id"]: product for product in existing["products"]
+    }
+    for product in refreshed["products"]:
+        governed = governed_by_id.get(product["agent_id"])
+        if governed is None:
+            continue
+        for field in GOVERNED_PRODUCT_FIELDS:
+            product[field] = governed[field]
+    errors = validate_snapshot(refreshed)
+    if errors:
+        raise ValueError("refreshed portfolio is invalid: " + "; ".join(errors))
+    return refreshed
 
 
 def validate_snapshot(snapshot: dict) -> list[str]:
@@ -331,6 +371,26 @@ def _main() -> int:
         default=Path.home() / ".openclaw/state/capafy-portfolio.json",
     )
     snapshot.add_argument("--observed-at")
+    refresh = commands.add_parser("refresh")
+    refresh.add_argument("--inventory-json", type=Path)
+    refresh.add_argument(
+        "--inventory-command-dir",
+        type=Path,
+        default=Path.home()
+        / ".openclaw/skills/capafy-autopublish/vendor/capafy-publisher",
+    )
+    refresh.add_argument(
+        "--projection",
+        type=Path,
+        default=Path(__file__).parents[1] / "site/company/state.json",
+    )
+    refresh.add_argument(
+        "--output",
+        type=Path,
+        default=Path.home() / ".openclaw/state/capafy-portfolio.json",
+    )
+    refresh.add_argument("--existing", type=Path)
+    refresh.add_argument("--observed-at")
     validate = commands.add_parser("validate")
     validate.add_argument("--input", type=Path, required=True)
     args = parser.parse_args()
@@ -348,7 +408,12 @@ def _main() -> int:
         observed_at = args.observed_at or datetime.now(timezone.utc).isoformat(
             timespec="seconds"
         ).replace("+00:00", "Z")
-        value = build_snapshot(agents, company, observed_at)
+        if args.command == "refresh":
+            existing_path = args.existing or args.output
+            existing = json.loads(existing_path.read_text(encoding="utf-8"))
+            value = refresh_snapshot(existing, agents, company, observed_at)
+        else:
+            value = build_snapshot(agents, company, observed_at)
         errors = validate_snapshot(value)
         if errors:
             raise ValueError("; ".join(errors))

@@ -139,3 +139,85 @@ def test_validate_cli_refuses_unknown_top_level_field(tmp_path: Path) -> None:
 
     assert result.returncode == 2
     assert "unsupported top-level fields" in result.stderr
+
+
+def test_refresh_preserves_audit_fields_and_adds_new_product_unaudited() -> None:
+    original_agents = inventory_agents()
+    existing = portfolio.build_snapshot(
+        original_agents, company_projection(), "2026-08-02T12:00:00Z"
+    )
+    governed = existing["products"][0]
+    governed.update(
+        {
+            "decision": "promote",
+            "purchase_model": "one_time",
+            "value_metric": "one complete kit",
+            "target_customer": "Amazon sellers",
+            "decision_reason": "Cited bounded deliverable.",
+            "evidence": [
+                {
+                    "url": "https://capafy.ai/agent/1000000000",
+                    "observed_at": "2026-08-02T12:00:00Z",
+                    "claim": "Seller-owned product exists.",
+                    "confidence": "high",
+                }
+            ],
+            "unknowns": ["paid conversion"],
+        }
+    )
+    refreshed_agents = [dict(item) for item in original_agents]
+    refreshed_agents[0]["name"] = "Renamed remotely"
+    refreshed_agents.append(
+        {
+            "agentId": "5648342153",
+            "name": "Amazon Listing Images — 7-Slot Kit",
+            "desc": "Buyer-run Download kit",
+            "agentType": "download",
+            "agentStatus": "under_review",
+            "updatedAt": 1785626386737,
+            "sales": None,
+        }
+    )
+
+    refreshed = portfolio.refresh_snapshot(
+        existing,
+        refreshed_agents,
+        {"projection_id": "sha256:" + "b" * 64},
+        "2026-08-02T13:00:00Z",
+    )
+
+    assert len(refreshed["products"]) == 32
+    preserved = next(item for item in refreshed["products"] if item["agent_id"] == "1000000000")
+    added = next(item for item in refreshed["products"] if item["agent_id"] == "5648342153")
+    assert preserved["name"] == "Renamed remotely"
+    assert preserved["decision"] == "promote"
+    assert preserved["purchase_model"] == "one_time"
+    assert preserved["evidence"] == governed["evidence"]
+    assert added["decision"] == "unaudited"
+    assert added["purchase_model"] == "undecided"
+    assert refreshed["inventory"] == {
+        "online": 27,
+        "under_review": 3,
+        "draft": 1,
+        "rejected": 1,
+    }
+    assert portfolio.validate_snapshot(refreshed) == []
+
+
+def test_refresh_refuses_invalid_existing_registry() -> None:
+    existing = portfolio.build_snapshot(
+        inventory_agents(), company_projection(), "2026-08-02T12:00:00Z"
+    )
+    existing["products"][0]["decision"] = "invent_money"
+
+    try:
+        portfolio.refresh_snapshot(
+            existing,
+            inventory_agents(),
+            company_projection(),
+            "2026-08-02T13:00:00Z",
+        )
+    except ValueError as exc:
+        assert "existing portfolio is invalid" in str(exc)
+    else:
+        raise AssertionError("invalid existing registry was accepted")
