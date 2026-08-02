@@ -1586,6 +1586,15 @@ mainへpushし、image `1ae29666775f`を11:15 JSTに配備した。worker health
 11:20:36 JST開始予定でqueuedであり、次のLIVE receiptでは本文を保存せず
 `SHAPE / COUNT / EVENT_REF / TEXT / GROUNDED`のどれか、または実応募enqueue成功を確定する。
 
+O1B-26進捗30（grounded validation真因 / RED→GREEN）: fresh job attempt 1・2は一時的な
+`INVENTORY_FAILED`から自動回復し、attempt 3で初めて
+`CONNECTOR_COVERAGE_APPLICATION_GOAL_VALIDATION_GROUNDED_FAILED`を確定した。model判断ではなく、公開event情報に
+email等の安全非表示tokenが含まれると、systemがそのまま作った根拠抜粋をfinal validator自身が拒否する自己矛盾だった。
+provider本文を保存・表示せず、連続した安全なprovider原文spanだけを根拠に採用し、全体が非表示対象なら
+`redacted / evidence_excerpt=null`と明示する。contact付き公開本文の回帰testは修正前に同じGROUNDED codeでRED、
+修正後GREEN。outbound 251/251、runtime-up 38/38、runtime adapters 125/125、失敗0件。次はcommit/push/deployし、
+新imageでgoal判断を通過して一件の実応募jobがenqueueされるかをLIVE確認する。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
