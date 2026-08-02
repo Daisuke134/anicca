@@ -124,6 +124,19 @@ test("always closes its own page after a task failure without closing the browse
   assert.equal(fx.calls.some(([name]) => name === "close-browser"), false);
 });
 
+test("reuses one live CDP connection across sequential Luma pages", async () => {
+  const fx = fixture();
+  const driver = createCloakBrowserDailyDriver({ connectOverCDP: fx.connectOverCDP });
+
+  await driver.withLumaPage("https://luma.com/event-a", async () => ({}));
+  await driver.withLumaPage("https://luma.com/event-b", async () => ({}));
+
+  assert.equal(fx.calls.filter(([name]) => name === "connect").length, 1);
+  assert.equal(fx.calls.filter(([name]) => name === "new-page").length, 2);
+  assert.equal(fx.calls.filter(([name]) => name === "close-owned-page").length, 2);
+  assert.equal(fx.calls.some(([name]) => name === "close-browser"), false);
+});
+
 test("classifies Luma login without exposing page text or cookie values", () => {
   assert.deepEqual(classifyLumaLogin({
     origin: "https://luma.com",
