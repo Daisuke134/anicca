@@ -235,18 +235,25 @@ Every message answers:
 
 All published skills, articles, videos, Reels, landing pages, and review pages include clickable URLs. Internal paths are never presented as the user's primary evidence.
 
+Money is rendered in two non-overlapping lanes:
+
+- **One-time / Download:** order count, one-time gross, platform fee, seller-hosted inference cost, estimated or observed contribution, pending balance, and realized payout. `MRR change` is always `$0.00` for this lane.
+- **Recurring / hosted:** new subscription or renewal, billing interval, charged gross, recognized recurring revenue, new-MRR movement, total MRR, platform fee, observed/estimated hosted cost, and contribution. A renewal adds recurring revenue but does not add new MRR; a cancellation reduces MRR; a refund reverses only the revenue lane to which the original order belonged.
+
+Daily and lifetime totals never combine one-time revenue with MRR under a generic `revenue` label. MRR normalization is explicit: monthly price as-is, weekly price multiplied by `52/12`, and annual price divided by `12`. Projected fee/cost/contribution is labeled `estimated`; only platform settlement and measured provider/tool charges are labeled `observed` or `realized`.
+
 ### 9.2 Scheduled cadence
 
 | Time JST | Report |
 |---|---|
-| 08:00 | Morning CEO brief: yesterday's gross/net/realized/MRR/cost, funnel, incidents, today's Builder and Marketer objectives. |
+| 08:00 | Morning CEO brief: yesterday's one-time gross/contribution, recurring recognized revenue, new/total MRR, pending/realized payout, cost, funnel, incidents, and today's Builder/Marketer objectives. |
 | 08:10 | Builder starts silently. |
 | On Builder terminal state | Immediate verified listing result with real URL. |
 | 09:30 | Consolidated company state after any Builder repair. Replaces the misleading 09:00 goal dump. |
 | 16:00 | Marketer starts silently. |
 | On Marketing terminal state | Immediate content/post result with public URL, media, caption, promoted listing URL, and attribution link. |
 | 20:00 | Only if content was published: first performance snapshot with views, clicks, buyers, and interpretation. |
-| 23:50 | Daily close: gross, net, pending, realized, MRR, model/tool spend, contribution, experiment result, next automatic action. |
+| 23:50 | Daily close: one-time and recurring lanes shown separately, new/total MRR, pending/realized payout, model/tool spend, contribution, experiment result, and next automatic action. |
 
 Event-driven immediate reports: order, cancellation, refund, payout, listing approval/rejection, public content, account challenge/replacement, cost breaker, and verified repair closure.
 
@@ -305,31 +312,97 @@ The examples below are message contracts. Braced values such as `{verified_reel_
 >  
 > Current result: public and verified. The owner session was rechecked after posting. Views/clicks/buyers will be measured at 20:00; the next promotion decision uses that evidence rather than account age.
 
-### 9.7 Exact example: sale
+### 9.7 Exact example: recurring subscription sale
 
 > **Capafy sale — real money event**  
-> **Portfolio Tracker — Daily Position Review** received a new $9.99 weekly subscription.  
->  
-> Skill: https://capafy.ai/agent/9480246345  
-> Attributed source: Instagram Reel  
-> Source content: {verified_reel_url}  
->  
-> Today: 1 order / $9.99 gross  
-> Estimated publisher proceeds before model cost: $7.59/week  
-> Realized bank payout: unchanged until Capafy pays it  
-> MRR run rate added: approximately $43.29 gross  
->  
+> **Cold Email Writer — Get Replies, Not Templates** received one new `$5.99/month` subscription.
+>
+> Skill: https://capafy.ai/agent/5051239796
+> Attributed source: Instagram Reel
+> Source content: https://www.instagram.com/reel/DbhCWLhorxy/
+>
+> **Recurring lane**
+> Charged today: `$5.99` gross
+> New MRR: `+$5.99`
+> Total MRR: `$5.99`
+> Estimated platform fee: `$1.20`
+> Estimated hosted model cost for the included 60 requests: `$0.27`
+> Estimated monthly contribution: `$4.52`
+> Pending seller balance: unchanged until platform reconciliation
+> Realized bank payout: unchanged until Capafy pays it
+>
+> **One-time lane today:** `0 orders / $0.00 gross`
+>
 > I will now increase allocation to this product and test the next creative without changing the winning offer simultaneously.
 
-### 9.8 Exact example: unresolved external blocker
+### 9.8 Exact example: one-time Download sale
 
-> **Capafy incident remains unresolved — automatic retry scheduled**  
-> Instagram returned a platform challenge while establishing the posting session for `@capafy.skills10491`. I stopped retries to avoid worsening the account, preserved the evidence, and started the replacement-account workflow.  
->  
-> Attempts completed: session verification, one clean reattach, challenge confirmation.  
-> Current containment: no posting or login retries on the affected account.  
+> **Capafy sale — one-time Download purchased**
+> **Amazon Listing Images — 7-Slot Kit** received one `$49.00` one-time order. The buyer runs the downloaded package; this is not a hosted subscription.
+>
+> Download: https://capafy.ai/agent/5648342153
+> Attributed source: Instagram Reel
+> Source content: {verified_reel_url}
+>
+> **One-time lane**
+> Orders today: `1`
+> One-time gross today: `$49.00`
+> Estimated platform fee: `$9.80`
+> Seller-hosted inference cost: `$0.00`
+> Estimated contribution before support/refunds: `$39.20`
+> Pending seller balance: unchanged until platform reconciliation
+> Realized bank payout: unchanged until Capafy pays it
+>
+> **Recurring lane**
+> New MRR: `$0.00`
+> Total MRR: unchanged
+>
+> I will measure delivery/refund status and increase Download promotion only after the order and attribution remain verified. I will not report this purchase as MRR.
+
+### 9.9 Exact example: unresolved external blocker
+
+> **Capafy incident remains unresolved — automatic retry scheduled**
+> Instagram returned a platform challenge while establishing the posting session for `@capafy.skills10491`. I stopped retries to avoid worsening the account, preserved the evidence, and started the replacement-account workflow.
+>
+> Attempts completed: session verification, one clean reattach, challenge confirmation.
+> Current containment: no posting or login retries on the affected account.
 > Next automatic action: create and independently verify the replacement account, then run one immediate original publish probe.
 > Human action required: none. I will send the replacement handle when creation is verified.
+
+### 9.10 Exact example: daily close with both revenue types
+
+> **Capafy — Daily close, Aug 2**
+>
+> **One-time / Download today**
+> Orders: `1`
+> Gross: `$49.00`
+> Estimated platform fee: `$9.80`
+> Seller-hosted inference cost: `$0.00`
+> Estimated contribution before support/refunds: `$39.20`
+>
+> **Recurring / hosted today**
+> New subscriptions: `1`
+> Renewals: `0`
+> Cancellations: `0`
+> Charged gross: `$5.99`
+> Recognized recurring revenue: `$5.99`
+> New MRR: `+$5.99`
+> Total MRR: `$5.99`
+> Estimated hosted cost: `$0.27/month` at full included usage
+> Estimated recurring contribution: `$4.52/month`
+>
+> **Cash status**
+> Pending seller balance: `{verified_pending_balance}`
+> Realized bank payout today: `{verified_realized_payout}`
+>
+> **Funnel today**
+> Instagram views: `{verified_views}`
+> Attributed clicks: `{verified_clicks}`
+> Attributed one-time buyers: `1`
+> Attributed subscription buyers: `1`
+>
+> Decision: continue the winning Download creative and hold the hosted offer constant until the next measured conversion window. No human action is required.
+> Dashboard: https://capafy-skills-daily.netlify.app
 
 ## 10. User experience
 
@@ -627,7 +700,7 @@ Dashboard: https://capafy-skills-daily.netlify.app
 3. Every detected operational failure automatically enters repair within five minutes.
 4. Every successful repair re-runs and verifies the original business observable.
 5. Telegram never leaves a failure as the final message when the repair later succeeds.
-6. Telegram reports are natural language, contain real links, and distinguish gross/pending/realized/MRR/cost.
+6. Telegram reports are natural language, contain real links, and keep one-time gross/contribution separate from recurring recognized revenue/new MRR/total MRR; pending payout, realized payout, fees, hosted cost, and contribution remain explicitly labeled.
 7. Dashboard and Telegram agree because both use the same event ledger.
 8. Account health distinguishes session readiness, public live state, account-status signals, and reach health; calendar age and synthetic activity are not health evidence.
 9. Every hosted product has a hard loss cap and measurable contribution margin.
