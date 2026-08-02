@@ -987,6 +987,23 @@ fresh verificationはfocused 15件、outbound 294件、runtime-up 59件、legacy
 `docs/evidence/funding/2026-08-02-o1c24-yc-daily-driver-migration.json`。55/143完了、残作業は88件。
 次はO1C-25で、current company facts、founder profile、58秒動画、demo、progressをpreviewで全確認する。
 
+O1C-25完了: Fall 2026 applicationのcompany facts、founder profile、founder video、demo、progressを
+CloakBrowser daily-driver `:9222`で5ページread-only確認し、`preview_complete:true`を得た。ただし
+`submit_ready:false`であり、外部effectは停止する。submitted applicationは現在も古いAnicca pitchでcurrent Life Manager
+factsと不一致、founder profileは構造上completeだがnarrative/source conflictを要review、founder videoはremoteで
+ready state 4・57.856667秒・720x1280、local sourceは57.835秒・H.264/AAC・SHA-256
+`34881787...`へ結合、demoはremote 0件かつ専用artifactなし、progress 5 fieldも古い値でprovider route driftがある。
+O1C-07 receipt本文を必須sourceにし、同じapplication ID、Fall 2026、`In review`、submit effect 1へ結合したため、
+application再Submitを許可しない。8 sourceのbody SHA/bytes、scope別exact role、media metadata、statusからcanonical safety code、
+mandatory blocker、15分chronology、5分freshness、全mutation effect 0をclosed receiptで検証し、raw answer、連絡先、生年月日、
+token、cookie、signed media URLは保存していない。fresh verificationはfocused 14件、outbound 308件、runtime-up 59件、
+Life Manager full `npm test`、Node/JSON/source SHA/privacy/diff checkが全成功。独立review最終Critical/Important 0、Ready Yes。
+実装commit `868426fdc`、hardening `5af397293` / `35556b655` / `528fe6df3`。設計:
+`docs/superpowers/specs/2026-08-02-o1c25-yc-full-preview-design.md`。実装plan:
+`docs/superpowers/plans/2026-08-02-o1c25-yc-full-preview.md`。実測証拠:
+`docs/evidence/funding/2026-08-02-o1c25-yc-full-preview.json`。56/143完了、残作業は87件。
+次はO1C-26で上記blockerを先に解消してfresh previewを再生成し、`submit_ready:true`の場合だけ別種updateをexactly-onceで実行する。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
@@ -1211,8 +1228,8 @@ agentが本文と履歴を読んで判断し、keyword/regexの固定分類へ�
 - [x] O1C-22 古いSummer application IDがFall 2026へ継続可能かYC home実画面で確認
 - [x] O1C-23 `yc-w26.json`のbatch、deadline、amount、URLをcurrent official factsへ更新
 - [x] O1C-24 YC操作を別Chrome `9223`から既存CloakBrowser daily-driver `:9222`へ移行
-- [ ] O1C-25 current company facts、founder profile、58秒動画、demo、progressをpreviewで全確認
-- [ ] O1C-26 O1C-07のapplication再Submitを禁止し、O1C-25が`submit_ready:true`の時だけ別種updateを一度実行してreadbackを取得
+- [x] O1C-25 current company facts、founder profile、58秒動画、demo、progressをpreviewで全確認
+- [ ] O1C-26 O1C-25のcompany/profile/demo/progress/provider blockerを解消してfresh previewを再生成し、O1C-07のapplication再Submitを禁止したまま`submit_ready:true`の別種updateだけを一度実行してreadbackを取得
 - [ ] O1C-27 YC reply/interviewを毎日追跡し、Calendarと面談準備へ接続
 
 完了条件: 実accelerator提出と確認receipt、reply追跡、面談calendar経路が動く。
