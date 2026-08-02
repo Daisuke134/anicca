@@ -1529,6 +1529,14 @@ O1B-26進捗22（登録復元の段階codeをLIVE配備）: 分類修正をcommi
 `b6fe9cebe2ce`を10:04 JSTに配備した。配備で中断された副作用なしのattempt 10だけを正規failure関数で
 `WORKER_REPLACED`として回収した。新workerの次attemptで三つのstage codeのどれかを取得し、実原因だけを修復する。
 
+O1B-26進捗23（8月3日解決 / 次open日へLIVE前進）: 新imageのattempt 11は約106秒でcompletedし、
+`status=continue / open_date_count=18 / open_date_plan_status=unavailable`を返した。最新verified coverageは
+`open=18 / covered_existing=0 / covered_new=1 / unavailable=2`。8月2日は実blocker 2件、8月3日は最小blocker 1件で
+`unavailable`、8月15日の既存Luma登録はreceipt＋Google Calendarの2証拠で`covered_new`を維持している。次coverage jobは
+1秒後にdurable enqueueされ、既にattempt 1を実workerが処理中。これにより、同じ日を再試行するloop、20件超のblocker
+和集合、登録復元の一時failureを越え、8月4日以降へ自動前進した。次は新jobのplan結果を追い、最初の実応募job enqueue、
+Luma登録、確認mail、Calendar、Telegramまで継続する。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
