@@ -13,6 +13,12 @@ function unavailable() {
   return new Error("Luma authentication unavailable");
 }
 
+function pageUnavailable(code) {
+  const error = new Error("Luma page unavailable");
+  error.code = code;
+  throw error;
+}
+
 function requiredText(value, max = 320) {
   const text = String(value == null ? "" : value).trim();
   return text && text.length <= max ? text : "";
@@ -146,9 +152,18 @@ function createAuthAwareLumaDailyDriver(options = {}) {
   return Object.freeze({
     async withLumaPage(url, task) {
       if (typeof task !== "function") throw new Error("CloakBrowser daily-driver task unavailable");
-      const result = await auth.ensureAuthenticated();
-      if (!result || result.status !== "authenticated") throw unavailable();
-      return dailyDriver.withLumaPage(url, task);
+      let result;
+      try {
+        result = await auth.ensureAuthenticated();
+      } catch {
+        pageUnavailable("LUMA_PAGE_AUTH_FAILED");
+      }
+      if (!result || result.status !== "authenticated") pageUnavailable("LUMA_PAGE_AUTH_FAILED");
+      try {
+        return await dailyDriver.withLumaPage(url, task);
+      } catch {
+        pageUnavailable("LUMA_PAGE_TARGET_FAILED");
+      }
     },
   });
 }

@@ -197,6 +197,8 @@ async function discoverLumaTokyo(options = {}) {
     if (/^LUMA_DISCOVERY_(?:SNAPSHOT|ADVANCE)_FAILED$|^LUMA_DISCOVERY_END_UNPROVEN$/.test(String(error && error.code || ""))) {
       throw error;
     }
+    const page = /^LUMA_PAGE_(AUTH|TARGET)_FAILED$/.exec(String(error && error.code || ""));
+    if (page) unavailable(`LUMA_DISCOVERY_PAGE_${page[1]}_FAILED`);
     unavailable("LUMA_DISCOVERY_PAGE_FAILED");
   }
 }

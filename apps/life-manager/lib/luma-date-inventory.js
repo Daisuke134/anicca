@@ -155,7 +155,7 @@ async function inspectLumaDateInventory(options = {}) {
   try {
     inventory = await options.discoverTokyo();
   } catch (error) {
-    const substage = /^LUMA_DISCOVERY_(PAGE|SNAPSHOT|ADVANCE)_FAILED$/.exec(String(error && error.code || ""));
+    const substage = /^LUMA_DISCOVERY_(PAGE(?:_(?:AUTH|TARGET))?|SNAPSHOT|ADVANCE)_FAILED$/.exec(String(error && error.code || ""));
     if (substage) unavailable(`CONNECTOR_COVERAGE_INVENTORY_DISCOVERY_${substage[1]}_FAILED`);
     if (error && error.code === "LUMA_DISCOVERY_END_UNPROVEN") {
       unavailable("CONNECTOR_COVERAGE_INVENTORY_DISCOVERY_END_UNPROVEN_FAILED");

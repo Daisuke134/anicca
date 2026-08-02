@@ -16,7 +16,7 @@ function unavailable(code) {
 
 function inventoryUnavailable(error) {
   const code = String(error && error.code || "");
-  return /^CONNECTOR_COVERAGE_INVENTORY_(?:DISCOVERY(?:_(?:PAGE|SNAPSHOT|ADVANCE|END_UNPROVEN))?|DETAIL|BUILD)_FAILED$/.test(code)
+  return /^CONNECTOR_COVERAGE_INVENTORY_(?:DISCOVERY(?:_(?:PAGE(?:_(?:AUTH|TARGET))?|SNAPSHOT|ADVANCE|END_UNPROVEN))?|DETAIL|BUILD)_FAILED$/.test(code)
     ? code
     : "CONNECTOR_COVERAGE_INVENTORY_FAILED";
 }
