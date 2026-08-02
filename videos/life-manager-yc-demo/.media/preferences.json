@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "preferences": {
+    "flow": {
+      "value": "automation",
+      "confirmed_in": [
+        "life-manager-yc-demo"
+      ],
+      "updated_at": "2026-08-02T02:18:51.632Z"
+    },
+    "storyboard": {
+      "value": "no",
+      "confirmed_in": [
+        "life-manager-yc-demo"
+      ],
+      "updated_at": "2026-08-02T02:18:51.707Z"
+    },
+    "style_preset.product-launch-video": {
+      "value": "code-editorial",
+      "confirmed_in": [
+        "life-manager-yc-demo"
+      ],
+      "updated_at": "2026-08-02T02:22:23.317Z"
+    }
+  },
+  "sightings": {}
+}

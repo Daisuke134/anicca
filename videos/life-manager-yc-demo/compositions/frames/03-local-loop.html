@@ -1,0 +1,407 @@
+<template>
+  <style>
+    @font-face {
+      font-family: "__Outfit_ed3508";
+      src: url("capture/assets/fonts/7b0b24f36b1a6d0b-s.p.woff2") format("woff2");
+      font-style: normal;
+      font-weight: 100 900;
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: "__JetBrains_Mono_3c557b";
+      src: url("capture/assets/fonts/bb3ef058b751a6ad-s.p.woff2") format("woff2");
+      font-style: normal;
+      font-weight: 100 800;
+      font-display: swap;
+    }
+
+    #root {
+      position: relative;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      container-type: size;
+      color: #18181b;
+      font-family: "__Outfit_ed3508";
+    }
+
+    #root * {
+      box-sizing: border-box;
+    }
+
+    .f03-local-loop-ground {
+      position: absolute;
+      inset: 0;
+      background: #fafafa;
+    }
+
+    .f03-local-loop-evidence {
+      position: absolute;
+      left: 80px;
+      top: 58px;
+      width: 1760px;
+      height: 770px;
+      overflow: hidden;
+      border: 1px solid rgba(24, 24, 27, 0.12);
+      border-radius: 12px;
+      background: #e6e6e7;
+      box-shadow: 0 1px 3px rgba(24, 24, 27, 0.08), 0 4px 16px rgba(24, 24, 27, 0.04);
+    }
+
+    .f03-local-loop-evidence img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: top center;
+      display: block;
+    }
+
+    .f03-local-loop-evidence-motion {
+      width: 100%;
+      height: 100%;
+    }
+
+    .f03-local-loop-url {
+      position: absolute;
+      left: 116px;
+      top: 92px;
+      z-index: 2;
+      padding: 12px 18px;
+      border-radius: 6px;
+      border: 1px solid rgba(250, 250, 250, 0.14);
+      background: #181715;
+      color: #fafafa;
+      font-family: "__JetBrains_Mono_3c557b";
+      font-size: 25px;
+      font-weight: 500;
+      letter-spacing: 0.01em;
+    }
+
+    .f03-local-loop-source-tag {
+      color: rgba(250, 250, 250, 0.62);
+      margin-right: 14px;
+    }
+
+    .f03-local-loop-terminal {
+      position: absolute;
+      left: 120px;
+      top: 72px;
+      width: 1680px;
+      height: 780px;
+      overflow: hidden;
+      border: 1px solid rgba(250, 250, 250, 0.14);
+      border-radius: 8px;
+      background: #181715;
+      color: #fafafa;
+      box-shadow: 0 1px 3px rgba(24, 24, 27, 0.08), 0 4px 16px rgba(24, 24, 27, 0.04);
+      font-family: "__JetBrains_Mono_3c557b";
+    }
+
+    .f03-local-loop-titlebar {
+      height: 66px;
+      padding: 0 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #252320;
+      border-bottom: 1px solid rgba(250, 250, 250, 0.14);
+      font-size: 22px;
+      letter-spacing: 0.02em;
+    }
+
+    .f03-local-loop-lights {
+      display: flex;
+      gap: 10px;
+    }
+
+    .f03-local-loop-light {
+      width: 10px;
+      height: 10px;
+      border-radius: 9999px;
+      background: rgba(250, 250, 250, 0.24);
+    }
+
+    .f03-local-loop-runtime {
+      color: rgba(250, 250, 250, 0.64);
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+    }
+
+    .f03-local-loop-terminal-body {
+      position: relative;
+      height: 646px;
+      padding: 34px 42px;
+    }
+
+    .f03-local-loop-commands {
+      position: absolute;
+      left: 42px;
+      right: 42px;
+      top: 34px;
+      font-size: 29px;
+      line-height: 1.65;
+      color: #fafafa;
+    }
+
+    .f03-local-loop-command-line {
+      min-height: 48px;
+      white-space: pre;
+    }
+
+    .f03-local-loop-prompt {
+      display: inline-block;
+      width: 26px;
+      color: #5db8a6;
+    }
+
+    .f03-local-loop-char {
+      display: inline-block;
+      min-width: 0.01em;
+    }
+
+    .f03-local-loop-caret {
+      display: inline-block;
+      width: 15px;
+      height: 30px;
+      margin-left: 6px;
+      vertical-align: -5px;
+      background: #fafafa;
+    }
+
+    .f03-local-loop-ledger {
+      position: absolute;
+      left: 42px;
+      right: 42px;
+      top: 202px;
+      display: grid;
+      grid-template-rows: repeat(5, 78px);
+      gap: 10px;
+    }
+
+    .f03-local-loop-row {
+      position: relative;
+      display: grid;
+      grid-template-columns: 190px 1fr auto;
+      align-items: center;
+      padding: 0 24px;
+      border: 1px solid rgba(250, 250, 250, 0.14);
+      border-radius: 8px;
+      background: #1f1e1b;
+      font-size: 24px;
+      letter-spacing: 0.01em;
+    }
+
+    .f03-local-loop-row-label {
+      font-weight: 700;
+      letter-spacing: 0.11em;
+    }
+
+    .f03-local-loop-row-detail {
+      color: rgba(250, 250, 250, 0.7);
+    }
+
+    .f03-local-loop-row-time {
+      color: rgba(250, 250, 250, 0.42);
+      font-size: 20px;
+    }
+
+    .f03-local-loop-hash {
+      display: inline-block;
+      margin-left: 14px;
+      padding: 7px 11px;
+      border: 1px solid rgba(205, 164, 60, 0.62);
+      border-radius: 6px;
+      color: #cda43c;
+      background: rgba(205, 164, 60, 0.08);
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+
+    .f03-local-loop-loopline {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1680px;
+      height: 780px;
+      overflow: visible;
+      pointer-events: none;
+    }
+
+    .f03-local-loop-loopline path {
+      fill: none;
+      stroke: rgba(250, 250, 250, 0.62);
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .f03-local-loop-loopline circle {
+      fill: #fafafa;
+    }
+
+    .f03-local-loop-statusbar {
+      height: 68px;
+      padding: 0 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #252320;
+      border-top: 1px solid rgba(250, 250, 250, 0.14);
+      color: rgba(250, 250, 250, 0.58);
+      font-size: 20px;
+      letter-spacing: 0.05em;
+    }
+
+    .f03-local-loop-live {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: #fafafa;
+    }
+
+    .f03-local-loop-live-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 9999px;
+      background: #5db872;
+    }
+  </style>
+
+  <div id="root" data-composition-id="03-local-loop" data-width="1920" data-height="1080" data-duration="8.284">
+    <div class="clip f03-local-loop-ground" data-start="0" data-duration="9" data-track-index="0"></div>
+
+    <div class="clip f03-local-loop-evidence" data-start="0" data-duration="1.4" data-track-index="1">
+      <div id="f03-local-loop-evidence" class="f03-local-loop-evidence-motion">
+        <img src="assets/github-repository.png" alt="Public GitHub repository for Daisuke134/life-manager">
+      </div>
+    </div>
+    <div class="clip f03-local-loop-url" data-start="0" data-duration="1.4" data-track-index="2">
+      <div id="f03-local-loop-url">
+        <span class="f03-local-loop-source-tag">PUBLIC SOURCE</span>github.com/Daisuke134/life-manager
+      </div>
+    </div>
+
+    <section id="f03-local-loop-terminal" class="clip f03-local-loop-terminal" data-start="1.4" data-duration="7.6" data-track-index="3" aria-label="Local runtime terminal">
+      <div class="f03-local-loop-titlebar">
+        <div class="f03-local-loop-lights" aria-hidden="true">
+          <span class="f03-local-loop-light"></span>
+          <span class="f03-local-loop-light"></span>
+          <span class="f03-local-loop-light"></span>
+        </div>
+        <span>life-manager / local</span>
+        <span class="f03-local-loop-runtime">bounded runtime</span>
+      </div>
+
+      <div class="f03-local-loop-terminal-body">
+        <div id="f03-local-loop-commands" class="clip f03-local-loop-commands" data-start="1.4" data-duration="7.6" data-track-index="4">
+          <div class="f03-local-loop-command-line"><span class="f03-local-loop-prompt">$</span><span id="f03-local-loop-command-1"></span></div>
+          <div class="f03-local-loop-command-line"><span class="f03-local-loop-prompt">$</span><span id="f03-local-loop-command-2"></span></div>
+          <div class="f03-local-loop-command-line"><span class="f03-local-loop-prompt">$</span><span id="f03-local-loop-command-3"></span><span id="f03-local-loop-caret" class="clip f03-local-loop-caret" data-start="1.58" data-duration="7.42" data-track-index="5"></span></div>
+        </div>
+
+        <div class="f03-local-loop-ledger" aria-label="Recurring local runtime ledger">
+          <div id="f03-local-loop-row-wake" class="clip f03-local-loop-row" data-start="4" data-duration="5" data-track-index="6">
+            <span class="f03-local-loop-row-label">WAKE</span><span class="f03-local-loop-row-detail">schedule due</span><span class="f03-local-loop-row-time">00:00.000</span>
+          </div>
+          <div id="f03-local-loop-row-decide" class="clip f03-local-loop-row" data-start="4.62" data-duration="4.38" data-track-index="7">
+            <span class="f03-local-loop-row-label">DECIDE</span><span class="f03-local-loop-row-detail">bounded task selected</span><span class="f03-local-loop-row-time">00:00.023</span>
+          </div>
+          <div id="f03-local-loop-row-act" class="clip f03-local-loop-row" data-start="5.24" data-duration="3.76" data-track-index="8">
+            <span class="f03-local-loop-row-label">ACT</span><span class="f03-local-loop-row-detail">skill: daily-plan</span><span class="f03-local-loop-row-time">00:00.081</span>
+          </div>
+          <div id="f03-local-loop-row-receipt" class="clip f03-local-loop-row" data-start="5.88" data-duration="3.12" data-track-index="9">
+            <span class="f03-local-loop-row-label">RECEIPT</span><span class="f03-local-loop-row-detail">ledger append <span id="f03-local-loop-hash" class="clip f03-local-loop-hash" data-start="6.34" data-duration="2.66" data-track-index="10">7F2A·91C4</span></span><span class="f03-local-loop-row-time">00:00.144</span>
+          </div>
+          <div id="f03-local-loop-row-next" class="clip f03-local-loop-row" data-start="6.55" data-duration="2.45" data-track-index="11">
+            <span class="f03-local-loop-row-label">NEXT_WAKE</span><span class="f03-local-loop-row-detail">scheduled +15m</span><span class="f03-local-loop-row-time">00:00.151</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="f03-local-loop-statusbar">
+        <span class="f03-local-loop-live"><i class="f03-local-loop-live-dot"></i>RUNNING LOCALLY</span>
+        <span>ledger.jsonl · append-only</span>
+      </div>
+
+      <svg id="f03-local-loop-loopline" class="clip f03-local-loop-loopline" data-start="7.2" data-duration="1.8" data-track-index="12" viewBox="0 0 1680 780" aria-hidden="true">
+        <path id="f03-local-loop-loop-path" d="M 1582 620 C 1640 620 1640 240 1582 240"></path>
+        <circle id="f03-local-loop-loop-dot" cx="1582" cy="240" r="6"></circle>
+      </svg>
+    </section>
+  </div>
+
+  <script>
+    (() => {
+      const root = document.querySelector('[data-composition-id="03-local-loop"]');
+      if (!root || typeof gsap === "undefined") return;
+
+      const commands = [
+        "git clone https://github.com/Daisuke134/life-manager.git",
+        "cd life-manager && npm install",
+        "npm run dev"
+      ];
+      const targets = [
+        root.querySelector("#f03-local-loop-command-1"),
+        root.querySelector("#f03-local-loop-command-2"),
+        root.querySelector("#f03-local-loop-command-3")
+      ];
+      const characterGroups = commands.map((command, lineIndex) => {
+        return Array.from(command).map((character) => {
+          const span = document.createElement("span");
+          span.className = "f03-local-loop-char";
+          span.textContent = character === " " ? "\u00a0" : character;
+          targets[lineIndex].appendChild(span);
+          return span;
+        });
+      });
+
+      const timeline = gsap.timeline({ paused: true });
+      window.__timelines = window.__timelines || {};
+      window.__timelines["03-local-loop"] = timeline;
+
+      timeline.fromTo("#f03-local-loop-evidence", { x: 230, opacity: 0.35 }, { x: 0, opacity: 1, duration: 0.42, ease: "power4.out" }, 0);
+      timeline.fromTo("#f03-local-loop-url", { x: 230, opacity: 0.35 }, { x: 0, opacity: 1, duration: 0.42, ease: "power4.out" }, 0.08);
+      timeline.to("#f03-local-loop-evidence", { x: -230, duration: 0.3, ease: "power4.in" }, 1.1);
+      timeline.to("#f03-local-loop-evidence", { opacity: 0, duration: 0.18, ease: "power1.in" }, 1.2);
+      timeline.to("#f03-local-loop-url", { x: -230, duration: 0.3, ease: "power4.in" }, 1.1);
+      timeline.to("#f03-local-loop-url", { opacity: 0, duration: 0.18, ease: "power1.in" }, 1.2);
+      timeline.set("#f03-local-loop-evidence", { opacity: 0 }, 1.40);
+      timeline.set("#f03-local-loop-url", { opacity: 0 }, 1.40);
+
+      timeline.fromTo("#f03-local-loop-terminal", { x: 230, opacity: 0.35, scale: 0.965 }, { x: 0, opacity: 1, scale: 1, duration: 0.42, ease: "power4.out" }, 1.4);
+      timeline.fromTo("#f03-local-loop-commands", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.3, ease: "power2.out" }, 1.58);
+
+      let typeAt = 1.82;
+      characterGroups.forEach((group, index) => {
+        const perCharacter = index === 0 ? 0.018 : 0.022;
+        timeline.fromTo(group, { opacity: 0 }, { opacity: 1, duration: 0.01, stagger: perCharacter, ease: "none" }, typeAt);
+        typeAt += group.length * perCharacter + 0.2;
+      });
+
+      timeline.fromTo("#f03-local-loop-caret", { opacity: 1 }, { opacity: 0, duration: 0.22, repeat: 4, yoyo: true, ease: "steps(1)" }, 1.58);
+      timeline.fromTo("#f03-local-loop-commands", { y: 0, opacity: 1 }, { y: -12, opacity: 0.38, duration: 0.36, ease: "power2.out" }, 3.82);
+
+      const rows = [
+        ["#f03-local-loop-row-wake", 4.0],
+        ["#f03-local-loop-row-decide", 4.62],
+        ["#f03-local-loop-row-act", 5.24],
+        ["#f03-local-loop-row-receipt", 5.88],
+        ["#f03-local-loop-row-next", 6.55]
+      ];
+      rows.forEach(([selector, start]) => {
+        timeline.fromTo(selector, { y: 26, scale: 0.975, opacity: 0 }, { y: 0, scale: 1, opacity: 1, duration: 0.42, ease: "back.out(1.5)" }, start);
+      });
+
+      timeline.fromTo("#f03-local-loop-hash", { scale: 0.72, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.48, ease: "back.out(1.7)" }, 6.34);
+
+      const loopPath = root.querySelector("#f03-local-loop-loop-path");
+      const loopLength = loopPath.getTotalLength();
+      gsap.set(loopPath, { strokeDasharray: loopLength, strokeDashoffset: loopLength });
+      timeline.fromTo("#f03-local-loop-loopline", { opacity: 0 }, { opacity: 1, duration: 0.12, ease: "none" }, 7.2);
+      timeline.to(loopPath, { strokeDashoffset: 0, duration: 0.78, ease: "power2.inOut" }, 7.2);
+      timeline.fromTo("#f03-local-loop-loop-dot", { scale: 0, transformOrigin: "50% 50%" }, { scale: 1, duration: 0.24, ease: "back.out(1.8)" }, 7.82);
+      timeline.fromTo("#f03-local-loop-caret", { opacity: 1 }, { opacity: 0, duration: 0.28, repeat: 2, yoyo: true, ease: "steps(1)" }, 7.35);
+    })();
+  </script>
+</template>

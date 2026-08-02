@@ -1,0 +1,251 @@
+{
+  "files": [
+    {
+      "file": "0aa834ed78bf6d07-s.woff2",
+      "family": "JetBrains Mono",
+      "rawFamily": "JetBrains Mono",
+      "subfamily": "Regular",
+      "postscript": "JetBrainsMono-Regular",
+      "weight": 400,
+      "style": "normal",
+      "variationAxes": [
+        "wght"
+      ],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "67957d42bae0796d-s.woff2",
+      "family": "JetBrains Mono",
+      "rawFamily": "JetBrains Mono",
+      "subfamily": "Regular",
+      "postscript": "JetBrainsMono-Regular",
+      "weight": 400,
+      "style": "normal",
+      "variationAxes": [
+        "wght"
+      ],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "6ed338a30d658adc-s.woff2",
+      "family": "Noto Sans JP",
+      "rawFamily": "Noto Sans JP Thin",
+      "subfamily": "Regular",
+      "postscript": "NotoSansJP-Thin",
+      "weight": 100,
+      "style": "normal",
+      "variationAxes": [
+        "wght"
+      ],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "7b0b24f36b1a6d0b-s.p.woff2",
+      "family": "Outfit",
+      "rawFamily": "Outfit Thin",
+      "subfamily": "Regular",
+      "postscript": "Outfit-Thin",
+      "weight": 100,
+      "style": "normal",
+      "variationAxes": [
+        "wght"
+      ],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "886030b0b59bc5a7-s.woff2",
+      "family": "JetBrains Mono",
+      "rawFamily": "JetBrains Mono",
+      "subfamily": "Regular",
+      "postscript": "JetBrainsMono-Regular",
+      "weight": 400,
+      "style": "normal",
+      "variationAxes": [
+        "wght"
+      ],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "939c4f875ee75fbb-s.woff2",
+      "family": "JetBrains Mono",
+      "rawFamily": "JetBrains Mono",
+      "subfamily": "Regular",
+      "postscript": "JetBrainsMono-Regular",
+      "weight": 400,
+      "style": "normal",
+      "variationAxes": [
+        "wght"
+      ],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "98848575513c9742-s.woff2",
+      "family": "Outfit",
+      "rawFamily": "Outfit Thin",
+      "subfamily": "Regular",
+      "postscript": "Outfit-Thin",
+      "weight": 100,
+      "style": "normal",
+      "variationAxes": [
+        "wght"
+      ],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "aa7f81ee08e33986-s.woff2",
+      "family": "Noto Sans JP",
+      "rawFamily": "Noto Sans JP Thin",
+      "subfamily": "Regular",
+      "postscript": "NotoSansJP-Thin",
+      "weight": 100,
+      "style": "normal",
+      "variationAxes": [
+        "wght"
+      ],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "ab3bd16111852789-s.woff2",
+      "family": "Noto Sans JP",
+      "rawFamily": "Noto Sans JP Thin",
+      "subfamily": "Regular",
+      "postscript": "NotoSansJP-Thin",
+      "weight": 100,
+      "style": "normal",
+      "variationAxes": [
+        "wght"
+      ],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "bb3ef058b751a6ad-s.p.woff2",
+      "family": "JetBrains Mono",
+      "rawFamily": "JetBrains Mono",
+      "subfamily": "Regular",
+      "postscript": "JetBrainsMono-Regular",
+      "weight": 400,
+      "style": "normal",
+      "variationAxes": [
+        "wght"
+      ],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "da18d495caa1bffe-s.woff2",
+      "family": "Noto Sans JP",
+      "rawFamily": "Noto Sans JP Thin",
+      "subfamily": "Regular",
+      "postscript": "NotoSansJP-Thin",
+      "weight": 100,
+      "style": "normal",
+      "variationAxes": [
+        "wght"
+      ],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "ea6791b6c54f602a-s.woff2",
+      "family": "Noto Sans JP",
+      "rawFamily": "Noto Sans JP Thin",
+      "subfamily": "Regular",
+      "postscript": "NotoSansJP-Thin",
+      "weight": 100,
+      "style": "normal",
+      "variationAxes": [
+        "wght"
+      ],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "f390640bdede9737-s.woff2",
+      "family": "Noto Sans JP",
+      "rawFamily": "Noto Sans JP Thin",
+      "subfamily": "Regular",
+      "postscript": "NotoSansJP-Thin",
+      "weight": 100,
+      "style": "normal",
+      "variationAxes": [
+        "wght"
+      ],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "f911b923c6adde36-s.woff2",
+      "family": "JetBrains Mono",
+      "rawFamily": "JetBrains Mono",
+      "subfamily": "Regular",
+      "postscript": "JetBrainsMono-Regular",
+      "weight": 400,
+      "style": "normal",
+      "variationAxes": [
+        "wght"
+      ],
+      "identified": true,
+      "isIcon": false
+    }
+  ],
+  "families": [
+    {
+      "family": "JetBrains Mono",
+      "weights": [
+        400
+      ],
+      "variable": true,
+      "fileCount": 6,
+      "files": [
+        "0aa834ed78bf6d07-s.woff2",
+        "67957d42bae0796d-s.woff2",
+        "886030b0b59bc5a7-s.woff2",
+        "939c4f875ee75fbb-s.woff2",
+        "bb3ef058b751a6ad-s.p.woff2",
+        "f911b923c6adde36-s.woff2"
+      ]
+    },
+    {
+      "family": "Noto Sans JP",
+      "weights": [
+        100
+      ],
+      "variable": true,
+      "fileCount": 6,
+      "files": [
+        "6ed338a30d658adc-s.woff2",
+        "aa7f81ee08e33986-s.woff2",
+        "ab3bd16111852789-s.woff2",
+        "da18d495caa1bffe-s.woff2",
+        "ea6791b6c54f602a-s.woff2",
+        "f390640bdede9737-s.woff2"
+      ]
+    },
+    {
+      "family": "Outfit",
+      "weights": [
+        100
+      ],
+      "variable": true,
+      "fileCount": 2,
+      "files": [
+        "7b0b24f36b1a6d0b-s.p.woff2",
+        "98848575513c9742-s.woff2"
+      ]
+    }
+  ],
+  "unidentified": [],
+  "meta": {
+    "generatedAt": "2026-08-02T02:19:25.105Z",
+    "tool": "fontkit"
+  }
+}

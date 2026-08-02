@@ -1,0 +1,248 @@
+{
+  "typography": [
+    {
+      "role": "heading",
+      "fontFamily": "Mona Sans VF",
+      "fontSize": "32px",
+      "fontWeight": "600",
+      "lineHeight": "48px",
+      "letterSpacing": "normal",
+      "color": "#1F2328",
+      "sampleText": "Folders and files"
+    },
+    {
+      "role": "heading-2",
+      "fontFamily": "Mona Sans VF",
+      "fontSize": "24px",
+      "fontWeight": "600",
+      "lineHeight": "36px",
+      "letterSpacing": "normal",
+      "color": "#FFFFFF",
+      "sampleText": "Navigation Menu"
+    },
+    {
+      "role": "heading-3",
+      "fontFamily": "Mona Sans VF",
+      "fontSize": "20px",
+      "fontWeight": "600",
+      "lineHeight": "25px",
+      "letterSpacing": "normal",
+      "color": "#1F2328",
+      "sampleText": "① automaton — self-funded on Base (ClawRouter fuel)"
+    },
+    {
+      "role": "body",
+      "fontFamily": "Mona Sans VF",
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "lineHeight": "24px",
+      "letterSpacing": "normal",
+      "color": "#1F2328",
+      "sampleText": "Life Manager manages your body, mind, and money. It is a per"
+    },
+    {
+      "role": "link",
+      "fontFamily": "Mona Sans VF",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "lineHeight": "21px",
+      "letterSpacing": "normal",
+      "color": "#FFFFFF",
+      "sampleText": "Skip to content"
+    }
+  ],
+  "spacing": {
+    "observed": [
+      8,
+      16
+    ],
+    "baseUnit": 8
+  },
+  "radius": [
+    "6px"
+  ],
+  "shadows": [
+    {
+      "value": "rgba(209, 217, 224, 0.7) 0px -1px 0px 0px inset",
+      "count": 2
+    },
+    {
+      "value": "rgba(31, 35, 40, 0.04) 0px 1px 0px 0px",
+      "count": 1
+    },
+    {
+      "value": "rgba(31, 35, 40, 0.04) 0px 1px 1px 0px, rgba(31, 35, 40, 0.03) 0px 1px 2px 0px",
+      "count": 1
+    }
+  ],
+  "buttons": [
+    {
+      "label": "Search or jump to...",
+      "background": "transparent",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "#FFFFFF",
+      "padding": "0px 0px 0px 8px",
+      "borderRadius": "6px",
+      "border": "0px none rgba(255, 255, 255, 0.75)",
+      "boxShadow": "none",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "height": "30px"
+    },
+    {
+      "label": "Sign in",
+      "background": "transparent",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "#FFFFFF",
+      "padding": "4px 12px",
+      "borderRadius": "6px",
+      "border": "0px none rgb(255, 255, 255)",
+      "boxShadow": "none",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "height": "32px"
+    },
+    {
+      "label": "Sign up",
+      "background": "transparent",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "#FFFFFF",
+      "padding": "4px 12px",
+      "borderRadius": "6px",
+      "border": "1px solid rgb(209, 217, 224)",
+      "boxShadow": "none",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "height": "32px"
+    },
+    {
+      "label": "Notifications",
+      "background": "#F6F8FA",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "#25292E",
+      "padding": "3px 12px",
+      "borderRadius": "6px",
+      "border": "1px solid rgb(209, 217, 224)",
+      "boxShadow": "none",
+      "fontSize": "12px",
+      "fontWeight": "500",
+      "height": "28px"
+    },
+    {
+      "label": "main",
+      "background": "transparent",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "#25292E",
+      "padding": "0px",
+      "borderRadius": "0px",
+      "border": "0px none rgb(37, 41, 46)",
+      "boxShadow": "none",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "height": "21px"
+    },
+    {
+      "label": "Code",
+      "background": "#1F883D",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "#FFFFFF",
+      "padding": "0px 12px",
+      "borderRadius": "6px",
+      "border": "1px solid rgba(31, 35, 40, 0.15)",
+      "boxShadow": "rgba(31, 35, 40, 0.04) 0px 1px 1px 0px, rgba(31, 35, 40, 0.03) 0px 1px 2px 0px",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "height": "32px"
+    }
+  ],
+  "cards": [
+    {
+      "label": "card",
+      "background": "transparent",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "#1F2328",
+      "padding": "0px",
+      "borderRadius": "0px",
+      "border": "0px none rgb(31, 35, 40)",
+      "boxShadow": "none",
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "height": "6383.62px"
+    }
+  ],
+  "nav": {
+    "label": "navigation",
+    "background": "transparent",
+    "backgroundImage": "",
+    "backdropFilter": "",
+    "color": "#1F2328",
+    "padding": "0px",
+    "borderRadius": "0px",
+    "border": "0px none rgb(31, 35, 40)",
+    "boxShadow": "none",
+    "fontSize": "14px",
+    "fontWeight": "400",
+    "height": "72px"
+  },
+  "chips": [
+    {
+      "label": "agiaiai-agentsautonomus-",
+      "background": "transparent",
+      "color": "#1F2328",
+      "padding": "0px",
+      "borderRadius": "0px",
+      "border": "0px none rgb(31, 35, 40)",
+      "boxShadow": "none",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "height": "59px"
+    },
+    {
+      "label": "agi",
+      "background": "#DDF4FF",
+      "color": "#0969DA",
+      "padding": "2px 12px",
+      "borderRadius": "9999.01px",
+      "border": "1px solid rgba(255, 255, 255, 0)",
+      "boxShadow": "none",
+      "fontSize": "12px",
+      "fontWeight": "600",
+      "height": "25.5px"
+    },
+    {
+      "label": "Skip to content",
+      "background": "#0969DA",
+      "color": "#FFFFFF",
+      "padding": "0px",
+      "borderRadius": "0px",
+      "border": "0px none rgb(255, 255, 255)",
+      "boxShadow": "none",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "height": "1px"
+    },
+    {
+      "label": "Public",
+      "background": "transparent",
+      "color": "#59636E",
+      "padding": "0px 6px",
+      "borderRadius": "9999.01px",
+      "border": "1px solid rgb(209, 217, 224)",
+      "boxShadow": "none",
+      "fontSize": "12px",
+      "fontWeight": "500",
+      "height": "20px"
+    }
+  ],
+  "statCells": [],
+  "tabs": [],
+  "backgrounds": [],
+  "glass": []
+}

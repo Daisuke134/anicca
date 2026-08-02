@@ -1,0 +1,222 @@
+<template id="captions-template" data-composition-id="captions" data-width="1920" data-height="1080">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+
+
+<style data-brand-tokens>
+      @font-face { font-family: '__Outfit_ed3508'; src: url('assets/fonts/__Outfit_ed3508_Variable.woff2') format('woff2'); font-weight: 400; font-display: block; }
+      :root {
+      --ink: #18181B;
+      --cream: #FAFAFA;
+      --tile: #E6E6E7;
+      --tile-strong: #53535A;
+      --coral: #CDA43C;
+      --navy: #181715;
+      --navy-soft: #1F1E1B;
+      --navy-elev: #252320;
+      --cap-ink: #18181B;
+      --cap-canvas: #FAFAFA;
+      --cap-accent: #CDA43C;
+      --cap-accent-2: #53535A;
+      --font-display: "__Outfit_ed3508", system-ui, serif;
+      --font-body: "__Outfit_ed3508", system-ui, sans-serif;
+      --cap-band-top: 900px;
+      --cap-band-height: 180px;
+      }
+    </style>
+
+<style>
+  #captions-root {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+  .caption-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    pointer-events: none;
+  }
+  /* the keep-out band, from captionBand(H) — frame content stays above it */
+  .caption-stage {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: var(--cap-band-top, 900px);
+    height: var(--cap-band-height, 180px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .caption-group {
+    /* every group is absolutely stacked over the SAME band — exactly one shown at a
+       time via opacity. Must be absolute: in-flow groups would lay out side-by-side. */
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+  }
+
+  /* THE lifted cream card — warm cream fill, 1px hairline ink border, one soft warm
+     shadow (code-editorial's only elevation language), 12px radius, no tilt */
+  .caption-pill {
+    max-width: 78%;
+    padding: 22px 44px 26px;
+    background: var(--cap-canvas, #faf9f5);
+    border: 1px solid color-mix(in srgb, var(--cap-ink, #141413) 12%, transparent);
+    border-radius: 12px;
+    box-shadow:
+      0 1px 3px color-mix(in srgb, var(--cap-ink, #141413) 8%, transparent),
+      0 4px 16px color-mix(in srgb, var(--cap-ink, #141413) 4%, transparent);
+  }
+  .caption-line {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.12em 0.3em;
+    font-family: "__Outfit_ed3508", Georgia, serif;
+    font-weight: 500;
+    font-size: clamp(40px, 4.4vw, 56px);
+    line-height: 1.24;
+    letter-spacing: -0.02em;
+  }
+
+  /* upcoming — faint warm ink, no underline */
+  .caption-word {
+    display: inline-block;
+    padding: 0 0.02em 0.06em;
+    color: color-mix(in srgb, var(--cap-ink, #141413) 40%, var(--cap-canvas, #faf9f5));
+    border-bottom: 3px solid transparent;
+  }
+  /* current word — full ink under the coral voltage underline (the brand's signature
+     inline-link gesture; border-bottom = underline without layout shift) */
+  .caption-word.is-active {
+    color: var(--cap-ink, #141413);
+    border-bottom: 3px solid var(--cap-accent, #cc785c);
+  }
+  /* already spoken — solid warm ink, underline cleared */
+  .caption-word.is-spoken {
+    color: var(--cap-ink, #141413);
+    border-bottom: 3px solid transparent;
+  }
+
+  /* optional per-word accents (dormant until a word-classer tags them) */
+  /* brand / key term — the expressive EB Garamond italic */
+  .caption-word.cap-brand {
+    font-style: italic;
+    color: var(--cap-ink, #141413);
+  }
+  .caption-word.cap-brand.is-active {
+    border-bottom: 3px solid var(--cap-accent, #cc785c);
+  }
+  /* numerals / data — slightly recessed warm ink */
+  .caption-word.cap-num {
+    color: color-mix(in srgb, var(--cap-ink, #141413) 72%, var(--cap-canvas, #faf9f5));
+  }
+  /* emphasis — a persistent coral voltage underline */
+  .caption-word.cap-cta {
+    border-bottom: 3px solid var(--cap-accent-2, #b5654a);
+    color: var(--cap-ink, #141413);
+  }
+
+  @media (max-aspect-ratio: 9/16) {
+    .caption-pill {
+      max-width: 92%;
+    }
+    .caption-line {
+      font-size: clamp(34px, 5.4vw, 46px);
+    }
+  }
+</style>
+
+<div
+  id="captions-root"
+  data-composition-id="captions"
+  data-timeline-locked
+  data-start="0"
+  data-duration="50.807"
+  data-fps="30"
+  data-width="1920"
+  data-height="1080"
+>
+  <div class="caption-layer" aria-hidden="true">
+    <div id="caption-stage" class="caption-stage"></div>
+  </div>
+</div>
+
+<script>
+  // captions.mjs injects the engine's scene-aware groups + real duration here.
+  var GROUPS = [{"id":"caption-group-0","frame":1,"start":0.259,"end":1.279,"text":"Your ideal life","words":[{"id":"caption-word-0-0","text":"Your","start":0.259,"end":0.439},{"id":"caption-word-0-1","text":"ideal","start":0.579,"end":0.859},{"id":"caption-word-0-2","text":"life","start":0.979,"end":1.22}]},{"id":"caption-group-1","frame":1,"start":1.279,"end":1.719,"text":"should come","words":[{"id":"caption-word-1-0","text":"should","start":1.279,"end":1.459},{"id":"caption-word-1-1","text":"come","start":1.5,"end":1.699}]},{"id":"caption-group-2","frame":1,"start":1.719,"end":2.139,"text":"to you","words":[{"id":"caption-word-2-0","text":"to","start":1.719,"end":1.86},{"id":"caption-word-2-1","text":"you","start":1.919,"end":2.039}]},{"id":"caption-group-3","frame":1,"start":2.139,"end":2.679,"text":"not become","words":[{"id":"caption-word-3-0","text":"not","start":2.139,"end":2.359},{"id":"caption-word-3-1","text":"become","start":2.399,"end":2.639}]},{"id":"caption-group-4","frame":1,"start":2.679,"end":3.539,"text":"another system","words":[{"id":"caption-word-4-0","text":"another","start":2.679,"end":2.959},{"id":"caption-word-4-1","text":"system","start":3.079,"end":3.459}]},{"id":"caption-group-5","frame":1,"start":3.539,"end":4.54,"text":"you must manage.","words":[{"id":"caption-word-5-0","text":"you","start":3.539,"end":3.619},{"id":"caption-word-5-1","text":"must","start":3.659,"end":3.879},{"id":"caption-word-5-2","text":"manage.","start":3.98,"end":4.42}]},{"id":"caption-group-6","frame":2,"start":5.034,"end":6.153,"text":"Life Manager is","words":[{"id":"caption-word-6-0","text":"Life","start":5.034,"end":5.273},{"id":"caption-word-6-1","text":"Manager","start":5.374,"end":5.874},{"id":"caption-word-6-2","text":"is","start":5.913,"end":6.073}]},{"id":"caption-group-7","frame":2,"start":6.153,"end":7.533,"text":"one open-source product:","words":[{"id":"caption-word-7-0","text":"one","start":6.153,"end":6.293},{"id":"caption-word-7-1","text":"open-source","start":6.433,"end":6.913},{"id":"caption-word-7-2","text":"product:","start":6.994,"end":7.413}]},{"id":"caption-group-8","frame":2,"start":7.893,"end":9.114,"text":"local and self-hosted","words":[{"id":"caption-word-8-0","text":"local","start":7.893,"end":8.234},{"id":"caption-word-8-1","text":"and","start":8.313,"end":8.393},{"id":"caption-word-8-2","text":"self-hosted","start":8.494,"end":9.053}]},{"id":"caption-group-9","frame":2,"start":9.114,"end":10.274,"text":"for technical users,","words":[{"id":"caption-word-9-0","text":"for","start":9.114,"end":9.174},{"id":"caption-word-9-1","text":"technical","start":9.254,"end":9.634},{"id":"caption-word-9-2","text":"users,","start":9.773,"end":10.154}]},{"id":"caption-group-10","frame":2,"start":10.613,"end":11.133,"text":"cloud and","words":[{"id":"caption-word-10-0","text":"cloud","start":10.613,"end":10.913},{"id":"caption-word-10-1","text":"and","start":10.953,"end":11.033}]},{"id":"caption-group-11","frame":2,"start":11.133,"end":11.573,"text":"web for","words":[{"id":"caption-word-11-0","text":"web","start":11.133,"end":11.353},{"id":"caption-word-11-1","text":"for","start":11.393,"end":11.473}]},{"id":"caption-group-12","frame":2,"start":11.573,"end":12.373,"text":"everyone else.","words":[{"id":"caption-word-12-0","text":"everyone","start":11.573,"end":11.893},{"id":"caption-word-12-1","text":"else.","start":11.953,"end":12.253}]},{"id":"caption-group-13","frame":3,"start":12.678,"end":13.257,"text":"Locally,","words":[{"id":"caption-word-13-0","text":"Locally,","start":12.678,"end":13.137}]},{"id":"caption-group-14","frame":3,"start":13.477,"end":14.777,"text":"its runtime wakes,","words":[{"id":"caption-word-14-0","text":"its","start":13.477,"end":13.658},{"id":"caption-word-14-1","text":"runtime","start":13.737,"end":14.197},{"id":"caption-word-14-2","text":"wakes,","start":14.278,"end":14.657}]},{"id":"caption-group-15","frame":3,"start":15.038,"end":16.257,"text":"chooses bounded work,","words":[{"id":"caption-word-15-0","text":"chooses","start":15.038,"end":15.437},{"id":"caption-word-15-1","text":"bounded","start":15.498,"end":15.778},{"id":"caption-word-15-2","text":"work,","start":15.877,"end":16.137}]},{"id":"caption-group-16","frame":3,"start":16.577,"end":17.038,"text":"acts through","words":[{"id":"caption-word-16-0","text":"acts","start":16.577,"end":16.817},{"id":"caption-word-16-1","text":"through","start":16.857,"end":16.998}]},{"id":"caption-group-17","frame":3,"start":17.038,"end":17.618,"text":"a skill,","words":[{"id":"caption-word-17-0","text":"a","start":17.038,"end":17.057},{"id":"caption-word-17-1","text":"skill,","start":17.157,"end":17.498}]},{"id":"caption-group-18","frame":3,"start":17.938,"end":18.357,"text":"writes a","words":[{"id":"caption-word-18-0","text":"writes","start":17.938,"end":18.197},{"id":"caption-word-18-1","text":"a","start":18.237,"end":18.257}]},{"id":"caption-group-19","frame":3,"start":18.357,"end":19.197,"text":"ledger receipt,","words":[{"id":"caption-word-19-0","text":"ledger","start":18.357,"end":18.577},{"id":"caption-word-19-1","text":"receipt,","start":18.637,"end":19.077}]},{"id":"caption-group-20","frame":3,"start":19.357,"end":20.158,"text":"and repeats.","words":[{"id":"caption-word-20-0","text":"and","start":19.357,"end":19.457},{"id":"caption-word-20-1","text":"repeats.","start":19.498,"end":20.038}]},{"id":"caption-group-21","frame":4,"start":20.602,"end":22.561,"text":"Specialist agents span health,","words":[{"id":"caption-word-21-0","text":"Specialist","start":20.602,"end":21.201},{"id":"caption-word-21-1","text":"agents","start":21.341,"end":21.682},{"id":"caption-word-21-2","text":"span","start":21.741,"end":22.021},{"id":"caption-word-21-3","text":"health,","start":22.121,"end":22.441}]},{"id":"caption-group-22","frame":4,"start":22.861,"end":23.561,"text":"finance,","words":[{"id":"caption-word-22-0","text":"finance,","start":22.861,"end":23.441}]},{"id":"caption-group-23","frame":4,"start":23.841,"end":24.401,"text":"growth,","words":[{"id":"caption-word-23-0","text":"growth,","start":23.841,"end":24.281}]},{"id":"caption-group-24","frame":4,"start":24.682,"end":25.561,"text":"technology,","words":[{"id":"caption-word-24-0","text":"technology,","start":24.682,"end":25.441}]},{"id":"caption-group-25","frame":4,"start":25.822,"end":26.882,"text":"and opportunity,","words":[{"id":"caption-word-25-0","text":"and","start":25.822,"end":25.921},{"id":"caption-word-25-1","text":"opportunity,","start":26.041,"end":26.762}]},{"id":"caption-group-26","frame":4,"start":27.242,"end":27.981,"text":"each labeled","words":[{"id":"caption-word-26-0","text":"each","start":27.242,"end":27.441},{"id":"caption-word-26-1","text":"labeled","start":27.561,"end":27.941}]},{"id":"caption-group-27","frame":4,"start":27.981,"end":28.401,"text":"by its","words":[{"id":"caption-word-27-0","text":"by","start":27.981,"end":28.101},{"id":"caption-word-27-1","text":"its","start":28.121,"end":28.282}]},{"id":"caption-group-28","frame":4,"start":28.401,"end":29.461,"text":"true lifecycle.","words":[{"id":"caption-word-28-0","text":"true","start":28.401,"end":28.542},{"id":"caption-word-28-1","text":"lifecycle.","start":28.681,"end":29.341}]},{"id":"caption-group-29","frame":5,"start":29.767,"end":31.027,"text":"Cloud adds Telegram","words":[{"id":"caption-word-29-0","text":"Cloud","start":29.767,"end":30.107},{"id":"caption-word-29-1","text":"adds","start":30.167,"end":30.427},{"id":"caption-word-29-2","text":"Telegram","start":30.467,"end":30.907}]},{"id":"caption-group-30","frame":5,"start":31.047,"end":31.628,"text":"onboarding,","words":[{"id":"caption-word-30-0","text":"onboarding,","start":31.047,"end":31.508}]},{"id":"caption-group-31","frame":5,"start":31.967,"end":32.567,"text":"scheduling,","words":[{"id":"caption-word-31-0","text":"scheduling,","start":31.967,"end":32.447}]},{"id":"caption-group-32","frame":5,"start":32.847,"end":33.567,"text":"wake calls,","words":[{"id":"caption-word-32-0","text":"wake","start":32.847,"end":33.027},{"id":"caption-word-32-1","text":"calls,","start":33.108,"end":33.447}]},{"id":"caption-group-33","frame":5,"start":33.787,"end":35.047,"text":"authenticated access,","words":[{"id":"caption-word-33-0","text":"authenticated","start":33.787,"end":34.387},{"id":"caption-word-33-1","text":"access,","start":34.487,"end":34.927}]},{"id":"caption-group-34","frame":5,"start":35.307,"end":35.748,"text":"billing,","words":[{"id":"caption-word-34-0","text":"billing,","start":35.307,"end":35.628}]},{"id":"caption-group-35","frame":5,"start":35.967,"end":37.467,"text":"and user-scoped workflows.","words":[{"id":"caption-word-35-0","text":"and","start":35.967,"end":36.047},{"id":"caption-word-35-1","text":"user-scoped","start":36.148,"end":36.707},{"id":"caption-word-35-2","text":"workflows.","start":36.787,"end":37.347}]},{"id":"caption-group-36","frame":6,"start":37.729,"end":39.069,"text":"Today’s public dashboard","words":[{"id":"caption-word-36-0","text":"Today’s","start":37.729,"end":38.068},{"id":"caption-word-36-1","text":"public","start":38.128,"end":38.408},{"id":"caption-word-36-2","text":"dashboard","start":38.448,"end":39.028}]},{"id":"caption-group-37","frame":6,"start":39.069,"end":40.309,"text":"shows zero instances","words":[{"id":"caption-word-37-0","text":"shows","start":39.069,"end":39.328},{"id":"caption-word-37-1","text":"zero","start":39.368,"end":39.608},{"id":"caption-word-37-2","text":"instances","start":39.688,"end":40.248}]},{"id":"caption-group-38","frame":6,"start":40.309,"end":41.388,"text":"and zero revenue.","words":[{"id":"caption-word-38-0","text":"and","start":40.309,"end":40.388},{"id":"caption-word-38-1","text":"zero","start":40.508,"end":40.788},{"id":"caption-word-38-2","text":"revenue.","start":40.809,"end":41.268}]},{"id":"caption-group-39","frame":6,"start":41.648,"end":42.089,"text":"We invent","words":[{"id":"caption-word-39-0","text":"We","start":41.648,"end":41.728},{"id":"caption-word-39-1","text":"invent","start":41.768,"end":42.029}]},{"id":"caption-group-40","frame":6,"start":42.089,"end":42.968,"text":"no traction.","words":[{"id":"caption-word-40-0","text":"no","start":42.089,"end":42.248},{"id":"caption-word-40-1","text":"traction.","start":42.288,"end":42.848}]},{"id":"caption-group-41","frame":7,"start":43.332,"end":44.292,"text":"Life Manager:","words":[{"id":"caption-word-41-0","text":"Life","start":43.332,"end":43.592},{"id":"caption-word-41-1","text":"Manager:","start":43.692,"end":44.172}]},{"id":"caption-group-42","frame":7,"start":44.872,"end":45.792,"text":"open locally,","words":[{"id":"caption-word-42-0","text":"open","start":44.872,"end":45.172},{"id":"caption-word-42-1","text":"locally,","start":45.212,"end":45.672}]},{"id":"caption-group-43","frame":7,"start":46.153,"end":47.492,"text":"accessible in cloud,","words":[{"id":"caption-word-43-0","text":"accessible","start":46.153,"end":46.792},{"id":"caption-word-43-1","text":"in","start":46.812,"end":46.952},{"id":"caption-word-43-2","text":"cloud,","start":46.992,"end":47.372}]},{"id":"caption-group-44","frame":7,"start":47.832,"end":49.392,"text":"organized around agents that","words":[{"id":"caption-word-44-0","text":"organized","start":47.832,"end":48.352},{"id":"caption-word-44-1","text":"around","start":48.432,"end":48.732},{"id":"caption-word-44-2","text":"agents","start":48.832,"end":49.192},{"id":"caption-word-44-3","text":"that","start":49.232,"end":49.372}]},{"id":"caption-group-45","frame":7,"start":49.392,"end":50.713,"text":"leave evidence behind.","words":[{"id":"caption-word-45-0","text":"leave","start":49.392,"end":49.653},{"id":"caption-word-45-1","text":"evidence","start":49.712,"end":50.133},{"id":"caption-word-45-2","text":"behind.","start":50.172,"end":50.593}]}];
+  var DURATION = 50.807;
+
+  (function () {
+    var stage = document.getElementById("caption-stage");
+
+    // build DOM: one .caption-group per group, .caption-word per word
+    GROUPS.forEach(function (group, g) {
+      var groupEl = document.createElement("div");
+      groupEl.className = "caption-group";
+      groupEl.id = "caption-group-" + g;
+      var pill = document.createElement("div");
+      pill.className = "caption-pill";
+      var line = document.createElement("div");
+      line.className = "caption-line";
+      (group.words || []).forEach(function (w, i) {
+        var span = document.createElement("span");
+        span.className = "caption-word";
+        span.id = "caption-word-" + g + "-" + i;
+        span.textContent = String(w.text);
+        line.appendChild(span);
+      });
+      pill.appendChild(line);
+      groupEl.appendChild(pill);
+      stage.appendChild(groupEl);
+    });
+
+    window.__timelines = window.__timelines || {};
+    var tl = gsap.timeline({ paused: true });
+
+    GROUPS.forEach(function (group, g) {
+      var groupEl = document.getElementById("caption-group-" + g);
+      var words = group.words || [];
+      var next = GROUPS[g + 1];
+      var isLast = g === GROUPS.length - 1;
+      var start = Math.max(0, Number(group.start));
+      var end = isLast ? DURATION : Math.min(Number(next.start), Number(group.end) + 0.3);
+      if (end <= start) end = start + 0.01;
+
+      // group on/off — exactly one group visible at a time
+      tl.set(groupEl, { opacity: 1 }, start);
+      tl.set(groupEl, { opacity: 0 }, end);
+
+      // 3-state karaoke via className SETS — seek-safe (gsap.set applies on the
+      // engine's frame-by-frame seek; .call callbacks would NOT fire).
+      words.forEach(function (w, i) {
+        var el = document.getElementById("caption-word-" + g + "-" + i);
+        var at = Math.max(start, Number(w.start));
+        tl.set(el, { className: "caption-word" }, start); // upcoming (also resets on reverse-seek)
+        tl.set(el, { className: "caption-word is-active" }, at); // current
+        tl.fromTo(el, { scale: 0.98 }, { scale: 1, duration: 0.16, ease: "power1.out" }, at);
+        if (i + 1 < words.length) {
+          var nextAt = Math.max(start, Number(words[i + 1].start));
+          tl.set(el, { className: "caption-word is-spoken" }, nextAt); // demote when next activates
+        }
+      });
+      if (words.length) {
+        var lastEl = document.getElementById("caption-word-" + g + "-" + (words.length - 1));
+        var lastSpoken = Math.min(end, Number(words[words.length - 1].end) + 0.1);
+        tl.set(lastEl, { className: "caption-word is-spoken" }, lastSpoken);
+      }
+    });
+
+    // full-span anchor so the sub-comp timeline spans the whole video
+    tl.to({}, { duration: DURATION }, 0);
+    window.__timelines["captions"] = tl;
+  })();
+</script>
+
+<style>
+  .caption-line { line-height: 1.1 !important; }
+</style>
+</template>

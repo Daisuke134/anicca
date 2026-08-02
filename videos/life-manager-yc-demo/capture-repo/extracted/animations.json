@@ -1,0 +1,53 @@
+{
+  "summary": {
+    "webAnimations": 1,
+    "cssDeclarations": 89,
+    "scrollTargets": 6,
+    "cdpAnimations": 121,
+    "canvases": 0
+  },
+  "namedAnimations": [
+    "Overlay--motion-scaleFade",
+    "prc-UnderlineNav-detect-overflow-6HuSH"
+  ],
+  "scrollTriggeredElements": 6,
+  "representativeAnimations": [
+    {
+      "type": "CSSAnimation",
+      "playState": "running",
+      "animationName": "prc-UnderlineNav-detect-overflow-6HuSH",
+      "targetSelector": "nav.prc-components-UnderlineWrapper-eT-Yj.prc-UnderlineNav-UnderlineWrapper-GWONT.OverviewRepoFiles-module__UnderlineNav__QbWWv",
+      "targetRect": {
+        "x": 353,
+        "y": 192,
+        "width": 860,
+        "height": 48,
+        "top": 192,
+        "right": 1213,
+        "bottom": 240,
+        "left": 353
+      },
+      "keyframes": [
+        {
+          "offset": 0,
+          "easing": "linear",
+          "composite": "auto",
+          "computedOffset": 0
+        },
+        {
+          "offset": 1,
+          "easing": "linear",
+          "composite": "auto",
+          "computedOffset": 1
+        }
+      ],
+      "timing": {
+        "duration": {},
+        "delay": 0,
+        "iterations": 1,
+        "easing": "linear",
+        "direction": "normal"
+      }
+    }
+  ]
+}

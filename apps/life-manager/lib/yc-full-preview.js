@@ -14,12 +14,12 @@ const SOURCE_REFS = Object.freeze({
   readme_en: "repo://README.md",
   readme_ja: "repo://README.ja.md",
   agent_registry: "repo://agents/registry.json",
-  provider_manifest: "repo://apps/life-manager/config/yc-application-provider.json",
+  provider_manifest: "repo://apps/life-manager/config/yc-submitted-update-provider.json",
   answer_draft: "workspace://funders/results/FT-YC/yc-answers-lifemanager-2026fall.json",
   application_kit: "application-kit://KIT.md",
   application_submit_receipt: "repo://docs/evidence/funding/2026-08-02-o1c07-yc-fall-2026-submit.json",
   founder_video_source: "application-kit://videos/Anicca_intro_EN.mp4",
-  demo_source: "workspace://funders/assets/life-manager-demo.mp4",
+  demo_source: "application-kit://videos/life-manager-yc-demo.mp4",
 });
 const REQUIRED_SOURCE_ROLES = Object.freeze(Object.keys(SOURCE_REFS).filter((role) => role !== "demo_source"));
 const SCOPE_SOURCE_ROLES = Object.freeze({
@@ -245,13 +245,38 @@ function parseFounderVideoObservation(value, sources) {
   };
 }
 
-function parseDemoObservation(value, status, roles) {
-  exactKeys(value, ["dedicated_source_role", "remote"], "demo observation");
+function parseDemoLocal(value, sources) {
+  exactKeys(value, ["duration_seconds", "bytes", "sha256", "container", "video_codec", "audio_codec", "width", "height"], "demo local");
+  const source = sources.find(({ value: item }) => item.role === "demo_source")?.value;
+  const bytes = safePositiveInteger(value.bytes, "demo local bytes");
+  const sha256 = digest(value.sha256, "demo local digest");
+  if (!source || source.bytes !== bytes || source.sha256 !== sha256
+    || value.container !== "mp4" || value.video_codec !== "h264" || value.audio_codec !== "aac") fail("demo local");
+  return {
+    duration_seconds: finitePositive(value.duration_seconds, "demo local duration", 180),
+    bytes,
+    sha256,
+    container: "mp4",
+    video_codec: "h264",
+    audio_codec: "aac",
+    width: safePositiveInteger(value.width, "demo local width"),
+    height: safePositiveInteger(value.height, "demo local height"),
+  };
+}
+
+function parseDemoObservation(value, status, roles, sources) {
   if (status === "missing") {
+    exactKeys(value, ["dedicated_source_role", "remote"], "demo observation");
     if (value.dedicated_source_role !== null || value.remote !== null || roles.length !== 0) fail("missing demo");
     return { dedicated_source_role: null, remote: null };
   }
   if (value.dedicated_source_role !== "demo_source" || roles.length !== 1 || roles[0] !== "demo_source") fail("demo provenance");
+  if (status === "prepared") {
+    exactKeys(value, ["dedicated_source_role", "remote", "local"], "demo observation");
+    if (value.remote !== null) fail("prepared demo remote");
+    return { dedicated_source_role: "demo_source", remote: null, local: parseDemoLocal(value.local, sources) };
+  }
+  exactKeys(value, ["dedicated_source_role", "remote"], "demo observation");
   return { dedicated_source_role: "demo_source", remote: parseRemoteMedia(value.remote, "demo remote") };
 }
 
@@ -273,28 +298,28 @@ function parseScopes(value, sources) {
     let allowed;
     let observation;
     if (item.scope === "company_facts") {
-      allowed = new Set(["current", "stale"]);
+      allowed = new Set(["current", "prepared", "stale"]);
       observation = parseCompanyObservation(item.observation);
     } else if (item.scope === "founder_profile") {
-      allowed = new Set(["current", "needs_review"]);
+      allowed = new Set(["current", "prepared", "needs_review"]);
       observation = parseFounderObservation(item.observation);
     } else if (item.scope === "founder_video") {
       allowed = new Set(["present"]);
       if (roles.length !== 1 || roles[0] !== "founder_video_source") fail("founder video provenance");
       observation = parseFounderVideoObservation(item.observation, sources);
     } else if (item.scope === "demo") {
-      allowed = new Set(["present", "missing"]);
-      observation = parseDemoObservation(item.observation, item.status, roles);
+      allowed = new Set(["present", "prepared", "missing"]);
+      observation = parseDemoObservation(item.observation, item.status, roles, sources);
     } else if (item.scope === "progress") {
-      allowed = new Set(["current", "stale"]);
+      allowed = new Set(["current", "prepared", "stale"]);
       observation = parseProgressObservation(item.observation);
     }
-    const expectedRoles = item.scope === "demo" && item.status === "present" ? ["demo_source"] : SCOPE_SOURCE_ROLES[item.scope];
+    const expectedRoles = item.scope === "demo" && ["present", "prepared"].includes(item.status) ? ["demo_source"] : SCOPE_SOURCE_ROLES[item.scope];
     if (stable(roles) !== stable(expectedRoles)) fail(`${item.scope} source roles`);
     if (!allowed || !allowed.has(item.status)) fail(`${item.scope} status`);
     const requiredIssue = STATUS_REQUIRED_ISSUES[item.scope]?.[item.status];
     if (requiredIssue && !issues.includes(requiredIssue)) fail(`${item.scope} canonical issue`);
-    const good = item.status === "current" || item.status === "present";
+    const good = item.status === "current" || item.status === "present" || item.status === "prepared";
     if ((good && issues.length !== 0) || (!good && issues.length === 0)) fail(`${item.scope} issue consistency`);
     return {
       value: { scope: item.scope, status: item.status, observed_at: observed.text, source_roles: roles, issue_codes: issues, observation },

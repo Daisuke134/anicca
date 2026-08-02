@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js" integrity="sha384-sG0Hv1tP1lZCk9KQmrIbY/XNwi+OY84GQqhMscbnsoBFqAz8KNCil1kvfL3Hbbk2" crossorigin="anonymous"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #000;
+      }
+      #root {
+        position: relative;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #FAFAFA;
+      }
+      .scene {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="50.807"
+      data-width="1920"
+      data-height="1080"
+    >
+      <div
+        id="el-01-life-comes-to-you"
+        class="scene"
+        data-composition-id="01-life-comes-to-you"
+        data-composition-src="compositions/frames/01-life-comes-to-you.html"
+        data-start="0"
+        data-duration="5.154"
+        data-track-index="0"
+      ></div>
+      <audio
+        id="el-01-life-comes-to-you-voice"
+        src="assets/voice/01.wav"
+        data-start="0"
+        data-duration="4.754"
+        data-track-index="10"
+        data-volume="1"
+      ></audio>
+
+      <div
+        id="el-02-two-surfaces"
+        class="scene"
+        data-composition-id="02-two-surfaces"
+        data-composition-src="compositions/frames/02-two-surfaces.html"
+        data-start="4.754"
+        data-duration="8.284"
+        data-track-index="1"
+      ></div>
+      <audio
+        id="el-02-two-surfaces-voice"
+        src="assets/voice/02.wav"
+        data-start="4.754"
+        data-duration="7.784"
+        data-track-index="10"
+        data-volume="1"
+      ></audio>
+
+      <div
+        id="el-03-local-loop"
+        class="scene"
+        data-composition-id="03-local-loop"
+        data-composition-src="compositions/frames/03-local-loop.html"
+        data-start="12.538"
+        data-duration="8.284"
+        data-track-index="0"
+      ></div>
+      <audio
+        id="el-03-local-loop-voice"
+        src="assets/voice/03.wav"
+        data-start="12.538"
+        data-duration="7.784"
+        data-track-index="10"
+        data-volume="1"
+      ></audio>
+
+      <div
+        id="el-04-agent-organization"
+        class="scene"
+        data-composition-id="04-agent-organization"
+        data-composition-src="compositions/frames/04-agent-organization.html"
+        data-start="20.322"
+        data-duration="9.826"
+        data-track-index="1"
+      ></div>
+      <audio
+        id="el-04-agent-organization-voice"
+        src="assets/voice/04.wav"
+        data-start="20.322"
+        data-duration="9.326"
+        data-track-index="10"
+        data-volume="1"
+      ></audio>
+
+      <div
+        id="el-05-cloud-surface"
+        class="scene"
+        data-composition-id="05-cloud-surface"
+        data-composition-src="compositions/frames/05-cloud-surface.html"
+        data-start="29.648"
+        data-duration="8.541"
+        data-track-index="0"
+      ></div>
+      <audio
+        id="el-05-cloud-surface-voice"
+        src="assets/voice/05.wav"
+        data-start="29.648"
+        data-duration="7.941"
+        data-track-index="10"
+        data-volume="1"
+      ></audio>
+
+      <div
+        id="el-06-honest-state"
+        class="scene"
+        data-composition-id="06-honest-state"
+        data-composition-src="compositions/frames/06-honest-state.html"
+        data-start="37.589"
+        data-duration="6.064"
+        data-track-index="1"
+      ></div>
+      <audio
+        id="el-06-honest-state-voice"
+        src="assets/voice/06.wav"
+        data-start="37.589"
+        data-duration="5.564"
+        data-track-index="10"
+        data-volume="1"
+      ></audio>
+
+      <div
+        id="el-07-close"
+        class="scene"
+        data-composition-id="07-close"
+        data-composition-src="compositions/frames/07-close.html"
+        data-start="43.153"
+        data-duration="7.654"
+        data-track-index="0"
+      ></div>
+      <audio
+        id="el-07-close-voice"
+        src="assets/voice/07.wav"
+        data-start="43.153"
+        data-duration="7.654"
+        data-track-index="10"
+        data-volume="1"
+      ></audio>
+
+      <!-- BGM -->
+      <audio
+        id="el-bgm"
+        src="assets/bgm/track.mp3"
+        data-start="0"
+        data-duration="50.807"
+        data-track-index="11"
+        data-volume="0.12"
+      ></audio>
+
+      <!-- captions -->
+      <div
+        id="el-captions"
+        class="scene"
+        data-composition-id="captions"
+        data-composition-src="compositions/captions.html"
+        data-start="0"
+        data-duration="50.807"
+        data-track-index="2"
+      ></div>
+
+    </div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      window.__timelines["main"] = gsap.timeline({ paused: true });
+      // ── frame transitions (injected by transitions.mjs) ──
+      (function () { var tl = window.__timelines["main"];
+        tl.to("#el-01-life-comes-to-you", { scale: 2.5, opacity: 0, filter: "blur(8px)", duration: 0.4, ease: "power3.in" }, 4.754);
+        tl.fromTo("#el-02-two-surfaces", { scale: 0.5, opacity: 0, filter: "blur(8px)" }, { scale: 1, opacity: 1, filter: "blur(0px)", duration: 0.4, ease: "power3.out" }, 4.754);
+        tl.to("#el-02-two-surfaces", { x: -1920, duration: 0.5, ease: "power3.inOut" }, 12.538);
+        tl.fromTo("#el-03-local-loop", { x: 1920, opacity: 1 }, { x: 0, duration: 0.5, ease: "power3.inOut" }, 12.538);
+        tl.to("#el-03-local-loop", { x: -1920, duration: 0.5, ease: "power3.inOut" }, 20.322);
+        tl.fromTo("#el-04-agent-organization", { x: 1920, opacity: 1 }, { x: 0, duration: 0.5, ease: "power3.inOut" }, 20.322);
+        tl.to("#el-04-agent-organization", { x: -1920, duration: 0.5, ease: "power3.inOut" }, 29.648);
+        tl.fromTo("#el-05-cloud-surface", { x: 1920, opacity: 1 }, { x: 0, duration: 0.5, ease: "power3.inOut" }, 29.648);
+        tl.to("#el-05-cloud-surface", { filter: "blur(10px)", scale: 1.03, opacity: 0, duration: 0.6, ease: "power2.inOut" }, 37.589);
+        tl.fromTo("#el-06-honest-state", { filter: "blur(10px)", scale: 0.97, opacity: 0 }, { filter: "blur(0px)", scale: 1, opacity: 1, duration: 0.6, ease: "power2.inOut" }, 37.589);
+        tl.to("#el-06-honest-state", { opacity: 0, duration: 0.5, ease: "power2.inOut" }, 43.153);
+        tl.fromTo("#el-07-close", { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power2.inOut" }, 43.153);
+        tl.to({}, { duration: 50.807 }, 0); // full-span anchor — main.duration() == composition total (Studio master duration)
+      })();
+    </script>
+  </body>
+</html>

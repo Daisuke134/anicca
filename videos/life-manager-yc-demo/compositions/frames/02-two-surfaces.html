@@ -1,0 +1,456 @@
+<template>
+  <style>
+    @font-face {
+      font-family: "__Outfit_ed3508";
+      font-style: normal;
+      font-weight: 100 900;
+      font-display: swap;
+      src: url("capture/assets/fonts/7b0b24f36b1a6d0b-s.p.woff2") format("woff2");
+    }
+
+    @font-face {
+      font-family: "__JetBrains_Mono_3c557b";
+      font-style: normal;
+      font-weight: 100 800;
+      font-display: swap;
+      src: url("capture/assets/fonts/bb3ef058b751a6ad-s.p.woff2") format("woff2");
+    }
+
+    #root {
+      width: 1920px;
+      height: 1080px;
+      position: relative;
+      overflow: hidden;
+      container-type: size;
+      color: #18181b;
+      font-family: "__Outfit_ed3508";
+    }
+
+    .f02-two-surfaces-ground {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      background: #fafafa;
+    }
+
+    .f02-two-surfaces-evidence-mat {
+      position: absolute;
+      left: 80px;
+      top: 122px;
+      width: 1760px;
+      height: 742px;
+      overflow: hidden;
+      border: 1px solid rgba(24, 24, 27, 0.12);
+      border-radius: 12px;
+      background: #fafafa;
+      box-shadow: 0 1px 3px rgba(24, 24, 27, 0.08), 0 4px 16px rgba(24, 24, 27, 0.04);
+    }
+
+    .f02-two-surfaces-evidence-image {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: 50% 64%;
+      opacity: 0.18;
+      filter: saturate(0.2) contrast(0.82);
+    }
+
+    .f02-two-surfaces-paper-wash {
+      position: absolute;
+      inset: 0;
+      background: rgba(250, 250, 250, 0.70);
+    }
+
+    .f02-two-surfaces-source-label {
+      position: absolute;
+      right: 24px;
+      bottom: 20px;
+      padding: 9px 13px;
+      border: 1px solid rgba(24, 24, 27, 0.12);
+      border-radius: 6px;
+      background: rgba(250, 250, 250, 0.90);
+      color: #53535a;
+      font-family: "__JetBrains_Mono_3c557b";
+      font-size: 18px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .f02-two-surfaces-kicker {
+      position: absolute;
+      top: 54px;
+      left: 0;
+      width: 100%;
+      text-align: center;
+      font-family: "__JetBrains_Mono_3c557b";
+      font-size: 28px;
+      font-weight: 500;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    .f02-two-surfaces-kicker-mark {
+      margin-right: 12px;
+      color: #cda43c;
+    }
+
+    .f02-two-surfaces-product {
+      position: absolute;
+      z-index: 6;
+      top: 151px;
+      left: 50%;
+      width: 430px;
+      margin-left: -215px;
+      padding: 18px 26px 19px;
+      box-sizing: border-box;
+      border: 1px solid rgba(24, 24, 27, 0.20);
+      border-radius: 8px;
+      background: #fafafa;
+      box-shadow: 0 1px 3px rgba(24, 24, 27, 0.08), 0 4px 16px rgba(24, 24, 27, 0.04);
+      text-align: center;
+    }
+
+    .f02-two-surfaces-product-name {
+      font-size: 42px;
+      font-weight: 400;
+      line-height: 1;
+      letter-spacing: -0.018em;
+    }
+
+    .f02-two-surfaces-product-sub {
+      margin-top: 8px;
+      color: #53535a;
+      font-family: "__JetBrains_Mono_3c557b";
+      font-size: 18px;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .f02-two-surfaces-connector {
+      position: absolute;
+      z-index: 5;
+      pointer-events: none;
+    }
+
+    .f02-two-surfaces-connector-stem {
+      left: 959px;
+      top: 249px;
+      width: 1px;
+      height: 62px;
+      background: #cda43c;
+      transform-origin: 50% 0%;
+    }
+
+    .f02-two-surfaces-connector-bar {
+      left: 473px;
+      top: 310px;
+      width: 974px;
+      height: 1px;
+      background: #cda43c;
+      transform-origin: 50% 50%;
+    }
+
+    .f02-two-surfaces-connector-drop-left,
+    .f02-two-surfaces-connector-drop-right {
+      top: 310px;
+      width: 1px;
+      height: 34px;
+      background: #cda43c;
+      transform-origin: 50% 0%;
+    }
+
+    .f02-two-surfaces-connector-drop-left { left: 473px; }
+    .f02-two-surfaces-connector-drop-right { left: 1446px; }
+
+    .f02-two-surfaces-stage {
+      position: absolute;
+      z-index: 4;
+      left: 50%;
+      top: 326px;
+      width: 1580px;
+      height: 454px;
+      margin-left: -790px;
+      perspective: 1800px;
+      transform-style: preserve-3d;
+    }
+
+    .f02-two-surfaces-card {
+      position: absolute;
+      top: 18px;
+      width: 724px;
+      height: 404px;
+      box-sizing: border-box;
+      padding: 44px 56px;
+      border: 1px solid rgba(24, 24, 27, 0.20);
+      border-radius: 12px;
+      background: #fafafa;
+      transform-style: preserve-3d;
+      will-change: transform;
+    }
+
+    .f02-two-surfaces-card-left {
+      left: 42px;
+      box-shadow: -22px 12px 32px rgba(24, 24, 27, 0.07);
+    }
+
+    .f02-two-surfaces-card-right {
+      right: 42px;
+      box-shadow: 22px 12px 32px rgba(24, 24, 27, 0.07);
+    }
+
+    .f02-two-surfaces-card-topline {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      padding-bottom: 22px;
+      border-bottom: 1px solid rgba(24, 24, 27, 0.12);
+    }
+
+    .f02-two-surfaces-card-title {
+      font-size: 58px;
+      font-weight: 400;
+      line-height: 1;
+      letter-spacing: -0.018em;
+    }
+
+    .f02-two-surfaces-audience {
+      color: #53535a;
+      font-family: "__JetBrains_Mono_3c557b";
+      font-size: 17px;
+      font-weight: 500;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+    }
+
+    .f02-two-surfaces-list {
+      display: grid;
+      gap: 18px;
+      margin-top: 28px;
+    }
+
+    .f02-two-surfaces-list-item {
+      display: grid;
+      grid-template-columns: 20px 1fr;
+      gap: 15px;
+      align-items: center;
+      font-size: 34px;
+      font-weight: 400;
+      line-height: 1.22;
+      letter-spacing: -0.005em;
+    }
+
+    .f02-two-surfaces-list-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 9999px;
+      background: #53535a;
+    }
+
+    .f02-two-surfaces-badge {
+      position: absolute;
+      z-index: 8;
+      top: -12px;
+      box-sizing: border-box;
+      min-width: 230px;
+      padding: 14px 19px;
+      border: 1px solid rgba(24, 24, 27, 0.20);
+      border-radius: 9999px;
+      background: #e6e6e7;
+      color: #18181b;
+      font-family: "__JetBrains_Mono_3c557b";
+      font-size: 18px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-align: center;
+      text-transform: uppercase;
+      transform-origin: 50% 50%;
+      will-change: transform;
+    }
+
+    .f02-two-surfaces-badge-left { left: 548px; }
+    .f02-two-surfaces-badge-right { right: 548px; }
+
+    .f02-two-surfaces-footer-rule {
+      position: absolute;
+      z-index: 3;
+      left: 150px;
+      top: 820px;
+      width: 1620px;
+      height: 1px;
+      background: rgba(24, 24, 27, 0.12);
+    }
+  </style>
+
+  <div id="root" data-composition-id="02-two-surfaces" data-width="1920" data-height="1080" data-duration="8.284">
+    <div class="clip f02-two-surfaces-ground" data-start="0" data-duration="9" data-track-index="0">
+      <div class="f02-two-surfaces-evidence-mat">
+        <img class="f02-two-surfaces-evidence-image" src="assets/github-readme-architecture.png" alt="" />
+        <div class="f02-two-surfaces-paper-wash"></div>
+        <div class="f02-two-surfaces-source-label">README · architecture</div>
+      </div>
+
+      <div class="f02-two-surfaces-kicker"><span class="f02-two-surfaces-kicker-mark">✱</span>ONE PRODUCT</div>
+
+      <div class="f02-two-surfaces-product">
+        <div class="f02-two-surfaces-product-name">Life Manager</div>
+        <div class="f02-two-surfaces-product-sub">one core · two surfaces</div>
+      </div>
+
+      <div class="f02-two-surfaces-connector f02-two-surfaces-connector-stem"></div>
+      <div class="f02-two-surfaces-connector f02-two-surfaces-connector-bar"></div>
+      <div class="f02-two-surfaces-connector f02-two-surfaces-connector-drop-left"></div>
+      <div class="f02-two-surfaces-connector f02-two-surfaces-connector-drop-right"></div>
+
+      <div class="f02-two-surfaces-stage">
+        <article class="f02-two-surfaces-card f02-two-surfaces-card-left">
+          <div class="f02-two-surfaces-card-topline">
+            <div class="f02-two-surfaces-card-title">LOCAL</div>
+            <div class="f02-two-surfaces-audience f02-two-surfaces-audience-left">TECHNICAL USERS</div>
+          </div>
+          <div class="f02-two-surfaces-list">
+            <div class="f02-two-surfaces-list-item f02-two-surfaces-local-item"><span class="f02-two-surfaces-list-dot"></span><span>Open source</span></div>
+            <div class="f02-two-surfaces-list-item f02-two-surfaces-local-item"><span class="f02-two-surfaces-list-dot"></span><span>Self-hosted</span></div>
+          </div>
+        </article>
+
+        <article class="f02-two-surfaces-card f02-two-surfaces-card-right">
+          <div class="f02-two-surfaces-card-topline">
+            <div class="f02-two-surfaces-card-title">CLOUD</div>
+            <div class="f02-two-surfaces-audience f02-two-surfaces-audience-right">EVERYONE ELSE</div>
+          </div>
+          <div class="f02-two-surfaces-list">
+            <div class="f02-two-surfaces-list-item f02-two-surfaces-cloud-item"><span class="f02-two-surfaces-list-dot"></span><span>Web access</span></div>
+            <div class="f02-two-surfaces-list-item f02-two-surfaces-cloud-item"><span class="f02-two-surfaces-list-dot"></span><span>No local computer</span></div>
+          </div>
+        </article>
+
+        <div class="f02-two-surfaces-badge f02-two-surfaces-badge-left">SOURCE AVAILABLE</div>
+        <div class="f02-two-surfaces-badge f02-two-surfaces-badge-right">SERVICE CODE</div>
+      </div>
+
+      <div class="f02-two-surfaces-footer-rule"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (() => {
+      const id = "02-two-surfaces";
+      const q = (name) => ".f02-two-surfaces-" + name;
+      const tl = gsap.timeline({ paused: true });
+
+      window.__timelines = window.__timelines || {};
+      window.__timelines[id] = tl;
+
+      tl.fromTo(
+        q("evidence-mat"),
+        { opacity: 0, scale: 1.035, filter: "blur(18px)" },
+        { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.72, ease: "power3.out" },
+        0
+      );
+      tl.fromTo(
+        q("kicker"),
+        { y: -44, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.62, ease: "power3.out" },
+        0.08
+      );
+      tl.fromTo(
+        q("product"),
+        { y: -22, opacity: 0, scale: 0.96 },
+        { y: 0, opacity: 1, scale: 1, duration: 0.72, ease: "power3.out" },
+        0.42
+      );
+
+      tl.fromTo(
+        q("card-left"),
+        { x: -430, rotateY: 24, scale: 0.85, opacity: 0 },
+        { x: 0, rotateY: 13, scale: 1, opacity: 1, duration: 1.05, ease: "power3.out" },
+        1.24
+      );
+      tl.fromTo(
+        q("card-right"),
+        { x: 430, rotateY: -24, scale: 0.85, opacity: 0 },
+        { x: 0, rotateY: -13, scale: 1, opacity: 1, duration: 1.05, ease: "power3.out" },
+        1.46
+      );
+      tl.fromTo(
+        `${q("card-title")}`,
+        { y: 24, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.68, ease: "power2.out", stagger: 0.18 },
+        2.02
+      );
+      tl.fromTo(
+        q("audience-left"),
+        { x: -36, opacity: 0 },
+        { x: 0, opacity: 1, duration: 0.62, ease: "power4.out" },
+        3.12
+      );
+      tl.fromTo(
+        q("audience-right"),
+        { x: 36, opacity: 0 },
+        { x: 0, opacity: 1, duration: 0.62, ease: "power4.out" },
+        3.42
+      );
+      tl.fromTo(
+        q("source-label"),
+        { y: 18, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.58, ease: "power3.out" },
+        4.14
+      );
+
+      tl.fromTo(
+        q("local-item"),
+        { x: -70, opacity: 0 },
+        { x: 0, opacity: 1, duration: 0.58, ease: "power4.out", stagger: 0.38 },
+        4.86
+      );
+      tl.fromTo(
+        q("cloud-item"),
+        { x: 70, opacity: 0 },
+        { x: 0, opacity: 1, duration: 0.58, ease: "power4.out", stagger: 0.38 },
+        5.04
+      );
+      tl.fromTo(
+        q("badge-left"),
+        { scale: 0, opacity: 0, y: 18 },
+        { scale: 1, opacity: 1, y: 0, duration: 0.64, ease: "power3.out" },
+        6.10
+      );
+      tl.fromTo(
+        q("badge-right"),
+        { scale: 0, opacity: 0, y: 18 },
+        { scale: 1, opacity: 1, y: 0, duration: 0.64, ease: "power3.out" },
+        6.40
+      );
+
+      tl.fromTo(
+        q("connector-stem"),
+        { scaleY: 0, opacity: 0 },
+        { scaleY: 1, opacity: 1, duration: 0.34, ease: "power2.out" },
+        7.20
+      );
+      tl.fromTo(
+        q("connector-bar"),
+        { scaleX: 0, opacity: 0 },
+        { scaleX: 1, opacity: 1, duration: 0.62, ease: "power3.out" },
+        7.46
+      );
+      tl.fromTo(
+        `${q("connector-drop-left")}, ${q("connector-drop-right")}`,
+        { scaleY: 0, opacity: 0 },
+        { scaleY: 1, opacity: 1, duration: 0.36, ease: "power2.out" },
+        8.02
+      );
+      tl.fromTo(
+        q("footer-rule"),
+        { scaleX: 0, opacity: 0 },
+        { scaleX: 1, opacity: 1, duration: 0.52, ease: "power2.out" },
+        8.26
+      );
+    })();
+  </script>
+</template>

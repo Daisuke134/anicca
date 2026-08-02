@@ -1,0 +1,443 @@
+<template>
+  <style>
+    @font-face {
+      font-family: "__Outfit_ed3508";
+      src: url("capture/assets/fonts/7b0b24f36b1a6d0b-s.p.woff2") format("woff2");
+      font-style: normal;
+      font-weight: 100 900;
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: "__JetBrains_Mono_3c557b";
+      src: url("capture/assets/fonts/bb3ef058b751a6ad-s.p.woff2") format("woff2");
+      font-style: normal;
+      font-weight: 100 800;
+      font-display: swap;
+    }
+
+    #root {
+      position: relative;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      container-type: size;
+      color: #18181b;
+      font-family: "__Outfit_ed3508";
+    }
+
+    #root * {
+      box-sizing: border-box;
+    }
+
+    [class~="f05-cloud-surface-ground"] {
+      position: absolute;
+      inset: 0;
+      background: #fafafa;
+    }
+
+    [class~="f05-cloud-surface-ground"]::before {
+      content: "";
+      position: absolute;
+      left: 80px;
+      top: 138px;
+      width: 1760px;
+      height: 712px;
+      border: 1px solid rgba(24, 24, 27, 0.12);
+      border-radius: 12px;
+      background: #e6e6e7;
+    }
+
+    [class~="f05-cloud-surface-kicker"] {
+      position: absolute;
+      left: 80px;
+      top: 62px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      color: #18181b;
+      font-family: "__JetBrains_Mono_3c557b";
+      font-size: 28px;
+      font-weight: 500;
+      letter-spacing: 0.16em;
+      line-height: 1;
+    }
+
+    [class~="f05-cloud-surface-spike"] {
+      color: #b08d34;
+      font-family: "__Outfit_ed3508";
+      font-size: 36px;
+      letter-spacing: 0;
+      line-height: 1;
+    }
+
+    [class~="f05-cloud-surface-conclusion"] {
+      position: absolute;
+      right: 80px;
+      top: 50px;
+      padding: 15px 20px 14px;
+      border: 1px solid rgba(24, 24, 27, 0.20);
+      border-radius: 8px;
+      background: #fafafa;
+      color: #18181b;
+      font-family: "__JetBrains_Mono_3c557b";
+      font-size: 26px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    [class~="f05-cloud-surface-map"] {
+      position: absolute;
+      left: 80px;
+      top: 138px;
+      width: 1760px;
+      height: 712px;
+      overflow: hidden;
+    }
+
+    [class~="f05-cloud-surface-card"] {
+      position: absolute;
+      width: 340px;
+      height: 120px;
+      padding: 23px 26px;
+      border: 1px solid rgba(24, 24, 27, 0.12);
+      border-radius: 12px;
+      background: #fafafa;
+      box-shadow: 0 1px 3px rgba(24, 24, 27, 0.08), 0 4px 16px rgba(24, 24, 27, 0.04);
+    }
+
+    [class~="f05-cloud-surface-card-left"] {
+      left: 60px;
+    }
+
+    [class~="f05-cloud-surface-card-right"] {
+      left: 1360px;
+    }
+
+    [class~="f05-cloud-surface-row-one"] {
+      top: 185px;
+    }
+
+    [class~="f05-cloud-surface-row-two"] {
+      top: 385px;
+    }
+
+    [class~="f05-cloud-surface-row-three"] {
+      top: 585px;
+    }
+
+    [class~="f05-cloud-surface-card-index"] {
+      display: block;
+      margin-bottom: 10px;
+      color: #53535a;
+      font-family: "__JetBrains_Mono_3c557b";
+      font-size: 18px;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      line-height: 1;
+    }
+
+    [class~="f05-cloud-surface-card-title"] {
+      display: block;
+      color: #18181b;
+      font-size: 39px;
+      font-weight: 500;
+      letter-spacing: -0.005em;
+      line-height: 1.05;
+    }
+
+    [class~="f05-cloud-surface-runtime"] {
+      position: absolute;
+      left: 595px;
+      top: 206px;
+      width: 570px;
+      height: 430px;
+      overflow: hidden;
+      border: 1px solid rgba(250, 250, 250, 0.14);
+      border-radius: 8px;
+      background: #181715;
+      color: #fafafa;
+      box-shadow: 0 1px 3px rgba(24, 24, 27, 0.08), 0 4px 16px rgba(24, 24, 27, 0.04);
+    }
+
+    [class~="f05-cloud-surface-runtime-head"] {
+      height: 106px;
+      padding: 24px 30px;
+      border-bottom: 1px solid rgba(250, 250, 250, 0.14);
+      background: #252320;
+    }
+
+    [class~="f05-cloud-surface-runtime-eyebrow"] {
+      display: block;
+      margin-bottom: 10px;
+      color: rgba(250, 250, 250, 0.62);
+      font-family: "__JetBrains_Mono_3c557b";
+      font-size: 17px;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      line-height: 1;
+    }
+
+    [class~="f05-cloud-surface-runtime-title"] {
+      display: block;
+      font-size: 41px;
+      font-weight: 500;
+      letter-spacing: -0.01em;
+      line-height: 1;
+    }
+
+    [class~="f05-cloud-surface-ledger"] {
+      padding: 24px 30px 22px;
+      font-family: "__JetBrains_Mono_3c557b";
+    }
+
+    [class~="f05-cloud-surface-ledger-label"] {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      color: rgba(250, 250, 250, 0.62);
+      font-size: 18px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+    }
+
+    [class~="f05-cloud-surface-ledger-status"] {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #fafafa;
+      letter-spacing: 0.04em;
+    }
+
+    [class~="f05-cloud-surface-ledger-status"]::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 9999px;
+      background: #fafafa;
+      opacity: 0.78;
+    }
+
+    [class~="f05-cloud-surface-ledger-row"] {
+      display: grid;
+      grid-template-columns: 180px 1fr;
+      align-items: center;
+      min-height: 58px;
+      border-top: 1px solid rgba(250, 250, 250, 0.14);
+      color: #fafafa;
+      font-size: 22px;
+      line-height: 1;
+    }
+
+    [class~="f05-cloud-surface-ledger-key"] {
+      color: rgba(250, 250, 250, 0.56);
+    }
+
+    [class~="f05-cloud-surface-connectors"] {
+      position: absolute;
+      inset: 0;
+      width: 1760px;
+      height: 712px;
+      overflow: visible;
+      pointer-events: none;
+    }
+
+    [class~="f05-cloud-surface-connector"] {
+      fill: none;
+      stroke: rgba(24, 24, 27, 0.42);
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    [class~="f05-cloud-surface-token"] {
+      position: absolute;
+      z-index: 5;
+      padding: 7px 10px 6px;
+      border: 1px solid rgba(24, 24, 27, 0.20);
+      border-radius: 9999px;
+      background: #fafafa;
+      color: #18181b;
+      font-family: "__JetBrains_Mono_3c557b";
+      font-size: 15px;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    [class~="f05-cloud-surface-token-left-one"] { left: 470px; top: 236px; }
+    [class~="f05-cloud-surface-token-left-two"] { left: 470px; top: 436px; }
+    [class~="f05-cloud-surface-token-left-three"] { left: 470px; top: 636px; }
+    [class~="f05-cloud-surface-token-right-one"] { left: 1180px; top: 236px; }
+    [class~="f05-cloud-surface-token-right-two"] { left: 1180px; top: 436px; }
+    [class~="f05-cloud-surface-token-right-three"] { left: 1180px; top: 636px; }
+  </style>
+
+  <div id="root" data-composition-id="05-cloud-surface" data-width="1920" data-height="1080" data-duration="8.541">
+    <div class="clip f05-cloud-surface-ground" data-start="0" data-duration="9" data-track-index="0"></div>
+
+    <div id="f05-cloud-surface-kicker" class="clip f05-cloud-surface-kicker" data-start="0" data-duration="9" data-track-index="1">
+      <span class="f05-cloud-surface-spike">✱</span>
+      <span>CODE-BACKED SERVICE MAP</span>
+    </div>
+
+    <div id="f05-cloud-surface-conclusion" class="clip f05-cloud-surface-conclusion" data-start="7.4" data-duration="1.6" data-track-index="2">
+      NO LOCAL COMPUTER REQUIRED
+    </div>
+
+    <section class="f05-cloud-surface-map" aria-label="Code-backed service map">
+      <svg class="f05-cloud-surface-connectors" viewBox="0 0 1760 712" aria-hidden="true">
+        <path id="f05-cloud-surface-line-telegram" class="clip f05-cloud-surface-connector" data-start="5.8" data-duration="3.2" data-track-index="10" d="M 400 245 C 488 245 520 276 595 290"></path>
+        <path id="f05-cloud-surface-line-scheduler" class="clip f05-cloud-surface-connector" data-start="5.8" data-duration="3.2" data-track-index="11" d="M 400 445 C 492 445 522 374 595 356"></path>
+        <path id="f05-cloud-surface-line-wake" class="clip f05-cloud-surface-connector" data-start="5.8" data-duration="3.2" data-track-index="12" d="M 400 645 C 500 645 530 482 595 422"></path>
+        <path id="f05-cloud-surface-line-auth" class="clip f05-cloud-surface-connector" data-start="5.8" data-duration="3.2" data-track-index="13" d="M 1360 245 C 1272 245 1240 276 1165 290"></path>
+        <path id="f05-cloud-surface-line-billing" class="clip f05-cloud-surface-connector" data-start="5.8" data-duration="3.2" data-track-index="14" d="M 1360 445 C 1268 445 1238 374 1165 356"></path>
+        <path id="f05-cloud-surface-line-state" class="clip f05-cloud-surface-connector" data-start="5.8" data-duration="3.2" data-track-index="15" d="M 1360 645 C 1260 645 1230 482 1165 422"></path>
+      </svg>
+
+      <article id="f05-cloud-surface-runtime" class="clip f05-cloud-surface-runtime" data-start="0" data-duration="9" data-track-index="3">
+        <div class="f05-cloud-surface-runtime-head">
+          <span class="f05-cloud-surface-runtime-eyebrow">USER-SCOPED CORE</span>
+          <span class="f05-cloud-surface-runtime-title">Life Manager runtime</span>
+        </div>
+        <div class="f05-cloud-surface-ledger">
+          <div class="f05-cloud-surface-ledger-label">
+            <span>SCOPED-STATE LEDGER</span>
+            <span class="f05-cloud-surface-ledger-status">BOUND</span>
+          </div>
+          <div class="f05-cloud-surface-ledger-row"><span class="f05-cloud-surface-ledger-key">user_id</span><span>usr_7f2a</span></div>
+          <div class="f05-cloud-surface-ledger-row"><span class="f05-cloud-surface-ledger-key">workflow</span><span>daily_plan</span></div>
+          <div class="f05-cloud-surface-ledger-row"><span class="f05-cloud-surface-ledger-key">next_wake</span><span>07:00 JST</span></div>
+          <div class="f05-cloud-surface-ledger-row"><span class="f05-cloud-surface-ledger-key">access</span><span>authenticated</span></div>
+        </div>
+      </article>
+
+      <article id="f05-cloud-surface-card-telegram" class="clip f05-cloud-surface-card f05-cloud-surface-card-left f05-cloud-surface-row-one" data-start="1.2" data-duration="7.8" data-track-index="4">
+        <span class="f05-cloud-surface-card-index">01 · ENTRY</span>
+        <span class="f05-cloud-surface-card-title">Telegram</span>
+      </article>
+      <article id="f05-cloud-surface-card-scheduler" class="clip f05-cloud-surface-card f05-cloud-surface-card-left f05-cloud-surface-row-two" data-start="1.95" data-duration="7.05" data-track-index="5">
+        <span class="f05-cloud-surface-card-index">02 · TIME</span>
+        <span class="f05-cloud-surface-card-title">Scheduler</span>
+      </article>
+      <article id="f05-cloud-surface-card-wake" class="clip f05-cloud-surface-card f05-cloud-surface-card-left f05-cloud-surface-row-three" data-start="2.7" data-duration="6.3" data-track-index="6">
+        <span class="f05-cloud-surface-card-index">03 · CALL</span>
+        <span class="f05-cloud-surface-card-title">Wake calls</span>
+      </article>
+      <article id="f05-cloud-surface-card-auth" class="clip f05-cloud-surface-card f05-cloud-surface-card-right f05-cloud-surface-row-one" data-start="3.45" data-duration="5.55" data-track-index="7">
+        <span class="f05-cloud-surface-card-index">04 · ACCESS</span>
+        <span class="f05-cloud-surface-card-title">Auth panel</span>
+      </article>
+      <article id="f05-cloud-surface-card-billing" class="clip f05-cloud-surface-card f05-cloud-surface-card-right f05-cloud-surface-row-two" data-start="4.2" data-duration="4.8" data-track-index="8">
+        <span class="f05-cloud-surface-card-index">05 · PLAN</span>
+        <span class="f05-cloud-surface-card-title">Billing</span>
+      </article>
+      <article id="f05-cloud-surface-card-state" class="clip f05-cloud-surface-card f05-cloud-surface-card-right f05-cloud-surface-row-three" data-start="4.95" data-duration="4.05" data-track-index="9">
+        <span class="f05-cloud-surface-card-index">06 · SCOPE</span>
+        <span class="f05-cloud-surface-card-title">User state</span>
+      </article>
+
+      <span id="f05-cloud-surface-token-left-one" class="clip f05-cloud-surface-token f05-cloud-surface-token-left-one" data-start="5.95" data-duration="3.05" data-track-index="16">USER_ID</span>
+      <span id="f05-cloud-surface-token-left-two" class="clip f05-cloud-surface-token f05-cloud-surface-token-left-two" data-start="6.15" data-duration="2.85" data-track-index="17">USER_ID</span>
+      <span id="f05-cloud-surface-token-left-three" class="clip f05-cloud-surface-token f05-cloud-surface-token-left-three" data-start="6.35" data-duration="2.65" data-track-index="18">USER_ID</span>
+      <span id="f05-cloud-surface-token-right-one" class="clip f05-cloud-surface-token f05-cloud-surface-token-right-one" data-start="6.05" data-duration="2.95" data-track-index="19">USER_ID</span>
+      <span id="f05-cloud-surface-token-right-two" class="clip f05-cloud-surface-token f05-cloud-surface-token-right-two" data-start="6.25" data-duration="2.75" data-track-index="20">USER_ID</span>
+      <span id="f05-cloud-surface-token-right-three" class="clip f05-cloud-surface-token f05-cloud-surface-token-right-three" data-start="6.45" data-duration="2.55" data-track-index="21">USER_ID</span>
+    </section>
+  </div>
+
+  <script>
+    (() => {
+      const root = document.querySelector('[data-composition-id="05-cloud-surface"]');
+      if (!root || typeof gsap === "undefined") return;
+
+      const byId = (id) => {
+        const element = document.getElementById(id);
+        return element && root.contains(element) ? element : null;
+      };
+      const timeline = gsap.timeline({ paused: true });
+      window.__timelines = window.__timelines || {};
+      window.__timelines["05-cloud-surface"] = timeline;
+
+      timeline.fromTo(
+        byId("f05-cloud-surface-kicker"),
+        { opacity: 0, y: 12 },
+        { opacity: 1, y: 0, duration: 0.42, ease: "power2.out" },
+        0
+      );
+      timeline.fromTo(
+        byId("f05-cloud-surface-runtime"),
+        { opacity: 0, scale: 0.965, y: 18 },
+        { opacity: 1, scale: 1, y: 0, duration: 0.5, ease: "power3.out" },
+        0.05
+      );
+
+      const cardEntrances = [
+        ["f05-cloud-surface-card-telegram", -74, 1.2],
+        ["f05-cloud-surface-card-scheduler", -74, 1.95],
+        ["f05-cloud-surface-card-wake", -74, 2.7],
+        ["f05-cloud-surface-card-auth", 74, 3.45],
+        ["f05-cloud-surface-card-billing", 74, 4.2],
+        ["f05-cloud-surface-card-state", 74, 4.95]
+      ];
+
+      cardEntrances.forEach(([id, x, start]) => {
+        timeline.fromTo(
+          byId(id),
+          { x, scale: 0.96, opacity: 0 },
+          { x: 0, scale: 1, opacity: 1, duration: 0.72, ease: "power3.out" },
+          start
+        );
+      });
+
+      const connectorIds = [
+        "f05-cloud-surface-line-telegram",
+        "f05-cloud-surface-line-scheduler",
+        "f05-cloud-surface-line-wake",
+        "f05-cloud-surface-line-auth",
+        "f05-cloud-surface-line-billing",
+        "f05-cloud-surface-line-state"
+      ];
+
+      connectorIds.forEach((id, index) => {
+        const path = byId(id);
+        const length = path.getTotalLength();
+        gsap.set(path, { strokeDasharray: length, strokeDashoffset: length });
+        timeline.to(
+          path,
+          { strokeDashoffset: 0, duration: 0.58, ease: "power2.out" },
+          5.8 + index * 0.1
+        );
+      });
+
+      const tokenEntrances = [
+        ["f05-cloud-surface-token-left-one", -80, 5.95],
+        ["f05-cloud-surface-token-right-one", 80, 6.05],
+        ["f05-cloud-surface-token-left-two", -80, 6.15],
+        ["f05-cloud-surface-token-right-two", 80, 6.25],
+        ["f05-cloud-surface-token-left-three", -80, 6.35],
+        ["f05-cloud-surface-token-right-three", 80, 6.45]
+      ];
+
+      tokenEntrances.forEach(([id, x, start]) => {
+        timeline.fromTo(
+          byId(id),
+          { x, opacity: 0, scale: 0.88 },
+          { x: 0, opacity: 1, scale: 1, duration: 0.72, ease: "power2.out" },
+          start
+        );
+      });
+
+      timeline.fromTo(
+        byId("f05-cloud-surface-conclusion"),
+        { opacity: 0, y: 14, clipPath: "inset(0 100% 0 0)" },
+        { opacity: 1, y: 0, clipPath: "inset(0 0% 0 0)", duration: 0.62, ease: "power3.out" },
+        7.4
+      );
+    })();
+  </script>
+</template>

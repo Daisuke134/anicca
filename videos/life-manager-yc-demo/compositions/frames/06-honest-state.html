@@ -1,0 +1,226 @@
+<template>
+  <style>
+    @font-face {
+      font-family: "__Outfit_ed3508";
+      font-style: normal;
+      font-weight: 100 900;
+      font-display: swap;
+      src: url("capture/assets/fonts/7b0b24f36b1a6d0b-s.p.woff2") format("woff2");
+    }
+
+    @font-face {
+      font-family: "__JetBrains_Mono_3c557b";
+      font-style: normal;
+      font-weight: 100 800;
+      font-display: swap;
+      src: url("capture/assets/fonts/bb3ef058b751a6ad-s.p.woff2") format("woff2");
+    }
+
+    #root {
+      position: relative;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      container-type: size;
+      color: #18181b;
+      font-family: "__Outfit_ed3508";
+    }
+
+    [class~="f06-honest-state-ground"] {
+      position: absolute;
+      inset: 0;
+      background: #fafafa;
+    }
+
+    [class~="f06-honest-state-stage"] {
+      position: absolute;
+      inset: 0;
+    }
+
+    [class~="f06-honest-state-browser"] {
+      position: absolute;
+      left: 144px;
+      top: 42px;
+      width: 1632px;
+      height: 850px;
+      overflow: hidden;
+      background: #fafafa;
+      border: 1px solid rgba(24, 24, 27, 0.2);
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(24, 24, 27, 0.08), 0 4px 16px rgba(24, 24, 27, 0.04);
+      transform-origin: 50% 50%;
+    }
+
+    [class~="f06-honest-state-browser-bar"] {
+      position: absolute;
+      z-index: 3;
+      inset: 0 0 auto;
+      height: 32px;
+      background: #e6e6e7;
+      border-bottom: 1px solid rgba(24, 24, 27, 0.12);
+    }
+
+    [class~="f06-honest-state-browser-dots"] {
+      position: absolute;
+      left: 18px;
+      top: 13px;
+      display: flex;
+      gap: 7px;
+    }
+
+    [class~="f06-honest-state-browser-dot"] {
+      width: 6px;
+      height: 6px;
+      border-radius: 9999px;
+      background: rgba(24, 24, 27, 0.24);
+    }
+
+    [class~="f06-honest-state-url"] {
+      position: absolute;
+      left: 50%;
+      top: 8px;
+      width: 310px;
+      margin-left: -155px;
+      color: rgba(24, 24, 27, 0.55);
+      font-family: "__JetBrains_Mono_3c557b";
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      line-height: 1;
+      text-align: center;
+    }
+
+    [class~="f06-honest-state-dashboard"] {
+      position: absolute;
+      left: 0;
+      top: 32px;
+      width: 1632px;
+      height: auto;
+      display: block;
+    }
+
+    [class~="f06-honest-state-bracket"] {
+      position: absolute;
+      z-index: 5;
+      top: 404px;
+      width: 190px;
+      height: 108px;
+      overflow: visible;
+    }
+
+    [class~="f06-honest-state-bracket-net"] {
+      left: 448px;
+    }
+
+    [class~="f06-honest-state-bracket-revenue"] {
+      left: 628px;
+    }
+
+    [class~="f06-honest-state-bracket-live"] {
+      left: 988px;
+    }
+
+    [class~="f06-honest-state-bracket-path"] {
+      fill: none;
+      stroke: rgba(24, 24, 27, 0.78);
+      stroke-width: 1.5;
+      stroke-linecap: square;
+      stroke-linejoin: miter;
+      vector-effect: non-scaling-stroke;
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+    }
+
+    [class~="f06-honest-state-proof-label"] {
+      position: absolute;
+      z-index: 6;
+      right: 34px;
+      top: 6px;
+      padding: 4px 8px 3px;
+      color: #cda43c;
+      font-family: "__JetBrains_Mono_3c557b";
+      font-size: 13px;
+      font-weight: 500;
+      line-height: 1;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+  </style>
+
+  <div id="root" data-composition-id="06-honest-state" data-width="1920" data-height="1080" data-duration="6.064">
+    <div class="clip f06-honest-state-ground" data-start="0" data-duration="8" data-track-index="0"></div>
+
+    <div class="clip f06-honest-state-stage" data-start="0" data-duration="8" data-track-index="1">
+      <div class="f06-honest-state-browser" data-el="f06-honest-state-browser">
+        <div class="f06-honest-state-browser-bar">
+          <div class="f06-honest-state-browser-dots" aria-hidden="true">
+            <span class="f06-honest-state-browser-dot"></span>
+            <span class="f06-honest-state-browser-dot"></span>
+            <span class="f06-honest-state-browser-dot"></span>
+          </div>
+          <div class="f06-honest-state-url">aniccaai.com/dashboard</div>
+          <div class="f06-honest-state-proof-label" data-el="f06-honest-state-proof-label">Current public state · captured today</div>
+        </div>
+
+        <img class="f06-honest-state-dashboard" src="assets/dashboard-current-zero.png" alt="Public dashboard showing zero net worth, zero revenue, and zero live instances">
+
+        <svg class="f06-honest-state-bracket f06-honest-state-bracket-net" viewBox="0 0 190 108" aria-hidden="true">
+          <path class="f06-honest-state-bracket-path" data-el="f06-honest-state-bracket-net" pathLength="1" d="M28 1H1V28 M162 1h27v27 M1 80v27h27 M189 80v27h-27" />
+        </svg>
+        <svg class="f06-honest-state-bracket f06-honest-state-bracket-revenue" viewBox="0 0 190 108" aria-hidden="true">
+          <path class="f06-honest-state-bracket-path" data-el="f06-honest-state-bracket-revenue" pathLength="1" d="M28 1H1V28 M162 1h27v27 M1 80v27h27 M189 80v27h-27" />
+        </svg>
+        <svg class="f06-honest-state-bracket f06-honest-state-bracket-live" viewBox="0 0 190 108" aria-hidden="true">
+          <path class="f06-honest-state-bracket-path" data-el="f06-honest-state-bracket-live" pathLength="1" d="M28 1H1V28 M162 1h27v27 M1 80v27h27 M189 80v27h-27" />
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (() => {
+      const select = (name) => `[data-el="${name}"]`;
+      const timeline = gsap.timeline({ paused: true });
+
+      window.__timelines = window.__timelines || {};
+      window.__timelines["06-honest-state"] = timeline;
+
+      timeline.fromTo(
+        select("f06-honest-state-browser"),
+        { x: 40, y: 18, scale: 0.985, opacity: 0.28 },
+        { x: 0, y: 0, scale: 1, opacity: 1, duration: 1.4, ease: "power3.out" },
+        0
+      );
+
+      timeline.fromTo(
+        select("f06-honest-state-bracket-net"),
+        { strokeDashoffset: 1, opacity: 0.25 },
+        { strokeDashoffset: 0, opacity: 1, duration: 0.86, ease: "power2.out" },
+        1.48
+      );
+
+      timeline.fromTo(
+        select("f06-honest-state-bracket-revenue"),
+        { strokeDashoffset: 1, opacity: 0.25 },
+        { strokeDashoffset: 0, opacity: 1, duration: 0.86, ease: "power2.out" },
+        2.92
+      );
+
+      timeline.fromTo(
+        select("f06-honest-state-bracket-live"),
+        { strokeDashoffset: 1, opacity: 0.25 },
+        { strokeDashoffset: 0, opacity: 1, duration: 0.86, ease: "power2.out" },
+        4.36
+      );
+
+      timeline.fromTo(
+        select("f06-honest-state-proof-label"),
+        { y: 7, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.72, ease: "power3.out" },
+        5.82
+      );
+    })();
+  </script>
+</template>

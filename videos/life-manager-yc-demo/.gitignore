@@ -1,0 +1,4 @@
+.hyperframes/worker-logs/
+.hyperframes/retry-*/
+renders/
+capture*/extracted/page.html

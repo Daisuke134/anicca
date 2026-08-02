@@ -1,0 +1,476 @@
+<template>
+  <style>
+    @font-face {
+      font-family: "__Outfit_ed3508";
+      src: url("capture/assets/fonts/7b0b24f36b1a6d0b-s.p.woff2") format("woff2");
+      font-style: normal;
+      font-weight: 100 900;
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: "__JetBrains_Mono_3c557b";
+      src: url("capture/assets/fonts/bb3ef058b751a6ad-s.p.woff2") format("woff2");
+      font-style: normal;
+      font-weight: 100 800;
+      font-display: swap;
+    }
+
+    #root {
+      position: relative;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      container-type: size;
+      color: #18181b;
+      font-family: "__Outfit_ed3508";
+    }
+
+    #root * { box-sizing: border-box; }
+
+    [class~="f04-agent-organization-ground"] {
+      position: absolute;
+      inset: 0;
+      background: #fafafa;
+    }
+
+    [class~="f04-agent-organization-kicker"] {
+      position: absolute;
+      left: 80px;
+      top: 50px;
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      color: #53535a;
+      font-family: "__JetBrains_Mono_3c557b";
+      font-size: 24px;
+      font-weight: 500;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    [class~="f04-agent-organization-spike"] {
+      color: #b08d34;
+      font-family: "__Outfit_ed3508";
+      font-size: 30px;
+      letter-spacing: 0;
+      line-height: 1;
+    }
+
+    [class~="f04-agent-organization-orchestrator"] {
+      position: absolute;
+      left: 650px;
+      top: 42px;
+      z-index: 5;
+      width: 620px;
+      min-height: 174px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 30px;
+      padding: 32px 38px;
+      border: 1px solid rgba(24, 24, 27, 0.2);
+      border-radius: 12px;
+      background: #fafafa;
+      box-shadow: 0 1px 3px rgba(24, 24, 27, 0.08), 0 4px 16px rgba(24, 24, 27, 0.04);
+    }
+
+    [class~="f04-agent-organization-orchestrator"]::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 8px;
+      border-radius: 12px 0 0 12px;
+      background: #b08d34;
+    }
+
+    [class~="f04-agent-organization-overline"],
+    [class~="f04-agent-organization-organ-label"],
+    [class~="f04-agent-organization-agent-id"] {
+      font-family: "__JetBrains_Mono_3c557b";
+      font-weight: 500;
+    }
+
+    [class~="f04-agent-organization-overline"] {
+      margin-bottom: 9px;
+      color: #53535a;
+      font-size: 20px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    [class~="f04-agent-organization-orchestrator-title"] {
+      font-size: 48px;
+      font-weight: 400;
+      line-height: 1.02;
+      letter-spacing: -0.022em;
+    }
+
+    [class~="f04-agent-organization-orchestrator-mark"] {
+      width: 70px;
+      height: 70px;
+      display: grid;
+      place-items: center;
+      border-radius: 9999px;
+      background: #181715;
+      color: #fafafa;
+      font-family: "__JetBrains_Mono_3c557b";
+      font-size: 26px;
+      font-weight: 500;
+    }
+
+    [class~="f04-agent-organization-orchestrator"] > [class~="f04-agent-organization-dot"] {
+      position: absolute;
+      right: 18px;
+      top: 18px;
+    }
+
+    [class~="f04-agent-organization-branches"] {
+      position: absolute;
+      left: 0;
+      top: 0;
+      z-index: 1;
+      width: 1920px;
+      height: 350px;
+      overflow: visible;
+    }
+
+    [class~="f04-agent-organization-branch-base"] {
+      fill: none;
+      stroke: rgba(24, 24, 27, 0.2);
+      stroke-width: 1.5;
+      vector-effect: non-scaling-stroke;
+    }
+
+    [class~="f04-agent-organization-branch-scan"] {
+      fill: none;
+      stroke: #b08d34;
+      stroke-width: 3;
+      stroke-linecap: round;
+      stroke-dasharray: 92 900;
+      vector-effect: non-scaling-stroke;
+    }
+
+    [class~="f04-agent-organization-grid"] {
+      position: absolute;
+      left: 80px;
+      top: 286px;
+      z-index: 3;
+      width: 1760px;
+      height: 490px;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 18px;
+    }
+
+    [class~="f04-agent-organization-organ"] {
+      position: relative;
+      min-width: 0;
+    }
+
+    [class~="f04-agent-organization-organ-head"] {
+      height: 54px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 18px;
+      border: 1px solid rgba(24, 24, 27, 0.12);
+      border-radius: 8px;
+      background: #e6e6e7;
+    }
+
+    [class~="f04-agent-organization-organ-label"] {
+      overflow: hidden;
+      color: #18181b;
+      font-size: 20px;
+      letter-spacing: 0.08em;
+      text-overflow: ellipsis;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    [class~="f04-agent-organization-organ-count"] {
+      color: #53535a;
+      font-family: "__JetBrains_Mono_3c557b";
+      font-size: 18px;
+    }
+
+    [class~="f04-agent-organization-stack"] {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    [class~="f04-agent-organization-card"] {
+      position: relative;
+      height: 60px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 10px;
+      overflow: hidden;
+      padding: 0 16px;
+      border: 1px solid rgba(24, 24, 27, 0.12);
+      border-radius: 8px;
+      background: #fafafa;
+      box-shadow: 0 1px 3px rgba(24, 24, 27, 0.06);
+    }
+
+    [class~="f04-agent-organization-card-name"] {
+      overflow: hidden;
+      font-size: 21px;
+      font-weight: 500;
+      letter-spacing: -0.005em;
+      line-height: 1.1;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    [class~="f04-agent-organization-agent-id"] {
+      display: none;
+      color: #53535a;
+      font-size: 13px;
+      letter-spacing: 0.02em;
+    }
+
+    [class~="f04-agent-organization-dot"] {
+      width: 13px;
+      height: 13px;
+      flex: none;
+      border: 2px solid #fafafa;
+      border-radius: 9999px;
+      box-shadow: 0 0 0 1px rgba(24, 24, 27, 0.18);
+    }
+
+    [data-lifecycle="live"] [class~="f04-agent-organization-dot"],
+    [class~="f04-agent-organization-pill-live"] [class~="f04-agent-organization-pill-dot"] { background: #2f7d5a; }
+    [data-lifecycle="legacy_live"] [class~="f04-agent-organization-dot"],
+    [class~="f04-agent-organization-pill-legacy"] [class~="f04-agent-organization-pill-dot"] { background: #c9782e; }
+    [data-lifecycle="shadow"] [class~="f04-agent-organization-dot"],
+    [class~="f04-agent-organization-pill-shadow"] [class~="f04-agent-organization-pill-dot"] { background: #b08d34; }
+    [data-lifecycle="planned"] [class~="f04-agent-organization-dot"],
+    [class~="f04-agent-organization-pill-planned"] [class~="f04-agent-organization-pill-dot"] { background: #a0a0a4; }
+
+    [class~="f04-agent-organization-legend"] {
+      position: absolute;
+      left: 80px;
+      top: 812px;
+      z-index: 5;
+      width: 1760px;
+      height: 66px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      border-top: 1px solid rgba(24, 24, 27, 0.12);
+    }
+
+    [class~="f04-agent-organization-legend-label"] {
+      margin-right: 12px;
+      color: #53535a;
+      font-family: "__JetBrains_Mono_3c557b";
+      font-size: 17px;
+      font-weight: 500;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    [class~="f04-agent-organization-pill"] {
+      min-width: 142px;
+      height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 11px;
+      border: 1px solid rgba(24, 24, 27, 0.12);
+      border-radius: 9999px;
+      background: #fafafa;
+      color: #18181b;
+      font-family: "__JetBrains_Mono_3c557b";
+      font-size: 16px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+    }
+
+    [class~="f04-agent-organization-pill-dot"] {
+      width: 10px;
+      height: 10px;
+      border-radius: 9999px;
+    }
+  </style>
+
+  <div id="root" data-composition-id="04-agent-organization" data-width="1920" data-height="1080" data-duration="9.826">
+    <div class="clip f04-agent-organization-ground" data-start="0" data-duration="10" data-track-index="0"></div>
+
+    <div class="clip f04-agent-organization-kicker" data-start="0" data-duration="10" data-track-index="1">
+      <span class="f04-agent-organization-spike">✱</span>
+      <span>Agent registry</span>
+    </div>
+
+    <svg class="clip f04-agent-organization-branches" data-start="0" data-duration="10" data-track-index="2" viewBox="0 0 1920 350" aria-hidden="true">
+      <path class="f04-agent-organization-branch-base" d="M960 216 L960 246 L256 246 L256 286" />
+      <path class="f04-agent-organization-branch-base" d="M960 216 L960 246 L608 246 L608 286" />
+      <path class="f04-agent-organization-branch-base" d="M960 216 L960 286" />
+      <path class="f04-agent-organization-branch-base" d="M960 216 L960 246 L1312 246 L1312 286" />
+      <path class="f04-agent-organization-branch-base" d="M960 216 L960 246 L1664 246 L1664 286" />
+      <path class="f04-agent-organization-branch-scan" d="M960 216 L960 246 L256 246 L256 286" />
+      <path class="f04-agent-organization-branch-scan" d="M960 216 L960 246 L608 246 L608 286" />
+      <path class="f04-agent-organization-branch-scan" d="M960 216 L960 286" />
+      <path class="f04-agent-organization-branch-scan" d="M960 216 L960 246 L1312 246 L1312 286" />
+      <path class="f04-agent-organization-branch-scan" d="M960 216 L960 246 L1664 246 L1664 286" />
+    </svg>
+
+    <section class="clip f04-agent-organization-orchestrator" data-start="0" data-duration="10" data-track-index="3" data-lifecycle="live">
+      <div>
+        <div class="f04-agent-organization-overline">Orchestrator</div>
+        <div class="f04-agent-organization-orchestrator-title">Life Manager</div>
+      </div>
+      <div class="f04-agent-organization-orchestrator-mark">LM</div>
+      <span class="f04-agent-organization-dot"></span>
+    </section>
+
+    <div class="clip f04-agent-organization-grid" data-start="0" data-duration="10" data-track-index="4">
+      <section class="f04-agent-organization-organ">
+        <div class="f04-agent-organization-organ-head"><span class="f04-agent-organization-organ-label">Health</span><span class="f04-agent-organization-organ-count">02</span></div>
+        <div class="f04-agent-organization-stack">
+          <article class="f04-agent-organization-card" data-lifecycle="planned"><span class="f04-agent-organization-card-name">Physical Health</span><span class="f04-agent-organization-dot"></span></article>
+          <article class="f04-agent-organization-card" data-lifecycle="planned"><span class="f04-agent-organization-card-name">Mental Health</span><span class="f04-agent-organization-dot"></span></article>
+        </div>
+      </section>
+
+      <section class="f04-agent-organization-organ">
+        <div class="f04-agent-organization-organ-head"><span class="f04-agent-organization-organ-label">Finance</span><span class="f04-agent-organization-organ-count">06</span></div>
+        <div class="f04-agent-organization-stack">
+          <article class="f04-agent-organization-card" data-lifecycle="planned"><span class="f04-agent-organization-card-name">CFO Lead</span><span class="f04-agent-organization-dot"></span></article>
+          <article class="f04-agent-organization-card" data-lifecycle="legacy_live"><span class="f04-agent-organization-card-name">Gig Work</span><span class="f04-agent-organization-dot"></span></article>
+          <article class="f04-agent-organization-card" data-lifecycle="legacy_live"><span class="f04-agent-organization-card-name">Writer</span><span class="f04-agent-organization-dot"></span></article>
+          <article class="f04-agent-organization-card" data-lifecycle="legacy_live"><span class="f04-agent-organization-card-name">Capafy</span><span class="f04-agent-organization-dot"></span></article>
+          <article class="f04-agent-organization-card" data-lifecycle="live"><span class="f04-agent-organization-card-name">Solana Trading</span><span class="f04-agent-organization-dot"></span></article>
+          <article class="f04-agent-organization-card" data-lifecycle="live"><span class="f04-agent-organization-card-name">Polymarket</span><span class="f04-agent-organization-dot"></span></article>
+        </div>
+      </section>
+
+      <section class="f04-agent-organization-organ">
+        <div class="f04-agent-organization-organ-head"><span class="f04-agent-organization-organ-label">Growth</span><span class="f04-agent-organization-organ-count">02</span></div>
+        <div class="f04-agent-organization-stack">
+          <article class="f04-agent-organization-card" data-lifecycle="legacy_live"><span class="f04-agent-organization-card-name">Marketing</span><span class="f04-agent-organization-dot"></span></article>
+          <article class="f04-agent-organization-card" data-lifecycle="legacy_live"><span class="f04-agent-organization-card-name">Clip / Affiliate</span><span class="f04-agent-organization-dot"></span></article>
+        </div>
+      </section>
+
+      <section class="f04-agent-organization-organ">
+        <div class="f04-agent-organization-organ-head"><span class="f04-agent-organization-organ-label">Technology</span><span class="f04-agent-organization-organ-count">02</span></div>
+        <div class="f04-agent-organization-stack">
+          <article class="f04-agent-organization-card" data-lifecycle="live"><span class="f04-agent-organization-card-name">Development</span><span class="f04-agent-organization-dot"></span></article>
+          <article class="f04-agent-organization-card" data-lifecycle="planned"><span class="f04-agent-organization-card-name">Mobile App Builder</span><span class="f04-agent-organization-dot"></span></article>
+        </div>
+      </section>
+
+      <section class="f04-agent-organization-organ">
+        <div class="f04-agent-organization-organ-head"><span class="f04-agent-organization-organ-label">Opportunity</span><span class="f04-agent-organization-organ-count">03</span></div>
+        <div class="f04-agent-organization-stack">
+          <article class="f04-agent-organization-card" data-lifecycle="planned"><span class="f04-agent-organization-card-name">Event</span><span class="f04-agent-organization-dot"></span></article>
+          <article class="f04-agent-organization-card" data-lifecycle="planned"><span class="f04-agent-organization-card-name">Fundraising</span><span class="f04-agent-organization-dot"></span></article>
+          <article class="f04-agent-organization-card" data-lifecycle="shadow"><span class="f04-agent-organization-card-name">Job Application</span><span class="f04-agent-organization-dot"></span></article>
+        </div>
+      </section>
+    </div>
+
+    <div class="clip f04-agent-organization-legend" data-start="0" data-duration="10" data-track-index="5">
+      <span class="f04-agent-organization-legend-label">Lifecycle</span>
+      <div class="f04-agent-organization-pill f04-agent-organization-pill-live"><span class="f04-agent-organization-pill-dot"></span><span>LIVE</span></div>
+      <div class="f04-agent-organization-pill f04-agent-organization-pill-legacy"><span class="f04-agent-organization-pill-dot"></span><span>LEGACY</span></div>
+      <div class="f04-agent-organization-pill f04-agent-organization-pill-shadow"><span class="f04-agent-organization-pill-dot"></span><span>SHADOW</span></div>
+      <div class="f04-agent-organization-pill f04-agent-organization-pill-planned"><span class="f04-agent-organization-pill-dot"></span><span>PLANNED</span></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (() => {
+      const compositionId = "04-agent-organization";
+      const root = document.querySelector('[data-composition-id="' + compositionId + '"]');
+      if (!root || typeof gsap === "undefined") return;
+
+      const select = (token) => root.querySelectorAll('[class~="' + token + '"]');
+      const one = (token) => root.querySelector('[class~="' + token + '"]');
+      const timeline = gsap.timeline({ paused: true });
+
+      window.__timelines = window.__timelines || {};
+      window.__timelines[compositionId] = timeline;
+
+      timeline.fromTo(
+        one("f04-agent-organization-kicker"),
+        { opacity: 0, x: -24 },
+        { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" },
+        0.05
+      );
+
+      timeline.fromTo(
+        one("f04-agent-organization-orchestrator"),
+        { opacity: 0, y: -42, scale: 0.94 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.55, ease: "power3.out" },
+        0.08
+      );
+
+      const branchLines = select("f04-agent-organization-branch-base");
+      branchLines.forEach((line) => {
+        const length = line.getTotalLength();
+        gsap.set(line, { strokeDasharray: length, strokeDashoffset: length });
+        timeline.to(line, { strokeDashoffset: 0, duration: 0.7, ease: "power2.out" }, 0.72);
+      });
+
+      timeline.fromTo(
+        select("f04-agent-organization-organ-head"),
+        { opacity: 0, y: -22, scale: 0.96 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.48, ease: "power3.out", stagger: 0.12 },
+        1.5
+      );
+
+      const cards = Array.from(select("f04-agent-organization-card"));
+      cards.forEach((card, index) => {
+        const targetX = (index % 2 === 0 ? -1 : 1) * (18 + (index % 3) * 5);
+        timeline.fromTo(
+          card,
+          { opacity: 0, x: targetX, y: 18, scale: 0.94 },
+          { opacity: 1, x: 0, y: 0, scale: 1, duration: 0.52, ease: "power3.out" },
+          1.72 + index * 0.31
+        );
+      });
+
+      const legend = one("f04-agent-organization-legend");
+      timeline.fromTo(
+        legend,
+        { opacity: 0, y: 18 },
+        { opacity: 1, y: 0, duration: 0.34, ease: "power2.out" },
+        6.76
+      );
+
+      timeline.fromTo(
+        select("f04-agent-organization-pill"),
+        { opacity: 0, rotationX: -88, transformPerspective: 600, transformOrigin: "50% 100%" },
+        { opacity: 1, rotationX: 0, duration: 0.48, ease: "power3.out", stagger: 0.16 },
+        6.9
+      );
+
+      timeline.fromTo(
+        select("f04-agent-organization-dot"),
+        { opacity: 0, scale: 0.2 },
+        { opacity: 1, scale: 1, duration: 0.34, ease: "back.out(1.8)", stagger: 0.065 },
+        7.15
+      );
+
+      const scanLines = select("f04-agent-organization-branch-scan");
+      gsap.set(scanLines, { opacity: 0, strokeDashoffset: 920 });
+      timeline.to(scanLines, { opacity: 0.58, duration: 0.12, ease: "none" }, 8.4);
+      timeline.to(
+        scanLines,
+        { strokeDashoffset: -180, duration: 1.25, ease: "none", stagger: 0.045 },
+        8.4
+      );
+      timeline.to(scanLines, { opacity: 0, duration: 0.22, ease: "power1.in" }, 9.68);
+    })();
+  </script>
+</template>

@@ -1,0 +1,108 @@
+{
+  "typography": [
+    {
+      "role": "display",
+      "fontFamily": "__Outfit_ed3508",
+      "fontSize": "60px",
+      "fontWeight": "600",
+      "lineHeight": "60px",
+      "letterSpacing": "-1.5px",
+      "color": "#18181B",
+      "sampleText": "Autonomous agents,paying their own way."
+    },
+    {
+      "role": "body",
+      "fontFamily": "__JetBrains_Mono_3c557b",
+      "fontSize": "30px",
+      "fontWeight": "500",
+      "lineHeight": "36px",
+      "letterSpacing": "-0.75px",
+      "color": "#CDA43C",
+      "sampleText": "$0.00"
+    },
+    {
+      "role": "heading",
+      "fontFamily": "__JetBrains_Mono_3c557b",
+      "fontSize": "11px",
+      "fontWeight": "400",
+      "lineHeight": "16.5px",
+      "letterSpacing": "2.42px",
+      "color": "#53535A",
+      "sampleText": "Leaderboard"
+    },
+    {
+      "role": "link",
+      "fontFamily": "__Outfit_ed3508",
+      "fontSize": "11px",
+      "fontWeight": "400",
+      "lineHeight": "16.5px",
+      "letterSpacing": "2.42px",
+      "color": "#53535A",
+      "sampleText": "anicca"
+    }
+  ],
+  "spacing": {
+    "observed": [
+      1,
+      8,
+      20,
+      28,
+      32
+    ],
+    "baseUnit": 4
+  },
+  "radius": [
+    "14px"
+  ],
+  "shadows": [],
+  "buttons": [],
+  "cards": [
+    {
+      "label": "card",
+      "background": "#E4E4E7",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "#18181B",
+      "padding": "0px",
+      "borderRadius": "14px",
+      "border": "1px solid rgb(228, 228, 231)",
+      "boxShadow": "none",
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "height": "101px"
+    },
+    {
+      "label": "card",
+      "background": "transparent",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "#53535A",
+      "padding": "32px",
+      "borderRadius": "14px",
+      "border": "1px solid rgb(228, 228, 231)",
+      "boxShadow": "none",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "height": "86px"
+    }
+  ],
+  "nav": {
+    "label": "navigation",
+    "background": "transparent",
+    "backgroundImage": "",
+    "backdropFilter": "",
+    "color": "#53535A",
+    "padding": "0px",
+    "borderRadius": "0px",
+    "border": "0px solid rgb(229, 231, 235)",
+    "boxShadow": "none",
+    "fontSize": "11px",
+    "fontWeight": "400",
+    "height": "16.5px"
+  },
+  "chips": [],
+  "statCells": [],
+  "tabs": [],
+  "backgrounds": [],
+  "glass": []
+}

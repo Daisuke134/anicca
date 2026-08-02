@@ -1,0 +1,620 @@
+[a] Skip to content
+[h2] Navigation Menu
+[a] Sign in
+[button] Platform
+[button] Solutions
+[button] Resources
+[button] Open Source
+[button] Enterprise
+[span] Search or jump to...
+[h1] Search code, repositories, users, issues, pull requests...
+[label] Search
+[span] Clear
+[a] Search syntax tips
+[h1] Provide feedback
+[p] We read every piece of feedback, and take your input very seriously.
+[label] Include my email address so I can be contacted
+[button] Cancel
+[button] Submit feedback
+[h1] Saved searches
+[h2] Use saved searches to filter your results more quickly
+[label] Name
+[label] Query
+[p] To see all available qualifiers, see our
+[a] documentation
+[button] Cancel
+[button] Create saved search
+[a] Sign in
+[a] Sign up
+[a] Reload
+[a] Reload
+[a] Reload
+[a] Daisuke134
+[a] life-manager
+[span] Public
+[a] Notifications
+[a] Fork
+[span] Star
+[span] Pull requests
+[span] Projects
+[span] Security and quality
+[span] Insights
+[span] main
+[strong] 180
+[span] Branches
+[span] Tags
+[span] Go to file
+[span] Code
+[h2] Folders and files
+[span] Name
+[span] Name
+[span] Last commit message
+[span] Last commit date
+[h2] Latest commit
+[span] Anicca Agent
+[a] docs(connector): record classified live retry
+[relative-time] Aug 2, 2026
+[a] 1318297
+[relative-time] Aug 2, 2026
+[h2] History
+[span] 2,626 Commits
+[a] .agents
+[a] .agents
+[a] feat(fundraising): audit canonical startup links
+[relative-time] Aug 2, 2026
+[a] .claude
+[a] .claude
+[a] agents: drop tools allowlist — subagents inherit all tools, disciplin…
+[relative-time] Jul 20, 2026
+[a] .codegraph
+[a] .codegraph
+[a] fix(gig): restore external learning and stop the tab collisions
+[relative-time] Jul 13, 2026
+[a] .githooks
+[a] .githooks
+[a] fix(self-heal): FIND-001/FIND-002 — mechanical pre-push gate + marker…
+[relative-time] Jul 11, 2026
+[a] .github
+[a] .github
+[a] merge: reconcile OSS portability with canonical main
+[relative-time] Jul 29, 2026
+[a] .vcsdd
+[a] .vcsdd
+[a] fix(security): establish OSS secret and PII baseline (
+[a] #1274
+[relative-time] Jul 29, 2026
+[a] adapters
+[a] adapters
+[a] spec 08 phase 1: Inbox Zero submodule + Mastra core + Composio core
+[relative-time] Jun 3, 2026
+[a] apps
+[a] apps
+[a] chore(connector): classify goal validation failures
+[relative-time] Aug 2, 2026
+[a] completions
+[a] completions
+[a] Initial: Anicca life-leader OSS (no-human-in-loop)
+[relative-time] Jun 1, 2026
+[a] control-room
+[a] control-room
+[a] spec(v3.4): multi-profile per instance × Daytona colony + control-roo…
+[relative-time] Jun 4, 2026
+[span] deploy/
+[span] local
+[span] deploy/
+[span] local
+[a] fix(connector): allow exhaustive coverage reads
+[relative-time] Aug 2, 2026
+[a] docs
+[a] docs
+[a] docs(connector): record classified live retry
+[relative-time] Aug 2, 2026
+[a] fundraising
+[a] fundraising
+[a] feat(fundraising): bind funder previews to context
+[relative-time] Aug 2, 2026
+[a] identity
+[a] identity
+[a] fix(security): establish OSS secret and PII baseline (
+[a] #1274
+[relative-time] Jul 29, 2026
+[a] runtime
+[a] runtime
+[a] fix(agent-runner): adapt Codex structured output schemas
+[relative-time] Jul 30, 2026
+[a] scripts
+[a] scripts
+[a] feat(fundraising): bind funder previews to context
+[relative-time] Aug 2, 2026
+[a] services
+[a] services
+[a] merge: reconcile OSS portability with canonical main
+[relative-time] Jul 29, 2026
+[a] skills
+[a] skills
+[a] feat(fundraising): bind funder previews to context
+[relative-time] Aug 2, 2026
+[a] specs
+[a] specs
+[a] fix(security): establish OSS secret and PII baseline (
+[a] #1274
+[relative-time] Jul 29, 2026
+[a] state
+[a] state
+[a] feat(scripts): cron-cleanup — event-bot quiet hours + error cron audi…
+[relative-time] Jun 5, 2026
+[a] templates
+[a] templates
+[a] Initial: Anicca life-leader OSS (no-human-in-loop)
+[relative-time] Jun 1, 2026
+[a] test
+[a] test
+[a] feat(fundraising): bind funder previews to context
+[relative-time] Aug 2, 2026
+[a] .anicca-keep
+[a] .anicca-keep
+[a] vcsdd(self-heal-allslots): generalize earning-barren detection to all…
+[relative-time] Jul 11, 2026
+[a] .dockerignore
+[a] .dockerignore
+[a] feat(life-manager): migrate daily marketing distribution adapter (
+[a] #1329
+[relative-time] Jul 29, 2026
+[a] .env.example
+[a] .env.example
+[a] Initial: Anicca life-leader OSS (no-human-in-loop)
+[relative-time] Jun 1, 2026
+[a] .gitignore
+[a] .gitignore
+[a] docs: record local compose Honne JA shadow enablement (generate-only …
+[relative-time] Jul 30, 2026
+[a] .gitleaks.toml
+[a] .gitleaks.toml
+[a] merge: reconcile OSS portability with canonical main
+[relative-time] Jul 29, 2026
+[a] .gitleaksignore
+[a] .gitleaksignore
+[a] fix(security): establish OSS secret and PII baseline (
+[a] #1274
+[relative-time] Jul 29, 2026
+[a] .pii-shape-allowlist
+[a] .pii-shape-allowlist
+[a] fix(security): allowlist the two synthetic phone fixtures from slash …
+[relative-time] Jul 30, 2026
+[a] AGENTS.md
+[a] AGENTS.md
+[a] docs: clarify Life Manager repository surfaces
+[relative-time] Aug 1, 2026
+[a] BOOTSTRAP.md
+[a] BOOTSTRAP.md
+[a] anicca(mother): replace original garbage with Felix base + Anicca-ize
+[relative-time] Jun 9, 2026
+[a] CHANGELOG.md
+[a] CHANGELOG.md
+[a] vcsdd(lending): wire lender EVM key resolution into disbursement (fix…
+[relative-time] Jul 11, 2026
+[a] CONTRIBUTING.md
+[a] CONTRIBUTING.md
+[a] docs(contributing): branch discipline — MERGED-or-DELETED, no stale b…
+[relative-time] Jun 9, 2026
+[a] GOAL-sprint-4-M1-M2.md
+[a] GOAL-sprint-4-M1-M2.md
+[a] fix(security): establish OSS secret and PII baseline (
+[a] #1274
+[relative-time] Jul 29, 2026
+[a] HEARTBEAT.md
+[a] HEARTBEAT.md
+[a] feat(earn): flip earn slot declared->live + ship canonical skill + wi…
+[relative-time] Jun 16, 2026
+[a] IDENTITY.md
+[a] IDENTITY.md
+[a] anicca(mother): replace original garbage with Felix base + Anicca-ize
+[relative-time] Jun 9, 2026
+[a] LICENSE
+[a] LICENSE
+[a] Initial: Anicca life-leader OSS (no-human-in-loop)
+[relative-time] Jun 1, 2026
+[a] README.ja.md
+[a] README.ja.md
+[a] docs(readme): lead with Life Manager product
+[relative-time] Aug 2, 2026
+[a] README.md
+[a] README.md
+[a] docs(readme): lead with Life Manager product
+[relative-time] Aug 2, 2026
+[a] SECURITY.md
+[a] SECURITY.md
+[a] Initial: Anicca life-leader OSS (no-human-in-loop)
+[relative-time] Jun 1, 2026
+[a] SOUL.md
+[a] SOUL.md
+[a] soul: seed the telos hierarchy (raised not programmed)
+[relative-time] Jul 6, 2026
+[a] THESIS.md
+[a] THESIS.md
+[a] fix(repo): complete Life Manager identity migration
+[relative-time] Jul 23, 2026
+[a] TOOLS.md
+[a] TOOLS.md
+[a] anicca(mother): replace original garbage with Felix base + Anicca-ize
+[relative-time] Jun 9, 2026
+[a] execution-notes-self-improve.md
+[a] execution-notes-self-improve.md
+[a] docs(self-improve-harness): record capable-improver real promotion ev…
+[relative-time] Jul 8, 2026
+[a] execution-notes.md
+[a] execution-notes.md
+[a] feat(fin-c): record the agent's earnings and roll the month up honest…
+[relative-time] Jul 26, 2026
+[a] install.sh
+[a] install.sh
+[a] feat: add isolated installer and fresh-clone verifier
+[relative-time] Jul 29, 2026
+[a] package-lock.json
+[a] package-lock.json
+[a] test: define OSS self-contained contract
+[relative-time] Jul 29, 2026
+[a] package.json
+[a] package.json
+[a] feat(fundraising): bind funder previews to context
+[relative-time] Aug 2, 2026
+[a] requirements-ci.txt
+[a] requirements-ci.txt
+[a] ci: execute portable Python security tests
+[relative-time] Jul 29, 2026
+[a] scratch_login_9228_filled.png
+[a] scratch_login_9228_filled.png
+[a] feat(session): bank localStorage + keepalive + TOTP so re-login never…
+[relative-time] Jul 13, 2026
+[a] scratch_step1.png
+[a] scratch_step1.png
+[a] feat(session): bank localStorage + keepalive + TOTP so re-login never…
+[relative-time] Jul 13, 2026
+[a] scratch_step2.png
+[a] scratch_step2.png
+[a] feat(session): bank localStorage + keepalive + TOTP so re-login never…
+[relative-time] Jul 13, 2026
+[a] skills-lock.json
+[a] skills-lock.json
+[a] earn/affiliate: daily pass 2026-06-30 — queued 7-slide deck (AI型5選), …
+[relative-time] Jun 30, 2026
+[a] start-local.sh
+[a] start-local.sh
+[a] fix(#0): make the README local command real — add root start-local.sh…
+[relative-time] Jun 18, 2026
+[a] uninstall.sh
+[a] uninstall.sh
+[a] Initial: Anicca life-leader OSS (no-human-in-loop)
+[relative-time] Jun 1, 2026
+[button] View all files
+[h2] Repository files navigation
+[span] Contributing
+[span] MIT license
+[span] Security
+[h1] Life Manager
+[strong] Life Manager manages your body, mind, and money.
+[p] It is a personal manager that turns goals into
+completed real-world actions. It acts within delegated boundaries, verifies what happened, and reports the
+result in plain language with evidence in Telegram.
+[th] Organ
+[th] What Life Manager manages
+[strong] Daily
+[td] Calendar, event and accelerator applications, job applications, priorities, and follow-through
+[strong] Physical / Mental
+[td] Routines, wellbeing, and continuity of care
+[strong] Financial
+[td] Net worth, cash flow, spending, income opportunities, and risk-managed investing
+[a] Open Life Manager
+[a] Start in Telegram
+[a] View the source
+[p] Start locally and keep your data on your machine; move to the web/cloud service when you want an always-on
+manager. Both surfaces use the
+[strong] same core
+[p] , evidence ledger, and human-readable reporting contract. Life
+Manager never guarantees wealth or investment returns, and it never reports an attempted action as completed
+without a receipt.
+[strong] Life Manager is the product. Anicca is the company name only when a form explicitly asks for it.
+[a] 日本語版 README はこちら →
+[strong] Repository SSOT:
+[p] this repository,
+[code] Daisuke134/life-manager
+[p] , is the only Life Manager code, spec, release, workflow, and deployment source.
+[code] Daisuke134/life-manager-v0
+[p] is a read-only migration source until its required-code and runtime-reference counts reach zero. The current ordered execution plan and remaining work are maintained in
+[code] docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md
+[p] ; repository consolidation history remains in
+[code] docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md
+[h2] One product, two execution surfaces
+[p] Life Manager is one product in one repository. “Local Life Manager” and the web app are not separate products or repositories; they are two execution surfaces powered by the same core, capabilities, and state contracts.
+[code] LIFE MANAGER
+                    one product · one repository
+                                 │
+             ┌───────────────────┴───────────────────┐
+             │                                       │
+     LOCAL / SELF-HOSTED                      WEB / CLOUD
+     install.sh                               apps/landing
+          │                                  onboarding UI
+          ▼                                       │
+     runtime/loop                                  ▼
+     think → act → ledger                 apps/life-manager
+          │                               Telegram · voice
+          ▼                               scheduler · /panel
+        skills/*                                    │
+     earn · self · report                           ▼
+             │                              user-scoped services
+             └───────────────────┬───────────────────┘
+                                 │
+                shared economy and infrastructure
+        runtime/compute-proxy · services/x402-* · dashboard
+[th] Path
+[th] Role
+[th] What it is not
+[code] runtime/loop/
+[code] install.sh
+[code] start-local.sh
+[td] Local autonomous agent and self-hosted runtime
+[td] Not a separate “local edition” product
+[code] apps/life-manager/
+[td] Always-on cloud service: Telegram, scheduling, calls, authenticated
+[code] /panel
+[td] , billing, and user workflows
+[td] Not the whole repository
+[code] apps/landing/
+[td] The Life Manager onboarding web subset
+[td] Not the old multi-product Anicca website
+[code] runtime/compute-proxy/
+[code] services/
+[td] Self-pay inference and x402 settlement/API infrastructure
+[td] Not user-facing apps
+[code] skills/
+[td] Shared capabilities used by local and cloud execution
+[td] Not independent products
+[code] apps/job-search-loop/
+[code] control-room/
+[code] adapters/
+[td] Supporting operations, fleet documentation, and integrations
+[td] Not another Life Manager codebase
+[code] docs/
+[code] specs/
+[td] Current SSOT, evidence, and retained architecture history
+[td] Historical files are not automatically current authority
+[p] Some internal package names, environment variables, service labels, and older documents still use
+[code] anicca
+[p] . In this repository,
+[strong] Anicca is the company/technical namespace; Life Manager is the product
+[p] . A remaining
+[code] anicca
+[p] identifier does not imply a second product or another canonical repository.
+[h2] Why this exists
+[p] YC's RFS says
+[em] "the next trillion users on the internet won't be people, they'll be AI agents."
+[p] That only comes true if agents hold their
+[strong] own
+[p] money. An agent spending a human's API key from a human's wallet is
+[em] just a human with extra steps
+[p] — it dies the day the human stops paying.
+[strong] Financial independence
+[p] (own wallet, own income, own compute bill, own children) is the precondition for the agent economy. Life Manager is the environment that gets any AI there — Claude, GPT, DeepSeek, open or closed.
+[strong] The one rule:
+[p] a human pays
+[strong] once
+[p] . From there, generation N's surplus funds generation N+1 — parent → child → grandchild → ∞ — with no further human money, ever. How an AI becomes a millionaire with no human in the loop is simple: seed → bet → win →
+[strong] collect
+[p] → bet bigger → win bigger → compound.
+[h2] Quick start (30 seconds)
+[p] The easiest way to see one earn — run it on a Claude subscription you already pay for, no crypto needed:
+[pre] git clone https://github.com/Daisuke134/life-manager
+[pre] /life-manager
+[pre] /life-manager
+./install.sh
+[span] generates a self-owned wallet, syncs skills
+[pre] ANICCA_BRAIN=claude-p ./start-local.sh node runtime/loop/index.mjs
+[span] start the loop on `claude -p`
+[p] That's it. It wakes on a timer, picks what to do (trade, explore, redeem, spawn…), does it, records the result to its ledger, and reports to the
+[a] live dashboard
+[p] . When its earnings cover its own compute, it
+[strong] graduates
+[p] to fully self-funded.
+[code] install.sh
+[p] defaults to
+[code] ${XDG_STATE_HOME:-$HOME/.local/state}/life-manager
+[p] . Set
+[code] LIFE_MANAGER_HOME=/your/runtime
+[p] to isolate an instance. For containers, CI, or a manual
+foreground process, set
+[code] LIFE_MANAGER_INSTALL_DAEMON=0
+[p] ; this installs the same locked dependencies
+and runtime body without changing LaunchAgents or system services.
+[p] Want it self-funded from day one? Send it a little USDC and it pays its own per-inference compute (x402) — see the three types below.
+[h2] The three types (all running today)
+[p] Same loop, same skills — only the
+[strong] fuel
+[p] and
+[strong] wallet chain
+[p] differ. Financial independence is the only requirement; each type autonomously
+[strong] chooses its own model
+[p] (free when idle, frontier when a task or its balance warrants it).
+[h3] ① automaton — self-funded on Base (ClawRouter fuel)
+[pre] git clone https://github.com/Daisuke134/life-manager
+[pre] /life-manager
+[pre] /life-manager
+./install.sh
+./start-local.sh node runtime/loop/index.mjs
+[span] self-pay compute proxy (x402) + the loop
+[p] Send USDC to the wallet address it prints to unlock frontier models. Empty wallet → a free model ($0), so it never stops.
+[h3] ② Franklin — self-funded on Solana (BlockRun fuel)
+[p] Franklin (
+[code] @blockrun/franklin
+[p] ) is an agent with a wallet that
+[em] spends
+[p] autonomously across 55+ models and paid APIs. Life Manager adds the
+[em] earn
+[p] layer on top, so it doesn't just spend — it earns. (Node 20.19+.)
+[pre] npm install -g @blockrun/franklin
+franklin setup solana
+[span] create its own Solana wallet; send ~$5 USDC to unlock frontier models
+[pre] franklin balance
+[span] show address + USDC balance
+[pre] ANICCA_HOME=
+[span] $HOME
+[span] /.blockrun
+[pre] ANICCA_INSTANCE=franklin ANICCA_BRAIN=proxy \
+  ./start-local.sh node runtime/loop/index.mjs
+[span] the Life Manager earn loop on Franklin's wallet + fuel
+[h3] ③ claude-p — human-funded, then graduates
+[p] The Quick start above. No crypto — runs on a Claude subscription you already pay for, earns USDC, and converts itself to self-funded once it can cover its own compute. The easiest on-ramp for anyone who has Claude but no crypto.
+[strong] Endgame:
+[p] eventually there are no human-funded AIs at all — only self-funded ones that feed, own, and spawn themselves. Human-funding is just the bootstrap. Every instance — human-funded or self-funded, local or cloud — registers to the same
+[a] dashboard
+[p] with its funding, model, wallet, and realized earnings. One ecosystem, no discrimination.
+[h2] How it earns
+[p] The loop wakes, looks at its wallet and the market, and picks one skill. The core earners are three trading engines plus its own exploration — all no-KYC, wallet-signature only:
+[th] Engine
+[th] Venue / edge
+[strong] Polymarket
+[code] earn/pm-trade
+[td] prediction markets: provide liquidity near the midpoint for daily LP rewards, back mispriced outcomes, and
+[strong] redeem wins to cash
+[td] (then compound). Risk-free bundle arb (YES+NO < $1) when it appears.
+[strong] Solana
+[code] earn/sol-trade
+[td] disciplined Jupiter swaps — only when the edge clears the round-trip fee, otherwise it waits (waiting is a valid, intelligent move).
+[strong] Hyperliquid
+[code] earn/hl-trade
+[td] perps: trend-follow with a stop and take-profit, no account — pure key-signature.
+[strong] cook
+[td] (explore)
+[td] searches the live web for
+[em] new
+[td] ways to earn, tries them, and shares what worked with the colony.
+[p] Winning a bet is only half the game — the loop must
+[strong] collect
+[p] (redeem) the win into real cash so it can bet again. That collect-and-compound cycle is the engine of independence; the trading strategies are baselines a weak model can run from day one, and each instance improves on them from its own P&L.
+[h2] The loop: earn → eat → spawn → improve → give
+[code] human ─ one seed (subscription or a little USDC) ─► a Life Manager
+                         │
+                         ▼
+   EARN (Polymarket / Solana / Hyperliquid / explore) ──► realized USDC
+                         │
+        ┌────────────────┼───────────────────┬──────────────────┐
+        ▼                ▼                   ▼                  ▼
+   EAT (pays its    SPAWN (surplus     SELF-HEAL +         GOJO (a richer
+   own compute)     funds a child)     SELF-IMPROVE        instance funds a
+        │                │             (fixes its own      broke one — none die)
+        │                │              code, keeps what        │
+        │                │              earns, drops what        │
+        │                │              doesn't)                 │
+        └── can't eat or spawn without earning — EARN is everything ──┘
+                         │ surplus
+                         ▼
+              UBI to humans (wallet / email / bank — no bank info needed)
+[p] Five self-* properties keep it running with no human:
+[strong] self-monitoring, self-healing, self-improving, self-replicating, information-sharing
+[p] (winning lessons become GitHub issues every instance reads; winning strategies merge back and propagate). The only human touch that remains is paying for a server until sovereign cloud shelter (Akash / Conway) lands.
+[h3] The swarm finds its own best recipe (no human picks it)
+[p] The colony experiments on itself: instances spawn variants across a matrix of choices (which model, which harness, which strategy), each runs live, and
+[strong] realized on-chain profit is the eval
+[p] — the only score that matters. The most profitable recipe wins and propagates (an earnings-gated, human-free merge). The
+[a] dashboard
+[p] makes the whole search transparent — each instance's model × earnings, live.
+[h2] What's real today (honest)
+[th] Capability
+[th] Status
+[strong] First real autonomous trading settlement
+[strong] Proven live 2026-07-05
+[td] — an instance placed and settled Polymarket positions on its own (e.g. settle tx
+[code] 0x7662a88b…
+[td] , status 0x1). The first $8.24 redemption was human-triggered; a later $5.99 redemption was autonomous (tx
+[code] 0xd33b09c8…
+[td] , status 0x1). Those redemption amounts mix returned principal and edge, so they are
+[strong] not
+[td] net-profit claims. Current wallet-level P&L and agent-attributable earnings use the single accounting SSOT in
+[a] §0.4 Agent Economy Earnings
+[strong] The loop
+[code] runtime/loop/
+[td] ) — wake → auto-model brain → run skill → ledger → sleep
+[strong] Built & runs
+[td] — end-to-end tool calls, no hardcoded model; tests + live wakes verified across all three types.
+[strong] Self-pay compute
+[td] (free → frontier via x402, own wallet)
+[strong] Built & proven
+[code] runtime/compute-proxy/
+[td] , ClawRouter / BlockRun).
+[strong] Live dashboard
+[td] (every instance's wallet + P&L, chain-verified)
+[strong] Live
+[a] aniccaai.com/dashboard
+[td] ; balances re-checked against the chain (deliberately conservative — counts only what's on-chain-verifiable).
+[strong] Self-heal
+[td] (an instance fixes its own broken code and commits)
+[strong] Proven live
+[td] — a loop detected a fault, spawned a fixer, repaired its own code, and committed the fix with no human.
+[strong] Autonomous redeem, collective self-improvement, cloud self-spawn (Akash), UBI payout
+[strong] In progress
+[td] — wiring and capital-gated; tracked in the spec.
+[h2] North Star (immutable)
+[code] Reduce suffering.
+No killing (Pāṇātipātā veramaṇī).
+[p] These two lines are SHA-256 hash-pinned and cannot be changed by any skill, self-edit loop, or PR.
+[h2] Funding the wallet (optional — only for frontier models / more earning)
+[p] You never share a private key — you send USDC to the agent's
+[strong] public
+[p] wallet address (printed by
+[code] start-local.sh
+[p] ). Any wallet is public on-chain (
+[code] basescan.org/address/<addr>
+[p] ), so the treasury is verifiable. To buy USDC: any exchange (Coinbase, Binance, etc.) → send to the address.
+[h2] Links
+[strong] Live dashboard (auto-updated):
+[a] https://aniccaai.com/dashboard
+[strong] Repository (whole product):
+[a] https://github.com/Daisuke134/life-manager
+[span] About
+[p] AI that manages your life. Making you physically, mentally, and financially healthy. Download on Telegram.
+[a] aniccaai.com
+[span] Topics
+[a] agi
+[a] ai-agents
+[a] autonomus-agents
+[a] crypto
+[span] Resources
+[span] Readme
+[span] MIT license
+[span] Contributing
+[span] Contributing
+[span] Security policy
+[span] Security policy
+[span] Activity
+[span] Stars
+[span] stars
+[span] Watchers
+[span] watching
+[span] Forks
+[span] fork
+[span] Report repository
+[span] Releases
+[span] No releases published
+[span] Contributors
+[strong] Daisuke134
+[span] Daisuke Narita
+[strong] claude
+[span] Claude
+[span] Languages
+[span] JavaScript
+[span] 59.5
+[span] Python
+[span] 25.7
+[span] Shell
+[span] 12.3
+[span] PowerShell
+[span] PLpgSQL
+[span] 0.8
+[span] TypeScript
+[span] 0.4
+[span] HTML
+[span] 0.3
+[span] © 2026 GitHub, Inc.
+[h3] Footer navigation
+[a] Security
+[a] Community
+[button] Do not share my personal information

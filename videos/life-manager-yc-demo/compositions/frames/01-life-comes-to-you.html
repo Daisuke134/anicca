@@ -1,0 +1,278 @@
+<template>
+  <style>
+    @font-face {
+      font-family: "__Outfit_ed3508";
+      font-style: normal;
+      font-weight: 100 900;
+      font-display: swap;
+      src: url("capture/assets/fonts/7b0b24f36b1a6d0b-s.p.woff2") format("woff2");
+    }
+
+    #root {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      container-type: size;
+      color: #18181b;
+      font-family: "__Outfit_ed3508";
+    }
+
+    .f01-life-comes-to-you-ground {
+      position: absolute;
+      inset: 0;
+      background: #fafafa;
+      overflow: hidden;
+    }
+
+    .f01-life-comes-to-you-grid {
+      position: absolute;
+      inset: 0;
+      opacity: 0.42;
+      background-image:
+        linear-gradient(rgba(24, 24, 27, 0.055) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(24, 24, 27, 0.055) 1px, transparent 1px);
+      background-size: 80px 80px;
+    }
+
+    .f01-life-comes-to-you-grid::after {
+      content: "";
+      position: absolute;
+      left: 80px;
+      right: 80px;
+      top: 80px;
+      height: 1px;
+      background: rgba(24, 24, 27, 0.12);
+    }
+
+    .f01-life-comes-to-you-stage {
+      position: absolute;
+      inset: 0 0 184px;
+      overflow: hidden;
+    }
+
+    .f01-life-comes-to-you-scene {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .f01-life-comes-to-you-type-line {
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      white-space: nowrap;
+      font-size: 8.45cqw;
+      font-weight: 400;
+      line-height: 0.98;
+      letter-spacing: -0.028em;
+    }
+
+    .f01-life-comes-to-you-char {
+      display: inline-block;
+    }
+
+    .f01-life-comes-to-you-caret {
+      display: inline-block;
+      width: 0.54em;
+      height: 0.84em;
+      margin-left: 0.1em;
+      border-radius: 6px;
+      background: #18181b;
+      vertical-align: -0.05em;
+    }
+
+    .f01-life-comes-to-you-swap-line {
+      display: grid;
+      grid-template-columns: auto 9.2ch;
+      align-items: baseline;
+      column-gap: 0.35em;
+      width: min-content;
+      white-space: nowrap;
+      font-size: 7.3cqw;
+      font-weight: 400;
+      line-height: 1;
+      letter-spacing: -0.025em;
+    }
+
+    .f01-life-comes-to-you-fixed {
+      text-align: right;
+    }
+
+    .f01-life-comes-to-you-slot {
+      position: relative;
+      display: inline-block;
+      width: 9.2ch;
+      height: 1em;
+      color: #53535a;
+    }
+
+    .f01-life-comes-to-you-token {
+      position: absolute;
+      left: 0;
+      top: 0;
+      opacity: 0;
+    }
+
+    .f01-life-comes-to-you-final-hero {
+      position: absolute;
+      left: 50%;
+      top: 304px;
+      width: 1320px;
+      margin-left: -660px;
+      text-align: center;
+    }
+
+    .f01-life-comes-to-you-selection {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 1120px;
+      min-height: 220px;
+      padding: 22px 64px 28px;
+      border: 3px solid #cda43c;
+      border-radius: 8px;
+      background: rgba(250, 250, 250, 0.92);
+      transform-origin: center center;
+    }
+
+    .f01-life-comes-to-you-final-text {
+      white-space: nowrap;
+      font-size: 8.9cqw;
+      font-weight: 400;
+      line-height: 0.98;
+      letter-spacing: -0.028em;
+    }
+
+    .f01-life-comes-to-you-wordmark {
+      position: absolute;
+      left: 50%;
+      top: 590px;
+      width: 760px;
+      margin-left: -380px;
+      text-align: center;
+      font-size: 2.3cqw;
+      font-weight: 500;
+      line-height: 1;
+      letter-spacing: -0.005em;
+    }
+
+    .f01-life-comes-to-you-wordmark::before,
+    .f01-life-comes-to-you-wordmark::after {
+      content: "";
+      display: inline-block;
+      width: 92px;
+      height: 1px;
+      margin: 0 26px 0.32em;
+      background: rgba(24, 24, 27, 0.2);
+    }
+  </style>
+
+  <div id="root" data-composition-id="01-life-comes-to-you" data-width="1920" data-height="1080" data-duration="5.154">
+    <div class="clip f01-life-comes-to-you-ground" data-start="0" data-duration="7" data-track-index="0">
+      <div class="f01-life-comes-to-you-grid"></div>
+    </div>
+
+    <div class="clip f01-life-comes-to-you-stage" data-start="0" data-duration="7" data-track-index="1">
+      <div id="f01-life-comes-to-you-scene-one" class="f01-life-comes-to-you-scene">
+        <div class="f01-life-comes-to-you-type-line" aria-label="YOUR IDEAL LIFE">
+          <span class="f01-life-comes-to-you-char">Y</span><span class="f01-life-comes-to-you-char">O</span><span class="f01-life-comes-to-you-char">U</span><span class="f01-life-comes-to-you-char">R</span><span class="f01-life-comes-to-you-char">&nbsp;</span><span class="f01-life-comes-to-you-char">I</span><span class="f01-life-comes-to-you-char">D</span><span class="f01-life-comes-to-you-char">E</span><span class="f01-life-comes-to-you-char">A</span><span class="f01-life-comes-to-you-char">L</span><span class="f01-life-comes-to-you-char">&nbsp;</span><span class="f01-life-comes-to-you-char">L</span><span class="f01-life-comes-to-you-char">I</span><span class="f01-life-comes-to-you-char">F</span><span class="f01-life-comes-to-you-char">E</span><span id="f01-life-comes-to-you-caret" class="f01-life-comes-to-you-caret"></span>
+        </div>
+      </div>
+
+      <div id="f01-life-comes-to-you-scene-two" class="f01-life-comes-to-you-scene">
+        <div class="f01-life-comes-to-you-swap-line">
+          <span class="f01-life-comes-to-you-fixed">NOT ANOTHER</span>
+          <span class="f01-life-comes-to-you-slot">
+            <span id="f01-life-comes-to-you-system" class="f01-life-comes-to-you-token">SYSTEM</span>
+            <span id="f01-life-comes-to-you-dashboard" class="f01-life-comes-to-you-token">DASHBOARD</span>
+            <span id="f01-life-comes-to-you-app" class="f01-life-comes-to-you-token">APP</span>
+          </span>
+        </div>
+      </div>
+
+      <div id="f01-life-comes-to-you-final-hero" class="f01-life-comes-to-you-final-hero">
+        <div id="f01-life-comes-to-you-selection" class="f01-life-comes-to-you-selection">
+          <span class="f01-life-comes-to-you-final-text">COMES TO YOU</span>
+        </div>
+      </div>
+      <div id="f01-life-comes-to-you-wordmark" class="f01-life-comes-to-you-wordmark">Life Manager</div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script>
+    (() => {
+      const frame = document.querySelector('[data-composition-id="01-life-comes-to-you"]');
+      const sceneOne = frame.querySelector('#f01-life-comes-to-you-scene-one');
+      const sceneTwo = frame.querySelector('#f01-life-comes-to-you-scene-two');
+      const chars = frame.querySelectorAll('.f01-life-comes-to-you-char');
+      const caret = frame.querySelector('#f01-life-comes-to-you-caret');
+      const system = frame.querySelector('#f01-life-comes-to-you-system');
+      const dashboard = frame.querySelector('#f01-life-comes-to-you-dashboard');
+      const app = frame.querySelector('#f01-life-comes-to-you-app');
+      const finalHero = frame.querySelector('#f01-life-comes-to-you-final-hero');
+      const selection = frame.querySelector('#f01-life-comes-to-you-selection');
+      const wordmark = frame.querySelector('#f01-life-comes-to-you-wordmark');
+
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+      window.__timelines['01-life-comes-to-you'] = tl;
+
+      gsap.set([sceneTwo, finalHero, wordmark], { autoAlpha: 0 });
+      gsap.set(chars, { opacity: 0 });
+      gsap.set(caret, { opacity: 0 });
+      gsap.set([system, dashboard, app], { opacity: 0 });
+
+      tl.fromTo(
+        chars,
+        { opacity: 0 },
+        { opacity: 1, duration: 0.07, stagger: 0.055, ease: 'none' },
+        0.08
+      );
+      tl.set(caret, { opacity: 1 }, 0.14);
+      tl.set(caret, { opacity: 0 }, 0.42);
+      tl.set(caret, { opacity: 1 }, 0.64);
+      tl.set(caret, { opacity: 0 }, 0.92);
+
+      tl.to(sceneOne, { x: -230, duration: 0.3, ease: 'power4.in' }, 1.0);
+      tl.to(sceneOne, { opacity: 0, duration: 0.28, ease: 'power1.in' }, 1.0);
+      tl.fromTo(
+        sceneTwo,
+        { x: 230, opacity: 0.35 },
+        { x: 0, opacity: 1, visibility: 'visible', duration: 0.3, ease: 'power4.out' },
+        1.3
+      );
+
+      tl.set(system, { opacity: 1 }, 1.46);
+      tl.set(system, { opacity: 0 }, 2.43);
+      tl.set(dashboard, { opacity: 1 }, 2.43);
+      tl.set(dashboard, { opacity: 0 }, 3.55);
+      tl.set(app, { opacity: 1 }, 3.55);
+
+      tl.to(sceneTwo, { scale: 0.8, filter: 'blur(10px)', duration: 0.3, ease: 'power3.in' }, 4.5);
+      tl.to(sceneTwo, { opacity: 0.15, duration: 0.3, ease: 'none' }, 4.5);
+      tl.set(sceneTwo, { opacity: 0, visibility: 'hidden' }, 4.8);
+      tl.fromTo(
+        finalHero,
+        { scale: 1.25, filter: 'blur(10px)', opacity: 0.15 },
+        { scale: 1, filter: 'blur(0px)', opacity: 1, visibility: 'visible', duration: 0.5, ease: 'expo.out' },
+        4.8
+      );
+      tl.fromTo(
+        selection,
+        { scaleX: 0.18, opacity: 0 },
+        { scaleX: 1, opacity: 1, duration: 0.34, ease: 'back.out(1.7)' },
+        4.92
+      );
+      tl.fromTo(
+        wordmark,
+        { y: 30, opacity: 0 },
+        { y: 0, opacity: 1, visibility: 'visible', duration: 0.72, ease: 'expo.out' },
+        5.58
+      );
+    })();
+  </script>
+</template>

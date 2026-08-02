@@ -19,12 +19,12 @@ const REQUIRED_SOURCES = Object.freeze({
   readme_en: "repo://README.md",
   readme_ja: "repo://README.ja.md",
   agent_registry: "repo://agents/registry.json",
-  provider_manifest: "repo://apps/life-manager/config/yc-application-provider.json",
+  provider_manifest: "repo://apps/life-manager/config/yc-submitted-update-provider.json",
   answer_draft: "workspace://funders/results/FT-YC/yc-answers-lifemanager-2026fall.json",
   application_kit: "application-kit://KIT.md",
   application_submit_receipt: "repo://docs/evidence/funding/2026-08-02-o1c07-yc-fall-2026-submit.json",
   founder_video_source: "application-kit://videos/Anicca_intro_EN.mp4",
-  demo_source: "workspace://funders/assets/life-manager-demo.mp4",
+  demo_source: "application-kit://videos/life-manager-yc-demo.mp4",
 });
 
 function source(role, observedAt = "2026-08-02T05:00:10.000Z") {
@@ -147,6 +147,47 @@ test("five current scopes become a frozen privacy-minimal submit-ready preview",
   for (const forbidden of ["fixture-", "raw_answer", "email", "phone", "birth_date", "authenticity_token", "cookie", "signed_url", "/Users/"]) {
     assert.equal(serialized.includes(forbidden), false, forbidden);
   }
+});
+
+test("a content-addressed local demo can be prepared before its first remote upload", () => {
+  const input = fixture();
+  const demoSource = input.sources.find(({ role }) => role === "demo_source");
+  input.scopes[3] = {
+    scope: "demo",
+    status: "prepared",
+    observed_at: "2026-08-02T05:01:10.000Z",
+    source_roles: ["demo_source"],
+    issue_codes: [],
+    observation: {
+      dedicated_source_role: "demo_source",
+      remote: null,
+      local: {
+        duration_seconds: 50.833333,
+        bytes: demoSource.bytes,
+        sha256: demoSource.sha256,
+        container: "mp4",
+        video_codec: "h264",
+        audio_codec: "aac",
+        width: 1920,
+        height: 1080,
+      },
+    },
+  };
+  const receipt = build(input);
+  assert.equal(receipt.scopes[3].status, "prepared");
+  assert.equal(receipt.scopes[3].observation.remote, null);
+  assert.equal(receipt.scopes[3].observation.local.sha256, demoSource.sha256);
+  assert.equal(receipt.submit_ready, true);
+});
+
+test("typed company, founder, and progress payloads may be prepared before their one allowed controls", () => {
+  const input = fixture();
+  input.scopes[0].status = "prepared";
+  input.scopes[1].status = "prepared";
+  input.scopes[4].status = "prepared";
+  const receipt = build(input);
+  assert.deepEqual(receipt.scopes.map(({ status }) => status), ["prepared", "prepared", "present", "present", "prepared"]);
+  assert.equal(receipt.submit_ready, true);
 });
 
 test("all five scopes can be completely previewed while blockers close submit readiness", () => {

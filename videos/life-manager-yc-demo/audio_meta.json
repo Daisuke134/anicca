@@ -1,0 +1,691 @@
+{
+  "bgm": {
+    "path": "assets/bgm/track.mp3",
+    "volume": 0.12,
+    "query": "confident minimal technical underscore",
+    "duration_s": 63
+  },
+  "bgm_pending": false,
+  "voices": [
+    {
+      "frame": 1,
+      "path": "assets/voice/01.wav",
+      "duration_s": 4.754,
+      "words": [
+        {
+          "id": "w0",
+          "text": "Your",
+          "start": 0.259,
+          "end": 0.439
+        },
+        {
+          "id": "w1",
+          "text": "ideal",
+          "start": 0.579,
+          "end": 0.859
+        },
+        {
+          "id": "w2",
+          "text": "life",
+          "start": 0.979,
+          "end": 1.22
+        },
+        {
+          "id": "w3",
+          "text": "should",
+          "start": 1.279,
+          "end": 1.459
+        },
+        {
+          "id": "w4",
+          "text": "come",
+          "start": 1.5,
+          "end": 1.699
+        },
+        {
+          "id": "w5",
+          "text": "to",
+          "start": 1.719,
+          "end": 1.86
+        },
+        {
+          "id": "w6",
+          "text": "you",
+          "start": 1.919,
+          "end": 2.039
+        },
+        {
+          "id": "w7",
+          "text": "—",
+          "start": 2.039,
+          "end": 2.039
+        },
+        {
+          "id": "w8",
+          "text": "not",
+          "start": 2.139,
+          "end": 2.359
+        },
+        {
+          "id": "w9",
+          "text": "become",
+          "start": 2.399,
+          "end": 2.639
+        },
+        {
+          "id": "w10",
+          "text": "another",
+          "start": 2.679,
+          "end": 2.959
+        },
+        {
+          "id": "w11",
+          "text": "system",
+          "start": 3.079,
+          "end": 3.459
+        },
+        {
+          "id": "w12",
+          "text": "you",
+          "start": 3.539,
+          "end": 3.619
+        },
+        {
+          "id": "w13",
+          "text": "must",
+          "start": 3.659,
+          "end": 3.879
+        },
+        {
+          "id": "w14",
+          "text": "manage.",
+          "start": 3.98,
+          "end": 4.42
+        }
+      ]
+    },
+    {
+      "frame": 2,
+      "path": "assets/voice/02.wav",
+      "duration_s": 7.784,
+      "words": [
+        {
+          "id": "w0",
+          "text": "Life",
+          "start": 0.28,
+          "end": 0.519
+        },
+        {
+          "id": "w1",
+          "text": "Manager",
+          "start": 0.62,
+          "end": 1.12
+        },
+        {
+          "id": "w2",
+          "text": "is",
+          "start": 1.159,
+          "end": 1.319
+        },
+        {
+          "id": "w3",
+          "text": "one",
+          "start": 1.399,
+          "end": 1.539
+        },
+        {
+          "id": "w4",
+          "text": "open-source",
+          "start": 1.679,
+          "end": 2.159
+        },
+        {
+          "id": "w5",
+          "text": "product:",
+          "start": 2.24,
+          "end": 2.659
+        },
+        {
+          "id": "w6",
+          "text": "local",
+          "start": 3.139,
+          "end": 3.48
+        },
+        {
+          "id": "w7",
+          "text": "and",
+          "start": 3.559,
+          "end": 3.639
+        },
+        {
+          "id": "w8",
+          "text": "self-hosted",
+          "start": 3.74,
+          "end": 4.299
+        },
+        {
+          "id": "w9",
+          "text": "for",
+          "start": 4.36,
+          "end": 4.42
+        },
+        {
+          "id": "w10",
+          "text": "technical",
+          "start": 4.5,
+          "end": 4.88
+        },
+        {
+          "id": "w11",
+          "text": "users,",
+          "start": 5.019,
+          "end": 5.4
+        },
+        {
+          "id": "w12",
+          "text": "cloud",
+          "start": 5.859,
+          "end": 6.159
+        },
+        {
+          "id": "w13",
+          "text": "and",
+          "start": 6.199,
+          "end": 6.279
+        },
+        {
+          "id": "w14",
+          "text": "web",
+          "start": 6.379,
+          "end": 6.599
+        },
+        {
+          "id": "w15",
+          "text": "for",
+          "start": 6.639,
+          "end": 6.719
+        },
+        {
+          "id": "w16",
+          "text": "everyone",
+          "start": 6.819,
+          "end": 7.139
+        },
+        {
+          "id": "w17",
+          "text": "else.",
+          "start": 7.199,
+          "end": 7.499
+        }
+      ]
+    },
+    {
+      "frame": 3,
+      "path": "assets/voice/03.wav",
+      "duration_s": 7.784,
+      "words": [
+        {
+          "id": "w0",
+          "text": "Locally,",
+          "start": 0.14,
+          "end": 0.599
+        },
+        {
+          "id": "w1",
+          "text": "its",
+          "start": 0.939,
+          "end": 1.12
+        },
+        {
+          "id": "w2",
+          "text": "runtime",
+          "start": 1.199,
+          "end": 1.659
+        },
+        {
+          "id": "w3",
+          "text": "wakes,",
+          "start": 1.74,
+          "end": 2.119
+        },
+        {
+          "id": "w4",
+          "text": "chooses",
+          "start": 2.5,
+          "end": 2.899
+        },
+        {
+          "id": "w5",
+          "text": "bounded",
+          "start": 2.96,
+          "end": 3.24
+        },
+        {
+          "id": "w6",
+          "text": "work,",
+          "start": 3.339,
+          "end": 3.599
+        },
+        {
+          "id": "w7",
+          "text": "acts",
+          "start": 4.039,
+          "end": 4.279
+        },
+        {
+          "id": "w8",
+          "text": "through",
+          "start": 4.319,
+          "end": 4.46
+        },
+        {
+          "id": "w9",
+          "text": "a",
+          "start": 4.5,
+          "end": 4.519
+        },
+        {
+          "id": "w10",
+          "text": "skill,",
+          "start": 4.619,
+          "end": 4.96
+        },
+        {
+          "id": "w11",
+          "text": "writes",
+          "start": 5.4,
+          "end": 5.659
+        },
+        {
+          "id": "w12",
+          "text": "a",
+          "start": 5.699,
+          "end": 5.719
+        },
+        {
+          "id": "w13",
+          "text": "ledger",
+          "start": 5.819,
+          "end": 6.039
+        },
+        {
+          "id": "w14",
+          "text": "receipt,",
+          "start": 6.099,
+          "end": 6.539
+        },
+        {
+          "id": "w15",
+          "text": "and",
+          "start": 6.819,
+          "end": 6.919
+        },
+        {
+          "id": "w16",
+          "text": "repeats.",
+          "start": 6.96,
+          "end": 7.5
+        }
+      ]
+    },
+    {
+      "frame": 4,
+      "path": "assets/voice/04.wav",
+      "duration_s": 9.326,
+      "words": [
+        {
+          "id": "w0",
+          "text": "Specialist",
+          "start": 0.28,
+          "end": 0.879
+        },
+        {
+          "id": "w1",
+          "text": "agents",
+          "start": 1.019,
+          "end": 1.36
+        },
+        {
+          "id": "w2",
+          "text": "span",
+          "start": 1.419,
+          "end": 1.699
+        },
+        {
+          "id": "w3",
+          "text": "health,",
+          "start": 1.799,
+          "end": 2.119
+        },
+        {
+          "id": "w4",
+          "text": "finance,",
+          "start": 2.539,
+          "end": 3.119
+        },
+        {
+          "id": "w5",
+          "text": "growth,",
+          "start": 3.519,
+          "end": 3.959
+        },
+        {
+          "id": "w6",
+          "text": "technology,",
+          "start": 4.36,
+          "end": 5.119
+        },
+        {
+          "id": "w7",
+          "text": "and",
+          "start": 5.5,
+          "end": 5.599
+        },
+        {
+          "id": "w8",
+          "text": "opportunity,",
+          "start": 5.719,
+          "end": 6.44
+        },
+        {
+          "id": "w9",
+          "text": "each",
+          "start": 6.92,
+          "end": 7.119
+        },
+        {
+          "id": "w10",
+          "text": "labeled",
+          "start": 7.239,
+          "end": 7.619
+        },
+        {
+          "id": "w11",
+          "text": "by",
+          "start": 7.659,
+          "end": 7.779
+        },
+        {
+          "id": "w12",
+          "text": "its",
+          "start": 7.799,
+          "end": 7.96
+        },
+        {
+          "id": "w13",
+          "text": "true",
+          "start": 8.079,
+          "end": 8.22
+        },
+        {
+          "id": "w14",
+          "text": "lifecycle.",
+          "start": 8.359,
+          "end": 9.019
+        }
+      ]
+    },
+    {
+      "frame": 5,
+      "path": "assets/voice/05.wav",
+      "duration_s": 7.941,
+      "words": [
+        {
+          "id": "w0",
+          "text": "Cloud",
+          "start": 0.119,
+          "end": 0.459
+        },
+        {
+          "id": "w1",
+          "text": "adds",
+          "start": 0.519,
+          "end": 0.779
+        },
+        {
+          "id": "w2",
+          "text": "Telegram",
+          "start": 0.819,
+          "end": 1.259
+        },
+        {
+          "id": "w3",
+          "text": "onboarding,",
+          "start": 1.399,
+          "end": 1.86
+        },
+        {
+          "id": "w4",
+          "text": "scheduling,",
+          "start": 2.319,
+          "end": 2.799
+        },
+        {
+          "id": "w5",
+          "text": "wake",
+          "start": 3.199,
+          "end": 3.379
+        },
+        {
+          "id": "w6",
+          "text": "calls,",
+          "start": 3.46,
+          "end": 3.799
+        },
+        {
+          "id": "w7",
+          "text": "authenticated",
+          "start": 4.139,
+          "end": 4.739
+        },
+        {
+          "id": "w8",
+          "text": "access,",
+          "start": 4.839,
+          "end": 5.279
+        },
+        {
+          "id": "w9",
+          "text": "billing,",
+          "start": 5.659,
+          "end": 5.98
+        },
+        {
+          "id": "w10",
+          "text": "and",
+          "start": 6.319,
+          "end": 6.399
+        },
+        {
+          "id": "w11",
+          "text": "user-scoped",
+          "start": 6.5,
+          "end": 7.059
+        },
+        {
+          "id": "w12",
+          "text": "workflows.",
+          "start": 7.139,
+          "end": 7.699
+        }
+      ]
+    },
+    {
+      "frame": 6,
+      "path": "assets/voice/06.wav",
+      "duration_s": 5.564,
+      "words": [
+        {
+          "id": "w0",
+          "text": "Today’s",
+          "start": 0.14,
+          "end": 0.479
+        },
+        {
+          "id": "w1",
+          "text": "public",
+          "start": 0.539,
+          "end": 0.819
+        },
+        {
+          "id": "w2",
+          "text": "dashboard",
+          "start": 0.859,
+          "end": 1.439
+        },
+        {
+          "id": "w3",
+          "text": "shows",
+          "start": 1.48,
+          "end": 1.739
+        },
+        {
+          "id": "w4",
+          "text": "zero",
+          "start": 1.779,
+          "end": 2.019
+        },
+        {
+          "id": "w5",
+          "text": "instances",
+          "start": 2.099,
+          "end": 2.659
+        },
+        {
+          "id": "w6",
+          "text": "and",
+          "start": 2.72,
+          "end": 2.799
+        },
+        {
+          "id": "w7",
+          "text": "zero",
+          "start": 2.919,
+          "end": 3.199
+        },
+        {
+          "id": "w8",
+          "text": "revenue.",
+          "start": 3.22,
+          "end": 3.679
+        },
+        {
+          "id": "w9",
+          "text": "We",
+          "start": 4.059,
+          "end": 4.139
+        },
+        {
+          "id": "w10",
+          "text": "invent",
+          "start": 4.179,
+          "end": 4.44
+        },
+        {
+          "id": "w11",
+          "text": "no",
+          "start": 4.5,
+          "end": 4.659
+        },
+        {
+          "id": "w12",
+          "text": "traction.",
+          "start": 4.699,
+          "end": 5.259
+        }
+      ]
+    },
+    {
+      "frame": 7,
+      "path": "assets/voice/07.wav",
+      "duration_s": 7.654,
+      "words": [
+        {
+          "id": "w0",
+          "text": "Life",
+          "start": 0.179,
+          "end": 0.439
+        },
+        {
+          "id": "w1",
+          "text": "Manager:",
+          "start": 0.539,
+          "end": 1.019
+        },
+        {
+          "id": "w2",
+          "text": "open",
+          "start": 1.719,
+          "end": 2.019
+        },
+        {
+          "id": "w3",
+          "text": "locally,",
+          "start": 2.059,
+          "end": 2.519
+        },
+        {
+          "id": "w4",
+          "text": "accessible",
+          "start": 3,
+          "end": 3.639
+        },
+        {
+          "id": "w5",
+          "text": "in",
+          "start": 3.659,
+          "end": 3.799
+        },
+        {
+          "id": "w6",
+          "text": "cloud,",
+          "start": 3.839,
+          "end": 4.219
+        },
+        {
+          "id": "w7",
+          "text": "organized",
+          "start": 4.679,
+          "end": 5.199
+        },
+        {
+          "id": "w8",
+          "text": "around",
+          "start": 5.279,
+          "end": 5.579
+        },
+        {
+          "id": "w9",
+          "text": "agents",
+          "start": 5.679,
+          "end": 6.039
+        },
+        {
+          "id": "w10",
+          "text": "that",
+          "start": 6.079,
+          "end": 6.219
+        },
+        {
+          "id": "w11",
+          "text": "leave",
+          "start": 6.239,
+          "end": 6.5
+        },
+        {
+          "id": "w12",
+          "text": "evidence",
+          "start": 6.559,
+          "end": 6.98
+        },
+        {
+          "id": "w13",
+          "text": "behind.",
+          "start": 7.019,
+          "end": 7.44
+        }
+      ]
+    }
+  ],
+  "sfx": []
+}
