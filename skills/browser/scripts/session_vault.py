@@ -27,11 +27,13 @@ Google passkey and Apple-ID-SMS are NOT solvable in-browser; earn accounts must 
 with app-based 2FA, never Dais's passkey-locked Google.
 """
 import asyncio
+import glob
 import json
 import os
 import sys
 import time
 import urllib.request
+import urllib.parse
 
 CDP_PORT = os.environ.get("SESSION_VAULT_PORT", "9222")
 CDP = f"http://127.0.0.1:{CDP_PORT}"
@@ -130,26 +132,51 @@ async def _localstorage(op, data=None):
 # guaranteed-broken pair. So each site in SITE_HEALTH_REQUIRED must have ALL of its listed
 # cookie names present in the same dump, or that site's cookies are spliced back in from the
 # PRIOR vault (if it had a healthy set) instead of being overwritten. Other sites are unaffected.
-SITE_HEALTH_REQUIRED = {"x.com": ("auth_token", "ct0")}
+SITE_HEALTH_REQUIRED = {
+    "x.com": ("auth_token", "ct0"),
+    "coconala.com": ("_coconala_session", "_coconala_session_private"),
+    "instagram.com": ("sessionid",),
+}
+
+
+def _snapshot_paths():
+    return glob.glob(os.path.join(os.path.dirname(VAULT), "auth-state*.json"))
+
+
+def _latest_healthy_snapshot(site, paths=None):
+    """Return the newest snapshot containing the site's complete auth-cookie set."""
+    required = SITE_HEALTH_REQUIRED.get(site)
+    if not required:
+        return None
+    candidates = paths if paths is not None else _snapshot_paths()
+    for path in sorted(candidates, key=os.path.getmtime, reverse=True):
+        try:
+            cookies = json.load(open(path)).get("cookies", [])
+        except (OSError, ValueError, TypeError):
+            continue
+        names = {c.get("name") for c in cookies if site in c.get("domain", "")}
+        if all(name in names for name in required):
+            return path
+    return None
 
 
 def _guard_degraded_site_cookies(new_cookies):
     """Return new_cookies with any SITE_HEALTH_REQUIRED site's cookies replaced by the prior
     vault's cookies for that site, if the new dump is missing a required cookie name for it and
     the prior vault had a complete set. Never invents cookies; only preserves a known-good set."""
-    if not os.path.exists(VAULT):
-        return new_cookies, []
-    try:
-        prior = json.load(open(VAULT)).get("cookies", [])
-    except Exception:
-        return new_cookies, []
-
     degraded_sites = []
     result = list(new_cookies)
     for site, required in SITE_HEALTH_REQUIRED.items():
         new_site_names = {c["name"] for c in new_cookies if site in c.get("domain", "")}
         if all(r in new_site_names for r in required):
             continue  # healthy in the new dump, nothing to do
+        healthy_path = _latest_healthy_snapshot(site)
+        if not healthy_path:
+            continue
+        try:
+            prior = json.load(open(healthy_path)).get("cookies", [])
+        except (OSError, ValueError, TypeError):
+            continue
         prior_site_cookies = [c for c in prior if site in c.get("domain", "")]
         prior_site_names = {c["name"] for c in prior_site_cookies}
         if not all(r in prior_site_names for r in required):
@@ -157,6 +184,22 @@ def _guard_degraded_site_cookies(new_cookies):
         degraded_sites.append(site)
         result = [c for c in result if site not in c.get("domain", "")] + prior_site_cookies
     return result, degraded_sites
+
+
+def restore_site(site):
+    """Restore only one site's known-good cookies, leaving every other site untouched."""
+    snapshot = _latest_healthy_snapshot(site)
+    if not snapshot:
+        return {"ok": False, "site": site, "reason": "no healthy snapshot"}
+    saved = json.load(open(snapshot))
+    cookies = [c for c in saved.get("cookies", []) if site in c.get("domain", "")]
+    asyncio.run(_call("Storage.setCookies", {"cookies": cookies}))
+    return {
+        "ok": True,
+        "site": site,
+        "cookies": len(cookies),
+        "snapshot": snapshot,
+    }
 
 
 def dump():
@@ -319,6 +362,42 @@ def keepalive(urls):
     return {"ok": not any_out, "logged_out": any_out, "pages": res}
 
 
+def _site_for_url(url):
+    host = (urllib.parse.urlparse(url).hostname or "").lower()
+    for site in SITE_HEALTH_REQUIRED:
+        if host == site or host.endswith("." + site):
+            return site
+    return host
+
+
+def recover(urls):
+    """Restore only dead sites from their latest healthy snapshots, then verify each site."""
+    initial = keepalive(urls)
+    dead_pages = [page for page in initial.get("pages", []) if page.get("logged_out")]
+    sites = {}
+    dead_urls = []
+    for page in dead_pages:
+        site = _site_for_url(page["url"])
+        if site not in sites:
+            sites[site] = {"restore": restore_site(site), "recovered": False}
+        dead_urls.append(page["url"])
+
+    verification = keepalive(dead_urls) if dead_urls else {"ok": True, "logged_out": False, "pages": []}
+    for page in verification.get("pages", []):
+        site = _site_for_url(page["url"])
+        if site in sites:
+            sites[site]["recovered"] = not page.get("logged_out", True)
+            sites[site]["final"] = page.get("final", "")
+
+    return {
+        "ok": all(state["recovered"] for state in sites.values()),
+        "revenue_ready": sites.get("coconala.com", {"recovered": True})["recovered"],
+        "initial": initial,
+        "verification": verification,
+        "sites": sites,
+    }
+
+
 # task #75 (2026-07-17): password re-login self-heal for X specifically. A keepalive-detected
 # logged_out=true on x.com should not just sit there until a human notices -- but X actively
 # monitors login() frequency and can flag/kill an account for repeated automated login attempts
@@ -460,6 +539,10 @@ if __name__ == "__main__":
     try:
         if cmd == "keepalive":
             out = keepalive(rest)
+        elif cmd == "recover":
+            out = recover(rest)
+        elif cmd == "restore_site":
+            out = restore_site(rest[0]) if rest else {"ok": False, "reason": "usage: restore_site <domain>"}
         elif cmd == "totp":
             out = totp(rest[0]) if rest else {"ok": False, "reason": "usage: totp <secret|@service>"}
         else:
