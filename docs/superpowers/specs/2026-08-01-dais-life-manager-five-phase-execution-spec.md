@@ -1626,6 +1626,16 @@ reconciliationはeffect absent、plannerは`available`以外のclosed/unknown/fu
 outbound 254/254、runtime-up 38/38、runtime adapters 125/125、失敗0件。診断screenshotはゴミ箱へ移動済み。
 次はcommit/push/deploy後、このjobをabsentへ解決し、次の実行可能候補へ進む。
 
+O1B-26進捗35（初の新規実登録成功 / inventory失敗を三段階へ分離）: outbound job
+`outbound-event:4670f7ed77217565a62b8eedb77e42f7bae9e5f3f44c7b33ad6c55c8a6b707dd`はattempt 1で
+2026-08-02 12:13 JSTにcompletedし、`https://luma.com/supabase-meetup-tokyo-202608`のE1/E2/E3 verified receiptを
+保存した。これは新規の実登録成功であり、slugからtitleを推測せず、次のfresh detailとCalendar同期後に人間向け報告を確定する。
+一方、後続coverage jobは登録をCalendar/21日coverageへ復元する前のinventory取得で旧generic
+`CONNECTOR_COVERAGE_INVENTORY_FAILED`をattempt 17まで反復した。失敗を無根拠に直さず、Luma inventoryを
+`DISCOVERY`（東京一覧）、`DETAIL`（個別event）、`BUILD`（検証済み21日snapshot組立）の三段階へ安全に分離し、provider本文・
+account情報をerrorへ含めない。substageを保存する回帰testは修正前RED、実装後GREEN。Connector/Luma/runtime関連188/188、
+adapter関連64/64、失敗0件。次はcommit/push/deployし、fresh jobのexact substageを実測してCalendar同期を完了する。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 

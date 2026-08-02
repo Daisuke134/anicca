@@ -10,6 +10,11 @@ const VERIFIED = new WeakSet();
 const LUMA_CANONICAL_URL = /^https:\/\/luma\.com\/[A-Za-z0-9_-]+$/;
 
 function invalid() { throw new Error("Luma date inventory invalid"); }
+function unavailable(code) {
+  const error = new Error("Luma date inventory unavailable");
+  error.code = code;
+  throw error;
+}
 
 function exactInstant(value) {
   const text = String(value == null ? "" : value).trim();
@@ -146,7 +151,12 @@ async function inspectLumaDateInventory(options = {}) {
     typeof options.discoverTokyo !== "function"
     || typeof options.inspectEvent !== "function"
   ) invalid();
-  const inventory = await options.discoverTokyo();
+  let inventory;
+  try {
+    inventory = await options.discoverTokyo();
+  } catch {
+    unavailable("CONNECTOR_COVERAGE_INVENTORY_DISCOVERY_FAILED");
+  }
   const requiredUrls = requiredCanonicalUrls(options.requiredCanonicalUrls);
   const discoveredUrls = new Set(
     inventory && Array.isArray(inventory.candidates)
@@ -155,18 +165,32 @@ async function inspectLumaDateInventory(options = {}) {
   );
   const details = [];
   for (const candidate of inventory && Array.isArray(inventory.candidates) ? inventory.candidates : []) {
-    details.push(await options.inspectEvent(candidate.canonical_url));
+    try {
+      details.push(await options.inspectEvent(candidate.canonical_url));
+    } catch {
+      unavailable("CONNECTOR_COVERAGE_INVENTORY_DETAIL_FAILED");
+    }
   }
   for (const canonicalUrl of requiredUrls) {
-    if (!discoveredUrls.has(canonicalUrl)) details.push(await options.inspectEvent(canonicalUrl));
+    if (!discoveredUrls.has(canonicalUrl)) {
+      try {
+        details.push(await options.inspectEvent(canonicalUrl));
+      } catch {
+        unavailable("CONNECTOR_COVERAGE_INVENTORY_DETAIL_FAILED");
+      }
+    }
   }
-  return buildLumaDateInventory({
-    coverage: options.coverage,
-    inventory,
-    details,
-    requiredCanonicalUrls: requiredUrls,
-    now: options.now,
-  });
+  try {
+    return buildLumaDateInventory({
+      coverage: options.coverage,
+      inventory,
+      details,
+      requiredCanonicalUrls: requiredUrls,
+      now: options.now,
+    });
+  } catch {
+    unavailable("CONNECTOR_COVERAGE_INVENTORY_BUILD_FAILED");
+  }
 }
 
 function isVerifiedLumaDateInventory(value) {

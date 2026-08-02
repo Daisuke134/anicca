@@ -173,6 +173,35 @@ test("re-inspects verified registration URLs missing from the Tokyo feed", async
   )), true);
 });
 
+test("reports the exact safe inventory stage without leaking provider details", async () => {
+  const inventory = await verifiedInventory(["tokyo-one"]);
+  const privateText = "private browser and account detail";
+  const cases = [
+    {
+      code: "CONNECTOR_COVERAGE_INVENTORY_DISCOVERY_FAILED",
+      discoverTokyo: async () => { throw new Error(privateText); },
+      inspectEvent: async () => { throw new Error("must not inspect"); },
+    },
+    {
+      code: "CONNECTOR_COVERAGE_INVENTORY_DETAIL_FAILED",
+      discoverTokyo: async () => inventory,
+      inspectEvent: async () => { throw new Error(privateText); },
+    },
+  ];
+  for (const item of cases) {
+    await assert.rejects(inspectLumaDateInventory({
+      coverage: COVERAGE,
+      now: "2026-08-02T01:00:00.000Z",
+      discoverTokyo: item.discoverTokyo,
+      inspectEvent: item.inspectEvent,
+    }), (error) => (
+      error.code === item.code
+      && error.message === "Luma date inventory unavailable"
+      && !JSON.stringify(error).includes(privateText)
+    ));
+  }
+});
+
 test("does not convert a fully read zero-candidate date into coverage resolution", async () => {
   const inventory = await verifiedInventory(["tokyo-one"]);
   const snapshot = buildLumaDateInventory({
