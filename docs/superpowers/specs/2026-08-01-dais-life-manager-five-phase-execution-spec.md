@@ -2023,6 +2023,16 @@ lintがGREENで、fresh reviewerは`ship`。ただしこの進捗はlifecycle sc
 `worker_finished_unverified`を残す。Luma探索・登録、receipt照合、Calendar同期、Telegram報告の直接module合成は未実装なので、
 O1B-25B/Cは未完了のままにする。次は`connector-native-runtime`を既存moduleだけで合成し、外部writeなしの契約testを通す。
 
+O1B-25進捗41（native read-only direct runtime RED→GREEN / write境界未接続）: 旧generic worker fallbackを削除し、
+productionの`native-pass`が常にLife Managerの`connector-native-runtime`を直接呼ぶようにした。実moduleの
+`createCloakBrowserDailyDriver`（固定`:9222`）、read-only Luma auth、`createConnectorEventsPack`、`makeGogCalendar`、
+rolling coverage/continuationを合成し、Luma inventoryと全Google CalendarをMac上から直接読む境界を固定した。
+旧`CONNECTOR_NATIVE_WORKER_BIN`が環境に残っていても無視される回帰testを追加し、未検証worker exit 0が
+`open > 0`を成功にする経路を除去した。focused 14/14、既存Connector/outbound 260/260、構文・禁止依存scanがGREEN、
+fresh reviewerは`ship`。ただしcoverageはまだread-onlyの新規21日snapshotであり、既存登録の復元、候補選択、実登録、
+receipt確認、Calendar write/sync、Telegram送信は実行しない。したがってO1B-25B〜Gは未完了のまま、次は同じnative runtimeへ
+既存の登録・receipt・Calendar・Telegram write境界を順番に接続する。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 

@@ -1,10 +1,9 @@
 #!/usr/bin/env node
 "use strict";
 
-const { spawnSync } = require("node:child_process");
-const fs = require("node:fs");
 const path = require("node:path");
 
+const { runNativeConnectorPass } = require("../../apps/life-manager/lib/connector-native-runtime.js");
 const { recordContinuation } = require("./lib/native-state.js");
 
 function unavailable() {
@@ -23,66 +22,73 @@ function requiredToken(value) {
   return token;
 }
 
-function workerTimeout(value) {
-  const milliseconds = Number(value == null || value === "" ? 900_000 : value);
-  if (!Number.isSafeInteger(milliseconds) || milliseconds < 1_000 || milliseconds > 900_000) unavailable();
-  return milliseconds;
-}
-
-function resolveWorker(repoRoot, value) {
-  const worker = String(value == null ? "" : value).trim()
-    || path.join(repoRoot, "skills", "earn", "marketing-engine", "run_agent.sh");
-  if (!path.isAbsolute(worker) || !fs.statSync(worker).isFile()) unavailable();
-  return worker;
-}
-
-function nativeWorkerArguments(repoRoot, stateDir) {
-  const evidenceDir = path.join(stateDir, "worker-evidence", `${Date.now()}-${process.pid}`);
-  fs.mkdirSync(evidenceDir, { recursive: true, mode: 0o700 });
+function runtimeConfig(options, stateDir) {
+  if (options.config && typeof options.config === "object" && !Array.isArray(options.config)) {
+    return options.config;
+  }
+  const env = options.env || process.env;
+  const calendarAccount = String(
+    env.LM_CONNECTOR_CALENDAR_ACCOUNT
+      || env.GOG_ACCOUNT
+      || env.DAIS_EMAIL
+      || env.LM_CONNECTOR_LUMA_EMAIL
+      || "",
+  ).trim();
+  if (!calendarAccount) unavailable();
+  const evidenceDir = String(env.LM_CONNECTOR_EVIDENCE_DIR || path.join(stateDir, "evidence")).trim();
   return Object.freeze({
-    evidenceDir,
-    args: Object.freeze([
-      "--task-class", "browser-lane-agent",
-      "--evidence-dir", evidenceDir,
-      "--task-label", "connector-native-pass",
-      "--loop", "connector",
-      "--workdir", repoRoot,
-    ]),
+    tenantId: String(env.LM_CONNECTOR_TENANT_ID || "dais-local").trim(),
+    timeZone: String(env.LM_CONNECTOR_TIME_ZONE || "Asia/Tokyo").trim(),
+    now: new Date().toISOString(),
+    evidenceDir: absoluteDirectory(evidenceDir),
+    calendarAccount,
+    gogBin: String(env.GOG_BIN || "").trim() || undefined,
   });
 }
 
-function runNativePass(options = {}) {
-  const repoRoot = absoluteDirectory(options.repoRoot);
-  const stateDir = absoluteDirectory(options.stateDir);
-  const ownerToken = requiredToken(options.ownerToken);
-  const worker = resolveWorker(repoRoot, options.env?.CONNECTOR_NATIVE_WORKER_BIN);
-  const contractPath = path.join(repoRoot, "skills", "connector", "WORKER-CONTRACT.md");
-  if (!fs.statSync(contractPath).isFile()) unavailable();
-  const contract = fs.readFileSync(contractPath, "utf8");
-  if (contract.trim().length < 16) unavailable();
+function boundedResult(result) {
+  if (!result || typeof result !== "object" || Array.isArray(result)) unavailable();
+  const status = String(result.status || "").trim();
+  const counts = result.coverage && result.coverage.counts;
+  const open = counts && counts.open;
+  const continuation = result.continuation;
+  if (
+    !["complete", "incomplete"].includes(status)
+    || !counts || !Number.isSafeInteger(open) || open < 0 || open > 21
+    || !continuation || typeof continuation !== "object"
+    || !["complete", "continue"].includes(String(continuation.status || ""))
+  ) unavailable();
+  const complete = status === "complete"
+    && open === 0
+    && continuation.status === "complete";
+  if (status === "complete" && !complete) unavailable();
+  if (status === "incomplete" && complete) unavailable();
+  return Object.freeze({ status, complete });
+}
 
-  const invocation = nativeWorkerArguments(repoRoot, stateDir);
-  const result = (options.spawnSync || spawnSync)(worker, invocation.args, {
-    cwd: repoRoot,
-    env: {
-      ...process.env,
-      ...(options.env || {}),
-      CONNECTOR_NATIVE_OWNER_TOKEN: ownerToken,
-      CONNECTOR_NATIVE_REPO_ROOT: repoRoot,
-      CONNECTOR_NATIVE_STATE_DIR: stateDir,
-    },
-    input: contract,
-    stdio: ["pipe", "ignore", "ignore"],
-    timeout: workerTimeout(options.env?.CONNECTOR_NATIVE_WORKER_TIMEOUT_MS),
-  });
-  const exitCode = Number.isSafeInteger(result?.status) && result.status >= 0 && result.status <= 125
-    ? result.status
-    : 1;
-  recordContinuation({
-    stateDir,
-    reason: exitCode === 0 ? "worker_finished_unverified" : "worker_failed",
-  });
-  return Object.freeze({ exitCode });
+async function runNativePass(options = {}) {
+  absoluteDirectory(options.repoRoot);
+  const stateDir = absoluteDirectory(options.stateDir);
+  requiredToken(options.ownerToken);
+
+  const runtime = typeof options.runRuntime === "function"
+    ? options.runRuntime
+    : runNativeConnectorPass;
+  try {
+    const result = await runtime({
+      config: runtimeConfig(options, stateDir),
+      deps: options.deps && typeof options.deps === "object" ? options.deps : {},
+    });
+    const bounded = boundedResult(result);
+    if (bounded.complete) {
+      return Object.freeze({ exitCode: 0, status: "complete" });
+    }
+    recordContinuation({ stateDir, reason: "runtime_incomplete" });
+    return Object.freeze({ exitCode: 1, status: "incomplete" });
+  } catch {
+    recordContinuation({ stateDir, reason: "runtime_failed" });
+    return Object.freeze({ exitCode: 1, status: "failed" });
+  }
 }
 
 function cliArguments(argv = process.argv.slice(2)) {
@@ -93,12 +99,12 @@ function cliArguments(argv = process.argv.slice(2)) {
 }
 
 if (require.main === module) {
-  try {
-    process.exitCode = runNativePass(cliArguments()).exitCode;
-  } catch {
-    process.stderr.write("Connector native pass unavailable\n");
-    process.exitCode = 2;
-  }
+  runNativePass(cliArguments())
+    .then((result) => { process.exitCode = result.exitCode; })
+    .catch(() => {
+      process.stderr.write("Connector native pass unavailable\n");
+      process.exitCode = 2;
+    });
 }
 
 module.exports = { runNativePass };

@@ -7,6 +7,7 @@ const os = require("node:os");
 const path = require("node:path");
 const test = require("node:test");
 
+const { runNativePass } = require("../native-pass.js");
 const {
   acquireLock,
   heartbeat,
@@ -15,108 +16,115 @@ const {
 } = require("../lib/native-state.js");
 
 const REPO_ROOT = path.resolve(__dirname, "../../..");
-const ENTRYPOINT = path.join(REPO_ROOT, "skills/connector/run.sh");
 const HEALTHCHECK = path.join(REPO_ROOT, "skills/connector/healthcheck.sh");
 const RENDERER = path.join(REPO_ROOT, "skills/connector/render-launchd.sh");
+
+const OWNER_TOKEN = "native-pass-test-owner-123456";
 
 function temporaryDirectory() {
   return fs.mkdtempSync(path.join(os.tmpdir(), "connector-native-entrypoint-"));
 }
 
-function fixtureWorker(directory, exitCode = 0) {
-  const worker = path.join(directory, "bounded-worker.sh");
-  const counter = path.join(directory, "worker-count");
-  const observedRoot = path.join(directory, "worker-repo-root");
-  fs.writeFileSync(worker, [
-    "#!/usr/bin/env bash",
-    "set -eu",
-    `printf '%s' \"\${CONNECTOR_NATIVE_REPO_ROOT}\" > ${JSON.stringify(observedRoot)}`,
-    `printf '1\\n' >> ${JSON.stringify(counter)}`,
-    `exit ${exitCode}`,
-  ].join("\n"), { mode: 0o700 });
-  return { counter, observedRoot, worker };
-}
-
-function runEntrypoint(directory, worker, extra = {}) {
-  const stateDir = path.join(directory, "state");
-  const envFile = path.join(directory, "connector.env");
-  fs.writeFileSync(envFile, "CONNECTOR_NATIVE_TEST_SECRET=not-for-stdout\n", { mode: 0o600 });
-  return spawnSync("bash", [ENTRYPOINT], {
-    cwd: directory,
-    encoding: "utf8",
-    env: {
-      ...process.env,
-      HOME: directory,
-      LM_CONNECTOR_ENV_FILE: envFile,
-      LM_CONNECTOR_STATE_DIR: stateDir,
-      CONNECTOR_NATIVE_WORKER_BIN: worker,
-      CONNECTOR_NATIVE_WORKER_TIMEOUT_MS: "1000",
-      ...extra,
-    },
-  });
-}
-
-test("run.sh resolves the canonical repository, runs one bounded worker, and releases its lock", () => {
-  const directory = temporaryDirectory();
-  try {
-    const fixture = fixtureWorker(directory);
-    const result = runEntrypoint(directory, fixture.worker);
-
-    assert.equal(result.status, 0, result.stderr);
-    assert.equal(fs.readFileSync(fixture.counter, "utf8"), "1\n");
-    assert.equal(fs.readFileSync(fixture.observedRoot, "utf8"), REPO_ROOT);
-    assert.equal(result.stdout.includes("not-for-stdout"), false);
-    assert.deepEqual(readHealth({
-      stateDir: path.join(directory, "state"),
-      now: new Date().toISOString(),
-      staleMs: 60_000,
-    }).lock, { status: "idle" });
-  } finally {
-    fs.rmSync(directory, { recursive: true, force: true });
-  }
-});
-
-test("a live lock skips the worker and exits without declaring coverage complete", () => {
+test("native-pass invokes the direct runtime and keeps open coverage as a continuation", async () => {
   const directory = temporaryDirectory();
   const stateDir = path.join(directory, "state");
+  const observed = [];
   try {
-    const fixture = fixtureWorker(directory);
-    assert.deepEqual(acquireLock({
+    const result = await runNativePass({
+      repoRoot: REPO_ROOT,
       stateDir,
-      token: "other-owner-token-123456",
-      pid: process.pid,
-      now: new Date().toISOString(),
-      staleMs: 60_000,
-    }), { status: "acquired" });
+      ownerToken: OWNER_TOKEN,
+      config: {
+        tenantId: "dais-local",
+        timeZone: "Asia/Tokyo",
+        now: "2026-08-02T01:00:00.000Z",
+        evidenceDir: path.join(directory, "evidence"),
+        calendarAccount: "dais@example.test",
+      },
+      runRuntime: async (input) => {
+        observed.push(input);
+        return {
+          status: "incomplete",
+          coverage: { counts: { open: 21 } },
+          continuation: { status: "continue" },
+        };
+      },
+    });
 
-    const result = runEntrypoint(directory, fixture.worker);
-    assert.equal(result.status, 75, result.stderr);
-    assert.equal(fs.existsSync(fixture.counter), false);
-    assert.equal(/complete/i.test(result.stdout), false);
-  } finally {
-    releaseLock({ stateDir, token: "other-owner-token-123456" });
-    fs.rmSync(directory, { recursive: true, force: true });
-  }
-});
-
-test("a failed bounded worker persists continuation and keeps a nonzero exit", () => {
-  const directory = temporaryDirectory();
-  try {
-    const fixture = fixtureWorker(directory, 7);
-    const result = runEntrypoint(directory, fixture.worker);
-
-    assert.equal(result.status, 7, result.stderr);
+    assert.equal(result.exitCode, 1);
+    assert.equal(observed.length, 1);
+    assert.equal(observed[0].config.tenantId, "dais-local");
     assert.deepEqual(JSON.parse(fs.readFileSync(
-      path.join(directory, "state", "continuation.json"), "utf8",
+      path.join(stateDir, "continuation.json"), "utf8",
     )), {
-      reason: "worker_failed",
+      reason: "runtime_incomplete",
       status: "pending",
     });
-    assert.deepEqual(readHealth({
-      stateDir: path.join(directory, "state"),
-      now: new Date().toISOString(),
-      staleMs: 60_000,
-    }).heartbeat, { status: "fresh", stage: "worker_failed" });
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test("native-pass ignores CONNECTOR_NATIVE_WORKER_BIN and still invokes the direct runtime", async () => {
+  const directory = temporaryDirectory();
+  const stateDir = path.join(directory, "state");
+  const ignoredWorker = path.join(directory, "ignored-worker");
+  fs.writeFileSync(ignoredWorker, "this file must never be executed\n", { mode: 0o600 });
+  const observed = [];
+  try {
+    const result = await runNativePass({
+      repoRoot: REPO_ROOT,
+      stateDir,
+      ownerToken: OWNER_TOKEN,
+      env: { CONNECTOR_NATIVE_WORKER_BIN: ignoredWorker },
+      config: {
+        tenantId: "dais-local",
+        timeZone: "Asia/Tokyo",
+        now: "2026-08-02T01:00:00.000Z",
+        evidenceDir: path.join(directory, "evidence"),
+        calendarAccount: "dais@example.test",
+      },
+      runRuntime: async () => {
+        observed.push(true);
+        return {
+          status: "incomplete",
+          coverage: { counts: { open: 21 } },
+          continuation: { status: "continue" },
+        };
+      },
+    });
+
+    assert.equal(result.exitCode, 1);
+    assert.deepEqual(observed, [true]);
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test("native-pass exits zero only for verified open-zero coverage", async () => {
+  const directory = temporaryDirectory();
+  const stateDir = path.join(directory, "state");
+  try {
+    const result = await runNativePass({
+      repoRoot: REPO_ROOT,
+      stateDir,
+      ownerToken: OWNER_TOKEN,
+      config: {
+        tenantId: "dais-local",
+        timeZone: "Asia/Tokyo",
+        now: "2026-08-02T01:00:00.000Z",
+        evidenceDir: path.join(directory, "evidence"),
+        calendarAccount: "dais@example.test",
+      },
+      runRuntime: async () => ({
+        status: "complete",
+        coverage: { counts: { open: 0 } },
+        continuation: { status: "complete" },
+      }),
+    });
+
+    assert.deepEqual(result, { exitCode: 0, status: "complete" });
+    assert.equal(fs.existsSync(path.join(stateDir, "continuation.json")), false);
   } finally {
     fs.rmSync(directory, { recursive: true, force: true });
   }
