@@ -297,6 +297,8 @@ def _logged_out_for(url, final, cookies, page_text=""):
     - non-instagram/non-x/non-zenn domains: only the generic redirect check applies.
     """
     redirected = any(k in final.lower() for k in ("/login", "/signin", "/sign_in", "accounts.google.com/signin"))
+    if "instagram.com" in url.lower() and "/accounts/suspended/" in final.lower():
+        return True
     if "instagram.com" in url.lower() and not _has_instagram_sessionid(cookies):
         return True
     if "x.com" in url.lower() and "something went wrong" in (page_text or "").lower():
