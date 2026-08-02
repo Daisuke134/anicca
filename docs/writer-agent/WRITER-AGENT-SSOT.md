@@ -872,6 +872,47 @@ may require the owner. These are exception gates, not routine babysitting.
 The order is binding. Work that can be performed now must not wait for natural
 schedules or future data.
 
+### 9.0 Active execution order
+
+The table number is a stable task identity, not a command to repeat completed
+work. Tasks 5, 6, 7, and 8 are not skipped: their runtime, live verification,
+and push receipts are recorded as `DONE` in their rows. Reopening Task 4 after
+those completions does not invalidate them. It means the next development task
+returns to Task 4 before advancing the remaining revenue work.
+
+There are three execution lanes:
+
+1. **Foreground development:** complete Task 4 revenue-demand supply first.
+2. **Always-running recovery:** Task 1 continues same-run publication recovery
+   whenever an unfinished publication exists. It does not replace or postpone
+   Task 4 development.
+3. **External-state monitoring:** Tasks 9 and 10 continue polling AppSignal,
+   TECHi, and other verified opportunities while Task 4 is implemented. An
+   external acceptance immediately advances its own contracted article path;
+   silence is not a reason to pause Task 4.
+
+After Task 4 passes its live acceptance receipt, the remaining foreground order
+is binding:
+
+1. Tasks 9 and 10: turn compatible publisher opportunities into accepted,
+   published, paid articles while discovery continues.
+2. Task 11: obtain and attribute the first real note paid-article purchase.
+3. Task 12: obtain and reconcile the first real Substack paid contract.
+4. Task 13: close the self-owned one-time unlock and recurring-renewal path.
+5. Task 14: close one real matched self-improvement canary and prove a later run
+   consumes a winning strategy.
+6. Tasks 15 through 20: pass first-dollar, $400, $1,000, unit-economics,
+   $10,000-monthly, and $10,000-MRR gates in that order.
+7. Tasks 21 through 23: package OSS, establish cloud parity, and prove one
+   external user receives real writing revenue without daily intervention.
+8. Tasks 24 through 28: expand only positive-net units through the portfolio,
+   self-extension, $100K, $1M, and $10M gates.
+
+Tasks 9 through 14 may collect external observations concurrently, but a later
+revenue gate cannot be marked complete without all of its own receipts. Task
+numbers are never renumbered when work is reopened or completed; status and
+this section define what runs next.
+
 | # | Phase | Work | Done receipt | Status |
 |---:|---|---|---|---|
 | 0 | Boundary | Create this dedicated Writer SSOT; point AGENTS and historical spec here | File exists, links resolve, committed and pushed | DONE |
