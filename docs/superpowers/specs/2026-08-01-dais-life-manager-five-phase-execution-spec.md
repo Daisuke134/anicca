@@ -187,7 +187,7 @@ AI登壇枠だけを対象にし、候補0件をexit 0で終了する。Luma dis
 
 | 候補 | 確認した事実 | 方針 |
 |---|---|---|
-| **既存CloakBrowser daily-driver** | CDP `http://127.0.0.1:9222`。job loopのowner probe、Playwright接続、共有context運用が実装済み | **唯一のbrowser transportとして採用済み。events / funders / jobsで共有。新browserを導入しない** |
+| **既存CloakBrowser daily-driver** | CDP `http://127.0.0.1:9222`。job loopのowner probe、Playwright接続、共有context運用が実装済み | **Daisのlocal profileで唯一のbrowser transportとして採用済み。events / funders / jobsで共有し、local完成まで新browserを導入しない** |
 | [browser-use](https://github.com/browser-use/browser-use) | agent向けブラウザ操作基盤。2026-08-01実測で約10.7万stars、MIT | 調査比較だけ。現在のtrackへ導入しない |
 | [Steel Browser](https://github.com/steel-dev/steel-browser) | self-host可能なagent browser API。約7.4千stars、Apache-2.0 | 調査比較だけ。daily-driverの代替として導入しない |
 | [Luma API](https://docs.luma.com/reference/getting-started-with-your-api) | 公式APIは主催者自身のevent/guest管理用で、calendar単位keyとLuma Plusが必要 | 参加者RSVPは既存daily-driverを使う |
@@ -311,6 +311,27 @@ YC公式pageでlate application受付を当日再確認
   → Telegramへ応募内容、動画、deck、確認mailの直接linkを送る
   → reply/interviewを毎日追跡
 ```
+
+### 4.9 local / self-host / cloudを一製品にする外部実装調査 — 2026-08-02
+
+「Mac用とWeb用を二重実装する」ことも、「最初からすべてをDocker/cloudの中で動かす」ことも
+標準解ではない。成熟した実装は、同じcore/APIを保ち、local・container・hostedで
+runtime/workspace/browser adapterだけを差し替えている。
+
+| 参照実装 | GitHub実測 | 確認したpattern | Life Managerへ持ち込むもの |
+|---|---:|---|---|
+| [OpenHands](https://github.com/OpenHands/OpenHands) / [Remote Agent Server](https://docs.openhands.dev/sdk/guides/agent-server/overview) | 約82.8k stars、MIT | 同じSDK APIが`LocalWorkspace` / `DockerWorkspace` / `APIRemoteWorkspace`を差し替え、remoteはHTTP/WebSocketで同じagent serverへ接続 | **`WorkerRuntime` portとlocal/hosted adapterの正本pattern**。まるごと導入せず境界を移植 |
+| [Stagehand](https://github.com/browserbase/stagehand) / [Browser configuration](https://docs.stagehand.dev/v3/configuration/browser) | 約23.7k stars、MIT | 同じ`Stagehand`が`env: LOCAL | BROWSERBASE`でlocal Chromeとmanaged browserを切替。session resume、timeout、cleanupも共通 | **`BrowserRuntime` portの正本pattern**。localはCloak、hostedはSteelへ差し替え |
+| [Steel Browser](https://github.com/steel-dev/steel-browser) / [self-host Docker](https://docs.steel.dev/overview/self-hosting/docker) | 約7.4k stars、Apache-2.0 | prebuilt single image/Compose、health endpoint、persistent cache、session context、本番はversion pin・resource limit・private CDP | hosted browserの実装候補。session schemaとcontext保存patternはlicense notice付きで移植可 |
+| [Activepieces architecture](https://www.activepieces.com/docs/install/architecture/overview) | 約23.5k stars、custom license | appがジョブを管理し、workerがsandboxを割り当てて実行し結果を返す。queueでspikeを落とさずworkerを独立scale | **Life Manager control plane ≠ worker agent**の裏付け。非permissiveなためsourceはcopyしない |
+| [Temporal](https://github.com/temporalio/temporal) / [docs](https://docs.temporal.io/) | 約22.0k stars、MIT | crash/network failure後にworkflowを途中から再開し、self-host/Cloudの両方を選べる | durable semanticsの参考。現時点でTemporal自体は導入せず、必要性を計測してから判断 |
+| [Docker build best practices](https://docs.docker.com/build/building/best-practices/) / [resource constraints](https://docs.docker.com/engine/containers/resource_constraints/) / [local log driver](https://docs.docker.com/engine/logging/drivers/local/) | Docker公式 | image version pin、CPU/memory制限、ログsize/file制限が必要 | optional Docker profileとhosted workerにだけ適用。`latest`固定や無制限logは禁止 |
+
+ライセンス境界:
+
+- OpenHandsとStagehandはMIT、SteelはApache-2.0。必要な小さい境界/schemaはnoticeと出典を保って移植できる。
+- Activepieces、n8n、Browserless等のcustom/fair-code実装はarchitecture研究だけに使い、sourceをcopyしない。
+- starsは2026-08-02の参考値であり、採用理由にしない。採用理由はAPI境界、ライセンス、隔離、復旧性、local/cloud parityで決める。
 
 ## 5. 残作業 — 必ず番号順
 
@@ -990,6 +1011,69 @@ runtimeは、ローカル完成後にPCを持たない一般userへLife Manager 
 | state/evidence | Life Manager local state・ledger。worker transcriptを正本にしない |
 | user report | Life ManagerからTelegramへ人間向けに送信 |
 | later cloud | 同じcoreをcloud scheduler + tenant別Steelへ接続。local完成後に着手 |
+
+### 5.0.3 外部調査後の実行architecture決定
+
+検討した三案:
+
+| 案 | 利点 | 問題 | 判断 |
+|---|---|---|---|
+| localとWebを別実装 | 目先は自由 | business logic、bug fix、testが二重化し、必ず乖離 | 不採用 |
+| 最初から全てDocker/cloud runtime | 配備は均一 | 現行Gig/ConnectorとCloakから外れ、local-firstの完了を遅らせる | 不採用 |
+| **一つのcore + ports/adapters** | business logicとcontract testを共有し、localとhostedの実行面だけ変えられる | adapter contractとparity testが必要 | **採用** |
+
+```text
+                       同じ Life Manager Core
+     goal / policy / job / receipt / evidence / report / Telegram UX
+                                  |
+             +--------------------+--------------------+
+             |                                         |
+        LocalProfile                              HostedProfile
+        launchd                                   managed scheduler
+        LocalWorkerRuntime                        HostedWorkerRuntime
+        CloakBrowserRuntime                       SteelBrowserRuntime
+        local state adapter                       tenant Postgres adapter
+             |                                         |
+        Dais Mac mini                       phone -> Telegram / Web panel
+
+OptionalSelfHostProfile
+  同じcore + pinned Docker Compose + self-host Steel
+  ※開発parity/他userの自己hosting用。Daisの日常local実行のownerにしない
+```
+
+「同じbrowser」の意味は、一つのChrome process/profileをインターネット越しに共用することではない。
+同じ`BrowserRuntime` contractと同じ操作/receiptを使い、localはCloak、hostedはtenantごとに隔離した
+Steel session/contextを使う。cookie、localStorage、sessionStorage、IndexedDBを一つの暗号化した
+`BrowserSessionContext`として扱い、生cookieをjob/report/logへ流さない。
+
+最初に追加する共通境界は三つだけとする。
+
+1. `WorkerRuntime`: bounded taskを起動し、heartbeat、result、cancel、timeoutを返す。
+2. `BrowserRuntime`: session/contextをacquire/resume/releaseし、CDP/Playwright接続と証拠URLを返す。
+3. `StateStore`: job、lease、idempotency key、receipt ref、Telegram deliveryを保存する。
+
+Connectorの候補選定、Luma登録、Calendar照合、Telegram文面はこれらの中に書かない。
+Life Manager Coreに一度だけ実装し、全profileが同じcontract suiteを通す。
+
+Dockerの正しい役割:
+
+- browser/workerの実行依存を再現するpackageとsandbox。business logicとproduct stateのownerではない。
+- taskごとにimageをbuildしない。CIで一度buildしたpinned image digestをpullする。
+- CPU/memory上限、log rotation、session TTL、artifact retention、health/pressure endpoint、volume quotaを必須にする。
+- CDP portをpublicに開けず、Life Manager workerのprivate networkからのみ接続する。
+
+parityの完了条件:
+
+- [ ] PA-01 同じConnector fixture/jobがLocalWorker+CloakとSelfHostWorker+Steelで同じ正規化receiptを返す
+- [ ] PA-02 browser adapterの切替えでConnectorのdomain moduleが変更されない
+- [ ] PA-03 crash後にresumeしても同じ申込を二重submitしない
+- [ ] PA-04 tenant Aのcookie/state/evidenceがtenant Bへ一バイトも漏れない
+- [ ] PA-05 image、browser cache、log、artifactが設定上限内で回収され、Mac/hostの空き容量を食い潰さない
+- [ ] PA-06 phoneだけのuserがTelegram/Webから同じjobを依頼し、同じ人間向けreportと証拠linkを受け取る
+
+導入順は変えない。`O1B-25A〜H`でDaisのnative localを先に完成し、Order 1〜5の
+local実証後にOptionalSelfHostProfileとHostedProfileを開く。Stagehand、Steel、Temporalの導入は
+Connector native完成の先行条件にしない。
 
 ### 5.1 Order 1A — 共通応募基盤
 
