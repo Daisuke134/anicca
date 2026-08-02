@@ -1525,6 +1525,10 @@ provider本文やevent本文をreceiptへ保存しない。fresh inventoryに存
 failure、evidence生成failureを独立したRED testで固定し、実装後GREEN。outbound 249/249、runtime adapters 125/125、
 失敗0件。次はcommit/push/deploy後の一回で真因を一点に確定する。
 
+O1B-26進捗22（登録復元の段階codeをLIVE配備）: 分類修正をcommit `08050e129`としてmainへpushし、image
+`b6fe9cebe2ce`を10:04 JSTに配備した。配備で中断された副作用なしのattempt 10だけを正規failure関数で
+`WORKER_REPLACED`として回収した。新workerの次attemptで三つのstage codeのどれかを取得し、実原因だけを修復する。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
