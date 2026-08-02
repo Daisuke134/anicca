@@ -5,6 +5,7 @@ owner: Dais / Life Manager
 created: 2026-08-01 JST
 updated: 2026-08-02 JST
 scope: 応募基盤、イベント、資金調達、求人、個人CFO、暗号資産、法定通貨投資・NISA
+active_execution_surface: LOCAL_ONLY_UNTIL_ORDER_5_COMPLETE
 
 ## 0. この文書の権限
 
@@ -63,14 +64,41 @@ covered_new=1 / unavailable=2`である。8月15日の実Luma登録は確認mail
   → O3B-01〜24 Moneytree / Binance / walletを統一財務台帳へ接続しCFOを完成
   → O4-01〜16 Cryptoをpaper→小額canary→risk制御付き運用へ進める
   → O5-01〜14 Fiat / NISAを生活防衛資金・制度・risk制約付きで接続
-  → OW-01〜12 同じcoreをWebへtenant化し、Dais以外のpilotで実証
+local版完成gate:
+  上記のOrder 1〜5がMac miniで連続稼働し、Telegram報告と証拠が揃う
+  → その後にだけOW-01〜12を開始し、同じcoreをDais以外のpilotへ展開
 ```
 
 各checkboxの完了条件は「codeを書いた」ではない。fresh test、実serviceでのreadbackまたは
 許可された実action、receipt/ledger、Telegramで人間が理解できる報告、commit、pushが揃った時だけ
 `[x]`にする。
 
-### 0.3 2026-08-02 Fundraising正本の緊急修正
+### 0.3 現在のlocal-only gate
+
+Order 1Bの再開からOrder 5の完了まで、実行対象はDaisのMac mini上の
+Life Managerだけとする。現在の実装中に、将来配布、複数user、別実行環境の都合を
+先行条件として入れない。
+
+```text
+launchd
+  → Life Manager local control plane
+    → 一仕事ごとのbounded worker agent
+      → CloakBrowser daily-driver / gog / 公式API
+    → Life Manager local state / evidence ledger
+      → Telegram
+```
+
+外部調査から現在取り入れるのは、次の四原則に限る。
+
+1. product/control planeとshort-lived worker agentを分ける。
+2. 候補選定、金額計算、receipt検証、Telegram文面を実行transportの中へ書かない。
+3. crash、timeout、login切れ、一候補失敗から再開でき、同じ外部効果を二重実行しない。
+4. 「workerが成功と言った」ではなく、実画面、mail、Calendar、provider/API receiptで完了を決める。
+
+外部repositoryの調査結果とlicense境界は§4.9に保存するが、Order 1〜5の実行中に
+将来配布用infrastructureを導入しない。
+
+### 0.4 2026-08-02 Fundraising正本の緊急修正
 
 Daisの最新指示により、次の実行対象を一時的に`O1C-00 Life Manager startup context正本化`へ置く。
 これは別trackへの脱線ではなく、Fundraising agentが旧Anicca productを再提出する事故を防ぐための
@@ -119,7 +147,9 @@ O1C-00の承認済み子設計は
   → 3B Dais実口座を読む個人財務管理
   → 4  暗号資産運用（Anicca + Daisを分離）
   → 5  法定通貨投資・NISA
-  → W  同じcoreをLife Manager Webアプリへtenant化
+
+local完成gateの後だけ:
+  → W  同じcoreをDais以外のuserへ提供
 ```
 
 前段階の完了条件を満たすまで、次段階へ着手しない。
@@ -312,7 +342,10 @@ YC公式pageでlate application受付を当日再確認
   → reply/interviewを毎日追跡
 ```
 
-### 4.9 local / self-host / cloudを一製品にする外部実装調査 — 2026-08-02
+### 4.9 外部実装調査の保存記録（将来参照、現在の実行dependencyではない） — 2026-08-02
+
+**この節の候補技術をOrder 1〜5のTODOへ入れない。** 現在はMac mini localだけを完成させる。
+この節は、後で二重実装を避けるために調査事実とlicense境界だけを保存する。
 
 「Mac用とWeb用を二重実装する」ことも、「最初からすべてをDocker/cloudの中で動かす」ことも
 標準解ではない。成熟した実装は、同じcore/APIを保ち、local・container・hostedで
@@ -916,21 +949,22 @@ identity/browser/calendar reference検証を追加し、新規4件と既存runti
 実装commit: `7aeed4098`。実装plan:
 `docs/superpowers/plans/2026-08-01-connector-o1a01-durable-runtime.md`。
 
-最後までのmaster checklist:
+最後までのactive master checklist（現在はlocalのみ）:
 
-| order | 残っている成果 | 次へ進める条件 |
-|---|---|---|
-| 1A | 共通応募runtime、Guardian、証拠、再試行、Telegram | 強制停止から自動検知・復旧し、偽の成功を作らない |
-| 1B | 東京対面eventの21日coverage、一般参加、LT応募、確認mail、QR、Calendar | 未処理の空き枠がなく、実申込と確認証拠がCalendarまでつながる |
-| 1C | accelerator/VC/grantの継続探索・応募・返信・面談 | 実提出、確認mail、追跡、Calendar、面談資料が一つにつながる |
-| 2 | 高年収job探索・応募・返信・面接 | Ashby/Workday実応募と面接mail→Calendarが成立 |
-| 3A | CFO runtime database、executor、launchd、失敗復旧 | enqueue→実行→財務報告が止まらず動く |
-| 3B | Moneytree、銀行/card、Binance、wallet、JPY、予算、CFO organ | 総資産と1/3/12か月収支が原本まで遡れ、CFO specialist loopが動く |
-| 4 | Anicca/Dais分離crypto、paper、canary、risk、停止 | fee後実現P&Lと全cap・緊急停止を実資金の小額で実証 |
-| 5 | Fiat/NISA data、余剰資金、提案、注文、税/fee | NISA/課税/現金/cryptoを分け、約定からCFOまで照合 |
-| Web | 同じcoreのtenant化、認証、secret、panel、課金 | ローカルで実証した同じjob/ledger/reportを別userが安全に使える |
+| 順番 | 状態 | 残っている現実成果 | 次へ進める条件 |
+|---:|---|---|---|
+| 1A | 完了 | 共通応募contract、Guardian、証拠、再試行は保持 | 完了状態を回帰testで維持 |
+| **1B** | **現在** | 東京対面eventの21日coverage、一般参加・LT応募、mail、QR、Calendar、Telegramをlocal一巡にする | 21日の`open=0`、実申込receipt、Calendar、人間向けTelegramが揃う |
+| 1C | 次 | accelerator/VC/grantを毎日探索し、Life Managerとして実提出・返信・面談追跡 | 提出内容、確認mail、status、Calendar、面談資料が同じapplicationにつながる |
+| 2 | 待機 | 高年収jobを探し、個別resume/cover letterで実応募し、返信・面接を追う | AshbyとWorkdayの実応募、確認mail、面接→Calendarが成立 |
+| 3A | 待機 | 壊れたCFO実行loopのenv、executor、launchd、復旧を直す | enqueue→execute→receipt→TelegramがMac再起動後も動く |
+| 3B | 待機 | Moneytree、銀行/card、Binance、wallet、JPY、予算を統一する | 総資産と1/3/12か月収支がsource receiptまで遡れ、CFO briefingが毎日届く |
+| 4 | 待機 | Anicca/Daisを分離し、cryptoをpaper→小額canary→risk制御付きへ進める | fee後実現P&L、loss cap、緊急停止、CFO照合を実証 |
+| 5 | 待機 | 生活防衛資金を守り、Fiat/NISAの提案・注文・税/feeを管理 | NISA/課税/現金/cryptoを分け、約定からCFO報告まで照合 |
+| local完成 | gate | Order 1〜5をMac mini上で一つのLife Managerとして連続運用 | 七日連続でscheduler、worker、receipt、ledger、Telegramに未解決の停止がない |
+| 将来提供 | local完成後 | 同じcoreとUXをDais以外のpilot userへ展開 | 別userが自分の口座、Telegram、permissionで安全に使える |
 
-### 5.0.0 Docker判断の監査と結論
+### 5.0.0 過去の実行方式判断の監査（履歴でありactive TODOではない）
 
 DockerはDaisの要求やREADMEのlocal-first契約から出たものではない。2026-08-01のagent-authored commit
 `19804a34c`が、既存`lm_runtime_jobs`のenqueue、lease、retry、dead-letter、idempotency、immutable receiptを
@@ -1010,70 +1044,33 @@ runtimeは、ローカル完成後にPCを持たない一般userへLife Manager 
 | browser | Mac miniのCloakBrowser daily-driver。所有tab/contextだけを操作 |
 | state/evidence | Life Manager local state・ledger。worker transcriptを正本にしない |
 | user report | Life ManagerからTelegramへ人間向けに送信 |
-| later cloud | 同じcoreをcloud scheduler + tenant別Steelへ接続。local完成後に着手 |
+| future surface | Order 5とlocal連続稼働gateの完了まで設計・実装を凍結 |
 
-### 5.0.3 外部調査後の実行architecture決定
+### 5.0.3 外部調査をlocal実装へ反映する境界
 
-検討した三案:
-
-| 案 | 利点 | 問題 | 判断 |
-|---|---|---|---|
-| localとWebを別実装 | 目先は自由 | business logic、bug fix、testが二重化し、必ず乖離 | 不採用 |
-| 最初から全てDocker/cloud runtime | 配備は均一 | 現行Gig/ConnectorとCloakから外れ、local-firstの完了を遅らせる | 不採用 |
-| **一つのcore + ports/adapters** | business logicとcontract testを共有し、localとhostedの実行面だけ変えられる | adapter contractとparity testが必要 | **採用** |
+§4.9で確認した成熟実装の共通patternは、「一つのcore」、「control planeとworkerの分離」、
+「明示的なruntime contract」、「crash後のresume」である。これを現在のMac mini実行に次のように限定して反映する。
 
 ```text
-                       同じ Life Manager Core
-     goal / policy / job / receipt / evidence / report / Telegram UX
-                                  |
-             +--------------------+--------------------+
-             |                                         |
-        LocalProfile                              HostedProfile
-        launchd                                   managed scheduler
-        LocalWorkerRuntime                        HostedWorkerRuntime
-        CloakBrowserRuntime                       SteelBrowserRuntime
-        local state adapter                       tenant Postgres adapter
-             |                                         |
-        Dais Mac mini                       phone -> Telegram / Web panel
-
-OptionalSelfHostProfile
-  同じcore + pinned Docker Compose + self-host Steel
-  ※開発parity/他userの自己hosting用。Daisの日常local実行のownerにしない
+Life Manager Core
+  goal / policy / schedule / state / evidence / report
+                       |
+                 WorkerRuntime
+       bounded task / heartbeat / cancel / timeout
+                       |
+       CloakBrowser / gog / provider official API
+                       |
+        verified receipt -> local ledger -> Telegram
 ```
 
-「同じbrowser」の意味は、一つのChrome process/profileをインターネット越しに共用することではない。
-同じ`BrowserRuntime` contractと同じ操作/receiptを使い、localはCloak、hostedはtenantごとに隔離した
-Steel session/contextを使う。cookie、localStorage、sessionStorage、IndexedDBを一つの暗号化した
-`BrowserSessionContext`として扱い、生cookieをjob/report/logへ流さない。
+1. `WorkerRuntime`は一仕事だけを実行し、全体scheduleや正本stateを所有しない。
+2. Connector、Fundraising、Job Hunter、CFOは、同じheartbeat、timeout、cancel、result contractを使う。
+3. browser操作は既存CloakBrowser daily-driverの所有context/tabに限定し、他loopの画面を触らない。
+4. Gmail/Calendarは既存`gog`、金融dataは公式read APIを優先し、生credentialをworker transcriptやTelegramへ出さない。
+5. 外部効果はidempotency keyとeffect fenceを先に確認し、実receiptがない成功申告を拒否する。
+6. localの各organは同じcontract testを通し、運用中の失敗と成功を同じlocal ledgerへ追記する。
 
-最初に追加する共通境界は三つだけとする。
-
-1. `WorkerRuntime`: bounded taskを起動し、heartbeat、result、cancel、timeoutを返す。
-2. `BrowserRuntime`: session/contextをacquire/resume/releaseし、CDP/Playwright接続と証拠URLを返す。
-3. `StateStore`: job、lease、idempotency key、receipt ref、Telegram deliveryを保存する。
-
-Connectorの候補選定、Luma登録、Calendar照合、Telegram文面はこれらの中に書かない。
-Life Manager Coreに一度だけ実装し、全profileが同じcontract suiteを通す。
-
-Dockerの正しい役割:
-
-- browser/workerの実行依存を再現するpackageとsandbox。business logicとproduct stateのownerではない。
-- taskごとにimageをbuildしない。CIで一度buildしたpinned image digestをpullする。
-- CPU/memory上限、log rotation、session TTL、artifact retention、health/pressure endpoint、volume quotaを必須にする。
-- CDP portをpublicに開けず、Life Manager workerのprivate networkからのみ接続する。
-
-parityの完了条件:
-
-- [ ] PA-01 同じConnector fixture/jobがLocalWorker+CloakとSelfHostWorker+Steelで同じ正規化receiptを返す
-- [ ] PA-02 browser adapterの切替えでConnectorのdomain moduleが変更されない
-- [ ] PA-03 crash後にresumeしても同じ申込を二重submitしない
-- [ ] PA-04 tenant Aのcookie/state/evidenceがtenant Bへ一バイトも漏れない
-- [ ] PA-05 image、browser cache、log、artifactが設定上限内で回収され、Mac/hostの空き容量を食い潰さない
-- [ ] PA-06 phoneだけのuserがTelegram/Webから同じjobを依頼し、同じ人間向けreportと証拠linkを受け取る
-
-導入順は変えない。`O1B-25A〜H`でDaisのnative localを先に完成し、Order 1〜5の
-local実証後にOptionalSelfHostProfileとHostedProfileを開く。Stagehand、Steel、Temporalの導入は
-Connector native完成の先行条件にしない。
+この境界を変更する将来向け作業は、Order 1〜5とlocal連続稼働gateが終わるまで着手しない。
 
 ### 5.1 Order 1A — 共通応募基盤
 
@@ -1110,14 +1107,14 @@ Connector native完成の先行条件にしない。
 - [x] O1B-22 「検索一巡」「一件の操作失敗」「一sourceの失敗」を終了条件にしない
 - [x] O1B-23 Google Calendarの全calendarからbusy intervalを読み、前後移動時間を含むfree intervalだけへ予約
 - [x] O1B-24 無料を優先し、有料eventは一度設定した自動支出policy内で保存済み決済手段を使い、都度承認を要求しない
-- [ ] O1B-25A Connector専用Docker build/deployを停止し、動作中containerはnative切替までrollback専用に固定
+- [ ] O1B-25A Connectorの日常実行ownerをLife Manager localに一本化し、並行するlegacy実行経路を停止
 - [ ] O1B-25B canonical repoのLife Manager `skills/`へConnector capability、worker contract、native bootを置く
 - [ ] O1B-25C `launchd`→Life Manager local control planeからConnectorを起動し、single-instance lock、heartbeat、healthcheck、self-healを接続
 - [ ] O1B-25D 既存CloakBrowser daily-driverを所有権付きで直接使い、他agentのtab/contextを触らない
 - [ ] O1B-25E `gog`でGoogle Calendar全calendarを読み、21日coverageと二重予約防止をnative実行
 - [ ] O1B-25F Luma探索→実登録→確認mail/QR→Calendarをnative一巡で実証
 - [ ] O1B-25G 21日coverage、既存予定、新規予約、残り空き、申込証拠、選定理由をTelegramへ一通で報告
-- [ ] O1B-25H native parity後にConnector Docker worker、host bridge、queue scheduleを退役
+- [ ] O1B-25H local一巡の実receipt保存後にlegacy worker、bridge、重複scheduleを退役
 
 Native Connector acceptance test list（この順で実測）:
 
@@ -1132,7 +1129,7 @@ Native Connector acceptance test list（この順で実測）:
 - [ ] NT-C09 Telegramがevent名、日時、場所、選定理由、Luma直接link、Calendar直接link、21日進捗を人間の言葉で送る
 - [ ] NT-C10 Telegramに`runner`、job ID、内部error codeだけの説明を出さない
 - [ ] NT-C11 Mac再起動後にlaunchdが自動復帰し、heartbeat/healthcheck/self-healが機能する
-- [ ] NT-C12 native一巡のreceipt保存後だけDocker Connectorを停止し、次回もnativeだけで成功する
+- [ ] NT-C12 local一巡のreceipt保存後だけlegacy Connectorを停止し、次回もlocal経路だけで成功する
 
 O1B-17開始（2026-08-02）: discovery cardの日本語日付labelは証拠に使わない。仮想scroll終端を
 証明したTokyo inventoryの全canonical URLについて公式JSON-LD detailを読み、ISO開始時刻を
