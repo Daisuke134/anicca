@@ -134,6 +134,22 @@ failed feedback.
 - MRR includes active recurring contracts only; editorial fees and paid articles
   remain one-time monthly revenue.
 
+### 2.4 Continuous operation
+
+`ai.anicca.article-daily` is the sole creator of a new daily Writer run and
+runs with `ARTICLE_AUTOPUBLISH=1`. `ai.anicca.article-resume` owns bounded
+same-run recovery; claim, opportunity, money, report, and learning workers
+continue on their own intervals. A loaded or running daily job is observed, not
+stopped or restarted merely because no new public URL has appeared yet.
+
+A quality-blocked run is a live safety result, not proof that the Writer loop is
+off. It keeps its immutable drafts, feedback, and receipts; the same-run
+recovery worker performs the bounded recovery path. The next daily run still
+starts on schedule. The Agent reports separately: (1) scheduler/worker health,
+(2) current-run generation state, (3) publication state, and (4) received
+revenue. Only a verified public readback counts as published, and only an
+external receipt counts as earned.
+
 ## 3. Revenue streams
 
 ### 3.1 Current stream ledger
