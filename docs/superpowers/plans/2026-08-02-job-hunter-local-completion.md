@@ -207,8 +207,18 @@ Headings such as `MUIT / MUFG` are forbidden.
 
 #### MUIT and ICLR 2026 narrative
 
-MUIT is the primary professional experience. The base claim set must separately
-capture and preserve:
+MUIT is the primary professional experience. A reader is assumed to know nothing
+about MUIT, the internal project, or Agentforce. The resume therefore defines
+Agentforce on first use as Salesforce's platform for building and operating AI
+agents, explains the enterprise-CRM users and purpose, and avoids unexplained product
+jargon.
+
+The CRM deployment, Databricks observability workflow, prompt tuning, context
+engineering, and relationship-manager summaries are parts of one approximately
+year-long Agentforce deployment project. They must never be presented as unrelated
+projects. ICLR 2026 is a separate MUIT achievement.
+
+The base claim set must capture and preserve:
 
 - deployment and prompt tuning of AI agents in a regulated bank CRM environment;
 - company-information summarization for relationship-manager workflows;
@@ -226,40 +236,69 @@ records the exact audience as C-suite. Attendance, contribution, and communicati
 are strong claims; sole ownership, sole deployment leadership, and invented impact
 numbers are forbidden.
 
-Recommended English bullets, subject to fact-ledger validation:
+Approved English content direction, subject to fact-ledger validation:
 
 ```text
-Mitsubishi UFJ Information Technology, Ltd. (MUIT) — Applied AI / AI Agent Engineering
+Mitsubishi UFJ Information Technology, Ltd. (MUIT)
+Applied AI / AI Agent Engineering
 Tokyo, Japan | Apr 2025–Present
 
-• Built an observability workflow in Databricks for an Agentforce-powered CRM agent,
-  using Genie Code to analyze output logs, diagnose behavior, and improve agent
+Enterprise CRM AI Agent Deployment
+
+• Contributed to Japan's first production deployment by a financial institution of
+  Salesforce Agentforce—a platform for building and operating AI agents—integrating
+  agent capabilities into the company's enterprise CRM system used by sales
+  professionals.
+• Built an observability workflow in Databricks to analyze the agents' inputs,
+  outputs, and responses to sales professionals. Used Genie Code to investigate
+  behavior, identify response-quality issues, and support improvements in agent
   effectiveness.
-• Deployed and prompt-tuned AI agents in a regulated banking CRM environment,
-  including company-information summaries for relationship-manager workflows.
-• Contributed through MUIT to Japan's first production deployment of Agentforce for
-  Financial Services by a financial institution.
+• Supported prompt tuning and context engineering for the deployed AI agents,
+  including agents that generate company-information summaries for relationship
+  managers.
+
+ICLR 2026 Research Communication
+
 • Represented MUIT at ICLR 2026 in Rio de Janeiro; synthesized frontier-AI research
-  for an internal executive briefing and communicated findings through MUIT's
-  official two-part YouTube report.
+  for an internal executive briefing and presented key findings through MUIT's
+  official two-part conference report.
+
+  ICLR 2026 Conference Report
 ```
 
-Recommended Japanese bullets, subject to the same validation:
+The final line is a tappable text link to the user-specified latter-part YouTube URL.
+The visible label must not say `Watch`, `YouTube`, `Part 2`, or `latter part`; the
+destination alone identifies the linked video.
+
+Approved Japanese content direction, subject to the same validation:
 
 ```text
 三菱UFJインフォメーションテクノロジー株式会社（MUIT）
-応用AI・AIエージェント関連業務 | 2025年4月〜現在
+応用AI・AIエージェント関連業務
+2025年4月〜現在
 
-・Agentforceを用いた銀行CRM向けAIエージェントのオブザーバビリティ基盤を
-  Databricks上で構築。Genie Codeによる出力ログ分析を通じて、挙動の把握と
-  有効性改善に取り組む。
-・リレーションシップマネージャー向けの企業情報要約を含むAIエージェントの
-  導入・プロンプト調整に従事。
-・金融機関として国内初となるAgentforce for Financial Servicesの本番導入に、
-  MUITの担当者として貢献。
-・MUITの業務としてICLR 2026に参加。最先端AI研究を経営層向けに社内報告し、
-  MUIT公式YouTubeの前編・後編レポートを通じて社外にも発信。
+社内CRMへのAIエージェント導入プロジェクト
+
+・AIエージェントを構築・運用するSalesforceのプラットフォーム
+  「Agentforce」を、営業担当者が利用する社内CRMへ導入するプロジェクトに
+  参画。金融機関として国内初となる本番導入に貢献。
+・AIエージェントへの入力、生成された回答、営業担当者への回答内容を分析する
+  オブザーバビリティ基盤をDatabricks上で構築。Genie Codeを活用して挙動や
+  回答品質の問題を調査し、エージェントの有効性改善を支援。
+・企業情報を営業担当者向けに要約する機能を含むAIエージェントについて、
+  プロンプト調整とコンテキストエンジニアリングを支援。
+
+ICLR 2026の調査・社内外発信
+
+・MUITの業務としてブラジル・リオデジャネイロで開催されたICLR 2026に参加。
+  最先端AI研究を整理して経営層向けに社内報告し、MUIT公式の前編・後編
+  カンファレンスレポートを通じて社外にも発信。
+
+  ICLR 2026参加レポート
 ```
+
+The Japanese link label follows the same rule: it links to the user-specified
+latter-part video but does not display `後編`, `YouTube`, or an imperative CTA.
 
 #### English resume information architecture
 
@@ -269,17 +308,20 @@ photograph, marital status, and current salary are excluded.
 
 Order:
 
-1. name, role-specific headline, Tokyo/Japan, email, LinkedIn, and GitHub profile;
+1. name, role-specific headline, Tokyo/Japan, email, LinkedIn, GitHub profile, and a
+   compact `ICLR 2026 Conference Report` link;
 2. two-line role-specific summary;
 3. professional experience, led by MUIT and followed by the A10 Lab internship;
 4. education and research: NAIST/ATR and Keio with explicit dates;
 5. selected independent projects;
 6. compact skills and languages.
 
-The header does not contain a generic `Portfolio` link or a standalone Life Manager
-link. Project links live next to their projects. The direct ICLR report may appear in
-the MUIT achievement. A general portfolio may appear only in the independent-projects
-section as `More projects` when space and ATS extraction remain clean.
+The header does not contain a generic `Portfolio` link, a standalone Life Manager
+link, or an Anicca link. Project links live next to their projects. The direct ICLR
+report appears once in the compact header and again as `ICLR 2026 Conference Report`
+inside the MUIT achievement; both point to the user-specified latter-part video. A
+general portfolio may appear only in the independent-projects section as `More
+projects` when space and ATS extraction remain clean.
 
 Engineering summary direction:
 
@@ -318,14 +360,13 @@ Anicca — iOS Affirmation App
 Product: https://aniccaai.com/affirmation-app
 App Store: https://apps.apple.com/jp/app/id6755129214
 
-Built and shipped an iOS affirmation app that delivers context-aware interventions;
-46 ratings at 4.5/5 on the Japan App Store at the 2026-08-03 verification snapshot.
+Built and shipped a mobile affirmation app with 45+ ratings and a 4.5/5 rating.
 ```
 
-App Store rating/count is a time-varying external fact. Every regenerated base or
-job-specific resume refreshes it from Apple's official lookup response and stores the
-country, observed timestamp, rating, count, and evidence hash. If lookup fails, the
-resume omits the numbers rather than reusing an unverified stale value.
+The Anicca rating statement is an owner-verified resume fact. Use `45+ ratings` and
+`4.5/5 rating` as provided; do not spend runtime or owner time re-searching it during
+base-resume generation. The product link is
+`https://aniccaai.com/affirmation-app`; the App Store link remains beside it.
 
 #### Japanese document architecture
 
@@ -342,6 +383,103 @@ artifacts:
 The Japanese chronology uses the full legal employer name and never lists MUFG as an
 employer. The English resume excludes age; the Japanese 履歴書 handles birth date and
 photo only under the selected official/employer document contract.
+
+#### Full base-resume content blueprint
+
+The renderer owns layout, but the following is the complete approved information
+architecture. Contact and profile URLs are resolved from the private profile at
+render time and are not duplicated in this versioned document.
+
+**English Applied AI / Agent Engineer base (one page)**
+
+1. Header: `Daisuke Narita | Applied AI & Agent Engineer | Tokyo, Japan`, followed by
+   private-profile email, LinkedIn, GitHub, and `ICLR 2026 Conference Report`.
+2. Summary:
+
+   ```text
+   Applied AI engineer at Mitsubishi UFJ Information Technology with experience
+   deploying and observing AI agents in a regulated banking environment. Combines
+   enterprise AI delivery, agentic product development, neuroscience/ML research,
+   and bilingual Japanese-English communication.
+   ```
+
+3. Experience:
+   - the complete MUIT `Enterprise CRM AI Agent Deployment` and `ICLR 2026 Research
+     Communication` content defined above;
+   - `A10 Lab Inc. — Marketing Intern | 2021–2022`: managed a JPY 20M campaign
+     budget, reduced CPA by 10%, and achieved record paid acquisition. Exact months
+     remain omitted until verified.
+4. Education and research:
+   - `Nara Institute of Science and Technology (NAIST) | Apr 2024–Apr 2026`:
+     master's research using EEG and machine learning to detect mind wandering;
+     research conducted and presented at Advanced Telecommunications Research
+     Institute International (ATR); founded a weekly community for applying Claude
+     Code, Codex, Cursor, and AI-agent workflows to research and daily work;
+   - `Keio University | 2020–2024`: B.A. in Political Science.
+5. Independent projects:
+   - `Life Manager — Autonomous Personal Operations Agent` with
+     `https://aniccaai.com/life-manager` and
+     `https://github.com/Daisuke134/life-manager`: an open-source, local-first agent
+     system coordinating calendar, commute, phone, Telegram, and life workflows with
+     persistent scheduling and verified side-effect handling;
+   - `Anicca — Mobile Affirmation App` with
+     `https://aniccaai.com/affirmation-app` and its App Store link: built and shipped
+     a mobile affirmation app with 45+ ratings and a 4.5/5 rating.
+6. Skills and languages:
+   - skills are generated only from approved facts and include AI agents,
+     Agentforce, prompt tuning, context engineering, Databricks, Genie Code,
+     Python/ML where supported, Swift/iOS, observability, and CRM workflows;
+   - Japanese native; English TOEFL iBT 96 and Duolingo English Test 140; Spanish
+     DELE B1.
+
+The business/solutions English variant uses the same chronology, facts, links, and
+projects. It changes only the headline, two-line summary, bullet ordering, and
+role-relevant emphasis; it may not create a separate factual baseline.
+
+**Japanese 履歴書 (separate official-style artifact)**
+
+1. date, name, contact details, birth date, and photograph only when required by the
+   selected official/employer contract, all sourced from the private profile;
+2. chronological education and employment:
+   - 2020–2024 慶應義塾大学 法学部政治学科;
+   - 2021–2022 株式会社A10 Lab マーケティングインターン;
+   - 2024年4月–2026年4月 奈良先端科学技術大学院大学, with ATR research
+     described as a research affiliation rather than employment;
+   - 2025年4月–現在 三菱UFJインフォメーションテクノロジー株式会社;
+3. qualifications and languages from approved private facts;
+4. role-specific 志望動機 generated only for a selected employer; and
+5. 本人希望欄 containing only truthful job-specific constraints, never compensation
+   or unsupported preferences by default.
+
+**Japanese 職務経歴書 (one to two pages)**
+
+1. Header: `成田大輔 | 応用AI・AIエージェントエンジニア | 東京`, followed by
+   private-profile contact details and `ICLR 2026参加レポート`.
+2. 職務要約:
+
+   ```text
+   三菱UFJインフォメーションテクノロジーにて、規制産業の社内CRMへ
+   AIエージェントを導入するプロジェクトに従事。AIエージェントの導入支援、
+   プロンプト・コンテキスト設計、Databricks上のオブザーバビリティ基盤構築に
+   加え、AI/機械学習研究、個人プロダクト開発、日英での技術発信経験を持つ。
+   ```
+
+3. 職務経歴:
+   - the complete MUIT `社内CRMへのAIエージェント導入プロジェクト` and
+     `ICLR 2026の調査・社内外発信` content defined above;
+   - `株式会社A10 Lab — マーケティングインターン | 2021–2022`: 2,000万円の
+     広告予算を運用し、CPAを10%削減、有料獲得数の過去最高を達成。
+4. 研究・学歴:
+   - 奈良先端科学技術大学院大学でEEGと機械学習によるマインドワンダリング
+     検出を研究し、ATRで研究・発表を実施;
+   - Claude Code、Codex、Cursor、AIエージェント活用を扱う週次コミュニティを
+     設立;
+   - 慶應義塾大学 法学部政治学科卒業。
+5. 個人開発:
+   - Life Manager with both web and GitHub links and the same approved description;
+   - Anicca with product/App Store links and the owner-verified `45件以上、評価4.5/5`.
+6. 活かせるスキル・語学 and job-specific 自己PR use only approved facts and the
+   same language scores as the English base.
 
 #### Resume acceptance gate
 
@@ -549,7 +687,13 @@ before the next item begins.
   code slice and record the resulting commit.
 - [ ] **O2-03** — Re-run the complete Job Hunter and runner suites from their canonical
   working directories and keep them green.
-- [ ] **O2-04** — Commit and push every reviewable slice; keep this dedicated spec as
+- [ ] **O2-04A — first implementation slice: corrected resume baseline** — TDD the
+  approved one-page English resume and the separate Japanese `履歴書` and
+  `職務経歴書`; update the private fact ledger without inventing facts; render PDFs;
+  verify ATS extraction, page count, chronology, links, and visual layout; send every
+  artifact to Telegram; record message IDs and SHA-256 values here; obtain base
+  acceptance before autonomous submission.
+- [ ] **O2-04B** — Commit and push every reviewable slice; keep this dedicated spec as
   the progress SSOT. The five-phase master spec remains untouched.
 - [ ] **O2-05** — Replace worktree-bound LaunchAgent programs with stable launchers
   and immutable releases; install the canonical local runtime.
