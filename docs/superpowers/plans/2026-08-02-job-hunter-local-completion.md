@@ -5,7 +5,8 @@
 **Canonical repository:** `https://github.com/Daisuke134/life-manager`  
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
-**Status:** Design aligned; implementation pending in O2 order.
+**Status:** Corrected resume baseline accepted and installed; runtime revival paused
+at owner request before O2-05.
 
 ## 1. Done condition
 
@@ -151,6 +152,20 @@ Current Dais base artifacts:
 | English Applied AI / Agent Engineer | `~/.local/share/anicca/job-search/materials/master/Daisuke_Narita_AI_Resume.pdf` | 6084 |
 | English AI Product / Solutions / Business | `~/.local/share/anicca/job-search/materials/business/Daisuke_Narita_AI_Business_Resume.pdf` | 6085 |
 | Japanese AI work history | `~/.local/share/anicca/job-search/materials/japan/Daisuke_Narita_Japan_AI_Resume.pdf` | 6086 |
+
+The superseding accepted baseline is recorded in
+`~/.local/share/anicca/job-search/materials/baseline.v1.json`:
+
+| Variant | SHA-256 | Telegram message ID |
+|---|---|---:|
+| English Applied AI / Agent Engineer | `31d8ca96a396526d23a8a4de4dcffdb8cc773cd7ff43db04e52a0e4c35e2d21e` | 6119 |
+| English AI Product / Solutions | `2e3ed9c27c7c4abc6dc6ff478c5718821d3d4ad4a5034c99f808841f41a1cd88` | 6120 |
+| Japanese 履歴書, no photograph | `e23efc2c9c09e0780a6dcdcf92c1487e6beafb5880ebc2f5dd77da54c67dd5d4` | 6121 |
+| Japanese 職務経歴書 | `13e4e3a78152182a7dad411f00b3846150151721396e16eefaefe7548edd94b9` | 6122 |
+
+The historical 6084–6086 artifacts are superseded and must never be selected for a
+new application. Production routing continues to use the stable `master`, `business`,
+and `japan` filenames, which have been overwritten by the accepted files above.
 
 ### 6.2 Per-application immutable dossier
 
@@ -676,7 +691,9 @@ after bounded recovery fails.
 - `summary.v1` exists; `summary.v2` is incomplete.
 - Ashby confirmed receipt: 0.
 - Workday confirmed receipt: 0.
-- Existing base resumes resent to Telegram with message IDs 6084–6086.
+- Corrected base resumes rendered as four one-page PDFs, visually inspected, selected
+  through the production stable filenames, and delivered with Telegram message IDs
+  6119–6122. The prior 6084–6086 files are superseded.
 
 ## 11. Execution order and remaining TODO
 
@@ -685,16 +702,17 @@ before the next item begins.
 
 - [x] **O2-01** — Create and measure dedicated branch/worktree; preserve unrelated
   main changes; record baseline and current runtime truth.
-- [ ] **O2-02** — Rebase onto the latest `origin/main` immediately before the first
+- [x] **O2-02** — Rebase onto the latest `origin/main` immediately before the first
   code slice and record the resulting commit.
-- [ ] **O2-03** — Re-run the complete Job Hunter and runner suites from their canonical
+- [x] **O2-03** — Re-run the complete Job Hunter and runner suites from their canonical
   working directories and keep them green.
-- [ ] **O2-04A — first implementation slice: corrected resume baseline** — TDD the
+- [x] **O2-04A — first implementation slice: corrected resume baseline** — Build the
   approved one-page English resume and the separate Japanese `履歴書` and
   `職務経歴書`; update the private fact ledger without inventing facts; render PDFs;
   verify ATS extraction, page count, chronology, links, and visual layout; send every
   artifact to Telegram; record message IDs and SHA-256 values here; obtain base
-  acceptance before autonomous submission.
+  acceptance before autonomous submission. Owner explicitly waived TDD for resume
+  authoring; post-change verification completed with 203 tests green.
 - [ ] **O2-04B** — Commit and push every reviewable slice; keep this dedicated spec as
   the progress SSOT. The five-phase master spec remains untouched.
 - [ ] **O2-05** — Replace worktree-bound LaunchAgent programs with stable launchers
