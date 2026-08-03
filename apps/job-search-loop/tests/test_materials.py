@@ -9,6 +9,7 @@ from job_search_loop.materials import (
     business_sections,
     render_business,
     render_resume_html,
+    render_japanese_rirekisho,
     secure_material_paths,
     validate_claims,
 )
@@ -91,7 +92,9 @@ class MaterialTests(unittest.TestCase):
         profile = {
             "candidate": {"name": "Daisuke Narita"},
             "facts": [
+                {"id": "muit_role_2025", "claim": "MUIT applied AI role."},
                 {"id": "muit_agent_crm", "claim": "Deployed agents into a bank CRM."},
+                {"id": "muit_genie_logs", "claim": "Analyzed agent logs."},
                 {"id": "muit_rm_summary", "claim": "Built RM-facing summaries."},
                 {"id": "mufg", "claim": "Contributed to MUFG production deployment."},
                 {"id": "anicca_consumer", "claim": "Built and grew Anicca."},
@@ -102,19 +105,15 @@ class MaterialTests(unittest.TestCase):
             ],
         }
         sections = business_sections(profile)
-        self.assertEqual(
-            sections[0]["heading"],
-            "Regulated Enterprise AI Delivery — MUIT / MUFG (2025–Present)",
-        )
+        self.assertEqual(sections[0]["heading"], "Professional Experience")
         first_ids = [item["fact_ids"][0] for item in sections[0]["items"]]
-        self.assertEqual(first_ids, ["muit_agent_crm", "muit_rm_summary", "mufg"])
+        self.assertEqual(first_ids[0], "muit_role_2025")
+        self.assertIn("muit_agent_crm", sections[0]["items"][1]["fact_ids"])
+        self.assertIn("mufg", sections[0]["items"][1]["fact_ids"])
         product_ids = {
             item["fact_ids"][0] for item in sections[1]["items"]
         }
-        self.assertEqual(
-            product_ids,
-            {"anicca_consumer", "life_manager", "a10_marketing"},
-        )
+        self.assertEqual(product_ids, {"anicca_consumer", "life_manager"})
 
     def test_resume_supports_business_specific_headline_without_invented_ownership(self):
         html = render_resume_html(
@@ -142,6 +141,7 @@ class MaterialTests(unittest.TestCase):
     @unittest.skipUnless(shutil.which("weasyprint"), "weasyprint is required")
     def test_business_resume_renders_one_private_ats_page(self):
         facts = [
+            ("muit_role_2025", "MUIT applied AI role."),
             ("muit_agent_crm", "MUIT deployed AI agents into a bank CRM."),
             ("muit_genie_logs", "Analyzed agent logs with Databricks Genie Code."),
             ("muit_rm_summary", "Built relationship-manager company summaries."),
@@ -210,7 +210,7 @@ class MaterialTests(unittest.TestCase):
             "languages",
         ]
         profile = {
-            "candidate": {"name": "Daisuke Narita", "name_ja": "成田大輔"},
+            "candidate": {"name": "Daisuke Narita", "name_ja": "成田大祐"},
             "facts": [
                 {"id": fact_id, "claim": f"Approved claim for {fact_id}"}
                 for fact_id in fact_ids
@@ -232,7 +232,7 @@ class MaterialTests(unittest.TestCase):
             ],
         )
         self.assertTrue(all(any("\u3040" <= c <= "\u9fff" for c in item["text"]) for item in items))
-        self.assertIn("日本初", items[4]["text"])
+        self.assertIn("国内初", items[4]["text"])
         self.assertNotIn("主導", items[4]["text"])
 
     @unittest.skipUnless(shutil.which("weasyprint"), "weasyprint is required")
@@ -259,7 +259,7 @@ class MaterialTests(unittest.TestCase):
         profile = {
             "candidate": {
                 "name": "Daisuke Narita",
-                "name_ja": "成田大輔",
+                "name_ja": "成田大祐",
                 "application_email": "candidate@example.com",
                 "phone": "09000000000",
                 "base": "Tokyo, Japan",
@@ -293,12 +293,26 @@ class MaterialTests(unittest.TestCase):
                 text=True,
             ).stdout
             self.assertIn("Pages:           1", info)
-            self.assertIn("成田大輔", extracted)
+            self.assertIn("成田大祐", extracted)
             self.assertIn("職務経歴書", extracted)
             self.assertIn("AIエージェント", extracted)
-            self.assertIn("生年月日：2002-01-30", extracted)
+            self.assertNotIn("生年月日", extracted)
             self.assertEqual(html_path.stat().st_mode & 0o777, 0o600)
             self.assertEqual(pdf_path.stat().st_mode & 0o777, 0o600)
+
+            rirekisho_html, rirekisho_pdf = render_japanese_rirekisho(
+                profile_path, root / "output"
+            )
+            rirekisho_text = __import__("subprocess").run(
+                ["pdftotext", str(rirekisho_pdf), "-"],
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout
+            self.assertIn("成田大祐", rirekisho_text)
+            self.assertIn("生年月日：2002-01-30", rirekisho_text)
+            self.assertNotIn("写真", rirekisho_text)
+            self.assertEqual(rirekisho_html.stat().st_mode & 0o777, 0o600)
 
 
 if __name__ == "__main__":
