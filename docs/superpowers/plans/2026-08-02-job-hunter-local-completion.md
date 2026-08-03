@@ -181,6 +181,186 @@ No receipt means no `application completed` claim.
   in the Japanese 履歴書 contract when required by the selected official format or
   employer.
 
+### 6.4 Dais base-resume correction contract
+
+Autonomous submission remains disabled until the corrected base resumes are rendered,
+visually inspected, delivered to Telegram, and accepted as the new content-addressed
+baseline. The current 6084–6086 artifacts are review inputs, not approved submission
+defaults.
+
+#### Verified timeline and naming
+
+The first occurrence uses the full organization name followed by its abbreviation.
+Later occurrences may use the abbreviation. Employment, client/deployment context,
+research affiliation, education, internship, and independent work remain separate.
+
+| Period | Resume identity |
+|---|---|
+| 2020–2024 | Keio University — B.A. in Political Science |
+| 2021–2022 | A10 Lab Inc. — Marketing Intern; exact months remain outside generated material until verified |
+| 2024-04–2026-04 | Nara Institute of Science and Technology (NAIST), with research at Advanced Telecommunications Research Institute International (ATR) |
+| 2025-04–Present | Mitsubishi UFJ Information Technology, Ltd. (MUIT) — Applied AI / AI agent work |
+
+The resume must never state or imply that Dais is or was employed by MUFG. MUFG
+appears only as the regulated banking deployment context for work performed at MUIT.
+Headings such as `MUIT / MUFG` are forbidden.
+
+#### MUIT and ICLR 2026 narrative
+
+MUIT is the primary professional experience. The base claim set must separately
+capture and preserve:
+
+- deployment and prompt tuning of AI agents in a regulated bank CRM environment;
+- company-information summarization for relationship-manager workflows;
+- an observability workflow/tool built in Databricks for a CRM Agentforce agent;
+- use of Databricks Genie Code to analyze agent-output logs and improve agent
+  effectiveness;
+- contribution through MUIT to Japan's first production deployment of Agentforce for
+  Financial Services by a financial institution; and
+- participation in ICLR 2026 in Rio de Janeiro as a MUIT achievement, synthesis of
+  frontier-AI research for an internal executive briefing, and communication of the
+  findings through MUIT's official two-part YouTube report.
+
+`executive briefing` or `senior executives` is used unless the verified private fact
+records the exact audience as C-suite. Attendance, contribution, and communication
+are strong claims; sole ownership, sole deployment leadership, and invented impact
+numbers are forbidden.
+
+Recommended English bullets, subject to fact-ledger validation:
+
+```text
+Mitsubishi UFJ Information Technology, Ltd. (MUIT) — Applied AI / AI Agent Engineering
+Tokyo, Japan | Apr 2025–Present
+
+• Built an observability workflow in Databricks for an Agentforce-powered CRM agent,
+  using Genie Code to analyze output logs, diagnose behavior, and improve agent
+  effectiveness.
+• Deployed and prompt-tuned AI agents in a regulated banking CRM environment,
+  including company-information summaries for relationship-manager workflows.
+• Contributed through MUIT to Japan's first production deployment of Agentforce for
+  Financial Services by a financial institution.
+• Represented MUIT at ICLR 2026 in Rio de Janeiro; synthesized frontier-AI research
+  for an internal executive briefing and communicated findings through MUIT's
+  official two-part YouTube report.
+```
+
+Recommended Japanese bullets, subject to the same validation:
+
+```text
+三菱UFJインフォメーションテクノロジー株式会社（MUIT）
+応用AI・AIエージェント関連業務 | 2025年4月〜現在
+
+・Agentforceを用いた銀行CRM向けAIエージェントのオブザーバビリティ基盤を
+  Databricks上で構築。Genie Codeによる出力ログ分析を通じて、挙動の把握と
+  有効性改善に取り組む。
+・リレーションシップマネージャー向けの企業情報要約を含むAIエージェントの
+  導入・プロンプト調整に従事。
+・金融機関として国内初となるAgentforce for Financial Servicesの本番導入に、
+  MUITの担当者として貢献。
+・MUITの業務としてICLR 2026に参加。最先端AI研究を経営層向けに社内報告し、
+  MUIT公式YouTubeの前編・後編レポートを通じて社外にも発信。
+```
+
+#### English resume information architecture
+
+The English engineering and business variants are one-page, single-column,
+ATS-readable application resumes for an early-career candidate. Age, birth date,
+photograph, marital status, and current salary are excluded.
+
+Order:
+
+1. name, role-specific headline, Tokyo/Japan, email, LinkedIn, and GitHub profile;
+2. two-line role-specific summary;
+3. professional experience, led by MUIT and followed by the A10 Lab internship;
+4. education and research: NAIST/ATR and Keio with explicit dates;
+5. selected independent projects;
+6. compact skills and languages.
+
+The header does not contain a generic `Portfolio` link or a standalone Life Manager
+link. Project links live next to their projects. The direct ICLR report may appear in
+the MUIT achievement. A general portfolio may appear only in the independent-projects
+section as `More projects` when space and ATS extraction remain clean.
+
+Engineering summary direction:
+
+```text
+Applied AI engineer at Mitsubishi UFJ Information Technology with experience
+deploying and observing AI agents in a regulated banking environment. Combines
+enterprise AI delivery, agentic product development, neuroscience/ML research, and
+bilingual Japanese-English communication.
+```
+
+Business/solutions summary direction:
+
+```text
+AI solutions and product professional at Mitsubishi UFJ Information Technology,
+translating frontier AI research into regulated enterprise delivery, customer
+workflows, and clear executive communication in Japanese and English.
+```
+
+#### Independent projects and links
+
+Independent work comes after professional experience and education/research. It is
+not presented as employment. Project names own their links:
+
+```text
+Life Manager — Autonomous Personal Operations Agent
+Web: https://aniccaai.com/life-manager
+Source: https://github.com/Daisuke134/life-manager
+
+Built an open-source, local-first agent system that coordinates calendar, commute,
+phone, Telegram, and life workflows, with persistent scheduling and verified
+side-effect handling.
+```
+
+```text
+Anicca — iOS Affirmation App
+Product: https://aniccaai.com/affirmation-app
+App Store: https://apps.apple.com/jp/app/id6755129214
+
+Built and shipped an iOS affirmation app that delivers context-aware interventions;
+46 ratings at 4.5/5 on the Japan App Store at the 2026-08-03 verification snapshot.
+```
+
+App Store rating/count is a time-varying external fact. Every regenerated base or
+job-specific resume refreshes it from Apple's official lookup response and stores the
+country, observed timestamp, rating, count, and evidence hash. If lookup fails, the
+resume omits the numbers rather than reusing an unverified stale value.
+
+#### Japanese document architecture
+
+Japanese applications that request domestic-format documents receive two separate
+artifacts:
+
+1. `履歴書` based on the Ministry of Health, Labour and Welfare A4 example, containing
+   chronological education/employment, qualifications, language, motivation, and
+   applicant preferences as required; and
+2. `職務経歴書`, normally one to two pages, containing professional summary, MUIT
+   achievements including ICLR 2026, NAIST/ATR research, verified skills, independent
+   projects, A10 Lab internship, and role-specific self-promotion.
+
+The Japanese chronology uses the full legal employer name and never lists MUFG as an
+employer. The English resume excludes age; the Japanese 履歴書 handles birth date and
+photo only under the selected official/employer document contract.
+
+#### Resume acceptance gate
+
+Each corrected artifact must pass all of the following before autonomous submission:
+
+- all claims map to approved private fact IDs and exact source/evidence class;
+- organization names, dates, employment/affiliation types, and chronology agree;
+- MUIT employment and MUFG deployment context are unambiguous;
+- ICLR 2026 is prominent under MUIT and its public URL resolves;
+- independent projects appear below professional experience and education/research;
+- project links resolve and the generic header portfolio link is absent;
+- English output is one page, single-column, and ATS text extraction is complete;
+- Japanese 履歴書 and 職務経歴書 are separate and match the official routing policy;
+- unsupported superlatives, sole-ownership wording, age emphasis, secrets, and
+  private-only links are absent;
+- visual inspection confirms hierarchy, line wrapping, whitespace, and link labels;
+- the exact PDFs are delivered to Telegram with message IDs; and
+- the accepted SHA-256 values become the only base inputs for future tailoring.
+
 ## 7. Telegram product UX
 
 Telegram is the proactive command center. Messages are concise, emotional, natural
@@ -429,4 +609,3 @@ flowchart TD
     Z --> K[Report what was learned and what changes next]
     K --> D
 ```
-
