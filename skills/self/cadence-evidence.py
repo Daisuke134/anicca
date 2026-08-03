@@ -144,6 +144,10 @@ def _gig_listings_path():
     return os.environ.get("GIG_LISTINGS_PATH") or os.path.expanduser("~/gig/listings.jsonl")
 
 
+def _gig_shuppin_path():
+    return os.environ.get("GIG_SHUPPIN_PATH") or os.path.expanduser("~/gig/shuppin.jsonl")
+
+
 # Local literal copy of funnel.py's won/paid status vocabulary (REQ-GFV-022) — copied, not
 # cross-repo-imported, since funnel.py lives in ~/profitable-claude/ while this module lives in
 # ~/anicca/; documented as intentionally mirroring funnel.py's vocabulary so the two stay in
@@ -153,7 +157,7 @@ _GIG_PAID_STATUSES = {"検収完了", "支払"}
 _GIG_REAL_ACTION_STATUSES = {"applied", "replied"} | _GIG_WON_STATUSES | _GIG_PAID_STATUSES
 
 
-def _gig_activity_event_dates(applied_rows, listings_rows):
+def _gig_activity_event_dates(applied_rows, listings_rows, shuppin_rows=None):
     """REQ-GFV-022 (PROP-030, PROP-036) — pure: given already-read applied_rows/listings_rows (the
     file reads are the effectful shell, see _gig_applied_path/_gig_listings_path below), returns the
     union of (a) JST dates (via _gig_ts_to_jst_date) of every applied_rows entry whose `status` is
@@ -185,13 +189,29 @@ def _gig_activity_event_dates(applied_rows, listings_rows):
             first_seen_by_listing_id[listing_id] = d
     dates.update(first_seen_by_listing_id.values())
 
+    # B0's canonical append-only ledger is shuppin.jsonl.  Older deployments
+    # never projected its buyer-visible publish/edit actions into listings.jsonl,
+    # so reading only the newer projection makes a real same-day listing action
+    # invisible to the daily contract.  Count only the explicit action rows and
+    # their machine timestamp; do not infer cadence from file mtime.
+    for row in shuppin_rows or []:
+        if not isinstance(row, dict):
+            continue
+        action = row.get("action")
+        if action not in {"shuppin_created", "shuppin_edited", "shuppin_published"}:
+            continue
+        d = _gig_ts_to_jst_date(row.get("ts"))
+        if d:
+            dates.add(d)
+
     return dates
 
 
 def _gig_row_exists_event_dates():
     applied_rows = _read_jsonl_rows(_gig_applied_path())
     listings_rows = _read_jsonl_rows(_gig_listings_path())
-    return _gig_activity_event_dates(applied_rows, listings_rows)
+    shuppin_rows = _read_jsonl_rows(_gig_shuppin_path())
+    return _gig_activity_event_dates(applied_rows, listings_rows, shuppin_rows)
 
 
 # Test-only override seams (mirrors this codebase's own EARN_LEDGER/FOUNDER_DIR/FOUNDER_TEST
