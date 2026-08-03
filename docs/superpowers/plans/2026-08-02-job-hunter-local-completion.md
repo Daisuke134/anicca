@@ -177,9 +177,9 @@ No receipt means no `application completed` claim.
   Welfare style `履歴書` plus a separate job-specific `職務経歴書`.
 - Employer language and requested document types control routing, not a person's
   name, nationality, or company origin.
-- A photograph, document date, motivation, and preference field are included only
-  in the Japanese 履歴書 contract when required by the selected official format or
-  employer.
+- The Dais Japanese 履歴書 does not include a photograph. Document date, motivation,
+  and preference fields are included only when required by the selected official
+  format or employer.
 
 ### 6.4 Dais base-resume correction contract
 
@@ -197,12 +197,13 @@ research affiliation, education, internship, and independent work remain separat
 | Period | Resume identity |
 |---|---|
 | 2020–2024 | Keio University — B.A. in Political Science |
-| 2021–2022 | A10 Lab Inc. — Marketing Intern; exact months remain outside generated material until verified |
+| 2021-01–2022-01 | A10 Lab Inc. — Marketing Intern |
 | 2024-04–2026-04 | Nara Institute of Science and Technology (NAIST), with research at Advanced Telecommunications Research Institute International (ATR) |
 | 2025-04–Present | Mitsubishi UFJ Information Technology, Ltd. (MUIT) — Applied AI / AI agent work |
 
-The resume must never state or imply that Dais is or was employed by MUFG. MUFG
-appears only as the regulated banking deployment context for work performed at MUIT.
+The resume must never state or imply that Dais is or was employed by MUFG. MUFG Bank
+appears as the owner and operating context of the internal CRM into which Dais
+contributed through his employment at MUIT.
 Headings such as `MUIT / MUFG` are forbidden.
 
 #### MUIT and ICLR 2026 narrative
@@ -220,7 +221,7 @@ projects. ICLR 2026 is a separate MUIT achievement.
 
 The base claim set must capture and preserve:
 
-- deployment and prompt tuning of AI agents in a regulated bank CRM environment;
+- deployment and prompt tuning of AI agents in MUFG Bank's internal CRM;
 - company-information summarization for relationship-manager workflows;
 - an observability workflow/tool built in Databricks for a CRM Agentforce agent;
 - use of Databricks Genie Code to analyze agent-output logs and improve agent
@@ -247,8 +248,8 @@ Enterprise CRM AI Agent Deployment
 
 • Contributed to Japan's first production deployment by a financial institution of
   Salesforce Agentforce—a platform for building and operating AI agents—integrating
-  agent capabilities into the company's enterprise CRM system used by sales
-  professionals.
+  agent capabilities into MUFG Bank's internal CRM system used by sales
+  professionals, through his role at MUIT.
 • Built an observability workflow in Databricks to analyze the agents' inputs,
   outputs, and responses to sales professionals. Used Genie Code to investigate
   behavior, identify response-quality issues, and support improvements in agent
@@ -280,8 +281,9 @@ Approved Japanese content direction, subject to the same validation:
 社内CRMへのAIエージェント導入プロジェクト
 
 ・AIエージェントを構築・運用するSalesforceのプラットフォーム
-  「Agentforce」を、営業担当者が利用する社内CRMへ導入するプロジェクトに
-  参画。金融機関として国内初となる本番導入に貢献。
+  「Agentforce」を、三菱UFJ銀行の営業担当者が利用する社内CRMへ導入する
+  プロジェクトにMUITの担当者として参画。金融機関として国内初となる
+  本番導入に貢献。
 ・AIエージェントへの入力、生成された回答、営業担当者への回答内容を分析する
   オブザーバビリティ基盤をDatabricks上で構築。Genie Codeを活用して挙動や
   回答品質の問題を調査し、エージェントの有効性改善を支援。
@@ -406,9 +408,8 @@ render time and are not duplicated in this versioned document.
 3. Experience:
    - the complete MUIT `Enterprise CRM AI Agent Deployment` and `ICLR 2026 Research
      Communication` content defined above;
-   - `A10 Lab Inc. — Marketing Intern | 2021–2022`: managed a JPY 20M campaign
-     budget, reduced CPA by 10%, and achieved record paid acquisition. Exact months
-     remain omitted until verified.
+   - `A10 Lab Inc. — Marketing Intern | Jan 2021–Jan 2022`: managed a JPY 20M
+     campaign budget, reduced CPA by 10%, and achieved record paid acquisition.
 4. Education and research:
    - `Nara Institute of Science and Technology (NAIST) | Apr 2024–Apr 2026`:
      master's research using EEG and machine learning to detect mind wandering;
@@ -438,11 +439,11 @@ role-relevant emphasis; it may not create a separate factual baseline.
 
 **Japanese 履歴書 (separate official-style artifact)**
 
-1. date, name, contact details, birth date, and photograph only when required by the
-   selected official/employer contract, all sourced from the private profile;
+1. date, name, contact details, and birth date as required by the selected
+   official/employer contract, all sourced from the private profile; no photograph;
 2. chronological education and employment:
    - 2020–2024 慶應義塾大学 法学部政治学科;
-   - 2021–2022 株式会社A10 Lab マーケティングインターン;
+   - 2021年1月–2022年1月 株式会社A10 Lab マーケティングインターン;
    - 2024年4月–2026年4月 奈良先端科学技術大学院大学, with ATR research
      described as a research affiliation rather than employment;
    - 2025年4月–現在 三菱UFJインフォメーションテクノロジー株式会社;
@@ -453,12 +454,12 @@ role-relevant emphasis; it may not create a separate factual baseline.
 
 **Japanese 職務経歴書 (one to two pages)**
 
-1. Header: `成田大輔 | 応用AI・AIエージェントエンジニア | 東京`, followed by
+1. Header: `成田大祐 | 応用AI・AIエージェントエンジニア | 東京`, followed by
    private-profile contact details and `ICLR 2026参加レポート`.
 2. 職務要約:
 
    ```text
-   三菱UFJインフォメーションテクノロジーにて、規制産業の社内CRMへ
+   三菱UFJインフォメーションテクノロジーにて、三菱UFJ銀行の社内CRMへ
    AIエージェントを導入するプロジェクトに従事。AIエージェントの導入支援、
    プロンプト・コンテキスト設計、Databricks上のオブザーバビリティ基盤構築に
    加え、AI/機械学習研究、個人プロダクト開発、日英での技術発信経験を持つ。
@@ -467,7 +468,8 @@ role-relevant emphasis; it may not create a separate factual baseline.
 3. 職務経歴:
    - the complete MUIT `社内CRMへのAIエージェント導入プロジェクト` and
      `ICLR 2026の調査・社内外発信` content defined above;
-   - `株式会社A10 Lab — マーケティングインターン | 2021–2022`: 2,000万円の
+   - `株式会社A10 Lab — マーケティングインターン | 2021年1月–2022年1月`:
+     2,000万円の
      広告予算を運用し、CPAを10%削減、有料獲得数の過去最高を達成。
 4. 研究・学歴:
    - 奈良先端科学技術大学院大学でEEGと機械学習によるマインドワンダリング
