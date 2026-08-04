@@ -296,6 +296,21 @@ Dais verbatim: "you were just hiding your output" / "I really don't want that yo
 
 スキーマ膨張・ARG_MAX 説は不成立（compact JSON 最大 3,395 bytes、中央値 500 前後）。codex / openclaw 経路への汚染なし（`candidate_prompt` は `prompt` で初期化され CLAUDE_PROVIDERS でのみ差し替わる。openclaw は従来どおり stdin を `ValueError` で拒否）。`--` 分割ヒューリスティック自体に反例ゼロ（172本走査で `--` 2回以上・`Program` のみ・バイナリ plist いずれも0件）。V5 の「散文が返った」観測は正しい（失敗 result 全件で JSON オブジェクトは validator 出力1個のみ）。V10 の配布は4宛先すべて到達しマーカー外は無傷。
 
+## 2.12 敵対的検証 第3回（2026-08-05、Sonnet。V12〜V18 / L1 / F2 対象）
+
+**Dais 2026-08-05 の指示で検証者を Sonnet に固定して以降の初回。実バグを1件掘り当てた。**
+
+| # | 指摘 | 対処 |
+|---|---|---|
+| 1 | **HIGH — `.sh` で終わるコマンドライン全体をパスと誤認**。`["/bin/bash","-lc","bash $HOME/anicca/.../x.sh"]` はフラグメント自体が `.sh` 終わりのため `_first_script` の最初のループがそれを返し、`bash /Users/…/x.sh` という非絶対パスになって `repo=unparsed` / `fuel=unknown` に落ちていた（3本）。cwd バグと違い**全員に対して一貫して誤る** | **修正済**（`ai-config` `0cb9a97`）。`_looks_like_path()` を追加（空白を含まず `/` `~` `$HOME` `./` で始まる）。加えて `SCRIPT_IN_TEXT` の lookbehind が省略可能な `$HOME` の**前**に置かれていて `$HOME/` に一致しなかったため順序を修正。結果 life-manager 68→**71**、system 13→**7**、`ceo-runner` が `not-found`→**agent-runner** に是正 |
+| 2 | **MEDIUM — `TOOLLESS_TASK_CLASSES` の「唯一の定義」は嘘**。codex 側の `--sandbox read-only` 分岐（`e049b69d`、3日前）が同じ3クラス名を独立に持っており、新設テストはそれを見ていなかった | **修正済**（`profitable-claude` `dbe513a0`）。codex 分岐を定数参照に統一。テストを「3つ組の literal が1回だけ現れる」検査に強化し、**重複を戻すと落ちること**を実証。当初テストは個々の名前の出現回数を禁じていたが、argparse の choices など無関係な用途まで巻き込むため誤り（テスト側を修正） |
+| 3 | MEDIUM — テストスイートは対象コミット後も 2件 red | **既知**。根因を独立に特定してくれた: `test_business_script_…` は別コミット `59f0c444`（B2 用スキーマ分離で `const`→`enum`）、`test_provider_executable_…` は `8bdca6ee`（`~/.cli-proxy-api-key` 必須化）。いずれも本作業と無関係。本セッションは一貫して「55 passed / ベースライン失敗2件」と報告しており「tests pass」とは主張していない |
+| 4 | MEDIUM — `AGENTS.md` を chezmoi から外したため、新規マシンで `chezmoi apply` だけでは生成されない。`sync.sh` を自動実行する仕組みも無い | **未対応**。V19 として登録 |
+| 5 | LOW — `bin/fleet-model.sh` が未コミット | **陳腐化**。検証エージェントの実行中に commit された（`ai-config` `6873c52`） |
+| 6 | LOW — `pipecat-meeting` のバックアップ先が `/tmp` | **修正済**。`~/.local/state/anicca/removed-launchagents/` へ移動 |
+
+**壊せなかった点**: `chezmoi apply` の安全性（`.zshrc` と `config.toml` を実際に復号して現物と一致を確認、age 暗号化の完全性、両リポジトリの private 設定、全履歴に対する秘密パターン走査すべて異常なし）。cwd 非依存性も再実証。
+
 ## 3. Telegram メッセージ設計（Dais 合意済み）
 
 原則: ①無音＝正常は禁止（毎日必ず1通来る。来なければ監視が死んでいる） ②緑は報告しない、変化と赤だけ ③「動いた」でなく「稼いだ」を先頭に。
@@ -368,6 +383,7 @@ life-manager:  alive_if = 過去25時間に exit=0
 | G2 | ローカル版オンボーディングを1コマンドに | clone → 1コマンド → 全エージェント起動 | pending |
 | G3 | クラウド/Web版のオンボーディング導線 | 既存の導線と接続 | pending |
 | G4 | 「Life Manager が何をするか」を定義し直す | 54本のうち実際に人生管理をしているのは何本かを名指しする | pending |
+| V19 | 新規マシンのブートストラップを閉じる（第3回 指摘4） | clone → 1手順で `CLAUDE.md` / `AGENTS.md` / `GEMINI.md` が生成される | pending |
 | B1 | `fleet status` を1本書く | 171本の生死・exit・最終活動が1画面。**F1 に統合予定** | pending |
 | B4 | 効果ゼロ検知（稼働緑・成果ゼロ） | `alive_if` 真 かつ `healthy_if` 偽 で1通届く | pending |
 | A3 | remote-control の停止理由をログに残す | シグナルトラップ追加。次の停止で犯人が記録される | **done 2026-08-04**。`~/.claude/scripts/remote-control-supervise.sh` に `start pid=` 行と `TRAPTERM/INT/HUP/QUIT` を追加。`zsh -n` OK。隔離テストで発火実証。**本番プロセスは再起動していない**（このセッション自体がそこを通っているため）→ 次の自然再起動から有効。**測定で判明した限界**: zsh は前景パイプライン待機中のシグナル trap をジョブ終了まで保留するため、シェル単体への TERM では1行も残らない。launchd はプロセスグループへ送るので実運用では記録される。検証は `perl -e 'setpgrp(0,0); exec ...'` + `kill -TERM -<PGID>` で行うこと（シェル単体への kill は偽陰性）。`~/.claude` は git 管理外なので commit なし |
