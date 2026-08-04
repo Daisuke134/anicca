@@ -228,7 +228,7 @@ life-manager:  alive_if = 過去25時間に exit=0
 | G4 | 「Life Manager が何をするか」を定義し直す | 54本のうち実際に人生管理をしているのは何本かを名指しする | pending |
 | B1 | `fleet status` を1本書く | 171本の生死・exit・最終活動が1画面。**F1 に統合予定** | pending |
 | B4 | 効果ゼロ検知（稼働緑・成果ゼロ） | `alive_if` 真 かつ `healthy_if` 偽 で1通届く | pending |
-| A3 | remote-control の停止理由をログに残す | シグナルトラップ追加。次の停止で犯人が記録される | pending |
+| A3 | remote-control の停止理由をログに残す | シグナルトラップ追加。次の停止で犯人が記録される | **done 2026-08-04**。`~/.claude/scripts/remote-control-supervise.sh` に `start pid=` 行と `TRAPTERM/INT/HUP/QUIT` を追加。`zsh -n` OK。隔離テストで発火実証。**本番プロセスは再起動していない**（このセッション自体がそこを通っているため）→ 次の自然再起動から有効。**測定で判明した限界**: zsh は前景パイプライン待機中のシグナル trap をジョブ終了まで保留するため、シェル単体への TERM では1行も残らない。launchd はプロセスグループへ送るので実運用では記録される。検証は `perl -e 'setpgrp(0,0); exec ...'` + `kill -TERM -<PGID>` で行うこと（シェル単体への kill は偽陰性）。`~/.claude` は git 管理外なので commit なし |
 | A4 | claude 資格情報の共有を調査 | 同時稼働 claude プロセス数 × 401 発生時刻を突合し §2.5 の仮説を白黒つける | pending |
 | E3 | 座席競合を構造的に防ぐ | デスクトップアプリと CLI daemon が同じ CODEX_HOME を握らない | pending |
 | C1 | exit≠0 の27本を1本ずつ決着 | 特に5分毎失敗の4本（life-manager 系）。直すか止めるか | pending |
