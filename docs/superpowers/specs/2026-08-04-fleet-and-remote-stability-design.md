@@ -427,6 +427,31 @@ life-manager:  alive_if = 過去25時間に exit=0
 
 ## 4. TODO（順序が正本。番号順に着手、飛ばさない）
 
+### 4.0 現在の実行順（2026-08-05 Dais 合意。★この順で1件ずつ閉じる。飛ばさない・並べ替えない★）
+
+「次どれ?」を聞かない。この表の未完の先頭が常に次の1件。1件を done 条件まで閉じてから次へ進む。
+
+| 順 | ID | タスク | done 条件 | 状態 |
+|---|---|---|---|---|
+| 1 | **R1** | Remote Control を殺している犯人を特定して止める | 犯人をコード行で名指し + 過去の全発火が防げることを示す + 本番で回帰なし | **done 2026-08-05**（§2.5.1。`chezmoi 6b40882` / `products e3a696740`） |
+| 2 | **R2** | Remote Control の死が必ず届く | 実際に死なせて Telegram に messageId が返る。無音で死ぬ経路が残っていない | 進行中 |
+| 3 | **R3** | 長時間作業を対話セッションから launchd ループへ移す運用を確立 | 「寝る前に投げた仕事」が翌朝 Telegram に結果で届く（セッションを開いたままにしない） | 未着手 |
+| 4 | **R4** | 背景 subagent の完了通知が孤児化する問題を回避 | 背景 agent の成果が、親セッションの生死に関係なく届く | 未着手 |
+| 5 | **R5** | swap 92% / ディスク残 9GB を解消 | swap 使用率 < 70% かつ空き > 20GB | 未着手 |
+| 6 | **A** | caveman skill の `No tool-call narration` を潰す | ツール実行前に必ず1行が出る。core.md の「黙るな」と衝突しない | 未着手 |
+| 7 | **V0** | `verify_domain_skills.sh` を commit + 自動判定に配線 | 実 pass の全プロンプトに domain-skills が載っているか自動で判定される | untracked |
+| 8 | **P1a** | ★paid-buyer 会話の所有者レーン新設★（4アクション） | 素材欠落案件で `ask_buyer` が実発火 | 未着手（gig の律速） |
+| 9 | **P1b** | b1-context に project context 同梱 | b1-context が「キャンセル」の語を含む | 未着手 |
+| 10 | **P1c** | plist 8本を1ツリーへ統一 | auditor の STALE 誤報が止まる | 未着手 |
+| 11 | **P2** | outcome ledger + 3アラート | 「トークン>0 かつ入金0」で実発火 | 半分（`effect-watch` 稼働中） |
+| 12 | **P3** | promptfoo 納品ゲート | 劣化成果物で納品が止まる | 未着手 |
+| 13 | **P4** | corrections repo + domain-skills 自動抽出 | 同種失敗の2度目が構造的に不可能 | 手書きのみ済 |
+| 14 | **P5** | 定期購入 lifecycle / 発注率>40% / 単価2万円以上 | — | 未着手 |
+
+**R を P より先に置く理由**: R が直らない限り、P の作業を夜に走らせても朝には「繋がっているのに何もしていない」に戻る。**gig agent を直す前に、gig agent を直す作業自体が生き残れるようにする。** P1a〜P5 の詳細な done 条件は gig 側の正本 `~/profitable-claude/docs/loop-engineering/26-gig-loop-asis-tobe-plan.md` §0.1.4 が持つ。ここは順序だけを持つ。
+
+### 4.1 旧 TODO（F/B 系列。上の順序に吸収済み。参照用）
+
 | # | タスク | done 条件 | 状態 |
 |---|---|---|---|
 | A1 | `stop-block.sh` 削除 | Stop フックが cozempic と orca だけ | **done 2026-08-04** |
