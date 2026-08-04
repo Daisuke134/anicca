@@ -263,6 +263,39 @@ Dais verbatim: "you were just hiding your output" / "I really don't want that yo
 
 最後の1行が過剰指摘のセンサーになる。全部が指摘で埋まっている検証は、その検証自体を疑う。
 
+## 2.11 敵対的検証 第2回の結果（2026-08-05、V2 / V4 / V5 / V10 対象）
+
+### CRITICAL
+
+| # | 反証 | 一次証拠 | 影響 |
+|---|---|---|---|
+| C1 | 「`chezmoi apply` しても戻らない」は正しいが、**apply 自体が安全かは検証していなかった** | `chezmoi status` → `MM .codex/AGENTS.md` / `MM .codex/config.toml` / `MM .config/ai/common-rules.md` / `MM .zshrc`。`chezmoi apply --dry-run` は1本目の TTY 要求で停止する | apply すると ①`~/.codex/AGENTS.md` の AI-SYNC ブロックが削除され V10 の Codex 配布が消える ②`~/.codex/config.toml` から `approval_policy="never"` / `sandbox_mode` / `mcp_servers` 4件が消え Codex loop が承認待ちで停止しうる ③`~/.zshrc` の `FIRECRAWL_API_KEY` が旧キーへ、`unset CLAUDE_CODE_OAUTH_TOKEN` が削除 ④`common-rules.md` が旧文へ巻き戻る。**私が実行したのは `chezmoi apply ~/.claude` とスコープを切った形だったため当たらなかっただけ** |
+| C2 | 「172本すべてを扱う」 | `ls ~/Library/LaunchAgents/*.plist \| wc -l` → **200**。`PREFIX = "ai.anicca."` で名前空間を絞っている。除外されたもの: `ai.openclaw.gateway` / `homebrew.mxcl.cliproxyapi` / `com.anicca.disk-sentinel` / `com.anicca.claude-remote-control` / `com.anicca.cdp-bridge` ほか28件。さらに `~/.openclaw/cron/jobs.json` の **222 job（enabled 79）** が範囲外 | registry 冒頭が "Source of truth for what launchd is holding" と宣言しているのに、gateway と cliproxyapi が「無い」と読める。memory 規律「稼働 loop 登録簿を引く。あれば kickstart、spawn しない」に従うと**重複 spawn を防ぐ台帳が重複 spawn を誘発する** |
+| C3 | repo 帰属が決定論的 | 同一 commit のスクリプトを cwd だけ変えて実行: `/tmp` → system 16 / anicca-products 3、`~/anicca-project` → system 13 / anicca-products 6、`~/profitable-claude` → profitable-claude 39。原因は `repo_of()` の `os.path.realpath()` が非絶対パスに cwd を前置すること | 「この repo を触ると何が動くか」の答えが生成者の cwd で変わる。docstring の「generated rather than typed, so it cannot drift」は成立していない。`untracked 22` のうち14件は実際には repo 内（`Projects/life-manager-main` 9件ほか）で、**life-manager の真の数は 55 ではなく 65** |
+
+### HIGH
+
+| # | 反証 | 証拠 | 影響 |
+|---|---|---|---|
+| H1 | V10 が Dais verbatim の禁止条項を無言で弱めた | `git show 57504f1 -- core.md` → `★ VCSDD 永久禁止（plugin も adversary agent も呼ぶな）★` から **`も adversary agent も` が削除**。commit message はこれに触れていない。memory `feedback_never_vcsdd_superpowers_and_claude_only` と project CLAUDE.md 0.37 には禁止が生きている | 優先順位表は core.md(2) > project CLAUDE.md(4) > memory(5) なので新側が勝つ。**自分の新機能を通すために上位規律を自分で書き換えた**形になっている。禁止の是非以前に、変更が変更として記録されていないことが問題 |
+| H2 | `fuel` 列が判断に使える | `_first_script` が拡張子一致のみなので `bash -lc "… ceo-run.sh --light-pass"` は `/bin/bash` に落ち、Mach-O を読んで `none` と結論。`ceo-runner` / `stripe-revenue-poller` / `sbi-usdc-monitor` / `citizen-refill` が同型。`none 98` の内訳は interpreter-only 11、変数間接で追跡不能 39。**larry 9本は実体が agent-runner**（正規表現の文字クラスが `${VAR:-/path}` の `-` を飲む）。`openclaw 27` のうち **24件は `#` コメント行へのマッチ**、残り3件も Telegram 通知で LLM 燃料ではない | 「どの account が枯れたらどの loop が死ぬか」に答えられない。money 系が「モデルを呼ばない安全な loop」として並ぶ false safety |
+| H3 | V5 の契約に副作用がない | `command_for` は composition-agent / diagnostic-agent / application-intent-planner に `--tools ""` を渡す。`strict_output_contract` は無条件で「Complete the requested work using tools from that workdir」を付ける。この3クラスのフォールバックは全て `claude-direct/sonnet`。`--prompt-stdin` の実利用者は `reply_composer.py`(composition) と `application_parent.py`(planner) の2つ = まさにこのクラス | 08-04 の telemetry では composition-agent の claude-direct は6回すべて `schema_valid=True`。**100%成功していた経路に実行不能な指示を追加した**。回帰の有無は次の実 pass まで観測できない |
+
+### MEDIUM
+
+| # | 反証 | 実測 |
+|---|---|---|
+| M1 | 「8パス連続で失敗、1回 $0.59」 | **8本中7本**。`gig-pass-1785826801` の attempt-2 は `schema_valid=True`。失敗7本の実額は 0.7466 / 0.5068 / 0.6101 / 0.5866 / 0.5960 / 0.7673 / 0.5921 = 平均 **$0.63**。同日の claude 失敗全体（B0/B1/B2 含む10本）で **約 $8.4**。誤った数字がコード comment・テスト docstring・commit message の3箇所に固定されている。なお成功例の中身も散文＋```json フェンスで `salvage` に救われており、判別軸は「散文か JSON か」ではなく「契約オブジェクトを出したか」 |
+| M2 | 「引き金3行、one line of floor cost」 | core.md 8302→9043 bytes（**+741**）。追加した1行は756文字。配布先4ファイルすべてに載る。core.md 自身の規律「常時ロードされる場所に何かを足す前に必ず同量を削る」に違反。削ったのは十数バイトのみ。加えて引き金①「外に出る不可逆なもの」は同じ core.md が命じる `git push` を字義通り含み、発火条件が絞れていない |
+| M3 | stdin テスト | `test_the_stdin_transport_carries_the_candidate_prompt` はソースの文字列 grep。実際に stdin へ契約が乗ることは検証していない。コードがデッドでも通り、改行が入るだけで落ちる |
+| M4 | `parse_error 2` | `plutil -lint` では **tsbridge は OK**（稼働中 exit 0）。先頭 XML コメント内の `--` で plistlib(expat) だけが落ちる。Apple のパーサは許容。稼働中の Tailscale bridge が repo/script/fuel すべて不明として記録されている。`plutil -convert xml1 -o -` を噛ませれば読める |
+| M5 | `~/.config/ai` の保全 | `git remote -v` 空。chezmoi 管理下は `common-rules.md` 1本だけ（しかも stale）。`core.md` / `harness-*.md` / `adversarial-verification.md` / `sync.sh` / `bin/` / `registry/` はこの Mac の1箇所にしか存在しない。**V2 で CLAUDE.md を chezmoi から外した結果、正本をバックアップの無い場所に一本化した** |
+| L1 | — | `track-search.sh` が `PreToolUse matcher:"*"` に残存。読む者（`stop-require-search.sh`）は削除済。全ツール呼び出しで python3 を2回起動するコストだけが残る |
+
+### 壊せなかった点
+
+スキーマ膨張・ARG_MAX 説は不成立（compact JSON 最大 3,395 bytes、中央値 500 前後）。codex / openclaw 経路への汚染なし（`candidate_prompt` は `prompt` で初期化され CLAUDE_PROVIDERS でのみ差し替わる。openclaw は従来どおり stdin を `ValueError` で拒否）。`--` 分割ヒューリスティック自体に反例ゼロ（172本走査で `--` 2回以上・`Program` のみ・バイナリ plist いずれも0件）。V5 の「散文が返った」観測は正しい（失敗 result 全件で JSON オブジェクトは validator 出力1個のみ）。V10 の配布は4宛先すべて到達しマーカー外は無傷。
+
 ## 3. Telegram メッセージ設計（Dais 合意済み）
 
 原則: ①無音＝正常は禁止（毎日必ず1通来る。来なければ監視が死んでいる） ②緑は報告しない、変化と赤だけ ③「動いた」でなく「稼いだ」を先頭に。
@@ -315,8 +348,17 @@ life-manager:  alive_if = 過去25時間に exit=0
 | V4 | `fleet-inventory.py` の無言スキップとラッパー解析を直す（C-7 / C-8） | 172本すべてを扱い、壊れた plist を `parse_error` として明示。`--` 以降の実体を追う | **done 2026-08-05**（`ai-config` `a887379`）。件数 170→**172**。読めない plist は破棄せず `repo=parse_error` で行として残し、専用セクションに出す（`cfo-daily` は `exit=127` = command not found で、まさに落とされていた方）。`entry_script()` は `--` を境に実体を返し、ラッパーを `wrapper` フィールドへ分離。**帰属が大きく変わった**: profitable-claude 57→36、anicca-dais 14→35（ラッパーは profitable-claude、実体は別リポジトリだった）。fuel: none 117→**98**、openclaw 11→**27**、agent-runner 11→**13**（19件が再分類、敵対的検証の見積りと一致）。exit≠0 は 27→**28**（cfo-daily が可視化された分） |
 | V5 | 燃料の逃げ道（C-4 / F5 前倒し） | keio が枯れても止まらない | **done 2026-08-05**（`profitable-claude` `dad14ab1`）。Dais 裁定「fallback は Claude でよい」に従い、2アカウント目を足すのではなく**壊れていた Claude fallback を直した**。真因: task prompt の末尾が `Return JSON matching <schema へのパス>` で、モデルにファイルを開いてから答えることを要求していた。openclaw だけは `openclaw_prompt()` でスキーマを本文に埋め込んでおり、この問題を持っていなかった。共通ヘルパ `strict_output_contract()` を切り出し Claude 系にも適用。**同時に発見した迂回路**: stdin 経路が `candidate_prompt` ではなく生の `prompt` を送っていたため、候補ごとの加工が一切効かなかった（`input_bytes=` の行）。テスト3件追加、うち2件は実装を戻すと落ちることを実証。50→53 passed、ベースラインの失敗2件は不変。**未検証**: 実際に codex を枯らして claude に落ちる E2E は未実施（枯らす操作自体が副作用のため）。次に自然に枯れたときが検証機会 |
 | V6 | 「未ロード40本」の記述を訂正（H-6） | 40/40 が明示的 disable であることを registry に反映。bootstrap 提案を撤回 | **done 2026-08-05**（`ai-config` `aa0344a`）。`launchctl print-disabled gui/501` を読む `disabled_labels()` を追加し、独立に再計測して **40/40 が `=> disabled`、配線漏れは0本**であることを確認。表示を「installed but not loaded」から「停止中（launchctl で明示的に無効化・触るな）」へ変更し、無効化されていない未ロードだけを「★配線漏れの疑い」として別枠に出す（現在0本）。registry の各行に `disabled = true  # bootstrap するな` を出力。**bootstrap 提案は撤回する** — 40本には larry / reelclaw の投稿ループが含まれ、起動すると誰かが意図して止めた投稿が一斉に再開する |
-| V7 | 残る圧力源の HARD RULE を整理（H-9） | 0.14 / 0.21 / 0.29 / 0.32 と #-3 見出しを3段の規律に従属させる。dev / main にも反映（H-8） | pending |
+| V7 | 残る圧力源の HARD RULE を整理（H-9 / H-8） | 「Dais 待ち = 罪」の言い回しが残らない | **done 2026-08-05**（`anicca-products` `96eae2e87`）。#-3 の見出しを「Dais に質問するな」→「丸投げの質問をするな」へ。0.21 の「= Dais 待ち = 怠惰」と 0.32 の「permission ゼロ、罪 = handover 不能」を **HARD RULE 0.33 第1段（聞かずに実行）への参照**に置換。0.14（E2E で動き切るまで次に行くな）と 0.29（spec/task/push を溜めるな）は3段規律と矛盾しないため無修正。**H-8（dev / main に旧文が生存）は改めて修正不要と判断**: 優先順位は `core.md`（2位） > project CLAUDE.md（4位）で、`core.md` はブランチに属さず `sync.sh` が `~/.claude/CLAUDE.md` へ直接配るため、古い project ファイルが残っていても3段規律が勝つ |
+| V11 | 敵対的検証の既定モデルを Sonnet に固定（Dais 2026-08-05） | Opus が呼ばれない | **done 2026-08-05**（`ai-config` `b2e9483`）。引き金の重さでモデルを上げる設計を撤回。重要な作業ほど頻度が高く、そこで高いモデルを呼ぶと枠を焼くため。効き目は4要件（独立性・反証の役割づけ・接地・判断可能な出力）から出ており賢さ依存ではない。**subagent には必ずモデルを明示**（省略すると親を継承して Opus で走る）を併記。4ハーネスすべてに配布確認済 |
 | V8 | `~/.config/ai` に upstream を付ける（H-10） | ディスク消失で規律の正本が消えない | pending |
+| V13 | core.md の禁止条項変更を明記（H1） | 「adversary agent も呼ぶな」を消した事実と、それが Dais 2026-08-05 の指示によることが core.md 本文に書かれている | pending ★次★ |
+| V14 | V5 の契約が `--tools ""` と矛盾しないように（H3） | ツールを渡さない task_class に「workdir のツールで作業しろ」を出さない | pending |
+| V12 | `chezmoi apply` の危険を解消（C1） | `chezmoi status` の 4件の乖離を、どちらが正かを判断した上で解消。`~/.zshrc` と `~/.codex/config.toml` は Dais の環境なので現物優先で re-add | pending |
+| V15 | registry の母集団と cwd 依存を直す（C2 / C3 / M4） | `ai.anicca.` 名前空間の制限を撤廃（または明記）、`repo_of()` を cwd 非依存に、openclaw cron 222件の扱いを決める、`plutil -convert` fallback で tsbridge を読む | pending |
+| V16 | `fuel` 列を直すか使えないと明記（H2） | `bash -lc "…"` の中身を読む、`${VAR:-…}` を追う、コメント行を除外する。直せない範囲は列に `unknown` を出して false safety を作らない | pending |
+| V17 | 測定値の訂正（M1） | コード comment / テスト docstring / spec の「8/8・$0.59」を「7/8・平均 $0.63・同日 claude 失敗総額 約$8.4」へ | pending |
+| V18 | 床コストの削減（M2） | core.md の +741 bytes を相殺。引き金①の定義を絞る（`git push` が字義通り該当しないように） | pending |
+| L1 | `track-search.sh` を外す | 読む者が消えた PreToolUse hook を settings.json から削除 | pending |
 | F1 | **全171本を `loops.toml` に棚卸し**（§2.4c） | 1ループ=1行。id / repo / スクリプト実体 / schedule / owner / 使用モデルとアカウント / alive_if / healthy_if。**B1 と C3 を吸収する** | **partial 2026-08-04**。生成器と registry は動くが C-7 / C-8 / H-5 / H-7 で母集団と分類が壊れている → V4 で修正するまで数値を根拠に使わない |
 | F2 | repo 外の40本（home直下23 + その他17）を回収 | git 管理下に入れるか削除するかを1本ずつ決着。Mac 消失で復旧不能なものをゼロにする | pending |
 | F3 | life-manager に agent-runner を導入 | profitable-claude から移植（新規開発しない）。12ファイルの直書きを config 1箇所へ | pending |
