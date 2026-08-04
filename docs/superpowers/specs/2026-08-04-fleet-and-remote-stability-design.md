@@ -168,7 +168,7 @@ life-manager:  alive_if = 過去25時間に exit=0
 | D1 | codex アカウント配置を memory に永続化 | `reference_codex_account_split_loops_vs_desk` | **done 2026-08-04** |
 | D2 | 「1リソース1オーナー」を memory に | `feedback_one_resource_one_owner` | **done 2026-08-04** |
 | A5 | 進捗をファイルへ（本ファイル） | 次セッションが本ファイル1本で続行できる | **done 2026-08-04** |
-| B0 | **Telegram の重複抑制**（§2.4b） | 同一本文は状態が変わるまで再送しない。ただし24時間経過したら1回だけ再送して握り潰しを防ぐ。1日150通 → 5〜10通 | pending |
+| B0 | **Telegram の重複抑制**（§2.4b） | 同一本文は24時間抑制、経過後は1回だけ再送 | **done 2026-08-04**（`profitable-claude` `223f639a`）。`telegram_outbox.py` の `enqueue` に body 単位の抑制を追加（`SUPPRESS_WINDOW_SECONDS=86400`、`telegram_reports_body_idx`）。TDD: 失敗3件 → 実装 → outbox 9件 + reporting 20件すべて green。本番DBの複製で検証: 104回送信済の本文を1分後に投入 → `suppressed=True`、24h+1秒後 → `False`、別本文（燃料切れ）→ `False` |
 | B0b | 通知本文を実数にする | 「納品機能を復旧しています」→ 対象の talkroom / 連続失敗回数 / 原因 / 金額 を含む | pending |
 | B2 | 日報1通を Telegram へ（毎朝必ず） | 実送信され messageId が返る。無音＝異常と判定できる。**B0 の後**でないと151通目になる | pending |
 | B3 | 燃料アラート（codex/claude の枠切れ即通知） | 枯渇を作って1通届くことを実測 | pending |
