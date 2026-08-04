@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>ai.anicca.gig-outcome-watch</string>
+
+  <!-- Deliberately points at anicca-project, not at skills/gig-work: the loop must not be
+       able to edit its own judge. It also runs on its own schedule so a wedged gig pass
+       cannot take the detector down with it. -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>/Users/anicca/anicca-project/tools/gig-outcome-watch/notify.sh</string>
+  </array>
+
+  <key>StartInterval</key>
+  <integer>3600</integer>
+
+  <key>RunAtLoad</key>
+  <false/>
+
+  <key>StandardOutPath</key>
+  <string>/Users/anicca/.openclaw/logs/gig-outcome-watch.out.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/anicca/.openclaw/logs/gig-outcome-watch.err.log</string>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    <key>WINDOW_HOURS</key>
+    <string>24</string>
+  </dict>
+</dict>
+</plist>
