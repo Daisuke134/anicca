@@ -190,6 +190,27 @@ E. 自己保守                   11本  healthcheck 4 / backup 3 / audit / sess
 
 **G1 への含意**: README は「control plane が何を保証するか（落ちたら届く・1画面で生死が分かる・モデルとアカウントが1箇所）」を書き、自己資金 AI は**同梱デモ**として節を分ける。
 
+#### ★ 2.4e の訂正（同日 2026-08-05、G1 着手時に判明）★
+
+**上の「人生管理は0本」は母集団が誤っている。** launchd の**シェル entrypoint だけ**を grep したため、製品本体を見落としていた。
+
+実測し直した結果:
+
+| 面 | 実体 | 稼働形態 |
+|---|---|---|
+| **製品のユーザー向け本体** | `apps/life-manager/`（`server.js` 58KB / `scheduler.js` 57KB / `lib/` **400ファイル**）。`calendar-cache.js` `calendar-interpreter.js` `connector-calendar-sync.js` `connector-coverage-telegram.js` など | **Railway**（`railway.toml`: `startCommand = "node server.js"`）。launchd ではない |
+| **製品のローカル面** | `apps/life-manager/launchd/*.plist.template` 9本（connector-native / connector-host-bridge / payout / financial-report / x402-ledger / taskmarket-ledger / ugig-invoice-observer / dev） | この Mac の launchd（＝71本の一部） |
+| **会社側の運営** | A 経済32 / B マーケ21 / E 自己保守11 | この Mac の launchd |
+
+したがって:
+
+- 「人生管理をしているコードは0」は**誤り**。カレンダー同期・Telegram・`/panel` は実装されており、`main` の README も既に製品として書かれている（`# Life Manager`、clone URL も `life-manager` に修正済）。**spec が 2026-08-04 に見た「# Anicca の README」は `~/anicca` の feature branch `feature/dist1-mcp-launchd`（main より304 commit 乖離）の古い版だった。**
+- 正しい言い方は「**この Mac の launchd 71本のうち、人の人生を管理しているのは製品のローカル面9本ぶんだけで、残り62本は会社の運営（自己資金 AI の経済とマーケ）**」。
+- 「Life Manager = control plane」という定義は**採らない**。正しい定義は `main` の README が既に書いている「**1製品・2実行面（ローカル / クラウド）**」であり、control plane はその下の共有インフラ層にすぎない。
+- **C1 の優先度が上がる**: 5分毎に exit=1 を出し続けている4本（`life-manager-payout` / `financial-report` / `x402-ledger` / `ugig-invoice-observer`）は**製品のローカル面そのもの**。インフラの不調ではなく、製品機能が7/30から壊れたまま。
+
+**この誤りが起きた仕組み**: 母集団を「launchd」に固定し、シェルの entrypoint に grep をかけた。製品が Railway 上の Node サービスである可能性を確かめなかった。**教訓 = 「何本あるか」を数える前に「どこで動くか」を数える。** launchd は稼働形態の1つであって全体ではない。
+
 ### 2.5 Remote Control（電話 ↔ Mac）
 
 先行調査が既にある → `docs/superpowers/specs/2026-08-01-remote-control-robustness-design.md`（8本中6本 done）。
