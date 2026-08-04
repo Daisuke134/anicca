@@ -201,10 +201,50 @@ E. 自己保守                   11本  healthcheck 4 / backup 3 / audit / sess
 | 401 発生回数（今日） | **0**（8/1 のサーキットブレーカが効いている） |
 | サービス停止（今日） | **2回** — 17:42:10、18:36:37（`launchd: service inactive`） |
 | supervise ログの終了記録 | **無し** → 正常終了経路を通らずに死んだ |
-| `claude-remote-control` を kill するスクリプト | 全域検索で**ゼロ**（`remote-control-supervise.sh` と `remote-control-notify.sh` のみが参照） |
+| `claude-remote-control` を kill するスクリプト | 全域検索で**ゼロ**（`remote-control-supervise.sh` と `remote-control-notify.sh` のみが参照）← **2026-08-05 に誤りと判明。下記** |
 | 現在 | 18:36 から連続稼働 |
 
-**未解決**: この2回の停止の原因。残る容疑者は ①claude 本体のクラッシュ ②外部からの `launchctl kill` / `kickstart -k` ③シグナル死。
+**未解決** ← **2026-08-05 に解決。容疑者②「外部からの `kickstart -k`」が正解だった。**
+
+#### 2.5.1 解決（2026-08-05） — 監視が、生かしたい対象を殺していた
+
+**犯人**: `~/recovery-setup/health-check.sh`（`com.anicca.recovery-health`、60秒毎）の §4 分岐。
+
+```bash
+conns=$(lsof -nP -p "${cpid}${rcpid:+,$rcpid}" | grep -c ESTABLISHED)
+if [ "$conns" -ge 1 ]; then claude=ok
+else launchctl kickstart -k gui/501/com.anicca.claude-remote-control; fi   # ← SIGKILL
+```
+
+**上表の「全域検索でゼロ」が漏れた理由**: 検索範囲が `~/.claude` `~/.openclaw` などスクリプト置き場に限られ、`~/recovery-setup/` が入っていなかった。**「見つからなかった」は「存在しない」ではない。** 探索範囲を書かずに否定形の結論を書いたのが誤りの本体。
+
+**因果連鎖（全て実測）**:
+
+| 時刻 | 事象 | 証拠 |
+|---|---|---|
+| 04:16:33.167 | `com.anicca.recovery-health` 起動 | `log show --predicate 'process == "launchd"'` |
+| 04:16:33.591 | `launchctl list`（pid 23186） | 同上 |
+| 04:16:33.620 | `launchctl kickstart`（pid 23195）→ `service inactive: com.anicca.claude-remote-control` | 同上、同一ミリ秒 |
+| 04:16:33.620 | remote-control 再spawn（pid 23196） | supervise.log `start pid=23196` |
+| 04:16:33.702 | recovery-health 終了 | 同上 |
+| 同秒 | **対話セッション `7f5938cb` の最終レコード**。`2cbf32a9` も同時消滅 | transcript 末尾 |
+
+`kickstart -k` は **SIGKILL**。`launchctl list` の状態列が `-9` になっていたのが直接証拠。SIGKILL は trap 不可能なので supervise.sh の終了ログが残らず、「原因不明の死」に見えていた。
+
+**発火は全て誤検知だった**（`~/recovery-setup/health.log` 2762観測）:
+
+| 観測 | 件数 |
+|---|---|
+| `claude=ok` | 2755 |
+| `claude=no_conn`（＝SIGKILL） | **7** |
+
+7回の日時 = 08-03 22:36 / 08-04 00:03 / 15:45 / 17:42 / 18:36 / 08-05 04:16 / 05:13。**7回すべて、直前と直後の観測は `claude=ok`。** 単発の瞬間値のブレであり、本物の切断は1度も無い。`lsof` の ESTABLISHED 数は60秒に1度の瞬間観測で、接続の張り直し中や取りこぼしで容易に0になる。
+
+**修正（2026-08-05 実施）**: ストライク方式。連続 3 回 `no_conn` を観測して初めて `kickstart`、`ok` が1回でも来たら計数をリセット。過去7回はすべて孤立サンプルなので**この条件なら1回も発火しない**。あわせて、実際に再起動した時は Telegram へ通知する（再起動は生きている会話セッションを必ず全滅させる不可逆操作であり、無音で起きてよいものではない）。
+
+**一般法則**: **単発の観測で破壊的操作を撃たない。** 監視の誤検知率が 0.25%（7/2762）でも、1回の誤検知の代償が「全セッション消失」なら、その監視は守っている対象より危険。破壊的な自動修復には ①連続観測によるデバウンス ②発火時の可観測性（通知）③「再起動が何を壊すか」の明記 の3点を必須にする。
+
+**副次の発見**: `health-check.sh` は **chezmoi 管理外**だった（`recovery-setup/boot-notify.sh` のみ管理下）。iPhone からの到達性を握る本体がバックアップも履歴も無い状態だった。→ 管理下へ追加する。
 
 **構造的な要点**: launchd は「プロセスが居ること」しか保証しない。ループは 1 pass = 1 プロセスで状態をファイルに書くので再起動で完全復旧するが、Remote Control はセッション状態をメモリに持つため、再起動すると走っていたターンが消える。→ **解は「もっと launchd」ではなく「進捗をファイルに置く」**（本ファイルがその第一歩）。
 
