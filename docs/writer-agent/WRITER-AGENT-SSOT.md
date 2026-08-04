@@ -1,6 +1,6 @@
 # Writer Agent — Revenue, UX, Runtime, and Roadmap SSOT
 
-Last updated: 2026-08-03 JST
+Last updated: 2026-08-04 JST
 
 This file is the only current source of truth for the Writer Agent's objective,
 user experience, revenue model, execution order, and remaining work. Historical
@@ -134,21 +134,36 @@ failed feedback.
 - MRR includes active recurring contracts only; editorial fees and paid articles
   remain one-time monthly revenue.
 
-### 2.4 Continuous operation
+### 2.4 Daily shipment contract
 
 `ai.anicca.article-daily` is the sole creator of a new daily Writer run and
-runs with `ARTICLE_AUTOPUBLISH=1`. `ai.anicca.article-resume` owns bounded
-same-run recovery; claim, opportunity, money, report, and learning workers
-continue on their own intervals. A loaded or running daily job is observed, not
-stopped or restarted merely because no new public URL has appeared yet.
+runs with `ARTICLE_AUTOPUBLISH=1`. `ai.anicca.article-resume` owns same-run,
+per-destination recovery; claim, opportunity, money, report, and learning
+workers continue on their own intervals.
 
-A quality-blocked run is a live safety result, not proof that the Writer loop is
-off. It keeps its immutable drafts, feedback, and receipts; the same-run
-recovery worker performs the bounded recovery path. The next daily run still
-starts on schedule. The Agent reports separately: (1) scheduler/worker health,
-(2) current-run generation state, (3) publication state, and (4) received
-revenue. Only a verified public readback counts as published, and only an
-external receipt counts as earned.
+The Writer improves the **same article** from reader/editorial feedback. The
+maximum iteration count bounds generation cost and time; it never decides
+whether the article ships. At that bound, the Agent freezes the best current
+JA/EN bytes, records remaining feedback as quality debt, initializes all eight
+destination intents, and enters the publication rig. `block_freeze` is not an
+allowed terminal state. A reader/editorial verdict is an improvement input, not
+a publication veto.
+
+Every daily run has one observable service-level objective: each exact-eight
+destination receives a verified public URL. A destination-specific platform
+failure starts immediate, bounded recovery for that destination while all other
+destinations continue; it never cancels the other seven. A destination without
+a public readback is displayed as an SLO breach with its real platform error
+and recovery receipt, never as "published" or a silent pending state. Only a
+verified public readback counts as published, and only an external receipt
+counts as earned.
+
+**Current divergence, owned by Task 1:** the live runtime still sets
+`MAX_REROUTES = 1`, returns `block_freeze`, and prevents publication-state
+initialization after the second failed quality assessment. The 2026-08-04 run
+therefore produced no publication state or platform dispatch. This is an
+implementation defect against this contract, not an acceptable no-shipment
+outcome.
 
 ## 3. Revenue streams
 
@@ -891,37 +906,44 @@ schedules or future data.
 ### 9.0 Active execution order
 
 The table number is a stable task identity, not a command to repeat completed
-work. Tasks 5, 6, 7, and 8 are not skipped: their runtime, live verification,
-and push receipts are recorded as `DONE` in their rows. Reopening Task 4 after
-those completions does not invalidate them. It means the next development task
-returns to Task 4 before advancing the remaining revenue work.
+work. Tasks 5, 6, and 7 are not skipped: their runtime, live verification, and
+push receipts are recorded as `DONE` in their rows. Task 8's report generator
+is complete, but its public Web route is absent and is therefore reopened.
+
+Task 1 is the first foreground repair. The daily run is loaded, but its current
+quality terminal violates the shipment contract in §2.4 by cancelling all
+destinations. Task 4 follows Task 1: a better topic cannot create revenue while
+the Writer is permitted to ship nothing.
 
 There are three execution lanes:
 
-1. **Foreground development:** complete Task 4 revenue-demand supply first.
-2. **Always-running recovery:** Task 1 continues same-run publication recovery
-   whenever an unfinished publication exists. It does not replace or postpone
-   Task 4 development.
+1. **Foreground development:** complete Task 1's mandatory exact-eight shipment
+   path first, then complete Task 4 revenue-demand supply.
+2. **Always-running recovery:** Task 1 continues per-destination publication
+   recovery whenever a verified public URL is missing. It does not cancel other
+   destinations or create a second daily article.
 3. **External-state monitoring:** Tasks 9 and 10 continue polling AppSignal,
    TECHi, and other verified opportunities while Task 4 is implemented. An
    external acceptance immediately advances its own contracted article path;
    silence is not a reason to pause Task 4.
 
-After Task 4 passes its live acceptance receipt, the remaining foreground order
-is binding:
+After Task 1 and Task 4 pass their live acceptance receipts, the remaining
+foreground order is binding:
 
-1. Tasks 9 and 10: turn compatible publisher opportunities into accepted,
+1. Task 8: deploy the existing Writer Money Control UI at a public Writer route
+   and prove that it renders the same snapshot as Telegram.
+2. Tasks 9 and 10: turn compatible publisher opportunities into accepted,
    published, paid articles while discovery continues.
-2. Task 11: obtain and attribute the first real note paid-article purchase.
-3. Task 12: obtain and reconcile the first real Substack paid contract.
-4. Task 13: close the self-owned one-time unlock and recurring-renewal path.
-5. Task 14: close one real matched self-improvement canary and prove a later run
+3. Task 11: obtain and attribute the first real note paid-article purchase.
+4. Task 12: obtain and reconcile the first real Substack paid contract.
+5. Task 13: close the self-owned one-time unlock and recurring-renewal path.
+6. Task 14: close one real matched self-improvement canary and prove a later run
    consumes a winning strategy.
-6. Tasks 15 through 20: pass first-dollar, $400, $1,000, unit-economics,
+7. Tasks 15 through 20: pass first-dollar, $400, $1,000, unit-economics,
    $10,000-monthly, and $10,000-MRR gates in that order.
-7. Tasks 21 through 23: package OSS, establish cloud parity, and prove one
+8. Tasks 21 through 23: package OSS, establish cloud parity, and prove one
    external user receives real writing revenue without daily intervention.
-8. Tasks 24 through 28: expand only positive-net units through the portfolio,
+9. Tasks 24 through 28: expand only positive-net units through the portfolio,
    self-extension, $100K, $1M, and $10M gates.
 
 Tasks 9 through 14 may collect external observations concurrently, but a later
@@ -939,7 +961,7 @@ this section define what runs next.
 | 5 | Supply | Reject proposals that do not cite a new claim useful to a reader | Negative and positive fixtures | DONE: `f4e6b33` and `1fad26c` require an unconsumed durable claim ID, exact durable `reader_job`, exact canonical source URL in the browse evidence plan, a valid reader/outcome/form route, and an immutable topic-card hash before consumption. Missing-source, partial-model-JSON, changed-card, already-consumed, and model-unavailable fixtures create no card and consume no claim. Positive fixtures and the two live OpenAI release cards prove the accepted path; the model judges usefulness without a subject allowlist and deterministic code enforces evidence/newness |
 | 6 | Measurement | Add metrics, sales, subscription, editorial, payout, fee, and attribution schema | Status-bearing rows join through `artifact_id` | DONE: runtime commit `d00a8ff` adds the canonical typed SQLite money ledger for immutable published artifacts, metric observations, direct-writing/product-derived/network-fee money events, subscription contracts, fees, payouts, payout allocations, and one-lineage artifact attribution. A verified received sale or editorial fee requires a positive non-test external receipt; the same receipt cannot move between streams or be counted as both direct and product revenue; refunds reduce net; fees reconcile to their event; payouts reconcile gross minus fee to net and remain cash movement rather than new revenue; one event cannot be over-allocated across payouts; currencies never get silently converted or combined; active non-test contracts alone produce MRR; unknown observations stay null with a reason. The compatibility importer registers only full public publication receipts and imports legacy sales-dashboard, funnel, and own-metric rows as observations—never as received money—and refuses to guess unmatched old metrics onto an article. `ai.anicca.writer-money-sync` is installed on the live host with `RunAtLoad=true`, immediate kickstart, and a five-minute interval. Its first two live runs exited `0`, registered 59 verified artifacts and 156 typed observations, reported 141 unmatched historical rows instead of fabricating joins, and truthfully returned empty verified gross, net, fees, payouts, and MRR because no external transaction receipt exists. Sixteen focused ledger/sync tests plus 24 existing attribution, sales-measurement, and opportunity-payment tests pass |
 | 7 | Measurement | Mark destinations `revenue_capable`; exclude Dev.to/Zenn/X views from money reward; attribute article -> Life Manager product visit -> activation -> purchase without double counting | Reward uses verified money surfaces only; direct writing and product-derived revenue reconcile separately | DONE: runtime commit `8d63b71` makes `revenue_capable` an executable, versioned contract rather than prose. note, Substack, verified editorial work, and the future self-owned publication can accept direct-writing receipts; Dev.to, Zenn, X Article, and X Post are explicitly non-money surfaces until an external payout receipt is wired, so views/likes cannot be promoted into revenue. A real product purchase may still originate from any registered public article: the canonical ledger now fixes one `product_id/run_id/artifact_id/variant_id/click_id` lineage, requires visit before activation and activation before purchase, rejects a click that moves to another publication, rejects late/out-of-order or duplicate target evidence, and creates `product_derived` money only from a positive non-test external purchase receipt. Direct-writing and product-derived gross are reported in separate stream/class maps without currency conversion or receipt reuse. The recurring five-minute live sync imports append-only `product-funnel.jsonl`; its current truthful result is zero rows and zero product revenue, not a synthetic conversion. Self-improvement no longer reads note/Substack dashboard totals as money; only canonical verified net receipt money can become its revenue score, and a multi-currency window remains unscored rather than guessed through FX. The complete article suite passes: 575 tests, including direct-vs-product reconciliation, non-money destination rejection, visit/activation/purchase ordering, idempotent replay, and missing-receipt fixtures |
-| 8 | Reporting/UX | Build the money-first visual UI and send natural-language immediate/hourly deltas, daily report, and weekly stream report with every public article URL | UI and Telegram equal the ledger; verified/test/unknown visually separated; nontechnical fixture is understandable without logs | DONE: runtime commit `0d15f0a` adds one receipt-backed snapshot rendered into both the responsive `WRITER MONEY CONTROL` Web UI and plain-Japanese Telegram reports. Today/month/net/MRR/balance, revenue by stream, every current-run public URL, revenue-capable versus reach-only surfaces, views, active paid-writing opportunities, interpretation, next action, and required user action come from the same canonical money/artifact/opportunity stores; missing receipts display `unknown` or `0 external receipts`, never estimated earnings. `ai.anicca.writer-report` is installed with `RunAtLoad=true`, immediate kickstart, and a five-minute interval. Hourly behavior is semantic event/delta delivery rather than an empty heartbeat; first install sends immediately, while mandatory daily and weekly windows use durable cursors and catch up once. The outbox chunks messages under Telegram's 4,096-character limit, retains every URL and every returned message ID, and resumes unsent chunks without replaying completed deliveries. The first live delivery succeeded at 2026-08-02 02:40 JST with Telegram receipt `5136`; an immediate live replay exposed a false delta caused only by moving aggregation-window timestamps and produced diagnostic duplicate receipt `5137`. Semantic-hash schema v2 now compares only user-visible money/article/opportunity values; two subsequent live kickstarts left the delivery count unchanged, and launchd exited `0`. Desktop and 390px mobile screenshots were visually inspected; mobile publication rows switch to cards instead of a compressed table. SQLite period comparisons now normalize mixed UTC/JST timestamps as instants. The complete Writer suite passes: 584 tests, including bootstrap/replay, real semantic delta, daily/weekly one-shot, long-message URL preservation, installer, report/UI, and timezone-boundary fixtures. Runtime commit `ed17cb2` additionally makes a prepared Telegram outbox replay its frozen chunks after restart instead of regenerating a time-bearing message and crashing with `prepared report conflicts with durable outbox`; the restart regression and complete Writer suite pass (`674 passed`). Runtime commit `1539237` removes that remaining live transport dependency: the Writer report worker now posts directly to the official Telegram Bot API with a 15-second bound, reads the exact bot token from process environment or the protected OpenClaw env file, never includes the token-bearing provider URL in an exception, and marks a chunk sent only after Telegram returns a real `result.message_id`. Re-bootstrap replayed the exact two frozen prepared messages as Telegram receipts `5566` and `5567`. An immediate second live kick left durable delivery/message-ID counts unchanged at `19/19`, left zero prepared rows, and exited `0`; the five-minute LaunchAgent is enabled again. Report-focused verification passes `15 passed` and the complete Writer suite passes `676 passed`. |
+| 8 | Reporting/UX | Build the money-first visual UI and send natural-language immediate/hourly deltas, daily report, and weekly stream report with every public article URL | UI and Telegram equal the ledger; verified/test/unknown visually separated; nontechnical fixture is understandable without logs | REOPENED / PARTIAL: the receipt-backed `WRITER MONEY CONTROL` generator and Telegram reporter are implemented and live locally. Its current artifacts are `skills/writer-agent/state/reporting/index.html` and `latest.json`; it has no public Writer route. `https://aniccaai.com/dashboard` is a different USDC dashboard and must not be represented as this Writer UI. Remaining: deploy the existing report at a public Writer URL, serve the same snapshot JSON, add the exact-eight daily URL/SLO matrix, and prove public Web and Telegram render the same values. The existing generator's money/stream/publication/delta behaviors and test receipts remain valid. |
 | 9 | Editorial fee | Continue AppSignal state machine from submitted to response, article, publication, payment | Contracted rate and payment receipt | PARTIAL: the prior submission is now restored from external evidence rather than prose. The immutable original Claude session contains the exact AppSignal Google Form `formResponse` URL, provider confirmation text, confirmation PNG bytes, pre-submit field readback, submission timestamp, and a second parent-agent visual read. Runtime commit `5f345c1` adds a replay-safe historical recovery boundary that does not pretend the unknown AI policy/rate gate passed and does not relax the normal `POLICY_CLEAR -> PITCH_READY -> SUBMITTED` path. The recovered confirmation PNG has SHA-256 `045f099d8e797414ee75ae0a9e066ca127a4152dca90a95d9e7e45dcf3dce5b4`; durable evidence `ev_6150e3272dfc77648f74e592` and transition `tr_0b7897f6abbf23021ed74eca` moved AppSignal `VALUE_UNKNOWN -> SUBMITTED` with derived receipt identifier `google-form-response:045f099d8e797414ee75ae0a`, explicitly recording that Google supplied no provider submission ID. Runtime commits `0bba0d2`, `5f9ef00`, and `e1cc020` correlate replies through the unique submitted plus-address plus trusted official sender, supply launchd's missing HOME, and pass only the two required GOG values from the protected env file to the Gmail child process. The live 15-minute worker now watches AppSignal and TECHi with `unavailable:0`, AppSignal `NO_RESPONSE`, TECHi `pending`, and exit `0`. The complete Writer suite passes `680 passed`. Remaining before DONE: receive AppSignal's external response, record the contracted rate/policy/payout terms if accepted, draft and submit the article, obtain public publication evidence, and reconcile a real payment, fee, and payout receipt |
 | 10 | Editorial fee | Advance AppSignal; clarify Hygraph policy/rate; monitor DigitalOcean, Better Stack, Honeybadger, Earthly, and Baeldung; reject Civo under its current AI-content policy; continuously discover replacements | Current official-state receipts; policy/rate clarification; only compatible submission receipts; later contract, publication, payment | PARTIAL: `2ac1bdf` implements the durable state/evidence contract and the live 2026-08-02 JST wake verified all nine configured official pages. Civo is automatically rejected under its current AI prohibition; five closed/stale programs cannot be submitted; Hygraph and Oracle remain parked until missing value/policy facts are clarified; AppSignal is now evidence-backed `SUBMITTED` from its recovered provider confirmation without claiming those unknown terms are resolved. `83afe1b` completes automatic replacement discovery: 127 canonical candidates are durable, a bounded daily worker continuously verifies official pages, rejects incompatible policies, and parks unknown terms without pretending they are safe. `8572122` prepares an exact-claim-bound pitch whenever official evidence reaches `POLICY_CLEAR`; `93c3b02` accepts only exact official application routes/contact addresses; `af608cb` monitors verified submitted work every 15 minutes and advances only from correlated publisher evidence. None can mark `SUBMITTED` without an external receipt. TECHi is now the first live compatible replacement: Author application ID `4` is durably `SUBMITTED`, and runtime commit `57bd62d` polls the authenticated official status endpoint every 15 minutes by exact provider ID. Remaining: advance both evidence-backed AppSignal and TECHi submissions through acceptance or honest decline, contracted drafting, article submission, publication, external payment, fee, and payout reconciliation while the discovery loop continues evaluating other programs |
 | 11 | Paid article | Make every selected note article's price/paywall state explicit and measurable | Public paid state plus first attributed purchase | PARTIAL: runtime commit `0515555` removes the stale `forms.json` ¥1,000 description and makes the executable one-time ¥500 policy consistent across the form registry, publisher, tests, and report. The five-minute money sync now reads each durable live note publication receipt, requires matching run/public URL/public ID plus `verified=true`, `monetization_verified=true`, and positive price, then stores article-scoped `price` and `paywall_active` observations without creating a sale. The current article `20260731-213927__note__ja` is live at `https://note.com/anicca123/n/n84aed983c96c`; canonical metrics now show `price=500 JPY verified` and `paywall_active=1 verified` from its 2026-08-01 public/API receipt. Web and Telegram display `¥500買い切り・有料状態確認済み` while still reporting received revenue as zero; the semantic delta was delivered with Telegram receipt `5139`. The full Writer suite passes 587 tests and the 390px UI was visually inspected. Remaining before DONE: observe the first real external note purchase/fee/payout receipt, join it to this exact artifact without using an account-total proxy, and show gross/net/payout in the same report |
