@@ -297,7 +297,7 @@ life-manager:  alive_if = 過去25時間に exit=0
 | B3 | 燃料アラート（codex/claude の枠切れ即通知） | 枯渇を作って1通届くことを実測 | pending |
 | V3 | incident/recovery 本文に識別子を入れる（C-3） | 原因・案件ID・時刻を含み、別事象が別本文になる | **partial 2026-08-05** ★最優先★ |
 | V3a | └ `recovery_report` に発生時刻と原因を入れる | 別の障害が別の本文になる | **done 2026-08-05**（`profitable-claude` `4474825e`、branch `fix/writer-note-resume-circuit`）。TDD: 失敗2件 → 実装 → 55 passed。ベースラインの失敗3件は変化なし（下 V9） |
-| V3b | └ incident 側（`work-events` の「🟠 …を自動で復旧しています」）に識別子 | 104回・98回重複していた本文が、案件ID・原因・時刻で区別される | pending |
+| V3b | └ incident 側（`work-events` の「🟠 …を自動で復旧しています」）に識別子 | 104回・98回重複していた本文が時刻で区別される | **done 2026-08-05**（`profitable-claude` `7aeb6ff9`）。`report_envelope.py` に `_incident_moment()` を追加し JA 本文へ検出時刻（分粒度）を挿入。50 passed。**途中で既存契約と衝突**: `test_business_event_envelopes_have_plain_ja_and_en_from_one_snapshot` が `application_readback_failed` を JA 本文で禁止していたため、生の failure class は EN 本文だけに置いた。分粒度にしたのは、同一 incident の再試行が同じ分なら1通に畳まれ、別事象は別本文になるため |
 | V9 | **沈黙検知のテストが本番 checkout で3件落ちている** | `test_a_backdated_heartbeat_fires_and_a_fresh_one_does_not` / `test_a_missing_heartbeat_is_treated_as_silence` / `test_the_detector_keeps_working_with_no_new_arguments`。V3a 作業中に発見。停止に気づくための仕組みのテストが壊れており、2026-08-04 の「8時間気づかなかった」と関係する可能性がある | pending |
 | V1 | 抑制を実際に使われる経路へ（C-2） | `~/profitable-claude/skills/gig-work/scripts/telegram_outbox.py`（main checkout）にも同じ抑制が入り、`work-events` 経路で発火することを本番で確認 | pending（**V3 の後**） |
 | V2 | chezmoi 正本から旧 hook を削除（C-5） | `chezmoi status` に `DA .claude/hooks/stop-*` が出ない。`chezmoi apply` しても戻らない | pending |
