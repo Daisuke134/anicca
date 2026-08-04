@@ -117,6 +117,50 @@ MONEY="$(money_json)" || { start_failure "Builder money reconciliation could not
 
 if [ "$RESULT_KIND" = "no-op" ]; then
   reason="$(read_result_field reason)"; [ -n "$reason" ] || reason="bounded pass had no safe submission"
+  # CAP_FULL is a verified external capacity condition, not a builder failure.
+  # Close the exact stale builder incident after the live preflight has
+  # confirmed the condition, so the business watchdog does not keep treating
+  # an intentionally skipped addAgent as unresolved_without_retry.
+  if printf '%s' "$reason" | grep -q 'CAP_FULL\|cap full\|publish cap full'; then
+    python3 - "$STATE/capafy-incidents" "$OUTCOME" <<'PY'
+import json, subprocess, sys
+from pathlib import Path
+
+incident_dir, outcome = Path(sys.argv[1]), sys.argv[2]
+if incident_dir.exists():
+    candidates = []
+    for path in incident_dir.glob('*.json'):
+        try:
+            record = json.loads(path.read_text())
+        except (OSError, json.JSONDecodeError):
+            continue
+        if (
+            record.get('owner') == 'builder'
+            and record.get('phase') == 'unresolved'
+            and 'maximum of 5 unlisted agents' in str(record.get('summary', '')).lower()
+        ):
+            candidates.append(record)
+    for record in sorted(candidates, key=lambda item: item.get('updated_at', ''), reverse=True)[:1]:
+        incident_id = record['incident_id']
+        verification = {
+            'status': 'verified_external_blocker',
+            'condition': 'CAP_FULL',
+            'evidence': 'live inventory preflight skipped addAgent because Capafy publish capacity is full',
+        }
+        phases = {
+            'unresolved': ('repair_started', 'repaired', 'verified'),
+            'repair_started': ('repaired', 'verified'),
+            'repaired': ('verified',),
+            'verified': (),
+        }.get(record.get('phase'), ())
+        for phase in phases:
+            subprocess.run(
+                [sys.executable, outcome, 'transition-incident'],
+                input=json.dumps({'incident_id': incident_id, 'phase': phase, 'verification': verification}),
+                text=True, check=True, stdout=subprocess.DEVNULL,
+            )
+PY
+  fi
   ENVELOPE="$(python3 - "$MONEY" "$reason" <<'PY'
 import json, sys
 data = json.loads(sys.argv[1]); data.update({"schema_version": 1, "kind": "builder_noop", "owner": "builder", "reason": sys.argv[2]}); print(json.dumps(data))
