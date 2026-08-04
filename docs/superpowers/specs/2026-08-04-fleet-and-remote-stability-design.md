@@ -271,6 +271,28 @@ else launchctl kickstart -k gui/501/com.anicca.claude-remote-control; fi   # ←
 
 **未検証の最有力仮説**（8/1 spec §5 より）: 同一 Mac で複数の `claude` プロセス（remote-control 常駐 / 対話セッション / reddit-loop / gig のフォールバック = 4本）が同じ OAuth 資格情報のリフレッシュトークンを取り合っている線。gh #53635 に状況証拠。**UNVERIFIED。**
 
+#### 2.5.2 R2 — 通知が1通も出せなかった。穴は5層あり、上の層を直すまで下は見えない
+
+§2.5.1 で「殺す側」を止めた。残るのは「殺されたことが伝わらない」側。8/5 04:16 の再起動で通知は **0通**だった。
+
+**設計の変更**: 死因ごとに通知を書くのをやめ、**「ジョブの PID が変わった」という1つの観測に集約**した。シグナル死・クラッシュ・launchd の再起動・自分で撃った `kickstart` が、すべて同じ1通になる。原因が分かる時（自分で撃った時）だけ理由を添え、分からない時は「原因不明（この監視は撃っていない）」と正直に書く。加えて、PID 変化では拾えない「二度と起きてこない」を `DOWN` 継続カウンタで拾う（3分で1通、以後60分毎）。
+
+**実装してから1通出るまでに剥がれた層**（各層は上の層を直すまで観測できない）:
+
+| 層 | 症状 | 実態 |
+|---|---|---|
+| 1 | `tg_send SKIPPED no_token` | トークン検索が `^export TELEGRAM_BOT_TOKEN=` で、`.env` の実際の行は `export` 無し → **マッチ 0 件**。このスクリプトの Telegram 通知は codex 認証切れも disk 枯渇も含めて**一度も送れたことが無かった** |
+| 2 | `502 Bad Gateway` ×3 | `api.telegram.org` を curl で直叩きすると 3 回連続で 502。リトライを足しても届かない |
+| 3 | — | 同じ Mac の `fleet-daily.py` は `openclaw message send` で前日 `messageId=6683` を実取得していた。**動く経路が既にあるのに 2 本目を自作していた**のが誤り |
+| 4 | `env: node: No such file or directory` | `com.anicca.recovery-health` の plist は `EnvironmentVariables` を持たず launchd の素の PATH で走る。openclaw は `#!/usr/bin/env node` の .mjs なので node が見つからない。絶対パス指定では回避できない（解決は shebang 側） |
+| 5 | JSON 解析が必ず失敗 | openclaw は毎回 `[state-migrations] ...` を **stderr** に書く。`2>&1` にすると JSON の前にゴミが付く。`fleet-daily.py` は stdout だけを読んでいた |
+
+**検証**: launchd 配下の本番スクリプトから `tg_send ok messageId=6726 attempt=1`。手動実行でも `messageId=6725` を実取得。一時ファイル残留 0。`DOWN` 分岐は発火条件（3 / 60 / 120 分）を隔離テストで確認したが、**実発火はしていない** — 発火させるにはジョブを bootout する必要があり、それは検証中のセッション自身を殺すため。**UNVERIFIED として残す。**
+
+**この作業中に確定した構造的事実**: 対話セッションは `remote-control` の子プロセスである（実測 `14536 → 50782(claude --print) → 50252(claude remote-control) → 50237(supervise.sh)`）。だから remote-control を再起動すると、iPhone から開いた会話は**必ず全滅する**。再起動は「無害な自己修復」ではなく、作業中の会話を破棄する不可逆操作として扱う。
+
+**一般法則**: **発火を見たことがない監視は、発火できない監視と区別がつかない。** 通知経路は「書いた」ではなく「実際に1通出して ID を受け取った」で初めて存在する。かつ、通知経路は**1本に統一する** — 2本あると、片方だけが鳴る条件（＝最も危険な死に方）が必ず無音になる。
+
 ### 2.6 codex のリモート座席（両アカウント同時接続）
 
 | 実測 | 値 |
@@ -455,7 +477,7 @@ life-manager:  alive_if = 過去25時間に exit=0
 | 順 | ID | タスク | done 条件 | 状態 |
 |---|---|---|---|---|
 | 1 | **R1** | Remote Control を殺している犯人を特定して止める | 犯人をコード行で名指し + 過去の全発火が防げることを示す + 本番で回帰なし | **done 2026-08-05**（§2.5.1。`chezmoi 6b40882` / `products e3a696740`） |
-| 2 | **R2** | Remote Control の死が必ず届く | 実際に死なせて Telegram に messageId が返る。無音で死ぬ経路が残っていない | 進行中 |
+| 2 | **R2** | Remote Control の死が必ず届く | 本番コード経路から Telegram に messageId が返る。無音で死ぬ経路が残っていない | **done 2026-08-05**（§2.5.2。`chezmoi 559871f`。`messageId=6726`） |
 | 3 | **R3** | 長時間作業を対話セッションから launchd ループへ移す運用を確立 | 「寝る前に投げた仕事」が翌朝 Telegram に結果で届く（セッションを開いたままにしない） | 未着手 |
 | 4 | **R4** | 背景 subagent の完了通知が孤児化する問題を回避 | 背景 agent の成果が、親セッションの生死に関係なく届く | 未着手 |
 | 5 | **R5** | swap 92% / ディスク残 9GB を解消 | swap 使用率 < 70% かつ空き > 20GB | 未着手 |
