@@ -292,14 +292,14 @@ life-manager:  alive_if = 過去25時間に exit=0
 | D2 | 「1リソース1オーナー」を memory に | `feedback_one_resource_one_owner` | **done 2026-08-04** |
 | A5 | 進捗をファイルへ（本ファイル） | 次セッションが本ファイル1本で続行できる | **done 2026-08-04** |
 | B0 | **Telegram の重複抑制**（§2.4b） | 同一本文は24時間抑制、経過後は1回だけ再送 | **partial 2026-08-04**（`profitable-claude` `223f639a`）。`telegram_outbox.py` の `enqueue` に body 単位の抑制を追加（`SUPPRESS_WINDOW_SECONDS=86400`、`telegram_reports_body_idx`）。TDD: 失敗3件 → 実装 → outbox 9件 + reporting 20件 green。本番DB複製では期待通り動く。**しかし敵対的検証 C-2 により、105回重複を出している `work-events` 経路は main checkout をハードコードで呼ぶため抑制が届いていないことが判明。本番での発火実績はゼロ（M-1）。V1 と V3 が閉じるまで「done」ではない** |
-| B0b | 通知本文を実数にする | 「納品機能を復旧しています」→ 対象の talkroom / 連続失敗回数 / 原因 / 金額 を含む | pending |
+| B0b | 通知本文を実数にする | 「納品機能を復旧しています」→ 対象の talkroom / 連続失敗回数 / 原因 / 金額 を含む | pending — **gig エージェント担当** |
 | B2 | 日報1通を Telegram へ（毎朝必ず） | 実送信され messageId が返る。無音＝異常と判定できる。**B0 の後**でないと151通目になる | pending |
 | B3 | 燃料アラート（codex/claude の枠切れ即通知） | 枯渇を作って1通届くことを実測 | pending |
 | V3 | incident/recovery 本文に識別子を入れる（C-3） | 原因・案件ID・時刻を含み、別事象が別本文になる | **partial 2026-08-05** ★最優先★ |
 | V3a | └ `recovery_report` に発生時刻と原因を入れる | 別の障害が別の本文になる | **done 2026-08-05**（`profitable-claude` `4474825e`、branch `fix/writer-note-resume-circuit`）。TDD: 失敗2件 → 実装 → 55 passed。ベースラインの失敗3件は変化なし（下 V9） |
 | V3b | └ incident 側（`work-events` の「🟠 …を自動で復旧しています」）に識別子 | 104回・98回重複していた本文が時刻で区別される | **done 2026-08-05**（`profitable-claude` `7aeb6ff9`）。`report_envelope.py` に `_incident_moment()` を追加し JA 本文へ検出時刻（分粒度）を挿入。50 passed。**途中で既存契約と衝突**: `test_business_event_envelopes_have_plain_ja_and_en_from_one_snapshot` が `application_readback_failed` を JA 本文で禁止していたため、生の failure class は EN 本文だけに置いた。分粒度にしたのは、同一 incident の再試行が同じ分なら1通に畳まれ、別事象は別本文になるため |
-| V9 | **沈黙検知のテストが本番 checkout で3件落ちている** | `test_a_backdated_heartbeat_fires_and_a_fresh_one_does_not` / `test_a_missing_heartbeat_is_treated_as_silence` / `test_the_detector_keeps_working_with_no_new_arguments`。V3a 作業中に発見。停止に気づくための仕組みのテストが壊れており、2026-08-04 の「8時間気づかなかった」と関係する可能性がある | pending |
-| V1 | 抑制を実際に使われる経路へ（C-2） | `~/profitable-claude/skills/gig-work/scripts/telegram_outbox.py`（main checkout）にも同じ抑制が入り、`work-events` 経路で発火することを本番で確認 | pending（**V3 の後**） |
+| V9 | **沈黙検知のテストが本番 checkout で3件落ちている** | `test_a_backdated_heartbeat_fires_and_a_fresh_one_does_not` / `test_a_missing_heartbeat_is_treated_as_silence` / `test_the_detector_keeps_working_with_no_new_arguments`。V3a 作業中に発見。停止に気づくための仕組みのテストが壊れており、2026-08-04 の「8時間気づかなかった」と関係する可能性がある | pending — **gig エージェント担当** |
+| V1 | 抑制を実際に使われる経路へ（C-2） | `~/profitable-claude/skills/gig-work/scripts/telegram_outbox.py`（main checkout）にも同じ抑制が入り、`work-events` 経路で発火することを本番で確認 | pending — **gig エージェント担当**（V3 の後） |
 | V2 | chezmoi 正本から旧 hook を削除（C-5） | `chezmoi status` に `DA .claude/hooks/stop-*` が出ない。`chezmoi apply` しても戻らない | pending |
 | V4 | `fleet-inventory.py` の無言スキップとラッパー解析を直す（C-7 / C-8） | 172本すべてを扱い、壊れた plist を `parse_error` として明示。`--` 以降の実体を追い、`launchd_run_and_report.sh` で止まらない | pending |
 | V5 | 燃料の逃げ道（C-4 / F5 前倒し） | keio が枯れても止まらない。`~/.local/bin/codex` が acct2 内にある事実（H-4）を壊さない | pending |
@@ -326,6 +326,10 @@ life-manager:  alive_if = 過去25時間に exit=0
 | D3 | 後片付け | `~/.local/state/anicca/codex-login-kk` 削除、`/tmp/kk-login-*.py` `/tmp/gig-kick-watch.*` 削除、ブラウザリース解放確認 | pending |
 
 **gig work 本体は別エージェントが担当する**（Dais 裁定 2026-08-04）。本セッションはインフラ側を閉じる。
+
+**★ 所有権の線引き（Dais 2026-08-05、境界侵犯の是正）★**: `skills/gig-work/` 配下は **gig エージェントの担当**であり、本セッションは触らない。該当する TODO は **B0 / B0b / V1 / V3 / V9**、および gig 側の実装を要する B2 / B4 の一部。2026-08-05 に本セッションが V3a（`4474825e`）と V3b（`7aeb6ff9`）を `fix/writer-note-resume-circuit` へ commit・push 済み — **これは境界侵犯であり、以後は gig エージェントが所有する**。同一ファイルを両者が触った可能性があるため、gig 側は作業再開前に当該2コミットを確認すること。本セッションが自分で書いた memory `feedback_one_resource_one_owner` に自分で違反した事例として記録する。
+
+**本セッションの担当**: V2 / V4 / V5 / V6 / V7 / V8 → F2 → F3 → F4 → F5 → G1〜G4 → A4 → E3 → C1 → C2 → C3 → D3 → B1。順序は本表の並び順が正本であり、都度組み替えない。
 
 **実行順**: F1 → F2 → B3 → F3 → F4 → F5 → G1〜G4 → 残り（A3 / A4 / B0b / B2 / B4 / C1 / C2 / D3）。
 
