@@ -352,7 +352,7 @@ life-manager:  alive_if = 過去25時間に exit=0
 | V11 | 敵対的検証の既定モデルを Sonnet に固定（Dais 2026-08-05） | Opus が呼ばれない | **done 2026-08-05**（`ai-config` `b2e9483`）。引き金の重さでモデルを上げる設計を撤回。重要な作業ほど頻度が高く、そこで高いモデルを呼ぶと枠を焼くため。効き目は4要件（独立性・反証の役割づけ・接地・判断可能な出力）から出ており賢さ依存ではない。**subagent には必ずモデルを明示**（省略すると親を継承して Opus で走る）を併記。4ハーネスすべてに配布確認済 |
 | V8 | `~/.config/ai` に upstream を付ける（H-10） | ディスク消失で規律の正本が消えない | pending |
 | V13 | core.md の禁止条項変更を明記（H1） | 変更が変更として記録されている | **done 2026-08-05**（`ai-config` `8166693`）。2026-07-30 の禁止は「plugin **も adversary agent も**」だったこと、Dais 2026-08-05 の指示で adversary の禁止だけを解除したこと、plugin の禁止は継続すること、project CLAUDE.md 0.37 と memory に旧文が残るが優先順位で core.md が勝つこと、を core.md 本文に明記。4ハーネスへ配布確認 |
-| V14 | V5 の契約が `--tools ""` と矛盾しないように（H3） | ツールを渡さない task_class に「workdir のツールで作業しろ」を出さない | pending |
+| V14 | V5 の契約が `--tools ""` と矛盾しないように（H3） | ツールを渡さない task_class に不可能な指示を出さない | **done 2026-08-05**（`profitable-claude` `825000c9`）。`TOOLLESS_TASK_CLASSES` を1箇所に定義し `command_for` と契約の両方が参照するようにした（drift 防止）。`has_tools=False` の時は「Complete the requested work using tools from that workdir」ではなく「You have no tools this turn. Decide from the material already in the prompt.」を出す。実文面を両方出力して確認。53→55 passed、ベースライン失敗2件は不変 |
 | V12 | `chezmoi apply` の危険を解消（C1） | `chezmoi status` の 4件の乖離を、どちらが正かを判断した上で解消。`~/.zshrc` と `~/.codex/config.toml` は Dais の環境なので現物優先で re-add | pending |
 | V15 | registry の母集団と cwd 依存を直す（C2 / C3 / M4） | `ai.anicca.` 名前空間の制限を撤廃（または明記）、`repo_of()` を cwd 非依存に、openclaw cron 222件の扱いを決める、`plutil -convert` fallback で tsbridge を読む | pending |
 | V16 | `fuel` 列を直すか使えないと明記（H2） | `bash -lc "…"` の中身を読む、`${VAR:-…}` を追う、コメント行を除外する。直せない範囲は列に `unknown` を出して false safety を作らない | pending |
