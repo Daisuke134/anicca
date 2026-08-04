@@ -295,9 +295,9 @@ life-manager:  alive_if = 過去25時間に exit=0
 | B0b | 通知本文を実数にする | 「納品機能を復旧しています」→ 対象の talkroom / 連続失敗回数 / 原因 / 金額 を含む | pending |
 | B2 | 日報1通を Telegram へ（毎朝必ず） | 実送信され messageId が返る。無音＝異常と判定できる。**B0 の後**でないと151通目になる | pending |
 | B3 | 燃料アラート（codex/claude の枠切れ即通知） | 枯渇を作って1通届くことを実測 | pending |
-| V1 | **抑制を実際に使われる経路へ**（C-2） | `~/profitable-claude/skills/gig-work/scripts/telegram_outbox.py`（main checkout）にも同じ抑制が入り、`work-events` 経路で発火することを本番で確認 | pending ★最優先★ |
+| V3 | incident/recovery 本文に識別子を入れる（C-3） | 原因・案件ID・時刻を含み、別事象が別本文になる。`pass_outage.py` の `recovery_report`（elapsed<60秒で常に同一本文）を含む | pending ★最優先★ |
+| V1 | 抑制を実際に使われる経路へ（C-2） | `~/profitable-claude/skills/gig-work/scripts/telegram_outbox.py`（main checkout）にも同じ抑制が入り、`work-events` 経路で発火することを本番で確認 | pending（**V3 の後**） |
 | V2 | chezmoi 正本から旧 hook を削除（C-5） | `chezmoi status` に `DA .claude/hooks/stop-*` が出ない。`chezmoi apply` しても戻らない | pending |
-| V3 | incident/recovery 本文に識別子を入れる（C-3） | 原因・案件ID・時刻を含み、別事象が別本文になる。**これが先。でないと抑制が警報を飲む** | pending |
 | V4 | `fleet-inventory.py` の無言スキップとラッパー解析を直す（C-7 / C-8） | 172本すべてを扱い、壊れた plist を `parse_error` として明示。`--` 以降の実体を追い、`launchd_run_and_report.sh` で止まらない | pending |
 | V5 | 燃料の逃げ道（C-4 / F5 前倒し） | keio が枯れても止まらない。`~/.local/bin/codex` が acct2 内にある事実（H-4）を壊さない | pending |
 | V6 | 「未ロード40本」の記述を訂正（H-6） | 40/40 が明示的 disable であることを spec と registry に反映。bootstrap 提案を撤回 | pending |
