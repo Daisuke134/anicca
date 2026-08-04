@@ -86,6 +86,51 @@ anicca の launchd ジョブ = 171本
 
 **よって B2（日報を足す）を先にやると151通目になるだけ。抑制（B0）を先に入れる。**
 
+### 2.4c 制御プレーンが1枚になっていない（2026-08-04 実測）
+
+**ループの所属リポジトリ**（launchd 171本を plist の実行スクリプトから逆引き）:
+
+```
+profitable-claude   57本   gig / article / larry / reddit / bounty
+life-manager        54本   clip / capafy / franklin / agentmail / marketing / citizens
+home直下            23本   ★どのリポジトリにも属していない★
+その他              17本   ★正体不明★
+anicca-dais         14本
+anicca-products      3本 / anicca-genesis 2本 / blockrun 1本
+```
+
+**repo 外の40本（home直下23 + その他17）は git で追跡されていない。** Mac が飛んだら復旧できない。
+
+**モデル切替のコストが repo で10倍違う**:
+
+| repo | 切替の口 | 何箇所直すか |
+|---|---|---|
+| profitable-claude（57本） | `skills/agent-runner/config.json` の `task_classes[].candidates` | **1箇所** |
+| life-manager（54本） | **存在しない**。各 CLI スクリプトにモデル名が直書き | **12ファイル以上**（`skills/self/reddit-loop/*.sh`、`skills/self/claude-p-mainloop.sh`、`skills/earn/clip/clip_pass.sh`、`skills/earn/video/video-cli.sh`、`skills/self/capafy-loop/*`、`skills/self/life-manager-loop/*`、`skills/earn/self-improve/promote_gate.sh` ほか） |
+
+今日の燃料切れが一撃で直ったのは、認証が symlink 経由の**1箇所**だったから。モデルも同じ構造にする必要がある。
+
+**目標状態（3層すべて1箇所）**:
+
+```
+loops.toml（登録簿・未作成）
+  id / repo / script / schedule / owner / done条件 / alive_if / healthy_if / 役割
+        ↓
+agent-runner config（役割 → 候補モデル列）   ← profitable-claude のみ実装済
+        ↓
+燃料（認証）  ~/.codex=keiodaisuke / ~/.codex-acct2=53 / claude OAuth  ← 2026-08-04 に1箇所化済
+```
+
+### 2.4d life-manager の README が製品を説明していない（2026-08-04 実測）
+
+`~/anicca`（origin = `Daisuke134/life-manager`）の README 144行:
+
+- タイトルが `# Anicca`、clone URL が旧 `Daisuke134/anicca`（リポジトリは `life-manager` に改名済）
+- Quick start が `ANICCA_BRAIN=claude-p ./start-local.sh node runtime/loop/index.mjs`
+- 本文は automaton / Franklin / claude-p の3タイプ、wallet、x402、Solana の話
+
+**Life Manager という製品（人が自分の人生を管理させるためのエージェント群）の説明になっていない。** 自己資金 AI の話と製品の話が同居している。ローカル版 / クラウド版 / Web版のオンボーディングが1コマンドで始められる形になっていない。
+
 ### 2.5 Remote Control（電話 ↔ Mac）
 
 先行調査が既にある → `docs/superpowers/specs/2026-08-01-remote-control-robustness-design.md`（8本中6本 done）。
@@ -172,7 +217,16 @@ life-manager:  alive_if = 過去25時間に exit=0
 | B0b | 通知本文を実数にする | 「納品機能を復旧しています」→ 対象の talkroom / 連続失敗回数 / 原因 / 金額 を含む | pending |
 | B2 | 日報1通を Telegram へ（毎朝必ず） | 実送信され messageId が返る。無音＝異常と判定できる。**B0 の後**でないと151通目になる | pending |
 | B3 | 燃料アラート（codex/claude の枠切れ即通知） | 枯渇を作って1通届くことを実測 | pending |
-| B1 | `fleet status` を1本書く | 171本の生死・exit・最終活動が1画面 | pending |
+| F1 | **全171本を `loops.toml` に棚卸し**（§2.4c） | 1ループ=1行。id / repo / スクリプト実体 / schedule / owner / 使用モデルとアカウント / alive_if / healthy_if。**B1 と C3 を吸収する** | pending |
+| F2 | repo 外の40本（home直下23 + その他17）を回収 | git 管理下に入れるか削除するかを1本ずつ決着。Mac 消失で復旧不能なものをゼロにする | pending |
+| F3 | life-manager に agent-runner を導入 | profitable-claude から移植（新規開発しない）。12ファイルの直書きを config 1箇所へ | pending |
+| F4 | モデル/アカウント切替を1コマンドに | `fleet switch <役割> <モデル列>` で全ループに反映。編集箇所は常に1つ | pending |
+| F5 | 燃料の自動フェイルオーバー | GPT 枯渇 → Claude → 別 GPT。2026-08-04 は手で直した。次は自動で | pending |
+| G1 | life-manager の README を製品の説明に書き直す（§2.4d） | 旧 URL 修正、自己資金 AI の話と Life Manager 製品の話を分離 | pending |
+| G2 | ローカル版オンボーディングを1コマンドに | clone → 1コマンド → 全エージェント起動 | pending |
+| G3 | クラウド/Web版のオンボーディング導線 | 既存の導線と接続 | pending |
+| G4 | 「Life Manager が何をするか」を定義し直す | 54本のうち実際に人生管理をしているのは何本かを名指しする | pending |
+| B1 | `fleet status` を1本書く | 171本の生死・exit・最終活動が1画面。**F1 に統合予定** | pending |
 | B4 | 効果ゼロ検知（稼働緑・成果ゼロ） | `alive_if` 真 かつ `healthy_if` 偽 で1通届く | pending |
 | A3 | remote-control の停止理由をログに残す | シグナルトラップ追加。次の停止で犯人が記録される | pending |
 | A4 | claude 資格情報の共有を調査 | 同時稼働 claude プロセス数 × 401 発生時刻を突合し §2.5 の仮説を白黒つける | pending |
@@ -182,7 +236,13 @@ life-manager:  alive_if = 過去25時間に exit=0
 | C3 | 生きている67本を `loops.toml` に登録 | owner / done条件 / alive_if / healthy_if を持つ正本ができる | pending |
 | D3 | 後片付け | `~/.local/state/anicca/codex-login-kk` 削除、`/tmp/kk-login-*.py` `/tmp/gig-kick-watch.*` 削除、ブラウザリース解放確認 | pending |
 
-**gig work 本体に入る最低ライン**: A1 / A2 / D1 / D2 / B2 / B3 が閉じていること。残りは並行で回せる。
+**gig work 本体は別エージェントが担当する**（Dais 裁定 2026-08-04）。本セッションはインフラ側を閉じる。
+
+**実行順**: F1 → F2 → B3 → F3 → F4 → F5 → G1〜G4 → 残り（A3 / A4 / B0b / B2 / B4 / C1 / C2 / D3）。
+
+F1 を最初に置く理由: 171本の実態が1枚に出るまで、F2〜F5 も G も対象が推測になる。現時点で分かっているのは repo 別の本数（57 / 54 / 40 / 14 / 6）だけ。
+
+**なぜこの順序が金に効くか**: 切替コストが下がると、モデルが枯れても新しい安いモデルが出ても、ループが止まらずに乗り換えられる。2026-08-04 の8時間停止は「1アカウントが枯れた」ことではなく「乗り換えに人間の手が要った」ことが損失の本体だった。
 
 ---
 
