@@ -143,6 +143,53 @@ agent-runner config（役割 → 候補モデル列）   ← profitable-claude �
 
 **Life Manager という製品（人が自分の人生を管理させるためのエージェント群）の説明になっていない。** 自己資金 AI の話と製品の話が同居している。ローカル版 / クラウド版 / Web版のオンボーディングが1コマンドで始められる形になっていない。
 
+### 2.4e G4: Life Manager が実際にやっていること（2026-08-05 実測、71本を名指し）
+
+`fleet-inventory.py --json` で `repo=life-manager` を抽出（**71本**。spec が「54/55本」と書いていたのは V15 の母集団拡張前の古い数字）。61本の**スクリプト実体を開いて**分類した:
+
+```
+A. AI 自身の経済              32本  x402 販売 23 / citizen・UBI 6 / trade・funding 3
+B. 製品のマーケ・集客          21本  marketing-engine 9 / capafy 5 / agentmail 3 / clip / life-manager-daily ほか
+C. 金の台帳                    3本  payout / financial-report / ugig-invoice-observer
+D. 自己開発                    4本  selfbuild / founder-loop / bounty / probe
+E. 自己保守                   11本  healthcheck 4 / backup 3 / audit / session-vault / netmonitor / connector-bridge
+                              ──
+                              71本
+```
+
+**人間の人生を管理しているループ = 0本。** `gog gmail` / `gcal` / `calendar.googleapis` / `habit` / `健康` / `人生` の厳密 grep を61本すべてに当てて**ヒット0**。唯一 `Dais` が出るのは `capafy-loop-daily.sh` の `money → Dais bank` = 送金先としての記述であり、Dais の予定・受信箱・習慣に触るコードは1行も無い。
+
+名前を裏切っている具体例（実体を読んで確認）:
+
+| id | 名前からの期待 | 実体 |
+|---|---|---|
+| `life-manager-daily` | 毎日の人生管理パス | `One bounded Life Manager marketing pass` = 製品のマーケ投稿 |
+| `life-manager-selfbuild` | — | 自分のコードの fix PR を1日1本マージゲートへ渡す DEV loop |
+| `cadence-deadline-check` | 締切管理 | ループが今日の Cadence Contract を満たしたかの自己監査 |
+| `founder-loop-cadence` | — | money loop の1回起床（ledger 記録 + ゴール判定） |
+
+**したがって G4 の定義（決定）**:
+
+> **Life Manager = 常駐エージェント群を1人分のマシンの上で落とさず回す control plane。** 人生管理タスクそのものではない。
+
+この定義を採る理由は、実測が「71本すべてが control plane か、その上で走るワークロードのどちらか」を示しているため。**製品の core は E + C + D の18本**（監視・台帳・自己修復）であり、**A の32本と B の21本は core の上で走る第1号ユーザーのワークロード**（＝自己資金 AI という dogfood）。
+
+```
+        ┌─────────────────────────────────────────────┐
+        │  ワークロード層（第1号ユーザー = AI 自身）      │
+        │  A. 自己資金の経済 32本  B. マーケ 21本        │
+        ├─────────────────────────────────────────────┤
+        │  Life Manager 本体 = control plane（18本）    │
+        │  E 自己保守 11 / C 台帳 3 / D 自己開発 4       │
+        │  + loops.toml（C3）+ fleet status（B1）       │
+        │  + 燃料監視 F5 / 日報 B2 / 効果ゼロ B4         │
+        └─────────────────────────────────────────────┘
+```
+
+**棄却した定義**: 「Life Manager = 人の予定・メール・習慣を代行する」。実装が1行も存在せず、採ると71本すべてが製品外になり、README が実物を1つも説明できなくなる。人向けワークロードは**この control plane の上に載る2本目のワークロード**として後から足す（G2 / G3 の後）。
+
+**G1 への含意**: README は「control plane が何を保証するか（落ちたら届く・1画面で生死が分かる・モデルとアカウントが1箇所）」を書き、自己資金 AI は**同梱デモ**として節を分ける。
+
 ### 2.5 Remote Control（電話 ↔ Mac）
 
 先行調査が既にある → `docs/superpowers/specs/2026-08-01-remote-control-robustness-design.md`（8本中6本 done）。
@@ -382,7 +429,7 @@ life-manager:  alive_if = 過去25時間に exit=0
 | G1 | life-manager の README を製品の説明に書き直す（§2.4d） | 旧 URL 修正、自己資金 AI の話と Life Manager 製品の話を分離 | pending |
 | G2 | ローカル版オンボーディングを1コマンドに | clone → 1コマンド → 全エージェント起動 | pending |
 | G3 | クラウド/Web版のオンボーディング導線 | 既存の導線と接続 | pending |
-| G4 | 「Life Manager が何をするか」を定義し直す | 54本のうち実際に人生管理をしているのは何本かを名指しする | pending |
+| G4 | 「Life Manager が何をするか」を定義し直す | 54本のうち実際に人生管理をしているのは何本かを名指しする | **done 2026-08-05**（§2.4e）。母集団は 54 ではなく **71本**（古い数字だった）。61本の実体を開いて分類 — A 経済32 / B マーケ21 / C 台帳3 / D 自己開発4 / E 自己保守11。**人生管理をしているのは0本**（`gog gmail` `gcal` `calendar.googleapis` `habit` `健康` の厳密 grep でヒット0）。定義を「**常駐エージェント群を落とさず回す control plane**」に決定し、core = E+C+D の18本、A+B の53本は第1号ユーザー（自己資金 AI）のワークロードと線を引いた。`life-manager-daily` が実際にはマーケ投稿パスであることなど、名前が実体を裏切る4件を表に記録。G1 は「control plane が何を保証するか」を書き、自己資金 AI は同梱デモとして節を分ける |
 | V19 | 新規マシンのブートストラップを閉じる（第3回 指摘4） | clone → 1手順で `CLAUDE.md` / `AGENTS.md` / `GEMINI.md` が生成される | pending |
 | B1 | `fleet status` を1本書く | 171本の生死・exit・最終活動が1画面。**F1 に統合予定** | pending |
 | B4 | 効果ゼロ検知（稼働緑・成果ゼロ） | 活動はあるが成果ゼロで1通届く | **done 2026-08-05**（`ai-config` `259de52`）。`~/.config/ai/bin/effect-watch.py` + `ai.anicca.effect-watch`（毎日 12:00 JST）。**区別しているのは「忙しい」と「成果がある」**。相手のいるイベント（application / delivery / contract / payment / reply_verified / retainer_followthrough）だけを成果と数え、incident と recovery は**ループが自分について喋っているだけ**として除外する。窓内に活動が皆無の場合は何も言わない（それは liveness の話で、日報が既に報告しているため二重にしない）。24時間で再送。**初回実行で本物の異常を検知した**: gig は直近24時間で89イベント（incident×78 / recovery×11）を書いているが**相手のいる成果は0件**、最後の成果は8月3日 22:51。これは §2.2 の C-1（PAID_WORK が blocked のまま30時間）と独立に同じ事実を捕まえている。**検証**: `--status` で活動89/成果0を確認 → `--dry-run` で本文確認 → **実送信 `messageId=6684`** → 即再実行で沈黙（抑制が効く）→ `launchctl kickstart` で exit=0 |
