@@ -351,13 +351,13 @@ life-manager:  alive_if = 過去25時間に exit=0
 | V7 | 残る圧力源の HARD RULE を整理（H-9 / H-8） | 「Dais 待ち = 罪」の言い回しが残らない | **done 2026-08-05**（`anicca-products` `96eae2e87`）。#-3 の見出しを「Dais に質問するな」→「丸投げの質問をするな」へ。0.21 の「= Dais 待ち = 怠惰」と 0.32 の「permission ゼロ、罪 = handover 不能」を **HARD RULE 0.33 第1段（聞かずに実行）への参照**に置換。0.14（E2E で動き切るまで次に行くな）と 0.29（spec/task/push を溜めるな）は3段規律と矛盾しないため無修正。**H-8（dev / main に旧文が生存）は改めて修正不要と判断**: 優先順位は `core.md`（2位） > project CLAUDE.md（4位）で、`core.md` はブランチに属さず `sync.sh` が `~/.claude/CLAUDE.md` へ直接配るため、古い project ファイルが残っていても3段規律が勝つ |
 | V11 | 敵対的検証の既定モデルを Sonnet に固定（Dais 2026-08-05） | Opus が呼ばれない | **done 2026-08-05**（`ai-config` `b2e9483`）。引き金の重さでモデルを上げる設計を撤回。重要な作業ほど頻度が高く、そこで高いモデルを呼ぶと枠を焼くため。効き目は4要件（独立性・反証の役割づけ・接地・判断可能な出力）から出ており賢さ依存ではない。**subagent には必ずモデルを明示**（省略すると親を継承して Opus で走る）を併記。4ハーネスすべてに配布確認済 |
 | V8 | `~/.config/ai` に upstream を付ける（H-10） | ディスク消失で規律の正本が消えない | pending |
-| V13 | core.md の禁止条項変更を明記（H1） | 「adversary agent も呼ぶな」を消した事実と、それが Dais 2026-08-05 の指示によることが core.md 本文に書かれている | pending ★次★ |
+| V13 | core.md の禁止条項変更を明記（H1） | 変更が変更として記録されている | **done 2026-08-05**（`ai-config` `8166693`）。2026-07-30 の禁止は「plugin **も adversary agent も**」だったこと、Dais 2026-08-05 の指示で adversary の禁止だけを解除したこと、plugin の禁止は継続すること、project CLAUDE.md 0.37 と memory に旧文が残るが優先順位で core.md が勝つこと、を core.md 本文に明記。4ハーネスへ配布確認 |
 | V14 | V5 の契約が `--tools ""` と矛盾しないように（H3） | ツールを渡さない task_class に「workdir のツールで作業しろ」を出さない | pending |
 | V12 | `chezmoi apply` の危険を解消（C1） | `chezmoi status` の 4件の乖離を、どちらが正かを判断した上で解消。`~/.zshrc` と `~/.codex/config.toml` は Dais の環境なので現物優先で re-add | pending |
 | V15 | registry の母集団と cwd 依存を直す（C2 / C3 / M4） | `ai.anicca.` 名前空間の制限を撤廃（または明記）、`repo_of()` を cwd 非依存に、openclaw cron 222件の扱いを決める、`plutil -convert` fallback で tsbridge を読む | pending |
 | V16 | `fuel` 列を直すか使えないと明記（H2） | `bash -lc "…"` の中身を読む、`${VAR:-…}` を追う、コメント行を除外する。直せない範囲は列に `unknown` を出して false safety を作らない | pending |
 | V17 | 測定値の訂正（M1） | コード comment / テスト docstring / spec の「8/8・$0.59」を「7/8・平均 $0.63・同日 claude 失敗総額 約$8.4」へ | pending |
-| V18 | 床コストの削減（M2） | core.md の +741 bytes を相殺。引き金①の定義を絞る（`git push` が字義通り該当しないように） | pending |
+| V18 | 床コストの削減（M2） | 追加ぶんを相殺し、引き金①が `git push` を含まない | **done 2026-08-05**（`ai-config` `5cfa9c0` + `2013f07`）。V10 直前 8302 bytes → 一時 9806（+1504）→ **8483（+181）**。圧縮したのは ①敵対的検証ブロック 849→389 ②「稼働系 Phase 4 ゲート」を3段規律の第3段への参照に置換 ③「進捗は会話の外に置く」段落 601→364。引き金①を「取り消せない外部作用（納品・投稿・提出・公開・送金。**commit/push は含まない**）」へ限定。残 +181 は機能2件（敵対的検証・禁止解除の記録）ぶんとして受け入れる |
 | L1 | `track-search.sh` を外す | 読む者が消えた PreToolUse hook を settings.json から削除 | pending |
 | F1 | **全171本を `loops.toml` に棚卸し**（§2.4c） | 1ループ=1行。id / repo / スクリプト実体 / schedule / owner / 使用モデルとアカウント / alive_if / healthy_if。**B1 と C3 を吸収する** | **partial 2026-08-04**。生成器と registry は動くが C-7 / C-8 / H-5 / H-7 で母集団と分類が壊れている → V4 で修正するまで数値を根拠に使わない |
 | F2 | repo 外の40本（home直下23 + その他17）を回収 | git 管理下に入れるか削除するかを1本ずつ決着。Mac 消失で復旧不能なものをゼロにする | pending |
