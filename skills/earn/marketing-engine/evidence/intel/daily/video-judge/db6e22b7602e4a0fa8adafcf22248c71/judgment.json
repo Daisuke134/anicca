@@ -1,0 +1,85 @@
+{
+  "hooks": [
+    {
+      "captured_at": "2026-08-02T02:43:53.609377Z",
+      "evidence_null_reason": null,
+      "evidence_url": "https://www.tiktok.com/@furutani_kodai/video/7469941064267304210",
+      "ewma_score": null,
+      "id": "hook.tiktok.7469941064267304210.001",
+      "language": "ja",
+      "observations": 0,
+      "product_ids": [
+        "ebook-ja"
+      ],
+      "provenance": "live_observed",
+      "rubric": {
+        "conflict": 7,
+        "emotional_peak": 8,
+        "hook": 8,
+        "practical_value": 8,
+        "quotability": 8,
+        "total": 39
+      },
+      "schema_version": "marketing.hook.v1",
+      "source_null_reason": null,
+      "source_type": "video",
+      "source_url": "https://www.tiktok.com/@furutani_kodai/video/7469941064267304210",
+      "status": "active",
+      "text": "気分が重い場所から抜け出せないときは、考え方より先に“明るい刺激”を入れる。心の空気を変える小さなリセット習慣。"
+    },
+    {
+      "captured_at": "2026-08-02T02:43:53.609377Z",
+      "evidence_null_reason": null,
+      "evidence_url": "https://www.tiktok.com/@furutani_kodai/video/7469941064267304210",
+      "ewma_score": null,
+      "id": "hook.tiktok.7469941064267304210.002",
+      "language": "ja",
+      "observations": 0,
+      "product_ids": [
+        "ebook-ja"
+      ],
+      "provenance": "live_observed",
+      "rubric": {
+        "conflict": 8,
+        "emotional_peak": 9,
+        "hook": 8,
+        "practical_value": 9,
+        "quotability": 8,
+        "total": 42
+      },
+      "schema_version": "marketing.hook.v1",
+      "source_null_reason": null,
+      "source_type": "video",
+      "source_url": "https://www.tiktok.com/@furutani_kodai/video/7469941064267304210",
+      "status": "active",
+      "text": "誰かの不機嫌を受け取ってしまった日は、無理に前向きにならなくていい。五感を使って、自分の気分を自分の場所へ戻す方法があります。"
+    },
+    {
+      "captured_at": "2026-08-02T02:43:53.609377Z",
+      "evidence_null_reason": null,
+      "evidence_url": "https://www.tiktok.com/@furutani_kodai/video/7469941064267304210",
+      "ewma_score": null,
+      "id": "hook.tiktok.7469941064267304210.003",
+      "language": "ja",
+      "observations": 0,
+      "product_ids": [
+        "ebook-ja"
+      ],
+      "provenance": "live_observed",
+      "rubric": {
+        "conflict": 8,
+        "emotional_peak": 8,
+        "hook": 9,
+        "practical_value": 9,
+        "quotability": 9,
+        "total": 43
+      },
+      "schema_version": "marketing.hook.v1",
+      "source_null_reason": null,
+      "source_type": "video",
+      "source_url": "https://www.tiktok.com/@furutani_kodai/video/7469941064267304210",
+      "status": "active",
+      "text": "嫌な空気に飲まれたまま帰宅しないために。部屋に入った瞬間、自分の心を切り替える三分間の儀式を決めておこう。"
+    }
+  ]
+}

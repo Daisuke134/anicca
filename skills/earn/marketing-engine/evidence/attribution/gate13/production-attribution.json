@@ -1,0 +1,119 @@
+{
+  "attribution_id": "attribution.9264ecd4335dbb0be77a0b04",
+  "click_query": {
+    "campaign_token": "ej_7gy3bv7vf2r5d7aebnzv",
+    "content_range": "*/0",
+    "count": 0,
+    "evidence_refs": [
+      "skills/earn/marketing-engine/evidence/attribution/gate13/click-receipts.json"
+    ],
+    "observed_at": "2026-08-01T20:30:15Z",
+    "product_id": "ebook-ja",
+    "receipt_ids": [],
+    "status": "available"
+  },
+  "gate": 13,
+  "observed_at": "2026-08-01T20:30:15Z",
+  "publish_key": "publication.babf5c938cba5dc0d5c02b68",
+  "result_summary": [
+    {
+      "attribution_class": "unknown",
+      "confidence": 0.0,
+      "metric_name": "impressions",
+      "null_reason": "social_checkpoint_not_mature",
+      "status": "not_mature",
+      "unit": "count",
+      "value": null
+    },
+    {
+      "attribution_class": "unknown",
+      "confidence": 0.0,
+      "metric_name": "views",
+      "null_reason": "social_checkpoint_not_mature",
+      "status": "not_mature",
+      "unit": "count",
+      "value": null
+    },
+    {
+      "attribution_class": "deterministic",
+      "confidence": 1.0,
+      "metric_name": "qualified_clicks",
+      "null_reason": null,
+      "status": "observed",
+      "unit": "count",
+      "value": 0
+    },
+    {
+      "attribution_class": "unknown",
+      "confidence": 0.0,
+      "metric_name": "first_time_downloads",
+      "null_reason": "business_window_not_mature",
+      "status": "not_mature",
+      "unit": "count",
+      "value": null
+    },
+    {
+      "attribution_class": "unknown",
+      "confidence": 0.0,
+      "metric_name": "installs",
+      "null_reason": "business_window_not_mature",
+      "status": "not_mature",
+      "unit": "count",
+      "value": null
+    },
+    {
+      "attribution_class": "unknown",
+      "confidence": 0.0,
+      "metric_name": "trials",
+      "null_reason": "business_window_not_mature",
+      "status": "not_mature",
+      "unit": "count",
+      "value": null
+    },
+    {
+      "attribution_class": "unknown",
+      "confidence": 0.0,
+      "metric_name": "paid_orders",
+      "null_reason": "business_window_not_mature",
+      "status": "not_mature",
+      "unit": "count",
+      "value": null
+    },
+    {
+      "attribution_class": "unknown",
+      "confidence": 0.0,
+      "metric_name": "refunds",
+      "null_reason": "business_window_not_mature",
+      "status": "not_mature",
+      "unit": "count",
+      "value": null
+    },
+    {
+      "attribution_class": "unknown",
+      "confidence": 0.0,
+      "metric_name": "gross_revenue",
+      "null_reason": "business_window_not_mature",
+      "status": "not_mature",
+      "unit": "minor_currency_units",
+      "value": null
+    },
+    {
+      "attribution_class": "unknown",
+      "confidence": 0.0,
+      "metric_name": "net_revenue",
+      "null_reason": "business_window_not_mature",
+      "status": "not_mature",
+      "unit": "minor_currency_units",
+      "value": null
+    }
+  ],
+  "schema_version": 1,
+  "snapshot_appended": false,
+  "source_paths": {
+    "business": "/Users/anicca/anicca/skills/earn/marketing-engine/state/business-outcomes.jsonl",
+    "identity": "/Users/anicca/anicca/skills/earn/marketing-engine/state/publication-identity.jsonl",
+    "ledger": "/Users/anicca/anicca/skills/earn/marketing-engine/state/experiment-attribution.jsonl",
+    "post_metrics": "/Users/anicca/anicca/skills/earn/marketing-engine/state/post-metrics.jsonl"
+  },
+  "status": "verified"
+}

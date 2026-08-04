@@ -1,0 +1,85 @@
+{
+  "hooks": [
+    {
+      "captured_at": "2026-08-02T02:46:26.181770Z",
+      "evidence_null_reason": null,
+      "evidence_url": "https://www.tiktok.com/@furutani_kodai/video/7556571246406765832",
+      "ewma_score": null,
+      "id": "hook.tiktok.7556571246406765832.001",
+      "language": "ja",
+      "observations": 0,
+      "product_ids": [
+        "ebook-ja"
+      ],
+      "provenance": "live_observed",
+      "rubric": {
+        "conflict": 8,
+        "emotional_peak": 8,
+        "hook": 8,
+        "practical_value": 7,
+        "quotability": 8,
+        "total": 39
+      },
+      "schema_version": "marketing.hook.v1",
+      "source_null_reason": null,
+      "source_type": "video",
+      "source_url": "https://www.tiktok.com/@furutani_kodai/video/7556571246406765832",
+      "status": "active",
+      "text": "努力しても空回りする日は、現実を押し切るより「今日は何を期待しないか」を決めると、次の一歩が見えてくる。"
+    },
+    {
+      "captured_at": "2026-08-02T02:46:26.181770Z",
+      "evidence_null_reason": null,
+      "evidence_url": "https://www.tiktok.com/@furutani_kodai/video/7556571246406765832",
+      "ewma_score": null,
+      "id": "hook.tiktok.7556571246406765832.002",
+      "language": "ja",
+      "observations": 0,
+      "product_ids": [
+        "ebook-ja"
+      ],
+      "provenance": "live_observed",
+      "rubric": {
+        "conflict": 7,
+        "emotional_peak": 8,
+        "hook": 8,
+        "practical_value": 8,
+        "quotability": 8,
+        "total": 39
+      },
+      "schema_version": "marketing.hook.v1",
+      "source_null_reason": null,
+      "source_type": "video",
+      "source_url": "https://www.tiktok.com/@furutani_kodai/video/7556571246406765832",
+      "status": "active",
+      "text": "不安の正体は、出来事より「こうなるはず」にしがみつくこと。期待を一つ手放すだけで、心の消耗は減らせます。"
+    },
+    {
+      "captured_at": "2026-08-02T02:46:26.181770Z",
+      "evidence_null_reason": null,
+      "evidence_url": "https://www.tiktok.com/@furutani_kodai/video/7556571246406765832",
+      "ewma_score": null,
+      "id": "hook.tiktok.7556571246406765832.003",
+      "language": "ja",
+      "observations": 0,
+      "product_ids": [
+        "ebook-ja"
+      ],
+      "provenance": "live_observed",
+      "rubric": {
+        "conflict": 7,
+        "emotional_peak": 8,
+        "hook": 7,
+        "practical_value": 8,
+        "quotability": 8,
+        "total": 38
+      },
+      "schema_version": "marketing.hook.v1",
+      "source_null_reason": null,
+      "source_type": "video",
+      "source_url": "https://www.tiktok.com/@furutani_kodai/video/7556571246406765832",
+      "status": "active",
+      "text": "人生を立て直す最初の習慣は、結果を変えることではなく、起きたことの意味づけを一度保留することです。"
+    }
+  ]
+}

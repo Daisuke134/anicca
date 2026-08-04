@@ -1,0 +1,39 @@
+{
+  "daily": {
+    "cadence": {
+      "Hour": 5,
+      "Minute": 30
+    },
+    "changed": false,
+    "label": "ai.anicca.marketing-mine-daily",
+    "path": "/Users/anicca/Library/LaunchAgents/ai.anicca.marketing-mine-daily.plist",
+    "program_arguments": [
+      "/opt/homebrew/opt/python@3.14/bin/python3.14",
+      "/Users/anicca/anicca/skills/earn/marketing-engine/report/scheduled_runner.py",
+      "mine"
+    ],
+    "would_change": false
+  },
+  "mode": "apply",
+  "schema_version": "marketing.gate8-schedules.v1",
+  "weekly": {
+    "backup_path": "/Users/anicca/anicca/skills/earn/marketing-engine/evidence/schedulers/gate8-backups/ai.anicca.marketing-weekly-review.plist",
+    "bootout_returncode": 0,
+    "bootstrap_returncode": 0,
+    "cadence": {
+      "Hour": 21,
+      "Minute": 0,
+      "Weekday": 0
+    },
+    "changed": true,
+    "label": "ai.anicca.marketing-weekly-review",
+    "path": "/Users/anicca/Library/LaunchAgents/ai.anicca.marketing-weekly-review.plist",
+    "program_arguments": [
+      "/Users/anicca/anicca/skills/earn/marketing-engine/bin/lm",
+      "intel",
+      "gap",
+      "--telegram"
+    ],
+    "would_change": true
+  }
+}

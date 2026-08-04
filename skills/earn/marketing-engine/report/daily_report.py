@@ -23,12 +23,17 @@ import datetime as dt
 import json
 import os
 import pathlib
-import subprocess
 import sys
+
+REPO_ROOT = pathlib.Path(__file__).resolve().parents[4]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from skills._shared.telegram import TelegramClient, TelegramError
 
 LIB = pathlib.Path(os.path.expanduser(os.environ.get(
     "MKT_LIBRARY_DIR", "~/.openclaw/state/content-library")))
-TELEGRAM_TARGET = os.environ.get("MKT_TELEGRAM_TARGET", "8547730585")
+TELEGRAM_TARGET = os.environ.get("MKT_TELEGRAM_TARGET")
 
 
 def rows(path: pathlib.Path) -> list[dict]:
@@ -118,13 +123,12 @@ def verdict_section() -> list[str]:
 
 
 def send(message: str) -> bool:
-    r = subprocess.run(
-        ["openclaw", "message", "send", "--channel", "telegram",
-         "--target", TELEGRAM_TARGET, "--message", message, "--json"],
-        capture_output=True, text=True, timeout=120)
-    if r.returncode != 0:
-        print(f"send failed rc={r.returncode}: {(r.stderr or r.stdout)[:200]}", file=sys.stderr)
+    try:
+        receipt = TelegramClient.from_env().send_text(message, chat_id=TELEGRAM_TARGET)
+    except TelegramError as exc:
+        print(f"send failed: {exc}", file=sys.stderr)
         return False
+    print(f"telegram_message_ids={receipt['message_ids']}")
     return True
 
 

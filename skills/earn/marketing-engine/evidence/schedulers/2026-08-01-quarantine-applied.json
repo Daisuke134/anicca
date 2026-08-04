@@ -1,0 +1,767 @@
+{
+  "captured_at": "2026-08-01T00:50:45Z",
+  "mode": "apply",
+  "results": [
+    {
+      "commands": [
+        {
+          "argv": [
+            "launchctl",
+            "disable",
+            "gui/501/ai.anicca.larry-anicca-en-v1"
+          ],
+          "status": "ok"
+        },
+        {
+          "argv": [
+            "launchctl",
+            "bootout",
+            "gui/501/ai.anicca.larry-anicca-en-v1"
+          ],
+          "status": "ok"
+        }
+      ],
+      "id": "ai.anicca.larry-anicca-en-v1",
+      "runtime": "launchd",
+      "status": "quarantined"
+    },
+    {
+      "commands": [
+        {
+          "argv": [
+            "launchctl",
+            "disable",
+            "gui/501/ai.anicca.larry-anicca-en-v2"
+          ],
+          "status": "ok"
+        },
+        {
+          "argv": [
+            "launchctl",
+            "bootout",
+            "gui/501/ai.anicca.larry-anicca-en-v2"
+          ],
+          "status": "ok"
+        }
+      ],
+      "id": "ai.anicca.larry-anicca-en-v2",
+      "runtime": "launchd",
+      "status": "quarantined"
+    },
+    {
+      "commands": [
+        {
+          "argv": [
+            "launchctl",
+            "disable",
+            "gui/501/ai.anicca.larry-anicca-en-v3"
+          ],
+          "status": "ok"
+        },
+        {
+          "argv": [
+            "launchctl",
+            "bootout",
+            "gui/501/ai.anicca.larry-anicca-en-v3"
+          ],
+          "status": "ok"
+        }
+      ],
+      "id": "ai.anicca.larry-anicca-en-v3",
+      "runtime": "launchd",
+      "status": "quarantined"
+    },
+    {
+      "commands": [
+        {
+          "argv": [
+            "launchctl",
+            "disable",
+            "gui/501/ai.anicca.larry-anicca-ja-v1"
+          ],
+          "status": "ok"
+        },
+        {
+          "argv": [
+            "launchctl",
+            "bootout",
+            "gui/501/ai.anicca.larry-anicca-ja-v1"
+          ],
+          "status": "ok"
+        }
+      ],
+      "id": "ai.anicca.larry-anicca-ja-v1",
+      "runtime": "launchd",
+      "status": "quarantined"
+    },
+    {
+      "commands": [
+        {
+          "argv": [
+            "launchctl",
+            "disable",
+            "gui/501/ai.anicca.larry-anicca-ja-v2"
+          ],
+          "status": "ok"
+        },
+        {
+          "argv": [
+            "launchctl",
+            "bootout",
+            "gui/501/ai.anicca.larry-anicca-ja-v2"
+          ],
+          "status": "ok"
+        }
+      ],
+      "id": "ai.anicca.larry-anicca-ja-v2",
+      "runtime": "launchd",
+      "status": "quarantined"
+    },
+    {
+      "commands": [
+        {
+          "argv": [
+            "launchctl",
+            "disable",
+            "gui/501/ai.anicca.larry-en-female-reel-replace-1"
+          ],
+          "status": "ok"
+        },
+        {
+          "argv": [
+            "launchctl",
+            "bootout",
+            "gui/501/ai.anicca.larry-en-female-reel-replace-1"
+          ],
+          "status": "ok"
+        }
+      ],
+      "id": "ai.anicca.larry-en-female-reel-replace-1",
+      "runtime": "launchd",
+      "status": "quarantined"
+    },
+    {
+      "commands": [
+        {
+          "argv": [
+            "launchctl",
+            "disable",
+            "gui/501/ai.anicca.larry-en-v1-library-post"
+          ],
+          "status": "ok"
+        },
+        {
+          "argv": [
+            "launchctl",
+            "bootout",
+            "gui/501/ai.anicca.larry-en-v1-library-post"
+          ],
+          "status": "ok"
+        }
+      ],
+      "id": "ai.anicca.larry-en-v1-library-post",
+      "runtime": "launchd",
+      "status": "quarantined"
+    },
+    {
+      "commands": [
+        {
+          "argv": [
+            "launchctl",
+            "disable",
+            "gui/501/ai.anicca.larry-ja-male-buddha-reel-replace-1"
+          ],
+          "status": "ok"
+        },
+        {
+          "argv": [
+            "launchctl",
+            "bootout",
+            "gui/501/ai.anicca.larry-ja-male-buddha-reel-replace-1"
+          ],
+          "status": "ok"
+        }
+      ],
+      "id": "ai.anicca.larry-ja-male-buddha-reel-replace-1",
+      "runtime": "launchd",
+      "status": "quarantined"
+    },
+    {
+      "commands": [
+        {
+          "argv": [
+            "launchctl",
+            "disable",
+            "gui/501/ai.anicca.larry-ja-male-cta-reel-replace-1"
+          ],
+          "status": "ok"
+        },
+        {
+          "argv": [
+            "launchctl",
+            "bootout",
+            "gui/501/ai.anicca.larry-ja-male-cta-reel-replace-1"
+          ],
+          "status": "ok"
+        }
+      ],
+      "id": "ai.anicca.larry-ja-male-cta-reel-replace-1",
+      "runtime": "launchd",
+      "status": "quarantined"
+    },
+    {
+      "commands": [
+        {
+          "argv": [
+            "launchctl",
+            "disable",
+            "gui/501/ai.anicca.larry-ja-v1-library-post"
+          ],
+          "status": "ok"
+        },
+        {
+          "argv": [
+            "launchctl",
+            "bootout",
+            "gui/501/ai.anicca.larry-ja-v1-library-post"
+          ],
+          "status": "ok"
+        }
+      ],
+      "id": "ai.anicca.larry-ja-v1-library-post",
+      "runtime": "launchd",
+      "status": "quarantined"
+    },
+    {
+      "commands": [
+        {
+          "argv": [
+            "launchctl",
+            "disable",
+            "gui/501/ai.anicca.larry-jp-sunset-reel-replace-1"
+          ],
+          "status": "ok"
+        },
+        {
+          "argv": [
+            "launchctl",
+            "bootout",
+            "gui/501/ai.anicca.larry-jp-sunset-reel-replace-1"
+          ],
+          "status": "ok"
+        }
+      ],
+      "id": "ai.anicca.larry-jp-sunset-reel-replace-1",
+      "runtime": "launchd",
+      "status": "quarantined"
+    },
+    {
+      "commands": [
+        {
+          "argv": [
+            "launchctl",
+            "disable",
+            "gui/501/ai.anicca.larry-library-filler"
+          ],
+          "status": "ok"
+        },
+        {
+          "argv": [
+            "launchctl",
+            "bootout",
+            "gui/501/ai.anicca.larry-library-filler"
+          ],
+          "status": "ok"
+        }
+      ],
+      "id": "ai.anicca.larry-library-filler",
+      "runtime": "launchd",
+      "status": "quarantined"
+    },
+    {
+      "commands": [
+        {
+          "argv": [
+            "launchctl",
+            "disable",
+            "gui/501/ai.anicca.larry-strategy-updater"
+          ],
+          "status": "ok"
+        },
+        {
+          "argv": [
+            "launchctl",
+            "bootout",
+            "gui/501/ai.anicca.larry-strategy-updater"
+          ],
+          "status": "ok"
+        }
+      ],
+      "id": "ai.anicca.larry-strategy-updater",
+      "runtime": "launchd",
+      "status": "quarantined"
+    },
+    {
+      "commands": [
+        {
+          "argv": [
+            "launchctl",
+            "disable",
+            "gui/501/ai.anicca.reelclaw-en-card-1"
+          ],
+          "status": "ok"
+        },
+        {
+          "argv": [
+            "launchctl",
+            "bootout",
+            "gui/501/ai.anicca.reelclaw-en-card-1"
+          ],
+          "status": "ok"
+        }
+      ],
+      "id": "ai.anicca.reelclaw-en-card-1",
+      "runtime": "launchd",
+      "status": "quarantined"
+    },
+    {
+      "commands": [
+        {
+          "argv": [
+            "launchctl",
+            "disable",
+            "gui/501/ai.anicca.reelclaw-en-card-2"
+          ],
+          "status": "ok"
+        },
+        {
+          "argv": [
+            "launchctl",
+            "bootout",
+            "gui/501/ai.anicca.reelclaw-en-card-2"
+          ],
+          "status": "ok"
+        }
+      ],
+      "id": "ai.anicca.reelclaw-en-card-2",
+      "runtime": "launchd",
+      "status": "quarantined"
+    },
+    {
+      "commands": [
+        {
+          "argv": [
+            "launchctl",
+            "disable",
+            "gui/501/ai.anicca.reelclaw-en-card-3"
+          ],
+          "status": "ok"
+        },
+        {
+          "argv": [
+            "launchctl",
+            "bootout",
+            "gui/501/ai.anicca.reelclaw-en-card-3"
+          ],
+          "status": "ok"
+        }
+      ],
+      "id": "ai.anicca.reelclaw-en-card-3",
+      "runtime": "launchd",
+      "status": "quarantined"
+    },
+    {
+      "commands": [
+        {
+          "argv": [
+            "launchctl",
+            "disable",
+            "gui/501/ai.anicca.reelclaw-en-widget-1"
+          ],
+          "status": "ok"
+        },
+        {
+          "argv": [
+            "launchctl",
+            "bootout",
+            "gui/501/ai.anicca.reelclaw-en-widget-1"
+          ],
+          "status": "ok"
+        }
+      ],
+      "id": "ai.anicca.reelclaw-en-widget-1",
+      "runtime": "launchd",
+      "status": "quarantined"
+    },
+    {
+      "commands": [
+        {
+          "argv": [
+            "launchctl",
+            "disable",
+            "gui/501/ai.anicca.reelclaw-en-widget-2"
+          ],
+          "status": "ok"
+        },
+        {
+          "argv": [
+            "launchctl",
+            "bootout",
+            "gui/501/ai.anicca.reelclaw-en-widget-2"
+          ],
+          "status": "ok"
+        }
+      ],
+      "id": "ai.anicca.reelclaw-en-widget-2",
+      "runtime": "launchd",
+      "status": "quarantined"
+    },
+    {
+      "commands": [
+        {
+          "argv": [
+            "launchctl",
+            "disable",
+            "gui/501/ai.anicca.reelclaw-honne-en"
+          ],
+          "status": "ok"
+        },
+        {
+          "argv": [
+            "launchctl",
+            "bootout",
+            "gui/501/ai.anicca.reelclaw-honne-en"
+          ],
+          "status": "ok"
+        }
+      ],
+      "id": "ai.anicca.reelclaw-honne-en",
+      "runtime": "launchd",
+      "status": "quarantined"
+    },
+    {
+      "commands": [
+        {
+          "argv": [
+            "launchctl",
+            "disable",
+            "gui/501/ai.anicca.reelclaw-honne-ja"
+          ],
+          "status": "ok"
+        },
+        {
+          "argv": [
+            "launchctl",
+            "bootout",
+            "gui/501/ai.anicca.reelclaw-honne-ja"
+          ],
+          "status": "ok"
+        }
+      ],
+      "id": "ai.anicca.reelclaw-honne-ja",
+      "runtime": "launchd",
+      "status": "quarantined"
+    },
+    {
+      "commands": [
+        {
+          "argv": [
+            "launchctl",
+            "disable",
+            "gui/501/ai.anicca.reelclaw-honne-ja-fresh"
+          ],
+          "status": "ok"
+        },
+        {
+          "argv": [
+            "launchctl",
+            "bootout",
+            "gui/501/ai.anicca.reelclaw-honne-ja-fresh"
+          ],
+          "status": "ok"
+        }
+      ],
+      "id": "ai.anicca.reelclaw-honne-ja-fresh",
+      "runtime": "launchd",
+      "status": "quarantined"
+    },
+    {
+      "commands": [
+        {
+          "argv": [
+            "launchctl",
+            "disable",
+            "gui/501/ai.anicca.reelclaw-ja-card-1"
+          ],
+          "status": "ok"
+        },
+        {
+          "argv": [
+            "launchctl",
+            "bootout",
+            "gui/501/ai.anicca.reelclaw-ja-card-1"
+          ],
+          "status": "ok"
+        }
+      ],
+      "id": "ai.anicca.reelclaw-ja-card-1",
+      "runtime": "launchd",
+      "status": "quarantined"
+    },
+    {
+      "commands": [
+        {
+          "argv": [
+            "launchctl",
+            "disable",
+            "gui/501/ai.anicca.reelclaw-ja-card-2"
+          ],
+          "status": "ok"
+        },
+        {
+          "argv": [
+            "launchctl",
+            "bootout",
+            "gui/501/ai.anicca.reelclaw-ja-card-2"
+          ],
+          "status": "ok"
+        }
+      ],
+      "id": "ai.anicca.reelclaw-ja-card-2",
+      "runtime": "launchd",
+      "status": "quarantined"
+    },
+    {
+      "commands": [
+        {
+          "argv": [
+            "launchctl",
+            "disable",
+            "gui/501/ai.anicca.reelclaw-ja-widget-1"
+          ],
+          "status": "ok"
+        },
+        {
+          "argv": [
+            "launchctl",
+            "bootout",
+            "gui/501/ai.anicca.reelclaw-ja-widget-1"
+          ],
+          "status": "ok"
+        }
+      ],
+      "id": "ai.anicca.reelclaw-ja-widget-1",
+      "runtime": "launchd",
+      "status": "quarantined"
+    },
+    {
+      "commands": [
+        {
+          "argv": [
+            "launchctl",
+            "disable",
+            "gui/501/ai.anicca.reelclaw-ja-widget-2"
+          ],
+          "status": "ok"
+        },
+        {
+          "argv": [
+            "launchctl",
+            "bootout",
+            "gui/501/ai.anicca.reelclaw-ja-widget-2"
+          ],
+          "status": "ok"
+        }
+      ],
+      "id": "ai.anicca.reelclaw-ja-widget-2",
+      "runtime": "launchd",
+      "status": "quarantined"
+    },
+    {
+      "commands": [
+        {
+          "argv": [
+            "launchctl",
+            "disable",
+            "gui/501/ai.anicca.watercolor-jp-evening"
+          ],
+          "status": "ok"
+        },
+        {
+          "argv": [
+            "launchctl",
+            "bootout",
+            "gui/501/ai.anicca.watercolor-jp-evening"
+          ],
+          "status": "ok"
+        }
+      ],
+      "id": "ai.anicca.watercolor-jp-evening",
+      "runtime": "launchd",
+      "status": "quarantined"
+    },
+    {
+      "commands": [
+        {
+          "argv": [
+            "launchctl",
+            "disable",
+            "gui/501/ai.anicca.watercolor-jp-morning"
+          ],
+          "status": "ok"
+        },
+        {
+          "argv": [
+            "launchctl",
+            "bootout",
+            "gui/501/ai.anicca.watercolor-jp-morning"
+          ],
+          "status": "ok"
+        }
+      ],
+      "id": "ai.anicca.watercolor-jp-morning",
+      "runtime": "launchd",
+      "status": "quarantined"
+    },
+    {
+      "commands": [
+        {
+          "argv": [
+            "launchctl",
+            "disable",
+            "gui/501/ai.anicca.watercolor-jp-noon"
+          ],
+          "status": "ok"
+        },
+        {
+          "argv": [
+            "launchctl",
+            "bootout",
+            "gui/501/ai.anicca.watercolor-jp-noon"
+          ],
+          "status": "ok"
+        }
+      ],
+      "id": "ai.anicca.watercolor-jp-noon",
+      "runtime": "launchd",
+      "status": "quarantined"
+    },
+    {
+      "commands": [
+        {
+          "argv": [
+            "openclaw",
+            "cron",
+            "disable",
+            "a4092e38-8229-461e-8cbd-0e01478566f0"
+          ],
+          "status": "ok"
+        }
+      ],
+      "id": "a4092e38-8229-461e-8cbd-0e01478566f0",
+      "runtime": "openclaw",
+      "status": "quarantined"
+    },
+    {
+      "commands": [
+        {
+          "argv": [
+            "openclaw",
+            "cron",
+            "disable",
+            "57fb7dbc-0f18-4bdd-b8e7-74233aa27009"
+          ],
+          "status": "ok"
+        }
+      ],
+      "id": "57fb7dbc-0f18-4bdd-b8e7-74233aa27009",
+      "runtime": "openclaw",
+      "status": "quarantined"
+    },
+    {
+      "commands": [
+        {
+          "argv": [
+            "openclaw",
+            "cron",
+            "disable",
+            "26932ef8-5bb6-487d-aaf0-94febda4b2a4"
+          ],
+          "status": "ok"
+        }
+      ],
+      "id": "26932ef8-5bb6-487d-aaf0-94febda4b2a4",
+      "runtime": "openclaw",
+      "status": "quarantined"
+    },
+    {
+      "commands": [
+        {
+          "argv": [
+            "openclaw",
+            "cron",
+            "disable",
+            "330bbaf7-3ea2-41f6-8479-f1c6f8ef1f45"
+          ],
+          "status": "ok"
+        }
+      ],
+      "id": "330bbaf7-3ea2-41f6-8479-f1c6f8ef1f45",
+      "runtime": "openclaw",
+      "status": "quarantined"
+    },
+    {
+      "commands": [
+        {
+          "argv": [
+            "openclaw",
+            "cron",
+            "disable",
+            "c6eaca79-8de5-4f61-9020-d7e082b14f1a"
+          ],
+          "status": "ok"
+        }
+      ],
+      "id": "c6eaca79-8de5-4f61-9020-d7e082b14f1a",
+      "runtime": "openclaw",
+      "status": "quarantined"
+    },
+    {
+      "commands": [
+        {
+          "argv": [
+            "openclaw",
+            "cron",
+            "disable",
+            "24d0460b-372c-4edb-8022-8b04bf59afc3"
+          ],
+          "status": "ok"
+        }
+      ],
+      "id": "24d0460b-372c-4edb-8022-8b04bf59afc3",
+      "runtime": "openclaw",
+      "status": "quarantined"
+    },
+    {
+      "commands": [
+        {
+          "argv": [
+            "openclaw",
+            "cron",
+            "disable",
+            "b0374b1f-1338-4710-a498-024930519d98"
+          ],
+          "status": "ok"
+        }
+      ],
+      "id": "b0374b1f-1338-4710-a498-024930519d98",
+      "runtime": "openclaw",
+      "status": "quarantined"
+    }
+  ],
+  "rollback": [],
+  "schema_version": 1,
+  "snapshot_captured_at": "2026-08-01T00:50:20Z",
+  "status": "quarantined",
+  "target_count": 35
+}

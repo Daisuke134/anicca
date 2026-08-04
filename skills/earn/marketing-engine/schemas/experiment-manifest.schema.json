@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://anicca.ai/schemas/marketing/experiment-manifest.v1.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version","experiment_id","creative_id","product_id","account_id","hook_id","hook_text","tactic_id","renderer_id","language","cta","destination_url","primary_metric","attribution_method","idempotency_key","status"],
+  "properties": {
+    "schema_version":{"const":"marketing.experiment-plan.v1"},
+    "experiment_id":{"type":"string","pattern":"^experiment\\.[0-9a-f]{24}$"},
+    "creative_id":{"type":"string","pattern":"^creative\\.[0-9a-f]{24}$"},
+    "product_id":{"type":"string","minLength":1},
+    "account_id":{"type":"string","minLength":1},
+    "hook_id":{"type":"string","minLength":1},
+    "hook_text":{"type":"string","minLength":1},
+    "tactic_id":{"type":"string","minLength":1},
+    "renderer_id":{"type":"string","minLength":1},
+    "language":{"enum":["en","ja"]},
+    "cta":{"type":"string","minLength":1},
+    "destination_url":{"type":"string","format":"uri","pattern":"^https://"},
+    "primary_metric":{"type":"string","minLength":1},
+    "attribution_method":{"type":"string","minLength":1},
+    "idempotency_key":{"type":"string","minLength":1},
+    "status":{"const":"planned"}
+  }
+}

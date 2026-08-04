@@ -1,0 +1,39 @@
+{
+  "schema_version": "marketing.video-source-registry.v1",
+  "limits": {
+    "max_posts_per_source": 20,
+    "max_downloads_per_run": 1,
+    "max_download_bytes": 30000000,
+    "max_duration_seconds": 180
+  },
+  "transcription": {
+    "engine": "openai-whisper",
+    "model": "base",
+    "device": "cpu"
+  },
+  "qualification": {
+    "post_min_views": 15000,
+    "creator_average_views": 25000,
+    "creator_floor_views": 15000
+  },
+  "sources": [
+    {
+      "id": "video.tiktok.itsyangmun.en",
+      "platform": "tiktok",
+      "handle": "itsyangmun",
+      "profile_url": "https://www.tiktok.com/@itsyangmun",
+      "language": "en",
+      "product_ids": ["ebook-en"],
+      "enabled": true
+    },
+    {
+      "id": "video.tiktok.furutani-kodai.ja",
+      "platform": "tiktok",
+      "handle": "furutani_kodai",
+      "profile_url": "https://www.tiktok.com/@furutani_kodai",
+      "language": "ja",
+      "product_ids": ["ebook-ja"],
+      "enabled": true
+    }
+  ]
+}

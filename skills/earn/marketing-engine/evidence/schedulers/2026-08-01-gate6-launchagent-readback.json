@@ -1,0 +1,68 @@
+{
+  "action": "plan",
+  "rows": [
+    {
+      "current_sha256": "cc4b88bd9f956df27f84cb036706d62eb7e30313cc843f1bce678983c1db3f42",
+      "exists": true,
+      "label": "ai.anicca.marketing-mine-daily",
+      "path": "/Users/anicca/Library/LaunchAgents/ai.anicca.marketing-mine-daily.plist",
+      "runner_id": "mine",
+      "target_sha256": "cc4b88bd9f956df27f84cb036706d62eb7e30313cc843f1bce678983c1db3f42",
+      "would_change": false
+    },
+    {
+      "current_sha256": "da3503b4e40650a3b216b82cda1aa888cb7e4cad1c2e09ea99a36e63d6840b48",
+      "exists": true,
+      "label": "ai.anicca.marketing-score-daily",
+      "path": "/Users/anicca/Library/LaunchAgents/ai.anicca.marketing-score-daily.plist",
+      "runner_id": "score",
+      "target_sha256": "da3503b4e40650a3b216b82cda1aa888cb7e4cad1c2e09ea99a36e63d6840b48",
+      "would_change": false
+    },
+    {
+      "current_sha256": "62bf46a3eff3674a0bad478a192047c8f54097ab035f5197d602106e254fab0a",
+      "exists": true,
+      "label": "ai.anicca.marketing-metrics-daily",
+      "path": "/Users/anicca/Library/LaunchAgents/ai.anicca.marketing-metrics-daily.plist",
+      "runner_id": "metrics",
+      "target_sha256": "62bf46a3eff3674a0bad478a192047c8f54097ab035f5197d602106e254fab0a",
+      "would_change": false
+    },
+    {
+      "current_sha256": "21d2d31602dbb5593a02b9f56a82a41ba10ed1ffa5a0ed06dee7eaccf8ebe018",
+      "exists": true,
+      "label": "ai.anicca.marketing-dashboard",
+      "path": "/Users/anicca/Library/LaunchAgents/ai.anicca.marketing-dashboard.plist",
+      "runner_id": "dashboard",
+      "target_sha256": "21d2d31602dbb5593a02b9f56a82a41ba10ed1ffa5a0ed06dee7eaccf8ebe018",
+      "would_change": false
+    },
+    {
+      "current_sha256": "94576c20ce2407ed30b6fd338ca868ec9767acd15e3c7895a419f288ff359bf3",
+      "exists": true,
+      "label": "ai.anicca.clip-loop",
+      "path": "/Users/anicca/Library/LaunchAgents/ai.anicca.clip-loop.plist",
+      "runner_id": "clip",
+      "target_sha256": "94576c20ce2407ed30b6fd338ca868ec9767acd15e3c7895a419f288ff359bf3",
+      "would_change": false
+    },
+    {
+      "current_sha256": "dfa11865dedf955ab9e9992c3edf206c96819c0829588c0e2b9c1ca7160df9a5",
+      "exists": true,
+      "label": "ai.anicca.self-improve-evolve",
+      "path": "/Users/anicca/Library/LaunchAgents/ai.anicca.self-improve-evolve.plist",
+      "runner_id": "self-improve",
+      "target_sha256": "dfa11865dedf955ab9e9992c3edf206c96819c0829588c0e2b9c1ca7160df9a5",
+      "would_change": false
+    },
+    {
+      "current_sha256": "7a29ca7655b229934feb70c4d308d289655a9619c690888f130fbb459237599c",
+      "exists": true,
+      "label": "ai.anicca.capafy-ig-marketing-daily",
+      "path": "/Users/anicca/Library/LaunchAgents/ai.anicca.capafy-ig-marketing-daily.plist",
+      "runner_id": "capafy",
+      "target_sha256": "7a29ca7655b229934feb70c4d308d289655a9619c690888f130fbb459237599c",
+      "would_change": false
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "ambiguous_postiz_ids": [
+    "cms85cbv90bmjqn0yf8i8kl0r",
+    "cms8v1wvj0h9rqn0yd4fnpcfl"
+  ],
+  "error_postiz_ids": [
+    "cms5i0ld90a2do40ynsntq1fd",
+    "cms5ql4nq004mod0ywq5b9g50",
+    "cms5z65cj0205p50yptbhydyz",
+    "cms64rscf039vod0yhzi1muz8",
+    "cms6hzklg07iuod0ycyf95ceq",
+    "cms6ovsfd09gyod0y093lv0en",
+    "cms6xgg050ayvod0yyq3hgbih",
+    "cms7613gd00bmqn0y5tlun7dy",
+    "cms7eltk1025zqn0yu2nnfwky",
+    "cms7k7mkn04l5kz0y3epu8vuo",
+    "cms7xfhcj09cmqn0yyhwggekw",
+    "cms84blhj0bchqn0y19m53iqu",
+    "cms8cwali0d3zqn0y3agr351k",
+    "cms8lguj90ejpqn0y4jm6bq0g",
+    "cms8u1hqg0gxokz0y3v41z3va",
+    "cms8zncy60iidkz0yei03zsnh",
+    "cms9cv5jp0majqn0y83yboufm",
+    "cms9jrc110nywkz0yfz1rdqll"
+  ],
+  "identity_status_counts": {
+    "ambiguous": 2,
+    "error": 18,
+    "resolved": 71
+  },
+  "observed_at": "2026-08-01T01:07:53Z",
+  "passes_95_percent_gate": true,
+  "platform_state_counts": {
+    "instagram-standalone|PUBLISHED": 38,
+    "tiktok|PUBLISHED": 25,
+    "x|PUBLISHED": 1,
+    "youtube|ERROR": 18,
+    "youtube|PUBLISHED": 9
+  },
+  "published_denominator": 73,
+  "published_resolution_rate": 0.972603,
+  "published_resolved": 71,
+  "schema_version": 1,
+  "state_counts": {
+    "ERROR": 18,
+    "PUBLISHED": 73
+  },
+  "total_rows": 91,
+  "window_end": "2026-08-01T01:07:53Z",
+  "window_start": "2026-07-29T01:07:53Z"
+}

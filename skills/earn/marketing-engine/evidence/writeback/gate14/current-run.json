@@ -1,0 +1,32 @@
+{
+  "canonical_mutation_count": 0,
+  "decision": {
+    "checkpoint_hours": 24,
+    "decision_id": "writeback.7da73ad427f5617d8ce7404e",
+    "eligible_experiments": 0,
+    "losers": [],
+    "min_cohort": 10,
+    "mutations": [],
+    "observed_at": "2026-08-01T20:38:22Z",
+    "platform": "tiktok",
+    "product_id": "ebook-ja",
+    "reason": "checkpoint_not_mature",
+    "renderer_id": "watercolor-monk",
+    "reward_metric": null,
+    "schema_version": "marketing.hook-performance.v1",
+    "source_attribution_ids": [],
+    "status": "insufficient_data",
+    "tactic_mapping_status": "unavailable",
+    "winners": []
+  },
+  "evidence_status": "waiting_for_mature_cohort",
+  "gate": 14,
+  "implementation_status": "verified",
+  "perf_appended": true,
+  "schema_version": 1,
+  "source_paths": {
+    "attribution": "/Users/anicca/anicca/skills/earn/marketing-engine/state/experiment-attribution.jsonl",
+    "hook_perf": "/Users/anicca/anicca/skills/earn/marketing-engine/state/hook-perf.jsonl",
+    "plans": "/Users/anicca/anicca/skills/earn/marketing-engine/evidence/creative/gate10/plans.jsonl"
+  }
+}

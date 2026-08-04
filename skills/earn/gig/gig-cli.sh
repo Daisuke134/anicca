@@ -13,6 +13,7 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PAT
 #   bash gig-cli.sh --restart  # kill the existing session then start fresh
 #   bash gig-cli.sh --status   # is the session alive?
 set -uo pipefail
+LOOP_MODEL="$("$HOME/.config/ai/bin/loop-model.sh")"   # 切替口は ~/.config/ai/models.env の1箇所
 SOCK="/tmp/anicca-gig-tmux.sock"
 SESSION="anicca-gig-core"
 CLAUDE="$(command -v claude || echo "$HOME/.local/bin/claude")"
@@ -55,7 +56,7 @@ if [ -n "$CLIPROXY_KEY" ]; then
 fi
 
 tmux -S "$SOCK" new-session -d -s "$SESSION" -c "$HOME" \
-  "exec \"$CLAUDE\" --name \"$SESSION\" --model sonnet --dangerously-skip-permissions --add-dir \"$HOME\" -- \"\$(cat '$PROMPT_FILE')\""
+  "exec \"$CLAUDE\" --name \"$SESSION\" --model ${LOOP_MODEL} --dangerously-skip-permissions --add-dir \"$HOME\" -- \"\$(cat '$PROMPT_FILE')\""
 mkdir -p "$HOME/gig" && touch "$HOME/gig/.last-start"   # FIND-R2-001: seed start marker only (.last-pass = real completed pass only, never startup)
 sleep 2
 echo "gig-core started ($(status)). Attach: tmux -S $SOCK attach -t $SESSION"

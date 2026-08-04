@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "observed_at": "2026-08-01T00:47:00Z",
+  "scheduler": "launchd",
+  "label": "ai.anicca.larry-ja-male-cta-reel-replace-1",
+  "scheduled_local_time": "2026-08-01T09:45:00+09:00",
+  "process_exit": 0,
+  "publication_status": "failed",
+  "native_post_id": null,
+  "history_appended": false,
+  "reason": "POSTIZ_API_KEY missing before publication",
+  "evidence_path": "/Users/anicca/.openclaw/logs/larry-ja-male-cta-reel-replace-1-launchd.out.log",
+  "rule": "wrapper exit zero is not publication success without a native receipt"
+}

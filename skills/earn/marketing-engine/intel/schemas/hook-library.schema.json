@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aniccaai.com/schemas/marketing-hook-v1.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "id", "text", "language", "product_ids", "source_type", "source_url", "source_null_reason", "captured_at", "provenance", "rubric", "status", "ewma_score", "observations", "evidence_url", "evidence_null_reason"],
+  "properties": {
+    "schema_version": {"const": "marketing.hook.v1"},
+    "id": {"type": "string"},
+    "text": {"type": "string", "minLength": 1},
+    "language": {"enum": ["en", "ja", "es", "multi", "unknown"]},
+    "product_ids": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+    "source_type": {"type": "string"},
+    "source_url": {"type": ["string", "null"]},
+    "source_null_reason": {"type": ["string", "null"]},
+    "captured_at": {"type": "string", "format": "date-time"},
+    "provenance": {"type": "string"},
+    "rubric": {"type": "object", "required": ["hook", "emotional_peak", "conflict", "quotability", "practical_value", "total"]},
+    "status": {"enum": ["active", "retired"]},
+    "ewma_score": {"type": ["number", "null"]},
+    "observations": {"type": "integer", "minimum": 0},
+    "evidence_url": {"type": ["string", "null"]},
+    "evidence_null_reason": {"type": ["string", "null"]}
+  }
+}

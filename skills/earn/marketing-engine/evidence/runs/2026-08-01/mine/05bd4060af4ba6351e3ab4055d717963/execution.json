@@ -1,0 +1,12 @@
+{
+  "command_sha256": "40d2dbc4e32084ad5340327ef1d6d836a6ad736a156b6fe542072e99fa9a6759",
+  "dry_run": false,
+  "finished_at": "2026-08-01T12:46:45.306022Z",
+  "quarantine_reason": "legacy_openclaw_state_not_migrated_until_gate_7",
+  "quarantined": true,
+  "returncode": 0,
+  "run_id": "05bd4060af4ba6351e3ab4055d717963",
+  "runner_id": "mine",
+  "schema_version": "marketing.execution.v1",
+  "started_at": "2026-08-01T12:46:45.305671Z"
+}

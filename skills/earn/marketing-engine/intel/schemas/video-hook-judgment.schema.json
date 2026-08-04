@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aniccaai.com/schemas/marketing-video-hook-judgment-v1.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["hooks"],
+  "properties": {
+    "hooks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["schema_version", "id", "text", "language", "product_ids", "source_type", "source_url", "source_null_reason", "captured_at", "provenance", "rubric", "status", "ewma_score", "observations", "evidence_url", "evidence_null_reason"],
+        "properties": {
+          "schema_version": {"type": "string", "enum": ["marketing.hook.v1"]},
+          "id": {"type": "string"},
+          "text": {"type": "string"},
+          "language": {"type": "string", "enum": ["en", "ja", "es", "multi", "unknown"]},
+          "product_ids": {"type": "array", "items": {"type": "string"}},
+          "source_type": {"type": "string", "enum": ["video"]},
+          "source_url": {"type": "string"},
+          "source_null_reason": {"type": "null"},
+          "captured_at": {"type": "string"},
+          "provenance": {"type": "string", "enum": ["live_observed"]},
+          "rubric": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["hook", "emotional_peak", "conflict", "quotability", "practical_value", "total"],
+            "properties": {
+              "hook": {"type": "number"}, "emotional_peak": {"type": "number"},
+              "conflict": {"type": "number"}, "quotability": {"type": "number"},
+              "practical_value": {"type": "number"}, "total": {"type": "number"}
+            }
+          },
+          "status": {"type": "string", "enum": ["active"]},
+          "ewma_score": {"type": "null"},
+          "observations": {"type": "integer"},
+          "evidence_url": {"type": "string"},
+          "evidence_null_reason": {"type": "null"}
+        }
+      }
+    }
+  }
+}

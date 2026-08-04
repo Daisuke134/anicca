@@ -1,0 +1,12 @@
+{
+  "command_sha256": "5febc8ab9e171eaacee2ceba17d8015c63e10381524bf7a008d1d85a94b1ae65",
+  "dry_run": false,
+  "finished_at": "2026-08-04T16:10:31.681722Z",
+  "quarantine_reason": "verified_writeback_not_ready_until_gate_14",
+  "quarantined": true,
+  "returncode": 0,
+  "run_id": "9b107e7720dfd5aafc8fb97e369b44f6",
+  "runner_id": "self-improve",
+  "schema_version": "marketing.execution.v1",
+  "started_at": "2026-08-04T16:10:31.680886Z"
+}

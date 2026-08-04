@@ -1,0 +1,85 @@
+{
+  "hooks": [
+    {
+      "captured_at": "2026-08-01T15:03:04.066559Z",
+      "evidence_null_reason": null,
+      "evidence_url": "https://www.tiktok.com/@itsyangmun/video/7609309883912965390",
+      "ewma_score": null,
+      "id": "hook.tiktok.7609309883912965390.001",
+      "language": "en",
+      "observations": 0,
+      "product_ids": [
+        "ebook-en"
+      ],
+      "provenance": "live_observed",
+      "rubric": {
+        "conflict": 7,
+        "emotional_peak": 7,
+        "hook": 8,
+        "practical_value": 8,
+        "quotability": 7,
+        "total": 37
+      },
+      "schema_version": "marketing.hook.v1",
+      "source_null_reason": null,
+      "source_type": "video",
+      "source_url": "https://www.tiktok.com/@itsyangmun/video/7609309883912965390",
+      "status": "active",
+      "text": "Feeling stuck indoors? Use a tiny outside ritual to make the next step feel possible."
+    },
+    {
+      "captured_at": "2026-08-01T15:03:04.066559Z",
+      "evidence_null_reason": null,
+      "evidence_url": "https://www.tiktok.com/@itsyangmun/video/7609309883912965390",
+      "ewma_score": null,
+      "id": "hook.tiktok.7609309883912965390.002",
+      "language": "en",
+      "observations": 0,
+      "product_ids": [
+        "ebook-en"
+      ],
+      "provenance": "live_observed",
+      "rubric": {
+        "conflict": 8,
+        "emotional_peak": 8,
+        "hook": 9,
+        "practical_value": 8,
+        "quotability": 8,
+        "total": 41
+      },
+      "schema_version": "marketing.hook.v1",
+      "source_null_reason": null,
+      "source_type": "video",
+      "source_url": "https://www.tiktok.com/@itsyangmun/video/7609309883912965390",
+      "status": "active",
+      "text": "Your room may feel safe—but when it becomes your whole world, every doorway gets harder. Start with one block."
+    },
+    {
+      "captured_at": "2026-08-01T15:03:04.066559Z",
+      "evidence_null_reason": null,
+      "evidence_url": "https://www.tiktok.com/@itsyangmun/video/7609309883912965390",
+      "ewma_score": null,
+      "id": "hook.tiktok.7609309883912965390.003",
+      "language": "en",
+      "observations": 0,
+      "product_ids": [
+        "ebook-en"
+      ],
+      "provenance": "live_observed",
+      "rubric": {
+        "conflict": 8,
+        "emotional_peak": 7,
+        "hook": 8,
+        "practical_value": 8,
+        "quotability": 9,
+        "total": 40
+      },
+      "schema_version": "marketing.hook.v1",
+      "source_null_reason": null,
+      "source_type": "video",
+      "source_url": "https://www.tiktok.com/@itsyangmun/video/7609309883912965390",
+      "status": "active",
+      "text": "Overthinking thrives on repetition. Break the loop with a five-minute change of scene."
+    }
+  ]
+}

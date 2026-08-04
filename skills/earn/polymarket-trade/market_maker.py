@@ -21,6 +21,12 @@ MIN_SIZE=5           # CLOB min order = 5 shares
 MAX_MARKETS=3        # spread across up to 3 markets
 MARGIN=0.995         # require yes_bid+no_bid <= 0.995 (locked >=0.5% if both fill)
 MAX_PASS_SPEND=float(os.getenv("MAX_PASS_SPEND","2.0"))  # fixed USD ceiling per pass (money-safety, #25 adversary fix)
+# DRY-RUN GATE (2026-07-25, added for the scheduled observe+report loop, #decision-loop task).
+# Default DRY (unset/anything but "0"/"false" -> dry): cancel_all/approve_erc20/create_*_order/
+# post_order below are skipped and replaced with "[DRY] would ..." log lines instead. run.sh
+# (the pre-existing, already-adversary-reviewed LIVE entrypoint) explicitly exports PM_DRY_RUN=0
+# so ITS documented behavior (HARD 0.24: always real) is byte-for-byte unchanged.
+DRY_RUN=os.getenv("PM_DRY_RUN","1") not in ("0","false","False","")
 
 # ROOT CAUSE FIX (2026-07-07): this used to carry its own mint() that POSTed a brand-new
 # relayer key every pass -> hit Polymarket's 100-keys-per-address cap on 2026-07-04 ->
@@ -83,7 +89,11 @@ def _flatten_naked(c):
     for sp in SPENDERS:
         try:
             ba=c.get_balance_allowance(asset_type="COLLATERAL")
-            if int(ba.allowances.get(sp,0))<1: c.approve_erc20(token_address=PUSD,spender_address=sp,amount="max").wait()
+            if int(ba.allowances.get(sp,0))<1:
+                if DRY_RUN:
+                    print(f"  [DRY] would approve_erc20 spender={sp[:10]} (skipped, no on-chain tx)")
+                else:
+                    c.approve_erc20(token_address=PUSD,spender_address=sp,amount="max").wait()
         except Exception: pass
     for leg in naked:
         try:
@@ -94,6 +104,10 @@ def _flatten_naked(c):
         size=int(leg["held_size"])
         if size<=0 or plan["action"]=="none":
             print(f"  NAKED-FIX skip ({plan['reason']}) mkt={str(leg.get('market'))[:30]}"); continue
+        if DRY_RUN:
+            print(f"  [DRY] would NAKED-FIX {plan['action']} {plan['token'][:10]} {size}@{plan['price']} "
+                  f"mkt={str(leg.get('market'))[:30]} — REAL naked leg detected but NOT flattened (dry mode)")
+            continue
         try:
             if plan["action"]=="complete":
                 # UNVERIFIED(live SDK): buy missing leg as FOK taker to lock a full bundle
@@ -113,8 +127,11 @@ def _flatten_naked(c):
 def main():
     tmp=SecureClient._create(private_key=KEY,validate_credentials=True); creds=tmp._ctx.credentials; tmp.close()
     c=SecureClient.create(private_key=KEY,credentials=creds,api_key=RelayerApiKey(key=mint(),address=ADDR))
-    try: c.cancel_all(); print("  cancel-and-replace: cleared old quotes")
-    except Exception as e: print("  cancel_all:", str(e)[:60])
+    if DRY_RUN:
+        print("  [DRY] would cancel_all() (skipped — any real resting orders are left untouched)")
+    else:
+        try: c.cancel_all(); print("  cancel-and-replace: cleared old quotes")
+        except Exception as e: print("  cancel_all:", str(e)[:60])
     # SPEC-no-naked-fills R3: neutralize any naked single-leg position BEFORE quoting. If one was
     # present, do NOT add new maker quotes this pass (fail-closed — never grow naked exposure).
     if _flatten_naked(c):
@@ -129,7 +146,11 @@ def main():
               f"Not placing (positions will free cash on resolution). No churn.")
         c.close(); return 0
     for sp in SPENDERS:
-        if int(ba.allowances.get(sp,0))<1: c.approve_erc20(token_address=PUSD,spender_address=sp,amount="max").wait()
+        if int(ba.allowances.get(sp,0))<1:
+            if DRY_RUN:
+                print(f"  [DRY] would approve_erc20 spender={sp[:10]} (skipped, no on-chain tx)")
+            else:
+                c.approve_erc20(token_address=PUSD,spender_address=sp,amount="max").wait()
 
     ms=requests.get("https://gamma-api.polymarket.com/markets?closed=false&active=true&order=volume24hr&ascending=false&limit=50",timeout=25).json()
     picks=[]
@@ -191,6 +212,9 @@ def main():
         size = min(size, 200)
         print(f"MKT {q[:42]:42} YES {by}+NO {bn}={s:.3f} lock {(1-s)*100:.1f}% -> {size} sh/leg")
         for tid,px in [(yes,by),(no,bn)]:
+            if DRY_RUN:
+                print(f"    [DRY] would post_order {'YES' if tid==yes else 'NO '} {size}@{px} (post_only BUY) — no order placed")
+                continue
             try:
                 o=c.create_limit_order(token_id=tid, price=str(px), size=str(size), side="BUY", post_only=True)
                 r=c.post_order(o)

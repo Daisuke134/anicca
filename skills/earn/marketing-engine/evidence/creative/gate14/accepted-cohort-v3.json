@@ -1,0 +1,21 @@
+{
+  "accepted_count": 10,
+  "cohort_id": "cohort.ebook-ja.tiktok.watercolor.24h.v3",
+  "experiment_count": 10,
+  "hook_count": 10,
+  "publication_effects": [],
+  "renderer_source_sha256": "b9965a8e2dd56d1d01202b66ba9ed52d756e068be6f6d4995bae9a1135dbd482",
+  "status": "verified",
+  "treatment_ids": [
+    "treatment.643df43ea4de0d6d48963097",
+    "treatment.b51d6ebd2818ce950e9f149c",
+    "treatment.a8668b1d9cef5323bc8b2760",
+    "treatment.7ec591322e2719952c72f8ac",
+    "treatment.633a6ab175fbe33f552b375e",
+    "treatment.f2b0f1f959b423313aa39703",
+    "treatment.a38bf4f5cc4075beb2509366",
+    "treatment.694b4489a000717d229d13b4",
+    "treatment.f97a21980418788e18de6d13",
+    "treatment.1ff6528125ed3db1f7f10ffd"
+  ]
+}

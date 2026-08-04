@@ -1,0 +1,40 @@
+{
+  "schema_version": "marketing.visual-evaluation.v1",
+  "status": "failed",
+  "evaluated_at": "2026-08-01T15:39:24Z",
+  "evaluator": "provider-neutral-model-visual-inspection",
+  "scope": "safety-local contact sheet; technical baseline only",
+  "contact_sheet": "skills/earn/marketing-engine/evidence/renderers/gate11/contact-sheet.jpg",
+  "contact_sheet_sha256": "01e2c9bc65c720506d1c8c70d6f0ba3c46120feb22601699facf536b7057d91f",
+  "criteria": {
+    "identity_consistency": {
+      "result": "accepted",
+      "reason": "Each language keeps one visibly consistent owned character across all five fixtures."
+    },
+    "mouth_artifacts": {
+      "result": "not_testable",
+      "reason": "The safety baseline is a still image and has no mouth animation."
+    },
+    "motion_naturalness": {
+      "result": "failed",
+      "reason": "The safety baseline contains no character motion."
+    },
+    "temporal_stability": {
+      "result": "accepted",
+      "reason": "The frozen still does not visibly drift or change identity."
+    },
+    "captions": {
+      "result": "failed",
+      "reason": "English captions are readable, but Japanese lines extend beyond the safe horizontal frame and are clipped."
+    },
+    "audio_visual_sync": {
+      "result": "not_testable",
+      "reason": "Audio exists, but a still-image baseline provides no mouth movement to judge sync."
+    },
+    "character_product_fit": {
+      "result": "accepted",
+      "reason": "The English monk maps only to ebook-en and the watercolor monk maps only to ebook-ja."
+    }
+  },
+  "decision": "Keep as a deterministic emergency benchmark only. Do not publish or promote. A motion/avatar challenger must preserve identity, keep all captions inside safe margins, and provide judgeable audio-visual sync."
+}

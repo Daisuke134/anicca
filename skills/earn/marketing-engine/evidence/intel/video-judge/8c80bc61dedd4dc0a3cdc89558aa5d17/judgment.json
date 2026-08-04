@@ -1,0 +1,85 @@
+{
+  "hooks": [
+    {
+      "captured_at": "2026-08-01T15:06:15.261520Z",
+      "evidence_null_reason": null,
+      "evidence_url": "https://www.tiktok.com/@furutani_kodai/video/7468922143619812626",
+      "ewma_score": null,
+      "id": "hook.tiktok.7468922143619812626.001",
+      "language": "ja",
+      "observations": 0,
+      "product_ids": [
+        "ebook-ja"
+      ],
+      "provenance": "live_observed",
+      "rubric": {
+        "conflict": 7,
+        "emotional_peak": 8,
+        "hook": 8,
+        "practical_value": 8,
+        "quotability": 8,
+        "total": 39
+      },
+      "schema_version": "marketing.hook.v1",
+      "source_null_reason": null,
+      "source_type": "video",
+      "source_url": "https://www.tiktok.com/@furutani_kodai/video/7468922143619812626",
+      "status": "active",
+      "text": "話すたびに疲れる相手から、あなたの大切な時間を取り戻す方法があります。"
+    },
+    {
+      "captured_at": "2026-08-01T15:06:15.261520Z",
+      "evidence_null_reason": null,
+      "evidence_url": "https://www.tiktok.com/@furutani_kodai/video/7468922143619812626",
+      "ewma_score": null,
+      "id": "hook.tiktok.7468922143619812626.002",
+      "language": "ja",
+      "observations": 0,
+      "product_ids": [
+        "ebook-ja"
+      ],
+      "provenance": "live_observed",
+      "rubric": {
+        "conflict": 8,
+        "emotional_peak": 8,
+        "hook": 8,
+        "practical_value": 7,
+        "quotability": 9,
+        "total": 40
+      },
+      "schema_version": "marketing.hook.v1",
+      "source_null_reason": null,
+      "source_type": "video",
+      "source_url": "https://www.tiktok.com/@furutani_kodai/video/7468922143619812626",
+      "status": "active",
+      "text": "どれだけ認められようとしても苦しいなら、相手ではなく距離を変えるときかもしれません。"
+    },
+    {
+      "captured_at": "2026-08-01T15:06:15.261520Z",
+      "evidence_null_reason": null,
+      "evidence_url": "https://www.tiktok.com/@furutani_kodai/video/7468922143619812626",
+      "ewma_score": null,
+      "id": "hook.tiktok.7468922143619812626.003",
+      "language": "ja",
+      "observations": 0,
+      "product_ids": [
+        "ebook-ja"
+      ],
+      "provenance": "live_observed",
+      "rubric": {
+        "conflict": 8,
+        "emotional_peak": 7,
+        "hook": 8,
+        "practical_value": 9,
+        "quotability": 8,
+        "total": 40
+      },
+      "schema_version": "marketing.hook.v1",
+      "source_null_reason": null,
+      "source_type": "video",
+      "source_url": "https://www.tiktok.com/@furutani_kodai/video/7468922143619812626",
+      "status": "active",
+      "text": "あなたを小さくする関係を見抜いて、守るべき人と時間に集中するための5つのサイン。"
+    }
+  ]
+}

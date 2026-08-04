@@ -1,0 +1,23 @@
+{
+  "schema_version": "marketing.video-tools-lock.v1",
+  "verified_at": "2026-08-01T15:14:25Z",
+  "tools": {
+    "yt-dlp": {
+      "version": "2026.07.04",
+      "install": "homebrew",
+      "source_url": "https://github.com/yt-dlp/yt-dlp/releases/tag/2026.07.04"
+    },
+    "openai-whisper": {
+      "version": "20250625",
+      "install": "python-package",
+      "model": "base",
+      "device": "cpu",
+      "source_url": "https://github.com/openai/whisper"
+    },
+    "ffmpeg": {
+      "version": "8.1",
+      "install": "homebrew",
+      "source_url": "https://ffmpeg.org/releases/"
+    }
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "started_at": "2026-08-02T20:30:25.499300+00:00",
+  "finished_at": "2026-08-02T20:31:47.214050+00:00",
+  "task_label": "marketing-intel-b8453b72269d49cfb5dcec27cb7000ca",
+  "loop": "marketing-intel",
+  "task_class": "marketing-agent",
+  "route": "luna-medium-decision",
+  "escalated": false,
+  "escalation_reason": null,
+  "status": "success",
+  "budget": {
+    "status": "disabled",
+    "reason": "budget_not_configured",
+    "scope_id": null
+  },
+  "selected_provider": "codex",
+  "selected_model": "gpt-5.6-luna",
+  "selected_effort": "medium",
+  "attempt_count": 1,
+  "attempts_path": "/Users/anicca/anicca/skills/earn/marketing-engine/evidence/intel/daily/text-pulls/b8453b72269d49cfb5dcec27cb7000ca/judge/attempts.jsonl",
+  "result_path": "/Users/anicca/anicca/skills/earn/marketing-engine/evidence/intel/daily/text-pulls/b8453b72269d49cfb5dcec27cb7000ca/judge/attempt-01.result.json"
+}

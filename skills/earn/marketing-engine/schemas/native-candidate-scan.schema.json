@@ -1,0 +1,17 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://anicca.ai/schemas/marketing/native-candidate-scan.v1.json",
+  "type":"object",
+  "additionalProperties":false,
+  "required":["schema_version","status","publish_key","candidate_count","api_responses_observed","profile_items_observed","output","external_mutations"],
+  "properties":{
+    "schema_version":{"const":"marketing.native-candidate-scan.v1"},
+    "status":{"enum":["collector_unverified","pending_native_receipt","candidate_found"]},
+    "publish_key":{"type":"string","pattern":"^publication\\.[0-9a-f]{24}$"},
+    "candidate_count":{"type":"integer","minimum":0,"maximum":1},
+    "api_responses_observed":{"type":"integer","minimum":0},
+    "profile_items_observed":{"type":"integer","minimum":0},
+    "output":{"type":"string","minLength":1},
+    "external_mutations":{"const":0}
+  }
+}

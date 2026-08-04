@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+LOOP_MODEL="$("$HOME/.config/ai/bin/loop-model.sh")"   # 切替口は ~/.config/ai/models.env の1箇所
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin:$PATH"
 # reality-verify-spawn.sh — GENERALIZED, BLOCKING verification spawn wrapper.
 # Spec: .vcsdd/features/reality-gate/specs/behavioral-spec.md REQ-005/REQ-006/REQ-010/REQ-018
@@ -180,7 +181,7 @@ Do not write to any other file. A FAIL must include at least one evidenced findi
 
 echo "$(date '+%F %T') reality-verify[$LOOP] SPAWNING blocking sonnet fresh-context verifier (pass=$PASS_ID, timeout ${TIMEOUT_SECS}s)" >> "$LOG"
 env -u ANTHROPIC_API_KEY timeout "$TIMEOUT_SECS" \
-  "$CLAUDE" -p "$TASK" --model sonnet --dangerously-skip-permissions --add-dir "$HOME" --output-format text \
+  "$CLAUDE" -p "$TASK" --model "$LOOP_MODEL" --dangerously-skip-permissions --add-dir "$HOME" --output-format text \
   > /dev/null 2>>"$LOG"
 CLAUDE_RC=$?
 echo "$(date '+%F %T') reality-verify[$LOOP] verifier spawn returned rc=$CLAUDE_RC" >> "$LOG"

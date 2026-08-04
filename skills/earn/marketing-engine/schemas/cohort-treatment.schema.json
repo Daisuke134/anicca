@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://anicca.ai/schemas/cohort-treatment.schema.json",
+  "title": "Immutable comparable cohort treatment",
+  "type": "object",
+  "required": [
+    "schema_version", "treatment_id", "cohort_id", "experiment_id",
+    "creative_id", "product_id", "account_id", "hook_id", "hook_text",
+    "tactic_id", "renderer_id", "renderer_version", "renderer_source_path",
+    "renderer_source_sha256", "body_template_id",
+    "body_text", "full_script", "script_sha256", "voice", "voice_rate",
+    "caption_style_id", "clip_set", "target_duration_seconds",
+    "duration_seconds", "cta", "destination_url", "asset_path",
+    "asset_sha256", "publication_effects"
+  ],
+  "properties": {
+    "schema_version": {"const": "marketing.cohort-treatment.v1"},
+    "treatment_id": {"type": "string", "pattern": "^treatment\\.[0-9a-f]{24}$"},
+    "cohort_id": {"type": "string", "minLength": 1},
+    "experiment_id": {"type": "string", "minLength": 1},
+    "creative_id": {"type": "string", "minLength": 1},
+    "product_id": {"type": "string", "minLength": 1},
+    "account_id": {"type": "string", "minLength": 1},
+    "hook_id": {"type": "string", "minLength": 1},
+    "hook_text": {"type": "string", "minLength": 1},
+    "tactic_id": {"type": "string", "minLength": 1},
+    "renderer_id": {"type": "string", "minLength": 1},
+    "renderer_version": {"type": "string", "minLength": 1},
+    "renderer_source_path": {"type": "string", "minLength": 1},
+    "renderer_source_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "body_template_id": {"type": "string", "minLength": 1},
+    "body_text": {"type": "string", "minLength": 1},
+    "full_script": {"type": "string", "minLength": 1},
+    "script_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "voice": {"type": "string", "minLength": 1},
+    "voice_rate": {"type": "integer", "minimum": 1},
+    "caption_style_id": {"type": "string", "minLength": 1},
+    "clip_set": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object", "required": ["path", "sha256"],
+        "properties": {
+          "path": {"type": "string", "minLength": 1},
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "target_duration_seconds": {
+      "type": "object", "required": ["min", "max"],
+      "properties": {"min": {"type": "number"}, "max": {"type": "number"}},
+      "additionalProperties": false
+    },
+    "duration_seconds": {"type": "number", "minimum": 0},
+    "cta": {"type": "string", "minLength": 1},
+    "destination_url": {"type": "string", "minLength": 1},
+    "asset_path": {"type": "string", "minLength": 1},
+    "asset_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "publication_effects": {"type": "array", "maxItems": 0}
+  },
+  "additionalProperties": false
+}

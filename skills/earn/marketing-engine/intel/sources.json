@@ -1,0 +1,233 @@
+{
+  "schema_version": "marketing.intel-sources.v1",
+  "sources": [
+    {
+      "id": "x.george-lampro-articles",
+      "adapter": "x_articles",
+      "enabled": true,
+      "cadence": "daily",
+      "handle": "GeorgeLampro20",
+      "limit": 5,
+      "enrichments": [
+        {"tactic_id": "tactic.gotcha-prd.v1", "status_id": "2081979523873038368"},
+        {"tactic_id": "tactic.content-first-product.v1", "status_id": "2081979523873038368"},
+        {"tactic_id": "tactic.feed-engineering-creators.v1", "status_id": "2081979523873038368"},
+        {"tactic_id": "tactic.paid-promo-outreach.v1", "status_id": "2081979523873038368"},
+        {"tactic_id": "tactic.annual-only-trial.v1", "status_id": "2081979523873038368"},
+        {"tactic_id": "tactic.gotcha-before-paywall.v1", "status_id": "2081979523873038368"},
+        {"tactic_id": "tactic.ad-mechanism-replication.v1", "status_id": "2081979523873038368"}
+      ],
+      "product_ids": ["aniccaios", "honne"],
+      "languages": ["en"]
+    },
+    {
+      "id": "x.3imzdo3-articles",
+      "adapter": "x_articles",
+      "enabled": true,
+      "cadence": "daily",
+      "handle": "3Imzdo3",
+      "limit": 5,
+      "enrichments": [
+        {"tactic_id": "tactic.fixed-character-identity.v1", "status_id": "2082760469300011416"}
+      ],
+      "product_ids": ["ebook-ja", "ebook-en"],
+      "languages": ["ja"]
+    },
+    {
+      "id": "x.ernesto-software-articles",
+      "adapter": "x_articles",
+      "enabled": true,
+      "cadence": "daily",
+      "handle": "ErnestoSOFTWARE",
+      "limit": 5,
+      "enrichments": [
+        {"tactic_id": "tactic.parallel-build-ugc.v1", "status_id": "2082527284301300023"}
+      ],
+      "product_ids": ["aniccaios", "honne"],
+      "languages": ["en"]
+    },
+    {
+      "id": "x.woody-research-articles",
+      "adapter": "x_articles",
+      "enabled": true,
+      "cadence": "daily",
+      "handle": "woody_research",
+      "limit": 5,
+      "enrichments": [
+        {"tactic_id": "tactic.minimum-format-cohort.v1", "status_id": "2061700552422195234"},
+        {"tactic_id": "tactic.fixed-character-identity.v1", "status_id": "2061700552422195234"}
+      ],
+      "product_ids": ["ebook-ja", "ebook-en"],
+      "languages": ["en"]
+    },
+    {
+      "id": "rss.aso-skills-commits",
+      "adapter": "rss",
+      "enabled": true,
+      "cadence": "daily",
+      "url": "https://github.com/Eronred/aso-skills/commits/main.atom",
+      "limit": 20,
+      "product_ids": ["aniccaios", "honne"],
+      "languages": ["en"]
+    },
+    {
+      "id": "github.asc-cli",
+      "adapter": "github_repo",
+      "enabled": true,
+      "cadence": "daily",
+      "repo": "rorkai/App-Store-Connect-CLI",
+      "product_ids": ["aniccaios", "honne"],
+      "languages": ["en"]
+    },
+    {
+      "id": "github.aso-skills",
+      "adapter": "github_repo",
+      "enabled": true,
+      "cadence": "daily",
+      "repo": "Eronred/aso-skills",
+      "product_ids": ["aniccaios", "honne"],
+      "languages": ["en"]
+    },
+    {
+      "id": "github.aso-cli",
+      "adapter": "github_repo",
+      "enabled": true,
+      "cadence": "daily",
+      "repo": "semihcihan/App-Store-Optimization-CLI",
+      "product_ids": ["aniccaios", "honne"],
+      "languages": ["en"]
+    },
+    {
+      "id": "github.apple-search-ads-cli",
+      "adapter": "github_repo",
+      "enabled": true,
+      "cadence": "daily",
+      "repo": "cameronehrlich/apple-search-ads-cli",
+      "product_ids": ["aniccaios", "honne"],
+      "languages": ["en"]
+    },
+    {
+      "id": "github.auto-kdp",
+      "adapter": "github_repo",
+      "enabled": true,
+      "cadence": "daily",
+      "repo": "ekr0/auto-kdp",
+      "product_ids": ["ebook-ja", "ebook-en"],
+      "languages": ["en"]
+    },
+    {
+      "id": "github.kdp-scout",
+      "adapter": "github_repo",
+      "enabled": true,
+      "cadence": "daily",
+      "repo": "rxpelle/kdp-scout",
+      "product_ids": ["ebook-ja", "ebook-en"],
+      "languages": ["en"]
+    },
+    {
+      "id": "github.gumroad-cli",
+      "adapter": "github_repo",
+      "enabled": true,
+      "cadence": "daily",
+      "repo": "antiwork/gumroad-cli",
+      "product_ids": ["ebook-ja", "ebook-en"],
+      "languages": ["en"]
+    },
+    {
+      "id": "github.epub-generator",
+      "adapter": "github_repo",
+      "enabled": true,
+      "cadence": "daily",
+      "repo": "joeseesun/qiaomu-epub-book-generator",
+      "product_ids": ["ebook-ja", "ebook-en"],
+      "languages": ["en"]
+    },
+    {
+      "id": "github.hook-rubric",
+      "adapter": "github_repo",
+      "enabled": true,
+      "cadence": "daily",
+      "repo": "Anil-matcha/AI-Youtube-Shorts-Generator",
+      "product_ids": ["aniccaios", "honne", "ebook-ja", "ebook-en"],
+      "languages": ["en"]
+    },
+    {
+      "id": "github.tiktok-api",
+      "adapter": "github_repo",
+      "enabled": true,
+      "cadence": "daily",
+      "repo": "davidteather/TikTok-Api",
+      "product_ids": ["aniccaios", "honne", "ebook-ja", "ebook-en"],
+      "languages": ["en"]
+    },
+    {
+      "id": "github.shorts-generator",
+      "adapter": "github_repo",
+      "enabled": true,
+      "cadence": "daily",
+      "repo": "leamsigc/ShortsGenerator",
+      "product_ids": ["aniccaios", "honne", "ebook-ja", "ebook-en"],
+      "languages": ["en"]
+    },
+    {
+      "id": "github.discovery-marketing-tools",
+      "adapter": "github_search",
+      "enabled": true,
+      "cadence": "daily",
+      "query": "\"app store optimization\" in:name,description stars:>10",
+      "sort": "updated",
+      "order": "desc",
+      "limit": 10,
+      "product_ids": ["aniccaios", "honne"],
+      "languages": ["en"]
+    },
+    {
+      "id": "apple.owned-apps-jp",
+      "adapter": "apple_lookup",
+      "enabled": true,
+      "cadence": "daily",
+      "ids": [6755129214, 6759667221],
+      "country": "jp",
+      "product_ids": ["aniccaios", "honne"],
+      "languages": ["ja"]
+    },
+    {
+      "id": "apple.competitors-affirmation-us",
+      "adapter": "apple_search",
+      "enabled": true,
+      "cadence": "daily",
+      "term": "daily affirmations",
+      "country": "us",
+      "media": "software",
+      "entity": "software",
+      "lang": "en_us",
+      "limit": 10,
+      "product_ids": ["aniccaios"],
+      "languages": ["en"]
+    },
+    {
+      "id": "apple.competitors-relationship-jp",
+      "adapter": "apple_search",
+      "enabled": true,
+      "cadence": "daily",
+      "term": "恋愛 本音 AI",
+      "country": "jp",
+      "media": "software",
+      "entity": "software",
+      "lang": "ja_jp",
+      "limit": 10,
+      "product_ids": ["honne"],
+      "languages": ["ja"]
+    },
+    {
+      "id": "meta.competitor-app-ads",
+      "adapter": "meta_ad_library",
+      "enabled": true,
+      "cadence": "daily",
+      "query": "daily affirmations",
+      "country": "ALL",
+      "product_ids": ["aniccaios"],
+      "languages": ["en"]
+    }
+  ]
+}

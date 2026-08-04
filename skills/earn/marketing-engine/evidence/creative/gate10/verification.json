@@ -1,0 +1,31 @@
+{
+  "accounts_by_product": {
+    "aniccaios": 3,
+    "ebook-en": 2,
+    "ebook-ja": 2,
+    "honne": 2
+  },
+  "app_candidate_counts": {
+    "aniccaios": 0,
+    "honne": 0
+  },
+  "counts": {
+    "accounts": 9,
+    "products": 4,
+    "renderers": 5,
+    "safe_plans": 2
+  },
+  "enabled_legacy_publishers": 0,
+  "legacy_production_references": 0,
+  "passed": true,
+  "plans_by_product": {
+    "ebook-en": 1,
+    "ebook-ja": 1
+  },
+  "publication_effects": 0,
+  "safe_experiment_ids": [
+    "experiment.7481b64f311f43cd6ff13db3",
+    "experiment.de65c60f9e94a33eeef67d67"
+  ],
+  "schema_version": "marketing.gate10-verification.v1"
+}

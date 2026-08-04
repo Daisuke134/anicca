@@ -1,0 +1,18 @@
+{
+  "content": "距離を変えるとき。『アニッチャ・リセット』を読む https://aniccaai.com/go/ej_7gy3bv7vf2r5d7aebnzv ej_7gy3bv7vf2r5d7aebnzv",
+  "creationMethod": "API",
+  "group": "f0a692df-7c55-4bec-ab6f-476c74568597",
+  "id": "cmsaselv6070sqn0yp7oix7yd",
+  "integration": {
+    "id": "cmo5s4edx00vgn10ygnu34a0n",
+    "name": "アニッチャ - 無常の教え",
+    "picture": "https://uploads.postiz.com/OoPFViWFWo.jpg",
+    "providerIdentifier": "tiktok"
+  },
+  "intervalInDays": null,
+  "publishDate": "2026-08-01T20:15:00.000Z",
+  "releaseId": "v_pub_file~v2-1.7669158928722266120",
+  "releaseURL": "https://www.tiktok.com/@obou_anicca",
+  "state": "PUBLISHED",
+  "tags": []
+}

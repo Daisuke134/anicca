@@ -18,16 +18,21 @@ import datetime as dt
 import json
 import os
 import pathlib
-import subprocess
 import sys
 import urllib.parse
 import urllib.request
+
+REPO_ROOT = pathlib.Path(__file__).resolve().parents[4]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from skills._shared.telegram import TelegramClient, TelegramError
 
 STATE = pathlib.Path(os.path.expanduser(os.environ.get(
     "MKT_NOTIFY_STATE", "~/.openclaw/state/content-library/notified-posts.jsonl")))
 ENV_FILE = pathlib.Path(os.path.expanduser("~/.openclaw/.env"))
 POSTIZ = "https://api.postiz.com/public/v1"
-TELEGRAM_TARGET = os.environ.get("MKT_TELEGRAM_TARGET", "8547730585")
+TELEGRAM_TARGET = os.environ.get("MKT_TELEGRAM_TARGET")
 
 
 def load_env() -> dict:
@@ -70,14 +75,13 @@ def fetch_posts(env, hours: int) -> list[dict]:
 
 
 def send(message: str) -> bool:
-    """openclaw owns the Telegram transport; a failed send must not look like success."""
-    r = subprocess.run(
-        ["openclaw", "message", "send", "--channel", "telegram",
-         "--target", TELEGRAM_TARGET, "--message", message, "--json"],
-        capture_output=True, text=True, timeout=120)
-    if r.returncode != 0:
-        print(f"send failed rc={r.returncode}: {(r.stderr or r.stdout)[:200]}", file=sys.stderr)
+    """Send through the direct Bot API; a failed send never looks like success."""
+    try:
+        receipt = TelegramClient.from_env().send_text(message, chat_id=TELEGRAM_TARGET)
+    except TelegramError as exc:
+        print(f"send failed: {exc}", file=sys.stderr)
         return False
+    print(f"telegram_message_ids={receipt['message_ids']}")
     return True
 
 

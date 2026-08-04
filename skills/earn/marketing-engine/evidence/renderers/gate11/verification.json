@@ -1,0 +1,11 @@
+{
+  "cost_usd": 0,
+  "failed": 0,
+  "fixtures": 10,
+  "publication_effects": 0,
+  "receipts": 13,
+  "safety_success": 10,
+  "status": "success",
+  "unavailable": 3,
+  "visual_evaluation_status": "failed"
+}

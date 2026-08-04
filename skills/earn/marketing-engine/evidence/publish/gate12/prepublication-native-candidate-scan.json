@@ -1,0 +1,10 @@
+{
+  "api_responses_observed": 2,
+  "candidate_count": 0,
+  "external_mutations": 0,
+  "output": "skills/earn/marketing-engine/evidence/publish/gate12/prepublication-native-candidates.json",
+  "profile_items_observed": 33,
+  "publish_key": "publication.e571e875dd7bf6452ecd849c",
+  "schema_version": "marketing.native-candidate-scan.v1",
+  "status": "pending_native_receipt"
+}

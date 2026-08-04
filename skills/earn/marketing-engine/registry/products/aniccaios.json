@@ -1,0 +1,17 @@
+{
+  "schema_version": "marketing.product.v1",
+  "product_id": "aniccaios",
+  "type": "ios_app",
+  "live_status": "app_store_live",
+  "destination_url": "https://apps.apple.com/jp/app/id6755129214",
+  "price": {"amount": 9.99, "currency": "USD", "basis": "monthly_from"},
+  "approved_claims": ["Delivers affirmation prompts at configured moments", "Offers monthly and annual subscription options"],
+  "cta": "Try Anicca on the App Store",
+  "conversion_events": ["app_store_impression", "install", "onboarding_complete", "paywall_view", "trial_start"],
+  "revenue_events": ["subscription_start", "renewal", "refund"],
+  "margin_rule": "report gross subscription revenue and estimated App Store proceeds separately",
+  "audiences": ["people seeking timely affirmation and reflection prompts"],
+  "metric_adapters": ["app_store_connect", "revenuecat", "posthog"],
+  "primary_metric": "retained_subscription_revenue",
+  "attribution_method": "apple_campaign_token"
+}

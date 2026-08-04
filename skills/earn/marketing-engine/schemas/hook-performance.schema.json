@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aniccaai.com/schemas/hook-performance.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "decision_id", "observed_at", "product_id", "platform", "renderer_id", "checkpoint_hours", "min_cohort", "eligible_experiments", "status", "reason", "reward_metric", "source_attribution_ids", "winners", "losers", "mutations", "tactic_mapping_status"],
+  "properties": {
+    "schema_version": {"const": "marketing.hook-performance.v1"},
+    "decision_id": {"type": "string", "pattern": "^writeback\\.[a-f0-9]{24}$"},
+    "observed_at": {"type": "string", "format": "date-time"},
+    "product_id": {"type": "string", "minLength": 1},
+    "platform": {"type": "string", "minLength": 1},
+    "renderer_id": {"type": "string", "minLength": 1},
+    "checkpoint_hours": {"type": "number", "minimum": 24},
+    "min_cohort": {"type": "integer", "minimum": 10},
+    "eligible_experiments": {"type": "integer", "minimum": 0},
+    "status": {"enum": ["insufficient_data", "scored"]},
+    "reason": {"type": ["string", "null"]},
+    "reward_metric": {"type": ["string", "null"]},
+    "source_attribution_ids": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+    "winners": {"type": "array"},
+    "losers": {"type": "array"},
+    "mutations": {"type": "array"},
+    "tactic_mapping_status": {"enum": ["available", "partial", "unavailable"]}
+  }
+}

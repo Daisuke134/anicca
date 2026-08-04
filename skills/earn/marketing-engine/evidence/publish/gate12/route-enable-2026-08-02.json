@@ -1,0 +1,28 @@
+{
+  "schema_version": "marketing.publisher-route-enable.v1",
+  "captured_at": "2026-08-01T19:49:05Z",
+  "owner_authorization": "Use the browser and complete the operation without a human in the loop",
+  "account_id": "tiktok.obou_anicca",
+  "integration_id": "cmo5s4edx00vgn10ygnu34a0n",
+  "native_handle": "obou_anicca",
+  "display_name": "アニッチャ - 無常の教え",
+  "provider": "tiktok",
+  "precondition": {
+    "disabled": true,
+    "plan_channel_limit": 30,
+    "active_channels": 27
+  },
+  "mutation": {
+    "method": "POST https://api.postiz.com/integrations/enable from authenticated dashboard session",
+    "http_status": 201,
+    "external_mutations": 1
+  },
+  "postcondition": {
+    "dashboard_disabled": false,
+    "public_route_ready": true,
+    "blockers": []
+  },
+  "dashboard_login_restored": true,
+  "credential_storage": "macOS Keychain",
+  "postiz_api_key_rotated": false
+}

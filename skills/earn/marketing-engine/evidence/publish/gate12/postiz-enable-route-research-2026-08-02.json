@@ -1,0 +1,25 @@
+{
+  "schema_version": "marketing.postiz-enable-route-research.v1",
+  "captured_at": "2026-08-01T16:38:11Z",
+  "repo": "gitroomhq/postiz-app",
+  "commit": "cf4c432c00c9db775ea1b1f12480a8e2b89aec32",
+  "external_mutations": 0,
+  "findings": {
+    "public_api_lists_disabled_state": true,
+    "public_api_enable_endpoint": false,
+    "dashboard_internal_enable_endpoint": "POST /integrations/enable",
+    "dashboard_internal_enable_body": {"id": "<integration_id>"},
+    "enable_requires_authenticated_dashboard_session": true,
+    "enable_checks_subscription_channel_limit": true,
+    "repository_effect": "sets integration.disabled=false",
+    "oauth_reconnect_is_not_required_for_plain_enable": true
+  },
+  "sources": [
+    "https://github.com/gitroomhq/postiz-app/blob/cf4c432c00c9db775ea1b1f12480a8e2b89aec32/apps/backend/src/public-api/routes/v1/public.integrations.controller.ts",
+    "https://github.com/gitroomhq/postiz-app/blob/cf4c432c00c9db775ea1b1f12480a8e2b89aec32/apps/backend/src/api/routes/integrations.controller.ts",
+    "https://github.com/gitroomhq/postiz-app/blob/cf4c432c00c9db775ea1b1f12480a8e2b89aec32/libraries/nestjs-libraries/src/database/prisma/integrations/integration.service.ts",
+    "https://github.com/gitroomhq/postiz-app/blob/cf4c432c00c9db775ea1b1f12480a8e2b89aec32/libraries/nestjs-libraries/src/database/prisma/integrations/integration.repository.ts",
+    "https://github.com/gitroomhq/postiz-app/blob/cf4c432c00c9db775ea1b1f12480a8e2b89aec32/apps/frontend/src/components/launches/menu/menu.tsx"
+  ],
+  "owner_action": "In the authenticated Postiz dashboard, use Enable Channel for exactly one approved integration, then rerun lm publish route-check before changing the local manifest status."
+}

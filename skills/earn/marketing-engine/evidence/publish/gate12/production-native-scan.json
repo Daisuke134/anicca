@@ -1,0 +1,10 @@
+{
+  "api_responses_observed": 2,
+  "candidate_count": 1,
+  "external_mutations": 0,
+  "output": "skills/earn/marketing-engine/evidence/publish/gate12/production-native-candidates.json",
+  "profile_items_observed": 34,
+  "publish_key": "publication.babf5c938cba5dc0d5c02b68",
+  "schema_version": "marketing.native-candidate-scan.v1",
+  "status": "candidate_found"
+}

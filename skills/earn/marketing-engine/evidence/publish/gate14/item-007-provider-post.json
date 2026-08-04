@@ -1,0 +1,18 @@
+{
+  "content": "返信の遅さを「嫌われた証拠」にしないために。『アニッチャ・リセット』を読む https://aniccaai.com/go/ej_illczvsyspapkjqwmk7t ej_illczvsyspapkjqwmk7t",
+  "creationMethod": "API",
+  "group": "793395a3-0e62-4fae-9858-1e60cf0d86b3",
+  "id": "cmsb7lueb0zi7kz0yknyfshr9",
+  "integration": {
+    "id": "cmo5s4edx00vgn10ygnu34a0n",
+    "name": "アニッチャ - 無常の教え",
+    "picture": "https://uploads.postiz.com/OoPFViWFWo.jpg",
+    "providerIdentifier": "tiktok"
+  },
+  "intervalInDays": null,
+  "publishDate": "2026-08-08T11:15:00.000Z",
+  "releaseId": null,
+  "releaseURL": null,
+  "state": "QUEUE",
+  "tags": []
+}

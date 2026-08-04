@@ -1,0 +1,18 @@
+{
+  "content": "認められようとして苦しいなら、相手ではなく距離を変える。『アニッチャ・リセット』を読む https://aniccaai.com/go/ej_zhn3afg7gtkicshdlfb5 ej_zhn3afg7gtkicshdlfb5",
+  "creationMethod": "API",
+  "group": "5ac135ea-b2ff-43be-b18d-64b84ac799cb",
+  "id": "cmsb7hkfx0zi0kz0ym75336xw",
+  "integration": {
+    "id": "cmo5s4edx00vgn10ygnu34a0n",
+    "name": "アニッチャ - 無常の教え",
+    "picture": "https://uploads.postiz.com/OoPFViWFWo.jpg",
+    "providerIdentifier": "tiktok"
+  },
+  "intervalInDays": null,
+  "publishDate": "2026-08-03T11:15:00.000Z",
+  "releaseId": null,
+  "releaseURL": null,
+  "state": "QUEUE",
+  "tags": []
+}

@@ -1,0 +1,18 @@
+{
+  "content": "誰かの不機嫌で一日を潰さないための、心の切り替え。『アニッチャ・リセット』を読む https://aniccaai.com/go/ej_2wr53hx2zd5o3g27m3g2 ej_2wr53hx2zd5o3g27m3g2",
+  "creationMethod": "API",
+  "group": "e01e947a-cbc9-4415-af77-1c54c5d5cb16",
+  "id": "cmsb7lr7u0zi6kz0y5uxb5y04",
+  "integration": {
+    "id": "cmo5s4edx00vgn10ygnu34a0n",
+    "name": "アニッチャ - 無常の教え",
+    "picture": "https://uploads.postiz.com/OoPFViWFWo.jpg",
+    "providerIdentifier": "tiktok"
+  },
+  "intervalInDays": null,
+  "publishDate": "2026-08-07T11:15:00.000Z",
+  "releaseId": null,
+  "releaseURL": null,
+  "state": "QUEUE",
+  "tags": []
+}

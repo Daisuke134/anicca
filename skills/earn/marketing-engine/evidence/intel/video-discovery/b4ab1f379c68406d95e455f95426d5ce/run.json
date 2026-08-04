@@ -1,0 +1,39 @@
+{
+  "new_observations": 20,
+  "observed_at": "2026-08-01T15:05:31.756582Z",
+  "run_id": "b4ab1f379c68406d95e455f95426d5ce",
+  "schema_version": "marketing.video-discovery-run.v1",
+  "sources": [
+    {
+      "cohort": {
+        "average_views": 33204.5,
+        "floor_views": 921,
+        "meets_creator_consistency_floor": false,
+        "observed_posts": 20,
+        "posts_with_views": 20
+      },
+      "evidence_path": "/Users/anicca/anicca/skills/earn/marketing-engine/evidence/intel/video-discovery/b4ab1f379c68406d95e455f95426d5ce/video.tiktok.itsyangmun.en.json",
+      "items": 20,
+      "reason": null,
+      "sha256": "8b95675469705038fad47be82b3c5592161addb94af3b0d50b5256f044171a08",
+      "source_id": "video.tiktok.itsyangmun.en",
+      "status": "success"
+    },
+    {
+      "cohort": {
+        "average_views": 182665.0,
+        "floor_views": 23800,
+        "meets_creator_consistency_floor": true,
+        "observed_posts": 20,
+        "posts_with_views": 20
+      },
+      "evidence_path": "/Users/anicca/anicca/skills/earn/marketing-engine/evidence/intel/video-discovery/b4ab1f379c68406d95e455f95426d5ce/video.tiktok.furutani-kodai.ja.json",
+      "items": 20,
+      "reason": null,
+      "sha256": "c3cb611ef6f496ca624f99393c435a1361bb84f1d639654ecb22e186c89ffae2",
+      "source_id": "video.tiktok.furutani-kodai.ja",
+      "status": "success"
+    }
+  ],
+  "status": "success"
+}

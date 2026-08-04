@@ -1,0 +1,12 @@
+{
+  "command_sha256": "57b8e67ee03dc38558f7a0e89cbcdcf1288d0b251c4eb4658a81cb2fc06b06e8",
+  "dry_run": false,
+  "finished_at": "2026-08-01T12:46:48.280191Z",
+  "quarantine_reason": "publisher_quarantined_until_gate_12",
+  "quarantined": true,
+  "returncode": 0,
+  "run_id": "7bd1ccb89926de7de2de125190a7486b",
+  "runner_id": "video",
+  "schema_version": "marketing.execution.v1",
+  "started_at": "2026-08-01T12:46:48.279730Z"
+}

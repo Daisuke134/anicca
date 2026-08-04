@@ -1,0 +1,40 @@
+{
+  "schema_version": "marketing.gate14-queue-verification.v1",
+  "status": "verified",
+  "accepted_treatments": 10,
+  "intents": 10,
+  "unique_publish_keys": 10,
+  "unique_attribution_tokens": 10,
+  "unique_schedules": 10,
+  "asset_manifest_matches": 10,
+  "provider_post_id_matches": 10,
+  "database_state": "reconciled_provider",
+  "native_receipts": 0,
+  "first_scheduled_at": "2026-08-02T11:15:00Z",
+  "last_scheduled_at": "2026-08-11T11:15:00Z",
+  "local_cadence": "20:15 Asia/Tokyo daily",
+  "publish_keys": [
+    "publication.42b830cf56a65e7394e8286d",
+    "publication.24441431f989f3c7c25e64da",
+    "publication.749c77c5aea7b799e3bfe5ab",
+    "publication.7fe40b0ce1a41360ace0033e",
+    "publication.389bc295bc8d4e6c4e2e5752",
+    "publication.683c0b8b7a28b6d90b0cf7f2",
+    "publication.ba1a5fcb7e85e98512cfae71",
+    "publication.66151a9186d82b8d6e7d085f",
+    "publication.ccee41b83c3aeb3dc6b3f0f1",
+    "publication.f7173127fe6f46edea373863"
+  ],
+  "provider_post_ids": [
+    "cmsb7fen00zhgkz0ymlugjsol",
+    "cmsb7hkfx0zi0kz0ym75336xw",
+    "cmsb7j4oh0zi1kz0ypeq26mvw",
+    "cmsb7lj4b09shqn0y1i2goerb",
+    "cmsb7ln3409siqn0yp538ibkh",
+    "cmsb7lr7u0zi6kz0y5uxb5y04",
+    "cmsb7lueb0zi7kz0yknyfshr9",
+    "cmsb7lx9609snqn0y071yafzm",
+    "cmsb7lzxl0zi8kz0y85l1a4gc",
+    "cmsb7m33q0zi9kz0yk8tddig7"
+  ]
+}

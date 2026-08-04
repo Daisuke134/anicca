@@ -62,6 +62,13 @@ FINAL CONTRACT: after completing the bounded work, return only JSON that satisfi
 EOF
 
 RUNNER_STDOUT="$EVIDENCE_DIR/runner.stdout.log"
+RUNNER_PID=""
+forward_runner_signal() {
+  if [ -n "$RUNNER_PID" ] && kill -0 "$RUNNER_PID" 2>/dev/null; then
+    kill -TERM "$RUNNER_PID" 2>/dev/null || true
+  fi
+}
+trap forward_runner_signal TERM INT HUP
 set +e
 /usr/bin/python3 "$RUNNER" \
   --task-class "$TASK_CLASS" \
@@ -70,7 +77,9 @@ set +e
   --evidence-dir "$EVIDENCE_DIR" \
   --task-label "$TASK_LABEL" \
   --loop "$LOOP" \
-  --workdir "$WORKDIR" >"$RUNNER_STDOUT"
+  --workdir "$WORKDIR" >"$RUNNER_STDOUT" &
+RUNNER_PID=$!
+wait "$RUNNER_PID"
 RC=$?
 set -e
 

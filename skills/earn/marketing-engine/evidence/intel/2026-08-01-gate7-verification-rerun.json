@@ -1,0 +1,32 @@
+{
+  "counts": {
+    "ad-swipe": 0,
+    "creators": 0,
+    "hook-library": 0,
+    "playbook": 10
+  },
+  "passed": true,
+  "schema_version": "marketing.intel-verification.v1",
+  "stores": {
+    "ad-swipe": {
+      "bytes": 0,
+      "count": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "creators": {
+      "bytes": 0,
+      "count": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "hook-library": {
+      "bytes": 0,
+      "count": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "playbook": {
+      "bytes": 7934,
+      "count": 10,
+      "sha256": "52e3f0a8b2aaacb47213c552009897c44d6996aaf0b0da86918c815f4f8d8b7e"
+    }
+  }
+}

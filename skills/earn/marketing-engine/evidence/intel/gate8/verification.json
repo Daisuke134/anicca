@@ -1,0 +1,100 @@
+{
+  "canonical_stores": {
+    "counts": {
+      "ad-swipe": 1,
+      "creators": 4,
+      "hook-library": 0,
+      "playbook": 12
+    },
+    "passed": true,
+    "schema_version": "marketing.intel-verification.v1",
+    "stores": {
+      "ad-swipe": {
+        "bytes": 1107,
+        "count": 1,
+        "sha256": "581d10d0cc157fb186d896ded4a74dde8943777fcc7a8017c3898651ec258306"
+      },
+      "creators": {
+        "bytes": 5626,
+        "count": 4,
+        "sha256": "059e69a23913bfb88ee70726879d00f4baad8d8015d320476e4c57048a40790f"
+      },
+      "hook-library": {
+        "bytes": 0,
+        "count": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "playbook": {
+        "bytes": 9708,
+        "count": 12,
+        "sha256": "e1fe2eb179940441774c9c20fe0fc41ad1a469279066672c1bd03cb90a280a02"
+      }
+    }
+  },
+  "idempotency": {
+    "hashes_match": true,
+    "run_id": "f689fff4f03f49c3ba6fd611dd8f4f4d"
+  },
+  "live_sources": {
+    "adapters": {
+      "apple_lookup": "success",
+      "apple_search": "success",
+      "github_repo": "success",
+      "github_search": "success",
+      "meta_ad_library": "unavailable",
+      "rss": "unchanged",
+      "x_articles": "success"
+    },
+    "meta_reason": "meta_ad_library_access_token_not_configured"
+  },
+  "passed": true,
+  "schedules": {
+    "daily": {
+      "cadence": {
+        "Hour": 5,
+        "Minute": 30
+      },
+      "changed": false,
+      "label": "ai.anicca.marketing-mine-daily",
+      "path": "/Users/anicca/Library/LaunchAgents/ai.anicca.marketing-mine-daily.plist",
+      "program_arguments": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "/Users/anicca/anicca/skills/earn/marketing-engine/report/scheduled_runner.py",
+        "mine"
+      ],
+      "would_change": false
+    },
+    "weekly": {
+      "cadence": {
+        "Hour": 21,
+        "Minute": 0,
+        "Weekday": 0
+      },
+      "changed": false,
+      "label": "ai.anicca.marketing-weekly-review",
+      "path": "/Users/anicca/Library/LaunchAgents/ai.anicca.marketing-weekly-review.plist",
+      "program_arguments": [
+        "/Users/anicca/anicca/skills/earn/marketing-engine/bin/lm",
+        "intel",
+        "gap",
+        "--telegram"
+      ],
+      "would_change": false
+    }
+  },
+  "schema_version": "marketing.gate8-verification.v1",
+  "source_pipeline": {
+    "enrichments": 11,
+    "judged_items": 75,
+    "pending_items": 0,
+    "source_items": 75
+  },
+  "telegram": {
+    "daily_message_ids": [
+      5095
+    ],
+    "weekly_message_ids": [
+      5094
+    ]
+  }
+}

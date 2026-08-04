@@ -1,0 +1,368 @@
+{
+  "observed_at": "2026-08-01T01:38:47Z",
+  "platform_counts": {
+    "instagram": 4,
+    "tiktok": 3,
+    "youtube": 3
+  },
+  "records": [
+    {
+      "comparison": {
+        "comparable_fields": [
+          "views",
+          "likes",
+          "comments"
+        ],
+        "excluded_fields": {},
+        "mismatches": []
+      },
+      "identity_match": true,
+      "independent_metrics": {
+        "comments": 0,
+        "impressions": null,
+        "likes": 0,
+        "reach": null,
+        "saves": null,
+        "shares": null,
+        "views": 118
+      },
+      "independent_source": "apify_instagram_public_post",
+      "native_post_id": "18139047514601894",
+      "native_url": "https://www.instagram.com/reel/DbXGVoEijNA/",
+      "platform": "instagram",
+      "postiz_id": "cms5hyhdu09w1s90yhnk2w6el",
+      "primary_metrics": {
+        "comments": 0,
+        "impressions": null,
+        "likes": 0,
+        "reach": 112,
+        "saves": 0,
+        "shares": 0,
+        "views": 118
+      },
+      "primary_source": "postiz_instagram_graph_api"
+    },
+    {
+      "comparison": {
+        "comparable_fields": [
+          "views",
+          "likes",
+          "comments"
+        ],
+        "excluded_fields": {},
+        "mismatches": []
+      },
+      "identity_match": true,
+      "independent_metrics": {
+        "comments": 0,
+        "impressions": null,
+        "likes": 0,
+        "reach": null,
+        "saves": null,
+        "shares": null,
+        "views": 0
+      },
+      "independent_source": "apify_instagram_public_post",
+      "native_post_id": "18172814599435871",
+      "native_url": "https://www.instagram.com/reel/DbXKNNMCrTL/",
+      "platform": "instagram",
+      "postiz_id": "cms5j5y3b0a2ds90yhqjzsr5f",
+      "primary_metrics": {
+        "comments": 0,
+        "impressions": null,
+        "likes": 0,
+        "reach": 0,
+        "saves": 0,
+        "shares": 0,
+        "views": 0
+      },
+      "primary_source": "postiz_instagram_graph_api"
+    },
+    {
+      "comparison": {
+        "comparable_fields": [
+          "views",
+          "likes",
+          "comments"
+        ],
+        "excluded_fields": {},
+        "mismatches": []
+      },
+      "identity_match": true,
+      "independent_metrics": {
+        "comments": 0,
+        "impressions": null,
+        "likes": 0,
+        "reach": null,
+        "saves": null,
+        "shares": null,
+        "views": 54
+      },
+      "independent_source": "apify_instagram_public_post",
+      "native_post_id": "17943268047057670",
+      "native_url": "https://www.instagram.com/reel/DbXh0M-DpoN/",
+      "platform": "instagram",
+      "postiz_id": "cms5qizs5003kp50yndlssbws",
+      "primary_metrics": {
+        "comments": 0,
+        "impressions": null,
+        "likes": 0,
+        "reach": 46,
+        "saves": 0,
+        "shares": 0,
+        "views": 54
+      },
+      "primary_source": "postiz_instagram_graph_api"
+    },
+    {
+      "comparison": {
+        "comparable_fields": [
+          "views",
+          "likes",
+          "comments"
+        ],
+        "excluded_fields": {},
+        "mismatches": []
+      },
+      "identity_match": true,
+      "independent_metrics": {
+        "comments": 0,
+        "impressions": null,
+        "likes": 1,
+        "reach": null,
+        "saves": null,
+        "shares": null,
+        "views": 114
+      },
+      "independent_source": "apify_instagram_public_post",
+      "native_post_id": "17936480808315475",
+      "native_url": "https://www.instagram.com/reel/DbX9ZX6DfnW/",
+      "platform": "instagram",
+      "postiz_id": "cms5z3t0u01y8p50yfdf0vdv4",
+      "primary_metrics": {
+        "comments": 0,
+        "impressions": null,
+        "likes": 1,
+        "reach": 105,
+        "saves": 0,
+        "shares": 0,
+        "views": 114
+      },
+      "primary_source": "postiz_instagram_graph_api"
+    },
+    {
+      "comparison": {
+        "comparable_fields": [
+          "likes",
+          "comments",
+          "shares",
+          "saves"
+        ],
+        "excluded_fields": {},
+        "mismatches": []
+      },
+      "identity_match": true,
+      "independent_metrics": {
+        "comments": 0,
+        "likes": 9,
+        "saves": 0,
+        "shares": 0
+      },
+      "independent_source": "tiktok_visible_detail_dom",
+      "native_post_id": "7667763982932937992",
+      "native_url": "https://www.tiktok.com/@honne_reveal/video/7667763982932937992",
+      "platform": "tiktok",
+      "postiz_id": "cms5ft94a09n6o40yhz9ljrm5",
+      "primary_metrics": {
+        "comments": 0,
+        "impressions": null,
+        "likes": 9,
+        "reach": null,
+        "saves": 0,
+        "shares": 0,
+        "views": 199
+      },
+      "primary_source": "cloakbrowser_tiktok_native_public_api"
+    },
+    {
+      "comparison": {
+        "comparable_fields": [
+          "likes",
+          "comments",
+          "shares",
+          "saves"
+        ],
+        "excluded_fields": {},
+        "mismatches": []
+      },
+      "identity_match": true,
+      "independent_metrics": {
+        "comments": 0,
+        "likes": 2,
+        "saves": 1,
+        "shares": 0
+      },
+      "independent_source": "tiktok_visible_detail_dom",
+      "native_post_id": "7667786901369261329",
+      "native_url": "https://www.tiktok.com/@honnevideo/video/7667786901369261329",
+      "platform": "tiktok",
+      "postiz_id": "cms5j10kk0a5no40y9irt0b33",
+      "primary_metrics": {
+        "comments": 0,
+        "impressions": null,
+        "likes": 2,
+        "reach": null,
+        "saves": 1,
+        "shares": 0,
+        "views": 176
+      },
+      "primary_source": "cloakbrowser_tiktok_native_public_api"
+    },
+    {
+      "comparison": {
+        "comparable_fields": [
+          "likes",
+          "comments",
+          "shares",
+          "saves"
+        ],
+        "excluded_fields": {},
+        "mismatches": []
+      },
+      "identity_match": true,
+      "independent_metrics": {
+        "comments": 0,
+        "likes": 32,
+        "saves": 1,
+        "shares": 0
+      },
+      "independent_source": "tiktok_visible_detail_dom",
+      "native_post_id": "7667910852011412756",
+      "native_url": "https://www.tiktok.com/@honne_reveal/video/7667910852011412756",
+      "platform": "tiktok",
+      "postiz_id": "cms606bu20295p50yiquz8j4n",
+      "primary_metrics": {
+        "comments": 0,
+        "impressions": null,
+        "likes": 32,
+        "reach": null,
+        "saves": 1,
+        "shares": 0,
+        "views": 559
+      },
+      "primary_source": "cloakbrowser_tiktok_native_public_api"
+    },
+    {
+      "comparison": {
+        "comparable_fields": [
+          "views"
+        ],
+        "excluded_fields": {
+          "comments": "field_unavailable_in_one_source",
+          "likes": "field_unavailable_in_one_source"
+        },
+        "mismatches": []
+      },
+      "identity_match": true,
+      "independent_error": null,
+      "independent_metrics": {
+        "comments": null,
+        "likes": null,
+        "views": 0
+      },
+      "independent_source": "yt_dlp_public_metadata",
+      "native_post_id": "5J-ohIY-f_w",
+      "native_url": "https://www.youtube.com/watch?v=5J-ohIY-f_w",
+      "platform": "youtube",
+      "postiz_id": "cms61azsc02jxod0y25oqjk6n",
+      "primary_metrics": {
+        "comments": 0,
+        "impressions": null,
+        "likes": 0,
+        "reach": null,
+        "saves": null,
+        "shares": null,
+        "views": 0
+      },
+      "primary_source": "postiz_youtube_data_api"
+    },
+    {
+      "comparison": {
+        "comparable_fields": [
+          "views"
+        ],
+        "excluded_fields": {
+          "comments": "field_unavailable_in_one_source",
+          "likes": "field_unavailable_in_one_source"
+        },
+        "mismatches": []
+      },
+      "identity_match": true,
+      "independent_error": null,
+      "independent_metrics": {
+        "comments": null,
+        "likes": null,
+        "views": 0
+      },
+      "independent_source": "yt_dlp_public_metadata",
+      "native_post_id": "AWkxNL46mUQ",
+      "native_url": "https://www.youtube.com/watch?v=AWkxNL46mUQ",
+      "platform": "youtube",
+      "postiz_id": "cms6mqn6l08ybp50y8tak9ek8",
+      "primary_metrics": {
+        "comments": 0,
+        "impressions": null,
+        "likes": 0,
+        "reach": null,
+        "saves": null,
+        "shares": null,
+        "views": 0
+      },
+      "primary_source": "postiz_youtube_data_api"
+    },
+    {
+      "comparison": {
+        "comparable_fields": [
+          "views"
+        ],
+        "excluded_fields": {
+          "comments": "field_unavailable_in_one_source",
+          "likes": "field_unavailable_in_one_source"
+        },
+        "mismatches": []
+      },
+      "identity_match": true,
+      "independent_error": null,
+      "independent_metrics": {
+        "comments": null,
+        "likes": null,
+        "views": 0
+      },
+      "independent_source": "yt_dlp_public_metadata",
+      "native_post_id": "yeX4g-jrnDM",
+      "native_url": "https://www.youtube.com/watch?v=yeX4g-jrnDM",
+      "platform": "youtube",
+      "postiz_id": "cms6s3hvu0a1hod0yzz47g5fq",
+      "primary_metrics": {
+        "comments": 0,
+        "impressions": null,
+        "likes": 0,
+        "reach": null,
+        "saves": null,
+        "shares": null,
+        "views": 0
+      },
+      "primary_source": "postiz_youtube_data_api"
+    }
+  ],
+  "rounding_rule": "exact integers; unavailable fields excluded with reason",
+  "schema_version": 1,
+  "summary": {
+    "identity_matches": 10,
+    "mismatch_count": 0,
+    "mismatches": [],
+    "passes_gate": true,
+    "posts_checked": 10,
+    "posts_with_comparable_field": 10
+  }
+}

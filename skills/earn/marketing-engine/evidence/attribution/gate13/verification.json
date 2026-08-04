@@ -1,0 +1,35 @@
+{
+  "attribution_class_counts": {
+    "deterministic": 1,
+    "unknown": 9
+  },
+  "attribution_id": "attribution.9264ecd4335dbb0be77a0b04",
+  "click_query_status": "available",
+  "experiment_id": "experiment.preview-gate12",
+  "fabricated_zero_count": 0,
+  "gate": 13,
+  "gate_pass": true,
+  "native_post_id": "7669159327655054613",
+  "native_post_url": "https://www.tiktok.com/@obou_anicca/video/7669159327655054613",
+  "observed_at": "2026-08-01T20:30:15Z",
+  "product_id": "ebook-ja",
+  "publish_key": "publication.babf5c938cba5dc0d5c02b68",
+  "qualified_clicks": 0,
+  "result_records": 10,
+  "schema_version": 1,
+  "status_counts": {
+    "not_mature": 9,
+    "observed": 1
+  },
+  "unknown_metrics": [
+    "impressions",
+    "views",
+    "first_time_downloads",
+    "installs",
+    "trials",
+    "paid_orders",
+    "refunds",
+    "gross_revenue",
+    "net_revenue"
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "counts": {
+    "hook_evidence": 11,
+    "hooks": 11,
+    "video_judgments": 4,
+    "video_observations": 40,
+    "video_transcripts": 4
+  },
+  "hooks_by_language": {
+    "en": 5,
+    "ja": 6
+  },
+  "idempotency": {
+    "new_observations": 0,
+    "run_id": "c763b04b5c8f487ca8daf3f326b9bdfa"
+  },
+  "openclaw_dependency": false,
+  "passed": true,
+  "scheduled_run": {
+    "daily_run_id": "3a2b29678a0b4e318764f91ca97d3450",
+    "mine_command": [
+      "{repo}/skills/earn/marketing-engine/bin/lm",
+      "intel",
+      "daily"
+    ],
+    "run_id": "3368cdd366b4e142ee1c6102a458b63d",
+    "telegram_message_ids": [
+      5102
+    ]
+  },
+  "schema_version": "marketing.gate9-verification.v1",
+  "source_product_mapping": {
+    "en": "ebook-en",
+    "ja": "ebook-ja"
+  },
+  "tool_versions": {
+    "ffmpeg": "8.1",
+    "openai-whisper": "20250625",
+    "yt-dlp": "2026.07.04"
+  }
+}

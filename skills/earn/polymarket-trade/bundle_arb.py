@@ -18,6 +18,12 @@ SPENDERS=["0xE111180000d2663C0091e4f400237545B87B996B","0xe2222d279d744050d28e00
 FEE_RATE=0.05  # conservative blended taker rate
 EDGE=0.005     # require >=0.5% locked edge after fee
 MAX_PASS_SPEND=float(os.getenv("MAX_PASS_SPEND","2.0"))  # fixed USD ceiling per pass (money-safety, #25 adversary fix)
+# DRY-RUN GATE (2026-07-25, added for the scheduled observe+report loop, #decision-loop task).
+# Default DRY (unset/anything but "0"/"false" -> dry): every approve_erc20/create_*_order/
+# post_order call below is skipped and replaced with a "[DRY] would ..." log line instead.
+# run.sh (the pre-existing, already-adversary-reviewed LIVE entrypoint) explicitly exports
+# PM_DRY_RUN=0 so ITS documented behavior (HARD 0.24: always real) is byte-for-byte unchanged.
+DRY_RUN=os.getenv("PM_DRY_RUN","1") not in ("0","false","False","")
 
 # ROOT CAUSE FIX (2026-07-07): this used to carry its own mint() that POSTed a brand-new
 # relayer key every pass -> hit Polymarket's 100-keys-per-address cap on 2026-07-04 ->
@@ -49,7 +55,11 @@ def main():
     ba=c.get_balance_allowance(asset_type="COLLATERAL"); avail=int(ba.balance)/1e6
     print("deposit wallet:",c._ctx.wallet,"| pUSD:",avail)
     for sp in SPENDERS:
-        if int(ba.allowances.get(sp,0))<1: c.approve_erc20(token_address=PUSD,spender_address=sp,amount="max").wait()
+        if int(ba.allowances.get(sp,0))<1:
+            if DRY_RUN:
+                print(f"  [DRY] would approve_erc20 spender={sp[:10]} (skipped, no on-chain tx)")
+            else:
+                c.approve_erc20(token_address=PUSD,spender_address=sp,amount="max").wait()
     ms=requests.get("https://gamma-api.polymarket.com/markets?closed=false&active=true&order=volume24hr&ascending=false&limit=60",timeout=25).json()
     best=None
     scanned=0
@@ -86,6 +96,10 @@ def main():
     print(f"ARB FOUND: {q[:50]} | ask_YES {ay}+ask_NO {an}={ay+an:.3f} | locked edge {edge*100:.2f}%")
     shares=max(5, min(int(msz), int((avail*0.9)/(ay+an)), budget_shares))
     print(f"buying {shares} YES + {shares} NO (FOK) = locked ${shares*edge:.3f} profit...")
+    if DRY_RUN:
+        print(f"  [DRY] would create_market_order BUY {shares}@{ay} token={yes[:12]} (FOK) — no order placed")
+        print(f"  [DRY] would create_market_order BUY {shares}@{an} token={no[:12]} (FOK) — no order placed")
+        c.close(); return 0
     # SPEC-no-naked-fills R4: the two FOK legs are NOT atomic together. Track each leg's fill; if
     # exactly one filled, immediately unwind it so no naked directional position survives this pass.
     legs=[]

@@ -1,0 +1,89 @@
+{
+  "action": "apply",
+  "rows": [
+    {
+      "backup_path": "/Users/anicca/anicca/skills/earn/marketing-engine/evidence/schedulers/gate6-backups/ai.anicca.marketing-mine-daily.original.plist",
+      "bootstrap_returncode": 0,
+      "changed": true,
+      "installed_sha256": "cc4b88bd9f956df27f84cb036706d62eb7e30313cc843f1bce678983c1db3f42",
+      "label": "ai.anicca.marketing-mine-daily",
+      "loaded_readback": true,
+      "original_sha256": "a99eebe14f062e67670e2f61ae980fa0e0c042bbd1c8364e8a6abea5fa90b9b6",
+      "path": "/Users/anicca/Library/LaunchAgents/ai.anicca.marketing-mine-daily.plist",
+      "readback_mentions_runner": true,
+      "runner_id": "mine"
+    },
+    {
+      "backup_path": "/Users/anicca/anicca/skills/earn/marketing-engine/evidence/schedulers/gate6-backups/ai.anicca.marketing-score-daily.original.plist",
+      "bootstrap_returncode": 0,
+      "changed": true,
+      "installed_sha256": "da3503b4e40650a3b216b82cda1aa888cb7e4cad1c2e09ea99a36e63d6840b48",
+      "label": "ai.anicca.marketing-score-daily",
+      "loaded_readback": true,
+      "original_sha256": "5f2994122eb5fd18bfcfc93598e8bd90043791a77b787b26b085c06ed585d047",
+      "path": "/Users/anicca/Library/LaunchAgents/ai.anicca.marketing-score-daily.plist",
+      "readback_mentions_runner": true,
+      "runner_id": "score"
+    },
+    {
+      "backup_path": "/Users/anicca/anicca/skills/earn/marketing-engine/evidence/schedulers/gate6-backups/ai.anicca.marketing-metrics-daily.original.plist",
+      "bootstrap_returncode": 0,
+      "changed": true,
+      "installed_sha256": "62bf46a3eff3674a0bad478a192047c8f54097ab035f5197d602106e254fab0a",
+      "label": "ai.anicca.marketing-metrics-daily",
+      "loaded_readback": true,
+      "original_sha256": "724544224881965b42980b86088c164579183455026c88283d8b648dbb05d7d3",
+      "path": "/Users/anicca/Library/LaunchAgents/ai.anicca.marketing-metrics-daily.plist",
+      "readback_mentions_runner": true,
+      "runner_id": "metrics"
+    },
+    {
+      "backup_path": "/Users/anicca/anicca/skills/earn/marketing-engine/evidence/schedulers/gate6-backups/ai.anicca.marketing-dashboard.original.plist",
+      "bootstrap_returncode": 0,
+      "changed": true,
+      "installed_sha256": "21d2d31602dbb5593a02b9f56a82a41ba10ed1ffa5a0ed06dee7eaccf8ebe018",
+      "label": "ai.anicca.marketing-dashboard",
+      "loaded_readback": true,
+      "original_sha256": "60a54953aa8ac8b1db9a1d6368e2c965d258712b6639f2a3ff19360daed230d6",
+      "path": "/Users/anicca/Library/LaunchAgents/ai.anicca.marketing-dashboard.plist",
+      "readback_mentions_runner": true,
+      "runner_id": "dashboard"
+    },
+    {
+      "backup_path": "/Users/anicca/anicca/skills/earn/marketing-engine/evidence/schedulers/gate6-backups/ai.anicca.clip-loop.original.plist",
+      "bootstrap_returncode": 0,
+      "changed": true,
+      "installed_sha256": "94576c20ce2407ed30b6fd338ca868ec9767acd15e3c7895a419f288ff359bf3",
+      "label": "ai.anicca.clip-loop",
+      "loaded_readback": true,
+      "original_sha256": "3c0b0e62d65420d6fc509e34d6d0311dbf024980c26017a9430a8f5b25f2e61f",
+      "path": "/Users/anicca/Library/LaunchAgents/ai.anicca.clip-loop.plist",
+      "readback_mentions_runner": true,
+      "runner_id": "clip"
+    },
+    {
+      "backup_path": "/Users/anicca/anicca/skills/earn/marketing-engine/evidence/schedulers/gate6-backups/ai.anicca.self-improve-evolve.original.plist",
+      "bootstrap_returncode": 0,
+      "changed": true,
+      "installed_sha256": "dfa11865dedf955ab9e9992c3edf206c96819c0829588c0e2b9c1ca7160df9a5",
+      "label": "ai.anicca.self-improve-evolve",
+      "loaded_readback": true,
+      "original_sha256": "494f8af7d881797158c25eb0d2f90f39b026e465e96d73b13c4313b3f04f4ad2",
+      "path": "/Users/anicca/Library/LaunchAgents/ai.anicca.self-improve-evolve.plist",
+      "readback_mentions_runner": true,
+      "runner_id": "self-improve"
+    },
+    {
+      "backup_path": "/Users/anicca/anicca/skills/earn/marketing-engine/evidence/schedulers/gate6-backups/ai.anicca.capafy-ig-marketing-daily.original.plist",
+      "bootstrap_returncode": 0,
+      "changed": true,
+      "installed_sha256": "7a29ca7655b229934feb70c4d308d289655a9619c690888f130fbb459237599c",
+      "label": "ai.anicca.capafy-ig-marketing-daily",
+      "loaded_readback": true,
+      "original_sha256": "9398d97ae073c70280f5b434c015ea053942835c86c2e48986d1d44a1743d294",
+      "path": "/Users/anicca/Library/LaunchAgents/ai.anicca.capafy-ig-marketing-daily.plist",
+      "readback_mentions_runner": true,
+      "runner_id": "capafy"
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "items": [
+    {
+      "media_bytes": null,
+      "native_id": "7467710446204652818",
+      "reason": "download did not produce exactly one media file",
+      "status": "error",
+      "transcript_segments": null
+    }
+  ],
+  "new_transcripts": 0,
+  "observed_at": "2026-08-02T20:31:54.635288Z",
+  "run_id": "1d3f5a60ebc94fbcaea9e41d0d78143f",
+  "schema_version": "marketing.video-ingest-run.v1",
+  "selected": 1,
+  "status": "failed"
+}

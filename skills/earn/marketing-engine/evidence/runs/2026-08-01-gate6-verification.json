@@ -1,0 +1,101 @@
+{
+  "details": {
+    "capafy": {
+      "dry_run": false,
+      "errors": [],
+      "evidence_items": 3,
+      "message_ids": [
+        5054
+      ],
+      "run_id": "f2ae2969f05b4ef7814e1ed817c13795",
+      "status": "skipped"
+    },
+    "clip": {
+      "dry_run": false,
+      "errors": [],
+      "evidence_items": 3,
+      "message_ids": [
+        5051
+      ],
+      "run_id": "c47f7af9e1ab0f541b0680c152345865",
+      "status": "skipped"
+    },
+    "dashboard": {
+      "dry_run": false,
+      "errors": [],
+      "evidence_items": 3,
+      "message_ids": [
+        5048
+      ],
+      "run_id": "116c4517d84b4a680ee8b74df83d0630",
+      "status": "success"
+    },
+    "metrics": {
+      "dry_run": false,
+      "errors": [],
+      "evidence_items": 3,
+      "message_ids": [
+        5023
+      ],
+      "run_id": "bbb87e0fb87851130c9af10c8835b11a",
+      "status": "success"
+    },
+    "mine": {
+      "dry_run": false,
+      "errors": [],
+      "evidence_items": 3,
+      "message_ids": [
+        5049
+      ],
+      "run_id": "05bd4060af4ba6351e3ab4055d717963",
+      "status": "skipped"
+    },
+    "score": {
+      "dry_run": false,
+      "errors": [],
+      "evidence_items": 3,
+      "message_ids": [
+        5050
+      ],
+      "run_id": "1f5e4d014ff4f8a339a07a38dc086c15",
+      "status": "skipped"
+    },
+    "self-improve": {
+      "dry_run": false,
+      "errors": [],
+      "evidence_items": 3,
+      "message_ids": [
+        5053
+      ],
+      "run_id": "f61082a184062cf175519b4707c8e9c4",
+      "status": "skipped"
+    },
+    "video": {
+      "dry_run": false,
+      "errors": [],
+      "evidence_items": 3,
+      "message_ids": [
+        5052
+      ],
+      "run_id": "7bd1ccb89926de7de2de125190a7486b",
+      "status": "skipped"
+    }
+  },
+  "duplicate_delivery_keys": [],
+  "duplicate_final_keys": [],
+  "errors": [],
+  "expected_run_ids": {
+    "capafy": "f2ae2969f05b4ef7814e1ed817c13795",
+    "clip": "c47f7af9e1ab0f541b0680c152345865",
+    "dashboard": "116c4517d84b4a680ee8b74df83d0630",
+    "metrics": "bbb87e0fb87851130c9af10c8835b11a",
+    "mine": "05bd4060af4ba6351e3ab4055d717963",
+    "score": "1f5e4d014ff4f8a339a07a38dc086c15",
+    "self-improve": "f61082a184062cf175519b4707c8e9c4",
+    "video": "7bd1ccb89926de7de2de125190a7486b"
+  },
+  "passed": true,
+  "runners_verified": 8,
+  "schema_version": "marketing.gate6-verification.v1",
+  "would_resend": []
+}

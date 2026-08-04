@@ -1,4 +1,5 @@
 #!/bin/bash
+LOOP_MODEL="$("$HOME/.config/ai/bin/loop-model.sh")"   # 切替口は ~/.config/ai/models.env の1箇所
 # claude-p-mainloop.sh — claude-p's autonomous MAIN loop runner (human-funded builder/monitor of
 # the Anicca colony). Fired on a recurring schedule by
 # ~/Library/LaunchAgents/ai.anicca.claude-p-mainloop.plist (StartInterval, RunAtLoad=false — this
@@ -74,8 +75,8 @@ fi
 source "$TIMEOUT_LIB"
 TIMEOUT_SEC="$(resolve_mainloop_timeout_sec)"
 
-echo "$(now) launching claude --model sonnet (hard timeout ${TIMEOUT_SEC}s) cwd=$(pwd)" >> "$LOG_OUT"
-timeout "$TIMEOUT_SEC" claude --model sonnet --dangerously-skip-permissions -p "$(cat "$PROMPT_FILE")" \
+echo "$(now) launching claude --model ${LOOP_MODEL} (hard timeout ${TIMEOUT_SEC}s) cwd=$(pwd)" >> "$LOG_OUT"
+timeout "$TIMEOUT_SEC" claude --model "$LOOP_MODEL" --dangerously-skip-permissions -p "$(cat "$PROMPT_FILE")" \
   >> "$LOG_OUT" 2>> "$LOG_ERR"
 STATUS=$?
 echo "$(now) claude-p-mainloop exit status=$STATUS" >> "$LOG_OUT"

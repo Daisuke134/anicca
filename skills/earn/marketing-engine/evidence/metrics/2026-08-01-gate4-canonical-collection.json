@@ -1,0 +1,17 @@
+{
+  "collector_version": "native-metrics-v1",
+  "eligible": 71,
+  "excluded_ambiguous": 2,
+  "excluded_error": 18,
+  "excluded_missing_native_identity": 0,
+  "excluded_not_published": 0,
+  "excluded_unresolved": 0,
+  "ledger_rows": 91,
+  "new_rows": 110,
+  "new_status_counts": {
+    "measured": 4,
+    "missed": 106
+  },
+  "observed_at": "2026-08-01T01:34:25Z",
+  "schema_version": 1
+}

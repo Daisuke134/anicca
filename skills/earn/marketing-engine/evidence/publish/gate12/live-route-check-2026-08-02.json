@@ -1,0 +1,23 @@
+{
+  "schema_version": "marketing.publisher-route-check.v1",
+  "captured_at": "2026-08-01T19:49:05Z",
+  "method": "GET https://api.postiz.com/public/v1/integrations via lm publish route-check",
+  "external_mutations": 0,
+  "accounts": [
+    {
+      "account_id": "tiktok.obou_anicca",
+      "integration_id": "cmo5s4edx00vgn10ygnu34a0n",
+      "route_ready": true,
+      "blockers": []
+    },
+    {
+      "account_id": "tiktok.monk_anicca",
+      "integration_id": "cmo5rwq2p00twn10yrsdglng3",
+      "route_ready": false,
+      "blockers": [
+        "local account status is disabled_verified",
+        "Postiz integration is disabled"
+      ]
+    }
+  ]
+}

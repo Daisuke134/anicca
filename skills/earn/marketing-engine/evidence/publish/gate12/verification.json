@@ -1,0 +1,72 @@
+{
+  "account_status": "approved_active",
+  "evidence_status": "production_evidence_complete",
+  "external_effects": 3,
+  "implementation_status": "verified",
+  "native_candidate_scan": {
+    "api_responses_observed": 2,
+    "candidate_count": 0,
+    "external_mutations": 0,
+    "output": "skills/earn/marketing-engine/evidence/publish/gate12/prepublication-native-candidates.json",
+    "profile_items_observed": 33,
+    "publish_key": "publication.e571e875dd7bf6452ecd849c",
+    "schema_version": "marketing.native-candidate-scan.v1",
+    "status": "pending_native_receipt"
+  },
+  "native_post_id": "7669159327655054613",
+  "native_post_url": "https://www.tiktok.com/@obou_anicca/video/7669159327655054613",
+  "preflight_blocker": null,
+  "preview_asset": "/Users/anicca/anicca/skills/earn/marketing-engine/evidence/renderers/gate12-watercolor-preview.mp4",
+  "preview_media": {
+    "audio_codec": "aac",
+    "duration_seconds": 17.466016,
+    "format_names": [
+      "mov",
+      "mp4",
+      "m4a",
+      "3gp",
+      "3g2",
+      "mj2"
+    ],
+    "height": 1280,
+    "video_codec": "h264",
+    "width": 720
+  },
+  "preview_sha256": "03d41c7665f7ca6edb2756b52a838bcc173d65ba78acb8b7e94158e235037be2",
+  "preview_telegram_message_id": 5113,
+  "production_post_id": "cmsaselv6070sqn0yp7oix7yd",
+  "production_post_receipt": {
+    "content": "距離を変えるとき。『アニッチャ・リセット』を読む https://aniccaai.com/go/ej_7gy3bv7vf2r5d7aebnzv ej_7gy3bv7vf2r5d7aebnzv",
+    "creationMethod": "API",
+    "group": "f0a692df-7c55-4bec-ab6f-476c74568597",
+    "id": "cmsaselv6070sqn0yp7oix7yd",
+    "integration": {
+      "id": "cmo5s4edx00vgn10ygnu34a0n",
+      "name": "アニッチャ - 無常の教え",
+      "picture": "https://uploads.postiz.com/OoPFViWFWo.jpg",
+      "providerIdentifier": "tiktok"
+    },
+    "intervalInDays": null,
+    "publishDate": "2026-08-01T20:15:00.000Z",
+    "releaseId": "v_pub_file~v2-1.7669158928722266120",
+    "releaseURL": "https://www.tiktok.com/@obou_anicca",
+    "state": "PUBLISHED",
+    "tags": []
+  },
+  "provider_create_calls": 1,
+  "provider_promote_calls": 1,
+  "provider_upload_calls": 1,
+  "publish_key": "publication.e571e875dd7bf6452ecd849c",
+  "publisher_route": {
+    "account_id": "tiktok.obou_anicca",
+    "blockers": [],
+    "integration_id": "cmo5s4edx00vgn10ygnu34a0n",
+    "route_ready": true
+  },
+  "schema_version": "marketing.gate12-verification.v1",
+  "shadow_intent_created": false,
+  "shadow_lease_fence": 1,
+  "shadow_request_sha256": "4346c4c281c3034f44376618a7ab65cf092f64e9cbac7cd680e05a266baa24df",
+  "shadow_status": "shadow_valid",
+  "visual_approval_status": "accepted"
+}

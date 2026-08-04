@@ -9,6 +9,7 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PAT
 #   bash video-cli.sh --restart  # kill the existing session then start fresh
 #   bash video-cli.sh --status   # is the session alive?
 set -uo pipefail
+LOOP_MODEL="$("$HOME/.config/ai/bin/loop-model.sh")"   # 切替口は ~/.config/ai/models.env の1箇所
 SOCK="/tmp/anicca-video-tmux.sock"
 SESSION="anicca-video-core"
 CLAUDE="$(command -v claude || echo /Users/anicca/.local/bin/claude)"
@@ -47,7 +48,7 @@ if [ -n "$CLIPROXY_KEY" ]; then
 fi
 
 tmux -S "$SOCK" new-session -d -s "$SESSION" \
-  "exec \"$CLAUDE\" --name \"$SESSION\" --model sonnet --dangerously-skip-permissions --add-dir \"$HOME\" -- \"\$(cat '$PROMPT_FILE')\""
+  "exec \"$CLAUDE\" --name \"$SESSION\" --model ${LOOP_MODEL} --dangerously-skip-permissions --add-dir \"$HOME\" -- \"\$(cat '$PROMPT_FILE')\""
 mkdir -p "$HOME/.openclaw/state" && touch "$HOME/.openclaw/state/.video-core-last-start"   # ported from gig-cli.sh: seeds the grace-window marker for healthcheck's stale-pass detection
 sleep 2
 echo "video-core started ($(status)). Attach: tmux -S $SOCK attach -t $SESSION"

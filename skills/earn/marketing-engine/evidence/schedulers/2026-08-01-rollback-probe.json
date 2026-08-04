@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "observed_at": "2026-08-01T00:56:00Z",
+  "label": "ai.anicca.marketing-quarantine-probe",
+  "program": "/usr/bin/true",
+  "external_action": "none",
+  "steps": [
+    "bootstrap",
+    "disable",
+    "bootout",
+    "verify disabled",
+    "enable",
+    "bootstrap",
+    "verify loaded with last exit 0",
+    "bootout"
+  ],
+  "result": "passed",
+  "final_state": "unloaded",
+  "fixture_path": "/tmp/ai.anicca.marketing-quarantine-probe.plist"
+}

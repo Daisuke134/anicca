@@ -5,26 +5,29 @@
 #
 #   bash send-telegram.sh "<message text>" [chat_id]
 #
-# Uses TELEGRAM_BOT_TOKEN from ~/.openclaw/.env. Default chat_id = Dais's chat (8547730585),
-# the same one OpenClaw's own crons already report to.
+# Backward-compatible wrapper around telegram.py. Configuration comes from the process
+# environment or ~/anicca/.env; there is no OpenClaw runtime or secret-path dependency.
 set -uo pipefail
 MSG="${1:?usage: send-telegram.sh \"<message>\" [chat_id]}"
-CHAT_ID="${2:-8547730585}"
+CHAT_ID="${2:-}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-set -a; . "$HOME/.openclaw/.env" 2>/dev/null; set +a
-: "${TELEGRAM_BOT_TOKEN:?TELEGRAM_BOT_TOKEN not set in ~/.openclaw/.env}"
+ARGS=("$SCRIPT_DIR/telegram.py")
+if [ -n "$CHAT_ID" ]; then
+  ARGS+=("--chat-id" "$CHAT_ID")
+fi
+ARGS+=("text" "$MSG")
+RESP=$(python3 "${ARGS[@]}" 2>&1)
+STATUS=$?
 
-RESP=$(curl -sS --max-time 10 "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-  --data-urlencode "chat_id=${CHAT_ID}" \
-  --data-urlencode "text=${MSG}" \
-  --data-urlencode "disable_web_page_preview=false")
-
-OK=$(printf '%s' "$RESP" | python3 -c 'import json,sys
-try: print(json.load(sys.stdin).get("ok", False))
-except Exception: print(False)' 2>/dev/null)
-
-if [ "$OK" = "True" ]; then
-  echo "TELEGRAM_SENT=true"
+if [ "$STATUS" -eq 0 ]; then
+  # MSGID (2026-07-25 addition, backward-compatible): the real Telegram message_id, so a caller
+  # that needs to prove a send actually happened (not just TELEGRAM_SENT=true) can cite it. Old
+  # callers that only check for the "TELEGRAM_SENT=true" substring are unaffected.
+  MSGID=$(printf '%s' "$RESP" | python3 -c 'import json,sys
+try: print((json.load(sys.stdin).get("message_ids") or [""])[0])
+except Exception: print("")' 2>/dev/null)
+  echo "TELEGRAM_SENT=true MSGID=$MSGID"
   exit 0
 else
   echo "TELEGRAM_SENT=false RESP=$RESP"

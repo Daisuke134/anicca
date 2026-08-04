@@ -1,0 +1,17 @@
+{
+  "items": [
+    {
+      "media_bytes": 4233263,
+      "native_id": "7608561076686359822",
+      "reason": null,
+      "status": "success",
+      "transcript_segments": 14
+    }
+  ],
+  "new_transcripts": 1,
+  "observed_at": "2026-08-01T14:59:21.851176Z",
+  "run_id": "a4d0bb48f1c046089135dd785c09d05f",
+  "schema_version": "marketing.video-ingest-run.v1",
+  "selected": 1,
+  "status": "success"
+}

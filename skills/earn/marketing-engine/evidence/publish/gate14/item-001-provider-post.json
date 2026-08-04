@@ -1,0 +1,18 @@
+{
+  "content": "話すたびに疲れる相手から、大切な時間を取り戻す。『アニッチャ・リセット』を読む https://aniccaai.com/go/ej_rqfohbwdfnsxlvud6q4j ej_rqfohbwdfnsxlvud6q4j",
+  "creationMethod": "API",
+  "group": "3598a7ce-2e95-44ee-8441-2cd42bfa9bf9",
+  "id": "cmsb7fen00zhgkz0ymlugjsol",
+  "integration": {
+    "id": "cmo5s4edx00vgn10ygnu34a0n",
+    "name": "アニッチャ - 無常の教え",
+    "picture": "https://uploads.postiz.com/OoPFViWFWo.jpg",
+    "providerIdentifier": "tiktok"
+  },
+  "intervalInDays": null,
+  "publishDate": "2026-08-02T11:15:00.000Z",
+  "releaseId": null,
+  "releaseURL": null,
+  "state": "QUEUE",
+  "tags": []
+}

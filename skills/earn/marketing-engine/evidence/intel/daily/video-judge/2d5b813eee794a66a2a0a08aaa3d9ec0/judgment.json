@@ -1,0 +1,85 @@
+{
+  "hooks": [
+    {
+      "captured_at": "2026-08-01T20:32:49.547910Z",
+      "evidence_null_reason": null,
+      "evidence_url": "https://www.tiktok.com/@furutani_kodai/video/7469555236407872776",
+      "ewma_score": null,
+      "id": "hook.tiktok.7469555236407872776.001",
+      "language": "ja",
+      "observations": 0,
+      "product_ids": [
+        "ebook-ja"
+      ],
+      "provenance": "live_observed",
+      "rubric": {
+        "conflict": 8,
+        "emotional_peak": 8,
+        "hook": 8,
+        "practical_value": 8,
+        "quotability": 7,
+        "total": 39
+      },
+      "schema_version": "marketing.hook.v1",
+      "source_null_reason": null,
+      "source_type": "video",
+      "source_url": "https://www.tiktok.com/@furutani_kodai/video/7469555236407872776",
+      "status": "active",
+      "text": "返信の遅さを嫌われた証拠に変えないために、心が暴走する前の考え方を一つ持っておこう。"
+    },
+    {
+      "captured_at": "2026-08-01T20:32:49.547910Z",
+      "evidence_null_reason": null,
+      "evidence_url": "https://www.tiktok.com/@furutani_kodai/video/7469555236407872776",
+      "ewma_score": null,
+      "id": "hook.tiktok.7469555236407872776.002",
+      "language": "ja",
+      "observations": 0,
+      "product_ids": [
+        "ebook-ja"
+      ],
+      "provenance": "live_observed",
+      "rubric": {
+        "conflict": 7,
+        "emotional_peak": 8,
+        "hook": 8,
+        "practical_value": 8,
+        "quotability": 8,
+        "total": 39
+      },
+      "schema_version": "marketing.hook.v1",
+      "source_null_reason": null,
+      "source_type": "video",
+      "source_url": "https://www.tiktok.com/@furutani_kodai/video/7469555236407872776",
+      "status": "active",
+      "text": "終わった関係を何度も心の中で再生してしまう人へ。過去ではなく、今日の自分に意識を戻す小さな習慣があります。"
+    },
+    {
+      "captured_at": "2026-08-01T20:32:49.547910Z",
+      "evidence_null_reason": null,
+      "evidence_url": "https://www.tiktok.com/@furutani_kodai/video/7469555236407872776",
+      "ewma_score": null,
+      "id": "hook.tiktok.7469555236407872776.003",
+      "language": "ja",
+      "observations": 0,
+      "product_ids": [
+        "ebook-ja"
+      ],
+      "provenance": "live_observed",
+      "rubric": {
+        "conflict": 8,
+        "emotional_peak": 8,
+        "hook": 9,
+        "practical_value": 7,
+        "quotability": 8,
+        "total": 40
+      },
+      "schema_version": "marketing.hook.v1",
+      "source_null_reason": null,
+      "source_type": "video",
+      "source_url": "https://www.tiktok.com/@furutani_kodai/video/7469555236407872776",
+      "status": "active",
+      "text": "画面の向こうの一言に一日を奪われる前に。反応する相手と、手放す相手を見分ける基準を知っていますか？"
+    }
+  ]
+}

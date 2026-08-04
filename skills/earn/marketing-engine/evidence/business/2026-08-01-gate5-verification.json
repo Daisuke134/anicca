@@ -1,0 +1,141 @@
+{
+  "business_date": "2026-07-30",
+  "gate": 5,
+  "gate_pass": true,
+  "products_verified": 4,
+  "redirect": {
+    "campaign_token": "ee_7vdae2v22zd6xth6ejg3",
+    "deploy_id": "6a6db281f56a4a29ebdb1983",
+    "http_status": 302,
+    "private_fields_stored": false,
+    "production_url": "https://aniccaai.com/go/ee_7vdae2v22zd6xth6ejg3",
+    "receipt_readback": {
+      "campaign_token": "ee_7vdae2v22zd6xth6ejg3",
+      "clicked_at": "2026-08-01T08:52:13.36+00:00",
+      "product_id": "ebook-en",
+      "receipt_id": "14c2d355-fef4-4644-bd20-665853792829",
+      "schema_version": 1
+    },
+    "stored_fields": [
+      "campaign_token",
+      "clicked_at",
+      "product_id",
+      "receipt_id",
+      "schema_version"
+    ]
+  },
+  "rejected_hypotheses": [
+    "project-wide RevenueCat overview as product metric",
+    "all ASC download types as installs",
+    "Mixpanel purchase event as money truth",
+    "unbounded Stripe historical query",
+    "Netlify Blobs without runtime credentials",
+    "unmeasured redirect on storage failure"
+  ],
+  "schema_version": 1,
+  "snapshot_rows": 4,
+  "telegram": {
+    "chat_id": 8547730585,
+    "message_id": 5020,
+    "status": "delivered"
+  },
+  "source_summary": {
+    "aniccaios": {
+      "asc_downloads": {
+        "auto_updates": 1,
+        "first_time_downloads": 1,
+        "manual_updates": 0,
+        "redownloads": 0,
+        "restores": 0
+      },
+      "mixpanel_event_counts": {
+        "app_opened": 3,
+        "purchase_completed": 6
+      },
+      "revenuecat_mrr_usd": 20.73
+    },
+    "ebook-en": {
+      "gross_minor": {},
+      "matched_session_ids": [],
+      "net_minor": {},
+      "paid_orders": 0,
+      "queried_product_ids": [
+        "prod_UQ2LTH66Rwict4"
+      ],
+      "refunded_minor": {}
+    },
+    "ebook-ja": {
+      "gross_minor": {},
+      "matched_session_ids": [],
+      "net_minor": {},
+      "paid_orders": 0,
+      "queried_product_ids": [
+        "prod_UQ2LrpVy4b1bAY"
+      ],
+      "refunded_minor": {}
+    },
+    "honne": {
+      "asc_downloads": {
+        "auto_updates": 11,
+        "first_time_downloads": 115,
+        "manual_updates": 2,
+        "redownloads": 20,
+        "restores": 1
+      },
+      "product_analytics_status": "unavailable",
+      "revenuecat_mrr_usd": 0.0
+    }
+  },
+  "state_sha256": "e359120017263659eac9629b9df65ee81c95e67054d4d0713398b0dc975fc7af",
+  "unavailable_sources": [
+    {
+      "product_id": "aniccaios",
+      "reason": "missing_project_read_credential",
+      "source": "posthog"
+    },
+    {
+      "product_id": "ebook-en",
+      "reason": "not_configured",
+      "source": "gumroad"
+    },
+    {
+      "product_id": "ebook-en",
+      "reason": "not_authenticated",
+      "source": "kdp"
+    },
+    {
+      "product_id": "ebook-ja",
+      "reason": "not_configured",
+      "source": "gumroad"
+    },
+    {
+      "product_id": "ebook-ja",
+      "reason": "not_authenticated",
+      "source": "kdp"
+    },
+    {
+      "product_id": "honne",
+      "reason": "missing_project_read_credential",
+      "source": "posthog"
+    },
+    {
+      "product_id": "honne",
+      "reason": "no_verified_readable_funnel",
+      "source": "product_analytics"
+    }
+  ],
+  "unique_snapshot_ids": 4,
+  "verification": {
+    "idempotent_snapshot_rows_after": 4,
+    "idempotent_snapshot_rows_before": 4,
+    "netlify_node_test": {
+      "failures": 0,
+      "tests": 288
+    },
+    "python_unittest": {
+      "failures": 0,
+      "tests": 54
+    }
+  },
+  "verified_at": "2026-08-01T08:57:55.621484+00:00"
+}

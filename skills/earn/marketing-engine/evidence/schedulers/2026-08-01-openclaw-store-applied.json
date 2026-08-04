@@ -1,0 +1,20 @@
+{
+  "after_sha256": "9027ec173f9cb1430b3a3e3e188f362a090e715109a7bf9f04d23016c182a01a",
+  "backup_path": "/Users/anicca/.openclaw/cron/jobs.json.pre-marketing-quarantine-20260801T0955.bak",
+  "before_sha256": "17aad513b916474d880190979f1e906d2e291952113bdd924466421c9b8c2d8b",
+  "captured_at": "2026-08-01T00:54:39Z",
+  "changed_ids": [
+    "24d0460b-372c-4edb-8022-8b04bf59afc3",
+    "26932ef8-5bb6-487d-aaf0-94febda4b2a4",
+    "330bbaf7-3ea2-41f6-8479-f1c6f8ef1f45",
+    "57fb7dbc-0f18-4bdd-b8e7-74233aa27009",
+    "a4092e38-8229-461e-8cbd-0e01478566f0",
+    "b0374b1f-1338-4710-a498-024930519d98",
+    "c6eaca79-8de5-4f61-9020-d7e082b14f1a"
+  ],
+  "mode": "apply",
+  "schema_version": 1,
+  "status": "persisted",
+  "store_path": "/Users/anicca/.openclaw/cron/jobs.json",
+  "target_count": 7
+}

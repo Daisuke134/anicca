@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "started_at": "2026-08-01T15:03:40.644780+00:00",
+  "finished_at": "2026-08-01T15:03:53.341642+00:00",
+  "task_label": "video-hook-judge",
+  "loop": "marketing-intel",
+  "task_class": "marketing-agent",
+  "route": "luna-medium-decision",
+  "escalated": false,
+  "escalation_reason": null,
+  "status": "success",
+  "budget": {
+    "status": "disabled",
+    "reason": "budget_not_configured",
+    "scope_id": null
+  },
+  "selected_provider": "codex",
+  "selected_model": "gpt-5.6-luna",
+  "selected_effort": "medium",
+  "attempt_count": 1,
+  "attempts_path": "/Users/anicca/anicca/skills/earn/marketing-engine/evidence/intel/video-judge/848d5a6210d3456eae0c1f1e85e0936d/agent/attempts.jsonl",
+  "result_path": "/Users/anicca/anicca/skills/earn/marketing-engine/evidence/intel/video-judge/848d5a6210d3456eae0c1f1e85e0936d/agent/attempt-01.result.json"
+}

@@ -1,0 +1,18 @@
+{
+  "content": "相手を変えるより先に、自分の境界線を引き直す。『アニッチャ・リセット』を読む https://aniccaai.com/go/ej_dxjqkn5xwwcg4arinsjr ej_dxjqkn5xwwcg4arinsjr",
+  "creationMethod": "API",
+  "group": "1cc72cea-e299-44bb-8ea2-fdd98e5bd873",
+  "id": "cmsb7ln3409siqn0yp538ibkh",
+  "integration": {
+    "id": "cmo5s4edx00vgn10ygnu34a0n",
+    "name": "アニッチャ - 無常の教え",
+    "picture": "https://uploads.postiz.com/OoPFViWFWo.jpg",
+    "providerIdentifier": "tiktok"
+  },
+  "intervalInDays": null,
+  "publishDate": "2026-08-06T11:15:00.000Z",
+  "releaseId": null,
+  "releaseURL": null,
+  "state": "QUEUE",
+  "tags": []
+}

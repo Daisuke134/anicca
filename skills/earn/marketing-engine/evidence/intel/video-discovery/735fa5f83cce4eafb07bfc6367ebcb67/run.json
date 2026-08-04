@@ -1,0 +1,24 @@
+{
+  "new_observations": 20,
+  "observed_at": "2026-08-01T14:56:56.055950Z",
+  "run_id": "735fa5f83cce4eafb07bfc6367ebcb67",
+  "schema_version": "marketing.video-discovery-run.v1",
+  "sources": [
+    {
+      "cohort": {
+        "average_views": 33204.5,
+        "floor_views": 921,
+        "meets_creator_consistency_floor": false,
+        "observed_posts": 20,
+        "posts_with_views": 20
+      },
+      "evidence_path": "/Users/anicca/anicca/skills/earn/marketing-engine/evidence/intel/video-discovery/735fa5f83cce4eafb07bfc6367ebcb67/video.tiktok.itsyangmun.en.json",
+      "items": 20,
+      "reason": null,
+      "sha256": "378067bb8d0737b616fb5c47f36c2628786d3f05afe3064033c74849c74f9087",
+      "source_id": "video.tiktok.itsyangmun.en",
+      "status": "success"
+    }
+  ],
+  "status": "success"
+}

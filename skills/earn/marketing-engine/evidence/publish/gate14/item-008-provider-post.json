@@ -1,0 +1,18 @@
+{
+  "content": "画面の向こうの一言に、一日を奪われる前に。『アニッチャ・リセット』を読む https://aniccaai.com/go/ej_m7cfmkwpvmwmbomqi6g6 ej_m7cfmkwpvmwmbomqi6g6",
+  "creationMethod": "API",
+  "group": "48d9acf2-e2ea-4c80-9401-c209d6720719",
+  "id": "cmsb7lx9609snqn0y071yafzm",
+  "integration": {
+    "id": "cmo5s4edx00vgn10ygnu34a0n",
+    "name": "アニッチャ - 無常の教え",
+    "picture": "https://uploads.postiz.com/OoPFViWFWo.jpg",
+    "providerIdentifier": "tiktok"
+  },
+  "intervalInDays": null,
+  "publishDate": "2026-08-09T11:15:00.000Z",
+  "releaseId": null,
+  "releaseURL": null,
+  "state": "QUEUE",
+  "tags": []
+}

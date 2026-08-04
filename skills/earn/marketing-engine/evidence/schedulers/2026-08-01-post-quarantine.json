@@ -1,0 +1,4298 @@
+{
+  "captured_at": "2026-08-01T00:51:14Z",
+  "host_uid": 501,
+  "invalid_plists": [
+    {
+      "error": "ExpatError",
+      "path": "/Users/anicca/Library/LaunchAgents/ai.anicca.cfo-daily.plist"
+    },
+    {
+      "error": "ExpatError",
+      "path": "/Users/anicca/Library/LaunchAgents/ai.anicca.tsbridge.plist"
+    }
+  ],
+  "postiz_live_lookup": true,
+  "records": [
+    {
+      "accounts": [
+        {
+          "disabled": false,
+          "integration_id": "cmlt171eq04d9r00yzzceb6bw",
+          "name": "Anicca",
+          "platform": "tiktok",
+          "profile": "aniccaen2"
+        },
+        {
+          "disabled": false,
+          "integration_id": "cmpc3gx4001nklg0y27a8o66q",
+          "name": "Anicca iOS",
+          "platform": "instagram-standalone",
+          "profile": "anicca.encards"
+        }
+      ],
+      "command": [
+        "/bin/bash",
+        "/Users/anicca/profitable-claude/bin/launchd_run_and_report.sh",
+        "--label",
+        "larry-anicca-en-v1",
+        "--channel",
+        "telegram",
+        "--target",
+        "8547730585",
+        "--",
+        "/bin/bash",
+        "/Users/anicca/profitable-claude/bin/run_larry_fixed_strings.sh",
+        "--account-key",
+        "en-v1"
+      ],
+      "command_sha256": "d1cc405703bcc573a984bfe12e6ac978ce32fe6a6b258eb00533021c4febbad1",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "larry",
+      "id": "ai.anicca.larry-anicca-en-v1",
+      "integration_ids": [
+        "cmlt171eq04d9r00yzzceb6bw",
+        "cmpc3gx4001nklg0y27a8o66q"
+      ],
+      "label": "ai.anicca.larry-anicca-en-v1",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "launchctl",
+        "enable",
+        "gui/501/ai.anicca.larry-anicca-en-v1",
+        "&&",
+        "launchctl",
+        "bootstrap",
+        "gui/501",
+        "/Users/anicca/Library/LaunchAgents/ai.anicca.larry-anicca-en-v1.plist"
+      ],
+      "runtime": "launchd",
+      "schedule": {
+        "entries": [
+          {
+            "Hour": 13,
+            "Minute": 0
+          }
+        ],
+        "kind": "calendar"
+      },
+      "source_path": "/Users/anicca/Library/LaunchAgents/ai.anicca.larry-anicca-en-v1.plist",
+      "source_sha256": "a6c32b5a24d0d920113f56d2467eb74928ce8868da096262f24aa1bf47b1dde5"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": false,
+          "integration_id": "cmlt171eq04d9r00yzzceb6bw",
+          "name": "Anicca",
+          "platform": "tiktok",
+          "profile": "aniccaen2"
+        }
+      ],
+      "command": [
+        "/bin/bash",
+        "/Users/anicca/profitable-claude/bin/launchd_run_and_report.sh",
+        "--label",
+        "larry-anicca-en-v2",
+        "--channel",
+        "telegram",
+        "--target",
+        "8547730585",
+        "--",
+        "/bin/bash",
+        "/Users/anicca/profitable-claude/bin/run_larry_fixed_strings.sh",
+        "--account-key",
+        "en-v2"
+      ],
+      "command_sha256": "3c3e3b3269c761c412c30a5fb33c6ee82af4339ae103d6950e30a8b9ecd74eae",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "larry",
+      "id": "ai.anicca.larry-anicca-en-v2",
+      "integration_ids": [
+        "cmlt171eq04d9r00yzzceb6bw"
+      ],
+      "label": "ai.anicca.larry-anicca-en-v2",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "launchctl",
+        "enable",
+        "gui/501/ai.anicca.larry-anicca-en-v2",
+        "&&",
+        "launchctl",
+        "bootstrap",
+        "gui/501",
+        "/Users/anicca/Library/LaunchAgents/ai.anicca.larry-anicca-en-v2.plist"
+      ],
+      "runtime": "launchd",
+      "schedule": {
+        "entries": [
+          {
+            "Hour": 10,
+            "Minute": 0
+          }
+        ],
+        "kind": "calendar"
+      },
+      "source_path": "/Users/anicca/Library/LaunchAgents/ai.anicca.larry-anicca-en-v2.plist",
+      "source_sha256": "4b60fcac934d9aabb3803e42e428e72bb721ebabec4b32e6379d36899ec9df19"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": false,
+          "integration_id": "cmlt171eq04d9r00yzzceb6bw",
+          "name": "Anicca",
+          "platform": "tiktok",
+          "profile": "aniccaen2"
+        }
+      ],
+      "command": [
+        "/bin/bash",
+        "/Users/anicca/profitable-claude/bin/launchd_run_and_report.sh",
+        "--label",
+        "larry-anicca-en-v3",
+        "--channel",
+        "telegram",
+        "--target",
+        "8547730585",
+        "--",
+        "/bin/bash",
+        "/Users/anicca/profitable-claude/bin/run_larry_fixed_strings.sh",
+        "--account-key",
+        "en-v3"
+      ],
+      "command_sha256": "a52392875bafc8d9a9d49706884f3bb22837b97a5f04b07a99a3102d8e329f76",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "larry",
+      "id": "ai.anicca.larry-anicca-en-v3",
+      "integration_ids": [
+        "cmlt171eq04d9r00yzzceb6bw"
+      ],
+      "label": "ai.anicca.larry-anicca-en-v3",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "launchctl",
+        "enable",
+        "gui/501/ai.anicca.larry-anicca-en-v3",
+        "&&",
+        "launchctl",
+        "bootstrap",
+        "gui/501",
+        "/Users/anicca/Library/LaunchAgents/ai.anicca.larry-anicca-en-v3.plist"
+      ],
+      "runtime": "launchd",
+      "schedule": {
+        "entries": [
+          {
+            "Hour": 14,
+            "Minute": 30
+          }
+        ],
+        "kind": "calendar"
+      },
+      "source_path": "/Users/anicca/Library/LaunchAgents/ai.anicca.larry-anicca-en-v3.plist",
+      "source_sha256": "adba7094e75e822ca0296238d33d38cd5f93191f9c0e491116c7081cd3829712"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": false,
+          "integration_id": "cmlrv8jq000hun60yy57eaptx",
+          "name": "アニッチャ",
+          "platform": "tiktok",
+          "profile": "anicca.jpx"
+        }
+      ],
+      "command": [
+        "/bin/bash",
+        "/Users/anicca/profitable-claude/bin/launchd_run_and_report.sh",
+        "--label",
+        "larry-anicca-ja-v1",
+        "--channel",
+        "telegram",
+        "--target",
+        "8547730585",
+        "--",
+        "/bin/bash",
+        "/Users/anicca/profitable-claude/bin/run_larry_fixed_strings.sh",
+        "--account-key",
+        "ja-v1"
+      ],
+      "command_sha256": "db44fc907ecd196b83b36688d352fb1e715d79fde3221f1db45e4baa14ae1d35",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "larry",
+      "id": "ai.anicca.larry-anicca-ja-v1",
+      "integration_ids": [
+        "cmlrv8jq000hun60yy57eaptx"
+      ],
+      "label": "ai.anicca.larry-anicca-ja-v1",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "launchctl",
+        "enable",
+        "gui/501/ai.anicca.larry-anicca-ja-v1",
+        "&&",
+        "launchctl",
+        "bootstrap",
+        "gui/501",
+        "/Users/anicca/Library/LaunchAgents/ai.anicca.larry-anicca-ja-v1.plist"
+      ],
+      "runtime": "launchd",
+      "schedule": {
+        "entries": [
+          {
+            "Hour": 9,
+            "Minute": 30
+          },
+          {
+            "Hour": 13,
+            "Minute": 30
+          }
+        ],
+        "kind": "calendar"
+      },
+      "source_path": "/Users/anicca/Library/LaunchAgents/ai.anicca.larry-anicca-ja-v1.plist",
+      "source_sha256": "110b156d36865e900edd71da44d637943eebaed385759b068475b1828862e5bc"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": false,
+          "integration_id": "cmq2aoena08bhqp0yx1epjcik",
+          "name": "アニッチャ",
+          "platform": "tiktok",
+          "profile": "anicca.he"
+        }
+      ],
+      "command": [
+        "/bin/bash",
+        "/Users/anicca/profitable-claude/bin/launchd_run_and_report.sh",
+        "--label",
+        "larry-anicca-ja-v2",
+        "--channel",
+        "telegram",
+        "--target",
+        "8547730585",
+        "--",
+        "/bin/bash",
+        "/Users/anicca/profitable-claude/bin/run_larry_fixed_strings.sh",
+        "--account-key",
+        "ja-v2"
+      ],
+      "command_sha256": "bff35817f627f136790bf855f0e5593955831f8c20f38ce6034b1c8667e87309",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "larry",
+      "id": "ai.anicca.larry-anicca-ja-v2",
+      "integration_ids": [
+        "cmq2aoena08bhqp0yx1epjcik"
+      ],
+      "label": "ai.anicca.larry-anicca-ja-v2",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "launchctl",
+        "enable",
+        "gui/501/ai.anicca.larry-anicca-ja-v2",
+        "&&",
+        "launchctl",
+        "bootstrap",
+        "gui/501",
+        "/Users/anicca/Library/LaunchAgents/ai.anicca.larry-anicca-ja-v2.plist"
+      ],
+      "runtime": "launchd",
+      "schedule": {
+        "entries": [
+          {
+            "Hour": 8,
+            "Minute": 30
+          },
+          {
+            "Hour": 14,
+            "Minute": 0
+          }
+        ],
+        "kind": "calendar"
+      },
+      "source_path": "/Users/anicca/Library/LaunchAgents/ai.anicca.larry-anicca-ja-v2.plist",
+      "source_sha256": "288def25c9d52d630ea1b2198ce4c910d4109d6f2443d1d1cc82f7ea76ebb311"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": false,
+          "integration_id": "cmp93bkpu01uvoh0yd3aj560g",
+          "name": "Affirmation Girl",
+          "platform": "tiktok",
+          "profile": "aniccaaffirmation"
+        }
+      ],
+      "command": [
+        "/bin/bash",
+        "/Users/anicca/profitable-claude/bin/launchd_run_and_report.sh",
+        "--label",
+        "larry-en-female-reel-replace-1",
+        "--channel",
+        "telegram",
+        "--target",
+        "8547730585",
+        "--",
+        "/bin/bash",
+        "/Users/anicca/profitable-claude/bin/run_larry_fixed_strings.sh",
+        "--account-key",
+        "en-female"
+      ],
+      "command_sha256": "6d50e8f71002a7fd0f5f36c5392215227f3088844c0f2a12e408d77562f88f50",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "larry",
+      "id": "ai.anicca.larry-en-female-reel-replace-1",
+      "integration_ids": [
+        "cmp93bkpu01uvoh0yd3aj560g"
+      ],
+      "label": "ai.anicca.larry-en-female-reel-replace-1",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "launchctl",
+        "enable",
+        "gui/501/ai.anicca.larry-en-female-reel-replace-1",
+        "&&",
+        "launchctl",
+        "bootstrap",
+        "gui/501",
+        "/Users/anicca/Library/LaunchAgents/ai.anicca.larry-en-female-reel-replace-1.plist"
+      ],
+      "runtime": "launchd",
+      "schedule": {
+        "entries": [
+          {
+            "Hour": 9,
+            "Minute": 15
+          },
+          {
+            "Hour": 14,
+            "Minute": 15
+          },
+          {
+            "Hour": 19,
+            "Minute": 0
+          },
+          {
+            "Hour": 20,
+            "Minute": 15
+          }
+        ],
+        "kind": "calendar"
+      },
+      "source_path": "/Users/anicca/Library/LaunchAgents/ai.anicca.larry-en-female-reel-replace-1.plist",
+      "source_sha256": "a37aabcba430d1fde941d6bc881b15935ef8c4a1cb701c968785d439e7303123"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": false,
+          "integration_id": "cmp93bkpu01uvoh0yd3aj560g",
+          "name": "Affirmation Girl",
+          "platform": "tiktok",
+          "profile": "aniccaaffirmation"
+        }
+      ],
+      "command": [
+        "/bin/bash",
+        "/Users/anicca/profitable-claude/bin/launchd_run_and_report.sh",
+        "--label",
+        "larry-en-v1-library-post",
+        "--channel",
+        "telegram",
+        "--target",
+        "8547730585",
+        "--",
+        "/bin/bash",
+        "/Users/anicca/.openclaw/skills/_dispatcher/scripts/cron-bash.sh",
+        "anicca-larry/scripts/run-account.sh",
+        "--variant",
+        "en-v1",
+        "--tt",
+        "cmp93bkpu01uvoh0yd3aj560g"
+      ],
+      "command_sha256": "ed352dc5b5178c4ed86cc0cf2b9394974921753f5cd0b205e98004045a3763d1",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "larry",
+      "id": "ai.anicca.larry-en-v1-library-post",
+      "integration_ids": [
+        "cmp93bkpu01uvoh0yd3aj560g"
+      ],
+      "label": "ai.anicca.larry-en-v1-library-post",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "launchctl",
+        "enable",
+        "gui/501/ai.anicca.larry-en-v1-library-post",
+        "&&",
+        "launchctl",
+        "bootstrap",
+        "gui/501",
+        "/Users/anicca/Library/LaunchAgents/ai.anicca.larry-en-v1-library-post.plist"
+      ],
+      "runtime": "launchd",
+      "schedule": {
+        "entries": [
+          {
+            "Hour": 16,
+            "Minute": 35
+          }
+        ],
+        "kind": "calendar"
+      },
+      "source_path": "/Users/anicca/Library/LaunchAgents/ai.anicca.larry-en-v1-library-post.plist",
+      "source_sha256": "9e6565372e42ebe31f71c4e1b786e4947ac14ca34bc0879e0ef74a8219811039"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": false,
+          "integration_id": "cmq2aoena08bhqp0yx1epjcik",
+          "name": "アニッチャ",
+          "platform": "tiktok",
+          "profile": "anicca.he"
+        }
+      ],
+      "command": [
+        "/bin/bash",
+        "/Users/anicca/profitable-claude/bin/launchd_run_and_report.sh",
+        "--label",
+        "larry-ja-male-buddha-reel-replace-1",
+        "--channel",
+        "telegram",
+        "--target",
+        "8547730585",
+        "--",
+        "/bin/bash",
+        "/Users/anicca/profitable-claude/bin/run_larry_fixed_strings.sh",
+        "--account-key",
+        "ja-male-buddha"
+      ],
+      "command_sha256": "57b224e915d2ff304a84377095ec9c0f930e95422c3e620cfd7958a95d2d2745",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "larry",
+      "id": "ai.anicca.larry-ja-male-buddha-reel-replace-1",
+      "integration_ids": [
+        "cmq2aoena08bhqp0yx1epjcik"
+      ],
+      "label": "ai.anicca.larry-ja-male-buddha-reel-replace-1",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "launchctl",
+        "enable",
+        "gui/501/ai.anicca.larry-ja-male-buddha-reel-replace-1",
+        "&&",
+        "launchctl",
+        "bootstrap",
+        "gui/501",
+        "/Users/anicca/Library/LaunchAgents/ai.anicca.larry-ja-male-buddha-reel-replace-1.plist"
+      ],
+      "runtime": "launchd",
+      "schedule": {
+        "entries": [
+          {
+            "Hour": 7,
+            "Minute": 0
+          },
+          {
+            "Hour": 13,
+            "Minute": 0
+          },
+          {
+            "Hour": 20,
+            "Minute": 0
+          }
+        ],
+        "kind": "calendar"
+      },
+      "source_path": "/Users/anicca/Library/LaunchAgents/ai.anicca.larry-ja-male-buddha-reel-replace-1.plist",
+      "source_sha256": "915b6fb425ce82bdce2e5b4805919f248b44b921e12a4b46fb028c0a22f87e9d"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": false,
+          "integration_id": "cmn8x8hdv028uqx0y4gdfse5t",
+          "name": "アニッチャ",
+          "platform": "tiktok",
+          "profile": "anicca.jp4"
+        }
+      ],
+      "command": [
+        "/bin/bash",
+        "/Users/anicca/profitable-claude/bin/launchd_run_and_report.sh",
+        "--label",
+        "larry-ja-male-cta-reel-replace-1",
+        "--channel",
+        "telegram",
+        "--target",
+        "8547730585",
+        "--",
+        "/bin/bash",
+        "/Users/anicca/profitable-claude/bin/run_larry_fixed_strings.sh",
+        "--account-key",
+        "ja-male-cta"
+      ],
+      "command_sha256": "a9a7aa1cf7e751a8116e3f57d908ab28b76a3664a53dc9db8655d49fb3ae7dd9",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "larry",
+      "id": "ai.anicca.larry-ja-male-cta-reel-replace-1",
+      "integration_ids": [
+        "cmn8x8hdv028uqx0y4gdfse5t"
+      ],
+      "label": "ai.anicca.larry-ja-male-cta-reel-replace-1",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "launchctl",
+        "enable",
+        "gui/501/ai.anicca.larry-ja-male-cta-reel-replace-1",
+        "&&",
+        "launchctl",
+        "bootstrap",
+        "gui/501",
+        "/Users/anicca/Library/LaunchAgents/ai.anicca.larry-ja-male-cta-reel-replace-1.plist"
+      ],
+      "runtime": "launchd",
+      "schedule": {
+        "entries": [
+          {
+            "Hour": 9,
+            "Minute": 45
+          },
+          {
+            "Hour": 20,
+            "Minute": 45
+          }
+        ],
+        "kind": "calendar"
+      },
+      "source_path": "/Users/anicca/Library/LaunchAgents/ai.anicca.larry-ja-male-cta-reel-replace-1.plist",
+      "source_sha256": "6424e5a7470b2e871db9a1143aef8fbbed1a1d35e45bfdc0bf3348f50abacaf5"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": false,
+          "integration_id": "cmn8x8hdv028uqx0y4gdfse5t",
+          "name": "アニッチャ",
+          "platform": "tiktok",
+          "profile": "anicca.jp4"
+        }
+      ],
+      "command": [
+        "/bin/bash",
+        "/Users/anicca/profitable-claude/bin/launchd_run_and_report.sh",
+        "--label",
+        "larry-ja-v1-library-post",
+        "--channel",
+        "telegram",
+        "--target",
+        "8547730585",
+        "--",
+        "/bin/bash",
+        "/Users/anicca/.openclaw/skills/_dispatcher/scripts/cron-bash.sh",
+        "anicca-larry/scripts/run-account.sh",
+        "--variant",
+        "ja-v1",
+        "--tt",
+        "cmn8x8hdv028uqx0y4gdfse5t"
+      ],
+      "command_sha256": "5a988631d7e169806d541936d1818693bf5e5900a0d9a1c2c6e4d605009aeda2",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "larry",
+      "id": "ai.anicca.larry-ja-v1-library-post",
+      "integration_ids": [
+        "cmn8x8hdv028uqx0y4gdfse5t"
+      ],
+      "label": "ai.anicca.larry-ja-v1-library-post",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "launchctl",
+        "enable",
+        "gui/501/ai.anicca.larry-ja-v1-library-post",
+        "&&",
+        "launchctl",
+        "bootstrap",
+        "gui/501",
+        "/Users/anicca/Library/LaunchAgents/ai.anicca.larry-ja-v1-library-post.plist"
+      ],
+      "runtime": "launchd",
+      "schedule": {
+        "entries": [
+          {
+            "Hour": 16,
+            "Minute": 30
+          }
+        ],
+        "kind": "calendar"
+      },
+      "source_path": "/Users/anicca/Library/LaunchAgents/ai.anicca.larry-ja-v1-library-post.plist",
+      "source_sha256": "4d1fab9a9a1a17dd94c930ca19a24fd1d3cb6b5aba0a1a113679e0913236a5a2"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": false,
+          "integration_id": "cmp9sdev5012voh0y58qs45xc",
+          "name": "アニッチャ iOS",
+          "platform": "tiktok",
+          "profile": "anicca.jp"
+        }
+      ],
+      "command": [
+        "/bin/bash",
+        "/Users/anicca/profitable-claude/bin/launchd_run_and_report.sh",
+        "--label",
+        "larry-jp-sunset-reel-replace-1",
+        "--channel",
+        "telegram",
+        "--target",
+        "8547730585",
+        "--",
+        "/bin/bash",
+        "/Users/anicca/profitable-claude/bin/run_larry_fixed_strings.sh",
+        "--account-key",
+        "jp-sunset"
+      ],
+      "command_sha256": "4efa454112df23221a23f397dc4bb604bbf7e7a4fc9669fdfc9c34d0e2ce4764",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "larry",
+      "id": "ai.anicca.larry-jp-sunset-reel-replace-1",
+      "integration_ids": [
+        "cmp9sdev5012voh0y58qs45xc"
+      ],
+      "label": "ai.anicca.larry-jp-sunset-reel-replace-1",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "launchctl",
+        "enable",
+        "gui/501/ai.anicca.larry-jp-sunset-reel-replace-1",
+        "&&",
+        "launchctl",
+        "bootstrap",
+        "gui/501",
+        "/Users/anicca/Library/LaunchAgents/ai.anicca.larry-jp-sunset-reel-replace-1.plist"
+      ],
+      "runtime": "launchd",
+      "schedule": {
+        "entries": [
+          {
+            "Hour": 9,
+            "Minute": 0
+          },
+          {
+            "Hour": 13,
+            "Minute": 30
+          },
+          {
+            "Hour": 14,
+            "Minute": 0
+          },
+          {
+            "Hour": 20,
+            "Minute": 0
+          }
+        ],
+        "kind": "calendar"
+      },
+      "source_path": "/Users/anicca/Library/LaunchAgents/ai.anicca.larry-jp-sunset-reel-replace-1.plist",
+      "source_sha256": "1a127987761b87bc4e68ab61b66efce788cfb91a04a8bc3cc677fd79f46d10e8"
+    },
+    {
+      "accounts": [],
+      "command": [
+        "/bin/bash",
+        "/Users/anicca/profitable-claude/bin/launchd_run_and_report.sh",
+        "--label",
+        "larry-library-filler",
+        "--channel",
+        "telegram",
+        "--target",
+        "8547730585",
+        "--",
+        "/opt/homebrew/bin/python3",
+        "/Users/anicca/.openclaw/skills/anicca-larry-library-filler/scripts/fill.py",
+        "--lang",
+        "both",
+        "--limit",
+        "1"
+      ],
+      "command_sha256": "73cb03bcb216f7c87800c37369e939a0b40f1739d5458d091decdd9a9985d5b3",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "none",
+      "family": "larry",
+      "id": "ai.anicca.larry-library-filler",
+      "integration_ids": [],
+      "label": "ai.anicca.larry-library-filler",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "launchctl",
+        "enable",
+        "gui/501/ai.anicca.larry-library-filler",
+        "&&",
+        "launchctl",
+        "bootstrap",
+        "gui/501",
+        "/Users/anicca/Library/LaunchAgents/ai.anicca.larry-library-filler.plist"
+      ],
+      "runtime": "launchd",
+      "schedule": {
+        "entries": [
+          {
+            "Hour": 3,
+            "Minute": 0
+          }
+        ],
+        "kind": "calendar"
+      },
+      "source_path": "/Users/anicca/Library/LaunchAgents/ai.anicca.larry-library-filler.plist",
+      "source_sha256": "4bb110ca978f461a2a2858a286fb698c87d0299cefea52e36c352ba7b51eac92"
+    },
+    {
+      "accounts": [],
+      "command": [
+        "/bin/bash",
+        "/Users/anicca/profitable-claude/bin/launchd_run_and_report.sh",
+        "--label",
+        "larry-strategy-updater",
+        "--channel",
+        "telegram",
+        "--target",
+        "8547730585",
+        "--",
+        "/opt/homebrew/bin/python3",
+        "/Users/anicca/.openclaw/workspace/tiktok-marketing/scripts/larry-strategy-updater.py"
+      ],
+      "command_sha256": "c2bf99e5bf396e6dff9142e315fea71837a2f22dff16540dbee756788cbfc3ff",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "none",
+      "family": "larry",
+      "id": "ai.anicca.larry-strategy-updater",
+      "integration_ids": [],
+      "label": "ai.anicca.larry-strategy-updater",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "launchctl",
+        "enable",
+        "gui/501/ai.anicca.larry-strategy-updater",
+        "&&",
+        "launchctl",
+        "bootstrap",
+        "gui/501",
+        "/Users/anicca/Library/LaunchAgents/ai.anicca.larry-strategy-updater.plist"
+      ],
+      "runtime": "launchd",
+      "schedule": {
+        "entries": [
+          {
+            "Hour": 5,
+            "Minute": 10
+          }
+        ],
+        "kind": "calendar"
+      },
+      "source_path": "/Users/anicca/Library/LaunchAgents/ai.anicca.larry-strategy-updater.plist",
+      "source_sha256": "669320d96b9562ce5d64cb0381b3fceea83d27569b40bfae31a32f6d592da8aa"
+    },
+    {
+      "accounts": [],
+      "command": [
+        "/opt/homebrew/bin/python3",
+        "/Users/anicca/anicca/skills/earn/marketing-engine/measure/audit_accounts.py"
+      ],
+      "command_sha256": "a01bfb9cc94747bad6860a6e7894a3113d7b270c38ab9b26c07770d8da12a254",
+      "disposition": "migrate",
+      "enabled": true,
+      "external_action": "none",
+      "family": "marketing",
+      "id": "ai.anicca.marketing-account-audit",
+      "integration_ids": [],
+      "label": "ai.anicca.marketing-account-audit",
+      "last_exit": 1,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": true,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "launchctl",
+        "enable",
+        "gui/501/ai.anicca.marketing-account-audit",
+        "&&",
+        "launchctl",
+        "bootstrap",
+        "gui/501",
+        "/Users/anicca/Library/LaunchAgents/ai.anicca.marketing-account-audit.plist"
+      ],
+      "runtime": "launchd",
+      "schedule": {
+        "entries": [
+          {
+            "Hour": 6,
+            "Minute": 30
+          }
+        ],
+        "kind": "calendar"
+      },
+      "source_path": "/Users/anicca/Library/LaunchAgents/ai.anicca.marketing-account-audit.plist",
+      "source_sha256": "dd7168b0e32f3178556206987a3d29c07874c0037701e35bcb1f3742c89afb1e"
+    },
+    {
+      "accounts": [],
+      "command": [
+        "/opt/homebrew/bin/python3",
+        "/Users/anicca/anicca/skills/earn/marketing-engine/report/daily_report.py"
+      ],
+      "command_sha256": "64b503e8d97dd9859500fd90c96179f9d067a9d14c752bc66ce7c0cfc495adb2",
+      "disposition": "migrate",
+      "enabled": true,
+      "external_action": "none",
+      "family": "marketing",
+      "id": "ai.anicca.marketing-daily-report",
+      "integration_ids": [],
+      "label": "ai.anicca.marketing-daily-report",
+      "last_exit": 0,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": true,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "launchctl",
+        "enable",
+        "gui/501/ai.anicca.marketing-daily-report",
+        "&&",
+        "launchctl",
+        "bootstrap",
+        "gui/501",
+        "/Users/anicca/Library/LaunchAgents/ai.anicca.marketing-daily-report.plist"
+      ],
+      "runtime": "launchd",
+      "schedule": {
+        "entries": [
+          {
+            "Hour": 22,
+            "Minute": 0
+          }
+        ],
+        "kind": "calendar"
+      },
+      "source_path": "/Users/anicca/Library/LaunchAgents/ai.anicca.marketing-daily-report.plist",
+      "source_sha256": "4a7b3b46d373e784bd5efc39319c3e1ed0013dfbed283df11c0a7a533b566daf"
+    },
+    {
+      "accounts": [],
+      "command": [
+        "/Users/anicca/profitable-claude/marketing/engine/bin/marketing",
+        "dashboard",
+        "--root",
+        "/Users/anicca/Library/Application Support/AniccaMarketing",
+        "--output",
+        "/Users/anicca/Library/Application Support/AniccaMarketing/dashboard/index.html"
+      ],
+      "command_sha256": "045fa2ed6b3889f99a1860d45d8b55cbf79540bdd5b555e4d990b52987c316e7",
+      "disposition": "migrate",
+      "enabled": true,
+      "external_action": "none",
+      "family": "marketing",
+      "id": "ai.anicca.marketing-dashboard",
+      "integration_ids": [],
+      "label": "ai.anicca.marketing-dashboard",
+      "last_exit": 0,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": true,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "launchctl",
+        "enable",
+        "gui/501/ai.anicca.marketing-dashboard",
+        "&&",
+        "launchctl",
+        "bootstrap",
+        "gui/501",
+        "/Users/anicca/Library/LaunchAgents/ai.anicca.marketing-dashboard.plist"
+      ],
+      "runtime": "launchd",
+      "schedule": {
+        "kind": "interval",
+        "seconds": 900
+      },
+      "source_path": "/Users/anicca/Library/LaunchAgents/ai.anicca.marketing-dashboard.plist",
+      "source_sha256": "60a54953aa8ac8b1db9a1d6368e2c965d258712b6639f2a3ff19360daed230d6"
+    },
+    {
+      "accounts": [],
+      "command": [
+        "/Users/anicca/profitable-claude/marketing/engine/bin/marketing",
+        "observe",
+        "--root",
+        "/Users/anicca/Library/Application Support/AniccaMarketing"
+      ],
+      "command_sha256": "85cc5cc49b0f22f28b9c9395e49ea9a50f1e27fc5a13beaf2183d8d828577f1e",
+      "disposition": "migrate",
+      "enabled": true,
+      "external_action": "none",
+      "family": "marketing",
+      "id": "ai.anicca.marketing-metrics",
+      "integration_ids": [],
+      "label": "ai.anicca.marketing-metrics",
+      "last_exit": 0,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": true,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "launchctl",
+        "enable",
+        "gui/501/ai.anicca.marketing-metrics",
+        "&&",
+        "launchctl",
+        "bootstrap",
+        "gui/501",
+        "/Users/anicca/Library/LaunchAgents/ai.anicca.marketing-metrics.plist"
+      ],
+      "runtime": "launchd",
+      "schedule": {
+        "kind": "interval",
+        "seconds": 900
+      },
+      "source_path": "/Users/anicca/Library/LaunchAgents/ai.anicca.marketing-metrics.plist",
+      "source_sha256": "072c626097321099e0ae29848ce9f03491a92a98304ab06472f974e18dff5a60"
+    },
+    {
+      "accounts": [],
+      "command": [
+        "/opt/homebrew/bin/python3",
+        "/Users/anicca/anicca/skills/earn/marketing-engine/measure/collect_metrics.py"
+      ],
+      "command_sha256": "957393c6098b5a804c451be1b306f9861909fe4bb98a99d5fb7baf87330be3c7",
+      "disposition": "migrate",
+      "enabled": true,
+      "external_action": "none",
+      "family": "marketing",
+      "id": "ai.anicca.marketing-metrics-daily",
+      "integration_ids": [],
+      "label": "ai.anicca.marketing-metrics-daily",
+      "last_exit": 0,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": true,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "launchctl",
+        "enable",
+        "gui/501/ai.anicca.marketing-metrics-daily",
+        "&&",
+        "launchctl",
+        "bootstrap",
+        "gui/501",
+        "/Users/anicca/Library/LaunchAgents/ai.anicca.marketing-metrics-daily.plist"
+      ],
+      "runtime": "launchd",
+      "schedule": {
+        "entries": [
+          {
+            "Hour": 7,
+            "Minute": 0
+          }
+        ],
+        "kind": "calendar"
+      },
+      "source_path": "/Users/anicca/Library/LaunchAgents/ai.anicca.marketing-metrics-daily.plist",
+      "source_sha256": "724544224881965b42980b86088c164579183455026c88283d8b648dbb05d7d3"
+    },
+    {
+      "accounts": [],
+      "command": [
+        "/bin/bash",
+        "/Users/anicca/anicca/skills/earn/marketing-engine/mine/mine_daily.sh"
+      ],
+      "command_sha256": "a3f361684939f4b380933a72208414b8572f73dc16a8c61a2a348333dcc48dec",
+      "disposition": "migrate",
+      "enabled": true,
+      "external_action": "none",
+      "family": "marketing",
+      "id": "ai.anicca.marketing-mine-daily",
+      "integration_ids": [],
+      "label": "ai.anicca.marketing-mine-daily",
+      "last_exit": 0,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": true,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "launchctl",
+        "enable",
+        "gui/501/ai.anicca.marketing-mine-daily",
+        "&&",
+        "launchctl",
+        "bootstrap",
+        "gui/501",
+        "/Users/anicca/Library/LaunchAgents/ai.anicca.marketing-mine-daily.plist"
+      ],
+      "runtime": "launchd",
+      "schedule": {
+        "entries": [
+          {
+            "Hour": 5,
+            "Minute": 30
+          }
+        ],
+        "kind": "calendar"
+      },
+      "source_path": "/Users/anicca/Library/LaunchAgents/ai.anicca.marketing-mine-daily.plist",
+      "source_sha256": "a99eebe14f062e67670e2f61ae980fa0e0c042bbd1c8364e8a6abea5fa90b9b6"
+    },
+    {
+      "accounts": [],
+      "command": [
+        "/opt/homebrew/bin/python3",
+        "/Users/anicca/anicca/skills/earn/marketing-engine/measure/collect_post_metrics.py",
+        "--days",
+        "3",
+        "--limit",
+        "20"
+      ],
+      "command_sha256": "8b776e54a913cee4169ac2d1e6aa7110fbedfd7721b12504450be9d36fef19c1",
+      "disposition": "migrate",
+      "enabled": true,
+      "external_action": "none",
+      "family": "marketing",
+      "id": "ai.anicca.marketing-post-metrics",
+      "integration_ids": [],
+      "label": "ai.anicca.marketing-post-metrics",
+      "last_exit": 0,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": true,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "launchctl",
+        "enable",
+        "gui/501/ai.anicca.marketing-post-metrics",
+        "&&",
+        "launchctl",
+        "bootstrap",
+        "gui/501",
+        "/Users/anicca/Library/LaunchAgents/ai.anicca.marketing-post-metrics.plist"
+      ],
+      "runtime": "launchd",
+      "schedule": {
+        "kind": "interval",
+        "seconds": 21600
+      },
+      "source_path": "/Users/anicca/Library/LaunchAgents/ai.anicca.marketing-post-metrics.plist",
+      "source_sha256": "e43867e681572c70894de5c352e4e695b2ecdafb0fc1408db13aa3bc14d872f2"
+    },
+    {
+      "accounts": [],
+      "command": [
+        "/opt/homebrew/bin/python3",
+        "/Users/anicca/anicca/skills/earn/marketing-engine/report/notify_posts.py",
+        "--hours",
+        "2"
+      ],
+      "command_sha256": "6066791c1d0f2001f3cc030ef4257e08b0683135007a5696aad94ba2d2a779d5",
+      "disposition": "migrate",
+      "enabled": true,
+      "external_action": "none",
+      "family": "marketing",
+      "id": "ai.anicca.marketing-post-notify",
+      "integration_ids": [],
+      "label": "ai.anicca.marketing-post-notify",
+      "last_exit": 0,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": true,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "launchctl",
+        "enable",
+        "gui/501/ai.anicca.marketing-post-notify",
+        "&&",
+        "launchctl",
+        "bootstrap",
+        "gui/501",
+        "/Users/anicca/Library/LaunchAgents/ai.anicca.marketing-post-notify.plist"
+      ],
+      "runtime": "launchd",
+      "schedule": {
+        "kind": "interval",
+        "seconds": 1800
+      },
+      "source_path": "/Users/anicca/Library/LaunchAgents/ai.anicca.marketing-post-notify.plist",
+      "source_sha256": "9d7e3e97e2ac86e266666ee14ea63e17f17d910f5dd26cb3b632c120ccc51bc0"
+    },
+    {
+      "accounts": [],
+      "command": [
+        "/opt/homebrew/bin/python3",
+        "/Users/anicca/anicca/skills/earn/marketing-engine/brain/score.py"
+      ],
+      "command_sha256": "8f35d3e30ff81739ea361c1ac6e7f203a066cb1dd056db9f70638ceec3d225fc",
+      "disposition": "migrate",
+      "enabled": true,
+      "external_action": "none",
+      "family": "marketing",
+      "id": "ai.anicca.marketing-score-daily",
+      "integration_ids": [],
+      "label": "ai.anicca.marketing-score-daily",
+      "last_exit": 0,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": true,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "launchctl",
+        "enable",
+        "gui/501/ai.anicca.marketing-score-daily",
+        "&&",
+        "launchctl",
+        "bootstrap",
+        "gui/501",
+        "/Users/anicca/Library/LaunchAgents/ai.anicca.marketing-score-daily.plist"
+      ],
+      "runtime": "launchd",
+      "schedule": {
+        "entries": [
+          {
+            "Hour": 8,
+            "Minute": 0
+          }
+        ],
+        "kind": "calendar"
+      },
+      "source_path": "/Users/anicca/Library/LaunchAgents/ai.anicca.marketing-score-daily.plist",
+      "source_sha256": "5f2994122eb5fd18bfcfc93598e8bd90043791a77b787b26b085c06ed585d047"
+    },
+    {
+      "accounts": [],
+      "command": [
+        "/opt/homebrew/bin/python3",
+        "/Users/anicca/anicca/skills/earn/marketing-engine/report/weekly_review.py"
+      ],
+      "command_sha256": "c9d8a8c613c1f649fccb11ff1ecffe437ba224aa7ca382edd9e4cbf65a2136ce",
+      "disposition": "migrate",
+      "enabled": true,
+      "external_action": "none",
+      "family": "marketing",
+      "id": "ai.anicca.marketing-weekly-review",
+      "integration_ids": [],
+      "label": "ai.anicca.marketing-weekly-review",
+      "last_exit": 0,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": true,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "launchctl",
+        "enable",
+        "gui/501/ai.anicca.marketing-weekly-review",
+        "&&",
+        "launchctl",
+        "bootstrap",
+        "gui/501",
+        "/Users/anicca/Library/LaunchAgents/ai.anicca.marketing-weekly-review.plist"
+      ],
+      "runtime": "launchd",
+      "schedule": {
+        "entries": [
+          {
+            "Hour": 21,
+            "Minute": 0,
+            "Weekday": 0
+          }
+        ],
+        "kind": "calendar"
+      },
+      "source_path": "/Users/anicca/Library/LaunchAgents/ai.anicca.marketing-weekly-review.plist",
+      "source_sha256": "6d4610355530eb26a9bd81dadbcce41257256e7c79688271c9cf3a3403ac5213"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": false,
+          "integration_id": "cmn8y95rg02d2qx0y09bbk5pb",
+          "name": "Daily Anicca Nudges",
+          "platform": "instagram-standalone",
+          "profile": "anicca.en"
+        },
+        {
+          "disabled": false,
+          "integration_id": "cmq3u37gi005iqp0y90a2w92n",
+          "name": "Anicca - Daily Affirmation ",
+          "platform": "youtube",
+          "profile": "@anicca-ai"
+        }
+      ],
+      "command": [
+        "/bin/bash",
+        "/Users/anicca/profitable-claude/bin/launchd_run_and_report.sh",
+        "--label",
+        "reelclaw-en-card-1",
+        "--channel",
+        "telegram",
+        "--target",
+        "8547730585",
+        "--",
+        "/bin/bash",
+        "/Users/anicca/.openclaw/skills/_dispatcher/scripts/cron-bash.sh",
+        "reelclaw/scripts/run-card-en.sh",
+        "--ig",
+        "cmn8y95rg02d2qx0y09bbk5pb",
+        "--yt",
+        "cmq3u37gi005iqp0y90a2w92n"
+      ],
+      "command_sha256": "355c52f5637f9a44cccbf2ed02b6c78b90860afde3055784d8f6c760a0b85356",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "reelclaw",
+      "id": "ai.anicca.reelclaw-en-card-1",
+      "integration_ids": [
+        "cmn8y95rg02d2qx0y09bbk5pb",
+        "cmq3u37gi005iqp0y90a2w92n"
+      ],
+      "label": "ai.anicca.reelclaw-en-card-1",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "launchctl",
+        "enable",
+        "gui/501/ai.anicca.reelclaw-en-card-1",
+        "&&",
+        "launchctl",
+        "bootstrap",
+        "gui/501",
+        "/Users/anicca/Library/LaunchAgents/ai.anicca.reelclaw-en-card-1.plist"
+      ],
+      "runtime": "launchd",
+      "schedule": {
+        "entries": [
+          {
+            "Hour": 11,
+            "Minute": 0
+          }
+        ],
+        "kind": "calendar"
+      },
+      "source_path": "/Users/anicca/Library/LaunchAgents/ai.anicca.reelclaw-en-card-1.plist",
+      "source_sha256": "8d0d544b5e72405f22a53dd7974229edc87144e1c66562afbbc9b01119111b17"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": false,
+          "integration_id": "cmn8y95rg02d2qx0y09bbk5pb",
+          "name": "Daily Anicca Nudges",
+          "platform": "instagram-standalone",
+          "profile": "anicca.en"
+        },
+        {
+          "disabled": false,
+          "integration_id": "cmq3u37gi005iqp0y90a2w92n",
+          "name": "Anicca - Daily Affirmation ",
+          "platform": "youtube",
+          "profile": "@anicca-ai"
+        }
+      ],
+      "command": [
+        "/bin/bash",
+        "/Users/anicca/profitable-claude/bin/launchd_run_and_report.sh",
+        "--label",
+        "reelclaw-en-card-2",
+        "--channel",
+        "telegram",
+        "--target",
+        "8547730585",
+        "--",
+        "/bin/bash",
+        "/Users/anicca/.openclaw/workspace/skills/reelclaw/scripts/run-card-en.sh",
+        "--ig",
+        "cmn8y95rg02d2qx0y09bbk5pb",
+        "--yt",
+        "cmq3u37gi005iqp0y90a2w92n"
+      ],
+      "command_sha256": "d6ee26c75ab0f2ac4ba2857eb3f94fbcdde9bff1920f45060df54296a25ca9ba",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "reelclaw",
+      "id": "ai.anicca.reelclaw-en-card-2",
+      "integration_ids": [
+        "cmn8y95rg02d2qx0y09bbk5pb",
+        "cmq3u37gi005iqp0y90a2w92n"
+      ],
+      "label": "ai.anicca.reelclaw-en-card-2",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "launchctl",
+        "enable",
+        "gui/501/ai.anicca.reelclaw-en-card-2",
+        "&&",
+        "launchctl",
+        "bootstrap",
+        "gui/501",
+        "/Users/anicca/Library/LaunchAgents/ai.anicca.reelclaw-en-card-2.plist"
+      ],
+      "runtime": "launchd",
+      "schedule": {
+        "entries": [
+          {
+            "Hour": 0,
+            "Minute": 0
+          }
+        ],
+        "kind": "calendar"
+      },
+      "source_path": "/Users/anicca/Library/LaunchAgents/ai.anicca.reelclaw-en-card-2.plist",
+      "source_sha256": "77476b4d32ef54d984effdb617f12cd3673d6811bfcaf5c0182eae97da902b81"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": false,
+          "integration_id": "cmn8y95rg02d2qx0y09bbk5pb",
+          "name": "Daily Anicca Nudges",
+          "platform": "instagram-standalone",
+          "profile": "anicca.en"
+        },
+        {
+          "disabled": false,
+          "integration_id": "cmq3u37gi005iqp0y90a2w92n",
+          "name": "Anicca - Daily Affirmation ",
+          "platform": "youtube",
+          "profile": "@anicca-ai"
+        }
+      ],
+      "command": [
+        "/bin/bash",
+        "/Users/anicca/profitable-claude/bin/launchd_run_and_report.sh",
+        "--label",
+        "reelclaw-en-card-3",
+        "--channel",
+        "telegram",
+        "--target",
+        "8547730585",
+        "--",
+        "/bin/bash",
+        "/Users/anicca/.openclaw/skills/_dispatcher/scripts/cron-bash.sh",
+        "reelclaw/scripts/run-card-en.sh",
+        "--ig",
+        "cmn8y95rg02d2qx0y09bbk5pb",
+        "--yt",
+        "cmq3u37gi005iqp0y90a2w92n"
+      ],
+      "command_sha256": "5fa3575121e55823390a20e4df0361391bf4167a4d84217ab814457016dc946a",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "reelclaw",
+      "id": "ai.anicca.reelclaw-en-card-3",
+      "integration_ids": [
+        "cmn8y95rg02d2qx0y09bbk5pb",
+        "cmq3u37gi005iqp0y90a2w92n"
+      ],
+      "label": "ai.anicca.reelclaw-en-card-3",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "launchctl",
+        "enable",
+        "gui/501/ai.anicca.reelclaw-en-card-3",
+        "&&",
+        "launchctl",
+        "bootstrap",
+        "gui/501",
+        "/Users/anicca/Library/LaunchAgents/ai.anicca.reelclaw-en-card-3.plist"
+      ],
+      "runtime": "launchd",
+      "schedule": {
+        "entries": [
+          {
+            "Hour": 17,
+            "Minute": 23
+          }
+        ],
+        "kind": "calendar"
+      },
+      "source_path": "/Users/anicca/Library/LaunchAgents/ai.anicca.reelclaw-en-card-3.plist",
+      "source_sha256": "590941ef8114baff17ca9814758820a48a6792ee306d81528f57b8c9ec23bd05"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": false,
+          "integration_id": "cmn8y95rg02d2qx0y09bbk5pb",
+          "name": "Daily Anicca Nudges",
+          "platform": "instagram-standalone",
+          "profile": "anicca.en"
+        },
+        {
+          "disabled": false,
+          "integration_id": "cmq3u37gi005iqp0y90a2w92n",
+          "name": "Anicca - Daily Affirmation ",
+          "platform": "youtube",
+          "profile": "@anicca-ai"
+        }
+      ],
+      "command": [
+        "/bin/bash",
+        "/Users/anicca/profitable-claude/bin/launchd_run_and_report.sh",
+        "--label",
+        "reelclaw-en-widget-1",
+        "--channel",
+        "telegram",
+        "--target",
+        "8547730585",
+        "--",
+        "/bin/bash",
+        "/Users/anicca/.openclaw/skills/_dispatcher/scripts/cron-bash.sh",
+        "reelclaw/scripts/run-widget-en.sh",
+        "--ig",
+        "cmn8y95rg02d2qx0y09bbk5pb",
+        "--yt",
+        "cmq3u37gi005iqp0y90a2w92n"
+      ],
+      "command_sha256": "d09f396a934000687845ef7bf5b2b62505e8f41ff2cab59b68dde4d6884374c9",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "reelclaw",
+      "id": "ai.anicca.reelclaw-en-widget-1",
+      "integration_ids": [
+        "cmn8y95rg02d2qx0y09bbk5pb",
+        "cmq3u37gi005iqp0y90a2w92n"
+      ],
+      "label": "ai.anicca.reelclaw-en-widget-1",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "launchctl",
+        "enable",
+        "gui/501/ai.anicca.reelclaw-en-widget-1",
+        "&&",
+        "launchctl",
+        "bootstrap",
+        "gui/501",
+        "/Users/anicca/Library/LaunchAgents/ai.anicca.reelclaw-en-widget-1.plist"
+      ],
+      "runtime": "launchd",
+      "schedule": {
+        "entries": [
+          {
+            "Hour": 9,
+            "Minute": 30
+          }
+        ],
+        "kind": "calendar"
+      },
+      "source_path": "/Users/anicca/Library/LaunchAgents/ai.anicca.reelclaw-en-widget-1.plist",
+      "source_sha256": "3f85c7ce579088dd85a1560e8b74aa501409753888ac250dc724a2503211d5e5"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": false,
+          "integration_id": "cmn8y95rg02d2qx0y09bbk5pb",
+          "name": "Daily Anicca Nudges",
+          "platform": "instagram-standalone",
+          "profile": "anicca.en"
+        },
+        {
+          "disabled": false,
+          "integration_id": "cmq3u37gi005iqp0y90a2w92n",
+          "name": "Anicca - Daily Affirmation ",
+          "platform": "youtube",
+          "profile": "@anicca-ai"
+        }
+      ],
+      "command": [
+        "/bin/bash",
+        "/Users/anicca/profitable-claude/bin/launchd_run_and_report.sh",
+        "--label",
+        "reelclaw-en-widget-2",
+        "--channel",
+        "telegram",
+        "--target",
+        "8547730585",
+        "--",
+        "/bin/bash",
+        "/Users/anicca/.openclaw/skills/_dispatcher/scripts/cron-bash.sh",
+        "reelclaw/scripts/run-widget-en.sh",
+        "--ig",
+        "cmn8y95rg02d2qx0y09bbk5pb",
+        "--yt",
+        "cmq3u37gi005iqp0y90a2w92n"
+      ],
+      "command_sha256": "b33102c9f93b402ba6acabdd2bb9a2638aa02afedb18554e65e3e0b18afdb372",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "reelclaw",
+      "id": "ai.anicca.reelclaw-en-widget-2",
+      "integration_ids": [
+        "cmn8y95rg02d2qx0y09bbk5pb",
+        "cmq3u37gi005iqp0y90a2w92n"
+      ],
+      "label": "ai.anicca.reelclaw-en-widget-2",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "launchctl",
+        "enable",
+        "gui/501/ai.anicca.reelclaw-en-widget-2",
+        "&&",
+        "launchctl",
+        "bootstrap",
+        "gui/501",
+        "/Users/anicca/Library/LaunchAgents/ai.anicca.reelclaw-en-widget-2.plist"
+      ],
+      "runtime": "launchd",
+      "schedule": {
+        "entries": [
+          {
+            "Hour": 7,
+            "Minute": 0
+          },
+          {
+            "Hour": 21,
+            "Minute": 0
+          }
+        ],
+        "kind": "calendar"
+      },
+      "source_path": "/Users/anicca/Library/LaunchAgents/ai.anicca.reelclaw-en-widget-2.plist",
+      "source_sha256": "a24244168c13391aa452086c199987f5e53253d926b42bc468b2fde136a0de80"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": false,
+          "integration_id": "cmoig11ew001zlv0yk6vqo1us",
+          "name": "user6721125412040",
+          "platform": "tiktok",
+          "profile": "honne_reveal"
+        }
+      ],
+      "command": [
+        "/bin/bash",
+        "/Users/anicca/profitable-claude/bin/launchd_run_and_report.sh",
+        "--label",
+        "reelclaw-honne-en",
+        "--channel",
+        "telegram",
+        "--target",
+        "8547730585",
+        "--",
+        "/bin/bash",
+        "/Users/anicca/.openclaw/skills/_dispatcher/scripts/cron-bash.sh",
+        "reelclaw/scripts/run-honne-en.sh",
+        "--tt",
+        "cmoig11ew001zlv0yk6vqo1us"
+      ],
+      "command_sha256": "4d5559b8fe9515e0c6e639a023fb6bbf31982fb7916558dd6ad1a6fe6b5ac017",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "reelclaw",
+      "id": "ai.anicca.reelclaw-honne-en",
+      "integration_ids": [
+        "cmoig11ew001zlv0yk6vqo1us"
+      ],
+      "label": "ai.anicca.reelclaw-honne-en",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "launchctl",
+        "enable",
+        "gui/501/ai.anicca.reelclaw-honne-en",
+        "&&",
+        "launchctl",
+        "bootstrap",
+        "gui/501",
+        "/Users/anicca/Library/LaunchAgents/ai.anicca.reelclaw-honne-en.plist"
+      ],
+      "runtime": "launchd",
+      "schedule": {
+        "entries": [
+          {
+            "Hour": 7,
+            "Minute": 0
+          },
+          {
+            "Hour": 11,
+            "Minute": 0
+          },
+          {
+            "Hour": 20,
+            "Minute": 30
+          }
+        ],
+        "kind": "calendar"
+      },
+      "source_path": "/Users/anicca/Library/LaunchAgents/ai.anicca.reelclaw-honne-en.plist",
+      "source_sha256": "f0164c2e941158cfe9bf826d6ddc991795ada2eee77fa7f867c2aa2c58055925"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": false,
+          "integration_id": "cmnit95mg015rrm0ye5vm8dhl",
+          "name": "本音翻訳",
+          "platform": "tiktok",
+          "profile": "honnevideo"
+        }
+      ],
+      "command": [
+        "/bin/bash",
+        "/Users/anicca/profitable-claude/bin/launchd_run_and_report.sh",
+        "--label",
+        "reelclaw-honne-ja",
+        "--channel",
+        "telegram",
+        "--target",
+        "8547730585",
+        "--",
+        "/bin/bash",
+        "/Users/anicca/.openclaw/skills/_dispatcher/scripts/cron-bash.sh",
+        "reelclaw/scripts/run-honne-ja.sh",
+        "--tt",
+        "cmnit95mg015rrm0ye5vm8dhl"
+      ],
+      "command_sha256": "0faa642eebdd635091338b37d1f8f782f6aa2ddddd7f15887ea4c54ca0740d08",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "reelclaw",
+      "id": "ai.anicca.reelclaw-honne-ja",
+      "integration_ids": [
+        "cmnit95mg015rrm0ye5vm8dhl"
+      ],
+      "label": "ai.anicca.reelclaw-honne-ja",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "launchctl",
+        "enable",
+        "gui/501/ai.anicca.reelclaw-honne-ja",
+        "&&",
+        "launchctl",
+        "bootstrap",
+        "gui/501",
+        "/Users/anicca/Library/LaunchAgents/ai.anicca.reelclaw-honne-ja.plist"
+      ],
+      "runtime": "launchd",
+      "schedule": {
+        "entries": [
+          {
+            "Hour": 12,
+            "Minute": 30
+          },
+          {
+            "Hour": 21,
+            "Minute": 30
+          }
+        ],
+        "kind": "calendar"
+      },
+      "source_path": "/Users/anicca/Library/LaunchAgents/ai.anicca.reelclaw-honne-ja.plist",
+      "source_sha256": "745ee2bb2011877463a8e60d4cfd18f47f9e714b606ae3b50bb201ab89a637d6"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": false,
+          "integration_id": "cmnit95mg015rrm0ye5vm8dhl",
+          "name": "本音翻訳",
+          "platform": "tiktok",
+          "profile": "honnevideo"
+        }
+      ],
+      "command": [
+        "/bin/bash",
+        "/Users/anicca/profitable-claude/bin/launchd_run_and_report.sh",
+        "--label",
+        "reelclaw-honne-ja-fresh",
+        "--channel",
+        "telegram",
+        "--target",
+        "8547730585",
+        "--",
+        "/bin/bash",
+        "/Users/anicca/.openclaw/skills/_dispatcher/scripts/cron-bash.sh",
+        "reelclaw/scripts/run-honne-fresh-ja.sh",
+        "--tt",
+        "cmnit95mg015rrm0ye5vm8dhl"
+      ],
+      "command_sha256": "3d35396f466e37bb47ac665ac049c25b68f5107282721898656b36ebf6d98de7",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "reelclaw",
+      "id": "ai.anicca.reelclaw-honne-ja-fresh",
+      "integration_ids": [
+        "cmnit95mg015rrm0ye5vm8dhl"
+      ],
+      "label": "ai.anicca.reelclaw-honne-ja-fresh",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "launchctl",
+        "enable",
+        "gui/501/ai.anicca.reelclaw-honne-ja-fresh",
+        "&&",
+        "launchctl",
+        "bootstrap",
+        "gui/501",
+        "/Users/anicca/Library/LaunchAgents/ai.anicca.reelclaw-honne-ja-fresh.plist"
+      ],
+      "runtime": "launchd",
+      "schedule": {
+        "entries": [
+          {
+            "Hour": 8,
+            "Minute": 30
+          }
+        ],
+        "kind": "calendar"
+      },
+      "source_path": "/Users/anicca/Library/LaunchAgents/ai.anicca.reelclaw-honne-ja-fresh.plist",
+      "source_sha256": "a6b34929709c1d80c052239884f6b0b06b31db5fbb605aa7ac4d53f5d732f834"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": false,
+          "integration_id": "cmmzzg2es0539p30ycb94ayx0",
+          "name": "Anicca",
+          "platform": "instagram-standalone",
+          "profile": "anicca.jp.videos"
+        },
+        {
+          "disabled": false,
+          "integration_id": "cmn1oukj9012nnq0yqhouc3ib",
+          "name": "Anicca",
+          "platform": "youtube",
+          "profile": "@anicca-jp"
+        },
+        {
+          "disabled": false,
+          "integration_id": "cmn8x8hdv028uqx0y4gdfse5t",
+          "name": "アニッチャ",
+          "platform": "tiktok",
+          "profile": "anicca.jp4"
+        }
+      ],
+      "command": [
+        "/bin/bash",
+        "/Users/anicca/profitable-claude/bin/launchd_run_and_report.sh",
+        "--label",
+        "reelclaw-ja-card-1",
+        "--channel",
+        "telegram",
+        "--target",
+        "8547730585",
+        "--",
+        "/bin/bash",
+        "/Users/anicca/.openclaw/skills/_dispatcher/scripts/cron-bash.sh",
+        "reelclaw/scripts/run-card-ja.sh",
+        "--use-pattern-jsonl",
+        "--tt",
+        "cmn8x8hdv028uqx0y4gdfse5t",
+        "--ig",
+        "cmmzzg2es0539p30ycb94ayx0",
+        "--yt",
+        "cmn1oukj9012nnq0yqhouc3ib"
+      ],
+      "command_sha256": "80fb51d7daaffa6a5383bdcd7b1a18464e432329089af66495464fc4df1b143f",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "reelclaw",
+      "id": "ai.anicca.reelclaw-ja-card-1",
+      "integration_ids": [
+        "cmmzzg2es0539p30ycb94ayx0",
+        "cmn1oukj9012nnq0yqhouc3ib",
+        "cmn8x8hdv028uqx0y4gdfse5t"
+      ],
+      "label": "ai.anicca.reelclaw-ja-card-1",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "launchctl",
+        "enable",
+        "gui/501/ai.anicca.reelclaw-ja-card-1",
+        "&&",
+        "launchctl",
+        "bootstrap",
+        "gui/501",
+        "/Users/anicca/Library/LaunchAgents/ai.anicca.reelclaw-ja-card-1.plist"
+      ],
+      "runtime": "launchd",
+      "schedule": {
+        "entries": [
+          {
+            "Hour": 4,
+            "Minute": 47
+          },
+          {
+            "Hour": 12,
+            "Minute": 0
+          }
+        ],
+        "kind": "calendar"
+      },
+      "source_path": "/Users/anicca/Library/LaunchAgents/ai.anicca.reelclaw-ja-card-1.plist",
+      "source_sha256": "b222c23f9ca3f7e38d6d3f20f04d186981739c6ccd91c87bafc138b839d69e7d"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": false,
+          "integration_id": "cmmzzg2es0539p30ycb94ayx0",
+          "name": "Anicca",
+          "platform": "instagram-standalone",
+          "profile": "anicca.jp.videos"
+        },
+        {
+          "disabled": false,
+          "integration_id": "cmn1oukj9012nnq0yqhouc3ib",
+          "name": "Anicca",
+          "platform": "youtube",
+          "profile": "@anicca-jp"
+        },
+        {
+          "disabled": false,
+          "integration_id": "cmq2aoena08bhqp0yx1epjcik",
+          "name": "アニッチャ",
+          "platform": "tiktok",
+          "profile": "anicca.he"
+        }
+      ],
+      "command": [
+        "/bin/bash",
+        "/Users/anicca/profitable-claude/bin/launchd_run_and_report.sh",
+        "--label",
+        "reelclaw-ja-card-2",
+        "--channel",
+        "telegram",
+        "--target",
+        "8547730585",
+        "--",
+        "/bin/bash",
+        "/Users/anicca/.openclaw/workspace/skills/reelclaw/scripts/run-card-ja.sh",
+        "--use-pattern-jsonl",
+        "--tt",
+        "cmq2aoena08bhqp0yx1epjcik",
+        "--ig",
+        "cmmzzg2es0539p30ycb94ayx0",
+        "--yt",
+        "cmn1oukj9012nnq0yqhouc3ib"
+      ],
+      "command_sha256": "dd33b4200d2a45496233d0ddfd88b16fd5b7b2474289b9324e6b1469e562b001",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "reelclaw",
+      "id": "ai.anicca.reelclaw-ja-card-2",
+      "integration_ids": [
+        "cmmzzg2es0539p30ycb94ayx0",
+        "cmn1oukj9012nnq0yqhouc3ib",
+        "cmq2aoena08bhqp0yx1epjcik"
+      ],
+      "label": "ai.anicca.reelclaw-ja-card-2",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "launchctl",
+        "enable",
+        "gui/501/ai.anicca.reelclaw-ja-card-2",
+        "&&",
+        "launchctl",
+        "bootstrap",
+        "gui/501",
+        "/Users/anicca/Library/LaunchAgents/ai.anicca.reelclaw-ja-card-2.plist"
+      ],
+      "runtime": "launchd",
+      "schedule": {
+        "entries": [
+          {
+            "Hour": 20,
+            "Minute": 0
+          }
+        ],
+        "kind": "calendar"
+      },
+      "source_path": "/Users/anicca/Library/LaunchAgents/ai.anicca.reelclaw-ja-card-2.plist",
+      "source_sha256": "988b5a6ede58e430181abceca81bff1045554e6df4955fa2ae74e84eb6932564"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": false,
+          "integration_id": "cmmzzg2es0539p30ycb94ayx0",
+          "name": "Anicca",
+          "platform": "instagram-standalone",
+          "profile": "anicca.jp.videos"
+        },
+        {
+          "disabled": false,
+          "integration_id": "cmn1oukj9012nnq0yqhouc3ib",
+          "name": "Anicca",
+          "platform": "youtube",
+          "profile": "@anicca-jp"
+        },
+        {
+          "disabled": false,
+          "integration_id": "cmp9sdev5012voh0y58qs45xc",
+          "name": "アニッチャ iOS",
+          "platform": "tiktok",
+          "profile": "anicca.jp"
+        }
+      ],
+      "command": [
+        "/bin/bash",
+        "/Users/anicca/profitable-claude/bin/launchd_run_and_report.sh",
+        "--label",
+        "reelclaw-ja-widget-1",
+        "--channel",
+        "telegram",
+        "--target",
+        "8547730585",
+        "--",
+        "/bin/bash",
+        "/Users/anicca/.openclaw/skills/_dispatcher/scripts/cron-bash.sh",
+        "reelclaw/scripts/run-widget-ja.sh",
+        "--tt",
+        "cmp9sdev5012voh0y58qs45xc",
+        "--ig",
+        "cmmzzg2es0539p30ycb94ayx0",
+        "--yt",
+        "cmn1oukj9012nnq0yqhouc3ib"
+      ],
+      "command_sha256": "0c601c800a36967569ceb3a6880ee69241650bc2ac3f90b17cf17838d45ad93f",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "reelclaw",
+      "id": "ai.anicca.reelclaw-ja-widget-1",
+      "integration_ids": [
+        "cmmzzg2es0539p30ycb94ayx0",
+        "cmn1oukj9012nnq0yqhouc3ib",
+        "cmp9sdev5012voh0y58qs45xc"
+      ],
+      "label": "ai.anicca.reelclaw-ja-widget-1",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "launchctl",
+        "enable",
+        "gui/501/ai.anicca.reelclaw-ja-widget-1",
+        "&&",
+        "launchctl",
+        "bootstrap",
+        "gui/501",
+        "/Users/anicca/Library/LaunchAgents/ai.anicca.reelclaw-ja-widget-1.plist"
+      ],
+      "runtime": "launchd",
+      "schedule": {
+        "entries": [
+          {
+            "Hour": 8,
+            "Minute": 0
+          },
+          {
+            "Hour": 22,
+            "Minute": 37
+          }
+        ],
+        "kind": "calendar"
+      },
+      "source_path": "/Users/anicca/Library/LaunchAgents/ai.anicca.reelclaw-ja-widget-1.plist",
+      "source_sha256": "c29ee402609094a73572a0b93c2be8b5ca4b69667bffc2c6248928702a434a99"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": false,
+          "integration_id": "cmmzzg2es0539p30ycb94ayx0",
+          "name": "Anicca",
+          "platform": "instagram-standalone",
+          "profile": "anicca.jp.videos"
+        },
+        {
+          "disabled": false,
+          "integration_id": "cmn1oukj9012nnq0yqhouc3ib",
+          "name": "Anicca",
+          "platform": "youtube",
+          "profile": "@anicca-jp"
+        },
+        {
+          "disabled": false,
+          "integration_id": "cmp9txjdp01c8oh0yb6dhlarr",
+          "name": "アニッチャ お笑い",
+          "platform": "tiktok",
+          "profile": "anicca_buddha"
+        }
+      ],
+      "command": [
+        "/bin/bash",
+        "/Users/anicca/profitable-claude/bin/launchd_run_and_report.sh",
+        "--label",
+        "reelclaw-ja-widget-2",
+        "--channel",
+        "telegram",
+        "--target",
+        "8547730585",
+        "--",
+        "/bin/bash",
+        "/Users/anicca/.openclaw/workspace/skills/reelclaw/scripts/run-widget-ja.sh",
+        "--tt",
+        "cmp9txjdp01c8oh0yb6dhlarr",
+        "--ig",
+        "cmmzzg2es0539p30ycb94ayx0",
+        "--yt",
+        "cmn1oukj9012nnq0yqhouc3ib"
+      ],
+      "command_sha256": "b9d968b915a99e370eb542cfb3994eb410db7fa15de421598f56755a40bbc6a5",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "reelclaw",
+      "id": "ai.anicca.reelclaw-ja-widget-2",
+      "integration_ids": [
+        "cmmzzg2es0539p30ycb94ayx0",
+        "cmn1oukj9012nnq0yqhouc3ib",
+        "cmp9txjdp01c8oh0yb6dhlarr"
+      ],
+      "label": "ai.anicca.reelclaw-ja-widget-2",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "launchctl",
+        "enable",
+        "gui/501/ai.anicca.reelclaw-ja-widget-2",
+        "&&",
+        "launchctl",
+        "bootstrap",
+        "gui/501",
+        "/Users/anicca/Library/LaunchAgents/ai.anicca.reelclaw-ja-widget-2.plist"
+      ],
+      "runtime": "launchd",
+      "schedule": {
+        "entries": [
+          {
+            "Hour": 16,
+            "Minute": 0
+          }
+        ],
+        "kind": "calendar"
+      },
+      "source_path": "/Users/anicca/Library/LaunchAgents/ai.anicca.reelclaw-ja-widget-2.plist",
+      "source_sha256": "9243e5c82fd64f3f1057cf4718d2e9d91f9006bc969fdd548847263c386188bf"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": true,
+          "integration_id": "cmo5s4edx00vgn10ygnu34a0n",
+          "name": "アニッチャ - 無常の教え",
+          "platform": "tiktok",
+          "profile": "obou_anicca"
+        }
+      ],
+      "command": [
+        "/bin/bash",
+        "/Users/anicca/profitable-claude/bin/launchd_run_and_report.sh",
+        "--label",
+        "watercolor-jp-evening",
+        "--channel",
+        "telegram",
+        "--target",
+        "8547730585",
+        "--",
+        "/bin/bash",
+        "/Users/anicca/.openclaw/skills/_dispatcher/scripts/cron-bash.sh",
+        "watercolor-monk-factory/scripts/run.sh",
+        "jp",
+        "evening",
+        "cmo5s4edx00vgn10ygnu34a0n"
+      ],
+      "command_sha256": "22b2457a77addac662bb336d6d27af3e8141687d61b758e7d3967db5d22b1d5e",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "watercolor",
+      "id": "ai.anicca.watercolor-jp-evening",
+      "integration_ids": [
+        "cmo5s4edx00vgn10ygnu34a0n"
+      ],
+      "label": "ai.anicca.watercolor-jp-evening",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "launchctl",
+        "enable",
+        "gui/501/ai.anicca.watercolor-jp-evening",
+        "&&",
+        "launchctl",
+        "bootstrap",
+        "gui/501",
+        "/Users/anicca/Library/LaunchAgents/ai.anicca.watercolor-jp-evening.plist"
+      ],
+      "runtime": "launchd",
+      "schedule": {
+        "entries": [
+          {
+            "Hour": 20,
+            "Minute": 0
+          }
+        ],
+        "kind": "calendar"
+      },
+      "source_path": "/Users/anicca/Library/LaunchAgents/ai.anicca.watercolor-jp-evening.plist",
+      "source_sha256": "2dfc560ace8f7fc61e31d622d059a0f7aa29c7e150754ad7a5d078e6f8a38961"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": true,
+          "integration_id": "cmo5s4edx00vgn10ygnu34a0n",
+          "name": "アニッチャ - 無常の教え",
+          "platform": "tiktok",
+          "profile": "obou_anicca"
+        }
+      ],
+      "command": [
+        "/bin/bash",
+        "/Users/anicca/profitable-claude/bin/launchd_run_and_report.sh",
+        "--label",
+        "watercolor-jp-morning",
+        "--channel",
+        "telegram",
+        "--target",
+        "8547730585",
+        "--",
+        "/bin/bash",
+        "/Users/anicca/.openclaw/skills/_dispatcher/scripts/cron-bash.sh",
+        "watercolor-monk-factory/scripts/run.sh",
+        "jp",
+        "morning",
+        "cmo5s4edx00vgn10ygnu34a0n"
+      ],
+      "command_sha256": "1618e0ae21bda51f6fb1b3f4cbe53afa62a435f8a80c7d411ceb57d87c07c537",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "watercolor",
+      "id": "ai.anicca.watercolor-jp-morning",
+      "integration_ids": [
+        "cmo5s4edx00vgn10ygnu34a0n"
+      ],
+      "label": "ai.anicca.watercolor-jp-morning",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "launchctl",
+        "enable",
+        "gui/501/ai.anicca.watercolor-jp-morning",
+        "&&",
+        "launchctl",
+        "bootstrap",
+        "gui/501",
+        "/Users/anicca/Library/LaunchAgents/ai.anicca.watercolor-jp-morning.plist"
+      ],
+      "runtime": "launchd",
+      "schedule": {
+        "entries": [
+          {
+            "Hour": 7,
+            "Minute": 0
+          }
+        ],
+        "kind": "calendar"
+      },
+      "source_path": "/Users/anicca/Library/LaunchAgents/ai.anicca.watercolor-jp-morning.plist",
+      "source_sha256": "bb74186df205913b7ff030202071711a0854540cf2c96f7d80f05089de0b1609"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": true,
+          "integration_id": "cmo5s4edx00vgn10ygnu34a0n",
+          "name": "アニッチャ - 無常の教え",
+          "platform": "tiktok",
+          "profile": "obou_anicca"
+        }
+      ],
+      "command": [
+        "/bin/bash",
+        "/Users/anicca/profitable-claude/bin/launchd_run_and_report.sh",
+        "--label",
+        "watercolor-jp-noon",
+        "--channel",
+        "telegram",
+        "--target",
+        "8547730585",
+        "--",
+        "/bin/bash",
+        "/Users/anicca/.openclaw/skills/_dispatcher/scripts/cron-bash.sh",
+        "watercolor-monk-factory/scripts/run.sh",
+        "jp",
+        "noon",
+        "cmo5s4edx00vgn10ygnu34a0n"
+      ],
+      "command_sha256": "5d4678fa7713898aa4091cf5b5fc6e8b7aaebb521bed3b8d686e83b7f8cbfd4c",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "watercolor",
+      "id": "ai.anicca.watercolor-jp-noon",
+      "integration_ids": [
+        "cmo5s4edx00vgn10ygnu34a0n"
+      ],
+      "label": "ai.anicca.watercolor-jp-noon",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "launchctl",
+        "enable",
+        "gui/501/ai.anicca.watercolor-jp-noon",
+        "&&",
+        "launchctl",
+        "bootstrap",
+        "gui/501",
+        "/Users/anicca/Library/LaunchAgents/ai.anicca.watercolor-jp-noon.plist"
+      ],
+      "runtime": "launchd",
+      "schedule": {
+        "entries": [
+          {
+            "Hour": 12,
+            "Minute": 30
+          }
+        ],
+        "kind": "calendar"
+      },
+      "source_path": "/Users/anicca/Library/LaunchAgents/ai.anicca.watercolor-jp-noon.plist",
+      "source_sha256": "4a2a63c7ee4da0a61306e63c9010f64e6d4176836985bf28f9e0237c911def2f"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": false,
+          "integration_id": "cmlt171eq04d9r00yzzceb6bw",
+          "name": "Anicca",
+          "platform": "tiktok",
+          "profile": "aniccaen2"
+        }
+      ],
+      "command": "Execute Larry per-account cron (Dais 2026-06-07 spec Part I+T+X).\n\n★ fixed-strings driven flow (NEW). DO NOT use old generate-slides.js. ★\n\nSTEP 1 — Read fixed-strings:\n  FS=~/.openclaw/skills/anicca-larry/state/fixed-strings-larry-en-v1.json\n  (defines slide1_hook, slide7_cta?, bg_mode, bg files; per-account brand)\n\nSTEP 2 — Read library + history:\n  - ~/.openclaw/state/content-library/pattern-card-en.jsonl\n  - ~/.openclaw/state/content-library/account-history.jsonl\n    filter for this cron's account, last 14d → forbidden BODY texts\n  - Pick 1 viral pattern with high views, source_id NOT in 14d, emotion diversity\n\nSTEP 3 — Generate 5 fresh BODY texts (slide 2-6) ONLY in en:\n  Clone pattern STRUCTURE + emotion (clone-don't-template). Fresh wording.\n  Write picks.json:\n    [body1, body2, body3, body4, body5]\n  Write source_id.txt + emotion.txt for append-to-history.\n\nSTEP 4 — Build slides (NEW helper):\n  RUN_DIR=\"$HOME/.openclaw/workspace/tiktok-marketing/run-larry-en-v1-$(date +%Y%m%d-%H%M)\"\n  mkdir -p \"$RUN_DIR\"\n  cp picks.json \"$RUN_DIR/picks.json\"  # body texts only\n  bash ~/.openclaw/workspace/skills/larry/scripts/build-from-fixed-strings.sh \\\n    \"$FS\" \"$RUN_DIR/picks.json\" \"$RUN_DIR\"\n\nSTEP 5 — Post to TikTok via post-to-tiktok.js (SSOT for DIRECT_POST + PUBLIC + autoAddMusic):\n  node ~/.openclaw/workspace/skills/larry/scripts/post-to-tiktok.js \\\n    --tt cmlt171eq04d9r00yzzceb6bw --dir \"$RUN_DIR\" \\\n    --caption \"<5-8 word caption derived from hook+body>\" \\\n    --title \"<account-appropriate title>\"\n\nSTEP 6 — Append history:\n  bash ~/.openclaw/skills/_shared/append-to-history.sh \\\n    --account larry-anicca-en-1 --platform TT --post-id <TT_POST_ID> \\\n    --source-id \"$(cat $RUN_DIR/source_id.txt)\" \\\n    --hook \"$(python3 -c \\\"import json; print(json.load(open('$FS'))['slide1_hook'])\\\")\" \\\n    --emotion \"$(cat $RUN_DIR/emotion.txt)\"\n\nReport TT_POST_ID + source_id used.",
+      "command_sha256": "13b792fdd4047053c26a34386d68d2c5a6d91d3c0efcfd093f503911f459b200",
+      "disposition": "retire",
+      "enabled": true,
+      "external_action": "publish",
+      "family": "openclaw-legacy-marketing",
+      "id": "a4092e38-8229-461e-8cbd-0e01478566f0",
+      "integration_ids": [
+        "cmlt171eq04d9r00yzzceb6bw"
+      ],
+      "label": "larry-anicca-en-1",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": true,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "openclaw",
+        "cron",
+        "enable",
+        "a4092e38-8229-461e-8cbd-0e01478566f0"
+      ],
+      "runtime": "openclaw",
+      "schedule": {
+        "expr": "35 16 * * *",
+        "kind": "cron",
+        "tz": "Asia/Tokyo"
+      },
+      "source_path": "/Users/anicca/.openclaw/cron/jobs.json",
+      "source_sha256": "17aad513b916474d880190979f1e906d2e291952113bdd924466421c9b8c2d8b"
+    },
+    {
+      "accounts": [],
+      "command": "Execute Larry per-account cron (Dais 2026-06-07 spec Part I+T+X).\n\n★ fixed-strings driven flow (NEW). DO NOT use old generate-slides.js. ★\n\nSTEP 1 — Read fixed-strings:\n  FS=~/.openclaw/skills/anicca-larry/state/fixed-strings-larry-en-v2.json\n  (defines slide1_hook, slide7_cta?, bg_mode, bg files; per-account brand)\n\nSTEP 2 — Read library + history:\n  - ~/.openclaw/state/content-library/pattern-card-en.jsonl\n  - ~/.openclaw/state/content-library/account-history.jsonl\n    filter for this cron's account, last 14d → forbidden BODY texts\n  - Pick 1 viral pattern with high views, source_id NOT in 14d, emotion diversity\n\nSTEP 3 — Generate 5 fresh BODY texts (slide 2-6) ONLY in en:\n  Clone pattern STRUCTURE + emotion (clone-don't-template). Fresh wording.\n  Write picks.json:\n    [body1, body2, body3, body4, body5]\n  Write source_id.txt + emotion.txt for append-to-history.\n\nSTEP 4 — Build slides (NEW helper):\n  RUN_DIR=\"$HOME/.openclaw/workspace/tiktok-marketing/run-larry-en-v2-$(date +%Y%m%d-%H%M)\"\n  mkdir -p \"$RUN_DIR\"\n  cp picks.json \"$RUN_DIR/picks.json\"  # body texts only\n  bash ~/.openclaw/workspace/skills/larry/scripts/build-from-fixed-strings.sh \\\n    \"$FS\" \"$RUN_DIR/picks.json\" \"$RUN_DIR\"\n\nSTEP 5 — Post to TikTok via post-to-tiktok.js (SSOT for DIRECT_POST + PUBLIC + autoAddMusic):\n  node ~/.openclaw/workspace/skills/larry/scripts/post-to-tiktok.js \\\n    --tt <NEW_TT_PENDING> --dir \"$RUN_DIR\" \\\n    --caption \"<5-8 word caption derived from hook+body>\" \\\n    --title \"<account-appropriate title>\"\n\nSTEP 6 — Append history:\n  bash ~/.openclaw/skills/_shared/append-to-history.sh \\\n    --account larry-anicca-en-v2 --platform TT --post-id <TT_POST_ID> \\\n    --source-id \"$(cat $RUN_DIR/source_id.txt)\" \\\n    --hook \"$(python3 -c \\\"import json; print(json.load(open('$FS'))['slide1_hook'])\\\")\" \\\n    --emotion \"$(cat $RUN_DIR/emotion.txt)\"\n\nReport TT_POST_ID + source_id used.",
+      "command_sha256": "f1b43267a6d2e6a860212828e46cd242665925db47f3ce80cbfcebc0f128df9d",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "openclaw-legacy-marketing",
+      "id": "2615fbac-7c7f-4992-85f2-3a3aaa2b5e20",
+      "integration_ids": [],
+      "label": "larry-anicca-en-v2",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "openclaw",
+        "cron",
+        "enable",
+        "2615fbac-7c7f-4992-85f2-3a3aaa2b5e20"
+      ],
+      "runtime": "openclaw",
+      "schedule": {
+        "expr": "0 8 * * *",
+        "kind": "cron",
+        "tz": "Asia/Tokyo"
+      },
+      "source_path": "/Users/anicca/.openclaw/cron/jobs.json",
+      "source_sha256": "17aad513b916474d880190979f1e906d2e291952113bdd924466421c9b8c2d8b"
+    },
+    {
+      "accounts": [],
+      "command": "Execute Larry per-account cron (Dais 2026-06-07 spec Part I+T+X).\n\n★ fixed-strings driven flow (NEW). DO NOT use old generate-slides.js. ★\n\nSTEP 1 — Read fixed-strings:\n  FS=~/.openclaw/skills/anicca-larry/state/fixed-strings-larry-en-v3.json\n  (defines slide1_hook, slide7_cta?, bg_mode, bg files; per-account brand)\n\nSTEP 2 — Read library + history:\n  - ~/.openclaw/state/content-library/pattern-card-en.jsonl\n  - ~/.openclaw/state/content-library/account-history.jsonl\n    filter for this cron's account, last 14d → forbidden BODY texts\n  - Pick 1 viral pattern with high views, source_id NOT in 14d, emotion diversity\n\nSTEP 3 — Generate 5 fresh BODY texts (slide 2-6) ONLY in en:\n  Clone pattern STRUCTURE + emotion (clone-don't-template). Fresh wording.\n  Write picks.json:\n    [body1, body2, body3, body4, body5]\n  Write source_id.txt + emotion.txt for append-to-history.\n\nSTEP 4 — Build slides (NEW helper):\n  RUN_DIR=\"$HOME/.openclaw/workspace/tiktok-marketing/run-larry-en-v3-$(date +%Y%m%d-%H%M)\"\n  mkdir -p \"$RUN_DIR\"\n  cp picks.json \"$RUN_DIR/picks.json\"  # body texts only\n  bash ~/.openclaw/workspace/skills/larry/scripts/build-from-fixed-strings.sh \\\n    \"$FS\" \"$RUN_DIR/picks.json\" \"$RUN_DIR\"\n\nSTEP 5 — Post to TikTok via post-to-tiktok.js (SSOT for DIRECT_POST + PUBLIC + autoAddMusic):\n  node ~/.openclaw/workspace/skills/larry/scripts/post-to-tiktok.js \\\n    --tt <NEW_TT_PENDING> --dir \"$RUN_DIR\" \\\n    --caption \"<5-8 word caption derived from hook+body>\" \\\n    --title \"<account-appropriate title>\"\n\nSTEP 6 — Append history:\n  bash ~/.openclaw/skills/_shared/append-to-history.sh \\\n    --account larry-anicca-en-v3 --platform TT --post-id <TT_POST_ID> \\\n    --source-id \"$(cat $RUN_DIR/source_id.txt)\" \\\n    --hook \"$(python3 -c \\\"import json; print(json.load(open('$FS'))['slide1_hook'])\\\")\" \\\n    --emotion \"$(cat $RUN_DIR/emotion.txt)\"\n\nReport TT_POST_ID + source_id used.",
+      "command_sha256": "46d927573a7bb29d320733bb4c72e2fb7b92cc91f24ac6e0ac4eb8a44785d4d8",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "openclaw-legacy-marketing",
+      "id": "f755a710-9fad-49d1-8bb6-9b0451b808ef",
+      "integration_ids": [],
+      "label": "larry-anicca-en-v3",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "openclaw",
+        "cron",
+        "enable",
+        "f755a710-9fad-49d1-8bb6-9b0451b808ef"
+      ],
+      "runtime": "openclaw",
+      "schedule": {
+        "expr": "0 13 * * *",
+        "kind": "cron",
+        "tz": "Asia/Tokyo"
+      },
+      "source_path": "/Users/anicca/.openclaw/cron/jobs.json",
+      "source_sha256": "17aad513b916474d880190979f1e906d2e291952113bdd924466421c9b8c2d8b"
+    },
+    {
+      "accounts": [],
+      "command": "Execute Larry per-account cron (Dais 2026-06-07 spec Part I+T+X).\n\n★ fixed-strings driven flow (NEW). DO NOT use old generate-slides.js. ★\n\nSTEP 1 — Read fixed-strings:\n  FS=~/.openclaw/skills/anicca-larry/state/fixed-strings-larry-en-v4.json\n  (defines slide1_hook, slide7_cta?, bg_mode, bg files; per-account brand)\n\nSTEP 2 — Read library + history:\n  - ~/.openclaw/state/content-library/pattern-card-en.jsonl\n  - ~/.openclaw/state/content-library/account-history.jsonl\n    filter for this cron's account, last 14d → forbidden BODY texts\n  - Pick 1 viral pattern with high views, source_id NOT in 14d, emotion diversity\n\nSTEP 3 — Generate 5 fresh BODY texts (slide 2-6) ONLY in en:\n  Clone pattern STRUCTURE + emotion (clone-don't-template). Fresh wording.\n  Write picks.json:\n    [body1, body2, body3, body4, body5]\n  Write source_id.txt + emotion.txt for append-to-history.\n\nSTEP 4 — Build slides (NEW helper):\n  RUN_DIR=\"$HOME/.openclaw/workspace/tiktok-marketing/run-larry-en-v4-$(date +%Y%m%d-%H%M)\"\n  mkdir -p \"$RUN_DIR\"\n  cp picks.json \"$RUN_DIR/picks.json\"  # body texts only\n  bash ~/.openclaw/workspace/skills/larry/scripts/build-from-fixed-strings.sh \\\n    \"$FS\" \"$RUN_DIR/picks.json\" \"$RUN_DIR\"\n\nSTEP 5 — Post to TikTok via post-to-tiktok.js (SSOT for DIRECT_POST + PUBLIC + autoAddMusic):\n  node ~/.openclaw/workspace/skills/larry/scripts/post-to-tiktok.js \\\n    --tt <NEW_TT_PENDING> --dir \"$RUN_DIR\" \\\n    --caption \"<5-8 word caption derived from hook+body>\" \\\n    --title \"<account-appropriate title>\"\n\nSTEP 6 — Append history:\n  bash ~/.openclaw/skills/_shared/append-to-history.sh \\\n    --account larry-anicca-en-v4 --platform TT --post-id <TT_POST_ID> \\\n    --source-id \"$(cat $RUN_DIR/source_id.txt)\" \\\n    --hook \"$(python3 -c \\\"import json; print(json.load(open('$FS'))['slide1_hook'])\\\")\" \\\n    --emotion \"$(cat $RUN_DIR/emotion.txt)\"\n\nReport TT_POST_ID + source_id used.",
+      "command_sha256": "ba98768aeba38c73197b1edb7517a0807b217b23d6cd4de3cc23ab8f4e54ed3e",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "openclaw-legacy-marketing",
+      "id": "fdc25fac-bda3-44ed-a5b4-7599025b259a",
+      "integration_ids": [],
+      "label": "larry-anicca-en-v4",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "openclaw",
+        "cron",
+        "enable",
+        "fdc25fac-bda3-44ed-a5b4-7599025b259a"
+      ],
+      "runtime": "openclaw",
+      "schedule": {
+        "expr": "0 19 * * *",
+        "kind": "cron",
+        "tz": "Asia/Tokyo"
+      },
+      "source_path": "/Users/anicca/.openclaw/cron/jobs.json",
+      "source_sha256": "17aad513b916474d880190979f1e906d2e291952113bdd924466421c9b8c2d8b"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": false,
+          "integration_id": "cmlrv8jq000hun60yy57eaptx",
+          "name": "アニッチャ",
+          "platform": "tiktok",
+          "profile": "anicca.jpx"
+        }
+      ],
+      "command": "Execute Larry per-account cron (Dais 2026-06-07 spec Part I+T+X).\n\n★ fixed-strings driven flow (NEW). DO NOT use old generate-slides.js. ★\n\nSTEP 1 — Read fixed-strings:\n  FS=~/.openclaw/skills/anicca-larry/state/fixed-strings-larry-ja-v1.json\n  (defines slide1_hook, slide7_cta?, bg_mode, bg files; per-account brand)\n\nSTEP 2 — Read library + history:\n  - ~/.openclaw/state/content-library/pattern-card-ja.jsonl\n  - ~/.openclaw/state/content-library/account-history.jsonl\n    filter for this cron's account, last 14d → forbidden BODY texts\n  - Pick 1 viral pattern with high views, source_id NOT in 14d, emotion diversity\n\nSTEP 3 — Generate 5 fresh BODY texts (slide 2-6) ONLY in ja:\n  Clone pattern STRUCTURE + emotion (clone-don't-template). Fresh wording.\n  Write picks.json:\n    [body1, body2, body3, body4, body5]\n  Write source_id.txt + emotion.txt for append-to-history.\n\nSTEP 4 — Build slides (NEW helper):\n  RUN_DIR=\"$HOME/.openclaw/workspace/tiktok-marketing/run-larry-ja-v1-$(date +%Y%m%d-%H%M)\"\n  mkdir -p \"$RUN_DIR\"\n  cp picks.json \"$RUN_DIR/picks.json\"  # body texts only\n  bash ~/.openclaw/workspace/skills/larry/scripts/build-from-fixed-strings.sh \\\n    \"$FS\" \"$RUN_DIR/picks.json\" \"$RUN_DIR\"\n\nSTEP 5 — Post to TikTok via post-to-tiktok.js (SSOT for DIRECT_POST + PUBLIC + autoAddMusic):\n  node ~/.openclaw/workspace/skills/larry/scripts/post-to-tiktok.js \\\n    --tt cmlrv8jq000hun60yy57eaptx --dir \"$RUN_DIR\" \\\n    --caption \"<5-8 word caption derived from hook+body>\" \\\n    --title \"<account-appropriate title>\"\n\nSTEP 6 — Append history:\n  bash ~/.openclaw/skills/_shared/append-to-history.sh \\\n    --account larry-anicca-ja-1 --platform TT --post-id <TT_POST_ID> \\\n    --source-id \"$(cat $RUN_DIR/source_id.txt)\" \\\n    --hook \"$(python3 -c \\\"import json; print(json.load(open('$FS'))['slide1_hook'])\\\")\" \\\n    --emotion \"$(cat $RUN_DIR/emotion.txt)\"\n\nReport TT_POST_ID + source_id used.",
+      "command_sha256": "0f17732e8d0cb8cc1d7f4f2e3e92759c50fcae1390eccb2ac595d4b2d99426e0",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "openclaw-legacy-marketing",
+      "id": "61d431fc-774e-4e58-b421-6e06571e6ec8",
+      "integration_ids": [
+        "cmlrv8jq000hun60yy57eaptx"
+      ],
+      "label": "larry-anicca-ja-1",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "openclaw",
+        "cron",
+        "enable",
+        "61d431fc-774e-4e58-b421-6e06571e6ec8"
+      ],
+      "runtime": "openclaw",
+      "schedule": {
+        "expr": "30 16 * * *",
+        "kind": "cron",
+        "tz": "Asia/Tokyo"
+      },
+      "source_path": "/Users/anicca/.openclaw/cron/jobs.json",
+      "source_sha256": "17aad513b916474d880190979f1e906d2e291952113bdd924466421c9b8c2d8b"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": false,
+          "integration_id": "cmq2aoena08bhqp0yx1epjcik",
+          "name": "アニッチャ",
+          "platform": "tiktok",
+          "profile": "anicca.he"
+        }
+      ],
+      "command": "Execute Larry per-account cron (Dais 2026-06-07 spec Part I+T+X).\n\n★ fixed-strings driven flow (NEW). DO NOT use old generate-slides.js. ★\n\nSTEP 1 — Read fixed-strings:\n  FS=~/.openclaw/skills/anicca-larry/state/fixed-strings-larry-ja-v2.json\n  (defines slide1_hook, slide7_cta?, bg_mode, bg files; per-account brand)\n\nSTEP 2 — Read library + history:\n  - ~/.openclaw/state/content-library/pattern-card-ja.jsonl\n  - ~/.openclaw/state/content-library/account-history.jsonl\n    filter for this cron's account, last 14d → forbidden BODY texts\n  - Pick 1 viral pattern with high views, source_id NOT in 14d, emotion diversity\n\nSTEP 3 — Generate 5 fresh BODY texts (slide 2-6) ONLY in ja:\n  Clone pattern STRUCTURE + emotion (clone-don't-template). Fresh wording.\n  Write picks.json:\n    [body1, body2, body3, body4, body5]\n  Write source_id.txt + emotion.txt for append-to-history.\n\nSTEP 4 — Build slides (NEW helper):\n  RUN_DIR=\"$HOME/.openclaw/workspace/tiktok-marketing/run-larry-ja-v2-$(date +%Y%m%d-%H%M)\"\n  mkdir -p \"$RUN_DIR\"\n  cp picks.json \"$RUN_DIR/picks.json\"  # body texts only\n  bash ~/.openclaw/workspace/skills/larry/scripts/build-from-fixed-strings.sh \\\n    \"$FS\" \"$RUN_DIR/picks.json\" \"$RUN_DIR\"\n\nSTEP 5 — Post to TikTok via post-to-tiktok.js (SSOT for DIRECT_POST + PUBLIC + autoAddMusic):\n  node ~/.openclaw/workspace/skills/larry/scripts/post-to-tiktok.js \\\n    --tt cmq2aoena08bhqp0yx1epjcik --dir \"$RUN_DIR\" \\\n    --caption \"<5-8 word caption derived from hook+body>\" \\\n    --title \"<account-appropriate title>\"\n\nSTEP 6 — Append history:\n  bash ~/.openclaw/skills/_shared/append-to-history.sh \\\n    --account larry-anicca-ja-v2 --platform TT --post-id <TT_POST_ID> \\\n    --source-id \"$(cat $RUN_DIR/source_id.txt)\" \\\n    --hook \"$(python3 -c \\\"import json; print(json.load(open('$FS'))['slide1_hook'])\\\")\" \\\n    --emotion \"$(cat $RUN_DIR/emotion.txt)\"\n\nReport TT_POST_ID + source_id used.",
+      "command_sha256": "17965c373d3551bcd453d9cbcfeae44ff19bccf81b7b424e4872dd831205ce9f",
+      "disposition": "retire",
+      "enabled": true,
+      "external_action": "publish",
+      "family": "openclaw-legacy-marketing",
+      "id": "57fb7dbc-0f18-4bdd-b8e7-74233aa27009",
+      "integration_ids": [
+        "cmq2aoena08bhqp0yx1epjcik"
+      ],
+      "label": "larry-anicca-ja-v2",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": true,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "openclaw",
+        "cron",
+        "enable",
+        "57fb7dbc-0f18-4bdd-b8e7-74233aa27009"
+      ],
+      "runtime": "openclaw",
+      "schedule": {
+        "expr": "30 8 * * *",
+        "kind": "cron",
+        "tz": "Asia/Tokyo"
+      },
+      "source_path": "/Users/anicca/.openclaw/cron/jobs.json",
+      "source_sha256": "17aad513b916474d880190979f1e906d2e291952113bdd924466421c9b8c2d8b"
+    },
+    {
+      "accounts": [],
+      "command": "Execute Larry per-account cron (Dais 2026-06-07 spec Part I+T+X).\n\n★ fixed-strings driven flow (NEW). DO NOT use old generate-slides.js. ★\n\nSTEP 1 — Read fixed-strings:\n  FS=~/.openclaw/skills/anicca-larry/state/fixed-strings-larry-ja-v3.json\n  (defines slide1_hook, slide7_cta?, bg_mode, bg files; per-account brand)\n\nSTEP 2 — Read library + history:\n  - ~/.openclaw/state/content-library/pattern-card-ja.jsonl\n  - ~/.openclaw/state/content-library/account-history.jsonl\n    filter for this cron's account, last 14d → forbidden BODY texts\n  - Pick 1 viral pattern with high views, source_id NOT in 14d, emotion diversity\n\nSTEP 3 — Generate 5 fresh BODY texts (slide 2-6) ONLY in ja:\n  Clone pattern STRUCTURE + emotion (clone-don't-template). Fresh wording.\n  Write picks.json:\n    [body1, body2, body3, body4, body5]\n  Write source_id.txt + emotion.txt for append-to-history.\n\nSTEP 4 — Build slides (NEW helper):\n  RUN_DIR=\"$HOME/.openclaw/workspace/tiktok-marketing/run-larry-ja-v3-$(date +%Y%m%d-%H%M)\"\n  mkdir -p \"$RUN_DIR\"\n  cp picks.json \"$RUN_DIR/picks.json\"  # body texts only\n  bash ~/.openclaw/workspace/skills/larry/scripts/build-from-fixed-strings.sh \\\n    \"$FS\" \"$RUN_DIR/picks.json\" \"$RUN_DIR\"\n\nSTEP 5 — Post to TikTok via post-to-tiktok.js (SSOT for DIRECT_POST + PUBLIC + autoAddMusic):\n  node ~/.openclaw/workspace/skills/larry/scripts/post-to-tiktok.js \\\n    --tt <NEW_TT_PENDING> --dir \"$RUN_DIR\" \\\n    --caption \"<5-8 word caption derived from hook+body>\" \\\n    --title \"<account-appropriate title>\"\n\nSTEP 6 — Append history:\n  bash ~/.openclaw/skills/_shared/append-to-history.sh \\\n    --account larry-anicca-ja-v3 --platform TT --post-id <TT_POST_ID> \\\n    --source-id \"$(cat $RUN_DIR/source_id.txt)\" \\\n    --hook \"$(python3 -c \\\"import json; print(json.load(open('$FS'))['slide1_hook'])\\\")\" \\\n    --emotion \"$(cat $RUN_DIR/emotion.txt)\"\n\nReport TT_POST_ID + source_id used.",
+      "command_sha256": "c06ea68ad16894834718b577e228daef48d844d60320db9946c437797622dfdd",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "openclaw-legacy-marketing",
+      "id": "3d0f65a6-8d03-42b6-b958-829ba4ef3fd8",
+      "integration_ids": [],
+      "label": "larry-anicca-ja-v3",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "openclaw",
+        "cron",
+        "enable",
+        "3d0f65a6-8d03-42b6-b958-829ba4ef3fd8"
+      ],
+      "runtime": "openclaw",
+      "schedule": {
+        "expr": "30 13 * * *",
+        "kind": "cron",
+        "tz": "Asia/Tokyo"
+      },
+      "source_path": "/Users/anicca/.openclaw/cron/jobs.json",
+      "source_sha256": "17aad513b916474d880190979f1e906d2e291952113bdd924466421c9b8c2d8b"
+    },
+    {
+      "accounts": [],
+      "command": "Execute Larry per-account cron (Dais 2026-06-07 spec Part I+T+X).\n\n★ fixed-strings driven flow (NEW). DO NOT use old generate-slides.js. ★\n\nSTEP 1 — Read fixed-strings:\n  FS=~/.openclaw/skills/anicca-larry/state/fixed-strings-larry-ja-v4.json\n  (defines slide1_hook, slide7_cta?, bg_mode, bg files; per-account brand)\n\nSTEP 2 — Read library + history:\n  - ~/.openclaw/state/content-library/pattern-card-ja.jsonl\n  - ~/.openclaw/state/content-library/account-history.jsonl\n    filter for this cron's account, last 14d → forbidden BODY texts\n  - Pick 1 viral pattern with high views, source_id NOT in 14d, emotion diversity\n\nSTEP 3 — Generate 5 fresh BODY texts (slide 2-6) ONLY in ja:\n  Clone pattern STRUCTURE + emotion (clone-don't-template). Fresh wording.\n  Write picks.json:\n    [body1, body2, body3, body4, body5]\n  Write source_id.txt + emotion.txt for append-to-history.\n\nSTEP 4 — Build slides (NEW helper):\n  RUN_DIR=\"$HOME/.openclaw/workspace/tiktok-marketing/run-larry-ja-v4-$(date +%Y%m%d-%H%M)\"\n  mkdir -p \"$RUN_DIR\"\n  cp picks.json \"$RUN_DIR/picks.json\"  # body texts only\n  bash ~/.openclaw/workspace/skills/larry/scripts/build-from-fixed-strings.sh \\\n    \"$FS\" \"$RUN_DIR/picks.json\" \"$RUN_DIR\"\n\nSTEP 5 — Post to TikTok via post-to-tiktok.js (SSOT for DIRECT_POST + PUBLIC + autoAddMusic):\n  node ~/.openclaw/workspace/skills/larry/scripts/post-to-tiktok.js \\\n    --tt <NEW_TT_PENDING> --dir \"$RUN_DIR\" \\\n    --caption \"<5-8 word caption derived from hook+body>\" \\\n    --title \"<account-appropriate title>\"\n\nSTEP 6 — Append history:\n  bash ~/.openclaw/skills/_shared/append-to-history.sh \\\n    --account larry-anicca-ja-v4 --platform TT --post-id <TT_POST_ID> \\\n    --source-id \"$(cat $RUN_DIR/source_id.txt)\" \\\n    --hook \"$(python3 -c \\\"import json; print(json.load(open('$FS'))['slide1_hook'])\\\")\" \\\n    --emotion \"$(cat $RUN_DIR/emotion.txt)\"\n\nReport TT_POST_ID + source_id used.",
+      "command_sha256": "a724686bcc0d70256b9baf5ca4f378e5759aa8e106294781fac568d941c23ec2",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "openclaw-legacy-marketing",
+      "id": "affbe0f1-e324-4a15-98dd-304a3c1505ae",
+      "integration_ids": [],
+      "label": "larry-anicca-ja-v4",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "openclaw",
+        "cron",
+        "enable",
+        "affbe0f1-e324-4a15-98dd-304a3c1505ae"
+      ],
+      "runtime": "openclaw",
+      "schedule": {
+        "expr": "30 19 * * *",
+        "kind": "cron",
+        "tz": "Asia/Tokyo"
+      },
+      "source_path": "/Users/anicca/.openclaw/cron/jobs.json",
+      "source_sha256": "17aad513b916474d880190979f1e906d2e291952113bdd924466421c9b8c2d8b"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": false,
+          "integration_id": "cmp9pedr700ttqh0yj8o57fog",
+          "name": "anicca",
+          "platform": "instagram-standalone",
+          "profile": "anicca.affirmation"
+        }
+      ],
+      "command": "Execute Larry per-account cron (Dais 2026-06-07 spec Part I+T+X).\n\n★ fixed-strings driven flow (NEW). DO NOT use old generate-slides.js. ★\n\nSTEP 1 — Read fixed-strings:\n  FS=~/.openclaw/skills/anicca-larry/state/fixed-strings-larry-en-v4.json\n  (defines slide1_hook, slide7_cta?, bg_mode, bg files; per-account brand)\n\nSTEP 2 — Read library + history:\n  - ~/.openclaw/state/content-library/pattern-card-en.jsonl\n  - ~/.openclaw/state/content-library/account-history.jsonl\n    filter for this cron's account, last 14d → forbidden BODY texts\n  - Pick 1 viral pattern with high views, source_id NOT in 14d, emotion diversity\n\nSTEP 3 — Generate 5 fresh BODY texts (slide 2-6) ONLY in en:\n  Clone pattern STRUCTURE + emotion (clone-don't-template). Fresh wording.\n  Write picks.json:\n    [body1, body2, body3, body4, body5]\n  Write source_id.txt + emotion.txt for append-to-history.\n\nSTEP 4 — Build slides (NEW helper):\n  RUN_DIR=\"$HOME/.openclaw/workspace/tiktok-marketing/run-larry-en-v4-$(date +%Y%m%d-%H%M)\"\n  mkdir -p \"$RUN_DIR\"\n  cp picks.json \"$RUN_DIR/picks.json\"  # body texts only\n  bash ~/.openclaw/workspace/skills/larry/scripts/build-from-fixed-strings.sh \\\n    \"$FS\" \"$RUN_DIR/picks.json\" \"$RUN_DIR\"\n\nSTEP 5 — Post to TikTok via post-to-tiktok.js (SSOT for DIRECT_POST + PUBLIC + autoAddMusic):\n  node ~/.openclaw/workspace/skills/larry/scripts/post-to-tiktok.js \\\n    --tt cmp9pedr700ttqh0yj8o57fog --dir \"$RUN_DIR\" \\\n    --caption \"<5-8 word caption derived from hook+body>\" \\\n    --title \"<account-appropriate title>\"\n\nSTEP 6 — Append history:\n  bash ~/.openclaw/skills/_shared/append-to-history.sh \\\n    --account larry-en-female-reel-replace-1 --platform TT --post-id <TT_POST_ID> \\\n    --source-id \"$(cat $RUN_DIR/source_id.txt)\" \\\n    --hook \"$(python3 -c \\\"import json; print(json.load(open('$FS'))['slide1_hook'])\\\")\" \\\n    --emotion \"$(cat $RUN_DIR/emotion.txt)\"\n\nReport TT_POST_ID + source_id used.",
+      "command_sha256": "d75ed7969486b3e8789bdb264d930ae08c39fef2d4b42c455816a598559e98e4",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "openclaw-legacy-marketing",
+      "id": "66fbd9c9-0caa-45e8-833e-8a2e6b171c83",
+      "integration_ids": [
+        "cmp9pedr700ttqh0yj8o57fog"
+      ],
+      "label": "larry-en-female-reel-replace-1",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "openclaw",
+        "cron",
+        "enable",
+        "66fbd9c9-0caa-45e8-833e-8a2e6b171c83"
+      ],
+      "runtime": "openclaw",
+      "schedule": {
+        "expr": "15 9 * * *",
+        "kind": "cron",
+        "tz": "Asia/Tokyo"
+      },
+      "source_path": "/Users/anicca/.openclaw/cron/jobs.json",
+      "source_sha256": "17aad513b916474d880190979f1e906d2e291952113bdd924466421c9b8c2d8b"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": false,
+          "integration_id": "cmp9pedr700ttqh0yj8o57fog",
+          "name": "anicca",
+          "platform": "instagram-standalone",
+          "profile": "anicca.affirmation"
+        }
+      ],
+      "command": "Execute Larry per-account cron (Dais 2026-06-07 spec Part I+T+X).\n\n★ fixed-strings driven flow (NEW). DO NOT use old generate-slides.js. ★\n\nSTEP 1 — Read fixed-strings:\n  FS=~/.openclaw/skills/anicca-larry/state/fixed-strings-larry-en-v4.json\n  (defines slide1_hook, slide7_cta?, bg_mode, bg files; per-account brand)\n\nSTEP 2 — Read library + history:\n  - ~/.openclaw/state/content-library/pattern-card-en.jsonl\n  - ~/.openclaw/state/content-library/account-history.jsonl\n    filter for this cron's account, last 14d → forbidden BODY texts\n  - Pick 1 viral pattern with high views, source_id NOT in 14d, emotion diversity\n\nSTEP 3 — Generate 5 fresh BODY texts (slide 2-6) ONLY in en:\n  Clone pattern STRUCTURE + emotion (clone-don't-template). Fresh wording.\n  Write picks.json:\n    [body1, body2, body3, body4, body5]\n  Write source_id.txt + emotion.txt for append-to-history.\n\nSTEP 4 — Build slides (NEW helper):\n  RUN_DIR=\"$HOME/.openclaw/workspace/tiktok-marketing/run-larry-en-v4-$(date +%Y%m%d-%H%M)\"\n  mkdir -p \"$RUN_DIR\"\n  cp picks.json \"$RUN_DIR/picks.json\"  # body texts only\n  bash ~/.openclaw/workspace/skills/larry/scripts/build-from-fixed-strings.sh \\\n    \"$FS\" \"$RUN_DIR/picks.json\" \"$RUN_DIR\"\n\nSTEP 5 — Post to TikTok via post-to-tiktok.js (SSOT for DIRECT_POST + PUBLIC + autoAddMusic):\n  node ~/.openclaw/workspace/skills/larry/scripts/post-to-tiktok.js \\\n    --tt cmp9pedr700ttqh0yj8o57fog --dir \"$RUN_DIR\" \\\n    --caption \"<5-8 word caption derived from hook+body>\" \\\n    --title \"<account-appropriate title>\"\n\nSTEP 6 — Append history:\n  bash ~/.openclaw/skills/_shared/append-to-history.sh \\\n    --account larry-en-female-reel-replace-2 --platform TT --post-id <TT_POST_ID> \\\n    --source-id \"$(cat $RUN_DIR/source_id.txt)\" \\\n    --hook \"$(python3 -c \\\"import json; print(json.load(open('$FS'))['slide1_hook'])\\\")\" \\\n    --emotion \"$(cat $RUN_DIR/emotion.txt)\"\n\nReport TT_POST_ID + source_id used.",
+      "command_sha256": "dd7ab7e65fe4d4f3c386a73c288e7e3d1242c680d68c582fbcd47c16cb898733",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "openclaw-legacy-marketing",
+      "id": "eb990dec-8688-497a-b6f8-554f219917ff",
+      "integration_ids": [
+        "cmp9pedr700ttqh0yj8o57fog"
+      ],
+      "label": "larry-en-female-reel-replace-2",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "openclaw",
+        "cron",
+        "enable",
+        "eb990dec-8688-497a-b6f8-554f219917ff"
+      ],
+      "runtime": "openclaw",
+      "schedule": {
+        "expr": "15 14 * * *",
+        "kind": "cron",
+        "tz": "Asia/Tokyo"
+      },
+      "source_path": "/Users/anicca/.openclaw/cron/jobs.json",
+      "source_sha256": "17aad513b916474d880190979f1e906d2e291952113bdd924466421c9b8c2d8b"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": false,
+          "integration_id": "cmp9pedr700ttqh0yj8o57fog",
+          "name": "anicca",
+          "platform": "instagram-standalone",
+          "profile": "anicca.affirmation"
+        }
+      ],
+      "command": "Execute Larry per-account cron (Dais 2026-06-07 spec Part I+T+X).\n\n★ fixed-strings driven flow (NEW). DO NOT use old generate-slides.js. ★\n\nSTEP 1 — Read fixed-strings:\n  FS=~/.openclaw/skills/anicca-larry/state/fixed-strings-larry-en-v4.json\n  (defines slide1_hook, slide7_cta?, bg_mode, bg files; per-account brand)\n\nSTEP 2 — Read library + history:\n  - ~/.openclaw/state/content-library/pattern-card-en.jsonl\n  - ~/.openclaw/state/content-library/account-history.jsonl\n    filter for this cron's account, last 14d → forbidden BODY texts\n  - Pick 1 viral pattern with high views, source_id NOT in 14d, emotion diversity\n\nSTEP 3 — Generate 5 fresh BODY texts (slide 2-6) ONLY in en:\n  Clone pattern STRUCTURE + emotion (clone-don't-template). Fresh wording.\n  Write picks.json:\n    [body1, body2, body3, body4, body5]\n  Write source_id.txt + emotion.txt for append-to-history.\n\nSTEP 4 — Build slides (NEW helper):\n  RUN_DIR=\"$HOME/.openclaw/workspace/tiktok-marketing/run-larry-en-v4-$(date +%Y%m%d-%H%M)\"\n  mkdir -p \"$RUN_DIR\"\n  cp picks.json \"$RUN_DIR/picks.json\"  # body texts only\n  bash ~/.openclaw/workspace/skills/larry/scripts/build-from-fixed-strings.sh \\\n    \"$FS\" \"$RUN_DIR/picks.json\" \"$RUN_DIR\"\n\nSTEP 5 — Post to TikTok via post-to-tiktok.js (SSOT for DIRECT_POST + PUBLIC + autoAddMusic):\n  node ~/.openclaw/workspace/skills/larry/scripts/post-to-tiktok.js \\\n    --tt cmp9pedr700ttqh0yj8o57fog --dir \"$RUN_DIR\" \\\n    --caption \"<5-8 word caption derived from hook+body>\" \\\n    --title \"<account-appropriate title>\"\n\nSTEP 6 — Append history:\n  bash ~/.openclaw/skills/_shared/append-to-history.sh \\\n    --account larry-en-female-reel-replace-3 --platform TT --post-id <TT_POST_ID> \\\n    --source-id \"$(cat $RUN_DIR/source_id.txt)\" \\\n    --hook \"$(python3 -c \\\"import json; print(json.load(open('$FS'))['slide1_hook'])\\\")\" \\\n    --emotion \"$(cat $RUN_DIR/emotion.txt)\"\n\nReport TT_POST_ID + source_id used.",
+      "command_sha256": "dea2bea8400c34b10e99ec00f292dd3221d5cb4c8eeb48cc58684ab12829e25c",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "openclaw-legacy-marketing",
+      "id": "7f291612-9941-40b5-8959-5e18cc98df84",
+      "integration_ids": [
+        "cmp9pedr700ttqh0yj8o57fog"
+      ],
+      "label": "larry-en-female-reel-replace-3",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "openclaw",
+        "cron",
+        "enable",
+        "7f291612-9941-40b5-8959-5e18cc98df84"
+      ],
+      "runtime": "openclaw",
+      "schedule": {
+        "expr": "15 20 * * *",
+        "kind": "cron",
+        "tz": "Asia/Tokyo"
+      },
+      "source_path": "/Users/anicca/.openclaw/cron/jobs.json",
+      "source_sha256": "17aad513b916474d880190979f1e906d2e291952113bdd924466421c9b8c2d8b"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": false,
+          "integration_id": "cmp9txjdp01c8oh0yb6dhlarr",
+          "name": "アニッチャ お笑い",
+          "platform": "tiktok",
+          "profile": "anicca_buddha"
+        }
+      ],
+      "command": "Execute Larry per-account cron (Dais 2026-06-07 spec Part I+T+X).\n\n★ fixed-strings driven flow (NEW). DO NOT use old generate-slides.js. ★\n\nSTEP 1 — Read fixed-strings:\n  FS=~/.openclaw/skills/anicca-larry/state/fixed-strings-larry-ja-v2.json\n  (defines slide1_hook, slide7_cta?, bg_mode, bg files; per-account brand)\n\nSTEP 2 — Read library + history:\n  - ~/.openclaw/state/content-library/pattern-card-ja.jsonl\n  - ~/.openclaw/state/content-library/account-history.jsonl\n    filter for this cron's account, last 14d → forbidden BODY texts\n  - Pick 1 viral pattern with high views, source_id NOT in 14d, emotion diversity\n\nSTEP 3 — Generate 5 fresh BODY texts (slide 2-6) ONLY in ja:\n  Clone pattern STRUCTURE + emotion (clone-don't-template). Fresh wording.\n  Write picks.json:\n    [body1, body2, body3, body4, body5]\n  Write source_id.txt + emotion.txt for append-to-history.\n\nSTEP 4 — Build slides (NEW helper):\n  RUN_DIR=\"$HOME/.openclaw/workspace/tiktok-marketing/run-larry-ja-v2-$(date +%Y%m%d-%H%M)\"\n  mkdir -p \"$RUN_DIR\"\n  cp picks.json \"$RUN_DIR/picks.json\"  # body texts only\n  bash ~/.openclaw/workspace/skills/larry/scripts/build-from-fixed-strings.sh \\\n    \"$FS\" \"$RUN_DIR/picks.json\" \"$RUN_DIR\"\n\nSTEP 5 — Post to TikTok via post-to-tiktok.js (SSOT for DIRECT_POST + PUBLIC + autoAddMusic):\n  node ~/.openclaw/workspace/skills/larry/scripts/post-to-tiktok.js \\\n    --tt cmp9txjdp01c8oh0yb6dhlarr --dir \"$RUN_DIR\" \\\n    --caption \"<5-8 word caption derived from hook+body>\" \\\n    --title \"<account-appropriate title>\"\n\nSTEP 6 — Append history:\n  bash ~/.openclaw/skills/_shared/append-to-history.sh \\\n    --account larry-ja-male-buddha-reel-replace-1 --platform TT --post-id <TT_POST_ID> \\\n    --source-id \"$(cat $RUN_DIR/source_id.txt)\" \\\n    --hook \"$(python3 -c \\\"import json; print(json.load(open('$FS'))['slide1_hook'])\\\")\" \\\n    --emotion \"$(cat $RUN_DIR/emotion.txt)\"\n\nReport TT_POST_ID + source_id used.",
+      "command_sha256": "3df19bdf700749f80293bd3677e9d69a1bd01d814fcb2527871c14c242e8763f",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "openclaw-legacy-marketing",
+      "id": "465fb911-9240-4275-88f5-c676fed1aace",
+      "integration_ids": [
+        "cmp9txjdp01c8oh0yb6dhlarr"
+      ],
+      "label": "larry-ja-male-buddha-reel-replace-1",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "openclaw",
+        "cron",
+        "enable",
+        "465fb911-9240-4275-88f5-c676fed1aace"
+      ],
+      "runtime": "openclaw",
+      "schedule": {
+        "expr": "30 11 * * *",
+        "kind": "cron",
+        "tz": "Asia/Tokyo"
+      },
+      "source_path": "/Users/anicca/.openclaw/cron/jobs.json",
+      "source_sha256": "17aad513b916474d880190979f1e906d2e291952113bdd924466421c9b8c2d8b"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": false,
+          "integration_id": "cmp9txjdp01c8oh0yb6dhlarr",
+          "name": "アニッチャ お笑い",
+          "platform": "tiktok",
+          "profile": "anicca_buddha"
+        }
+      ],
+      "command": "Execute Larry per-account cron (Dais 2026-06-07 spec Part I+T+X).\n\n★ fixed-strings driven flow (NEW). DO NOT use old generate-slides.js. ★\n\nSTEP 1 — Read fixed-strings:\n  FS=~/.openclaw/skills/anicca-larry/state/fixed-strings-larry-ja-v2.json\n  (defines slide1_hook, slide7_cta?, bg_mode, bg files; per-account brand)\n\nSTEP 2 — Read library + history:\n  - ~/.openclaw/state/content-library/pattern-card-ja.jsonl\n  - ~/.openclaw/state/content-library/account-history.jsonl\n    filter for this cron's account, last 14d → forbidden BODY texts\n  - Pick 1 viral pattern with high views, source_id NOT in 14d, emotion diversity\n\nSTEP 3 — Generate 5 fresh BODY texts (slide 2-6) ONLY in ja:\n  Clone pattern STRUCTURE + emotion (clone-don't-template). Fresh wording.\n  Write picks.json:\n    [body1, body2, body3, body4, body5]\n  Write source_id.txt + emotion.txt for append-to-history.\n\nSTEP 4 — Build slides (NEW helper):\n  RUN_DIR=\"$HOME/.openclaw/workspace/tiktok-marketing/run-larry-ja-v2-$(date +%Y%m%d-%H%M)\"\n  mkdir -p \"$RUN_DIR\"\n  cp picks.json \"$RUN_DIR/picks.json\"  # body texts only\n  bash ~/.openclaw/workspace/skills/larry/scripts/build-from-fixed-strings.sh \\\n    \"$FS\" \"$RUN_DIR/picks.json\" \"$RUN_DIR\"\n\nSTEP 5 — Post to TikTok via post-to-tiktok.js (SSOT for DIRECT_POST + PUBLIC + autoAddMusic):\n  node ~/.openclaw/workspace/skills/larry/scripts/post-to-tiktok.js \\\n    --tt cmp9txjdp01c8oh0yb6dhlarr --dir \"$RUN_DIR\" \\\n    --caption \"<5-8 word caption derived from hook+body>\" \\\n    --title \"<account-appropriate title>\"\n\nSTEP 6 — Append history:\n  bash ~/.openclaw/skills/_shared/append-to-history.sh \\\n    --account larry-ja-male-buddha-reel-replace-2 --platform TT --post-id <TT_POST_ID> \\\n    --source-id \"$(cat $RUN_DIR/source_id.txt)\" \\\n    --hook \"$(python3 -c \\\"import json; print(json.load(open('$FS'))['slide1_hook'])\\\")\" \\\n    --emotion \"$(cat $RUN_DIR/emotion.txt)\"\n\nReport TT_POST_ID + source_id used.",
+      "command_sha256": "c3f35b5a9868a281379175430746b2efb42af783db1af629283735c03d9ff25f",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "openclaw-legacy-marketing",
+      "id": "602ddd19-1fdc-46a4-bf60-f8089031e5d5",
+      "integration_ids": [
+        "cmp9txjdp01c8oh0yb6dhlarr"
+      ],
+      "label": "larry-ja-male-buddha-reel-replace-2",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "openclaw",
+        "cron",
+        "enable",
+        "602ddd19-1fdc-46a4-bf60-f8089031e5d5"
+      ],
+      "runtime": "openclaw",
+      "schedule": {
+        "expr": "30 21 * * *",
+        "kind": "cron",
+        "tz": "Asia/Tokyo"
+      },
+      "source_path": "/Users/anicca/.openclaw/cron/jobs.json",
+      "source_sha256": "17aad513b916474d880190979f1e906d2e291952113bdd924466421c9b8c2d8b"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": false,
+          "integration_id": "cmn8x8hdv028uqx0y4gdfse5t",
+          "name": "アニッチャ",
+          "platform": "tiktok",
+          "profile": "anicca.jp4"
+        }
+      ],
+      "command": "Execute Larry per-account cron (Dais 2026-06-07 spec Part I+T+X).\n\n★ fixed-strings driven flow (NEW). DO NOT use old generate-slides.js. ★\n\nSTEP 1 — Read fixed-strings:\n  FS=~/.openclaw/skills/anicca-larry/state/fixed-strings-larry-ja-male-cta.json\n  (defines slide1_hook, slide7_cta?, bg_mode, bg files; per-account brand)\n\nSTEP 2 — Read library + history:\n  - ~/.openclaw/state/content-library/pattern-card-ja.jsonl\n  - ~/.openclaw/state/content-library/account-history.jsonl\n    filter for this cron's account, last 14d → forbidden BODY texts\n  - Pick 1 viral pattern with high views, source_id NOT in 14d, emotion diversity\n\nSTEP 3 — Generate 5 fresh BODY texts (slide 2-6) ONLY in ja:\n  Clone pattern STRUCTURE + emotion (clone-don't-template). Fresh wording.\n  Write picks.json:\n    [body1, body2, body3, body4, body5]\n  Write source_id.txt + emotion.txt for append-to-history.\n\nSTEP 4 — Build slides (NEW helper):\n  RUN_DIR=\"$HOME/.openclaw/workspace/tiktok-marketing/run-larry-ja-male-cta-$(date +%Y%m%d-%H%M)\"\n  mkdir -p \"$RUN_DIR\"\n  cp picks.json \"$RUN_DIR/picks.json\"  # body texts only\n  bash ~/.openclaw/workspace/skills/larry/scripts/build-from-fixed-strings.sh \\\n    \"$FS\" \"$RUN_DIR/picks.json\" \"$RUN_DIR\"\n\nSTEP 5 — Post to TikTok via post-to-tiktok.js (SSOT for DIRECT_POST + PUBLIC + autoAddMusic):\n  node ~/.openclaw/workspace/skills/larry/scripts/post-to-tiktok.js \\\n    --tt cmn8x8hdv028uqx0y4gdfse5t --dir \"$RUN_DIR\" \\\n    --caption \"<5-8 word caption derived from hook+body>\" \\\n    --title \"<account-appropriate title>\"\n\nSTEP 6 — Append history:\n  bash ~/.openclaw/skills/_shared/append-to-history.sh \\\n    --account larry-ja-male-cta-reel-replace-1 --platform TT --post-id <TT_POST_ID> \\\n    --source-id \"$(cat $RUN_DIR/source_id.txt)\" \\\n    --hook \"$(python3 -c \\\"import json; print(json.load(open('$FS'))['slide1_hook'])\\\")\" \\\n    --emotion \"$(cat $RUN_DIR/emotion.txt)\"\n\nReport TT_POST_ID + source_id used.",
+      "command_sha256": "619098043bcffbf9c20f2edfcb5ea38327a0a5ad3e843e12f574d2ecc8b17bc7",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "openclaw-legacy-marketing",
+      "id": "beffdd85-69a9-44f7-9afa-9c4139473601",
+      "integration_ids": [
+        "cmn8x8hdv028uqx0y4gdfse5t"
+      ],
+      "label": "larry-ja-male-cta-reel-replace-1",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "openclaw",
+        "cron",
+        "enable",
+        "beffdd85-69a9-44f7-9afa-9c4139473601"
+      ],
+      "runtime": "openclaw",
+      "schedule": {
+        "expr": "45 9 * * *",
+        "kind": "cron",
+        "tz": "Asia/Tokyo"
+      },
+      "source_path": "/Users/anicca/.openclaw/cron/jobs.json",
+      "source_sha256": "17aad513b916474d880190979f1e906d2e291952113bdd924466421c9b8c2d8b"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": false,
+          "integration_id": "cmn8x8hdv028uqx0y4gdfse5t",
+          "name": "アニッチャ",
+          "platform": "tiktok",
+          "profile": "anicca.jp4"
+        }
+      ],
+      "command": "Execute Larry per-account cron (Dais 2026-06-07 spec Part I+T+X).\n\n★ fixed-strings driven flow (NEW). DO NOT use old generate-slides.js. ★\n\nSTEP 1 — Read fixed-strings:\n  FS=~/.openclaw/skills/anicca-larry/state/fixed-strings-larry-ja-male-cta.json\n  (defines slide1_hook, slide7_cta?, bg_mode, bg files; per-account brand)\n\nSTEP 2 — Read library + history:\n  - ~/.openclaw/state/content-library/pattern-card-ja.jsonl\n  - ~/.openclaw/state/content-library/account-history.jsonl\n    filter for this cron's account, last 14d → forbidden BODY texts\n  - Pick 1 viral pattern with high views, source_id NOT in 14d, emotion diversity\n\nSTEP 3 — Generate 5 fresh BODY texts (slide 2-6) ONLY in ja:\n  Clone pattern STRUCTURE + emotion (clone-don't-template). Fresh wording.\n  Write picks.json:\n    [body1, body2, body3, body4, body5]\n  Write source_id.txt + emotion.txt for append-to-history.\n\nSTEP 4 — Build slides (NEW helper):\n  RUN_DIR=\"$HOME/.openclaw/workspace/tiktok-marketing/run-larry-ja-male-cta-$(date +%Y%m%d-%H%M)\"\n  mkdir -p \"$RUN_DIR\"\n  cp picks.json \"$RUN_DIR/picks.json\"  # body texts only\n  bash ~/.openclaw/workspace/skills/larry/scripts/build-from-fixed-strings.sh \\\n    \"$FS\" \"$RUN_DIR/picks.json\" \"$RUN_DIR\"\n\nSTEP 5 — Post to TikTok via post-to-tiktok.js (SSOT for DIRECT_POST + PUBLIC + autoAddMusic):\n  node ~/.openclaw/workspace/skills/larry/scripts/post-to-tiktok.js \\\n    --tt cmn8x8hdv028uqx0y4gdfse5t --dir \"$RUN_DIR\" \\\n    --caption \"<5-8 word caption derived from hook+body>\" \\\n    --title \"<account-appropriate title>\"\n\nSTEP 6 — Append history:\n  bash ~/.openclaw/skills/_shared/append-to-history.sh \\\n    --account larry-ja-male-cta-reel-replace-2 --platform TT --post-id <TT_POST_ID> \\\n    --source-id \"$(cat $RUN_DIR/source_id.txt)\" \\\n    --hook \"$(python3 -c \\\"import json; print(json.load(open('$FS'))['slide1_hook'])\\\")\" \\\n    --emotion \"$(cat $RUN_DIR/emotion.txt)\"\n\nReport TT_POST_ID + source_id used.",
+      "command_sha256": "c4fdf9fc51dfd67fa8b4f5cb29efae893e488b74bc7029b4898d09860fb7ee61",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "openclaw-legacy-marketing",
+      "id": "e75b40a8-0bcc-4fd3-8151-52de0d92b51b",
+      "integration_ids": [
+        "cmn8x8hdv028uqx0y4gdfse5t"
+      ],
+      "label": "larry-ja-male-cta-reel-replace-2",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "openclaw",
+        "cron",
+        "enable",
+        "e75b40a8-0bcc-4fd3-8151-52de0d92b51b"
+      ],
+      "runtime": "openclaw",
+      "schedule": {
+        "expr": "45 20 * * *",
+        "kind": "cron",
+        "tz": "Asia/Tokyo"
+      },
+      "source_path": "/Users/anicca/.openclaw/cron/jobs.json",
+      "source_sha256": "17aad513b916474d880190979f1e906d2e291952113bdd924466421c9b8c2d8b"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": false,
+          "integration_id": "cmp9sdev5012voh0y58qs45xc",
+          "name": "アニッチャ iOS",
+          "platform": "tiktok",
+          "profile": "anicca.jp"
+        }
+      ],
+      "command": "Execute Larry per-account cron (Dais 2026-06-07 spec Part I+T+X).\n\n★ fixed-strings driven flow (NEW). DO NOT use old generate-slides.js. ★\n\nSTEP 1 — Read fixed-strings:\n  FS=~/.openclaw/skills/anicca-larry/state/fixed-strings-larry-ja-v3.json\n  (defines slide1_hook, slide7_cta?, bg_mode, bg files; per-account brand)\n\nSTEP 2 — Read library + history:\n  - ~/.openclaw/state/content-library/pattern-card-ja.jsonl\n  - ~/.openclaw/state/content-library/account-history.jsonl\n    filter for this cron's account, last 14d → forbidden BODY texts\n  - Pick 1 viral pattern with high views, source_id NOT in 14d, emotion diversity\n\nSTEP 3 — Generate 5 fresh BODY texts (slide 2-6) ONLY in ja:\n  Clone pattern STRUCTURE + emotion (clone-don't-template). Fresh wording.\n  Write picks.json:\n    [body1, body2, body3, body4, body5]\n  Write source_id.txt + emotion.txt for append-to-history.\n\nSTEP 4 — Build slides (NEW helper):\n  RUN_DIR=\"$HOME/.openclaw/workspace/tiktok-marketing/run-larry-ja-v3-$(date +%Y%m%d-%H%M)\"\n  mkdir -p \"$RUN_DIR\"\n  cp picks.json \"$RUN_DIR/picks.json\"  # body texts only\n  bash ~/.openclaw/workspace/skills/larry/scripts/build-from-fixed-strings.sh \\\n    \"$FS\" \"$RUN_DIR/picks.json\" \"$RUN_DIR\"\n\nSTEP 5 — Post to TikTok via post-to-tiktok.js (SSOT for DIRECT_POST + PUBLIC + autoAddMusic):\n  node ~/.openclaw/workspace/skills/larry/scripts/post-to-tiktok.js \\\n    --tt cmp9sdev5012voh0y58qs45xc --dir \"$RUN_DIR\" \\\n    --caption \"<5-8 word caption derived from hook+body>\" \\\n    --title \"<account-appropriate title>\"\n\nSTEP 6 — Append history:\n  bash ~/.openclaw/skills/_shared/append-to-history.sh \\\n    --account larry-jp-sunset-reel-replace-1 --platform TT --post-id <TT_POST_ID> \\\n    --source-id \"$(cat $RUN_DIR/source_id.txt)\" \\\n    --hook \"$(python3 -c \\\"import json; print(json.load(open('$FS'))['slide1_hook'])\\\")\" \\\n    --emotion \"$(cat $RUN_DIR/emotion.txt)\"\n\nReport TT_POST_ID + source_id used.",
+      "command_sha256": "cc5c956af93bddb50e5b419bde62998fa11340274a7175e644504c6ff2915ddd",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "openclaw-legacy-marketing",
+      "id": "bec4d005-36b5-496c-961c-ee849b61893b",
+      "integration_ids": [
+        "cmp9sdev5012voh0y58qs45xc"
+      ],
+      "label": "larry-jp-sunset-reel-replace-1",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "openclaw",
+        "cron",
+        "enable",
+        "bec4d005-36b5-496c-961c-ee849b61893b"
+      ],
+      "runtime": "openclaw",
+      "schedule": {
+        "expr": "0 9 * * *",
+        "kind": "cron",
+        "tz": "Asia/Tokyo"
+      },
+      "source_path": "/Users/anicca/.openclaw/cron/jobs.json",
+      "source_sha256": "17aad513b916474d880190979f1e906d2e291952113bdd924466421c9b8c2d8b"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": false,
+          "integration_id": "cmp9sdev5012voh0y58qs45xc",
+          "name": "アニッチャ iOS",
+          "platform": "tiktok",
+          "profile": "anicca.jp"
+        }
+      ],
+      "command": "Execute Larry per-account cron (Dais 2026-06-07 spec Part I+T+X).\n\n★ fixed-strings driven flow (NEW). DO NOT use old generate-slides.js. ★\n\nSTEP 1 — Read fixed-strings:\n  FS=~/.openclaw/skills/anicca-larry/state/fixed-strings-larry-ja-v3.json\n  (defines slide1_hook, slide7_cta?, bg_mode, bg files; per-account brand)\n\nSTEP 2 — Read library + history:\n  - ~/.openclaw/state/content-library/pattern-card-ja.jsonl\n  - ~/.openclaw/state/content-library/account-history.jsonl\n    filter for this cron's account, last 14d → forbidden BODY texts\n  - Pick 1 viral pattern with high views, source_id NOT in 14d, emotion diversity\n\nSTEP 3 — Generate 5 fresh BODY texts (slide 2-6) ONLY in ja:\n  Clone pattern STRUCTURE + emotion (clone-don't-template). Fresh wording.\n  Write picks.json:\n    [body1, body2, body3, body4, body5]\n  Write source_id.txt + emotion.txt for append-to-history.\n\nSTEP 4 — Build slides (NEW helper):\n  RUN_DIR=\"$HOME/.openclaw/workspace/tiktok-marketing/run-larry-ja-v3-$(date +%Y%m%d-%H%M)\"\n  mkdir -p \"$RUN_DIR\"\n  cp picks.json \"$RUN_DIR/picks.json\"  # body texts only\n  bash ~/.openclaw/workspace/skills/larry/scripts/build-from-fixed-strings.sh \\\n    \"$FS\" \"$RUN_DIR/picks.json\" \"$RUN_DIR\"\n\nSTEP 5 — Post to TikTok via post-to-tiktok.js (SSOT for DIRECT_POST + PUBLIC + autoAddMusic):\n  node ~/.openclaw/workspace/skills/larry/scripts/post-to-tiktok.js \\\n    --tt cmp9sdev5012voh0y58qs45xc --dir \"$RUN_DIR\" \\\n    --caption \"<5-8 word caption derived from hook+body>\" \\\n    --title \"<account-appropriate title>\"\n\nSTEP 6 — Append history:\n  bash ~/.openclaw/skills/_shared/append-to-history.sh \\\n    --account larry-jp-sunset-reel-replace-2 --platform TT --post-id <TT_POST_ID> \\\n    --source-id \"$(cat $RUN_DIR/source_id.txt)\" \\\n    --hook \"$(python3 -c \\\"import json; print(json.load(open('$FS'))['slide1_hook'])\\\")\" \\\n    --emotion \"$(cat $RUN_DIR/emotion.txt)\"\n\nReport TT_POST_ID + source_id used.",
+      "command_sha256": "fbdad595bad21432df1098d7670373e3195a3a59181a84a8a745383f84c3a1ed",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "openclaw-legacy-marketing",
+      "id": "67f009b7-e139-45a2-957c-a04efef93c5e",
+      "integration_ids": [
+        "cmp9sdev5012voh0y58qs45xc"
+      ],
+      "label": "larry-jp-sunset-reel-replace-2",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "openclaw",
+        "cron",
+        "enable",
+        "67f009b7-e139-45a2-957c-a04efef93c5e"
+      ],
+      "runtime": "openclaw",
+      "schedule": {
+        "expr": "0 14 * * *",
+        "kind": "cron",
+        "tz": "Asia/Tokyo"
+      },
+      "source_path": "/Users/anicca/.openclaw/cron/jobs.json",
+      "source_sha256": "17aad513b916474d880190979f1e906d2e291952113bdd924466421c9b8c2d8b"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": false,
+          "integration_id": "cmp9sdev5012voh0y58qs45xc",
+          "name": "アニッチャ iOS",
+          "platform": "tiktok",
+          "profile": "anicca.jp"
+        }
+      ],
+      "command": "Execute Larry per-account cron (Dais 2026-06-07 spec Part I+T+X).\n\n★ fixed-strings driven flow (NEW). DO NOT use old generate-slides.js. ★\n\nSTEP 1 — Read fixed-strings:\n  FS=~/.openclaw/skills/anicca-larry/state/fixed-strings-larry-ja-v3.json\n  (defines slide1_hook, slide7_cta?, bg_mode, bg files; per-account brand)\n\nSTEP 2 — Read library + history:\n  - ~/.openclaw/state/content-library/pattern-card-ja.jsonl\n  - ~/.openclaw/state/content-library/account-history.jsonl\n    filter for this cron's account, last 14d → forbidden BODY texts\n  - Pick 1 viral pattern with high views, source_id NOT in 14d, emotion diversity\n\nSTEP 3 — Generate 5 fresh BODY texts (slide 2-6) ONLY in ja:\n  Clone pattern STRUCTURE + emotion (clone-don't-template). Fresh wording.\n  Write picks.json:\n    [body1, body2, body3, body4, body5]\n  Write source_id.txt + emotion.txt for append-to-history.\n\nSTEP 4 — Build slides (NEW helper):\n  RUN_DIR=\"$HOME/.openclaw/workspace/tiktok-marketing/run-larry-ja-v3-$(date +%Y%m%d-%H%M)\"\n  mkdir -p \"$RUN_DIR\"\n  cp picks.json \"$RUN_DIR/picks.json\"  # body texts only\n  bash ~/.openclaw/workspace/skills/larry/scripts/build-from-fixed-strings.sh \\\n    \"$FS\" \"$RUN_DIR/picks.json\" \"$RUN_DIR\"\n\nSTEP 5 — Post to TikTok via post-to-tiktok.js (SSOT for DIRECT_POST + PUBLIC + autoAddMusic):\n  node ~/.openclaw/workspace/skills/larry/scripts/post-to-tiktok.js \\\n    --tt cmp9sdev5012voh0y58qs45xc --dir \"$RUN_DIR\" \\\n    --caption \"<5-8 word caption derived from hook+body>\" \\\n    --title \"<account-appropriate title>\"\n\nSTEP 6 — Append history:\n  bash ~/.openclaw/skills/_shared/append-to-history.sh \\\n    --account larry-jp-sunset-reel-replace-3 --platform TT --post-id <TT_POST_ID> \\\n    --source-id \"$(cat $RUN_DIR/source_id.txt)\" \\\n    --hook \"$(python3 -c \\\"import json; print(json.load(open('$FS'))['slide1_hook'])\\\")\" \\\n    --emotion \"$(cat $RUN_DIR/emotion.txt)\"\n\nReport TT_POST_ID + source_id used.",
+      "command_sha256": "dd7b7dac52344b23705af8191b2bfd72391b1d1e397a5baeb962b9616662b0aa",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "openclaw-legacy-marketing",
+      "id": "67c6f2fb-1a6a-4711-9e46-3937f277c3e2",
+      "integration_ids": [
+        "cmp9sdev5012voh0y58qs45xc"
+      ],
+      "label": "larry-jp-sunset-reel-replace-3",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "openclaw",
+        "cron",
+        "enable",
+        "67c6f2fb-1a6a-4711-9e46-3937f277c3e2"
+      ],
+      "runtime": "openclaw",
+      "schedule": {
+        "expr": "0 20 * * *",
+        "kind": "cron",
+        "tz": "Asia/Tokyo"
+      },
+      "source_path": "/Users/anicca/.openclaw/cron/jobs.json",
+      "source_sha256": "17aad513b916474d880190979f1e906d2e291952113bdd924466421c9b8c2d8b"
+    },
+    {
+      "accounts": [],
+      "command": "hookPool自動更新。\n1. winning-trends/最新日付.json を読む\n2. hook-performance.json を読む（larry専用）\n2.5 ~/.openclaw/state/content-metrics/top-performers.json を読む（無ければスキップ）。\n    cross-account の top5（views順）に含まれるフックが larry の hookPool 内にあれば、\n    通常の50K閾値に加えて追加 SCALE 候補として扱う（バリエーション+3）。\n    file が無い・dry_run:true の場合はスキップ（content-7day-rollup未稼働）。\n3. 判定:\n   - 50K+ views → SCALE（バリエーション3つ追加）\n   - <1K views × 2回連続 → DROP\n   - ⭐ 新外部フック → 無条件でhookPoolに追加（engagement閾値なし！全て追加）\n   - droppedHooksに含まれるフックのみ除外\n4. 全6 slot JSONを更新:\n   ~/.openclaw/workspace/tiktok-marketing/slots/morning-en.json\n   ~/.openclaw/workspace/tiktok-marketing/slots/morning-ja.json\n   ~/.openclaw/workspace/tiktok-marketing/slots/afternoon-en.json\n   ~/.openclaw/workspace/tiktok-marketing/slots/afternoon-ja.json\n   ~/.openclaw/workspace/tiktok-marketing/slots/evening-en.json\n   ~/.openclaw/workspace/tiktok-marketing/slots/evening-ja.json\n   ⚠️ 更新時に既存のhookPool構造を保持（type, slides, account, integration, imageDir, etc.は絶対に変えない）\n   ⚠️ hookPoolは常に15個以上を維持\n5. demos-mapping.json も同様に更新（新フックをテーマ別にhooks_ja/hooks_enに追加）\n6. strategy.json の droppedHooks を更新",
+      "command_sha256": "57bac5ce13701ec3312c21fa0dc99e76fad225bdd2fe8ab1b0b31a83df0554d2",
+      "disposition": "retire",
+      "enabled": true,
+      "external_action": "none",
+      "family": "openclaw-legacy-marketing",
+      "id": "26932ef8-5bb6-487d-aaf0-94febda4b2a4",
+      "integration_ids": [],
+      "label": "larry-strategy-updater",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": true,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "openclaw",
+        "cron",
+        "enable",
+        "26932ef8-5bb6-487d-aaf0-94febda4b2a4"
+      ],
+      "runtime": "openclaw",
+      "schedule": {
+        "expr": "10 5 * * *",
+        "kind": "cron",
+        "staggerMs": 120000,
+        "tz": "Asia/Tokyo"
+      },
+      "source_path": "/Users/anicca/.openclaw/cron/jobs.json",
+      "source_sha256": "17aad513b916474d880190979f1e906d2e291952113bdd924466421c9b8c2d8b"
+    },
+    {
+      "accounts": [],
+      "command": "bash $HOME/.openclaw/skills/_dispatcher/scripts/cron-bash.sh trend-hunter/run_trend_hunter.sh",
+      "command_sha256": "0d918903eeac12867dd3254eb294030ac89758543e952c13727537e44ffb7f99",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "none",
+      "family": "openclaw-legacy-marketing",
+      "id": "7a6230f8-d2a9-4d4b-8421-eba46faba984",
+      "integration_ids": [],
+      "label": "larry-trend-hunter-en",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "openclaw",
+        "cron",
+        "enable",
+        "7a6230f8-d2a9-4d4b-8421-eba46faba984"
+      ],
+      "runtime": "openclaw",
+      "schedule": {
+        "expr": "45 4 * * *",
+        "kind": "cron",
+        "staggerMs": 120000,
+        "tz": "Asia/Tokyo"
+      },
+      "source_path": "/Users/anicca/.openclaw/cron/jobs.json",
+      "source_sha256": "17aad513b916474d880190979f1e906d2e291952113bdd924466421c9b8c2d8b"
+    },
+    {
+      "accounts": [],
+      "command": "bash $HOME/.openclaw/skills/_dispatcher/scripts/cron-bash.sh trend-hunter/run_trend_hunter.sh",
+      "command_sha256": "0d918903eeac12867dd3254eb294030ac89758543e952c13727537e44ffb7f99",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "none",
+      "family": "openclaw-legacy-marketing",
+      "id": "71e0e811-a031-4ee8-a794-16c91974728c",
+      "integration_ids": [],
+      "label": "larry-trend-hunter-ja",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "openclaw",
+        "cron",
+        "enable",
+        "71e0e811-a031-4ee8-a794-16c91974728c"
+      ],
+      "runtime": "openclaw",
+      "schedule": {
+        "expr": "25 4 * * *",
+        "kind": "cron",
+        "staggerMs": 300000,
+        "tz": "Asia/Tokyo"
+      },
+      "source_path": "/Users/anicca/.openclaw/cron/jobs.json",
+      "source_sha256": "17aad513b916474d880190979f1e906d2e291952113bdd924466421c9b8c2d8b"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": true,
+          "integration_id": "cmo5rwq2p00twn10yrsdglng3",
+          "name": "Monk Anicca",
+          "platform": "tiktok",
+          "profile": "monk_anicca"
+        },
+        {
+          "disabled": null,
+          "integration_id": "cmoopzaak04yop70y1yx1bwr1",
+          "name": null,
+          "platform": null,
+          "profile": null
+        }
+      ],
+      "command": "bash $HOME/.openclaw/skills/_dispatcher/scripts/cron-bash.sh anicca-monk-factory-v3/scripts/run-daily.sh",
+      "command_sha256": "91b9db567cbdb9ad7d41975a4b02b3b9e29ba579ab6df80419ca97f496af1e3c",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "openclaw-legacy-marketing",
+      "id": "7e929ab5-21ed-45e6-a4e7-aaba32ae84ac",
+      "integration_ids": [
+        "cmo5rwq2p00twn10yrsdglng3",
+        "cmoopzaak04yop70y1yx1bwr1"
+      ],
+      "label": "monk-factory-en-0800",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "openclaw",
+        "cron",
+        "enable",
+        "7e929ab5-21ed-45e6-a4e7-aaba32ae84ac"
+      ],
+      "runtime": "openclaw",
+      "schedule": {
+        "expr": "0 8 * * *",
+        "kind": "cron",
+        "tz": "Asia/Tokyo"
+      },
+      "source_path": "/Users/anicca/.openclaw/cron/jobs.json",
+      "source_sha256": "17aad513b916474d880190979f1e906d2e291952113bdd924466421c9b8c2d8b"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": true,
+          "integration_id": "cmo5rwq2p00twn10yrsdglng3",
+          "name": "Monk Anicca",
+          "platform": "tiktok",
+          "profile": "monk_anicca"
+        },
+        {
+          "disabled": null,
+          "integration_id": "cmoopzaak04yop70y1yx1bwr1",
+          "name": null,
+          "platform": null,
+          "profile": null
+        }
+      ],
+      "command": "Run this ONE command and wait for it to finish (it does the entire Monk Factory pipeline — render, captions, post to TikTok+IG — and reports to Slack #metrics itself): bash /Users/anicca/.openclaw/skills/anicca-monk-factory-v3/scripts/run-daily.sh",
+      "command_sha256": "c5407b523c236c3aa2ce0856ce6b7f500ee304b8eab7a04a41693370193d00c4",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "openclaw-legacy-marketing",
+      "id": "df6f5a53-9df6-45d0-b67c-0f9cce5628d2",
+      "integration_ids": [
+        "cmo5rwq2p00twn10yrsdglng3",
+        "cmoopzaak04yop70y1yx1bwr1"
+      ],
+      "label": "monk-factory-en-1400",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "openclaw",
+        "cron",
+        "enable",
+        "df6f5a53-9df6-45d0-b67c-0f9cce5628d2"
+      ],
+      "runtime": "openclaw",
+      "schedule": {
+        "expr": "0 14 * * *",
+        "kind": "cron",
+        "tz": "Asia/Tokyo"
+      },
+      "source_path": "/Users/anicca/.openclaw/cron/jobs.json",
+      "source_sha256": "17aad513b916474d880190979f1e906d2e291952113bdd924466421c9b8c2d8b"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": true,
+          "integration_id": "cmo5rwq2p00twn10yrsdglng3",
+          "name": "Monk Anicca",
+          "platform": "tiktok",
+          "profile": "monk_anicca"
+        },
+        {
+          "disabled": null,
+          "integration_id": "cmoopzaak04yop70y1yx1bwr1",
+          "name": null,
+          "platform": null,
+          "profile": null
+        }
+      ],
+      "command": "Execute this exact shell command and BLOCK until it exits. Do NOT report progress before exit. Do NOT claim success until you see \"RUN_DONE\" in stdout.\n\nbash /Users/anicca/.openclaw/skills/anicca-monk-factory-v3/scripts/run-daily.sh\n\nYour summary MUST be EXACTLY the last 6 lines of stdout (which include either):\n  RUN_DONE id=<id> tiktok=<url> ig=<url>     ← success\nor:\n  FATAL: ... (or any error)                   ← failure\n\nDo NOT add prose. Do NOT claim \"pipeline initiated\" or \"rendering in progress\" — those are FAILURE modes (early return). If you cannot see RUN_DONE in stdout the cron has FAILED.\n\nThe script takes 15-25 minutes (HeyGen render). Wait for it.",
+      "command_sha256": "90051fa0608b5a1970da504f140dc108b753ef8458cbd2fe19ea45052f0ff5ec",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "openclaw-legacy-marketing",
+      "id": "6aaf30b2-e3a2-4d1c-8b6f-c366ade0f431",
+      "integration_ids": [
+        "cmo5rwq2p00twn10yrsdglng3",
+        "cmoopzaak04yop70y1yx1bwr1"
+      ],
+      "label": "monk-factory-en-2100",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "openclaw",
+        "cron",
+        "enable",
+        "6aaf30b2-e3a2-4d1c-8b6f-c366ade0f431"
+      ],
+      "runtime": "openclaw",
+      "schedule": {
+        "expr": "0 21 * * *",
+        "kind": "cron",
+        "tz": "Asia/Tokyo"
+      },
+      "source_path": "/Users/anicca/.openclaw/cron/jobs.json",
+      "source_sha256": "17aad513b916474d880190979f1e906d2e291952113bdd924466421c9b8c2d8b"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": true,
+          "integration_id": "cmo5rwq2p00twn10yrsdglng3",
+          "name": "Monk Anicca",
+          "platform": "tiktok",
+          "profile": "monk_anicca"
+        },
+        {
+          "disabled": null,
+          "integration_id": "cmoopzaak04yop70y1yx1bwr1",
+          "name": null,
+          "platform": null,
+          "profile": null
+        }
+      ],
+      "command": "Execute this exact shell command and BLOCK until it exits. Do NOT report progress before exit:\n\nbash /Users/anicca/.openclaw/skills/anicca-monk-factory-v3/scripts/resume-render.sh\n\nYour summary MUST be EXACTLY the last 6 lines of stdout.",
+      "command_sha256": "650bf5bfc3888eb3fb1b8b75b75eacae0c6b8ed2c12303c71e4e99ec7a82b32d",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "openclaw-legacy-marketing",
+      "id": "monk-factory-en-recovery",
+      "integration_ids": [
+        "cmo5rwq2p00twn10yrsdglng3",
+        "cmoopzaak04yop70y1yx1bwr1"
+      ],
+      "label": "monk-factory-en-recovery",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "openclaw",
+        "cron",
+        "enable",
+        "monk-factory-en-recovery"
+      ],
+      "runtime": "openclaw",
+      "schedule": {
+        "expr": "0 */2 * * *",
+        "kind": "cron",
+        "staggerMs": 300000,
+        "tz": "Asia/Tokyo"
+      },
+      "source_path": "/Users/anicca/.openclaw/cron/jobs.json",
+      "source_sha256": "17aad513b916474d880190979f1e906d2e291952113bdd924466421c9b8c2d8b"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": false,
+          "integration_id": "cmlt171eq04d9r00yzzceb6bw",
+          "name": "Anicca",
+          "platform": "tiktok",
+          "profile": "aniccaen2"
+        },
+        {
+          "disabled": null,
+          "integration_id": "cmmzukbkw04ulp30yfvijrwio",
+          "name": null,
+          "platform": null,
+          "profile": null
+        },
+        {
+          "disabled": false,
+          "integration_id": "cmpc3gx4001nklg0y27a8o66q",
+          "name": "Anicca iOS",
+          "platform": "instagram-standalone",
+          "profile": "anicca.encards"
+        }
+      ],
+      "command": "Execute this exact shell command. Capture full stdout verbatim. Add no prose. If exits non-zero the cron has FAILED.\n\nbash ~/.openclaw/workspace/skills/reelclaw/scripts/run-card-en.sh --tt cmlt171eq04d9r00yzzceb6bw --ig cmpc3gx4001nklg0y27a8o66q --yt cmmzukbkw04ulp30yfvijrwio\n\n(6/2 Dais correction: YT integration switched to cmmzukbkw04ulp30yfvijrwio = @anicca-ai = Anicca - AI Coaching app. Verified live: https://www.youtube.com/watch?v=CYMbemS6GKs)\n\nSummary MUST include these 5 lines verbatim:\nHOOK_ID=...\nTT_POST_ID=...\nIG_POST_ID=...\nYT_POST_ID=...\nOUT=...\n\nIf TT/IG/YT_POST_ID is NONE/FAILED, report cron failure.",
+      "command_sha256": "5eda7e160da403757e082d67cc82bc7ec0be8a04a8e9b0f9d3ab9e5df8551a40",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "openclaw-legacy-marketing",
+      "id": "a0a1d2fe-4087-4ee4-bc7b-526b6f8d8e65",
+      "integration_ids": [
+        "cmlt171eq04d9r00yzzceb6bw",
+        "cmmzukbkw04ulp30yfvijrwio",
+        "cmpc3gx4001nklg0y27a8o66q"
+      ],
+      "label": "reelclaw-anicca-en-card-1",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "openclaw",
+        "cron",
+        "enable",
+        "a0a1d2fe-4087-4ee4-bc7b-526b6f8d8e65"
+      ],
+      "runtime": "openclaw",
+      "schedule": {
+        "expr": "45 12 * * *",
+        "kind": "cron",
+        "tz": "Asia/Tokyo"
+      },
+      "source_path": "/Users/anicca/.openclaw/cron/jobs.json",
+      "source_sha256": "17aad513b916474d880190979f1e906d2e291952113bdd924466421c9b8c2d8b"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": false,
+          "integration_id": "cmlt171eq04d9r00yzzceb6bw",
+          "name": "Anicca",
+          "platform": "tiktok",
+          "profile": "aniccaen2"
+        },
+        {
+          "disabled": null,
+          "integration_id": "cmmzukbkw04ulp30yfvijrwio",
+          "name": null,
+          "platform": null,
+          "profile": null
+        },
+        {
+          "disabled": false,
+          "integration_id": "cmpc3gx4001nklg0y27a8o66q",
+          "name": "Anicca iOS",
+          "platform": "instagram-standalone",
+          "profile": "anicca.encards"
+        }
+      ],
+      "command": "Execute this exact shell command. Capture full stdout verbatim. Add no prose. If exits non-zero the cron has FAILED.\n\nbash ~/.openclaw/workspace/skills/reelclaw/scripts/run-card-en.sh --use-pattern-jsonl --tt cmlt171eq04d9r00yzzceb6bw --ig cmpc3gx4001nklg0y27a8o66q --yt cmmzukbkw04ulp30yfvijrwio\n\n(6/3 Dais correction: YT re-enabled to @anicca-ai, IG → anicca.en. 5/17 skip retired.)\n\nSummary MUST include these 5 lines verbatim:\nHOOK_ID=...\nTT_POST_ID=...\nIG_POST_ID=...\nYT_POST_ID=...\nOUT=...\n\nIf TT/IG/YT_POST_ID is NONE/FAILED, report cron failure.",
+      "command_sha256": "86293253c2e80fef599e771a9f8f4dbb8e59bfd570c5d91397f1f54ee11bc483",
+      "disposition": "retire",
+      "enabled": true,
+      "external_action": "publish",
+      "family": "openclaw-legacy-marketing",
+      "id": "330bbaf7-3ea2-41f6-8479-f1c6f8ef1f45",
+      "integration_ids": [
+        "cmlt171eq04d9r00yzzceb6bw",
+        "cmmzukbkw04ulp30yfvijrwio",
+        "cmpc3gx4001nklg0y27a8o66q"
+      ],
+      "label": "reelclaw-anicca-en-card-2",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": true,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "openclaw",
+        "cron",
+        "enable",
+        "330bbaf7-3ea2-41f6-8479-f1c6f8ef1f45"
+      ],
+      "runtime": "openclaw",
+      "schedule": {
+        "expr": "30 21 * * *",
+        "kind": "cron",
+        "tz": "Asia/Tokyo"
+      },
+      "source_path": "/Users/anicca/.openclaw/cron/jobs.json",
+      "source_sha256": "17aad513b916474d880190979f1e906d2e291952113bdd924466421c9b8c2d8b"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": false,
+          "integration_id": "cmlt171eq04d9r00yzzceb6bw",
+          "name": "Anicca",
+          "platform": "tiktok",
+          "profile": "aniccaen2"
+        },
+        {
+          "disabled": null,
+          "integration_id": "cmmzukbkw04ulp30yfvijrwio",
+          "name": null,
+          "platform": null,
+          "profile": null
+        },
+        {
+          "disabled": false,
+          "integration_id": "cmpc3gx4001nklg0y27a8o66q",
+          "name": "Anicca iOS",
+          "platform": "instagram-standalone",
+          "profile": "anicca.encards"
+        }
+      ],
+      "command": "Execute this exact shell command. Capture full stdout verbatim. Add no prose. If exits non-zero the cron has FAILED.\n\nbash ~/.openclaw/workspace/skills/reelclaw/scripts/run-widget-en.sh --tt cmlt171eq04d9r00yzzceb6bw --ig cmpc3gx4001nklg0y27a8o66q --yt cmmzukbkw04ulp30yfvijrwio\n\n(6/2 Dais correction: YT integration switched to cmmzukbkw04ulp30yfvijrwio = @anicca-ai = Anicca - AI Coaching app. Verified live: https://www.youtube.com/watch?v=CYMbemS6GKs)\n\nSummary MUST include these 5 lines verbatim:\nHOOK_ID=...\nTT_POST_ID=...\nIG_POST_ID=...\nYT_POST_ID=...\nOUT=...\n\nIf TT/IG/YT_POST_ID is NONE/FAILED, report cron failure.",
+      "command_sha256": "08f9967dd2c630f1792d042ec1649569f89912ed7e421f73175d6e200ceb8190",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "openclaw-legacy-marketing",
+      "id": "f31e4870-f0ef-451b-853a-d88a066da447",
+      "integration_ids": [
+        "cmlt171eq04d9r00yzzceb6bw",
+        "cmmzukbkw04ulp30yfvijrwio",
+        "cmpc3gx4001nklg0y27a8o66q"
+      ],
+      "label": "reelclaw-anicca-en-widget-1",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "openclaw",
+        "cron",
+        "enable",
+        "f31e4870-f0ef-451b-853a-d88a066da447"
+      ],
+      "runtime": "openclaw",
+      "schedule": {
+        "expr": "30 9 * * *",
+        "kind": "cron",
+        "tz": "Asia/Tokyo"
+      },
+      "source_path": "/Users/anicca/.openclaw/cron/jobs.json",
+      "source_sha256": "17aad513b916474d880190979f1e906d2e291952113bdd924466421c9b8c2d8b"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": false,
+          "integration_id": "cmlt171eq04d9r00yzzceb6bw",
+          "name": "Anicca",
+          "platform": "tiktok",
+          "profile": "aniccaen2"
+        },
+        {
+          "disabled": null,
+          "integration_id": "cmmzukbkw04ulp30yfvijrwio",
+          "name": null,
+          "platform": null,
+          "profile": null
+        },
+        {
+          "disabled": false,
+          "integration_id": "cmpc3gx4001nklg0y27a8o66q",
+          "name": "Anicca iOS",
+          "platform": "instagram-standalone",
+          "profile": "anicca.encards"
+        }
+      ],
+      "command": "Execute this exact shell command. Capture full stdout verbatim. Add no prose. If exits non-zero the cron has FAILED.\n\nbash ~/.openclaw/workspace/skills/reelclaw/scripts/run-widget-en.sh --tt cmlt171eq04d9r00yzzceb6bw --ig cmpc3gx4001nklg0y27a8o66q --yt cmmzukbkw04ulp30yfvijrwio\n\n(6/2 Dais correction: YT integration switched to cmmzukbkw04ulp30yfvijrwio = @anicca-ai = Anicca - AI Coaching app. Verified live: https://www.youtube.com/watch?v=CYMbemS6GKs)\n\nSummary MUST include these 5 lines verbatim:\nHOOK_ID=...\nTT_POST_ID=...\nIG_POST_ID=...\nYT_POST_ID=...\nOUT=...\n\nIf TT/IG/YT_POST_ID is NONE/FAILED, report cron failure.",
+      "command_sha256": "08f9967dd2c630f1792d042ec1649569f89912ed7e421f73175d6e200ceb8190",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "openclaw-legacy-marketing",
+      "id": "92c13cc2-3888-4c4a-b2b7-5a200f223677",
+      "integration_ids": [
+        "cmlt171eq04d9r00yzzceb6bw",
+        "cmmzukbkw04ulp30yfvijrwio",
+        "cmpc3gx4001nklg0y27a8o66q"
+      ],
+      "label": "reelclaw-anicca-en-widget-2",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "openclaw",
+        "cron",
+        "enable",
+        "92c13cc2-3888-4c4a-b2b7-5a200f223677"
+      ],
+      "runtime": "openclaw",
+      "schedule": {
+        "expr": "0 19 * * *",
+        "kind": "cron",
+        "staggerMs": 180000,
+        "tz": "Asia/Tokyo"
+      },
+      "source_path": "/Users/anicca/.openclaw/cron/jobs.json",
+      "source_sha256": "17aad513b916474d880190979f1e906d2e291952113bdd924466421c9b8c2d8b"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": false,
+          "integration_id": "cmn1oukj9012nnq0yqhouc3ib",
+          "name": "Anicca",
+          "platform": "youtube",
+          "profile": "@anicca-jp"
+        },
+        {
+          "disabled": false,
+          "integration_id": "cmnhlk3ju058lpn0ytilqdpo0",
+          "name": "アニッチャ",
+          "platform": "tiktok",
+          "profile": "anicca.jp8"
+        },
+        {
+          "disabled": null,
+          "integration_id": "cmnipef7g00oerm0y3dz4lamx",
+          "name": null,
+          "platform": null,
+          "profile": null
+        }
+      ],
+      "command": "Execute this exact shell command. Capture full stdout verbatim into your summary. Add no prose before, between, or after. If the script exits non-zero, the cron has FAILED — do not claim success.\n\nbash ~/.openclaw/workspace/skills/reelclaw/scripts/run-card-ja.sh --use-pattern-jsonl --tt cmnhlk3ju058lpn0ytilqdpo0 --ig cmnipef7g00oerm0y3dz4lamx --yt cmn1oukj9012nnq0yqhouc3ib\n\nYour summary MUST include these 4 verbatim lines from the orchestrator stdout:\nHOOK_ID=...\nTT_POST_ID=...\nIG_POST_ID=NONE\nYT_POST_ID=...\n\nIf TT_POST_ID or YT_POST_ID is \"NONE\" or \"FAILED\", that platform did not post — report it as cron failure.",
+      "command_sha256": "09ab0b0d9f4c007df163364b97b499a491a411c1af6eb693b47c87ed4549f22d",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "openclaw-legacy-marketing",
+      "id": "174f01dd-b2ae-413f-85f7-3b03236e3944",
+      "integration_ids": [
+        "cmn1oukj9012nnq0yqhouc3ib",
+        "cmnhlk3ju058lpn0ytilqdpo0",
+        "cmnipef7g00oerm0y3dz4lamx"
+      ],
+      "label": "reelclaw-anicca-ja-card-1",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "openclaw",
+        "cron",
+        "enable",
+        "174f01dd-b2ae-413f-85f7-3b03236e3944"
+      ],
+      "runtime": "openclaw",
+      "schedule": {
+        "expr": "15 12 * * *",
+        "kind": "cron",
+        "staggerMs": 300000,
+        "tz": "Asia/Tokyo"
+      },
+      "source_path": "/Users/anicca/.openclaw/cron/jobs.json",
+      "source_sha256": "17aad513b916474d880190979f1e906d2e291952113bdd924466421c9b8c2d8b"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": false,
+          "integration_id": "cmn1oukj9012nnq0yqhouc3ib",
+          "name": "Anicca",
+          "platform": "youtube",
+          "profile": "@anicca-jp"
+        },
+        {
+          "disabled": false,
+          "integration_id": "cmnhlk3ju058lpn0ytilqdpo0",
+          "name": "アニッチャ",
+          "platform": "tiktok",
+          "profile": "anicca.jp8"
+        },
+        {
+          "disabled": null,
+          "integration_id": "cmnipef7g00oerm0y3dz4lamx",
+          "name": null,
+          "platform": null,
+          "profile": null
+        }
+      ],
+      "command": "Execute this exact shell command. Capture full stdout verbatim into your summary. Add no prose. If the script exits non-zero, the cron has FAILED.\n\nbash ~/.openclaw/workspace/skills/reelclaw/scripts/run-card-ja.sh --use-pattern-jsonl --tt cmnhlk3ju058lpn0ytilqdpo0 --ig cmnipef7g00oerm0y3dz4lamx --yt cmn1oukj9012nnq0yqhouc3ib\n\nYour summary MUST include these 5 verbatim lines from stdout:\nHOOK_ID=...\nTT_POST_ID=...\nIG_POST_ID=...\nYT_POST_ID=...\nOUT=...\n\nIf TT/IG/YT_POST_ID is NONE/FAILED, report cron failure.",
+      "command_sha256": "1582be7b6ad5c975ffc57970a445f6c2edaac27c347f0b6316e28eaa3617cd36",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "openclaw-legacy-marketing",
+      "id": "a6ccfc01-42c8-4b5c-8c43-5713e90ee10d",
+      "integration_ids": [
+        "cmn1oukj9012nnq0yqhouc3ib",
+        "cmnhlk3ju058lpn0ytilqdpo0",
+        "cmnipef7g00oerm0y3dz4lamx"
+      ],
+      "label": "reelclaw-anicca-ja-card-2",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "openclaw",
+        "cron",
+        "enable",
+        "a6ccfc01-42c8-4b5c-8c43-5713e90ee10d"
+      ],
+      "runtime": "openclaw",
+      "schedule": {
+        "expr": "20 21 * * *",
+        "kind": "cron",
+        "staggerMs": 540000,
+        "tz": "Asia/Tokyo"
+      },
+      "source_path": "/Users/anicca/.openclaw/cron/jobs.json",
+      "source_sha256": "17aad513b916474d880190979f1e906d2e291952113bdd924466421c9b8c2d8b"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": false,
+          "integration_id": "cmn1oukj9012nnq0yqhouc3ib",
+          "name": "Anicca",
+          "platform": "youtube",
+          "profile": "@anicca-jp"
+        },
+        {
+          "disabled": false,
+          "integration_id": "cmnhlk3ju058lpn0ytilqdpo0",
+          "name": "アニッチャ",
+          "platform": "tiktok",
+          "profile": "anicca.jp8"
+        },
+        {
+          "disabled": null,
+          "integration_id": "cmnipef7g00oerm0y3dz4lamx",
+          "name": null,
+          "platform": null,
+          "profile": null
+        }
+      ],
+      "command": "Execute this exact shell command. Capture full stdout verbatim. Add no prose. If the script exits non-zero, the cron has FAILED.\n\nbash ~/.openclaw/workspace/skills/reelclaw/scripts/run-widget-ja.sh --tt cmnhlk3ju058lpn0ytilqdpo0 --ig cmnipef7g00oerm0y3dz4lamx --yt cmn1oukj9012nnq0yqhouc3ib\n\nYour summary MUST include these 5 verbatim lines from stdout:\nHOOK_ID=...\nTT_POST_ID=...\nIG_POST_ID=...\nYT_POST_ID=...\nOUT=...\n\nIf any *_POST_ID is NONE/FAILED, report cron failure.",
+      "command_sha256": "12ae1316a744892c0394b7b939ef3fde04531266df14e86431e2499a1f9d76a3",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "openclaw-legacy-marketing",
+      "id": "b5b49526-a38c-49b8-9c13-2d8d51b97834",
+      "integration_ids": [
+        "cmn1oukj9012nnq0yqhouc3ib",
+        "cmnhlk3ju058lpn0ytilqdpo0",
+        "cmnipef7g00oerm0y3dz4lamx"
+      ],
+      "label": "reelclaw-anicca-ja-widget-1",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "openclaw",
+        "cron",
+        "enable",
+        "b5b49526-a38c-49b8-9c13-2d8d51b97834"
+      ],
+      "runtime": "openclaw",
+      "schedule": {
+        "expr": "5 8 * * *",
+        "kind": "cron",
+        "staggerMs": 300000,
+        "tz": "Asia/Tokyo"
+      },
+      "source_path": "/Users/anicca/.openclaw/cron/jobs.json",
+      "source_sha256": "17aad513b916474d880190979f1e906d2e291952113bdd924466421c9b8c2d8b"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": false,
+          "integration_id": "cmn1oukj9012nnq0yqhouc3ib",
+          "name": "Anicca",
+          "platform": "youtube",
+          "profile": "@anicca-jp"
+        },
+        {
+          "disabled": false,
+          "integration_id": "cmnhlk3ju058lpn0ytilqdpo0",
+          "name": "アニッチャ",
+          "platform": "tiktok",
+          "profile": "anicca.jp8"
+        },
+        {
+          "disabled": null,
+          "integration_id": "cmnipef7g00oerm0y3dz4lamx",
+          "name": null,
+          "platform": null,
+          "profile": null
+        }
+      ],
+      "command": "Execute this exact shell command. Capture full stdout verbatim. Add no prose. If the script exits non-zero, the cron has FAILED.\n\nbash ~/.openclaw/workspace/skills/reelclaw/scripts/run-widget-ja.sh --tt cmnhlk3ju058lpn0ytilqdpo0 --ig cmnipef7g00oerm0y3dz4lamx --yt cmn1oukj9012nnq0yqhouc3ib\n\nYour summary MUST include these 5 verbatim lines from stdout:\nHOOK_ID=...\nTT_POST_ID=...\nIG_POST_ID=...\nYT_POST_ID=...\nOUT=...\n\nIf any *_POST_ID is NONE/FAILED, report cron failure.",
+      "command_sha256": "12ae1316a744892c0394b7b939ef3fde04531266df14e86431e2499a1f9d76a3",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "openclaw-legacy-marketing",
+      "id": "71957a9d-36bb-44f3-8fa6-078f72244fb4",
+      "integration_ids": [
+        "cmn1oukj9012nnq0yqhouc3ib",
+        "cmnhlk3ju058lpn0ytilqdpo0",
+        "cmnipef7g00oerm0y3dz4lamx"
+      ],
+      "label": "reelclaw-anicca-ja-widget-2",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "openclaw",
+        "cron",
+        "enable",
+        "71957a9d-36bb-44f3-8fa6-078f72244fb4"
+      ],
+      "runtime": "openclaw",
+      "schedule": {
+        "expr": "20 18 * * *",
+        "kind": "cron",
+        "staggerMs": 300000,
+        "tz": "Asia/Tokyo"
+      },
+      "source_path": "/Users/anicca/.openclaw/cron/jobs.json",
+      "source_sha256": "17aad513b916474d880190979f1e906d2e291952113bdd924466421c9b8c2d8b"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": false,
+          "integration_id": "cmnit95mg015rrm0ye5vm8dhl",
+          "name": "本音翻訳",
+          "platform": "tiktok",
+          "profile": "honnevideo"
+        }
+      ],
+      "command": "Execute this exact shell command. Capture full stdout verbatim. Add no prose. If exits non-zero the cron has FAILED.\n\nbash ~/.openclaw/workspace/skills/reelclaw/scripts/run-honne-en.sh --tt cmnit95mg015rrm0ye5vm8dhl\n\nSummary MUST include these 5 verbatim lines from stdout:\nHOOK_ID=...\nTT_POST_ID=...\nIG_POST_ID=NONE\nYT_POST_ID=NONE\nOUT=...",
+      "command_sha256": "a545227fd028e465526a9b89325167602f0fa2601fa2fc0e1b683f5d6904c0c5",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "openclaw-legacy-marketing",
+      "id": "61b913e6-57e9-46f0-a2b1-d7dc20435580",
+      "integration_ids": [
+        "cmnit95mg015rrm0ye5vm8dhl"
+      ],
+      "label": "reelclaw-honne-en-1",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "openclaw",
+        "cron",
+        "enable",
+        "61b913e6-57e9-46f0-a2b1-d7dc20435580"
+      ],
+      "runtime": "openclaw",
+      "schedule": {
+        "expr": "0 7 * * *",
+        "kind": "cron",
+        "tz": "Asia/Tokyo"
+      },
+      "source_path": "/Users/anicca/.openclaw/cron/jobs.json",
+      "source_sha256": "17aad513b916474d880190979f1e906d2e291952113bdd924466421c9b8c2d8b"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": false,
+          "integration_id": "cmnit95mg015rrm0ye5vm8dhl",
+          "name": "本音翻訳",
+          "platform": "tiktok",
+          "profile": "honnevideo"
+        }
+      ],
+      "command": "Execute this exact shell command. Capture full stdout verbatim. Add no prose. If exits non-zero the cron has FAILED.\n\nbash ~/.openclaw/workspace/skills/reelclaw/scripts/run-honne-en.sh --tt cmnit95mg015rrm0ye5vm8dhl\n\nSummary MUST include these 5 verbatim lines from stdout:\nHOOK_ID=...\nTT_POST_ID=...\nIG_POST_ID=NONE\nYT_POST_ID=NONE\nOUT=...",
+      "command_sha256": "a545227fd028e465526a9b89325167602f0fa2601fa2fc0e1b683f5d6904c0c5",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "openclaw-legacy-marketing",
+      "id": "fd9bdcad-48b4-4efa-9eed-90f0b0358041",
+      "integration_ids": [
+        "cmnit95mg015rrm0ye5vm8dhl"
+      ],
+      "label": "reelclaw-honne-en-2",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "openclaw",
+        "cron",
+        "enable",
+        "fd9bdcad-48b4-4efa-9eed-90f0b0358041"
+      ],
+      "runtime": "openclaw",
+      "schedule": {
+        "expr": "30 19 * * *",
+        "kind": "cron"
+      },
+      "source_path": "/Users/anicca/.openclaw/cron/jobs.json",
+      "source_sha256": "17aad513b916474d880190979f1e906d2e291952113bdd924466421c9b8c2d8b"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": false,
+          "integration_id": "cmnit95mg015rrm0ye5vm8dhl",
+          "name": "本音翻訳",
+          "platform": "tiktok",
+          "profile": "honnevideo"
+        }
+      ],
+      "command": "Execute this exact shell command. Capture full stdout verbatim. Add no prose. If exits non-zero the cron has FAILED.\n\nbash ~/.openclaw/workspace/skills/reelclaw/scripts/run-honne-ja.sh --tt cmnit95mg015rrm0ye5vm8dhl\n\nSummary MUST include these 5 verbatim lines from stdout:\nHOOK_ID=...\nTT_POST_ID=...\nIG_POST_ID=NONE\nYT_POST_ID=NONE\nOUT=...",
+      "command_sha256": "6173ee59ad5c0ec8bcd64e7b9cc47b3b0e7efe9c1a6ca9497096f9440966070e",
+      "disposition": "retire",
+      "enabled": true,
+      "external_action": "publish",
+      "family": "openclaw-legacy-marketing",
+      "id": "c6eaca79-8de5-4f61-9020-d7e082b14f1a",
+      "integration_ids": [
+        "cmnit95mg015rrm0ye5vm8dhl"
+      ],
+      "label": "reelclaw-honne-ja-1",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": true,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "openclaw",
+        "cron",
+        "enable",
+        "c6eaca79-8de5-4f61-9020-d7e082b14f1a"
+      ],
+      "runtime": "openclaw",
+      "schedule": {
+        "expr": "10 10 * * *",
+        "kind": "cron",
+        "staggerMs": 540000,
+        "tz": "Asia/Tokyo"
+      },
+      "source_path": "/Users/anicca/.openclaw/cron/jobs.json",
+      "source_sha256": "17aad513b916474d880190979f1e906d2e291952113bdd924466421c9b8c2d8b"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": true,
+          "integration_id": "cmo5s4edx00vgn10ygnu34a0n",
+          "name": "アニッチャ - 無常の教え",
+          "platform": "tiktok",
+          "profile": "obou_anicca"
+        },
+        {
+          "disabled": false,
+          "integration_id": "cmooplxmu04tpmd0y4h3cpk33",
+          "name": "obou",
+          "platform": "instagram-standalone",
+          "profile": "obou.anicca"
+        }
+      ],
+      "command": "Run this ONE command and WAIT for it to finish (generates + posts the JP watercolor monk video, then reports to Slack #metrics itself): bash ~/.openclaw/skills/watercolor-monk-factory/scripts/run.sh jp morning cmo5s4edx00vgn10ygnu34a0n. After it finishes, post a 1-line result to #metrics starting \"💧 watercolor-jp morning\" with success/fail + post URL or error.",
+      "command_sha256": "b3428d8dc1acf29a745eac4db1ef646a249368fdb08baad40bda504bc701b22b",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "openclaw-legacy-marketing",
+      "id": "8456bf04-dbc9-4978-ba80-aca12f251460",
+      "integration_ids": [
+        "cmo5s4edx00vgn10ygnu34a0n",
+        "cmooplxmu04tpmd0y4h3cpk33"
+      ],
+      "label": "watercolor-jp-0700",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "openclaw",
+        "cron",
+        "enable",
+        "8456bf04-dbc9-4978-ba80-aca12f251460"
+      ],
+      "runtime": "openclaw",
+      "schedule": {
+        "expr": "0 7 * * *",
+        "kind": "cron",
+        "tz": "Asia/Tokyo"
+      },
+      "source_path": "/Users/anicca/.openclaw/cron/jobs.json",
+      "source_sha256": "17aad513b916474d880190979f1e906d2e291952113bdd924466421c9b8c2d8b"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": true,
+          "integration_id": "cmo5s4edx00vgn10ygnu34a0n",
+          "name": "アニッチャ - 無常の教え",
+          "platform": "tiktok",
+          "profile": "obou_anicca"
+        },
+        {
+          "disabled": false,
+          "integration_id": "cmooplxmu04tpmd0y4h3cpk33",
+          "name": "obou",
+          "platform": "instagram-standalone",
+          "profile": "obou.anicca"
+        }
+      ],
+      "command": "Run this ONE command and WAIT for it to finish (generates + posts the JP watercolor monk video): bash ~/.openclaw/skills/watercolor-monk-factory/scripts/run.sh jp evening cmo5s4edx00vgn10ygnu34a0n. Return a short summary starting '💧 watercolor-jp evening' with success/fail + post URL or error.",
+      "command_sha256": "151d8bd6448259cb00a23f0e13f25a09613a3362ba920a331ab6008e2dc17124",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "openclaw-legacy-marketing",
+      "id": "fd98ec71-fb85-412b-8044-e511fc325464",
+      "integration_ids": [
+        "cmo5s4edx00vgn10ygnu34a0n",
+        "cmooplxmu04tpmd0y4h3cpk33"
+      ],
+      "label": "watercolor-jp-2000",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "openclaw",
+        "cron",
+        "enable",
+        "fd98ec71-fb85-412b-8044-e511fc325464"
+      ],
+      "runtime": "openclaw",
+      "schedule": {
+        "expr": "0 20 * * *",
+        "kind": "cron",
+        "tz": "Asia/Tokyo"
+      },
+      "source_path": "/Users/anicca/.openclaw/cron/jobs.json",
+      "source_sha256": "17aad513b916474d880190979f1e906d2e291952113bdd924466421c9b8c2d8b"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": true,
+          "integration_id": "cmo5s4edx00vgn10ygnu34a0n",
+          "name": "アニッチャ - 無常の教え",
+          "platform": "tiktok",
+          "profile": "obou_anicca"
+        },
+        {
+          "disabled": false,
+          "integration_id": "cmooplxmu04tpmd0y4h3cpk33",
+          "name": "obou",
+          "platform": "instagram-standalone",
+          "profile": "obou.anicca"
+        }
+      ],
+      "command": "bash $HOME/.openclaw/skills/_dispatcher/scripts/cron-bash.sh watercolor-monk-factory/scripts/run.sh",
+      "command_sha256": "09d35e870517b1e51ad804bd47131d82007f1dfff2041f231a94e83cdfa949a5",
+      "disposition": "retire",
+      "enabled": false,
+      "external_action": "publish",
+      "family": "openclaw-legacy-marketing",
+      "id": "2a568fd7-3fa5-43b9-b8f4-c9d6143602c6",
+      "integration_ids": [
+        "cmo5s4edx00vgn10ygnu34a0n",
+        "cmooplxmu04tpmd0y4h3cpk33"
+      ],
+      "label": "watercolor-monk-noon",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": false,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "openclaw",
+        "cron",
+        "enable",
+        "2a568fd7-3fa5-43b9-b8f4-c9d6143602c6"
+      ],
+      "runtime": "openclaw",
+      "schedule": {
+        "expr": "30 12 * * *",
+        "kind": "cron"
+      },
+      "source_path": "/Users/anicca/.openclaw/cron/jobs.json",
+      "source_sha256": "17aad513b916474d880190979f1e906d2e291952113bdd924466421c9b8c2d8b"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": true,
+          "integration_id": "cmo5rwq2p00twn10yrsdglng3",
+          "name": "Monk Anicca",
+          "platform": "tiktok",
+          "profile": "monk_anicca"
+        },
+        {
+          "disabled": null,
+          "integration_id": "cmoopzaak04yop70y1yx1bwr1",
+          "name": null,
+          "platform": null,
+          "profile": null
+        }
+      ],
+      "command": "bash $HOME/.openclaw/skills/_dispatcher/scripts/cron-bash.sh yangmun-monk-factory/scripts/run-evening.sh",
+      "command_sha256": "96dfd2c1d9de485a3f6ad56e39775f9b569ec6337dacc40a612cc9680f7debc9",
+      "disposition": "retire",
+      "enabled": true,
+      "external_action": "publish",
+      "family": "openclaw-legacy-marketing",
+      "id": "24d0460b-372c-4edb-8022-8b04bf59afc3",
+      "integration_ids": [
+        "cmo5rwq2p00twn10yrsdglng3",
+        "cmoopzaak04yop70y1yx1bwr1"
+      ],
+      "label": "yangmun-monk-evening",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": true,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "openclaw",
+        "cron",
+        "enable",
+        "24d0460b-372c-4edb-8022-8b04bf59afc3"
+      ],
+      "runtime": "openclaw",
+      "schedule": {
+        "expr": "30 8 * * *",
+        "kind": "cron",
+        "tz": "Asia/Tokyo"
+      },
+      "source_path": "/Users/anicca/.openclaw/cron/jobs.json",
+      "source_sha256": "17aad513b916474d880190979f1e906d2e291952113bdd924466421c9b8c2d8b"
+    },
+    {
+      "accounts": [
+        {
+          "disabled": true,
+          "integration_id": "cmo5rwq2p00twn10yrsdglng3",
+          "name": "Monk Anicca",
+          "platform": "tiktok",
+          "profile": "monk_anicca"
+        },
+        {
+          "disabled": null,
+          "integration_id": "cmoopzaak04yop70y1yx1bwr1",
+          "name": null,
+          "platform": null,
+          "profile": null
+        }
+      ],
+      "command": "bash $HOME/.openclaw/skills/_dispatcher/scripts/cron-bash.sh yangmun-monk-factory/scripts/run-noon.sh",
+      "command_sha256": "88b3aeed27929926521642f032c0f29d456624e40cf4ab2cfa2d57632f06c78d",
+      "disposition": "retire",
+      "enabled": true,
+      "external_action": "publish",
+      "family": "openclaw-legacy-marketing",
+      "id": "b0374b1f-1338-4710-a498-024930519d98",
+      "integration_ids": [
+        "cmo5rwq2p00twn10yrsdglng3",
+        "cmoopzaak04yop70y1yx1bwr1"
+      ],
+      "label": "yangmun-monk-noon",
+      "last_exit": null,
+      "last_run_at": null,
+      "last_status": null,
+      "loaded": true,
+      "next_run_at": null,
+      "pid": null,
+      "rollback": [
+        "openclaw",
+        "cron",
+        "enable",
+        "b0374b1f-1338-4710-a498-024930519d98"
+      ],
+      "runtime": "openclaw",
+      "schedule": {
+        "expr": "30 12 * * *",
+        "kind": "cron"
+      },
+      "source_path": "/Users/anicca/.openclaw/cron/jobs.json",
+      "source_sha256": "17aad513b916474d880190979f1e906d2e291952113bdd924466421c9b8c2d8b"
+    }
+  ],
+  "schema_version": 1,
+  "summary": {
+    "enabled_publishers": 6,
+    "launchd_records": 38,
+    "loaded_or_enabled_retire": 7,
+    "openclaw_records": 41,
+    "records": 79
+  }
+}

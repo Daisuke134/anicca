@@ -1,0 +1,16 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://anicca.ai/schemas/marketing/postiz-readback.v1.json",
+  "type":"object",
+  "additionalProperties":false,
+  "required":["schema_version","status","publish_key","stored_post_id","posts_observed","output","external_mutations"],
+  "properties":{
+    "schema_version":{"const":"marketing.postiz-readback.v1"},
+    "status":{"enum":["post_found","pending_provider_receipt"]},
+    "publish_key":{"type":"string","pattern":"^publication\\.[0-9a-f]{24}$"},
+    "stored_post_id":{"type":"string","minLength":1},
+    "posts_observed":{"type":"integer","minimum":0},
+    "output":{"type":["string","null"]},
+    "external_mutations":{"const":0}
+  }
+}

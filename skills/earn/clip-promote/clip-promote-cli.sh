@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+LOOP_MODEL="$("$HOME/.config/ai/bin/loop-model.sh")"   # 切替口は ~/.config/ai/models.env の1箇所
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin:$PATH"  # claude itself lives in ~/.local/bin (native installer, not homebrew)
 # clip-promote-cli.sh — launch the ALWAYS-ON clip-promote-loop claude-p session (same pattern as
 # clip-cli.sh / gig-cli.sh: a detached tmux session running headless `claude` with
@@ -52,7 +53,7 @@ if [ -n "$CLIPROXY_KEY" ]; then
 fi
 
 tmux -S "$SOCK" new-session -d -s "$SESSION" \
-  "$CLAUDE" --name "$SESSION" --model sonnet --dangerously-skip-permissions --add-dir "$HOME" -- "$STARTUP"
+  "$CLAUDE" --name "$SESSION" --model "$LOOP_MODEL" --dangerously-skip-permissions --add-dir "$HOME" -- "$STARTUP"
 mkdir -p "$HOME/.openclaw/state" && touch "$HOME/.openclaw/state/.clip-promote-core-last-start"   # seeds the grace-window marker for healthcheck's stale-pass detection
 sleep 2
 echo "clip-promote-core started ($(status)). Attach: tmux -S $SOCK attach -t $SESSION"

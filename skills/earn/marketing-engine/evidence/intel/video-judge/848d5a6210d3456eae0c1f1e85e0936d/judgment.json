@@ -1,0 +1,58 @@
+{
+  "hooks": [
+    {
+      "captured_at": "2026-08-01T15:03:40.462170Z",
+      "evidence_null_reason": null,
+      "evidence_url": "https://www.tiktok.com/@itsyangmun/video/7608561076686359822",
+      "ewma_score": null,
+      "id": "hook.tiktok.7608561076686359822.001",
+      "language": "en",
+      "observations": 0,
+      "product_ids": [
+        "ebook-en"
+      ],
+      "provenance": "live_observed",
+      "rubric": {
+        "conflict": 8,
+        "emotional_peak": 8,
+        "hook": 8,
+        "practical_value": 7,
+        "quotability": 7,
+        "total": 38
+      },
+      "schema_version": "marketing.hook.v1",
+      "source_null_reason": null,
+      "source_type": "video",
+      "source_url": "https://www.tiktok.com/@itsyangmun/video/7608561076686359822",
+      "status": "active",
+      "text": "Kindness feels pointless when nobody notices—but choosing one generous act today can keep disappointment from turning you hard."
+    },
+    {
+      "captured_at": "2026-08-01T15:03:40.462170Z",
+      "evidence_null_reason": null,
+      "evidence_url": "https://www.tiktok.com/@itsyangmun/video/7608561076686359822",
+      "ewma_score": null,
+      "id": "hook.tiktok.7608561076686359822.002",
+      "language": "en",
+      "observations": 0,
+      "product_ids": [
+        "ebook-en"
+      ],
+      "provenance": "live_observed",
+      "rubric": {
+        "conflict": 8,
+        "emotional_peak": 7,
+        "hook": 8,
+        "practical_value": 8,
+        "quotability": 8,
+        "total": 39
+      },
+      "schema_version": "marketing.hook.v1",
+      "source_null_reason": null,
+      "source_type": "video",
+      "source_url": "https://www.tiktok.com/@itsyangmun/video/7608561076686359822",
+      "status": "active",
+      "text": "Before you match someone’s coldness, pause: a quiet act of decency may be the boundary that protects your peace."
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "captured_at": "2026-08-01T01:03:00Z",
+  "source": "clockworks~tiktok-scraper",
+  "mode": "read_only_profile_scan",
+  "profiles": 6,
+  "items": 150,
+  "items_with_native_id": 150,
+  "items_with_native_url": 150,
+  "raw_snapshot_sha256": "b10a6533f13984506ab40584a86e8a8167a4fe1fbaa747050dc599a3359b3a32",
+  "raw_snapshot_retained": false,
+  "reason": "ledger retains only native identity, timestamps, provenance, and content hash; raw captions and expiring media URLs are not durable evidence"
+}

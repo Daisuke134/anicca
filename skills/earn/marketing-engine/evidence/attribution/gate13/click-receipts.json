@@ -1,0 +1,12 @@
+{
+  "campaign_token": "ej_7gy3bv7vf2r5d7aebnzv",
+  "content_range": "*/0",
+  "count": 0,
+  "evidence_refs": [
+    "supabase:marketing_click_receipts"
+  ],
+  "observed_at": "2026-08-01T20:30:15Z",
+  "product_id": "ebook-ja",
+  "receipt_ids": [],
+  "status": "available"
+}

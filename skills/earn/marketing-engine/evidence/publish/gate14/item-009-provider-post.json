@@ -1,0 +1,18 @@
+{
+  "content": "嫌な空気を家まで持ち帰らない、三分間の切り替え。『アニッチャ・リセット』を読む https://aniccaai.com/go/ej_5mvvw7aoeyem4bskri5f ej_5mvvw7aoeyem4bskri5f",
+  "creationMethod": "API",
+  "group": "d3fc4fff-237a-4b90-a455-9d985e26d706",
+  "id": "cmsb7lzxl0zi8kz0y85l1a4gc",
+  "integration": {
+    "id": "cmo5s4edx00vgn10ygnu34a0n",
+    "name": "アニッチャ - 無常の教え",
+    "picture": "https://uploads.postiz.com/OoPFViWFWo.jpg",
+    "providerIdentifier": "tiktok"
+  },
+  "intervalInDays": null,
+  "publishDate": "2026-08-10T11:15:00.000Z",
+  "releaseId": null,
+  "releaseURL": null,
+  "state": "QUEUE",
+  "tags": []
+}

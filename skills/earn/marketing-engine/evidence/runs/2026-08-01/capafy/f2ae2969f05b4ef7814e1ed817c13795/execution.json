@@ -1,0 +1,12 @@
+{
+  "command_sha256": "e0fe29466c1a87f01b4f046f0da59ad5fd7f338ef5cd1b1ea58a1d5306c653d1",
+  "dry_run": false,
+  "finished_at": "2026-08-01T12:46:50.792883Z",
+  "quarantine_reason": "publisher_quarantined_until_gate_12",
+  "quarantined": true,
+  "returncode": 0,
+  "run_id": "f2ae2969f05b4ef7814e1ed817c13795",
+  "runner_id": "capafy",
+  "schema_version": "marketing.execution.v1",
+  "started_at": "2026-08-01T12:46:50.792453Z"
+}

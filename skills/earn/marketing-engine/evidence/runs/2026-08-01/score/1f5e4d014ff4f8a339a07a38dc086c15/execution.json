@@ -1,0 +1,12 @@
+{
+  "command_sha256": "6b2b5762ec2055cf858b50c100f749f2e09185559b85afc9096ca97f0cf8208e",
+  "dry_run": false,
+  "finished_at": "2026-08-01T12:46:46.292594Z",
+  "quarantine_reason": "verified_writeback_not_ready_until_gate_14",
+  "quarantined": true,
+  "returncode": 0,
+  "run_id": "1f5e4d014ff4f8a339a07a38dc086c15",
+  "runner_id": "score",
+  "schema_version": "marketing.execution.v1",
+  "started_at": "2026-08-01T12:46:46.292173Z"
+}

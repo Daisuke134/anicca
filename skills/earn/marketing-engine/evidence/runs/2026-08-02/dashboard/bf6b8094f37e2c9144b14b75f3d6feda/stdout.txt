@@ -1,0 +1,1 @@
+{"output": "/Users/anicca/Library/Application Support/AniccaMarketing/dashboard/index.html", "projection_errors": 0}

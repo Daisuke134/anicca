@@ -1,1 +1,113 @@
 x402: Route "POST /image" has an invalid bazaar extension: /input/method: must be equal to one of the allowed values
+Failed to fetch supported kinds from facilitator: TypeError: fetch failed
+file:///Users/anicca/anicca/skills/earn/x402-sell/node_modules/@x402/core/dist/esm/server/index.mjs:494
+      throw lastError ? new Error(
+                        ^
+
+Error: Failed to initialize: no supported payment kinds loaded from any facilitator.
+    at x402ResourceServer.initialize (file:///Users/anicca/anicca/skills/earn/x402-sell/node_modules/@x402/core/dist/esm/server/index.mjs:494:25)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async x402HTTPResourceServer.initialize (file:///Users/anicca/anicca/skills/earn/x402-sell/node_modules/@x402/core/dist/esm/chunk-YEYZQZNL.mjs:120:5) {
+  [cause]: [TypeError: fetch failed] {
+    [cause]: Error: getaddrinfo ENOTFOUND api.cdp.coinbase.com
+        at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:121:26) {
+      errno: -3008,
+      code: 'ENOTFOUND',
+      syscall: 'getaddrinfo',
+      hostname: 'api.cdp.coinbase.com'
+    }
+  }
+}
+
+Node.js v25.6.1
+Failed to fetch supported kinds from facilitator: TypeError: fetch failed
+file:///Users/anicca/anicca/skills/earn/x402-sell/node_modules/@x402/core/dist/esm/server/index.mjs:494
+      throw lastError ? new Error(
+                        ^
+
+Error: Failed to initialize: no supported payment kinds loaded from any facilitator.
+    at x402ResourceServer.initialize (file:///Users/anicca/anicca/skills/earn/x402-sell/node_modules/@x402/core/dist/esm/server/index.mjs:494:25)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async x402HTTPResourceServer.initialize (file:///Users/anicca/anicca/skills/earn/x402-sell/node_modules/@x402/core/dist/esm/chunk-YEYZQZNL.mjs:120:5) {
+  [cause]: [TypeError: fetch failed] {
+    [cause]: Error: getaddrinfo ENOTFOUND api.cdp.coinbase.com
+        at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:121:26) {
+      errno: -3008,
+      code: 'ENOTFOUND',
+      syscall: 'getaddrinfo',
+      hostname: 'api.cdp.coinbase.com'
+    }
+  }
+}
+
+Node.js v25.6.1
+Error: Facilitator does not support exact on eip155:8453. Make sure to call initialize() to fetch supported kinds from facilitators.
+    at x402ResourceServer.buildPaymentRequirements (file:///Users/anicca/anicca/skills/earn/x402-sell/node_modules/@x402/core/dist/esm/server/index.mjs:562:13)
+    at x402ResourceServer.buildPaymentRequirementsFromOptions (file:///Users/anicca/anicca/skills/earn/x402-sell/node_modules/@x402/core/dist/esm/server/index.mjs:618:39)
+    at x402HTTPResourceServer.processHTTPRequest (file:///Users/anicca/anicca/skills/earn/x402-sell/node_modules/@x402/core/dist/esm/chunk-YEYZQZNL.mjs:191:50)
+    at file:///Users/anicca/anicca/skills/earn/x402-sell/node_modules/@x402/express/dist/esm/index.mjs:174:33
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+Error: Facilitator does not support exact on eip155:8453. Make sure to call initialize() to fetch supported kinds from facilitators.
+    at x402ResourceServer.buildPaymentRequirements (file:///Users/anicca/anicca/skills/earn/x402-sell/node_modules/@x402/core/dist/esm/server/index.mjs:562:13)
+    at x402ResourceServer.buildPaymentRequirementsFromOptions (file:///Users/anicca/anicca/skills/earn/x402-sell/node_modules/@x402/core/dist/esm/server/index.mjs:618:39)
+    at x402HTTPResourceServer.processHTTPRequest (file:///Users/anicca/anicca/skills/earn/x402-sell/node_modules/@x402/core/dist/esm/chunk-YEYZQZNL.mjs:191:50)
+    at file:///Users/anicca/anicca/skills/earn/x402-sell/node_modules/@x402/express/dist/esm/index.mjs:174:33
+    at Layer.handleRequest (/Users/anicca/anicca/skills/earn/x402-sell/node_modules/router/lib/layer.js:152:17)
+    at trimPrefix (/Users/anicca/anicca/skills/earn/x402-sell/node_modules/router/index.js:342:13)
+    at /Users/anicca/anicca/skills/earn/x402-sell/node_modules/router/index.js:297:9
+    at processParams (/Users/anicca/anicca/skills/earn/x402-sell/node_modules/router/index.js:582:12)
+    at next (/Users/anicca/anicca/skills/earn/x402-sell/node_modules/router/index.js:291:5)
+    at file:///Users/anicca/anicca/skills/earn/x402-sell/image-server.mjs:290:7
+Error: Facilitator does not support exact on eip155:8453. Make sure to call initialize() to fetch supported kinds from facilitators.
+    at x402ResourceServer.buildPaymentRequirements (file:///Users/anicca/anicca/skills/earn/x402-sell/node_modules/@x402/core/dist/esm/server/index.mjs:562:13)
+    at x402ResourceServer.buildPaymentRequirementsFromOptions (file:///Users/anicca/anicca/skills/earn/x402-sell/node_modules/@x402/core/dist/esm/server/index.mjs:618:39)
+    at x402HTTPResourceServer.processHTTPRequest (file:///Users/anicca/anicca/skills/earn/x402-sell/node_modules/@x402/core/dist/esm/chunk-YEYZQZNL.mjs:191:50)
+    at file:///Users/anicca/anicca/skills/earn/x402-sell/node_modules/@x402/express/dist/esm/index.mjs:174:33
+    at Layer.handleRequest (/Users/anicca/anicca/skills/earn/x402-sell/node_modules/router/lib/layer.js:152:17)
+    at trimPrefix (/Users/anicca/anicca/skills/earn/x402-sell/node_modules/router/index.js:342:13)
+    at /Users/anicca/anicca/skills/earn/x402-sell/node_modules/router/index.js:297:9
+    at processParams (/Users/anicca/anicca/skills/earn/x402-sell/node_modules/router/index.js:582:12)
+    at next (/Users/anicca/anicca/skills/earn/x402-sell/node_modules/router/index.js:291:5)
+    at file:///Users/anicca/anicca/skills/earn/x402-sell/image-server.mjs:290:7
+Failed to fetch supported kinds from facilitator: TypeError: fetch failed
+{"facilitator_init":"failed","error":"Failed to initialize: no supported payment kinds loaded from any facilitator."}
+Failed to fetch supported kinds from facilitator: TypeError: fetch failed
+{"facilitator_init":"failed","error":"Failed to initialize: no supported payment kinds loaded from any facilitator."}
+Failed to fetch supported kinds from facilitator: TypeError: fetch failed
+{"facilitator_init":"failed","error":"Failed to initialize: no supported payment kinds loaded from any facilitator."}
+Failed to fetch supported kinds from facilitator: TypeError: fetch failed
+{"facilitator_init":"failed","error":"Failed to initialize: no supported payment kinds loaded from any facilitator."}
+Failed to fetch supported kinds from facilitator: TypeError: fetch failed
+{"facilitator_init":"failed","error":"Failed to initialize: no supported payment kinds loaded from any facilitator."}
+Failed to fetch supported kinds from facilitator: TypeError: fetch failed
+{"facilitator_init":"failed","error":"Failed to initialize: no supported payment kinds loaded from any facilitator."}
+Failed to fetch supported kinds from facilitator: TypeError: fetch failed
+{"facilitator_init":"failed","error":"Failed to initialize: no supported payment kinds loaded from any facilitator."}
+Failed to fetch supported kinds from facilitator: TypeError: fetch failed
+{"facilitator_init":"failed","error":"Failed to initialize: no supported payment kinds loaded from any facilitator."}
+Failed to fetch supported kinds from facilitator: TypeError: fetch failed
+{"facilitator_init":"failed","error":"Failed to initialize: no supported payment kinds loaded from any facilitator."}
+Failed to fetch supported kinds from facilitator: TypeError: fetch failed
+{"facilitator_init":"failed","error":"Failed to initialize: no supported payment kinds loaded from any facilitator."}
+Failed to fetch supported kinds from facilitator: TypeError: fetch failed
+{"facilitator_init":"failed","error":"Failed to initialize: no supported payment kinds loaded from any facilitator."}
+Failed to fetch supported kinds from facilitator: TypeError: fetch failed
+{"facilitator_init":"failed","error":"Failed to initialize: no supported payment kinds loaded from any facilitator."}
+Failed to fetch supported kinds from facilitator: TypeError: fetch failed
+{"facilitator_init":"failed","error":"Failed to initialize: no supported payment kinds loaded from any facilitator."}
+Failed to fetch supported kinds from facilitator: TypeError: fetch failed
+{"facilitator_init":"failed","error":"Failed to initialize: no supported payment kinds loaded from any facilitator."}
+Failed to fetch supported kinds from facilitator: TypeError: fetch failed
+{"facilitator_init":"failed","error":"Failed to initialize: no supported payment kinds loaded from any facilitator."}
+Failed to fetch supported kinds from facilitator: TypeError: fetch failed
+{"facilitator_init":"failed","error":"Failed to initialize: no supported payment kinds loaded from any facilitator."}
+Failed to fetch supported kinds from facilitator: TypeError: fetch failed
+{"facilitator_init":"failed","error":"Failed to initialize: no supported payment kinds loaded from any facilitator."}
+Failed to fetch supported kinds from facilitator: TypeError: fetch failed
+{"facilitator_init":"failed","error":"Failed to initialize: no supported payment kinds loaded from any facilitator."}
+Failed to fetch supported kinds from facilitator: TypeError: fetch failed
+{"facilitator_init":"failed","error":"Failed to initialize: no supported payment kinds loaded from any facilitator."}
+Failed to fetch supported kinds from facilitator: TypeError: fetch failed
+{"facilitator_init":"failed","error":"Failed to initialize: no supported payment kinds loaded from any facilitator."}
+Failed to fetch supported kinds from facilitator: TypeError: fetch failed
+{"facilitator_init":"failed","error":"Failed to initialize: no supported payment kinds loaded from any facilitator."}

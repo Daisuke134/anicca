@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "started_at": "2026-08-01T14:24:25.664105+00:00",
+  "finished_at": "2026-08-01T14:24:27.974422+00:00",
+  "task_label": "marketing-intel-526b42bf3ea04dd68c73bd0ab548c826",
+  "loop": "marketing-intel",
+  "task_class": "marketing-agent",
+  "route": "luna-medium-decision",
+  "escalated": false,
+  "escalation_reason": null,
+  "status": "failed",
+  "budget": {
+    "status": "disabled",
+    "reason": "budget_not_configured",
+    "scope_id": null
+  },
+  "selected_provider": null,
+  "selected_model": null,
+  "selected_effort": null,
+  "attempt_count": 1,
+  "attempts_path": "/Users/anicca/anicca/skills/earn/marketing-engine/evidence/intel/pulls/526b42bf3ea04dd68c73bd0ab548c826/judge/attempts.jsonl",
+  "result_path": null
+}

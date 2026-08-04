@@ -1,0 +1,12 @@
+{
+  "command_sha256": "65491f766547187a6105100f6e554d7f05eaf53e6219695804b3b31cab7450b2",
+  "dry_run": false,
+  "finished_at": "2026-08-02T10:10:33.536023Z",
+  "quarantine_reason": "publisher_quarantined_until_gate_12",
+  "quarantined": true,
+  "returncode": 0,
+  "run_id": "42104519dd214e5ccc6bfd09b85bc74b",
+  "runner_id": "clip",
+  "schema_version": "marketing.execution.v1",
+  "started_at": "2026-08-02T10:10:33.374474Z"
+}

@@ -1,0 +1,9 @@
+{
+  "accepted_hooks": 3,
+  "observed_at": "2026-08-02T02:46:26.181770Z",
+  "pending_transcripts": 0,
+  "run_id": "602a8a46ff7349e990005998dbcb5836",
+  "schema_version": "marketing.video-hook-judge-run.v1",
+  "status": "success",
+  "transcript_id": "transcript.tiktok.7556571246406765832.v1"
+}

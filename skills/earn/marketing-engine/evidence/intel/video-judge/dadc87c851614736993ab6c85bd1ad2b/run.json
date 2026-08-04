@@ -1,0 +1,8 @@
+{
+  "schema_version": "marketing.video-hook-judge-run.v1",
+  "run_id": "dadc87c851614736993ab6c85bd1ad2b",
+  "observed_at": "2026-08-01T15:03:53.449090Z",
+  "status": "skipped",
+  "pending_transcripts": 0,
+  "accepted_hooks": 0
+}

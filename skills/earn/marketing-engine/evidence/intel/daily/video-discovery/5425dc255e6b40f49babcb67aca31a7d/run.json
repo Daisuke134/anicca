@@ -1,0 +1,27 @@
+{
+  "new_observations": 0,
+  "observed_at": "2026-08-02T02:45:46.990224Z",
+  "run_id": "5425dc255e6b40f49babcb67aca31a7d",
+  "schema_version": "marketing.video-discovery-run.v1",
+  "sources": [
+    {
+      "cohort": null,
+      "evidence_path": null,
+      "items": 0,
+      "reason": "ERROR: [tiktok:user] itsyangmun: Unable to extract secondary user ID. If you are able to get the channel_id from a video posted by this user, try using \"tiktokuser:channel_id\" as the input URL (replacing `channel_id` with its actual value)",
+      "sha256": null,
+      "source_id": "video.tiktok.itsyangmun.en",
+      "status": "error"
+    },
+    {
+      "cohort": null,
+      "evidence_path": null,
+      "items": 0,
+      "reason": "ERROR: [tiktok:user] furutani_kodai: Unable to extract secondary user ID. If you are able to get the channel_id from a video posted by this user, try using \"tiktokuser:channel_id\" as the input URL (replacing `channel_id` with its actual value)",
+      "sha256": null,
+      "source_id": "video.tiktok.furutani-kodai.ja",
+      "status": "error"
+    }
+  ],
+  "status": "failed"
+}

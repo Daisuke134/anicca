@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aniccaai.com/schemas/marketing-run-v1.json",
+  "title": "Anicca Marketing runner final event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "run_id", "runner_id", "environment", "started_at",
+    "finished_at", "status", "dry_run", "product_ids", "effects", "metrics",
+    "evidence", "error"
+  ],
+  "properties": {
+    "schema_version": {"const": "marketing.run.v1"},
+    "run_id": {"type": "string", "pattern": "^(?!0{32}$)[0-9a-f]{32}$"},
+    "runner_id": {
+      "enum": ["mine", "score", "metrics", "dashboard", "clip", "video", "self-improve", "capafy"]
+    },
+    "environment": {"enum": ["production", "test"]},
+    "started_at": {"type": "string", "format": "date-time"},
+    "finished_at": {"type": "string", "format": "date-time"},
+    "status": {"enum": ["success", "partial", "failed", "skipped"]},
+    "dry_run": {"type": "boolean"},
+    "product_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "effects": {"type": "array", "items": {"$ref": "#/$defs/effect"}},
+    "metrics": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/metric"}
+    },
+    "evidence": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/evidence"}
+    },
+    "error": {"type": ["string", "null"]}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"dry_run": {"const": true}}},
+      "then": {"properties": {"environment": {"const": "test"}}}
+    },
+    {
+      "if": {"properties": {"status": {"const": "failed"}}},
+      "then": {"properties": {"error": {"type": "string", "minLength": 1}}}
+    }
+  ],
+  "$defs": {
+    "effect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider", "action", "status", "receipt", "evidence", "null_reason", "simulated"],
+      "properties": {
+        "provider": {"type": "string", "minLength": 1},
+        "action": {"type": "string", "minLength": 1},
+        "status": {"type": "string", "minLength": 1},
+        "receipt": {"type": ["string", "null"]},
+        "evidence": {"type": ["string", "null"]},
+        "null_reason": {"type": ["string", "null"]},
+        "simulated": {"type": "boolean"}
+      },
+      "anyOf": [
+        {"required": ["receipt"], "properties": {"receipt": {"type": "string", "minLength": 1}}},
+        {"required": ["null_reason"], "properties": {"null_reason": {"type": "string", "minLength": 1}}}
+      ]
+    },
+    "metric": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "product_id", "value", "unit", "observed_at", "source", "evidence", "null_reason", "simulated"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "product_id": {"type": ["string", "null"]},
+        "value": {"type": ["number", "null"]},
+        "unit": {"type": ["string", "null"]},
+        "observed_at": {"type": "string", "format": "date-time"},
+        "source": {"type": "string", "minLength": 1},
+        "evidence": {"type": ["string", "null"]},
+        "null_reason": {"type": ["string", "null"]},
+        "simulated": {"type": "boolean"}
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "bytes", "kind"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "bytes": {"type": "integer", "minimum": 0},
+        "kind": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}

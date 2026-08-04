@@ -1,0 +1,85 @@
+{
+  "hooks": [
+    {
+      "captured_at": "2026-08-01T15:09:27.614459Z",
+      "evidence_null_reason": null,
+      "evidence_url": "https://www.tiktok.com/@furutani_kodai/video/7468080597261470983",
+      "ewma_score": null,
+      "id": "hook.tiktok.7468080597261470983.001",
+      "language": "ja",
+      "observations": 0,
+      "product_ids": [
+        "ebook-ja"
+      ],
+      "provenance": "live_observed",
+      "rubric": {
+        "conflict": 7,
+        "emotional_peak": 8,
+        "hook": 8,
+        "practical_value": 8,
+        "quotability": 8,
+        "total": 39
+      },
+      "schema_version": "marketing.hook.v1",
+      "source_null_reason": null,
+      "source_type": "video",
+      "source_url": "https://www.tiktok.com/@furutani_kodai/video/7468080597261470983",
+      "status": "active",
+      "text": "その悪意に反応する前に、心を守るための「受け流し方」を一つ決めておこう。"
+    },
+    {
+      "captured_at": "2026-08-01T15:09:27.614459Z",
+      "evidence_null_reason": null,
+      "evidence_url": "https://www.tiktok.com/@furutani_kodai/video/7468080597261470983",
+      "ewma_score": null,
+      "id": "hook.tiktok.7468080597261470983.002",
+      "language": "ja",
+      "observations": 0,
+      "product_ids": [
+        "ebook-ja"
+      ],
+      "provenance": "live_observed",
+      "rubric": {
+        "conflict": 8,
+        "emotional_peak": 8,
+        "hook": 9,
+        "practical_value": 9,
+        "quotability": 8,
+        "total": 42
+      },
+      "schema_version": "marketing.hook.v1",
+      "source_null_reason": null,
+      "source_type": "video",
+      "source_url": "https://www.tiktok.com/@furutani_kodai/video/7468080597261470983",
+      "status": "active",
+      "text": "言い返しても心が軽くならないなら、相手を変えるより先に、自分の境界線を引き直す方法があります。"
+    },
+    {
+      "captured_at": "2026-08-01T15:09:27.614459Z",
+      "evidence_null_reason": null,
+      "evidence_url": "https://www.tiktok.com/@furutani_kodai/video/7468080597261470983",
+      "ewma_score": null,
+      "id": "hook.tiktok.7468080597261470983.003",
+      "language": "ja",
+      "observations": 0,
+      "product_ids": [
+        "ebook-ja"
+      ],
+      "provenance": "live_observed",
+      "rubric": {
+        "conflict": 7,
+        "emotional_peak": 9,
+        "hook": 8,
+        "practical_value": 9,
+        "quotability": 8,
+        "total": 41
+      },
+      "schema_version": "marketing.hook.v1",
+      "source_null_reason": null,
+      "source_type": "video",
+      "source_url": "https://www.tiktok.com/@furutani_kodai/video/7468080597261470983",
+      "status": "active",
+      "text": "誰かの不機嫌を背負って一日を潰さないために、傷ついた直後にできる心の切り替えを紹介します。"
+    }
+  ]
+}
