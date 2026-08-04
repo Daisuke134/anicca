@@ -10,6 +10,9 @@ STARTUP='You are the Anicca Reddit demand-gen loop core (claude-p, self-improvin
 status(){ tmux -S "$SOCK" has-session -t "$SESSION" 2>/dev/null && echo ALIVE || echo DEAD; }
 case "${1:-}" in --status) status; exit 0;; --restart) tmux -S "$SOCK" kill-session -t "$SESSION" 2>/dev/null||true;; esac
 if [ "${1:-}" != "--restart" ] && tmux -S "$SOCK" has-session -t "$SESSION" 2>/dev/null; then echo "reddit-loop already ALIVE"; exit 0; fi
+# launchd/healthcheck does not inject STARTUP; initialize it before the
+# appended policy blocks so nounset cannot kill the launcher before tmux starts.
+STARTUP="${STARTUP:-}"
 STARTUP="${STARTUP} 重要な結果（数字・IDを含む成果、realized P&L、致命的エラー）が出たら PushNotification ツールで Dais へ verbatim 送信してから終了する。narration・定常報告には使わない。"
 STARTUP="${STARTUP} BROWSER DISCIPLINE (mandatory, every pass): Reddit is NOT reachable through the shared CDP :9222 daily-driver Chromium — that browser is hard-blocked by Reddit's network security (confirmed 2026-07-05, see ~/.cloak/reddit-accounts.json). This account lives ONLY on camofox (stealth Firefox fork, REST API :9377, userId=anicca sessionKey=reddit1, profile ~/.camofox/profiles/anicca/reddit1/) — start it with bash ~/.openclaw/skills/camofox-browser/scripts/start.sh (idempotent) and drive it via its REST API (POST /tabs to open a tab with that userId/sessionKey, snapshot/click/type/press, GET screenshot to verify) per ~/.openclaw/skills/camofox-browser/SKILL.md. camofox already isolates this session from every other loop by (userId,sessionKey) — no CDP context-lease needed. If /tmp/camofox.log shows binaries missing, run npx camoufox-js fetch then restart the server; if tab-create hangs after restoring storage state, stop.sh + start.sh clears it. Close any tab you open when the pass ends."
 PROMPT_FILE="$HOME/.cache/anicca-loops/reddit-startup.txt"
