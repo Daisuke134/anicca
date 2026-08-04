@@ -25,9 +25,14 @@ CLIPROXY_KEY="$(cat "$HOME/.cli-proxy-api-key" 2>/dev/null || true)"
 if [ -n "$CLIPROXY_KEY" ]; then
   export ANTHROPIC_BASE_URL="http://127.0.0.1:8317"
   export ANTHROPIC_AUTH_TOKEN="$CLIPROXY_KEY"
+  # CLI alias `sonnet` currently resolves to claude-sonnet-5, which is not
+  # provisioned by the local proxy. Use an advertised concrete model instead.
+  LOOP_MODEL="claude-sonnet-4-6"
+else
+  LOOP_MODEL="sonnet"
 fi
 
 tmux -S "$SOCK" new-session -d -s "$SESSION" \
-  "exec \"$CLAUDE\" --name \"$SESSION\" --model sonnet --dangerously-skip-permissions --add-dir \"$HOME\" -- \"\$(cat '$PROMPT_FILE')\""
+  "exec \"$CLAUDE\" --name \"$SESSION\" --model \"$LOOP_MODEL\" --dangerously-skip-permissions --add-dir \"$HOME\" -- \"\$(cat '$PROMPT_FILE')\""
 mkdir -p "$HOME/.openclaw/state" && touch "$HOME/.openclaw/state/.reddit-loop-last-start"; sleep 2
 echo "reddit-loop started ($(status))."

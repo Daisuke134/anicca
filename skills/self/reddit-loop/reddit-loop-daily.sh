@@ -30,9 +30,14 @@ CLIPROXY_KEY="$(cat "$HOME/.cli-proxy-api-key" 2>/dev/null || true)"
 if [ -n "$CLIPROXY_KEY" ]; then
   export ANTHROPIC_BASE_URL="http://127.0.0.1:8317"
   export ANTHROPIC_AUTH_TOKEN="$CLIPROXY_KEY"
+  # CLI alias `sonnet` resolves to claude-sonnet-5, unavailable in the local
+  # proxy. Pin the advertised concrete model so launchd passes can authenticate.
+  LOOP_MODEL="claude-sonnet-4-6"
+else
+  LOOP_MODEL="sonnet"
 fi
 
-timeout 1500 env -u ANTHROPIC_API_KEY "$CLAUDE" --model sonnet --dangerously-skip-permissions --add-dir "$HOME" -p "$PROMPT" >>"$LOG" 2>&1
+timeout 1500 env -u ANTHROPIC_API_KEY "$CLAUDE" --model "$LOOP_MODEL" --dangerously-skip-permissions --add-dir "$HOME" -p "$PROMPT" >>"$LOG" 2>&1
 RC=$?
 echo "=== reddit-loop-daily done rc=$RC $(date '+%F %T %Z') ===" >>"$LOG"
 touch "$HOME/.openclaw/state/.reddit-loop-last-pass" 2>/dev/null || true
