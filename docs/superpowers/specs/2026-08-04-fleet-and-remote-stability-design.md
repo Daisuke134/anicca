@@ -93,13 +93,23 @@ anicca の launchd ジョブ = 171本
 **ループの所属リポジトリ**（launchd 171本を plist の実行スクリプトから逆引き）:
 
 ```
-profitable-claude   57本   gig / article / larry / reddit / bounty
-life-manager        54本   clip / capafy / franklin / agentmail / marketing / citizens
-home直下            23本   ★どのリポジトリにも属していない★
-その他              17本   ★正体不明★
-anicca-dais         14本
-anicca-products      3本 / anicca-genesis 2本 / blockrun 1本
+（初回集計。V4 で訂正済 — 下の「訂正後」を使うこと）
+profitable-claude   57本 / life-manager 54本 / home直下 23本 / その他 17本
+anicca-dais         14本 / anicca-products 3本 / anicca-genesis 2本 / blockrun 1本
 ```
+
+**訂正後（2026-08-05、V4 適用後の実測・172本）**:
+
+```
+life-manager        55本   clip / capafy / franklin / agentmail / marketing / citizens
+profitable-claude   36本   gig / article / larry / reddit / bounty
+anicca-dais         35本   ★初回は14本と誤った★
+untracked           22本   ★どのリポジトリにも属していない★
+system              13本
+anicca-products      6本 / parse_error 2本 / anicca-genesis 2本 / blockrun 1本
+```
+
+初回が外れた理由: 多くのジョブが `launchd_run_and_report.sh --label … -- <実体>` の形で起動され、ラッパーは `profitable-claude` にあるが実体は別リポジトリにある。最初のスクリプトを実体とみなしていたため、profitable-claude が21本ぶん過大、anicca-dais が21本ぶん過小になっていた。
 
 **repo 外の40本（home直下23 + その他17）は git で追跡されていない。** Mac が飛んだら復旧できない。
 
@@ -301,7 +311,7 @@ life-manager:  alive_if = 過去25時間に exit=0
 | V9 | **沈黙検知のテストが本番 checkout で3件落ちている** | `test_a_backdated_heartbeat_fires_and_a_fresh_one_does_not` / `test_a_missing_heartbeat_is_treated_as_silence` / `test_the_detector_keeps_working_with_no_new_arguments`。V3a 作業中に発見。停止に気づくための仕組みのテストが壊れており、2026-08-04 の「8時間気づかなかった」と関係する可能性がある | pending — **gig エージェント担当** |
 | V1 | 抑制を実際に使われる経路へ（C-2） | `~/profitable-claude/skills/gig-work/scripts/telegram_outbox.py`（main checkout）にも同じ抑制が入り、`work-events` 経路で発火することを本番で確認 | pending — **gig エージェント担当**（V3 の後） |
 | V2 | chezmoi 正本から旧 hook を削除（C-5） | `chezmoi apply` しても戻らない | **done 2026-08-05**（`ai-config` `fd063ef`）。`chezmoi forget` で `stop-block.sh` / `stop-require-search.sh` / `stop-require-search.py` を管理から外しソース実体を削除、`.py` はローカルからも削除（M-5）。`settings.json` は `re-add` で現状を取り込み。**`~/.claude/CLAUDE.md` は chezmoi 管理から外した** — 生成元は `~/.config/ai/core.md` + `sync.sh` であり、二重所有は必ずどちらかを巻き戻すため。実証: `chezmoi apply ~/.claude` を実行し、3本とも復活しないことを確認。**途中の落とし穴**: `chezmoi add` が `private_` 属性を落として `encrypted_settings.json.age` を作ったため、`encrypted_private_settings.json.age` へ戻した（秘密を含みうるファイルの権限が 600→644 に緩む事故を回避）。apply 後の実測権限は `-rw-------` |
-| V4 | `fleet-inventory.py` の無言スキップとラッパー解析を直す（C-7 / C-8） | 172本すべてを扱い、壊れた plist を `parse_error` として明示。`--` 以降の実体を追い、`launchd_run_and_report.sh` で止まらない | pending |
+| V4 | `fleet-inventory.py` の無言スキップとラッパー解析を直す（C-7 / C-8） | 172本すべてを扱い、壊れた plist を `parse_error` として明示。`--` 以降の実体を追う | **done 2026-08-05**（`ai-config` `a887379`）。件数 170→**172**。読めない plist は破棄せず `repo=parse_error` で行として残し、専用セクションに出す（`cfo-daily` は `exit=127` = command not found で、まさに落とされていた方）。`entry_script()` は `--` を境に実体を返し、ラッパーを `wrapper` フィールドへ分離。**帰属が大きく変わった**: profitable-claude 57→36、anicca-dais 14→35（ラッパーは profitable-claude、実体は別リポジトリだった）。fuel: none 117→**98**、openclaw 11→**27**、agent-runner 11→**13**（19件が再分類、敵対的検証の見積りと一致）。exit≠0 は 27→**28**（cfo-daily が可視化された分） |
 | V5 | 燃料の逃げ道（C-4 / F5 前倒し） | keio が枯れても止まらない。`~/.local/bin/codex` が acct2 内にある事実（H-4）を壊さない | pending |
 | V6 | 「未ロード40本」の記述を訂正（H-6） | 40/40 が明示的 disable であることを spec と registry に反映。bootstrap 提案を撤回 | pending |
 | V7 | 残る圧力源の HARD RULE を整理（H-9） | 0.14 / 0.21 / 0.29 / 0.32 と #-3 見出しを3段の規律に従属させる。dev / main にも反映（H-8） | pending |
