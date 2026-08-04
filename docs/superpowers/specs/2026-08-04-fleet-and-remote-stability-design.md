@@ -385,7 +385,7 @@ life-manager:  alive_if = 過去25時間に exit=0
 | G4 | 「Life Manager が何をするか」を定義し直す | 54本のうち実際に人生管理をしているのは何本かを名指しする | pending |
 | V19 | 新規マシンのブートストラップを閉じる（第3回 指摘4） | clone → 1手順で `CLAUDE.md` / `AGENTS.md` / `GEMINI.md` が生成される | pending |
 | B1 | `fleet status` を1本書く | 171本の生死・exit・最終活動が1画面。**F1 に統合予定** | pending |
-| B4 | 効果ゼロ検知（稼働緑・成果ゼロ） | `alive_if` 真 かつ `healthy_if` 偽 で1通届く | pending |
+| B4 | 効果ゼロ検知（稼働緑・成果ゼロ） | 活動はあるが成果ゼロで1通届く | **done 2026-08-05**（`ai-config` `259de52`）。`~/.config/ai/bin/effect-watch.py` + `ai.anicca.effect-watch`（毎日 12:00 JST）。**区別しているのは「忙しい」と「成果がある」**。相手のいるイベント（application / delivery / contract / payment / reply_verified / retainer_followthrough）だけを成果と数え、incident と recovery は**ループが自分について喋っているだけ**として除外する。窓内に活動が皆無の場合は何も言わない（それは liveness の話で、日報が既に報告しているため二重にしない）。24時間で再送。**初回実行で本物の異常を検知した**: gig は直近24時間で89イベント（incident×78 / recovery×11）を書いているが**相手のいる成果は0件**、最後の成果は8月3日 22:51。これは §2.2 の C-1（PAID_WORK が blocked のまま30時間）と独立に同じ事実を捕まえている。**検証**: `--status` で活動89/成果0を確認 → `--dry-run` で本文確認 → **実送信 `messageId=6684`** → 即再実行で沈黙（抑制が効く）→ `launchctl kickstart` で exit=0 |
 | A3 | remote-control の停止理由をログに残す | シグナルトラップ追加。次の停止で犯人が記録される | **done 2026-08-04**。`~/.claude/scripts/remote-control-supervise.sh` に `start pid=` 行と `TRAPTERM/INT/HUP/QUIT` を追加。`zsh -n` OK。隔離テストで発火実証。**本番プロセスは再起動していない**（このセッション自体がそこを通っているため）→ 次の自然再起動から有効。**測定で判明した限界**: zsh は前景パイプライン待機中のシグナル trap をジョブ終了まで保留するため、シェル単体への TERM では1行も残らない。launchd はプロセスグループへ送るので実運用では記録される。検証は `perl -e 'setpgrp(0,0); exec ...'` + `kill -TERM -<PGID>` で行うこと（シェル単体への kill は偽陰性）。`~/.claude` は git 管理外なので commit なし |
 | A4 | claude 資格情報の共有を調査 | 同時稼働 claude プロセス数 × 401 発生時刻を突合し §2.5 の仮説を白黒つける | pending |
 | E3 | 座席競合を構造的に防ぐ | デスクトップアプリと CLI daemon が同じ CODEX_HOME を握らない | pending |
