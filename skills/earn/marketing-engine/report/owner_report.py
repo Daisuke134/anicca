@@ -14,6 +14,7 @@ import fcntl
 import hashlib
 import json
 import pathlib
+from collections import Counter
 from typing import Callable, Iterable
 
 
@@ -268,6 +269,75 @@ def _existing_owner_report_for_evidence(
             except OwnerReportError:
                 continue
     return None
+
+
+def _message_key_exists(root: pathlib.Path, message_key: str) -> bool:
+    """Return whether an append-only report or delivery ledger reserves a key."""
+
+    for filename in ("owner-reports.jsonl", "owner-report-deliveries.jsonl"):
+        if any(row.get("message_key") == message_key for row in load_jsonl(pathlib.Path(root) / filename)):
+            return True
+    return False
+
+
+def _social_checkpoint_incident_base_key(product_id: str, facts: dict) -> str:
+    return (
+        f"incident:{product_id}:social_checkpoint:"
+        f"{facts['publication_id']}:{facts['reason']}"
+    )
+
+
+def _social_checkpoint_incident_key(
+    root: pathlib.Path,
+    product_id: str,
+    index: int,
+    row: dict,
+    facts: dict,
+    base_counts: Counter[str],
+    used_keys: set[str],
+) -> str:
+    """Choose an immutable key without stealing a legacy terminal receipt.
+
+    A historical report tied to this exact evidence row keeps its original
+    key.  A lone new incident keeps the legacy base format; only colliding new
+    rows receive a target-age suffix (and, for an impossible same-age
+    duplicate, an evidence-row suffix).
+    """
+
+    evidence_ref = _ref("post-metrics.jsonl", index)
+    existing = _existing_owner_report_for_evidence(
+        root,
+        kind="incident",
+        product_id=product_id,
+        evidence_ref=evidence_ref,
+    )
+    if existing is not None:
+        key = existing["message_key"]
+        used_keys.add(key)
+        return key
+
+    base_key = _social_checkpoint_incident_base_key(product_id, facts)
+    if (
+        base_counts[base_key] == 1
+        and base_key not in used_keys
+        and not _message_key_exists(root, base_key)
+    ):
+        used_keys.add(base_key)
+        return base_key
+
+    target_age = row.get("target_age_hours")
+    target_key = "unknown" if target_age is None else str(target_age)
+    key = f"{base_key}:{target_key}"
+    if key in used_keys or _message_key_exists(root, key):
+        row_key = f"{key}:row-{index}"
+        if row_key in used_keys or _message_key_exists(root, row_key):
+            evidence_digest = hashlib.sha256(
+                f"post-metrics.jsonl#row-{index}".encode("utf-8")
+            ).hexdigest()[:12]
+            row_key = f"{row_key}:{evidence_digest}"
+        key = row_key
+    used_keys.add(key)
+    return key
 
 
 def _action_events(root: pathlib.Path, product_id: str, as_of: dt.datetime) -> list[dict]:
@@ -713,6 +783,7 @@ def _incident_events(root: pathlib.Path, product_id: str, as_of: dt.datetime) ->
 
     # Keep product-bound social checkpoint incidents separate from business
     # incidents.  Unbound rows are intentionally excluded by _scoped above.
+    social_rows = []
     for index, row in _scoped(_indexed_rows(root, "post-metrics.jsonl"), product_id):
         if not _before(row, as_of):
             continue
@@ -720,18 +791,42 @@ def _incident_events(root: pathlib.Path, product_id: str, as_of: dt.datetime) ->
         reason = (row.get("metric_null_reasons") or {}).get("views") or row.get("error")
         if status not in {"missed", "error", "failed"} and not reason:
             continue
+        social_rows.append((index, row, reason or "checkpoint_failed"))
+
+    base_counts: Counter[str] = Counter()
+    for _index, row, reason in social_rows:
+        base_counts[
+            _social_checkpoint_incident_base_key(
+                product_id,
+                {
+                    "publication_id": row.get("publication_id") or row.get("postiz_id"),
+                    "reason": reason,
+                },
+            )
+        ] += 1
+    used_keys: set[str] = set()
+    for index, row, reason in social_rows:
         facts = {
             "source": "social_checkpoint",
-            "reason": reason or "checkpoint_failed",
+            "reason": reason,
             "next_repair": _repair_for("social_checkpoint"),
             "native_url": row.get("native_url"),
             "publication_id": row.get("publication_id") or row.get("postiz_id"),
         }
+        message_key = _social_checkpoint_incident_key(
+            root,
+            product_id,
+            index,
+            row,
+            facts,
+            base_counts,
+            used_keys,
+        )
         events.append(_event(
             kind="incident",
             product_id=product_id,
             as_of=as_of,
-            message_key=f"incident:{product_id}:social_checkpoint:{facts['publication_id']}:{facts['reason']}",
+            message_key=message_key,
             facts=facts,
             evidence_refs=[_ref("post-metrics.jsonl", index)],
         ))
