@@ -31,6 +31,35 @@ class LedgerTests(unittest.TestCase):
         self.ledger.transition(target, "qualified")
         self.ledger.transition(target, "materials_ready")
 
+    def _fill_receipt(
+        self,
+        application_id,
+        job_url,
+        snapshot_sha256,
+        *,
+        resume_sha256=None,
+    ):
+        receipt = Path(self.tempdir.name) / f"fill-{application_id}.json"
+        receipt.write_text(
+            json.dumps(
+                {
+                    "version": 1,
+                    "status": "claim_ready",
+                    "job_url": job_url,
+                    "snapshot_sha256": snapshot_sha256,
+                    "resume_sha256": resume_sha256 or self.resume_sha256,
+                    "owner_lease_id": "lease-test",
+                    "owner_fence": 1,
+                    "owner_holder_pid": 123,
+                    "blockers": [],
+                    "submit_clicked": False,
+                },
+                sort_keys=True,
+            ),
+            encoding="utf-8",
+        )
+        return receipt, hashlib.sha256(receipt.read_bytes()).hexdigest()
+
     def _claim(
         self,
         ledger,
@@ -89,6 +118,11 @@ class LedgerTests(unittest.TestCase):
             encoding="utf-8",
         )
         snapshot_sha256 = hashlib.sha256(snapshot.read_bytes()).hexdigest()
+        fill_receipt, fill_receipt_sha256 = self._fill_receipt(
+            application_id,
+            str(row["canonical_url"]),
+            snapshot_sha256,
+        )
         intent = ledger.claim_submission(
             application_id,
             japan_day,
@@ -97,6 +131,8 @@ class LedgerTests(unittest.TestCase):
             resume_sha256=self.resume_sha256,
             ats_snapshot_path=snapshot,
             ats_snapshot_sha256=snapshot_sha256,
+            fill_receipt_path=fill_receipt,
+            fill_receipt_sha256=fill_receipt_sha256,
             portfolio_bucket=portfolio_bucket,
         )
         if intent is not None and record_materials:
@@ -605,6 +641,65 @@ class LedgerTests(unittest.TestCase):
             )
         self.assertEqual(self.ledger.daily_slot_count("2026-07-29"), 0)
 
+    def test_blocked_fill_receipt_cannot_claim_or_consume_slot(self):
+        parameters = inspect.signature(self.ledger.claim_submission).parameters
+        self.assertIn("fill_receipt_path", parameters)
+        self.assertIn("fill_receipt_sha256", parameters)
+        self._ready()
+        snapshot = Path(self.tempdir.name) / "ready-for-fill.json"
+        snapshot.write_text(
+            json.dumps(
+                {
+                    "version": 1,
+                    "url": "https://jobs.example.com/42",
+                    "navigation_committed": True,
+                    "frames": [
+                        {
+                            "url": "https://jobs.example.com/42",
+                            "controls": [
+                                {"tag": "input", "type": "email"},
+                                {"tag": "input", "type": "file"},
+                                {"tag": "button", "type": "submit", "text": "Submit Application"},
+                            ],
+                        }
+                    ],
+                }
+            ),
+            encoding="utf-8",
+        )
+        snapshot_sha256 = hashlib.sha256(snapshot.read_bytes()).hexdigest()
+        fill_receipt = Path(self.tempdir.name) / "blocked-fill.json"
+        fill_receipt.write_text(
+            json.dumps(
+                {
+                    "version": 1,
+                    "status": "blocked",
+                    "job_url": "https://jobs.example.com/42",
+                    "snapshot_sha256": snapshot_sha256,
+                    "resume_sha256": self.resume_sha256,
+                    "owner_lease_id": "lease-1",
+                    "owner_fence": 1,
+                    "owner_holder_pid": 123,
+                    "blockers": ["Work authorization"],
+                    "submit_clicked": False,
+                }
+            ),
+            encoding="utf-8",
+        )
+        with self.assertRaisesRegex(ValueError, "fill receipt is not claim-ready"):
+            self.ledger.claim_submission(
+                self.application_id,
+                "2026-07-29",
+                "payload",
+                resume_path=self.resume,
+                resume_sha256=self.resume_sha256,
+                ats_snapshot_path=snapshot,
+                ats_snapshot_sha256=snapshot_sha256,
+                fill_receipt_path=fill_receipt,
+                fill_receipt_sha256=hashlib.sha256(fill_receipt.read_bytes()).hexdigest(),
+            )
+        self.assertEqual(self.ledger.daily_slot_count("2026-07-29"), 0)
+
     def test_non_ready_snapshot_cannot_claim_or_consume_slot(self):
         self._ready()
         snapshot = Path(self.tempdir.name) / "not-ready.json"
@@ -792,6 +887,12 @@ class LedgerTests(unittest.TestCase):
             encoding="utf-8",
         )
         ats_sha256 = hashlib.sha256(ats_snapshot.read_bytes()).hexdigest()
+        fill_receipt, fill_receipt_sha256 = self._fill_receipt(
+            self.application_id,
+            "https://jobs.example.com/42",
+            ats_sha256,
+            resume_sha256=resume_sha256,
+        )
         intent = self.ledger.claim_submission(
             self.application_id,
             "2026-07-29",
@@ -800,9 +901,13 @@ class LedgerTests(unittest.TestCase):
             resume_sha256=resume_sha256,
             ats_snapshot_path=ats_snapshot,
             ats_snapshot_sha256=ats_sha256,
+            fill_receipt_path=fill_receipt,
+            fill_receipt_sha256=fill_receipt_sha256,
         )
         self.assertEqual(intent.ats_snapshot_path, str(ats_snapshot.resolve()))
         self.assertEqual(intent.ats_snapshot_sha256, ats_sha256)
+        self.assertEqual(intent.fill_receipt_path, str(fill_receipt.resolve()))
+        self.assertEqual(intent.fill_receipt_sha256, fill_receipt_sha256)
         self.ledger.record_submission_materials(
             intent_id=intent.intent_id,
             fence=intent.fence,
