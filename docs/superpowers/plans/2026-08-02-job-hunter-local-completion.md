@@ -2060,6 +2060,16 @@ this spec update → commit/push → Telegram milestone before the next item sta
   `no_eligible_job_found` whenever any unverified link remains. Regression fixture:
   24 searches plus 102 links can never produce zero verified postings and a clean
   terminal result.
+  - Implemented locally: a private SQLite candidate queue canonically deduplicates
+    discovered URLs, records source/query family and verification disposition, and
+    exposes pending/verify/summary operations to the resident browser actor.
+  - Implemented locally: `run-daily.sh` validates the browser result against durable
+    queue state before privacy scanning or final reporting. A claimed
+    `no_eligible_job_found` with 102 pending links is now exit 76, never success.
+  - Verified locally: focused contract/runtime suite 25/25 and complete Job Hunter
+    suite 373/373 pass. Completion remains unchecked until an immutable release is
+    activated and a resident LaunchAgent run proves queue persistence and the
+    terminal gate with real browser observations.
 - [ ] **L-49K0A1H** — Repair privacy classification without weakening real secret
   detection. Public job/location terms such as Tokyo and Japan must not become a
   profile leak merely because they equal mailing-address components; exact private

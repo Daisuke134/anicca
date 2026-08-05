@@ -16,6 +16,7 @@ chmod 700 \
   "$JOB_SEARCH_STATE_ROOT/logs"
 export PYTHONPATH="$JOB_SEARCH_APP_ROOT"
 export JOB_SEARCH_BROWSER_OWNER_EVIDENCE="$EVIDENCE/browser-owner.json"
+export JOB_SEARCH_CANDIDATE_QUEUE="$JOB_SEARCH_STATE_ROOT/candidate-queue.sqlite3"
 "$JOB_SEARCH_PYTHON" -m job_search_loop.application_reporting deliver \
   --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
   --outbox "$TELEGRAM_OUTBOX" \
@@ -190,6 +191,21 @@ set +e
   --workdir "$JOB_SEARCH_REPO_ROOT"
 RUNNER_RC=$?
 set -e
+if [[ "$RUNNER_RC" -eq 0 ]]; then
+  RESULT_PATH=$("$JOB_SEARCH_JQ" -er \
+    '.result_path | select(type == "string" and length > 0)' \
+    "$EVIDENCE/summary.json")
+  set +e
+  "$JOB_SEARCH_PYTHON" -m job_search_loop.candidate_queue validate-terminal \
+    --database "$JOB_SEARCH_CANDIDATE_QUEUE" \
+    --result "$RESULT_PATH" \
+    --output "$EVIDENCE/candidate-terminal-receipt.json"
+  TERMINAL_RC=$?
+  set -e
+  if [[ "$TERMINAL_RC" -ne 0 ]]; then
+    RUNNER_RC=76
+  fi
+fi
 PRIVACY_RC=0
 PROVIDER_LOGS=(
   "$EVIDENCE"/attempt-*.stdout.log(N)

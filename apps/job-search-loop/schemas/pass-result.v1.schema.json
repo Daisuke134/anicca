@@ -1,12 +1,18 @@
 {
   "type": "object",
   "additionalProperties": false,
-  "required": ["status", "submitted", "submit_unknown", "blocked", "report_message_id"],
+  "required": [
+    "status", "submitted", "submit_unknown", "blocked", "report_message_id",
+    "discovered_link_count", "verified_link_count", "remaining_unverified_count"
+  ],
   "properties": {
     "status": {"type": "string"},
     "submitted": {"type": "array", "items": {"type": "string"}},
     "submit_unknown": {"type": "array", "items": {"type": "string"}},
     "blocked": {"type": "array", "items": {"type": "string"}},
-    "report_message_id": {"type": ["string", "null"]}
+    "report_message_id": {"type": ["string", "null"]},
+    "discovered_link_count": {"type": "integer", "minimum": 0},
+    "verified_link_count": {"type": "integer", "minimum": 0},
+    "remaining_unverified_count": {"type": "integer", "minimum": 0}
   }
 }

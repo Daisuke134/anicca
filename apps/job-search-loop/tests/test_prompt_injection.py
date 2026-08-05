@@ -56,6 +56,21 @@ class PromptInjectionTests(unittest.TestCase):
         script = (root / "scripts" / "run-daily.sh").read_text(encoding="utf-8")
         self.assertIn("ANICCA_LOOP_DAILY_TOKEN_BUDGET=1048576", script)
 
+    def test_daily_runtime_gates_terminal_result_on_durable_candidate_queue(self):
+        root = Path(__file__).parents[1]
+        script = (root / "scripts" / "run-daily.sh").read_text(encoding="utf-8")
+        prompt = (root / "prompts" / "daily-pass.md").read_text(encoding="utf-8")
+        self.assertIn("JOB_SEARCH_CANDIDATE_QUEUE", script)
+        self.assertIn("job_search_loop.candidate_queue validate-terminal", script)
+        self.assertLess(
+            script.index("job_search_loop.candidate_queue validate-terminal"),
+            script.rindex("job_search_loop.application_reporting deliver"),
+        )
+        self.assertIn("job_search_loop.candidate_queue discover", prompt)
+        self.assertIn("job_search_loop.candidate_queue verify", prompt)
+        self.assertIn("remaining_unverified_count", prompt)
+        self.assertIn("must not return `no_eligible_job_found`", prompt)
+
     def test_daily_routes_deep_fit_tailoring_and_answers_through_terra_composition(self):
         root = Path(__file__).parents[1]
         script = (root / "scripts" / "run-daily.sh").read_text(encoding="utf-8")
