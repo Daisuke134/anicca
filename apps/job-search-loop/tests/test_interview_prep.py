@@ -2,6 +2,7 @@ import tempfile
 import unittest
 import json
 import os
+import hashlib
 from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import Mock
@@ -10,11 +11,13 @@ from job_search_loop.interview_prep import (
     PrepError,
     PrepStore,
     append_pending_to_prompt,
+    application_prep_context,
     build_prep_pack,
     deliver_due_preps,
     render_prep_message,
     save_pack_from_input,
 )
+from job_search_loop.ledger import Ledger
 
 
 class InterviewPrepTests(unittest.TestCase):
@@ -64,6 +67,65 @@ class InterviewPrepTests(unittest.TestCase):
             ],
             "logistics": "Video interview; join link is stored in Calendar.",
         }
+
+    def test_application_context_requires_one_verified_artifact_of_each_kind(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            database = root / "ledger.sqlite3"
+            ledger = Ledger(database)
+            application_id = ledger.add_application(
+                "Example AI", "AI Product Manager", "https://example.com/job"
+            )
+            for kind, content, fact_ids, urls in (
+                ("posting", "official posting", [], ["https://example.com/job"]),
+                ("resume_draft", "grounded resume", ["fact-1"], []),
+                ("cover_letter_draft", "grounded letter", ["fact-1"], []),
+            ):
+                path = root / f"{kind}.txt"
+                path.write_text(content, encoding="utf-8")
+                path.chmod(0o600)
+                ledger.record_application_artifact(
+                    application_id=application_id,
+                    kind=kind,
+                    path=path,
+                    sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
+                    fact_ids=fact_ids,
+                    source_urls=urls,
+                )
+            ledger.close()
+
+            context = application_prep_context(
+                ledger_database=database,
+                application_id=application_id,
+            )
+            self.assertEqual(context["application_id"], application_id)
+            self.assertEqual(
+                [item["kind"] for item in context["artifacts"]],
+                ["posting", "resume_draft", "cover_letter_draft"],
+            )
+            self.assertEqual(len(context["context_sha256"]), 64)
+            self.assertNotIn("content", json.dumps(context))
+
+            (root / "resume_draft.txt").write_text("mutated", encoding="utf-8")
+            with self.assertRaisesRegex(PrepError, "changed after archival"):
+                application_prep_context(
+                    ledger_database=database,
+                    application_id=application_id,
+                )
+
+    def test_application_context_fails_closed_when_required_artifact_is_missing(self):
+        with tempfile.TemporaryDirectory() as directory:
+            database = Path(directory) / "ledger.sqlite3"
+            ledger = Ledger(database)
+            application_id = ledger.add_application(
+                "Example AI", "AI Product Manager", "https://example.com/job"
+            )
+            ledger.close()
+            with self.assertRaisesRegex(PrepError, "missing posting"):
+                application_prep_context(
+                    ledger_database=database,
+                    application_id=application_id,
+                )
 
     def test_registration_is_private_idempotent_and_pending_generation(self):
         with tempfile.TemporaryDirectory() as directory:
