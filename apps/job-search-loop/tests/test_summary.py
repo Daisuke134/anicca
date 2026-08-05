@@ -7,9 +7,51 @@ import unittest
 from pathlib import Path
 
 from job_search_loop.ledger import Ledger
+from job_search_loop.summary import build_summary_v2
 
 
 class SummaryProjectionTests(unittest.TestCase):
+    def test_funnel_metrics_expose_exact_numerators_and_denominators(self):
+        def row(identifier, stages):
+            return {
+                "application_id": identifier,
+                "canonical_url": f"https://jobs.example/{identifier}",
+                "owner": "agent",
+                "current_state": "submitted",
+                "ever_submitted": True,
+                "submission_attempted": True,
+                "positive_funnel_stages": stages,
+            }
+
+        value = build_summary_v2(
+            day="2026-08-05",
+            applications=[
+                row("one", ["confirmed_application", "recruiter_response", "interview", "final_round", "offer", "accepted"]),
+                row("two", ["confirmed_application"]),
+                row("three", []),
+            ],
+        )
+        self.assertEqual(value["funnel"], {
+            "confirmed_application_rate": {"numerator": 2, "denominator": 3, "rate": 0.6667},
+            "recruiter_reply_rate": {"numerator": 1, "denominator": 2, "rate": 0.5},
+            "interview_rate": {"numerator": 1, "denominator": 2, "rate": 0.5},
+            "final_round_rate": {"numerator": 1, "denominator": 1, "rate": 1.0},
+            "offer_rate": {"numerator": 1, "denominator": 2, "rate": 0.5},
+            "acceptance_rate": {"numerator": 1, "denominator": 1, "rate": 1.0},
+        })
+
+    def test_funnel_metric_rejects_numerator_outside_denominator(self):
+        with self.assertRaisesRegex(ValueError, "outside its denominator"):
+            build_summary_v2(day="2026-08-05", applications=[{
+                "application_id": "one",
+                "canonical_url": "https://jobs.example/one",
+                "owner": "agent",
+                "current_state": "interview",
+                "ever_submitted": True,
+                "submission_attempted": True,
+                "positive_funnel_stages": ["interview"],
+            }])
+
     def test_cli_writes_private_adapter_progress_without_application_details(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

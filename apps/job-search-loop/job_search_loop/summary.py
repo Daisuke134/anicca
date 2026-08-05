@@ -65,11 +65,47 @@ def build_summary_v2(*, day: str, applications: list[dict[str, Any]]) -> dict[st
     for adapter in REQUIRED_ATS_ADAPTERS:
         if adapter_counts.get(adapter, Counter()).get("ever_submitted", 0) > 0:
             confirmed_adapters.append(adapter)
+    application_sets = {
+        "attempted": {
+            str(row["application_id"])
+            for row in applications if row["submission_attempted"]
+        }
+    }
+    for stage in (
+        "confirmed_application", "recruiter_response", "interview",
+        "final_round", "offer", "accepted",
+    ):
+        application_sets[stage] = {
+            str(row["application_id"])
+            for row in applications if stage in row["positive_funnel_stages"]
+        }
+    metric_cohorts = {
+        "confirmed_application_rate": ("confirmed_application", "attempted"),
+        "recruiter_reply_rate": ("recruiter_response", "confirmed_application"),
+        "interview_rate": ("interview", "confirmed_application"),
+        "final_round_rate": ("final_round", "interview"),
+        "offer_rate": ("offer", "confirmed_application"),
+        "acceptance_rate": ("accepted", "offer"),
+    }
+    funnel: dict[str, dict[str, Any]] = {}
+    for metric, (numerator_name, denominator_name) in metric_cohorts.items():
+        numerator_set = application_sets[numerator_name]
+        denominator_set = application_sets[denominator_name]
+        if not numerator_set.issubset(denominator_set):
+            raise ValueError(f"{metric} numerator is outside its denominator cohort")
+        numerator = len(numerator_set)
+        denominator = len(denominator_set)
+        funnel[metric] = {
+            "numerator": numerator,
+            "denominator": denominator,
+            "rate": round(numerator / denominator, 4) if denominator else None,
+        }
     value: dict[str, Any] = {
         "version": 2,
         "day": day,
         "counts": dict(sorted(counts.items())),
         "owners": dict(sorted(owners.items())),
+        "funnel": funnel,
         "ats_progress": {
             "required_adapters": list(REQUIRED_ATS_ADAPTERS),
             "confirmed_adapters": confirmed_adapters,
