@@ -4,6 +4,7 @@ import argparse
 import json
 import os
 import tempfile
+import hashlib
 from collections import Counter
 from pathlib import Path
 from typing import Any
@@ -50,6 +51,43 @@ def build_summary(
     }
 
 
+def build_summary_v2(*, day: str, applications: list[dict[str, Any]]) -> dict[str, Any]:
+    counts = Counter(str(row["current_state"]) for row in applications)
+    owners = Counter(str(row["owner"]) for row in applications)
+    adapter_counts: dict[str, Counter[str]] = {}
+    confirmed_adapters: list[str] = []
+    for application in applications:
+        adapter = detect_provider(str(application["canonical_url"]))
+        state = str(application["current_state"])
+        adapter_counts.setdefault(adapter, Counter())[state] += 1
+        if application["ever_submitted"]:
+            adapter_counts[adapter]["ever_submitted"] += 1
+    for adapter in REQUIRED_ATS_ADAPTERS:
+        if adapter_counts.get(adapter, Counter()).get("ever_submitted", 0) > 0:
+            confirmed_adapters.append(adapter)
+    value: dict[str, Any] = {
+        "version": 2,
+        "day": day,
+        "counts": dict(sorted(counts.items())),
+        "owners": dict(sorted(owners.items())),
+        "ats_progress": {
+            "required_adapters": list(REQUIRED_ATS_ADAPTERS),
+            "confirmed_adapters": confirmed_adapters,
+            "complete": len(confirmed_adapters) == len(REQUIRED_ATS_ADAPTERS),
+            "adapters": {
+                adapter: dict(sorted(states.items()))
+                for adapter, states in sorted(adapter_counts.items())
+            },
+        },
+    }
+    value["projection_sha256"] = hashlib.sha256(
+        json.dumps(
+            value, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+        ).encode("utf-8")
+    ).hexdigest()
+    return value
+
+
 def write_summary(path: Path, value: dict[str, Any]) -> None:
     target = Path(path)
     target.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -78,20 +116,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--ledger", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--day", required=True)
-    parser.add_argument("--model-route", required=True)
     parsed = parser.parse_args(argv)
 
     ledger = Ledger(parsed.ledger)
     try:
-        applications = ledger.application_summary_rows()
+        applications = ledger.event_summary_rows()
     finally:
         ledger.close()
-    value = build_summary(
-        day=parsed.day,
-        states=[row["current_state"] for row in applications],
-        model_route=parsed.model_route,
-        applications=applications,
-    )
+    value = build_summary_v2(day=parsed.day, applications=applications)
     write_summary(parsed.output, value)
     print(
         json.dumps(

@@ -699,15 +699,12 @@ class OutcomeAttributionTests(unittest.TestCase):
             second = ledger.add_application(
                 "Legacy Two", "AI Product", "https://jobs.example.com/legacy-2"
             )
-            with ledger._transaction():
-                ledger.connection.execute(
-                    "UPDATE applications SET current_state = 'submitted' WHERE id = ?",
-                    (first,),
-                )
-                ledger.connection.execute(
-                    "UPDATE applications SET current_state = 'not_submitted' WHERE id = ?",
-                    (second,),
-                )
+            for application_id in (first, second):
+                ledger.transition(application_id, "qualified")
+                ledger.transition(application_id, "materials_ready")
+                ledger.transition(application_id, "submit_claimed")
+            ledger.transition(first, "submitted")
+            ledger.transition(second, "not_submitted")
             before = dict(
                 ledger.connection.execute(
                     """
