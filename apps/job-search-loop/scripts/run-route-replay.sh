@@ -13,6 +13,17 @@ mkdir -p "$EVIDENCE/luna" "$EVIDENCE/terra"
 chmod 700 "$EVIDENCE" "$EVIDENCE/luna" "$EVIDENCE/terra"
 export PYTHONPATH="$JOB_SEARCH_APP_ROOT"
 export JOB_SEARCH_ROUTE_REPLAY_SNAPSHOT="$SNAPSHOT"
+export JOB_SEARCH_ROUTE_REPLAY_SHA256=$("$JOB_SEARCH_PYTHON" - "$SNAPSHOT" <<'PY'
+import hashlib
+import json
+import sys
+from pathlib import Path
+
+value = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+canonical = json.dumps(value, sort_keys=True, separators=(",", ":")).encode("utf-8")
+print(hashlib.sha256(canonical).hexdigest(), end="")
+PY
+)
 export ANICCA_BUDGET_REQUIRED=1
 export ANICCA_PASS_TOKEN_BUDGET=65536
 export ANICCA_LOOP_DAILY_TOKEN_BUDGET=131072
