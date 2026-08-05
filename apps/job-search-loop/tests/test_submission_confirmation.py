@@ -4,13 +4,25 @@ import tempfile
 import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from unittest.mock import patch
 
 from job_search_loop.ledger import Ledger
 from job_search_loop.state import InvalidTransition
-from job_search_loop.submission_confirmation import reconcile_confirmation_threads
+from job_search_loop.submission_confirmation import reconcile_confirmation_threads, _gmail_confirmation_threads
 
 
 class SubmissionConfirmationTests(unittest.TestCase):
+    def test_confirmation_search_uses_supported_read_only_gog_flags(self):
+        completed = type("Completed", (), {"stdout": '{"threads": []}'})()
+        with patch("job_search_loop.submission_confirmation.subprocess.run", return_value=completed) as run:
+            self.assertEqual(_gmail_confirmation_threads("candidate@example.com", "/opt/gog"), [])
+        argv = run.call_args.args[0]
+        self.assertIn("--wrap-untrusted", argv)
+        self.assertIn("--gmail-no-send", argv)
+        self.assertIn("--no-input", argv)
+        self.assertIn("--max", argv)
+        self.assertNotIn("--limit", argv)
+
     def _unknown_submission(
         self,
         root: Path,
