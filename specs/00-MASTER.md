@@ -1,4 +1,17 @@
-# 00 — MASTER (SSOT, locked 2026-06-11)
+# 00 — MASTER (SSOT; execution override 2026-08-01)
+
+## CURRENT EXECUTION OVERRIDE — marketing engine
+
+For the current marketing-engine implementation, [27-MARKETING-ENGINE-END-TO-END.md](27-MARKETING-ENGINE-END-TO-END.md) is the execution SSOT and overrides older marketing/content-factory/runtime TODOs where they conflict. [26-MOBILE-APP-EBOOK-10K-LOOPS.md](26-MOBILE-APP-EBOOK-10K-LOOPS.md) remains the business-outcome and $10k revenue-model context; it does not reorder or broaden spec 27.
+
+- Active business loops: **Mobile App Scaler** (`aniccaios`, `honne`) and **Ebook Seller** (Japanese + English).
+- Targets: $10k gross MRR **per mobile app**, $10k gross monthly revenue for the initial Japanese ebook product, and $10k gross monthly revenue for the initial English ebook product. Net proceeds/contribution are reported separately.
+- Phone/voice-call/life-manager-call work is out of scope.
+- Telegram uses the Bot API directly. Postiz may remain a publishing transport.
+- No new work may depend on OpenClaw. Existing jobs move through leased-queue shadow verification before OpenClaw is stopped.
+- Avatar generation is an optional marketing treatment. Faceless/slideshow production continues if no avatar wins on measured business value.
+
+The historical architecture and decisions below remain context for other Anicca work, but do not reorder or broaden the 16-step marketing execution plan in spec 27.
 
 This is the single source of truth for Anicca's architecture + roadmap. Detail lives in 02-24; this file holds the LOCKED decisions and the end-to-end TODO. If anything elsewhere contradicts this, this wins.
 
