@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-18` — private profile JPY 8M hard floor
+**Active atomic task:** `L-19` — strategy JPY 10M target and JPY 30M stretch
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -990,7 +990,11 @@ this spec update → commit/push → Telegram milestone before the next item sta
   isolated `old → new → rollback old` preserves the displaced release as
   `previous`, while a writable candidate is rejected without changing `current`;
   production `current` remains on the verified release; full 228-test suite PASS.
-- [ ] **L-18** — Migrate the private profile to the JPY 8M hard floor.
+- [x] **L-18** — Migrate the private profile to the JPY 8M hard floor. Receipt:
+  canonical private profile moved from JPY 7M to JPY 8M minimum while preserving
+  JPY 10M target and JPY 30M stretch; the human-readable compensation statement,
+  structured fields, 0600 mode, and profile schema all agree; before/after SHA-256
+  differ and no private profile content was committed or transmitted.
 - [ ] **L-19** — Migrate the strategy to the JPY 10M target and JPY 30M stretch.
 - [ ] **L-20** — Implement timestamped BOJ-rate USD 100K classification.
 - [ ] **L-21** — Implement travel-positive ranking.
