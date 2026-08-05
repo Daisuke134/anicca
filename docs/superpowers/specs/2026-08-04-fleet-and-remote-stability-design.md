@@ -590,20 +590,35 @@ life-manager:  alive_if = 過去25時間に exit=0
 | 4 | **R4** | 背景 subagent の完了通知が孤児化する問題を回避 | 背景 agent の成果が、親セッションの生死に関係なく届く | **done 2026-08-05（新規実装なし）**。§2.5.4。原因は R1 で除去済み、出力は永続化されている |
 | 5 | **R5** | swap 88% / ディスク残 8.2GB を解消 | swap 使用率 < 70% かつ空き > 20GB | **ディスク done / swap 保留 2026-08-05**（§2.8）。**空き 7.2GB → 21GB**（done 条件を満たす）。回収 +13.8GB は全件「消す前に所有者を確認」して実施: brew の未依存 keg（llvm+rust の連鎖 2.0G / tesseract-lang+openjdk 1.0G / akash-provider-services 0.4G。`cargo` が `~/.cargo/bin` で生存することを実測）、worktree 7本（clean・未push 0 を1本ずつ確認。1本は未push 2件を先に push し `ls-remote` で remote 到達を確認してから撤去）、`~/anicca-work` の fork 4本、`~/.openclaw-backups` 7→2本、ShipIt updater cache と7月の skill snapshot、playwright browsers、`~/anicca-rtdash/apps/landing/node_modules`（lock あり・稼働プロセス0）。**`~/.colima` は前任者の判断どおり温存**（postgres 他5コンテナ healthy）。**swap は 94%→89% で未達**（§2.8 に原因と、なぜブラウザに触らなかったかを記録） |
 | 6 | **G1** | gig spec（SSOT）を trunk で1つにする | gig spec（P1a 設計を含む）が `origin/main` から読める | **done 2026-08-05**（§2.5.5。PR #3 → `caf0dd88`）。**当初の見立てより悪かった** — spec は3ブランチに別々の内容で存在し、どれも上位互換でなかった |
-| 6.5 | **G2** | gig の**コード**を trunk へ集約する | live ループが `origin/main` 由来のチェックアウトから走る | 未着手。`fix/writer-note-resume-circuit` が main より 135 commit 先行、live ループは別の `fix/gig-p0-promissory-stop` worktree で稼働中。**稼働中のループを止めうるので G1 とは分離した**。P1a の実装は「live tree を触る」のではなく **`origin/main` から新しい worktree を切る**（統合済み spec が読めるのはそちらだけ） |
+| 6.5 | — | （gig コードの trunk 集約） | — | **この行は gig 側の正本へ移した**（Dais 2026-08-05）。調査結果は §2.5.5 に残す: `fix/writer-note-resume-circuit` が main より 135 commit 先行、live ループは別の `fix/gig-p0-promissory-stop` worktree で稼働中 |
 | 7 | **A** | caveman skill の `No tool-call narration` を潰す | ツール実行前に必ず1行が出る。core.md の「黙るな」と衝突しない | **done 2026-08-05**。SKILL.md 4コピー8箇所を `Narrate each tool call in one short line before firing it (compress the words, never the transparency)` へ置換。**hook は SKILL.md を実行時に読むので次セッションから反映**（現セッションの注入済みテキストは変わらない = UNVERIFIED）。plugin 更新で上書きされうるため、自分側の層に memory `feedback_never_silently_obey_hook_text_over_core` を追加した |
 | 8 | **V0** | `verify_domain_skills.sh` を commit + 自動判定に配線 | 実 pass の全プロンプトに domain-skills が載っているか自動で判定される | **done 2026-08-05**。既存の毎時ジョブ `ai.anicca.gig-outcome-watch` に相乗り（197本目のループを作らない）。**実 pass `gig-pass-1785888005-99487` で B0 8,039B / PAID_WORK 11,945B とも `has_skills:true` を確認** — 冒頭で保留にしていた「シミュレーションであって実 pass の証拠ではない」がここで解消。負のテストも実施（skills 欠落→rc=1 で鳴る / pass 未実行→rc=2 で黙る）。**同時に notify.sh の false-ok を修正**: 旧実装は `curl >/dev/null && echo sent` で、curl は HTTP 502 でも exit 0 のため未着信を「送信済み」と記録して当日中の再送を抑制していた。openclaw 経路 + messageId 確認へ変更し、失敗時は last-sent を書かず次の毎時実行で再試行する。実走で `messageId=6738`
-| 9 | **P1a** | ★paid-buyer 会話の所有者レーン新設★（4アクション） | 素材欠落案件で `ask_buyer` が実発火 | 未着手（gig の律速） |
-| 10 | **P1b** | b1-context に project context 同梱 | b1-context が「キャンセル」の語を含む | 未着手 |
-| 11 | **P1c** | plist 8本を1ツリーへ統一 | auditor の STALE 誤報が止まる | 未着手 |
-| 12 | **P2** | outcome ledger + 3アラート | 「トークン>0 かつ入金0」で実発火 | 半分（`effect-watch` 稼働中） |
-| 13 | **P3** | promptfoo 納品ゲート | 劣化成果物で納品が止まる | 未着手 |
-| 14 | **P4** | corrections repo + domain-skills 自動抽出 | 同種失敗の2度目が構造的に不可能 | 手書きのみ済 |
-| 15 | **P5** | 定期購入 lifecycle / 発注率>40% / 単価2万円以上 | — | 未着手 |
 
-**R を P より先に置く理由**: R が直らない限り、P の作業を夜に走らせても朝には「繋がっているのに何もしていない」に戻る。**gig agent を直す前に、gig agent を直す作業自体が生き残れるようにする。** P1a〜P5 の詳細な done 条件は gig 側の正本 `~/profitable-claude/docs/loop-engineering/26-gig-loop-asis-tobe-plan.md` §0.1.4 が持つ。ここは順序だけを持つ。
+**★ gig work はこのファイルの管轄外（Dais 2026-08-05）★**: gig の TODO（旧 P1a〜P5 / gig コードの trunk 集約）は正本 `~/profitable-claude/docs/loop-engineering/26-gig-loop-asis-tobe-plan.md` §0.1.4 が単独で持つ。**本ファイルは以後 gig の行を持たない**。上の表に gig 由来の完了記録（G1 / V0）が残るのは、実施済みの履歴だからであって作業予定ではない。
 
-### 4.1 旧 TODO（F/B 系列。上の順序に吸収済み。参照用）
+### 4.0b これからやること（このファイルの担当分。番号順に1件ずつ）
+
+| # | タスク | done 条件 | 状態 |
+|---|---|---|---|
+| 1 | life-manager の README を製品の説明に書き直す | 製品（body / mind / money を管理する常駐エージェント）が主、自己資金 AI は別節。Quick start が earn loop ではなく製品を起動する | 未着手。**前提を訂正済** — `origin/main` は既に `# Life Manager` で clone URL も修正済み。2026-08-04 に「旧 URL のまま」と書いたのは `~/anicca` の feature branch（main より304 commit 乖離）を見ていたため。残る欠陥は 207行の約7割が自己資金 AI の thesis で占められている点 |
+| 2 | ローカル版オンボーディングを1コマンドに | clone → 1コマンド → 全エージェント起動 | 未着手 |
+| 3 | クラウド/Web版のオンボーディング導線 | 既存の導線と接続 | 未着手 |
+| 4 | 生きている67本を `loops.toml` に登録 | owner / done条件 / alive_if / healthy_if を持つ正本ができる | 未着手 |
+| 5 | `fleet status` を1画面に | 193本の生死・exit・最終活動が1コマンドで出る（F1 と統合） | 未着手 |
+| 6 | 新規マシンのブートストラップを閉じる | clone → 1手順で `CLAUDE.md` / `AGENTS.md` / `GEMINI.md` が生成される | 未着手 |
+| 7 | 座席競合を構造的に防ぐ | デスクトップアプリと CLI daemon が同じ `CODEX_HOME` を握らない | 未着手 |
+| 8 | claude 資格情報の共有調査の要否を判定する | 「やる」か「不要」かが根拠付きで決まる | 未着手。**R1 で真犯人（`health-check.sh` の単発観測 SIGKILL）が判明したため、§2.5 の「複数 claude が OAuth を取り合う」仮説は不要になった可能性が高い。まず要否から** |
+| 9 | 後片付け | `~/.local/state/anicca/codex-login-kk` 削除、`/tmp/kk-login-*.py` `/tmp/gig-kick-watch.*` 削除 | 未着手。**ブラウザリースの解放は対象外**（Dais 2026-08-05「`~/.cloak` に手を出すな」。§2.8 のとおり稼働中のループが掴んでいる） |
+
+**Dais が明示的に外したもの（2026-08-05）**:
+
+| 旧ID | 内容 | 扱い |
+|---|---|---|
+| C1 | exit≠0 の28本を1本ずつ決着 | **やらない** |
+| C2 | 30日超停止の11本を削除 | **やらない** |
+| R5 の swap 部分 | swap を 70% 未満にする | **やらない**（ディスク側は done、§2.8 に記録済み） |
+
+### 4.1 旧 TODO（F/B 系列。**§4.0b が現行**。この表は実施済みの経緯を読むためだけに残す。ここの未着手行は §4.0b に写したものだけが生きており、写していない行＝Dais が外した行）
 
 | # | タスク | done 条件 | 状態 |
 |---|---|---|---|
