@@ -1,9 +1,14 @@
+import json
+import tempfile
 import unittest
+from pathlib import Path
 
 from job_search_loop.ats_liveness import (
     classify_ashby_board,
     classify_workable_board,
+    check_liveness_via_api,
     resolve_ats_api,
+    write_liveness_receipt,
 )
 
 
@@ -67,6 +72,69 @@ class AtsLivenessTests(unittest.TestCase):
         self.assertEqual(classify_workable_board(payload, "ABC123")["result"], "active")
         self.assertEqual(classify_workable_board(payload, "MISSING")["result"], "expired")
         self.assertIsNone(classify_workable_board({"jobs": None}, "ABC123"))
+
+    def test_per_job_200_is_active_and_request_refuses_redirects(self):
+        calls = []
+
+        def request(url, *, timeout_seconds, follow_redirects):
+            calls.append((url, timeout_seconds, follow_redirects))
+            return 200, {"id": 12345}
+
+        result = check_liveness_via_api(
+            "https://job-boards.greenhouse.io/acme/jobs/12345",
+            request=request,
+        )
+
+        self.assertEqual(result["result"], "active")
+        self.assertEqual(result["code"], "greenhouse_api_ok")
+        self.assertEqual(calls[0][2], False)
+        self.assertGreater(calls[0][1], 0)
+
+    def test_exact_gone_status_is_expired(self):
+        for status in (404, 410):
+            with self.subTest(status=status):
+                result = check_liveness_via_api(
+                    "https://jobs.lever.co/acme/abc-123",
+                    request=lambda *_args, **_kwargs: (status, None),
+                )
+                self.assertEqual(result["result"], "expired")
+                self.assertEqual(result["code"], "lever_api_gone")
+
+    def test_ambiguous_status_parse_drift_and_network_error_remain_pending(self):
+        for response in ((302, None), (429, None), (500, None), (200, "changed")):
+            with self.subTest(response=response):
+                self.assertIsNone(
+                    check_liveness_via_api(
+                        "https://jobs.ashbyhq.com/acme/abc-123",
+                        request=lambda *_args, **_kwargs: response,
+                    )
+                )
+
+        def failed_request(*_args, **_kwargs):
+            raise TimeoutError("bounded timeout")
+
+        self.assertIsNone(
+            check_liveness_via_api(
+                "https://jobs.lever.co/acme/abc-123",
+                request=failed_request,
+            )
+        )
+
+    def test_receipt_hashes_url_and_is_private(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp) / "liveness.json"
+            raw_url = "https://jobs.lever.co/acme/abc-123"
+            write_liveness_receipt(
+                output,
+                raw_url,
+                {"result": "active", "code": "lever_api_ok", "reason": "live"},
+            )
+            receipt_text = output.read_text(encoding="utf-8")
+            receipt = json.loads(receipt_text)
+            self.assertNotIn(raw_url, receipt_text)
+            self.assertEqual(len(receipt["url_sha256"]), 64)
+            self.assertEqual(receipt["result"], "active")
+            self.assertEqual(output.stat().st_mode & 0o777, 0o600)
 
 
 if __name__ == "__main__":

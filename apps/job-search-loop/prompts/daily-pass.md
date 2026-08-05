@@ -76,9 +76,17 @@ PYTHONPATH=apps/job-search-loop /opt/homebrew/bin/python3 -m job_search_loop.can
   --output "<private-discovery-receipt>"
 ```
 
-Load durable pending work with `job_search_loop.candidate_queue pending`. Visit each
-returned official URL, normalize the posting, check liveness and every deterministic
-hard gate, then durably resolve it with:
+Load durable pending work with `job_search_loop.candidate_queue pending`. For each
+candidate, before opening a pending URL in Playwright, call
+`job_search_loop.ats_liveness.check_liveness_via_api` and persist its result with
+`job_search_loop.ats_liveness.write_liveness_receipt` beside this run's other private
+evidence. An exact API-active result may proceed to posting normalization. An exact
+API-expired result may be rejected with that receipt's grounded code. A timeout, redirect, 429, 5xx,
+network error, or changed/unparseable payload is inconclusive:
+the candidate must remain pending and continue to browser fallback. Never treat an
+organization-level HTTP 200 as proof that a specific Ashby or Workable job exists.
+Visit each still-pending official URL, normalize the posting, check liveness and every
+deterministic hard gate, then durably resolve it with:
 
 ```bash
 PYTHONPATH=apps/job-search-loop /opt/homebrew/bin/python3 -m job_search_loop.candidate_queue verify \
