@@ -383,6 +383,48 @@ Dais verbatim: "you were just hiding your output" / "I really don't want that yo
 
 ---
 
+## 2.8 R5 の実測（2026-08-05）— ディスクは閉じた、swap は閉じていない
+
+### 空き 7.2GB → 21GB
+
+削除の前に**必ず所有者を確認**した。手順は毎回 ①ループから参照されているか（`fleet-inventory.py --json` の 193本の `script` / `wrapper` を前方一致）②git が clean で未 push が 0 か ③掴んでいるプロセスが居るか、の3点。
+
+| 回収 | 量 | 消してよいと判断した根拠 |
+|---|---|---|
+| brew `rust` → `llvm` `z3` `libgit2` が autoremove で連鎖 | 2.0G | `brew uses --installed` で `llvm` の依存は `rust` だけ。削除後に `cargo --version` を実行し `~/.cargo/bin/cargo 1.96.1`（rustup 側）が生きていることを**実測** |
+| brew `tesseract-lang` `openjdk` | 1.0G | 依存ゼロ。skill 内の grep ヒットは全部 state JSON と vendored `node_modules` の文字列 |
+| brew `akash-provider-services` | 0.4G | `akash` バイナリは別 formula（`akash 2.0.1`）が提供。provider 側は未使用 |
+| worktree 7本 | 3.7G | `cloud-inventory-392-refresh` / `anicca-self-improving-ai-research` / `life-manager-spec-chat-reporting` / `anicca-task5-luma-auth-fix` / `life-manager-spec-chat-first` / `life-manager-spec-oss-self-contained` / `life-manager-x402`。全部 clean かつ未 push 0。**`spec-chat-reporting` だけ未 push が2件あったので先に push し、`git ls-remote` で `refs/heads/docs/daily-first-v1` = ローカル HEAD を確認してから撤去** |
+| `~/anicca-work`（fork 4本） | 0.8G | 全部 remote あり・未 push 0。dirty は `.DS_Store` の削除のみ |
+| `~/Projects` の再 clone 可能な3本 | 0.9G | `ugig-aiornot-vote` / `anicha` / `AiToEarn`。remote URL を実測 |
+| `~/.openclaw-backups` 7→2本 | 1.2G | 日次生成。元は git 管理下 |
+| ShipIt updater cache + 7月の skill snapshot 2本 + `skills.disabled-2026-07-13` | 1.6G | 再生成物 |
+| playwright browsers（`anicha-video`） | 0.5G | `playwright install` で戻る |
+| `~/anicca-rtdash/apps/landing/node_modules` | 1.4G | `package-lock.json` あり、`pgrep -f anicca-rtdash` が 0 件 |
+
+**消さなかったものと、その理由**（同じ判断を次回もう一度やらないために記録する）:
+
+| 対象 | 量 | 消さない理由 |
+|---|---|---|
+| `~/gig` | 24G | **稼働中の有償案件**。`projects/5174332/state.json` = coconala / buyer `athena_japan` / `price_jpy=30000` / `delivery_date=2026-08-05` / `talkroom_state=取引中` / `next_action=await_buyer_acceptance`。内訳は `source/gigafile` 15G（客から受領した素材）+ `work/athena-v3` 4.4G。**受理される前に消したら納品物と差し戻し用の版が同時に消える** |
+| `/opt/homebrew` 残り 19G | — | `brew autoremove -n` が空。`gcc` には `opencv` `numpy` `hdf5` 等11 formula が依存 |
+| `~/.colima` | 6.2G | life-manager のローカルスタック5コンテナが healthy で2日稼働（api / scheduler / worker / postgres / minio） |
+| `~/.cloak` | 9.6G | 不可侵。daily-driver プロファイル |
+| `~/.venvs/crawl4ai` | 0.9G | `crwl` CLI の実体＝全セッションの既定 web 取得経路 |
+| `~/clips` `~/MoneyPrinterTurbo` | 4.2G | clip 系 skill 3本と `life-manager-daily.sh` / `life-manager-cli.sh` が参照 |
+
+### swap は 94% → 89%。閉じていない
+
+**大食い1プロセスではない**。RSS 合計 8.9GB / **665プロセス**（RAM 16GB）で、最大が CloakBrowser の Chromium **57プロセス 2.0GB**、次が colima VM 0.84GB。
+
+**ブラウザのタブを閉じにいって、途中で止めた。** `~/.cloak/leases/` の2つのリース（`coconala:kosuke` pid=16332 / `interactive:dais` pid=39835）は**両方とも pid が死んでいる**ので、一見「孤児タブだから閉じてよい」に見える。だが `~/gig/.cdp-gig.lock` の mtime が**9分前**で、`context-lease-acquire.log` の末尾2行が `{"ok": true, "reused": false, "context_id": ...}` = **gig ループが今まさに新しいブラウザコンテキストを取得している**。リースファイルの pid は当てにならず、実際の使用者は別にいた。
+
+**教訓**: 「リースの pid が死んでいる」は「誰も使っていない」を意味しない。**掴んでいるのは誰かを、リースではなくロックの mtime と取得ログで確かめる。** 稼働中のループが使っている資源に、空き容量のために触らない（Dais 2026-08-05「agents own things, be careful」）。
+
+**残る選択肢**（swap を下げたい場合）: ①`~/gig` の受理後に 20G を解放してディスク側にさらに余裕を作る ②CloakBrowser のタブ整理は **gig ループが idle の時間帯に、gig エージェントの合意のうえで**行う ③何もしない（ディスクが空いた分、macOS が swap を縮める余地はできた）。
+
+---
+
 ## 2.9 敵対的検証の結果（2026-08-05、Opus 5 の独立サブエージェント）
 
 本ファイルの §2 の主張を、fresh context の検証エージェントに一次証拠で反証させた。**5件のうち2件が反証成立、残りも重大な条件付き。** 以下は「完了」と報告した直後に見つかったもので、報告を信じたまま進んでいたら全部埋もれていた。
@@ -546,7 +588,7 @@ life-manager:  alive_if = 過去25時間に exit=0
 | 2 | **R2** | Remote Control の死が必ず届く | 本番コード経路から Telegram に messageId が返る。無音で死ぬ経路が残っていない | **done 2026-08-05**（§2.5.2。`chezmoi 559871f`。`messageId=6726`） |
 | 3 | **R3** | 長時間作業を対話セッションから launchd ループへ移す運用を確立 | 「寝る前に投げた仕事」が翌朝 Telegram に結果で届く（セッションを開いたままにしない） | **done 2026-08-05**（§2.5.3。`ai-config 002b443`）。**R3b（無人エンジニアリング）は P3 の後ろへ意図的に繰り延べ** |
 | 4 | **R4** | 背景 subagent の完了通知が孤児化する問題を回避 | 背景 agent の成果が、親セッションの生死に関係なく届く | **done 2026-08-05（新規実装なし）**。§2.5.4。原因は R1 で除去済み、出力は永続化されている |
-| 5 | **R5** | swap 88% / ディスク残 8.2GB を解消 | swap 使用率 < 70% かつ空き > 20GB | **保留（Dais 判断 2026-08-05）**。`~/.colima` 6.2GB は life-manager の postgres が2日間稼働中で**消せない**。即死水域ではなく（`health-check` が 5GB 未満で自動回収 + 2GB 未満で通知、R2 で経路が復活）、収益に効かないため G1 の後ろへ。**リスク: swap 88% のまま実装を回すと別プロセスが jetsam に殺され、R1 とは別経路の「黙って死ぬ」が起きうる** |
+| 5 | **R5** | swap 88% / ディスク残 8.2GB を解消 | swap 使用率 < 70% かつ空き > 20GB | **ディスク done / swap 保留 2026-08-05**（§2.8）。**空き 7.2GB → 21GB**（done 条件を満たす）。回収 +13.8GB は全件「消す前に所有者を確認」して実施: brew の未依存 keg（llvm+rust の連鎖 2.0G / tesseract-lang+openjdk 1.0G / akash-provider-services 0.4G。`cargo` が `~/.cargo/bin` で生存することを実測）、worktree 7本（clean・未push 0 を1本ずつ確認。1本は未push 2件を先に push し `ls-remote` で remote 到達を確認してから撤去）、`~/anicca-work` の fork 4本、`~/.openclaw-backups` 7→2本、ShipIt updater cache と7月の skill snapshot、playwright browsers、`~/anicca-rtdash/apps/landing/node_modules`（lock あり・稼働プロセス0）。**`~/.colima` は前任者の判断どおり温存**（postgres 他5コンテナ healthy）。**swap は 94%→89% で未達**（§2.8 に原因と、なぜブラウザに触らなかったかを記録） |
 | 6 | **G1** | gig spec（SSOT）を trunk で1つにする | gig spec（P1a 設計を含む）が `origin/main` から読める | **done 2026-08-05**（§2.5.5。PR #3 → `caf0dd88`）。**当初の見立てより悪かった** — spec は3ブランチに別々の内容で存在し、どれも上位互換でなかった |
 | 6.5 | **G2** | gig の**コード**を trunk へ集約する | live ループが `origin/main` 由来のチェックアウトから走る | 未着手。`fix/writer-note-resume-circuit` が main より 135 commit 先行、live ループは別の `fix/gig-p0-promissory-stop` worktree で稼働中。**稼働中のループを止めうるので G1 とは分離した**。P1a の実装は「live tree を触る」のではなく **`origin/main` から新しい worktree を切る**（統合済み spec が読めるのはそちらだけ） |
 | 7 | **A** | caveman skill の `No tool-call narration` を潰す | ツール実行前に必ず1行が出る。core.md の「黙るな」と衝突しない | 未着手 |
