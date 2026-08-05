@@ -33,6 +33,64 @@ class UpstreamLockTests(unittest.TestCase):
             "https://github.com/MadsLorentzen/ai-job-search/blob/v1.3.0/LICENSE",
         )
 
+    def test_career_ops_v1250_is_content_addressed_and_licensed(self):
+        data = json.loads(LOCK.read_text(encoding="utf-8"))
+        self.assertIn("santifer-career-ops", data["upstreams"])
+        upstream = data["upstreams"]["santifer-career-ops"]
+
+        self.assertEqual(upstream["repository"], "https://github.com/santifer/career-ops")
+        self.assertEqual(upstream["package_version"], "1.25.0")
+        self.assertEqual(upstream["release"], "career-ops-v1.25.0")
+        self.assertEqual(upstream["commit_sha"], "ae1a92dd1a4d299e637ce5d96f18e79f743a50ba")
+        self.assertEqual(upstream["tree_sha"], "f0003d2870570efbb4595997d85bcb16e9586814")
+        self.assertEqual(upstream["file_count"], 965)
+        self.assertEqual(
+            upstream["archive"],
+            {
+                "url": "https://api.github.com/repos/santifer/career-ops/tarball/ae1a92dd1a4d299e637ce5d96f18e79f743a50ba",
+                "content_sha256": "65762e626ac69d83880b361a882ea4714387025940643ed03b4cd2481b555234",
+            },
+        )
+        self.assertEqual(upstream["license"]["spdx"], "MIT")
+        self.assertEqual(upstream["license"]["blob_sha"], "89c4ce0ad6b1db98d827ddd9725da5efdff55997")
+        self.assertEqual(
+            upstream["license"]["content_sha256"],
+            "51989d2589b2aa87ca6cbb253391bcb476a21cbafdc71eea4410548538510870",
+        )
+        self.assertEqual(
+            upstream["files"],
+            {
+                "LICENSE": {
+                    "blob_sha": "89c4ce0ad6b1db98d827ddd9725da5efdff55997",
+                    "content_sha256": "51989d2589b2aa87ca6cbb253391bcb476a21cbafdc71eea4410548538510870",
+                    "size": 1090,
+                },
+                "README.md": {
+                    "blob_sha": "bd87484929cdd45d611c3d2860e6f658730d427d",
+                    "content_sha256": "0293b375b7cea0d8f7c70ea65a6567c5071317d9262a6ff4eae562188b17a4ec",
+                    "size": 31737,
+                },
+                "docs/APPLY_AUTOFILL.md": {
+                    "blob_sha": "43afc62bd3c2fb7ff8d939e5f3d115c01e2f8ee6",
+                    "content_sha256": "05e2734a6f80b89adfa0297c41fa56e2c8f188b6c240b363a65a21ac98559551",
+                    "size": 4186,
+                },
+                "package.json": {
+                    "blob_sha": "aa157b12e6b6c26da9ac912ad348111a5cbdd9f4",
+                    "content_sha256": "c30dd080f4e1b54520dea0779d79cdc08f61512702000d8047276a5301708a77",
+                    "size": 3635,
+                },
+            },
+        )
+        self.assertEqual(
+            upstream["sources"]["release"],
+            "https://github.com/santifer/career-ops/releases/tag/career-ops-v1.25.0",
+        )
+        self.assertEqual(
+            upstream["sources"]["license"],
+            "https://github.com/santifer/career-ops/blob/career-ops-v1.25.0/LICENSE",
+        )
+
     def test_every_v130_component_has_one_explicit_adoption_decision(self):
         data = json.loads(ADOPTION.read_text(encoding="utf-8"))
         self.assertEqual(data["upstream_release"], "v1.3.0")

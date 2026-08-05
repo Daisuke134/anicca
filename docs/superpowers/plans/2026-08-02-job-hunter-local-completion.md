@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-49K0A` — pin and inventory `career-ops` v1.25.0 as the second upstream before another live application
+**Active atomic task:** `L-49K0A1` — pin Browser Use v0.13.7 before adapting the resident browser executor
 **Status:** The immutable four-lane runtime, hourly/five-minute schedules, grounded
 materials, ownership fences, Gmail ingestion, Telegram outbox, quota accounting, and
 Ashby observation classifier are implemented and tested. The daily application
@@ -1947,9 +1947,20 @@ this spec update → commit/push → Telegram milestone before the next item sta
   three older unrelated `send_started` rows as uncertain. Telegram's installed
   transport rejects read-history with `Unsupported Telegram action: read`, so those
   rows remain quarantined and were not blindly resent. No file was attached.
-- [ ] **L-49K0A** — Pin `santifer/career-ops` v1.25.0, tag commit, tree, license,
+- [x] **L-49K0A** — Pin `santifer/career-ops` v1.25.0, tag commit, tree, license,
   release URL, and file hashes as a second immutable upstream. Do not copy or execute
-  unpinned upstream code. Receipt: lock validation and license tests PASS.
+  unpinned upstream code. Receipt: official release
+  `career-ops-v1.25.0` resolves to commit
+  `ae1a92dd1a4d299e637ce5d96f18e79f743a50ba` and tree
+  `f0003d2870570efbb4595997d85bcb16e9586814`; the commit-addressed tarball SHA-256 is
+  `65762e626ac69d83880b361a882ea4714387025940643ed03b4cd2481b555234`.
+  The recursive tree contains 965 blobs. MIT copyright, package version 1.25.0,
+  and the Git blob, byte size, and SHA-256 values for `LICENSE`, `README.md`,
+  `docs/APPLY_AUTOFILL.md`, and `package.json` were re-downloaded from the exact
+  commit and matched the committed lock. The focused RED failed because the second
+  upstream was absent; focused GREEN PASS, the real archive verification PASS, and
+  the final full 365-test suite PASS in 22.183 seconds. No upstream code was executed or
+  activated.
 - [ ] **L-49K0A1** — Pin `browser-use/browser-use` v0.13.7, tag commit, tree, MIT
   license, dependency lock, and the exact job-application example hashes. Record all
   upstream actions and history/screenshot contracts consumed by Job Hunter.
