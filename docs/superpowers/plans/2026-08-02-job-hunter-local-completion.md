@@ -2234,6 +2234,21 @@ the resident worker from producing one authoritative application receipt:
       longer depends on model compliance. API-2 remains unchecked only for the first
       real supported-ATS receipt, which `SCAN-1` must supply.
   - [ ] `SCAN-1` — Port board-level discovery and normalized job metadata fixtures.
+    - Rejected path: Career Ops EchoJobs passed mocked upstream tests but its live
+      public endpoint returned Cloudflare HTTP 403 for both browser and Career Ops
+      user agents on 2026-08-06. It is not shipped as a working provider.
+    - Implemented locally: Career Ops `discover-ats.mjs` v1.25.0 live-probed 15 AI
+      companies and resolved 12 official boards. The release registry pins OpenAI,
+      Anthropic, Cohere, Scale AI, Sierra, Harvey, Perplexity, Cursor, Vercel,
+      Replit, ElevenLabs, and LangChain to official Ashby/Greenhouse slugs. The
+      provider performs bounded parallel no-redirect API reads, normalizes official
+      metadata, shares a private 15-minute cache across queries, ranks by grounded
+      title/location/description matches, and caps each query at 100 results.
+    - Live read-only proof: 2,723 official postings were fetched; the bounded query
+      returned 100/100 API-2-supported URLs (87 Ashby, 13 Greenhouse), including 11
+      Japan-or-remote location matches. Focused tests 17/17 and full Job Hunter suite
+      387/387 pass. Completion remains unchecked until the resident prefilter places
+      these results in the durable candidate queue and API-2 writes real receipts.
   - [ ] `DEDUP-1` — Port company-role, repost-window, and JD-fingerprint parity.
   - [ ] `GATE-1` — Port cheap knockout pre-scan without weakening local ranking.
   - [ ] `FILL-1` — Port ATS-specific non-submit form behavior behind local fences.

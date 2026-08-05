@@ -153,6 +153,15 @@ def _default_providers(
             "firecrawl",
             ("/bin/zsh", str(app_root / "scripts" / "firecrawl-search.sh"), query),
         ),
+        Provider(
+            "official_ats_boards",
+            (
+                os.environ.get("JOB_SEARCH_PYTHON", "/opt/homebrew/bin/python3"),
+                "-m",
+                "job_search_loop.official_ats_boards",
+                query,
+            ),
+        ),
     )
 
 
