@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-44` — Validate event-specific Telegram tone without fact drift
+**Active atomic task:** `L-45A` — Guardian release-health check
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1383,7 +1383,21 @@ this spec update → commit/push → Telegram milestone before the next item sta
   sent natural-language pipeline message ID `6883` under event key
   `job-search-daily:2026-08-05`; immediate replay returned the same message ID and
   key with no second send. Both receipts are mode 0600. Daily remains unloaded.
-- [ ] **L-44** — Validate event-specific Telegram tone without changing event facts.
+- [x] **L-44** — Validate event-specific Telegram tone without changing event facts.
+  Receipt: application, recruiter-interest, interview, offer, rejection, and
+  operational-delay reports now render from one strict structured-fact contract with
+  event-specific Japanese tone (`💼`, `✨`, `🎉`, `🚀🎊`, supportive rejection, calm
+  `⚠️`). Company, title, stage, timestamp, next action, and HTTPS Markdown links are
+  exact inputs; validation accepts only the deterministic render, so changed facts,
+  links, emoji, or unsupported claims fail as drift. Private paths, raw local links,
+  runner/exit/hash/bounded language, non-HTTPS links, and messages over Telegram's
+  limit are rejected. Focused 3-test and full 301-test suites PASS. Immutable release
+  `6c77e3166121bfb28839318fa8f6713893d6e7f6` (archive SHA-256
+  `3f46b00a7f1805fe5a8deb09097922de13de4bdf157ed8d6751ee1dbc3063f66`)
+  is active with zero writable paths and unchanged routes. Installed-code E2E
+  rendered and validated all six kinds with six unique fact hashes and six unique
+  message hashes; the mode-0600 receipt is 198 bytes. No Telegram message was sent
+  for synthetic tone validation, and Daily remains unloaded.
 - [ ] **L-45A** — Implement the Guardian release-health check.
 - [ ] **L-45B** — Implement the Guardian schedule-health check.
 - [ ] **L-45C** — Implement the Guardian ledger-health check.
