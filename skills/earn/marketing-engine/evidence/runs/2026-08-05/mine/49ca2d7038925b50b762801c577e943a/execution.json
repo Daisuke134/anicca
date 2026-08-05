@@ -1,0 +1,12 @@
+{
+  "command_sha256": "3621a47e5c14eca70baaf00604d3df83a1bc2a1978bef72b45992ab0d462fcbd",
+  "dry_run": false,
+  "finished_at": "2026-08-05T20:32:06.716515Z",
+  "quarantine_reason": null,
+  "quarantined": false,
+  "returncode": 1,
+  "run_id": "49ca2d7038925b50b762801c577e943a",
+  "runner_id": "mine",
+  "schema_version": "marketing.execution.v1",
+  "started_at": "2026-08-05T20:30:05.440204Z"
+}

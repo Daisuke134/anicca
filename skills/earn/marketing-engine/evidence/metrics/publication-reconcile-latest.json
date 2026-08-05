@@ -10,7 +10,6 @@
     "unmapped": 59
   },
   "error_postiz_ids": [
-    "cms52joox060fo40ypa9c2plg",
     "cms59fwva08bdo40yj87hqgwb",
     "cms5i0ld90a2do40ynsntq1fd",
     "cms5ql4nq004mod0ywq5b9g50",
@@ -33,27 +32,27 @@
   ],
   "identity_status_counts": {
     "ambiguous": 2,
-    "error": 20,
-    "resolved": 85
+    "error": 19,
+    "resolved": 84
   },
-  "observed_at": "2026-08-05T14:01:18Z",
+  "observed_at": "2026-08-05T21:09:58Z",
   "passes_95_percent_gate": true,
   "platform_state_counts": {
-    "instagram-standalone|PUBLISHED": 43,
+    "instagram-standalone|PUBLISHED": 42,
     "tiktok|PUBLISHED": 32,
     "x|PUBLISHED": 1,
-    "youtube|ERROR": 20,
+    "youtube|ERROR": 19,
     "youtube|PUBLISHED": 11
   },
-  "published_denominator": 87,
-  "published_resolution_rate": 0.977011,
-  "published_resolved": 85,
+  "published_denominator": 86,
+  "published_resolution_rate": 0.976744,
+  "published_resolved": 84,
   "schema_version": 1,
   "state_counts": {
-    "ERROR": 20,
-    "PUBLISHED": 87
+    "ERROR": 19,
+    "PUBLISHED": 86
   },
-  "total_rows": 107,
-  "window_end": "2026-08-05T14:01:18Z",
-  "window_start": "2026-07-28T14:01:18Z"
+  "total_rows": 105,
+  "window_end": "2026-08-05T21:09:58Z",
+  "window_start": "2026-07-28T21:09:58Z"
 }

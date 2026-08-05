@@ -83,14 +83,28 @@ def _browser_ws():
     return d["webSocketDebuggerUrl"]
 
 
-async def _calls(pairs):
-    """Run several CDP calls on one browser connection; returns the list of results."""
+async def _calls(pairs, timeout=20.0):
+    """Run several CDP calls on one browser connection; returns the list of results.
+
+    The whole batch shares one deadline. recv() used to wait forever, so disposing a
+    context whose renderer was wedged hung this script until the caller's subprocess limit
+    killed it (measured 2026-08-06: the gig loop's target recovery died inside `release`).
+    A browser that keeps the socket open while never answering must become an exception
+    here, not a hang.
+    """
     out = []
-    async with websockets.connect(_browser_ws(), max_size=64 * 1024 * 1024) as ws:
+    loop = asyncio.get_running_loop()
+    deadline = loop.time() + timeout
+    async with websockets.connect(
+        _browser_ws(), max_size=64 * 1024 * 1024, open_timeout=min(10.0, timeout)
+    ) as ws:
         for i, (method, params) in enumerate(pairs, start=1):
             await ws.send(json.dumps({"id": i, "method": method, "params": params or {}}))
             while True:
-                msg = json.loads(await ws.recv())
+                remaining = deadline - loop.time()
+                if remaining <= 0:
+                    raise TimeoutError(f"{method} did not answer within {timeout}s")
+                msg = json.loads(await asyncio.wait_for(ws.recv(), timeout=remaining))
                 if msg.get("id") == i:
                     if "error" in msg:
                         raise RuntimeError(f"{method}: {msg['error']}")
@@ -262,18 +276,27 @@ def release(task, token=None, generation=None):
         os.makedirs(os.path.dirname(lock_path), exist_ok=True)
         with open(lock_path, "a+", encoding="utf-8") as operation_lock:
             fcntl.flock(operation_lock.fileno(), fcntl.LOCK_EX)
+            dispose_note = None
             try:
                 asyncio.run(_calls([(
                     "Target.disposeBrowserContext",
                     {"browserContextId": held["context_id"]},
                 )]))
             except Exception as e:
-                return {"ok": False, "reason": f"dispose failed: {e}"}
+                # A context whose renderer is wedged cannot be disposed right now, and it
+                # is exactly the context the caller most needs to be rid of. Keeping the
+                # row would hand the same corpse to every future acquire; gc reaps the
+                # browser-side remains once it recovers or restarts. The fence was already
+                # checked above -- this never weakens who may release what.
+                dispose_note = f"context_left_for_gc: {e}"
             finally:
                 fcntl.flock(operation_lock.fileno(), fcntl.LOCK_UN)
         leases.pop(task, None)
         _save(leases)
-        return {"ok": True, "released": task, "context_id": held["context_id"]}
+        result = {"ok": True, "released": task, "context_id": held["context_id"]}
+        if dispose_note:
+            result["note"] = dispose_note
+        return result
 
 
 def gc(idle_min=45):
