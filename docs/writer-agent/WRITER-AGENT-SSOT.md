@@ -829,7 +829,19 @@ returned successfully, publication state is absent, and the terminal action is
 `same-jst-day-unclassified-run`. Its classifier incorrectly requires both
 languages to be failed. This slice changes the classifier—not the quality
 gate—so declared failed languages must be current FAIL while all other
-languages must be current PASS. Implementation evidence is pending.
+languages must be current PASS. Runtime commit `8667728a` was promoted to live
+checkout commit `eda54769`; both are pushed. RED reproduced
+`block-incomplete`; GREEN passes all 30 start-control tests and requires a
+current FAIL only for declared failed languages while requiring current PASS
+for the rest. The full suite remains `339/371` with the same 32 non-Writer
+failure files. Before promotion, the fixed classifier read the real live state
+as `new-quality-replacement` with three JA feedback items; after promotion the
+same result passed from the live path. The existing `ai.anicca.article-daily`
+owner was kickstarted, created replacement run `20260804-214206`, persisted the
+exact source run, forbidden topic/form, receipt hashes, and three JA fixes, and
+entered generation attempt 1. This proves the poison exit is repaired; it does
+not yet claim the replacement article is published while that real run remains
+`invoking`.
 
 Decision evidence:
 
