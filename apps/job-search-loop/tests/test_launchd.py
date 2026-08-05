@@ -14,7 +14,7 @@ class LaunchdTests(unittest.TestCase):
         self.assertTrue(daily["RunAtLoad"])
         self.assertEqual(daily["StartInterval"], 3600)
         self.assertNotIn("StartCalendarInterval", daily)
-        self.assertEqual(inbox["StartInterval"], 900)
+        self.assertEqual(inbox["StartInterval"], 300)
         self.assertTrue(learning["RunAtLoad"])
         self.assertEqual(
             learning["StartCalendarInterval"],
