@@ -4,11 +4,18 @@ import argparse
 import json
 import os
 import sqlite3
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Iterable
 
 from .state import canonical_url
+from .dedup import (
+    CROSSLIST_THRESHOLD,
+    company_key,
+    company_role_key,
+    fingerprint_similarity,
+    role_key,
+)
 
 
 class TerminalResultError(RuntimeError):
@@ -34,6 +41,19 @@ class CandidateQueue:
             )
             """
         )
+        columns = {
+            row["name"]
+            for row in self.connection.execute("PRAGMA table_info(candidate_links)")
+        }
+        for name in ("company_key", "role_key", "jd_fingerprint"):
+            if name not in columns:
+                self.connection.execute(
+                    f"ALTER TABLE candidate_links ADD COLUMN {name} TEXT"
+                )
+        self.connection.execute(
+            "CREATE INDEX IF NOT EXISTS candidate_links_role_dedup "
+            "ON candidate_links(company_key, role_key, discovered_at)"
+        )
         self.connection.commit()
         os.chmod(self.database, 0o600)
 
@@ -43,7 +63,10 @@ class CandidateQueue:
     def discover(self, links: Iterable[dict[str, Any]]) -> dict[str, int]:
         inserted = 0
         observed = 0
-        now = datetime.now(timezone.utc).isoformat()
+        duplicate = 0
+        now_value = datetime.now(timezone.utc)
+        now = now_value.isoformat()
+        cutoff = (now_value - timedelta(days=90)).isoformat()
         for link in links:
             if not isinstance(link, dict):
                 raise ValueError("candidate link must be an object")
@@ -53,17 +76,75 @@ class CandidateQueue:
             if not url or not source or not query_family:
                 raise ValueError("candidate link requires url, source, and query_family")
             observed += 1
+            company = company_key(link.get("company"))
+            role = role_key(link.get("title"))
+            fingerprint = str(link.get("jd_fingerprint") or "").strip()
+            existing = self.connection.execute(
+                "SELECT canonical_url FROM candidate_links WHERE canonical_url = ?",
+                (url,),
+            ).fetchone()
+            if existing is not None:
+                self.connection.execute(
+                    """
+                    UPDATE candidate_links
+                    SET company_key = COALESCE(company_key, NULLIF(?, '')),
+                        role_key = COALESCE(role_key, NULLIF(?, '')),
+                        jd_fingerprint = COALESCE(jd_fingerprint, NULLIF(?, ''))
+                    WHERE canonical_url = ?
+                    """,
+                    (company, role, fingerprint, url),
+                )
+                duplicate += 1
+                continue
+            if company and role:
+                repost = self.connection.execute(
+                    """
+                    SELECT 1 FROM candidate_links
+                    WHERE status != 'rejected'
+                      AND discovered_at >= ?
+                      AND company_key = ? AND role_key = ?
+                    LIMIT 1
+                    """,
+                    (cutoff, company, role),
+                ).fetchone()
+                if repost is not None:
+                    duplicate += 1
+                    continue
+            if fingerprint:
+                crosslist_rows = self.connection.execute(
+                    """
+                    SELECT company_key, jd_fingerprint FROM candidate_links
+                    WHERE status != 'rejected'
+                      AND discovered_at >= ?
+                      AND jd_fingerprint IS NOT NULL
+                      AND jd_fingerprint != ''
+                    """,
+                    (cutoff,),
+                )
+                if any(
+                    str(row["company_key"] or "") != company
+                    and fingerprint_similarity(fingerprint, row["jd_fingerprint"])
+                    >= CROSSLIST_THRESHOLD
+                    for row in crosslist_rows
+                ):
+                    duplicate += 1
+                    continue
             cursor = self.connection.execute(
                 """
                 INSERT OR IGNORE INTO candidate_links (
-                    canonical_url, source, query_family, status, discovered_at
-                ) VALUES (?, ?, ?, 'discovered', ?)
+                    canonical_url, source, query_family, status, discovered_at,
+                    company_key, role_key, jd_fingerprint
+                ) VALUES (?, ?, ?, 'discovered', ?, ?, ?, ?)
                 """,
-                (url, source, query_family, now),
+                (url, source, query_family, now, company or None, role or None, fingerprint or None),
             )
             inserted += cursor.rowcount
         self.connection.commit()
-        return {"observed_count": observed, "inserted_count": inserted}
+        return {
+            "observed_count": observed,
+            "inserted_count": inserted,
+            "duplicate_count": duplicate,
+        }
 
     def mark_verified(self, url: str, *, eligible: bool, reason: str) -> None:
         normalized = canonical_url(url)
@@ -163,7 +244,7 @@ def _write_json(path: Path | None, value: dict[str, Any]) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "action", choices=("discover", "pending", "verify", "summary", "validate-terminal")
+        "action", choices=("discover", "discover-prefilter", "pending", "verify", "summary", "validate-terminal")
     )
     parser.add_argument("--database", type=Path, required=True)
     parser.add_argument("--input", type=Path)
@@ -184,6 +265,26 @@ def main() -> None:
             links = payload.get("links") if isinstance(payload, dict) else payload
             if not isinstance(links, list):
                 raise ValueError("discovery input must contain a links array")
+            receipt = {"status": "recorded", **queue.discover(links), **queue.summary()}
+        elif args.action == "discover-prefilter":
+            if args.input is None:
+                parser.error("discover-prefilter requires --input")
+            payload = _read_json(args.input)
+            candidates = payload.get("candidates") if isinstance(payload, dict) else None
+            if not isinstance(candidates, list):
+                raise ValueError("prefilter input must contain a candidates array")
+            links = [
+                {
+                    "url": candidate.get("official_url"),
+                    "source": candidate.get("provider") or "prefilter",
+                    "query_family": candidate.get("bucket") or "unclassified",
+                    "company": candidate.get("company"),
+                    "title": candidate.get("title"),
+                    "jd_fingerprint": candidate.get("jd_fingerprint"),
+                }
+                for candidate in candidates
+                if isinstance(candidate, dict)
+            ]
             receipt = {"status": "recorded", **queue.discover(links), **queue.summary()}
         elif args.action == "pending":
             receipt = {

@@ -22,7 +22,10 @@ class DeterministicPrefilterTests(unittest.TestCase):
                         "location": "Tokyo, Japan",
                         "url": "https://jobs.ashbyhq.com/openai/role-1",
                         "canonical_url": "https://jobs.ashbyhq.com/openai/role-1",
-                        "description": "Deploy AI systems with customers.",
+                        "description": " ".join(
+                            ["Deploy production AI systems with customers in Tokyo."]
+                            * 12
+                        ),
                         "discovery_provider": "official_ats_boards",
                     }
                 ],
@@ -44,6 +47,7 @@ class DeterministicPrefilterTests(unittest.TestCase):
         self.assertEqual(candidate["bucket"], "dream")
         self.assertEqual(candidate["japan_eligibility_evidence"], "Tokyo, Japan")
         self.assertEqual(candidate["source_spans"], [candidate["official_url"]])
+        self.assertRegex(candidate["jd_fingerprint"], r"^[0-9a-f]{16}$")
         self.assertEqual(len(result["provider_results"]), 2)
         self.assertTrue(all("results" not in row for row in result["provider_results"]))
 

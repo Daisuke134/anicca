@@ -29,6 +29,12 @@ The next resident run `daily-20260806-004512` checked 80 supported ATS URLs as a
 and persisted 80 URL-hashed mode-0600 receipts, completing API-2. Terra still produced
 zero grounded dossiers because prefilter source spans contain URLs rather than exact
 job-description evidence, so the browser actor remains unable to submit.
+DEDUP-1 is implemented locally from Career Ops parity: tracking-only URL parameters
+are removed while identity parameters survive, company-role reposts use a 90-day
+non-rejected window, and substantial JDs receive 64-bit 3-token SimHash with a 0.92
+cross-list threshold. A live 80-candidate artifact produced 73 fingerprints and the
+queue retained 77 candidates with 70 fingerprints; three company-role duplicates
+were suppressed. Resident re-verification is next.
 The authoritative ledger still has zero current submission confirmations. Historical
 `submitted` projection rows are not current authoritative confirmation.
 Development-session browser runs are verification evidence only and MUST NOT be
@@ -2313,6 +2319,22 @@ the resident worker from producing one authoritative application receipt:
       batch, then terminal validation correctly exited 76. This proves discovery and
       persistence only; it does not prove application or API-2 receipt completion.
   - [ ] `DEDUP-1` — Port company-role, repost-window, and JD-fingerprint parity.
+    - Implemented locally from Career Ops v1.25.0 `scan.mjs`,
+      `detect-reposts.mjs`, and `fingerprint-core.mjs`: URL identity strips only an
+      explicit tracking allowlist and preserves `gh_jid`-style identity parameters;
+      company-role keys fold corporate suffixes and trailing location/remote tags;
+      rejected/expired rows do not seed repost suppression; and descriptions with
+      at least 200 normalized characters receive a zero-dependency 64-bit SimHash
+      over 3-token shingles. Cross-company fingerprints deduplicate only at the
+      upstream 0.92 threshold inside a 90-day window.
+    - The deterministic driver now writes prefilter candidates into the durable
+      queue before any model, records a private receipt, and runs ATS liveness before
+      Terra instead of spending model tokens first. A live six-query artifact had 80
+      candidates and 73 valid JD fingerprints; an empty queue retained 77 candidates
+      with 70 fingerprints and suppressed three company-role duplicates. Replaying
+      the same 80 inputs inserted zero and reported 80 duplicates. Focused tests
+      40/40, shell syntax, and the full Job Hunter suite 399/399 pass. Resident
+      persistence/sweep ordering proof remains required before completion.
   - [ ] `GATE-1` — Port cheap knockout pre-scan without weakening local ranking.
   - [ ] `FILL-1` — Port ATS-specific non-submit form behavior behind local fences.
 - [ ] **L-49K0C1** — Implement the same-role alternate-route ladder: canonical ATS,

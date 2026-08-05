@@ -20,6 +20,14 @@ class StateTests(unittest.TestCase):
     def test_allowed_transition(self):
         validate_transition("discovered", "qualified")
 
+    def test_canonical_url_preserves_identity_query_parameters(self):
+        from job_search_loop.state import canonical_url
+
+        self.assertNotEqual(
+            canonical_url("https://boards.greenhouse.io/acme/jobs/1?gh_jid=1"),
+            canonical_url("https://boards.greenhouse.io/acme/jobs/1?gh_jid=2"),
+        )
+
     def test_forbidden_transition(self):
         with self.assertRaises(InvalidTransition):
             validate_transition("discovered", "submitted")

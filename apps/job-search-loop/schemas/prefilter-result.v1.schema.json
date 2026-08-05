@@ -21,6 +21,7 @@
           "japan_eligibility_evidence",
           "compensation_evidence",
           "deadline_evidence",
+          "jd_fingerprint",
           "source_spans"
         ],
         "properties": {
@@ -35,6 +36,7 @@
           "japan_eligibility_evidence": {"type": ["string", "null"]},
           "compensation_evidence": {"type": ["string", "null"]},
           "deadline_evidence": {"type": ["string", "null"]},
+          "jd_fingerprint": {"type": "string", "pattern": "^(|[0-9a-f]{16})$"},
           "source_spans": {"type": "array", "items": {"type": "string"}}
         }
       }

@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from .discovery import _default_providers, search_jobs
+from .dedup import fingerprint_text
 from .state import canonical_url
 
 
@@ -100,6 +101,7 @@ def build_prefilter_result(
                 ),
                 "compensation_evidence": None,
                 "deadline_evidence": None,
+                "jd_fingerprint": fingerprint_text(description),
                 "source_spans": [normalized_url],
             }
     candidates = list(candidates_by_url.values())
