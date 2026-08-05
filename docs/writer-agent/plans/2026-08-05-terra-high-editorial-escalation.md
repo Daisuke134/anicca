@@ -30,11 +30,11 @@
 - Consumes: prior `gates/editorial-<lang>.json` fields `verdict`, `article_sha256`, and new `requested_reasoning_effort`.
 - Produces: model-runner environment `ARTICLE_MODEL_REASONING_EFFORT=medium|high`, receipt field `requested_reasoning_effort`, exit `77` after a high FAIL is already spent.
 
-- [ ] **Step 1: Extend the existing boundary test and verify RED**
+- [x] **Step 1: Extend the existing boundary test and verify RED**
 
 Make the fake model runner append `${ARTICLE_MODEL_REASONING_EFFORT:-unset}` for each call. Assert the first call is `medium`, the changed-draft call is `high`, both receipts carry their requested effort, and a third changed draft exits `77` without a third call. Run `bash skills/writer-agent/tests/editorial-revision-boundary.sh`; expected failure is `unset` instead of `medium` before production changes.
 
-- [ ] **Step 2: Implement the minimal effort state machine**
+- [x] **Step 2: Implement the minimal effort state machine**
 
 Before the judge call, set `REQUESTED_REASONING_EFFORT=medium`. If the prior receipt is FAIL with different bytes and its effort is not `high`, select `high`. If its effort is `high`, log `BLOCK:high-escalation-exhausted`, emit an error, and exit `77`. Invoke only:
 
@@ -45,19 +45,18 @@ ARTICLE_MODEL_REASONING_EFFORT="$REQUESTED_REASONING_EFFORT" \
 
 Persist `requested_reasoning_effort` beside the current article hash.
 
-- [ ] **Step 3: Run focused GREEN and adjacent editorial contracts**
+- [x] **Step 3: Run focused GREEN and adjacent editorial contracts**
 
 Run the revised boundary test plus `editorial-cta-contract.sh`, `editorial-citation-contract.sh`, and `quality-gate-persistent-control.sh`. All must pass.
 
-- [ ] **Step 4: Run real non-publishing medium/high E2E**
+- [x] **Step 4: Run real non-publishing medium/high E2E**
 
 Use a temporary run/article and the live gate with the real model runner. Capture a first FAIL receipt requesting medium, change the article bytes according to its fix, then prove the second receipt requests high. If the real first call passes, use the command-contract fake for the state transition and separately prove real model-runner accepts `ARTICLE_MODEL_REASONING_EFFORT=high`; never alter or publish a live article.
 
-- [ ] **Step 5: Run full regression delta**
+- [x] **Step 5: Run full regression delta**
 
 Run `bash tests/run-all.sh`. The new/changed Writer test must pass and the existing unrelated 32-file failure set must not grow.
 
-- [ ] **Step 6: Promote, document, and push**
+- [x] **Step 6: Promote, document, and push**
 
 Commit/push the isolated runtime branch, promote that exact commit to the live checkout, rerun the focused contract on the live path, then update Writer SSOT with RED/GREEN/E2E/full-suite receipts. Send the changed SSOT through Telegram and commit/push both SSOT remotes.
-
