@@ -42,9 +42,18 @@ the cloud runs.
 
 ```bash
 git clone https://github.com/Daisuke134/life-manager ~/life-manager && cd ~/life-manager
-cp deploy/local/.env.example deploy/local/.env     # ports and local-only object-store credentials
-docker compose -f deploy/local/compose.yaml up -d --build
-docker compose -f deploy/local/compose.yaml ps     # postgres · object-store · api · scheduler · worker
+./scripts/local-up.sh
+```
+
+That is the whole thing. It writes `deploy/local/.env` if you don't have one (generating a password for the
+local object store instead of shipping one), brings up postgres · object store · api · scheduler · worker, and
+**waits until every service reports healthy** before printing anything — so "it started" means it can serve, not
+just that containers exist. First run builds the image and takes a few minutes.
+
+```
+./scripts/local-up.sh status    what is running
+./scripts/local-up.sh logs      follow the logs
+./scripts/local-up.sh down      stop it (your data survives)
 ```
 
 The API listens on `http://localhost:18788` and the worker exposes health on `:18790` (both overridable in
