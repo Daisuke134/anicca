@@ -14,8 +14,12 @@ REPO_ROOT="$(cd "$HERE/../.." && pwd -P)"
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${PATH:-}"
 # shellcheck source=/dev/null
 source "$REPO_ROOT/apps/life-manager/scripts/lib/load-env-file.sh"
+LM_CONNECTOR_SHARED_ENV_FILE="${LM_CONNECTOR_SHARED_ENV_FILE:-$HOME/.openclaw/.env}"
+lm_load_env_file "$LM_CONNECTOR_SHARED_ENV_FILE" || exit 2
 LM_CONNECTOR_ENV_FILE="${LM_CONNECTOR_ENV_FILE:-$HOME/.local/state/life-manager/.env}"
-lm_load_env_file "$LM_CONNECTOR_ENV_FILE" || exit 2
+if [ -f "$LM_CONNECTOR_ENV_FILE" ]; then
+  lm_load_env_file "$LM_CONNECTOR_ENV_FILE" || exit 2
+fi
 
 STATE_DIR="${LM_CONNECTOR_STATE_DIR:-$HOME/.local/state/life-manager/connector-native}"
 case "$STATE_DIR" in
@@ -27,6 +31,21 @@ NODE_BIN="${NODE_BIN:-$(command -v node || true)}"
   printf 'Connector native node unavailable\n' >&2
   exit 2
 }
+if [ -z "${LM_CONNECTOR_TELEGRAM_TARGET:-}" ]; then
+  TELEGRAM_OWNER_FILE="$HOME/.openclaw/credentials/telegram-default-allowFrom.json"
+  LM_CONNECTOR_TELEGRAM_TARGET="$($NODE_BIN -e '
+const fs = require("node:fs");
+const value = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+const candidates = Array.isArray(value) ? value : value.allowFrom;
+const target = Array.isArray(candidates) ? String(candidates[0] || "").trim() : "";
+if (!/^-?[0-9]{5,20}$/.test(target)) process.exit(2);
+process.stdout.write(target);
+' "$TELEGRAM_OWNER_FILE")" || {
+    printf 'Connector native Telegram owner unavailable\n' >&2
+    exit 2
+  }
+  export LM_CONNECTOR_TELEGRAM_TARGET
+fi
 LOCK_STALE_MS="${LM_CONNECTOR_LOCK_STALE_MS:-900000}"
 OWNER_TOKEN="$($NODE_BIN -e 'process.stdout.write(require("node:crypto").randomBytes(32).toString("hex"))')"
 

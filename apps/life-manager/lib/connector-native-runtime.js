@@ -21,6 +21,7 @@ const {
 } = require("./event-spend-policy.js");
 const { isVerifiedEventGoalSerendipity } = require("./event-goal-serendipity.js");
 const { runNativeConnectorWrite } = require("./connector-native-write-pipeline.js");
+const { createConnectorRouteMinutes } = require("./connector-route-minutes.js");
 const { zonedSlotInstant } = require("./honne-ja-shadow-schedule.js");
 
 function unavailable() {
@@ -190,6 +191,7 @@ async function runNativeConnectorPass(input = {}) {
         deps, "isVerifiedEventGoalSerendipity", isVerifiedEventGoalSerendipity,
       );
       const gateDateCalendar = factory(deps, "gateDateCalendar", (...args) => pack.gateDateCalendar(...args));
+      const createRouteMinutes = factory(deps, "createRouteMinutes", createConnectorRouteMinutes);
       const createSpendPolicy = factory(deps, "createSpendPolicy", createEventSpendPolicy);
       const planDateSpend = factory(deps, "planDateSpend", (...args) => pack.planDateSpend(...args));
       const verifySpendSequence = factory(
@@ -213,8 +215,12 @@ async function runNativeConnectorPass(input = {}) {
       });
       if (!verifyGoalDecision(goalDecision) || goalDecision.ranked_events.length === 0) unavailable();
       const selectedDate = judgmentDay.date;
+      const routeMinutes = createRouteMinutes({
+        mapsKey: requiredText(config.mapsKey),
+        homeLocation: requiredText(config.homeLocation),
+      });
       const calendarGate = await gateDateCalendar(
-        dateInventory, busyInventory, selectedDate, requiredText(config.homeLocation), deps.routeMinutes,
+        dateInventory, busyInventory, selectedDate, requiredText(config.homeLocation), routeMinutes,
       );
       const policy = await createSpendPolicy({ tenantId, limits: profile.spend_policy && profile.spend_policy.limits });
       const spendSequence = await planDateSpend(policy, dateInventory, calendarGate, goalDecision);
