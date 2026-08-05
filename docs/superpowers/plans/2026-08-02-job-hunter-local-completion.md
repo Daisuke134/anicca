@@ -30,6 +30,9 @@ Completion requires all of the following:
 
 - one confirmed real Ashby application and receipt;
 - one confirmed real Workday application and receipt;
+- one ATS-blocked fixture that proves the resident worker continues through the
+  alternate-route ladder, sends at most one role-linked email when permitted, and
+  continues to another eligible posting without development-session intervention;
 - official job URL, company, role, compensation, location, and fit thesis;
 - exact submitted resume and cover letter for every application;
 - every employer question and submitted answer preserved as a private artifact;
@@ -175,7 +178,7 @@ Once base resumes and candidate facts are accepted, Job Hunter:
    legitimacy, and expiry;
 3. creates a job-specific resume, cover letter, and answer set;
 4. validates every claim against private fact IDs;
-5. submits through the existing CloakBrowser;
+5. submits through the existing CloakBrowser or the bounded alternate-route ladder;
 6. records an authoritative receipt or `submit_unknown`;
 7. reports the result and exact artifacts on Telegram; and
 8. follows all later email and interview stages automatically.
@@ -239,7 +242,51 @@ direct outreach, reply tracking, and a verified paid-trial, contract, or employm
 outcome. The lane never invents a vacancy and its outcomes are reported separately
 from application conversion.
 
-### 5.6 Runtime cadence and model contract
+### 5.6 ATS failure and alternate-route contract
+
+One blocked ATS is never a successful reason to end an hourly pass. The resident Job
+Hunter, not Codex, Claude, or a development shell, owns this deterministic route
+ladder for the same verified role:
+
+1. attempt the canonical official ATS once under the existing intent and receipt
+   fence;
+2. discover and verify another official employer-controlled application URL for the
+   identical role, then attempt it once under the same cross-route duplicate key;
+3. when the employer explicitly publishes a recruiting address or states that email
+   applications are accepted, send one role-specific application email with the
+   truthful tailored resume, official posting URL, and exact message artifact;
+4. otherwise, when a relevant recruiter, hiring manager, or founder has a verified
+   public work address, send one personalized role-linked outreach email asking for
+   the accepted application route or consideration, attach the truthful resume, and
+   classify it as `recruiting_outreach`, not `confirmed_application`;
+5. if the same role still lacks an authoritative application receipt, preserve its
+   terminal route state and immediately continue to the next eligible role on a
+   different supported ATS or employer site during the same pass.
+
+An email provider acknowledgement proves only `email_sent`. It becomes a confirmed
+application only when the employer explicitly accepts email applications, replies
+that the candidate is under consideration, or supplies another authoritative
+application receipt. The ledger binds ATS attempts, alternate URLs, email message
+IDs, recipients, artifacts, and replies to one company-role identity so no route can
+duplicate another. Gmail's API exposes a provider message send operation, but a send
+receipt is not an employer hiring-stage decision. Source:
+[Gmail API — users.messages.send](https://developers.google.com/workspace/gmail/api/reference/rest/v1/users.messages/send).
+
+The worker MUST NOT guess private addresses, use scraped personal email, contact
+privacy/security/support addresses, send generic bulk mail, repeat an unanswered
+role email, evade CAPTCHA or anti-bot controls, or claim that outreach was an
+application. Public company recruiting addresses and public role-relevant work
+addresses remain eligible. A route failure records its exact class and evidence; it
+never causes the development session to take over.
+
+The daily report MUST lead with confirmed applications, then separately report ATS
+failures, email applications, recruiting outreach, and quota deficit. It never says
+`applied` when only a click or outbound email exists. It also never reports an empty
+pass as success: the resident worker continues through eligible roles and routes
+until the confirmed cap is met or all currently discovered eligible candidates have
+durable terminal route states, then the next hourly wake expands discovery.
+
+### 5.7 Runtime cadence and model contract
 
 - Application passes run every hour, continuously. Each day targets 100–300 newly
   discovered postings, 30–50 deep evaluations, 15–20 complete application dossiers,
@@ -249,6 +296,9 @@ from application conversion.
   segments while preserving the JPY floor, truth, authorization, expiry, duplicate,
   and human-only boundaries. It never invents a vacancy or submits a bad known fit
   merely to fill quota.
+- ATS failures do not consume the confirmed-submission cap. Email applications and
+  recruiting outreach have separate daily counters; neither reduces the obligation
+  to continue searching for ten authoritative confirmed submissions.
 - The daily portfolio is initially two dream/high-touch, five strong-fit, and three
   adjacent-stretch applications. A quota change requires the experiment gate below.
 - Gmail polling through `gog` runs every five minutes. A deterministic query and
@@ -269,7 +319,7 @@ The controlling distinction is: `gpt-5.6-terra` balances intelligence and cost,
 while `gpt-5.6-luna` serves efficient high-volume workloads. Representative replay
 evidence, not the model label, remains the activation gate.
 
-### 5.7 Upstream maximal-reuse contract
+### 5.8 Upstream maximal-reuse contract
 
 Pin [MadsLorentzen/ai-job-search v1.3.0](https://github.com/MadsLorentzen/ai-job-search/releases/tag/v1.3.0)
 and record its tag commit, file hashes, and license in
@@ -298,7 +348,7 @@ Primary workflow references: [setup](https://github.com/MadsLorentzen/ai-job-sea
 [Gmail sync](https://github.com/MadsLorentzen/ai-job-search/blob/v1.3.0/.claude/commands/gmail-sync.md),
 and [interview](https://github.com/MadsLorentzen/ai-job-search/blob/v1.3.0/.claude/commands/interview.md).
 
-### 5.8 Open-source agent-loop stack
+### 5.9 Open-source agent-loop stack
 
 Job Hunter MUST compose existing open-source layers instead of recreating a complete
 agent platform inside prompts. This stack also defines the reusable execution model
@@ -351,7 +401,7 @@ test, release, trigger, and inspect a Temporal-owned worker. Every external side
 effect requires a worker identity and durable workflow/activity receipt; an
 interactive development process cannot mint that authority.
 
-### 5.9 Self-improvement contract
+### 5.10 Self-improvement contract
 
 The optimization objective is confirmed interview and offer conversion, not raw
 submission count. Every application freezes its source, query, role family, fit
@@ -1996,6 +2046,16 @@ this spec update → commit/push → Telegram milestone before the next item sta
   cross-listing/repost dedupe, knockout pre-scan, and ATS-specific form-fill
   behaviors for Ashby, Greenhouse, Lever, Workable, and Workday. Preserve local
   compensation, truth, authorization, ownership, and evidence gates.
+- [ ] **L-49K0C1** — Implement the same-role alternate-route ladder: canonical ATS,
+  alternate official employer URL, explicitly accepted recruiting-email application,
+  verified public work-address recruiting outreach, then the next eligible role.
+  Bind every route to one cross-route duplicate key and preserve the exact message,
+  resume, recipient provenance, provider ID, delivery state, and employer reply.
+- [ ] **L-49K0C2** — Prove an ATS bot block, CAPTCHA, timeout, or unsupported form
+  cannot end an hourly pass. The resident worker records the failure, executes every
+  eligible remaining route once, moves to a different supported role during the same
+  pass, and reports confirmed applications, email applications, outreach, and deficit
+  separately. Codex, Claude, and the development shell perform zero live actions.
 - [ ] **L-49K0D** — Port `career-ops` tracker, outcome, follow-up, and weekly-digest
   behavior only as projections over the existing event ledger. They MUST NOT become
   a second source of truth or weaken deterministic Gmail matching.
@@ -2153,8 +2213,15 @@ flowchart TD
     F --> M[Tailored resume, cover letter, and answers]
     M --> S[Submit in existing CloakBrowser]
     S --> C{Authoritative receipt?}
-    C -->|Yes| T[Report application and artifacts on Telegram]
-    C -->|Unknown| U[Do not duplicate; reconcile ATS and Gmail]
+    C -->|Yes| T[Report exact route result and artifacts on Telegram]
+    C -->|Unknown or blocked| AR[Try alternate official URL]
+    AR --> EM{Verified email route?}
+    EM -->|Email applications accepted| EA[Send one role-linked email application]
+    EM -->|Public relevant work address| EO[Send one recruiting outreach]
+    EM -->|No safe route| NR[Continue to next eligible role]
+    EA --> U[Reconcile provider, employer reply, ATS, and Gmail]
+    EO --> U
+    NR --> D
     C -->|Human-only step| Q[Ask one contextual question or action]
     Q --> S
     U --> T
@@ -2190,6 +2257,10 @@ flowchart TD
   ambiguous email changes an application stage.
 - Founder outreach is not counted as a job application until a verified role and
   application receipt exist.
+- An outbound email is not automatically a confirmed application. The worker may use
+  only an explicitly accepted recruiting address or a verified public role-relevant
+  work address, sends once per company-role identity, and never guesses or scrapes a
+  private address.
 - W-series multi-user work does not begin before the L-73 Dais campaign gate.
 - Cross-user learning never contains raw resumes, application answers, Gmail bodies,
   compensation records, identity facts, credentials, or artifact links.
@@ -2232,6 +2303,9 @@ flowchart TD
 | 30 | Daily campaign portfolio | Five-day receipt audit proves the 2/5/3 allocation, safe spillover, ten/day cap, and no false confirmations | MUST pass |
 | 31 | Fifty-application calibration | Event replay reproduces all lane and funnel denominators, rates, cohorts, and the deterministic L-69 decision | MUST pass |
 | 32 | Six-figure campaign outcome | Authoritative written offer plus timestamped BOJ conversion, terms, Telegram receipt, comparison brief, and owner-decision event | MUST pass for L-73 |
+| 33 | ATS alternate-route continuation | Blocked-ATS fixture proves official-URL → accepted recruiting email → public work-address outreach → next-role ordering under one duplicate key | MUST pass |
+| 34 | Email truth classification | Provider ACK remains `email_sent`; only explicit employer acceptance or authoritative receipt creates `confirmed_application` | MUST pass |
+| 35 | Resident-only fallback | Provenance fixture rejects development-session email/browser authority and proves the resident worker continues the same pass after an ATS failure | MUST pass |
 
 ### E2E judgment
 
