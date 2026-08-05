@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-47` — sole fenced CloakBrowser owner
+**Active atomic task:** `L-48` — close only Job Hunter-created browser pages
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1503,7 +1503,23 @@ this spec update → commit/push → Telegram milestone before the next item sta
   receipted Guardian alert, and immediate replay left sent count at 18 with exactly
   one Guardian alert event. Production outbox now reports only the three pre-existing
   uncertain side effects; the former timestamp-schema fault is resolved.
-- [ ] **L-47** — Make `ai.anicca.job-search-daily` the sole CloakBrowser owner.
+- [x] **L-47** — Make `ai.anicca.job-search-daily` the sole CloakBrowser owner.
+  Receipt: the daily pass now acquires the existing `interactive:dais` browser
+  identity only through `browser-guard.sh`, fails closed on BUSY or identity
+  mismatch before invoking the browser-lane runner, records a private version-2
+  receipt with a monotonic fence plus distinct live holder and Chromium PIDs,
+  renews the lease every five minutes, and registers owner-checked release before
+  the runner starts. Guardian now validates the live holder PID separately from
+  the sole loopback Chromium listener PID and rejects stale heartbeats. Fifteen
+  focused tests pass; the 320-test non-canonical suite plus 45 subtests passes;
+  syntax, bytecode, and diff checks pass. Two isolated real-guard E2Es proved
+  acquire/renew/release with mode 0600 and no remaining lease, and proved a
+  concurrent second holder is blocked without receiving a receipt. The loaded
+  shared browser was not navigated, killed, restarted, or reassigned, and the
+  daily LaunchAgent remains intentionally unloaded. The pre-existing canonical
+  runtime harness still terminates its parent test process without a capturable
+  exit status even on its unchanged full-quota path; no success is claimed for
+  those ten harness cases.
 - [ ] **L-48** — Prove Job Hunter closes only browser pages it created.
 - [ ] **L-49** — Submit one eligible real Ashby application and store its
   authoritative receipt.

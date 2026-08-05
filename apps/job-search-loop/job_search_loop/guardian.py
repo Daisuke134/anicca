@@ -99,6 +99,7 @@ def browser_owner_health(
     reasons: list[str] = []
     owner_state = "unverified"
     holder_pid: int | None = None
+    browser_pid: int | None = None
     path = Path(receipt_path).expanduser().resolve()
     receipt: dict[str, Any] | None = None
     if not path.is_file():
@@ -113,7 +114,7 @@ def browser_owner_health(
             receipt = None
         required = {
             "version", "status", "owner", "endpoint", "lease_id", "fence",
-            "holder_pid", "acquired_at", "expires_at",
+            "holder_pid", "browser_pid", "acquired_at", "heartbeat_at",
         }
         valid = (
             receipt is not None
@@ -130,18 +131,28 @@ def browser_owner_health(
             and isinstance(receipt.get("holder_pid"), int)
             and not isinstance(receipt.get("holder_pid"), bool)
             and receipt.get("holder_pid", 0) > 0
+            and isinstance(receipt.get("browser_pid"), int)
+            and not isinstance(receipt.get("browser_pid"), bool)
+            and receipt.get("browser_pid", 0) > 0
         )
         if not valid:
             reasons.append("browser_owner_receipt_invalid")
         else:
             holder_pid = int(receipt["holder_pid"])
+            browser_pid = int(receipt["browser_pid"])
             try:
                 acquired = datetime.fromisoformat(str(receipt["acquired_at"]))
-                expires = datetime.fromisoformat(str(receipt["expires_at"]))
-                if acquired.tzinfo is None or expires.tzinfo is None or not acquired <= current < expires:
-                    reasons.append("browser_owner_lease_expired")
+                heartbeat = datetime.fromisoformat(str(receipt["heartbeat_at"]))
+                if acquired.tzinfo is None or heartbeat.tzinfo is None:
+                    reasons.append("browser_owner_receipt_invalid")
                 else:
-                    owner_state = "leased"
+                    age = (current - heartbeat).total_seconds()
+                    if acquired > heartbeat or age < 0:
+                        reasons.append("browser_owner_receipt_invalid")
+                    elif age > 1800:
+                        reasons.append("browser_owner_heartbeat_stale")
+                    else:
+                        owner_state = "leased"
             except ValueError:
                 reasons.append("browser_owner_receipt_invalid")
             if not pid_alive(holder_pid):
@@ -153,7 +164,7 @@ def browser_owner_health(
         reasons.append("browser_listener_not_unique")
     if any(row.get("address") not in {"127.0.0.1", "[::1]", "::1"} for row in listeners):
         reasons.append("browser_listener_not_loopback")
-    if holder_pid is not None and len(listeners) == 1 and listeners[0].get("pid") != holder_pid:
+    if browser_pid is not None and len(listeners) == 1 and listeners[0].get("pid") != browser_pid:
         reasons.append("browser_listener_holder_mismatch")
     try:
         cdp_ready = cdp_probe(endpoint).get("status") == "ready"
