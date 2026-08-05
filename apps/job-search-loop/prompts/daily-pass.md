@@ -205,6 +205,16 @@ draft that differs from the browser fields. `submitted` and `submit_unknown` are
 invalid until this immutable receipt exists. An exact replay is idempotent; any
 changed resume, letter, answer, intent, or fence must stop before the click.
 
+Immediately before the physical submit click, durably call
+`Ledger.mark_submission_click_phase(intent_id, fence, "clicked")`. This write must
+commit before Playwright receives the click. After exact authoritative ATS success
+is visible, call `mark_submission_click_phase(intent_id, fence, "confirmed")`
+before completing the intent as `submitted`. If the worker exits or is interrupted,
+the supervisor must call `Ledger.reconcile_interrupted_submission`: `pre_click`
+becomes retryable `not_submitted`, while `clicked` or `confirmed` becomes
+non-retryable `submit_unknown`. Never infer click phase from a missing browser tab,
+process exit code, timeout, or absent email.
+
 Before fresh discovery, call `Ledger.retryable_applications()`. A durable
 `not_submitted` row means the prior attempt definitely stopped before the submit
 click; recheck its recorded blocker against the current private profile and current

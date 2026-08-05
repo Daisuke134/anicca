@@ -212,6 +212,16 @@ class Ledger:
                 FOREIGN KEY (intent_id, fence)
                     REFERENCES submission_attempts(intent_id, fence)
             );
+            CREATE TABLE IF NOT EXISTS submission_click_phases (
+                intent_id TEXT NOT NULL,
+                fence INTEGER NOT NULL,
+                phase TEXT NOT NULL CHECK (phase IN
+                    ('pre_click', 'clicked', 'confirmed')),
+                updated_at TEXT NOT NULL,
+                PRIMARY KEY (intent_id, fence),
+                FOREIGN KEY (intent_id, fence)
+                    REFERENCES submission_attempts(intent_id, fence)
+            );
             CREATE TABLE IF NOT EXISTS submission_confirmations (
                 message_id TEXT PRIMARY KEY,
                 thread_id TEXT NOT NULL,
@@ -599,6 +609,20 @@ class Ledger:
               resume_sha256, ats_snapshot_path, ats_snapshot_sha256,
               japan_day, slot, status, created_at, completed_at
             FROM submit_intents
+            """
+        )
+        self.connection.execute(
+            """
+            INSERT OR IGNORE INTO submission_click_phases
+              (intent_id, fence, phase, updated_at)
+            SELECT intent_id, fence,
+              CASE status
+                WHEN 'submitted' THEN 'confirmed'
+                WHEN 'submit_unknown' THEN 'clicked'
+                ELSE 'pre_click'
+              END,
+              COALESCE(completed_at, created_at)
+            FROM submission_attempts
             """
         )
         migration_time = _now()
@@ -2407,6 +2431,14 @@ class Ledger:
                     claimed_at,
                 ),
             )
+            self.connection.execute(
+                """
+                INSERT INTO submission_click_phases
+                  (intent_id, fence, phase, updated_at)
+                VALUES (?, ?, 'pre_click', ?)
+                """,
+                (intent.intent_id, intent.fence, claimed_at),
+            )
             self._transition_in_transaction(
                 application_id,
                 "submit_claimed",
@@ -2524,6 +2556,62 @@ class Ledger:
                 ),
             )
         return {"payload_sha256": payload_sha256, **payload}
+
+    def submission_click_phase(self, intent_id: str, fence: int) -> str:
+        row = self.connection.execute(
+            "SELECT phase FROM submission_click_phases "
+            "WHERE intent_id = ? AND fence = ?",
+            (intent_id, fence),
+        ).fetchone()
+        if row is None:
+            raise FenceError("submission click phase fence does not exist")
+        return str(row["phase"])
+
+    def mark_submission_click_phase(
+        self, intent_id: str, fence: int, phase: str
+    ) -> str:
+        if phase not in {"clicked", "confirmed"}:
+            raise ValueError("submission click phase must be clicked or confirmed")
+        with self._transaction():
+            attempt = self.connection.execute(
+                "SELECT status FROM submission_attempts "
+                "WHERE intent_id = ? AND fence = ?",
+                (intent_id, fence),
+            ).fetchone()
+            if attempt is None or str(attempt["status"]) != "submit_claimed":
+                raise FenceError("submission click phase fence is not active")
+            receipt = self.connection.execute(
+                "SELECT 1 FROM submission_material_receipts "
+                "WHERE intent_id = ? AND fence = ?",
+                (intent_id, fence),
+            ).fetchone()
+            if receipt is None:
+                raise FenceError("submission material receipt is required")
+            current = self.submission_click_phase(intent_id, fence)
+            allowed = {
+                "pre_click": "clicked",
+                "clicked": "confirmed",
+                "confirmed": "confirmed",
+            }
+            if allowed[current] != phase:
+                raise FenceError(
+                    f"invalid submission click phase: {current} -> {phase}"
+                )
+            if current != phase:
+                self.connection.execute(
+                    "UPDATE submission_click_phases SET phase = ?, updated_at = ? "
+                    "WHERE intent_id = ? AND fence = ? AND phase = ?",
+                    (phase, _now(), intent_id, fence, current),
+                )
+        return phase
+
+    def reconcile_interrupted_submission(
+        self, intent_id: str, fence: int
+    ) -> str:
+        phase = self.submission_click_phase(intent_id, fence)
+        outcome = "not_submitted" if phase == "pre_click" else "submit_unknown"
+        self.complete_submission(intent_id, fence, outcome)
+        return outcome
 
     def complete_submission(
         self, intent_id: str, fence: int, outcome: str

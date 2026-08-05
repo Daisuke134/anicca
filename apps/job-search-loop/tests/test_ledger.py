@@ -540,6 +540,7 @@ class LedgerTests(unittest.TestCase):
             intent.intent_id, intent.fence, "not_submitted"
         )
         self.ledger.connection.execute("DROP TABLE submission_material_receipts")
+        self.ledger.connection.execute("DROP TABLE submission_click_phases")
         self.ledger.connection.execute("DROP TABLE submission_attempts")
         self.ledger.close()
 
@@ -907,6 +908,70 @@ class LedgerTests(unittest.TestCase):
                 resume_sha256=self.resume_sha256,
                 cover_letter="different",
                 employer_answers=[],
+            )
+
+    def test_interrupted_submission_before_click_is_retryable(self):
+        self._ready()
+        intent = self._claim(
+            self.ledger, self.application_id, "2026-08-05", "phase-before"
+        )
+        self.assertEqual(
+            self.ledger.submission_click_phase(intent.intent_id, intent.fence),
+            "pre_click",
+        )
+
+        outcome = self.ledger.reconcile_interrupted_submission(
+            intent.intent_id, intent.fence
+        )
+
+        self.assertEqual(outcome, "not_submitted")
+        self.assertEqual(self.ledger.current_state(self.application_id), "not_submitted")
+
+    def test_interrupted_submission_after_click_is_never_retried(self):
+        self._ready()
+        intent = self._claim(
+            self.ledger, self.application_id, "2026-08-05", "phase-after"
+        )
+        self.assertEqual(
+            self.ledger.mark_submission_click_phase(
+                intent.intent_id, intent.fence, "clicked"
+            ),
+            "clicked",
+        )
+
+        outcome = self.ledger.reconcile_interrupted_submission(
+            intent.intent_id, intent.fence
+        )
+
+        self.assertEqual(outcome, "submit_unknown")
+        self.assertEqual(self.ledger.current_state(self.application_id), "submit_unknown")
+        self.assertIsNone(
+            self._claim(
+                self.ledger, self.application_id, "2026-08-06", "must-not-retry"
+            )
+        )
+
+    def test_submission_click_phase_is_ordered_and_fenced(self):
+        self._ready()
+        intent = self._claim(
+            self.ledger, self.application_id, "2026-08-05", "phase-order"
+        )
+        with self.assertRaises(FenceError):
+            self.ledger.mark_submission_click_phase(
+                intent.intent_id, intent.fence, "confirmed"
+            )
+        self.ledger.mark_submission_click_phase(
+            intent.intent_id, intent.fence, "clicked"
+        )
+        self.assertEqual(
+            self.ledger.mark_submission_click_phase(
+                intent.intent_id, intent.fence, "confirmed"
+            ),
+            "confirmed",
+        )
+        with self.assertRaises(FenceError):
+            self.ledger.mark_submission_click_phase(
+                intent.intent_id, intent.fence + 1, "clicked"
             )
 
 

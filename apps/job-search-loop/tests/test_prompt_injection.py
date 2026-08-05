@@ -83,6 +83,8 @@ class PromptInjectionTests(unittest.TestCase):
         ]
         for prompt in prompts:
             self.assertIn("record_submission_materials", prompt)
+            self.assertIn("mark_submission_click_phase", prompt)
+            self.assertIn("reconcile_interrupted_submission", prompt)
             self.assertIn("before", prompt)
             self.assertIn("click", prompt)
 
