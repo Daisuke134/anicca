@@ -215,12 +215,9 @@ or omitted. Complete the intent as submitted only with confirmation evidence;
 submit_unknown on ambiguity; not_submitted when definitely before the click.
 submit_unknown is never retried.
 
-Use `job_search_loop.telegram.send_daily_report` for the daily report, passing the
-current Asia/Tokyo day. Report applied URLs, roles, exact state, blockers, discovery
-fallback outcome, and selected model route. The first report uses the stable daily
-key; a materially changed same-day catch-up sends one content-addressed correction,
-while an identical retry remains at-most-once. The deterministic daily driver
-separately sends the exact recorded resume as a Telegram document for every
+Do not send or compose the daily pipeline report. The deterministic daily driver
+renders it exclusively from private `summary.v2`; model prose, URLs, and this run
+result are not tracker truth. The deterministic daily driver separately sends the exact recorded resume as a Telegram document for every
 `submitted` application; do not substitute a different resume or claim delivery
 without its Telegram ACK. Do not evaluate or promote strategy inside this daily
 owner. The separate resident weekly learning driver owns replay, Wilson evaluation,
