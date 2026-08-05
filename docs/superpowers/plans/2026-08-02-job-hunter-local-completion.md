@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-49` — submit one eligible real Ashby application and store an authoritative receipt
+**Active atomic task:** `L-49I` — close the silent post-click Ashby observation gap before another live submission
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1753,6 +1753,25 @@ this spec update → commit/push → Telegram milestone before the next item sta
   `f12805527d8145bb827a49dd9778a5ba020a20b6685ecf94900915755f508e69`)
   is active with zero writable paths, both release and ledger Guardian `healthy`,
   zero active claims, and the approved route SHA unchanged. Daily remains unloaded.
+- [ ] **L-49I** — Persist a PII-free post-click Ashby observation receipt that
+  distinguishes native/custom validation rejection, reCAPTCHA execution or
+  rejection, an exact submit request, exact status/alert text, and a silent timeout.
+  Require custom-button selected state before the click, capture every visible
+  application-form error after the click, and keep any unproven clicked attempt
+  non-retryable. Prove the classifier and prompt ordering under focused and full
+  tests before another live Ashby click. Live trigger: Camunda `AI Process Forward
+  Deployed Engineer` was globally remote with Japan employment available, scored
+  85 strong-fit, used the technical-business resume, and was claimed in strong-fit
+  slot 8. Fence 2 stopped safely before click because the location list was still
+  `Loading...`; the slot was released. A read-only probe established the official
+  option `Tokyo, Tokyo Prefecture, Japan`. Fresh fence 3 selected that option,
+  recorded the exact resume and nine fact-bound employer answers, committed
+  `clicked`, and clicked once. Neither an exact submit request nor the known robot
+  verification error appeared within 45 seconds, and the immediate Camunda/Ashby
+  Gmail query returned zero messages. The ledger therefore records
+  `submit_unknown`, forbids retrying Camunda, preserves slot 8, has SQLite integrity
+  `ok`, and released the exact owned page and browser lease. Another live Ashby
+  click is forbidden until this observation gap is closed.
 - [ ] **L-50** — Deliver the Ashby application artifacts and receipt to Telegram.
 - [ ] **L-51** — Submit one eligible real Workday application and store its
   authoritative receipt.
