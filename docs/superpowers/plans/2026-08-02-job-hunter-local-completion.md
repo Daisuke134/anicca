@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-42` — Expose explicit funnel numerators and denominators
+**Active atomic task:** `L-43` — Render Telegram daily pipeline from summary.v2
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1349,7 +1349,24 @@ this spec update → commit/push → Telegram milestone before the next item sta
   Two production rebuilds were byte-identical: three submitted, three
   `submit_unknown`, five agent-owned, one Dais-manual, and zero confirmed required
   ATS adapters. Daily remains unloaded and no application side effect occurred.
-- [ ] **L-42** — Expose explicit funnel numerators and denominators in the tracker.
+- [x] **L-42** — Expose explicit funnel numerators and denominators in the tracker.
+  Receipt: `summary.v2` now contains confirmed-application, recruiter-reply,
+  interview, final-round, offer, and acceptance metrics with an explicit numerator,
+  denominator, and rate; zero denominators produce null rather than an invented 0%.
+  Cohorts are fixed: attempted submissions for confirmation, confirmed applications
+  for reply/interview/offer, interviews for final round, and offers for acceptance.
+  A numerator outside its denominator cohort fails summary generation instead of
+  hiding a missing upstream event. `final_round` is now a first-class authoritative
+  funnel stage. Exact synthetic cohort and invalid-cohort tests plus full 295-test
+  suite PASS. Production-copy replay exposed all six metric triplets without changing
+  production. Immutable release
+  `1ba668d12239f2bb39d09be750160825fc5d5c86` (archive SHA-256
+  `c6300b09c8d7d46d9ac6d090699f5b3bb43f7a5efe65f183dbca08b32db4b10b`)
+  is active with zero writable paths and unchanged replay-approved routes. The real
+  private `summary.v2` is mode 0600, 854 bytes, SHA-256
+  `20922f9728fab4e854912c5bf0b9c04093b83d9f116d17cebe9761eb9f760fbc`:
+  confirmed application 0/6, while reply/interview/final/offer/acceptance each have
+  denominator zero and null rate. Daily remains unloaded.
 - [ ] **L-43** — Render the Telegram daily pipeline projection from `summary.v2`.
 - [ ] **L-44** — Validate event-specific Telegram tone without changing event facts.
 - [ ] **L-45A** — Implement the Guardian release-health check.
