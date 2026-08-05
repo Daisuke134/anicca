@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-47A` — dedicated Job Hunter browser identity
+**Active atomic task:** `L-49` — first eligible real Ashby application
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1544,13 +1544,26 @@ this spec update → commit/push → Telegram milestone before the next item sta
   `68eafec10b1e2ff519314969ce1a7763f80db916e15500a6e481025074dc1497`)
   is active with zero writable paths; `5a22501a7a42e650c7b4a2183aa852c9720b4b07`
   remains rollback-ready and the approved route SHA is unchanged.
-- [ ] **L-47A** — Give Job Hunter a dedicated CloakBrowser profile and dynamic
+- [x] **L-47A** — Give Job Hunter a dedicated CloakBrowser profile and dynamic
   CDP identity. Live L-49 preflight found the shared `interactive:dais` browser
   had 52 pages and 94 total targets; Playwright could not complete CDP attach in
   60 seconds. The inspection process was terminated, its lease was released,
   and the shared browser and all existing tabs were preserved. L-47's lease is
   necessary but not sufficient: Job Hunter must not attach to unrelated human
-  targets.
+  targets. Receipt: a fourth immutable `browser` lane now supervises the private
+  `job-search-daily` profile on a loopback-only dynamic CDP port, and Daily leases
+  only the registered `job-search:dais` identity. Release validation and Guardian
+  require all four lanes while safely migrating the prior three-lane rollback
+  release. Full non-canonical suite: 327 tests plus 45 subtests PASS. Production
+  browser LaunchAgent is running at measured dynamic port 55260 with a distinct
+  browser UUID and zero registry collisions. Real isolated E2E measured one
+  baseline page, Playwright CDP connect in 0.337 seconds, the exact Sierra Ashby
+  application title, one Job Hunter-created page closed, and a clean lease release.
+  Immutable release `ee07aa53742883f909d2f91486772eda6ffa733a` (archive SHA-256
+  `1e325b77f4ff8fa9c878ca4337e564b051638319f2491b7fb30569c8915cd93f`)
+  is active with zero writable paths; previous release
+  `8de3f7de61726a51215b3e5c83c05bab0c608091` remains rollback-ready. Daily stayed
+  unloaded and no application, form input, email, or Calendar side effect occurred.
 - [ ] **L-49** — Submit one eligible real Ashby application and store its
   authoritative receipt.
 - [ ] **L-50** — Deliver the Ashby application artifacts and receipt to Telegram.
