@@ -5,6 +5,7 @@ const path = require("node:path");
 const { spawnSync } = require("node:child_process");
 
 const { inferEventGoalSerendipity } = require("./event-goal-serendipity.js");
+const { inferEventPreferenceRanking } = require("./event-preference-ranking.js");
 const { isVerifiedConnectorProfile } = require("./connector-profile.js");
 
 function unavailable() {
@@ -96,26 +97,39 @@ async function runConnectorLunaJudgment(input = {}, deps = {}) {
     const runAgentRunner = typeof deps.runAgentRunner === "function"
       ? deps.runAgentRunner
       : (request) => runLocalAgentRunner(request, deps);
+    const evidenceRoot = absoluteDirectory(input.evidenceDir);
+    if (typeof deps.runAgentRunner !== "function") {
+      fs.mkdirSync(evidenceRoot, { mode: 0o700 });
+      fs.chmodSync(evidenceRoot, 0o700);
+    }
+    const invokeLuna = async ({ prompt, schema, timeoutMs }, stage) => {
+      const result = await runAgentRunner({
+        prompt, schema, timeoutMs,
+        evidenceDir: path.join(evidenceRoot, stage),
+        repoRoot: input.repoRoot,
+        runnerPath: input.runnerPath,
+      });
+      if (
+        !result || !result.summary
+        || result.summary.status !== "success"
+        || result.summary.selected_provider !== "codex"
+        || result.summary.selected_model !== "gpt-5.6-luna"
+      ) unavailable();
+      return result.value;
+    };
+    const preferenceRanking = input.preferenceRanking || await inferEventPreferenceRanking({
+      dateInventory: input.dateInventory,
+      date: input.date,
+      preferences: input.profile.preferences,
+    }, {
+      generateDecision: (request) => invokeLuna(request, "preference"),
+    });
     return await inferEventGoalSerendipity({
       dateInventory: input.dateInventory,
-      preferenceRanking: input.preferenceRanking,
+      preferenceRanking,
       goals: input.profile.goals,
     }, {
-      generateDecision: async ({ prompt, schema, timeoutMs }) => {
-        const result = await runAgentRunner({
-          prompt, schema, timeoutMs,
-          evidenceDir: input.evidenceDir,
-          repoRoot: input.repoRoot,
-          runnerPath: input.runnerPath,
-        });
-        if (
-          !result || !result.summary
-          || result.summary.status !== "success"
-          || result.summary.selected_provider !== "codex"
-          || result.summary.selected_model !== "gpt-5.6-luna"
-        ) unavailable();
-        return result.value;
-      },
+      generateDecision: (request) => invokeLuna(request, "goal"),
     });
   } catch {
     unavailable();

@@ -68,10 +68,13 @@ async function fixture() {
     goal_reason: "Life Managerを見せられるfounderとの接点に合います。",
     serendipity_reason: "product demoから予期しない協力関係が生まれ得ます。",
   }] };
+  const preferenceValue = { ranked_events: [{
+    event_ref: eventRef, preference_fit: "strong", preference_reason: "AI founderへの関心と合います。",
+  }] };
   return { root, input: {
     dateInventory, preferenceRanking, profile,
     evidenceDir: path.join(root, "evidence"), repoRoot: path.resolve(__dirname, "../../.."),
-  }, value };
+  }, value, preferenceValue };
 }
 
 test("Connector judgment accepts only a Luna-pinned structured runner result", async () => {
@@ -131,4 +134,24 @@ test("local runner pins Codex Luna and accepts only an evidence-contained result
   assert.deepEqual(invocation.args.slice(0, 3), [path.join(root, "agent_runner.py"), "--task-class", "repeatable-agent"]);
   assert.equal(invocation.options.env.AGENT_RUNNER_PROVIDER, "codex");
   assert.equal(invocation.options.input, "x".repeat(200));
+});
+
+test("Luna creates the preference ranking before goal and serendipity judgment", async () => {
+  const { input, value, preferenceValue } = await fixture();
+  const calls = [];
+  const result = await runConnectorLunaJudgment({
+    ...input, preferenceRanking: undefined, date: "2026-08-02",
+  }, {
+    runAgentRunner: async ({ prompt }) => {
+      calls.push(prompt);
+      return {
+        summary: { status: "success", selected_provider: "codex", selected_model: "gpt-5.6-luna" },
+        value: calls.length === 1 ? preferenceValue : value,
+      };
+    },
+  });
+  assert.equal(isVerifiedEventGoalSerendipity(result), true);
+  assert.equal(calls.length, 2);
+  assert.match(calls[0], /Preferences affect ordering/);
+  assert.match(calls[1], /grounded serendipity potential/);
 });

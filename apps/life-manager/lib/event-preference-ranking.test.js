@@ -184,3 +184,16 @@ test("a fully read empty day returns a verified empty ranking without calling th
   assert.deepEqual(ranking.ranked_events, []);
   assert.equal(isVerifiedEventPreferenceRanking(ranking), true);
 });
+
+test("a structured generator still returns a verified preference ranking", async () => {
+  const snapshot = await fixtureSnapshot();
+  let request;
+  const ranking = await inferEventPreferenceRanking({
+    dateInventory: snapshot, date: "2026-08-02", preferences: PREFERENCES,
+  }, {
+    generateDecision: async (value) => { request = value; return decision(); },
+  });
+  assert.match(request.prompt, /untrusted data/i);
+  assert.equal(request.schema.type, "object");
+  assert.equal(isVerifiedEventPreferenceRanking(ranking), true);
+});

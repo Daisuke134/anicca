@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Produce the existing verified event goal/serendipity decision through a locally executed, Codex-pinned `gpt-5.6-luna` bounded worker without allowing the model to claim registration success.
+**Goal:** Produce the existing verified preference ranking and event goal/serendipity decision through a locally executed, Codex-pinned `gpt-5.6-luna` bounded worker without allowing the model to claim registration success.
 
-**Architecture:** Keep `event-goal-serendipity.js` as the only grounding and validation authority, but add a provider-neutral structured-decision seam. A new Connector adapter invokes the existing `runtime/agent-runner/agent_runner.py` with `repeatable-agent`, pins provider `codex`, verifies the summary selected `gpt-5.6-luna`, reads only the result inside its owner-only evidence directory, and passes that raw decision back through the existing grounding validator.
+**Architecture:** Keep `event-preference-ranking.js` and `event-goal-serendipity.js` as the grounding and validation authorities, but add the same provider-neutral structured-decision seam to both. A new Connector adapter invokes the existing `runtime/agent-runner/agent_runner.py` twice with isolated evidence subdirectories—preference first, then goals/serendipity—pins provider `codex`, verifies the summary selected `gpt-5.6-luna`, and passes each raw decision back through its existing grounding validator.
 
 **Tech Stack:** Node.js CommonJS, Node test runner, Python agent-runner subprocess, JSON Schema, existing Luma verified inventory/ranking contracts.
 
@@ -75,9 +75,11 @@ Expected: all existing Gemini/error tests and the new provider-neutral test pass
 - Modify: `apps/life-manager/package.json`
 
 **Interfaces:**
-- Consumes: `{ dateInventory, preferenceRanking, profile, evidenceDir, repoRoot, runnerPath? }` where profile passes `isVerifiedConnectorProfile`.
+- Consumes: `{ dateInventory, preferenceRanking?, profile, evidenceDir, repoRoot, runnerPath? }` where profile passes `isVerifiedConnectorProfile`.
 - Produces: `runConnectorLunaJudgment(input, deps?) -> Promise<VerifiedEventGoalSerendipity>`.
 - Calls: `inferEventGoalSerendipity({ dateInventory, preferenceRanking, goals: profile.goals }, { generateDecision })`.
+
+If `preferenceRanking` is absent, the adapter first calls `inferEventPreferenceRanking` through the same Luna-pinned runner boundary, then feeds that verified ranking into goal/serendipity evaluation.
 
 - [x] **Step 1: Write failing adapter tests**
 
@@ -149,9 +151,24 @@ git commit -m "feat(connector): route event judgment through Luna"
 git push
 ```
 
+### Task 3: Close the preference-provider gap
+
+**Files:**
+- Modify: `apps/life-manager/lib/event-preference-ranking.js`
+- Test: `apps/life-manager/lib/event-preference-ranking.test.js`
+- Modify: `apps/life-manager/lib/connector-luna-judgment.js`
+- Test: `apps/life-manager/lib/connector-luna-judgment.test.js`
+
+- [x] Add `generateDecision({ prompt, schema, timeoutMs })` to preference ranking while preserving the existing Gemini compatibility path and validator.
+- [x] Make Connector Luna judgment create preference ranking when the caller has not supplied one.
+- [x] Isolate the two runner results under `evidenceDir/preference` and `evidenceDir/goal`.
+- [x] Prove the order and provider boundary with focused tests.
+
+Observed: focused preference/Luna/goal suite 18/18 pass; full outbound suite 282/282 pass; `git diff --check` pass.
+
 ## Plan Self-Review
 
-- Spec coverage: the plan pins Luna locally, preserves existing grounding, and keeps every external-effect success decision outside the model.
+- Spec coverage: the plan pins Luna locally for preference, goal, and serendipity judgment, preserves existing grounding, and keeps every external-effect success decision outside the model.
 - Scope: this plan ends at a verified judgment object; Task 3 owns default native runtime and write-pipeline integration.
 - Type consistency: the adapter returns the existing `VerifiedEventGoalSerendipity` object consumed by the Task 5 write pipeline.
 - No placeholder steps or unbounded provider fallback remain.
