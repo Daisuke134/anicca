@@ -1,6 +1,6 @@
 # Writer Agent — Revenue, UX, Runtime, and Roadmap SSOT
 
-Last updated: 2026-08-04 JST
+Last updated: 2026-08-05 JST
 
 This file is the only current source of truth for the Writer Agent's objective,
 user experience, revenue model, execution order, and remaining work. Historical
@@ -164,6 +164,29 @@ initialization after the second failed quality assessment. The 2026-08-04 run
 therefore produced no publication state or platform dispatch. This is an
 implementation defect against this contract, not an acceptable no-shipment
 outcome.
+
+### 2.5 Exact-eight distribution contract
+
+One daily Writer run freezes one Japanese article and one independently
+localized English article, then derives exactly these eight destination
+intents. Translation does not create a second topic or daily run.
+
+| Destination | Language | Revenue role | Required receipt |
+|---|---|---|---|
+| note paid article | JA | One-time direct writing revenue | Authenticated price/paywall readback, public URL, later purchase/fee/payout receipt |
+| Substack article | JA | Recurring direct writing revenue | Authenticated paid-audience/paywall readback, public URL, later contract/charge/churn receipt |
+| Substack article | EN | Recurring direct writing revenue | Authenticated paid-audience/paywall readback, public URL, later contract/charge/churn receipt |
+| Dev.to article | EN | Free discovery | Public title/body/media readback |
+| Zenn article | JA | Free discovery | Public title/body/media readback |
+| X Article | JA | Long-form acquisition | Public Article URL and rendered-body readback |
+| X Article | EN | Long-form acquisition | Public Article URL and rendered-body readback |
+| X Post | JA | Same-day short-form distribution | Public status URL and text/link readback |
+
+The initial contract has one Japanese X Post, not duplicate JA/EN short posts
+on the same account. An English X Post becomes a separate measured distribution
+unit only after English X Article -> Substack paid conversion is observable and
+the account/language cohort can be attributed without mixing audiences. More
+posts are not scale when they make causal attribution worse.
 
 ## 3. Revenue streams
 
@@ -455,6 +478,62 @@ These examples are evidence about mechanisms, not guaranteed conversion rates
 for this Writer. Only the Writer's external receipts can promote a topic,
 price, prompt, or channel into the active playbook.
 
+### 3.6 Full-page market-reading and prompt evidence
+
+Search snippets, titles, screenshots, and public logged-out summaries are
+discovery inputs only. When a selected source is an X post or X Article, the
+Writer must open the actual source in the existing CloakBrowser daily-driver
+through CDP `127.0.0.1:9222`, read the rendered DOM, and persist the canonical
+URL, author, observation time, body hash, extracted offer, free/paid boundary,
+CTA, prompt structure, claimed metrics, and evidence class. A login banner does
+not prove the Article body is unavailable; the rendered DOM is checked before
+declaring an access failure. If CDP genuinely cannot supply the body, the
+Writer tries the other approved acquisition paths and records the exact
+failure rather than inventing the missing text.
+
+The 2026-08-05 measured exemplars establish the first prompt-pattern evidence:
+
+- MuchoAI's rendered X Article contains seven prompt contracts: topic mining
+  from experience, experience interviewing, free/paid boundary design,
+  experience-preserving drafting, article-to-X repurposing, buyer artifact
+  generation, and a durable editorial workspace. Its central offer is reduced
+  reader trial-and-error, not word count. Core quote: "売れているのは文章量
+  ではなく『読者の試行錯誤をどれだけ飛ばせるか』".
+  Source: https://x.com/MuchoAi/status/2079105435056107721
+- Maron's rendered X Article contains four prompt contracts: bilingual X
+  Article trend research, outline-only generation, session-grounded drafting,
+  and evidence-image planning. It explicitly orders theme -> outline -> body ->
+  images and says topic choice determines most of the outcome. Core quote:
+  "テーマ選びの段階で、記事が伸びるかどうかの8割が決まります".
+  Source: https://x.com/rimuruafi/status/2069458256238612785
+
+These are market exemplars, not truth authorities. Their revenue and impression
+claims remain creator claims until independently receipted. The Writer may
+reuse the observed structures and short prompt patterns, but only the Writer's
+own matched external receipts may promote a prompt version. The active prompt
+registry stores `prompt_id`, version, content hash, source URL, permitted use,
+article/run consumption, baseline/candidate relationship, and KEEP/REVERT/
+INCONCLUSIVE outcome.
+
+The reusable paid-writing shape is:
+
+```text
+specific costly problem or desired result
+  -> evidence and concrete numbers
+  -> why prior attempts fail
+  -> reproducible procedure
+  -> copyable prompt/template/checklist/decision aid
+  -> failure modes and correction path
+  -> next reader action
+  -> purchase or recurring subscription
+```
+
+Prompts and templates embedded in the paid section remain writing content. They
+do not create a separate derived-product business. Writer revenue is payment
+for the article/archive or commissioned writing. Affiliate commission belongs
+to the separate Affiliator ledger even when both Agents observe the same market
+source or use the same editorial technique.
+
 ## 4. First $10,000 monthly revenue model
 
 The following is a planning allocation, not a forecast. Actual allocation must
@@ -482,7 +561,45 @@ and capacity are measured.
 | S1 | $400 monthly | $400 verified monthly writing revenue from any receipted mix; one publisher article may satisfy it, but it is not recurring |
 | S2 | $1,000 monthly | Three consecutive revenue-positive weeks with zero manual execution |
 | S3 | $10,000 monthly | Three consecutive months at or above $10,000 gross, net positive after compute/platform fees, with every dollar attributed |
-| S4 | $10,000 MRR | Active recurring writing subscriptions total $10,000; one-time editorial/article revenue is reported separately |
+| S4 | $10,000 MRR | Active recurring writing contracts total $10,000: reader subscriptions plus externally contracted recurring writing retainers; one-time editorial/article revenue remains separate |
+
+### 4.2 $10,000 MRR composition and replacement rule
+
+The first `$10,000 monthly revenue` gate and `$10,000 MRR` gate are different.
+Paid articles and one-time publisher fees accelerate learning and cash flow but
+never satisfy recurring revenue. A publisher/client contract counts as MRR only
+while an external recurring retainer contract is active.
+
+The initial planning composition is deliberately concrete, not a forecast:
+
+| Recurring unit | Planning quantity | Gross MRR contribution |
+|---|---:|---:|
+| English paid writing | 600 active readers at $8/month | $4,800 |
+| Japanese paid writing | 400 active readers at ¥1,500/month, planning FX ¥150/$ | $4,000 |
+| One recurring commissioned-writing retainer | One active external contract | $1,200 |
+| Total | 1,000 reader contracts plus one retainer | $10,000 |
+
+Displayed MRR uses transaction currency and receipted period values; planning
+FX is never silently applied to accounting. The Agent replaces this mix from
+measured acquisition, conversion, renewal, churn, fees, compute cost, capacity,
+and net margin. The desired steady state removes dependence on the retainer by
+growing reader subscriptions, but the retainer is a legitimate early recurring
+writing unit rather than affiliate or unrelated product revenue.
+
+The repeatable path for Dais and later local/cloud users is:
+
+```text
+publishing alive
+  -> first verified writing payment
+  -> $400 monthly writing revenue
+  -> $1,000 monthly with three autonomous positive weeks
+  -> one recurring reader cohort with renewal and churn receipts
+  -> $3,000 MRR
+  -> $10,000 monthly revenue for three months
+  -> $10,000 active recurring MRR for three months, net positive
+  -> package the same identity/publication/payment/measurement contract
+  -> fresh local/cloud user earns without daily human operation
+```
 
 ## 5. Daily Agent loop
 
@@ -530,7 +647,35 @@ Deterministic code owns arithmetic, receipts, idempotency, deduplication,
 scheduling, and bookkeeping. The Agent owns topic, reader, article form,
 revenue-stream selection, experiment choice, and interpretation.
 
-### 5.1 Self-improvement loop and visible diff
+### 5.1 Metric provenance matrix
+
+Every metric joins through `run_id -> topic_id -> artifact_id`; prompt-led
+experiments additionally bind `prompt_id` and immutable prompt hash. Platform
+account totals may be retained as observations but cannot be attributed to an
+article without an exact join.
+
+| Stage | Required measures | Authority |
+|---|---|---|
+| Demand | observation count, source-family diversity, JA/EN market, problem, transformation, visible price/paywall, trajectory, evidence class | Full rendered source pages through approved crawler/CDP paths; official publisher pages; community/search source URLs |
+| Topic | buyer, costly problem, observable transformation, article deliverable, price hypothesis, distribution path, source bundle | Immutable topic card and selector receipt |
+| Research | primary-source count, independent-source count, fact/inference boundary, unsupported claims | Research plan, fetched-body hashes, citation manifest |
+| Prompt | prompt ID/version/hash, source pattern, changed field, consuming run/article | Prompt registry and experiment ledger |
+| Draft/quality | reader-job completion, citation support, editorial usefulness, identity/PII/safety, quality debt | Current-draft-hash gate receipts |
+| Publication | URL, platform ID, content hash, account identity, language, price/paywall, title/body/media render | Authenticated platform response plus public browser readback |
+| X acquisition | Article impressions/opens, Post impressions/engagement, qualified link click | X authenticated analytics/CDP observation joined to exact public IDs |
+| note funnel | views, paid-boundary visits, purchases, refunds, fees, payout | note authenticated creator/API observation plus external transaction/payout receipt |
+| Substack funnel | free/paid subscriber, conversion, active/canceled/past-due contract, renewal, churn, fee, payout | Substack authenticated observation plus Stripe contract/charge/payout receipts |
+| Self-owned funnel | visit, read, checkout, paid event, unlock, renewal, churn, fee, payout | First-party event ledger plus payment webhook and payout receipt |
+| Publisher | opportunity, pitch, acceptance, contracted rate, article submission, publication, payment, payout | Official provider endpoint/form/email correlated to submission ID plus payment receipt |
+| Economics | gross, refund, platform fee, compute, net, time-to-payment, margin | Canonical money/cost ledger; currencies remain separate unless an explicit receipted conversion exists |
+| Learning | baseline/candidate, one changed variable, same-age outcome, sample/uncertainty, net-revenue delta, decision, later consumption | Immutable experiment ledger and matched production receipts |
+
+Authority order is external payment/provider receipt, authenticated platform
+API/dashboard, public readback, browser-observed metric, then creator claim.
+Creator claims may inform demand but never become Writer revenue. Unknown is
+visible and cannot be converted to zero.
+
+### 5.2 Self-improvement loop and visible diff
 
 Self-improvement is not "the Agent rewrote something" and not a higher judge
 score on one draft. It exists only when an immutable baseline and candidate are
@@ -915,6 +1060,15 @@ quality terminal violates the shipment contract in §2.4 by cancelling all
 destinations. Task 4 follows Task 1: a better topic cannot create revenue while
 the Writer is permitted to ship nothing.
 
+Task 4 is not complete when another feed has been added. It is complete only
+when one live selected topic begins with paid-market/reader-demand evidence,
+the actual source bodies (including rendered X Article DOM when applicable)
+are hash-bound, the topic card contains buyer/problem/transformation/
+deliverable/price/distribution/source bundle, its prompt version is registered,
+the resulting JA/EN article is researched from multiple independent sources,
+and the eight-destination run supplies public receipts. Later conversion may
+change the strategy, but missing conversion does not erase this supply receipt.
+
 There are three execution lanes:
 
 1. **Foreground development:** complete Task 1's mandatory exact-eight shipment
@@ -945,6 +1099,25 @@ foreground order is binding:
    external user receives real writing revenue without daily intervention.
 9. Tasks 24 through 28: expand only positive-net units through the portfolio,
    self-extension, $100K, $1M, and $10M gates.
+
+Read as one end-to-end completion route, the remaining work is:
+
+```text
+1/3  repair finite-quality shipment and prove three consecutive exact8 days
+  -> 4  replace vendor-news supply with full-page paid-demand selection
+  -> 8  expose the receipt-backed Money Control publicly
+  -> 9/10  advance publisher opportunities to real payment or honest rejection
+  -> 11  first attributed note purchase
+  -> 12  first Substack contract, renewal/churn, fee and payout
+  -> 13  first self-owned unlock and recurring renewal
+  -> 14  real matched prompt/strategy canary and later-run consumption
+  -> 15/16/17/18  first dollar, $400, $1K, scorable unit economics
+  -> 19  three $10K monthly-revenue months
+  -> 20  three $10K active-MRR months with positive net margin
+  -> 21/22/23  local OSS, cloud parity, first autonomous external earner
+  -> 24/25  add only positive-net subject/language units and self-extension
+  -> 26/27/28  $100K, $1M and $10M operator revenue with receipts
+```
 
 Tasks 9 through 14 may collect external observations concurrently, but a later
 revenue gate cannot be marked complete without all of its own receipts. Task
@@ -1227,14 +1400,26 @@ the smallest next step.
 
 The Writer is complete only when:
 
+- selected market sources are read from their actual full rendered bodies, not
+  inferred from titles or snippets, and every extracted prompt/offer/claim has
+  a source URL, body hash, evidence class, and observation receipt;
 - missed runs recover without being told;
 - platform-specific waits never stall the whole loop;
+- each daily article contract produces the exact JA/EN eight-destination matrix
+  in §2.5, or exposes each missing public readback as an owned SLO breach;
 - articles remain useful to external readers rather than describing the loop;
 - every reported dollar has a verifiable origin and owner;
 - one-time revenue and MRR are never mixed;
+- `$10,000 monthly revenue` and `$10,000 MRR` pass their separate three-month
+  gates with positive net margin, renewal/churn receipts, and complete
+  attribution;
+- prompt/topic/channel improvements use one changed variable, matched evidence,
+  KEEP/REVERT/INCONCLUSIVE, rollback, and a later consuming run;
 - the Agent finds readers and payers without receiving a customer list;
 - the OSS default starts without Google/Gmail/note/Substack credentials;
 - optional fiat/platform connectors state their account and KYC requirements;
 - local and cloud use the same Agent judgment contract;
+- a fresh external local/cloud user receives real writing revenue without daily
+  human topic choice, execution, repair, measurement, or reporting;
 - users see money, work in progress, failures, recovery, and next action;
 - no dry-run, test, or estimated value is represented as earnings.
