@@ -6,14 +6,15 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-49K0A2` — pin Temporal Server and Python SDK and prove restart-safe local execution
+**Active atomic task:** `L-49K0A1F` — repair the Codex prefilter response schema, deploy it, and prove the resident loop reaches the application actor
 **Status:** The immutable four-lane runtime, hourly/five-minute schedules, grounded
 materials, ownership fences, Gmail ingestion, Telegram outbox, quota accounting, and
 Ashby observation classifier are implemented and tested. The daily application
-LaunchAgent remains intentionally unloaded: real Ashby confirmation, real Workday
-confirmation, interview-to-Calendar E2E, learning promotion, and simultaneous
-LaunchAgent health have not passed. Development-session browser runs are verification
-evidence only and MUST NOT be described as the autonomous loop running in production.
+LaunchAgent is loaded and scheduled hourly. Its 2026-08-05 resident run reached the
+prefilter but failed before application work because the Codex response schema omitted
+`additionalProperties: false` on `candidates.items`; Telegram failure reporting sent
+provider message `7173`. Development-session browser runs are verification evidence
+only and MUST NOT be described as the autonomous loop running in production.
 
 ## 1. Acceptance criteria — done condition
 
@@ -1048,10 +1049,12 @@ submissions.
   now a prohibited verification method. Every future live application MUST originate
   from the installed Job Hunter LaunchAgent; the development session only triggers
   and observes that durable loop.
-- The daily LaunchAgent remains unloaded until L-49 through L-65 pass because turning
-  it on now could create repeated ambiguous Ashby clicks without reliable owner
-  handoff and authoritative receipts. Therefore Job Hunter is not yet producing ten
-  confirmed applications per day.
+- The daily LaunchAgent stays loaded and scheduled. The development session may
+  kickstart and observe it, but never performs an application itself. A failed run is
+  repaired and the same resident launcher is kicked again; ambiguous postings remain
+  protected by their per-posting duplicate fence while the worker continues to other
+  eligible routes and roles. Job Hunter is not yet producing ten confirmed
+  applications per day.
 - Ashby as a platform is not globally skipped. Eligible Ashby postings remain
   discoverable and rankable, but another physical click is fenced until L-49K adds
   a one-action human handoff and no-second-click recovery. Workday has not yet had
@@ -2027,6 +2030,12 @@ this spec update → commit/push → Telegram milestone before the next item sta
   Action registry, agent history, screenshot, and job-application example source
   paths are recorded. Focused RED detected the missing upstream; focused GREEN and
   dependency-lock replay PASS. No Browser Use code is imported, executed, or active.
+- [ ] **L-49K0A1F** — Add a regression test requiring every object in the Codex
+  prefilter response schema, including `candidates.items`, to declare
+  `additionalProperties: false`; repair the schema; build and activate a new immutable
+  release; kickstart the installed LaunchAgent; and prove from resident artifacts that
+  prefilter succeeds and execution reaches the application actor. A Telegram deficit
+  report alone does not pass this task.
 - [ ] **L-49K0A2** — Pin `temporalio/temporal` v1.31.2 and `temporalio/sdk-python`
   v1.31.0 with MIT licenses, server/CLI/SDK artifacts, protocol versions, and local
   rollback. Prove an isolated local server and Python worker can survive worker
