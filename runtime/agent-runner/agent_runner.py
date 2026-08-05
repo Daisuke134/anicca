@@ -292,16 +292,18 @@ def provider_process_env(provider: str, provider_config: dict[str, Any],
     child_env = dict(os.environ if environ is None else environ)
 
     def bounded(value: dict[str, str]) -> dict[str, str]:
-        if task_class != "repeatable-agent":
+        if task_class not in ("repeatable-agent", "job-search-terra-high"):
             return value
-        denied_prefixes = (
+        denied_prefixes = [
             "TELEGRAM_", "GMAIL_", "GOOGLE_", "GOG_", "CLOAK_",
             "SLACK_", "DISCORD_", "RESEND_", "SMTP_",
-            "JOB_SEARCH_PROFILE", "JOB_SEARCH_BROWSER",
-        )
+            "JOB_SEARCH_BROWSER",
+        ]
+        if task_class == "repeatable-agent":
+            denied_prefixes.append("JOB_SEARCH_PROFILE")
         return {
             name: item for name, item in value.items()
-            if not name.startswith(denied_prefixes)
+            if not name.startswith(tuple(denied_prefixes))
         }
     if provider == "codex":
         automation_home_value = provider_config.get("automation_home")
@@ -813,7 +815,7 @@ def command_for(provider: str, executable: str, provider_config: dict[str, Any],
             "--ignore-user-config", "--json",
             "--output-schema", str(provider_schema_path), "-o", str(result_path),
         ])
-        if args.task_class in ("composition-agent", "diagnostic-agent", "repeatable-agent"):
+        if args.task_class in ("composition-agent", "diagnostic-agent", "repeatable-agent", "job-search-terra-high"):
             command.extend(["--sandbox", "read-only"])
         else:
             command.append("--dangerously-bypass-approvals-and-sandbox")
@@ -827,7 +829,7 @@ def command_for(provider: str, executable: str, provider_config: dict[str, Any],
             executable, "--model", model, "--no-session-persistence",
             "--output-format", "json",
         ]
-        if args.task_class in ("composition-agent", "diagnostic-agent", "repeatable-agent"):
+        if args.task_class in ("composition-agent", "diagnostic-agent", "repeatable-agent", "job-search-terra-high"):
             command.extend(["--tools", ""])
         command.append("-p")
         if not prompt_via_stdin:
@@ -898,7 +900,7 @@ def classify_provider_error(rc: int, timed_out: bool, stdout: str, stderr: str, 
 def run() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--task-class", required=True,
-                        choices=("deterministic", "composition-agent", "repeatable-agent", "tool-agent", "browser-lane-agent", "application-lane-agent", "diagnostic-agent", "marketing-agent", "high-value-agent", "escalation-agent"))
+                        choices=("deterministic", "composition-agent", "repeatable-agent", "tool-agent", "browser-lane-agent", "application-lane-agent", "diagnostic-agent", "marketing-agent", "high-value-agent", "job-search-terra-high", "escalation-agent"))
     prompt_source = parser.add_mutually_exclusive_group(required=True)
     prompt_source.add_argument("--prompt-file", type=Path)
     prompt_source.add_argument("--prompt-stdin", action="store_true")

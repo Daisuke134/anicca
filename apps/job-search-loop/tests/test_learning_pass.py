@@ -416,6 +416,44 @@ print(json.dumps({"messageId": "learning-script-902"}))
                 encoding="utf-8",
             )
             executable.chmod(0o700)
+            provider = root / "fake-codex"
+            provider.write_text(
+                """#!/usr/bin/env python3
+import json
+import pathlib
+import sys
+
+args = sys.argv[1:]
+result = pathlib.Path(args[args.index("-o") + 1])
+result.write_text(json.dumps({
+    "status": "ok", "mode": "weekly", "dream_dossiers": [],
+    "hypothesis": {
+        "statement": "Raise the evidence threshold.",
+        "evidence_ids": ["decision-receipt"],
+        "single_changed_field": "auto_apply_threshold",
+        "expected_metric": "interview_rate",
+        "falsification_rule": "Reject when held-out conversion does not improve."
+    }, "blocked": []
+}))
+print(json.dumps({"type": "turn.completed", "usage": {"input_tokens": 10, "output_tokens": 10}}))
+""",
+                encoding="utf-8",
+            )
+            provider.chmod(0o700)
+            runner_config = root / "runner-config.json"
+            runner_config.write_text(json.dumps({
+                "version": 1,
+                "timeout_seconds": 30,
+                "providers": {"codex": {"executable": str(provider)}},
+                "task_classes": {
+                    "job-search-terra-high": {
+                        "route": "test-terra-high",
+                        "requires_explicit_escalation": True,
+                        "token_reservation": 65536,
+                        "candidates": [{"provider": "codex", "model": "gpt-5.6-terra", "effort": "high"}],
+                    }
+                },
+            }))
             env = {
                 **os.environ,
                 "HOME": str(root / "home"),
@@ -423,6 +461,8 @@ print(json.dumps({"messageId": "learning-script-902"}))
                 "JOB_SEARCH_STATE_ROOT": str(root / "job-state"),
                 "JOB_SEARCH_PYTHON": sys.executable,
                 "JOB_SEARCH_OPENCLAW": str(executable),
+                "AGENT_RUNNER_CONFIG": str(runner_config),
+                "AGENT_RUNNER_PROVIDER": "codex",
             }
 
             first = subprocess.run(
@@ -454,6 +494,14 @@ print(json.dumps({"messageId": "learning-script-902"}))
             )
             self.assertEqual(len(reports), 2)
             self.assertEqual(len(summaries), 2)
+            hypotheses = sorted(
+                (root / "job-state" / "evidence").glob(
+                    "learning-*/weekly-hypothesis-result.json"
+                )
+            )
+            self.assertEqual(len(hypotheses), 2)
+            self.assertTrue(all(path.stat().st_mode & 0o777 == 0o600 for path in hypotheses))
+            self.assertTrue(all(json.loads(path.read_text())["mode"] == "weekly" for path in hypotheses))
             self.assertTrue(all(path.stat().st_mode & 0o777 == 0o600 for path in reports))
             first_report = json.loads(reports[0].read_text(encoding="utf-8"))
             second_report = json.loads(reports[1].read_text(encoding="utf-8"))

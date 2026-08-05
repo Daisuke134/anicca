@@ -45,6 +45,26 @@ class RepeatableAuthorityTests(unittest.TestCase):
         for name in ("TELEGRAM_BOT_TOKEN", "GMAIL_TOKEN", "GOOGLE_APPLICATION_CREDENTIALS", "GOG_KEYRING_PASSWORD", "JOB_SEARCH_PROFILE"):
             self.assertNotIn(name, child)
 
+    def test_job_search_terra_high_is_read_only_and_keeps_profile_without_outbound_keys(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            args = argparse.Namespace(task_class="job-search-terra-high", workdir=root)
+            command = command_for(
+                "codex", "codex", {},
+                {"model": "gpt-5.6-terra", "effort": "high"}, args,
+                "Analyze one explicitly escalated dream application.",
+                {"type": "object"}, root / "result.json", 60, None,
+            )
+            self.assertIn("read-only", command)
+            self.assertNotIn("--dangerously-bypass-approvals-and-sandbox", command)
+            child = provider_process_env(
+                "codex", {},
+                {"PATH": "/usr/bin", "JOB_SEARCH_PROFILE": "/private/profile.json", "TELEGRAM_BOT_TOKEN": "secret"},
+                task_class="job-search-terra-high",
+            )
+            self.assertEqual(child["JOB_SEARCH_PROFILE"], "/private/profile.json")
+            self.assertNotIn("TELEGRAM_BOT_TOKEN", child)
+
 
 if __name__ == "__main__":
     unittest.main()

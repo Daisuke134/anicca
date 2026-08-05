@@ -40,6 +40,9 @@ deep-fit analysis, resume variant, and employer answers as grounded drafts rathe
 than authority: verify every fact ID, source span, official posting fact, resume
 route, and deterministic hard gate before using it. Never invent or silently repair
 an answer that the dossier records as blocked.
+Load `$JOB_SEARCH_TERRA_HIGH_RESULT` and use its additional dossier only when your
+own deterministic `classify_portfolio` result is `dream`. Terra high cannot relabel
+a role, weaken a hard gate, claim a slot, or authorize submission.
 Preserve bucket attribution and verify each surviving fact against the official page.
 Use the existing browser for missing official company career and ATS scopes. Do not
 rerun high-volume extraction already completed by Luna unless its receipt explicitly

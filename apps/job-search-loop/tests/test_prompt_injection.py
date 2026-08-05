@@ -75,6 +75,22 @@ class PromptInjectionTests(unittest.TestCase):
         self.assertIn('"$TERRA_PLAN_EVIDENCE"/attempt-*.stdout.log', script)
         self.assertIn('"$JOB_SEARCH_TERRA_PLAN_RESULT"', script)
 
+    def test_dream_and_weekly_hypothesis_use_explicit_terra_high_route(self):
+        root = Path(__file__).parents[1]
+        daily = (root / "scripts" / "run-daily.sh").read_text(encoding="utf-8")
+        weekly = (root / "scripts" / "run-learning.sh").read_text(encoding="utf-8")
+        browser = (root / "prompts" / "daily-pass.md").read_text(encoding="utf-8")
+        high_prompt = root / "prompts" / "terra-high-pass.md"
+        high_schema = root / "schemas" / "terra-high-result.v1.schema.json"
+        self.assertTrue(high_prompt.is_file())
+        self.assertTrue(high_schema.is_file())
+        for script in (daily, weekly):
+            self.assertIn("--task-class job-search-terra-high", script)
+            self.assertIn("--escalation-reason", script)
+        self.assertIn("JOB_SEARCH_TERRA_HIGH_RESULT", daily)
+        self.assertIn("JOB_SEARCH_TERRA_HIGH_RESULT", browser)
+        self.assertIn("JOB_SEARCH_WEEKLY_HYPOTHESIS_RESULT", weekly)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,0 +1,23 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["status", "mode", "dream_dossiers", "hypothesis", "blocked"],
+  "properties": {
+    "status": {"type": "string", "enum": ["ok", "blocked"]},
+    "mode": {"type": "string", "enum": ["dream", "weekly"]},
+    "dream_dossiers": {"type": "array", "items": {"type": "object", "additionalProperties": true}},
+    "hypothesis": {
+      "type": ["object", "null"],
+      "properties": {
+        "statement": {"type": "string"},
+        "evidence_ids": {"type": "array", "items": {"type": "string"}},
+        "single_changed_field": {"type": "string"},
+        "expected_metric": {"type": "string"},
+        "falsification_rule": {"type": "string"}
+      },
+      "required": ["statement", "evidence_ids", "single_changed_field", "expected_metric", "falsification_rule"],
+      "additionalProperties": false
+    },
+    "blocked": {"type": "array", "items": {"type": "string"}}
+  }
+}
