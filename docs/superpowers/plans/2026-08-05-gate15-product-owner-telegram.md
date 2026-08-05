@@ -31,10 +31,7 @@
 - Create: `skills/earn/marketing-engine/report/owner_report.py`
 - Create: `skills/earn/marketing-engine/report/owner_report_cli.py`
 - Create: `skills/earn/marketing-engine/report/test_owner_report.py`
-- Create: `skills/earn/marketing-engine/report/install_gate15_launchagents.py`
-- Create: `skills/earn/marketing-engine/report/test_install_gate15_launchagents.py`
 - Modify: `skills/earn/marketing-engine/test_direct_telegram_transport.py`
-- Modify: `specs/27-MARKETING-ENGINE-END-TO-END.md`
 
 **Interfaces:**
 - `owner_report.load_jsonl(path: pathlib.Path) -> list[dict]`
@@ -43,7 +40,6 @@
 - `owner_report.OwnerReportStore(report_path: pathlib.Path, delivery_path: pathlib.Path)` with `record(event)`, `delivery_for(message_key)`, and `record_delivery(message_key, receipt)`.
 - `owner_report.deliver(event: dict, store: OwnerReportStore, send_text: Callable[[str], dict]) -> dict`; equivalent replay returns the first receipt without calling `send_text` again.
 - `owner_report_cli.main(argv: list[str] | None = None) -> int` with `sweep --kind`, optional `--product-id`, `--state-root`, `--as-of`, and `--no-send`.
-- `install_gate15_launchagents.build_plists(repo_root: pathlib.Path, home: pathlib.Path) -> dict[str, bytes]` returns exactly three plists: `ai.anicca.marketing-owner-events` every 900 seconds for action/checkpoint/incident/experiment sweeps, `ai.anicca.marketing-owner-daily` at 22:00 local for all four product-daily reports, and `ai.anicca.marketing-owner-weekly` Sunday at 21:00 local for the portfolio report.
 
 - [ ] **Step 1: Write failing renderer and isolation tests**
 
@@ -67,7 +63,7 @@ The hand-derived fixture must include one exact native URL, one measured social 
 Run:
 
 ```bash
-python3 -m unittest skills/earn/marketing-engine/report/test_owner_report.py -v
+PYTHONPATH=skills/earn/marketing-engine/report python3 -m unittest skills/earn/marketing-engine/report/test_owner_report.py -v
 ```
 
 Expected: FAIL because `owner_report.py` does not exist or the required interfaces are absent. Record the command and relevant failure in the task report before writing production code.
@@ -112,7 +108,7 @@ Extend `test_direct_telegram_transport.py` so `owner_report_cli.py` is included 
 Run:
 
 ```bash
-python3 -m unittest \
+PYTHONPATH=skills/earn/marketing-engine/report python3 -m unittest \
   skills/earn/marketing-engine/report/test_owner_report.py \
   skills/earn/marketing-engine/test_direct_telegram_transport.py -v
 ```
@@ -127,30 +123,45 @@ Use `fcntl` locking and canonical sorted JSON for `owner-reports.jsonl` and `own
 
 Run the Step 6 command. Expected: all tests PASS; identical CLI replay makes zero sender calls after the first recorded receipt.
 
-- [ ] **Step 9: Write failing launchd schedule tests**
+- [ ] **Step 9: Commit the canonical reporter slice**
+
+Stage only `owner_report.py`, `owner_report_cli.py`, `test_owner_report.py`, and `test_direct_telegram_transport.py`. Commit with `feat(marketing): add product-scoped owner reports` and push the current feature branch. The report must include RED/GREEN evidence and concerns.
+
+---
+
+### Task 2: Gate 15 launchd schedules
+
+**Files:**
+- Create: `skills/earn/marketing-engine/report/install_gate15_launchagents.py`
+- Create: `skills/earn/marketing-engine/report/test_install_gate15_launchagents.py`
+
+**Interfaces:**
+- `install_gate15_launchagents.build_plists(repo_root: pathlib.Path, home: pathlib.Path) -> dict[str, bytes]` returns exactly three plists: `ai.anicca.marketing-owner-events` every 900 seconds for action/checkpoint/incident/experiment sweeps, `ai.anicca.marketing-owner-daily` at 22:00 local for all four product-daily reports, and `ai.anicca.marketing-owner-weekly` Sunday at 21:00 local for the portfolio report.
+
+- [ ] **Step 1: Write failing launchd schedule tests**
 
 In `test_install_gate15_launchagents.py`, assert exact labels, intervals, calendar times, canonical repository paths, `owner_report_cli.py` arguments, writable log paths outside `.openclaw`, and absence of the strings `openclaw`, `daily_report.py`, `weekly_review.py`, and `notify_posts.py` in generated plists. Also assert plan mode reports create/update/no-change without writing.
 
-- [ ] **Step 10: Run schedule tests and capture RED**
+- [ ] **Step 2: Run schedule tests and capture RED**
 
 Run:
 
 ```bash
-python3 -m unittest skills/earn/marketing-engine/report/test_install_gate15_launchagents.py -v
+PYTHONPATH=skills/earn/marketing-engine/report python3 -m unittest skills/earn/marketing-engine/report/test_install_gate15_launchagents.py -v
 ```
 
 Expected: FAIL because the installer does not exist.
 
-- [ ] **Step 11: Implement the installer and pass schedule tests**
+- [ ] **Step 3: Implement the installer and pass schedule tests**
 
 Implement `--plan` and `--apply`. Writes use a temporary file plus atomic rename. `--apply` installs only the three new owner-report plists, bootstraps/kickstarts only those labels, and read-backs loaded definitions. It must not unload or edit legacy jobs; legacy removal belongs to Gate 16 cutover after shadow evidence.
 
-- [ ] **Step 12: Run the full relevant suite**
+- [ ] **Step 4: Run the full relevant suite**
 
 Run:
 
 ```bash
-python3 -m unittest \
+PYTHONPATH=skills/earn/marketing-engine/report python3 -m unittest \
   skills/earn/marketing-engine/report/test_owner_report.py \
   skills/earn/marketing-engine/report/test_install_gate15_launchagents.py \
   skills/earn/marketing-engine/report/test_run_contract.py \
@@ -162,29 +173,42 @@ python3 -m unittest \
 
 Expected: zero failures and zero errors.
 
-- [ ] **Step 13: Perform non-mutating production probes**
+- [ ] **Step 5: Commit the launchd installer slice**
+
+Stage only the two Task 2 files. Commit with `feat(marketing): schedule owner reports` and push the current feature branch. Do not apply schedules from a disposable worktree.
+
+---
+
+### Task 3: Canonical-root live E2E and SSOT closure
+
+**Files:**
+- Modify: `specs/27-MARKETING-ENGINE-END-TO-END.md`
+
+**Execution boundary:** Run this task only after Tasks 1–2 are merged into the canonical checkout `/Users/anicca/anicca`. The primary SOL session owns independent evidence verification; Luna may execute the bounded commands from that canonical checkout. Never install launchd entries that point at `.worktrees/`.
+
+- [ ] **Step 1: Perform non-mutating production probes**
 
 Run `owner_report_cli.py sweep --no-send` once for each of the six kinds against the real canonical state. Verify every active product appears where required, every rendered number matches its source row, the action report contains an exact native URL, and absent data uses a natural reason rather than numeric zero.
 
-- [ ] **Step 14: Install and read back the three schedules**
+- [ ] **Step 2: Install and read back the three schedules**
 
 Run installer `--plan`, inspect the exact diff, then run `--apply`. Verify `launchctl print gui/$(id -u)/<label>` for all three labels and confirm their resolved program arguments point at this repository and canonical state.
 
-- [ ] **Step 15: Perform real Telegram E2E and replay verification**
+- [ ] **Step 3: Perform real Telegram E2E and replay verification**
 
 Run one real event sweep, one real product-daily report for each of the four products, and one real portfolio-weekly report. Capture returned Telegram `message_ids` in evidence. Repeat the identical commands and verify zero additional Bot sends and unchanged delivery-row count.
 
-- [ ] **Step 16: Update the execution SSOT from evidence**
+- [ ] **Step 4: Update the execution SSOT from evidence**
 
 Update Gate 15 in `specs/27-MARKETING-ENGINE-END-TO-END.md` with exact test counts, canonical report/delivery row counts, schedule read-back results, real Telegram message IDs, replay results, and any honest remaining gap. Mark Gate 15 complete only if all six report kinds have a real receipt and ledger equality is proven; otherwise leave it OPEN with the exact missing evidence. Move the active build lane to native social measurement only after Gate 15 is complete.
 
-- [ ] **Step 17: Commit and push**
+- [ ] **Step 5: Commit and push**
 
 Stage only files owned by this task and commit:
 
 ```bash
-git commit -m "feat(marketing): add product-scoped owner reports"
+git commit -m "docs(marketing): record Gate 15 live evidence"
 git push origin HEAD
 ```
 
-The task report must include RED and GREEN output, live schedule labels, Telegram message IDs, replay delivery counts, changed files, commit SHA, and concerns.
+The Task 3 report must include live schedule labels, Telegram message IDs, replay delivery counts, changed files, commit SHA, and concerns.
