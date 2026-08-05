@@ -196,3 +196,19 @@ test("concurrent callers share one login recovery attempt", async () => {
   ]);
   assert.equal(attempts, 1);
 });
+
+test("native login waits for Luma navigation after entering the code", async () => {
+  const calls = [];
+  let inspections = 0;
+  const page = { async waitForTimeout(ms) { calls.push(["wait", ms]); } };
+  const auth = createLumaDailyDriverAuth({
+    dailyDriver: { async withLumaPage(_url, task) { return task(page); } },
+    email: "dais@example.test", name: "Dais", now: () => 10,
+    inspectAuth: async () => ({ status: inspections++ === 0 ? "login_required" : "authenticated" }),
+    requestLogin: async () => {}, readLoginCode: async () => "123456",
+    submitCode: async () => { calls.push(["submit"]); },
+    finishPostAuth: async () => { calls.push(["finish"]); },
+  });
+  await auth.ensureAuthenticated();
+  assert.deepEqual(calls, [["submit"], ["wait", 3_000], ["finish"]]);
+});
