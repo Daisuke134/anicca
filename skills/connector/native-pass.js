@@ -91,7 +91,24 @@ function boundedResult(result) {
     && continuation.status === "complete";
   if (status === "complete" && !complete) unavailable();
   if (status === "incomplete" && complete) unavailable();
-  return Object.freeze({ status, complete });
+  const write = result.write && typeof result.write === "object" && !Array.isArray(result.write)
+    ? {
+      status: String(result.write.status || ""),
+      outcome: String(result.write.outcome || ""),
+      event_ref: String(result.write.event_ref || ""),
+      calendar_event_ref: String(result.write.calendar_sync && result.write.calendar_sync.calendar_event_ref || ""),
+      telegram_provider_id: String(result.write.telegram && result.write.telegram.provider_id || ""),
+    }
+    : null;
+  return Object.freeze({ status, complete, write });
+}
+
+function recordLastResult(stateDir, bounded) {
+  const file = path.join(stateDir, "last-result.json");
+  fs.mkdirSync(stateDir, { recursive: true, mode: 0o700 });
+  fs.writeFileSync(file, `${JSON.stringify({ status: bounded.status, write: bounded.write })}\n`, {
+    encoding: "utf8", mode: 0o600,
+  });
 }
 
 async function runNativePass(options = {}) {
@@ -108,6 +125,7 @@ async function runNativePass(options = {}) {
       deps: options.deps && typeof options.deps === "object" ? options.deps : {},
     });
     const bounded = boundedResult(result);
+    recordLastResult(stateDir, bounded);
     if (bounded.complete) {
       return Object.freeze({ exitCode: 0, status: "complete" });
     }
