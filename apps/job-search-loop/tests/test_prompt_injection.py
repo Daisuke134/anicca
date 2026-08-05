@@ -30,6 +30,14 @@ class PromptInjectionTests(unittest.TestCase):
         self.assertIn("portfolio_bucket=", prompt)
         self.assertIn("2 dream, 5 strong-fit, and 3 adjacent", prompt)
 
+    def test_daily_runtime_consumes_durable_recovery_plan(self):
+        root = Path(__file__).parents[1]
+        prompt = (root / "prompts" / "daily-pass.md").read_text(encoding="utf-8")
+        script = (root / "scripts" / "run-daily.sh").read_text(encoding="utf-8")
+        self.assertIn("JOB_SEARCH_RECOVERY_PLAN", prompt)
+        self.assertIn("job_search_loop.recovery", script)
+        self.assertIn("recovery-plan.json", script)
+
 
 if __name__ == "__main__":
     unittest.main()

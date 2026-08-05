@@ -58,6 +58,11 @@ if [[ "$SLOT_COUNT" -ge "10" ]]; then
   refresh_summary
   exit 0
 fi
+export JOB_SEARCH_RECOVERY_PLAN="$EVIDENCE/recovery-plan.json"
+"$JOB_SEARCH_PYTHON" -m job_search_loop.recovery plan \
+  --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
+  --day "$JAPAN_DAY" \
+  --output "$JOB_SEARCH_RECOVERY_PLAN"
 "$JOB_SEARCH_PYTHON" -m job_search_loop.browser_owner \
   --endpoint "http://127.0.0.1:9222" \
   --output "$JOB_SEARCH_BROWSER_OWNER_EVIDENCE"
