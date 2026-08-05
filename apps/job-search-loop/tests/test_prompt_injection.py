@@ -51,6 +51,11 @@ class PromptInjectionTests(unittest.TestCase):
         self.assertIn("JOB_SEARCH_PREFILTER_RESULT", script)
         self.assertIn("JOB_SEARCH_PREFILTER_RESULT", prompt)
 
+    def test_daily_budget_allows_multiple_hourly_runs_and_repair_retries(self):
+        root = Path(__file__).parents[1]
+        script = (root / "scripts" / "run-daily.sh").read_text(encoding="utf-8")
+        self.assertIn("ANICCA_LOOP_DAILY_TOKEN_BUDGET=1048576", script)
+
     def test_daily_routes_deep_fit_tailoring_and_answers_through_terra_composition(self):
         root = Path(__file__).parents[1]
         script = (root / "scripts" / "run-daily.sh").read_text(encoding="utf-8")
