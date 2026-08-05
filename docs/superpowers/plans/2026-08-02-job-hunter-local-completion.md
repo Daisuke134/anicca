@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-49F` — distinguish Ashby GraphQL operation names from response field names before another click
+**Active atomic task:** `L-49` — submit one eligible real Ashby application and store an authoritative receipt
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1684,10 +1684,20 @@ this spec update → commit/push → Telegram milestone before the next item sta
   `22dcee0d1da989363c544d2950bc23e5fdf811ef14e6a77304e47a1595d5d06f`)
   is active with Guardian `healthy` and the approved route SHA unchanged. Daily
   remains unloaded.
-- [ ] **L-49F** — Extract the exact current Ashby submit request `operationName`
+- [x] **L-49F** — Extract the exact current Ashby submit request `operationName`
   values from the official bundle and keep them distinct from response data field
   names. Update the response predicate and classifier tests before another live
-  application; HTTP status and an unmatched POST remain non-authoritative.
+  application; HTTP status and an unmatched POST remain non-authoritative. Receipt:
+  the official current bundle names requests
+  `ApiSubmitSingleApplicationFormAction` and `ApiSubmitMultipleFormsAction`, while
+  their response fields are `submitApplicationFormAction` and
+  `submitMultipleFormsAction`. The request predicate now accepts only the two API
+  operation names and explicitly rejects both field names. Focused six tests and the
+  full 349-test suite PASS; the full suite completed in 18.801 seconds. Immutable
+  release `2b15e2e9f376da017f94b57be190296a783ff392` (archive SHA-256
+  `f9fdaa773ed77c359ea1c83a8644ce896b54871204bf80f3952fea7e81c06afb`)
+  is active with Guardian `healthy` and the approved route SHA unchanged. Daily
+  remains unloaded.
 - [ ] **L-50** — Deliver the Ashby application artifacts and receipt to Telegram.
 - [ ] **L-51** — Submit one eligible real Workday application and store its
   authoritative receipt.
