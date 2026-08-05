@@ -29,16 +29,20 @@ Last updated: 2026-08-05
 
 Completed gate: **13 — truthful experiment attribution**
 
-Active build lane: **15 — natural-Japanese owner reporting**
+Active build lane: **native social measurement — Gate 15 checkpoint evidence and Gate 14 maturity**
 
 Background evidence lane: **14 — native publication, maturity, and real performance write-back; 16 shadow soak**
 
-Gate state: **Gates 1–13 complete; Gate 14 is not closed; Gate 15 execution is active under `docs/superpowers/plans/2026-08-05-gate15-product-owner-telegram.md`; Gate 16A remains queued behind Gate 15. Gate 15 has one manual product-scoped Telegram receipt but no automated owner report. Waiting never blocks independent build work.**
+Gate state: **Gates 1–13 complete; Gate 14 is not closed; Gate 15 is operational for five of six report kinds and remains OPEN only because no product-bound social checkpoint event exists to render. Three owner-report LaunchAgents are loaded and verified. Native social measurement is now the active build lane because it supplies the missing checkpoint evidence and the mature inputs required by Gate 14. Gate 16A remains queued behind this truth boundary. Waiting never blocks independent build work.**
 
 2026-08-05 live audit overrides older optimistic status text where it conflicts:
 
 - Product-scoped read-only collection succeeded for `aniccaios`, `honne`, `ebook-ja`, and `ebook-en`. `aniccaios` returned RevenueCat MRR `$20.73`, five actives, ASC first-time downloads `1` for the latest processed August 1–3 window, and Mixpanel `app_opened=3` / `paywall_primer_viewed=3` for August 4. `honne` returned RevenueCat MRR `$0` and zero actives; ASC was readable but its newest complete source data was July 30; its inside-app funnel remains unavailable. Both ebook Stripe product-scoped queries succeeded with zero paid orders for August 4. KDP is unauthenticated, Gumroad is not configured, and PostHog lacks a project-read credential.
-- A truthful product-scoped Japanese audit reached Telegram as `message_id=6845`. This proves transport and one manual rendering only. It does not close Gate 15 because the scheduled daily renderer still reads the legacy aggregate state and does not automatically produce this product-scoped message.
+- Gate 15 now runs three dedicated LaunchAgents: events every 900 seconds, product-daily at 22:00 local time, and portfolio-weekly at Sunday 21:00 local time. Exact `launchctl print` read-back verified canonical `/Users/anicca/anicca` paths, one successful run per job, and exit status zero; legacy metric and publisher jobs were not modified.
+- Real Telegram delivery produced 11 owner reports with message IDs `6916`–`6926`: one action, four product-daily, four aggregated current incidents, one experiment, and one weekly portfolio report. The delivery ledger contains 11 `sending` claims and 11 matching `delivered` terminal rows. An identical replay added zero reports and zero sends; both report and delivery hashes remained unchanged.
+- The checkpoint builder correctly emitted zero reports. The canonical social checkpoint store has 110 rows and the publication identity ledger has 92 rows, but the inspected checkpoint rows have no product binding. The system does not infer a product or fabricate a receipt. Gate 15 therefore remains OPEN until native reconciliation produces one real product-bound checkpoint and its Telegram receipt.
+- Incident generation initially exposed 42 historical rows. TDD changed the builder to select only the latest business snapshot per product and aggregate all current gaps into one incident per product; the live result is exactly four current incidents dated August 4.
+- The focused production suite passes 66 tests. It covers deterministic rendering, ledger equality, atomic delivery claims, replay dedupe, minor-unit currencies, schedule installation/read-back, and direct Telegram transport.
 - Postiz live read-back shows one `ebook-ja` watercolor TikTok marked `PUBLISHED` on each of August 2, 3, and 4, followed by one `QUEUE` row per day from August 5 through August 11. Queue state is not native publication. No durable producer is proven for August 12 onward.
 - The canonical publication ledger has 92 rows. The native checkpoint store has 110 rows: four measured and 106 missed; four additional checkpoints were due at audit time. The latest watercolor Postiz analytics request returned an empty list, and the legacy Apify collector failed with HTTP 402. Therefore social measurement, winner/loser judgment, and performance write-back are not operating as a closed production loop.
 - The current lease/fence implementation is SQLite in `publish/intent_store.py`. There is no verified shared Marketing Engine PostgreSQL queue to adopt today. Gate 16A first moves this tested contract under the Life Manager worker and proves seven-day shadow equivalence. A PostgreSQL backend is introduced only when more than one host must compete for the same leases; storage migration must not block restoring truthful daily operation.
@@ -124,9 +128,9 @@ The gate numbers below preserve causal and audit history; they are not a serial
 instruction to leave workers idle while a real-world checkpoint matures. Work
 is scheduled by the following executable priority:
 
-1. **BUILD NOW — Gate 15:** implement and verify natural-Japanese owner reports
-   for operations, progress, daily product outcomes, experiments, incidents,
-   and weekly decisions.
+1. **BUILD NOW — native social measurement:** bind reconciled native posts and
+   6h/24h/72h/7d checkpoints to products. This creates the one missing real
+   Gate 15 checkpoint receipt and supplies mature evidence for Gate 14.
 2. **BUILD NOW — Gate 16A:** implement the leased queue, lease recovery,
    idempotency, retry/dead-letter policy, health, read-only reconciliation, and
    rollback tooling; then start shadow mode without stopping the current
@@ -166,7 +170,7 @@ do not mean that evidence gates, platform delays, or policy boundaries vanish.
 | 12 | Make Postiz/browser posting adapters idempotent and lease-owned | **DONE 2026-08-02:** exact route and asset approved; immutable intent passed shadow; upload/draft/promote each accepted once; one exact Postiz read-back reconciled to TikTok ID `7669159327655054613` and its native URL; replay-safe identity ledger and production DB both report `published` |
 | 13 | Join social metrics and business outcomes back to experiments through the attribution ledger | **DONE 2026-08-02:** one production snapshot contains all ten required result records; an exact Supabase token+product query reports deterministic qualified clicks `0`; the nine 15-minute-old social/business results remain `not_mature=null`; fabricated-zero count is zero; exact replay stays one ledger row; schema/verifier pass; 262 tests + 47 subtests pass |
 | 14 | Restore write-back: tactic status, hook EWMA, renderer result, bottom-20% retirement, and 20% exploration | **OPEN 2026-08-05:** three scheduled watercolor rows reached Postiz `PUBLISHED` and seven remain `QUEUE`, but the canonical metric store is only 4 measured / 106 missed and the sampled Postiz TikTok analytics response is empty. Closure still requires ten plan-mapped mature real experiments and one evidenced `won`/`lost` mutation |
-| 15 | Deliver compact natural-Japanese daily, incident, experiment, progress, and weekly Telegram reports | **IN PROGRESS 2026-08-05:** Superpowers plan `docs/superpowers/plans/2026-08-05-gate15-product-owner-telegram.md` is the active slice. A Luna executor will implement six deterministic product-scoped report kinds by TDD; the primary SOL session owns planning and evidence verification. Manual product-scoped message `6845` proves rendering and transport only. Closure still requires automation, per-product native URLs, natural null reasons, canonical-ledger equality, schedule read-back, real Bot receipts for all six kinds, and zero-send replay proof |
+| 15 | Deliver compact natural-Japanese daily, incident, experiment, progress, and weekly Telegram reports | **OPEN — 5/6 LIVE 2026-08-05:** deterministic action, product-daily, incident, experiment, and weekly reports delivered as Telegram messages `6916`–`6926`; three LaunchAgents read back the canonical path and schedules; 66 focused tests pass; identical replay added zero rows and zero sends. The only missing closure evidence is one real product-bound checkpoint report. Existing checkpoint rows have no product binding, so zero was not fabricated |
 | 16A | Build the leased job queue and start non-mutating shadow operation | **OPEN 2026-08-05:** SQLite lease/fence primitives exist for publication intents, but no one durable worker owns all four products, no seven-day shadow is running, and no producer is proven after the August 11 queue ends |
 | 16B | Cut over after the time-dependent shadow soak, then stop Marketing OpenClaw | **TIME-DEPENDENT CLOSURE:** seven consecutive reconciled days, zero duplicate external actions, rollback readiness, Life Manager worker cutover, then OpenClaw processes/crons stop |
 
@@ -2068,7 +2072,7 @@ flowchart TD
 | Post identity | Postiz often returns a profile URL or publish token instead of a safe native URL/ID | Reconciliation obtains exact native ID/URL, sends it to Telegram, and blocks metrics/attribution until identity is deterministic |
 | Social measurement | 4 measured checkpoints, 106 missed, sampled TikTok analytics empty, Apify HTTP 402 | 95% in-window checkpoints using native/provider adapters with explicit failover and alerting |
 | Business measurement | Anicca APIs work; Honne funnel, KDP, Gumroad, and PostHog have explicit gaps | Every product has at least one authoritative conversion and money source; gaps remain visible until connected |
-| Reporting | Telegram transport works; message `6845` is a manual product-scoped proof; scheduled text is legacy aggregate | Deterministic Japanese action, checkpoint, product-daily, incident, experiment, and weekly portfolio messages |
+| Reporting | Five deterministic owner-report kinds are live: action, product-daily, incident, experiment, and weekly portfolio; 11 real receipts are recorded and replay is send-free. Checkpoint has no product-bound source event | Bind native checkpoint evidence to a product and deliver the sixth real report kind; retain ledger equality and replay dedupe |
 | Improvement | scorer rules exist but no real mature `won/lost` production mutation exists | Mature economic result updates hook/tactic/renderer memory, retires losers, reserves exploration, and schedules the next bounded test |
 | Scale | no product has proven repeatable positive contribution | `$0→$1k→$3k→$10k` gates require increasing evidence, cohort repeatability, positive contribution, and bounded spend |
 
@@ -2082,7 +2086,7 @@ flowchart TD
 | 4 | In-window social collection | `test_checkpoint_window_and_nullable_failure` plus rolling 30-day completeness report ≥95% | OK |
 | 5 | App funnel and economics | `test_app_source_to_proceeds_join` for each app with product-filtered ASC/analytics/RevenueCat evidence | OK |
 | 6 | Ebook funnel and economics | `test_ebook_token_to_order_royalty_contribution_join` for each language product | OK |
-| 7 | Japanese owner reports | fixture/ledger equality, replay dedupe test, and real Telegram message IDs for all six report types | OK |
+| 7 | Japanese owner reports | fixture/ledger equality, replay dedupe test, and real Telegram message IDs for all six report types | PARTIAL — 5/6 live; checkpoint source event absent |
 | 8 | Safe self-improvement | `test_mature_economic_winner_updates_memory_once` and `test_three_observations_before_retirement` | OK |
 | 9 | Exploration floor | `test_active_output_keeps_twenty_percent_exploration` | OK |
 | 10 | Lease safety | acquire/renew/expire/fence/retry/dead-letter tests and seven-day shadow with zero duplicate external actions | OK |
@@ -2107,8 +2111,8 @@ E2E judgment:
 
 ### 15.6 Remaining execution steps — order is SSOT
 
-1. **Close Gate 15:** replace the legacy aggregate scheduled report with deterministic product-scoped Japanese action/checkpoint/daily/incident/experiment/weekly renderers; prove ledger equality, replay dedupe, native links, and real Bot receipts.
-2. **Restore native social measurement:** reconcile the August 2–11 watercolor cohort to exact TikTok IDs/URLs; replace the failed Apify dependency with the verified native/provider adapter; schedule 6h/24h/72h/7d collection and overdue alerts; reach 95% in-window completeness before claiming self-improvement.
+1. **Finish Gate 15 checkpoint evidence:** reconcile one native post to an exact product-bound checkpoint, run the installed event reporter, record its real Telegram message ID, and prove an identical replay sends nothing. The other five report kinds, ledger equality, schedules, and live receipts are complete.
+2. **Restore native social measurement:** reconcile the August 2–11 watercolor cohort to exact TikTok IDs/URLs and product IDs; replace the failed Apify dependency with the verified native/provider adapter; schedule 6h/24h/72h/7d collection and overdue alerts; reach 95% in-window completeness before claiming self-improvement.
 3. **Make daily publication continuous:** build one producer per product, maintain a rolling seven-day intent horizon, publish through leased idempotent actions, reconcile native links within 15 minutes, and alert before any product reaches zero future intents.
 4. **Close Gate 16A:** move scheduling ownership to one Life Manager worker using the existing SQLite lease/fence contract; implement expiry recovery, bounded retry, dead-letter, health, read-only reconciliation, and rollback; start seven-day non-mutating shadow without stopping the current runtime.
 5. **Close `aniccaios` economics:** join campaign/source to first download, Mixpanel gotcha/paywall, RevenueCat trial/paid/churn/refund/MRR, ASC proceeds, spend, and contribution; run one bottleneck experiment at a time.
