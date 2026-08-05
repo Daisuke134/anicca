@@ -50,6 +50,19 @@ class RouteReplayTests(unittest.TestCase):
         self.assertEqual(receipt["quality"], {"luna": 1.0, "terra": 1.0})
         self.assertTrue(receipt["evidence_not_weakened"])
 
+    def test_three_sample_gate_uses_median_and_requires_every_sample_quality(self):
+        digest = hashlib.sha256(json.dumps(SNAPSHOT, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+        luna = [result(9, .01), result(2, .02), result(3, .03)]
+        terra = [result(4, .04), result(5, .05), result(30, .06)]
+        for payload in luna + terra:
+            payload["snapshot_sha256"] = digest
+        receipt = evaluate_route_replay(SNAPSHOT, {"luna": luna, "terra": terra})
+        self.assertEqual(receipt["status"], "pass")
+        self.assertEqual(receipt["metrics"]["luna"]["latency_seconds"], 3)
+        self.assertEqual(receipt["sample_count"], {"luna": 3, "terra": 3})
+        luna[0]["results"][0]["hard_eligible"] = False
+        self.assertEqual(evaluate_route_replay(SNAPSHOT, {"luna": luna, "terra": terra})["status"], "fail")
+
     def test_missing_evidence_fails_gate(self):
         raw = json.dumps(SNAPSHOT, sort_keys=True, separators=(",", ":")).encode()
         digest = hashlib.sha256(raw).hexdigest()
