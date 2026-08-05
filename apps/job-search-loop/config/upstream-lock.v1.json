@@ -65,6 +65,80 @@
         "tree": "https://github.com/santifer/career-ops/tree/ae1a92dd1a4d299e637ce5d96f18e79f743a50ba",
         "license": "https://github.com/santifer/career-ops/blob/career-ops-v1.25.0/LICENSE"
       }
+    },
+    "browser-use": {
+      "repository": "https://github.com/browser-use/browser-use",
+      "package_version": "0.13.7",
+      "release": "0.13.7",
+      "released_at": "2026-07-27T17:10:13Z",
+      "commit_sha": "f0aa3a8bb03779c71a5aa262d389e3bfe6b77cdc",
+      "tree_sha": "6ebd132305353e4e62d8b7f61736ccbcbb377ab8",
+      "file_count": 480,
+      "archive": {
+        "url": "https://api.github.com/repos/browser-use/browser-use/tarball/f0aa3a8bb03779c71a5aa262d389e3bfe6b77cdc",
+        "content_sha256": "99190d8045faa2f5831dfc6a0f2403bdc4301e1229f6690ebf3af8fc1ab4fe22"
+      },
+      "license": {
+        "spdx": "MIT",
+        "copyright": "Copyright (c) 2024 Gregor Zunic",
+        "blob_sha": "1ea3836ce58a4cd32c90c0b4f4e736d840d23780",
+        "content_sha256": "135c57671b0ee957669b05a0ca00cc06f645496d351e2e732832c6e276da9a5e"
+      },
+      "files": {
+        "LICENSE": {
+          "blob_sha": "1ea3836ce58a4cd32c90c0b4f4e736d840d23780",
+          "content_sha256": "135c57671b0ee957669b05a0ca00cc06f645496d351e2e732832c6e276da9a5e",
+          "size": 1069
+        },
+        "README.md": {
+          "blob_sha": "4eec68396b2cfe2f81cb0ebae79930d123baaf9e",
+          "content_sha256": "20f5da760af5f727a565ea295e43ead02c0440994912c5b86c88f0c44056b0b2",
+          "size": 13002
+        },
+        "examples/use-cases/apply_to_job.py": {
+          "blob_sha": "91d472dfda307e20d5cd08cabc6c539e74ec8f61",
+          "content_sha256": "95a9e9719a77060d5c1d2f482089fa3f3d993ec285ec9447314e120683c7979c",
+          "size": 5935
+        },
+        "pyproject.toml": {
+          "blob_sha": "92f970dea6d8efc79339d354d23b1e92814c2224",
+          "content_sha256": "fe1b8a0a928cf6e4a8db04fc2ad88c98bb231b4b67d1c988dd46488ddc604509",
+          "size": 7599
+        }
+      },
+      "upstream_dependency_lock": "absent",
+      "local_dependency_lock": {
+        "resolver": "uv 0.10.7",
+        "python_version": "3.12",
+        "platform": "aarch64-apple-darwin",
+        "no_header": true,
+        "no_annotate": true,
+        "input_path": "config/upstreams/browser-use-0.13.7.in",
+        "input_sha256": "e5c0548d2e9c5cf8aac045ad36f8d6f7c14d3d987f1269a58fb0c4026533a2b4",
+        "path": "config/upstreams/browser-use-0.13.7-macos-arm64-py312.lock",
+        "content_sha256": "3ac583136825fd6af93fb86e370189fa3f7c3095b18f5061788b69e81a5e5e21"
+      },
+      "consumed_contracts": {
+        "actions": [
+          "browser_use/tools/registry/service.py",
+          "browser_use/tools/registry/views.py",
+          "browser_use/tools/service.py"
+        ],
+        "history": ["browser_use/agent/views.py"],
+        "screenshots": [
+          "browser_use/agent/views.py",
+          "browser_use/browser/session.py",
+          "browser_use/tools/service.py"
+        ],
+        "job_application_example": ["examples/use-cases/apply_to_job.py"]
+      },
+      "sources": {
+        "release": "https://github.com/browser-use/browser-use/releases/tag/0.13.7",
+        "commit": "https://github.com/browser-use/browser-use/commit/f0aa3a8bb03779c71a5aa262d389e3bfe6b77cdc",
+        "tree": "https://github.com/browser-use/browser-use/tree/f0aa3a8bb03779c71a5aa262d389e3bfe6b77cdc",
+        "license": "https://github.com/browser-use/browser-use/blob/0.13.7/LICENSE",
+        "job_application_example": "https://github.com/browser-use/browser-use/blob/0.13.7/examples/use-cases/apply_to_job.py"
+      }
     }
   }
 }
