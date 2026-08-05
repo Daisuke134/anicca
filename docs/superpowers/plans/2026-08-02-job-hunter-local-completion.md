@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-06 JST
-**Active atomic task:** `L-49K0C/SCAN-1` — bound official ATS discovery and prove resident candidate output
+**Active atomic task:** `L-49K0C/API-2` — persist real supported-ATS liveness receipts for the resident queue
 **Status:** The immutable four-lane runtime, hourly/five-minute schedules, grounded
 materials, ownership fences, Gmail ingestion, Telegram outbox, quota accounting, and
 Ashby observation classifier are implemented and tested. The daily LaunchAgent is
@@ -18,9 +18,12 @@ structured output; launchd exited 1 and submitted zero applications. A bounded r
 parallel tool results still expanded its transcript to 210,336 bytes. The local fix
 removes discovery execution from Luna: deterministic code now runs every recovery
 query, deduplicates the results, and hands a bounded schema-complete artifact to
-Terra. A live six-query proof finishes in 4.9 seconds with 80 unique candidates, 21
-Japan-explicit candidates, a 50KB mode-0600 artifact, and full tests 391/391 passing.
-Resident re-verification is next. Telegram sent the daily
+Terra. Resident release `cd2866efc`, run `daily-20260806-003739`, produced 80
+deduplicated candidates, including 21 with explicit Japan evidence, and expanded the
+durable queue from 48 to 128 links. SCAN-1 is complete. Terra plan and Terra-high
+then returned zero dossiers because the full 80-candidate batch exceeded bounded
+deep-analysis capacity; the browser actor submitted zero applications and left 91
+links unverified, so terminal validation correctly exited 76. Telegram sent the daily
 report as message `7377`, but it contains no application evidence because none exists.
 The authoritative ledger still has zero current submission confirmations. Historical
 `submitted` projection rows are not current authoritative confirmation.
@@ -2238,7 +2241,7 @@ the resident worker from producing one authoritative application receipt:
       the browser actor stdout began afterward at 00:08:55 JST. Thus the sweep no
       longer depends on model compliance. API-2 remains unchecked only for the first
       real supported-ATS receipt, which `SCAN-1` must supply.
-  - [ ] `SCAN-1` — Port board-level discovery and normalized job metadata fixtures.
+  - [x] `SCAN-1` — Port board-level discovery and normalized job metadata fixtures.
     - Rejected path: Career Ops EchoJobs passed mocked upstream tests but its live
       public endpoint returned Cloudflare HTTP 403 for both browser and Career Ops
       user agents on 2026-08-06. It is not shipped as a working provider.
@@ -2285,7 +2288,16 @@ the resident worker from producing one authoritative application receipt:
       4.9 seconds with 80 unique candidates, 21 Japan-explicit candidates, official
       ATS success 6/6, Firecrawl failure 6/6 without pipeline failure, and a 50KB
       artifact. Focused tests 25/25, shell syntax, and full Job Hunter tests 391/391
-      pass; resident candidate-output proof remains required.
+      pass.
+    - Resident completion proof: immutable release `cd2866efc76c6c2d9c747dfe2633d7464118da49`,
+      run `daily-20260806-003739`, refreshed 2,723 official postings and wrote a
+      51,537-byte mode-0600 prefilter result containing 80 unique candidates and 21
+      explicit Japan matches. The resident browser owner consumed that artifact and
+      expanded the durable candidate queue from 48 to 128 links; unverified links
+      increased from 11 to 91. The run submitted zero applications because Terra
+      plan and Terra-high returned zero dossiers for the oversized deep-analysis
+      batch, then terminal validation correctly exited 76. This proves discovery and
+      persistence only; it does not prove application or API-2 receipt completion.
   - [ ] `DEDUP-1` — Port company-role, repost-window, and JD-fingerprint parity.
   - [ ] `GATE-1` — Port cheap knockout pre-scan without weakening local ranking.
   - [ ] `FILL-1` — Port ATS-specific non-submit form behavior behind local fences.
