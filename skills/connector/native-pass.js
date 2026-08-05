@@ -109,6 +109,28 @@ function recordLastResult(stateDir, bounded) {
   fs.writeFileSync(file, `${JSON.stringify({ status: bounded.status, write: bounded.write })}\n`, {
     encoding: "utf8", mode: 0o600,
   });
+  const write = bounded.write;
+  if (write && write.telegram_provider_id && write.event_ref && write.calendar_event_ref) {
+    const historyFile = path.join(stateDir, "delivery-receipts.jsonl");
+    let existing = "";
+    try {
+      const stat = fs.statSync(historyFile);
+      if (stat.size > 1_000_000) unavailable();
+      existing = fs.readFileSync(historyFile, "utf8");
+    } catch (error) {
+      if (!error || error.code !== "ENOENT") throw error;
+    }
+    const receipt = {
+      event_ref: write.event_ref,
+      calendar_event_ref: write.calendar_event_ref,
+      telegram_provider_id: write.telegram_provider_id,
+    };
+    const duplicate = existing.split(/\r?\n/).filter(Boolean).some((line) => {
+      try { return JSON.parse(line).telegram_provider_id === receipt.telegram_provider_id; }
+      catch { unavailable(); }
+    });
+    if (!duplicate) fs.appendFileSync(historyFile, `${JSON.stringify(receipt)}\n`, { encoding: "utf8", mode: 0o600 });
+  }
 }
 
 async function runNativePass(options = {}) {
