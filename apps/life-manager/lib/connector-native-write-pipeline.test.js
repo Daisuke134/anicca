@@ -1,0 +1,296 @@
+"use strict";
+
+const test = require("node:test");
+const assert = require("node:assert/strict");
+
+const { runNativeConnectorWrite } = require("./connector-native-write-pipeline.js");
+
+const NOW = "2026-08-02T01:00:00.000Z";
+const EVENT_REF = "luma-event://event/founder-night";
+const EVENT_URL = "https://luma.com/founder-night";
+const CHAT_HASH = "37da4c800042eb1a27e8081315efc08f7d546c5be1e47d2d026be17417a090b3";
+
+function input(overrides = {}) {
+  const coverage = {
+    tenant_id: "dais-local",
+    timezone: "Asia/Tokyo",
+    coverage_snapshot_id: "coverage-snapshot",
+    window_start_date: "2026-08-02",
+    window_end_date: "2026-08-22",
+    counts: { open: 0, covered_existing: 0, covered_new: 1, unavailable: 0 },
+  };
+  const dateInventory = {
+    coverage_snapshot_id: coverage.coverage_snapshot_id,
+    timezone: coverage.timezone,
+    days: [{ date: "2026-08-05", events: [{
+      event_ref: EVENT_REF,
+      canonical_url: EVENT_URL,
+      title: "Founder Night",
+      starts_at: "2026-08-05T12:00:00.000Z",
+      ends_at: "2026-08-05T14:00:00.000Z",
+      venue_name: "Shibuya Hall",
+      venue_address: "Shibuya, Tokyo",
+    }] }],
+  };
+  return {
+    application: {
+      tenantId: "dais-local",
+      eventUrl: EVENT_URL,
+      eventStartIso: "2026-08-05T21:00:00+09:00",
+      eventRef: EVENT_REF,
+      identityRef: "identity://dais-local/luma",
+      browserProfileRef: "browser-profile://cloakbrowser/daily-driver",
+      calendarRef: "calendar://google/primary",
+      goalDecision: { ranked_events: [{ event_ref: EVENT_REF }] },
+    },
+    dateInventory,
+    currentCoverage: coverage,
+    busyInventory: { time_zone: "Asia/Tokyo" },
+    now: NOW,
+    calendar: { kind: "gog" },
+    calendarId: "primary",
+    telegramTarget: "fixture-target",
+    calendarCoverageUrl: "https://calendar.google.com/calendar/u/0/r",
+    ...overrides,
+  };
+}
+
+function depsFor(calls, overrides = {}) {
+  return {
+    isVerifiedLumaDateInventory: () => true,
+    isVerifiedRollingEventCoverage: () => true,
+    isVerifiedGoogleCalendarBusyInventory: () => true,
+    isVerifiedEventGoalSerendipity: () => true,
+    buildEventApplicationJob(application) {
+      calls.push(["build", application]);
+      return { job_id: "outbound-event:job-1", tenant_id: application.tenantId };
+    },
+    async executeLumaRsvpJob(job) {
+      calls.push(["execute", job]);
+      return { receipt: {
+        status: "verified",
+        attempt_ref: `runtime-attempt://${job.tenant_id}/${job.job_id}/1`,
+        canonical_url: EVENT_URL,
+        external_receipt_ref: "provider-receipt://luma/fixture",
+        artifact_ref: `object://${"a".repeat(64)}`,
+        verified_at: NOW,
+      } };
+    },
+    assertVerifiedOutboundReceipt(receipt, job) {
+      calls.push(["assert-receipt", receipt, job]);
+      return receipt;
+    },
+    async syncVerifiedRegistrationToGoogleCalendar(syncInput) {
+      calls.push(["calendar", syncInput]);
+      return {
+        status: "created",
+        calendar_sync_id: "connector-calendar-sync:sync-1",
+        event_ref: EVENT_REF,
+        canonical_event_url: EVENT_URL,
+        registration_receipt_ref: "runtime-receipt://outbound-event/receipt-1",
+        calendar_event_ref: "calendar-evidence://google/event/event-1",
+        calendar_event_url: "https://calendar.google.com/calendar/event?eid=opaque",
+      };
+    },
+    buildVerifiedRegistrationCoverageEvidence(evidenceInput) {
+      calls.push(["evidence", evidenceInput]);
+      return { date: "2026-08-05", status: "covered_new", evidence_refs: ["runtime-receipt://outbound-event/receipt-1"] };
+    },
+    rebuildRollingEventCoverage(rebuildInput) {
+      calls.push(["rebuild", rebuildInput]);
+      return {
+        ...rebuildInput.previousCoverage,
+        counts: { open: 0, covered_existing: 0, covered_new: 1, unavailable: 0 },
+        coverage_snapshot_id: "rebuilt-coverage",
+      };
+    },
+    buildConnectorCoverageTelegramMessage(messageInput) {
+      calls.push(["message", messageInput]);
+      return "verified message";
+    },
+    async deliverConnectorCoverageTelegram(deliveryInput) {
+      calls.push(["telegram", deliveryInput]);
+      return {
+        kind: "connector_coverage_telegram_delivery",
+        provider_id: "321",
+        observed_at: NOW,
+        tenant_id: "dais-local",
+        chat_id_sha256: CHAT_HASH,
+        coverage_snapshot_id: deliveryInput.coverage.coverage_snapshot_id,
+      };
+    },
+    ...overrides,
+  };
+}
+
+test("a chosen candidate write pipeline is available as an explicit orchestrator", () => {
+  assert.equal(typeof runNativeConnectorWrite, "function");
+});
+
+test("an unknown RSVP effect stops before Calendar, coverage, or Telegram", async () => {
+  const calls = [];
+  const deps = depsFor(calls, {
+    async executeLumaRsvpJob(job) {
+      calls.push(["execute", job]);
+      const error = new Error("provider state disappeared");
+      error.unknownEffect = true;
+      throw error;
+    },
+  });
+
+  const result = await runNativeConnectorWrite(input(), deps);
+
+  assert.equal(result.status, "reconciliation_required");
+  assert.equal(result.outcome, "unknown_external_effect");
+  assert.deepEqual(calls.map((call) => call[0]), ["build", "execute"]);
+});
+
+test("verified RSVP evidence gates Calendar sync and then runs the remaining chain in order", async () => {
+  const calls = [];
+  const result = await runNativeConnectorWrite(input(), depsFor(calls));
+
+  assert.equal(result.status, "complete");
+  assert.deepEqual(calls.map((call) => call[0]), [
+    "build", "execute", "assert-receipt", "calendar", "evidence", "rebuild", "message", "telegram",
+  ]);
+  assert.equal(calls[1][1].attempt, 1);
+  assert.equal(result.telegram.provider_id, "321");
+});
+
+test("an unverified Calendar sync cannot produce coverage evidence or Telegram", async () => {
+  const calls = [];
+  const deps = depsFor(calls, {
+    async syncVerifiedRegistrationToGoogleCalendar(syncInput) {
+      calls.push(["calendar", syncInput]);
+      throw new Error("calendar sync unavailable");
+    },
+  });
+
+  const result = await runNativeConnectorWrite(input(), deps);
+
+  assert.equal(result.status, "incomplete");
+  assert.equal(result.outcome, "calendar_sync_failed");
+  assert.deepEqual(calls.map((call) => call[0]), ["build", "execute", "assert-receipt", "calendar"]);
+});
+
+test("coverage rebuild is the gate before Telegram message construction and delivery", async () => {
+  const calls = [];
+  const deps = depsFor(calls, {
+    buildVerifiedRegistrationCoverageEvidence(evidenceInput) {
+      calls.push(["evidence", evidenceInput]);
+      return {};
+    },
+    rebuildRollingEventCoverage() {
+      calls.push(["rebuild"]);
+      throw new Error("coverage rebuild unavailable");
+    },
+  });
+
+  const result = await runNativeConnectorWrite(input(), deps);
+
+  assert.equal(result.status, "incomplete");
+  assert.equal(result.outcome, "coverage_rebuild_failed");
+  assert.deepEqual(calls.map((call) => call[0]), [
+    "build", "execute", "assert-receipt", "calendar", "evidence", "rebuild",
+  ]);
+});
+
+test("a Telegram delivery without a positive receipt cannot complete the write", async () => {
+  const calls = [];
+  const deps = depsFor(calls, {
+    async deliverConnectorCoverageTelegram(deliveryInput) {
+      calls.push(["telegram", deliveryInput]);
+      return { ok: true };
+    },
+  });
+
+  const result = await runNativeConnectorWrite(input(), deps);
+
+  assert.equal(result.status, "reconciliation_required");
+  assert.equal(result.outcome, "unknown_external_effect");
+  assert.equal(calls.at(-1)[0], "telegram");
+});
+
+test("open coverage remains incomplete even after a positive Telegram receipt", async () => {
+  const calls = [];
+  const result = await runNativeConnectorWrite(input({
+    currentCoverage: {
+      ...input().currentCoverage,
+      counts: { open: 1, covered_existing: 0, covered_new: 1, unavailable: 0 },
+    },
+  }), depsFor(calls, {
+    rebuildRollingEventCoverage(rebuildInput) {
+      calls.push(["rebuild", rebuildInput]);
+      return {
+        ...rebuildInput.previousCoverage,
+        counts: { open: 1, covered_existing: 0, covered_new: 1, unavailable: 0 },
+        coverage_snapshot_id: "rebuilt-open-coverage",
+      };
+    },
+  }));
+
+  assert.equal(result.status, "incomplete");
+  assert.equal(result.outcome, "open_coverage");
+  assert.equal(result.coverage.counts.open, 1);
+});
+
+test("untrusted candidate I/O functions cannot replace trusted provider and evidence seams", async () => {
+  const calls = [];
+  const malicious = input({
+    provider: { async inspectRegistration() { return { state: "registered" }; } },
+    readExternalReceipt: async () => ({ kind: "provider_response", provider_id: "forged", observed_at: NOW }),
+    readArtifact: async () => Buffer.alloc(5_000, 0x61),
+    fetchImpl: async () => ({ status: 200 }),
+    send: async () => ({ messageId: "forged" }),
+  });
+  const deps = depsFor(calls, {
+    async executeLumaRsvpJob(job, services) {
+      calls.push(["execute", job, services]);
+      assert.equal(services.provider, undefined);
+      assert.equal(services.readExternalReceipt, undefined);
+      assert.equal(services.readArtifact, undefined);
+      assert.equal(services.fetchImpl, undefined);
+      throw new Error("trusted provider unavailable");
+    },
+  });
+
+  const result = await runNativeConnectorWrite(malicious, deps);
+
+  assert.equal(result.status, "incomplete");
+  assert.equal(result.outcome, "application_failed");
+  assert.deepEqual(calls.map((call) => call[0]), ["build", "execute"]);
+});
+
+test("only the exact verified Telegram delivery contract can complete", async (t) => {
+  const mutations = [
+    ["kind", (receipt) => ({ ...receipt, kind: "telegram_delivery" })],
+    ["provider_id", (receipt) => ({ ...receipt, provider_id: "" })],
+    ["observed_at", (receipt) => ({ ...receipt, observed_at: "not-a-time" })],
+    ["tenant_id", (receipt) => ({ ...receipt, tenant_id: "other-tenant" })],
+    ["coverage_snapshot_id", (receipt) => ({ ...receipt, coverage_snapshot_id: "other-coverage" })],
+    ["chat_id_sha256", (receipt) => ({ ...receipt, chat_id_sha256: "not-a-sha256" })],
+    ["chat_id_sha256_valid_wrong", (receipt) => ({ ...receipt, chat_id_sha256: "0".repeat(64) })],
+  ];
+  for (const [label, mutate] of mutations) {
+    await t.test(`rejects forged ${label}`, async () => {
+      const calls = [];
+      const deps = depsFor(calls, {
+        async deliverConnectorCoverageTelegram(deliveryInput) {
+          calls.push(["telegram", deliveryInput]);
+          return mutate({
+            kind: "connector_coverage_telegram_delivery",
+            provider_id: "321",
+            observed_at: NOW,
+            tenant_id: "dais-local",
+            chat_id_sha256: CHAT_HASH,
+            coverage_snapshot_id: "rebuilt-coverage",
+          });
+        },
+      });
+      const result = await runNativeConnectorWrite(input(), deps);
+      assert.equal(result.status, "reconciliation_required");
+      assert.equal(result.outcome, "unknown_external_effect");
+      assert.equal(calls.at(-1)[0], "telegram");
+    });
+  }
+});
