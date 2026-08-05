@@ -2135,22 +2135,90 @@ E2E judgment:
 
 ### 15.6 Remaining execution steps — order is SSOT
 
-Completed prerequisite: the free-only hourly truth plane and quiet, deduplicated Telegram transport are live. The 30-day completeness soak continues in the background.
+The prior plan incorrectly treated the product accounts and producers as absent and made a human-built `aniccaios` creative the first slice. Verified reality is different: product-specific Postiz accounts and OpenClaw-era ReelClaw/Larry/watercolor producers already exist, but their marketing crons were quarantined during the 2026-08-01 migration and were never closed into one launchd-owned learning loop. The system, not the implementation agent or owner, MUST generate and mutate creatives.
 
-1. **Close the `aniccaios` fresh economy first.** Build its canonical seven-day producer, require real visual approval, publish one immutable experiment with an owned campaign token, reconcile the exact native URL, collect 6h/24h metrics, and join that token to App Store Connect/product analytics/RevenueCat. **Done:** Telegram shows one real post link and one acquisition-to-paid/proceeds cohort; replay creates no duplicate action or message.
-2. **Close the other three product economies one at a time.** Repeat the same producer-to-money proof for `honne`, then `ebook-ja`, then `ebook-en`. Honne MUST have monetization and an inside-app funnel; each ebook MUST have an owned paid edition plus KDP or direct-sale order/refund/revenue evidence. **Done:** all four products continuously hold a seven-day horizon and each has one mature, isolated, real-money cohort.
-3. **Enable learning, healing, and Life Manager ownership.** Accumulate at least ten mature comparable experiments per product; promote only evidenced winners, retire only after three observations, retain 20% exploration, and add bounded retry, correction/backfill, lease recovery, dead-letter ownership, and redacted isolated browser evidence. Run a seven-day non-mutating Life Manager shadow before cutover. **Done:** zero duplicate external actions, tested rollback, and real winner/loser write-back determine the next experiment automatically.
-4. **Enforce the `$0 -> $1k -> $3k -> $10k` scale policy and generalize it.** Implement the executable policy that rejects scaling on views-only, missing cost, non-positive contribution, or undeclared payback. Apps advance toward `$10k gross MRR`; ebook language products advance toward `$10k gross monthly revenue`. Convert the proven contracts into Mobile App Factory and Ebook Factory manifests. **Done:** every increase is authorized by that product's own receipts, positive contribution, and repeatable cohort; `$10k` remains a target, never a guarantee.
+1. **Establish complete runtime truth, duplicate safety, and truthful owner reporting.** Inventory all effective scheduler stores before migration: OpenClaw CLI output, its on-disk `jobs.json`, launchd, and product/account registries MUST reconcile, and every enabled publishing path MUST map to exactly one product and account. Add a cross-scheduler publication lease/duplicate guard before moving schedules. Preserve every known product/account/Postiz mapping, make the exact native post ID and URL mandatory, and collect every available `views`, `impressions`, `likes`, `comments`, `shares`, `saves`, and derived engagement rate. Postiz remains the first adapter; a provider-empty response falls through to a free official/native/public adapter. Product reports also expose ASC downloads and country breakdown, RevenueCat MRR/trials/subscriptions/revenue, and the configured product-analytics source. Telegram MUST render the values and clickable post link already present in evidence, never discard them or print `None`; `not_instrumented`, `credential_missing`, `provider_empty`, `not_mature`, and measured zero are distinct states. **Done:** no enabled publisher or account is unowned, an old-enough real post on every active platform produces a ledger-backed Telegram message whose displayed fields equal the source evidence, overlap cannot duplicate a publication, and replay sends no duplicate message.
+2. **Migrate the existing product agents into one launchd control plane.** Inventory and import the disabled OpenClaw jobs, existing Postiz integrations, schedules, prompt/content libraries, ReelClaw/Larry/watercolor generators, and account histories into four product manifests: `aniccaios`, `honne`, `ebook-ja`, and `ebook-en`. Life Manager's separate publishing pipeline is not migrated here; it consumes the same measurement/learning contracts later. Run shadow equivalence before disabling any surviving legacy schedule. **Done:** launchd is the only scheduler for these four products, every account remains product-isolated, each product maintains a seven-day publication horizon, and no creative is manually produced by the implementation agent.
+3. **Close autonomous learning, artifact verification, and self-healing.** Join native post metrics and business outcomes to immutable experiment/creative IDs; feed the result into the exact hook, script, CTA, renderer, and format pools consumed by the next generator run. Record source asset hashes and semantic creative signatures, reject accidental repeats, promote evidenced winners, retire only after at least three comparable observations, and reserve at least 20% exploration. Bounded retry, correction/backfill, lease recovery, dead-letter ownership, credential incidents, and artifact-diff evidence are part of the same loop. **Done:** two successive real runs prove that measured evidence changed the next agent decision and artifact, while replay and overlap tests prove zero duplicate external actions.
+4. **Kickstart, prove, soak, then scale all four autonomous economies.** Kickstart the real launchd agent for `aniccaios`, then `honne`, `ebook-ja`, and `ebook-en`; verify generation, visual preflight, Postiz publication, native reconciliation, social checkpoints, business outcome, learning write-back, next scheduling, and truthful Telegram output without a human turn. Run a seven-day shadow/soak before final cutover. Enforce executable `$0 -> $1k -> $3k -> $10k` gates: apps target `$10k gross MRR`; each ebook language product targets `$10k gross monthly revenue`, not MRR. **Done:** every scale increase uses that product's own complete cohort, positive contribution, declared payback, and repeatable results; views alone can never authorize scale.
 
-#### 15.6.1 Active slice — `aniccaios` fresh economy
+#### 15.6.1 Verified current state and corrected active slice
 
-Status: **IN PROGRESS — producer contract is the first missing link.**
+Status: **IN PROGRESS — Step 1 truth/report closure is first. No creative implementation is authorized in this slice.**
 
-- Revenue-side reads already work: the latest verified business snapshot exposes App Store Connect downloads, product analytics events, five RevenueCat actives, and `$20.73` MRR. These portfolio values are not attributed to a new social cohort yet.
-- Existing `aniccaios` publication rows resolve to native TikTok/Instagram/YouTube URLs and can be measured, but they are legacy rows with `experiment_id=null` and `creative_sha256=null`; they cannot prove which creative caused an install or subscription.
-- Historical Reelclaw plist files exist, but the inspected `aniccaios` jobs are not loaded. Their scripts publish directly to Postiz, reuse a bootstrap asset, and omit the owned `/go/<token>` attribution URL. They therefore are not the Step-2 producer.
-- The first implementation is one `aniccaios` producer contract that creates immutable canonical intents with a unique experiment, creative hash, approved asset, dedicated account, owned attribution token, future schedule, and seven-day horizon. It MUST stop at `pending_visual_approval` rather than invent owner approval or bypass preflight.
-- After one approved intent is promoted, completion evidence is: Postiz receipt, exact native URL, 6h and 24h metric snapshots, token-resolved App Store cohort, RevenueCat/ASC money snapshot, compact Telegram link report, and replay-zero. A portfolio MRR value without cohort linkage does not close this slice.
+- OpenClaw exposes conflicting operational views: `openclaw cron list --json` returned only an unrelated funder job, while the current on-disk `~/.openclaw/cron/jobs.json` contains the enabled `4.7-slideshow-morning` publisher and its pre-quarantine backup contains the wider Larry, ReelClaw, watercolor, slideshow, and strategy-updater inventory. The enabled slideshow targets `anicca-en`, which is absent from the canonical account registry. The migration MUST treat every scheduler store and actual side-effect path as evidence; CLI visibility alone is not an inventory or duplicate-safety proof.
+- Canonical account registries already map the product agents to their Postiz integrations. Their approved/quarantined status is preserved until launchd equivalence proves safe cutover.
+- Postiz returned YouTube values for an old-enough real post but returned an empty analytics array for a real TikTok post. The free native TikTok collector measured that same post as `1037` views, `8` likes, `0` comments, `2` shares, and `1` save. The delivered Telegram renderer displayed only views and the literal `None` impression value, proving a report-projection defect in addition to the provider gap.
+- The Anicca iOS source tree already links and initializes both Mixpanel and PostHog SDKs. The Marketing Engine currently reads Mixpanel and unconditionally marks PostHog unavailable because its read path is not wired. Instrumentation existence, production event flow, and read credential availability MUST be reported as separate facts. Honne remains `not_verified` until its authoritative app repository and live event source are resolved.
+- Historical ReelClaw output contains 58 run directories but only 11 unique final-video hashes, with individual assets repeated up to 17 times. A successful process exit or publication receipt is therefore not proof of self-improvement.
+- The loaded `ai.anicca.self-improve-evolve` job targets the earning/Polymarket OpenEvolve path, not marketing creative evolution; the Marketing Engine scorer and write-back runners remain quarantined or connected to legacy state. No current loaded loop proves metric-to-creative mutation.
+
+#### 15.6.2 Target repository structure
+
+Product agents own configuration and state; shared stages own behavior. Generator names are adapters, not separate schedulers.
+
+```text
+skills/earn/marketing-engine/
+├── contracts/                 # schemas: intent, receipt, metric, outcome, decision
+├── registry/
+│   ├── accounts/              # existing Postiz account/integration mappings
+│   ├── products/              # economics and source configuration
+│   └── channels/              # platform capabilities and fallback policy
+├── agents/
+│   ├── aniccaios/manifest.json
+│   ├── honne/manifest.json
+│   ├── ebook-ja/manifest.json
+│   └── ebook-en/manifest.json # configuration only; no forked engine code
+├── runtime/
+│   ├── supervisor.py          # launchd entry point and schedule ownership
+│   ├── product_worker.py      # one complete product turn
+│   ├── leases.py              # idempotency, fence, retry, dead letter
+│   └── health.py              # durable recovery ownership
+├── stages/
+│   ├── observe/               # prior social and business evidence
+│   ├── decide/                # one bounded causal mutation
+│   ├── generate/              # invoke an existing generator adapter
+│   ├── preflight/             # policy, visual, hash, repeat checks
+│   ├── publish/               # Postiz first
+│   ├── reconcile/             # exact native ID and URL
+│   ├── measure/               # social and business checkpoints
+│   ├── attribute/             # experiment-to-outcome join
+│   ├── learn/                 # score, promote, retire, explore, write back
+│   └── report/                # truthful compact Telegram projection
+├── adapters/
+│   ├── generators/            # reelclaw.py, larry.py, watercolor.py
+│   ├── publishers/            # postiz.py
+│   └── metrics/               # Postiz, native/free social, ASC, RevenueCat,
+│                              # Mixpanel/PostHog, KDP/direct sales
+├── state/                     # one canonical append-only ledger family
+├── evidence/                  # immutable receipts, artifacts, screenshots
+├── launchd/                   # one supervisor plus product manifests
+├── migrations/openclaw/       # cron inventory, mapping, equivalence receipts
+└── tests/                     # contracts, integration, live E2E, replay/overlap
+```
+
+#### 15.6.3 Autonomous turn contract
+
+```mermaid
+flowchart LR
+    L["launchd supervisor"] --> A["Product manifest<br/>account · cadence · goal"]
+    A --> O["Observe<br/>social + installs/orders + money"]
+    O --> D["Decide one mutation<br/>hook · CTA · format · renderer"]
+    D --> G["Existing generator adapter<br/>ReelClaw · Larry · watercolor"]
+    G --> V{"Preflight passes?<br/>visual · policy · new signature"}
+    V -->|no| H["Self-heal<br/>bounded regenerate or incident"]
+    H --> G
+    V -->|yes| P["Postiz publish"]
+    P --> R["Reconcile exact native ID + URL"]
+    R --> M["6h · 24h · 72h · 7d metrics"]
+    M --> B["ASC/KDP + RevenueCat/sales + analytics"]
+    B --> J["Join by product + experiment + creative"]
+    J --> W["Write back winner/loser<br/>≥20% exploration"]
+    W --> N["Schedule next autonomous turn"]
+    R --> T["Telegram publication link"]
+    J --> T2["Telegram truthful result + next change"]
+    N --> O
+```
 
 ### 15.7 Ideal owner experience in Telegram
 
