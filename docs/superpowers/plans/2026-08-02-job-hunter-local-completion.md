@@ -2203,6 +2203,12 @@ the resident worker from producing one authoritative application receipt:
     PII-free receipt. Only exact 200/membership is active and exact 404/410 or board
     absence is expired; timeout, redirect, 429, 5xx, parse drift, and network error
     remain pending for browser fallback.
+    - Implemented locally: bounded GET with redirect refusal, exact status handling,
+      Ashby/Workable membership classification, URL-hashed mode-0600 receipts, and
+      browser-fallback prompt contract. Focused tests 24/24 and full Job Hunter suite
+      382/382 pass. The current durable pending queue contains 11 browser-only URLs,
+      so completion remains unchecked until a resident run observes an API-supported
+      ATS posting and persists its liveness receipt.
   - [ ] `SCAN-1` — Port board-level discovery and normalized job metadata fixtures.
   - [ ] `DEDUP-1` — Port company-role, repost-window, and JD-fingerprint parity.
   - [ ] `GATE-1` — Port cheap knockout pre-scan without weakening local ranking.

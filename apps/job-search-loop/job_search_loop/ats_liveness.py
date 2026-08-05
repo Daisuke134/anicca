@@ -1,9 +1,14 @@
 from __future__ import annotations
 
+import hashlib
+import json
+import os
 import re
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
+from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 
 SAFE_SEGMENT = re.compile(r"^[A-Za-z0-9._-]+$")
@@ -15,6 +20,11 @@ class AtsApiResolution:
     api_url: str
     parts: dict[str, str]
     board_level: bool = False
+
+
+class _NoRedirect(HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
 
 
 def _safe(*values: str) -> bool:
@@ -169,3 +179,94 @@ def classify_workable_board(payload: Any, shortcode: str) -> dict[str, str] | No
         "code": "workable_api_unlisted",
         "reason": "Workable posting is absent from the public board",
     }
+
+
+def _request_json(
+    url: str, *, timeout_seconds: float, follow_redirects: bool
+) -> tuple[int, Any]:
+    if follow_redirects:
+        raise ValueError("ATS liveness requests must not follow redirects")
+    opener = build_opener(_NoRedirect())
+    request = Request(
+        url,
+        headers={
+            "Accept": "application/json",
+            "User-Agent": "anicca-job-search-liveness/1.0",
+        },
+        method="GET",
+    )
+    try:
+        with opener.open(request, timeout=timeout_seconds) as response:
+            status = int(response.status)
+            if status != 200:
+                return status, None
+            return status, json.loads(response.read().decode("utf-8"))
+    except Exception as error:
+        status = getattr(error, "code", None)
+        if isinstance(status, int):
+            return status, None
+        raise
+
+
+def check_liveness_via_api(
+    raw_url: str,
+    *,
+    request=_request_json,
+) -> dict[str, str] | None:
+    resolved = resolve_ats_api(raw_url)
+    if resolved is None:
+        return None
+    timeout_seconds = 20.0 if resolved.ats == "ashby" else 8.0
+    try:
+        status, payload = request(
+            resolved.api_url,
+            timeout_seconds=timeout_seconds,
+            follow_redirects=False,
+        )
+    except Exception:
+        return None
+    if status in {404, 410}:
+        return {
+            "result": "expired",
+            "code": f"{resolved.ats}_api_gone",
+            "reason": f"ATS API returned {status}",
+        }
+    if status != 200:
+        return None
+    if resolved.ats == "ashby":
+        return classify_ashby_board(payload, resolved.parts["job_id"])
+    if resolved.ats == "workable":
+        return classify_workable_board(payload, resolved.parts["shortcode"])
+    return {
+        "result": "active",
+        "code": f"{resolved.ats}_api_ok",
+        "reason": "ATS API returned the posting",
+    }
+
+
+def write_liveness_receipt(
+    output: Path,
+    raw_url: str,
+    result: dict[str, str],
+) -> None:
+    resolved = resolve_ats_api(raw_url)
+    payload = {
+        "version": 1,
+        "ats": resolved.ats if resolved is not None else "unknown",
+        "url_sha256": hashlib.sha256(raw_url.encode("utf-8")).hexdigest(),
+        "result": result["result"],
+        "code": result["code"],
+        "reason": result["reason"],
+    }
+    output = Path(output)
+    output.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    temporary = output.with_name(f".{output.name}.tmp-{os.getpid()}")
+    try:
+        temporary.write_text(
+            json.dumps(payload, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        os.chmod(temporary, 0o600)
+        temporary.replace(output)
+    finally:
+        temporary.unlink(missing_ok=True)
