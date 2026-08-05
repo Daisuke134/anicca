@@ -799,6 +799,16 @@ contracts. The full suite is `337/370`; the new Writer file passes and the same
 next slice wires this producer into the daily review owner; producer existence
 alone does not claim that unattended daily review invokes it.
 
+The fifth slice is
+`docs/writer-agent/plans/2026-08-05-sol-quality-sample-daily-wiring.md`.
+`editorial-gate.sh` is the canonical integration owner because every initial
+and recovery path already calls it. It registers eligibility only after a
+current-hash Terra PASS, invokes the selected-language Sol audit once, reuses a
+same-hash audit verdict without another call, and fails closed when a receipt
+was bound or claimed without a matching audit verdict. A recorded Sol FAIL may
+be repaired and rechecked by Terra, but it cannot purchase another Sol sample.
+Implementation evidence is pending.
+
 Decision evidence:
 
 - OpenAI describes Terra as the everyday workhorse and Sol as the model for
