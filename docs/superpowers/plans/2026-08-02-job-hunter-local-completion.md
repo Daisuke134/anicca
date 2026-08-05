@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-49B` — persist the pre-click/click/post-click phase outside the browser process before another live application
+**Active atomic task:** `L-49` — submit a different eligible Ashby posting with durable click phase and authoritative confirmation
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1578,7 +1578,7 @@ this spec update → commit/push → Telegram milestone before the next item sta
   success message did not become visible within 30 seconds and the immediate Gmail
   query returned no Sierra/Ashby message. The ledger therefore records
   `submit_unknown`, not `submitted`, and forbids retrying the same posting.
-- [ ] **L-49B** — Make the live Ashby executor persist `pre_click`, `clicked`, and
+- [x] **L-49B** — Make the live Ashby executor persist `pre_click`, `clicked`, and
   `confirmed` phases durably outside the Playwright worker before another live
   application. The fallback OpenAI `AI Deployment Engineer - Tokyo` form was live
   and its exact English resume and required answers were fenced in the ledger. The
@@ -1587,6 +1587,19 @@ this spec update → commit/push → Telegram milestone before the next item sta
   recoverable. It was conservatively reconciled to `submit_unknown` and must never
   be retried. A third live submission is forbidden until worker exit can be mapped
   deterministically to click phase and every terminal path releases its lease.
+  Receipt: every submission attempt now creates a fenced `pre_click` phase; exact
+  material persistence is required before ordered `clicked` and `confirmed`
+  transitions. Interrupted reconciliation deterministically maps `pre_click` to
+  retryable `not_submitted` and `clicked`/`confirmed` to non-retryable
+  `submit_unknown`. Stale fences and skipped phases fail closed. Both browser prompts
+  require the durable transition immediately before the physical click and exact ATS
+  confirmation before `confirmed`. Focused ledger tests and the full 340-test suite
+  PASS; the full suite completed in 465.617 seconds. Immutable release
+  `020c6135a8a6c16b05854c4bc79c1912e38f68c9` (archive SHA-256
+  `2a631331ce812d3f6bba5a3ef683067974bec8ba48e297fcfd3ad09e728cf81f`)
+  is active with zero writable paths, four runners, four stable launchers, unchanged
+  approved route SHA, and Guardian `healthy`. Production migration created 11 click
+  phase rows with SQLite integrity `ok`; Daily remains unloaded.
 - [ ] **L-50** — Deliver the Ashby application artifacts and receipt to Telegram.
 - [ ] **L-51** — Submit one eligible real Workday application and store its
   authoritative receipt.
