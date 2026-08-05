@@ -77,7 +77,7 @@ async function submitLumaOnPage(page) {
         }
       }
       const confirm = dialog.getByRole("button", {
-        name: /^(?:参加登録|Register|Submit|Confirm RSVP)$/i,
+        name: /^(?:参加登録|参加リクエスト|参加をリクエスト|承認をリクエスト|Register|Request to Join|Submit|Confirm RSVP)$/i,
         exact: true,
       }).last();
       if (await confirm.count() !== 1 || !await confirm.isVisible()) {

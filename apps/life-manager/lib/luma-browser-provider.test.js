@@ -185,6 +185,53 @@ test("submits the live Japanese one-click registration control", async () => {
   assert.deepEqual(calls, ["click"]);
 });
 
+test("confirms an approval-request dialog with the same Japanese action", async () => {
+  const calls = [];
+  const initial = {
+    first() { return this; },
+    async count() { return 1; },
+    async isVisible() { return true; },
+    async click() { calls.push("initial-click"); },
+  };
+  const confirm = {
+    last() { return this; },
+    async count() { return 1; },
+    async isVisible() { return true; },
+    async click() { calls.push("confirm-click"); },
+  };
+  const required = { async count() { return 0; } };
+  const dialog = {
+    last() { return this; },
+    async count() { return 1; },
+    async isVisible() { return true; },
+    locator() { return required; },
+    getByRole(role, options) {
+      assert.equal(role, "button");
+      assert.equal(options.exact, true);
+      assert.equal(options.name.test("参加リクエスト"), true);
+      return confirm;
+    },
+  };
+  let reads = 0;
+  const page = {
+    getByRole(role) {
+      assert.equal(role, reads === 0 ? "button" : "dialog");
+      return reads === 0 ? initial : dialog;
+    },
+    async waitForTimeout() {},
+    async evaluate() {
+      reads += 1;
+      return { registered: reads === 2 };
+    },
+  };
+
+  assert.deepEqual(await submitLumaOnPage(page), {
+    status: "registered",
+    effect_started: true,
+  });
+  assert.deepEqual(calls, ["initial-click", "confirm-click"]);
+});
+
 test("paid registration cannot click without a matching verified spend authorization", async () => {
   const paidOffer = { price: 2500, priceCurrency: "JPY", availability: "https://schema.org/InStock" };
   const blocked = fixture(["参加登録"], paidOffer);
