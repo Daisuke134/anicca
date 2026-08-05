@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-38` — Immutable Gmail message checkpoint via gog
+**Active atomic task:** `L-39` — Deterministic Gmail-to-application matching
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1269,8 +1269,25 @@ this spec update → commit/push → Telegram milestone before the next item sta
   `dec99970c5fdc19e5cedc63efe8e73a60122c912` remains rollback-ready. Activation
   receipt is mode 0600 and daily remains unloaded, so no application, browser,
   email, Calendar, or Telegram side effect occurred.
-- [ ] **L-38** — Append immutable Gmail message IDs through the deterministic `gog`
-  checkpoint.
+- [x] **L-38** — Append immutable Gmail message IDs through the deterministic `gog`
+  checkpoint. Receipt: both recruiting and submission-confirmation scans now use the
+  installed `gog` 0.17.0 contract (`--max`, not unsupported `--limit`) with JSON,
+  `--wrap-untrusted`, `--gmail-no-send`, and `--no-input`; full thread reads also
+  sanitize content. The private version-2 checkpoint owns unique immutable message
+  IDs, preserves legacy thread cutoffs, observes a later message in the same thread,
+  acknowledges only the exact processed candidate subset after a durable result, and
+  rejects unknown, duplicate, or mismatched IDs. Real read-only `gog` scan detected
+  three unprocessed recruiting messages with zero model calls; the production inbox
+  run used Terra medium successfully at the runner/schema layer. Its downstream
+  transient result acknowledged zero, and an isolated replay proved checkpoint
+  SHA-256 `5435729811fed152edcfc65cd488e3ae243bcfb7a9e5988a6450d28b1d011de8`
+  remained byte-identical, so all three candidates remain retryable rather than
+  falsely seen. Production checkpoint remains version 2, mode 0600, with three prior
+  unique message IDs. Gmail-focused 19-test and full 282-test suites PASS. Immutable
+  release `92e55cc15b97f2e9560346af7ed94710d8e968b2` (archive SHA-256
+  `3c031c726c748ae4025b1aa99068c693954087638efb25b97090bf5532d48707`)
+  is active with zero writable paths and the replay-approved route config unchanged.
+  Daily remains unloaded; no application, reply, or Calendar side effect occurred.
 - [ ] **L-39** — Match Gmail events to applications or fail closed as ambiguous.
 - [ ] **L-40** — Persist exact submitted resume, cover letter, and employer answers
   for each application.
