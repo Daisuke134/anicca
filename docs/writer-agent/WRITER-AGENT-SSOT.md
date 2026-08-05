@@ -761,6 +761,13 @@ Codex `status=success` receipts; the real third call exited `77` without a
 provider call. The full suite remains `337/369` with the same 32 unrelated
 failure files. Sol remains out of scope and is the next model-routing slice.
 
+The third slice is
+`docs/writer-agent/plans/2026-08-05-sol-trigger-execution-boundary.md`.
+It first makes Sol impossible without a valid, run-bound, allowed trigger
+receipt and atomically limits that receipt to one Codex invocation. Trigger
+producers remain the following slice; this boundary prevents free-form prompts
+or inherited environment from turning ordinary articles into Sol calls.
+
 Decision evidence:
 
 - OpenAI describes Terra as the everyday workhorse and Sol as the model for
