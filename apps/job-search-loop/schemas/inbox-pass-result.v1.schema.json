@@ -20,7 +20,7 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["message_id", "thread_id", "received_at", "evidence_sha256", "company", "title", "posting_url", "status", "application_id"],
+        "required": ["message_id", "thread_id", "received_at", "evidence_sha256", "company", "title", "posting_url"],
         "properties": {
           "message_id": {"type": "string"},
           "thread_id": {"type": "string"},
@@ -28,9 +28,7 @@
           "evidence_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
           "company": {"$ref": "#/$defs/grounded_identifier"},
           "title": {"$ref": "#/$defs/grounded_identifier"},
-          "posting_url": {"anyOf": [{"$ref": "#/$defs/grounded_identifier"}, {"type": "null"}]},
-          "status": {"enum": ["matched", "no_match", "ambiguous", "insufficient_evidence"]},
-          "application_id": {"type": ["string", "null"]}
+          "posting_url": {"anyOf": [{"$ref": "#/$defs/grounded_identifier"}, {"type": "null"}]}
         }
       }
     },
