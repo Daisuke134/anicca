@@ -12,13 +12,16 @@ from typing import Any
 
 COMMIT_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 LANES = ("browser", "daily", "inbox", "learning")
+LEGACY_LANES = ("daily", "inbox", "learning")
 
 
 class ActivationError(RuntimeError):
     pass
 
 
-def _validate_release(data_root: Path, commit: str) -> Path:
+def _validate_release(
+    data_root: Path, commit: str, *, required_lanes: tuple[str, ...] = LANES
+) -> Path:
     if COMMIT_PATTERN.fullmatch(commit) is None:
         raise ActivationError("release commit is invalid")
     releases = (data_root / "releases").resolve()
@@ -34,7 +37,7 @@ def _validate_release(data_root: Path, commit: str) -> Path:
     for path in (candidate, *candidate.rglob("*")):
         if stat.S_IMODE(path.stat().st_mode) & 0o222:
             raise ActivationError(f"release is writable: {path}")
-    for lane in LANES:
+    for lane in required_lanes:
         runner = candidate / f"apps/job-search-loop/scripts/run-{lane}.sh"
         if not runner.is_file() or not os.access(runner, os.X_OK):
             raise ActivationError(f"release runner is missing: {lane}")
@@ -92,7 +95,7 @@ def activate(*, data_root: Path, commit: str) -> dict[str, Any]:
         _write_active_receipt(data_root, candidate, commit)
         return {"status": "already_active", "active_commit": commit}
     if current_commit is not None:
-        _validate_release(data_root, current_commit)
+        _validate_release(data_root, current_commit, required_lanes=LEGACY_LANES)
         _replace_link(data_root, "previous", current_commit)
     _replace_link(data_root, "current", commit)
     _write_active_receipt(data_root, candidate, commit)
@@ -110,8 +113,8 @@ def rollback(*, data_root: Path) -> dict[str, Any]:
     previous_commit = _link_commit(data_root, "previous")
     if current_commit is None or previous_commit is None:
         raise ActivationError("rollback requires current and previous releases")
-    _validate_release(data_root, current_commit)
-    target = _validate_release(data_root, previous_commit)
+    _validate_release(data_root, current_commit, required_lanes=LEGACY_LANES)
+    target = _validate_release(data_root, previous_commit, required_lanes=LEGACY_LANES)
     _replace_link(data_root, "current", previous_commit)
     _replace_link(data_root, "previous", current_commit)
     _write_active_receipt(data_root, target, previous_commit)

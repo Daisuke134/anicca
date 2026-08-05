@@ -7,7 +7,7 @@ from job_search_loop.release_activation import ActivationError, activate, rollba
 
 
 class ReleaseActivationTests(unittest.TestCase):
-    def _release(self, data: Path, commit: str) -> Path:
+    def _release(self, data: Path, commit: str, lanes=("browser", "daily", "inbox", "learning")) -> Path:
         release = data / "releases" / commit
         scripts = release / "apps/job-search-loop/scripts"
         scripts.mkdir(parents=True)
@@ -15,7 +15,7 @@ class ReleaseActivationTests(unittest.TestCase):
         config = release / "runtime/agent-runner/config.json"
         config.parent.mkdir(parents=True)
         config.write_text(json.dumps({"version": 1, "routes": []}), encoding="utf-8")
-        for lane in ("browser", "daily", "inbox", "learning"):
+        for lane in lanes:
             runner = scripts / f"run-{lane}.sh"
             runner.write_text("#!/bin/zsh\nexit 0\n", encoding="utf-8")
             runner.chmod(0o555)
@@ -61,6 +61,16 @@ class ReleaseActivationTests(unittest.TestCase):
             with self.assertRaisesRegex(ActivationError, "writable"):
                 activate(data_root=data, commit="bad-commit")
             self.assertEqual((data / "current").resolve(), good.resolve())
+
+    def test_four_lane_candidate_can_replace_legacy_three_lane_release(self):
+        with tempfile.TemporaryDirectory() as directory:
+            data = Path(directory) / "job-search"
+            legacy = self._release(data, "legacy-commit", lanes=("daily", "inbox", "learning"))
+            data.mkdir(parents=True, exist_ok=True)
+            (data / "current").symlink_to(Path("releases") / "legacy-commit")
+            modern = self._release(data, "modern-commit")
+            receipt = activate(data_root=data, commit="modern-commit")
+            self.assertEqual(receipt["previous_commit"], "legacy-commit")
 
 
 if __name__ == "__main__":
