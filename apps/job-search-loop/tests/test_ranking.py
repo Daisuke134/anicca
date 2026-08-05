@@ -215,6 +215,59 @@ class RankingTests(unittest.TestCase):
         self.assertEqual(result.strengths, ("Built production agents",))
         self.assertEqual(result.gaps, ("No stated Kubernetes evidence",))
 
+    def test_verified_travel_is_positive_but_never_overrides_hard_gates(self):
+        base = dict(
+            company="Travel AI",
+            title="AI Solutions Engineer",
+            location="Tokyo",
+            compensation_min_jpy=10_000_000,
+            clearance_required=False,
+            skills=["agents", "salesforce"],
+            domains=["enterprise_ai"],
+        )
+        neutral = evaluate(
+            Job(url="https://jobs.example.com/neutral", japan_eligible=True, **base)
+        )
+        travel = evaluate(
+            Job(
+                url="https://jobs.example.com/travel",
+                japan_eligible=True,
+                travel_scope="domestic_and_international",
+                frequent_client_site=True,
+                **base,
+            )
+        )
+        blocked = evaluate(
+            Job(
+                url="https://jobs.example.com/blocked-travel",
+                japan_eligible=False,
+                travel_scope="international",
+                frequent_client_site=True,
+                **base,
+            )
+        )
+
+        self.assertEqual(neutral.components["travel"], 0)
+        self.assertEqual(travel.components["travel"], 5)
+        self.assertEqual(travel.score, neutral.score + 5)
+        self.assertEqual(travel.travel_scope, "domestic_and_international")
+        self.assertTrue(travel.frequent_client_site)
+        self.assertFalse(blocked.eligible)
+        self.assertIn("not_available_from_japan", blocked.reasons)
+
+    def test_invalid_travel_scope_is_rejected_at_ingestion(self):
+        with self.assertRaisesRegex(ValueError, "travel_scope"):
+            Job(
+                company="Travel AI",
+                title="AI Engineer",
+                url="https://jobs.example.com/travel-invalid",
+                location="Tokyo",
+                japan_eligible=True,
+                compensation_min_jpy=10_000_000,
+                clearance_required=False,
+                travel_scope="travel everywhere forever",
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -43,6 +43,8 @@ class Evaluation:
     deadline: str | None
     strengths: tuple[str, ...]
     gaps: tuple[str, ...]
+    travel_scope: str
+    frequent_client_site: bool
 
 
 def _has_ai_evidence(title: str, skills: set[str]) -> bool:
@@ -104,6 +106,13 @@ def evaluate(job: Job, *, today: date | None = None) -> Evaluation:
             else 0
         ),
         "mission": 10 if domains & PREFERRED_DOMAINS else 0,
+        "travel": (
+            5
+            if job.frequent_client_site
+            or job.travel_scope
+            in {"domestic", "international", "domestic_and_international"}
+            else 0
+        ),
     }
     score = sum(components.values())
     if score < AUTO_APPLY_THRESHOLD:
@@ -119,4 +128,6 @@ def evaluate(job: Job, *, today: date | None = None) -> Evaluation:
         deadline=job.deadline,
         strengths=tuple(job.strengths),
         gaps=tuple(job.gaps),
+        travel_scope=job.travel_scope,
+        frequent_client_site=job.frequent_client_site,
     )
