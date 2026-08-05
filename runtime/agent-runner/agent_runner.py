@@ -301,12 +301,26 @@ def provider_process_env(provider: str, provider_config: dict[str, Any],
                          task_class: str | None = None) -> dict[str, str]:
     """Build a provider-scoped, non-interactive child environment."""
     child_env = dict(os.environ if environ is None else environ)
+
+    def bounded(value: dict[str, str]) -> dict[str, str]:
+        if task_class != "repeatable-agent":
+            return value
+        denied_prefixes = (
+            "TELEGRAM_", "GMAIL_", "GOOGLE_", "GOG_", "CLOAK_",
+            "SLACK_", "DISCORD_", "RESEND_", "SMTP_",
+            "JOB_SEARCH_PROFILE", "JOB_SEARCH_BROWSER",
+        )
+        return {
+            name: item for name, item in value.items()
+            if not name.startswith(denied_prefixes)
+        }
+
     if task_class == "application-intent-planner":
         child_env = _strip_browser_routes_for_planner(child_env)
     if provider == "codex":
         automation_home_value = provider_config.get("automation_home")
         if not automation_home_value:
-            return child_env
+            return bounded(child_env)
         automation_home = Path(os.path.expandvars(os.path.expanduser(
             str(automation_home_value)
         )))
@@ -328,7 +342,7 @@ def provider_process_env(provider: str, provider_config: dict[str, Any],
             child_env["SSL_CERT_FILE"] = str(ssl_cert_file)
 
         if child_env.get("OPENAI_API_KEY"):
-            return child_env
+            return bounded(child_env)
         auth_file = Path(os.path.expandvars(os.path.expanduser(str(
             provider_config.get("auth_file", "~/.codex/auth.json")
         ))))
@@ -344,20 +358,20 @@ def provider_process_env(provider: str, provider_config: dict[str, Any],
                     raise ValueError("codex automation auth target mismatch")
             except OSError as error:
                 raise ValueError("codex automation auth target invalid") from error
-        return child_env
+        return bounded(child_env)
     if provider not in CLAUDE_PROVIDERS:
-        return child_env
+        return bounded(child_env)
     if provider == "claude-direct":
         for name in (
             "ANTHROPIC_BASE_URL", "ANTHROPIC_AUTH_TOKEN",
             "ANTHROPIC_API_KEY", "CLAUDE_CODE_OAUTH_TOKEN",
         ):
             child_env.pop(name, None)
-        return child_env
+        return bounded(child_env)
     if any(child_env.get(name) for name in (
         "ANTHROPIC_AUTH_TOKEN", "ANTHROPIC_API_KEY", "CLAUDE_CODE_OAUTH_TOKEN",
     )):
-        return child_env
+        return bounded(child_env)
 
     token_file = os.path.expandvars(os.path.expanduser(str(
         provider_config.get("auth_token_file", "~/.cli-proxy-api-key")
@@ -374,7 +388,7 @@ def provider_process_env(provider: str, provider_config: dict[str, Any],
     child_env["ANTHROPIC_AUTH_TOKEN"] = auth_token
     if task_class == "application-intent-planner":
         child_env = _strip_browser_routes_for_planner(child_env)
-    return child_env
+    return bounded(child_env)
 
 
 # The live provider Popen, if any. start_new_session detaches the provider into its
@@ -815,7 +829,7 @@ def command_for(provider: str, executable: str, provider_config: dict[str, Any],
             "--ignore-user-config", "--json",
             "--output-schema", str(provider_schema_path), "-o", str(result_path),
         ])
-        if args.task_class in ("composition-agent", "diagnostic-agent"):
+        if args.task_class in ("composition-agent", "diagnostic-agent", "repeatable-agent"):
             command.extend(["--sandbox", "read-only"])
         else:
             command.append("--dangerously-bypass-approvals-and-sandbox")
@@ -829,7 +843,7 @@ def command_for(provider: str, executable: str, provider_config: dict[str, Any],
             executable, "--model", model, "--no-session-persistence",
             "--output-format", "json",
         ]
-        if args.task_class in ("composition-agent", "diagnostic-agent"):
+        if args.task_class in ("composition-agent", "diagnostic-agent", "repeatable-agent"):
             command.extend(["--tools", ""])
         command.append("-p")
         if not prompt_via_stdin:
