@@ -224,6 +224,52 @@ def _matching_identity(
     return matched
 
 
+def _existing_owner_report(
+    root: pathlib.Path,
+    *,
+    kind: str,
+    product_id: str,
+    message_key: str,
+) -> dict | None:
+    """Return a valid canonical report already recorded for one immutable key."""
+
+    for row in load_jsonl(pathlib.Path(root) / "owner-reports.jsonl"):
+        if (
+            row.get("kind") == kind
+            and row.get("product_id") == product_id
+            and row.get("message_key") == message_key
+        ):
+            try:
+                return _validate_event(row)
+            except OwnerReportError:
+                continue
+    return None
+
+
+def _existing_owner_report_for_evidence(
+    root: pathlib.Path,
+    *,
+    kind: str,
+    product_id: str,
+    evidence_ref: str,
+) -> dict | None:
+    """Return the prior report for an evidence row, including legacy keys."""
+
+    for row in load_jsonl(pathlib.Path(root) / "owner-reports.jsonl"):
+        refs = row.get("evidence_refs")
+        if (
+            row.get("kind") == kind
+            and row.get("product_id") == product_id
+            and isinstance(refs, list)
+            and evidence_ref in refs
+        ):
+            try:
+                return _validate_event(row)
+            except OwnerReportError:
+                continue
+    return None
+
+
 def _action_events(root: pathlib.Path, product_id: str, as_of: dt.datetime) -> list[dict]:
     identities = _indexed_rows(root, "publication-identity.jsonl")
     attributions = _indexed_rows(root, "experiment-attribution.jsonl")
@@ -301,13 +347,32 @@ def _action_events(root: pathlib.Path, product_id: str, as_of: dt.datetime) -> l
             "experiment_id": row.get("experiment_id"),
             "platform": row.get("platform") or "unknown",
         }
+        message_key = f"action:{product_id}:{native_id}"
+        evidence_refs = [ref]
+        existing = _existing_owner_report(
+            root,
+            kind="action",
+            product_id=product_id,
+            message_key=message_key,
+        )
+        existing_facts = existing.get("facts") if existing is not None else None
+        if (
+            isinstance(existing_facts, dict)
+            and existing_facts.get("native_post_id") is not None
+            and str(existing_facts.get("native_post_id")) == str(native_id)
+        ):
+            # An action is an immutable notification.  Once a canonical report
+            # exists, a later provider identity must not rewrite its facts or
+            # evidence under the same message key.
+            facts = copy.deepcopy(existing_facts)
+            evidence_refs = copy.deepcopy(existing["evidence_refs"])
         events.append(_event(
             kind="action",
             product_id=product_id,
             as_of=as_of,
-            message_key=f"action:{product_id}:{native_id}",
+            message_key=message_key,
             facts=facts,
-            evidence_refs=[ref],
+            evidence_refs=evidence_refs,
         ))
     return events
 
@@ -701,13 +766,25 @@ def _experiment_events(root: pathlib.Path, product_id: str, as_of: dt.datetime) 
                 for item in results if isinstance(item, dict)
             ],
         }
+        evidence_ref = _ref("experiment-attribution.jsonl", index)
+        existing = _existing_owner_report_for_evidence(
+            root,
+            kind="experiment",
+            product_id=product_id,
+            evidence_ref=evidence_ref,
+        )
+        message_key = (
+            existing["message_key"]
+            if existing is not None
+            else f"experiment:{product_id}:{row.get('attribution_id') or row.get('experiment_id')}"
+        )
         events.append(_event(
             kind="experiment",
             product_id=product_id,
             as_of=as_of,
-            message_key=f"experiment:{product_id}:{row.get('attribution_id') or row.get('experiment_id')}",
+            message_key=message_key,
             facts=facts,
-            evidence_refs=[_ref("experiment-attribution.jsonl", index)],
+            evidence_refs=[evidence_ref],
         ))
     if events:
         return events

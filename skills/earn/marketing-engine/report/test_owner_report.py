@@ -347,6 +347,68 @@ class OwnerReportRendererTest(unittest.TestCase):
         self.assertEqual(replay_receipt["message_ids"], [401])
         self.assertEqual(calls, [1])
 
+    def test_action_replay_freezes_attribution_snapshot_when_identity_is_appended(self):
+        native_id = "1000000000000000099"
+        attribution = {
+            "schema_version": "marketing.experiment-attribution.v1",
+            "product_id": "honne",
+            "experiment_id": "experiment.honne.action-only",
+            "attribution_id": "attribution.honne.action-only",
+            "native_post_url": f"https://www.tiktok.com/@honne/video/{native_id}",
+            "native_post_id": native_id,
+            "observed_at": "2026-08-04T06:00:00Z",
+            "published_at": "2026-08-04T05:00:00Z",
+            "results": [],
+        }
+        with (self.root / "experiment-attribution.jsonl").open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(attribution, ensure_ascii=False) + "\n")
+
+        first = next(
+            event
+            for event in owner_report.build_events(
+                self.root, "action", product_id="honne", as_of=AS_OF
+            )
+            if event["facts"]["native_post_id"] == native_id
+        )
+        store = owner_report.OwnerReportStore(
+            self.root / "owner-reports.jsonl", self.root / "owner-report-deliveries.jsonl"
+        )
+        calls = []
+
+        def sender(_text: str) -> dict:
+            calls.append(1)
+            return {"status": "delivered", "message_ids": [403]}
+
+        first_receipt = owner_report.deliver(first, store, sender)
+
+        identity = {
+            "schema_version": 1,
+            "product_id": "honne",
+            "postiz_state": "PUBLISHED",
+            "identity_status": "resolved",
+            "postiz_post_id": "pub-honne-action-only",
+            "native_post_id": native_id,
+            "native_post_url": attribution["native_post_url"],
+            "publish_date": "2026-08-04T05:00:00Z",
+            "account_name": "honne",
+            "platform": "tiktok",
+        }
+        with (self.root / "publication-identity.jsonl").open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(identity, ensure_ascii=False) + "\n")
+
+        replay = next(
+            event
+            for event in owner_report.build_events(
+                self.root, "action", product_id="honne", as_of=AS_OF
+            )
+            if event["facts"]["native_post_id"] == native_id
+        )
+        self.assertEqual(replay, first)
+        replay_receipt = owner_report.deliver(replay, store, sender)
+        self.assertEqual(first_receipt["message_ids"], [403])
+        self.assertEqual(replay_receipt["message_ids"], [403])
+        self.assertEqual(calls, [1])
+
     def test_checkpoint_uses_exact_metric_values_and_natural_null_reason(self):
         measured = self.event("checkpoint", "aniccaios")
         measured_text = owner_report.render_japanese(measured)
@@ -542,6 +604,64 @@ class OwnerReportRendererTest(unittest.TestCase):
         self.assertEqual(transition_receipt["message_ids"], [404])
         self.assertEqual(replay_receipt["message_ids"], [404])
         self.assertEqual(calls, [1, 1])
+
+    def test_experiment_legacy_snapshot_reuses_receipt_and_new_snapshot_delivers_once(self):
+        rows = owner_report.load_jsonl(self.root / "experiment-attribution.jsonl")
+        rows[0]["experiment_id"] = "experiment.preview-gate12"
+        (self.root / "experiment-attribution.jsonl").write_text(
+            "".join(json.dumps(row, ensure_ascii=False) + "\n" for row in rows),
+            encoding="utf-8",
+        )
+
+        generated = self.event("experiment", "ebook-ja")
+        legacy_key = "experiment:ebook-ja:experiment.preview-gate12"
+        legacy = json.loads(json.dumps(generated))
+        legacy["message_key"] = legacy_key
+        store = owner_report.OwnerReportStore(
+            self.root / "owner-reports.jsonl", self.root / "owner-report-deliveries.jsonl"
+        )
+        store.record(legacy)
+        store.claim_delivery(legacy_key)
+        store.record_delivery(legacy_key, {"status": "delivered", "message_ids": [6926]})
+        calls = []
+
+        def sender(_text: str) -> dict:
+            calls.append(1)
+            return {"status": "delivered", "message_ids": [405 + len(calls)]}
+
+        initial = self.event("experiment", "ebook-ja")
+        self.assertEqual(initial["message_key"], legacy_key)
+        initial_receipt = owner_report.deliver(initial, store, sender)
+        self.assertEqual(initial_receipt["message_ids"], [6926])
+        self.assertEqual(calls, [])
+
+        snapshot = json.loads(json.dumps(rows[0]))
+        snapshot["attribution_id"] = "attribution.ebook-ja.002"
+        snapshot["observed_at"] = "2026-08-05T11:00:00Z"
+        snapshot["results"] = [
+            {
+                "metric_name": "views",
+                "status": "observed",
+                "value": 128,
+                "null_reason": None,
+            }
+        ]
+        with (self.root / "experiment-attribution.jsonl").open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(snapshot, ensure_ascii=False) + "\n")
+
+        events = owner_report.build_events(
+            self.root, "experiment", product_id="ebook-ja", as_of=AS_OF
+        )
+        transition = next(
+            event for event in events if event["facts"]["attribution_id"] == snapshot["attribution_id"]
+        )
+        self.assertNotEqual(transition["message_key"], legacy_key)
+        self.assertIn(snapshot["attribution_id"], transition["message_key"])
+        transition_receipt = owner_report.deliver(transition, store, sender)
+        replay_receipt = owner_report.deliver(transition, store, sender)
+        self.assertEqual(transition_receipt["message_ids"], [406])
+        self.assertEqual(replay_receipt["message_ids"], [406])
+        self.assertEqual(calls, [1])
 
     def test_portfolio_weekly_contains_each_product_once(self):
         event = self.event("portfolio_weekly")
