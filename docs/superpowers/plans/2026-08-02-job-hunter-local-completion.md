@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-17` — immutable release activation
+**Active atomic task:** `L-17A` — last-known-good rollback proof
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -977,7 +977,13 @@ this spec update → commit/push → Telegram milestone before the next item sta
   passes, no worktree path remains in the loaded learning program, and
   pre-activation RunAtLoad fails closed with exit 78; all three macOS lanes now use
   stable launchers and the full 226-test suite PASS.
-- [ ] **L-17** — Activate the immutable release through the stable pointer.
+- [x] **L-17** — Activate the immutable release through the stable pointer. Receipt:
+  `current` was atomically switched from absent to immutable release
+  `fe5f09e069e365e3599a9fae67a0cbf7ed6ecf62`; resolved target, manifest commit,
+  zero writable paths, lane runners, core imports, canonical profile/install modes,
+  provider authentication, ledger/prep/outbox integrity, three loaded stable
+  ProgramArguments, CloakBrowser CDP, and a send-disabled `gog` Gmail read all PASS;
+  no application, email, Calendar, model, or Telegram side effect was triggered.
 - [ ] **L-17A** — Prove rollback to the last-known-good release.
 - [ ] **L-18** — Migrate the private profile to the JPY 8M hard floor.
 - [ ] **L-19** — Migrate the strategy to the JPY 10M target and JPY 30M stretch.
