@@ -134,6 +134,34 @@ test("native-pass forwards validated delivery history for coverage restoration",
   } finally { fs.rmSync(directory, { recursive: true, force: true }); }
 });
 
+test("native-pass preserves a bounded write error code for live diagnosis", async () => {
+  const directory = temporaryDirectory();
+  const stateDir = path.join(directory, "state");
+  try {
+    await runNativePass({
+      repoRoot: REPO_ROOT,
+      stateDir,
+      ownerToken: OWNER_TOKEN,
+      config: { tenantId: "dais-local" },
+      runRuntime: async () => ({
+        status: "incomplete",
+        coverage: { counts: { open: 19 } },
+        continuation: { status: "continue" },
+        write: {
+          status: "reconciliation_required",
+          outcome: "unknown_external_effect",
+          error_code: "LUMA_RESULT_UNVERIFIED",
+          event_ref: "luma-event://event/pending-one",
+        },
+      }),
+    });
+    assert.equal(
+      JSON.parse(fs.readFileSync(path.join(stateDir, "last-result.json"), "utf8")).write.error_code,
+      "LUMA_RESULT_UNVERIFIED",
+    );
+  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+});
+
 test("native-pass keeps successful Calendar and Telegram receipts in append-only deduped history", async () => {
   const directory = temporaryDirectory();
   const stateDir = path.join(directory, "state");

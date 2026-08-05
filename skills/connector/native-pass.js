@@ -123,6 +123,9 @@ function boundedResult(result) {
     ? {
       status: String(result.write.status || ""),
       outcome: String(result.write.outcome || ""),
+      ...(/^[A-Z][A-Z0-9_:-]{0,99}$/.test(String(result.write.error_code || ""))
+        ? { error_code: String(result.write.error_code) }
+        : {}),
       event_ref: String(result.write.event_ref || ""),
       calendar_event_ref: String(result.write.calendar_sync && result.write.calendar_sync.calendar_event_ref || ""),
       telegram_provider_id: String(result.write.telegram && result.write.telegram.provider_id || ""),
