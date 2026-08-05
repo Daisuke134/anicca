@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-43` — Render Telegram daily pipeline from summary.v2
+**Active atomic task:** `L-44` — Validate event-specific Telegram tone without fact drift
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1367,7 +1367,22 @@ this spec update → commit/push → Telegram milestone before the next item sta
   `20922f9728fab4e854912c5bf0b9c04093b83d9f116d17cebe9761eb9f760fbc`:
   confirmed application 0/6, while reply/interview/final/offer/acceptance each have
   denominator zero and null rate. Daily remains unloaded.
-- [ ] **L-43** — Render the Telegram daily pipeline projection from `summary.v2`.
+- [x] **L-43** — Render the Telegram daily pipeline projection from `summary.v2`.
+  Receipt: a deterministic Japanese renderer verifies the canonical projection
+  SHA-256 before reading any value and prints all six funnel numerator/denominator
+  pairs, owner counts, and required-ATS coverage without URLs, company names, email,
+  or model prose. A tampered projection cannot reach the sender. Every terminal daily
+  path refreshes summary then invokes the same renderer; the browser model is
+  forbidden from composing or sending tracker truth. Existing daily outbox semantics
+  retain the stable day key, content-addressed correction, uncertain-delivery fence,
+  and identical-message dedupe. Focused 14-test and full 298-test suites PASS.
+  Immutable release `8f0439ab729cbdf820f25f4fa08140fd80dc3e02`
+  (archive SHA-256
+  `5de0d121071408de155ef461f6821258067f897952ef992b8a152953bb78ec34`)
+  is active with zero writable paths and unchanged routes. Real production delivery
+  sent natural-language pipeline message ID `6883` under event key
+  `job-search-daily:2026-08-05`; immediate replay returned the same message ID and
+  key with no second send. Both receipts are mode 0600. Daily remains unloaded.
 - [ ] **L-44** — Validate event-specific Telegram tone without changing event facts.
 - [ ] **L-45A** — Implement the Guardian release-health check.
 - [ ] **L-45B** — Implement the Guardian schedule-health check.
