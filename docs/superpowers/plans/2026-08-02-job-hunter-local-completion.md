@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-49` — submit one eligible real Ashby application and store an authoritative receipt
+**Active atomic task:** `L-49F` — distinguish Ashby GraphQL operation names from response field names before another click
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1578,6 +1578,17 @@ this spec update → commit/push → Telegram milestone before the next item sta
   immediate Cursor/Anysphere/Ashby Gmail receipt was captured. The ledger therefore
   records `submit_unknown`, forbids retry, retains one immutable materials receipt,
   and has SQLite integrity `ok`; every owned page and browser lease was released.
+  A second official Tokyo attempt used Applied Intuition's claim-ready Solution
+  Engineer form, score 80 strong-fit, the technical-business resume, and an 89-word
+  bounded answer backed by three approved facts. Its first fence stopped before
+  click when no fact-bound current-company answer was found; the fresh second fence
+  used the approved `mufg` fact for `MUIT`, recorded materials, committed `clicked`,
+  and clicked once. The request predicate again timed out without a captured submit
+  mutation, exact success UI, or matching Gmail receipt, so Applied is also
+  `submit_unknown` and cannot be retried. This repeated failure indicates the
+  request `operationName` allowlist may incorrectly contain GraphQL response field
+  names; another live click is forbidden until the official current bundle proves
+  the actual operation names under test.
 - [ ] **L-49A** — Reconcile the Sierra `submit_unknown` without resubmitting it;
   if neither Ashby nor Gmail yields authoritative confirmation, submit a different
   eligible Ashby posting exactly once. Receipt so far: the official Sierra Japan
@@ -1673,6 +1684,10 @@ this spec update → commit/push → Telegram milestone before the next item sta
   `22dcee0d1da989363c544d2950bc23e5fdf811ef14e6a77304e47a1595d5d06f`)
   is active with Guardian `healthy` and the approved route SHA unchanged. Daily
   remains unloaded.
+- [ ] **L-49F** — Extract the exact current Ashby submit request `operationName`
+  values from the official bundle and keep them distinct from response data field
+  names. Update the response predicate and classifier tests before another live
+  application; HTTP status and an unmatched POST remain non-authoritative.
 - [ ] **L-50** — Deliver the Ashby application artifacts and receipt to Telegram.
 - [ ] **L-51** — Submit one eligible real Workday application and store its
   authoritative receipt.
