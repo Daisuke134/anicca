@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-06 JST
-**Active atomic task:** `L-49K0C/FILL-1C` — implement ATS-specific non-submit field adapters
+**Active atomic task:** `L-49K0C/FILL-1C2` — execute a grounded fill plan and persist a no-submit receipt
 **Status:** The immutable four-lane runtime, hourly/five-minute schedules, grounded
 materials, ownership fences, Gmail ingestion, Telegram outbox, quota accounting, and
 Ashby observation classifier are implemented and tested. The daily LaunchAgent is
@@ -2415,6 +2415,19 @@ the resident worker from producing one authoritative application receipt:
       Ashby, Greenhouse, Lever, Workable, and Workday. Persist exact questions,
       grounded answers, selected resume hash, pre-click screenshot, and a terminal
       `claim_ready` receipt; do not click Submit in this slice.
+      - [x] `FILL-1C1` — Detect all five ATS from exact hostname boundaries and build
+        a deterministic non-submit plan. The plan includes only grounded first name,
+        last name, email, and resume actions; preserves exact question text, fact IDs,
+        resume path/hash, frame/control identity; excludes Submit structurally; and
+        leaves every unknown required question as an explicit blocker. Focused tests
+        pass 15/15 and the full Job Hunter suite passes 406/406.
+      - [ ] `FILL-1C2` — Execute the plan through a bounded page adapter, verify the
+        entered values without logging private values, capture the pre-submit image,
+        and persist a mode-0600 receipt binding snapshot hash, plan hash, resume hash,
+        owner lease/fence, and unresolved blockers. Submit remains unreachable.
+      - [ ] `FILL-1C3` — Bind the receipt to the ledger's existing ATS snapshot and
+        `claim_submission` gate so only a fully validated, zero-blocker form becomes
+        ATS `claim_ready`; a partial form remains pending and consumes no quota slot.
     - [ ] `FILL-1D` — Trigger the installed resident loop and prove it reaches a real
       ATS pre-submit state through the single worker. The development session only
       watches evidence. Any CAPTCHA or unsupported field remains explicit and the

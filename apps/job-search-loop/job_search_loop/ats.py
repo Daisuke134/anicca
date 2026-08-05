@@ -8,10 +8,25 @@ from typing import Any
 from urllib.parse import urlsplit
 
 
+SUPPORTED_FILL_PROVIDERS = frozenset(
+    {"ashby", "greenhouse", "lever", "workable", "workday"}
+)
+
+
 def detect_provider(url: str) -> str:
     hostname = (urlsplit(url).hostname or "").casefold().rstrip(".")
     if hostname in {"jobs.ashbyhq.com", "app.ashbyhq.com"}:
         return "ashby"
+    if hostname in {
+        "boards.greenhouse.io",
+        "job-boards.greenhouse.io",
+        "job-boards.eu.greenhouse.io",
+    }:
+        return "greenhouse"
+    if hostname in {"jobs.lever.co", "jobs.eu.lever.co"}:
+        return "lever"
+    if hostname == "apply.workable.com":
+        return "workable"
     if hostname == "myworkdayjobs.com" or hostname.endswith(".myworkdayjobs.com"):
         return "workday"
     if hostname == "myworkdaysite.com" or hostname.endswith(".myworkdaysite.com"):
@@ -36,6 +51,102 @@ def _control_text(control: dict[str, Any]) -> str:
         )
         if part
     )
+
+
+def _field_key(control: dict[str, Any]) -> str | None:
+    control_type = _normalized(control.get("type"))
+    text = _control_text(control)
+    if control_type == "email" or text in {"email", "email address"}:
+        return "email"
+    if control_type == "file" and any(
+        token in text for token in ("resume", "cv", "curriculum vitae")
+    ):
+        return "resume"
+    if "first name" in text or text in {"firstname", "given name"}:
+        return "first_name"
+    if "last name" in text or text in {"lastname", "family name", "surname"}:
+        return "last_name"
+    return None
+
+
+def _question(control: dict[str, Any]) -> str:
+    for key in ("label", "name", "text"):
+        value = control.get(key)
+        if isinstance(value, str) and value.strip():
+            return re.sub(r"\s+", " ", value).strip()
+    return "unlabeled_required_control"
+
+
+def build_non_submit_fill_plan(
+    snapshot: dict[str, Any],
+    *,
+    answers: dict[str, dict[str, Any]],
+    resume_path: str,
+    resume_sha256: str,
+) -> dict[str, Any]:
+    value = _validate_snapshot(snapshot)
+    provider = detect_provider(value["url"])
+    if provider not in SUPPORTED_FILL_PROVIDERS:
+        raise ValueError("ATS provider is not supported for deterministic fill")
+    if not Path(resume_path).is_absolute():
+        raise ValueError("resume_path must be absolute")
+    if re.fullmatch(r"[0-9a-f]{64}", resume_sha256) is None:
+        raise ValueError("resume_sha256 must be lowercase SHA-256")
+    actions: list[dict[str, Any]] = []
+    blockers: list[str] = []
+    for frame_index, frame in enumerate(value["frames"]):
+        for control_index, control in enumerate(frame["controls"]):
+            if _normalized(control.get("type")) == "submit":
+                continue
+            field_key = _field_key(control)
+            question = _question(control)
+            if field_key == "resume":
+                actions.append(
+                    {
+                        "kind": "upload",
+                        "field_key": "resume",
+                        "frame_index": frame_index,
+                        "control_index": control_index,
+                        "question": question,
+                        "resume_path": resume_path,
+                        "resume_sha256": resume_sha256,
+                        "fact_ids": [],
+                    }
+                )
+                continue
+            answer = answers.get(field_key or "")
+            if field_key is not None and isinstance(answer, dict):
+                answer_value = answer.get("value")
+                fact_ids = answer.get("fact_ids")
+                if (
+                    isinstance(answer_value, str)
+                    and answer_value.strip()
+                    and isinstance(fact_ids, list)
+                    and fact_ids
+                    and all(isinstance(item, str) and item.strip() for item in fact_ids)
+                ):
+                    actions.append(
+                        {
+                            "kind": "fill",
+                            "field_key": field_key,
+                            "frame_index": frame_index,
+                            "control_index": control_index,
+                            "question": question,
+                            "answer": answer_value,
+                            "fact_ids": fact_ids,
+                        }
+                    )
+                    continue
+            if control.get("required") is True:
+                blockers.append(question)
+    return {
+        "version": 1,
+        "provider": provider,
+        "job_url": value["url"],
+        "actions": actions,
+        "blockers": blockers,
+        "submit_action_included": False,
+    }
 
 
 def _is_application_form(controls: list[dict[str, Any]]) -> bool:

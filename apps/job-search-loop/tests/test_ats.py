@@ -13,13 +13,75 @@ def load_fixture(name):
 
 
 class AtsReadinessTests(unittest.TestCase):
+    def test_five_supported_ats_build_grounded_non_submit_fill_plans(self):
+        from job_search_loop import ats
+
+        self.assertTrue(
+            hasattr(ats, "build_non_submit_fill_plan"),
+            "ATS non-submit fill planner is missing",
+        )
+        urls = {
+            "ashby": "https://jobs.ashbyhq.com/acme/role/application",
+            "greenhouse": "https://job-boards.greenhouse.io/acme/jobs/123",
+            "lever": "https://jobs.lever.co/acme/role-123",
+            "workable": "https://apply.workable.com/acme/j/ROLE123/",
+            "workday": "https://acme.wd5.myworkdayjobs.com/jobs/role",
+        }
+        answers = {
+            "first_name": {"value": "Daisuke", "fact_ids": ["profile.first_name"]},
+            "last_name": {"value": "Narita", "fact_ids": ["profile.last_name"]},
+            "email": {"value": "candidate@example.test", "fact_ids": ["profile.email"]},
+        }
+        for provider, url in urls.items():
+            with self.subTest(provider=provider):
+                snapshot = {
+                    "version": 1,
+                    "url": url,
+                    "navigation_committed": True,
+                    "frames": [
+                        {
+                            "url": url,
+                            "controls": [
+                                {"tag": "input", "type": "text", "label": "First Name", "required": True},
+                                {"tag": "input", "type": "text", "label": "Last Name", "required": True},
+                                {"tag": "input", "type": "email", "label": "Email", "required": True},
+                                {"tag": "input", "type": "file", "label": "Resume/CV", "required": True},
+                                {"tag": "input", "type": "text", "label": "Unverified Required Question", "required": True},
+                                {"tag": "button", "type": "submit", "text": "Submit Application"},
+                            ],
+                        }
+                    ],
+                }
+                result = ats.build_non_submit_fill_plan(
+                    snapshot,
+                    answers=answers,
+                    resume_path="/private/resume.pdf",
+                    resume_sha256="a" * 64,
+                )
+                self.assertEqual(result["provider"], provider)
+                self.assertFalse(any(action["kind"] == "submit" for action in result["actions"]))
+                self.assertEqual(
+                    [action["field_key"] for action in result["actions"]],
+                    ["first_name", "last_name", "email", "resume"],
+                )
+                self.assertEqual(result["actions"][0]["question"], "First Name")
+                self.assertEqual(result["actions"][0]["fact_ids"], ["profile.first_name"])
+                self.assertEqual(result["actions"][-1]["resume_sha256"], "a" * 64)
+                self.assertEqual(result["blockers"], ["Unverified Required Question"])
+
     def test_provider_detection_uses_hostname_boundaries(self):
         cases = {
             "https://jobs.ashbyhq.com/acme/role/application": "ashby",
             "https://app.ashbyhq.com/applicationForm": "ashby",
             "https://acme.wd5.myworkdayjobs.com/jobs/role": "workday",
             "https://wd1.myworkdaysite.com/acme/job/role": "workday",
+            "https://boards.greenhouse.io/acme/jobs/123": "greenhouse",
+            "https://job-boards.greenhouse.io/acme/jobs/123": "greenhouse",
+            "https://jobs.lever.co/acme/role-123": "lever",
+            "https://jobs.eu.lever.co/acme/role-123": "lever",
+            "https://apply.workable.com/acme/j/ROLE123/": "workable",
             "https://ashbyhq.com.example.test/role": "generic",
+            "https://jobs.lever.co.example.test/acme/role": "generic",
             "https://careers.example.com/role": "generic",
         }
         for url, expected in cases.items():
