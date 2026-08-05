@@ -232,7 +232,7 @@ def _field_matches(text: str, names: tuple[str, ...], value: object) -> bool:
     for name in names:
         pattern = re.compile(
             rf"(?<![a-z0-9_])['\"]?{re.escape(name.lower())}['\"]?"
-            rf"\s*(?:=|:)\s*['\"]?{re.escape(expected)}['\"]?(?![a-z0-9_.-])",
+            rf"\s*(?:=>|=|:)\s*['\"]?{re.escape(expected)}['\"]?(?![a-z0-9_.-])",
             re.IGNORECASE,
         )
         if pattern.search(text):
@@ -240,17 +240,13 @@ def _field_matches(text: str, names: tuple[str, ...], value: object) -> bool:
     return False
 
 
-def _calendar_descriptor(text: str) -> str:
-    """Extract the StartCalendarInterval descriptor/block from readback."""
+def _balanced_block(text: str, start: int) -> str:
+    """Return one brace-delimited block beginning at or after ``start``."""
 
-    match = re.search(r"start\s*calendar\s*interval\s*(?:=|:)", text, re.IGNORECASE)
-    if match is None:
-        return ""
-    start = match.end()
     while start < len(text) and text[start].isspace():
         start += 1
     if start >= len(text) or text[start] != "{":
-        return text[match.start() : text.find("\n", start) if "\n" in text[start:] else len(text)]
+        return ""
     depth = 0
     for index in range(start, len(text)):
         if text[index] == "{":
@@ -260,6 +256,30 @@ def _calendar_descriptor(text: str) -> str:
             if depth == 0:
                 return text[start : index + 1]
     return text[start:]
+
+
+def _calendar_descriptors(text: str) -> list[str]:
+    """Extract schedule descriptor blocks from real or synthetic readback."""
+
+    # ``launchctl print`` uses ``event triggers = { ... descriptor = { ... } }``.
+    triggers = re.search(r"event\s+triggers\s*(?:=|:)", text, re.IGNORECASE)
+    if triggers is not None:
+        event_block = _balanced_block(text, triggers.end())
+        descriptors: list[str] = []
+        for match in re.finditer(r"descriptor\s*(?:=|:)", event_block, re.IGNORECASE):
+            descriptor = _balanced_block(event_block, match.end())
+            if descriptor:
+                descriptors.append(descriptor)
+        if descriptors:
+            return descriptors
+
+    # Keep compatibility with the earlier synthetic fixture shape while the
+    # live path uses event triggers above.
+    legacy = re.search(r"start\s*calendar\s*interval\s*(?:=|:)", text, re.IGNORECASE)
+    if legacy is None:
+        return []
+    descriptor = _balanced_block(text, legacy.end())
+    return [descriptor] if descriptor else [text[legacy.start() :]]
 
 
 def _readback_matches(output: str, payload: bytes, label: str) -> bool:
@@ -296,19 +316,24 @@ def _readback_matches(output: str, payload: bytes, label: str) -> bool:
 
     if "StartInterval" in expected:
         if not _field_matches(
-            text, ("startinterval", "start interval"), expected["StartInterval"]
+            text,
+            ("startinterval", "start interval", "run interval"),
+            expected["StartInterval"],
         ):
             return False
     else:
         calendar = expected.get("StartCalendarInterval")
         if not isinstance(calendar, dict):
             return False
-        descriptor = _calendar_descriptor(text)
-        if not descriptor:
+        descriptors = _calendar_descriptors(text)
+        # These owner-report jobs each have one calendar descriptor.  Multiple
+        # descriptors are ambiguous: accepting any one could borrow fields
+        # from an unrelated event block, so fail closed instead.
+        if len(descriptors) != 1:
             return False
-        for key, value in calendar.items():
-            if not _field_matches(descriptor, (key,), value):
-                return False
+        descriptor = descriptors[0]
+        if not all(_field_matches(descriptor, (key,), value) for key, value in calendar.items()):
+            return False
     return True
 
 

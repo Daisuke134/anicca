@@ -181,21 +181,33 @@ def _launchctl_success(stdout: str = "") -> subprocess.CompletedProcess[str]:
 
 
 def _matching_readback(root: pathlib.Path, home: pathlib.Path, label: str) -> str:
-    """Render the essential fields a mocked ``launchctl print`` should expose."""
+    """Literal launchctl-print-shaped output for an owned schedule."""
 
     payload = installer.build_plists(root, home)[label]
     job = plistlib.loads(payload)
-    schedule = job.get("StartInterval") or job.get("StartCalendarInterval")
-    return "\n".join(
-        (
-            f"Label = {job['Label']}",
-            f"ProgramArguments = {job['ProgramArguments']}",
-            f"WorkingDirectory = {job['WorkingDirectory']}",
-            f"StartInterval = {job.get('StartInterval', '')}",
-            f"StartCalendarInterval = {schedule}",
-            "owner_report_cli.py",
-        )
-    )
+    arguments = "\n".join(f"        {argument}" for argument in job["ProgramArguments"])
+    common = f"""gui/501/{label} = {{
+    label = {job['Label']}
+    program = {job['ProgramArguments'][0]}
+    program arguments = {{
+{arguments}
+    }}
+    working directory = {job['WorkingDirectory']}
+"""
+    if "StartInterval" in job:
+        return common + f"    run interval = {job['StartInterval']} seconds\n}}\n"
+
+    calendar = job["StartCalendarInterval"]
+    fields = [f'        "Minute" => {calendar["Minute"]};', f'        "Hour" => {calendar["Hour"]};']
+    if "Weekday" in calendar:
+        fields.append(f'        "Weekday" => {calendar["Weekday"]};')
+    return common + """    event triggers = {
+        descriptor = {
+""" + "\n".join(fields) + """
+        };
+    };
+}
+"""
 
 
 class ApplyTests(unittest.TestCase):
@@ -208,6 +220,16 @@ class ApplyTests(unittest.TestCase):
             return _launchctl_success()
 
         return run
+
+    def test_real_launchctl_print_shapes_match_each_owned_schedule(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp) / "repo"
+            home = pathlib.Path(tmp) / "home"
+            for label, payload in installer.build_plists(root, home).items():
+                with self.subTest(label=label):
+                    self.assertTrue(
+                        installer._readback_matches(_matching_readback(root, home, label), payload, label)
+                    )
 
     def test_apply_writes_atomically_and_controls_only_three_owner_labels(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -285,7 +307,7 @@ class ApplyTests(unittest.TestCase):
             root, home, launch_dir = (pathlib.Path(tmp) / name for name in ("repo", "home", "LaunchAgents"))
             label = LABELS["events"]
             readback = _matching_readback(root, home, label).replace(
-                "StartInterval = 900", "StartInterval = 120"
+                "run interval = 900 seconds", "run interval = 120 seconds"
             ) + "\nUnrelated = 900"
             self._assert_schedule_readback_rejected(root, home, launch_dir, label, readback)
 
@@ -294,7 +316,7 @@ class ApplyTests(unittest.TestCase):
             root, home, launch_dir = (pathlib.Path(tmp) / name for name in ("repo", "home", "LaunchAgents"))
             label = LABELS["daily"]
             readback = _matching_readback(root, home, label).replace(
-                "'Hour': 22", "'Hour': 23"
+                '"Hour" => 22', '"Hour" => 23'
             ) + "\nUnrelated = 22"
             self._assert_schedule_readback_rejected(root, home, launch_dir, label, readback)
 
@@ -303,8 +325,27 @@ class ApplyTests(unittest.TestCase):
             root, home, launch_dir = (pathlib.Path(tmp) / name for name in ("repo", "home", "LaunchAgents"))
             label = LABELS["daily"]
             readback = _matching_readback(root, home, label).replace(
-                "'Minute': 0", "'Minute': 1"
+                '"Minute" => 0', '"Minute" => 1'
             ) + "\nUnrelated = 0"
+            self._assert_schedule_readback_rejected(root, home, launch_dir, label, readback)
+
+    def test_daily_schedule_cannot_borrow_values_from_another_descriptor(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root, home, launch_dir = (pathlib.Path(tmp) / name for name in ("repo", "home", "LaunchAgents"))
+            label = LABELS["daily"]
+            readback = _matching_readback(root, home, label).replace(
+                '"Hour" => 22', '"Hour" => 23'
+            ).replace(
+                "    event triggers = {\n        descriptor = {",
+                """    event triggers = {
+        unrelated = {
+            descriptor = {
+                "Minute" => 0;
+                "Hour" => 22;
+            };
+        };
+        descriptor = {""",
+            )
             self._assert_schedule_readback_rejected(root, home, launch_dir, label, readback)
 
     def test_weekly_weekday_wrong_value_is_rejected_even_if_zero_appears_elsewhere(self):
@@ -312,7 +353,7 @@ class ApplyTests(unittest.TestCase):
             root, home, launch_dir = (pathlib.Path(tmp) / name for name in ("repo", "home", "LaunchAgents"))
             label = LABELS["weekly"]
             readback = _matching_readback(root, home, label).replace(
-                "'Weekday': 0", "'Weekday': 3"
+                '"Weekday" => 0', '"Weekday" => 3'
             ) + "\nUnrelated = 0"
             self._assert_schedule_readback_rejected(root, home, launch_dir, label, readback)
 
@@ -321,7 +362,7 @@ class ApplyTests(unittest.TestCase):
             root, home, launch_dir = (pathlib.Path(tmp) / name for name in ("repo", "home", "LaunchAgents"))
             label = LABELS["weekly"]
             readback = _matching_readback(root, home, label).replace(
-                "'Hour': 21", "'Hour': 20"
+                '"Hour" => 21', '"Hour" => 20'
             ) + "\nUnrelated = 21"
             self._assert_schedule_readback_rejected(root, home, launch_dir, label, readback)
 
@@ -330,7 +371,7 @@ class ApplyTests(unittest.TestCase):
             root, home, launch_dir = (pathlib.Path(tmp) / name for name in ("repo", "home", "LaunchAgents"))
             label = LABELS["weekly"]
             readback = _matching_readback(root, home, label).replace(
-                "'Minute': 0", "'Minute': 1"
+                '"Minute" => 0', '"Minute" => 1'
             ) + "\nUnrelated = 0"
             self._assert_schedule_readback_rejected(root, home, launch_dir, label, readback)
 
