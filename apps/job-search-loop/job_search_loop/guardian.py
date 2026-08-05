@@ -9,10 +9,12 @@ import re
 import sqlite3
 import stat
 import subprocess
+from urllib.parse import urlsplit
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
+from .browser_owner import probe_cdp
 from .release_activation import ActivationError, LANES, _link_commit, _validate_release
 from .state import InvalidTransition, validate_transition
 
@@ -54,6 +56,123 @@ REQUIRED_LEDGER_TRIGGERS = frozenset(
 )
 MAX_SUBMISSION_CLAIM_AGE = timedelta(hours=2)
 GMAIL_CHECKPOINT_ID = re.compile(r"^[A-Za-z0-9_-]{1,256}$")
+
+
+def _browser_listeners(port: int) -> list[dict[str, Any]]:
+    completed = subprocess.run(
+        ["lsof", "-nP", f"-iTCP:{port}", "-sTCP:LISTEN", "-Fpn"],
+        check=False, capture_output=True, text=True, timeout=10,
+    )
+    if completed.returncode not in {0, 1}:
+        return []
+    listeners: list[dict[str, Any]] = []
+    pid: int | None = None
+    for line in completed.stdout.splitlines():
+        if line.startswith("p") and line[1:].isdigit():
+            pid = int(line[1:])
+        elif line.startswith("n") and pid is not None:
+            address = line[1:].rsplit(":", 1)[0]
+            listeners.append({"pid": pid, "address": address})
+    return listeners
+
+
+def _pid_alive(pid: int) -> bool:
+    try:
+        os.kill(pid, 0)
+        return True
+    except (OSError, ValueError):
+        return False
+
+
+def browser_owner_health(
+    *,
+    receipt_path: Path,
+    endpoint: str,
+    now: datetime | None = None,
+    cdp_probe: Any = probe_cdp,
+    listener_reader: Any = _browser_listeners,
+    pid_alive: Any = _pid_alive,
+) -> dict[str, Any]:
+    current = now or datetime.now(timezone.utc)
+    if current.tzinfo is None:
+        raise ValueError("Guardian browser time must include timezone")
+    reasons: list[str] = []
+    owner_state = "unverified"
+    holder_pid: int | None = None
+    path = Path(receipt_path).expanduser().resolve()
+    receipt: dict[str, Any] | None = None
+    if not path.is_file():
+        reasons.append("browser_owner_receipt_missing")
+    else:
+        if stat.S_IMODE(path.stat().st_mode) != 0o600:
+            reasons.append("browser_owner_receipt_permissions_invalid")
+        try:
+            candidate = json.loads(path.read_text(encoding="utf-8"))
+            receipt = candidate if isinstance(candidate, dict) else None
+        except (OSError, json.JSONDecodeError):
+            receipt = None
+        required = {
+            "version", "status", "owner", "endpoint", "lease_id", "fence",
+            "holder_pid", "acquired_at", "expires_at",
+        }
+        valid = (
+            receipt is not None
+            and required.issubset(receipt)
+            and receipt.get("version") == 2
+            and receipt.get("status") == "ready"
+            and receipt.get("owner") == "ai.anicca.job-search-daily"
+            and receipt.get("endpoint") == endpoint
+            and isinstance(receipt.get("lease_id"), str)
+            and bool(receipt.get("lease_id"))
+            and isinstance(receipt.get("fence"), int)
+            and not isinstance(receipt.get("fence"), bool)
+            and receipt.get("fence", 0) > 0
+            and isinstance(receipt.get("holder_pid"), int)
+            and not isinstance(receipt.get("holder_pid"), bool)
+            and receipt.get("holder_pid", 0) > 0
+        )
+        if not valid:
+            reasons.append("browser_owner_receipt_invalid")
+        else:
+            holder_pid = int(receipt["holder_pid"])
+            try:
+                acquired = datetime.fromisoformat(str(receipt["acquired_at"]))
+                expires = datetime.fromisoformat(str(receipt["expires_at"]))
+                if acquired.tzinfo is None or expires.tzinfo is None or not acquired <= current < expires:
+                    reasons.append("browser_owner_lease_expired")
+                else:
+                    owner_state = "leased"
+            except ValueError:
+                reasons.append("browser_owner_receipt_invalid")
+            if not pid_alive(holder_pid):
+                reasons.append("browser_owner_pid_dead")
+    parsed = urlsplit(endpoint)
+    port = parsed.port or 80
+    listeners = listener_reader(port)
+    if len(listeners) != 1:
+        reasons.append("browser_listener_not_unique")
+    if any(row.get("address") not in {"127.0.0.1", "[::1]", "::1"} for row in listeners):
+        reasons.append("browser_listener_not_loopback")
+    if holder_pid is not None and len(listeners) == 1 and listeners[0].get("pid") != holder_pid:
+        reasons.append("browser_listener_holder_mismatch")
+    try:
+        cdp_ready = cdp_probe(endpoint).get("status") == "ready"
+    except Exception:
+        cdp_ready = False
+    if not cdp_ready:
+        reasons.append("browser_cdp_unavailable")
+    return {
+        "version": 1,
+        "status": "healthy" if not reasons else "unhealthy",
+        "reasons": sorted(set(reasons)),
+        "owner_state": owner_state,
+        "listener_count": len(listeners),
+        "listener_loopback_only": bool(listeners) and not any(
+            row.get("address") not in {"127.0.0.1", "[::1]", "::1"}
+            for row in listeners
+        ),
+        "cdp": "ready" if cdp_ready else "unavailable",
+    }
 
 
 def _gmail_checkpoint_health(path: Path) -> tuple[list[str], int]:
@@ -443,6 +562,10 @@ def main(argv: list[str] | None = None) -> int:
     gmail.add_argument("--checkpoint", type=Path, required=True)
     gmail.add_argument("--gog", type=Path, default=Path("/opt/homebrew/bin/gog"))
     gmail.add_argument("--output", type=Path, required=True)
+    browser = subparsers.add_parser("browser")
+    browser.add_argument("--receipt", type=Path, required=True)
+    browser.add_argument("--endpoint", default="http://127.0.0.1:9222")
+    browser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(argv)
     if args.command == "release":
         report = release_health(args.data_root, args.launcher_root)
@@ -471,11 +594,17 @@ def main(argv: list[str] | None = None) -> int:
             "stale_submission_claim_count": report["stale_submission_claim_count"],
             "reasons": report["reasons"],
         }
-    else:
+    elif args.command == "gmail":
         report = gmail_health(
             account=args.account,
             checkpoint_path=args.checkpoint,
             executable=args.gog,
+        )
+        public = report
+    else:
+        report = browser_owner_health(
+            receipt_path=args.receipt,
+            endpoint=args.endpoint,
         )
         public = report
     args.output.write_text(json.dumps(report, sort_keys=True) + "\n", encoding="utf-8")
