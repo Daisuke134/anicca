@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-27` — durable quota-deficit event
+**Active atomic task:** `L-28` — quota-deficit discovery expansion
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1088,8 +1088,23 @@ this spec update → commit/push → Telegram milestone before the next item sta
   `afc2bfde3d64e28e2d5d498a19b588472ad17074bb64739f1b907e2e83033aa7`)
   is active with zero writable paths; daily remains unloaded until the durable
   deficit/recovery slices are installed.
-- [ ] **L-27** — Persist a `quota_deficit` event when fewer than ten submissions are
-  confirmed.
+- [x] **L-27** — Persist a `quota_deficit` event when fewer than ten submissions are
+  confirmed. Receipt: an append-only ledger table records Japan day, total confirmed,
+  total deficit, 2/5/3 confirmed and missing bucket counts, reason, deterministic
+  payload SHA-256, and content-addressed event ID. Identical hourly observations are
+  idempotent; improved counts create a new immutable event; ten confirmed creates no
+  deficit. Legacy submitted slots count toward the total without fabricating a
+  portfolio bucket. Every daily summary exit invokes the recorder and writes a
+  mode-0600 receipt. Focused 4-test and full 250-test suites PASS. A real-ledger
+  read-only backup produced one event after two identical records, with both
+  immutability triggers present and the production ledger SHA-256 unchanged. The
+  authoritative production history is two submitted slots on 2026-07-28 and three
+  `submit_unknown` slots across 2026-07-29/31; 2026-08-05 therefore truthfully has
+  zero confirmed and deficit ten. Immutable release
+  `ffd7a9ba778e224a422a711399ba5e0610c3c187` (archive SHA-256
+  `25cd8a68fbfead03117566ad4225d3bf36b2f829aa8c2e3054c9cd765de905ac`)
+  is active with zero writable paths; daily remains unloaded until L-28 installs the
+  deterministic recovery expansion.
 - [ ] **L-28** — Expand sources and queries after a quota deficit without weakening
   any hard gate.
 - [ ] **L-29** — Add `agent`, `dais_manual`, and `recruiter` as exclusive owners.
