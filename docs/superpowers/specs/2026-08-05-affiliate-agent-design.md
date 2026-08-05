@@ -10,11 +10,13 @@ Life Manager API repository: `/Users/anicca/anicca-project`
 
 ## 1. Goal
 
-Build one bilingual Affiliate Agent in Life Manager's financial organ that can
-continuously discover lawful offers, create useful Japanese and English buying
+Build one English-first Affiliate Agent in Life Manager's financial organ that can
+continuously discover lawful offers, create useful English buying
 decision assets, publish them through owned and approved channels, attribute
 clicks and commissions, repair failures, and reallocate effort from external
-receipts without routine human or Codex operation.
+receipts without routine human or Codex operation. After English Gate E0 it may
+launch a Japanese pod with a separate social identity, provider/account receipts,
+content history, attribution cohorts, experiments, and money reporting.
 
 The first commercial gate is three consecutive months at USD 10,000 equivalent
 gross affiliate commission with gross, net, reversals, fees, and currencies
@@ -47,9 +49,9 @@ commission watermark as newly attributed revenue.
 
 The software is complete when all of the following are true:
 
-1. One authenticated Japanese offer and one authenticated English offer have
-   provider-owned account and terms readback receipts.
-2. One Japanese and one English placement pass evidence, disclosure, policy,
+1. One authenticated English offer has provider-owned account, terms,
+   executable-link, and dedicated `Anicca EN` Postiz integration receipts.
+2. One English placement passes evidence, disclosure, policy,
    publication, public-readback, redirect, and click-ingest E2E tests.
 3. A real provider report can be reconciled to a placement and click/sub-ID
    without manual database editing.
@@ -64,8 +66,8 @@ The software is complete when all of the following are true:
 
 ### 2.2 First-money done
 
-Gate A1 is complete only after a non-test external provider receipt records an
-approved commission and joins it to the exact offer, placement, artifact, and
+English Gate E1 is complete only after a non-test external provider receipt
+records an approved commission and joins it to the exact offer, placement, artifact, and
 available click/sub-ID. A click, order screenshot, estimated commission, test
 transaction, or creator claim is not revenue.
 
@@ -106,7 +108,8 @@ learning; it must not promise a particular income.
 
 ### 3.1 Included
 
-- Japanese and English research, content, offers, reports, and experiments.
+- English research, content, offers, reports, and experiments first. Japanese
+  read-only discovery may run before E0, but Japanese publication cannot.
 - Amazon, Rakuten, high-value Japanese ASPs, and English recurring/high-value
   programs through a normalized provider contract.
 - Owned comparison/review pages, X/X Articles through the dedicated account and
@@ -116,6 +119,8 @@ learning; it must not promise a particular income.
   provider report reconciliation, immutable commission ledger, and payout state.
 - Official-source evidence, disclosure and policy gates, self-repair, bounded
   learning, reporting, and staged scaling.
+- Strict account/locale isolation: no account publishes both English and
+  Japanese, and no attribution cohort or experiment crosses locale identities.
 
 ### 3.2 Excluded from the first implementation
 
@@ -134,7 +139,11 @@ learning; it must not promise a particular income.
 
 ### 4.1 Recommended: one durable portfolio Agent with specialized workers
 
-One canonical state machine owns money and truth. Deterministic workers perform
+One canonical state machine owns money and truth. Specialized roles perform
+opportunity discovery, offer/account verification, evidence, content,
+criticism/policy, publication/readback, reconciliation, learning, reporting, and
+recovery. A role may be a bounded model call or deterministic worker; it never
+owns an independent ledger or independent autonomous loop. Deterministic workers perform
 provider normalization, arithmetic, receipts, idempotency, policy checks, and
 retries. Model calls perform bounded research judgment, content composition, and
 editorial evaluation. Workers share typed records instead of separate memories.
@@ -411,8 +420,9 @@ honest alternatives. It includes:
 - cost, trade-offs, alternatives, failure modes, and freshness date;
 - adjacent and visible affiliate disclosure;
 - one measurable CTA per placement;
-- Japanese and English versions independently localized, never mechanically
-  translated as if local terms and availability were identical.
+- after English E0 unlocks Japanese production, Japanese and English versions
+  are independently localized, never mechanically translated as if local terms
+  and availability were identical.
 
 The policy gate fails closed for missing evidence, stale prices, unsupported
 superlatives, hidden disclosures, prohibited channel use, broken links, PII,
@@ -467,8 +477,10 @@ stateDiagram-v2
 
 Hourly workers refresh offer/link health, ingest clicks, reconcile available
 reports, resume failed intents, and quarantine local failures. The daily worker
-selects capacity, produces at most one primary JA and one primary EN unit until
-economics justify more, publishes derived placements, and emits a report.
+measures prior English cohorts, verifies terms, selects one reader problem,
+produces at most one primary English unit until economics justify more, publishes
+derived placements, performs public readback, and emits a report. A Japanese
+daily worker is created only after E0 and uses its own identity and cohorts.
 Outcome windows close at 24 hours, 72 hours, 7 days, and 30 days without replacing
 missing evidence with zero.
 
@@ -558,7 +570,8 @@ generated from the same snapshot hash.
 
 ```mermaid
 flowchart LR
-  S0[Software E2E] --> S1[First approved commission]
+  S0[English E0 public E2E] --> S1[English E1 approved commission]
+  S0 --> J0[Isolated Japanese canary]
   S1 --> S2[Four positive weeks]
   S2 --> S3[$10k monthly x 3]
   S3 --> S4[10 diversified pods]
@@ -586,10 +599,10 @@ tenant sales, clicks, and forecasts never satisfy it.
 3. The deterministic kernel checks origin, terms, budget, idempotency, disclosure,
    evidence, and required verification before executing that action.
 4. The browser/API harness executes it, reads the result back, stores hashes and
-   receipts, and emits a Japanese natural-language `ActionEvent` to the Telegram
+   receipts, and emits an owner-readable natural-language `ActionEvent` to the Telegram
    outbox.
 5. The planner then chooses the next eligible work item: offer/terms refresh,
-   bilingual evidence and decision asset creation, publication, measurement,
+   English evidence and decision asset creation, publication, measurement,
    reconciliation, learning, or recovery.
 6. Readers pass through an Agent-owned redirect that records placement lineage.
 7. Provider reports advance transactions from pending to approved, reversed, or
@@ -616,7 +629,7 @@ The implementation plan is maintained at
 3. ledger and generic provider playbook truth;
 4. public redirect, click ingest, evidence, policy, content, and publication;
 5. reconciliation, bounded learning, recovery, reporting, and production launchd;
-6. real bilingual E2E and first external commission;
+6. real English E2E, first external commission, then an isolated Japanese canary;
 7. operational $10k gate;
 8. post-proof tenantization and staged $10M scale;
 9. separately receipted $100M horizon.

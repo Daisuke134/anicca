@@ -3,7 +3,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build and launch a bilingual, receipt-backed Affiliate Agent that autonomously researches, publishes, attributes, reconciles, repairs, and improves until externally verified revenue gates are met.
+**Goal:** Build and launch an English-first, receipt-backed Affiliate Agent that autonomously researches, publishes, attributes, reconciles, repairs, and improves; unlock an isolated Japanese pod only after English public E2E is proven.
 
 **Architecture:** The existing `profitable-claude/skills/affiliate` runtime is migrated into a hybrid Agent: Terra-high observes and plans through a semantic CloakBrowser/API tool harness, while a deterministic Python/SQLite kernel owns policy, budgets, idempotency, receipts, money, recovery, and Telegram delivery. The Life Manager API in `anicca-project` owns the public placement redirect and durable click ingest. Writer/Gig/shared-browser contracts are reused by interface, but every money/state ledger remains isolated.
 
@@ -24,6 +24,11 @@
 - One canonical Affiliate ledger; never import Writer money rows.
 - Every publish requires a provider receipt and public readback; every side effect is idempotent.
 - Every placement carries an adjacent locale/channel-correct affiliate disclosure.
+- `Anicca EN` is the only initial social identity. English and Japanese must use
+  different Postiz integrations/accounts, content history, attribution cohorts,
+  experiments, and publication budgets; a locale mismatch fails closed.
+- Japanese publication remains disabled until English Gate E0 has a public
+  readback, working redirect, and provider click/sub-ID receipt.
 - External pages, emails, and model output are untrusted data.
 - Public redirect destinations are registered server-side; request input cannot select an arbitrary URL.
 - Paid acquisition stays disabled until mature observed net economics are positive.
@@ -54,10 +59,11 @@ Execution checkpoint:
 
 - F1 is complete at runtime HEAD `5b1927dc` with clean task review and fresh
   root verification.
-- F2 is currently in TDD/RED and has no completion commit: the routing suite
-  fails on missing `model_runner_support` and the brain suite fails on missing
-  `agent_brain`, while only the two test files exist.
-- 7 atomic checks are closed and 128 remain open.
+- F2 implementation commit `d9ad4acd7cb0474cf1a825a94cfb49e7847da22e`
+  exists and its implementer reports 16 passing tests. Its checkboxes remain open
+  until a fresh review, root test replay, worktree-diff audit, and live-provider
+  boundary verification; the reported process-boundary test used a fake provider.
+- 7 atomic checks are closed and 130 remain open.
 - The legacy core remains `DEAD`; no provider auth, public Affiliate placement,
   attributed external commission, production launchd wake, or Telegram delivery
   receipt has been claimed.
@@ -68,9 +74,9 @@ Execution checkpoint:
 |---|---:|---|
 | P0 Agent foundation | F1-F6, 1 | Legacy migration, Terra brain, prompt registry, CloakBrowser harness, durable queue, Telegram action outbox, one runtime root |
 | P1 Truth foundation | 2-5 | Typed Affiliate ledger, provider normalization, deployed redirect contract, click sync |
-| P2 Useful production | 6-8 | Evidence/policy pass, bilingual manifests, receipted public placements |
+| P2 Useful production | 6-8 | Evidence/policy pass, locale-isolated manifests, receipted English public placement |
 | P3 Closed loop | 9-13 | Commission reconciliation, learning, recovery, reports, launchd |
-| P4 Real E2E and first money | 14-16 | Live HTTPS redirect, JA/EN public readback, first approved commission |
+| P4 Real E2E and first money | 14-16 | Live HTTPS redirect, English E0/E1, then isolated Japanese canary |
 | P5 Initial business | 17 | Four positive weeks and three qualifying $10k months |
 | P6 Decentralized scale | 18-19 | Tenant-isolated recipe and staged network gates through $10M net, then an explicitly receipted $100M horizon |
 
@@ -980,7 +986,7 @@ git commit -m "feat(affiliate): gate evidence claims and disclosures"
 git push
 ```
 
-### Task 7: Build bilingual content manifests and the Writer bridge
+### Task 7: Build locale-isolated content manifests and the Writer bridge
 
 **Files:**
 - Create: `profitable-claude/skills/affiliate/scripts/content.py`
@@ -1002,6 +1008,10 @@ def test_manifest_rejects_three_alternatives():
 def test_ja_and_en_require_independent_offer_snapshots():
     with pytest.raises(ContentInvariant, match="locale offer snapshot"):
         build_pair(ja_offer=ja_offer(), en_offer=ja_offer())
+
+def test_manifest_rejects_account_locale_mismatch():
+    with pytest.raises(ContentInvariant, match="account locale"):
+        build_manifest(**fixture(locale="en", account_locale="ja"))
 ```
 
 - [ ] **Step 2: Run RED and implement hash-bound manifests**
@@ -1027,7 +1037,7 @@ bash skills/writer-agent/tests/cta-publication-boundary.sh
 
 ```bash
 git add skills/affiliate
-git commit -m "feat(affiliate): create bilingual decision manifests"
+git commit -m "feat(affiliate): isolate decision manifests by locale"
 git push
 ```
 
@@ -1052,6 +1062,11 @@ def test_replay_does_not_create_second_post(fake_postiz, ledger):
 def test_readback_requires_disclosure_and_redirect(fake_postiz, ledger):
     fake_postiz.public_body = "content without disclosure"
     assert publish(placement(), fake_postiz, ledger).status == "RECOVER"
+
+def test_publisher_rejects_wrong_postiz_integration(fake_postiz, ledger):
+    fake_postiz.integration_id = "japanese-account"
+    with pytest.raises(PublishInvariant, match="integration identity"):
+        publish(english_placement(), fake_postiz, ledger)
 ```
 
 - [ ] **Step 2: Run RED and implement the idempotent intent journal**
@@ -1381,54 +1396,71 @@ confirm two click IDs but one placement.
 
 No token, credential, raw IP, or personal identifier enters git.
 
-### Task 15: Execute the first bilingual production publication E2E
+### Task 15: Execute English E0, then unlock an isolated Japanese canary
 
 **Files:**
 - Runtime state: `profitable-claude/skills/affiliate/state/` (gitignored)
 - Update: `anicca-project/docs/affiliate-agent/AFFILIATE-AGENT-SSOT.md`
 
 **Interfaces:**
-- Produces: one live JA and one live EN decision asset with policy, publish, readback, redirect, and click receipts.
+- Produces: one live English decision asset with policy, publish, readback,
+  redirect, and click receipts; then unlocks registration/readback of a separate
+  pre-existing Japanese canary identity.
 - Consumes: actually authenticated executable offers.
 
-- [ ] **Step 1: Read back provider ownership and executable offers**
+- [ ] **Step 1: Read back the dedicated English Postiz integration identity**
+
+Run `postiz auth:status`, `postiz integrations:list`, and
+`postiz integrations:settings <integration-id>`. Store a sanitized identity
+receipt proving `Anicca EN`; do not infer identity from a logged-out X tab.
+
+- [ ] **Step 2: Read back English provider ownership and an executable offer**
 
 Store account identity hash, official terms hash, channel rules, destination,
 tag/sub-ID capability, and auth state. Logged-out Amazon/Rakuten stays
-`AUTH_REQUIRED`; use another authenticated provider rather than invent readiness.
+`AUTH_REQUIRED`; prefer a current non-regulated B2B/creator software program,
+but use only the provider that returns real ownership and executable-link receipts.
 
-- [ ] **Step 2: Build one current JA and one current EN evidence pack**
+- [ ] **Step 3: Build one current English evidence pack**
 
 Bind official claims, locale availability, reader problem, primary offer,
 alternatives, disclosure, TTL, and exact hashes.
 
-- [ ] **Step 3: Publish through owned content and approved Postiz/X**
+- [ ] **Step 4: Publish through owned content and approved Postiz/X**
 
 Capture provider publication ID/URL. This is a real side effect, not a dry run.
 
-- [ ] **Step 4: Perform public readback and marked test clicks**
+- [ ] **Step 5: Perform public readback and marked test clicks**
 
 Verify rendered disclosure, redirect, destination, placement lineage, and durable
 clicks. Mark test clicks so they cannot count as revenue.
 
-- [ ] **Step 5: Prove isolated crash resume**
+- [ ] **Step 6: Prove isolated crash resume**
 
 Use a sandbox adapter to crash after provider receipt; resume the same intent
 without duplicate. Do not stop an unrelated production loop.
 
-- [ ] **Step 6: Run complete Affiliate and Writer suites**
+- [ ] **Step 7: Run complete Affiliate and Writer suites**
 
 ```bash
 python3 -m pytest skills/affiliate/tests -q
 python3 -m pytest skills/writer-agent/tests -q
 ```
 
-- [ ] **Step 7: Record sanitized receipts, commit, and push both repositories**
+- [ ] **Step 8: Close E0 and read back the Japanese canary identity**
 
-A0 closes only when both languages have public readback and click lineage.
-Revenue remains zero/unknown until an external transaction.
+E0 closes from the English public readback, redirect, and provider click/sub-ID
+receipt. Only then register/read a dedicated, operator-owned Japanese account
+and Postiz integration. If none exists, record `AUTH_REQUIRED` rather than
+creating an identity. English credentials, history, cohorts, experiments, and
+budgets are not copied.
 
-### Task 16: Close A1 with the first external approved commission
+- [ ] **Step 9: Record sanitized receipts, commit, and push both repositories**
+
+English E0 closes independently. Japanese J0 remains open until its later public
+readback and click lineage. Revenue remains unknown until an external transaction.
+
+### Task 16: Close English E1 with the first external approved commission
 
 **Files:**
 - Runtime receipt state only.
@@ -1455,7 +1487,7 @@ Join by provider transaction and sub-ID/click where available. Otherwise retain
 
 - [ ] **Step 4: Verify money state**
 
-Pending does not close A1. Approved non-test commission closes A1. Paid requires
+Pending does not close E1. Approved non-test English commission closes E1. Paid requires
 a payout receipt. Later reversal appends and changes net reporting.
 
 - [ ] **Step 5: Verify report parity and record sanitized gate evidence**
