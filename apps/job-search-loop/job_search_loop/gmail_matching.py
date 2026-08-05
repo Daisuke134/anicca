@@ -57,8 +57,6 @@ def match_gmail_event(
     company = _identifier(event.get("company"), "company")
     title = _identifier(event.get("title"), "title")
     posting_url = _identifier(event.get("posting_url"), "posting URL")
-    if posting_url is None and (company is None or title is None):
-        return {"status": "insufficient_evidence"}
     normalized_url = canonical_url(posting_url) if posting_url else None
     identifiers = {"company": company, "title": title, "posting_url": normalized_url}
     identifier_sha256 = hashlib.sha256(
@@ -66,7 +64,7 @@ def match_gmail_event(
     ).hexdigest()
 
     existing = ledger.connection.execute(
-        "SELECT * FROM gmail_application_matches WHERE message_id = ?", (message_id,)
+        "SELECT * FROM gmail_match_decisions WHERE message_id = ?", (message_id,)
     ).fetchone()
     if existing is not None:
         if (
@@ -76,7 +74,16 @@ def match_gmail_event(
             or str(existing["received_at"]) != str(event["received_at"])
         ):
             raise FenceError("Gmail message is already bound to different evidence")
-        return {"status": "matched", "application_id": str(existing["application_id"])}
+        result = {"status": str(existing["status"])}
+        if existing["application_id"] is not None:
+            result["application_id"] = str(existing["application_id"])
+        return result
+
+    if posting_url is None and (company is None or title is None):
+        result: dict[str, str] = {"status": "insufficient_evidence"}
+        return _persist_decision(
+            ledger, event, identifier_sha256, result, persist=persist
+        )
 
     rows = ledger.connection.execute(
         """
@@ -104,13 +111,43 @@ def match_gmail_event(
             continue
         matches.append(str(row["id"]))
     if not matches:
-        return {"status": "no_match"}
-    if len(matches) != 1:
-        return {"status": "ambiguous"}
-    application_id = matches[0]
+        result = {"status": "no_match"}
+    elif len(matches) != 1:
+        result = {"status": "ambiguous"}
+    else:
+        result = {"status": "matched", "application_id": matches[0]}
+    return _persist_decision(
+        ledger, event, identifier_sha256, result, persist=persist
+    )
+
+
+def _persist_decision(
+    ledger: Ledger,
+    event: dict[str, Any],
+    identifier_sha256: str,
+    result: dict[str, str],
+    *,
+    persist: bool,
+) -> dict[str, str]:
     if not persist:
-        return {"status": "matched", "application_id": application_id}
+        return result
+    application_id = result.get("application_id")
     with ledger._transaction():
+        ledger.connection.execute(
+            """
+            INSERT INTO gmail_match_decisions
+              (message_id, thread_id, application_id, status, evidence_sha256,
+               identifier_sha256, received_at, decided_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                event["message_id"], event["thread_id"], application_id,
+                result["status"], event["evidence_sha256"], identifier_sha256,
+                event["received_at"], datetime.now().astimezone().isoformat(),
+            ),
+        )
+        if application_id is None:
+            return result
         ledger.connection.execute(
             """
             INSERT INTO gmail_application_matches
@@ -119,12 +156,12 @@ def match_gmail_event(
             VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
             (
-                message_id, thread_id, application_id, evidence_sha256,
-                identifier_sha256, str(event["received_at"]),
-                datetime.now(received.tzinfo).isoformat(),
+                event["message_id"], event["thread_id"], application_id,
+                event["evidence_sha256"], identifier_sha256,
+                str(event["received_at"]), datetime.now().astimezone().isoformat(),
             ),
         )
-    return {"status": "matched", "application_id": application_id}
+    return result
 
 
 def validate_match_result(
@@ -142,6 +179,8 @@ def validate_match_result(
         raise ValueError("gmail_matches contains invalid or duplicate message IDs")
     if set(request_ids) != set(processed):
         raise ValueError("gmail_matches must cover exactly processed message IDs")
+    if set(processed) != set(events):
+        raise ValueError("every scanned message must receive a deterministic decision")
     ledger = Ledger(ledger_path)
     checked: list[tuple[dict[str, Any], dict[str, str]]] = []
     try:

@@ -43,6 +43,9 @@ class GmailMatchingTests(unittest.TestCase):
         self.ledger.add_application("Example AI", "Applied AI Engineer", "https://jobs.example/two")
         self.assertEqual(match_gmail_event(self.ledger, event()), {"status": "ambiguous"})
         self.assertEqual(self.ledger.connection.execute("SELECT COUNT(*) FROM gmail_application_matches").fetchone()[0], 0)
+        self.assertEqual(self.ledger.connection.execute(
+            "SELECT status FROM gmail_match_decisions"
+        ).fetchone()[0], "ambiguous")
 
     def test_exact_url_with_conflicting_title_is_no_match(self):
         self.ledger.add_application("Example AI", "Applied AI Engineer", "https://jobs.example/one")
@@ -51,6 +54,9 @@ class GmailMatchingTests(unittest.TestCase):
             posting_url={"value": "https://jobs.example/one", "source_span": "Apply at https://jobs.example/one"},
         ))
         self.assertEqual(result, {"status": "no_match"})
+        self.assertEqual(self.ledger.connection.execute(
+            "SELECT status FROM gmail_match_decisions"
+        ).fetchone()[0], "no_match")
 
     def test_insufficient_identifier_or_unverbatim_span_records_nothing(self):
         self.ledger.add_application("Example AI", "Applied AI Engineer", "https://jobs.example/one")
@@ -58,6 +64,19 @@ class GmailMatchingTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "source span"):
             match_gmail_event(self.ledger, event(company={"value": "Example AI", "source_span": "unrelated"}))
         self.assertEqual(self.ledger.connection.execute("SELECT COUNT(*) FROM gmail_application_matches").fetchone()[0], 0)
+
+    def test_validator_requires_every_scanned_message_to_receive_a_decision(self):
+        candidates, result = self._write_validation_files(event())
+        result.write_text(json.dumps({
+            "processed_message_ids": [],
+            "gmail_matches": [],
+        }), encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "every scanned message"):
+            validate_match_result(
+                ledger_path=Path(self.temp.name) / "ledger.sqlite3",
+                candidates_path=candidates,
+                result_path=result,
+            )
 
     def test_exact_replay_is_idempotent_but_rebinding_message_is_fenced(self):
         first = self.ledger.add_application("Example AI", "Applied AI Engineer", "https://jobs.example/one")
