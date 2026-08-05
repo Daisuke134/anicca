@@ -1583,7 +1583,7 @@ class Ledger:
                     (japan_day,),
                 ).fetchall()
             }
-            slot = next((candidate for candidate in (1, 2) if candidate not in used), None)
+            slot = next((candidate for candidate in range(1, 11) if candidate not in used), None)
             if slot is None:
                 return None
             claimed_at = _now()

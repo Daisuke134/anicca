@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "daily_target": 2,
+  "daily_target": 10,
   "auto_apply_threshold": 75,
   "compensation_floor_jpy": 8000000,
   "compensation_target_jpy": 10000000,
