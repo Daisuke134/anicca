@@ -15,6 +15,8 @@ function providerError(message, code, unknownEffect) {
 
 async function exactControlState(page) {
   return page.evaluate(() => {
+    const body = String(document.body && document.body.innerText || "")
+      .replace(/\s+/g, " ").trim().toLowerCase();
     const values = [...document.querySelectorAll(
       'button, a[role="button"], input[type="submit"]',
     )].map((element) => (
@@ -31,7 +33,8 @@ async function exactControlState(page) {
         "you’re going",
         "going",
       ]
-        .some((value) => controls.has(value)),
+        .some((value) => controls.has(value))
+        || /(?:承認待ち|pending approval|approval pending)/i.test(body),
     };
   });
 }

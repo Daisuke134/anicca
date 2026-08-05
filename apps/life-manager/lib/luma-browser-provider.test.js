@@ -171,7 +171,10 @@ test("submits the live Japanese one-click registration control", async () => {
       return control;
     },
     async waitForTimeout() {},
-    async evaluate() { return { registered: true }; },
+    async evaluate(expression) {
+      assert.match(String(expression), /承認待ち/);
+      return { registered: true };
+    },
   };
 
   assert.deepEqual(await submitLumaOnPage(page), {
