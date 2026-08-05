@@ -227,9 +227,40 @@ Evidence: `node --test apps/life-manager/lib/connector-native-runtime.test.js` p
 tests pass with env-override regression coverage; no external write boundary is invoked and `open=21` remains
 `incomplete` with `refresh_inventory` continuation.
 
+### Task 5: Explicit native write pipeline (bounded registration, Calendar, coverage, Telegram)
+
+**Files:**
+
+- Create: `apps/life-manager/lib/connector-native-write-pipeline.js`
+- Test: `apps/life-manager/lib/connector-native-write-pipeline.test.js`
+- Modify: `apps/life-manager/lib/connector-coverage-telegram.js`
+- Test: `apps/life-manager/lib/connector-coverage-telegram.test.js`
+
+**Interfaces:**
+
+- Consumes a chosen application, verified date inventory, rolling coverage, Google busy inventory, Calendar write context, and Telegram target.
+- Runs the trusted chain in order: application job → Luma RSVP → verified receipt → Calendar sync → coverage rebuild → Telegram delivery.
+- Produces only secret-free status and opaque references. Unknown external effects stop at reconciliation and never advance to Calendar or Telegram.
+
+- [x] **Step 1: Write failing pipeline tests**
+
+  The tests cover unknown RSVP effects, receipt and Calendar gates, coverage-before-Telegram ordering, exact Telegram receipt binding, and incomplete coverage.
+
+- [x] **Step 2: Run RED**
+
+  `node --test lib/connector-native-write-pipeline.test.js` failed with `MODULE_NOT_FOUND` because the orchestrator did not exist. The Telegram copy test separately failed because production claimed confirmation-mail verification that Task 5 does not perform.
+
+- [x] **Step 3: Implement the minimum verified chain**
+
+  `runNativeConnectorWrite` reuses existing production modules and accepts dependency overrides only at trusted test seams. The Telegram copy now claims only registration evidence and Calendar registration. Gmail confirmation, guest binding, and ticket/QR remain Task 6.
+
+- [x] **Step 4: Run GREEN**
+
+  `node --test lib/connector-native-write-pipeline.test.js lib/connector-coverage-telegram.test.js lib/connector-native-runtime.test.js` passes 24/24. The default native runtime still remains read-only; connecting candidate judgment and this write pipeline is the next task.
+
 ## Plan Self-Review
 
-- Coverage boundary: Tasks 1–3 deliver only the native boot/launchd lifecycle scaffold: lock, heartbeat, healthcheck, dynamic canonical path, and direct-runtime handoff. Task 4 completes only shared browser auth, Luma inventory, all-calendar `gog` reads, and coverage continuation. Registration, receipt verification, Calendar write/sync, and Telegram delivery remain unchecked next live work; this slice is not Connector completion.
+- Coverage boundary: Tasks 1–3 deliver the native boot/launchd lifecycle scaffold. Task 4 completes shared browser auth, Luma inventory, all-calendar `gog` reads, and coverage continuation. Task 5 provides a production-capable write orchestrator behind an explicit chosen-candidate boundary, but the default runtime does not invoke it and no live side effect is claimed.
 - Judgment boundary: no task encodes relevance, preference, or candidate selection in deterministic code; the local contract documents that boundary without becoming an executable override.
-- Safety: every action in Tasks 1–3 is local state, template rendering to an explicit test directory, or read-only health probing. Task 4 adds read-only browser/calendar inventory only. Real registration, receipt verification, Calendar write/sync, Telegram send, launchd loading, and legacy retirement remain outside this slice.
+- Safety: Tasks 1–4 remain local or read-only. Task 5 adds verified write composition without invoking it live. Real registration, Gmail/ticket verification, Calendar write/readback, Telegram send, and launchd loading remain later explicit gates.
 - Scope: all planned production files are within the delegated ownership set; no master specification, runtime queue, bridge, package manifest, or lockfile changes are included.

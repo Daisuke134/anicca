@@ -123,7 +123,7 @@ function buildConnectorCoverageTelegramMessage(input = {}) {
     `未処理の空き: ${coverage.counts.open}日`,
   ];
   if (newEvents.length > 0) {
-    lines.push("", "今回予約し、確認メールとCalendar登録を照合したevent:");
+    lines.push("", "今回予約し、登録証拠とCalendar登録を照合したevent:");
     for (const [index, event] of newEvents.entries()) {
       lines.push(
         `${index + 1}. ${shortDate(event.date)} ${displayText(event.title)}`,
