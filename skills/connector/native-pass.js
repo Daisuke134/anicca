@@ -22,6 +22,12 @@ function requiredToken(value) {
   return token;
 }
 
+function requiredText(value) {
+  const text = String(value == null ? "" : value).trim();
+  if (!text || text.length > 2_000 || /[\x00-\x1f\x7f]/.test(text)) unavailable();
+  return text;
+}
+
 function runtimeConfig(options, stateDir) {
   if (options.config && typeof options.config === "object" && !Array.isArray(options.config)) {
     return options.config;
@@ -36,6 +42,10 @@ function runtimeConfig(options, stateDir) {
   ).trim();
   if (!calendarAccount) unavailable();
   const evidenceDir = String(env.LM_CONNECTOR_EVIDENCE_DIR || path.join(stateDir, "evidence")).trim();
+  const profilePath = path.resolve(String(
+    env.LM_CONNECTOR_PROFILE_PATH
+      || path.join(options.repoRoot, "apps/life-manager/config/connector/dais-local.json"),
+  ));
   return Object.freeze({
     tenantId: String(env.LM_CONNECTOR_TENANT_ID || "dais-local").trim(),
     timeZone: String(env.LM_CONNECTOR_TIME_ZONE || "Asia/Tokyo").trim(),
@@ -43,6 +53,16 @@ function runtimeConfig(options, stateDir) {
     evidenceDir: absoluteDirectory(evidenceDir),
     calendarAccount,
     gogBin: String(env.GOG_BIN || "").trim() || undefined,
+    profilePath,
+    lunaEvidenceDir: absoluteDirectory(env.LM_CONNECTOR_LUNA_EVIDENCE_DIR || path.join(stateDir, "luna")),
+    telegramTarget: requiredText(env.LM_CONNECTOR_TELEGRAM_TARGET),
+    calendarId: requiredText(env.LM_CONNECTOR_CALENDAR_ID || "primary"),
+    calendarCoverageUrl: requiredText(
+      env.LM_CONNECTOR_CALENDAR_COVERAGE_URL || "https://calendar.google.com/calendar/u/0/r",
+    ),
+    homeLocation: requiredText(env.LIFE_HOME_ADDRESS),
+    mapsKey: requiredText(env.GOOGLE_API_KEY_DIRECTIONS),
+    repoRoot: absoluteDirectory(options.repoRoot),
   });
 }
 

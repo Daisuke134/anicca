@@ -65,6 +65,48 @@ test("native-pass invokes the direct runtime and keeps open coverage as a contin
   }
 });
 
+test("native-pass forwards the complete launchd-owned Connector loop configuration", async () => {
+  const directory = temporaryDirectory();
+  const stateDir = path.join(directory, "state");
+  let observed;
+  try {
+    await runNativePass({
+      repoRoot: REPO_ROOT,
+      stateDir,
+      ownerToken: OWNER_TOKEN,
+      env: {
+        GOG_ACCOUNT: "dais@example.test",
+        LM_CONNECTOR_PROFILE_PATH: path.join(REPO_ROOT, "apps/life-manager/config/connector/dais-local.json"),
+        LM_CONNECTOR_TELEGRAM_TARGET: "123456",
+        LM_CONNECTOR_CALENDAR_ID: "primary",
+        LM_CONNECTOR_CALENDAR_COVERAGE_URL: "https://calendar.google.com/calendar/u/0/r",
+        LIFE_HOME_ADDRESS: "Tokyo home",
+        GOOGLE_API_KEY_DIRECTIONS: "maps-secret",
+      },
+      runRuntime: async (input) => {
+        observed = input.config;
+        return { status: "incomplete", coverage: { counts: { open: 21 } }, continuation: { status: "continue" } };
+      },
+    });
+    assert.equal(observed.profilePath.endsWith("config/connector/dais-local.json"), true);
+    assert.equal(observed.lunaEvidenceDir, path.join(stateDir, "luna"));
+    assert.equal(observed.telegramTarget, "123456");
+    assert.equal(observed.calendarId, "primary");
+    assert.equal(observed.homeLocation, "Tokyo home");
+    assert.equal(observed.mapsKey, "maps-secret");
+    assert.equal(observed.repoRoot, REPO_ROOT);
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test("launchd run script restores Connector credentials and Telegram owner without a manual env file", () => {
+  const source = fs.readFileSync(path.join(REPO_ROOT, "skills/connector/run.sh"), "utf8");
+  assert.match(source, /\.openclaw\/\.env/);
+  assert.match(source, /telegram-default-allowFrom\.json/);
+  assert.match(source, /LM_CONNECTOR_TELEGRAM_TARGET/);
+});
+
 test("native-pass ignores CONNECTOR_NATIVE_WORKER_BIN and still invokes the direct runtime", async () => {
   const directory = temporaryDirectory();
   const stateDir = path.join(directory, "state");

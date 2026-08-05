@@ -250,6 +250,7 @@ test("configured native execution uses Luna then passes one verified candidate t
       telegramTarget: "opaque-chat",
       calendarCoverageUrl: "https://calendar.google.com/calendar/u/0/r",
       calendarId: "primary",
+      mapsKey: "maps-secret",
     },
     deps: {
       ...input.deps,
@@ -259,7 +260,10 @@ test("configured native execution uses Luna then passes one verified candidate t
       async createSpendPolicy(value) { input.calls.push(["policy", value]); return Object.freeze({ limits: [] }); },
       planDateSpend(...value) { input.calls.push(["spend", ...value]); return spendSequence; },
       async runNativeWrite(value) { input.calls.push(["write", value]); return writeResult; },
-      routeMinutes: async () => 20,
+      createRouteMinutes(value) {
+        input.calls.push(["route-adapter", value]);
+        return async () => 20;
+      },
       isVerifiedConnectorProfile: (value) => value === profile,
       isVerifiedEventGoalSerendipity: (value) => value === goalDecision,
       isVerifiedEventSpendSequence: (value) => value === spendSequence,
@@ -267,8 +271,8 @@ test("configured native execution uses Luna then passes one verified candidate t
   });
 
   assert.equal(result.write, writeResult);
-  assert.deepEqual(input.calls.filter(([name]) => ["profile", "luna", "gate", "policy", "spend", "write"].includes(name))
-    .map(([name]) => name), ["profile", "luna", "gate", "policy", "spend", "write"]);
+  assert.deepEqual(input.calls.filter(([name]) => ["profile", "luna", "route-adapter", "gate", "policy", "spend", "write"].includes(name))
+    .map(([name]) => name), ["profile", "luna", "route-adapter", "gate", "policy", "spend", "write"]);
   const writeInput = input.calls.find(([name]) => name === "write")[1];
   assert.equal(writeInput.application.eventRef, "luma-event://event/founder-night");
   assert.equal(writeInput.goalDecision, goalDecision);
