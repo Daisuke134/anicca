@@ -144,15 +144,15 @@ workers continue on their own intervals.
 The Writer improves the **same article** from reader/editorial feedback. The
 maximum iteration count bounds generation cost and time; it never decides
 whether the article ships. At that bound, the Agent freezes the best current
-JA/EN bytes, records remaining feedback as quality debt, initializes all eight
-destination intents, and enters the publication rig. `block_freeze` is not an
+JA/EN bytes, records remaining feedback as quality debt, initializes every
+currently active destination intent, and enters the publication rig. `block_freeze` is not an
 allowed terminal state. A reader/editorial verdict is an improvement input, not
 a publication veto.
 
-Every daily run has one observable service-level objective: each exact-eight
+Every daily run has one observable service-level objective: each active
 destination receives a verified public URL. A destination-specific platform
 failure starts immediate, bounded recovery for that destination while all other
-destinations continue; it never cancels the other seven. A destination without
+destinations continue; it never cancels the others. A destination without
 a public readback is displayed as an SLO breach with its real platform error
 and recovery receipt, never as "published" or a silent pending state. Only a
 verified public readback counts as published, and only an external receipt
@@ -165,10 +165,10 @@ therefore produced no publication state or platform dispatch. This is an
 implementation defect against this contract, not an acceptable no-shipment
 outcome.
 
-### 2.5 Exact-eight distribution contract
+### 2.5 Active-six distribution and dormant-adapter contract
 
 One daily Writer run freezes one Japanese article and one independently
-localized English article, then derives exactly these eight destination
+localized English article, then derives exactly these six active destination
 intents. Translation does not create a second topic or daily run.
 
 | Destination | Language | Revenue role | Required receipt |
@@ -179,14 +179,29 @@ intents. Translation does not create a second topic or daily run.
 | Dev.to article | EN | Free discovery | Public title/body/media readback |
 | Zenn article | JA | Free discovery | Public title/body/media readback |
 | X Article | JA | Long-form acquisition | Public Article URL and rendered-body readback |
-| X Article | EN | Long-form acquisition | Public Article URL and rendered-body readback |
-| X Post | JA | Same-day short-form distribution | Public status URL and text/link readback |
 
-The initial contract has one Japanese X Post, not duplicate JA/EN short posts
-on the same account. An English X Post becomes a separate measured distribution
-unit only after English X Article -> Substack paid conversion is observable and
-the account/language cohort can be attributed without mixing audiences. More
-posts are not scale when they make causal attribution worse.
+The following adapters, code, historical receipts, and state are retained but
+must not create a daily publication intent while marked `DORMANT_EXPERIMENT`:
+
+| Dormant destination | State | Reactivation gate |
+|---|---|---|
+| X Article EN | `DORMANT_EXPERIMENT` | Substack EN has a real attributed paid conversion, a distinct English audience/account can be measured, and 30 days of nonduplicate English topic supply exists |
+| X Post JA | `DORMANT_EXPERIMENT` | X Article JA has a 30-day standalone baseline, incremental teaser-to-paid conversion can be measured, and the added cadence does not bury the Article |
+
+X Article JA publishes at most once per JST day. English distribution remains
+Substack EN and Dev.to EN until the English X gate passes. Dormant means skipped
+without an SLO breach; it does not mean deleted. More posts or accounts are not
+scale when they reduce reach, reader trust, or causal attribution.
+
+This follows X's own guidance to revise for the reader, use a specific hook,
+promote and pin an Article during its first 24–72 hours, and avoid platform
+manipulation/spam. X Creator Revenue Sharing is an optional bonus, not the
+Writer's `$10k` foundation: eligibility currently requires Premium, 5M organic
+impressions in three months, 500 verified followers, a supported country,
+identity verification, and a payout account; payout weighting may vary by
+format. Sources: https://help.x.com/en/using-x/articles,
+https://help.x.com/en/using-x/creator-revenue-sharing, and
+https://help.x.com/en/rules-and-policies/content-monetization-standards.
 
 ## 3. Revenue streams
 
@@ -647,6 +662,49 @@ Deterministic code owns arithmetic, receipts, idempotency, deduplication,
 scheduling, and bookkeeping. The Agent owns topic, reader, article form,
 revenue-stream selection, experiment choice, and interpretation.
 
+The loop is continuously awake, but it does not continuously publish. One JST
+daily artifact receives repeated research, review, recovery, measurement, and
+learning work until its active-six SLO and revenue observations are closed.
+
+```mermaid
+flowchart LR
+  A[06:00 create one daily run] --> B[Research and write JA/EN]
+  B --> C[Fresh Terra editor]
+  C --> D[Writer revision]
+  D --> E[Fresh Sol auditor]
+  E --> F{Hard safety valid?}
+  F -- yes --> G[Publish active six]
+  F -- no --> H[Same-run safe useful reroute]
+  H --> C
+  G --> I[5-minute recovery]
+  I --> J[24h and 7d measurement]
+  J --> K[Weekly KEEP or REVERT]
+  K --> A
+```
+
+| Cadence | Durable owner | Required action |
+|---|---|---|
+| 06:00 JST daily | daily creator | Create exactly one new run; catch up immediately if missed |
+| Every 5 minutes | same-run reconciler | Resume incomplete review/publication/readback without making a new article |
+| Every 15 minutes | demand and opportunity workers | Read actual source bodies, publisher state, questions, and failures |
+| Hourly and on material delta | measure/report workers | Refresh funnel, received money, cost, recovery, and next action |
+| 24 hours and 7 days after publish | outcome closer | Close matched outcome windows without replacing unknown with zero |
+| Weekly | strategy controller | Promote only an evidence-backed KEEP; otherwise REVERT/INCONCLUSIVE |
+
+The first 30 published articles receive both a fresh Terra editorial pass and a
+fresh Sol audit. Each reviewer sees the frozen brief, sources, and current draft
+but not the other reviewer's prose. The Writer may revise at most twice. Review
+feedback is quality input, not a publication veto. Only deterministic identity,
+PII, citation-integrity, platform-policy, and harm checks may block an artifact;
+a blocked artifact immediately reroutes within the same run to a safe useful
+article. Review model cost is recorded in net margin.
+
+After 30 articles, review becomes evidence-based: new/high-value topics retain
+both reviews; medical, legal, and financial claims require Sol; proven low-risk
+series use Terra plus sampled Sol; every weekly strategy promotion receives a
+fresh Sol evidence audit. The Agent never reviews its own strategy promotion in
+the same context that proposed it.
+
 ### 5.1 Metric provenance matrix
 
 Every metric joins through `run_id -> topic_id -> artifact_id`; prompt-led
@@ -1013,6 +1071,28 @@ Scale order:
 7. Only profitable units are cloned across niches and languages.
 8. Losing units are stopped automatically.
 
+Account count is not a growth metric. The initial X unit is one Japanese
+account publishing at most one X Article per day. A new account/language unit
+is permitted only when the current unit has 30 days of public and payment
+receipts, attributable paid conversion, positive net contribution after review
+and compute cost, 30 days of distinct topic supply, no policy strike, and a
+distinct audience/job that cannot be measured cleanly in the current unit. The
+second X unit is an English canary only after Substack EN conversion passes its
+gate. Duplicate content, multi-account spam, and automated cross-account
+engagement are prohibited.
+
+```mermaid
+flowchart LR
+  A[1 JA X account] -->|30-day profitable evidence| B[Profitable JA Writer]
+  B -->|EN paid conversion| C[1 bounded EN canary]
+  C -->|positive net unit| D[First external user]
+  D --> E[10 Writers]
+  E --> F[100]
+  F --> G[1,000]
+  G --> H[10,000 Writers]
+  H --> I[10,000 x $10k GMV x 10% = $10M operator MRR]
+```
+
 ### 8.1 Autonomous scale controller
 
 Reaching $10M must not require a person to choose daily topics, repair runs,
@@ -1066,12 +1146,12 @@ the actual source bodies (including rendered X Article DOM when applicable)
 are hash-bound, the topic card contains buyer/problem/transformation/
 deliverable/price/distribution/source bundle, its prompt version is registered,
 the resulting JA/EN article is researched from multiple independent sources,
-and the eight-destination run supplies public receipts. Later conversion may
+and the active-six run supplies public receipts. Later conversion may
 change the strategy, but missing conversion does not erase this supply receipt.
 
 There are three execution lanes:
 
-1. **Foreground development:** complete Task 1's mandatory exact-eight shipment
+1. **Foreground development:** complete Task 1's mandatory active-six shipment
    path first, then complete Task 4 revenue-demand supply.
 2. **Always-running recovery:** Task 1 continues per-destination publication
    recovery whenever a verified public URL is missing. It does not cancel other
@@ -1103,7 +1183,7 @@ foreground order is binding:
 Read as one end-to-end completion route, the remaining work is:
 
 ```text
-1/3  repair finite-quality shipment and prove three consecutive exact8 days
+1/3  repair finite-quality shipment and prove three consecutive active-six days
   -> 4  replace vendor-news supply with full-page paid-demand selection
   -> 8  expose the receipt-backed Money Control publicly
   -> 9/10  advance publisher opportunities to real payment or honest rejection
@@ -1127,14 +1207,14 @@ this section define what runs next.
 | # | Phase | Work | Done receipt | Status |
 |---:|---|---|---|---|
 | 0 | Boundary | Create this dedicated Writer SSOT; point AGENTS and historical spec here | File exists, links resolve, committed and pushed | DONE |
-| 1 | Availability | Recover today's and yesterday's missed publication immediately | Same-run receipts, all available destinations live, no duplicate | IN PROGRESS, not complete. Older run `20260731-213927` retains seven authenticated/public receipts; its Zenn JA pair is durably pending until the measured platform interval `2026-08-02T18:10:43+09:00`. Today's original `daily-2026-08-02` ended `block_freeze`; bounded same-day replacement `20260802-000152` recovered the exact failed feedback, passed the current identity/editorial/reader gates on frozen JA/EN hashes, registered all eight stable targets, and now has six authenticated live receipts: paid note JA at ¥500, paid-only Substack JA/EN, Dev.to EN, X Article JA, and X Post JA. Its X Article EN is pending until six hours after the verified JA publication (`2026-08-02T17:48:38+09:00`), and its Zenn JA remains delegated behind the older measured Zenn interval. Runtime commits `16800ac` and `a42e9cb` preserve armed autopublish across resume, consume the real Substack manifest schema, recover a fenced X Post by the same status ID without reopening the composer, and match Markdown CTA URLs without treating `)` as URL bytes. Focused verification passes `86 passed`; the broader current worktree has `662 passed` plus only the six deliberate RED contracts for Task 4 canonical-tree migration. Completion still requires X Article EN, both due Zenn public readbacks, exact8 completion notification, and final no-duplicate audit. Received revenue remains zero; paid state is not a purchase receipt |
+| 1 | Availability | Recover today's and yesterday's missed publication immediately | Same-run receipts, all active destinations live, dormant destinations skipped, no duplicate | IN PROGRESS, not complete. Historical run `20260802-000152` used the superseded eight-target contract and produced six authenticated live receipts; its X Article EN and X Post JA history remains immutable but neither is required by the current contract. Current completion requires the runtime contract migration, recovery from `block_freeze`, both due historical Zenn readbacks, three consecutive active-six daily runs, active-six completion notification, dormant-skip receipts, and a final no-duplicate audit. Runtime commits `16800ac` and `a42e9cb` remain valid historical recovery evidence. Received revenue remains zero; paid state is not a purchase receipt. |
 | 2 | Availability | Install no-passive-wait catch-up and per-platform pending/resume | Missed schedule and platform-window fixtures plus live recovery | DONE: the armed 06:00 daily creator, five-minute same-run reconciler, and five-minute Zenn deferred worker are enabled on the live host. Runtime commit `670ae86` makes the reconciler hand `new` to the daily wrapper immediately after a missed 06:00 event, while refusing an early pre-06:00 run; a date-bound expectation prevents a race from creating a duplicate. The same commit restores `ai.anicca.article-daily` to `enabled` in the launchd registry and adds a PID-bearing, install-scoped shared lock so manual relative invocation, launchd, Zenn, and media repair cannot steal one another's publication ownership. Platform-window fixtures prove X EN remains pending until six hours after the verified JA timestamp and Zenn remains delegated until its measured interval; current run `20260731-213927` supplies live recovery receipts for six independent destinations while those two waits do not block any other work. Verification: 101 schedule/start/full-pass/launchd tests plus the shell daily contract pass |
-| 3 | Quality | Repair attempt exhaustion, contradictory advisory/blocking contract, log path crash, and language mismatch | Repaired content can pass; no permanent poison; focused tests | REOPENED / PARTIAL: the attempt reset, log-path, and language repairs remain complete. The former executable policy—editorial FAIL blocks publication—is superseded by §2.4. Remaining: replace `block_freeze` after the bounded feedback loop with a shipment transition that records quality debt and initializes publication; update the resume boundary and regression tests to prove that all eight destinations dispatch after the iteration cap. |
+| 3 | Quality | Repair attempt exhaustion, contradictory advisory/blocking contract, log path crash, and language mismatch | Repaired content can pass; no permanent poison; focused tests | REOPENED / PARTIAL: the attempt reset, log-path, and language repairs remain complete. The former executable policy—editorial FAIL blocks publication—is superseded by §2.4. Remaining: replace `block_freeze` after the bounded feedback loop with a shipment transition that records quality debt and initializes publication; add the fresh Terra -> Writer -> fresh Sol review boundary; update the resume boundary and regression tests to prove that all active destinations dispatch after the iteration cap while dormant adapters are skipped without an SLO breach. |
 | 4 | Revenue-demand supply | Replace the static four-vendor claim watch as topic authority with the §3.5 paid-market and reader-demand loop while preserving the one canonical `writer-agent` tree and existing publication matrix | Live JA/EN observations from independent demand families; source-family diversity; one buyer/problem/transformation/deliverable/price/distribution contract per queue card; multi-source cited research; first live topic selected from paid-demand evidence | REOPENED / PARTIAL: runtime commit `8dcef20` changes the skill identity to `writer-agent`, points metadata at this SSOT, removes the AI-entity niche allowlist and the conflicting instruction to keep a separate general-purpose writer, and replaces active daily/platform/scheduler wording with the one Writer Agent identity. Topic validity now comes from a concrete reader, reader job, useful outcome, and verified evidence plan; Life Manager products, publisher/company assignments, software, business, and other subjects are allowed, while internal loop diaries are not the default. Live `~/.claude/skills/writer-agent` and `~/.openclaw/skills/writer-agent` aliases resolve to the same current tree, and the legacy alias resolves that same tree rather than a second pipeline. Runtime commit `f4e6b33` adds one durable claim store and one bounded watch path for X, GitHub releases, and RSS: HTTPS/source validation, fetched-content SHA-256, canonical URL plus normalized-claim deduplication, repeat-observation receipts, one-time claim-to-topic consumption, immutable queue-card recovery, and per-source honest availability state. A live 2026-08-02 JST wake stored nine nonduplicate official claims (three OpenAI Python releases, three Cloudflare RSS entries, and three GitHub Blog RSS entries); repeated wakes deduplicate rather than re-add them. Runtime commit `bb93b81` replaces the hanging macOS Keychain scan with an ephemeral daily-driver CDP bridge: X cookies stay in memory and child-process environment, never files, logs, or arguments. Two live 15-minute wakes fetched and stored three meaningful OpenAI X claims with canonical status URLs and content hashes, then deduplicated them; all four X/GitHub/RSS sources were `OK`, unavailable was zero, and exit was `0`. A URL-only X row was preserved but quarantined by a rejection receipt and is not offered to topic or pitch selection. Runtime commit `1fad26c` adds the model-selected refill boundary and installs `ai.anicca.writer-claim-loop`: every 900 seconds and at installation time it performs one locked `WATCH -> SELECT -> REFILL` wake, keeps three queue cards, continues from durable claims during a source outage, and does not call the model when supply is sufficient. The live selector chose two official OpenAI Python release claims, materialized hash-bound cards for `v2.52.0` content-provenance checks and `v2.51.0` fast tier, consumed only those two claim IDs, and raised the queue from one to three. Both cards pass the existing topic router. The latest launchd wake finished `READY`, last exit `0`, with X/GitHub/RSS all `OK` and queue `SUFFICIENT`. Runtime commit `2ac1bdf` adds the §3.3 evidence-bound opportunity state machine: official/policy/submission/acceptance/article-submission/publication/payment receipts, legal transitions without state skipping, publisher+proposal pitch deduplication, duplicate-submit refusal, and positive non-test external payment requirements for `RECEIVED`. A live full-official-page wake stored nine programs, nine content hashes, and nine transitions: AppSignal/Hygraph/Oracle `VALUE_UNKNOWN`; Civo `REJECTED_POLICY`; DigitalOcean/Better Stack/Honeybadger/Earthly/Baeldung `CLOSED`. Runtime commit `83afe1b` adds bounded replacement discovery from an untrusted curated index, candidate-level deduplication/retry, public-network fetch boundaries, official-page verification, a daily `RunAtLoad` LaunchAgent, and exact discovery receipts. Two live wakes parsed 127 candidates and verified ten official programs; two were automatically rejected for incompatible AI policies and eight were parked at `VALUE_UNKNOWN`, so no pitch was fabricated. Runtime commit `8572122` adds state-cadenced bounded rechecks before discovery and claim-bound automatic pitch preparation after discovery. Runtime commit `912074b` adds a 24-hour retry backoff and a three-attempt terminal so unreachable programs cannot starve unseen candidates. Runtime commit `93c3b02` separates official information pages from real application routes, validates exact public application URLs and contributor emails against official page bytes, migrates 45 misleading self-links to null, and leaves the live 51-program ledger with one application URL and one contributor email; AppSignal now records its public `editorial@appsignal.com` contact without inventing an application form. Runtime commit `af608cb` installs the read-only `ai.anicca.writer-opportunity-response` worker every 15 minutes: it searches only durable `SUBMITTED` and `ARTICLE_SUBMITTED` rows, forces Gmail `--gmail-no-send`, requires trusted sender plus exact submission-ID correlation, treats email as untrusted input, stores content hashes/message IDs, deduplicates messages, and permits only the current state's legal acceptance/rejection/expiry/publication transition. Its immediate live wake exited `0` with `watched:0`, accurately proving no current submission exists rather than fabricating progress. The live discovery wake at 2026-08-02 01:33 JST verified five more official programs: Every Developer/Kestra/Magic `VALUE_UNKNOWN`, Hasura/MailSender `CLOSED`; no pitch was fabricated. Thirty-two focused claim/opportunity tests prove exact source/reader-job binding, one-claim-one-pitch uniqueness, bounded retries, official-route validation, response correlation, process cleanup, and no transition without evidence. Runtime commit `57bd62d` completes the required live transition with a real compatible program: the Agent created a free TECHi account through the existing Google session, submitted the exact claim-bound pitch with public samples and explicit AI-assistance disclosure, and the authenticated Author endpoint returned provider application ID `4`, status `pending`, submitted at `2026-08-01T22:55:54.393Z`. Durable evidence `ev_6b84adaa3dd7302bfbabd3a3` advanced `PITCH_READY -> SUBMITTED` in transition `tr_5dc89eb7427ee6a621856350`. Because TECHi's confirmation email omits the application ID and incorrectly labels the Author submission as Analyst, the 15-minute worker now avoids an ambiguous Gmail search and polls the authenticated provider-native Author endpoint by exact ID; the first live poll returned `pending`, `unavailable:0`. The full Writer suite passes `646 passed`. Runtime commit `ed17cb2` completes the canonical-tree migration: tracked `skills/writer-agent` is the only implementation, tracked `skills/article-writer` is a repository-relative symlink, Writer Engine's article form is a symlink to the same canonical `SKILL.md`, and live Claude/OpenClaw current and legacy aliases all resolve to that one tree. All installed article/writer plist program paths and descriptions use the canonical identity; no process runs an old implementation. A versioned state migration changed only 22 mutable `publication-state.json`/backup controls (170 exact absolute-path replacements), retained immutable historical receipts unchanged, recorded before/after SHA-256 for every file, and returned the same receipt on replay with zero legacy paths reappearing. The reloaded live resume and Zenn workers both exited `0` without a new run or duplicate publication. Unmanaged Dev.to and Zenn wrapper entry points now refuse without the managed run/state/ledger boundary, removing the second manual pipeline. Canonical, alias, launchd, state-migration, publisher-boundary, report-restart, and full Writer verification pass: `674 passed`; runtime commit `ed17cb2` is pushed. Remaining before DONE: replace the four-vendor claim list as topic authority with the §3.5 revenue-demand supply; collect live JA/EN paid-market, reader-demand, publisher, and owned-funnel evidence; require each queued proposal to bind one buyer, problem, transformation, deliverable, price hypothesis, distribution path, and source bundle; prove source-family diversity and a first live topic selected from paid-demand evidence. Existing X and bilingual publication destinations remain unchanged. |
 | 5 | Supply | Reject proposals that do not cite a new claim useful to a reader | Negative and positive fixtures | DONE: `f4e6b33` and `1fad26c` require an unconsumed durable claim ID, exact durable `reader_job`, exact canonical source URL in the browse evidence plan, a valid reader/outcome/form route, and an immutable topic-card hash before consumption. Missing-source, partial-model-JSON, changed-card, already-consumed, and model-unavailable fixtures create no card and consume no claim. Positive fixtures and the two live OpenAI release cards prove the accepted path; the model judges usefulness without a subject allowlist and deterministic code enforces evidence/newness |
 | 6 | Measurement | Add metrics, sales, subscription, editorial, payout, fee, and attribution schema | Status-bearing rows join through `artifact_id` | DONE: runtime commit `d00a8ff` adds the canonical typed SQLite money ledger for immutable published artifacts, metric observations, direct-writing/product-derived/network-fee money events, subscription contracts, fees, payouts, payout allocations, and one-lineage artifact attribution. A verified received sale or editorial fee requires a positive non-test external receipt; the same receipt cannot move between streams or be counted as both direct and product revenue; refunds reduce net; fees reconcile to their event; payouts reconcile gross minus fee to net and remain cash movement rather than new revenue; one event cannot be over-allocated across payouts; currencies never get silently converted or combined; active non-test contracts alone produce MRR; unknown observations stay null with a reason. The compatibility importer registers only full public publication receipts and imports legacy sales-dashboard, funnel, and own-metric rows as observations—never as received money—and refuses to guess unmatched old metrics onto an article. `ai.anicca.writer-money-sync` is installed on the live host with `RunAtLoad=true`, immediate kickstart, and a five-minute interval. Its first two live runs exited `0`, registered 59 verified artifacts and 156 typed observations, reported 141 unmatched historical rows instead of fabricating joins, and truthfully returned empty verified gross, net, fees, payouts, and MRR because no external transaction receipt exists. Sixteen focused ledger/sync tests plus 24 existing attribution, sales-measurement, and opportunity-payment tests pass |
 | 7 | Measurement | Mark destinations `revenue_capable`; exclude Dev.to/Zenn/X views from money reward; attribute article -> Life Manager product visit -> activation -> purchase without double counting | Reward uses verified money surfaces only; direct writing and product-derived revenue reconcile separately | DONE: runtime commit `8d63b71` makes `revenue_capable` an executable, versioned contract rather than prose. note, Substack, verified editorial work, and the future self-owned publication can accept direct-writing receipts; Dev.to, Zenn, X Article, and X Post are explicitly non-money surfaces until an external payout receipt is wired, so views/likes cannot be promoted into revenue. A real product purchase may still originate from any registered public article: the canonical ledger now fixes one `product_id/run_id/artifact_id/variant_id/click_id` lineage, requires visit before activation and activation before purchase, rejects a click that moves to another publication, rejects late/out-of-order or duplicate target evidence, and creates `product_derived` money only from a positive non-test external purchase receipt. Direct-writing and product-derived gross are reported in separate stream/class maps without currency conversion or receipt reuse. The recurring five-minute live sync imports append-only `product-funnel.jsonl`; its current truthful result is zero rows and zero product revenue, not a synthetic conversion. Self-improvement no longer reads note/Substack dashboard totals as money; only canonical verified net receipt money can become its revenue score, and a multi-currency window remains unscored rather than guessed through FX. The complete article suite passes: 575 tests, including direct-vs-product reconciliation, non-money destination rejection, visit/activation/purchase ordering, idempotent replay, and missing-receipt fixtures |
-| 8 | Reporting/UX | Build the money-first visual UI and send natural-language immediate/hourly deltas, daily report, and weekly stream report with every public article URL | UI and Telegram equal the ledger; verified/test/unknown visually separated; nontechnical fixture is understandable without logs | REOPENED / PARTIAL: the receipt-backed `WRITER MONEY CONTROL` generator and Telegram reporter are implemented and live locally. Its current artifacts are `skills/writer-agent/state/reporting/index.html` and `latest.json`; it has no public Writer route. `https://aniccaai.com/dashboard` is a different USDC dashboard and must not be represented as this Writer UI. Remaining: deploy the existing report at a public Writer URL, serve the same snapshot JSON, add the exact-eight daily URL/SLO matrix, and prove public Web and Telegram render the same values. The existing generator's money/stream/publication/delta behaviors and test receipts remain valid. |
+| 8 | Reporting/UX | Build the money-first visual UI and send natural-language immediate/hourly deltas, daily report, and weekly stream report with every public article URL | UI and Telegram equal the ledger; verified/test/unknown visually separated; nontechnical fixture is understandable without logs | REOPENED / PARTIAL: the receipt-backed `WRITER MONEY CONTROL` generator and Telegram reporter are implemented and live locally. Its current artifacts are `skills/writer-agent/state/reporting/index.html` and `latest.json`; it has no public Writer route. `https://aniccaai.com/dashboard` is a different USDC dashboard and must not be represented as this Writer UI. Remaining: deploy the existing report at a public Writer URL, serve the same snapshot JSON, add the active-six plus dormant-adapter daily URL/SLO matrix, and prove public Web and Telegram render the same values. The existing generator's money/stream/publication/delta behaviors and test receipts remain valid. |
 | 9 | Editorial fee | Continue AppSignal state machine from submitted to response, article, publication, payment | Contracted rate and payment receipt | PARTIAL: the prior submission is now restored from external evidence rather than prose. The immutable original Claude session contains the exact AppSignal Google Form `formResponse` URL, provider confirmation text, confirmation PNG bytes, pre-submit field readback, submission timestamp, and a second parent-agent visual read. Runtime commit `5f345c1` adds a replay-safe historical recovery boundary that does not pretend the unknown AI policy/rate gate passed and does not relax the normal `POLICY_CLEAR -> PITCH_READY -> SUBMITTED` path. The recovered confirmation PNG has SHA-256 `045f099d8e797414ee75ae0a9e066ca127a4152dca90a95d9e7e45dcf3dce5b4`; durable evidence `ev_6150e3272dfc77648f74e592` and transition `tr_0b7897f6abbf23021ed74eca` moved AppSignal `VALUE_UNKNOWN -> SUBMITTED` with derived receipt identifier `google-form-response:045f099d8e797414ee75ae0a`, explicitly recording that Google supplied no provider submission ID. Runtime commits `0bba0d2`, `5f9ef00`, and `e1cc020` correlate replies through the unique submitted plus-address plus trusted official sender, supply launchd's missing HOME, and pass only the two required GOG values from the protected env file to the Gmail child process. The live 15-minute worker now watches AppSignal and TECHi with `unavailable:0`, AppSignal `NO_RESPONSE`, TECHi `pending`, and exit `0`. The complete Writer suite passes `680 passed`. Remaining before DONE: receive AppSignal's external response, record the contracted rate/policy/payout terms if accepted, draft and submit the article, obtain public publication evidence, and reconcile a real payment, fee, and payout receipt |
 | 10 | Editorial fee | Advance AppSignal; clarify Hygraph policy/rate; monitor DigitalOcean, Better Stack, Honeybadger, Earthly, and Baeldung; reject Civo under its current AI-content policy; continuously discover replacements | Current official-state receipts; policy/rate clarification; only compatible submission receipts; later contract, publication, payment | PARTIAL: `2ac1bdf` implements the durable state/evidence contract and the live 2026-08-02 JST wake verified all nine configured official pages. Civo is automatically rejected under its current AI prohibition; five closed/stale programs cannot be submitted; Hygraph and Oracle remain parked until missing value/policy facts are clarified; AppSignal is now evidence-backed `SUBMITTED` from its recovered provider confirmation without claiming those unknown terms are resolved. `83afe1b` completes automatic replacement discovery: 127 canonical candidates are durable, a bounded daily worker continuously verifies official pages, rejects incompatible policies, and parks unknown terms without pretending they are safe. `8572122` prepares an exact-claim-bound pitch whenever official evidence reaches `POLICY_CLEAR`; `93c3b02` accepts only exact official application routes/contact addresses; `af608cb` monitors verified submitted work every 15 minutes and advances only from correlated publisher evidence. None can mark `SUBMITTED` without an external receipt. TECHi is now the first live compatible replacement: Author application ID `4` is durably `SUBMITTED`, and runtime commit `57bd62d` polls the authenticated official status endpoint every 15 minutes by exact provider ID. Remaining: advance both evidence-backed AppSignal and TECHi submissions through acceptance or honest decline, contracted drafting, article submission, publication, external payment, fee, and payout reconciliation while the discovery loop continues evaluating other programs |
 | 11 | Paid article | Make every selected note article's price/paywall state explicit and measurable | Public paid state plus first attributed purchase | PARTIAL: runtime commit `0515555` removes the stale `forms.json` ¥1,000 description and makes the executable one-time ¥500 policy consistent across the form registry, publisher, tests, and report. The five-minute money sync now reads each durable live note publication receipt, requires matching run/public URL/public ID plus `verified=true`, `monetization_verified=true`, and positive price, then stores article-scoped `price` and `paywall_active` observations without creating a sale. The current article `20260731-213927__note__ja` is live at `https://note.com/anicca123/n/n84aed983c96c`; canonical metrics now show `price=500 JPY verified` and `paywall_active=1 verified` from its 2026-08-01 public/API receipt. Web and Telegram display `¥500買い切り・有料状態確認済み` while still reporting received revenue as zero; the semantic delta was delivered with Telegram receipt `5139`. The full Writer suite passes 587 tests and the 390px UI was visually inspected. Remaining before DONE: observe the first real external note purchase/fee/payout receipt, join it to this exact artifact without using an account-total proxy, and show gross/net/payout in the same report |
@@ -1155,6 +1235,10 @@ this section define what runs next.
 | 26 | $100K | Autonomously operate enough proven units for $100K monthly net-positive revenue | Three-month receipts; no daily topic/repair/clone operation by a person | TODO |
 | 27 | $1M | Autonomously scale cloud/network distribution and retention to $1M MRR | Active recurring receipts, staged-promotion receipts, bounded spend, rollback proof | TODO |
 | 28 | $10M | Reach $100M network GMV at 10% fee, or another fully receipted equivalent, through the autonomous scale controller | $10M active recurring receipts; no internal/self payments; no routine human operation; legal/KYC exceptions explicit | TODO |
+
+Current-contract note: historical Task rows describe receipts under the former
+eight-target matrix. Wherever a historical sentence says X destinations remain
+unchanged, §2.5 supersedes it for new runs: active six, dormant two.
 
 Task 1 handoff correction (`bb4779a`, superseding the reporting text introduced
 by `68550b9`): `article-resume-pending.sh` is the installed same-run reconciler,
@@ -1405,8 +1489,9 @@ The Writer is complete only when:
   a source URL, body hash, evidence class, and observation receipt;
 - missed runs recover without being told;
 - platform-specific waits never stall the whole loop;
-- each daily article contract produces the exact JA/EN eight-destination matrix
-  in §2.5, or exposes each missing public readback as an owned SLO breach;
+- each daily article contract produces the active JA/EN six-destination matrix
+  in §2.5, exposes each missing active public readback as an owned SLO breach,
+  and skips dormant adapters without deleting their code or history;
 - articles remain useful to external readers rather than describing the loop;
 - every reported dollar has a verifiable origin and owner;
 - one-time revenue and MRR are never mixed;
