@@ -61,7 +61,7 @@ live autonomous operation.
 |---|---|---|
 | Runtime | Legacy core still reports `DEAD` | No hourly/daily Affiliate Agent wake has completed |
 | F1 migration | Implemented, reviewed, pushed, and re-run from final HEAD | It does not publish, browse, attribute, or earn |
-| F2 Agent brain | Implementation commit `d9ad4acd7cb0474cf1a825a94cfb49e7847da22e` exists and its implementer reports 16 passing tests; fresh review, root replay, and live-provider execution remain open | A fake provider crossed the process boundary, but no live Terra action has been accepted or executed by the production loop |
+| F2 Agent brain | Commit `d9ad4acd7cb0474cf1a825a94cfb49e7847da22e` is pushed; root replay on 2026-08-06 passed focused 16/16, Python 3.9 compile/shell syntax, and 30/30 related regressions | Full-suite collection is blocked by legacy `test_affiliate_verify.py` import-time `sys.exit()`; fresh review and live-provider execution remain open, so F2 stays open |
 | Provider auth | Amazon JP and Rakuten remain `AUTH_REQUIRED` from the last authenticated-state check | Account approval, tag ownership, current offer terms, and executable links |
 | Publication | Planned adapters and Postiz reuse path only | No Affiliate JA/EN placement has a provider receipt plus public readback |
 | Attribution | Design and API tasks remain open | No live redirect click is joined to an ASP transaction |
@@ -424,10 +424,13 @@ without changing the architecture.
 - Inspected OSS repositories show useful role/adapter patterns but no verified
   autonomous $10k/month receipt loop. Several have low adoption or unresolved
   license metadata, so code copying is disabled until license verification.
-- F2 has an implementation commit and reported tests, but lacks fresh review,
-  root replay, live model/provider boundary proof, and a clean worktree audit.
+- F2 has a pushed implementation and root-verified focused tests, but lacks fresh
+  review, live model/provider boundary proof, a clean worktree audit, and a
+  collection-safe all-tests command.
 - Telegram delivery remains broken with `chat not found`; no `messageId` exists.
 - No production Affiliate placement, organic click, approved commission, paid
   payout, hourly/daily launchd wake, or crash-recovery E2E exists yet.
+- `ai.anicca.affiliate-hourly` and `ai.anicca.affiliate-daily` are not registered
+  in the user launchd domain, and no `affiliate-core` tmux session exists.
 - `$10k`, `$10M`, and `$100M` are outcome gates. There is no honest date or
   probability forecast until live cohorts and partner capacity are measured.

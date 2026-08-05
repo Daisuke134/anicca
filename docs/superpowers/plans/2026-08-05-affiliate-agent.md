@@ -60,13 +60,17 @@ Execution checkpoint:
 - F1 is complete at runtime HEAD `5b1927dc` with clean task review and fresh
   root verification.
 - F2 implementation commit `d9ad4acd7cb0474cf1a825a94cfb49e7847da22e`
-  exists and its implementer reports 16 passing tests. Its checkboxes remain open
-  until a fresh review, root test replay, worktree-diff audit, and live-provider
-  boundary verification; the reported process-boundary test used a fake provider.
+  is pushed. Root replay on 2026-08-06 passed the focused 16 tests, Python 3.9
+  compile/shell syntax, and 30 related regression tests. Its checkboxes remain
+  open until fresh review, worktree-diff audit, live-provider boundary proof, and
+  a collection-safe full-suite command; the process-boundary test uses a fake provider.
 - 7 atomic checks are closed and 130 remain open.
 - The legacy core remains `DEAD`; no provider auth, public Affiliate placement,
   attributed external commission, production launchd wake, or Telegram delivery
   receipt has been claimed.
+- `ai.anicca.affiliate-hourly` and `ai.anicca.affiliate-daily` are not registered;
+  `affiliate-core` tmux is absent. The runtime worktree also contains three
+  tracked `__pycache__` deletions whose ownership must be audited before F2 closes.
 - A passing unit test closes only its software check. It cannot close a live
   readback or external-money gate.
 
@@ -493,6 +497,16 @@ def test_low_level_browser_steps_group_under_one_semantic_action():
     assert event.kind == "provider_report_download"
     assert event.low_level_step_count == 7
     assert event.telegram_message_count == 1
+
+def test_money_event_exposes_truth_and_next_action_without_secrets():
+    event = build_event(approved_commission_fixture())
+    for field in ("MONEY", "approved", "net", "証拠", "次", "snapshot"):
+        assert field in event.human_message_ja
+    assert "API_KEY" not in event.human_message_ja
+
+def test_normal_operation_never_waits_for_telegram_reply():
+    event = build_event(publication_success_fixture())
+    assert event.requires_reply is False
 ```
 
 - [ ] **Step 2: Write the failing at-most-once tests**
@@ -530,7 +544,11 @@ Gig behavior.
 External side effects, failure, money, safety, quarantine, model escalation, and
 KEEP/REVERT enqueue immediately. Successful internal observation actions keep
 their own ledger row and enter the same-hour ordered digest. Every message stores
-the same event key and snapshot hash as the Agent feed.
+the same event key and snapshot hash as the Agent feed. Daily close MUST contain
+placements, clicks, transaction states, costs, net, blockers, recovery, and next
+capacity allocation. Weekly close MUST contain mature KEEP/REVERT decisions,
+concentration, reversal risk, and gate progress. Telegram is reporting-only for
+normal operation; no eligible queue item waits for a reply.
 
 - [ ] **Step 6: Run GREEN and Gig regressions**
 

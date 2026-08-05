@@ -43,6 +43,18 @@ Implementation migrates this one runtime in place. It does not create a second
 `skills/affiliate-agent` tree, erase legacy state, or count a legacy aggregate
 commission watermark as newly attributed revenue.
 
+### 1.2 As-is and to-be
+
+| Boundary | As-is | To-be acceptance |
+|---|---|---|
+| Runtime | Legacy core/tmux is absent; hourly and daily launchd services are not registered | Two launchd owners wake one durable queue and resume the same work without duplicate side effects |
+| Agent brain | F2 is pushed and focused tests pass; only fake-provider process replay exists | Terra proposes one typed action and a live allowlisted provider boundary returns a verification receipt |
+| Offers | No English account, approval, terms, or executable link is read back | At least one English offer is `EXECUTABLE` from current ownership, terms, channel, destination, and tracking-link receipts |
+| Publishing | No Affiliate public placement exists | `Anicca EN` publication receipt, public readback, disclosure, redirect, and durable click lineage agree |
+| Money | No new approved Affiliate commission exists | Provider transactions append pending/approved/reversed/paid receipts and join by strongest available attribution key |
+| Telegram | Delivery currently fails with `chat not found`; no provider `message_id` exists | Immediate events and hourly/daily/weekly summaries deliver at-most-once from the same snapshot as Life Manager |
+| Learning | No mature Affiliate cohort exists | One-variable experiments use external net outcomes, then KEEP or REVERT with a consumed strategy hash |
+
 ## 2. Definitions of done
 
 ### 2.1 Software done
@@ -538,6 +550,56 @@ Telegram receives semantic state changes, hourly failure summaries, daily money
 and publication reports, and weekly portfolio decisions. Web and Telegram are
 generated from the same snapshot hash.
 
+### 15.1 Telegram owner experience
+
+Telegram is an observability surface, not a routine approval queue. The Agent
+continues safe eligible work without waiting for a reply. It asks nothing unless
+the next action requires personal KYC/contractual identity, an irreversible
+personal-fund transfer, or genuinely new regulated/legal authority.
+
+```mermaid
+sequenceDiagram
+  participant L as Affiliate loop
+  participant O as Durable outbox
+  participant T as Telegram
+  participant D as Dais
+  L->>O: Semantic ActionEvent plus snapshot hash
+  alt external action, failure, money, safety, or KEEP/REVERT
+    O->>T: Send immediately
+  else successful observation
+    O->>T: Include in ordered hourly digest
+  end
+  T-->>O: Provider message_id
+  O->>O: Mark delivered at-most-once
+  T->>D: What it saw, chose, did, proved, earned, and does next
+  Note over D,L: No response is required for normal operation
+```
+
+Every immediate message MUST contain:
+
+- state label: `LIVE`, `WAITING`, `QUARANTINED`, `MONEY`, `KEEP`, or `REVERT`;
+- what changed and why the Agent selected the action;
+- actual external result, public URL/provider receipt when applicable, and
+  evidence class (`TEST`, `LIVE_READBACK`, or `EXTERNAL_MONEY_RECEIPT`);
+- money delta separated into pending, approved, reversed, paid, and net;
+- affected provider/account/offer/channel without exposing secrets;
+- next automatic action and its scheduled/eligible time;
+- event ID and snapshot hash shared with Life Manager.
+
+Delivery cadence MUST be:
+
+- immediate: publication, public-readback mismatch, authentication failure,
+  quarantine, policy denial, commission/reversal/payout, and KEEP/REVERT;
+- hourly digest: successful research/verification actions and unresolved waits;
+- daily close: placements, clicks, transactions, money states, cost, net,
+  blockers, recovery, and next-day capacity allocation;
+- weekly close: mature cohort decisions, provider/channel concentration,
+  reversal risk, and progress toward E0, E1, A2, and A3.
+
+Raw browser clicks, selector retries, and polling MUST NOT create Telegram spam;
+they remain attached to one semantic event. A send with ambiguous outcome becomes
+`delivery_unknown` and MUST NOT be blindly resent.
+
 ## 16. Security and compliance
 
 - Provider credentials stay in Keychain or protected environment files and never
@@ -565,6 +627,7 @@ generated from the same snapshot hash.
 | Learning | one-variable invariant, mature cohort, KEEP/REVERT rollback | later run consumes winning hash |
 | Recovery | crash after intent/before receipt and after receipt/before state | kickstart resumes same run without duplicate |
 | Reporting | snapshot parity and currency separation | public/report endpoint and Telegram share hash |
+| Telegram UX | required semantic fields, severity routing, digest grouping, at-most-once, `delivery_unknown` | real provider `message_id`; message snapshot hash equals Life Manager snapshot |
 
 ## 18. Revenue staircase
 
@@ -590,6 +653,43 @@ and its own receipted economics. New pods start as budget-capped canaries. They
 scale only after positive mature net economics and automatically roll back after
 harm. `$100M` is a separate external-settlement horizon: GMV, pending commission,
 tenant sales, clicks, and forecasts never satisfy it.
+
+### 18.1 Monthly $10k operating loop
+
+The software does not promise $10,000. It MUST run the following closed loop
+until three closed months independently satisfy A3 from external receipts:
+
+```mermaid
+flowchart TD
+  R[Provider and audience receipts] --> U[Update observed unit economics]
+  U --> B[Allocate bounded weekly capacity]
+  B --> O[Verify one executable high-intent offer]
+  O --> E[Build one evidence-led decision asset]
+  E --> P[Policy and disclosure gate]
+  P -->|pass| X[Publish and public readback]
+  P -->|fail| Q[Repair or quarantine]
+  X --> C[Qualified reader uses signed redirect]
+  C --> V[Provider records click, lead, trial, or sale]
+  V --> M[Reconcile commission and reversals]
+  M --> N[Compute net commission by mature cohort]
+  N --> K{Positive net and policy-safe?}
+  K -->|yes| S[KEEP one variable and expand capacity]
+  K -->|no| Z[REVERT one variable and reallocate]
+  S --> G{Closed month at least $10k gross?}
+  Z --> B
+  Q --> B
+  G -->|no| B
+  G -->|yes, month 1 or 2| B
+  G -->|yes, third consecutive month| A3[A3 closed by external receipts]
+```
+
+For every cohort the Agent computes:
+
+`net commission = qualified visits × observed conversion × confirmed payout − reversals − content/compute cost − paid acquisition`
+
+Before observed data exists, inputs remain `unknown`. Capacity increases only
+after mature positive net economics. No provider, offer, or channel may exceed
+40% of net commission at the diversification gate.
 
 ## 19. What happens after all implementation tasks finish
 
@@ -635,3 +735,23 @@ The implementation plan is maintained at
 9. separately receipted $100M horizon.
 
 No later phase may claim success from a lower-level proxy.
+
+## 21. Execution and verification commands
+
+The atomic commands and expected RED/GREEN results are authoritative in the
+implementation plan. Completion MUST include all of the following classes:
+
+1. Python 3.9 compile, shell syntax, focused tests, and collection-safe full
+   Affiliate regression execution;
+2. authenticated provider/account/terms/link readback;
+3. Postiz publication receipt plus public content/account readback;
+4. deployed HTTPS redirect and durable click receipt;
+5. provider report replay with one canonical transaction/commission receipt;
+6. launchd hourly/daily kickstart with successful real wake receipts;
+7. Telegram provider `message_id` and snapshot-hash parity with Life Manager;
+8. external approved commission for E1 and three closed qualifying months for A3.
+
+| Item | Value |
+|---|---|
+| UI change | Telegram reporting UX and Life Manager financial reporting |
+| E2E judgment | Maestro not required: the changed UI boundary is Telegram/web reporting, provider APIs, public pages, redirect, and launchd; each requires real API/browser/HTTP/runtime E2E instead |
