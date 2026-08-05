@@ -6,16 +6,18 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
-next execution slice. Product contract refreshed for the three-hour application
-cadence, JPY 8M–30M compensation band, Gmail outcome tracking, Terra-based learning,
+next execution slice. Product contract refreshed for hourly discovery/application
+passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
+Gmail outcome tracking, Luna/Terra routing,
 manual/recruiter deduplication, and post-Dais multi-user productization.
 
 ## 1. Acceptance criteria — done condition
 
-The Mac mini Job Hunter autonomously wakes every three hours during the configured
-Japan-day search window, discovers high-upside roles, verifies fit, creates truthful
+The Mac mini Job Hunter autonomously wakes every hour, discovers high-upside roles,
+verifies fit, creates truthful
 tailored materials, submits eligible applications, captures an authoritative
-receipt, polls Gmail through `gog` every 15 minutes, updates the company funnel,
+receipt, works toward ten unique confirmed applications per day, polls Gmail through
+`gog` every five minutes, updates the company funnel,
 creates confirmed interview events in Google Calendar, reports every material
 change in natural Japanese on Telegram, and improves its strategy from verified
 outcomes.
@@ -30,7 +32,7 @@ Completion requires all of the following:
 - Gmail thread ID bound to the correct application;
 - one real interview email converted into a Google Calendar event;
 - Telegram message IDs for application, progression, interview, and learning reports;
-- three-hour application, 15-minute inbox, weekly learning, and guardian
+- hourly application, five-minute inbox, weekly learning, and guardian
   LaunchAgents healthy on the stable runtime;
 - `summary.v2`, Telegram, ledger, and rebuilt event projections agree;
 - all Job Hunter tests green; and
@@ -38,7 +40,7 @@ Completion requires all of the following:
 
 ## 2. Overview — product outcome
 
-Job Hunter is not a bulk-application counter. It maximizes the probability that the
+Job Hunter uses high throughput without optimizing vanity volume. It maximizes the probability that the
 user reaches a dream job they would gladly accept but may not have discovered or
 attempted alone. The initial target is Dais; the local contract must remain
 profile-driven so Life Manager can later onboard any person, including users with
@@ -172,24 +174,97 @@ from application conversion.
 
 ### 5.6 Runtime cadence and model contract
 
-- Application passes run at 08:00, 11:00, 14:00, 17:00, and 20:00 Asia/Tokyo.
-- Gmail polling through `gog` runs every 15 minutes.
-- A pass with no new eligible role exits without browser submission or duplicate
-  model work.
-- Extraction, tailoring, inbox interpretation, browser work, and weekly hypothesis
-  generation use `gpt-5.6-terra` with bounded task-specific effort.
+- Application passes run every hour, continuously. Each day targets 100–300 newly
+  discovered postings, 30–50 deep evaluations, 15–20 complete application dossiers,
+  and exactly ten unique confirmed submissions under the initial hard cap.
+- Fewer than ten confirmed submissions is a visible `quota_deficit`, not a successful
+  empty pass. The next hourly wake expands sources, queries, and eligible adjacent
+  segments while preserving the JPY floor, truth, authorization, expiry, duplicate,
+  and human-only boundaries. It never invents a vacancy or submits a bad known fit
+  merely to fill quota.
+- The daily portfolio is initially two dream/high-touch, five strong-fit, and three
+  adjacent-stretch applications. A quota change requires the experiment gate below.
+- Gmail polling through `gog` runs every five minutes. A deterministic query and
+  immutable-message checkpoint return immediately without a model call when empty.
+- `gpt-5.6-luna` handles high-volume, non-side-effect extraction, normalization, and
+  preliminary ranking. `gpt-5.6-terra` medium handles deep fit, truthful tailoring,
+  employer answers, Gmail interpretation, and any decision leading to an external
+  side effect. Terra high handles dream applications and the weekly hypothesis.
 - Weekly learning uses Terra to propose exactly one bounded strategy change. Wilson
   interval comparison, minimum sample thresholds, safety rollback, promotion, and
   active-generation switching remain deterministic code; the model never overrides
   those gates.
-- Luna is not the Job Hunter default. A later model change requires a replay eval on
-  the same immutable outcome snapshots and a measured quality, latency, and cost
-  improvement without weakening safety or evidence requirements.
+- A model-route change requires a replay eval on the same immutable snapshots and a
+  measured quality, latency, and cost improvement without weakening evidence.
 
 Model-selection source: [OpenAI — Using GPT-5.6](https://developers.openai.com/api/docs/guides/latest-model.md).
 The controlling distinction is: `gpt-5.6-terra` balances intelligence and cost,
 while `gpt-5.6-luna` serves efficient high-volume workloads. Representative replay
 evidence, not the model label, remains the activation gate.
+
+### 5.7 Upstream maximal-reuse contract
+
+Pin [MadsLorentzen/ai-job-search v1.3.0](https://github.com/MadsLorentzen/ai-job-search/releases/tag/v1.3.0)
+and record its tag commit, file hashes, and license in
+`upstream-adoption.v1.json`. Every upstream component is classified `reuse`, `adapt`,
+or `supersede`, with reason, local owner, tests, and last-reviewed upstream commit.
+
+| Upstream capability | Local treatment | Contract |
+|---|---|---|
+| `/setup` document ingestion and fact grounding | reuse/adapt | Populate the private fact ledger; never copy unverified tailored claims back into profile truth |
+| portal discovery, `seen_jobs` dedupe, `/rank` rubric | reuse/adapt | Add Japan/global sources; retain dead-posting, location, language, deadline, and honest-gap gates |
+| `/apply` research, drafting, reviewer, ATS checks | reuse/adapt | Keep its grounded artifact chain, then add autonomous CloakBrowser submission and receipts |
+| `/outcome`, follow-up, archived posting/CV/letter | reuse/adapt | Project into the event ledger; preserve exact submitted artifacts and authoritative stages |
+| `/gmail-sync` message taxonomy | adapt | Replace approval batch with `gog`, immutable IDs, safe automatic transitions, Calendar, and Telegram |
+| `/interview` exact-artifact preparation | reuse/adapt | Trigger automatically from verified progression and add Calendar/debrief evidence |
+| `/upskill`, `/html-report`, one-way destination sync | reuse/adapt | Feed verified gaps and ledger projections; never make CSV, HTML, or Notion a second SSOT |
+| interactive execution and CSV/file state | supersede | Resident launchd loops plus SQLite append-only events, idempotency, leases, and side-effect receipts |
+
+Each upstream release triggers a tag diff, privacy/security review, adoption-manifest
+update, ported tests, and same-snapshot regression replay. We reuse upstream workflow
+semantics and artifacts maximally, but do not maintain two sources of truth and do
+not import interactive assumptions that weaken autonomous evidence fencing.
+Primary workflow references: [setup](https://github.com/MadsLorentzen/ai-job-search/blob/v1.3.0/.claude/commands/setup.md),
+[rank](https://github.com/MadsLorentzen/ai-job-search/blob/v1.3.0/.claude/commands/rank.md),
+[apply](https://github.com/MadsLorentzen/ai-job-search/blob/v1.3.0/.claude/commands/apply.md),
+[outcome](https://github.com/MadsLorentzen/ai-job-search/blob/v1.3.0/.claude/commands/outcome.md),
+[Gmail sync](https://github.com/MadsLorentzen/ai-job-search/blob/v1.3.0/.claude/commands/gmail-sync.md),
+and [interview](https://github.com/MadsLorentzen/ai-job-search/blob/v1.3.0/.claude/commands/interview.md).
+
+### 5.8 Self-improvement contract
+
+The optimization objective is confirmed interview and offer conversion, not raw
+submission count. Every application freezes its source, query, role family, fit
+score, compensation band, location model, resume variant, message emphasis, model
+route, owner, and strategy generation before submission. Only ATS receipts, immutable
+Gmail messages, verified manual/recruiter updates, and Calendar/provider receipts may
+create outcomes.
+
+The loop is:
+
+1. hourly collection, ranking, dossier generation, and quota execution create
+   traceable cohorts;
+2. daily monitoring reports throughput, quota deficit, funnel movement, data quality,
+   and safety, but cannot promote strategy;
+3. weekly Terra analysis cites an immutable cohort and proposes exactly one bounded
+   variable change, such as source, role family, resume emphasis, or search query;
+4. deterministic code rejects changes that alter truth, compensation floor,
+   authorization, duplicate, human-only, or receipt requirements;
+5. eligible applications receive a stable randomized 20% baseline holdout and 80%
+   candidate assignment recorded before generation;
+6. neither arm is judged before at least ten resolved authoritative outcomes; Wilson
+   intervals and delayed-outcome windows are calculated by code;
+7. promote only when the candidate lower bound exceeds the baseline upper bound;
+   otherwise retain the baseline, and roll back immediately on safety regression or
+   after three consecutive candidate failures;
+8. persist the generation pointer, evidence snapshot, decision receipt, and Telegram
+   report so projections can be rebuilt exactly.
+
+The first 50 confirmed applications are calibration, not proof of an offer. At that
+checkpoint, interview conversion of at least 10% keeps the mix, at least 20% permits
+a bounded experiment up to 15/day, and below 5% forces source/segment/material
+diagnosis before any volume increase. Submission-only or unresolved cohorts never
+justify a promotion.
 
 ## 6. Resume and artifact contract
 
@@ -694,7 +769,8 @@ The tracker exposes:
 - compensation distribution and JPY 10M+ target rate;
 - source, role-family, resume variant, and segment Pareto;
 - baseline/candidate strategy, 20% holdout, and rollback state;
-- last healthy daily/inbox/learning/guardian runs;
+- daily quota target, confirmed count, deficit reason, and last healthy
+  application/inbox/learning/guardian runs;
 - confirmed-application, recruiter-reply, interview, final-round, offer, and
   acceptance rates with explicit numerators and denominators;
 - median time to first reply and interview, verified compensation distribution, and
@@ -745,10 +821,10 @@ CloakBrowser owner, Telegram outbox, stale leases, and uncertain side effects. I
 repairs only deterministic pre-side-effect failures and sends one low-noise alert
 after bounded recovery fails.
 
-The stable schedule is five application passes at 08:00, 11:00, 14:00, 17:00, and
-20:00 Asia/Tokyo, a 15-minute inbox pass, a weekly learning pass, and a guardian
-health pass. Application quota and duplicate fences are ledger-backed across all
-wakes; increasing wake frequency never authorizes duplicate or low-confidence
+The stable schedule is an hourly application pass, a five-minute inbox pass, a
+weekly learning pass, and a guardian health pass. The ten-confirmed-per-day quota,
+portfolio mix, quota deficits, and duplicate fences are ledger-backed across all
+wakes. Hourly execution never authorizes duplicate, fabricated, or known-ineligible
 submissions.
 
 ## 10. As-Is / To-Be
@@ -756,13 +832,13 @@ submissions.
 | Concern | As-Is | To-Be |
 |---|---|---|
 | Runtime | Three installed agents reference a deleted worktree and exit 78 | Stable immutable release and launcher paths |
-| Application cadence | One 08:30 daily wake | Five Japan-day wakes, three hours apart |
-| Inbox | `gog` works; 15-minute agent exists but runtime path is broken | Healthy 15-minute deterministic-first Gmail reconciliation |
+| Application cadence | One 08:30 daily wake | Hourly continuous pass; ten confirmed/day initial cap |
+| Inbox | `gog` works; 15-minute agent exists but runtime path is broken | Healthy five-minute deterministic-first Gmail reconciliation |
 | Compensation | Versioned JPY 5.5M floor / JPY 7M target | JPY 8M floor / JPY 10M target / JPY 30M stretch |
 | Ownership | Agent applications exist without complete manual/recruiter import | One owner per application and cross-lane duplicate fence |
 | Palantir | Dais applied manually; not yet durably fenced | Track outcome only; autonomous resubmission impossible |
 | BlockRun | Could be mistaken for an ATS target | Separate founder-outreach funnel; no invented vacancy |
-| Models | Daily/inbox use Terra; high-value class routes to Luna | All Job Hunter semantic work uses Terra; statistics stay deterministic |
+| Models | Daily/inbox use Terra; high-value class routes to Luna | Luna volume prefilter; Terra side-effect quality and weekly hypothesis; deterministic statistics |
 | Outcomes | `summary.v1`; zero authoritative funnel outcomes | Event-backed `summary.v2` with reply/interview/final/offer metrics |
 | Product | Dais-only local implementation | Dais proof gate, then isolated multi-user Web product |
 
@@ -784,10 +860,10 @@ submissions.
 - Workday confirmed receipt: 0.
 - Palantir was submitted manually by Dais and still needs a durable `dais_manual`
   import and duplicate fence.
-- The installed application schedule is still one daily wake; the five-wake schedule
+- The installed application schedule is still one daily wake; the hourly schedule
   is specified but not implemented.
-- The shared runner still routes `high-value-agent` to Luna; the Job Hunter-specific
-  Terra learning route is specified but not implemented.
+- The Luna volume/Terra quality route and Terra weekly learning route are specified
+  but not implemented in the shared runner.
 - Corrected base resumes rendered as four one-page PDFs, visually inspected, selected
   through the production stable filenames, and delivered with Telegram message IDs
   6119–6122. The prior 6084–6086 files are superseded.
@@ -816,21 +892,25 @@ before the next item begins.
 - [ ] **O2-04C** — Diff upstream vetted release
   [`v1.3.0`](https://github.com/MadsLorentzen/ai-job-search/releases/tag/v1.3.0)
   and the newer `master` delta against the Dais fork and production loop; import only
-  tested improvements that preserve private data, autonomous submission, and the
-  event-ledger contract.
+  tested improvements using `upstream-adoption.v1.json`; port its grounded profile,
+  discovery, rank, application-artifact, outcome, Gmail, interview, upskill, and
+  reporting semantics while superseding interactive execution and CSV state with
+  the autonomous event-ledger/runtime contract.
 - [ ] **O2-05** — Replace worktree-bound LaunchAgent programs with stable launchers
   and immutable releases; install the canonical local runtime.
 - [ ] **O2-06A** — TDD the JPY 8M floor / JPY 10M target / JPY 30M stretch policy,
   timestamped USD-six-figure classification, travel-positive policy, and clearance
   non-rejection contract; prove with real discovery logs.
-- [ ] **O2-06B** — TDD the five-wake application schedule, 15-minute `gog` inbox
-  schedule, no-new-work early exit, and ledger-backed quota across repeated wakes.
+- [ ] **O2-06B** — TDD the hourly application schedule, five-minute `gog` inbox,
+  ten-confirmed/day cap and portfolio mix, visible quota-deficit recovery, and
+  ledger-backed quota across repeated wakes.
 - [ ] **O2-06C** — Import manual/recruiter applications, mark existing Palantir work
   `dais_manual`, enforce cross-owner duplicate prevention, and implement the separate
   BlockRun founder-outreach funnel.
-- [ ] **O2-06D** — Route Job Hunter weekly hypothesis generation to Terra, preserve
-  deterministic Wilson/sample/safety gates, and replay Terra versus the prior Luna
-  route on identical immutable snapshots before activation.
+- [ ] **O2-06D** — Route non-side-effect extraction/prefilter to Luna and deep fit,
+  tailoring, inbox meaning, external-side-effect decisions, and weekly hypotheses to
+  Terra; preserve deterministic Wilson/sample/safety gates and replay both routes on
+  identical immutable snapshots before activation.
 - [ ] **O2-07** — Complete Guardian, lifecycle closure, event-backed `summary.v2`,
   observable tracker, explicit funnel numerators/denominators, emotional Telegram
   copy validation, and per-application resume/cover-letter/question artifacts.
@@ -880,7 +960,7 @@ flowchart TD
     P --> R[Base resumes in preferred languages]
     R --> A[Autonomous mode enabled]
 
-    A --> W[Five Japan-day wakes]
+    A --> W[Hourly passes; ten confirmed per day]
     W --> H[Guardian verifies stable release and integrations]
     H --> D[Discover official AI-native roles]
     D --> V[Verify expiry, legitimacy, salary, location, and authorization]
@@ -894,7 +974,7 @@ flowchart TD
     Q --> S
     U --> T
 
-    T --> G[Poll Gmail through gog every 15 minutes]
+    T --> G[Poll Gmail through gog every five minutes]
     G --> I{Interview progression?}
     I -->|Yes| E[Create Google Calendar event]
     E --> J[🎉 Report and prepare interview]
@@ -915,8 +995,8 @@ flowchart TD
 - Job Hunter does not accept offers, sign agreements, complete identity-bound video
   or live interviews, answer unknown legal or clearance-held questions, or bypass
   prohibited assessment rules.
-- Wake frequency does not change the daily confirmed-submission quota until a later
-  outcome-backed experiment explicitly promotes a new quota.
+- The initial daily confirmed-submission cap is ten. Only an outcome-backed experiment
+  may promote it; a quota deficit expands search coverage but never weakens hard gates.
 - Gmail is an evidence source, not an independent source of truth; no unmatched or
   ambiguous email changes an application stage.
 - Founder outreach is not counted as a job application until a verified role and
@@ -932,8 +1012,8 @@ flowchart TD
 | # | To-Be contract | Required test or evidence | Coverage gate |
 |---:|---|---|---|
 | 1 | Stable release, no worktree runtime path | `test_installed_job_launchagents_use_stable_release_paths` plus loaded plist inspection | MUST pass |
-| 2 | Five application wakes | `test_daily_plist_has_five_japan_day_calendar_intervals` | MUST pass |
-| 3 | `gog` inbox every 15 minutes | `test_inbox_plist_keeps_900_second_interval` plus one real read receipt | MUST pass |
+| 2 | Hourly application pass | `test_daily_plist_uses_3600_second_interval` | MUST pass |
+| 3 | `gog` inbox every five minutes | `test_inbox_plist_keeps_300_second_interval` plus one real read receipt | MUST pass |
 | 4 | JPY 8M hard floor | `test_known_compensation_below_eight_million_is_rejected` | MUST pass |
 | 5 | JPY 10M target and JPY 30M stretch | `test_target_and_stretch_bands_rank_without_down_anchoring` | MUST pass |
 | 6 | Timestamped USD 100K classification | `test_six_figure_classification_requires_value_currency_rate_and_timestamp` | MUST pass |
@@ -951,6 +1031,9 @@ flowchart TD
 | 18 | Interview progression | Real Gmail message → ledger stage → Calendar ID → Telegram receipt | MUST pass |
 | 19 | Browser ownership | Shared-tab preservation E2E with before/after page inventory | MUST pass |
 | 20 | Tenant isolation | Two-tenant adversarial access tests across profile, Gmail, browser, ledger, artifacts, and outbox | MUST pass before O3 cohort |
+| 21 | Ten/day quota and deficit recovery | `test_daily_quota_caps_at_ten_confirmed` and `test_deficit_expands_search_without_weakening_gates` | MUST pass |
+| 22 | Luna/Terra route boundary | `test_luna_has_no_external_side_effect_authority` and same-snapshot route replay | MUST pass |
+| 23 | Maximal upstream reuse | Pinned `upstream-adoption.v1.json`, file-hash verification, ported workflow tests, and release-diff receipt | MUST pass |
 
 ### E2E judgment
 
