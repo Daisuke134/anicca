@@ -2175,6 +2175,15 @@ covered_existing=0 / unavailable=0`であり、ID `7372`と`7376`のeventを再�
 `luma-event://event/l5iu5frr`へ進んだ。これでhistory→Luma日付readback→rolling coverage→inventoryのlive一巡を実証した。
 次候補は`unknown_external_effect`で止まったため、次sliceは実画面の状態をreadbackして既知状態へ分類する。
 
+O1B-25進捗49（承認制eventの参加リクエスト認識 RED→GREEN）: `luma-event://event/l5iu5frr`
+（Reading Rhythm vol.2）の実画面をreadbackし、2026-08-22 19:00開始の無料枠は完売、20:00開始の無料承認制枠には
+押下可能な`参加リクエスト`が表示されていることを確認した。従来は`Request to Join`系の操作語を
+`approval_required`として非実行に分類し、providerも日本語ボタンを探索しなかったため、申請可能なeventが
+`unknown_external_effect`で停止していた。操作語`Request to Join` / `参加リクエスト` / `参加をリクエスト` /
+`承認をリクエスト`を`available`へ変更し、情報表示`approval required` / `承認が必要`は非実行状態として分離した。
+browser providerも同じ日英操作語をsubmit対象にした。focused testは18/18 GREEN、diff checkもGREEN。
+次はこのcommitをnative launchdへ反映し、loop自身によるLuma申請済みreadback、Calendar evidence、Telegram provider IDを実証する。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 

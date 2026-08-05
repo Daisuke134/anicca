@@ -159,7 +159,10 @@ function rsvpStatus(controls) {
   if (includesAny(controls, ["join waitlist", "キャンセル待ちに登録", "キャンセル待ち"])) {
     return "waitlist";
   }
-  if (includesAny(controls, ["request to join", "参加をリクエスト", "承認をリクエスト"])) {
+  if (includesAny(controls, ["request to join", "参加リクエスト", "参加をリクエスト", "承認をリクエスト"])) {
+    return "available";
+  }
+  if (includesAny(controls, ["approval required", "承認が必要"])) {
     return "approval_required";
   }
   if (includesAny(controls, ["ワンクリックで参加登録", "ワンクリック申し込み"])) {

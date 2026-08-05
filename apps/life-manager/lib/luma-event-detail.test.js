@@ -143,7 +143,8 @@ test("classifies registered, closed, waitlist, full, approval, and unknown contr
   assert.equal(normalizeLumaEventDetail(fixture({ controls: ["Registration Closed"] })).rsvp_status, "closed");
   assert.equal(normalizeLumaEventDetail(fixture({ controls: ["Join Waitlist"] })).rsvp_status, "waitlist");
   assert.equal(normalizeLumaEventDetail(fixture({ controls: ["Sold Out"] })).rsvp_status, "full");
-  assert.equal(normalizeLumaEventDetail(fixture({ controls: ["Request to Join"] })).rsvp_status, "approval_required");
+  assert.equal(normalizeLumaEventDetail(fixture({ controls: ["Request to Join"] })).rsvp_status, "available");
+  assert.equal(normalizeLumaEventDetail(fixture({ controls: ["参加リクエスト"] })).rsvp_status, "available");
   assert.equal(normalizeLumaEventDetail(fixture({ controls: ["ホストに連絡"] })).rsvp_status, "unknown");
 });
 
