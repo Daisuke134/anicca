@@ -21,6 +21,7 @@ Locked boundaries:
 - No new code depends on OpenClaw CLI, cron, process, state path, or secret path.
 - OpenClaw is removed only after leased-queue shadow verification.
 - Avatar video is optional. A faceless/slideshow lane always exists and may remain production.
+- **Production measurement is free-only.** Apify, paid scraping credits, paid proxy pools, and any automatic paid fallback are `DO NOT USE`. The engine may use the already-owned Postiz API, official platform APIs within their no-incremental-cost quota, public native pages through CloakBrowser, and local code. If those sources cannot return a value, the result remains unavailable with one deduplicated health incident; the agent MUST NOT spend money to fill it.
 - Generated files, posts, and views are not revenue. Decisions use attributed clicks, installs, paid starts, orders, refunds, retention, contribution margin, and revenue.
 
 ### 1.1 Live execution status
@@ -29,14 +30,18 @@ Last updated: 2026-08-05
 
 Completed gate: **13 — truthful experiment attribution**
 
-Active build lane: **native social measurement — Gate 15 checkpoint evidence and Gate 14 maturity**
+Active build lane: **free-only canonical measurement producer — then four-product self-improvement**
 
 Background evidence lane: **14 — native publication, maturity, and real performance write-back; 16 shadow soak**
 
-Gate state: **Gates 1–13 complete; Gate 14 remains OPEN because the canonical native store is still mostly missed/null and two TikTok provider attempts timed out; Gate 15 remains OPEN because the full post-checkpoint replay-zero proof is not yet complete. All six report kinds now have real receipts, including checkpoint receipts `7053`, `7054`, and `7055`, and the fixed owner-events run exits zero. The next SSOT item is the bounded replay repair described in §15.6 step 1. Gate 16A remains queued behind this truth boundary.**
+Gate state: **Gates 1–3 and 5–13 remain complete. Gate 4 is REOPENED for production operation: all 57 product-bound checkpoints are unmeasured, no LaunchAgent owns canonical publication reconciliation or `native_metrics.py`, and the loaded legacy metrics job writes a different OpenClaw ledger and exits 1 after Apify HTTP 402. Gate 14 and Gate 15 remain OPEN. Reporting works, but it currently amplifies missed checkpoints instead of reporting usable product metrics. The next SSOT item is the free-only four-step order in §15.6.**
 
 2026-08-05 live audit overrides older optimistic status text where it conflicts:
 
+- A fresh production audit proves the measurement plane is not operating for the four product agents. Canonical state has `223` checkpoints (`9 measured / 212 missed / 2 error`), but every measured row has `product_id=null`. Product-bound results are `aniccaios=15 missed`, `honne=23 missed + 2 error`, `ebook-ja=3 missed`, and `ebook-en=14 missed`: **zero usable measured checkpoints for every target product**.
+- No user LaunchAgent or crontab invokes canonical `identity/publication_ledger.py` or `measure/native_metrics.py`. `ai.anicca.marketing-post-metrics` instead runs legacy `collect_post_metrics.py` every six hours, writes `~/.openclaw/state/content-library/post-metrics.jsonl`, and currently exits 1 because Apify returns HTTP 402. `ai.anicca.marketing-metrics-daily` runs `business_outcomes.py`, not native social collection. Apify is therefore removed from all remaining production designs rather than funded or retried.
+- The exact YouTube notification `checkpoint:aniccaios:postiz:cms9mz2k90om0qn0ybphj6n7s:72` was not a provider inability. The first canonical observation occurred at age `106.2136h`, `34.2136h` after the 72-hour target, so the collector marked it missed and skipped the provider call. A direct live Postiz analytics read returned Views/Likes/Comments/Favorites=`0`, and the native YouTube page also showed zero views. Telegram MUST report a measured zero when retrievable, not “could not obtain.”
+- Free live provider reads are viable: the sampled YouTube and Instagram Postiz analytics calls returned metric arrays, while the sampled Honne TikTok call returned an empty array. The locked free adapter order is Postiz/official API first, then isolated CloakBrowser public read-back; one TikTok timeout MUST NOT fail another post or platform.
 - Gate 15 checkpoint binding implementation is merged on canonical `feature/dist1-mcp-launchd` at `7b25a50b3`. The pre-change focused suite was 73/73 PASS; Task 1 commit `f035ad931` supplied 15 binding contracts and Task 2 commit `f1cd4727c` supplied the publication-ledger/downstream integration. The pure binder uses only exact account-manifest integration IDs, fails closed on conflicts, and performs no network/provider calls in existing-only mode. The follow-up incident-key repair is included in `7b25a50b3`.
 - Task 2 TDD RED is verified: three new CLI options were unrecognized, `bind_merged_rows` was absent, and default registry binding did not populate `product_id`; the raw three-file command also exposed the owner-report test's existing local-import requirement. Commit `f1cd4727c` makes 14 publication-ledger, 17 native-metrics, 30 owner-report, and 95 total Gate 15 tests GREEN. Its bounded review verdict is `ship` with no Critical/Important finding: normal mode binds the full merge before validation/atomic write, existing-only bypasses credential/network paths, and downstream code adds no inference.
 - Canonical Task 3 implementation and the duplicate social-incident-key repair are merged at `7b25a50b3`; the canonical focused suite is now **97/97 PASS**. The exact target tuple is `cmsaselv6070sqn0yp7oix7yd` → integration `cmo5s4edx00vgn10ygnu34a0n` → account `tiktok.obou_anicca` → product `ebook-ja` → native `7669159327655054613` / `https://www.tiktok.com/@obou_anicca/video/7669159327655054613`.
@@ -129,25 +134,20 @@ After completion, the owner wakes up to a compact report saying what the system 
 
 The gate numbers below preserve causal and audit history; they are not a serial
 instruction to leave workers idle while a real-world checkpoint matures. Work
-is scheduled by the following executable priority:
+is scheduled by the four-step SSOT in §15.6:
 
-1. **BUILD NOW — native social measurement:** bind reconciled native posts and
-   6h/24h/72h/7d checkpoints to products. This creates the one missing real
-   Gate 15 checkpoint receipt and supplies mature evidence for Gate 14.
-2. **BUILD NOW — Gate 16A:** implement the leased queue, lease recovery,
-   idempotency, retry/dead-letter policy, health, read-only reconciliation, and
-   rollback tooling; then start shadow mode without stopping the current
-   runtime.
-3. **BUILD NOW — downstream product actuators:** finish the Mobile App Scaler
-   and Ebook Seller work listed in spec 26. These consume the Marketing Engine
-   contracts and do not wait for the first watercolor cohort to mature.
-4. **SOAK IN BACKGROUND — Gate 14 and Gate 16:** automatically reconcile each
-   scheduled native publication and collect 6h/24h/72h/7d outcomes while the
-   leased-queue shadow comparison accumulates seven consecutive days.
-5. **TIME-DEPENDENT CLOSURE:** after evidence matures, run the real Gate 14
-   write-back; after the seven-day queue reconciliation passes with zero
-   duplicate external actions and rollback readiness, cut over and stop the
-   Marketing OpenClaw runtime.
+1. **FREE-ONLY TRUTH PLANE:** replace the broken paid collector with one
+   serialized canonical reconcile -> bind -> collect -> report pipeline and
+   make Telegram report measured zero as zero instead of checkpoint spam.
+2. **FOUR MEASURED PRODUCT ECONOMIES:** keep every product publishing daily and
+   prove fresh social-to-money attribution independently for `aniccaios`,
+   `honne`, `ebook-ja`, and `ebook-en`.
+3. **SELF-IMPROVING, SELF-HEALING LOOP:** promote mature winners, retire proven
+   losers, preserve exploration, recover safe failures, and cut over to the
+   leased Life Manager worker after shadow evidence passes.
+4. **EVIDENCE-GATED `$10K` SCALE:** advance each product through
+   `$0 -> $1k -> $3k -> $10k` only while its own complete economics remain
+   positive. This is an operating target, not a guaranteed outcome.
 
 No task may convert a provider queue receipt into a native publication, an
 immature value into zero, or a shadow intent into a second external action.
@@ -162,7 +162,7 @@ do not mean that evidence gates, platform delays, or policy boundaries vanish.
 | 1 | Add `~/anicca/skills/_shared/telegram.py`; make `~/anicca/.env` the Marketing Engine credential source; support text, document, photo, and video with direct Bot API | **DONE 2026-08-01:** `getMe` passes; text `4946`, document `4947`, photo `4949`, video `4950`, and wrapper `4951` arrived with message IDs; 12 tests pass; Marketing Engine reporters invoke no OpenClaw message process |
 | 2 | Inventory and quarantine legacy marketing LaunchAgents; map each old Larry, ReelClaw, watercolor, monk, metrics, score, and dashboard task to keep/migrate/retire | **DONE 2026-08-01:** 79 relevant records inventoried; 28 LaunchAgents and seven live OpenClaw legacy jobs reversibly quarantined; post-snapshot has zero enabled publishers and zero enabled/loaded retire targets; ten measurement/report jobs remain loaded; plist hashes unchanged; inert rollback round trip passed |
 | 3 | Create the publication identity ledger from existing Postiz data: `experiment_id`, creative hash, Postiz ID, `releaseId`, native platform post ID/URL, account/integration ID, and timestamps | **DONE 2026-08-01:** 91 live rows written; 71/73 PUBLISHED uniquely resolve to native identity (97.2603%); two TikTok duplicate-caption rows remain ambiguous; all 18 ERROR rows remain errors; nine tests and idempotent 91→91 rerun pass |
-| 4 | Repair and verify social metrics collectors against native posts at 6h, 24h, 72h, and 7d | **DONE 2026-08-01:** canonical state has 110 unique checkpoints—four measured in their 24h windows and 106 honestly marked missed; idempotent rerun added zero; four Instagram + three TikTok + three YouTube identities matched 10/10 and comparable-field mismatches were zero; 32 related tests pass |
+| 4 | Repair and verify social metrics collectors against native posts at 6h, 24h, 72h, and 7d | **REOPENED 2026-08-05:** the historical fixture/live slice proved adapters once, but production ownership is absent. All 57 product-bound checkpoints are unmeasured, canonical reconciliation/collection has no schedule, and the loaded legacy job writes another ledger and fails on paid Apify HTTP 402. Closure now requires the free-only canonical producer and four-product fresh-post E2E in §15.6 steps 1–2 |
 | 5 | Restore business outcome inputs: RevenueCat, Stripe, App Store Connect, PostHog, KDP, Gumroad/direct sales; add owned campaign redirects and compact publication tokens | **DONE 2026-08-01:** four unique product/date snapshots verify; ASC report segments and RC app-filtered charts are live; ebook Stripe queries use exact product and one-day bounds with gross/refund/net; unavailable KDP/Gumroad/PostHog/Honne-funnel states remain null with reasons; production `/go/{token}` returned 302 and its minimal Supabase receipt read back; 54 focused Python and 288 Netlify tests pass |
 | 6 | Wire the truthful run/report contract to mine, score, metrics, dashboard, clip, video, self-improve, and capafy | **DONE 2026-08-01:** all eight lanes emitted validated production reports; metrics/dashboard executed successfully and six gated lanes emitted evidenced `skipped` results without running publishers; Telegram receipts are `5023`, `5048`, and `5049–5054`; verifier reports 8/8, zero duplicate final/delivery keys, zero replay sends, and zero production dry runs; seven existing LaunchAgents read back the canonical runner and an idempotent reinstall plan has zero changes |
 | 7 | Create and validate `intel/playbook.jsonl`, `hook-library.jsonl`, `creators.jsonl`, and `ad-swipe.jsonl`; seed nine open gaps and the completed fixed-character rule | **DONE 2026-08-01:** four UTF-8 JSONL stores and four Draft 2020-12 schemas validate; playbook has ten unique tactics, exactly nine `new`, one operational `done`, and zero unproved `won`; hook/creator/ad stores are honest empty streams; first/rerun hashes match; 111 Gate 1–7 focused tests pass; Telegram receipt `5059` |
@@ -172,8 +172,8 @@ do not mean that evidence gates, platform delays, or policy boundaries vanish.
 | 11 | Add the renderer registry and ten-clip eval pack: slideshow, ReelClaw/card, MoneyPrinterTurbo, OmniAvatar, and watercolor monk | **DONE 2026-08-01:** frozen five EN + five JA fixtures produced ten local 720×1280 H.264/AAC safety outputs at $0 with exact receipts; rerun appended zero; OmniAvatar/MuseTalk/LongCat remain explicitly unavailable; visual evaluation honestly failed the static baseline (no motion/sync and clipped JP captions), so nothing was promoted or posted; 178 tests + 47 subtests pass; Telegram `5109` and contact sheet `5110` |
 | 12 | Make Postiz/browser posting adapters idempotent and lease-owned | **DONE 2026-08-02:** exact route and asset approved; immutable intent passed shadow; upload/draft/promote each accepted once; one exact Postiz read-back reconciled to TikTok ID `7669159327655054613` and its native URL; replay-safe identity ledger and production DB both report `published` |
 | 13 | Join social metrics and business outcomes back to experiments through the attribution ledger | **DONE 2026-08-02:** one production snapshot contains all ten required result records; an exact Supabase token+product query reports deterministic qualified clicks `0`; the nine 15-minute-old social/business results remain `not_mature=null`; fabricated-zero count is zero; exact replay stays one ledger row; schema/verifier pass; 262 tests + 47 subtests pass |
-| 14 | Restore write-back: tactic status, hook EWMA, renderer result, bottom-20% retirement, and 20% exploration | **OPEN 2026-08-05:** canonical metrics are `9 measured / 212 missed / 2 error` across 223 unique checkpoints; two Honne TikTok rows retain explicit CDP timeout/null reasons, and no mature plan-mapped `won`/`lost` mutation exists. Closure still requires ten plan-mapped mature real experiments and one evidenced `won`/`lost` mutation |
-| 15 | Deliver compact natural-Japanese daily, incident, experiment, progress, and weekly Telegram reports | **OPEN — six report kinds have real receipts, but replay-zero is not yet proven:** fix `7b25a50b3`; 97/97 focused tests; target checkpoint receipts `7053`, `7054`, `7055`; owner-events resumed run exits zero; exact state is identity 92 (`545d0f5aa6e62250a79fdc3d1da27e8b52d7872b25764490f78cd58879a18d27`), metrics 223 (`2b12d76a73667716e2cc0cca0d31912be5d6258db0652c7ffdb9e20ebe8b5a8b`), reports 160 (`fed6a2475216062e9d14e20b43fcfc02eca75128b42a2cebe585a05367422fe6`), deliveries 320 (`963b4b0d8473866eefe3869d74f75fc5034471e6736700e6a2bbd4aee0591fc9`). Gate 15 stays OPEN until the two new 168h metric rows are delivered and an immediate fixed-time/no-new-due replay preserves metric/report/delivery counts and hashes with no new Telegram IDs |
+| 14 | Restore write-back: tactic status, hook EWMA, renderer result, bottom-20% retirement, and 20% exploration | **OPEN 2026-08-05:** canonical metrics are `9 measured / 212 missed / 2 error` across 223 unique checkpoints, but all nine measured rows are product-null legacy rows and all 57 product-bound checkpoints are unmeasured. Two Honne TikTok rows retain explicit timeout/null reasons, and no mature plan-mapped `won`/`lost` mutation exists. Each product needs at least ten mature, correctly mapped experiments before its own learning promotion is enabled |
+| 15 | Deliver compact natural-Japanese daily, incident, experiment, progress, and weekly Telegram reports | **OPEN — transport works, semantics do not:** six report kinds have real receipts and the installed reporter exits zero, but it currently sends one message per missed checkpoint and amplifies the broken producer. Closure requires a healthy free-only producer, one deduplicated `measurement_unhealthy` incident per product/platform/day, measured zero reported as zero, one daily digest with native links, and an immediate replay that produces no new Telegram IDs |
 | 16A | Build the leased job queue and start non-mutating shadow operation | **OPEN 2026-08-05:** SQLite lease/fence primitives exist for publication intents, but no one durable worker owns all four products, no seven-day shadow is running, and no producer is proven after the August 11 queue ends |
 | 16B | Cut over after the time-dependent shadow soak, then stop Marketing OpenClaw | **TIME-DEPENDENT CLOSURE:** seven consecutive reconciled days, zero duplicate external actions, rollback readiness, Life Manager worker cutover, then OpenClaw processes/crons stop |
 
@@ -412,7 +412,7 @@ the same Marketing Engine script:
 
 | runner ID | current entrypoint/owner | external effect policy during Gate 6 |
 |---|---|---|
-| `mine` | `mine/mine_daily.sh` | read competitors and write local evidence; Apify run response is an external receipt |
+| `mine` | `mine/mine_daily.sh` | **historical Gate 6 behavior only:** read competitors and write local evidence; its Apify call is no longer authorized for production and MUST be removed or replaced by a free source in §15.6 step 1 |
 | `score` | `brain/score.py` | read verified metrics and write local score evidence only |
 | `metrics` | `measure/business_outcomes.py` plus Gate 4 native collector | read-only provider queries; the legacy aggregate `collect_metrics.py` is never production truth |
 | `dashboard` | the existing Marketing dashboard command | local artifact only; hash the produced artifact |
@@ -2006,6 +2006,7 @@ Views diagnose creative reach. They never authorize spend or count as economic p
 
 #### Shared economy contract
 
+- Incremental measurement/tool cost is `$0`. Production code and scheduler manifests MUST contain no Apify actor, token, endpoint, paid scraping credit, or paid fallback. Existing owned Postiz access, official platform quota, public native pages, CloakBrowser, and local computation are the complete allowed measurement set.
 - Every production action carries `product_id`, `account_id`, `campaign_id`, `experiment_id`, `creative_id`, `attribution_token`, cost cap, primary metric, maturity window, and stop rule.
 - Every active product creates at least one leased, product-dedicated publication intent per local day. Within 15 minutes after its scheduled time, reconciliation records either an exact native post ID/URL or a named failure. `QUEUE`, renderer success, and process exit zero never count as publication.
 - Native social checkpoints run at 6h, 24h, 72h, and 7d. At least 95% execute inside the declared window over a rolling 30-day period. Missing data stays `null` with a provider reason.
@@ -2050,7 +2051,8 @@ flowchart TD
 
     Queue --> Publish["Postiz / browser / ASC / KDP actuators"]
     Publish --> Receipt["Exact native receipt<br/>ID · URL · cost · timestamp"]
-    Receipt --> Metrics["6h · 24h · 72h · 7d social metrics"]
+    Receipt --> FreeMeasure["$0 measurement plane<br/>Postiz · official APIs · public pages · CloakBrowser"]
+    FreeMeasure --> Metrics["6h · 24h · 72h · 7d social metrics"]
     Receipt --> Business["install · trial · paid · order · refund · revenue"]
 
     Metrics --> Join["Experiment attribution"]
@@ -2058,12 +2060,12 @@ flowchart TD
     Join --> Decide{"Mature economic evidence?"}
     Decide -->|winner| Promote["Exploit winner<br/>max 80% output"]
     Decide -->|loser| Retire["Retire after ≥3 observations"]
-    Decide -->|unknown| Repair["Self-heal collector<br/>do not invent zero"]
+    Decide -->|unknown| Repair["Self-heal free collector<br/>retry · correction · never buy data"]
 
     Promote --> Memory
     Retire --> Memory
     Repair --> Queue
-    Join --> Telegram["Telegram JP<br/>link · metrics · money · decision · next test"]
+    Join --> Telegram["Telegram JP<br/>one daily digest · links · metrics · money · next test"]
 ```
 
 ### 15.3 As-Is / To-Be
@@ -2073,9 +2075,9 @@ flowchart TD
 | Runtime | launchd, legacy OpenClaw paths, JSONL, and a separate SQLite publication-intent lease coexist | One Life Manager worker owns the canonical schedule and uses the tested SQLite lease/fence contract locally; after seven-day shadow it replaces Marketing OpenClaw jobs |
 | Daily supply | Three JP watercolor posts are `PUBLISHED`; seven are queued only through August 11 | Four product-dedicated daily producers continuously replenish a seven-day horizon; no product reaches zero future intents |
 | Post identity | Postiz often returns a profile URL or publish token instead of a safe native URL/ID | Reconciliation obtains exact native ID/URL, sends it to Telegram, and blocks metrics/attribution until identity is deterministic |
-| Social measurement | 223 unique checkpoints: 9 measured, 212 missed, 2 explicit provider-request errors; two Honne TikTok CDP timeouts; many product-null legacy rows remain explicit rather than inferred | 95% in-window checkpoints using native/provider adapters with explicit failover and alerting |
+| Social measurement | 223 unique checkpoints: 9 measured are all product-null legacy rows; every product-bound checkpoint is unmeasured; no canonical scheduler exists; the loaded legacy collector writes another ledger and fails on Apify HTTP 402 | One serialized hourly canonical pipeline owns reconcile -> bind -> free collect -> report; 95% in-window completeness; late real values append correction snapshots; Apify and paid fallbacks are absent |
 | Business measurement | Anicca APIs work; Honne funnel, KDP, Gumroad, and PostHog have explicit gaps | Every product has at least one authoritative conversion and money source; gaps remain visible until connected |
-| Reporting | Six deterministic owner-report kinds now have real receipts: target checkpoint IDs `7053`, `7054`, `7055`, plus the existing five kinds and fixed incident backlog; owner reports=160 / `fed6a2475216062e9d14e20b43fcfc02eca75128b42a2cebe585a05367422fe6`, deliveries=320 / `963b4b0d8473866eefe3869d74f75fc5034471e6736700e6a2bbd4aee0591fc9`; owner-events exit 0, but replay-zero is not proven because two 168h metrics became due during the replay boundary | Deliver the two pending 168h metric events, then use a fixed observed-at/no-new-due window to prove metric/report/delivery count+hash equality and no new Telegram IDs before closing Gate 15 |
+| Reporting | The reporter exits zero but sent one message per missed post/checkpoint, including multiple 6h/24h/72h incidents for one post; this faithfully amplifies broken measurement into Telegram noise | One deduplicated `measurement_unhealthy` incident per product/platform/day, one daily product digest, native post links, measured zero when zero is retrievable, and replay-zero after the canonical producer is healthy |
 | Improvement | scorer rules exist but no real mature `won/lost` production mutation exists | Mature economic result updates hook/tactic/renderer memory, retires losers, reserves exploration, and schedules the next bounded test |
 | Scale | no product has proven repeatable positive contribution | `$0→$1k→$3k→$10k` gates require increasing evidence, cohort repeatability, positive contribution, and bounded spend |
 
@@ -2093,8 +2095,13 @@ flowchart TD
 | 8 | Safe self-improvement | `test_mature_economic_winner_updates_memory_once` and `test_three_observations_before_retirement` | OK |
 | 9 | Exploration floor | `test_active_output_keeps_twenty_percent_exploration` | OK |
 | 10 | Lease safety | acquire/renew/expire/fence/retry/dead-letter tests and seven-day shadow with zero duplicate external actions | OK |
-| 11 | Scale gate | `test_spend_scale_requires_positive_complete_contribution` rejects views-only, revenue-only, or missing-cost promotion | OK |
+| 11 | Scale gate | implement `test_spend_scale_requires_positive_complete_contribution` so views-only, revenue-only, or missing-cost promotion is rejected by executable policy rather than prose | REQUIRED — step 4; no such executable test exists yet |
 | 12 | End-to-end economy loop | one real experiment per product travels from evidence to native receipt to business outcome to decision to next scheduled test | OK |
+| 13 | Free-only production dependency | source and loaded scheduler scan proves no Apify actor/token/endpoint, paid scraping credit, proxy pool, or automatic paid fallback exists | REQUIRED — step 1 |
+| 14 | Serialized canonical ownership | scheduler read-back and overlap test prove hourly `reconcile -> bind -> collect -> report` order under one lease | REQUIRED — step 1 |
+| 15 | Late checkpoint correction | a missed SLA event remains recoverable and a later real provider value appends one correction snapshot without rewriting history | REQUIRED — step 1 |
+| 16 | Quiet truthful Telegram | measured native zero is reported as zero; repeated failures collapse to one incident per product/platform/day; immediate replay sends nothing | REQUIRED — step 1 |
+| 17 | Four fresh product E2Es | each product supplies a new native post, deterministic identity, 6h/24h result or explicit provider error, conversion evidence, and money-source result | REQUIRED — step 2 |
 
 E2E judgment:
 
@@ -2106,6 +2113,9 @@ E2E judgment:
 ### 15.5 Boundaries
 
 - The target is `$10k gross MRR` per app and `$10k gross monthly revenue` per ebook language product. Ebook sales MUST NOT be labeled recurring revenue or MRR.
+- `$10k` is an evidence-gated operating target, not a forecast or guarantee. The engine may increase volume only after that product proves complete, positive contribution and acceptable payback.
+- Production measurement has zero incremental tool budget. Apify, paid scraping credits, paid proxy pools, and automatic paid measurement fallbacks are forbidden in source, manifests, and loaded schedules.
+- Already-owned Postiz access, official platform APIs within no-incremental-cost quota, public native pages through CloakBrowser, and local computation are the complete allowed measurement set. An unavailable value stays null with one deduplicated health incident; the system never buys a value to hide a gap.
 - No account promotes two products. No product borrows another product's installs, orders, revenue, or winner memory.
 - No paid acquisition scales from views, likes, an LLM score, a provider queue receipt, or incomplete contribution data.
 - No daily-post promise is made from a finite Postiz queue. Continuous supply requires a durable producer, horizon monitor, native receipt, and overdue alert.
@@ -2114,17 +2124,10 @@ E2E judgment:
 
 ### 15.6 Remaining execution steps — order is SSOT
 
-1. **Finish Gate 15 replay-zero proof:** (a) deliver the two newly appended 168h metric rows through the installed owner-events reporter and require exit 0; (b) immediately rerun `native_metrics.py collect` with a fixed `--now`/within-no-new-due checkpoint window so it appends zero rows; (c) rerun the owner-events reporter and require report/delivery counts and SHA-256 hashes to remain unchanged with no new Telegram IDs. Only then mark Gate 15 DONE; until then it remains OPEN. The exact target checkpoint receipts `7053`, `7054`, and `7055`, binding, and 97-test suite are already complete.
-2. **Restore native social measurement:** reconcile the August 2–11 watercolor cohort to exact TikTok IDs/URLs and product IDs; replace the failed Apify dependency with the verified native/provider adapter; schedule 6h/24h/72h/7d collection and overdue alerts; reach 95% in-window completeness before claiming self-improvement.
-3. **Make daily publication continuous:** build one producer per product, maintain a rolling seven-day intent horizon, publish through leased idempotent actions, reconcile native links within 15 minutes, and alert before any product reaches zero future intents.
-4. **Close Gate 16A:** move scheduling ownership to one Life Manager worker using the existing SQLite lease/fence contract; implement expiry recovery, bounded retry, dead-letter, health, read-only reconciliation, and rollback; start seven-day non-mutating shadow without stopping the current runtime.
-5. **Close `aniccaios` economics:** join campaign/source to first download, Mixpanel gotcha/paywall, RevenueCat trial/paid/churn/refund/MRR, ASC proceeds, spend, and contribution; run one bottleneck experiment at a time.
-6. **Create and close `honne` economics:** create the RevenueCat products/offering, instrument the inside-app funnel, map the winning content promise into gotcha/paywall, submit the build, and obtain the first attributed paid cohort.
-7. **Close `ebook-ja` economics:** authenticate KDP, publish the owned JP book, retain direct Stripe checkout, add royalty/KENP/refund/cost adapters, and bind watercolor posts to unique acquisition tokens and paid orders.
-8. **Close `ebook-en` economics:** authenticate KDP, publish the owned EN book, start the dedicated monk/faceless daily lane, and bind posts to clicks, orders, royalties, refunds, and contribution.
-9. **Close Gate 14:** after ten correctly mapped real experiments mature, write one real winner and loser into hook/tactic/renderer memory, verify the 20% exploration floor, and automatically schedule the next experiment.
-10. **Close Gate 16B:** after seven consecutive reconciled shadow days with zero duplicate external actions and a tested rollback, cut over to the Life Manager worker and stop only the Marketing OpenClaw runtime.
-11. **Scale each product through evidence gates:** `$0→$1k` proves one paid cohort; `$1k→$3k` repeats it across at least three mature cohorts; `$3k→$10k` increases volume only while contribution stays positive and payback stays inside the declared window. Weekly Telegram reports each product's current gate, gap, allocation, and next test.
+1. **Build the free-only truth plane and quiet Telegram.** Under TDD, install one leased, non-overlapping hourly pipeline in the exact order `publication reconcile -> product/experiment/creative bind -> native metrics collect -> owner report`. Remove or quarantine **every** production Apify path, including both the legacy metrics collector and the loaded `mine/mine_daily.sh` research call; replace necessary research inputs with free official/public/local sources and prove production source, manifests, and loaded schedules contain no Apify actor/token/endpoint or other paid fallback. A missed SLA becomes a recoverable event, not a terminal value; a later real metric appends a correction snapshot. Use already-owned Postiz first where its exact native analytics work, official owned-content APIs within free quota next, and isolated CloakBrowser public-page reads last. Report native zero as zero and collapse failures to one `measurement_unhealthy` incident per product/platform/day. **Done:** scheduler read-back and overlap tests pass, runs exit zero, paid calls are zero, rolling in-window completeness reaches 95%, and immediate Telegram replay sends nothing.
+2. **Prove four independent, continuously supplied product economies.** Give `aniccaios`, `honne`, `ebook-ja`, and `ebook-en` one dedicated daily producer each with a rolling seven-day horizon, leased idempotent posting, native-link reconciliation, and the full immutable attribution tuple. Run a fresh 6h/24h E2E for every active product/platform; store real integer metrics including zero or an explicit provider error. Join app cohorts through App Store Connect/product analytics/RevenueCat and ebook cohorts through Stripe/KDP/direct-sales receipts without borrowing another product's data. **Done:** every product has at least one new mature acquisition-to-money cohort, daily supply cannot silently reach zero, and every unavailable business source remains visibly null with a reason.
+3. **Turn on self-improvement and self-healing, then cut over safely.** For each product, accumulate at least ten mature comparable experiments before enabling its learning promotion; write evidenced winner/loser results to hook/tactic/renderer memory, update EWMA, retire only the bottom 20% after at least three observations, and reserve 20% exploration. Add bounded retry, correction/backfill, lease recovery, dead-letter and health ownership. Run the Life Manager worker in seven-day non-mutating shadow; require zero duplicate external actions and tested rollback before Gate 16B cutover. Telegram sends one daily product digest and one weekly portfolio decision report with post links, revenue, current bottleneck, stopped variants, and next tests. **Done:** Gates 14, 15, 16A, and 16B close on real evidence.
+4. **Scale each product through evidence gates and generalize the factories.** Apps target `$10k gross MRR` each; each language ebook targets `$10k gross monthly revenue`, never mislabeled MRR. Implement the executable scale-policy test before any spend increase: views-only, revenue-only, missing cost, non-positive contribution, or undeclared payback MUST reject promotion. `$0 -> $1k` requires one attributed paid cohort; `$1k -> $3k` requires at least three repeatable mature cohorts; `$3k -> $10k` raises volume only while complete contribution stays positive and payback remains inside the declared window. Generalize the same product manifest, account manifest, economic manifest, producer, attribution, learning, healing, and reporting contracts into Mobile App Factory and Ebook Factory so a new owned product can enter the same loop without copying another product's evidence. **Done:** the scale policy is executable, each product advances only on its own receipts, and `$10k` remains a target rather than a promised result.
 
 Primary-source alignment:
 
@@ -2132,3 +2135,7 @@ Primary-source alignment:
 - RevenueCat chart data remains the subscription/MRR source and is filtered by the product's app configuration: <https://www.revenuecat.com/docs/api-v2>.
 - Amazon KDP reports orders, royalties, payments, and KENP by title/marketplace; KENP may change until finalized: <https://kdp.amazon.com/en_US/help/topic/G201541130>.
 - Postiz exposes post analytics, but provider output is accepted only when it resolves the exact native publication: <https://docs.postiz.com/public-api/analytics/post>.
+- Postiz's open-source public API implements `GET /analytics/post/:postId`, so the already-owned service is a valid no-incremental-cost first adapter: <https://github.com/gitroomhq/postiz-app/blob/main/apps/backend/src/public-api/routes/v1/public.integrations.controller.ts#L507-L515>.
+- YouTube Data API projects receive a default daily quota allocation and read endpoints have published unit costs, so owned-video checks stay inside a measured free quota budget: <https://developers.google.com/youtube/v3/determine_quota_cost>.
+- TikTok's official owned-video query returns `view_count`, `like_count`, `comment_count`, and `share_count` for up to 20 requested video IDs: <https://developers.tiktok.com/doc/tiktok-api-v2-video-query/>.
+- Apify and every other paid scraping/measurement fallback are deliberately outside this production design.
