@@ -2382,6 +2382,11 @@ the resident worker from producing one authoritative application receipt:
       compensation evidence, role-family inputs, and exact official description
       span on each shortlisted candidate before any model runs. Produce at least one
       claim-ready candidate without relabeling an unknown public fact as known.
+      - Current RED proof: the focused prefilter test now requires `role_family`,
+        unknown-safe compensation state, deterministic score/components, portfolio
+        bucket, readiness, and URL-bound input spans. It fails at the first missing
+        field (`KeyError: role_family`; 1 error / 2 tests), proving these values are
+        not yet connected rather than pretending the candidate is application-ready.
     - [ ] `FILL-1B` — Replace model-authored temporary browser scripts with one
       release-contained browser worker. Enforce one worker per run and one atomic
       ledger claim per cross-route role key before opening or filling an ATS.
