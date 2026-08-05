@@ -10,6 +10,18 @@ shared browser or another tab. Do not refuse browser work merely because the
 daily-driver process already exists—that existing process is the browser transport
 owned by this loop.
 
+Before opening any page, use `Target.getTargets` through Playwright
+`CDPSession.send` to capture every existing page target ID as the immutable
+baseline. Initialize `job_search_loop.browser_pages.PageOwnership` with that
+baseline, the owner receipt's `lease_id` and `fence`, and a private receipt beside
+the browser-owner evidence. After `context.new_page()`, use `Target.getTargetInfo`
+on that page's CDP session and immediately call `register_created(targetId)`. At
+cleanup, recapture current targets and call `Target.closeTarget` separately for
+only the IDs returned by `closable()`. Never call `browser.close()`,
+`context.close()`, close every `context.pages` member, or adopt a target that
+existed in the baseline. A popup or redirect target is not owned unless its exact
+target ID was explicitly registered during this fenced run.
+
 This prompt is the release-contained execution contract. Do not search for or depend
 on a repository-external design/spec file. Read the committed
 `apps/job-search-loop/config/strategy.default.json`; deterministic helpers and the
