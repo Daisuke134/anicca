@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "observed_at": "2026-08-05",
+  "compare_url": "https://github.com/MadsLorentzen/ai-job-search/compare/v1.3.0...fcefb8150fb073ae0d86b5b7a6f09e94aa5976ee",
+  "base_release": "v1.3.0",
+  "base_commit": "a8a10011126f443e0041bb4924a1106c2f7f7536",
+  "master_commit": "fcefb8150fb073ae0d86b5b7a6f09e94aa5976ee",
+  "ahead_by": 3,
+  "behind_by": 0,
+  "changed_file_count": 13,
+  "auto_activate": false,
+  "commits": [
+    {
+      "sha": "fd04986a7596e45149b78d82e3078299023d2680",
+      "authored_at": "2026-08-04T14:24:39Z",
+      "subject": "test(rank): pin language_gate/language_note contract in the /rank spec (#278)"
+    },
+    {
+      "sha": "9aea6e7a44dd01baaa0b0b95d06ff4aa162d6177",
+      "authored_at": "2026-08-04T14:25:13Z",
+      "subject": "docs(changelog): entry for #278 language-gate spec-pinning tests"
+    },
+    {
+      "sha": "fcefb8150fb073ae0d86b5b7a6f09e94aa5976ee",
+      "authored_at": "2026-08-04T18:36:55Z",
+      "subject": "fix(web-research): stop treating a WebFetch 403 as a dead posting (#277)"
+    }
+  ],
+  "changed_paths": [
+    ".claude/commands/apply.md",
+    ".claude/commands/interview.md",
+    ".claude/commands/notion-sync.md",
+    ".claude/commands/outcome.md",
+    ".claude/commands/rank.md",
+    ".claude/skills/job-application-assistant/03-writing-style.md",
+    ".claude/skills/job-application-assistant/09-web-research.md",
+    ".claude/skills/job-application-assistant/SKILL.md",
+    ".claude/skills/job-scraper/SKILL.md",
+    "CHANGELOG.md",
+    "tests/test_rank_command.py",
+    "tests/test_robots_check.py",
+    "tools/robots_check.py"
+  ],
+  "candidates": [
+    {
+      "id": "rank_language_gate_regression_tests",
+      "decision": "port_later",
+      "reason": "The tests prevent computed language veto evidence from disappearing before later ranking and audit steps.",
+      "source_commits": ["fd04986a7596e45149b78d82e3078299023d2680"],
+      "changed_paths": [".claude/commands/rank.md", "tests/test_rank_command.py"],
+      "owner_task": "L-06"
+    },
+    {
+      "id": "robots_aware_web_research",
+      "decision": "port_later",
+      "reason": "A 403 is not proof of expiry; the robots-aware escalation preserves official-source evidence without bypassing an explicit opt-out.",
+      "source_commits": ["fcefb8150fb073ae0d86b5b7a6f09e94aa5976ee"],
+      "changed_paths": [
+        ".claude/commands/apply.md",
+        ".claude/commands/interview.md",
+        ".claude/commands/notion-sync.md",
+        ".claude/commands/outcome.md",
+        ".claude/commands/rank.md",
+        ".claude/skills/job-application-assistant/03-writing-style.md",
+        ".claude/skills/job-application-assistant/09-web-research.md",
+        ".claude/skills/job-application-assistant/SKILL.md",
+        ".claude/skills/job-scraper/SKILL.md",
+        "tests/test_robots_check.py",
+        "tools/robots_check.py"
+      ],
+      "owner_task": "L-05–L-10"
+    }
+  ]
+}

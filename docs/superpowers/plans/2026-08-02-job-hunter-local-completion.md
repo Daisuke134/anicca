@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-03` — upstream master delta inventory
+**Active atomic task:** `L-04` — grounded profile-ingestion contract
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -898,7 +898,11 @@ this spec update → commit/push → Telegram milestone before the next item sta
   `upstream-adoption.v1.json`. Receipt: 27 explicit decisions (`reuse` 4, `adapt` 14,
   `supersede` 9), each with upstream paths, reason, local contract, and owning atomic
   task; `tests.test_upstream_lock` PASS.
-- [ ] **L-03** — Diff upstream `master` against v1.3.0 and record candidate changes.
+- [x] **L-03** — Diff upstream `master` against v1.3.0 and record candidate changes.
+  Receipt: master `fcefb8150fb073ae0d86b5b7a6f09e94aa5976ee` is three commits and
+  13 files ahead; language-gate regression tests route to L-06 and robots-aware web
+  research routes to L-05–L-10; automatic activation is false;
+  `tests.test_upstream_lock` PASS.
 - [ ] **L-04** — Port the upstream grounded profile-ingestion contract.
 - [ ] **L-05** — Port the upstream discovery and `seen_jobs` dedupe contract.
 - [ ] **L-06** — Port the upstream ranking, veto, deadline, and honest-gap contract.
