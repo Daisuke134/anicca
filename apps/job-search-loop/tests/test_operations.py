@@ -7,6 +7,7 @@ from pathlib import Path
 from job_search_loop.calendar_sync import event_key, prep_windows
 from job_search_loop.inbox import (
     classify_message,
+    gog_event_from_message,
     mark_processed_messages,
     mark_threads_seen,
     select_new_recruiting_messages,
@@ -36,6 +37,40 @@ class OperationsTests(unittest.TestCase):
         self.assertEqual(
             classify_message("Update", "We will not be moving forward"), "rejection"
         )
+        self.assertEqual(
+            classify_message("一次面接のご案内", "候補日を選択してください"),
+            "interview",
+        )
+        self.assertEqual(
+            classify_message("選考結果のご連絡", "慎重に検討した結果、不採用となりました"),
+            "rejection",
+        )
+
+    def test_gog_message_becomes_redacted_deterministic_event(self):
+        raw = {
+            "id": "message-123",
+            "threadId": "thread-456",
+            "internalDate": 1785900000000,
+            "headers": {
+                "subject": "Interview invitation",
+                "from": "Recruiting <jobs@example.com>",
+            },
+            "body": "Choose a time. Private interview details.",
+        }
+
+        first = gog_event_from_message(raw)
+        second = gog_event_from_message(raw)
+
+        self.assertEqual(first, second)
+        self.assertEqual(first["event_id"], "gmail-message-123")
+        self.assertEqual(first["message_id"], "message-123")
+        self.assertEqual(first["thread_id"], "thread-456")
+        self.assertEqual(first["classification"], "interview")
+        self.assertEqual(first["funnel_stage"], "interview")
+        self.assertEqual(first["disposition"], "positive")
+        self.assertEqual(len(first["evidence_sha256"]), 64)
+        self.assertNotIn("body", first)
+        self.assertNotIn("Private interview details", json.dumps(first))
 
     def test_inbox_poll_only_returns_unseen_recruiting_threads(self):
         threads = [
@@ -138,6 +173,8 @@ class OperationsTests(unittest.TestCase):
                 selected["messages"],
                 [{"message_id": "message-new", "thread_id": "thread-1"}],
             )
+            self.assertEqual(selected["events"][0]["classification"], "interview")
+            self.assertEqual(selected["events"][0]["message_id"], "message-new")
             self.assertEqual(
                 selected["bootstrap_message_ids"], ["message-old"]
             )

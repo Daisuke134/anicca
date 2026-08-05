@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
 import subprocess
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -67,17 +69,95 @@ def classify_message(subject: str, body: str) -> str:
             "account_verification",
             ("verify your candidate account", "confirm your email address"),
         ),
-        ("offer", ("offer letter", "pleased to offer")),
-        ("interview", ("interview", "choose a time", "schedule a call")),
-        ("assessment", ("assessment", "coding challenge", "take-home")),
-        ("rejection", ("not be moving forward", "other candidates", "unfortunately")),
-        ("confirmation", ("application received", "thank you for applying")),
-        ("recruiter", ("recruiter", "talent acquisition", "your background")),
+        ("offer", ("offer letter", "pleased to offer", "内定", "オファー")),
+        (
+            "interview",
+            (
+                "interview",
+                "choose a time",
+                "schedule a call",
+                "面接",
+                "カジュアル面談",
+                "候補日",
+            ),
+        ),
+        (
+            "assessment",
+            ("assessment", "coding challenge", "take-home", "技術試験", "適性検査"),
+        ),
+        (
+            "rejection",
+            (
+                "not be moving forward",
+                "other candidates",
+                "unfortunately",
+                "不採用",
+                "ご希望に添いかね",
+            ),
+        ),
+        (
+            "confirmation",
+            ("application received", "thank you for applying", "応募が完了", "ご応募いただ"),
+        ),
+        (
+            "recruiter",
+            ("recruiter", "talent acquisition", "your background", "採用担当"),
+        ),
     )
     for label, phrases in rules:
         if any(phrase in text for phrase in phrases):
             return label
     return "irrelevant"
+
+
+def gog_event_from_message(raw_message: dict[str, Any]) -> dict[str, Any]:
+    message_id = str(raw_message.get("id") or "")
+    thread_id = str(raw_message.get("threadId") or "")
+    if not THREAD_ID_PATTERN.fullmatch(message_id):
+        raise ValueError("invalid Gmail message ID")
+    if not THREAD_ID_PATTERN.fullmatch(thread_id):
+        raise ValueError("invalid Gmail thread ID")
+    try:
+        received_milliseconds = int(raw_message.get("internalDate"))
+    except (TypeError, ValueError) as error:
+        raise ValueError("Gmail internalDate must be milliseconds") from error
+    subject, sender = _message_headers(raw_message)
+    body = str(raw_message.get("body") or "")
+    classification = classify_message(subject, body)
+    funnel = {
+        "confirmation": ("confirmed_application", "positive"),
+        "recruiter": ("recruiter_response", "positive"),
+        "assessment": ("screen", "positive"),
+        "interview": ("interview", "positive"),
+        "offer": ("offer", "positive"),
+        "rejection": ("recruiter_response", "negative"),
+    }.get(classification, (None, None))
+    evidence = json.dumps(
+        {
+            "message_id": message_id,
+            "thread_id": thread_id,
+            "internal_date": received_milliseconds,
+            "subject": subject,
+            "sender": sender,
+            "body": body,
+        },
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return {
+        "version": 1,
+        "event_id": f"gmail-{message_id}",
+        "message_id": message_id,
+        "thread_id": thread_id,
+        "received_at": datetime.fromtimestamp(
+            received_milliseconds / 1000, tz=timezone.utc
+        ).isoformat(),
+        "classification": classification,
+        "funnel_stage": funnel[0],
+        "disposition": funnel[1],
+        "evidence_sha256": hashlib.sha256(evidence.encode("utf-8")).hexdigest(),
+    }
 
 
 def select_new_recruiting_threads(
@@ -268,6 +348,7 @@ def select_new_recruiting_messages(
     seen_messages, legacy_threads, legacy_cutoff = _checkpoint(state_path)
     selected_threads = select_new_recruiting_threads(threads, set())
     messages: list[dict[str, str]] = []
+    events: list[dict[str, Any]] = []
     bootstrap_message_ids: set[str] = set()
     observed_message_ids: set[str] = set()
     for thread in selected_threads:
@@ -318,6 +399,7 @@ def select_new_recruiting_messages(
             messages.append(
                 {"message_id": message_id, "thread_id": thread_id}
             )
+            events.append(gog_event_from_message(raw_message))
     thread_ids = list(dict.fromkeys(row["thread_id"] for row in messages))
     message_ids = [row["message_id"] for row in messages]
     return {
@@ -326,6 +408,7 @@ def select_new_recruiting_messages(
         "thread_ids": thread_ids,
         "message_ids": message_ids,
         "messages": messages,
+        "events": events,
         "bootstrap_message_ids": sorted(bootstrap_message_ids),
     }
 
