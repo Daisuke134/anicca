@@ -29,6 +29,13 @@ def result(latency, cost):
 
 
 class RouteReplayTests(unittest.TestCase):
+    def test_route_replay_shell_uses_braced_scope_ids(self):
+        script = (Path(__file__).parents[1] / "scripts" / "run-route-replay.sh").read_text()
+        self.assertIn('${RUN_ID}:luna', script)
+        self.assertIn('${RUN_ID}:terra', script)
+        self.assertNotIn('$RUN_ID:luna', script)
+        self.assertNotIn('$RUN_ID:terra', script)
+
     def test_equal_quality_and_evidence_with_faster_cheaper_luna_passes(self):
         raw = json.dumps(SNAPSHOT, sort_keys=True, separators=(",", ":")).encode()
         digest = hashlib.sha256(raw).hexdigest()
