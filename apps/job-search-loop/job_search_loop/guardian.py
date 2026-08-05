@@ -4,7 +4,11 @@ import argparse
 import hashlib
 import json
 import os
+import plistlib
+import re
 import stat
+import subprocess
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -13,6 +17,107 @@ from .release_activation import ActivationError, LANES, _link_commit, _validate_
 
 class GuardianError(RuntimeError):
     pass
+
+
+EXPECTED_SCHEDULES = {
+    "daily": {"StartInterval": 3600},
+    "inbox": {"StartInterval": 300},
+    "learning": {
+        "StartCalendarInterval": {"Weekday": 1, "Hour": 9, "Minute": 15}
+    },
+}
+MAX_EVIDENCE_AGE_SECONDS = {
+    "daily": 7200,
+    "inbox": 900,
+    "learning": 8 * 24 * 3600,
+}
+
+
+def _launchctl(label: str) -> str | None:
+    completed = subprocess.run(
+        ["launchctl", "print", f"gui/{os.getuid()}/{label}"],
+        check=False, capture_output=True, text=True, timeout=10,
+    )
+    return completed.stdout if completed.returncode == 0 else None
+
+
+def schedule_health(
+    *,
+    plist_root: Path,
+    launcher_root: Path,
+    evidence_root: Path,
+    intentionally_disabled: set[str],
+    launchctl_reader: Any = _launchctl,
+    now: datetime | None = None,
+) -> dict[str, Any]:
+    current = now or datetime.now(timezone.utc)
+    if current.tzinfo is None:
+        raise ValueError("Guardian schedule time must include timezone")
+    lanes: dict[str, Any] = {}
+    for lane, expected_schedule in EXPECTED_SCHEDULES.items():
+        reasons: list[str] = []
+        label = f"ai.anicca.job-search-{lane}"
+        plist_path = Path(plist_root) / f"{label}.plist"
+        try:
+            value = plistlib.loads(plist_path.read_bytes())
+        except (OSError, plistlib.InvalidFileException):
+            value = {}
+            reasons.append("plist_invalid")
+        expected_program = str((Path(launcher_root) / lane).resolve())
+        if value.get("Label") != label:
+            reasons.append("label_mismatch")
+        arguments = value.get("ProgramArguments")
+        if (
+            not isinstance(arguments, list) or len(arguments) != 1
+            or str(Path(str(arguments[0])).resolve()) != expected_program
+        ):
+            reasons.append("program_mismatch")
+        if value.get("RunAtLoad") is not True:
+            reasons.append("run_at_load_mismatch")
+        for key, expected in expected_schedule.items():
+            if value.get(key) != expected:
+                reasons.append("interval_mismatch")
+        output = launchctl_reader(label)
+        loaded = output is not None
+        lane_state = "loaded" if loaded else "unloaded"
+        runs = None
+        last_exit = None
+        if lane in intentionally_disabled:
+            lane_state = "intentionally_disabled"
+            if loaded:
+                reasons.append("intentionally_disabled_but_loaded")
+        elif not loaded:
+            reasons.append("not_loaded")
+        else:
+            runs_match = re.search(r"(?m)^\s*runs = (\d+)", output)
+            exit_match = re.search(r"(?m)^\s*last exit code = (\d+)", output)
+            runs = int(runs_match.group(1)) if runs_match else 0
+            last_exit = int(exit_match.group(1)) if exit_match else None
+            if runs == 0:
+                reasons.append("never_run")
+            if last_exit not in {None, 0}:
+                reasons.append("last_exit_nonzero")
+            candidates = list(Path(evidence_root).glob(f"{lane}-*"))
+            if not candidates:
+                reasons.append("evidence_missing")
+            else:
+                latest = max(candidate.stat().st_mtime for candidate in candidates)
+                age = current.timestamp() - latest
+                if age < 0 or age > MAX_EVIDENCE_AGE_SECONDS[lane]:
+                    reasons.append("evidence_stale")
+        lanes[lane] = {
+            "state": lane_state,
+            "interval_seconds": value.get("StartInterval"),
+            "calendar_interval": value.get("StartCalendarInterval"),
+            "runs": runs,
+            "last_exit_code": last_exit,
+            "reasons": sorted(set(reasons)),
+        }
+    return {
+        "version": 1,
+        "status": "healthy" if all(not row["reasons"] for row in lanes.values()) else "unhealthy",
+        "lanes": lanes,
+    }
 
 
 def release_health(data_root: Path, launcher_root: Path | None = None) -> dict[str, Any]:
@@ -72,16 +177,33 @@ def main(argv: list[str] | None = None) -> int:
     release.add_argument("--data-root", type=Path, required=True)
     release.add_argument("--launcher-root", type=Path, required=True)
     release.add_argument("--output", type=Path, required=True)
+    schedule = subparsers.add_parser("schedule")
+    schedule.add_argument("--plist-root", type=Path, required=True)
+    schedule.add_argument("--launcher-root", type=Path, required=True)
+    schedule.add_argument("--evidence-root", type=Path, required=True)
+    schedule.add_argument("--intentionally-disabled", nargs="*", default=[])
+    schedule.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(argv)
-    report = release_health(args.data_root, args.launcher_root)
+    if args.command == "release":
+        report = release_health(args.data_root, args.launcher_root)
+        public = {
+            "status": report["status"], "active_commit": report["active_commit"],
+            "runner_count": report["runner_count"],
+            "stable_launcher_count": report["stable_launcher_count"],
+        }
+    else:
+        report = schedule_health(
+            plist_root=args.plist_root, launcher_root=args.launcher_root,
+            evidence_root=args.evidence_root,
+            intentionally_disabled=set(args.intentionally_disabled),
+        )
+        public = {
+            "status": report["status"],
+            "lanes": {key: value["state"] for key, value in report["lanes"].items()},
+        }
     args.output.write_text(json.dumps(report, sort_keys=True) + "\n", encoding="utf-8")
     os.chmod(args.output, 0o600)
-    print(json.dumps({
-        "status": report["status"],
-        "active_commit": report["active_commit"],
-        "runner_count": report["runner_count"],
-        "stable_launcher_count": report["stable_launcher_count"],
-    }, sort_keys=True))
+    print(json.dumps(public, sort_keys=True))
     return 0
 
 
