@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-45B` — Guardian schedule-health check
+**Active atomic task:** `L-45C` — Guardian ledger-health check
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1415,7 +1415,22 @@ this spec update → commit/push → Telegram milestone before the next item sta
   and replay-approved route SHA-256
   `66d5efecdfffed8cd9a294736d00aed83701c67220a22608728b140c9c740409`.
   Daily remains unloaded; the check performed no repair or external side effect.
-- [ ] **L-45B** — Implement the Guardian schedule-health check.
+- [x] **L-45B** — Implement the Guardian schedule-health check. Receipt: Guardian
+  parses the actual installed plists and live `launchctl` state for all three lanes,
+  requiring canonical stable programs, RunAtLoad, daily 3,600-second interval, inbox
+  300-second interval, learning Sunday 09:15 calendar schedule, loaded state, at
+  least one run, zero last exit, and lane-specific evidence freshness. An explicit
+  intentional-disable set distinguishes a safety hold from failure; a disabled lane
+  that is nevertheless loaded fails. Interval drift, wrong program/label, missing or
+  stale evidence, never-run state, nonzero exit, and unloaded required lane are
+  enumerated reasons. Related 10-test and full 305-test suites PASS. Immutable release
+  `67eb5ef0021ba229e575e523cecc69d8755e554e` (archive SHA-256
+  `6d419566d30950c958ff9e158d1f84fe1d02649991f29109f85d965f52b0ba4d`)
+  is active with zero writable paths. The real mode-0600, 519-byte schedule report
+  truthfully says `unhealthy`: daily is intentionally disabled with no fault; inbox
+  is loaded at 300 seconds with 29 runs, last exit zero, and fresh evidence; learning
+  is loaded on the exact weekly schedule but has one run with last exit 78. L-45B
+  detects only and performed no kick, reload, repair, or external side effect.
 - [ ] **L-45C** — Implement the Guardian ledger-health check.
 - [ ] **L-45D** — Implement the Guardian Gmail-health check.
 - [ ] **L-45E** — Implement the Guardian browser-owner health check.
