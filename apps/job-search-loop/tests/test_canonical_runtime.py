@@ -305,7 +305,7 @@ raise SystemExit(0)
             )
             self.assertEqual(
                 learning["ProgramArguments"][0],
-                str(APP_ROOT / "scripts" / "run-learning.sh"),
+                str(private_root / "libexec" / "learning"),
             )
             self.assertEqual(daily["StartCalendarInterval"], {"Hour": 8, "Minute": 30})
             self.assertEqual(inbox["StartInterval"], 900)

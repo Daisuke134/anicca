@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-16` — learning LaunchAgent stable path
+**Active atomic task:** `L-17` — immutable release activation
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -971,7 +971,12 @@ this spec update → commit/push → Telegram milestone before the next item sta
   `/Users/anicca/.local/libexec/anicca/job-search/inbox`, plist lint passes, no
   worktree path remains in the loaded inbox program, and pre-activation RunAtLoad
   fails closed with exit 78; full 226-test suite PASS.
-- [ ] **L-16** — Point the learning LaunchAgent at the stable launcher.
+- [x] **L-16** — Point the learning LaunchAgent at the stable launcher. Receipt:
+  installer rendering and the real loaded `ai.anicca.job-search-learning` both
+  resolve `/Users/anicca/.local/libexec/anicca/job-search/learning`, plist lint
+  passes, no worktree path remains in the loaded learning program, and
+  pre-activation RunAtLoad fails closed with exit 78; all three macOS lanes now use
+  stable launchers and the full 226-test suite PASS.
 - [ ] **L-17** — Activate the immutable release through the stable pointer.
 - [ ] **L-17A** — Prove rollback to the last-known-good release.
 - [ ] **L-18** — Migrate the private profile to the JPY 8M hard floor.
