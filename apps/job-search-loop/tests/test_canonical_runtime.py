@@ -61,25 +61,26 @@ if sys.argv[1:2] == ["-"]:
 if sys.argv[1:3] == ["-m", "job_search_loop.summary"]:
     from job_search_loop.summary import main
     raise SystemExit(main(sys.argv[3:]))
+if sys.argv[1:3] == ["-m", "job_search_loop.prefilter"]:
+    output = pathlib.Path(sys.argv[sys.argv.index("--output") + 1])
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(
+        json.dumps(
+            {
+                "status": "browser_fallback_required",
+                "candidates": [],
+                "provider_results": [],
+                "blocked": [],
+            }
+        ) + "\\n",
+        encoding="utf-8",
+    )
+    print(json.dumps({"status": "browser_fallback_required", "candidate_count": 0}))
+    raise SystemExit(0)
 if sys.argv[1:2] and sys.argv[1].endswith("agent_runner.py"):
     evidence = pathlib.Path(sys.argv[sys.argv.index("--evidence-dir") + 1])
     evidence.mkdir(parents=True, exist_ok=True)
     task_class = sys.argv[sys.argv.index("--task-class") + 1]
-    if task_class == "repeatable-agent":
-        result = evidence / "result.json"
-        result.write_text(
-            json.dumps(
-                {
-                    "status": "ok",
-                    "candidates": [],
-                    "provider_results": [],
-                    "blocked": [],
-                }
-            ) + "\\n",
-            encoding="utf-8",
-        )
-        print(json.dumps({"status": "ok", "result_path": str(result)}))
-        raise SystemExit(0)
     if task_class == "composition-agent":
         result = evidence / "result.json"
         result.write_text(
@@ -187,7 +188,7 @@ raise SystemExit(0)
             ]
             self.assertEqual(
                 [call[call.index("--task-class") + 1] for call in runner_calls],
-                ["repeatable-agent", "composition-agent", "job-search-terra-high", "browser-lane-agent"],
+                ["composition-agent", "job-search-terra-high", "browser-lane-agent"],
             )
             terra_results = list(
                 (root / "state" / "evidence").glob("daily-*/terra-plan-result.json")

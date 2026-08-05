@@ -75,34 +75,16 @@ OFFICIAL_ATS_REFRESH_RC=$?
 set -e
 chmod 600 "$EVIDENCE/official-ats-refresh.json"
 export ANICCA_BUDGET_REQUIRED=1
-export ANICCA_BUDGET_SCOPE_ID="job-search-daily:${RUN_ID}:prefilter"
-export ANICCA_PASS_TOKEN_BUDGET=32768
 export ANICCA_LOOP_DAILY_TOKEN_BUDGET=1048576
 export ANICCA_BUDGET_DAILY_SCOPE="job-search-daily"
 export ANICCA_BUDGET_DAY_TZ="Asia/Tokyo"
-PREFILTER_EVIDENCE="$EVIDENCE/prefilter"
-mkdir -p "$PREFILTER_EVIDENCE"
-chmod 700 "$PREFILTER_EVIDENCE"
-set +e
-"$JOB_SEARCH_PYTHON" "$JOB_SEARCH_RUNNER" \
-  --task-class repeatable-agent \
-  --prompt-file "$JOB_SEARCH_APP_ROOT/prompts/prefilter-pass.md" \
-  --schema "$JOB_SEARCH_APP_ROOT/schemas/prefilter-result.v1.schema.json" \
-  --evidence-dir "$PREFILTER_EVIDENCE" \
-  --task-label job-search-prefilter \
-  --loop job-search \
-  --workdir "$JOB_SEARCH_REPO_ROOT" \
-  >"$EVIDENCE/prefilter-runner.json"
-PREFILTER_RC=$?
-set -e
-chmod 600 "$EVIDENCE/prefilter-runner.json"
-if [[ "$PREFILTER_RC" -ne 0 ]]; then
-  refresh_summary
-  exit "$PREFILTER_RC"
-fi
-PREFILTER_RESULT_PATH=$("$JOB_SEARCH_JQ" -er '.result_path' "$EVIDENCE/prefilter-runner.json")
 export JOB_SEARCH_PREFILTER_RESULT="$EVIDENCE/prefilter-result.json"
-cp "$PREFILTER_RESULT_PATH" "$JOB_SEARCH_PREFILTER_RESULT"
+"$JOB_SEARCH_PYTHON" -m job_search_loop.prefilter \
+  --recovery-plan "$JOB_SEARCH_RECOVERY_PLAN" \
+  --framework-root "$JOB_SEARCH_FRAMEWORK_ROOT" \
+  --output "$JOB_SEARCH_PREFILTER_RESULT" \
+  >"$EVIDENCE/prefilter-runner.json"
+chmod 600 "$EVIDENCE/prefilter-runner.json"
 chmod 600 "$JOB_SEARCH_PREFILTER_RESULT"
 export ANICCA_BUDGET_SCOPE_ID="job-search-daily:${RUN_ID}:terra-plan"
 export ANICCA_PASS_TOKEN_BUDGET=65536
