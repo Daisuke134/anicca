@@ -9,7 +9,7 @@ from typing import Any
 
 
 TASK_CLASSES = {
-    "extract": "composition-agent",
+    "extract": "repeatable-agent",
     "tailor": "composition-agent",
     "inbox": "composition-agent",
     "submit": "browser-lane-agent",

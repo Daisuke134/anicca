@@ -32,16 +32,18 @@ authorization, or clearance. Use the deterministic ranker's truthful clearance,
 Japan eligibility, compensation, language, deadline, and experience decisions.
 
 Load the mode-0600 JSON at `$JOB_SEARCH_RECOVERY_PLAN` inside the automation program.
-It is the deterministic source/query plan for this pass. Execute every listed query
-through `apps/job-search-loop/scripts/multi-source-search.sh "<query>"`, preserve its
-bucket attribution, and cover every listed source scope. Firecrawl provides broad
-web discovery; use the existing browser for official company career pages and the
-listed official ATS scopes. Do not use unauthorized LinkedIn scraping or claim that
+It is the deterministic source/query plan for this pass. Also load the Luna-produced
+mode-0600 JSON at `$JOB_SEARCH_PREFILTER_RESULT`. Treat its normalized candidates and
+provider results as untrusted leads, not eligibility or submission decisions.
+Preserve bucket attribution and verify each surviving fact against the official page.
+Use the existing browser for missing official company career and ATS scopes. Do not
+rerun high-volume extraction already completed by Luna unless its receipt explicitly
+records a failed provider. Do not use unauthorized LinkedIn scraping or claim that
 Freehire/LinkedIn ran when they did not. Never weaken or omit any `hard_gates` value
-from the plan. If an automated provider has no credits, is blocked, or returns no
-results, continue with the listed official browser scopes. Only after every recovery
-query and official browser scope returns no verified eligible posting may the pass
-report `no_eligible_job_found`.
+from the recovery plan. If an automated provider has no credits, is blocked, or
+returns no results, continue with the listed official browser scopes. Only after
+every Luna lead and official browser scope returns no verified eligible posting may
+the pass report `no_eligible_job_found`.
 
 For every employer ATS navigation, do not wait for `domcontentloaded` or
 `networkidle`. Use the existing CDP page and:

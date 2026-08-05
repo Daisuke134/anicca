@@ -64,6 +64,22 @@ if sys.argv[1:3] == ["-m", "job_search_loop.summary"]:
 if sys.argv[1:2] and sys.argv[1].endswith("agent_runner.py"):
     evidence = pathlib.Path(sys.argv[sys.argv.index("--evidence-dir") + 1])
     evidence.mkdir(parents=True, exist_ok=True)
+    task_class = sys.argv[sys.argv.index("--task-class") + 1]
+    if task_class == "repeatable-agent":
+        result = evidence / "result.json"
+        result.write_text(
+            json.dumps(
+                {
+                    "status": "ok",
+                    "candidates": [],
+                    "provider_results": [],
+                    "blocked": [],
+                }
+            ) + "\\n",
+            encoding="utf-8",
+        )
+        print(json.dumps({"status": "ok", "result_path": str(result)}))
+        raise SystemExit(0)
     (evidence / "summary.json").write_text(
         json.dumps({"status": "budget_blocked"}) + "\\n",
         encoding="utf-8",
