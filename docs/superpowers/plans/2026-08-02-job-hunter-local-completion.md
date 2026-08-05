@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-26` — daily 2 dream / 5 strong-fit / 3 adjacent portfolio
+**Active atomic task:** `L-27` — durable quota-deficit event
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1073,7 +1073,21 @@ this spec update → commit/push → Telegram milestone before the next item sta
   `4df206d1536966d0702ab22b7ea482f423aeb389a7ed4119e8354c0aede53a42`)
   is active with zero writable paths; daily remains unloaded until L-26 installs the
   contracted portfolio allocation.
-- [ ] **L-26** — Enforce the daily 2 dream / 5 strong-fit / 3 adjacent portfolio.
+- [x] **L-26** — Enforce the daily 2 dream / 5 strong-fit / 3 adjacent portfolio.
+  Receipt: deterministic classification assigns dream only at score 95+ or verified
+  JPY 20M+ compensation, assigns eligible technical-business role families to
+  adjacent, and assigns other eligible AI roles to strong-fit; scores below the hard
+  75 threshold cannot be classified. The ledger transaction enforces independent
+  caps of 2/5/3 and rejects bucket overflow without relabeling. Strategy validation
+  fails closed if the committed limits or dream thresholds drift from code, and the
+  browser contract must pass the helper result as `portfolio_bucket`. Focused
+  16-test and full 247-test suites PASS. A mode-0600 copy of the real ledger migrated
+  all five existing slots to `legacy_unallocated` without loss while the production
+  ledger SHA-256 remained unchanged. Immutable release
+  `58a49ec1a5ece9f9c253404b47a796dd6cbf71c3` (archive SHA-256
+  `afc2bfde3d64e28e2d5d498a19b588472ad17074bb64739f1b907e2e83033aa7`)
+  is active with zero writable paths; daily remains unloaded until the durable
+  deficit/recovery slices are installed.
 - [ ] **L-27** — Persist a `quota_deficit` event when fewer than ten submissions are
   confirmed.
 - [ ] **L-28** — Expand sources and queries after a quota deficit without weakening
