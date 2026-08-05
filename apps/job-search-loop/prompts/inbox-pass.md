@@ -18,6 +18,10 @@ deterministic driver acknowledges only the processed message subset, so every
 omitted candidate message is retried on the next 15-minute pass and a later
 message in the same Gmail thread remains observable.
 
+Return every supplied candidate message in `processed_message_ids` and exactly one
+grounded `gmail_matches` extraction for each. The deterministic driver persists an
+immutable decision even when the result is no match, ambiguous, or insufficient.
+
 For every authoritative recruiting outcome, resolve the application deterministically
 by returning one `gmail_matches` request per processed message. Preserve its exact
 message/thread ID, received timestamp, and evidence SHA from the scan; extract
