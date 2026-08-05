@@ -134,6 +134,25 @@ test("local runner pins Codex Luna and accepts only an evidence-contained result
   assert.deepEqual(invocation.args.slice(0, 3), [path.join(root, "agent_runner.py"), "--task-class", "repeatable-agent"]);
   assert.equal(invocation.options.env.AGENT_RUNNER_PROVIDER, "codex");
   assert.equal(invocation.options.input, "x".repeat(200));
+
+  assert.doesNotThrow(() => runLocalAgentRunner({
+    prompt: "x".repeat(200),
+    schema: { type: "object", properties: { ranked_events: { type: "array" } }, required: ["ranked_events"] },
+    timeoutMs: 120_000,
+    evidenceDir,
+    repoRoot: path.resolve(__dirname, "../../.."),
+    runnerPath: path.join(root, "agent_runner.py"),
+  }, {
+    spawnSync: invocation && (() => ({
+      status: 0,
+      stdout: JSON.stringify({
+        status: "success", selected_provider: "codex", selected_model: "gpt-5.6-luna",
+        result_path: path.join(evidenceDir, "attempt-01.result.json"),
+      }),
+      stderr: "",
+    })),
+    isRunnerFile: () => true,
+  }));
 });
 
 test("Luna creates the preference ranking before goal and serendipity judgment", async () => {

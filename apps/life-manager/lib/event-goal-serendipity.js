@@ -26,11 +26,13 @@ const VERIFIED = new WeakSet();
 
 const RESPONSE_SCHEMA = Object.freeze({
   type: "object",
+  additionalProperties: false,
   properties: {
     ranked_events: {
       type: "array",
       items: {
         type: "object",
+        additionalProperties: false,
         properties: {
           event_ref: { type: "string" },
           goal_alignment: { type: "string", enum: GOAL_ALIGNMENTS },
