@@ -2463,6 +2463,24 @@ the resident worker from producing one authoritative application receipt:
         increasing the token budget. Any other Terra failure still stops the pass.
         Release activation plus a launchd trigger must now prove the worker against
         the real ATS before this task can be checked complete.
+      - Partial resident proof: immutable release
+        `0f1ec0def7b00ea83763bcf74370fd5acdfeb701`, run
+        `daily-20260806-085331`, received an exact Terra `budget_blocked` receipt,
+        skipped Terra-high, then continued to the single resident CloakBrowser worker
+        and exited zero. The worker opened OpenAI's real Ashby application for `AI
+        Success Engineer - Tokyo`, fence 88, captured one owned target over a
+        ten-target baseline, filled Legal Name and Email, uploaded the hash-verified
+        engineering resume, and wrote mode-0600 ATS snapshot, fill receipt, and
+        261,610-byte pre-submit image. It clicked Submit zero times and recorded two
+        blockers: `Phone Number` and the ungrounded start-date placeholder `Pick
+        date...`.
+      - Newly observed defect: the screenshot also shows required location,
+        work-authorization, sponsorship, Tokyo-office, and certification groups, but
+        their question labels/required state were not represented by the value-free
+        control snapshot. The current blocked receipt prevents a false claim. FILL-1D
+        remains open until group labels are captured, every unanswered required group
+        is a blocker, verified phone is filled, and the same resident pass continues
+        to another candidate when one role remains blocked.
 - [ ] **L-49K0C1** — Implement the same-role alternate-route ladder: canonical ATS,
   alternate official employer URL, explicitly accepted recruiting-email application,
   verified public work-address recruiting outreach, then the next eligible role.
