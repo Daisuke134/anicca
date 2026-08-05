@@ -19,6 +19,15 @@ BUSINESS_ROLE_FAMILIES = frozenset(
         "technical_account",
         "sales_engineering",
         "business_development",
+        "ai_product_management",
+        "technical_program_management",
+        "ai_business_development",
+        "ai_partnerships",
+        "technical_account_management",
+        "ai_customer_success",
+        "ai_sales_engineering",
+        "ai_solutions",
+        "ai_consulting",
     }
 )
 
