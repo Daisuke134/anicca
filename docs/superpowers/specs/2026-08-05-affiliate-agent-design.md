@@ -18,9 +18,28 @@ receipts without routine human or Codex operation.
 
 The first commercial gate is three consecutive months at USD 10,000 equivalent
 gross affiliate commission with gross, net, reversals, fees, and currencies
-reported separately. The long-horizon gate is USD 10,000,000 monthly net
-affiliate commission across a diversified network. Neither amount is promised
-by software completion.
+reported separately. The scale gate is USD 10,000,000 monthly net affiliate
+commission across a diversified network. USD 100,000,000 monthly net is retained
+as a separately receipted horizon, not a forecast. None is promised by software
+completion.
+
+### 1.1 Measured legacy runtime
+
+The production repository already contains `skills/affiliate`; it is the
+canonical migration target. Read-only inspection on 2026-08-05 found:
+
+- the tmux core reports `DEAD`;
+- its last pass and last-start markers are dated 2026-07-12;
+- the launchd healthcheck is not loaded;
+- `run.sh` is a fixed Instagram-carousel → Amazon-bio workflow;
+- `affiliate-cli.sh` runs one large Claude Sonnet startup prompt;
+- browser state is isolated on CloakBrowser port 9225 for one Instagram account;
+- commission watermark and lessons history exist and must be preserved;
+- current reporting is not the required Telegram action outbox.
+
+Implementation migrates this one runtime in place. It does not create a second
+`skills/affiliate-agent` tree, erase legacy state, or count a legacy aggregate
+commission watermark as newly attributed revenue.
 
 ## 2. Definitions of done
 
@@ -67,7 +86,16 @@ channel, or language contributes more than 40%. It is a company/network-scale
 gate requiring direct partnerships, regulated operations where applicable, and
 many proven market units. It is not reached by multiplying unproven AI posts.
 
-### 2.5 Public recipe done
+### 2.5 USD 100,000,000 monthly horizon
+
+This horizon closes only after one externally settled month contains USD
+100,000,000 equivalent net affiliate commission. GMV, pending commission,
+tenant sales, clicks, internal payments, and forecasts remain separate. The
+receipt set must include dated FX, reversals, cost, concentration, policy,
+partner-capacity, and tenant-isolation evidence. Until then its state is
+`HORIZON_OPEN`.
+
+### 2.6 Public recipe done
 
 The recipe may be packaged for other people only after Gate A3. Each installation
 uses the operator's own provider accounts, disclosures, identity/KYC, payout
@@ -111,6 +139,14 @@ provider normalization, arithmetic, receipts, idempotency, policy checks, and
 retries. Model calls perform bounded research judgment, content composition, and
 editorial evaluation. Workers share typed records instead of separate memories.
 
+The runtime is deliberately a hybrid, not a collection of provider-specific
+scripts. A Terra Agent observes the current world through allowlisted tools,
+writes a typed action plan in natural language plus JSON, and diagnoses novel
+failures. A deterministic kernel validates and executes that plan, records every
+boundary, and refuses unsafe or unreceipted actions. New providers are primarily
+learned as versioned browser/API playbooks; stable parsing and money boundaries
+remain deterministic.
+
 This approach is selected because it reuses the Writer Agent's verified runtime
 contracts while preventing Writer and Affiliate revenue from being combined.
 
@@ -142,62 +178,153 @@ publication contracts, same-run recovery, claim/opportunity evidence stores,
 attribution, reports, and launchd installers. It does not import Writer money
 rows or modify Writer's revenue semantics.
 
+It also reuses the shared CloakBrowser/CDP lease and recovery tools under
+`profitable-claude/skills/_shared/browser`, plus the at-most-once Telegram
+outbox and natural-language event envelope patterns already proven by Gig Work.
+The legacy `skills/affiliate` scripts become compatibility wrappers during the
+migration and are removed from scheduling only after state-parity receipts.
+
 ## 6. Architecture
 
 ```mermaid
 flowchart TD
-  subgraph Observe[Observe]
-    O1[CRWL official pages]
-    O2[Provider API or report]
-    O3[CDP for rendered X evidence]
-    O4[Context7 and GH for implementation evidence]
+  T[Hourly or daily trigger] --> B[Terra Agent brain]
+
+  subgraph Tools[Allowlisted observation and action tools]
+    C[CRWL public web]
+    CB[CloakBrowser and CDP lease]
+    API[Provider and Postiz APIs]
+    REP[Provider reports]
   end
 
-  subgraph Decide[Decide]
-    V[Account and offer verifier]
-    P[Portfolio allocator]
-    E[Evidence pack]
-    M[JA and EN content manifest]
-    G[Disclosure and policy gate]
+  C --> B
+  CB --> B
+  API --> B
+  REP --> B
+
+  B --> P[Typed action proposal]
+
+  subgraph Kernel[Deterministic safety and truth kernel]
+    G[Evidence policy and budget gates]
+    X[Idempotent action executor]
+    V[Public and provider verification]
+    L[Click and commission ledger]
+    O[Telegram action outbox]
+    R[Recovery and quarantine]
   end
 
-  subgraph Act[Act]
-    W[Owned decision asset]
-    X[X and X Article via Postiz]
-    N[Approved article and email channels]
-    R[Signed redirect and sub-ID]
-  end
-
-  subgraph Learn[Verify and learn]
-    C[Click receipts]
-    A[ASP conversion reports]
-    L[Commission ledger]
-    Q[Experiment learner]
-    H[Recovery and quarantine]
-  end
-
-  O1 --> V
-  O2 --> V
-  O3 --> E
-  O4 --> E
-  V --> P --> E --> M --> G
-  G --> W
-  G --> X
-  G --> N
-  W --> R
+  P --> G
+  G -->|pass| X
+  G -->|fail| O
+  X --> V
+  V --> L
+  V --> O
+  L --> B
+  R --> B
   X --> R
-  N --> R
-  R --> C
-  R --> A
-  C --> L
-  A --> L
-  L --> Q --> P
-  H --> V
-  H --> M
-  H --> W
-  H --> X
-  H --> A
+
+  B --> E[One-variable experiment proposal]
+  E --> G
+  L --> D{Mature net evidence}
+  D -->|KEEP| B
+  D -->|REVERT| R
 ```
+
+### 6.1 Agent action protocol
+
+The model never receives a blank browser and unlimited authority. Every reasoning
+turn receives a bounded context packet: goal, current state hash, eligible
+offers, recent external receipts, open waits, budget, previous lesson, and tool
+schemas. It returns exactly one `ActionProposal`:
+
+```text
+action_id, run_id, objective, rationale, tool, input_refs,
+expected_state, risk_class, idempotency_key, verification_plan,
+human_summary_ja, next_action_if_success, next_action_if_failure
+```
+
+The kernel rejects unknown tools, raw credentials, arbitrary shell, arbitrary
+redirects, policy bypass, missing verification, duplicate idempotency keys, and
+actions outside the current budget or state transition. A browser action is
+successful only after a fresh DOM/API/public readback receipt.
+
+### 6.2 Browser harness
+
+- Public pages use `crwl` first.
+- Authenticated pages use CloakBrowser through a task-owned CDP lease.
+- Account identities that must not share cookies use dedicated persistent
+  profiles; the Agent verifies the active identity before side effects.
+- Browser tools expose semantic `observe`, `navigate`, `act`, `download`, and
+  `verify` operations. Low-level selectors remain replaceable implementation.
+- Each browser step stores before/after URL, semantic observation hash, expected
+  change, actual change, and screenshot/DOM receipt where appropriate.
+- A changed DOM triggers fresh observation and replanning; the Agent does not
+  retry a stale selector indefinitely.
+
+### 6.3 Model routing
+
+Runtime judgment defaults to `gpt-5.6-terra` at `high` effort for market
+research, offer comparison, browser planning, content strategy, and novel
+failure diagnosis. Deterministic extraction, hashing, arithmetic, retries, and
+formatting use code. Luna is not allowed to make money-affecting or publication
+decisions in the initial system.
+
+`gpt-5.6-sol` at `high` is receipt-triggered for legal/financial claims,
+high-value irreversible publication, new provider promotion, prompt promotion,
+and periodic adversarial samples. A missing or replayed trigger receipt fails
+closed. Model/provider failure changes the run to a durable wait or fallback; it
+never silently downgrades a strategic decision to a weaker model.
+
+Implementation is task-isolated: the root session selects one task and sends
+only its spec slice, interfaces, baseline commit, and failing test to a Terra-max
+engineer. The root verifies the diff and real tests before advancing the SSOT.
+This preserves the CEO context window and prevents parallel writers from sharing
+state or branches.
+
+### 6.4 Prompt provenance and self-improvement
+
+Exact prompt text is copied only when its license permits it, such as the MIT
+Affitor structures. Public creator articles and X posts contribute paraphrased
+workflow patterns, never falsely attributed proprietary prompt text. Every seed
+and mutation records source URL/repository, license/evidence class, source hash,
+adaptation notes, prompt role, version, prompt hash, and active/retired state.
+
+The Agent may propose one prompt-field change per experiment. A proposal passes
+offline schema/safety replay, held-out JA/EN evaluation, and a budget-capped live
+canary. Only mature net receipts can promote it. Policy, reversal, refund, or net
+harm forces rollback to the stored prior hash.
+
+### 6.5 Natural-language action reporting
+
+Every meaningful boundary action becomes one Japanese `ActionEvent`: observation
+completed, decision made, external action attempted, verification result,
+commission state change, retry/quarantine, prompt/model escalation, or strategy
+KEEP/REVERT. The message says what the Agent saw, why it chose the action, what
+actually happened, the evidence, money impact, and the next automatic action.
+
+Raw DOM clicks and polling iterations are grouped beneath their semantic action,
+so the operator receives every understandable action without unusable click
+spam. External side effects, failures, money changes, and safety decisions send
+immediately. Successful internal observations may be delivered in the same
+hour's ordered digest. The durable outbox is at-most-once, stores provider
+`message_id`, marks ambiguous delivery `delivery_unknown`, and never blind-retries
+after a send may have occurred.
+
+### 6.6 Durable work queue and replanning
+
+The hourly/daily trigger does not execute a fixed list of scripts. It wakes a
+durable queue. Each `WorkItem` stores objective, kind, state, input hash,
+dependencies, lease/fencing token, attempts, retry time, idempotency key, budget,
+and receipt IDs. One wake claims one bounded item, asks Terra for one action when
+judgment is needed, executes it through the kernel, verifies it, reports it, and
+then selects the next eligible item.
+
+Two wakes cannot claim the same item. An expired lease resumes the same work and
+idempotency key. Waiting provider/auth work does not block independent research,
+reconciliation, reporting, or healthy channels. Publication budgets never block
+money reconciliation or recovery. The planner may add, reorder, or cancel work
+only within allowed state transitions and budgets; it cannot invent a new tool,
+origin, provider account, or external side effect.
 
 ## 7. Canonical records
 
@@ -221,6 +348,13 @@ payload/content SHA-256 where applicable.
 | `policy_decision` | rule version, input hashes, pass/fail reasons, time |
 | `wait_state` | owner, external reason, retry time, attempts, independent work |
 | `recovery_attempt` | failed boundary, same idempotency key, action, result, time |
+| `action_proposal` | goal/state hashes, tool, rationale, risk, idempotency, verification plan, model receipt |
+| `action_event` | natural-language observation/decision/action/result/evidence/money/next-action envelope |
+| `prompt_version` | role, source/license/evidence, source hash, prompt hash, parent, mutation field, state |
+| `model_call` | role, model, effort, input/output hashes, cost, status, trigger receipt |
+| `browser_receipt` | lease/profile identity, before/after URL and observation hashes, expected/actual change |
+| `work_item` | objective, kind/state, input hash, dependencies, lease/fence, attempt/retry, idempotency, budget |
+| `agent_plan` | objective, ordered work IDs, rationale, source receipts, prompt hash, model-call receipt |
 
 ## 8. Money invariants
 
@@ -433,6 +567,7 @@ flowchart LR
   S6 --> S7[$1M monthly]
   S7 --> S8[25 to 50 market pods]
   S8 --> S9[$10M monthly net]
+  S9 --> S10[$100M net horizon]
   S3 --> P1[Package auditable recipe]
   P1 --> P2[Operator-owned tenant installs]
 ```
@@ -440,28 +575,31 @@ flowchart LR
 A pod is one language/region, buyer problem, content cluster, provider portfolio,
 and its own receipted economics. New pods start as budget-capped canaries. They
 scale only after positive mature net economics and automatically roll back after
-harm.
+harm. `$100M` is a separate external-settlement horizon: GMV, pending commission,
+tenant sales, clicks, and forecasts never satisfy it.
 
 ## 19. What happens after all implementation tasks finish
 
-1. launchd wakes the Agent without a chat session.
-2. The Agent refreshes authenticated offers and official terms.
-3. It chooses one receipted opportunity per language within concentration and
-   exploration limits.
-4. It creates evidence packs and useful decision assets.
-5. Deterministic gates block unsupported claims, stale details, unsafe categories,
-   broken links, and missing disclosures.
-6. It publishes through owned pages and approved adapters, including Postiz/X.
-7. It reads every placement back publicly and records exact hashes.
-8. Readers pass through an Agent-owned redirect that records placement lineage.
-9. Provider reports advance transactions from pending to approved, reversed, or
+1. launchd wakes the Agent without a chat session and claims one durable work item.
+2. Terra observes the current page/API/report and proposes exactly one typed,
+   semantic action; it does not receive arbitrary shell or unrestricted CDP.
+3. The deterministic kernel checks origin, terms, budget, idempotency, disclosure,
+   evidence, and required verification before executing that action.
+4. The browser/API harness executes it, reads the result back, stores hashes and
+   receipts, and emits a Japanese natural-language `ActionEvent` to the Telegram
+   outbox.
+5. The planner then chooses the next eligible work item: offer/terms refresh,
+   bilingual evidence and decision asset creation, publication, measurement,
+   reconciliation, learning, or recovery.
+6. Readers pass through an Agent-owned redirect that records placement lineage.
+7. Provider reports advance transactions from pending to approved, reversed, or
    paid without rewriting history.
-10. The learner compares mature net results, keeps or reverts one-variable
-    experiments, and reallocates the next cycle.
-11. Recovery workers resume interrupted work and isolate broken accounts or
-    channels.
-12. Life Manager and Telegram show the same money, health, changes, and next
-    automatic action.
+8. The learner compares mature net results, keeps or reverts one-variable
+   experiments, and reallocates the next cycle.
+9. Recovery resumes interrupted work and isolates only the broken account,
+   provider recipe, or channel while independent work continues.
+10. Life Manager and Telegram show the same money, health, changes, evidence, and
+    next automatic action.
 
 The human remains outside routine production, posting, measurement, repair, and
 optimization. Human authority remains for personal KYC/contractual identity,
@@ -472,14 +610,15 @@ irreversible personal-fund transfer, and genuinely new regulated or legal scope.
 The implementation plan is maintained at
 `docs/superpowers/plans/2026-08-05-affiliate-agent.md`. It is ordered as:
 
-1. repository/worktree and contract baseline;
-2. ledger and provider truth;
-3. public redirect and click ingest;
-4. evidence, policy, content, and publication;
-5. reconciliation, orchestration, recovery, and reporting;
-6. bounded learning and production launchd;
-7. real bilingual E2E and first external commission;
-8. operational $10k gate;
-9. post-proof tenantization and $10M network scale.
+1. legacy characterization and in-place migration;
+2. Terra action boundary, licensed prompt registry, semantic CloakBrowser harness,
+   durable queue, and Telegram action outbox;
+3. ledger and generic provider playbook truth;
+4. public redirect, click ingest, evidence, policy, content, and publication;
+5. reconciliation, bounded learning, recovery, reporting, and production launchd;
+6. real bilingual E2E and first external commission;
+7. operational $10k gate;
+8. post-proof tenantization and staged $10M scale;
+9. separately receipted $100M horizon.
 
 No later phase may claim success from a lower-level proxy.

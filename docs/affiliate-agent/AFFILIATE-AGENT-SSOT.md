@@ -21,7 +21,7 @@ English content, attributes clicks and conversions, records external commission
 receipts, repairs interrupted runs, and reallocates effort without daily human or
 Codex operation.
 
-The machine cannot guarantee $10,000 or $10,000,000 revenue. It guarantees
+The machine cannot guarantee $10,000, $10,000,000, or $100,000,000 revenue. It guarantees
 measurable attempts, honest receipts, bounded experiments, compliance gates, and
 same-run recovery. Revenue targets are gates, not claims or forecasts.
 
@@ -224,6 +224,7 @@ workflow ideas are reimplemented against our own contracts and evidence.
 | A3 | Three consecutive months at $10,000 gross affiliate commission with net, reversals, and attribution reported separately |
 | A4 | Diversified scale: no provider, offer, or channel exceeds 40% of net commission |
 | A5 | $10,000,000 cumulative or monthly target is defined explicitly and then met only by external receipts; never inferred from traffic |
+| A6 | $100,000,000 monthly net remains `HORIZON_OPEN` until one externally settled month passes FX, reversal, cost, concentration, policy, partner-capacity, and tenant-isolation audits; GMV and forecasts do not count |
 
 Best/base/worst planning is computed only after 30 days of real funnel data.
 Before that, revenue is `unknown`, not a fabricated conversion forecast.
