@@ -734,6 +734,15 @@ provider-default effort as fallback. It does not implement the Terra-medium
 default or receipted Sol escalation matrix. Runtime and tests must migrate; this
 SSOT change alone does not claim that production already uses Terra.
 
+Implementation slice `docs/writer-agent/plans/2026-08-05-terra-medium-runtime.md`
+starts with only the executable Terra-medium default. Its isolated runtime
+worktree is `profitable-claude/.worktrees/writer-terra-medium`. The measured
+pre-change repository baseline is `336/368 passed`; all 32 failures are outside
+Writer (Gig/CEO/clip/agent-runner/video families). Slice verification therefore
+requires the new Writer contract test, one non-publishing real Codex E2E, shell
+syntax, and proof that the full-suite failure set does not grow. Terra-high,
+Sol routing, cost receipts, `block_freeze`, and active-six remain later slices.
+
 Decision evidence:
 
 - OpenAI describes Terra as the everyday workhorse and Sol as the model for
