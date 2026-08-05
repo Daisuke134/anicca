@@ -1,7 +1,7 @@
 {
   "type": "object",
   "additionalProperties": false,
-  "required": ["status", "processed_threads", "processed_thread_ids", "processed_message_ids", "calendar_events", "replies", "assessments", "prep_packs", "verifications", "reports"],
+  "required": ["status", "processed_threads", "processed_thread_ids", "processed_message_ids", "gmail_matches", "calendar_events", "replies", "assessments", "prep_packs", "verifications", "reports"],
   "properties": {
     "status": {"type": "string"},
     "processed_threads": {"type": "integer"},
@@ -14,6 +14,25 @@
       "type": "array",
       "uniqueItems": true,
       "items": {"type": "string", "pattern": "^[A-Za-z0-9_-]+$"}
+    },
+    "gmail_matches": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["message_id", "thread_id", "received_at", "evidence_sha256", "company", "title", "posting_url", "status", "application_id"],
+        "properties": {
+          "message_id": {"type": "string"},
+          "thread_id": {"type": "string"},
+          "received_at": {"type": "string"},
+          "evidence_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+          "company": {"$ref": "#/$defs/grounded_identifier"},
+          "title": {"$ref": "#/$defs/grounded_identifier"},
+          "posting_url": {"anyOf": [{"$ref": "#/$defs/grounded_identifier"}, {"type": "null"}]},
+          "status": {"enum": ["matched", "no_match", "ambiguous", "insufficient_evidence"]},
+          "application_id": {"type": ["string", "null"]}
+        }
+      }
     },
     "calendar_events": {"type": "array", "items": {"type": "string"}},
     "replies": {
@@ -89,5 +108,13 @@
       }
     },
     "reports": {"type": "array", "items": {"type": "string"}}
+  },
+  "$defs": {
+    "grounded_identifier": {
+      "type": ["object", "null"],
+      "required": ["value", "source_span"],
+      "properties": {"value": {"type": "string"}, "source_span": {"type": "string"}},
+      "additionalProperties": false
+    }
   }
 }

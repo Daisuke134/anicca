@@ -102,6 +102,11 @@ case "$RESULT_PATH" in
     exit 2
     ;;
 esac
+"$JOB_SEARCH_PYTHON" -m job_search_loop.gmail_matching \
+  --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
+  --candidates "$CANDIDATES" \
+  --result "$RESULT_PATH" \
+  --output "$EVIDENCE/gmail-match-receipt.json"
 "$JOB_SEARCH_PYTHON" -m job_search_loop.inbox mark \
   --state "$SEEN_STATE" \
   --input "$CANDIDATES" \

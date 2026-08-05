@@ -206,6 +206,15 @@ class Ledger:
                 received_at TEXT NOT NULL,
                 created_at TEXT NOT NULL
             );
+            CREATE TABLE IF NOT EXISTS gmail_application_matches (
+                message_id TEXT PRIMARY KEY,
+                thread_id TEXT NOT NULL,
+                application_id TEXT NOT NULL REFERENCES applications(id),
+                evidence_sha256 TEXT NOT NULL,
+                identifier_sha256 TEXT NOT NULL,
+                received_at TEXT NOT NULL,
+                matched_at TEXT NOT NULL
+            );
             CREATE TABLE IF NOT EXISTS strategy_generations (
                 strategy_generation_id TEXT PRIMARY KEY,
                 parent_generation_id TEXT
@@ -456,6 +465,16 @@ class Ledger:
             BEFORE DELETE ON learning_decisions
             BEGIN
                 SELECT RAISE(ABORT, 'learning decisions are immutable');
+            END;
+            CREATE TRIGGER IF NOT EXISTS gmail_application_matches_no_update
+            BEFORE UPDATE ON gmail_application_matches
+            BEGIN
+                SELECT RAISE(ABORT, 'Gmail application matches are immutable');
+            END;
+            CREATE TRIGGER IF NOT EXISTS gmail_application_matches_no_delete
+            BEFORE DELETE ON gmail_application_matches
+            BEGIN
+                SELECT RAISE(ABORT, 'Gmail application matches are immutable');
             END;
             """
         )
