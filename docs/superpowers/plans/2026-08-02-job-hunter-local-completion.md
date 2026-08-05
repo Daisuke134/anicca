@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-37A` — Activate replay-approved route map
+**Active atomic task:** `L-38` — Immutable Gmail message checkpoint via gog
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1254,7 +1254,21 @@ this spec update → commit/push → Telegram milestone before the next item sta
   minimum quality across all samples plus median performance. Full 277-test suite
   PASS. The candidate has zero writable paths and remains inactive pending L-37A;
   no application, browser, email, Calendar, or Telegram side effect occurred.
-- [ ] **L-37A** — Activate only the route map that passed the replay gate.
+- [x] **L-37A** — Activate only the route map that passed the replay gate.
+  Receipt: the activation controller binds candidate commit, route-config hash,
+  candidate-contained snapshot hash, replay receipt self-hash, exact Luna/Terra
+  model and effort, three samples per route, and all six schema-valid attempts before
+  delegating to the existing atomic release switch. Copied evidence under another
+  commit, route drift, receipt tampering, non-PASS status, missing quality/evidence,
+  or one invalid attempt fails closed; full 280-test suite PASS. Production gate
+  SHA-256 `920275f42d171791f648fc30cfb87d2b2fde940fd9767b8f47917061583f0454`
+  approved replay receipt SHA-256
+  `c48c748726588e1b1241dd81e9b4db67809214c659c0160bf0a771386782cbed`
+  and atomically activated
+  `70debb4faf2fefec06f2afd00acfd6b1d119615e`; previous release
+  `dec99970c5fdc19e5cedc63efe8e73a60122c912` remains rollback-ready. Activation
+  receipt is mode 0600 and daily remains unloaded, so no application, browser,
+  email, Calendar, or Telegram side effect occurred.
 - [ ] **L-38** — Append immutable Gmail message IDs through the deterministic `gog`
   checkpoint.
 - [ ] **L-39** — Match Gmail events to applications or fail closed as ambiguous.
