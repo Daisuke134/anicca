@@ -135,6 +135,32 @@ test("native-pass keeps successful Calendar and Telegram receipts in append-only
   } finally { fs.rmSync(directory, { recursive: true, force: true }); }
 });
 
+test("native-pass migrates the previous successful last result before the next runtime", async () => {
+  const directory = temporaryDirectory();
+  const stateDir = path.join(directory, "state");
+  fs.mkdirSync(stateDir, { recursive: true });
+  fs.writeFileSync(path.join(stateDir, "last-result.json"), JSON.stringify({
+    status: "incomplete",
+    write: {
+      status: "incomplete", outcome: "open_coverage", event_ref: "luma-event://event/pending-one",
+      calendar_event_ref: `calendar-evidence://google/event/${"b".repeat(64)}`,
+      telegram_provider_id: "7372",
+    },
+  }));
+  try {
+    await runNativePass({
+      repoRoot: REPO_ROOT, stateDir, ownerToken: OWNER_TOKEN,
+      config: { tenantId: "dais-local" },
+      runRuntime: async () => ({
+        status: "incomplete", coverage: { counts: { open: 21 } }, continuation: { status: "continue" },
+      }),
+    });
+    const receipt = JSON.parse(fs.readFileSync(path.join(stateDir, "delivery-receipts.jsonl"), "utf8"));
+    assert.equal(receipt.telegram_provider_id, "7372");
+    assert.equal(receipt.event_ref, "luma-event://event/pending-one");
+  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+});
+
 test("launchd run script restores Connector credentials and Telegram owner without a manual env file", () => {
   const source = fs.readFileSync(path.join(REPO_ROOT, "skills/connector/run.sh"), "utf8");
   assert.match(source, /\.openclaw\/\.env/);
