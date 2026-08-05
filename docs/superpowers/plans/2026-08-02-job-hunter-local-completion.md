@@ -2457,8 +2457,12 @@ the resident worker from producing one authoritative application receipt:
         single `Name` field is grounded from `profile.name`. Focused adapter/runtime
         tests and the full Job Hunter suite pass 412/412.
       - Resident proof remains open. The current Asia/Tokyo daily model budget was
-        exhausted by earlier runs, so release activation plus a launchd trigger must
-        first reach the worker after Terra before this task can be checked complete.
+        exhausted by earlier runs. The daily driver now treats an exact Terra
+        `budget_blocked` receipt as a bounded analysis skip, writes explicit empty
+        Terra artifacts, and still runs the deterministic pre-submit worker without
+        increasing the token budget. Any other Terra failure still stops the pass.
+        Release activation plus a launchd trigger must now prove the worker against
+        the real ATS before this task can be checked complete.
 - [ ] **L-49K0C1** — Implement the same-role alternate-route ladder: canonical ATS,
   alternate official employer URL, explicitly accepted recruiting-email application,
   verified public work-address recruiting outreach, then the next eligible role.

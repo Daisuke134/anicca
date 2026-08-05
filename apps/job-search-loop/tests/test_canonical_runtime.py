@@ -116,7 +116,11 @@ if sys.argv[1:2] and sys.argv[1].endswith("agent_runner.py"):
     evidence = pathlib.Path(sys.argv[sys.argv.index("--evidence-dir") + 1])
     evidence.mkdir(parents=True, exist_ok=True)
     task_class = sys.argv[sys.argv.index("--task-class") + 1]
+    runner_rc = %d
     if task_class == "composition-agent":
+        if runner_rc == 75:
+            print(json.dumps({"status": "budget_blocked"}))
+            raise SystemExit(75)
         result = evidence / "result.json"
         result.write_text(
             json.dumps({"status": "ok", "dossiers": [], "blocked": []}) + "\\n",
@@ -132,7 +136,6 @@ if sys.argv[1:2] and sys.argv[1].endswith("agent_runner.py"):
         )
         print(json.dumps({"status": "ok", "result_path": str(result)}))
         raise SystemExit(0)
-    runner_rc = %d
     if runner_rc == 0:
         result = evidence / "result.json"
         result.write_text(
@@ -245,7 +248,7 @@ raise SystemExit(0)
             self.assertEqual(len(terra_results), 1)
             self.assertEqual(terra_results[0].stat().st_mode & 0o777, 0o600)
 
-    def test_daily_browser_worker_has_no_submit_model_budget_failure_path(self):
+    def test_daily_terra_budget_block_still_runs_deterministic_browser_worker(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             result, calls = self._run_daily_with_fake_python(root, 0, 75)
