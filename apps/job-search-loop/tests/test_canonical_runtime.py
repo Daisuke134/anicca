@@ -309,7 +309,7 @@ raise SystemExit(0)
             )
             self.assertEqual(daily["StartInterval"], 3600)
             self.assertNotIn("StartCalendarInterval", daily)
-            self.assertEqual(inbox["StartInterval"], 900)
+            self.assertEqual(inbox["StartInterval"], 300)
             self.assertEqual(
                 learning["StartCalendarInterval"],
                 {"Weekday": 1, "Hour": 9, "Minute": 15},
