@@ -8,8 +8,10 @@ from job_search_loop.ats_liveness import (
     classify_workable_board,
     check_liveness_via_api,
     resolve_ats_api,
+    sweep_candidate_queue,
     write_liveness_receipt,
 )
+from job_search_loop.candidate_queue import CandidateQueue
 
 
 class AtsLivenessTests(unittest.TestCase):
@@ -135,6 +137,54 @@ class AtsLivenessTests(unittest.TestCase):
             self.assertEqual(len(receipt["url_sha256"]), 64)
             self.assertEqual(receipt["result"], "active")
             self.assertEqual(output.stat().st_mode & 0o777, 0o600)
+
+    def test_sweep_rejects_only_expired_and_keeps_active_or_uncertain_pending(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            database = root / "candidate.sqlite3"
+            evidence = root / "evidence"
+            queue = CandidateQueue(database)
+            urls = {
+                "https://jobs.lever.co/acme/live": "active",
+                "https://jobs.lever.co/acme/gone": "expired",
+                "https://jobs.lever.co/acme/uncertain": None,
+                "https://example.com/browser-only": "ignored",
+            }
+            queue.discover(
+                {"url": url, "source": "test", "query_family": "test"}
+                for url in urls
+            )
+            queue.close()
+
+            def check(url):
+                outcome = urls[url]
+                if outcome is None:
+                    return None
+                return {
+                    "result": outcome,
+                    "code": f"lever_api_{outcome}",
+                    "reason": outcome,
+                }
+
+            receipt = sweep_candidate_queue(
+                database,
+                evidence,
+                limit=10,
+                check=check,
+            )
+
+            self.assertEqual(receipt["api_supported_count"], 3)
+            self.assertEqual(receipt["active_count"], 1)
+            self.assertEqual(receipt["expired_count"], 1)
+            self.assertEqual(receipt["inconclusive_count"], 1)
+            queue = CandidateQueue(database)
+            self.assertEqual(queue.summary()["remaining_unverified_count"], 3)
+            queue.close()
+            evidence_text = "".join(
+                path.read_text(encoding="utf-8") for path in evidence.glob("*.json")
+            )
+            self.assertNotIn("jobs.lever.co", evidence_text)
+            self.assertEqual(len(list(evidence.glob("*.json"))), 3)
 
 
 if __name__ == "__main__":

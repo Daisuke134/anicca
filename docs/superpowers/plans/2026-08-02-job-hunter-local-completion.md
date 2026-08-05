@@ -2209,6 +2209,23 @@ the resident worker from producing one authoritative application receipt:
       382/382 pass. The current durable pending queue contains 11 browser-only URLs,
       so completion remains unchecked until a resident run observes an API-supported
       ATS posting and persists its liveness receipt.
+    - Resident evidence: immutable release `0c2179b1b1d0a1afa740bcb8e75dfe3a53f086cf`
+      produced `daily-20260805-235710`. The actor searched 80 links, deduplicated
+      them into the existing 48-link queue, retained 37 rejected / 11 pending, and
+      produced zero ATS-liveness receipts because all pending URLs were browser-only.
+      It returned `not_submitted` with blocker
+      `official_posting_requires_deterministic_normalization`; application count was
+      zero and Telegram again reused message ID 7173. API-2 therefore remains open.
+      The next RED moves ATS sweep execution out of prompt discretion and into the
+      deterministic daily driver before the browser actor.
+    - Implemented after that resident failure: `run-daily.sh` now executes a
+      deterministic pending-queue ATS sweep before acquiring browser ownership or
+      starting the model actor. It writes one URL-hashed receipt per supported ATS
+      attempt, rejects only exact expired results, and leaves active or inconclusive
+      candidates pending for full normalization/browser fallback. Focused tests
+      31/31 and full Job Hunter tests 383/383 pass. Production API-supported receipt
+      proof remains coupled to `SCAN-1`, because the current 11 pending URLs are all
+      browser-only.
   - [ ] `SCAN-1` — Port board-level discovery and normalized job metadata fixtures.
   - [ ] `DEDUP-1` — Port company-role, repost-window, and JD-fingerprint parity.
   - [ ] `GATE-1` — Port cheap knockout pre-scan without weakening local ranking.

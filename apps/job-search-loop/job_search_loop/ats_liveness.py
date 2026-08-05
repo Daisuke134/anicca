@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
 import os
@@ -270,3 +271,87 @@ def write_liveness_receipt(
         temporary.replace(output)
     finally:
         temporary.unlink(missing_ok=True)
+
+
+def sweep_candidate_queue(
+    database: Path,
+    evidence_dir: Path,
+    *,
+    limit: int = 100,
+    check=check_liveness_via_api,
+) -> dict[str, int | str]:
+    from .candidate_queue import CandidateQueue
+
+    evidence_dir = Path(evidence_dir)
+    evidence_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
+    os.chmod(evidence_dir, 0o700)
+    queue = CandidateQueue(database)
+    api_supported = 0
+    active = 0
+    expired = 0
+    inconclusive = 0
+    try:
+        for candidate in queue.pending(limit=limit):
+            raw_url = candidate["url"]
+            if resolve_ats_api(raw_url) is None:
+                continue
+            api_supported += 1
+            result = check(raw_url)
+            if result is None:
+                inconclusive += 1
+                result = {
+                    "result": "pending",
+                    "code": "ats_api_inconclusive",
+                    "reason": "ATS API was inconclusive; browser fallback required",
+                }
+            elif result["result"] == "expired":
+                expired += 1
+                queue.mark_verified(
+                    raw_url,
+                    eligible=False,
+                    reason=result["code"],
+                )
+            else:
+                active += 1
+            digest = hashlib.sha256(raw_url.encode("utf-8")).hexdigest()
+            write_liveness_receipt(
+                evidence_dir / f"ats-liveness-{digest}.json",
+                raw_url,
+                result,
+            )
+        summary = queue.summary()
+    finally:
+        queue.close()
+    return {
+        "status": "complete",
+        "api_supported_count": api_supported,
+        "active_count": active,
+        "expired_count": expired,
+        "inconclusive_count": inconclusive,
+        **summary,
+    }
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("action", choices=("sweep",))
+    parser.add_argument("--database", type=Path, required=True)
+    parser.add_argument("--evidence-dir", type=Path, required=True)
+    parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--limit", type=int, default=100)
+    args = parser.parse_args()
+    receipt = sweep_candidate_queue(
+        args.database,
+        args.evidence_dir,
+        limit=args.limit,
+    )
+    args.output.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    args.output.write_text(
+        json.dumps(receipt, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    os.chmod(args.output, 0o600)
+
+
+if __name__ == "__main__":
+    main()

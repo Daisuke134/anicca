@@ -152,6 +152,11 @@ TERRA_HIGH_RESULT_PATH=$("$JOB_SEARCH_JQ" -er '.result_path' "$EVIDENCE/terra-hi
 export JOB_SEARCH_TERRA_HIGH_RESULT="$EVIDENCE/terra-high-result.json"
 cp "$TERRA_HIGH_RESULT_PATH" "$JOB_SEARCH_TERRA_HIGH_RESULT"
 chmod 600 "$JOB_SEARCH_TERRA_HIGH_RESULT"
+"$JOB_SEARCH_PYTHON" -m job_search_loop.ats_liveness sweep \
+  --database "$JOB_SEARCH_CANDIDATE_QUEUE" \
+  --evidence-dir "$EVIDENCE/ats-liveness" \
+  --output "$EVIDENCE/ats-liveness-sweep.json" \
+  --limit 100
 JOB_SEARCH_BROWSER_FENCE="$JOB_SEARCH_STATE_ROOT/browser-fence"
 "$JOB_SEARCH_PYTHON" -m job_search_loop.browser_owner acquire \
   --identity "job-search:dais" \

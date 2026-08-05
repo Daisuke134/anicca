@@ -74,11 +74,17 @@ class PromptInjectionTests(unittest.TestCase):
     def test_daily_prompt_uses_public_ats_liveness_before_browser(self):
         root = Path(__file__).parents[1]
         prompt = (root / "prompts" / "daily-pass.md").read_text(encoding="utf-8")
+        script = (root / "scripts" / "run-daily.sh").read_text(encoding="utf-8")
         self.assertIn("job_search_loop.ats_liveness", prompt)
         self.assertIn("check_liveness_via_api", prompt)
         self.assertIn("before opening a pending URL in Playwright", prompt)
         self.assertIn("timeout, redirect, 429, 5xx", prompt)
         self.assertIn("must remain pending", prompt)
+        self.assertIn("job_search_loop.ats_liveness sweep", script)
+        self.assertLess(
+            script.index("job_search_loop.ats_liveness sweep"),
+            script.index("--task-class browser-lane-agent"),
+        )
 
     def test_daily_routes_deep_fit_tailoring_and_answers_through_terra_composition(self):
         root = Path(__file__).parents[1]
