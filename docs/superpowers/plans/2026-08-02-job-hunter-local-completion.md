@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-49G` — prove the request/response correlation gate before another live Ashby click
+**Active atomic task:** `L-49` — submit one eligible real Ashby application and store an authoritative receipt
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1707,12 +1707,22 @@ this spec update → commit/push → Telegram milestone before the next item sta
   `f9fdaa773ed77c359ea1c83a8644ce896b54871204bf80f3952fea7e81c06afb`)
   is active with Guardian `healthy` and the approved route SHA unchanged. Daily
   remains unloaded.
-- [ ] **L-49G** — Capture the PII-free submit operation at request time and correlate
+- [x] **L-49G** — Capture the PII-free submit operation at request time and correlate
   the exact Playwright request object to its response. Support both one-operation
   JSON objects and batched JSON arrays, reject response field names and unrelated
   operations, attach capture before the physical click, and fail closed when no
   exact response arrives. Prove this under focused and full tests before another
-  live Ashby application. Daily remains unloaded.
+  live Ashby application. Receipt: `submit_operation_from_payload` accepts exactly
+  one official submit operation from a JSON object or batched array and rejects
+  malformed, unrelated, response-field, and ambiguous multi-submit payloads. Both
+  browser prompts now attach request capture before the click and await that exact
+  request object's response. Focused 18 tests and the full 353-test suite PASS; the
+  full suite completed in 17.149 seconds. Immutable release
+  `1ceac25e1c8da9ba5a9d17adfaee747d7fca26e4` (archive SHA-256
+  `73f04e485b113e5599aacade7ab00f4f917999d405d658e3e72e88fc213c8936`)
+  is active with zero writable paths, release Guardian `healthy`, ledger integrity
+  `ok`, zero active submission claims, and the approved route SHA unchanged. Daily
+  remains unloaded.
 - [ ] **L-50** — Deliver the Ashby application artifacts and receipt to Telegram.
 - [ ] **L-51** — Submit one eligible real Workday application and store its
   authoritative receipt.
