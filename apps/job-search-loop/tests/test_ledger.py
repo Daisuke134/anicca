@@ -540,7 +540,9 @@ class LedgerTests(unittest.TestCase):
             intent.intent_id, intent.fence, "not_submitted"
         )
         self.ledger.connection.execute("DROP TABLE submission_material_receipts")
+        self.ledger.connection.execute("DROP TABLE submission_client_block_receipts")
         self.ledger.connection.execute("DROP TABLE submission_click_phases")
+        self.ledger.connection.execute("DROP TABLE submission_transport_phases")
         self.ledger.connection.execute("DROP TABLE submission_attempts")
         self.ledger.close()
 
@@ -973,6 +975,99 @@ class LedgerTests(unittest.TestCase):
             self.ledger.mark_submission_click_phase(
                 intent.intent_id, intent.fence + 1, "clicked"
             )
+
+    def test_new_submission_starts_before_any_submit_request(self):
+        self._ready()
+        intent = self._claim(
+            self.ledger, self.application_id, "2026-08-05", "transport-before"
+        )
+
+        self.assertEqual(
+            self.ledger.submission_transport_phase(intent.intent_id, intent.fence),
+            "pre_request",
+        )
+
+    def test_proven_recaptcha_block_before_request_is_retryable(self):
+        self._ready()
+        intent = self._claim(
+            self.ledger, self.application_id, "2026-08-05", "recaptcha-blocked"
+        )
+        self.ledger.mark_submission_click_phase(
+            intent.intent_id, intent.fence, "clicked"
+        )
+
+        outcome = self.ledger.complete_client_blocked_submission(
+            intent_id=intent.intent_id,
+            fence=intent.fence,
+            blocker="ashby_recaptcha_before_submit_request",
+            evidence_sha256="a" * 64,
+        )
+
+        self.assertEqual(outcome, "not_submitted")
+        self.assertEqual(self.ledger.current_state(self.application_id), "not_submitted")
+        self.assertEqual(self.ledger.daily_slot_count("2026-08-05"), 0)
+
+    def test_submit_request_started_can_never_be_downgraded_to_client_blocked(self):
+        self._ready()
+        intent = self._claim(
+            self.ledger, self.application_id, "2026-08-05", "request-started"
+        )
+        self.ledger.mark_submission_click_phase(
+            intent.intent_id, intent.fence, "clicked"
+        )
+        self.assertEqual(
+            self.ledger.mark_submission_request_started(
+                intent.intent_id, intent.fence
+            ),
+            "request_started",
+        )
+
+        with self.assertRaises(FenceError):
+            self.ledger.complete_client_blocked_submission(
+                intent_id=intent.intent_id,
+                fence=intent.fence,
+                blocker="ashby_recaptcha_before_submit_request",
+                evidence_sha256="b" * 64,
+            )
+        self.assertEqual(
+            self.ledger.reconcile_interrupted_submission(
+                intent.intent_id, intent.fence
+            ),
+            "submit_unknown",
+        )
+
+    def test_submit_request_phase_is_ordered_and_fenced(self):
+        self._ready()
+        intent = self._claim(
+            self.ledger, self.application_id, "2026-08-05", "transport-order"
+        )
+        with self.assertRaises(FenceError):
+            self.ledger.mark_submission_request_started(
+                intent.intent_id, intent.fence
+            )
+        self.ledger.mark_submission_click_phase(
+            intent.intent_id, intent.fence, "clicked"
+        )
+        with self.assertRaises(FenceError):
+            self.ledger.mark_submission_request_started(
+                intent.intent_id, intent.fence + 1
+            )
+
+    def test_unproven_clicked_attempt_still_becomes_unknown(self):
+        self._ready()
+        intent = self._claim(
+            self.ledger, self.application_id, "2026-08-05", "unproven-clicked"
+        )
+        self.ledger.mark_submission_click_phase(
+            intent.intent_id, intent.fence, "clicked"
+        )
+
+        self.assertEqual(
+            self.ledger.reconcile_interrupted_submission(
+                intent.intent_id, intent.fence
+            ),
+            "submit_unknown",
+        )
 
 
 if __name__ == "__main__":

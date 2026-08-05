@@ -222,6 +222,27 @@ class Ledger:
                 FOREIGN KEY (intent_id, fence)
                     REFERENCES submission_attempts(intent_id, fence)
             );
+            CREATE TABLE IF NOT EXISTS submission_transport_phases (
+                intent_id TEXT NOT NULL,
+                fence INTEGER NOT NULL,
+                phase TEXT NOT NULL CHECK (phase IN
+                    ('pre_request', 'request_started')),
+                updated_at TEXT NOT NULL,
+                PRIMARY KEY (intent_id, fence),
+                FOREIGN KEY (intent_id, fence)
+                    REFERENCES submission_attempts(intent_id, fence)
+            );
+            CREATE TABLE IF NOT EXISTS submission_client_block_receipts (
+                intent_id TEXT NOT NULL,
+                fence INTEGER NOT NULL,
+                blocker TEXT NOT NULL CHECK (blocker IN
+                    ('ashby_recaptcha_before_submit_request')),
+                evidence_sha256 TEXT NOT NULL UNIQUE,
+                recorded_at TEXT NOT NULL,
+                PRIMARY KEY (intent_id, fence),
+                FOREIGN KEY (intent_id, fence)
+                    REFERENCES submission_attempts(intent_id, fence)
+            );
             CREATE TABLE IF NOT EXISTS submission_confirmations (
                 message_id TEXT PRIMARY KEY,
                 thread_id TEXT NOT NULL,
@@ -620,6 +641,20 @@ class Ledger:
                 WHEN 'submitted' THEN 'confirmed'
                 WHEN 'submit_unknown' THEN 'clicked'
                 ELSE 'pre_click'
+              END,
+              COALESCE(completed_at, created_at)
+            FROM submission_attempts
+            """
+        )
+        self.connection.execute(
+            """
+            INSERT OR IGNORE INTO submission_transport_phases
+              (intent_id, fence, phase, updated_at)
+            SELECT intent_id, fence,
+              CASE status
+                WHEN 'submitted' THEN 'request_started'
+                WHEN 'submit_unknown' THEN 'request_started'
+                ELSE 'pre_request'
               END,
               COALESCE(completed_at, created_at)
             FROM submission_attempts
@@ -2439,6 +2474,14 @@ class Ledger:
                 """,
                 (intent.intent_id, intent.fence, claimed_at),
             )
+            self.connection.execute(
+                """
+                INSERT INTO submission_transport_phases
+                  (intent_id, fence, phase, updated_at)
+                VALUES (?, ?, 'pre_request', ?)
+                """,
+                (intent.intent_id, intent.fence, claimed_at),
+            )
             self._transition_in_transaction(
                 application_id,
                 "submit_claimed",
@@ -2566,6 +2609,79 @@ class Ledger:
         if row is None:
             raise FenceError("submission click phase fence does not exist")
         return str(row["phase"])
+
+    def submission_transport_phase(self, intent_id: str, fence: int) -> str:
+        row = self.connection.execute(
+            "SELECT phase FROM submission_transport_phases "
+            "WHERE intent_id = ? AND fence = ?",
+            (intent_id, fence),
+        ).fetchone()
+        if row is None:
+            raise FenceError("submission transport phase fence does not exist")
+        return str(row["phase"])
+
+    def mark_submission_request_started(self, intent_id: str, fence: int) -> str:
+        with self._transaction():
+            attempt = self.connection.execute(
+                "SELECT status FROM submission_attempts "
+                "WHERE intent_id = ? AND fence = ?",
+                (intent_id, fence),
+            ).fetchone()
+            if attempt is None or str(attempt["status"]) != "submit_claimed":
+                raise FenceError("submission transport fence is not active")
+            if self.submission_click_phase(intent_id, fence) != "clicked":
+                raise FenceError("submit request requires a committed click")
+            if self.submission_transport_phase(intent_id, fence) != "pre_request":
+                raise FenceError("submit request has already started")
+            self.connection.execute(
+                "UPDATE submission_transport_phases "
+                "SET phase = 'request_started', updated_at = ? "
+                "WHERE intent_id = ? AND fence = ? AND phase = 'pre_request'",
+                (_now(), intent_id, fence),
+            )
+        return "request_started"
+
+    def complete_client_blocked_submission(
+        self,
+        *,
+        intent_id: str,
+        fence: int,
+        blocker: str,
+        evidence_sha256: str,
+    ) -> str:
+        if blocker != "ashby_recaptcha_before_submit_request":
+            raise ValueError("unsupported client submission blocker")
+        if not re.fullmatch(r"[a-f0-9]{64}", evidence_sha256):
+            raise ValueError("client blocker evidence must be a lowercase SHA-256")
+        with self._transaction():
+            attempt = self.connection.execute(
+                "SELECT status FROM submission_attempts "
+                "WHERE intent_id = ? AND fence = ?",
+                (intent_id, fence),
+            ).fetchone()
+            if attempt is None or str(attempt["status"]) != "submit_claimed":
+                raise FenceError("client blocker fence is not active")
+            if self.submission_click_phase(intent_id, fence) != "clicked":
+                raise FenceError("client blocker requires a committed click")
+            if self.submission_transport_phase(intent_id, fence) != "pre_request":
+                raise FenceError("submit request already started")
+            receipt = self.connection.execute(
+                "SELECT 1 FROM submission_material_receipts "
+                "WHERE intent_id = ? AND fence = ?",
+                (intent_id, fence),
+            ).fetchone()
+            if receipt is None:
+                raise FenceError("submission material receipt is required")
+            self.connection.execute(
+                """
+                INSERT INTO submission_client_block_receipts
+                  (intent_id, fence, blocker, evidence_sha256, recorded_at)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (intent_id, fence, blocker, evidence_sha256, _now()),
+            )
+        self.complete_submission(intent_id, fence, "not_submitted")
+        return "not_submitted"
 
     def mark_submission_click_phase(
         self, intent_id: str, fence: int, phase: str

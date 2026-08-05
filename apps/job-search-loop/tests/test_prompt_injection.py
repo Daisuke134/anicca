@@ -84,6 +84,9 @@ class PromptInjectionTests(unittest.TestCase):
         for prompt in prompts:
             self.assertIn("record_submission_materials", prompt)
             self.assertIn("mark_submission_click_phase", prompt)
+            self.assertIn("mark_submission_request_started", prompt)
+            self.assertIn("complete_client_blocked_submission", prompt)
+            self.assertIn("ashby_recaptcha_before_submit_request", prompt)
             self.assertIn("reconcile_interrupted_submission", prompt)
             self.assertIn("classify_confirmation", prompt)
             self.assertIn("HTTP 200", prompt)
