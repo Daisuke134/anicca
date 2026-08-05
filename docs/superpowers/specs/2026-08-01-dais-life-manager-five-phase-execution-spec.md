@@ -2203,6 +2203,13 @@ page scopeでもrequired inputsを検査し、confirm前の空欄は`LUMA_FORM_I
 provider/detail/runtime focused testは26/26 GREEN、diff checkもGREEN。次はnative launchd実runで、このeventを未送信skipし、
 次候補のLuma receipt、Calendar evidence、Telegram provider IDへ進むことを実証する。
 
+O1B-25進捗52（live write error codeのdurable可観測化）: commit `a7c2bb24d`の5回目native runは
+新しいstateを保存したが、`last-result`のbounded projectionがwrite `error_code`を破棄していたため、
+known form failureとpost-click unverifiedを外から区別できなかった。英大文字・数字・underscore等だけの最大100文字codeを
+allowlistし、message、DOM、form回答、secretを保存せず`last-result.write.error_code`へ保持する。
+native entrypoint testはREDで欠落を再現し、実装後17/17 GREEN、diff checkもGREEN。次のlive runでexact codeを取得し、
+`LUMA_FORM_INPUT_REQUIRED`なら同日次候補継続、別codeならその停止点を次sliceで修復する。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
