@@ -5,7 +5,30 @@
   "properties": {
     "status": {"type": "string", "enum": ["ok", "blocked"]},
     "mode": {"type": "string", "enum": ["dream", "weekly"]},
-    "dream_dossiers": {"type": "array", "items": {"type": "object", "additionalProperties": true}},
+    "dream_dossiers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["job_url", "recommendations"],
+        "properties": {
+          "job_url": {"type": "string"},
+          "recommendations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["text", "fact_ids", "source_spans"],
+              "properties": {
+                "text": {"type": "string"},
+                "fact_ids": {"type": "array", "items": {"type": "string"}},
+                "source_spans": {"type": "array", "items": {"type": "string"}}
+              }
+            }
+          }
+        }
+      }
+    },
     "hypothesis": {
       "type": ["object", "null"],
       "properties": {
