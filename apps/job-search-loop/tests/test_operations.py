@@ -3,6 +3,7 @@ import tempfile
 import unittest
 from datetime import datetime, timezone
 from pathlib import Path
+from unittest.mock import patch
 
 from job_search_loop.calendar_sync import event_key, prep_windows
 from job_search_loop.inbox import (
@@ -12,12 +13,24 @@ from job_search_loop.inbox import (
     mark_threads_seen,
     select_new_recruiting_messages,
     select_new_recruiting_threads,
+    _gmail_threads,
 )
 from job_search_loop.outbox import DeliveryUncertain, Outbox
 from job_search_loop.summary import build_summary
 
 
 class OperationsTests(unittest.TestCase):
+    def test_gog_search_is_read_only_noninteractive_wrapped_and_uses_supported_max_flag(self):
+        completed = type("Completed", (), {"stdout": '{"threads": []}'})()
+        with patch("job_search_loop.inbox.subprocess.run", return_value=completed) as run:
+            self.assertEqual(_gmail_threads("candidate@example.com"), [])
+        argv = run.call_args.args[0]
+        self.assertIn("--wrap-untrusted", argv)
+        self.assertIn("--gmail-no-send", argv)
+        self.assertIn("--no-input", argv)
+        self.assertIn("--max", argv)
+        self.assertNotIn("--limit", argv)
+
     def test_inbox_classification(self):
         self.assertEqual(
             classify_message(
