@@ -34,10 +34,49 @@ class RankingTests(unittest.TestCase):
         self.assertFalse(result.eligible)
         self.assertIn("not_available_from_japan", result.reasons)
 
-    def test_clearance_is_hard_rejected(self):
+    def test_unspecified_clearance_is_flagged_not_blanket_rejected(self):
         result = evaluate(self.jobs["clearance"])
-        self.assertFalse(result.eligible)
-        self.assertIn("clearance_required", result.reasons)
+        self.assertTrue(result.eligible)
+        self.assertIn("clearance_requirement_needs_verification", result.warnings)
+        self.assertEqual(result.clearance_requirement, "unspecified_required")
+        self.assertEqual(result.candidate_clearance_state, "unknown")
+
+    def test_current_clearance_requirement_needs_verified_current_clearance(self):
+        job = Job(
+            company="Regulated AI",
+            title="AI Engineer",
+            url="https://jobs.example.com/current-clearance",
+            location="Tokyo",
+            japan_eligible=True,
+            compensation_min_jpy=10_000_000,
+            clearance_required=True,
+            clearance_requirement="current_required",
+            skills=["agents"],
+            domains=["enterprise_ai"],
+        )
+        unknown = evaluate(job, candidate_clearance_state="unknown")
+        verified = evaluate(job, candidate_clearance_state="verified_current")
+        self.assertFalse(unknown.eligible)
+        self.assertIn("current_clearance_not_verified", unknown.reasons)
+        self.assertTrue(verified.eligible)
+
+    def test_obtainable_clearance_preserves_truthful_unknown_state(self):
+        job = Job(
+            company="Regulated AI",
+            title="AI Engineer",
+            url="https://jobs.example.com/obtainable-clearance",
+            location="Tokyo",
+            japan_eligible=True,
+            compensation_min_jpy=10_000_000,
+            clearance_required=True,
+            clearance_requirement="obtainable_after_hire",
+            skills=["agents"],
+            domains=["enterprise_ai"],
+        )
+        result = evaluate(job, candidate_clearance_state="unknown")
+        self.assertTrue(result.eligible)
+        self.assertIn("clearance_process_required", result.warnings)
+        self.assertNotIn("verified_current", result.reasons)
 
     def test_known_compensation_below_floor_is_hard_rejected(self):
         result = evaluate(self.jobs["low_pay"])
