@@ -97,6 +97,12 @@ The CLI gains account- and product-registry arguments whose defaults are
 `registry/accounts` and `registry/products`. Fixture tests can pass temporary
 registries.
 
+The CLI also gains `--bind-existing-only`. In that mode it performs no Postiz,
+Apify, or TikTok request: it reads the current output ledger, binds and
+validates the complete existing rows, writes them atomically, and emits the
+normal reconciliation/binding report. This is the production migration path;
+normal reconciliation continues to bind every newly fetched row.
+
 ### `measure/native_metrics.py`
 
 No product inference is added here. Its existing propagation contract remains:
