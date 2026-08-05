@@ -102,7 +102,7 @@ async function verifiedNewEventReportInput() {
   const calendar = {
     async findConnectorEvents() { return existingCalendarEvents; },
     async createConnectorEvent() {
-      const created = { id: "private-id", htmlLink: "https://calendar.google.com/calendar/event?eid=opaque" };
+      const created = { id: "private-id", htmlLink: "https://www.google.com/calendar/event?eid=opaque" };
       existingCalendarEvents = [created];
       return created;
     },
@@ -199,7 +199,7 @@ test("verified新規予約は名前・時刻・場所・選定理由とevent/Cal
   assert.match(message, /19:00〜21:00 \/ Shibuya Hall/);
   assert.match(message, /理由: Life Managerをfounderへ見せ/);
   assert.match(message, /イベントページ:\n   https:\/\/luma\.com\/founder-night/);
-  assert.match(message, /Calendar:\n   https:\/\/calendar\.google\.com\/calendar\/event\?eid=opaque/);
+  assert.match(message, /Calendar:\n   https:\/\/www\.google\.com\/calendar\/event\?eid=opaque/);
   assert.match(message, /今回予約し、登録証拠とCalendar登録を照合したevent/);
   assert.doesNotMatch(message, /確認メール/);
   assert.match(message, /未処理の空き: 20日/);

@@ -27,7 +27,8 @@ function googleCalendarUrl(value) {
   let url;
   try { url = new URL(String(value == null ? "" : value)); } catch { invalid(); }
   if (
-    url.protocol !== "https:" || url.hostname !== "calendar.google.com"
+    url.protocol !== "https:"
+    || !["calendar.google.com", "www.google.com"].includes(url.hostname)
     || !url.pathname.startsWith("/calendar/") || url.username || url.password
   ) invalid();
   return url.toString();
