@@ -67,6 +67,35 @@ if ! "$PY" "$EVENT_SYNC" sync-all \
     --fingerprint goal-monitor-event-sync-failed >/dev/null 2>&1 || true
   exit 2
 fi
+
+# A sync incident is a transient operation failure. Once the same canonical writer
+# succeeds again, close only that fingerprinted incident before projecting state;
+# otherwise the old `detected` record permanently trips the repair-SLA watchdog.
+while IFS=$'\t' read -r INCIDENT_ID INCIDENT_PHASE; do
+  [ -n "$INCIDENT_ID" ] || continue
+  case "$INCIDENT_PHASE" in
+    detected) NEXT_PHASES="repair_started repaired verified" ;;
+    repair_started) NEXT_PHASES="repaired verified" ;;
+    repaired) NEXT_PHASES="verified" ;;
+    *) continue ;;
+  esac
+  for NEXT_PHASE in $NEXT_PHASES; do
+    printf '%s\n' "{\"incident_id\":\"$INCIDENT_ID\",\"phase\":\"$NEXT_PHASE\",\"repair_summary\":\"Canonical revenue source sync succeeded on the next live run.\",\"verification\":{\"event_sync_succeeded\":true,\"incident_id\":\"$INCIDENT_ID\"}}" \
+      | "$PY" "$OUTCOME_SCRIPT" transition-incident >/dev/null || exit 2
+  done
+done < <("$PY" - <<'PY'
+import json
+from pathlib import Path
+state = Path.home() / ".openclaw/state/capafy-incidents"
+for path in sorted(state.glob("*.json")):
+    try:
+        record = json.loads(path.read_text())
+    except (OSError, json.JSONDecodeError):
+        continue
+    if record.get("fingerprint") == "goal-monitor-event-sync-failed" and record.get("phase") != "verified":
+        print(f"{record.get('incident_id','')}\t{record.get('phase','')}")
+PY
+)
 if ! "$PY" "$EVENT_PROJECTION" project --ledger "$EVENT_LEDGER" > "$PROJECTION_FILE"; then
   "$PY" "$OUTCOME_SCRIPT" start-incident \
     --owner company --summary "Canonical company projection failed." \
