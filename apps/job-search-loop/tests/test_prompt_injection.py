@@ -98,6 +98,8 @@ class PromptInjectionTests(unittest.TestCase):
     def test_daily_persists_prefilter_candidates_and_sweeps_before_terra(self):
         root = Path(__file__).parents[1]
         script = (root / "scripts" / "run-daily.sh").read_text(encoding="utf-8")
+        self.assertIn("--queue-output", script)
+        self.assertIn("prefilter-queue.json", script)
         self.assertIn("candidate_queue discover-prefilter", script)
         self.assertLess(
             script.index("candidate_queue discover-prefilter"),

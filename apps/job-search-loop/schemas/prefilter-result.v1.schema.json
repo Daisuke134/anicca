@@ -22,6 +22,8 @@
           "compensation_evidence",
           "deadline_evidence",
           "jd_fingerprint",
+          "gate_status",
+          "gate_reasons",
           "source_spans"
         ],
         "properties": {
@@ -37,6 +39,8 @@
           "compensation_evidence": {"type": ["string", "null"]},
           "deadline_evidence": {"type": ["string", "null"]},
           "jd_fingerprint": {"type": "string", "pattern": "^(|[0-9a-f]{16})$"},
+          "gate_status": {"type": "string", "enum": ["pass", "needs_verification", "rejected"]},
+          "gate_reasons": {"type": "array", "items": {"type": "string"}},
           "source_spans": {"type": "array", "items": {"type": "string"}}
         }
       }
