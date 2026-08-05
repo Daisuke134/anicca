@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-36` — Terra high dream/weekly-hypothesis routing
+**Active atomic task:** `L-37` — Immutable Luna/Terra route replay
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1222,7 +1222,23 @@ this spec update → commit/push → Telegram milestone before the next item sta
   `419f86dc2d9312ffa4132e4ba8d82537be24c935cdff071e6ae701347fcfb2de`)
   is active with zero writable paths and rollback retained. Daily remains unloaded;
   no application, email, Calendar, or model-driven outbound side effect occurred.
-- [ ] **L-36** — Route dream applications and weekly hypotheses to Terra high.
+- [x] **L-36** — Route dream applications and weekly hypotheses to Terra high.
+  Receipt: a Job-Hunter-only `job-search-terra-high` route resolves exclusively to
+  GPT-5.6 Terra high, requires a non-empty escalation reason, runs read-only, has no
+  browser or outbound credentials, and leaves shared high-value routes unchanged.
+  The daily pass creates high-depth dossiers only for roles that the committed
+  ranker and portfolio classifier call `dream`; the browser independently rechecks
+  that classification and retains sole submission authority. The weekly pass reads
+  an immutable deterministic decision report and emits exactly one bounded,
+  falsifiable hypothesis without promotion, rollback, strategy mutation, or hard-gate
+  authority. Real-runner weekly E2E proved schema, budget, explicit escalation,
+  mode-0600 receipts, and at-most-once deterministic Telegram delivery. Shared-runner
+  15-test and Job Hunter 271-test suites PASS. Immutable release
+  `dec99970c5fdc19e5cedc63efe8e73a60122c912` (archive SHA-256
+  `cf4cb386c235ff6fe7591e99718c1e72f68b27964654a67d4f609296732652c0`)
+  is active with zero writable paths and rollback retained. Schedulers remain
+  unchanged; no application, email, Calendar, or new production model side effect
+  occurred.
 - [ ] **L-37** — Replay Luna/Terra routes on one immutable snapshot.
 - [ ] **L-37A** — Activate only the route map that passed the replay gate.
 - [ ] **L-38** — Append immutable Gmail message IDs through the deterministic `gog`
