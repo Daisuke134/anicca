@@ -307,7 +307,8 @@ raise SystemExit(0)
                 learning["ProgramArguments"][0],
                 str(private_root / "libexec" / "learning"),
             )
-            self.assertEqual(daily["StartCalendarInterval"], {"Hour": 8, "Minute": 30})
+            self.assertEqual(daily["StartInterval"], 3600)
+            self.assertNotIn("StartCalendarInterval", daily)
             self.assertEqual(inbox["StartInterval"], 900)
             self.assertEqual(
                 learning["StartCalendarInterval"],

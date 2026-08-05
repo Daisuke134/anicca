@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-23` — hourly application LaunchAgent interval
+**Active atomic task:** `L-24` — five-minute inbox LaunchAgent interval
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1028,8 +1028,14 @@ this spec update → commit/push → Telegram milestone before the next item sta
   current-clearance requirement fails unless current possession is verified, and
   verified ineligibility fails; candidate state remains explicit and citizenship is
   never substituted for clearance evidence; focused 18-test and full 235-test suites
-  PASS.
-- [ ] **L-23** — Configure the application LaunchAgent for a 3,600-second interval.
+  PASS. Immutable release `8603b295e1bcd5e715780b72267a58bee2c9c92a`
+  (archive SHA-256
+  `1703460ff4b41a502ebaee90a68766585b0bd676e7b5730e44a213323e3626a0`)
+  is active and proves the three clearance paths from installed code.
+- [x] **L-23** — Configure the application LaunchAgent for a 3,600-second interval.
+  Receipt: daily template and isolated installed plist use only `StartInterval=3600`,
+  the former 08:30 calendar trigger is absent, lane separation remains intact, and
+  focused scheduler plus full 235-test suites PASS.
 - [ ] **L-24** — Configure the inbox LaunchAgent for a 300-second interval.
 - [ ] **L-25** — Enforce the initial ten-confirmed-applications daily cap.
 - [ ] **L-26** — Enforce the daily 2 dream / 5 strong-fit / 3 adjacent portfolio.
