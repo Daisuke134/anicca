@@ -152,6 +152,22 @@ test("auth-aware driver separates target page failure without leaking provider t
   ));
 });
 
+test("auth-aware driver preserves a bounded provider failure classification", async () => {
+  const providerError = new Error("private missing form answer");
+  providerError.code = "LUMA_FORM_INPUT_REQUIRED";
+  providerError.unknownEffect = false;
+  const ready = createAuthAwareLumaDailyDriver({
+    dailyDriver: { async withLumaPage() { throw providerError; } },
+    auth: { async ensureAuthenticated() { return { status: "authenticated" }; } },
+  });
+  await assert.rejects(ready.withLumaPage("https://luma.com/event-one", async () => {}), (error) => (
+    error.code === "LUMA_FORM_INPUT_REQUIRED"
+    && error.unknownEffect === false
+    && error.message === "Luma page unavailable"
+    && !JSON.stringify(error).includes("private missing form answer")
+  ));
+});
+
 test("the worker read-only gate accepts only an already authenticated shared session", async () => {
   const { createReadOnlyLumaSessionAuth } = require("./luma-daily-driver-auth.js");
   for (const [status, accepted] of [["authenticated", true], ["login_required", false], ["unknown", false]]) {
