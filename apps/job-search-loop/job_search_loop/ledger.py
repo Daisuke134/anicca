@@ -51,6 +51,17 @@ APPLICATION_ARTIFACT_KINDS = frozenset(
     }
 )
 APPLICATION_OWNERS = frozenset({"agent", "dais_manual", "recruiter"})
+FOUNDER_OUTREACH_TRANSITIONS = {
+    "researched": frozenset({"contribution_ready", "proposal_ready", "closed"}),
+    "contribution_ready": frozenset({"outreach_sent", "closed"}),
+    "outreach_sent": frozenset({"replied", "closed"}),
+    "replied": frozenset(
+        {"proposal_ready", "paid_trial", "contract", "employment", "closed"}
+    ),
+    "proposal_ready": frozenset({"outreach_sent", "closed"}),
+    "paid_trial": frozenset({"contract", "employment", "closed"}),
+    "contract": frozenset({"employment", "closed"}),
+}
 
 
 class FenceError(RuntimeError):
@@ -151,6 +162,24 @@ class Ledger:
                 evidence_sha256 TEXT NOT NULL UNIQUE,
                 posting_alias TEXT NOT NULL UNIQUE,
                 imported_at TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS founder_outreach_targets (
+                target_id TEXT PRIMARY KEY,
+                company TEXT NOT NULL,
+                relationship_url TEXT NOT NULL UNIQUE,
+                current_state TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS founder_outreach_events (
+                event_id TEXT PRIMARY KEY,
+                target_id TEXT NOT NULL REFERENCES founder_outreach_targets(target_id),
+                from_state TEXT,
+                to_state TEXT NOT NULL,
+                evidence_source TEXT NOT NULL,
+                evidence_id TEXT NOT NULL,
+                evidence_sha256 TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                UNIQUE (target_id, evidence_source, evidence_id, evidence_sha256)
             );
             CREATE TABLE IF NOT EXISTS submission_attempts (
                 intent_id TEXT NOT NULL REFERENCES submit_intents(intent_id),
@@ -332,6 +361,16 @@ class Ledger:
             BEFORE DELETE ON external_application_imports
             BEGIN
                 SELECT RAISE(ABORT, 'external application imports are immutable');
+            END;
+            CREATE TRIGGER IF NOT EXISTS founder_outreach_events_no_update
+            BEFORE UPDATE ON founder_outreach_events
+            BEGIN
+                SELECT RAISE(ABORT, 'founder outreach events are immutable');
+            END;
+            CREATE TRIGGER IF NOT EXISTS founder_outreach_events_no_delete
+            BEFORE DELETE ON founder_outreach_events
+            BEGIN
+                SELECT RAISE(ABORT, 'founder outreach events are immutable');
             END;
             CREATE TRIGGER IF NOT EXISTS application_artifacts_no_delete
             BEFORE DELETE ON application_artifacts
@@ -1301,6 +1340,154 @@ class Ledger:
             "SELECT * FROM external_application_imports ORDER BY imported_at, application_id"
         ).fetchall()
         return [{key: str(row[key]) for key in row.keys()} for row in rows]
+
+    def add_founder_outreach_target(
+        self,
+        *,
+        company: str,
+        relationship_url: str,
+        evidence_source: str,
+        evidence_id: str,
+        evidence_sha256: str,
+    ) -> str:
+        text_values = {
+            "company": company,
+            "relationship_url": relationship_url,
+            "evidence_source": evidence_source,
+            "evidence_id": evidence_id,
+        }
+        for name, value in text_values.items():
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(f"{name} is required")
+        if not re.fullmatch(r"[a-f0-9]{64}", evidence_sha256):
+            raise ValueError("evidence_sha256 must be a lowercase SHA-256")
+        normalized_url = canonical_url(relationship_url)
+        target_id = hashlib.sha256(
+            f"{company.strip().casefold()}\n{normalized_url}".encode("utf-8")
+        ).hexdigest()
+        event_payload = "\n".join(
+            (target_id, "researched", evidence_source.strip(), evidence_id.strip(), evidence_sha256)
+        )
+        event_id = f"founder-event-{hashlib.sha256(event_payload.encode('utf-8')).hexdigest()}"
+        with self._transaction():
+            existing = self.connection.execute(
+                "SELECT target_id, company FROM founder_outreach_targets "
+                "WHERE relationship_url = ?",
+                (normalized_url,),
+            ).fetchone()
+            if existing is not None:
+                if str(existing["target_id"]) != target_id:
+                    raise FenceError("relationship URL is already bound to another target")
+                recorded = self.connection.execute(
+                    "SELECT event_id FROM founder_outreach_events WHERE event_id = ?",
+                    (event_id,),
+                ).fetchone()
+                if recorded is None:
+                    raise FenceError("founder target research evidence conflicts")
+                return target_id
+            created_at = _now()
+            self.connection.execute(
+                "INSERT INTO founder_outreach_targets "
+                "(target_id, company, relationship_url, current_state, created_at) "
+                "VALUES (?, ?, ?, 'researched', ?)",
+                (target_id, company.strip(), normalized_url, created_at),
+            )
+            self.connection.execute(
+                "INSERT INTO founder_outreach_events "
+                "(event_id, target_id, from_state, to_state, evidence_source, "
+                "evidence_id, evidence_sha256, created_at) "
+                "VALUES (?, ?, NULL, 'researched', ?, ?, ?, ?)",
+                (
+                    event_id,
+                    target_id,
+                    evidence_source.strip(),
+                    evidence_id.strip(),
+                    evidence_sha256,
+                    created_at,
+                ),
+            )
+        return target_id
+
+    def transition_founder_outreach(
+        self,
+        *,
+        target_id: str,
+        to_state: str,
+        evidence_source: str,
+        evidence_id: str,
+        evidence_sha256: str,
+    ) -> str:
+        if not re.fullmatch(r"[a-f0-9]{64}", evidence_sha256):
+            raise ValueError("evidence_sha256 must be a lowercase SHA-256")
+        for name, value in {
+            "to_state": to_state,
+            "evidence_source": evidence_source,
+            "evidence_id": evidence_id,
+        }.items():
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(f"{name} is required")
+        event_payload = "\n".join(
+            (target_id, to_state, evidence_source.strip(), evidence_id.strip(), evidence_sha256)
+        )
+        event_id = f"founder-event-{hashlib.sha256(event_payload.encode('utf-8')).hexdigest()}"
+        with self._transaction():
+            replay = self.connection.execute(
+                "SELECT event_id FROM founder_outreach_events WHERE event_id = ?",
+                (event_id,),
+            ).fetchone()
+            if replay is not None:
+                return event_id
+            target = self.connection.execute(
+                "SELECT current_state FROM founder_outreach_targets WHERE target_id = ?",
+                (target_id,),
+            ).fetchone()
+            if target is None:
+                raise KeyError(target_id)
+            from_state = str(target["current_state"])
+            if to_state not in FOUNDER_OUTREACH_TRANSITIONS.get(from_state, frozenset()):
+                raise ValueError(
+                    f"invalid founder outreach transition: {from_state} -> {to_state}"
+                )
+            created_at = _now()
+            self.connection.execute(
+                "UPDATE founder_outreach_targets SET current_state = ? WHERE target_id = ?",
+                (to_state, target_id),
+            )
+            self.connection.execute(
+                "INSERT INTO founder_outreach_events "
+                "(event_id, target_id, from_state, to_state, evidence_source, "
+                "evidence_id, evidence_sha256, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                (
+                    event_id,
+                    target_id,
+                    from_state,
+                    to_state,
+                    evidence_source.strip(),
+                    evidence_id.strip(),
+                    evidence_sha256,
+                    created_at,
+                ),
+            )
+        return event_id
+
+    def founder_outreach_status(self, target_id: str) -> dict[str, str]:
+        row = self.connection.execute(
+            "SELECT * FROM founder_outreach_targets WHERE target_id = ?", (target_id,)
+        ).fetchone()
+        if row is None:
+            raise KeyError(target_id)
+        return {key: str(row[key]) for key in row.keys()}
+
+    def founder_outreach_events(self, target_id: str) -> list[dict[str, str | None]]:
+        rows = self.connection.execute(
+            "SELECT * FROM founder_outreach_events WHERE target_id = ? "
+            "ORDER BY created_at, rowid",
+            (target_id,),
+        ).fetchall()
+        return [
+            {key: (str(row[key]) if row[key] is not None else None) for key in row.keys()}
+            for row in rows
+        ]
 
     def strategy_assignment(self, application_id: str) -> dict[str, Any]:
         row = self.connection.execute(
