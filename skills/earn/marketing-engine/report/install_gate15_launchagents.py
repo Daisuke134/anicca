@@ -1,0 +1,333 @@
+#!/usr/bin/env python3
+"""Plan or install the three Gate 15 owner-report LaunchAgents.
+
+The installer deliberately owns only the ``marketing-owner-*`` labels.  Gate
+16 is responsible for retiring the legacy aggregate reporters after shadow
+evidence is complete; this module never edits or unloads those jobs.
+"""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import os
+import pathlib
+import plistlib
+import shlex
+import subprocess
+import sys
+import tempfile
+from typing import Any
+
+
+HERE = pathlib.Path(__file__).resolve().parent
+REPO_ROOT = HERE.parents[3]
+DEFAULT_HOME = pathlib.Path.home()
+DEFAULT_LAUNCH_DIR = DEFAULT_HOME / "Library" / "LaunchAgents"
+PYTHON = sys.executable
+CLI_RELATIVE = pathlib.Path("skills/earn/marketing-engine/report/owner_report_cli.py")
+STATE_RELATIVE = pathlib.Path("skills/earn/marketing-engine/state")
+LOG_RELATIVE = pathlib.Path("Library/Logs/anicca")
+
+LABELS = (
+    "ai.anicca.marketing-owner-events",
+    "ai.anicca.marketing-owner-daily",
+    "ai.anicca.marketing-owner-weekly",
+)
+EVENT_KINDS = ("action", "checkpoint", "incident", "experiment")
+
+
+def _sha256(payload: bytes) -> str:
+    return hashlib.sha256(payload).hexdigest()
+
+
+def _paths(repo_root: pathlib.Path, home: pathlib.Path) -> tuple[pathlib.Path, pathlib.Path, pathlib.Path]:
+    repo_root = pathlib.Path(repo_root)
+    home = pathlib.Path(home)
+    return repo_root / CLI_RELATIVE, repo_root / STATE_RELATIVE, home / LOG_RELATIVE
+
+
+def _common_job(
+    *,
+    label: str,
+    repo_root: pathlib.Path,
+    home: pathlib.Path,
+    log_dir: pathlib.Path,
+) -> dict[str, Any]:
+    return {
+        "Label": label,
+        "ProcessType": "Background",
+        "RunAtLoad": False,
+        "WorkingDirectory": str(repo_root),
+        "EnvironmentVariables": {
+            "HOME": str(home),
+            "PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/usr/sbin:/bin:/sbin",
+        },
+        "StandardOutPath": str(log_dir / f"{label}.out.log"),
+        "StandardErrorPath": str(log_dir / f"{label}.err.log"),
+    }
+
+
+def _sweep_args(
+    *,
+    python: str,
+    cli: pathlib.Path,
+    state_root: pathlib.Path,
+    kind: str,
+) -> list[str]:
+    return [
+        python,
+        str(cli),
+        "sweep",
+        "--kind",
+        kind,
+        "--state-root",
+        str(state_root),
+    ]
+
+
+def _event_command(
+    *,
+    python: str,
+    cli: pathlib.Path,
+    state_root: pathlib.Path,
+) -> str:
+    # owner_report_cli intentionally accepts one report kind per invocation.
+    # A small shell sequence keeps one 15-minute LaunchAgent while preserving
+    # the CLI's bounded, directly testable interface for each of the four
+    # event sweeps.
+    commands = [shlex.join(_sweep_args(
+        python=python,
+        cli=cli,
+        state_root=state_root,
+        kind=kind,
+    )) for kind in EVENT_KINDS]
+    return "set -eu; " + "; ".join(commands)
+
+
+def build_plists(repo_root: pathlib.Path, home: pathlib.Path) -> dict[str, bytes]:
+    """Return exactly the three Gate 15 LaunchAgent plist payloads.
+
+    ``repo_root`` is explicit so callers can inspect a canonical checkout
+    without accidentally embedding this disposable worktree.  This function
+    is pure: it only renders bytes and does not create directories or write
+    files.
+    """
+
+    repo_root = pathlib.Path(repo_root)
+    home = pathlib.Path(home)
+    cli, state_root, log_dir = _paths(repo_root, home)
+
+    events = _common_job(
+        label=LABELS[0], repo_root=repo_root, home=home, log_dir=log_dir
+    )
+    events["StartInterval"] = 900
+    events["ProgramArguments"] = [
+        "/bin/sh",
+        "-c",
+        _event_command(python=PYTHON, cli=cli, state_root=state_root),
+    ]
+
+    daily = _common_job(
+        label=LABELS[1], repo_root=repo_root, home=home, log_dir=log_dir
+    )
+    daily["StartCalendarInterval"] = {"Hour": 22, "Minute": 0}
+    daily["ProgramArguments"] = _sweep_args(
+        python=PYTHON, cli=cli, state_root=state_root, kind="product_daily"
+    )
+
+    weekly = _common_job(
+        label=LABELS[2], repo_root=repo_root, home=home, log_dir=log_dir
+    )
+    # launchd uses Sunday == 0 for StartCalendarInterval.  No timezone is
+    # embedded; calendar values therefore use the host's local timezone.
+    weekly["StartCalendarInterval"] = {"Weekday": 0, "Hour": 21, "Minute": 0}
+    weekly["ProgramArguments"] = _sweep_args(
+        python=PYTHON, cli=cli, state_root=state_root, kind="portfolio_weekly"
+    )
+
+    jobs = (events, daily, weekly)
+    return {
+        job["Label"]: plistlib.dumps(job, fmt=plistlib.FMT_XML, sort_keys=True)
+        for job in jobs
+    }
+
+
+def _status(path: pathlib.Path, payload: bytes) -> tuple[str, bool, bytes | None]:
+    """Return plan status and current bytes without mutating ``path``."""
+
+    try:
+        current = path.read_bytes()
+    except FileNotFoundError:
+        return "create", True, None
+    if current == payload:
+        return "no-change", False, current
+    return "update", True, current
+
+
+def plan(
+    repo_root: pathlib.Path = REPO_ROOT,
+    home: pathlib.Path = DEFAULT_HOME,
+    launch_dir: pathlib.Path | None = None,
+) -> list[dict[str, Any]]:
+    """Describe create/update/no-change status for the three target files."""
+
+    launch_dir = pathlib.Path(launch_dir) if launch_dir is not None else pathlib.Path(home) / "Library" / "LaunchAgents"
+    payloads = build_plists(repo_root, home)
+    rows: list[dict[str, Any]] = []
+    for label in LABELS:
+        path = launch_dir / f"{label}.plist"
+        payload = payloads[label]
+        status, changed, current = _status(path, payload)
+        rows.append({
+            "label": label,
+            "path": str(path),
+            "status": status,
+            "exists": current is not None,
+            "changed": changed,
+            "current_sha256": _sha256(current) if current is not None else None,
+            "target_sha256": _sha256(payload),
+        })
+    return rows
+
+
+def _atomic_write(path: pathlib.Path, payload: bytes) -> None:
+    path = pathlib.Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, temporary = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
+    try:
+        with os.fdopen(fd, "wb") as handle:
+            handle.write(payload)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, path)
+    finally:
+        if os.path.exists(temporary):
+            os.unlink(temporary)
+
+
+def _run_launchctl(arguments: list[str]) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        ["launchctl", *arguments],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        check=False,
+    )
+
+
+def _reload_and_readback(path: pathlib.Path, label: str) -> dict[str, Any]:
+    """Reload one owned label and prove launchd can print its definition."""
+
+    domain = f"gui/{os.getuid()}"
+    # Bootout is deliberately scoped to the one new owner-report label.  A
+    # missing job is expected on first install and is not an error.
+    bootout = _run_launchctl(["bootout", f"{domain}/{label}"])
+    bootstrap = _run_launchctl(["bootstrap", domain, str(path)])
+    if bootstrap.returncode != 0:
+        detail = (bootstrap.stderr or bootstrap.stdout or "").strip()
+        raise RuntimeError(f"bootstrap failed for {label}: {detail}")
+    kickstart = _run_launchctl(["kickstart", "-k", f"{domain}/{label}"])
+    if kickstart.returncode != 0:
+        detail = (kickstart.stderr or kickstart.stdout or "").strip()
+        raise RuntimeError(f"kickstart failed for {label}: {detail}")
+    readback = _run_launchctl(["print", f"{domain}/{label}"])
+    if readback.returncode != 0:
+        detail = (readback.stderr or readback.stdout or "").strip()
+        raise RuntimeError(f"readback failed for {label}: {detail}")
+    output = readback.stdout or ""
+    return {
+        "bootout_returncode": bootout.returncode,
+        "bootstrap_returncode": bootstrap.returncode,
+        "kickstart_returncode": kickstart.returncode,
+        "loaded_readback": True,
+        "readback_mentions_cli": "owner_report_cli.py" in output,
+    }
+
+
+def apply(
+    repo_root: pathlib.Path = REPO_ROOT,
+    home: pathlib.Path = DEFAULT_HOME,
+    launch_dir: pathlib.Path | None = None,
+) -> list[dict[str, Any]]:
+    """Atomically install and read back only the three owned labels."""
+
+    repo_root = pathlib.Path(repo_root)
+    home = pathlib.Path(home)
+    launch_dir = pathlib.Path(launch_dir) if launch_dir is not None else home / "Library" / "LaunchAgents"
+    payloads = build_plists(repo_root, home)
+    # Ensure launchd's stdout/stderr destinations are writable without touching
+    # any legacy scheduler paths.  Plan mode never calls this function.
+    _cli, _state_root, log_dir = _paths(repo_root, home)
+    log_dir.mkdir(parents=True, exist_ok=True)
+
+    rows: list[dict[str, Any]] = []
+    for label in LABELS:
+        path = launch_dir / f"{label}.plist"
+        payload = payloads[label]
+        status, changed, current = _status(path, payload)
+        if changed:
+            _atomic_write(path, payload)
+        row: dict[str, Any] = {
+            "label": label,
+            "path": str(path),
+            "status": status,
+            "changed": changed,
+            "current_sha256": _sha256(current) if current is not None else None,
+            "installed_sha256": _sha256(payload),
+        }
+        row.update(_reload_and_readback(path, label))
+        rows.append(row)
+    return rows
+
+
+def _write_output(path: pathlib.Path | None, rendered: str) -> None:
+    if path is None:
+        return
+    path = pathlib.Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(rendered, encoding="utf-8")
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    mode = parser.add_mutually_exclusive_group(required=True)
+    mode.add_argument("--plan", action="store_true", help="report changes without writing")
+    mode.add_argument("--apply", action="store_true", help="atomically install and reload owned jobs")
+    parser.add_argument("--repo-root", type=pathlib.Path, default=REPO_ROOT)
+    parser.add_argument("--home", type=pathlib.Path, default=DEFAULT_HOME)
+    parser.add_argument("--launch-dir", type=pathlib.Path)
+    parser.add_argument("--output", type=pathlib.Path)
+    args = parser.parse_args(argv)
+    launch_dir = args.launch_dir
+    if launch_dir is None:
+        launch_dir = args.home / "Library" / "LaunchAgents"
+
+    try:
+        if args.plan:
+            result: dict[str, Any] = {
+                "action": "plan",
+                "repo_root": str(args.repo_root),
+                "launch_dir": str(launch_dir),
+                "rows": plan(args.repo_root, args.home, launch_dir),
+            }
+        else:
+            result = {
+                "action": "apply",
+                "repo_root": str(args.repo_root),
+                "launch_dir": str(launch_dir),
+                "rows": apply(args.repo_root, args.home, launch_dir),
+            }
+    except (OSError, ValueError, RuntimeError, plistlib.InvalidFileException) as exc:
+        print(json.dumps({"status": "failed", "error": str(exc)}, ensure_ascii=False), file=sys.stderr)
+        return 1
+
+    rendered = json.dumps(result, ensure_ascii=False, sort_keys=True, indent=2) + "\n"
+    _write_output(args.output, rendered)
+    print(rendered, end="")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
