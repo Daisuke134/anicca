@@ -79,6 +79,20 @@ class LaunchdTests(unittest.TestCase):
         self.assertIn("daily_quota_reached", script)
         self.assertIn("job_search_loop.quota", script)
 
+    def test_daily_shell_leases_browser_and_registers_release_before_runner(self):
+        root = Path(__file__).parents[1]
+        script = (root / "scripts" / "run-daily.sh").read_text(encoding="utf-8")
+        acquire = "job_search_loop.browser_owner acquire"
+        release = "job_search_loop.browser_owner release"
+        beat = "job_search_loop.browser_owner hold"
+        runner = "--task-class browser-lane-agent"
+        self.assertIn(acquire, script)
+        self.assertIn(release, script)
+        self.assertIn(beat, script)
+        self.assertIn("TRAPEXIT", script)
+        self.assertLess(script.index(acquire), script.index(runner))
+        self.assertLess(script.index("TRAPEXIT"), script.index(runner))
+
     def test_healthcheck_covers_scheduler_ledger_and_private_state(self):
         root = Path(__file__).parents[1]
         script = (root / "scripts" / "healthcheck.sh").read_text(encoding="utf-8")

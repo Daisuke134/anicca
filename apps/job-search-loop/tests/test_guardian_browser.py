@@ -19,8 +19,9 @@ class GuardianBrowserOwnerTests(unittest.TestCase):
             "lease_id": "lease-abc",
             "fence": 4,
             "holder_pid": 123,
+            "browser_pid": 777,
             "acquired_at": "2026-08-05T11:55:00+00:00",
-            "expires_at": "2026-08-05T12:05:00+00:00",
+            "heartbeat_at": "2026-08-05T11:59:00+00:00",
         }
         self.write(self.value)
 
@@ -37,7 +38,7 @@ class GuardianBrowserOwnerTests(unittest.TestCase):
             "endpoint": "http://127.0.0.1:9222",
             "now": datetime(2026, 8, 5, 12, 0, tzinfo=timezone.utc),
             "cdp_probe": lambda endpoint: {"status": "ready"},
-            "listener_reader": lambda port: [{"pid": 123, "address": "127.0.0.1"}],
+            "listener_reader": lambda port: [{"pid": 777, "address": "127.0.0.1"}],
             "pid_alive": lambda pid: pid == 123,
         }
         options.update(overrides)
@@ -51,16 +52,17 @@ class GuardianBrowserOwnerTests(unittest.TestCase):
         self.assertNotIn("lease-abc", str(report))
         self.assertNotIn("123", str(report))
 
-    def test_expired_lease_is_unhealthy(self):
-        self.value["expires_at"] = "2026-08-05T11:59:59+00:00"
+    def test_stale_heartbeat_is_unhealthy(self):
+        self.value["acquired_at"] = "2026-08-05T11:00:00+00:00"
+        self.value["heartbeat_at"] = "2026-08-05T11:29:59+00:00"
         self.write(self.value)
         report = self.health()
-        self.assertIn("browser_owner_lease_expired", report["reasons"])
+        self.assertIn("browser_owner_heartbeat_stale", report["reasons"])
 
     def test_multiple_or_non_loopback_listeners_are_unhealthy(self):
         report = self.health(
             listener_reader=lambda port: [
-                {"pid": 123, "address": "127.0.0.1"},
+                {"pid": 777, "address": "127.0.0.1"},
                 {"pid": 456, "address": "0.0.0.0"},
             ]
         )
