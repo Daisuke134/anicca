@@ -46,10 +46,10 @@ function runLocalAgentRunner(input = {}, deps = {}) {
       ? deps.isRunnerFile
       : (file) => fs.statSync(file).isFile();
     if (!path.isAbsolute(runnerPath) || !isRunnerFile(runnerPath)) unavailable();
-    fs.mkdirSync(evidenceDir, { mode: 0o700 });
+    fs.mkdirSync(evidenceDir, { mode: 0o700, recursive: true });
     fs.chmodSync(evidenceDir, 0o700);
     const schemaPath = path.join(evidenceDir, "schema.json");
-    fs.writeFileSync(schemaPath, `${JSON.stringify(schema)}\n`, { encoding: "utf8", mode: 0o600, flag: "wx" });
+    fs.writeFileSync(schemaPath, `${JSON.stringify(schema)}\n`, { encoding: "utf8", mode: 0o600, flag: "w" });
     const execute = typeof deps.spawnSync === "function" ? deps.spawnSync : spawnSync;
     const completed = execute("python3", [
       runnerPath,
@@ -99,7 +99,7 @@ async function runConnectorLunaJudgment(input = {}, deps = {}) {
       : (request) => runLocalAgentRunner(request, deps);
     const evidenceRoot = absoluteDirectory(input.evidenceDir);
     if (typeof deps.runAgentRunner !== "function") {
-      fs.mkdirSync(evidenceRoot, { mode: 0o700 });
+      fs.mkdirSync(evidenceRoot, { mode: 0o700, recursive: true });
       fs.chmodSync(evidenceRoot, 0o700);
     }
     const invokeLuna = async ({ prompt, schema, timeoutMs }, stage) => {

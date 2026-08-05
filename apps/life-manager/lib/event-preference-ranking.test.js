@@ -195,5 +195,7 @@ test("a structured generator still returns a verified preference ranking", async
   });
   assert.match(request.prompt, /untrusted data/i);
   assert.equal(request.schema.type, "object");
+  assert.equal(request.schema.additionalProperties, false);
+  assert.equal(request.schema.properties.ranked_events.items.additionalProperties, false);
   assert.equal(isVerifiedEventPreferenceRanking(ranking), true);
 });
