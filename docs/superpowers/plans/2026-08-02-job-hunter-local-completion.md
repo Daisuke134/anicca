@@ -256,7 +256,60 @@ Primary workflow references: [setup](https://github.com/MadsLorentzen/ai-job-sea
 [Gmail sync](https://github.com/MadsLorentzen/ai-job-search/blob/v1.3.0/.claude/commands/gmail-sync.md),
 and [interview](https://github.com/MadsLorentzen/ai-job-search/blob/v1.3.0/.claude/commands/interview.md).
 
-### 5.8 Self-improvement contract
+### 5.8 Open-source agent-loop stack
+
+Job Hunter MUST compose existing open-source layers instead of recreating a complete
+agent platform inside prompts. This stack also defines the reusable execution model
+for Writer, CFO, Crypto, Affiliator, and Marketing agents; each product supplies its
+own domain activities, policy, evidence, and optimization objective.
+
+| Layer | Pinned upstream | Treatment | Boundary |
+|---|---|---|---|
+| Career brain | `MadsLorentzen/ai-job-search` v1.3.0 | reuse/adapt | Grounded profile, evaluation, documents, outcomes, Gmail taxonomy, and interview preparation |
+| Job operations | `santifer/career-ops` v1.25.0 | reuse/adapt | Public ATS scan, liveness, repost/cross-listing dedupe, knockout pre-scan, ATS fill knowledge, follow-up, and reporting |
+| Browser executor | `browser-use/browser-use` v0.13.7 | adapt | Execute bounded ATS form workflows through the existing private browser profile; preserve exact screenshots/history but replace its example prompt's guessing and self-asserted success |
+| Durable loop kernel | `temporalio/temporal` v1.31.2 plus Python SDK v1.31.0 | reuse/adapt | Schedule, durable workflow history, retries only for pre-side-effect activities, signals, cancellation, crash recovery, and worker identity |
+| Local safety envelope | Job Hunter ledger and Guardian | retain | Truth, compensation, ownership, provenance, quota, idempotency, exact ATS/Gmail confirmation, Telegram evidence, and no-retry unknown state |
+
+Source contracts:
+
+- Browser Use explicitly supports a job-application task and says its Python library
+  can "run many tasks on a schedule or in parallel"; its MIT engine is adopted, but
+  the published job example's instruction to make a best guess is forbidden.
+  Sources: [Browser Use README](https://github.com/browser-use/browser-use),
+  [job-application example](https://github.com/browser-use/browser-use/blob/v0.13.7/examples/use-cases/apply_to_job.py).
+- Temporal describes workflows as resilient execution that "automatically handles
+  intermittent failures, and retries failed operations" and provides first-class
+  interval schedules. Only deterministic, pre-side-effect Job Hunter activities may
+  use automatic retry.
+  Sources: [Temporal](https://github.com/temporalio/temporal/tree/v1.31.2),
+  [Python schedule example](https://github.com/temporalio/samples-python/blob/main/schedules/start_schedule.py).
+- Career-Ops states "Career-Ops never submits." Its form knowledge is adopted below
+  the local submit fence; its human-submit boundary does not become the Job Hunter
+  product boundary.
+  Source: [Career-Ops ATS Auto-Fill](https://github.com/santifer/career-ops/blob/career-ops-v1.25.0/docs/APPLY_AUTOFILL.md).
+
+Rejected whole-system candidates:
+
+- `feder-cr/Jobs_Applier_AI_Agent_AIHawk` is AGPL, LinkedIn-centered, and states that
+  third-party provider plugins were removed from the public repository. It is a
+  research reference only; Job Hunter does not automate LinkedIn or import its
+  runtime. Source: [AIHawk README](https://github.com/feder-cr/Jobs_Applier_AI_Agent_AIHawk).
+- `billmal071/job-agent` is MIT and resembles the target product, but its current
+  external-ATS implementation force-clicks/JavaScript-clicks Submit, treats generic
+  page text or URL fragments as success, uses non-durable APScheduler, counts dry-run
+  applications, permits blind retry of failed rows, and attempts an hCaptcha checkbox.
+  It is an adversarial comparison fixture, not an executable dependency.
+  Sources: [external ATS implementation](https://github.com/billmal071/job-agent/blob/main/src/job_agent/platforms/external_ats.py),
+  [scheduler](https://github.com/billmal071/job-agent/blob/main/src/job_agent/orchestrator/engine.py),
+  [pipeline](https://github.com/billmal071/job-agent/blob/main/src/job_agent/orchestrator/pipeline.py).
+
+Claude and Codex are builders and observers, never resident operators. They may edit,
+test, release, trigger, and inspect a Temporal-owned worker. Every external side
+effect requires a worker identity and durable workflow/activity receipt; an
+interactive development process cannot mint that authority.
+
+### 5.9 Self-improvement contract
 
 The optimization objective is confirmed interview and offer conversion, not raw
 submission count. Every application freezes its source, query, role family, fit
@@ -1855,11 +1908,23 @@ this spec update → commit/push → Telegram milestone before the next item sta
 - [ ] **L-49K0A** — Pin `santifer/career-ops` v1.25.0, tag commit, tree, license,
   release URL, and file hashes as a second immutable upstream. Do not copy or execute
   unpinned upstream code. Receipt: lock validation and license tests PASS.
+- [ ] **L-49K0A1** — Pin `browser-use/browser-use` v0.13.7, tag commit, tree, MIT
+  license, dependency lock, and the exact job-application example hashes. Record all
+  upstream actions and history/screenshot contracts consumed by Job Hunter.
+- [ ] **L-49K0A2** — Pin `temporalio/temporal` v1.31.2 and `temporalio/sdk-python`
+  v1.31.0 with MIT licenses, server/CLI/SDK artifacts, protocol versions, and local
+  rollback. Prove an isolated local server and Python worker can survive worker
+  restart without duplicating an activity.
 - [ ] **L-49K0B** — Inventory every `career-ops` v1.25.0 capability as `reuse`,
   `adapt`, or `supersede`, including ATS scan providers, liveness, repost/dedup,
   scoring, pipeline, CV fact verification, apply autofill, tracker, outcomes,
   follow-up, weekly digest, Web UI, and automation. Every decision names a local
   contract, owner task, and parity test.
+- [ ] **L-49K0B1** — Inventory Browser Use and Temporal components as `reuse`,
+  `adapt`, or `supersede`. Explicitly supersede Browser Use's best-guess answers,
+  self-reported success, unrestricted Submit action, CAPTCHA handling, and generic
+  retry; explicitly map Temporal workflow/activity/schedule/signal/cancellation/
+  heartbeat/history contracts to the Job Hunter ledger and Guardian.
 - [ ] **L-49K0C** — Port the non-side-effect `career-ops` capabilities that improve
   coverage before another live application: public ATS discovery, liveness,
   cross-listing/repost dedupe, knockout pre-scan, and ATS-specific form-fill
@@ -1868,10 +1933,20 @@ this spec update → commit/push → Telegram milestone before the next item sta
 - [ ] **L-49K0D** — Port `career-ops` tracker, outcome, follow-up, and weekly-digest
   behavior only as projections over the existing event ledger. They MUST NOT become
   a second source of truth or weaken deterministic Gmail matching.
+- [ ] **L-49K0D1** — Replace the prompt-owned Playwright executor with a pinned
+  Browser Use adapter connected to the dedicated CloakBrowser profile. The adapter
+  exposes only locally authorized actions, captures before/after/terminal images,
+  and cannot mark success without an authoritative local confirmation classifier.
+- [ ] **L-49K0D2** — Wrap hourly application, five-minute Gmail, weekly learning,
+  Telegram delivery, and Guardian reconciliation as Temporal workflows/activities.
+  External side effects use explicit idempotency keys and no automatic retry after
+  `action_started`; only deterministic pre-side-effect activities retry.
 - [ ] **L-49K0E** — Prove actor provenance: trigger the installed Job Hunter
-  LaunchAgent on an isolated no-submit fixture and verify that discovery, evaluation,
-  material generation, browser ownership, and receipts identify the resident loop,
-  not the development session. Future live E2E MUST use this trigger-and-observe path.
+  launcher on an isolated no-submit fixture and verify that discovery, evaluation,
+  material generation, browser ownership, Temporal workflow/activity identity, and
+  receipts identify the resident worker, not the development session. Reject direct
+  Codex, Claude, shell, Python, and Playwright attempts to mint Submit authority.
+  Future live E2E MUST use this trigger-and-observe path.
 - [ ] **L-49K** — Replace repeated blind Ashby clicks with a fenced human-confirmation
   handoff when a fully valid form produces no submit request, no reCAPTCHA execution,
   no visible validation error, and no Gmail receipt. The agent may discover, rank,
@@ -2053,6 +2128,9 @@ flowchart TD
 | 24 | `career-ops` second-upstream parity | Pinned v1.25.0 lock, complete adoption matrix, and parity tests for every activated component | MUST pass |
 | 25 | Resident-loop-only live actor | Installed LaunchAgent trigger receipt proves resident runner PID/release/browser fence; development-session live submit is rejected | MUST pass |
 | 26 | Visual application evidence | Three application/fence/URL-bound screenshot hashes plus Telegram provider receipt; missing terminal image cannot confirm submission | MUST pass |
+| 27 | Browser Use executor boundary | Pinned v0.13.7 parity suite rejects guessing, direct success assertion, unrestricted Submit, CAPTCHA action, and unbound screenshots | MUST pass |
+| 28 | Temporal durable loop | Worker-restart, schedule, signal, cancellation, heartbeat, replay, idempotency, and post-side-effect no-retry tests | MUST pass |
+| 29 | Builder/operator separation | Direct interactive processes cannot mint activity/Submit authority; only the registered resident worker produces accepted provenance | MUST pass |
 
 ### E2E judgment
 
