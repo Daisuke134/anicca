@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-49K0B` — inventory Career Ops before porting discovery/form capabilities
+**Active atomic task:** `L-49K0C/API-2` — execute conservative public ATS liveness before browser fallback
 **Status:** The immutable four-lane runtime, hourly/five-minute schedules, grounded
 materials, ownership fences, Gmail ingestion, Telegram outbox, quota accounting, and
 Ashby observation classifier are implemented and tested. The daily LaunchAgent is
@@ -2194,6 +2194,19 @@ the resident worker from producing one authoritative application receipt:
   cross-listing/repost dedupe, knockout pre-scan, and ATS-specific form-fill
   behaviors for Ashby, Greenhouse, Lever, Workable, and Workday. Preserve local
   compensation, truth, authorization, ownership, and evidence gates.
+  - [x] `API-1` — Port strict HTTPS posting-to-public-API resolution for Ashby,
+    Greenhouse, Lever, Workable, and Workday. All API hosts are fixed; unsafe,
+    traversal, credential-bearing, lookalike, and non-HTTPS inputs fall back rather
+    than fetch. Ashby and Workable board-level responses require exact posting
+    membership. Focused tests 12/12 and full Job Hunter tests 377/377 pass.
+  - [ ] `API-2` — Execute bounded no-redirect public API liveness and persist a
+    PII-free receipt. Only exact 200/membership is active and exact 404/410 or board
+    absence is expired; timeout, redirect, 429, 5xx, parse drift, and network error
+    remain pending for browser fallback.
+  - [ ] `SCAN-1` — Port board-level discovery and normalized job metadata fixtures.
+  - [ ] `DEDUP-1` — Port company-role, repost-window, and JD-fingerprint parity.
+  - [ ] `GATE-1` — Port cheap knockout pre-scan without weakening local ranking.
+  - [ ] `FILL-1` — Port ATS-specific non-submit form behavior behind local fences.
 - [ ] **L-49K0C1** — Implement the same-role alternate-route ladder: canonical ATS,
   alternate official employer URL, explicitly accepted recruiting-email application,
   verified public work-address recruiting outreach, then the next eligible role.
