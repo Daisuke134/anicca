@@ -2162,6 +2162,13 @@ Asia/Tokyoの日付を確定、Calendar evidenceを持つ日を`covered_new`と�
 absolute canonical main pathを固定してworktree renderを誤拒否していたtestも、指定`REPO_ROOT`を検証する契約へ修正した。
 次はlive wakeでhistory ID `7372`から`covered_new=1 / open=20`を実測し、同eventを再選択しないことを確認する。
 
+O1B-25進捗47（反復3件目の実配送 / coverage counts可観測化）: 通常scheduleのlaunchd loopは人手の登録・送信なしで
+3件目`luma-event://event/a206zjkz`を処理し、Calendar evidence
+`calendar-evidence://google/event/4ce58f5cb5160cf529ae036a0bd6df632302297e4f5e8c98b0f9ba2fbf8ef4c6`と
+Telegram message ID `7376`をappend-only historyへ保存した。historyは2件目ID `7372`と3件目ID `7376`の2行を保持する。
+次wakeのcoverage復元を外から検証できるよう、last-resultへopen / covered_existing / covered_new / unavailableの
+整数countsだけを追加した。focused 3/3 GREEN。live完了条件は次runで`covered_new >= 2`を観測すること。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 

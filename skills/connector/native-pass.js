@@ -128,7 +128,14 @@ function boundedResult(result) {
       telegram_provider_id: String(result.write.telegram && result.write.telegram.provider_id || ""),
     }
     : null;
-  return Object.freeze({ status, complete, write });
+  const coverageCounts = Object.freeze({
+    open,
+    covered_existing: Number(counts.covered_existing || 0),
+    covered_new: Number(counts.covered_new || 0),
+    unavailable: Number(counts.unavailable || 0),
+  });
+  if (Object.values(coverageCounts).some((value) => !Number.isSafeInteger(value) || value < 0)) unavailable();
+  return Object.freeze({ status, complete, write, coverageCounts });
 }
 
 function appendDeliveryReceipt(stateDir, write) {
@@ -158,7 +165,9 @@ function appendDeliveryReceipt(stateDir, write) {
 function recordLastResult(stateDir, bounded) {
   const file = path.join(stateDir, "last-result.json");
   fs.mkdirSync(stateDir, { recursive: true, mode: 0o700 });
-  fs.writeFileSync(file, `${JSON.stringify({ status: bounded.status, write: bounded.write })}\n`, {
+  fs.writeFileSync(file, `${JSON.stringify({
+    status: bounded.status, coverage_counts: bounded.coverageCounts, write: bounded.write,
+  })}\n`, {
     encoding: "utf8", mode: 0o600,
   });
   appendDeliveryReceipt(stateDir, bounded.write);
