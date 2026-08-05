@@ -150,6 +150,47 @@ class LedgerTests(unittest.TestCase):
                 source_urls=["https://jobs.example.com/42"],
             )
 
+    def test_upskill_projection_rebuilds_from_immutable_ranked_gaps(self):
+        second = self.ledger.add_application(
+            "Second", "AI Engineer", "https://jobs.example.com/43"
+        )
+        self.ledger.record_ranked_gaps(
+            application_id=self.application_id,
+            score=80,
+            gaps=["Kubernetes", "Advanced Python"],
+            evidence_sha256="1" * 64,
+        )
+        self.ledger.record_ranked_gaps(
+            application_id=second,
+            score=60,
+            gaps=["Kubernetes", "MLOps"],
+            evidence_sha256="2" * 64,
+        )
+
+        projection = self.ledger.upskill_projection(profile_skills=["Python"])
+
+        self.assertEqual(projection["analysed_jobs"], 2)
+        self.assertEqual(projection["jobs_without_recorded_gaps"], 0)
+        self.assertEqual(
+            [(row["gap"], row["job_count"], row["weighted_score"]) for row in projection["gaps"]],
+            [("Kubernetes", 2, 0.6), ("MLOps", 1, 0.4)],
+        )
+        self.assertNotIn("Advanced Python", json.dumps(projection))
+        self.assertEqual(len(projection["projection_sha256"]), 64)
+        replay = self.ledger.upskill_projection(profile_skills=["Python"])
+        self.assertEqual(replay, projection)
+        with self.assertRaises(Exception):
+            self.ledger.connection.execute(
+                "UPDATE application_ranked_gaps SET score=100 WHERE application_id=?",
+                (self.application_id,),
+            )
+
+    def test_upskill_projection_counts_jobs_without_persisted_gaps_without_guessing(self):
+        projection = self.ledger.upskill_projection(profile_skills=[])
+        self.assertEqual(projection["analysed_jobs"], 0)
+        self.assertEqual(projection["jobs_without_recorded_gaps"], 1)
+        self.assertEqual(projection["gaps"], [])
+
     def test_followups_are_due_after_ten_days_and_capped_at_two(self):
         self._ready()
         intent = self._claim(
