@@ -50,6 +50,7 @@ APPLICATION_ARTIFACT_KINDS = frozenset(
         "answers_draft",
     }
 )
+APPLICATION_OWNERS = frozenset({"agent", "dais_manual", "recruiter"})
 
 
 class FenceError(RuntimeError):
@@ -92,6 +93,8 @@ class Ledger:
                 company TEXT NOT NULL,
                 title TEXT NOT NULL,
                 canonical_url TEXT NOT NULL,
+                owner TEXT NOT NULL DEFAULT 'agent'
+                    CHECK (owner IN ('agent', 'dais_manual', 'recruiter')),
                 current_state TEXT NOT NULL,
                 created_at TEXT NOT NULL
             );
@@ -302,6 +305,12 @@ class Ledger:
             BEGIN
                 SELECT RAISE(ABORT, 'daily quota events are immutable');
             END;
+            CREATE TRIGGER IF NOT EXISTS applications_owner_no_update
+            BEFORE UPDATE OF owner ON applications
+            WHEN NEW.owner != OLD.owner
+            BEGIN
+                SELECT RAISE(ABORT, 'application owner is immutable');
+            END;
             CREATE TRIGGER IF NOT EXISTS application_artifacts_no_delete
             BEFORE DELETE ON application_artifacts
             BEGIN
@@ -390,6 +399,16 @@ class Ledger:
             """
         )
         self._migrate_funnel_outcome_evidence_constraint()
+        application_columns = {
+            str(row["name"])
+            for row in self.connection.execute("PRAGMA table_info(applications)")
+        }
+        if "owner" not in application_columns:
+            self.connection.execute(
+                "ALTER TABLE applications ADD COLUMN owner TEXT NOT NULL "
+                "DEFAULT 'agent' CHECK (owner IN "
+                "('agent', 'dais_manual', 'recruiter'))"
+            )
         intent_columns = {
             str(row["name"])
             for row in self.connection.execute("PRAGMA table_info(submit_intents)")
@@ -567,7 +586,16 @@ class Ledger:
             ),
         )
 
-    def add_application(self, company: str, title: str, url: str) -> str:
+    def add_application(
+        self,
+        company: str,
+        title: str,
+        url: str,
+        *,
+        owner: str = "agent",
+    ) -> str:
+        if owner not in APPLICATION_OWNERS:
+            raise ValueError("owner must be agent, dais_manual, or recruiter")
         application_id = canonical_job_id(company, title, url)
         with self._transaction():
             existing = self.connection.execute(
@@ -578,14 +606,15 @@ class Ledger:
                 self.connection.execute(
                     """
                     INSERT INTO applications
-                      (id, company, title, canonical_url, current_state, created_at)
-                    VALUES (?, ?, ?, ?, 'discovered', ?)
+                      (id, company, title, canonical_url, owner, current_state, created_at)
+                    VALUES (?, ?, ?, ?, ?, 'discovered', ?)
                     """,
                     (
                         application_id,
                         company.strip(),
                         title.strip(),
                         canonical_url(url),
+                        owner,
                         created_at,
                     ),
                 )
@@ -999,8 +1028,8 @@ class Ledger:
                 self.connection.execute(
                     """
                     INSERT INTO applications
-                      (id, company, title, canonical_url, current_state, created_at)
-                    VALUES (?, ?, ?, ?, 'discovered', ?)
+                      (id, company, title, canonical_url, owner, current_state, created_at)
+                    VALUES (?, ?, ?, ?, 'agent', 'discovered', ?)
                     """,
                     (
                         application_id,
@@ -1338,6 +1367,15 @@ class Ledger:
             raise KeyError(application_id)
         return str(row["current_state"])
 
+    def application_owner(self, application_id: str) -> str:
+        row = self.connection.execute(
+            "SELECT owner FROM applications WHERE id = ?",
+            (application_id,),
+        ).fetchone()
+        if row is None:
+            raise KeyError(application_id)
+        return str(row["owner"])
+
     def daily_slot_count(self, japan_day: str) -> int:
         row = self.connection.execute(
             "SELECT COUNT(*) AS count FROM daily_slots WHERE japan_day = ?",
@@ -1566,6 +1604,7 @@ class Ledger:
             """
             SELECT
               applications.canonical_url,
+              applications.owner,
               applications.current_state,
               submit_intents.status AS submission_state
             FROM applications
@@ -1577,6 +1616,7 @@ class Ledger:
         return [
             {
                 "canonical_url": str(row["canonical_url"]),
+                "owner": str(row["owner"]),
                 "current_state": str(row["current_state"]),
                 "submission_state": (
                     str(row["submission_state"])
