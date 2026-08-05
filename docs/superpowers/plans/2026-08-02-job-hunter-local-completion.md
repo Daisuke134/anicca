@@ -2393,6 +2393,12 @@ the resident worker from producing one authoritative application receipt:
         12 bounded Terra candidates: seven ranking-ready (two dream, three
         strong-fit, two adjacent), with scores 75–95. All 12 compensation values
         remained explicit `unknown`; none was converted to zero or invented.
+      - Resident proof: immutable release
+        `a4d1a49fe68fb6b9886fdeb4424a799e506f1644`, run
+        `daily-20260806-082606`, reproduced seven ranking-ready candidates with the
+        same 2/3/2 portfolio split before any model ran. Terra was then correctly
+        blocked by the already-exhausted daily token budget and launchd exited 75;
+        the run performed no browser action and produced no application claim.
     - [ ] `FILL-1B` — Replace model-authored temporary browser scripts with one
       release-contained browser worker. Enforce one worker per run and one atomic
       ledger claim per cross-route role key before opening or filling an ATS.
