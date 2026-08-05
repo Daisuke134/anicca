@@ -999,7 +999,10 @@ this spec update → commit/push → Telegram milestone before the next item sta
   Receipt: committed strategy, runtime settings, and ranker agree on JPY 8M hard
   floor and JPY 10M target, retain JPY 30M stretch, reject known compensation below
   floor, award partial compensation fit below target, and expose all three values to
-  runtime consumers; focused 20-test and full 229-test suites PASS.
+  runtime consumers; focused 20-test and full 229-test suites PASS. Immutable release
+  `a952b2dfe959417310d4dbb718e386bb8a40e5dc` (archive SHA-256
+  `31a83f0b5bf1f984ca8bf319b9f0abedc6c073625bfb537b5baa98e4b8396399`)
+  is active with zero writable paths, and the prior release remains `previous`.
 - [ ] **L-20** — Implement timestamped BOJ-rate USD 100K classification.
 - [ ] **L-21** — Implement travel-positive ranking.
 - [ ] **L-22** — Replace blanket clearance rejection with truthful clearance-state
