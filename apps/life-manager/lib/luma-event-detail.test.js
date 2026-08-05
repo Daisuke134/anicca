@@ -138,6 +138,7 @@ test("missing public attendee metadata remains explicitly unavailable without in
 test("classifies registered, closed, waitlist, full, approval, and unknown controls exactly", () => {
   assert.equal(normalizeLumaEventDetail(fixture({ controls: ["参加予定"] })).rsvp_status, "registered");
   assert.equal(normalizeLumaEventDetail(fixture({ controls: ["マイチケット"] })).rsvp_status, "registered");
+  assert.equal(normalizeLumaEventDetail(fixture({ controls: ["承認待ち"] })).rsvp_status, "registered");
   assert.equal(normalizeLumaEventDetail(fixture({ controls: ["参加登録受付終了"] })).rsvp_status, "closed");
   assert.equal(normalizeLumaEventDetail(fixture({ controls: ["Registration Closed"] })).rsvp_status, "closed");
   assert.equal(normalizeLumaEventDetail(fixture({ controls: ["Join Waitlist"] })).rsvp_status, "waitlist");
