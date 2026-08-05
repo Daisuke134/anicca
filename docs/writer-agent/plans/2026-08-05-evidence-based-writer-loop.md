@@ -83,3 +83,57 @@ receipt exist.
    canary, and revenue gates in SSOT order.
 5. For every implementation slice: RED, GREEN, focused regression, full Writer
    regression, live owner E2E, receipt update, commit, and push.
+
+## Task 0: Restore the truthful green baseline
+
+The runtime contract is Terra medium, but one historical test still expects
+Luna xhigh. Change only that stale expectation and its name so the test asserts
+the current model/effort boundary. Run the focused model-runner test and the
+complete Writer suite. This task changes no production behavior.
+
+Done receipt: focused test passes; complete Writer suite has zero failures; the
+diff changes only the stale test contract; commit and push exist.
+
+## Task 1: Prove terminal quality releases the next JST day
+
+Use the live hash-bound terminal run as input. Prove today's terminal miss is
+closed, tomorrow's decision is `new`, no publication state or destination
+ledger row exists, and no provider invocation is added. Add a real behavior
+test only if the existing suite does not already protect this exact transition.
+
+Done receipt: focused automated coverage plus live-state read-only output. This
+does not claim the future scheduled launch occurred before its real clock time.
+
+## Task 2: Prove active-six isolation and no forced publication
+
+Write RED behavior tests first. A current-hash ineligible artifact creates no
+publication intent; a quality-eligible artifact creates all active-six intents;
+one destination failure leaves the other five owned and recoverable; dormant X
+Post JA and X Article EN produce explicit skip receipts without an SLO breach.
+
+Done receipt: RED observed, minimal GREEN implementation, focused and full
+Writer regression, live owner E2E, commit and push.
+
+## Task 3: Replace vendor-biased topic authority
+
+Write RED behavior tests first. Collect paid-market, reader-demand, publisher,
+and owned-funnel observations; limit source-family concentration; bind buyer,
+problem, transformation, deliverable, price hypothesis, distribution path,
+and multiple full source bodies to each selected card. Read X Article bodies
+from the rendered CDP DOM when selected. Produce one live JA/EN article from a
+paid-demand card and dispatch it only after current-hash eligibility.
+
+Done receipt: source-family fixtures, one live selected card, source-body
+hashes, prompt hash, bilingual article hashes, active-six public readbacks,
+commit and push.
+
+## Task 4: Close revenue, reporting, and learning gates
+
+Deploy public Money Control parity, advance publisher opportunities, collect
+the first external note/Substack/self-owned/retainer receipts, and run one
+matched one-variable learning canary. Keep one-time revenue separate from MRR.
+Advance $1, $400, $1K, $10K monthly, and $10K active MRR only from their exact
+external receipts.
+
+Done receipt: each SSOT gate passes in order; no projection, internal transfer,
+test payment, view, or one-time sale is counted as MRR.
