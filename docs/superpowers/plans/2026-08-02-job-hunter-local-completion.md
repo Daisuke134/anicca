@@ -38,6 +38,11 @@ were suppressed. Resident release `c84a2f863`, run `daily-20260806-010005`, then
 suppressed 80/80 repeated candidates without growing the 128-link queue and executed
 ATS liveness before Terra, completing DEDUP-1. GATE-1 is next because Terra still
 lacks exact JD source spans for grounded fit decisions.
+GATE-1 is implemented locally: all 80 leads remain in a private queue artifact while
+Terra receives a 12-candidate, 19KB shortlist containing only explicit title-relevant
+roles, all 12 with Japan evidence and exact title/location/description source spans.
+Unknown compensation remains eligible for verification; only an explicit JPY maximum
+below 8,000,000 is rejected. Full tests pass 402/402; resident proof remains open.
 The authoritative ledger still has zero current submission confirmations. Historical
 `submitted` projection rows are not current authoritative confirmation.
 Development-session browser runs are verification evidence only and MUST NOT be
@@ -2346,6 +2351,19 @@ the resident worker from producing one authoritative application receipt:
       only after the sweep receipt existed. Thus repeated hourly discovery no longer
       grows the queue, and an ambiguous API result is not silently rejected.
   - [ ] `GATE-1` — Port cheap knockout pre-scan without weakening local ranking.
+    - Implemented locally from Career Ops' conservative salary/content/country/visa
+      filter semantics: missing public facts remain `needs_verification`; only an
+      explicit JPY range whose maximum is below 8,000,000 is rejected at this stage.
+      Title relevance and Japan location add deterministic priority without deleting
+      the rest of the discovery set.
+    - Prefilter output is now split: a mode-0600 112KB queue artifact retains all 80
+      live candidates, while a mode-0600 19KB Terra artifact contains the top 12.
+      In the live read-only proof, all 12 shortlisted roles had explicit relevant
+      titles, Japan/Tokyo location evidence, and official-URL-bound exact title,
+      location, and description source spans; zero of the 80 were rejected for
+      unknown compensation. Focused tests 29/29, shell syntax, and the full Job
+      Hunter suite 402/402 pass. Resident dossier and downstream browser proof remain
+      required before completion.
   - [ ] `FILL-1` — Port ATS-specific non-submit form behavior behind local fences.
 - [ ] **L-49K0C1** — Implement the same-role alternate-route ladder: canonical ATS,
   alternate official employer URL, explicitly accepted recruiting-email application,

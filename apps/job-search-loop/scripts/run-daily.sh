@@ -79,16 +79,19 @@ export ANICCA_LOOP_DAILY_TOKEN_BUDGET=1048576
 export ANICCA_BUDGET_DAILY_SCOPE="job-search-daily"
 export ANICCA_BUDGET_DAY_TZ="Asia/Tokyo"
 export JOB_SEARCH_PREFILTER_RESULT="$EVIDENCE/prefilter-result.json"
+JOB_SEARCH_PREFILTER_QUEUE="$EVIDENCE/prefilter-queue.json"
 "$JOB_SEARCH_PYTHON" -m job_search_loop.prefilter \
   --recovery-plan "$JOB_SEARCH_RECOVERY_PLAN" \
   --framework-root "$JOB_SEARCH_FRAMEWORK_ROOT" \
+  --queue-output "$JOB_SEARCH_PREFILTER_QUEUE" \
   --output "$JOB_SEARCH_PREFILTER_RESULT" \
   >"$EVIDENCE/prefilter-runner.json"
 chmod 600 "$EVIDENCE/prefilter-runner.json"
 chmod 600 "$JOB_SEARCH_PREFILTER_RESULT"
+chmod 600 "$JOB_SEARCH_PREFILTER_QUEUE"
 "$JOB_SEARCH_PYTHON" -m job_search_loop.candidate_queue discover-prefilter \
   --database "$JOB_SEARCH_CANDIDATE_QUEUE" \
-  --input "$JOB_SEARCH_PREFILTER_RESULT" \
+  --input "$JOB_SEARCH_PREFILTER_QUEUE" \
   --output "$EVIDENCE/prefilter-candidate-receipt.json"
 chmod 600 "$EVIDENCE/prefilter-candidate-receipt.json"
 "$JOB_SEARCH_PYTHON" -m job_search_loop.ats_liveness sweep \

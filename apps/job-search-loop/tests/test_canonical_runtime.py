@@ -64,17 +64,16 @@ if sys.argv[1:3] == ["-m", "job_search_loop.summary"]:
 if sys.argv[1:3] == ["-m", "job_search_loop.prefilter"]:
     output = pathlib.Path(sys.argv[sys.argv.index("--output") + 1])
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(
-        json.dumps(
-            {
-                "status": "browser_fallback_required",
-                "candidates": [],
-                "provider_results": [],
-                "blocked": [],
-            }
-        ) + "\\n",
-        encoding="utf-8",
-    )
+    payload = {
+        "status": "browser_fallback_required",
+        "candidates": [],
+        "provider_results": [],
+        "blocked": [],
+    }
+    output.write_text(json.dumps(payload) + "\\n", encoding="utf-8")
+    if "--queue-output" in sys.argv:
+        queue_output = pathlib.Path(sys.argv[sys.argv.index("--queue-output") + 1])
+        queue_output.write_text(json.dumps(payload) + "\\n", encoding="utf-8")
     print(json.dumps({"status": "browser_fallback_required", "candidate_count": 0}))
     raise SystemExit(0)
 if sys.argv[1:4] == ["-m", "job_search_loop.candidate_queue", "discover-prefilter"]:

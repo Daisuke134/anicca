@@ -9,6 +9,7 @@ from typing import Any, Callable
 
 from .discovery import _default_providers, search_jobs
 from .dedup import fingerprint_text
+from .knockout import assess_candidate, shortlist_candidates
 from .state import canonical_url
 
 
@@ -87,7 +88,7 @@ def build_prefilter_result(
                 continue
             location = str(row.get("location") or "").strip() or None
             description = row.get("description")
-            candidates_by_url[normalized_url] = {
+            candidate = {
                 "bucket": query_item.get("bucket"),
                 "language": query_item.get("language"),
                 "provider": row.get("discovery_provider"),
@@ -102,8 +103,17 @@ def build_prefilter_result(
                 "compensation_evidence": None,
                 "deadline_evidence": None,
                 "jd_fingerprint": fingerprint_text(description),
-                "source_spans": [normalized_url],
             }
+            candidate.update(
+                assess_candidate(
+                    {
+                        **candidate,
+                        "url": normalized_url,
+                        "description": description,
+                    }
+                )
+            )
+            candidates_by_url[normalized_url] = candidate
     candidates = list(candidates_by_url.values())
     return {
         "status": "usable" if candidates else "browser_fallback_required",
@@ -131,6 +141,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--recovery-plan", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--queue-output", type=Path)
     parser.add_argument("--framework-root", type=Path, required=True)
     args = parser.parse_args()
     plan = json.loads(args.recovery_plan.read_text(encoding="utf-8"))
@@ -146,13 +157,20 @@ def main() -> None:
             ),
         )
 
-    result = build_prefilter_result(plan, search=search)
+    queue_result = build_prefilter_result(plan, search=search)
+    result = {
+        **queue_result,
+        "candidates": shortlist_candidates(queue_result["candidates"], limit=12),
+    }
+    if args.queue_output is not None:
+        _write_private_json(args.queue_output, queue_result)
     _write_private_json(args.output, result)
     print(
         json.dumps(
             {
                 "status": result["status"],
                 "candidate_count": len(result["candidates"]),
+                "queue_candidate_count": len(queue_result["candidates"]),
                 "provider_result_count": len(result["provider_results"]),
             },
             sort_keys=True,

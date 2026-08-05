@@ -46,7 +46,12 @@ class DeterministicPrefilterTests(unittest.TestCase):
         candidate = result["candidates"][0]
         self.assertEqual(candidate["bucket"], "dream")
         self.assertEqual(candidate["japan_eligibility_evidence"], "Tokyo, Japan")
-        self.assertEqual(candidate["source_spans"], [candidate["official_url"]])
+        self.assertTrue(
+            any("#title=AI Deployment Engineer" in span for span in candidate["source_spans"])
+        )
+        self.assertTrue(
+            any("#location=Tokyo" in span for span in candidate["source_spans"])
+        )
         self.assertRegex(candidate["jd_fingerprint"], r"^[0-9a-f]{16}$")
         self.assertEqual(len(result["provider_results"]), 2)
         self.assertTrue(all("results" not in row for row in result["provider_results"]))
