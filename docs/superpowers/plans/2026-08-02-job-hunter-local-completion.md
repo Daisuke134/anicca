@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-40` — Persist exact submitted application artifacts
+**Active atomic task:** `L-41` — Rebuild summary.v2 exclusively from the event ledger
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1309,8 +1309,26 @@ this spec update → commit/push → Telegram milestone before the next item sta
   zero without Calendar or reply side effects. Immediate replay found zero new mail,
   made zero model attempts, preserved three decisions and six checkpoint IDs, and
   exited zero. Daily remains intentionally unloaded.
-- [ ] **L-40** — Persist exact submitted resume, cover letter, and employer answers
-  for each application.
+- [x] **L-40** — Persist exact submitted resume, cover letter, and employer answers
+  for each application. Receipt: every browser submission must persist an immutable
+  material receipt keyed by the exact `intent_id + fence` after filling and before
+  the submit click. The ledger rereads and hashes the selected resume, stores the
+  complete cover-letter text or an explicit null, canonicalizes every exact employer
+  question/answer with approved fact IDs, and binds the whole payload to a SHA-256.
+  `submitted` and `submit_unknown` fail closed without that receipt; exact replay is
+  idempotent before or after completion, while changed resume, letter, answer,
+  intent, or fence is rejected. No-update/no-delete triggers protect the receipt.
+  Related 48-test and full 293-test suites PASS. A production-ledger copy migrated
+  with `integrity_check=ok`, preserved six applications and eight submission
+  attempts, added the empty receipt table plus two immutability triggers, and left
+  production SHA unchanged. Isolated production-shaped E2E proved unrecorded submit
+  rejection, successful submit only after an exact receipt, valid receipt SHA,
+  blocked direct update/delete, database integrity, and unchanged production ledger.
+  Immutable release `19045067c869cf5d384ed31d979f36ad39794c5c`
+  (archive SHA-256
+  `74138c45fd9069b5f477caa1c38365f794995e5a0b437b02684117f1ca513062`)
+  is active with zero writable paths and unchanged replay-approved model routes.
+  Daily remains intentionally unloaded; no real application was submitted in L-40.
 - [ ] **L-41** — Rebuild `summary.v2` exclusively from the event ledger.
 - [ ] **L-42** — Expose explicit funnel numerators and denominators in the tracker.
 - [ ] **L-43** — Render the Telegram daily pipeline projection from `summary.v2`.
