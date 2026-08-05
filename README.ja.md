@@ -38,9 +38,15 @@ Docker が必要です。ローカルスタックは Postgres + object store + A
 
 ```bash
 git clone https://github.com/Daisuke134/life-manager ~/life-manager && cd ~/life-manager
-cp deploy/local/.env.example deploy/local/.env     # port と、ローカル専用の object-store 認証情報
-docker compose -f deploy/local/compose.yaml up -d --build
-docker compose -f deploy/local/compose.yaml ps     # postgres · object-store · api · scheduler · worker
+./scripts/local-up.sh
+```
+
+これだけです。`deploy/local/.env` が無ければ作り（object store のパスワードは同梱せずその場で生成）、postgres · object store · api · scheduler · worker を起動し、**全サービスが healthy になるまで待ってから**結果を表示します。つまり「起動した」は「リクエストを処理できる」の意味で、コンテナが存在するだけの状態を成功と呼びません。初回はイメージのビルドで数分かかります。
+
+```
+./scripts/local-up.sh status    何が動いているか
+./scripts/local-up.sh logs      ログを追う
+./scripts/local-up.sh down      止める（dataは残る）
 ```
 
 API は `http://localhost:18788`、worker の health は `:18790`（どちらも `deploy/local/.env` で変更可）。data はローカルの Postgres と object store に置かれ、**これを動かすだけでは何もどこにも送信されません**。
