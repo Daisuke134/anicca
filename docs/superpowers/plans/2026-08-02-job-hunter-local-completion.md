@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-49K0A1F` — repair the Codex prefilter response schema, deploy it, and prove the resident loop reaches the application actor
+**Active atomic task:** `L-49K0A2` — pin Temporal Server and Python SDK and prove restart-safe local execution
 **Status:** The immutable four-lane runtime, hourly/five-minute schedules, grounded
 materials, ownership fences, Gmail ingestion, Telegram outbox, quota accounting, and
 Ashby observation classifier are implemented and tested. The daily application
@@ -2030,12 +2030,23 @@ this spec update → commit/push → Telegram milestone before the next item sta
   Action registry, agent history, screenshot, and job-application example source
   paths are recorded. Focused RED detected the missing upstream; focused GREEN and
   dependency-lock replay PASS. No Browser Use code is imported, executed, or active.
-- [ ] **L-49K0A1F** — Add a regression test requiring every object in the Codex
+- [x] **L-49K0A1F** — Add a regression test requiring every object in the Codex
   prefilter response schema, including `candidates.items`, to declare
   `additionalProperties: false`; repair the schema; build and activate a new immutable
   release; kickstart the installed LaunchAgent; and prove from resident artifacts that
   prefilter succeeds and execution reaches the application actor. A Telegram deficit
   report alone does not pass this task.
+  PASS evidence: commits `49601fecc`, `fad41642e`, and `41f06d23e` repaired the
+  prefilter and Terra-high strict schemas and raised the daily repair-run budget to
+  1,048,576. Focused model/pipeline/release tests pass 22/22. Installed release
+  `41f06d23e26b171787edad0e86ed9bbd74f52e6a` produced resident run
+  `daily-20260805-221126`: Luna prefilter, Terra-medium plan, Terra-high dossier,
+  and Terra-medium browser actor all returned schema-valid success. The dedicated
+  CloakBrowser was restarted after a measured Playwright CDP initialization timeout;
+  post-restart attach proved one context. The browser actor executed 24 searches and
+  observed 102 unverified links but incorrectly returned `no_eligible_job_found`
+  without verifying any posting. That remaining discovery-to-verification defect is
+  owned by existing task L-49K0C and is not an application receipt.
 - [ ] **L-49K0A2** — Pin `temporalio/temporal` v1.31.2 and `temporalio/sdk-python`
   v1.31.0 with MIT licenses, server/CLI/SDK artifacts, protocol versions, and local
   rollback. Prove an isolated local server and Python worker can survive worker
