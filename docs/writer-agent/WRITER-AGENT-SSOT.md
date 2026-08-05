@@ -1515,6 +1515,38 @@ this section define what runs next.
 | 27 | $1M | Autonomously scale cloud/network distribution and retention to $1M MRR | Active recurring receipts, staged-promotion receipts, bounded spend, rollback proof | TODO |
 | 28 | $10M | Reach $100M network GMV at 10% fee, or another fully receipted equivalent, through the autonomous scale controller | $10M active recurring receipts; no internal/self payments; no routine human operation; legal/KYC exceptions explicit | TODO |
 
+### Task 3b/3c canonical CDP lock receipt
+
+Task 3b is complete as a feature-only runtime slice. The canonical runtime
+repository is `/Users/anicca/profitable-claude`, branch
+`fix/writer-terra-medium`, feature commit
+`25cc301fe57b33cd21a20a8769c77d412fe50e4d` (`25cc301f`). The slice covers the
+daily publication lock and the claim loop's short recovery mutex. A fresh lock
+(age at or below six hours) is non-blocking: the caller records `SKIPPED` or
+`capture pending` and does not start dynamic CDP capture. Stale recovery takes
+one stable `(device, inode, mtime)` snapshot, rechecks it before the atomic
+rename, rechecks the quarantined directory, and aborts if a TOCTOU replacement
+appears. Owner-token cleanup can remove only the caller's token; stale tokens
+are removed only inside the identity-checked quarantine. Recovery then removes
+that exact quarantined directory and recreates the canonical path, rolling back
+on cleanup or reacquisition failure. The short recovery mutex serializes these
+steps across `article-daily` and claim capture without covering the model or
+publication pass.
+
+Feature acceptance is recorded as focused behavior `95/95`, complete Writer
+regression `765/765` (seven pre-existing multiprocessing warnings), daily shell
+contract PASS, shell syntax PASS, and diff checks PASS. A fresh reviewer
+returned `SHIP` with no blocking finding. This evidence is for the runtime
+feature branch only: `25cc301f` is not yet installed on the live owner.
+No live publication or external post is claimed.
+
+Task 3c (live deploy and owner E2E for this lock slice) is NEXT and NOT
+COMPLETE. It must deploy the exact runtime tip through the managed Writer path,
+verify the installed owner/aliases, and capture live stale/fresh, TOCTOU,
+owner-token, atomic-quarantine, and dynamic-CDP acquisition receipts before
+Task 3 can close. Until then Task 3 remains `REOPENED / PARTIAL` in the task
+table above; no historical TODO is resurrected.
+
 Current-contract note: historical Task rows describe receipts under the former
 eight-target matrix. Wherever a historical sentence says X destinations remain
 unchanged, §2.5 supersedes it for new runs: active six, dormant two.

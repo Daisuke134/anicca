@@ -155,6 +155,46 @@ Done receipt: source-family fixtures, one live selected card, source-body
 hashes, prompt hash, bilingual article hashes, active-six public readbacks,
 commit and push.
 
+### Task 3b: Make canonical CDP lock acquisition and stale recovery atomic
+
+The runtime lock slice is complete on the Writer runtime feature branch. It
+must keep dynamic X/CDP capture non-blocking while preventing a stale cleanup
+from deleting a newer owner. The contract covers both the daily publication
+owner and the claim/capture worker's short recovery mutex:
+
+- a fresh lock (age at or below six hours) returns `SKIPPED`/`capture pending`
+  without starting dynamic CDP capture;
+- a stale lock is recovered only after a stable `(device, inode, mtime)`
+  snapshot, an identity recheck before rename, and a second identity check in
+  the quarantine directory;
+- TOCTOU replacement by a fresh competitor aborts recovery and leaves the
+  replacement owner and its token untouched;
+- cleanup is owner-token-bound, so a process can remove only its own lock
+  receipt; stale owner tokens are removed only inside the identity-checked
+  quarantine; and
+- stale recovery uses atomic quarantine (`rename`), then removes the exact
+  quarantined directory and recreates the canonical path, rolling back the
+  quarantine when cleanup or reacquisition fails.
+
+Status: DONE as a feature-only runtime receipt. Runtime repository is
+`/Users/anicca/profitable-claude`, branch `fix/writer-terra-medium`, feature
+commit `25cc301fe57b33cd21a20a8769c77d412fe50e4d` (`25cc301f`). The focused
+behavior acceptance is `95/95`; the complete Writer suite is `765/765` with
+seven pre-existing multiprocessing warnings. The daily shell contract,
+shell syntax, and diff checks are PASS. A fresh reviewer returned `SHIP` with
+no blocking finding. This receipt proves the feature branch contract only;
+it does not imply that the commit is installed on the live owner.
+No live publication is claimed.
+
+### Task 3c: Deploy the lock slice and run live owner E2E
+
+Status: NEXT / NOT COMPLETE. Deploy the exact runtime commit through the
+managed Writer path, verify the installed owner and aliases resolve to that
+tip, and run the live stale/fresh, TOCTOU, owner-token, atomic-quarantine,
+and dynamic-CDP acquisition E2E. Record the durable owner receipt and any
+platform-specific `PENDING` state before claiming Task 3 complete. No live
+publication or external post is claimed by Task 3b.
+
 ## Task 4: Close revenue, reporting, and learning gates
 
 Deploy public Money Control parity, advance publisher opportunities, collect
