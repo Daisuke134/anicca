@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-24` — five-minute inbox LaunchAgent interval
+**Active atomic task:** `L-23` — hourly runtime privacy remediation and release
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1035,7 +1035,17 @@ this spec update → commit/push → Telegram milestone before the next item sta
 - [x] **L-23** — Configure the application LaunchAgent for a 3,600-second interval.
   Receipt: daily template and isolated installed plist use only `StartInterval=3600`,
   the former 08:30 calendar trigger is absent, lane separation remains intact, and
-  focused scheduler plus full 235-test suites PASS.
+  focused scheduler plus full 235-test suites PASS. The first real RunAtLoad pass
+  exposed a release-external spec dependency and rendered private profile values in
+  provider stdout before any application submission. The daily LaunchAgent was
+  booted out before the next hourly run. The release-contained prompt now forbids
+  shell rendering of the private profile, passes private values only into browser
+  `fill()` sinks, and scans every provider stdout transcript before accepting a run.
+  The original transcript is detected fail-closed with exit 76; its mode-0600 receipt
+  contains only eight leaked field keys plus the transcript SHA-256, never leaked
+  values. Focused 13-test and full 238-test suites PASS. Daily remains intentionally
+  unloaded until L-25 replaces the obsolete two-slot runtime cap with the contracted
+  ten-confirmed-application cap.
 - [ ] **L-24** — Configure the inbox LaunchAgent for a 300-second interval.
 - [ ] **L-25** — Enforce the initial ten-confirmed-applications daily cap.
 - [ ] **L-26** — Enforce the daily 2 dream / 5 strong-fit / 3 adjacent portfolio.

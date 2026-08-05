@@ -73,6 +73,19 @@ set +e
   --workdir "$JOB_SEARCH_REPO_ROOT"
 RUNNER_RC=$?
 set -e
+PRIVACY_RC=0
+PROVIDER_LOGS=("$EVIDENCE"/attempt-*.stdout.log(N))
+for PROVIDER_LOG in "${PROVIDER_LOGS[@]}"; do
+  LOG_NAME="${PROVIDER_LOG:t:r:r}"
+  "$JOB_SEARCH_PYTHON" -m job_search_loop.profile_privacy scan \
+    --profile "$JOB_SEARCH_PROFILE" \
+    --log "$PROVIDER_LOG" \
+    --output "$EVIDENCE/profile-privacy-$LOG_NAME.json" \
+    || PRIVACY_RC=$?
+done
+if [[ "$PRIVACY_RC" -ne 0 ]]; then
+  RUNNER_RC=76
+fi
 if [[ "$RUNNER_RC" -ne 0 ]]; then
   refresh_summary
   if [[ "$RUNNER_RC" -eq 75 ]] \
