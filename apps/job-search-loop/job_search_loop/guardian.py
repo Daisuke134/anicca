@@ -53,6 +53,105 @@ REQUIRED_LEDGER_TRIGGERS = frozenset(
     }
 )
 MAX_SUBMISSION_CLAIM_AGE = timedelta(hours=2)
+GMAIL_CHECKPOINT_ID = re.compile(r"^[A-Za-z0-9_-]{1,256}$")
+
+
+def _gmail_checkpoint_health(path: Path) -> tuple[list[str], int]:
+    reasons: list[str] = []
+    message_count = 0
+    if not path.is_file():
+        return ["gmail_checkpoint_missing"], 0
+    if stat.S_IMODE(path.stat().st_mode) != 0o600:
+        reasons.append("gmail_checkpoint_permissions_invalid")
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+        message_ids = value.get("message_ids") if isinstance(value, dict) else None
+        legacy_ids = value.get("legacy_thread_ids", []) if isinstance(value, dict) else None
+        valid = (
+            isinstance(value, dict)
+            and value.get("version") == 2
+            and isinstance(message_ids, list)
+            and isinstance(legacy_ids, list)
+            and len(message_ids) == len(set(message_ids))
+            and len(legacy_ids) == len(set(legacy_ids))
+            and all(
+                isinstance(item, str) and GMAIL_CHECKPOINT_ID.fullmatch(item)
+                for item in [*message_ids, *legacy_ids]
+            )
+        )
+        if not valid:
+            reasons.append("gmail_checkpoint_invalid")
+        else:
+            message_count = len(message_ids)
+    except (OSError, json.JSONDecodeError):
+        reasons.append("gmail_checkpoint_invalid")
+    return reasons, message_count
+
+
+def gmail_health(
+    *,
+    account: str,
+    checkpoint_path: Path,
+    executable: Path = Path("/opt/homebrew/bin/gog"),
+    runner: Any = subprocess.run,
+) -> dict[str, Any]:
+    reasons, checkpoint_message_count = _gmail_checkpoint_health(
+        Path(checkpoint_path).expanduser().resolve()
+    )
+    executable_path = Path(executable).expanduser().resolve()
+    auth_ok = False
+    read_ok = False
+    probe_thread_count = 0
+    if not account.strip():
+        reasons.append("gmail_account_missing")
+    if not executable_path.is_file() or not os.access(executable_path, os.X_OK):
+        reasons.append("gog_executable_invalid")
+    if not reasons or not any(
+        reason in {"gmail_account_missing", "gog_executable_invalid"}
+        for reason in reasons
+    ):
+        auth_argv = [
+            str(executable_path), "auth", "doctor", "--account", account,
+            "--json", "--gmail-no-send", "--no-input", "--check",
+        ]
+        try:
+            completed = runner(
+                auth_argv, check=False, capture_output=True, text=True, timeout=60
+            )
+            auth_value = json.loads(completed.stdout) if completed.returncode == 0 else None
+            auth_ok = isinstance(auth_value, dict)
+        except (OSError, subprocess.TimeoutExpired, json.JSONDecodeError):
+            auth_ok = False
+        if not auth_ok:
+            reasons.append("gmail_auth_check_failed")
+        else:
+            search_argv = [
+                str(executable_path), "gmail", "search", "--account", account,
+                "--json", "--wrap-untrusted", "--gmail-no-send", "--no-input",
+                "--max", "1", "newer_than:1d",
+            ]
+            try:
+                completed = runner(
+                    search_argv, check=False, capture_output=True, text=True, timeout=60
+                )
+                value = json.loads(completed.stdout) if completed.returncode == 0 else None
+                threads = value.get("threads") if isinstance(value, dict) else None
+                read_ok = isinstance(threads, list)
+                if read_ok:
+                    probe_thread_count = len(threads)
+            except (OSError, subprocess.TimeoutExpired, json.JSONDecodeError):
+                read_ok = False
+            if not read_ok:
+                reasons.append("gmail_read_invalid")
+    return {
+        "version": 1,
+        "status": "healthy" if not reasons else "unhealthy",
+        "reasons": sorted(set(reasons)),
+        "auth_check": "passed" if auth_ok else "failed",
+        "gmail_read": "passed" if read_ok else "not_passed",
+        "checkpoint_message_count": checkpoint_message_count,
+        "probe_thread_count": probe_thread_count,
+    }
 
 
 def _valid_event_projection(connection: sqlite3.Connection) -> bool:
@@ -339,6 +438,11 @@ def main(argv: list[str] | None = None) -> int:
     ledger = subparsers.add_parser("ledger")
     ledger.add_argument("--ledger", type=Path, required=True)
     ledger.add_argument("--output", type=Path, required=True)
+    gmail = subparsers.add_parser("gmail")
+    gmail.add_argument("--account", required=True)
+    gmail.add_argument("--checkpoint", type=Path, required=True)
+    gmail.add_argument("--gog", type=Path, default=Path("/opt/homebrew/bin/gog"))
+    gmail.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(argv)
     if args.command == "release":
         report = release_health(args.data_root, args.launcher_root)
@@ -357,7 +461,7 @@ def main(argv: list[str] | None = None) -> int:
             "status": report["status"],
             "lanes": {key: value["state"] for key, value in report["lanes"].items()},
         }
-    else:
+    elif args.command == "ledger":
         report = ledger_health(args.ledger)
         public = {
             "status": report["status"],
@@ -367,6 +471,13 @@ def main(argv: list[str] | None = None) -> int:
             "stale_submission_claim_count": report["stale_submission_claim_count"],
             "reasons": report["reasons"],
         }
+    else:
+        report = gmail_health(
+            account=args.account,
+            checkpoint_path=args.checkpoint,
+            executable=args.gog,
+        )
+        public = report
     args.output.write_text(json.dumps(report, sort_keys=True) + "\n", encoding="utf-8")
     os.chmod(args.output, 0o600)
     print(json.dumps(public, sort_keys=True))
