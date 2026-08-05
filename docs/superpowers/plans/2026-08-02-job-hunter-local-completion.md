@@ -39,6 +39,9 @@ Completion requires all of the following:
 - hourly application, five-minute inbox, weekly learning, and guardian
   LaunchAgents healthy on the stable runtime;
 - `summary.v2`, Telegram, ledger, and rebuilt event projections agree;
+- the Dais campaign continues beyond technical local-product proof until one
+  authoritative offer at or above the verified USD 100,000 annual threshold is
+  recorded, compared, and presented for the owner's decision;
 - all Job Hunter tests green; and
 - every meaningful change committed and pushed.
 
@@ -101,6 +104,45 @@ claiming either target. The practical route is: high-fit applications → recrui
 replies → interviews → competing offers → verified accepted compensation. The later
 multi-user Web product may create real MRR, but Dais's salary must never be reported
 as product revenue or MRR.
+
+### 3.2 August 2026 campaign target and planning truth
+
+The campaign's hard operating target is the first verified six-figure USD offer by
+2026-08-31 JST. This is a goal, not a promise: neither a resume nor application
+volume can guarantee an employer decision or hiring timeline. The loop may report a
+forecast only from observed confirmed applications, replies, interviews, and stage
+velocity; when those observations are absent, the date remains `unknown`.
+
+The campaign runs one ten-confirmed-applications-per-day portfolio instead of betting
+on one employer:
+
+| Daily lane | Confirmed/day | Purpose |
+|---|---:|---|
+| Dream frontier AI | 2 | OpenAI, Anthropic, and equivalent high-upside roles |
+| Tokyo/global AI employers | 5 | Highest location fit and sufficiently broad role coverage |
+| Fast remote startups/direct founder routes | 3 | Shorter decision cycles and additional high-upside surface |
+
+The counts are allocation targets, not permission to weaken truth, compensation,
+duplicate, authorization, CAPTCHA, or authoritative-receipt gates. An unfilled lane
+spills into another eligible lane on the same day. A founder conversation counts as
+outreach, not an application, until tied to a verified role and receipt.
+
+Planning scenarios are operational hypotheses, never probability claims:
+
+- best case: a fast-moving startup produces interviews within one to two weeks and
+  a verified offer during 2026-08-20–2026-08-31;
+- base case: interviews begin in August and the first qualifying offer arrives in
+  September or October; and
+- worst case: the first 50 confirmed applications produce no qualifying interview,
+  forcing the L-69 funnel diagnosis while the campaign continues.
+
+The role surface is real but does not establish personal selection odds. On
+2026-08-05, OpenAI's official search showed `735 jobs`, including Tokyo listings for
+AI Deployment Engineer and Forward Deployed Engineer. Anthropic's official hiring
+page says, "We care about what you can do, not where you learned to do it," and
+describes live technical interviews plus experience and motivation discussions.
+Sources: [OpenAI Careers Search](https://openai.com/careers/search/),
+[Anthropic Careers](https://www.anthropic.com/careers).
 
 ## 4. Location, travel, citizenship, clearance, and start date
 
@@ -1999,8 +2041,36 @@ this spec update → commit/push → Telegram milestone before the next item sta
   healthy simultaneously.
 - [ ] **L-66** — Freeze the Dais local product contract after real Ashby, Workday,
   Gmail, Calendar, Telegram, and interview receipts all pass.
+- [ ] **L-67** — Activate the resident production campaign with the 2/5/3 daily
+  portfolio, ten-confirmed-per-day cap, spillover policy, and one Telegram daily
+  digest. Prove that only the installed Temporal-owned worker performs live actions.
+- [ ] **L-68** — Complete the first 50 unique confirmed applications across at least
+  five operating days. Preserve authoritative receipts, exact artifacts, screenshot
+  hashes, ownership, source, role family, compensation state, and strategy cohort for
+  every application; do not count outreach, dry runs, clicks, or `submit_unknown`.
+- [ ] **L-69** — At 50 confirmed applications, compute reply, interview, final-round,
+  and offer conversion by lane, source, role family, resume variant, and compensation
+  band. Keep the mix at interview conversion of at least 10%, permit only a bounded
+  cap experiment at at least 20%, and force one-variable source/segment/material
+  diagnosis below 5% before increasing volume.
+- [ ] **L-70** — Continue the resident campaign until at least one interview for an
+  eligible role is verified end-to-end through Gmail, Calendar, Telegram, and the
+  submitted-artifact interview pack. A calendar invitation without application
+  attribution does not satisfy this task.
+- [ ] **L-71** — Continue the resident campaign until at least one authoritative
+  written offer meets the hard JPY floor and verified USD 100,000 annual threshold.
+  Preserve base, bonus, equity, currency, BOJ conversion receipt, work location,
+  start date, expiry, and employer source; the agent must not accept it.
+- [ ] **L-72** — Produce a truthful offer comparison and negotiation brief covering
+  compensation, role scope, AI learning environment, location, visa/EOR status,
+  start-date options, downside risks, and the owner's walk-away floor. Draft but do
+  not send negotiation or notice messages without the required owner action.
+- [ ] **L-73** — Close the Dais campaign gate only after the owner decision is
+  recorded and every application, message, interview, offer, artifact, and metric can
+  be rebuilt from authoritative events. A declined qualifying offer still proves
+  L-71 but does not authorize the agent to accept another offer.
 
-### 12.3 Multi-user Web product — begins only after L-66
+### 12.3 Multi-user Web product — begins only after L-73
 
 - [ ] **W-01** — Define a tenant-scoped profile boundary.
 - [ ] **W-02** — Define tenant-scoped credential and OAuth boundaries.
@@ -2075,7 +2145,11 @@ flowchart TD
 
     B --> Y[Outcome attribution]
     L --> Y
-    X --> Y
+    X --> OQ{Verified USD 100K offer?}
+    OQ -->|Yes| OC[Compare terms and prepare negotiation]
+    OQ -->|No| Y
+    OC --> OD[Owner decides; agent never accepts]
+    OD --> Y
     Y --> Z[Weekly Terra hypothesis plus deterministic held-out decision]
     Z --> K[Report what was learned and what changes next]
     K --> D
@@ -2092,7 +2166,7 @@ flowchart TD
   ambiguous email changes an application stage.
 - Founder outreach is not counted as a job application until a verified role and
   application receipt exist.
-- W-series multi-user work does not begin before the L-66 Dais proof gate.
+- W-series multi-user work does not begin before the L-73 Dais campaign gate.
 - Cross-user learning never contains raw resumes, application answers, Gmail bodies,
   compensation records, identity facts, credentials, or artifact links.
 - The iOS app, Writer, CFO, Crypto, Affiliator, Connector, Fundraising, and Gig Work
@@ -2131,6 +2205,9 @@ flowchart TD
 | 27 | Browser Use executor boundary | Pinned v0.13.7 parity suite rejects guessing, direct success assertion, unrestricted Submit, CAPTCHA action, and unbound screenshots | MUST pass |
 | 28 | Temporal durable loop | Worker-restart, schedule, signal, cancellation, heartbeat, replay, idempotency, and post-side-effect no-retry tests | MUST pass |
 | 29 | Builder/operator separation | Direct interactive processes cannot mint activity/Submit authority; only the registered resident worker produces accepted provenance | MUST pass |
+| 30 | Daily campaign portfolio | Five-day receipt audit proves the 2/5/3 allocation, safe spillover, ten/day cap, and no false confirmations | MUST pass |
+| 31 | Fifty-application calibration | Event replay reproduces all lane and funnel denominators, rates, cohorts, and the deterministic L-69 decision | MUST pass |
+| 32 | Six-figure campaign outcome | Authoritative written offer plus timestamped BOJ conversion, terms, Telegram receipt, comparison brief, and owner-decision event | MUST pass for L-73 |
 
 ### E2E judgment
 
