@@ -7,7 +7,11 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from job_search_loop.profile_setup import ProfileSetupError, collect_interactive
+from job_search_loop.profile_setup import (
+    ProfileSetupError,
+    collect_interactive,
+    ingest_document_facts,
+)
 
 
 APP_ROOT = Path(__file__).resolve().parents[1]
@@ -18,6 +22,7 @@ class ProfileSetupTests(unittest.TestCase):
         self.temporary = tempfile.TemporaryDirectory()
         self.root = Path(self.temporary.name)
         self.answers = self.root / "answers.json"
+        self.documents = self.root / "documents.json"
         self.output = self.root / "private" / "profile.json"
 
     def tearDown(self):
@@ -51,6 +56,23 @@ class ProfileSetupTests(unittest.TestCase):
                 "--output",
                 str(self.output),
                 *extra,
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+            env={**os.environ, "PYTHONPATH": str(APP_ROOT)},
+        )
+
+    def _run_documents(self):
+        return subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "job_search_loop.profile_setup",
+                "--documents",
+                str(self.documents),
+                "--output",
+                str(self.output),
             ],
             check=False,
             capture_output=True,
@@ -146,6 +168,117 @@ class ProfileSetupTests(unittest.TestCase):
         with patch("builtins.input", side_effect=lambda _prompt: next(responses)):
             with self.assertRaisesRegex(ProfileSetupError, "fact"):
                 collect_interactive()
+
+    def test_document_ingestion_preserves_immutable_source_provenance(self):
+        facts = ingest_document_facts(
+            [
+                {
+                    "kind": "cv",
+                    "path": "documents/cv/base.pdf",
+                    "sha256": "a" * 64,
+                    "facts": [
+                        {
+                            "id": "employment-title",
+                            "field": "employment.acme.title",
+                            "value": "AI Engineer",
+                            "claim": "Worked as an AI Engineer at Acme.",
+                            "source_span": "page 1, employment section",
+                        }
+                    ],
+                }
+            ]
+        )
+
+        self.assertEqual(len(facts), 1)
+        self.assertEqual(facts[0]["provenance"]["kind"], "cv")
+        self.assertEqual(facts[0]["provenance"]["sha256"], "a" * 64)
+        self.assertEqual(
+            facts[0]["evidence"],
+            "documents/cv/base.pdf: page 1, employment section",
+        )
+
+    def test_document_ingestion_fails_closed_on_cross_source_conflict(self):
+        common = {
+            "id": "employment-title",
+            "field": "employment.acme.title",
+            "claim": "Employment title at Acme.",
+            "source_span": "employment section",
+        }
+        documents = [
+            {
+                "kind": "cv",
+                "path": "documents/cv/base.pdf",
+                "sha256": "a" * 64,
+                "facts": [{**common, "value": "AI Engineer"}],
+            },
+            {
+                "kind": "linkedin",
+                "path": "documents/linkedin/export.pdf",
+                "sha256": "b" * 64,
+                "facts": [{**common, "value": "Product Manager"}],
+            },
+        ]
+
+        with self.assertRaisesRegex(ProfileSetupError, "conflict.*employment.acme.title"):
+            ingest_document_facts(documents)
+
+    def test_tailored_application_output_cannot_become_profile_truth(self):
+        with self.assertRaisesRegex(ProfileSetupError, "tailored"):
+            ingest_document_facts(
+                [
+                    {
+                        "kind": "application_resume",
+                        "path": "documents/applications/acme/resume.pdf",
+                        "sha256": "c" * 64,
+                        "facts": [
+                            {
+                                "id": "invented",
+                                "field": "skills.invented",
+                                "value": "Expert",
+                                "claim": "Invented claim.",
+                                "source_span": "page 1",
+                            }
+                        ],
+                    }
+                ]
+            )
+
+    def test_documents_cli_writes_a_grounded_private_profile(self):
+        self.documents.write_text(
+            json.dumps(
+                {
+                    "candidate": {
+                        "name": "Document Candidate",
+                        "application_email": "documents@example.test",
+                    },
+                    "documents": [
+                        {
+                            "kind": "diploma",
+                            "path": "documents/diplomas/degree.pdf",
+                            "sha256": "d" * 64,
+                            "facts": [
+                                {
+                                    "id": "degree-001",
+                                    "field": "education.degree",
+                                    "value": "Master of Engineering",
+                                    "claim": "Earned a Master of Engineering.",
+                                    "source_span": "degree title",
+                                }
+                            ],
+                        }
+                    ],
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        result = self._run_documents()
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        profile = json.loads(self.output.read_text(encoding="utf-8"))
+        self.assertEqual(profile["facts"][0]["field"], "education.degree")
+        self.assertEqual(profile["facts"][0]["provenance"]["kind"], "diploma")
+        self.assertEqual(self.output.stat().st_mode & 0o777, 0o600)
 
 
 if __name__ == "__main__":
