@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from datetime import date
 
 from .jobs import Job
 
@@ -36,6 +37,12 @@ class Evaluation:
     score: int
     components: dict[str, int]
     reasons: tuple[str, ...]
+    warnings: tuple[str, ...]
+    language_gate: str
+    language_note: str | None
+    deadline: str | None
+    strengths: tuple[str, ...]
+    gaps: tuple[str, ...]
 
 
 def _has_ai_evidence(title: str, skills: set[str]) -> bool:
@@ -50,12 +57,29 @@ def _has_ai_evidence(title: str, skills: set[str]) -> bool:
     )
 
 
-def evaluate(job: Job) -> Evaluation:
+def evaluate(job: Job, *, today: date | None = None) -> Evaluation:
     reasons: list[str] = []
+    warnings: list[str] = []
     if not job.japan_eligible:
         reasons.append("not_available_from_japan")
     if job.clearance_required:
         reasons.append("clearance_required")
+    if job.language_gate == "FAIL":
+        reasons.append("language_requirement_failed")
+    elif job.language_gate == "FLAG":
+        warnings.append("language_requirement_flagged")
+    if job.deadline is not None:
+        try:
+            deadline = date.fromisoformat(job.deadline)
+        except ValueError:
+            reasons.append("invalid_deadline")
+        else:
+            current = today or date.today()
+            days_remaining = (deadline - current).days
+            if days_remaining < 0:
+                reasons.append("posting_expired")
+            elif days_remaining <= 7:
+                warnings.append("deadline_within_seven_days")
     if (
         job.compensation_min_jpy is not None
         and job.compensation_min_jpy < COMPENSATION_FLOOR_JPY
@@ -89,4 +113,10 @@ def evaluate(job: Job) -> Evaluation:
         score=score,
         components=components,
         reasons=tuple(reasons),
+        warnings=tuple(warnings),
+        language_gate=job.language_gate,
+        language_note=job.language_note,
+        deadline=job.deadline,
+        strengths=tuple(job.strengths),
+        gaps=tuple(job.gaps),
     )

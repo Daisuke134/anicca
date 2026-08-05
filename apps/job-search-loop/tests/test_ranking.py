@@ -1,5 +1,6 @@
 import json
 import unittest
+from datetime import date
 from pathlib import Path
 
 from job_search_loop.jobs import Job
@@ -124,6 +125,95 @@ class RankingTests(unittest.TestCase):
         }
         with self.assertRaisesRegex(ValueError, "source_span"):
             Job.from_extracted(payload)
+
+    def test_language_fail_is_a_traceable_hard_veto(self):
+        job = Job(
+            company="Language Co",
+            title="AI Engineer",
+            url="https://jobs.example.com/language",
+            location="Tokyo",
+            japan_eligible=True,
+            compensation_min_jpy=9_000_000,
+            clearance_required=False,
+            skills=["agents", "databricks"],
+            domains=["enterprise_ai"],
+            language_gate="FAIL",
+            language_note="Native German required; candidate has not declared German.",
+        )
+
+        result = evaluate(job)
+
+        self.assertFalse(result.eligible)
+        self.assertIn("language_requirement_failed", result.reasons)
+        self.assertEqual(result.language_gate, "FAIL")
+        self.assertEqual(result.language_note, job.language_note)
+
+    def test_language_flag_stays_eligible_and_visible(self):
+        job = Job(
+            company="Language Co",
+            title="AI Engineer",
+            url="https://jobs.example.com/language-flag",
+            location="Tokyo",
+            japan_eligible=True,
+            compensation_min_jpy=9_000_000,
+            clearance_required=False,
+            skills=["agents", "databricks"],
+            domains=["enterprise_ai"],
+            language_gate="FLAG",
+            language_note="Business Japanese requested; declared level needs review.",
+        )
+
+        result = evaluate(job)
+
+        self.assertTrue(result.eligible)
+        self.assertIn("language_requirement_flagged", result.warnings)
+        self.assertEqual(result.language_note, job.language_note)
+
+    def test_expired_deadline_is_rejected_but_future_deadline_is_preserved(self):
+        base = dict(
+            company="Deadline AI",
+            title="AI Engineer",
+            location="Tokyo",
+            japan_eligible=True,
+            compensation_min_jpy=9_000_000,
+            clearance_required=False,
+            skills=["agents", "databricks"],
+            domains=["enterprise_ai"],
+        )
+        expired = evaluate(
+            Job(url="https://jobs.example.com/expired", deadline="2026-08-04", **base),
+            today=date(2026, 8, 5),
+        )
+        future = evaluate(
+            Job(url="https://jobs.example.com/future", deadline="2026-08-12", **base),
+            today=date(2026, 8, 5),
+        )
+
+        self.assertFalse(expired.eligible)
+        self.assertIn("posting_expired", expired.reasons)
+        self.assertTrue(future.eligible)
+        self.assertEqual(future.deadline, "2026-08-12")
+        self.assertIn("deadline_within_seven_days", future.warnings)
+
+    def test_honest_strengths_and_gaps_survive_evaluation(self):
+        job = Job(
+            company="Evidence AI",
+            title="AI Engineer",
+            url="https://jobs.example.com/evidence",
+            location="Tokyo",
+            japan_eligible=True,
+            compensation_min_jpy=9_000_000,
+            clearance_required=False,
+            skills=["agents", "databricks"],
+            domains=["enterprise_ai"],
+            strengths=["Built production agents"],
+            gaps=["No stated Kubernetes evidence"],
+        )
+
+        result = evaluate(job)
+
+        self.assertEqual(result.strengths, ("Built production agents",))
+        self.assertEqual(result.gaps, ("No stated Kubernetes evidence",))
 
 
 if __name__ == "__main__":

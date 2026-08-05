@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-06` — ranking and veto contract
+**Active atomic task:** `L-07` — application research and artifact-chain contract
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -913,7 +913,11 @@ this spec update → commit/push → Telegram milestone before the next item sta
   automation; results persist canonical URL, canonical job ID, and provider;
   cross-provider duplicates collapse to one posting with official-source preference;
   exhausted automation still requests browser fallback; discovery/state suites PASS.
-- [ ] **L-06** — Port the upstream ranking, veto, deadline, and honest-gap contract.
+- [x] **L-06** — Port the upstream ranking, veto, deadline, and honest-gap contract.
+  Receipt: Job and Evaluation persist language gate/note, deadline, strengths, and
+  gaps; language FAIL vetoes, FLAG remains eligible and visible, expired postings
+  reject, seven-day deadlines warn, and evidence survives evaluation; ranking suite
+  PASS.
 - [ ] **L-07** — Port the upstream application research and artifact-chain contract.
 - [ ] **L-08** — Port the upstream outcome, follow-up, and archive contract.
 - [ ] **L-09** — Port the upstream Gmail classification semantics into `gog` events.
