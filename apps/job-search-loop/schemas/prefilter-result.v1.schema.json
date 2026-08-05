@@ -6,11 +6,53 @@
     "status": {"type": "string"},
     "candidates": {
       "type": "array",
-      "items": {"type": "object", "additionalProperties": true}
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "bucket",
+          "language",
+          "provider",
+          "official_url",
+          "title",
+          "company",
+          "location",
+          "ai_requirement_evidence",
+          "japan_eligibility_evidence",
+          "compensation_evidence",
+          "deadline_evidence",
+          "source_spans"
+        ],
+        "properties": {
+          "bucket": {"type": ["string", "null"]},
+          "language": {"type": ["string", "null"]},
+          "provider": {"type": ["string", "null"]},
+          "official_url": {"type": ["string", "null"]},
+          "title": {"type": ["string", "null"]},
+          "company": {"type": ["string", "null"]},
+          "location": {"type": ["string", "null"]},
+          "ai_requirement_evidence": {"type": ["string", "null"]},
+          "japan_eligibility_evidence": {"type": ["string", "null"]},
+          "compensation_evidence": {"type": ["string", "null"]},
+          "deadline_evidence": {"type": ["string", "null"]},
+          "source_spans": {"type": "array", "items": {"type": "string"}}
+        }
+      }
     },
     "provider_results": {
       "type": "array",
-      "items": {"type": "object", "additionalProperties": true}
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["provider", "query", "status", "result_count", "error"],
+        "properties": {
+          "provider": {"type": "string"},
+          "query": {"type": "string"},
+          "status": {"type": "string"},
+          "result_count": {"type": "integer"},
+          "error": {"type": ["string", "null"]}
+        }
+      }
     },
     "blocked": {"type": "array", "items": {"type": "string"}}
   }
