@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-45A` — Guardian release-health check
+**Active atomic task:** `L-45B` — Guardian schedule-health check
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1398,7 +1398,23 @@ this spec update → commit/push → Telegram milestone before the next item sta
   rendered and validated all six kinds with six unique fact hashes and six unique
   message hashes; the mode-0600 receipt is 198 bytes. No Telegram message was sent
   for synthetic tone validation, and Daily remains unloaded.
-- [ ] **L-45A** — Implement the Guardian release-health check.
+- [x] **L-45A** — Implement the Guardian release-health check. Receipt: every
+  activation and rollback atomically writes a mode-0600 canonical active-release
+  receipt binding expected commit, manifest SHA-256, and route-config SHA-256.
+  Guardian requires that receipt, the canonical `current` symlink, immutable release
+  directory, manifest commit/hash, route hash, all three executable release runners,
+  and all three executable non-writable stable launchers to agree; receipt tamper,
+  pointer drift, writable release, missing runner/launcher, or hash drift fails
+  closed. Focused 4-test and full 303-test suites PASS. Immutable release
+  `e98ada000564e67208dcd92a5e5f8d9203c00d48` (archive SHA-256
+  `780d3551e91a594e85d4d223afe0d5497e58197439b7d246d4e6b2621e2b122e`)
+  is active with zero writable paths. Production active receipt is mode 0600 and 254
+  bytes. Real Guardian report is `healthy`, mode 0600 and 322 bytes, with three
+  release runners, three stable launchers, manifest SHA-256
+  `4d5ed4d176b02ff0e64ea0659150bf4d68209fd66481f7c998820bec2fc198a7`,
+  and replay-approved route SHA-256
+  `66d5efecdfffed8cd9a294736d00aed83701c67220a22608728b140c9c740409`.
+  Daily remains unloaded; the check performed no repair or external side effect.
 - [ ] **L-45B** — Implement the Guardian schedule-health check.
 - [ ] **L-45C** — Implement the Guardian ledger-health check.
 - [ ] **L-45D** — Implement the Guardian Gmail-health check.
