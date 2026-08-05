@@ -121,6 +121,7 @@ function candidateObservation(dateInventory, sequence, summary) {
 }
 
 async function runNativeConnectorPass(input = {}) {
+  let failureCode = "CONNECTOR_NATIVE_CONFIG_FAILED";
   try {
     const config = input && input.config;
     const deps = input && input.deps && typeof input.deps === "object" ? input.deps : {};
@@ -170,8 +171,10 @@ async function runNativeConnectorPass(input = {}) {
       || typeof pack.runSameDayCandidates !== "function"
     ) unavailable();
 
+    failureCode = "CONNECTOR_NATIVE_AUTH_FAILED";
     const authentication = await auth.ensureAuthenticated();
     if (!authentication || authentication.status !== "authenticated") unavailable();
+    failureCode = "CONNECTOR_NATIVE_INVENTORY_FAILED";
     const dateInventory = await pack.readDateInventory(coverage, { now });
     if (
       !isVerifiedLumaDateInventory(dateInventory)
@@ -179,6 +182,7 @@ async function runNativeConnectorPass(input = {}) {
     ) unavailable();
     const timeMin = midnight(coverage.window_start_date, timeZone);
     const timeMax = midnight(nextDate(coverage.window_end_date), timeZone);
+    failureCode = "CONNECTOR_NATIVE_CALENDAR_READ_FAILED";
     const busyInventory = await pack.readBusyCalendar(calendar, { timeMin, timeMax, timeZone, now });
     if (!isVerifiedGoogleCalendarBusyInventory(busyInventory) || busyInventory.transport !== "gog") unavailable();
 
@@ -198,6 +202,7 @@ async function runNativeConnectorPass(input = {}) {
         deps, "isVerifiedEventSpendSequence", isVerifiedEventSpendSequence,
       );
       const runNativeWrite = factory(deps, "runNativeWrite", runNativeConnectorWrite);
+      failureCode = "CONNECTOR_NATIVE_PROFILE_FAILED";
       const profile = readProfile({ tenantId, path: config.profilePath });
       if (!verifyProfile(profile) || profile.tenant_id !== tenantId || profile.timezone !== timeZone) unavailable();
       const judgmentDay = dateInventory.days.find((day) => (
@@ -205,6 +210,7 @@ async function runNativeConnectorPass(input = {}) {
         && Array.isArray(day.events) && day.events.length > 0
       ));
       if (!judgmentDay) unavailable();
+      failureCode = "CONNECTOR_NATIVE_LUNA_FAILED";
       const goalDecision = await runLunaJudgment({
         dateInventory,
         profile,
@@ -219,9 +225,11 @@ async function runNativeConnectorPass(input = {}) {
         mapsKey: requiredText(config.mapsKey),
         homeLocation: requiredText(config.homeLocation),
       });
+      failureCode = "CONNECTOR_NATIVE_CALENDAR_GATE_FAILED";
       const calendarGate = await gateDateCalendar(
         dateInventory, busyInventory, selectedDate, requiredText(config.homeLocation), routeMinutes,
       );
+      failureCode = "CONNECTOR_NATIVE_SPEND_GATE_FAILED";
       const policy = await createSpendPolicy({ tenantId, limits: profile.spend_policy && profile.spend_policy.limits });
       const spendSequence = await planDateSpend(policy, dateInventory, calendarGate, goalDecision);
       if (!verifySpendSequence(spendSequence) || spendSequence.ordered_candidates.length === 0) unavailable();
@@ -229,6 +237,7 @@ async function runNativeConnectorPass(input = {}) {
       const selectedRef = chosen.event_ref;
       const selectedEvent = judgmentDay.events.find((event) => event && event.event_ref === selectedRef);
       if (!selectedEvent || chosen.canonical_url !== selectedEvent.canonical_url) unavailable();
+      failureCode = "CONNECTOR_NATIVE_WRITE_FAILED";
       write = await runNativeWrite({
         application: {
           tenantId,
@@ -299,7 +308,9 @@ async function runNativeConnectorPass(input = {}) {
       }),
     });
   } catch {
-    unavailable();
+    const error = new Error("Connector native runtime unavailable");
+    error.code = failureCode;
+    throw error;
   }
 }
 

@@ -2,9 +2,11 @@
 "use strict";
 
 const path = require("node:path");
+const fs = require("node:fs");
 
 const { runNativeConnectorPass } = require("../../apps/life-manager/lib/connector-native-runtime.js");
 const { recordContinuation } = require("./lib/native-state.js");
+const { loadConnectorEnv } = require("./lib/load-connector-env.js");
 
 function unavailable() {
   throw new Error("Connector native pass unavailable");
@@ -32,7 +34,10 @@ function runtimeConfig(options, stateDir) {
   if (options.config && typeof options.config === "object" && !Array.isArray(options.config)) {
     return options.config;
   }
-  const env = options.env || process.env;
+  const suppliedEnv = options.env || process.env;
+  const sharedFile = suppliedEnv.LM_CONNECTOR_SHARED_ENV_FILE
+    || path.join(suppliedEnv.HOME || process.env.HOME || "", ".openclaw/.env");
+  const env = { ...(fs.existsSync(sharedFile) ? loadConnectorEnv(sharedFile) : {}), ...suppliedEnv };
   const calendarAccount = String(
     env.LM_CONNECTOR_CALENDAR_ACCOUNT
       || env.GOG_ACCOUNT
@@ -105,8 +110,12 @@ async function runNativePass(options = {}) {
     }
     recordContinuation({ stateDir, reason: "runtime_incomplete" });
     return Object.freeze({ exitCode: 1, status: "incomplete" });
-  } catch {
-    recordContinuation({ stateDir, reason: "runtime_failed" });
+  } catch (error) {
+    const code = String(error && error.code || "");
+    const reason = /^CONNECTOR_NATIVE_(?:CONFIG|AUTH|INVENTORY|CALENDAR_READ|PROFILE|LUNA|CALENDAR_GATE|SPEND_GATE|WRITE)_FAILED$/.test(code)
+      ? code.toLowerCase()
+      : "runtime_failed";
+    recordContinuation({ stateDir, reason });
     return Object.freeze({ exitCode: 1, status: "failed" });
   }
 }
