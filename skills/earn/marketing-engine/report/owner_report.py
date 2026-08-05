@@ -11,6 +11,7 @@ from __future__ import annotations
 import copy
 import datetime as dt
 import fcntl
+import hashlib
 import json
 import pathlib
 from typing import Callable, Iterable
@@ -170,9 +171,20 @@ def _validate_event(event: dict) -> dict:
     if not isinstance(event["facts"], dict):
         raise OwnerReportError("facts must be an object")
     refs = event["evidence_refs"]
-    if not isinstance(refs, list) or not all(isinstance(ref, str) and ref for ref in refs):
+    if not isinstance(refs, list) or not refs or not all(isinstance(ref, str) and ref for ref in refs):
         raise OwnerReportError("evidence_refs must be a non-empty string array")
     return copy.deepcopy(event)
+
+
+def _semantic_event(event: dict) -> dict:
+    """Return the immutable fact identity used for replay comparisons.
+
+    ``as_of`` records when a sweep observed the row, but is not itself a new
+    fact.  A later sweep may therefore reuse the same message key and receipt;
+    any change to facts or evidence still fails closed.
+    """
+
+    return {key: value for key, value in event.items() if key != "as_of"}
 
 
 def _scoped(rows: list[tuple[int, dict]], product_id: str) -> list[tuple[int, dict]]:
@@ -351,6 +363,21 @@ def _first_number(value: object, keys: tuple[str, ...]) -> object:
     return None
 
 
+def _minor_money(data: object) -> tuple[object, str | None, str | None, object] | None:
+    """Read one canonical minor-unit amount without confusing order counts."""
+
+    if not isinstance(data, dict):
+        return None
+    for field in ("net_minor", "gross_minor"):
+        amounts = data.get(field)
+        if not isinstance(amounts, dict):
+            continue
+        for currency, minor in sorted(amounts.items()):
+            if isinstance(minor, (int, float)) and not isinstance(minor, bool):
+                return (minor / 100, str(currency), field.removesuffix("_minor"), minor)
+    return None
+
+
 def _business_facts(row: dict) -> dict:
     sources = row.get("sources") if isinstance(row.get("sources"), dict) else {}
     revenuecat = sources.get("revenuecat") if isinstance(sources.get("revenuecat"), dict) else {}
@@ -369,6 +396,11 @@ def _business_facts(row: dict) -> dict:
         "mrr_reason": None,
         "active_subscriptions": active,
         "sources": {},
+        "paid_orders": None,
+        "money_value": None,
+        "money_currency": None,
+        "money_minor": None,
+        "money_metric": None,
     }
     if revenuecat.get("status") == "available" and mrr is None:
         facts["mrr_reason"] = "revenuecat_mrr_missing"
@@ -395,9 +427,33 @@ def _business_facts(row: dict) -> dict:
             if source.get("status") != "available":
                 continue
             data = source.get("data")
-            amount = _first_number(data, ("net_revenue", "gross_revenue", "paid_orders", "orders", "sales"))
+            paid_orders = _first_number(data, ("paid_orders", "orders"))
+            if paid_orders is not None:
+                facts["paid_orders"] = paid_orders
+            minor_amount = _minor_money(data)
+            if minor_amount is not None:
+                amount, currency, metric, minor = minor_amount
+                facts["money_value"] = amount
+                facts["money_currency"] = currency
+                facts["money_minor"] = minor
+                facts["money_metric"] = metric
+                facts["money_source"] = name
+                facts["money_reason"] = None
+                break
+            amount = _first_number(data, ("net_revenue", "gross_revenue", "sales"))
             if amount is not None:
                 facts["money_value"] = amount
+                facts["money_currency"] = data.get("currency") if isinstance(data, dict) else None
+                facts["money_metric"] = "net" if _first_number(data, ("net_revenue",)) is not None else "gross"
+                facts["money_source"] = name
+                facts["money_reason"] = None
+                break
+            if paid_orders == 0:
+                # A successful zero-order query is truthful, but the provider
+                # did not return a currency amount to format.
+                facts["money_value"] = 0.0
+                facts["money_currency"] = data.get("currency") if isinstance(data, dict) else None
+                facts["money_metric"] = "net"
                 facts["money_source"] = name
                 facts["money_reason"] = None
                 break
@@ -420,7 +476,29 @@ def _daily_events(root: pathlib.Path, product_id: str, as_of: dt.datetime) -> li
     rows = _scoped(_indexed_rows(root, "business-outcomes.jsonl"), product_id)
     latest = _latest(rows, as_of, "business_date", "observed_at")
     if latest is None:
-        return []
+        return [_event(
+            kind="product_daily",
+            product_id=product_id,
+            as_of=as_of,
+            message_key=f"product_daily:{product_id}:no_business_snapshot:{as_of.date().isoformat()}",
+            facts={
+                "business_date": None,
+                "snapshot_id": None,
+                "mrr": None,
+                "mrr_source": None,
+                "mrr_reason": "no_business_snapshot",
+                "active_subscriptions": None,
+                "paid_orders": None,
+                "money_value": None,
+                "money_currency": None,
+                "money_minor": None,
+                "money_metric": None,
+                "money_source": None,
+                "money_reason": "no_business_snapshot",
+                "sources": {},
+            },
+            evidence_refs=["state/business-outcomes.jsonl#no_business_snapshot"],
+        )]
     index, row = latest
     facts = _business_facts(row)
     return [_event(
@@ -570,7 +648,15 @@ def _portfolio_event(root: pathlib.Path, as_of: dt.datetime) -> list[dict]:
         rows = _scoped(_indexed_rows(root, "business-outcomes.jsonl"), product_id)
         latest = _latest(rows, as_of, "business_date", "observed_at")
         if latest is None:
-            products.append({"product_id": product_id, "mrr": None, "mrr_reason": "no_business_snapshot"})
+            products.append({
+                "product_id": product_id,
+                "mrr": None,
+                "mrr_reason": "no_business_snapshot",
+                "money_value": None,
+                "money_currency": None,
+                "paid_orders": None,
+                "money_reason": "no_business_snapshot",
+            })
             continue
         index, row = latest
         facts = _business_facts(row)
@@ -579,6 +665,8 @@ def _portfolio_event(root: pathlib.Path, as_of: dt.datetime) -> list[dict]:
             "mrr": facts.get("mrr"),
             "mrr_reason": facts.get("mrr_reason"),
             "money_value": facts.get("money_value"),
+            "money_currency": facts.get("money_currency"),
+            "paid_orders": facts.get("paid_orders"),
             "money_source": facts.get("money_source"),
             "money_reason": facts.get("money_reason"),
         })
@@ -640,11 +728,11 @@ def _reason_text(reason: object, *, not_mature: bool = False) -> str:
     raw = str(reason or "unknown")
     if not_mature or "not_mature" in raw or raw in {"insufficient_data", "checkpoint_not_mature"}:
         return "まだ判断できる時間ではありません"
-    if "unavailable" in raw or raw in {"missing", "error", "failed"}:
+    if any(token in raw for token in ("unavailable", "not_authenticated", "not_configured", "no_business_snapshot", "missing", "error", "failed", "missed")):
         return "取得できませんでした"
     if raw == "unknown":
         return "現在の証拠では分かりません"
-    return "取得できませんでした"
+    return "現在の証拠では分かりません"
 
 
 def render_japanese(event: dict) -> str:
@@ -666,30 +754,39 @@ def render_japanese(event: dict) -> str:
             lines.append(f"📊 {product_id}の{platform}チェックポイント（{age}時間）。")
             lines.append(f"閲覧数 {facts.get('views')}、表示回数 {facts.get('impressions')}。")
         else:
-            lines.append(f"📊 {product_id}の{platform}チェックポイントはまだ取得できませんでした。")
-            lines.append(f"理由: {facts.get('reason') or 'checkpoint_missed'}。")
+            reason = facts.get("reason") or "checkpoint_missed"
+            natural = _reason_text(reason)
+            if natural == "取得できませんでした":
+                natural = "まだ取得できませんでした"
+            lines.append(f"📊 {product_id}の{platform}チェックポイントは{natural}。")
     elif kind == "product_daily":
         lines.append(f"📦 {product_id}の今日の結果です。")
         mrr = facts.get("mrr")
         if mrr is not None:
             lines.append(f"MRRは{_number(mrr)} USD（RevenueCat）。")
         elif facts.get("money_value") is not None:
-            lines.append(f"売上の確認値は{_number(facts.get('money_value'))} USD（{facts.get('money_source')}）。")
+            currency = facts.get("money_currency") or "通貨不明"
+            lines.append(f"売上の確認値は{_number(facts.get('money_value'))} {currency}（{facts.get('money_source')}）。")
+            if facts.get("paid_orders") is not None:
+                lines.append(f"注文数 {facts['paid_orders']}件。")
+        elif facts.get("paid_orders") is not None:
+            lines.append(f"注文数 {facts['paid_orders']}件。売上額は取得できませんでした。")
         else:
+            reason = facts.get('money_reason') or facts.get('mrr_reason') or 'unknown'
             lines.append(
-                f"売上は取得できませんでした。理由: {facts.get('money_reason') or facts.get('mrr_reason') or 'unknown'}。"
+                f"売上は{_reason_text(reason)}。"
             )
     elif kind == "incident":
         source = facts.get("source") or "unknown"
         reason = facts.get("reason") or "unknown"
-        lines.append(f"⚠️ {product_id}で{source}の確認に失敗しました（{reason}）。")
+        lines.append(f"⚠️ {product_id}で{source}の確認が必要です。{_reason_text(reason)}。")
         lines.append(f"次の修復: {facts.get('next_repair') or _repair_for(source)}。")
     elif kind == "experiment":
         status = facts.get("status")
         if status == "not_mature":
             lines.append(f"🧪 {product_id}の実験はまだ判断できる時間ではありません。")
             if facts.get("reason"):
-                lines.append(f"理由: {facts['reason']}。")
+                lines.append(f"補足: {_reason_text(facts['reason'])}。")
         elif status == "observed":
             lines.append(f"🧪 {product_id}の実験結果を観測しました。")
         else:
@@ -702,7 +799,11 @@ def render_japanese(event: dict) -> str:
             if mrr is not None:
                 detail = f"MRR {mrr} USD"
             elif item.get("money_value") is not None:
-                detail = f"売上 {item['money_value']} USD"
+                detail = f"売上 {item['money_value']} {item.get('money_currency') or '通貨不明'}"
+                if item.get("paid_orders") is not None:
+                    detail += f"・注文数 {item['paid_orders']}件"
+            elif item.get("paid_orders") is not None:
+                detail = f"注文数 {item['paid_orders']}件・売上額は取得できませんでした"
             else:
                 detail = _reason_text(item.get("money_reason") or item.get("mrr_reason"))
             lines.append(f"{item_product}: {detail}")
@@ -712,6 +813,9 @@ def render_japanese(event: dict) -> str:
     lines.append(f"product={product_id if product_id is not None else 'portfolio'}")
     if kind == "action" and facts.get("native_url"):
         lines.append(f"native_url={facts['native_url']}")
+    raw_reason = facts.get("reason") or facts.get("money_reason") or facts.get("mrr_reason")
+    if raw_reason:
+        lines.append(f"reason={raw_reason}")
     lines.append("evidence_refs=" + ",".join(event["evidence_refs"]))
     return "\n".join(lines)
 
@@ -746,7 +850,7 @@ class OwnerReportStore:
             for existing in self._reports():
                 if existing.get("message_key") != checked["message_key"]:
                     continue
-                if _canonical(existing) != _canonical(checked):
+                if _canonical(_semantic_event(existing)) != _canonical(_semantic_event(checked)):
                     raise ConflictError(f"conflicting replay for {checked['message_key']}")
                 return copy.deepcopy(existing)
             self.report_path.parent.mkdir(parents=True, exist_ok=True)
@@ -755,20 +859,59 @@ class OwnerReportStore:
                 handle.flush()
             return copy.deepcopy(checked)
 
-    def delivery_for(self, message_key: str) -> dict | None:
+    def _latest_delivery_unlocked(self, message_key: str) -> dict | None:
+        latest = None
         for row in self._deliveries():
             if row.get("message_key") == message_key:
-                return copy.deepcopy(row)
-        return None
+                latest = row
+        return copy.deepcopy(latest) if latest is not None else None
 
-    def record_delivery(self, message_key: str, receipt: dict) -> dict:
+    def delivery_for(self, message_key: str) -> dict | None:
+        """Return the latest append-only state for a message key."""
+
+        return self._latest_delivery_unlocked(message_key)
+
+    def _append_delivery_row(self, row: dict) -> dict:
+        self.delivery_path.parent.mkdir(parents=True, exist_ok=True)
+        with self.delivery_path.open("a", encoding="utf-8") as handle:
+            handle.write(_canonical(row) + "\n")
+            handle.flush()
+        return copy.deepcopy(row)
+
+    def claim_delivery(self, message_key: str) -> tuple[bool, dict]:
+        """Atomically claim a message key before an external send.
+
+        The claim is itself an append-only row.  A second process observing the
+        ``sending`` state never calls Telegram; the first process either
+        appends a terminal receipt or leaves the durable claim for inspection.
+        """
+
         if not isinstance(message_key, str) or not message_key:
             raise DeliveryError("message_key must be non-empty")
+        with self._locked() as lock:
+            existing = self._latest_delivery_unlocked(message_key)
+            if existing is not None:
+                return False, existing
+            claim = {
+                "schema_version": DELIVERY_SCHEMA_VERSION,
+                "message_key": message_key,
+                "status": "sending",
+                "message_ids": [],
+                "claim_id": "claim:" + hashlib.sha256(message_key.encode("utf-8")).hexdigest()[:16],
+                "claimed_at": _timestamp(dt.datetime.now(dt.timezone.utc)),
+                "receipt": {"status": "sending", "message_ids": []},
+            }
+            return True, self._append_delivery_row(claim)
+
+    @staticmethod
+    def _normalize_receipt(receipt: dict) -> dict:
         if not isinstance(receipt, dict):
             raise DeliveryError("Telegram receipt must be an object")
         status = receipt.get("status")
         message_ids = receipt.get("message_ids") or []
-        if not isinstance(message_ids, list) or not all(item is None or isinstance(item, (int, str)) for item in message_ids):
+        if not isinstance(message_ids, list) or not all(
+            item is None or isinstance(item, (int, str)) for item in message_ids
+        ):
             raise DeliveryError("message_ids must be an array")
         message_ids = [item for item in message_ids if item is not None]
         if status == "delivered" and not message_ids:
@@ -778,27 +921,31 @@ class OwnerReportStore:
                 status = "delivered"
             else:
                 raise DeliveryError("receipt status must prove delivery or explicit unknown")
-        normalized_receipt = copy.deepcopy(receipt)
-        normalized_receipt["status"] = status
-        normalized_receipt["message_ids"] = message_ids
+        normalized = copy.deepcopy(receipt)
+        normalized["status"] = status
+        normalized["message_ids"] = message_ids
+        return normalized
+
+    def record_delivery(self, message_key: str, receipt: dict) -> dict:
+        """Append a terminal receipt, allowing only a prior ``sending`` claim."""
+
+        if not isinstance(message_key, str) or not message_key:
+            raise DeliveryError("message_key must be non-empty")
+        normalized_receipt = self._normalize_receipt(receipt)
         row = {
             "schema_version": DELIVERY_SCHEMA_VERSION,
             "message_key": message_key,
-            "status": status,
-            "message_ids": message_ids,
+            "status": normalized_receipt["status"],
+            "message_ids": normalized_receipt["message_ids"],
             "receipt": normalized_receipt,
         }
         with self._locked() as lock:
-            existing = self.delivery_for(message_key)
-            if existing:
+            existing = self._latest_delivery_unlocked(message_key)
+            if existing is not None and existing.get("status") != "sending":
                 if _canonical(existing) != _canonical(row):
                     raise ConflictError(f"conflicting delivery for {message_key}")
                 return existing
-            self.delivery_path.parent.mkdir(parents=True, exist_ok=True)
-            with self.delivery_path.open("a", encoding="utf-8") as handle:
-                handle.write(_canonical(row) + "\n")
-                handle.flush()
-            return copy.deepcopy(row)
+            return self._append_delivery_row(row)
 
 
 def _receipt_from_row(row: dict) -> dict:
@@ -813,9 +960,15 @@ def deliver(event: dict, store: OwnerReportStore, send_text: Callable[[str], dic
 
     recorded = store.record(event)
     message_key = recorded["message_key"]
-    existing = store.delivery_for(message_key)
-    if existing is not None:
-        return _receipt_from_row(existing)
+    claimed, state = store.claim_delivery(message_key)
+    if not claimed:
+        if state.get("status") == "sending":
+            return {
+                "status": "delivery_unknown",
+                "message_ids": [],
+                "error": "delivery_in_progress_claimed_by_another_process",
+            }
+        return _receipt_from_row(state)
     try:
         receipt = send_text(render_japanese(recorded))
     except Exception as exc:  # transport timeout is explicitly not retried
@@ -826,5 +979,16 @@ def deliver(event: dict, store: OwnerReportStore, send_text: Callable[[str], dic
         }
         store.record_delivery(message_key, unknown)
         return unknown
-    store.record_delivery(message_key, receipt)
-    return copy.deepcopy(receipt)
+    try:
+        row = store.record_delivery(message_key, receipt)
+    except DeliveryError as exc:
+        # A response claiming delivery without a real message ID is
+        # ambiguous.  Persist the non-retryable state before returning so a
+        # replay cannot issue a second Bot API call.
+        unknown = {
+            "status": "delivery_unknown",
+            "message_ids": [],
+            "error": f"invalid Telegram receipt: {exc}",
+        }
+        row = store.record_delivery(message_key, unknown)
+    return _receipt_from_row(row)

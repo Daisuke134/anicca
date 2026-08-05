@@ -11,7 +11,10 @@ from __future__ import annotations
 import datetime as dt
 import json
 import tempfile
+import threading
+import time
 import unittest
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from unittest import mock
 
@@ -398,8 +401,11 @@ class OwnerReportRendererTest(unittest.TestCase):
     def test_delivery_requires_real_message_ids(self):
         event = self.event("product_daily", "aniccaios")
         store = owner_report.OwnerReportStore(self.root / "reports.jsonl", self.root / "deliveries.jsonl")
-        with self.assertRaises(Exception):
-            owner_report.deliver(event, store, lambda _text: {"status": "delivered", "message_ids": []})
+        receipt = owner_report.deliver(
+            event, store, lambda _text: {"status": "delivered", "message_ids": []}
+        )
+        self.assertEqual(receipt["status"], "delivery_unknown")
+        self.assertEqual(store.delivery_for(event["message_key"])["status"], "delivery_unknown")
 
     def test_cli_no_send_records_report_without_delivery(self):
         import owner_report_cli
@@ -425,6 +431,133 @@ class OwnerReportRendererTest(unittest.TestCase):
         self.assertTrue(report_path.exists())
         self.assertFalse(delivery_path.exists())
         client.from_env.assert_not_called()
+
+    def test_replay_different_as_of_keeps_semantic_key_and_sends_once(self):
+        first_event = self.event("product_daily", "aniccaios")
+        later = AS_OF + dt.timedelta(days=1)
+        second_event = owner_report.build_events(
+            self.root, "product_daily", product_id="aniccaios", as_of=later
+        )[0]
+        self.assertNotEqual(first_event["as_of"], second_event["as_of"])
+        store = owner_report.OwnerReportStore(self.root / "reports.jsonl", self.root / "deliveries.jsonl")
+        calls = []
+
+        def sender(_text: str) -> dict:
+            calls.append(1)
+            return {"status": "delivered", "message_ids": [201]}
+
+        first = owner_report.deliver(first_event, store, sender)
+        second = owner_report.deliver(second_event, store, sender)
+        self.assertEqual(first["message_ids"], [201])
+        self.assertEqual(second["message_ids"], [201])
+        self.assertEqual(len(calls), 1)
+
+    def test_ebook_paid_orders_are_count_and_minor_money_is_currency(self):
+        rows = owner_report.load_jsonl(self.root / "business-outcomes.jsonl")
+        rows.append(
+            {
+                "schema_version": 1,
+                "product_id": "ebook-en",
+                "business_date": "2026-08-05",
+                "observed_at": "2026-08-05T11:00:00Z",
+                "snapshot_id": "ebook-en:2026-08-05",
+                "sources": {
+                    "stripe": {
+                        "status": "available",
+                        "reason": None,
+                        "data": {
+                            "paid_orders": 3,
+                            "gross_minor": {"USD": 1500},
+                            "net_minor": {"USD": 1234},
+                        },
+                    }
+                },
+            }
+        )
+        (self.root / "business-outcomes.jsonl").write_text(
+            "".join(json.dumps(row, ensure_ascii=False) + "\n" for row in rows),
+            encoding="utf-8",
+        )
+        event = owner_report.build_events(
+            self.root, "product_daily", product_id="ebook-en", as_of=AS_OF
+        )[0]
+        text = owner_report.render_japanese(event)
+        self.assertIn("注文数 3件", text)
+        self.assertIn("12.34 USD", text)
+        self.assertNotIn("売上の確認値は3 USD", text)
+
+    def test_invalid_delivered_receipt_is_durable_unknown_and_not_retried(self):
+        event = self.event("product_daily", "aniccaios")
+        store = owner_report.OwnerReportStore(self.root / "reports.jsonl", self.root / "deliveries.jsonl")
+        calls = []
+
+        def sender(_text: str) -> dict:
+            calls.append(1)
+            return {"status": "delivered", "message_ids": []}
+
+        first = owner_report.deliver(event, store, sender)
+        second = owner_report.deliver(event, store, sender)
+        self.assertEqual(first["status"], "delivery_unknown")
+        self.assertEqual(second["status"], "delivery_unknown")
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(store.delivery_for(event["message_key"])["status"], "delivery_unknown")
+
+    def test_concurrent_delivery_claim_sends_at_most_once(self):
+        event = self.event("product_daily", "aniccaios")
+        store = owner_report.OwnerReportStore(self.root / "reports.jsonl", self.root / "deliveries.jsonl")
+        calls = []
+        start = threading.Barrier(2)
+
+        def sender(_text: str) -> dict:
+            calls.append(1)
+            time.sleep(0.08)
+            return {"status": "delivered", "message_ids": [301]}
+
+        def run() -> dict:
+            start.wait()
+            return owner_report.deliver(event, store, sender)
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            first, second = pool.map(lambda _unused: run(), (1, 2))
+        self.assertEqual(len(calls), 1)
+        self.assertIn(first["status"], {"delivered", "delivery_unknown"})
+        self.assertIn(second["status"], {"delivered", "delivery_unknown"})
+
+    def test_missing_business_snapshot_emits_null_daily_event(self):
+        with tempfile.TemporaryDirectory() as path:
+            root = Path(path)
+            events = owner_report.build_events(
+                root, "product_daily", product_id="honne", as_of=AS_OF
+            )
+        self.assertEqual(len(events), 1)
+        self.assertIsNone(events[0]["facts"]["mrr"])
+        self.assertEqual(events[0]["facts"]["money_reason"], "no_business_snapshot")
+        self.assertIn("取得できませんでした", owner_report.render_japanese(events[0]))
+
+    def test_named_reasons_are_natural_in_owner_facing_prose(self):
+        checkpoint = self.event("checkpoint", "ebook-ja")
+        checkpoint["facts"]["reason"] = "social_checkpoint_not_mature"
+        checkpoint_body = owner_report.render_japanese(checkpoint).split("確認情報", 1)[0]
+        self.assertIn("まだ判断できる時間ではありません", checkpoint_body)
+        self.assertNotIn("social_checkpoint_not_mature", checkpoint_body)
+
+        daily = self.event("product_daily", "ebook-ja")
+        daily["facts"]["money_reason"] = "kdp_not_authenticated"
+        daily_body = owner_report.render_japanese(daily).split("確認情報", 1)[0]
+        self.assertIn("取得できませんでした", daily_body)
+        self.assertNotIn("kdp_not_authenticated", daily_body)
+
+        incident = self.event("incident", "ebook-ja")
+        incident["facts"]["reason"] = "missing_project_read_credential"
+        incident_body = owner_report.render_japanese(incident).split("確認情報", 1)[0]
+        self.assertIn("取得できませんでした", incident_body)
+        self.assertNotIn("missing_project_read_credential", incident_body)
+
+    def test_empty_evidence_refs_fail_closed(self):
+        event = self.event("product_daily", "aniccaios")
+        event["evidence_refs"] = []
+        with self.assertRaises(owner_report.OwnerReportError):
+            owner_report.render_japanese(event)
 
 
 if __name__ == "__main__":
