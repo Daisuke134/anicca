@@ -63,7 +63,7 @@ class NativeMetricCheckpointTest(unittest.TestCase):
         self.assertEqual(counts["excluded_ambiguous"], 1)
         self.assertEqual(counts["excluded_error"], 1)
 
-    def test_due_and_missed_checkpoints_are_distinct(self):
+    def test_late_checkpoint_is_still_due_with_missed_sla(self):
         plans = metrics.plan_checkpoints(
             publication(),
             existing_rows=[],
@@ -71,9 +71,11 @@ class NativeMetricCheckpointTest(unittest.TestCase):
         )
         self.assertEqual(
             [(plan["target_age_hours"], plan["checkpoint_status"]) for plan in plans],
-            [(6, "missed"), (24, "due")],
+            [(6, "due"), (24, "due")],
         )
+        self.assertEqual(plans[0]["checkpoint_sla_status"], "missed")
         self.assertEqual(plans[0]["error"], "checkpoint_missed")
+        self.assertEqual(plans[1]["checkpoint_sla_status"], "in_window")
         self.assertIsNone(plans[1]["error"])
 
     def test_current_value_is_never_backfilled_into_missed_checkpoint(self):
@@ -90,7 +92,12 @@ class NativeMetricCheckpointTest(unittest.TestCase):
             self.assertEqual(missed["metric_null_reasons"][field], "checkpoint_missed")
 
     def test_existing_checkpoint_is_idempotently_skipped(self):
-        existing = [{"publication_id": "postiz:post-1", "target_age_hours": 6}]
+        existing = [{
+            "publication_id": "postiz:post-1",
+            "target_age_hours": 6,
+            "snapshot_id": "measured-6",
+            "checkpoint_status": "measured",
+        }]
         plans = metrics.plan_checkpoints(
             publication(), existing, "2026-08-02T01:00:00Z"
         )
@@ -99,14 +106,61 @@ class NativeMetricCheckpointTest(unittest.TestCase):
             [(24, "due")],
         )
 
-    def test_very_late_run_records_missed_not_fake_measurements(self):
+    def test_very_late_run_still_plans_provider_collection(self):
         plans = metrics.plan_checkpoints(
             publication(), [], "2026-08-04T08:00:00Z"
         )
         self.assertEqual(
             [(plan["target_age_hours"], plan["checkpoint_status"]) for plan in plans],
-            [(6, "missed"), (24, "missed"), (72, "missed")],
+            [(6, "due"), (24, "due"), (72, "due")],
         )
+        self.assertTrue(
+            all(plan["checkpoint_sla_status"] == "missed" for plan in plans)
+        )
+
+    def test_historical_missed_checkpoint_plans_one_linked_correction(self):
+        missed = metrics.make_missed_row(
+            publication(),
+            {
+                "target_age_hours": 6,
+                "observed_age_hours": 25.0,
+                "lateness_hours": 19.0,
+                "max_lateness_hours": 3,
+                "checkpoint_status": "missed",
+                "error": "checkpoint_missed",
+            },
+            "2026-08-02T01:00:00Z",
+        )
+        plans = metrics.plan_checkpoints(
+            publication(), [missed], "2026-08-02T02:00:00Z"
+        )
+        correction = next(plan for plan in plans if plan["target_age_hours"] == 6)
+        self.assertEqual(correction["checkpoint_status"], "due")
+        self.assertEqual(correction["checkpoint_sla_status"], "missed")
+        self.assertEqual(correction["corrects_snapshot_id"], missed["snapshot_id"])
+
+    def test_late_checkpoint_fetches_real_zero_instead_of_writing_missed(self):
+        calls = []
+
+        def fetch(postiz_id: str) -> list[dict]:
+            calls.append(postiz_id)
+            return [
+                {"label": "Views", "data": [{"total": 0}]},
+                {"label": "Likes", "data": [{"total": 0}]},
+            ]
+
+        new_rows, _raw, _report = metrics.collect_metrics(
+            [publication(platform="youtube")],
+            [],
+            observed_at="2026-08-02T01:00:00Z",
+            fetch_analytics=fetch,
+        )
+        six_hour = next(row for row in new_rows if row["target_age_hours"] == 6)
+        self.assertEqual(calls, ["post-1", "post-1"])
+        self.assertEqual(six_hour["checkpoint_status"], "measured")
+        self.assertEqual(six_hour["checkpoint_sla_status"], "missed")
+        self.assertEqual(six_hour["views"], 0)
+        self.assertIsNone(six_hour["error"])
 
     def test_product_binding_fields_propagate_to_due_and_missed_rows(self):
         plans = metrics.plan_checkpoints(

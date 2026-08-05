@@ -66,6 +66,104 @@ def extract_wanted_items(
     return found
 
 
+def extract_profile_identity_items(
+    payload: dict[str, Any], *, expected_handle: str
+) -> list[dict[str, Any]]:
+    """Return only stable fields needed for caption+time identity matching."""
+
+    items: list[dict[str, Any]] = []
+    for item in payload.get("itemList") or []:
+        native_id = str(item.get("id") or "")
+        author = item.get("author") or {}
+        handle = str(author.get("uniqueId") or "")
+        if not native_id or handle.lower() != expected_handle.lower():
+            continue
+        items.append(
+            {
+                "id": native_id,
+                "webVideoUrl": f"https://www.tiktok.com/@{handle}/video/{native_id}",
+                "text": str(item.get("desc") or ""),
+                "createTime": item.get("createTime"),
+                "authorMeta": {"name": handle},
+            }
+        )
+    return items
+
+
+async def _collect_profiles_async(
+    handles: Iterable[str], *, cdp_url: str, wait_ms: int
+) -> list[dict[str, Any]]:
+    try:
+        from playwright.async_api import async_playwright
+    except ImportError as exc:
+        raise RuntimeError("playwright is required for TikTok public identity") from exc
+
+    wanted = sorted(
+        {
+            str(handle).lstrip("@")
+            for handle in handles
+            if HANDLE.fullmatch("@" + str(handle).lstrip("@"))
+        }
+    )
+    if not wanted:
+        return []
+    found: dict[str, dict[str, Any]] = {}
+    async with async_playwright() as playwright:
+        browser = await playwright.chromium.connect_over_cdp(cdp_url)
+        context = await browser.new_context()
+        try:
+            page = await context.new_page()
+            for handle in wanted:
+                pending: set[asyncio.Task[Any]] = set()
+
+                async def capture(response: Any, expected_handle: str = handle) -> None:
+                    if "/api/post/item_list/" not in response.url or response.status != 200:
+                        return
+                    try:
+                        payload = await response.json()
+                    except Exception:
+                        return
+                    for item in extract_profile_identity_items(
+                        payload, expected_handle=expected_handle
+                    ):
+                        found[str(item["id"])] = item
+
+                def schedule(response: Any) -> None:
+                    task = asyncio.create_task(capture(response))
+                    pending.add(task)
+                    task.add_done_callback(pending.discard)
+
+                page.on("response", schedule)
+                try:
+                    await page.goto(
+                        f"https://www.tiktok.com/@{handle}",
+                        wait_until="domcontentloaded",
+                        timeout=60_000,
+                    )
+                    await page.wait_for_timeout(wait_ms)
+                    await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+                    await page.wait_for_timeout(2_000)
+                    if pending:
+                        await asyncio.gather(*list(pending), return_exceptions=True)
+                finally:
+                    page.remove_listener("response", schedule)
+        finally:
+            await context.close()
+            await browser.close()
+    return list(found.values())
+
+
+def collect_tiktok_public_profiles(
+    handles: Iterable[str],
+    *,
+    cdp_url: str = "http://127.0.0.1:9222",
+    wait_ms: int = 7_000,
+) -> list[dict[str, Any]]:
+    return asyncio.run(
+        _collect_profiles_async(handles, cdp_url=cdp_url, wait_ms=wait_ms)
+    )
+
+
 async def _collect_async(
     publications: Iterable[dict[str, Any]],
     *,
@@ -146,4 +244,3 @@ def collect_tiktok_public_metrics(
     return asyncio.run(
         _collect_async(publications, cdp_url=cdp_url, wait_ms=wait_ms)
     )
-

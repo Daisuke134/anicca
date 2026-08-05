@@ -1,0 +1,46 @@
+{
+  "action": "apply",
+  "launch_dir": "/Users/anicca/Library/LaunchAgents",
+  "repo_root": "/Users/anicca/anicca",
+  "rows": [
+    {
+      "bootout_returncode": 0,
+      "bootstrap_returncode": 0,
+      "changed": true,
+      "current_sha256": "703a3ec0b30555eb3931301eaad4286dc2d6ffb2fa161792bf41075f26c6c806",
+      "installed_sha256": "6eab969e1b32cd7b8d739ac7b2586d2601fc6dd3174221aef795d177e24d705d",
+      "kickstart_returncode": 0,
+      "label": "ai.anicca.marketing-owner-events",
+      "loaded_readback": true,
+      "path": "/Users/anicca/Library/LaunchAgents/ai.anicca.marketing-owner-events.plist",
+      "readback_mentions_cli": true,
+      "status": "update"
+    },
+    {
+      "bootout_returncode": 0,
+      "bootstrap_returncode": 0,
+      "changed": false,
+      "current_sha256": "a9d2e69cab5ef58de663d9c73837ce977edaac1546c4f16317847a7ccdea331d",
+      "installed_sha256": "a9d2e69cab5ef58de663d9c73837ce977edaac1546c4f16317847a7ccdea331d",
+      "kickstart_returncode": 0,
+      "label": "ai.anicca.marketing-owner-daily",
+      "loaded_readback": true,
+      "path": "/Users/anicca/Library/LaunchAgents/ai.anicca.marketing-owner-daily.plist",
+      "readback_mentions_cli": true,
+      "status": "no-change"
+    },
+    {
+      "bootout_returncode": 0,
+      "bootstrap_returncode": 0,
+      "changed": false,
+      "current_sha256": "e26048a1e9c35a4c3ab31d151f9658e8cdb9a8e4e3a0aae4be7985cef3576181",
+      "installed_sha256": "e26048a1e9c35a4c3ab31d151f9658e8cdb9a8e4e3a0aae4be7985cef3576181",
+      "kickstart_returncode": 0,
+      "label": "ai.anicca.marketing-owner-weekly",
+      "loaded_readback": true,
+      "path": "/Users/anicca/Library/LaunchAgents/ai.anicca.marketing-owner-weekly.plist",
+      "readback_mentions_cli": true,
+      "status": "no-change"
+    }
+  ]
+}

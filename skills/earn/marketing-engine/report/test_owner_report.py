@@ -415,10 +415,13 @@ class OwnerReportRendererTest(unittest.TestCase):
         self.assertIn("42", measured_text)
         self.assertIn("50", measured_text)
 
-        missed = self.event("checkpoint", "ebook-ja")
-        missed_text = owner_report.render_japanese(missed)
-        self.assertIn("まだ取得できませんでした", missed_text)
-        self.assertNotIn("views 0", missed_text)
+        self.assertEqual(
+            owner_report.build_events(
+                self.root, "checkpoint", product_id="ebook-ja", as_of=AS_OF
+            ),
+            [],
+            "unmeasured checkpoints belong in one health incident, not checkpoint spam",
+        )
 
     def test_bound_checkpoint_is_product_scoped_and_replays_delivery(self):
         native_url = "https://www.tiktok.com/@account/video/native-1"
@@ -528,120 +531,95 @@ class OwnerReportRendererTest(unittest.TestCase):
         self.assertIn("KDP", text)
         self.assertIn("認証", text)
 
-    def test_missed_checkpoint_incidents_have_distinct_replayable_keys(self):
-        collision_rows = [
+    def test_social_checkpoint_failures_aggregate_once_per_product_platform_day(self):
+        metrics_path = self.root / "post-metrics.jsonl"
+        rows = owner_report.load_jsonl(metrics_path)
+        rows.extend(
             {
                 "schema_version": 1,
+                "snapshot_id": f"missed-{age}",
                 "product_id": "ebook-ja",
-                "publication_id": "postiz:collision",
-                "postiz_id": "collision",
-                "native_url": "https://www.tiktok.com/@account/video/collision",
-                "native_post_id": "collision",
+                "publication_id": "postiz:another",
+                "postiz_id": "another",
+                "native_url": "https://www.tiktok.com/@account/video/another",
+                "native_post_id": "another",
                 "platform": "tiktok",
                 "checkpoint_status": "missed",
-                "target_age_hours": target_age_hours,
-                "observed_at": "2026-08-05T10:00:00Z",
+                "target_age_hours": age,
+                "observed_at": "2026-08-05T10:30:00Z",
                 "views": None,
-                "impressions": None,
-                "reach": None,
-                "likes": None,
-                "comments": None,
-                "shares": None,
-                "saves": None,
                 "metric_null_reasons": {"views": "checkpoint_missed"},
                 "error": "checkpoint_missed",
             }
-            for target_age_hours in (6, 24)
-        ]
-        metrics_path = self.root / "post-metrics.jsonl"
-        rows = owner_report.load_jsonl(metrics_path)
-        rows.extend(collision_rows)
+            for age in (6, 24)
+        )
         metrics_path.write_text(
             "".join(json.dumps(row, ensure_ascii=False) + "\n" for row in rows),
             encoding="utf-8",
         )
 
-        events = [
+        social = [
             event
             for event in owner_report.build_events(
                 self.root, "incident", product_id="ebook-ja", as_of=AS_OF
             )
-            if event["facts"].get("publication_id") == "postiz:collision"
+            if event["facts"].get("source") == "social_measurement"
         ]
-        self.assertEqual(len(events), 2)
+        self.assertEqual(len(social), 1)
         self.assertEqual(
-            {event["facts"]["reason"] for event in events}, {"checkpoint_missed"}
+            social[0]["message_key"],
+            "measurement_unhealthy:ebook-ja:tiktok:2026-08-05",
         )
+        self.assertEqual(social[0]["facts"]["affected_checkpoints"], 3)
 
-        store = owner_report.OwnerReportStore(
-            self.root / "owner-reports.jsonl", self.root / "owner-report-deliveries.jsonl"
-        )
-        calls = []
-
-        def sender(_text: str) -> dict:
-            calls.append(1)
-            return {"status": "delivered", "message_ids": [900 + len(calls)]}
-
-        first_receipts = [owner_report.deliver(event, store, sender) for event in events]
-        self.assertEqual(
-            [receipt["status"] for receipt in first_receipts], ["delivered", "delivered"]
-        )
-        self.assertEqual(
-            {event["message_key"] for event in events},
-            {
-                "incident:ebook-ja:social_checkpoint:postiz:collision:checkpoint_missed:6",
-                "incident:ebook-ja:social_checkpoint:postiz:collision:checkpoint_missed:24",
-            },
-        )
-        self.assertEqual(calls, [1, 1])
-
-        replay_events = [
-            event
-            for event in owner_report.build_events(
-                self.root, "incident", product_id="ebook-ja", as_of=AS_OF
-            )
-            if event["facts"].get("publication_id") == "postiz:collision"
-        ]
-        replay_receipts = [owner_report.deliver(event, store, sender) for event in replay_events]
-        self.assertEqual(
-            [receipt["message_ids"] for receipt in replay_receipts], [[901], [902]]
-        )
-        self.assertEqual(calls, [1, 1])
-
-    def test_legacy_incident_key_and_receipt_survive_a_later_checkpoint_age(self):
-        base_row = {
-            "schema_version": 1,
-            "product_id": "ebook-ja",
-            "publication_id": "postiz:legacy-collision",
-            "postiz_id": "legacy-collision",
-            "native_url": "https://www.tiktok.com/@account/video/legacy-collision",
-            "native_post_id": "legacy-collision",
-            "platform": "tiktok",
-            "checkpoint_status": "missed",
-            "target_age_hours": 24,
-            "observed_at": "2026-08-05T10:00:00Z",
-            "views": None,
-            "metric_null_reasons": {"views": "checkpoint_missed"},
-            "error": "checkpoint_missed",
-        }
+    def test_measured_correction_removes_resolved_checkpoint_from_health_incident(self):
         metrics_path = self.root / "post-metrics.jsonl"
         rows = owner_report.load_jsonl(metrics_path)
-        rows.append(base_row)
+        missed = next(row for row in rows if row.get("product_id") == "ebook-ja")
+        missed["snapshot_id"] = "missed-original"
+        correction = dict(
+            missed,
+            snapshot_id="measured-correction",
+            corrects_snapshot_id="missed-original",
+            checkpoint_status="measured",
+            observed_at="2026-08-05T11:00:00Z",
+            views=0,
+            impressions=0,
+            likes=0,
+            comments=0,
+            shares=0,
+            saves=0,
+            metric_null_reasons={"reach": "provider_field_missing"},
+            error=None,
+        )
+        rows.append(correction)
         metrics_path.write_text(
             "".join(json.dumps(row, ensure_ascii=False) + "\n" for row in rows),
             encoding="utf-8",
         )
 
+        social = [
+            event
+            for event in owner_report.build_events(
+                self.root, "incident", product_id="ebook-ja", as_of=AS_OF
+            )
+            if event["facts"].get("source") == "social_measurement"
+        ]
+        self.assertEqual(social, [])
+        checkpoint = owner_report.build_events(
+            self.root, "checkpoint", product_id="ebook-ja", as_of=AS_OF
+        )
+        self.assertEqual(len(checkpoint), 1)
+        self.assertEqual(checkpoint[0]["facts"]["views"], 0)
+
+    def test_daily_social_incident_delivery_replays_once_when_more_failures_arrive(self):
         initial = next(
             event
             for event in owner_report.build_events(
                 self.root, "incident", product_id="ebook-ja", as_of=AS_OF
             )
-            if event["facts"].get("publication_id") == "postiz:legacy-collision"
+            if event["facts"].get("source") == "social_measurement"
         )
-        legacy_key = "incident:ebook-ja:social_checkpoint:postiz:legacy-collision:checkpoint_missed"
-        self.assertEqual(initial["message_key"], legacy_key)
-
         store = owner_report.OwnerReportStore(
             self.root / "owner-reports.jsonl", self.root / "owner-report-deliveries.jsonl"
         )
@@ -649,39 +627,33 @@ class OwnerReportRendererTest(unittest.TestCase):
 
         def sender(_text: str) -> dict:
             calls.append(1)
-            return {"status": "delivered", "message_ids": [950 + len(calls)]}
+            return {"status": "delivered", "message_ids": [950]}
 
-        first_receipt = owner_report.deliver(initial, store, sender)
-
-        later_row = dict(base_row, target_age_hours=6)
-        with metrics_path.open("a", encoding="utf-8") as handle:
+        first = owner_report.deliver(initial, store, sender)
+        later_row = {
+            **owner_report.load_jsonl(self.root / "post-metrics.jsonl")[-1],
+            "snapshot_id": "later-failure",
+            "publication_id": "postiz:later",
+            "postiz_id": "later",
+            "target_age_hours": 6,
+            "observed_at": "2026-08-05T11:00:00Z",
+        }
+        with (self.root / "post-metrics.jsonl").open("a", encoding="utf-8") as handle:
             handle.write(json.dumps(later_row, ensure_ascii=False) + "\n")
 
-        events = [
+        replay = next(
             event
             for event in owner_report.build_events(
                 self.root, "incident", product_id="ebook-ja", as_of=AS_OF
             )
-            if event["facts"].get("publication_id") == "postiz:legacy-collision"
-        ]
-        self.assertEqual(len({event["message_key"] for event in events}), 2)
-        receipts = [owner_report.deliver(event, store, sender) for event in events]
-        self.assertIn(first_receipt["message_ids"], [receipt["message_ids"] for receipt in receipts])
-        self.assertEqual(calls, [1, 1])
-
-        replay = [
-            event
-            for event in owner_report.build_events(
-                self.root, "incident", product_id="ebook-ja", as_of=AS_OF
-            )
-            if event["facts"].get("publication_id") == "postiz:legacy-collision"
-        ]
-        replay_receipts = [owner_report.deliver(event, store, sender) for event in replay]
-        self.assertEqual(
-            sorted(receipt["message_ids"] for receipt in replay_receipts),
-            sorted(receipt["message_ids"] for receipt in receipts),
+            if event["facts"].get("source") == "social_measurement"
         )
-        self.assertEqual(calls, [1, 1])
+        second = owner_report.deliver(replay, store, sender)
+        self.assertEqual(replay["message_key"], initial["message_key"])
+        self.assertEqual(replay["facts"], initial["facts"])
+        self.assertEqual(first["message_ids"], [950])
+        self.assertEqual(second["message_ids"], [950])
+        self.assertEqual(calls, [1])
 
     def test_incident_uses_latest_snapshot_and_aggregates_current_gaps(self):
         """Historical snapshots must not replay stale gaps into a sweep."""
@@ -1190,7 +1162,9 @@ class OwnerReportRendererTest(unittest.TestCase):
         self.assertIn("取得できませんでした", owner_report.render_japanese(events[0]))
 
     def test_named_reasons_are_natural_in_owner_facing_prose(self):
-        checkpoint = self.event("checkpoint", "ebook-ja")
+        checkpoint = self.event("checkpoint", "aniccaios")
+        checkpoint["facts"]["checkpoint_status"] = "unavailable"
+        checkpoint["facts"]["views"] = None
         checkpoint["facts"]["reason"] = "social_checkpoint_not_mature"
         checkpoint_body = owner_report.render_japanese(checkpoint).split("確認情報", 1)[0]
         self.assertIn("まだ判断できる時間ではありません", checkpoint_body)

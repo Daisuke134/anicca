@@ -204,6 +204,23 @@ def _latest(rows: list[tuple[int, dict]], as_of: dt.datetime, *fields: str) -> t
     return max(eligible, key=lambda pair: (_date_key(pair[1], *fields), pair[0]))
 
 
+def _latest_metric_snapshots(
+    rows: list[tuple[int, dict]], as_of: dt.datetime
+) -> list[tuple[int, dict]]:
+    """Keep the newest append-only snapshot for each publication checkpoint."""
+
+    latest: dict[tuple[object, object], tuple[int, dict]] = {}
+    for index, row in rows:
+        if not _before(row, as_of):
+            continue
+        key = (
+            row.get("publication_id") or row.get("postiz_id"),
+            row.get("target_age_hours"),
+        )
+        latest[key] = (index, row)
+    return sorted(latest.values(), key=lambda pair: pair[0])
+
+
 def _matching_identity(
     identity_rows: list[tuple[int, dict]],
     source: dict,
@@ -448,11 +465,13 @@ def _action_events(root: pathlib.Path, product_id: str, as_of: dt.datetime) -> l
 
 
 def _checkpoint_events(root: pathlib.Path, product_id: str, as_of: dt.datetime) -> list[dict]:
-    rows = _scoped(_indexed_rows(root, "post-metrics.jsonl"), product_id)
+    rows = _latest_metric_snapshots(
+        _scoped(_indexed_rows(root, "post-metrics.jsonl"), product_id), as_of
+    )
     identities = _indexed_rows(root, "publication-identity.jsonl")
     events = []
     for index, row in sorted(rows, key=lambda pair: (_date_key(pair[1], "observed_at", "published_at"), pair[0])):
-        if not _before(row, as_of):
+        if row.get("checkpoint_status") != "measured":
             continue
         # A metric row is accepted only when its publication identity is either
         # unbound legacy data (which cannot be reassigned) or bound to this
@@ -476,6 +495,9 @@ def _checkpoint_events(root: pathlib.Path, product_id: str, as_of: dt.datetime) 
             "reason": reasons.get("views") or row.get("error"),
         }
         suffix = f"{facts['publication_id']}:{facts['target_age_hours']}"
+        if row.get("corrects_snapshot_id"):
+            correction_id = str(row.get("snapshot_id") or "unknown")[:12]
+            suffix += f":correction:{correction_id}"
         events.append(_event(
             kind="checkpoint",
             product_id=product_id,
@@ -781,54 +803,55 @@ def _incident_events(root: pathlib.Path, product_id: str, as_of: dt.datetime) ->
                 )
             )
 
-    # Keep product-bound social checkpoint incidents separate from business
-    # incidents.  Unbound rows are intentionally excluded by _scoped above.
+    # One current health event per product/platform/day replaces historical
+    # per-checkpoint noise. Corrections supersede old missed rows before the
+    # grouping is computed.
     social_rows = []
-    for index, row in _scoped(_indexed_rows(root, "post-metrics.jsonl"), product_id):
-        if not _before(row, as_of):
-            continue
+    current_metrics = _latest_metric_snapshots(
+        _scoped(_indexed_rows(root, "post-metrics.jsonl"), product_id), as_of
+    )
+    for index, row in current_metrics:
         status = row.get("checkpoint_status")
         reason = (row.get("metric_null_reasons") or {}).get("views") or row.get("error")
         if status not in {"missed", "error", "failed"} and not reason:
             continue
         social_rows.append((index, row, reason or "checkpoint_failed"))
 
-    base_counts: Counter[str] = Counter()
-    for _index, row, reason in social_rows:
-        base_counts[
-            _social_checkpoint_incident_base_key(
-                product_id,
-                {
-                    "publication_id": row.get("publication_id") or row.get("postiz_id"),
-                    "reason": reason,
-                },
-            )
-        ] += 1
-    used_keys: set[str] = set()
-    for index, row, reason in social_rows:
+    by_platform: dict[str, list[tuple[int, dict, str]]] = {}
+    for item in social_rows:
+        platform = str(item[1].get("platform") or item[1].get("provider_identifier") or "unknown")
+        by_platform.setdefault(platform, []).append(item)
+    day = as_of.date().isoformat()
+    for platform, failures in sorted(by_platform.items()):
+        message_key = f"measurement_unhealthy:{product_id}:{platform}:{day}"
         facts = {
-            "source": "social_checkpoint",
-            "reason": reason,
+            "source": "social_measurement",
+            "platform": platform,
+            "reason": failures[0][2],
             "next_repair": _repair_for("social_checkpoint"),
-            "native_url": row.get("native_url"),
-            "publication_id": row.get("publication_id") or row.get("postiz_id"),
+            "affected_checkpoints": len(failures),
+            "native_urls": list(dict.fromkeys(
+                str(row.get("native_url"))
+                for _index, row, _reason in failures
+                if row.get("native_url")
+            )),
         }
-        message_key = _social_checkpoint_incident_key(
-            root,
-            product_id,
-            index,
-            row,
-            facts,
-            base_counts,
-            used_keys,
+        evidence_refs = [
+            _ref("post-metrics.jsonl", index) for index, _row, _reason in failures
+        ]
+        existing = _existing_owner_report(
+            root, kind="incident", product_id=product_id, message_key=message_key
         )
+        if existing is not None:
+            facts = copy.deepcopy(existing["facts"])
+            evidence_refs = copy.deepcopy(existing["evidence_refs"])
         events.append(_event(
             kind="incident",
             product_id=product_id,
             as_of=as_of,
             message_key=message_key,
             facts=facts,
-            evidence_refs=[_ref("post-metrics.jsonl", index)],
+            evidence_refs=evidence_refs,
         ))
     return events
 

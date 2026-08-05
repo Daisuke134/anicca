@@ -42,23 +42,22 @@ class BuildPlistsTests(unittest.TestCase):
             set(LABELS.values()),
         )
 
-    def test_event_job_runs_all_four_sweeps_every_900_seconds(self):
+    def test_event_job_runs_serialized_truth_pipeline_hourly(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = pathlib.Path(tmp) / "repo"
             home = pathlib.Path(tmp) / "home"
             job = _plist(installer.build_plists(root, home)[LABELS["events"]])
 
         self.assertEqual(job["Label"], LABELS["events"])
-        self.assertEqual(job["StartInterval"], 900)
+        self.assertEqual(job["StartInterval"], 3600)
         self.assertNotIn("StartCalendarInterval", job)
         self.assertEqual(job["WorkingDirectory"], str(root))
         command = " ".join(job["ProgramArguments"])
-        cli = root / "skills/earn/marketing-engine/report/owner_report_cli.py"
-        state = root / "skills/earn/marketing-engine/state"
-        self.assertIn(str(cli), command)
-        self.assertIn(str(state), command)
-        for kind in ("action", "checkpoint", "incident", "experiment"):
-            self.assertIn(f"--kind {kind}", command)
+        pipeline = root / "skills/earn/marketing-engine/report/truth_pipeline.py"
+        self.assertEqual(job["ProgramArguments"][1], str(pipeline))
+        self.assertIn(str(pipeline), command)
+        self.assertNotIn("/bin/sh", command)
+        self.assertNotIn("apify", command.lower())
 
     def test_daily_and_weekly_calendar_intervals_and_arguments(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -302,13 +301,13 @@ class ApplyTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "readback mismatch"):
                 installer.apply(root, home, launch_dir)
 
-    def test_event_interval_wrong_value_is_rejected_even_if_900_appears_elsewhere(self):
+    def test_event_interval_wrong_value_is_rejected_even_if_3600_appears_elsewhere(self):
         with tempfile.TemporaryDirectory() as tmp:
             root, home, launch_dir = (pathlib.Path(tmp) / name for name in ("repo", "home", "LaunchAgents"))
             label = LABELS["events"]
             readback = _matching_readback(root, home, label).replace(
-                "run interval = 900 seconds", "run interval = 120 seconds"
-            ) + "\nUnrelated = 900"
+                "run interval = 3600 seconds", "run interval = 120 seconds"
+            ) + "\nUnrelated = 3600"
             self._assert_schedule_readback_rejected(root, home, launch_dir, label, readback)
 
     def test_daily_hour_wrong_value_is_rejected_even_if_22_appears_elsewhere(self):

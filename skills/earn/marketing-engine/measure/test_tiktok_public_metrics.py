@@ -74,6 +74,42 @@ class TikTokPublicMetricsTest(unittest.TestCase):
             {"native_post_id", "handle", "native_url", "stats"},
         )
 
+    def test_profile_identity_items_keep_only_deterministic_match_fields(self):
+        payload = {
+            "itemList": [
+                {
+                    "id": "7669159327655054613",
+                    "desc": "Full caption text",
+                    "createTime": 1785552010,
+                    "author": {"uniqueId": "obou_anicca"},
+                    "video": {"playAddr": "https://expiring.example/video"},
+                    "stats": {"playCount": 99},
+                },
+                {
+                    "id": "wrong-account",
+                    "desc": "must be excluded",
+                    "createTime": 1785552011,
+                    "author": {"uniqueId": "someone_else"},
+                },
+            ]
+        }
+        items = tiktok.extract_profile_identity_items(
+            payload, expected_handle="obou_anicca"
+        )
+        self.assertEqual(
+            items,
+            [
+                {
+                    "id": "7669159327655054613",
+                    "webVideoUrl": "https://www.tiktok.com/@obou_anicca/video/7669159327655054613",
+                    "text": "Full caption text",
+                    "createTime": 1785552010,
+                    "authorMeta": {"name": "obou_anicca"},
+                }
+            ],
+        )
+        self.assertNotIn("expiring.example", str(items))
+
 
 if __name__ == "__main__":
     unittest.main()

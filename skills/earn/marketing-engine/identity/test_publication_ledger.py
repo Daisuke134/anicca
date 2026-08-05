@@ -69,6 +69,79 @@ def unbound_row(identifier: str, integration_id: str = "integration-ebook-ja") -
 
 
 class PublicationLedgerTest(unittest.TestCase):
+    def test_live_reconcile_of_exact_tiktok_receipt_requires_no_paid_scraper(self):
+        value = post(platform="tiktok")
+        value["releaseId"] = "7669159327655054613"
+        value["releaseURL"] = (
+            "https://www.tiktok.com/@handle/video/7669159327655054613"
+        )
+        value["integration"]["id"] = "integration-ebook-ja"
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            output = root / "publication-identity.jsonl"
+            report = root / "report.json"
+            env = root / ".env"
+            env.write_text("POSTIZ_API_KEY=test-only\n", encoding="utf-8")
+            products, accounts = binding_registries(root)
+            with mock.patch.object(ledger, "fetch_postiz_posts", return_value=[value]):
+                result = ledger.main([
+                    "--days", "8",
+                    "--env-file", str(env),
+                    "--output", str(output),
+                    "--report", str(report),
+                    "--product-registry", str(products),
+                    "--account-registry", str(accounts),
+                ])
+            row = json.loads(output.read_text(encoding="utf-8").splitlines()[0])
+        self.assertEqual(result, 0)
+        self.assertEqual(row["native_post_id"], "7669159327655054613")
+        self.assertEqual(row["provenance"], ["postiz_public_api"])
+
+    def test_profile_only_tiktok_receipt_uses_free_public_browser_snapshot(self):
+        value = post(platform="tiktok")
+        value["releaseId"] = "publish-token"
+        value["releaseURL"] = "https://www.tiktok.com/@handle"
+        value["integration"]["id"] = "integration-ebook-ja"
+        public_item = {
+            "id": "7669159327655054613",
+            "webVideoUrl": "https://www.tiktok.com/@handle/video/7669159327655054613",
+            "text": "Full caption text",
+            "createTimeISO": "2026-08-01T00:00:10Z",
+            "authorMeta": {"name": "handle"},
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            output = root / "publication-identity.jsonl"
+            report = root / "report.json"
+            env = root / ".env"
+            env.write_text("POSTIZ_API_KEY=test-only\n", encoding="utf-8")
+            products, accounts = binding_registries(root)
+            with (
+                mock.patch.object(ledger, "fetch_postiz_posts", return_value=[value]),
+                mock.patch.object(
+                    ledger,
+                    "fetch_tiktok_public_profiles",
+                    return_value=[public_item],
+                ) as free_fetch,
+            ):
+                result = ledger.main([
+                    "--days", "8",
+                    "--env-file", str(env),
+                    "--output", str(output),
+                    "--report", str(report),
+                    "--product-registry", str(products),
+                    "--account-registry", str(accounts),
+                ])
+            row = json.loads(output.read_text(encoding="utf-8").splitlines()[0])
+        self.assertEqual(result, 0)
+        free_fetch.assert_called_once_with(["handle"], cdp_url="http://127.0.0.1:9222")
+        self.assertEqual(row["identity_status"], "resolved")
+        self.assertEqual(row["native_post_id"], "7669159327655054613")
+        self.assertEqual(
+            row["provenance"],
+            ["postiz_public_api", "public_tiktok_profile_snapshot"],
+        )
+
     def test_direct_provider_receipt_resolves(self):
         row = ledger.make_row(post(), [], "2026-08-01T01:00:00Z")
         self.assertEqual(row["identity_status"], "resolved")
@@ -114,6 +187,30 @@ class PublicationLedgerTest(unittest.TestCase):
         self.assertIsNone(row["native_post_url"])
         self.assertEqual(row["candidate_count"], 2)
 
+    def test_reused_caption_resolves_when_only_one_exact_candidate_is_near_publish_time(self):
+        value = post(platform="tiktok")
+        value["releaseURL"] = "https://www.tiktok.com/@handle"
+        items = [
+            {
+                "id": "old-video",
+                "webVideoUrl": "https://www.tiktok.com/@handle/video/old-video",
+                "text": "Full caption text",
+                "createTimeISO": "2026-07-29T00:00:00Z",
+                "authorMeta": {"name": "handle"},
+            },
+            {
+                "id": "near-video",
+                "webVideoUrl": "https://www.tiktok.com/@handle/video/near-video",
+                "text": "Full caption text",
+                "createTimeISO": "2026-08-01T00:00:10Z",
+                "authorMeta": {"name": "handle"},
+            },
+        ]
+        row = ledger.make_row(value, items, "2026-08-01T01:00:00Z")
+        self.assertEqual(row["identity_status"], "resolved")
+        self.assertEqual(row["native_post_id"], "near-video")
+        self.assertEqual(row["candidate_count"], 1)
+
     def test_caption_hash_is_not_mislabeled_as_creative_hash(self):
         row = ledger.make_row(post(), [], "2026-08-01T01:00:00Z")
         self.assertIsNotNone(row["content_sha256"])
@@ -132,6 +229,24 @@ class PublicationLedgerTest(unittest.TestCase):
         rows = ledger.merge_rows([one], [newer])
         self.assertEqual(len(rows), 1)
         self.assertEqual(rows[0]["observed_at"], "2026-08-01T02:00:00Z")
+
+    def test_merge_never_downgrades_resolved_identity_to_unresolved(self):
+        existing = ledger.make_row(post("p1"), [], "2026-08-01T01:00:00Z")
+        current_post = post("p1", platform="tiktok")
+        current_post["releaseId"] = "publish-token"
+        current_post["releaseURL"] = "https://www.tiktok.com/@handle"
+        current = ledger.make_row(current_post, [], "2026-08-05T13:00:00Z")
+        self.assertEqual(current["identity_status"], "unresolved")
+
+        merged = ledger.merge_rows([existing], [current])
+
+        self.assertEqual(len(merged), 1)
+        self.assertEqual(merged[0]["identity_status"], "resolved")
+        self.assertEqual(merged[0]["native_post_id"], "native1")
+        self.assertEqual(
+            merged[0]["resolution_method"], "postiz_provider_native_receipt"
+        )
+        self.assertEqual(merged[0]["observed_at"], "2026-08-05T13:00:00Z")
 
     def test_report_uses_only_published_denominator(self):
         published = ledger.make_row(post("p1"), [], "2026-08-01T01:00:00Z")
@@ -304,9 +419,6 @@ class PublicationLedgerTest(unittest.TestCase):
                 mock.patch.object(ledger, "load_env", side_effect=AssertionError("env loaded")),
                 mock.patch.object(
                     ledger, "fetch_postiz_posts", side_effect=AssertionError("Postiz called")
-                ),
-                mock.patch.object(
-                    ledger, "fetch_tiktok_profiles", side_effect=AssertionError("Apify called")
                 ),
                 mock.patch.object(ledger, "http_json", side_effect=AssertionError("HTTP called")),
                 contextlib.redirect_stdout(stdout),

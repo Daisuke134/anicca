@@ -182,14 +182,18 @@ def plan_checkpoints(
     if age_hours < 0:
         return []
     pid = publication_id(publication_row)
-    existing = {
-        (row.get("publication_id"), row.get("target_age_hours"))
-        for row in existing_rows
-    }
+    latest_by_checkpoint: dict[tuple[object, object], dict[str, Any]] = {}
+    for row in existing_rows:
+        latest_by_checkpoint[
+            (row.get("publication_id"), row.get("target_age_hours"))
+        ] = row
     plans: list[dict[str, Any]] = []
     for checkpoint in CHECKPOINTS:
         target = checkpoint["target_age_hours"]
-        if age_hours < target or (pid, target) in existing:
+        if age_hours < target:
+            continue
+        previous = latest_by_checkpoint.get((pid, target))
+        if previous is not None and previous.get("checkpoint_status") != "missed":
             continue
         lateness = age_hours - target
         missed = lateness > checkpoint["max_lateness_hours"]
@@ -200,7 +204,11 @@ def plan_checkpoints(
                 "observed_age_hours": round(age_hours, 4),
                 "lateness_hours": round(lateness, 4),
                 "max_lateness_hours": checkpoint["max_lateness_hours"],
-                "checkpoint_status": "missed" if missed else "due",
+                "checkpoint_status": "due",
+                "checkpoint_sla_status": "missed" if missed else "in_window",
+                "corrects_snapshot_id": (
+                    previous.get("snapshot_id") if previous is not None else None
+                ),
                 "error": "checkpoint_missed" if missed else None,
             }
         )
@@ -307,7 +315,10 @@ def _row_base(
     return {
         "schema_version": 1,
         "snapshot_id": hashlib.sha256(
-            f"{publication_id(publication_row)}:{plan['target_age_hours']}".encode()
+            (
+                f"{publication_id(publication_row)}:{plan['target_age_hours']}"
+                + (f":correction:{observed_at}" if plan.get("corrects_snapshot_id") else "")
+            ).encode()
         ).hexdigest(),
         "publication_id": publication_id(publication_row),
         "experiment_id": publication_row.get("experiment_id"),
@@ -341,6 +352,11 @@ def _row_base(
         "target_age_hours": plan["target_age_hours"],
         "observed_age_hours": plan["observed_age_hours"],
         "lateness_hours": plan["lateness_hours"],
+        "checkpoint_sla_status": plan.get(
+            "checkpoint_sla_status",
+            "missed" if plan.get("checkpoint_status") == "missed" else "in_window",
+        ),
+        "corrects_snapshot_id": plan.get("corrects_snapshot_id"),
         "collector_version": COLLECTOR_VERSION,
     }
 
@@ -397,12 +413,13 @@ def make_metric_row(
 
 
 def validate_metric_rows(rows: Iterable[dict[str, Any]]) -> None:
-    seen: set[tuple[str, int]] = set()
+    seen: dict[tuple[str, int], dict[str, Any]] = {}
     for index, row in enumerate(rows, start=1):
         key = (row.get("publication_id"), row.get("target_age_hours"))
-        if key in seen:
-            raise ValueError(f"duplicate metric checkpoint at row {index}: {key}")
-        seen.add(key)
+        previous = seen.get(key)
+        if previous is not None and row.get("corrects_snapshot_id") != previous.get("snapshot_id"):
+            raise ValueError(f"unlinked duplicate metric checkpoint at row {index}: {key}")
+        seen[key] = row
         if not key[0] or key[1] not in {6, 24, 72, 168}:
             raise ValueError(f"invalid metric checkpoint at row {index}")
         for field in METRIC_FIELDS:
@@ -567,9 +584,6 @@ def collect_metrics(
     raw_rows: list[dict[str, Any]] = []
     for publication_row in eligible:
         for plan in plan_checkpoints(publication_row, existing_rows + new_rows, observed_at):
-            if plan["checkpoint_status"] == "missed":
-                new_rows.append(make_missed_row(publication_row, plan, observed_at))
-                continue
             platform = metric_platform(publication_row["platform"])
             source = source_for(platform)
             try:

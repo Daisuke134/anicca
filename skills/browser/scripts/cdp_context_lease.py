@@ -119,10 +119,66 @@ def _save(d):
     os.replace(tmp, leases_path)
 
 
+async def _target_answers(ws_url, timeout):
+    try:
+        async with websockets.connect(
+            ws_url, open_timeout=timeout, ping_interval=None, max_size=1 << 20
+        ) as ws:
+            await ws.send(json.dumps({
+                "id": 1,
+                "method": "Runtime.evaluate",
+                "params": {"expression": "1", "returnByValue": True},
+            }))
+            loop = asyncio.get_running_loop()
+            deadline = loop.time() + timeout
+            while True:
+                remaining = deadline - loop.time()
+                if remaining <= 0:
+                    return False
+                message = json.loads(await asyncio.wait_for(ws.recv(), timeout=remaining))
+                if message.get("id") == 1:
+                    return "error" not in message
+    except Exception:
+        return False
+
+
+def target_responds(ws_url, timeout=6.0):
+    """Does this leased page still answer, or is its renderer wedged?
+
+    A held lease was reused on trust. When gig fills a 応募 form and then navigates that
+    same target, the renderer stops and takes its CDP endpoint with it -- the loop's own
+    domain-skills already record that -- and the lease keeps handing the dead target back
+    on every later pass. On 2026-08-05 that turned one wedged renderer into
+    cdp_Page.enable_timeout_after_30s on every B2 for hours: the apply lane could not run
+    at all, and nothing in the lease could tell that the thing it was lending was gone.
+
+    Runtime.evaluate of `1` is the cheapest question a live renderer always answers.
+    """
+    if not ws_url:
+        return False
+    try:
+        return asyncio.run(_target_answers(ws_url, timeout))
+    except Exception:
+        return False
+
+
 def acquire(task, url="about:blank", no_seed=False):
     with _ledger_lock():
         leases = _leases()
         held = leases.get(task)
+        if held and not target_responds(held.get("ws") or _page_ws(held.get("target_id") or "")):
+            # Dead renderer. Drop the whole context so the next block builds a fresh one;
+            # reusing it would fail this lane on every pass until a human noticed.
+            try:
+                asyncio.run(_calls([(
+                    "Target.disposeBrowserContext",
+                    {"browserContextId": held.get("context_id")},
+                )]))
+            except Exception:
+                pass
+            leases.pop(task, None)
+            _save(leases)
+            held = None
         if held:  # one task owns one durable fence until release
             changed = False
             if not isinstance(held.get("token"), str):

@@ -28,6 +28,7 @@ DEFAULT_HOME = pathlib.Path.home()
 DEFAULT_LAUNCH_DIR = DEFAULT_HOME / "Library" / "LaunchAgents"
 PYTHON = sys.executable
 CLI_RELATIVE = pathlib.Path("skills/earn/marketing-engine/report/owner_report_cli.py")
+PIPELINE_RELATIVE = pathlib.Path("skills/earn/marketing-engine/report/truth_pipeline.py")
 STATE_RELATIVE = pathlib.Path("skills/earn/marketing-engine/state")
 LOG_RELATIVE = pathlib.Path("Library/Logs/anicca")
 
@@ -123,11 +124,14 @@ def build_plists(repo_root: pathlib.Path, home: pathlib.Path) -> dict[str, bytes
     events = _common_job(
         label=LABELS[0], repo_root=repo_root, home=home, log_dir=log_dir
     )
-    events["StartInterval"] = 900
+    events["StartInterval"] = 3600
     events["ProgramArguments"] = [
-        "/bin/sh",
-        "-c",
-        _event_command(python=PYTHON, cli=cli, state_root=state_root),
+        PYTHON,
+        str(repo_root / PIPELINE_RELATIVE),
+        "--repo-root",
+        str(repo_root),
+        "--home",
+        str(home),
     ]
 
     daily = _common_job(
@@ -305,11 +309,18 @@ def _readback_matches(output: str, payload: bytes, label: str) -> bool:
     arguments = expected.get("ProgramArguments")
     if not isinstance(arguments, list) or not arguments:
         return False
-    cli_argument = next(
-        (str(argument) for argument in arguments if "owner_report_cli.py" in str(argument)),
+    owned_entrypoint = next(
+        (
+            str(argument)
+            for argument in arguments
+            if any(
+                name in str(argument)
+                for name in ("owner_report_cli.py", "truth_pipeline.py")
+            )
+        ),
         None,
     )
-    if cli_argument is None or cli_argument.lower() not in text:
+    if owned_entrypoint is None or owned_entrypoint.lower() not in text:
         return False
     if label.lower() != str(expected.get("Label", "")).lower():
         return False

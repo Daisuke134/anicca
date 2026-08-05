@@ -8,6 +8,7 @@ import datetime as dt
 import hashlib
 import json
 import os
+import sys
 import tempfile
 import urllib.parse
 import urllib.request
@@ -19,7 +20,7 @@ from product_binding import bind_product_ids, load_account_bindings, load_produc
 
 
 POSTIZ = "https://api.postiz.com/public/v1"
-APIFY_ACTOR = "clockworks~tiktok-scraper"
+MEASURE_DIR = Path(__file__).resolve().parents[1] / "measure"
 
 
 def utc_now() -> dt.datetime:
@@ -84,20 +85,14 @@ def tiktok_handle(post: dict[str, Any]) -> str | None:
     return url.rstrip("/").rsplit("@", 1)[-1].split("/", 1)[0] or None
 
 
-def fetch_tiktok_profiles(token: str, handles: list[str]) -> list[dict[str, Any]]:
-    if not handles:
-        return []
-    payload = {
-        "profiles": sorted(set(handles)),
-        "resultsPerPage": 25,
-        "shouldDownloadVideos": False,
-        "shouldDownloadCovers": False,
-    }
-    url = (
-        f"https://api.apify.com/v2/acts/{APIFY_ACTOR}/run-sync-get-dataset-items?"
-        + urllib.parse.urlencode({"token": token, "timeout": 600})
-    )
-    return list(http_json(url, {"Content-Type": "application/json"}, json.dumps(payload).encode()))
+def fetch_tiktok_public_profiles(
+    handles: list[str], *, cdp_url: str
+) -> list[dict[str, Any]]:
+    if str(MEASURE_DIR) not in sys.path:
+        sys.path.insert(0, str(MEASURE_DIR))
+    from tiktok_public_metrics import collect_tiktok_public_profiles
+
+    return collect_tiktok_public_profiles(handles, cdp_url=cdp_url)
 
 
 def candidate_handle(item: dict[str, Any]) -> str | None:
@@ -128,8 +123,12 @@ def resolve_tiktok(post: dict[str, Any], items: list[dict[str, Any]]) -> dict[st
             if candidate_time(item) is not None
             and abs((candidate_time(item) - published_at).total_seconds()) <= 900
         ]
-    if len(exact) == 1 and len(near) == 1 and exact[0].get("id") == near[0].get("id"):
-        item = exact[0]
+    near_ids = {str(item.get("id") or "") for item in near}
+    exact_near = [
+        item for item in exact if str(item.get("id") or "") in near_ids
+    ]
+    if len(exact_near) == 1:
+        item = exact_near[0]
         native_id = str(item.get("id") or "") or None
         native_url = item.get("webVideoUrl")
         if native_id and native_url:
@@ -147,7 +146,7 @@ def resolve_tiktok(post: dict[str, Any], items: list[dict[str, Any]]) -> dict[st
         "native_post_url": None,
         "resolution_method": None,
         "resolution_confidence": "unknown",
-        "candidate_count": max(len(exact), len(near)),
+        "candidate_count": len(exact_near) or max(len(exact), len(near)),
     }
 
 
@@ -218,7 +217,9 @@ def make_row(post: dict[str, Any], tiktok_items: list[dict[str, Any]], observed_
         "experiment_id_null_reason": "legacy_uninstrumented",
         "creative_sha256": None,
         "creative_sha256_null_reason": "legacy_postiz_list_omits_asset_identity",
-        "provenance": ["postiz_public_api"] + (["apify_tiktok_profile_scan"] if platform == "tiktok" else []),
+        "provenance": ["postiz_public_api"] + (
+            ["public_tiktok_profile_snapshot"] if platform == "tiktok" and tiktok_items else []
+        ),
         **identity,
     }
 
@@ -246,7 +247,32 @@ def validate_rows(rows: list[dict[str, Any]]) -> None:
 
 def merge_rows(existing: list[dict[str, Any]], current: list[dict[str, Any]]) -> list[dict[str, Any]]:
     merged = {str(row["postiz_post_id"]): row for row in existing}
-    merged.update({str(row["postiz_post_id"]): row for row in current})
+    identity_fields = (
+        "identity_status",
+        "native_post_id",
+        "native_post_url",
+        "resolution_method",
+        "resolution_confidence",
+        "candidate_count",
+    )
+    for row in current:
+        key = str(row["postiz_post_id"])
+        previous = merged.get(key)
+        if (
+            previous is not None
+            and previous.get("identity_status") == "resolved"
+            and row.get("postiz_state") == "PUBLISHED"
+            and row.get("identity_status") != "resolved"
+        ):
+            row = dict(row)
+            for field in identity_fields:
+                row[field] = previous.get(field)
+            row["provenance"] = list(
+                dict.fromkeys(
+                    [*(previous.get("provenance") or []), *(row.get("provenance") or [])]
+                )
+            )
+        merged[key] = row
     rows = sorted(merged.values(), key=lambda row: (str(row.get("publish_date") or ""), str(row["postiz_post_id"])))
     validate_rows(rows)
     return rows
@@ -319,6 +345,10 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--env-file", type=Path, default=Path.home() / "anicca/.env")
     result.add_argument("--posts-fixture", type=Path)
     result.add_argument("--tiktok-snapshot", type=Path)
+    result.add_argument(
+        "--cdp-url",
+        default=os.environ.get("CLOAK_CDP_BASE_URL", "http://127.0.0.1:9222"),
+    )
     result.add_argument("--output", type=Path, default=root / "state/publication-identity.jsonl")
     result.add_argument("--report", type=Path, required=True)
     result.add_argument("--account-registry", type=Path, default=root / "registry/accounts")
@@ -373,15 +403,28 @@ def main(argv: list[str] | None = None) -> int:
     if args.tiktok_snapshot:
         tiktok_items = json.loads(args.tiktok_snapshot.read_text())
     else:
-        handles = [
-            handle for post in posts
-            if post.get("state") == "PUBLISHED"
-            and (post.get("integration") or {}).get("providerIdentifier") == "tiktok"
-            and (handle := tiktok_handle(post))
-        ]
-        if handles and not env.get("APIFY_API_TOKEN"):
-            raise SystemExit("APIFY_API_TOKEN missing; TikTok identity would be unresolved")
-        tiktok_items = fetch_tiktok_profiles(env["APIFY_API_TOKEN"], handles) if handles else []
+        handles = sorted(
+            {
+                handle
+                for post in posts
+                if post.get("state") == "PUBLISHED"
+                and (post.get("integration") or {}).get("providerIdentifier") == "tiktok"
+                and "/video/" not in str(post.get("releaseURL") or "")
+                and (handle := tiktok_handle(post))
+            }
+        )
+        try:
+            tiktok_items = (
+                fetch_tiktok_public_profiles(handles, cdp_url=args.cdp_url)
+                if handles
+                else []
+            )
+        except Exception as exc:
+            print(
+                f"WARNING free TikTok public identity unavailable: {type(exc).__name__}: {exc}",
+                file=sys.stderr,
+            )
+            tiktok_items = []
     observed_at = iso(end)
     current = [make_row(post, tiktok_items, observed_at) for post in posts]
     rows = merge_rows(read_jsonl(args.output), current)

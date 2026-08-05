@@ -1,0 +1,12 @@
+{
+  "command_sha256": "43a0f210b9944e231a4aee8b292fc8dfa380b64b0d9843ff14f079ae5781c91f",
+  "dry_run": false,
+  "finished_at": "2026-08-04T18:32:34.016828Z",
+  "quarantine_reason": null,
+  "quarantined": false,
+  "returncode": 0,
+  "run_id": "b2b9e7164cbe0721195d27534e36dbc3",
+  "runner_id": "dashboard",
+  "schema_version": "marketing.execution.v1",
+  "started_at": "2026-08-04T18:32:33.736762Z"
+}
