@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-25` — ten-confirmed-applications daily cap
+**Active atomic task:** `L-26` — daily 2 dream / 5 strong-fit / 3 adjacent portfolio
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1061,7 +1061,18 @@ this spec update → commit/push → Telegram milestone before the next item sta
   `transient_gmail_provider_failure`: zero messages, replies, or Calendar events were
   processed. The interval slice is complete; provider-success E2E remains owned by
   the later Gmail reconciliation slice and is not claimed here.
-- [ ] **L-25** — Enforce the initial ten-confirmed-applications daily cap.
+- [x] **L-25** — Enforce the initial ten-confirmed-applications daily cap. Receipt:
+  committed strategy, validated settings, pre-browser daily gate, and transactional
+  ledger allocator all use ten slots; two consumed slots no longer stop a pass, ten
+  consumed slots stop before browser/model startup, the eleventh claim is rejected,
+  and twenty concurrent claims atomically yield exactly ten intents. A
+  `submit_unknown` retains its slot to prevent unsafe resubmission; confirmed
+  shortfall is handled separately by L-27. Focused 11-test and full 239-test suites
+  PASS. Immutable release `9427aafd973cf1c1d29016a3e3ce5bcb23b2b235`
+  (archive SHA-256
+  `4df206d1536966d0702ab22b7ea482f423aeb389a7ed4119e8354c0aede53a42`)
+  is active with zero writable paths; daily remains unloaded until L-26 installs the
+  contracted portfolio allocation.
 - [ ] **L-26** — Enforce the daily 2 dream / 5 strong-fit / 3 adjacent portfolio.
 - [ ] **L-27** — Persist a `quota_deficit` event when fewer than ten submissions are
   confirmed.
