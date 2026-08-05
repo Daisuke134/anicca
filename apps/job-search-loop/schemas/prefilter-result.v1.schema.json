@@ -1,0 +1,17 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["status", "candidates", "provider_results", "blocked"],
+  "properties": {
+    "status": {"type": "string"},
+    "candidates": {
+      "type": "array",
+      "items": {"type": "object", "additionalProperties": true}
+    },
+    "provider_results": {
+      "type": "array",
+      "items": {"type": "object", "additionalProperties": true}
+    },
+    "blocked": {"type": "array", "items": {"type": "string"}}
+  }
+}

@@ -38,6 +38,19 @@ class PromptInjectionTests(unittest.TestCase):
         self.assertIn("job_search_loop.recovery", script)
         self.assertIn("recovery-plan.json", script)
 
+    def test_daily_runs_luna_prefilter_before_terra_browser_lane(self):
+        root = Path(__file__).parents[1]
+        script = (root / "scripts" / "run-daily.sh").read_text(encoding="utf-8")
+        prompt = (root / "prompts" / "daily-pass.md").read_text(encoding="utf-8")
+        self.assertIn("prompts/prefilter-pass.md", script)
+        self.assertIn("schemas/prefilter-result.v1.schema.json", script)
+        self.assertLess(
+            script.index("--task-class repeatable-agent"),
+            script.index("--task-class browser-lane-agent"),
+        )
+        self.assertIn("JOB_SEARCH_PREFILTER_RESULT", script)
+        self.assertIn("JOB_SEARCH_PREFILTER_RESULT", prompt)
+
 
 if __name__ == "__main__":
     unittest.main()

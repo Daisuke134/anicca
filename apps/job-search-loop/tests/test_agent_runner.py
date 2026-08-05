@@ -18,6 +18,7 @@ class AgentRunnerTests(unittest.TestCase):
             )
 
     def test_task_routes_are_pinned(self):
+        self.assertEqual(TASK_CLASSES["extract"], "repeatable-agent")
         self.assertEqual(TASK_CLASSES["tailor"], "composition-agent")
         self.assertEqual(TASK_CLASSES["inbox"], "composition-agent")
         self.assertEqual(TASK_CLASSES["submit"], "browser-lane-agent")
