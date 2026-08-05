@@ -197,7 +197,15 @@ def events_from_verified_runtime(
         owner = source.get("owner")
         detected_at = _utc_text(source.get("detected_at"))
         current_phase = source.get("phase")
-        current_at = _utc_text(source.get("updated_at"))
+        # `updated_at` changes on every retry/metadata write.  The event ID is
+        # phase-stable, so replay must use the immutable transition timestamp
+        # instead of turning a retry into a conflicting new event.
+        phase_times = source.get("phase_timestamps") or {}
+        current_at = _utc_text(phase_times.get(str(current_phase)))
+        # Legacy incident records predate phase_timestamps; retain their
+        # one-time migration behavior while keeping current records replay-safe.
+        if current_at is None:
+            current_at = _utc_text(source.get("updated_at"))
         if not incident_id or not owner or not detected_at:
             continue
 

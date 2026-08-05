@@ -274,6 +274,29 @@ def test_verified_runtime_artifacts_backfill_outcomes_and_honest_incident_phases
     assert events[-1]["status"]["after"] == "verified"
 
 
+def test_incident_replay_uses_phase_timestamp_not_mutable_updated_at() -> None:
+    incident = {
+        "schema_version": 1,
+        "incident_id": "capafy-company-20260804T003008Z-9109bc73",
+        "owner": "company",
+        "phase": "unresolved",
+        "detected_at": "2026-08-04T00:30:08Z",
+        "updated_at": "2026-08-05T07:00:06Z",
+        "phase_timestamps": {
+            "detected": "2026-08-04T00:30:08Z",
+            "unresolved": "2026-08-04T00:30:09Z",
+        },
+        "summary": "Canonical revenue source sync failed.",
+    }
+
+    events = sync.events_from_verified_runtime({}, {}, [incident])
+
+    assert events[-1]["event_id"] == (
+        "capafy:incident.unresolved:capafy-company-20260804T003008Z-9109bc73"
+    )
+    assert events[-1]["occurred_at"] == "2026-08-04T00:30:09Z"
+
+
 def test_sync_all_cli_backfills_once_and_keeps_exact_cost_private(tmp_path: Path) -> None:
     money = tmp_path / "capafy-earn-ledger.jsonl"
     cost = tmp_path / "capafy-loop.log"
