@@ -21,7 +21,7 @@ export ANICCA_BUDGET_DAY_TZ="Asia/Tokyo"
 export ANICCA_TOKEN_BUDGET_LEDGER="$EVIDENCE/token-budget.jsonl"
 export ANICCA_USAGE_LEDGER="$EVIDENCE/usage.jsonl"
 
-export ANICCA_BUDGET_SCOPE_ID="$RUN_ID:luna"
+export ANICCA_BUDGET_SCOPE_ID="${RUN_ID}:luna"
 "$JOB_SEARCH_PYTHON" "$JOB_SEARCH_RUNNER" \
   --task-class repeatable-agent \
   --prompt-file "$PROMPT" \
@@ -32,7 +32,7 @@ export ANICCA_BUDGET_SCOPE_ID="$RUN_ID:luna"
   --workdir "$JOB_SEARCH_REPO_ROOT" \
   >"$EVIDENCE/luna-runner.json"
 
-export ANICCA_BUDGET_SCOPE_ID="$RUN_ID:terra"
+export ANICCA_BUDGET_SCOPE_ID="${RUN_ID}:terra"
 "$JOB_SEARCH_PYTHON" "$JOB_SEARCH_RUNNER" \
   --task-class composition-agent \
   --prompt-stdin \
