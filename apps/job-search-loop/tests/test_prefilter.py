@@ -53,6 +53,22 @@ class DeterministicPrefilterTests(unittest.TestCase):
             any("#location=Tokyo" in span for span in candidate["source_spans"])
         )
         self.assertRegex(candidate["jd_fingerprint"], r"^[0-9a-f]{16}$")
+        self.assertEqual(candidate["role_family"], "applied_ai")
+        self.assertIsNone(candidate["compensation_min_jpy"])
+        self.assertEqual(candidate["compensation_status"], "unknown")
+        self.assertTrue(candidate["ranking"]["eligible"])
+        self.assertGreaterEqual(candidate["ranking"]["score"], 75)
+        self.assertEqual(candidate["portfolio_bucket"], "strong_fit")
+        self.assertTrue(candidate["ranking_ready"])
+        self.assertEqual(
+            candidate["ranking_inputs"]["japan_eligible_source_span"],
+            "https://jobs.ashbyhq.com/openai/role-1#location=Tokyo, Japan",
+        )
+        self.assertTrue(
+            candidate["ranking_inputs"]["role_family_source_span"].startswith(
+                "https://jobs.ashbyhq.com/openai/role-1#title="
+            )
+        )
         self.assertEqual(len(result["provider_results"]), 2)
         self.assertTrue(all("results" not in row for row in result["provider_results"]))
 
