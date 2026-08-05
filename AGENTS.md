@@ -24,6 +24,7 @@ Remote Claudeの複数起動依頼は `.claude/skills/remote-claude/SKILL.md` �
 ### 0.W Writer Agent 絶対ルール
 
 - Writerの現行判断では `docs/writer-agent/WRITER-AGENT-SSOT.md` だけを正本にする。`docs/loop-engineering/47-writer-loop-quality-and-self-improvement.md` は履歴であり、旧TODOを復活させない。
+- Writer作業のユーザー報告は、このチャットで自然言語の短いbriefとして行う。spec/plan/MDは裏で更新するが、ユーザーへファイル添付・ファイルを読ませるhandoff・ファイルだけの報告をしない。報告には「変更」「検証コマンドの意味」「実測結果」「残る故障」「次の一件」を含める。
 - **NO PASSIVE WAITING**: 未完runがあり、安全に実行できる作業があるなら即時kickstart/resumeする。「次のscheduleを待つ」を終了理由にしない。
 - platform固有の公開窓はそのplatformだけを`PENDING`にする。他platform、計測、research、reportは継続する。
 - waitには対象・外部理由・再開時刻・durable owner・並行作業・Telegram event UUIDを必須にする。ownerのないwaitは放置としてFAIL。
