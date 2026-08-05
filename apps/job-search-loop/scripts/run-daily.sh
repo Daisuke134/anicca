@@ -32,6 +32,10 @@ refresh_summary() {
     --day "$JAPAN_DAY" \
     --reason "hourly_pass_complete" \
     --output "$EVIDENCE/quota-deficit.json"
+  "$JOB_SEARCH_PYTHON" -m job_search_loop.daily_reporting deliver \
+    --summary "$JOB_SEARCH_STATE_ROOT/summary.v2.json" \
+    --outbox "$TELEGRAM_OUTBOX" \
+    --output "$EVIDENCE/daily-pipeline-report.json"
 }
 SLOT_COUNT=$("$JOB_SEARCH_PYTHON" - "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" "$JAPAN_DAY" <<'PY'
 import sys
