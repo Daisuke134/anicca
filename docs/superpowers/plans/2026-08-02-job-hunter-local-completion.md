@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-21` — travel-positive ranking
+**Active atomic task:** `L-22` — truthful clearance-state handling
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1011,7 +1011,14 @@ this spec update → commit/push → Telegram milestone before the next item sta
   index states the 9:00/17:00 USD/JPY figures are bid/offer mid rates, and the
   2026-08-04 PDF fixes 17:00 at 157.80–157.82 (mid 157.81); exact USD 100K boundary,
   one-yen-below, and fail-closed evidence tests plus full 231-test suite PASS.
-- [ ] **L-21** — Implement travel-positive ranking.
+  Immutable release `8893e951eb30d2f5bc232ced01a9d2e5bbf746a0` (archive
+  SHA-256 `2821e87902053ee104b889802a4d0e0b0cc4b72ae041e9460248a91e92d4573a`)
+  is active and proves the boundary from the installed classifier.
+- [x] **L-21** — Implement travel-positive ranking. Receipt: explicit domestic,
+  international, combined, or frequent client-site travel adds one independently
+  visible five-point component; unspecified/none is neutral, invalid free-form scope
+  fails ingestion, and travel never overrides Japan, compensation, language,
+  clearance, expiry, or score gates; focused 16-test and full 233-test suites PASS.
 - [ ] **L-22** — Replace blanket clearance rejection with truthful clearance-state
   handling.
 - [ ] **L-23** — Configure the application LaunchAgent for a 3,600-second interval.

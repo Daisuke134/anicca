@@ -20,12 +20,24 @@ class Job:
     deadline: str | None = None
     strengths: list[str] = field(default_factory=list)
     gaps: list[str] = field(default_factory=list)
+    travel_scope: str = "unspecified"
+    frequent_client_site: bool = False
 
     def __post_init__(self) -> None:
         if self.language_gate not in {"PASS", "FAIL", "FLAG"}:
             raise ValueError("language_gate must be PASS, FAIL, or FLAG")
         if self.language_gate != "PASS" and not str(self.language_note or "").strip():
             raise ValueError("language_note is required for FAIL or FLAG")
+        if self.travel_scope not in {
+            "unspecified",
+            "none",
+            "domestic",
+            "international",
+            "domestic_and_international",
+        }:
+            raise ValueError("travel_scope is invalid")
+        if not isinstance(self.frequent_client_site, bool):
+            raise ValueError("frequent_client_site must be boolean")
 
     @classmethod
     def from_extracted(cls, payload: dict[str, Any]) -> "Job":
@@ -50,5 +62,7 @@ class Job:
             "deadline",
             "strengths",
             "gaps",
+            "travel_scope",
+            "frequent_client_site",
         }
         return cls(**{key: value for key, value in payload.items() if key in allowed})
