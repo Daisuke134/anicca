@@ -1,6 +1,13 @@
 {
   "version": 1,
   "daily_target": 10,
+  "daily_portfolio": {
+    "dream": 2,
+    "strong_fit": 5,
+    "adjacent": 3
+  },
+  "dream_score_min": 95,
+  "dream_compensation_min_jpy": 20000000,
   "auto_apply_threshold": 75,
   "compensation_floor_jpy": 8000000,
   "compensation_target_jpy": 10000000,

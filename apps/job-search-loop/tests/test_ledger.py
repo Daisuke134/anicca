@@ -30,7 +30,15 @@ class LedgerTests(unittest.TestCase):
         self.ledger.transition(target, "qualified")
         self.ledger.transition(target, "materials_ready")
 
-    def _claim(self, ledger, application_id, japan_day, payload_hash):
+    def _claim(
+        self,
+        ledger,
+        application_id,
+        japan_day,
+        payload_hash,
+        *,
+        portfolio_bucket=None,
+    ):
         row = ledger.connection.execute(
             "SELECT canonical_url FROM applications WHERE id = ?",
             (application_id,),
@@ -87,7 +95,45 @@ class LedgerTests(unittest.TestCase):
             resume_sha256=self.resume_sha256,
             ats_snapshot_path=snapshot,
             ats_snapshot_sha256=snapshot_sha256,
+            portfolio_bucket=portfolio_bucket,
         )
+
+    def test_daily_portfolio_enforces_two_five_three_bucket_caps(self):
+        self.assertIn("portfolio_bucket", inspect.signature(self.ledger.claim_submission).parameters)
+        limits = {"dream": 2, "strong_fit": 5, "adjacent": 3}
+        for day_index, (bucket, limit) in enumerate(limits.items(), start=1):
+            japan_day = f"2026-08-0{day_index}"
+            for index in range(limit):
+                application_id = self.ledger.add_application(
+                    f"{bucket}-{index}",
+                    "AI Role",
+                    f"https://jobs.example.com/{bucket}-{index}",
+                )
+                self._ready(application_id)
+                self.assertIsNotNone(
+                    self._claim(
+                        self.ledger,
+                        application_id,
+                        japan_day,
+                        f"{bucket}-hash-{index}",
+                        portfolio_bucket=bucket,
+                    )
+                )
+            overflow_id = self.ledger.add_application(
+                f"{bucket}-overflow",
+                "AI Role",
+                f"https://jobs.example.com/{bucket}-overflow",
+            )
+            self._ready(overflow_id)
+            self.assertIsNone(
+                self._claim(
+                    self.ledger,
+                    overflow_id,
+                    japan_day,
+                    f"{bucket}-overflow-hash",
+                    portfolio_bucket=bucket,
+                )
+            )
 
     def test_duplicate_job_returns_same_application(self):
         duplicate = self.ledger.add_application(

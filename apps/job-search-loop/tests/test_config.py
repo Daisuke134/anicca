@@ -18,6 +18,13 @@ class ConfigTests(unittest.TestCase):
                 {
                     "version": 1,
                     "daily_target": 10,
+                    "daily_portfolio": {
+                        "dream": 2,
+                        "strong_fit": 5,
+                        "adjacent": 3,
+                    },
+                    "dream_score_min": 95,
+                    "dream_compensation_min_jpy": 20_000_000,
                     "auto_apply_threshold": 75,
                     "compensation_floor_jpy": 8_000_000,
                     "compensation_target_jpy": 10_000_000,
@@ -76,6 +83,21 @@ class ConfigTests(unittest.TestCase):
         del value["facts"][0]["evidence"]
         with self.assertRaisesRegex(ConfigError, "evidence"):
             validate_profile(value)
+
+    def test_portfolio_policy_drift_fails_closed(self):
+        self.profile.parent.mkdir(parents=True)
+        self.profile.write_text(json.dumps(self._valid_profile()), encoding="utf-8")
+        strategy = json.loads(self.strategy.read_text(encoding="utf-8"))
+        strategy["daily_portfolio"]["dream"] = 3
+        self.strategy.write_text(json.dumps(strategy), encoding="utf-8")
+
+        with self.assertRaisesRegex(ConfigError, "daily_portfolio"):
+            load_settings(
+                profile_path=self.profile,
+                strategy_path=self.strategy,
+                state_dir=self.root / "state",
+                materials_dir=self.root / "materials",
+            )
 
     def test_committed_strategy_contains_no_private_fields(self):
         strategy_path = (
