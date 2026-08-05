@@ -12,6 +12,9 @@ class ReleaseActivationTests(unittest.TestCase):
         scripts = release / "apps/job-search-loop/scripts"
         scripts.mkdir(parents=True)
         (release / "RELEASE.json").write_text(json.dumps({"commit": commit}), encoding="utf-8")
+        config = release / "runtime/agent-runner/config.json"
+        config.parent.mkdir(parents=True)
+        config.write_text(json.dumps({"version": 1, "routes": []}), encoding="utf-8")
         for lane in ("daily", "inbox", "learning"):
             runner = scripts / f"run-{lane}.sh"
             runner.write_text("#!/bin/zsh\nexit 0\n", encoding="utf-8")
@@ -28,6 +31,11 @@ class ReleaseActivationTests(unittest.TestCase):
             new = self._release(data, "new-commit")
 
             activate(data_root=data, commit="old-commit")
+            self.assertEqual(
+                json.loads((data / "active-release.json").read_text())["active_commit"],
+                "old-commit",
+            )
+            self.assertEqual((data / "active-release.json").stat().st_mode & 0o777, 0o600)
             activate(data_root=data, commit="new-commit")
             self.assertEqual((data / "current").resolve(), new.resolve())
             self.assertEqual((data / "previous").resolve(), old.resolve())
@@ -37,6 +45,10 @@ class ReleaseActivationTests(unittest.TestCase):
             self.assertEqual((data / "previous").resolve(), new.resolve())
             self.assertEqual(receipt["active_commit"], "old-commit")
             self.assertEqual(receipt["rollback_from_commit"], "new-commit")
+            self.assertEqual(
+                json.loads((data / "active-release.json").read_text())["active_commit"],
+                "old-commit",
+            )
 
     def test_writable_candidate_is_rejected_before_pointer_change(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import os
 import re
 import stat
@@ -60,17 +61,41 @@ def _replace_link(data_root: Path, name: str, commit: str) -> None:
         temporary.unlink(missing_ok=True)
 
 
+def _write_active_receipt(data_root: Path, candidate: Path, commit: str) -> None:
+    manifest = candidate / "RELEASE.json"
+    config = candidate / "runtime/agent-runner/config.json"
+    if not config.is_file():
+        raise ActivationError("release route config is missing")
+    value = {
+        "version": 1,
+        "active_commit": commit,
+        "manifest_sha256": hashlib.sha256(manifest.read_bytes()).hexdigest(),
+        "route_config_sha256": hashlib.sha256(config.read_bytes()).hexdigest(),
+    }
+    target = data_root / "active-release.json"
+    temporary = data_root / f".active-release-{uuid.uuid4().hex}.json"
+    try:
+        temporary.write_text(json.dumps(value, sort_keys=True) + "\n", encoding="utf-8")
+        os.chmod(temporary, 0o600)
+        os.replace(temporary, target)
+        os.chmod(target, 0o600)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
 def activate(*, data_root: Path, commit: str) -> dict[str, Any]:
     data_root = Path(data_root).resolve()
     data_root.mkdir(parents=True, exist_ok=True, mode=0o700)
     candidate = _validate_release(data_root, commit)
     current_commit = _link_commit(data_root, "current")
     if current_commit == commit:
+        _write_active_receipt(data_root, candidate, commit)
         return {"status": "already_active", "active_commit": commit}
     if current_commit is not None:
         _validate_release(data_root, current_commit)
         _replace_link(data_root, "previous", current_commit)
     _replace_link(data_root, "current", commit)
+    _write_active_receipt(data_root, candidate, commit)
     return {
         "status": "activated",
         "active_commit": commit,
@@ -89,6 +114,7 @@ def rollback(*, data_root: Path) -> dict[str, Any]:
     target = _validate_release(data_root, previous_commit)
     _replace_link(data_root, "current", previous_commit)
     _replace_link(data_root, "previous", current_commit)
+    _write_active_receipt(data_root, target, previous_commit)
     return {
         "status": "rolled_back",
         "active_commit": previous_commit,
