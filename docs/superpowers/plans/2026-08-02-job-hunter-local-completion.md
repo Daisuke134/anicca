@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-13` — stable launcher installation
+**Active atomic task:** `L-14` — application LaunchAgent stable path
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -955,7 +955,12 @@ this spec update → commit/push → Telegram milestone before the next item sta
   private/profile/database files are absent, release imports pass, and the extracted
   release under the stable data root contains zero user-writable paths; `current`
   remains untouched until L-17; release E2E and full 225-test suite PASS.
-- [ ] **L-13** — Install the stable launcher under `~/.local/libexec/anicca/job-search/`.
+- [x] **L-13** — Install the stable launcher under `~/.local/libexec/anicca/job-search/`.
+  Receipt: daily, inbox, and learning launchers are installed mode 0555; each
+  resolves only a physical `current` target below the stable releases root, rejects
+  absent activation, escaped targets, missing manifests/runners, and writable
+  releases before exec, and preserves lane arguments; isolated launcher E2E and full
+  226-test suite PASS; the real inactive launcher exits 78 without side effects.
 - [ ] **L-14** — Point the application LaunchAgent at the stable launcher.
 - [ ] **L-15** — Point the inbox LaunchAgent at the stable launcher.
 - [ ] **L-16** — Point the learning LaunchAgent at the stable launcher.
