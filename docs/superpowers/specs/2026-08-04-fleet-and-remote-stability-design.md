@@ -339,6 +339,26 @@ R4 の当初の懸念は「背景 agent の完了通知が親セッションに�
 
 **一般法則**: **テレメトリの意味論を確かめる前に、そのテレメトリを根拠に機能を作らない。** 上の3段階はすべて「数字は出るが解釈が間違っている」型で、そのまま作れば「存在しない問題のための仕組み」が 197 本目のループとして残っていた。数える前に、その数が何を意味するのかを1件開いて確かめる。
 
+#### 2.5.5 G1 — SSOT が3つに割れていた。どれも上位互換ではなかった
+
+登録時の見立ては「135 commit が feature branch に取り残されている」だった。**実測はもっと悪かった。**
+
+| ブランチ | 行数 | 最終更新 | 一意に持っていたもの |
+|---|---:|---|---|
+| `origin/main` | 2,696 | 08-02 13:26 | 承認済み Agent topology / blast-radius 契約 / paid-work queue ほか5節 |
+| **`fix/gig-p0-promissory-stop`**（★live ループが走っているブランチ★） | 3,255 | 08-04 13:25 | P1 実装契約（Mio 型 fulfillment / Application revenue-max contract / P1-1h 重複送信事故） |
+| `fix/writer-note-resume-circuit`（記事系の無関係ブランチ） | 3,052 | 08-05 08:55 | §0.1.5（サイト固有知識16項目）/ §0.1.6（P1a 設計） |
+
+**どれも上位互換ではない。** そして P1a の設計を書いた場所は、gig ループが走っているブランチですらなかった（記事系ブランチの古いコピーに書いていた）。main を見たセッションからは P1a 設計が存在しないように見えた。
+
+**やり方**: 手作業の union は事故るので git の3方向マージ機構を使った。①live × writer を共通祖先 `d568bdcb`（08-03）で merge ②その結果を main と共通祖先 `d34ec3ff`（08-01）で merge。衝突3箇所はすべて追記型の状態表・P0 表で、**両方を残して**解決（この文書自身が superseded な行を履歴として残す慣習に従った）。作業ツリーを汚さないよう plumbing（`hash-object` → `update-index` → `commit-tree`）で main の上に直接コミットを構築した。
+
+**検証**: 三者すべての見出しが main に存在（欠落 0）。衝突マーカー残存 0。行レベルの差分19件は全て「古い版が新しい版に置き換わった」もので、`P0-2「これからやる」→ P0-2 ✅完了` のように**語句で1件ずつ確認**した（推測で「たぶん大丈夫」と言っていない）。変更は spec 1ファイルのみ（982 insertions / 26 deletions）、コードには触れていない。
+
+**分離した課題（G2）**: コードの trunk 集約。live ループを止めうるので同じ PR に混ぜなかった。**P1a の実装時は live tree を触らず、`origin/main` から新しい worktree を切る** — 統合済み spec が読めるのはそちらだけ。
+
+**一般法則**: **SSOT は「1つのファイル」ではなく「1つの到達可能な場所」。** 同じパスのファイルが複数ブランチにあれば、それは複数の SSOT であり、どれが正かは誰も知らない。ドキュメントを編集する前に `git branch --show-current` を見て、**そのブランチが trunk から到達可能か**を確かめる。今回は編集した後に気づいた。
+
 ### 2.6 codex のリモート座席（両アカウント同時接続）
 
 | 実測 | 値 |
@@ -527,7 +547,8 @@ life-manager:  alive_if = 過去25時間に exit=0
 | 3 | **R3** | 長時間作業を対話セッションから launchd ループへ移す運用を確立 | 「寝る前に投げた仕事」が翌朝 Telegram に結果で届く（セッションを開いたままにしない） | **done 2026-08-05**（§2.5.3。`ai-config 002b443`）。**R3b（無人エンジニアリング）は P3 の後ろへ意図的に繰り延べ** |
 | 4 | **R4** | 背景 subagent の完了通知が孤児化する問題を回避 | 背景 agent の成果が、親セッションの生死に関係なく届く | **done 2026-08-05（新規実装なし）**。§2.5.4。原因は R1 で除去済み、出力は永続化されている |
 | 5 | **R5** | swap 88% / ディスク残 8.2GB を解消 | swap 使用率 < 70% かつ空き > 20GB | **保留（Dais 判断 2026-08-05）**。`~/.colima` 6.2GB は life-manager の postgres が2日間稼働中で**消せない**。即死水域ではなく（`health-check` が 5GB 未満で自動回収 + 2GB 未満で通知、R2 で経路が復活）、収益に効かないため G1 の後ろへ。**リスク: swap 88% のまま実装を回すと別プロセスが jetsam に殺され、R1 とは別経路の「黙って死ぬ」が起きうる** |
-| 6 | **G1** | `profitable-claude` の 135 commit を trunk へ戻す | gig spec（P1a 設計の SSOT）が `origin/main` から読める | 2026-08-05 追加。**現在 `fix/writer-note-resume-circuit` が main より 135 commit 先行**し、gig spec・domain-skills 配線・planner ルール・Telegram 抑制が全部そこに載っている。CLAUDE.md の git BP「branch の終着は MERGED か DELETED」に反する長命ブランチ。次のセッションが main を見ると P1a 設計が存在しないように見える |
+| 6 | **G1** | gig spec（SSOT）を trunk で1つにする | gig spec（P1a 設計を含む）が `origin/main` から読める | **done 2026-08-05**（§2.5.5。PR #3 → `caf0dd88`）。**当初の見立てより悪かった** — spec は3ブランチに別々の内容で存在し、どれも上位互換でなかった |
+| 6.5 | **G2** | gig の**コード**を trunk へ集約する | live ループが `origin/main` 由来のチェックアウトから走る | 未着手。`fix/writer-note-resume-circuit` が main より 135 commit 先行、live ループは別の `fix/gig-p0-promissory-stop` worktree で稼働中。**稼働中のループを止めうるので G1 とは分離した**。P1a の実装は「live tree を触る」のではなく **`origin/main` から新しい worktree を切る**（統合済み spec が読めるのはそちらだけ） |
 | 7 | **A** | caveman skill の `No tool-call narration` を潰す | ツール実行前に必ず1行が出る。core.md の「黙るな」と衝突しない | 未着手 |
 | 8 | **V0** | `verify_domain_skills.sh` を commit + 自動判定に配線 | 実 pass の全プロンプトに domain-skills が載っているか自動で判定される | untracked |
 | 9 | **P1a** | ★paid-buyer 会話の所有者レーン新設★（4アクション） | 素材欠落案件で `ask_buyer` が実発火 | 未着手（gig の律速） |
