@@ -150,6 +150,63 @@ class LedgerTests(unittest.TestCase):
                 source_urls=["https://jobs.example.com/42"],
             )
 
+    def test_followups_are_due_after_ten_days_and_capped_at_two(self):
+        self._ready()
+        intent = self._claim(
+            self.ledger, self.application_id, "2026-08-01", "followup-payload"
+        )
+        self.ledger.complete_submission(intent.intent_id, intent.fence, "submitted")
+
+        first_due = self.ledger.due_followups("2100-01-01T00:00:00+00:00")
+        self.assertEqual(first_due[0]["application_id"], self.application_id)
+        self.assertEqual(first_due[0]["ordinal"], 1)
+        first_id = self.ledger.record_followup(
+            application_id=self.application_id,
+            ordinal=1,
+            sent_at="2100-01-01T00:00:00+00:00",
+            evidence_sha256="1" * 64,
+        )
+        replay_id = self.ledger.record_followup(
+            application_id=self.application_id,
+            ordinal=1,
+            sent_at="2100-01-01T00:00:00+00:00",
+            evidence_sha256="1" * 64,
+        )
+        self.assertEqual(replay_id, first_id)
+        self.assertEqual(self.ledger.due_followups("2100-01-10T23:59:59+00:00"), [])
+        second_due = self.ledger.due_followups("2100-01-11T00:00:00+00:00")
+        self.assertEqual(second_due[0]["ordinal"], 2)
+        self.ledger.record_followup(
+            application_id=self.application_id,
+            ordinal=2,
+            sent_at="2100-01-11T00:00:00+00:00",
+            evidence_sha256="2" * 64,
+        )
+        self.assertEqual(self.ledger.due_followups("2101-01-01T00:00:00+00:00"), [])
+
+    def test_outcome_stops_followups_and_archive_rebuilds_the_chain(self):
+        self._ready()
+        intent = self._claim(
+            self.ledger, self.application_id, "2026-08-01", "archive-payload"
+        )
+        self.ledger.complete_submission(intent.intent_id, intent.fence, "submitted")
+        self.ledger.record_funnel_outcome(
+            application_id=self.application_id,
+            funnel_stage="recruiter_response",
+            disposition="positive",
+            evidence_source="gmail",
+            evidence_sha256="3" * 64,
+            occurred_at="2099-12-01T00:00:00+00:00",
+            observed_at="2099-12-01T00:01:00+00:00",
+        )
+
+        self.assertEqual(self.ledger.due_followups("2100-01-01T00:00:00+00:00"), [])
+        archive = self.ledger.application_archive(self.application_id)
+        self.assertEqual(archive["application"]["id"], self.application_id)
+        self.assertEqual(archive["outcomes"][0]["funnel_stage"], "recruiter_response")
+        self.assertIn("artifacts", archive)
+        self.assertIn("followups", archive)
+
     def test_events_reconstruct_state_after_reopen(self):
         self._ready()
         self.ledger.close()
