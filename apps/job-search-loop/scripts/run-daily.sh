@@ -118,13 +118,26 @@ set +e
 TERRA_PLAN_RC=$?
 set -e
 chmod 600 "$EVIDENCE/terra-plan-runner.json"
+TERRA_PLAN_AVAILABLE=1
 if [[ "$TERRA_PLAN_RC" -ne 0 ]]; then
-  refresh_summary
-  exit "$TERRA_PLAN_RC"
+  if [[ "$TERRA_PLAN_RC" -eq 75 ]] \
+    && "$JOB_SEARCH_JQ" -e '.status == "budget_blocked"' \
+      "$EVIDENCE/terra-plan-runner.json" >/dev/null 2>&1; then
+    TERRA_PLAN_AVAILABLE=0
+  else
+    refresh_summary
+    exit "$TERRA_PLAN_RC"
+  fi
 fi
-TERRA_PLAN_RESULT_PATH=$("$JOB_SEARCH_JQ" -er '.result_path' "$EVIDENCE/terra-plan-runner.json")
 export JOB_SEARCH_TERRA_PLAN_RESULT="$EVIDENCE/terra-plan-result.json"
-cp "$TERRA_PLAN_RESULT_PATH" "$JOB_SEARCH_TERRA_PLAN_RESULT"
+if [[ "$TERRA_PLAN_AVAILABLE" == "1" ]]; then
+  TERRA_PLAN_RESULT_PATH=$("$JOB_SEARCH_JQ" -er '.result_path' "$EVIDENCE/terra-plan-runner.json")
+  cp "$TERRA_PLAN_RESULT_PATH" "$JOB_SEARCH_TERRA_PLAN_RESULT"
+else
+  "$JOB_SEARCH_JQ" -n \
+    '{status:"blocked",dossiers:[],blocked:["daily_model_budget_exhausted"]}' \
+    >"$JOB_SEARCH_TERRA_PLAN_RESULT"
+fi
 chmod 600 "$JOB_SEARCH_TERRA_PLAN_RESULT"
 export JOB_SEARCH_HIGH_MODE=dream
 export ANICCA_BUDGET_SCOPE_ID="job-search-daily:${RUN_ID}:dream-high"
@@ -132,27 +145,43 @@ export ANICCA_PASS_TOKEN_BUDGET=65536
 TERRA_HIGH_EVIDENCE="$EVIDENCE/terra-high"
 mkdir -p "$TERRA_HIGH_EVIDENCE"
 chmod 700 "$TERRA_HIGH_EVIDENCE"
-set +e
-"$JOB_SEARCH_PYTHON" "$JOB_SEARCH_RUNNER" \
-  --task-class job-search-terra-high \
-  --escalation-reason "dream application dossier for deterministic dream candidates" \
-  --prompt-file "$JOB_SEARCH_APP_ROOT/prompts/terra-high-pass.md" \
-  --schema "$JOB_SEARCH_APP_ROOT/schemas/terra-high-result.v1.schema.json" \
-  --evidence-dir "$TERRA_HIGH_EVIDENCE" \
-  --task-label job-search-dream-high \
-  --loop job-search \
-  --workdir "$JOB_SEARCH_REPO_ROOT" \
-  >"$EVIDENCE/terra-high-runner.json"
-TERRA_HIGH_RC=$?
-set -e
-chmod 600 "$EVIDENCE/terra-high-runner.json"
-if [[ "$TERRA_HIGH_RC" -ne 0 ]]; then
-  refresh_summary
-  exit "$TERRA_HIGH_RC"
-fi
-TERRA_HIGH_RESULT_PATH=$("$JOB_SEARCH_JQ" -er '.result_path' "$EVIDENCE/terra-high-runner.json")
 export JOB_SEARCH_TERRA_HIGH_RESULT="$EVIDENCE/terra-high-result.json"
-cp "$TERRA_HIGH_RESULT_PATH" "$JOB_SEARCH_TERRA_HIGH_RESULT"
+if [[ "$TERRA_PLAN_AVAILABLE" == "1" ]]; then
+  set +e
+  "$JOB_SEARCH_PYTHON" "$JOB_SEARCH_RUNNER" \
+    --task-class job-search-terra-high \
+    --escalation-reason "dream application dossier for deterministic dream candidates" \
+    --prompt-file "$JOB_SEARCH_APP_ROOT/prompts/terra-high-pass.md" \
+    --schema "$JOB_SEARCH_APP_ROOT/schemas/terra-high-result.v1.schema.json" \
+    --evidence-dir "$TERRA_HIGH_EVIDENCE" \
+    --task-label job-search-dream-high \
+    --loop job-search \
+    --workdir "$JOB_SEARCH_REPO_ROOT" \
+    >"$EVIDENCE/terra-high-runner.json"
+  TERRA_HIGH_RC=$?
+  set -e
+  chmod 600 "$EVIDENCE/terra-high-runner.json"
+  if [[ "$TERRA_HIGH_RC" -eq 0 ]]; then
+    TERRA_HIGH_RESULT_PATH=$("$JOB_SEARCH_JQ" -er '.result_path' "$EVIDENCE/terra-high-runner.json")
+    cp "$TERRA_HIGH_RESULT_PATH" "$JOB_SEARCH_TERRA_HIGH_RESULT"
+  elif [[ "$TERRA_HIGH_RC" -eq 75 ]] \
+    && "$JOB_SEARCH_JQ" -e '.status == "budget_blocked"' \
+      "$EVIDENCE/terra-high-runner.json" >/dev/null 2>&1; then
+    "$JOB_SEARCH_JQ" -n \
+      '{status:"blocked",mode:"dream",dream_dossiers:[],hypothesis:null,blocked:["daily_model_budget_exhausted"]}' \
+      >"$JOB_SEARCH_TERRA_HIGH_RESULT"
+  else
+    refresh_summary
+    exit "$TERRA_HIGH_RC"
+  fi
+else
+  "$JOB_SEARCH_JQ" -n '{status:"skipped_budget"}' \
+    >"$EVIDENCE/terra-high-runner.json"
+  "$JOB_SEARCH_JQ" -n \
+    '{status:"blocked",mode:"dream",dream_dossiers:[],hypothesis:null,blocked:["daily_model_budget_exhausted"]}' \
+    >"$JOB_SEARCH_TERRA_HIGH_RESULT"
+  chmod 600 "$EVIDENCE/terra-high-runner.json"
+fi
 chmod 600 "$JOB_SEARCH_TERRA_HIGH_RESULT"
 JOB_SEARCH_BROWSER_FENCE="$JOB_SEARCH_STATE_ROOT/browser-fence"
 "$JOB_SEARCH_PYTHON" -m job_search_loop.browser_owner acquire \
