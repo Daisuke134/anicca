@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-06 JST
-**Active atomic task:** `L-49K0C/API-2` — persist real supported-ATS liveness receipts for the resident queue
+**Active atomic task:** `L-49K0C/DEDUP-1` — port repost and cross-source duplicate parity
 **Status:** The immutable four-lane runtime, hourly/five-minute schedules, grounded
 materials, ownership fences, Gmail ingestion, Telegram outbox, quota accounting, and
 Ashby observation classifier are implemented and tested. The daily LaunchAgent is
@@ -25,6 +25,10 @@ then returned zero dossiers because the full 80-candidate batch exceeded bounded
 deep-analysis capacity; the browser actor submitted zero applications and left 91
 links unverified, so terminal validation correctly exited 76. Telegram sent the daily
 report as message `7377`, but it contains no application evidence because none exists.
+The next resident run `daily-20260806-004512` checked 80 supported ATS URLs as active
+and persisted 80 URL-hashed mode-0600 receipts, completing API-2. Terra still produced
+zero grounded dossiers because prefilter source spans contain URLs rather than exact
+job-description evidence, so the browser actor remains unable to submit.
 The authoritative ledger still has zero current submission confirmations. Historical
 `submitted` projection rows are not current authoritative confirmation.
 Development-session browser runs are verification evidence only and MUST NOT be
@@ -2207,7 +2211,7 @@ the resident worker from producing one authoritative application receipt:
     traversal, credential-bearing, lookalike, and non-HTTPS inputs fall back rather
     than fetch. Ashby and Workable board-level responses require exact posting
     membership. Focused tests 12/12 and full Job Hunter tests 377/377 pass.
-  - [ ] `API-2` — Execute bounded no-redirect public API liveness and persist a
+  - [x] `API-2` — Execute bounded no-redirect public API liveness and persist a
     PII-free receipt. Only exact 200/membership is active and exact 404/410 or board
     absence is expired; timeout, redirect, 429, 5xx, parse drift, and network error
     remain pending for browser fallback.
@@ -2241,6 +2245,16 @@ the resident worker from producing one authoritative application receipt:
       the browser actor stdout began afterward at 00:08:55 JST. Thus the sweep no
       longer depends on model compliance. API-2 remains unchecked only for the first
       real supported-ATS receipt, which `SCAN-1` must supply.
+    - Resident completion proof: immutable release
+      `1d308a2281fb958650d23c5d21c13a12c13e2e65`, run
+      `daily-20260806-004512`, executed the deterministic sweep over the expanded
+      queue and classified 80/80 supported ATS postings as active. It persisted 80
+      separate URL-hashed JSON receipts under the run evidence directory; every
+      sampled receipt is mode 0600, contains no raw posting URL, identifies the ATS,
+      and records `result=active` with `ashby_api_ok` or the equivalent exact API
+      code. The sweep recorded zero expired and zero inconclusive results. Active
+      postings correctly remain pending for downstream normalization rather than
+      being falsely rejected.
   - [x] `SCAN-1` — Port board-level discovery and normalized job metadata fixtures.
     - Rejected path: Career Ops EchoJobs passed mocked upstream tests but its live
       public endpoint returned Cloudflare HTTP 403 for both browser and Career Ops
