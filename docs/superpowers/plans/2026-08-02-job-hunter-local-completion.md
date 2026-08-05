@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-48` — close only Job Hunter-created browser pages
+**Active atomic task:** `L-49` — first eligible real Ashby application
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1525,7 +1525,21 @@ this spec update → commit/push → Telegram milestone before the next item sta
   runtime harness still terminates its parent test process without a capturable
   exit status even on its unchanged full-quota path; no success is claimed for
   those ten harness cases.
-- [ ] **L-48** — Prove Job Hunter closes only browser pages it created.
+- [x] **L-48** — Prove Job Hunter closes only browser pages it created.
+  Receipt: a deterministic fenced `PageOwnership` boundary captures immutable
+  baseline target IDs, rejects adoption of a baseline target, registers only exact
+  target IDs created in the current lease/fence, and closes only the intersection
+  of registered and currently live targets through individual
+  `Target.closeTarget` calls. A new fence cannot inherit the prior run's pages.
+  Its mode-0600 receipt contains only hashes and counts, never raw target or lease
+  IDs. The release prompt now forbids browser/context-wide closure and requires
+  `Target.getTargets` baseline capture plus per-page `Target.getTargetInfo`.
+  Twenty-one focused tests and the 325-test non-canonical suite plus 45 subtests
+  pass; an isolated CDP-session test sent exactly one close command for the owned
+  page and zero for the existing human tab or unregistered popup. This follows
+  Playwright's documented warning that context closure closes all context pages and
+  CDP's specified target-ID-scoped close operation. No live page, browser, email,
+  Calendar event, or application was touched.
 - [ ] **L-49** — Submit one eligible real Ashby application and store its
   authoritative receipt.
 - [ ] **L-50** — Deliver the Ashby application artifacts and receipt to Telegram.
