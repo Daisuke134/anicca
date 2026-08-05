@@ -223,7 +223,7 @@ test("a candidate failure remains incomplete and defers every write boundary", a
   assert.equal(input.calls.some((call) => call[0] === "telegram"), false);
 });
 
-test("configured native execution uses Luna then passes one verified candidate to the write pipeline", async () => {
+test("configured native execution gates the date then uses Luna and passes one verified candidate to the write pipeline", async () => {
   const input = await fixture();
   const profile = Object.freeze({ tenant_id: TENANT, timezone: "Asia/Tokyo" });
   const goalDecision = Object.freeze({ ranked_events: [{
@@ -256,7 +256,10 @@ test("configured native execution uses Luna then passes one verified candidate t
       ...input.deps,
       readProfile(value) { input.calls.push(["profile", value]); return profile; },
       async runLunaJudgment(value) { input.calls.push(["luna", value]); return goalDecision; },
-      async gateDateCalendar(...value) { input.calls.push(["gate", ...value]); return Object.freeze({ date: "2026-08-05" }); },
+      async gateDateCalendar(...value) {
+        input.calls.push(["gate", ...value]);
+        return Object.freeze({ date: "2026-08-05", candidates: [{ event_ref: "luma-event://event/founder-night", eligible: true }] });
+      },
       async createSpendPolicy(value) { input.calls.push(["policy", value]); return Object.freeze({ limits: [] }); },
       planDateSpend(...value) { input.calls.push(["spend", ...value]); return spendSequence; },
       async runNativeWrite(value) { input.calls.push(["write", value]); return writeResult; },
@@ -272,7 +275,7 @@ test("configured native execution uses Luna then passes one verified candidate t
 
   assert.equal(result.write, writeResult);
   assert.deepEqual(input.calls.filter(([name]) => ["profile", "luna", "route-adapter", "gate", "policy", "spend", "write"].includes(name))
-    .map(([name]) => name), ["profile", "luna", "route-adapter", "gate", "policy", "spend", "write"]);
+    .map(([name]) => name), ["profile", "route-adapter", "policy", "gate", "luna", "spend", "write"]);
   const writeInput = input.calls.find(([name]) => name === "write")[1];
   assert.equal(writeInput.application.eventRef, "luma-event://event/founder-night");
   assert.equal(writeInput.goalDecision, goalDecision);

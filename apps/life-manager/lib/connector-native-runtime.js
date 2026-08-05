@@ -230,34 +230,44 @@ async function runNativeConnectorPass(input = {}) {
       failureCode = "CONNECTOR_NATIVE_PROFILE_FAILED";
       const profile = readProfile({ tenantId, path: config.profilePath });
       if (!verifyProfile(profile) || profile.tenant_id !== tenantId || profile.timezone !== timeZone) unavailable();
-      const judgmentDay = dateInventory.days.find((day) => (
+      const judgmentDays = dateInventory.days.filter((day) => (
         coverage.days.some((coverageDay) => coverageDay.date === day.date && coverageDay.status === "open")
         && Array.isArray(day.events) && day.events.length > 0
       ));
-      if (!judgmentDay) unavailable();
-      failureCode = "CONNECTOR_NATIVE_LUNA_FAILED";
-      const goalDecision = await runLunaJudgment({
-        dateInventory,
-        profile,
-        date: judgmentDay.date,
-        evidenceDir: absoluteDirectory(config.lunaEvidenceDir),
-        repoRoot: config.repoRoot,
-        runnerPath: config.runnerPath,
-      });
-      if (!verifyGoalDecision(goalDecision) || goalDecision.ranked_events.length === 0) unavailable();
-      const selectedDate = judgmentDay.date;
+      if (judgmentDays.length === 0) unavailable();
       const routeMinutes = createRouteMinutes({
         mapsKey: requiredText(config.mapsKey),
         homeLocation: requiredText(config.homeLocation),
       });
-      failureCode = "CONNECTOR_NATIVE_CALENDAR_GATE_FAILED";
-      const calendarGate = await gateDateCalendar(
-        dateInventory, busyInventory, selectedDate, requiredText(config.homeLocation), routeMinutes,
-      );
-      failureCode = "CONNECTOR_NATIVE_SPEND_GATE_FAILED";
       const policy = await createSpendPolicy({ tenantId, limits: profile.spend_policy && profile.spend_policy.limits });
-      const spendSequence = await planDateSpend(policy, dateInventory, calendarGate, goalDecision);
-      if (!verifySpendSequence(spendSequence) || spendSequence.ordered_candidates.length === 0) unavailable();
+      let selected = null;
+      for (const judgmentDay of judgmentDays) {
+        failureCode = "CONNECTOR_NATIVE_CALENDAR_GATE_FAILED";
+        const calendarGate = await gateDateCalendar(
+          dateInventory, busyInventory, judgmentDay.date, requiredText(config.homeLocation), routeMinutes,
+        );
+        if (!calendarGate || !Array.isArray(calendarGate.candidates)) unavailable();
+        if (!calendarGate.candidates.some((candidate) => candidate && candidate.eligible === true)) continue;
+        failureCode = "CONNECTOR_NATIVE_LUNA_FAILED";
+        const goalDecision = await runLunaJudgment({
+          dateInventory,
+          profile,
+          date: judgmentDay.date,
+          evidenceDir: absoluteDirectory(config.lunaEvidenceDir),
+          repoRoot: config.repoRoot,
+          runnerPath: config.runnerPath,
+        });
+        if (!verifyGoalDecision(goalDecision) || goalDecision.ranked_events.length === 0) unavailable();
+        failureCode = "CONNECTOR_NATIVE_SPEND_GATE_FAILED";
+        const spendSequence = await planDateSpend(policy, dateInventory, calendarGate, goalDecision);
+        if (!verifySpendSequence(spendSequence)) unavailable();
+        if (spendSequence.ordered_candidates.length > 0) {
+          selected = { judgmentDay, goalDecision, spendSequence };
+          break;
+        }
+      }
+      if (!selected) unavailable();
+      const { judgmentDay, goalDecision, spendSequence } = selected;
       const chosen = spendSequence.ordered_candidates[0];
       const selectedRef = chosen.event_ref;
       const selectedEvent = judgmentDay.events.find((event) => event && event.event_ref === selectedRef);
