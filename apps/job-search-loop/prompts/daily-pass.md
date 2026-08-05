@@ -65,6 +65,36 @@ returns no results, continue with the listed official browser scopes. Only after
 every Luna lead and official browser scope returns no verified eligible posting may
 the pass report `no_eligible_job_found`.
 
+Every browser-discovered official-looking job link is durable work, not temporary
+model context. Before visiting or evaluating those links, write a private mode-0600
+JSON object with a `links` array whose items contain only `url`, `source`, and
+`query_family`, then run:
+
+```bash
+PYTHONPATH=apps/job-search-loop /opt/homebrew/bin/python3 -m job_search_loop.candidate_queue discover \
+  --database "$JOB_SEARCH_CANDIDATE_QUEUE" --input "<private-links-json>" \
+  --output "<private-discovery-receipt>"
+```
+
+Load durable pending work with `job_search_loop.candidate_queue pending`. Visit each
+returned official URL, normalize the posting, check liveness and every deterministic
+hard gate, then durably resolve it with:
+
+```bash
+PYTHONPATH=apps/job-search-loop /opt/homebrew/bin/python3 -m job_search_loop.candidate_queue verify \
+  --database "$JOB_SEARCH_CANDIDATE_QUEUE" --url "<official-url>" \
+  --eligible true --reason "eligible_for_application"
+```
+
+Use `--eligible false` with the exact grounded rejection reason for an expired,
+ineligible, duplicate, or non-job URL. Never mark a link verified merely because
+navigation, parsing, or an ATS failed; leave it pending for a supported fallback.
+Before returning, load `candidate_queue summary` and copy its `discovered_count`,
+`verified_count`, and `remaining_unverified_count` into the result fields
+`discovered_link_count`, `verified_link_count`, and `remaining_unverified_count`.
+The worker must not return `no_eligible_job_found` while
+`remaining_unverified_count` is nonzero. The shell independently enforces this gate.
+
 For every employer ATS navigation, do not wait for `domcontentloaded` or
 `networkidle`. Use the existing CDP page and:
 

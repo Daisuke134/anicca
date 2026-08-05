@@ -96,11 +96,35 @@ if sys.argv[1:2] and sys.argv[1].endswith("agent_runner.py"):
         )
         print(json.dumps({"status": "ok", "result_path": str(result)}))
         raise SystemExit(0)
-    (evidence / "summary.json").write_text(
-        json.dumps({"status": "budget_blocked"}) + "\\n",
-        encoding="utf-8",
-    )
-    raise SystemExit(%d)
+    runner_rc = %d
+    if runner_rc == 0:
+        result = evidence / "result.json"
+        result.write_text(
+            json.dumps(
+                {
+                    "version": 1,
+                    "run_id": "daily-test",
+                    "status": "no_eligible_job_found",
+                    "submitted": [],
+                    "submit_unknown": [],
+                    "blocked": [],
+                    "discovered_link_count": 0,
+                    "verified_link_count": 0,
+                    "remaining_unverified_count": 0,
+                }
+            ) + "\\n",
+            encoding="utf-8",
+        )
+        (evidence / "summary.json").write_text(
+            json.dumps({"status": "ok", "result_path": str(result)}) + "\\n",
+            encoding="utf-8",
+        )
+    else:
+        (evidence / "summary.json").write_text(
+            json.dumps({"status": "budget_blocked"}) + "\\n",
+            encoding="utf-8",
+        )
+    raise SystemExit(runner_rc)
 raise SystemExit(0)
 """
             % (slot_count, runner_rc),
