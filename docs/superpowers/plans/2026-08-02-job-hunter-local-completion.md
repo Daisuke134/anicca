@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-05` — discovery and posting-identity contract
+**Active atomic task:** `L-06` — ranking and veto contract
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -908,7 +908,11 @@ this spec update → commit/push → Telegram milestone before the next item sta
   fact preserves source path, SHA-256, and source span; conflicting values fail
   closed; tailored application outputs cannot become profile truth; profile setup
   suite PASS.
-- [ ] **L-05** — Port the upstream discovery and `seen_jobs` dedupe contract.
+- [x] **L-05** — Port the upstream discovery and `seen_jobs` dedupe contract.
+  Receipt: default discovery removes Denmark-only and unauthorized LinkedIn
+  automation; results persist canonical URL, canonical job ID, and provider;
+  cross-provider duplicates collapse to one posting with official-source preference;
+  exhausted automation still requests browser fallback; discovery/state suites PASS.
 - [ ] **L-06** — Port the upstream ranking, veto, deadline, and honest-gap contract.
 - [ ] **L-07** — Port the upstream application research and artifact-chain contract.
 - [ ] **L-08** — Port the upstream outcome, follow-up, and archive contract.

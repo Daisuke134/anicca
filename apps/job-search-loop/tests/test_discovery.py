@@ -122,6 +122,66 @@ exit {returncode}
             self.assertTrue(result["requires_browser_fallback"])
             self.assertNotEqual(result["status"], "blocked")
 
+    def test_provider_results_are_deduped_into_canonical_postings(self):
+        module = self._module()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            first, _ = self._provider(
+                module,
+                root,
+                "official",
+                returncode=0,
+                payload={
+                    "results": [
+                        {
+                            "company": "Dream AI",
+                            "title": "AI Engineer",
+                            "url": "https://jobs.dream.ai/roles/123?utm_source=one",
+                            "source_kind": "official",
+                        }
+                    ]
+                },
+            )
+            second, _ = self._provider(
+                module,
+                root,
+                "search_index",
+                returncode=0,
+                payload={
+                    "results": [
+                        {
+                            "company": "Dream AI",
+                            "title": "AI Engineer",
+                            "url": "https://jobs.dream.ai/roles/123?utm_source=two",
+                            "source_kind": "lead",
+                        }
+                    ]
+                },
+            )
+
+            result = module.search_jobs(
+                "AI Engineer", providers=(first, second), timeout_seconds=5
+            )
+
+        self.assertEqual(result["usable_result_count"], 1)
+        self.assertEqual(len(result["results"]), 1)
+        row = result["results"][0]
+        self.assertEqual(row["canonical_url"], "https://jobs.dream.ai/roles/123")
+        self.assertEqual(len(row["canonical_job_id"]), 64)
+        self.assertEqual(row["discovery_provider"], "official")
+
+    def test_default_discovery_has_no_unauthorized_or_denmark_portals(self):
+        module = self._module()
+        providers = module._default_providers(
+            "AI Engineer",
+            app_root=Path("/app"),
+            framework_root=Path("/framework"),
+        )
+        names = {provider.name for provider in providers}
+        self.assertEqual(names, {"firecrawl"})
+        self.assertFalse(any("linkedin" in name for name in names))
+        self.assertFalse(any("freehire" in name for name in names))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -8,6 +8,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Sequence
 
+from .state import canonical_job_id, canonical_url
+
 
 @dataclass(frozen=True)
 class Provider:
@@ -50,7 +52,7 @@ def search_jobs(
     if not query:
         raise ValueError("query is required")
     attempts = []
-    total = 0
+    combined_by_url: dict[str, dict[str, Any]] = {}
     for provider in providers:
         try:
             completed = subprocess.run(
@@ -99,16 +101,38 @@ def search_jobs(
             )
             continue
         rows = _results(payload)
-        total += len(rows)
+        enriched_rows = []
+        for row in rows:
+            company = str(row.get("company", "")).strip()
+            title = str(row.get("title", "")).strip()
+            url = str(row.get("url", "")).strip()
+            if not company or not title or not url:
+                continue
+            normalized_url = canonical_url(url)
+            enriched = {
+                **row,
+                "canonical_url": normalized_url,
+                "canonical_job_id": canonical_job_id(company, title, normalized_url),
+                "discovery_provider": provider.name,
+            }
+            existing = combined_by_url.get(normalized_url)
+            if existing is None or (
+                existing.get("source_kind") != "official"
+                and enriched.get("source_kind") == "official"
+            ):
+                combined_by_url[normalized_url] = enriched
+            enriched_rows.append(enriched)
         attempts.append(
             {
                 "name": provider.name,
-                "status": "success" if rows else "empty",
-                "count": len(rows),
+                "status": "success" if enriched_rows else "empty",
+                "count": len(enriched_rows),
                 "error": None,
-                "results": rows,
+                "results": enriched_rows,
             }
         )
+    combined = list(combined_by_url.values())
+    total = len(combined)
     needs_browser = total == 0
     return {
         "version": 1,
@@ -116,6 +140,7 @@ def search_jobs(
         "status": "browser_fallback_required" if needs_browser else "usable",
         "requires_browser_fallback": needs_browser,
         "usable_result_count": total,
+        "results": combined,
         "providers": attempts,
     }
 
@@ -123,79 +148,10 @@ def search_jobs(
 def _default_providers(
     query: str, *, app_root: Path, framework_root: Path
 ) -> tuple[Provider, ...]:
-    bun = "/opt/homebrew/bin/bun"
     return (
         Provider(
             "firecrawl",
             ("/bin/zsh", str(app_root / "scripts" / "firecrawl-search.sh"), query),
-        ),
-        Provider(
-            "freehire",
-            (
-                bun,
-                "run",
-                str(
-                    framework_root
-                    / ".agents/skills/freehire-search/cli/src/cli.ts"
-                ),
-                "search",
-                "--query",
-                query,
-                "--remote",
-                "remote",
-                "--jobage",
-                "30",
-                "--limit",
-                "10",
-                "--format",
-                "json",
-            ),
-        ),
-        Provider(
-            "linkedin_tokyo",
-            (
-                bun,
-                "run",
-                str(
-                    framework_root
-                    / ".agents/skills/linkedin-search/cli/src/cli.ts"
-                ),
-                "search",
-                "--query",
-                query,
-                "--location",
-                "Tokyo, Japan",
-                "--jobage",
-                "30",
-                "--limit",
-                "10",
-                "--format",
-                "json",
-            ),
-        ),
-        Provider(
-            "linkedin_remote",
-            (
-                bun,
-                "run",
-                str(
-                    framework_root
-                    / ".agents/skills/linkedin-search/cli/src/cli.ts"
-                ),
-                "search",
-                "--query",
-                query,
-                "--location",
-                "Remote",
-                "--remote",
-                "remote",
-                "--jobage",
-                "30",
-                "--limit",
-                "10",
-                "--format",
-                "json",
-            ),
         ),
     )
 
@@ -240,7 +196,7 @@ def main() -> None:
     args = parser.parse_args()
     app_root = Path(__file__).resolve().parents[1]
     framework_root = args.framework_root.expanduser().resolve()
-    bootstrap_error = _ensure_framework(app_root, framework_root)
+    bootstrap_error = None
     result = search_jobs(
         args.query,
         providers=_default_providers(
