@@ -10,6 +10,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
+from .outbox import Outbox
 from .telegram import send_once
 
 
@@ -141,6 +142,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--openclaw", default="/opt/homebrew/bin/openclaw")
     args = parser.parse_args(argv)
     delivery: dict[str, Any] = {}
+    outbox = Outbox(args.outbox)
+    outbox.close()
 
     def alert(value: dict[str, Any]) -> None:
         encoded = json.dumps(value, sort_keys=True, separators=(",", ":"))

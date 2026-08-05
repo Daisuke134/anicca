@@ -4,7 +4,7 @@ import unittest
 from datetime import datetime, timezone
 from pathlib import Path
 
-from job_search_loop.guardian_recovery import bounded_recovery
+from job_search_loop.guardian_recovery import bounded_recovery, main
 from job_search_loop.outbox import Outbox
 
 
@@ -107,6 +107,32 @@ class GuardianRecoveryTests(unittest.TestCase):
         )
         self.assertEqual(len(calls), 1)
         self.assertFalse(report["alert_sent"])
+
+    def test_cli_migrates_legacy_schema_before_counting_uncertain_rows(self):
+        connection = sqlite3.connect(self.database)
+        connection.execute(
+            "CREATE TABLE outbox(event_key TEXT PRIMARY KEY,payload TEXT NOT NULL,status TEXT NOT NULL,fence TEXT,telegram_message_id TEXT)"
+        )
+        connection.execute(
+            "INSERT INTO outbox VALUES('unknown','body','send_started','fence',NULL)"
+        )
+        connection.commit(); connection.close()
+        executable = self.root / "fake-openclaw"
+        executable.write_text("#!/bin/sh\necho '{\"messageId\":\"801\"}'\n")
+        executable.chmod(0o700)
+        output = self.root / "recovery.json"
+        self.assertEqual(main([
+            "--outbox", str(self.database), "--output", str(output),
+            "--openclaw", str(executable),
+        ]), 0)
+        report = __import__("json").loads(output.read_text())
+        self.assertEqual(report["uncertain_side_effect_count"], 1)
+        connection = sqlite3.connect(self.database)
+        columns = {
+            row[1] for row in connection.execute("PRAGMA table_info(outbox)")
+        }
+        connection.close()
+        self.assertIn("send_started_at", columns)
 
 
 if __name__ == "__main__": unittest.main()
