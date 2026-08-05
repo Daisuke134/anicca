@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-45F` — Guardian Telegram-outbox health check
+**Active atomic task:** `L-46` — bounded deterministic Guardian recovery
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1473,7 +1473,18 @@ this spec update → commit/push → Telegram milestone before the next item sta
   declares the owner and has no lease, fence, PID, or expiry proof. L-45E detects
   only; it did not navigate, restart, kill, or reassign the browser. L-47 owns the
   fenced sole-owner correction.
-- [ ] **L-45F** — Implement the Guardian Telegram-outbox health check.
+- [x] **L-45F** — Implement the Guardian Telegram-outbox health check. Receipt:
+  read-only Guardian verifies mode 0600, SQLite integrity, allowed states, per-state
+  fence/message invariants, unique sent message IDs, lease timestamp columns, and
+  counts `send_started` as an uncertain side effect without retrying or exposing
+  payloads or provider IDs. Three focused and full 320-test suites PASS. Immutable
+  release `cb8de5178d356d72da3f89138f7fa7feef7a73f2` (archive SHA-256
+  `61264780adb8d32bac027afa88ed616a13c977f0188785a4faddd22bd1ae67ec`)
+  is active with zero writable paths. The installed-release report is truthfully
+  `unhealthy`, mode 0600 and 207 bytes: SQLite integrity is `ok`, 17 rows are sent,
+  three rows remain `send_started`, and the legacy schema lacks lease timestamps.
+  L-45F performed no state update or Telegram retry; L-46 may recover only proven
+  pre-side-effect rows, never these uncertain sends.
 - [ ] **L-46** — Bound Guardian auto-recovery to deterministic pre-side-effect faults.
 - [ ] **L-47** — Make `ai.anicca.job-search-daily` the sole CloakBrowser owner.
 - [ ] **L-48** — Prove Job Hunter closes only browser pages it created.
