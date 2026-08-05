@@ -2121,6 +2121,18 @@ fresh reviewerは`ship`。ただしcoverageはまだread-onlyの新規21日snaps
 receipt確認、Calendar write/sync、Telegram送信は実行しない。したがってO1B-25B〜Gは未完了のまま、次は同じnative runtimeへ
 既存の登録・receipt・Calendar・Telegram write境界を順番に接続する。
 
+O1B-25進捗42（native実write一巡 / 2件目申請済み・Telegram未完）: `ai.anicca.life-manager-connector-native`を
+Mac miniのlaunchdへ登録し、5分間隔のbounded passとして実稼働させた。停止していた原因を、期限切れLuma session、
+React formへ伝わらないemail入力、Gmail code到着遅延、認証後navigation未待機、Codex Luna structured-output schema、
+競合日の後続日探索停止、native write dependency未配線、E3 URL readback未配線、Google Calendar実`htmlLink`形式の拒否へ
+順番に限定し、各sliceをRED→GREEN、commit、push、launchd kickstart、実readbackで閉じた。1件目
+`luma-event://event/c32o6i8l`（Builders Weekend）はLumaで「参加確定！」、Google Calendar event
+`ivg56l78ftmn2dilndfm3qqchs`を実readbackした。loop自身が次に`luma-event://event/u12izq9i`（8/13皇居ラン）へ申込み、
+Luma実画面は「承認待ち」である。これはhost承認型eventの正常な申請済み状態だが、providerが確定済みだけを成功扱いして
+unknown effectへ落としていたため、承認待ちも外部申請receiptを作れるreadback markerへ追加した。残TODOの順序は、
+2件目E1/E2/E3 receipt完成、Calendar同期、各eventのTelegram positive message ID保存、coverage/registration stateの
+次wakeへの永続化、2件を別日として再選択しない実証、full regression、DEBUG解除である。完了条件はまだ未達とする。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
