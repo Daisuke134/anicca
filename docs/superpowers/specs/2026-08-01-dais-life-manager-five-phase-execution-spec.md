@@ -3,7 +3,7 @@
 status: ACTIVE
 owner: Dais / Life Manager
 created: 2026-08-01 JST
-updated: 2026-08-02 JST
+updated: 2026-08-05 JST
 scope: 応募基盤、イベント、資金調達、求人、個人CFO、暗号資産、法定通貨投資・NISA
 active_execution_surface: LOCAL_ONLY_UNTIL_ORDER_5_COMPLETE
 
@@ -39,16 +39,23 @@ Life Managerは「検索した」「分析した」「失敗した」と報告�
 その場合も、何もせず閉じるのではなく、停止理由、次の観測、改善案、次回判断時刻という現実の
 次行動を残す。Connectorではno-eventを正常終了にせず、実参加予約までloopを継続する。
 
-### 0.2 現在地と残りの一本道（2026-08-02 JST）
+### 0.2 現在地と残りの一本道（2026-08-05 JST）
 
 正本実装は`/Users/operator/Projects/life-manager-main`の`main`である。`O1A-01〜06`と
 `O1B-01〜24`は実装・実測・証拠化・push済み。21日coverageの器に加え、実Luma Tokyoを終端まで読み、
 全candidateを21日へ投影し、好みで候補を捨てず、本文・主催者・参加者・場所・時間からgoalと
-serendipityを根拠付き評価するところまで完成した。実Calendarを読んだ
-2026-08-02〜2026-08-22の最新verified coverageは`open=18 / covered_existing=0 /
-covered_new=1 / unavailable=2`である。8月15日の実Luma登録は確認mailとGoogle Calendarを伴う
-`covered_new`、8月2日・3日は実Calendar blocker付き`unavailable`である。残り18日は未処理であり、
-「イベントがない」「完了した」という意味ではない。
+serendipityを根拠付き評価するところまで完成した。2026-08-02に最後に証拠化されたcoverageは
+`open=18 / covered_existing=0 / covered_new=1 / unavailable=2`である。これは現在時刻のcoverageではなく
+履歴証拠である。8月15日の実Luma登録は確認mailとGoogle Calendarを伴う`covered_new`、8月2日・3日は
+実Calendar blocker付き`unavailable`だった。現在値はnative passが実Calendarとproviderを再読取して
+新しいsnapshotを保存するまでunknownとし、古い18日を現在値として報告しない。
+
+native local runtimeはlock、heartbeat、healthcheck、CloakBrowserの共有page、Luma inventory、全Calendarの
+read-only取得、21日coverage continuationまで`main`へpush済みである。一方、ローカルworking treeには
+登録receipt → Calendar同期 → coverage再構築 → Telegram送信を直列化するTask 5 write pipelineがあり、
+focused testは36/36 PASSしたが、未commit・未pushでdefault native runtimeからも未接続である。
+native launchdとhealthcheckは未登録、native state directoryも未生成である。したがってConnectorは
+「部品実装が進んだ」状態であり、「ユーザーが何も管理せず結果だけ受け取る常駐agent」は未完成である。
 
 `O1C-00 Life Manager startup context正本化`は2026-08-02に実装・監査・pushまで完了した。
 現在の実装優先は、保持していたConnectorの再開位置`O1B-25`である。残作業は、途中へ別trackを混ぜず
@@ -57,7 +64,7 @@ covered_new=1 / unavailable=2`である。8月15日の実Luma登録は確認mail
 ```text
 完了: O1B-20〜24 source handoff、候補継続、Calendar・移動時間・支出gate
 完了: O1C-00 Life Manager startup context正本化（旧Anicca product提出防止）
-いま: O1B-25/26 21日coverageを埋め、実登録・Calendar・Telegram報告を一つのloopとして完成
+いま: O1B-25/26 native read→Luna判断→実登録→receipt→Calendar→Telegramを一つのloopとして完成
   → O1C-01〜27 Fundraising / acceleratorの探索・提出・返信・面談追跡
   → O2-01〜12 Job Hunterの統合・実応募・返信・面接追跡
   → O3A-01〜07 壊れたCFO runtime loopを復旧
@@ -68,6 +75,84 @@ local版完成gate:
   上記のOrder 1〜5がMac miniで連続稼働し、Telegram報告と証拠が揃う
   → その後にだけOW-01〜12を開始し、同じcoreをDais以外のpilotへ展開
 ```
+
+#### 0.2.1 Connectorのユーザー体験contract
+
+Connectorを作る目的は、Daisへagentの管理、tool選択、失敗logの読解、再実行をさせないことである。
+通常時にDaisが見るsurfaceはTelegramだけとし、Life ManagerはMac mini上で探索から検証まで継続する。
+本人しか完了できないOAuth、CAPTCHA、本人確認、または設計外の支出だけを、具体的な一操作として通知する。
+その操作後は同じcontinuationから自動再開し、「再実行してください」と返さない。
+
+```mermaid
+flowchart TD
+    U["Dais"]
+
+    subgraph FIRST["初回だけ"]
+        ON["TelegramでConnectorをON"]
+        PROFILE["既存profileから興味・場所・予算を設定"]
+        ACK["動作条件を1通で確認"]
+        ON --> PROFILE --> ACK
+    end
+
+    subgraph LOCAL["Mac mini上で継続実行 — 通常は見えない"]
+        CAL["全Calendarの空きと移動時間を確認"]
+        DISCOVER["Luma / 許可済みevent sourceを探索"]
+        LUNA["Luna workerが興味・目標・serendipityを判断"]
+        GATE{"重複・時間・移動・予算gateを通過?"}
+        APPLY["参加登録"]
+        RECEIPT{"provider receiptを検証できた?"}
+        VERIFY["確認mail・guest binding・ticket / QRを検証"]
+        SYNC["Google Calendarへ冪等登録しreadback"]
+        COVERAGE["rolling 21日coverageを再計算"]
+        NEXT{"open = 0?"}
+
+        CAL --> DISCOVER --> LUNA --> GATE
+        GATE -->|No| DISCOVER
+        GATE -->|Yes| APPLY --> RECEIPT
+        RECEIPT -->|結果不明| RECON["reconciliationへ保存し二重申込みを防止"]
+        RECON --> RECEIPT
+        RECEIPT -->|Yes| VERIFY --> SYNC --> COVERAGE --> NEXT
+        NEXT -->|No| CAL
+    end
+
+    subgraph TELEGRAM["Daisが見るもの"]
+        BOOKED["予約完了: event・日時・場所・理由・Calendar・ticket"]
+        DAILY["短い日次brief: 新規予約・今後の予定・残open日"]
+        ACTION["本人操作が不可避な時だけ1アクションを依頼"]
+        CONTROL["返信で停止・興味修正・予算変更"]
+    end
+
+    U --> ON
+    ACK --> CAL
+    COVERAGE --> BOOKED --> U
+    NEXT --> DAILY --> U
+    APPLY -->|OAuth等が必要| ACTION --> U
+    U --> CONTROL --> PROFILE
+```
+
+Telegramの予約完了messageは、少なくともevent名、日時、場所、選定理由、event URL、Calendar URL、
+ticketまたはQR、現在の21日coverage countsを含む。receiptが検証できない登録、Calendar readbackが無い登録、
+Telegram provider message IDが無い送信を成功として表示しない。日次briefは内部stageやstack traceを見せず、
+成立した現実結果、未処理日数、次にsystemが行うことだけを伝える。
+
+#### 0.2.2 Connectorの残TODO — 実行順SSOT
+
+以下はcheckboxの古い完了表示より優先する。各項目は前項のverified outputを入力にするため、順序を入れ替えない。
+
+1. **Task 5を正本化する**: 未commitのnative write pipelineとTelegram copyをreviewし、focused testを再実行してcommit/pushする。
+2. **Luna判断境界を接続する**: verified inventoryとprofileをLuna bounded workerへ渡し、候補と根拠だけを受け取る。LLMにreceipt成功判定をさせない。
+3. **default native runtimeへwrite pipelineを接続する**: 明示的に選択された候補だけを、登録→receipt→Calendar→coverage→Telegramの順で処理する。
+4. **Task 6を実装する**: Gmail確認message、guest binding、ticket / QR captureを検証し、Telegram artifactへ接続する。
+5. **event source contractを閉じる**: Lumaをprimaryとする。`Compass`がliteralな別providerならadapter未実装としてsource/auth/apply/receiptを追加する。Daisが`connpass`を指した場合は承認済み公式APIだけをfallback接続する。
+6. **無料Luma一件でnative実E2Eを通す**: 実探索、Luna選定、実登録、provider receipt、確認mail、ticket / QR、Calendar write/readback、Telegram message IDを一つのlineageで証拠化する。
+7. **native launchdをlocalへinstallする**: canonical templateをrenderし、native workerとhealthcheckをloadしてheartbeat、state、logをreadbackする。
+8. **restart/idempotencyを実証する**: concurrent lock、stale recovery、登録直後crash、Telegram retry、unknown effect reconciliationで二重申込みが起きないことを実状態で確認する。
+9. **rolling 21日loopを完了させる**: 各passで次のopen日を処理し、`open=0`まで継続する。各実登録と日次briefをTelegramへ送る。
+10. **O1B-25/26を閉じる**: fresh tests、実service receipt、Calendar readback、Telegram message ID、launchd連続稼働、commit/pushが揃った時だけ完了にする。
+
+Connectorのdoneは「一件予約できた」ではない。`open=0`であり、各日が`covered_existing`、
+`covered_new`、または実Calendar blocker付き`unavailable`のいずれかとして証拠化され、Daisがagentを
+手動管理せずTelegramで結果を理解できる状態である。
 
 各checkboxの完了条件は「codeを書いた」ではない。fresh test、実serviceでのreadbackまたは
 許可された実action、receipt/ledger、Telegramで人間が理解できる報告、commit、pushが揃った時だけ
