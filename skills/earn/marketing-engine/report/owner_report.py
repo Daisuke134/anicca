@@ -366,6 +366,7 @@ def _first_number(value: object, keys: tuple[str, ...]) -> object:
 def _minor_money(data: object) -> tuple[object, str | None, str | None, object] | None:
     """Read one canonical minor-unit amount without confusing order counts."""
 
+    exponents = {"JPY": 0, "USD": 2}
     if not isinstance(data, dict):
         return None
     for field in ("net_minor", "gross_minor"):
@@ -374,7 +375,14 @@ def _minor_money(data: object) -> tuple[object, str | None, str | None, object] 
             continue
         for currency, minor in sorted(amounts.items()):
             if isinstance(minor, (int, float)) and not isinstance(minor, bool):
-                return (minor / 100, str(currency), field.removesuffix("_minor"), minor)
+                normalized_currency = str(currency).upper()
+                exponent = exponents.get(normalized_currency)
+                if exponent is None:
+                    # Preserve the provider's integer exactly; callers must
+                    # not fabricate a decimal scale for an unrecognised code.
+                    return (None, normalized_currency, field.removesuffix("_minor"), minor)
+                amount = minor if exponent == 0 else minor / (10 ** exponent)
+                return (amount, normalized_currency, field.removesuffix("_minor"), minor)
     return None
 
 
@@ -438,7 +446,7 @@ def _business_facts(row: dict) -> dict:
                 facts["money_minor"] = minor
                 facts["money_metric"] = metric
                 facts["money_source"] = name
-                facts["money_reason"] = None
+                facts["money_reason"] = None if amount is not None else "unknown_currency_exponent"
                 break
             amount = _first_number(data, ("net_revenue", "gross_revenue", "sales"))
             if amount is not None:
@@ -770,12 +778,21 @@ def render_japanese(event: dict) -> str:
             if facts.get("paid_orders") is not None:
                 lines.append(f"注文数 {facts['paid_orders']}件。")
         elif facts.get("paid_orders") is not None:
-            lines.append(f"注文数 {facts['paid_orders']}件。売上額は取得できませんでした。")
+            if facts.get("money_reason") == "unknown_currency_exponent":
+                lines.append(
+                    f"売上額は通貨指数が不明のため、最小単位 {facts.get('money_minor')} {facts.get('money_currency')} のままです。"
+                )
+            else:
+                lines.append("売上額は取得できませんでした。")
+            lines.append(f"注文数 {facts['paid_orders']}件。")
         else:
             reason = facts.get('money_reason') or facts.get('mrr_reason') or 'unknown'
-            lines.append(
-                f"売上は{_reason_text(reason)}。"
-            )
+            if reason == "unknown_currency_exponent":
+                lines.append(
+                    f"売上額は通貨指数が不明のため、最小単位 {facts.get('money_minor')} {facts.get('money_currency')} のままです。"
+                )
+            else:
+                lines.append(f"売上は{_reason_text(reason)}。")
     elif kind == "incident":
         source = facts.get("source") or "unknown"
         reason = facts.get("reason") or "unknown"

@@ -559,6 +559,54 @@ class OwnerReportRendererTest(unittest.TestCase):
         with self.assertRaises(owner_report.OwnerReportError):
             owner_report.render_japanese(event)
 
+    def test_minor_currency_exponents_preserve_jpy_usd_and_unknown(self):
+        def money_event(currency: str, minor: int) -> tuple[dict, str]:
+            with tempfile.TemporaryDirectory() as path:
+                root = Path(path)
+                row = {
+                    "schema_version": 1,
+                    "product_id": "ebook-ja",
+                    "business_date": "2026-08-06",
+                    "observed_at": "2026-08-06T08:00:00Z",
+                    "snapshot_id": f"ebook-ja:2026-08-06:{currency}",
+                    "sources": {
+                        "stripe": {
+                            "status": "available",
+                            "reason": None,
+                            "data": {
+                                "paid_orders": 1,
+                                "net_minor": {currency: minor},
+                            },
+                        }
+                    },
+                }
+                (root / "business-outcomes.jsonl").write_text(
+                    json.dumps(row, ensure_ascii=False) + "\n", encoding="utf-8"
+                )
+                event = owner_report.build_events(
+                    root,
+                    "product_daily",
+                    product_id="ebook-ja",
+                    as_of=dt.datetime(2026, 8, 6, 12, tzinfo=dt.timezone.utc),
+                )[0]
+                return event, owner_report.render_japanese(event)
+
+        jpy_event, jpy_text = money_event("JPY", 3160)
+        self.assertEqual(jpy_event["facts"]["money_value"], 3160)
+        self.assertIn("3160 JPY", jpy_text)
+
+        usd_event, usd_text = money_event("USD", 2073)
+        self.assertEqual(usd_event["facts"]["money_value"], 20.73)
+        self.assertIn("20.73 USD", usd_text)
+
+        unknown_event, unknown_text = money_event("XYZ", 2073)
+        self.assertIsNone(unknown_event["facts"]["money_value"])
+        self.assertEqual(unknown_event["facts"]["money_minor"], 2073)
+        self.assertEqual(unknown_event["facts"]["money_reason"], "unknown_currency_exponent")
+        self.assertIn("2073", unknown_text)
+        self.assertIn("XYZ", unknown_text)
+        self.assertIn("最小単位", unknown_text)
+
 
 if __name__ == "__main__":
     unittest.main()
