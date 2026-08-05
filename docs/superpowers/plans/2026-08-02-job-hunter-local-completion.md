@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-49E` — enforce employer word limits without dropping approved fact provenance
+**Active atomic task:** `L-49` — submit one eligible real Ashby application and store an authoritative receipt
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1657,12 +1657,22 @@ this spec update → commit/push → Telegram milestone before the next item sta
   `b2b3a2150e3245b860cdabbeb8f42b29eb22632bcb4844190d90c34f1f7cc460`)
   is active with Guardian `healthy` and the approved route SHA unchanged. Daily
   remains unloaded.
-- [ ] **L-49E** — Add a bounded application-answer mode that preserves official job
+- [x] **L-49E** — Add a bounded application-answer mode that preserves official job
   source text and an ordered non-empty subset of approved fact claims while enforcing
   the employer's exact word limit. Applied Intuition's live Tokyo Solution Engineer
   form is Ashby claim-ready and asks for `Why Applied Intuition?` in around 100 words
   maximum, but every current grounded template is 138–158 words. Do not claim or
   truncate the live answer until builder and validator both enforce the same bound.
+  Receipt: bounded mode selects the longest non-empty ordered prefix of the role
+  template's approved facts that fits with the grounded role reason; validator
+  enforces the same positive word limit and rejects reordered, empty, or oversized
+  output. Normal messages still require every configured fact. Focused eight tests
+  and the full 349-test suite PASS; the full suite completed in 102.631 seconds.
+  Immutable release `2ae55554f75a93d45a71a5c2b2ec80b305a0fed9`
+  (archive SHA-256
+  `22dcee0d1da989363c544d2950bc23e5fdf811ef14e6a77304e47a1595d5d06f`)
+  is active with Guardian `healthy` and the approved route SHA unchanged. Daily
+  remains unloaded.
 - [ ] **L-50** — Deliver the Ashby application artifacts and receipt to Telegram.
 - [ ] **L-51** — Submit one eligible real Workday application and store its
   authoritative receipt.
