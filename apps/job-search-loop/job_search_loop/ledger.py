@@ -98,6 +98,8 @@ class Ledger:
                 current_state TEXT NOT NULL,
                 created_at TEXT NOT NULL
             );
+            CREATE UNIQUE INDEX IF NOT EXISTS applications_canonical_url_unique
+            ON applications(canonical_url);
             CREATE TABLE IF NOT EXISTS events (
                 event_id TEXT PRIMARY KEY,
                 application_id TEXT NOT NULL REFERENCES applications(id),
@@ -596,8 +598,20 @@ class Ledger:
     ) -> str:
         if owner not in APPLICATION_OWNERS:
             raise ValueError("owner must be agent, dais_manual, or recruiter")
-        application_id = canonical_job_id(company, title, url)
+        normalized_url = canonical_url(url)
+        application_id = canonical_job_id(company, title, normalized_url)
         with self._transaction():
+            existing_url = self.connection.execute(
+                "SELECT id, owner FROM applications WHERE canonical_url = ?",
+                (normalized_url,),
+            ).fetchone()
+            if existing_url is not None:
+                existing_owner = str(existing_url["owner"])
+                if existing_owner != owner:
+                    raise FenceError(
+                        f"canonical posting is already owned by {existing_owner}"
+                    )
+                application_id = str(existing_url["id"])
             existing = self.connection.execute(
                 "SELECT id FROM applications WHERE id = ?", (application_id,)
             ).fetchone()
@@ -613,7 +627,7 @@ class Ledger:
                         application_id,
                         company.strip(),
                         title.strip(),
-                        canonical_url(url),
+                        normalized_url,
                         owner,
                         created_at,
                     ),
@@ -1001,7 +1015,8 @@ class Ledger:
             if not re.fullmatch(r"[a-f0-9]{64}", value):
                 raise ValueError(f"{name} must be a lowercase SHA-256")
 
-        application_id = canonical_job_id(company, title, url)
+        normalized_url = canonical_url(url)
+        application_id = canonical_job_id(company, title, normalized_url)
         rank_config_json = json.dumps(
             dict(rank_config),
             ensure_ascii=False,
@@ -1019,9 +1034,19 @@ class Ledger:
             ).fetchone()
             if generation is None:
                 raise ValueError("strategy generation does not exist")
+            existing_url = self.connection.execute(
+                "SELECT id, owner FROM applications WHERE canonical_url = ?",
+                (normalized_url,),
+            ).fetchone()
+            if existing_url is not None:
+                existing_owner = str(existing_url["owner"])
+                if existing_owner != "agent":
+                    raise FenceError(
+                        f"canonical posting is already owned by {existing_owner}"
+                    )
+                application_id = str(existing_url["id"])
             application = self.connection.execute(
-                "SELECT id FROM applications WHERE id = ?",
-                (application_id,),
+                "SELECT id FROM applications WHERE id = ?", (application_id,)
             ).fetchone()
             if application is None:
                 created_at = _now()
@@ -1035,7 +1060,7 @@ class Ledger:
                         application_id,
                         company.strip(),
                         title.strip(),
-                        canonical_url(url),
+                        normalized_url,
                         created_at,
                     ),
                 )

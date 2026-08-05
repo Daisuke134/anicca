@@ -177,6 +177,61 @@ class LedgerTests(unittest.TestCase):
                 (self.application_id,),
             )
 
+    def test_same_owner_canonical_url_replay_is_idempotent(self):
+        first = self.ledger.add_application(
+            "Manual Co",
+            "AI Engineer",
+            "https://jobs.example.com/shared?utm_source=one",
+            owner="dais_manual",
+        )
+        replay = self.ledger.add_application(
+            "Manual Company",
+            "Senior AI Engineer",
+            "https://jobs.example.com/shared?utm_source=two",
+            owner="dais_manual",
+        )
+        self.assertEqual(replay, first)
+
+    def test_cross_owner_canonical_url_is_fenced(self):
+        self.ledger.add_application(
+            "Manual Co",
+            "AI Engineer",
+            "https://jobs.example.com/shared-owner",
+            owner="dais_manual",
+        )
+        with self.assertRaisesRegex(FenceError, "owned by dais_manual"):
+            self.ledger.add_application(
+                "Recruiter Co",
+                "Senior AI Engineer",
+                "https://jobs.example.com/shared-owner?utm_source=recruiter",
+                owner="recruiter",
+            )
+
+    def test_attributed_agent_cannot_adopt_manual_posting(self):
+        self.ledger.add_application(
+            "Manual Co",
+            "AI Engineer",
+            "https://jobs.example.com/manual-attributed",
+            owner="dais_manual",
+        )
+        generation_id = self.ledger.record_strategy_generation({"threshold": 75})
+        with self.assertRaisesRegex(FenceError, "owned by dais_manual"):
+            self.ledger.add_attributed_application(
+                "Manual Co Renamed",
+                "Senior AI Engineer",
+                "https://jobs.example.com/manual-attributed?utm_source=agent",
+                strategy_generation_id=generation_id,
+                source="official_ats",
+                query_family="strong_fit",
+                rank_config={"threshold": 75},
+                role_family="applied_ai",
+                material_variant="engineering_en_v2",
+                message_variant="none",
+                model_route="terra-medium",
+                prompt_sha256="a" * 64,
+                material_sha256="b" * 64,
+            )
+
     def test_application_research_and_drafts_form_an_immutable_artifact_chain(self):
         artifacts = [
             ("posting", "Official posting text", [], ["https://jobs.example.com/42"]),
