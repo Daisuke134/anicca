@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-49` — first eligible real Ashby application
+**Active atomic task:** `L-49A` — reconcile Sierra without resubmission, then close L-49 with an authoritative Ashby receipt
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1566,6 +1566,18 @@ this spec update → commit/push → Telegram milestone before the next item sta
   unloaded and no application, form input, email, or Calendar side effect occurred.
 - [ ] **L-49** — Submit one eligible real Ashby application and store its
   authoritative receipt.
+- [ ] **L-49A** — Reconcile the Sierra `submit_unknown` without resubmitting it;
+  if neither Ashby nor Gmail yields authoritative confirmation, submit a different
+  eligible Ashby posting exactly once. Receipt so far: the official Sierra Japan
+  `Strategist, Agent Development` posting was live, Tokyo onsite, JPY 20M–30M,
+  scored 100 in the dream bucket, and had no ledger duplicate. The exact Japanese
+  resume and five required employer answers were bound to submit intent fence 2.
+  The first form attempt stopped before click because the LinkedIn textbox and
+  LinkedIn source radio shared an accessible label; its slot was released. The
+  corrected attempt clicked `Submit Application` exactly once, but the exact Ashby
+  success message did not become visible within 30 seconds and the immediate Gmail
+  query returned no Sierra/Ashby message. The ledger therefore records
+  `submit_unknown`, not `submitted`, and forbids retrying the same posting.
 - [ ] **L-50** — Deliver the Ashby application artifacts and receipt to Telegram.
 - [ ] **L-51** — Submit one eligible real Workday application and store its
   authoritative receipt.
