@@ -35,6 +35,10 @@ class RouteReplayTests(unittest.TestCase):
         self.assertIn('${RUN_ID}:terra', script)
         self.assertNotIn('$RUN_ID:luna', script)
         self.assertNotIn('$RUN_ID:terra', script)
+        self.assertIn("JOB_SEARCH_ROUTE_REPLAY_SHA256", script)
+        prompt = (Path(__file__).parents[1] / "prompts" / "model-route-replay.md").read_text()
+        self.assertIn("$JOB_SEARCH_ROUTE_REPLAY_SHA256", prompt)
+        self.assertNotIn("Compute `snapshot_sha256`", prompt)
 
     def test_equal_quality_and_evidence_with_faster_cheaper_luna_passes(self):
         raw = json.dumps(SNAPSHOT, sort_keys=True, separators=(",", ":")).encode()
