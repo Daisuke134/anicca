@@ -66,7 +66,7 @@ class PromptInjectionTests(unittest.TestCase):
             script.index("job_search_loop.candidate_queue validate-terminal"),
             script.rindex("job_search_loop.application_reporting deliver"),
         )
-        self.assertIn("job_search_loop.candidate_queue discover", prompt)
+        self.assertIn("already persisted prefilter candidates", prompt)
         self.assertIn("job_search_loop.candidate_queue verify", prompt)
         self.assertIn("remaining_unverified_count", prompt)
         self.assertIn("must not return `no_eligible_job_found`", prompt)
@@ -93,6 +93,19 @@ class PromptInjectionTests(unittest.TestCase):
         self.assertLess(
             script.index("job_search_loop.official_ats_boards --refresh-only"),
             script.index("job_search_loop.prefilter"),
+        )
+
+    def test_daily_persists_prefilter_candidates_and_sweeps_before_terra(self):
+        root = Path(__file__).parents[1]
+        script = (root / "scripts" / "run-daily.sh").read_text(encoding="utf-8")
+        self.assertIn("candidate_queue discover-prefilter", script)
+        self.assertLess(
+            script.index("candidate_queue discover-prefilter"),
+            script.index("job_search_loop.ats_liveness sweep"),
+        )
+        self.assertLess(
+            script.index("job_search_loop.ats_liveness sweep"),
+            script.index("--task-class composition-agent"),
         )
 
     def test_daily_routes_deep_fit_tailoring_and_answers_through_terra_composition(self):

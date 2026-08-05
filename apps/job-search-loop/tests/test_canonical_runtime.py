@@ -77,6 +77,26 @@ if sys.argv[1:3] == ["-m", "job_search_loop.prefilter"]:
     )
     print(json.dumps({"status": "browser_fallback_required", "candidate_count": 0}))
     raise SystemExit(0)
+if sys.argv[1:4] == ["-m", "job_search_loop.candidate_queue", "discover-prefilter"]:
+    output = pathlib.Path(sys.argv[sys.argv.index("--output") + 1])
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(
+        json.dumps(
+            {
+                "status": "recorded",
+                "observed_count": 0,
+                "inserted_count": 0,
+                "duplicate_count": 0,
+                "discovered_count": 0,
+                "verified_count": 0,
+                "eligible_count": 0,
+                "rejected_count": 0,
+                "remaining_unverified_count": 0,
+            }
+        ) + "\\n",
+        encoding="utf-8",
+    )
+    raise SystemExit(0)
 if sys.argv[1:2] and sys.argv[1].endswith("agent_runner.py"):
     evidence = pathlib.Path(sys.argv[sys.argv.index("--evidence-dir") + 1])
     evidence.mkdir(parents=True, exist_ok=True)

@@ -127,6 +127,109 @@ class CandidateQueueTests(unittest.TestCase):
             ],
         )
 
+    def test_company_role_repost_is_deduped_across_urls_and_runs(self):
+        with tempfile.TemporaryDirectory() as directory:
+            queue = CandidateQueue(Path(directory) / "candidate-queue.sqlite3")
+            try:
+                first = queue.discover(
+                    [
+                        {
+                            "url": "https://jobs.example/roles/old",
+                            "source": "official",
+                            "query_family": "dream",
+                            "company": "Acme, Inc.",
+                            "title": "AI Deployment Engineer (Tokyo)",
+                        }
+                    ]
+                )
+                second = queue.discover(
+                    [
+                        {
+                            "url": "https://jobs.example/roles/new",
+                            "source": "official",
+                            "query_family": "dream",
+                            "company": "Acme Inc",
+                            "title": "AI Deployment Engineer [Remote]",
+                        }
+                    ]
+                )
+            finally:
+                queue.close()
+
+        self.assertEqual(first["inserted_count"], 1)
+        self.assertEqual(second["inserted_count"], 0)
+        self.assertEqual(second["duplicate_count"], 1)
+
+    def test_rejected_role_does_not_hide_a_new_live_requisition(self):
+        with tempfile.TemporaryDirectory() as directory:
+            queue = CandidateQueue(Path(directory) / "candidate-queue.sqlite3")
+            try:
+                queue.discover(
+                    [
+                        {
+                            "url": "https://jobs.example/roles/expired",
+                            "source": "official",
+                            "query_family": "dream",
+                            "company": "Acme",
+                            "title": "AI Engineer",
+                        }
+                    ]
+                )
+                queue.mark_verified(
+                    "https://jobs.example/roles/expired",
+                    eligible=False,
+                    reason="posting_expired",
+                )
+                next_role = queue.discover(
+                    [
+                        {
+                            "url": "https://jobs.example/roles/live",
+                            "source": "official",
+                            "query_family": "dream",
+                            "company": "Acme",
+                            "title": "AI Engineer",
+                        }
+                    ]
+                )
+            finally:
+                queue.close()
+
+        self.assertEqual(next_role["inserted_count"], 1)
+
+    def test_cross_company_near_verbatim_jd_is_deduped_by_fingerprint(self):
+        from job_search_loop.dedup import fingerprint_text
+
+        body = " ".join(["Build reliable AI systems for enterprise customers"] * 14)
+        fingerprint = fingerprint_text(body)
+        with tempfile.TemporaryDirectory() as directory:
+            queue = CandidateQueue(Path(directory) / "candidate-queue.sqlite3")
+            try:
+                result = queue.discover(
+                    [
+                        {
+                            "url": "https://company.example/role",
+                            "source": "official",
+                            "query_family": "dream",
+                            "company": "Company",
+                            "title": "AI Engineer",
+                            "jd_fingerprint": fingerprint,
+                        },
+                        {
+                            "url": "https://agency.example/role",
+                            "source": "official",
+                            "query_family": "dream",
+                            "company": "Agency",
+                            "title": "Machine Learning Consultant",
+                            "jd_fingerprint": fingerprint,
+                        },
+                    ]
+                )
+            finally:
+                queue.close()
+
+        self.assertEqual(result["inserted_count"], 1)
+        self.assertEqual(result["duplicate_count"], 1)
+
 
 if __name__ == "__main__":
     unittest.main()
