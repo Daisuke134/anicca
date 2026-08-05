@@ -261,7 +261,15 @@ function authenticatedSnapshotExpression() {
 }
 
 async function requestLumaEmailLogin(page, email) {
-  if (!page || typeof page.evaluate !== "function") {
+  if (!page) {
+    throw new LumaBootstrapError("Luma authentication unavailable");
+  }
+  if (typeof page.fill === "function" && typeof page.click === "function") {
+    await page.fill('input[type="email"]', email);
+    await page.click('button[type="submit"]');
+    return true;
+  }
+  if (typeof page.evaluate !== "function") {
     throw new LumaBootstrapError("Luma authentication unavailable");
   }
   const submitted = await page.evaluate(`(async () => {
