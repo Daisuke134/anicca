@@ -67,6 +67,13 @@ export JOB_SEARCH_RECOVERY_PLAN="$EVIDENCE/recovery-plan.json"
   --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
   --day "$JAPAN_DAY" \
   --output "$JOB_SEARCH_RECOVERY_PLAN"
+set +e
+"$JOB_SEARCH_PYTHON" -m job_search_loop.official_ats_boards --refresh-only \
+  --cache "$JOB_SEARCH_STATE_ROOT/official-ats-board-cache.v1.json" \
+  >"$EVIDENCE/official-ats-refresh.json"
+OFFICIAL_ATS_REFRESH_RC=$?
+set -e
+chmod 600 "$EVIDENCE/official-ats-refresh.json"
 export ANICCA_BUDGET_REQUIRED=1
 export ANICCA_BUDGET_SCOPE_ID="job-search-daily:${RUN_ID}:prefilter"
 export ANICCA_PASS_TOKEN_BUDGET=32768

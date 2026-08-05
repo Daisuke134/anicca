@@ -174,13 +174,14 @@ def search_official_boards(
     cache_path: Path | None = None,
     cache_ttl_seconds: int = 900,
     max_results: int = 100,
+    write_cache: bool = True,
 ) -> list[dict[str, Any]]:
     if max_results <= 0:
         raise ValueError("max_results must be positive")
     rows = _load_cache(cache_path, cache_ttl_seconds) if cache_path else None
     if rows is None:
         rows = _fetch_all(boards, request)
-        if cache_path is not None:
+        if cache_path is not None and write_cache:
             _write_cache(cache_path, rows)
     terms = tuple(
         token.casefold()
@@ -207,9 +208,10 @@ def search_official_boards(
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("query")
+    parser.add_argument("query", nargs="?")
     parser.add_argument("--boards", type=Path)
     parser.add_argument("--cache", type=Path)
+    parser.add_argument("--refresh-only", action="store_true")
     args = parser.parse_args()
     app_root = Path(__file__).resolve().parents[1]
     boards_path = args.boards or app_root / "config" / "official-ats-boards.v1.json"
@@ -224,9 +226,25 @@ def main() -> None:
     boards = payload.get("boards")
     if not isinstance(boards, list):
         raise ValueError("official ATS boards config requires boards")
+    if args.refresh_only:
+        rows = _fetch_all(boards, _request_json)
+        if not rows:
+            raise ValueError("official ATS refresh returned zero jobs")
+        _write_cache(cache_path, rows)
+        print(json.dumps({"status": "refreshed", "job_count": len(rows)}, sort_keys=True))
+        return
+    if not args.query:
+        parser.error("query is required unless --refresh-only is used")
     print(
         json.dumps(
-            {"results": search_official_boards(args.query, boards=boards, cache_path=cache_path)},
+            {
+                "results": search_official_boards(
+                    args.query,
+                    boards=boards,
+                    cache_path=cache_path,
+                    write_cache=False,
+                )
+            },
             ensure_ascii=False,
             sort_keys=True,
         )

@@ -2249,6 +2249,16 @@ the resident worker from producing one authoritative application receipt:
       Japan-or-remote location matches. Focused tests 17/17 and full Job Hunter suite
       387/387 pass. Completion remains unchecked until the resident prefilter places
       these results in the durable candidate queue and API-2 writes real receipts.
+    - First resident failure: release `34ee831071f6bcf4f09cf794e57baaf62b433b95`,
+      run `daily-20260806-001719`, reached the provider but every query failed with
+      macOS sandbox `Operation not permitted` while attempting to create the shared
+      cache under the state root. This produced zero candidates and is not proof of
+      discovery.
+    - Fixed locally: the unsandboxed deterministic daily driver now refreshes the
+      private cache before Luna starts; sandboxed query processes consume it
+      read-only and never attempt state writes. Refresh failure remains nonfatal and
+      query processes can fetch without caching. Focused tests 31/31 and full Job
+      Hunter tests 388/388 pass; resident re-verification remains required.
   - [ ] `DEDUP-1` — Port company-role, repost-window, and JD-fingerprint parity.
   - [ ] `GATE-1` — Port cheap knockout pre-scan without weakening local ranking.
   - [ ] `FILL-1` — Port ATS-specific non-submit form behavior behind local fences.
