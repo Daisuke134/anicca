@@ -38,14 +38,14 @@ class PromptInjectionTests(unittest.TestCase):
         self.assertIn("job_search_loop.recovery", script)
         self.assertIn("recovery-plan.json", script)
 
-    def test_daily_runs_luna_prefilter_before_terra_browser_lane(self):
+    def test_daily_runs_deterministic_prefilter_before_terra_browser_lane(self):
         root = Path(__file__).parents[1]
         script = (root / "scripts" / "run-daily.sh").read_text(encoding="utf-8")
         prompt = (root / "prompts" / "daily-pass.md").read_text(encoding="utf-8")
-        self.assertIn("prompts/prefilter-pass.md", script)
-        self.assertIn("schemas/prefilter-result.v1.schema.json", script)
+        self.assertIn("job_search_loop.prefilter", script)
+        self.assertNotIn("prompts/prefilter-pass.md", script)
         self.assertLess(
-            script.index("--task-class repeatable-agent"),
+            script.index("job_search_loop.prefilter"),
             script.index("--task-class browser-lane-agent"),
         )
         self.assertIn("JOB_SEARCH_PREFILTER_RESULT", script)
@@ -92,7 +92,7 @@ class PromptInjectionTests(unittest.TestCase):
         self.assertIn("job_search_loop.official_ats_boards --refresh-only", script)
         self.assertLess(
             script.index("job_search_loop.official_ats_boards --refresh-only"),
-            script.index("--task-class repeatable-agent"),
+            script.index("job_search_loop.prefilter"),
         )
 
     def test_daily_routes_deep_fit_tailoring_and_answers_through_terra_composition(self):
@@ -107,7 +107,7 @@ class PromptInjectionTests(unittest.TestCase):
         for phrase in ("deep fit", "resume variant", "employer answers"):
             self.assertIn(phrase, contract)
         self.assertLess(
-            script.index("--task-class repeatable-agent"),
+            script.index("job_search_loop.prefilter"),
             script.index("--task-class composition-agent"),
         )
         self.assertLess(

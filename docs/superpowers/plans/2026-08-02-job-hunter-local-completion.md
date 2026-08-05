@@ -12,12 +12,15 @@ materials, ownership fences, Gmail ingestion, Telegram outbox, quota accounting,
 Ashby observation classifier are implemented and tested. The daily LaunchAgent is
 loaded hourly, but production is not healthy. Release `770e1f6a7` resident run
 `daily-20260806-002415` refreshed 2,722 official Ashby/Greenhouse postings before the
-model sandbox, proving the prior cache-permission fault fixed, but Luna exhausted its
-32,768-token prefilter budget before returning structured output; launchd exited 1
-and submitted zero applications. The local fix caps each query at 25 postings,
-truncates model-facing descriptions to 500 characters, and removes duplicated full
-results from provider diagnostics; its live one-query payload is 27,353 bytes and
-full tests pass 389/389. Resident re-verification is next. Telegram sent the daily
+model sandbox, proving the prior cache-permission fault fixed, but Luna returned no
+structured output; launchd exited 1 and submitted zero applications. A bounded retry
+`daily-20260806-003052` refreshed 2,723 postings but failed identically because six
+parallel tool results still expanded its transcript to 210,336 bytes. The local fix
+removes discovery execution from Luna: deterministic code now runs every recovery
+query, deduplicates the results, and hands a bounded schema-complete artifact to
+Terra. A live six-query proof finishes in 4.9 seconds with 80 unique candidates, 21
+Japan-explicit candidates, a 50KB mode-0600 artifact, and full tests 391/391 passing.
+Resident re-verification is next. Telegram sent the daily
 report as message `7377`, but it contains no application evidence because none exists.
 The authoritative ledger still has zero current submission confirmations. Historical
 `submitted` projection rows are not current authoritative confirmation.
@@ -2268,8 +2271,21 @@ the resident worker from producing one authoritative application receipt:
     - Bounded-context fix: each query now returns at most 25 jobs, model-facing
       descriptions are limited to 500 characters, and provider diagnostics no
       longer duplicate every full result. A live official query returns 25 supported
-      ATS jobs in a 27,353-byte discovery payload. Focused tests 9/9 and the full Job
-      Hunter suite 389/389 pass; resident candidate-output proof remains required.
+      ATS jobs in a 27,353-byte discovery payload. Resident release `49445a0d2`, run
+      `daily-20260806-003052`, nevertheless produced a 210,336-byte Luna transcript:
+      the model executed all six searches, received every command payload in its
+      context, attempted another Japan-only extraction, and ended without final JSON.
+      It submitted zero applications and is a second failed proof.
+    - Deterministic prefilter fix: discovery no longer asks Luna to execute shell
+      searches. `job_search_loop.prefilter` executes every recovery query, continues
+      across provider failure, records bounded provider diagnostics, deduplicates by
+      canonical URL, preserves bucket/language/official source, and emits the strict
+      prefilter schema directly as a mode-0600 artifact. Terra retains deep-fit,
+      tailoring, and employer-answer judgment. A live six-query run completed in
+      4.9 seconds with 80 unique candidates, 21 Japan-explicit candidates, official
+      ATS success 6/6, Firecrawl failure 6/6 without pipeline failure, and a 50KB
+      artifact. Focused tests 25/25, shell syntax, and full Job Hunter tests 391/391
+      pass; resident candidate-output proof remains required.
   - [ ] `DEDUP-1` — Port company-role, repost-window, and JD-fingerprint parity.
   - [ ] `GATE-1` — Port cheap knockout pre-scan without weakening local ranking.
   - [ ] `FILL-1` — Port ATS-specific non-submit form behavior behind local fences.
