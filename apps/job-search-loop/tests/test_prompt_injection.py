@@ -86,6 +86,15 @@ class PromptInjectionTests(unittest.TestCase):
             script.index("--task-class browser-lane-agent"),
         )
 
+    def test_daily_driver_refreshes_official_ats_cache_before_prefilter(self):
+        root = Path(__file__).parents[1]
+        script = (root / "scripts" / "run-daily.sh").read_text(encoding="utf-8")
+        self.assertIn("job_search_loop.official_ats_boards --refresh-only", script)
+        self.assertLess(
+            script.index("job_search_loop.official_ats_boards --refresh-only"),
+            script.index("--task-class repeatable-agent"),
+        )
+
     def test_daily_routes_deep_fit_tailoring_and_answers_through_terra_composition(self):
         root = Path(__file__).parents[1]
         script = (root / "scripts" / "run-daily.sh").read_text(encoding="utf-8")
