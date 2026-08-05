@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-46` — bounded deterministic Guardian recovery
+**Active atomic task:** `L-47` — sole fenced CloakBrowser owner
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1485,7 +1485,24 @@ this spec update → commit/push → Telegram milestone before the next item sta
   three rows remain `send_started`, and the legacy schema lacks lease timestamps.
   L-45F performed no state update or Telegram retry; L-46 may recover only proven
   pre-side-effect rows, never these uncertain sends.
-- [ ] **L-46** — Bound Guardian auto-recovery to deterministic pre-side-effect faults.
+- [x] **L-46** — Bound Guardian auto-recovery to deterministic pre-side-effect
+  faults. Receipt: Outbox now records creation, claim, send-start, and completion
+  boundaries. Guardian repairs mode-0600 private paths and only claims older than
+  two hours whose `send_started_at` is null, using the original event key, fence,
+  status, and a single SQLite write transaction. Each pass permits at most three
+  actions, one verification pass, and one content-addressed alert attempt; alert
+  transport failure is never retried. `send_started`, browser navigation, submission
+  claims, and all other uncertain states are immutable to recovery. Six focused,
+  related 21-test, and full 326-test suites PASS without warnings. Immutable release
+  `f6e3c65a903fd0fa771b8e7614c59c0299978a15` (archive SHA-256
+  `216c1dff9d664050ead2d334c6e07b86cf4a4ff00e1276890085a88ddd3d3e1a`)
+  is active with zero writable paths and the approved route SHA unchanged. Isolated
+  CLI E2E recovered one stale pre-send claim, preserved one `send_started`, and sent
+  one deduplicated alert. Production migration added all four timestamp columns;
+  recovery changed zero uncertain rows, preserved all three `send_started`, sent one
+  receipted Guardian alert, and immediate replay left sent count at 18 with exactly
+  one Guardian alert event. Production outbox now reports only the three pre-existing
+  uncertain side effects; the former timestamp-schema fault is resolved.
 - [ ] **L-47** — Make `ai.anicca.job-search-daily` the sole CloakBrowser owner.
 - [ ] **L-48** — Prove Job Hunter closes only browser pages it created.
 - [ ] **L-49** — Submit one eligible real Ashby application and store its
