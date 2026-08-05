@@ -18,8 +18,10 @@ poisoning the next day. It does not create a second short fallback article.
    reroute inside that run.
 2. An artifact with unresolved factual, citation, identity, policy, or harm
    defects creates no publication intent or delivery row.
-3. Exhausted quality writes a current-hash terminal rejection and the next JST
-   day remains eligible for a new run.
+3. Editorial exhaustion is keyed by `(language, current_article_sha256)`: a
+   newly authorized reroute hash gets one bounded evaluation, while the same
+   language/hash remains exhausted and cannot purchase another call; a
+   terminal miss never poisons the next JST day.
 4. A PASS artifact dispatches every active-six destination independently;
    one destination failure cannot cancel the others.
 5. Topic selection binds reader, problem, transformation, deliverable, price
@@ -51,11 +53,11 @@ poisoning the next day. It does not create a second short fallback article.
 | 5 | Demand-bound topic card | `test_selected_topic_binds_demand_offer_and_sources` | PLANNED | NOT RUN |
 | 6 | MRR excludes one-time money | `test_mrr_requires_active_recurring_external_contract` | PLANNED | NOT RUN |
 | 7 | One-variable learning | `test_strategy_promotion_requires_matched_canary` | PLANNED | NOT RUN |
+| 8 | Language/hash editorial exhaustion | `test_editorial_exhaustion_is_scoped_to_language_and_current_hash` | PLANNED | NOT RUN |
 
-`Coverage=PLANNED` means every To-Be has an explicit future test identity; none
-of these seven names exists in runtime yet. `Execution=NOT RUN` is the current
-truth. Each row moves to IMPLEMENTED/PASS only after its code and execution
-receipt exist.
+`Coverage=PLANNED` means every To-Be has an explicit future test identity;
+`Execution=NOT RUN` is the current truth for this plan's new contracts. Each
+row moves to IMPLEMENTED/PASS only after its code and execution receipt exist.
 
 ## 5. Boundaries
 
@@ -83,6 +85,18 @@ receipt exist.
    canary, and revenue gates in SSOT order.
 5. For every implementation slice: RED, GREEN, focused regression, full Writer
    regression, live owner E2E, receipt update, commit, and push.
+
+The remaining revenue/UX order is binding: hash-keyed editorial repair and
+current-hash reader/editorial gates -> active-six publication/readback and money
+sync -> three consecutive active-six runs -> public Money Control plus Telegram
+parity (same snapshot, verified/unknown/pending separated) -> accepted publisher
+work -> first note purchase -> first Substack contract/renewal -> self-owned
+unlock/renewal -> matched learning canary -> first dollar -> `$400` month ->
+`$1,000` month with three autonomous positive weeks -> scorable unit economics
+-> three `$10,000` revenue months -> three `$10,000` active-MRR months with
+positive net margin. No view, paid-state configuration, test payment, estimate,
+or one-time article sale satisfies MRR. Telegram sends natural-language deltas;
+the SSOT/spec, raw logs, and generated artifacts are never sent as user files.
 
 ## Task 0: Restore the truthful green baseline
 
@@ -151,49 +165,42 @@ and multiple full source bodies to each selected card. Read X Article bodies
 from the rendered CDP DOM when selected. Produce one live JA/EN article from a
 paid-demand card and dispatch it only after current-hash eligibility.
 
+Current live receipt: claim run `309` created `paid-demand:7c43...` with X
+captures `2/2 valid`; the bilingual article run is the current
+`daily-2026-08-06` recovery described in the canonical live receipt section
+below. Task 3 remains open until current-hash editorial/reader gates pass and
+active-six publication/readback plus money sync are observed.
+
 Done receipt: source-family fixtures, one live selected card, source-body
 hashes, prompt hash, bilingual article hashes, active-six public readbacks,
 commit and push.
 
-### Task 3b: Make canonical CDP lock acquisition and stale recovery atomic
+## Current live receipt (2026-08-06 JST)
 
-The runtime lock slice is complete on the Writer runtime feature branch. It
-must keep dynamic X/CDP capture non-blocking while preventing a stale cleanup
-from deleting a newer owner. The contract covers both the daily publication
-owner and the claim/capture worker's short recovery mutex:
+See the detailed canonical receipt in
+`docs/writer-agent/WRITER-AGENT-SSOT.md#26-current-live-receipt--2026-08-06-jst`;
+this plan does not duplicate it. The installed runtime/remote/marker are all
+`06141970` after the reviewed Civo series. Claim launchd run `309` exited `0`
+`READY / FILLED`, queue `0 -> 1`, and created `paid-demand:7c43...`; X capture
+was `2/2 valid`. Feature `4295cf8f` and the live equivalent contain separate
+authoritative Civo full-body and fixed structural-window evidence reviewed
+`SHIP`.
 
-- a fresh lock (age at or below six hours) returns `SKIPPED`/`capture pending`
-  without starting dynamic CDP capture;
-- a stale lock is recovered only after a stable `(device, inode, mtime)`
-  snapshot, an identity recheck before rename, and a second identity check in
-  the quarantine directory;
-- TOCTOU replacement by a fresh competitor aborts recovery and leaves the
-  replacement owner and its token untouched;
-- cleanup is owner-token-bound, so a process can remove only its own lock
-  receipt; stale owner tokens are removed only inside the identity-checked
-  quarantine; and
-- stale recovery uses atomic quarantine (`rename`), then removes the exact
-  quarantined directory and recreates the canonical path, rolling back the
-  quarantine when cleanup or reacquisition fails.
+The `daily-2026-08-06` run generated JA/EN research, images, and diagram;
+self-healed `how-to -> comparison`; current identity+CTA hashes are `PASS`;
+editorial refused the new hashes with exit `77`
+(`high-escalation-exhausted`) because the prior high FAIL was not keyed by
+language and current hash. No publication state, public URL, payment, or
+revenue exists. Telegram message ID is `7398`; received revenue and MRR are
+`$0`.
 
-Status: DONE as a feature-only runtime receipt. Runtime repository is
-`/Users/anicca/profitable-claude`, branch `fix/writer-terra-medium`, feature
-commit `25cc301fe57b33cd21a20a8769c77d412fe50e4d` (`25cc301f`). The focused
-behavior acceptance is `95/95`; the complete Writer suite is `765/765` with
-seven pre-existing multiprocessing warnings. The daily shell contract,
-shell syntax, and diff checks are PASS. A fresh reviewer returned `SHIP` with
-no blocking finding. This receipt proves the feature branch contract only;
-it does not imply that the commit is installed on the live owner.
-No live publication is claimed.
+### Next exact task
 
-### Task 3c: Deploy the lock slice and run live owner E2E
-
-Status: NEXT / NOT COMPLETE. Deploy the exact runtime commit through the
-managed Writer path, verify the installed owner and aliases resolve to that
-tip, and run the live stale/fresh, TOCTOU, owner-token, atomic-quarantine,
-and dynamic-CDP acquisition E2E. Record the durable owner receipt and any
-platform-specific `PENDING` state before claiming Task 3 complete. No live
-publication or external post is claimed by Task 3b.
+Implement RED/GREEN for language+current-hash exhaustion, deploy the canonical
+runtime, kickstart `ai.anicca.article-resume`, pass current-hash editorial and
+reader gates, dispatch/read back active-six, then run money sync. Same-hash
+exhaustion remains terminal; a newly authorized reroute hash gets one bounded
+evaluation. This is the next task, not a passive schedule wait.
 
 ## Task 4: Close revenue, reporting, and learning gates
 

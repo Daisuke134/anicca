@@ -2,19 +2,31 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Give each article-language editorial gate one Terra-medium evaluation and, only after changed draft bytes following a FAIL, one Terra-high evaluation, with no third paid judge call.
+**Goal:** Give each `(language,current_article_sha256)` editorial key one
+bounded evaluation under the existing medium/high policy. A newly authorized
+reroute hash receives one bounded evaluation; the same language/hash remains
+exhausted and cannot purchase a third call.
 
-**Architecture:** `scripts/editorial-gate.sh` already owns the current draft hash and prior hash-bound editorial receipt. It deterministically selects requested effort from that receipt, passes the effort through the existing sole model runner, and persists the requested effort in the next receipt. A prior high FAIL plus another changed draft exits before invoking any model; the caller must reroute instead of buying more reasoning.
+**Architecture:** `scripts/editorial-gate.sh` owns the language, current draft
+hash, and prior hash-bound editorial receipt. It deterministically selects the
+requested effort from the receipt, passes it through the existing sole model
+runner, and persists the effort and key in the next receipt. A prior high FAIL
+for the same language/hash exits before invoking any model; an authorized new
+reroute hash gets its one bounded evaluation instead of inheriting stale
+exhaustion.
 
 **Tech Stack:** Bash, jq, Python standard library embedded JSON update, existing shell contract tests.
 
 ## Global Constraints
 
-- First editorial evaluation for one language/run requests `medium`.
-- The first changed draft after a hash-bound editorial FAIL requests `high`.
-- A hash-bound high FAIL permits no third editorial model call for that language/run.
+- First editorial evaluation for a language/current-hash key requests `medium`.
+- The first authorized changed draft after a hash-bound editorial FAIL may
+  request `high` under the existing policy.
+- A hash-bound high FAIL permits no further editorial model call for that same
+  language/current-hash key.
 - Same-byte FAIL remains the existing exit `76` and makes no model call.
-- New high-exhausted refusal uses exit `77` and makes no model call.
+- Same-key high-exhausted refusal uses exit `77` and makes no model call; a
+  newly authorized reroute hash is a new key and receives one bounded call.
 - This slice does not implement Sol, token/cost accounting, `block_freeze`, or active-six.
 
 ---
@@ -27,16 +39,25 @@
 - Modify after verification: `docs/writer-agent/WRITER-AGENT-SSOT.md`
 
 **Interfaces:**
-- Consumes: prior `gates/editorial-<lang>.json` fields `verdict`, `article_sha256`, and new `requested_reasoning_effort`.
-- Produces: model-runner environment `ARTICLE_MODEL_REASONING_EFFORT=medium|high`, receipt field `requested_reasoning_effort`, exit `77` after a high FAIL is already spent.
+- Consumes: prior `gates/editorial-<lang>.json` fields `verdict`,
+  `article_sha256`, `language`, reroute authorization, and new
+  `requested_reasoning_effort`.
+- Produces: model-runner environment `ARTICLE_MODEL_REASONING_EFFORT=medium|high`,
+  receipt fields for `(language,current_article_sha256)`, and exit `77` only
+  after a high FAIL is already spent for that exact key.
 
 - [x] **Step 1: Extend the existing boundary test and verify RED**
 
-Make the fake model runner append `${ARTICLE_MODEL_REASONING_EFFORT:-unset}` for each call. Assert the first call is `medium`, the changed-draft call is `high`, both receipts carry their requested effort, and a third changed draft exits `77` without a third call. Run `bash skills/writer-agent/tests/editorial-revision-boundary.sh`; expected failure is `unset` instead of `medium` before production changes.
+Make the fake model runner append `${ARTICLE_MODEL_REASONING_EFFORT:-unset}` for each call. Assert the first call is `medium`, the authorized changed-draft call is `high`, a same-key replay exits `77` without another call, and a newly authorized reroute hash gets exactly one bounded call. Run `bash skills/writer-agent/tests/editorial-revision-boundary.sh`; expected failure is `unset` instead of `medium` before production changes.
 
 - [x] **Step 2: Implement the minimal effort state machine**
 
-Before the judge call, set `REQUESTED_REASONING_EFFORT=medium`. If the prior receipt is FAIL with different bytes and its effort is not `high`, select `high`. If its effort is `high`, log `BLOCK:high-escalation-exhausted`, emit an error, and exit `77`. Invoke only:
+Before the judge call, derive a key from language and current article hash.
+Set `REQUESTED_REASONING_EFFORT=medium` for a new key. If the prior receipt for
+the same run/language has different authorized bytes and its effort is not
+`high`, select `high`; if the prior receipt for the exact current key is a high
+FAIL, log `BLOCK:high-escalation-exhausted`, emit an error, and exit `77`.
+Invoke only:
 
 ```bash
 ARTICLE_MODEL_REASONING_EFFORT="$REQUESTED_REASONING_EFFORT" \
