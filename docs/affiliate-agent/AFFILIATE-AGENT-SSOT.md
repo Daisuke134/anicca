@@ -2,6 +2,17 @@
 
 Last updated: 2026-08-05 JST
 
+Implementation SSOT:
+
+- Design and completion contract:
+  `docs/superpowers/specs/2026-08-05-affiliate-agent-design.md`
+- Atomic RED → GREEN → E2E plan:
+  `docs/superpowers/plans/2026-08-05-affiliate-agent.md`
+
+The ordered backlog in section 9 remains the product-level summary. The atomic
+plan is authoritative for implementation order, exact files, tests, commits,
+live verification, revenue gates, tenantization, and scale work.
+
 ## 0. Objective
 
 Build one bilingual Affiliate Agent inside Life Manager's financial organ that
