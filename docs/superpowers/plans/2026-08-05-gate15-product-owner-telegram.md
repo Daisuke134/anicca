@@ -67,7 +67,7 @@ The hand-derived fixture must include one exact native URL, one measured social 
 Run:
 
 ```bash
-python3 -m unittest skills/earn/marketing-engine/report/test_owner_report.py -v
+PYTHONPATH=skills/earn/marketing-engine/report python3 -m unittest skills/earn/marketing-engine/report/test_owner_report.py -v
 ```
 
 Expected: FAIL because `owner_report.py` does not exist or the required interfaces are absent. Record the command and relevant failure in the task report before writing production code.
@@ -112,7 +112,7 @@ Extend `test_direct_telegram_transport.py` so `owner_report_cli.py` is included 
 Run:
 
 ```bash
-python3 -m unittest \
+PYTHONPATH=skills/earn/marketing-engine/report python3 -m unittest \
   skills/earn/marketing-engine/report/test_owner_report.py \
   skills/earn/marketing-engine/test_direct_telegram_transport.py -v
 ```
@@ -136,7 +136,7 @@ In `test_install_gate15_launchagents.py`, assert exact labels, intervals, calend
 Run:
 
 ```bash
-python3 -m unittest skills/earn/marketing-engine/report/test_install_gate15_launchagents.py -v
+PYTHONPATH=skills/earn/marketing-engine/report python3 -m unittest skills/earn/marketing-engine/report/test_install_gate15_launchagents.py -v
 ```
 
 Expected: FAIL because the installer does not exist.
@@ -150,7 +150,7 @@ Implement `--plan` and `--apply`. Writes use a temporary file plus atomic rename
 Run:
 
 ```bash
-python3 -m unittest \
+PYTHONPATH=skills/earn/marketing-engine/report python3 -m unittest \
   skills/earn/marketing-engine/report/test_owner_report.py \
   skills/earn/marketing-engine/report/test_install_gate15_launchagents.py \
   skills/earn/marketing-engine/report/test_run_contract.py \
