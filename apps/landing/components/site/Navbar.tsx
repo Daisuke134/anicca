@@ -27,6 +27,15 @@ export default function Navbar({ locale }: NavbarProps) {
           >
             {locale === 'ja' ? '始める' : 'Start'}
           </Link>
+          {/* The product funnel already exists end to end -- /lm carries the Telegram deep link
+              and the Stripe checkout -- but nothing on the front door pointed at it, so the page
+              could only be reached by someone who already knew the URL. */}
+          <Link
+            href="/lm"
+            className="text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold))]"
+          >
+            Life Manager
+          </Link>
         </div>
 
         <div className="flex items-center gap-4">

@@ -22,6 +22,12 @@ export default function Footer({ locale }: FooterProps) {
             <p className="font-bold text-foreground">Anicca</p>
 
             <div className="mt-4 flex flex-wrap justify-center gap-4 text-sm text-muted-foreground">
+              {/* The top nav only shows from md up, so the product link is repeated here --
+                  otherwise a phone visitor has no path to /lm at all. */}
+              <Link href="/lm" className={LINK_CLASS}>
+                Life Manager
+              </Link>
+              <span aria-hidden="true">|</span>
               {/* spec31 §D/§E: surface /dais hub + cash-out guide (not in top nav) */}
               <Link href="/dais" className={LINK_CLASS}>
                 {locale === 'ja' ? 'Dais のプロダクト' : "Dais's products"}
