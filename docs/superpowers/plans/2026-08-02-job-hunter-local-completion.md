@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-45D` — Guardian Gmail-health check
+**Active atomic task:** `L-45E` — Guardian browser-owner health check
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1445,7 +1445,20 @@ this spec update → commit/push → Telegram milestone before the next item sta
   says `ok`, foreign-key and missing-trigger counts are zero, six applications and
   32 events reconstruct exactly, and active/stale submission claims are both zero.
   The check performed no ledger mutation, lane kick, browser action, or application.
-- [ ] **L-45D** — Implement the Guardian Gmail-health check.
+- [x] **L-45D** — Implement the Guardian Gmail-health check. Receipt: Guardian
+  uses the configured account with `gog auth doctor --check`, then performs a
+  noninteractive, JSON, wrapped, Gmail-no-send search limited to one thread. It
+  also validates the private version-2 checkpoint, duplicate-free identifiers,
+  and mode 0600, while excluding the account, message content, thread IDs, stdout,
+  and stderr from its report. Four focused and full 313-test suites PASS.
+  Immutable release `b83ece2a5e9ce1d84e175d4eaeeb7bfa3265dddf`
+  (archive SHA-256
+  `647a30171663aeb64ce0388d332dc8fe912a95a1294de1c5ffcd323147404565`)
+  is active with zero writable paths and the approved route SHA unchanged. The
+  installed-release E2E report is `healthy`, mode 0600 and 155 bytes: refresh-token
+  auth check and Gmail read both pass, the one-result probe returns one thread,
+  and the checkpoint contains six processed message IDs. No message was sent,
+  marked read, modified, deleted, or exposed by the health check.
 - [ ] **L-45E** — Implement the Guardian browser-owner health check.
 - [ ] **L-45F** — Implement the Guardian Telegram-outbox health check.
 - [ ] **L-46** — Bound Guardian auto-recovery to deterministic pre-side-effect faults.
