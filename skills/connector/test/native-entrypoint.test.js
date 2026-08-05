@@ -95,6 +95,8 @@ test("native-pass forwards the complete launchd-owned Connector loop configurati
     assert.equal(observed.homeLocation, "Tokyo home");
     assert.equal(observed.mapsKey, "maps-secret");
     assert.equal(observed.repoRoot, REPO_ROOT);
+    assert.equal(observed.lumaEmail, "dais@example.test");
+    assert.equal(observed.lumaName, "Dais");
   } finally {
     fs.rmSync(directory, { recursive: true, force: true });
   }

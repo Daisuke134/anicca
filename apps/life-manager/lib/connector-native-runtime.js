@@ -1,7 +1,8 @@
 "use strict";
 
 const { DAILY_DRIVER_CDP, createCloakBrowserDailyDriver } = require("./cloakbrowser-daily-driver.js");
-const { createReadOnlyLumaSessionAuth } = require("./luma-daily-driver-auth.js");
+const { createLumaDailyDriverAuth } = require("./luma-daily-driver-auth.js");
+const { createGogLumaCodeReader } = require("./gog-luma-code-reader.js");
 const { createConnectorEventsPack } = require("./connector-events-pack.js");
 const { createLumaEvidenceStore } = require("./luma-evidence-store.js");
 const { makeGogCalendar } = require("./transport/calendar-gog.js");
@@ -73,6 +74,23 @@ function defaultCreateDailyDriver(options = {}) {
   });
 }
 
+function defaultCreateAuth(options = {}) {
+  const email = requiredText(options.email);
+  return createLumaDailyDriverAuth({
+    dailyDriver: options.dailyDriver,
+    email,
+    name: requiredText(options.name),
+    readLoginCode: createGogLumaCodeReader({
+      gogPath: options.gogBin,
+      env: {
+        ...process.env,
+        GOG_ACCOUNT: email,
+        GOG_KEYRING_PASSWORD: requiredText(options.gogKeyring),
+      },
+    }),
+  });
+}
+
 function factory(deps, name, fallback) {
   return typeof deps[name] === "function" ? deps[name] : fallback;
 }
@@ -141,7 +159,7 @@ async function runNativeConnectorPass(input = {}) {
     if (!isVerifiedRollingEventCoverage(coverage)) unavailable();
 
     const createDailyDriver = factory(deps, "createDailyDriver", defaultCreateDailyDriver);
-    const createAuth = factory(deps, "createAuth", createReadOnlyLumaSessionAuth);
+    const createAuth = factory(deps, "createAuth", defaultCreateAuth);
     const createEvidenceStore = factory(deps, "createEvidenceStore", createLumaEvidenceStore);
     const createCalendar = factory(deps, "createCalendar", makeGogCalendar);
     const createPack = factory(deps, "createPack", createConnectorEventsPack);
@@ -151,13 +169,20 @@ async function runNativeConnectorPass(input = {}) {
       connectOverCDP: deps.connectOverCDP,
     });
     if (!dailyDriver || typeof dailyDriver.withLumaPage !== "function") unavailable();
-    const auth = createAuth({ dailyDriver });
+    const auth = createAuth({
+      dailyDriver,
+      email: config.lumaEmail,
+      name: config.lumaName,
+      gogBin: config.gogBin,
+      gogKeyring: config.gogKeyring,
+    });
     if (!auth || typeof auth.ensureAuthenticated !== "function") unavailable();
     const evidenceStore = createEvidenceStore({ dataDir: evidenceDir });
     if (!evidenceStore || typeof evidenceStore.record !== "function") unavailable();
     const calendar = createCalendar({
       account: calendarAccount,
       bin: config.gogBin,
+      keyring: config.gogKeyring,
     });
     if (!calendar || calendar.kind !== "gog" || typeof calendar.ready !== "function" || !calendar.ready()) {
       unavailable();
