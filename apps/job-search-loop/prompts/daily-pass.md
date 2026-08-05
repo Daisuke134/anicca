@@ -215,6 +215,19 @@ becomes retryable `not_submitted`, while `clicked` or `confirmed` becomes
 non-retryable `submit_unknown`. Never infer click phase from a missing browser tab,
 process exit code, timeout, or absent email.
 
+The physical click and the employer submit request are separate fenced phases. New
+intents begin with transport `pre_request`. Attach both the exact submit-request wait
+and visible-toast observer before committing `clicked` and clicking once. When the
+exact GraphQL submit request is captured, immediately call
+`Ledger.mark_submission_request_started(intent_id, fence)` before awaiting its
+response. If no submit request starts and the current official Ashby UI instead
+shows exactly `There was an error verifying that you are not a robot. Please try
+again.`, persist a PII-free evidence hash and call
+`Ledger.complete_client_blocked_submission` with blocker
+`ashby_recaptcha_before_submit_request`. This is retryable `not_submitted`; never
+answer or bypass the CAPTCHA. Any unproven clicked exit and every `request_started`
+exit remain non-retryable `submit_unknown`.
+
 For Ashby, HTTP 200 alone is never confirmation. Before clicking, read the expected
 success copy from the already-loaded page's
 `window.__appData.organization.theme.applicationSubmittedSuccessMessage`; when it is

@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-49` — submit one eligible real Ashby application and store an authoritative receipt
+**Active atomic task:** `L-49H` — distinguish a client-blocked click from a submit request side effect
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1598,6 +1598,15 @@ this spec update → commit/push → Telegram milestone before the next item sta
   resume, and selected custom answers. Therefore another live click is forbidden
   until request capture starts before the click and correlates the exact matching
   request object to its response without depending on a response-only predicate.
+  The next Supabase AI Platform Engineer attempt was globally remote, score 80,
+  strong-fit, claim-ready, candidate-arm assigned, and used the engineering resume
+  plus five fact-bound answers. It passed native validity and selected-state checks,
+  recorded exact materials, committed `clicked`, and clicked once, but again emitted
+  no matching request and no application Gmail receipt. The current official Ashby
+  bundle proves the submit handler first awaits invisible reCAPTCHA `job_apply`; on
+  rejection it shows the official robot-verification error and never invokes the
+  GraphQL mutation. Supabase remains `submit_unknown` under the current conservative
+  phase contract and cannot be retried.
 - [ ] **L-49A** — Reconcile the Sierra `submit_unknown` without resubmitting it;
   if neither Ashby nor Gmail yields authoritative confirmation, submit a different
   eligible Ashby posting exactly once. Receipt so far: the official Sierra Japan
@@ -1723,6 +1732,15 @@ this spec update → commit/push → Telegram milestone before the next item sta
   is active with zero writable paths, release Guardian `healthy`, ledger integrity
   `ok`, zero active submission claims, and the approved route SHA unchanged. Daily
   remains unloaded.
+- [ ] **L-49H** — Add a fenced submit-transport phase independent of the physical
+  click phase. New attempts begin `pre_request`; the exact captured GraphQL submit
+  request durably advances to `request_started`. Permit a clicked attempt to become
+  retryable `not_submitted` only when an immutable PII-free receipt proves the exact
+  official pre-request reCAPTCHA blocker while transport remains `pre_request`.
+  `request_started` and every unproven clicked exit remain non-retryable
+  `submit_unknown`. Prove ordering, stale-fence rejection, quota release, legacy
+  behavior, and prompt sequencing under focused and full tests before another live
+  click. Daily remains unloaded.
 - [ ] **L-50** — Deliver the Ashby application artifacts and receipt to Telegram.
 - [ ] **L-51** — Submit one eligible real Workday application and store its
   authoritative receipt.
