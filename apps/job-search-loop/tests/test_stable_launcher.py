@@ -26,7 +26,7 @@ class StableLauncherTests(unittest.TestCase):
                 env=env,
             )
             self.assertEqual(installed.returncode, 0, installed.stderr)
-            self.assertEqual(sorted(path.name for path in libexec.iterdir()), ["daily", "inbox", "learning"])
+            self.assertEqual(sorted(path.name for path in libexec.iterdir()), ["browser", "daily", "inbox", "learning"])
             self.assertTrue(all(path.stat().st_mode & 0o222 == 0 for path in libexec.iterdir()))
             inactive = subprocess.run([str(libexec / "daily")], capture_output=True, text=True, env=env)
             self.assertEqual(inactive.returncode, 78)

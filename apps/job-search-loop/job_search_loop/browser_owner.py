@@ -182,7 +182,7 @@ def _defaults(args: argparse.Namespace) -> BrowserLease:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("action", choices=("acquire", "beat", "hold", "release"))
-    parser.add_argument("--identity", default="interactive:dais")
+    parser.add_argument("--identity", default="job-search:dais")
     parser.add_argument("--owner", default="ai.anicca.job-search-daily")
     parser.add_argument("--guard", type=Path, default=Path("~/.config/ai/bin/browser-guard.sh"))
     parser.add_argument("--lease-dir", type=Path, default=Path("~/.cloak/leases"))

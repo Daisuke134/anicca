@@ -3,7 +3,7 @@ set -euo pipefail
 
 LANE="${0:t}"
 case "$LANE" in
-  daily|inbox|learning) ;;
+  browser|daily|inbox|learning) ;;
   *) print -u2 "job-search launcher: invalid lane $LANE"; exit 78 ;;
 esac
 

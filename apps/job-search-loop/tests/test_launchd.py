@@ -26,6 +26,21 @@ class LaunchdTests(unittest.TestCase):
             learning["ProgramArguments"][0], daily["ProgramArguments"][0]
         )
 
+    def test_browser_supervisor_uses_a_dedicated_dynamic_loopback_profile(self):
+        root = Path(__file__).parents[1]
+        browser = plistlib.loads(
+            (root / "launchd" / "ai.anicca.job-search-browser.plist").read_bytes()
+        )
+        script = (root / "scripts" / "run-browser.sh").read_text(encoding="utf-8")
+        self.assertEqual(browser["Label"], "ai.anicca.job-search-browser")
+        self.assertTrue(browser["RunAtLoad"])
+        self.assertTrue(browser["KeepAlive"])
+        self.assertIn('--remote-debugging-port=0', script)
+        self.assertIn('--remote-debugging-address=127.0.0.1', script)
+        self.assertIn('job-search-daily', script)
+        self.assertNotIn('daily-driver', script)
+        self.assertNotIn('9222', script)
+
     def test_inbox_shell_uses_deterministic_prefilter_before_model(self):
         root = Path(__file__).parents[1]
         script = (root / "scripts" / "run-inbox.sh").read_text(encoding="utf-8")
@@ -78,6 +93,7 @@ class LaunchdTests(unittest.TestCase):
         self.assertIn('if [[ "$SLOT_COUNT" -ge "10" ]]', script)
         self.assertIn("daily_quota_reached", script)
         self.assertIn("job_search_loop.quota", script)
+        self.assertIn('--identity "job-search:dais"', script)
 
     def test_daily_shell_leases_browser_and_registers_release_before_runner(self):
         root = Path(__file__).parents[1]
