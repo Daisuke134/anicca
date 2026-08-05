@@ -222,3 +222,55 @@ test("a candidate failure remains incomplete and defers every write boundary", a
   assert.equal(input.calls.some((call) => call[0] === "calendar-sync"), false);
   assert.equal(input.calls.some((call) => call[0] === "telegram"), false);
 });
+
+test("configured native execution uses Luna then passes one verified candidate to the write pipeline", async () => {
+  const input = await fixture();
+  const profile = Object.freeze({ tenant_id: TENANT, timezone: "Asia/Tokyo" });
+  const goalDecision = Object.freeze({ ranked_events: [{
+    event_ref: "luma-event://event/founder-night",
+    goal_fit: "strong",
+    goal_reason: "grounded",
+    serendipity_reason: "grounded",
+  }] });
+  const spendSequence = Object.freeze({
+    ordered_candidates: [{
+      event_ref: "luma-event://event/founder-night",
+      canonical_url: "https://luma.com/founder-night",
+    }],
+    skipped: [],
+  });
+  const writeResult = Object.freeze({ status: "incomplete", outcome: "open_coverage" });
+  const result = await runNativeConnectorPass({
+    ...input,
+    config: {
+      ...input.config,
+      profilePath: "/private/tmp/dais-local.json",
+      lunaEvidenceDir: "/private/tmp/connector-luna",
+      homeLocation: "opaque-home",
+      telegramTarget: "opaque-chat",
+      calendarCoverageUrl: "https://calendar.google.com/calendar/u/0/r",
+      calendarId: "primary",
+    },
+    deps: {
+      ...input.deps,
+      readProfile(value) { input.calls.push(["profile", value]); return profile; },
+      async runLunaJudgment(value) { input.calls.push(["luna", value]); return goalDecision; },
+      async gateDateCalendar(...value) { input.calls.push(["gate", ...value]); return Object.freeze({ date: "2026-08-05" }); },
+      async createSpendPolicy(value) { input.calls.push(["policy", value]); return Object.freeze({ limits: [] }); },
+      planDateSpend(...value) { input.calls.push(["spend", ...value]); return spendSequence; },
+      async runNativeWrite(value) { input.calls.push(["write", value]); return writeResult; },
+      routeMinutes: async () => 20,
+      isVerifiedConnectorProfile: (value) => value === profile,
+      isVerifiedEventGoalSerendipity: (value) => value === goalDecision,
+      isVerifiedEventSpendSequence: (value) => value === spendSequence,
+    },
+  });
+
+  assert.equal(result.write, writeResult);
+  assert.deepEqual(input.calls.filter(([name]) => ["profile", "luna", "gate", "policy", "spend", "write"].includes(name))
+    .map(([name]) => name), ["profile", "luna", "gate", "policy", "spend", "write"]);
+  const writeInput = input.calls.find(([name]) => name === "write")[1];
+  assert.equal(writeInput.application.eventRef, "luma-event://event/founder-night");
+  assert.equal(writeInput.goalDecision, goalDecision);
+  assert.equal(input.calls.find(([name]) => name === "luna")[1].date, "2026-08-05");
+});

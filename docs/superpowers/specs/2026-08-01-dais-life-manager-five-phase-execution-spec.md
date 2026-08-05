@@ -142,6 +142,7 @@ Telegram provider message IDが無い送信を成功として表示しない。�
 1. **Task 5を正本化する**: 未commitのnative write pipelineとTelegram copyをreviewし、focused testを再実行してcommit/pushする。
 2. **Luna判断境界を接続する**: verified inventoryとprofileをLuna bounded workerへ渡し、候補と根拠だけを受け取る。LLMにreceipt成功判定をさせない。
 3. **default native runtimeへwrite pipelineを接続する**: 明示的に選択された候補だけを、登録→receipt→Calendar→coverage→Telegramの順で処理する。
+   - 進捗: opt-in runtime compositionは、verified profile→Luna→Calendar gate→spend gate→既存write pipelineの順序をfocused testで固定した。native entrypointからeffect configを供給する配線と、no-candidate/failure時にwriteを呼ばない回帰は未完了のため、このTODOは未完了。
 4. **Task 6を実装する**: Gmail確認message、guest binding、ticket / QR captureを検証し、Telegram artifactへ接続する。
 5. **event source contractを閉じる**: Lumaをprimaryとする。`Compass`がliteralな別providerならadapter未実装としてsource/auth/apply/receiptを追加する。Daisが`connpass`を指した場合は承認済み公式APIだけをfallback接続する。
 6. **無料Luma一件でnative実E2Eを通す**: 実探索、Luna選定、実登録、provider receipt、確認mail、ticket / QR、Calendar write/readback、Telegram message IDを一つのlineageで証拠化する。
