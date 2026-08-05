@@ -61,7 +61,9 @@ test("native-pass invokes the direct runtime and keeps open coverage as a contin
       status: "pending",
     });
     assert.deepEqual(JSON.parse(fs.readFileSync(path.join(stateDir, "last-result.json"), "utf8")), {
-      status: "incomplete", write: null,
+      status: "incomplete",
+      coverage_counts: { open: 21, covered_existing: 0, covered_new: 0, unavailable: 0 },
+      write: null,
     });
   } finally {
     fs.rmSync(directory, { recursive: true, force: true });
