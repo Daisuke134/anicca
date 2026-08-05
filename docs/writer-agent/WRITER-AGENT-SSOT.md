@@ -118,9 +118,12 @@ valid terminal state for unfinished work.
 ### 2.2 Same-run recovery
 
 Failure resumes the same `run_id`, `artifact_id`, content hash, destination, and
-publication intent. A new article must not hide a failed article. A replacement
-is allowed only after a recorded terminal content rejection and must retain the
-failed feedback.
+publication intent. A new article must not hide a failed article. The Writer
+does not create a shorter or lower-quality fallback article to satisfy a daily
+cadence. It may perform at most one evidence-backed topic reroute inside the
+same daily obligation; if that artifact also exhausts its bounded quality
+budget, the day closes as an honest quality miss and the next JST day starts a
+new independent run.
 
 ### 2.3 Honest evidence
 
@@ -141,16 +144,23 @@ runs with `ARTICLE_AUTOPUBLISH=1`. `ai.anicca.article-resume` owns same-run,
 per-destination recovery; claim, opportunity, money, report, and learning
 workers continue on their own intervals.
 
-The Writer improves the **same article** from reader/editorial feedback. The
-maximum iteration count bounds generation cost and time; it never decides
-whether the article ships. At that bound, the Agent freezes the best current
-JA/EN bytes, records remaining feedback as quality debt, initializes every
-currently active destination intent, and enters the publication rig. `block_freeze` is not an
-allowed terminal state. A reader/editorial verdict is an improvement input, not
-a publication veto.
+The Writer improves the **same article** from reader/editorial feedback. It may
+revise at most twice and may use at most one evidence-backed topic reroute. A
+quality-eligible artifact initializes every active destination and enters the
+publication rig. An artifact with unresolved factual, citation-integrity,
+identity, platform-policy, or harm defects writes a current-hash
+`terminal_quality_blocked` receipt, creates no publication intent, spends no
+more model budget, and cannot suppress the next JST day's run. Editorial taste
+is improvement input; unresolved integrity or safety is a publication veto.
 
-Every daily run has one observable service-level objective: each active
-destination receives a verified public URL. A destination-specific platform
+The service-level objective is **daily autonomous operation**, not fabricated
+daily shipment. A day may truthfully end with zero public URLs only after the
+bounded revision/reroute contract is exhausted and its terminal receipt proves
+why. There is no special fallback-article pipeline.
+
+Every quality-eligible daily run has one observable publication service-level
+objective: each active destination receives a verified public URL. A
+destination-specific platform
 failure starts immediate, bounded recovery for that destination while all other
 destinations continue; it never cancels the others. A destination without
 a public readback is displayed as an SLO breach with its real platform error
@@ -158,12 +168,12 @@ and recovery receipt, never as "published" or a silent pending state. Only a
 verified public readback counts as published, and only an external receipt
 counts as earned.
 
-**Current divergence, owned by Task 1:** the live runtime still sets
-`MAX_REROUTES = 1`, returns `block_freeze`, and prevents publication-state
-initialization after the second failed quality assessment. The 2026-08-04 run
-therefore produced no publication state or platform dispatch. This is an
-implementation defect against this contract, not an acceptable no-shipment
-outcome.
+Live runtime commits `a30bfd66` and `60a7f223` close the prior poison path. Live
+run `20260804-214206` produced a current-hash terminal rejection with no
+publication state, no delivery ledger row, no extra provider call, and a
+next-day-eligible start-control state. Task 1 still owns proof of three
+consecutive quality-eligible active-six shipments; it does not own forced
+publication of an ineligible artifact.
 
 ### 2.5 Active-six distribution and dormant-adapter contract
 
@@ -473,6 +483,27 @@ to manufacture a separate product.
 
 Public evidence supports this contract:
 
+- Google states that helpful content is created primarily for people, should
+  add original information or analysis rather than rewrite sources, and should
+  leave the intended audience able to achieve its goal. It explicitly warns
+  against extensive automation across many topics and says adding content only
+  to make a site appear fresh does not improve overall ranking.
+  Core source language: "Are you using extensive automation to produce content
+  on many topics?"
+  Source: https://developers.google.com/search/docs/fundamentals/creating-helpful-content
+- X's official Article guide starts with the intended reader and desired
+  reader action, requires evidence after claims, recommends ruthless second-
+  and third-draft editing, and treats teasers, pinning, replies, and evergreen
+  resharing as distribution around the Article rather than substitutes for it.
+  Core source language: "Start with a clear purpose."
+  Source: https://help.x.com/en/using-x/articles
+- Substack states that subscribers pay for ongoing access to a writer's
+  worldview, expertise, and style rather than one isolated fact, and that
+  regular writing plus promotion compounds readership. Its planning guide says
+  5-10% free-to-paid conversion is commonly observed, with 10% an aim rather
+  than a guarantee.
+  Core source language: "Subscribers don’t pay for a single post."
+  Source: https://substack.com/going-paid-guide
 - note's analysis of roughly 300,000 paid articles reports that top-selling
   practical know-how averages ¥1,842 versus ¥983 for reading-oriented work;
   length has almost no sales correlation, while the free section establishes
@@ -571,7 +602,7 @@ and capacity are measured.
 
 | Stage | Target | Gate |
 |---|---|---|
-| S-1 | Publishing alive | Three consecutive daily runs publish all currently enabled, non-window-blocked destinations; duplicate zero |
+| S-1 | Publishing alive | Three consecutive quality-eligible daily runs publish all active, non-window-blocked destinations; duplicate zero; a terminal miss is honest but does not satisfy the gate |
 | S0 | First money | One verified non-test payment joined to an article or publisher submission |
 | S1 | $400 monthly | $400 verified monthly writing revenue from any receipted mix; one publisher article may satisfy it, but it is not recurring |
 | S2 | $1,000 monthly | Three consecutive revenue-positive weeks with zero manual execution |
@@ -589,17 +620,25 @@ The initial planning composition is deliberately concrete, not a forecast:
 
 | Recurring unit | Planning quantity | Gross MRR contribution |
 |---|---:|---:|
-| English paid writing | 600 active readers at $8/month | $4,800 |
-| Japanese paid writing | 400 active readers at ¥1,500/month, planning FX ¥150/$ | $4,000 |
-| One recurring commissioned-writing retainer | One active external contract | $1,200 |
-| Total | 1,000 reader contracts plus one retainer | $10,000 |
+| Reader subscriptions | 334 active readers at $15/month | $5,010 |
+| Recurring commissioned-writing retainers | Five active external contracts at $1,000/month | $5,000 |
+| Total | 334 reader contracts plus five retainers | $10,010 |
+
+This is an internal arithmetic scenario, not a conversion forecast. `$15` is
+the observed Lenny case price reused only as an unvalidated Writer hypothesis;
+the source itself says its correctness was unknown. Applying
+Substack's general 5-10% free-to-paid planning heuristic mechanically implies
+3,340-6,680 free subscribers for 334 paid contracts, but that range is not a
+prediction for this Writer and does not establish an engaged-reader count. The
+retainer price and count are also unvalidated hypotheses and cannot enter MRR
+until external recurring contracts are active.
 
 Displayed MRR uses transaction currency and receipted period values; planning
 FX is never silently applied to accounting. The Agent replaces this mix from
 measured acquisition, conversion, renewal, churn, fees, compute cost, capacity,
-and net margin. The desired steady state removes dependence on the retainer by
-growing reader subscriptions, but the retainer is a legitimate early recurring
-writing unit rather than affiliate or unrelated product revenue.
+and net margin. The desired steady state may reduce retainer concentration by
+growing reader subscriptions, but recurring commissioned writing is a
+legitimate early MRR unit rather than affiliate or unrelated product revenue.
 
 The repeatable path for Dais and later local/cloud users is:
 
@@ -635,10 +674,10 @@ WRITE
     |
 VERIFY
   Citation, editorial, reader, identity, PII, policy, and destination checks.
-  Finite revisions choose the best valid draft; attempt exhaustion does not
-  permanently poison a repaired article.
+  Finite revisions either produce a current-hash quality-eligible draft or a
+  terminal no-publication receipt that releases the next day.
     |
-PUBLISH / SUBMIT
+PUBLISH / SUBMIT (only after current-hash quality eligibility)
   Publish available destinations immediately. Submit publisher-paid original
   work only to the selected publisher. Platform-specific waits stay isolated.
     |
@@ -663,8 +702,10 @@ scheduling, and bookkeeping. The Agent owns topic, reader, article form,
 revenue-stream selection, experiment choice, and interpretation.
 
 The loop is continuously awake, but it does not continuously publish. One JST
-daily artifact receives repeated research, review, recovery, measurement, and
-learning work until its active-six SLO and revenue observations are closed.
+daily obligation receives bounded research, review, recovery, measurement, and
+learning work. A quality-eligible artifact owns the active-six publication SLO;
+a terminally rejected artifact owns a no-publication receipt and releases the
+next day's obligation.
 
 ```mermaid
 flowchart LR
@@ -672,12 +713,15 @@ flowchart LR
   B --> C[Fresh Terra medium editor]
   C --> D[Writer revision]
   D --> E{Sol escalation trigger?}
-  E -- no --> F{Hard safety valid?}
+  E -- no --> F{Current-hash quality, identity, policy, harm all eligible?}
   E -- yes --> S[Fresh Sol medium audit]
   S --> F
   F -- yes --> G[Publish active six]
-  F -- no --> H[Same-run safe useful reroute]
-  H --> C
+  F -- no --> H{Reroute unused and evidence-backed?}
+  H -- yes --> R[One new topic inside bounded obligation]
+  R --> C
+  H -- no --> T[Terminal quality miss: no publication]
+  T --> A
   G --> I[5-minute recovery]
   I --> J[24h and 7d measurement]
   J --> K[Weekly KEEP or REVERT]
@@ -701,10 +745,12 @@ strategy promotion. The first 30 articles sample exactly six Sol audits spread
 across topic and language classes, in addition to mandatory risk triggers.
 After calibration, the sample rate is promoted, retained, or reduced only by a
 matched defect-detection and net-cost receipt. The Writer may revise at most
-twice. Review feedback is quality input, not a publication veto. Only
-deterministic identity, PII, citation-integrity, platform-policy, and harm
-checks may block an artifact; a blocked artifact immediately reroutes within
-the same run to a safe useful article. The Agent never reviews its own strategy
+twice. Review is reduced to four decision dimensions: factual/citation
+integrity, completion of the declared reader job, original value beyond source
+rewriting, and fit between article value and the paid or contractual offer.
+Deterministic identity, PII, platform-policy, and harm checks remain hard
+blockers. A blocked artifact may use its one evidence-backed reroute; after
+that it closes without publication. The Agent never reviews its own strategy
 promotion in the context that proposed it.
 
 ### 5.1 Model, effort, and cost contract
@@ -1329,15 +1375,24 @@ schedules or future data.
 
 ### 9.0 Active execution order
 
+The current evidence-based correction contract is
+`docs/writer-agent/plans/2026-08-05-evidence-based-writer-loop.md`. It
+supersedes any interpretation that daily operation requires forced publication
+or a lower-quality fallback article.
+
 The table number is a stable task identity, not a command to repeat completed
 work. Tasks 5, 6, and 7 are not skipped: their runtime, live verification, and
 push receipts are recorded as `DONE` in their rows. Task 8's report generator
 is complete, but its public Web route is absent and is therefore reopened.
 
-Task 1 is the first foreground repair. The daily run is loaded, but its current
-quality terminal violates the shipment contract in §2.4 by cancelling all
-destinations. Task 4 follows Task 1: a better topic cannot create revenue while
-the Writer is permitted to ship nothing.
+Task 1 is the first foreground proof: verify the next JST day starts a clean
+run, then close three consecutive quality-eligible active-six shipments with
+no duplicate or human repair. A terminal quality miss is classified and does
+not poison the proof window, but it also does not count as a shipment day.
+Task 1's time-dependent live evidence is collected continuously while Task 4
+proceeds in the foreground: topic supply must move from vendor-news bias to
+paid-market and reader-demand evidence. Task 8 begins after both Task 1 and
+Task 4 have their acceptance receipts; Task 4 never waits three days for Task 1.
 
 Task 4 is not complete when another feed has been added. It is complete only
 when one live selected topic begins with paid-market/reader-demand evidence,
@@ -1350,8 +1405,9 @@ change the strategy, but missing conversion does not erase this supply receipt.
 
 There are three execution lanes:
 
-1. **Foreground development:** complete Task 1's mandatory active-six shipment
-   path first, then complete Task 4 revenue-demand supply.
+1. **Foreground development:** implement Task 4 revenue-demand supply while
+   Task 1 accumulates its next-day and three-run live receipts. Both must pass
+   before Task 8.
 2. **Always-running recovery:** Task 1 continues per-destination publication
    recovery whenever a verified public URL is missing. It does not cancel other
    destinations or create a second daily article.
@@ -1382,9 +1438,10 @@ foreground order is binding:
 Read as one end-to-end completion route, the remaining work is:
 
 ```text
-1/3  migrate Luna-xhigh to Terra-medium plus triggered Sol, repair finite-quality
-     shipment, and prove three consecutive active-six days
-  -> 4  replace vendor-news supply with full-page paid-demand selection
+1/3  continuously collect next-day and three-run active-six evidence; finish
+     deterministic Sol triggers and cost receipts
+  + 4  now: replace vendor-news supply with full-page paid-demand selection
+  -> both acceptance receipts
   -> 8  expose the receipt-backed Money Control publicly
   -> 9/10  advance publisher opportunities to real payment or honest rejection
   -> 11  first attributed note purchase
@@ -1407,9 +1464,9 @@ this section define what runs next.
 | # | Phase | Work | Done receipt | Status |
 |---:|---|---|---|---|
 | 0 | Boundary | Create this dedicated Writer SSOT; point AGENTS and historical spec here | File exists, links resolve, committed and pushed | DONE |
-| 1 | Availability | Recover today's and yesterday's missed publication immediately | Same-run receipts, all active destinations live, dormant destinations skipped, no duplicate | IN PROGRESS, not complete. Historical run `20260802-000152` used the superseded eight-target contract and produced six authenticated live receipts; its X Article EN and X Post JA history remains immutable but neither is required by the current contract. Current completion requires the runtime contract migration, recovery from `block_freeze`, both due historical Zenn readbacks, three consecutive active-six daily runs, active-six completion notification, dormant-skip receipts, and a final no-duplicate audit. Runtime commits `16800ac` and `a42e9cb` remain valid historical recovery evidence. Received revenue remains zero; paid state is not a purchase receipt. |
+| 1 | Availability | Recover today's and yesterday's missed publication immediately | Same-run receipts, all active destinations live, dormant destinations skipped, no duplicate | IN PROGRESS, not complete. Historical run `20260802-000152` used the superseded eight-target contract and produced six authenticated live receipts; its X Article EN and X Post JA history remains immutable but neither is required by the current contract. The `block_freeze` poison path is closed by live commits `a30bfd66` and `60a7f223`. Current completion requires next-JST-day clean-start proof, both due historical Zenn readbacks, three consecutive quality-eligible active-six runs, active-six completion notification, dormant-skip receipts, and a final no-duplicate audit. A terminal quality miss never forces publication and does not count toward the three-run gate. Runtime commits `16800ac` and `a42e9cb` remain valid historical recovery evidence. Received revenue remains zero; paid state is not a purchase receipt. |
 | 2 | Availability | Install no-passive-wait catch-up and per-platform pending/resume | Missed schedule and platform-window fixtures plus live recovery | DONE: the armed 06:00 daily creator, five-minute same-run reconciler, and five-minute Zenn deferred worker are enabled on the live host. Runtime commit `670ae86` makes the reconciler hand `new` to the daily wrapper immediately after a missed 06:00 event, while refusing an early pre-06:00 run; a date-bound expectation prevents a race from creating a duplicate. The same commit restores `ai.anicca.article-daily` to `enabled` in the launchd registry and adds a PID-bearing, install-scoped shared lock so manual relative invocation, launchd, Zenn, and media repair cannot steal one another's publication ownership. Platform-window fixtures prove X EN remains pending until six hours after the verified JA timestamp and Zenn remains delegated until its measured interval; current run `20260731-213927` supplies live recovery receipts for six independent destinations while those two waits do not block any other work. Verification: 101 schedule/start/full-pass/launchd tests plus the shell daily contract pass |
-| 3 | Quality/cost | Repair attempt exhaustion, contradictory advisory/blocking contract, log path crash, language mismatch, and model-effort overspend | Repaired content can pass; no permanent poison; model/effort/cost receipts; focused tests | REOPENED / PARTIAL: attempt reset, log-path/language repairs, live Terra-`medium`, one-shot Terra-`high`, fail-closed one-use Sol execution, the deterministic first-30 quality-sample producer, and its unattended daily editorial wiring are complete. Runtime/live commit pairs are `fe894b31`/`9baf58e5`, `1d0f7f66`/`bb6c2193`, `0fdade7f`/`309d670c`, `0b05ba24`/`d6a7e212`, and `4c3cae40`/`f93f3589`; RED/GREEN and provider evidence are in §5.1. Active next slice: replace `block_freeze` with bounded safe reroute so quality failure cannot poison a daily slot. Remaining after it: implement deterministic risk/high-value/strategy producers and the single Sol-`high` safety escalation; store tokens, latency, phase, retry, and cost; prove ordinary articles create zero Sol receipts/calls; prove all active destinations dispatch while dormant adapters skip without an SLO breach. |
+| 3 | Quality/cost | Repair attempt exhaustion, contradictory advisory/blocking contract, log path crash, language mismatch, and model-effort overspend | Repaired content can pass; no permanent poison; model/effort/cost receipts; focused tests | REOPENED / PARTIAL: attempt reset, log-path/language repairs, live Terra-`medium`, one-shot Terra-`high`, fail-closed one-use Sol execution, deterministic first-30 quality sampling, unattended editorial wiring, partial-language terminal classification, reader-terminal hash repair, and provider-free `terminal_quality_blocked` are complete. Runtime/live terminal commits are `a30bfd66` and `60a7f223`; live run `20260804-214206` proves no publication, no delivery ledger row, no extra provider call, and next-day eligibility after exhaustion. Remaining: implement deterministic risk/high-value/strategy Sol producers and the single Sol-`high` safety escalation; store tokens, latency, phase, retry, and cost; prove ordinary articles create zero Sol receipts/calls; prove active-six dispatch and dormant skips without an SLO breach. There is no fallback-article task. |
 | 4 | Revenue-demand supply | Replace the static four-vendor claim watch as topic authority with the §3.5 paid-market and reader-demand loop while preserving the one canonical `writer-agent` tree and existing publication matrix | Live JA/EN observations from independent demand families; source-family diversity; one buyer/problem/transformation/deliverable/price/distribution contract per queue card; multi-source cited research; first live topic selected from paid-demand evidence | REOPENED / PARTIAL: runtime commit `8dcef20` changes the skill identity to `writer-agent`, points metadata at this SSOT, removes the AI-entity niche allowlist and the conflicting instruction to keep a separate general-purpose writer, and replaces active daily/platform/scheduler wording with the one Writer Agent identity. Topic validity now comes from a concrete reader, reader job, useful outcome, and verified evidence plan; Life Manager products, publisher/company assignments, software, business, and other subjects are allowed, while internal loop diaries are not the default. Live `~/.claude/skills/writer-agent` and `~/.openclaw/skills/writer-agent` aliases resolve to the same current tree, and the legacy alias resolves that same tree rather than a second pipeline. Runtime commit `f4e6b33` adds one durable claim store and one bounded watch path for X, GitHub releases, and RSS: HTTPS/source validation, fetched-content SHA-256, canonical URL plus normalized-claim deduplication, repeat-observation receipts, one-time claim-to-topic consumption, immutable queue-card recovery, and per-source honest availability state. A live 2026-08-02 JST wake stored nine nonduplicate official claims (three OpenAI Python releases, three Cloudflare RSS entries, and three GitHub Blog RSS entries); repeated wakes deduplicate rather than re-add them. Runtime commit `bb93b81` replaces the hanging macOS Keychain scan with an ephemeral daily-driver CDP bridge: X cookies stay in memory and child-process environment, never files, logs, or arguments. Two live 15-minute wakes fetched and stored three meaningful OpenAI X claims with canonical status URLs and content hashes, then deduplicated them; all four X/GitHub/RSS sources were `OK`, unavailable was zero, and exit was `0`. A URL-only X row was preserved but quarantined by a rejection receipt and is not offered to topic or pitch selection. Runtime commit `1fad26c` adds the model-selected refill boundary and installs `ai.anicca.writer-claim-loop`: every 900 seconds and at installation time it performs one locked `WATCH -> SELECT -> REFILL` wake, keeps three queue cards, continues from durable claims during a source outage, and does not call the model when supply is sufficient. The live selector chose two official OpenAI Python release claims, materialized hash-bound cards for `v2.52.0` content-provenance checks and `v2.51.0` fast tier, consumed only those two claim IDs, and raised the queue from one to three. Both cards pass the existing topic router. The latest launchd wake finished `READY`, last exit `0`, with X/GitHub/RSS all `OK` and queue `SUFFICIENT`. Runtime commit `2ac1bdf` adds the §3.3 evidence-bound opportunity state machine: official/policy/submission/acceptance/article-submission/publication/payment receipts, legal transitions without state skipping, publisher+proposal pitch deduplication, duplicate-submit refusal, and positive non-test external payment requirements for `RECEIVED`. A live full-official-page wake stored nine programs, nine content hashes, and nine transitions: AppSignal/Hygraph/Oracle `VALUE_UNKNOWN`; Civo `REJECTED_POLICY`; DigitalOcean/Better Stack/Honeybadger/Earthly/Baeldung `CLOSED`. Runtime commit `83afe1b` adds bounded replacement discovery from an untrusted curated index, candidate-level deduplication/retry, public-network fetch boundaries, official-page verification, a daily `RunAtLoad` LaunchAgent, and exact discovery receipts. Two live wakes parsed 127 candidates and verified ten official programs; two were automatically rejected for incompatible AI policies and eight were parked at `VALUE_UNKNOWN`, so no pitch was fabricated. Runtime commit `8572122` adds state-cadenced bounded rechecks before discovery and claim-bound automatic pitch preparation after discovery. Runtime commit `912074b` adds a 24-hour retry backoff and a three-attempt terminal so unreachable programs cannot starve unseen candidates. Runtime commit `93c3b02` separates official information pages from real application routes, validates exact public application URLs and contributor emails against official page bytes, migrates 45 misleading self-links to null, and leaves the live 51-program ledger with one application URL and one contributor email; AppSignal now records its public `editorial@appsignal.com` contact without inventing an application form. Runtime commit `af608cb` installs the read-only `ai.anicca.writer-opportunity-response` worker every 15 minutes: it searches only durable `SUBMITTED` and `ARTICLE_SUBMITTED` rows, forces Gmail `--gmail-no-send`, requires trusted sender plus exact submission-ID correlation, treats email as untrusted input, stores content hashes/message IDs, deduplicates messages, and permits only the current state's legal acceptance/rejection/expiry/publication transition. Its immediate live wake exited `0` with `watched:0`, accurately proving no current submission exists rather than fabricating progress. The live discovery wake at 2026-08-02 01:33 JST verified five more official programs: Every Developer/Kestra/Magic `VALUE_UNKNOWN`, Hasura/MailSender `CLOSED`; no pitch was fabricated. Thirty-two focused claim/opportunity tests prove exact source/reader-job binding, one-claim-one-pitch uniqueness, bounded retries, official-route validation, response correlation, process cleanup, and no transition without evidence. Runtime commit `57bd62d` completes the required live transition with a real compatible program: the Agent created a free TECHi account through the existing Google session, submitted the exact claim-bound pitch with public samples and explicit AI-assistance disclosure, and the authenticated Author endpoint returned provider application ID `4`, status `pending`, submitted at `2026-08-01T22:55:54.393Z`. Durable evidence `ev_6b84adaa3dd7302bfbabd3a3` advanced `PITCH_READY -> SUBMITTED` in transition `tr_5dc89eb7427ee6a621856350`. Because TECHi's confirmation email omits the application ID and incorrectly labels the Author submission as Analyst, the 15-minute worker now avoids an ambiguous Gmail search and polls the authenticated provider-native Author endpoint by exact ID; the first live poll returned `pending`, `unavailable:0`. The full Writer suite passes `646 passed`. Runtime commit `ed17cb2` completes the canonical-tree migration: tracked `skills/writer-agent` is the only implementation, tracked `skills/article-writer` is a repository-relative symlink, Writer Engine's article form is a symlink to the same canonical `SKILL.md`, and live Claude/OpenClaw current and legacy aliases all resolve to that one tree. All installed article/writer plist program paths and descriptions use the canonical identity; no process runs an old implementation. A versioned state migration changed only 22 mutable `publication-state.json`/backup controls (170 exact absolute-path replacements), retained immutable historical receipts unchanged, recorded before/after SHA-256 for every file, and returned the same receipt on replay with zero legacy paths reappearing. The reloaded live resume and Zenn workers both exited `0` without a new run or duplicate publication. Unmanaged Dev.to and Zenn wrapper entry points now refuse without the managed run/state/ledger boundary, removing the second manual pipeline. Canonical, alias, launchd, state-migration, publisher-boundary, report-restart, and full Writer verification pass: `674 passed`; runtime commit `ed17cb2` is pushed. Remaining before DONE: replace the four-vendor claim list as topic authority with the §3.5 revenue-demand supply; collect live JA/EN paid-market, reader-demand, publisher, and owned-funnel evidence; require each queued proposal to bind one buyer, problem, transformation, deliverable, price hypothesis, distribution path, and source bundle; prove source-family diversity and a first live topic selected from paid-demand evidence. Existing X and bilingual publication destinations remain unchanged. |
 | 5 | Supply | Reject proposals that do not cite a new claim useful to a reader | Negative and positive fixtures | DONE: `f4e6b33` and `1fad26c` require an unconsumed durable claim ID, exact durable `reader_job`, exact canonical source URL in the browse evidence plan, a valid reader/outcome/form route, and an immutable topic-card hash before consumption. Missing-source, partial-model-JSON, changed-card, already-consumed, and model-unavailable fixtures create no card and consume no claim. Positive fixtures and the two live OpenAI release cards prove the accepted path; the model judges usefulness without a subject allowlist and deterministic code enforces evidence/newness |
 | 6 | Measurement | Add metrics, sales, subscription, editorial, payout, fee, and attribution schema | Status-bearing rows join through `artifact_id` | DONE: runtime commit `d00a8ff` adds the canonical typed SQLite money ledger for immutable published artifacts, metric observations, direct-writing/product-derived/network-fee money events, subscription contracts, fees, payouts, payout allocations, and one-lineage artifact attribution. A verified received sale or editorial fee requires a positive non-test external receipt; the same receipt cannot move between streams or be counted as both direct and product revenue; refunds reduce net; fees reconcile to their event; payouts reconcile gross minus fee to net and remain cash movement rather than new revenue; one event cannot be over-allocated across payouts; currencies never get silently converted or combined; active non-test contracts alone produce MRR; unknown observations stay null with a reason. The compatibility importer registers only full public publication receipts and imports legacy sales-dashboard, funnel, and own-metric rows as observations—never as received money—and refuses to guess unmatched old metrics onto an article. `ai.anicca.writer-money-sync` is installed on the live host with `RunAtLoad=true`, immediate kickstart, and a five-minute interval. Its first two live runs exited `0`, registered 59 verified artifacts and 156 typed observations, reported 141 unmatched historical rows instead of fabricating joins, and truthfully returned empty verified gross, net, fees, payouts, and MRR because no external transaction receipt exists. Sixteen focused ledger/sync tests plus 24 existing attribution, sales-measurement, and opportunity-payment tests pass |
