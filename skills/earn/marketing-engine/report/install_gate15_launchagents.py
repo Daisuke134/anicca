@@ -217,7 +217,62 @@ def _run_launchctl(arguments: list[str]) -> subprocess.CompletedProcess[str]:
     )
 
 
-def _reload_and_readback(path: pathlib.Path, label: str) -> dict[str, Any]:
+def _field_matches(text: str, names: tuple[str, ...], value: object) -> bool:
+    """Return whether a launchctl field and its expected value are present."""
+
+    expected = str(value).lower()
+    return expected in text and any(name in text for name in names)
+
+
+def _readback_matches(output: str, payload: bytes, label: str) -> bool:
+    """Validate the loaded definition represented by ``launchctl print``.
+
+    ``launchctl print`` is human-readable rather than plist XML, so matching
+    is deliberately tolerant of ``key = value`` versus ``key: value`` and
+    whitespace while remaining strict about the owned label, canonical
+    working/program paths, owner-report CLI, and schedule fields.
+    """
+
+    if not isinstance(output, str) or not output.strip():
+        return False
+    try:
+        expected = plistlib.loads(payload)
+    except plistlib.InvalidFileException:
+        return False
+    text = output.lower()
+    if str(expected.get("Label", "")).lower() not in text:
+        return False
+    if str(expected.get("WorkingDirectory", "")).lower() not in text:
+        return False
+    arguments = expected.get("ProgramArguments")
+    if not isinstance(arguments, list) or not arguments:
+        return False
+    cli_argument = next(
+        (str(argument) for argument in arguments if "owner_report_cli.py" in str(argument)),
+        None,
+    )
+    if cli_argument is None or cli_argument.lower() not in text:
+        return False
+    if label.lower() != str(expected.get("Label", "")).lower():
+        return False
+
+    if "StartInterval" in expected:
+        if not _field_matches(
+            text, ("startinterval", "start interval", "interval"), expected["StartInterval"]
+        ):
+            return False
+    else:
+        calendar = expected.get("StartCalendarInterval")
+        if not isinstance(calendar, dict):
+            return False
+        for key, value in calendar.items():
+            names = (key.lower(), key.replace("Calendar", " calendar").lower())
+            if not _field_matches(text, names, value):
+                return False
+    return True
+
+
+def _reload_and_readback(path: pathlib.Path, label: str, payload: bytes) -> dict[str, Any]:
     """Reload one owned label and prove launchd can print its definition."""
 
     domain = f"gui/{os.getuid()}"
@@ -237,12 +292,14 @@ def _reload_and_readback(path: pathlib.Path, label: str) -> dict[str, Any]:
         detail = (readback.stderr or readback.stdout or "").strip()
         raise RuntimeError(f"readback failed for {label}: {detail}")
     output = readback.stdout or ""
+    if not _readback_matches(output, payload, label):
+        raise RuntimeError(f"readback mismatch for {label}")
     return {
         "bootout_returncode": bootout.returncode,
         "bootstrap_returncode": bootstrap.returncode,
         "kickstart_returncode": kickstart.returncode,
         "loaded_readback": True,
-        "readback_mentions_cli": "owner_report_cli.py" in output,
+        "readback_mentions_cli": True,
     }
 
 
@@ -277,7 +334,7 @@ def apply(
             "current_sha256": _sha256(current) if current is not None else None,
             "installed_sha256": _sha256(payload),
         }
-        row.update(_reload_and_readback(path, label))
+        row.update(_reload_and_readback(path, label, payload))
         rows.append(row)
     return rows
 
@@ -324,7 +381,10 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     rendered = json.dumps(result, ensure_ascii=False, sort_keys=True, indent=2) + "\n"
-    _write_output(args.output, rendered)
+    # A plan is a read-only operation, including when --output is supplied.
+    # Only apply may persist an optional machine-readable result.
+    if args.apply:
+        _write_output(args.output, rendered)
     print(rendered, end="")
     return 0
 

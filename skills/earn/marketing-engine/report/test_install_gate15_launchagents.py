@@ -4,10 +4,14 @@
 from __future__ import annotations
 
 import json
+import io
 import pathlib
 import plistlib
+import subprocess
 import tempfile
 import unittest
+from contextlib import redirect_stdout
+from unittest import mock
 
 import install_gate15_launchagents as installer
 
@@ -122,22 +126,27 @@ class PlanTests(unittest.TestCase):
             old = b"legacy bytes that must remain untouched"
             update.write_bytes(old)
 
-            output = pathlib.Path(tmp) / "plan.json"
-            rc = installer.main(
-                [
-                    "--plan",
-                    "--repo-root",
-                    str(root),
-                    "--home",
-                    str(home),
-                    "--launch-dir",
-                    str(launch_dir),
-                    "--output",
-                    str(output),
-                ]
-            )
+            output = pathlib.Path(tmp) / "not-created" / "plan.json"
+            captured = io.StringIO()
+            with redirect_stdout(captured):
+                rc = installer.main(
+                    [
+                        "--plan",
+                        "--repo-root",
+                        str(root),
+                        "--home",
+                        str(home),
+                        "--launch-dir",
+                        str(launch_dir),
+                        "--output",
+                        str(output),
+                    ]
+                )
             self.assertEqual(rc, 0)
             self.assertEqual(update.read_bytes(), old)
+            self.assertFalse(output.exists())
+            self.assertFalse(output.parent.exists())
+            self.assertFalse((home / "Library").exists())
             self.assertEqual(
                 sorted(path.name for path in launch_dir.iterdir()),
                 sorted(
@@ -147,7 +156,11 @@ class PlanTests(unittest.TestCase):
                     ]
                 ),
             )
-            plan = json.loads(output.read_text(encoding="utf-8"))
+            plan = json.loads(captured.getvalue())
+            self.assertEqual(
+                captured.getvalue(),
+                json.dumps(plan, ensure_ascii=False, sort_keys=True, indent=2) + "\n",
+            )
             self.assertEqual(plan["action"], "plan")
             self.assertEqual(
                 {row["label"]: row["status"] for row in plan["rows"]},
@@ -157,6 +170,95 @@ class PlanTests(unittest.TestCase):
                     LABELS["weekly"]: "create",
                 },
             )
+
+
+def _launchctl_success(stdout: str = "") -> subprocess.CompletedProcess[str]:
+    """Build a successful mocked launchctl result without invoking launchctl."""
+
+    return subprocess.CompletedProcess(
+        args=["launchctl"], returncode=0, stdout=stdout, stderr=""
+    )
+
+
+def _matching_readback(root: pathlib.Path, home: pathlib.Path, label: str) -> str:
+    """Render the essential fields a mocked ``launchctl print`` should expose."""
+
+    payload = installer.build_plists(root, home)[label]
+    job = plistlib.loads(payload)
+    schedule = job.get("StartInterval") or job.get("StartCalendarInterval")
+    return "\n".join(
+        (
+            f"Label = {job['Label']}",
+            f"ProgramArguments = {job['ProgramArguments']}",
+            f"WorkingDirectory = {job['WorkingDirectory']}",
+            f"StartInterval = {job.get('StartInterval', '')}",
+            f"StartCalendarInterval = {schedule}",
+            "owner_report_cli.py",
+        )
+    )
+
+
+class ApplyTests(unittest.TestCase):
+    def _mock_launchctl(self, root: pathlib.Path, home: pathlib.Path, calls: list[list[str]]):
+        def run(arguments: list[str]) -> subprocess.CompletedProcess[str]:
+            calls.append(list(arguments))
+            if arguments[0] == "print":
+                label = arguments[1].rsplit("/", 1)[-1]
+                return _launchctl_success(_matching_readback(root, home, label))
+            return _launchctl_success()
+
+        return run
+
+    def test_apply_writes_atomically_and_controls_only_three_owner_labels(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp) / "repo"
+            home = pathlib.Path(tmp) / "home"
+            launch_dir = pathlib.Path(tmp) / "LaunchAgents"
+            calls: list[list[str]] = []
+            expected = installer.build_plists(root, home)
+            with mock.patch.object(
+                installer, "_run_launchctl", side_effect=self._mock_launchctl(root, home, calls)
+            ), mock.patch.object(
+                installer, "_atomic_write", wraps=installer._atomic_write
+            ) as atomic_write:
+                rows = installer.apply(root, home, launch_dir)
+
+            self.assertEqual([row["label"] for row in rows], list(LABELS.values()))
+            self.assertEqual(atomic_write.call_count, 3)
+            self.assertEqual(
+                {
+                    path.name.removesuffix(".plist")
+                    for path in launch_dir.iterdir()
+                    if path.is_file()
+                },
+                set(LABELS.values()),
+            )
+            for label, payload in expected.items():
+                self.assertEqual((launch_dir / f"{label}.plist").read_bytes(), payload)
+
+            calls_text = [" ".join(arguments) for arguments in calls]
+            for label in LABELS.values():
+                self.assertTrue(any("bootstrap" in call and label in call for call in calls_text))
+                self.assertTrue(any("kickstart" in call and label in call for call in calls_text))
+                self.assertTrue(any("print" in call and label in call for call in calls_text))
+            self.assertTrue(all("legacy" not in call and "marketing-mine" not in call for call in calls_text))
+            self.assertTrue(all(row["loaded_readback"] for row in rows))
+
+    def test_apply_fails_when_readback_is_empty_or_mismatched(self):
+        for readback in ("", "Label = ai.anicca.legacy\nowner_report_cli.py\nStartInterval = 900"):
+            with self.subTest(readback=readback), tempfile.TemporaryDirectory() as tmp:
+                root = pathlib.Path(tmp) / "repo"
+                home = pathlib.Path(tmp) / "home"
+                launch_dir = pathlib.Path(tmp) / "LaunchAgents"
+
+                def run(arguments: list[str]) -> subprocess.CompletedProcess[str]:
+                    if arguments[0] == "print":
+                        return _launchctl_success(readback)
+                    return _launchctl_success()
+
+                with mock.patch.object(installer, "_run_launchctl", side_effect=run):
+                    with self.assertRaisesRegex(RuntimeError, "readback mismatch"):
+                        installer.apply(root, home, launch_dir)
 
 
 if __name__ == "__main__":
