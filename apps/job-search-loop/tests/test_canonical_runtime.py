@@ -100,7 +100,7 @@ raise SystemExit(0)
     def test_daily_full_quota_exits_without_browser_or_model(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            result, calls = self._run_daily_with_fake_python(root, 2, 99)
+            result, calls = self._run_daily_with_fake_python(root, 10, 99)
 
             self.assertEqual(result.returncode, 0, result.stderr)
             encoded = json.dumps(calls)
@@ -115,6 +115,16 @@ raise SystemExit(0)
             projection = root / "state" / "summary.v1.json"
             self.assertTrue(projection.is_file())
             self.assertEqual(projection.stat().st_mode & 0o777, 0o600)
+
+    def test_daily_two_slots_consumed_still_runs_toward_ten(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            result, calls = self._run_daily_with_fake_python(root, 2, 0)
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            encoded = json.dumps(calls)
+            self.assertIn("job_search_loop.browser_owner", encoded)
+            self.assertIn("agent_runner.py", encoded)
 
     def test_daily_budget_block_is_an_honest_completed_pass(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -42,7 +42,7 @@ finally:
     ledger.close()
 PY
 )
-if [[ "$SLOT_COUNT" -ge "2" ]]; then
+if [[ "$SLOT_COUNT" -ge "10" ]]; then
   "$JOB_SEARCH_JQ" -n \
     --arg status "daily_quota_reached" \
     --arg japan_day "$JAPAN_DAY" \

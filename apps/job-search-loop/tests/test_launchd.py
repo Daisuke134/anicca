@@ -75,7 +75,7 @@ class LaunchdTests(unittest.TestCase):
         root = Path(__file__).parents[1]
         script = (root / "scripts" / "run-daily.sh").read_text(encoding="utf-8")
         self.assertIn("daily_slot_count", script)
-        self.assertIn('if [[ "$SLOT_COUNT" -ge "2" ]]', script)
+        self.assertIn('if [[ "$SLOT_COUNT" -ge "10" ]]', script)
         self.assertIn("daily_quota_reached", script)
 
     def test_healthcheck_covers_scheduler_ledger_and_private_state(self):

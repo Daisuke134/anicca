@@ -257,26 +257,29 @@ class LedgerTests(unittest.TestCase):
         )
         self.assertEqual(len(self.ledger.events(self.application_id)), 3)
 
-    def test_daily_quota_counts_submitted_and_unknown(self):
-        self._ready()
-        first = self._claim(
-            self.ledger, self.application_id, "2026-07-28", "hash-1"
+    def test_daily_quota_allows_ten_and_blocks_eleventh(self):
+        for index in range(10):
+            application_id = self.ledger.add_application(
+                f"Company {index}",
+                "GenAI Engineer",
+                f"https://jobs.example.com/quota-{index}",
+            )
+            self._ready(application_id)
+            intent = self._claim(
+                self.ledger, application_id, "2026-07-28", f"hash-{index}"
+            )
+            self.assertIsNotNone(intent)
+            status = "submitted" if index % 2 == 0 else "submit_unknown"
+            self.ledger.complete_submission(intent.intent_id, intent.fence, status)
+
+        eleventh_id = self.ledger.add_application(
+            "Company 11", "AI Product Engineer", "https://jobs.example.com/quota-11"
         )
-        self.ledger.complete_submission(first.intent_id, first.fence, "submitted")
-        second_id = self.ledger.add_application(
-            "Other", "GenAI Engineer", "https://jobs.example.com/43"
-        )
-        self._ready(second_id)
-        second = self._claim(self.ledger, second_id, "2026-07-28", "hash-2")
-        self.ledger.complete_submission(second.intent_id, second.fence, "submit_unknown")
-        third_id = self.ledger.add_application(
-            "Third", "AI Product Engineer", "https://jobs.example.com/44"
-        )
-        self._ready(third_id)
+        self._ready(eleventh_id)
         self.assertIsNone(
-            self._claim(self.ledger, third_id, "2026-07-28", "hash-3")
+            self._claim(self.ledger, eleventh_id, "2026-07-28", "hash-11")
         )
-        self.assertEqual(self.ledger.daily_slot_count("2026-07-28"), 2)
+        self.assertEqual(self.ledger.daily_slot_count("2026-07-28"), 10)
 
     def test_not_submitted_releases_observable_daily_slot(self):
         self._ready()
@@ -400,9 +403,9 @@ class LedgerTests(unittest.TestCase):
             [(1, "legacy-hash", "not_submitted")],
         )
 
-    def test_concurrent_claims_never_exceed_two(self):
+    def test_concurrent_claims_never_exceed_ten(self):
         ids = [self.application_id]
-        for index in range(1, 5):
+        for index in range(1, 20):
             ids.append(
                 self.ledger.add_application(
                     f"Company {index}",
@@ -436,7 +439,7 @@ class LedgerTests(unittest.TestCase):
         for thread in threads:
             thread.join()
         self.ledger = Ledger(self.db)
-        self.assertEqual(sum(value is not None for value in results), 2)
+        self.assertEqual(sum(value is not None for value in results), 10)
 
     def test_snapshot_hash_mismatch_cannot_claim_or_consume_slot(self):
         self._ready()

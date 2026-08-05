@@ -77,7 +77,7 @@ def load_settings(
         raise ConfigError(str(error)) from error
     validate_profile(profile)
     required = {
-        "daily_target": 2,
+        "daily_target": 10,
         "auto_apply_threshold": 75,
         "compensation_floor_jpy": 8_000_000,
         "compensation_target_jpy": 10_000_000,
