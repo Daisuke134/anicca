@@ -14,6 +14,7 @@ import json
 import os
 import pathlib
 import plistlib
+import re
 import shlex
 import subprocess
 import sys
@@ -218,10 +219,47 @@ def _run_launchctl(arguments: list[str]) -> subprocess.CompletedProcess[str]:
 
 
 def _field_matches(text: str, names: tuple[str, ...], value: object) -> bool:
-    """Return whether a launchctl field and its expected value are present."""
+    """Return whether one exact field/value pair occurs in ``text``.
+
+    A bare ``field in text`` plus ``value in text`` check is unsafe: a stale
+    value elsewhere in ``launchctl print`` could mask a changed schedule.  The
+    regular expression binds the value to the same assignment or mapping
+    member as the field, with numeric boundaries that reject prefixes such as
+    ``120`` for an expected ``12``.
+    """
 
     expected = str(value).lower()
-    return expected in text and any(name in text for name in names)
+    for name in names:
+        pattern = re.compile(
+            rf"(?<![a-z0-9_])['\"]?{re.escape(name.lower())}['\"]?"
+            rf"\s*(?:=|:)\s*['\"]?{re.escape(expected)}['\"]?(?![a-z0-9_.-])",
+            re.IGNORECASE,
+        )
+        if pattern.search(text):
+            return True
+    return False
+
+
+def _calendar_descriptor(text: str) -> str:
+    """Extract the StartCalendarInterval descriptor/block from readback."""
+
+    match = re.search(r"start\s*calendar\s*interval\s*(?:=|:)", text, re.IGNORECASE)
+    if match is None:
+        return ""
+    start = match.end()
+    while start < len(text) and text[start].isspace():
+        start += 1
+    if start >= len(text) or text[start] != "{":
+        return text[match.start() : text.find("\n", start) if "\n" in text[start:] else len(text)]
+    depth = 0
+    for index in range(start, len(text)):
+        if text[index] == "{":
+            depth += 1
+        elif text[index] == "}":
+            depth -= 1
+            if depth == 0:
+                return text[start : index + 1]
+    return text[start:]
 
 
 def _readback_matches(output: str, payload: bytes, label: str) -> bool:
@@ -258,16 +296,18 @@ def _readback_matches(output: str, payload: bytes, label: str) -> bool:
 
     if "StartInterval" in expected:
         if not _field_matches(
-            text, ("startinterval", "start interval", "interval"), expected["StartInterval"]
+            text, ("startinterval", "start interval"), expected["StartInterval"]
         ):
             return False
     else:
         calendar = expected.get("StartCalendarInterval")
         if not isinstance(calendar, dict):
             return False
+        descriptor = _calendar_descriptor(text)
+        if not descriptor:
+            return False
         for key, value in calendar.items():
-            names = (key.lower(), key.replace("Calendar", " calendar").lower())
-            if not _field_matches(text, names, value):
+            if not _field_matches(descriptor, (key,), value):
                 return False
     return True
 

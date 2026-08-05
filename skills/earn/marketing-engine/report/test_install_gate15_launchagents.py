@@ -260,6 +260,80 @@ class ApplyTests(unittest.TestCase):
                     with self.assertRaisesRegex(RuntimeError, "readback mismatch"):
                         installer.apply(root, home, launch_dir)
 
+    def _assert_schedule_readback_rejected(
+        self,
+        root: pathlib.Path,
+        home: pathlib.Path,
+        launch_dir: pathlib.Path,
+        label: str,
+        bad_readback: str,
+    ) -> None:
+        def run(arguments: list[str]) -> subprocess.CompletedProcess[str]:
+            if arguments[0] == "print":
+                printed_label = arguments[1].rsplit("/", 1)[-1]
+                if printed_label == label:
+                    return _launchctl_success(bad_readback)
+                return _launchctl_success(_matching_readback(root, home, printed_label))
+            return _launchctl_success()
+
+        with mock.patch.object(installer, "_run_launchctl", side_effect=run):
+            with self.assertRaisesRegex(RuntimeError, "readback mismatch"):
+                installer.apply(root, home, launch_dir)
+
+    def test_event_interval_wrong_value_is_rejected_even_if_900_appears_elsewhere(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root, home, launch_dir = (pathlib.Path(tmp) / name for name in ("repo", "home", "LaunchAgents"))
+            label = LABELS["events"]
+            readback = _matching_readback(root, home, label).replace(
+                "StartInterval = 900", "StartInterval = 120"
+            ) + "\nUnrelated = 900"
+            self._assert_schedule_readback_rejected(root, home, launch_dir, label, readback)
+
+    def test_daily_hour_wrong_value_is_rejected_even_if_22_appears_elsewhere(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root, home, launch_dir = (pathlib.Path(tmp) / name for name in ("repo", "home", "LaunchAgents"))
+            label = LABELS["daily"]
+            readback = _matching_readback(root, home, label).replace(
+                "'Hour': 22", "'Hour': 23"
+            ) + "\nUnrelated = 22"
+            self._assert_schedule_readback_rejected(root, home, launch_dir, label, readback)
+
+    def test_daily_minute_wrong_value_is_rejected_even_if_zero_appears_elsewhere(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root, home, launch_dir = (pathlib.Path(tmp) / name for name in ("repo", "home", "LaunchAgents"))
+            label = LABELS["daily"]
+            readback = _matching_readback(root, home, label).replace(
+                "'Minute': 0", "'Minute': 1"
+            ) + "\nUnrelated = 0"
+            self._assert_schedule_readback_rejected(root, home, launch_dir, label, readback)
+
+    def test_weekly_weekday_wrong_value_is_rejected_even_if_zero_appears_elsewhere(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root, home, launch_dir = (pathlib.Path(tmp) / name for name in ("repo", "home", "LaunchAgents"))
+            label = LABELS["weekly"]
+            readback = _matching_readback(root, home, label).replace(
+                "'Weekday': 0", "'Weekday': 3"
+            ) + "\nUnrelated = 0"
+            self._assert_schedule_readback_rejected(root, home, launch_dir, label, readback)
+
+    def test_weekly_hour_wrong_value_is_rejected_even_if_21_appears_elsewhere(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root, home, launch_dir = (pathlib.Path(tmp) / name for name in ("repo", "home", "LaunchAgents"))
+            label = LABELS["weekly"]
+            readback = _matching_readback(root, home, label).replace(
+                "'Hour': 21", "'Hour': 20"
+            ) + "\nUnrelated = 21"
+            self._assert_schedule_readback_rejected(root, home, launch_dir, label, readback)
+
+    def test_weekly_minute_wrong_value_is_rejected_even_if_zero_appears_elsewhere(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root, home, launch_dir = (pathlib.Path(tmp) / name for name in ("repo", "home", "LaunchAgents"))
+            label = LABELS["weekly"]
+            readback = _matching_readback(root, home, label).replace(
+                "'Minute': 0", "'Minute': 1"
+            ) + "\nUnrelated = 0"
+            self._assert_schedule_readback_rejected(root, home, launch_dir, label, readback)
+
 
 if __name__ == "__main__":
     unittest.main()
