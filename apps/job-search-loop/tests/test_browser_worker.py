@@ -13,6 +13,56 @@ from job_search_loop.candidate_queue import CandidateQueue
 
 
 class BrowserWorkerTests(unittest.TestCase):
+    def test_run_worker_invokes_one_release_contained_pre_submit_runner(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            database = root / "candidate-queue.sqlite3"
+            queue = CandidateQueue(database)
+            queue.close()
+            owner_receipt = root / "browser-owner.json"
+            owner_receipt.write_text(
+                json.dumps(
+                    {
+                        "status": "ready",
+                        "holder_pid": os.getpid(),
+                        "lease_id": "lease-1",
+                        "fence": 3,
+                        "endpoint": "http://127.0.0.1:9222",
+                    }
+                ),
+                encoding="utf-8",
+            )
+            prefilter = root / "prefilter.json"
+            prefilter.write_text(json.dumps({"candidates": []}), encoding="utf-8")
+            profile = root / "profile.json"
+            profile.write_text(json.dumps({"candidate": {}}), encoding="utf-8")
+            calls = []
+
+            def fake_pre_submit_runner(**kwargs):
+                calls.append(kwargs)
+                return {
+                    "status": "pending_verification",
+                    "blocked": ["no_ranking_ready_candidate"],
+                }
+
+            result = run_worker(
+                database=database,
+                owner_receipt=owner_receipt,
+                holder_pid=os.getpid(),
+                run_id="daily-test",
+                lock_path=root / "worker.lock",
+                worker_receipt=root / "worker-receipt.json",
+                output=root / "result.json",
+                prefilter_result=prefilter,
+                profile_path=profile,
+                materials_root=root / "materials",
+                evidence_dir=root / "evidence",
+                pre_submit_runner=fake_pre_submit_runner,
+            )
+
+            self.assertEqual(len(calls), 1)
+            self.assertEqual(result["blocked"], ["no_ranking_ready_candidate"])
+
     def test_exclusive_worker_rejects_a_second_worker(self):
         with tempfile.TemporaryDirectory() as directory:
             lock = Path(directory) / "browser-worker.lock"

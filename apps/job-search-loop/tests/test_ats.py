@@ -15,6 +15,27 @@ def load_fixture(name):
 
 
 class AtsReadinessTests(unittest.TestCase):
+    def test_ashby_single_name_field_uses_grounded_full_name(self):
+        from job_search_loop.ats import build_non_submit_fill_plan
+
+        snapshot = load_fixture("ashby-application-surface.json")
+        result = build_non_submit_fill_plan(
+            snapshot,
+            answers={
+                "full_name": {"value": "Daisuke Narita", "fact_ids": ["profile.name"]},
+                "email": {"value": "candidate@example.test", "fact_ids": ["profile.email"]},
+            },
+            resume_path="/private/resume.pdf",
+            resume_sha256="a" * 64,
+        )
+
+        self.assertEqual(
+            [action["field_key"] for action in result["actions"]],
+            ["resume", "full_name", "email"],
+        )
+        self.assertEqual(result["actions"][1]["question"], "Name")
+        self.assertEqual(result["actions"][1]["fact_ids"], ["profile.name"])
+
     def test_executes_and_receipts_verified_fields_without_submit_capability(self):
         from job_search_loop import ats
 

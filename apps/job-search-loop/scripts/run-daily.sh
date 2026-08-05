@@ -189,6 +189,10 @@ set +e
   --run-id "$RUN_ID" \
   --lock "$JOB_SEARCH_STATE_ROOT/browser-worker.lock" \
   --worker-receipt "$EVIDENCE/browser-worker-receipt.json" \
+  --prefilter-result "$JOB_SEARCH_PREFILTER_RESULT" \
+  --profile "$JOB_SEARCH_PROFILE" \
+  --materials-root "$JOB_SEARCH_MATERIALS_ROOT" \
+  --evidence-dir "$EVIDENCE" \
   --output "$RESULT_PATH" \
   >"$EVIDENCE/summary.json"
 RUNNER_RC=$?

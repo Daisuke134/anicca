@@ -231,6 +231,14 @@ raise SystemExit(0)
                 if call[:3] == ["-m", "job_search_loop.browser_worker", "run"]
             ]
             self.assertEqual(len(browser_worker_calls), 1)
+            worker_call = browser_worker_calls[0]
+            for argument in (
+                "--prefilter-result",
+                "--profile",
+                "--materials-root",
+                "--evidence-dir",
+            ):
+                self.assertIn(argument, worker_call)
             terra_results = list(
                 (root / "state" / "evidence").glob("daily-*/terra-plan-result.json")
             )

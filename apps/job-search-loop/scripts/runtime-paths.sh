@@ -8,6 +8,7 @@ typeset -gx JOB_SEARCH_STATE_ROOT="${JOB_SEARCH_STATE_ROOT:-${XDG_STATE_HOME:-$H
 typeset -gx JOB_SEARCH_PROFILE="${JOB_SEARCH_PROFILE:-${XDG_CONFIG_HOME:-$HOME/.config}/anicca/job-search/profile.json}"
 typeset -gx JOB_SEARCH_INSTALL_CONFIG="${JOB_SEARCH_INSTALL_CONFIG:-${XDG_CONFIG_HOME:-$HOME/.config}/anicca/job-search/install.json}"
 typeset -gx JOB_SEARCH_FRAMEWORK_ROOT="${JOB_SEARCH_FRAMEWORK_ROOT:-${XDG_DATA_HOME:-$HOME/.local/share}/anicca/job-search/framework}"
+typeset -gx JOB_SEARCH_MATERIALS_ROOT="${JOB_SEARCH_MATERIALS_ROOT:-${XDG_DATA_HOME:-$HOME/.local/share}/anicca/job-search/materials}"
 typeset -gx JOB_SEARCH_TELEGRAM_MEDIA="${JOB_SEARCH_TELEGRAM_MEDIA:-$HOME/.openclaw/media/job-search-outbound}"
 typeset -gx JOB_SEARCH_LAUNCH_AGENT_DIR="${JOB_SEARCH_LAUNCH_AGENT_DIR:-$HOME/Library/LaunchAgents}"
 typeset -gx JOB_SEARCH_LIBEXEC_ROOT="${JOB_SEARCH_LIBEXEC_ROOT:-$HOME/.local/libexec/anicca/job-search}"

@@ -2446,6 +2446,19 @@ the resident worker from producing one authoritative application receipt:
       ATS pre-submit state through the single worker. The development session only
       watches evidence. Any CAPTCHA or unsupported field remains explicit and the
       same pass continues to another eligible role.
+      - Implemented locally: the single worker now receives the deterministic
+        prefilter, private profile path, materials root, and evidence directory. It
+        selects the highest-priority ranking-ready supported candidate, attaches to
+        the existing CloakBrowser CDP endpoint, records baseline target IDs, creates
+        and registers one owned page, captures a value-free ATS snapshot, fills only
+        grounded contact fields, uploads the hash-verified routed resume, captures a
+        pre-submit image/receipt, and closes only its owned page. The adapter has no
+        Submit operation and never returns legal answers by inference. Ashby's
+        single `Name` field is grounded from `profile.name`. Focused adapter/runtime
+        tests and the full Job Hunter suite pass 412/412.
+      - Resident proof remains open. The current Asia/Tokyo daily model budget was
+        exhausted by earlier runs, so release activation plus a launchd trigger must
+        first reach the worker after Terra before this task can be checked complete.
 - [ ] **L-49K0C1** — Implement the same-role alternate-route ladder: canonical ATS,
   alternate official employer URL, explicitly accepted recruiting-email application,
   verified public work-address recruiting outreach, then the next eligible role.

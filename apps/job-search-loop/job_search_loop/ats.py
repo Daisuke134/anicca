@@ -58,6 +58,7 @@ def _control_text(control: dict[str, Any]) -> str:
 def _field_key(control: dict[str, Any]) -> str | None:
     control_type = _normalized(control.get("type"))
     text = _control_text(control)
+    label = _normalized(control.get("label"))
     if control_type == "email" or text in {"email", "email address"}:
         return "email"
     if control_type == "file" and any(
@@ -68,6 +69,8 @@ def _field_key(control: dict[str, Any]) -> str | None:
         return "first_name"
     if "last name" in text or text in {"lastname", "family name", "surname"}:
         return "last_name"
+    if label in {"name", "full name", "legal name", "preferred name"}:
+        return "full_name"
     return None
 
 
