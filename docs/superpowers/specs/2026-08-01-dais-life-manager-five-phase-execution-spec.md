@@ -2169,6 +2169,12 @@ Telegram message ID `7376`をappend-only historyへ保存した。historyは2件
 次wakeのcoverage復元を外から検証できるよう、last-resultへopen / covered_existing / covered_new / unavailableの
 整数countsだけを追加した。focused 3/3 GREEN。live完了条件は次runで`covered_new >= 2`を観測すること。
 
+O1B-25進捗48（live coverage復元と重複防止を実証）: 最新commit `7a0ebaff1`でnative launchdをkickstartし、
+append-only historyの2件をLuma detailで再照合した。実last-resultは`open=19 / covered_new=2 /
+covered_existing=0 / unavailable=0`であり、ID `7372`と`7376`のeventを再選択せず次候補
+`luma-event://event/l5iu5frr`へ進んだ。これでhistory→Luma日付readback→rolling coverage→inventoryのlive一巡を実証した。
+次候補は`unknown_external_effect`で止まったため、次sliceは実画面の状態をreadbackして既知状態へ分類する。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
