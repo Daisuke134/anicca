@@ -278,3 +278,14 @@ test("configured native execution uses Luna then passes one verified candidate t
   assert.equal(writeInput.goalDecision, goalDecision);
   assert.equal(input.calls.find(([name]) => name === "luna")[1].date, "2026-08-05");
 });
+
+test("native runtime exposes only its bounded failing stage", async () => {
+  const input = await fixture();
+  input.deps.createAuth = () => ({ async ensureAuthenticated() { throw new Error("raw cookie leak"); } });
+  await assert.rejects(runNativeConnectorPass(input), (error) => {
+    assert.equal(error.message, "Connector native runtime unavailable");
+    assert.equal(error.code, "CONNECTOR_NATIVE_AUTH_FAILED");
+    assert.equal(String(error).includes("cookie"), false);
+    return true;
+  });
+});

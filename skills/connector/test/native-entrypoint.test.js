@@ -107,6 +107,12 @@ test("launchd run script restores Connector credentials and Telegram owner witho
   assert.match(source, /LM_CONNECTOR_TELEGRAM_TARGET/);
 });
 
+test("launchd run script uses an allowlisted Connector env reader instead of the legacy-root-rejecting loader", () => {
+  const source = fs.readFileSync(path.join(REPO_ROOT, "skills/connector/run.sh"), "utf8");
+  assert.match(source, /load-connector-env\.js/);
+  assert.doesNotMatch(source, /lm_load_env_file "\$LM_CONNECTOR_SHARED_ENV_FILE"/);
+});
+
 test("native-pass ignores CONNECTOR_NATIVE_WORKER_BIN and still invokes the direct runtime", async () => {
   const directory = temporaryDirectory();
   const stateDir = path.join(directory, "state");
@@ -170,6 +176,26 @@ test("native-pass exits zero only for verified open-zero coverage", async () => 
   } finally {
     fs.rmSync(directory, { recursive: true, force: true });
   }
+});
+
+test("native-pass records only an allowlisted runtime failure stage", async () => {
+  const directory = temporaryDirectory();
+  const stateDir = path.join(directory, "state");
+  try {
+    const result = await runNativePass({
+      repoRoot: REPO_ROOT, stateDir, ownerToken: OWNER_TOKEN,
+      config: { tenantId: "dais-local" },
+      runRuntime: async () => {
+        const error = new Error("private failure");
+        error.code = "CONNECTOR_NATIVE_LUNA_FAILED";
+        throw error;
+      },
+    });
+    assert.equal(result.status, "failed");
+    assert.deepEqual(JSON.parse(fs.readFileSync(path.join(stateDir, "continuation.json"), "utf8")), {
+      reason: "connector_native_luna_failed", status: "pending",
+    });
+  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
 });
 
 test("rendered native templates contain only canonical launch paths", () => {
