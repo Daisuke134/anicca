@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-35` — Terra medium deep-fit/tailoring/answer routing
+**Active atomic task:** `L-36` — Terra high dream/weekly-hypothesis routing
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1208,7 +1208,20 @@ this spec update → commit/push → Telegram milestone before the next item sta
   is active with zero writable paths and the previous release retained for rollback.
   Daily remains unloaded and no application, email, Calendar, or model-driven
   outbound side effect occurred.
-- [ ] **L-35** — Route deep fit, tailoring, and employer answers to Terra medium.
+- [x] **L-35** — Route deep fit, tailoring, and employer answers to Terra medium.
+  Receipt: the daily pipeline now executes Luna public prefilter, Terra-medium
+  composition planning, then Terra-medium browser submission in that measured order.
+  The planning pass creates a strict per-job dossier containing grounded deep-fit
+  strengths and gaps, one allowed resume variant, grounded employer-answer drafts,
+  and explicit blocked questions; it has no browser or outbound authority. The
+  browser pass treats the dossier as advisory and revalidates source spans, fact IDs,
+  official facts, resume routing, and deterministic hard gates. Planning output and
+  provider logs are mode 0600 and pass the same private-profile leak scanner before
+  submission. Focused 16-test and full 269-test suites PASS. Immutable release
+  `3b9d1a9a969f6b98fa64909232151b5129316e90` (archive SHA-256
+  `419f86dc2d9312ffa4132e4ba8d82537be24c935cdff071e6ae701347fcfb2de`)
+  is active with zero writable paths and rollback retained. Daily remains unloaded;
+  no application, email, Calendar, or model-driven outbound side effect occurred.
 - [ ] **L-36** — Route dream applications and weekly hypotheses to Terra high.
 - [ ] **L-37** — Replay Luna/Terra routes on one immutable snapshot.
 - [ ] **L-37A** — Activate only the route map that passed the replay gate.
