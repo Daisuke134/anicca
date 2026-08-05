@@ -103,13 +103,7 @@ function boundedResult(result) {
   return Object.freeze({ status, complete, write });
 }
 
-function recordLastResult(stateDir, bounded) {
-  const file = path.join(stateDir, "last-result.json");
-  fs.mkdirSync(stateDir, { recursive: true, mode: 0o700 });
-  fs.writeFileSync(file, `${JSON.stringify({ status: bounded.status, write: bounded.write })}\n`, {
-    encoding: "utf8", mode: 0o600,
-  });
-  const write = bounded.write;
+function appendDeliveryReceipt(stateDir, write) {
   if (write && write.telegram_provider_id && write.event_ref && write.calendar_event_ref) {
     const historyFile = path.join(stateDir, "delivery-receipts.jsonl");
     let existing = "";
@@ -133,10 +127,32 @@ function recordLastResult(stateDir, bounded) {
   }
 }
 
+function recordLastResult(stateDir, bounded) {
+  const file = path.join(stateDir, "last-result.json");
+  fs.mkdirSync(stateDir, { recursive: true, mode: 0o700 });
+  fs.writeFileSync(file, `${JSON.stringify({ status: bounded.status, write: bounded.write })}\n`, {
+    encoding: "utf8", mode: 0o600,
+  });
+  appendDeliveryReceipt(stateDir, bounded.write);
+}
+
+function migrateLastResult(stateDir) {
+  const file = path.join(stateDir, "last-result.json");
+  let value;
+  try { value = JSON.parse(fs.readFileSync(file, "utf8")); }
+  catch (error) {
+    if (error && error.code === "ENOENT") return;
+    unavailable();
+  }
+  if (!value || typeof value !== "object" || Array.isArray(value)) unavailable();
+  appendDeliveryReceipt(stateDir, value.write);
+}
+
 async function runNativePass(options = {}) {
   absoluteDirectory(options.repoRoot);
   const stateDir = absoluteDirectory(options.stateDir);
   requiredToken(options.ownerToken);
+  migrateLastResult(stateDir);
 
   const runtime = typeof options.runRuntime === "function"
     ? options.runRuntime

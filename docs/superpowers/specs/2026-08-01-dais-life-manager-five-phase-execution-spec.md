@@ -2150,6 +2150,11 @@ positive Telegram IDとCalendar evidenceを持つ成功だけを`delivery-receip
 focused testは修正前にhistory欠落を示し、実装後2/2 GREEN。次は既存`last-result`のID `7372`をhistoryへ自動移行し、
 historyから21日coverageの`covered_new`日を復元する。
 
+O1B-25進捗45（既存last-resultの自動migration）: native passは新runtimeを起動する前に旧`last-result.json`を読み、
+positive Telegram ID・event ref・Calendar evidenceが揃う成功をappend-only historyへdedupe移行する。
+手作業でIDをstateへ書かず、既存ID `7372`を次の本物のlaunchd wakeが移行する契約とした。focused 3/3 GREEN。
+次はhistory entryへevent dateとcoverage evidence refsを保持し、rolling coverageの`resolvedDays`として次wakeへ戻す。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
