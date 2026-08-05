@@ -175,6 +175,69 @@ def browser_owner_health(
     }
 
 
+def telegram_outbox_health(database: Path) -> dict[str, Any]:
+    path = Path(database).expanduser().resolve()
+    reasons: list[str] = []
+    counts: dict[str, int] = {}
+    uncertain_count = 0
+    integrity = "unavailable"
+    if not path.is_file():
+        reasons.append("telegram_outbox_missing")
+    else:
+        if stat.S_IMODE(path.stat().st_mode) != 0o600:
+            reasons.append("telegram_outbox_permissions_invalid")
+        try:
+            connection = sqlite3.connect(f"file:{path}?mode=ro", uri=True, timeout=10)
+            connection.row_factory = sqlite3.Row
+            try:
+                values = [str(row[0]) for row in connection.execute("PRAGMA integrity_check")]
+                integrity = ";".join(values)
+                if values != ["ok"]:
+                    reasons.append("telegram_outbox_integrity_failed")
+                columns = {str(row[1]) for row in connection.execute("PRAGMA table_info(outbox)")}
+                timestamp_columns = {"created_at", "claimed_at", "send_started_at", "completed_at"}
+                if not timestamp_columns.issubset(columns):
+                    reasons.append("telegram_outbox_timestamps_missing")
+                rows = connection.execute(
+                    "SELECT status,fence,telegram_message_id,payload,event_key FROM outbox"
+                ).fetchall()
+                allowed = {"pending", "claimed", "send_started", "sent"}
+                message_ids: list[str] = []
+                for row in rows:
+                    status_value = str(row["status"])
+                    counts[status_value] = counts.get(status_value, 0) + 1
+                    fence = row["fence"]
+                    message_id = row["telegram_message_id"]
+                    if status_value not in allowed or not row["event_key"] or not row["payload"]:
+                        reasons.append("telegram_outbox_row_invalid")
+                    elif status_value == "pending" and (fence is not None or message_id is not None):
+                        reasons.append("telegram_outbox_row_invalid")
+                    elif status_value in {"claimed", "send_started"} and (not fence or message_id is not None):
+                        reasons.append("telegram_outbox_row_invalid")
+                    elif status_value == "sent" and (not fence or not message_id):
+                        reasons.append("telegram_outbox_row_invalid")
+                    if status_value == "send_started":
+                        uncertain_count += 1
+                    if status_value == "sent" and message_id:
+                        message_ids.append(str(message_id))
+                if len(message_ids) != len(set(message_ids)):
+                    reasons.append("telegram_message_id_duplicate")
+                if uncertain_count:
+                    reasons.append("telegram_side_effect_uncertain")
+            finally:
+                connection.close()
+        except sqlite3.Error:
+            reasons.append("telegram_outbox_unreadable")
+    return {
+        "version": 1,
+        "status": "healthy" if not reasons else "unhealthy",
+        "reasons": sorted(set(reasons)),
+        "integrity": integrity,
+        "counts": dict(sorted(counts.items())),
+        "uncertain_count": uncertain_count,
+    }
+
+
 def _gmail_checkpoint_health(path: Path) -> tuple[list[str], int]:
     reasons: list[str] = []
     message_count = 0
@@ -566,6 +629,9 @@ def main(argv: list[str] | None = None) -> int:
     browser.add_argument("--receipt", type=Path, required=True)
     browser.add_argument("--endpoint", default="http://127.0.0.1:9222")
     browser.add_argument("--output", type=Path, required=True)
+    outbox = subparsers.add_parser("outbox")
+    outbox.add_argument("--database", type=Path, required=True)
+    outbox.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(argv)
     if args.command == "release":
         report = release_health(args.data_root, args.launcher_root)
@@ -601,11 +667,14 @@ def main(argv: list[str] | None = None) -> int:
             executable=args.gog,
         )
         public = report
-    else:
+    elif args.command == "browser":
         report = browser_owner_health(
             receipt_path=args.receipt,
             endpoint=args.endpoint,
         )
+        public = report
+    else:
+        report = telegram_outbox_health(args.database)
         public = report
     args.output.write_text(json.dumps(report, sort_keys=True) + "\n", encoding="utf-8")
     os.chmod(args.output, 0o600)
