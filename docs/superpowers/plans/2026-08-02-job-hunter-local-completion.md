@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-20` — timestamped BOJ-rate USD 100K classification
+**Active atomic task:** `L-21` — travel-positive ranking
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1003,7 +1003,14 @@ this spec update → commit/push → Telegram milestone before the next item sta
   `a952b2dfe959417310d4dbb718e386bb8a40e5dc` (archive SHA-256
   `31a83f0b5bf1f984ca8bf319b9f0abedc6c073625bfb537b5baa98e4b8396399`)
   is active with zero writable paths, and the prior release remains `previous`.
-- [ ] **L-20** — Implement timestamped BOJ-rate USD 100K classification.
+- [x] **L-20** — Implement timestamped BOJ-rate USD 100K classification. Receipt:
+  classification requires verified annual base or explicitly defined annual total
+  compensation, value/currency, official BOJ daily PDF URL and SHA-256, URL-matching
+  observation date, 17:00 JST bid/offer, calculated mid, source/target currencies,
+  converted USD, boolean, and deterministic receipt SHA-256; BOJ's official daily
+  index states the 9:00/17:00 USD/JPY figures are bid/offer mid rates, and the
+  2026-08-04 PDF fixes 17:00 at 157.80–157.82 (mid 157.81); exact USD 100K boundary,
+  one-yen-below, and fail-closed evidence tests plus full 231-test suite PASS.
 - [ ] **L-21** — Implement travel-positive ranking.
 - [ ] **L-22** — Replace blanket clearance rejection with truthful clearance-state
   handling.
