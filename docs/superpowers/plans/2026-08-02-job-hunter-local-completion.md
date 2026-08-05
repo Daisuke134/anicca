@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-32` — independent BlockRun founder-outreach funnel
+**Active atomic task:** `L-33` — Luna extraction/normalization/prefilter routing
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1167,7 +1167,22 @@ this spec update → commit/push → Telegram milestone before the next item sta
   owner `dais_manual` and state `submitted`, returned `already_imported` on replay,
   and rejected an agent reapplication probe. Daily remains unloaded while the
   independent founder-outreach lane is built.
-- [ ] **L-32** — Create the independent BlockRun `founder_outreach` funnel.
+- [x] **L-32** — Create the independent BlockRun `founder_outreach` funnel.
+  Receipt: founder targets/events use independent tables and state machine, never an
+  application row, ATS quota, or invented vacancy. Evidence-bearing transitions are
+  append-only and idempotent; impossible jumps such as research directly to
+  employment fail closed. Focused 3-test and full 267-test suites PASS. GitHub
+  primary evidence identifies Daisuke's BlockRunAI/blockrun-mcp PR #82, created
+  2026-07-26 and closed 2026-08-04; maintainer Gmail evidence says the contribution
+  was careful work and closure was a scope rather than quality decision. Immutable
+  release `8cda9872407431c07bf13c8b458995a0338a7ea8` (archive SHA-256
+  `0af38612c8e4c732b7d5bd6b306203157745e6a54271e605497b5bc7f7418105`)
+  is active with zero writable paths. Production target
+  `dee8ed2948442a29b60b194ef47091deadcd49da300cf8417a596cdd7179a834`
+  has four historical events and current state `replied`; exact reply replay is
+  idempotent, receipt mode is 0600, and application count remains six. No proposal or
+  new outbound message exists yet; next founder-lane state is truthfully
+  `proposal_ready`. Daily remains unloaded while model authority routing is enforced.
 - [ ] **L-33** — Route extraction, normalization, and prefilter work to Luna.
 - [ ] **L-34** — Deny Luna authority for browser submission or outbound messages.
 - [ ] **L-35** — Route deep fit, tailoring, and employer answers to Terra medium.
