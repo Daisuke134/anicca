@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-06 JST
-**Active atomic task:** `L-49K0C/FILL-1C3` — bind validated fill receipts to the ledger claim gate
+**Active atomic task:** `L-49K0C/FILL-1D` — prove the resident worker reaches a real ATS pre-submit state
 **Status:** The immutable four-lane runtime, hourly/five-minute schedules, grounded
 materials, ownership fences, Gmail ingestion, Telegram outbox, quota accounting, and
 Ashby observation classifier are implemented and tested. The daily LaunchAgent is
@@ -2411,7 +2411,7 @@ the resident worker from producing one authoritative application receipt:
         blocker. Focused runtime/ownership tests pass 35/35 and the full Job Hunter
         suite passes 405/405; no model-authored `/tmp/browser_pass.py` execution path
         remains in the daily driver.
-    - [ ] `FILL-1C` — Implement and fixture-test non-submit field discovery/fill for
+    - [x] `FILL-1C` — Implement and fixture-test non-submit field discovery/fill for
       Ashby, Greenhouse, Lever, Workable, and Workday. Persist exact questions,
       grounded answers, selected resume hash, pre-click screenshot, and a terminal
       `claim_ready` receipt; do not click Submit in this slice.
@@ -2432,9 +2432,16 @@ the resident worker from producing one authoritative application receipt:
           fixture becomes `claim_ready`; the receipt and image are mode 0600 and
           retain `submit_clicked=false`. ATS-focused tests pass 13/13 and the full
           Job Hunter suite passes 407/407.
-      - [ ] `FILL-1C3` — Bind the receipt to the ledger's existing ATS snapshot and
+      - [x] `FILL-1C3` — Bind the receipt to the ledger's existing ATS snapshot and
         `claim_submission` gate so only a fully validated, zero-blocker form becomes
         ATS `claim_ready`; a partial form remains pending and consumes no quota slot.
+        - `Ledger.claim_submission` now independently hashes and validates the fill
+          receipt, requires `claim_ready`, `submit_clicked=false`, zero blockers,
+          matching official URL, ATS snapshot hash, and selected resume hash, plus a
+          browser owner lease/fence. The receipt path/hash is stored on the intent and
+          every attempt. A blocked receipt consumes zero slots. Ledger-focused tests
+          pass 40/40, cross-module claim tests pass 49/49, and the full Job Hunter
+          suite passes 408/408.
     - [ ] `FILL-1D` — Trigger the installed resident loop and prove it reaches a real
       ATS pre-submit state through the single worker. The development session only
       watches evidence. Any CAPTCHA or unsupported field remains explicit and the

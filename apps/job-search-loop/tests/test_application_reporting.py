@@ -112,6 +112,25 @@ print(json.dumps({"messageId": "901"}))
             ats_snapshot_sha256 = hashlib.sha256(
                 ats_snapshot.read_bytes()
             ).hexdigest()
+            fill_receipt = root / "fill-receipt.json"
+            fill_receipt.write_text(
+                json.dumps(
+                    {
+                        "version": 1,
+                        "status": "claim_ready",
+                        "job_url": "https://jobs.example/dream",
+                        "snapshot_sha256": ats_snapshot_sha256,
+                        "resume_sha256": resume_sha256,
+                        "owner_lease_id": "lease-test",
+                        "owner_fence": 1,
+                        "owner_holder_pid": 123,
+                        "blockers": [],
+                        "submit_clicked": False,
+                    }
+                ),
+                encoding="utf-8",
+            )
+            fill_receipt_sha256 = hashlib.sha256(fill_receipt.read_bytes()).hexdigest()
             intent = ledger.claim_submission(
                 application_id,
                 "2026-07-29",
@@ -120,6 +139,8 @@ print(json.dumps({"messageId": "901"}))
                 resume_sha256=resume_sha256,
                 ats_snapshot_path=ats_snapshot,
                 ats_snapshot_sha256=ats_snapshot_sha256,
+                fill_receipt_path=fill_receipt,
+                fill_receipt_sha256=fill_receipt_sha256,
             )
             ledger.record_submission_materials(
                 intent_id=intent.intent_id,

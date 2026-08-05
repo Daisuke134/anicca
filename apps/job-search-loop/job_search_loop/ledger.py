@@ -79,6 +79,8 @@ class SubmitIntent:
     resume_sha256: str
     ats_snapshot_path: str
     ats_snapshot_sha256: str
+    fill_receipt_path: str
+    fill_receipt_sha256: str
     japan_day: str
     slot: int
 
@@ -129,6 +131,8 @@ class Ledger:
                 resume_sha256 TEXT,
                 ats_snapshot_path TEXT,
                 ats_snapshot_sha256 TEXT,
+                fill_receipt_path TEXT,
+                fill_receipt_sha256 TEXT,
                 japan_day TEXT NOT NULL,
                 slot INTEGER NOT NULL,
                 status TEXT NOT NULL,
@@ -191,6 +195,8 @@ class Ledger:
                 resume_sha256 TEXT,
                 ats_snapshot_path TEXT,
                 ats_snapshot_sha256 TEXT,
+                fill_receipt_path TEXT,
+                fill_receipt_sha256 TEXT,
                 japan_day TEXT NOT NULL,
                 slot INTEGER NOT NULL,
                 status TEXT NOT NULL,
@@ -610,6 +616,26 @@ class Ledger:
             self.connection.execute(
                 "ALTER TABLE submit_intents ADD COLUMN ats_snapshot_sha256 TEXT"
             )
+        if "fill_receipt_path" not in intent_columns:
+            self.connection.execute(
+                "ALTER TABLE submit_intents ADD COLUMN fill_receipt_path TEXT"
+            )
+        if "fill_receipt_sha256" not in intent_columns:
+            self.connection.execute(
+                "ALTER TABLE submit_intents ADD COLUMN fill_receipt_sha256 TEXT"
+            )
+        attempt_columns = {
+            str(row["name"])
+            for row in self.connection.execute("PRAGMA table_info(submission_attempts)")
+        }
+        if "fill_receipt_path" not in attempt_columns:
+            self.connection.execute(
+                "ALTER TABLE submission_attempts ADD COLUMN fill_receipt_path TEXT"
+            )
+        if "fill_receipt_sha256" not in attempt_columns:
+            self.connection.execute(
+                "ALTER TABLE submission_attempts ADD COLUMN fill_receipt_sha256 TEXT"
+            )
         slot_columns = {
             str(row["name"])
             for row in self.connection.execute("PRAGMA table_info(daily_slots)")
@@ -624,10 +650,12 @@ class Ledger:
             INSERT OR IGNORE INTO submission_attempts
               (intent_id, fence, application_id, payload_hash, resume_path,
                resume_sha256, ats_snapshot_path, ats_snapshot_sha256,
+               fill_receipt_path, fill_receipt_sha256,
                japan_day, slot, status, created_at, completed_at)
             SELECT
               intent_id, fence, application_id, payload_hash, resume_path,
               resume_sha256, ats_snapshot_path, ats_snapshot_sha256,
+              fill_receipt_path, fill_receipt_sha256,
               japan_day, slot, status, created_at, completed_at
             FROM submit_intents
             """
@@ -2266,7 +2294,8 @@ class Ledger:
             """
             SELECT
               intent_id, fence, payload_hash, resume_path, resume_sha256,
-              ats_snapshot_path, ats_snapshot_sha256, japan_day, slot,
+              ats_snapshot_path, ats_snapshot_sha256,
+              fill_receipt_path, fill_receipt_sha256, japan_day, slot,
               status, created_at, completed_at
             FROM submission_attempts
             WHERE application_id = ?
@@ -2283,6 +2312,8 @@ class Ledger:
                 "resume_sha256": row["resume_sha256"],
                 "ats_snapshot_path": row["ats_snapshot_path"],
                 "ats_snapshot_sha256": row["ats_snapshot_sha256"],
+                "fill_receipt_path": row["fill_receipt_path"],
+                "fill_receipt_sha256": row["fill_receipt_sha256"],
                 "japan_day": str(row["japan_day"]),
                 "slot": int(row["slot"]),
                 "status": str(row["status"]),
@@ -2302,6 +2333,8 @@ class Ledger:
         resume_sha256: str,
         ats_snapshot_path: Path,
         ats_snapshot_sha256: str,
+        fill_receipt_path: Path | None = None,
+        fill_receipt_sha256: str | None = None,
         portfolio_bucket: str | None = None,
     ) -> SubmitIntent | None:
         if portfolio_bucket is not None and portfolio_bucket not in PORTFOLIO_LIMITS:
@@ -2331,6 +2364,41 @@ class Ledger:
             raise ValueError(f"ATS snapshot is not ready: {blockers}")
         if not snapshot_evaluation["claim_ready"]:
             raise ValueError("ATS snapshot is not claim-ready: application form not open")
+        application_before_claim = self.connection.execute(
+            "SELECT canonical_url FROM applications WHERE id = ?",
+            (application_id,),
+        ).fetchone()
+        if application_before_claim is None:
+            raise KeyError(application_id)
+        if canonical_url(snapshot["url"]) != str(application_before_claim["canonical_url"]):
+            raise ValueError("ATS snapshot URL does not match the application")
+        if fill_receipt_path is None or fill_receipt_sha256 is None:
+            raise ValueError("claim-ready fill receipt is required")
+        resolved_fill_receipt = Path(fill_receipt_path).expanduser().resolve()
+        if not resolved_fill_receipt.is_file():
+            raise ValueError("fill receipt SHA-256 cannot be verified: file is missing")
+        fill_receipt_bytes = resolved_fill_receipt.read_bytes()
+        actual_fill_receipt_sha256 = hashlib.sha256(fill_receipt_bytes).hexdigest()
+        if actual_fill_receipt_sha256 != fill_receipt_sha256:
+            raise ValueError("fill receipt SHA-256 does not match the selected file")
+        try:
+            fill_receipt = json.loads(fill_receipt_bytes)
+        except json.JSONDecodeError as error:
+            raise ValueError("fill receipt is invalid JSON") from error
+        if fill_receipt.get("status") != "claim_ready":
+            raise ValueError("fill receipt is not claim-ready")
+        if fill_receipt.get("submit_clicked") is not False:
+            raise ValueError("fill receipt must prove Submit was not clicked")
+        if fill_receipt.get("blockers") != []:
+            raise ValueError("fill receipt contains unresolved blockers")
+        if fill_receipt.get("snapshot_sha256") != ats_snapshot_sha256:
+            raise ValueError("fill receipt does not match the ATS snapshot")
+        if fill_receipt.get("resume_sha256") != resume_sha256:
+            raise ValueError("fill receipt does not match the selected resume")
+        if not isinstance(fill_receipt.get("owner_lease_id"), str) or not fill_receipt["owner_lease_id"]:
+            raise ValueError("fill receipt browser owner lease is missing")
+        if not isinstance(fill_receipt.get("owner_fence"), int) or fill_receipt["owner_fence"] <= 0:
+            raise ValueError("fill receipt browser owner fence is missing")
         with self._transaction():
             application = self.connection.execute(
                 "SELECT canonical_url FROM applications WHERE id = ?",
@@ -2338,8 +2406,10 @@ class Ledger:
             ).fetchone()
             if application is None:
                 raise KeyError(application_id)
-            if canonical_url(snapshot["url"]) != str(application["canonical_url"]):
-                raise ValueError("ATS snapshot URL does not match the application")
+            if canonical_url(str(fill_receipt.get("job_url") or "")) != str(
+                application["canonical_url"]
+            ):
+                raise ValueError("fill receipt URL does not match the application")
             existing = self.connection.execute(
                 "SELECT * FROM submit_intents WHERE application_id = ?",
                 (application_id,),
@@ -2385,6 +2455,8 @@ class Ledger:
                 resume_sha256=resume_sha256,
                 ats_snapshot_path=str(resolved_snapshot),
                 ats_snapshot_sha256=ats_snapshot_sha256,
+                fill_receipt_path=str(resolved_fill_receipt),
+                fill_receipt_sha256=fill_receipt_sha256,
                 japan_day=japan_day,
                 slot=slot,
             )
@@ -2402,7 +2474,8 @@ class Ledger:
                     UPDATE submit_intents
                     SET fence = ?, payload_hash = ?, resume_path = ?,
                         resume_sha256 = ?, ats_snapshot_path = ?,
-                        ats_snapshot_sha256 = ?, japan_day = ?, slot = ?,
+                        ats_snapshot_sha256 = ?, fill_receipt_path = ?,
+                        fill_receipt_sha256 = ?, japan_day = ?, slot = ?,
                         status = 'submit_claimed', created_at = ?,
                         completed_at = NULL
                     WHERE intent_id = ? AND fence = ? AND status = 'not_submitted'
@@ -2414,6 +2487,8 @@ class Ledger:
                         intent.resume_sha256,
                         intent.ats_snapshot_path,
                         intent.ats_snapshot_sha256,
+                        intent.fill_receipt_path,
+                        intent.fill_receipt_sha256,
                         intent.japan_day,
                         intent.slot,
                         claimed_at,
@@ -2427,8 +2502,9 @@ class Ledger:
                     INSERT INTO submit_intents
                       (intent_id, application_id, fence, payload_hash, resume_path,
                        resume_sha256, ats_snapshot_path, ats_snapshot_sha256,
+                       fill_receipt_path, fill_receipt_sha256,
                        japan_day, slot, status, created_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'submit_claimed', ?)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'submit_claimed', ?)
                     """,
                     (
                         intent.intent_id,
@@ -2439,6 +2515,8 @@ class Ledger:
                         intent.resume_sha256,
                         intent.ats_snapshot_path,
                         intent.ats_snapshot_sha256,
+                        intent.fill_receipt_path,
+                        intent.fill_receipt_sha256,
                         intent.japan_day,
                         intent.slot,
                         claimed_at,
@@ -2449,8 +2527,9 @@ class Ledger:
                 INSERT INTO submission_attempts
                   (intent_id, fence, application_id, payload_hash, resume_path,
                    resume_sha256, ats_snapshot_path, ats_snapshot_sha256,
+                   fill_receipt_path, fill_receipt_sha256,
                    japan_day, slot, status, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'submit_claimed', ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'submit_claimed', ?)
                 """,
                 (
                     intent.intent_id,
@@ -2461,6 +2540,8 @@ class Ledger:
                     intent.resume_sha256,
                     intent.ats_snapshot_path,
                     intent.ats_snapshot_sha256,
+                    intent.fill_receipt_path,
+                    intent.fill_receipt_sha256,
                     intent.japan_day,
                     intent.slot,
                     claimed_at,
@@ -2491,6 +2572,7 @@ class Ledger:
                     "payload_hash": payload_hash,
                     "resume_sha256": resume_sha256,
                     "ats_snapshot_sha256": ats_snapshot_sha256,
+                    "fill_receipt_sha256": fill_receipt_sha256,
                 },
             )
             return intent
