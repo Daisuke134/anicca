@@ -50,6 +50,20 @@
 All checkboxes are initially open. A checkbox closes only with the command or
 external receipt named in that step; prose updates alone do not close work.
 
+Execution checkpoint:
+
+- F1 is complete at runtime HEAD `5b1927dc` with clean task review and fresh
+  root verification.
+- F2 is currently in TDD/RED and has no completion commit: the routing suite
+  fails on missing `model_runner_support` and the brain suite fails on missing
+  `agent_brain`, while only the two test files exist.
+- 7 atomic checks are closed and 128 remain open.
+- The legacy core remains `DEAD`; no provider auth, public Affiliate placement,
+  attributed external commission, production launchd wake, or Telegram delivery
+  receipt has been claimed.
+- A passing unit test closes only its software check. It cannot close a live
+  readback or external-money gate.
+
 | Phase | Tasks | Exit evidence |
 |---|---:|---|
 | P0 Agent foundation | F1-F6, 1 | Legacy migration, Terra brain, prompt registry, CloakBrowser harness, durable queue, Telegram action outbox, one runtime root |

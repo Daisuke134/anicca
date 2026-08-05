@@ -47,6 +47,61 @@ techniques do not merge the ledgers.
 | P0/F1 legacy migration | Complete | Runtime commits `84cac1e7`, `3494f8ff`, `5b1927dc`; migration 8/8, legacy verification 10/10, commission regression 6/6; remote `feature/affiliate-agent-runtime` at `5b1927dc` |
 | Legacy wrapper cutover | Blocked by design until Task 11 | F1 receipts `run.sh` and `affiliate-cli.sh` path/SHA-256/size while preserving their bytes; Task 11 must verify these receipts before scheduling the new orchestrator |
 
+### 1.2 Truth checkpoint: implemented versus still hypothetical
+
+This table prevents tests, fixtures, screenshots, or plans from being reported as
+live autonomous operation.
+
+| Surface | Current truth | What is not yet proven |
+|---|---|---|
+| Runtime | Legacy core still reports `DEAD` | No hourly/daily Affiliate Agent wake has completed |
+| F1 migration | Implemented, reviewed, pushed, and re-run from final HEAD | It does not publish, browse, attribute, or earn |
+| F2 Agent brain | In RED/TDD work; routing test fails on missing `model_runner_support`, brain test fails on missing `agent_brain`; production files and completion commit do not exist | No Terra action has been accepted or executed by the production loop |
+| Provider auth | Amazon JP and Rakuten remain `AUTH_REQUIRED` from the last authenticated-state check | Account approval, tag ownership, current offer terms, and executable links |
+| Publication | Planned adapters and Postiz reuse path only | No Affiliate JA/EN placement has a provider receipt plus public readback |
+| Attribution | Design and API tasks remain open | No live redirect click is joined to an ASP transaction |
+| Revenue | No new Affiliate revenue receipt | Legacy watermark, fixtures, clicks, estimates, and creator screenshots do not count |
+| Telegram | F1 milestone delivery failed twice with `chat not found` | No provider `messageId`; delivery must not be claimed |
+| Autonomous operation | Queue, browser harness, recovery, launchd, and reports remain open | No-human-loop behavior is not yet achieved |
+
+### 1.3 No-dry-run equivalence rule
+
+| Evidence | It may prove | It never proves |
+|---|---|---|
+| Unit/fixture test | Local contract behavior | Live login, publication, click, conversion, or revenue |
+| CloakBrowser login page | Page reachability and observed auth state | Affiliate approval or account ownership |
+| Postiz fake/fixture response | Adapter parsing | A public X/article placement |
+| `test=true` redirect click | Deployed redirect and click persistence | Organic buyer intent or commission |
+| Provider report fixture | Reconciliation arithmetic | External approved or paid commission |
+| Legacy commission watermark | Historical unattributed aggregate | New Agent revenue or placement attribution |
+
+Every report labels evidence as `TEST`, `LIVE_READBACK`, or
+`EXTERNAL_MONEY_RECEIPT`. Only the final class closes a revenue gate. A task with
+external completion criteria remains open after code completion until the named
+external receipt exists.
+
+### 1.4 Ideal autonomous flow
+
+```mermaid
+flowchart TD
+  W[launchd wake] --> Q[Claim one durable work item]
+  Q --> O[Terra observes CRWL, CloakBrowser, API, reports]
+  O --> A[Propose exactly one typed action]
+  A --> G{Policy, evidence, budget, idempotency gate}
+  G -->|Fail| R[Wait, repair, or local quarantine]
+  G -->|Pass| E[Execute through allowlisted browser or API tool]
+  E --> V[Read back the real external result]
+  V --> T[Append receipt and Japanese Telegram event]
+  T --> M[Reconcile click, transaction, commission, reversal]
+  M --> L[KEEP or REVERT one measured variable]
+  L --> Q
+  R --> Q
+```
+
+The model is the planner and diagnostician. Deterministic code remains the money,
+permission, idempotency, and evidence kernel. This is the target architecture,
+not a claim about the current runtime.
+
 ## 2. Evidence-backed constraints
 
 1. Every affiliate surface carries a clear disclosure adjacent to the link or
