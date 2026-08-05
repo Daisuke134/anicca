@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-39` — Deterministic Gmail-to-application matching
+**Active atomic task:** `L-40` — Persist exact submitted application artifacts
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1288,7 +1288,27 @@ this spec update → commit/push → Telegram milestone before the next item sta
   `3c031c726c748ae4025b1aa99068c693954087638efb25b97090bf5532d48707`)
   is active with zero writable paths and the replay-approved route config unchanged.
   Daily remains unloaded; no application, reply, or Calendar side effect occurred.
-- [ ] **L-39** — Match Gmail events to applications or fail closed as ambiguous.
+- [x] **L-39** — Match Gmail events to applications or fail closed as ambiguous.
+  Receipt: the local `gog` scan supplies sanitized private message payloads to Terra
+  medium without requiring provider-side Gmail authentication and emits counts only
+  to stdout. Terra extracts verbatim-grounded company, title, and optional posting
+  URL; the deterministic ledger driver alone decides `matched`, `no_match`,
+  `ambiguous`, or `insufficient_evidence`. Every decision and every unique match is
+  append-only with no-update/no-delete triggers; copied evidence, mismatched scan
+  metadata, duplicate IDs, model-invented spans, and message rebinding fail closed.
+  Focused 34-test and full 290-test suites PASS. A production-ledger copy migrated
+  with `integrity_check=ok`, one decision table, and two immutability triggers while
+  the production ledger SHA remained unchanged. Immutable release
+  `45274787de7aaa15e73dfa83cb18ff847d93d129` (archive SHA-256
+  `a12c4bd0f8ef75ff4557c225581e753f2ca01cda152f3559696dca84d8435489`)
+  is active with zero writable paths and replay-approved route SHA-256
+  `66d5efecdfffed8cd9a294736d00aed83701c67220a22608728b140c9c740409`.
+  Real inbox E2E processed all three retryable messages in one Terra medium attempt,
+  persisted three deterministic decisions and zero false application matches,
+  advanced the private checkpoint from three to six exact message IDs, and exited
+  zero without Calendar or reply side effects. Immediate replay found zero new mail,
+  made zero model attempts, preserved three decisions and six checkpoint IDs, and
+  exited zero. Daily remains intentionally unloaded.
 - [ ] **L-40** — Persist exact submitted resume, cover letter, and employer answers
   for each application.
 - [ ] **L-41** — Rebuild `summary.v2` exclusively from the event ledger.
