@@ -29,7 +29,7 @@
 - Consumes: existing `inferEventGoalSerendipity(input, options)` input.
 - Produces: optional `options.generateDecision({ prompt, schema, timeoutMs }) -> Promise<object>`; returned object still passes `groundModelDecision` and `validateEventGoalSerendipity`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```js
 test("a structured model generator still passes the existing grounding boundary", async () => {
@@ -49,17 +49,19 @@ test("a structured model generator still passes the existing grounding boundary"
 });
 ```
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
 Run: `node --test lib/event-goal-serendipity.test.js`
 
 Expected: the new test fails with `EVENT_GOAL_SERENDIPITY_CONFIG_FAILED` because `generateDecision` is not consumed.
 
-- [ ] **Step 3: Implement the minimum seam**
+- [x] **Step 3: Implement the minimum seam**
 
 Build `eventData`, `prompt`, and schema exactly once. When `generateDecision` is a function, await it with a frozen request and treat its return value as the raw model decision. Otherwise keep the existing Gemini request and response parsing unchanged. Both paths then execute the same `groundModelDecision` and `validateEventGoalSerendipity` code.
 
-- [ ] **Step 4: Run GREEN**
+- [x] **Step 4: Run GREEN**
+
+Observed: 8/8 pass, including all existing Gemini compatibility and bounded-error tests.
 
 Run: `node --test lib/event-goal-serendipity.test.js`
 
@@ -70,13 +72,14 @@ Expected: all existing Gemini/error tests and the new provider-neutral test pass
 **Files:**
 - Create: `apps/life-manager/lib/connector-luna-judgment.js`
 - Test: `apps/life-manager/lib/connector-luna-judgment.test.js`
+- Modify: `apps/life-manager/package.json`
 
 **Interfaces:**
 - Consumes: `{ dateInventory, preferenceRanking, profile, evidenceDir, repoRoot, runnerPath? }` where profile passes `isVerifiedConnectorProfile`.
 - Produces: `runConnectorLunaJudgment(input, deps?) -> Promise<VerifiedEventGoalSerendipity>`.
 - Calls: `inferEventGoalSerendipity({ dateInventory, preferenceRanking, goals: profile.goals }, { generateDecision })`.
 
-- [ ] **Step 1: Write failing adapter tests**
+- [x] **Step 1: Write failing adapter tests**
 
 ```js
 test("Connector judgment accepts only a Luna-pinned structured runner result", async () => {
@@ -99,13 +102,13 @@ test("Connector judgment rejects fallback models and unverified profiles", async
 });
 ```
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
 Run: `node --test lib/connector-luna-judgment.test.js`
 
 Expected: FAIL with `MODULE_NOT_FOUND` for `connector-luna-judgment.js`.
 
-- [ ] **Step 3: Implement the adapter and production subprocess boundary**
+- [x] **Step 3: Implement the adapter and production subprocess boundary**
 
 The default runner must:
 
@@ -122,15 +125,17 @@ python3 runtime/agent-runner/agent_runner.py
 
 Set `AGENT_RUNNER_PROVIDER=codex` in the child environment. Require exit 0; parse the one summary JSON object; require Luna/codex/success; resolve `result_path` and require it is a regular file strictly inside `evidenceDir`; parse the structured value. Convert every failure to `Connector Luna judgment unavailable` without raw child output.
 
-- [ ] **Step 4: Run GREEN and regression suites**
+- [x] **Step 4: Register tests and run GREEN regression suites**
 
 Run: `node --test lib/connector-luna-judgment.test.js lib/event-goal-serendipity.test.js`
 
-Run: `npm run test:outbound`
+Add `lib/connector-luna-judgment.test.js` and `lib/connector-native-write-pipeline.test.js` to the fixed `test:outbound` list, then run: `npm run test:outbound`
 
 Expected: zero failures.
 
-- [ ] **Step 5: Record evidence, commit, and push**
+Observed: focused Luna/grounding suite 11/11 pass; `npm run test:outbound` 280/280 pass with the new Luna and native write-pipeline tests present in the executed command.
+
+- [x] **Step 5: Record evidence, commit, and push**
 
 Update this plan's checkboxes and observed RED/GREEN counts, then run:
 
