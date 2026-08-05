@@ -12,8 +12,8 @@ class LaunchdTests(unittest.TestCase):
             (root / "ai.anicca.job-search-learning.plist").read_bytes()
         )
         self.assertTrue(daily["RunAtLoad"])
-        self.assertEqual(daily["StartCalendarInterval"]["Hour"], 8)
-        self.assertEqual(daily["StartCalendarInterval"]["Minute"], 30)
+        self.assertEqual(daily["StartInterval"], 3600)
+        self.assertNotIn("StartCalendarInterval", daily)
         self.assertEqual(inbox["StartInterval"], 900)
         self.assertTrue(learning["RunAtLoad"])
         self.assertEqual(
