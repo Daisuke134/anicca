@@ -10,6 +10,7 @@ typeset -gx JOB_SEARCH_INSTALL_CONFIG="${JOB_SEARCH_INSTALL_CONFIG:-${XDG_CONFIG
 typeset -gx JOB_SEARCH_FRAMEWORK_ROOT="${JOB_SEARCH_FRAMEWORK_ROOT:-${XDG_DATA_HOME:-$HOME/.local/share}/anicca/job-search/framework}"
 typeset -gx JOB_SEARCH_TELEGRAM_MEDIA="${JOB_SEARCH_TELEGRAM_MEDIA:-$HOME/.openclaw/media/job-search-outbound}"
 typeset -gx JOB_SEARCH_LAUNCH_AGENT_DIR="${JOB_SEARCH_LAUNCH_AGENT_DIR:-$HOME/Library/LaunchAgents}"
+typeset -gx JOB_SEARCH_LIBEXEC_ROOT="${JOB_SEARCH_LIBEXEC_ROOT:-$HOME/.local/libexec/anicca/job-search}"
 typeset -gx JOB_SEARCH_PRIVATE_ENV="${JOB_SEARCH_PRIVATE_ENV:-$HOME/.openclaw/.env}"
 if [[ -x /opt/homebrew/bin/python3 ]]; then
   typeset -gx JOB_SEARCH_PYTHON="${JOB_SEARCH_PYTHON:-/opt/homebrew/bin/python3}"
