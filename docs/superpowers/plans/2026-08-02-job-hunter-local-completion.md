@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-09` — Gmail classification into gog events
+**Active atomic task:** `L-10` — interview-preparation contract
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -928,7 +928,12 @@ this spec update → commit/push → Telegram milestone before the next item sta
   stop after two or any outcome, require evidence hashes, and replay idempotently;
   application archive rebuilds artifacts, outcomes, and follow-ups from ledger state;
   ledger suite PASS.
-- [ ] **L-09** — Port the upstream Gmail classification semantics into `gog` events.
+- [x] **L-09** — Port the upstream Gmail classification semantics into `gog` events.
+  Receipt: each selected gog message yields one deterministic redacted event keyed by
+  immutable message/thread IDs, timestamp, classification, funnel suggestion, and
+  evidence SHA-256; English and Japanese confirmation, recruiter, assessment,
+  interview, offer, and rejection semantics are covered; raw body is not emitted;
+  operations suite PASS.
 - [ ] **L-10** — Port the upstream interview-preparation contract.
 - [ ] **L-11** — Port the upstream upskill and reporting projections without adding
   a second source of truth.
