@@ -39,6 +39,7 @@ class LedgerTests(unittest.TestCase):
         payload_hash,
         *,
         portfolio_bucket=None,
+        record_materials=True,
     ):
         row = ledger.connection.execute(
             "SELECT canonical_url FROM applications WHERE id = ?",
@@ -88,7 +89,7 @@ class LedgerTests(unittest.TestCase):
             encoding="utf-8",
         )
         snapshot_sha256 = hashlib.sha256(snapshot.read_bytes()).hexdigest()
-        return ledger.claim_submission(
+        intent = ledger.claim_submission(
             application_id,
             japan_day,
             payload_hash,
@@ -98,6 +99,16 @@ class LedgerTests(unittest.TestCase):
             ats_snapshot_sha256=snapshot_sha256,
             portfolio_bucket=portfolio_bucket,
         )
+        if intent is not None and record_materials:
+            ledger.record_submission_materials(
+                intent_id=intent.intent_id,
+                fence=intent.fence,
+                resume_path=self.resume,
+                resume_sha256=self.resume_sha256,
+                cover_letter=None,
+                employer_answers=[],
+            )
+        return intent
 
     def test_daily_portfolio_enforces_two_five_three_bucket_caps(self):
         self.assertIn("portfolio_bucket", inspect.signature(self.ledger.claim_submission).parameters)
@@ -528,6 +539,7 @@ class LedgerTests(unittest.TestCase):
         self.ledger.complete_submission(
             intent.intent_id, intent.fence, "not_submitted"
         )
+        self.ledger.connection.execute("DROP TABLE submission_material_receipts")
         self.ledger.connection.execute("DROP TABLE submission_attempts")
         self.ledger.close()
 
@@ -788,6 +800,14 @@ class LedgerTests(unittest.TestCase):
         )
         self.assertEqual(intent.ats_snapshot_path, str(ats_snapshot.resolve()))
         self.assertEqual(intent.ats_snapshot_sha256, ats_sha256)
+        self.ledger.record_submission_materials(
+            intent_id=intent.intent_id,
+            fence=intent.fence,
+            resume_path=resume,
+            resume_sha256=resume_sha256,
+            cover_letter=None,
+            employer_answers=[],
+        )
         self.ledger.complete_submission(intent.intent_id, intent.fence, "submitted")
 
         self.assertEqual(
@@ -803,6 +823,91 @@ class LedgerTests(unittest.TestCase):
                 }
             ],
         )
+
+    def test_submission_material_receipt_binds_exact_inputs_to_intent_fence(self):
+        self._ready()
+        intent = self._claim(
+            self.ledger, self.application_id, "2026-07-29", "payload-hash",
+            record_materials=False,
+        )
+        receipt = self.ledger.record_submission_materials(
+            intent_id=intent.intent_id,
+            fence=intent.fence,
+            resume_path=self.resume,
+            resume_sha256=self.resume_sha256,
+            cover_letter="Grounded exact letter",
+            employer_answers=[
+                {
+                    "question": "Why this role?",
+                    "answer": "Because the verified work aligns.",
+                    "fact_ids": ["fact-1"],
+                }
+            ],
+        )
+        replay = self.ledger.record_submission_materials(
+            intent_id=intent.intent_id,
+            fence=intent.fence,
+            resume_path=self.resume,
+            resume_sha256=self.resume_sha256,
+            cover_letter="Grounded exact letter",
+            employer_answers=[
+                {
+                    "question": "Why this role?",
+                    "answer": "Because the verified work aligns.",
+                    "fact_ids": ["fact-1"],
+                }
+            ],
+        )
+        self.assertEqual(replay, receipt)
+        row = self.ledger.connection.execute(
+            "SELECT * FROM submission_material_receipts"
+        ).fetchone()
+        self.assertEqual(json.loads(row["employer_answers_json"])[0]["question"], "Why this role?")
+        self.assertEqual(row["cover_letter"], "Grounded exact letter")
+        self.ledger.complete_submission(intent.intent_id, intent.fence, "submitted")
+        self.assertEqual(
+            self.ledger.record_submission_materials(
+                intent_id=intent.intent_id,
+                fence=intent.fence,
+                resume_path=self.resume,
+                resume_sha256=self.resume_sha256,
+                cover_letter="Grounded exact letter",
+                employer_answers=[
+                    {
+                        "question": "Why this role?",
+                        "answer": "Because the verified work aligns.",
+                        "fact_ids": ["fact-1"],
+                    }
+                ],
+            ),
+            receipt,
+        )
+
+    def test_submission_material_rebind_and_unrecorded_submit_fail_closed(self):
+        self._ready()
+        intent = self._claim(
+            self.ledger, self.application_id, "2026-07-29", "payload-hash",
+            record_materials=False,
+        )
+        with self.assertRaisesRegex(FenceError, "material receipt"):
+            self.ledger.complete_submission(intent.intent_id, intent.fence, "submitted")
+        self.ledger.record_submission_materials(
+            intent_id=intent.intent_id,
+            fence=intent.fence,
+            resume_path=self.resume,
+            resume_sha256=self.resume_sha256,
+            cover_letter=None,
+            employer_answers=[],
+        )
+        with self.assertRaises(FenceError):
+            self.ledger.record_submission_materials(
+                intent_id=intent.intent_id,
+                fence=intent.fence,
+                resume_path=self.resume,
+                resume_sha256=self.resume_sha256,
+                cover_letter="different",
+                employer_answers=[],
+            )
 
 
 if __name__ == "__main__":

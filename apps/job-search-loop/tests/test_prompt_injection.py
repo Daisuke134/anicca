@@ -75,6 +75,17 @@ class PromptInjectionTests(unittest.TestCase):
         self.assertIn('"$TERRA_PLAN_EVIDENCE"/attempt-*.stdout.log', script)
         self.assertIn('"$JOB_SEARCH_TERRA_PLAN_RESULT"', script)
 
+    def test_browser_persists_exact_submission_materials_before_click(self):
+        root = Path(__file__).parents[1]
+        prompts = [
+            (root / "prompts" / "daily-pass.md").read_text(encoding="utf-8"),
+            (root / "prompts" / "browser-submit.md").read_text(encoding="utf-8"),
+        ]
+        for prompt in prompts:
+            self.assertIn("record_submission_materials", prompt)
+            self.assertIn("before", prompt)
+            self.assertIn("click", prompt)
+
     def test_dream_and_weekly_hypothesis_use_explicit_terra_high_route(self):
         root = Path(__file__).parents[1]
         daily = (root / "scripts" / "run-daily.sh").read_text(encoding="utf-8")

@@ -184,6 +184,15 @@ invalid. Only then use an isolated
 Playwright/CloakBrowser context with user-facing locators. Use exactly one matching
 resume per application and include its hash in the intent.
 
+After filling every field but before the submit click, call
+`Ledger.record_submission_materials` for the active `intent_id` and `fence`. Pass
+the exact resume path/SHA already bound to the intent, the exact full cover-letter
+text entered (`None` only when no cover-letter field was submitted), and every
+employer question/answer actually entered with its approved fact IDs. Do not pass a
+draft that differs from the browser fields. `submitted` and `submit_unknown` are
+invalid until this immutable receipt exists. An exact replay is idempotent; any
+changed resume, letter, answer, intent, or fence must stop before the click.
+
 Before fresh discovery, call `Ledger.retryable_applications()`. A durable
 `not_submitted` row means the prior attempt definitely stopped before the submit
 click; recheck its recorded blocker against the current private profile and current
