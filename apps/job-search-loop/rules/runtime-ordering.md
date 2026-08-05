@@ -11,3 +11,16 @@
 Counterexample: an outbox delivery that was already durably committed remains before
 the quota gate because delivering that pending receipt is required idempotent
 recovery, not preparation for new work.
+
+## Private-profile boundary
+
+| Field | Rule |
+|---|---|
+| Symptom | A model or shell command renders private profile values into a provider transcript while preparing a browser form. |
+| Wrong instinct | Read the profile through a general-purpose shell command because the next browser action needs one field. |
+| Correct move | Load private values only inside non-logging automation code and pass them directly to browser `fill()` calls. Scan every provider stdout transcript before accepting the run as successful. |
+| General law | A private input may cross only into the exact side-effect sink that needs it; intermediate prompts, stdout, snapshots, receipts, and reports are fail-closed boundaries. |
+| Example | The application email moves from the mode-0600 profile parser directly to an email input; a transcript match records only the leaked field name and forces a nonzero run result. |
+
+Counterexample: a public job title or official posting URL may appear in evidence
+because it is application provenance rather than a private profile value.
