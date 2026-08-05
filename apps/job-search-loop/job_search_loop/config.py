@@ -19,6 +19,8 @@ class Settings:
     daily_target: int
     auto_apply_threshold: int
     compensation_floor_jpy: int
+    compensation_target_jpy: int
+    compensation_stretch_jpy: int
 
 
 def _required_string(value: dict[str, Any], key: str, where: str) -> str:
@@ -77,7 +79,9 @@ def load_settings(
     required = {
         "daily_target": 2,
         "auto_apply_threshold": 75,
-        "compensation_floor_jpy": 7_000_000,
+        "compensation_floor_jpy": 8_000_000,
+        "compensation_target_jpy": 10_000_000,
+        "compensation_stretch_jpy": 30_000_000,
     }
     for key, expected in required.items():
         if strategy.get(key) != expected:
@@ -89,4 +93,6 @@ def load_settings(
         daily_target=required["daily_target"],
         auto_apply_threshold=required["auto_apply_threshold"],
         compensation_floor_jpy=required["compensation_floor_jpy"],
+        compensation_target_jpy=required["compensation_target_jpy"],
+        compensation_stretch_jpy=required["compensation_stretch_jpy"],
     )

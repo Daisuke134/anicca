@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-19` — strategy JPY 10M target and JPY 30M stretch
+**Active atomic task:** `L-20` — timestamped BOJ-rate USD 100K classification
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -995,7 +995,11 @@ this spec update → commit/push → Telegram milestone before the next item sta
   JPY 10M target and JPY 30M stretch; the human-readable compensation statement,
   structured fields, 0600 mode, and profile schema all agree; before/after SHA-256
   differ and no private profile content was committed or transmitted.
-- [ ] **L-19** — Migrate the strategy to the JPY 10M target and JPY 30M stretch.
+- [x] **L-19** — Migrate the strategy to the JPY 10M target and JPY 30M stretch.
+  Receipt: committed strategy, runtime settings, and ranker agree on JPY 8M hard
+  floor and JPY 10M target, retain JPY 30M stretch, reject known compensation below
+  floor, award partial compensation fit below target, and expose all three values to
+  runtime consumers; focused 20-test and full 229-test suites PASS.
 - [ ] **L-20** — Implement timestamped BOJ-rate USD 100K classification.
 - [ ] **L-21** — Implement travel-positive ranking.
 - [ ] **L-22** — Replace blanket clearance rejection with truthful clearance-state

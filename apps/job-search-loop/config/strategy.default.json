@@ -2,8 +2,9 @@
   "version": 1,
   "daily_target": 2,
   "auto_apply_threshold": 75,
-  "compensation_floor_jpy": 5500000,
-  "compensation_target_jpy": 7000000,
+  "compensation_floor_jpy": 8000000,
+  "compensation_target_jpy": 10000000,
+  "compensation_stretch_jpy": 30000000,
   "role_families": [
     "applied_ai",
     "agent_engineer",

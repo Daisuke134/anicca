@@ -7,8 +7,8 @@ from datetime import date
 from .jobs import Job
 
 
-COMPENSATION_FLOOR_JPY = 5_500_000
-COMPENSATION_TARGET_JPY = 7_000_000
+COMPENSATION_FLOOR_JPY = 8_000_000
+COMPENSATION_TARGET_JPY = 10_000_000
 AUTO_APPLY_THRESHOLD = 75
 AI_TERMS = (
     "artificial intelligence",

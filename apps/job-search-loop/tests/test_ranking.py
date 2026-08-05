@@ -19,7 +19,7 @@ class RankingTests(unittest.TestCase):
     def test_tokyo_ai_role_is_eligible_with_component_score(self):
         result = evaluate(self.jobs["tokyo_ai"])
         self.assertTrue(result.eligible)
-        self.assertEqual(result.score, 85)
+        self.assertEqual(result.score, 82)
         self.assertEqual(result.components["ai_skill"], 30)
         self.assertEqual(result.components["enterprise"], 20)
 
@@ -51,7 +51,7 @@ class RankingTests(unittest.TestCase):
             url="https://jobs.example.com/genai",
             location="Tokyo",
             japan_eligible=True,
-            compensation_min_jpy=5_500_000,
+            compensation_min_jpy=8_000_000,
             clearance_required=False,
             skills=["agents", "databricks"],
             domains=["enterprise_ai"],
@@ -83,7 +83,7 @@ class RankingTests(unittest.TestCase):
             url="https://jobs.example.com/partnerships",
             location="Tokyo",
             japan_eligible=True,
-            compensation_min_jpy=7_000_000,
+            compensation_min_jpy=10_000_000,
             clearance_required=False,
             skills=["llm", "agentforce", "product"],
             domains=["enterprise_ai"],
