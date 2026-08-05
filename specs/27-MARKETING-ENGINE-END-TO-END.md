@@ -29,11 +29,11 @@ Last updated: 2026-08-05
 
 Completed gate: **13 — truthful experiment attribution**
 
-Active build lane: **15 — natural-Japanese owner reporting; 16A — leased-queue construction**
+Active build lane: **15 — natural-Japanese owner reporting**
 
 Background evidence lane: **14 — native publication, maturity, and real performance write-back; 16 shadow soak**
 
-Gate state: **Gates 1–13 complete; Gate 14 is not closed; Gate 15 has one manual product-scoped Telegram receipt but no automated owner report; Gate 16A is not closed. Waiting never blocks independent build work.**
+Gate state: **Gates 1–13 complete; Gate 14 is not closed; Gate 15 execution is active under `docs/superpowers/plans/2026-08-05-gate15-product-owner-telegram.md`; Gate 16A remains queued behind Gate 15. Gate 15 has one manual product-scoped Telegram receipt but no automated owner report. Waiting never blocks independent build work.**
 
 2026-08-05 live audit overrides older optimistic status text where it conflicts:
 
@@ -166,7 +166,7 @@ do not mean that evidence gates, platform delays, or policy boundaries vanish.
 | 12 | Make Postiz/browser posting adapters idempotent and lease-owned | **DONE 2026-08-02:** exact route and asset approved; immutable intent passed shadow; upload/draft/promote each accepted once; one exact Postiz read-back reconciled to TikTok ID `7669159327655054613` and its native URL; replay-safe identity ledger and production DB both report `published` |
 | 13 | Join social metrics and business outcomes back to experiments through the attribution ledger | **DONE 2026-08-02:** one production snapshot contains all ten required result records; an exact Supabase token+product query reports deterministic qualified clicks `0`; the nine 15-minute-old social/business results remain `not_mature=null`; fabricated-zero count is zero; exact replay stays one ledger row; schema/verifier pass; 262 tests + 47 subtests pass |
 | 14 | Restore write-back: tactic status, hook EWMA, renderer result, bottom-20% retirement, and 20% exploration | **OPEN 2026-08-05:** three scheduled watercolor rows reached Postiz `PUBLISHED` and seven remain `QUEUE`, but the canonical metric store is only 4 measured / 106 missed and the sampled Postiz TikTok analytics response is empty. Closure still requires ten plan-mapped mature real experiments and one evidenced `won`/`lost` mutation |
-| 15 | Deliver compact natural-Japanese daily, incident, experiment, progress, and weekly Telegram reports | **OPEN 2026-08-05:** manual product-scoped message `6845` proves the desired facts can be rendered and delivered. The scheduled renderer still uses legacy aggregate state, so automation, per-product post URLs, natural null reasons, and replay dedupe must be proven together |
+| 15 | Deliver compact natural-Japanese daily, incident, experiment, progress, and weekly Telegram reports | **IN PROGRESS 2026-08-05:** Superpowers plan `docs/superpowers/plans/2026-08-05-gate15-product-owner-telegram.md` is the active slice. A Luna executor will implement six deterministic product-scoped report kinds by TDD; the primary SOL session owns planning and evidence verification. Manual product-scoped message `6845` proves rendering and transport only. Closure still requires automation, per-product native URLs, natural null reasons, canonical-ledger equality, schedule read-back, real Bot receipts for all six kinds, and zero-send replay proof |
 | 16A | Build the leased job queue and start non-mutating shadow operation | **OPEN 2026-08-05:** SQLite lease/fence primitives exist for publication intents, but no one durable worker owns all four products, no seven-day shadow is running, and no producer is proven after the August 11 queue ends |
 | 16B | Cut over after the time-dependent shadow soak, then stop Marketing OpenClaw | **TIME-DEPENDENT CLOSURE:** seven consecutive reconciled days, zero duplicate external actions, rollback readiness, Life Manager worker cutover, then OpenClaw processes/crons stop |
 
