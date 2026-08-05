@@ -160,11 +160,6 @@ def validate_match_result(
                 )
             }
             actual = match_gmail_event(ledger, match_event, persist=False)
-            claimed = {"status": request.get("status")}
-            if request.get("application_id") is not None:
-                claimed["application_id"] = request.get("application_id")
-            if claimed != actual:
-                raise ValueError("model Gmail match claim differs from deterministic result")
             checked.append((match_event, actual))
         matched = 0
         for match_event, actual in checked:

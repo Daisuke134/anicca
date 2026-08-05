@@ -22,10 +22,10 @@ For every authoritative recruiting outcome, resolve the application deterministi
 by returning one `gmail_matches` request per processed message. Preserve its exact
 message/thread ID, received timestamp, and evidence SHA from the scan; extract
 company, title, and optional official posting URL only with verbatim `source_span`.
-The deterministic driver reruns `job_search_loop.gmail_matching` and refuses the
-entire checkpoint if your claimed status/application differs. URL exact, or exact
-company plus exact title, must identify one application; ambiguous or absent matches
-record nothing. Hash the retained private external receipt and call
+Do not predict or return a match status or application ID. The deterministic driver
+alone compares those grounded identifiers with the private ledger. URL exact, or
+exact company plus exact title, must identify one application; ambiguous or absent
+matches record nothing. Hash the retained private external receipt and call
 `Ledger.record_funnel_outcome` with its true timestamp and source. Record only the
 stages the evidence actually proves: `confirmed_application`, `recruiter_response`,
 `screen`, `interview`, `offer`, `accepted`, `declined`, or `started`. One receipt may

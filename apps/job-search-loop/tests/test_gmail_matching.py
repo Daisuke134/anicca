@@ -89,7 +89,7 @@ class GmailMatchingTests(unittest.TestCase):
         application_id = self.ledger.add_application(
             "Example AI", "Applied AI Engineer", "https://jobs.example/one"
         )
-        request = event(status="matched", application_id=application_id)
+        request = event()
         candidates, result = self._write_validation_files(request)
         receipt = validate_match_result(
             ledger_path=Path(self.temp.name) / "ledger.sqlite3",
@@ -101,13 +101,13 @@ class GmailMatchingTests(unittest.TestCase):
             "SELECT COUNT(*) FROM gmail_application_matches"
         ).fetchone()[0], 1)
 
-    def test_forged_model_claim_is_rejected_without_persistence(self):
+    def test_unscanned_evidence_is_rejected_without_persistence(self):
         self.ledger.add_application(
             "Example AI", "Applied AI Engineer", "https://jobs.example/one"
         )
-        request = event(status="no_match")
+        request = event(evidence_sha256="b" * 64)
         candidates, result = self._write_validation_files(request)
-        with self.assertRaisesRegex(ValueError, "differs from deterministic"):
+        with self.assertRaisesRegex(ValueError, "differs from scan evidence"):
             validate_match_result(
                 ledger_path=Path(self.temp.name) / "ledger.sqlite3",
                 candidates_path=candidates,
