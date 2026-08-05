@@ -94,6 +94,13 @@ complete Writer suite. This task changes no production behavior.
 Done receipt: focused test passes; complete Writer suite has zero failures; the
 diff changes only the stale test contract; commit and push exist.
 
+Status: DONE. The stale test first failed with `1 failed, 28 passed`, then
+passed as `29 passed` after changing only its model/effort expectation and
+name. The complete Writer suite passed `685/685` with seven pre-existing
+multiprocessing deprecation warnings. Feature commits are `120d6e8d` and
+`76d5b303`; live-branch commits are `e1fe2565` and `01d36dda`. A fresh Terra
+task review found no critical or important issue and approved the slice.
+
 ## Task 1: Prove terminal quality releases the next JST day
 
 Use the live hash-bound terminal run as input. Prove today's terminal miss is

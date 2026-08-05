@@ -926,9 +926,10 @@ evidence is pending.
 Implementation evidence is now complete. Runtime commits `a30bfd66` and
 `60a7f223` add a hash-bound terminal rejection plus a provider-free
 terminalization path for repairs that already ended. Focused control regression
-is `62/62` and the post-terminalize focused suite is `41/41`. The full Writer
-suite is `684/685`; its only failure is the pre-existing model-runner test that
-still expects Luna xhigh while the current contract is Terra medium. Real
+is `62/62` and the post-terminalize focused suite is `41/41`. The stale
+model-runner expectation was then corrected without changing production code:
+its focused suite passes `29/29`, and the full Writer suite passes `685/685`
+with seven pre-existing multiprocessing deprecation warnings. Real
 launchd run `761` exited `0` and wrote `terminal_quality_blocked` for live run
 `20260804-214206`, bound to current JA/EN draft hashes and the EN three-attempt
 reader cap. `publication-state.json` remains absent, destination ledger rows are
