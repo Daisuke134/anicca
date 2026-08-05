@@ -3,6 +3,7 @@ import unittest
 from job_search_loop.ashby_confirmation import (
     classify_confirmation,
     is_submit_mutation,
+    submit_operation_from_payload,
 )
 
 
@@ -118,6 +119,46 @@ class AshbyConfirmationTests(unittest.TestCase):
         self.assertFalse(is_submit_mutation("submitMultipleFormsAction"))
         self.assertFalse(is_submit_mutation("jobPostingFormQuery"))
         self.assertFalse(is_submit_mutation(None))
+
+    def test_extracts_submit_operation_from_single_request_payload(self):
+        self.assertEqual(
+            submit_operation_from_payload(
+                {"operationName": "ApiSubmitSingleApplicationFormAction"}
+            ),
+            "ApiSubmitSingleApplicationFormAction",
+        )
+
+    def test_extracts_one_submit_operation_from_batched_request_payload(self):
+        self.assertEqual(
+            submit_operation_from_payload(
+                [
+                    {"operationName": "jobPostingFormQuery"},
+                    {"operationName": "ApiSubmitMultipleFormsAction"},
+                ]
+            ),
+            "ApiSubmitMultipleFormsAction",
+        )
+
+    def test_rejects_response_field_names_unrelated_and_malformed_payloads(self):
+        for payload in (
+            {"operationName": "submitApplicationFormAction"},
+            {"operationName": "jobPostingFormQuery"},
+            [{"operationName": "submitMultipleFormsAction"}],
+            "ApiSubmitSingleApplicationFormAction",
+            None,
+        ):
+            with self.subTest(payload=payload):
+                self.assertIsNone(submit_operation_from_payload(payload))
+
+    def test_rejects_ambiguous_batch_with_multiple_submit_operations(self):
+        self.assertIsNone(
+            submit_operation_from_payload(
+                [
+                    {"operationName": "ApiSubmitSingleApplicationFormAction"},
+                    {"operationName": "ApiSubmitMultipleFormsAction"},
+                ]
+            )
+        )
 
 
 if __name__ == "__main__":

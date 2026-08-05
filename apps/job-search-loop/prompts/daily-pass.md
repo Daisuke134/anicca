@@ -219,10 +219,13 @@ For Ashby, HTTP 200 alone is never confirmation. Before clicking, read the expec
 success copy from the already-loaded page's
 `window.__appData.organization.theme.applicationSubmittedSuccessMessage`; when it is
 null, use Ashby's bundled default `Your application was successfully submitted.
-We'll contact you if there are next steps.` In memory only, select the GraphQL
-response whose request JSON `operationName` passes
-`job_search_loop.ashby_confirmation.is_submit_mutation`; never persist or print its
-request variables. Read that response JSON and the visible `role=status` or
+We'll contact you if there are next steps.` Before the physical click, attach a
+Playwright request wait whose in-memory JSON passes
+`job_search_loop.ashby_confirmation.submit_operation_from_payload`. It accepts one
+exact submit operation in either a JSON object or batched JSON array; never persist
+or print request variables. After the click, await the response from that exact
+captured request object instead of independently matching a later response. Read
+that response JSON and the visible `role=status` or
 `role=alert` text, then call `classify_confirmation`. Persist only its returned
 PII-free typename/hash receipt. Mark `confirmed` and `submitted` only when
 `authoritative_success=true`; otherwise reconcile from the durable click phase and

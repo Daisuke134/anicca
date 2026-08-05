@@ -14,6 +14,17 @@ def is_submit_mutation(operation_name: Any) -> bool:
     return isinstance(operation_name, str) and operation_name in SUBMIT_OPERATIONS
 
 
+def submit_operation_from_payload(payload: Any) -> str | None:
+    candidates = payload if isinstance(payload, list) else [payload]
+    operations = [
+        candidate.get("operationName")
+        for candidate in candidates
+        if isinstance(candidate, Mapping)
+        and is_submit_mutation(candidate.get("operationName"))
+    ]
+    return operations[0] if len(operations) == 1 else None
+
+
 def _typename(value: Any) -> str | None:
     if not isinstance(value, Mapping):
         return None
