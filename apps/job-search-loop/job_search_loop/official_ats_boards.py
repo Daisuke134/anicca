@@ -173,7 +173,7 @@ def search_official_boards(
     request=_request_json,
     cache_path: Path | None = None,
     cache_ttl_seconds: int = 900,
-    max_results: int = 100,
+    max_results: int = 25,
     write_cache: bool = True,
 ) -> list[dict[str, Any]]:
     if max_results <= 0:
@@ -203,7 +203,14 @@ def search_official_boards(
             continue
         ranked.append((score, int(row.get("posted_at_ms", 0)), row))
     ranked.sort(key=lambda item: (item[0], item[1]), reverse=True)
-    return [row for _, _, row in ranked[:max_results]]
+    results = []
+    for _, _, row in ranked[:max_results]:
+        compact = dict(row)
+        description = compact.get("description")
+        if isinstance(description, str):
+            compact["description"] = description[:500]
+        results.append(compact)
+    return results
 
 
 def main() -> None:

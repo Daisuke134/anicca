@@ -69,7 +69,6 @@ def search_jobs(
                     "status": "failed",
                     "count": 0,
                     "error": f"timed out after {timeout_seconds}s",
-                    "results": [],
                 }
             )
             continue
@@ -83,7 +82,6 @@ def search_jobs(
                         completed.stderr.strip()[-500:]
                         or f"provider returned rc={completed.returncode}"
                     ),
-                    "results": [],
                 }
             )
             continue
@@ -96,7 +94,6 @@ def search_jobs(
                     "status": "failed",
                     "count": 0,
                     "error": "provider returned invalid JSON",
-                    "results": [],
                 }
             )
             continue
@@ -128,7 +125,6 @@ def search_jobs(
                 "status": "success" if enriched_rows else "empty",
                 "count": len(enriched_rows),
                 "error": None,
-                "results": enriched_rows,
             }
         )
     combined = list(combined_by_url.values())

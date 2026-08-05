@@ -5,22 +5,24 @@
 **Canonical repository:** `https://github.com/Daisuke134/life-manager`  
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
-**Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-49K0C/API-2` — execute conservative public ATS liveness before browser fallback
+**Last updated:** 2026-08-06 JST
+**Active atomic task:** `L-49K0C/SCAN-1` — bound official ATS discovery and prove resident candidate output
 **Status:** The immutable four-lane runtime, hourly/five-minute schedules, grounded
 materials, ownership fences, Gmail ingestion, Telegram outbox, quota accounting, and
 Ashby observation classifier are implemented and tested. The daily LaunchAgent is
-loaded hourly, but production is not healthy: latest resident run
-`daily-20260805-221126` searched 24 queries, observed 102 unverified links, verified
-zero postings, submitted zero applications, then falsely returned
-`no_eligible_job_found`. Its privacy scan treated ordinary location words matching the
-private mailing address as leaks and forced final exit 76. Browser CDP required a
-manual dedicated-browser restart before attach recovered. Telegram reused message
-`7173` because the correction event key did not change. Inbox is healthy; learning
-last exited 78. The authoritative ledger has 15 application rows, 25 attempts, zero
-submission confirmations, and 14 historical slots. Historical `submitted` projection
-rows are not current authoritative confirmation. Development-session browser runs are
-verification evidence only and MUST NOT be described as autonomous production work.
+loaded hourly, but production is not healthy. Release `770e1f6a7` resident run
+`daily-20260806-002415` refreshed 2,722 official Ashby/Greenhouse postings before the
+model sandbox, proving the prior cache-permission fault fixed, but Luna exhausted its
+32,768-token prefilter budget before returning structured output; launchd exited 1
+and submitted zero applications. The local fix caps each query at 25 postings,
+truncates model-facing descriptions to 500 characters, and removes duplicated full
+results from provider diagnostics; its live one-query payload is 27,353 bytes and
+full tests pass 389/389. Resident re-verification is next. Telegram sent the daily
+report as message `7377`, but it contains no application evidence because none exists.
+The authoritative ledger still has zero current submission confirmations. Historical
+`submitted` projection rows are not current authoritative confirmation.
+Development-session browser runs are verification evidence only and MUST NOT be
+described as autonomous production work.
 
 ## 1. Acceptance criteria — done condition
 
@@ -2243,7 +2245,8 @@ the resident worker from producing one authoritative application receipt:
       Replit, ElevenLabs, and LangChain to official Ashby/Greenhouse slugs. The
       provider performs bounded parallel no-redirect API reads, normalizes official
       metadata, shares a private 15-minute cache across queries, ranks by grounded
-      title/location/description matches, and caps each query at 100 results.
+      title/location/description matches, and caps each model-facing query at 25
+      results with descriptions bounded to 500 characters.
     - Live read-only proof: 2,723 official postings were fetched; the bounded query
       returned 100/100 API-2-supported URLs (87 Ashby, 13 Greenhouse), including 11
       Japan-or-remote location matches. Focused tests 17/17 and full Job Hunter suite
@@ -2257,8 +2260,16 @@ the resident worker from producing one authoritative application receipt:
     - Fixed locally: the unsandboxed deterministic daily driver now refreshes the
       private cache before Luna starts; sandboxed query processes consume it
       read-only and never attempt state writes. Refresh failure remains nonfatal and
-      query processes can fetch without caching. Focused tests 31/31 and full Job
-      Hunter tests 388/388 pass; resident re-verification remains required.
+      query processes can fetch without caching. Resident release `770e1f6a7`, run
+      `daily-20260806-002415`, then refreshed 2,722 official postings successfully,
+      proving that permission repair, but Luna exhausted its 32,768-token budget
+      while consuming the still-oversized query results and returned no structured
+      prefilter result. This is a failed run, not discovery completion.
+    - Bounded-context fix: each query now returns at most 25 jobs, model-facing
+      descriptions are limited to 500 characters, and provider diagnostics no
+      longer duplicate every full result. A live official query returns 25 supported
+      ATS jobs in a 27,353-byte discovery payload. Focused tests 9/9 and the full Job
+      Hunter suite 389/389 pass; resident candidate-output proof remains required.
   - [ ] `DEDUP-1` — Port company-role, repost-window, and JD-fingerprint parity.
   - [ ] `GATE-1` — Port cheap knockout pre-scan without weakening local ranking.
   - [ ] `FILL-1` — Port ATS-specific non-submit form behavior behind local fences.

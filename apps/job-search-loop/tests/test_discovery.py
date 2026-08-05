@@ -87,6 +87,10 @@ exit {returncode}
                 [row["status"] for row in result["providers"]],
                 ["failed", "success", "success"],
             )
+            self.assertTrue(
+                all("results" not in row for row in result["providers"]),
+                "provider diagnostics must not duplicate full job payloads",
+            )
             self.assertEqual(result["usable_result_count"], 2)
             self.assertEqual(result["status"], "usable")
             self.assertFalse(result["requires_browser_fallback"])
