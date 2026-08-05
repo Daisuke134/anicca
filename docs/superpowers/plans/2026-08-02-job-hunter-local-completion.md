@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-31` — Palantir manual application import
+**Active atomic task:** `L-32` — independent BlockRun founder-outreach funnel
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1150,7 +1150,23 @@ this spec update → commit/push → Telegram milestone before the next item sta
   `df63c00fd1c2c181f956ed2143601a101ace71741eae0d5362aa934923713e64`)
   is active with zero writable paths; daily remains unloaded until the known manual
   application is imported.
-- [ ] **L-31** — Import the existing Palantir application as `dais_manual`.
+- [x] **L-31** — Import the existing Palantir application as `dais_manual`. Receipt:
+  read-only `gog` Gmail evidence identifies Palantir Technologies, role `Deployment
+  Strategist - Japan Forward Deployed`, official Lever sender, received 2024-12-10
+  05:36:18 JST, and immutable Gmail message ID `193ad2318e7e9ccd`; no official posting
+  URL exists in the confirmation or current discovery results, so no URL was
+  fabricated. The historical-import contract stores a content hash plus exact
+  normalized company/title alias, not message body or email address; creates a
+  submitted external application; makes exact replay idempotent; and fences a future
+  agent URL for the same role. Focused 4-test and full 264-test suites PASS.
+  Immutable release `bd2e813bbbffa1b07b7f0c35c832b9877d6a9711`
+  (archive SHA-256
+  `10a1359702dfbf3b6ae769084178ca4f110e2bb66d66a970d606bda1a65c8ef3`)
+  is active with zero writable paths. Production import increased applications from
+  five to six, produced exactly one mode-0600 external-import receipt, persisted
+  owner `dais_manual` and state `submitted`, returned `already_imported` on replay,
+  and rejected an agent reapplication probe. Daily remains unloaded while the
+  independent founder-outreach lane is built.
 - [ ] **L-32** — Create the independent BlockRun `founder_outreach` funnel.
 - [ ] **L-33** — Route extraction, normalization, and prefilter work to Luna.
 - [ ] **L-34** — Deny Luna authority for browser submission or outbound messages.
