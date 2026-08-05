@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-33` — Luna extraction/normalization/prefilter routing
+**Active atomic task:** `L-34` — Luna browser/outbound authority denial
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1183,7 +1183,19 @@ this spec update → commit/push → Telegram milestone before the next item sta
   idempotent, receipt mode is 0600, and application count remains six. No proposal or
   new outbound message exists yet; next founder-lane state is truthfully
   `proposal_ready`. Daily remains unloaded while model authority routing is enforced.
-- [ ] **L-33** — Route extraction, normalization, and prefilter work to Luna.
+- [x] **L-33** — Route extraction, normalization, and prefilter work to Luna.
+  Receipt: the daily pass now runs a bounded `repeatable-agent` prefilter before the
+  browser lane, and runtime config resolves that class first to GPT-5.6 Luna at
+  medium effort while `browser-lane-agent` remains GPT-5.6 Terra medium. The Luna
+  result has a strict schema, is copied into the daily evidence directory mode 0600,
+  and becomes untrusted lead input for the Terra pass. Daily quota short-circuiting,
+  honest browser-lane budget blocking, call ordering, shell syntax, focused E2E, and
+  the full 268-test suite PASS. Immutable release
+  `e21f38ace48cd5bd9b82bc710a0363be2a43d1c6` (archive SHA-256
+  `af256b296e444128fec906494d24db53a17ff5e5dafbe8e05d8f79f5ade5ca54`)
+  is active with zero writable paths and the prior release remains available for
+  rollback. Daily remains unloaded; this slice caused no application, email,
+  Calendar, model-scheduled wake, or Telegram side effect.
 - [ ] **L-34** — Deny Luna authority for browser submission or outbound messages.
 - [ ] **L-35** — Route deep fit, tailoring, and employer answers to Terra medium.
 - [ ] **L-36** — Route dream applications and weekly hypotheses to Terra high.
