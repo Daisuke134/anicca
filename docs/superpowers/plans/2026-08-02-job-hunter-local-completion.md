@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-49J` — restore natural-language Telegram milestone delivery and verify a real provider message ID
+**Active atomic task:** `L-49` — submit a different eligible Ashby application with the corrected observation receipt and store authoritative confirmation
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1797,7 +1797,7 @@ this spec update → commit/push → Telegram milestone before the next item sta
   approved route SHA, and release Guardian `healthy`. Ledger Guardian is `healthy`
   with 14 applications, 84 events, zero active claims, and zero stale claims. Daily
   remains unloaded.
-- [ ] **L-49J** — Restore owner-facing natural-language Telegram milestone delivery
+- [x] **L-49J** — Restore owner-facing natural-language Telegram milestone delivery
   before another live application. The required `send-telegram.sh` command is absent
   on the current Mac, so the 2026-08-05 Job Hunter milestone failed locally with
   `no such file or directory` and produced no provider receipt. Discover the
@@ -1805,7 +1805,17 @@ this spec update → commit/push → Telegram milestone before the next item sta
   natural-language status message with `artifact: none`, persist the real provider
   message ID, and prove duplicate delivery is suppressed. Do not attach spec,
   Markdown, logs, resumes, or other files unless the owner explicitly asks for that
-  exact artifact.
+  exact artifact. Receipt: the installed transport is the existing fenced
+  `job_search_loop.telegram.send_once` path through
+  `/opt/homebrew/bin/openclaw`, not the absent `send-telegram.sh`. One natural
+  Japanese status message with `artifact: none` was sent under immutable event key
+  `job-search-milestone:l49i:433ba0b0a239edc00da46d8b3a9ea098984c427f` and
+  Telegram acknowledged provider message ID `7026`. Replaying the exact event key
+  and body returned the same message ID without changing the durable completion
+  receipt; SQLite integrity remained `ok`. The outbox Guardian still identifies
+  three older unrelated `send_started` rows as uncertain. Telegram's installed
+  transport rejects read-history with `Unsupported Telegram action: read`, so those
+  rows remain quarantined and were not blindly resent. No file was attached.
 - [ ] **L-50** — Deliver the Ashby application artifacts and receipt to Telegram.
 - [ ] **L-51** — Submit one eligible real Workday application and store its
   authoritative receipt.
