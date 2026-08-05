@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-49K0A1G` — prevent false `no_eligible_job_found` and durably verify discovered links
+**Active atomic task:** `L-49K0B` — inventory Career Ops before porting discovery/form capabilities
 **Status:** The immutable four-lane runtime, hourly/five-minute schedules, grounded
 materials, ownership fences, Gmail ingestion, Telegram outbox, quota accounting, and
 Ashby observation classifier are implemented and tested. The daily LaunchAgent is
@@ -2053,7 +2053,7 @@ this spec update → commit/push → Telegram milestone before the next item sta
   observed 102 unverified links but incorrectly returned `no_eligible_job_found`
   without verifying any posting. That remaining discovery-to-verification defect is
   owned by existing task L-49K0C and is not an application receipt.
-- [ ] **L-49K0A1G** — Make discovery-to-verification durable and truthful. Persist
+- [x] **L-49K0A1G** — Make discovery-to-verification durable and truthful. Persist
   every discovered official-looking link before model exit; visit, normalize,
   liveness-check, deduplicate, and hard-gate each queued link until ten confirmed
   applications are reached or the durable queue is genuinely exhausted. Reject
@@ -2067,9 +2067,15 @@ this spec update → commit/push → Telegram milestone before the next item sta
     queue state before privacy scanning or final reporting. A claimed
     `no_eligible_job_found` with 102 pending links is now exit 76, never success.
   - Verified locally: focused contract/runtime suite 25/25 and complete Job Hunter
-    suite 373/373 pass. Completion remains unchecked until an immutable release is
-    activated and a resident LaunchAgent run proves queue persistence and the
-    terminal gate with real browser observations.
+    suite 373/373 pass.
+  - Verified in the resident loop: immutable release `ef7794bf191e00122df5738072606960b7b2e658`
+    produced `daily-20260805-223823`. The Job Hunter persisted 48 candidate links,
+    visited 34, durably rejected all 34, and left 14 browser-failed links pending.
+    It returned `verification_incomplete`, not `no_eligible_job_found`; the terminal
+    receipt preserved 34 verified / 14 pending and the process exited 76. No
+    application was claimed or reported. A `TargetClosedError` interrupted the
+    remaining 14 and is retained under browser self-healing task `L-49K0A1I`.
+    Telegram still reused message ID 7173 and remains owned by `L-49K0A1J`.
 - [ ] **L-49K0A1H** — Repair privacy classification without weakening real secret
   detection. Public job/location terms such as Tokyo and Japan must not become a
   profile leak merely because they equal mailing-address components; exact private
