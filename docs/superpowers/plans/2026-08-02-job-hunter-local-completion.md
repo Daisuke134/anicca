@@ -1516,7 +1516,12 @@ this spec update → commit/push → Telegram milestone before the next item sta
   acquire/renew/release with mode 0600 and no remaining lease, and proved a
   concurrent second holder is blocked without receiving a receipt. The loaded
   shared browser was not navigated, killed, restarted, or reassigned, and the
-  daily LaunchAgent remains intentionally unloaded. The pre-existing canonical
+  immutable release `5a22501a7a42e650c7b4a2183aa852c9720b4b07` (archive
+  SHA-256 `3dd23974b1ddfb5f940f97310431ebc32a383ca6a9ec404e1ca2869da35508ca`)
+  is active with zero writable paths; previous release
+  `f6e3c65a903fd0fa771b8e7614c59c0299978a15` remains rollback-ready and the
+  approved route SHA is unchanged. The daily LaunchAgent remains intentionally
+  unloaded. The pre-existing canonical
   runtime harness still terminates its parent test process without a capturable
   exit status even on its unchanged full-quota path; no success is claimed for
   those ten harness cases.
