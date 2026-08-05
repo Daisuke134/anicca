@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-49I` — close the silent post-click Ashby observation gap before another live submission
+**Active atomic task:** `L-49` — submit a different eligible Ashby application with the corrected observation receipt and store authoritative confirmation
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1753,7 +1753,7 @@ this spec update → commit/push → Telegram milestone before the next item sta
   `f12805527d8145bb827a49dd9778a5ba020a20b6685ecf94900915755f508e69`)
   is active with zero writable paths, both release and ledger Guardian `healthy`,
   zero active claims, and the approved route SHA unchanged. Daily remains unloaded.
-- [ ] **L-49I** — Persist a PII-free post-click Ashby observation receipt that
+- [x] **L-49I** — Persist a PII-free post-click Ashby observation receipt that
   distinguishes native/custom validation rejection, reCAPTCHA execution or
   rejection, an exact submit request, exact status/alert text, and a silent timeout.
   Require custom-button selected state before the click, capture every visible
@@ -1771,7 +1771,20 @@ this spec update → commit/push → Telegram milestone before the next item sta
   Gmail query returned zero messages. The ledger therefore records
   `submit_unknown`, forbids retrying Camunda, preserves slot 8, has SQLite integrity
   `ok`, and released the exact owned page and browser lease. Another live Ashby
-  click is forbidden until this observation gap is closed.
+  click is forbidden until this observation gap is closed. Receipt: the new pure
+  classifier prioritizes an exact official submit request, recognizes only the
+  exact approved reCAPTCHA rejection as retryable, and distinguishes validation
+  rejection, reCAPTCHA pending, silent timeout, and no terminal signal without
+  persisting raw error text. Both browser contracts now require rendered
+  custom-button state checks and pre-click request, reCAPTCHA, and visible-error
+  observers. Focused 24 tests and the full 364-test suite PASS; the full suite
+  completed in 30.516 seconds. Immutable release
+  `433ba0b0a239edc00da46d8b3a9ea098984c427f` (archive SHA-256
+  `1c64453f7f755b9b32f63dd69b555d281e0b7150eedd73f93c1ed04e18e9eeea`)
+  is active with zero writable paths, four runners, four stable launchers, unchanged
+  approved route SHA, and release Guardian `healthy`. Ledger Guardian is `healthy`
+  with 14 applications, 84 events, zero active claims, and zero stale claims. Daily
+  remains unloaded.
 - [ ] **L-50** — Deliver the Ashby application artifacts and receipt to Telegram.
 - [ ] **L-51** — Submit one eligible real Workday application and store its
   authoritative receipt.
