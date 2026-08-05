@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-49A` — reconcile Sierra without resubmission, then close L-49 with an authoritative Ashby receipt
+**Active atomic task:** `L-49B` — persist the pre-click/click/post-click phase outside the browser process before another live application
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1578,6 +1578,15 @@ this spec update → commit/push → Telegram milestone before the next item sta
   success message did not become visible within 30 seconds and the immediate Gmail
   query returned no Sierra/Ashby message. The ledger therefore records
   `submit_unknown`, not `submitted`, and forbids retrying the same posting.
+- [ ] **L-49B** — Make the live Ashby executor persist `pre_click`, `clicked`, and
+  `confirmed` phases durably outside the Playwright worker before another live
+  application. The fallback OpenAI `AI Deployment Engineer - Tokyo` form was live
+  and its exact English resume and required answers were fenced in the ledger. The
+  browser worker then exited without returning a result while the intent remained
+  `submit_claimed`; no owned page, exact success text, or matching Gmail receipt was
+  recoverable. It was conservatively reconciled to `submit_unknown` and must never
+  be retried. A third live submission is forbidden until worker exit can be mapped
+  deterministically to click phase and every terminal path releases its lease.
 - [ ] **L-50** — Deliver the Ashby application artifacts and receipt to Telegram.
 - [ ] **L-51** — Submit one eligible real Workday application and store its
   authoritative receipt.
