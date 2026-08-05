@@ -168,6 +168,7 @@ test("submits the live Japanese one-click registration control", async () => {
       assert.equal(role, "button");
       assert.equal(options.exact, true);
       assert.equal(options.name.test("ワンクリックで参加登録"), true);
+      assert.equal(options.name.test("参加リクエスト"), true);
       return control;
     },
     async waitForTimeout() {},
