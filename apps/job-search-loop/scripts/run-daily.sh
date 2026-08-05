@@ -28,6 +28,11 @@ refresh_summary() {
     --output "$JOB_SEARCH_STATE_ROOT/summary.v1.json" \
     --day "$JAPAN_DAY" \
     --model-route "${AGENT_RUNNER_PROVIDER:-unconfigured}"
+  "$JOB_SEARCH_PYTHON" -m job_search_loop.quota record \
+    --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
+    --day "$JAPAN_DAY" \
+    --reason "hourly_pass_complete" \
+    --output "$EVIDENCE/quota-deficit.json"
 }
 SLOT_COUNT=$("$JOB_SEARCH_PYTHON" - "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" "$JAPAN_DAY" <<'PY'
 import sys
