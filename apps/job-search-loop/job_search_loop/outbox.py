@@ -3,11 +3,16 @@ from __future__ import annotations
 import os
 import sqlite3
 import uuid
+from datetime import datetime, timezone
 from pathlib import Path
 
 
 class DeliveryUncertain(RuntimeError):
     pass
+
+
+def _now() -> str:
+    return datetime.now(timezone.utc).isoformat()
 
 
 class Outbox:
@@ -21,9 +26,22 @@ class Outbox:
               payload TEXT NOT NULL,
               status TEXT NOT NULL,
               fence TEXT,
-              telegram_message_id TEXT
+              telegram_message_id TEXT,
+              created_at TEXT,
+              claimed_at TEXT,
+              send_started_at TEXT,
+              completed_at TEXT
             )
             """
+        )
+        columns = {
+            str(row[1]) for row in self.connection.execute("PRAGMA table_info(outbox)")
+        }
+        for column in ("created_at", "claimed_at", "send_started_at", "completed_at"):
+            if column not in columns:
+                self.connection.execute(f"ALTER TABLE outbox ADD COLUMN {column} TEXT")
+        self.connection.execute(
+            "UPDATE outbox SET created_at=? WHERE created_at IS NULL", (_now(),)
         )
         os.chmod(path, 0o600)
 
@@ -32,8 +50,9 @@ class Outbox:
 
     def enqueue(self, event_key: str, payload: str) -> str:
         self.connection.execute(
-            "INSERT OR IGNORE INTO outbox(event_key,payload,status) VALUES(?,?,'pending')",
-            (event_key, payload),
+            "INSERT OR IGNORE INTO outbox(event_key,payload,status,created_at) "
+            "VALUES(?,?,'pending',?)",
+            (event_key, payload, _now()),
         )
         return event_key
 
@@ -49,18 +68,19 @@ class Outbox:
             raise DeliveryUncertain(f"outbox is not claimable: {row[0]}")
         fence = uuid.uuid4().hex
         self.connection.execute(
-            "UPDATE outbox SET status='claimed',fence=? WHERE event_key=? AND status='pending'",
-            (fence, event_key),
+            "UPDATE outbox SET status='claimed',fence=?,claimed_at=? "
+            "WHERE event_key=? AND status='pending'",
+            (fence, _now(), event_key),
         )
         return fence
 
     def mark_send_started(self, event_key: str, fence: str) -> None:
         changed = self.connection.execute(
             """
-            UPDATE outbox SET status='send_started'
+            UPDATE outbox SET status='send_started',send_started_at=?
             WHERE event_key=? AND fence=? AND status='claimed'
             """,
-            (event_key, fence),
+            (_now(), event_key, fence),
         ).rowcount
         if changed != 1:
             raise DeliveryUncertain("outbox fence mismatch")
@@ -68,10 +88,10 @@ class Outbox:
     def mark_sent(self, event_key: str, fence: str, message_id: str) -> None:
         changed = self.connection.execute(
             """
-            UPDATE outbox SET status='sent',telegram_message_id=?
+            UPDATE outbox SET status='sent',telegram_message_id=?,completed_at=?
             WHERE event_key=? AND fence=? AND status='send_started'
             """,
-            (message_id, event_key, fence),
+            (message_id, _now(), event_key, fence),
         ).rowcount
         if changed != 1:
             raise DeliveryUncertain("outbox fence mismatch")
