@@ -340,6 +340,122 @@ class OwnerReportRendererTest(unittest.TestCase):
         self.assertIn("KDP", text)
         self.assertIn("認証", text)
 
+    def test_incident_uses_latest_snapshot_and_aggregates_current_gaps(self):
+        """Historical snapshots must not replay stale gaps into a sweep."""
+
+        business_rows = []
+        for offset, business_date in enumerate(
+            [
+                "2026-07-30",
+                "2026-07-31",
+                "2026-08-01",
+                "2026-08-02",
+                "2026-08-03",
+                "2026-08-04",
+            ]
+        ):
+            if offset == 5:
+                sources = {
+                    "gumroad": {
+                        "status": "failed",
+                        "reason": "gumroad_current_failure",
+                        "data": None,
+                    },
+                    "kdp": {
+                        "status": "unavailable",
+                        "reason": "kdp_current_gap",
+                        "data": None,
+                    },
+                    "stripe": {
+                        "status": "error",
+                        "reason": "stripe_current_error",
+                        "data": None,
+                    },
+                }
+            else:
+                sources = {
+                    "kdp": {
+                        "status": "unavailable",
+                        "reason": f"kdp_historical_gap_{offset}",
+                        "data": None,
+                    }
+                }
+            business_rows.append(
+                {
+                    "schema_version": 1,
+                    "product_id": "ebook-ja",
+                    "business_date": business_date,
+                    "observed_at": f"{business_date}T08:00:00Z",
+                    "snapshot_id": f"ebook-ja:{business_date}",
+                    "sources": sources,
+                }
+            )
+
+        (self.root / "business-outcomes.jsonl").write_text(
+            "".join(json.dumps(row, ensure_ascii=False) + "\n" for row in business_rows),
+            encoding="utf-8",
+        )
+        events = owner_report.build_events(
+            self.root, "incident", product_id="ebook-ja", as_of=AS_OF
+        )
+
+        business_events = [event for event in events if "source_gaps" in event["facts"]]
+        self.assertEqual(len(business_events), 1)
+        event = business_events[0]
+        self.assertEqual(event["facts"]["business_date"], "2026-08-04")
+        self.assertEqual(event["facts"]["snapshot_id"], "ebook-ja:2026-08-04")
+        self.assertEqual(
+            event["facts"]["source_gaps"],
+            [
+                {
+                    "source": "kdp",
+                    "reason": "kdp_current_gap",
+                    "next_repair": "KDP認証を設定して再取得する",
+                },
+                {
+                    "source": "stripe",
+                    "reason": "stripe_current_error",
+                    "next_repair": "Stripeの商品ID設定を確認して再取得する",
+                },
+                {
+                    "source": "gumroad",
+                    "reason": "gumroad_current_failure",
+                    "next_repair": "Gumroadの読み取り設定を確認して再取得する",
+                },
+            ],
+        )
+        self.assertEqual(
+            event["evidence_refs"], ["state/business-outcomes.jsonl#row-5"]
+        )
+        text = owner_report.render_japanese(event)
+        self.assertIn("KDP", text)
+        self.assertIn("Stripe", text)
+        self.assertIn("Gumroad", text)
+        self.assertIn("現在の証拠では分かりません", text)
+        self.assertNotIn("historical_gap", text)
+        self.assertNotIn("2026-08-03", text)
+
+        replay = owner_report.build_events(
+            self.root,
+            "incident",
+            product_id="ebook-ja",
+            as_of=AS_OF + dt.timedelta(hours=1),
+        )
+        replay = next(event for event in replay if "source_gaps" in event["facts"])
+        self.assertEqual(event["message_key"], replay["message_key"])
+
+        changed_rows = json.loads(json.dumps(business_rows))
+        changed_rows[-1]["sources"]["stripe"]["reason"] = "stripe_changed_error"
+        (self.root / "business-outcomes.jsonl").write_text(
+            "".join(json.dumps(row, ensure_ascii=False) + "\n" for row in changed_rows),
+            encoding="utf-8",
+        )
+        changed = owner_report.build_events(
+            self.root, "incident", product_id="ebook-ja", as_of=AS_OF
+        )
+        changed = next(event for event in changed if "source_gaps" in event["facts"])
+        self.assertNotEqual(event["message_key"], changed["message_key"])
+
     def test_experiment_does_not_call_not_mature_winner_or_loser(self):
         event = self.event("experiment", "ebook-ja")
         text = owner_report.render_japanese(event)

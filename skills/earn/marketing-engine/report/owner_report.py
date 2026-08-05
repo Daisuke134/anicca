@@ -533,35 +533,79 @@ def _repair_for(source: str) -> str:
     return repairs.get(source, "ソースを確認して再収集する")
 
 
+_INCIDENT_STATUSES = frozenset({"unavailable", "error", "failed"})
+_INCIDENT_SOURCE_ORDER = (
+    "kdp",
+    "stripe",
+    "gumroad",
+    "revenuecat",
+    "product_analytics",
+    "posthog",
+)
+
+
+def _business_incident_gaps(row: dict) -> list[dict]:
+    sources = row.get("sources") if isinstance(row.get("sources"), dict) else {}
+    ordered_sources = list(dict.fromkeys([*_INCIDENT_SOURCE_ORDER, *sorted(sources)]))
+    gaps = []
+    for source_name in ordered_sources:
+        source = sources.get(source_name)
+        if not isinstance(source, dict) or source.get("status") not in _INCIDENT_STATUSES:
+            continue
+        gaps.append(
+            {
+                "source": source_name,
+                "reason": source.get("reason") or f"{source_name}_unavailable",
+                "next_repair": _repair_for(source_name),
+            }
+        )
+    return gaps
+
+
+def _incident_message_key(product_id: str, business_date: object, facts: dict) -> str:
+    """Build a replay-stable key from the latest business incident facts."""
+
+    date_key = str(business_date or facts.get("snapshot_id") or "unknown")
+    facts_digest = hashlib.sha256(_canonical(facts).encode("utf-8")).hexdigest()
+    return f"incident:{product_id}:{date_key}:{facts_digest}"
+
+
 def _incident_events(root: pathlib.Path, product_id: str, as_of: dt.datetime) -> list[dict]:
     events = []
-    # Business-source failures lead the report: they are the actionable owner
-    # blocker, while a missed social checkpoint remains the supporting signal.
-    for index, row in _scoped(_indexed_rows(root, "business-outcomes.jsonl"), product_id):
-        if not _before(row, as_of):
-            continue
-        sources = row.get("sources") if isinstance(row.get("sources"), dict) else {}
-        source_order = ("kdp", "stripe", "gumroad", "revenuecat", "product_analytics", "posthog")
-        ordered_sources = list(dict.fromkeys([*source_order, *sorted(sources)]))
-        for source_name in ordered_sources:
-            source = sources.get(source_name)
-            if not isinstance(source, dict) or source.get("status") not in {"unavailable", "error", "failed"}:
-                continue
-            reason = source.get("reason") or f"{source_name}_unavailable"
+    # Business-source failures are the actionable owner blocker.  Only the
+    # latest eligible snapshot is current; historical rows are evidence, not
+    # new incidents.  Aggregate every current gap so one product yields at
+    # most one business incident event per sweep.
+    latest = _latest(
+        _scoped(_indexed_rows(root, "business-outcomes.jsonl"), product_id),
+        as_of,
+        "business_date",
+        "observed_at",
+    )
+    if latest is not None:
+        index, row = latest
+        source_gaps = _business_incident_gaps(row)
+        if source_gaps:
             facts = {
-                "source": source_name,
-                "reason": reason,
-                "next_repair": _repair_for(source_name),
                 "business_date": row.get("business_date"),
+                "snapshot_id": row.get("snapshot_id"),
+                "source_gaps": source_gaps,
             }
-            events.append(_event(
-                kind="incident",
-                product_id=product_id,
-                as_of=as_of,
-                message_key=f"incident:{product_id}:{source_name}:{row.get('business_date')}:{reason}",
-                facts=facts,
-            evidence_refs=[_ref("business-outcomes.jsonl", index)],
-            ))
+            events.append(
+                _event(
+                    kind="incident",
+                    product_id=product_id,
+                    as_of=as_of,
+                    message_key=_incident_message_key(
+                        product_id, facts.get("business_date"), facts
+                    ),
+                    facts=facts,
+                    evidence_refs=[_ref("business-outcomes.jsonl", index)],
+                )
+            )
+
+    # Keep product-bound social checkpoint incidents separate from business
+    # incidents.  Unbound rows are intentionally excluded by _scoped above.
     for index, row in _scoped(_indexed_rows(root, "post-metrics.jsonl"), product_id):
         if not _before(row, as_of):
             continue
@@ -798,10 +842,26 @@ def render_japanese(event: dict) -> str:
             else:
                 lines.append(f"売上は{_reason_text(reason)}。")
     elif kind == "incident":
-        source = facts.get("source") or "unknown"
-        reason = facts.get("reason") or "unknown"
-        lines.append(f"⚠️ {product_id}で{source}の確認が必要です。{_reason_text(reason)}。")
-        lines.append(f"次の修復: {facts.get('next_repair') or _repair_for(source)}。")
+        source_gaps = facts.get("source_gaps")
+        if isinstance(source_gaps, list) and source_gaps:
+            business_date = facts.get("business_date") or "最新"
+            lines.append(
+                f"⚠️ {product_id}の{business_date}時点で、確認できないソースがあります。"
+            )
+            for gap in source_gaps:
+                if not isinstance(gap, dict):
+                    continue
+                source = gap.get("source") or "unknown"
+                reason = gap.get("reason") or "unknown"
+                lines.append(f"{source}は{_reason_text(reason)}。")
+                lines.append(
+                    f"次の修復: {gap.get('next_repair') or _repair_for(source)}。"
+                )
+        else:
+            source = facts.get("source") or "unknown"
+            reason = facts.get("reason") or "unknown"
+            lines.append(f"⚠️ {product_id}で{source}の確認が必要です。{_reason_text(reason)}。")
+            lines.append(f"次の修復: {facts.get('next_repair') or _repair_for(source)}。")
     elif kind == "experiment":
         status = facts.get("status")
         if status == "not_mature":
@@ -841,6 +901,20 @@ def render_japanese(event: dict) -> str:
     lines.append(f"product={product_id if product_id is not None else 'portfolio'}")
     if kind == "action" and facts.get("native_url"):
         lines.append(f"native_url={facts['native_url']}")
+    if kind == "incident":
+        source_gaps = facts.get("source_gaps")
+        if isinstance(source_gaps, list):
+            for gap in source_gaps:
+                if not isinstance(gap, dict):
+                    continue
+                lines.append(
+                    "source="
+                    + str(gap.get("source") or "unknown")
+                    + ";reason="
+                    + str(gap.get("reason") or "unknown")
+                    + ";next_repair="
+                    + str(gap.get("next_repair") or "")
+                )
     raw_reason = facts.get("reason") or facts.get("money_reason") or facts.get("mrr_reason")
     if raw_reason:
         lines.append(f"reason={raw_reason}")
