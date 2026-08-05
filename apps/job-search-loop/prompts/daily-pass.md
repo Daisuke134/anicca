@@ -148,7 +148,23 @@ assignment is immutable; an exact replay is idempotent and a conflicting rebind 
 stop.
 
 After the attributed application exists, transition qualified then materials_ready,
-hash the canonical job/material/answer payload, and claim a daily slot. Pass the
+hash the canonical job/material/answer payload, and claim a daily slot. The daily
+portfolio is exactly 2 dream, 5 strong-fit, and 3 adjacent applications. Compute the
+bucket only from the deterministic ranking result and official compensation:
+
+```python
+from job_search_loop.portfolio import classify_portfolio
+
+portfolio_bucket = classify_portfolio(
+    score=evaluation.score,
+    compensation_min_jpy=job.compensation_min_jpy,
+    role_family=role_family,
+)
+```
+
+Never relabel a role to fill a bucket. If its bucket is full, continue discovery for
+the missing bucket under the unchanged hard eligibility gates. Pass
+`portfolio_bucket=portfolio_bucket` to `Ledger.claim_submission`. Also pass the
 exact selected resume from the helper's `resume_path` and its verified `resume_sha256` to
 `claim_submission`, together with the exact ATS snapshot path and its SHA-256 as
 `ats_snapshot_path` and `ats_snapshot_sha256`. The Ledger rereads, hashes, evaluates,

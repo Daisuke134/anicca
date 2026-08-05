@@ -6,6 +6,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from .portfolio import (
+    DREAM_COMPENSATION_MIN_JPY,
+    DREAM_SCORE_MIN,
+    PORTFOLIO_LIMITS,
+)
+
 
 class ConfigError(ValueError):
     pass
@@ -86,6 +92,15 @@ def load_settings(
     for key, expected in required.items():
         if strategy.get(key) != expected:
             raise ConfigError(f"strategy.{key} must be {expected}")
+    if strategy.get("daily_portfolio") != PORTFOLIO_LIMITS:
+        raise ConfigError(f"strategy.daily_portfolio must be {PORTFOLIO_LIMITS}")
+    if strategy.get("dream_score_min") != DREAM_SCORE_MIN:
+        raise ConfigError(f"strategy.dream_score_min must be {DREAM_SCORE_MIN}")
+    if strategy.get("dream_compensation_min_jpy") != DREAM_COMPENSATION_MIN_JPY:
+        raise ConfigError(
+            "strategy.dream_compensation_min_jpy must be "
+            f"{DREAM_COMPENSATION_MIN_JPY}"
+        )
     return Settings(
         state_dir=_private_dir(state_dir),
         materials_dir=_private_dir(materials_dir),

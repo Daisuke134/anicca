@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any, Iterator, Mapping
 
 from .ats import evaluate_snapshot
+from .portfolio import PORTFOLIO_LIMITS
 from .state import canonical_job_id, canonical_url, validate_transition
 
 
@@ -121,6 +122,7 @@ class Ledger:
                 japan_day TEXT NOT NULL,
                 slot INTEGER NOT NULL,
                 application_id TEXT NOT NULL UNIQUE REFERENCES applications(id),
+                portfolio_bucket TEXT NOT NULL DEFAULT 'legacy_unallocated',
                 status TEXT NOT NULL,
                 PRIMARY KEY (japan_day, slot)
             );
@@ -386,6 +388,15 @@ class Ledger:
         if "ats_snapshot_sha256" not in intent_columns:
             self.connection.execute(
                 "ALTER TABLE submit_intents ADD COLUMN ats_snapshot_sha256 TEXT"
+            )
+        slot_columns = {
+            str(row["name"])
+            for row in self.connection.execute("PRAGMA table_info(daily_slots)")
+        }
+        if "portfolio_bucket" not in slot_columns:
+            self.connection.execute(
+                "ALTER TABLE daily_slots ADD COLUMN portfolio_bucket TEXT "
+                "NOT NULL DEFAULT 'legacy_unallocated'"
             )
         self.connection.execute(
             """
@@ -1313,6 +1324,19 @@ class Ledger:
         ).fetchone()
         return int(row["count"])
 
+    def daily_portfolio(self, japan_day: str) -> dict[str, int]:
+        counts = {bucket: 0 for bucket in PORTFOLIO_LIMITS}
+        rows = self.connection.execute(
+            "SELECT portfolio_bucket, COUNT(*) AS count FROM daily_slots "
+            "WHERE japan_day = ? GROUP BY portfolio_bucket",
+            (japan_day,),
+        ).fetchall()
+        for row in rows:
+            bucket = str(row["portfolio_bucket"])
+            if bucket in counts:
+                counts[bucket] = int(row["count"])
+        return counts
+
     def _transition_in_transaction(
         self,
         application_id: str,
@@ -1527,7 +1551,10 @@ class Ledger:
         resume_sha256: str,
         ats_snapshot_path: Path,
         ats_snapshot_sha256: str,
+        portfolio_bucket: str | None = None,
     ) -> SubmitIntent | None:
+        if portfolio_bucket is not None and portfolio_bucket not in PORTFOLIO_LIMITS:
+            raise ValueError("portfolio_bucket is invalid")
         resolved_resume = Path(resume_path).expanduser().resolve()
         if not resolved_resume.is_file():
             raise ValueError(f"resume is not a file: {resolved_resume}")
@@ -1576,6 +1603,15 @@ class Ledger:
                 return None
             if existing is None and current_state != "materials_ready":
                 return None
+            stored_bucket = portfolio_bucket or "legacy_unallocated"
+            if portfolio_bucket is not None:
+                bucket_count = self.connection.execute(
+                    "SELECT COUNT(*) AS count FROM daily_slots "
+                    "WHERE japan_day = ? AND portfolio_bucket = ?",
+                    (japan_day, portfolio_bucket),
+                ).fetchone()
+                if int(bucket_count["count"]) >= PORTFOLIO_LIMITS[portfolio_bucket]:
+                    return None
             used = {
                 int(row["slot"])
                 for row in self.connection.execute(
@@ -1603,10 +1639,11 @@ class Ledger:
             )
             self.connection.execute(
                 """
-                INSERT INTO daily_slots (japan_day, slot, application_id, status)
-                VALUES (?, ?, ?, 'claimed')
+                INSERT INTO daily_slots
+                  (japan_day, slot, application_id, portfolio_bucket, status)
+                VALUES (?, ?, ?, ?, 'claimed')
                 """,
-                (japan_day, slot, application_id),
+                (japan_day, slot, application_id, stored_bucket),
             )
             if reopening:
                 self.connection.execute(

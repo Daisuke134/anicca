@@ -23,6 +23,13 @@ class PromptInjectionTests(unittest.TestCase):
         script = (root / "scripts" / "run-daily.sh").read_text(encoding="utf-8")
         self.assertIn("job_search_loop.profile_privacy scan", script)
 
+    def test_daily_prompt_requires_deterministic_portfolio_claim(self):
+        root = Path(__file__).parents[1]
+        prompt = (root / "prompts" / "daily-pass.md").read_text(encoding="utf-8")
+        self.assertIn("classify_portfolio", prompt)
+        self.assertIn("portfolio_bucket=", prompt)
+        self.assertIn("2 dream, 5 strong-fit, and 3 adjacent", prompt)
+
 
 if __name__ == "__main__":
     unittest.main()
