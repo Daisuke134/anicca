@@ -870,87 +870,157 @@ submissions.
 
 ## 12. Execution order and remaining TODO
 
-Each item closes RED → GREEN → real verification → this spec update → commit/push
-before the next item begins.
+An item is atomic only when it changes one contract and has one independently
+observable completion receipt. Every item closes RED → GREEN → real verification →
+this spec update → commit/push → Telegram milestone before the next item starts.
 
-- [x] **O2-01** — Create and measure dedicated branch/worktree; preserve unrelated
-  main changes; record baseline and current runtime truth.
-- [x] **O2-02** — Rebase onto the latest `origin/main` immediately before the first
-  code slice and record the resulting commit.
-- [x] **O2-03** — Re-run the complete Job Hunter and runner suites from their canonical
-  working directories and keep them green.
-- [x] **O2-04A — first implementation slice: corrected resume baseline** — Build the
-  approved one-page English resume and the separate Japanese `履歴書` and
-  `職務経歴書`; update the private fact ledger without inventing facts; render PDFs;
-  verify ATS extraction, page count, chronology, links, and visual layout; send every
-  artifact to Telegram; record message IDs and SHA-256 values here; obtain base
-  acceptance before autonomous submission. Owner explicitly waived TDD for resume
-  authoring; post-change verification completed with 203 tests green.
-- [x] **O2-04B** — Commit and push every reviewable resume/spec slice; keep this
-  dedicated spec as the progress SSOT. Commits `e3d23ca73` through `c7eb197f0` are
-  present on the canonical remote branch.
-- [ ] **O2-04C** — Diff upstream vetted release
-  [`v1.3.0`](https://github.com/MadsLorentzen/ai-job-search/releases/tag/v1.3.0)
-  and the newer `master` delta against the Dais fork and production loop; import only
-  tested improvements using `upstream-adoption.v1.json`; port its grounded profile,
-  discovery, rank, application-artifact, outcome, Gmail, interview, upskill, and
-  reporting semantics while superseding interactive execution and CSV state with
-  the autonomous event-ledger/runtime contract.
-- [ ] **O2-05** — Replace worktree-bound LaunchAgent programs with stable launchers
-  and immutable releases; install the canonical local runtime.
-- [ ] **O2-06A** — TDD the JPY 8M floor / JPY 10M target / JPY 30M stretch policy,
-  timestamped USD-six-figure classification, travel-positive policy, and clearance
-  non-rejection contract; prove with real discovery logs.
-- [ ] **O2-06B** — TDD the hourly application schedule, five-minute `gog` inbox,
-  ten-confirmed/day cap and portfolio mix, visible quota-deficit recovery, and
-  ledger-backed quota across repeated wakes.
-- [ ] **O2-06C** — Import manual/recruiter applications, mark existing Palantir work
-  `dais_manual`, enforce cross-owner duplicate prevention, and implement the separate
-  BlockRun founder-outreach funnel.
-- [ ] **O2-06D** — Route non-side-effect extraction/prefilter to Luna and deep fit,
-  tailoring, inbox meaning, external-side-effect decisions, and weekly hypotheses to
-  Terra; preserve deterministic Wilson/sample/safety gates and replay both routes on
-  identical immutable snapshots before activation.
-- [ ] **O2-07** — Complete Guardian, lifecycle closure, event-backed `summary.v2`,
-  observable tracker, explicit funnel numerators/denominators, emotional Telegram
-  copy validation, and per-application resume/cover-letter/question artifacts.
-- [ ] **O2-08** — Submit one eligible real Ashby application and capture an
-  authoritative ATS or Gmail receipt, exact artifacts, Telegram IDs, and thread ID;
-  exclude all manually or recruiter-submitted roles.
-- [ ] **O2-09** — Submit one eligible real Workday application and capture the same
-  evidence contract.
-- [ ] **O2-10** — Prove one real interview email → stage update → Calendar event →
-  emotional Telegram progression report → interview prep/debrief flow using `gog`
-  and immutable Gmail message IDs.
-- [ ] **O2-11** — Complete trace-linked weekly reflection, funnel attribution,
-  confirmed-application/reply/interview/final/offer metrics, segment Pareto, 20%
-  holdout, one-variable experiments, deterministic promotion, and rollback; deliver
-  the Terra-authored self-improvement report to Telegram.
-- [ ] **O2-12** — Keep `ai.anicca.job-search-daily` as the CloakBrowser owner, make
-  daily/inbox/learning/guardian healthy, and prove Job Hunter closes only pages it
-  created without disturbing shared tabs or contexts.
+### 12.1 Completed foundation
 
-- [ ] **O3-01** — Freeze the Dais local product contract only after O2-08 through
-  O2-12 have authoritative real receipts and at least one real interview progression.
-- [ ] **O3-02** — Define tenant-isolated profile, credential, browser, ledger,
-  artifact, outbox, and audit boundaries; no user's facts or documents are visible to
-  another tenant or pooled model prompt.
-- [ ] **O3-03** — Build Web onboarding for candidate facts, compensation, location,
-  Gmail OAuth, accepted base resumes, autonomy boundaries, and manual/recruiter
-  application import.
-- [ ] **O3-04** — Run one isolated scheduler and browser owner per tenant with global
-  capacity limits, idempotent side effects, durable leases, and rollback.
-- [ ] **O3-05** — Build the Web Career surface from the same event ledger: company
-  list, artifacts, stages, Gmail evidence, interviews, offers, funnel metrics, and
-  system health.
-- [ ] **O3-06** — Generalize self-improvement per tenant. Share only privacy-safe,
-  minimum-cohort aggregate priors; never share resume text, employer answers, Gmail
-  bodies, compensation, or identity facts across users.
-- [ ] **O3-07** — Complete consent, deletion/export, security, abuse, billing,
-  observability, support, and incident-response gates before inviting external users.
-- [ ] **O3-08** — Onboard a bounded external cohort, verify real application and
-  outcome receipts, measure interview and offer conversion without fabricated or
-  dry-run outcomes, and expand only after the safety and quality gates pass.
+- [x] **F-01** — Create the isolated Job Hunter branch/worktree and record baseline.
+- [x] **F-02** — Rebase the isolated branch onto the recorded canonical base.
+- [x] **F-03** — Establish the 203-test green baseline.
+- [x] **F-04** — Accept the English Applied AI base resume.
+- [x] **F-05** — Accept the English AI Product/Solutions base resume.
+- [x] **F-06** — Accept the Japanese `履歴書`.
+- [x] **F-07** — Accept the Japanese `職務経歴書`.
+- [x] **F-08** — Install the four accepted resume hashes as the production baseline.
+
+### 12.2 Local autonomous loop — execute strictly in order
+
+- [ ] **L-01** — Pin upstream `ai-job-search` v1.3.0 commit, hashes, and license.
+- [ ] **L-02** — Record every v1.3.0 component as `reuse`, `adapt`, or `supersede` in
+  `upstream-adoption.v1.json`.
+- [ ] **L-03** — Diff upstream `master` against v1.3.0 and record candidate changes.
+- [ ] **L-04** — Port the upstream grounded profile-ingestion contract.
+- [ ] **L-05** — Port the upstream discovery and `seen_jobs` dedupe contract.
+- [ ] **L-06** — Port the upstream ranking, veto, deadline, and honest-gap contract.
+- [ ] **L-07** — Port the upstream application research and artifact-chain contract.
+- [ ] **L-08** — Port the upstream outcome, follow-up, and archive contract.
+- [ ] **L-09** — Port the upstream Gmail classification semantics into `gog` events.
+- [ ] **L-10** — Port the upstream interview-preparation contract.
+- [ ] **L-11** — Port the upstream upskill and reporting projections without adding
+  a second source of truth.
+- [ ] **L-12** — Build a content-addressed immutable local release.
+- [ ] **L-13** — Install the stable launcher under `~/.local/libexec/anicca/job-search/`.
+- [ ] **L-14** — Point the application LaunchAgent at the stable launcher.
+- [ ] **L-15** — Point the inbox LaunchAgent at the stable launcher.
+- [ ] **L-16** — Point the learning LaunchAgent at the stable launcher.
+- [ ] **L-17** — Activate the immutable release through the stable pointer.
+- [ ] **L-17A** — Prove rollback to the last-known-good release.
+- [ ] **L-18** — Migrate the private profile to the JPY 8M hard floor.
+- [ ] **L-19** — Migrate the strategy to the JPY 10M target and JPY 30M stretch.
+- [ ] **L-20** — Implement timestamped BOJ-rate USD 100K classification.
+- [ ] **L-21** — Implement travel-positive ranking.
+- [ ] **L-22** — Replace blanket clearance rejection with truthful clearance-state
+  handling.
+- [ ] **L-23** — Configure the application LaunchAgent for a 3,600-second interval.
+- [ ] **L-24** — Configure the inbox LaunchAgent for a 300-second interval.
+- [ ] **L-25** — Enforce the initial ten-confirmed-applications daily cap.
+- [ ] **L-26** — Enforce the daily 2 dream / 5 strong-fit / 3 adjacent portfolio.
+- [ ] **L-27** — Persist a `quota_deficit` event when fewer than ten submissions are
+  confirmed.
+- [ ] **L-28** — Expand sources and queries after a quota deficit without weakening
+  any hard gate.
+- [ ] **L-29** — Add `agent`, `dais_manual`, and `recruiter` as exclusive owners.
+- [ ] **L-30** — Enforce cross-owner posting duplicate prevention.
+- [ ] **L-31** — Import the existing Palantir application as `dais_manual`.
+- [ ] **L-32** — Create the independent BlockRun `founder_outreach` funnel.
+- [ ] **L-33** — Route extraction, normalization, and prefilter work to Luna.
+- [ ] **L-34** — Deny Luna authority for browser submission or outbound messages.
+- [ ] **L-35** — Route deep fit, tailoring, and employer answers to Terra medium.
+- [ ] **L-36** — Route dream applications and weekly hypotheses to Terra high.
+- [ ] **L-37** — Replay Luna/Terra routes on one immutable snapshot.
+- [ ] **L-37A** — Activate only the route map that passed the replay gate.
+- [ ] **L-38** — Append immutable Gmail message IDs through the deterministic `gog`
+  checkpoint.
+- [ ] **L-39** — Match Gmail events to applications or fail closed as ambiguous.
+- [ ] **L-40** — Persist exact submitted resume, cover letter, and employer answers
+  for each application.
+- [ ] **L-41** — Rebuild `summary.v2` exclusively from the event ledger.
+- [ ] **L-42** — Expose explicit funnel numerators and denominators in the tracker.
+- [ ] **L-43** — Render the Telegram daily pipeline projection from `summary.v2`.
+- [ ] **L-44** — Validate event-specific Telegram tone without changing event facts.
+- [ ] **L-45A** — Implement the Guardian release-health check.
+- [ ] **L-45B** — Implement the Guardian schedule-health check.
+- [ ] **L-45C** — Implement the Guardian ledger-health check.
+- [ ] **L-45D** — Implement the Guardian Gmail-health check.
+- [ ] **L-45E** — Implement the Guardian browser-owner health check.
+- [ ] **L-45F** — Implement the Guardian Telegram-outbox health check.
+- [ ] **L-46** — Bound Guardian auto-recovery to deterministic pre-side-effect faults.
+- [ ] **L-47** — Make `ai.anicca.job-search-daily` the sole CloakBrowser owner.
+- [ ] **L-48** — Prove Job Hunter closes only browser pages it created.
+- [ ] **L-49** — Submit one eligible real Ashby application and store its
+  authoritative receipt.
+- [ ] **L-50** — Deliver the Ashby application artifacts and receipt to Telegram.
+- [ ] **L-51** — Submit one eligible real Workday application and store its
+  authoritative receipt.
+- [ ] **L-52** — Deliver the Workday application artifacts and receipt to Telegram.
+- [ ] **L-53** — Convert one real interview Gmail message into a verified stage event.
+- [ ] **L-54** — Create the corresponding Google Calendar event with timezone,
+  duration, and meeting link.
+- [ ] **L-55** — Send the interview progression and Calendar receipt to Telegram.
+- [ ] **L-56** — Generate the interview pack from the exact submitted artifacts.
+- [ ] **L-57** — Persist the post-interview debrief and next-stage action.
+- [ ] **L-58** — Assign every eligible application to stable 20% baseline or 80%
+  candidate cohorts before material generation.
+- [ ] **L-59A** — Calculate recruiter-reply conversion from authoritative outcomes.
+- [ ] **L-59B** — Calculate interview conversion from authoritative outcomes.
+- [ ] **L-59C** — Calculate final-round conversion from authoritative outcomes.
+- [ ] **L-59D** — Calculate offer conversion from authoritative outcomes.
+- [ ] **L-60** — Generate one trace-linked Terra hypothesis per weekly run.
+- [ ] **L-61** — Reject a hypothesis that changes more than one strategy variable.
+- [ ] **L-62** — Gate promotion with minimum samples and Wilson interval separation.
+- [ ] **L-63** — Roll back immediately on safety regression or three candidate
+  failures.
+- [ ] **L-64** — Deliver the weekly promote/hold/rollback decision receipt to
+  Telegram.
+- [ ] **L-65** — Prove application, inbox, learning, and Guardian LaunchAgents are
+  healthy simultaneously.
+- [ ] **L-66** — Freeze the Dais local product contract after real Ashby, Workday,
+  Gmail, Calendar, Telegram, and interview receipts all pass.
+
+### 12.3 Multi-user Web product — begins only after L-66
+
+- [ ] **W-01** — Define a tenant-scoped profile boundary.
+- [ ] **W-02** — Define tenant-scoped credential and OAuth boundaries.
+- [ ] **W-03** — Define tenant-scoped browser ownership and session boundaries.
+- [ ] **W-04A** — Define the tenant-scoped ledger boundary.
+- [ ] **W-04B** — Define the tenant-scoped artifact boundary.
+- [ ] **W-04C** — Define the tenant-scoped outbox boundary.
+- [ ] **W-04D** — Define the tenant-scoped audit boundary.
+- [ ] **W-05** — Prove two-tenant isolation across all private resources.
+- [ ] **W-06** — Build Web onboarding for verified candidate facts.
+- [ ] **W-07** — Build Web onboarding for compensation and location policy.
+- [ ] **W-08** — Build Web Gmail OAuth onboarding.
+- [ ] **W-09** — Build Web base-resume review and acceptance.
+- [ ] **W-10** — Build Web autonomy-boundary acceptance.
+- [ ] **W-11** — Build Web manual/recruiter application import.
+- [ ] **W-12** — Run one durable scheduler lease per tenant.
+- [ ] **W-13** — Run one isolated browser owner per tenant.
+- [ ] **W-14** — Enforce global capacity limits without cross-tenant state sharing.
+- [ ] **W-15** — Make every tenant side effect idempotent and receipt-backed.
+- [ ] **W-16** — Build the Web company and stage pipeline from ledger projections.
+- [ ] **W-17** — Add application artifact and Gmail evidence views.
+- [ ] **W-18A** — Add the interview view.
+- [ ] **W-18B** — Add the offer view.
+- [ ] **W-18C** — Add the funnel-metrics view.
+- [ ] **W-18D** — Add the system-health view.
+- [ ] **W-19** — Run self-improvement independently per tenant.
+- [ ] **W-20** — Add privacy-safe minimum-cohort aggregate priors.
+- [ ] **W-21** — Implement user data export.
+- [ ] **W-22** — Implement user data deletion.
+- [ ] **W-23A** — Complete security controls.
+- [ ] **W-23B** — Complete abuse controls.
+- [ ] **W-24** — Complete billing and entitlement enforcement.
+- [ ] **W-25A** — Complete production observability.
+- [ ] **W-25B** — Complete incident response.
+- [ ] **W-26** — Complete user support and operational runbooks.
+- [ ] **W-27** — Onboard the bounded external cohort.
+- [ ] **W-28** — Verify one real application receipt for each cohort tenant.
+- [ ] **W-29A** — Verify outcome attribution for the cohort.
+- [ ] **W-29B** — Verify conversion metrics for the cohort.
+- [ ] **W-30** — Approve broader rollout only after privacy, safety, quality, and
+  conversion gates pass.
 
 ## 13. Final end-to-end state
 
@@ -1001,7 +1071,7 @@ flowchart TD
   ambiguous email changes an application stage.
 - Founder outreach is not counted as a job application until a verified role and
   application receipt exist.
-- O3 multi-user work does not begin before the O3-01 Dais proof gate.
+- W-series multi-user work does not begin before the L-66 Dais proof gate.
 - Cross-user learning never contains raw resumes, application answers, Gmail bodies,
   compensation records, identity facts, credentials, or artifact links.
 - The iOS app, Writer, CFO, Crypto, Affiliator, Connector, Fundraising, and Gig Work
