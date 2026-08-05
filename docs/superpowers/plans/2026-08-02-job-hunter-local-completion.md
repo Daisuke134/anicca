@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-49D` — route configured AI business role families to the technical-business resume before the Cursor submission
+**Active atomic task:** `L-49` — submit one eligible real Ashby-backed application and store an authoritative receipt
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1630,13 +1630,21 @@ this spec update → commit/push → Telegram milestone before the next item sta
   is active with four runners, four stable launchers, unchanged approved route SHA,
   and Guardian `healthy`. Production ledger integrity is `ok` with 12 durable click
   phase rows; Daily remains unloaded.
-- [ ] **L-49D** — Route the configured AI business role-family names through the
+- [x] **L-49D** — Route the configured AI business role-family names through the
   technical-business resume selector. The live Cursor Japan Field Engineering form
   is claim-ready and the deterministic evaluator scores it 80 in the adjacent
   bucket, but the configured `ai_sales_engineering` name currently misses the
   resume router's abbreviated `sales_engineering` allowlist. Do not claim or fill
   the live form until the configured business-family names select the exact English
-  technical-business resume under test and an immutable release is active.
+  technical-business resume under test and an immutable release is active. Receipt:
+  all nine configured AI business-family names now route to the technical-business
+  resume while Japanese postings still override to the Japanese resume. The focused
+  three-test file and full 347-test suite PASS; the full suite completed in 18.019
+  seconds. Immutable release
+  `2d6b8836f9cc5aa3e8a002159fa4056372b21e1d` (archive SHA-256
+  `b2b3a2150e3245b860cdabbeb8f42b29eb22632bcb4844190d90c34f1f7cc460`)
+  is active with Guardian `healthy` and the approved route SHA unchanged. Daily
+  remains unloaded.
 - [ ] **L-50** — Deliver the Ashby application artifacts and receipt to Telegram.
 - [ ] **L-51** — Submit one eligible real Workday application and store its
   authoritative receipt.
