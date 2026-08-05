@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-49` — submit a different eligible Ashby application with the corrected observation receipt and store authoritative confirmation
+**Active atomic task:** `L-49K` — add a fenced human-confirmation handoff for Ashby when trusted automation produces a silent pre-request stop
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1816,6 +1816,29 @@ this spec update → commit/push → Telegram milestone before the next item sta
   three older unrelated `send_started` rows as uncertain. Telegram's installed
   transport rejects read-history with `Unsupported Telegram action: read`, so those
   rows remain quarantined and were not blindly resent. No file was attached.
+- [ ] **L-49K** — Replace repeated blind Ashby clicks with a fenced human-confirmation
+  handoff when a fully valid form produces no submit request, no reCAPTCHA execution,
+  no visible validation error, and no Gmail receipt. The agent may discover, rank,
+  fill, upload, validate, and persist exact materials, but must leave one owned
+  application page open under a durable handoff lease and send one natural-language
+  Telegram action with the company, role, expiry, and exact owner action. After the
+  owner acts, the loop must capture the exact ATS request/confirmation or Gmail
+  receipt, close only that handed-off page, and finalize `submitted`,
+  `not_submitted`, or `submit_unknown` without a second click. Add expiry,
+  cancellation, crash recovery, page-identity binding, and duplicate-notification
+  tests before another live Ashby application. Live trigger: Cohere's official
+  `Forward Deployed Engineer, Infrastructure Specialist` posting is Tokyo, remote,
+  full-time, scored 85 strong-fit, and used the technical-business resume. Its
+  explicit gaps remain business-English level evidence, production Kubernetes,
+  Helm, and private-cloud ownership. Fences 1 and 2 stopped safely before click
+  while the runner learned Ashby's boolean-button state. Fence 3 verified native
+  validity, Japan location, resume upload, the Japan/native-Japanese Yes answers,
+  the truthful on-premise No answer, and exact grounded additional information;
+  it recorded materials and clicked once. The corrected post-click receipt records
+  `silent_timeout`, zero visible errors, zero unselected required answers, and no
+  reCAPTCHA execution. Immediate Cohere/Ashby Gmail search returned zero messages.
+  The ledger therefore records `submit_unknown`, forbids retrying Cohere, preserves
+  slot 9, has integrity `ok`, and has zero active claims. Cohere must not be retried.
 - [ ] **L-50** — Deliver the Ashby application artifacts and receipt to Telegram.
 - [ ] **L-51** — Submit one eligible real Workday application and store its
   authoritative receipt.
