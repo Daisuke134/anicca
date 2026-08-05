@@ -1565,7 +1565,19 @@ this spec update → commit/push → Telegram milestone before the next item sta
   `8de3f7de61726a51215b3e5c83c05bab0c608091` remains rollback-ready. Daily stayed
   unloaded and no application, form input, email, or Calendar side effect occurred.
 - [ ] **L-49** — Submit one eligible real Ashby application and store its
-  authoritative receipt.
+  authoritative receipt. Current Cursor receipt: the official Cursor careers page
+  still listed `Field Engineering - Japan` and exposed an Ashby-backed embedded
+  application even though the stale direct Ashby hosted URL rendered `Page not
+  found`. The posting scored 80, passed Japan and ATS gates, had no duplicate, and
+  used the newly corrected English technical-business resume in adjacent slot 4.
+  Two fenced retries stopped safely at `pre_click`: the first rejected an ambiguous
+  profile email selector and the second found that the custom sponsorship radio
+  cannot be checked through the hidden input. A fresh third fence used the verified
+  visible `No` label, recorded exact materials, durably committed `clicked`, and
+  clicked once. No matching Ashby submit mutation response, exact success UI, or
+  immediate Cursor/Anysphere/Ashby Gmail receipt was captured. The ledger therefore
+  records `submit_unknown`, forbids retry, retains one immutable materials receipt,
+  and has SQLite integrity `ok`; every owned page and browser lease was released.
 - [ ] **L-49A** — Reconcile the Sierra `submit_unknown` without resubmitting it;
   if neither Ashby nor Gmail yields authoritative confirmation, submit a different
   eligible Ashby posting exactly once. Receipt so far: the official Sierra Japan
