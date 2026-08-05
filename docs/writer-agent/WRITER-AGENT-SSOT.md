@@ -877,6 +877,20 @@ publish this artifact, permit only the existing bounded replacement policy,
 and ensure tomorrow is not poisoned by today's terminal miss. Implementation
 evidence is pending.
 
+Implementation evidence is now complete. Runtime commits `a30bfd66` and
+`60a7f223` add a hash-bound terminal rejection plus a provider-free
+terminalization path for repairs that already ended. Focused control regression
+is `62/62` and the post-terminalize focused suite is `41/41`. The full Writer
+suite is `684/685`; its only failure is the pre-existing model-runner test that
+still expects Luna xhigh while the current contract is Terra medium. Real
+launchd run `761` exited `0` and wrote `terminal_quality_blocked` for live run
+`20260804-214206`, bound to current JA/EN draft hashes and the EN three-attempt
+reader cap. `publication-state.json` remains absent, destination ledger rows are
+zero, and start control now returns `skip-quality-miss` instead of
+`same-jst-day-unclassified-run`. No provider invocation occurred during this
+terminalization. This closes today's bounded replacement safely and leaves the
+next JST day eligible for a new run.
+
 Decision evidence:
 
 - OpenAI describes Terra as the everyday workhorse and Sol as the model for
