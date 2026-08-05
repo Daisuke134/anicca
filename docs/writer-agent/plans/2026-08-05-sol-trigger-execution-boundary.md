@@ -32,27 +32,26 @@
 - Consumes: `ARTICLE_MODEL_ROLE=terra|sol-audit`, `ARTICLE_SOL_TRIGGER_RECEIPT=<path>`, `ARTICLE_RUN_ID`.
 - Produces: Codex `--model gpt-5.6-sol` with receipt-selected `medium|high`, `<receipt>.claim/receipt.sha256`, and no second provider call.
 
-- [ ] **Step 1: Add failing model-runner contracts**
+- [x] **Step 1: Add failing model-runner contracts**
 
 Extend the unittest with valid Sol receipt, missing receipt, invalid trigger, run mismatch, and replay cases. Verify RED because the current runner ignores the role and still captures Terra.
 
-- [ ] **Step 2: Implement minimal role/receipt validation and atomic claim**
+- [x] **Step 2: Implement minimal role/receipt validation and atomic claim**
 
 Default role to Terra. For Sol, validate with jq, create the claim directory using atomic `mkdir`, store the receipt SHA-256, set model/effort, and force candidates to Codex only. Exit `64` for invalid receipt and `78` for an already claimed receipt.
 
-- [ ] **Step 3: Run focused GREEN and shell syntax**
+- [x] **Step 3: Run focused GREEN and shell syntax**
 
 Run the model-runner unittest and `bash -n`. Verify ordinary calls capture Terra, valid Sol captures Sol once, and replay does not increase fake provider calls.
 
-- [ ] **Step 4: Run real non-publishing Sol E2E**
+- [x] **Step 4: Run real non-publishing Sol E2E**
 
 Create one temporary valid `quality_sample` receipt and call the real runner in judge mode. Require output, provider success, claim hash, and a replay exit `78` without a second success log.
 
-- [ ] **Step 5: Run full regression delta**
+- [x] **Step 5: Run full regression delta**
 
 Run the full repository suite and prove the existing unrelated 32-file failure set does not grow.
 
-- [ ] **Step 6: Promote, update receipts, and push**
+- [x] **Step 6: Promote, update receipts, and push**
 
 Commit/push feature runtime, promote the exact commit to the live checkout, rerun focused contracts, update the Writer SSOT privately, commit/push both SSOT remotes, and report only a natural-language brief to the user.
-
