@@ -1,13 +1,24 @@
 from __future__ import annotations
 
 import datetime as dt
+import contextlib
+import io
 import importlib.util
+import json
 import sys
+import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 MODULE_PATH = Path(__file__).with_name("publication_ledger.py")
+BINDING_PATH = Path(__file__).with_name("product_binding.py")
+BINDING_SPEC = importlib.util.spec_from_file_location("product_binding", BINDING_PATH)
+assert BINDING_SPEC and BINDING_SPEC.loader
+binding = importlib.util.module_from_spec(BINDING_SPEC)
+sys.modules[BINDING_SPEC.name] = binding
+BINDING_SPEC.loader.exec_module(binding)
 SPEC = importlib.util.spec_from_file_location("publication_ledger", MODULE_PATH)
 assert SPEC and SPEC.loader
 ledger = importlib.util.module_from_spec(SPEC)
@@ -26,6 +37,35 @@ def post(identifier="p1", platform="instagram-standalone", state="PUBLISHED"):
         "releaseURL": "https://www.instagram.com/reel/abc/" if state == "PUBLISHED" else None,
         "integration": {"id": "i1", "name": "account", "providerIdentifier": platform},
     }
+
+
+def write_json(path: Path, value: object) -> None:
+    path.write_text(json.dumps(value, ensure_ascii=False) + "\n", encoding="utf-8")
+
+
+def binding_registries(root: Path, *, integration_id: str = "integration-ebook-ja") -> tuple[Path, Path]:
+    products = root / "products"
+    accounts = root / "accounts"
+    products.mkdir()
+    accounts.mkdir()
+    write_json(products / "ebook-ja.json", {"product_id": "ebook-ja"})
+    write_json(
+        accounts / "ebook-ja.json",
+        {
+            "account_id": "tiktok.obou_anicca",
+            "product_id": "ebook-ja",
+            "publisher_integration_id": integration_id,
+        },
+    )
+    return products, accounts
+
+
+def unbound_row(identifier: str, integration_id: str = "integration-ebook-ja") -> dict:
+    value = post(identifier)
+    value["publishDate"] = "2026-08-05T09:00:00Z"
+    value["releaseId"] = f"native-{identifier}"
+    value["integration"]["id"] = integration_id
+    return ledger.make_row(value, [], "2026-08-01T01:00:00Z")
 
 
 class PublicationLedgerTest(unittest.TestCase):
@@ -102,6 +142,225 @@ class PublicationLedgerTest(unittest.TestCase):
         self.assertEqual(report["published_denominator"], 1)
         self.assertEqual(report["published_resolved"], 1)
         self.assertTrue(report["passes_95_percent_gate"])
+
+    def test_bind_merged_rows_backfills_complete_ledger_and_keeps_unmatched_null(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            products, accounts = binding_registries(root)
+            legacy_unbound = unbound_row("legacy")
+            current_unbound = unbound_row("current")
+            merged = ledger.merge_rows([legacy_unbound], [current_unbound])
+
+            bound, report = ledger.bind_merged_rows(
+                merged, product_registry=products, account_registry=accounts
+            )
+
+            self.assertEqual(report["bound"], 2)
+            self.assertEqual({row["product_id"] for row in bound}, {"ebook-ja"})
+            self.assertTrue(
+                all(row["account_id"] == "tiktok.obou_anicca" for row in bound)
+            )
+            self.assertTrue(all(row["product_id_null_reason"] is None for row in bound))
+
+            unmatched, unmatched_report = ledger.bind_merged_rows(
+                [unbound_row("unmatched", "integration-unknown")],
+                product_registry=products,
+                account_registry=accounts,
+            )
+            self.assertIsNone(unmatched[0]["product_id"])
+            self.assertEqual(
+                unmatched[0]["product_id_null_reason"],
+                "account_manifest_integration_unmapped",
+            )
+            self.assertEqual(unmatched_report["unmapped"], 1)
+
+    def test_identical_cli_runs_are_byte_equivalent_and_include_binding_summary(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            products, accounts = binding_registries(root, integration_id="integration-custom")
+            posts_path = root / "posts.json"
+            write_json(
+                posts_path,
+                [
+                    {
+                        **post("cli-one"),
+                        "publishDate": "2026-08-05T09:00:00Z",
+                        "releaseId": "native-cli-one",
+                        "integration": {
+                            "id": "integration-custom",
+                            "name": "account",
+                            "providerIdentifier": "instagram-standalone",
+                        },
+                    }
+                ],
+            )
+            snapshot_path = root / "tiktok.json"
+            write_json(snapshot_path, [])
+            output = root / "publication-identity.jsonl"
+            output.write_text(
+                json.dumps(
+                    unbound_row("legacy-cli", "integration-custom"),
+                    ensure_ascii=False,
+                    sort_keys=True,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            report_path = root / "report.json"
+            fixed_now = dt.datetime(2026, 8, 5, 12, 0, tzinfo=dt.timezone.utc)
+            argv = [
+                "--posts-fixture",
+                str(posts_path),
+                "--tiktok-snapshot",
+                str(snapshot_path),
+                "--output",
+                str(output),
+                "--report",
+                str(report_path),
+                "--account-registry",
+                str(accounts),
+                "--product-registry",
+                str(products),
+            ]
+            with mock.patch.object(ledger, "utc_now", return_value=fixed_now):
+                self.assertEqual(ledger.main(argv), 0)
+            first_output = output.read_bytes()
+            first_report = report_path.read_bytes()
+            with mock.patch.object(ledger, "utc_now", return_value=fixed_now):
+                self.assertEqual(ledger.main(argv), 0)
+            self.assertEqual(output.read_bytes(), first_output)
+            report = json.loads(first_report)
+            self.assertEqual(len(ledger.read_jsonl(output)), 2)
+            self.assertEqual(report["binding"]["bound"], 2)
+            replay_report = json.loads(report_path.read_text(encoding="utf-8"))
+            self.assertEqual(replay_report["binding"]["bound"], 2)
+            self.assertEqual(replay_report["binding"]["already_bound"], 1)
+
+    def test_cli_uses_default_registries_through_binding_behavior(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            posts_path = root / "posts.json"
+            default_integration = "cmo5s4edx00vgn10ygnu34a0n"
+            write_json(
+                posts_path,
+                [
+                    {
+                        **post("default-registry"),
+                        "publishDate": "2026-08-05T09:00:00Z",
+                        "releaseId": "native-default",
+                        "integration": {
+                            "id": default_integration,
+                            "name": "account",
+                            "providerIdentifier": "tiktok",
+                        },
+                        "releaseURL": "https://www.tiktok.com/@obou_anicca/video/native-default",
+                    }
+                ],
+            )
+            snapshot_path = root / "tiktok.json"
+            write_json(snapshot_path, [])
+            output = root / "publication-identity.jsonl"
+            report_path = root / "report.json"
+            fixed_now = dt.datetime(2026, 8, 5, 12, 0, tzinfo=dt.timezone.utc)
+            with mock.patch.object(ledger, "utc_now", return_value=fixed_now):
+                self.assertEqual(
+                    ledger.main(
+                        [
+                            "--posts-fixture",
+                            str(posts_path),
+                            "--tiktok-snapshot",
+                            str(snapshot_path),
+                            "--output",
+                            str(output),
+                            "--report",
+                            str(report_path),
+                        ]
+                    ),
+                    0,
+                )
+            row = ledger.read_jsonl(output)[0]
+            self.assertEqual(row["product_id"], "ebook-ja")
+            self.assertEqual(row["account_id"], "tiktok.obou_anicca")
+
+    def test_bind_existing_only_skips_credentials_and_network_helpers(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            products, accounts = binding_registries(root, integration_id="integration-existing")
+            output = root / "publication-identity.jsonl"
+            report_path = root / "report.json"
+            output.write_text(
+                json.dumps(
+                    unbound_row("existing", "integration-existing"),
+                    ensure_ascii=False,
+                    sort_keys=True,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            fixed_now = dt.datetime(2026, 8, 5, 12, 0, tzinfo=dt.timezone.utc)
+            stdout = io.StringIO()
+            with (
+                mock.patch.object(ledger, "utc_now", return_value=fixed_now),
+                mock.patch.object(ledger, "load_env", side_effect=AssertionError("env loaded")),
+                mock.patch.object(
+                    ledger, "fetch_postiz_posts", side_effect=AssertionError("Postiz called")
+                ),
+                mock.patch.object(
+                    ledger, "fetch_tiktok_profiles", side_effect=AssertionError("Apify called")
+                ),
+                mock.patch.object(ledger, "http_json", side_effect=AssertionError("HTTP called")),
+                contextlib.redirect_stdout(stdout),
+            ):
+                rc = ledger.main(
+                    [
+                        "--bind-existing-only",
+                        "--output",
+                        str(output),
+                        "--report",
+                        str(report_path),
+                        "--account-registry",
+                        str(accounts),
+                        "--product-registry",
+                        str(products),
+                    ]
+                )
+            self.assertEqual(rc, 0)
+            row = ledger.read_jsonl(output)[0]
+            self.assertEqual(row["product_id"], "ebook-ja")
+            self.assertEqual(row["product_id_null_reason"], None)
+            report = json.loads(report_path.read_text(encoding="utf-8"))
+            self.assertEqual(report["binding"]["bound"], 1)
+            self.assertEqual(json.loads(stdout.getvalue())["binding"]["bound"], 1)
+
+    def test_conflicting_binding_fails_before_output_rewrite(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            products, accounts = binding_registries(root, integration_id="integration-conflict")
+            output = root / "publication-identity.jsonl"
+            report_path = root / "report.json"
+            conflict = unbound_row("conflict", "integration-conflict")
+            conflict["product_id"] = "ebook-en"
+            original = json.dumps(conflict, ensure_ascii=False, sort_keys=True) + "\n"
+            output.write_text(original, encoding="utf-8")
+            posts_path = root / "posts.json"
+            write_json(posts_path, [])
+            with self.assertRaisesRegex(ValueError, "publication product binding conflict"):
+                ledger.main(
+                    [
+                        "--posts-fixture",
+                        str(posts_path),
+                        "--output",
+                        str(output),
+                        "--report",
+                        str(report_path),
+                        "--account-registry",
+                        str(accounts),
+                        "--product-registry",
+                        str(products),
+                    ]
+                )
+            self.assertEqual(output.read_text(encoding="utf-8"), original)
+            self.assertFalse(report_path.exists())
 
 
 if __name__ == "__main__":

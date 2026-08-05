@@ -420,6 +420,96 @@ class OwnerReportRendererTest(unittest.TestCase):
         self.assertIn("まだ取得できませんでした", missed_text)
         self.assertNotIn("views 0", missed_text)
 
+    def test_bound_checkpoint_is_product_scoped_and_replays_delivery(self):
+        native_url = "https://www.tiktok.com/@account/video/native-1"
+        identity = {
+            "schema_version": 1,
+            "account_id": "tiktok.obou_anicca",
+            "product_id": "ebook-ja",
+            "product_id_null_reason": None,
+            "product_binding_source": "account_manifest.publisher_integration_id",
+            "postiz_state": "PUBLISHED",
+            "identity_status": "resolved",
+            "postiz_post_id": "post-1",
+            "native_post_id": "native-1",
+            "native_post_url": native_url,
+            "publish_date": "2026-08-04T00:00:00Z",
+            "account_name": "account",
+            "platform": "tiktok",
+        }
+        metric = {
+            "schema_version": 1,
+            "product_id": "ebook-ja",
+            "product_id_null_reason": None,
+            "publication_id": "postiz:post-1",
+            "postiz_id": "post-1",
+            "native_url": native_url,
+            "native_post_id": "native-1",
+            "platform": "tiktok",
+            "checkpoint_status": "measured",
+            "target_age_hours": 24,
+            "observed_at": "2026-08-05T10:00:00Z",
+            "views": 42,
+            "impressions": 50,
+            "reach": 38,
+            "likes": 4,
+            "comments": 2,
+            "shares": 1,
+            "saves": 3,
+            "metric_null_reasons": {},
+        }
+        with (self.root / "publication-identity.jsonl").open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(identity, ensure_ascii=False) + "\n")
+        with (self.root / "post-metrics.jsonl").open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(metric, ensure_ascii=False) + "\n")
+
+        events = owner_report.build_events(
+            self.root, "checkpoint", product_id="ebook-ja", as_of=AS_OF
+        )
+        event = next(
+            event
+            for event in events
+            if event["facts"]["publication_id"] == "postiz:post-1"
+        )
+        self.assertEqual(event["product_id"], "ebook-ja")
+        self.assertEqual(
+            event["message_key"], "checkpoint:ebook-ja:postiz:post-1:24"
+        )
+        self.assertEqual(event["facts"]["native_url"], native_url)
+        self.assertEqual(event["facts"]["views"], 42)
+        self.assertEqual(event["facts"]["impressions"], 50)
+        self.assertIsNone(event["facts"]["reason"])
+        self.assertFalse(
+            any(
+                candidate["facts"]["publication_id"] == "postiz:post-1"
+                for candidate in owner_report.build_events(
+                    self.root, "checkpoint", product_id="aniccaios", as_of=AS_OF
+                )
+            )
+        )
+
+        store = owner_report.OwnerReportStore(
+            self.root / "owner-reports.jsonl", self.root / "owner-report-deliveries.jsonl"
+        )
+        calls = []
+
+        def sender(_text: str) -> dict:
+            calls.append(1)
+            return {"status": "delivered", "message_ids": [777]}
+
+        first = owner_report.deliver(event, store, sender)
+        replay = next(
+            candidate
+            for candidate in owner_report.build_events(
+                self.root, "checkpoint", product_id="ebook-ja", as_of=AS_OF
+            )
+            if candidate["message_key"] == event["message_key"]
+        )
+        second = owner_report.deliver(replay, store, sender)
+        self.assertEqual(first["message_ids"], [777])
+        self.assertEqual(second["message_ids"], [777])
+        self.assertEqual(calls, [1])
+
     def test_product_daily_never_borrows_another_products_money(self):
         anicca = owner_report.render_japanese(self.event("product_daily", "aniccaios"))
         honne = owner_report.render_japanese(self.event("product_daily", "honne"))

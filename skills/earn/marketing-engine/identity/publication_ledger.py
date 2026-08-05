@@ -15,6 +15,8 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
+from product_binding import bind_product_ids, load_account_bindings, load_product_ids
+
 
 POSTIZ = "https://api.postiz.com/public/v1"
 APIFY_ACTOR = "clockworks~tiktok-scraper"
@@ -250,6 +252,16 @@ def merge_rows(existing: list[dict[str, Any]], current: list[dict[str, Any]]) ->
     return rows
 
 
+def bind_merged_rows(
+    rows: list[dict[str, Any]], *, product_registry: Path, account_registry: Path
+) -> tuple[list[dict[str, Any]], dict]:
+    """Bind every merged publication row using the account manifest registry."""
+
+    products = load_product_ids(product_registry)
+    bindings = load_account_bindings(account_registry, products)
+    return bind_product_ids(rows, bindings)
+
+
 def reconciliation_report(rows: list[dict[str, Any]], start: dt.datetime, end: dt.datetime, observed_at: str) -> dict[str, Any]:
     window_ids = {
         row["postiz_post_id"] for row in rows
@@ -309,6 +321,9 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--tiktok-snapshot", type=Path)
     result.add_argument("--output", type=Path, default=root / "state/publication-identity.jsonl")
     result.add_argument("--report", type=Path, required=True)
+    result.add_argument("--account-registry", type=Path, default=root / "registry/accounts")
+    result.add_argument("--product-registry", type=Path, default=root / "registry/products")
+    result.add_argument("--bind-existing-only", action="store_true")
     return result
 
 
@@ -318,6 +333,35 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit("--days must be positive")
     end = utc_now()
     start = end - dt.timedelta(days=args.days)
+
+    if args.bind_existing_only:
+        observed_at = iso(end)
+        rows, binding_report = bind_merged_rows(
+            read_jsonl(args.output),
+            product_registry=args.product_registry,
+            account_registry=args.account_registry,
+        )
+        validate_rows(rows)
+        report = reconciliation_report(rows, start, end, observed_at)
+        report["binding"] = binding_report
+        atomic_write(
+            args.output,
+            "".join(json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n" for row in rows),
+        )
+        atomic_write(args.report, json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n")
+        print(
+            json.dumps(
+                {
+                    "status": "written",
+                    "output": str(args.output),
+                    "report": str(args.report),
+                    **report,
+                },
+                ensure_ascii=False,
+            )
+        )
+        return 0 if report["passes_95_percent_gate"] else 1
+
     env = load_env(args.env_file)
     if args.posts_fixture:
         value = json.loads(args.posts_fixture.read_text())
@@ -341,7 +385,14 @@ def main(argv: list[str] | None = None) -> int:
     observed_at = iso(end)
     current = [make_row(post, tiktok_items, observed_at) for post in posts]
     rows = merge_rows(read_jsonl(args.output), current)
+    rows, binding_report = bind_merged_rows(
+        rows,
+        product_registry=args.product_registry,
+        account_registry=args.account_registry,
+    )
+    validate_rows(rows)
     report = reconciliation_report(rows, start, end, observed_at)
+    report["binding"] = binding_report
     atomic_write(args.output, "".join(json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n" for row in rows))
     atomic_write(args.report, json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n")
     print(json.dumps({"status": "written", "output": str(args.output), "report": str(args.report), **report}, ensure_ascii=False))

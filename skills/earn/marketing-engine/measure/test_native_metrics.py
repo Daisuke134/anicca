@@ -17,7 +17,7 @@ SPEC.loader.exec_module(metrics)
 def publication(
     postiz_id: str = "post-1",
     *,
-    platform: str = "instagram-standalone",
+    platform: str = "tiktok",
     identity_status: str = "resolved",
     state: str = "PUBLISHED",
     native_id: str | None = "native-1",
@@ -33,7 +33,11 @@ def publication(
         "postiz_release_url": "https://example.test/profile",
         "integration_id": "integration-1",
         "account_name": "account",
+        "account_id": "tiktok.obou_anicca",
         "platform": platform,
+        "product_id": "ebook-ja",
+        "product_id_null_reason": None,
+        "product_binding_source": "account_manifest.publisher_integration_id",
         "native_post_id": native_id,
         "native_post_url": (
             f"https://www.tiktok.com/@account/video/{native_id}"
@@ -103,6 +107,31 @@ class NativeMetricCheckpointTest(unittest.TestCase):
             [(plan["target_age_hours"], plan["checkpoint_status"]) for plan in plans],
             [(6, "missed"), (24, "missed"), (72, "missed")],
         )
+
+    def test_product_binding_fields_propagate_to_due_and_missed_rows(self):
+        plans = metrics.plan_checkpoints(
+            publication(), [], "2026-08-02T01:00:00Z"
+        )
+        missed = metrics.make_missed_row(
+            publication(), plans[0], "2026-08-02T01:00:00Z"
+        )
+        due = metrics.make_metric_row(
+            publication(),
+            plans[1],
+            {field: 0 for field in metrics.METRIC_FIELDS},
+            {field: None for field in metrics.METRIC_FIELDS},
+            observed_at="2026-08-02T01:00:00Z",
+            source="tiktok_public_native_api",
+            raw_response={"native_post_id": "native-1"},
+        )
+        for row in (missed, due):
+            self.assertEqual(row["product_id"], "ebook-ja")
+            self.assertIsNone(row["product_id_null_reason"])
+            self.assertEqual(row["native_post_id"], "native-1")
+            self.assertEqual(
+                row["native_url"],
+                "https://www.tiktok.com/@account/video/native-1",
+            )
 
 
 class NativeMetricNormalizationTest(unittest.TestCase):
