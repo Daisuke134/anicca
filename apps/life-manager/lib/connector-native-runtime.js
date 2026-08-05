@@ -7,6 +7,7 @@ const { createConnectorEventsPack } = require("./connector-events-pack.js");
 const { createLumaEvidenceStore } = require("./luma-evidence-store.js");
 const { makeGogCalendar } = require("./transport/calendar-gog.js");
 const { isVerifiedLumaDateInventory } = require("./luma-date-inventory.js");
+const { isVerifiedLumaEventDetail } = require("./luma-event-detail.js");
 const { isVerifiedGoogleCalendarBusyInventory } = require("./google-calendar-busy-inventory.js");
 const { isVerifiedLumaCandidateSequence } = require("./luma-candidate-loop.js");
 const {
@@ -111,6 +112,14 @@ function eventDate(dateInventory, eventRef) {
   return day && /^\d{4}-\d{2}-\d{2}$/.test(String(day.date)) ? day.date : null;
 }
 
+function localDate(instant, timeZone) {
+  const parts = Object.fromEntries(new Intl.DateTimeFormat("en-CA", {
+    timeZone, year: "numeric", month: "2-digit", day: "2-digit",
+  }).formatToParts(new Date(instant)).filter((part) => part.type !== "literal")
+    .map((part) => [part.type, part.value]));
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
 function candidateSummary(sequence) {
   switch (sequence.status) {
     case "next_provider_required":
@@ -150,7 +159,7 @@ async function runNativeConnectorPass(input = {}) {
     const now = exactInstant(config.now);
     const evidenceDir = absoluteDirectory(config.evidenceDir);
     const calendarAccount = requiredText(config.calendarAccount);
-    const coverage = buildRollingEventCoverage({
+    let coverage = buildRollingEventCoverage({
       tenantId,
       timeZone,
       now,
@@ -204,6 +213,33 @@ async function runNativeConnectorPass(input = {}) {
     failureCode = "CONNECTOR_NATIVE_AUTH_FAILED";
     const authentication = await auth.ensureAuthenticated();
     if (!authentication || authentication.status !== "authenticated") unavailable();
+    const deliveredReceipts = Array.isArray(config.deliveredReceipts) ? config.deliveredReceipts : [];
+    if (deliveredReceipts.length > 0) {
+      if (typeof pack.inspectEvent !== "function") unavailable();
+      const restored = new Map();
+      for (const receipt of deliveredReceipts) {
+        if (
+          !receipt || typeof receipt !== "object" || Array.isArray(receipt)
+          || !/^luma-event:\/\/event\/[A-Za-z0-9_-]+$/.test(String(receipt.event_ref || ""))
+          || !/^calendar-evidence:\/\/google\/event\/[0-9a-f]{64}$/.test(String(receipt.calendar_event_ref || ""))
+        ) unavailable();
+        const slug = receipt.event_ref.slice("luma-event://event/".length);
+        const detail = await pack.inspectEvent(`https://luma.com/${slug}`, { now });
+        if (!isVerifiedLumaEventDetail(detail) || detail.event_ref !== receipt.event_ref) unavailable();
+        const date = localDate(detail.starts_at, timeZone);
+        if (!coverage.days.some((day) => day.date === date)) continue;
+        const refs = restored.get(date) || [];
+        refs.push(receipt.calendar_event_ref);
+        restored.set(date, refs);
+      }
+      coverage = buildRollingEventCoverage({
+        tenantId, timeZone, now,
+        resolvedDays: [...restored].map(([date, evidenceRefs]) => ({
+          date, status: "covered_new", evidence_refs: [...new Set(evidenceRefs)],
+        })),
+      });
+      if (!isVerifiedRollingEventCoverage(coverage)) unavailable();
+    }
     failureCode = "CONNECTOR_NATIVE_INVENTORY_FAILED";
     const dateInventory = await pack.readDateInventory(coverage, { now });
     if (

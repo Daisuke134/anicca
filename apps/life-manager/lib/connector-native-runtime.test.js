@@ -97,7 +97,22 @@ async function fixture() {
     },
     async readDateInventory(receivedCoverage, options) {
       calls.push(["date-inventory", receivedCoverage, options]);
-      return inventory;
+      return receivedCoverage.coverage_snapshot_id === currentCoverage.coverage_snapshot_id
+        ? inventory
+        : dateInventory(receivedCoverage);
+    },
+    async inspectEvent() {
+      calls.push(["restore-event"]);
+      return normalizeLumaEventDetail({
+        canonicalUrl: "https://luma.com/founder-night",
+        jsonLd: [{
+          "@type": "Event", name: "Founder Night", description: "public description only",
+          startDate: "2026-08-05T12:00:00+09:00", endDate: "2026-08-05T13:00:00+09:00",
+          eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+          eventStatus: "https://schema.org/EventScheduled",
+          location: { name: "Shibuya Hall", address: "Shibuya, Tokyo" },
+        }], controls: ["Register"],
+      });
     },
     async readBusyCalendar(receivedCalendar, options) {
       calls.push(["busy-calendar", receivedCalendar, options]);
@@ -226,6 +241,26 @@ test("a candidate failure remains incomplete and defers every write boundary", a
   assert.equal(input.calls.filter((call) => call[0] === "candidate-sequence").length, 1);
   assert.equal(input.calls.some((call) => call[0] === "calendar-sync"), false);
   assert.equal(input.calls.some((call) => call[0] === "telegram"), false);
+});
+
+test("verified delivery history restores its Luma date as covered before inventory refresh", async () => {
+  const input = await fixture();
+  const result = await runNativeConnectorPass({
+    ...input,
+    config: {
+      ...input.config,
+      deliveredReceipts: [{
+        event_ref: "luma-event://event/founder-night",
+        calendar_event_ref: `calendar-evidence://google/event/${"a".repeat(64)}`,
+        telegram_provider_id: "7372",
+      }],
+    },
+  });
+
+  assert.equal(result.coverage.counts.covered_new, 1);
+  assert.equal(result.coverage.counts.open, 20);
+  assert.equal(input.calls.some(([name]) => name === "restore-event"), true);
+  assert.equal(input.calls.find(([name]) => name === "date-inventory")[1].counts.covered_new, 1);
 });
 
 test("configured native execution gates the date then uses Luna and passes one verified candidate to the write pipeline", async () => {
