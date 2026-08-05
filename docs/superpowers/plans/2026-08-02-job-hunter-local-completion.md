@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-49K` — add a fenced human-confirmation handoff for Ashby when trusted automation produces a silent pre-request stop
+**Active atomic task:** `L-49K0A` — pin and inventory `career-ops` v1.25.0 as the second upstream before another live application
 **Status:** The immutable four-lane runtime, hourly/five-minute schedules, grounded
 materials, ownership fences, Gmail ingestion, Telegram outbox, quota accounting, and
 Ashby observation classifier are implemented and tested. The daily application
@@ -140,6 +140,15 @@ Once base resumes and candidate facts are accepted, Job Hunter:
 
 There is no routine `Apply / Skip / Edit` approval gate. The user may have many
 applications and offers and choose among verified outcomes later.
+
+The resident Job Hunter is the only permitted actor for live discovery, form fill,
+submission, receipt capture, and reconciliation. A development chat may change code,
+install an immutable release, trigger the installed LaunchAgent, and observe its
+receipts; it MUST NOT perform a live application itself or count a development-session
+browser action as product E2E. If the resident loop cannot complete an ATS, it records
+the failure class, learns through a tested adapter change, or uses the bounded
+human-only handoff below. It then continues to other supported ATS and direct-email
+routes instead of treating one ATS failure as a global stop.
 
 ### 5.2 Minimal human-only boundary
 
@@ -860,26 +869,20 @@ submissions.
 
 ## 11. Current verified state
 
-- Dedicated worktree and branch created from `origin/main` at `2099a29da`.
-- Canonical main working tree contains unrelated Connector edits and remains untouched.
-- Fresh baseline: `203 passed, 34 subtests passed`.
-- Private profile exists but must be migrated to compensation floor JPY 8M and target
-  JPY 10M.
-- Versioned strategy still has obsolete JPY 5.5M floor / JPY 7M target.
-- Installed daily, inbox, and learning LaunchAgents point to deleted
-  `/Users/anicca/anicca-project/.worktrees/job-canonical-merge` paths and exit 78.
+- The active immutable release has four stable lanes: application, inbox, learning,
+  and dedicated browser. The hourly application schedule and five-minute inbox
+  schedule are installed; daily remains deliberately unloaded until L-65.
+- The private compensation profile, Luna/Terra route map, manual/recruiter ownership
+  fences, Palantir manual import, `summary.v2`, and Telegram outbox are implemented.
 - Current `gog gmail search` succeeds.
-- Ledger: 5 applications, 2 legacy `submitted`, 3 `submit_unknown`, 0 authoritative
-  submission confirmations, 0 funnel outcomes.
-- `summary.v1` exists; `summary.v2` is incomplete.
-- Ashby confirmed receipt: 0.
-- Workday confirmed receipt: 0.
-- Palantir was submitted manually by Dais and still needs a durable `dais_manual`
-  import and duplicate fence.
-- The installed application schedule is still one daily wake; the hourly schedule
-  is specified but not implemented.
-- The Luna volume/Terra quality route and Terra weekly learning route are specified
-  but not implemented in the shared runner.
+- The authoritative ledger contains 15 applications: two legacy local `submitted`
+  rows (LayerX and Exture), one Dais-manual Palantir row, and twelve
+  `submit_unknown` rows. It contains zero authoritative ATS/Gmail submission
+  confirmations for an autonomous-loop application, zero confirmed Ashby receipts,
+  and zero confirmed Workday receipts.
+- No PNG/JPEG/WebP submission screenshot exists in the Sierra, Camunda, or Cohere
+  evidence directories. A later screenshot of an ordinary job page MUST NOT be
+  presented as historical submission proof.
 - Corrected base resumes rendered as four one-page PDFs, visually inspected, selected
   through the production stable filenames, and delivered with Telegram message IDs
   6119–6122. The prior 6084–6086 files are superseded.
@@ -896,11 +899,10 @@ submissions.
   execution, visible validation error, confirmation, and immediate Gmail receipt
   were absent. These runs are preserved as `submit_unknown`, not reported as
   successful applications, and not silently skipped.
-- The primary development session currently performs bounded real E2E verification
-  on behalf of the product. This is not the desired operating model. The desired
-  model is the installed Job Hunter LaunchAgents performing discovery, ranking,
-  dossier generation, browser submission, Gmail reconciliation, Telegram reporting,
-  and weekly learning without this development chat remaining alive.
+- Earlier L-49 runs used the development session as the live browser actor. This is
+  now a prohibited verification method. Every future live application MUST originate
+  from the installed Job Hunter LaunchAgent; the development session only triggers
+  and observes that durable loop.
 - The daily LaunchAgent remains unloaded until L-49 through L-65 pass because turning
   it on now could create repeated ambiguous Ashby clicks without reliable owner
   handoff and authoritative receipts. Therefore Job Hunter is not yet producing ten
@@ -909,6 +911,12 @@ submissions.
   discoverable and rankable, but another physical click is fenced until L-49K adds
   a one-action human handoff and no-second-click recovery. Workday has not yet had
   its required real confirmed E2E.
+- Every future live attempt MUST capture three immutable screenshots: fully validated
+  pre-submit form, immediate post-action state, and authoritative confirmation or
+  visible failure state. Each image binds application ID, intent fence, URL hash,
+  captured-at timestamp, and SHA-256. Telegram receives the confirmation/failure
+  screenshot with a natural-language status; absence of the required image prevents
+  `confirmed submitted`.
 
 ## 12. Execution order and remaining TODO
 
@@ -1844,6 +1852,26 @@ this spec update → commit/push → Telegram milestone before the next item sta
   three older unrelated `send_started` rows as uncertain. Telegram's installed
   transport rejects read-history with `Unsupported Telegram action: read`, so those
   rows remain quarantined and were not blindly resent. No file was attached.
+- [ ] **L-49K0A** — Pin `santifer/career-ops` v1.25.0, tag commit, tree, license,
+  release URL, and file hashes as a second immutable upstream. Do not copy or execute
+  unpinned upstream code. Receipt: lock validation and license tests PASS.
+- [ ] **L-49K0B** — Inventory every `career-ops` v1.25.0 capability as `reuse`,
+  `adapt`, or `supersede`, including ATS scan providers, liveness, repost/dedup,
+  scoring, pipeline, CV fact verification, apply autofill, tracker, outcomes,
+  follow-up, weekly digest, Web UI, and automation. Every decision names a local
+  contract, owner task, and parity test.
+- [ ] **L-49K0C** — Port the non-side-effect `career-ops` capabilities that improve
+  coverage before another live application: public ATS discovery, liveness,
+  cross-listing/repost dedupe, knockout pre-scan, and ATS-specific form-fill
+  behaviors for Ashby, Greenhouse, Lever, Workable, and Workday. Preserve local
+  compensation, truth, authorization, ownership, and evidence gates.
+- [ ] **L-49K0D** — Port `career-ops` tracker, outcome, follow-up, and weekly-digest
+  behavior only as projections over the existing event ledger. They MUST NOT become
+  a second source of truth or weaken deterministic Gmail matching.
+- [ ] **L-49K0E** — Prove actor provenance: trigger the installed Job Hunter
+  LaunchAgent on an isolated no-submit fixture and verify that discovery, evaluation,
+  material generation, browser ownership, and receipts identify the resident loop,
+  not the development session. Future live E2E MUST use this trigger-and-observe path.
 - [ ] **L-49K** — Replace repeated blind Ashby clicks with a fenced human-confirmation
   handoff when a fully valid form produces no submit request, no reCAPTCHA execution,
   no visible validation error, and no Gmail receipt. The agent may discover, rank,
@@ -1854,7 +1882,9 @@ this spec update → commit/push → Telegram milestone before the next item sta
   receipt, close only that handed-off page, and finalize `submitted`,
   `not_submitted`, or `submit_unknown` without a second click. Add expiry,
   cancellation, crash recovery, page-identity binding, and duplicate-notification
-  tests before another live Ashby application. Live trigger: Cohere's official
+  tests before another live Ashby application. Capture and Telegram-deliver the
+  required pre-submit, post-action, and terminal-state screenshots with immutable
+  hashes. Live trigger: Cohere's official
   `Forward Deployed Engineer, Infrastructure Specialist` posting is Tokyo, remote,
   full-time, scored 85 strong-fit, and used the technical-business resume. Its
   explicit gaps remain business-English level evidence, production Kubernetes,
@@ -2020,6 +2050,9 @@ flowchart TD
 | 21 | Ten/day quota and deficit recovery | `test_daily_quota_caps_at_ten_confirmed` and `test_deficit_expands_search_without_weakening_gates` | MUST pass |
 | 22 | Luna/Terra route boundary | `test_luna_has_no_external_side_effect_authority` and same-snapshot route replay | MUST pass |
 | 23 | Maximal upstream reuse | Pinned `upstream-adoption.v1.json`, file-hash verification, ported workflow tests, and release-diff receipt | MUST pass |
+| 24 | `career-ops` second-upstream parity | Pinned v1.25.0 lock, complete adoption matrix, and parity tests for every activated component | MUST pass |
+| 25 | Resident-loop-only live actor | Installed LaunchAgent trigger receipt proves resident runner PID/release/browser fence; development-session live submit is rejected | MUST pass |
+| 26 | Visual application evidence | Three application/fence/URL-bound screenshot hashes plus Telegram provider receipt; missing terminal image cannot confirm submission | MUST pass |
 
 ### E2E judgment
 
