@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-06 JST
-**Active atomic task:** `L-49K0C/DEDUP-1` — port repost and cross-source duplicate parity
+**Active atomic task:** `L-49K0C/GATE-1` — port grounded knockout pre-scan and exact source spans
 **Status:** The immutable four-lane runtime, hourly/five-minute schedules, grounded
 materials, ownership fences, Gmail ingestion, Telegram outbox, quota accounting, and
 Ashby observation classifier are implemented and tested. The daily LaunchAgent is
@@ -34,7 +34,10 @@ are removed while identity parameters survive, company-role reposts use a 90-day
 non-rejected window, and substantial JDs receive 64-bit 3-token SimHash with a 0.92
 cross-list threshold. A live 80-candidate artifact produced 73 fingerprints and the
 queue retained 77 candidates with 70 fingerprints; three company-role duplicates
-were suppressed. Resident re-verification is next.
+were suppressed. Resident release `c84a2f863`, run `daily-20260806-010005`, then
+suppressed 80/80 repeated candidates without growing the 128-link queue and executed
+ATS liveness before Terra, completing DEDUP-1. GATE-1 is next because Terra still
+lacks exact JD source spans for grounded fit decisions.
 The authoritative ledger still has zero current submission confirmations. Historical
 `submitted` projection rows are not current authoritative confirmation.
 Development-session browser runs are verification evidence only and MUST NOT be
@@ -2318,7 +2321,7 @@ the resident worker from producing one authoritative application receipt:
       plan and Terra-high returned zero dossiers for the oversized deep-analysis
       batch, then terminal validation correctly exited 76. This proves discovery and
       persistence only; it does not prove application or API-2 receipt completion.
-  - [ ] `DEDUP-1` — Port company-role, repost-window, and JD-fingerprint parity.
+  - [x] `DEDUP-1` — Port company-role, repost-window, and JD-fingerprint parity.
     - Implemented locally from Career Ops v1.25.0 `scan.mjs`,
       `detect-reposts.mjs`, and `fingerprint-core.mjs`: URL identity strips only an
       explicit tracking allowlist and preserves `gh_jid`-style identity parameters;
@@ -2333,8 +2336,15 @@ the resident worker from producing one authoritative application receipt:
       candidates and 73 valid JD fingerprints; an empty queue retained 77 candidates
       with 70 fingerprints and suppressed three company-role duplicates. Replaying
       the same 80 inputs inserted zero and reported 80 duplicates. Focused tests
-      40/40, shell syntax, and the full Job Hunter suite 399/399 pass. Resident
-      persistence/sweep ordering proof remains required before completion.
+      40/40, shell syntax, and the full Job Hunter suite 399/399 pass.
+    - Resident completion proof: immutable release
+      `c84a2f863f51ebc5c79a06a57aace82b8853c77a`, run
+      `daily-20260806-010005`, observed 80 prefilter candidates, inserted zero,
+      reported 80 duplicates, and kept the durable queue at 128 total / 91 pending.
+      Its mode-0600 candidate receipt was written before the ATS sweep. The sweep
+      then classified 79 active, one inconclusive, zero expired, and started Terra
+      only after the sweep receipt existed. Thus repeated hourly discovery no longer
+      grows the queue, and an ambiguous API result is not silently rejected.
   - [ ] `GATE-1` — Port cheap knockout pre-scan without weakening local ranking.
   - [ ] `FILL-1` — Port ATS-specific non-submit form behavior behind local fences.
 - [ ] **L-49K0C1** — Implement the same-role alternate-route ladder: canonical ATS,
