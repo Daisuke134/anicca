@@ -5,16 +5,20 @@
 **Canonical repository:** `https://github.com/Daisuke134/life-manager`  
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
-**Status:** Corrected resume baseline accepted and installed; runtime revival paused
-at owner request before O2-05.
+**Status:** Corrected resume baseline accepted and installed; runtime revival is the
+next execution slice. Product contract refreshed for the three-hour application
+cadence, JPY 8M–30M compensation band, Gmail outcome tracking, Terra-based learning,
+manual/recruiter deduplication, and post-Dais multi-user productization.
 
-## 1. Done condition
+## 1. Acceptance criteria — done condition
 
-The Mac mini Job Hunter autonomously discovers high-upside roles, verifies fit,
-creates truthful tailored materials, submits eligible applications, captures an
-authoritative receipt, follows Gmail replies, updates the company funnel, creates
-confirmed interview events in Google Calendar, reports every material change in
-natural Japanese on Telegram, and improves its strategy from verified outcomes.
+The Mac mini Job Hunter autonomously wakes every three hours during the configured
+Japan-day search window, discovers high-upside roles, verifies fit, creates truthful
+tailored materials, submits eligible applications, captures an authoritative
+receipt, polls Gmail through `gog` every 15 minutes, updates the company funnel,
+creates confirmed interview events in Google Calendar, reports every material
+change in natural Japanese on Telegram, and improves its strategy from verified
+outcomes.
 
 Completion requires all of the following:
 
@@ -26,12 +30,13 @@ Completion requires all of the following:
 - Gmail thread ID bound to the correct application;
 - one real interview email converted into a Google Calendar event;
 - Telegram message IDs for application, progression, interview, and learning reports;
-- daily, inbox, learning, and guardian LaunchAgents healthy on the stable runtime;
+- three-hour application, 15-minute inbox, weekly learning, and guardian
+  LaunchAgents healthy on the stable runtime;
 - `summary.v2`, Telegram, ledger, and rebuilt event projections agree;
 - all Job Hunter tests green; and
 - every meaningful change committed and pushed.
 
-## 2. Product outcome
+## 2. Overview — product outcome
 
 Job Hunter is not a bulk-application counter. It maximizes the probability that the
 user reaches a dream job they would gladly accept but may not have discovered or
@@ -52,7 +57,7 @@ Telegram copy, and learning reports must use one compensation contract:
 
 | Policy | JPY |
 |---|---:|
-| Hard floor | 7,000,000 |
+| Hard floor | 8,000,000 |
 | Default target | 10,000,000 |
 | Priority search range | 10,000,000–30,000,000 |
 | Stretch | 30,000,000+ |
@@ -60,9 +65,9 @@ Telegram copy, and learning reports must use one compensation contract:
 Rules:
 
 1. Reject a role only when authoritative compensation proves its maximum is below
-   JPY 7,000,000.
-2. JPY 7,000,000–9,999,999 is a minimum-acceptable band, not the search target. It
-   requires exceptional AI mission, peers, learning value, or strategic upside.
+   JPY 8,000,000.
+2. JPY 8,000,000–9,999,999 is an acceptable band, not the search target. It requires
+   exceptional AI mission, peers, learning value, or strategic upside.
 3. Rank JPY 10,000,000+ roles above otherwise equivalent lower-paid roles.
 4. Do not anchor a high-paying employer down to JPY 10,000,000. When a role publishes
    a higher range, answer inside that range based on scope and total compensation.
@@ -71,6 +76,13 @@ Rules:
 6. Never infer or disclose current compensation.
 7. Unknown compensation is not an automatic rejection; verify it or ask at the
    appropriate hiring stage.
+8. Store published base, recruiter-confirmed base, bonus, equity, currency, and
+   total compensation separately. Never label a role `six_figure_usd` until the
+   verified annual base or explicitly defined total-compensation value is at least
+   USD 100,000 using the latest available Bank of Japan 17:00 JST USD/JPY mid rate.
+   Persist the BOJ release URL, observation date, rate, source currency, target
+   currency, and converted amount with the classification receipt. Source:
+   [Bank of Japan — Foreign Exchange Rates (Daily)](https://www.boj.or.jp/en/statistics/market/forex/fxdaily/index.htm).
 
 ## 4. Location, travel, citizenship, clearance, and start date
 
@@ -136,6 +148,48 @@ person. They do not insert unsolicited statements such as `I am an AI` or `an AI
 assistant sent this`. They also never fabricate experience, impersonate the user in
 identity-bound interviews or videos, violate assessment rules, or give a false answer
 when an employer directly requires disclosure.
+
+### 5.4 Three-lane ownership and duplicate prevention
+
+Every application has exactly one durable owner: `agent`, `dais_manual`, or
+`recruiter`. Company plus normalized role plus official posting identity is unique
+across all owners. A manual or recruiter application is imported before the next
+autonomous pass and permanently fences the agent from submitting the same role.
+
+Palantir applications already submitted by Dais are `dais_manual`; Job Hunter tracks
+their Gmail outcomes but MUST NOT submit them again. Manual and recruiter lanes do
+not need autonomous material generation unless their application record lacks the
+exact submitted artifacts.
+
+### 5.5 Relationship and founder-outreach lane
+
+Companies without a verified open role, including the current BlockRun relationship,
+do not enter the ATS application lane. They enter a separate `founder_outreach`
+pipeline with product research, a truthful working contribution or concrete proposal,
+direct outreach, reply tracking, and a verified paid-trial, contract, or employment
+outcome. The lane never invents a vacancy and its outcomes are reported separately
+from application conversion.
+
+### 5.6 Runtime cadence and model contract
+
+- Application passes run at 08:00, 11:00, 14:00, 17:00, and 20:00 Asia/Tokyo.
+- Gmail polling through `gog` runs every 15 minutes.
+- A pass with no new eligible role exits without browser submission or duplicate
+  model work.
+- Extraction, tailoring, inbox interpretation, browser work, and weekly hypothesis
+  generation use `gpt-5.6-terra` with bounded task-specific effort.
+- Weekly learning uses Terra to propose exactly one bounded strategy change. Wilson
+  interval comparison, minimum sample thresholds, safety rollback, promotion, and
+  active-generation switching remain deterministic code; the model never overrides
+  those gates.
+- Luna is not the Job Hunter default. A later model change requires a replay eval on
+  the same immutable outcome snapshots and a measured quality, latency, and cost
+  improvement without weakening safety or evidence requirements.
+
+Model-selection source: [OpenAI — Using GPT-5.6](https://developers.openai.com/api/docs/guides/latest-model.md).
+The controlling distinction is: `gpt-5.6-terra` balances intelligence and cost,
+while `gpt-5.6-luna` serves efficient high-volume workloads. Representative replay
+evidence, not the model label, remains the activation gate.
 
 ## 6. Resume and artifact contract
 
@@ -630,6 +684,7 @@ change, and whether the strategy was promoted, unchanged, or rolled back.
 The tracker exposes:
 
 - full company list from discovery through final outcome;
+- application owner (`agent`, `dais_manual`, or `recruiter`) and duplicate fence;
 - stage conversion and failure reasons;
 - immutable application artifacts;
 - posting legitimacy and work-authorization findings;
@@ -639,10 +694,24 @@ The tracker exposes:
 - compensation distribution and JPY 10M+ target rate;
 - source, role-family, resume variant, and segment Pareto;
 - baseline/candidate strategy, 20% holdout, and rollback state;
-- last healthy daily/inbox/learning/guardian runs.
+- last healthy daily/inbox/learning/guardian runs;
+- confirmed-application, recruiter-reply, interview, final-round, offer, and
+  acceptance rates with explicit numerators and denominators;
+- median time to first reply and interview, verified compensation distribution, and
+  the share of offers at or above JPY 8M, JPY 10M, JPY 30M, and verified USD 100K;
+- segment breakdown by source, owner, role family, location model, compensation band,
+  company stage, resume variant, message emphasis, and strategy generation; and
+- founder-outreach activity and paid outcomes in a separate funnel that never
+  contaminates ATS application conversion.
 
 `summary.v2`, Telegram, and the local Career surface are projections of the same
 ledger/event stream and cannot maintain independent truth.
+
+Gmail is the primary external outcome feed but not the system of record. Every `gog`
+message is keyed by immutable Gmail message ID, matched against company, role,
+recipient, sender domain, and post-application time, and then appended to the event
+ledger. ATS completion evidence, exact submitted artifacts, Calendar IDs, and Gmail
+events remain independently auditable.
 
 ## 9. Stable local runtime — no worktree dependency
 
@@ -676,12 +745,34 @@ CloakBrowser owner, Telegram outbox, stale leases, and uncertain side effects. I
 repairs only deterministic pre-side-effect failures and sends one low-noise alert
 after bounded recovery fails.
 
-## 10. Current verified state
+The stable schedule is five application passes at 08:00, 11:00, 14:00, 17:00, and
+20:00 Asia/Tokyo, a 15-minute inbox pass, a weekly learning pass, and a guardian
+health pass. Application quota and duplicate fences are ledger-backed across all
+wakes; increasing wake frequency never authorizes duplicate or low-confidence
+submissions.
+
+## 10. As-Is / To-Be
+
+| Concern | As-Is | To-Be |
+|---|---|---|
+| Runtime | Three installed agents reference a deleted worktree and exit 78 | Stable immutable release and launcher paths |
+| Application cadence | One 08:30 daily wake | Five Japan-day wakes, three hours apart |
+| Inbox | `gog` works; 15-minute agent exists but runtime path is broken | Healthy 15-minute deterministic-first Gmail reconciliation |
+| Compensation | Versioned JPY 5.5M floor / JPY 7M target | JPY 8M floor / JPY 10M target / JPY 30M stretch |
+| Ownership | Agent applications exist without complete manual/recruiter import | One owner per application and cross-lane duplicate fence |
+| Palantir | Dais applied manually; not yet durably fenced | Track outcome only; autonomous resubmission impossible |
+| BlockRun | Could be mistaken for an ATS target | Separate founder-outreach funnel; no invented vacancy |
+| Models | Daily/inbox use Terra; high-value class routes to Luna | All Job Hunter semantic work uses Terra; statistics stay deterministic |
+| Outcomes | `summary.v1`; zero authoritative funnel outcomes | Event-backed `summary.v2` with reply/interview/final/offer metrics |
+| Product | Dais-only local implementation | Dais proof gate, then isolated multi-user Web product |
+
+## 11. Current verified state
 
 - Dedicated worktree and branch created from `origin/main` at `2099a29da`.
 - Canonical main working tree contains unrelated Connector edits and remains untouched.
 - Fresh baseline: `203 passed, 34 subtests passed`.
-- Private profile exists with compensation floor JPY 7M and target JPY 10M.
+- Private profile exists but must be migrated to compensation floor JPY 8M and target
+  JPY 10M.
 - Versioned strategy still has obsolete JPY 5.5M floor / JPY 7M target.
 - Installed daily, inbox, and learning LaunchAgents point to deleted
   `/Users/anicca/anicca-project/.worktrees/job-canonical-merge` paths and exit 78.
@@ -691,11 +782,17 @@ after bounded recovery fails.
 - `summary.v1` exists; `summary.v2` is incomplete.
 - Ashby confirmed receipt: 0.
 - Workday confirmed receipt: 0.
+- Palantir was submitted manually by Dais and still needs a durable `dais_manual`
+  import and duplicate fence.
+- The installed application schedule is still one daily wake; the five-wake schedule
+  is specified but not implemented.
+- The shared runner still routes `high-value-agent` to Luna; the Job Hunter-specific
+  Terra learning route is specified but not implemented.
 - Corrected base resumes rendered as four one-page PDFs, visually inspected, selected
   through the production stable filenames, and delivered with Telegram message IDs
   6119–6122. The prior 6084–6086 files are superseded.
 
-## 11. Execution order and remaining TODO
+## 12. Execution order and remaining TODO
 
 Each item closes RED → GREEN → real verification → this spec update → commit/push
 before the next item begins.
@@ -713,30 +810,69 @@ before the next item begins.
   artifact to Telegram; record message IDs and SHA-256 values here; obtain base
   acceptance before autonomous submission. Owner explicitly waived TDD for resume
   authoring; post-change verification completed with 203 tests green.
-- [ ] **O2-04B** — Commit and push every reviewable slice; keep this dedicated spec as
-  the progress SSOT. The five-phase master spec remains untouched.
+- [x] **O2-04B** — Commit and push every reviewable resume/spec slice; keep this
+  dedicated spec as the progress SSOT. Commits `e3d23ca73` through `c7eb197f0` are
+  present on the canonical remote branch.
+- [ ] **O2-04C** — Diff upstream vetted release
+  [`v1.3.0`](https://github.com/MadsLorentzen/ai-job-search/releases/tag/v1.3.0)
+  and the newer `master` delta against the Dais fork and production loop; import only
+  tested improvements that preserve private data, autonomous submission, and the
+  event-ledger contract.
 - [ ] **O2-05** — Replace worktree-bound LaunchAgent programs with stable launchers
   and immutable releases; install the canonical local runtime.
-- [ ] **O2-06** — TDD the JPY 7M floor / JPY 10M target / JPY 30M stretch policy,
-  travel-positive policy, and clearance non-rejection contract; prove with real
-  discovery logs.
+- [ ] **O2-06A** — TDD the JPY 8M floor / JPY 10M target / JPY 30M stretch policy,
+  timestamped USD-six-figure classification, travel-positive policy, and clearance
+  non-rejection contract; prove with real discovery logs.
+- [ ] **O2-06B** — TDD the five-wake application schedule, 15-minute `gog` inbox
+  schedule, no-new-work early exit, and ledger-backed quota across repeated wakes.
+- [ ] **O2-06C** — Import manual/recruiter applications, mark existing Palantir work
+  `dais_manual`, enforce cross-owner duplicate prevention, and implement the separate
+  BlockRun founder-outreach funnel.
+- [ ] **O2-06D** — Route Job Hunter weekly hypothesis generation to Terra, preserve
+  deterministic Wilson/sample/safety gates, and replay Terra versus the prior Luna
+  route on identical immutable snapshots before activation.
 - [ ] **O2-07** — Complete Guardian, lifecycle closure, event-backed `summary.v2`,
-  observable tracker, emotional Telegram copy validation, and per-application
-  resume/cover-letter/question artifacts.
+  observable tracker, explicit funnel numerators/denominators, emotional Telegram
+  copy validation, and per-application resume/cover-letter/question artifacts.
 - [ ] **O2-08** — Submit one eligible real Ashby application and capture an
-  authoritative ATS or Gmail receipt, exact artifacts, Telegram IDs, and thread ID.
+  authoritative ATS or Gmail receipt, exact artifacts, Telegram IDs, and thread ID;
+  exclude all manually or recruiter-submitted roles.
 - [ ] **O2-09** — Submit one eligible real Workday application and capture the same
   evidence contract.
 - [ ] **O2-10** — Prove one real interview email → stage update → Calendar event →
-  emotional Telegram progression report → interview prep/debrief flow.
+  emotional Telegram progression report → interview prep/debrief flow using `gog`
+  and immutable Gmail message IDs.
 - [ ] **O2-11** — Complete trace-linked weekly reflection, funnel attribution,
-  segment Pareto, 20% holdout, one-variable experiments, promotion, and rollback;
-  deliver the self-improvement report to Telegram.
+  confirmed-application/reply/interview/final/offer metrics, segment Pareto, 20%
+  holdout, one-variable experiments, deterministic promotion, and rollback; deliver
+  the Terra-authored self-improvement report to Telegram.
 - [ ] **O2-12** — Keep `ai.anicca.job-search-daily` as the CloakBrowser owner, make
   daily/inbox/learning/guardian healthy, and prove Job Hunter closes only pages it
   created without disturbing shared tabs or contexts.
 
-## 12. Final end-to-end state
+- [ ] **O3-01** — Freeze the Dais local product contract only after O2-08 through
+  O2-12 have authoritative real receipts and at least one real interview progression.
+- [ ] **O3-02** — Define tenant-isolated profile, credential, browser, ledger,
+  artifact, outbox, and audit boundaries; no user's facts or documents are visible to
+  another tenant or pooled model prompt.
+- [ ] **O3-03** — Build Web onboarding for candidate facts, compensation, location,
+  Gmail OAuth, accepted base resumes, autonomy boundaries, and manual/recruiter
+  application import.
+- [ ] **O3-04** — Run one isolated scheduler and browser owner per tenant with global
+  capacity limits, idempotent side effects, durable leases, and rollback.
+- [ ] **O3-05** — Build the Web Career surface from the same event ledger: company
+  list, artifacts, stages, Gmail evidence, interviews, offers, funnel metrics, and
+  system health.
+- [ ] **O3-06** — Generalize self-improvement per tenant. Share only privacy-safe,
+  minimum-cohort aggregate priors; never share resume text, employer answers, Gmail
+  bodies, compensation, or identity facts across users.
+- [ ] **O3-07** — Complete consent, deletion/export, security, abuse, billing,
+  observability, support, and incident-response gates before inviting external users.
+- [ ] **O3-08** — Onboard a bounded external cohort, verify real application and
+  outcome receipts, measure interview and offer conversion without fabricated or
+  dry-run outcomes, and expand only after the safety and quality gates pass.
+
+## 13. Final end-to-end state
 
 ```mermaid
 flowchart TD
@@ -744,7 +880,7 @@ flowchart TD
     P --> R[Base resumes in preferred languages]
     R --> A[Autonomous mode enabled]
 
-    A --> W[Daily wake]
+    A --> W[Five Japan-day wakes]
     W --> H[Guardian verifies stable release and integrations]
     H --> D[Discover official AI-native roles]
     D --> V[Verify expiry, legitimacy, salary, location, and authorization]
@@ -758,7 +894,7 @@ flowchart TD
     Q --> S
     U --> T
 
-    T --> G[Track Gmail thread and company stage]
+    T --> G[Poll Gmail through gog every 15 minutes]
     G --> I{Interview progression?}
     I -->|Yes| E[Create Google Calendar event]
     E --> J[🎉 Report and prepare interview]
@@ -769,7 +905,80 @@ flowchart TD
     B --> Y[Outcome attribution]
     L --> Y
     X --> Y
-    Y --> Z[Weekly held-out self-improvement]
+    Y --> Z[Weekly Terra hypothesis plus deterministic held-out decision]
     Z --> K[Report what was learned and what changes next]
     K --> D
 ```
+
+## 14. Boundaries
+
+- Job Hunter does not accept offers, sign agreements, complete identity-bound video
+  or live interviews, answer unknown legal or clearance-held questions, or bypass
+  prohibited assessment rules.
+- Wake frequency does not change the daily confirmed-submission quota until a later
+  outcome-backed experiment explicitly promotes a new quota.
+- Gmail is an evidence source, not an independent source of truth; no unmatched or
+  ambiguous email changes an application stage.
+- Founder outreach is not counted as a job application until a verified role and
+  application receipt exist.
+- O3 multi-user work does not begin before the O3-01 Dais proof gate.
+- Cross-user learning never contains raw resumes, application answers, Gmail bodies,
+  compensation records, identity facts, credentials, or artifact links.
+- The iOS app, Writer, CFO, Crypto, Affiliator, Connector, Fundraising, and Gig Work
+  are outside this spec.
+
+## 15. Test matrix
+
+| # | To-Be contract | Required test or evidence | Coverage gate |
+|---:|---|---|---|
+| 1 | Stable release, no worktree runtime path | `test_installed_job_launchagents_use_stable_release_paths` plus loaded plist inspection | MUST pass |
+| 2 | Five application wakes | `test_daily_plist_has_five_japan_day_calendar_intervals` | MUST pass |
+| 3 | `gog` inbox every 15 minutes | `test_inbox_plist_keeps_900_second_interval` plus one real read receipt | MUST pass |
+| 4 | JPY 8M hard floor | `test_known_compensation_below_eight_million_is_rejected` | MUST pass |
+| 5 | JPY 10M target and JPY 30M stretch | `test_target_and_stretch_bands_rank_without_down_anchoring` | MUST pass |
+| 6 | Timestamped USD 100K classification | `test_six_figure_classification_requires_value_currency_rate_and_timestamp` | MUST pass |
+| 7 | Manual/recruiter/agent ownership | `test_application_has_exactly_one_owner` | MUST pass |
+| 8 | Cross-lane duplicate fence | `test_manual_application_prevents_agent_submission` | MUST pass |
+| 9 | Palantir manual import | Private migration receipt plus `test_import_is_idempotent` | MUST pass |
+| 10 | BlockRun founder-outreach separation | `test_founder_outreach_never_counts_as_confirmed_application` | MUST pass |
+| 11 | Terra weekly hypothesis route | `test_job_learning_uses_terra_route` plus same-snapshot replay receipt | MUST pass |
+| 12 | Deterministic learning decision | Existing Wilson, sample-threshold, safety-rollback, and pointer-fencing suites | MUST pass |
+| 13 | Gmail immutable-message processing | Existing message checkpoint and late-receipt reconciliation suites plus one real `gog` message | MUST pass |
+| 14 | Event-backed `summary.v2` | `test_summary_v2_rebuilds_from_events_and_matches_telegram_projection` | MUST pass |
+| 15 | Funnel metrics | `test_funnel_rates_use_confirmed_application_denominator` | MUST pass |
+| 16 | Ashby real submission | ATS or Gmail receipt, exact artifacts, thread ID, and Telegram message IDs | MUST pass |
+| 17 | Workday real submission | ATS or Gmail receipt, exact artifacts, thread ID, and Telegram message IDs | MUST pass |
+| 18 | Interview progression | Real Gmail message → ledger stage → Calendar ID → Telegram receipt | MUST pass |
+| 19 | Browser ownership | Shared-tab preservation E2E with before/after page inventory | MUST pass |
+| 20 | Tenant isolation | Two-tenant adversarial access tests across profile, Gmail, browser, ledger, artifacts, and outbox | MUST pass before O3 cohort |
+
+### E2E judgment
+
+| Item | Value |
+|---|---|
+| UI change | Local phase: Telegram and Career projection; O3: Web Career surface |
+| Conclusion | Maestro: not applicable to the local macOS/browser loop. Real ATS, Gmail, Calendar, Telegram, and browser E2E are mandatory. Web Playwright E2E is mandatory for O3. |
+
+## 16. Execution and verification commands
+
+Run every slice from the dedicated Job Hunter worktree and close RED → GREEN → real
+verification → spec update → commit → push before starting the next checkbox.
+
+```bash
+cd apps/job-search-loop
+python3 -m unittest discover -s tests -v
+```
+
+After installing a release, verify the real runtime rather than the source template:
+
+```bash
+plutil -p ~/Library/LaunchAgents/ai.anicca.job-search-daily.plist
+plutil -p ~/Library/LaunchAgents/ai.anicca.job-search-inbox.plist
+launchctl list | rg 'ai\.anicca\.job-search'
+gog gmail search 'newer_than:1d' --account "$(jq -r '.candidate.application_email' ~/.config/anicca/job-search/profile.json)"
+```
+
+For every real application or outcome, verify the ledger, evidence directory,
+Telegram provider receipt, Gmail message ID, and Calendar event ID before reporting
+the stage as complete. A dry run, browser click without receipt, model summary, or
+unmatched email is not completion evidence.
