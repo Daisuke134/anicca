@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any, Callable
 from urllib.parse import urlsplit
 
+from .ledger import Ledger
 from .outbox import DeliveryUncertain
 from .telegram import send_once
 
@@ -21,6 +22,63 @@ IDENTIFIER_PATTERN = re.compile(r"^[A-Za-z0-9_-]{1,1024}$")
 
 class PrepError(ValueError):
     pass
+
+
+REQUIRED_APPLICATION_PREP_ARTIFACTS = (
+    "posting",
+    "resume_draft",
+    "cover_letter_draft",
+)
+
+
+def application_prep_context(
+    *,
+    ledger_database: Path,
+    application_id: str,
+) -> dict[str, Any]:
+    """Resolve one interview-prep context without exposing artifact contents."""
+    ledger = Ledger(ledger_database)
+    try:
+        archive = ledger.application_archive(application_id)
+    finally:
+        ledger.close()
+    selected: list[dict[str, Any]] = []
+    for kind in REQUIRED_APPLICATION_PREP_ARTIFACTS:
+        matches = [item for item in archive["artifacts"] if item["kind"] == kind]
+        if not matches:
+            raise PrepError(f"application prep context is missing {kind}")
+        if len(matches) != 1:
+            raise PrepError(f"application prep context has ambiguous {kind}")
+        artifact = matches[0]
+        path = Path(str(artifact["path"]))
+        if not path.is_file():
+            raise PrepError(f"{kind} artifact is no longer available")
+        if path.stat().st_mode & 0o077:
+            raise PrepError(f"{kind} artifact is no longer private")
+        actual_sha256 = hashlib.sha256(path.read_bytes()).hexdigest()
+        if actual_sha256 != artifact["sha256"]:
+            raise PrepError(f"{kind} artifact changed after archival")
+        selected.append(
+            {
+                "artifact_id": artifact["artifact_id"],
+                "kind": kind,
+                "path": str(path.resolve()),
+                "sha256": artifact["sha256"],
+                "fact_ids": artifact["fact_ids"],
+                "source_urls": artifact["source_urls"],
+            }
+        )
+    value: dict[str, Any] = {
+        "version": 1,
+        "application_id": str(archive["application"]["id"]),
+        "company": str(archive["application"]["company"]),
+        "role": str(archive["application"]["title"]),
+        "canonical_url": str(archive["application"]["canonical_url"]),
+        "artifacts": selected,
+    }
+    serialized = json.dumps(value, ensure_ascii=False, sort_keys=True)
+    value["context_sha256"] = hashlib.sha256(serialized.encode("utf-8")).hexdigest()
+    return value
 
 
 def _clean(value: Any, *, name: str, maximum: int) -> str:

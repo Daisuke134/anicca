@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-10` — interview-preparation contract
+**Active atomic task:** `L-11` — upskill and reporting projections
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -934,7 +934,12 @@ this spec update → commit/push → Telegram milestone before the next item sta
   evidence SHA-256; English and Japanese confirmation, recruiter, assessment,
   interview, offer, and rejection semantics are covered; raw body is not emitted;
   operations suite PASS.
-- [ ] **L-10** — Port the upstream interview-preparation contract.
+- [x] **L-10** — Port the upstream interview-preparation contract. Receipt:
+  one application ID resolves exactly one archived posting, resume draft, and
+  cover-letter draft; current privacy and SHA-256 are reverified, missing,
+  ambiguous, unavailable, public, or mutated artifacts fail closed; the resulting
+  context exposes provenance rather than artifact contents and has one deterministic
+  context SHA-256; interview-prep and full 223-test suites PASS.
 - [ ] **L-11** — Port the upstream upskill and reporting projections without adding
   a second source of truth.
 - [ ] **L-12** — Build a content-addressed immutable local release.
