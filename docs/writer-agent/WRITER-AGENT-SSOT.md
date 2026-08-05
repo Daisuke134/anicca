@@ -862,6 +862,21 @@ created a hash-manifest archive and entered attempt 1 with source defect
 `reader-terminal-hash` under owner PID `28630`. Publication remains unclaimed
 while that real repair is `invoking`.
 
+The eighth slice is
+`docs/writer-agent/plans/2026-08-05-terminal-quality-blocked-transition.md`.
+Live repair attempt 1 fixed the reader receipt defect: JA now has a current-hash
+reader PASS and EN a current-hash reader FAIL at attempt 3. It still cannot
+close quality because both editorial high FAIL receipts predate later draft
+changes, and `editorial-gate.sh` exits `77` before another provider call.
+Repair ended `retryable-incomplete`, start control remains
+`same-jst-day-unclassified-run`, and publication state is absent. A fresh GPT
+adversarial review rejected publishing with quality debt because the failures
+include unsupported quantitative and Unicode claims. Its single recommendation
+is a hash-bound `terminal_quality_blocked` rejection: stop model spend, never
+publish this artifact, permit only the existing bounded replacement policy,
+and ensure tomorrow is not poisoned by today's terminal miss. Implementation
+evidence is pending.
+
 Decision evidence:
 
 - OpenAI describes Terra as the everyday workhorse and Sol as the model for
