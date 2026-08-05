@@ -32,7 +32,7 @@ exact company plus exact title, must identify one application; ambiguous or abse
 matches record nothing. Hash the retained private external receipt and call
 `Ledger.record_funnel_outcome` with its true timestamp and source. Record only the
 stages the evidence actually proves: `confirmed_application`, `recruiter_response`,
-`screen`, `interview`, `offer`, `accepted`, `declined`, or `started`. One receipt may
+`screen`, `interview`, `final_round`, `offer`, `accepted`, `declined`, or `started`. One receipt may
 prove multiple stages for the same application, but it can never be rebound to
 another application. A negative recruiter-response outcome is valid only after the
 configured observation window has elapsed and must carry its versioned policy;

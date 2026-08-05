@@ -31,6 +31,7 @@ FUNNEL_STAGES = frozenset(
         "recruiter_response",
         "screen",
         "interview",
+        "final_round",
         "offer",
         "accepted",
         "declined",
@@ -2133,6 +2134,7 @@ class Ledger:
                 raise FenceError("application event chain lacks a valid origin")
             previous = first_state
             ever_submitted = first_state == "submitted"
+            submission_attempted = first_state in {"submitted", "submit_unknown"}
             for event in rows[1:]:
                 to_state = str(event["to_state"])
                 if str(event["from_state"]) != previous:
@@ -2147,12 +2149,26 @@ class Ledger:
                     validate_transition(previous, to_state)
                 previous = to_state
                 ever_submitted = ever_submitted or to_state == "submitted"
+                submission_attempted = submission_attempted or to_state in {
+                    "submitted", "submit_unknown"
+                }
+            positive_stages = {
+                str(row["funnel_stage"])
+                for row in self.connection.execute(
+                    "SELECT funnel_stage FROM funnel_outcomes "
+                    "WHERE application_id = ? AND disposition = 'positive'",
+                    (application["id"],),
+                ).fetchall()
+            }
             projection.append(
                 {
+                    "application_id": str(application["id"]),
                     "canonical_url": str(application["canonical_url"]),
                     "owner": str(application["owner"]),
                     "current_state": previous,
                     "ever_submitted": ever_submitted,
+                    "submission_attempted": submission_attempted,
+                    "positive_funnel_stages": sorted(positive_stages),
                 }
             )
         return projection
