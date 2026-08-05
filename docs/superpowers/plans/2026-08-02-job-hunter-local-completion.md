@@ -1539,7 +1539,11 @@ this spec update → commit/push → Telegram milestone before the next item sta
   page and zero for the existing human tab or unregistered popup. This follows
   Playwright's documented warning that context closure closes all context pages and
   CDP's specified target-ID-scoped close operation. No live page, browser, email,
-  Calendar event, or application was touched.
+  Calendar event, or application was touched. Immutable release
+  `8de3f7de61726a51215b3e5c83c05bab0c608091` (archive SHA-256
+  `68eafec10b1e2ff519314969ce1a7763f80db916e15500a6e481025074dc1497`)
+  is active with zero writable paths; `5a22501a7a42e650c7b4a2183aa852c9720b4b07`
+  remains rollback-ready and the approved route SHA is unchanged.
 - [ ] **L-49** — Submit one eligible real Ashby application and store its
   authoritative receipt.
 - [ ] **L-50** — Deliver the Ashby application artifacts and receipt to Telegram.
