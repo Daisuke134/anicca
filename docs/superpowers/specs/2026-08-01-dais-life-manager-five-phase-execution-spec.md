@@ -1343,10 +1343,10 @@ Life Manager Core
 - [x] O1B-23 Google Calendarの全calendarからbusy intervalを読み、前後移動時間を含むfree intervalだけへ予約
 - [x] O1B-24 無料を優先し、有料eventは一度設定した自動支出policy内で保存済み決済手段を使い、都度承認を要求しない
 - [ ] O1B-25A Connectorの日常実行ownerをLife Manager localに一本化し、並行するlegacy実行経路を停止
-- [ ] O1B-25B canonical repoのLife Manager `skills/`へConnector capability、worker contract、native bootを置く
-- [ ] O1B-25C `launchd`→Life Manager local control planeからConnectorを起動し、single-instance lock、heartbeat、healthcheck、self-healを接続
-- [ ] O1B-25D 既存CloakBrowser daily-driverを所有権付きで直接使い、他agentのtab/contextを触らない
-- [ ] O1B-25E `gog`でGoogle Calendar全calendarを読み、21日coverageと二重予約防止をnative実行
+- [x] O1B-25B canonical repoのLife Manager `skills/`へConnector capability、worker contract、native bootを置く
+- [x] O1B-25C `launchd`→Life Manager local control planeからConnectorを起動し、single-instance lock、heartbeat、healthcheck、self-healを接続
+- [x] O1B-25D 既存CloakBrowser daily-driverを所有権付きで直接使い、他agentのtab/contextを触らない
+- [x] O1B-25E `gog`でGoogle Calendar全calendarを読み、21日coverageと二重予約防止をnative実行
 - [ ] O1B-25F Luma探索→実登録→確認mail/QR→Calendarをnative一巡で実証
 - [ ] O1B-25G 21日coverage、既存予定、新規予約、残り空き、申込証拠、選定理由をTelegramへ一通で報告
 - [ ] O1B-25H local一巡の実receipt保存後にlegacy worker、bridge、重複scheduleを退役
@@ -1356,13 +1356,13 @@ Native Connector acceptance test list（この順で実測）:
 - [ ] NT-C01 `launchd`がcanonical `life-manager-main`内のnative bootだけを起動し、legacy checkoutを参照しない
 - [ ] NT-C02 同時起動してもsingle-instance lockにより一巡だけがCloakBrowserを操作する
 - [ ] NT-C03 Connector所有tab/contextだけを開閉し、Gig・Job Hunter・他agentのtab/contextを変更しない
-- [ ] NT-C04 `gog`で全Google Calendarを読み、既存予定と移動時間に重なる候補を申込まない
+- [x] NT-C04 `gog`で全Google Calendarを読み、既存予定と移動時間に重なる候補を申込まない
 - [ ] NT-C05 rolling 21日の最初のopen日から候補を探し、満席・受付終了なら同日次候補へ進む
 - [ ] NT-C06 実Luma登録、確認mail、QR、Calendar eventが同一canonical eventとして照合される
-- [ ] NT-C07 Calendar再実行で同一eventを重複作成しない
+- [x] NT-C07 Calendar再実行で同一eventを重複作成しない
 - [ ] NT-C08 一候補・一sourceの失敗でpassを終了せず、21日のopenが0になるまで次候補・次日へ進む
 - [ ] NT-C09 Telegramがevent名、日時、場所、選定理由、Luma直接link、Calendar直接link、21日進捗を人間の言葉で送る
-- [ ] NT-C10 Telegramに`runner`、job ID、内部error codeだけの説明を出さない
+- [x] NT-C10 Telegramに`runner`、job ID、内部error codeだけの説明を出さない
 - [ ] NT-C11 Mac再起動後にlaunchdが自動復帰し、heartbeat/healthcheck/self-healが機能する
 - [ ] NT-C12 local一巡のreceipt保存後だけlegacy Connectorを停止し、次回もlocal経路だけで成功する
 
@@ -2229,6 +2229,22 @@ O1B-25進捗55（現slice全回帰）: `npm run test:outbound`をfresh実行し�
 承認制CTA、roleなし必須form、auth-aware error分類、same-day known failure skipを含む既存Connector境界に回帰はない。
 ただしテストGREENは次open日継続の未実装を完了扱いにしない。次sliceは進捗54の状態遷移だけをRED→GREEN→live proofで閉じる。
 
+O1B-25進捗56（2026-08-06 live再監査 / TODO順序更新）: native launchdは5分間隔で継続し、累計73 run。
+最新stateは`open=19 / covered_new=2 / covered_existing=0 / unavailable=0`、最新候補は
+`luma-event://event/7gy3rv6t`、結果は`application_failed / LUMA_RSVP_UNAVAILABLE`で、Calendar/Telegram effectは0。
+append-only delivery historyにはpositive Telegram ID `7372`と`7376`の2件だけが残る。したがって「loop停止」ではなく、
+候補失敗後の次候補・次日継続と失敗候補のdurable suppressionが未完了で、同じ失敗を繰り返している状態である。
+
+残TODOの実行順序SSOT（上から一件ずつ閉じる）:
+
+1. `LUMA_RSVP_UNAVAILABLE`、`LUMA_FORM_INPUT_REQUIRED`、満席、受付終了をknown no-effectとして候補履歴へ保存し、同一候補を再wakeで再選択しない。
+2. 同日候補が尽きたら同じbounded pass内で次のopen日へ進み、一候補・一日・一sourceの失敗でpassを終了しない。
+3. 次の実eventでLuma申請済みreadback→確認mail/QR→Google Calendar→positive Telegram message IDを一巡実証する。
+4. append-only historyからcoverageを再構築し、成功event・known失敗eventの双方を重複処理しないことを次wakeで実証する。
+5. `open=0`になるまでloopを継続し、21日統合Telegram briefingを一通だけ送る。
+6. Mac再起動後のlaunchd自動復帰、heartbeat、healthcheck、self-healを実機検証する。
+7. feature branchをcanonical branchへ統合し、legacy host bridge / Docker worker / 重複scheduleを退役する。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
@@ -2583,6 +2599,46 @@ specialist agentの合議、多数決、CFO Leadの指示のいずれも、deter
 
 最初はDais一人のローカル運用で、支出削減、応募、収入、投資、Telegram UXを実証する。
 その後、同じcoreをLife Manager Webアプリへ統合し、有料userの継続売上をMRRとして積み上げる。
+
+### 8.1 月$10,000を作るagent business loop
+
+この節の`$10K/month`は**USD 10,000の事業MRR**を指す。投資利益、給与、資金調達、含み益、削減額を混ぜない。
+保証値ではなく、Stripeの実payment eventから監査可能な目標である。
+
+| 月額 | 必要active paid user | 到達MRR |
+|---:|---:|---:|
+| $49 | 205 | $10,045 |
+| $99 | 102 | $10,098 |
+| $199 | 51 | $10,149 |
+
+推奨する最初のbusiness modelは`$99/month × 102 active paid users`。Life Managerが「機会探索、応募、Calendar、
+Telegram報告、財務briefing」を一つのmanager体験として提供し、agent数を商品にしない。
+
+```mermaid
+flowchart LR
+    G[月$10K MRR goal] --> O[実データを観測]
+    O --> P[今月の最大leverを1つ選ぶ]
+    P --> E[専門agentをbounded実行]
+    E --> V[外部receiptで検証]
+    V --> T[Telegramへ結果を1通]
+    V --> L[統一ledgerへ記録]
+    L --> M[Stripe MRR・churn・costを計算]
+    M --> X{月$10K達成?}
+    X -- No --> A[獲得・activation・retentionの最弱点を改善]
+    A --> O
+    X -- Yes --> R[reserveと成長へ再配分]
+    R --> O
+```
+
+毎日のloopは「儲かりそうなことを無制限にする」ものではない。Connectorが見込み客・partner・採用候補との接点を作り、
+Job/Fundraisingが収入とrunwayを改善し、CFOがcostとcashを管理し、Product/Growthがpaid conversionとretentionを上げる。
+月次の唯一の事業判定は`new MRR + expansion + reactivation - contraction - churn`で、全変動をpayment eventへdrill-downできること。
+
+根拠:
+
+- ソース: [OpenAI Orchestration and handoffs](https://developers.openai.com/api/docs/guides/agents/orchestration) / 核心の引用: 「A manager should stay in control and call specialists as bounded capabilities」
+- ソース: [Telegram Bot API](https://core.telegram.org/bots/api#sendmessage) / 核心の引用: 「On success, the sent Message is returned」
+- ソース: [Stripe Subscription analytics](https://docs.stripe.com/billing/subscriptions/analytics) / 核心の引用: 「新規登録、アップグレード、ダウングレード、再有効化、解約を含む各顧客のすべての MRR の推移」
 
 ## 9. 完成時の全体図
 
@@ -3213,9 +3269,70 @@ NISA利用額: ¥{{nisa_used}}
 [元データを見る]({{source_detail_url}})
 ```
 
+### 10.12 ユーザーが実際に体験するTelegram UX
+
+Daisはagentを起動・選択・監視しない。Life Manager managerが裏でspecialistを呼び、Daisには次の3種類だけを送る。
+
+1. 朝: 今日の予定、残高、重要な変化、agentが今日行うことを一通。
+2. 日中: 実登録・実応募・面談・入金・異常だけをcompletion cardとして送る。通常retryは送らない。
+3. 月末: MRR、収入、支出、agent別純効果、目標gap、翌月の一手を一通。
+
+```mermaid
+sequenceDiagram
+    participant U as Dais
+    participant T as Telegram
+    participant LM as Life Manager
+    participant A as Specialist agents
+    participant X as External services
+    participant L as Verified ledger
+
+    LM->>A: goal・policy・予算付きでbounded task
+    A->>X: 探索・応募・登録・同期
+    X-->>A: confirmation・Calendar・payment receipt
+    A->>L: 検証済み結果だけ記録
+    L-->>LM: current state・MRR・next action
+    LM->>T: 人間向けの一通 + 直接link
+    T-->>U: 朝brief / 完了card / 月次締め
+    alt 通常
+        U-->>T: 何もしなくてよい
+    else policy外の不可逆操作
+        T->>U: 理由・金額・確認画面を提示
+        U-->>T: 承認または拒否
+    end
+```
+
+Telegramを開いた後に起こること:
+
+- `[イベントを見る]`でLuma公式page、`[Calendar]`で実予定、`[証拠を見る]`で認証済み詳細へ直接移動する。
+- 返信しなくてもloopは次のopen日、応募、reply追跡、財務更新へ進む。
+- Telegram送信成功はpositive `message_id`を保存できた時だけ。表示文面だけを成功証拠にしない。
+- 人間を呼ぶのはpolicy外の送金・売買等だけで、通常の無料event登録や既定範囲の行動には承認を要求しない。
+
 ## 11. 最終利用体験
 
 ### 11.0 全実装後の一枚図
+
+```mermaid
+flowchart TB
+    U[Dais: Telegramだけを見る] <--> M[Life Manager manager]
+    M --> C[Connector: event・人脈]
+    M --> F[Fundraising: capital・面談]
+    M --> J[Job Hunter: offer・給与]
+    M --> CFO[CFO: cash・cost・allocation]
+    CFO --> CR[Crypto: capped realized P&L]
+    CFO --> FI[Fiat/NISA: long-term return]
+    C --> R[External receipts]
+    F --> R
+    J --> R
+    CFO --> R
+    CR --> R
+    FI --> R
+    R --> L[Unified verified ledger]
+    L --> M
+    L --> W[Web: detail・history・evidence]
+    M --> T[Telegram: next action・result・exception]
+    T --> U
+```
 
 ```text
                          Life Manager
