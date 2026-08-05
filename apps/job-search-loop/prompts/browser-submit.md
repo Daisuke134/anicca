@@ -22,3 +22,13 @@ request JSON. Await the response from that exact captured request object, then u
 `classify_confirmation` to bind its result typename to the page's exact expected
 `role=status` text. HTTP 200 by itself is not success, and GraphQL request variables
 must never be logged or persisted.
+
+Before committing `clicked`, verify every required custom-button selected state in
+the rendered control, not only native `:invalid` inputs. Attach observers for the
+exact submit request, reCAPTCHA execution, and every visible application-form error
+before the click. After the first terminal signal or bounded timeout, call
+`classify_post_click_observation` and persist its
+PII-free post-click observation receipt. Hash error text instead of storing it.
+Preserve `silent_timeout` and every
+unproven clicked classification as non-retryable; only the already-authorized exact
+reCAPTCHA rejection may use the retryable client-block path.

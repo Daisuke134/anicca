@@ -93,6 +93,20 @@ class PromptInjectionTests(unittest.TestCase):
             self.assertIn("before", prompt)
             self.assertIn("click", prompt)
 
+    def test_browser_prompts_persist_post_click_observation(self):
+        root = Path(__file__).parents[1]
+        prompts = [
+            (root / "prompts" / "daily-pass.md").read_text(encoding="utf-8"),
+            (root / "prompts" / "browser-submit.md").read_text(encoding="utf-8"),
+        ]
+        for prompt in prompts:
+            self.assertIn("classify_post_click_observation", prompt)
+            self.assertIn("custom-button selected state", prompt)
+            self.assertIn("visible application-form error", prompt)
+            self.assertIn("reCAPTCHA execution", prompt)
+            self.assertIn("silent_timeout", prompt)
+            self.assertIn("PII-free post-click observation receipt", prompt)
+
     def test_dream_and_weekly_hypothesis_use_explicit_terra_high_route(self):
         root = Path(__file__).parents[1]
         daily = (root / "scripts" / "run-daily.sh").read_text(encoding="utf-8")

@@ -8,6 +8,9 @@ from typing import Any, Mapping
 SUBMIT_OPERATIONS = frozenset(
     {"ApiSubmitSingleApplicationFormAction", "ApiSubmitMultipleFormsAction"}
 )
+RECAPTCHA_REJECTION = (
+    "There was an error verifying that you are not a robot. Please try again."
+)
 
 
 def is_submit_mutation(operation_name: Any) -> bool:
@@ -40,6 +43,54 @@ def _sha256(value: str | None) -> str | None:
 
 def _normalized(value: str | None) -> str:
     return re.sub(r"\s+", " ", value or "").strip()
+
+
+def classify_post_click_observation(
+    *,
+    submit_operation: str | None,
+    recaptcha_started: bool,
+    visible_error_texts: list[str],
+    unselected_required_answers: list[str],
+    timed_out: bool,
+) -> dict[str, Any]:
+    if submit_operation is not None and not is_submit_mutation(submit_operation):
+        raise ValueError("submit_operation is not an official Ashby submit operation")
+    if not isinstance(recaptcha_started, bool) or not isinstance(timed_out, bool):
+        raise ValueError("observation flags must be booleans")
+    if any(not isinstance(value, str) or not value.strip() for value in visible_error_texts):
+        raise ValueError("visible errors must be non-empty strings")
+    if any(
+        not isinstance(value, str) or not value.strip()
+        for value in unselected_required_answers
+    ):
+        raise ValueError("required answer identifiers must be non-empty strings")
+
+    exact_recaptcha_rejection = RECAPTCHA_REJECTION in visible_error_texts
+    if submit_operation is not None:
+        classification = "request_started"
+    elif exact_recaptcha_rejection:
+        classification = "recaptcha_rejected"
+    elif visible_error_texts or unselected_required_answers:
+        classification = "validation_rejected"
+    elif recaptcha_started and timed_out:
+        classification = "recaptcha_pending"
+    elif timed_out:
+        classification = "silent_timeout"
+    else:
+        classification = "no_terminal_signal"
+
+    return {
+        "version": 1,
+        "classification": classification,
+        "submit_operation": submit_operation,
+        "recaptcha_started": recaptcha_started,
+        "timed_out": timed_out,
+        "visible_error_sha256": sorted(_sha256(value) for value in visible_error_texts),
+        "unselected_required_answer_sha256": sorted(
+            _sha256(value) for value in unselected_required_answers
+        ),
+        "retryable": classification == "recaptcha_rejected",
+    }
 
 
 def classify_confirmation(
