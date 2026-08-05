@@ -1,3 +1,4 @@
+import hashlib
 import json
 import unittest
 from pathlib import Path
@@ -89,6 +90,55 @@ class UpstreamLockTests(unittest.TestCase):
         self.assertEqual(
             upstream["sources"]["license"],
             "https://github.com/santifer/career-ops/blob/career-ops-v1.25.0/LICENSE",
+        )
+
+    def test_browser_use_0137_is_content_addressed_licensed_and_dependency_locked(self):
+        data = json.loads(LOCK.read_text(encoding="utf-8"))
+        self.assertIn("browser-use", data["upstreams"])
+        upstream = data["upstreams"]["browser-use"]
+
+        self.assertEqual(upstream["repository"], "https://github.com/browser-use/browser-use")
+        self.assertEqual(upstream["package_version"], "0.13.7")
+        self.assertEqual(upstream["release"], "0.13.7")
+        self.assertEqual(upstream["commit_sha"], "f0aa3a8bb03779c71a5aa262d389e3bfe6b77cdc")
+        self.assertEqual(upstream["tree_sha"], "6ebd132305353e4e62d8b7f61736ccbcbb377ab8")
+        self.assertEqual(upstream["file_count"], 480)
+        self.assertEqual(upstream["license"]["spdx"], "MIT")
+        self.assertEqual(upstream["license"]["blob_sha"], "1ea3836ce58a4cd32c90c0b4f4e736d840d23780")
+        self.assertEqual(
+            upstream["files"]["examples/use-cases/apply_to_job.py"]["content_sha256"],
+            "95a9e9719a77060d5c1d2f482089fa3f3d993ec285ec9447314e120683c7979c",
+        )
+        self.assertEqual(upstream["upstream_dependency_lock"], "absent")
+
+        dependency_lock = upstream["local_dependency_lock"]
+        self.assertEqual(dependency_lock["resolver"], "uv 0.10.7")
+        self.assertEqual(dependency_lock["python_version"], "3.12")
+        self.assertEqual(dependency_lock["platform"], "aarch64-apple-darwin")
+        self.assertTrue(dependency_lock["no_header"])
+        self.assertTrue(dependency_lock["no_annotate"])
+        lock_path = ROOT / dependency_lock["path"]
+        self.assertTrue(lock_path.is_file())
+        self.assertEqual(
+            hashlib.sha256(lock_path.read_bytes()).hexdigest(),
+            dependency_lock["content_sha256"],
+        )
+        self.assertEqual(
+            upstream["consumed_contracts"],
+            {
+                "actions": [
+                    "browser_use/tools/registry/service.py",
+                    "browser_use/tools/registry/views.py",
+                    "browser_use/tools/service.py",
+                ],
+                "history": ["browser_use/agent/views.py"],
+                "screenshots": [
+                    "browser_use/agent/views.py",
+                    "browser_use/browser/session.py",
+                    "browser_use/tools/service.py",
+                ],
+                "job_application_example": ["examples/use-cases/apply_to_job.py"],
+            },
         )
 
     def test_every_v130_component_has_one_explicit_adoption_decision(self):

@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-49K0A1` — pin Browser Use v0.13.7 before adapting the resident browser executor
+**Active atomic task:** `L-49K0A2` — pin Temporal Server and Python SDK and prove restart-safe local execution
 **Status:** The immutable four-lane runtime, hourly/five-minute schedules, grounded
 materials, ownership fences, Gmail ingestion, Telegram outbox, quota accounting, and
 Ashby observation classifier are implemented and tested. The daily application
@@ -1961,9 +1961,22 @@ this spec update → commit/push → Telegram milestone before the next item sta
   upstream was absent; focused GREEN PASS, the real archive verification PASS, and
   the final full 365-test suite PASS in 22.183 seconds. No upstream code was executed or
   activated.
-- [ ] **L-49K0A1** — Pin `browser-use/browser-use` v0.13.7, tag commit, tree, MIT
+- [x] **L-49K0A1** — Pin `browser-use/browser-use` v0.13.7, tag commit, tree, MIT
   license, dependency lock, and the exact job-application example hashes. Record all
-  upstream actions and history/screenshot contracts consumed by Job Hunter.
+  upstream actions and history/screenshot contracts consumed by Job Hunter. Receipt:
+  the official tag is `0.13.7` rather than `v0.13.7`; it resolves to commit
+  `f0aa3a8bb03779c71a5aa262d389e3bfe6b77cdc`, tree
+  `6ebd132305353e4e62d8b7f61736ccbcbb377ab8`, and 480 blobs. The exact-commit
+  archive, MIT license, `README.md`, `pyproject.toml`, and
+  `examples/use-cases/apply_to_job.py` Git blob, size, and SHA-256 values match the
+  committed lock. Upstream ships no dependency lock, so `uv 0.10.7` resolves the
+  exact `browser-use==0.13.7` input for Python 3.12 on macOS arm64 into a hash-locked
+  102-package file. Header and annotations are disabled so replay from a different
+  working directory reproduces SHA-256
+  `3ac583136825fd6af93fb86e370189fa3f7c3095b18f5061788b69e81a5e5e21`.
+  Action registry, agent history, screenshot, and job-application example source
+  paths are recorded. Focused RED detected the missing upstream; focused GREEN and
+  dependency-lock replay PASS. No Browser Use code is imported, executed, or active.
 - [ ] **L-49K0A2** — Pin `temporalio/temporal` v1.31.2 and `temporalio/sdk-python`
   v1.31.0 with MIT licenses, server/CLI/SDK artifacts, protocol versions, and local
   rollback. Prove an isolated local server and Python worker can survive worker
