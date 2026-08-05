@@ -51,6 +51,30 @@ class PromptInjectionTests(unittest.TestCase):
         self.assertIn("JOB_SEARCH_PREFILTER_RESULT", script)
         self.assertIn("JOB_SEARCH_PREFILTER_RESULT", prompt)
 
+    def test_daily_routes_deep_fit_tailoring_and_answers_through_terra_composition(self):
+        root = Path(__file__).parents[1]
+        script = (root / "scripts" / "run-daily.sh").read_text(encoding="utf-8")
+        browser_prompt = (root / "prompts" / "daily-pass.md").read_text(encoding="utf-8")
+        terra_prompt = root / "prompts" / "terra-plan-pass.md"
+        terra_schema = root / "schemas" / "terra-plan-result.v1.schema.json"
+        self.assertTrue(terra_prompt.is_file())
+        self.assertTrue(terra_schema.is_file())
+        contract = terra_prompt.read_text(encoding="utf-8")
+        for phrase in ("deep fit", "resume variant", "employer answers"):
+            self.assertIn(phrase, contract)
+        self.assertLess(
+            script.index("--task-class repeatable-agent"),
+            script.index("--task-class composition-agent"),
+        )
+        self.assertLess(
+            script.index("--task-class composition-agent"),
+            script.index("--task-class browser-lane-agent"),
+        )
+        self.assertIn("JOB_SEARCH_TERRA_PLAN_RESULT", script)
+        self.assertIn("JOB_SEARCH_TERRA_PLAN_RESULT", browser_prompt)
+        self.assertIn('"$TERRA_PLAN_EVIDENCE"/attempt-*.stdout.log', script)
+        self.assertIn('"$JOB_SEARCH_TERRA_PLAN_RESULT"', script)
+
 
 if __name__ == "__main__":
     unittest.main()

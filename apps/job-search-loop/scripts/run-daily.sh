@@ -93,6 +93,33 @@ PREFILTER_RESULT_PATH=$("$JOB_SEARCH_JQ" -er '.result_path' "$EVIDENCE/prefilter
 export JOB_SEARCH_PREFILTER_RESULT="$EVIDENCE/prefilter-result.json"
 cp "$PREFILTER_RESULT_PATH" "$JOB_SEARCH_PREFILTER_RESULT"
 chmod 600 "$JOB_SEARCH_PREFILTER_RESULT"
+export ANICCA_BUDGET_SCOPE_ID="job-search-daily:${RUN_ID}:terra-plan"
+export ANICCA_PASS_TOKEN_BUDGET=65536
+TERRA_PLAN_EVIDENCE="$EVIDENCE/terra-plan"
+mkdir -p "$TERRA_PLAN_EVIDENCE"
+chmod 700 "$TERRA_PLAN_EVIDENCE"
+set +e
+"$JOB_SEARCH_PYTHON" "$JOB_SEARCH_RUNNER" \
+  --task-class composition-agent \
+  --prompt-stdin \
+  --schema "$JOB_SEARCH_APP_ROOT/schemas/terra-plan-result.v1.schema.json" \
+  --evidence-dir "$TERRA_PLAN_EVIDENCE" \
+  --task-label job-search-terra-plan \
+  --loop job-search \
+  --workdir "$JOB_SEARCH_REPO_ROOT" \
+  <"$JOB_SEARCH_APP_ROOT/prompts/terra-plan-pass.md" \
+  >"$EVIDENCE/terra-plan-runner.json"
+TERRA_PLAN_RC=$?
+set -e
+chmod 600 "$EVIDENCE/terra-plan-runner.json"
+if [[ "$TERRA_PLAN_RC" -ne 0 ]]; then
+  refresh_summary
+  exit "$TERRA_PLAN_RC"
+fi
+TERRA_PLAN_RESULT_PATH=$("$JOB_SEARCH_JQ" -er '.result_path' "$EVIDENCE/terra-plan-runner.json")
+export JOB_SEARCH_TERRA_PLAN_RESULT="$EVIDENCE/terra-plan-result.json"
+cp "$TERRA_PLAN_RESULT_PATH" "$JOB_SEARCH_TERRA_PLAN_RESULT"
+chmod 600 "$JOB_SEARCH_TERRA_PLAN_RESULT"
 "$JOB_SEARCH_PYTHON" -m job_search_loop.browser_owner \
   --endpoint "http://127.0.0.1:9222" \
   --output "$JOB_SEARCH_BROWSER_OWNER_EVIDENCE"
@@ -110,13 +137,18 @@ set +e
 RUNNER_RC=$?
 set -e
 PRIVACY_RC=0
-PROVIDER_LOGS=("$EVIDENCE"/attempt-*.stdout.log(N))
+PROVIDER_LOGS=(
+  "$EVIDENCE"/attempt-*.stdout.log(N)
+  "$TERRA_PLAN_EVIDENCE"/attempt-*.stdout.log(N)
+  "$JOB_SEARCH_TERRA_PLAN_RESULT"
+)
+PRIVACY_INDEX=0
 for PROVIDER_LOG in "${PROVIDER_LOGS[@]}"; do
-  LOG_NAME="${PROVIDER_LOG:t:r:r}"
+  PRIVACY_INDEX=$((PRIVACY_INDEX + 1))
   "$JOB_SEARCH_PYTHON" -m job_search_loop.profile_privacy scan \
     --profile "$JOB_SEARCH_PROFILE" \
     --log "$PROVIDER_LOG" \
-    --output "$EVIDENCE/profile-privacy-$LOG_NAME.json" \
+    --output "$EVIDENCE/profile-privacy-$PRIVACY_INDEX.json" \
     || PRIVACY_RC=$?
 done
 if [[ "$PRIVACY_RC" -ne 0 ]]; then
