@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-29` — exclusive application owners
+**Active atomic task:** `L-30` — cross-owner posting duplicate prevention
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1124,7 +1124,19 @@ this spec update → commit/push → Telegram milestone before the next item sta
   `1a7c712001ad9c9ed329b54e584d21d6f59657cad9f8496463d3bc873517b570`)
   is active with zero writable paths; daily remains unloaded pending owner and
   duplicate fencing.
-- [ ] **L-29** — Add `agent`, `dais_manual`, and `recruiter` as exclusive owners.
+- [x] **L-29** — Add `agent`, `dais_manual`, and `recruiter` as exclusive owners.
+  Receipt: applications persist exactly one validated owner from the three-value
+  enumeration; autonomous attributed applications are always `agent`; existing rows
+  migrate non-destructively to `agent`; summary projections expose owner; and a DB
+  trigger rejects owner mutation while allowing normal state transitions. Focused
+  3-test and full 257-test suites PASS. A real-ledger backup migrated all five
+  existing applications to `agent`, exposed only `agent` in summary, rejected a
+  direct owner update, retained mode 0600, and left the production ledger SHA-256
+  unchanged. Immutable release `9ec49aa7f9fa1de596154fc4858f238cdc815489`
+  (archive SHA-256
+  `a8fad6bac903c21fd9b1c1cf06173c31d0eea7e47ec5da543aecbf94b306d4af`)
+  is active with zero writable paths; daily remains unloaded until cross-owner
+  duplicate fencing is complete.
 - [ ] **L-30** — Enforce cross-owner posting duplicate prevention.
 - [ ] **L-31** — Import the existing Palantir application as `dais_manual`.
 - [ ] **L-32** — Create the independent BlockRun `founder_outreach` funnel.
