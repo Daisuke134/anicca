@@ -938,6 +938,14 @@ zero, and start control now returns `skip-quality-miss` instead of
 terminalization. This closes today's bounded replacement safely and leaves the
 next JST day eligible for a new run.
 
+The next-day release is independently verified: the exact behavior-test file
+passes `31/31`; live start control returns `skip-quality-miss` for
+`2026-08-05` and `new` for `2026-08-06`; publication state is absent,
+destination ledger rows are zero, and provider attempts remain unchanged at
+one. A fresh Terra task review approved this receipt with no findings. The
+receipt proves eligibility on the next JST day and does not claim that a
+future scheduled launch has already run.
+
 Decision evidence:
 
 - OpenAI describes Terra as the everyday workhorse and Sol as the model for

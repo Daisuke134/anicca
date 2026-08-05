@@ -111,6 +111,15 @@ test only if the existing suite does not already protect this exact transition.
 Done receipt: focused automated coverage plus live-state read-only output. This
 does not claim the future scheduled launch occurred before its real clock time.
 
+Status: DONE without a code change. Existing behavior test
+`test_second_terminal_quality_block_closes_daily_miss` already protects the
+exact transition and its focused file passes `31/31`. Live run
+`20260804-214206` returns `skip-quality-miss` for `2026-08-05` and `new` for
+`2026-08-06`; publication state is absent, matching destination rows are zero,
+and the provider attempt count remains one. Fresh Terra review approved the
+evidence with no findings. This proves next-day eligibility, not execution of a
+future scheduled launch.
+
 ## Task 2: Prove active-six isolation and no forced publication
 
 Write RED behavior tests first. A current-hash ineligible artifact creates no
