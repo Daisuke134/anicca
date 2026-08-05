@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-49` — submit a different eligible Ashby application with the corrected observation receipt and store authoritative confirmation
+**Active atomic task:** `L-49J` — restore natural-language Telegram milestone delivery and verify a real provider message ID
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -87,6 +87,18 @@ Rules:
    Persist the BOJ release URL, observation date, rate, source currency, target
    currency, and converted amount with the classification receipt. Source:
    [Bank of Japan — Foreign Exchange Rates (Daily)](https://www.boj.or.jp/en/statistics/market/forex/fxdaily/index.htm).
+
+### 3.1 Income outcome and the USD 10K/month target
+
+For Dais, this loop targets employment compensation, not product MRR. `Six figure`
+means at least USD 100,000 annual compensation. USD 10,000 per month means USD
+120,000 annualized gross compensation. The JPY 10M default target is an acceptable
+search floor but does not automatically equal USD 10K/month; the loop must preserve
+currency, annual base, bonus, equity, and the timestamped BOJ conversion before
+claiming either target. The practical route is: high-fit applications → recruiter
+replies → interviews → competing offers → verified accepted compensation. The later
+multi-user Web product may create real MRR, but Dais's salary must never be reported
+as product revenue or MRR.
 
 ## 4. Location, travel, citizenship, clearance, and start date
 
@@ -1785,6 +1797,15 @@ this spec update → commit/push → Telegram milestone before the next item sta
   approved route SHA, and release Guardian `healthy`. Ledger Guardian is `healthy`
   with 14 applications, 84 events, zero active claims, and zero stale claims. Daily
   remains unloaded.
+- [ ] **L-49J** — Restore owner-facing natural-language Telegram milestone delivery
+  before another live application. The required `send-telegram.sh` command is absent
+  on the current Mac, so the 2026-08-05 Job Hunter milestone failed locally with
+  `no such file or directory` and produced no provider receipt. Discover the
+  installed owner Telegram transport without exposing secrets, send one concise
+  natural-language status message with `artifact: none`, persist the real provider
+  message ID, and prove duplicate delivery is suppressed. Do not attach spec,
+  Markdown, logs, resumes, or other files unless the owner explicitly asks for that
+  exact artifact.
 - [ ] **L-50** — Deliver the Ashby application artifacts and receipt to Telegram.
 - [ ] **L-51** — Submit one eligible real Workday application and store its
   authoritative receipt.
