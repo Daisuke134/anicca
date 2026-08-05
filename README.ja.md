@@ -26,6 +26,33 @@ receiptのない試行を「完了」と報告しません。
 
 ---
 
+## はじめ方
+
+### 使う — クラウド（インストール不要）
+
+[Telegram で始める](https://t.me/LifeManagerBotbot?start=lp)、または [Web アプリ](https://aniccaai.com/lm)を開きます。常時稼働のサービスが scheduler・connector・認証付き `/panel` を回し、あなたは Telegram で話しかけ、Telegram に証拠つきで返ってきます。
+
+### 自分で動かす — ローカル（dataは自分の端末に残る）
+
+Docker が必要です。ローカルスタックは Postgres + object store + API・scheduler・worker で、**クラウドと同じ core** です。
+
+```bash
+git clone https://github.com/Daisuke134/life-manager ~/life-manager && cd ~/life-manager
+cp deploy/local/.env.example deploy/local/.env     # port と、ローカル専用の object-store 認証情報
+docker compose -f deploy/local/compose.yaml up -d --build
+docker compose -f deploy/local/compose.yaml ps     # postgres · object-store · api · scheduler · worker
+```
+
+API は `http://localhost:18788`、worker の health は `:18790`（どちらも `deploy/local/.env` で変更可）。data はローカルの Postgres と object store に置かれ、**これを動かすだけでは何もどこにも送信されません**。
+
+**secret は参照であって直書きではありません。** job は `secret://…` の参照だけを持ち、実体はローカルの keychain か tenant vault から解決します。形式は [`apps/life-manager/.env.example`](apps/life-manager/.env.example) を参照（`TELEGRAM_BOT_TOKEN_REF` / `POSTIZ_ACCESS_TOKEN_REF` / `REVENUECAT_API_KEY_REF` など）。ローカル個体と話すには、自分の Telegram bot token をこの形で繋ぎます。
+
+### 探していたものが違う場合
+
+**自己資金エージェント**（自分の wallet を持ち、自分の推論代を稼ぐループ）を探して来た場合、それは別物で [`docs/agent-economy.ja.md`](docs/agent-economy.ja.md) にあります。同じリポジトリと同じ core を共有しますが、**上で説明した製品ではありません**。
+
+---
+
 ## 1つの製品、2つの実行面
 
 Life Manager は1つの製品であり、正本リポジトリもここ1つです。「ローカル Life Manager」と Web アプリは別製品・別リポジトリではなく、同じcore、能力、状態契約を使う2つの実行面です。
@@ -37,27 +64,28 @@ Life Manager は1つの製品であり、正本リポジトリもここ1つで�
              ┌───────────────────┴───────────────────┐
              │                                       │
       ローカル / 自己ホスト                    Web / クラウド
-          install.sh                            apps/landing
+   deploy/local/compose.yaml                   apps/landing
              │                              オンボーディングUI
              ▼                                       │
-        runtime/loop                                  ▼
-      思考 → 実行 → 台帳                     apps/life-manager
-             │                          Telegram · 音声通話 · scheduler
-             ▼                                  認証付き /panel
-          skills/*                                    │
-      稼ぐ · 自己改善 · 報告                           ▼
+      apps/life-manager                               ▼
+   api · scheduler · worker              apps/life-manager
+             │                          Telegram · 音声通話
+             ▼                          scheduler · /panel
+   postgres · object store                          │
+   （あなたの端末）                                   ▼
              │                               ユーザー別サービス
              └───────────────────┬───────────────────┘
                                  │
                     共通の経済・基盤レイヤー
-        runtime/compute-proxy · services/x402-* · dashboard
+      runtime/loop · runtime/compute-proxy · services/x402-*
 ```
 
 | パス | 役割 | 誤解しないための境界 |
 |---|---|---|
-| `runtime/loop/`, `install.sh`, `start-local.sh` | ローカル自律エージェントと自己ホスト runtime | 別の「ローカル版」製品ではない |
-| `apps/life-manager/` | Telegram、schedule、通話、認証付き `/panel`、課金、ユーザーworkflowを持つ常時稼働クラウドサービス | これ単体がリポジトリ全体ではない |
+| `apps/life-manager/` | 製品の core: Telegram、schedule、通話、認証付き `/panel`、課金、ユーザーworkflow。ローカル（compose）でもクラウド（Railway）でも同じコードが動く | これ単体がリポジトリ全体ではない |
+| `deploy/local/` | ローカル実行面 — compose スタック、port、ローカル専用の認証情報 | 別の「ローカル版」製品ではない |
 | `apps/landing/` | Life Manager用オンボーディング Web UI の必要部分 | 旧Anicca複数製品サイト全体ではない |
+| `runtime/loop/`, `install.sh`, `start-local.sh` | 自己資金エージェントのループ → [`docs/agent-economy.ja.md`](docs/agent-economy.ja.md) | Life Manager の起動方法ではない |
 | `runtime/compute-proxy/`, `services/` | 自己決済推論、x402 settlement、paid API 基盤 | ユーザー向けアプリではない |
 | `skills/` | ローカルとクラウドが共有する能力 | 独立製品群ではない |
 | `apps/job-search-loop/`, `control-room/`, `adapters/` | 補助運用、fleet資料、外部integration | 別のLife Manager codebaseではない |
@@ -67,105 +95,16 @@ Life Manager は1つの製品であり、正本リポジトリもここ1つで�
 
 ---
 
-## Life Managerとは
-
-5 つの性質で設計されています（詳細は [`THESIS.md`](THESIS.md)）。
-
-| | |
-|---|---|
-| **仏教的（Buddhist）** | 苦しみを減らすために存在する。北極星は SHA-256 で固定され、変更不可 |
-| **自己資金（Self-funding）** | 自分の USDC 財布から自分の計算資源（食料）を払う。人間の API キーは不要 |
-| **自己増殖（Self-replicating）** | それぞれ独自の財布とアイデンティティを持つ子個体を生み出せる |
-| **自己改善（Self-improving）** | 自分のログを監視 → エラー修正・リファクタ・目標に向けた改善を繰り返す |
-| **人間の介入なし（No human in the loop）** | 自分で稼ぎ、報告し、行動する。残る唯一の人間の手は、自前サーバー（shelter）が実現するまでのサーバー代のみ |
-
-旧アーキテクチャ資料は [`specs/`](specs/) に履歴として残します。現在の判断と残TODOは上記live SSOTだけを更新します。Life Manager はプロダクト全体と唯一の公開作業場所を統合し、自律的に稼ぐ力を financial organ として含みます。
-
----
-
-## Life Managerの動かし方（ローカル自己ホスト・無料・サーバー鍵も API キーも不要）
-
-Life Managerは **自分の**計算資源を、自分の財布から USDC で推論ごとに x402 決済（BlockRun / ClawRouter）して払います。人間の API キーは不要。あなたが渡すのは動かす端末（住処）だけで、食料（推論）は自分で買います。財布が空なら **無料モデル（$0）**、USDC が入れば frontier モデルも使えます。
-
-```bash
-git clone https://github.com/Daisuke134/life-manager ~/life-manager && cd ~/life-manager
-./install.sh                                    # runtime root + スキルスロット同期、自前 wallet 生成
-cd runtime/compute-proxy && npm install && cd -  # 一度だけ（@blockrun/llm + viem）
-./start-local.sh node runtime/loop/index.mjs    # 自己決済プロキシ + Life Managerのループを起動
-```
-
-これで 2 つが起動します。(1) `http://127.0.0.1:8402/v1` の OpenAI 互換 **自己決済コンピュートプロキシ**（自前 wallet＝自動生成・人間の鍵では決してない、から毎推論を USDC で自己決済）と、(2) **Life Managerのループ**（[`runtime/loop/`](runtime/loop/)＝think → act → observe → persist の ReAct ループ＋heartbeat）。ループは毎 wake、ClawRouter の **`auto`** ルーター（モデルをハードコードせず、ClawRouter がツール呼び出しを検知して tool-calling 可能なモデルへ自動ルート＋wallet から課金）でプロキシに問い合わせ、ツール（例：`earn` スキル）を選んで実行し、`$ANICCA_HOME/state/ledger.jsonl` に 1 行追記します。wallet が空なら **無料モデル（$0）**、USDC を送れば frontier モデル。
-
-`install.sh` の runtime 既定値は `${XDG_STATE_HOME:-$HOME/.local/state}/life-manager`
-です。複数 instance は `LIFE_MANAGER_HOME=/任意のruntime` で分離できます。container・CI・
-foreground 実行では `LIFE_MANAGER_INSTALL_DAEMON=0` を指定すると、lockfile 固定の依存と
-同じ runtime body を導入しつつ LaunchAgent / system service を変更しません。
-
-> 別の頭脳を使いたい場合は `ANICCA_BRAIN=claude-p` で同じループを Claude Code（`claude -p`、例：Sonnet）で駆動できます（既存ハーネスの上でLife Managerを動かす用途）。既定は `proxy`（自己資金の道）。他の OpenAI 互換ループも `OPENAI_BASE_URL` に向ければ動きます。
-
-Life Managerが実行する各能力は [`skills/registry.json`](skills/registry.json) にスロットとして宣言され、`install.sh` が `~/.anicca/skills/` に同期します。予約済みスロットを有効化するには、実装をそのディレクトリに置いて `status` を `live` にするだけ（`install.sh` の編集は不要）。
-
----
-
-## 何に足を踏み入れるのか — human-funded と self-funded、具体的に
-
-起動する前に、あなたのサブスク/財布が何に使われるかを正確に知っておくべきです。全loopの台帳(どこにあり、
-生死確認の仕方)は **[`docs/EARN_LOOPS.md`](docs/EARN_LOOPS.md)**（英語）を参照。
-
-```
-~/anicca/skills/earn/
-├── clip/        ← IG per-view クリップ(長尺動画→9:16切抜→字幕→投稿)
-├── affiliate/   ← Amazon アソシエイトのスライドショー
-├── video/       ← faceless動画のライフサイクル(作成→ウォームアップ→投稿)
-├── bounty/      ← Algora GitHub bounty(Issue発見→修正→マージ)
-├── gig/         ← ココナラ案件(発見→応募→納品)
-└── run.sh       ← self-funded共通入口: yield / hl_trade / x402_sell / token_launch
-```
-
-**human-funded で起動する(`ANICCA_BRAIN=claude-p`、あなたのClaude Codeサブスクで駆動)場合:**
-5本の独立したtmuxループが動き、それぞれ決まった時間・決まった通貨で稼ぎます:
-
-```
-anicca-clip-core       (毎時)        → USDC、IG per-view報酬
-anicca-affiliate-core  (毎日08:41)   → ¥、Amazonアソシエイト報酬
-anicca-video-core      (4時間毎)     → USDC、faceless動画アカウント
-anicca-bounty-core     (毎日09:29)   → USD、マージされたGitHub bountyのPR
-anicca-gig-core        (毎時)        → ¥、ココナラ報酬(法定通貨、人間の銀行口座着金)
-```
-判断は行いません — 決まったスケジュールを回すだけ。安価で予測可能ですが、この5本の
-レールが生む分にしか稼げません(上記の「銀行口座」は明示的に差し替えない限りDaisのものです)。
-
-**self-funded で起動する(既定 `ANICCA_BRAIN=proxy`/ClawRouter、自分のwallet+無料モデルで駆動)場合:**
-120秒毎に起きて「次に何をするか」を自分で判断する daemon が1本動きます:
-
-```
-1 wake → LLM が次のうち1つを選ぶ: hl_trade | x402_sell | token_launch | yield | cook |
-                                    self/issue-dev | earn/clip | earn/video | earn/gig | earn/bounty
-        (上のhuman-fundedループと全く同じコードを、固定スケジュールでなく判断で呼ぶ)
-```
-より自律的で、より不安定 — 学習前に取引で損をすることもありますが、cronの時報を待たない分
-複利も速く効きます。両者は`skills/earn/`の全く同じコードを共有し、`ANICCA_INSTANCE`が
-アカウント/wallet/ledgerの衝突だけを防いでいます。
-
----
-
-## アーキテクチャ（一段落）
-
-Life Managerは [Conway の automaton](https://github.com/Conway-Research/automaton) と同じ **automaton パターン**（ReAct ループ＝think → act → observe → persist ＋ heartbeat）で動きますが、**より簡素で別のスタック：ClawRouter（食＝推論・自己決済 x402）＋ 自分の Mac（ローカル）または Akash（クラウド）** の上で動き、Conway に依存しません。ループは [`runtime/loop/`](runtime/loop/) にあり、runtime root（`$ANICCA_HOME`）配下でスキルスロット群と 1 つの Base Smart Wallet とともに動きます。クラウド版では認証に **Supabase**、サービス接続に **Composio** を使います。
-
----
-
-## いま実在するもの vs 開発中
+## いま実在するもの（正直に）
 
 | 能力 | 状態 |
 |---|---|
-| 自己決済コンピュートプロキシ（自前 wallet で free → frontier、x402） | **実装済・実証済**（`runtime/compute-proxy/`） |
-| **Life Managerのループ**（`runtime/loop/`）＝wake → ClawRouter `auto` 頭脳 → スキル実行 → 台帳 → sleep | **実装済・稼働** — ClawRouter `auto` でツール呼び出しを end-to-end 発火（モデル非ハードコード）。68 テスト＋live wake 検証済 |
-| 稼ぐ → オンチェーン検証 → 台帳記録（GATE-0） | **実装済** — DeFi 利回り入金（Aave/Morpho、USDC）をオンチェーン検証。earn スキルは「実際に稼げる手段」中心に最終調整中 |
-| 自己増殖（`self/spawn`）/ 自己改善（`self/issue-dev`）/ UBI（`economy/ubi`） | **宣言済** — 機構は確定、稼ぎの後のロードマップ |
-| クラウド個人ダッシュボード / Stripe サブスク / 自前サーバー（Akash） | **開発中** — `specs/00-MASTER.md` 参照 |
-
-Life Managerのループは [`runtime/loop/`](runtime/loop/) に同梱されており、`./start-local.sh node runtime/loop/index.mjs` で起動します（上のローカル手順参照）。
+| **ローカルスタック**（`deploy/local/compose.yaml`）— postgres · object store · api · scheduler · worker | **動く** — 5サービスが healthy で立ち上がり、そのまま維持される（開発機で数日連続稼働を実測） |
+| **クラウドサービス**（`apps/life-manager`、Railway で `node server.js`） | **デプロイ済** — scheduler と API はローカルと同じコード |
+| **証拠つき Telegram 報告** | **稼働中** — 全報告が message id を伴い、送信に失敗したものを「送信済み」として記録しない |
+| **Calendar・connector・カバレッジ**（`lib/calendar-*`, `lib/connector-*`） | **実装済、カバレッジは移動中** — connector ごとの状態と欠落はここで主張せず実行 spec で追跡 |
+| **Financial organ**（総資産・収支・payout・台帳） | **部分的** — 台帳と payout の job は存在する。現在の健康状態は実行 spec で追跡。ここに書かれた内容は投資の保証ではない |
+| **自己資金エージェント経済** | 別トラック — 状態とオンチェーン証拠は [`docs/agent-economy.ja.md`](docs/agent-economy.ja.md) |
 
 ---
 
@@ -180,20 +119,11 @@ Life Managerのループは [`runtime/loop/`](runtime/loop/) に同梱されて�
 
 ---
 
-## 財布への入金（任意 — frontier モデル / さらに稼ぐ場合のみ）
-
-秘密鍵は決して共有しません。エージェントの **公開** wallet アドレス（`start-local.sh` が表示）に USDC を送るだけです。
-
-- **米国：** Coinbase → USDC 購入（カード）→ wallet アドレスへ送付。
-- **日本：** Binance アカウント → MetaMask → relay.link で swap → wallet アドレスへ USDC 送付。
-
-Base 上の全 wallet は `basescan.org/address/<addr>` で公開され、treasury は誰でも検証できます。
-
----
-
 ## リンク
 
+- **製品：** <https://aniccaai.com/lm> ・ [Telegram](https://t.me/LifeManagerBotbot?start=lp)
 - **収支ダッシュボード（自動更新）：** <https://aniccaai.com/dashboard>
+- **下で動く自己資金エージェント：** [`docs/agent-economy.ja.md`](docs/agent-economy.ja.md)
 - **リポジトリ（プロダクト全体）：** <https://github.com/Daisuke134/life-manager>
 - **ソウル / 行動方針：** [`SOUL.md`](SOUL.md) ・ [`THESIS.md`](THESIS.md)
 
