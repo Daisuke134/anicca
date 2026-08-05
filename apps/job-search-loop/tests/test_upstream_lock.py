@@ -6,6 +6,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 LOCK = ROOT / "config" / "upstream-lock.v1.json"
 ADOPTION = ROOT / "config" / "upstream-adoption.v1.json"
+MASTER_DELTA = ROOT / "config" / "upstream-master-delta.v1.json"
 
 
 class UpstreamLockTests(unittest.TestCase):
@@ -59,6 +60,26 @@ class UpstreamLockTests(unittest.TestCase):
             self.assertTrue(item["reason"].strip())
             self.assertTrue(item["local_contract"].strip())
             self.assertRegex(item["owner_task"], r"^L-\d+[A-Z]?$|^none$")
+
+    def test_master_delta_is_recorded_without_automatic_activation(self):
+        data = json.loads(MASTER_DELTA.read_text(encoding="utf-8"))
+        self.assertEqual(data["base_release"], "v1.3.0")
+        self.assertEqual(data["base_commit"], "a8a10011126f443e0041bb4924a1106c2f7f7536")
+        self.assertEqual(data["master_commit"], "fcefb8150fb073ae0d86b5b7a6f09e94aa5976ee")
+        self.assertEqual(data["ahead_by"], 3)
+        self.assertEqual(data["changed_file_count"], 13)
+        self.assertFalse(data["auto_activate"])
+
+        candidates = {item["id"]: item for item in data["candidates"]}
+        self.assertEqual(
+            set(candidates),
+            {"rank_language_gate_regression_tests", "robots_aware_web_research"},
+        )
+        for item in candidates.values():
+            self.assertEqual(item["decision"], "port_later")
+            self.assertTrue(item["source_commits"])
+            self.assertTrue(item["changed_paths"])
+            self.assertRegex(item["owner_task"], r"^L-\d+[A-Z]?$|^L-\d+\u2013L-\d+$")
 
 
 if __name__ == "__main__":
