@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-06 JST
-**Active atomic task:** `L-49K0C/FILL-1C2` — execute a grounded fill plan and persist a no-submit receipt
+**Active atomic task:** `L-49K0C/FILL-1C3` — bind validated fill receipts to the ledger claim gate
 **Status:** The immutable four-lane runtime, hourly/five-minute schedules, grounded
 materials, ownership fences, Gmail ingestion, Telegram outbox, quota accounting, and
 Ashby observation classifier are implemented and tested. The daily LaunchAgent is
@@ -2421,10 +2421,17 @@ the resident worker from producing one authoritative application receipt:
         resume path/hash, frame/control identity; excludes Submit structurally; and
         leaves every unknown required question as an explicit blocker. Focused tests
         pass 15/15 and the full Job Hunter suite passes 406/406.
-      - [ ] `FILL-1C2` — Execute the plan through a bounded page adapter, verify the
+      - [x] `FILL-1C2` — Execute the plan through a bounded page adapter, verify the
         entered values without logging private values, capture the pre-submit image,
         and persist a mode-0600 receipt binding snapshot hash, plan hash, resume hash,
         owner lease/fence, and unresolved blockers. Submit remains unreachable.
+        - The executor exposes only fill, read-back, upload verification, and
+          screenshot operations. It recalculates the selected resume hash from disk,
+          rejects any unsupported action including Submit, and records exact grounded
+          question/answer/fact IDs only inside the private receipt. A zero-blocker
+          fixture becomes `claim_ready`; the receipt and image are mode 0600 and
+          retain `submit_clicked=false`. ATS-focused tests pass 13/13 and the full
+          Job Hunter suite passes 407/407.
       - [ ] `FILL-1C3` — Bind the receipt to the ledger's existing ATS snapshot and
         `claim_submission` gate so only a fully validated, zero-blocker form becomes
         ATS `claim_ready`; a partial form remains pending and consumes no quota slot.

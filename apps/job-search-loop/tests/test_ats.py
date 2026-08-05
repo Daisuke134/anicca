@@ -1,4 +1,6 @@
 import json
+import hashlib
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -13,6 +15,89 @@ def load_fixture(name):
 
 
 class AtsReadinessTests(unittest.TestCase):
+    def test_executes_and_receipts_verified_fields_without_submit_capability(self):
+        from job_search_loop import ats
+
+        self.assertTrue(
+            hasattr(ats, "execute_non_submit_fill_plan"),
+            "bounded ATS fill executor is missing",
+        )
+
+        class FakePageAdapter:
+            def __init__(self):
+                self.values = {}
+                self.uploads = {}
+
+            def fill(self, frame_index, control_index, value):
+                self.values[(frame_index, control_index)] = value
+
+            def read_value(self, frame_index, control_index):
+                return self.values[(frame_index, control_index)]
+
+            def upload(self, frame_index, control_index, path):
+                self.uploads[(frame_index, control_index)] = path
+
+            def upload_matches(self, frame_index, control_index, path):
+                return self.uploads[(frame_index, control_index)] == path
+
+            def screenshot(self, path):
+                Path(path).write_bytes(b"pre-submit-image")
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            resume = root / "resume.pdf"
+            resume.write_bytes(b"verified resume")
+            resume_sha256 = hashlib.sha256(resume.read_bytes()).hexdigest()
+            url = "https://jobs.ashbyhq.com/acme/role/application"
+            snapshot = {
+                "version": 1,
+                "url": url,
+                "navigation_committed": True,
+                "frames": [
+                    {
+                        "url": url,
+                        "controls": [
+                            {"tag": "input", "type": "text", "label": "First Name", "required": True},
+                            {"tag": "input", "type": "email", "label": "Email", "required": True},
+                            {"tag": "input", "type": "file", "label": "Resume/CV", "required": True},
+                            {"tag": "button", "type": "submit", "text": "Submit Application"},
+                        ],
+                    }
+                ],
+            }
+            plan = ats.build_non_submit_fill_plan(
+                snapshot,
+                answers={
+                    "first_name": {"value": "Daisuke", "fact_ids": ["profile.first_name"]},
+                    "email": {"value": "candidate@example.test", "fact_ids": ["profile.email"]},
+                },
+                resume_path=str(resume),
+                resume_sha256=resume_sha256,
+            )
+            screenshot = root / "pre-submit.png"
+            receipt_path = root / "fill-receipt.json"
+
+            receipt = ats.execute_non_submit_fill_plan(
+                plan,
+                adapter=FakePageAdapter(),
+                owner_receipt={"lease_id": "lease-1", "fence": 9, "holder_pid": 123},
+                snapshot_sha256="b" * 64,
+                screenshot_path=screenshot,
+                receipt_path=receipt_path,
+            )
+
+            self.assertEqual(receipt["status"], "claim_ready")
+            self.assertFalse(receipt["submit_clicked"])
+            self.assertEqual(receipt["owner_fence"], 9)
+            self.assertEqual(receipt["resume_sha256"], resume_sha256)
+            self.assertEqual(receipt["answers"][0]["question"], "First Name")
+            self.assertEqual(receipt["answers"][0]["answer"], "Daisuke")
+            self.assertEqual(receipt["answers"][0]["fact_ids"], ["profile.first_name"])
+            self.assertRegex(receipt["plan_sha256"], r"^[0-9a-f]{64}$")
+            self.assertRegex(receipt["screenshot_sha256"], r"^[0-9a-f]{64}$")
+            self.assertEqual(receipt_path.stat().st_mode & 0o777, 0o600)
+            self.assertTrue(screenshot.is_file())
+
     def test_five_supported_ats_build_grounded_non_submit_fill_plans(self):
         from job_search_loop import ats
 
