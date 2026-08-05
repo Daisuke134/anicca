@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-34` — Luna browser/outbound authority denial
+**Active atomic task:** `L-35` — Terra medium deep-fit/tailoring/answer routing
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1196,7 +1196,18 @@ this spec update → commit/push → Telegram milestone before the next item sta
   is active with zero writable paths and the prior release remains available for
   rollback. Daily remains unloaded; this slice caused no application, email,
   Calendar, model-scheduled wake, or Telegram side effect.
-- [ ] **L-34** — Deny Luna authority for browser submission or outbound messages.
+- [x] **L-34** — Deny Luna authority for browser submission or outbound messages.
+  Receipt: `repeatable-agent` now launches Codex in read-only sandbox mode without
+  approval/sandbox bypass, launches the Claude fallback with an empty tool set, and
+  removes Telegram, Gmail, Google, `gog`, browser, profile, Slack, Discord, Resend,
+  and SMTP authority variables from the child environment while retaining the
+  public-search credential. Three RED authority tests reproduced every prior gap;
+  GREEN plus the full 14-test shared-runner and 268-test Job Hunter suites PASS.
+  Immutable release `f5ff17f2251020fdc8288878b0c0dedcbb2a1d21` (archive
+  SHA-256 `6bc665b42376f0d25df11bd773a7415cdbccbe60db9fe383d2705aca4a3fecc2`)
+  is active with zero writable paths and the previous release retained for rollback.
+  Daily remains unloaded and no application, email, Calendar, or model-driven
+  outbound side effect occurred.
 - [ ] **L-35** — Route deep fit, tailoring, and employer answers to Terra medium.
 - [ ] **L-36** — Route dream applications and weekly hypotheses to Terra high.
 - [ ] **L-37** — Replay Luna/Terra routes on one immutable snapshot.
