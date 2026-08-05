@@ -11,7 +11,7 @@ class GuardianReleaseTests(unittest.TestCase):
     def launchers(self, data):
         root = data / "launchers"
         root.mkdir(parents=True)
-        for lane in ("daily", "inbox", "learning"):
+        for lane in ("browser", "daily", "inbox", "learning"):
             launcher = root / lane
             launcher.write_text("#!/bin/zsh\nexit 0\n")
             launcher.chmod(0o555)
@@ -25,7 +25,7 @@ class GuardianReleaseTests(unittest.TestCase):
         config = root / "runtime/agent-runner/config.json"
         config.parent.mkdir(parents=True)
         config.write_text(json.dumps({"version": 1}))
-        for lane in ("daily", "inbox", "learning"):
+        for lane in ("browser", "daily", "inbox", "learning"):
             runner = scripts / f"run-{lane}.sh"
             runner.write_text("#!/bin/zsh\nexit 0\n")
             runner.chmod(0o555)
@@ -43,7 +43,7 @@ class GuardianReleaseTests(unittest.TestCase):
             report = release_health(data, launchers)
             self.assertEqual(report["status"], "healthy")
             self.assertEqual(report["active_commit"], "commit-one")
-            self.assertEqual(report["runner_count"], 3)
+            self.assertEqual(report["runner_count"], 4)
 
     def test_receipt_tamper_or_writable_release_fails_closed(self):
         with tempfile.TemporaryDirectory() as directory:

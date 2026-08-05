@@ -153,11 +153,13 @@ cp "$TERRA_HIGH_RESULT_PATH" "$JOB_SEARCH_TERRA_HIGH_RESULT"
 chmod 600 "$JOB_SEARCH_TERRA_HIGH_RESULT"
 JOB_SEARCH_BROWSER_FENCE="$JOB_SEARCH_STATE_ROOT/browser-fence"
 "$JOB_SEARCH_PYTHON" -m job_search_loop.browser_owner acquire \
+  --identity "job-search:dais" \
   --output "$JOB_SEARCH_BROWSER_OWNER_EVIDENCE" \
   --fence "$JOB_SEARCH_BROWSER_FENCE" \
   --holder-pid "$$"
 JOB_SEARCH_BROWSER_LEASED=1
 "$JOB_SEARCH_PYTHON" -m job_search_loop.browser_owner hold \
+  --identity "job-search:dais" \
   --output "$JOB_SEARCH_BROWSER_OWNER_EVIDENCE" \
   --fence "$JOB_SEARCH_BROWSER_FENCE" \
   --holder-pid "$$" >/dev/null 2>&1 &
@@ -169,6 +171,7 @@ TRAPEXIT() {
   fi
   if [[ "${JOB_SEARCH_BROWSER_LEASED:-0}" == "1" ]]; then
     "$JOB_SEARCH_PYTHON" -m job_search_loop.browser_owner release \
+      --identity "job-search:dais" \
       --output "$JOB_SEARCH_BROWSER_OWNER_EVIDENCE" \
       --fence "$JOB_SEARCH_BROWSER_FENCE" \
       --holder-pid "$$" >/dev/null 2>&1 || true

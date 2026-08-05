@@ -15,7 +15,7 @@ class ReleaseActivationTests(unittest.TestCase):
         config = release / "runtime/agent-runner/config.json"
         config.parent.mkdir(parents=True)
         config.write_text(json.dumps({"version": 1, "routes": []}), encoding="utf-8")
-        for lane in ("daily", "inbox", "learning"):
+        for lane in ("browser", "daily", "inbox", "learning"):
             runner = scripts / f"run-{lane}.sh"
             runner.write_text("#!/bin/zsh\nexit 0\n", encoding="utf-8")
             runner.chmod(0o555)
