@@ -302,6 +302,7 @@ async function runNativeConnectorPass(input = {}) {
         provider: pack.provider,
         readExternalReceipt: evidenceStore.readExternalReceipt,
         readArtifact: evidenceStore.readArtifact,
+        fetchImpl: globalThis.fetch,
         ...(deps.writeDependencies || {}),
       });
     }
