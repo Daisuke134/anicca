@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import os
 import re
 from pathlib import Path
 from typing import Any
@@ -147,6 +149,122 @@ def build_non_submit_fill_plan(
         "blockers": blockers,
         "submit_action_included": False,
     }
+
+
+def _canonical_sha256(value: Any) -> str:
+    encoded = json.dumps(
+        value, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _write_private_json(path: Path, value: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    temporary = path.with_name(f".{path.name}.tmp-{os.getpid()}")
+    try:
+        temporary.write_text(
+            json.dumps(value, ensure_ascii=False, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        os.chmod(temporary, 0o600)
+        os.replace(temporary, path)
+        os.chmod(path, 0o600)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def execute_non_submit_fill_plan(
+    plan: dict[str, Any],
+    *,
+    adapter: Any,
+    owner_receipt: dict[str, Any],
+    snapshot_sha256: str,
+    screenshot_path: Path,
+    receipt_path: Path,
+) -> dict[str, Any]:
+    if plan.get("submit_action_included") is not False:
+        raise ValueError("non-submit plan must explicitly exclude Submit")
+    if re.fullmatch(r"[0-9a-f]{64}", snapshot_sha256) is None:
+        raise ValueError("snapshot_sha256 must be lowercase SHA-256")
+    lease_id = owner_receipt.get("lease_id")
+    fence = owner_receipt.get("fence")
+    holder_pid = owner_receipt.get("holder_pid")
+    if not isinstance(lease_id, str) or not lease_id:
+        raise ValueError("browser owner lease_id is required")
+    if isinstance(fence, bool) or not isinstance(fence, int) or fence <= 0:
+        raise ValueError("browser owner fence is required")
+    if isinstance(holder_pid, bool) or not isinstance(holder_pid, int) or holder_pid <= 0:
+        raise ValueError("browser owner holder_pid is required")
+    answers: list[dict[str, Any]] = []
+    resume_sha256: str | None = None
+    verified_count = 0
+    actions = plan.get("actions")
+    if not isinstance(actions, list):
+        raise ValueError("fill plan actions must be an array")
+    for action in actions:
+        if not isinstance(action, dict):
+            raise ValueError("fill action must be an object")
+        kind = action.get("kind")
+        frame_index = action.get("frame_index")
+        control_index = action.get("control_index")
+        if kind == "fill":
+            value = action.get("answer")
+            if not isinstance(value, str):
+                raise ValueError("fill action answer is required")
+            adapter.fill(frame_index, control_index, value)
+            if adapter.read_value(frame_index, control_index) != value:
+                raise RuntimeError("filled value verification failed")
+            answers.append(
+                {
+                    "question": action.get("question"),
+                    "answer": value,
+                    "fact_ids": action.get("fact_ids", []),
+                }
+            )
+            verified_count += 1
+        elif kind == "upload":
+            path = Path(str(action.get("resume_path") or ""))
+            expected_sha256 = action.get("resume_sha256")
+            if not path.is_file():
+                raise ValueError("resume file is missing")
+            actual_sha256 = hashlib.sha256(path.read_bytes()).hexdigest()
+            if actual_sha256 != expected_sha256:
+                raise ValueError("resume SHA-256 does not match fill plan")
+            adapter.upload(frame_index, control_index, str(path))
+            if not adapter.upload_matches(frame_index, control_index, str(path)):
+                raise RuntimeError("resume upload verification failed")
+            resume_sha256 = actual_sha256
+            verified_count += 1
+        else:
+            raise ValueError("non-submit fill plan contains an unsupported action")
+    screenshot_path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    adapter.screenshot(str(screenshot_path))
+    if not screenshot_path.is_file():
+        raise RuntimeError("pre-submit screenshot was not created")
+    os.chmod(screenshot_path, 0o600)
+    blockers = plan.get("blockers")
+    if not isinstance(blockers, list) or any(not isinstance(item, str) for item in blockers):
+        raise ValueError("fill plan blockers must be strings")
+    receipt = {
+        "version": 1,
+        "status": "claim_ready" if not blockers else "blocked",
+        "provider": plan.get("provider"),
+        "job_url": plan.get("job_url"),
+        "owner_lease_id": lease_id,
+        "owner_fence": fence,
+        "owner_holder_pid": holder_pid,
+        "snapshot_sha256": snapshot_sha256,
+        "plan_sha256": _canonical_sha256(plan),
+        "resume_sha256": resume_sha256,
+        "screenshot_path": str(screenshot_path),
+        "screenshot_sha256": hashlib.sha256(screenshot_path.read_bytes()).hexdigest(),
+        "verified_action_count": verified_count,
+        "answers": answers,
+        "blockers": blockers,
+        "submit_clicked": False,
+    }
+    _write_private_json(receipt_path, receipt)
+    return receipt
 
 
 def _is_application_form(controls: list[dict[str, Any]]) -> bool:
