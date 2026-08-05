@@ -26,7 +26,7 @@ Locked boundaries:
 
 ### 1.1 Live execution status
 
-Last updated: 2026-08-05
+Last updated: 2026-08-06
 
 Completed gate: **13 — truthful experiment attribution**
 
@@ -34,7 +34,9 @@ Active build lane: **four fresh product economies — then self-improvement**
 
 Background evidence lane: **14 — native publication, maturity, and real performance write-back; 16 shadow soak**
 
-Gate state: **Gates 1–3 and 5–13 remain complete. Gate 4's free-only producer and Gate 15's quiet-reporting repair are implemented and live; their rolling soak remains open. One serialized hourly LaunchAgent owns reconciliation, binding, native collection, and reporting. The paid legacy collector is disabled and unloaded. The next active SSOT item is §15.6 step 2: one fresh acquisition-to-money E2E for each of the four products.**
+Gate state: **Gates 1–3 and 5–13 remain complete. Gate 4's free-only producer and Gate 15's quiet-reporting repair are implemented and live; their rolling soak remains open. One serialized hourly LaunchAgent owns reconciliation, binding, native collection, and reporting. The paid legacy collector is disabled and unloaded. The next active SSOT item is §15.6 step 1: close the `aniccaios` fresh acquisition-to-money E2E before touching the next product.**
+
+2026-08-06 live read-back: `ai.anicca.marketing-owner-events` is hourly, has `runs=11`, and last exited `0`. Canonical state contains 107 publication identities, 492 metric snapshots, 28 business snapshots, 323 owner reports, and 646 delivery-state rows. The latest reconciliation resolves `79/81 = 97.5309%` eligible published identities and passes the 95% gate; two remain explicitly ambiguous. The latest collection appended one measured row. The 2026-08-05 `aniccaios` business snapshot reads App Store Connect, product analytics, and RevenueCat successfully while PostHog remains unavailable for a named credential reason. These facts prove collection health, not a completed social-to-paid cohort.
 
 2026-08-05 implementation and live verification override older audit text where it conflicts:
 
@@ -2084,9 +2086,9 @@ flowchart TD
 | Runtime | launchd, legacy OpenClaw paths, JSONL, and a separate SQLite publication-intent lease coexist | One Life Manager worker owns the canonical schedule and uses the tested SQLite lease/fence contract locally; after seven-day shadow it replaces Marketing OpenClaw jobs |
 | Daily supply | Three JP watercolor posts are `PUBLISHED`; seven are queued only through August 11 | Four product-dedicated daily producers continuously replenish a seven-day horizon; no product reaches zero future intents |
 | Post identity | Postiz often returns a profile URL or publish token instead of a safe native URL/ID | Reconciliation obtains exact native ID/URL, sends it to Telegram, and blocks metrics/attribution until identity is deterministic |
-| Social measurement | Hourly canonical pipeline is live; 85/87 published identities resolve (97.70%); late checkpoints append corrections; immediate replay adds zero rows; legacy paid collector is disabled | Keep rolling 30-day completeness at or above 95% while step 2 supplies one fresh post E2E per product |
+| Social measurement | Hourly canonical pipeline is live; latest window resolves 79/81 published identities (97.53%); late checkpoints append corrections; legacy paid collectors are disabled/unloaded | Keep rolling 30-day completeness at or above 95% while fresh product E2Es supply current cohorts |
 | Business measurement | Anicca APIs work; Honne funnel, KDP, Gumroad, and PostHog have explicit gaps | Every product has at least one authoritative conversion and money source; gaps remain visible until connected |
-| Reporting | Real Bot API repair run delivered one aggregate health event per product/platform/day; final replay held reports at 315 and deliveries at 630 with zero new IDs | Add the step-2 fresh cohort and money result to each compact daily product digest |
+| Reporting | Real Bot API repair run proved aggregation and replay-zero; current ledgers contain 323 reports and 646 delivery-state rows | Replace routine checkpoint chatter with the four-message-class owner UX in §15.7 and add fresh cohort economics |
 | Improvement | scorer rules exist but no real mature `won/lost` production mutation exists | Mature economic result updates hook/tactic/renderer memory, retires losers, reserves exploration, and schedules the next bounded test |
 | Scale | no product has proven repeatable positive contribution | `$0→$1k→$3k→$10k` gates require increasing evidence, cohort repeatability, positive contribution, and bounded spend |
 
@@ -2094,18 +2096,18 @@ flowchart TD
 
 | # | To-Be | Required test/evidence | Cover |
 |---:|---|---|---|
-| 1 | Four isolated product economies | `test_product_account_and_ledger_isolation` rejects cross-product publication and aggregation | OK |
-| 2 | Continuous daily supply | `test_daily_horizon_has_one_intent_per_active_product` plus live seven-day queue read-back | OK |
-| 3 | Exact publication truth | `test_queue_is_not_publication` and live native ID/URL reconciliation receipt | OK |
-| 4 | In-window social collection | `test_checkpoint_window_and_nullable_failure` plus rolling 30-day completeness report ≥95% | OK |
-| 5 | App funnel and economics | `test_app_source_to_proceeds_join` for each app with product-filtered ASC/analytics/RevenueCat evidence | OK |
-| 6 | Ebook funnel and economics | `test_ebook_token_to_order_royalty_contribution_join` for each language product | OK |
+| 1 | Four isolated product economies | `test_product_account_and_ledger_isolation` rejects cross-product publication and aggregation | REQUIRED — exact executable test is not present |
+| 2 | Continuous daily supply | `test_daily_horizon_has_one_intent_per_active_product` plus live seven-day queue read-back | REQUIRED — no canonical seven-day producer exists for all four products |
+| 3 | Exact publication truth | `test_queue_is_not_publication` and live native ID/URL reconciliation receipt | PARTIAL — live reconciliation works; exact acceptance test remains |
+| 4 | In-window social collection | `test_checkpoint_window_and_nullable_failure` plus rolling 30-day completeness report ≥95% | SOAK — current reconciliation is 97.53%; rolling 30-day checkpoint evidence is still accumulating |
+| 5 | App funnel and economics | `test_app_source_to_proceeds_join` for each app with product-filtered ASC/analytics/RevenueCat evidence | PARTIAL — sources are readable, but no fresh social token reaches paid/proceeds yet |
+| 6 | Ebook funnel and economics | `test_ebook_token_to_order_royalty_contribution_join` for each language product | REQUIRED — KDP/direct-sale cohort closure is absent |
 | 7 | Japanese owner reports | fixture/ledger equality, replay dedupe test, and real Telegram message IDs for all six report types | OK — aggregate health receipts `7190`–`7194`; immediate replay added zero report/delivery rows |
-| 8 | Safe self-improvement | `test_mature_economic_winner_updates_memory_once` and `test_three_observations_before_retirement` | OK |
-| 9 | Exploration floor | `test_active_output_keeps_twenty_percent_exploration` | OK |
-| 10 | Lease safety | acquire/renew/expire/fence/retry/dead-letter tests and seven-day shadow with zero duplicate external actions | OK |
+| 8 | Safe self-improvement | `test_mature_economic_winner_updates_memory_once` and `test_three_observations_before_retirement` | PARTIAL — contracts exist; live promotion waits for mature comparable cohorts |
+| 9 | Exploration floor | `test_active_output_keeps_twenty_percent_exploration` | REQUIRED — executable live-output policy remains step 3 |
+| 10 | Lease safety | acquire/renew/expire/fence/retry/dead-letter tests and seven-day shadow with zero duplicate external actions | PARTIAL — unit contracts pass; seven-day Life Manager shadow remains |
 | 11 | Scale gate | implement `test_spend_scale_requires_positive_complete_contribution` so views-only, revenue-only, or missing-cost promotion is rejected by executable policy rather than prose | REQUIRED — step 4; no such executable test exists yet |
-| 12 | End-to-end economy loop | one real experiment per product travels from evidence to native receipt to business outcome to decision to next scheduled test | OK |
+| 12 | End-to-end economy loop | one real experiment per product travels from evidence to native receipt to business outcome to decision to next scheduled test | REQUIRED — this is the active four-product work |
 | 13 | Free-only production dependency | loaded scheduler/registry scan proves no paid collector is reachable; paid legacy jobs are disabled/unloaded | OK — both `marketing-post-metrics` and adversary-found `marketing-account-audit` are disabled/unloaded; dormant scripts must never be scheduled |
 | 14 | Serialized canonical ownership | scheduler read-back and overlap test prove hourly `reconcile -> bind -> collect -> report` order under one lock | OK — `runs=2`, `last exit code=0`, interval 3600s |
 | 15 | Late checkpoint correction | a missed SLA event remains recoverable and a later real provider value appends one correction snapshot without rewriting history | OK — unit contracts and live append-only correction run pass |
@@ -2133,10 +2135,12 @@ E2E judgment:
 
 ### 15.6 Remaining execution steps — order is SSOT
 
-1. **IMPLEMENTED; rolling soak continues — free-only truth plane and quiet Telegram.** One locked hourly pipeline now runs `publication reconcile -> product/experiment/creative bind -> native metrics collect -> owner report`. Both live Apify jobs are disabled/unloaded; active research resolves through the free `bin/lm intel daily` registry path. Late observations append corrections, measured zero remains zero, and failures aggregate once per product/platform/day. **Verified now:** 93 tests plus 5 subtests pass; identity is `85/87 = 97.70%`; both manual and LaunchAgent runs exit zero; the immediate real replay adds zero metrics, reports, deliveries, or Telegram IDs; one bounded Sonnet adversary found the second paid schedule and the post-repair scan is clean. **Soak condition:** maintain rolling 30-day in-window completeness at or above 95%; this condition accumulates in the background and does not block step 2.
-2. **Prove four independent, continuously supplied product economies.** Give `aniccaios`, `honne`, `ebook-ja`, and `ebook-en` one dedicated daily producer each with a rolling seven-day horizon, leased idempotent posting, native-link reconciliation, and the full immutable attribution tuple. Run a fresh 6h/24h E2E for every active product/platform; store real integer metrics including zero or an explicit provider error. Join app cohorts through App Store Connect/product analytics/RevenueCat and ebook cohorts through Stripe/KDP/direct-sales receipts without borrowing another product's data. **Done:** every product has at least one new mature acquisition-to-money cohort, daily supply cannot silently reach zero, and every unavailable business source remains visibly null with a reason.
-3. **Turn on self-improvement and self-healing, then cut over safely.** For each product, accumulate at least ten mature comparable experiments before enabling its learning promotion; write evidenced winner/loser results to hook/tactic/renderer memory, update EWMA, retire only the bottom 20% after at least three observations, and reserve 20% exploration. Add bounded retry, correction/backfill, lease recovery, dead-letter and health ownership. Run the Life Manager worker in seven-day non-mutating shadow; require zero duplicate external actions and tested rollback before Gate 16B cutover. Telegram sends one daily product digest and one weekly portfolio decision report with post links, revenue, current bottleneck, stopped variants, and next tests. **Done:** Gates 14, 15, 16A, and 16B close on real evidence.
-4. **Scale each product through evidence gates and generalize the factories.** Apps target `$10k gross MRR` each; each language ebook targets `$10k gross monthly revenue`, never mislabeled MRR. Implement the executable scale-policy test before any spend increase: views-only, revenue-only, missing cost, non-positive contribution, or undeclared payback MUST reject promotion. `$0 -> $1k` requires one attributed paid cohort; `$1k -> $3k` requires at least three repeatable mature cohorts; `$3k -> $10k` raises volume only while complete contribution stays positive and payback remains inside the declared window. Generalize the same product manifest, account manifest, economic manifest, producer, attribution, learning, healing, and reporting contracts into Mobile App Factory and Ebook Factory so a new owned product can enter the same loop without copying another product's evidence. **Done:** the scale policy is executable, each product advances only on its own receipts, and `$10k` remains a target rather than a promised result.
+Completed prerequisite: the free-only hourly truth plane and quiet, deduplicated Telegram transport are live. The 30-day completeness soak continues in the background.
+
+1. **Close the `aniccaios` fresh economy first.** Build its canonical seven-day producer, require real visual approval, publish one immutable experiment with an owned campaign token, reconcile the exact native URL, collect 6h/24h metrics, and join that token to App Store Connect/product analytics/RevenueCat. **Done:** Telegram shows one real post link and one acquisition-to-paid/proceeds cohort; replay creates no duplicate action or message.
+2. **Close the other three product economies one at a time.** Repeat the same producer-to-money proof for `honne`, then `ebook-ja`, then `ebook-en`. Honne MUST have monetization and an inside-app funnel; each ebook MUST have an owned paid edition plus KDP or direct-sale order/refund/revenue evidence. **Done:** all four products continuously hold a seven-day horizon and each has one mature, isolated, real-money cohort.
+3. **Enable learning, healing, and Life Manager ownership.** Accumulate at least ten mature comparable experiments per product; promote only evidenced winners, retire only after three observations, retain 20% exploration, and add bounded retry, correction/backfill, lease recovery, dead-letter ownership, and redacted isolated browser evidence. Run a seven-day non-mutating Life Manager shadow before cutover. **Done:** zero duplicate external actions, tested rollback, and real winner/loser write-back determine the next experiment automatically.
+4. **Enforce the `$0 -> $1k -> $3k -> $10k` scale policy and generalize it.** Implement the executable policy that rejects scaling on views-only, missing cost, non-positive contribution, or undeclared payback. Apps advance toward `$10k gross MRR`; ebook language products advance toward `$10k gross monthly revenue`. Convert the proven contracts into Mobile App Factory and Ebook Factory manifests. **Done:** every increase is authorized by that product's own receipts, positive contribution, and repeatable cohort; `$10k` remains a target, never a guarantee.
 
 #### 15.6.1 Active slice — `aniccaios` fresh economy
 
@@ -2147,6 +2151,104 @@ Status: **IN PROGRESS — producer contract is the first missing link.**
 - Historical Reelclaw plist files exist, but the inspected `aniccaios` jobs are not loaded. Their scripts publish directly to Postiz, reuse a bootstrap asset, and omit the owned `/go/<token>` attribution URL. They therefore are not the Step-2 producer.
 - The first implementation is one `aniccaios` producer contract that creates immutable canonical intents with a unique experiment, creative hash, approved asset, dedicated account, owned attribution token, future schedule, and seven-day horizon. It MUST stop at `pending_visual_approval` rather than invent owner approval or bypass preflight.
 - After one approved intent is promoted, completion evidence is: Postiz receipt, exact native URL, 6h and 24h metric snapshots, token-resolved App Store cohort, RevenueCat/ASC money snapshot, compact Telegram link report, and replay-zero. A portfolio MRR value without cohort linkage does not close this slice.
+
+### 15.7 Ideal owner experience in Telegram
+
+Telegram is the control room, not a raw log stream. Routine checkpoint rows stay in the ledger and roll into the next digest. The owner receives only four message classes:
+
+1. **Publication receipt — immediate.** Product, experiment, exact clickable native post URL, scheduled/actual time, and next measurement window.
+2. **Daily product digest — once per product per day.** Reach, clicks, installs/orders, trials/paid, revenue/refunds, contribution when complete, current bottleneck, experiment decision, and tomorrow's test. A measured zero is written as zero; unavailable and unknown remain visibly different.
+3. **Health incident — immediate and deduplicated.** One message per product/platform/day for missed publication, expired credential, duplicate-risk state, overdue metrics, or unavailable money source. It states the durable repair owner and next retry; repeated hourly failures do not create repeated chat messages.
+4. **Weekly portfolio decision — once per week.** All four products ranked by evidence quality and contribution, which experiment was promoted/stopped, current `$0/$1k/$3k/$10k` gate, and the next bounded allocation. Views never outrank verified money.
+
+```mermaid
+sequenceDiagram
+    participant A as Product Agent
+    participant P as Publisher
+    participant M as Free Metrics Plane
+    participant B as Business Sources
+    participant T as Telegram
+
+    A->>P: Publish immutable experiment
+    P-->>A: Exact native receipt and URL
+    A->>T: Immediate clickable publication receipt
+    M->>M: Measure 6h, 24h, 72h, 7d
+    B->>B: Read installs, paid, orders, revenue
+    M-->>A: Social result or named null
+    B-->>A: Economic result or named null
+    A->>A: Join by product and campaign token
+    alt Healthy routine
+        A->>T: One daily product digest
+    else Repair required
+        A->>T: One deduplicated health incident
+        A->>A: Retry, correct, or dead-letter
+    end
+    A->>T: Weekly portfolio scale decision
+```
+
+Example daily message after the loop is complete:
+
+```text
+今日は Anicca iOS の結果です。
+
+公開：TikTok「夜に不安が強くなる人へ」
+投稿を見る：https://www.tiktok.com/@.../video/...
+
+24時間結果：12,840再生、プロフィール遷移94、計測済みインストール21、
+trial 3、paid 1、gross revenue $9.99、refund 0。
+広告費は$0です。現在のボトルネックはプロフィール遷移→インストールです。
+
+判断：hookは継続、CTAだけを変更します。
+次：同じrendererでCTA variant Bを明日20:00に投稿。停止条件は24hで0クリックです。
+確認情報：experiment_id / campaign token / native receipt / ASC / RevenueCat
+```
+
+The example is a shape contract, not a claim about current results. Production messages substitute only ledger-backed values and links.
+
+### 15.8 Autonomous product-growth loop toward the monthly target
+
+The loop does not “earn `$10k`” by maximizing views. It repeatedly finds the narrowest verified economic bottleneck, changes one causal variable, waits for maturity, and scales only when contribution remains positive.
+
+```mermaid
+flowchart TD
+    Goal["Product target<br/>App: $10k gross MRR<br/>Ebook: $10k monthly gross"]
+    Observe["Observe current funnel<br/>reach → click → install/order → paid → retained revenue"]
+    Bottleneck["Select deepest reliable bottleneck"]
+    Hypothesis["Create one-variable hypothesis<br/>hook · CTA · renderer · offer · paywall"]
+    Intent["Create leased immutable intent<br/>product · account · experiment · token · cap"]
+    Publish["Publish and reconcile exact native URL"]
+    Measure["Measure social + business + cost<br/>6h · 24h · 72h · 7d · retention"]
+    Decide{"Mature complete economics?"}
+    Repair["Self-heal<br/>retry · correction · credential incident · dead-letter"]
+    Lose["Keep learning or retire<br/>only after ≥3 observations"]
+    Win["Promote winner<br/>≤80% exploitation · ≥20% exploration"]
+    Gate{"Scale gate passed?"}
+    Hold["Hold volume<br/>fix contribution, churn, or payback"]
+    Scale["Increase bounded volume<br/>$0 → $1k → $3k → $10k"]
+    Memory["Write evidence to product memory"]
+    Telegram["Report link, money, decision, next test"]
+
+    Goal --> Observe --> Bottleneck --> Hypothesis --> Intent --> Publish --> Measure --> Decide
+    Decide -->|missing or broken| Repair --> Measure
+    Decide -->|loser or insufficient| Lose --> Memory
+    Decide -->|winner| Win --> Gate
+    Gate -->|no| Hold --> Bottleneck
+    Gate -->|yes| Scale --> Observe
+    Memory --> Bottleneck
+    Decide --> Telegram
+    Scale --> Telegram
+```
+
+At each gate, the agent uses the product's own receipts:
+
+| Gate | Evidence required | Agent action |
+|---|---|---|
+| `$0 -> $1k/month` | first attributed paid cohort, complete revenue/refund/cost, positive contribution | repeat the winning mechanism under the same cap |
+| `$1k -> $3k/month` | at least three mature repeatable cohorts and acceptable payback/churn | increase output or spend by one bounded step |
+| `$3k -> $10k/month` | contribution stays positive at higher volume; retention and channel concentration remain inside limits | diversify winning variants/channels while preserving 20% exploration |
+| Gate fails | missing evidence, negative contribution, bad payback, rising churn, or concentration breach | stop scaling, notify Telegram, and run the next bottleneck experiment |
+
+No finite implementation can guarantee market demand. The completed system guarantees truthful observation, bounded autonomous experiments, evidence-based scaling, and visible stopping conditions.
 
 Primary-source alignment:
 
