@@ -40,6 +40,15 @@ FUNNEL_DISPOSITIONS = frozenset({"positive", "negative"})
 AUTHORITATIVE_EVIDENCE_SOURCES = frozenset(
     {"ats", "gmail", "calendar", "employer_portal", "signed_document"}
 )
+APPLICATION_ARTIFACT_KINDS = frozenset(
+    {
+        "posting",
+        "company_research",
+        "resume_draft",
+        "cover_letter_draft",
+        "answers_draft",
+    }
+)
 
 
 class FenceError(RuntimeError):
@@ -238,6 +247,27 @@ class Ledger:
                 report_json TEXT NOT NULL,
                 decided_at TEXT NOT NULL
             );
+            CREATE TABLE IF NOT EXISTS application_artifacts (
+                artifact_id TEXT PRIMARY KEY,
+                application_id TEXT NOT NULL REFERENCES applications(id),
+                kind TEXT NOT NULL,
+                path TEXT NOT NULL,
+                sha256 TEXT NOT NULL,
+                fact_ids_json TEXT NOT NULL,
+                source_urls_json TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                UNIQUE (application_id, kind, sha256)
+            );
+            CREATE TRIGGER IF NOT EXISTS application_artifacts_no_update
+            BEFORE UPDATE ON application_artifacts
+            BEGIN
+                SELECT RAISE(ABORT, 'application artifacts are immutable');
+            END;
+            CREATE TRIGGER IF NOT EXISTS application_artifacts_no_delete
+            BEFORE DELETE ON application_artifacts
+            BEGIN
+                SELECT RAISE(ABORT, 'application artifacts are immutable');
+            END;
             CREATE TRIGGER IF NOT EXISTS strategy_generations_no_update
             BEFORE UPDATE ON strategy_generations
             BEGIN
@@ -510,6 +540,108 @@ class Ledger:
                 (LEGACY_STRATEGY_GENERATION_ID, application_id),
             )
         return application_id
+
+    def record_application_artifact(
+        self,
+        *,
+        application_id: str,
+        kind: str,
+        path: Path,
+        sha256: str,
+        fact_ids: list[str],
+        source_urls: list[str],
+    ) -> str:
+        if kind not in APPLICATION_ARTIFACT_KINDS:
+            raise ValueError("unsupported application artifact kind")
+        resolved = Path(path).expanduser().resolve()
+        if not resolved.is_file():
+            raise ValueError("application artifact file does not exist")
+        if resolved.stat().st_mode & 0o077:
+            raise ValueError("application artifact must be private")
+        actual_sha256 = hashlib.sha256(resolved.read_bytes()).hexdigest()
+        if not re.fullmatch(r"[a-f0-9]{64}", sha256) or sha256 != actual_sha256:
+            raise ValueError("application artifact SHA-256 mismatch")
+        if not isinstance(fact_ids, list) or not all(
+            isinstance(value, str) and value.strip() for value in fact_ids
+        ):
+            raise ValueError("fact_ids must be a list of non-empty strings")
+        if not isinstance(source_urls, list) or not all(
+            isinstance(value, str) and value.startswith("https://")
+            for value in source_urls
+        ):
+            raise ValueError("source_urls must contain only HTTPS URLs")
+        if kind in {"posting", "company_research"} and not source_urls:
+            raise ValueError(f"{kind} requires at least one source URL")
+        if kind.endswith("_draft") and not fact_ids:
+            raise ValueError(f"{kind} requires approved fact IDs")
+
+        fact_ids_json = json.dumps(
+            fact_ids, ensure_ascii=False, separators=(",", ":")
+        )
+        source_urls_json = json.dumps(
+            source_urls, ensure_ascii=False, separators=(",", ":")
+        )
+        identity = "\n".join((application_id, kind, sha256))
+        artifact_id = f"artifact-{hashlib.sha256(identity.encode()).hexdigest()}"
+        with self._transaction():
+            application = self.connection.execute(
+                "SELECT id FROM applications WHERE id = ?", (application_id,)
+            ).fetchone()
+            if application is None:
+                raise KeyError(application_id)
+            existing = self.connection.execute(
+                "SELECT artifact_id, path, fact_ids_json, source_urls_json "
+                "FROM application_artifacts WHERE artifact_id = ?",
+                (artifact_id,),
+            ).fetchone()
+            expected = (artifact_id, str(resolved), fact_ids_json, source_urls_json)
+            if existing is not None:
+                if tuple(existing) == expected:
+                    return artifact_id
+                raise FenceError("artifact identity is already bound to other metadata")
+            self.connection.execute(
+                """
+                INSERT INTO application_artifacts
+                  (artifact_id, application_id, kind, path, sha256,
+                   fact_ids_json, source_urls_json, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    artifact_id,
+                    application_id,
+                    kind,
+                    str(resolved),
+                    sha256,
+                    fact_ids_json,
+                    source_urls_json,
+                    _now(),
+                ),
+            )
+        return artifact_id
+
+    def application_artifact_chain(self, application_id: str) -> list[dict[str, Any]]:
+        rows = self.connection.execute(
+            """
+            SELECT artifact_id, kind, path, sha256, fact_ids_json,
+                   source_urls_json, created_at
+            FROM application_artifacts
+            WHERE application_id = ?
+            ORDER BY rowid
+            """,
+            (application_id,),
+        ).fetchall()
+        return [
+            {
+                "artifact_id": str(row["artifact_id"]),
+                "kind": str(row["kind"]),
+                "path": str(row["path"]),
+                "sha256": str(row["sha256"]),
+                "fact_ids": json.loads(str(row["fact_ids_json"])),
+                "source_urls": json.loads(str(row["source_urls_json"])),
+                "created_at": str(row["created_at"]),
+            }
+            for row in rows
+        ]
 
     def add_attributed_application(
         self,

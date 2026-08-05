@@ -97,6 +97,59 @@ class LedgerTests(unittest.TestCase):
         )
         self.assertEqual(duplicate, self.application_id)
 
+    def test_application_research_and_drafts_form_an_immutable_artifact_chain(self):
+        artifacts = [
+            ("posting", "Official posting text", [], ["https://jobs.example.com/42"]),
+            ("company_research", "Official company research", [], ["https://example.com/about"]),
+            ("resume_draft", "Grounded resume", ["fact-1"], []),
+            ("cover_letter_draft", "Grounded cover letter", ["fact-1"], []),
+            ("answers_draft", "Grounded employer answers", ["fact-1"], []),
+        ]
+        recorded = []
+        for index, (kind, content, fact_ids, source_urls) in enumerate(artifacts):
+            path = Path(self.tempdir.name) / f"artifact-{index}.txt"
+            path.write_text(content, encoding="utf-8")
+            path.chmod(0o600)
+            digest = hashlib.sha256(path.read_bytes()).hexdigest()
+            artifact_id = self.ledger.record_application_artifact(
+                application_id=self.application_id,
+                kind=kind,
+                path=path,
+                sha256=digest,
+                fact_ids=fact_ids,
+                source_urls=source_urls,
+            )
+            recorded.append((artifact_id, kind, str(path.resolve()), digest))
+
+        chain = self.ledger.application_artifact_chain(self.application_id)
+
+        self.assertEqual(
+            [(row["artifact_id"], row["kind"], row["path"], row["sha256"]) for row in chain],
+            recorded,
+        )
+        self.assertEqual(chain[2]["fact_ids"], ["fact-1"])
+        self.assertEqual(chain[0]["source_urls"], ["https://jobs.example.com/42"])
+        with self.assertRaises(Exception):
+            self.ledger.connection.execute(
+                "UPDATE application_artifacts SET kind='posting' WHERE artifact_id=?",
+                (recorded[2][0],),
+            )
+
+    def test_application_artifact_rejects_hash_mismatch(self):
+        path = Path(self.tempdir.name) / "posting.txt"
+        path.write_text("Official posting", encoding="utf-8")
+        path.chmod(0o600)
+
+        with self.assertRaisesRegex(ValueError, "SHA-256"):
+            self.ledger.record_application_artifact(
+                application_id=self.application_id,
+                kind="posting",
+                path=path,
+                sha256="0" * 64,
+                fact_ids=[],
+                source_urls=["https://jobs.example.com/42"],
+            )
+
     def test_events_reconstruct_state_after_reopen(self):
         self._ready()
         self.ledger.close()
