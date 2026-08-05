@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-45E` — Guardian browser-owner health check
+**Active atomic task:** `L-45F` — Guardian Telegram-outbox health check
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1459,7 +1459,20 @@ this spec update → commit/push → Telegram milestone before the next item sta
   auth check and Gmail read both pass, the one-result probe returns one thread,
   and the checkpoint contains six processed message IDs. No message was sent,
   marked read, modified, deleted, or exposed by the health check.
-- [ ] **L-45E** — Implement the Guardian browser-owner health check.
+- [x] **L-45E** — Implement the Guardian browser-owner health check. Receipt:
+  Guardian requires a mode-0600 version-2 owner receipt binding the daily owner,
+  lease ID, positive fence, live holder PID, acquisition/expiry interval, and exact
+  loopback endpoint. It separately verifies a single loopback listener, listener/PID
+  agreement, and a live CDP probe, while excluding PID, lease, websocket, and probe
+  errors from the report. Four focused and full 317-test suites PASS. Immutable
+  release `df643175ed0c94580302810b6e1600b2b9074fad` (archive SHA-256
+  `3af94f77f028a9d4cf3262fd3d1429541db8fee2bbced6d8d6d14100c7cf6ac8`)
+  is active with zero writable paths and the approved route SHA unchanged. The
+  installed-release report is truthfully `unhealthy`, mode 0600 and 182 bytes:
+  CDP is ready with exactly one loopback listener, but the legacy receipt merely
+  declares the owner and has no lease, fence, PID, or expiry proof. L-45E detects
+  only; it did not navigate, restart, kill, or reassign the browser. L-47 owns the
+  fenced sole-owner correction.
 - [ ] **L-45F** — Implement the Guardian Telegram-outbox health check.
 - [ ] **L-46** — Bound Guardian auto-recovery to deterministic pre-side-effect faults.
 - [ ] **L-47** — Make `ai.anicca.job-search-daily` the sole CloakBrowser owner.
