@@ -112,8 +112,10 @@ class AshbyConfirmationTests(unittest.TestCase):
         self.assertRegex(receipt["alert_text_sha256"], r"^[a-f0-9]{64}$")
 
     def test_only_exact_ashby_submit_mutations_are_selected(self):
-        self.assertTrue(is_submit_mutation("submitApplicationFormAction"))
-        self.assertTrue(is_submit_mutation("submitMultipleFormsAction"))
+        self.assertTrue(is_submit_mutation("ApiSubmitSingleApplicationFormAction"))
+        self.assertTrue(is_submit_mutation("ApiSubmitMultipleFormsAction"))
+        self.assertFalse(is_submit_mutation("submitApplicationFormAction"))
+        self.assertFalse(is_submit_mutation("submitMultipleFormsAction"))
         self.assertFalse(is_submit_mutation("jobPostingFormQuery"))
         self.assertFalse(is_submit_mutation(None))
 
