@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-02` — upstream adoption classification
+**Active atomic task:** `L-03` — upstream master delta inventory
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -894,8 +894,10 @@ this spec update → commit/push → Telegram milestone before the next item sta
   tree `dd84a322610becd7c46b74f823d1e4ebc1c8432d`; MIT license content
   SHA-256 `accbf0accb87b7b905dd7ee0c7013075f0453637acf354ddae6fc0e4d8282e8e`;
   `tests.test_upstream_lock` PASS.
-- [ ] **L-02** — Record every v1.3.0 component as `reuse`, `adapt`, or `supersede` in
-  `upstream-adoption.v1.json`.
+- [x] **L-02** — Record every v1.3.0 component as `reuse`, `adapt`, or `supersede` in
+  `upstream-adoption.v1.json`. Receipt: 27 explicit decisions (`reuse` 4, `adapt` 14,
+  `supersede` 9), each with upstream paths, reason, local contract, and owning atomic
+  task; `tests.test_upstream_lock` PASS.
 - [ ] **L-03** — Diff upstream `master` against v1.3.0 and record candidate changes.
 - [ ] **L-04** — Port the upstream grounded profile-ingestion contract.
 - [ ] **L-05** — Port the upstream discovery and `seen_jobs` dedupe contract.

@@ -1,0 +1,228 @@
+{
+  "schema_version": 1,
+  "upstream_release": "v1.3.0",
+  "upstream_commit": "a8a10011126f443e0041bb4924a1106c2f7f7536",
+  "decision_definitions": {
+    "reuse": "Adopt the upstream contract without semantic changes.",
+    "adapt": "Preserve the upstream contract while replacing environment-specific execution or state.",
+    "supersede": "Do not activate upstream behavior; the named local contract is authoritative."
+  },
+  "components": [
+    {
+      "id": "profile_setup",
+      "decision": "adapt",
+      "source_paths": [".claude/commands/setup.md", ".claude/skills/job-application-assistant/01-candidate-profile.md", "documents/**"],
+      "reason": "Document cross-checking and fact grounding are strong, but interactive markdown profiles cannot be the private SSOT.",
+      "local_contract": "Write only verified facts into the private profile and fact ledger.",
+      "owner_task": "L-04"
+    },
+    {
+      "id": "job_scraper",
+      "decision": "adapt",
+      "source_paths": [".claude/skills/job-scraper/**", "job_scraper/**"],
+      "reason": "Search-query and dedupe semantics transfer, while sources and durable state must support Japan and global roles.",
+      "local_contract": "Use official-source discovery and ledger-backed canonical posting identity.",
+      "owner_task": "L-05"
+    },
+    {
+      "id": "rank",
+      "decision": "adapt",
+      "source_paths": [".claude/commands/rank.md", ".claude/skills/job-application-assistant/04-job-evaluation.md"],
+      "reason": "The honest scoring and veto flow transfers, but compensation, location, travel, and clearance policy are local.",
+      "local_contract": "Keep grounded dimensions and fail-closed vetoes under the versioned Dais strategy.",
+      "owner_task": "L-06"
+    },
+    {
+      "id": "apply",
+      "decision": "adapt",
+      "source_paths": [".claude/commands/apply.md", ".claude/skills/job-application-assistant/05-cv-templates.md", ".claude/skills/job-application-assistant/06-cover-letter-templates.md", ".claude/skills/job-application-assistant/08-application-forms.md"],
+      "reason": "Research, drafting, review, and ATS checks transfer, but upstream stops before autonomous receipt-fenced submission.",
+      "local_contract": "Generate grounded artifacts and submit through the sole CloakBrowser owner with authoritative receipts.",
+      "owner_task": "L-07"
+    },
+    {
+      "id": "outcome",
+      "decision": "adapt",
+      "source_paths": [".claude/commands/outcome.md", "documents/applications/**"],
+      "reason": "Outcome, follow-up, and exact-artifact archival semantics transfer, while CSV and markdown cannot be authoritative state.",
+      "local_contract": "Append authoritative outcomes and follow-ups to the immutable event ledger.",
+      "owner_task": "L-08"
+    },
+    {
+      "id": "gmail_sync",
+      "decision": "adapt",
+      "source_paths": [".claude/commands/gmail-sync.md"],
+      "reason": "Message taxonomy transfers, but approval batches must become deterministic gog checkpoints and safe automatic transitions.",
+      "local_contract": "Key every message by immutable Gmail ID and fail closed on ambiguous application matching.",
+      "owner_task": "L-09"
+    },
+    {
+      "id": "interview",
+      "decision": "adapt",
+      "source_paths": [".claude/commands/interview.md", ".claude/skills/job-application-assistant/07-interview-prep.md"],
+      "reason": "Preparation from exact submitted evidence transfers, while Calendar, Telegram, and debrief automation are local.",
+      "local_contract": "Trigger preparation only from verified progression and preserve Calendar and debrief receipts.",
+      "owner_task": "L-10"
+    },
+    {
+      "id": "upskill",
+      "decision": "adapt",
+      "source_paths": [".claude/skills/upskill/**", "upskill/**"],
+      "reason": "Gap aggregation transfers, but inferred gaps cannot mutate profile truth or strategy without experiment gates.",
+      "local_contract": "Project verified gaps from ledger cohorts and keep learning recommendations non-authoritative.",
+      "owner_task": "L-11"
+    },
+    {
+      "id": "html_report",
+      "decision": "adapt",
+      "source_paths": [".claude/commands/html-report.md", "tests/test_html_report_command.py"],
+      "reason": "The dashboard information design transfers, but its files cannot become a second source of truth.",
+      "local_contract": "Render reporting surfaces only from event-ledger projections.",
+      "owner_task": "L-11"
+    },
+    {
+      "id": "notion_sync",
+      "decision": "adapt",
+      "source_paths": [".claude/commands/notion-sync.md", "tests/test_notion_sync_command.py"],
+      "reason": "One-way idempotent projection is safe, but Notion is optional and never authoritative.",
+      "local_contract": "Allow read-only ledger projection after local completion without syncing private document content.",
+      "owner_task": "L-11"
+    },
+    {
+      "id": "portal_freehire",
+      "decision": "supersede",
+      "source_paths": [".agents/skills/freehire-search/**"],
+      "reason": "This Denmark-specific portal is not a priority source for Tokyo, SF, or Japan-compatible remote work.",
+      "local_contract": "Use the local official-source Japan and global discovery adapters.",
+      "owner_task": "L-05"
+    },
+    {
+      "id": "portal_jobbank",
+      "decision": "supersede",
+      "source_paths": [".agents/skills/jobbank-search/**"],
+      "reason": "This Denmark-specific portal is outside the target market.",
+      "local_contract": "Use the local official-source Japan and global discovery adapters.",
+      "owner_task": "L-05"
+    },
+    {
+      "id": "portal_jobdanmark",
+      "decision": "supersede",
+      "source_paths": [".agents/skills/jobdanmark-search/**"],
+      "reason": "This Denmark-specific portal is outside the target market.",
+      "local_contract": "Use the local official-source Japan and global discovery adapters.",
+      "owner_task": "L-05"
+    },
+    {
+      "id": "portal_jobindex",
+      "decision": "supersede",
+      "source_paths": [".agents/skills/jobindex-search/**"],
+      "reason": "This Denmark-specific portal is outside the target market.",
+      "local_contract": "Use the local official-source Japan and global discovery adapters.",
+      "owner_task": "L-05"
+    },
+    {
+      "id": "portal_jobnet",
+      "decision": "supersede",
+      "source_paths": [".agents/skills/jobnet-search/**"],
+      "reason": "This Denmark-specific portal is outside the target market.",
+      "local_contract": "Use the local official-source Japan and global discovery adapters.",
+      "owner_task": "L-05"
+    },
+    {
+      "id": "portal_linkedin",
+      "decision": "supersede",
+      "source_paths": [".agents/skills/linkedin-search/**"],
+      "reason": "Unauthorized automated LinkedIn access is not accepted for the autonomous loop.",
+      "local_contract": "Import Dais manual LinkedIn discoveries and use authorized official job sources.",
+      "owner_task": "L-05"
+    },
+    {
+      "id": "add_portal",
+      "decision": "adapt",
+      "source_paths": [".claude/commands/add-portal.md"],
+      "reason": "The adapter checklist transfers, but every source needs policy, provenance, timeout, and receipt tests.",
+      "local_contract": "Register only authorized official-source adapters with deterministic normalization tests.",
+      "owner_task": "L-05"
+    },
+    {
+      "id": "add_template",
+      "decision": "reuse",
+      "source_paths": [".claude/commands/add-template.md", "templates/**"],
+      "reason": "Adding a grounded presentation template does not change candidate facts or authoritative state.",
+      "local_contract": "Templates may change layout and emphasis but never introduce unverified claims.",
+      "owner_task": "L-07"
+    },
+    {
+      "id": "expand",
+      "decision": "adapt",
+      "source_paths": [".claude/commands/expand.md"],
+      "reason": "Search expansion transfers, but it must respond to quota deficits without weakening hard gates.",
+      "local_contract": "Expand sources, queries, and adjacent segments under unchanged eligibility policy.",
+      "owner_task": "L-28"
+    },
+    {
+      "id": "reset",
+      "decision": "supersede",
+      "source_paths": [".claude/commands/reset.md"],
+      "reason": "Destructive interactive reset conflicts with append-only evidence and rebuildable projections.",
+      "local_contract": "Never erase ledger evidence; reset only derived projections through deterministic rebuild.",
+      "owner_task": "L-41"
+    },
+    {
+      "id": "salary_lookup",
+      "decision": "supersede",
+      "source_paths": ["salary_lookup.py", "tools/convert_salary_excel.py", "tools/README_SALARY_TOOL.md", "tests/test_salary_lookup.py", "tests/test_convert_salary_excel.py"],
+      "reason": "The Denmark-oriented salary workbook does not implement the JPY and timestamped BOJ contract.",
+      "local_contract": "Use authoritative job compensation and timestamped BOJ conversion evidence.",
+      "owner_task": "L-20"
+    },
+    {
+      "id": "latex_assets",
+      "decision": "reuse",
+      "source_paths": ["cover_letters/**", "cv/**"],
+      "reason": "The MIT-licensed typography and LaTeX presentation assets are reusable with attribution preserved.",
+      "local_contract": "Use only as presentation assets after ATS extraction and visual verification.",
+      "owner_task": "L-07"
+    },
+    {
+      "id": "security_tooling",
+      "decision": "reuse",
+      "source_paths": ["tools/security_guards.py", "tests/test_security_guards.py", "SECURITY.md"],
+      "reason": "Prompt-injection and secret-handling guards strengthen the same fail-closed boundary.",
+      "local_contract": "Retain or strengthen every guard and prove parity with local adversarial tests.",
+      "owner_task": "L-07"
+    },
+    {
+      "id": "upstream_update_tooling",
+      "decision": "adapt",
+      "source_paths": ["tools/check_framework_version.py", "tools/check_upstream_updates.py", "tests/test_check_upstream_updates.py"],
+      "reason": "Update detection transfers, but activation requires the pinned provenance and adoption review gates.",
+      "local_contract": "Report new tags without automatically changing the active upstream lock.",
+      "owner_task": "L-03"
+    },
+    {
+      "id": "upstream_tests",
+      "decision": "adapt",
+      "source_paths": ["tests/**", ".github/workflows/ci.yml"],
+      "reason": "Behavioral tests are reusable evidence, but paths and runtime bindings differ locally.",
+      "local_contract": "Port relevant tests beside each adopted contract and keep the local suite authoritative.",
+      "owner_task": "L-04"
+    },
+    {
+      "id": "project_documentation",
+      "decision": "reuse",
+      "source_paths": ["README.md", "SETUP.md", "CONTRIBUTING.md", "CHANGELOG.md", "AGENTS.md", "CLAUDE.md", "documents/README.md", "templates/README.md"],
+      "reason": "Documentation provides provenance and upstream operating intent without becoming runtime state.",
+      "local_contract": "Use as cited reference; this Job Hunter spec remains the local product SSOT.",
+      "owner_task": "none"
+    },
+    {
+      "id": "claude_runtime_binding",
+      "decision": "supersede",
+      "source_paths": [".claude/settings.json", ".claude/agents/gemini-research-expert.md", ".claude/skills/job-application-assistant/SKILL.md"],
+      "reason": "Claude interactive runtime wiring cannot own the resident Luna/Terra loop or external side effects.",
+      "local_contract": "Use the local runner, model route map, launchd services, ledger, and CloakBrowser owner.",
+      "owner_task": "L-33"
+    }
+  ]
+}
