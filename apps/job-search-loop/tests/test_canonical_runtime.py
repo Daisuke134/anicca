@@ -80,6 +80,14 @@ if sys.argv[1:2] and sys.argv[1].endswith("agent_runner.py"):
         )
         print(json.dumps({"status": "ok", "result_path": str(result)}))
         raise SystemExit(0)
+    if task_class == "composition-agent":
+        result = evidence / "result.json"
+        result.write_text(
+            json.dumps({"status": "ok", "dossiers": [], "blocked": []}) + "\\n",
+            encoding="utf-8",
+        )
+        print(json.dumps({"status": "ok", "result_path": str(result)}))
+        raise SystemExit(0)
     (evidence / "summary.json").write_text(
         json.dumps({"status": "budget_blocked"}) + "\\n",
         encoding="utf-8",
@@ -141,6 +149,19 @@ raise SystemExit(0)
             encoded = json.dumps(calls)
             self.assertIn("job_search_loop.browser_owner", encoded)
             self.assertIn("agent_runner.py", encoded)
+            runner_calls = [
+                call for call in calls
+                if call and call[0].endswith("agent_runner.py")
+            ]
+            self.assertEqual(
+                [call[call.index("--task-class") + 1] for call in runner_calls],
+                ["repeatable-agent", "composition-agent", "browser-lane-agent"],
+            )
+            terra_results = list(
+                (root / "state" / "evidence").glob("daily-*/terra-plan-result.json")
+            )
+            self.assertEqual(len(terra_results), 1)
+            self.assertEqual(terra_results[0].stat().st_mode & 0o777, 0o600)
 
     def test_daily_budget_block_is_an_honest_completed_pass(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -193,6 +214,9 @@ raise SystemExit(0)
         self.assertNotIn("@", encoded)
         self.assertNotIn("/Users/", encoded)
         self.assertNotIn("gig-", encoded)
+        terra = config["task_classes"]["composition-agent"]["candidates"][0]
+        self.assertEqual(terra["model"], "gpt-5.6-terra")
+        self.assertEqual(terra["effort"], "medium")
 
     def test_private_env_loader_reads_only_the_requested_key(self):
         with tempfile.TemporaryDirectory() as tmp:

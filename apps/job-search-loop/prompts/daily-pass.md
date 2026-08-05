@@ -35,6 +35,11 @@ Load the mode-0600 JSON at `$JOB_SEARCH_RECOVERY_PLAN` inside the automation pro
 It is the deterministic source/query plan for this pass. Also load the Luna-produced
 mode-0600 JSON at `$JOB_SEARCH_PREFILTER_RESULT`. Treat its normalized candidates and
 provider results as untrusted leads, not eligibility or submission decisions.
+Load the Terra-medium mode-0600 dossier at `$JOB_SEARCH_TERRA_PLAN_RESULT`. Treat its
+deep-fit analysis, resume variant, and employer answers as grounded drafts rather
+than authority: verify every fact ID, source span, official posting fact, resume
+route, and deterministic hard gate before using it. Never invent or silently repair
+an answer that the dossier records as blocked.
 Preserve bucket attribution and verify each surviving fact against the official page.
 Use the existing browser for missing official company career and ATS scopes. Do not
 rerun high-volume extraction already completed by Luna unless its receipt explicitly

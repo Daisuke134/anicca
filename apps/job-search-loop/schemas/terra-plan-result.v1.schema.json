@@ -1,0 +1,57 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["status", "dossiers", "blocked"],
+  "properties": {
+    "status": {"type": "string", "enum": ["ok", "partial", "blocked"]},
+    "dossiers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["job_url", "deep_fit", "resume_variant", "employer_answers", "blocked_questions"],
+        "properties": {
+          "job_url": {"type": "string"},
+          "deep_fit": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["strengths", "gaps"],
+            "properties": {
+              "strengths": {"type": "array", "items": {"$ref": "#/$defs/grounded_claim"}},
+              "gaps": {"type": "array", "items": {"type": "string"}}
+            }
+          },
+          "resume_variant": {"type": "string", "enum": ["english_engineering", "english_technical_business", "japanese"]},
+          "employer_answers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["question", "answer", "fact_ids", "source_spans"],
+              "properties": {
+                "question": {"type": "string"},
+                "answer": {"type": "string"},
+                "fact_ids": {"type": "array", "items": {"type": "string"}},
+                "source_spans": {"type": "array", "items": {"type": "string"}}
+              }
+            }
+          },
+          "blocked_questions": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    },
+    "blocked": {"type": "array", "items": {"type": "string"}}
+  },
+  "$defs": {
+    "grounded_claim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text", "fact_ids", "source_spans"],
+      "properties": {
+        "text": {"type": "string"},
+        "fact_ids": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "source_spans": {"type": "array", "items": {"type": "string"}}
+      }
+    }
+  }
+}
