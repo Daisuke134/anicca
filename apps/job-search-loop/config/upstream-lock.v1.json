@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "upstreams": {
+    "mads-lorentzen-ai-job-search": {
+      "repository": "https://github.com/MadsLorentzen/ai-job-search",
+      "release": "v1.3.0",
+      "released_at": "2026-08-03T19:12:27Z",
+      "commit_sha": "a8a10011126f443e0041bb4924a1106c2f7f7536",
+      "tree_sha": "dd84a322610becd7c46b74f823d1e4ebc1c8432d",
+      "license": {
+        "spdx": "MIT",
+        "copyright": "Copyright (c) 2026 Mads Lorentzen",
+        "blob_sha": "dd86a45cbf864dd2cd82df06064cb8cc9aef995a",
+        "content_sha256": "accbf0accb87b7b905dd7ee0c7013075f0453637acf354ddae6fc0e4d8282e8e"
+      },
+      "sources": {
+        "release": "https://github.com/MadsLorentzen/ai-job-search/releases/tag/v1.3.0",
+        "commit": "https://github.com/MadsLorentzen/ai-job-search/commit/a8a10011126f443e0041bb4924a1106c2f7f7536",
+        "license": "https://github.com/MadsLorentzen/ai-job-search/blob/v1.3.0/LICENSE"
+      }
+    }
+  }
+}
