@@ -508,7 +508,6 @@ def _business_facts(row: dict) -> dict:
         "money_currency": None,
         "money_minor": None,
         "money_metric": None,
-        "money_buckets": [],
     }
     if revenuecat.get("status") == "available" and mrr is None:
         facts["mrr_reason"] = "revenuecat_mrr_missing"
@@ -540,7 +539,6 @@ def _business_facts(row: dict) -> dict:
                 facts["paid_orders"] = paid_orders
             minor_buckets = _minor_money_buckets(data)
             if minor_buckets:
-                facts["money_buckets"] = minor_buckets
                 facts["money_source"] = name
                 if len(minor_buckets) == 1:
                     bucket = minor_buckets[0]
@@ -554,6 +552,7 @@ def _business_facts(row: dict) -> dict:
                 else:
                     # A product can have legitimate sales in multiple
                     # currencies. Keep every bucket and never invent a sum.
+                    facts["money_buckets"] = minor_buckets
                     facts["money_reason"] = "multiple_currencies"
                 break
             amount = _first_number(data, ("net_revenue", "gross_revenue", "sales"))
@@ -609,7 +608,6 @@ def _daily_events(root: pathlib.Path, product_id: str, as_of: dt.datetime) -> li
                 "money_currency": None,
                 "money_minor": None,
                 "money_metric": None,
-                "money_buckets": [],
                 "money_source": None,
                 "money_reason": "no_business_snapshot",
                 "sources": {},
@@ -835,7 +833,7 @@ def _portfolio_event(root: pathlib.Path, as_of: dt.datetime) -> list[dict]:
             continue
         index, row = latest
         facts = _business_facts(row)
-        products.append({
+        product = {
             "product_id": product_id,
             "mrr": facts.get("mrr"),
             "mrr_reason": facts.get("mrr_reason"),
@@ -843,11 +841,14 @@ def _portfolio_event(root: pathlib.Path, as_of: dt.datetime) -> list[dict]:
             "money_currency": facts.get("money_currency"),
             "money_minor": facts.get("money_minor"),
             "money_metric": facts.get("money_metric"),
-            "money_buckets": facts.get("money_buckets", []),
             "paid_orders": facts.get("paid_orders"),
             "money_source": facts.get("money_source"),
             "money_reason": facts.get("money_reason"),
-        })
+        }
+        money_buckets = facts.get("money_buckets")
+        if isinstance(money_buckets, list) and len(money_buckets) > 1:
+            product["money_buckets"] = copy.deepcopy(money_buckets)
+        products.append(product)
         refs.append(_ref("business-outcomes.jsonl", index))
     return [_event(
         kind="portfolio_weekly",

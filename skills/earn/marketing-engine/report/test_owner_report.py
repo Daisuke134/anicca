@@ -766,6 +766,59 @@ class OwnerReportRendererTest(unittest.TestCase):
         self.assertEqual(second["message_ids"], [201])
         self.assertEqual(len(calls), 1)
 
+    def test_daily_legacy_facts_without_money_buckets_replay_after_upgrade(self):
+        generated = self.event("product_daily", "aniccaios")
+        legacy = json.loads(json.dumps(generated))
+        legacy["facts"].pop("money_buckets", None)
+        store = owner_report.OwnerReportStore(
+            self.root / "owner-reports.jsonl", self.root / "owner-report-deliveries.jsonl"
+        )
+        store.record(legacy)
+        store.claim_delivery(legacy["message_key"])
+        store.record_delivery(
+            legacy["message_key"], {"status": "delivered", "message_ids": [501]}
+        )
+        calls = []
+
+        def sender(_text: str) -> dict:
+            calls.append(1)
+            return {"status": "delivered", "message_ids": [502]}
+
+        replay = self.event("product_daily", "aniccaios")
+        self.assertNotIn("money_buckets", replay["facts"])
+        self.assertEqual(replay, legacy)
+        receipt = owner_report.deliver(replay, store, sender)
+        self.assertEqual(receipt["message_ids"], [501])
+        self.assertEqual(calls, [])
+
+    def test_portfolio_legacy_facts_without_money_buckets_replay_after_upgrade(self):
+        generated = self.event("portfolio_weekly")
+        legacy = json.loads(json.dumps(generated))
+        for product in legacy["facts"]["products"]:
+            product.pop("money_buckets", None)
+        store = owner_report.OwnerReportStore(
+            self.root / "owner-reports.jsonl", self.root / "owner-report-deliveries.jsonl"
+        )
+        store.record(legacy)
+        store.claim_delivery(legacy["message_key"])
+        store.record_delivery(
+            legacy["message_key"], {"status": "delivered", "message_ids": [503]}
+        )
+        calls = []
+
+        def sender(_text: str) -> dict:
+            calls.append(1)
+            return {"status": "delivered", "message_ids": [504]}
+
+        replay = self.event("portfolio_weekly")
+        self.assertTrue(
+            all("money_buckets" not in product for product in replay["facts"]["products"])
+        )
+        self.assertEqual(replay, legacy)
+        receipt = owner_report.deliver(replay, store, sender)
+        self.assertEqual(receipt["message_ids"], [503])
+        self.assertEqual(calls, [])
+
     def test_ebook_paid_orders_are_count_and_minor_money_is_currency(self):
         rows = owner_report.load_jsonl(self.root / "business-outcomes.jsonl")
         rows.append(
@@ -796,6 +849,7 @@ class OwnerReportRendererTest(unittest.TestCase):
             self.root, "product_daily", product_id="ebook-en", as_of=AS_OF
         )[0]
         text = owner_report.render_japanese(event)
+        self.assertNotIn("money_buckets", event["facts"])
         self.assertIn("注文数 3件", text)
         self.assertIn("12.34 USD", text)
         self.assertNotIn("売上の確認値は3 USD", text)
