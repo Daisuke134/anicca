@@ -186,6 +186,13 @@ class OperationsTests(unittest.TestCase):
                 selected["messages"],
                 [{"message_id": "message-new", "thread_id": "thread-1"}],
             )
+            self.assertEqual(
+                selected["message_payloads"][0]["body"], "Choose a time."
+            )
+            self.assertEqual(
+                selected["message_payloads"][0]["evidence_sha256"],
+                selected["events"][0]["evidence_sha256"],
+            )
             self.assertEqual(selected["events"][0]["classification"], "interview")
             self.assertEqual(selected["events"][0]["message_id"], "message-new")
             self.assertEqual(
