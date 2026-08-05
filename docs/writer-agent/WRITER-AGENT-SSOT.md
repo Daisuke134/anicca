@@ -820,6 +820,17 @@ model-runner contracts. The next eligible daily editorial calls now advance
 the durable sample ledger without a human command; no historical runs are
 retroactively counted.
 
+The sixth slice is
+`docs/writer-agent/plans/2026-08-05-quality-terminal-partial-language-recovery.md`.
+Live run `daily-2026-08-05` proves the concrete poison path: JA has a
+current-hash editorial FAIL, EN has a full current-hash PASS, generation
+returned successfully, publication state is absent, and the terminal action is
+`block_freeze`; nevertheless the start controller returns
+`same-jst-day-unclassified-run`. Its classifier incorrectly requires both
+languages to be failed. This slice changes the classifier—not the quality
+gate—so declared failed languages must be current FAIL while all other
+languages must be current PASS. Implementation evidence is pending.
+
 Decision evidence:
 
 - OpenAI describes Terra as the everyday workhorse and Sol as the model for
