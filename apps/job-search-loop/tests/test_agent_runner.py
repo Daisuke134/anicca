@@ -8,15 +8,10 @@ from job_search_loop.agent_runner import AgentRunner, ContractError, TASK_CLASSE
 
 
 class AgentRunnerTests(unittest.TestCase):
-    def test_prefilter_schema_is_strict_for_every_object(self):
-        schema_path = (
-            Path(__file__).resolve().parents[1]
-            / "schemas"
-            / "prefilter-result.v1.schema.json"
-        )
-        schema = json.loads(schema_path.read_text(encoding="utf-8"))
+    def test_daily_model_schemas_are_strict_for_every_object(self):
+        schema_root = Path(__file__).resolve().parents[1] / "schemas"
 
-        def assert_strict_objects(node, location="$"):
+        def assert_strict_objects(node, location):
             if isinstance(node, dict):
                 if node.get("type") == "object":
                     self.assertIs(
@@ -36,7 +31,14 @@ class AgentRunnerTests(unittest.TestCase):
                 for index, value in enumerate(node):
                     assert_strict_objects(value, f"{location}[{index}]")
 
-        assert_strict_objects(schema)
+        for name in (
+            "prefilter-result.v1.schema.json",
+            "terra-plan-result.v1.schema.json",
+            "terra-high-result.v1.schema.json",
+            "pass-result.v1.schema.json",
+        ):
+            schema = json.loads((schema_root / name).read_text(encoding="utf-8"))
+            assert_strict_objects(schema, name)
 
     def test_default_runner_is_the_canonical_life_manager_runtime(self):
         with tempfile.TemporaryDirectory() as directory:
