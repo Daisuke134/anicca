@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-22` — truthful clearance-state handling
+**Active atomic task:** `L-23` — hourly application LaunchAgent interval
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1019,8 +1019,16 @@ this spec update → commit/push → Telegram milestone before the next item sta
   visible five-point component; unspecified/none is neutral, invalid free-form scope
   fails ingestion, and travel never overrides Japan, compensation, language,
   clearance, expiry, or score gates; focused 16-test and full 233-test suites PASS.
-- [ ] **L-22** — Replace blanket clearance rejection with truthful clearance-state
-  handling.
+  Immutable release `e67ffc2a883ff640077d9ef6cae323bfef2d7301` (archive
+  SHA-256 `74cf3a1cee785d2660e175a92ce1b0a4fe8fcf4a4d2f737f3f96e6149eb4c96a`)
+  is active and proves the installed travel component.
+- [x] **L-22** — Replace blanket clearance rejection with truthful clearance-state
+  handling. Receipt: legacy unspecified requirements become verification warnings;
+  obtainable-after-hire requirements remain eligible with process warnings; a
+  current-clearance requirement fails unless current possession is verified, and
+  verified ineligibility fails; candidate state remains explicit and citizenship is
+  never substituted for clearance evidence; focused 18-test and full 235-test suites
+  PASS.
 - [ ] **L-23** — Configure the application LaunchAgent for a 3,600-second interval.
 - [ ] **L-24** — Configure the inbox LaunchAgent for a 300-second interval.
 - [ ] **L-25** — Enforce the initial ten-confirmed-applications daily cap.

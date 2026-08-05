@@ -45,6 +45,8 @@ class Evaluation:
     gaps: tuple[str, ...]
     travel_scope: str
     frequent_client_site: bool
+    clearance_requirement: str
+    candidate_clearance_state: str
 
 
 def _has_ai_evidence(title: str, skills: set[str]) -> bool:
@@ -59,13 +61,33 @@ def _has_ai_evidence(title: str, skills: set[str]) -> bool:
     )
 
 
-def evaluate(job: Job, *, today: date | None = None) -> Evaluation:
+def evaluate(
+    job: Job,
+    *,
+    today: date | None = None,
+    candidate_clearance_state: str = "unknown",
+) -> Evaluation:
     reasons: list[str] = []
     warnings: list[str] = []
+    if candidate_clearance_state not in {
+        "unknown",
+        "verified_current",
+        "eligible_to_undergo",
+        "verified_ineligible",
+    }:
+        raise ValueError("candidate_clearance_state is invalid")
     if not job.japan_eligible:
         reasons.append("not_available_from_japan")
     if job.clearance_required:
-        reasons.append("clearance_required")
+        if candidate_clearance_state == "verified_ineligible":
+            reasons.append("clearance_ineligible")
+        elif job.clearance_requirement == "current_required":
+            if candidate_clearance_state != "verified_current":
+                reasons.append("current_clearance_not_verified")
+        elif job.clearance_requirement == "obtainable_after_hire":
+            warnings.append("clearance_process_required")
+        else:
+            warnings.append("clearance_requirement_needs_verification")
     if job.language_gate == "FAIL":
         reasons.append("language_requirement_failed")
     elif job.language_gate == "FLAG":
@@ -130,4 +152,6 @@ def evaluate(job: Job, *, today: date | None = None) -> Evaluation:
         gaps=tuple(job.gaps),
         travel_scope=job.travel_scope,
         frequent_client_site=job.frequent_client_site,
+        clearance_requirement=job.clearance_requirement,
+        candidate_clearance_state=candidate_clearance_state,
     )

@@ -13,6 +13,7 @@ class Job:
     japan_eligible: bool
     compensation_min_jpy: int | None
     clearance_required: bool
+    clearance_requirement: str = "none"
     skills: list[str] = field(default_factory=list)
     domains: list[str] = field(default_factory=list)
     language_gate: str = "PASS"
@@ -24,6 +25,18 @@ class Job:
     frequent_client_site: bool = False
 
     def __post_init__(self) -> None:
+        allowed_clearance = {
+            "none",
+            "unspecified_required",
+            "current_required",
+            "obtainable_after_hire",
+        }
+        if self.clearance_requirement not in allowed_clearance:
+            raise ValueError("clearance_requirement is invalid")
+        if self.clearance_required and self.clearance_requirement == "none":
+            object.__setattr__(self, "clearance_requirement", "unspecified_required")
+        elif not self.clearance_required and self.clearance_requirement != "none":
+            raise ValueError("clearance requirement conflicts with clearance_required")
         if self.language_gate not in {"PASS", "FAIL", "FLAG"}:
             raise ValueError("language_gate must be PASS, FAIL, or FLAG")
         if self.language_gate != "PASS" and not str(self.language_note or "").strip():
@@ -55,6 +68,7 @@ class Job:
             "japan_eligible",
             "compensation_min_jpy",
             "clearance_required",
+            "clearance_requirement",
             "skills",
             "domains",
             "language_gate",
