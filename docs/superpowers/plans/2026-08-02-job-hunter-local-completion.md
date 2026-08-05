@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-37` — Immutable Luna/Terra route replay
+**Active atomic task:** `L-37A` — Activate replay-approved route map
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1239,7 +1239,21 @@ this spec update → commit/push → Telegram milestone before the next item sta
   is active with zero writable paths and rollback retained. Schedulers remain
   unchanged; no application, email, Calendar, or new production model side effect
   occurred.
-- [ ] **L-37** — Replay Luna/Terra routes on one immutable snapshot.
+- [x] **L-37** — Replay Luna/Terra routes on one immutable snapshot.
+  Receipt: candidate release `70debb4faf2fefec06f2afd00acfd6b1d119615e`
+  (archive SHA-256
+  `42ebbff5902d37297d426d1896d61880da666f2689b0cfe52df4827b04b8bbbc`)
+  ran three paired Luna-medium/Terra-medium trials over the same three-case snapshot
+  SHA-256 `627a74d547e3f0c03c973e6d4659e004ee3cc24bca7774967556c40dd3e53e03`.
+  Every trial retained 100% hard-gate quality and required evidence. Median Luna was
+  14.570 seconds and USD 0.015471 versus Terra at 15.331 seconds and USD 0.0378585,
+  so Luna was both faster and cheaper without weaker evidence. The mode-0600 PASS
+  receipt SHA-256 is
+  `c48c748726588e1b1241dd81e9b4db67809214c659c0160bf0a771386782cbed`;
+  the harness records an earlier honest single-sample latency FAIL and requires
+  minimum quality across all samples plus median performance. Full 277-test suite
+  PASS. The candidate has zero writable paths and remains inactive pending L-37A;
+  no application, browser, email, Calendar, or Telegram side effect occurred.
 - [ ] **L-37A** — Activate only the route map that passed the replay gate.
 - [ ] **L-38** — Append immutable Gmail message IDs through the deterministic `gog`
   checkpoint.
