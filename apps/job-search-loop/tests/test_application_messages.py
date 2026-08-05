@@ -147,6 +147,26 @@ class ApplicationMessageTests(unittest.TestCase):
             },
         )
 
+    def test_bounded_answer_keeps_ordered_approved_facts_within_word_limit(self):
+        value = build_application_message(
+            self.profile,
+            role_family="gtm",
+            word_limit=35,
+            **self.job,
+        )
+
+        self.assertLessEqual(len(value["body"].split()), 35)
+        self.assertGreaterEqual(len(value["fact_ids"]), 1)
+        expected = ("mufg", "muit_rm_summary", "a10_marketing", "anicca_consumer")
+        self.assertEqual(tuple(value["fact_ids"]), expected[: len(value["fact_ids"])])
+        validate_application_message(value, self.profile, word_limit=35)
+
+    def test_bounded_validator_rejects_body_over_employer_limit(self):
+        value = self._build("gtm")
+
+        with self.assertRaisesRegex(MessageError, "word limit"):
+            validate_application_message(value, self.profile, word_limit=10)
+
 
 if __name__ == "__main__":
     unittest.main()

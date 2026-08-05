@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-49` — submit one eligible real Ashby-backed application and store an authoritative receipt
+**Active atomic task:** `L-49E` — enforce employer word limits without dropping approved fact provenance
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1657,6 +1657,12 @@ this spec update → commit/push → Telegram milestone before the next item sta
   `b2b3a2150e3245b860cdabbeb8f42b29eb22632bcb4844190d90c34f1f7cc460`)
   is active with Guardian `healthy` and the approved route SHA unchanged. Daily
   remains unloaded.
+- [ ] **L-49E** — Add a bounded application-answer mode that preserves official job
+  source text and an ordered non-empty subset of approved fact claims while enforcing
+  the employer's exact word limit. Applied Intuition's live Tokyo Solution Engineer
+  form is Ashby claim-ready and asks for `Why Applied Intuition?` in around 100 words
+  maximum, but every current grounded template is 138–158 words. Do not claim or
+  truncate the live answer until builder and validator both enforce the same bound.
 - [ ] **L-50** — Deliver the Ashby application artifacts and receipt to Telegram.
 - [ ] **L-51** — Submit one eligible real Workday application and store its
   authoritative receipt.

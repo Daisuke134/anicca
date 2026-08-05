@@ -55,6 +55,7 @@ def build_application_message(
     role: str,
     grounded_role_reason: str,
     job_source_span: str,
+    word_limit: int | None = None,
     template_path: Path = DEFAULT_TEMPLATE_PATH,
 ) -> dict[str, Any]:
     templates = _templates(template_path)
@@ -83,15 +84,31 @@ def build_application_message(
     if missing:
         raise MessageError(f"missing approved fact IDs: {', '.join(missing)}")
     claims = [facts[fact_id] for fact_id in fact_ids]
-    body = "\n\n".join(
-        (
-            f"Dear {company} Hiring Team,",
-            f"I am applying for {role} because {reason}.",
-            " ".join(claims[:2]),
-            f"{template['bridge']} {' '.join(claims[2:])}",
-            str(template["closing"]),
+    if word_limit is None:
+        body = "\n\n".join(
+            (
+                f"Dear {company} Hiring Team,",
+                f"I am applying for {role} because {reason}.",
+                " ".join(claims[:2]),
+                f"{template['bridge']} {' '.join(claims[2:])}",
+                str(template["closing"]),
+            )
         )
-    )
+    else:
+        if isinstance(word_limit, bool) or not isinstance(word_limit, int) or word_limit < 1:
+            raise MessageError("word limit must be a positive integer")
+        prefix = f"I am applying for {role} at {company} because {reason}."
+        selected_count = 0
+        body = ""
+        for count in range(len(claims), 0, -1):
+            candidate = f"{prefix} {' '.join(claims[:count])}"
+            if len(candidate.split()) <= word_limit:
+                body = candidate
+                selected_count = count
+                break
+        if selected_count == 0:
+            raise MessageError("approved facts cannot fit within word limit")
+        fact_ids = fact_ids[:selected_count]
     result = {
         "version": 1,
         "role_family": role_family,
@@ -101,7 +118,12 @@ def build_application_message(
         "fact_ids": fact_ids,
         "job_source_span": source_span,
     }
-    validate_application_message(result, profile, template_path=template_path)
+    validate_application_message(
+        result,
+        profile,
+        word_limit=word_limit,
+        template_path=template_path,
+    )
     return result
 
 
@@ -109,6 +131,7 @@ def validate_application_message(
     value: dict[str, Any],
     profile: dict[str, Any],
     *,
+    word_limit: int | None = None,
     template_path: Path = DEFAULT_TEMPLATE_PATH,
 ) -> None:
     if set(value) != REQUIRED_FIELDS:
@@ -128,7 +151,19 @@ def validate_application_message(
         _clean(str(value.get(field) or ""), name=field, maximum=maximum)
     expected_fact_ids = [str(row) for row in templates[role_family]["fact_ids"]]
     fact_ids = value.get("fact_ids")
-    if not isinstance(fact_ids, list) or fact_ids != expected_fact_ids:
+    if word_limit is None:
+        valid_fact_ids = isinstance(fact_ids, list) and fact_ids == expected_fact_ids
+    else:
+        if isinstance(word_limit, bool) or not isinstance(word_limit, int) or word_limit < 1:
+            raise MessageError("word limit must be a positive integer")
+        valid_fact_ids = (
+            isinstance(fact_ids, list)
+            and 1 <= len(fact_ids) <= len(expected_fact_ids)
+            and fact_ids == expected_fact_ids[: len(fact_ids)]
+        )
+        if len(str(value.get("body") or "").split()) > word_limit:
+            raise MessageError("body exceeds employer word limit")
+    if not valid_fact_ids:
         raise MessageError("fact IDs do not match the role template")
     approved = {
         str(fact["id"]): str(fact["claim"])
