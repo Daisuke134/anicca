@@ -8,7 +8,7 @@ import sqlite3
 import uuid
 from contextlib import contextmanager
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Iterator, Mapping
 
@@ -258,6 +258,15 @@ class Ledger:
                 created_at TEXT NOT NULL,
                 UNIQUE (application_id, kind, sha256)
             );
+            CREATE TABLE IF NOT EXISTS application_followups (
+                followup_id TEXT PRIMARY KEY,
+                application_id TEXT NOT NULL REFERENCES applications(id),
+                ordinal INTEGER NOT NULL CHECK (ordinal IN (1, 2)),
+                sent_at TEXT NOT NULL,
+                evidence_sha256 TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                UNIQUE (application_id, ordinal)
+            );
             CREATE TRIGGER IF NOT EXISTS application_artifacts_no_update
             BEFORE UPDATE ON application_artifacts
             BEGIN
@@ -267,6 +276,16 @@ class Ledger:
             BEFORE DELETE ON application_artifacts
             BEGIN
                 SELECT RAISE(ABORT, 'application artifacts are immutable');
+            END;
+            CREATE TRIGGER IF NOT EXISTS application_followups_no_update
+            BEFORE UPDATE ON application_followups
+            BEGIN
+                SELECT RAISE(ABORT, 'application followups are immutable');
+            END;
+            CREATE TRIGGER IF NOT EXISTS application_followups_no_delete
+            BEFORE DELETE ON application_followups
+            BEGIN
+                SELECT RAISE(ABORT, 'application followups are immutable');
             END;
             CREATE TRIGGER IF NOT EXISTS strategy_generations_no_update
             BEFORE UPDATE ON strategy_generations
@@ -642,6 +661,139 @@ class Ledger:
             }
             for row in rows
         ]
+
+    def due_followups(self, as_of: str) -> list[dict[str, Any]]:
+        try:
+            current = datetime.fromisoformat(as_of)
+        except ValueError as error:
+            raise ValueError("as_of must be RFC3339") from error
+        if current.tzinfo is None:
+            raise ValueError("as_of must include a timezone")
+        rows = self.connection.execute(
+            """
+            SELECT applications.id, applications.company, applications.title,
+                   MIN(events.created_at) AS submitted_at
+            FROM applications
+            JOIN events ON events.application_id = applications.id
+            WHERE events.to_state = 'submitted'
+              AND NOT EXISTS (
+                SELECT 1 FROM funnel_outcomes
+                WHERE funnel_outcomes.application_id = applications.id
+              )
+            GROUP BY applications.id
+            ORDER BY applications.created_at, applications.id
+            """
+        ).fetchall()
+        due: list[dict[str, Any]] = []
+        for row in rows:
+            followups = self.connection.execute(
+                """
+                SELECT ordinal, sent_at FROM application_followups
+                WHERE application_id = ? ORDER BY ordinal
+                """,
+                (row["id"],),
+            ).fetchall()
+            if len(followups) >= 2:
+                continue
+            anchor = datetime.fromisoformat(
+                str(followups[-1]["sent_at"] if followups else row["submitted_at"])
+            )
+            due_at = anchor + timedelta(days=10)
+            if current >= due_at:
+                due.append(
+                    {
+                        "application_id": str(row["id"]),
+                        "company": str(row["company"]),
+                        "title": str(row["title"]),
+                        "ordinal": len(followups) + 1,
+                        "due_at": due_at.isoformat(),
+                    }
+                )
+        return due
+
+    def record_followup(
+        self,
+        *,
+        application_id: str,
+        ordinal: int,
+        sent_at: str,
+        evidence_sha256: str,
+    ) -> str:
+        if ordinal not in {1, 2}:
+            raise ValueError("followup ordinal must be 1 or 2")
+        if not re.fullmatch(r"[a-f0-9]{64}", evidence_sha256):
+            raise ValueError("followup evidence_sha256 must be a lowercase SHA-256")
+        identity = "\n".join(
+            (application_id, str(ordinal), sent_at, evidence_sha256)
+        )
+        followup_id = f"followup-{hashlib.sha256(identity.encode()).hexdigest()}"
+        existing = self.connection.execute(
+            """
+            SELECT followup_id, sent_at, evidence_sha256
+            FROM application_followups
+            WHERE application_id = ? AND ordinal = ?
+            """,
+            (application_id, ordinal),
+        ).fetchone()
+        if existing is not None:
+            if (
+                str(existing["followup_id"]) == followup_id
+                and str(existing["sent_at"]) == sent_at
+                and str(existing["evidence_sha256"]) == evidence_sha256
+            ):
+                return followup_id
+            raise FenceError("followup ordinal is already bound to other evidence")
+        eligible = {
+            (item["application_id"], item["ordinal"])
+            for item in self.due_followups(sent_at)
+        }
+        if (application_id, ordinal) not in eligible:
+            raise FenceError("followup is not due or application already has an outcome")
+        with self._transaction():
+            self.connection.execute(
+                """
+                INSERT INTO application_followups
+                  (followup_id, application_id, ordinal, sent_at,
+                   evidence_sha256, created_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    followup_id,
+                    application_id,
+                    ordinal,
+                    sent_at,
+                    evidence_sha256,
+                    _now(),
+                ),
+            )
+        return followup_id
+
+    def application_archive(self, application_id: str) -> dict[str, Any]:
+        row = self.connection.execute(
+            """
+            SELECT id, company, title, canonical_url, current_state, created_at
+            FROM applications WHERE id = ?
+            """,
+            (application_id,),
+        ).fetchone()
+        if row is None:
+            raise KeyError(application_id)
+        followups = self.connection.execute(
+            """
+            SELECT followup_id, ordinal, sent_at, evidence_sha256
+            FROM application_followups
+            WHERE application_id = ? ORDER BY ordinal
+            """,
+            (application_id,),
+        ).fetchall()
+        return {
+            "application": {key: row[key] for key in row.keys()},
+            "artifacts": self.application_artifact_chain(application_id),
+            "outcomes": self.funnel_outcomes(application_id),
+            "followups": [
+                {key: item[key] for key in item.keys()} for item in followups
+            ],
+        }
 
     def add_attributed_application(
         self,

@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-08` — outcome, follow-up, and archive contract
+**Active atomic task:** `L-09` — Gmail classification into gog events
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -923,7 +923,11 @@ this spec update → commit/push → Telegram milestone before the next item sta
   resume draft, cover-letter draft, and answer draft to one application; each record
   verifies private file permissions and SHA-256, retains approved fact IDs and HTTPS
   source URLs, and rejects update/delete; ledger artifact-chain tests PASS.
-- [ ] **L-08** — Port the upstream outcome, follow-up, and archive contract.
+- [x] **L-08** — Port the upstream outcome, follow-up, and archive contract. Receipt:
+  authoritative outcomes remain immutable; follow-ups become due after ten days,
+  stop after two or any outcome, require evidence hashes, and replay idempotently;
+  application archive rebuilds artifacts, outcomes, and follow-ups from ledger state;
+  ledger suite PASS.
 - [ ] **L-09** — Port the upstream Gmail classification semantics into `gog` events.
 - [ ] **L-10** — Port the upstream interview-preparation contract.
 - [ ] **L-11** — Port the upstream upskill and reporting projections without adding
