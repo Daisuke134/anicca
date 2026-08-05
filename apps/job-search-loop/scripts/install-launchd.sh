@@ -17,8 +17,8 @@ for name in ai.anicca.job-search-daily ai.anicca.job-search-inbox ai.anicca.job-
   installed="$JOB_SEARCH_LAUNCH_AGENT_DIR/$name.plist"
   program="${name##*-}"
   program_path="$JOB_SEARCH_APP_ROOT/scripts/run-$program.sh"
-  if [[ "$program" == "daily" ]]; then
-    program_path="$JOB_SEARCH_LIBEXEC_ROOT/daily"
+  if [[ "$program" == "daily" || "$program" == "inbox" ]]; then
+    program_path="$JOB_SEARCH_LIBEXEC_ROOT/$program"
   fi
   "$JOB_SEARCH_PYTHON" - \
     "$template" "$installed" \
