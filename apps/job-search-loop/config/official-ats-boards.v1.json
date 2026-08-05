@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "source": {
+    "repository": "https://github.com/santifer/career-ops",
+    "tag": "career-ops-v1.25.0",
+    "commit": "ae1a92dd1a4d299e637ce5d96f18e79f743a50ba"
+  },
+  "boards": [
+    {"company": "OpenAI", "ats": "ashby", "slug": "openai"},
+    {"company": "Anthropic", "ats": "greenhouse", "slug": "anthropic"},
+    {"company": "Cohere", "ats": "ashby", "slug": "cohere"},
+    {"company": "Scale AI", "ats": "greenhouse", "slug": "scaleai"},
+    {"company": "Sierra", "ats": "ashby", "slug": "sierra"},
+    {"company": "Harvey", "ats": "ashby", "slug": "harvey"},
+    {"company": "Perplexity", "ats": "ashby", "slug": "perplexity"},
+    {"company": "Cursor", "ats": "ashby", "slug": "cursor"},
+    {"company": "Vercel", "ats": "greenhouse", "slug": "vercel"},
+    {"company": "Replit", "ats": "ashby", "slug": "replit"},
+    {"company": "ElevenLabs", "ats": "ashby", "slug": "elevenlabs"},
+    {"company": "LangChain", "ats": "ashby", "slug": "langchain"}
+  ]
+}

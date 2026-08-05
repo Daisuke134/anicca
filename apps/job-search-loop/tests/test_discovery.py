@@ -178,7 +178,7 @@ exit {returncode}
             framework_root=Path("/framework"),
         )
         names = {provider.name for provider in providers}
-        self.assertEqual(names, {"firecrawl"})
+        self.assertEqual(names, {"firecrawl", "official_ats_boards"})
         self.assertFalse(any("linkedin" in name for name in names))
         self.assertFalse(any("freehire" in name for name in names))
 
