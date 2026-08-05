@@ -126,6 +126,17 @@ class Ledger:
                 status TEXT NOT NULL,
                 PRIMARY KEY (japan_day, slot)
             );
+            CREATE TABLE IF NOT EXISTS daily_quota_events (
+                event_id TEXT PRIMARY KEY,
+                japan_day TEXT NOT NULL,
+                confirmed_count INTEGER NOT NULL,
+                deficit_count INTEGER NOT NULL,
+                portfolio_confirmed_json TEXT NOT NULL,
+                portfolio_deficit_json TEXT NOT NULL,
+                reason TEXT NOT NULL,
+                payload_sha256 TEXT NOT NULL UNIQUE,
+                observed_at TEXT NOT NULL
+            );
             CREATE TABLE IF NOT EXISTS submission_attempts (
                 intent_id TEXT NOT NULL REFERENCES submit_intents(intent_id),
                 fence INTEGER NOT NULL,
@@ -280,6 +291,16 @@ class Ledger:
             BEFORE UPDATE ON application_artifacts
             BEGIN
                 SELECT RAISE(ABORT, 'application artifacts are immutable');
+            END;
+            CREATE TRIGGER IF NOT EXISTS daily_quota_events_no_update
+            BEFORE UPDATE ON daily_quota_events
+            BEGIN
+                SELECT RAISE(ABORT, 'daily quota events are immutable');
+            END;
+            CREATE TRIGGER IF NOT EXISTS daily_quota_events_no_delete
+            BEFORE DELETE ON daily_quota_events
+            BEGIN
+                SELECT RAISE(ABORT, 'daily quota events are immutable');
             END;
             CREATE TRIGGER IF NOT EXISTS application_artifacts_no_delete
             BEFORE DELETE ON application_artifacts
@@ -1336,6 +1357,91 @@ class Ledger:
             if bucket in counts:
                 counts[bucket] = int(row["count"])
         return counts
+
+    def confirmed_daily_portfolio(self, japan_day: str) -> dict[str, int]:
+        counts = {bucket: 0 for bucket in PORTFOLIO_LIMITS}
+        rows = self.connection.execute(
+            "SELECT portfolio_bucket, COUNT(*) AS count FROM daily_slots "
+            "WHERE japan_day = ? AND status = 'submitted' "
+            "GROUP BY portfolio_bucket",
+            (japan_day,),
+        ).fetchall()
+        for row in rows:
+            bucket = str(row["portfolio_bucket"])
+            if bucket in counts:
+                counts[bucket] = int(row["count"])
+        return counts
+
+    def confirmed_daily_count(self, japan_day: str) -> int:
+        row = self.connection.execute(
+            "SELECT COUNT(*) AS count FROM daily_slots "
+            "WHERE japan_day = ? AND status = 'submitted'",
+            (japan_day,),
+        ).fetchone()
+        return int(row["count"])
+
+    def record_quota_deficit(
+        self,
+        *,
+        japan_day: str,
+        confirmed_count: int,
+        portfolio_confirmed: Mapping[str, int],
+        portfolio_deficit: Mapping[str, int],
+        reason: str,
+    ) -> dict[str, Any]:
+        payload = {
+            "japan_day": japan_day,
+            "confirmed_count": confirmed_count,
+            "deficit_count": 10 - confirmed_count,
+            "portfolio_confirmed": dict(portfolio_confirmed),
+            "portfolio_deficit": dict(portfolio_deficit),
+            "reason": reason,
+        }
+        payload_json = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+        payload_sha256 = hashlib.sha256(payload_json.encode("utf-8")).hexdigest()
+        event_id = f"quota-deficit-{payload_sha256}"
+        with self._transaction():
+            self.connection.execute(
+                "INSERT OR IGNORE INTO daily_quota_events "
+                "(event_id, japan_day, confirmed_count, deficit_count, "
+                "portfolio_confirmed_json, portfolio_deficit_json, reason, "
+                "payload_sha256, observed_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (
+                    event_id,
+                    japan_day,
+                    confirmed_count,
+                    10 - confirmed_count,
+                    json.dumps(dict(portfolio_confirmed), sort_keys=True),
+                    json.dumps(dict(portfolio_deficit), sort_keys=True),
+                    reason,
+                    payload_sha256,
+                    _now(),
+                ),
+            )
+        return {"event_id": event_id, **payload, "payload_sha256": payload_sha256}
+
+    def quota_deficit_events(self, japan_day: str | None = None) -> list[dict[str, Any]]:
+        query = "SELECT * FROM daily_quota_events"
+        parameters: tuple[str, ...] = ()
+        if japan_day is not None:
+            query += " WHERE japan_day = ?"
+            parameters = (japan_day,)
+        query += " ORDER BY observed_at, event_id"
+        rows = self.connection.execute(query, parameters).fetchall()
+        return [
+            {
+                "event_id": str(row["event_id"]),
+                "japan_day": str(row["japan_day"]),
+                "confirmed_count": int(row["confirmed_count"]),
+                "deficit_count": int(row["deficit_count"]),
+                "portfolio_confirmed": json.loads(row["portfolio_confirmed_json"]),
+                "portfolio_deficit": json.loads(row["portfolio_deficit_json"]),
+                "reason": str(row["reason"]),
+                "payload_sha256": str(row["payload_sha256"]),
+                "observed_at": str(row["observed_at"]),
+            }
+            for row in rows
+        ]
 
     def _transition_in_transaction(
         self,
