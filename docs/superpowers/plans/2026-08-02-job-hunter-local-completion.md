@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-23` — hourly runtime privacy remediation and release
+**Active atomic task:** `L-24` — five-minute inbox LaunchAgent interval
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1045,7 +1045,11 @@ this spec update → commit/push → Telegram milestone before the next item sta
   contains only eight leaked field keys plus the transcript SHA-256, never leaked
   values. Focused 13-test and full 238-test suites PASS. Daily remains intentionally
   unloaded until L-25 replaces the obsolete two-slot runtime cap with the contracted
-  ten-confirmed-application cap.
+  ten-confirmed-application cap. Immutable release
+  `a5d436d4b910d6f5abe423ee76f8a601ba99639c` (archive SHA-256
+  `fc294932eafe3d0651d6bf0e5f1f0a951f7589786d467531318d4ffb7b6f7458`)
+  is active with zero writable paths; release
+  `2d9fa9be73e1aed79d8fc8307525b56db7551ed4` is retained as `previous`.
 - [ ] **L-24** — Configure the inbox LaunchAgent for a 300-second interval.
 - [ ] **L-25** — Enforce the initial ten-confirmed-applications daily cap.
 - [ ] **L-26** — Enforce the daily 2 dream / 5 strong-fit / 3 adjacent portfolio.
