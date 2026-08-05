@@ -215,6 +215,19 @@ becomes retryable `not_submitted`, while `clicked` or `confirmed` becomes
 non-retryable `submit_unknown`. Never infer click phase from a missing browser tab,
 process exit code, timeout, or absent email.
 
+For Ashby, HTTP 200 alone is never confirmation. Before clicking, read the expected
+success copy from the already-loaded page's
+`window.__appData.organization.theme.applicationSubmittedSuccessMessage`; when it is
+null, use Ashby's bundled default `Your application was successfully submitted.
+We'll contact you if there are next steps.` In memory only, select the GraphQL
+response whose request JSON `operationName` passes
+`job_search_loop.ashby_confirmation.is_submit_mutation`; never persist or print its
+request variables. Read that response JSON and the visible `role=status` or
+`role=alert` text, then call `classify_confirmation`. Persist only its returned
+PII-free typename/hash receipt. Mark `confirmed` and `submitted` only when
+`authoritative_success=true`; otherwise reconcile from the durable click phase and
+never retry the same posting.
+
 Before fresh discovery, call `Ledger.retryable_applications()`. A durable
 `not_submitted` row means the prior attempt definitely stopped before the submit
 click; recheck its recorded blocker against the current private profile and current

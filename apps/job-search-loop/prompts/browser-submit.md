@@ -9,3 +9,7 @@ the physical click, commit `Ledger.mark_submission_click_phase(intent_id, fence,
 interruption, use `Ledger.reconcile_interrupted_submission` so pre-click work is
 retryable and clicked work becomes submit_unknown. If the submit outcome is
 uncertain, return submit_unknown and never retry. Return only schema-valid JSON.
+For Ashby, use `job_search_loop.ashby_confirmation.is_submit_mutation` to select the
+submit GraphQL response and `classify_confirmation` to bind its result typename to
+the page's exact expected `role=status` text. HTTP 200 by itself is not success, and
+GraphQL request variables must never be logged or persisted.
