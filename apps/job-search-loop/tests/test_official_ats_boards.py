@@ -108,10 +108,27 @@ class OfficialAtsBoardsTests(unittest.TestCase):
             "AI agent engineer Japan remote",
             boards=[{"company": "Acme", "ats": "ashby", "slug": "acme"}],
             request=lambda *_args, **_kwargs: {"jobs": jobs},
-            max_results=100,
         )
-        self.assertEqual(len(rows), 100)
+        self.assertEqual(len(rows), 25)
         self.assertEqual(rows[0]["location"], "Tokyo, Japan")
+
+    def test_query_output_truncates_description_for_bounded_model_context(self):
+        rows = search_official_boards(
+            "AI",
+            boards=[{"company": "Acme", "ats": "ashby", "slug": "acme"}],
+            request=lambda *_args, **_kwargs: {
+                "jobs": [
+                    {
+                        "title": "AI Engineer",
+                        "jobUrl": "https://jobs.ashbyhq.com/acme/one",
+                        "descriptionPlain": "x" * 2_000,
+                        "isListed": True,
+                    }
+                ]
+            },
+        )
+
+        self.assertEqual(len(rows[0]["description"]), 500)
 
 
 if __name__ == "__main__":
