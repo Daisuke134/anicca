@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-06 JST
-**Active atomic task:** `L-49K0C/FILL-1A` — persist deterministic ranking inputs and one claim-ready candidate
+**Active atomic task:** `L-49K0C/FILL-1B` — enforce one release-contained browser worker per run
 **Status:** The immutable four-lane runtime, hourly/five-minute schedules, grounded
 materials, ownership fences, Gmail ingestion, Telegram outbox, quota accounting, and
 Ashby observation classifier are implemented and tested. The daily LaunchAgent is
@@ -2378,15 +2378,21 @@ the resident worker from producing one authoritative application receipt:
       durable links, and 91 pending links; these are FILL-1 failures, not fabricated
       GATE-1 success or application evidence.
   - [ ] `FILL-1` — Port ATS-specific non-submit form behavior behind local fences.
-    - [ ] `FILL-1A` — Persist the local deterministic ranking result, normalized
+    - [x] `FILL-1A` — Persist the local deterministic ranking result, normalized
       compensation evidence, role-family inputs, and exact official description
       span on each shortlisted candidate before any model runs. Produce at least one
-      claim-ready candidate without relabeling an unknown public fact as known.
-      - Current RED proof: the focused prefilter test now requires `role_family`,
+      ranking-ready candidate without relabeling an unknown public fact as known;
+      ATS `claim_ready` remains a later browser-snapshot decision.
+      - RED proof: the focused prefilter test required `role_family`,
         unknown-safe compensation state, deterministic score/components, portfolio
         bucket, readiness, and URL-bound input spans. It fails at the first missing
         field (`KeyError: role_family`; 1 error / 2 tests), proving these values are
         not yet connected rather than pretending the candidate is application-ready.
+      - GREEN proof: the focused tests pass 2/2 and the full Job Hunter suite passes
+        402/402. A fresh official-source local run found 81 candidates and produced
+        12 bounded Terra candidates: seven ranking-ready (two dream, three
+        strong-fit, two adjacent), with scores 75–95. All 12 compensation values
+        remained explicit `unknown`; none was converted to zero or invented.
     - [ ] `FILL-1B` — Replace model-authored temporary browser scripts with one
       release-contained browser worker. Enforce one worker per run and one atomic
       ledger claim per cross-route role key before opening or filling an ATS.
