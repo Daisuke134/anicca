@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-45C` — Guardian ledger-health check
+**Active atomic task:** `L-45D` — Guardian Gmail-health check
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1431,7 +1431,20 @@ this spec update → commit/push → Telegram milestone before the next item sta
   is loaded at 300 seconds with 29 runs, last exit zero, and fresh evidence; learning
   is loaded on the exact weekly schedule but has one run with last exit 78. L-45B
   detects only and performed no kick, reload, repair, or external side effect.
-- [ ] **L-45C** — Implement the Guardian ledger-health check.
+- [x] **L-45C** — Implement the Guardian ledger-health check. Receipt: the check
+  opens the production SQLite ledger with a read-only URI and verifies physical
+  integrity, foreign keys, 15 required immutability triggers, every application
+  event chain and current-state projection, mode 0600, and submission claims older
+  than the two-hour fence limit without exposing company, URL, or application IDs.
+  Four focused and full 309-test suites PASS. Immutable release
+  `f82cb1f5127bb30341d0ab98929fcbfb3339dfe1` (archive SHA-256
+  `a13a41959849748fc94aa8c7a3384c683c322b8c669b1b53d12c1ad2af995640`)
+  is active with zero writable paths and preserves approved route SHA-256
+  `66d5efecdfffed8cd9a294736d00aed83701c67220a22608728b140c9c740409`.
+  The installed-release E2E report is `healthy`, mode 0600 and 242 bytes: SQLite
+  says `ok`, foreign-key and missing-trigger counts are zero, six applications and
+  32 events reconstruct exactly, and active/stale submission claims are both zero.
+  The check performed no ledger mutation, lane kick, browser action, or application.
 - [ ] **L-45D** — Implement the Guardian Gmail-health check.
 - [ ] **L-45E** — Implement the Guardian browser-owner health check.
 - [ ] **L-45F** — Implement the Guardian Telegram-outbox health check.
