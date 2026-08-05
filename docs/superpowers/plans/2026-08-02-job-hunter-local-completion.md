@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-41` — Rebuild summary.v2 exclusively from the event ledger
+**Active atomic task:** `L-42` — Expose explicit funnel numerators and denominators
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1329,7 +1329,26 @@ this spec update → commit/push → Telegram milestone before the next item sta
   `74138c45fd9069b5f477caa1c38365f794995e5a0b437b02684117f1ca513062`)
   is active with zero writable paths and unchanged replay-approved model routes.
   Daily remains intentionally unloaded; no real application was submitted in L-40.
-- [ ] **L-41** — Rebuild `summary.v2` exclusively from the event ledger.
+- [x] **L-41** — Rebuild `summary.v2` exclusively from the event ledger. Receipt:
+  application events are now protected by no-update/no-delete triggers, application
+  identity is immutable, and `current_state` can change only after a matching event
+  is appended in the same transaction. The replay validates a continuous transition
+  chain from either `discovered` or a fully evidenced external-import origin; late
+  `submit_unknown → submitted` is accepted only with the dedicated Gmail evidence
+  fields. `summary.v2` derives current counts, owner counts, ATS current states, and
+  ever-submitted coverage from that stream, removes the non-authoritative CLI model
+  label, contains no application identity/URL/email, and hashes the canonical
+  projection. Focused 33-test and full 293-test suites PASS. A production-ledger
+  copy rebuilt twice byte-identically with privacy scan PASS and production SHA
+  unchanged. Active release `642702838d24c88caa49ca4e7c46b753186a2fbb`
+  (archive SHA-256
+  `ec027f178f2f8dd57cea548aa0051e76be2fe717129511be2b098c6310e0cd84`)
+  installed four production protection triggers and generated the real private
+  `summary.v2` mode 0600, 418 bytes, file SHA-256
+  `135c03d49f62fc8a47f47e14759a2ab583ac768bcda2c291b0fe5b1aa4bca1c6`.
+  Two production rebuilds were byte-identical: three submitted, three
+  `submit_unknown`, five agent-owned, one Dais-manual, and zero confirmed required
+  ATS adapters. Daily remains unloaded and no application side effect occurred.
 - [ ] **L-42** — Expose explicit funnel numerators and denominators in the tracker.
 - [ ] **L-43** — Render the Telegram daily pipeline projection from `summary.v2`.
 - [ ] **L-44** — Validate event-specific Telegram tone without changing event facts.
