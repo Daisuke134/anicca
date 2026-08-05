@@ -178,7 +178,12 @@ async function runNativeConnectorPass(input = {}) {
     });
     if (!auth || typeof auth.ensureAuthenticated !== "function") unavailable();
     const evidenceStore = createEvidenceStore({ dataDir: evidenceDir });
-    if (!evidenceStore || typeof evidenceStore.record !== "function") unavailable();
+    if (
+      !evidenceStore
+      || typeof evidenceStore.record !== "function"
+      || typeof evidenceStore.readExternalReceipt !== "function"
+      || typeof evidenceStore.readArtifact !== "function"
+    ) unavailable();
     const calendar = createCalendar({
       account: calendarAccount,
       bin: config.gogBin,
@@ -293,7 +298,12 @@ async function runNativeConnectorPass(input = {}) {
         telegramTarget: requiredText(config.telegramTarget),
         calendarCoverageUrl: requiredText(config.calendarCoverageUrl),
         now,
-      }, deps.writeDependencies || {});
+      }, {
+        provider: pack.provider,
+        readExternalReceipt: evidenceStore.readExternalReceipt,
+        readArtifact: evidenceStore.readArtifact,
+        ...(deps.writeDependencies || {}),
+      });
     }
 
     let candidate = null;

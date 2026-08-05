@@ -92,6 +92,7 @@ async function fixture() {
   };
   const pack = {
     provider: {
+      async inspectRegistration() { return { state: "registered" }; },
       async submitRegistration() { throw new Error("registration must stay deferred"); },
     },
     async readDateInventory(receivedCoverage, options) {
@@ -137,7 +138,11 @@ async function fixture() {
       },
       createEvidenceStore(input) {
         calls.push(["create-evidence-store", input]);
-        return { async record() { throw new Error("evidence write must stay deferred"); } };
+        return {
+          async record() { throw new Error("evidence write must stay deferred"); },
+          async readExternalReceipt() {},
+          async readArtifact() {},
+        };
       },
       createCalendar(input) {
         calls.push(["create-calendar", input]);
@@ -262,7 +267,7 @@ test("configured native execution gates the date then uses Luna and passes one v
       },
       async createSpendPolicy(value) { input.calls.push(["policy", value]); return Object.freeze({ limits: [] }); },
       planDateSpend(...value) { input.calls.push(["spend", ...value]); return spendSequence; },
-      async runNativeWrite(value) { input.calls.push(["write", value]); return writeResult; },
+      async runNativeWrite(value, dependencies) { input.calls.push(["write", value, dependencies]); return writeResult; },
       createRouteMinutes(value) {
         input.calls.push(["route-adapter", value]);
         return async () => 20;
@@ -277,8 +282,12 @@ test("configured native execution gates the date then uses Luna and passes one v
   assert.deepEqual(input.calls.filter(([name]) => ["profile", "luna", "route-adapter", "gate", "policy", "spend", "write"].includes(name))
     .map(([name]) => name), ["profile", "route-adapter", "policy", "gate", "luna", "spend", "write"]);
   const writeInput = input.calls.find(([name]) => name === "write")[1];
+  const writeDependencies = input.calls.find(([name]) => name === "write")[2];
   assert.equal(writeInput.application.eventRef, "luma-event://event/founder-night");
   assert.equal(writeInput.goalDecision, goalDecision);
+  assert.equal(typeof writeDependencies.provider.inspectRegistration, "function");
+  assert.equal(typeof writeDependencies.readExternalReceipt, "function");
+  assert.equal(typeof writeDependencies.readArtifact, "function");
   assert.equal(input.calls.find(([name]) => name === "luna")[1].date, "2026-08-05");
 });
 
