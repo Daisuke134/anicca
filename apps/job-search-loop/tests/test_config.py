@@ -19,7 +19,9 @@ class ConfigTests(unittest.TestCase):
                     "version": 1,
                     "daily_target": 2,
                     "auto_apply_threshold": 75,
-                    "compensation_floor_jpy": 7_000_000,
+                    "compensation_floor_jpy": 8_000_000,
+                    "compensation_target_jpy": 10_000_000,
+                    "compensation_stretch_jpy": 30_000_000,
                 }
             ),
             encoding="utf-8",
@@ -62,7 +64,9 @@ class ConfigTests(unittest.TestCase):
         )
         self.assertEqual(settings.daily_target, 2)
         self.assertEqual(settings.auto_apply_threshold, 75)
-        self.assertEqual(settings.compensation_floor_jpy, 7_000_000)
+        self.assertEqual(settings.compensation_floor_jpy, 8_000_000)
+        self.assertEqual(settings.compensation_target_jpy, 10_000_000)
+        self.assertEqual(settings.compensation_stretch_jpy, 30_000_000)
         self.assertEqual(settings.state_dir.stat().st_mode & 0o777, 0o700)
         self.assertEqual(settings.materials_dir.stat().st_mode & 0o777, 0o700)
         self.assertEqual(self.profile.stat().st_mode & 0o777, 0o600)
@@ -96,6 +100,13 @@ class ConfigTests(unittest.TestCase):
             "ai_sales_engineering",
         }
         self.assertTrue(expected <= set(value["role_families"]))
+
+    def test_committed_strategy_uses_compensation_contract(self):
+        strategy_path = Path(__file__).parents[1] / "config" / "strategy.default.json"
+        value = json.loads(strategy_path.read_text(encoding="utf-8"))
+        self.assertEqual(value["compensation_floor_jpy"], 8_000_000)
+        self.assertEqual(value["compensation_target_jpy"], 10_000_000)
+        self.assertEqual(value["compensation_stretch_jpy"], 30_000_000)
 
 
 if __name__ == "__main__":
