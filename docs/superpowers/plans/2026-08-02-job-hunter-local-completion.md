@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-49` — submit a different eligible Ashby posting with durable click phase and authoritative confirmation
+**Active atomic task:** `L-49C` — capture Ashby GraphQL result type and redacted status UI before another live application
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1600,6 +1600,25 @@ this spec update → commit/push → Telegram milestone before the next item sta
   is active with zero writable paths, four runners, four stable launchers, unchanged
   approved route SHA, and Guardian `healthy`. Production migration created 11 click
   phase rows with SQLite integrity `ok`; Daily remains unloaded.
+- [ ] **L-49C** — Capture and validate the authoritative Ashby submit result rather
+  than assuming one theme's success copy. Live follow-up first proved the dedicated
+  browser had three orphan Sierra tabs and Playwright attach timed out at 12 seconds.
+  One target matched its PageOwnership SHA and was closed; with Daily unloaded and
+  no live lease or human page, the dedicated browser lane was restarted. It returned
+  with one about:blank page, a new UUID, zero collisions, and measured 0.030-second
+  attach. The Sierra Agent Engineer was then fenced before input because its canonical
+  URL already had historical `submit_unknown`. A current Snowflake Associate Solution
+  Engineer posting passed official API, fit, duplicate, form, material, and answer
+  gates; its durable phase reached `clicked`, but the Sierra-specific success sentence
+  did not appear. Twenty redacted Ashby POST statuses were 200/204, but HTTP status is
+  not the GraphQL result. Immediate Gmail search was empty. The official current Ashby
+  bundle defines Snowflake's null-theme fallback as `Your application was successfully
+  submitted. We'll contact you if there are next steps.` and success only when the
+  mutation result typename is `FormSubmitSuccess`. A reconstructed success body hash
+  did not match the captured post-click body hash, so Snowflake remains
+  `submit_unknown` and cannot be retried. Before a third click, persist only the
+  GraphQL result typename plus exact redacted `role=status`/`role=alert` text, and
+  accept `submitted` only from `FormSubmitSuccess` with matching UI state.
 - [ ] **L-50** — Deliver the Ashby application artifacts and receipt to Telegram.
 - [ ] **L-51** — Submit one eligible real Workday application and store its
   authoritative receipt.
