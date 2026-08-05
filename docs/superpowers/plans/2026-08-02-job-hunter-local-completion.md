@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-49C` — capture Ashby GraphQL result type and redacted status UI before another live application
+**Active atomic task:** `L-49` — submit one eligible real Ashby application and store an authoritative receipt
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1600,7 +1600,7 @@ this spec update → commit/push → Telegram milestone before the next item sta
   is active with zero writable paths, four runners, four stable launchers, unchanged
   approved route SHA, and Guardian `healthy`. Production migration created 11 click
   phase rows with SQLite integrity `ok`; Daily remains unloaded.
-- [ ] **L-49C** — Capture and validate the authoritative Ashby submit result rather
+- [x] **L-49C** — Capture and validate the authoritative Ashby submit result rather
   than assuming one theme's success copy. Live follow-up first proved the dedicated
   browser had three orphan Sierra tabs and Playwright attach timed out at 12 seconds.
   One target matched its PageOwnership SHA and was closed; with Daily unloaded and
@@ -1618,7 +1618,18 @@ this spec update → commit/push → Telegram milestone before the next item sta
   did not match the captured post-click body hash, so Snowflake remains
   `submit_unknown` and cannot be retried. Before a third click, persist only the
   GraphQL result typename plus exact redacted `role=status`/`role=alert` text, and
-  accept `submitted` only from `FormSubmitSuccess` with matching UI state.
+  accept `submitted` only from `FormSubmitSuccess` with matching UI state. Receipt:
+  the executor now recognizes only Ashby's exact single- and multi-form mutation
+  names, keeps request variables memory-only, hashes status and alert text, and
+  requires every result typename to be `FormSubmitSuccess`, the exact expected
+  status UI, and no alert before `authoritative_success=true`. HTTP 200 and
+  `FormRender` fail closed. Six focused classifier tests, eight prompt tests, and the
+  full 346-test suite PASS; the full suite completed in 22.061 seconds. Immutable
+  release `10827867ad4f52255a6908a5eaaf4005e3690012` (archive SHA-256
+  `ec614a2ba4648e27368882d3417c43f7611041e1b28853624e9bbd0ef2736e07`)
+  is active with four runners, four stable launchers, unchanged approved route SHA,
+  and Guardian `healthy`. Production ledger integrity is `ok` with 12 durable click
+  phase rows; Daily remains unloaded.
 - [ ] **L-50** — Deliver the Ashby application artifacts and receipt to Telegram.
 - [ ] **L-51** — Submit one eligible real Workday application and store its
   authoritative receipt.
