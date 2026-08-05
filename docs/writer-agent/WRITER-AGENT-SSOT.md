@@ -747,6 +747,14 @@ suite is `337/369 passed`: the new Writer test passes and the same 32 unrelated
 files fail, so the failure set did not grow. Terra-high, Sol routing, cost
 receipts, `block_freeze`, and active-six remain later slices.
 
+The next one-at-a-time slice is
+`docs/writer-agent/plans/2026-08-05-terra-high-editorial-escalation.md`.
+The measured owner is `scripts/editorial-gate.sh`: it already holds the prior
+verdict and exact draft hash, so it—not the free-form daily prompt—must request
+medium on the first evaluation, high only for the changed draft after FAIL, and
+refuse a third judge call after high is spent. This slice is planned, not yet
+implemented; Sol remains out of scope.
+
 Decision evidence:
 
 - OpenAI describes Terra as the everyday workhorse and Sol as the model for
