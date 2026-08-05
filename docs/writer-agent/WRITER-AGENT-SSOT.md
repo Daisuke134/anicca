@@ -843,6 +843,25 @@ entered generation attempt 1. This proves the poison exit is repaired; it does
 not yet claim the replacement article is published while that real run remains
 `invoking`.
 
+The seventh slice is
+`docs/writer-agent/plans/2026-08-05-reader-terminal-hash-contract.md`.
+Live replacement run `20260804-214206` reached its one allowed reroute and
+executed both reader judges, but autonomous output handling replaced the
+canonical terminal wrappers with raw verdict JSON lacking `status`,
+`article_sha256`, and canonical `payload`. `quality_self_heal` correctly stayed
+at `evaluate_reroute`, with no publication state or public side effect. RED
+proved reader stdout lacked those fields and the live quality-repair plan was
+`REFUSED`. Runtime commits `03b744e9` and `347a9243` were promoted to live
+commits `e9c68de9` and `53e16c57`; all are pushed. GREEN preserves the old
+top-level reader JSON while adding the evaluated hash and compatible terminal
+shape, then admits only the exact tracked source-defect constellation into the
+bounded repair owner. Reader/repair/self-heal focused verification passes 34
+tests. On live state, the plan changed from `REFUSED` to
+`READY / tracked-reader-terminal-source-defect`; `ai.anicca.article-resume`
+created a hash-manifest archive and entered attempt 1 with source defect
+`reader-terminal-hash` under owner PID `28630`. Publication remains unclaimed
+while that real repair is `invoking`.
+
 Decision evidence:
 
 - OpenAI describes Terra as the everyday workhorse and Sol as the model for
