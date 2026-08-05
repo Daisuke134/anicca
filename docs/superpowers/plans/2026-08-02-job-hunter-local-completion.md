@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-28` — quota-deficit discovery expansion
+**Active atomic task:** `L-29` — exclusive application owners
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1105,8 +1105,25 @@ this spec update → commit/push → Telegram milestone before the next item sta
   `25cd8a68fbfead03117566ad4225d3bf36b2f829aa8c2e3054c9cd765de905ac`)
   is active with zero writable paths; daily remains unloaded until L-28 installs the
   deterministic recovery expansion.
-- [ ] **L-28** — Expand sources and queries after a quota deficit without weakening
-  any hard gate.
+- [x] **L-28** — Expand sources and queries after a quota deficit without weakening
+  any hard gate. Receipt: the runtime builds a mode-0600 recovery plan from current
+  2/5/3 confirmed counts and durable deficit history before browser/model startup.
+  Morning zero-state starts at level one rather than falsely reporting quota met;
+  unchanged deficit age expands monotonically from 6 bilingual queries/4 scopes to
+  12/6 after one hour and 18/9 after two hours. Scopes progress through broad web,
+  official company careers, Ashby, Greenhouse, Lever, Workday, SmartRecruiters,
+  Tokyo tech, and remote boards; every candidate still requires an official posting.
+  The exact Japan, JPY 8M, truth, AI evidence, language, expiry, clearance,
+  cross-owner duplicate, and CAPTCHA gates remain identical at every level. The
+  prompt no longer falsely claims Freehire or LinkedIn execution and explicitly
+  prohibits unauthorized LinkedIn scraping. Focused 8-test and full 255-test suites
+  PASS. A real-ledger backup produced the 6→12→18 query and 4→6→9 scope progression,
+  stable hard gates, receipt mode 0600, and unchanged production ledger SHA-256.
+  Immutable release `a0e1e1a3cabf1d80710fc2246bc61d817c621e0d`
+  (archive SHA-256
+  `1a7c712001ad9c9ed329b54e584d21d6f59657cad9f8496463d3bc873517b570`)
+  is active with zero writable paths; daily remains unloaded pending owner and
+  duplicate fencing.
 - [ ] **L-29** — Add `agent`, `dais_manual`, and `recruiter` as exclusive owners.
 - [ ] **L-30** — Enforce cross-owner posting duplicate prevention.
 - [ ] **L-31** — Import the existing Palantir application as `dais_manual`.
