@@ -1338,8 +1338,8 @@ Life Manager Core
 - [x] O1B-18 AI/crypto/英語等は優先順位にだけ使い、eventを捨てるhard category filterにはしない
 - [x] O1B-19 agentがevent本文・参加者・主催者・場所・時間を読み、Daisの目標とserendipityを自然言語で評価
 - [x] O1B-20 Lumaで実参加を確保できない場合、許諾済みsourceを探索する。connpassはkey取得後の公式API read-only discoveryだけとし、自動申込み・coverage達成には使わない
-- [x] O1B-21 一つの候補で申込失敗・満席・不適格になっても同じ日の次候補へ進み、予約確認までloopを継続
-- [x] O1B-22 「検索一巡」「一件の操作失敗」「一sourceの失敗」を終了条件にしない
+- [ ] O1B-21 一つの候補で申込失敗・満席・不適格になっても同じ日の次候補へ進み、予約確認までloopを継続
+- [ ] O1B-22 「検索一巡」「一件の操作失敗」「一sourceの失敗」を終了条件にしない
 - [x] O1B-23 Google Calendarの全calendarからbusy intervalを読み、前後移動時間を含むfree intervalだけへ予約
 - [x] O1B-24 無料を優先し、有料eventは一度設定した自動支出policy内で保存済み決済手段を使い、都度承認を要求しない
 - [ ] O1B-25A Connectorの日常実行ownerをLife Manager localに一本化し、並行するlegacy実行経路を停止
@@ -2235,15 +2235,59 @@ O1B-25進捗56（2026-08-06 live再監査 / TODO順序更新）: native launchd�
 append-only delivery historyにはpositive Telegram ID `7372`と`7376`の2件だけが残る。したがって「loop停止」ではなく、
 候補失敗後の次候補・次日継続と失敗候補のdurable suppressionが未完了で、同じ失敗を繰り返している状態である。
 
-残TODOの実行順序SSOT（上から一件ずつ閉じる）:
+O1B-25進捗57（task delivery停止のcode-level root cause / 2026-08-06）: live stateを再監査するとlaunchdは累計78 runで、
+heartbeatとcontinuationは更新され続けている。停止しているのはschedulerではなく**delivery state machineの前進**である。
+最新候補`luma-event://event/7gy3rv6t`は`LUMA_RSVP_UNAVAILABLE`、coverageは`covered_new=2 / open=19`のまま。
+原因は次の三つが同時にあるためである。
 
-1. `LUMA_RSVP_UNAVAILABLE`、`LUMA_FORM_INPUT_REQUIRED`、満席、受付終了をknown no-effectとして候補履歴へ保存し、同一候補を再wakeで再選択しない。
-2. 同日候補が尽きたら同じbounded pass内で次のopen日へ進み、一候補・一日・一sourceの失敗でpassを終了しない。
-3. 次の実eventでLuma申請済みreadback→確認mail/QR→Google Calendar→positive Telegram message IDを一巡実証する。
-4. append-only historyからcoverageを再構築し、成功event・known失敗eventの双方を重複処理しないことを次wakeで実証する。
-5. `open=0`になるまでloopを継続し、21日統合Telegram briefingを一通だけ送る。
-6. Mac再起動後のlaunchd自動復帰、heartbeat、healthcheck、self-healを実機検証する。
-7. feature branchをcanonical branchへ統合し、legacy host bridge / Docker worker / 重複scheduleを退役する。
+1. `connector-native-runtime.js`は候補を持つ最初のopen日を選ぶと日ループを`break`し、その日のwrite後に次のopen日へ戻らない。
+2. write loopが次候補へ進むknown no-effectは`LUMA_FORM_INPUT_REQUIRED`一種類だけで、`LUMA_RSVP_UNAVAILABLE`、満席、受付終了等は即終了する。
+3. `native-pass.js`のappend-only stateはCalendarとpositive Telegram IDを持つ成功だけを保存し、known no-effect候補を保存しない。
+   そのため次wakeは同じ候補を再び未処理として選ぶ。
+
+修正は個別errorの追加ではなく、`candidate_attempt`を`verified_success / known_no_effect / unknown_effect / recovery_required`
+へ正規化し、成功履歴とは別のappend-only attempt historyを持つ。`known_no_effect`は同日次候補、同日枯渇は次open日へ進み、
+`unknown_effect`だけが同一eventの再照合前に別writeを禁止する。1 passの件数・時間上限で終了してもcursorを保存し、次wakeは
+最後の未完位置から再開する。これをtask delivery修復のP0とする。
+
+完全な残TODO SSOT:
+
+**P0 — task deliveryを前進させる（最優先）**
+
+1. candidate outcomeの4分類contractとtable-driven testを追加する。
+2. `LUMA_RSVP_UNAVAILABLE`、`LUMA_FORM_INPUT_REQUIRED`、満席、受付終了を`known_no_effect`へ正規化する。
+3. append-only `candidate-attempts.jsonl`を作り、event ref、outcome、safe reason、observed_at、retry_afterを保存する。
+4. active window内のterminal known failureをinventory/rankingから除外し、event状態変更またはretry_after後だけ再検査する。
+5. 同日候補をすべて順番に試し、同日枯渇時は同じpassで次open日へ進む。
+6. pass budget到達時はdate/candidate cursorを保存し、次wakeで続きから再開する。
+7. unknown effectはLuma readbackでpresent/absentを確定するまで再submitしない。
+8. 次の実eventでLuma→mail/QR→Calendar→positive Telegram IDを一巡実証する。
+9. 次wakeで成功eventとknown失敗eventの双方を再選択しないことを実証する。
+10. `open=0`まで反復し、21日統合Telegram briefingを送る。
+11. Mac再起動後のlaunchd、heartbeat、healthcheck、self-healを実機検証する。
+12. canonical branchへ統合し、legacy bridge / Docker worker / 重複scheduleを退役する。
+
+**P1 — Connectorをconnection-to-cash agentにする（local）**
+
+13. `registered→attended→connected→followed_up→meeting→opportunity→won→cash_received`のforward-only lifecycleを追加する。
+14. event前Telegramへ、目的、会うべき人物像、30秒Life Manager説明、event固有QR/landing linkを送る。公開情報にない参加者名は創作しない。
+15. event固有link、名刺/連絡先交換、inbound message、次回Calendarからconsentあるconnectionだけをeventへ紐付ける。
+16. connectionごとに役割を`potential_user / customer / partner / employer / investor / collaborator`として証拠付き分類する。
+17. 交換済み連絡先またはinbound相手だけへ、会話文脈付きfollow-upを実行し、無差別送信を禁止する。
+18. reply→meeting→opportunityをGmail/Calendarから追跡し、停滞時に次のsafe actionを自動実行する。
+19. payment、invoice、payroll/contract receiptをopportunityへ結び、cash receivedだけをConnector実収益とする。
+20. Telegramへ週次funnelと「どのevent→誰との接点→何の機会→いくら受領」を直接link付きで送る。
+21. 30日local canaryでevent別の登録、参加、connection、meeting、won、cash、costを実測する。
+22. Connector起点の月間実収益が$10Kへ届くまで、conversionが最も弱い一段だけを毎週改善する。
+
+**P2 — 同じcoreをLife Manager Webへ移す**
+
+23. localのidentity、policy、browser、Calendar、Gmail、Telegram、ledgerをtenant interfaceへ分離する。
+24. cloud scheduler/worker、tenant別OAuth/secret/browser isolation、idempotency、rate limitを実装する。
+25. Web panelへConnector funnel、connection graph、opportunity、cash attribution、証拠を投影する。
+26. 別user一人でonboarding→event登録→connection→follow-up→paid outcomeを実証する。
+27. Stripe subscriptionのactive paid、new/expansion/contraction/churn MRRをConnector実収益とは別ledgerで測る。
+28. local Connectorのconnection-to-cash能力とWeb subscription MRRを両方維持し、合算時も内訳を失わない。
 
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
@@ -2296,12 +2340,15 @@ Connector Lead（21日coverageと応募完了を所有）
   ├─ Registration Tool   CloakBrowser :9222で申込、完了画面・mail・QRを取得
   ├─ Confirmation Tool   gog Gmailで確認mail、承認、cancelを照合
   ├─ Routes Tool         前後予定と移動時間を使い、申込可能か計算
-  └─ Application Ledger  discovered→attempted→confirmed→calendar_addedを記録
+  ├─ Connection Tool     event固有link・交換済み連絡先・reply・次回meetingを紐付け
+  ├─ Follow-up Tool      consentあるconnectionだけを会話文脈付きで追跡
+  └─ Connector Ledger    discovered→registered→attended→connected→meeting→won→cash_receivedを記録
 ```
 
 Calendar/Routesの時刻計算、dedup、状態遷移、証拠照合はdeterministicに行う。どのeventへ応募するかは
-agentが本文と履歴を読んで判断し、keyword/regexの固定分類へ戻さない。現地参加、参加者への連絡、
-返信、follow-up、次回面談はこのConnectorのscopeへ含めない。
+agentが本文と履歴を読んで判断し、keyword/regexの固定分類へ戻さない。現地で人と会うこと自体はDaisが行うが、
+参加準備、event固有の接点取得、交換済み連絡先/inbound相手へのfollow-up、返信、次回面談、opportunity、cash attributionは
+Connectorのscopeとする。公開参加者情報からの無差別連絡、contact情報の推測、同意のないmarketing送信はscope外とする。
 
 ### 5.3 Order 1C — 資金調達・アクセラレーター
 
@@ -2600,44 +2647,68 @@ specialist agentの合議、多数決、CFO Leadの指示のいずれも、deter
 最初はDais一人のローカル運用で、支出削減、応募、収入、投資、Telegram UXを実証する。
 その後、同じcoreをLife Manager Webアプリへ統合し、有料userの継続売上をMRRとして積み上げる。
 
-### 8.1 月$10,000を作るagent business loop
+### 8.1 Connector単体がlocalで月$10,000へ寄与するloop
 
-この節の`$10K/month`は**USD 10,000の事業MRR**を指す。投資利益、給与、資金調達、含み益、削減額を混ぜない。
-保証値ではなく、Stripeの実payment eventから監査可能な目標である。
+最初の目標はWeb subscription MRRではない。DaisのMacで動くConnectorがeventを通じて作ったconnectionから、
+**実際に受領したUSD 10,000/月の帰属可能収益**を作ることである。保証値ではなく、cash receiptまで到達した検証目標である。
 
-| 月額 | 必要active paid user | 到達MRR |
-|---:|---:|---:|
-| $49 | 205 | $10,045 |
-| $99 | 102 | $10,098 |
-| $199 | 51 | $10,149 |
+Connector実収益へ含める:
 
-推奨する最初のbusiness modelは`$99/month × 102 active paid users`。Life Managerが「機会探索、応募、Calendar、
-Telegram報告、財務briefing」を一つのmanager体験として提供し、agent数を商品にしない。
+- eventで出会った人が購入したLife Manager/pilot/consultingの実入金
+- event connectionから生じたcontract、partnership、referralの実入金
+- event connectionが直接生んだ新しいjob/contractの月次手取り増分
+
+含めない:
+
+- 登録数、参加数、名刺数、返信、meeting、proposal、口約束
+- 資金調達額、含み益、元本移動、未回収invoice
+- eventとのsource pathを証明できない売上や給与
+
+月$10Kは単一商品価格ではなく、次のcash ledger式で測る。
+
+```text
+Connector attributable cash
+  = Life Manager / pilot cash received
+  + consulting / contract cash received
+  + partnership / referral cash received
+  + verified monthly job or contract income uplift
+  - event fee / travel / follow-up / delivery cost
+```
+
+たとえば`paid pilot $4K + consulting/contract $4K + verified income uplift $2K = $10K`は一つの検証可能な構成であり、
+forecastではない。各項目はevent、connection、opportunity、payment/payroll receiptまで同じlineageを持つ場合だけ計上する。
 
 ```mermaid
 flowchart LR
-    G[月$10K MRR goal] --> O[実データを観測]
-    O --> P[今月の最大leverを1つ選ぶ]
-    P --> E[専門agentをbounded実行]
-    E --> V[外部receiptで検証]
-    V --> T[Telegramへ結果を1通]
-    V --> L[統一ledgerへ記録]
-    L --> M[Stripe MRR・churn・costを計算]
-    M --> X{月$10K達成?}
-    X -- No --> A[獲得・activation・retentionの最弱点を改善]
-    A --> O
-    X -- Yes --> R[reserveと成長へ再配分]
-    R --> O
+    D[Discover useful event] --> R[Register and Calendar]
+    R --> P[Pre-event goal・pitch・QR]
+    P --> A[Attend and meet people]
+    A --> C[Consent-based connection captured]
+    C --> F[Contextual follow-up]
+    F --> M[Meeting]
+    M --> O[Opportunity]
+    O --> W[Won]
+    W --> X[Cash received]
+    X --> L[Connector attribution ledger]
+    L --> T[Telegram: result・cash・next action]
+    L --> Q{Monthly $10K?}
+    Q -- No --> B[Improve weakest funnel stage]
+    B --> D
+    Q -- Yes --> S[Prove repeatability locally]
+    S --> WEB[Merge same core into Life Manager Web]
 ```
 
-毎日のloopは「儲かりそうなことを無制限にする」ものではない。Connectorが見込み客・partner・採用候補との接点を作り、
-Job/Fundraisingが収入とrunwayを改善し、CFOがcostとcashを管理し、Product/Growthがpaid conversionとretentionを上げる。
-月次の唯一の事業判定は`new MRR + expansion + reactivation - contraction - churn`で、全変動をpayment eventへdrill-downできること。
+Connectorは登録数を最大化しない。`cash_received / attended`とnet cashを改善する。最初はsampleが小さいため、eventを
+connectionのverified first touchとして保存し、cashまでのpathを全件表示する。複数touchpointがある時はConnector単独売上と断定せず、
+`connector_assisted`として分離する。localでこのloopを成立させた後、同じlifecycle、policy、receipt、Telegram templateを
+Life Manager Webへ移す。Web subscription MRRはその後の別収益streamである。
 
 根拠:
 
 - ソース: [OpenAI Orchestration and handoffs](https://developers.openai.com/api/docs/guides/agents/orchestration) / 核心の引用: 「A manager should stay in control and call specialists as bounded capabilities」
 - ソース: [Telegram Bot API](https://core.telegram.org/bots/api#sendmessage) / 核心の引用: 「On success, the sent Message is returned」
+- ソース: [HubSpot lifecycle stages](https://knowledge.hubspot.com/records/use-lifecycle-stages) / 核心の引用: 「Lifecycle stages are used to track how contacts or companies move forward in your process」
+- ソース: [Google Analytics attribution](https://support.google.com/analytics/answer/10596866) / 核心の引用: 「Attribution is the act of assigning credit for important user actions to different ads, clicks, and factors along the user's path」
 - ソース: [Stripe Subscription analytics](https://docs.stripe.com/billing/subscriptions/analytics) / 核心の引用: 「新規登録、アップグレード、ダウングレード、再有効化、解約を含む各顧客のすべての MRR の推移」
 
 ## 9. 完成時の全体図
