@@ -607,6 +607,38 @@ class OwnerReportRendererTest(unittest.TestCase):
         self.assertIn("XYZ", unknown_text)
         self.assertIn("最小単位", unknown_text)
 
+    def test_portfolio_unknown_currency_preserves_minor_units(self):
+        with tempfile.TemporaryDirectory() as path:
+            root = Path(path)
+            row = {
+                "schema_version": 1,
+                "product_id": "ebook-ja",
+                "business_date": "2026-08-06",
+                "observed_at": "2026-08-06T08:00:00Z",
+                "snapshot_id": "ebook-ja:2026-08-06:XYZ",
+                "sources": {
+                    "stripe": {
+                        "status": "available",
+                        "reason": None,
+                        "data": {"paid_orders": 1, "net_minor": {"XYZ": 2073}},
+                    }
+                },
+            }
+            (root / "business-outcomes.jsonl").write_text(
+                json.dumps(row, ensure_ascii=False) + "\n", encoding="utf-8"
+            )
+            event = owner_report.build_events(
+                root,
+                "portfolio_weekly",
+                product_id=None,
+                as_of=dt.datetime(2026, 8, 6, 12, tzinfo=dt.timezone.utc),
+            )[0]
+            text = owner_report.render_japanese(event)
+        ebook_line = next(line for line in text.splitlines() if line.startswith("ebook-ja:"))
+        self.assertIn("2073 XYZ", ebook_line)
+        self.assertIn("最小単位", ebook_line)
+        self.assertNotIn("売上額は取得できませんでした", ebook_line)
+
 
 if __name__ == "__main__":
     unittest.main()

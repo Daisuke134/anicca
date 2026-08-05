@@ -662,6 +662,8 @@ def _portfolio_event(root: pathlib.Path, as_of: dt.datetime) -> list[dict]:
                 "mrr_reason": "no_business_snapshot",
                 "money_value": None,
                 "money_currency": None,
+                "money_minor": None,
+                "money_metric": None,
                 "paid_orders": None,
                 "money_reason": "no_business_snapshot",
             })
@@ -674,6 +676,8 @@ def _portfolio_event(root: pathlib.Path, as_of: dt.datetime) -> list[dict]:
             "mrr_reason": facts.get("mrr_reason"),
             "money_value": facts.get("money_value"),
             "money_currency": facts.get("money_currency"),
+            "money_minor": facts.get("money_minor"),
+            "money_metric": facts.get("money_metric"),
             "paid_orders": facts.get("paid_orders"),
             "money_source": facts.get("money_source"),
             "money_reason": facts.get("money_reason"),
@@ -815,6 +819,13 @@ def render_japanese(event: dict) -> str:
             mrr = item.get("mrr")
             if mrr is not None:
                 detail = f"MRR {mrr} USD"
+            elif item.get("money_reason") == "unknown_currency_exponent":
+                detail = (
+                    f"売上 {item.get('money_minor')} {item.get('money_currency')}"
+                    "（最小単位・通貨指数不明）"
+                )
+                if item.get("paid_orders") is not None:
+                    detail += f"・注文数 {item['paid_orders']}件"
             elif item.get("money_value") is not None:
                 detail = f"売上 {item['money_value']} {item.get('money_currency') or '通貨不明'}"
                 if item.get("paid_orders") is not None:
