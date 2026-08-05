@@ -1,6 +1,7 @@
 import hashlib
 import inspect
 import json
+import sqlite3
 import tempfile
 import threading
 import unittest
@@ -142,6 +143,39 @@ class LedgerTests(unittest.TestCase):
             "https://jobs.example.com/42/?utm_campaign=test",
         )
         self.assertEqual(duplicate, self.application_id)
+
+    def test_application_owner_is_validated_and_persisted(self):
+        self.assertIn("owner", inspect.signature(self.ledger.add_application).parameters)
+        manual_id = self.ledger.add_application(
+            "Manual Co",
+            "AI Engineer",
+            "https://jobs.example.com/manual-owner",
+            owner="dais_manual",
+        )
+        recruiter_id = self.ledger.add_application(
+            "Recruiter Co",
+            "AI Engineer",
+            "https://jobs.example.com/recruiter-owner",
+            owner="recruiter",
+        )
+
+        self.assertEqual(self.ledger.application_owner(self.application_id), "agent")
+        self.assertEqual(self.ledger.application_owner(manual_id), "dais_manual")
+        self.assertEqual(self.ledger.application_owner(recruiter_id), "recruiter")
+        with self.assertRaisesRegex(ValueError, "owner"):
+            self.ledger.add_application(
+                "Invalid Co",
+                "AI Engineer",
+                "https://jobs.example.com/invalid-owner",
+                owner="other",
+            )
+
+    def test_application_owner_is_immutable(self):
+        with self.assertRaisesRegex(sqlite3.IntegrityError, "owner is immutable"):
+            self.ledger.connection.execute(
+                "UPDATE applications SET owner = 'dais_manual' WHERE id = ?",
+                (self.application_id,),
+            )
 
     def test_application_research_and_drafts_form_an_immutable_artifact_chain(self):
         artifacts = [
