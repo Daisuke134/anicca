@@ -142,6 +142,16 @@ class Ledger:
                 payload_sha256 TEXT NOT NULL UNIQUE,
                 observed_at TEXT NOT NULL
             );
+            CREATE TABLE IF NOT EXISTS external_application_imports (
+                application_id TEXT PRIMARY KEY REFERENCES applications(id),
+                owner TEXT NOT NULL CHECK (owner IN ('dais_manual', 'recruiter')),
+                source TEXT NOT NULL,
+                source_message_id TEXT NOT NULL UNIQUE,
+                applied_at TEXT NOT NULL,
+                evidence_sha256 TEXT NOT NULL UNIQUE,
+                posting_alias TEXT NOT NULL UNIQUE,
+                imported_at TEXT NOT NULL
+            );
             CREATE TABLE IF NOT EXISTS submission_attempts (
                 intent_id TEXT NOT NULL REFERENCES submit_intents(intent_id),
                 fence INTEGER NOT NULL,
@@ -312,6 +322,16 @@ class Ledger:
             WHEN NEW.owner != OLD.owner
             BEGIN
                 SELECT RAISE(ABORT, 'application owner is immutable');
+            END;
+            CREATE TRIGGER IF NOT EXISTS external_application_imports_no_update
+            BEFORE UPDATE ON external_application_imports
+            BEGIN
+                SELECT RAISE(ABORT, 'external application imports are immutable');
+            END;
+            CREATE TRIGGER IF NOT EXISTS external_application_imports_no_delete
+            BEFORE DELETE ON external_application_imports
+            BEGIN
+                SELECT RAISE(ABORT, 'external application imports are immutable');
             END;
             CREATE TRIGGER IF NOT EXISTS application_artifacts_no_delete
             BEFORE DELETE ON application_artifacts
@@ -600,7 +620,20 @@ class Ledger:
             raise ValueError("owner must be agent, dais_manual, or recruiter")
         normalized_url = canonical_url(url)
         application_id = canonical_job_id(company, title, normalized_url)
+        posting_alias = self._posting_alias(company, title)
         with self._transaction():
+            imported = self.connection.execute(
+                "SELECT application_id, owner FROM external_application_imports "
+                "WHERE posting_alias = ?",
+                (posting_alias,),
+            ).fetchone()
+            if imported is not None:
+                imported_owner = str(imported["owner"])
+                if imported_owner != owner:
+                    raise FenceError(
+                        f"canonical posting is already owned by {imported_owner}"
+                    )
+                return str(imported["application_id"])
             existing_url = self.connection.execute(
                 "SELECT id, owner FROM applications WHERE canonical_url = ?",
                 (normalized_url,),
@@ -1017,6 +1050,7 @@ class Ledger:
 
         normalized_url = canonical_url(url)
         application_id = canonical_job_id(company, title, normalized_url)
+        posting_alias = self._posting_alias(company, title)
         rank_config_json = json.dumps(
             dict(rank_config),
             ensure_ascii=False,
@@ -1024,6 +1058,15 @@ class Ledger:
             separators=(",", ":"),
         )
         with self._transaction():
+            imported = self.connection.execute(
+                "SELECT owner FROM external_application_imports "
+                "WHERE posting_alias = ?",
+                (posting_alias,),
+            ).fetchone()
+            if imported is not None:
+                raise FenceError(
+                    f"canonical posting is already owned by {str(imported['owner'])}"
+                )
             generation = self.connection.execute(
                 """
                 SELECT strategy_generation_id
@@ -1120,6 +1163,144 @@ class Ledger:
                 ),
             )
         return application_id
+
+    @staticmethod
+    def _posting_alias(company: str, title: str) -> str:
+        normalized = "\n".join(
+            re.sub(r"[^a-z0-9]+", " ", value.casefold()).strip()
+            for value in (company, title)
+        )
+        return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+
+    def import_external_application(
+        self,
+        *,
+        company: str,
+        title: str,
+        owner: str,
+        source: str,
+        source_message_id: str,
+        applied_at: str,
+        evidence_sha256: str,
+    ) -> dict[str, str]:
+        if owner not in {"dais_manual", "recruiter"}:
+            raise ValueError("external owner must be dais_manual or recruiter")
+        values = {
+            "company": company,
+            "title": title,
+            "source": source,
+            "source_message_id": source_message_id,
+        }
+        for name, value in values.items():
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(f"{name} is required")
+        try:
+            applied = datetime.fromisoformat(applied_at)
+        except ValueError as error:
+            raise ValueError("applied_at must be RFC3339") from error
+        if applied.tzinfo is None:
+            raise ValueError("applied_at must include timezone")
+        if not re.fullmatch(r"[a-f0-9]{64}", evidence_sha256):
+            raise ValueError("evidence_sha256 must be a lowercase SHA-256")
+        source_message_id = source_message_id.strip()
+        evidence_url = f"evidence://{source.strip().casefold()}/{source_message_id}"
+        application_id = canonical_job_id(company, title, evidence_url)
+        posting_alias = self._posting_alias(company, title)
+        with self._transaction():
+            existing = self.connection.execute(
+                "SELECT * FROM external_application_imports "
+                "WHERE source_message_id = ?",
+                (source_message_id,),
+            ).fetchone()
+            if existing is not None:
+                expected = (
+                    owner,
+                    source.strip(),
+                    applied_at,
+                    evidence_sha256,
+                    posting_alias,
+                )
+                recorded = (
+                    str(existing["owner"]),
+                    str(existing["source"]),
+                    str(existing["applied_at"]),
+                    str(existing["evidence_sha256"]),
+                    str(existing["posting_alias"]),
+                )
+                if recorded != expected:
+                    raise FenceError("source message is already bound to another import")
+                return {
+                    "status": "already_imported",
+                    "application_id": str(existing["application_id"]),
+                }
+            alias_existing = self.connection.execute(
+                "SELECT owner FROM external_application_imports WHERE posting_alias = ?",
+                (posting_alias,),
+            ).fetchone()
+            if alias_existing is not None:
+                raise FenceError(
+                    "posting alias is already owned by "
+                    f"{str(alias_existing['owner'])}"
+                )
+            created_at = _now()
+            self.connection.execute(
+                "INSERT INTO applications "
+                "(id, company, title, canonical_url, owner, current_state, created_at) "
+                "VALUES (?, ?, ?, ?, ?, 'submitted', ?)",
+                (
+                    application_id,
+                    company.strip(),
+                    title.strip(),
+                    evidence_url,
+                    owner,
+                    created_at,
+                ),
+            )
+            self._append_event(
+                application_id,
+                None,
+                "submitted",
+                {
+                    "external_import": True,
+                    "source": source.strip(),
+                    "source_message_id": source_message_id,
+                    "applied_at": applied_at,
+                    "evidence_sha256": evidence_sha256,
+                },
+            )
+            self.connection.execute(
+                "INSERT INTO external_application_imports "
+                "(application_id, owner, source, source_message_id, applied_at, "
+                "evidence_sha256, posting_alias, imported_at) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                (
+                    application_id,
+                    owner,
+                    source.strip(),
+                    source_message_id,
+                    applied_at,
+                    evidence_sha256,
+                    posting_alias,
+                    created_at,
+                ),
+            )
+            self.connection.execute(
+                "INSERT INTO application_strategy_assignments "
+                "(application_id, strategy_generation_id, capture_status, source, "
+                "query_family, rank_config_json, role_family, material_variant, "
+                "message_variant, model_route, prompt_sha256, material_sha256, "
+                "assigned_at) VALUES (?, ?, 'legacy_unavailable', ?, "
+                "'external_import', NULL, 'legacy_unavailable', 'legacy_unavailable', "
+                "'none', 'external_import', NULL, NULL, ?)",
+                (application_id, LEGACY_STRATEGY_GENERATION_ID, source.strip(), created_at),
+            )
+        return {"status": "imported", "application_id": application_id}
+
+    def external_application_imports(self) -> list[dict[str, str]]:
+        rows = self.connection.execute(
+            "SELECT * FROM external_application_imports ORDER BY imported_at, application_id"
+        ).fetchall()
+        return [{key: str(row[key]) for key in row.keys()} for row in rows]
 
     def strategy_assignment(self, application_id: str) -> dict[str, Any]:
         row = self.connection.execute(
