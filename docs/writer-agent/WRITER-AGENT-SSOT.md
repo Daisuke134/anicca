@@ -946,6 +946,19 @@ one. A fresh Terra task review approved this receipt with no findings. The
 receipt proves eligibility on the next JST day and does not claim that a
 future scheduled launch has already run.
 
+Active-six isolation is implemented and verified. New eligible runs own exactly
+note JA, Substack JA/EN, Dev.to EN, Zenn JA, and X Article JA; X Post JA and X
+Article EN receive durable `SKIP` receipts with `slo=not-applicable`. A changed
+current-hash artifact creates no publication intent, a failed active destination
+leaves the other five recoverable, and dormant destinations cannot transition
+to intent, unavailable, guard, or live state. Historical exact-eight runs use a
+shared trusted resolver across scheduling, completion, notification, learning,
+and audit, retaining X Article EN's JA-plus-six-hour rule and X Post's JST slot
+ownership. Runtime feature tip `2a332475` and live tip `493b185f` pass the full
+Writer suite `706/706`; the installed pending owner has last exit `0`, and three
+real unmarked historical states resolve as `legacy-exact8`. Fresh Terra review
+approved with no findings. Verification did not trigger an external post.
+
 Decision evidence:
 
 - OpenAI describes Terra as the everyday workhorse and Sol as the model for

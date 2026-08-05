@@ -130,6 +130,18 @@ Post JA and X Article EN produce explicit skip receipts without an SLO breach.
 Done receipt: RED observed, minimal GREEN implementation, focused and full
 Writer regression, live owner E2E, commit and push.
 
+Status: DONE. The final runtime tip is `2a332475` on the feature branch and
+`493b185f` on the live branch. RED rounds exposed missing active/dormant
+separation, dormant mutation paths, hidden X Post initialization, false
+completion labels, legacy completion/routing errors, untrusted state paths,
+lost legacy timing/slot rules, and divergent marker inference. The final
+Writer suite passes `706/706`; four shell owner contracts, isolated note/daily
+workers, syntax, compile, and diff checks pass. The installed launchd owner
+points at the canonical pending worker, has last exit `0`, and three real
+unmarked historical states resolve as `legacy-exact8`. No external publication
+was triggered for this verification. Fresh Terra review approved with zero
+critical, important, or minor findings.
+
 ## Task 3: Replace vendor-biased topic authority
 
 Write RED behavior tests first. Collect paid-market, reader-demand, publisher,
