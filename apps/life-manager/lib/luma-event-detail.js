@@ -133,6 +133,9 @@ function rsvpStatus(controls) {
     "you're going",
     "you’re going",
     "going",
+    "承認待ち",
+    "pending approval",
+    "approval pending",
   ])) {
     return "registered";
   }
@@ -279,13 +282,13 @@ async function readRawLumaEventDetail(page, canonicalUrl) {
     )].map((element) => (
       element.innerText || element.value || element.getAttribute("aria-label") || ""
     )).map((value) => value.replace(/\s+/g, " ").trim()).filter(Boolean);
-    const closedNotices = [...document.querySelectorAll("div, span, p")]
+    const statusNotices = [...document.querySelectorAll("div, span, p")]
       .map((element) => String(element.innerText || element.textContent || "").replace(/\s+/g, " ").trim())
-      .filter((value) => /^(?:参加登録受付終了|registration closed|registration has ended|registration is closed|rsvp closed)$/i.test(value));
+      .filter((value) => /^(?:参加登録受付終了|registration closed|registration has ended|registration is closed|rsvp closed|承認待ち|pending approval|approval pending)$/i.test(value));
     return {
       canonicalUrl: eventUrl,
       jsonLd: rows,
-      controls: [...new Set([...controls, ...closedNotices])].slice(0, 100),
+      controls: [...new Set([...controls, ...statusNotices])].slice(0, 100),
     };
   }, canonicalUrl);
 }
