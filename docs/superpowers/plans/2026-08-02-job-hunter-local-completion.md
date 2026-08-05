@@ -7,11 +7,13 @@
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
 **Active atomic task:** `L-49K` — add a fenced human-confirmation handoff for Ashby when trusted automation produces a silent pre-request stop
-**Status:** Corrected resume baseline accepted and installed; runtime revival is the
-next execution slice. Product contract refreshed for hourly discovery/application
-passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
-Gmail outcome tracking, Luna/Terra routing,
-manual/recruiter deduplication, and post-Dais multi-user productization.
+**Status:** The immutable four-lane runtime, hourly/five-minute schedules, grounded
+materials, ownership fences, Gmail ingestion, Telegram outbox, quota accounting, and
+Ashby observation classifier are implemented and tested. The daily application
+LaunchAgent remains intentionally unloaded: real Ashby confirmation, real Workday
+confirmation, interview-to-Calendar E2E, learning promotion, and simultaneous
+LaunchAgent health have not passed. Development-session browser runs are verification
+evidence only and MUST NOT be described as the autonomous loop running in production.
 
 ## 1. Acceptance criteria — done condition
 
@@ -881,6 +883,32 @@ submissions.
 - Corrected base resumes rendered as four one-page PDFs, visually inspected, selected
   through the production stable filenames, and delivered with Telegram message IDs
   6119–6122. The prior 6084–6086 files are superseded.
+
+### 11.1 Submission truth and current limitation
+
+- `confirmed submitted` requires an authoritative ATS response/confirmation or a
+  uniquely matched Gmail receipt. A physical click is never submission proof.
+- `submit_unknown` means the form was clicked but no authoritative terminal signal
+  was observed. It counts as neither confirmed submission nor safe retry, and the
+  same posting MUST NOT be clicked again.
+- Sierra, Camunda, and Cohere exposed the same Ashby failure class: valid rendered
+  forms reached one physical click, but the official submit request, reCAPTCHA
+  execution, visible validation error, confirmation, and immediate Gmail receipt
+  were absent. These runs are preserved as `submit_unknown`, not reported as
+  successful applications, and not silently skipped.
+- The primary development session currently performs bounded real E2E verification
+  on behalf of the product. This is not the desired operating model. The desired
+  model is the installed Job Hunter LaunchAgents performing discovery, ranking,
+  dossier generation, browser submission, Gmail reconciliation, Telegram reporting,
+  and weekly learning without this development chat remaining alive.
+- The daily LaunchAgent remains unloaded until L-49 through L-65 pass because turning
+  it on now could create repeated ambiguous Ashby clicks without reliable owner
+  handoff and authoritative receipts. Therefore Job Hunter is not yet producing ten
+  confirmed applications per day.
+- Ashby as a platform is not globally skipped. Eligible Ashby postings remain
+  discoverable and rankable, but another physical click is fenced until L-49K adds
+  a one-action human handoff and no-second-click recovery. Workday has not yet had
+  its required real confirmed E2E.
 
 ## 12. Execution order and remaining TODO
 
