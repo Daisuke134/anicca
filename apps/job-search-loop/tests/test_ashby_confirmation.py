@@ -2,6 +2,7 @@ import unittest
 
 from job_search_loop.ashby_confirmation import (
     classify_confirmation,
+    classify_post_click_observation,
     is_submit_mutation,
     submit_operation_from_payload,
 )
@@ -11,6 +12,65 @@ SUCCESS = "Your application was successfully submitted. We'll contact you if the
 
 
 class AshbyConfirmationTests(unittest.TestCase):
+    def test_post_click_observation_prefers_exact_submit_request(self):
+        receipt = classify_post_click_observation(
+            submit_operation="ApiSubmitSingleApplicationFormAction",
+            recaptcha_started=True,
+            visible_error_texts=[],
+            unselected_required_answers=[],
+            timed_out=False,
+        )
+        self.assertEqual(receipt["classification"], "request_started")
+        self.assertFalse(receipt["retryable"])
+
+    def test_post_click_observation_recognizes_exact_recaptcha_rejection(self):
+        receipt = classify_post_click_observation(
+            submit_operation=None,
+            recaptcha_started=True,
+            visible_error_texts=[
+                "There was an error verifying that you are not a robot. Please try again."
+            ],
+            unselected_required_answers=[],
+            timed_out=False,
+        )
+        self.assertEqual(receipt["classification"], "recaptcha_rejected")
+        self.assertTrue(receipt["retryable"])
+
+    def test_post_click_observation_keeps_validation_rejection_non_retryable(self):
+        receipt = classify_post_click_observation(
+            submit_operation=None,
+            recaptcha_started=False,
+            visible_error_texts=["Please select an option"],
+            unselected_required_answers=["remote_work"],
+            timed_out=False,
+        )
+        self.assertEqual(receipt["classification"], "validation_rejected")
+        self.assertFalse(receipt["retryable"])
+        self.assertEqual(len(receipt["visible_error_sha256"]), 1)
+        self.assertNotIn("Please select an option", str(receipt))
+
+    def test_post_click_observation_distinguishes_recaptcha_pending(self):
+        receipt = classify_post_click_observation(
+            submit_operation=None,
+            recaptcha_started=True,
+            visible_error_texts=[],
+            unselected_required_answers=[],
+            timed_out=True,
+        )
+        self.assertEqual(receipt["classification"], "recaptcha_pending")
+        self.assertFalse(receipt["retryable"])
+
+    def test_post_click_observation_distinguishes_silent_timeout(self):
+        receipt = classify_post_click_observation(
+            submit_operation=None,
+            recaptcha_started=False,
+            visible_error_texts=[],
+            unselected_required_answers=[],
+            timed_out=True,
+        )
+        self.assertEqual(receipt["classification"], "silent_timeout")
+        self.assertFalse(receipt["retryable"])
+
     def test_single_form_requires_graphql_success_and_exact_status_ui(self):
         payload = {
             "data": {

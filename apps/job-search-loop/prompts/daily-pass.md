@@ -228,6 +228,16 @@ again.`, persist a PII-free evidence hash and call
 answer or bypass the CAPTCHA. Any unproven clicked exit and every `request_started`
 exit remain non-retryable `submit_unknown`.
 
+Before committing `clicked`, verify every required custom-button selected state in
+the rendered control, not only native `:invalid` inputs. Attach observers for the
+exact submit request, reCAPTCHA execution, and every visible application-form error
+before the click. After the first terminal signal or bounded timeout, call
+`classify_post_click_observation` and persist its
+PII-free post-click observation receipt. Hash error text instead of storing it.
+Preserve `silent_timeout` and every
+unproven clicked classification as non-retryable; only the already-authorized exact
+reCAPTCHA rejection may use the retryable client-block path.
+
 For Ashby, HTTP 200 alone is never confirmation. Before clicking, read the expected
 success copy from the already-loaded page's
 `window.__appData.organization.theme.applicationSubmittedSuccessMessage`; when it is
