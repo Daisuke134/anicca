@@ -96,6 +96,22 @@ if sys.argv[1:4] == ["-m", "job_search_loop.candidate_queue", "discover-prefilte
         encoding="utf-8",
     )
     raise SystemExit(0)
+if sys.argv[1:3] == ["-m", "job_search_loop.browser_worker"]:
+    output = pathlib.Path(sys.argv[sys.argv.index("--output") + 1])
+    output.parent.mkdir(parents=True, exist_ok=True)
+    result = {
+        "status": "pending_verification",
+        "submitted": [],
+        "submit_unknown": [],
+        "blocked": ["0_candidate_links_await_fill_adapter"],
+        "report_message_id": None,
+        "discovered_link_count": 0,
+        "verified_link_count": 0,
+        "remaining_unverified_count": 0,
+    }
+    output.write_text(json.dumps(result) + "\\n", encoding="utf-8")
+    print(json.dumps({"status": "ok", "result_path": str(output)}))
+    raise SystemExit(0)
 if sys.argv[1:2] and sys.argv[1].endswith("agent_runner.py"):
     evidence = pathlib.Path(sys.argv[sys.argv.index("--evidence-dir") + 1])
     evidence.mkdir(parents=True, exist_ok=True)
@@ -207,27 +223,34 @@ raise SystemExit(0)
             ]
             self.assertEqual(
                 [call[call.index("--task-class") + 1] for call in runner_calls],
-                ["composition-agent", "job-search-terra-high", "browser-lane-agent"],
+                ["composition-agent", "job-search-terra-high"],
             )
+            browser_worker_calls = [
+                call
+                for call in calls
+                if call[:3] == ["-m", "job_search_loop.browser_worker", "run"]
+            ]
+            self.assertEqual(len(browser_worker_calls), 1)
             terra_results = list(
                 (root / "state" / "evidence").glob("daily-*/terra-plan-result.json")
             )
             self.assertEqual(len(terra_results), 1)
             self.assertEqual(terra_results[0].stat().st_mode & 0o777, 0o600)
 
-    def test_daily_budget_block_is_an_honest_completed_pass(self):
+    def test_daily_browser_worker_has_no_submit_model_budget_failure_path(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             result, calls = self._run_daily_with_fake_python(root, 0, 75)
 
             self.assertEqual(result.returncode, 0, result.stderr)
-            self.assertIn("job_search_loop.browser_owner", json.dumps(calls))
-            self.assertIn("agent_runner.py", json.dumps(calls))
+            encoded = json.dumps(calls)
+            self.assertIn("job_search_loop.browser_owner", encoded)
+            self.assertIn("job_search_loop.browser_worker", encoded)
             summaries = list((root / "state" / "evidence").glob("daily-*/summary.json"))
             self.assertEqual(len(summaries), 1)
             self.assertEqual(
                 json.loads(summaries[0].read_text(encoding="utf-8"))["status"],
-                "budget_blocked",
+                "ok",
             )
             projection = root / "state" / "summary.v2.json"
             self.assertTrue(projection.is_file())

@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-06 JST
-**Active atomic task:** `L-49K0C/FILL-1B` — enforce one release-contained browser worker per run
+**Active atomic task:** `L-49K0C/FILL-1C` — implement ATS-specific non-submit field adapters
 **Status:** The immutable four-lane runtime, hourly/five-minute schedules, grounded
 materials, ownership fences, Gmail ingestion, Telegram outbox, quota accounting, and
 Ashby observation classifier are implemented and tested. The daily LaunchAgent is
@@ -2399,9 +2399,18 @@ the resident worker from producing one authoritative application receipt:
         same 2/3/2 portfolio split before any model ran. Terra was then correctly
         blocked by the already-exhausted daily token budget and launchd exited 75;
         the run performed no browser action and produced no application claim.
-    - [ ] `FILL-1B` — Replace model-authored temporary browser scripts with one
+    - [x] `FILL-1B` — Replace model-authored temporary browser scripts with one
       release-contained browser worker. Enforce one worker per run and one atomic
       ledger claim per cross-route role key before opening or filling an ATS.
+      - `run-daily.sh` no longer launches a `browser-lane-agent`; it invokes the
+        committed `job_search_loop.browser_worker` exactly once after the browser
+        owner lease is ready. A non-blocking OS file lock rejects a second worker,
+        and the worker binds its private mode-0600 receipt to the daily holder PID,
+        browser lease ID, and fence. Until FILL-1C supplies the field adapter it
+        returns zero submissions and an explicit `candidate_links_await_fill_adapter`
+        blocker. Focused runtime/ownership tests pass 35/35 and the full Job Hunter
+        suite passes 405/405; no model-authored `/tmp/browser_pass.py` execution path
+        remains in the daily driver.
     - [ ] `FILL-1C` — Implement and fixture-test non-submit field discovery/fill for
       Ashby, Greenhouse, Lever, Workable, and Workday. Persist exact questions,
       grounded answers, selected resume hash, pre-click screenshot, and a terminal

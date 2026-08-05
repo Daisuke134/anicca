@@ -180,23 +180,20 @@ TRAPEXIT() {
       --holder-pid "$$" >/dev/null 2>&1 || true
   fi
 }
-export ANICCA_BUDGET_SCOPE_ID="job-search-daily:${RUN_ID}:submit"
-export ANICCA_PASS_TOKEN_BUDGET=98304
+RESULT_PATH="$EVIDENCE/browser-worker-result.json"
 set +e
-"$JOB_SEARCH_PYTHON" "$JOB_SEARCH_RUNNER" \
-  --task-class browser-lane-agent \
-  --prompt-file "$JOB_SEARCH_APP_ROOT/prompts/daily-pass.md" \
-  --schema "$JOB_SEARCH_APP_ROOT/schemas/pass-result.v1.schema.json" \
-  --evidence-dir "$EVIDENCE" \
-  --task-label job-search-daily \
-  --loop job-search \
-  --workdir "$JOB_SEARCH_REPO_ROOT"
+"$JOB_SEARCH_PYTHON" -m job_search_loop.browser_worker run \
+  --database "$JOB_SEARCH_CANDIDATE_QUEUE" \
+  --owner-receipt "$JOB_SEARCH_BROWSER_OWNER_EVIDENCE" \
+  --holder-pid "$$" \
+  --run-id "$RUN_ID" \
+  --lock "$JOB_SEARCH_STATE_ROOT/browser-worker.lock" \
+  --worker-receipt "$EVIDENCE/browser-worker-receipt.json" \
+  --output "$RESULT_PATH" \
+  >"$EVIDENCE/summary.json"
 RUNNER_RC=$?
 set -e
 if [[ "$RUNNER_RC" -eq 0 ]]; then
-  RESULT_PATH=$("$JOB_SEARCH_JQ" -er \
-    '.result_path | select(type == "string" and length > 0)' \
-    "$EVIDENCE/summary.json")
   set +e
   "$JOB_SEARCH_PYTHON" -m job_search_loop.candidate_queue validate-terminal \
     --database "$JOB_SEARCH_CANDIDATE_QUEUE" \

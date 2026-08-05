@@ -46,7 +46,7 @@ class PromptInjectionTests(unittest.TestCase):
         self.assertNotIn("prompts/prefilter-pass.md", script)
         self.assertLess(
             script.index("job_search_loop.prefilter"),
-            script.index("--task-class browser-lane-agent"),
+            script.index("job_search_loop.browser_worker run"),
         )
         self.assertIn("JOB_SEARCH_PREFILTER_RESULT", script)
         self.assertIn("JOB_SEARCH_PREFILTER_RESULT", prompt)
@@ -83,7 +83,7 @@ class PromptInjectionTests(unittest.TestCase):
         self.assertIn("job_search_loop.ats_liveness sweep", script)
         self.assertLess(
             script.index("job_search_loop.ats_liveness sweep"),
-            script.index("--task-class browser-lane-agent"),
+            script.index("job_search_loop.browser_worker run"),
         )
 
     def test_daily_driver_refreshes_official_ats_cache_before_prefilter(self):
@@ -127,7 +127,7 @@ class PromptInjectionTests(unittest.TestCase):
         )
         self.assertLess(
             script.index("--task-class composition-agent"),
-            script.index("--task-class browser-lane-agent"),
+            script.index("job_search_loop.browser_worker run"),
         )
         self.assertIn("JOB_SEARCH_TERRA_PLAN_RESULT", script)
         self.assertIn("JOB_SEARCH_TERRA_PLAN_RESULT", browser_prompt)

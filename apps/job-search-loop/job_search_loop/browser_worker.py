@@ -1,0 +1,136 @@
+from __future__ import annotations
+
+import argparse
+import fcntl
+import json
+import os
+from contextlib import contextmanager
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Iterator
+
+from .candidate_queue import CandidateQueue
+
+
+class BrowserWorkerBusy(RuntimeError):
+    pass
+
+
+def _write_private_json(path: Path, value: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    temporary = path.with_name(f".{path.name}.tmp-{os.getpid()}")
+    try:
+        temporary.write_text(
+            json.dumps(value, ensure_ascii=False, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        os.chmod(temporary, 0o600)
+        os.replace(temporary, path)
+        os.chmod(path, 0o600)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+@contextmanager
+def exclusive_worker(lock_path: Path) -> Iterator[None]:
+    lock_path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    descriptor = os.open(lock_path, os.O_RDWR | os.O_CREAT, 0o600)
+    try:
+        try:
+            fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError as error:
+            raise BrowserWorkerBusy("browser worker is already running") from error
+        yield
+    finally:
+        os.close(descriptor)
+
+
+def run_worker(
+    *,
+    database: Path,
+    owner_receipt: Path,
+    holder_pid: int,
+    run_id: str,
+    lock_path: Path,
+    worker_receipt: Path,
+    output: Path,
+) -> dict[str, Any]:
+    with exclusive_worker(lock_path):
+        owner = json.loads(owner_receipt.read_text(encoding="utf-8"))
+        if owner.get("status") != "ready" or owner.get("holder_pid") != holder_pid:
+            raise RuntimeError("browser owner receipt does not match daily owner")
+        started_at = datetime.now(timezone.utc).isoformat()
+        _write_private_json(
+            worker_receipt,
+            {
+                "version": 1,
+                "status": "running",
+                "run_id": run_id,
+                "worker_pid": os.getpid(),
+                "holder_pid": holder_pid,
+                "lease_id": owner.get("lease_id"),
+                "fence": owner.get("fence"),
+                "started_at": started_at,
+            },
+        )
+        queue = CandidateQueue(database)
+        try:
+            summary = queue.summary()
+        finally:
+            queue.close()
+        remaining = summary["remaining_unverified_count"]
+        result = {
+            "status": "pending_verification",
+            "submitted": [],
+            "submit_unknown": [],
+            "blocked": [f"{remaining}_candidate_links_await_fill_adapter"],
+            "report_message_id": None,
+            "discovered_link_count": summary["discovered_count"],
+            "verified_link_count": summary["verified_count"],
+            "remaining_unverified_count": remaining,
+        }
+        _write_private_json(output, result)
+        _write_private_json(
+            worker_receipt,
+            {
+                "version": 1,
+                "status": "completed",
+                "run_id": run_id,
+                "worker_pid": os.getpid(),
+                "holder_pid": holder_pid,
+                "lease_id": owner.get("lease_id"),
+                "fence": owner.get("fence"),
+                "started_at": started_at,
+                "completed_at": datetime.now(timezone.utc).isoformat(),
+                "submitted_count": 0,
+                "remaining_unverified_count": remaining,
+            },
+        )
+        return result
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("action", choices=("run",))
+    parser.add_argument("--database", type=Path, required=True)
+    parser.add_argument("--owner-receipt", type=Path, required=True)
+    parser.add_argument("--holder-pid", type=int, required=True)
+    parser.add_argument("--run-id", required=True)
+    parser.add_argument("--lock", type=Path, required=True)
+    parser.add_argument("--worker-receipt", type=Path, required=True)
+    parser.add_argument("--output", type=Path, required=True)
+    args = parser.parse_args()
+    run_worker(
+        database=args.database,
+        owner_receipt=args.owner_receipt,
+        holder_pid=args.holder_pid,
+        run_id=args.run_id,
+        lock_path=args.lock,
+        worker_receipt=args.worker_receipt,
+        output=args.output,
+    )
+    print(json.dumps({"status": "ok", "result_path": str(args.output)}, sort_keys=True))
+
+
+if __name__ == "__main__":
+    main()
