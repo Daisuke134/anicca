@@ -2118,11 +2118,72 @@ the resident worker from producing one authoritative application receipt:
     and owner decision.
 11. `W-01` through `W-30` — only then turn the local product into a multi-tenant Web
     product.
-- [ ] **L-49K0B** — Inventory every `career-ops` v1.25.0 capability as `reuse`,
+- [x] **L-49K0B** — Inventory every `career-ops` v1.25.0 capability as `reuse`,
   `adapt`, or `supersede`, including ATS scan providers, liveness, repost/dedup,
   scoring, pipeline, CV fact verification, apply autofill, tracker, outcomes,
   follow-up, weekly digest, Web UI, and automation. Every decision names a local
   contract, owner task, and parity test.
+  - Source pin: `santifer/career-ops` release `career-ops-v1.25.0`, commit
+    `ae1a92dd1a4d299e637ce5d96f18e79f743a50ba`, MIT. GitHub release and the pinned
+    `package.json` both report 1.25.0; the tag is not named `v1.25.0`.
+  - `adapt` — public ATS/board providers (`providers/*.mjs`, including Ashby,
+    Greenhouse, Lever, Workable, and Workday). Owner `L-49K0C`; local contracts
+    `discovery.py` and `candidate_queue.py`; parity: pinned provider fixtures produce
+    the same canonical URL/title/company/location/posted-date fields without PII.
+  - `adapt` — ATS discovery and Workday coordinate probing (`discover-ats.mjs`).
+    Owner `L-49K0C`; local contract durable candidate queue; parity: vendor URL
+    generation, duplicate suppression, invalid slug, SSRF, and unresolved-company
+    cases from `discover-ats.test.mjs`.
+  - `adapt` — API/browser liveness and challenge classification
+    (`liveness-api.mjs`, `liveness-browser.mjs`, `liveness-core.mjs`). Owner
+    `L-49K0C`; local contract candidate verification disposition; parity: live,
+    removed, private-host rejection, challenge, timeout, and headed-fallback cases.
+  - `adapt` — URL/company-role/repost/JD fingerprint dedupe (`scan.mjs`,
+    `detect-reposts.mjs`, `jd-similarity.mjs`). Owner `L-49K0C`; local contracts
+    candidate canonical URL plus ledger cross-owner duplicate fence; parity: UTM,
+    role suffix, company alias, repost-window, hard mismatch, and CV-reuse fixtures.
+  - `supersede` — A-F/1.0-5.0 scoring. Local `ranking.py` compensation, Japan,
+    language, clearance, expiry, AI-evidence, and portfolio gates remain authority.
+    Owner `L-49K0C`; parity proves imported metadata can improve coverage but cannot
+    weaken a local hard gate (`test_ranking.py`).
+  - `supersede` — Markdown URL pipeline. Local private SQLite candidate queue and
+    append-only ledger remain the only workflow/state authorities. Owner
+    `L-49K0C`; parity proves crash-resume, idempotent rediscovery, and no clean
+    terminal result while pending candidates remain (`test_candidate_queue.py`).
+  - `adapt` — CV claim audit (`verify-cv-facts.mjs`). Owner `L-49K0C`; local
+    `materials.py`, `resume_routing.py`, and immutable submission-material receipt
+    remain authority; parity ports metric/nonmetric/forbidden-phrase fixtures and
+    proves no source-span-less claim reaches a form (`test_materials.py`).
+  - `adapt` — ATS-specific autofill knowledge from `modes/apply.md`: Ashby duplicate
+    warning, Lever checkbox/radio CAPTCHA avoidance, Workable fresh-element/paste,
+    react-select re-snapshot, cross-ATS handoff detection, and Workday real input
+    events/value verification. Owners `L-49K0C` and `L-49K0D1`; local click fence,
+    CAPTCHA prohibition, and confirmation classifiers remain authority. Parity uses
+    local Ashby/Workday fixtures plus new Greenhouse/Lever/Workable fixtures; Submit
+    is never inherited from Career Ops, whose documented UX requires the human to
+    click it.
+  - `supersede` — `data/applications.md` tracker. Local `ledger.py` is SSOT and
+    `summary.py` is a projection. Owner `L-49K0D`; parity proves projection rebuild,
+    immutable transitions, and cross-owner dedupe (`test_ledger.py`,
+    `test_summary.py`).
+  - `adapt` — outcome/reply classification, follow-up cadence, funnel velocity, and
+    weekly digest. Owner `L-49K0D`; local Gmail matching and ledger events remain
+    authority. Parity ports reply ambiguity, follow-up date, status-transition, and
+    velocity fixtures without importing a second state store (`test_gmail_matching.py`,
+    `test_outcome_attribution.py`, `test_learning_pass.py`).
+  - `supersede` — Go TUI/Web UI for local completion; Telegram plus durable summary
+    are the owner UX. Owner `W-01` onward may adapt read-only dashboard projections
+    only after local completion; parity requires tenant isolation and zero direct
+    mutation of the ledger.
+  - `supersede` — cron/launchd recipe and prompt triage. Existing resident launchd
+    owners remain authority until `L-49K0D2` moves orchestration to Temporal. Parity
+    requires scheduled crash-resume, idempotency, and actor provenance; no Career
+    Ops worker may submit or mint local ledger authority.
+  - Upstream evidence: against the pinned commit, ATS discovery 106/106,
+    repost/dedup 233/233, JD similarity 15/15, follow-up cadence 21/21, and the
+    liveness-core representative cases 11/11 pass (386 total). These fixtures are
+    the parity source for `L-49K0C`; passing upstream alone does not authorize a live
+    application or replace local confirmation evidence.
 - [ ] **L-49K0B1** — Inventory Browser Use and Temporal components as `reuse`,
   `adapt`, or `supersede`. Explicitly supersede Browser Use's best-guess answers,
   self-reported success, unrestricted Submit action, CAPTCHA handling, and generic
