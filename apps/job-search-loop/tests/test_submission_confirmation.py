@@ -81,6 +81,14 @@ class SubmissionConfirmationTests(unittest.TestCase):
             ats_snapshot_path=snapshot,
             ats_snapshot_sha256=snapshot_sha256,
         )
+        ledger.record_submission_materials(
+            intent_id=intent.intent_id,
+            fence=intent.fence,
+            resume_path=resume,
+            resume_sha256=resume_sha256,
+            cover_letter=None,
+            employer_answers=[],
+        )
         ledger.complete_submission(
             intent.intent_id, intent.fence, "submit_unknown"
         )

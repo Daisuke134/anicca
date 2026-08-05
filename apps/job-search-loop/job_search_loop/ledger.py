@@ -197,6 +197,20 @@ class Ledger:
                 completed_at TEXT,
                 PRIMARY KEY (intent_id, fence)
             );
+            CREATE TABLE IF NOT EXISTS submission_material_receipts (
+                intent_id TEXT NOT NULL,
+                fence INTEGER NOT NULL,
+                application_id TEXT NOT NULL REFERENCES applications(id),
+                resume_path TEXT NOT NULL,
+                resume_sha256 TEXT NOT NULL,
+                cover_letter TEXT,
+                employer_answers_json TEXT NOT NULL,
+                payload_sha256 TEXT NOT NULL UNIQUE,
+                recorded_at TEXT NOT NULL,
+                PRIMARY KEY (intent_id, fence),
+                FOREIGN KEY (intent_id, fence)
+                    REFERENCES submission_attempts(intent_id, fence)
+            );
             CREATE TABLE IF NOT EXISTS submission_confirmations (
                 message_id TEXT PRIMARY KEY,
                 thread_id TEXT NOT NULL,
@@ -481,6 +495,16 @@ class Ledger:
             BEFORE UPDATE ON gmail_application_matches
             BEGIN
                 SELECT RAISE(ABORT, 'Gmail application matches are immutable');
+            END;
+            CREATE TRIGGER IF NOT EXISTS submission_material_receipts_no_update
+            BEFORE UPDATE ON submission_material_receipts
+            BEGIN
+                SELECT RAISE(ABORT, 'submission material receipts are immutable');
+            END;
+            CREATE TRIGGER IF NOT EXISTS submission_material_receipts_no_delete
+            BEFORE DELETE ON submission_material_receipts
+            BEGIN
+                SELECT RAISE(ABORT, 'submission material receipts are immutable');
             END;
             CREATE TRIGGER IF NOT EXISTS gmail_application_matches_no_delete
             BEFORE DELETE ON gmail_application_matches
@@ -2307,6 +2331,111 @@ class Ledger:
             )
             return intent
 
+    def record_submission_materials(
+        self,
+        *,
+        intent_id: str,
+        fence: int,
+        resume_path: Path,
+        resume_sha256: str,
+        cover_letter: str | None,
+        employer_answers: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        resolved_resume = Path(resume_path).expanduser().resolve()
+        if not resolved_resume.is_file():
+            raise ValueError("submission resume is not a file")
+        if not re.fullmatch(r"[a-f0-9]{64}", resume_sha256):
+            raise ValueError("submission resume SHA-256 is invalid")
+        if hashlib.sha256(resolved_resume.read_bytes()).hexdigest() != resume_sha256:
+            raise ValueError("submission resume SHA-256 does not match the file")
+        if cover_letter is not None and (
+            not isinstance(cover_letter, str) or not cover_letter.strip()
+        ):
+            raise ValueError("cover letter must be null or non-empty exact text")
+        if not isinstance(employer_answers, list):
+            raise ValueError("employer answers must be an array")
+        normalized_answers: list[dict[str, Any]] = []
+        for answer in employer_answers:
+            if not isinstance(answer, dict) or set(answer) != {
+                "question", "answer", "fact_ids"
+            }:
+                raise ValueError("employer answer has invalid fields")
+            question = answer.get("question")
+            value = answer.get("answer")
+            fact_ids = answer.get("fact_ids")
+            if not isinstance(question, str) or not question.strip():
+                raise ValueError("employer question must be exact non-empty text")
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError("employer answer must be exact non-empty text")
+            if (
+                not isinstance(fact_ids, list)
+                or len(fact_ids) != len(set(fact_ids))
+                or any(not isinstance(item, str) or not item for item in fact_ids)
+            ):
+                raise ValueError("employer answer fact IDs are invalid")
+            normalized_answers.append(
+                {"question": question, "answer": value, "fact_ids": fact_ids}
+            )
+        answers_json = json.dumps(
+            normalized_answers,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        payload = {
+            "intent_id": intent_id,
+            "fence": fence,
+            "resume_path": str(resolved_resume),
+            "resume_sha256": resume_sha256,
+            "cover_letter": cover_letter,
+            "employer_answers": normalized_answers,
+        }
+        payload_sha256 = hashlib.sha256(
+            json.dumps(
+                payload,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        ).hexdigest()
+        with self._transaction():
+            attempt = self.connection.execute(
+                "SELECT * FROM submission_attempts WHERE intent_id = ? AND fence = ?",
+                (intent_id, fence),
+            ).fetchone()
+            if attempt is None:
+                raise FenceError("submission material receipt fence does not exist")
+            if (
+                str(attempt["resume_path"]) != str(resolved_resume)
+                or str(attempt["resume_sha256"]) != resume_sha256
+            ):
+                raise FenceError("submission material resume differs from intent")
+            existing = self.connection.execute(
+                "SELECT * FROM submission_material_receipts "
+                "WHERE intent_id = ? AND fence = ?",
+                (intent_id, fence),
+            ).fetchone()
+            if existing is not None:
+                if str(existing["payload_sha256"]) != payload_sha256:
+                    raise FenceError("submission material receipt cannot be rebound")
+                return {"payload_sha256": payload_sha256, **payload}
+            if str(attempt["status"]) != "submit_claimed":
+                raise FenceError("submission material receipt fence is not active")
+            self.connection.execute(
+                """
+                INSERT INTO submission_material_receipts
+                  (intent_id, fence, application_id, resume_path, resume_sha256,
+                   cover_letter, employer_answers_json, payload_sha256, recorded_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    intent_id, fence, str(attempt["application_id"]),
+                    str(resolved_resume), resume_sha256, cover_letter,
+                    answers_json, payload_sha256, _now(),
+                ),
+            )
+        return {"payload_sha256": payload_sha256, **payload}
+
     def complete_submission(
         self, intent_id: str, fence: int, outcome: str
     ) -> None:
@@ -2320,6 +2449,14 @@ class Ledger:
                 raise FenceError("submission fence does not match")
             if row["status"] != "submit_claimed":
                 raise FenceError("submission intent is already completed")
+            if outcome in {"submitted", "submit_unknown"}:
+                receipt = self.connection.execute(
+                    "SELECT 1 FROM submission_material_receipts "
+                    "WHERE intent_id = ? AND fence = ?",
+                    (intent_id, fence),
+                ).fetchone()
+                if receipt is None:
+                    raise FenceError("submission material receipt is required")
             completed_at = _now()
             self.connection.execute(
                 """
