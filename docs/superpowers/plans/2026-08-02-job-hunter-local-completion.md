@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-49` — submit one eligible real Ashby application and store an authoritative receipt
+**Active atomic task:** `L-49D` — route configured AI business role families to the technical-business resume before the Cursor submission
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1630,6 +1630,13 @@ this spec update → commit/push → Telegram milestone before the next item sta
   is active with four runners, four stable launchers, unchanged approved route SHA,
   and Guardian `healthy`. Production ledger integrity is `ok` with 12 durable click
   phase rows; Daily remains unloaded.
+- [ ] **L-49D** — Route the configured AI business role-family names through the
+  technical-business resume selector. The live Cursor Japan Field Engineering form
+  is claim-ready and the deterministic evaluator scores it 80 in the adjacent
+  bucket, but the configured `ai_sales_engineering` name currently misses the
+  resume router's abbreviated `sales_engineering` allowlist. Do not claim or fill
+  the live form until the configured business-family names select the exact English
+  technical-business resume under test and an immutable release is active.
 - [ ] **L-50** — Deliver the Ashby application artifacts and receipt to Telegram.
 - [ ] **L-51** — Submit one eligible real Workday application and store its
   authoritative receipt.

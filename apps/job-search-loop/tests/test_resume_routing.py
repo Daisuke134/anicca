@@ -77,6 +77,36 @@ class ResumeRoutingTests(unittest.TestCase):
                 "Daisuke_Narita_AI_Business_Resume.pdf",
             )
 
+    def test_configured_ai_business_families_select_technical_business_resume(self):
+        routing = importlib.import_module("job_search_loop.resume_routing")
+        configured_business_families = (
+            "ai_product_management",
+            "technical_program_management",
+            "ai_business_development",
+            "ai_partnerships",
+            "technical_account_management",
+            "ai_customer_success",
+            "ai_sales_engineering",
+            "ai_solutions",
+            "ai_consulting",
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self._resume_tree(root)
+
+            for role_family in configured_business_families:
+                with self.subTest(role_family=role_family):
+                    result = routing.select_resume(
+                        posting_text="Help enterprise customers adopt reliable AI products.",
+                        role_family=role_family,
+                        materials_root=root,
+                    )
+                    self.assertEqual(result["resume_variant"], "technical_business")
+                    self.assertEqual(
+                        Path(result["resume_path"]).name,
+                        "Daisuke_Narita_AI_Business_Resume.pdf",
+                    )
+
 
 if __name__ == "__main__":
     unittest.main()
