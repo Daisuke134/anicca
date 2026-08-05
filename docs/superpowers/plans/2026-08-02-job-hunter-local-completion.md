@@ -6,15 +6,21 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-49K0A2` — pin Temporal Server and Python SDK and prove restart-safe local execution
+**Active atomic task:** `L-49K0A1G` — prevent false `no_eligible_job_found` and durably verify discovered links
 **Status:** The immutable four-lane runtime, hourly/five-minute schedules, grounded
 materials, ownership fences, Gmail ingestion, Telegram outbox, quota accounting, and
-Ashby observation classifier are implemented and tested. The daily application
-LaunchAgent is loaded and scheduled hourly. Its 2026-08-05 resident run reached the
-prefilter but failed before application work because the Codex response schema omitted
-`additionalProperties: false` on `candidates.items`; Telegram failure reporting sent
-provider message `7173`. Development-session browser runs are verification evidence
-only and MUST NOT be described as the autonomous loop running in production.
+Ashby observation classifier are implemented and tested. The daily LaunchAgent is
+loaded hourly, but production is not healthy: latest resident run
+`daily-20260805-221126` searched 24 queries, observed 102 unverified links, verified
+zero postings, submitted zero applications, then falsely returned
+`no_eligible_job_found`. Its privacy scan treated ordinary location words matching the
+private mailing address as leaks and forced final exit 76. Browser CDP required a
+manual dedicated-browser restart before attach recovered. Telegram reused message
+`7173` because the correction event key did not change. Inbox is healthy; learning
+last exited 78. The authoritative ledger has 15 application rows, 25 attempts, zero
+submission confirmations, and 14 historical slots. Historical `submitted` projection
+rows are not current authoritative confirmation. Development-session browser runs are
+verification evidence only and MUST NOT be described as autonomous production work.
 
 ## 1. Acceptance criteria — done condition
 
@@ -2047,10 +2053,55 @@ this spec update → commit/push → Telegram milestone before the next item sta
   observed 102 unverified links but incorrectly returned `no_eligible_job_found`
   without verifying any posting. That remaining discovery-to-verification defect is
   owned by existing task L-49K0C and is not an application receipt.
+- [ ] **L-49K0A1G** — Make discovery-to-verification durable and truthful. Persist
+  every discovered official-looking link before model exit; visit, normalize,
+  liveness-check, deduplicate, and hard-gate each queued link until ten confirmed
+  applications are reached or the durable queue is genuinely exhausted. Reject
+  `no_eligible_job_found` whenever any unverified link remains. Regression fixture:
+  24 searches plus 102 links can never produce zero verified postings and a clean
+  terminal result.
+- [ ] **L-49K0A1H** — Repair privacy classification without weakening real secret
+  detection. Public job/location terms such as Tokyo and Japan must not become a
+  profile leak merely because they equal mailing-address components; exact private
+  contact values in model transcripts must still force exit 76. Prove both positive
+  and negative fixtures, then rerun the resident pipeline to exit zero.
+- [ ] **L-49K0A1I** — Make the dedicated CloakBrowser owner prove a real Playwright
+  or Browser Use CDP attach, not HTTP readiness alone. On initialization timeout it
+  restarts only `ai.anicca.job-search-browser`, re-resolves `DevToolsActivePort`,
+  reacquires the fence, and retries once before the application actor starts.
+- [ ] **L-49K0A1J** — Make each materially changed resident run produce a unique,
+  deduplicated Telegram event and provider message ID. A previous deficit message ID
+  such as `7173` cannot serve as proof for a later run; confirmed applications attach
+  their exact screenshots and authoritative ATS/Gmail receipt.
 - [ ] **L-49K0A2** — Pin `temporalio/temporal` v1.31.2 and `temporalio/sdk-python`
   v1.31.0 with MIT licenses, server/CLI/SDK artifacts, protocol versions, and local
   rollback. Prove an isolated local server and Python worker can survive worker
   restart without duplicating an activity.
+
+### 12.2A Blocking execution order from the measured 2026-08-05 state
+
+The detailed tasks below remain the requirements, but execution follows this critical
+path. A later platform/product task never delays a task that is currently preventing
+the resident worker from producing one authoritative application receipt:
+
+1. `L-49K0A1G` — turn discovered links into a durable verified candidate queue.
+2. `L-49K0B` — inventory Career Ops before porting its discovery/form capabilities.
+3. `L-49K0C` — port ATS discovery, liveness, dedupe, knockout, and form-fill coverage.
+4. `L-49K0D1` — replace prompt-authored browser scripts with pinned Browser Use on the
+   dedicated CloakBrowser identity.
+5. `L-49K0C1` then `L-49K0C2` — alternate routes and same-pass continuation.
+6. `L-49K0A1H`, `L-49K0A1I`, `L-49K0A1J` — remove false privacy failure, self-heal
+   browser attach, and deliver fresh Telegram evidence.
+7. `L-49K0A2`, `L-49K0B1`, `L-49K0D2` — pin and map Temporal, then make all four
+   lanes restart-safe and idempotent.
+8. `L-49K0E`, `L-49K`, `L-49`, `L-50`, `L-51`, `L-52` — prove resident ownership and
+   real Ashby plus Workday receipts in Telegram.
+9. `L-53` through `L-65` — Gmail, Calendar, interview, metrics, learning, and all-lane
+   health.
+10. `L-66` through `L-73` — run the Dais campaign through a qualifying written offer
+    and owner decision.
+11. `W-01` through `W-30` — only then turn the local product into a multi-tenant Web
+    product.
 - [ ] **L-49K0B** — Inventory every `career-ops` v1.25.0 capability as `reuse`,
   `adapt`, or `supersede`, including ATS scan providers, liveness, repost/dedup,
   scoring, pipeline, CV fact verification, apply autofill, tracker, outcomes,
