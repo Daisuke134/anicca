@@ -271,6 +271,7 @@ raise SystemExit(0)
                 "JOB_SEARCH_LAUNCH_AGENT_DIR": str(agents),
                 "JOB_SEARCH_SKIP_BOOTSTRAP": "1",
                 "JOB_SEARCH_SKIP_LAUNCHCTL": "1",
+                "JOB_SEARCH_LIBEXEC_ROOT": str(private_root / "libexec"),
             }
             fake_plutil = private_root / "plutil"
             fake_plutil.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
@@ -296,7 +297,7 @@ raise SystemExit(0)
             )
             self.assertEqual(
                 daily["ProgramArguments"][0],
-                str(APP_ROOT / "scripts" / "run-daily.sh"),
+                str(private_root / "libexec" / "daily"),
             )
             self.assertEqual(
                 inbox["ProgramArguments"][0],

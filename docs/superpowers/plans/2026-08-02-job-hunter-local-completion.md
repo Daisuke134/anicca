@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-14` — application LaunchAgent stable path
+**Active atomic task:** `L-15` — inbox LaunchAgent stable path
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -961,7 +961,11 @@ this spec update → commit/push → Telegram milestone before the next item sta
   absent activation, escaped targets, missing manifests/runners, and writable
   releases before exec, and preserves lane arguments; isolated launcher E2E and full
   226-test suite PASS; the real inactive launcher exits 78 without side effects.
-- [ ] **L-14** — Point the application LaunchAgent at the stable launcher.
+- [x] **L-14** — Point the application LaunchAgent at the stable launcher. Receipt:
+  installer rendering and the real loaded `ai.anicca.job-search-daily` both resolve
+  `/Users/anicca/.local/libexec/anicca/job-search/daily`, plist lint passes, no
+  worktree path remains in the loaded daily program, and pre-activation RunAtLoad
+  fails closed with exit 78; full 226-test suite PASS.
 - [ ] **L-15** — Point the inbox LaunchAgent at the stable launcher.
 - [ ] **L-16** — Point the learning LaunchAgent at the stable launcher.
 - [ ] **L-17** — Activate the immutable release through the stable pointer.

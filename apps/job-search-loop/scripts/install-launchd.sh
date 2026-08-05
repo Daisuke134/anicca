@@ -16,9 +16,13 @@ for name in ai.anicca.job-search-daily ai.anicca.job-search-inbox ai.anicca.job-
   template="$JOB_SEARCH_APP_ROOT/launchd/$name.plist"
   installed="$JOB_SEARCH_LAUNCH_AGENT_DIR/$name.plist"
   program="${name##*-}"
+  program_path="$JOB_SEARCH_APP_ROOT/scripts/run-$program.sh"
+  if [[ "$program" == "daily" ]]; then
+    program_path="$JOB_SEARCH_LIBEXEC_ROOT/daily"
+  fi
   "$JOB_SEARCH_PYTHON" - \
     "$template" "$installed" \
-    "$JOB_SEARCH_APP_ROOT/scripts/run-$program.sh" \
+    "$program_path" \
     "$JOB_SEARCH_STATE_ROOT/logs/$program.out.log" \
     "$JOB_SEARCH_STATE_ROOT/logs/$program.err.log" <<'PY'
 import os
