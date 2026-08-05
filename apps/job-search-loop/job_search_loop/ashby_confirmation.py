@@ -5,13 +5,13 @@ import re
 from typing import Any, Mapping
 
 
-SUBMIT_MUTATIONS = frozenset(
-    {"submitApplicationFormAction", "submitMultipleFormsAction"}
+SUBMIT_OPERATIONS = frozenset(
+    {"ApiSubmitSingleApplicationFormAction", "ApiSubmitMultipleFormsAction"}
 )
 
 
 def is_submit_mutation(operation_name: Any) -> bool:
-    return isinstance(operation_name, str) and operation_name in SUBMIT_MUTATIONS
+    return isinstance(operation_name, str) and operation_name in SUBMIT_OPERATIONS
 
 
 def _typename(value: Any) -> str | None:
