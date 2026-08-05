@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-49H` — distinguish a client-blocked click from a submit request side effect
+**Active atomic task:** `L-49` — submit one eligible real Ashby application and store an authoritative receipt
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1732,7 +1732,7 @@ this spec update → commit/push → Telegram milestone before the next item sta
   is active with zero writable paths, release Guardian `healthy`, ledger integrity
   `ok`, zero active submission claims, and the approved route SHA unchanged. Daily
   remains unloaded.
-- [ ] **L-49H** — Add a fenced submit-transport phase independent of the physical
+- [x] **L-49H** — Add a fenced submit-transport phase independent of the physical
   click phase. New attempts begin `pre_request`; the exact captured GraphQL submit
   request durably advances to `request_started`. Permit a clicked attempt to become
   retryable `not_submitted` only when an immutable PII-free receipt proves the exact
@@ -1740,7 +1740,19 @@ this spec update → commit/push → Telegram milestone before the next item sta
   `request_started` and every unproven clicked exit remain non-retryable
   `submit_unknown`. Prove ordering, stale-fence rejection, quota release, legacy
   behavior, and prompt sequencing under focused and full tests before another live
-  click. Daily remains unloaded.
+  click. Receipt: transport and client-block receipts are separate append-only
+  tables. New claims start `pre_request`; only a committed click may advance to
+  `request_started`. The one allowed official pre-request reCAPTCHA blocker requires
+  an active fence, exact materials, clicked phase, pre-request transport, and a
+  lowercase evidence SHA before returning the slot as `not_submitted`. Every
+  unproven click and request-started interruption remains `submit_unknown`.
+  Production migration backfilled all 19 attempts; all 10 historical unknowns map
+  conservatively to `request_started`, with integrity `ok`. Focused 47 tests and the
+  full 358-test suite PASS; the full suite completed in 18.797 seconds. Immutable
+  release `58898399e8dc73f69d322e75f06b28fdcd49c7aa` (archive SHA-256
+  `f12805527d8145bb827a49dd9778a5ba020a20b6685ecf94900915755f508e69`)
+  is active with zero writable paths, both release and ledger Guardian `healthy`,
+  zero active claims, and the approved route SHA unchanged. Daily remains unloaded.
 - [ ] **L-50** — Deliver the Ashby application artifacts and receipt to Telegram.
 - [ ] **L-51** — Submit one eligible real Workday application and store its
   authoritative receipt.
