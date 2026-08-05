@@ -7,7 +7,7 @@ import os
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any, Callable, Iterator
 
 from .candidate_queue import CandidateQueue
 
@@ -54,6 +54,11 @@ def run_worker(
     lock_path: Path,
     worker_receipt: Path,
     output: Path,
+    prefilter_result: Path | None = None,
+    profile_path: Path | None = None,
+    materials_root: Path | None = None,
+    evidence_dir: Path | None = None,
+    pre_submit_runner: Callable[..., dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     with exclusive_worker(lock_path):
         owner = json.loads(owner_receipt.read_text(encoding="utf-8"))
@@ -79,11 +84,29 @@ def run_worker(
         finally:
             queue.close()
         remaining = summary["remaining_unverified_count"]
-        result = {
+        pre_submit = {
             "status": "pending_verification",
+            "blocked": [f"{remaining}_candidate_links_await_fill_adapter"],
+        }
+        if prefilter_result is not None:
+            if profile_path is None or materials_root is None or evidence_dir is None:
+                raise ValueError("pre-submit runner inputs are incomplete")
+            if pre_submit_runner is None:
+                from .playwright_ats import run_pre_submit
+
+                pre_submit_runner = run_pre_submit
+            pre_submit = pre_submit_runner(
+                owner_receipt=owner,
+                prefilter_result=prefilter_result,
+                profile_path=profile_path,
+                materials_root=materials_root,
+                evidence_dir=evidence_dir,
+            )
+        result = {
+            "status": str(pre_submit.get("status") or "pending_verification"),
             "submitted": [],
             "submit_unknown": [],
-            "blocked": [f"{remaining}_candidate_links_await_fill_adapter"],
+            "blocked": list(pre_submit.get("blocked") or []),
             "report_message_id": None,
             "discovered_link_count": summary["discovered_count"],
             "verified_link_count": summary["verified_count"],
@@ -119,6 +142,10 @@ def main() -> None:
     parser.add_argument("--lock", type=Path, required=True)
     parser.add_argument("--worker-receipt", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--prefilter-result", type=Path)
+    parser.add_argument("--profile", type=Path)
+    parser.add_argument("--materials-root", type=Path)
+    parser.add_argument("--evidence-dir", type=Path)
     args = parser.parse_args()
     run_worker(
         database=args.database,
@@ -128,6 +155,10 @@ def main() -> None:
         lock_path=args.lock,
         worker_receipt=args.worker_receipt,
         output=args.output,
+        prefilter_result=args.prefilter_result,
+        profile_path=args.profile,
+        materials_root=args.materials_root,
+        evidence_dir=args.evidence_dir,
     )
     print(json.dumps({"status": "ok", "result_path": str(args.output)}, sort_keys=True))
 
