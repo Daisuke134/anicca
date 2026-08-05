@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-12` — content-addressed immutable local release
+**Active atomic task:** `L-13` — stable launcher installation
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -947,7 +947,14 @@ this spec update → commit/push → Telegram milestone before the next item sta
   already present in the supplied profile, counts missing historical gap data without
   inference, and hashes the rebuilt result; source rows are immutable and no CSV,
   Markdown, HTML, or destination becomes authoritative; full 225-test suite PASS.
-- [ ] **L-12** — Build a content-addressed immutable local release.
+- [x] **L-12** — Build a content-addressed immutable local release. Receipt:
+  commit `fe5f09e069e365e3599a9fae67a0cbf7ed6ecf62` produced 130 normalized
+  entries with archive SHA-256
+  `0460f170489e79b308e0a31ef8df9d9d031a1e55a77c43eb99e947e4b8dbcc4b`;
+  two independent builds are byte-identical, checksum and manifest commit verify,
+  private/profile/database files are absent, release imports pass, and the extracted
+  release under the stable data root contains zero user-writable paths; `current`
+  remains untouched until L-17; release E2E and full 225-test suite PASS.
 - [ ] **L-13** — Install the stable launcher under `~/.local/libexec/anicca/job-search/`.
 - [ ] **L-14** — Point the application LaunchAgent at the stable launcher.
 - [ ] **L-15** — Point the inbox LaunchAgent at the stable launcher.
