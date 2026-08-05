@@ -105,6 +105,33 @@ test("native-pass forwards the complete launchd-owned Connector loop configurati
   }
 });
 
+test("native-pass forwards validated delivery history for coverage restoration", async () => {
+  const directory = temporaryDirectory();
+  const stateDir = path.join(directory, "state");
+  fs.mkdirSync(stateDir, { recursive: true });
+  fs.writeFileSync(path.join(stateDir, "delivery-receipts.jsonl"), `${JSON.stringify({
+    event_ref: "luma-event://event/verified-one",
+    calendar_event_ref: `calendar-evidence://google/event/${"a".repeat(64)}`,
+    telegram_provider_id: "7372",
+  })}\n`);
+  let observed;
+  try {
+    await runNativePass({
+      repoRoot: REPO_ROOT, stateDir, ownerToken: OWNER_TOKEN,
+      env: {
+        GOG_ACCOUNT: "dais@example.test", LM_CONNECTOR_TELEGRAM_TARGET: "123456",
+        LIFE_HOME_ADDRESS: "Tokyo", GOOGLE_API_KEY_DIRECTIONS: "maps-secret",
+      },
+      runRuntime: async (input) => {
+        observed = input.config.deliveredReceipts;
+        return { status: "incomplete", coverage: { counts: { open: 20 } }, continuation: { status: "continue" } };
+      },
+    });
+    assert.equal(observed.length, 1);
+    assert.equal(observed[0].event_ref, "luma-event://event/verified-one");
+  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+});
+
 test("native-pass keeps successful Calendar and Telegram receipts in append-only deduped history", async () => {
   const directory = temporaryDirectory();
   const stateDir = path.join(directory, "state");
@@ -285,8 +312,8 @@ test("rendered native templates contain only canonical launch paths", () => {
       path.join(outputDir, "ai.anicca.life-manager-connector-native-healthcheck.plist"),
       "utf8",
     );
-    assert.match(nativePass, /\/Users\/anicca\/Projects\/life-manager-main\/skills\/connector\/run\.sh/);
-    assert.match(healthcheck, /\/Users\/anicca\/Projects\/life-manager-main\/skills\/connector\/healthcheck\.sh/);
+    assert.equal(nativePass.includes(path.join(REPO_ROOT, "skills/connector/run.sh")), true);
+    assert.equal(healthcheck.includes(path.join(REPO_ROOT, "skills/connector/healthcheck.sh")), true);
     assert.doesNotMatch(`${nativePass}\n${healthcheck}`, /docker|host\.docker\.internal|connector-host-bridge|profitable-claude/i);
   } finally {
     fs.rmSync(directory, { recursive: true, force: true });

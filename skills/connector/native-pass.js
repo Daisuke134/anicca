@@ -30,6 +30,33 @@ function requiredText(value) {
   return text;
 }
 
+function readDeliveryReceipts(stateDir) {
+  const file = path.join(stateDir, "delivery-receipts.jsonl");
+  let source;
+  try {
+    const stat = fs.statSync(file);
+    if (stat.size > 1_000_000) unavailable();
+    source = fs.readFileSync(file, "utf8");
+  } catch (error) {
+    if (error && error.code === "ENOENT") return Object.freeze([]);
+    throw error;
+  }
+  const rows = source.split(/\r?\n/).filter(Boolean).map((line) => {
+    let value;
+    try { value = JSON.parse(line); } catch { unavailable(); }
+    if (
+      !value || typeof value !== "object" || Array.isArray(value)
+      || Object.keys(value).sort().join(",") !== "calendar_event_ref,event_ref,telegram_provider_id"
+      || !/^luma-event:\/\/event\/[A-Za-z0-9_-]+$/.test(String(value.event_ref || ""))
+      || !/^calendar-evidence:\/\/google\/event\/[0-9a-f]{64}$/.test(String(value.calendar_event_ref || ""))
+      || !/^[^\x00-\x1f\x7f]{1,128}$/.test(String(value.telegram_provider_id || ""))
+    ) unavailable();
+    return Object.freeze({ ...value });
+  });
+  if (rows.length > 100 || new Set(rows.map((row) => row.telegram_provider_id)).size !== rows.length) unavailable();
+  return Object.freeze(rows);
+}
+
 function runtimeConfig(options, stateDir) {
   if (options.config && typeof options.config === "object" && !Array.isArray(options.config)) {
     return options.config;
@@ -71,6 +98,7 @@ function runtimeConfig(options, stateDir) {
     homeLocation: requiredText(env.LIFE_HOME_ADDRESS),
     mapsKey: requiredText(env.GOOGLE_API_KEY_DIRECTIONS),
     repoRoot: absoluteDirectory(options.repoRoot),
+    deliveredReceipts: readDeliveryReceipts(stateDir),
   });
 }
 
