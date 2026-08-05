@@ -2226,6 +2226,13 @@ the resident worker from producing one authoritative application receipt:
       31/31 and full Job Hunter tests 383/383 pass. Production API-supported receipt
       proof remains coupled to `SCAN-1`, because the current 11 pending URLs are all
       browser-only.
+    - Resident ordering proof: immutable release
+      `ee2b422e9bd4272388f412e0cdf5564e6077211d` produced
+      `daily-20260806-000711`. Its deterministic sweep completed at 00:08:34 JST
+      with 48 discovered / 37 rejected / 11 pending / zero API-supported candidates;
+      the browser actor stdout began afterward at 00:08:55 JST. Thus the sweep no
+      longer depends on model compliance. API-2 remains unchecked only for the first
+      real supported-ATS receipt, which `SCAN-1` must supply.
   - [ ] `SCAN-1` — Port board-level discovery and normalized job metadata fixtures.
   - [ ] `DEDUP-1` — Port company-role, repost-window, and JD-fingerprint parity.
   - [ ] `GATE-1` — Port cheap knockout pre-scan without weakening local ranking.
