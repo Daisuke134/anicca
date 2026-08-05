@@ -227,7 +227,7 @@ def _matching_identity(
 def _action_events(root: pathlib.Path, product_id: str, as_of: dt.datetime) -> list[dict]:
     identities = _indexed_rows(root, "publication-identity.jsonl")
     attributions = _indexed_rows(root, "experiment-attribution.jsonl")
-    candidates: list[tuple[str, int, dict, str]] = []
+    candidates: list[tuple[str, int, dict, str, str]] = []
 
     # A publication identity is eligible only when the immutable publication
     # row itself is product-bound.  Product-null historical rows are never
@@ -243,6 +243,7 @@ def _action_events(root: pathlib.Path, product_id: str, as_of: dt.datetime) -> l
             index,
             row,
             _ref("publication-identity.jsonl", index),
+            "identity",
         ))
 
     # Attribution rows are product-bound canonical publication facts even when
@@ -268,18 +269,30 @@ def _action_events(root: pathlib.Path, product_id: str, as_of: dt.datetime) -> l
             index,
             row,
             _ref("experiment-attribution.jsonl", index),
+            "attribution",
         ))
 
-    # Keep one action per native publication, preferring the product-bound
-    # attribution row because it carries the experiment context.
-    unique: dict[str, tuple[str, int, dict, str]] = {}
+    # Keep one action per native publication. A bound publication identity is
+    # immutable publication proof and therefore wins over attribution rows. If
+    # only attribution rows exist, keep the earliest canonical snapshot: later
+    # observations may update experiment results, but must not conflict with
+    # the already-recorded action for the same publication.
+    unique: dict[str, tuple[str, int, dict, str, str]] = {}
     for candidate in candidates:
         native_id = str(candidate[2].get("native_post_id"))
         previous = unique.get(native_id)
-        if previous is None or candidate[2].get("experiment_id"):
+        candidate_key = (0 if candidate[4] == "identity" else 1, candidate[0], candidate[1])
+        previous_key = (
+            (0 if previous[4] == "identity" else 1, previous[0], previous[1])
+            if previous is not None
+            else None
+        )
+        if previous is None or candidate_key < previous_key:
             unique[native_id] = candidate
     events = []
-    for _, index, row, ref in sorted(unique.values(), key=lambda item: (item[0], item[1]), reverse=True):
+    for _, index, row, ref, _source_kind in sorted(
+        unique.values(), key=lambda item: (item[0], item[1]), reverse=True
+    ):
         native_id = row.get("native_post_id")
         facts = {
             "native_post_id": native_id,
@@ -363,27 +376,48 @@ def _first_number(value: object, keys: tuple[str, ...]) -> object:
     return None
 
 
-def _minor_money(data: object) -> tuple[object, str | None, str | None, object] | None:
-    """Read one canonical minor-unit amount without confusing order counts."""
+def _minor_money_buckets(data: object) -> list[dict]:
+    """Read all canonical minor-unit currency buckets deterministically."""
 
     exponents = {"JPY": 0, "USD": 2}
     if not isinstance(data, dict):
-        return None
+        return []
     for field in ("net_minor", "gross_minor"):
         amounts = data.get(field)
         if not isinstance(amounts, dict):
             continue
-        for currency, minor in sorted(amounts.items()):
+        buckets = []
+        for currency, minor in sorted(amounts.items(), key=lambda item: str(item[0]).upper()):
             if isinstance(minor, (int, float)) and not isinstance(minor, bool):
                 normalized_currency = str(currency).upper()
                 exponent = exponents.get(normalized_currency)
                 if exponent is None:
                     # Preserve the provider's integer exactly; callers must
                     # not fabricate a decimal scale for an unrecognised code.
-                    return (None, normalized_currency, field.removesuffix("_minor"), minor)
-                amount = minor if exponent == 0 else minor / (10 ** exponent)
-                return (amount, normalized_currency, field.removesuffix("_minor"), minor)
-    return None
+                    amount = None
+                else:
+                    amount = minor if exponent == 0 else minor / (10 ** exponent)
+                buckets.append(
+                    {
+                        "currency": normalized_currency,
+                        "metric": field.removesuffix("_minor"),
+                        "minor": minor,
+                        "value": amount,
+                    }
+                )
+        if buckets:
+            return buckets
+    return []
+
+
+def _minor_money(data: object) -> tuple[object, str | None, str | None, object] | None:
+    """Backward-compatible first-bucket view for callers outside this module."""
+
+    buckets = _minor_money_buckets(data)
+    if not buckets:
+        return None
+    bucket = buckets[0]
+    return bucket["value"], bucket["currency"], bucket["metric"], bucket["minor"]
 
 
 def _business_facts(row: dict) -> dict:
@@ -409,6 +443,7 @@ def _business_facts(row: dict) -> dict:
         "money_currency": None,
         "money_minor": None,
         "money_metric": None,
+        "money_buckets": [],
     }
     if revenuecat.get("status") == "available" and mrr is None:
         facts["mrr_reason"] = "revenuecat_mrr_missing"
@@ -438,15 +473,23 @@ def _business_facts(row: dict) -> dict:
             paid_orders = _first_number(data, ("paid_orders", "orders"))
             if paid_orders is not None:
                 facts["paid_orders"] = paid_orders
-            minor_amount = _minor_money(data)
-            if minor_amount is not None:
-                amount, currency, metric, minor = minor_amount
-                facts["money_value"] = amount
-                facts["money_currency"] = currency
-                facts["money_minor"] = minor
-                facts["money_metric"] = metric
+            minor_buckets = _minor_money_buckets(data)
+            if minor_buckets:
+                facts["money_buckets"] = minor_buckets
                 facts["money_source"] = name
-                facts["money_reason"] = None if amount is not None else "unknown_currency_exponent"
+                if len(minor_buckets) == 1:
+                    bucket = minor_buckets[0]
+                    facts["money_value"] = bucket["value"]
+                    facts["money_currency"] = bucket["currency"]
+                    facts["money_minor"] = bucket["minor"]
+                    facts["money_metric"] = bucket["metric"]
+                    facts["money_reason"] = (
+                        None if bucket["value"] is not None else "unknown_currency_exponent"
+                    )
+                else:
+                    # A product can have legitimate sales in multiple
+                    # currencies. Keep every bucket and never invent a sum.
+                    facts["money_reason"] = "multiple_currencies"
                 break
             amount = _first_number(data, ("net_revenue", "gross_revenue", "sales"))
             if amount is not None:
@@ -501,6 +544,7 @@ def _daily_events(root: pathlib.Path, product_id: str, as_of: dt.datetime) -> li
                 "money_currency": None,
                 "money_minor": None,
                 "money_metric": None,
+                "money_buckets": [],
                 "money_source": None,
                 "money_reason": "no_business_snapshot",
                 "sources": {},
@@ -661,7 +705,7 @@ def _experiment_events(root: pathlib.Path, product_id: str, as_of: dt.datetime) 
             kind="experiment",
             product_id=product_id,
             as_of=as_of,
-            message_key=f"experiment:{product_id}:{row.get('experiment_id') or row.get('attribution_id')}",
+            message_key=f"experiment:{product_id}:{row.get('attribution_id') or row.get('experiment_id')}",
             facts=facts,
             evidence_refs=[_ref("experiment-attribution.jsonl", index)],
         ))
@@ -722,6 +766,7 @@ def _portfolio_event(root: pathlib.Path, as_of: dt.datetime) -> list[dict]:
             "money_currency": facts.get("money_currency"),
             "money_minor": facts.get("money_minor"),
             "money_metric": facts.get("money_metric"),
+            "money_buckets": facts.get("money_buckets", []),
             "paid_orders": facts.get("paid_orders"),
             "money_source": facts.get("money_source"),
             "money_reason": facts.get("money_reason"),
@@ -780,6 +825,16 @@ def _number(value: object) -> str:
     return str(value)
 
 
+def _money_bucket_text(bucket: dict) -> str:
+    """Render one money bucket without aggregating currencies."""
+
+    currency = bucket.get("currency") or "通貨不明"
+    value = bucket.get("value")
+    if value is None:
+        return f"最小単位 {bucket.get('minor')} {currency}（通貨指数不明）"
+    return f"{_number(value)} {currency}"
+
+
 def _reason_text(reason: object, *, not_mature: bool = False) -> str:
     raw = str(reason or "unknown")
     if not_mature or "not_mature" in raw or raw in {"insufficient_data", "checkpoint_not_mature"}:
@@ -818,8 +873,18 @@ def render_japanese(event: dict) -> str:
     elif kind == "product_daily":
         lines.append(f"📦 {product_id}の今日の結果です。")
         mrr = facts.get("mrr")
+        money_buckets = facts.get("money_buckets")
         if mrr is not None:
             lines.append(f"MRRは{_number(mrr)} USD（RevenueCat）。")
+        elif isinstance(money_buckets, list) and len(money_buckets) > 1:
+            amounts = "、".join(
+                _money_bucket_text(bucket)
+                for bucket in money_buckets
+                if isinstance(bucket, dict)
+            )
+            lines.append(f"売上の確認値は{amounts}（{facts.get('money_source')}）。")
+            if facts.get("paid_orders") is not None:
+                lines.append(f"注文数 {facts['paid_orders']}件。")
         elif facts.get("money_value") is not None:
             currency = facts.get("money_currency") or "通貨不明"
             lines.append(f"売上の確認値は{_number(facts.get('money_value'))} {currency}（{facts.get('money_source')}）。")
@@ -877,8 +942,18 @@ def render_japanese(event: dict) -> str:
         for item in facts.get("products", []):
             item_product = item.get("product_id")
             mrr = item.get("mrr")
+            money_buckets = item.get("money_buckets")
             if mrr is not None:
                 detail = f"MRR {mrr} USD"
+            elif isinstance(money_buckets, list) and len(money_buckets) > 1:
+                amounts = "、".join(
+                    _money_bucket_text(bucket)
+                    for bucket in money_buckets
+                    if isinstance(bucket, dict)
+                )
+                detail = f"売上 {amounts}"
+                if item.get("paid_orders") is not None:
+                    detail += f"・注文数 {item['paid_orders']}件"
             elif item.get("money_reason") == "unknown_currency_exponent":
                 detail = (
                     f"売上 {item.get('money_minor')} {item.get('money_currency')}"

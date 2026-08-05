@@ -311,6 +311,42 @@ class OwnerReportRendererTest(unittest.TestCase):
         self.assertIn("aniccaios", text)
         self.assertIn(NATIVE_URL, text)
 
+    def test_action_replay_is_stable_when_attribution_snapshot_appended(self):
+        first = self.event("action", "ebook-ja")
+        store = owner_report.OwnerReportStore(
+            self.root / "owner-reports.jsonl", self.root / "owner-report-deliveries.jsonl"
+        )
+        calls = []
+
+        def sender(_text: str) -> dict:
+            calls.append(1)
+            return {"status": "delivered", "message_ids": [401]}
+
+        first_receipt = owner_report.deliver(first, store, sender)
+
+        rows = owner_report.load_jsonl(self.root / "experiment-attribution.jsonl")
+        snapshot = json.loads(json.dumps(rows[0]))
+        snapshot["attribution_id"] = "attribution.ebook-ja.002"
+        snapshot["observed_at"] = "2026-08-05T11:00:00Z"
+        snapshot["results"] = [
+            {
+                "metric_name": "views",
+                "status": "not_mature",
+                "value": None,
+                "null_reason": "social_checkpoint_not_mature",
+            }
+        ]
+        with (self.root / "experiment-attribution.jsonl").open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(snapshot, ensure_ascii=False) + "\n")
+
+        replay = self.event("action", "ebook-ja")
+        self.assertEqual(replay["facts"], first["facts"])
+        self.assertEqual(replay["evidence_refs"], first["evidence_refs"])
+        replay_receipt = owner_report.deliver(replay, store, sender)
+        self.assertEqual(first_receipt["message_ids"], [401])
+        self.assertEqual(replay_receipt["message_ids"], [401])
+        self.assertEqual(calls, [1])
+
     def test_checkpoint_uses_exact_metric_values_and_natural_null_reason(self):
         measured = self.event("checkpoint", "aniccaios")
         measured_text = owner_report.render_japanese(measured)
@@ -465,6 +501,48 @@ class OwnerReportRendererTest(unittest.TestCase):
         self.assertNotIn("勝者", text)
         self.assertNotIn("敗者", text)
 
+    def test_experiment_transition_uses_attribution_snapshot_key_and_replays(self):
+        initial = self.event("experiment", "ebook-ja")
+        rows = owner_report.load_jsonl(self.root / "experiment-attribution.jsonl")
+        snapshot = json.loads(json.dumps(rows[0]))
+        snapshot["attribution_id"] = "attribution.ebook-ja.002"
+        snapshot["observed_at"] = "2026-08-05T11:00:00Z"
+        snapshot["results"] = [
+            {
+                "metric_name": "views",
+                "status": "observed",
+                "value": 128,
+                "null_reason": None,
+            }
+        ]
+        with (self.root / "experiment-attribution.jsonl").open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(snapshot, ensure_ascii=False) + "\n")
+
+        events = owner_report.build_events(
+            self.root, "experiment", product_id="ebook-ja", as_of=AS_OF
+        )
+        self.assertEqual(len(events), 2)
+        transition = events[-1]
+        self.assertNotEqual(initial["message_key"], transition["message_key"])
+        self.assertIn(snapshot["attribution_id"], transition["message_key"])
+        self.assertEqual(transition["facts"]["status"], "observed")
+
+        store = owner_report.OwnerReportStore(
+            self.root / "owner-reports.jsonl", self.root / "owner-report-deliveries.jsonl"
+        )
+        calls = []
+
+        def sender(_text: str) -> dict:
+            calls.append(1)
+            return {"status": "delivered", "message_ids": [402 + len(calls)]}
+
+        owner_report.deliver(initial, store, sender)
+        transition_receipt = owner_report.deliver(transition, store, sender)
+        replay_receipt = owner_report.deliver(transition, store, sender)
+        self.assertEqual(transition_receipt["message_ids"], [404])
+        self.assertEqual(replay_receipt["message_ids"], [404])
+        self.assertEqual(calls, [1, 1])
+
     def test_portfolio_weekly_contains_each_product_once(self):
         event = self.event("portfolio_weekly")
         text = owner_report.render_japanese(event)
@@ -600,6 +678,48 @@ class OwnerReportRendererTest(unittest.TestCase):
         text = owner_report.render_japanese(event)
         self.assertIn("注文数 3件", text)
         self.assertIn("12.34 USD", text)
+        self.assertNotIn("売上の確認値は3 USD", text)
+
+    def test_ebook_multiple_stripe_currencies_preserve_each_minor_bucket(self):
+        rows = owner_report.load_jsonl(self.root / "business-outcomes.jsonl")
+        rows.append(
+            {
+                "schema_version": 1,
+                "product_id": "ebook-en",
+                "business_date": "2026-08-05",
+                "observed_at": "2026-08-05T11:00:00Z",
+                "snapshot_id": "ebook-en:2026-08-05:multi-currency",
+                "sources": {
+                    "stripe": {
+                        "status": "available",
+                        "reason": None,
+                        "data": {
+                            "paid_orders": 2,
+                            "net_minor": {"USD": 1234, "JPY": 3160},
+                        },
+                    }
+                },
+            }
+        )
+        (self.root / "business-outcomes.jsonl").write_text(
+            "".join(json.dumps(row, ensure_ascii=False) + "\n" for row in rows),
+            encoding="utf-8",
+        )
+        event = owner_report.build_events(
+            self.root, "product_daily", product_id="ebook-en", as_of=AS_OF
+        )[0]
+        text = owner_report.render_japanese(event)
+        self.assertIsNone(event["facts"]["money_value"])
+        self.assertEqual(
+            event["facts"]["money_buckets"],
+            [
+                {"currency": "JPY", "metric": "net", "minor": 3160, "value": 3160},
+                {"currency": "USD", "metric": "net", "minor": 1234, "value": 12.34},
+            ],
+        )
+        self.assertIn("12.34 USD", text)
+        self.assertIn("3160 JPY", text)
+        self.assertIn("注文数 2件", text)
         self.assertNotIn("売上の確認値は3 USD", text)
 
     def test_invalid_delivered_receipt_is_durable_unknown_and_not_retried(self):
