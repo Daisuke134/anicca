@@ -123,6 +123,7 @@ function createLumaDailyDriverAuth(options = {}) {
       const code = String(await readLoginCode({ afterMs, account: email }) || "");
       if (!/^\d{6}$/.test(code)) throw unavailable();
       await submitCode(page, code);
+      if (typeof page.waitForTimeout === "function") await page.waitForTimeout(3_000);
       await finishPostAuth(page, name);
       const after = await inspectAuth(page);
       if (!after || after.status !== "authenticated") throw unavailable();
