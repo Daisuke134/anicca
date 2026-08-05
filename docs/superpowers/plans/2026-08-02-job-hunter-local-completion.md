@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-17A` — last-known-good rollback proof
+**Active atomic task:** `L-18` — private profile JPY 8M hard floor
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -984,7 +984,12 @@ this spec update → commit/push → Telegram milestone before the next item sta
   provider authentication, ledger/prep/outbox integrity, three loaded stable
   ProgramArguments, CloakBrowser CDP, and a send-disabled `gog` Gmail read all PASS;
   no application, email, Calendar, model, or Telegram side effect was triggered.
-- [ ] **L-17A** — Prove rollback to the last-known-good release.
+- [x] **L-17A** — Prove rollback to the last-known-good release. Receipt:
+  the atomic release controller validates canonical release location, manifest
+  commit, zero writable paths, and all three runners before pointer mutation;
+  isolated `old → new → rollback old` preserves the displaced release as
+  `previous`, while a writable candidate is rejected without changing `current`;
+  production `current` remains on the verified release; full 228-test suite PASS.
 - [ ] **L-18** — Migrate the private profile to the JPY 8M hard floor.
 - [ ] **L-19** — Migrate the strategy to the JPY 10M target and JPY 30M stretch.
 - [ ] **L-20** — Implement timestamped BOJ-rate USD 100K classification.
