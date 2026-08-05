@@ -144,7 +144,7 @@ raise SystemExit(0)
                 json.loads(summaries[0].read_text(encoding="utf-8"))["status"],
                 "daily_quota_reached",
             )
-            projection = root / "state" / "summary.v1.json"
+            projection = root / "state" / "summary.v2.json"
             self.assertTrue(projection.is_file())
             self.assertEqual(projection.stat().st_mode & 0o777, 0o600)
 
@@ -185,7 +185,7 @@ raise SystemExit(0)
                 json.loads(summaries[0].read_text(encoding="utf-8"))["status"],
                 "budget_blocked",
             )
-            projection = root / "state" / "summary.v1.json"
+            projection = root / "state" / "summary.v2.json"
             self.assertTrue(projection.is_file())
             self.assertEqual(projection.stat().st_mode & 0o777, 0o600)
 
@@ -195,7 +195,7 @@ raise SystemExit(0)
             result, calls = self._run_daily_with_fake_python(root, 0, 0)
 
             self.assertEqual(result.returncode, 0, result.stderr)
-            projection = root / "state" / "summary.v1.json"
+            projection = root / "state" / "summary.v2.json"
             self.assertTrue(projection.is_file())
             self.assertEqual(
                 json.loads(projection.read_text(encoding="utf-8"))["day"],

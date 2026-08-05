@@ -1,4 +1,5 @@
 import json
+import sqlite3
 import subprocess
 import sys
 import tempfile
@@ -13,7 +14,7 @@ class SummaryProjectionTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             database = root / "ledger.sqlite3"
-            output = root / "summary.v1.json"
+            output = root / "summary.v2.json"
             ledger = Ledger(database)
             applications = [
                 (
@@ -49,23 +50,14 @@ class SummaryProjectionTests(unittest.TestCase):
                     "interview",
                 ),
             ]
-            with ledger._transaction():
-                for application_id, state in applications:
-                    ledger.connection.execute(
-                        "UPDATE applications SET current_state=? WHERE id=?",
-                        (state, application_id),
-                    )
-                ledger.connection.execute(
-                    """
-                    INSERT INTO submit_intents
-                      (intent_id, application_id, fence, payload_hash, japan_day,
-                       slot, status, created_at)
-                    VALUES
-                      ('progressed-intent', ?, 1, 'payload', '2026-07-28',
-                       1, 'submitted', '2026-07-28T00:00:00+00:00')
-                    """,
-                    (applications[-1][0],),
-                )
+            for application_id, state in applications:
+                for transition in ("qualified", "materials_ready", "submit_claimed"):
+                    ledger.transition(application_id, transition)
+                if state == "interview":
+                    ledger.transition(application_id, "submitted")
+                    ledger.transition(application_id, "interview")
+                else:
+                    ledger.transition(application_id, state)
             ledger.close()
 
             output.write_text("{partial", encoding="utf-8")
@@ -81,8 +73,6 @@ class SummaryProjectionTests(unittest.TestCase):
                     str(output),
                     "--day",
                     "2026-07-29",
-                    "--model-route",
-                    "codex",
                 ],
                 check=False,
                 capture_output=True,
@@ -96,34 +86,71 @@ class SummaryProjectionTests(unittest.TestCase):
                 [
                     path.name
                     for path in root.iterdir()
-                    if path.name.startswith(".summary.v1.json.")
+                    if path.name.startswith(".summary.v2.json.")
                 ],
                 [],
             )
             value = json.loads(output.read_text(encoding="utf-8"))
+            first_bytes = output.read_bytes()
+            self.assertEqual(value["version"], 2)
+            self.assertEqual(value["day"], "2026-07-29")
             self.assertEqual(
-                value,
+                value["counts"],
                 {
-                    "version": 1,
-                    "day": "2026-07-29",
-                    "counts": {
-                        "interview": 1,
-                        "submit_unknown": 1,
-                        "submitted": 2,
-                    },
-                    "model_route": "codex",
-                    "ats_progress": {
-                        "required_adapters": ["ashby", "workday"],
-                        "confirmed_adapters": ["ashby"],
-                        "complete": False,
-                        "adapters": {
-                            "ashby": {"submitted": 2},
-                            "generic": {"submitted": 1},
-                            "workday": {"submit_unknown": 1},
-                        },
+                    "interview": 1,
+                    "submit_unknown": 1,
+                    "submitted": 2,
+                },
+            )
+            self.assertEqual(value["owners"], {"agent": 4})
+            self.assertEqual(
+                value["ats_progress"],
+                {
+                    "required_adapters": ["ashby", "workday"],
+                    "confirmed_adapters": ["ashby"],
+                    "complete": False,
+                    "adapters": {
+                        "ashby": {"ever_submitted": 2, "interview": 1, "submitted": 1},
+                        "generic": {"ever_submitted": 1, "submitted": 1},
+                        "workday": {"submit_unknown": 1},
                     },
                 },
             )
+            self.assertRegex(value["projection_sha256"], r"^[a-f0-9]{64}$")
+            self.assertNotIn("model_route", value)
+            output.unlink()
+            replay = subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "job_search_loop.summary",
+                    "--ledger",
+                    str(database),
+                    "--output",
+                    str(output),
+                    "--day",
+                    "2026-07-29",
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(replay.returncode, 0, replay.stderr)
+            self.assertEqual(output.read_bytes(), first_bytes)
+            ledger = Ledger(database)
+            try:
+                with self.assertRaises(sqlite3.IntegrityError):
+                    ledger.connection.execute(
+                        "UPDATE events SET to_state='rejected'"
+                    )
+                with self.assertRaises(sqlite3.IntegrityError):
+                    ledger.connection.execute("DELETE FROM events")
+                with self.assertRaises(sqlite3.IntegrityError):
+                    ledger.connection.execute(
+                        "UPDATE applications SET current_state='rejected'"
+                    )
+            finally:
+                ledger.close()
             encoded = json.dumps(value).casefold()
             for private_value in (
                 "ashby employer",

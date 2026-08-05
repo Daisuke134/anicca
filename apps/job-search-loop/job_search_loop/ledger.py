@@ -506,6 +506,30 @@ class Ledger:
             BEGIN
                 SELECT RAISE(ABORT, 'submission material receipts are immutable');
             END;
+            CREATE TRIGGER IF NOT EXISTS events_no_update
+            BEFORE UPDATE ON events
+            BEGIN
+                SELECT RAISE(ABORT, 'application events are immutable');
+            END;
+            CREATE TRIGGER IF NOT EXISTS events_no_delete
+            BEFORE DELETE ON events
+            BEGIN
+                SELECT RAISE(ABORT, 'application events are immutable');
+            END;
+            CREATE TRIGGER IF NOT EXISTS applications_identity_no_update
+            BEFORE UPDATE OF company, title, canonical_url ON applications
+            BEGIN
+                SELECT RAISE(ABORT, 'application identity is immutable');
+            END;
+            CREATE TRIGGER IF NOT EXISTS applications_state_requires_event
+            BEFORE UPDATE OF current_state ON applications
+            WHEN NEW.current_state != (
+                SELECT to_state FROM events
+                WHERE application_id = OLD.id ORDER BY rowid DESC LIMIT 1
+            )
+            BEGIN
+                SELECT RAISE(ABORT, 'application state requires matching event');
+            END;
             CREATE TRIGGER IF NOT EXISTS gmail_application_matches_no_delete
             BEFORE DELETE ON gmail_application_matches
             BEGIN
@@ -1946,11 +1970,11 @@ class Ledger:
     ) -> None:
         from_state = self.current_state(application_id)
         validate_transition(from_state, to_state)
+        self._append_event(application_id, from_state, to_state, payload)
         self.connection.execute(
             "UPDATE applications SET current_state = ? WHERE id = ?",
             (to_state, application_id),
         )
-        self._append_event(application_id, from_state, to_state, payload)
 
     def transition(
         self,
@@ -2083,6 +2107,55 @@ class Ledger:
             }
             for row in rows
         ]
+
+    def event_summary_rows(self) -> list[dict[str, Any]]:
+        applications = self.connection.execute(
+            "SELECT id, canonical_url, owner FROM applications ORDER BY created_at, rowid"
+        ).fetchall()
+        projection: list[dict[str, Any]] = []
+        for application in applications:
+            rows = self.connection.execute(
+                "SELECT from_state, to_state, payload_json FROM events "
+                "WHERE application_id = ? ORDER BY rowid",
+                (application["id"],),
+            ).fetchall()
+            if not rows or rows[0]["from_state"] is not None:
+                raise FenceError("application event chain lacks a valid origin")
+            first_state = str(rows[0]["to_state"])
+            first_payload = json.loads(str(rows[0]["payload_json"]))
+            external_origin = first_state == "submitted" and (
+                first_payload.get("external_import") is True
+                and all(first_payload.get(key) for key in (
+                    "applied_at", "source", "source_message_id", "evidence_sha256"
+                ))
+            )
+            if first_state != "discovered" and not external_origin:
+                raise FenceError("application event chain lacks a valid origin")
+            previous = first_state
+            ever_submitted = first_state == "submitted"
+            for event in rows[1:]:
+                to_state = str(event["to_state"])
+                if str(event["from_state"]) != previous:
+                    raise FenceError("application event chain is discontinuous")
+                if previous == "submit_unknown" and to_state == "submitted":
+                    payload = json.loads(str(event["payload_json"]))
+                    if not all(payload.get(key) for key in (
+                        "message_id", "thread_id", "evidence_sha256", "received_at"
+                    )):
+                        raise FenceError("late confirmation event lacks evidence")
+                else:
+                    validate_transition(previous, to_state)
+                previous = to_state
+                ever_submitted = ever_submitted or to_state == "submitted"
+            projection.append(
+                {
+                    "canonical_url": str(application["canonical_url"]),
+                    "owner": str(application["owner"]),
+                    "current_state": previous,
+                    "ever_submitted": ever_submitted,
+                }
+            )
+        return projection
 
     def retryable_applications(self) -> list[dict[str, Any]]:
         rows = self.connection.execute(
@@ -2634,16 +2707,6 @@ class Ledger:
             ):
                 raise FenceError("submission confirmation state is inconsistent")
             application_id = str(row["application_id"])
-            application_update = self.connection.execute(
-                """
-                UPDATE applications
-                SET current_state = 'submitted'
-                WHERE id = ? AND current_state = 'submit_unknown'
-                """,
-                (application_id,),
-            )
-            if application_update.rowcount != 1:
-                raise FenceError("application confirmation state is inconsistent")
             self._append_event(
                 application_id,
                 "submit_unknown",
@@ -2656,6 +2719,16 @@ class Ledger:
                     "received_at": received_at,
                 },
             )
+            application_update = self.connection.execute(
+                """
+                UPDATE applications
+                SET current_state = 'submitted'
+                WHERE id = ? AND current_state = 'submit_unknown'
+                """,
+                (application_id,),
+            )
+            if application_update.rowcount != 1:
+                raise FenceError("application confirmation state is inconsistent")
             outcome_identity = {
                 "application_id": application_id,
                 "funnel_stage": "confirmed_application",

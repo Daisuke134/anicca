@@ -25,9 +25,8 @@ JAPAN_DAY=$(TZ=Asia/Tokyo /bin/date +%F)
 refresh_summary() {
   "$JOB_SEARCH_PYTHON" -m job_search_loop.summary \
     --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
-    --output "$JOB_SEARCH_STATE_ROOT/summary.v1.json" \
-    --day "$JAPAN_DAY" \
-    --model-route "${AGENT_RUNNER_PROVIDER:-unconfigured}"
+    --output "$JOB_SEARCH_STATE_ROOT/summary.v2.json" \
+    --day "$JAPAN_DAY"
   "$JOB_SEARCH_PYTHON" -m job_search_loop.quota record \
     --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
     --day "$JAPAN_DAY" \
