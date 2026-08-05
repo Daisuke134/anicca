@@ -144,16 +144,17 @@ state, auth, a browser profile, or a branch never execute concurrently.
 **Files:**
 - Create: `profitable-claude/skills/affiliate/scripts/legacy_migration.py`
 - Test: `profitable-claude/skills/affiliate/tests/test_legacy_migration.py`
-- Modify after parity: `profitable-claude/skills/affiliate/run.sh`
-- Modify after parity: `profitable-claude/skills/affiliate/affiliate-cli.sh`
+- Preserve until Task 11: `profitable-claude/skills/affiliate/run.sh`
+- Preserve until Task 11: `profitable-claude/skills/affiliate/affiliate-cli.sh`
 - Preserve: `profitable-claude/skills/affiliate/measure_commission.py`
 - Preserve: `profitable-claude/skills/affiliate/state/`
 
 **Interfaces:**
-- Produces: `LegacyInventory`, content-addressed migration receipt, and compatibility wrappers.
+- Produces: `LegacyInventory` and a content-addressed migration receipt; Task 11
+  consumes the parity receipt before it owns compatibility-wrapper cutover.
 - Consumes: existing watermark, lessons, queue/posted directories, tmux/launchd state, and legacy tests.
 
-- [ ] **Step 1: Capture read-only baseline evidence**
+- [x] **Step 1: Capture read-only baseline evidence**
 
 ```bash
 bash skills/affiliate/affiliate-cli.sh --status
@@ -165,7 +166,7 @@ find skills/affiliate -maxdepth 3 -type f -print0 | sort -z | xargs -0 shasum -a
 Expected current runtime fact: core is `DEAD`; the two legacy focused suites pass
 or any failure is recorded before migration.
 
-- [ ] **Step 2: Write the failing state-preservation tests**
+- [x] **Step 2: Write the failing state-preservation tests**
 
 ```python
 def test_legacy_watermark_is_imported_as_unattributed_history(tmp_path):
@@ -186,7 +187,7 @@ def test_legacy_files_are_not_deleted(tmp_path):
     assert tree_hashes(root) == before
 ```
 
-- [ ] **Step 3: Run RED**
+- [x] **Step 3: Run RED**
 
 ```bash
 python3 -m pytest skills/affiliate/tests/test_legacy_migration.py -q
@@ -194,14 +195,14 @@ python3 -m pytest skills/affiliate/tests/test_legacy_migration.py -q
 
 Expected: FAIL because `legacy_migration.py` does not exist.
 
-- [ ] **Step 4: Implement inventory and append-only import**
+- [x] **Step 4: Implement inventory and append-only import**
 
 Record path/hash/size/state for legacy artifacts. Import aggregate commission
 watermark as `legacy_unattributed`, lessons as historical observations, and
 queue/posted entries as legacy artifacts. Never manufacture click or placement
 lineage.
 
-- [ ] **Step 5: Run GREEN and legacy regression**
+- [x] **Step 5: Run GREEN and legacy regression**
 
 ```bash
 python3 -m pytest skills/affiliate/tests/test_legacy_migration.py -q
@@ -209,14 +210,14 @@ python3 skills/affiliate/tests/test_affiliate_verify.py
 python3 skills/affiliate/tests/test_measure_commission.py
 ```
 
-- [ ] **Step 6: Convert legacy entrypoints to compatibility wrappers only after parity**
+- [x] **Step 6: Preserve entrypoints and receipt the Task 11 cutover dependency**
 
-`affiliate-cli.sh --status` reports the new orchestrator plus migration state.
-`run.sh` delegates one bounded wake. The old fixed Instagram/Amazon behavior
-remains callable only through an explicitly named legacy fixture path and is not
-scheduled.
+Do not invent a new orchestrator interface in F1. Prove `run.sh` and
+`affiliate-cli.sh` are unchanged from the F1 base, record the migration/parity
+receipt consumed by Task 11, and keep the legacy scheduler state unchanged. Task
+11 performs the actual cutover only after `hourly_wake()` and `daily_wake()` exist.
 
-- [ ] **Step 7: Commit and push**
+- [x] **Step 7: Commit and push**
 
 ```bash
 git add skills/affiliate
@@ -1162,6 +1163,8 @@ git push
 **Files:**
 - Create: `profitable-claude/skills/affiliate/scripts/orchestrator.py`
 - Create: `profitable-claude/skills/affiliate/scripts/recovery.py`
+- Modify after migration parity: `profitable-claude/skills/affiliate/run.sh`
+- Modify after migration parity: `profitable-claude/skills/affiliate/affiliate-cli.sh`
 - Test: `profitable-claude/skills/affiliate/tests/test_orchestrator.py`
 - Test: `profitable-claude/skills/affiliate/tests/test_recovery.py`
 
@@ -1204,7 +1207,15 @@ python3 -m pytest skills/affiliate/tests/test_orchestrator.py skills/affiliate/t
 Store external reason, owner, retry time, attempt count, and independent work.
 Honor `Retry-After`; move permanent failures to quarantine.
 
-- [ ] **Step 4: Run crash matrix GREEN, commit, and push**
+- [ ] **Step 4: Cut legacy entrypoints over after migration and orchestrator parity**
+
+Require the F1 migration receipt. `affiliate-cli.sh --status` reports the new
+orchestrator plus migration state; `run.sh` delegates one bounded wake. The old
+fixed Instagram/Amazon behavior remains callable only through an explicitly
+named legacy fixture path and is not scheduled. Prove status and wake behavior
+with executable wrapper tests before changing scheduling.
+
+- [ ] **Step 5: Run crash matrix GREEN, commit, and push**
 
 ```bash
 python3 -m pytest skills/affiliate/tests/test_orchestrator.py skills/affiliate/tests/test_recovery.py -q
