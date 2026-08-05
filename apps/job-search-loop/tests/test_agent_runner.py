@@ -8,6 +8,36 @@ from job_search_loop.agent_runner import AgentRunner, ContractError, TASK_CLASSE
 
 
 class AgentRunnerTests(unittest.TestCase):
+    def test_prefilter_schema_is_strict_for_every_object(self):
+        schema_path = (
+            Path(__file__).resolve().parents[1]
+            / "schemas"
+            / "prefilter-result.v1.schema.json"
+        )
+        schema = json.loads(schema_path.read_text(encoding="utf-8"))
+
+        def assert_strict_objects(node, location="$"):
+            if isinstance(node, dict):
+                if node.get("type") == "object":
+                    self.assertIs(
+                        node.get("additionalProperties"),
+                        False,
+                        f"{location} must reject undeclared properties",
+                    )
+                    properties = node.get("properties", {})
+                    self.assertEqual(
+                        set(node.get("required", [])),
+                        set(properties),
+                        f"{location} must require every declared property",
+                    )
+                for key, value in node.items():
+                    assert_strict_objects(value, f"{location}.{key}")
+            elif isinstance(node, list):
+                for index, value in enumerate(node):
+                    assert_strict_objects(value, f"{location}[{index}]")
+
+        assert_strict_objects(schema)
+
     def test_default_runner_is_the_canonical_life_manager_runtime(self):
         with tempfile.TemporaryDirectory() as directory:
             runner = AgentRunner(evidence_root=Path(directory) / "evidence")
