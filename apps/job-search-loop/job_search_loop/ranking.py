@@ -21,6 +21,7 @@ AI_TERMS = (
 )
 ENTERPRISE_SKILLS = {
     "agents",
+    "customer_deployment",
     "databricks",
     "salesforce",
     "agentforce",

@@ -9,12 +9,110 @@ from typing import Any, Callable
 
 from .discovery import _default_providers, search_jobs
 from .dedup import fingerprint_text
-from .knockout import assess_candidate, shortlist_candidates
+from .jobs import Job
+from .knockout import _jpy_amounts, assess_candidate, shortlist_candidates
+from .portfolio import classify_portfolio
+from .ranking import evaluate
 from .state import canonical_url
 
 
 JAPAN_RE = re.compile(r"\b(?:japan|tokyo)\b|日本|東京", re.IGNORECASE)
 AI_RE = re.compile(r"\b(?:AI|LLM|GenAI|machine learning)\b|生成AI", re.IGNORECASE)
+CUSTOMER_DEPLOYMENT_RE = re.compile(
+    r"\b(?:deployment|forward deployed|solutions?|customer-facing|customers?)\b",
+    re.IGNORECASE,
+)
+PRODUCT_RE = re.compile(r"\bproduct\b", re.IGNORECASE)
+
+
+def _role_family(title: str, description: Any) -> str:
+    text = f"{title} {description if isinstance(description, str) else ''}"
+    title_folded = title.casefold()
+    if "product" in title_folded:
+        return "ai_product_management"
+    if "program" in title_folded:
+        return "technical_program_management"
+    if "partnership" in title_folded:
+        return "ai_partnerships"
+    if "business development" in title_folded:
+        return "ai_business_development"
+    if "customer success" in title_folded:
+        return "ai_customer_success"
+    if "sales engineer" in title_folded:
+        return "ai_sales_engineering"
+    if "account" in title_folded:
+        return "technical_account_management"
+    if AI_RE.search(text) or CUSTOMER_DEPLOYMENT_RE.search(title):
+        return "applied_ai"
+    return "unknown"
+
+
+def _source_for(candidate: dict[str, Any], field: str) -> str | None:
+    marker = f"#{field}="
+    return next(
+        (span for span in candidate.get("source_spans", []) if marker in span),
+        None,
+    )
+
+
+def _rank_candidate(candidate: dict[str, Any], description: Any) -> dict[str, Any]:
+    title = str(candidate.get("title") or "")
+    location = str(candidate.get("location") or "")
+    text = f"{title} {description if isinstance(description, str) else ''}"
+    role_family = _role_family(title, description)
+    amounts = _jpy_amounts(description)
+    compensation_min_jpy = min(amounts) if amounts else None
+    skills: list[str] = []
+    if AI_RE.search(text):
+        skills.append("ai")
+    if re.search(r"\bagents?\b", text, re.IGNORECASE):
+        skills.append("agents")
+    if CUSTOMER_DEPLOYMENT_RE.search(text):
+        skills.append("customer_deployment")
+    if PRODUCT_RE.search(text):
+        skills.append("product")
+    domains = ["enterprise_ai"] if AI_RE.search(text) else []
+    job = Job(
+        company=str(candidate.get("company") or ""),
+        title=title,
+        url=str(candidate.get("official_url") or ""),
+        location=location,
+        japan_eligible=bool(JAPAN_RE.search(location)),
+        compensation_min_jpy=compensation_min_jpy,
+        clearance_required=False,
+        skills=skills,
+        domains=domains,
+    )
+    evaluation = evaluate(job)
+    portfolio_bucket = None
+    if evaluation.eligible and role_family != "unknown":
+        portfolio_bucket = classify_portfolio(
+            score=evaluation.score,
+            compensation_min_jpy=compensation_min_jpy,
+            role_family=role_family,
+        )
+    return {
+        "role_family": role_family,
+        "compensation_min_jpy": compensation_min_jpy,
+        "compensation_status": "known" if amounts else "unknown",
+        "ranking_inputs": {
+            "japan_eligible": job.japan_eligible,
+            "japan_eligible_source_span": _source_for(candidate, "location"),
+            "role_family_source_span": _source_for(candidate, "title"),
+            "compensation_source_span": _source_for(candidate, "description") if amounts else None,
+            "skills": skills,
+            "domains": domains,
+        },
+        "ranking": {
+            "eligible": evaluation.eligible,
+            "score": evaluation.score,
+            "components": evaluation.components,
+            "reasons": list(evaluation.reasons),
+            "warnings": list(evaluation.warnings),
+        },
+        "portfolio_bucket": portfolio_bucket,
+        "ranking_ready": evaluation.eligible and portfolio_bucket is not None,
+    }
 
 
 def _excerpt(text: Any, pattern: re.Pattern[str], limit: int = 240) -> str | None:
@@ -113,6 +211,7 @@ def build_prefilter_result(
                     }
                 )
             )
+            candidate.update(_rank_candidate(candidate, description))
             candidates_by_url[normalized_url] = candidate
     candidates = list(candidates_by_url.values())
     return {

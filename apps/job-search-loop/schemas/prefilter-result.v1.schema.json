@@ -24,7 +24,14 @@
           "jd_fingerprint",
           "gate_status",
           "gate_reasons",
-          "source_spans"
+          "source_spans",
+          "role_family",
+          "compensation_min_jpy",
+          "compensation_status",
+          "ranking_inputs",
+          "ranking",
+          "portfolio_bucket",
+          "ranking_ready"
         ],
         "properties": {
           "bucket": {"type": ["string", "null"]},
@@ -41,7 +48,57 @@
           "jd_fingerprint": {"type": "string", "pattern": "^(|[0-9a-f]{16})$"},
           "gate_status": {"type": "string", "enum": ["pass", "needs_verification", "rejected"]},
           "gate_reasons": {"type": "array", "items": {"type": "string"}},
-          "source_spans": {"type": "array", "items": {"type": "string"}}
+          "source_spans": {"type": "array", "items": {"type": "string"}},
+          "role_family": {"type": "string"},
+          "compensation_min_jpy": {"type": ["integer", "null"], "minimum": 0},
+          "compensation_status": {"type": "string", "enum": ["known", "unknown"]},
+          "ranking_inputs": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "japan_eligible",
+              "japan_eligible_source_span",
+              "role_family_source_span",
+              "compensation_source_span",
+              "skills",
+              "domains"
+            ],
+            "properties": {
+              "japan_eligible": {"type": "boolean"},
+              "japan_eligible_source_span": {"type": ["string", "null"]},
+              "role_family_source_span": {"type": ["string", "null"]},
+              "compensation_source_span": {"type": ["string", "null"]},
+              "skills": {"type": "array", "items": {"type": "string"}},
+              "domains": {"type": "array", "items": {"type": "string"}}
+            }
+          },
+          "ranking": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["eligible", "score", "components", "reasons", "warnings"],
+            "properties": {
+              "eligible": {"type": "boolean"},
+              "score": {"type": "integer", "minimum": 0, "maximum": 100},
+              "components": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["ai_skill", "enterprise", "consumer", "location", "compensation", "mission", "travel"],
+                "properties": {
+                  "ai_skill": {"type": "integer"},
+                  "enterprise": {"type": "integer"},
+                  "consumer": {"type": "integer"},
+                  "location": {"type": "integer"},
+                  "compensation": {"type": "integer"},
+                  "mission": {"type": "integer"},
+                  "travel": {"type": "integer"}
+                }
+              },
+              "reasons": {"type": "array", "items": {"type": "string"}},
+              "warnings": {"type": "array", "items": {"type": "string"}}
+            }
+          },
+          "portfolio_bucket": {"type": ["string", "null"], "enum": ["dream", "strong_fit", "adjacent", null]},
+          "ranking_ready": {"type": "boolean"}
         }
       }
     },
