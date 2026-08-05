@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-24` — five-minute inbox LaunchAgent interval
+**Active atomic task:** `L-25` — ten-confirmed-applications daily cap
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1050,7 +1050,17 @@ this spec update → commit/push → Telegram milestone before the next item sta
   `fc294932eafe3d0651d6bf0e5f1f0a951f7589786d467531318d4ffb7b6f7458`)
   is active with zero writable paths; release
   `2d9fa9be73e1aed79d8fc8307525b56db7551ed4` is retained as `previous`.
-- [ ] **L-24** — Configure the inbox LaunchAgent for a 300-second interval.
+- [x] **L-24** — Configure the inbox LaunchAgent for a 300-second interval. Receipt:
+  source template, isolated installer output, immutable release, and real installed
+  plist all use `StartInterval=300`; stable launcher path and lane separation remain
+  intact; focused 15-test and full 238-test suites PASS. Immutable release
+  `d9319c11c9ce1eb4c52282221398ff045c22bb4b` (archive SHA-256
+  `6f5f8cc1bd3fbd1fd60973899023d462f686aefc3113965df714a150f58f9cdf`)
+  is active with zero writable paths. Real RunAtLoad exited zero after one Terra
+  medium attempt, while its result truthfully records
+  `transient_gmail_provider_failure`: zero messages, replies, or Calendar events were
+  processed. The interval slice is complete; provider-success E2E remains owned by
+  the later Gmail reconciliation slice and is not claimed here.
 - [ ] **L-25** — Enforce the initial ten-confirmed-applications daily cap.
 - [ ] **L-26** — Enforce the daily 2 dream / 5 strong-fit / 3 adjacent portfolio.
 - [ ] **L-27** — Persist a `quota_deficit` event when fewer than ten submissions are
