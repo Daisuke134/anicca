@@ -13,6 +13,14 @@ const {
   isVerifiedRollingEventCoverage,
 } = require("./rolling-event-coverage.js");
 const { isVerifiedConnectorCoverageContinuation } = require("./connector-coverage-continuation.js");
+const { readConnectorProfile, isVerifiedConnectorProfile } = require("./connector-profile.js");
+const { runConnectorLunaJudgment } = require("./connector-luna-judgment.js");
+const {
+  createEventSpendPolicy,
+  isVerifiedEventSpendSequence,
+} = require("./event-spend-policy.js");
+const { isVerifiedEventGoalSerendipity } = require("./event-goal-serendipity.js");
+const { runNativeConnectorWrite } = require("./connector-native-write-pipeline.js");
 const { zonedSlotInstant } = require("./honne-ja-shadow-schedule.js");
 
 function unavailable() {
@@ -173,6 +181,71 @@ async function runNativeConnectorPass(input = {}) {
     const busyInventory = await pack.readBusyCalendar(calendar, { timeMin, timeMax, timeZone, now });
     if (!isVerifiedGoogleCalendarBusyInventory(busyInventory) || busyInventory.transport !== "gog") unavailable();
 
+    let write = null;
+    if (Object.hasOwn(config, "profilePath")) {
+      const readProfile = factory(deps, "readProfile", readConnectorProfile);
+      const verifyProfile = factory(deps, "isVerifiedConnectorProfile", isVerifiedConnectorProfile);
+      const runLunaJudgment = factory(deps, "runLunaJudgment", runConnectorLunaJudgment);
+      const verifyGoalDecision = factory(
+        deps, "isVerifiedEventGoalSerendipity", isVerifiedEventGoalSerendipity,
+      );
+      const gateDateCalendar = factory(deps, "gateDateCalendar", (...args) => pack.gateDateCalendar(...args));
+      const createSpendPolicy = factory(deps, "createSpendPolicy", createEventSpendPolicy);
+      const planDateSpend = factory(deps, "planDateSpend", (...args) => pack.planDateSpend(...args));
+      const verifySpendSequence = factory(
+        deps, "isVerifiedEventSpendSequence", isVerifiedEventSpendSequence,
+      );
+      const runNativeWrite = factory(deps, "runNativeWrite", runNativeConnectorWrite);
+      const profile = readProfile({ tenantId, path: config.profilePath });
+      if (!verifyProfile(profile) || profile.tenant_id !== tenantId || profile.timezone !== timeZone) unavailable();
+      const judgmentDay = dateInventory.days.find((day) => (
+        coverage.days.some((coverageDay) => coverageDay.date === day.date && coverageDay.status === "open")
+        && Array.isArray(day.events) && day.events.length > 0
+      ));
+      if (!judgmentDay) unavailable();
+      const goalDecision = await runLunaJudgment({
+        dateInventory,
+        profile,
+        date: judgmentDay.date,
+        evidenceDir: absoluteDirectory(config.lunaEvidenceDir),
+        repoRoot: config.repoRoot,
+        runnerPath: config.runnerPath,
+      });
+      if (!verifyGoalDecision(goalDecision) || goalDecision.ranked_events.length === 0) unavailable();
+      const selectedDate = judgmentDay.date;
+      const calendarGate = await gateDateCalendar(
+        dateInventory, busyInventory, selectedDate, requiredText(config.homeLocation), deps.routeMinutes,
+      );
+      const policy = await createSpendPolicy({ tenantId, limits: profile.spend_policy && profile.spend_policy.limits });
+      const spendSequence = await planDateSpend(policy, dateInventory, calendarGate, goalDecision);
+      if (!verifySpendSequence(spendSequence) || spendSequence.ordered_candidates.length === 0) unavailable();
+      const chosen = spendSequence.ordered_candidates[0];
+      const selectedRef = chosen.event_ref;
+      const selectedEvent = judgmentDay.events.find((event) => event && event.event_ref === selectedRef);
+      if (!selectedEvent || chosen.canonical_url !== selectedEvent.canonical_url) unavailable();
+      write = await runNativeWrite({
+        application: {
+          tenantId,
+          eventRef: selectedRef,
+          eventUrl: selectedEvent.canonical_url,
+          eventStartIso: selectedEvent.starts_at,
+          identityRef: profile.identity_ref,
+          browserProfileRef: profile.browser_profile_ref,
+          calendarRef: profile.calendar_ref,
+        },
+        profile,
+        dateInventory,
+        currentCoverage: coverage,
+        busyInventory,
+        goalDecision,
+        calendar,
+        calendarId: requiredText(config.calendarId),
+        telegramTarget: requiredText(config.telegramTarget),
+        calendarCoverageUrl: requiredText(config.calendarCoverageUrl),
+        now,
+      }, deps.writeDependencies || {});
+    }
+
     let candidate = null;
     const observedOutcomes = [];
     const candidateConfigured = Object.hasOwn(config, "candidates") || Object.hasOwn(config, "attemptCandidate");
@@ -206,6 +279,7 @@ async function runNativeConnectorPass(input = {}) {
         busy_event_count: busyInventory.busy_event_count,
       }),
       candidate,
+      write,
       continuation: Object.freeze({
         status: continuation.status,
         open_date_count: continuation.open_date_count,
