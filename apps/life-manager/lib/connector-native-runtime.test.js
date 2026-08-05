@@ -288,6 +288,7 @@ test("configured native execution gates the date then uses Luna and passes one v
   assert.equal(typeof writeDependencies.provider.inspectRegistration, "function");
   assert.equal(typeof writeDependencies.readExternalReceipt, "function");
   assert.equal(typeof writeDependencies.readArtifact, "function");
+  assert.equal(typeof writeDependencies.fetchImpl, "function");
   assert.equal(input.calls.find(([name]) => name === "luna")[1].date, "2026-08-05");
 });
 
