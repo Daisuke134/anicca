@@ -88,6 +88,14 @@ if sys.argv[1:2] and sys.argv[1].endswith("agent_runner.py"):
         )
         print(json.dumps({"status": "ok", "result_path": str(result)}))
         raise SystemExit(0)
+    if task_class == "job-search-terra-high":
+        result = evidence / "result.json"
+        result.write_text(
+            json.dumps({"status": "ok", "mode": "dream", "dream_dossiers": [], "hypothesis": None, "blocked": []}) + "\\n",
+            encoding="utf-8",
+        )
+        print(json.dumps({"status": "ok", "result_path": str(result)}))
+        raise SystemExit(0)
     (evidence / "summary.json").write_text(
         json.dumps({"status": "budget_blocked"}) + "\\n",
         encoding="utf-8",
@@ -155,7 +163,7 @@ raise SystemExit(0)
             ]
             self.assertEqual(
                 [call[call.index("--task-class") + 1] for call in runner_calls],
-                ["repeatable-agent", "composition-agent", "browser-lane-agent"],
+                ["repeatable-agent", "composition-agent", "job-search-terra-high", "browser-lane-agent"],
             )
             terra_results = list(
                 (root / "state" / "evidence").glob("daily-*/terra-plan-result.json")

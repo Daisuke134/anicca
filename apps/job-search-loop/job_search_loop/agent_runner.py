@@ -13,7 +13,8 @@ TASK_CLASSES = {
     "tailor": "composition-agent",
     "inbox": "composition-agent",
     "submit": "browser-lane-agent",
-    "improve": "high-value-agent",
+    "dream": "job-search-terra-high",
+    "improve": "job-search-terra-high",
 }
 
 
@@ -57,6 +58,7 @@ class AgentRunner:
         schema_path: Path,
         workdir: Path,
         run_id: str,
+        escalation_reason: str | None = None,
     ) -> dict[str, Any]:
         task_class = TASK_CLASSES.get(task)
         if task_class is None:
@@ -73,6 +75,10 @@ class AgentRunner:
             "--task-class",
             task_class,
         ]
+        if task_class == "job-search-terra-high":
+            if not escalation_reason or not escalation_reason.strip():
+                raise ValueError("job-search Terra high requires escalation_reason")
+            argv.extend(["--escalation-reason", escalation_reason.strip()])
         prompt_input = None
         if task_class in {"composition-agent", "diagnostic-agent"}:
             argv.append("--prompt-stdin")

@@ -120,6 +120,34 @@ TERRA_PLAN_RESULT_PATH=$("$JOB_SEARCH_JQ" -er '.result_path' "$EVIDENCE/terra-pl
 export JOB_SEARCH_TERRA_PLAN_RESULT="$EVIDENCE/terra-plan-result.json"
 cp "$TERRA_PLAN_RESULT_PATH" "$JOB_SEARCH_TERRA_PLAN_RESULT"
 chmod 600 "$JOB_SEARCH_TERRA_PLAN_RESULT"
+export JOB_SEARCH_HIGH_MODE=dream
+export ANICCA_BUDGET_SCOPE_ID="job-search-daily:${RUN_ID}:dream-high"
+export ANICCA_PASS_TOKEN_BUDGET=65536
+TERRA_HIGH_EVIDENCE="$EVIDENCE/terra-high"
+mkdir -p "$TERRA_HIGH_EVIDENCE"
+chmod 700 "$TERRA_HIGH_EVIDENCE"
+set +e
+"$JOB_SEARCH_PYTHON" "$JOB_SEARCH_RUNNER" \
+  --task-class job-search-terra-high \
+  --escalation-reason "dream application dossier for deterministic dream candidates" \
+  --prompt-file "$JOB_SEARCH_APP_ROOT/prompts/terra-high-pass.md" \
+  --schema "$JOB_SEARCH_APP_ROOT/schemas/terra-high-result.v1.schema.json" \
+  --evidence-dir "$TERRA_HIGH_EVIDENCE" \
+  --task-label job-search-dream-high \
+  --loop job-search \
+  --workdir "$JOB_SEARCH_REPO_ROOT" \
+  >"$EVIDENCE/terra-high-runner.json"
+TERRA_HIGH_RC=$?
+set -e
+chmod 600 "$EVIDENCE/terra-high-runner.json"
+if [[ "$TERRA_HIGH_RC" -ne 0 ]]; then
+  refresh_summary
+  exit "$TERRA_HIGH_RC"
+fi
+TERRA_HIGH_RESULT_PATH=$("$JOB_SEARCH_JQ" -er '.result_path' "$EVIDENCE/terra-high-runner.json")
+export JOB_SEARCH_TERRA_HIGH_RESULT="$EVIDENCE/terra-high-result.json"
+cp "$TERRA_HIGH_RESULT_PATH" "$JOB_SEARCH_TERRA_HIGH_RESULT"
+chmod 600 "$JOB_SEARCH_TERRA_HIGH_RESULT"
 "$JOB_SEARCH_PYTHON" -m job_search_loop.browser_owner \
   --endpoint "http://127.0.0.1:9222" \
   --output "$JOB_SEARCH_BROWSER_OWNER_EVIDENCE"
@@ -141,6 +169,8 @@ PROVIDER_LOGS=(
   "$EVIDENCE"/attempt-*.stdout.log(N)
   "$TERRA_PLAN_EVIDENCE"/attempt-*.stdout.log(N)
   "$JOB_SEARCH_TERRA_PLAN_RESULT"
+  "$TERRA_HIGH_EVIDENCE"/attempt-*.stdout.log(N)
+  "$JOB_SEARCH_TERRA_HIGH_RESULT"
 )
 PRIVACY_INDEX=0
 for PROVIDER_LOG in "${PROVIDER_LOGS[@]}"; do

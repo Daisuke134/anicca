@@ -22,7 +22,16 @@ class AgentRunnerTests(unittest.TestCase):
         self.assertEqual(TASK_CLASSES["tailor"], "composition-agent")
         self.assertEqual(TASK_CLASSES["inbox"], "composition-agent")
         self.assertEqual(TASK_CLASSES["submit"], "browser-lane-agent")
-        self.assertEqual(TASK_CLASSES["improve"], "high-value-agent")
+        self.assertEqual(TASK_CLASSES["dream"], "job-search-terra-high")
+        self.assertEqual(TASK_CLASSES["improve"], "job-search-terra-high")
+
+    def test_job_search_high_route_is_explicit_terra_high_only(self):
+        config_path = Path(__file__).resolve().parents[3] / "runtime" / "agent-runner" / "config.json"
+        route = json.loads(config_path.read_text(encoding="utf-8"))["task_classes"]["job-search-terra-high"]
+        self.assertTrue(route["requires_explicit_escalation"])
+        primary = route["candidates"][0]
+        self.assertEqual(primary["model"], "gpt-5.6-terra")
+        self.assertEqual(primary["effort"], "high")
 
     def test_composition_prompt_uses_stdin_and_retains_private_evidence(self):
         with tempfile.TemporaryDirectory() as directory:
