@@ -6,7 +6,7 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-05 JST
-**Active atomic task:** `L-30` — cross-owner posting duplicate prevention
+**Active atomic task:** `L-31` — Palantir manual application import
 **Status:** Corrected resume baseline accepted and installed; runtime revival is the
 next execution slice. Product contract refreshed for hourly discovery/application
 passes, ten confirmed applications per day, JPY 8M–30M compensation, five-minute
@@ -1137,7 +1137,19 @@ this spec update → commit/push → Telegram milestone before the next item sta
   `a8fad6bac903c21fd9b1c1cf06173c31d0eea7e47ec5da543aecbf94b306d4af`)
   is active with zero writable paths; daily remains unloaded until cross-owner
   duplicate fencing is complete.
-- [ ] **L-30** — Enforce cross-owner posting duplicate prevention.
+- [x] **L-30** — Enforce cross-owner posting duplicate prevention. Receipt: the
+  posting identity is the canonical official URL, independent of company/title text
+  or tracking parameters; a same-owner replay returns the original application ID;
+  a different owner raises a fence naming the existing owner; and attributed agent
+  creation cannot adopt a manual/recruiter posting. A DB unique index protects the
+  URL under concurrent writers. Focused 3-test and full 260-test suites PASS. A
+  real-ledger backup created the unique index, fenced a recruiter replay against an
+  existing agent URL, kept the application count at five, retained mode 0600, and
+  left the production ledger SHA-256 unchanged. Immutable release
+  `26e841659e8dd2e92bb305b516512e546fd7af56` (archive SHA-256
+  `df63c00fd1c2c181f956ed2143601a101ace71741eae0d5362aa934923713e64`)
+  is active with zero writable paths; daily remains unloaded until the known manual
+  application is imported.
 - [ ] **L-31** — Import the existing Palantir application as `dais_manual`.
 - [ ] **L-32** — Create the independent BlockRun `founder_outreach` funnel.
 - [ ] **L-33** — Route extraction, normalization, and prefilter work to Luna.
