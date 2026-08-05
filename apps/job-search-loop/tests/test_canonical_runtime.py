@@ -301,7 +301,7 @@ raise SystemExit(0)
             )
             self.assertEqual(
                 inbox["ProgramArguments"][0],
-                str(APP_ROOT / "scripts" / "run-inbox.sh"),
+                str(private_root / "libexec" / "inbox"),
             )
             self.assertEqual(
                 learning["ProgramArguments"][0],
