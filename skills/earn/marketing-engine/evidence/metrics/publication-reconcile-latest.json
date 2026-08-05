@@ -36,7 +36,7 @@
     "error": 20,
     "resolved": 85
   },
-  "observed_at": "2026-08-05T13:53:14Z",
+  "observed_at": "2026-08-05T14:01:18Z",
   "passes_95_percent_gate": true,
   "platform_state_counts": {
     "instagram-standalone|PUBLISHED": 43,
@@ -54,6 +54,6 @@
     "PUBLISHED": 87
   },
   "total_rows": 107,
-  "window_end": "2026-08-05T13:53:14Z",
-  "window_start": "2026-07-28T13:53:14Z"
+  "window_end": "2026-08-05T14:01:18Z",
+  "window_start": "2026-07-28T14:01:18Z"
 }

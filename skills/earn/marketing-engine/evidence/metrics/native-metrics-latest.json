@@ -7,11 +7,8 @@
   "excluded_not_published": 0,
   "excluded_unresolved": 0,
   "ledger_rows": 107,
-  "new_rows": 89,
-  "new_status_counts": {
-    "measured": 83,
-    "unavailable": 6
-  },
-  "observed_at": "2026-08-05T13:54:23Z",
+  "new_rows": 0,
+  "new_status_counts": {},
+  "observed_at": "2026-08-05T14:02:32Z",
   "schema_version": 1
 }
