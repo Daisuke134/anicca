@@ -258,6 +258,13 @@ class Ledger:
                 created_at TEXT NOT NULL,
                 UNIQUE (application_id, kind, sha256)
             );
+            CREATE TABLE IF NOT EXISTS application_ranked_gaps (
+                application_id TEXT PRIMARY KEY REFERENCES applications(id),
+                score INTEGER NOT NULL CHECK (score BETWEEN 0 AND 100),
+                gaps_json TEXT NOT NULL,
+                evidence_sha256 TEXT NOT NULL UNIQUE,
+                created_at TEXT NOT NULL
+            );
             CREATE TABLE IF NOT EXISTS application_followups (
                 followup_id TEXT PRIMARY KEY,
                 application_id TEXT NOT NULL REFERENCES applications(id),
@@ -276,6 +283,16 @@ class Ledger:
             BEFORE DELETE ON application_artifacts
             BEGIN
                 SELECT RAISE(ABORT, 'application artifacts are immutable');
+            END;
+            CREATE TRIGGER IF NOT EXISTS application_ranked_gaps_no_update
+            BEFORE UPDATE ON application_ranked_gaps
+            BEGIN
+                SELECT RAISE(ABORT, 'application ranked gaps are immutable');
+            END;
+            CREATE TRIGGER IF NOT EXISTS application_ranked_gaps_no_delete
+            BEFORE DELETE ON application_ranked_gaps
+            BEGIN
+                SELECT RAISE(ABORT, 'application ranked gaps are immutable');
             END;
             CREATE TRIGGER IF NOT EXISTS application_followups_no_update
             BEFORE UPDATE ON application_followups
@@ -661,6 +678,96 @@ class Ledger:
             }
             for row in rows
         ]
+
+    def record_ranked_gaps(
+        self,
+        *,
+        application_id: str,
+        score: int,
+        gaps: list[str],
+        evidence_sha256: str,
+    ) -> None:
+        if isinstance(score, bool) or not isinstance(score, int) or not 0 <= score <= 100:
+            raise ValueError("score must be an integer from 0 to 100")
+        if not isinstance(gaps, list) or not all(
+            isinstance(gap, str) and gap.strip() for gap in gaps
+        ):
+            raise ValueError("gaps must be a list of non-empty strings")
+        normalized_gaps = list(dict.fromkeys(gap.strip() for gap in gaps))
+        if not re.fullmatch(r"[a-f0-9]{64}", evidence_sha256):
+            raise ValueError("evidence_sha256 must be a lowercase SHA-256")
+        gaps_json = json.dumps(
+            normalized_gaps, ensure_ascii=False, separators=(",", ":")
+        )
+        with self._transaction():
+            if self.connection.execute(
+                "SELECT id FROM applications WHERE id=?", (application_id,)
+            ).fetchone() is None:
+                raise KeyError(application_id)
+            existing = self.connection.execute(
+                "SELECT score,gaps_json,evidence_sha256 FROM application_ranked_gaps "
+                "WHERE application_id=?",
+                (application_id,),
+            ).fetchone()
+            expected = (score, gaps_json, evidence_sha256)
+            if existing is not None:
+                if tuple(existing) == expected:
+                    return
+                raise FenceError("ranked gaps are already fixed for this application")
+            self.connection.execute(
+                "INSERT INTO application_ranked_gaps "
+                "(application_id,score,gaps_json,evidence_sha256,created_at) "
+                "VALUES(?,?,?,?,?)",
+                (application_id, score, gaps_json, evidence_sha256, _now()),
+            )
+
+    def upskill_projection(self, *, profile_skills: list[str]) -> dict[str, Any]:
+        if not isinstance(profile_skills, list) or not all(
+            isinstance(skill, str) and skill.strip() for skill in profile_skills
+        ):
+            raise ValueError("profile_skills must be a list of non-empty strings")
+        known = [skill.casefold().strip() for skill in profile_skills]
+        rows = self.connection.execute(
+            "SELECT application_id,score,gaps_json,evidence_sha256 "
+            "FROM application_ranked_gaps ORDER BY application_id"
+        ).fetchall()
+        totals: dict[str, dict[str, Any]] = {}
+        for row in rows:
+            weight = (100 - int(row["score"])) / 100
+            for gap in json.loads(str(row["gaps_json"])):
+                folded = str(gap).casefold()
+                if any(skill in folded or folded in skill for skill in known):
+                    continue
+                key = folded.strip()
+                item = totals.setdefault(
+                    key,
+                    {"gap": str(gap), "job_count": 0, "weighted_score": 0.0},
+                )
+                item["job_count"] += 1
+                item["weighted_score"] += weight
+        gaps = sorted(
+            (
+                {
+                    **item,
+                    "weighted_score": round(float(item["weighted_score"]), 6),
+                }
+                for item in totals.values()
+            ),
+            key=lambda item: (-item["weighted_score"], -item["job_count"], item["gap"].casefold()),
+        )
+        total_applications = int(
+            self.connection.execute("SELECT COUNT(*) FROM applications").fetchone()[0]
+        )
+        value: dict[str, Any] = {
+            "version": 1,
+            "analysed_jobs": len(rows),
+            "jobs_without_recorded_gaps": total_applications - len(rows),
+            "gaps": gaps,
+        }
+        value["projection_sha256"] = hashlib.sha256(
+            json.dumps(value, ensure_ascii=False, sort_keys=True).encode("utf-8")
+        ).hexdigest()
+        return value
 
     def due_followups(self, as_of: str) -> list[dict[str, Any]]:
         try:
