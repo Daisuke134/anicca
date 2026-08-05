@@ -132,10 +132,9 @@ function cliArguments(argv = process.argv.slice(2)) {
 
 if (require.main === module) {
   runNativePass(cliArguments())
-    .then((result) => { process.exitCode = result.exitCode; })
+    .then((result) => { process.exit(result.exitCode); })
     .catch(() => {
-      process.stderr.write("Connector native pass unavailable\n");
-      process.exitCode = 2;
+      process.stderr.write("Connector native pass unavailable\n", () => process.exit(2));
     });
 }
 

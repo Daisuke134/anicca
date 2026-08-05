@@ -200,6 +200,12 @@ test("native-pass records only an allowlisted runtime failure stage", async () =
   } finally { fs.rmSync(directory, { recursive: true, force: true }); }
 });
 
+test("native-pass CLI terminates its bounded process after durable state is written", () => {
+  const source = fs.readFileSync(path.join(REPO_ROOT, "skills/connector/native-pass.js"), "utf8");
+  assert.match(source, /process\.exit\(result\.exitCode\)/);
+  assert.doesNotMatch(source, /process\.exitCode = result\.exitCode/);
+});
+
 test("rendered native templates contain only canonical launch paths", () => {
   const directory = temporaryDirectory();
   try {
