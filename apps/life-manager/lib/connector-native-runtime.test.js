@@ -35,6 +35,11 @@ async function dateInventory(currentCoverage) {
       title: "Founder Night",
       cardText: "Founder Night",
       timelineText: "Aug 5",
+    }, {
+      href: "https://luma.com/agent-night",
+      title: "Agent Night",
+      cardText: "Agent Night",
+      timelineText: "Aug 5",
     }] : []),
     advance: async () => ({ atEnd: true, scrollHeight: 100 }),
     stableEndRounds: 1,
@@ -53,10 +58,24 @@ async function dateInventory(currentCoverage) {
     }],
     controls: ["Register"],
   });
+  const secondDetail = normalizeLumaEventDetail({
+    canonicalUrl: "https://luma.com/agent-night",
+    jsonLd: [{
+      "@type": "Event",
+      name: "Agent Night",
+      description: "public description only",
+      startDate: "2026-08-05T14:00:00+09:00",
+      endDate: "2026-08-05T15:00:00+09:00",
+      eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+      eventStatus: "https://schema.org/EventScheduled",
+      location: { name: "Shibuya Hall", address: "Shibuya, Tokyo" },
+    }],
+    controls: ["Register"],
+  });
   return buildLumaDateInventory({
     coverage: currentCoverage,
     inventory: discovered,
-    details: [detail],
+    details: [detail, secondDetail],
     now: NOW,
   });
 }
@@ -325,6 +344,65 @@ test("configured native execution gates the date then uses Luna and passes one v
   assert.equal(typeof writeDependencies.readArtifact, "function");
   assert.equal(typeof writeDependencies.fetchImpl, "function");
   assert.equal(input.calls.find(([name]) => name === "luna")[1].date, "2026-08-05");
+});
+
+test("a known missing Luma form answer skips to the next ranked candidate", async () => {
+  const input = await fixture();
+  const profile = Object.freeze({ tenant_id: TENANT, timezone: "Asia/Tokyo" });
+  const goalDecision = Object.freeze({ ranked_events: [
+    { event_ref: "luma-event://event/founder-night" },
+    { event_ref: "luma-event://event/agent-night" },
+  ] });
+  const spendSequence = Object.freeze({
+    ordered_candidates: [{
+      event_ref: "luma-event://event/founder-night",
+      canonical_url: "https://luma.com/founder-night",
+    }, {
+      event_ref: "luma-event://event/agent-night",
+      canonical_url: "https://luma.com/agent-night",
+    }],
+    skipped: [],
+  });
+  const delivered = Object.freeze({ status: "incomplete", outcome: "open_coverage", event_ref: "luma-event://event/agent-night" });
+  const result = await runNativeConnectorPass({
+    ...input,
+    config: {
+      ...input.config,
+      profilePath: "/private/tmp/dais-local.json",
+      lunaEvidenceDir: "/private/tmp/connector-luna",
+      homeLocation: "opaque-home",
+      telegramTarget: "opaque-chat",
+      calendarCoverageUrl: "https://calendar.google.com/calendar/u/0/r",
+      calendarId: "primary",
+      mapsKey: "maps-secret",
+    },
+    deps: {
+      ...input.deps,
+      readProfile() { return profile; },
+      async runLunaJudgment() { return goalDecision; },
+      async gateDateCalendar() {
+        return Object.freeze({ date: "2026-08-05", candidates: spendSequence.ordered_candidates.map(({ event_ref }) => ({ event_ref, eligible: true })) });
+      },
+      async createSpendPolicy() { return Object.freeze({ limits: [] }); },
+      planDateSpend() { return spendSequence; },
+      async runNativeWrite(value) {
+        input.calls.push(["write", value]);
+        return value.application.eventRef.endsWith("founder-night")
+          ? Object.freeze({ status: "incomplete", outcome: "application_failed", error_code: "LUMA_FORM_INPUT_REQUIRED" })
+          : delivered;
+      },
+      createRouteMinutes() { return async () => 20; },
+      isVerifiedConnectorProfile: (value) => value === profile,
+      isVerifiedEventGoalSerendipity: (value) => value === goalDecision,
+      isVerifiedEventSpendSequence: (value) => value === spendSequence,
+    },
+  });
+
+  assert.equal(result.write, delivered);
+  assert.deepEqual(input.calls.filter(([name]) => name === "write").map(([, value]) => value.application.eventRef), [
+    "luma-event://event/founder-night",
+    "luma-event://event/agent-night",
+  ]);
 });
 
 test("native runtime exposes only its bounded failing stage", async () => {

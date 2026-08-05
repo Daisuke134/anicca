@@ -2193,6 +2193,16 @@ Lunaが`luma-event://event/l5iu5frr`をpreference/goalとも`moderate`として�
 focused provider/detail testは19/19 GREEN、diff checkもGREEN。次はcommit/push後に同じnative loopをkickstartし、
 Luma申請済みreadback、Calendar evidence、Telegram provider IDまで一巡を再実証する。
 
+O1B-25進捗51（必須form不足を既知skipへ分類 / 同日次候補継続 RED→GREEN）: commit `365dd9c1c`の実runも
+`luma-event://event/l5iu5frr`で外部receiptを作らず停止した。初期CTAだけを開く可逆UI診断で、Luma formは
+role=`dialog`を持たず、必須質問として生年月日、性別、Instagram、発見経路、招待者、支払・規約同意等を要求していた。
+private profile SSOTには氏名・生年月日はあるが他の個人回答はなく、loopが推測して送信してはならない。
+従来はroleなしformを検査せず、初期CTA click後という理由だけでunknown external effectへ分類していた。
+page scopeでもrequired inputsを検査し、confirm前の空欄は`LUMA_FORM_INPUT_REQUIRED / unknownEffect=false`へ変更した。
+さらにnative runtimeはこのexact known failureだけを同日ランキングの次候補へskipし、unknown effectや他failureは従来どおり停止する。
+provider/detail/runtime focused testは26/26 GREEN、diff checkもGREEN。次はnative launchd実runで、このeventを未送信skipし、
+次候補のLuma receipt、Calendar evidence、Telegram provider IDへ進むことを実証する。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 

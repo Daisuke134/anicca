@@ -64,19 +64,20 @@ async function submitLumaOnPage(page) {
     }
 
     const dialog = page.getByRole("dialog").last();
-    if (await dialog.count() === 1 && await dialog.isVisible()) {
-      const required = dialog.locator("input[required], textarea[required], select[required]");
+    const scope = await dialog.count() === 1 && await dialog.isVisible() ? dialog : page;
+    if (typeof scope.locator === "function") {
+      const required = scope.locator("input[required], textarea[required], select[required]");
       for (let index = 0; index < await required.count(); index += 1) {
         const input = required.nth(index);
         if (!String(await input.inputValue()).trim()) {
           throw providerError(
             "Luma RSVP required form input unavailable",
             "LUMA_FORM_INPUT_REQUIRED",
-            true,
+            false,
           );
         }
       }
-      const confirm = dialog.getByRole("button", {
+      const confirm = scope.getByRole("button", {
         name: /^(?:参加登録|参加リクエスト|参加をリクエスト|承認をリクエスト|Register|Request to Join|Submit|Confirm RSVP)$/i,
         exact: true,
       }).last();

@@ -309,38 +309,40 @@ async function runNativeConnectorPass(input = {}) {
       }
       if (!selected) unavailable();
       const { judgmentDay, goalDecision, spendSequence } = selected;
-      const chosen = spendSequence.ordered_candidates[0];
-      const selectedRef = chosen.event_ref;
-      const selectedEvent = judgmentDay.events.find((event) => event && event.event_ref === selectedRef);
-      if (!selectedEvent || chosen.canonical_url !== selectedEvent.canonical_url) unavailable();
       failureCode = "CONNECTOR_NATIVE_WRITE_FAILED";
-      write = await runNativeWrite({
-        application: {
-          tenantId,
-          eventRef: selectedRef,
-          eventUrl: selectedEvent.canonical_url,
-          eventStartIso: selectedEvent.starts_at,
-          identityRef: profile.identity_ref,
-          browserProfileRef: profile.browser_profile_ref,
-          calendarRef: profile.calendar_ref,
-        },
-        profile,
-        dateInventory,
-        currentCoverage: coverage,
-        busyInventory,
-        goalDecision,
-        calendar,
-        calendarId: requiredText(config.calendarId),
-        telegramTarget: requiredText(config.telegramTarget),
-        calendarCoverageUrl: requiredText(config.calendarCoverageUrl),
-        now,
-      }, {
-        provider: pack.provider,
-        readExternalReceipt: evidenceStore.readExternalReceipt,
-        readArtifact: evidenceStore.readArtifact,
-        fetchImpl: globalThis.fetch,
-        ...(deps.writeDependencies || {}),
-      });
+      for (const chosen of spendSequence.ordered_candidates) {
+        const selectedRef = chosen.event_ref;
+        const selectedEvent = judgmentDay.events.find((event) => event && event.event_ref === selectedRef);
+        if (!selectedEvent || chosen.canonical_url !== selectedEvent.canonical_url) unavailable();
+        write = await runNativeWrite({
+          application: {
+            tenantId,
+            eventRef: selectedRef,
+            eventUrl: selectedEvent.canonical_url,
+            eventStartIso: selectedEvent.starts_at,
+            identityRef: profile.identity_ref,
+            browserProfileRef: profile.browser_profile_ref,
+            calendarRef: profile.calendar_ref,
+          },
+          profile,
+          dateInventory,
+          currentCoverage: coverage,
+          busyInventory,
+          goalDecision,
+          calendar,
+          calendarId: requiredText(config.calendarId),
+          telegramTarget: requiredText(config.telegramTarget),
+          calendarCoverageUrl: requiredText(config.calendarCoverageUrl),
+          now,
+        }, {
+          provider: pack.provider,
+          readExternalReceipt: evidenceStore.readExternalReceipt,
+          readArtifact: evidenceStore.readArtifact,
+          fetchImpl: globalThis.fetch,
+          ...(deps.writeDependencies || {}),
+        });
+        if (!(write && write.outcome === "application_failed" && write.error_code === "LUMA_FORM_INPUT_REQUIRED")) break;
+      }
     }
 
     let candidate = null;
