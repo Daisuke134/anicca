@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "hard_gates": {
+    "minimum_compensation_jpy": 8000000,
+    "location": "Tokyo or remote from Japan",
+    "authorization": "never infer work authorization or clearance"
+  },
+  "cases": [
+    {
+      "case_id": "eligible_tokyo",
+      "posting": "Applied AI Engineer — Tokyo, Japan. Annual base salary: JPY 12,000,000. Build and evaluate production LLM agents. Applications close 2026-12-31.",
+      "expected": {"hard_eligible": true},
+      "required_evidence": ["Tokyo, Japan", "JPY 12,000,000", "Applications close 2026-12-31"]
+    },
+    {
+      "case_id": "below_floor",
+      "posting": "AI Solutions Engineer — Tokyo hybrid. Annual salary: JPY 6,000,000. Work with enterprise customers on LLM systems.",
+      "expected": {"hard_eligible": false},
+      "required_evidence": ["Tokyo hybrid", "JPY 6,000,000"]
+    },
+    {
+      "case_id": "authorization_blocked",
+      "posting": "Forward Deployed AI Engineer — Remote US only. Compensation: JPY 20,000,000 equivalent. Must already be authorized to work in the United States and obtain US security clearance.",
+      "expected": {"hard_eligible": false},
+      "required_evidence": ["Remote US only", "Must already be authorized to work in the United States", "US security clearance"]
+    }
+  ]
+}

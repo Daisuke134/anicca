@@ -1,0 +1,21 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["snapshot_sha256", "results"],
+  "properties": {
+    "snapshot_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["case_id", "hard_eligible", "evidence_spans"],
+        "properties": {
+          "case_id": {"type": "string"},
+          "hard_eligible": {"type": "boolean"},
+          "evidence_spans": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    }
+  }
+}
