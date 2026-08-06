@@ -24,6 +24,7 @@ const {
 const { isVerifiedEventGoalSerendipity } = require("./event-goal-serendipity.js");
 const { runNativeConnectorWrite } = require("./connector-native-write-pipeline.js");
 const { classifyConnectorCandidateOutcome } = require("./connector-candidate-outcome.js");
+const { activeSuppressedEventRefs } = require("./connector-candidate-suppression.js");
 const { createConnectorRouteMinutes } = require("./connector-route-minutes.js");
 const { zonedSlotInstant } = require("./honne-ja-shadow-schedule.js");
 
@@ -255,6 +256,10 @@ async function runNativeConnectorPass(input = {}) {
 
     let write = null;
     const candidateAttempts = [];
+    const suppressedEventRefs = activeSuppressedEventRefs({
+      attempts: Array.isArray(config.candidateAttempts) ? config.candidateAttempts : [],
+      now,
+    });
     if (Object.hasOwn(config, "profilePath")) {
       const readProfile = factory(deps, "readProfile", readConnectorProfile);
       const verifyProfile = factory(deps, "isVerifiedConnectorProfile", isVerifiedConnectorProfile);
@@ -304,15 +309,18 @@ async function runNativeConnectorPass(input = {}) {
         failureCode = "CONNECTOR_NATIVE_SPEND_GATE_FAILED";
         const spendSequence = await planDateSpend(policy, dateInventory, calendarGate, goalDecision);
         if (!verifySpendSequence(spendSequence)) unavailable();
-        if (spendSequence.ordered_candidates.length > 0) {
-          selected = { judgmentDay, goalDecision, spendSequence };
+        const orderedCandidates = spendSequence.ordered_candidates.filter(
+          (candidate) => !suppressedEventRefs.has(candidate.event_ref),
+        );
+        if (orderedCandidates.length > 0) {
+          selected = { judgmentDay, goalDecision, spendSequence, orderedCandidates };
           break;
         }
       }
       if (!selected) unavailable();
-      const { judgmentDay, goalDecision, spendSequence } = selected;
+      const { judgmentDay, goalDecision, orderedCandidates } = selected;
       failureCode = "CONNECTOR_NATIVE_WRITE_FAILED";
-      for (const chosen of spendSequence.ordered_candidates) {
+      for (const chosen of orderedCandidates) {
         const selectedRef = chosen.event_ref;
         const selectedEvent = judgmentDay.events.find((event) => event && event.event_ref === selectedRef);
         if (!selectedEvent || chosen.canonical_url !== selectedEvent.canonical_url) unavailable();
