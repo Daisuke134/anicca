@@ -44,9 +44,18 @@ test("native-pass invokes the direct runtime and keeps open coverage as a contin
       runRuntime: async (input) => {
         observed.push(input);
         return {
-          status: "incomplete",
-          coverage: { counts: { open: 21 } },
-          continuation: { status: "continue" },
+        status: "incomplete",
+        coverage: { counts: { open: 21 } },
+        selection: {
+          inventory_event_count: 27,
+          calendar_gate_event_count: 12,
+          calendar_eligible_count: 4,
+          luna_ranked_count: 4,
+          spend_ordered_count: 3,
+          unsuppressed_count: 2,
+          write_attempt_count: 0,
+        },
+        continuation: { status: "continue" },
         };
       },
     });
@@ -63,6 +72,15 @@ test("native-pass invokes the direct runtime and keeps open coverage as a contin
     assert.deepEqual(JSON.parse(fs.readFileSync(path.join(stateDir, "last-result.json"), "utf8")), {
       status: "incomplete",
       coverage_counts: { open: 21, covered_existing: 0, covered_new: 0, unavailable: 0 },
+      selection: {
+        inventory_event_count: 27,
+        calendar_gate_event_count: 12,
+        calendar_eligible_count: 4,
+        luna_ranked_count: 4,
+        spend_ordered_count: 3,
+        unsuppressed_count: 2,
+        write_attempt_count: 0,
+      },
       write: null,
     });
   } finally {

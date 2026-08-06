@@ -440,6 +440,15 @@ test("zero Calendar-eligible events is a valid incomplete pass instead of a runt
   assert.equal(result.write, null);
   assert.equal(result.candidate_attempts.length, 0);
   assert.equal(result.continuation.status, "continue");
+  assert.deepEqual(result.selection, {
+    inventory_event_count: 2,
+    calendar_gate_event_count: 1,
+    calendar_eligible_count: 0,
+    luna_ranked_count: 0,
+    spend_ordered_count: 0,
+    unsuppressed_count: 0,
+    write_attempt_count: 0,
+  });
 });
 
 test("a known missing Luma form answer skips to the next ranked candidate", async () => {
