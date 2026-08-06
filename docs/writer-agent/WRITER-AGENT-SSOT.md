@@ -308,9 +308,15 @@ then completed both persisted Substack targets. Publisher-native readback is
 `https://aniccabuddha.substack.com/p/ai4` and Substack EN `210074421` at
 `https://aniccabuddha.substack.com/p/your-ai-revenue-story-is-not-a-tutorial`.
 Both receipts verify public HTML, paid audience, one paywall, immutable article
-hash, and exact-SHA media. Current item 1c now moves to Dev.to same-ID ambiguity;
-Task 1 remains open until another independent publisher and then active-six
-complete their public readbacks.
+hash, and exact-SHA media. Dev.to was already public at stable ID `4330381`, but
+its authenticated API returned a false `404` when browser-only Origin/Referer
+headers were attached. Runtime repair `74bdc6ed` removed those headers and the
+installed loop recorded `PASS` at
+`https://dev.to/anicca_301094325e/your-ai-revenue-story-is-not-a-tutorial-yet-what-it-needs-2dil`,
+including public HTML, owner identity, article hash, and exact-SHA media. The
+current run therefore has three live receipts across two independent
+publishers. Current item 1c now moves to note's body-image S3 `403`; Task 1
+remains open until Zenn and X Article also complete the active-six readbacks.
 
 ### 2.5 Active-six distribution and dormant-adapter contract
 
