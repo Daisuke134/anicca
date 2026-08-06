@@ -48,6 +48,30 @@ test("Luma discovery returns the first free open non-conflicting candidates in p
   ]);
 });
 
+test("Luma default conflict filter consumes the minimal runner busy interval array", async () => {
+  const conflicting = event("calendar-conflict");
+  const free = event("calendar-free", {
+    starts_at: "2026-08-11T10:00:00.000Z",
+    ends_at: "2026-08-11T11:00:00.000Z",
+  });
+  const workflow = createLumaScriptFirstWorkflow({
+    async discoverOnPage() { return [conflicting, free]; },
+    async submitOnPage() { return { status: "registered" }; },
+    async readProviderStateOnPage() { return { status: "absent" }; },
+  });
+
+  const result = await workflow.discoverCandidates({
+    page: {},
+    calendar: [{
+      kind: "timed",
+      start_at: "2026-08-10T09:30:00.000Z",
+      end_at: "2026-08-10T10:30:00.000Z",
+    }],
+  });
+
+  assert.deepEqual(result.map((candidate) => candidate.event_ref), [free.event_ref]);
+});
+
 test("Luma direct action uses the retained submit function without agent assistance", async () => {
   const calls = [];
   const page = Object.freeze({ page_id: "owned-page" });

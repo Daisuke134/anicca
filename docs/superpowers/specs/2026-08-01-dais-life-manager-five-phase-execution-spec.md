@@ -5370,7 +5370,20 @@ production rail、target controller、target lease、tab ownerのfocused suite�
 same-page goto 1、release 1、browser close 0を確認した。実`:9222`接続とexternal writeは0。Item 10は未完で、次はLuma/Calendar/cache/fallbackを
 official native adapterへ組み立てる残りのproduction dependenciesをTDDで接続する。scheduleは引き続きunloadedを維持する。
 
-### Active remaining TODO SSOT（進捗181。これ以外の残TODO一覧は履歴）
+### O1B-25進捗182（Item 10A-2b / Calendar conflict contract補正）
+
+production dependency routerの配線前監査で、minimal runnerの`readCalendarGaps` contractはbusy interval配列を要求する一方、
+Luma default conflict filterは`{ busy_intervals: [...] }` objectだけを読んでいたことを確認した。このままcompositionがverified inventoryから
+interval配列を渡すと、全予定を空扱いして衝突eventを候補に残す。
+
+実配線と同じbusy interval配列を渡すbehavior testを追加し、conflicting candidateが残るREDを確認した後、
+`defaultCalendarFree`を配列とverified inventory objectの両contractへ対応させた。overlap条件はevent start < busy endかつevent end > busy startを維持する。
+Luma workflow、minimal core、Google Calendar inventoryのfocused suiteは15/15 GREENで、conflicting candidate 0、non-conflicting candidate 1を確認した。
+
+実Calendar read、browser、Submit、PNG、Telegram作用は0。Item 10は未完で、次はこのbusy interval配列を実Google Calendar inventoryから生成し、
+Luma/cache/fallbackへ渡すproduction dependency routerをTDDで接続する。scheduleは引き続きunloadedを維持する。
+
+### Active remaining TODO SSOT（進捗182。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
