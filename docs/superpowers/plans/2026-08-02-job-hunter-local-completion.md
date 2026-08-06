@@ -2228,11 +2228,12 @@ Completed foundations are `L-49K0A1G`, `L-49K0B`, `L-49K0C`, and `L-49K0C1`.
 The active cursor is the first item below; do not start a later item merely because
 it is easier to demonstrate:
 
-1. `L-49K0C2O1` through `L-49K0C2O6` — install the complete local OpenTelemetry,
-   Collector, Grafana, trace-correlation, and privacy boundary before another ATS
-   selector diagnosis. A generic surface error without its raw non-private cause is
-   no longer an acceptable repair input.
-2. `L-49K1` through `L-49K4`, then `L-49K0C2` — copy the measured successful Ashby
+1. `L-49K0C2O1` through `L-49K0C2O5`, excluding only the action-owned
+   `L-49K0C2O3b2c` — install the local OpenTelemetry, Collector, Grafana,
+   trace-correlation, and privacy boundary before another ATS selector diagnosis.
+   A generic surface error without its raw non-private cause is no longer acceptable.
+2. `L-49K1` through `L-49K4`, closing `L-49K0C2O3b2c` inside `L-49K3`, then
+   `L-49K0C2O6` and `L-49K0C2` — copy the measured successful Ashby
    interaction into a deterministic resident apply adapter: open `Application`,
    complete and verify the form, submit once, confirm success, build the immutable
    owner dossier, then
@@ -2865,10 +2866,19 @@ OpenTelemetry decision and primary sources:
           Raw posting URL/query and private form values are absent. Focused resident
           ATS tests pass 5/5, including a full candidate attempt with a private query
           fixture; the O2H boundary independently prevents exception payload leakage.
-      - [ ] `L-49K0C2O3b2` — Add `hourly_pass → submit.intent → submit.action →
-        confirmation.observe` at the resident submit activity plus focused tests.
-        Builder/development processes retain zero live-submit authority (at most
-        3 files, soft target 100 LOC).
+      - [ ] `L-49K0C2O3b2` — Complete resident pass/submit/confirmation spans.
+        Parent closes only after all three children close.
+        - [ ] `L-49K0C2O3b2a` — Add `hourly_pass` at `browser_worker.run_worker`
+          with injected telemetry and focused tests (2 files, soft target 60 LOC).
+        - [ ] `L-49K0C2O3b2b` — Add `submit.intent` and `confirmation.observe` at
+          the existing ledger claim and authoritative Gmail/ATS reconciliation
+          boundaries, split into claim and confirmation slices of at most 3 files
+          and 100 LOC each.
+        - [ ] `L-49K0C2O3b2c` — Add `submit.action` inside `L-49K3`'s fenced
+          semantic resident Submit activity. This cannot be implemented earlier:
+          the measured runtime has ledger intent/click/transport fences but no
+          resident Submit executor, and Browser Use explicitly rejects `submit`.
+          Builder/development processes retain zero live-submit authority.
   - [ ] `L-49K0C2O4` — Correlate `trace_id`/`span_id` through Temporal Workflow and
     Activity IDs, application/route IDs, ledger events, owner/worker receipts,
     evidence manifests, Guardian repair cases, and Telegram reports. OTel remains
