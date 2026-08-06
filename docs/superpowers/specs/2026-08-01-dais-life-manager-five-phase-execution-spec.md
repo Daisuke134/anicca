@@ -5383,7 +5383,40 @@ Luma workflow、minimal core、Google Calendar inventoryのfocused suiteは15/15
 実Calendar read、browser、Submit、PNG、Telegram作用は0。Item 10は未完で、次はこのbusy interval配列を実Google Calendar inventoryから生成し、
 Luma/cache/fallbackへ渡すproduction dependency routerをTDDで接続する。scheduleは引き続きunloadedを維持する。
 
-### Active remaining TODO SSOT（進捗182。これ以外の残TODO一覧は履歴）
+### O1B-25進捗183（14日探索窓 / Browser Harness・Sol・multi-agent運用判断）
+
+Daisの明示判断により、production candidate探索窓は**今日を含む14日間**へ固定する。旧21日coverageは復活させず、
+14日を全件埋めるcoverage completionもSubmit前提にしない。一wakeは14日内のCalendar非衝突候補を探し、実申込可能な最初の候補へ進む。
+AI/cryptoはhard filterではなく、同日・同時間帯に複数の無料・受付中・非衝突候補がある場合だけのstable tie-breakとする。
+AI/crypto以外の候補を抑止せず、「何かに参加する」を「好みの候補がないので何にも参加しない」より優先する。
+
+Browser Harness、Sol、Healer、multi-agentのproduction運用は次へ固定する。
+
+1. daily wakeの通常経路はcached/direct actionだけで、LLM call 0を標準とする。
+2. cache/direct actionが現在pageで失敗した時だけBrowser Harness fallbackを同じsession/pageで最大10 step起動する。
+3. fallback成功後はparent readbackが`registered/pending`を確認し、replacement actionだけversioned cacheへ保存する。次runはagentなしで再生する。
+4. 高価なSolを常時loop、候補探索、通常form入力へ使わない。安価なbounded browser modelで解けず、ordinary UI変更の修復価値が高い場合だけ
+   escalation候補にできるが、同一wakeの10 step/10分/circuit上限を超えない。
+5. repo-wide Healerはdaily Connectorの前提・sidecar・自動retry ownerにしない。正常workflowとlive bundle完成後、再現可能なcode defectだけを
+   isolated repair taskへ渡す将来boundaryとし、browser apply、merge、deploy権限を同じagentへ集約しない。
+6. Connector本体はsingle parent orchestratorを維持する。Calendar→同一page navigation→Submit→readback→evidenceは順序依存であり、
+   複数agentの同時browser操作を禁止する。multi-agentは将来、複数providerのread-only discovery/researchなど独立・並列・高価値の作業にだけ使い、
+   parentが候補を統合後、一つのActorだけがexternal writeを行う。
+
+一次資料:
+
+- Stagehand Agent Fallbacks: https://docs.stagehand.dev/v3/best-practices/agent-fallbacks — direct action失敗時にだけagent fallbackを使い、例も`maxSteps: 10`。
+- Stagehand Deterministic Agent Scripts: https://docs.stagehand.dev/v3/best-practices/deterministic-agent — 初回agent workflowをcacheし、以後LLM inferenceなしで再生する。
+- Browser Use Deterministic rerun: https://docs.browser-use.com/cloud/agent/cache-script — 初回agent実行後、同じtaskをcached scriptでLLM cost 0再実行する。
+- OpenAI Practical Guide to Building Agents: https://openai.com/business/guides-and-resources/a-practical-guide-to-building-ai-agents/ —
+  single-agentへtoolsを段階追加して複雑性を抑え、tool overlapや複雑な分岐が限界になった時にmulti-agentを検討する。
+- Anthropic Multi-agent Research System: https://www.anthropic.com/engineering/multi-agent-research-system —
+  multi-agentは独立方向を並列探索するbreadth-first taskに強い一方、token消費が大きく、依存が多く共有contextが必要なtaskには不向き。
+
+この進捗はarchitecture/spec判断であり、実browser、Calendar、Submit、PNG、Telegram作用は0。Item 10は未完で、次は14日Calendar inventoryと
+single-parent Luma/cache/fallbackをproduction dependency routerへ接続する。scheduleは引き続きunloadedを維持する。
+
+### Active remaining TODO SSOT（進捗183。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
@@ -5396,7 +5429,7 @@ Luma/cache/fallbackへ渡すproduction dependency routerをTDDで接続する。
 7. [x] **Browser Harness bounded adapterを接続する。** Connector-owned claimed pageだけを操作対象にし、AX tree→targeted DOM→screenshot/coordinateの順で観察する。navigate/observe/fill/submit/readbackを一作用ずつ実行し、candidateごと最大10 agent step、browser/session/target作成権限なし、永続更新先はprovider skill/helper/cacheだけに制限する。証拠: 進捗177、adapter/core 9/9 GREEN。
 8. [x] **Luma script-first workflowを接続する。** Lumaを必ず最初に探索し、無料・受付中・Calendar非衝突の最初のcandidateへ既存reader/filler/Submitをdirect actionとして適用する。未知ordinary required fieldまたはUI変更だけBrowser Harnessへ渡す。過去attempt/suppressionを申込停止gateにしない。証拠: 進捗178、Luma関連43/43 GREEN。
 9. [x] **versioned provider/action cacheを実装する。** provider、workflow version、page state、safe selector/action、expected effectを保存する。fallback成功時は親がexpected stateを確認後、replacement actionだけ更新する。credential、cookie、private value、raw promptは保存しない。証拠: 進捗179、cache/core 10/10 GREEN。
-10. [ ] **foreground Luma live E2Eを実行する。** scheduling disabledのままbounded foreground runnerを起動し、実際の無料・Calendar非衝突Luma eventへSubmitする。失敗時は同じsession/pageで修復または次候補へ進む。完了条件はparent readbackが新規`registered`または`pending`を観測すること。
+10. [ ] **foreground Luma live E2Eを実行する。** scheduling disabledのままbounded foreground runnerを起動し、今日を含む14日内の実際の無料・Calendar非衝突Luma eventへSubmitする。AI/cryptoは同日競合候補のtie-breakだけに使い、一般eventをstop/filterしない。失敗時は同じsession/pageで修復または次候補へ進む。完了条件はparent readbackが新規`registered`または`pending`を観測すること。
 11. [ ] **同じLuma registrationのexternal evidence chainを完成する。** Provider receipt/ticket/QRまたは同等receipt、Calendar event IDと独立readback、registered page full-page PNGとSHA-256、Telegram message positive ID、Telegram photo positive IDを同一lineageのdurable `applied_bundle`へ保存する。不足が一つでもあれば成功扱いにしない。
 12. [ ] **post-registration recoveryを実証する。** Calendar、PNG、ticket、Telegram各境界の中断fixtureから、providerへ再Submitせず不足artifactだけを補完する。完了条件は外部registration 1、Calendar event 1、bundle 1、duplicate Submit 0。
 13. [ ] **idempotent second foreground wakeを実証する。** 同じeventを既登録としてreadbackし、Submit 0で未処理candidateへ継続する。every-wake Telegram positive message IDを保存する。
