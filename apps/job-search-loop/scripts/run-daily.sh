@@ -260,6 +260,7 @@ TRAPEXIT() {
 set +e
 "$JOB_SEARCH_PYTHON" -m job_search_loop.browser_worker run \
   --database "$JOB_SEARCH_CANDIDATE_QUEUE" \
+  --application-ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
   --owner-receipt "$JOB_SEARCH_BROWSER_OWNER_EVIDENCE" \
   --holder-pid "$$" \
   --run-id "$RUN_ID" \
