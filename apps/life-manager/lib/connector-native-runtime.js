@@ -72,6 +72,13 @@ function passCandidateBudget(value) {
   return budget;
 }
 
+function capabilityVersion(value) {
+  if (value == null) return null;
+  const version = String(value).trim();
+  if (!/^[a-z0-9][a-z0-9._-]{0,63}$/.test(version)) unavailable();
+  return version;
+}
+
 function resumeCursor(value) {
   if (value == null) return null;
   if (
@@ -299,12 +306,14 @@ async function runNativeConnectorPass(input = {}) {
 
     let write = null;
     const candidateAttempts = [];
+    const currentCapabilityVersion = capabilityVersion(config.capabilityVersion);
     const candidateBudget = passCandidateBudget(config.passCandidateBudget);
     const inputCursor = resumeCursor(config.cursor);
     let outputCursor = null;
     let attemptCount = 0;
     const suppressedEventRefs = activeSuppressedEventRefs({
       attempts: Array.isArray(config.candidateAttempts) ? config.candidateAttempts : [],
+      capabilityVersion: currentCapabilityVersion,
       now,
     });
     const latestAttempts = latestCandidateAttempts({
@@ -435,6 +444,7 @@ async function runNativeConnectorPass(input = {}) {
                 safe_reason: reconciledAbsent ? "LUMA_RECONCILED_ABSENT" : "CONNECTOR_EFFECT_UNKNOWN",
                 observed_at: now,
                 retry_after: reconciledAbsent ? now : null,
+                ...(currentCapabilityVersion ? { capability_version: currentCapabilityVersion } : {}),
               }));
               break judgmentLoop;
             }
@@ -483,6 +493,7 @@ async function runNativeConnectorPass(input = {}) {
             safe_reason: candidateOutcome.error_code || write.outcome,
             observed_at: now,
             retry_after: null,
+            ...(currentCapabilityVersion ? { capability_version: currentCapabilityVersion } : {}),
           }));
           attemptCount += 1;
           if (

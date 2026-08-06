@@ -2678,6 +2678,12 @@ form capability versionが旧attemptと異なる時だけsuppressionを解除し
 legacy→v1解除、v1再抑制、v1→v2解除のRED後、suppression/native 17/17 GREEN。次はversionをruntime configと新attemptへ保存し、
 legacy JSONLを値欠落のまま安全にmigrationして実runでApplyへ進める12Bである。
 
+O1B-25進捗110（12B capability version persistence / RED→GREEN、live再評価待ち）: native configを
+`luma-form-submit-v1`へ固定し、suppression入力と新しいcandidate attempt全件へ同versionを渡すようにした。既存JSONLの
+versionなし5-key行と新6-key行を両方closed schemaで読めるため、過去stateを削除・書換せずappend-only migrationできる。
+旧form failureがv1で一度再試行され、その結果がv1 attemptとして保存されるruntime RED後、runtime/suppression 17/17、
+native entrypoint 26/26 GREEN。次は既存launchd runで`unsuppressed>0 / write attempts>0`と実provider resultを確認する。
+
 現在と完成形:
 
 ```mermaid
@@ -2719,7 +2725,7 @@ flowchart LR
 11A. [x] Luma formを標準required input、custom multi-select、app-level required checkboxを含むclosed schemaへ正規化する。focused 2/2、provider回帰込み11/11。
 11B. [x] verified profileの完全一致回答と明示consentだけをanswer planへ変換し、未知required fieldで虚偽入力せず次候補へ進める。回帰込み14/14。
 11C. [x] exact controlだけをfill/check/selectし、各effectをreadbackするbounded executorを追加する。回帰込み16/16。
-11D. live DOM schema reader→private profile loader→answer plan→fill readbackを`submitLumaOnPage`のconfirm click前へ接続し、未知fieldでは同passの次候補へ継続する。
+11D. [x] live DOM schema reader→private profile loader→answer plan→fill readbackを`submitLumaOnPage`のconfirm click前へ接続し、未知fieldでは同passの次候補へ継続する。
 12. attempt/suppressionへ`capability_version`を追加し、旧`LUMA_FORM_INPUT_REQUIRED / retry_after=null`を新versionで一度だけ再評価する。同versionの無限retryは禁止する。
 13. Observer trace packを実装する。run/event/capability versionへaction、URL class、control label、validation class、screenshot SHA、provider readbackをbindし、PII/secretなしのreplay fixtureをincidentへ添付する。
 14. [~] Terra self-fix producerをrevision-awareにする。canonical path/stateとexit 0はlive実証済み。残りは`incident_fingerprint + capability_version + revision` ledger、Connector blocker優先queue、PR作成をdoneにしない状態遷移、不十分PR #1410をrevision 2へ戻すことである。
