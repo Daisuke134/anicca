@@ -16,6 +16,7 @@ from .ats import evaluate_snapshot
 from .dedup import company_role_key
 from .portfolio import PORTFOLIO_LIMITS
 from .state import canonical_job_id, canonical_url, validate_transition
+from .telemetry import Telemetry
 
 
 LEGACY_STRATEGY = {"capture_status": "legacy_unavailable"}
@@ -91,8 +92,9 @@ def _now() -> str:
 
 
 class Ledger:
-    def __init__(self, path: Path):
+    def __init__(self, path: Path, telemetry: Any = None):
         self.path = Path(path)
+        self.telemetry = telemetry or Telemetry()
         self.path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
         os.chmod(self.path.parent, 0o700)
         self.connection = sqlite3.connect(
@@ -2474,7 +2476,9 @@ class Ledger:
             raise ValueError("fill receipt browser owner lease is missing")
         if not isinstance(fill_receipt.get("owner_fence"), int) or fill_receipt["owner_fence"] <= 0:
             raise ValueError("fill receipt browser owner fence is missing")
-        with self._transaction():
+        with self.telemetry.span(
+            "submit.intent", {"application.id": application_id}
+        ), self._transaction():
             application = self.connection.execute(
                 "SELECT canonical_url FROM applications WHERE id = ?",
                 (application_id,),

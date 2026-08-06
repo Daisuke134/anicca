@@ -10,6 +10,20 @@ from pathlib import Path
 from job_search_loop.ledger import FenceError, Ledger
 
 
+class RecordingSpan:
+    recording = True
+    def __init__(self, name, attributes): self.name, self.attributes = name, attributes or {}
+    def __enter__(self): return self
+    def __exit__(self, *_): return False
+    def set_attributes(self, attributes): self.attributes.update(attributes)
+
+
+class RecordingTelemetry:
+    def __init__(self): self.spans = []
+    def span(self, name, attributes=None):
+        span = RecordingSpan(name, attributes); self.spans.append(span); return span
+
+
 class LedgerTests(unittest.TestCase):
     def setUp(self):
         self.tempdir = tempfile.TemporaryDirectory()
@@ -145,6 +159,18 @@ class LedgerTests(unittest.TestCase):
                 employer_answers=[],
             )
         return intent
+
+    def test_submission_claim_emits_one_private_safe_intent_span(self):
+        telemetry = RecordingTelemetry()
+        self.ledger.telemetry = telemetry
+        self._ready()
+
+        intent = self._claim(self.ledger, self.application_id, "2026-08-06", "payload")
+
+        self.assertIsNotNone(intent)
+        self.assertEqual([span.name for span in telemetry.spans], ["submit.intent"])
+        self.assertEqual(telemetry.spans[0].attributes, {"application.id": self.application_id})
+        self.assertNotIn("resume", json.dumps(telemetry.spans[0].attributes))
 
     def test_daily_portfolio_enforces_two_five_three_bucket_caps(self):
         self.assertIn("portfolio_bucket", inspect.signature(self.ledger.claim_submission).parameters)
