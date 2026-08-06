@@ -75,14 +75,22 @@ class BrowserWorkerTests(unittest.TestCase):
         self.assertIn("route-fixture-request.json", script)
         self.assertIn("--route-fixture", script)
         fixture_branch = script.index('if [[ -f "$ROUTE_FIXTURE_REQUEST" ]]')
-        model_call = script.index("job-search-terra-plan")
+        model_call = script.index("application-lane-agent")
         self.assertLess(fixture_branch, model_call)
         self.assertIn('mv "$ROUTE_FIXTURE_REQUEST" "$EVIDENCE/route-fixture-request.json"', script)
-        worker_run = script.index("job_search_loop.browser_worker run")
-        ledger_arg = script.index(
-            '--application-ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3"'
-        )
-        self.assertGreater(ledger_arg, worker_run)
+
+    def test_live_daily_apply_is_one_natural_language_terra_agent(self):
+        script = (
+            Path(__file__).parents[1] / "scripts" / "run-daily.sh"
+        ).read_text(encoding="utf-8")
+        fixture_end = script.index('fi\n"$JOB_SEARCH_PYTHON" -m job_search_loop.application_reporting deliver')
+        live_path = script[fixture_end:]
+        self.assertIn("--task-class application-lane-agent", live_path)
+        self.assertIn('prompts/daily-pass.md', live_path)
+        self.assertNotIn("job_search_loop.browser_worker run", live_path)
+        self.assertNotIn("--task-class composition-agent", live_path)
+        self.assertNotIn("--task-class job-search-terra-high", live_path)
+        self.assertEqual(live_path.count('"$JOB_SEARCH_PYTHON" "$JOB_SEARCH_RUNNER"'), 1)
 
     def test_run_worker_executes_route_fixture_with_resident_actor_provenance(self):
         with tempfile.TemporaryDirectory() as directory:
