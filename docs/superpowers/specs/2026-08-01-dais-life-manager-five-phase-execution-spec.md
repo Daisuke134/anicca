@@ -5241,7 +5241,27 @@ focused REDを実行し、production moduleがまだ存在しないため`MODULE
 focused REDでは実出力がnative、healthcheck、Healerの3 plistだったためfail 1となり、旧duplicate owner wiringを正しく検出した。
 Item 4はRED contract固定として完了し、Item 5で旧production orchestrationを除去してからItem 6でGREENへ進める。
 
-### Active remaining TODO SSOT（進捗174。これ以外の残TODO一覧は履歴）
+### O1B-25進捗175（Item 5 / 旧production orchestration除去）
+
+inventoryに従いGit patchでofficial production pathを縮小した。`skills/connector/native-pass.js`の旧717行を、
+`runMinimalConnectorWake`へowner token、state dir、provider順`luma→connpass`、failure上限3、wake上限600,000ms、agent上限10だけを渡す
+thin adapterへ置換した。`connector-native-runtime.js`、provider cursor、coverage、ranking、serendipity、spend、suppression、self-heal issue、
+Docker/host bridgeのofficial importは0になった。old runtime moduleと他track/eval consumerは削除していない。
+
+`skills/connector/test/native-entrypoint.test.js`の旧orchestration behavior 1,138行を退役し、official adapterがbounded minimal contractだけを
+forwardし`provider-cursor.json`を作らないbehavior testへ置換した。`apps/life-manager/lib/connector-minimal-runner.js`はItem 6用の明示的RED
+skeletonとして追加し、まだ外部作用を持たない。
+
+`skills/connector/render-launchd.sh`はnative plist一個だけをrenderし、healthcheck/Healer sidecarを生成しない。
+native plist templateは`StartInterval=300`を除去し、daily `StartCalendarInterval` 09:00 localへ変更した。これはrender contractだけで、
+live install/loadは行っていない。Native、healthcheck、Healer、host bridgeのlaunchctl statusは全て113を維持する。
+
+focused adapter/renderer testsは3/3 GREEN、syntax check 2/2 GREEN、official old-import scan 0、`git diff --check` GREENである。
+minimal runner behavior testsは実装skeletonの`Connector minimal runner not implemented`により期待どおり4/4 REDを維持する。
+state、profile、auth、token、cookie、receipt、Calendar/Telegram evidence、PNG、append-only ledgerの変更・削除は0。Item 5を完了し、
+Item 6でprovider-neutral coreを実装して4 REDをGREENにする。
+
+### Active remaining TODO SSOT（進捗175。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
@@ -5249,7 +5269,7 @@ Item 4はRED contract固定として完了し、Item 5で旧production orchestra
 2. [x] **Connector ownerとGig consumer境界を確定する。** `rg`とcall pathでHealer shadowとhost bridgeのplist、process、port、token consumerを列挙し、Gig consumer 0とConnector ownershipを証明する。証明後だけHealerとConnector-owned legacy bridgeをunloadする。profile、auth、receipt、append-only stateは削除しない。証拠: 進捗172。
 3. [x] **exact keep / direct-reuse / delete inventoryを作る。** production entrypointから全call pathを追い、file名とsymbol名単位で分類してこのspecへ追記する。`keep`は`:9222` target ownership/fencingとdurable evidence、`direct-reuse`はLuma reader/filler/submit/readback、Calendar、PNG、Telegram、receipt/idempotency、`delete`は旧native-pass orchestration、21日coverage、bulk tab discovery、ranking/gates、spend ordering、suppression stop gate、durable provider cursor、Healer-first wiring、5分retry、重複schedule。consumer未確認の削除は禁止する。証拠: 進捗173 inventory tablesとconsumer call path。
 4. [x] **production interfaceとfocused destructive-boundary testsを先に固定する。** 一entrypoint、一session、一target、一page、candidate navigationでcreate/close 0、Gig `:9223` write 0、agent `browser.close()` 0、inline generated Node 0、failure 3/10分circuit-openを失敗する契約testとして追加する。大規模test frameworkは作らない。証拠: 進捗174、focused RED 2件。
-5. [ ] **旧production orchestrationをGit patchで除去する。** official Connector entrypointからcoverage/ranking/gate/cursor/Healer/healthcheck/bridge依存を外す。state/evidence/receipt fileは削除しない。broad `rm`は使わない。旧moduleが他trackで必要ならproduction pathからだけ切り離す。
+5. [x] **旧production orchestrationをGit patchで除去する。** official Connector entrypointからcoverage/ranking/gate/cursor/Healer/healthcheck/bridge依存を外す。state/evidence/receipt fileは削除しない。broad `rm`は使わない。旧moduleが他trackで必要ならproduction pathからだけ切り離す。証拠: 進捗175、focused 3/3 GREEN、minimal core 4/4 expected RED。
 6. [ ] **provider-neutral minimal runner coreを実装する。** Daily wake→Calendar gap→ordered provider/candidate→same-page navigation→direct action→parent readback→downstream evidence→close owned page→exitを一entrypointへ接続する。action historyはpurpose、safe method、timestamp、result、durationだけをappend-only保存する。
 7. [ ] **Browser Harness bounded adapterを接続する。** Connector-owned claimed pageだけを操作対象にし、AX tree→targeted DOM→screenshot/coordinateの順で観察する。navigate/observe/fill/submit/readbackを一作用ずつ実行し、candidateごと最大10 agent step、browser/session/target作成権限なし、永続更新先はprovider skill/helper/cacheだけに制限する。
 8. [ ] **Luma script-first workflowを接続する。** Lumaを必ず最初に探索し、無料・受付中・Calendar非衝突の最初のcandidateへ既存reader/filler/Submitをdirect actionとして適用する。未知ordinary required fieldまたはUI変更だけBrowser Harnessへ渡す。過去attempt/suppressionを申込停止gateにしない。
