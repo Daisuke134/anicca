@@ -137,6 +137,24 @@ test("the pack gives discovery and RSVP one auth-aware daily-driver", async () =
   assert.deepEqual(calls.at(-2)[1], { apiKey: "fixture-secret-api-key-1234567890" });
 });
 
+test("the pack forwards only the trusted private form profile reader to the RSVP provider", () => {
+  const readLumaFormProfile = () => ({ form_answers: {} });
+  let providerInput;
+  createConnectorEventsPack({
+    dailyDriver: { withLumaPage: async () => {} },
+    auth: { ensureAuthenticated: async () => ({ status: "authenticated" }) },
+    evidenceStore: { record: async () => {} },
+    readLumaFormProfile,
+    createAuthAwareDriver: () => ({ withLumaPage: async () => {} }),
+    createProvider(input) {
+      providerInput = input;
+      return { inspectRegistration: async () => {}, submitRegistration: async () => {} };
+    },
+  });
+
+  assert.equal(providerInput.readLumaFormProfile, readLumaFormProfile);
+});
+
 test("source handoff with no connpass key never constructs an API client", async () => {
   let clientCreated = false;
   const pack = createConnectorEventsPack({

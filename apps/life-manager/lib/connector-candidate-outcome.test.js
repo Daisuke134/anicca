@@ -26,6 +26,16 @@ test("write results are normalized into the four candidate attempt outcomes", ()
       want: { classification: "known_no_effect", retryable: false, suppress_candidate: true },
     },
     {
+      name: "required private profile answer is unavailable before confirm",
+      write: {
+        status: "incomplete",
+        outcome: "application_failed",
+        error_code: "LUMA_REQUIRED_PROFILE_FIELD_UNAVAILABLE",
+        event_ref: "luma-event://event/profile-unavailable",
+      },
+      want: { classification: "known_no_effect", retryable: false, suppress_candidate: true },
+    },
+    {
       name: "provider cannot prove whether submit happened",
       write: {
         status: "reconciliation_required",

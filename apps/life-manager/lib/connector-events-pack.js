@@ -86,6 +86,7 @@ function createConnectorEventsPack(options = {}) {
   const provider = createProvider({
     dailyDriver: authAwareDriver,
     evidenceStore,
+    readLumaFormProfile: options.readLumaFormProfile,
     now: options.now,
   });
   if (
