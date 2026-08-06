@@ -27,7 +27,13 @@ answers. Decline optional demographic questions when possible.
 For each candidate:
 
 1. Check the durable ledger for an existing submitted or submit-unknown application
-   to the canonical posting. Skip only a real duplicate.
+   to the canonical posting. Skip only a real duplicate. An existing record owned by
+   `dais_manual` or `recruiter` is a duplicate only when its durable state proves
+   `submitted` or `submit_unknown`. Never call `add_application(owner="agent")` for
+   an existing cross-owner record and never let `FenceError` end the pass: preserve
+   that record, record the skip privately, and immediately continue to the next
+   candidate. Ledger persistence happens after browser work and cannot block browser
+   execution for a different candidate.
 2. Open the official posting in CloakBrowser. Follow the obvious user-facing Apply,
    Apply now, Apply for this job, 応募する, 応募へ進む, エントリー, popup, redirect,
    account, and iframe route. A job-detail page is never a terminal failure.
@@ -49,12 +55,14 @@ For each candidate:
    state, why it matched, outcome, screenshot, exact submitted resume, and submitted
    question/answer dossier. Require a Telegram message ID before claiming delivery.
 
-There are only four reasons to stop one candidate before Submit: a durable duplicate,
-a genuinely missing required personal/legal fact, a visible CAPTCHA, or explicit
-below-floor compensation. An unsupported ATS, unfamiliar control, missing predefined
-action, evaluator failure, unpublished compensation, or another candidate remaining
-unverified is not a stop reason. Adapt with live Playwright inspection. If one route
-is blocked, continue to another candidate; do not end the pass with zero attempts.
+There are only four reasons to abandon one candidate before Submit: a durable
+duplicate, a genuinely missing required personal/legal fact, a visible CAPTCHA, or
+explicit below-floor compensation. None of them ends the pass. Record the candidate
+outcome and immediately continue to another eligible candidate. An unsupported ATS,
+unfamiliar control, missing predefined action, evaluator failure, ledger ownership,
+unpublished compensation, or another candidate remaining unverified is not a pass
+stop reason. Adapt with live Playwright inspection. Do not end the pass with zero
+attempts while any eligible candidate remains.
 
 Do not require every discovered link to be verified before the first Submit. Do not
 call a deterministic ATS evaluator on a job-detail page. Deterministic helpers may

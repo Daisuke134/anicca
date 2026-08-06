@@ -3295,6 +3295,16 @@ OpenTelemetry decision and primary sources:
       lease for a 1,800-second agent-shell grace period. Job Hunter's holder is the
       long-lived launchd wrapper, so acquire now sets stale seconds to zero: a live
       PID remains exclusive, while a dead wrapper lease is reclaimed immediately.
+    - Run-56 execution correction: the single Terra process reached the live OpenAI
+      Ashby application, observed the required start-date question, and correctly
+      refused to invent an answer. Owner direction establishes `2026-12-01`, now
+      stored only in the private profile. The same run then called
+      `add_application(owner="agent")` against an existing `dais_manual` record and
+      hit `FenceError` twice while trying later candidates. Cross-owner ownership is
+      still retained for duplicate safety, but it is no longer an execution stop:
+      an already-submitted manual/recruiter record is preserved and skipped without
+      mutation, and the same Terra must immediately continue to the next candidate.
+      Candidate blockers never end the pass while another eligible candidate exists.
 - [ ] **L-49K2** — Make the resident fill contract complete and inspectable. Route the
   exact accepted resume; fill verified identity/contact/location/start-date fields;
   select work authorization and sponsorship answers from the private profile; verify
