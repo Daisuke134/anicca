@@ -146,7 +146,10 @@ themselves.
 <task>
 Navigate the running CloakBrowser daily-driver (CDP :9222, already logged in as mtdc) to EACH of the
 ground-truth URLs below using the DETERMINISTIC navigation helper — do NOT navigate freehand via raw
-Bash/CDP calls. For EACH ground-truth URL below, call this exact script once, using pass_id "{pass_id}"
+Bash/CDP calls, and do NOT use a browser/CloakBrowser/hidden-target tool or any tool API that creates
+a hidden target. That tool path is not guaranteed to have remote debugging enabled and produces no
+real page evidence. Use Bash to run the exact Python helper below; the helper is the only permitted
+browser-driving action. For EACH ground-truth URL below, call this exact script once, using pass_id "{pass_id}"
 (the SAME pass_id for every call this round) and seq 01, 02, 03... in the SAME order as the URLs are
 listed:
   python3 ~/anicca/skills/earn/gig/scripts/cdp_nav_snapshot.py {pass_id} <seq> reality_check_<seq> <url>
