@@ -116,6 +116,13 @@ Dais confirms he has obtained direct permission from each listed event site for 
 
 **Completion:** The existing `createTarget → claimExact → probe → heartbeat → goto → parent task/readback → release` lifecycle accepts only the fixed provider/host mapping for Luma, Connpass, Peatix, Meetup, Doorkeeper, and Eventbrite. `withLumaPage` remains a compatibility wrapper. Endpoint stays exactly Connector `:9222`; Gig `:9223` and arbitrary origins remain rejected.
 
+This slice changes 103 lines across the four declared files because both the live-target and fallback-tab ownership paths share the same URL boundary; splitting them would leave one path Luma-only and create inconsistent fencing.
+
+- [x] RED: existing ownership 12 tests passed; `withEventPage` was absent and tab owner rejected Connpass.
+- [x] GREEN: fixed provider-host mapping shares the exact parent-owned lifecycle; Luma compatibility remains; mismatch/arbitrary origin/credentials/`:9223` fail closed.
+- [x] Ownership focused 22/22、pretest 12/12、outbound 348/348 GREEN。
+- [x] Master specへdirect authorization premiseと進捗135を記録しcommit/push。
+
 ## Task 4B: Connpass Authenticated Registration Adapter
 
 **Completion:** One parent-owned Connector target performs real registration, parent marker readback, PNG, admission ticket/QR or equivalent receipt, Calendar insertion, and Telegram card/photo. Only then promote Connpass registration capabilities to active.
