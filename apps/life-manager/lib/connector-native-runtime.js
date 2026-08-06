@@ -287,6 +287,16 @@ async function runNativeConnectorPass(input = {}) {
     const busyInventory = await pack.readBusyCalendar(calendar, { timeMin, timeMax, timeZone, now });
     if (!isVerifiedGoogleCalendarBusyInventory(busyInventory) || busyInventory.transport !== "gog") unavailable();
 
+    const selection = {
+      inventory_event_count: eventCount(dateInventory),
+      calendar_gate_event_count: 0,
+      calendar_eligible_count: 0,
+      luna_ranked_count: 0,
+      spend_ordered_count: 0,
+      unsuppressed_count: 0,
+      write_attempt_count: 0,
+    };
+
     let write = null;
     const candidateAttempts = [];
     const candidateBudget = passCandidateBudget(config.passCandidateBudget);
@@ -370,6 +380,10 @@ async function runNativeConnectorPass(input = {}) {
           failureCode = calendarGateFailureCode(null, { phase: "result" });
           unavailable();
         }
+        selection.calendar_gate_event_count += calendarGate.candidates.length;
+        selection.calendar_eligible_count += calendarGate.candidates.filter(
+          (candidate) => candidate && candidate.eligible === true,
+        ).length;
         if (!calendarGate.candidates.some((candidate) => candidate && candidate.eligible === true)) continue;
         failureCode = "CONNECTOR_NATIVE_LUNA_FAILED";
         const goalDecision = await runLunaJudgment({
@@ -381,9 +395,11 @@ async function runNativeConnectorPass(input = {}) {
           runnerPath: config.runnerPath,
         });
         if (!verifyGoalDecision(goalDecision) || goalDecision.ranked_events.length === 0) unavailable();
+        selection.luna_ranked_count += goalDecision.ranked_events.length;
         failureCode = "CONNECTOR_NATIVE_SPEND_GATE_FAILED";
         const spendSequence = await planDateSpend(policy, dateInventory, calendarGate, goalDecision);
         if (!verifySpendSequence(spendSequence)) unavailable();
+        selection.spend_ordered_count += spendSequence.ordered_candidates.length;
         let resumableCandidates = spendSequence.ordered_candidates;
         if (inputCursor && judgmentDay.date === inputCursor.date) {
           const cursorIndex = resumableCandidates.findIndex(
@@ -394,6 +410,7 @@ async function runNativeConnectorPass(input = {}) {
         const orderedCandidates = resumableCandidates.filter(
           (candidate) => !suppressedEventRefs.has(candidate.event_ref),
         );
+        selection.unsuppressed_count += orderedCandidates.length;
         if (orderedCandidates.length === 0) continue;
         failureCode = "CONNECTOR_NATIVE_WRITE_FAILED";
         for (const chosen of orderedCandidates) {
@@ -458,6 +475,7 @@ async function runNativeConnectorPass(input = {}) {
             fetchImpl: globalThis.fetch,
             ...(deps.writeDependencies || {}),
           });
+          selection.write_attempt_count += 1;
           const candidateOutcome = classifyConnectorCandidateOutcome(write);
           candidateAttempts.push(Object.freeze({
             event_ref: candidateOutcome.event_ref,
@@ -510,6 +528,7 @@ async function runNativeConnectorPass(input = {}) {
         complete: true,
         event_count: eventCount(dateInventory),
       }),
+      selection: Object.freeze({ ...selection }),
       calendar: Object.freeze({
         transport: "gog",
         all_calendars_read: true,

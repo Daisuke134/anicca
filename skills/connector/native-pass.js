@@ -349,6 +349,24 @@ function boundedResult(result) {
     unavailable: Number(counts.unavailable || 0),
   });
   if (Object.values(coverageCounts).some((value) => !Number.isSafeInteger(value) || value < 0)) unavailable();
+  let selection = null;
+  if (result.selection != null) {
+    const value = result.selection;
+    if (
+      !value || typeof value !== "object" || Array.isArray(value)
+      || Object.keys(value).sort().join(",") !== [
+        "calendar_eligible_count", "calendar_gate_event_count", "inventory_event_count",
+        "luna_ranked_count", "spend_ordered_count", "unsuppressed_count", "write_attempt_count",
+      ].sort().join(",")
+      || Object.values(value).some((count) => !Number.isSafeInteger(count) || count < 0 || count > 10_000)
+      || value.calendar_gate_event_count > value.inventory_event_count
+      || value.calendar_eligible_count > value.calendar_gate_event_count
+      || value.spend_ordered_count > value.calendar_eligible_count
+      || value.unsuppressed_count > value.spend_ordered_count
+      || value.write_attempt_count > value.unsuppressed_count
+    ) unavailable();
+    selection = Object.freeze({ ...value });
+  }
   const candidateAttempts = Array.isArray(result.candidate_attempts)
     ? result.candidate_attempts.map((attempt) => {
       if (
@@ -384,6 +402,7 @@ function boundedResult(result) {
     candidateAttempts: Object.freeze(candidateAttempts),
     cursor: cursor === null ? null : Object.freeze({ ...cursor }),
     coverageCounts,
+    selection,
   });
 }
 
@@ -447,7 +466,9 @@ function recordLastResult(stateDir, bounded) {
   const file = path.join(stateDir, "last-result.json");
   fs.mkdirSync(stateDir, { recursive: true, mode: 0o700 });
   fs.writeFileSync(file, `${JSON.stringify({
-    status: bounded.status, coverage_counts: bounded.coverageCounts, write: bounded.write,
+    status: bounded.status, coverage_counts: bounded.coverageCounts,
+    ...(bounded.selection ? { selection: bounded.selection } : {}),
+    write: bounded.write,
   })}\n`, {
     encoding: "utf8", mode: 0o600,
   });
