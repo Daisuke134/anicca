@@ -2574,6 +2574,13 @@ fall throughし、実run 133 fingerprintに対するGitHub issue `#1409`を作�
 同testへfake clientを注入し、再実行ではnetwork送信なしで26/26 GREENを確認した。次はcommit/push後の既存launchd wakeがmarkerで
 issue #1409を再利用し、local issue receiptを一行保存することをlive readbackしてP0-10Bを閉じる。
 
+O1B-25進捗97（P0-10B existing launchd LIVE GREEN）: push済みcommit `33798f72e`後、schedule-owned existing launchd
+run 134を別executorなしで自然終了まで観測した。GitHub検索では同incident title/markerのissueは一件だけで、run終了後に
+mode 0600 `self-heal-issue-receipts.jsonl`が一行生成された。receiptはrun 133 incidentと同じsha256 fingerprint、
+`https://github.com/Daisuke134/life-manager/issues/1409`、observed_atだけを持つ。これでincident検出→dedupe issue→provider URL receiptを
+実loopで完了した。run 134自体の応募は依然Apply 0 / write nullであり、次はP0-11でproducerを復旧し、issue #1409を
+RED test→required-form fix→PRへ変換する。
+
 現在と完成形:
 
 ```mermaid
@@ -2611,7 +2618,7 @@ flowchart LR
 8. [x] submit後のLuma登録済みpageをfull-page PNGで取得し、event ref、canonical URL、取得時刻、SHA-256、Calendar event IDへbindする。focused 30/30、native 21/21、outbound 302/302。
 9. [x] Telegramへ結果cardと登録済みpage画像を実送信し、画像のpositive provider message IDをdelivery receiptへ保存・readbackする。run 103、card `7372`、photo `7594`、native 23/23、outbound 307/307。
 10A. [x] Connectorのcandidate outcomeとselection telemetryから、本文・個人情報・secretを含まないdedupe可能なincident envelopeを生成し、mode 0600 local ledgerへ永続化する。native 25/25、outbound 314/314。
-10B. [進行中] incident envelopeを`lm:type:self-heal` issue intakeへdedupe付きで配送し、provider issue IDをdurable receiptとして保存する。
+10B. [x] incident envelopeを`lm:type:self-heal` issue intakeへdedupe付きで配送し、provider issue URLをdurable receiptとして保存する。issue #1409、run 134、mode 0600 receipt一行。
 11. self-fix producerを有効なcanonical path/stateへ修復し、incidentを隔離worktreeのRED test、最小修正、全回帰、PRへ変換する。modelは実装に十分なcoding modelを使うが、model名ではなくmachine resultとdiff/test証拠を合否の正本にする。
 12. self-build consumerを復旧し、protected-path、permission、test、canary、rollback gateを通過したPRだけをmerge・再配備する。producer/consumer双方のlaunchd exit 0と新ledger rowを実測する。
 13. 修復後にConnector loop自身を再wakeし、同じincident fingerprintが消え、実外部effectが成立するまでbounded repair cycleを継続する。通常retry/修復途中はTelegramへ送らない。
