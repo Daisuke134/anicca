@@ -1,7 +1,7 @@
 "use strict";
 
 function observedEffect() {
-  return "runtime_failed";
+  return "applied_bundle";
 }
 
 module.exports = { observedEffect };
