@@ -2581,6 +2581,16 @@ mode 0600 `self-heal-issue-receipts.jsonl`が一行生成された。receiptはr
 実loopで完了した。run 134自体の応募は依然Apply 0 / write nullであり、次はP0-11でproducerを復旧し、issue #1409を
 RED test→required-form fix→PRへ変換する。
 
+O1B-25進捗98（P0-11 producer実行とwrapper root fix / GREEN、再live検証待ち）: legacy dev stateをcopy-only migrationし、
+520 filesのcopy/verifyと`done.jsonl` byte一致を確認後、既存launchd `ai.anicca.life-manager-dev`をkickstartした。producer run 6は
+issue #1409を隔離worktreeへ渡し、実coding agentがcommit `ee94c69f6`とPR #1410を作成した。しかし外側daily wrapperは
+`invalid_machine_result`でexit 1だった。実測根因は二つで、worktree内testが親の`LIFE_MANAGER_REPO`を継承してprimary checkoutを参照したこと、
+PR URLとmachine result保存後に未設定`LM_DEV_TELEGRAM_TARGET`のparameter expansionがshellを終了させたことである。これを固定するRED testを
+追加し、test gate直前で`LIFE_MANAGER_REPO`をunset、Telegram target不在時は既に保存した`pr_open`を壊さずskipする最小修正で
+focused 3/3、daily loop 13/13 GREENを確認した。PR #1410自体は`LUMA_FORM_INPUT_REQUIRED`のeffect分類を変えるだけで、required formの
+schema読取、入力、Submit、登録済みreadback、screenshotを実装していないため受入不可・未mergeである。次はこのproducer修正をpushし、
+既存launchdのexit 0/machine resultをlive確認した後、insufficient PRを再修正cycleへ戻す。
+
 現在と完成形:
 
 ```mermaid
@@ -2619,7 +2629,7 @@ flowchart LR
 9. [x] Telegramへ結果cardと登録済みpage画像を実送信し、画像のpositive provider message IDをdelivery receiptへ保存・readbackする。run 103、card `7372`、photo `7594`、native 23/23、outbound 307/307。
 10A. [x] Connectorのcandidate outcomeとselection telemetryから、本文・個人情報・secretを含まないdedupe可能なincident envelopeを生成し、mode 0600 local ledgerへ永続化する。native 25/25、outbound 314/314。
 10B. [x] incident envelopeを`lm:type:self-heal` issue intakeへdedupe付きで配送し、provider issue URLをdurable receiptとして保存する。issue #1409、run 134、mode 0600 receipt一行。
-11. self-fix producerを有効なcanonical path/stateへ修復し、incidentを隔離worktreeのRED test、最小修正、全回帰、PRへ変換する。modelは実装に十分なcoding modelを使うが、model名ではなくmachine resultとdiff/test証拠を合否の正本にする。
+11. [~] self-fix producerを有効なcanonical path/stateへ修復し、incidentを隔離worktreeのRED test、最小修正、全回帰、PRへ変換する。state migrationとissue→agent→commit→PRはlive実証済み。残りはwrapper root fixのcanonical反映、launchd exit 0/machine result実証、受入不足PRを再修正cycleへ戻すこと。model名ではなくmachine resultとdiff/test証拠を合否の正本にする。
 12. self-build consumerを復旧し、protected-path、permission、test、canary、rollback gateを通過したPRだけをmerge・再配備する。producer/consumer双方のlaunchd exit 0と新ledger rowを実測する。
 13. 修復後にConnector loop自身を再wakeし、同じincident fingerprintが消え、実外部effectが成立するまでbounded repair cycleを継続する。通常retry/修復途中はTelegramへ送らない。
 14. 最初のlive self-fix fixtureとして`LUMA_FORM_INPUT_REQUIRED`を処理する。form schemaとlabelを安全に読み、verified profileと公開event evidenceだけから回答し、各入力をreadbackしてからsubmitする。推測できない質問、同意、公開投稿、支払はfail-closedのままにする。
