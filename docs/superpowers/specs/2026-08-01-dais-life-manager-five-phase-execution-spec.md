@@ -5458,7 +5458,24 @@ Luma/cache/Browser Harness/core/production focused suiteは23/23 GREEN。
 実gog、Google Calendar read、browser、Submit、PNG、Telegram作用は0。Item 10は未完で、次はItem 10A-2bとしてevidence、Telegram wake report、
 safe append-only action historyをofficial entrypointへ組成する。scheduleは引き続きunloadedを維持する。
 
-### Active remaining TODO SSOT（進捗186。これ以外の残TODO一覧は履歴）
+### O1B-25進捗187（Item 10A-2b-1 / minimal operations outbox）
+
+旧`wake-report-outbox`は21日coverageのopen count/cursor schemaへ結合しているためproduction minimal pathへ再接続せず、TDD REDで
+`createMinimalProductionOperations` contractを追加して新しいsmall boundaryを実装した。
+
+`recordAction`はcoreから受けたpurpose、safe method、timestamp、success/failed result、durationとsafe wake IDだけを
+`action-history.jsonl`へappend-only、mode 0600で保存する。URL、provider text、form value、Telegram target、credential、cookie、raw promptは
+schemaに存在せず、予期しないfieldを拒否する。
+
+`reportWake`は`applied_bundle`、`completed_no_effect`、`circuit_open`をcurrent wake reportとして送信前にdurable outboxへ保存し、
+Telegram positive message IDをparent parserが確認した後だけdelivery receiptを追記する。同じwakeの重複callは再送0。一時send failureはreportを
+削除・成功扱いせず、次wakeが過去pending reportから順に再送して各positive IDを保存する。本文先頭は`Connector:::`で送信元を明示する。
+
+minimal operations focused suiteは2/2 GREEN。private state directoryと全JSONLはmode 0700/0600、Telegram target persistence 0を確認した。
+実Telegram、browser、Calendar、Submit、PNG作用は0。Item 10は未完で、次はこのoperations boundaryとminimal evidence chainをofficial
+production dependenciesへ接続する。scheduleは引き続きunloadedを維持する。
+
+### Active remaining TODO SSOT（進捗187。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
