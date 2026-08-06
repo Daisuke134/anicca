@@ -32,6 +32,7 @@ const {
   inspectSavedLumaPaymentMethod,
 } = require("./event-spend-policy.js");
 const { createConnpassApiClient } = require("./connpass-api-client.js");
+const { discoverConnpassDateWithBrowser } = require("./connpass-browser-discovery.js");
 const {
   createEventSourceCapabilities,
   executeEventSourceHandoff,
@@ -67,6 +68,7 @@ function createConnectorEventsPack(options = {}) {
   const executeSourceHandoff = options.executeSourceHandoff || executeEventSourceHandoff;
   const createConnpassClient = options.createConnpassClient || createConnpassApiClient;
   const runCandidateSequence = options.runCandidateSequence || runLumaCandidateSequence;
+  const discoverConnpassDate = options.discoverConnpassDate || discoverConnpassDateWithBrowser;
   const planCoverageContinuation = options.planCoverageContinuation || planConnectorCoverageContinuation;
   const selectCalendarEligibleCandidates = options.selectCalendarEligibleCandidates || calendarEligibleLumaCandidates;
   const inspectBusyCalendar = options.inspectBusyCalendar || inspectGoogleCalendarBusyInventory;
@@ -204,6 +206,13 @@ function createConnectorEventsPack(options = {}) {
           : undefined)
         : (connpassApiKey ? createConnpassClient({ apiKey: connpassApiKey }) : undefined);
       return executeSourceHandoff({ plan, connpassClient });
+    },
+    discoverConnpassDate(date, extra = {}) {
+      return discoverConnpassDate({
+        date,
+        timeZone: extra.timeZone,
+        dailyDriver,
+      });
     },
   });
 }

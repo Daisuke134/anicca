@@ -17,6 +17,7 @@ const { advanceEventProviderCursor, createEventProviderCursor } = require("./eve
 const { inspectGoogleCalendarBusyInventory } = require("./google-calendar-busy-inventory.js");
 const { buildRollingEventCoverage } = require("./rolling-event-coverage.js");
 const { runLumaCandidateSequence } = require("./luma-candidate-loop.js");
+const { buildConnpassBrowserHandoff } = require("./event-source-handoff.js");
 
 const NOW = "2026-08-02T01:00:00.000Z";
 const TENANT = "dais-local";
@@ -443,9 +444,8 @@ test("zero Calendar-eligible events is a valid incomplete pass instead of a runt
   const providerCursor = createEventProviderCursor({
     registry, date: "2026-08-05", observedAt: "2026-08-05T00:00:00.000Z",
   });
-  const handoff = Object.freeze({
-    status: "waiting_for_authorized_source", coverage_status: "open", coverage_credit_count: 0,
-    network_call_count: 0, advisory_candidates: Object.freeze([]),
+  const handoff = buildConnpassBrowserHandoff({
+    date: "2026-08-05", browserPageCount: 1, candidates: [],
   });
   const profile = Object.freeze({ tenant_id: TENANT, timezone: "Asia/Tokyo" });
   const result = await runNativeConnectorPass({
@@ -475,9 +475,8 @@ test("zero Calendar-eligible events is a valid incomplete pass instead of a runt
       runLunaJudgment: async () => { throw new Error("Luna must not run"); },
       createPack: () => Object.freeze({
         ...input.pack,
-        handoffEventSource: async () => handoff,
+        discoverConnpassDate: async () => handoff,
       }),
-      isVerifiedEventSourceHandoff: (value) => value === handoff,
     },
   });
 
@@ -486,7 +485,7 @@ test("zero Calendar-eligible events is a valid incomplete pass instead of a runt
   assert.equal(result.candidate_attempts.length, 0);
   assert.equal(result.continuation.status, "continue");
   assert.equal(result.provider_cursor.provider, "connpass");
-  assert.equal(result.provider_discovery.status, "waiting_for_authorized_source");
+  assert.equal(result.provider_discovery.status, "authorized_source_empty");
   assert.deepEqual(result.selection, {
     inventory_event_count: 2,
     calendar_gate_event_count: 1,
@@ -1010,9 +1009,8 @@ test("Luma known-no-effect exhaustion advances the verified provider cursor to C
     }],
     skipped: [],
   });
-  const handoff = Object.freeze({
-    status: "waiting_for_authorized_source", coverage_status: "open",
-    coverage_credit_count: 0, network_call_count: 0, advisory_candidates: Object.freeze([]),
+  const handoff = buildConnpassBrowserHandoff({
+    date: "2026-08-05", browserPageCount: 1, candidates: [],
   });
   const result = await runNativeConnectorPass({
     ...input,
@@ -1031,9 +1029,8 @@ test("Luma known-no-effect exhaustion advances the verified provider cursor to C
     deps: {
       ...input.deps,
       createPack() {
-        return { ...input.pack, async handoffEventSource() { return handoff; } };
+        return { ...input.pack, async discoverConnpassDate() { return handoff; } };
       },
-      isVerifiedEventSourceHandoff: (value) => value === handoff,
       readProfile() { return profile; },
       async runLunaJudgment() { return goalDecision; },
       async gateDateCalendar() {
@@ -1062,7 +1059,7 @@ test("Luma known-no-effect exhaustion advances the verified provider cursor to C
   assert.equal(JSON.stringify(result.provider_cursor).includes("founder-night"), false);
 });
 
-test("an empty Luma inventory hands Connpass discovery into its browser write dependencies", async () => {
+test("an empty Luma inventory uses Connpass browser discovery and its browser write dependencies", async () => {
   const input = await fixture({ emptyLuma: true });
   const registry = createEventProviderRegistry();
   const lumaCursor = createEventProviderCursor({
@@ -1072,11 +1069,6 @@ test("an empty Luma inventory hands Connpass discovery into its browser write de
     registry, cursor: lumaCursor, transition: "provider_exhausted",
     observedAt: "2026-08-05T00:00:01.000Z",
   });
-  const handoff = Object.freeze({
-    status: "advisory_candidates_found", coverage_status: "open", coverage_credit_count: 0,
-    network_call_count: 2, advisory_candidates: Object.freeze([{ provider: "connpass", event_ref: "connpass-event://event/101" }]),
-  });
-  const calendarGate = Object.freeze({ status: "evaluated" });
   const providerEvent = Object.freeze({
     provider: "connpass", event_ref: "connpass-event://event/101",
     canonical_url: "https://tokyo-builders.connpass.com/event/101/",
@@ -1084,6 +1076,13 @@ test("an empty Luma inventory hands Connpass discovery into its browser write de
     ends_at: "2026-08-05T12:00:00.000Z", venue_name: "Shibuya Hall",
     venue_address: "Shibuya, Tokyo",
   });
+  const handoff = buildConnpassBrowserHandoff({
+    date: "2026-08-05", browserPageCount: 2, candidates: [{
+      ...providerEvent,
+      address: providerEvent.venue_address,
+    }],
+  });
+  const calendarGate = Object.freeze({ status: "evaluated" });
   const providerInventory = Object.freeze({
     provider: "connpass", coverage_snapshot_id: coverage().coverage_snapshot_id,
     timezone: "Asia/Tokyo", days: Object.freeze([
@@ -1106,8 +1105,8 @@ test("an empty Luma inventory hands Connpass discovery into its browser write de
   let received;
   input.deps.createPack = () => ({
     ...input.pack,
-    async handoffEventSource(date, lumaOutcome, extra) {
-      received = { date, lumaOutcome, extra };
+    async discoverConnpassDate(date, extra) {
+      received = { date, extra };
       return handoff;
     },
   });
@@ -1115,7 +1114,6 @@ test("an empty Luma inventory hands Connpass discovery into its browser write de
     ...input,
     config: {
       ...input.config, providerRegistry: registry, providerCursor,
-      connpassApiKey: "fixture-secret-api-key-1234567890",
       mapsKey: "maps-secret", homeLocation: "opaque-home",
       profilePath: "/private/tmp/dais-local.json", lunaEvidenceDir: "/private/tmp/connector-luna",
       telegramTarget: "opaque-chat", calendarCoverageUrl: "https://calendar.google.com/calendar/u/0/r",
@@ -1128,7 +1126,6 @@ test("an empty Luma inventory hands Connpass discovery into its browser write de
       isVerifiedCalendarCandidateGate: (value) => value === calendarGate,
       selectCalendarEligibleConnpass: () => eligibleCandidates,
       buildEventProviderDateInventory: () => providerInventory,
-      isVerifiedEventSourceHandoff: (value) => value === handoff,
       readProfile: () => profile,
       isVerifiedConnectorProfile: (value) => value === profile,
       createConnpassEvidenceStore: () => connpassStore,
@@ -1144,10 +1141,11 @@ test("an empty Luma inventory hands Connpass discovery into its browser write de
   const result = await runNativeConnectorPass(runtimeInput);
 
   assert.equal(received.date, "2026-08-05");
-  assert.equal(received.lumaOutcome.status, "next_provider_required");
-  assert.equal(received.extra.connpassApiKey, "fixture-secret-api-key-1234567890");
+  assert.equal(received.extra.timeZone, "Asia/Tokyo");
   assert.equal(result.provider_discovery.status, "advisory_candidates_found");
   assert.equal(result.provider_discovery.coverage_credit_count, 0);
+  assert.equal(result.provider_discovery.network_call_count, 0);
+  assert.equal(result.provider_discovery.browser_page_count, 2);
   assert.equal(result.provider_cursor, providerCursor);
   assert.equal(result.provider_inventory, providerInventory);
   assert.equal(result.write.event_ref, providerEvent.event_ref);
@@ -1157,7 +1155,6 @@ test("an empty Luma inventory hands Connpass discovery into its browser write de
   assert.equal(received.write.writeDeps.readArtifact, connpassStore.readArtifact);
   assert.equal(typeof received.write.writeDeps.buildEventApplicationJob, "function");
   assert.equal(typeof received.write.writeDeps.executeLumaRsvpJob, "function");
-  assert.equal(JSON.stringify(result).includes("fixture-secret"), false);
 
   writeResult = Object.freeze({
     status: "incomplete", outcome: "application_failed",
