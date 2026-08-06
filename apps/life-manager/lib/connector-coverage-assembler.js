@@ -7,6 +7,7 @@ const {
   isVerifiedRollingEventCoverage,
 } = require("./rolling-event-coverage.js");
 const { isVerifiedLumaDateInventory } = require("./luma-date-inventory.js");
+const { isVerifiedEventProviderDateInventory } = require("./event-provider-date-inventory.js");
 const { isVerifiedConnectorCalendarSync } = require("./connector-calendar-sync.js");
 const { isVerifiedGoogleCalendarBusyInventory } = require("./google-calendar-busy-inventory.js");
 const { isVerifiedCalendarCandidateGate } = require("./calendar-candidate-gate.js");
@@ -43,7 +44,7 @@ function buildVerifiedRegistrationCoverageEvidence(input = {}) {
   const dateInventory = input.dateInventory;
   const calendarSync = input.calendarSync;
   if (
-    !isVerifiedLumaDateInventory(dateInventory)
+    !(isVerifiedLumaDateInventory(dateInventory) || isVerifiedEventProviderDateInventory(dateInventory))
     || !isVerifiedConnectorCalendarSync(calendarSync)
     || !["created", "existing"].includes(calendarSync.status)
   ) invalid();

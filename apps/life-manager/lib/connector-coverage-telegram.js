@@ -3,6 +3,7 @@
 const { createHash } = require("node:crypto");
 const { isVerifiedRollingEventCoverage } = require("./rolling-event-coverage.js");
 const { isVerifiedLumaDateInventory } = require("./luma-date-inventory.js");
+const { isVerifiedEventProviderDateInventory } = require("./event-provider-date-inventory.js");
 const { isVerifiedConnectorCalendarSync } = require("./connector-calendar-sync.js");
 const { isVerifiedEventGoalSerendipity } = require("./event-goal-serendipity.js");
 const {
@@ -75,21 +76,21 @@ function normalizeNewEvents(coverage, rows) {
     if (
       !row || typeof row !== "object" || Array.isArray(row)
       || Object.keys(row).sort().join(",") !== [...NEW_EVENT_KEYS].sort().join(",")
-      || !isVerifiedLumaDateInventory(row.dateInventory)
+      || !(isVerifiedLumaDateInventory(row.dateInventory) || isVerifiedEventProviderDateInventory(row.dateInventory))
       || !isVerifiedConnectorCalendarSync(row.calendarSync)
-      || !isVerifiedEventGoalSerendipity(row.goalDecision)
+      || (isVerifiedLumaDateInventory(row.dateInventory) && !isVerifiedEventGoalSerendipity(row.goalDecision))
     ) invalid();
     const eventRef = String(row.eventRef == null ? "" : row.eventRef).trim();
     if (
       !eventRef || seenRefs.has(eventRef)
       || row.calendarSync.event_ref !== eventRef
       || row.calendarSync.canonical_event_url == null
-      || row.dateInventory.inventory_snapshot_id !== row.goalDecision.inventory_snapshot_id
+      || (row.goalDecision && row.dateInventory.inventory_snapshot_id !== row.goalDecision.inventory_snapshot_id)
     ) invalid();
     const event = row.dateInventory.days.flatMap((day) => day.events)
       .find((candidate) => candidate.event_ref === eventRef);
-    const goal = row.goalDecision.ranked_events.find((candidate) => candidate.event_ref === eventRef);
-    if (!event || !goal || event.canonical_url !== row.calendarSync.canonical_event_url) invalid();
+    const goal = row.goalDecision && row.goalDecision.ranked_events.find((candidate) => candidate.event_ref === eventRef);
+    if (!event || (isVerifiedLumaDateInventory(row.dateInventory) && !goal) || event.canonical_url !== row.calendarSync.canonical_event_url) invalid();
     const date = localDate(event.starts_at, coverage.timezone);
     const coverageDay = coverage.days.find((day) => day.date === date);
     if (
@@ -105,7 +106,7 @@ function normalizeNewEvents(coverage, rows) {
       venue: safeText(event.venue_name || event.venue_address, 160),
       starts_at: event.starts_at,
       ends_at: event.ends_at,
-      reason: safeText(goal.goal_reason, 240),
+      reason: safeText(goal ? goal.goal_reason : "Calendarの空き枠に適合した登録", 240),
       event_url: event.canonical_url,
       calendar_url: googleCalendarUrl(row.calendarSync.calendar_event_url),
     });

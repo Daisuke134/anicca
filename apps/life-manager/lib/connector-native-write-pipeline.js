@@ -249,6 +249,7 @@ function selectedContext(input) {
 }
 
 function assertContext(context, deps) {
+  const providerInventory = isVerifiedEventProviderDateInventory(context.dateInventory);
   const verifyDateInventory = typeof deps.isVerifiedLumaDateInventory === "function"
     ? deps.isVerifiedLumaDateInventory
     : (value) => isVerifiedLumaDateInventory(value) || isVerifiedEventProviderDateInventory(value);
@@ -268,10 +269,12 @@ function assertContext(context, deps) {
   ));
   if (!event || event.canonical_url !== context.eventUrl) invalid("chosen event is not in verified inventory");
   if (Date.parse(event.starts_at) !== Date.parse(context.eventStartIso)) invalid("chosen event start mismatch");
-  const verifyGoal = factory(deps, "isVerifiedEventGoalSerendipity", isVerifiedEventGoalSerendipity);
-  if (!verifyGoal(context.goalDecision)) invalid("chosen judgment is not verified");
-  if (!context.goalDecision.ranked_events.some((candidate) => candidate.event_ref === context.eventRef)) {
-    invalid("chosen judgment event mismatch");
+  if (!providerInventory) {
+    const verifyGoal = factory(deps, "isVerifiedEventGoalSerendipity", isVerifiedEventGoalSerendipity);
+    if (!verifyGoal(context.goalDecision)) invalid("chosen judgment is not verified");
+    if (!context.goalDecision.ranked_events.some((candidate) => candidate.event_ref === context.eventRef)) {
+      invalid("chosen judgment event mismatch");
+    }
   }
   if (!context.calendar || !context.calendarId) invalid("Calendar write context missing");
   if (!context.telegramTarget || !context.calendarCoverageUrl) invalid("Telegram write context missing");
@@ -440,9 +443,9 @@ async function runNativeConnectorWrite(input = {}, deps = {}) {
         eventTitle: event.title,
         venue: event.venue_name || event.venue_address,
         registrationIdentity: context.registrationIdentity,
-        selectionReason: context.goalDecision.ranked_events.find(
+        selectionReason: context.goalDecision?.ranked_events.find(
           (candidate) => candidate.event_ref === context.eventRef,
-        ).goal_reason,
+        )?.goal_reason || "Calendarの空き枠に適合した登録",
         startsAt: event.starts_at,
         endsAt: event.ends_at,
         eventUrl: event.canonical_url,
