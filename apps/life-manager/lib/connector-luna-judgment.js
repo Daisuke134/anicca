@@ -74,7 +74,7 @@ function runLocalAgentRunner(input = {}, deps = {}) {
     if (
       !summary || summary.status !== "success"
       || summary.selected_provider !== "codex"
-      || summary.selected_model !== "gpt-5.6-luna"
+      || summary.selected_model !== "gpt-5.6-terra"
     ) unavailable();
     const resultPath = containedFile(evidenceDir, summary.result_path);
     let value;
@@ -113,7 +113,7 @@ async function runConnectorLunaJudgment(input = {}, deps = {}) {
         !result || !result.summary
         || result.summary.status !== "success"
         || result.summary.selected_provider !== "codex"
-        || result.summary.selected_model !== "gpt-5.6-luna"
+        || result.summary.selected_model !== "gpt-5.6-terra"
       ) unavailable();
       return result.value;
     };

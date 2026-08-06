@@ -2666,6 +2666,12 @@ strict loaderで検証してからread-only bind mountでworkerのdurable privat
 deploy test 2/2とmerged compose configがGREEN。次はfeature buildをlocal workerへ再配備し、実container内のmode/loader readback後に
 既存Connector loopをwakeしてlive registration chainを確認する。
 
+O1B-25進捗108（Terra judgment acceptance root fix / LIVE RED→GREEN）: feature worker再配備後の既存launchd run 148は、
+agent runnerが`gpt-5.6-terra`でpreference judgmentをsuccessにした直後、`connector_native_luna_failed`でresult生成前に終了した。
+根因は全executorをTerra一候補へ統一した後もConnector judgment wrapperが`gpt-5.6-luna`だけをsuccessとしていたこと。
+Terra resultを受理するcontractへ更新し、変更前3 failure RED、変更後judgment/native 18/18、agent-runner 12/12 GREEN。
+次は既存launchdを再wakeし、judgment後のwrite attemptと実provider submit/readbackを確認する。
+
 現在と完成形:
 
 ```mermaid
