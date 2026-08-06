@@ -6,16 +6,53 @@ integration at 4a8d521f67f5139811c0a910ef37410f8e6d836a. No upstream source is c
 
 from __future__ import annotations
 
+import argparse
+import json
 import re
 from collections.abc import Callable, Iterable
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
+from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 from .candidate_queue import CandidateQueue
 
 
 SAFE_ID = re.compile(r"[A-Za-z0-9_-]+")
 WORKDAY_SUFFIXES = (".myworkdayjobs.com", ".myworkdaysite.com")
+
+
+class _NoRedirect(HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
+def _request_json(
+    url: str, *, payload: dict[str, Any], timeout_seconds: float, follow_redirects: bool
+) -> Any:
+    if follow_redirects:
+        raise ValueError("Workday requests must not follow redirects")
+    parsed = urlsplit(url)
+    hostname = (parsed.hostname or "").lower()
+    if parsed.scheme != "https" or not any(
+        hostname.endswith(suffix) for suffix in WORKDAY_SUFFIXES
+    ):
+        raise ValueError("Workday request escaped fixed host")
+    request = Request(
+        url,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "User-Agent": "Mozilla/5.0 AniccaJobSearch/1.0",
+        },
+        method="POST",
+    )
+    with build_opener(_NoRedirect()).open(request, timeout=timeout_seconds) as response:
+        if int(response.status) != 200:
+            raise ValueError(f"Workday CXS returned HTTP {response.status}")
+        return json.loads(response.read().decode("utf-8"))
 
 
 def _validated_board(board: dict[str, str]) -> tuple[str, str, str, str]:
@@ -182,3 +219,53 @@ def ingest_workday_boards(
         "inactive_count": inactive,
         "malformed_count": malformed,
     }
+
+
+def search_workday_registry(
+    query: str,
+    *,
+    boards: Iterable[dict[str, str]],
+    request: Callable[..., Any] = _request_json,
+    workers: int = 6,
+    max_results_per_board: int = 20,
+) -> dict[str, Any]:
+    """Search registered Workday boards concurrently without persistence."""
+    board_list = list(boards)
+    results: list[dict[str, Any]] = []
+    failures = 0
+    with ThreadPoolExecutor(max_workers=min(workers, max(1, len(board_list)))) as executor:
+        futures = {
+            executor.submit(
+                search_workday_board,
+                query,
+                board=board,
+                request=request,
+                max_pages=1,
+                max_results=max_results_per_board,
+            ): board
+            for board in board_list
+        }
+        for future in as_completed(futures):
+            try:
+                results.extend(future.result()["results"])
+            except Exception:
+                failures += 1
+    return {"results": results, "board_count": len(board_list), "failure_count": failures}
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("query")
+    parser.add_argument("--boards", type=Path)
+    args = parser.parse_args()
+    app_root = Path(__file__).resolve().parents[1]
+    boards_path = args.boards or app_root / "config" / "workday-boards.v1.json"
+    registry = json.loads(boards_path.read_text(encoding="utf-8"))
+    boards = registry.get("boards")
+    if not isinstance(boards, list):
+        raise ValueError("Workday registry requires boards")
+    print(json.dumps(search_workday_registry(args.query, boards=boards), sort_keys=True))
+
+
+if __name__ == "__main__":
+    main()
