@@ -159,6 +159,7 @@ def run_no_send_fixture(
             for index, (kind, endpoint, acceptance) in enumerate(
                 [
                     ("canonical_ats", "https://jobs.fixture.test/crash-role", "not_applicable"),
+                    ("alternate_official", "https://careers.fixture.test/crash-role", "not_applicable"),
                     ("recruiting_email", "jobs@fixture.test", "accepts_applications"),
                 ],
                 start=1,
@@ -187,9 +188,19 @@ def run_no_send_fixture(
                 resume_sha256=hashlib.sha256(resume.read_bytes()).hexdigest(),
             )
         except FenceError:
-            crash_replay_status = "cross_route_fenced"
+            ats_crash_replay_status = "ats_action_fenced"
         else:
-            crash_replay_status = "unsafe_claim_succeeded"
+            ats_crash_replay_status = "unsafe_ats_claim_succeeded"
+        ledger.claim_application_route(
+            crash_routes[2],
+            actor="resident_worker",
+            fence=crash_fence + 2,
+            message_path=str(message),
+            message_sha256=hashlib.sha256(message.read_bytes()).hexdigest(),
+            resume_path=str(resume),
+            resume_sha256=hashlib.sha256(resume.read_bytes()).hexdigest(),
+        )
+        email_fallback_status = "email_claimed"
         result = {
             "version": 1,
             "status": "fixture_verified",
@@ -198,7 +209,8 @@ def run_no_send_fixture(
             "simulated_transport_count": simulated_transport_count,
             "ordered_attempts": ordered_attempts,
             "replay_status": replay["status"],
-            "crash_replay_status": crash_replay_status,
+            "ats_crash_replay_status": ats_crash_replay_status,
+            "email_fallback_status": email_fallback_status,
             "actor_provenance": {
                 "actor": authority["actor"],
                 "worker_pid": authority["worker_pid"],
@@ -207,8 +219,8 @@ def run_no_send_fixture(
                 "fence": authority["fence"],
             },
         }
-        if crash_replay_status != "cross_route_fenced":
-            raise RuntimeError("route fixture crash replay fence failed")
+        if ats_crash_replay_status != "ats_action_fenced":
+            raise RuntimeError("route fixture ATS crash replay fence failed")
         return result
     finally:
         ledger.close()

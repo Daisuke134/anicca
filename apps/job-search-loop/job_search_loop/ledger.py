@@ -313,8 +313,16 @@ class Ledger:
                 UNIQUE (application_id, route_kind, endpoint),
                 UNIQUE (cross_route_key, ordinal)
             );
-            CREATE UNIQUE INDEX IF NOT EXISTS application_routes_one_live_action
-            ON application_routes(cross_route_key)
+            DROP INDEX IF EXISTS application_routes_one_live_action;
+            CREATE UNIQUE INDEX IF NOT EXISTS application_routes_one_live_action_per_class
+            ON application_routes(
+                cross_route_key,
+                CASE
+                    WHEN route_kind IN ('canonical_ats', 'alternate_official')
+                    THEN 'ats'
+                    ELSE 'email'
+                END
+            )
             WHERE delivery_state IN
                 ('action_started', 'delivered', 'delivery_unknown', 'replied');
             CREATE TABLE IF NOT EXISTS application_route_events (
@@ -3313,17 +3321,23 @@ class Ledger:
                 raise ValueError("application route does not exist")
             if row["delivery_state"] != "eligible":
                 raise FenceError("application route is not eligible")
+            action_class_kinds = (
+                ("canonical_ats", "alternate_official")
+                if row["route_kind"] in {"canonical_ats", "alternate_official"}
+                else ("recruiting_email", "recruiting_outreach")
+            )
             live = self.connection.execute(
                 """
                 SELECT route_id FROM application_routes
                 WHERE cross_route_key = ? AND route_id != ?
+                  AND route_kind IN (?, ?)
                   AND delivery_state IN
                     ('action_started', 'delivered', 'delivery_unknown', 'replied')
                 """,
-                (row["cross_route_key"], route_id),
+                (row["cross_route_key"], route_id, *action_class_kinds),
             ).fetchone()
             if live is not None:
-                raise FenceError("cross-route action is already fenced")
+                raise FenceError("application route action class is already fenced")
             now = _now()
             self.connection.execute(
                 """

@@ -3593,9 +3593,14 @@ OpenTelemetry decision and primary sources:
           domain, content SHA, source-span, and email validation while returning
           `recruiting_email / accepts_applications` for every verified address.
           Focused provenance/executor tests pass 9/9; adjacent route suites pass 16/16.
-      - [ ] `L-49K3A1b` — Replace the company-role-wide live-action uniqueness rule
+      - [x] `L-49K3A1b` — Replace the company-role-wide live-action uniqueness rule
         with route-kind fences that permit at most one ATS action followed by at most
         one email action, while preserving at-most-once replay per individual route.
+        - RED proved an ATS `action_started` row fenced the email route. GREEN migrates
+          the SQLite unique index and claim query to independent ATS/email action
+          classes. The crash fixture rejects a second ATS claim after reopen while
+          accepting the email fallback claim. Focused ledger/executor/fixture tests
+          pass 9/9.
       - [ ] `L-49K3A1c` — Make route selection treat only authoritative ATS success
         as terminal. ATS `failed`, ambiguous, CAPTCHA, timeout, or other unconfirmed
         diagnostics select the first eligible recruiting email; delivered/unknown
