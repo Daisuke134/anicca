@@ -2437,6 +2437,16 @@ O1B-25進捗83（P0-10 run 112 root cause確定 / zero writable candidate RED→
 `CONNECTOR_NATIVE_CALENDAR_GATE_FAILED`でRED。`selected=false`を正常な`status=incomplete / continuation=continue / write=null`として返す
 最小修正後runtime 14/14 GREEN。応募可能候補がないwakeは失敗通知を作らず、次のinventory refreshへ進む。
 
+O1B-25進捗84（P0-10 run 113 live root-fix verification）: commit `681bf16e1`後の既存launchd run 113は自然終了し、
+continuationが`runtime_incomplete`、mode 0600 last-resultが`write=null / open=19 / covered_new=2`へ更新された。旧generic Calendar failureは
+再発せず、zero writable candidateを正常continuationとして扱うroot fixをlive確認した。P0-10の新規実event full chainはwritable候補が現れるまで
+未完のまま維持し、receiptを創作しない。
+
+O1B-25進捗85（P0-11 next-wake reselection proof / LIVE GREEN）: run 113後のappend-only stateはcandidate attempts 5行、delivery receipts
+2行、photo delivery receipts 2行のまま、candidate file mtimeは10:08 JST、delivery file mtimeは00:06 JSTでrun 113より前から不変だった。
+成功event `u12izq9i` / `a206zjkz`は各delivery一件、既知失敗event 4件にも新しいattemptは追加されず、last-resultはwrite=nullだった。
+これで次wakeが成功eventをcoverage restorationで、terminal known failureをactive suppressionで再選択しないことをlive実証した。
+
 完全な残TODO SSOT:
 
 **P0 — task deliveryを前進させる（最優先）**
@@ -2451,7 +2461,7 @@ O1B-25進捗83（P0-10 run 112 root cause確定 / zero writable candidate RED→
 8. [x] submit後のLuma登録済みpageをfull-page PNGで取得し、event ref、canonical URL、取得時刻、SHA-256、Calendar event IDへbindする。focused 30/30、native 21/21、outbound 302/302。
 9. [x] Telegramへ結果cardと登録済みpage画像を実送信し、画像のpositive provider message IDをdelivery receiptへ保存・readbackする。run 103、card `7372`、photo `7594`、native 23/23、outbound 307/307。
 10. [進行中] Calendar gate invalidをbounded substage化・実入力fixture化して修正し、次の実eventでLuma→登録済みpage PNG→mail/QR→Calendar→Telegram画像message IDを一巡実証する。
-11. 次wakeで成功eventとknown失敗eventの双方を再選択しないことを実証する。
+11. [x] 次wakeで成功eventとknown失敗eventの双方を再選択しないことを実証する。run 113、attempt 5行・delivery 2行不変、write=null。
 12. `open=0`まで反復し、21日統合Telegram briefingを送る。
 13. Mac再起動後のlaunchd、heartbeat、healthcheck、self-healを実機検証する。
 14. canonical branchへ統合し、legacy bridge / Docker worker / 重複scheduleを退役する。
