@@ -2861,6 +2861,15 @@ Calendar delivery receipt 2→2、Telegram photo receipt 2→2で増分0だっ�
 親cleanupは成立した。新規form submitを必要とするcandidateへ到達しておらず、Terra form-decision turnも実行されていないため、
 このrunを16Cのcorrected live submit acceptanceとは扱わない。Calendar、Telegram、full lineageも未成立なので16Dも未完である。
 
+O1B-25進捗125（verified registration core deliveryとoptional ticket enrichment分離 / RED→GREEN）: run 178で再現した
+`registration verified + PNG generated → confirmation/QR failure → Calendar/Telegram未到達`を回帰testにした。旧pipelineは
+verified provider receiptの直後にconfirmation mailとticket QRを必須化し、失敗時にCalendar前でreturnしていた。修正後は
+provider marker/PNG receiptをcore effect oracleとしてCalendar、coverage、登録page Telegram card/photoを継続し、mail/QR/ticket photoは
+verified artifactが得られた時だけ追加送信するbest-effort enrichmentとした。ticket evidenceまたはticket Telegram failureはbounded
+`unavailable` statusとして返すが、登録済みeventをapplication failureへ戻さない。Calendar receipt、coverage rebuild、Telegram positive
+card/photo IDの既存fail-closed gateは変更していない。回帰testは旧codeで1件RED、修正後focused 21/21、pretest 12/12、
+Connector/outbound 337/337 GREEN、失敗0件。live Calendar/Telegram増分は次の既存launchd runで未実証のため16Dは未完である。
+
 現在と完成形:
 
 ```mermaid

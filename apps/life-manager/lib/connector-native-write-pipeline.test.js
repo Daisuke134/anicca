@@ -296,6 +296,33 @@ test("write pipeline requires verified confirmation mail and official QR before 
   ]);
 });
 
+test("optional ticket evidence failure cannot block Calendar and registration-page Telegram delivery", async () => {
+  const calls = [];
+  const result = await runNativeConnectorWrite(input(), depsFor(calls, {
+    async readLumaConfirmation() {
+      calls.push(["confirmation-read"]);
+      throw new Error("confirmation unavailable");
+    },
+    async deliverConnectorTicket() {
+      calls.push(["ticket-telegram"]);
+      throw new Error("must not run without a verified ticket");
+    },
+  }));
+
+  assert.equal(result.status, "complete");
+  assert.deepEqual(result.ticket, {
+    status: "unavailable",
+    reason: "TICKET_EVIDENCE_FAILED",
+  });
+  assert.equal(result.calendar_sync.calendar_event_ref, "calendar-evidence://google/event/event-1");
+  assert.equal(result.telegram.provider_id, "321");
+  assert.equal(result.telegram.photo_provider_id, "322");
+  assert.deepEqual(calls.map(([name]) => name), [
+    "build", "execute", "assert-receipt", "confirmation-read",
+    "calendar", "evidence", "rebuild", "message", "telegram",
+  ]);
+});
+
 test("an unverified Calendar sync cannot produce coverage evidence or Telegram", async () => {
   const calls = [];
   const deps = depsFor(calls, {
