@@ -37,6 +37,8 @@ const { classifyConnectorCandidateOutcome } = require("./connector-candidate-out
 const { latestCandidateAttempts } = require("./connector-candidate-suppression.js");
 const { createConnectorRouteMinutes } = require("./connector-route-minutes.js");
 const { zonedSlotInstant } = require("./honne-ja-shadow-schedule.js");
+const { isVerifiedEventProviderRegistry } = require("./event-provider-registry.js");
+const { advanceEventProviderCursor } = require("./event-provider-cursor.js");
 
 function unavailable() {
   throw new Error("Connector native runtime unavailable");
@@ -81,6 +83,13 @@ function capabilityVersion(value) {
   const version = String(value).trim();
   if (!/^[a-z0-9][a-z0-9._-]{0,63}$/.test(version)) unavailable();
   return version;
+}
+
+function nextCursorInstant(cursor, now) {
+  const previous = Date.parse(cursor.observed_at);
+  const current = Date.parse(now);
+  if (!Number.isFinite(previous) || !Number.isFinite(current)) unavailable();
+  return new Date(Math.max(previous + 1, current)).toISOString();
 }
 
 function resumeCursor(value) {
@@ -355,6 +364,10 @@ async function runNativeConnectorPass(input = {}) {
     const currentCapabilityVersion = capabilityVersion(config.capabilityVersion);
     const inputCursor = resumeCursor(config.cursor);
     const outputCursor = null;
+    const providerRegistry = config.providerRegistry == null ? null : config.providerRegistry;
+    let providerCursor = config.providerCursor == null ? null : config.providerCursor;
+    if ((providerRegistry === null) !== (providerCursor === null)) unavailable();
+    if (providerRegistry !== null && !isVerifiedEventProviderRegistry(providerRegistry)) unavailable();
     const latestAttempts = latestCandidateAttempts({
       attempts: Array.isArray(config.candidateAttempts) ? config.candidateAttempts : [],
       now,
@@ -413,6 +426,9 @@ async function runNativeConnectorPass(input = {}) {
       ) unavailable();
       const policy = await createSpendPolicy({ tenantId, limits: profile.spend_policy && profile.spend_policy.limits });
       judgmentLoop: for (const judgmentDay of judgmentDays) {
+        if (providerCursor && (
+          providerCursor.date !== judgmentDay.date || providerCursor.provider !== "luma"
+        )) continue;
         if (inputCursor && judgmentDay.date < inputCursor.date) continue;
         failureCode = "CONNECTOR_NATIVE_CALENDAR_GATE_FAILED";
         let calendarGate;
@@ -457,8 +473,21 @@ async function runNativeConnectorPass(input = {}) {
         }
         const orderedCandidates = resumableCandidates;
         selection.unsuppressed_count += orderedCandidates.length;
-        if (orderedCandidates.length === 0) continue;
+        if (orderedCandidates.length === 0) {
+          if (providerCursor) {
+            providerCursor = advanceEventProviderCursor({
+              cursor: providerCursor,
+              registry: providerRegistry,
+              transition: "provider_exhausted",
+              observedAt: nextCursorInstant(providerCursor, now),
+            });
+            break judgmentLoop;
+          }
+          continue;
+        }
         failureCode = "CONNECTOR_NATIVE_WRITE_FAILED";
+        let providerHasUnknownEffect = false;
+        let providerVerifiedSuccess = false;
         for (const chosen of orderedCandidates) {
           const selectedRef = chosen.event_ref;
           const selectedEvent = judgmentDay.events.find((event) => event && event.event_ref === selectedRef);
@@ -483,7 +512,10 @@ async function runNativeConnectorPass(input = {}) {
                 retry_after: reconciledAbsent ? now : null,
                 ...(currentCapabilityVersion ? { capability_version: currentCapabilityVersion } : {}),
               }));
-              if (proof.state !== "absent") continue;
+              if (proof.state !== "absent") {
+                providerHasUnknownEffect = true;
+                continue;
+              }
             }
           }
           write = await runNativeWrite({
@@ -532,7 +564,28 @@ async function runNativeConnectorPass(input = {}) {
             retry_after: null,
             ...(currentCapabilityVersion ? { capability_version: currentCapabilityVersion } : {}),
           }));
-          if (candidateOutcome.classification === "verified_success") break judgmentLoop;
+          if (candidateOutcome.classification === "verified_success") {
+            providerVerifiedSuccess = true;
+            break judgmentLoop;
+          }
+          if (candidateOutcome.classification === "unknown_effect") providerHasUnknownEffect = true;
+          if (providerCursor && candidateOutcome.classification === "known_no_effect") {
+            providerCursor = advanceEventProviderCursor({
+              cursor: providerCursor,
+              registry: providerRegistry,
+              transition: "known_no_effect",
+              observedAt: nextCursorInstant(providerCursor, now),
+            });
+          }
+        }
+        if (providerCursor && !providerVerifiedSuccess && !providerHasUnknownEffect) {
+          providerCursor = advanceEventProviderCursor({
+            cursor: providerCursor,
+            registry: providerRegistry,
+            transition: "provider_exhausted",
+            observedAt: nextCursorInstant(providerCursor, now),
+          });
+          break judgmentLoop;
         }
       }
     }
@@ -574,6 +627,7 @@ async function runNativeConnectorPass(input = {}) {
       write,
       candidate_attempts: Object.freeze([...candidateAttempts]),
       cursor: outputCursor,
+      provider_cursor: providerCursor,
       continuation: Object.freeze({
         status: continuation.status,
         open_date_count: continuation.open_date_count,

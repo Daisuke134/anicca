@@ -48,6 +48,13 @@
 
 **Completion:** The runtime accepts only a verified Task 2A provider cursor. Known no-effect advances the candidate, Luma exhaustion advances to Connpass, and unknown effect cannot advance before readback reconciliation. It emits the next bounded provider cursor without storing page text or identity. Actual Connpass discovery remains Task 3.
 
+The slice is 127 changed lines across its two declared files because the existing runtime fixture requires a complete Calendar/profile/spend/write boundary setup; production logic is 60 lines and splitting the single transition contract again would create an unverified half-state.
+
+- [x] RED: existing 15 tests passed and the missing `provider_cursor` assertion failed.
+- [x] GREEN: verified cursor advances known-no-effect candidate then Luma exhaustion to Connpass; unknown-effect readback leaves cursor unchanged.
+- [x] Focused 16/16、pretest 12/12、outbound 344/344 GREEN。
+- [x] Master specへ進捗131を記録しcommit/push。
+
 ## Task 2B2: Native-Pass Provider Cursor Persistence
 
 **Files:**
