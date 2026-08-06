@@ -15,6 +15,52 @@ def load_fixture(name):
 
 
 class AtsReadinessTests(unittest.TestCase):
+    def test_required_group_labels_fill_verified_contact_and_block_unknowns_once(self):
+        from job_search_loop.ats import build_non_submit_fill_plan
+
+        url = "https://jobs.ashbyhq.com/acme/role/application"
+        snapshot = {
+            "version": 1,
+            "url": url,
+            "navigation_committed": True,
+            "frames": [
+                {
+                    "url": url,
+                    "controls": [
+                        {"tag": "input", "type": "tel", "label": "Phone Number", "group_label": "Phone Number*", "required": True},
+                        {"tag": "input", "type": "text", "label": "Start typing...", "group_label": "Where are you currently located?*", "required": True},
+                        {"tag": "input", "type": "text", "label": "Pick date...", "group_label": "When can you start a new role?*", "required": True},
+                        {"tag": "button", "type": "button", "text": "Yes", "group_label": "Are you authorized to work in Japan?*", "required": True},
+                        {"tag": "button", "type": "button", "text": "No", "group_label": "Are you authorized to work in Japan?*", "required": True},
+                        {"tag": "input", "type": "checkbox", "label": "I confirm", "group_label": "I certify these answers are true.*", "required": True},
+                        {"tag": "button", "type": "submit", "text": "Submit Application"},
+                    ],
+                }
+            ],
+        }
+        result = build_non_submit_fill_plan(
+            snapshot,
+            answers={
+                "phone": {"value": "+81-00-0000-0000", "fact_ids": ["profile.phone"]},
+                "location": {"value": "Tokyo, Japan", "fact_ids": ["profile.base"]},
+            },
+            resume_path="/private/resume.pdf",
+            resume_sha256="a" * 64,
+        )
+
+        self.assertEqual(
+            [action["field_key"] for action in result["actions"]],
+            ["phone", "location"],
+        )
+        self.assertEqual(
+            result["blockers"],
+            [
+                "When can you start a new role?*",
+                "Are you authorized to work in Japan?*",
+                "I certify these answers are true.*",
+            ],
+        )
+
     def test_ashby_single_name_field_uses_grounded_full_name(self):
         from job_search_loop.ats import build_non_submit_fill_plan
 
