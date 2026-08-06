@@ -5441,7 +5441,24 @@ production Calendar reader、browser rail、Google Calendar inventory、Luma wor
 実gog、Google Calendar read、browser、Submit、PNG、Telegram作用は0。Item 10は未完で、次はItem 10A-2としてLuma、action cache、
 bounded Browser Harness、evidence/reportをofficial entrypointへ組成する。scheduleは引き続きunloadedを維持する。
 
-### Active remaining TODO SSOT（進捗185。これ以外の残TODO一覧は履歴）
+### O1B-25進捗186（Item 10A-2a / Luma provider action router）
+
+TDD REDで`createProductionProviderRouter` contractを追加し、production export不存在を確認後に実装した。routerは同一owned pageを
+Luma discovery、versioned action cache replay、既存direct Submit、bounded Browser Harness fallback、parent provider readbackへ渡す。
+cache keyはprovider `luma`、workflow `luma_registration_v1`、page state `registration_page_v1`、expected effect
+`registered_or_pending`へ固定した。
+
+cache replayはagentを呼ばず、replay後にLuma parent readbackを行う。direct failure時のfallbackはowned page、exact `:9222` page WebSocket、
+最大10 step、expected stateだけをBrowser Harness adapterへ渡す。fallback actionsはparent stateが`registered/pending`の時だけ既存private
+action cacheへ保存され、observed timestamp以外のprovider text、form value、credential、cookie、raw promptを追加しない。
+
+provider order上のConnpassは維持するが、Item 14のlive実証前に未検証actionを成功扱いしないため、このrouter sliceではcandidate 0を返す。
+Luma/cache/Browser Harness/core/production focused suiteは23/23 GREEN。
+
+実gog、Google Calendar read、browser、Submit、PNG、Telegram作用は0。Item 10は未完で、次はItem 10A-2bとしてevidence、Telegram wake report、
+safe append-only action historyをofficial entrypointへ組成する。scheduleは引き続きunloadedを維持する。
+
+### Active remaining TODO SSOT（進捗186。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 

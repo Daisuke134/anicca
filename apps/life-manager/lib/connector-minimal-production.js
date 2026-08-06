@@ -18,6 +18,9 @@ const { makeGogCalendar } = require("./transport/calendar-gog.js");
 
 const LUMA_DISCOVERY_URL = "https://luma.com/tokyo?k=p";
 const PRODUCTION_TIME_ZONE = "Asia/Tokyo";
+const LUMA_WORKFLOW_VERSION = "luma_registration_v1";
+const LUMA_PAGE_STATE = "registration_page_v1";
+const EXPECTED_REGISTRATION_EFFECT = "registered_or_pending";
 
 function invalid() {
   throw new Error("Connector minimal production unavailable");
@@ -93,6 +96,86 @@ function createProductionCalendarReader(options = {}) {
       });
       if (!isVerifiedBusyInventory(inventory) || !Array.isArray(inventory.busy_intervals)) invalid();
       return inventory.busy_intervals;
+    },
+  });
+}
+
+function createProductionProviderRouter(options = {}) {
+  const lumaWorkflow = options.lumaWorkflow;
+  const actionCache = options.actionCache;
+  const browserHarness = options.browserHarness;
+  const performAction = options.performAction;
+  const now = options.now || (() => new Date());
+  if (
+    !lumaWorkflow || typeof lumaWorkflow.discoverCandidates !== "function"
+    || typeof lumaWorkflow.runDirectAction !== "function"
+    || typeof lumaWorkflow.readProviderState !== "function"
+    || !actionCache || typeof actionCache.replay !== "function"
+    || typeof actionCache.saveVerifiedRepair !== "function"
+    || !browserHarness || typeof browserHarness.runFallback !== "function"
+    || typeof performAction !== "function" || typeof now !== "function"
+  ) invalid();
+
+  function luma(input) {
+    if (!input || input.provider !== "luma") invalid();
+    return input;
+  }
+
+  return Object.freeze({
+    discoverCandidates(provider, calendar, page) {
+      if (provider === "connpass") return Promise.resolve(Object.freeze([]));
+      if (provider !== "luma") invalid();
+      return lumaWorkflow.discoverCandidates({ page, calendar });
+    },
+
+    runCachedAction(input) {
+      const selected = luma(input);
+      return actionCache.replay({
+        provider: "luma",
+        workflowVersion: LUMA_WORKFLOW_VERSION,
+        pageState: LUMA_PAGE_STATE,
+        expectedEffect: EXPECTED_REGISTRATION_EFFECT,
+        page: selected.page,
+        performAction,
+        readExpectedState: ({ page }) => lumaWorkflow.readProviderState({
+          page,
+          candidate: selected.candidate,
+        }),
+      });
+    },
+
+    runDirectAction(input) {
+      const selected = luma(input);
+      return lumaWorkflow.runDirectAction({ page: selected.page, candidate: selected.candidate });
+    },
+
+    runAgentFallback(input) {
+      const selected = luma(input);
+      return browserHarness.runFallback({
+        provider: "luma",
+        page: selected.page,
+        pageWebsocket: selected.pageWebsocket,
+        maxSteps: selected.maxSteps,
+        expectedState: selected.expectedState,
+      });
+    },
+
+    readProviderState(input) {
+      const selected = luma(input);
+      return lumaWorkflow.readProviderState({ page: selected.page, candidate: selected.candidate });
+    },
+
+    saveRepairedActions(input) {
+      const selected = luma(input);
+      return actionCache.saveVerifiedRepair({
+        provider: "luma",
+        workflowVersion: LUMA_WORKFLOW_VERSION,
+        pageState: LUMA_PAGE_STATE,
+        expectedEffect: EXPECTED_REGISTRATION_EFFECT,
+        providerState: selected.providerState,
+        actions: selected.repairedActions,
+        observedAt: exactNow(now()).toISOString(),
+      });
     },
   });
 }
@@ -187,4 +270,8 @@ function createProductionBrowserRail(options = {}) {
   });
 }
 
-module.exports = { createProductionBrowserRail, createProductionCalendarReader };
+module.exports = {
+  createProductionBrowserRail,
+  createProductionCalendarReader,
+  createProductionProviderRouter,
+};

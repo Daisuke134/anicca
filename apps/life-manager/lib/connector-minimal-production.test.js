@@ -9,7 +9,78 @@ const test = require("node:test");
 const {
   createProductionBrowserRail,
   createProductionCalendarReader,
+  createProductionProviderRouter,
 } = require("./connector-minimal-production.js");
+
+test("production provider router keeps Luma cache direct fallback and readback on one page", async () => {
+  const calls = [];
+  const page = Object.freeze({ page_id: "owned-page-1" });
+  const candidate = Object.freeze({
+    provider: "luma",
+    event_ref: "luma-event://event/one",
+    canonical_url: "https://luma.com/one",
+  });
+  const calendar = Object.freeze([{ kind: "timed", start_at: "2026-08-10T10:00:00.000Z", end_at: "2026-08-10T11:00:00.000Z" }]);
+  const lumaWorkflow = {
+    async discoverCandidates(input) { calls.push(["discover", input]); return [candidate]; },
+    async runDirectAction(input) { calls.push(["direct", input]); return { status: "completed" }; },
+    async readProviderState(input) { calls.push(["readback", input]); return { status: "registered" }; },
+  };
+  const actionCache = {
+    async replay(input) {
+      calls.push(["cache-replay", input]);
+      return { status: "cache_miss" };
+    },
+    saveVerifiedRepair(input) {
+      calls.push(["cache-save", input]);
+      return { status: "saved", cache_entry_id: "cache-entry-1" };
+    },
+  };
+  const browserHarness = {
+    async runFallback(input) { calls.push(["fallback", input]); return { status: "failed" }; },
+  };
+  const performAction = async () => ({ status: "success" });
+  const router = createProductionProviderRouter({
+    lumaWorkflow,
+    actionCache,
+    browserHarness,
+    performAction,
+    now: () => new Date("2026-08-07T08:30:00.000Z"),
+  });
+
+  assert.deepEqual(await router.discoverCandidates("luma", calendar, page), [candidate]);
+  assert.deepEqual(await router.discoverCandidates("connpass", calendar, page), []);
+  assert.deepEqual(await router.runCachedAction({ provider: "luma", candidate, page }), { status: "cache_miss" });
+  assert.deepEqual(await router.runDirectAction({ provider: "luma", candidate, page }), { status: "completed" });
+  assert.deepEqual(await router.runAgentFallback({
+    provider: "luma",
+    candidate,
+    page,
+    pageWebsocket: "ws://127.0.0.1:9222/devtools/page/OWNEDTARGET1",
+    maxSteps: 10,
+    expectedState: "registered_or_pending",
+  }), { status: "failed" });
+  assert.deepEqual(await router.readProviderState({ provider: "luma", candidate, page }), { status: "registered" });
+  assert.deepEqual(await router.saveRepairedActions({
+    provider: "luma",
+    candidate,
+    page,
+    providerState: { status: "registered" },
+    repairedActions: [{ purpose: "submit", method: "ax_click", control: "register_button" }],
+  }), { status: "saved", cache_entry_id: "cache-entry-1" });
+
+  const replay = calls.find(([name]) => name === "cache-replay")[1];
+  assert.equal(replay.provider, "luma");
+  assert.equal(replay.workflowVersion, "luma_registration_v1");
+  assert.equal(replay.pageState, "registration_page_v1");
+  assert.equal(replay.expectedEffect, "registered_or_pending");
+  assert.equal(replay.page, page);
+  assert.equal(replay.performAction, performAction);
+  assert.equal(typeof replay.readExpectedState, "function");
+  assert.equal(calls.find(([name]) => name === "discover")[1].calendar, calendar);
+  assert.equal(calls.find(([name]) => name === "fallback")[1].page, page);
+  assert.equal(calls.find(([name]) => name === "cache-save")[1].observedAt, "2026-08-07T08:30:00.000Z");
+});
 
 test("production calendar reader uses gog for exactly fourteen Tokyo calendar days", async () => {
   const calls = [];
