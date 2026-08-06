@@ -2263,12 +2263,18 @@ table-driven testは実装前にmodule不在でexit 1を確認し、実装後は
 `npm run test:outbound`のpretest 12/12・outbound 289/289がfresh GREEN。未知またはmalformedな結果は推測せず拒否する。
 このsliceは分類contractだけであり、runtime利用、満席/受付終了の正規化、attempt永続化、次候補/次日継続は未完のままP0順序で続ける。
 
+O1B-25進捗60（P0-2 known no-effect正規化 / RED→GREEN）: Luma detail/providerは満席・受付終了・waitlist等を
+submit前の`unavailable`として判定し、adapterは副作用なしの`LUMA_RSVP_UNAVAILABLE`へ変換済みだったが、runtimeは
+`LUMA_FORM_INPUT_REQUIRED`だけを次候補継続条件にしていた。最初の候補が`LUMA_RSVP_UNAVAILABLE`でも同日の二件目を
+実行するtestを追加し、修正前は一件目で停止してRED、runtimeを4分類contractの`known_no_effect`判定へ接続してGREENにした。
+focused 9/9、`npm run test:outbound`はpretest 12/12・outbound 289/289。attempt履歴未実装のため、次wakeでの再選択抑止はまだ未完。
+
 完全な残TODO SSOT:
 
 **P0 — task deliveryを前進させる（最優先）**
 
 1. [x] candidate outcomeの4分類contractとtable-driven testを追加する。focused 2/2、outbound 289/289。
-2. `LUMA_RSVP_UNAVAILABLE`、`LUMA_FORM_INPUT_REQUIRED`、満席、受付終了を`known_no_effect`へ正規化する。
+2. [x] `LUMA_RSVP_UNAVAILABLE`、`LUMA_FORM_INPUT_REQUIRED`、満席、受付終了を`known_no_effect`へ正規化する。focused 9/9、outbound 289/289。
 3. append-only `candidate-attempts.jsonl`を作り、event ref、outcome、safe reason、observed_at、retry_afterを保存する。
 4. active window内のterminal known failureをinventory/rankingから除外し、event状態変更またはretry_after後だけ再検査する。
 5. 同日候補をすべて順番に試し、同日枯渇時は同じpassで次open日へ進む。

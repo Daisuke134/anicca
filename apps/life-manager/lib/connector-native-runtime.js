@@ -23,6 +23,7 @@ const {
 } = require("./event-spend-policy.js");
 const { isVerifiedEventGoalSerendipity } = require("./event-goal-serendipity.js");
 const { runNativeConnectorWrite } = require("./connector-native-write-pipeline.js");
+const { classifyConnectorCandidateOutcome } = require("./connector-candidate-outcome.js");
 const { createConnectorRouteMinutes } = require("./connector-route-minutes.js");
 const { zonedSlotInstant } = require("./honne-ja-shadow-schedule.js");
 
@@ -341,7 +342,8 @@ async function runNativeConnectorPass(input = {}) {
           fetchImpl: globalThis.fetch,
           ...(deps.writeDependencies || {}),
         });
-        if (!(write && write.outcome === "application_failed" && write.error_code === "LUMA_FORM_INPUT_REQUIRED")) break;
+        const candidateOutcome = classifyConnectorCandidateOutcome(write);
+        if (candidateOutcome.classification !== "known_no_effect") break;
       }
     }
 
