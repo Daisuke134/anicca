@@ -13,6 +13,13 @@ from job_search_loop.candidate_queue import CandidateQueue
 
 
 class BrowserWorkerTests(unittest.TestCase):
+    def test_default_pre_submit_runner_is_the_pinned_browser_use_adapter(self):
+        source = (
+            Path(__file__).parents[1] / "job_search_loop" / "browser_worker.py"
+        ).read_text(encoding="utf-8")
+        self.assertIn("from .browser_use_ats import run_pre_submit", source)
+        self.assertNotIn("from .playwright_ats import run_pre_submit", source)
+
     def test_daily_loop_consumes_route_fixture_before_models_or_live_browser_work(self):
         script = (
             Path(__file__).parents[1] / "scripts" / "run-daily.sh"

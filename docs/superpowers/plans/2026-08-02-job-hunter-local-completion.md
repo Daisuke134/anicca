@@ -2713,9 +2713,16 @@ it is easier to demonstrate:
     lane selects that interpreter when present. A real isolated bootstrap completed
     in 4.7 seconds and imported exact `browser-use==0.13.7` plus `BrowserSession`.
     Focused runtime/release tests pass 10/10 and the complete suite passes 462/462.
-    Remaining: implement the BrowserSession-backed operations, switch
-    `browser_worker` from `playwright_ats`, and prove the adapter against the
-    dedicated resident CloakBrowser identity.
+    BrowserSession-backed navigate/snapshot/fill/read/upload/screenshot operations
+    now share one async bridge; root-frame and official-domain allowlists fail
+    closed. `browser_worker` now imports `browser_use_ats`, which produces fenced
+    before/after/terminal evidence and never exposes Submit. A read-only E2E attached
+    exact 0.13.7 to the dedicated live CloakBrowser endpoint, observed one frame,
+    captured a real screenshot with SHA-256
+    `401aca8b2184149ee856286215e3f7125a63102e2cd81e756d6453a4ae029b11`,
+    and disconnected without navigation or input. Focused tests pass 7/7 and the
+    complete suite passes 466/466. Remaining before checking D1: activate the
+    immutable release and observe the installed resident worker execute this runner.
 - [ ] **L-49K0D2** — Wrap hourly application, five-minute Gmail, weekly learning,
   Telegram delivery, and Guardian reconciliation as Temporal workflows/activities.
   External side effects use explicit idempotency keys and no automatic retry after
