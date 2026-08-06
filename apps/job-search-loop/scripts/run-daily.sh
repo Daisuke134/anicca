@@ -249,6 +249,7 @@ if [[ "$FILL_CANARY_ACTIVE" == "1" ]]; then
     set +e
     "$JOB_SEARCH_PYTHON" -m job_search_loop.ashby_apply verify \
       --output "$JOB_SEARCH_ASHBY_APPLY_RESULT" \
+      --profile "$JOB_SEARCH_PROFILE" \
       >"$EVIDENCE/ashby-fill-verification.json"
     FILL_VERIFY_RC=$?
     set -e
