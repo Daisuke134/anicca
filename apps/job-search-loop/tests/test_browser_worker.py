@@ -119,6 +119,8 @@ class BrowserWorkerTests(unittest.TestCase):
                     "blocked": ["no_ranking_ready_candidate"],
                     "attempted_count": 3,
                     "executor": "browser-use-0.13.7",
+                    "attempt_audit": [{"candidate_index": 1, "outcome": "blocked"}],
+                    "continued_after_failure": True,
                 }
 
             result = run_worker(
@@ -140,6 +142,8 @@ class BrowserWorkerTests(unittest.TestCase):
             self.assertEqual(result["blocked"], ["no_ranking_ready_candidate"])
             self.assertEqual(result["attempted_count"], 3)
             self.assertEqual(result["executor"], "browser-use-0.13.7")
+            self.assertTrue(result["continued_after_failure"])
+            self.assertEqual(result["attempt_audit"][0]["outcome"], "blocked")
             receipt = json.loads(
                 (root / "worker-receipt.json").read_text(encoding="utf-8")
             )

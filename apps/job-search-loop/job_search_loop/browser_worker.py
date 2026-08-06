@@ -146,6 +146,10 @@ def run_worker(
             "submit_unknown": [],
             "blocked": list(pre_submit.get("blocked") or []),
             "attempted_count": int(pre_submit.get("attempted_count") or 0),
+            "attempt_audit": list(pre_submit.get("attempt_audit") or []),
+            "continued_after_failure": bool(
+                pre_submit.get("continued_after_failure")
+            ),
             "report_message_id": None,
             "discovered_link_count": summary["discovered_count"],
             "verified_link_count": summary["verified_count"],
