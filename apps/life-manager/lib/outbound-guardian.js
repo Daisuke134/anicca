@@ -140,7 +140,16 @@ async function notifyOpenClawPhoto(bytes, options = {}) {
   const target = String(options.telegramTarget || "").trim();
   if (!target || !Buffer.isBuffer(bytes)) throw new Error("Telegram photo delivery invalid");
   const spawn = options.spawnSync || spawnSync;
-  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "connector-telegram-photo-"));
+  const mediaRoot = path.join(os.homedir(), ".openclaw", "media");
+  fs.mkdirSync(mediaRoot, { recursive: true, mode: 0o700 });
+  const rootStat = fs.lstatSync(mediaRoot);
+  if (
+    !rootStat.isDirectory() || rootStat.isSymbolicLink()
+    || (typeof process.getuid === "function" && rootStat.uid !== process.getuid())
+  ) throw new Error("Telegram photo media root invalid");
+  fs.chmodSync(mediaRoot, 0o700);
+  const directory = fs.mkdtempSync(path.join(mediaRoot, "connector-telegram-photo-"));
+  fs.chmodSync(directory, 0o700);
   const file = path.join(directory, "registered-page.png");
   try {
     fs.writeFileSync(file, bytes, { mode: 0o600, flag: "wx" });
