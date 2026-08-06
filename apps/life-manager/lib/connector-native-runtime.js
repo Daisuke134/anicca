@@ -479,7 +479,18 @@ async function runNativeConnectorPass(input = {}) {
         selection.calendar_eligible_count += calendarGate.candidates.filter(
           (candidate) => candidate && candidate.eligible === true,
         ).length;
-        if (!calendarGate.candidates.some((candidate) => candidate && candidate.eligible === true)) continue;
+        if (!calendarGate.candidates.some((candidate) => candidate && candidate.eligible === true)) {
+          if (providerCursor) {
+            providerCursor = advanceEventProviderCursor({
+              cursor: providerCursor,
+              registry: providerRegistry,
+              transition: "provider_exhausted",
+              observedAt: nextCursorInstant(providerCursor, now),
+            });
+            break judgmentLoop;
+          }
+          continue;
+        }
         failureCode = "CONNECTOR_NATIVE_LUNA_FAILED";
         const goalDecision = await runLunaJudgment({
           dateInventory,

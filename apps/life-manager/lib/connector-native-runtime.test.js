@@ -439,6 +439,14 @@ test("configured native execution gates the date then uses Luna and passes one v
 
 test("zero Calendar-eligible events is a valid incomplete pass instead of a runtime failure", async () => {
   const input = await fixture();
+  const registry = createEventProviderRegistry();
+  const providerCursor = createEventProviderCursor({
+    registry, date: "2026-08-05", observedAt: "2026-08-05T00:00:00.000Z",
+  });
+  const handoff = Object.freeze({
+    status: "waiting_for_authorized_source", coverage_status: "open", coverage_credit_count: 0,
+    network_call_count: 0, advisory_candidates: Object.freeze([]),
+  });
   const profile = Object.freeze({ tenant_id: TENANT, timezone: "Asia/Tokyo" });
   const result = await runNativeConnectorPass({
     ...input,
@@ -451,6 +459,8 @@ test("zero Calendar-eligible events is a valid incomplete pass instead of a runt
       calendarCoverageUrl: "https://calendar.google.com/calendar/u/0/r",
       calendarId: "primary",
       mapsKey: "maps-secret",
+      providerRegistry: registry,
+      providerCursor,
     },
     deps: {
       ...input.deps,
@@ -463,6 +473,11 @@ test("zero Calendar-eligible events is a valid incomplete pass instead of a runt
         candidates: [{ event_ref: "luma-event://event/founder-night", eligible: false }],
       }),
       runLunaJudgment: async () => { throw new Error("Luna must not run"); },
+      createPack: () => Object.freeze({
+        ...input.pack,
+        handoffEventSource: async () => handoff,
+      }),
+      isVerifiedEventSourceHandoff: (value) => value === handoff,
     },
   });
 
@@ -470,6 +485,8 @@ test("zero Calendar-eligible events is a valid incomplete pass instead of a runt
   assert.equal(result.write, null);
   assert.equal(result.candidate_attempts.length, 0);
   assert.equal(result.continuation.status, "continue");
+  assert.equal(result.provider_cursor.provider, "connpass");
+  assert.equal(result.provider_discovery.status, "waiting_for_authorized_source");
   assert.deepEqual(result.selection, {
     inventory_event_count: 2,
     calendar_gate_event_count: 1,
