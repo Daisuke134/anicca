@@ -31,6 +31,7 @@ test("OpenClaw photo delivery uses a private temporary PNG and returns a positiv
         "message", "send", "--channel", "telegram", "--target", "fixture-target",
       ]);
       mediaPath = args[args.indexOf("--media") + 1];
+      assert.notEqual(args.indexOf("--force-document"), -1);
       assert.equal(fs.statSync(mediaPath).mode & 0o777, 0o600);
       assert.deepEqual(fs.readFileSync(mediaPath), bytes);
       assert.equal(args[args.indexOf("--message") + 1], "registered evidence");
