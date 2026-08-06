@@ -113,8 +113,12 @@ class BrowserUseATSRunnerTests(unittest.TestCase):
     def test_fails_closed_when_no_application_surface_appears(self):
         adapter = SurfaceAdapter([snapshot({"tag": "a", "text": "Company"})])
         with tempfile.TemporaryDirectory() as directory:
+            evidence = Path(directory)
             with self.assertRaisesRegex(RuntimeError, "application surface"):
-                resolve_application_surface(adapter, Path(directory))
+                resolve_application_surface(adapter, evidence)
+            raw = json.loads((evidence / "application-surface-snapshot.json").read_text())
+            self.assertEqual(raw["frames"][0]["controls"][0]["text"], "Company")
+            self.assertEqual(raw["classification"]["surface"], "none")
 
     def test_no_candidate_returns_pending_without_constructing_browser(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -3135,7 +3135,7 @@ OpenTelemetry decision and primary sources:
   receipts identify the resident worker, not the development session. Reject direct
   Codex, Claude, shell, Python, and Playwright attempts to mint Submit authority.
   Future live E2E MUST use this trigger-and-observe path.
-- [ ] **L-49K1** — Add the Ashby surface state machine measured in the OpenAI
+- [x] **L-49K1** — Add the Ashby surface state machine measured in the OpenAI
   reference success. After `page.ready`, recognize Overview separately from the
   application form, locate the semantic `Application` tab or `Apply for this Job`
   control by accessible role/name, execute exactly one open action, wait for required
@@ -3169,7 +3169,7 @@ OpenTelemetry decision and primary sources:
     run `daily-20260806-160111`, owner fence 114. The worker completed, audited one
     `skipped_cross_owner`, materialized two later candidates, attempted all three,
     and launchd exited 0. Focused 2/2 and full 474/474 tests passed.
-  - [ ] `L-49K1B` — Add the deterministic blank/delayed-render/Overview/direct-form/
+  - [x] `L-49K1B` — Add the deterministic blank/delayed-render/Overview/direct-form/
     stale-ref/no-surface state machine, using `L-49K1A` to open the form and one fresh
     snapshot to recover a stale ref. Persist the before/after surface classification
     and the raw control snapshot even on failure, then fail unless required form
@@ -3178,6 +3178,12 @@ OpenTelemetry decision and primary sources:
     must be added before diagnosing selector text versus render timing. Files: modify
     `browser_use_ats.py` and `tests/test_browser_use_ats.py` (2 files, soft target
     100 LOC).
+    - Completion receipt: commit `8e2f50be0` implemented blank commit/delayed render,
+      Overview semantic open, direct form, one stale-ref refresh, and no-surface
+      failure. A fresh RED then proved no-surface discarded the raw controls; GREEN
+      now atomically stores the last raw snapshot plus classification on both success
+      and failure. Focused adapter/surface tests pass 14/14 and the full suite passes
+      492/492. K1 is complete without authorizing generic click or Submit.
 - [ ] **L-49K2** — Make the resident fill contract complete and inspectable. Route the
   exact accepted resume; fill verified identity/contact/location/start-date fields;
   select work authorization and sponsorship answers from the private profile; verify

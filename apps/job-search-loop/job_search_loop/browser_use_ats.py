@@ -51,6 +51,8 @@ def _application_entry(snapshot: dict[str, Any]) -> tuple[int, int] | None:
 def resolve_application_surface(adapter: Any, evidence_dir: Path, telemetry: Any = None) -> dict[str, Any]:
     telemetry = telemetry or Telemetry()
     started = time.monotonic()
+    current_snapshot: dict[str, Any] | None = None
+    current: dict[str, Any] | None = None
     with telemetry.span("surface.classify") as classify_span:
         try:
             before_snapshot = adapter.snapshot()
@@ -86,6 +88,13 @@ def resolve_application_surface(adapter: Any, evidence_dir: Path, telemetry: Any
             classify_span.set_attributes({"duration.ms": (time.monotonic() - started) * 1000,
                                           "exception.type": type(error).__name__})
             raise
+        finally:
+            if current_snapshot is not None and current is not None:
+                _private_write(
+                    evidence_dir / "application-surface-snapshot.json",
+                    {**current_snapshot, "classification": current},
+                )
+    assert current is not None and current_snapshot is not None
     _private_write(evidence_dir / "application-surface.json", {"before": before, "after": current})
     if not current["claim_ready"]:
         raise RuntimeError("application surface is not a complete form")
