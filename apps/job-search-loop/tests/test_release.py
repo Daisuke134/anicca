@@ -160,6 +160,7 @@ class ReleaseTests(unittest.TestCase):
                 "XDG_STATE_HOME": str(state),
                 "XDG_DATA_HOME": str(data),
                 "PATH": f"{bin_dir}:/usr/bin:/bin",
+                "JOB_SEARCH_BROWSER_USE_BOOTSTRAP": "0",
             }
             authored = subprocess.run(
                 [

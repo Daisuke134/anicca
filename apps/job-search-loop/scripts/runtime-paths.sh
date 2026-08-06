@@ -13,11 +13,16 @@ typeset -gx JOB_SEARCH_TELEGRAM_MEDIA="${JOB_SEARCH_TELEGRAM_MEDIA:-$HOME/.openc
 typeset -gx JOB_SEARCH_LAUNCH_AGENT_DIR="${JOB_SEARCH_LAUNCH_AGENT_DIR:-$HOME/Library/LaunchAgents}"
 typeset -gx JOB_SEARCH_LIBEXEC_ROOT="${JOB_SEARCH_LIBEXEC_ROOT:-$HOME/.local/libexec/anicca/job-search}"
 typeset -gx JOB_SEARCH_PRIVATE_ENV="${JOB_SEARCH_PRIVATE_ENV:-$HOME/.openclaw/.env}"
-if [[ -x /opt/homebrew/bin/python3 ]]; then
+typeset -gx JOB_SEARCH_BROWSER_USE_RUNTIME_ROOT="${JOB_SEARCH_BROWSER_USE_RUNTIME_ROOT:-$JOB_SEARCH_FRAMEWORK_ROOT/runtimes}"
+JOB_SEARCH_BROWSER_USE_PYTHON="$JOB_SEARCH_BROWSER_USE_RUNTIME_ROOT/browser-use-0.13.7-py312/bin/python"
+if [[ -x "$JOB_SEARCH_BROWSER_USE_PYTHON" ]]; then
+  typeset -gx JOB_SEARCH_PYTHON="$JOB_SEARCH_BROWSER_USE_PYTHON"
+elif [[ -x /opt/homebrew/bin/python3 ]]; then
   typeset -gx JOB_SEARCH_PYTHON="${JOB_SEARCH_PYTHON:-/opt/homebrew/bin/python3}"
 else
   typeset -gx JOB_SEARCH_PYTHON="${JOB_SEARCH_PYTHON:-$(command -v python3)}"
 fi
+unset JOB_SEARCH_BROWSER_USE_PYTHON
 typeset -gx JOB_SEARCH_JQ="${JOB_SEARCH_JQ:-/usr/bin/jq}"
 typeset -gx JOB_SEARCH_PLUTIL="${JOB_SEARCH_PLUTIL:-/usr/bin/plutil}"
 typeset -gx JOB_SEARCH_LAUNCHCTL="${JOB_SEARCH_LAUNCHCTL:-/bin/launchctl}"
