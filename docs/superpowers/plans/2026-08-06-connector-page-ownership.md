@@ -78,26 +78,28 @@
 - [x] **Step 2: Run focused tests and verify RED:** `cd apps/life-manager && node --test lib/cloakbrowser-daily-driver.test.js lib/connector-native-runtime.test.js`.
 - [x] **Step 3: Implement the minimal parent target lifecycle** using the default authenticated context, one browser CDP session, bounded target-to-page binding, heartbeat, renderer probe, and parent-only close/release.
 - [x] **Step 4: Run focused tests and verify GREEN** with the same command.
-- [ ] **Step 5: Commit Task 2** with `feat(connector): own browser target lifecycle`.
+- [x] **Step 5: Commit Task 2** with `feat(connector): own browser target lifecycle` (`1f04a2341`).
 
-### Task 3: Fenced Single-Page Agent Capability and Parent Oracle
+### Task 3: Model-Only Form Decisions and Parent-Owned Browser Oracle
 
 **Files:**
-- Create: `apps/life-manager/lib/connector-page-session.js`
-- Create: `apps/life-manager/lib/connector-page-session.test.js`
 - Modify: `apps/life-manager/lib/connector-agentic-registration.js`
 - Modify: `apps/life-manager/lib/connector-agentic-registration.test.js`
+- Modify: `apps/life-manager/lib/luma-form-answer-policy.js`
+- Modify: `apps/life-manager/lib/luma-form-answer-policy.test.js`
 - Modify: `apps/life-manager/lib/luma-browser-provider.js`
 - Modify: `apps/life-manager/lib/luma-browser-provider.test.js`
+- Modify: `apps/life-manager/lib/connector-native-runtime.js`
 
 **Interfaces:**
-- Consumes: Task 2 fenced direct page WebSocket and private profile for one action.
-- Produces: a bounded page capability exposing snapshot, user-facing click/fill/check/select/press, settle, and screenshot; no browser endpoint, page inventory, raw DOM mutation, or close method.
+- Consumes: the form schema observed by the Task 2 parent-owned page and the private profile for one action.
+- Produces: one bounded Terra decision containing answers only. Terra receives no browser endpoint, page WebSocket, target inventory, browser tool, or close capability.
+- The parent-owned Playwright page remains the only browser executor and performs real locator actions, provider readback, screenshot, and fenced cleanup on the same target.
 
-- [ ] **Step 1: Write failing tests** proving the agent input contains no `receipt.endpoint`, `connectOverCDP`, page enumeration, inline Node instructions, or `browser.close`; all actions remain fenced to one target/generation.
-- [ ] **Step 2: Run focused tests and verify RED:** `cd apps/life-manager && node --test lib/connector-page-session.test.js lib/connector-agentic-registration.test.js lib/luma-browser-provider.test.js`.
-- [ ] **Step 3: Implement the minimal single-page capability** and bind it to one Terra turn. Reject fence mismatch, renderer death, navigation outside allowed registration origins, and any action after parent cancellation.
-- [ ] **Step 4: Implement the parent oracle:** after agent return, reload/read the same target, require an exact registered or pending-approval marker, capture PNG, then close/release in the parent.
-- [ ] **Step 5: Run focused tests and the Connector suite:** `cd apps/life-manager && node --test lib/connector-page-session.test.js lib/connector-agentic-registration.test.js lib/luma-browser-provider.test.js && npm run pretest:outbound && npm run test:outbound`.
+- [ ] **Step 1: Write failing tests** proving Terra receives only a sanitized form schema and profile. The prompt contains no endpoint, page WebSocket, target receipt, tab enumeration, inline Node/Playwright bootstrap, `connectOverCDP`, or `browser.close`. Require exactly one Terra invocation and a complete validated answer plan.
+- [ ] **Step 2: Run focused tests and verify RED:** `cd apps/life-manager && node --test lib/connector-agentic-registration.test.js lib/luma-form-answer-policy.test.js lib/luma-browser-provider.test.js`.
+- [ ] **Step 3: Implement the minimal model-decision adapter.** Deterministic profile answers stay local; only unresolved ordinary questions are sent once to Terra. Reject secret-shaped fields, OTP/password/file controls, invalid options, unknown keys, duplicates, and incomplete required answers.
+- [ ] **Step 4: Keep the entire effect in the parent.** The existing owned page opens the form, reads its schema, merges validated Terra decisions, fills using user-facing Playwright actions, clicks final submit once, then performs independent provider readback and PNG capture before fenced cleanup.
+- [ ] **Step 5: Run focused tests and the Connector suite:** `cd apps/life-manager && node --test lib/connector-agentic-registration.test.js lib/luma-form-answer-policy.test.js lib/luma-browser-provider.test.js && npm run pretest:outbound && npm run test:outbound`.
 - [ ] **Step 6: Run the existing Connector launchd live acceptance** and require one trace with one target, one agent session, zero agent closes, real submit, parent marker readback, PNG SHA, and parent release. Do not touch Gig or `:9223`.
 - [ ] **Step 7: Update the master spec with measured evidence and commit** using `feat(connector): complete page-scoped registration transaction`.
