@@ -5587,7 +5587,21 @@ PNG、Telegram作用は0。原因はtracked file modeが100644で、official ent
 entrypointのexecute bitを検査するtestを追加してREDを確認し、`run.sh`をmode 100755へ復元した。native entrypoint suiteは4/4 GREEN。
 Item 10Bは未完で、次の一件は同じbounded foreground commandを再実行し、最初に到達する実境界を観測すること。scheduleはunloadedを維持する。
 
-### Active remaining TODO SSOT（進捗194。これ以外の残TODO一覧は履歴）
+### O1B-25進捗195（Item 10B foreground wake 1 / providers exhausted）
+
+execute bit修復後、schedule unloadedのままofficial `run.sh`を660秒hard timeout付きで再実行した。Google Calendar busy readは
+2,690msでsuccess、single owned `:9222` pageでLuma provider discoveryは44,529msでsuccess。14日内の最終candidateは0件で、
+Item 14前のConnpass production routerは意図どおり0件のため、wakeは`completed_no_effect / providers_exhausted`で終了した。
+
+外部作用はprovider Submit 0、Calendar write 0、PNG 0、applied bundle 0。every-wake Telegram reportはpositive provider ID `8226`を
+parent receiptへ保存した。owned target leaseは終了時に解放済みで、browser-level closeとschedule loadは0。CLIは現状
+`applied_bundle`以外をexit 1にするためprocess exitは1だが、stderr/stdoutは0、process crash reportは起動していない。
+
+現在のfailureは、Lumaに実際に該当候補がない場合と、detail/date/open/free normalizationで候補を誤除外した場合をsafe historyから
+区別できないこと。Item 10Bは未完。次の一件はprovider text、URL、個人情報を保存せず、observed/detail-valid/window/open/free/conflictの
+件数だけをparentが記録する診断contractをTDDで追加し、同じ実pageで0件の原因を特定すること。
+
+### Active remaining TODO SSOT（進捗195。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
