@@ -69,6 +69,8 @@ test("Healer converts one privacy-safe incident into one isolated Terra Superpow
     assert.equal("GOOGLE_API_KEY_DIRECTIONS" in codex.options.env, false);
     assert.equal(calls.some((call) => call.command === "git" && call.args.includes("status")), true);
     assert.equal(calls.some((call) => call.command === "git" && call.args.includes("ls-remote")), true);
+    assert.equal(calls.some((call) => call.command === "gitleaks" && call.args.includes("--redact")), true);
+    assert.equal(calls.some((call) => call.command === "python3" && call.args.some((arg) => /pii_shape_scan\.py$/.test(arg))), true);
     const revisions = fs.readFileSync(path.join(stateDir, "healer-revisions.jsonl"), "utf8")
       .trim().split("\n").map(JSON.parse);
     assert.equal(revisions.length, 1);

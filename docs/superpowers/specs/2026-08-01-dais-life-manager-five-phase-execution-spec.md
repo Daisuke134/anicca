@@ -3230,7 +3230,14 @@ O1B-25進捗158（Healer orphan branch/worktree collision recovery / RED→GREEN
 認証、base commit、repository等の非collision Git failureは再試行せず`worktree_failed`へ記録する。既存pathの削除・上書きは行わない。
 Healer focused 4/4 GREEN。外部申込、Calendar、Telegram、browser、live launchd effectは0件。
 
-### Active remaining TODO SSOT（進捗158。これ以外の残TODO一覧は履歴）
+O1B-25進捗159（Healer secret/PII parent scan / RED→GREEN）:
+成功候補revisionへrepo既存の`gitleaks 8.30.1`と`scripts/security/pii_shape_scan.py`を親Healerから必須実行する。gitleaksはincidentの
+base commitからcandidate HEADまでのcommit範囲を`.gitleaks.toml`・redaction付きで検査し、PII scannerは既存allowlistでisolated worktreeを
+検査する。どちらかがnonzeroならremote commitが存在しても`revision_failed`でpromotion候補にしない。Healer focused 4/4 GREEN。
+今回変更2ファイルはgitleaks no leaks、PII shape scan clean。repo全体gitleaksの既存16件は今回差分外のfixture/evidenceであり、値は表示していない。
+外部申込、Calendar、Telegram、browser、live launchd effectは0件。
+
+### Active remaining TODO SSOT（進捗159。これ以外の残TODO一覧は履歴）
 
 1. [x] Provider-neutral downstream write、Connpass runtime write dependencies、Luma Calendar-eligible 0 handoff、Connpass state persistenceを閉じる。証拠: 進捗141、143、144、commit `65241d6a2`、`e822bfa3a`、`d0e05f5d8`、`1cfa2e56f`。
 2. [x] Privacy-safe Observer envelope/replayを実装する。完了条件: success、tool failure、timeout、process crashが同じschemaでrun/wake、stage、safe action、expected/observed effect、owner generation、screenshot SHA、provider readback、commit、cursorへ正規化され、secret/PII/raw logなし、fingerprint dedupe可能なincidentとreplay fixtureを各1件生成する。証拠: 進捗148、focused 33/33 GREEN。
