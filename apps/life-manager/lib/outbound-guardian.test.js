@@ -11,11 +11,35 @@ const {
   classifyOutboundWorkerHealth,
   guardianExitCode,
   parseOpenClawMessageId,
+  notifyOpenClawPhoto,
   recoverDockerWorker,
   runOutboundGuardian,
 } = require("./outbound-guardian.js");
 
 const NOW = Date.parse("2026-08-01T03:00:00.000Z");
+
+test("OpenClaw photo delivery uses a private temporary PNG and returns a positive message ID", async () => {
+  const bytes = Buffer.alloc(5_000, 0x61);
+  Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(bytes);
+  let mediaPath;
+  const receipt = await notifyOpenClawPhoto(bytes, {
+    telegramTarget: "fixture-target",
+    caption: "registered evidence",
+    spawnSync(command, args) {
+      assert.equal(command, "openclaw");
+      assert.deepEqual(args.slice(0, 6), [
+        "message", "send", "--channel", "telegram", "--target", "fixture-target",
+      ]);
+      mediaPath = args[args.indexOf("--media") + 1];
+      assert.equal(fs.statSync(mediaPath).mode & 0o777, 0o600);
+      assert.deepEqual(fs.readFileSync(mediaPath), bytes);
+      assert.equal(args[args.indexOf("--message") + 1], "registered evidence");
+      return { status: 0, stdout: JSON.stringify({ messageId: "322" }), stderr: "" };
+    },
+  });
+  assert.deepEqual(receipt, { messageId: "322" });
+  assert.equal(fs.existsSync(mediaPath), false);
+});
 
 function healthyBody(overrides = {}) {
   return {

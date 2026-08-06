@@ -1,5 +1,6 @@
 "use strict";
 
+const { createHash } = require("node:crypto");
 const { canonicalEventUrl } = require("./canonical-event-url.js");
 const {
   buildEventApplicationJob,
@@ -125,11 +126,16 @@ function reconciliationResult(context, error) {
   });
 }
 
-function verifiedTelegramDelivery(delivery, context, coverage) {
+function verifiedTelegramDelivery(delivery, context, coverage, artifactSha256) {
   if (!delivery || typeof delivery !== "object" || Array.isArray(delivery)) return null;
   if (delivery.kind !== "connector_coverage_telegram_delivery") return null;
   const providerId = String(delivery.provider_id == null ? "" : delivery.provider_id).trim();
-  if (!providerId || !POSITIVE_REF.test(providerId)) return null;
+  const photoProviderId = String(delivery.photo_provider_id == null ? "" : delivery.photo_provider_id).trim();
+  if (
+    !providerId || !POSITIVE_REF.test(providerId)
+    || !photoProviderId || !POSITIVE_REF.test(photoProviderId)
+    || delivery.artifact_sha256 !== artifactSha256
+  ) return null;
   const observedAt = String(delivery.observed_at == null ? "" : delivery.observed_at).trim();
   const observedMilliseconds = Date.parse(observedAt);
   if (
@@ -144,7 +150,7 @@ function verifiedTelegramDelivery(delivery, context, coverage) {
     !/^[0-9a-f]{64}$/.test(String(delivery.chat_id_sha256 || ""))
     || delivery.chat_id_sha256 !== hashChatId(context.telegramTarget)
   ) return null;
-  return Object.freeze({ providerId, observedAt });
+  return Object.freeze({ providerId, photoProviderId, artifactSha256, observedAt });
 }
 
 function selectedContext(input) {
@@ -392,6 +398,21 @@ async function runNativeConnectorWrite(input = {}, deps = {}) {
     calendarCoverageUrl: context.calendarCoverageUrl,
   };
   try {
+    if (typeof injected.readArtifact !== "function") throw new Error("registration PNG reader unavailable");
+    const bytes = await injected.readArtifact(context.tenantId, receipt.artifact_ref);
+    const digest = Buffer.isBuffer(bytes) ? createHash("sha256").update(bytes).digest("hex") : "";
+    if (digest !== receipt.artifact_sha256) throw new Error("registration PNG hash mismatch");
+    telegramInput.registrationEvidence = Object.freeze({
+      event_ref: context.eventRef,
+      canonical_url: receipt.canonical_url,
+      artifact_ref: receipt.artifact_ref,
+      artifact_sha256: receipt.artifact_sha256,
+      bytes,
+    });
+  } catch (error) {
+    return failureResult("telegram_evidence_failed", { ...context, job }, error);
+  }
+  try {
     // Build first so a malformed report can never be hidden by a delivery call.
     buildTelegramMessage(telegramInput);
   } catch (error) {
@@ -408,7 +429,7 @@ async function runNativeConnectorWrite(input = {}, deps = {}) {
     if (error && error.unknownEffect === true) return reconciliationResult({ ...context, job }, error);
     return failureResult("telegram_delivery_failed", { ...context, job }, error);
   }
-  const verifiedDelivery = verifiedTelegramDelivery(delivery, context, coverage);
+  const verifiedDelivery = verifiedTelegramDelivery(delivery, context, coverage, receipt.artifact_sha256);
   if (!verifiedDelivery) {
     const error = new Error("Telegram delivery needs a positive receipt");
     error.unknownEffect = true;
@@ -433,6 +454,8 @@ async function runNativeConnectorWrite(input = {}, deps = {}) {
     coverage: coverageProjection(coverage),
     telegram: Object.freeze({
       provider_id: verifiedDelivery.providerId,
+      photo_provider_id: verifiedDelivery.photoProviderId,
+      artifact_sha256: verifiedDelivery.artifactSha256,
       observed_at: verifiedDelivery.observedAt,
       coverage_snapshot_id: coverage.coverage_snapshot_id,
     }),

@@ -97,7 +97,11 @@ test("native-pass durably binds the registered-page PNG lineage to its Calendar 
           calendar_sync: {
             calendar_event_ref: `calendar-evidence://google/event/${"b".repeat(64)}`,
           },
-          telegram: { provider_id: "7576" },
+          telegram: {
+            provider_id: "7576",
+            photo_provider_id: "7577",
+            artifact_sha256: hash,
+          },
         },
       }),
     });
@@ -113,7 +117,71 @@ test("native-pass durably binds the registered-page PNG lineage to its Calendar 
       artifact_sha256: hash,
       calendar_event_ref: `calendar-evidence://google/event/${"b".repeat(64)}`,
       telegram_provider_id: "7576",
+      telegram_photo_provider_id: "7577",
     });
+    const delivery = JSON.parse(fs.readFileSync(
+      path.join(stateDir, "delivery-receipts.jsonl"), "utf8",
+    ));
+    assert.equal(delivery.telegram_provider_id, "7576");
+    assert.equal(delivery.telegram_photo_provider_id, "7577");
+    assert.equal(delivery.artifact_sha256, hash);
+  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+});
+
+test("native loop backfills one legacy successful card with its real registered-page PNG", async () => {
+  const directory = temporaryDirectory();
+  const stateDir = path.join(directory, "state");
+  const evidenceDir = path.join(stateDir, "evidence");
+  const bytes = Buffer.alloc(5_000, 0x61);
+  Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(bytes);
+  const hash = require("node:crypto").createHash("sha256").update(bytes).digest("hex");
+  fs.mkdirSync(path.join(evidenceDir, "objects/sha256"), { recursive: true });
+  fs.mkdirSync(path.join(evidenceDir, "tenants/dais-local/outbound/luma/artifacts"), { recursive: true });
+  fs.mkdirSync(stateDir, { recursive: true });
+  fs.writeFileSync(path.join(evidenceDir, "objects/sha256", hash), bytes, { mode: 0o600 });
+  fs.writeFileSync(
+    path.join(evidenceDir, "tenants/dais-local/outbound/luma/artifacts", `${hash}.json`),
+    `${JSON.stringify({ sha256: hash, event_ref: "luma-event://event/verified-one" })}\n`,
+    { mode: 0o600 },
+  );
+  fs.writeFileSync(path.join(stateDir, "delivery-receipts.jsonl"), `${JSON.stringify({
+    event_ref: "luma-event://event/verified-one",
+    calendar_event_ref: `calendar-evidence://google/event/${"a".repeat(64)}`,
+    telegram_provider_id: "7372",
+  })}\n`, { mode: 0o600 });
+  let sends = 0;
+  try {
+    await runNativePass({
+      repoRoot: REPO_ROOT,
+      stateDir,
+      ownerToken: OWNER_TOKEN,
+      config: {
+        tenantId: "dais-local",
+        evidenceDir,
+        telegramTarget: "fixture-target",
+      },
+      sendPhotoEvidence: async (photo, options) => {
+        sends += 1;
+        assert.deepEqual(photo, bytes);
+        assert.match(options.caption, /verified-one/);
+        return { messageId: "7577" };
+      },
+      runRuntime: async () => ({
+        status: "incomplete",
+        coverage: { counts: { open: 20 } },
+        continuation: { status: "continue" },
+      }),
+    });
+    assert.equal(sends, 1);
+    const receipt = JSON.parse(fs.readFileSync(path.join(stateDir, "photo-delivery-receipts.jsonl"), "utf8"));
+    assert.deepEqual(receipt, {
+      event_ref: "luma-event://event/verified-one",
+      telegram_provider_id: "7372",
+      telegram_photo_provider_id: "7577",
+      artifact_sha256: hash,
+      observed_at: receipt.observed_at,
+    });
+    assert.equal(new Date(Date.parse(receipt.observed_at)).toISOString(), receipt.observed_at);
   } finally { fs.rmSync(directory, { recursive: true, force: true }); }
 });
 

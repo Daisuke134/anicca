@@ -2346,6 +2346,16 @@ canonical Luma URL、exact instant、`object://sha256/<hash>`と同一hashを再
 同じmode 0600 `last-result.json.write`へ保存する。focused evidence/provider/write 30/30、durable lineage 1/1、native 21/21、
 pretest 12/12、outbound 302/302がfresh GREEN。実eventの画像そのもののreadbackとTelegram画像送信はP0-9/10で実証する。
 
+O1B-25進捗72（P0-9 result card + registered-page photo implementation / RED→GREEN、live未実証）: Connector deliveryは
+OpenClawで本文cardを一通送るだけで、verified PNG bytesをdeliveryへ渡さず、画像message IDもstateへ残さなかった。新規登録時は
+tenant-scoped artifact readerからPNGを再取得してreceipt SHAと照合し、本文cardと登録済みpage画像を別々に送る。両方のpositive IDと
+同一artifact SHAが揃わない限り成功receiptを拒否する。OpenClaw media transportはmode 0600の一時PNGを`--media`へ渡し、送信後に
+固定temp directoryを削除する。native resultと新規delivery receiptはcard ID、photo ID、artifact SHAを保存する。既存の実成功2件は
+card IDを保持したまま、native loop自身がtenant-owned artifactを一wake一件だけ画像backfillし、append-only
+`photo-delivery-receipts.jsonl`へ記録する。REDはphoto send 0回、pipeline evidence欠落、native photo ID欠落、backfill 0回を個別に確認。
+GREENはfocused 3/3、Telegram/write 47/47、native 22/22、outbound 307/307。次にpush済みcodeを既存launchdで実発火し、実画像の
+positive IDとSHAをreadbackするまではP0-9を完了扱いにしない。
+
 完全な残TODO SSOT:
 
 **P0 — task deliveryを前進させる（最優先）**
