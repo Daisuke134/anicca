@@ -50,7 +50,7 @@ commission watermark as newly attributed revenue.
 | Runtime | Legacy core/tmux is absent; hourly and daily launchd services are not registered | Two launchd owners wake one durable queue and resume the same work without duplicate side effects |
 | Agent brain | F2 is pushed and focused tests pass; only fake-provider process replay exists | Terra proposes one typed action and a live allowlisted provider boundary returns a verification receipt |
 | Offers | No English account, approval, terms, or executable link is read back | At least one English offer is `EXECUTABLE` from current ownership, terms, channel, destination, and tracking-link receipts |
-| Publishing | English X login is verified as `@selawmqt`, currently named `sela` with 128 mixed JA/EN historical posts and 0 followers; Postiz's only X integration is Japanese `@aniccaxxx`; X body links are stripped and browser scripting is not a permitted autonomous publisher | English-only Anicca profile/disclosure, approved API/Postiz integration for `@selawmqt`, owned conversion page, publication receipt, public readback, disclosure, redirect, and durable click lineage agree |
+| Publishing | English X login is verified as `@selawmqt`, currently named `sela` with 128 mixed JA/EN historical posts and 0 followers; no Affiliate placement exists; X warns that website scripting can trigger permanent suspension | The Agent rebrands and operates `@selawmqt` through its isolated browser, then proves identity, disclosure, owned conversion page, action receipt, public readback, redirect, and durable click lineage. Postiz and external publishing APIs are prohibited |
 | Money | No new approved Affiliate commission exists | Provider transactions append pending/approved/reversed/paid receipts and join by strongest available attribution key |
 | Telegram | The shared Life Manager target delivered Affiliate milestone `messageId=7639`; Affiliate outbox/dedupe and Web snapshot parity are not implemented | Immediate events and hourly/daily/weekly summaries deliver at-most-once from the same snapshot as Life Manager |
 | Learning | No mature Affiliate cohort exists | One-variable experiments use external net outcomes, then KEEP or REVERT with a consumed strategy hash |
@@ -125,8 +125,8 @@ learning; it must not promise a particular income.
   read-only discovery may run before E0, but Japanese publication cannot.
 - Amazon, Rakuten, high-value Japanese ASPs, and English recurring/high-value
   programs through a normalized provider contract.
-- Owned comparison/review pages, X/X Articles through the dedicated account and
-  Postiz API, email when an owned consented list exists, and approved article
+- Owned comparison/review pages, X/X Articles through the dedicated browser,
+  email when an owned consented list exists, and article
   platforms.
 - Signed redirect, first-party click receipt, provider sub-ID where supported,
   provider report reconciliation, immutable commission ledger, and payout state.
@@ -140,8 +140,8 @@ learning; it must not promise a particular income.
 - Paid acquisition before observed positive net unit economics.
 - Medical, legal, financial, gambling, or other regulated claims without a
   provider-specific legal policy contract.
-- Account creation, identity fabrication, CAPTCHA bypass, cloaking, spam,
-  purchased engagement, or platform-rule evasion.
+- Identity fabrication, CAPTCHA bypass, cloaking, spam, purchased engagement, or
+  platform-rule evasion. Authorized account creation/recovery is included.
 - Generic deal-feed output, scraped-copy pages, or autonomous factual claims
   without current evidence.
 - Treating views, clicks, estimated revenue, or another creator's screenshots as
@@ -166,7 +166,7 @@ scripts. A Terra Agent observes the current world through allowlisted tools,
 writes a typed action plan in natural language plus JSON, and diagnoses novel
 failures. A deterministic kernel validates and executes that plan, records every
 boundary, and refuses unsafe or unreceipted actions. New providers are primarily
-learned as versioned browser/API playbooks; stable parsing and money boundaries
+learned as versioned browser playbooks; stable parsing and money boundaries
 remain deterministic.
 
 This approach is selected because it reuses the Writer Agent's verified runtime
@@ -198,10 +198,11 @@ registered page, not X or LINE.
 
 The revenue posture is aggressive within account-survival constraints: increase
 research speed, hook variation, offer turnover, and proven capacity; never hide
-advertising, invent experience, manipulate engagement, or automate X through
-website scripting. X's April 2026 automation rules require an approved API path
-for the production loop, so the verified browser session is used for ownership,
-OAuth, and readback only.
+advertising, invent experience, manipulate engagement, or evade challenges. X's
+April 2026 rules warn that website scripting may permanently suspend an account.
+The product nevertheless requires browser-only external operation, so suspension
+is an explicit capped external risk; the design never calls this lane approved
+or uses Postiz/API as a hidden fallback.
 
 ### 4.2 Rejected: independent multi-agent swarm with separate state
 
@@ -239,6 +240,17 @@ migration and are removed from scheduling only after state-parity receipts.
 
 ## 6. Architecture
 
+The completion boundary starts on a scratch macOS or Ubuntu computer. The Agent
+installs pinned dependencies, creates an encrypted authority vault and isolated
+locale profiles, discovers/creates/recovers/configures authorized accounts,
+applies to programs, polls approvals, publishes, acquires traffic, downloads and
+hashes provider reports, reconciles money, reports to Telegram, and survives
+reboot/UI drift. Missing legal identity, KYC, tax, payout, CAPTCHA, or contractual
+consent becomes `EXTERNAL_CHALLENGE`; it is never fabricated or bypassed.
+
+External service APIs and Postiz are prohibited. Internal SQLite/local HTTP and
+the Agent-owned signed redirect remain valid implementation boundaries.
+
 ```mermaid
 flowchart TD
   T[Hourly or daily trigger] --> B[Terra Agent brain]
@@ -246,13 +258,13 @@ flowchart TD
   subgraph Tools[Allowlisted observation and action tools]
     C[CRWL public web]
     CB[CloakBrowser and CDP lease]
-    API[Provider and Postiz APIs]
-    REP[Provider reports]
+    WEB[Provider and publisher websites]
+    REP[Rendered reports and downloads]
   end
 
   C --> B
   CB --> B
-  API --> B
+  WEB --> B
   REP --> B
 
   B --> P[Typed action proposal]
@@ -540,7 +552,7 @@ missing evidence with zero.
   records every attempt.
 - Authentication failure quarantines only that account.
 - Offer expiry disables only that offer and schedules replacement selection.
-- Postiz/X failure leaves owned content and other channels running.
+- X/browser quarantine leaves owned content and other channels running.
 - Provider-report failure leaves publication running but money unknown.
 - Policy or evidence failure freezes that artifact; it cannot be bypassed by a
   model retry.
@@ -658,7 +670,7 @@ they remain attached to one semantic event. A send with ambiguous outcome become
 | Provider | normalize fixtures, expiry, forbidden channel, auth failure | authenticated account and offer readback |
 | Evidence/policy | stale source, unsupported claim, disclosure location | rendered JA/EN content passes current official terms |
 | Redirect | invalid/expired token, no open redirect, rate limit, persistence failure | deployed HTTPS click returns 302 and durable click ID |
-| Publication | duplicate intent, mismatched readback, partial channel failure | Postiz/owned placement public readback |
+| Publication | duplicate intent, mismatched readback, partial channel failure | Browser/owned placement public readback |
 | Reconciliation | sub-ID match, unmatched row, reversal, payout | real provider report joins click/placement |
 | Learning | one-variable invariant, mature cohort, KEEP/REVERT rollback | later run consumes winning hash |
 | Recovery | crash after intent/before receipt and after receipt/before state | kickstart resumes same run without duplicate |
@@ -734,7 +746,7 @@ after mature positive net economics. No provider, offer, or channel may exceed
    semantic action; it does not receive arbitrary shell or unrestricted CDP.
 3. The deterministic kernel checks origin, terms, budget, idempotency, disclosure,
    evidence, and required verification before executing that action.
-4. The browser/API harness executes it, reads the result back, stores hashes and
+4. The browser harness executes it, reads the result back, stores hashes and
    receipts, and emits an owner-readable natural-language `ActionEvent` to the Telegram
    outbox.
 5. The planner then chooses the next eligible work item: offer/terms refresh,
@@ -780,7 +792,7 @@ implementation plan. Completion MUST include all of the following classes:
 1. Python 3.9 compile, shell syntax, focused tests, and collection-safe full
    Affiliate regression execution;
 2. authenticated provider/account/terms/link readback;
-3. Postiz publication receipt plus public content/account readback;
+3. browser action receipt plus public content/account readback;
 4. deployed HTTPS redirect and durable click receipt;
 5. provider report replay with one canonical transaction/commission receipt;
 6. launchd hourly/daily kickstart with successful real wake receipts;
@@ -790,4 +802,4 @@ implementation plan. Completion MUST include all of the following classes:
 | Item | Value |
 |---|---|
 | UI change | Telegram reporting UX and Life Manager financial reporting |
-| E2E judgment | Maestro not required: the changed UI boundary is Telegram/web reporting, provider APIs, public pages, redirect, and launchd; each requires real API/browser/HTTP/runtime E2E instead |
+| E2E judgment | Maestro not required: the changed UI boundary is Telegram/web reporting, rendered provider websites/downloads, public pages, redirect, launchd/systemd, and clean-host bootstrap; each requires real browser/HTTP/runtime E2E instead |

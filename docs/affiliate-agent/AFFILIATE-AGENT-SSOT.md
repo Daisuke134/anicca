@@ -26,10 +26,18 @@ English and Japanese never share one social identity, publication history,
 attribution cohort, or experiment. English is first. The verified English X
 identity is now `sela` / `@selawmqt`, logged in through the isolated
 `capafy-mkt-provision` CloakBrowser profile; legacy `@aniccaen` is not an active
-X username. The only currently verified Postiz X integration remains Japanese
-`アニッチャ` / `@aniccaxxx`, so autonomous English publication stays fail-closed
-until `@selawmqt` has an approved API/Postiz integration. A dedicated Japanese
-canary is admitted only after English Gate E0.
+X username. Postiz and every external publishing API are out of scope by product
+decision. The Agent itself must provision an isolated browser profile, recover or
+establish the authorized user account, configure the profile, publish through the
+rendered website, and verify the public result. A dedicated Japanese canary is
+admitted only after English Gate E0 and uses a different browser profile.
+
+“End to end” begins on a scratch computer. Installation, encrypted authority
+inventory, browser/profile provisioning, account discovery/signup/recovery,
+rebranding, affiliate application, offer approval polling, research, content,
+browser publication, acquisition experiments, click attribution, provider
+dashboard/CSV reconciliation, Telegram reporting, recovery, and learning are all
+Agent states. None is an operator setup checklist masquerading as a prerequisite.
 
 The machine cannot guarantee $10,000, $10,000,000, or $100,000,000 revenue. It guarantees
 measurable attempts, honest receipts, bounded experiments, compliance gates, and
@@ -45,9 +53,9 @@ techniques do not merge the ledgers.
 |---|---|---|
 | Amazon Associates Japan | CDP reached the Amazon sign-in page; approval state is not observable | `AUTH_REQUIRED`, no offer may publish until the account and tag are read back |
 | Rakuten Affiliate | CDP rendered the public home page with `ログイン`; approval state is not observable | `AUTH_REQUIRED`, keep the provider adapter dormant |
-| Postiz | CLI auth is valid and the live API returns 29 integrations. The only live X integration is ID `cmm6d7m5703rwpr0yr5vtme3w`, `アニッチャ` / `@aniccaxxx`; the local 31-row snapshot is stale | Keep English X publication disabled until a separate English integration is verified; refresh state from live API rather than hand-editing the snapshot |
+| Postiz | A Japanese integration exists, but the product decision excludes Postiz | Do not read, connect, or use it in the Agent; this is not a blocker |
 | X identity | User screenshot, authenticated browser, and public CRWL readback agree on `sela` / `@selawmqt`: 128 posts, 27 following, 0 followers, with mixed historical JA/EN Anicca posts. Stored credentials produced a real `auth_token`, `/home`, and profile link `/selawmqt`. X rejected legacy `@aniccaen` as inactive | Reuse `@selawmqt` as the English identity, then make its display name, bio, disclosure, and all future posts English-only before E0; preserve historical posts and never use Japanese `@aniccaxxx` or the shared daily-driver |
-| X publication | Postiz reports a 4,000-character limit and says body links are stripped; X's April 2026 automation rules prohibit scripted website automation | Use an owned registered page as the initial conversion surface and an approved API/Postiz adapter for autonomous distribution; browser is auth/readback/emergency-only, not the posting loop |
+| X publication | No Affiliate placement exists. X's April 2026 rules warn that scripted website automation may permanently suspend an account | The user-selected implementation is browser-only. Enforce identity, disclosure, duplicate prevention, public readback, action caps, and immediate account quarantine; never describe this lane as platform-approved or evade challenges |
 | clip loop | launchd is installed, last exit code is 0, and logs show production/posting through 2026-08-01 | Not banned. Reuse its publisher, renderer, attribution, and scoring contracts |
 | recent clip runs | Contract reports `skipped`; older stderr shows Telegram DNS delivery failures | Diagnose scheduler/business gates separately from platform health |
 
@@ -69,7 +77,7 @@ live autonomous operation.
 | F1 migration | Implemented, reviewed, pushed, and re-run from final HEAD | It does not publish, browse, attribute, or earn |
 | F2 Agent brain | Commit `d9ad4acd7cb0474cf1a825a94cfb49e7847da22e` is pushed; root replay on 2026-08-06 passed focused 16/16, Python 3.9 compile/shell syntax, and 30/30 related regressions | Full-suite collection is blocked by legacy `test_affiliate_verify.py` import-time `sys.exit()`; fresh review and live-provider execution remain open, so F2 stays open |
 | Provider auth | Amazon JP and Rakuten remain `AUTH_REQUIRED` from the last authenticated-state check | Account approval, tag ownership, current offer terms, and executable links |
-| Publication | Planned adapters and Postiz reuse path only | No Affiliate JA/EN placement has a provider receipt plus public readback |
+| Publication | Browser publisher is planned only | No Affiliate JA/EN placement has an action receipt plus public readback |
 | Attribution | Design and API tasks remain open | No live redirect click is joined to an ASP transaction |
 | Revenue | No new Affiliate revenue receipt | Legacy watermark, fixtures, clicks, estimates, and creator screenshots do not count |
 | Telegram | The shared Life Manager allowlist target delivered a real Affiliate milestone with provider `messageId=7639`; the older F1 path failed because it did not use this resolved target | Reuse the validated target contract and build the Affiliate durable outbox/dedupe layer; delivery identity is no longer unknown |
@@ -81,7 +89,7 @@ live autonomous operation.
 |---|---|---|
 | Unit/fixture test | Local contract behavior | Live login, publication, click, conversion, or revenue |
 | CloakBrowser login page | Page reachability and observed auth state | Affiliate approval or account ownership |
-| Postiz fake/fixture response | Adapter parsing | A public X/article placement |
+| Fake browser/fixture response | Adapter parsing | A public X/article placement |
 | `test=true` redirect click | Deployed redirect and click persistence | Organic buyer intent or commission |
 | Provider report fixture | Reconciliation arithmetic | External approved or paid commission |
 | Legacy commission watermark | Historical unattributed aggregate | New Agent revenue or placement attribution |
@@ -96,11 +104,11 @@ external receipt exists.
 ```mermaid
 flowchart TD
   W[launchd wake] --> Q[Claim one durable work item]
-  Q --> O[Terra observes CRWL, CloakBrowser, API, reports]
+  Q --> O[Terra observes browser pages, CRWL, downloads]
   O --> A[Propose exactly one typed action]
   A --> G{Policy, evidence, budget, idempotency gate}
   G -->|Fail| R[Wait, repair, or local quarantine]
-  G -->|Pass| E[Execute through allowlisted browser or API tool]
+  G -->|Pass| E[Execute one allowlisted browser action]
   E --> V[Read back the real external result]
   V --> T[Append receipt and owner-language Telegram event]
   T --> M[Reconcile click, transaction, commission, reversal]
@@ -212,8 +220,9 @@ is never promoted merely because its author reports income.
 “Aggressive” means faster evidence collection, more creative variation, quicker
 offer replacement, and higher capacity only after positive net receipts. It does
 not mean hidden advertising, fabricated experience, unauthorized channels,
-scripted X website posting, engagement manipulation, or risking the payout
-account. The Agent may test strong hooks, contrarian angles, reply-versus-profile
+engagement manipulation, challenge evasion, or risking the payout account. The
+browser-only X lane is an explicit accepted enforcement risk, not a claim of X
+approval. The Agent may test strong hooks, contrarian angles, profile-versus-owned-page
 distribution, pricing frames, CTA placement, and content format one variable at
 a time. Any tactic that requires deception or threatens account/payout survival
 has negative expected value and is rejected by the deterministic gate.
@@ -221,7 +230,7 @@ has negative expected value and is rejected by the deterministic gate.
 ## 3. Single recommended strategy
 
 Start with one narrow English buyer problem on `@selawmqt`. Its X login is
-provisioned, but its autonomous API/Postiz publisher is not. The initial
+provisioned; account presentation and browser publishing remain Agent work. The initial
 candidate set is non-regulated B2B SaaS and
 creator/productivity software because its official programs expose higher or
 recurring payouts and the existing English publication lane reduces launch
@@ -300,9 +309,9 @@ prompts and browser sessions are replaceable executors.
 | Evidence pack | Stores official facts, direct product evidence, alternatives, audience pain, counterclaims, and freshness TTL |
 | Content studio | Produces an English article, X thread/post, X Article, carousel, slideshow, or video; the later Japanese pod uses independent evidence, identity, and localization rather than mixed-language reuse |
 | Policy gate | Fail-closed for missing disclosure, unverified claims, prohibited categories, self-dealing, stale price, broken link, or unregistered surface |
-| Publisher adapters | Build a Postiz adapter over the verified CLI/API contract; current Marketing Engine code supplies generic receipts/rendering but no proven Affiliate Postiz adapter. Every publish requires provider receipt plus public readback |
+| Browser publisher | Observe semantically, execute one typed action, then require before/after URL and observation hashes, expected identity, external object URL/ID when visible, screenshot hash, and fresh public readback. Before retrying an ambiguous publish, search the ledger and live account for the content fingerprint |
 | Attribution | Agent-owned redirect records click ID, content, placement, offer, language, and experiment before redirecting to the signed affiliate URL |
-| Receipt reconciler | Joins ASP transaction/sub-ID reports to clicks. Unknown is never zero; pending, approved, reversed, and paid remain distinct |
+| Receipt reconciler | Navigates provider dashboards and downloaded reports through the browser, hashes the source artifact, and joins transaction/sub-ID rows to clicks. Unknown is never zero; pending, approved, reversed, and paid remain distinct |
 | Learner | Promotes a tactic only from mature cohorts and deepest common signal: net commission → approved orders → qualified leads → clicks → engagement |
 | Recovery controller | Same `run_id`, artifact hash, placement, and publication intent resume after failure; exponential retry obeys provider `Retry-After` |
 
@@ -321,6 +330,44 @@ status, observed time, and immutable source hash. Canonical states are
 but that phrase is not a fifth storage state. Approved and paid are never combined.
 
 ## 5. Loop and state machine
+
+```mermaid
+stateDiagram-v2
+  [*] --> Bootstrap
+  Bootstrap --> AuthorityInventory
+  AuthorityInventory --> BrowserProvision
+  BrowserProvision --> AccountReady
+  AccountReady --> ProfileReady
+  ProfileReady --> ProgramDiscovery
+  ProgramDiscovery --> ApplyOrLogin
+  ApplyOrLogin --> ApprovalPolling
+  ApprovalPolling --> OfferReady
+  OfferReady --> Evidence
+  Evidence --> Produce
+  Produce --> BrowserPublish
+  BrowserPublish --> PublicReadback
+  PublicReadback --> Acquire
+  Acquire --> Reconcile
+  Reconcile --> Learn
+  Learn --> ProgramDiscovery
+  ApplyOrLogin --> ExternalChallenge: OTP, CAPTCHA, KYC, contract
+  ExternalChallenge --> ApplyOrLogin: authorized evidence becomes available
+  BrowserPublish --> Recover: ambiguous or changed UI
+  Recover --> BrowserPublish: no duplicate found
+```
+
+The deterministic kernel owns transitions, leases, budgets, idempotency, money,
+and receipts. One semantic browser planner handles unfamiliar pages. After a
+successful path, the Agent stores a versioned playbook; later runs replay it and
+invoke semantic recovery only when observation or postcondition hashes diverge.
+This is one durable Agent with role prompts, not a swarm of independent ledgers.
+
+Minimum receipt chain:
+
+`BootstrapReceipt → AuthorityReceipt → AuthReceipt → ProfileReceipt → ProgramApplicationReceipt → OfferApprovalReceipt → EvidenceReceipt → PublishIntent → BrowserActionReceipt → PublicReadbackReceipt → ClickReceipt → CommissionReceipt → PayoutReceipt → LearningReceipt`.
+
+Screenshots prove rendered state, not money. Only hashed provider dashboard/report
+readback can create `pending`, `approved`, `reversed`, or `paid` commission rows.
 
 ```mermaid
 stateDiagram-v2
@@ -376,14 +423,14 @@ Reuse from the existing system:
   adapters, public readback, same-run resume, claim registry;
 - Marketing Engine: generic publication receipts, account-isolation patterns,
   slideshow/video/carousel renderers, mature-cohort scoring, and Telegram
-  reporting; a Postiz Affiliate adapter still has to be implemented and verified;
+  reporting; its Postiz publisher is explicitly not reused;
 - Life Manager financial ledgers: verified money semantics and reporting.
 
 OSS inspected:
 
 - [ricky-affiliate-agent](https://github.com/sujalmanpara/ricky-affiliate-agent)
   provides Amazon extraction, category creative generation, disclosure, and
-  Postiz posting. Port only the adapter/prompt shapes after license verification;
+  posting. Port only non-Postiz research/prompt shapes after license verification;
   it lacks durable attribution and commission reconciliation.
 - [amazon-affiliate-automation-pipeline](https://github.com/haramhussain110/amazon-affiliate-automation-pipeline)
   demonstrates bestseller → ASIN link → short video, but its posting is manual
@@ -427,27 +474,33 @@ Before that, revenue is `unknown`, not a fabricated conversion forecast.
 
 ## 9. Ordered implementation backlog
 
-1. Create the Agent schema and append-only Affiliate ledger; add invariants for
+1. Build a reproducible scratch-computer bootstrap for macOS and Ubuntu: install
+   the pinned runtime/browser dependencies, create an encrypted local vault,
+   provision isolated EN/JA profiles, and emit a machine capability receipt.
+2. Create the Agent schema and append-only Affiliate ledger; add invariants for
    unknown, pending, approved, reversed, and paid money.
-2. Connect/read back an approved English API/Postiz integration for `@selawmqt`;
-   the currently verified Japanese `@aniccaxxx` integration must fail the
-   English manifest. Browser scripting is not a production publisher fallback.
-3. Apply to/read back at least two English candidate programs; activate only an
+3. Implement the semantic browser harness, typed action grammar, leases,
+   screenshots/DOM hashes, download capture, postcondition checks, ambiguous-side-
+   effect dedupe, playbook cache, selector-drift recovery, and crash resume.
+4. Make account discovery/signup/login/recovery/profile setup first-class states.
+   Verify `@selawmqt`, rebrand it in English, and prove identity after every write.
+5. Apply to/read back at least two English candidate programs through their
+   websites; activate only an
    actually authenticated offer with current terms and an executable link.
-4. Implement the signed redirect/sub-ID service and verify click → provider
+6. Implement the signed redirect/sub-ID service and verify click → provider
    report joining before producing content at scale.
-5. Extract Writer research/localization/publication contracts behind shared
+7. Extract Writer research/localization/publication contracts behind shared
    interfaces without changing the Writer revenue ledger.
-6. Add English Affiliate manifests to the Marketing Engine for X/Postiz and owned
-   articles; keep clip/slideshow/video renderers as format adapters.
-7. Add the fail-closed policy/disclosure gate and official-source freshness TTL.
-8. Ship one English end-to-end placement, reconcile a real click, and start the
+8. Add English Affiliate manifests for browser-published X and owned articles;
+   keep clip/slideshow/video renderers as format adapters.
+9. Add the fail-closed policy/disclosure gate and official-source freshness TTL.
+10. Ship one English end-to-end placement, reconcile a real click, and start the
    English daily loop; only then provision the separate Japanese canary.
-9. Enable mature-cohort learning only after ten comparable placements; promote
+11. Enable mature-cohort learning only after ten comparable placements; promote
    net commission as the deepest reward when available.
-10. Add provider/channel quarantine, same-run recovery, health reporting, and
+12. Add provider/channel quarantine, same-run recovery, health reporting, and
    launchd ownership.
-11. Scale content and providers only after the first approved commission and
+13. Scale content and providers only after the first approved commission and
     positive unit economics.
 
 ## 10. Rejected designs
@@ -473,16 +526,71 @@ without changing the architecture.
 
 ## 11. Visible uncertainties and blocked proof
 
+### 11.1 Cleared implementation decisions
+
+- All external platform operations are browser-only. Postiz and third-party
+  publishing/affiliate APIs are neither prerequisites nor fallbacks. Internal
+  local HTTP/SQLite interfaces and the owned redirect remain allowed.
+- Rebranding, account creation/recovery, program application, dashboard scraping,
+  report download, and payout reconciliation are Agent states, not manual setup.
+- Architecture is one durable portfolio Agent with specialized role prompts and
+  one ledger; it is not a multi-agent swarm with separate truths.
+- Stable flows are deterministic cached playbooks; unfamiliar or drifted pages
+  invoke the semantic planner; every write requires fresh rendered readback.
+- Browser retries are at-most-once: an ambiguous write is externally searched by
+  content/action fingerprint before any retry.
+- The $10,000/month target closes only after three consecutive externally
+  receipted months; software completion cannot promise revenue.
+
+### 11.2 Must be cleared by implementation tests
+
+- Reproducible bootstrap parity on macOS and Ubuntu; pinned browser/runtime
+  versions; encrypted secret persistence; upgrades and rollback.
+- Semantic action schema, browser profile leases, account switching, downloads,
+  DOM/screenshot hashing, selector drift, localization, popups, and crash resume.
+- Signup/login/recovery/profile workflows that resume without duplicating an
+  account, application, post, or payout request.
+- Reliable publication fingerprinting when a website returns an ambiguous result;
+  deletion/edit/repost policy; acquisition cadence and account-risk caps.
+- Durable scheduler ownership, watchdog, cost budgets, Telegram outbox/dedupe,
+  receipt compaction, disaster recovery, and safe remote updates.
+- Provider playbook discovery and promotion: how many successful replays are
+  needed before a semantic path becomes cached, and what drift revokes it.
+- Browser-only provider-report normalization, currency/FX timestamps, sub-ID
+  coverage, reversal windows, and payout artifact integrity.
+
+### 11.3 Can only be learned from live canaries
+
+- Which English niche, offer, content format, cadence, and acquisition path
+  produces qualified clicks and approved net commission for this new account.
+- Actual reach throttling/suspension rate, UI-drift rate, provider approval rate,
+  CTR, partner conversion, reversal/refund rate, payout delay, and unit economics.
+- Time and capacity required for the first approved commission, $10k/month, and
+  later scale; prompt copying cannot determine these outcomes.
+
+### 11.4 Irreducible external constraints
+
+- A scratch computer cannot invent a legal identity, email/phone ownership, tax
+  data, payout account, contractual consent, or affiliate-program acceptance.
+  The deployment contract therefore requires an authorized identity bundle.
+- Email/SMS OTP may be automated only when the user-authorized inbox/device is
+  available. CAPTCHA, biometric checks, KYC, tax attestations, and contracts are
+  never bypassed or fabricated; the Agent records `EXTERNAL_CHALLENGE` and keeps
+  independent work running.
+- X explicitly warns that non-API website scripting may permanently suspend an
+  account. Browser-only operation is the user's accepted product direction, but
+  no implementation can make it platform-approved or guarantee account survival.
+- Providers may reject the applicant, prohibit a channel, change terms/UI, reverse
+  commissions, withhold payout, or terminate a program. Quarantine and portfolio
+  diversification limit damage; they cannot erase this uncertainty.
+
 - No English affiliate program application, approval, account ownership, or
   executable tracking link has been read back for this Agent.
 - English X ownership/login is resolved as `sela` / `@selawmqt`; legacy
   `@aniccaen` is inactive. The account has 128 mixed-language historical posts
   and 0 followers, so rebranding and audience acquisition are required and
   organic distribution power remains unproven.
-- Postiz auth and ID are known, but they prove only Japanese `@aniccaxxx`; no
-  approved English API/Postiz integration for `@selawmqt` exists in live readback.
-- Postiz strips X body links; a separately verified reply-link capability or,
-  preferably, an owned registered landing page is required for conversion.
+- No browser-published Affiliate X placement or owned conversion page exists yet.
 - Amazon JP and Rakuten remain `AUTH_REQUIRED`; acceptance is unknown.
 - English total addressable market and the claim that it is larger than Japanese
   are not quantified by the collected primary sources.

@@ -5,9 +5,9 @@
 
 **Goal:** Build and launch an English-first, receipt-backed Affiliate Agent that autonomously researches, publishes, attributes, reconciles, repairs, and improves; unlock an isolated Japanese pod only after English public E2E is proven.
 
-**Architecture:** The existing `profitable-claude/skills/affiliate` runtime is migrated into a hybrid Agent: Terra-high observes and plans through a semantic CloakBrowser/API tool harness, while a deterministic Python/SQLite kernel owns policy, budgets, idempotency, receipts, money, recovery, and Telegram delivery. The Life Manager API in `anicca-project` owns the public placement redirect and durable click ingest. Writer/Gig/shared-browser contracts are reused by interface, but every money/state ledger remains isolated.
+**Architecture:** The existing `profitable-claude/skills/affiliate` runtime is migrated into a hybrid Agent: Terra-high observes and plans through a semantic CloakBrowser website harness, while a deterministic Python/SQLite kernel owns bootstrap, policy, budgets, idempotency, receipts, money, recovery, and Telegram delivery. The Life Manager service owns the public placement redirect and durable click ingest. Writer/Gig/shared-browser contracts are reused by interface, but every money/state ledger remains isolated.
 
-**Tech Stack:** Python 3.9-compatible standard library, SQLite, pytest, Bash/launchd, Node.js ESM, Express, PostgreSQL/Prisma, Vitest/Supertest, Postiz API, CRWL, and CDP only for rendered X evidence.
+**Tech Stack:** pinned Python runtime, SQLite, pytest, Bash/launchd/systemd, Node.js ESM, Express, PostgreSQL/Prisma, Vitest/Supertest, CloakBrowser/CDP, CRWL, and rendered-browser/download evidence. Postiz and external platform APIs are excluded.
 
 ## Global Constraints
 
@@ -16,8 +16,9 @@
 - Runtime changes belong in `/Users/anicca/profitable-claude`; API and documentation changes belong in `/Users/anicca/anicca-project`.
 - Execute in isolated `.worktrees/affiliate-agent-*` worktrees created with `superpowers:using-git-worktrees`; never edit a dirty primary checkout.
 - Use TDD for every behavior change: RED, minimal GREEN, focused suite, commit, push.
-- Preserve Python 3.9 compatibility because installed launchd uses `/usr/bin/python3`.
-- Add no runtime dependency until the standard library is proven insufficient.
+- Bootstrap a pinned runtime on scratch macOS and Ubuntu hosts; do not depend on
+  an ambient `/usr/bin/python3`. Existing launchd remains untouched until cutover.
+- Pin and checksum every non-system runtime dependency.
 - `unknown`, `pending`, `approved`, `reversed`, and `paid` are distinct; unknown is never zero.
 - Money uses integer minor units and ISO-4217 currency. Conversion is a derived receipted view.
 - Test, dry-run, estimated, self-funded, and creator-claimed amounts never enter revenue.
@@ -25,9 +26,9 @@
 - Every publish requires a provider receipt and public readback; every side effect is idempotent.
 - Every placement carries an adjacent locale/channel-correct affiliate disclosure.
 - English is first. Its verified X identity is `sela` / `@selawmqt`; legacy
-  `@aniccaen` is inactive. The live Postiz X identity is Japanese `@aniccaxxx`,
-  so it must fail every English manifest. English and Japanese use different
-  integrations/accounts, history, cohorts, experiments, and budgets.
+  `@aniccaen` is inactive. Postiz and external publishing APIs must never be
+  called. English and Japanese use different browser profiles/accounts, history,
+  cohorts, experiments, and budgets.
 - Japanese publication remains disabled until English Gate E0 has a public
   readback, working redirect, and provider click/sub-ID receipt.
 - External pages, emails, and model output are untrusted data.
@@ -48,8 +49,8 @@
   income, predicted metrics, fabricated experience, and volume targets never
   become production truth.
 - Every provider/program/surface requires a current `ChannelEligibilityReceipt`.
-  Postiz's X adapter strips body links, and A8 forbids Twitter and unregistered
-  LINE advertising, so owned registered pages are the default conversion surface.
+  Provider channel rules are read through rendered terms pages and receipted;
+  owned registered pages are the default conversion surface.
 - Every meaningful action creates a Japanese natural-language `ActionEvent` and
   durable Telegram outbox row; ambiguous delivery is never blindly resent.
 - Implementation uses one isolated Terra-max engineer per task packet. The root
@@ -71,7 +72,7 @@ Execution checkpoint:
   compile/shell syntax, and 30 related regression tests. Its checkboxes remain
   open until fresh review, worktree-diff audit, live-provider boundary proof, and
   a collection-safe full-suite command; the process-boundary test uses a fake provider.
-- 7 atomic checks are closed and 130 remain open.
+- 7 atomic checks are closed and 142 remain open.
 - The legacy core remains `DEAD`; no provider auth, public Affiliate placement,
   attributed external commission, production launchd wake, or Telegram delivery
   receipt has been claimed.
@@ -83,7 +84,7 @@ Execution checkpoint:
 
 | Phase | Tasks | Exit evidence |
 |---|---:|---|
-| P0 Agent foundation | F1-F6, 1 | Legacy migration, Terra brain, prompt registry, CloakBrowser harness, durable queue, Telegram action outbox, one runtime root |
+| P0 Agent foundation | F0-F6, 1 | Scratch-host bootstrap, legacy migration, Terra brain, prompt registry, CloakBrowser harness, durable queue, Telegram action outbox, one runtime root |
 | P1 Truth foundation | 2-5 | Typed Affiliate ledger, provider normalization, deployed redirect contract, click sync |
 | P2 Useful production | 6-8 | Evidence/policy pass, locale-isolated manifests, receipted English public placement |
 | P3 Closed loop | 9-13 | Commission reconciliation, learning, recovery, reports, launchd |
@@ -99,19 +100,18 @@ receipts or fail-closed owners; business outcomes remain later live gates:
 1. fresh F2 review plus a non-importing full test collector;
 2. ownership audit for the three tracked `__pycache__` deletions;
 3. canonical runtime root, branch, and entrypoint receipt;
-4. approved API/Postiz publisher receipt for browser-verified English
-   `@selawmqt`; current Postiz result is a blocking locale mismatch;
+4. scratch-host bootstrap receipt plus browser ownership/readback for English
+   `@selawmqt`; Postiz state is irrelevant and must not be queried;
 5. shared browser/profile/credential ownership map with no stop/restart of
    unrelated money loops;
 6. Affiliate outbox/dedupe wiring to the validated Life Manager Telegram target;
    live delivery `messageId=7639` closes target discovery, not outbox behavior;
-7. production identity gate requiring Postiz identity, offer ownership, current
+7. production identity gate requiring browser-read account identity, offer ownership, current
    terms, eligible channel, and signed redirect before any publish.
 
-The earlier 228 uncertainties are not all pre-code questions: 57 are read-only
-investigations, 73 require implementation tests, 64 require live canary data,
-and 34 are irreducible business risks controlled by caps/quarantine. “Cleared”
-means assigned to one of those gates with a falsifiable receipt, never guessed.
+Uncertainties close only by one of four dispositions: fixed design decision,
+implementation test, live-canary measurement, or irreducible external constraint
+with a named state/cap/quarantine. “Cleared” never means guessed.
 
 The implementation path is P0 → P1 → P2 → P3 → P4. Foundation tasks are
 sequential because they establish shared contracts. Revenue operation P5 starts
@@ -139,12 +139,12 @@ recipe with this Agent's own external receipts.
 | `skills/affiliate/scripts/action_events.py` | Natural-language action envelopes |
 | `skills/affiliate/scripts/telegram_report.py` | Immediate/digest reporting and message receipts |
 | `lib/telegram_outbox.py` | Shared at-most-once Telegram delivery primitive |
-| `skills/affiliate/scripts/providers/*.py` | Generic browser/API/report provider protocol |
+| `skills/affiliate/scripts/providers/*.py` | Generic browser/download/report provider protocol |
 | `skills/affiliate/config/provider-playbooks/*.json` | Versioned learned semantic playbooks |
 | `skills/affiliate/scripts/evidence.py` | Official-source evidence packs |
 | `skills/affiliate/scripts/policy.py` | Fail-closed policy gate |
 | `skills/affiliate/scripts/content.py` | JA/EN manifests and Writer bridge |
-| `skills/affiliate/scripts/publisher.py` | Owned/Postiz publication and readback |
+| `skills/affiliate/scripts/publisher.py` | Owned/browser publication and readback |
 | `skills/affiliate/scripts/click_sync.py` | Life Manager placement/click API client |
 | `skills/affiliate/scripts/reconcile.py` | Conversion/commission reconciliation |
 | `skills/affiliate/scripts/allocator.py` | Exploration and concentration allocation |
@@ -191,6 +191,62 @@ strategy promotion, or the periodic adversarial sample. Tasks sharing runtime
 state, auth, a browser profile, or a branch never execute concurrently.
 
 ---
+
+### Task F0: Bootstrap the Agent from a scratch macOS or Ubuntu computer
+
+**Files:**
+- Create: `profitable-claude/skills/affiliate/bootstrap/install.sh`
+- Create: `profitable-claude/skills/affiliate/bootstrap/manifest.lock`
+- Create: `profitable-claude/skills/affiliate/scripts/authority_inventory.py`
+- Create: `profitable-claude/skills/affiliate/scripts/profile_provisioner.py`
+- Test: `profitable-claude/skills/affiliate/tests/test_bootstrap.py`
+- Test: `profitable-claude/skills/affiliate/tests/test_authority_inventory.py`
+- Test: `profitable-claude/skills/affiliate/tests/test_profile_provisioner.py`
+
+**Interfaces:**
+- Produces: `MachineCapabilityReceipt`, `AuthorityReceipt`, and isolated EN/JA
+  `BrowserProfileReceipt` records.
+- Consumes: a supported clean host and an explicitly user-authorized authority
+  bundle. Missing identity/OTP/KYC/contract capability becomes
+  `EXTERNAL_CHALLENGE`, not invented data.
+
+- [ ] **Step 1: Write RED bootstrap idempotency and checksum tests**
+
+Assert that a second install changes no pinned artifact, an unsupported OS fails
+closed, every download is checksummed, secrets never enter logs/git, and an
+interrupted install resumes from the last receipted step.
+
+- [ ] **Step 2: Write RED authority and profile-isolation tests**
+
+Assert EN and JA never share cookies/storage, absent authority remains explicit,
+authorized inbox OTP is scoped to one login intent, and CAPTCHA/KYC/contract
+pages transition to `EXTERNAL_CHALLENGE` without bypass.
+
+- [ ] **Step 3: Implement minimal pinned installer and encrypted vault contract**
+
+Install the exact runtime/browser dependencies, create state/log/download roots,
+configure secret redaction and OS key storage, and emit hashes/versions. Do not
+touch or restart existing money loops.
+
+- [ ] **Step 4: Implement semantic capability inventory and browser provisioning**
+
+Discover existing authorized identities and sessions, create locale-isolated
+profiles, verify the account handle after login/recovery, and persist only
+encrypted session material plus sanitized receipts.
+
+- [ ] **Step 5: Run clean-host E2E on macOS and Ubuntu**
+
+Use isolated disposable hosts/VMs. Reboot between bootstrap and resume; prove the
+same queue/profile identities return without duplicate account creation or any
+external publication. This is environment E2E, not a mocked success.
+
+- [ ] **Step 6: Commit and push the bootstrap slice**
+
+```bash
+git add skills/affiliate/bootstrap skills/affiliate/scripts skills/affiliate/tests
+git commit -m "feat(affiliate): bootstrap scratch hosts"
+git push
+```
 
 ### Task F1: Characterize and migrate the legacy Affiliate loop without losing truth
 
@@ -853,7 +909,7 @@ python3 -m pytest skills/affiliate/tests/test_providers.py -q
 
 - [ ] **Step 3: Implement fail-closed connector and recipe contracts**
 
-Keep provider identity and mutable browser/API steps in signed JSON recipes, not
+Keep provider identity and mutable browser steps in signed JSON recipes, not
 provider-specific Python modules. A candidate recipe becomes executable only after
 origin, auth, selector/readback, terms, and rollback verification. Expired or drifted
 recipes re-enter discovery and cannot silently broaden permissions.
@@ -1088,7 +1144,7 @@ git commit -m "feat(affiliate): isolate decision manifests by locale"
 git push
 ```
 
-### Task 8: Publish owned and Postiz placements with public readback
+### Task 8: Publish owned and X placements through the browser with public readback
 
 **Files:**
 - Create: `profitable-claude/skills/affiliate/scripts/publisher.py`
@@ -1096,24 +1152,24 @@ git push
 
 **Interfaces:**
 - Produces: `PublishIntent`, provider publish receipt, and `PublicReadback`.
-- Consumes: policy-passed content, redirect token, channel adapter, and protected Postiz API key.
+- Consumes: policy-passed content, redirect token, isolated browser lease, and verified account identity.
 
 - [ ] **Step 1: Write failing duplicate/readback tests**
 
 ```python
-def test_replay_does_not_create_second_post(fake_postiz, ledger):
-    publish(placement(), fake_postiz, ledger)
-    publish(placement(), fake_postiz, ledger)
-    assert fake_postiz.create_calls == 1
+def test_replay_does_not_create_second_post(fake_browser, ledger):
+    publish(placement(), fake_browser, ledger)
+    publish(placement(), fake_browser, ledger)
+    assert fake_browser.submit_calls == 1
 
-def test_readback_requires_disclosure_and_redirect(fake_postiz, ledger):
-    fake_postiz.public_body = "content without disclosure"
-    assert publish(placement(), fake_postiz, ledger).status == "RECOVER"
+def test_readback_requires_disclosure_and_redirect(fake_browser, ledger):
+    fake_browser.public_body = "content without disclosure"
+    assert publish(placement(), fake_browser, ledger).status == "RECOVER"
 
-def test_publisher_rejects_wrong_postiz_integration(fake_postiz, ledger):
-    fake_postiz.integration_id = "japanese-account"
+def test_publisher_rejects_wrong_browser_identity(fake_browser, ledger):
+    fake_browser.account_handle = "japanese-account"
     with pytest.raises(PublishInvariant, match="integration identity"):
-        publish(english_placement(), fake_postiz, ledger)
+        publish(english_placement(), fake_browser, ledger)
 ```
 
 - [ ] **Step 2: Run RED and implement the idempotent intent journal**
@@ -1122,10 +1178,11 @@ def test_publisher_rejects_wrong_postiz_integration(fake_postiz, ledger):
 python3 -m pytest skills/affiliate/tests/test_publisher.py -q
 ```
 
-- [ ] **Step 3: Implement Postiz and owned-page adapters**
+- [ ] **Step 3: Implement browser and owned-page adapters**
 
-Require API publication ID/URL and rendered public readback. X account identity
-must match the configured dedicated account receipt.
+Require a pre-submit content fingerprint, post-submit URL/ID when rendered, and
+fresh public readback. If submit result is ambiguous, search the live account and
+ledger before retry. X account identity must match the leased profile receipt.
 
 - [ ] **Step 4: Run GREEN and Writer isolation regression**
 
@@ -1138,7 +1195,7 @@ bash skills/writer-agent/tests/platform-dispatch-isolation.sh
 
 ```bash
 git add skills/affiliate
-git commit -m "feat(affiliate): publish receipted Postiz placements"
+git commit -m "feat(affiliate): publish receipted browser placements"
 git push
 ```
 
@@ -1455,15 +1512,14 @@ No token, credential, raw IP, or personal identifier enters git.
   pre-existing Japanese canary identity.
 - Consumes: actually authenticated executable offers.
 
-- [ ] **Step 1: Connect and read back `@selawmqt` through an approved API/Postiz integration**
+- [ ] **Step 1: Let the Agent provision and read back `@selawmqt` through its isolated browser**
 
 Browser readback now proves `sela` / `@selawmqt`: stored credentials produced an
 X `auth_token`, `/home`, and profile link `/selawmqt` in the isolated
-`capafy-mkt-provision` profile. Legacy `@aniccaen` is inactive. Postiz readback
-still proves only Japanese `@aniccaxxx` (integration
-`cmm6d7m5703rwpr0yr5vtme3w`). Keep this step open until an approved English
-API/Postiz integration resolves exactly to `@selawmqt`; never use scripted X
-website posting as the autonomous fallback.
+`capafy-mkt-provision` profile. Legacy `@aniccaen` is inactive. The runtime must
+reproduce profile provisioning, login/recovery, identity readback, and session
+persistence from its authorized vault. It never calls Postiz or an X publishing
+API. X's suspension warning remains a quarantined external risk.
 
 - [ ] **Step 1A: Make `@selawmqt` an English-only Affiliate-ready identity**
 
@@ -1484,12 +1540,11 @@ but use only the provider that returns real ownership and executable-link receip
 Bind official claims, locale availability, reader problem, primary offer,
 alternatives, disclosure, TTL, and exact hashes.
 
-- [ ] **Step 4: Publish owned content, then eligible Postiz/X distribution**
+- [ ] **Step 4: Publish owned content, then eligible browser/X distribution**
 
-Capture provider publication ID/URL. The owned registered page contains the
-measurable CTA. Reject X-body links because the verified Postiz adapter strips
-them; use a reply only if provider, Postiz, and X receipts prove it is supported
-and eligible. This is a real side effect, not a dry run.
+Capture the rendered publication ID/URL. The owned registered page contains the
+measurable CTA. Use only a placement pattern whose current rendered result and
+provider terms are receipted. This is a real side effect, not a dry run.
 
 - [ ] **Step 5: Perform public readback and marked test clicks**
 
@@ -1511,10 +1566,10 @@ python3 -m pytest skills/writer-agent/tests -q
 - [ ] **Step 8: Close E0 and read back the Japanese canary identity**
 
 E0 closes from the English public readback, redirect, and provider click/sub-ID
-receipt. Only then register/read a dedicated, operator-owned Japanese account
-and Postiz integration. If none exists, record `AUTH_REQUIRED` rather than
-creating an identity. English credentials, history, cohorts, experiments, and
-budgets are not copied.
+receipt. Only then let the Agent discover/create/recover and read a dedicated
+authorized Japanese account in a separate browser profile. If required identity
+authority is unavailable, record `EXTERNAL_CHALLENGE`; never fabricate it.
+English credentials, history, cohorts, experiments, and budgets are not copied.
 
 - [ ] **Step 9: Record sanitized receipts, commit, and push both repositories**
 
