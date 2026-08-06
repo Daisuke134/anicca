@@ -51,6 +51,12 @@ if [[ "$SCHEDULER" == "auto" ]]; then
   esac
 fi
 
+if [[ "${JOB_SEARCH_SKIP_BOOTSTRAP:-0}" != "1" && "${JOB_SEARCH_BROWSER_USE_BOOTSTRAP:-1}" == "1" ]]; then
+  "$SCRIPT_DIR/bootstrap-browser-use.sh" >/dev/null
+  unset JOB_SEARCH_PYTHON
+  source "$SCRIPT_DIR/runtime-paths.sh"
+fi
+
 export PYTHONPATH="$JOB_SEARCH_APP_ROOT${PYTHONPATH:+:$PYTHONPATH}"
 SETUP_ARGUMENTS=(
   --profile "$PROFILE_SOURCE"

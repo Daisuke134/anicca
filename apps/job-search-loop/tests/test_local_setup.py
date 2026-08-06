@@ -56,6 +56,7 @@ class LocalSetupTests(unittest.TestCase):
             "XDG_DATA_HOME": str(self.data),
             "PATH": f"{self.bin}:/usr/bin:/bin",
             "PYTHONPATH": str(APP_ROOT),
+            "JOB_SEARCH_SKIP_BOOTSTRAP": "1",
         }
 
     def _run(self, *extra: str, env: dict[str, str] | None = None):

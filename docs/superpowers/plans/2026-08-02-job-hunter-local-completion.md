@@ -2708,10 +2708,14 @@ it is easier to demonstrate:
     The public action surface contains only navigate, snapshot, fill/read, upload
     verification, and screenshot. Click, Submit, CAPTCHA solving, and success marking
     fail before reaching the backend. Before/after/terminal images are owner-fenced,
-    mode 0600, and SHA-256 addressed. Focused tests pass 3/3 and the complete suite
-    passes 457/457. Remaining: install the locked Python 3.12 runtime, implement the
-    BrowserSession-backed operations, switch `browser_worker` from `playwright_ats`,
-    and prove the adapter against the dedicated resident CloakBrowser identity.
+    mode 0600, and SHA-256 addressed. The installer now atomically constructs a
+    Python 3.12 runtime from the hash-locked 0.13.7 dependency set; every resident
+    lane selects that interpreter when present. A real isolated bootstrap completed
+    in 4.7 seconds and imported exact `browser-use==0.13.7` plus `BrowserSession`.
+    Focused runtime/release tests pass 10/10 and the complete suite passes 462/462.
+    Remaining: implement the BrowserSession-backed operations, switch
+    `browser_worker` from `playwright_ats`, and prove the adapter against the
+    dedicated resident CloakBrowser identity.
 - [ ] **L-49K0D2** — Wrap hourly application, five-minute Gmail, weekly learning,
   Telegram delivery, and Guardian reconciliation as Temporal workflows/activities.
   External side effects use explicit idempotency keys and no automatic retry after
