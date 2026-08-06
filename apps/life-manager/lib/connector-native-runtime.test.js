@@ -264,6 +264,29 @@ test("the native runtime composes one shared daily driver, all-calendar gog, and
   assert.equal(input.calls[7][2].timeMax, "2026-08-22T15:00:00.000Z");
 });
 
+test("the native runtime gives its provider a lazy private form profile reader", async () => {
+  const input = await fixture();
+  let reader;
+  const reads = [];
+  const originalCreatePack = input.deps.createPack;
+  await runNativeConnectorPass({
+    ...input,
+    config: { ...input.config, lumaFormProfilePath: "/private/connector-luma-form-profile.json" },
+    deps: {
+      ...input.deps,
+      readLumaFormProfile(value) { reads.push(value); return { form_answers: {} }; },
+      createPack(value) {
+        reader = value.readLumaFormProfile;
+        return originalCreatePack(value);
+      },
+    },
+  });
+
+  assert.equal(reads.length, 0);
+  assert.deepEqual(reader(), { form_answers: {} });
+  assert.deepEqual(reads, [{ path: "/private/connector-luma-form-profile.json" }]);
+});
+
 test("a candidate failure remains incomplete and defers every write boundary", async () => {
   const input = await fixture();
   const result = await runNativeConnectorPass({

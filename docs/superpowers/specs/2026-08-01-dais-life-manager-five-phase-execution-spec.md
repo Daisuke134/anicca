@@ -2684,6 +2684,13 @@ versionなし5-key行と新6-key行を両方closed schemaで読めるため、�
 旧form failureがv1で一度再試行され、その結果がv1 attemptとして保存されるruntime RED後、runtime/suppression 17/17、
 native entrypoint 26/26 GREEN。次は既存launchd runで`unsuppressed>0 / write attempts>0`と実provider resultを確認する。
 
+O1B-25進捗111（native private profile + pre-confirm outcome closure / LIVE RED→GREEN）: run 150は旧form suppressionを解除して
+write境界へ到達したが、host-native packにprivate readerが渡らず、candidate-local pre-confirm errorをoutcome classifierが拒否したため
+`connector_native_write_failed`でbounded result前に終了した。native runtimeにもmode 0600 loaderの引数なしreaderを接続し、
+control/schema/plan/fill/confirm unavailableをknown-no-effectとして同pass継続するclosed mappingを追加した。
+lazy reader REDと5 error分類RED後、provider/runtime/profile 35/35、native entrypoint 26/26 GREEN。次の既存runで
+versioned attempt、次候補継続、登録済みreadbackのいずれまで到達するかを確認する。
+
 現在と完成形:
 
 ```mermaid

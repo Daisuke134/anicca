@@ -6,6 +6,7 @@ const { createGogLumaCodeReader } = require("./gog-luma-code-reader.js");
 const { createGogLumaConfirmationReader } = require("./gog-luma-confirmation-reader.js");
 const { createConnectorEventsPack } = require("./connector-events-pack.js");
 const { createLumaEvidenceStore } = require("./luma-evidence-store.js");
+const { readLumaFormProfile } = require("./luma-form-profile.js");
 const { createLumaConfirmationMailStore } = require("./luma-confirmation-mail.js");
 const { createLumaTicketQrStore } = require("./luma-ticket-qr.js");
 const { makeGogCalendar } = require("./transport/calendar-gog.js");
@@ -57,6 +58,13 @@ function absoluteDirectory(value) {
   const directory = path.resolve(String(value == null ? "" : value));
   if (!path.isAbsolute(directory) || directory === path.parse(directory).root) unavailable();
   return directory;
+}
+
+function absoluteFilePath(value) {
+  const path = require("node:path");
+  const file = path.resolve(String(value == null ? "" : value));
+  if (!path.isAbsolute(file) || file === path.parse(file).root) unavailable();
+  return file;
 }
 
 function requiredText(value) {
@@ -214,6 +222,7 @@ async function runNativeConnectorPass(input = {}) {
     const createEvidenceStore = factory(deps, "createEvidenceStore", createLumaEvidenceStore);
     const createCalendar = factory(deps, "createCalendar", makeGogCalendar);
     const createPack = factory(deps, "createPack", createConnectorEventsPack);
+    const readPrivateLumaFormProfile = factory(deps, "readLumaFormProfile", readLumaFormProfile);
 
     const dailyDriver = createDailyDriver({
       endpoint: DAILY_DRIVER_CDP,
@@ -243,7 +252,17 @@ async function runNativeConnectorPass(input = {}) {
     if (!calendar || calendar.kind !== "gog" || typeof calendar.ready !== "function" || !calendar.ready()) {
       unavailable();
     }
-    const pack = createPack({ dailyDriver, auth, evidenceStore, now: () => now });
+    const lumaFormProfilePath = config.lumaFormProfilePath == null
+      ? null : absoluteFilePath(config.lumaFormProfilePath);
+    const pack = createPack({
+      dailyDriver,
+      auth,
+      evidenceStore,
+      readLumaFormProfile: lumaFormProfilePath === null ? undefined : (() => (
+        readPrivateLumaFormProfile({ path: lumaFormProfilePath })
+      )),
+      now: () => now,
+    });
     if (
       !pack
       || typeof pack.readDateInventory !== "function"

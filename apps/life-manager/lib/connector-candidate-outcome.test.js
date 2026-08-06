@@ -35,6 +35,22 @@ test("write results are normalized into the four candidate attempt outcomes", ()
       },
       want: { classification: "known_no_effect", retryable: false, suppress_candidate: true },
     },
+    ...[
+      "LUMA_CONTROL_UNAVAILABLE",
+      "LUMA_FORM_SCHEMA_UNAVAILABLE",
+      "LUMA_FORM_PLAN_UNAVAILABLE",
+      "LUMA_FORM_FILL_UNAVAILABLE",
+      "LUMA_CONFIRM_UNAVAILABLE",
+    ].map((errorCode, index) => ({
+      name: `${errorCode} is a candidate-local pre-confirm failure`,
+      write: {
+        status: "incomplete",
+        outcome: "application_failed",
+        error_code: errorCode,
+        event_ref: `luma-event://event/preconfirm-${index}`,
+      },
+      want: { classification: "known_no_effect", retryable: false, suppress_candidate: true },
+    })),
     {
       name: "provider cannot prove whether submit happened",
       write: {
