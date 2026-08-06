@@ -5115,11 +5115,27 @@ Browser Harnessはそのまま無制限に常駐させず、Connector adapterの
 - 一candidate failureでwakeを終了しない。Luma候補を継続し、枯渇後はConnpass、次にconfigured providerへ進む。
 - 連続failure 3回またはwake 10分でcircuit-openし、追加操作/target churnを止め、durable stage/action historyとTelegram recovery receiptを保存する。
 
-### Active remaining TODO SSOT（進捗170。これ以外の残TODO一覧は履歴）
+### O1B-25進捗171（Item 1 / 物理停止状態の再実測）
+
+branch `feature/connector-native-completion`、commit `9204f2e65`、remoteとのahead/behind 0、dirty file 0を確認した。
+`launchctl print`の実測では`ai.anicca.life-manager-connector-native`と
+`ai.anicca.life-manager-connector-native-healthcheck`はdomainに存在せずstatus 113、Native/healthcheck process 0である。
+`ai.anicca.life-manager-connector-healer-shadow`はloaded、`state = not running`、runs 8、last exit 0で、Healer process 0である。
+`ai.anicca.life-manager-connector-host-bridge`はloaded、`state = running`、PID 853、runs 1である。Item 2のconsumer/ownership
+証明前なのでHealerとbridgeは変更していない。
+
+CloakBrowser `127.0.0.1:9222`はChromium PID 69767がlistenし、`/json/version`はChrome 145とbrowser WebSocketの存在を返した。
+Gig `127.0.0.1:9223`はChromium PID 74198がlistenすることだけをread-only確認し、接続、target列挙、profile/state/lock/vault/code変更は0である。
+Connector safe evidenceの最新mtimeは`evidence/target-leases.json`と`evidence/tab-owner.json`の
+`2026-08-07T01:26:54+0900`で、heartbeatは`2026-08-07T01:23:32+0900`、wake delivery ledgerは
+`2026-08-07T01:22:15+0900`である。内容、credential、cookie、private profile、raw logは出力・変更していない。
+Item 1を完了し、Native scheduling disabledを維持したままItem 2へ進む。
+
+### Active remaining TODO SSOT（進捗171。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
-1. [ ] **物理停止状態を再確認する。** Git branch/commit/dirty state、Native/healthcheck/Healer/host bridgeのlaunchd state、Connector process、`:9222` health、最新safe evidence timestampをread-onlyで記録する。Native schedulingはforeground live acceptanceまでdisabledを維持する。Gig code/launchd/browser/lock/profile/state/vault/`:9223`へのwriteは0。
+1. [x] **物理停止状態を再確認する。** Git branch/commit/dirty state、Native/healthcheck/Healer/host bridgeのlaunchd state、Connector process、`:9222` health、最新safe evidence timestampをread-onlyで記録する。Native schedulingはforeground live acceptanceまでdisabledを維持する。Gig code/launchd/browser/lock/profile/state/vault/`:9223`へのwriteは0。証拠: 進捗171。
 2. [ ] **Connector ownerとGig consumer境界を確定する。** `rg`とcall pathでHealer shadowとhost bridgeのplist、process、port、token consumerを列挙し、Gig consumer 0とConnector ownershipを証明する。証明後だけHealerとConnector-owned legacy bridgeをunloadする。profile、auth、receipt、append-only stateは削除しない。
 3. [ ] **exact keep / direct-reuse / delete inventoryを作る。** production entrypointから全call pathを追い、file名とsymbol名単位で分類してこのspecへ追記する。`keep`は`:9222` target ownership/fencingとdurable evidence、`direct-reuse`はLuma reader/filler/submit/readback、Calendar、PNG、Telegram、receipt/idempotency、`delete`は旧native-pass orchestration、21日coverage、bulk tab discovery、ranking/gates、spend ordering、suppression stop gate、durable provider cursor、Healer-first wiring、5分retry、重複schedule。consumer未確認の削除は禁止する。
 4. [ ] **production interfaceとfocused destructive-boundary testsを先に固定する。** 一entrypoint、一session、一target、一page、candidate navigationでcreate/close 0、Gig `:9223` write 0、agent `browser.close()` 0、inline generated Node 0、failure 3/10分circuit-openを失敗する契約testとして追加する。大規模test frameworkは作らない。
