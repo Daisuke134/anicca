@@ -103,7 +103,10 @@ async function defaultDiscoverOnPage({ page }) {
     );
     if (detail) details.push(Object.freeze({ provider: "luma", ...detail }));
   }
-  return Object.freeze(details);
+  return Object.freeze({
+    observed_count: inventory.candidates.length,
+    candidates: Object.freeze(details),
+  });
 }
 
 async function defaultReadProviderStateOnPage({ page, candidate }) {
@@ -133,27 +136,44 @@ function createLumaScriptFirstWorkflow(options = {}) {
   const submitOnPage = options.submitOnPage || submitLumaOnPage;
   const readProviderStateOnPage = options.readProviderStateOnPage || defaultReadProviderStateOnPage;
   const readLumaFormProfile = options.readLumaFormProfile;
+  const onDiscoveryAudit = options.onDiscoveryAudit || (() => {});
   if (
     typeof now !== "function" || typeof discoverOnPage !== "function"
     || typeof isCalendarFree !== "function"
     || typeof submitOnPage !== "function" || typeof readProviderStateOnPage !== "function"
+    || typeof onDiscoveryAudit !== "function"
     || (readLumaFormProfile != null && typeof readLumaFormProfile !== "function")
   ) invalid();
 
   return Object.freeze({
     async discoverCandidates({ page, calendar }) {
-      const observed = await discoverOnPage({ page });
+      const discovery = await discoverOnPage({ page });
+      const observed = Array.isArray(discovery) ? discovery : discovery && discovery.candidates;
       if (!Array.isArray(observed) || observed.length > 500) invalid();
+      const observedCount = Array.isArray(discovery)
+        ? observed.length : Number(discovery.observed_count);
+      if (!Number.isInteger(observedCount) || observedCount < observed.length || observedCount > 500) invalid();
       const window = candidateWindow(now);
       const result = [];
+      let windowCount = 0;
+      let freeOpenCount = 0;
       for (const raw of observed) {
         const candidate = exactEvent(raw);
         const startsAt = Date.parse(candidate.starts_at);
         if (startsAt < window.start || startsAt >= window.end) continue;
+        windowCount += 1;
         if (!isFreeOpen(candidate)) continue;
+        freeOpenCount += 1;
         if (!await isCalendarFree(candidate, calendar)) continue;
         result.push(Object.freeze({ ...candidate }));
       }
+      await onDiscoveryAudit(Object.freeze({
+        observed_count: observedCount,
+        normalized_count: observed.length,
+        window_count: windowCount,
+        free_open_count: freeOpenCount,
+        calendar_free_count: result.length,
+      }));
       return Object.freeze(result);
     },
 

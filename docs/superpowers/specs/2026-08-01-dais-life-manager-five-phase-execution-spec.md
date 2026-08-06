@@ -5601,7 +5601,20 @@ parent receiptへ保存した。owned target leaseは終了時に解放済みで
 区別できないこと。Item 10Bは未完。次の一件はprovider text、URL、個人情報を保存せず、observed/detail-valid/window/open/free/conflictの
 件数だけをparentが記録する診断contractをTDDで追加し、同じ実pageで0件の原因を特定すること。
 
-### Active remaining TODO SSOT（進捗195。これ以外の残TODO一覧は履歴）
+### O1B-25進捗196（Item 10B diagnosis slice 1 / safe Luma eligibility audit）
+
+既存read-only semantic inspectorを一回bounded実行し、Tokyo inventory complete、7 scroll rounds、公開candidate 37件、先頭candidateの
+JSON-LD Event 1件、description/location/organizerとnormalizationが有効であることを確認した。provider本文、title、URL、個人情報は出力・保存せず、
+Submit、Calendar、PNG、Telegram作用は0。この結果から「公開candidate 0」ではなく後段filterで0になったと確定した。
+
+`createLumaScriptFirstWorkflow`へsafe aggregate audit contractを追加した。default discoveryはinventory observed countとnormalized candidateだけを返し、
+workflowは`observed_count / normalized_count / window_count / free_open_count / calendar_free_count`の5整数だけをcallbackへ渡す。
+event identity、title、URL、date、provider text、form valueはaudit schemaに存在しない。Luma workflow suiteは7/7 GREEN。
+
+Item 10Bは未完。次の一件はこのaggregate auditだけをmode 0600 append-only stateへ保存するminimal operations配線をTDDで追加し、
+official foreground wakeで37件がどのfilterで0になるかを実測すること。scheduleはunloadedを維持する。
+
+### Active remaining TODO SSOT（進捗196。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
