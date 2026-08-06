@@ -2392,7 +2392,7 @@ Calendar sync後は公式QRをevent/title/time/venue/Calendar URL付きTelegram 
 その後だけ従来のcoverage card + registered-page PNGを送る。native runtimeは実`gog gmail` reader、confirmation store、ticket store、
 auth-aware QR captureを結線し、native-passはconfirmation receipt ref、ticket receipt/artifact ref、ticket Telegram IDをmode 0600
 `last-result.json`へfail-closed投影する。REDはchain未実行、Gmail reader不存在、pack QR method不存在、runtime依存欠落、native投影欠落を
-個別再現。GREENはmail/QR/write/runtime関連62/62、native 23/23。P0-10 checkboxはまだ未完であり、次はpush済みcodeを既存launchdで
+個別再現。GREENはmail/QR/write/runtime関連62/62、native 23/23、pretest 12/12、outbound 311/311。P0-10 checkboxはまだ未完であり、次はpush済みcodeを既存launchdで
 実発火し、新規実eventの同一attemptで全receiptとTelegram message IDをreadbackする。
 
 完全な残TODO SSOT:
