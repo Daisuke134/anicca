@@ -125,4 +125,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = { runNativePass };
+module.exports = { createNativeProductionConfig: productionConfig, runNativePass };
