@@ -2975,12 +2975,19 @@ OpenTelemetry decision and primary sources:
         to trace/span IDs inside `L-49K0D2`, where the resident cron migration to
         Temporal is implemented. The measured resident runtime has no Temporal
         Workflow or Activity today, so this gate may not fabricate those IDs early.
-  - [ ] `L-49K0C2O5` — Install the loopback-only Collector/backend LaunchAgent,
-    persistent private data volume, health receipt, bounded retention, and Grafana
-    dashboard for pass/candidate/route timelines, failure classes, confirmation rate,
-    repair attempts, promotion/rollback, and resumed outcome. Collector/export failure
-    must never stop applications. Files: one collector/backend launcher, one config,
-    one health test (3 files, soft target 100 LOC).
+  - [ ] `L-49K0C2O5` — Install the loopback-only Collector/backend, private durable
+    storage, health evidence, bounded retention, and operator dashboard. Export
+    failure must never stop applications. Parent closes only after all children.
+    - [ ] `L-49K0C2O5a` — Add the digest-pinned Grafana LGTM service launcher contract:
+      localhost-only OTLP/Grafana bindings, private volume, deterministic container
+      name, bounded logs, and machine-readable health receipt (3 files, soft target
+      100 LOC).
+    - [ ] `L-49K0C2O5b` — Install the service as a resident LaunchAgent, pull/verify the
+      exact pinned digest, start it, and prove restart plus loopback-only listeners;
+      exporter unavailability remains non-blocking (3 files, soft target 100 LOC).
+    - [ ] `L-49K0C2O5c` — Provision bounded retention and a Grafana dashboard for
+      pass/candidate/route timelines, failure classes, confirmation rate, repair
+      attempts, promotion/rollback, and resumed outcome (3 files, soft target 100 LOC).
   - [ ] `L-49K0C2O6` — Trigger the installed resident loop on a no-submit canary and
     prove one trace joins resident PID, release SHA, Browser Use executor, fence,
     candidate, route, detailed blank/overview/form classification, evidence hashes,
