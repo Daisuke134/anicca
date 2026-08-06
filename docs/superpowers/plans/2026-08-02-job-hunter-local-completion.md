@@ -3584,10 +3584,15 @@ OpenTelemetry decision and primary sources:
       verified official recruiting/careers/hiring-manager/recruiter work address as
       an application-email destination, attach the selected resume, and eliminate
       `outreach_only` as a terminal route.
-      - [ ] `L-49K3A1a` — Reclassify every verified official recruiting/careers/
+      - [x] `L-49K3A1a` — Reclassify every verified official recruiting/careers/
         hiring-manager/recruiter work address as `recruiting_email /
         accepts_applications`; the message executor always attaches the selected
         resume and exposes no outreach-only terminal result.
+        - RED proved an official careers address without explicit apply-by-email
+          wording became `recruiting_outreach`. GREEN preserves HTTPS, authorized
+          domain, content SHA, source-span, and email validation while returning
+          `recruiting_email / accepts_applications` for every verified address.
+          Focused provenance/executor tests pass 9/9; adjacent route suites pass 16/16.
       - [ ] `L-49K3A1b` — Replace the company-role-wide live-action uniqueness rule
         with route-kind fences that permit at most one ATS action followed by at most
         one email action, while preserving at-most-once replay per individual route.

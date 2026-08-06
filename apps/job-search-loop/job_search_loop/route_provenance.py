@@ -47,25 +47,10 @@ def verify_recipient_route(
     if re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", normalized_recipient) is None:
         raise ProvenanceError("recipient is not a valid public email address")
     span = _source_span(source_text, normalized_recipient)
-    lowered = span.casefold()
-    application_terms = (
-        "apply",
-        "application",
-        "resume",
-        "curriculum vitae",
-        " cv ",
-        "応募",
-        "履歴書",
-        "職務経歴書",
-    )
-    direction_terms = ("email", "send", "submit", "送", "メール")
-    accepts = any(term in f" {lowered} " for term in application_terms) and any(
-        term in lowered for term in direction_terms
-    )
     return {
-        "route_kind": "recruiting_email" if accepts else "recruiting_outreach",
+        "route_kind": "recruiting_email",
         "recipient": normalized_recipient,
-        "recipient_acceptance": "accepts_applications" if accepts else "outreach_only",
+        "recipient_acceptance": "accepts_applications",
         "source_url": source_url,
         "source_sha256": source_sha256,
         "source_span": span,
