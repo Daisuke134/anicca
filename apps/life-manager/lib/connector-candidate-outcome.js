@@ -3,6 +3,7 @@
 const EVENT_REF = /^luma-event:\/\/event\/[A-Za-z0-9_-]+$/;
 const KNOWN_NO_EFFECT_CODES = new Set([
   "LUMA_FORM_INPUT_REQUIRED",
+  "LUMA_REQUIRED_PROFILE_FIELD_UNAVAILABLE",
   "LUMA_RSVP_UNAVAILABLE",
 ]);
 const VERIFIED_SUCCESS_OUTCOMES = new Set([

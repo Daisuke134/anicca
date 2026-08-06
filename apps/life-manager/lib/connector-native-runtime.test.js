@@ -451,7 +451,7 @@ test("zero Calendar-eligible events is a valid incomplete pass instead of a runt
   });
 });
 
-test("a known missing Luma form answer skips to the next ranked candidate", async () => {
+test("an unavailable required private profile answer skips to the next ranked candidate", async () => {
   const input = await fixture();
   const profile = Object.freeze({ tenant_id: TENANT, timezone: "Asia/Tokyo" });
   const goalDecision = Object.freeze({ ranked_events: [
@@ -496,7 +496,7 @@ test("a known missing Luma form answer skips to the next ranked candidate", asyn
           ? Object.freeze({
             status: "incomplete",
             outcome: "application_failed",
-            error_code: "LUMA_FORM_INPUT_REQUIRED",
+            error_code: "LUMA_REQUIRED_PROFILE_FIELD_UNAVAILABLE",
             event_ref: "luma-event://event/founder-night",
           })
           : delivered;

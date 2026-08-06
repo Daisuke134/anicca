@@ -652,6 +652,7 @@ function createWorkerHandlers(env, capabilities, dependencies = {}) {
         dailyDriver,
         auth,
         evidenceStore,
+        readLumaFormProfile: dependencies.readLumaFormProfile,
         now: dependencies.now,
       });
       provider = pack.provider;

@@ -780,6 +780,7 @@ test("outbound event worker obtains its provider from the canonical events pack"
   const provider = { inspectRegistration: async () => {}, submitRegistration: async () => {} };
   let composition;
   let services;
+  const readLumaFormProfile = () => ({ form_answers: {} });
   createWorkerHandlers({
     LM_RUNTIME_TENANT_ID: "tenant-a",
     LM_DATA_DIR: "/var/lib/life-manager/data",
@@ -795,6 +796,7 @@ test("outbound event worker obtains its provider from the canonical events pack"
       composition = input;
       return { provider };
     },
+    readLumaFormProfile,
     createRegistry({ servicesByAdapter }) {
       services = servicesByAdapter["outbound-luma-rsvp"];
       return { hasCapability: () => false };
@@ -802,6 +804,7 @@ test("outbound event worker obtains its provider from the canonical events pack"
   });
   assert.equal(composition.dailyDriver, dailyDriver);
   assert.equal(composition.auth, auth);
+  assert.equal(composition.readLumaFormProfile, readLumaFormProfile);
   assert.equal(services.provider, provider);
 });
 
