@@ -2879,6 +2879,13 @@ Calendar/coverage delivery receiptは2→3へ増えた。`luma-event://event/thi
 core Calendar/Telegram deliveryを止めないことと16Dの4証拠lineageをlive完了した。ただしagentic-registration evidenceは生成されず、
 既登録effectの親readbackだったため、corrected railで新規form submitを行う16Cは未完のまま維持する。
 
+O1B-25進捗127（16C run 180 / 新規submit可能候補なし）: 16Cだけを次のactive itemとして既存Connector launchdを
+run 180で一度wakeした。fresh inventory 27件、Calendar gate対象21件、eligible 4件、Luna ranked 4件、zero-yen spend policy後2件を
+同じpassでattemptしたが、2件とも親provider readbackで`LUMA_RSVP_UNAVAILABLE / known_no_effect`だった。Terra childと
+agentic-registration evidenceは生成されず、candidate attemptは41→43、delivery receiptは3→3である。これはbrowser rail failureではなく、
+現inventoryに新規submit可能なfree候補が無いことを示す。corrected railの実form submit証拠は存在しないため16Cを完了扱いせず、
+次のschedule wakeでも全ranked candidateを再評価する。16C成立前にObserver/Fixer実装へ順序を飛ばさない。
+
 現在と完成形:
 
 ```mermaid

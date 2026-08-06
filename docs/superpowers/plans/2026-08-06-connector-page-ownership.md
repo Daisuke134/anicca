@@ -103,6 +103,7 @@
 - [x] **Step 5: Run focused tests and the Connector suite:** focused 17/17、pretest 12/12、outbound 336/336 GREEN。
 - [ ] **Step 6: Run the existing Connector launchd live acceptance** and require one trace with one target, one agent session, zero agent closes, real submit, parent marker readback, PNG SHA, and parent release. Do not touch Gig or `:9223`.
 - Run 178 observation: schedule-owned lifecycle and parent cleanup were healthy, but no new form submit occurred; two existing-effect readbacks produced PNG evidence and then stopped at ticket evidence, while two candidates were unavailable. This is not Step 6 completion.
+- Run 180 observation: fresh inventory 27 → Calendar eligible 4 → spend ordered 2; both attempts were `LUMA_RSVP_UNAVAILABLE`, no Terra child/evidence and no delivery increment. Step 6 remains open because no submit-capable candidate existed.
 - [ ] **Step 7: Update the master spec with measured evidence and commit** using `feat(connector): complete page-scoped registration transaction`.
 
 ### Task 4: Keep Optional Ticket Enrichment Out of the Core Delivery Gate
