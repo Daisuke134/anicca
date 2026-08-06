@@ -39,13 +39,21 @@ For each candidate:
    account, and iframe route. A job-detail page is never a terminal failure.
 3. On `/application`, `/apply`, or an application heading, wait for attached form
    fields. A snapshot containing only navigation controls is incomplete; recapture.
+   Inspect the live element before choosing a selector. On Ashby,
+   `data-field-path` is a field-container key and is not necessarily an element ID:
+   locate `[data-field-path="<key>"]` and then its actual `input`, `textarea`, button,
+   or combobox. Never turn an arbitrary UUID into `#<uuid>`; use an exact attribute
+   selector or `CSS.escape`. A selector timeout is an executor defect to correct in
+   the same browser session, not a candidate blocker.
 4. Fill every required field from truthful profile facts, upload the routed resume,
    and answer questions consistently. Save a private pre-submit screenshot and a
    private dossier containing official URL, company, role, resume path/hash, exact
    question text, exact answer, and fact provenance. Mode 0600.
 5. Click the final Submit control exactly once. Observe the exact request, response,
    visible success or validation message, resulting URL, and Gmail confirmation when
-   available. Save a private post-submit screenshot.
+   available. Save a private post-submit screenshot only after the click and name an
+   artifact `submitted` only after authoritative ATS success. A validation-still-on-
+   form screenshot is an attempt/validation artifact, never post-submit evidence.
 6. Count `submitted` only from authoritative ATS success or a matching Gmail receipt.
    If the click definitely occurred but confirmation is ambiguous, record
    `submit_unknown` and never retry that posting. If validation fails before the

@@ -3315,6 +3315,18 @@ OpenTelemetry decision and primary sources:
       with provenance. This removes repeated legal-answer rediscovery without
       weakening truthfulness or duplicate-Submit protection. Submit evidence remains
       required before this run can count an application.
+    - Run-57 Ashby adaptation receipt: Terra clicked the ElevenLabs button but the
+      final submission did not occur; the only observed POSTs saved form values and
+      the screenshot remained on a form with required answers blank. The first live
+      error was an invalid CSS `#<uuid>` selector; the next OpenAI attempt timed out
+      on nonexistent `#_systemfield_location`. Ashby `data-field-path` values are
+      container keys, not guaranteed DOM IDs. The live contract now requires exact
+      attribute selection followed by the real nested control, treats selector
+      timeout as an in-session executor defect, and forbids naming validation-page
+      artifacts `post-submit` or `submitted`. The recruiter LinkedIn URL was removed
+      from the private candidate profile after visual proof that it would have sent
+      false applicant information. Japan start date, sponsorship, work authorization,
+      and Tokyo three-day availability are now explicit private facts.
 - [ ] **L-49K2** — Make the resident fill contract complete and inspectable. Route the
   exact accepted resume; fill verified identity/contact/location/start-date fields;
   select work authorization and sponsorship answers from the private profile; verify
