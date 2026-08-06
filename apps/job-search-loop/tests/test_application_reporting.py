@@ -81,6 +81,8 @@ class ApplicationReportingTests(unittest.TestCase):
                 "bundle_sha256": "c" * 64,
                 "confirmation_source": "gmail",
                 "confirmation_id": "gmail-message-1",
+                "trace_id": "1" * 32,
+                "span_id": "2" * 16,
             }
             for name, suffix in {
                 "resume": ".pdf",
@@ -111,7 +113,21 @@ class ApplicationReportingTests(unittest.TestCase):
             )
             self.assertEqual(calls[0]["document"].suffix, ".zip")
             self.assertIn("gmail-message-1", calls[0]["message"])
+            self.assertIn("Trace: " + "1" * 32 + "/" + "2" * 16, calls[0]["message"])
             self.assertEqual(result[0]["message_id"], "903")
+            self.assertEqual(result[0]["trace_id"], "1" * 32)
+            self.assertEqual(result[0]["span_id"], "2" * 16)
+            with zipfile.ZipFile(calls[0]["document"]) as bundle:
+                manifest = json.loads(bundle.read("manifest.json"))
+                self.assertEqual(manifest["trace_id"], "1" * 32)
+                self.assertEqual(manifest["span_id"], "2" * 16)
+
+    def test_evidence_report_rejects_malformed_correlation_as_null(self):
+        reporting = importlib.import_module("job_search_loop.application_reporting")
+        self.assertEqual(
+            reporting.validated_correlation({"trace_id": "PRIVATE", "span_id": "bad"}),
+            {"trace_id": None, "span_id": None},
+        )
 
     def test_ledger_and_reporter_expose_fenced_submission_evidence_bundle(self):
         self.assertTrue(hasattr(Ledger, "record_submission_evidence_bundle"))
