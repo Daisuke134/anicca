@@ -153,6 +153,7 @@ function createProductionProviderRouter(options = {}) {
       const selected = luma(input);
       return browserHarness.runFallback({
         provider: "luma",
+        candidate: selected.candidate,
         page: selected.page,
         pageWebsocket: selected.pageWebsocket,
         maxSteps: selected.maxSteps,
