@@ -3327,6 +3327,25 @@ OpenTelemetry decision and primary sources:
       from the private candidate profile after visual proof that it would have sent
       false applicant information. Japan start date, sponsorship, work authorization,
       and Tokyo three-day availability are now explicit private facts.
+    - Dream-killer audit and policy replacement: `ranking_ready`, `gate_status`, fit
+      score, years of experience, skill match, AI wording, compensation, and location
+      were still acting as pre-application rejection gates even though applying is
+      reversible and the owner wants breadth. They are now ordering signals only.
+      Every active official posting enters the serial application lane. The only
+      candidate-level abandon reasons are an authoritative prior Submit/unknown,
+      closed posting, a truly absent required personal/legal answer after reading all
+      natural-language facts, or CAPTCHA; every such outcome continues to the next
+      posting and never ends the pass. Natural-language `facts[].claim/evidence` is
+      the profile authority; duplicate convenience booleans are not required.
+    - Upstream code audit: pinned `MadsLorentzen/ai-job-search` v1.3.0 supplies the
+      strongest grounded-profile, requirement-coverage, document, Gmail outcome, and
+      interview-prep contracts, but its `/apply` explicitly asks the user before
+      drafting and is not an autonomous Submit loop. Pinned `santifer/career-ops`
+      v1.25.0 supplies ATS discovery, field extraction/prefill, vendor quirks,
+      tracker, and follow-up logic, but its live fill route explicitly says `NEVER
+      submits` and hands the browser to a human. Job Hunter must reuse those grounded
+      answer and deterministic field-fill patterns while adding its own receipt-
+      fenced Submit, confirmation, evidence, and Telegram continuation layer.
 - [ ] **L-49K2** — Make the resident fill contract complete and inspectable. Route the
   exact accepted resume; fill verified identity/contact/location/start-date fields;
   select work authorization and sponsorship answers from the private profile; verify
