@@ -2,6 +2,7 @@
 
 const path = require("node:path");
 const fs = require("node:fs");
+const os = require("node:os");
 const { spawnSync } = require("node:child_process");
 
 const OUTBOUND_CAPABILITY = "outbound.event.apply";
@@ -135,6 +136,28 @@ async function notifyOpenClaw(message, options = {}) {
   return { messageId: parseOpenClawMessageId(String(result.stdout || "")) };
 }
 
+async function notifyOpenClawPhoto(bytes, options = {}) {
+  const target = String(options.telegramTarget || "").trim();
+  if (!target || !Buffer.isBuffer(bytes)) throw new Error("Telegram photo delivery invalid");
+  const spawn = options.spawnSync || spawnSync;
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "connector-telegram-photo-"));
+  const file = path.join(directory, "registered-page.png");
+  try {
+    fs.writeFileSync(file, bytes, { mode: 0o600, flag: "wx" });
+    const result = spawn("openclaw", [
+      "message", "send", "--channel", "telegram", "--target", target,
+      "--media", file, "--message", String(options.caption || ""), "--json",
+    ], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+    if (!result || result.status !== 0) {
+      throw new Error(String(result && result.stderr || "Telegram photo delivery failed").trim());
+    }
+    return { messageId: parseOpenClawMessageId(String(result.stdout || "")) };
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true });
+  }
+}
+
+
 async function recoverDockerWorker(options = {}) {
   const container = String(options.workerContainer || "").trim();
   if (!/^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/.test(container)) return false;
@@ -266,6 +289,7 @@ module.exports = {
   parseOpenClawMessageId,
   createFileIncidentStore,
   notifyOpenClaw,
+  notifyOpenClawPhoto,
   recoverDockerWorker,
   runOutboundGuardian,
   guardianExitCode,

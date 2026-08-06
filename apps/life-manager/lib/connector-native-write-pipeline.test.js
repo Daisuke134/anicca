@@ -2,6 +2,7 @@
 
 const test = require("node:test");
 const assert = require("node:assert/strict");
+const { createHash } = require("node:crypto");
 
 const { runNativeConnectorWrite } = require("./connector-native-write-pipeline.js");
 
@@ -9,6 +10,9 @@ const NOW = "2026-08-02T01:00:00.000Z";
 const EVENT_REF = "luma-event://event/founder-night";
 const EVENT_URL = "https://luma.com/founder-night";
 const CHAT_HASH = "37da4c800042eb1a27e8081315efc08f7d546c5be1e47d2d026be17417a090b3";
+const TEST_PNG = Buffer.alloc(5_000, 0x61);
+Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(TEST_PNG);
+const TEST_PNG_HASH = createHash("sha256").update(TEST_PNG).digest("hex");
 
 function input(overrides = {}) {
   const coverage = {
@@ -72,9 +76,9 @@ function depsFor(calls, overrides = {}) {
         attempt_ref: `runtime-attempt://${job.tenant_id}/${job.job_id}/1`,
         canonical_url: EVENT_URL,
         external_receipt_ref: "provider-receipt://luma/fixture",
-        artifact_ref: `object://${"a".repeat(64)}`,
+        artifact_ref: `object://sha256/${TEST_PNG_HASH}`,
         evidence_observed_at: NOW,
-        artifact_sha256: "a".repeat(64),
+        artifact_sha256: TEST_PNG_HASH,
         verified_at: NOW,
       } };
     },
@@ -82,6 +86,7 @@ function depsFor(calls, overrides = {}) {
       calls.push(["assert-receipt", receipt, job]);
       return receipt;
     },
+    async readArtifact() { return TEST_PNG; },
     async syncVerifiedRegistrationToGoogleCalendar(syncInput) {
       calls.push(["calendar", syncInput]);
       return {
@@ -115,6 +120,8 @@ function depsFor(calls, overrides = {}) {
       return {
         kind: "connector_coverage_telegram_delivery",
         provider_id: "321",
+        photo_provider_id: "322",
+        artifact_sha256: TEST_PNG_HASH,
         observed_at: NOW,
         tenant_id: "dais-local",
         chat_id_sha256: CHAT_HASH,
@@ -160,13 +167,61 @@ test("verified RSVP evidence gates Calendar sync and then runs the remaining cha
   assert.deepEqual(result.registration_receipt, {
     attempt_ref: "runtime-attempt://dais-local/outbound-event:job-1/1",
     external_receipt_ref: "provider-receipt://luma/fixture",
-    artifact_ref: `object://${"a".repeat(64)}`,
+    artifact_ref: `object://sha256/${TEST_PNG_HASH}`,
     evidence_observed_at: NOW,
-    artifact_sha256: "a".repeat(64),
+    artifact_sha256: TEST_PNG_HASH,
     canonical_url: EVENT_URL,
     verified_at: NOW,
   });
   assert.equal(result.calendar_sync.calendar_event_ref, "calendar-evidence://google/event/event-1");
+});
+
+test("write pipeline reads the verified PNG and binds it to Telegram photo delivery", async () => {
+  const calls = [];
+  const bytes = Buffer.alloc(5_000, 0x61);
+  Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(bytes);
+  const hash = createHash("sha256").update(bytes).digest("hex");
+  const result = await runNativeConnectorWrite(input(), depsFor(calls, {
+    async executeLumaRsvpJob(job) {
+      return { receipt: {
+        status: "verified",
+        attempt_ref: `runtime-attempt://${job.tenant_id}/${job.job_id}/1`,
+        canonical_url: EVENT_URL,
+        external_receipt_ref: "provider-receipt://luma/fixture",
+        artifact_ref: `object://sha256/${hash}`,
+        evidence_observed_at: NOW,
+        artifact_sha256: hash,
+        verified_at: NOW,
+      } };
+    },
+    async readArtifact(tenantId, artifactRef) {
+      assert.equal(tenantId, "dais-local");
+      assert.equal(artifactRef, `object://sha256/${hash}`);
+      return bytes;
+    },
+    async deliverConnectorCoverageTelegram(deliveryInput) {
+      assert.equal(deliveryInput.registrationEvidence.event_ref, EVENT_REF);
+      assert.equal(deliveryInput.registrationEvidence.canonical_url, EVENT_URL);
+      assert.equal(deliveryInput.registrationEvidence.artifact_sha256, hash);
+      assert.equal(createHash("sha256").update(deliveryInput.registrationEvidence.bytes).digest("hex"), hash);
+      return {
+        kind: "connector_coverage_telegram_delivery",
+        provider_id: "321",
+        photo_provider_id: "322",
+        artifact_sha256: hash,
+        observed_at: NOW,
+        tenant_id: "dais-local",
+        chat_id_sha256: CHAT_HASH,
+        coverage_snapshot_id: deliveryInput.coverage.coverage_snapshot_id,
+      };
+    },
+  }));
+
+  assert.equal(result.status, "complete");
+  assert.equal(result.telegram.provider_id, "321");
+  assert.equal(result.telegram.photo_provider_id, "322");
+  assert.equal(result.telegram.photo_provider_id, "322");
+  assert.equal(result.telegram.artifact_sha256, hash);
 });
 
 test("an unverified Calendar sync cannot produce coverage evidence or Telegram", async () => {
@@ -277,6 +332,8 @@ test("only the exact verified Telegram delivery contract can complete", async (t
   const mutations = [
     ["kind", (receipt) => ({ ...receipt, kind: "telegram_delivery" })],
     ["provider_id", (receipt) => ({ ...receipt, provider_id: "" })],
+    ["photo_provider_id", (receipt) => ({ ...receipt, photo_provider_id: "" })],
+    ["artifact_sha256", (receipt) => ({ ...receipt, artifact_sha256: "0".repeat(64) })],
     ["observed_at", (receipt) => ({ ...receipt, observed_at: "not-a-time" })],
     ["tenant_id", (receipt) => ({ ...receipt, tenant_id: "other-tenant" })],
     ["coverage_snapshot_id", (receipt) => ({ ...receipt, coverage_snapshot_id: "other-coverage" })],
@@ -292,6 +349,8 @@ test("only the exact verified Telegram delivery contract can complete", async (t
           return mutate({
             kind: "connector_coverage_telegram_delivery",
             provider_id: "321",
+            photo_provider_id: "322",
+            artifact_sha256: TEST_PNG_HASH,
             observed_at: NOW,
             tenant_id: "dais-local",
             chat_id_sha256: CHAT_HASH,

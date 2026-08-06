@@ -14,6 +14,7 @@ const RECOVERY_OUTCOMES = new Set([
   "coverage_rebuild_failed",
   "registration_evidence_failed",
   "telegram_delivery_failed",
+  "telegram_evidence_failed",
   "telegram_message_build_failed",
 ]);
 const VERIFIED = new WeakSet();

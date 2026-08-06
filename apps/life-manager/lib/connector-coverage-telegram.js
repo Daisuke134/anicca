@@ -1,15 +1,21 @@
 "use strict";
 
+const { createHash } = require("node:crypto");
 const { isVerifiedRollingEventCoverage } = require("./rolling-event-coverage.js");
 const { isVerifiedLumaDateInventory } = require("./luma-date-inventory.js");
 const { isVerifiedConnectorCalendarSync } = require("./connector-calendar-sync.js");
 const { isVerifiedEventGoalSerendipity } = require("./event-goal-serendipity.js");
-const { notifyOpenClaw, parseOpenClawMessageId } = require("./outbound-guardian.js");
+const {
+  notifyOpenClaw,
+  notifyOpenClawPhoto,
+  parseOpenClawMessageId,
+} = require("./outbound-guardian.js");
 const { hashChatId } = require("./telegram.js");
 
 const TENANT = /^[a-z0-9][a-z0-9._-]{0,199}$/;
 const NEW_EVENT_KEYS = Object.freeze(["calendarSync", "dateInventory", "eventRef", "goalDecision"]);
 const UNSAFE = /\{\{|\}\}|\b(?:TODO|TBD|password|cookie|guest[_ -]?key|api[_ -]?key|access[_ -]?token)\b/i;
+const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
 function invalid() { throw new Error("Connector coverage Telegram invalid"); }
 
@@ -165,6 +171,32 @@ async function deliverConnectorCoverageTelegram(input = {}, dependencies = {}) {
   let providerId;
   try { providerId = parseOpenClawMessageId(JSON.stringify(response || {})); }
   catch { throw new Error("Connector coverage Telegram needs a positive message ID"); }
+  let photo = null;
+  if (Array.isArray(input.newEvents) && input.newEvents.length > 0) {
+    const evidence = input.registrationEvidence;
+    const row = input.newEvents.length === 1 ? input.newEvents[0] : null;
+    const event = row && row.dateInventory && row.dateInventory.days
+      .flatMap((day) => day.events).find((candidate) => candidate.event_ref === row.eventRef);
+    const bytes = evidence && evidence.bytes;
+    const digest = Buffer.isBuffer(bytes) ? createHash("sha256").update(bytes).digest("hex") : "";
+    if (
+      !evidence || !event || evidence.event_ref !== row.eventRef
+      || evidence.canonical_url !== event.canonical_url
+      || !Buffer.isBuffer(bytes) || bytes.length < 5_000
+      || !bytes.subarray(0, PNG_SIGNATURE.length).equals(PNG_SIGNATURE)
+      || evidence.artifact_sha256 !== digest
+      || evidence.artifact_ref !== `object://sha256/${digest}`
+    ) invalid();
+    const sendPhoto = dependencies.sendPhoto || notifyOpenClawPhoto;
+    const photoResponse = await sendPhoto(bytes, {
+      telegramTarget: target,
+      caption: `✅ 登録済み証拠: ${safeText(event.title, 160)}\n${event.canonical_url}`,
+    });
+    let photoProviderId;
+    try { photoProviderId = parseOpenClawMessageId(JSON.stringify(photoResponse || {})); }
+    catch { throw new Error("Connector coverage Telegram photo needs a positive message ID"); }
+    photo = { photo_provider_id: photoProviderId, artifact_sha256: digest };
+  }
   const observedAt = new Date(Date.parse(
     (dependencies.observedAt || (() => new Date().toISOString()))(),
   )).toISOString();
@@ -172,6 +204,7 @@ async function deliverConnectorCoverageTelegram(input = {}, dependencies = {}) {
   return Object.freeze({
     kind: "connector_coverage_telegram_delivery",
     provider_id: providerId,
+    ...(photo || {}),
     observed_at: observedAt,
     tenant_id: tenant,
     chat_id_sha256: hashChatId(target),

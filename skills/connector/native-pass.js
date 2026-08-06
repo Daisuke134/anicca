@@ -3,10 +3,17 @@
 
 const path = require("node:path");
 const fs = require("node:fs");
+const { createHash } = require("node:crypto");
 
 const { runNativeConnectorPass } = require("../../apps/life-manager/lib/connector-native-runtime.js");
 const { recordContinuation } = require("./lib/native-state.js");
 const { loadConnectorEnv } = require("./lib/load-connector-env.js");
+const {
+  notifyOpenClawPhoto,
+  parseOpenClawMessageId,
+} = require("../../apps/life-manager/lib/outbound-guardian.js");
+
+const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
 function unavailable() {
   throw new Error("Connector native pass unavailable");
@@ -46,15 +53,103 @@ function readDeliveryReceipts(stateDir) {
     try { value = JSON.parse(line); } catch { unavailable(); }
     if (
       !value || typeof value !== "object" || Array.isArray(value)
-      || Object.keys(value).sort().join(",") !== "calendar_event_ref,event_ref,telegram_provider_id"
+      || ![
+        "calendar_event_ref,event_ref,telegram_provider_id",
+        "artifact_sha256,calendar_event_ref,event_ref,telegram_photo_provider_id,telegram_provider_id",
+      ].includes(Object.keys(value).sort().join(","))
       || !/^luma-event:\/\/event\/[A-Za-z0-9_-]+$/.test(String(value.event_ref || ""))
       || !/^calendar-evidence:\/\/google\/event\/[0-9a-f]{64}$/.test(String(value.calendar_event_ref || ""))
       || !/^[^\x00-\x1f\x7f]{1,128}$/.test(String(value.telegram_provider_id || ""))
+      || (Object.hasOwn(value, "telegram_photo_provider_id") && (
+        !/^[^\x00-\x1f\x7f]{1,128}$/.test(String(value.telegram_photo_provider_id || ""))
+        || !/^[0-9a-f]{64}$/.test(String(value.artifact_sha256 || ""))
+      ))
     ) unavailable();
     return Object.freeze({ ...value });
   });
   if (rows.length > 100 || new Set(rows.map((row) => row.telegram_provider_id)).size !== rows.length) unavailable();
   return Object.freeze(rows);
+}
+
+function readPhotoDeliveredEvents(stateDir) {
+  const file = path.join(stateDir, "photo-delivery-receipts.jsonl");
+  let source = "";
+  try {
+    const stat = fs.statSync(file);
+    if (stat.size > 1_000_000) unavailable();
+    source = fs.readFileSync(file, "utf8");
+  } catch (error) {
+    if (!error || error.code !== "ENOENT") throw error;
+  }
+  const events = new Set();
+  for (const line of source.split(/\r?\n/).filter(Boolean)) {
+    let value;
+    try { value = JSON.parse(line); } catch { unavailable(); }
+    if (
+      !value || typeof value !== "object" || Array.isArray(value)
+      || Object.keys(value).sort().join(",") !== "artifact_sha256,event_ref,observed_at,telegram_photo_provider_id,telegram_provider_id"
+      || !/^luma-event:\/\/event\/[A-Za-z0-9_-]+$/.test(String(value.event_ref || ""))
+      || !/^[0-9a-f]{64}$/.test(String(value.artifact_sha256 || ""))
+      || !/^[^\x00-\x1f\x7f]{1,128}$/.test(String(value.telegram_provider_id || ""))
+      || !/^[^\x00-\x1f\x7f]{1,128}$/.test(String(value.telegram_photo_provider_id || ""))
+      || new Date(Date.parse(String(value.observed_at || ""))).toISOString() !== value.observed_at
+    ) unavailable();
+    events.add(value.event_ref);
+  }
+  return events;
+}
+
+async function backfillLegacyPhoto(options, stateDir, config) {
+  const delivered = readDeliveryReceipts(stateDir);
+  const alreadySent = readPhotoDeliveredEvents(stateDir);
+  const legacy = delivered.find((row) => !row.telegram_photo_provider_id && !alreadySent.has(row.event_ref));
+  if (!legacy) return;
+  const tenant = String(config.tenantId || "");
+  if (!/^[a-z0-9][a-z0-9._-]{0,127}$/i.test(tenant)) unavailable();
+  if (!config.evidenceDir || !config.telegramTarget) return;
+  const evidenceDir = absoluteDirectory(config.evidenceDir);
+  const markerDir = path.join(evidenceDir, "tenants", tenant, "outbound", "luma", "artifacts");
+  let names;
+  try { names = fs.readdirSync(markerDir).sort(); } catch { return; }
+  if (names.length > 100) unavailable();
+  let artifact;
+  for (const name of names) {
+    if (!/^[0-9a-f]{64}\.json$/.test(name)) unavailable();
+    let marker;
+    try { marker = JSON.parse(fs.readFileSync(path.join(markerDir, name), "utf8")); } catch { unavailable(); }
+    if (
+      marker && marker.event_ref === legacy.event_ref
+      && marker.sha256 === name.slice(0, -5)
+    ) { artifact = marker; break; }
+  }
+  if (!artifact) return;
+  const objectFile = path.join(evidenceDir, "objects", "sha256", artifact.sha256);
+  let bytes;
+  try { bytes = fs.readFileSync(objectFile); } catch { return; }
+  if (
+    bytes.length < 5_000 || !bytes.subarray(0, PNG_SIGNATURE.length).equals(PNG_SIGNATURE)
+    || createHash("sha256").update(bytes).digest("hex") !== artifact.sha256
+  ) unavailable();
+  const slug = legacy.event_ref.slice("luma-event://event/".length);
+  const sendPhoto = typeof options.sendPhotoEvidence === "function"
+    ? options.sendPhotoEvidence : notifyOpenClawPhoto;
+  const response = await sendPhoto(bytes, {
+    telegramTarget: requiredText(config.telegramTarget),
+    caption: `✅ Connector登録済み証拠\nhttps://luma.com/${slug}`,
+  });
+  const photoProviderId = parseOpenClawMessageId(JSON.stringify(response || {}));
+  const receipt = {
+    event_ref: legacy.event_ref,
+    telegram_provider_id: legacy.telegram_provider_id,
+    telegram_photo_provider_id: photoProviderId,
+    artifact_sha256: artifact.sha256,
+    observed_at: new Date().toISOString(),
+  };
+  fs.appendFileSync(
+    path.join(stateDir, "photo-delivery-receipts.jsonl"),
+    `${JSON.stringify(receipt)}\n`,
+    { encoding: "utf8", mode: 0o600 },
+  );
 }
 
 function readCandidateAttempts(stateDir) {
@@ -186,16 +281,20 @@ function boundedResult(result) {
     const artifactMatch = /^object:\/\/sha256\/([0-9a-f]{64})$/.exec(String(receipt.artifact_ref || ""));
     let canonical;
     try { canonical = new URL(String(receipt.canonical_url || "")); } catch { unavailable(); }
+    const photoProviderId = String(rawWrite.telegram && rawWrite.telegram.photo_provider_id || "");
     if (
       !artifactMatch || receipt.artifact_sha256 !== artifactMatch[1]
       || canonical.protocol !== "https:" || canonical.hostname !== "luma.com"
       || new Date(Date.parse(String(receipt.evidence_observed_at || ""))).toISOString() !== receipt.evidence_observed_at
+      || !/^[^\x00-\x1f\x7f]{1,128}$/.test(photoProviderId)
+      || rawWrite.telegram.artifact_sha256 !== receipt.artifact_sha256
     ) unavailable();
     evidence = {
       canonical_url: canonical.toString(),
       evidence_observed_at: receipt.evidence_observed_at,
       artifact_ref: receipt.artifact_ref,
       artifact_sha256: receipt.artifact_sha256,
+      telegram_photo_provider_id: photoProviderId,
     };
   }
   const write = rawWrite
@@ -274,6 +373,8 @@ function appendCandidateAttempts(stateDir, attempts) {
 
 function appendDeliveryReceipt(stateDir, write) {
   if (write && write.telegram_provider_id && write.event_ref && write.calendar_event_ref) {
+    const hasNewEvidence = Boolean(write.artifact_sha256 || write.telegram_photo_provider_id);
+    if (hasNewEvidence && !(write.artifact_sha256 && write.telegram_photo_provider_id)) unavailable();
     const historyFile = path.join(stateDir, "delivery-receipts.jsonl");
     let existing = "";
     try {
@@ -287,6 +388,10 @@ function appendDeliveryReceipt(stateDir, write) {
       event_ref: write.event_ref,
       calendar_event_ref: write.calendar_event_ref,
       telegram_provider_id: write.telegram_provider_id,
+      ...(hasNewEvidence ? {
+        telegram_photo_provider_id: write.telegram_photo_provider_id,
+        artifact_sha256: write.artifact_sha256,
+      } : {}),
     };
     const duplicate = existing.split(/\r?\n/).filter(Boolean).some((line) => {
       try { return JSON.parse(line).telegram_provider_id === receipt.telegram_provider_id; }
@@ -341,8 +446,10 @@ async function runNativePass(options = {}) {
     ? options.runRuntime
     : runNativeConnectorPass;
   try {
+    const config = runtimeConfig(options, stateDir);
+    await backfillLegacyPhoto(options, stateDir, config);
     const result = await runtime({
-      config: runtimeConfig(options, stateDir),
+      config,
       deps: options.deps && typeof options.deps === "object" ? options.deps : {},
     });
     const bounded = boundedResult(result);
