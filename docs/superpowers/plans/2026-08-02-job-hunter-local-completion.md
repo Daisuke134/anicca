@@ -3241,6 +3241,18 @@ OpenTelemetry decision and primary sources:
       stops hunting or submission. The first live progress correction was delivered
       as Telegram message ID `7801` while run `daily-20260806-182939` was actively
       checking more than 76 ATS URLs.
+    - Navigation defect receipt: that run finished with zero submissions after
+      discovering 156 links, verifying 38, leaving 118 pending, and opening only
+      three pages. All three evaluations returned `application_surface_not_found`,
+      even though the live redacted controls contained Penguin Solutions
+      `Apply now »` and HERP `応募へ進む`. The prompt had evaluated job-detail pages
+      before application-entry navigation and then ordered a stop on evaluator
+      failure. The live contract now requires the single Terra owner to use its
+      enabled Codex tools plus direct Playwright/CloakBrowser CDP, activate grounded
+      application-entry controls before ATS evaluation, follow same-tab/popup/frame
+      transitions, and treat this error on a page with an Apply control as an
+      executor defect to repair in-process. The application route has only GPT-5.6
+      Terra medium; it cannot silently fall back to another model.
 - [ ] **L-49K2** — Make the resident fill contract complete and inspectable. Route the
   exact accepted resume; fill verified identity/contact/location/start-date fields;
   select work authorization and sponsorship answers from the private profile; verify

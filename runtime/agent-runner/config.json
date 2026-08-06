@@ -90,8 +90,7 @@
       "_timeout_note": "B2-only route. Measured 2026-07-29: newest plus 27 category sources plus keyword/pagination had traversed only the first category after three minutes. The shared 900s browser bound contradicts the exhaustive-search completion contract. One hour remains below the launcher's 7200s runaway guard while allowing the money-entry lane to search before it returns.",
       "timeout_seconds": 3600,
       "candidates": [
-        {"provider": "codex", "model": "gpt-5.6-terra", "effort": "medium"},
-        {"provider": "claude-direct", "model": "sonnet"}
+        {"provider": "codex", "model": "gpt-5.6-terra", "effort": "medium"}
       ]
     },
     "diagnostic-agent": {
