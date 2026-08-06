@@ -2672,6 +2672,12 @@ agent runnerが`gpt-5.6-terra`でpreference judgmentをsuccessにした直後、
 Terra resultを受理するcontractへ更新し、変更前3 failure RED、変更後judgment/native 18/18、agent-runner 12/12 GREEN。
 次は既存launchdを再wakeし、judgment後のwrite attemptと実provider submit/readbackを確認する。
 
+O1B-25進捗109（12A capability-aware suppression / RED→GREEN）: run 149はTerra preference/goal judgmentを全日程で通過したが、
+旧`LUMA_FORM_INPUT_REQUIRED` attemptが4候補をterminal suppressionし、`unsuppressed=0 / write attempts=0`で終了した。
+form capability versionが旧attemptと異なる時だけsuppressionを解除し、同versionで一度再試行した後は再び抑制するcontractを追加した。
+legacy→v1解除、v1再抑制、v1→v2解除のRED後、suppression/native 17/17 GREEN。次はversionをruntime configと新attemptへ保存し、
+legacy JSONLを値欠落のまま安全にmigrationして実runでApplyへ進める12Bである。
+
 現在と完成形:
 
 ```mermaid

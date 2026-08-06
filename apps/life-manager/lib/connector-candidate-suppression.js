@@ -7,6 +7,11 @@ const OUTCOMES = new Set([
   "unknown_effect",
   "recovery_required",
 ]);
+const FORM_REEVALUATION_CODES = new Set([
+  "LUMA_FORM_INPUT_REQUIRED",
+  "LUMA_REQUIRED_PROFILE_FIELD_UNAVAILABLE",
+]);
+const CAPABILITY_VERSION = /^[a-z0-9][a-z0-9._-]{0,63}$/;
 
 function invalid() {
   throw new Error("Connector candidate suppression invalid");
@@ -26,10 +31,11 @@ function checkedAttempt(attempt) {
     || !OUTCOMES.has(attempt.outcome)
     || !/^[A-Za-z0-9_:-]{1,100}$/.test(String(attempt.safe_reason || ""))
     || !(attempt.retry_after === null || typeof attempt.retry_after === "string")
+    || !(attempt.capability_version == null || CAPABILITY_VERSION.test(attempt.capability_version))
   ) invalid();
   const observedAt = exactInstant(attempt.observed_at);
   const retryAfter = attempt.retry_after === null ? null : exactInstant(attempt.retry_after);
-  return { ...attempt, observedAt, retryAfter };
+  return { ...attempt, capability_version: attempt.capability_version || null, observedAt, retryAfter };
 }
 
 function latestCandidateAttempts(input = {}) {
@@ -46,11 +52,18 @@ function latestCandidateAttempts(input = {}) {
 
 function activeSuppressedEventRefs(input = {}) {
   const { now, latest } = latestCandidateAttempts(input);
+  const capabilityVersion = input.capabilityVersion == null ? null : String(input.capabilityVersion);
+  if (capabilityVersion !== null && !CAPABILITY_VERSION.test(capabilityVersion)) invalid();
   const suppressed = new Set();
   for (const attempt of latest.values()) {
     if (
       attempt.outcome === "known_no_effect"
       && (attempt.retryAfter === null || attempt.retryAfter > now)
+      && !(
+        capabilityVersion !== null
+        && FORM_REEVALUATION_CODES.has(attempt.safe_reason)
+        && attempt.capability_version !== capabilityVersion
+      )
     ) suppressed.add(attempt.event_ref);
   }
   return suppressed;
