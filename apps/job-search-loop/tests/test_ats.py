@@ -15,6 +15,39 @@ def load_fixture(name):
 
 
 class AtsReadinessTests(unittest.TestCase):
+    def test_group_location_never_turns_buttons_or_labeled_textarea_into_fill_actions(self):
+        from job_search_loop.ats import build_non_submit_fill_plan
+
+        snapshot = {
+            "version": 1,
+            "url": "https://jobs.ashbyhq.com/acme/role/application",
+            "navigation_committed": True,
+            "frames": [
+                {
+                    "url": "https://jobs.ashbyhq.com/acme/role/application",
+                    "controls": [
+                        {"tag": "input", "type": "email", "label": "Email", "required": True},
+                        {"tag": "input", "type": "file", "label": "Resume", "required": True},
+                        {"tag": "button", "text": "Yes", "group_label": "Where are you currently located?", "required": True},
+                        {"tag": "textarea", "label": "Additional Information", "group_label": "Where are you currently located?", "required": False},
+                        {"tag": "button", "text": "Submit Application"},
+                    ],
+                }
+            ],
+        }
+        plan = build_non_submit_fill_plan(
+            snapshot,
+            answers={
+                "email": {"value": "candidate@example.test", "fact_ids": ["profile.email"]},
+                "location": {"value": "Tokyo, Japan", "fact_ids": ["profile.base"]},
+            },
+            resume_path="/private/resume.pdf",
+            resume_sha256="a" * 64,
+        )
+
+        self.assertNotIn("location", [action.get("field_key") for action in plan["actions"]])
+        self.assertIn("Where are you currently located?", plan["blockers"])
+
     def test_required_group_labels_fill_verified_contact_and_block_unknowns_once(self):
         from job_search_loop.ats import build_non_submit_fill_plan
 
@@ -28,7 +61,7 @@ class AtsReadinessTests(unittest.TestCase):
                     "url": url,
                     "controls": [
                         {"tag": "input", "type": "tel", "label": "Phone Number", "group_label": "Phone Number*", "required": True},
-                        {"tag": "input", "type": "text", "label": "Start typing...", "group_label": "Where are you currently located?*", "required": True},
+                        {"tag": "input", "type": "text", "role": "combobox", "label": "Start typing...", "group_label": "Where are you currently located?*", "required": True},
                         {"tag": "input", "type": "text", "label": "Pick date...", "group_label": "When can you start a new role?*", "required": True},
                         {"tag": "button", "type": "button", "text": "Yes", "group_label": "Are you authorized to work in Japan?*", "required": True},
                         {"tag": "button", "type": "button", "text": "No", "group_label": "Are you authorized to work in Japan?*", "required": True},
@@ -81,6 +114,27 @@ class AtsReadinessTests(unittest.TestCase):
         )
         self.assertEqual(result["actions"][1]["question"], "Name")
         self.assertEqual(result["actions"][1]["fact_ids"], ["profile.name"])
+
+    def test_unchecked_personal_attestation_is_a_blocker_even_without_native_required(self):
+        from job_search_loop.ats import build_non_submit_fill_plan
+
+        snapshot = {
+            "version": 1,
+            "url": "https://jobs.ashbyhq.com/acme/role/application",
+            "navigation_committed": True,
+            "frames": [{"url": "https://jobs.ashbyhq.com/acme/role/application", "controls": [
+                {"tag": "input", "type": "checkbox", "label": "I confirm I have read the above.", "required": False},
+                {"tag": "button", "type": "submit", "text": "Submit Application"},
+            ]}],
+        }
+        result = build_non_submit_fill_plan(
+            snapshot,
+            answers={},
+            resume_path="/private/resume.pdf",
+            resume_sha256="a" * 64,
+        )
+
+        self.assertEqual(result["blockers"], ["I confirm I have read the above."])
 
     def test_executes_and_receipts_verified_fields_without_submit_capability(self):
         from job_search_loop import ats

@@ -2493,6 +2493,17 @@ the resident worker from producing one authoritative application receipt:
         416/416. The next atomic action is immutable release activation followed by a
         resident launchd run proving group capture and same-pass continuation on real
         ATS pages.
+      - Resident run `daily-20260806-090319` exposed a second real-DOM defect rather
+        than producing a false application claim. The broad ancestor lookup attached
+        the location question to unrelated buttons and a textarea; Playwright then
+        rejected an attempted fill on a button and the outer exception collapsed the
+        pass to `pre_submit_error:Error`. The run submitted zero jobs. The repair now
+        collects group questions only for unlabeled controls/comboboxes, limits the
+        location answer to an actual combobox, treats question groups as fail-closed
+        blockers, treats personal-attestation checkboxes as owner-only blockers, and
+        isolates each candidate exception so the next ranked candidate still runs.
+        Related tests pass 27/27 and the full suite passes 419/419. A new immutable
+        resident run is required before FILL-1D is complete.
 - [ ] **L-49K0C1** — Implement the same-role alternate-route ladder: canonical ATS,
   alternate official employer URL, explicitly accepted recruiting-email application,
   verified public work-address recruiting outreach, then the next eligible role.

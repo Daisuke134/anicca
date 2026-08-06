@@ -57,6 +57,8 @@ def _control_text(control: dict[str, Any]) -> str:
 
 def _field_key(control: dict[str, Any]) -> str | None:
     control_type = _normalized(control.get("type"))
+    tag = _normalized(control.get("tag"))
+    role = _normalized(control.get("role"))
     text = _control_text(control)
     label = _normalized(control.get("label"))
     group_label = _normalized(control.get("group_label"))
@@ -74,11 +76,15 @@ def _field_key(control: dict[str, Any]) -> str | None:
         return "full_name"
     if control_type == "tel" or "phone number" in group_label or "phone number" in text:
         return "phone"
-    if "where are you currently located" in group_label:
+    if (
+        "where are you currently located" in group_label
+        and tag in {"input", "select"}
+        and role == "combobox"
+    ):
         return "location"
-    if "linkedin" in group_label or "linkedin" in text:
+    if tag in {"input", "textarea"} and ("linkedin" in group_label or "linkedin" in text):
         return "linkedin"
-    if "github" in group_label or "github" in text:
+    if tag in {"input", "textarea"} and ("github" in group_label or "github" in text):
         return "github"
     return None
 
@@ -114,6 +120,10 @@ def build_non_submit_fill_plan(
                 continue
             field_key = _field_key(control)
             question = _question(control)
+            personal_attestation = (
+                _normalized(control.get("type")) == "checkbox"
+                and _normalized(control.get("label")).startswith("i confirm")
+            )
             if field_key == "resume":
                 actions.append(
                     {
@@ -151,7 +161,7 @@ def build_non_submit_fill_plan(
                         }
                     )
                     continue
-            if control.get("required") is True:
+            if control.get("required") is True or personal_attestation:
                 if question not in blockers:
                     blockers.append(question)
     return {
