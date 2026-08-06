@@ -2304,6 +2304,12 @@ O1B-25進捗65（P0-5 same-pass next-open-date continuation / RED→GREEN）: ru
 success・unknown effect・recovery requiredではpassを停止する。focused 13/13、native 19/19、pretest 12/12、outbound 300/300が
 fresh GREEN。次に既存launchd一回の中で複数日/候補へ進むlive historyをreadbackする。
 
+O1B-25進捗66（P0-5 first live attempt / upstream gate failure）: commit `7b319c598`後の既存launchd run 90は
+約3分で終了したが、attempt historyは4→4、continuationは`connector_native_calendar_gate_failed`だった。したがって同一passの
+次日writeをlive実証したとは扱わない。これはP0-5の二日fixture GREENと矛盾せず、実環境では後続日のCalendar/route gate failureが
+pass全体を例外終了させ、途中attemptとcursorを返せないP0-6のdurability gapを示す。外部境界の一時失敗かを既存loopで一度だけ
+再試行し、再発時は結果を捏造せずP0-6を先に実装する。
+
 完全な残TODO SSOT:
 
 **P0 — task deliveryを前進させる（最優先）**
