@@ -2944,7 +2944,7 @@ OpenTelemetry decision and primary sources:
     `open_application`, never a generic `click` or Submit. Files: modify
     `browser_use_adapter.py` and `tests/test_browser_use_adapter.py` (2 files, soft
     target 80 LOC).
-  - [ ] `L-49K1B0` — Keep the resident worker moving when canonical-route
+  - [x] `L-49K1B0` — Keep the resident worker moving when canonical-route
     materialization encounters a posting already owned by the manual or recruiter
     lane. Preserve the ledger fence, skip only that candidate, persist a hashed skip
     audit, and continue to the next ranked candidate instead of crashing the whole
@@ -2952,10 +2952,17 @@ OpenTelemetry decision and primary sources:
     ready CloakBrowser owner at fence 113 but exited 1 on `canonical posting is
     already owned by dais_manual`. Files: modify `candidate_routes.py` and
     `tests/test_candidate_routes.py` (2 files, soft target 80 LOC).
+    Receipt: release `248d14c8a927ef19bd0e393bfc36f865b228fe02`, resident
+    run `daily-20260806-160111`, owner fence 114. The worker completed, audited one
+    `skipped_cross_owner`, materialized two later candidates, attempted all three,
+    and launchd exited 0. Focused 2/2 and full 474/474 tests passed.
   - [ ] `L-49K1B` — Add the deterministic blank/delayed-render/Overview/direct-form/
     stale-ref/no-surface state machine, using `L-49K1A` to open the form and one fresh
     snapshot to recover a stale ref. Persist the before/after surface classification
-    and fail unless required form controls appear. Files: modify
+    and the raw control snapshot even on failure, then fail unless required form
+    controls appear. Resident run `daily-20260806-160111` continued across all three
+    candidates but classified every surface as `none`; the missing failure snapshot
+    must be added before diagnosing selector text versus render timing. Files: modify
     `browser_use_ats.py` and `tests/test_browser_use_ats.py` (2 files, soft target
     100 LOC).
 - [ ] **L-49K2** — Make the resident fill contract complete and inspectable. Route the
