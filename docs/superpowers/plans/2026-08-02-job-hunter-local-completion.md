@@ -2721,8 +2721,16 @@ it is easier to demonstrate:
     captured a real screenshot with SHA-256
     `401aca8b2184149ee856286215e3f7125a63102e2cd81e756d6453a4ae029b11`,
     and disconnected without navigation or input. Focused tests pass 7/7 and the
-    complete suite passes 466/466. Remaining before checking D1: activate the
-    immutable release and observe the installed resident worker execute this runner.
+    complete suite passes 466/466. The first installed resident execution on release
+    `742850bf46ddab5ff0581a99e2ed20c64320aa59` failed before the worker because
+    `browser_owner` still imported Playwright for its CDP health check, while the
+    intentionally isolated Browser Use runtime contains no Playwright. This is a real
+    D1 migration defect; no application was attempted in that failed run. The owner
+    probe now uses exact Browser Use 0.13.7 for a read-only attach and DOM snapshot,
+    and every runner result carries `executor=browser-use-0.13.7`, including the
+    no-candidate path, so resident provenance is observable. Focused regression tests
+    pass 18/18. Remaining before checking D1: pass the complete suite, activate the
+    repaired immutable release, and observe the installed resident worker execute it.
 - [ ] **L-49K0D2** — Wrap hourly application, five-minute Gmail, weekly learning,
   Telegram delivery, and Guardian reconciliation as Temporal workflows/activities.
   External side effects use explicit idempotency keys and no automatic retry after

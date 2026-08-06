@@ -26,6 +26,7 @@ class BrowserUseATSRunnerTests(unittest.TestCase):
 
             self.assertEqual(result["status"], "pending_verification")
             self.assertEqual(result["blocked"], ["no_ranking_ready_candidate"])
+            self.assertEqual(result["executor"], "browser-use-0.13.7")
 
 
 if __name__ == "__main__":
