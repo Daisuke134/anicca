@@ -7,10 +7,13 @@ import hashlib
 import json
 import os
 import threading
+import time
 from importlib import metadata
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
+
+from .telemetry import Telemetry
 
 
 class BrowserUsePolicyError(RuntimeError):
@@ -45,6 +48,8 @@ class PinnedBrowserUseBackend:
         allowed_domains: list[str],
         version_getter: Any = metadata.version,
         session_factory: Any = None,
+        telemetry: Any = None,
+        clock: Any = time.monotonic,
     ):
         parsed = urlparse(endpoint)
         if parsed.scheme not in {"http", "ws"} or parsed.hostname not in {
@@ -72,6 +77,8 @@ class PinnedBrowserUseBackend:
             keep_alive=True,
         )
         self.allowed_domains = tuple(item.lower() for item in allowed_domains)
+        self.telemetry = telemetry or Telemetry()
+        self.clock = clock
         self._bridge: _AsyncBridge | None = None
 
     def connect(self) -> None:
@@ -101,7 +108,15 @@ class PinnedBrowserUseBackend:
 
     def navigate(self, url: str) -> None:
         self._allowed_url(url)
-        self._run(self.session.navigate_to(url))
+        started = self.clock()
+        with self.telemetry.span("browser.navigate") as span:
+            try:
+                self._run(self.session.navigate_to(url))
+            except Exception as error:
+                span.set_attributes({"duration.ms": (self.clock() - started) * 1000,
+                                     "exception.type": type(error).__name__})
+                raise
+            span.set_attributes({"duration.ms": (self.clock() - started) * 1000})
 
     def _page(self) -> Any:
         page = self._run(self.session.get_current_page())
@@ -111,7 +126,11 @@ class PinnedBrowserUseBackend:
 
     def snapshot(self) -> dict[str, Any]:
         page = self._page()
-        script = """() => JSON.stringify(Array.from(document.querySelectorAll(
+        script = """() => JSON.stringify({
+          ready_state: document.readyState,
+          redirect_count: (performance.getEntriesByType('navigation')[0] || {}).redirectCount || 0,
+          text_count: (document.body && document.body.innerText || '').length,
+          controls: Array.from(document.querySelectorAll(
           'input, textarea, select, button, a, [role=button], [role=alert], [role=status]'
         )).map(n => ({
           tag: (n.tagName || '').toLowerCase(),
@@ -122,8 +141,24 @@ class PinnedBrowserUseBackend:
           text: (n.innerText || n.textContent || '').replace(/\\s+/g, ' ').trim(),
           group_label: '',
           required: Boolean(n.required) || n.getAttribute('aria-required') === 'true'
-        })))"""
-        controls = json.loads(self._run(page.evaluate(script)))
+        }))})"""
+        started = self.clock()
+        with self.telemetry.span("page.ready") as span:
+            try:
+                payload = json.loads(self._run(page.evaluate(script)))
+                payload = {"controls": payload} if isinstance(payload, list) else payload
+                controls = payload.get("controls") or []
+                span.set_attributes({
+                    "duration.ms": (self.clock() - started) * 1000,
+                    "redirect.count": int(payload.get("redirect_count") or 0),
+                    "page.ready_state": str(payload.get("ready_state") or "unknown"),
+                    "dom.control_count": len(controls),
+                    "dom.text_count": int(payload.get("text_count") or 0),
+                })
+            except Exception as error:
+                span.set_attributes({"duration.ms": (self.clock() - started) * 1000,
+                                     "exception.type": type(error).__name__})
+                raise
         return {
             "version": 1,
             "url": self._run(page.get_url()) if hasattr(page, "get_url") else "",

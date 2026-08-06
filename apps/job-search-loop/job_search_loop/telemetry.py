@@ -57,6 +57,16 @@ class SpanHandle:
     recording: bool = False
     trace_id: str | None = None
     span_id: str | None = None
+    sdk_span: Any = None
+
+    def set_attributes(self, attributes: Mapping[str, Any]) -> None:
+        try:
+            clean = sanitize_attributes(attributes)
+            if self.sdk_span is not None:
+                for key, value in clean.items():
+                    self.sdk_span.set_attribute(key, value)
+        except Exception:
+            pass
 
 
 class _SafeSpanContext:
@@ -72,7 +82,7 @@ class _SafeSpanContext:
             self._context = self._tracer.start_as_current_span(self._name, attributes=clean)
             span = self._context.__enter__()
             context = span.get_span_context()
-            return SpanHandle(span.is_recording(), f"{context.trace_id:032x}", f"{context.span_id:016x}")
+            return SpanHandle(span.is_recording(), f"{context.trace_id:032x}", f"{context.span_id:016x}", span)
         except Exception:
             self._context = None
             return SpanHandle()

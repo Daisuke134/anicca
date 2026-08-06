@@ -92,7 +92,10 @@ class FakePage:
         self.element = FakeElement()
 
     async def evaluate(self, _script):
-        return json.dumps([{"tag": "input", "type": "text", "required": True}])
+        return json.dumps({
+            "ready_state": "complete", "redirect_count": 1, "text_count": 42,
+            "controls": [{"tag": "input", "type": "text", "required": True}],
+        })
 
     async def get_elements_by_css_selector(self, _selector):
         return [self.element]
@@ -120,7 +123,78 @@ class FakeAsyncBrowserSession:
         self.calls.append("stop")
 
 
+class FailingNavigateSession(FakeAsyncBrowserSession):
+    async def navigate_to(self, _url):
+        raise RuntimeError("private failure details")
+
+
+class RecordingSpan:
+    recording = True
+
+    def __init__(self, name):
+        self.name = name
+        self.attributes = {}
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_):
+        return False
+
+    def set_attributes(self, attributes):
+        self.attributes.update(attributes)
+
+
+class RecordingTelemetry:
+    def __init__(self):
+        self.spans = []
+
+    def span(self, name, attributes=None):
+        span = RecordingSpan(name)
+        span.attributes.update(attributes or {})
+        self.spans.append(span)
+        return span
+
+
 class BrowserUseAdapterTests(unittest.TestCase):
+    def test_navigation_and_readiness_emit_private_safe_diagnostics(self):
+        telemetry = RecordingTelemetry()
+        backend = PinnedBrowserUseBackend(
+            "http://127.0.0.1:9222",
+            allowed_domains=["jobs.ashbyhq.com"],
+            version_getter=lambda _: "0.13.7",
+            session_factory=FakeAsyncBrowserSession,
+            telemetry=telemetry,
+        )
+        backend.connect()
+
+        backend.navigate("https://jobs.ashbyhq.com/example/application?private=token")
+        backend.snapshot()
+
+        self.assertEqual([span.name for span in telemetry.spans], ["browser.navigate", "page.ready"])
+        self.assertGreaterEqual(telemetry.spans[0].attributes["duration.ms"], 0)
+        self.assertEqual(telemetry.spans[1].attributes["redirect.count"], 1)
+        self.assertEqual(telemetry.spans[1].attributes["page.ready_state"], "complete")
+        self.assertEqual(telemetry.spans[1].attributes["dom.control_count"], 1)
+        self.assertEqual(telemetry.spans[1].attributes["dom.text_count"], 42)
+        self.assertNotIn("jobs.ashbyhq.com", json.dumps([span.attributes for span in telemetry.spans]))
+        backend.close()
+
+    def test_navigation_failure_records_only_exception_class_and_reraises(self):
+        telemetry = RecordingTelemetry()
+        backend = PinnedBrowserUseBackend(
+            "http://127.0.0.1:9222", allowed_domains=["jobs.ashbyhq.com"],
+            version_getter=lambda _: "0.13.7", session_factory=FailingNavigateSession,
+            telemetry=telemetry,
+        )
+        backend.connect()
+
+        with self.assertRaisesRegex(RuntimeError, "private failure details"):
+            backend.navigate("https://jobs.ashbyhq.com/example/application?private=token")
+
+        self.assertEqual(telemetry.spans[0].attributes["exception.type"], "RuntimeError")
+        self.assertNotIn("private", json.dumps(telemetry.spans[0].attributes))
+        backend.close()
     def test_backend_opens_only_semantic_application_entry_controls(self):
         backend = PinnedBrowserUseBackend(
             "http://127.0.0.1:9222",
