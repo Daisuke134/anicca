@@ -6,6 +6,7 @@ const fs = require("node:fs");
 const { createHash } = require("node:crypto");
 
 const { runNativeConnectorPass } = require("../../apps/life-manager/lib/connector-native-runtime.js");
+const { createGhIssueClient } = require("../../apps/life-manager/lib/feedback-to-issue.js");
 const { recordContinuation } = require("./lib/native-state.js");
 const { loadConnectorEnv } = require("./lib/load-connector-env.js");
 const {
@@ -467,6 +468,67 @@ function recordSelfHealIncident(stateDir, bounded) {
   fs.appendFileSync(file, `${JSON.stringify(incident)}\n`, { encoding: "utf8", mode: 0o600 });
 }
 
+async function deliverPendingSelfHealIncident(options, stateDir) {
+  const incidentFile = path.join(stateDir, "self-heal-incidents.jsonl");
+  const receiptFile = path.join(stateDir, "self-heal-issue-receipts.jsonl");
+  let incidents = "";
+  let receipts = "";
+  try { incidents = fs.readFileSync(incidentFile, "utf8"); }
+  catch (error) { if (!error || error.code !== "ENOENT") throw error; }
+  try { receipts = fs.readFileSync(receiptFile, "utf8"); }
+  catch (error) { if (!error || error.code !== "ENOENT") throw error; }
+  if (incidents.length > 1_000_000 || receipts.length > 1_000_000) unavailable();
+  const delivered = new Set(receipts.split(/\r?\n/).filter(Boolean).map((line) => {
+    try { return JSON.parse(line).fingerprint; } catch { unavailable(); }
+  }));
+  let incident = null;
+  for (const line of incidents.split(/\r?\n/).filter(Boolean)) {
+    let value;
+    try { value = JSON.parse(line); } catch { unavailable(); }
+    if (!delivered.has(value.fingerprint)) { incident = value; break; }
+  }
+  if (!incident) return;
+  if (
+    incident.schema_version !== 1
+    || !/^sha256:[0-9a-f]{64}$/.test(String(incident.fingerprint || ""))
+    || incident.component !== "connector-native"
+    || incident.incident_class !== "apply_blocked_by_suppression"
+    || incident.safe_reason !== "LUMA_FORM_INPUT_REQUIRED"
+  ) unavailable();
+  const marker = `lm-connector-incident:${incident.fingerprint}`;
+  const issue = {
+    title: "[error] Connector apply blocked by suppression",
+    body: [
+      "## Privacy-safe Connector incident",
+      "",
+      `Safe reason: ${incident.safe_reason}`,
+      `Selection telemetry: ${JSON.stringify(incident.selection)}`,
+      "",
+      "## Acceptance",
+      "",
+      "- Add a failing regression test that reproduces Apply attempt count remaining zero.",
+      "- Fix the smallest root cause and keep Connector tests green.",
+      "- Verify the real Connector reaches Apply, submit, readback, and screenshot evidence.",
+      "- Do not add raw event content, identity, contact, cookie, or secret data.",
+      "",
+      `<!-- ${marker} -->`,
+    ].join("\n"),
+    labels: ["lm:type:self-heal"],
+  };
+  const client = options.issueClient || createGhIssueClient();
+  await client.ensureLabel("lm:type:self-heal");
+  const existing = await client.findByMarker(marker);
+  const resolved = existing || await client.create(issue);
+  const issueUrl = String(resolved && resolved.url || "");
+  if (!/^https:\/\/github\.com\/Daisuke134\/life-manager\/issues\/[1-9][0-9]*$/.test(issueUrl)) unavailable();
+  fs.appendFileSync(receiptFile, `${JSON.stringify({
+    schema_version: 1,
+    fingerprint: incident.fingerprint,
+    issue_url: issueUrl,
+    observed_at: new Date().toISOString(),
+  })}\n`, { encoding: "utf8", mode: 0o600 });
+}
+
 function appendDeliveryReceipt(stateDir, write) {
   if (write && write.telegram_provider_id && write.event_ref && write.calendar_event_ref) {
     const hasNewEvidence = Boolean(write.artifact_sha256 || write.telegram_photo_provider_id);
@@ -553,6 +615,7 @@ async function runNativePass(options = {}) {
     });
     const bounded = boundedResult(result);
     recordLastResult(stateDir, bounded);
+    await deliverPendingSelfHealIncident(options, stateDir);
     if (bounded.complete) {
       return Object.freeze({ exitCode: 0, status: "complete" });
     }

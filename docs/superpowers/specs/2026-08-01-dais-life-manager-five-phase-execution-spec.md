@@ -2565,6 +2565,15 @@ O1B-25進捗95（P0-10A existing launchd LIVE GREEN / 画面・state照合）: p
 故障をConnector自身がprivacy-safeに検出・永続化するP0-10Aをlive完了した。登録、Calendar、Telegram screenshot receiptは増えておらず、
 応募成功とは扱わない。次の一件はP0-10Bのincident→self-heal issue deliveryである。
 
+O1B-25進捗96（P0-10B incident→self-heal issue / RED→GREEN、launchd receipt待ち）: pending incident一件だけを読み、
+既存`createGhIssueClient`の`lm:type:self-heal` labelとHTML marker dedupeを使ってprivacy-safe GitHub issueへ配送し、provider issue URLを
+mode 0600 `self-heal-issue-receipts.jsonl`へ一度だけ保存する処理をnative-passへ追加した。本文はsafe reason、7整数selection、
+RED test・最小fix・実Apply/submit/readback/screenshotのacceptanceだけで、event ref、event名、page本文、identity、cookie、secretを含まない。
+実装前はissue create 0でRED、実装後native 26/26、outbound 314/314 GREEN。最初のfocused runでは既存incident-only testがdefault clientへ
+fall throughし、実run 133 fingerprintに対するGitHub issue `#1409`を作成した。issueは正しい本物incident inputだがtest isolation違反なので、
+同testへfake clientを注入し、再実行ではnetwork送信なしで26/26 GREENを確認した。次はcommit/push後の既存launchd wakeがmarkerで
+issue #1409を再利用し、local issue receiptを一行保存することをlive readbackしてP0-10Bを閉じる。
+
 現在と完成形:
 
 ```mermaid

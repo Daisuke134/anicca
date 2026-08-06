@@ -119,6 +119,12 @@ test("native-pass persists one privacy-safe self-heal incident when suppression 
       stateDir,
       ownerToken: OWNER_TOKEN,
       config: { tenantId: "dais-local" },
+      issueClient: {
+        async ensureLabel() {},
+        async findByMarker() {
+          return { url: "https://github.com/Daisuke134/life-manager/issues/2467" };
+        },
+      },
       runRuntime: async () => runtimeResult,
     };
     await runNativePass(options);
@@ -137,6 +143,68 @@ test("native-pass persists one privacy-safe self-heal incident when suppression 
     assert.match(incidents[0].fingerprint, /^sha256:[0-9a-f]{64}$/);
     assert.equal(JSON.stringify(incidents[0]).includes("private-event-ref"), false);
     assert.equal(fs.statSync(path.join(stateDir, "self-heal-incidents.jsonl")).mode & 0o777, 0o600);
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test("native-pass delivers one pending incident to the self-heal issue intake and stores its receipt", async () => {
+  const directory = temporaryDirectory();
+  const stateDir = path.join(directory, "state");
+  const calls = [];
+  const issueClient = {
+    async ensureLabel(label) { calls.push(["label", label]); },
+    async findByMarker(marker) { calls.push(["find", marker]); return null; },
+    async create(issue) {
+      calls.push(["create", issue]);
+      return { url: "https://github.com/Daisuke134/life-manager/issues/2468" };
+    },
+  };
+  const runtimeResult = {
+    status: "incomplete",
+    coverage: { counts: { open: 19, covered_new: 2 } },
+    continuation: { status: "continue" },
+    selection: {
+      inventory_event_count: 28,
+      calendar_gate_event_count: 24,
+      calendar_eligible_count: 6,
+      luna_ranked_count: 6,
+      spend_ordered_count: 4,
+      unsuppressed_count: 0,
+      write_attempt_count: 0,
+    },
+  };
+  try {
+    fs.mkdirSync(stateDir, { recursive: true });
+    fs.writeFileSync(path.join(stateDir, "candidate-attempts.jsonl"), `${JSON.stringify({
+      event_ref: "luma-event://event/private-event-ref",
+      outcome: "known_no_effect",
+      safe_reason: "LUMA_FORM_INPUT_REQUIRED",
+      observed_at: "2026-08-06T01:05:01.993Z",
+      retry_after: null,
+    })}\n`, { mode: 0o600 });
+    const options = {
+      repoRoot: REPO_ROOT, stateDir, ownerToken: OWNER_TOKEN,
+      config: { tenantId: "dais-local" }, issueClient,
+      runRuntime: async () => runtimeResult,
+    };
+    await runNativePass(options);
+    await runNativePass(options);
+
+    assert.equal(calls.filter(([name]) => name === "create").length, 1);
+    const created = calls.find(([name]) => name === "create")[1];
+    assert.deepEqual(created.labels, ["lm:type:self-heal"]);
+    assert.match(created.title, /^\[error\] Connector apply blocked by suppression/);
+    assert.match(created.body, /LUMA_FORM_INPUT_REQUIRED/);
+    assert.match(created.body, /<!-- lm-connector-incident:sha256:[0-9a-f]{64} -->/);
+    assert.equal(created.body.includes("private-event-ref"), false);
+
+    const receipts = fs.readFileSync(path.join(stateDir, "self-heal-issue-receipts.jsonl"), "utf8")
+      .trim().split("\n").map(JSON.parse);
+    assert.equal(receipts.length, 1);
+    assert.equal(receipts[0].issue_url, "https://github.com/Daisuke134/life-manager/issues/2468");
+    assert.match(receipts[0].fingerprint, /^sha256:[0-9a-f]{64}$/);
+    assert.equal(fs.statSync(path.join(stateDir, "self-heal-issue-receipts.jsonl")).mode & 0o777, 0o600);
   } finally {
     fs.rmSync(directory, { recursive: true, force: true });
   }
