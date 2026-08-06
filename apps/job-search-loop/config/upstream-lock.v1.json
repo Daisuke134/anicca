@@ -19,6 +19,7 @@
         "content_sha256": "0d96a4ff68ad6d4b6f1f30f713b18d5184912ba8dd389f86aa7710db079abcb0"
       },
       "candidate_files": {
+        "src/applypilot/config/employers.yaml": {"blob_sha": "528732e7bebdc0541b538d6e95590e4b651e399b", "size": 7863},
         "src/applypilot/discovery/jobspy.py": {"blob_sha": "b5e54ff44239eb3f007198fefbb1aa52e9013fa0", "size": 16291},
         "src/applypilot/discovery/workday.py": {"blob_sha": "cef69fe45781d42bff222c5a38d6fbc0c0ca125b", "size": 18417},
         "src/applypilot/discovery/smartextract.py": {"blob_sha": "cf49a9a2d53e221de782ce91174e899d365956c6", "size": 45110},

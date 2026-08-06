@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "source": {
+    "repository": "https://github.com/Pickle-Pixel/ApplyPilot",
+    "commit": "4a8d521f67f5139811c0a910ef37410f8e6d836a",
+    "path": "src/applypilot/config/employers.yaml",
+    "blob_sha": "528732e7bebdc0541b538d6e95590e4b651e399b"
+  },
+  "boards": [
+    {"company": "Adobe", "tenant": "adobe", "site_id": "external_experienced", "base_url": "https://adobe.wd5.myworkdayjobs.com"},
+    {"company": "Cisco", "tenant": "cisco", "site_id": "Cisco_Careers", "base_url": "https://cisco.wd5.myworkdayjobs.com"},
+    {"company": "Intel", "tenant": "intel", "site_id": "External", "base_url": "https://intel.wd1.myworkdayjobs.com"},
+    {"company": "Mastercard", "tenant": "mastercard", "site_id": "CorporateCareers", "base_url": "https://mastercard.wd1.myworkdayjobs.com"},
+    {"company": "NVIDIA", "tenant": "nvidia", "site_id": "NVIDIAExternalCareerSite", "base_url": "https://nvidia.wd5.myworkdayjobs.com"},
+    {"company": "PayPal", "tenant": "paypal", "site_id": "jobs", "base_url": "https://paypal.wd1.myworkdayjobs.com"},
+    {"company": "Salesforce", "tenant": "salesforce", "site_id": "External_Career_Site", "base_url": "https://salesforce.wd12.myworkdayjobs.com"},
+    {"company": "Uber", "tenant": "uber", "site_id": "uberCareers", "base_url": "https://uber.wd5.myworkdayjobs.com"},
+    {"company": "Workday", "tenant": "workday", "site_id": "Workday", "base_url": "https://workday.wd5.myworkdayjobs.com"}
+  ]
+}

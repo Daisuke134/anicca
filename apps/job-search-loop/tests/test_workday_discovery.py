@@ -1,6 +1,10 @@
+import json
+import tempfile
 import unittest
+from pathlib import Path
 
-from job_search_loop.workday_discovery import search_workday_board
+from job_search_loop.candidate_queue import CandidateQueue
+from job_search_loop.workday_discovery import ingest_workday_boards, search_workday_board
 
 
 BOARD = {
@@ -12,6 +16,17 @@ BOARD = {
 
 
 class WorkdayDiscoveryTests(unittest.TestCase):
+    def test_registry_is_pinned_to_applypilot_and_contains_global_employers(self):
+        registry = json.loads(
+            (Path(__file__).resolve().parents[1] / "config" / "workday-boards.v1.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(registry["source"]["commit"], "4a8d521f67f5139811c0a910ef37410f8e6d836a")
+        self.assertEqual(registry["source"]["blob_sha"], "528732e7bebdc0541b538d6e95590e4b651e399b")
+        self.assertEqual(
+            {board["company"] for board in registry["boards"]},
+            {"Adobe", "Cisco", "Intel", "Mastercard", "NVIDIA", "PayPal", "Salesforce", "Uber", "Workday"},
+        )
+
     def test_posts_bounded_pages_and_emits_direct_official_urls(self):
         calls = []
 
@@ -74,6 +89,35 @@ class WorkdayDiscoveryTests(unittest.TestCase):
         self.assertEqual(result["results"], [])
         self.assertEqual(result["inactive_count"], 1)
         self.assertEqual(result["malformed_count"], 2)
+
+    def test_registry_results_use_existing_queue_and_restart_replay_is_idempotent(self):
+        def request(_url, *, payload, **_kwargs):
+            return {
+                "total": 2,
+                "jobPostings": [
+                    {"title": "AI Engineer", "externalPath": "/job/Japan/AI-Engineer_R1", "locationsText": "Tokyo"},
+                    {"title": "Closed", "externalPath": "/job/closed", "isListed": False},
+                ],
+            }
+
+        with tempfile.TemporaryDirectory() as directory:
+            queue = CandidateQueue(Path(directory) / "candidates.sqlite3")
+            try:
+                first = ingest_workday_boards(
+                    queue, "AI Japan", query_family="six_figure_japan", boards=[BOARD], request=request
+                )
+                replay = ingest_workday_boards(
+                    queue, "AI Japan", query_family="six_figure_japan", boards=[BOARD], request=request
+                )
+                pending = queue.pending(limit=10)
+            finally:
+                queue.close()
+
+        self.assertEqual(first["inserted_count"], 1)
+        self.assertEqual(first["inactive_count"], 1)
+        self.assertEqual(replay["inserted_count"], 0)
+        self.assertEqual(replay["duplicate_count"], 1)
+        self.assertEqual(pending[0]["source"], "official_workday:NVIDIA")
 
 
 if __name__ == "__main__":

@@ -3787,7 +3787,7 @@ OpenTelemetry decision and primary sources:
         `config/applypilot-adoption.v1.json` retains `copied_paths: []` and records the
         MIT implementation path plus its exact upstream contract path. The combined
         JobSpy/adoption focused suite passes 13/13.
-    - [ ] `L-49K5B2` — Adapt Workday CXS and direct-career discovery behind the same
+    - [x] `L-49K5B2` — Adapt Workday CXS and direct-career discovery behind the same
       provider contract. Use the pinned employer/site patterns, bound pagination and
       timeouts, retain official posting provenance, and enqueue only through the
       existing queue. Prove restart replay and expired/unlisted classification.
@@ -3802,9 +3802,16 @@ OpenTelemetry decision and primary sources:
           caps both pages and results. Active rows retain official Workday provenance;
           inactive and malformed rows are counted but not emitted. Focused provider
           tests pass 3/3.
-      - [ ] `L-49K5B2b` — Pin the adopted employer/site registry, pass B2a results
+      - [x] `L-49K5B2b` — Pin the adopted employer/site registry, pass B2a results
         through the existing `CandidateQueue`, and prove canonical dedupe, official
         provenance, inactive exclusion, and restart replay without a second database.
+        - Evidence: `config/workday-boards.v1.json` pins nine global employers to
+          ApplyPilot employer-registry blob
+          `528732e7bebdc0541b538d6e95590e4b651e399b`. `ingest_workday_boards`
+          converts only active rows into `official_workday:<company>` candidates and
+          calls the existing `CandidateQueue`; a second identical run inserts zero and
+          records the canonical duplicate. No ApplyPilot database, poller, or scheduler
+          is imported. Workday focused tests pass 5/5.
     - [ ] `L-49K5B3` — Adapt SmartExtract and detail enrichment behind the existing
       normalized candidate contract. Bound fetched content, retain source URL and
       extraction provenance, and never let enrichment create a second job record or
