@@ -1684,6 +1684,24 @@ stateDiagram-v2
 
 The legacy worker continues posting during `Inventoried`, `Mapped`, and `Shadowing`. At `Handoff`, both runtimes may compute but only the account lease holder may call Postiz. No code path disables a legacy schedule before a successful canonical native receipt and a tested rollback.
 
+### 6.3 Repository map and anti-reinvention rule
+
+The current system spans three repositories. This is migration reality, not the desired final architecture.
+
+| Repository | Current source of truth | Target disposition |
+|---|---|---|
+| `/Users/anicca/anicca` (`life-manager`) | Spec 27, canonical Marketing Engine target, product/account registry, truth/attribution/reporting code, future local/cloud control plane | Sole code and durable runtime SSOT |
+| `/Users/anicca/profitable-claude` | Existing product-independent `marketing/engine`, contracts, producer manifests, learning controller, agent runner and launchd wrappers still invoked by Life Manager | Import the proven implementation and tests, preserve behavior, then remove runtime imports |
+| `/Users/anicca/.openclaw` (`anicca-dais`) | Live OpenClaw cron store, producer scripts/assets, account histories, credentials and legacy operational state | Continue external effects during shadow; import config/assets/history and hand off each account; never bulk-delete or bulk-disable |
+
+Life Manager currently contains real cross-repository dependencies, including the profitable-claude agent runner/dashboard engine and OpenClaw metric, mining, report, environment and producer paths. “The code is already in Life Manager” is false until an executable dependency scan returns zero production imports from both source repositories.
+
+Before implementing any marketing component, the agent MUST search, in order: this spec and `skills/earn/marketing-engine/README.md`; Life Manager source; `profitable-claude/marketing`, `profitable-claude/config/openclaw`, and relevant tests; then `anicca-dais` cron, skills, workspace assets and state. If an implementation exists, the work is migration/adaptation with characterization tests—not greenfield replacement. Any genuinely new component records why none of the three repositories already satisfies its contract.
+
+The final architecture does not reconnect a second self-improvement brain to OpenClaw and later migrate it again. The shared decision/learning engine moves once into Life Manager; during account shadow it reads copied/imported evidence while the legacy producer remains the sole publisher. This preserves daily output without adding another durable brain or write-back location.
+
+Current runtime evidence supports that direction: `ai.anicca.self-improve-evolve` already invokes Life Manager's `skills/earn/marketing-engine/report/scheduled_runner.py self-improve` directly. The old `.openclaw/skills/marketing-self-improve/` tree remains as non-running migration residue. It MUST NOT be reactivated and is removed only after verified cutover and rollback expiry.
+
 ## 7. Metric truth contract
 
 The previous loop failed this contract: `account-history.jsonl` had 800 posts with null 6h/24h/48h views; only 40 post-metric snapshots existed; only three posts were mature and measurable, so the scorer correctly had no winners. Gate 3's verified three-day window contained 91 Postiz rows: 73 PUBLISHED and 18 ERROR. All 25 TikTok PUBLISHED rows exposed only a profile `releaseURL`; their stored `releaseId` values were publish-job tokens rather than safe native video IDs. Twenty-three were independently resolved through a unique account + full normalized caption + ±15-minute match, while two duplicate-caption rows remain ambiguous. Prefix matching and release-token parsing are forbidden.

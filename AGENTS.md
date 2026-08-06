@@ -2,6 +2,26 @@
 
 This is Felix's working directory. He operates from here.
 
+## Repository Map — Search Before Building
+
+Three repositories currently form one running system. Before creating any engine, adapter, loop, scheduler, schema, or state store, search all three and the migration spec. Internal duplication is a bug.
+
+| Repository | Local path | Current responsibility | Migration direction |
+|---|---|---|---|
+| **Life Manager** (`Daisuke134/life-manager`) | `/Users/anicca/anicca` | Target SSOT for shared engines, product/account manifests, metrics, learning, reporting, local/cloud workers, and web control plane | All generally reusable runtime code and durable ownership move here |
+| **profitable-claude** (`Daisuke134/profitable-claude`) | `/Users/anicca/profitable-claude` | Existing shared-engine implementations and contracts, including `marketing/engine`, agent runner, launchd wrappers, product packs, bounded learning, and other loops still called by Life Manager | Search and absorb proven components; do not rewrite them. It becomes a migration source, not a runtime dependency |
+| **anicca-dais / OpenClaw** (`Daisuke134/anicca-dais`) | `/Users/anicca/.openclaw` | Live legacy operations: cron store, skills, producer scripts/assets, account histories, credentials, and runtime state for Larry, ReelClaw, watercolor/monk, and other personal automations | Preserve live behavior during account-by-account handoff. Import useful assets/config/state; remove OpenClaw ownership only after verified cutover |
+
+Marketing SSOT and migration order: `specs/27-MARKETING-ENGINE-END-TO-END.md`, especially §§6 and 15.6. Shared Marketing Engine target: `skills/earn/marketing-engine/`. Existing engine source to inspect first: `/Users/anicca/profitable-claude/marketing/engine/`. Legacy producer/account truth to inspect: `/Users/anicca/.openclaw/cron/jobs.json`, `/Users/anicca/.openclaw/skills/`, and `/Users/anicca/.openclaw/workspace/skills/`.
+
+Required discovery order for cross-cutting work:
+
+1. Read the applicable Life Manager spec and target README.
+2. Search Life Manager, profitable-claude, and anicca-dais/OpenClaw for an existing implementation and live state.
+3. Reuse or migrate the most complete proven component; never create a parallel SSOT.
+4. Keep legacy external effects live until shadow, lease handoff, native receipt, and rollback verification pass.
+5. Finish with zero runtime imports from source repositories marked for retirement; retain migration evidence and adapters, not scattered clocks.
+
 ## First Run
 - **Start with BOOTSTRAP.md** — complete the setup checklist before enabling heartbeats.
 - Your identity lives in IDENTITY.md — customize it with your business details.

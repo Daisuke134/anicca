@@ -2,8 +2,22 @@
 
 **One engine. Many loops. You never reinvent distribution.**
 
-Every marketing loop (capafy, clip, and every future product) runs on this ONE shared engine.
-The engine does all the hard, dangerous, already-solved work — creating IG accounts that survive,
+**Status: migration in progress.** The target is one engine, but production is still split across Life Manager, profitable-claude, and anicca-dais/OpenClaw. Do not interpret this README as proof that a listed capability has already cut over; Spec 27 and live scheduler/dependency evidence decide that.
+
+## Repository map and current SSOT
+
+This directory is the **target canonical home**. Do not build a second shared engine here without first importing the proven pieces that already exist elsewhere.
+
+| Source | What exists there now | Rule |
+|---|---|---|
+| `~/profitable-claude/marketing/engine/` | product/channel/slice registry, contracts, producer adapters, bounded learning, canary/weight-consumption receipts, dashboard CLI | Absorb and preserve these contracts here; do not reimplement them |
+| `~/.openclaw/` (`anicca-dais`) | live cron store, Larry/ReelClaw/watercolor/monk scripts and assets, Postiz identities, histories and legacy state | Treat as live migration input; never disable in bulk or infer account mapping |
+| `~/anicca/skills/earn/marketing-engine/` | target registry, truth plane, attribution, reporting, scheduler inventory, publisher/metric adapters | Becomes the only runtime SSOT after account-by-account handoff |
+
+Full mapping and cutover order: `../../../specs/27-MARKETING-ENGINE-END-TO-END.md` §§6 and 15.6. During migration, references to `~/profitable-claude` and `~/.openclaw` are explicit debt, not permission to add new dependencies.
+
+Every marketing loop (capafy, clip, and every future product) ultimately runs on this ONE shared engine.
+The completed engine owns all the hard, dangerous, already-solved work — creating IG accounts that survive,
 warming them, posting durably, measuring reach, self-improving, reporting. A loop is just a
 **manifest**: the 4 things that are actually different per product.
 
@@ -88,6 +102,4 @@ agent owns (an affiliate tag owned by a human must be replaced before live).
 A loop keeps only what is genuinely unique: its selector (what to promote), its copy/voiceover
 judgment, and its content adapter (how the video/slideshow is built). Everything else is here.
 
-**Future**: this engine migrates to `profitable-claude` as OSS so anyone — human or AI — can stand
-up a self-improving marketing loop by writing a manifest. A meta-loop ("advertise product X") will
-generate the manifest itself → loops that build loops.
+**Target**: proven shared-engine contracts migrate **from** `profitable-claude` and live producer/account inputs migrate **from** `anicca-dais/OpenClaw` into this directory. A product becomes a manifest and asset pack; local launchd and cloud workers execute the same engine. No second scheduler or product-specific engine is created.
