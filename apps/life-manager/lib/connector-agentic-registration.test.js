@@ -13,6 +13,7 @@ test("pins Terra to the parent-owned CDP target receipt", async () => {
       schema_version: 1,
       endpoint: "http://127.0.0.1:9222",
       owner_token: "owner-token-123",
+      generation: 1,
       target_id: "OWNED123",
       page_websocket: "ws://127.0.0.1:9222/devtools/page/OWNED123",
       baseline_target_ids: ["BASELINE"],
@@ -51,6 +52,24 @@ test("refuses to start Terra without a valid parent-owned receipt", async () => 
     runConnectorAgenticRegistration({
       canonicalUrl: "https://luma.com/event-a",
       tabOwnerReceipt: null,
+    }, { runAgentRunner: async () => { throw new Error("must not run"); } }),
+    /unavailable/,
+  );
+
+  await assert.rejects(
+    runConnectorAgenticRegistration({
+      canonicalUrl: "https://luma.com/event-a",
+      tabOwnerReceipt: {
+        schema_version: 1,
+        endpoint: "http://127.0.0.1:9222",
+        owner_token: "owner-token-123",
+        generation: 0,
+        target_id: "OWNED123",
+        page_websocket: "ws://127.0.0.1:9222/devtools/page/OWNED123",
+        baseline_target_ids: [],
+        canonical_url: "https://luma.com/event-a",
+        observed_at: "2026-08-06T01:02:03.000Z",
+      },
     }, { runAgentRunner: async () => { throw new Error("must not run"); } }),
     /unavailable/,
   );

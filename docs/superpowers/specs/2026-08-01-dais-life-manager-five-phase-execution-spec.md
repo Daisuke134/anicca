@@ -2833,14 +2833,24 @@ Luma URL、別owner、stale fenceを拒否する。`connector-tab-owner`は注�
 主張しない。TDDはmodule不在RED、lease未接続REDを実測後、focused ownership/provider関連28/28、pretest 12/12、Connector/outbound
 320/320がfresh GREEN、失敗0件である。
 
+O1B-25進捗122（16B再補正 Task 2 parent-created target lifecycle / RED→GREEN）: Connector専用
+`connector-browser-target-controller.js`を追加し、親が既存CloakBrowser `:9222`のdefault authenticated contextへ
+`Target.createTarget`を一回だけ実行し、返されたtarget IDとPlaywright pageをboundedに一致確認する。daily-driverのproduction railは
+そのexact targetをdurable leaseへclaimし、renderer probe、navigation前heartbeat、親task/readback後heartbeatを行い、finallyで
+owner token/generationが一致するtargetだけを親がclose/releaseする。production runtimeはConnector evidence directory内の
+`target-leases.json`を渡すため、旧`context.newPage()` receipt-only branchを使わない。Terra側はまだendpointを受け取りinline Nodeと
+反復`connectOverCDP()`を行うため、single-page agent capabilityとlive effectはTask 3まで未完である。controller/lease/owner/driver/
+agent receipt/runtime/provider focused 48/48、pretest 12/12、ownership testsを常設登録したConnector/outbound 335/335がfresh GREEN、
+失敗0件である。
+
 現在と完成形:
 
 ```mermaid
 flowchart LR
   subgraph NOW[現在]
     N1[Luma 28件] --> N2[候補4件]
-    N2 --> N3[receiptだけのtab-owner]
-    N3 --> N4[Terraが接続codeを即興・反復]
+    N2 --> N3[親がtarget作成・durable claim]
+    N3 --> N4[Terraは接続codeを即興・反復]
     N4 --> N5[submit・親readbackは到達]
     N5 --> N6[mail/QRでCalendar前に停止]
   end

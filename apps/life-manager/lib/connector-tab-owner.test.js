@@ -132,3 +132,36 @@ test("does not issue an ownership receipt until the durable target lease claims 
   assert.equal(receipt.generation, 7);
   assert.equal(receipt.target_id, fence.target_id);
 });
+
+test("claims a parent-created exact target and delegates its fenced lifecycle", async () => {
+  const calls = [];
+  const fence = Object.freeze({
+    schema_version: 1,
+    owner_token: "connector-owner-token",
+    generation: 3,
+    target_id: "PARENT_TARGET",
+    page_websocket: "ws://127.0.0.1:9222/devtools/page/PARENT_TARGET",
+    canonical_url: "https://luma.com/tokyo-ai",
+    claimed_at: "2026-08-06T01:02:03.000Z",
+    heartbeat_at: "2026-08-06T01:02:03.000Z",
+  });
+  const targetLease = {
+    async claim(input) { calls.push(["claim", input]); return fence; },
+    async heartbeat(input) { calls.push(["heartbeat", input]); return fence; },
+    async probe(input) { calls.push(["probe", input]); return true; },
+    async release(input) { calls.push(["release", input]); return true; },
+    async reapStale(input) { calls.push(["reap", input]); return { reaped_target_ids: [], retained_target_ids: [] }; },
+  };
+  const owner = createConnectorTabOwner({ targetLease, listTargets: async () => [] });
+
+  const receipt = await owner.claimExact({
+    canonicalUrl: "https://luma.com/tokyo-ai",
+    targetId: "PARENT_TARGET",
+    pageWebsocket: "ws://127.0.0.1:9222/devtools/page/PARENT_TARGET",
+  });
+  assert.equal(receipt.generation, 3);
+  assert.deepEqual(receipt.baseline_target_ids, []);
+  assert.equal(await owner.probe(receipt), true);
+  assert.equal(await owner.release(receipt), true);
+  assert.deepEqual(calls.map(([name]) => name), ["claim", "probe", "release"]);
+});

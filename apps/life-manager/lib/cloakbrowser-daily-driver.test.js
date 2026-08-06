@@ -231,3 +231,58 @@ test("Docker may resolve the same :9222 owner to a private host IP but never ano
     /resolved endpoint/i,
   );
 });
+
+test("uses a parent-created fenced target and releases it only after task readback", async () => {
+  const fx = fixture();
+  const calls = fx.calls;
+  const receipt = Object.freeze({
+    target_id: "PARENT_TARGET",
+    owner_token: "connector-owner-token",
+    generation: 1,
+  });
+  const driver = createCloakBrowserDailyDriver({
+    connectOverCDP: fx.connectOverCDP,
+    createTargetOwnership(browser) {
+      calls.push(["create-target-ownership", browser === undefined ? "missing" : "browser"]);
+      return {
+        controller: {
+          async create() {
+            calls.push(["create-target"]);
+            return {
+              target_id: "PARENT_TARGET",
+              page_websocket: "ws://127.0.0.1:9222/devtools/page/PARENT_TARGET",
+              page: fx.ownedPage,
+            };
+          },
+          async close(targetId) { calls.push(["controller-close", targetId]); return true; },
+        },
+        owner: {
+          async claimExact(input) { calls.push(["claim-exact", input]); return receipt; },
+          async heartbeat(input) { calls.push(["heartbeat", input]); return receipt; },
+          async probe(input) { calls.push(["probe", input]); return true; },
+          async release(input) { calls.push(["release", input]); return true; },
+        },
+      };
+    },
+    tabOwnerReceiptPath: "/private/evidence/tab-owner.json",
+  });
+
+  await driver.withLumaPage("https://luma.com/event-a", async (page, metadata) => {
+    calls.push(["task-readback"]);
+    assert.equal(page, fx.ownedPage);
+    assert.equal(metadata.tab_owner_receipt, receipt);
+  });
+
+  assert.equal(calls.some(([name]) => name === "new-page"), false);
+  assert.equal(calls.some(([name]) => name === "close-owned-page"), false);
+  assert.ok(calls.findIndex(([name]) => name === "create-target") < calls.findIndex(([name]) => name === "claim-exact"));
+  assert.ok(calls.findIndex(([name]) => name === "claim-exact") < calls.findIndex(([name]) => name === "goto"));
+  assert.ok(calls.findIndex(([name]) => name === "task-readback") < calls.findIndex(([name]) => name === "release"));
+  assert.equal(calls.filter(([name]) => name === "heartbeat").length, 2);
+  assert.deepEqual(calls.find(([name]) => name === "claim-exact"), ["claim-exact", {
+    canonicalUrl: "https://luma.com/event-a",
+    targetId: "PARENT_TARGET",
+    pageWebsocket: "ws://127.0.0.1:9222/devtools/page/PARENT_TARGET",
+    receiptPath: "/private/evidence/tab-owner.json",
+  }]);
+});

@@ -74,10 +74,10 @@
 - Consumes: `browser.newBrowserCDPSession()`, `Target.createTarget`, Task 1 lease.
 - Produces: `withLumaPage()` metadata containing one fenced `page_websocket`; parent retains the Playwright page and release callback.
 
-- [ ] **Step 1: Write failing tests** proving the parent calls `Target.createTarget` once, claims before navigation actions are delegated, never uses `context.newPage()`, and releases in `finally` after parent readback.
-- [ ] **Step 2: Run focused tests and verify RED:** `cd apps/life-manager && node --test lib/cloakbrowser-daily-driver.test.js lib/connector-native-runtime.test.js`.
-- [ ] **Step 3: Implement the minimal parent target lifecycle** using the default authenticated context, one browser CDP session, bounded target-to-page binding, heartbeat, renderer probe, and parent-only close/release.
-- [ ] **Step 4: Run focused tests and verify GREEN** with the same command.
+- [x] **Step 1: Write failing tests** proving the parent calls `Target.createTarget` once, claims before navigation actions are delegated, never uses `context.newPage()`, and releases in `finally` after parent readback.
+- [x] **Step 2: Run focused tests and verify RED:** `cd apps/life-manager && node --test lib/cloakbrowser-daily-driver.test.js lib/connector-native-runtime.test.js`.
+- [x] **Step 3: Implement the minimal parent target lifecycle** using the default authenticated context, one browser CDP session, bounded target-to-page binding, heartbeat, renderer probe, and parent-only close/release.
+- [x] **Step 4: Run focused tests and verify GREEN** with the same command.
 - [ ] **Step 5: Commit Task 2** with `feat(connector): own browser target lifecycle`.
 
 ### Task 3: Fenced Single-Page Agent Capability and Parent Oracle

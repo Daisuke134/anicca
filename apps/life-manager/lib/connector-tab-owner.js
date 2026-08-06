@@ -140,6 +140,66 @@ function createConnectorTabOwner({
       if (receiptPath !== undefined) writePrivateJson(receiptPath, receipt);
       return receipt;
     },
+    async claimExact({ canonicalUrl, targetId, pageWebsocket, receiptPath } = {}) {
+      if (!targetLease) throw new Error("Connector target lease unavailable");
+      const normalizedCanonicalUrl = normalizedEventUrl(canonicalUrl);
+      const exactTargetId = String(targetId || "");
+      if (!/^[A-Za-z0-9_-]{1,128}$/.test(exactTargetId)
+        || !validPageWebsocket(pageWebsocket, exactTargetId)) {
+        throw new Error("Connector exact target unavailable");
+      }
+      const fence = await targetLease.claim({
+        targetId: exactTargetId,
+        pageWebsocket,
+        canonicalUrl: normalizedCanonicalUrl,
+      });
+      if (
+        !fence || fence.schema_version !== 1
+        || fence.target_id !== exactTargetId
+        || fence.page_websocket !== pageWebsocket
+        || fence.canonical_url !== normalizedCanonicalUrl
+        || typeof fence.owner_token !== "string" || fence.owner_token.length === 0
+        || !Number.isInteger(fence.generation) || fence.generation < 1
+        || !Number.isFinite(Date.parse(fence.claimed_at))
+      ) throw new Error("Connector target lease unavailable");
+      const receipt = Object.freeze({
+        schema_version: 1,
+        endpoint,
+        owner_token: fence.owner_token,
+        generation: fence.generation,
+        target_id: fence.target_id,
+        page_websocket: fence.page_websocket,
+        baseline_target_ids: [],
+        canonical_url: fence.canonical_url,
+        observed_at: fence.claimed_at,
+      });
+      if (receiptPath !== undefined) writePrivateJson(receiptPath, receipt);
+      return receipt;
+    },
+    heartbeat(fence) {
+      if (!targetLease || typeof targetLease.heartbeat !== "function") {
+        throw new Error("Connector target lease unavailable");
+      }
+      return targetLease.heartbeat(fence);
+    },
+    probe(fence) {
+      if (!targetLease || typeof targetLease.probe !== "function") {
+        throw new Error("Connector target lease unavailable");
+      }
+      return targetLease.probe(fence);
+    },
+    release(fence) {
+      if (!targetLease || typeof targetLease.release !== "function") {
+        throw new Error("Connector target lease unavailable");
+      }
+      return targetLease.release(fence);
+    },
+    reapStale(input) {
+      if (!targetLease || typeof targetLease.reapStale !== "function") {
+        throw new Error("Connector target lease unavailable");
+      }
+      return targetLease.reapStale(input);
+    },
   });
 }
 
