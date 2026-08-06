@@ -83,3 +83,5 @@ render "$TEMPLATES/ai.anicca.life-manager-connector-native.plist.template" \
   "$OUTPUT_DIR/ai.anicca.life-manager-connector-native.plist"
 render "$TEMPLATES/ai.anicca.life-manager-connector-native-healthcheck.plist.template" \
   "$OUTPUT_DIR/ai.anicca.life-manager-connector-native-healthcheck.plist"
+render "$TEMPLATES/ai.anicca.life-manager-connector-healer-shadow.plist.template" \
+  "$OUTPUT_DIR/ai.anicca.life-manager-connector-healer-shadow.plist"
