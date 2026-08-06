@@ -2581,6 +2581,20 @@ the resident worker from producing one authoritative application receipt:
     prove ATS failure advances through every eligible route in order, cross-route
     duplicate fencing holds across crashes/replay, and the development session
     cannot mint route action authority.
+    - Local implementation complete; resident proof remains open. A fixed private
+      `route-fixture-request.json` is consumed by the existing hourly launchd before
+      discovery, models, Playwright, or any delivery transport. The same leased
+      browser worker runs a dedicated no-send action with actor/PID/run/lease/fence
+      provenance. Scenario A advances canonical ATS, alternate official URL,
+      accepted recruiting email, and outreach exactly once, records all four as
+      failed, then proves replay has no eligible route. Scenario B persists
+      `action_started`, reopens SQLite as a crash replay, and proves the next route is
+      cross-route fenced. The fixture uses zero external sends; direct
+      Codex/Claude/shell/Python actor names are rejected. Shell syntax passes,
+      focused tests pass 30/30, and the full Job Hunter suite passes 437/437. Next:
+      build/activate an immutable release, write one fixture request, kickstart the
+      existing daily launchd, and inspect its resident receipts before checking this
+      task complete.
 - [ ] **L-49K0C2** — Prove an ATS bot block, CAPTCHA, timeout, or unsupported form
   cannot end an hourly pass. The resident worker records the failure, executes every
   eligible remaining route once, moves to a different supported role during the same

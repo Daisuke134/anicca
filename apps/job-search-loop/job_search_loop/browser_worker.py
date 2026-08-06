@@ -59,6 +59,7 @@ def run_worker(
     materials_root: Path | None = None,
     evidence_dir: Path | None = None,
     pre_submit_runner: Callable[..., dict[str, Any]] | None = None,
+    route_fixture: Path | None = None,
 ) -> dict[str, Any]:
     with exclusive_worker(lock_path):
         owner = json.loads(owner_receipt.read_text(encoding="utf-8"))
@@ -75,9 +76,45 @@ def run_worker(
                 "holder_pid": holder_pid,
                 "lease_id": owner.get("lease_id"),
                 "fence": owner.get("fence"),
+                "actor": "resident_worker",
                 "started_at": started_at,
             },
         )
+        if route_fixture is not None:
+            if evidence_dir is None:
+                raise ValueError("route fixture evidence directory is missing")
+            from .route_fixture import run_no_send_fixture
+
+            result = run_no_send_fixture(
+                request_path=route_fixture,
+                evidence_dir=evidence_dir / "route-fixture",
+                authority={
+                    "actor": "resident_worker",
+                    "worker_pid": os.getpid(),
+                    "run_id": run_id,
+                    "lease_id": owner.get("lease_id"),
+                    "fence": owner.get("fence"),
+                },
+            )
+            _write_private_json(output, result)
+            _write_private_json(
+                worker_receipt,
+                {
+                    "version": 1,
+                    "status": "completed",
+                    "actor": "resident_worker",
+                    "run_id": run_id,
+                    "worker_pid": os.getpid(),
+                    "holder_pid": holder_pid,
+                    "lease_id": owner.get("lease_id"),
+                    "fence": owner.get("fence"),
+                    "started_at": started_at,
+                    "completed_at": datetime.now(timezone.utc).isoformat(),
+                    "route_fixture_status": result["status"],
+                    "send_count": result["send_count"],
+                },
+            )
+            return result
         queue = CandidateQueue(database)
         try:
             summary = queue.summary()
@@ -135,7 +172,7 @@ def run_worker(
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("action", choices=("run",))
+    parser.add_argument("action", choices=("run", "route-fixture"))
     parser.add_argument("--database", type=Path, required=True)
     parser.add_argument("--owner-receipt", type=Path, required=True)
     parser.add_argument("--holder-pid", type=int, required=True)
@@ -147,7 +184,12 @@ def main() -> None:
     parser.add_argument("--profile", type=Path)
     parser.add_argument("--materials-root", type=Path)
     parser.add_argument("--evidence-dir", type=Path)
+    parser.add_argument("--route-fixture", type=Path)
     args = parser.parse_args()
+    if args.action == "route-fixture" and args.route_fixture is None:
+        parser.error("route-fixture action requires --route-fixture")
+    if args.action == "run" and args.route_fixture is not None:
+        parser.error("run action cannot consume --route-fixture")
     run_worker(
         database=args.database,
         owner_receipt=args.owner_receipt,
@@ -160,6 +202,7 @@ def main() -> None:
         profile_path=args.profile,
         materials_root=args.materials_root,
         evidence_dir=args.evidence_dir,
+        route_fixture=args.route_fixture,
     )
     print(json.dumps({"status": "ok", "result_path": str(args.output)}, sort_keys=True))
 
