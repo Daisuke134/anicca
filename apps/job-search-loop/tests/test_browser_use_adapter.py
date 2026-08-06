@@ -36,14 +36,21 @@ class FakeBrowserUseSession:
         self.calls.append(("upload_matches", frame_index, control_index, path))
         return True
 
+    def open_application(self, frame_index, control_index):
+        self.calls.append(("open_application", frame_index, control_index))
+
     def screenshot(self):
         self.calls.append(("screenshot",))
         return b"real-png-bytes"
 
 
 class FakeElement:
-    def __init__(self):
+    def __init__(self, *, tag="input", role="", text=""):
         self.value = ""
+        self.tag = tag
+        self.role = role
+        self.text = text
+        self.click_count = 0
         self._backend_node_id = 17
         self._session_id = "session-1"
         self._client = FakeCDPClient(self)
@@ -51,8 +58,13 @@ class FakeElement:
     async def fill(self, value):
         self.value = value
 
-    async def evaluate(self, _script):
+    async def evaluate(self, script):
+        if "tagName" in script:
+            return json.dumps({"tag": self.tag, "role": self.role, "text": self.text})
         return self.value
+
+    async def click(self):
+        self.click_count += 1
 
 
 class FakeDOM:
@@ -109,6 +121,38 @@ class FakeAsyncBrowserSession:
 
 
 class BrowserUseAdapterTests(unittest.TestCase):
+    def test_backend_opens_only_semantic_application_entry_controls(self):
+        backend = PinnedBrowserUseBackend(
+            "http://127.0.0.1:9222",
+            allowed_domains=["jobs.ashbyhq.com"],
+            version_getter=lambda _: "0.13.7",
+            session_factory=FakeAsyncBrowserSession,
+        )
+        backend.connect()
+        application = FakeElement(tag="a", role="tab", text="Application")
+        backend.session.page.element = application
+
+        backend.open_application(0, 0)
+
+        self.assertEqual(application.click_count, 1)
+        backend.session.page.element = FakeElement(tag="button", text="Submit Application")
+        with self.assertRaisesRegex(BrowserUsePolicyError, "application entry"):
+            backend.open_application(0, 0)
+        backend.close()
+
+    def test_adapter_authorizes_semantic_application_open_but_never_generic_click(self):
+        backend = FakeBrowserUseSession()
+        adapter = AuthorizedBrowserUseAdapter(
+            backend,
+            owner_receipt={"lease_id": "lease-1", "fence": 7, "holder_pid": 42},
+        )
+
+        adapter.open_application(0, 3)
+
+        self.assertEqual(backend.calls[-1], ("open_application", 0, 3))
+        with self.assertRaisesRegex(BrowserUsePolicyError, "not authorized"):
+            adapter.perform("click", 0, 3)
+
     def test_pinned_backend_runs_async_browser_session_on_one_bridge(self):
         backend = PinnedBrowserUseBackend(
             "http://127.0.0.1:9222",

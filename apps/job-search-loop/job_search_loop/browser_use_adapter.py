@@ -170,6 +170,27 @@ class PinnedBrowserUseBackend:
         value = self.read_value(frame_index, control_index)
         return Path(value.replace("\\", "/")).name == Path(path).name
 
+    def open_application(self, frame_index: int, control_index: int) -> None:
+        element = self._element(frame_index, control_index)
+        metadata_json = self._run(
+            element.evaluate(
+                "() => JSON.stringify({"
+                "tag: (this.tagName || '').toLowerCase(),"
+                "role: this.getAttribute('role') || '',"
+                "text: (this.innerText || this.textContent || '').replace(/\\s+/g, ' ').trim()"
+                "})"
+            )
+        )
+        metadata_value = json.loads(str(metadata_json))
+        tag = str(metadata_value.get("tag") or "").casefold()
+        role = str(metadata_value.get("role") or "").casefold()
+        text = " ".join(str(metadata_value.get("text") or "").casefold().split())
+        is_application_tab = tag == "a" and role == "tab" and text == "application"
+        is_apply_control = tag in {"a", "button"} and text == "apply for this job"
+        if not (is_application_tab or is_apply_control):
+            raise BrowserUsePolicyError("Browser Use control is not an application entry")
+        self._run(element.click())
+
     def screenshot(self) -> bytes:
         value = self._run(self.session.take_screenshot())
         if not isinstance(value, bytes):
@@ -191,7 +212,10 @@ class AuthorizedBrowserUseAdapter:
     """Expose Browser Use only for deterministic pre-submit browser operations."""
 
     authorized_actions = frozenset(
-        {"navigate", "snapshot", "fill", "read_value", "upload", "upload_matches", "screenshot"}
+        {
+            "navigate", "snapshot", "fill", "read_value", "upload", "upload_matches",
+            "open_application", "screenshot",
+        }
     )
     evidence_stages = frozenset({"before", "after", "terminal"})
 
@@ -235,6 +259,9 @@ class AuthorizedBrowserUseAdapter:
 
     def upload_matches(self, frame_index: int, control_index: int, path: str) -> bool:
         return bool(self.perform("upload_matches", frame_index, control_index, path))
+
+    def open_application(self, frame_index: int, control_index: int) -> None:
+        self.perform("open_application", frame_index, control_index)
 
     def capture_evidence(self, stage: str, directory: Path) -> dict[str, Any]:
         if stage not in self.evidence_stages:
