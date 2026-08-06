@@ -9,9 +9,62 @@ LOCK = ROOT / "config" / "upstream-lock.v1.json"
 ADOPTION = ROOT / "config" / "upstream-adoption.v1.json"
 MASTER_DELTA = ROOT / "config" / "upstream-master-delta.v1.json"
 RUNTIME_ADOPTION = ROOT / "config" / "upstream-runtime-adoption.v1.json"
+APPLYPILOT_ADOPTION = ROOT / "config" / "applypilot-adoption.v1.json"
 
 
 class UpstreamLockTests(unittest.TestCase):
+    def test_applypilot_commit_is_content_addressed_and_agpl_licensed(self):
+        data = json.loads(LOCK.read_text(encoding="utf-8"))
+        upstream = data["upstreams"]["applypilot"]
+
+        self.assertEqual(upstream["repository"], "https://github.com/Pickle-Pixel/ApplyPilot")
+        self.assertEqual(upstream["package_version"], "0.3.0")
+        self.assertEqual(upstream["commit_sha"], "4a8d521f67f5139811c0a910ef37410f8e6d836a")
+        self.assertEqual(upstream["tree_sha"], "a81d5265f4313aeadc9da0099974ea2beeb90657")
+        self.assertEqual(upstream["file_count"], 40)
+        self.assertEqual(upstream["license"]["spdx"], "AGPL-3.0-only")
+        self.assertEqual(upstream["license"]["blob_sha"], "be3f7b28e564e7dd05eaf59d64adba1a4065ac0e")
+        self.assertEqual(
+            upstream["license"]["content_sha256"],
+            "0d96a4ff68ad6d4b6f1f30f713b18d5184912ba8dd389f86aa7710db079abcb0",
+        )
+        self.assertEqual(
+            upstream["archive"]["content_sha256"],
+            "951f7cf084023ddb4648496f29987ede848e33c64fbaf36468880dc3557bc9d1",
+        )
+
+    def test_applypilot_adoption_ledger_separates_planned_agpl_code_from_mit_monorepo(self):
+        data = json.loads(APPLYPILOT_ADOPTION.read_text(encoding="utf-8"))
+
+        self.assertEqual(data["schema_version"], 1)
+        self.assertEqual(data["upstream_commit"], "4a8d521f67f5139811c0a910ef37410f8e6d836a")
+        self.assertEqual(data["license_boundary"]["upstream_spdx"], "AGPL-3.0-only")
+        self.assertEqual(data["license_boundary"]["monorepo_spdx"], "MIT")
+        self.assertEqual(data["license_boundary"]["derived_code_root"], "vendor/applypilot-derived")
+        self.assertFalse(data["license_boundary"]["relicense_unrelated_monorepo"])
+        self.assertEqual(data["copied_paths"], [])
+
+        components = {item["id"]: item for item in data["components"]}
+        self.assertEqual(
+            set(components),
+            {
+                "jobspy_discovery", "workday_discovery", "smartextract_discovery",
+                "detail_enrichment", "site_patterns", "generic_form_classification",
+                "model_reported_applied", "permission_bypass", "manual_ats_skip",
+                "applypilot_database", "applypilot_scheduler", "applypilot_browser_owner",
+            },
+        )
+        for item in components.values():
+            self.assertIn(item["decision"], {"adapt", "supersede"})
+            self.assertTrue(item["source_paths"])
+            self.assertTrue(item["local_authority"].strip())
+            self.assertIn(item["owner_task"], {"L-49K5B", "L-49K5C"})
+        for component_id in {
+            "model_reported_applied", "permission_bypass", "manual_ats_skip",
+            "applypilot_database", "applypilot_scheduler", "applypilot_browser_owner",
+        }:
+            self.assertEqual(components[component_id]["decision"], "supersede")
+
     def test_ai_job_search_v130_is_content_addressed_and_licensed(self):
         data = json.loads(LOCK.read_text(encoding="utf-8"))
         upstream = data["upstreams"]["mads-lorentzen-ai-job-search"]

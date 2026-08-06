@@ -1,6 +1,38 @@
 {
   "schema_version": 1,
   "upstreams": {
+    "applypilot": {
+      "repository": "https://github.com/Pickle-Pixel/ApplyPilot",
+      "package_version": "0.3.0",
+      "commit_sha": "4a8d521f67f5139811c0a910ef37410f8e6d836a",
+      "committed_at": "2026-03-08T19:12:34Z",
+      "tree_sha": "a81d5265f4313aeadc9da0099974ea2beeb90657",
+      "file_count": 40,
+      "archive": {
+        "url": "https://api.github.com/repos/Pickle-Pixel/ApplyPilot/tarball/4a8d521f67f5139811c0a910ef37410f8e6d836a",
+        "content_sha256": "951f7cf084023ddb4648496f29987ede848e33c64fbaf36468880dc3557bc9d1"
+      },
+      "license": {
+        "spdx": "AGPL-3.0-only",
+        "attribution": "ApplyPilot by Pickle-Pixel",
+        "blob_sha": "be3f7b28e564e7dd05eaf59d64adba1a4065ac0e",
+        "content_sha256": "0d96a4ff68ad6d4b6f1f30f713b18d5184912ba8dd389f86aa7710db079abcb0"
+      },
+      "candidate_files": {
+        "src/applypilot/discovery/jobspy.py": {"blob_sha": "b5e54ff44239eb3f007198fefbb1aa52e9013fa0", "size": 16291},
+        "src/applypilot/discovery/workday.py": {"blob_sha": "cef69fe45781d42bff222c5a38d6fbc0c0ca125b", "size": 18417},
+        "src/applypilot/discovery/smartextract.py": {"blob_sha": "cf49a9a2d53e221de782ce91174e899d365956c6", "size": 45110},
+        "src/applypilot/enrichment/detail.py": {"blob_sha": "11b79260803fd0cad04b9f1fc5573ef28cf76183", "size": 30582},
+        "src/applypilot/config/sites.yaml": {"blob_sha": "5107aca850034334ad351b283e3694db989b2f8d", "size": 5919},
+        "src/applypilot/apply/prompt.py": {"blob_sha": "37c3790a173884016710478633cf5eafd65e71c3", "size": 30885},
+        "src/applypilot/apply/launcher.py": {"blob_sha": "341a11a367850a9a6312835bf372ad4c402ab757", "size": 30762}
+      },
+      "sources": {
+        "commit": "https://github.com/Pickle-Pixel/ApplyPilot/commit/4a8d521f67f5139811c0a910ef37410f8e6d836a",
+        "tree": "https://github.com/Pickle-Pixel/ApplyPilot/tree/4a8d521f67f5139811c0a910ef37410f8e6d836a",
+        "license": "https://github.com/Pickle-Pixel/ApplyPilot/blob/4a8d521f67f5139811c0a910ef37410f8e6d836a/LICENSE"
+      }
+    },
     "mads-lorentzen-ai-job-search": {
       "repository": "https://github.com/MadsLorentzen/ai-job-search",
       "release": "v1.3.0",

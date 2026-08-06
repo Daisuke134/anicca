@@ -2313,7 +2313,8 @@ parallel only where explicitly stated below. Otherwise preserve this order:
    passed terminal validation at 46 verified/110 remaining, and Telegram-reported
    message ID `7985`.
 6. [ ] **Adopt proven ApplyPilot discovery and form-adaptation components
-   (`L-49K5A`–`L-49K5C`) without replacing Job Hunter truth or ownership.** Pin
+   (`L-49K5B`–`L-49K5C`; `L-49K5A` complete) without replacing Job Hunter truth or
+   ownership.** Pin
    `Pickle-Pixel/ApplyPilot` commit
    `4a8d521f67f5139811c0a910ef37410f8e6d836a`, preserve AGPL-3.0 copyright and
    license notices for copied code, and record changed upstream files. Adopt only
@@ -3750,11 +3751,23 @@ OpenTelemetry decision and primary sources:
 - [ ] **L-49K5** — Adopt the useful ApplyPilot upstream components into the generic
   resident Job Hunter while preserving one launchd owner, one CloakBrowser owner, and
   Ledger-only application truth.
-  - [ ] `L-49K5A` — Add an exact upstream lock and adoption ledger for ApplyPilot
+  - [x] `L-49K5A` — Add an exact upstream lock and adoption ledger for ApplyPilot
     commit `4a8d521f67f5139811c0a910ef37410f8e6d836a`. Preserve the upstream AGPL-3.0
     license and copyright notices, record copied/changed paths, and keep the adopted
     Job Hunter component's corresponding source publicly available. Do not declare
     unrelated monorepo code AGPL without a separate license audit.
+    - Evidence: `config/upstream-lock.v1.json` fixes tree
+      `a81d5265f4313aeadc9da0099974ea2beeb90657`, 40 blobs, archive SHA-256
+      `951f7cf084023ddb4648496f29987ede848e33c64fbaf36468880dc3557bc9d1`,
+      and AGPL license SHA-256
+      `0d96a4ff68ad6d4b6f1f30f713b18d5184912ba8dd389f86aa7710db079abcb0`.
+      `config/applypilot-adoption.v1.json` records twelve `adapt`/`supersede`
+      decisions, assigns `L-49K5B`/`L-49K5C`, keeps the monorepo MIT, reserves
+      `vendor/applypilot-derived` as the AGPL corresponding-source boundary, and
+      truthfully records `copied_paths: []` before any upstream code is copied.
+      The complete upstream-lock suite passes 10/10 and the complete Job Hunter suite
+      passes 515/515; the previously reported eight full-suite failures do not
+      reproduce on this tree.
   - [ ] `L-49K5B` — Port JobSpy, Workday/direct-career discovery, SmartExtract, and
     pinned site patterns behind the existing candidate normalization contract. Every
     discovered role enters the current candidate queue; no ApplyPilot jobs table,
