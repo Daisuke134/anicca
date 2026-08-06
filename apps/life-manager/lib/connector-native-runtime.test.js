@@ -4,6 +4,7 @@ const assert = require("node:assert/strict");
 const test = require("node:test");
 
 const {
+  calendarGateFailureCode,
   runNativeConnectorPass,
 } = require("./connector-native-runtime.js");
 const { DAILY_DRIVER_CDP } = require("./cloakbrowser-daily-driver.js");
@@ -17,6 +18,17 @@ const { runLumaCandidateSequence } = require("./luma-candidate-loop.js");
 
 const NOW = "2026-08-02T01:00:00.000Z";
 const TENANT = "dais-local";
+
+test("Calendar gate failures expose only bounded input or execution substages", () => {
+  assert.equal(
+    calendarGateFailureCode(new Error("Calendar candidate gate invalid")),
+    "CONNECTOR_NATIVE_CALENDAR_GATE_INPUT_FAILED",
+  );
+  assert.equal(
+    calendarGateFailureCode(new Error("raw provider payload secret")),
+    "CONNECTOR_NATIVE_CALENDAR_GATE_EXECUTION_FAILED",
+  );
+});
 
 function coverage() {
   return buildRollingEventCoverage({
