@@ -1,6 +1,8 @@
 "use strict";
 
+const path = require("node:path");
 const { DAILY_DRIVER_CDP, createCloakBrowserDailyDriver } = require("./cloakbrowser-daily-driver.js");
+const { createConnectorTabOwner } = require("./connector-tab-owner.js");
 const { createLumaDailyDriverAuth } = require("./luma-daily-driver-auth.js");
 const { createGogLumaCodeReader } = require("./gog-luma-code-reader.js");
 const { createGogLumaConfirmationReader } = require("./gog-luma-confirmation-reader.js");
@@ -113,6 +115,8 @@ function defaultCreateDailyDriver(options = {}) {
   return createCloakBrowserDailyDriver({
     endpoint: DAILY_DRIVER_CDP,
     connectOverCDP,
+    tabOwner: createConnectorTabOwner({ endpoint: DAILY_DRIVER_CDP }),
+    tabOwnerReceiptPath: options.tabOwnerReceiptPath,
   });
 }
 
@@ -218,6 +222,7 @@ async function runNativeConnectorPass(input = {}) {
     const dailyDriver = createDailyDriver({
       endpoint: DAILY_DRIVER_CDP,
       connectOverCDP: deps.connectOverCDP,
+      tabOwnerReceiptPath: path.join(evidenceDir, "tab-owner.json"),
     });
     if (!dailyDriver || typeof dailyDriver.withLumaPage !== "function") unavailable();
     const auth = createAuth({
@@ -252,8 +257,9 @@ async function runNativeConnectorPass(input = {}) {
       readLumaFormProfile: lumaFormProfilePath === null ? undefined : (() => (
         readPrivateLumaFormProfile({ path: lumaFormProfilePath })
       )),
-      agenticRegister: (contract) => runConnectorAgenticRegistration({
+      agenticRegister: (contract, tabOwnerReceipt) => runConnectorAgenticRegistration({
         canonicalUrl: contract.canonical_url,
+        tabOwnerReceipt,
         profile: lumaFormProfilePath === null ? {} : readPrivateLumaFormProfile({ path: lumaFormProfilePath }),
         evidenceDir,
         repoRoot: config.repoRoot,

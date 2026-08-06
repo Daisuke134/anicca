@@ -137,6 +137,37 @@ test("reuses one live CDP connection across sequential Luma pages", async () => 
   assert.equal(fx.calls.some(([name]) => name === "close-browser"), false);
 });
 
+test("captures the target baseline before opening and passes one owned-tab receipt to the task", async () => {
+  const fx = fixture();
+  const calls = fx.calls;
+  const receipt = Object.freeze({ target_id: "OWNED" });
+  const driver = createCloakBrowserDailyDriver({
+    connectOverCDP: fx.connectOverCDP,
+    tabOwner: {
+      async captureBaseline() {
+        calls.push(["capture-baseline"]);
+        return ["BASELINE"];
+      },
+      async claim(input) {
+        calls.push(["claim", input]);
+        return receipt;
+      },
+    },
+    tabOwnerReceiptPath: "/private/evidence/tab-owner.json",
+  });
+
+  await driver.withLumaPage("https://luma.com/event-a", async (_page, metadata) => {
+    assert.equal(metadata.tab_owner_receipt, receipt);
+  });
+
+  assert.ok(calls.findIndex(([name]) => name === "capture-baseline") < calls.findIndex(([name]) => name === "new-page"));
+  assert.deepEqual(calls.find(([name]) => name === "claim"), ["claim", {
+    canonicalUrl: "https://luma.com/event-a",
+    baselineTargetIds: ["BASELINE"],
+    receiptPath: "/private/evidence/tab-owner.json",
+  }]);
+});
+
 test("classifies Luma login without exposing page text or cookie values", () => {
   assert.deepEqual(classifyLumaLogin({
     origin: "https://luma.com",

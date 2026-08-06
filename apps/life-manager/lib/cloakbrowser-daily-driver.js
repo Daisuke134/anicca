@@ -82,6 +82,8 @@ function createCloakBrowserDailyDriver(options = {}) {
   const endpoint = String(options.endpoint || DAILY_DRIVER_CDP).trim();
   const connectOverCDP = options.connectOverCDP;
   const resolveEndpoint = options.resolveEndpoint || (async () => endpoint);
+  const tabOwner = options.tabOwner || null;
+  const tabOwnerReceiptPath = options.tabOwnerReceiptPath;
   if (endpoint !== DAILY_DRIVER_CDP) {
     throw new Error("CloakBrowser daily-driver endpoint invalid");
   }
@@ -91,6 +93,10 @@ function createCloakBrowserDailyDriver(options = {}) {
   if (typeof resolveEndpoint !== "function") {
     throw new Error("CloakBrowser daily-driver resolver unavailable");
   }
+  if (tabOwner && (
+    typeof tabOwner.captureBaseline !== "function"
+    || typeof tabOwner.claim !== "function"
+  )) throw new Error("Connector tab owner unavailable");
 
   let browserPromise = null;
   async function liveBrowser(connectionEndpoint) {
@@ -122,6 +128,7 @@ function createCloakBrowserDailyDriver(options = {}) {
       }
       const context = contexts[0];
       const existingPages = typeof context.pages === "function" ? context.pages() : [];
+      const baselineTargetIds = tabOwner ? await tabOwner.captureBaseline() : null;
       if (typeof context.newPage !== "function") {
         throw new Error("CloakBrowser shared context unavailable");
       }
@@ -131,9 +138,15 @@ function createCloakBrowserDailyDriver(options = {}) {
           waitUntil: "domcontentloaded",
           timeout: 30_000,
         });
+        const tabOwnerReceipt = tabOwner ? await tabOwner.claim({
+          canonicalUrl: url,
+          baselineTargetIds,
+          receiptPath: tabOwnerReceiptPath,
+        }) : null;
         return await task(page, Object.freeze({
           endpoint,
           existing_page_count: Array.isArray(existingPages) ? existingPages.length : 0,
+          ...(tabOwnerReceipt ? { tab_owner_receipt: tabOwnerReceipt } : {}),
         }));
       } finally {
         if (page && typeof page.close === "function") await page.close();

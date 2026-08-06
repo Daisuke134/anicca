@@ -5,17 +5,34 @@ const { runLocalAgentRunner } = require("./connector-luna-judgment.js");
 
 function unavailable() { throw new Error("Connector agentic registration unavailable"); }
 
+function verifiedTabOwnerReceipt(value, canonicalUrl) {
+  if (
+    !value || typeof value !== "object" || Array.isArray(value)
+    || value.schema_version !== 1
+    || value.endpoint !== "http://127.0.0.1:9222"
+    || typeof value.owner_token !== "string" || value.owner_token.length < 8
+    || typeof value.target_id !== "string" || value.target_id.length < 1
+    || value.canonical_url !== canonicalUrl
+    || !Array.isArray(value.baseline_target_ids)
+    || value.baseline_target_ids.includes(value.target_id)
+    || value.page_websocket !== `ws://127.0.0.1:9222/devtools/page/${value.target_id}`
+    || !Number.isFinite(Date.parse(value.observed_at))
+  ) unavailable();
+  return value;
+}
+
 async function runConnectorAgenticRegistration(input = {}, deps = {}) {
   const canonicalUrl = String(input.canonicalUrl || "").trim();
   if (!/^https:\/\/luma\.com\/[A-Za-z0-9_-]+(?:[/?#].*)?$/.test(canonicalUrl)) unavailable();
+  const tabOwnerReceipt = verifiedTabOwnerReceipt(input.tabOwnerReceipt, canonicalUrl);
   const profile = input.profile && typeof input.profile === "object" ? input.profile : {};
   const result = await (deps.runAgentRunner || runLocalAgentRunner)({
     prompt: [
       "You are the Connector loop's browser executor. Execute the event registration now; do not edit code and do not ask the human.",
-      `Use the already-open tab for this exact event in the local CloakBrowser daily-driver session at CDP http://127.0.0.1:9222: ${canonicalUrl}`,
-      "Do not create another tab, navigate away, or close the event tab. The parent loop deliberately keeps this tab alive until you return.",
+      `Operate only the parent-owned tab described by this private receipt: ${JSON.stringify(tabOwnerReceipt)}`,
+      "Do not create another tab, navigate away, close the event tab, or inspect unrelated tabs. The parent loop keeps this owned tab alive until you return.",
       "Use the existing authenticated browser account. Visually inspect and operate the live UI as a capable browser agent; do not depend on hardcoded site selectors.",
-      "Use Playwright only as the controller for the existing CloakBrowser daily-driver at CDP http://127.0.0.1:9222. From the repository root load chromium with require(process.cwd() + '/apps/life-manager/node_modules/playwright-core'); do not require('playwright'). Attach with chromium.connectOverCDP(), select the already-open exact event tab, and use user-facing role/label locators with Playwright auto-wait.",
+      "Use Playwright only as the controller for the existing CloakBrowser daily-driver at receipt.endpoint. From the repository root load chromium with require(process.cwd() + '/apps/life-manager/node_modules/playwright-core'); do not require('playwright'). Attach with chromium.connectOverCDP(receipt.endpoint). For each existing page, create a CDP session and call Target.getTargetInfo; select only the page whose targetInfo.targetId equals receipt.target_id and whose URL matches receipt.canonical_url. Detach sessions for every non-owned page without inspecting their content. Require exactly one owned page, then use user-facing role/label locators with Playwright auto-wait.",
       "Never launch another browser or profile. Never use desktop-wide Cmd-Tab, AppleScript, cliclick, screen coordinates, or a different Chrome window. Never assign DOM values with Runtime.evaluate or mutate the DOM; use real locator fill/click/check/selectOption/press actions on CloakBrowser.",
       "Click the registration/request-to-join action, complete every required form field, submit it, and keep working until the page visibly shows the registered, going, ticket, or pending-approval state.",
       "For identity/contact fields use only the supplied profile. For ordinary subjective questions, answer truthfully and generally: building Life Manager and AI agents, meeting founders/engineers/users, learning, and making useful connections. Choose a reasonable visible option for required choices. Leave optional social handles blank if unknown.",

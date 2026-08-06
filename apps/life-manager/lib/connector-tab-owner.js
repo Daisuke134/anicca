@@ -68,6 +68,13 @@ function createConnectorTabOwner({
   if (typeof listTargets !== "function") throw new Error("listTargets is required");
 
   return Object.freeze({
+    async captureBaseline() {
+      const targets = await listTargets();
+      if (!Array.isArray(targets)) throw new Error("Connector target inventory must be an array");
+      return Object.freeze(targets
+        .filter((target) => target && target.type === "page" && typeof target.id === "string")
+        .map((target) => target.id));
+    },
     async claim({ canonicalUrl, baselineTargetIds = [], receiptPath } = {}) {
       const normalizedCanonicalUrl = normalizedEventUrl(canonicalUrl);
       const baseline = new Set(baselineTargetIds.map(String));
