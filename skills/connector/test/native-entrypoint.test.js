@@ -88,6 +88,68 @@ test("native-pass invokes the direct runtime and keeps open coverage as a contin
   }
 });
 
+test("native-pass durably reports every incomplete wake and stores the positive Telegram receipt", async () => {
+  const directory = temporaryDirectory();
+  const stateDir = path.join(directory, "state");
+  const sent = [];
+  try {
+    const result = await runNativePass({
+      repoRoot: REPO_ROOT,
+      stateDir,
+      ownerToken: OWNER_TOKEN,
+      observationContext: {
+        wakeId: "connector-wake-outbox-1",
+        runId: "connector-run-outbox-1",
+        observedAt: "2026-08-06T15:00:00.000Z",
+      },
+      config: { tenantId: "dais-local", telegramTarget: "opaque-target" },
+      sendWakeReport: async (message, delivery) => {
+        sent.push({ message, delivery });
+        return { messageId: 9001 };
+      },
+      runRuntime: async () => ({
+        status: "incomplete",
+        coverage: { counts: { open: 18 } },
+        selection: {
+          inventory_event_count: 27, calendar_gate_event_count: 0,
+          calendar_eligible_count: 0, luna_ranked_count: 0,
+          spend_ordered_count: 0, unsuppressed_count: 0, write_attempt_count: 0,
+        },
+        continuation: { status: "continue" },
+      }),
+    });
+
+    assert.equal(result.status, "incomplete");
+    assert.equal(sent.length, 1);
+    assert.match(sent[0].message, /Connector.*継続/);
+    assert.equal(sent[0].delivery.telegramTarget, "opaque-target");
+    assert.deepEqual(
+      fs.readFileSync(path.join(stateDir, "wake-report-outbox.jsonl"), "utf8").trim().split("\n").map(JSON.parse),
+      [{
+        schema_version: 1,
+        wake_id: "connector-wake-outbox-1",
+        report_kind: "continuing",
+        safe_reason: "runtime_incomplete",
+        cursor: "provider:none",
+        open_count: 18,
+        attempt_count: 0,
+        created_at: "2026-08-06T15:00:00.000Z",
+      }],
+    );
+    assert.deepEqual(
+      fs.readFileSync(path.join(stateDir, "wake-report-deliveries.jsonl"), "utf8").trim().split("\n").map(JSON.parse),
+      [{
+        schema_version: 1,
+        wake_id: "connector-wake-outbox-1",
+        telegram_provider_id: "9001",
+        delivered_at: "2026-08-06T15:00:00.000Z",
+      }],
+    );
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true });
+  }
+});
+
 test("native-pass records runtime completion and failure through the same observer replay", async () => {
   const directory = temporaryDirectory();
   const stateDir = path.join(directory, "state");
@@ -733,6 +795,7 @@ test("launchd parent records a process crash when native-pass exits by signal", 
   const directory = temporaryDirectory();
   const fakeNode = path.join(directory, "fake-node.sh");
   const observerCall = path.join(directory, "observer-call.txt");
+  const wakeReportCall = path.join(directory, "wake-report-call.txt");
   fs.writeFileSync(fakeNode, `#!/bin/bash
 case "$1" in
   -e) printf '%064d' 0; exit 0 ;;
@@ -743,6 +806,7 @@ case "$1" in
     ;;
   *native-pass.js) exit 137 ;;
   *observer-envelope.js) printf '%s\\n' "$*" > "$OBSERVER_CALL_FILE"; exit 0 ;;
+  *wake-report-outbox.js) printf '%s\\n' "$*" > "$WAKE_REPORT_CALL_FILE"; exit 0 ;;
 esac
 exit 2
 `, { mode: 0o700 });
@@ -753,6 +817,7 @@ exit 2
         ...process.env,
         NODE_BIN: fakeNode,
         OBSERVER_CALL_FILE: observerCall,
+        WAKE_REPORT_CALL_FILE: wakeReportCall,
         LM_CONNECTOR_STATE_DIR: path.join(directory, "state"),
         LM_CONNECTOR_TELEGRAM_TARGET: "123456789",
         LM_CONNECTOR_CODE_COMMIT: "27506a703",
@@ -760,6 +825,7 @@ exit 2
     });
     assert.equal(result.status, 137);
     assert.match(fs.readFileSync(observerCall, "utf8"), /observer-envelope\.js process-crash/);
+    assert.match(fs.readFileSync(wakeReportCall, "utf8"), /wake-report-outbox\.js process-crash/);
   } finally {
     fs.rmSync(directory, { recursive: true, force: true });
   }

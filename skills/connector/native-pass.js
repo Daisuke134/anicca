@@ -12,6 +12,7 @@ const { createGhIssueClient } = require("../../apps/life-manager/lib/feedback-to
 const { recordContinuation } = require("./lib/native-state.js");
 const { loadConnectorEnv } = require("./lib/load-connector-env.js");
 const { appendObservation, buildObservation } = require("./lib/observer-envelope.js");
+const { deliverPendingWakeReports, enqueueWakeReport } = require("./lib/wake-report-outbox.js");
 const {
   notifyOpenClawPhoto,
   parseOpenClawMessageId,
@@ -609,6 +610,27 @@ function recordRuntimeObservation(options, stateDir, providerCursor, observedEff
   }
 }
 
+function wakeReportContext(options, providerCursor) {
+  const supplied = options.observationContext || {};
+  const observedAt = String(supplied.observedAt || options.config && options.config.now || new Date().toISOString());
+  const identity = createHash("sha256").update(`${options.ownerToken}:${observedAt}`).digest("hex").slice(0, 24);
+  return {
+    wake_id: supplied.wakeId || `wake:${identity}`,
+    created_at: observedAt,
+    cursor: supplied.cursor || (providerCursor
+      ? `${providerCursor.provider}:${providerCursor.date}:${providerCursor.candidate_index}:${providerCursor.generation}`
+      : "provider:none"),
+  };
+}
+
+async function recordAndDeliverWakeReport(options, stateDir, config, providerCursor, report) {
+  enqueueWakeReport(stateDir, { ...wakeReportContext(options, providerCursor), ...report });
+  await deliverPendingWakeReports(stateDir, {
+    telegramTarget: config && config.telegramTarget,
+    send: options.sendWakeReport,
+  });
+}
+
 async function runNativePass(options = {}) {
   absoluteDirectory(options.repoRoot);
   const stateDir = absoluteDirectory(options.stateDir);
@@ -625,9 +647,14 @@ async function runNativePass(options = {}) {
   const runtime = typeof options.runRuntime === "function"
     ? options.runRuntime
     : runNativeConnectorPass;
+  let config;
   try {
-    const config = Object.freeze({
+    config = Object.freeze({
       ...runtimeConfig(options, stateDir), providerRegistry, providerCursor,
+    });
+    await deliverPendingWakeReports(stateDir, {
+      telegramTarget: config.telegramTarget,
+      send: options.sendWakeReport,
     });
     await backfillLegacyPhoto(options, stateDir, config);
     const result = await runtime({
@@ -639,9 +666,21 @@ async function runNativePass(options = {}) {
     recordRuntimeObservation(options, stateDir, bounded.providerCursor || providerCursor, "success", "none");
     await deliverPendingSelfHealIncident(options, stateDir);
     if (bounded.complete) {
+      await recordAndDeliverWakeReport(options, stateDir, config, bounded.providerCursor || providerCursor, {
+        report_kind: bounded.write && bounded.write.outcome === "verified_success" ? "applied" : "continuing",
+        safe_reason: "runtime_complete",
+        open_count: bounded.coverageCounts.open,
+        attempt_count: bounded.candidateAttempts.length,
+      });
       return Object.freeze({ exitCode: 0, status: "complete" });
     }
     recordContinuation({ stateDir, reason: "runtime_incomplete" });
+    await recordAndDeliverWakeReport(options, stateDir, config, bounded.providerCursor || providerCursor, {
+      report_kind: bounded.write && bounded.write.outcome === "verified_success" ? "applied" : "continuing",
+      safe_reason: "runtime_incomplete",
+      open_count: bounded.coverageCounts.open,
+      attempt_count: bounded.candidateAttempts.length,
+    });
     return Object.freeze({ exitCode: 1, status: "incomplete" });
   } catch (error) {
     const code = String(error && error.code || "");
@@ -651,6 +690,12 @@ async function runNativePass(options = {}) {
     const observerClass = /(?:TIMEOUT|DEADLINE)/.test(code) ? "timeout" : "tool_failure";
     recordRuntimeObservation(options, stateDir, providerCursor, observerClass, observerClass);
     recordContinuation({ stateDir, reason });
+    await recordAndDeliverWakeReport(options, stateDir, config || options.config || {}, providerCursor, {
+      report_kind: "recovering",
+      safe_reason: reason,
+      open_count: 0,
+      attempt_count: 0,
+    });
     return Object.freeze({ exitCode: 1, status: "failed" });
   }
 }

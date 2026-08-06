@@ -74,6 +74,8 @@ else
       "$STATE_DIR/observer-replay.jsonl" \
       "wake:$OBSERVER_ID" "run:$OBSERVER_ID" \
       "${LM_CONNECTOR_CODE_COMMIT:-unknown}" || exit 2
+    "$NODE_BIN" "$HERE/lib/wake-report-outbox.js" process-crash \
+      "$STATE_DIR" "wake:$OBSERVER_ID" || exit 2
   fi
   "$NODE_BIN" "$HERE/lib/native-state.js" heartbeat "$STATE_DIR" "$OWNER_TOKEN" worker_failed >/dev/null 2>&1 || true
   exit "$EXIT_CODE"
