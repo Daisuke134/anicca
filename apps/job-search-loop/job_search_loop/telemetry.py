@@ -16,6 +16,9 @@ ALLOWED_ATTRIBUTES = {
     "surface.type", "failure.code", "duration.ms", "exception.type",
     "evidence.sha256", "confirmation.observed", "repair.attempt",
 }
+INDEXED_RESOURCE_ATTRIBUTES = {
+    "service.version", "job_hunter.lane", "job_hunter.resident_actor",
+}
 
 
 class TelemetryPrivacyError(ValueError):
