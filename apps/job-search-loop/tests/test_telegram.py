@@ -7,6 +7,55 @@ from job_search_loop import telegram
 
 
 class TelegramReportTests(unittest.TestCase):
+    def test_same_text_with_changed_material_digest_sends_new_event_once(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            executable = root / "fake-openclaw"
+            executable.write_text(
+                """#!/usr/bin/env python3
+import json
+import pathlib
+messages = pathlib.Path(__file__).with_suffix(".messages")
+prior = json.loads(messages.read_text()) if messages.exists() else []
+prior.append("sent")
+messages.write_text(json.dumps(prior))
+print(json.dumps({"messageId": str(800 + len(prior))}))
+""",
+                encoding="utf-8",
+            )
+            executable.chmod(0o700)
+            database = root / "outbox.sqlite3"
+
+            first = telegram.send_daily_report(
+                database=database,
+                japan_day="2026-08-06",
+                message="same owner-facing report",
+                material_digest="a" * 64,
+                executable=str(executable),
+            )
+            changed = telegram.send_daily_report(
+                database=database,
+                japan_day="2026-08-06",
+                message="same owner-facing report",
+                material_digest="b" * 64,
+                executable=str(executable),
+            )
+            replay = telegram.send_daily_report(
+                database=database,
+                japan_day="2026-08-06",
+                message="same owner-facing report",
+                material_digest="b" * 64,
+                executable=str(executable),
+            )
+
+            self.assertEqual(first["message_id"], "801")
+            self.assertEqual(changed["message_id"], "802")
+            self.assertEqual(replay, changed)
+            self.assertNotEqual(first["event_key"], changed["event_key"])
+            self.assertEqual(
+                len(json.loads(executable.with_suffix(".messages").read_text())), 2
+            )
+
     def test_daily_report_sends_one_content_addressed_correction(self):
         sender = getattr(telegram, "send_daily_report", None)
         self.assertIsNotNone(sender)

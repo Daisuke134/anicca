@@ -7,6 +7,7 @@ source "$SCRIPT_DIR/runtime-paths.sh"
 RUN_ID="daily-$(date +%Y%m%d-%H%M%S)"
 EVIDENCE="$JOB_SEARCH_STATE_ROOT/evidence/$RUN_ID"
 TELEGRAM_OUTBOX="$JOB_SEARCH_STATE_ROOT/telegram-outbox.sqlite3"
+RESULT_PATH="$EVIDENCE/browser-worker-result.json"
 
 mkdir -p "$EVIDENCE" "$JOB_SEARCH_STATE_ROOT/logs"
 chmod 700 \
@@ -81,6 +82,8 @@ refresh_summary() {
   "$JOB_SEARCH_PYTHON" -m job_search_loop.daily_reporting deliver \
     --summary "$JOB_SEARCH_STATE_ROOT/summary.v2.json" \
     --outbox "$TELEGRAM_OUTBOX" \
+    --release-manifest "$JOB_SEARCH_REPO_ROOT/RELEASE.json" \
+    --browser-result "$RESULT_PATH" \
     --output "$EVIDENCE/daily-pipeline-report.json"
 }
 SLOT_COUNT=$("$JOB_SEARCH_PYTHON" - "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" "$JAPAN_DAY" <<'PY'
@@ -254,7 +257,6 @@ TRAPEXIT() {
       --holder-pid "$$" >/dev/null 2>&1 || true
   fi
 }
-RESULT_PATH="$EVIDENCE/browser-worker-result.json"
 set +e
 "$JOB_SEARCH_PYTHON" -m job_search_loop.browser_worker run \
   --database "$JOB_SEARCH_CANDIDATE_QUEUE" \

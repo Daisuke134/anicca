@@ -18,6 +18,15 @@ LABELS = (
     ("offer_rate", "オファー"),
     ("acceptance_rate", "承諾"),
 )
+MATERIAL_BROWSER_FIELDS = (
+    "status",
+    "attempted_count",
+    "verified_link_count",
+    "remaining_unverified_count",
+    "submitted",
+    "submit_unknown",
+    "blocked",
+)
 
 
 def _validate(value: dict[str, Any]) -> None:
@@ -68,8 +77,40 @@ def render_pipeline(value: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def _material_digest(
+    summary: dict[str, Any], release_manifest_path: Path, browser_result_path: Path
+) -> str:
+    try:
+        release = json.loads(release_manifest_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise ValueError("daily material evidence is unavailable") from error
+    if browser_result_path.is_file():
+        try:
+            browser = json.loads(browser_result_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as error:
+            raise ValueError("browser material evidence is invalid") from error
+    else:
+        browser = {"status": "not_started"}
+    if not isinstance(release, dict) or not isinstance(release.get("commit"), str):
+        raise ValueError("release material evidence is invalid")
+    if not isinstance(browser, dict):
+        raise ValueError("browser material evidence is invalid")
+    material = {
+        "projection_sha256": summary["projection_sha256"],
+        "release_commit": release["commit"],
+        "browser": {key: browser.get(key) for key in MATERIAL_BROWSER_FIELDS},
+    }
+    return hashlib.sha256(
+        json.dumps(
+            material, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+        ).encode("utf-8")
+    ).hexdigest()
+
+
 def deliver_pipeline_report(
     *, summary_path: Path, outbox_path: Path,
+    release_manifest_path: Path | None = None,
+    browser_result_path: Path | None = None,
     sender: Callable[..., dict[str, str | None]] = send_daily_report,
 ) -> dict[str, str | None]:
     try:
@@ -78,10 +119,19 @@ def deliver_pipeline_report(
         raise ValueError("private summary.v2 is unavailable") from error
     if not isinstance(value, dict):
         raise ValueError("summary.v2 must be an object")
-    return sender(
-        database=Path(outbox_path), japan_day=str(value["day"]),
-        message=render_pipeline(value),
-    )
+    message = render_pipeline(value)
+    sender_arguments: dict[str, Any] = {
+        "database": Path(outbox_path),
+        "japan_day": str(value["day"]),
+    }
+    if release_manifest_path is not None or browser_result_path is not None:
+        if release_manifest_path is None or browser_result_path is None:
+            raise ValueError("both daily material evidence paths are required")
+        digest = _material_digest(value, release_manifest_path, browser_result_path)
+        sender_arguments["material_digest"] = digest
+        message = f"{message}\n実行証拠: {digest[:12]}"
+    sender_arguments["message"] = message
+    return sender(**sender_arguments)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -89,9 +139,16 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("command", choices=("deliver",))
     parser.add_argument("--summary", type=Path, required=True)
     parser.add_argument("--outbox", type=Path, required=True)
+    parser.add_argument("--release-manifest", type=Path)
+    parser.add_argument("--browser-result", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(argv)
-    receipt = deliver_pipeline_report(summary_path=args.summary, outbox_path=args.outbox)
+    receipt = deliver_pipeline_report(
+        summary_path=args.summary,
+        outbox_path=args.outbox,
+        release_manifest_path=args.release_manifest,
+        browser_result_path=args.browser_result,
+    )
     args.output.write_text(json.dumps(receipt, sort_keys=True) + "\n", encoding="utf-8")
     os.chmod(args.output, 0o600)
     print(json.dumps(receipt, sort_keys=True))
