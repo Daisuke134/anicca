@@ -3216,12 +3216,12 @@ flowchart TD
     N4 --> N5[新規Calendar・PNG・Telegram 0]
   end
   subgraph NEXT[次の厳密な順序]
-    S1[Healer shadow] --> S2[Guarded canary]
-    S2 --> S3[Codex Actor・JSONL shadow]
-    S3 --> S4[Every-wake・Weekly Telegram]
-    S4 --> S5[Bounded browser discovery]
-    S5 --> S6[Forward-only continuation]
-    S6 --> S7[Actor production切替]
+    S1[Every-wake Telegram] --> S2[Bounded browser discovery]
+    S2 --> S3[Forward-only continuation]
+    S3 --> S4[Connector launchd kickstart]
+    S4 --> S5[Luma-first live submit]
+    S5 --> S6[Evidence・次wake idempotency]
+    S6 --> S7[Healer・Codex Actor]
   end
   subgraph TARGET[完成形]
     T1[Luma-first全provider探索] --> T2[Calendar gap候補へApply]
