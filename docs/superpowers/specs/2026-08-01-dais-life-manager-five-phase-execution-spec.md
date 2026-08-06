@@ -3060,10 +3060,21 @@ O1B-25進捗146（Codex harness調査とbrowser discovery配線）: commit `f74a
 `worker_failed`、last exit 1で、実申込、Calendar、PNG、Telegramの新規外部証拠は0件である。したがってbrowser配線はcode-completeでもlive未完了で、
 Task 2は閉じない。
 
+O1B-25進捗147（Dais直接指示: main session待機を除去し、Observer→Healerを先行）: Connectorのlive runはlaunchd自身に
+継続させ、Codex main sessionはrun完了待ちのdurable ownerにならない。進捗146の「実`applied_bundle`後にObserver」という順序を撤回し、
+最初に既存incident intakeをprivacy-safe Observer envelopeへ拡張し、次にexternal-submit権限0のHealerをisolated worktreeでshadow稼働する。
+Connector Actorのbrowser discovery/applyは同時に継続し、Observer/Healerの完成を理由に止めない。production promotionは従来どおり
+historical replay、focused/full test、permission check、rollback、isolated browser canary、one bounded live effectを全て通過するまで禁止する。
+ローカルDais版はChatGPT subscriptionでログイン済みCodex CLI認証をtrusted Mac mini上のSDK/`codex exec`が再利用する。公式Codexは
+local SDK threadのstart/resume、`codex exec --json`のthread/turn/item/error JSONL、skills/worktree付きScheduled tasksを提供する。
+世界向けlocal版は各user自身のChatGPT/Codex認証を使い、managed cloud版はtenant別API/service credentialを使う。Daisのsubscription/authを
+共有backendへ流用しない。Source: https://learn.chatgpt.com/docs/auth 、https://learn.chatgpt.com/docs/codex-sdk 、
+https://learn.chatgpt.com/docs/non-interactive-mode 、https://learn.chatgpt.com/docs/automations 。
+
 #### Codex-native Connector Actor / Healer contract
 
 **Overview:** 現在のConnectorは独自Node runtimeがTerraへ限定promptを渡すため、TerraはCodex CLIと同じshell、skills、MCP、継続thread、
-JSONL observabilityを持たない。task deliveryのgolden `applied_bundle`を一件実証した直後、常設agentをCodex SDK/CLI harnessへ移し、
+JSONL observabilityを持たない。live task deliveryと並行してObserverを先行実装し、次にHealerをshadow稼働し、常設agentをCodex SDK/CLI harnessへ移す。
 同じ`gpt-5.6-terra`へConnector専用toolsを与える。目的はCodex対話sessionを永久ownerにせず、Mac mini上のConnector自身が毎日実行・観測・修復すること。
 
 **Authentication and distribution boundary:** local single-user Mac miniは保存済みCodex CLI authenticationをtrusted runnerで再利用できる。
@@ -3101,28 +3112,29 @@ test、修正、commit/pushを行い、guarded canary通過後だけrevisionをA
 **Boundaries:** iPhone等のmobile deviceはcontrol/status UIとcredential handoffを提供し、初期版のfull Codex harnessは各userのMacまたはmanaged cloud runnerで動かす。
 Codex subscription quota、API usage、browser/site制約は消えない。Actorへunrestricted code self-modificationと外部submitを同時に与えない。
 
-**Execution steps:** Task 2/3の実`applied_bundle` → Codex Actor wrapper/structured schema → launchd shadow wake → Actor live canary → default Actor切替 →
-Observer → isolated Healer → guarded canary → restart/multi-user/cloud acceptanceの順を固定する。
+**Execution steps:** privacy-safe Observer envelope/replay → isolated Healer shadow → guarded consumer/canary → Codex Actor wrapper/structured schema →
+launchd shadow wake → Actor live canary → default Actor切替 → production self-heal → restart/multi-user/cloud acceptanceの順を固定する。
+既存Connector launchdのbrowser discovery/applyはこの実装と並行して前進し、各runをObserver fixtureへ取り込む。
 
-### Active remaining TODO SSOT（進捗146。これ以外の残TODO一覧は履歴）
+### Active remaining TODO SSOT（進捗147。これ以外の残TODO一覧は履歴）
 
 1. [x] Provider-neutral downstream write、Connpass runtime write dependencies、Luma Calendar-eligible 0 handoff、Connpass state persistenceを閉じる。証拠: 進捗141、143、144、commit `65241d6a2`、`e822bfa3a`、`d0e05f5d8`、`1cfa2e56f`。
-2. [in progress] Run 197の`worker_failed`をsafe stage/traceから特定し、commit `f74a5870b`のbrowser discoveryをlive GREENにする。完了条件: API key参照0、API network call 0、既存launchd wakeが対象日のConnpass browser inventory countを返し、`worker_failed`にならずprovider candidateへ進む。
-3. 常設loop自身によるConnpass live submitとpromotionを閉じる。完了条件: 一時scriptやCodex手動申込ではなく同一launchd runがform入力・Submitを行い、親readbackのregistered/pending、provider receipt、PNG SHA、Calendar ID/readback、Telegram card/photo positive IDを一event lineageへ揃え、そのproofだけで`registration_allowed=true`。
-4. Every-wake Telegram durable outboxを実装する。完了条件: `applied / continuing / recovering`の全exit pathでwake report欠落0、positive message IDまで保持、再送重複0、報告後も申込み継続。
-5. Weekly Telegram rollupを実装する。完了条件: 成功週、登録0週、process停止週、Telegram停止週で週次record欠落0、復旧後positive message ID、重複0。
-6. Exhaustive continuationを一つのforward-only state machineにする。完了条件: candidate 0、満席、closed、form failure、provider down、browser crashがterminal failureにならず、次candidate→provider→date→windowまたはdurable recoveryへ進む。
-7. Codex-native Actorへ移行する。完了条件: launchdがCodex SDK persistent Terra threadをwake/resumeし、Connector skill、`:9222`、Calendar、Telegramを使う一方、repo edit、Gig、未知toolを拒否し、Actor自身が実`applied_bundle`を作る。
-8. Peatixをbrowser-only discovery→parent submit/readback→evidence→isolated live proof→promotionの順で追加する。完了条件は実`applied_bundle`。
-9. Meetupをstep 8と同じgateで追加する。完了条件は実`applied_bundle`。
-10. Doorkeeperをstep 8と同じgateで追加する。完了条件は実`applied_bundle`。
-11. Eventbriteをstep 8と同じgateで追加する。完了条件は実`applied_bundle`。
-12. Cross-provider live acceptanceを行う。完了条件: 一providerのknown-no-effect後、同じrun IDが次providerで実`applied_bundle`を作る。
-13. Post-registration recoveryを閉じる。完了条件: Calendar、PNG、ticket、Telegram各境界の中断後、providerへ再submitせず不足artifactだけを補完し、外部登録1回・bundle1個。
-14. Codex JSONL Observer trace packを実装する。完了条件: thread/turn/tool/action、expected/observed effect、owner generation、screenshot SHA、provider readback、commit、cursorがprivacy-safe incident/replayへ揃う。
-15. Codex-native Superpowers Healerをisolated worktreeで実装する。完了条件: incidentごとにsystematic-debugging→一仮説→実RED→最小GREEN→fresh verification→commit/push、Actor external-submit権限0、上限3 revision/24時間。
-16. Guarded consumer/canaryを復旧する。完了条件: historical replay→focused/full test→protected path/permission→rollback→isolated browser canary→one bounded live effectを通ったrevisionだけmerge/redeploy。
-17. Production self-heal E2Eを実証する。完了条件: Actor→Observer→Healer→consumer→canary→Actor再実行が実`applied_bundle`を作った時だけincident=`healed`。
+2. [in progress] Privacy-safe Observer envelope/replayを実装する。完了条件: success、tool failure、timeout、process crashが同じschemaでrun/wake、stage、safe action、expected/observed effect、owner generation、screenshot SHA、provider readback、commit、cursorへ正規化され、secret/PII/raw logなし、fingerprint dedupe可能なincidentとreplay fixtureを各1件生成する。
+3. Codex-native Superpowers Healerをisolated worktreeでshadow実装する。完了条件: incidentごとにsystematic-debugging→一仮説→実RED→最小GREEN→fresh verification→commit/pushを行い、Actor external-submit権限0、上限3 revision/24時間、production自動merge 0。
+4. Guarded consumer/canaryを復旧する。完了条件: historical replay→focused/full test→protected path/permission→rollback→isolated browser canary→one bounded live effectを通ったrevisionだけpromotion可能になる。
+5. Production self-heal E2Eをshadowで実証する。完了条件: Actor fixture→Observer→Healer→consumer→canary→Actor replayがexpected effectを満たした時だけincident=`healed`になり、失敗時はrollbackして次仮説へ進む。
+6. Run 200以降のbrowser discoveryをlive GREENにする。完了条件: API key参照0、API network call 0、既存launchd wakeが対象日のConnpass browser inventory countをbounded batchで返し、provider candidateへ進み、未処理候補をdurable cursorへ残す。
+7. 常設loop自身によるConnpass live submitとpromotionを閉じる。完了条件: 一時scriptやCodex手動申込ではなく同一launchd runがform入力・Submitを行い、親readbackのregistered/pending、provider receipt、PNG SHA、Calendar ID/readback、Telegram card/photo positive IDを一event lineageへ揃え、そのproofだけで`registration_allowed=true`。
+8. Every-wake Telegram durable outboxを実装する。完了条件: `applied / continuing / recovering`の全exit pathでwake report欠落0、positive message IDまで保持、再送重複0、報告後も申込み継続。
+9. Weekly Telegram rollupを実装する。完了条件: 成功週、登録0週、process停止週、Telegram停止週で週次record欠落0、復旧後positive message ID、重複0。
+10. Exhaustive continuationを一つのforward-only state machineにする。完了条件: candidate 0、満席、closed、form failure、provider down、browser crashがterminal failureにならず、次candidate→provider→date→windowまたはdurable recoveryへ進む。
+11. Codex-native Actorへ移行する。完了条件: launchdがCodex SDK persistent Terra threadをwake/resumeし、Connector skill、`:9222`、Calendar、Telegramを使う一方、repo edit、Gig、未知toolを拒否し、Actor自身が実`applied_bundle`を作る。
+12. Peatixをbrowser-only discovery→parent submit/readback→evidence→isolated live proof→promotionの順で追加する。完了条件は実`applied_bundle`。
+13. Meetupをstep 12と同じgateで追加する。完了条件は実`applied_bundle`。
+14. Doorkeeperをstep 12と同じgateで追加する。完了条件は実`applied_bundle`。
+15. Eventbriteをstep 12と同じgateで追加する。完了条件は実`applied_bundle`。
+16. Cross-provider live acceptanceを行う。完了条件: 一providerのknown-no-effect後、同じrun IDが次providerで実`applied_bundle`を作る。
+17. Post-registration recoveryを閉じる。完了条件: Calendar、PNG、ticket、Telegram各境界の中断後、providerへ再submitせず不足artifactだけを補完し、外部登録1回・bundle1個。
 18. Observer SDKをmail、Calendar、payment、収益loopへadapter展開する。Gigはread-onlyのままGig所有repoの独立sliceで行う。完了条件は各loop固有external oracle。
 19. Rolling coverageを閉じる。完了条件: 21日分の`open=0`、各日が実証拠付き`covered_existing / covered_new / unavailable`、少なくとも一件の新規`applied_bundle`。gapがなければ次windowへ延長。
 20. Local multi-userとcloud isolation acceptanceを行う。完了条件: userごとのauth/browser/Calendar/Telegram/state/thread分離、Dais auth共有0、cloudはtenant service credential、cross-tenant read/write 0。
