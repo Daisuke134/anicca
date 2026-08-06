@@ -141,6 +141,32 @@ class UpstreamLockTests(unittest.TestCase):
             },
         )
 
+    def test_temporal_server_and_python_sdk_are_content_addressed_and_rollback_pinned(self):
+        data = json.loads(LOCK.read_text(encoding="utf-8"))
+        server = data["upstreams"]["temporal-server"]
+        sdk = data["upstreams"]["temporal-sdk-python"]
+
+        self.assertEqual(server["repository"], "https://github.com/temporalio/temporal")
+        self.assertEqual(server["release"], "v1.31.2")
+        self.assertEqual(server["commit_sha"], "19a774302c613da9adc4436ab14278ccdca8e0a5")
+        self.assertEqual(server["tree_sha"], "ffd7f02fe0639e9faf2b97702eb3ea0944bd48de")
+        self.assertEqual(server["license"]["spdx"], "MIT")
+        self.assertIn("darwin_arm64", server["artifacts"])
+        self.assertIn("checksums", server["artifacts"])
+        self.assertEqual(server["rollback"]["strategy"], "local_binary_previous_pin")
+
+        self.assertEqual(sdk["repository"], "https://github.com/temporalio/sdk-python")
+        self.assertEqual(sdk["release"], "1.31.0")
+        self.assertEqual(sdk["commit_sha"], "84b519e0ff407b049da88ac7d1711f110494ff4d")
+        self.assertEqual(sdk["tree_sha"], "6ca7d581e9e0bea3f19a0e1bf5f3a5ef9fec6d21")
+        self.assertEqual(sdk["license"]["spdx"], "MIT")
+        self.assertEqual(sdk["package"], "temporalio==1.31.0")
+        self.assertEqual(
+            set(sdk["consumed_contracts"]),
+            {"workflow", "activity", "worker", "schedule", "client", "testing"},
+        )
+        self.assertEqual(sdk["rollback"]["strategy"], "uv_lock_previous_pin")
+
     def test_every_v130_component_has_one_explicit_adoption_decision(self):
         data = json.loads(ADOPTION.read_text(encoding="utf-8"))
         self.assertEqual(data["upstream_release"], "v1.3.0")

@@ -139,6 +139,40 @@
         "license": "https://github.com/browser-use/browser-use/blob/0.13.7/LICENSE",
         "job_application_example": "https://github.com/browser-use/browser-use/blob/0.13.7/examples/use-cases/apply_to_job.py"
       }
+    },
+    "temporal-server": {
+      "repository": "https://github.com/temporalio/temporal",
+      "release": "v1.31.2",
+      "released_at": "2026-07-08T17:10:11Z",
+      "commit_sha": "19a774302c613da9adc4436ab14278ccdca8e0a5",
+      "tree_sha": "ffd7f02fe0639e9faf2b97702eb3ea0944bd48de",
+      "license": {"spdx": "MIT", "blob_sha": "3349f76795f4409cba6ae18ea56adf9fbd8346f3", "content_sha256": "6aab9afd99ceb1dcaf6a0d91386b46baef9bce17ae4006044e0f231e31430b69"},
+      "artifacts": {
+        "checksums": {"url": "https://github.com/temporalio/temporal/releases/download/v1.31.2/checksums.txt", "content_sha256": "cd8cc0c02c3a552d590a346a4311a76fd645ba72dc78973b8d011a49b4e32b3e"},
+        "darwin_arm64": {"url": "https://github.com/temporalio/temporal/releases/download/v1.31.2/temporal_1.31.2_darwin_arm64.tar.gz", "content_sha256": "cef6f8a28da8fe276b1b502062f05a0cff9466451d4f07f70ec1c5a0cbd3d4fb"}
+      },
+      "protocol": {"transport": "gRPC", "api_repository": "https://github.com/temporalio/api"},
+      "rollback": {"strategy": "local_binary_previous_pin", "state_policy": "preserve_sqlite_and_event_history"},
+      "sources": {"release": "https://github.com/temporalio/temporal/releases/tag/v1.31.2", "license": "https://github.com/temporalio/temporal/blob/v1.31.2/LICENSE"}
+    },
+    "temporal-sdk-python": {
+      "repository": "https://github.com/temporalio/sdk-python",
+      "release": "1.31.0",
+      "released_at": "2026-07-29T17:58:27Z",
+      "commit_sha": "84b519e0ff407b049da88ac7d1711f110494ff4d",
+      "tree_sha": "6ca7d581e9e0bea3f19a0e1bf5f3a5ef9fec6d21",
+      "package": "temporalio==1.31.0",
+      "license": {"spdx": "MIT", "blob_sha": "c7f1b9e7e809f4134614fdd5bd1b00c5e3a8df87", "content_sha256": "d7706f28d144dabf07e4946553a4d117d1dab5cda6bf34a602959b4a2fa86b38"},
+      "consumed_contracts": {
+        "workflow": "temporalio.workflow",
+        "activity": "temporalio.activity",
+        "worker": "temporalio.worker.Worker",
+        "schedule": "temporalio.client.Schedule",
+        "client": "temporalio.client.Client",
+        "testing": "temporalio.testing.WorkflowEnvironment"
+      },
+      "rollback": {"strategy": "uv_lock_previous_pin", "state_policy": "replay_event_history_before_activation"},
+      "sources": {"release": "https://github.com/temporalio/sdk-python/releases/tag/1.31.0", "license": "https://github.com/temporalio/sdk-python/blob/1.31.0/LICENSE"}
     }
   }
 }
