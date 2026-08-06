@@ -1536,6 +1536,14 @@ tag/sub-ID capability, and auth state. Logged-out Amazon/Rakuten stays
 `AUTH_REQUIRED`; prefer a current non-regulated B2B/creator software program,
 but use only the provider that returns real ownership and executable-link receipts.
 
+Live checkpoint: Kit returned a rendered `Application received!` confirmation
+after a truthful browser submission and is `APPLICATION_PENDING`; do not reapply.
+Amazon Associates JP found an existing Amazon.co.jp account and sent a recovery
+OTP, but no authorized mail session could read it, so it is
+`AUTH_RECOVERY_OTP_REQUIRED` and no Associates application was submitted. This
+step remains open until approval, ownership, current terms, payout readiness, and
+an executable tracking link are all read back.
+
 - [ ] **Step 3: Build one current English evidence pack**
 
 Bind official claims, locale availability, reader problem, primary offer,

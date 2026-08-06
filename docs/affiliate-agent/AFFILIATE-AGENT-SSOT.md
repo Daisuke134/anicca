@@ -51,7 +51,8 @@ techniques do not merge the ledgers.
 
 | Surface | Observation | Runtime decision |
 |---|---|---|
-| Amazon Associates Japan | CDP reached the Amazon sign-in page; approval state is not observable | `AUTH_REQUIRED`, no offer may publish until the account and tag are read back |
+| Amazon Associates Japan | Browser confirmed an existing Amazon.co.jp account for the private SSOT application email. No password exists in Chrome or macOS Keychain; password recovery sent an OTP to the masked matching mailbox, but no currently authenticated Gmail or macOS Mail authority could read it. No Associates application was submitted | `AUTH_RECOVERY_OTP_REQUIRED`; resume the same recovery intent only after authorized mail access is available, then inspect existing Associates state before creating any application |
+| Kit | A real PartnerStack application was submitted with truthful Anicca, website, `@selawmqt`, audience-size, channel, country, and region fields. The rendered confirmation says `Application received!` and that Kit review will update the application email | `APPLICATION_PENDING`; poll email/PartnerStack without reapplying. Approval, PartnerStack account setup, payout details, and tracking link remain unproven |
 | Rakuten Affiliate | CDP rendered the public home page with `ログイン`; approval state is not observable | `AUTH_REQUIRED`, keep the provider adapter dormant |
 | Postiz | A Japanese integration exists, but the product decision excludes Postiz | Do not read, connect, or use it in the Agent; this is not a blocker |
 | X identity | User screenshot, authenticated browser, and public CRWL readback agree on `sela` / `@selawmqt`: 128 posts, 27 following, 0 followers, with mixed historical JA/EN Anicca posts. Stored credentials produced a real `auth_token`, `/home`, and profile link `/selawmqt`. X rejected legacy `@aniccaen` as inactive | Reuse `@selawmqt` as the English identity, then make its display name, bio, disclosure, and all future posts English-only before E0; preserve historical posts and never use Japanese `@aniccaxxx` or the shared daily-driver |
@@ -76,7 +77,7 @@ live autonomous operation.
 | Runtime | Legacy core still reports `DEAD` | No hourly/daily Affiliate Agent wake has completed |
 | F1 migration | Implemented, reviewed, pushed, and re-run from final HEAD | It does not publish, browse, attribute, or earn |
 | F2 Agent brain | Commit `d9ad4acd7cb0474cf1a825a94cfb49e7847da22e` is pushed; root replay on 2026-08-06 passed focused 16/16, Python 3.9 compile/shell syntax, and 30/30 related regressions | Full-suite collection is blocked by legacy `test_affiliate_verify.py` import-time `sys.exit()`; fresh review and live-provider execution remain open, so F2 stays open |
-| Provider auth | Amazon JP and Rakuten remain `AUTH_REQUIRED` from the last authenticated-state check | Account approval, tag ownership, current offer terms, and executable links |
+| Provider auth | Kit is `APPLICATION_PENDING`; Amazon JP is `AUTH_RECOVERY_OTP_REQUIRED`; Rakuten remains `AUTH_REQUIRED` | No provider approval, tag/link ownership, current executable offer, or payout setup is proven |
 | Publication | Browser publisher is planned only | No Affiliate JA/EN placement has an action receipt plus public readback |
 | Attribution | Design and API tasks remain open | No live redirect click is joined to an ASP transaction |
 | Revenue | No new Affiliate revenue receipt | Legacy watermark, fixtures, clicks, estimates, and creator screenshots do not count |
