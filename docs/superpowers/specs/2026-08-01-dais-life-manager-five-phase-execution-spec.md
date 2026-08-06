@@ -2706,6 +2706,13 @@ ConnectorはGigの稼働資産を一切変更・参照依存しない。`profita
 候補attempt履歴はtelemetryであり除外gateにしない。生年月日`2002-01-30`はmode 0600 private profileへseed済みだが、全agentの
 個人情報SSOT統合は未完了である。
 
+O1B-25進捗113（16A Connector tab-owner rail / RED→GREEN、runtime配線は16B）: Connector repository内へ
+`connector-tab-owner.js`を追加した。`:9222`以外を拒否し、baseline targetを除外した後にcanonical Luma URLへ一致する
+page targetが正確に一つだけの場合に限り、owner token、target ID、page WebSocket、baseline targetsを含むschema v1 receiptを
+mode 0600でatomic保存する。Chrome内部pageや他site targetは候補外とし、同一event tabが複数なら曖昧な所有権として停止する。
+新規contractと既存daily-driverのfocused testは8/8 GREEN。次はこのreceiptを親loopからTerraへ渡し、Terraの接続先を
+所有tab一つへ限定する16Bである。live submitはまだ成立していない。
+
 現在と完成形:
 
 ```mermaid
@@ -2752,7 +2759,7 @@ flowchart LR
 13. Observer trace packを実装する。run/event/capability versionへaction、URL class、control label、validation class、screenshot SHA、provider readbackをbindし、PII/secretなしのreplay fixtureをincidentへ添付する。
 14. [pause] self-fix producerはDaisの明示指示で停止する。task deliveryのlive E2Eが成立するまで再開しない。
 15. self-build consumerを復旧し、protected-path、permission、focused/full test、rollback、隔離CloakBrowser canaryを通過したrevisionだけをmerge・再配備する。canary failureは同incidentの次revisionへ戻す。
-16A. Connector専用tab-owner railをrepository内へ実装する。`:9222`の既存CloakBrowser default contextから一tabだけをowner token付きで取得し、target ID、page WebSocket、baseline targetsをmode 0600 receiptへ保存する。Gigのcode/state/profile/portへ依存しない。
+16A. [x] Connector専用tab-owner railをrepository内へ実装する。`:9222`の既存CloakBrowser default contextから一tabだけをowner token付きで取得し、target ID、page WebSocket、baseline targetsをmode 0600 receiptへ保存する。Gigのcode/state/profile/portへ依存しない。focused 8/8 GREEN。runtimeからの利用は16Bで閉じる。
 16B. Terra browser executorへ16Aのreceiptだけを渡す。browser/package/tab探索、別browser起動、desktop-wide `Cmd-Tab`・AppleScript・`cliclick`、raw DOM mutationを禁止し、所有tabでuser-facing actionを使って同一turnのsubmitまで完了する。
 16C. Connector launchd自身を最新commitでwakeし、実Luma eventでform入力→final submit→登録済みまたは承認待ちmarkerを親loopが独立readbackする。agentのJSON自己申告だけを成功にしない。
 16D. 同じevent lineageへfull-page PNG SHA-256、Google Calendar event ID/readback、Telegram card/photo positive message IDを保存する。4証拠の一つでも欠ければ未完了とする。
@@ -2768,22 +2775,21 @@ flowchart LR
 26. Mac再起動後のConnector、producer、consumer launchd、heartbeat、healthcheck、stale-loop self-healを実機検証する。
 27. canonical branchへ統合し、legacy bridge / Docker worker / 重複scheduleを退役する。
 
-### P0 残TODOの現在順序（進捗112を正本とする）
+### P0 残TODOの現在順序（進捗113を正本とする）
 
-1. Connector専用tab-owner railを実装し、`:9222`の所有tab receiptを生成する（16A）。
-2. Terraを所有tab一つへ固定し、同一turnでform入力・submitまで実行させる（16B）。
-3. 全個人情報をprivate user-profile SSOTへ統合し、Connectorは必要fieldだけを遅延読込する。未知の通常主観質問はtruthful general answerで継続し、質問shape未知を停止理由にしない。
-4. 最新Connector launchdをkickstartし、loop主体のLuma実submitと親readbackを成立させる（16C）。
-5. PNG、Calendar ID/readback、Telegram card/photo IDを一つのlineage receiptへ結合する（16D、18）。
-6. Lumaが主催者公式siteへの追加登録を要求するeventで、trusted Gmail OTPと公式完了markerまで同じlineageで閉じる（17）。
-7. privacy-safe Observer trace packを実装し、action、URL class、control label、validation class、screenshot SHA、provider readbackをrun/event/capability versionへbindする（13）。
-8. source registryを実装し、Luma、Connpass、Peatix、Meetup、Doorkeeper、Eventbriteを`discovery / registration / effect_readback / screenshot_evidence`能力で宣言する（19）。
-9. Connpassの公式API discoveryと認証済みbrowser submit/readbackを実証してからregistrationを有効化する（20〜21）。
-10. Peatix、Meetup、Doorkeeper、Eventbriteを一siteずつlive proof後に有効化し、一source failureでpass全体を止めない（22〜23）。
-11. rolling 21日の`open=0`まで反復し、各日を`covered_existing / covered_new / unavailable`の実証拠で閉じる（25）。
-12. Mac再起動後のlaunchd、CloakBrowser、heartbeat、healthcheck、idempotencyを実機検証する（26）。
-13. self-fix producerはlive task delivery成立まで停止を維持する。成立後にObserver fixture→Terra revision→隔離Connector canary→merge/redeployを復旧する（14〜15）。
-14. canonical branchへ統合し、legacy bridge、Docker worker、重複scheduleを退役する（27）。
+1. Terraを所有tab一つへ固定し、同一turnでform入力・submitまで実行させる（16B）。
+2. 全個人情報をprivate user-profile SSOTへ統合し、Connectorは必要fieldだけを遅延読込する。未知の通常主観質問はtruthful general answerで継続し、質問shape未知を停止理由にしない。
+3. 最新Connector launchdをkickstartし、loop主体のLuma実submitと親readbackを成立させる（16C）。
+4. PNG、Calendar ID/readback、Telegram card/photo IDを一つのlineage receiptへ結合する（16D、18）。
+5. Lumaが主催者公式siteへの追加登録を要求するeventで、trusted Gmail OTPと公式完了markerまで同じlineageで閉じる（17）。
+6. privacy-safe Observer trace packを実装し、action、URL class、control label、validation class、screenshot SHA、provider readbackをrun/event/capability versionへbindする（13）。
+7. source registryを実装し、Luma、Connpass、Peatix、Meetup、Doorkeeper、Eventbriteを`discovery / registration / effect_readback / screenshot_evidence`能力で宣言する（19）。
+8. Connpassの公式API discoveryと認証済みbrowser submit/readbackを実証してからregistrationを有効化する（20〜21）。
+9. Peatix、Meetup、Doorkeeper、Eventbriteを一siteずつlive proof後に有効化し、一source failureでpass全体を止めない（22〜23）。
+10. rolling 21日の`open=0`まで反復し、各日を`covered_existing / covered_new / unavailable`の実証拠で閉じる（25）。
+11. Mac再起動後のlaunchd、CloakBrowser、heartbeat、healthcheck、idempotencyを実機検証する（26）。
+12. self-fix producerはlive task delivery成立まで停止を維持する。成立後にObserver fixture→Terra revision→隔離Connector canary→merge/redeployを復旧する（14〜15）。
+13. canonical branchへ統合し、legacy bridge、Docker worker、重複scheduleを退役する（27）。
 
 ### Browser E2E判定
 
