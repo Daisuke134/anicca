@@ -91,8 +91,16 @@ The runtime file needs an 11-line first-wake initializer because native-pass can
 - Modify: `apps/life-manager/lib/calendar-candidate-gate.js`
 - Modify: `apps/life-manager/lib/calendar-candidate-gate.test.js`
 - Modify: `apps/life-manager/lib/connector-native-runtime.js`
+- Modify: `apps/life-manager/lib/connector-native-runtime.test.js`
 
 **Completion:** Verified Connpass discovery candidates pass through the same direct-conflict, all-day, inbound-route, outbound-route, and expanded-window checks as Luma without forging Luma provenance. Only eligible candidates are handed to the still-read-only Connpass adapter boundary; zero eligible candidates advances the provider cursor and coverage remains open.
+
+This slice changes 196 lines across four files because 60 lines move the existing Luma evaluator into one shared implementation, while separate unit and runtime tests prove both provenance rejection and cursor advancement. Splitting before runtime wiring would leave the new gate unreachable and would not satisfy Task 3.
+
+- [x] RED: existing Calendar gate 5 tests passed and the Connpass evaluator export was absent.
+- [x] GREEN: Luma and Connpass share one evaluator; verified Connpass candidates receive direct/all-day/travel/expanded-window checks; fake handoff fails closed; zero eligible advances to Peatix.
+- [x] Focused Calendar 6/6 + runtime 17/17、pretest 12/12、outbound 346/346 GREEN。
+- [x] Master specへ進捗134を記録しcommit/push。
 
 ## Task 4: Connpass Authenticated Registration Adapter
 

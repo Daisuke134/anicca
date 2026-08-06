@@ -1059,6 +1059,8 @@ test("a Connpass cursor runs exhaustive official discovery without registration 
     status: "advisory_candidates_found", coverage_status: "open", coverage_credit_count: 0,
     network_call_count: 2, advisory_candidates: Object.freeze([{ provider: "connpass", event_ref: "connpass-event://event/101" }]),
   });
+  const calendarGate = Object.freeze({ status: "evaluated" });
+  let eligibleCandidates = handoff.advisory_candidates;
   let received;
   input.deps.createPack = () => ({
     ...input.pack,
@@ -1067,17 +1069,23 @@ test("a Connpass cursor runs exhaustive official discovery without registration 
       return handoff;
     },
   });
-  const result = await runNativeConnectorPass({
+  const runtimeInput = {
     ...input,
     config: {
       ...input.config, providerRegistry: registry, providerCursor,
       connpassApiKey: "fixture-secret-api-key-1234567890",
+      mapsKey: "maps-secret", homeLocation: "opaque-home",
     },
     deps: {
       ...input.deps,
+      createRouteMinutes: () => async () => 20,
+      async gateConnpassCalendar() { return calendarGate; },
+      isVerifiedCalendarCandidateGate: (value) => value === calendarGate,
+      selectCalendarEligibleConnpass: () => eligibleCandidates,
       isVerifiedEventSourceHandoff: (value) => value === handoff,
     },
-  });
+  };
+  const result = await runNativeConnectorPass(runtimeInput);
 
   assert.equal(received.date, "2026-08-05");
   assert.equal(received.lumaOutcome.status, "next_provider_required");
@@ -1087,6 +1095,10 @@ test("a Connpass cursor runs exhaustive official discovery without registration 
   assert.equal(result.provider_cursor, providerCursor);
   assert.equal(result.write, null);
   assert.equal(JSON.stringify(result).includes("fixture-secret"), false);
+  eligibleCandidates = Object.freeze([]);
+  const blocked = await runNativeConnectorPass(runtimeInput);
+  assert.equal(blocked.provider_cursor.provider, "peatix");
+  assert.equal(blocked.provider_discovery.advisory_candidates.length, 0);
 });
 
 test("native runtime exposes only its bounded failing stage", async () => {

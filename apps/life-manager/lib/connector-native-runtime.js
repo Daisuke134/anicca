@@ -40,6 +40,11 @@ const { zonedSlotInstant } = require("./honne-ja-shadow-schedule.js");
 const { isVerifiedEventProviderRegistry } = require("./event-provider-registry.js");
 const { advanceEventProviderCursor, createEventProviderCursor } = require("./event-provider-cursor.js");
 const { isVerifiedEventSourceHandoff } = require("./event-source-handoff.js");
+const {
+  calendarEligibleConnpassCandidates,
+  evaluateConnpassCalendarCandidateGate,
+  isVerifiedCalendarCandidateGate,
+} = require("./calendar-candidate-gate.js");
 
 function unavailable() {
   throw new Error("Connector native runtime unavailable");
@@ -361,6 +366,7 @@ async function runNativeConnectorPass(input = {}) {
     };
 
     let write = null;
+    let routeMinutesForProviders = null;
     const candidateAttempts = [];
     const currentCapabilityVersion = capabilityVersion(config.capabilityVersion);
     const inputCursor = resumeCursor(config.cursor);
@@ -373,6 +379,14 @@ async function runNativeConnectorPass(input = {}) {
       attempts: Array.isArray(config.candidateAttempts) ? config.candidateAttempts : [],
       now,
     }).latest;
+    if (providerCursor && !Object.hasOwn(config, "profilePath")) {
+      const createRouteMinutes = factory(deps, "createRouteMinutes", createConnectorRouteMinutes);
+      routeMinutesForProviders = createRouteMinutes({
+        mapsKey: requiredText(config.mapsKey),
+        homeLocation: requiredText(config.homeLocation),
+      });
+      if (typeof routeMinutesForProviders !== "function") unavailable();
+    }
     if (Object.hasOwn(config, "profilePath")) {
       const readProfile = factory(deps, "readProfile", readConnectorProfile);
       const verifyProfile = factory(deps, "isVerifiedConnectorProfile", isVerifiedConnectorProfile);
@@ -381,7 +395,6 @@ async function runNativeConnectorPass(input = {}) {
         deps, "isVerifiedEventGoalSerendipity", isVerifiedEventGoalSerendipity,
       );
       const gateDateCalendar = factory(deps, "gateDateCalendar", (...args) => pack.gateDateCalendar(...args));
-      const createRouteMinutes = factory(deps, "createRouteMinutes", createConnectorRouteMinutes);
       const createSpendPolicy = factory(deps, "createSpendPolicy", createEventSpendPolicy);
       const planDateSpend = factory(deps, "planDateSpend", (...args) => pack.planDateSpend(...args));
       const verifySpendSequence = factory(
@@ -398,15 +411,18 @@ async function runNativeConnectorPass(input = {}) {
       failureCode = "CONNECTOR_NATIVE_PROFILE_FAILED";
       const profile = readProfile({ tenantId, path: config.profilePath });
       if (!verifyProfile(profile) || profile.tenant_id !== tenantId || profile.timezone !== timeZone) unavailable();
+      const createRouteMinutes = factory(deps, "createRouteMinutes", createConnectorRouteMinutes);
+      routeMinutesForProviders = createRouteMinutes({
+        mapsKey: requiredText(config.mapsKey),
+        homeLocation: requiredText(config.homeLocation),
+      });
+      if (typeof routeMinutesForProviders !== "function") unavailable();
       const judgmentDays = dateInventory.days.filter((day) => (
         coverage.days.some((coverageDay) => coverageDay.date === day.date && coverageDay.status === "open")
         && Array.isArray(day.events) && day.events.length > 0
       ));
       if (judgmentDays.length === 0) unavailable();
-      const routeMinutes = createRouteMinutes({
-        mapsKey: requiredText(config.mapsKey),
-        homeLocation: requiredText(config.homeLocation),
-      });
+      const routeMinutes = routeMinutesForProviders;
       const lumaEmail = requiredText(config.lumaEmail);
       const confirmationReader = createConfirmationReader({
         gogPath: config.gogBin,
@@ -628,6 +644,36 @@ async function runNativeConnectorPass(input = {}) {
         network_call_count: handoff.network_call_count,
         advisory_candidates: Object.freeze([...handoff.advisory_candidates]),
       });
+      if (handoff.status === "advisory_candidates_found") {
+        if (typeof routeMinutesForProviders !== "function") unavailable();
+        const gateConnpass = factory(
+          deps, "gateConnpassCalendar", evaluateConnpassCalendarCandidateGate,
+        );
+        const verifyCalendarGate = factory(
+          deps, "isVerifiedCalendarCandidateGate", isVerifiedCalendarCandidateGate,
+        );
+        const selectConnpass = factory(
+          deps, "selectCalendarEligibleConnpass", calendarEligibleConnpassCandidates,
+        );
+        const calendarGate = await gateConnpass({
+          handoff, busyInventory, homeLocation: requiredText(config.homeLocation),
+          routeMinutes: routeMinutesForProviders,
+        });
+        if (!verifyCalendarGate(calendarGate)) unavailable();
+        const eligible = selectConnpass(handoff, calendarGate);
+        if (!Array.isArray(eligible)) unavailable();
+        providerDiscovery = Object.freeze({
+          ...providerDiscovery,
+          calendar_gate_status: calendarGate.status,
+          advisory_candidates: Object.freeze([...eligible]),
+        });
+        if (calendarGate.status === "evaluated" && eligible.length === 0) {
+          providerCursor = advanceEventProviderCursor({
+            cursor: providerCursor, registry: providerRegistry,
+            transition: "provider_exhausted", observedAt: nextCursorInstant(providerCursor, now),
+          });
+        }
+      }
     }
 
     let candidate = null;
