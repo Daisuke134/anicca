@@ -2504,6 +2504,20 @@ the resident worker from producing one authoritative application receipt:
         isolates each candidate exception so the next ranked candidate still runs.
         Related tests pass 27/27 and the full suite passes 419/419. A new immutable
         resident run is required before FILL-1D is complete.
+      - Resident run `daily-20260806-090916` proved same-pass continuation: the
+        installed Job Hunter processed three ranked OpenAI Ashby roles and persisted
+        three independent snapshots, fill receipts, and pre-submit screenshots. It
+        exposed every observed start-date, work-authorization, sponsorship,
+        office-attendance, and attestation question as a blocker and submitted zero.
+        The receipts show `profile.base` was entered and read back, but empty
+        dropdown/link controls carrying the same group label produced a duplicate
+        location blocker. Phone remained blocked because the private profile's exact
+        trusted status is `verified_from_sent_resume`, while the adapter accepted only
+        the literal `verified`. The local repair limits group lookup to comboboxes and
+        explicit Yes/No choice buttons, accepts any `verified*` phone provenance, and
+        projects `attempted_count` into the browser result. Related tests pass 27/27
+        and the full suite remains 419/419. One resident replay must prove phone and
+        location disappear from blockers while the legal questions remain blocked.
 - [ ] **L-49K0C1** — Implement the same-role alternate-route ladder: canonical ATS,
   alternate official employer URL, explicitly accepted recruiting-email application,
   verified public work-address recruiting outreach, then the next eligible role.

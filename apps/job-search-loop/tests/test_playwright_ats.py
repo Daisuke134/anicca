@@ -47,6 +47,7 @@ class PlaywrightAtsTests(unittest.TestCase):
         script = page.frames[0].control_locator.script
         self.assertIn("group_label", script)
         self.assertIn("needsGroup", script)
+        self.assertIn("choiceText", script)
         self.assertIn("groupLabel.includes('?')", script)
         self.assertNotIn("n.value", script)
 
@@ -63,7 +64,7 @@ class PlaywrightAtsTests(unittest.TestCase):
                     "name": "Daisuke Narita",
                     "application_email": "candidate@example.test",
                     "phone": "+81-00-0000-0000",
-                    "phone_status": "verified",
+                    "phone_status": "verified_from_sent_resume",
                     "linkedin_url": "https://www.linkedin.com/in/example",
                     "github_url": "https://github.com/example",
                     "base": "Tokyo, Japan",
