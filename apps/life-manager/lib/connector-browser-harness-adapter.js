@@ -1,0 +1,124 @@
+"use strict";
+
+const PAGE_WEBSOCKET = /^ws:\/\/127\.0\.0\.1:9222\/devtools\/page\/([A-Za-z0-9._-]{3,128})$/;
+const PROVIDER = /^[a-z][a-z0-9_-]{1,31}$/;
+const CONTROL = /^[a-z][a-z0-9_-]{1,63}$/;
+const ALLOWED = new Map([
+  ["observe", new Set(["ax_inspect", "dom_inspect", "parent_readback"])],
+  ["fill", new Set(["ax_fill", "dom_fill", "ax_check", "ax_select"])],
+  ["submit", new Set(["ax_click", "coordinate_click", "keyboard_submit"])],
+  ["readback", new Set(["parent_readback", "ax_inspect", "dom_inspect"])],
+]);
+
+function invalid() {
+  throw new Error("Browser Harness adapter invalid");
+}
+
+function dependencies(input) {
+  if (!input || typeof input !== "object" || Array.isArray(input)) invalid();
+  for (const name of ["observePage", "proposeAction", "performAction", "readExpectedState"]) {
+    if (typeof input[name] !== "function") invalid();
+  }
+  return input;
+}
+
+function scope(input) {
+  if (!input || typeof input !== "object" || Array.isArray(input)) invalid();
+  const websocket = String(input.pageWebsocket || "");
+  const match = PAGE_WEBSOCKET.exec(websocket);
+  if (!match || !input.page || typeof input.page !== "object") invalid();
+  const provider = String(input.provider || "");
+  if (!PROVIDER.test(provider) || input.expectedState !== "registered_or_pending") invalid();
+  const maxSteps = Number(input.maxSteps);
+  if (!Number.isInteger(maxSteps) || maxSteps < 1 || maxSteps > 10) invalid();
+  return Object.freeze({
+    provider,
+    page: input.page,
+    page_websocket: websocket,
+    target_id: match[1],
+    expected_state: input.expectedState,
+    max_steps: maxSteps,
+  });
+}
+
+function safeAction(input) {
+  if (!input || typeof input !== "object" || Array.isArray(input)) return null;
+  const purpose = String(input.purpose || "");
+  const method = String(input.method || "");
+  const control = String(input.control || "");
+  if (!ALLOWED.has(purpose) || !ALLOWED.get(purpose).has(method) || !CONTROL.test(control)) return null;
+  return Object.freeze({ purpose, method, control });
+}
+
+function completedState(value) {
+  return Boolean(value && ["registered", "pending"].includes(value.status));
+}
+
+function createBrowserHarnessAdapter(options = {}) {
+  const deps = dependencies(options);
+
+  async function execute(bounded) {
+    const repaired = [];
+    for (let step = 1; step <= bounded.max_steps; step += 1) {
+      const observation = await deps.observePage(Object.freeze({
+        page: bounded.page,
+        target_id: bounded.target_id,
+      }));
+      const proposed = await deps.proposeAction(Object.freeze({
+        provider: bounded.provider,
+        page_websocket: bounded.page_websocket,
+        target_id: bounded.target_id,
+        expected_state: bounded.expected_state,
+        step,
+        observation,
+      }));
+      const action = safeAction(proposed);
+      if (!action) {
+        return Object.freeze({
+          status: "failed",
+          safe_reason: "unsafe_agent_action",
+          repaired_actions: Object.freeze([...repaired]),
+        });
+      }
+      const effect = await deps.performAction(Object.freeze({
+        page: bounded.page,
+        target_id: bounded.target_id,
+        action,
+      }));
+      if (!effect || effect.status !== "success") {
+        return Object.freeze({
+          status: "failed",
+          safe_reason: "agent_action_failed",
+          repaired_actions: Object.freeze([...repaired]),
+        });
+      }
+      repaired.push(action);
+      const providerState = await deps.readExpectedState(Object.freeze({
+        page: bounded.page,
+        target_id: bounded.target_id,
+        provider: bounded.provider,
+        expected_state: bounded.expected_state,
+      }));
+      if (completedState(providerState)) {
+        return Object.freeze({
+          status: "completed",
+          provider_state: Object.freeze({ ...providerState }),
+          repaired_actions: Object.freeze([...repaired]),
+        });
+      }
+    }
+    return Object.freeze({
+      status: "failed",
+      safe_reason: "agent_step_limit",
+      repaired_actions: Object.freeze([...repaired]),
+    });
+  }
+
+  return Object.freeze({
+    runFallback(input) {
+      return execute(scope(input));
+    },
+  });
+}
+
+module.exports = { createBrowserHarnessAdapter };

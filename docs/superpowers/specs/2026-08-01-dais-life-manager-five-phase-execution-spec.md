@@ -5281,7 +5281,29 @@ focused minimal coreは5/5 GREEN。official adapter/rendererを含むfocused sui
 実browser、provider Submit、Calendar、PNG、Telegram外部作用は0である。Item 6を完了し、Item 7でConnector-owned pageだけを実操作できる
 Browser Harness bounded adapterを接続する。
 
-### Active remaining TODO SSOT（進捗176。これ以外の残TODO一覧は履歴）
+### O1B-25進捗177（Item 7 / Browser Harness page-scoped bounded adapter）
+
+local `browser-harness --version`は0.1.0、doctorはlatest 0.1.8 available、Chrome/daemon alive、active connection 0を返した。
+公式mainの`src/browser_harness/daemon.py`を再読し、`BU_CDP_WS`はbrowser-level WebSocketへ接続後、`Target.getTargets`で全pageを列挙し、
+最初のpageへattachし、pageがなければ`Target.createTarget`、条件によりinspect tabを`Target.closeTarget`することを確認した。
+したがって公式CLIをConnector `:9222` browser endpointへそのまま接続すると、一owned target境界に違反する。local package update、daemon接続、
+profile変更は行わず、Browser HarnessのAX-first→targeted DOM→coordinate fallbackとfocused action contractをpage-scoped adapterとして採用した。
+
+TDD REDで`apps/life-manager/lib/connector-browser-harness-adapter.test.js`を追加し、module不存在によるREDを確認後、
+`createBrowserHarnessAdapter`を実装した。adapterはexact
+`ws://127.0.0.1:9222/devtools/page/<claimed-target-id>`だけを受理し、browser endpoint、Gig `:9223`、credential-bearing URL、malformed
+page endpointを同期拒否する。agent proposalは`observe/fill/submit/readback`とallowlisted AX/DOM/coordinate method、一つのsafe controlだけに閉じる。
+`browser_close`、`target_create`、`target_close`、`new_tab`はperform前に`unsafe_agent_action`へする。
+
+fallbackは毎stepでsanitized page observation→一focused proposal→parent perform→parent expected-state readbackを行い、最大10 stepで止まる。
+成功条件はagent proseではなく`readExpectedState`の`registered/pending`だけで、成功したsafe action列だけを`repaired_actions`として返す。
+core側もowned target IDとpage WebSocketの完全一致を検証し、同じ`page`と`pageWebsocket`だけをadapterへ渡すようRED→GREEN更新した。
+
+adapter/core focused testsは9/9 GREEN。ownership/controller/lease、official adapter/rendererを含む関連suiteは後続fresh verificationで確認する。
+実`:9222`接続、target操作、Submit、Calendar、PNG、Telegram作用は0。Item 7を完了し、Item 8で既存Luma direct workflowとproduction
+dependency boundaryを接続する。
+
+### Active remaining TODO SSOT（進捗177。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
@@ -5291,7 +5313,7 @@ Browser Harness bounded adapterを接続する。
 4. [x] **production interfaceとfocused destructive-boundary testsを先に固定する。** 一entrypoint、一session、一target、一page、candidate navigationでcreate/close 0、Gig `:9223` write 0、agent `browser.close()` 0、inline generated Node 0、failure 3/10分circuit-openを失敗する契約testとして追加する。大規模test frameworkは作らない。証拠: 進捗174、focused RED 2件。
 5. [x] **旧production orchestrationをGit patchで除去する。** official Connector entrypointからcoverage/ranking/gate/cursor/Healer/healthcheck/bridge依存を外す。state/evidence/receipt fileは削除しない。broad `rm`は使わない。旧moduleが他trackで必要ならproduction pathからだけ切り離す。証拠: 進捗175、focused 3/3 GREEN、minimal core 4/4 expected RED。
 6. [x] **provider-neutral minimal runner coreを実装する。** Daily wake→Calendar gap→ordered provider/candidate→same-page navigation→direct action→parent readback→downstream evidence→close owned page→exitを一entrypointへ接続する。action historyはpurpose、safe method、timestamp、result、durationだけをappend-only保存する。証拠: 進捗176、focused 8/8 GREEN。
-7. [ ] **Browser Harness bounded adapterを接続する。** Connector-owned claimed pageだけを操作対象にし、AX tree→targeted DOM→screenshot/coordinateの順で観察する。navigate/observe/fill/submit/readbackを一作用ずつ実行し、candidateごと最大10 agent step、browser/session/target作成権限なし、永続更新先はprovider skill/helper/cacheだけに制限する。
+7. [x] **Browser Harness bounded adapterを接続する。** Connector-owned claimed pageだけを操作対象にし、AX tree→targeted DOM→screenshot/coordinateの順で観察する。navigate/observe/fill/submit/readbackを一作用ずつ実行し、candidateごと最大10 agent step、browser/session/target作成権限なし、永続更新先はprovider skill/helper/cacheだけに制限する。証拠: 進捗177、adapter/core 9/9 GREEN。
 8. [ ] **Luma script-first workflowを接続する。** Lumaを必ず最初に探索し、無料・受付中・Calendar非衝突の最初のcandidateへ既存reader/filler/Submitをdirect actionとして適用する。未知ordinary required fieldまたはUI変更だけBrowser Harnessへ渡す。過去attempt/suppressionを申込停止gateにしない。
 9. [ ] **versioned provider/action cacheを実装する。** provider、workflow version、page state、safe selector/action、expected effectを保存する。fallback成功時は親がexpected stateを確認後、replacement actionだけ更新する。credential、cookie、private value、raw promptは保存しない。
 10. [ ] **foreground Luma live E2Eを実行する。** scheduling disabledのままbounded foreground runnerを起動し、実際の無料・Calendar非衝突Luma eventへSubmitする。失敗時は同じsession/pageで修復または次候補へ進む。完了条件はparent readbackが新規`registered`または`pending`を観測すること。

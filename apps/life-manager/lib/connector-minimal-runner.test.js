@@ -28,6 +28,7 @@ function fixture(overrides = {}) {
         return Object.freeze({
           session_id: "session-owned-1",
           target_id: "TARGETOWNED1",
+          page_websocket: "ws://127.0.0.1:9222/devtools/page/TARGETOWNED1",
           page,
         });
       },
@@ -115,6 +116,7 @@ test("a failed direct action invokes at most ten agent steps on the exact same p
   const state = fixture({
     async runAgentFallback(input) {
       assert.equal(input.page.page_id, "page-owned-1");
+      assert.equal(input.pageWebsocket, "ws://127.0.0.1:9222/devtools/page/TARGETOWNED1");
       assert.equal(input.maxSteps, 10);
       assert.equal(Object.hasOwn(input, "browser"), false);
       state.calls.push(["agent", input.candidate.event_ref, input.page.page_id, input.maxSteps]);
