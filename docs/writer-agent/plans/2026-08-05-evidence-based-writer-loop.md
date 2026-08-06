@@ -30,6 +30,17 @@ poisoning the next day. It does not create a second short fallback article.
    the $10,000 MRR gate only from active external recurring contracts.
 7. Every strategy change binds one variable, a baseline, a candidate, measured
    funnel/revenue/cost outcomes, and KEEP/REVERT/INCONCLUSIVE.
+8. AppSignal, TECHi, and later paid publishers use one evidence-backed
+   Opportunity -> Application -> Contract -> Assignment -> Delivery ->
+   acceptance/publication contract; the existing canonical money ledger records
+   payment at the contract-defined trigger. Publisher adapters contain
+   transport only.
+9. AppSignal's recovered submission and TECHi provider ID `4` migrate
+   idempotently without duplicate submission or invented acceptance/revenue.
+10. A company-paid article cannot enter drafting until every blocking commercial
+    term in SSOT §8.2 is captured; only an exact positive external payment at
+    the contract-defined approval/publication/later trigger may enter revenue,
+    and one-time editorial fees never enter MRR.
 
 ## 3. As-Is / To-Be
 
@@ -41,6 +52,7 @@ poisoning the next day. It does not create a second short fallback article.
 | Review | Multiple overlapping gates appear to own taste | Four decision dimensions: factual integrity, reader job, original value, offer fit; deterministic safety/policy checks remain hard blockers |
 | Topic | Vendor claims can dominate supply | Paid-market, reader-demand, publisher, and owned-funnel evidence select the problem first |
 | Revenue | Mixed one-time monthly target precedes MRR | Cash-learning gates remain separate; $10K MRR uses only subscriptions and recurring retainers |
+| Company-paid work | Publisher-specific polling and receipts stop before one complete commercial contract | Thin publisher adapters over one shared contract, delivery, payment, recovery, and reporting pipeline |
 
 ## 4. Test Matrix
 
@@ -54,6 +66,11 @@ poisoning the next day. It does not create a second short fallback article.
 | 6 | MRR excludes one-time money | `test_mrr_requires_active_recurring_external_contract` | PLANNED | NOT RUN |
 | 7 | One-variable learning | `test_strategy_promotion_requires_matched_canary` | PLANNED | NOT RUN |
 | 8 | Language/hash editorial exhaustion | `test_editorial_exhaustion_is_scoped_to_language_and_current_hash` | PLANNED | NOT RUN |
+| 9 | Existing application migration | `test_existing_applications_migrate_once_without_resubmission` | PLANNED | NOT RUN |
+| 10 | Contract term gate | `test_assignment_requires_complete_commercial_terms` | PLANNED | NOT RUN |
+| 11 | Publisher isolation | `test_publisher_outage_does_not_block_daily_or_other_publishers` | PLANNED | NOT RUN |
+| 12 | Exact company payment | `test_editorial_payment_joins_exact_contract_trigger_and_artifact` | PLANNED | NOT RUN |
+| 13 | Commercial crash recovery | `test_each_commercial_transition_is_idempotent_after_restart` | PLANNED | NOT RUN |
 
 `Coverage=PLANNED` means every To-Be has an explicit future test identity;
 `Execution=NOT RUN` is the current truth for this plan's new contracts. Each
@@ -76,19 +93,22 @@ row moves to IMPLEMENTED/PASS only after its code and execution receipt exist.
 
 ## 6. Execution Steps
 
-1. Verify the live next-day start controller against the terminal run.
-2. Implement and pass the active-six isolation and no-forced-publication
+1. Refactor the existing AppSignal/TECHi seam into the shared commercial
+   contract in SSOT §8.2, migrate both submissions, run the real watchers, and
+   prove no duplicate side effect or false money.
+2. Verify the live next-day start controller against the terminal run.
+3. Implement and pass the active-six isolation and no-forced-publication
    contracts; then record those receipts in the SSOT.
-3. Replace vendor-biased topic authority with demand-bound selection and prove
+4. Replace vendor-biased topic authority with demand-bound selection and prove
    one live bilingual article from full source bodies.
-4. Close public Money Control, first external payments, matched learning
+5. Close public Money Control, first external payments, matched learning
    canary, and revenue gates in SSOT order.
-5. For every implementation slice: RED, GREEN, focused regression, full Writer
+6. For every implementation slice: RED, GREEN, focused regression, full Writer
    regression, live owner E2E, receipt update, commit, and push.
 
-The remaining revenue/UX order is binding: hash-keyed editorial repair and
-current-hash reader/editorial gates -> active-six publication/readback and money
-sync -> three consecutive active-six runs -> public Money Control plus Telegram
+The remaining revenue/UX order is binding: bounded company-contract refactor ->
+hash-keyed editorial repair -> current-hash reader/editorial gates -> active-six
+publication/readback and money sync -> three consecutive active-six runs -> public Money Control plus Telegram
 parity (same snapshot, verified/unknown/pending separated) -> accepted publisher
 work -> first note purchase -> first Substack contract/renewal -> self-owned
 unlock/renewal -> matched learning canary -> first dollar -> `$400` month ->
@@ -196,11 +216,11 @@ revenue exists. Telegram message ID is `7398`; received revenue and MRR are
 
 ### Next exact task
 
-Implement RED/GREEN for language+current-hash exhaustion, deploy the canonical
-runtime, kickstart `ai.anicca.article-resume`, pass current-hash editorial and
-reader gates, dispatch/read back active-six, then run money sync. Same-hash
-exhaustion remains terminal; a newly authorized reroute hash gets one bounded
-evaluation. This is the next task, not a passive schedule wait.
+Implement SSOT §8.2's bounded company-contract refactor from its first RED
+characterization slice. Then implement language+current-hash exhaustion,
+deploy, kickstart `ai.anicca.article-resume`, pass current-hash gates, dispatch
+active-six, and run money sync. Existing loops remain active; this ordering is
+not a passive schedule wait.
 
 ## Task 4: Close revenue, reporting, and learning gates
 

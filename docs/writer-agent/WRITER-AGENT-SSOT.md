@@ -257,7 +257,8 @@ public readback are observed.
 
 | Stream | What is sold | Revenue type | Current state | Account/KYC dependency | Verified amount now |
 |---|---|---|---|---|---:|
-| AppSignal | Accepted technical article | One-time editorial fee | A prior run reported an application submitted, but no durable submission ID, confirmation page, email, or content hash is present in the current Writer state. Runtime therefore keeps the program `VALUE_UNKNOWN` and must recover that receipt before treating it as `SUBMITTED` | Author agreement and publisher payment details | $0 |
+| AppSignal | Accepted technical article | One-time editorial fee | Recovered immutable Google Form confirmation advances the application to `SUBMITTED`; the correlated 15-minute watcher currently observes `NO_RESPONSE`. Acceptance, rate, publication, and payment remain absent | Author agreement and publisher payment details | $0 |
+| TECHi Author | Accepted article | One-time editorial fee plus traffic-threshold revenue share | Provider application ID `4` remains durably `SUBMITTED`; last confirmed provider state is `pending`, while the latest real poll returns `UNAVAILABLE` because the authenticated endpoint returns no application. No acceptance, article, publication, or payout exists | Free TECHi account; monthly Stripe payout after accepted published work | $0 |
 | DigitalOcean Write for DOnations | Accepted and published tutorial | One-time editorial fee | Intake is not currently usable: the official page still says submissions are paused, and `do.co/w4do` redirects to that page instead of an application form | PayPal receive capability and DO credit exist; contract/contact details still apply. Never store the PayPal address in this SSOT | $0 |
 | note | Paid Japanese article | One-time reader payment | Paid publication capability exists; attributed sales receipt absent | note creator and payout account | ¥0 verified |
 | Substack | Paid subscription/archive | Recurring reader payment | $8/month tier was enabled; paid subscriber receipt absent | Substack creator plus Stripe | $0 MRR verified |
@@ -313,11 +314,12 @@ programs remain on a low-frequency recheck list while the Agent continues
 finding alternatives. A human-readable Telegram delta is sent only for a real
 state change or a high-fit newly open opportunity.
 
-Current verified opportunity matrix (2026-08-02):
+Current verified opportunity matrix:
 
 | Publisher | State | Public compensation | Writer decision |
 |---|---|---|---|
-| AppSignal | `SUBMITTED_REPORTED_RECEIPT_MISSING`; runtime `VALUE_UNKNOWN` | Base rate promised; amount not public | Recover a real prior-submission receipt before importing `SUBMITTED`; never duplicate-submit from the chat/spec assertion alone |
+| AppSignal | `SUBMITTED`; watcher `NO_RESPONSE` | Base rate promised; amount not public | Poll the unique submitted address and trusted official sender; next state is evidence-backed acceptance/decline, never duplicate submission |
+| TECHi Author | `SUBMITTED`; last confirmed provider state `pending`; current poll `UNAVAILABLE` | Flat rate per accepted piece plus traffic-threshold revenue share; monthly Stripe payout; exact rate not public | Repair/re-authenticate the read-only status adapter without resubmitting; only an exact provider response may accept/decline the application |
 | Hygraph Creator Program | `OPEN_POLICY_UNKNOWN` | Rewards/compensation stated; amount and payout rail not public | Highest-fit new lead because AI agents, MCP, GraphQL, and structured content are named topics; clarify AI-authorship policy and compensation before submission |
 | Civo | `REJECTED_POLICY` | Fee agreed on acceptance; PayPal or Civo credits | Do not submit: the official call explicitly rejects AI-generated content and requires a Google Doc |
 | Oracle Technical Articles | `OPEN_VALUE_UNKNOWN` | Stipend only occasionally available | Low priority; confirm commission, amount, identity requirements, and AI-authorship policy before work |
@@ -1431,12 +1433,274 @@ A regulated payout/KYC event, contract signature that legally requires a
 person, material increase in authorized spending, or disputed harmful output
 may require the owner. These are exception gates, not routine babysitting.
 
+### 8.2 Bounded refactor: one editorial-contract pipeline
+
+The Writer does not need a ground-up rewrite. Discovery, official-page
+verification, pitch preparation, evidence-backed submission, and 15-minute
+response polling already exist. The remaining architectural fault is that
+publisher-specific handling is not yet joined to one complete commercial
+contract from opportunity through received money. Refactor that seam before
+adding another paid publisher.
+
+The design decision is frozen from these primary-source observations so normal
+implementation does not reopen market research. Official state is still
+rechecked immediately before any external submission, delivery, or contract
+transition; a changed source creates a new observation rather than silently
+rewriting this one. Observed `2026-08-06T00:00Z`:
+
+- AppSignal, `https://blog.appsignal.com/write-for-us.html`: the official
+  process is author agreement, topic agreement, outline review, GitHub draft,
+  edits, approval/payment, then publication/promotion. It requires original,
+  deep, approximately 1,500-word technical work with code examples. It says a
+  base rate exists but does not publish the amount. Rate, AI policy, payout
+  rail, and tax/KYC therefore remain contract-time unknowns. Normalized body
+  SHA-256 `1c9bf9c50586e0e2fc07ba26872a2ab5aaa59f50cb7903de7aadcb8a615131ec`
+  after replacing dynamic `dpl_*` asset deployment IDs with `dpl_DYNAMIC`;
+  core quote: “once approved, we pay you.”
+- TECHi Author, `https://www.techi.com/authors/apply/`: accepted work earns a
+  flat per-publish rate plus traffic-threshold revenue share, paid monthly by
+  Stripe. Application ID `4` remains durably submitted; its last confirmed
+  provider state is `pending`, while the latest live poll is honestly
+  `UNAVAILABLE`. No revenue exists before acceptance, publication, and an
+  external payout. Body SHA-256
+  `1141d703fefe27748535f47ce6382525515f7b63dd10fb78528ba665f70930a0`;
+  core quote: “Paid monthly via Stripe.”
+- TECHi Editorial Standards,
+  `https://www.techi.com/editorial-standards/`: software-assisted research,
+  checks, summaries, and edits are permitted, but they do not replace
+  reporting, human editing, source review, disclosure, or a recorded editorial
+  decision for market and finance coverage. Numeric/name/price claims bind to
+  primary sources; market-moving claims require the stated source rule. Other
+  beats do not inherit market-only requirements without their own publisher
+  rule. Body SHA-256
+  `8c6e2a3b0de2cdb88b66ac09e85f2c51c680319775f7a1e80b61e70ecbfcef77`;
+  core quote: “That does not replace reporting.”
+
+```mermaid
+flowchart LR
+  D[Discover official program] --> V[Verify open route and terms]
+  V --> P[Prepare evidence-bound pitch]
+  P --> S[Submit and store provider receipt]
+  S --> R{Publisher decision}
+  R -->|declined| X[Close honestly]
+  R -->|accepted| C[Contract: rate rights payout AI policy]
+  C --> O[Outline approval]
+  O --> W[Research and bilingual-capable draft core]
+  W --> E[Fresh editorial and factual review]
+  E --> L[Deliver exact revision]
+  L --> A[Publisher accepts exact work]
+  A --> T{Contract payment trigger}
+  T -->|approval| M[External payment and payout receipt]
+  A --> U[Publisher publishes]
+  U -->|publication or later trigger| T
+  M --> G[Gross fee net and attribution ledger]
+```
+
+The shared domain records are `Opportunity`, `Application`, `Contract`,
+`Assignment`, `Delivery`, and `Publication`. Payment is not a second store: the
+existing canonical money ledger joins the contract-defined payment trigger,
+external receipt, assignment, publication when applicable, and artifact.
+AppSignal and TECHi
+become thin adapters for their official page, submission channel, status/email
+correlation, delivery channel, and payout receipt. They do not own separate
+topic, research, editorial, reporting, or money logic. The reader-owned lane
+(note, Substack, self-owned) and company-paid lane share the same research,
+quality, learning, and ledger cores but retain different sales states.
+
+```mermaid
+flowchart TB
+  Demand[Paid demand and reader demand] --> Core[Topic research draft quality core]
+  Core --> Reader[Reader-owned publishing lane]
+  Core --> Client[Company-paid contract lane]
+  Reader --> RP[Purchase subscription renewal]
+  Client --> CP[AppSignal TECHi and later publishers]
+  CP --> Fee[Contract-triggered editorial payment]
+  RP --> Ledger[Receipt-only money ledger]
+  Fee --> Ledger
+  Ledger --> Learn[Unit economics and one-variable learning]
+  Learn --> Core
+```
+
+Refactor acceptance criteria:
+
+1. Every opportunity advances through legal transitions without skipping a
+   required external receipt; a duplicate application is refused.
+2. `ACCEPTED` cannot create an Assignment or enter drafting until
+   rate/currency, rights/exclusivity, AI/disclosure policy, delivery channel,
+   payout rail, and payment trigger are known. `publisher-pending` is visible
+   but blocking, never permission to draft.
+3. Company revenue is zero until a positive, non-test external payment receipt
+   joins the exact publisher, contract, assignment, artifact, and the trigger
+   evidence. Publication is required only when that contract's trigger requires
+   publication; AppSignal's documented default trigger is approval.
+4. One-time article fees never enter MRR. Only active renewable reader
+   subscriptions or recurring commissioned-writing retainers enter MRR.
+5. AppSignal's recovered form receipt remains `SUBMITTED`; TECHi application
+   ID `4` remains `SUBMITTED` with last-known `pending` kept separate from
+   current poll availability. The migration is replay-safe and does not
+   duplicate either application.
+6. A declined, closed, policy-incompatible, unreachable, or silent publisher
+   cannot block the daily reader-owned article or another publisher.
+7. Telegram reports every commercial state change in natural language with the
+   observed evidence, money truth, remaining fault, and next owned action.
+
+Test matrix:
+
+| Case | Required proof |
+|---|---|
+| AppSignal replay | Existing recovered receipt imports once; no second form submission |
+| TECHi replay | Provider ID `4` polls the authenticated endpoint; last-known `pending` or current `UNAVAILABLE` creates no acceptance or money |
+| Accepted contract | Missing commercial term blocks assignment creation and identifies the missing term |
+| Delivery | Exact draft hash and revision bind to the assignment and publisher receipt |
+| Payment | Test/self/internal/zero/estimated payments are rejected; positive external payment reconciles gross, fee, payout, net |
+| Isolation | One publisher outage leaves daily publication and other publisher polling runnable |
+| Recovery | Crash at each transition resumes idempotently without duplicate submission, delivery, publication, or payment |
+| Reporting | Web snapshot and Telegram state delta equal the canonical ledger |
+
+This requires real E2E verification: replay tests alone cannot prove provider
+status, public publication, or received money. AppSignal and TECHi must be read
+through their real official/status channels; later acceptance, delivery,
+publication, and payout each require their own external receipt when that event
+occurs. Payment follows the recorded contract trigger and is not universally
+blocked on publication.
+
 ## 9. Remaining work — only active TODO
 
 The order is binding. Work that can be performed now must not wait for natural
 schedules or future data.
 
 ### 9.0 Active execution order
+
+The atomic end-to-end order is frozen here. Each item closes only with its
+listed receipt; implementation does not introduce a new publisher or reopen
+market research until item C13 permits it.
+
+**A — refactor the company-paid contract seam first:**
+
+- A1 RED APPSIGNAL: characterize its row, receipt, poll, illegal transition,
+  and duplicate-submit refusal with one fixture per behavior.
+- A2 RED TECHI: characterize ID `4`, last-known/current availability, illegal
+  transition, and duplicate-submit refusal with one fixture per behavior.
+- A3 SCHEMA INTAKE: version Opportunity and Application; one migration receipt.
+- A4 SCHEMA CONTRACT: version Contract and its blocking terms; one schema test.
+- A5 SCHEMA ASSIGNMENT: version Assignment; one schema test.
+- A6 SCHEMA DELIVERY: version Delivery; one schema test.
+- A7 SCHEMA PUBLICATION: version Publication; one schema test. Reuse the
+  canonical money ledger instead of adding a second Payment store.
+- A8 STATE: add the common transition service and required evidence/term guards.
+- A9 APPSIGNAL ADAPTER: make email/form correlation a thin adapter.
+- A10 TECHI ADAPTER: make authenticated ID polling a thin adapter.
+- A11 MIGRATE APPSIGNAL: replay-import the recovered receipt without changing its
+  state or duplicating effects.
+- A12 MIGRATE TECHI: replay-import ID `4`, preserving durable `SUBMITTED`,
+  last-known `pending`, and current availability separately.
+- A13 MONEY: join payment to the exact contract trigger, assignment, artifact,
+  currency, gross, fee, payout, and net; require publication only when the
+  contract trigger requires it and exclude one-time fees from MRR.
+- A14 RECOVERY: prove each commercial transition resumes idempotently.
+- A15 ISOLATION: prove one publisher outage leaves daily publication runnable.
+- A16 ISOLATION: prove one publisher outage leaves other polling runnable.
+- A17 REPORT: render the same commercial states, unknown terms, evidence IDs,
+  money, and next action in Web snapshot and natural-language Telegram.
+- A18 LIVE APPSIGNAL: accept only a correlated official result or honest
+  `NO_RESPONSE`.
+- A19 LIVE TECHI: repair the read-only `UNAVAILABLE` adapter without
+  resubmission and record the exact provider result.
+
+**B — restore the current daily article immediately after the seam is safe:**
+
+- B1 RED: reproduce old-hash editorial exhaustion leaking into the new reroute.
+- B2 GREEN: key exhaustion by `(language,current_article_sha256)`; allow one
+  bounded evaluation for a new authorized hash and keep the same hash exhausted.
+- B3 VERIFY: pass JA/EN, same-hash, new-hash, restart, and bounded-retry tests.
+- B4 LIVE: deploy, kickstart `ai.anicca.article-resume`, and capture current-hash
+  editorial and reader decisions.
+- B5 SHIP: dispatch/read back active six or record each isolated owned SLO
+  breach; run money sync.
+- B6 DURABILITY: close each of three consecutive quality-eligible daily
+  shipments without duplicate publication or human repair.
+
+**C — convert explicit company demand into money:**
+
+- C1 On an external acceptance, capture agreement, exact rate/currency,
+  rights/exclusivity, AI/disclosure policy, delivery path, payout rail, tax/KYC,
+  revision rule, and payment trigger before drafting.
+- C2 Obtain publisher topic/outline approval and bind it to one Assignment.
+- C3 Research primary sources and produce the contracted draft under that
+  publisher's stated format and language; do not force the daily JA/EN template
+  onto a client deliverable.
+- C4 Run factual/editorial/adversarial review and record exact draft hash.
+- C5 Deliver through the official channel and store provider delivery receipt.
+- C6 Process bounded revisions as new hashes under the same Assignment.
+- C7 Capture publisher acceptance and its exact trigger evidence.
+- C8 If payment trigger is approval, capture positive external payment, fee,
+  payout, and net before publication.
+- C9 Capture public URL/readback when the publisher publishes.
+- C10 If payment trigger is publication or later, capture positive external
+  payment, fee, payout, and net after that trigger.
+- C11 Advance an honest decline/expiry without blocking other work.
+- C12 Continue bounded discovery and official rechecks while AppSignal/TECHi are
+  pending, but never duplicate-submit or treat silence as progress.
+- C13 Add a new publisher adapter only when the common contract cannot express a
+  verified open opportunity; otherwise add configuration, not code.
+
+**D — close reader-owned revenue and learning:**
+
+- D1 Deploy Writer Money Control at a public Writer URL and prove Web/Telegram
+  snapshot equality.
+- D2 Attribute the first real note paid purchase to its exact article.
+- D3 Capture the first real Substack paid contract.
+- D4 Capture the first Substack renewal.
+- D5 Verify one Substack cancellation transition.
+- D6 Verify one Substack past-due transition.
+- D7 Reconcile Substack platform/processor fees.
+- D8 Reconcile churn and gross MRR.
+- D9 Reconcile payout and net receipts.
+- D10 Complete the self-owned one-time unlock with real external payment and
+  access receipts.
+- D11 Complete one self-owned recurring renewal with payment/access receipts.
+- D12 Close one matched 24-hour learning canary with
+  KEEP/REVERT/INCONCLUSIVE; if KEEP, prove a later production run consumes it.
+- D13 Store per-run tokens and latency.
+- D14 Store phase and retry receipts.
+- D15 Store compute cost receipts.
+- D16 Prove normal runs create no Sol call/receipt.
+- D17 Prove escalation remains bounded.
+
+**E — pass business gates without mixing revenue classes:**
+
+- E1 S0: first verified external dollar joined to exact writing work.
+- E2 S1: `$400` verified monthly writing revenue.
+- E3 S2: `$1,000` monthly for three positive weeks with no manual execution.
+- E4 Measure attributable conversion.
+- E5 Measure churn and LTV.
+- E6 Reconcile compute and platform fees.
+- E7 Reconcile refunds and payout.
+- E8 Compute net margin; missing data remains unknown.
+- E9 S3: `$10,000` monthly writing revenue for three consecutive months.
+- E10 S4: `$10,000 active MRR`, target composition `334 x $15 = $5,010`
+  reader subscriptions plus `5 x $1,000 = $5,000` recurring writing retainers;
+  one-time AppSignal/TECHi fees accelerate cash but do not count as MRR.
+
+**F — make the profitable unit repeatable, then scale:**
+
+- F1 Package zero-account local OSS and prove a fresh machine reaches public
+  writing and a real payment without Dais's platform credentials.
+- F2 Prove local/cloud judgment and public-route parity.
+- F3 Add encrypted tenant isolation and durable cloud workers.
+- F4 Prove cloud rollback and measured local/cloud cost.
+- F5 Prove one external user earns writing revenue and receives reports without
+  daily intervention.
+- F6 Add a second niche/language only after the first unit's 30-day positive-net
+  and policy gates pass; automatically stop losing units.
+- F7 Promote one proven unit to three through held-out replay and canary.
+- F8 Promote three units to ten only with positive-net receipts and rollback.
+- F9 Promote ten units to 100 only under the same gates.
+- F10 Pass the `$100K` monthly revenue gate.
+- F11 Pass the `$1M active MRR` gate.
+- F12 Pass the `$10M operator MRR` gate; at a 10% fee this
+  gate requires `$100M` monthly network GMV or an equally receipted recurring
+  model. These are proof gates, not forecasts.
 
 The current evidence-based correction contract is
 `docs/writer-agent/plans/2026-08-05-evidence-based-writer-loop.md`. It
@@ -1448,15 +1712,14 @@ work. Tasks 5, 6, and 7 are not skipped: their runtime, live verification, and
 push receipts are recorded as `DONE` in their rows. Task 8's report generator
 is complete, but its public Web route is absent and is therefore reopened.
 
-The immediate foreground slice is the current `daily-2026-08-06` recovery:
-key editorial exhaustion by language plus current article hash, give a newly
-authorized reroute hash one bounded evaluation, and keep the same hash
-exhausted. Then deploy and kickstart `article-resume`, run the current-hash
-editorial and reader gates, dispatch/read back active-six destinations, and
-sync money. A terminal quality miss is classified and does not poison the next
-JST day or force a fallback article. Task 1's time-dependent proof remains
-continuous after this repair: close three consecutive quality-eligible
-active-six shipments with no duplicate or human repair. Task 4's demand supply
+The immediate foreground slice is §8.2's bounded company-contract refactor,
+because it freezes the commercial boundary before more publisher-specific code
+is added. It is followed immediately by the current `daily-2026-08-06`
+hash-scoping repair and `article-resume` kickstart. This short ordering does not
+permit passive waiting: the existing daily loop and read-only opportunity
+watchers remain running during the refactor. Task 1's time-dependent proof then
+closes three consecutive quality-eligible active-six shipments with no duplicate
+or human repair. Task 4's demand supply
 receipt is now live (claim run 309, paid-demand topic), but its acceptance still
 requires the bilingual article and active-six readbacks.
 
@@ -1534,6 +1797,13 @@ revenue gate cannot be marked complete without all of its own receipts. Task
 numbers are never renumbered when work is reopened or completed; status and
 this section define what runs next.
 
+Execution-order correction: §9.0 is the only current order authority. Any
+historical row below that says “Next exact task” or lists
+publication-before-payment is a past receipt, not an instruction. New work
+starts with §9.0 A1, and every editorial payment follows the recorded contract
+trigger (`approval`, `publication`, or later) with publication required only
+when that trigger requires it.
+
 | # | Phase | Work | Done receipt | Status |
 |---:|---|---|---|---|
 | 0 | Boundary | Create this dedicated Writer SSOT; point AGENTS and historical spec here | File exists, links resolve, committed and pushed | DONE |
@@ -1545,7 +1815,7 @@ this section define what runs next.
 | 6 | Measurement | Add metrics, sales, subscription, editorial, payout, fee, and attribution schema | Status-bearing rows join through `artifact_id` | DONE: runtime commit `d00a8ff` adds the canonical typed SQLite money ledger for immutable published artifacts, metric observations, direct-writing/product-derived/network-fee money events, subscription contracts, fees, payouts, payout allocations, and one-lineage artifact attribution. A verified received sale or editorial fee requires a positive non-test external receipt; the same receipt cannot move between streams or be counted as both direct and product revenue; refunds reduce net; fees reconcile to their event; payouts reconcile gross minus fee to net and remain cash movement rather than new revenue; one event cannot be over-allocated across payouts; currencies never get silently converted or combined; active non-test contracts alone produce MRR; unknown observations stay null with a reason. The compatibility importer registers only full public publication receipts and imports legacy sales-dashboard, funnel, and own-metric rows as observations—never as received money—and refuses to guess unmatched old metrics onto an article. `ai.anicca.writer-money-sync` is installed on the live host with `RunAtLoad=true`, immediate kickstart, and a five-minute interval. Its first two live runs exited `0`, registered 59 verified artifacts and 156 typed observations, reported 141 unmatched historical rows instead of fabricating joins, and truthfully returned empty verified gross, net, fees, payouts, and MRR because no external transaction receipt exists. Sixteen focused ledger/sync tests plus 24 existing attribution, sales-measurement, and opportunity-payment tests pass |
 | 7 | Measurement | Mark destinations `revenue_capable`; exclude Dev.to/Zenn/X views from money reward; attribute article -> Life Manager product visit -> activation -> purchase without double counting | Reward uses verified money surfaces only; direct writing and product-derived revenue reconcile separately | DONE: runtime commit `8d63b71` makes `revenue_capable` an executable, versioned contract rather than prose. note, Substack, verified editorial work, and the future self-owned publication can accept direct-writing receipts; Dev.to, Zenn, X Article, and X Post are explicitly non-money surfaces until an external payout receipt is wired, so views/likes cannot be promoted into revenue. A real product purchase may still originate from any registered public article: the canonical ledger now fixes one `product_id/run_id/artifact_id/variant_id/click_id` lineage, requires visit before activation and activation before purchase, rejects a click that moves to another publication, rejects late/out-of-order or duplicate target evidence, and creates `product_derived` money only from a positive non-test external purchase receipt. Direct-writing and product-derived gross are reported in separate stream/class maps without currency conversion or receipt reuse. The recurring five-minute live sync imports append-only `product-funnel.jsonl`; its current truthful result is zero rows and zero product revenue, not a synthetic conversion. Self-improvement no longer reads note/Substack dashboard totals as money; only canonical verified net receipt money can become its revenue score, and a multi-currency window remains unscored rather than guessed through FX. The complete article suite passes: 575 tests, including direct-vs-product reconciliation, non-money destination rejection, visit/activation/purchase ordering, idempotent replay, and missing-receipt fixtures |
 | 8 | Reporting/UX | Build the money-first visual UI and send natural-language immediate/hourly deltas, daily report, and weekly stream report with every public article URL | UI and Telegram equal the ledger; verified/test/unknown visually separated; nontechnical fixture is understandable without logs | REOPENED / PARTIAL: the receipt-backed `WRITER MONEY CONTROL` generator and Telegram reporter are implemented and live locally. Its current artifacts are `skills/writer-agent/state/reporting/index.html` and `latest.json`; it has no public Writer route. `https://aniccaai.com/dashboard` is a different USDC dashboard and must not be represented as this Writer UI. Remaining: deploy the existing report at a public Writer URL, serve the same snapshot JSON, add the active-six plus dormant-adapter daily URL/SLO matrix, and prove public Web and Telegram render the same values. The existing generator's money/stream/publication/delta behaviors and test receipts remain valid. |
-| 9 | Editorial fee | Continue AppSignal state machine from submitted to response, article, publication, payment | Contracted rate and payment receipt | PARTIAL: the prior submission is now restored from external evidence rather than prose. The immutable original Claude session contains the exact AppSignal Google Form `formResponse` URL, provider confirmation text, confirmation PNG bytes, pre-submit field readback, submission timestamp, and a second parent-agent visual read. Runtime commit `5f345c1` adds a replay-safe historical recovery boundary that does not pretend the unknown AI policy/rate gate passed and does not relax the normal `POLICY_CLEAR -> PITCH_READY -> SUBMITTED` path. The recovered confirmation PNG has SHA-256 `045f099d8e797414ee75ae0a9e066ca127a4152dca90a95d9e7e45dcf3dce5b4`; durable evidence `ev_6150e3272dfc77648f74e592` and transition `tr_0b7897f6abbf23021ed74eca` moved AppSignal `VALUE_UNKNOWN -> SUBMITTED` with derived receipt identifier `google-form-response:045f099d8e797414ee75ae0a`, explicitly recording that Google supplied no provider submission ID. Runtime commits `0bba0d2`, `5f9ef00`, and `e1cc020` correlate replies through the unique submitted plus-address plus trusted official sender, supply launchd's missing HOME, and pass only the two required GOG values from the protected env file to the Gmail child process. The live 15-minute worker now watches AppSignal and TECHi with `unavailable:0`, AppSignal `NO_RESPONSE`, TECHi `pending`, and exit `0`. The complete Writer suite passes `680 passed`. Remaining before DONE: receive AppSignal's external response, record the contracted rate/policy/payout terms if accepted, draft and submit the article, obtain public publication evidence, and reconcile a real payment, fee, and payout receipt |
+| 9 | Editorial fee | Continue AppSignal state machine from submitted to response, article, publication, payment | Contracted rate and payment receipt | PARTIAL: the prior submission is now restored from external evidence rather than prose. The immutable original Claude session contains the exact AppSignal Google Form `formResponse` URL, provider confirmation text, confirmation PNG bytes, pre-submit field readback, submission timestamp, and a second parent-agent visual read. Runtime commit `5f345c1` adds a replay-safe historical recovery boundary that does not pretend the unknown AI policy/rate gate passed and does not relax the normal `POLICY_CLEAR -> PITCH_READY -> SUBMITTED` path. The recovered confirmation PNG has SHA-256 `045f099d8e797414ee75ae0a9e066ca127a4152dca90a95d9e7e45dcf3dce5b4`; durable evidence `ev_6150e3272dfc77648f74e592` and transition `tr_0b7897f6abbf23021ed74eca` moved AppSignal `VALUE_UNKNOWN -> SUBMITTED` with derived receipt identifier `google-form-response:045f099d8e797414ee75ae0a`, explicitly recording that Google supplied no provider submission ID. Runtime commits `0bba0d2`, `5f9ef00`, and `e1cc020` correlate replies through the unique submitted plus-address plus trusted official sender, supply launchd's missing HOME, and pass only the two required GOG values from the protected env file to the Gmail child process. The live 15-minute worker exits `0` and AppSignal remains `NO_RESPONSE`. TECHi remains durably submitted but its latest provider read is separately `UNAVAILABLE`; that adapter repair belongs to Task 10. The complete Writer suite passes `680 passed`. Remaining before DONE: receive AppSignal's external response, record the contracted rate/policy/payout terms if accepted, draft and submit the article, obtain public publication evidence, and reconcile a real payment, fee, and payout receipt |
 | 10 | Editorial fee | Advance AppSignal; clarify Hygraph policy/rate; monitor DigitalOcean, Better Stack, Honeybadger, Earthly, and Baeldung; reject Civo under its current AI-content policy; continuously discover replacements | Current official-state receipts; policy/rate clarification; only compatible submission receipts; later contract, publication, payment | PARTIAL: `2ac1bdf` implements the durable state/evidence contract and the live 2026-08-02 JST wake verified all nine configured official pages. Civo is automatically rejected under its current AI prohibition; five closed/stale programs cannot be submitted; Hygraph and Oracle remain parked until missing value/policy facts are clarified; AppSignal is now evidence-backed `SUBMITTED` from its recovered provider confirmation without claiming those unknown terms are resolved. `83afe1b` completes automatic replacement discovery: 127 canonical candidates are durable, a bounded daily worker continuously verifies official pages, rejects incompatible policies, and parks unknown terms without pretending they are safe. `8572122` prepares an exact-claim-bound pitch whenever official evidence reaches `POLICY_CLEAR`; `93c3b02` accepts only exact official application routes/contact addresses; `af608cb` monitors verified submitted work every 15 minutes and advances only from correlated publisher evidence. None can mark `SUBMITTED` without an external receipt. TECHi is now the first live compatible replacement: Author application ID `4` is durably `SUBMITTED`, and runtime commit `57bd62d` polls the authenticated official status endpoint every 15 minutes by exact provider ID. Remaining: advance both evidence-backed AppSignal and TECHi submissions through acceptance or honest decline, contracted drafting, article submission, publication, external payment, fee, and payout reconciliation while the discovery loop continues evaluating other programs |
 | 11 | Paid article | Make every selected note article's price/paywall state explicit and measurable | Public paid state plus first attributed purchase | PARTIAL: runtime commit `0515555` removes the stale `forms.json` ¥1,000 description and makes the executable one-time ¥500 policy consistent across the form registry, publisher, tests, and report. The five-minute money sync now reads each durable live note publication receipt, requires matching run/public URL/public ID plus `verified=true`, `monetization_verified=true`, and positive price, then stores article-scoped `price` and `paywall_active` observations without creating a sale. The current article `20260731-213927__note__ja` is live at `https://note.com/anicca123/n/n84aed983c96c`; canonical metrics now show `price=500 JPY verified` and `paywall_active=1 verified` from its 2026-08-01 public/API receipt. Web and Telegram display `¥500買い切り・有料状態確認済み` while still reporting received revenue as zero; the semantic delta was delivered with Telegram receipt `5139`. The full Writer suite passes 587 tests and the 390px UI was visually inspected. Remaining before DONE: observe the first real external note purchase/fee/payout receipt, join it to this exact artifact without using an account-total proxy, and show gross/net/payout in the same report |
 | 12 | Subscription | Measure Substack active paid, new, churn, gross MRR, fees, and net MRR | Stripe/Substack receipts join to article | PARTIAL: runtime commit `0e7d5d2` closes the paid-publication and recurring-measurement boundaries. A Substack article is now live only when authenticated post-publish readback still proves `audience=only_paid`, free preview enabled, and exactly one paywall; a lost paid contract returns unknown instead of minting a live receipt. Both current JA/EN articles passed that live API readback and canonical article metrics now show `paid_post_active=1 verified`; the Web/Telegram report labels them `有料購読者限定・paywall確認済み`, with semantic-delta Telegram receipt `5141`. `ai.anicca.writer-sales-measure` is installed with `RunAtLoad=true`, immediate kickstart, and a 3,600-second interval; its first live run exited `0`, collected external note/Substack dashboard observations, and synchronized the canonical ledger. The same run measured explicit note month sales `¥0` and purchase count `0`; Substack currently renders a dash/no numeric MRR or paid-subscriber count, so those values remain `unknown`, not fabricated zero. The canonical sync now accepts append-only external `subscription-receipts.jsonl`, orders updates by observation time, maps Substack/self-owned contracts and an exact acquisition article when available, and counts only active non-test external contract IDs in gross MRR; fixture replay is idempotent. The full Writer suite passes 594 tests. Remaining before DONE: the first real Substack/Stripe contract and charge receipts; explicit new/canceled/past-due transitions; actual platform/Stripe fee receipts; gross MRR, period net receipts, churn, and payout reconciliation. Net MRR must remain unknown rather than using an estimated fee percentage |
