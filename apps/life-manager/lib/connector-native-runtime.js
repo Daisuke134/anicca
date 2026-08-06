@@ -38,6 +38,12 @@ function unavailable() {
   throw new Error("Connector native runtime unavailable");
 }
 
+function calendarGateFailureCode(error) {
+  return error && error.message === "Calendar candidate gate invalid"
+    ? "CONNECTOR_NATIVE_CALENDAR_GATE_INPUT_FAILED"
+    : "CONNECTOR_NATIVE_CALENDAR_GATE_EXECUTION_FAILED";
+}
+
 function exactInstant(value) {
   const text = String(value == null ? "" : value).trim();
   const milliseconds = Date.parse(text);
@@ -351,9 +357,15 @@ async function runNativeConnectorPass(input = {}) {
       judgmentLoop: for (const judgmentDay of judgmentDays) {
         if (inputCursor && judgmentDay.date < inputCursor.date) continue;
         failureCode = "CONNECTOR_NATIVE_CALENDAR_GATE_FAILED";
-        const calendarGate = await gateDateCalendar(
-          dateInventory, busyInventory, judgmentDay.date, requiredText(config.homeLocation), routeMinutes,
-        );
+        let calendarGate;
+        try {
+          calendarGate = await gateDateCalendar(
+            dateInventory, busyInventory, judgmentDay.date, requiredText(config.homeLocation), routeMinutes,
+          );
+        } catch (error) {
+          failureCode = calendarGateFailureCode(error);
+          unavailable();
+        }
         if (!calendarGate || !Array.isArray(calendarGate.candidates)) unavailable();
         if (!calendarGate.candidates.some((candidate) => candidate && candidate.eligible === true)) continue;
         failureCode = "CONNECTOR_NATIVE_LUNA_FAILED";
@@ -526,4 +538,4 @@ async function runNativeConnectorPass(input = {}) {
   }
 }
 
-module.exports = { runNativeConnectorPass };
+module.exports = { calendarGateFailureCode, runNativeConnectorPass };

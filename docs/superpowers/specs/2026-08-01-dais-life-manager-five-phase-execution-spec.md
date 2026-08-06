@@ -2415,6 +2415,13 @@ date inventory / busy inventory / event location / private busy contextのいず
 潰しており、秘密を漏らさず原因を区別できない。P0-10は未完のまま維持し、次sliceはCalendar gate invalidをbounded substageへ分離し、
 実入力のreference-only fixtureでREDを固定してから修正する。根拠のない再kickstartはしない。
 
+O1B-25進捗81（P0-10 Calendar gate bounded diagnostics / RED→GREEN）: runtimeはCalendar gate内の例外本文を全て
+`CONNECTOR_NATIVE_CALENDAR_GATE_FAILED`へ潰しており、入力contract不正と実行境界故障を区別できなかった。既知の
+`Calendar candidate gate invalid`だけを`CONNECTOR_NATIVE_CALENDAR_GATE_INPUT_FAILED`、それ以外を
+`CONNECTOR_NATIVE_CALENDAR_GATE_EXECUTION_FAILED`へ写し、raw messageをstateへ保存しないcontractを追加した。native-passのallowlistも
+この二stageだけを受理する。実装前はruntime helper不存在、native continuation=`runtime_failed`で個別RED、実装後runtime 12/12、native 24/24
+GREEN。次はfull outbound・push後に既存launchdを一度だけ発火し、実故障の境界をreadbackする。
+
 完全な残TODO SSOT:
 
 **P0 — task deliveryを前進させる（最優先）**
