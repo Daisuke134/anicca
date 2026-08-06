@@ -330,7 +330,7 @@ async function runNativeConnectorPass(input = {}) {
       });
       const lumaEmail = requiredText(config.lumaEmail);
       const confirmationReader = createConfirmationReader({
-        gogPath: requiredText(config.gogBin),
+        gogPath: config.gogBin,
         env: {
           ...process.env,
           GOG_ACCOUNT: lumaEmail,
