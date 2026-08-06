@@ -2853,6 +2853,14 @@ required普通質問、private profileだけを一回渡し、endpoint、page We
 修正後17/17 GREEN、pretest 12/12、Connector/outbound 336/336 GREEN、失敗0件である。これはcode/test完了であり、最新commitを使った
 既存Connector launchdの実submit、親marker、PNG、Calendar、Telegram receiptはまだ未実証なので16C/16Dは未完のまま維持する。
 
+O1B-25進捗124（Task 3 schedule-owned run 178 / ownership GREEN・新規submit未到達）: commit `dcd552c3b`を参照する
+既存Connector launchdがschedule自身でrun 178を開始したため、重複kickstartせず自然終了まで観測した。runは4候補を処理し、
+2件を`LUMA_RSVP_UNAVAILABLE / known_no_effect`、2件を`TICKET_EVIDENCE_FAILED_FAILED / recovery_required`としてappendした。
+後者2件では親provider readbackに基づく新しいPNG object/provider receiptが生成されたが、candidate-attempt 35→39に対して
+Calendar delivery receipt 2→2、Telegram photo receipt 2→2で増分0だった。Connector target lease ledgerは終了時targets 0で、
+親cleanupは成立した。新規form submitを必要とするcandidateへ到達しておらず、Terra form-decision turnも実行されていないため、
+このrunを16Cのcorrected live submit acceptanceとは扱わない。Calendar、Telegram、full lineageも未成立なので16Dも未完である。
+
 現在と完成形:
 
 ```mermaid
