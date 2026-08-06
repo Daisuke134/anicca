@@ -3920,7 +3920,7 @@ OpenTelemetry decision and primary sources:
         from Gmail evidence. Release `8be6cee8f...` is active with immutable manifest
         SHA-256 `f571544fa0d46bcd54727e90875e152b9d259808ad304ff098257c47b273a01e`;
         rollback release is `02be66aa6...`. B4 is complete.
-  - [ ] `L-49K5C` — Port generic Playwright form and CAPTCHA/SSO/page classification
+  - [x] `L-49K5C` — Port generic Playwright form and CAPTCHA/SSO/page classification
     into the existing fenced CloakBrowser application lane. Keep the resident Terra
     agent as the adaptive owner. Do not use `bypassPermissions`, unpinned packages,
     model `RESULT:APPLIED`, manual-ATS skip, or a second Chrome profile owner.
@@ -3957,11 +3957,24 @@ OpenTelemetry decision and primary sources:
         confirmation-like page still cannot create success truth. Observer,
         classifier, browser-owner boundary, Browser Use surface, and prompt focused
         tests pass 32/32; the daily zsh entrypoint parses cleanly.
-    - [ ] `L-49K5C3` — Build and install the release, then run no-send canaries across
+    - [x] `L-49K5C3` — Build and install the release, then run no-send canaries across
       representative Ashby, Greenhouse, and Workday surfaces. Prove page transitions,
       field grounding, artifact capture, and fallback selection without Submit or
       email side effects. Do not add a second fixture matrix beyond the smallest
       regressions exposed by the canary.
+      - Evidence: immutable release `33d9c608d270d3929fdd033d06ba156461fd84ce`
+        was activated with Guardian `healthy`, then the existing launchd owner ran
+        resident pass 71 (`daily-20260807-005035`) under fence 145. It navigated live
+        OpenAI Ashby, Anthropic Greenhouse, and NVIDIA Workday surfaces and persisted
+        mode-0600 JSON plus PNG evidence for each. Ashby classified
+        `application_form` with five grounded actions; Greenhouse classified
+        `application_form` with four grounded actions; Workday classified
+        `account_auth` without inventing a form. All generated plans explicitly had
+        `submit_action_included=false`; the terminal receipt records three
+        navigations, zero Submit, and zero email sends. Installed blocked-SSO
+        observation maps to `gmail_fallback_required`. The request was consumed,
+        launchd exited 0, and the exact browser lease was released. Local canary and
+        canonical-runtime focused tests pass 26/26.
   - [ ] `L-49K5D` — Run the installed resident against two new real employers using
     the adopted path: one non-Workday official ATS first, then Workday under `L-51`.
     Each role MUST finish through confirmed ATS or one verified email fallback, store
