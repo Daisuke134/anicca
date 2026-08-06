@@ -2511,6 +2511,26 @@ flowchart LR
 Telegram message ID、artifact SHAで照合できた時だけである。資金移動、権限拡大、secret/allowlist変更、guard自身の変更は
 self-fix対象外で、既存hard safetyを維持する。
 
+O1B-25進捗92（応募0回とmulti-source未接続の再監査）: existing launchd run 131中の最新durable stateは
+`inventory=28 / calendar gate=24 / eligible=6 / Luna ranked=6 / spend ordered=4 / unsuppressed=0 / write attempts=0`である。
+したがってConnectorはLumaへ到達してevent pageを開いているが、4候補すべてをwrite前のsuppressionで除外しており、Apply controlを
+押す関数へ一度も到達していない。candidate historyには`LUMA_FORM_INPUT_REQUIRED` 2件、`LUMA_RSVP_UNAVAILABLE` 3件が
+`retry_after=null`で残り、現suppression contractでは永久除外になる。画面上の「開く、読む、閉じる」はdiscovery/inspectionであり、
+応募動作ではない。直接修正は、required formのschema読取・verified回答・入力readback・submitを実装し、そのcapability versionが上がった時に
+同理由の旧suppressionを再評価することである。
+
+multi-sourceについて、`connector-events-pack.js`にはLuma exhaustion後のConnpass handoff部品があるが、native runtimeは
+`luma-event://`だけを受理し`handoffEventSource`を呼ばない。Connpass capabilityも`official_api_discovery_only / registration_allowed=false /
+coverage_credit=false`であり、Peatix、Meetup、Doorkeeper、Eventbriteの稼働adapterは存在しない。従って現loopは実質Luma-onlyである。
+正しい完成形はsource registryが各siteのdiscovery、authenticated registration、effect readback、screenshot evidence能力を宣言し、
+一つのsourceで日付を埋められなければ次sourceへ進むことである。単にURLを見つけただけ、read-only API候補を得ただけではcoverage creditを与えない。
+
+外部根拠:
+
+- Luma Help Center, https://help.luma.com/p/collect-registration-questions — “we collect name and email for all guests, you can collect more information”。required custom questionsを通常flowとして扱う。
+- connpass API v2, https://connpass.com/about/api/v2/ — 「すべてのAPIエンドポイントでは、APIキーによる認証が必須」「1秒間に1リクエストまで」。探索adapterは公式v2 APIとrate limitに固定する。
+- Meetup GraphQL API, https://www.meetup.com/api/general/ — API accessはMeetup Proの提供能力として記載される。契約・権限を実測するまでbrowser/API registration capabilityを宣言しない。
+
 完全な残TODO SSOT:
 
 **P0 — task deliveryを前進させる（最優先）**
@@ -2529,35 +2549,42 @@ self-fix対象外で、既存hard safetyを維持する。
 12. self-build consumerを復旧し、protected-path、permission、test、canary、rollback gateを通過したPRだけをmerge・再配備する。producer/consumer双方のlaunchd exit 0と新ledger rowを実測する。
 13. 修復後にConnector loop自身を再wakeし、同じincident fingerprintが消え、実外部effectが成立するまでbounded repair cycleを継続する。通常retry/修復途中はTelegramへ送らない。
 14. 最初のlive self-fix fixtureとして`LUMA_FORM_INPUT_REQUIRED`を処理する。form schemaとlabelを安全に読み、verified profileと公開event evidenceだけから回答し、各入力をreadbackしてからsubmitする。推測できない質問、同意、公開投稿、支払はfail-closedのままにする。
-15. [進行中] Calendar gate誤分類は修正済み。self-fix済みのwritable実eventでLuma→登録済みpage PNG→mail/QR→Calendar→Telegram画像message IDを一巡実証する。
-16. [x] 次wakeで成功eventとknown失敗eventの双方を再選択しないことを実証する。run 113、attempt 5行・delivery 2行不変、write=null。
-17. `open=0`まで反復し、21日統合Telegram briefingを送る。
-18. Mac再起動後のConnector、producer、consumer launchd、heartbeat、healthcheck、stale-loop self-healを実機検証する。
-19. canonical branchへ統合し、legacy bridge / Docker worker / 重複scheduleを退役する。
+15. capability versionをattempt/suppressionへ追加し、required-form対応前の`LUMA_FORM_INPUT_REQUIRED / retry_after=null`だけを一度再評価する。同一capabilityでの永久retry loopは禁止する。
+16. [進行中] Calendar gate誤分類は修正済み。self-fix済みのwritable実eventでLuma→登録済みpage PNG→mail/QR→Calendar→Telegram画像message IDを一巡実証する。
+17. source registry contractを追加し、各providerの`discovery / registration / effect_readback / screenshot_evidence` capabilityをclosed schemaで宣言する。
+18. Connpass公式v2 APIの探索handoffをnative runtimeへ接続し、API key、1 req/sec、paginationを守る。read-only候補にcoverage creditを与えない。
+19. Connpassの認証済みbrowser registration adapter、登録済みreadback、screenshot evidenceをTDD/E2Eで追加し、初めて`registration_allowed=true`へpromotionする。
+20. Peatix、Meetup、Doorkeeper、Eventbriteを同じregistryへ一siteずつ追加する。各siteは実account/session、利用規約に沿う探索経路、submit、readback、screenshotのlive proofが揃うまでadvisory-onlyとする。
+21. dateごとにLuma→Connpass→Peatix→Meetup→Doorkeeper→Eventbriteの順でhandoffし、一sourceの候補枯渇・満席・未対応formでpass全体を終了しない。
+22. [x] 次wakeで成功eventとknown失敗eventの双方を再選択しないことを実証する。run 113、attempt 5行・delivery 2行不変、write=null。
+23. `open=0`まで反復し、21日統合Telegram briefingを送る。
+24. Mac再起動後のConnector、producer、consumer launchd、heartbeat、healthcheck、stale-loop self-healを実機検証する。
+25. canonical branchへ統合し、legacy bridge / Docker worker / 重複scheduleを退役する。
 
 **P1 — Connectorをconnection-to-cash agentにする（local）**
 
-20. `registered→attended→connected→followed_up→meeting→opportunity→won→cash_received`のforward-only lifecycleを追加する。
-21. event前Telegramへ、目的、会うべき人物像、30秒Life Manager説明、event固有QR/landing linkを送る。公開情報にない参加者名は創作しない。
-22. event固有link、名刺/連絡先交換、inbound message、次回Calendarからconsentあるconnectionだけをeventへ紐付ける。
-23. connectionごとに役割を`potential_user / customer / partner / employer / investor / collaborator`として証拠付き分類する。
-24. 交換済み連絡先またはinbound相手だけへ、会話文脈付きfollow-upを実行し、無差別送信を禁止する。
-25. reply→meeting→opportunityをGmail/Calendarから追跡し、停滞時に次のsafe actionを自動実行する。
-26. payment、invoice、payroll/contract receiptをopportunityへ結び、cash receivedだけをConnector実収益とする。
-27. Telegramへ週次funnelと「どのevent→誰との接点→何の機会→いくら受領」を直接link付きで送る。
-28. 30日local canaryでevent別の登録、参加、connection、meeting、won、cash、costを実測する。
-29. Connector起点の月間実収益が$10Kへ届くまで、conversionが最も弱い一段だけを毎週改善する。
+26. `registered→attended→connected→followed_up→meeting→opportunity→won→cash_received`のforward-only lifecycleを追加する。
+27. event前Telegramへ、目的、会うべき人物像、30秒Life Manager説明、event固有QR/landing linkを送る。公開情報にない参加者名は創作しない。
+28. event固有link、名刺/連絡先交換、inbound message、次回Calendarからconsentあるconnectionだけをeventへ紐付ける。
+29. connectionごとに役割を`potential_user / customer / partner / employer / investor / collaborator`として証拠付き分類する。
+30. 交換済み連絡先またはinbound相手だけへ、会話文脈付きfollow-upを実行し、無差別送信を禁止する。
+31. reply→meeting→opportunityをGmail/Calendarから追跡し、停滞時に次のsafe actionを自動実行する。
+32. payment、invoice、payroll/contract receiptをopportunityへ結び、cash receivedだけをConnector実収益とする。
+33. Telegramへ週次funnelと「どのevent→誰との接点→何の機会→いくら受領」を直接link付きで送る。
+34. 30日local canaryでevent別の登録、参加、connection、meeting、won、cash、costを実測する。
+35. Connector起点の月間実収益が$10Kへ届くまで、conversionが最も弱い一段だけを毎週改善する。
 
 **P2 — 同じcoreをLife Manager Webへ移す**
 
-30. localのidentity、policy、browser、Calendar、Gmail、Telegram、ledgerをtenant interfaceへ分離する。
-31. cloud scheduler/worker、tenant別OAuth/secret/browser isolation、idempotency、rate limitを実装する。
-32. Web panelへConnector funnel、connection graph、opportunity、cash attribution、証拠を投影する。
-33. 別user一人でonboarding→event登録→connection→follow-up→paid outcomeを実証する。
-34. Stripe subscriptionのactive paid、new/expansion/contraction/churn MRRをConnector実収益とは別ledgerで測る。
-35. local Connectorのconnection-to-cash能力とWeb subscription MRRを両方維持し、合算時も内訳を失わない。
+36. localのidentity、policy、browser、Calendar、Gmail、Telegram、ledgerをtenant interfaceへ分離する。
+37. cloud scheduler/worker、tenant別OAuth/secret/browser isolation、idempotency、rate limitを実装する。
+38. Web panelへConnector funnel、connection graph、opportunity、cash attribution、証拠を投影する。
+39. 別user一人でonboarding→event登録→connection→follow-up→paid outcomeを実証する。
+40. Stripe subscriptionのactive paid、new/expansion/contraction/churn MRRをConnector実収益とは別ledgerで測る。
+41. local Connectorのconnection-to-cash能力とWeb subscription MRRを両方維持し、合算時も内訳を失わない。
 
-完了条件: 実Luma登録、submit後の登録済みpage PNG、確認mail、QR、Calendar、Telegram画像message IDが同一eventとして照合され、
+完了条件: 少なくともLumaとConnpassの実登録を含み、各providerでsubmit後の登録済みpage PNG、確認mailまたはprovider receipt、
+ticket/QR（提供時）、Calendar、Telegram画像message IDが同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
 - `covered_existing`: 既に参加確定した東京の対面eventがあるため、重複予約しない。
@@ -2583,7 +2610,8 @@ free intervalへ参加できるeventを探す。`unavailable`は、候補event�
   → free intervalと前後移動時間に収まる最上位候補へ申込
   → 満席・失敗・確認なしなら同じ日の次候補へ即時進む
   → Lumaを十分に探索しても確保できない時は別の許諾済み予約sourceへ進む
-  → connpass key受領後は公式APIを候補発見にだけ使い、予約はしない
+  → Connpassは公式APIで候補発見し、browser registration capabilityのlive promotion後だけ予約する
+  → Connpassで確保できなければPeatix→Meetup→Doorkeeper→Eventbriteへ同じcapability gateで進む
   → 東京・対面・時間非衝突・自動支出policy内を確認
   → 完了画面または確認mailを取得
   → Calendar、QR、Telegramを作成
