@@ -1101,6 +1101,13 @@ submissions.
 
 ### 12.0 Non-negotiable application-first contract
 
+The Job Hunter agent architecture and the boundary between model judgment and
+deterministic safeguards are defined in
+`docs/superpowers/specs/2026-08-06-job-hunter-agent-architecture-design.md`. This
+section remains the outcome contract and execution-order SSOT. Any prompt or code
+that prescribes a complete decision tree, makes a diagnostic terminal, or restores a
+production no-submit mode contradicts both documents.
+
 Job Hunter exists to apply, not to decide whether an eligible discovered role deserves
 an application. Every selected role MUST reach exactly one durable application outcome:
 
@@ -2262,9 +2269,10 @@ this spec update → commit/push → Telegram milestone before the next item sta
 ### 12.2A Current blocking execution order
 
 The detailed tasks below remain the requirements, but execution follows this critical
-path. First make the resident Job Hunter work end to end; only after that contract is
-proven may the repair process itself be automated. A durability, learning, repair, or
-Web task never delays a task currently preventing one authoritative application:
+path. First prove one resident application end to end, then prove that the resident
+can repair and resume the same application before production campaign activation.
+Learning and Web work never delay a task currently preventing an authoritative
+application or the minimum self-healing contract:
 
 Completed foundations include `L-49K0A1G`, `L-49K0B`, `L-49K0C`, `L-49K0C1`,
 `L-49K1`, OpenTelemetry `O1`/`O2`/`O5`, and all currently checked O3/O4 slices.
@@ -2282,22 +2290,24 @@ it is easier to demonstrate:
 4. `L-49K4`, `L-49K0C2O6`, and the remaining `L-49K0C2` children — build the
    immutable owner dossier, prove one joined live application trace, and prove every
    ATS obstacle reaches the email route rather than ending the pass.
-5. `L-49K0E`, `L-49K`, `L-49`, `L-49A`, `L-50`, `L-51`, `L-52` — prove resident
-   actor provenance and authoritative real Ashby plus Workday receipts, exact
-   submitted documents, complete question/answer dossiers, screenshots, and Gmail
-   confirmation in Telegram.
-6. `L-49K0D`, `L-49K0D2`, then `L-53` through `L-57` — add tracker projections,
+5. `L-49K0E`, `L-49K`, `L-49`, `L-49A`, and `L-50` — prove resident actor
+   provenance and one authoritative real Ashby receipt, exact submitted documents,
+   complete question/answer dossier, screenshots, and Gmail confirmation in Telegram.
+6. `L-66A` through `L-66F` — immediately after the first joined live application,
+   prove automated detect, diagnose, reproduce, test, patch, no-send repair canary,
+   immutable release/rollback, resume of that same application, and Telegram receipt.
+   This minimum self-healing proof is required before production campaign activation.
+7. `L-51` and `L-52` — prove one authoritative real Workday application and its
+   exact artifacts and receipt in Telegram using the self-healing-capable resident.
+8. `L-49K0D`, `L-49K0D2`, then `L-53` through `L-57` — add tracker projections,
    move the four working lanes to restart-safe Temporal workflows, and prove Gmail,
    Calendar, interview preparation, and debrief from authoritative events.
-7. `L-58` through `L-66` — prove conversion metrics, one-variable learning,
+9. `L-58` through `L-66` — prove conversion metrics, one-variable learning,
    rollback, Telegram, simultaneous health, and freeze the working local contract.
-8. `L-66A` through `L-66F` — only after the local contract works, automate the same
-   diagnose, reproduce, test, patch, immutable-release, canary, rollback, resume, and
-   Telegram repair process currently performed by the architect.
-9. `L-67` through `L-73` — operate the Dais campaign through fifty confirmed
+10. `L-67` through `L-73` — operate the Dais campaign through fifty confirmed
    applications, a verified interview, a qualifying written offer, comparison,
    negotiation brief, and owner decision.
-10. `W-01` through `W-30` — only after local completion, build and verify the
+11. `W-01` through `W-30` — only after local completion, build and verify the
    tenant-isolated Web product.
 
 Current production truth measured from the ledger and resident receipts:
@@ -3676,7 +3686,7 @@ OpenTelemetry decision and primary sources:
   healthy simultaneously.
 - [ ] **L-66** — Freeze the Dais local product contract after real Ashby, Workday,
   Gmail, Calendar, Telegram, and interview receipts all pass.
-- [ ] **L-66A** — Define the post-contract repair-agent authority: it may inspect
+- [ ] **L-66A** — Define the pre-production repair-agent authority: it may inspect
   traces and private receipts, reproduce faults in an isolated worktree, edit only
   Job Hunter code/tests/spec, and trigger no application, email, Calendar, or other
   external side effect while repairing.
@@ -3688,7 +3698,8 @@ OpenTelemetry decision and primary sources:
   release build. A fresh Sol verifier MUST independently inspect the repair diff and
   evidence and attempt to falsify the claimed fix before canary activation. Terra or
   Sol model assertions cannot mark a repair successful; only executable evidence can.
-- [ ] **L-66D** — Activate every repair first as a no-send canary, verify the original
+- [ ] **L-66D** — Activate every repair first as an isolated no-send repair canary,
+  which is never a production application mode; verify the original
   fault is gone and no safety/confirmation regression exists, then promote or
   atomically roll back to the last known-good release.
 - [ ] **L-66E** — Re-signal the interrupted Temporal workflow after promotion so the
