@@ -13,6 +13,73 @@ from job_search_loop.candidate_queue import CandidateQueue
 
 
 class BrowserWorkerTests(unittest.TestCase):
+    def test_daily_loop_consumes_route_fixture_before_models_or_live_browser_work(self):
+        script = (
+            Path(__file__).parents[1] / "scripts" / "run-daily.sh"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("route-fixture-request.json", script)
+        self.assertIn("--route-fixture", script)
+        fixture_branch = script.index('if [[ -f "$ROUTE_FIXTURE_REQUEST" ]]')
+        model_call = script.index("job-search-terra-plan")
+        self.assertLess(fixture_branch, model_call)
+        self.assertIn('mv "$ROUTE_FIXTURE_REQUEST" "$EVIDENCE/route-fixture-request.json"', script)
+
+    def test_run_worker_executes_route_fixture_with_resident_actor_provenance(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            owner_receipt = root / "browser-owner.json"
+            owner_receipt.write_text(
+                json.dumps(
+                    {
+                        "status": "ready",
+                        "holder_pid": os.getpid(),
+                        "lease_id": "lease-fixture",
+                        "fence": 12,
+                    }
+                ),
+                encoding="utf-8",
+            )
+            request = root / "route-fixture-request.json"
+            request.write_text(
+                json.dumps(
+                    {
+                        "version": 1,
+                        "request_id": "worker-fixture-1",
+                        "application": {
+                            "company": "Fixture Corp",
+                            "title": "AI Engineer",
+                            "url": "https://jobs.fixture.test/role",
+                        },
+                        "routes": [
+                            {"kind": "canonical_ats", "endpoint": "https://jobs.fixture.test/role", "acceptance": "not_applicable"},
+                            {"kind": "recruiting_email", "endpoint": "jobs@fixture.test", "acceptance": "accepts_applications"},
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            worker_receipt = root / "worker-receipt.json"
+
+            result = run_worker(
+                database=root / "candidate-queue.sqlite3",
+                owner_receipt=owner_receipt,
+                holder_pid=os.getpid(),
+                run_id="daily-fixture",
+                lock_path=root / "worker.lock",
+                worker_receipt=worker_receipt,
+                output=root / "result.json",
+                evidence_dir=root / "evidence",
+                route_fixture=request,
+            )
+
+            self.assertEqual(result["status"], "fixture_verified")
+            self.assertEqual(result["send_count"], 0)
+            self.assertEqual(result["actor_provenance"]["worker_pid"], os.getpid())
+            recorded = json.loads(worker_receipt.read_text(encoding="utf-8"))
+            self.assertEqual(recorded["actor"], "resident_worker")
+            self.assertEqual(recorded["route_fixture_status"], "fixture_verified")
+
     def test_run_worker_invokes_one_release_contained_pre_submit_runner(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

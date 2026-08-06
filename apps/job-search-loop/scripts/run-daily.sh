@@ -17,6 +17,51 @@ chmod 700 \
 export PYTHONPATH="$JOB_SEARCH_APP_ROOT"
 export JOB_SEARCH_BROWSER_OWNER_EVIDENCE="$EVIDENCE/browser-owner.json"
 export JOB_SEARCH_CANDIDATE_QUEUE="$JOB_SEARCH_STATE_ROOT/candidate-queue.sqlite3"
+ROUTE_FIXTURE_REQUEST="$JOB_SEARCH_STATE_ROOT/route-fixture-request.json"
+if [[ -f "$ROUTE_FIXTURE_REQUEST" ]]; then
+  JOB_SEARCH_BROWSER_FENCE="$JOB_SEARCH_STATE_ROOT/browser-fence"
+  "$JOB_SEARCH_PYTHON" -m job_search_loop.browser_owner acquire \
+    --identity "job-search:dais" \
+    --output "$JOB_SEARCH_BROWSER_OWNER_EVIDENCE" \
+    --fence "$JOB_SEARCH_BROWSER_FENCE" \
+    --holder-pid "$$"
+  "$JOB_SEARCH_PYTHON" -m job_search_loop.browser_owner hold \
+    --identity "job-search:dais" \
+    --output "$JOB_SEARCH_BROWSER_OWNER_EVIDENCE" \
+    --fence "$JOB_SEARCH_BROWSER_FENCE" \
+    --holder-pid "$$" >/dev/null 2>&1 &
+  ROUTE_FIXTURE_BEAT_PID=$!
+  set +e
+  "$JOB_SEARCH_PYTHON" -m job_search_loop.browser_worker route-fixture \
+    --database "$JOB_SEARCH_CANDIDATE_QUEUE" \
+    --owner-receipt "$JOB_SEARCH_BROWSER_OWNER_EVIDENCE" \
+    --holder-pid "$$" \
+    --run-id "$RUN_ID" \
+    --lock "$JOB_SEARCH_STATE_ROOT/browser-worker.lock" \
+    --worker-receipt "$EVIDENCE/browser-worker-receipt.json" \
+    --evidence-dir "$EVIDENCE" \
+    --route-fixture "$ROUTE_FIXTURE_REQUEST" \
+    --output "$EVIDENCE/browser-worker-result.json" \
+    >"$EVIDENCE/summary.json"
+  ROUTE_FIXTURE_RC=$?
+  set -e
+  kill "$ROUTE_FIXTURE_BEAT_PID" >/dev/null 2>&1 || true
+  wait "$ROUTE_FIXTURE_BEAT_PID" >/dev/null 2>&1 || true
+  "$JOB_SEARCH_PYTHON" -m job_search_loop.browser_owner release \
+    --identity "job-search:dais" \
+    --output "$JOB_SEARCH_BROWSER_OWNER_EVIDENCE" \
+    --fence "$JOB_SEARCH_BROWSER_FENCE" \
+    --holder-pid "$$" >/dev/null 2>&1 || true
+  if [[ "$ROUTE_FIXTURE_RC" -eq 0 ]]; then
+    mv "$ROUTE_FIXTURE_REQUEST" "$EVIDENCE/route-fixture-request.json"
+    chmod 600 \
+      "$EVIDENCE/route-fixture-request.json" \
+      "$EVIDENCE/browser-worker-result.json" \
+      "$EVIDENCE/browser-worker-receipt.json" \
+      "$EVIDENCE/summary.json"
+  fi
+  exit "$ROUTE_FIXTURE_RC"
+fi
 "$JOB_SEARCH_PYTHON" -m job_search_loop.application_reporting deliver \
   --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
   --outbox "$TELEGRAM_OUTBOX" \
