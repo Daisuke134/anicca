@@ -3131,9 +3131,10 @@ test、修正、commit/pushを行い、guarded canary通過後だけrevisionをA
 **Boundaries:** iPhone等のmobile deviceはcontrol/status UIとcredential handoffを提供し、初期版のfull Codex harnessは各userのMacまたはmanaged cloud runnerで動かす。
 Codex subscription quota、API usage、browser/site制約は消えない。Actorへunrestricted code self-modificationと外部submitを同時に与えない。
 
-**Execution steps:** privacy-safe Observer envelope/replay → every-wake Telegram → bounded browser discovery → forward-only continuation →
-既存Connector launchdのLuma-first live submit/evidence → 次wake idempotency → weekly Telegram → isolated Healer shadow → guarded consumer/canary →
-Codex Actor/JSONL shadowとproduction切替 → production self-heal → fallback provider → rolling coverage → multi-user/restart → public claim acceptance → canonical mergeの順を固定する。各sliceはfocused test、full relevant suite、spec更新、commit、pushで
+**Execution steps:** privacy-safe Observer envelope/replay → isolated Superpowers Healer shadow → guarded consumer/canary → shadow self-heal E2E →
+Codex Actor/JSONL shadow → every-wake/weekly Telegram completion → bounded browser discovery → forward-only continuation → Actor production切替 →
+既存Connector launchdのLuma-first live submit/evidence → 次wake idempotency → production self-heal → fallback provider → rolling coverage →
+multi-user/restart → public claim acceptance → canonical mergeの順を固定する。各sliceはfocused test、full relevant suite、spec更新、commit、pushで
 閉じてから次へ進む。live E2Eは既存Connector launchdだけを主体とし、main sessionはeventを手動submitしない。
 
 **E2E judgment:**
@@ -3175,22 +3176,33 @@ Every-wake Telegramの最低限の安全網、bounded browser discovery、forwar
 live submit、同一lineage evidence、次wake idempotencyまでをP0 task-delivery sliceとして閉じる。その後にweekly rollupと本格的な
 Healer/consumer/Codex-native migrationへ進む。kickstartは独立TODOとして明記し、main sessionの手動申込を成功証拠にしない。
 
-### Active remaining TODO SSOT（進捗151。これ以外の残TODO一覧は履歴）
+O1B-25進捗152（Dais直接指示: Terra self-observing/self-healing foundation first）:
+進捗151のtask-delivery-first順序を撤回する。main sessionがprovider故障を一件ずつ直し続ける運用を避けるため、privacy-safe Observerの次に
+Superpowers Healer、guarded consumer/canary、shadow self-heal E2E、Codex-native Terra Actorを完成させる。その後、Every-wake Telegram、
+browser continuation、常設loop自身のlive submitへ進む。Healerは外部申込権限0、Actorはproduction code変更権限0を維持し、同じagentへ
+unrestricted self-modificationとexternal submitを同時に与えない。明白な修正でもfocused RED→GREENはproject guardrailとして最小限だけ行い、
+不要なtest abstractionや広いfixture追加は行わない。
+
+中断前のEvery-wake outbox foundationはcommit `0026c1a4e`でappend-only outbox、positive-ID delivery ledger、native complete/incomplete/failure、
+run.sh process-crash経路まで実装し、native/Observer/state focused suiteをexit 0で確認した。ただし送信失敗→次wake先行再送→重複0のacceptanceが
+未完なので、Every-wake TODOは未完のままHealer/Actor後に再開する。外部Telegram送信、launchd kickstart、event submitはこの進捗では0件。
+
+### Active remaining TODO SSOT（進捗152。これ以外の残TODO一覧は履歴）
 
 1. [x] Provider-neutral downstream write、Connpass runtime write dependencies、Luma Calendar-eligible 0 handoff、Connpass state persistenceを閉じる。証拠: 進捗141、143、144、commit `65241d6a2`、`e822bfa3a`、`d0e05f5d8`、`1cfa2e56f`。
 2. [x] Privacy-safe Observer envelope/replayを実装する。完了条件: success、tool failure、timeout、process crashが同じschemaでrun/wake、stage、safe action、expected/observed effect、owner generation、screenshot SHA、provider readback、commit、cursorへ正規化され、secret/PII/raw logなし、fingerprint dedupe可能なincidentとreplay fixtureを各1件生成する。証拠: 進捗148、focused 33/33 GREEN。
-3. [in progress] Every-wake Telegram durable outboxを実装する。完了条件: `applied / continuing / recovering`の全exit pathでwake report欠落0、positive message IDまで保持、再送重複0、送信失敗後も申込みcursorを失わない。これがGREENになるまで次のlive wakeを意図的に起動しない。
-4. Connpass browser discoveryをbounded batchへ修正する。完了条件: API key参照0、API network call 0、対象日のbrowser inventoryを一wakeの上限内で返し、未処理候補をdurable cursorへ残し、次wakeが同じ候補を重複走査せず再開する。
-5. Exhaustive continuationを一つのforward-only state machineにする。完了条件: candidate 0、満席、closed、form failure、provider down、browser crashがterminal failureにならず、次candidate→provider→date→windowまたはdurable recoveryへ進む。
-6. 既存Connector launchdを最新commitでkickstartし、常設loop自身の最初のlive submitをLuma-firstで閉じる。完了条件: 各fresh dateはLumaから開始し、一時scriptやmain-session手動申込ではなく同一launchd runがCalendar gapを持つ実eventへform入力・Submitを行う。Lumaにeligible候補がない、または全候補がknown-no-effectの場合だけ同じrunでConnpassへ進み、さらに次providerへ継続する。
-7. Step 6の同一event lineage evidenceを閉じる。完了条件: 親readbackのregistered/pending、provider receipt、ticket/QRまたは同等receipt、full-page PNG SHA、Calendar ID/readback、Telegram card/photo positive message IDを一つの`applied_bundle`へ揃える。Connpassはこのproofを得た時だけ`registration_allowed=true`へpromotionする。
-8. 次wake idempotencyを実証する。完了条件: 既存Connector launchdを次wakeまで観測し、同一eventへの再submit 0、未処理candidate/provider/date cursorからの再開、wake reportのpositive message IDを確認する。
-9. Weekly Telegram rollupを実装する。完了条件: 成功週、登録0週、process停止週、Telegram停止週で週次record欠落0、復旧後positive message ID、重複0。
-10. Codex-native Superpowers Healerをisolated worktreeでshadow実装する。完了条件: Observer incidentごとにsystematic-debugging Phase 1〜4→単一仮説→実RED→最小GREEN→fresh verification→commit/pushを行い、外部event submit権限0、上限3 revision/24時間、production merge/deploy 0。
-11. Guarded consumer/canaryをshadow復旧する。完了条件: historical replay→focused/full test→protected path/permission→rollback rehearsal→isolated browser canaryを通ったrevisionだけpromotion候補になり、production merge/deployはまだ0。
-12. Shadow self-heal E2Eを実証する。完了条件: fixture Actor→Observer→Healer→consumer→canary→fixture replayがexpected effectを満たした時だけshadow incident=`healed`になり、失敗時はrollbackして次仮説へ進む。
-13. Codex-native ActorとCodex JSONL adapterをshadow実装する。完了条件: Codex SDKのpersistent Terra threadをwake/resumeし、thread/turn/item/tool/error/usageをObserver schemaへ変換し、Connector skill、`:9222`、Calendar、Telegramだけを許可し、repo edit、Gig `:9223`、別profile、未知toolを拒否する。`codex exec --json`は同schemaの補助検証だけに使い、shadowでは外部submit 0。
-14. Codex-native Actorをproduction Connectorへ切り替える。完了条件: launchdの単一scheduleがpersistent Terra threadをwake/resumeし、ObserverとTelegram outboxを必ず通り、旧custom Terra runnerとの二重実行0。
+3. [in progress] Codex-native Superpowers Healerをisolated worktreeでshadow実装する。完了条件: Observer incidentごとにsystematic-debugging Phase 1〜4→単一仮説→実RED→最小GREEN→fresh verification→commit/pushを行い、外部event submit権限0、上限3 revision/24時間、production merge/deploy 0。
+4. Guarded consumer/canaryをshadow復旧する。完了条件: historical replay→focused/full test→protected path/permission→rollback rehearsal→isolated browser canaryを通ったrevisionだけpromotion候補になり、production merge/deployはまだ0。
+5. Shadow self-heal E2Eを実証する。完了条件: fixture Actor→Observer→Healer→consumer→canary→fixture replayがexpected effectを満たした時だけshadow incident=`healed`になり、失敗時はrollbackして次仮説へ進む。
+6. Codex-native ActorとCodex JSONL adapterをshadow実装する。完了条件: Codex SDKのpersistent Terra threadをwake/resumeし、thread/turn/item/tool/error/usageをObserver schemaへ変換し、Connector skill、`:9222`、Calendar、Telegramだけを許可し、repo edit、Gig `:9223`、別profile、未知toolを拒否する。`codex exec --json`は同schemaの補助検証だけに使い、shadowでは外部submit 0。
+7. Every-wake Telegram durable outboxを完成する。commit `0026c1a4e`のfoundationを使い、完了条件は`applied / continuing / recovering`の全exit pathでwake report欠落0、positive message IDまで保持、送信失敗後の次wake先行再送、delivery重複0、申込みcursor喪失0。これがGREENになるまで次のlive wakeを意図的に起動しない。
+8. Weekly Telegram rollupを実装する。完了条件: 成功週、登録0週、process停止週、Telegram停止週で週次record欠落0、復旧後positive message ID、重複0。
+9. Connpass browser discoveryをbounded batchへ修正する。完了条件: API key参照0、API network call 0、対象日のbrowser inventoryを一wakeの上限内で返し、未処理候補をdurable cursorへ残し、次wakeが同じ候補を重複走査せず再開する。
+10. Exhaustive continuationを一つのforward-only state machineにする。完了条件: candidate 0、満席、closed、form failure、provider down、browser crashがterminal failureにならず、次candidate→provider→date→windowまたはdurable recoveryへ進む。
+11. Codex-native Actorをproduction Connectorへ切り替える。完了条件: launchdの単一scheduleがpersistent Terra threadをwake/resumeし、ObserverとTelegram outboxを必ず通り、旧custom Terra runnerとの二重実行0。
+12. 既存Connector launchdを最新commitでkickstartし、常設loop自身の最初のlive submitをLuma-firstで閉じる。完了条件: 各fresh dateはLumaから開始し、一時scriptやmain-session手動申込ではなく同一launchd runがCalendar gapを持つ実eventへform入力・Submitを行う。Lumaにeligible候補がない、または全候補がknown-no-effectの場合だけ同じrunでConnpassへ進み、さらに次providerへ継続する。
+13. Step 12の同一event lineage evidenceを閉じる。完了条件: 親readbackのregistered/pending、provider receipt、ticket/QRまたは同等receipt、full-page PNG SHA、Calendar ID/readback、Telegram card/photo positive message IDを一つの`applied_bundle`へ揃える。Connpassはこのproofを得た時だけ`registration_allowed=true`へpromotionする。
+14. 次wake idempotencyを実証する。完了条件: 既存Connector launchdを次wakeまで観測し、同一eventへの再submit 0、未処理candidate/provider/date cursorからの再開、wake reportのpositive message IDを確認する。
 15. Production self-heal E2Eを実証する。完了条件: 実incident→Observer→Healer→consumer→canary→Connector再実行が実`applied_bundle`を作った時だけproduction incident=`healed`になり、失敗revisionはrollbackされる。
 16. Post-registration recoveryを閉じる。完了条件: Calendar、PNG、ticket、Telegram各境界の中断後、providerへ再submitせず不足artifactだけを補完し、外部登録1回・bundle1個。
 17. Peatixをbrowser-only discovery→parent submit/readback→evidence→isolated live proof→promotionの順で追加する。完了条件は実`applied_bundle`。
@@ -3216,12 +3228,12 @@ flowchart TD
     N4 --> N5[新規Calendar・PNG・Telegram 0]
   end
   subgraph NEXT[次の厳密な順序]
-    S1[Every-wake Telegram] --> S2[Bounded browser discovery]
-    S2 --> S3[Forward-only continuation]
-    S3 --> S4[Connector launchd kickstart]
-    S4 --> S5[Luma-first live submit]
-    S5 --> S6[Evidence・次wake idempotency]
-    S6 --> S7[Healer・Codex Actor]
+    S1[Superpowers Healer shadow] --> S2[Guarded canary]
+    S2 --> S3[Shadow self-heal E2E]
+    S3 --> S4[Codex Terra Actor]
+    S4 --> S5[Every-wake Telegram]
+    S5 --> S6[Browser continuation]
+    S6 --> S7[Launchd live submit]
   end
   subgraph TARGET[完成形]
     T1[Luma-first全provider探索] --> T2[Calendar gap候補へApply]
