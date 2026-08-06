@@ -1,6 +1,6 @@
 # Writer Agent — Revenue, UX, Runtime, and Roadmap SSOT
 
-Last updated: 2026-08-05 JST
+Last updated: 2026-08-06 JST
 
 This file is the only current source of truth for the Writer Agent's objective,
 user experience, revenue model, execution order, and remaining work. Historical
@@ -49,6 +49,65 @@ The order is:
 The machine cannot guarantee demand or revenue. It must guarantee continuous
 measurable attempts, honest receipts, bounded improvement, and automatic
 recovery.
+
+### 0.2 Open-source positioning and public-claim gate
+
+The Writer must not call itself the "world's first autonomous Writer Agent."
+Prior-art research found multiple public repositories that already claim and
+show autonomous research, writing, and publication, and at least one that feeds
+publication failures and quality metrics into later writing. An absolute
+world-first claim is also not falsifiable through a finite GitHub/web search.
+
+Current approved positioning is:
+
+> A receipt-verified autonomous Writer Agent being built as open source to
+> research, write, publish across multiple platforms, measure real writing
+> revenue, recover interrupted work, and improve from production evidence.
+
+The shorter phrase "autonomous research-to-publication Writer Agent" is allowed.
+The phrases "makes money," "self-healing," "self-improving," and "no human in
+the loop" may describe a specific capability only after its matching receipt
+below exists. A paywall, price, view, estimated value, or creator revenue claim
+is not a received-payment receipt.
+
+| Public claim | Minimum production evidence before using it |
+|---|---|
+| Publishes autonomously | One installed-loop run has publisher-native public readback for every active destination, with no primary-session manual publication |
+| Self-healing | A real incident trace closes `detect -> classify -> repair -> verify -> same-work-item resume -> public readback` without primary-session code or state intervention |
+| Self-improving | A matched production canary records baseline/candidate, one changed variable, same-age outcome, `KEEP` or `REVERT`, and a later run consumes the decision |
+| Makes money | At least one non-test external payment and publisher/payment-processor receipt reconcile to an article artifact and payout ledger |
+| No human in the loop | Thirty consecutive operating days complete the installed schedule, publication recovery, measurement, and reporting contracts with zero manual execution or repair; KYC, credential bootstrap, policy approval, and exceptional destructive actions remain disclosed setup/governance boundaries |
+| Receipt-verified full combination | All rows above pass in the same released OSS version and an independent user reproduces the install-to-revenue path |
+
+Even after the full-combination gate passes, the preferred claim is
+"a receipt-verified open-source autonomous Writer Agent" plus the dated public
+evidence. "World's first" remains prohibited unless an independent, dated
+prior-art audit defines the exact comparison set and supports that conclusion.
+
+The 2026-08-06 prior-art audit establishes the claim boundary:
+
+- `dpdanpittman/blog-system` says it runs "completely autonomously," publishes
+  through a five-agent pipeline, and loads past validation failures and quality
+  metrics into later writing. Source:
+  https://github.com/dpdanpittman/blog-system#automated-ai-blog-system
+- `KushParsaniya/blog-genius` says the end-to-end daily system publishes to
+  Dev.to after topic generation, drafting, optimization, and fact checking.
+  Source: https://github.com/KushParsaniya/blog-genius
+- `AICMO/Autonomous-Agent-Digests-Blog` shows a scheduled pipeline publishing
+  to Ghost, Substack, and Telegram, including links to agent-generated public
+  outputs. Source: https://github.com/AICMO/Autonomous-Agent-Digests-Blog
+- `greekr4/Viruagent` shows an agent loop that searches, writes, edits, uploads
+  images, and publishes to Tistory, including a public article URL. Source:
+  https://github.com/greekr4/Viruagent
+- Stanford STORM explicitly says its generated articles are not publication
+  ready and require significant edits. It is relevant research/writing prior
+  art, but not evidence of autonomous publication or revenue. Source:
+  https://github.com/stanford-oval/storm
+
+No inspected primary source supplied a reconciled real-payment receipt plus the
+complete autonomous publication, self-healing, and self-improvement trace. This
+is a documented search result, not proof that no unindexed, private, deleted,
+or non-English predecessor exists.
 
 ## 1. Product boundary
 
