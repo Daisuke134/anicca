@@ -2180,7 +2180,7 @@ this spec update → commit/push → Telegram milestone before the next item sta
     Telegram message ID `7621`. Production SQLite integrity is `ok`; the new table
     exists with zero rows, and both reporter passes delivered zero evidence/resume
     artifacts rather than fabricating a confirmed application.
-- [ ] **L-49K0A2** — Pin `temporalio/temporal` v1.31.2 and `temporalio/sdk-python`
+- [x] **L-49K0A2** — Pin `temporalio/temporal` v1.31.2 and `temporalio/sdk-python`
   v1.31.0 with MIT licenses, server/CLI/SDK artifacts, protocol versions, and local
   rollback. Prove an isolated local server and Python worker can survive worker
   restart without duplicating an activity.
@@ -2188,9 +2188,16 @@ this spec update → commit/push → Telegram milestone before the next item sta
     `19a774302c613da9adc4436ab14278ccdca8e0a5` and Python SDK `1.31.0` commit
     `84b519e0ff407b049da88ac7d1711f110494ff4d` are content-addressed with MIT
     license hashes, official macOS arm64 artifact/checksum hashes, consumed SDK
-    contracts, and explicit local rollback policies. The focused lock test and all
-    438 Job Hunter tests pass. Remaining before checking this task: run the isolated
-    server/worker restart fixture and prove one durable activity effect.
+    contracts, and explicit local rollback policies. The isolated official server
+    artifact SHA-256 is
+    `cef6f8a28da8fe276b1b502062f05a0cff9466451d4f07f70ec1c5a0cbd3d4fb`; its
+    reported version/revision are `1.31.2` and
+    `19a774302c613da9adc4436ab14278ccdca8e0a5`. Python SDK `1.31.0` connected by
+    gRPC and completed workflow `job-hunter-restart-proof-33304`: worker PID `33305`
+    recorded the effect and was killed with exit `-9`; replacement PID `33313`
+    completed activity attempt 2. The durable ledger proves `attempt_count=2` and
+    `effect_count=1`. The fixture keeps the retry side effect idempotent under a
+    unique key. Its focused test and the complete Job Hunter suite pass 453/453.
 
 ### 12.2A Current blocking execution order
 
@@ -2202,20 +2209,18 @@ Completed foundations are `L-49K0A1G`, `L-49K0B`, `L-49K0C`, and `L-49K0C1`.
 The active cursor is the first item below; do not start a later item merely because
 it is easier to demonstrate:
 
-1. `L-49K0A2` — finish the already pinned Temporal slice by proving an isolated
-   worker restart produces exactly one durable activity effect.
-2. `L-49K0B1` — finish the Browser Use/Temporal reuse-adapt-supersede inventory and
+1. `L-49K0B1` — finish the Browser Use/Temporal reuse-adapt-supersede inventory and
    bind each accepted component to a local authority and parity test.
-3. `L-49K0D1` — replace the remaining prompt-owned Playwright execution contract
+2. `L-49K0D1` — replace the remaining prompt-owned Playwright execution contract
    with the pinned Browser Use adapter on the dedicated CloakBrowser identity.
-4. `L-49K0C2` — prove a blocked ATS route cannot end the resident hourly pass and
+3. `L-49K0C2` — prove a blocked ATS route cannot end the resident hourly pass and
    that all remaining eligible routes/roles continue exactly once.
-5. `L-49K0D`, then `L-49K0D2` — build tracker/outcome/digest projections, then move
+4. `L-49K0D`, then `L-49K0D2` — build tracker/outcome/digest projections, then move
    all four resident lanes to restart-safe, idempotent Temporal workflows.
-6. `L-49K0E`, `L-49K`, `L-49`, `L-49A`, `L-50`, `L-51`, `L-52` — prove resident
+5. `L-49K0E`, `L-49K`, `L-49`, `L-49A`, `L-50`, `L-51`, `L-52` — prove resident
    actor provenance, bounded owner handoff where required, and authoritative real
    Ashby plus Workday receipts and screenshots in Telegram.
-7. `L-53` through `L-65` — prove Gmail, Calendar, interview preparation/debrief,
+6. `L-53` through `L-65` — prove Gmail, Calendar, interview preparation/debrief,
     conversion metrics, one-variable learning, rollback, Telegram, and simultaneous
     health of all resident lanes.
 8. `L-66` through `L-73` — operate the Dais campaign through fifty confirmed
