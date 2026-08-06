@@ -2937,6 +2937,19 @@ OpenTelemetry decision and primary sources:
   controls, direct `/application`, stale ref, and no application surface. Files:
   modify `browser_use_ats.py`, `browser_use_adapter.py`, and focused tests (3 files,
   soft target 100 LOC; split state classification from action execution if exceeded).
+  - [ ] `L-49K1A` — Add only a semantic application-entry action to the Browser Use
+    boundary. The backend may click an element only when its live accessible role,
+    tag, and normalized text identify the `Application` tab or `Apply for this Job`;
+    stale indices and every other element fail closed. The authorized surface exposes
+    `open_application`, never a generic `click` or Submit. Files: modify
+    `browser_use_adapter.py` and `tests/test_browser_use_adapter.py` (2 files, soft
+    target 80 LOC).
+  - [ ] `L-49K1B` — Add the deterministic blank/delayed-render/Overview/direct-form/
+    stale-ref/no-surface state machine, using `L-49K1A` to open the form and one fresh
+    snapshot to recover a stale ref. Persist the before/after surface classification
+    and fail unless required form controls appear. Files: modify
+    `browser_use_ats.py` and `tests/test_browser_use_ats.py` (2 files, soft target
+    100 LOC).
 - [ ] **L-49K2** — Make the resident fill contract complete and inspectable. Route the
   exact accepted resume; fill verified identity/contact/location/start-date fields;
   select work authorization and sponsorship answers from the private profile; verify
