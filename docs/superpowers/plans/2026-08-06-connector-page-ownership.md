@@ -61,8 +61,12 @@
 ### Task 2: Parent-Created Default-Context Target
 
 **Files:**
+- Create: `apps/life-manager/lib/connector-browser-target-controller.js`
+- Create: `apps/life-manager/lib/connector-browser-target-controller.test.js`
 - Modify: `apps/life-manager/lib/cloakbrowser-daily-driver.js`
 - Modify: `apps/life-manager/lib/cloakbrowser-daily-driver.test.js`
+- Modify: `apps/life-manager/lib/connector-tab-owner.js`
+- Modify: `apps/life-manager/lib/connector-tab-owner.test.js`
 - Modify: `apps/life-manager/lib/connector-native-runtime.js`
 - Modify: `apps/life-manager/lib/connector-native-runtime.test.js`
 
