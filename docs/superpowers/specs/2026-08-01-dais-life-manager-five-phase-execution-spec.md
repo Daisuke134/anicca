@@ -3214,7 +3214,13 @@ live `~/Library/LaunchAgents`出力を拒否する。rendered contract focused 2
 Healer TODOはまだin progressである。次はCodex timeout分類、branch/worktree衝突回復、Terraが作ったcommit/pushのremote readback、privacy scanを閉じ、
 その後にこのrendered shadow scheduleを安全にinstallして一件のprivacy-safe fixture incidentで実測する。
 
-### Active remaining TODO SSOT（進捗155。これ以外の残TODO一覧は履歴）
+O1B-25進捗156（Healer revision commit/push parent readback / RED→GREEN）:
+Codex childの終了や自己申告だけで`revision_created`にする経路を撤回した。親Healerがisolated worktreeの`HEAD`を40桁commitとして読み、
+incidentのbase commitから前進していること、`git status --porcelain`が空であること、`git ls-remote --heads origin <branch>`が同じcommit SHAを
+返すことを独立検証する。dirty worktree、base据え置き、remote欠落・不一致は`revision_failed`としてledgerへ残しpromotion候補にしない。
+Healer focused 2/2 GREEN。外部申込、Calendar、Telegram、browser、live launchd effectは0件。
+
+### Active remaining TODO SSOT（進捗156。これ以外の残TODO一覧は履歴）
 
 1. [x] Provider-neutral downstream write、Connpass runtime write dependencies、Luma Calendar-eligible 0 handoff、Connpass state persistenceを閉じる。証拠: 進捗141、143、144、commit `65241d6a2`、`e822bfa3a`、`d0e05f5d8`、`1cfa2e56f`。
 2. [x] Privacy-safe Observer envelope/replayを実装する。完了条件: success、tool failure、timeout、process crashが同じschemaでrun/wake、stage、safe action、expected/observed effect、owner generation、screenshot SHA、provider readback、commit、cursorへ正規化され、secret/PII/raw logなし、fingerprint dedupe可能なincidentとreplay fixtureを各1件生成する。証拠: 進捗148、focused 33/33 GREEN。

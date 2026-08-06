@@ -160,7 +160,26 @@ async function runHealerShadow(options = {}) {
     cwd: worktree, env: healerEnvironment(options.env),
   });
   const commitId = String(commit && commit.stdout || "").trim();
-  if (!commit || commit.status !== 0 || !SAFE.test(commitId)) invalid();
+  const status = await execute("git", ["-C", worktree, "status", "--porcelain"], {
+    cwd: worktree, env: healerEnvironment(options.env),
+  });
+  const remote = await execute("git", ["-C", worktree, "ls-remote", "--heads", "origin", branch], {
+    cwd: worktree, env: healerEnvironment(options.env),
+  });
+  const remoteLine = String(remote && remote.stdout || "").trim();
+  const verified = commit && commit.status === 0
+    && /^[0-9a-f]{40}$/.test(commitId)
+    && !commitId.startsWith(String(incident.code_commit || ""))
+    && status && status.status === 0 && String(status.stdout || "") === ""
+    && remote && remote.status === 0
+    && remoteLine === `${commitId}\trefs/heads/${branch}`;
+  if (!verified) {
+    appendRevision(revisionsFile, {
+      fingerprint: incident.fingerprint, revision, status: "revision_failed",
+      branch, observed_at: observedAt,
+    });
+    return Object.freeze({ status: "revision_failed", branch, worktree });
+  }
   const row = appendRevision(revisionsFile, {
     fingerprint: incident.fingerprint,
     revision,
