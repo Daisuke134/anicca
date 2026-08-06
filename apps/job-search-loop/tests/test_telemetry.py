@@ -10,6 +10,32 @@ from job_search_loop.telemetry import (
 
 
 class TelemetryTests(unittest.TestCase):
+    def test_sdk_never_auto_records_exception_message_or_stack(self):
+        captured = {}
+        class Context:
+            def __enter__(self):
+                class Span:
+                    def get_span_context(self): return type("C", (), {"trace_id": 1, "span_id": 2})()
+                    def is_recording(self): return True
+                return Span()
+            def __exit__(self, *_): return False
+        class Tracer:
+            def start_as_current_span(self, _name, **kwargs):
+                captured.update(kwargs)
+                return Context()
+
+        telemetry = configure_telemetry(
+            release_sha="a" * 40, lane="daily", resident_actor="job_hunter_codex_terra",
+            hostname="host", endpoint="http://127.0.0.1:4318",
+            _tracer_factory=lambda *_: (Tracer(), object()),
+        )
+        with self.assertRaisesRegex(RuntimeError, "private answer"):
+            with telemetry.span("form.fill"):
+                raise RuntimeError("private answer")
+
+        self.assertFalse(captured["record_exception"])
+        self.assertFalse(captured["set_status_on_exception"])
+
     def test_resource_contains_only_non_private_runtime_identity(self):
         resource = build_resource_attributes(
             release_sha="a" * 40,

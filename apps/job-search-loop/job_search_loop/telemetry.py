@@ -79,7 +79,10 @@ class _SafeSpanContext:
             clean = sanitize_attributes(self._attributes)
             if self._tracer is None or SAFE_TOKEN.fullmatch(self._name) is None:
                 return SpanHandle()
-            self._context = self._tracer.start_as_current_span(self._name, attributes=clean)
+            self._context = self._tracer.start_as_current_span(
+                self._name, attributes=clean,
+                record_exception=False, set_status_on_exception=False,
+            )
             span = self._context.__enter__()
             context = span.get_span_context()
             return SpanHandle(span.is_recording(), f"{context.trace_id:032x}", f"{context.span_id:016x}", span)
