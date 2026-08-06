@@ -407,6 +407,41 @@ test("configured native execution gates the date then uses Luna and passes one v
   assert.equal(input.calls.find(([name]) => name === "luna")[1].date, "2026-08-05");
 });
 
+test("zero Calendar-eligible events is a valid incomplete pass instead of a runtime failure", async () => {
+  const input = await fixture();
+  const profile = Object.freeze({ tenant_id: TENANT, timezone: "Asia/Tokyo" });
+  const result = await runNativeConnectorPass({
+    ...input,
+    config: {
+      ...input.config,
+      profilePath: "/private/tmp/dais-local.json",
+      lunaEvidenceDir: "/private/tmp/connector-luna",
+      homeLocation: "opaque-home",
+      telegramTarget: "opaque-chat",
+      calendarCoverageUrl: "https://calendar.google.com/calendar/u/0/r",
+      calendarId: "primary",
+      mapsKey: "maps-secret",
+    },
+    deps: {
+      ...input.deps,
+      readProfile: () => profile,
+      isVerifiedConnectorProfile: (value) => value === profile,
+      createRouteMinutes: () => async () => 20,
+      createSpendPolicy: async () => Object.freeze({ limits: [] }),
+      gateDateCalendar: async (_inventory, _busy, date) => Object.freeze({
+        date,
+        candidates: [{ event_ref: "luma-event://event/founder-night", eligible: false }],
+      }),
+      runLunaJudgment: async () => { throw new Error("Luna must not run"); },
+    },
+  });
+
+  assert.equal(result.status, "incomplete");
+  assert.equal(result.write, null);
+  assert.equal(result.candidate_attempts.length, 0);
+  assert.equal(result.continuation.status, "continue");
+});
+
 test("a known missing Luma form answer skips to the next ranked candidate", async () => {
   const input = await fixture();
   const profile = Object.freeze({ tenant_id: TENANT, timezone: "Asia/Tokyo" });

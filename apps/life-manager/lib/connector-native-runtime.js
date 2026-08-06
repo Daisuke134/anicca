@@ -354,7 +354,6 @@ async function runNativeConnectorPass(input = {}) {
         || typeof pack.captureLumaTicketQr !== "function"
       ) unavailable();
       const policy = await createSpendPolicy({ tenantId, limits: profile.spend_policy && profile.spend_policy.limits });
-      let selected = false;
       judgmentLoop: for (const judgmentDay of judgmentDays) {
         if (inputCursor && judgmentDay.date < inputCursor.date) continue;
         failureCode = "CONNECTOR_NATIVE_CALENDAR_GATE_FAILED";
@@ -396,7 +395,6 @@ async function runNativeConnectorPass(input = {}) {
           (candidate) => !suppressedEventRefs.has(candidate.event_ref),
         );
         if (orderedCandidates.length === 0) continue;
-        selected = true;
         failureCode = "CONNECTOR_NATIVE_WRITE_FAILED";
         for (const chosen of orderedCandidates) {
           const selectedRef = chosen.event_ref;
@@ -484,7 +482,6 @@ async function runNativeConnectorPass(input = {}) {
           if (candidateOutcome.classification !== "known_no_effect") break judgmentLoop;
         }
       }
-      if (!selected) unavailable();
     }
 
     let candidate = null;

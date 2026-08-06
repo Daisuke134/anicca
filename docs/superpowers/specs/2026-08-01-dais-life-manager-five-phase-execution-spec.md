@@ -2429,6 +2429,14 @@ continuationは新しいINPUT/EXECUTIONではなく旧`connector_native_calendar
 native continuationがruntime_failedでRED、実装後runtime 13/13、native 24/24 GREEN。次runでRESULTを確認したら、返却値生成元を
 reference-only実fixtureへ固定して修正する。
 
+O1B-25進捗83（P0-10 run 112 root cause確定 / zero writable candidate RED→GREEN）: run 112も12:28 JSTに
+旧`connector_native_calendar_gate_failed`を更新したため、throw/malformed result仮説をともに否定した。data flowを最後まで追うと、各日のgateが
+正常でもeligible候補が0件、またはeligible候補が既知失敗suppressionで全件除外されると`selected=false`のままday loopを終え、runtimeが
+これを例外化し、最後に設定されたgeneric Calendar stageを誤って保存していた。本人住所を表示しない実Google Maps route probeは
+`available / 27 minutes`で成功し、route outageも否定した。zero eligible fixtureは修正前にlive同様
+`CONNECTOR_NATIVE_CALENDAR_GATE_FAILED`でRED。`selected=false`を正常な`status=incomplete / continuation=continue / write=null`として返す
+最小修正後runtime 14/14 GREEN。応募可能候補がないwakeは失敗通知を作らず、次のinventory refreshへ進む。
+
 完全な残TODO SSOT:
 
 **P0 — task deliveryを前進させる（最優先）**
