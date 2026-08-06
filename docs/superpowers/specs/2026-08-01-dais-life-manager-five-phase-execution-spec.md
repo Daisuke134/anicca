@@ -2283,6 +2283,14 @@ mode 0600の`candidate-attempts.jsonl`が生成された。保存行は実候補
 `retry_after=null`であり、秘密・page本文・個人情報を含まない。これでP0-3のlive write/readbackを完了し、次はP0-4で
 この行を次wakeの候補除外へ使う。
 
+O1B-25進捗63（P0-4 terminal known failure suppression / RED→GREEN）: live historyには同じ
+`luma-event://event/7gy3rv6t`の`known_no_effect`が`00:37:48Z`と`00:44:59Z`に二重記録され、保存だけでは
+次wakeの再選択を止めないことを再現した。native-passが最大10,000件のvalidated attempt historyを次runtimeへ戻し、runtimeは
+eventごとの最新observationを採用して、`known_no_effect`かつ`retry_after=null`または未来の候補をverified spend sequenceの
+active write rankingから除外する。retry_after到来後、または後続の非terminal observationがあるeventは再検査可能である。
+実装前はsuppression module不存在、runtime再write、config history欠落の三つでRED。実装後はsuppression/runtime 10/10、
+native 19/19、pretest 12/12、outbound 299/299がfresh GREEN。次は既存launchdを二回観測し、同じeventの行数が増えないことを実証する。
+
 完全な残TODO SSOT:
 
 **P0 — task deliveryを前進させる（最優先）**
@@ -2290,7 +2298,7 @@ mode 0600の`candidate-attempts.jsonl`が生成された。保存行は実候補
 1. [x] candidate outcomeの4分類contractとtable-driven testを追加する。focused 2/2、outbound 289/289。
 2. [x] `LUMA_RSVP_UNAVAILABLE`、`LUMA_FORM_INPUT_REQUIRED`、満席、受付終了を`known_no_effect`へ正規化する。focused 9/9、outbound 289/289。
 3. [x] append-only `candidate-attempts.jsonl`を作り、event ref、outcome、safe reason、observed_at、retry_afterを保存する。runtime 9/9、native 18/18、outbound 289/289。
-4. active window内のterminal known failureをinventory/rankingから除外し、event状態変更またはretry_after後だけ再検査する。
+4. [x] active window内のterminal known failureをactive write rankingから除外し、後続状態observationまたはretry_after後だけ再検査する。runtime 10/10、native 19/19、outbound 299/299。
 5. 同日候補をすべて順番に試し、同日枯渇時は同じpassで次open日へ進む。
 6. pass budget到達時はdate/candidate cursorを保存し、次wakeで続きから再開する。
 7. unknown effectはLuma readbackでpresent/absentを確定するまで再submitしない。

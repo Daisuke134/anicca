@@ -134,6 +134,39 @@ test("native-pass forwards validated delivery history for coverage restoration",
   } finally { fs.rmSync(directory, { recursive: true, force: true }); }
 });
 
+test("native-pass forwards durable candidate attempts into the next runtime wake", async () => {
+  const directory = temporaryDirectory();
+  const stateDir = path.join(directory, "state");
+  fs.mkdirSync(stateDir, { recursive: true });
+  const attempt = {
+    event_ref: "luma-event://event/unavailable-one",
+    outcome: "known_no_effect",
+    safe_reason: "LUMA_RSVP_UNAVAILABLE",
+    observed_at: "2026-08-06T00:00:00.000Z",
+    retry_after: null,
+  };
+  fs.writeFileSync(path.join(stateDir, "candidate-attempts.jsonl"), `${JSON.stringify(attempt)}\n`);
+  let observed;
+  try {
+    await runNativePass({
+      repoRoot: REPO_ROOT,
+      stateDir,
+      ownerToken: OWNER_TOKEN,
+      env: {
+        GOG_ACCOUNT: "dais@example.test",
+        LM_CONNECTOR_TELEGRAM_TARGET: "123456",
+        LIFE_HOME_ADDRESS: "Tokyo",
+        GOOGLE_API_KEY_DIRECTIONS: "maps-secret",
+      },
+      runRuntime: async (input) => {
+        observed = input.config.candidateAttempts;
+        return { status: "incomplete", coverage: { counts: { open: 21 } }, continuation: { status: "continue" } };
+      },
+    });
+    assert.deepEqual(observed, [attempt]);
+  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+});
+
 test("native-pass preserves a bounded write error code for live diagnosis", async () => {
   const directory = temporaryDirectory();
   const stateDir = path.join(directory, "state");

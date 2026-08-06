@@ -57,6 +57,39 @@ function readDeliveryReceipts(stateDir) {
   return Object.freeze(rows);
 }
 
+function readCandidateAttempts(stateDir) {
+  const file = path.join(stateDir, "candidate-attempts.jsonl");
+  let source;
+  try {
+    const stat = fs.statSync(file);
+    if (stat.size > 10_000_000) unavailable();
+    source = fs.readFileSync(file, "utf8");
+  } catch (error) {
+    if (error && error.code === "ENOENT") return Object.freeze([]);
+    throw error;
+  }
+  const rows = source.split(/\r?\n/).filter(Boolean).map((line) => {
+    let value;
+    try { value = JSON.parse(line); } catch { unavailable(); }
+    if (
+      !value || typeof value !== "object" || Array.isArray(value)
+      || Object.keys(value).sort().join(",") !== "event_ref,observed_at,outcome,retry_after,safe_reason"
+      || !/^luma-event:\/\/event\/[A-Za-z0-9_-]+$/.test(String(value.event_ref || ""))
+      || !["verified_success", "known_no_effect", "unknown_effect", "recovery_required"].includes(value.outcome)
+      || !/^[A-Za-z0-9_:-]{1,100}$/.test(String(value.safe_reason || ""))
+      || !Number.isFinite(Date.parse(String(value.observed_at || "")))
+      || new Date(Date.parse(value.observed_at)).toISOString() !== value.observed_at
+      || !(value.retry_after === null || (
+        Number.isFinite(Date.parse(String(value.retry_after || "")))
+        && new Date(Date.parse(value.retry_after)).toISOString() === value.retry_after
+      ))
+    ) unavailable();
+    return Object.freeze({ ...value });
+  });
+  if (rows.length > 10_000) unavailable();
+  return Object.freeze(rows);
+}
+
 function runtimeConfig(options, stateDir) {
   if (options.config && typeof options.config === "object" && !Array.isArray(options.config)) {
     return options.config;
@@ -99,6 +132,7 @@ function runtimeConfig(options, stateDir) {
     mapsKey: requiredText(env.GOOGLE_API_KEY_DIRECTIONS),
     repoRoot: absoluteDirectory(options.repoRoot),
     deliveredReceipts: readDeliveryReceipts(stateDir),
+    candidateAttempts: readCandidateAttempts(stateDir),
   });
 }
 
