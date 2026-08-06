@@ -49,8 +49,9 @@ function isFreeOpen(candidate) {
 }
 
 function defaultCalendarFree(candidate, calendar) {
-  const intervals = calendar && Array.isArray(calendar.busy_intervals)
-    ? calendar.busy_intervals : [];
+  const intervals = Array.isArray(calendar)
+    ? calendar
+    : (calendar && Array.isArray(calendar.busy_intervals) ? calendar.busy_intervals : []);
   const start = Date.parse(candidate.starts_at);
   const end = Date.parse(candidate.ends_at);
   return !intervals.some((busy) => (
