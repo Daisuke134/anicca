@@ -2698,7 +2698,7 @@ it is easier to demonstrate:
 - [ ] **L-49K0D** — Port `career-ops` tracker, outcome, follow-up, and weekly-digest
   behavior only as projections over the existing event ledger. They MUST NOT become
   a second source of truth or weaken deterministic Gmail matching.
-- [ ] **L-49K0D1** — Replace the prompt-owned Playwright executor with a pinned
+- [x] **L-49K0D1** — Replace the prompt-owned Playwright executor with a pinned
   Browser Use adapter connected to the dedicated CloakBrowser profile. The adapter
   exposes only locally authorized actions, captures before/after/terminal images,
   and cannot mark success without an authoritative local confirmation classifier.
@@ -2742,7 +2742,15 @@ it is easier to demonstrate:
     `browser-worker-result.json` and its receipt discarded the runner's executor
     identity. The worker now propagates `executor=browser-use-0.13.7` into both files
     with `actor=resident_worker`. Remaining before checking D1: full regression and
-    one resident replay proving those durable executor fields.
+    one resident replay proving those durable executor fields. Final resident proof:
+    immutable release `05daa3858ec4258ee2985ebaf6de7f50357e8e34`, launchd run
+    `daily-20260806-140834`, holder PID 36232, worker PID 38261, fence 107. Both
+    `browser-worker-result.json` and `browser-worker-receipt.json` durably record
+    `executor=browser-use-0.13.7`; the receipt records `actor=resident_worker`.
+    Three candidates were attempted, all truthfully remained
+    `application_surface_not_found`, submitted stayed empty, launchd exited 0, and
+    Telegram delivery returned message ID `7662`. D1 is complete without any
+    development-session browser action or fabricated submission.
 - [ ] **L-49K0D2** — Wrap hourly application, five-minute Gmail, weekly learning,
   Telegram delivery, and Guardian reconciliation as Temporal workflows/activities.
   External side effects use explicit idempotency keys and no automatic retry after
