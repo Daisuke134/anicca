@@ -2979,10 +2979,17 @@ OpenTelemetry decision and primary sources:
     durable trace storage, health evidence, bounded retention, and an operator query
     view. Docker is not a runtime dependency. Export failure must never stop
     applications. Parent closes only after all children.
-    - [ ] `L-49K0C2O5a` — Replace the discarded Docker LGTM prototype with the
+    - [x] `L-49K0C2O5a` — Replace the discarded Docker LGTM prototype with the
       digest-pinned native Collector contract: OTLP HTTP bound only to `127.0.0.1`,
       private file-backed trace export, bounded queue/batch behavior, and a
       machine-readable health receipt (3 files, soft target 100 LOC).
+      - Completion receipt: RED failed because the native Collector configuration
+        did not exist. GREEN removes the Docker launcher/config entirely and adds an
+        OTLP HTTP receiver bound only to `127.0.0.1:4318`, a two-second/128-span batch,
+        a private environment-resolved JSON file exporter, 10 MB/30-day/10-backup
+        rotation, and loopback health endpoint. Contract test passes 1/1, adjacent
+        pin/telemetry tests pass 13/13, and the full suite passes 490/490. Exact
+        Collector binary validation remains the first gate of O5b.
     - [ ] `L-49K0C2O5b` — Install the exact pinned darwin-arm64 Collector binary and a
       dedicated resident LaunchAgent, then prove checksum, restart, loopback-only
       listener, and non-blocking exporter failure (3 files, soft target 100 LOC).
