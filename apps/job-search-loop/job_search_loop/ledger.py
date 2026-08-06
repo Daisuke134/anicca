@@ -3519,6 +3519,7 @@ class Ledger:
                 payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")
             ).encode("utf-8")
         ).hexdigest()
+        correlation = self._current_correlation()
         with self._transaction():
             intent = self.connection.execute(
                 "SELECT application_id, fence, status FROM submit_intents "
@@ -3546,8 +3547,9 @@ class Ledger:
                    post_action_path, post_action_sha256,
                    terminal_path, terminal_sha256,
                    confirmation_path, confirmation_sha256,
-                   confirmation_source, confirmation_id, bundle_sha256, recorded_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                   confirmation_source, confirmation_id, bundle_sha256, recorded_at,
+                   trace_id, span_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     intent_id, fence, str(intent["application_id"]),
@@ -3556,6 +3558,7 @@ class Ledger:
                     normalized["terminal_path"], normalized["terminal_sha256"],
                     normalized["confirmation_path"], normalized["confirmation_sha256"],
                     confirmation_source, confirmation_id, bundle_sha256, _now(),
+                    correlation["trace_id"], correlation["span_id"],
                 ),
             )
         return bundle_sha256

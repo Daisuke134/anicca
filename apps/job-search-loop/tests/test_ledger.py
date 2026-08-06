@@ -994,6 +994,7 @@ class LedgerTests(unittest.TestCase):
         )
 
     def test_submission_evidence_bundle_is_hash_and_fence_bound(self):
+        self.ledger.telemetry = CorrelationTelemetry()
         self._ready()
         intent = self._claim(
             self.ledger, self.application_id, "2026-08-06", "bundle-payload"
@@ -1046,6 +1047,8 @@ class LedgerTests(unittest.TestCase):
         self.assertEqual(reports[0]["resume_sha256"], self.resume_sha256)
         self.assertEqual(reports[0]["bundle_sha256"], recorded)
         self.assertEqual(reports[0]["confirmation_source"], "ats")
+        self.assertEqual(reports[0]["trace_id"], "a" * 32)
+        self.assertEqual(reports[0]["span_id"], "b" * 16)
 
     def test_submission_material_receipt_binds_exact_inputs_to_intent_fence(self):
         self._ready()

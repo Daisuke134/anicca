@@ -2919,7 +2919,7 @@ OpenTelemetry decision and primary sources:
         writes the same values to running/completed receipts plus normal/fixture
         results. Invalid or no-backend values become explicit null. Focused worker
         tests pass 8/8.
-    - [ ] `L-49K0C2O4b` — Persist validated trace/span IDs with application/route
+    - [x] `L-49K0C2O4b` — Persist validated trace/span IDs with application/route
       ledger events and evidence manifests via one migration. Split ledger schema/
       write and evidence projection into slices of at most 3 files and 100 LOC.
       - [x] `L-49K0C2O4b1` — Add nullable `trace_id`/`span_id` migration columns to
@@ -2930,7 +2930,7 @@ OpenTelemetry decision and primary sources:
           additive nullable SQLite migration columns, preserves historical rows, and
           is idempotent on reopen. Focused schema test passes 1/1 and the complete
           ledger suite passes 43/43.
-      - [ ] `L-49K0C2O4b2` — Validate and write current correlation IDs at event and
+      - [x] `L-49K0C2O4b2` — Validate and write current correlation IDs at event and
         evidence creation boundaries; reject malformed IDs and keep missing backend
         values null.
         - [x] `L-49K0C2O4b2a` — Write current validated IDs to immutable application
@@ -2941,8 +2941,14 @@ OpenTelemetry decision and primary sources:
             and inserts them atomically with immutable application/route events.
             Missing, malformed, or failing context resolves to null. Focused test
             passes 1/1; ledger plus telemetry suites pass 49/49.
-        - [ ] `L-49K0C2O4b2b` — Write the same IDs to the submission evidence bundle
+        - [x] `L-49K0C2O4b2b` — Write the same IDs to the submission evidence bundle
           and prove its content-addressed report preserves them.
+          - Completion receipt: RED showed a content-addressed submitted evidence
+            report returned null correlation under an active span. GREEN stores the
+            validated IDs atomically on first bundle creation and returns them through
+            the existing report; idempotent replay preserves the first correlation.
+            Correlation remains diagnostic and does not change the authoritative
+            artifact bundle SHA. Focused test passes 1/1; ledger suite passes 44/44.
     - [ ] `L-49K0C2O4c` — Carry the same IDs through Temporal Workflow/Activity
       identity, Guardian repair cases, and Telegram reports. Split durable runtime
       correlation from Telegram projection (each at most 3 files and 100 LOC).
