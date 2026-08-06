@@ -3289,6 +3289,12 @@ OpenTelemetry decision and primary sources:
       duplicate, genuinely missing required personal/legal facts, visible CAPTCHA,
       or explicit compensation below JPY 8M. Pending links, unfamiliar UI,
       unpublished compensation, and evaluator failure cannot end a zero-attempt pass.
+    - Dead-lease correction: runs `daily-20260806-185626` and
+      `daily-20260806-185908` both ended before Terra with `browser lease busy`.
+      Holder PID 89904 was absent, but the generic browser guard retained its dead
+      lease for a 1,800-second agent-shell grace period. Job Hunter's holder is the
+      long-lived launchd wrapper, so acquire now sets stale seconds to zero: a live
+      PID remains exclusive, while a dead wrapper lease is reclaimed immediately.
 - [ ] **L-49K2** — Make the resident fill contract complete and inspectable. Route the
   exact accepted resume; fill verified identity/contact/location/start-date fields;
   select work authorization and sponsorship answers from the private profile; verify
