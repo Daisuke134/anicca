@@ -40,13 +40,21 @@
 - [x] Focused 6/6、pretest 12/12、outbound 343/343 GREEN。
 - [x] Master specへ進捗130を記録しcommit/push。
 
-## Task 2B: Same-Pass Handoff Runtime Wiring
+## Task 2B1: Same-Pass Runtime State Transition
 
 **Files:**
 - Modify: `apps/life-manager/lib/connector-native-runtime.js`
-- Modify: `skills/connector/native-pass.js`
+- Modify: `apps/life-manager/lib/connector-native-runtime.test.js`
 
-**Completion:** Luma candidate exhaustion advances to Connpass within the same pass; known no-effect advances candidate; provider exhaustion advances provider; unknown effect reconciles before retry; only all-provider exhaustion advances the date. The runtime persists the Task 2A cursor without storing page text or identity.
+**Completion:** The runtime accepts only a verified Task 2A provider cursor. Known no-effect advances the candidate, Luma exhaustion advances to Connpass, and unknown effect cannot advance before readback reconciliation. It emits the next bounded provider cursor without storing page text or identity. Actual Connpass discovery remains Task 3.
+
+## Task 2B2: Native-Pass Provider Cursor Persistence
+
+**Files:**
+- Modify: `skills/connector/native-pass.js`
+- Modify: `skills/connector/test/native-entrypoint.test.js`
+
+**Completion:** Native-pass reads and atomically writes mode-0600 `provider-cursor.json` through the Task 2A store, forwards it into the next wake, and removes the superseded Luma-only `cursor.json` path after migration tests pass.
 
 ## Task 3: Connpass Discovery in Native Runtime
 
