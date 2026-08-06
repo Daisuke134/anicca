@@ -60,6 +60,7 @@ def run_worker(
     evidence_dir: Path | None = None,
     pre_submit_runner: Callable[..., dict[str, Any]] | None = None,
     route_fixture: Path | None = None,
+    application_ledger: Path | None = None,
 ) -> dict[str, Any]:
     with exclusive_worker(lock_path):
         owner = json.loads(owner_receipt.read_text(encoding="utf-8"))
@@ -132,6 +133,13 @@ def run_worker(
                 from .browser_use_ats import run_pre_submit
 
                 pre_submit_runner = run_pre_submit
+            route_materialization: list[dict[str, Any]] = []
+            if application_ledger is not None:
+                from .candidate_routes import materialize_canonical_routes
+
+                route_materialization = materialize_canonical_routes(
+                    application_ledger, prefilter_result
+                )
             pre_submit = pre_submit_runner(
                 owner_receipt=owner,
                 prefilter_result=prefilter_result,
@@ -150,6 +158,9 @@ def run_worker(
             "continued_after_failure": bool(
                 pre_submit.get("continued_after_failure")
             ),
+            "route_materialization": route_materialization
+            if prefilter_result is not None
+            else [],
             "report_message_id": None,
             "discovered_link_count": summary["discovered_count"],
             "verified_link_count": summary["verified_count"],
@@ -192,6 +203,7 @@ def main() -> None:
     parser.add_argument("--materials-root", type=Path)
     parser.add_argument("--evidence-dir", type=Path)
     parser.add_argument("--route-fixture", type=Path)
+    parser.add_argument("--application-ledger", type=Path)
     args = parser.parse_args()
     if args.action == "route-fixture" and args.route_fixture is None:
         parser.error("route-fixture action requires --route-fixture")
@@ -210,6 +222,7 @@ def main() -> None:
         materials_root=args.materials_root,
         evidence_dir=args.evidence_dir,
         route_fixture=args.route_fixture,
+        application_ledger=args.application_ledger,
     )
     print(json.dumps({"status": "ok", "result_path": str(args.output)}, sort_keys=True))
 

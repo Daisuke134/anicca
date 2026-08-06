@@ -31,6 +31,11 @@ class BrowserWorkerTests(unittest.TestCase):
         model_call = script.index("job-search-terra-plan")
         self.assertLess(fixture_branch, model_call)
         self.assertIn('mv "$ROUTE_FIXTURE_REQUEST" "$EVIDENCE/route-fixture-request.json"', script)
+        worker_run = script.index("job_search_loop.browser_worker run")
+        ledger_arg = script.index(
+            '--application-ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3"'
+        )
+        self.assertGreater(ledger_arg, worker_run)
 
     def test_run_worker_executes_route_fixture_with_resident_actor_provenance(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -107,7 +112,12 @@ class BrowserWorkerTests(unittest.TestCase):
                 encoding="utf-8",
             )
             prefilter = root / "prefilter.json"
-            prefilter.write_text(json.dumps({"candidates": []}), encoding="utf-8")
+            prefilter.write_text(json.dumps({"candidates": [{
+                "company": "Example AI", "title": "AI Engineer",
+                "official_url": "https://jobs.ashbyhq.com/example/role",
+                "provider": "ashby", "ranking_ready": True,
+                "ranking": {"score": 90}, "source_spans": ["official span"],
+            }]}), encoding="utf-8")
             profile = root / "profile.json"
             profile.write_text(json.dumps({"candidate": {}}), encoding="utf-8")
             calls = []
@@ -136,6 +146,7 @@ class BrowserWorkerTests(unittest.TestCase):
                 materials_root=root / "materials",
                 evidence_dir=root / "evidence",
                 pre_submit_runner=fake_pre_submit_runner,
+                application_ledger=root / "ledger.sqlite3",
             )
 
             self.assertEqual(len(calls), 1)
@@ -144,6 +155,8 @@ class BrowserWorkerTests(unittest.TestCase):
             self.assertEqual(result["executor"], "browser-use-0.13.7")
             self.assertTrue(result["continued_after_failure"])
             self.assertEqual(result["attempt_audit"][0]["outcome"], "blocked")
+            self.assertEqual(len(result["route_materialization"]), 1)
+            self.assertIn("application_id", result["route_materialization"][0])
             receipt = json.loads(
                 (root / "worker-receipt.json").read_text(encoding="utf-8")
             )

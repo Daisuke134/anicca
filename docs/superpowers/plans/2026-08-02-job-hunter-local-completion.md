@@ -2704,6 +2704,28 @@ it is easier to demonstrate:
   - [ ] `C2B` — After a canonical or alternate browser route reaches a definite
     pre-send failure, consume every remaining eligible alternate/email/outreach route
     exactly once under the same resident actor, run ID, application ID, and fence.
+    - Production wiring gap measured after C2A: `route_provenance`,
+      `route_executor`, `GogApplicationTransport`, and the application-route ledger
+      exist and are tested, but the installed worker currently reaches them only via
+      the no-send fixture. Ranked live candidates contain the canonical official URL
+      but no verified alternate URL or public recruiting-recipient provenance. Email
+      fallback is therefore not yet wired into the resident pass.
+    - [x] `C2B1` — Idempotently materialize each ranked candidate as one ledger
+      application with its ordinal-1 canonical ATS route before browser execution.
+      The resident worker now receives the existing application ledger explicitly,
+      writes at most the same three ranked browser candidates through `add_application`
+      and `register_application_route`, and persists application/route IDs plus only
+      the official URL SHA-256 in its result. A repeated input produces the identical
+      IDs and one eligible canonical route; focused tests pass 3/3 and the launchd
+      shell parses successfully.
+    - [ ] `C2B2` — Enrich that application only with alternate URLs and public emails
+      accepted by the existing official-source provenance verifiers; never guess an
+      address and distinguish application email from outreach-only.
+    - [ ] `C2B3` — On a definite browser pre-send failure, mark only that route failed
+      and execute the next eligible route once; unknown post-send outcomes stop all
+      cross-route retry.
+    - [ ] `C2B4` — Bind each route claim and receipt to resident actor, worker PID,
+      run ID, application ID, lease ID, and monotonic fence.
   - [ ] `C2C` — Persist and Telegram-report per-pass confirmed ATS, confirmed email,
     outreach-only, delivery-unknown, and deficit counts without conflation.
   - [ ] `C2D` — Trigger the installed resident loop and prove a failed first browser
