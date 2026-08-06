@@ -200,6 +200,8 @@ test("verified新規予約は名前・時刻・場所・選定理由とevent/Cal
   assert.match(message, /理由: Life Managerをfounderへ見せ/);
   assert.match(message, /イベントページ:\n   https:\/\/luma\.com\/founder-night/);
   assert.match(message, /Calendar:\n   https:\/\/calendar\.google\.com\/calendar\/event\?eid=opaque/);
+  assert.match(message, /今回予約し、登録証拠とCalendar登録を照合したevent/);
+  assert.doesNotMatch(message, /確認メール/);
   assert.match(message, /未処理の空き: 20日/);
   assert.deepEqual(input.existingCoverage.counts, {
     open: 20, covered_existing: 0, covered_new: 1, unavailable: 0,
