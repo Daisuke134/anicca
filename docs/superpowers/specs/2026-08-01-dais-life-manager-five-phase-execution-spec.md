@@ -5559,7 +5559,26 @@ crash/native/state/operations focused suiteは11/11 GREEN、shell syntax GREEN�
 実gog、model、browser、Calendar write、Submit、PNG、Telegram作用はまだ0。次はItem 10Bの前にphysical foreground preflightとして、
 schedule unloaded、Connector process 0、`:9222` health、Gig `:9223` read-only境界、private config存在だけを再確認し、そのままbounded foreground live E2Eへ進む。
 
-### Active remaining TODO SSOT（進捗192。これ以外の残TODO一覧は履歴）
+### O1B-25進捗193（Item 10A foreground preflight / Luma 14日候補境界補正）
+
+foreground直前の物理preflightを再実測した。Native、healthcheck、Healer、host bridgeの4 Connector labelはすべてunloaded、
+Connector processは0。Connector-owned Chromium `:9222`はPID 69767、Chrome 145、browser WebSocketありでhealthy。
+Gig `:9223`は別PID 73537のlistenerとしてread-only確認だけを行い、code、launchd、browser、lock、profile、state、vaultへのwriteは0。
+private envとLuma form profileは既存のmode 0600、local agent runnerはmode 0755。preflight時点のbranchは
+`feature/connector-native-completion`、HEAD `babf80985`、remote同期済みだった。scheduleはunloadedを維持する。
+
+同じ監査で、Google Calendar readerは東京時間14日へ制限済みだが、Luma candidate workflowには日付窓filterがなく、14日外の
+無料eventもSubmit候補になり得る不整合を発見した。東京時間 `2026-08-07` の境界testを先に追加し、開始直前と14日後00:00以降の
+candidateも残るREDを確認した。
+
+`createLumaScriptFirstWorkflow`はproduction clockを受け、Asia/Tokyoの今日00:00以上、14日後00:00未満の半開区間で候補をfilterする。
+official production factoryもCalendar readerと同じ`now`をLuma workflowへ渡す。境界では今日00:00と最終日23:59:59を含み、
+直前と14日後00:00を除外した。Luma workflow、production factory、minimal runnerのfocused suiteは17/17 GREEN。
+
+実gog、browser、Submit、Calendar write、PNG、Telegram作用はまだ0。Item 10Aを閉じ、次の一件はschedule disabledのまま
+official foreground runnerをbounded実行するItem 10B。実Luma `registered/pending` parent readbackが得られなければItem 10は完了にしない。
+
+### Active remaining TODO SSOT（進捗193。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 

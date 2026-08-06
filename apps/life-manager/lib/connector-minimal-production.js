@@ -228,6 +228,7 @@ function createMinimalProductionDependencies(options = {}) {
   });
   const browserRail = options.browserRail || createProductionBrowserRail({ stateDir });
   const lumaWorkflow = options.lumaWorkflow || createLumaScriptFirstWorkflow({
+    now,
     readLumaFormProfile: () => readLumaFormProfile({ path: lumaFormProfilePath }),
   });
   const actionCache = options.actionCache || createConnectorActionCache({
