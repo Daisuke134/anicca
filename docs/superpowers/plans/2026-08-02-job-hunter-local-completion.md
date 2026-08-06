@@ -2829,6 +2829,13 @@ OpenTelemetry decision and primary sources:
       OTLP protobuf POST to a loopback HTTP receiver, returned 32/16-character trace
       and span IDs, and flushed successfully; the first E2E exposed and then closed
       a missing-provider flush defect.
+  - [x] `L-49K0C2O2H` — Disable OpenTelemetry SDK automatic exception event/status
+    recording so exception messages and stack frames can never bypass the O2
+    allowlist. Keep only explicit `exception.type` (2 files, soft target 40 LOC).
+    - Completion receipt: the safe span context passes `record_exception=False` and
+      `set_status_on_exception=False`; a focused SDK contract test raises an exception
+      containing a private answer, proves it propagates to application logic, and
+      proves both automatic recording flags are false.
   - [ ] `L-49K0C2O3` — Instrument the application trace hierarchy without private
     payloads. Parent closes only after both children close.
     - [x] `L-49K0C2O3a` — Add `browser.navigate → page.ready` spans at the pinned
@@ -2847,11 +2854,17 @@ OpenTelemetry decision and primary sources:
         drops SDK/validation faults. Focused adapter plus telemetry tests pass 13/13.
     - [ ] `L-49K0C2O3b` — Complete resident orchestration/ATS spans. Parent closes
       only after both children close.
-      - [ ] `L-49K0C2O3b1` — Add `candidate → route → surface.classify →
+      - [x] `L-49K0C2O3b1` — Add `candidate → route → surface.classify →
         application.open → form.snapshot → form.fill` to `browser_use_ats.py` and its
         focused tests. Pass one telemetry instance into the pinned backend; record
         surface type, blocker code, duration, exception class, and evidence SHA—not
         private values (2 files, soft target 100 LOC).
+        - Completion receipt: one injected telemetry object flows from resident
+          pre-submit into the pinned backend and emits hashed candidate/route IDs,
+          surface classification/opening, form snapshot SHA, and form-fill duration.
+          Raw posting URL/query and private form values are absent. Focused resident
+          ATS tests pass 5/5, including a full candidate attempt with a private query
+          fixture; the O2H boundary independently prevents exception payload leakage.
       - [ ] `L-49K0C2O3b2` — Add `hourly_pass → submit.intent → submit.action →
         confirmation.observe` at the resident submit activity plus focused tests.
         Builder/development processes retain zero live-submit authority (at most

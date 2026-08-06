@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import time
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
@@ -18,6 +19,7 @@ from .playwright_ats import (
     ranked_pre_submit_candidates,
 )
 from .resume_routing import select_resume
+from .telemetry import Telemetry
 
 
 EXECUTOR = "browser-use-0.13.7"
@@ -46,29 +48,44 @@ def _application_entry(snapshot: dict[str, Any]) -> tuple[int, int] | None:
     return None
 
 
-def resolve_application_surface(adapter: Any, evidence_dir: Path) -> dict[str, Any]:
-    before_snapshot = adapter.snapshot()
-    before = evaluate_snapshot(before_snapshot)
-    current_snapshot, current = before_snapshot, before
-    controls = [control for frame in before_snapshot.get("frames") or [] for control in frame.get("controls") or []]
-    if not before_snapshot.get("navigation_committed") or not controls:
-        current_snapshot = adapter.snapshot()
-        current = evaluate_snapshot(current_snapshot)
-    if not current["claim_ready"]:
-        entry = _application_entry(current_snapshot)
-        if entry is not None:
-            try:
-                adapter.open_application(*entry)
-            except BrowserUsePolicyError as error:
-                if "stale" not in str(error).casefold():
-                    raise
+def resolve_application_surface(adapter: Any, evidence_dir: Path, telemetry: Any = None) -> dict[str, Any]:
+    telemetry = telemetry or Telemetry()
+    started = time.monotonic()
+    with telemetry.span("surface.classify") as classify_span:
+        try:
+            before_snapshot = adapter.snapshot()
+            before = evaluate_snapshot(before_snapshot)
+            current_snapshot, current = before_snapshot, before
+            controls = [control for frame in before_snapshot.get("frames") or [] for control in frame.get("controls") or []]
+            if not before_snapshot.get("navigation_committed") or not controls:
                 current_snapshot = adapter.snapshot()
+                current = evaluate_snapshot(current_snapshot)
+            if not current["claim_ready"]:
                 entry = _application_entry(current_snapshot)
-                if entry is None:
-                    raise RuntimeError("application surface disappeared after stale control")
-                adapter.open_application(*entry)
-            current_snapshot = adapter.snapshot()
-            current = evaluate_snapshot(current_snapshot)
+                if entry is not None:
+                    with telemetry.span("application.open") as open_span:
+                        try:
+                            adapter.open_application(*entry)
+                        except BrowserUsePolicyError as error:
+                            open_span.set_attributes({"exception.type": type(error).__name__})
+                            if "stale" not in str(error).casefold():
+                                raise
+                            current_snapshot = adapter.snapshot()
+                            entry = _application_entry(current_snapshot)
+                            if entry is None:
+                                raise RuntimeError("application surface disappeared after stale control")
+                            adapter.open_application(*entry)
+                    current_snapshot = adapter.snapshot()
+                    current = evaluate_snapshot(current_snapshot)
+            classify_attributes = {"duration.ms": (time.monotonic() - started) * 1000,
+                                   "surface.type": str(current.get("surface") or "unknown")}
+            if current.get("blockers"):
+                classify_attributes["failure.code"] = str(current["blockers"][0])
+            classify_span.set_attributes(classify_attributes)
+        except Exception as error:
+            classify_span.set_attributes({"duration.ms": (time.monotonic() - started) * 1000,
+                                          "exception.type": type(error).__name__})
+            raise
     _private_write(evidence_dir / "application-surface.json", {"before": before, "after": current})
     if not current["claim_ready"]:
         raise RuntimeError("application surface is not a complete form")
@@ -83,7 +100,9 @@ def run_pre_submit(
     materials_root: Path,
     evidence_dir: Path,
     backend_factory: Any = PinnedBrowserUseBackend,
+    telemetry: Any = None,
 ) -> dict[str, Any]:
+    telemetry = telemetry or Telemetry()
     candidates = ranked_pre_submit_candidates(
         json.loads(prefilter_result.read_text(encoding="utf-8")), limit=3
     )
@@ -101,7 +120,7 @@ def run_pre_submit(
     )
     profile = json.loads(profile_path.read_text(encoding="utf-8"))
     evidence_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
-    backend = backend_factory(endpoint, allowed_domains=domains)
+    backend = backend_factory(endpoint, allowed_domains=domains, telemetry=telemetry)
     adapter = AuthorizedBrowserUseAdapter(backend, owner_receipt=owner_receipt)
     try:
         backend.connect()
@@ -114,47 +133,54 @@ def run_pre_submit(
 
                 provider = detect_provider(url)
             digest = hashlib.sha256(url.encode("utf-8")).hexdigest()
+            route_digest = hashlib.sha256(f"{provider}:{url}".encode("utf-8")).hexdigest()
             candidate_evidence = evidence_dir / digest
-            adapter.navigate(url if provider == "ashby" else _application_url(url, provider))
-            resolved = resolve_application_surface(adapter, candidate_evidence)
-            snapshot = resolved["snapshot"]
-            snapshot_path = candidate_evidence / "ats-snapshot.json"
-            _private_write(snapshot_path, snapshot)
-            snapshot_sha256 = hashlib.sha256(snapshot_path.read_bytes()).hexdigest()
-            evaluation = resolved["evaluation"]
-            _private_write(candidate_evidence / "ats-evaluation.json", evaluation)
-            before = adapter.capture_evidence("before", candidate_evidence)
-            if not evaluation["claim_ready"]:
-                terminal = adapter.capture_evidence("terminal", candidate_evidence)
-                _private_write(
-                    candidate_evidence / "browser-use-evidence.json",
-                    {"before": before, "terminal": terminal},
+            with telemetry.span("candidate", {"candidate.id": digest}):
+                with telemetry.span("route", {"route.id": route_digest}):
+                    adapter.navigate(url if provider == "ashby" else _application_url(url, provider))
+                    resolved = resolve_application_surface(adapter, candidate_evidence, telemetry)
+                snapshot = resolved["snapshot"]
+                snapshot_path = candidate_evidence / "ats-snapshot.json"
+                snapshot_started = time.monotonic()
+                with telemetry.span("form.snapshot") as snapshot_span:
+                    _private_write(snapshot_path, snapshot)
+                    snapshot_sha256 = hashlib.sha256(snapshot_path.read_bytes()).hexdigest()
+                    snapshot_span.set_attributes({"duration.ms": (time.monotonic() - snapshot_started) * 1000,
+                                                  "evidence.sha256": snapshot_sha256})
+                evaluation = resolved["evaluation"]
+                _private_write(candidate_evidence / "ats-evaluation.json", evaluation)
+                before = adapter.capture_evidence("before", candidate_evidence)
+                if not evaluation["claim_ready"]:
+                    terminal = adapter.capture_evidence("terminal", candidate_evidence)
+                    _private_write(
+                        candidate_evidence / "browser-use-evidence.json",
+                        {"before": before, "terminal": terminal},
+                    )
+                    return {
+                        "claim_ready": False,
+                        "blockers": list(evaluation.get("blockers") or ["application_surface_not_ready"]),
+                    }
+                posting_text = " ".join(str(value) for value in candidate.get("source_spans", []))
+                routed = select_resume(
+                    posting_text=posting_text,
+                    role_family=str(candidate.get("role_family") or "unknown"),
+                    materials_root=materials_root,
+                    posting_language=str(candidate.get("language") or "en"),
                 )
-                return {
-                    "claim_ready": False,
-                    "blockers": list(evaluation.get("blockers") or ["application_surface_not_ready"]),
-                }
-            posting_text = " ".join(str(value) for value in candidate.get("source_spans", []))
-            routed = select_resume(
-                posting_text=posting_text,
-                role_family=str(candidate.get("role_family") or "unknown"),
-                materials_root=materials_root,
-                posting_language=str(candidate.get("language") or "en"),
-            )
-            plan = build_non_submit_fill_plan(
-                snapshot,
-                answers=grounded_profile_answers(profile),
-                resume_path=routed["resume_path"],
-                resume_sha256=routed["resume_sha256"],
-            )
-            receipt = execute_non_submit_fill_plan(
-                plan,
-                adapter=adapter,
-                owner_receipt=owner_receipt,
-                snapshot_sha256=snapshot_sha256,
-                screenshot_path=candidate_evidence / "pre-submit.png",
-                receipt_path=candidate_evidence / "fill-receipt.json",
-            )
+                fill_started = time.monotonic()
+                with telemetry.span("form.fill") as fill_span:
+                    plan = build_non_submit_fill_plan(
+                        snapshot, answers=grounded_profile_answers(profile),
+                        resume_path=routed["resume_path"], resume_sha256=routed["resume_sha256"],
+                    )
+                    receipt = execute_non_submit_fill_plan(
+                        plan, adapter=adapter, owner_receipt=owner_receipt,
+                        snapshot_sha256=snapshot_sha256,
+                        screenshot_path=candidate_evidence / "pre-submit.png",
+                        receipt_path=candidate_evidence / "fill-receipt.json",
+                    )
+                    fill_span.set_attributes({"duration.ms": (time.monotonic() - fill_started) * 1000,
+                                              "evidence.sha256": snapshot_sha256})
             after = adapter.capture_evidence("after", candidate_evidence)
             terminal = adapter.capture_evidence("terminal", candidate_evidence)
             _private_write(
