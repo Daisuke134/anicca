@@ -5495,7 +5495,23 @@ independent post-read 1、Telegram message 1、photo 1、bundle 1を確認した
 operations、evidence chainを一つのofficial production dependency factoryへ組成し、native entrypointをforeground実行可能にする。
 scheduleは引き続きunloadedを維持する。
 
-### Active remaining TODO SSOT（進捗188。これ以外の残TODO一覧は履歴）
+### O1B-25進捗189（Item 10A-2c-1 / production Browser Harness parent boundary）
+
+TDD REDで`createProductionBrowserHarness` contractを追加し、module不存在を確認後に実装した。各fallback stepは同一owned pageを一回観察し、
+sanitized control token、kind、public label、required flagだけをaction proposerへ渡す。page/browser object、profile value、credential、cookieはmodel入力に渡さない。
+
+modelはpurpose/method/controlの一作用だけを提案し、parentが観察registryからexact controlを解決する。fill/selectの実値はparent `resolveValue`だけが
+private profileから取得し、model proposalやcache actionには保存しない。click/check/submitを含む実操作もparent `operateControl`だけが実行する。
+各step後の成功判定はLuma workflowのparent `readProviderState`だけで、`registered/pending`まで最大10 step。cache replayも同じparent
+`performAction`を使い、registryがない時だけpageを再観察する。
+
+production harness、bounded adapter、action cacheのfocused suiteは9/9 GREEN。fixture上で2操作、page observation 2、parent operation 2、
+parent readback 2、model入力private value 0を確認した。
+
+実model、browser、Calendar、Submit、PNG、Telegram作用は0。Item 10は未完で、次は実DOM/AX observer/performer、private profile resolver、
+bounded local agent proposerをこのparent boundaryへ接続する。scheduleは引き続きunloadedを維持する。
+
+### Active remaining TODO SSOT（進捗189。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
