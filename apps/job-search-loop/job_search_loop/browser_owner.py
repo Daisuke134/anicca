@@ -31,6 +31,32 @@ def probe_cdp(endpoint: str) -> dict[str, str]:
     return {"status": "ready", "endpoint": base, "browser": browser, "websocket": websocket}
 
 
+def attach_playwright_cdp(endpoint: str) -> dict[str, Any]:
+    from playwright.sync_api import sync_playwright
+
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.connect_over_cdp(endpoint, timeout=12_000)
+        if not browser.contexts:
+            raise RuntimeError("CloakBrowser default context is missing")
+        return {
+            "browser": browser.version,
+            "context_count": len(browser.contexts),
+        }
+
+
+def _restart_browser_launchagent(label: str) -> None:
+    if label != "ai.anicca.job-search-browser":
+        raise RuntimeError("browser recovery label is not authorized")
+    completed = subprocess.run(
+        ["/bin/launchctl", "kickstart", "-k", f"gui/{os.getuid()}/{label}"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if completed.returncode != 0:
+        raise RuntimeError("browser LaunchAgent restart failed")
+
+
 def _browser_pid(port: int) -> int:
     completed = subprocess.run(
         ["/usr/sbin/lsof", "-nP", f"-iTCP:{port}", "-sTCP:LISTEN", "-t"],
@@ -168,6 +194,36 @@ class BrowserLease:
         return True
 
 
+def acquire_with_attach_recovery(
+    lease: BrowserLease,
+    *,
+    attach_probe: Callable[[str], dict[str, Any]] = attach_playwright_cdp,
+    restart_browser: Callable[[str], Any] = _restart_browser_launchagent,
+) -> dict[str, Any]:
+    attempts = 0
+    while attempts < 2:
+        receipt = lease.acquire()
+        attempts += 1
+        try:
+            attached = attach_probe(str(receipt["endpoint"]))
+        except Exception:
+            if not lease.release():
+                raise RuntimeError("failed CDP attach lease could not be released")
+            if attempts == 2:
+                raise
+            restart_browser("ai.anicca.job-search-browser")
+            continue
+        receipt["attach_status"] = "ready"
+        receipt["attach_attempts"] = attempts
+        receipt["attach_browser"] = str(attached.get("browser") or "")
+        receipt["attach_context_count"] = int(attached.get("context_count") or 0)
+        receipt["attach_verified_at"] = datetime.now(timezone.utc).isoformat()
+        if lease.receipt_path.is_file():
+            _private_write(lease.receipt_path, receipt)
+        return receipt
+    raise RuntimeError("CDP attach recovery exhausted")
+
+
 def _defaults(args: argparse.Namespace) -> BrowserLease:
     identity = args.identity
     lease_name = identity.replace("/", "_").replace(":", "_") + ".lease"
@@ -192,7 +248,7 @@ def main() -> None:
     args = parser.parse_args()
     lease = _defaults(args)
     if args.action == "acquire":
-        result = lease.acquire()
+        result = acquire_with_attach_recovery(lease)
         print(json.dumps({"status": result["status"], "fence": result["fence"]}))
     elif args.action == "beat":
         if not lease.beat():
