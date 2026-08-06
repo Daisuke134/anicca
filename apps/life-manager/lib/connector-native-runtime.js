@@ -638,6 +638,7 @@ async function runNativeConnectorPass(input = {}) {
     let providerDiscovery = null;
     let providerDateInventory = null;
     if (providerCursor && providerCursor.provider === "connpass") {
+      try {
       if (typeof pack.discoverConnpassDate !== "function") unavailable();
       failureCode = "CONNECTOR_NATIVE_PROVIDER_DISCOVERY_FAILED";
       let handoff;
@@ -802,6 +803,25 @@ async function runNativeConnectorPass(input = {}) {
             transition: "provider_exhausted", observedAt: nextCursorInstant(providerCursor, now),
           });
         }
+      }
+      } catch (error) {
+        if (failureCode !== "CONNECTOR_NATIVE_PROVIDER_DISCOVERY_FAILED") throw error;
+        providerDiscovery = Object.freeze({
+          provider: "connpass",
+          date: providerCursor.date,
+          status: "provider_discovery_failed",
+          coverage_status: "open",
+          coverage_credit_count: 0,
+          network_call_count: 0,
+          browser_page_count: 0,
+          advisory_candidates: Object.freeze([]),
+        });
+        providerCursor = advanceEventProviderCursor({
+          cursor: providerCursor,
+          registry: providerRegistry,
+          transition: "provider_exhausted",
+          observedAt: nextCursorInstant(providerCursor, now),
+        });
       }
     }
 
