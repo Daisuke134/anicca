@@ -3,7 +3,9 @@ import tempfile
 import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from unittest.mock import patch
 
+from job_search_loop.guardian import ledger_health
 from job_search_loop.ledger import Ledger
 from job_search_loop.route_executor import execute_next_message_route
 
@@ -78,6 +80,94 @@ class RouteExecutorTests(unittest.TestCase):
         japan_day = datetime.now(timezone(timedelta(hours=9))).date().isoformat()
         self.assertEqual(self.ledger.current_state(self.application_id), "submitted")
         self.assertEqual(self.ledger.confirmed_daily_count(japan_day), 1)
+
+    def test_delivered_outreach_preserves_receipt_without_confirming_application(self):
+        self._route(
+            "recruiting_outreach", "talent@example.test", 4, "outreach_only"
+        )
+
+        result = execute_next_message_route(
+            ledger=self.ledger,
+            application_id=self.application_id,
+            actor="resident_worker",
+            fence=1,
+            message_path=self.message,
+            resume_path=self.resume,
+            transport=lambda **payload: {
+                "status": "delivered",
+                "provider_id": "gmail:outreach-42",
+                "evidence_sha256": hashlib.sha256(b"outreach receipt").hexdigest(),
+            },
+        )
+
+        route = self.ledger.application_routes(self.application_id)[0]
+        japan_day = datetime.now(timezone(timedelta(hours=9))).date().isoformat()
+        self.assertEqual(result["status"], "delivered")
+        self.assertEqual(route["route_kind"], "recruiting_outreach")
+        self.assertEqual(route["delivery_state"], "delivered")
+        self.assertEqual(route["provider_id"], "gmail:outreach-42")
+        self.assertEqual(self.ledger.current_state(self.application_id), "discovered")
+        self.assertEqual(self.ledger.confirmed_daily_count(japan_day), 0)
+        self.assertEqual(self.ledger.funnel_outcomes(self.application_id), [])
+
+    def test_reconciliation_corrects_run_74_outreach_without_rewriting_receipt(self):
+        for state in ("qualified", "materials_ready", "submit_claimed", "submit_unknown"):
+            self.ledger.transition(self.application_id, state)
+        route_id = self._route(
+            "recruiting_outreach", "talent@example.test", 4, "outreach_only"
+        )
+        evidence_sha256 = hashlib.sha256(b"run 74 outreach receipt").hexdigest()
+        self.ledger.claim_application_route(
+            route_id,
+            actor="resident_worker",
+            fence=74,
+            message_path=str(self.message),
+            message_sha256=hashlib.sha256(self.message.read_bytes()).hexdigest(),
+            resume_path=str(self.resume),
+            resume_sha256=hashlib.sha256(self.resume.read_bytes()).hexdigest(),
+        )
+        self.ledger.complete_application_route(
+            route_id,
+            fence=74,
+            state="delivered",
+            provider_id="gmail:run-74-outreach",
+            evidence_sha256=evidence_sha256,
+        )
+
+        route = self.ledger.application_routes(self.application_id)[0]
+        with self.ledger._transaction():
+            self.ledger._project_delivered_application_route_in_transaction(
+                row={**route, "recipient_acceptance": "accepts_applications"},
+                provider_id=str(route["provider_id"]),
+                evidence_sha256=evidence_sha256,
+            )
+        self.assertEqual(self.ledger.current_state(self.application_id), "submitted")
+
+        with patch("job_search_loop.ledger.RUN_74_APPLICATION_ID", self.application_id):
+            first = self.ledger.reconcile_delivered_application_routes()
+            second = self.ledger.reconcile_delivered_application_routes()
+            summary = next(
+                row
+                for row in self.ledger.event_summary_rows()
+                if row["application_id"] == self.application_id
+            )
+            health = ledger_health(self.ledger.path)
+
+        japan_day = datetime.now(timezone(timedelta(hours=9))).date().isoformat()
+        route = self.ledger.application_routes(self.application_id)[0]
+        self.assertEqual(first["outreach_correction_count"], 1)
+        self.assertEqual(second["outreach_correction_count"], 0)
+        self.assertEqual(self.ledger.current_state(self.application_id), "submit_unknown")
+        self.assertEqual(self.ledger.confirmed_daily_count(japan_day), 0)
+        self.assertEqual(route["provider_id"], "gmail:run-74-outreach")
+        self.assertEqual(route["delivery_evidence_sha256"], evidence_sha256)
+        self.assertEqual(
+            [event["to_state"] for event in self.ledger.application_route_events(route_id)],
+            ["eligible", "action_started", "delivered"],
+        )
+        self.assertEqual(summary["current_state"], "submit_unknown")
+        self.assertNotIn("confirmed_application", summary["positive_funnel_stages"])
+        self.assertEqual(health["status"], "healthy")
 
     def test_transport_exception_is_unknown_and_never_retried(self):
         self._route("recruiting_outreach", "talent@example.test", 4, "outreach_only")

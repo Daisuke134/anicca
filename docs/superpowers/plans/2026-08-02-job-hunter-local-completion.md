@@ -4066,16 +4066,20 @@ OpenTelemetry decision and primary sources:
       `08ec98f5ad84a82838392e37d60c1912f707c70d`. The complete Job Hunter suite
       passed 537/537 before activation, and an installed-release import classified
       the Neural Concept success variant as authoritative. Launchd run 74,
-      `daily-20260807-015421`, is currently running on that release under PID 36180.
-      It discovered 450 links, verified 50, retained five eligible candidates,
-      acquired the browser fence, started the single Terra application-lane agent,
-      and inspected OpenAI `AI Deployment Engineer, Startups`. No run-74 Submit,
-      application receipt, final result, or Telegram completion receipt exists yet;
-      do not mark `L-49K5D` complete until those artifacts appear. The resident spent
-      its first minute rediscovering CLI help and source, so the next atomic code
-      change after this run is to bake the already-proven Ashby command recipe and
-      durable answer-memory contract into the resident prompt/tool boundary rather
-      than paying that discovery cost every wake.
+      `daily-20260807-015421`, attempted LangChain Ashby for application
+      `fcd5aea271106d3cac08e1dfe42645d29275a4fc5415429bead7dbf485968081`.
+      Its deterministic Submit path stopped at the exact failure class
+      `FenceError: invalid submission click phase: clicked -> clicked`; it must not
+      re-click. The subsequent authoritative Gmail provider receipt is real delivery
+      only: its durable route metadata is `route_kind=recruiting_outreach` and
+      `recipient_acceptance=outreach_only`, so it is recruiting outreach rather than
+      `applied_email` or a confirmed application and must not be resent. Telegram
+      message ID `8109` records that truthful outreach delivery. Ledger reconciliation
+      preserves the ambiguous ATS click and immutable delivered-route evidence while
+      removing the false confirmed-application projection. `L-49K5D` remains open:
+      this run produced neither a confirmed ATS application nor an explicitly accepted
+      email application. The resident must continue with a new eligible role rather
+      than replaying either action.
 - [ ] **L-49K** — Prove `L-49K1` through `L-49K4` through the installed resident
   LaunchAgent on one eligible Ashby role. The development session only triggers and
   observes. The resident must open the application surface, fill, verify, submit once,
