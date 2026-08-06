@@ -71,19 +71,9 @@ The runtime file needs an 11-line first-wake initializer because native-pass can
 - [x] Native-entrypoint 26/26、runtime 16/16、pretest 12/12、outbound 344/344 GREEN。
 - [x] Master specへ進捗132を記録しcommit/push。
 
-## Task 3A: Connpass Official-API Runtime Handoff
+## Retired transport record: Connpass API (not a task)
 
-**Files:**
-- Modify: `apps/life-manager/lib/connector-native-runtime.js`
-- Modify: `apps/life-manager/lib/connector-native-runtime.test.js`
-- Modify: `skills/connector/native-pass.js`
-
-**Completion:** A Connpass provider cursor invokes the existing exhaustive official-v2 API handoff for its date in the same runtime pass. The API key remains private, missing/unavailable API stays open, normalized discovery is advisory-only, and discovery never creates coverage or invokes registration.
-
-- [x] RED: existing runtime 16 tests passed and the Connpass cursor never invoked handoff.
-- [x] GREEN: both a resumed Connpass cursor and same-pass Luma exhaustion invoke official-v2 handoff; missing key is zero-network/open and discovered candidates remain advisory with coverage credit zero.
-- [x] Runtime 17/17、native-entrypoint 26/26、pretest 12/12、outbound 345/345 GREEN。
-- [x] Master specへ進捗133を記録しcommit/push。
+Progress 145 permanently supersedes this transport. It is retained only as commit history; it is not an executable task or architecture option. The active Connector runtime MUST NOT read a Connpass API key, call the Connpass API, or derive availability from an API response. Task 4B2D is the sole replacement.
 
 ## Task 3B: Provider-Neutral Calendar and Travel Gate
 
@@ -169,9 +159,22 @@ The job/adapter/evidence transaction totals 348 lines across four modules/tests 
 
 This slice owns only downstream contract acceptance and regression tests. It does not construct a Connpass provider or perform a browser effect.
 
+- [x] Complete in commit `65241d6a2`; progress 141.
+
 ## Task 4B2C2: Connpass Runtime Execution Wiring
 
 **Completion:** Calendar-eligible Connpass candidates enter the common write pipeline with the Connpass provider/job/evidence dependencies, then Calendar and Telegram lineage. Known no-effect advances candidate/provider without stopping the pass; unknown effect reconciles before retry.
+
+- [x] Complete in commits `e822bfa3a`, `d0e05f5d8`, and `1cfa2e56f`; progress 143–145.
+
+## Task 4B2D: Connpass Browser-Only Discovery
+
+**Completion:** The active runtime uses only Connector CloakBrowser `:9222` parent-owned targets to read official Connpass calendar/explore pages, creates a verified exhaustive event inventory for the cursor date, and calls no Connpass API. API key presence or absence cannot change this path.
+
+- [ ] Read public event cards from a fixed official Connpass discovery URL through the parent-owned daily driver.
+- [ ] Normalize exact date, event URL/ref, title, start, and venue without raw page text or identity state.
+- [ ] Feed the verified browser inventory through Calendar/travel gate and the existing Connpass write dependencies.
+- [ ] Prove API-key reference 0 and API network call 0 in focused/full tests and a live launchd run.
 
 ## Task 4B3: Connpass Live Submit and Promotion
 
