@@ -141,10 +141,19 @@ Telegram provider message IDが無い送信を成功として表示しない。�
 実行順の唯一の正本は、このspec内の `### Active remaining TODO SSOT（進捗145。これ以外の残TODO一覧は履歴）` とする。
 この節、Order checkbox、過去の進捗文に異なる「次TODO」が残っていても実行順には使用しない。
 
-現在の物理状態: native launchd `ai.anicca.life-manager-connector-native`はこのworktreeを5分間隔で起動する。live run 190で
-Luma 27件、Calendar eligible 0件からConnpass cursorへのhandoffを実証した。Connpass APIは使用禁止。次の未完了項目は
-Connector専用CloakBrowser `:9222`によるConnpass browser-only discoveryである。実Connpass submit、Calendar、screenshot、Telegramの
-同一lineage proofはまだ存在しないため未完了である。
+現在の物理状態（2026-08-06 22:07 JST read-only実測）: native launchd
+`ai.anicca.life-manager-connector-native`はこのworktreeを5分間隔で起動するが、run 194はlast exit 1、heartbeat
+`worker_failed`、bounded result `incomplete`で終了した。Luma inventory 27件、Calendar gate 0件、eligible 0件、write attempt 0件で、
+provider cursorはConnpass、generation 2、次対象日は2026-08-07である。append-only stateはcandidate attempts 49、delivery receipts 3、
+photo receipts 2で、今回wakeの新規申込、Calendar、screenshot、Telegram deliveryは0件である。Connector専用CloakBrowser `:9222`は応答する。
+Connpass APIは使用禁止。次の未完了項目は`:9222`によるConnpass browser-only discoveryの欠落を直し、常設loopを再wakeすることである。
+
+**Executor boundary:** 実event discovery、form入力、Submit、provider readback、Calendar、screenshot、Telegramを行う主体は常設Connector
+launchd loopだけである。対話中のCodex、臨時script、手動browser操作が代わりに申し込んだ結果をConnectorのlive acceptanceへ数えない。
+Codexの仕事は先頭の実故障をTDDで直し、commit/pushし、既存launchdをwakeして観測し、loop自身の外部証拠で完了判定することである。
+各fresh open dateのprovider passは必ずLumaをprimaryとして開始する。LumaにCalendar-eligible候補が無い、または各候補がknown-no-effectの場合だけ、
+同じpassで`Connpass → Peatix → Meetup → Doorkeeper → Eventbrite`へ進む。crash/restart時はLumaへ巻き戻さずdurable cursorのexact provider/candidateから再開する。
+provider順を飛ばさず、一providerの失敗でpassを終了しない。
 
 Connectorのdoneは「一件予約できた」ではない。`open=0`であり、各日が`covered_existing`、
 `covered_new`、または実Calendar blocker付き`unavailable`のいずれかとして証拠化され、Daisがagentを
@@ -3048,8 +3057,8 @@ network API call 0でverified browser inventoryを作り、Calendar gate後の�
 ### Active remaining TODO SSOT（進捗145。これ以外の残TODO一覧は履歴）
 
 1. [x] Provider-neutral downstream write、Connpass runtime write dependencies、Luma Calendar-eligible 0 handoff、Connpass state persistenceを閉じる。証拠: 進捗141、143、144、commit `65241d6a2`、`e822bfa3a`、`d0e05f5d8`、`1cfa2e56f`。
-2. [in progress] Connpass browser-only discoveryを実装する。`:9222` parent-owned targetで公式`/calendar/`または`/explore/`をexhaustiveに読み、日付、event URL、title、start、venueをverified inventoryへする。完了条件: API key参照0、API network call 0、browser discovery test/full suite GREEN、live cursorが候補を得る。
-3. Connpass live submitとpromotionを閉じる。完了条件: 親readbackのregistered/pending、provider receipt、PNG SHA、Calendar ID/readback、Telegram card/photo positive IDが一event lineageに揃い、そのproofだけで`registration_allowed=true`。
+2. [in progress] Run 194の実故障を直す。常設loopのLuma-first動作を保持し、Luma eligible 0の同じrunがConnector `:9222` parent-owned targetでConnpass公式`/calendar/`または`/explore/`をexhaustiveに読み、日付、event URL、title、start、venueをverified inventoryへする。完了条件: focused/full suite GREEN、API key参照0、API network call 0、commit/push後の既存launchd wakeで`worker_failed`にならず、loop自身がConnpass候補を得る。
+3. 常設loop自身によるConnpass live submitとpromotionを閉じる。完了条件: 一時scriptやCodex手動申込ではなく同一launchd runがform入力・Submitを行い、親readbackのregistered/pending、provider receipt、PNG SHA、Calendar ID/readback、Telegram card/photo positive IDを一event lineageへ揃え、そのproofだけで`registration_allowed=true`。
 4. Every-wake Telegram durable outboxを実装する。完了条件: `applied / continuing / recovering`の全exit pathでwake report欠落0、positive message IDまで保持、再送重複0、報告後も申込み継続。
 5. Weekly Telegram rollupを実装する。完了条件: 成功週、登録0週、process停止週、Telegram停止週で週次record欠落0、復旧後positive message ID、重複0。
 6. Exhaustive continuationを一つのforward-only state machineにする。完了条件: candidate 0、満席、closed、form failure、provider down、browser crashがterminal failureにならず、次candidate→provider→date→windowまたはdurable recoveryへ進む。
