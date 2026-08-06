@@ -7,9 +7,10 @@
 **Configured upstream:** `canonical/docs/job-hunter-spec-20260805`
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-06 JST
-**Active atomic task:** `L-49K3A1` — replace the resident no-submit boundary with
-application-first routing: attempt the formal ATS first, then send an application
-email in the same pass whenever ATS application is not authoritatively confirmed.
+**Active atomic task:** `L-49K3A1c` — finish the minimum ATS-to-email route selection,
+then move directly through semantic Submit, minimum durable receipts, resident release,
+and one real application. Exhaustive hardening and complete dossier work follow the
+first resident `applied_ats` or `applied_email`; they never gate it.
 **Status:** The immutable four-lane runtime, grounded materials, ownership fences,
 Gmail ingestion, Telegram outbox, quota accounting, Ashby surface classifier, and
 loopback OpenTelemetry Collector/private trace index are implemented. The application
@@ -2269,31 +2270,37 @@ this spec update → commit/push → Telegram milestone before the next item sta
 ### 12.2A Current blocking execution order
 
 The detailed tasks below remain the requirements, but execution follows this critical
-path. First prove one resident application end to end, then prove that the resident
-can repair and resume the same application before production campaign activation.
-Learning and Web work never delay a task currently preventing an authoritative
-application or the minimum self-healing contract:
+path. The first milestone is not a complete framework: it is one real resident
+application. Build only the minimum truthful tools and at-most-once memory needed to
+let the LLM act, release them, and immediately run the installed loop. Do not place
+exhaustive branch tests, complete dossiers, cross-lane projections, learning, or Web
+work before that live proof. After the first application, harden what the real run
+reveals and prove self-healing before production campaign activation.
 
 Completed foundations include `L-49K0A1G`, `L-49K0B`, `L-49K0C`, `L-49K0C1`,
 `L-49K1`, OpenTelemetry `O1`/`O2`/`O5`, and all currently checked O3/O4 slices.
 The active cursor is the first item below; do not start a later item merely because
 it is easier to demonstrate:
 
-1. `L-49K3A1` — replace the old cross-route fence and outreach-only classification
-   so one ATS attempt may be followed by exactly one resume-bearing Gmail application.
-2. `L-49K3A2` and `L-49K0C2O3b2c` — add one semantic resident ATS Submit with its
-   action span; every non-confirmed result immediately enters the email route.
-3. `L-49K3A3`, then `L-49K3B`, then close `L-49K3` — prove every branch ends in one
-   of the two application outcomes, persist both outcomes, attach ATS or
-   Gmail provider evidence, update Ledger/Telegram, and resume the same application
-   after a crash without duplicating either route.
-4. `L-49K4`, `L-49K0C2O6`, and the remaining `L-49K0C2` children — build the
-   immutable owner dossier, prove one joined live application trace, and prove every
-   ATS obstacle reaches the email route rather than ending the pass.
-5. `L-49K0E`, `L-49K`, `L-49`, `L-49A`, and `L-50` — prove resident actor
-   provenance and one authoritative real Ashby receipt, exact submitted documents,
-   complete question/answer dossier, screenshots, and Gmail confirmation in Telegram.
-6. `L-66A` through `L-66F` — immediately after the first joined live application,
+1. Close `L-49K3A1c` — preserve the already-complete independent ATS/email fences and
+   make every unconfirmed ATS observation select the first verified recruiting-email
+   tool. Run its focused tests and the existing complete suite, then commit and push.
+2. `L-49K3A2` plus the minimum `L-49K0C2O3b2c` span — expose exactly one semantic
+   Submit action to the LLM and return the live result as an observation. This is a
+   small agent tool, not an ATS-specific decision workflow.
+3. Minimum `L-49K3B` — replace the resident `never Submit` prompt with the natural-
+   language application goal; persist only the ATS action fence and authoritative ATS
+   or Gmail provider receipt; send the result to Telegram; build and install the
+   immutable resident release. Complete dossier rendering is not a prerequisite.
+4. Immediately trigger the existing LaunchAgent and watch one real eligible Ashby
+   role from discovery to exactly one `applied_ats` or `applied_email`. This closes the
+   minimum live slices of `L-49K0E`, `L-49K`, `L-49`, `L-49A`, and `L-50`. No second
+   speculative hardening task may be inserted before this run.
+5. After the live receipt, close `L-49K3A3`, the remaining `L-49K3B`, `L-49K4`,
+   `L-49K0C2O6`, and the remaining `L-49K0C2` children. Add exhaustive cases and the
+   complete immutable dossier in response to measured live behavior while preserving
+   uninterrupted ATS-or-email application outcomes.
+6. `L-66A` through `L-66F` — immediately after the first resident application,
    prove automated detect, diagnose, reproduce, test, patch, no-send repair canary,
    immutable release/rollback, resume of that same application, and Telegram receipt.
    This minimum self-healing proof is required before production campaign activation.
