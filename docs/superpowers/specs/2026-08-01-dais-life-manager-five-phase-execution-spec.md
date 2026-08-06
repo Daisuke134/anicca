@@ -2733,11 +2733,11 @@ flowchart LR
 11B. [x] verified profileの完全一致回答と明示consentだけをanswer planへ変換し、未知required fieldで虚偽入力せず次候補へ進める。回帰込み14/14。
 11C. [x] exact controlだけをfill/check/selectし、各effectをreadbackするbounded executorを追加する。回帰込み16/16。
 11D. [x] live DOM schema reader→private profile loader→answer plan→fill readbackを`submitLumaOnPage`のconfirm click前へ接続し、未知fieldでは同passの次候補へ継続する。
-12. attempt/suppressionへ`capability_version`を追加し、旧`LUMA_FORM_INPUT_REQUIRED / retry_after=null`を新versionで一度だけ再評価する。同versionの無限retryは禁止する。
+12. [x] attempt/suppressionへ`capability_version`を追加し、旧form failureを新versionで一度だけ再評価する。同versionの無限retryは禁止する。run 151で`luma-form-submit-v1`再評価を実測済み。
 13. Observer trace packを実装する。run/event/capability versionへaction、URL class、control label、validation class、screenshot SHA、provider readbackをbindし、PII/secretなしのreplay fixtureをincidentへ添付する。
-14. [~] Terra self-fix producerをrevision-awareにする。canonical path/stateとexit 0はlive実証済み。残りは`incident_fingerprint + capability_version + revision` ledger、Connector blocker優先queue、PR作成をdoneにしない状態遷移、不十分PR #1410をrevision 2へ戻すことである。
+14. [pause] self-fix producerはDaisの明示指示で停止する。task deliveryのlive E2Eが成立するまで再開しない。
 15. self-build consumerを復旧し、protected-path、permission、focused/full test、rollback、隔離CloakBrowser canaryを通過したrevisionだけをmerge・再配備する。canary failureは同incidentの次revisionへ戻す。
-16. 修復後にConnector launchd自身を再wakeし、元eventまたは同型live eventでsubmit→登録済みreadback→PNG→Calendar→Telegram positive IDまで成立するまで最大3 revision/24時間で反復する。
+16. [~] Connector launchd自身を再wakeし、同型live eventでsubmit→登録済みreadback→PNG→Calendar→Telegram positive IDまで成立するまで反復する。run 154は旧capability suppressionにより`unsuppressed=0`。`luma-agentic-terra-v2`は、loop内Terraが既存CloakBrowserでフォームを視覚操作し、親providerがreload後に登録済みを再検証する経路として配備中。
 17. golden traceで確認したtrusted Gmail OTPとLuma→主催公式site handoffをprovider capabilityとして実装し、Lumaだけでは本登録にならないeventを公式readbackまで完了する。
 18. Lumaと公式siteの二枚のscreenshot、Calendar event ID、Telegram message IDを一つのevent lineage receiptへ保存し、loop主体のlive E2Eを実証する。
 19. source registry contractを追加し、各providerの`discovery / registration / effect_readback / screenshot_evidence` capabilityをclosed schemaで宣言する。
