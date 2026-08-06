@@ -3423,6 +3423,12 @@ OpenTelemetry decision and primary sources:
           make the true owner unable to release. The three exact RED reproductions
           are GREEN; adjacent runtime, launchd, browser-owner, reporting, and Ashby
           suites pass 41/41, and the complete suite passes.
+        - Repair commit `2979b77ceaf86f94e8c901c3d90376e29976f93e` is pushed,
+          built as a commit-pinned artifact, SHA-256 verified, installed read-only,
+          and activated as the stable resident release. Previous release
+          `538b0728b4c87b0f8f6a17951c0f847b43bb1d42` remains the rollback target. The
+          next canary is intentionally paused only for the missing candidate fact
+          answering when a new role can start; no value may be inferred.
 - [ ] **L-49K3** — Implement one fenced semantic `Submit Application` action for the
   registered resident worker only. Observe the Ashby submit request, reCAPTCHA
   outcome, HTTP result, terminal success text, URL, and Gmail confirmation; capture
