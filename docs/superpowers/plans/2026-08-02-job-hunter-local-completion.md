@@ -3941,11 +3941,22 @@ OpenTelemetry decision and primary sources:
         `gmail_fallback_required`; confirmation-like text maps only to
         `authoritative_confirmation_required`. One table-driven regression plus the
         existing browser boundary and Ashby confirmation suites pass 25/25.
-    - [ ] `L-49K5C2` — Give the classifier result to the same fenced Terra owner and
+    - [x] `L-49K5C2` — Give the classifier result to the same fenced Terra owner and
       adapt generic form filling to the current semantic controls. Preserve profile
       grounding, one browser/profile owner, one submit fence, and ATS-first ordering.
       Unexpected or unsupported controls remain an agent observation and then Gmail
       fallback, never a terminal skip.
+      - Evidence: `job_search_loop.ats_page_observer` validates the ready owner receipt,
+        loopback endpoint, lease, and fence; attaches read-only to the existing
+        CloakBrowser context; selects its current HTTP(S) page; and persists the
+        bounded C1 snapshot/classification with `browser_action_count=0`. It never
+        opens, navigates, fills, clicks, submits, closes, or creates a browser profile.
+        `run-daily.sh` exposes only the private evidence directory, and the resident
+        prompt tells Terra to use the observation adaptively: continue grounded form
+        work, or apply by Gmail for CAPTCHA/SSO/closed/unsupported surfaces. A
+        confirmation-like page still cannot create success truth. Observer,
+        classifier, browser-owner boundary, Browser Use surface, and prompt focused
+        tests pass 32/32; the daily zsh entrypoint parses cleanly.
     - [ ] `L-49K5C3` — Build and install the release, then run no-send canaries across
       representative Ashby, Greenhouse, and Workday surfaces. Prove page transitions,
       field grounding, artifact capture, and fallback selection without Submit or

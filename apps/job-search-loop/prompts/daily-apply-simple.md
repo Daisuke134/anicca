@@ -28,7 +28,20 @@ For each selected role:
    submit-unknown application. A role whose route is already `delivered` or
    `delivery_unknown` is terminal history for this pass: do not reopen or re-inspect
    it. Select a different eligible role immediately.
-2. Attempt the formal ATS first. An HTTP-200 shell, `Page not found`, missing form,
+2. After each ATS navigation or major page transition, reuse the current leased page
+   instead of building another browser owner. Run the installed read-only observer:
+   `$JOB_SEARCH_PYTHON -m job_search_loop.ats_page_observer --owner-receipt
+   "$JOB_SEARCH_BROWSER_OWNER_EVIDENCE" --output
+   "$JOB_SEARCH_EVIDENCE_DIR/ats-page-observation.json"`. Treat its classification as
+   an observation for your adaptive judgment, not a workflow that replaces you.
+   `terra_continue_formal` means inspect and fill the current semantic controls using
+   only grounded profile facts. `gmail_fallback_required` means immediately take the
+   verified Gmail application route; it never means stop applying.
+   `terra_inspect_then_gmail_fallback` permits one more bounded semantic inspection,
+   then requires Gmail fallback if no application form appears. A
+   `confirmation_like` observation is not success; run the authoritative ATS
+   confirmation contract before recording `applied_ats`.
+3. Attempt the formal ATS first. An HTTP-200 shell, `Page not found`, missing form,
    or stale vendor job ID is not a live ATS. Search the employer's official careers
    site for the current role, register that verified page as an alternate official
    route under the same application ID, and try its embedded form before using email.
@@ -39,17 +52,17 @@ For each selected role:
    such as `[data-automation-id="click_filter"]` while a hidden submit button sits
    underneath it. If the hidden button reports intercepted pointer events, click the
    visible wrapper/role control and verify the page or step transition before continuing.
-3. Before any Submit side effect, use the existing Ledger intent, material receipt,
+4. Before any Submit side effect, use the existing Ledger intent, material receipt,
    click fence, and request fence. Execute Submit once. Treat only the existing
    authoritative ATS confirmation classifier as `applied_ats`; HTTP 200 or model prose
    alone is not confirmation.
-4. If ATS does not produce authoritative confirmation for any reason—including
+5. If ATS does not produce authoritative confirmation for any reason—including
    CAPTCHA, timeout, missing fact, unsupported control, validation failure, closed
    form, or ambiguous result—do not click it again. Find a verified official careers,
    recruiting, hiring-manager, or recruiter work address and send one truthful Gmail
    application with the selected resume. A Gmail provider message ID is
    `applied_email`. Continue contact discovery when an address is not initially known.
-5. Persist the authoritative ATS or Gmail receipt and send a natural-language Telegram
+6. Persist the authoritative ATS or Gmail receipt and send a natural-language Telegram
    report with the role, company, channel, receipt, submitted resume, and available
    evidence. Diagnostics may be recorded, but they never end the selected application.
 
