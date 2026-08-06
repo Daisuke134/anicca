@@ -3193,6 +3193,18 @@ OpenTelemetry decision and primary sources:
   field, unknown legal fact, or selector ambiguity blocks that candidate before
   Submit and continues the pass. Files: modify `browser_fill.py`, material receipt,
   and focused tests (3 files, soft target 100 LOC per slice).
+  - [ ] `L-49K2A` — Extend deterministic field/question classification and build
+    semantic `fill`, `select`, `check`, and `upload` actions for start date, location,
+    work authorization, sponsorship, and attestations only from non-empty private
+    fact IDs. Unknown/ambiguous required groups remain blockers (2 files, soft target
+    100 LOC).
+  - [ ] `L-49K2B` — Add only bounded Browser Use `select_answer` and `check_answer`
+    actions that re-read the live group/question/option metadata and reject generic
+    click, Submit, stale refs, and unmatched answers (2 files, soft target 100 LOC).
+  - [ ] `L-49K2C` — Execute every semantic action, verify live value/selected/checked
+    state, and persist ordered exact question/answer/fact IDs, selected-state evidence,
+    resume filename/hash, and pre-submit screenshot. Any failed verification blocks
+    before Submit and continues the resident pass (2 files, soft target 100 LOC).
 - [ ] **L-49K3** — Implement one fenced semantic `Submit Application` action for the
   registered resident worker only. Observe the Ashby submit request, reCAPTCHA
   outcome, HTTP result, terminal success text, URL, and Gmail confirmation; capture
