@@ -2834,8 +2834,10 @@ OpenTelemetry decision and primary sources:
     - [ ] `L-49K0C2O3a` — Add `browser.navigate → page.ready` spans at the pinned
       Browser Use backend boundary. Record redirect count, readyState, DOM control
       and text counts, duration, and exception class; never record the raw URL or DOM.
-      Files: `browser_use_adapter.py` and `tests/test_browser_use_adapter.py` (2 files,
-      soft target 100 LOC).
+      Files: extend the O2 span handle in `telemetry.py`, then modify
+      `browser_use_adapter.py` and `tests/test_browser_use_adapter.py` (3 files,
+      soft target 100 LOC). The span-handle extension is required because duration
+      and exception class are known only after navigation/snapshot starts.
     - [ ] `L-49K0C2O3b` — Add `hourly_pass → candidate → route → surface.classify →
       application.open → form.snapshot → form.fill → submit.intent → submit.action →
       confirmation.observe` spans at the resident orchestration/ATS boundaries. Record
