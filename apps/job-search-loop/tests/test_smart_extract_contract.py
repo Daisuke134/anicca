@@ -1,6 +1,13 @@
 import unittest
+import tempfile
+import json
+from pathlib import Path
 
-from job_search_loop.smart_extract_contract import normalize_smart_extract_rows
+from job_search_loop.candidate_queue import CandidateQueue
+from job_search_loop.smart_extract_contract import (
+    ingest_site_pattern_captures,
+    normalize_smart_extract_rows,
+)
 
 
 class SmartExtractContractTests(unittest.TestCase):
@@ -60,6 +67,52 @@ class SmartExtractContractTests(unittest.TestCase):
         )
         self.assertEqual(result["results"][0]["source_kind"], "lead")
         self.assertEqual(result["results"][0]["source_url"], "https://company.example/careers")
+
+    def test_pinned_site_capture_uses_smart_extract_and_existing_queue(self):
+        patterns = json.loads(
+            (Path(__file__).parents[1] / "config" / "direct-career-sites.v1.json")
+            .read_text(encoding="utf-8")
+        )
+        captures = [
+            {
+                "site_id": "startup_jobs",
+                "strategy": "json_ld",
+                "source_url": "https://startup.jobs/?q=AI+Engineer&remote=true",
+                "rows": [
+                    {
+                        "@type": "JobPosting",
+                        "title": "AI Engineer",
+                        "url": "https://jobs.acme.example/roles/7",
+                        "hiringOrganization": {"name": "Acme"},
+                    }
+                ],
+            }
+        ]
+        with tempfile.TemporaryDirectory() as directory:
+            queue = CandidateQueue(Path(directory) / "candidates.sqlite3")
+            try:
+                receipt = ingest_site_pattern_captures(
+                    queue,
+                    captures,
+                    patterns=patterns,
+                    query="AI Engineer",
+                    location="Japan",
+                    query_family="six_figure_japan",
+                )
+                pending = queue.pending(limit=10)
+            finally:
+                queue.close()
+
+        self.assertEqual(receipt["inserted_count"], 1)
+        self.assertEqual(receipt["accepted_row_count"], 1)
+        self.assertEqual(
+            pending,
+            [{
+                "url": "https://jobs.acme.example/roles/7",
+                "source": "site_pattern:startup_jobs:smart_extract:json_ld:lead",
+                "query_family": "six_figure_japan",
+            }],
+        )
 
 
 if __name__ == "__main__":
