@@ -2285,48 +2285,69 @@ reveals and prove self-healing before production campaign activation.
 
 Completed foundations include `L-49K0A1G`, `L-49K0B`, `L-49K0C`, `L-49K0C1`,
 `L-49K1`, OpenTelemetry `O1`/`O2`/`O5`, and all currently checked O3/O4 slices.
-The active cursor is the first item below; do not start a later item merely because
-it is easier to demonstrate:
+The active cursor is the first unchecked item below; do not start a later item merely
+because it is easier to demonstrate:
 
-1. Close `L-49K3A1c` — preserve the already-complete independent ATS/email fences and
-   make every unconfirmed ATS observation select the first verified recruiting-email
-   tool. Run its focused tests and the existing complete suite, then commit and push.
-2. `L-49K3A2` plus the minimum `L-49K0C2O3b2c` span — expose exactly one semantic
-   Submit action to the LLM and return the live result as an observation. This is a
-   small agent tool, not an ATS-specific decision workflow.
-3. Minimum `L-49K3B` — replace the resident `never Submit` prompt with the natural-
-   language application goal; persist only the ATS action fence and authoritative ATS
-   or Gmail provider receipt; send the result to Telegram; build and install the
-   immutable resident release. Complete dossier rendering is not a prerequisite.
-4. Immediately trigger the existing LaunchAgent and watch one real eligible Ashby
-   role from discovery to exactly one `applied_ats` or `applied_email`. This closes the
-   minimum live slices of `L-49K0E`, `L-49K`, `L-49`, `L-49A`, and `L-50`. No second
-   speculative hardening task may be inserted before this run.
-5. After the live receipt, close `L-49K3A3`, the remaining `L-49K3B`, `L-49K4`,
-   `L-49K0C2O6`, and the remaining `L-49K0C2` children. Add exhaustive cases and the
+1. [x] Close `L-49K3A1c` — preserve independent ATS/email fences and make every
+   unconfirmed ATS observation select the first verified recruiting-email tool.
+2. [x] Complete `L-49K3A2` plus the minimum `L-49K0C2O3b2c` span — expose exactly
+   one semantic Submit action to the LLM and return the live result as an observation.
+3. [x] Complete the minimum `L-49K3B` release slice — activate the natural-language
+   application goal, ATS action fence, authoritative Gmail receipt, Telegram report,
+   and immutable resident release `abb4eafaad6764902bf7960f0dbea6e6bd545201`.
+4. [x] Trigger the existing LaunchAgent and watch one real role to an authoritative
+   terminal application. Resident run `daily-20260806-221921` selected Cursor
+   `Solutions Architect, Japan`, attempted the formal ATS first, observed a pre-submit
+   `TimeoutError`, then sent the same truthful resume application by Gmail. Receipt:
+   `applied_email`, application ID
+   `d11cc27f1bfcadc569c9ce3dcab6cba084c0005fcc832acc9a9c15324659b933`, Gmail
+   provider ID `gmail:19fd74214d1fc23e`, Telegram message ID `7950`, exit zero.
+5. [ ] **First active task: recover Cursor's formal ATS route for that same role.**
+   Reproduce and diagnose the measured pre-submit timeout in the resident environment;
+   give the Job Hunter the browser capability it currently lacks; resume the same
+   application intent; complete one fenced formal Cursor ATS Submit; require visible
+   or provider-authoritative ATS confirmation; reconcile ATS and Gmail as two receipts
+   for one application ID and count the role once. Never send a second email and never
+   click ATS Submit twice.
+6. [ ] Replace the resident's disposable `codex exec --ephemeral` invocation with a
+   persistent Codex thread controlled through the Codex SDK. Persist `thread_id` beside
+   the application intent, resume that exact thread after interruption or repair, and
+   start a fresh thread only for a genuinely new application. Expose the required
+   CloakBrowser, Ledger, Gmail, Telegram, Gmail-monitor, and Calendar capabilities as
+   explicit resident tools; do not assume the interactive Codex session's Apps,
+   Plugins, Skills, Browser Use, or Computer Use are inherited by a child CLI process.
+7. [ ] After the formal Cursor ATS receipt, close `L-49K3A3`, the remaining
+   `L-49K3B`, `L-49K4`, `L-49K0C2O6`, and the remaining `L-49K0C2` children. Add exhaustive cases and the
    complete immutable dossier in response to measured live behavior while preserving
    uninterrupted ATS-or-email application outcomes.
-6. `L-66A` through `L-66F` — immediately after the first resident application,
+8. [ ] `L-66A` through `L-66F` — use OpenTelemetry failure spans to create a repair
+   case; have the repair agent diagnose, reproduce, test, patch, run a no-send canary,
+   release or roll back, then resume the saved thread for the same application.
    prove automated detect, diagnose, reproduce, test, patch, no-send repair canary,
    immutable release/rollback, resume of that same application, and Telegram receipt.
    This minimum self-healing proof is required before production campaign activation.
-7. `L-51` and `L-52` — prove one authoritative real Workday application and its
+9. [ ] `L-51` and `L-52` — prove one authoritative real Workday application and its
    exact artifacts and receipt in Telegram using the self-healing-capable resident.
-8. `L-49K0D`, `L-49K0D2`, then `L-53` through `L-57` — add tracker projections,
+10. [ ] `L-49K0D`, `L-49K0D2`, then `L-53` through `L-57` — add tracker projections,
    move the four working lanes to restart-safe Temporal workflows, and prove Gmail,
    Calendar, interview preparation, and debrief from authoritative events.
-9. `L-58` through `L-66` — prove conversion metrics, one-variable learning,
+11. [ ] `L-58` through `L-66` — prove conversion metrics, one-variable learning,
    rollback, Telegram, simultaneous health, and freeze the working local contract.
-10. `L-67` through `L-73` — operate the Dais campaign through fifty confirmed
+12. [ ] `L-67` through `L-73` — operate the Dais campaign through fifty confirmed
    applications, a verified interview, a qualifying written offer, comparison,
    negotiation brief, and owner decision.
-11. `W-01` through `W-30` — only after local completion, build and verify the
+13. [ ] `W-01` through `W-30` — only after local completion, build and verify the
    tenant-isolated Web product.
 
 Current production truth measured from the ledger and resident receipts:
 
-- the installed resident Job Hunter still has zero new authoritative confirmed
-  applications, zero verified interviews, and zero offers;
+- the installed resident Job Hunter has one new authoritative application, zero
+  verified interviews, and zero offers. Cursor `Solutions Architect, Japan` is
+  `applied_email` under application ID
+  `d11cc27f1bfcadc569c9ce3dcab6cba084c0005fcc832acc9a9c15324659b933`; Gmail
+  provider ID `gmail:19fd74214d1fc23e` and Telegram message ID `7950` are the
+  authoritative receipts. The formal ATS is not complete: the resident observed
+  `browser_use_pre_submit_error:TimeoutError` before Submit and clicked it zero times;
 - one owner-authorized interactive diagnostic successfully submitted OpenAI
   `AI Deployment Engineer, Startups` in Tokyo through the existing dedicated
   CloakBrowser profile. This is a measured reference trace, not resident-loop proof:
@@ -2346,8 +2367,8 @@ Current production truth measured from the ledger and resident receipts:
   retried;
 - Gmail contains the OpenAI confirmation above, but the inbox loop acknowledged it
   with `matched_count=0` because the interactive diagnostic did not create a resident
-  submit intent. Resident Gmail submission confirmations, funnel outcomes, and
-  production application-route success remain zero;
+  submit intent. That historical reconciliation gap remains; it does not negate the
+  later Cursor resident Gmail provider receipt;
 - resident run `daily-20260806-160111` discovered 155 links, verified 37, and selected
   OpenAI `AI Success Engineer - Tokyo` (95), `Field Security Specialist` (95), and
   `AI Deployment Engineer, Startups` (80). The third was correctly audited as
@@ -2356,8 +2377,9 @@ Current production truth measured from the ledger and resident receipts:
   No application was submitted. All three surfaces classified as `none`, but failure
   paths persisted only the classification and not raw non-private controls, so
   selector mismatch versus render timing remains deliberately unknown;
-- Gmail fallback components exist but are not connected to the resident pass until
-  `C2B2` through `C2D` complete.
+- Gmail fallback is now connected to the resident pass and produced the Cursor
+  `applied_email` receipt. `C2B2` through `C2D` remain responsible for exhaustive
+  enrichment, reporting, quota, and recovery coverage rather than first connectivity.
 
 Measured reference timing: the final pre-submit image was captured at 15:16:45 JST
 and the terminal success image at 15:17:53 JST, so the verified final submit phase was
