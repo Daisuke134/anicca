@@ -2312,9 +2312,10 @@ parallel only where explicitly stated below. Otherwise preserve this order:
    `daily-20260806-230438` reconciled this state without resubmitting, exited zero,
    passed terminal validation at 46 verified/110 remaining, and Telegram-reported
    message ID `7985`.
-6. [ ] **Adopt proven ApplyPilot discovery and form-adaptation components
-   (`L-49K5B`–`L-49K5C`; `L-49K5A` complete) without replacing Job Hunter truth or
-   ownership.** Pin
+6. [ ] **Connect the completed minimum ApplyPilot-inspired discovery components to
+   the resident (`L-49K5B4`), then release/install and run the real loop before broad
+   site-pattern or form-framework work.** `L-49K5A`, `L-49K5B1`, `L-49K5B2`,
+   `L-49K5B3a`, and `L-49K5B3b` are complete. Pin
    `Pickle-Pixel/ApplyPilot` commit
    `4a8d521f67f5139811c0a910ef37410f8e6d836a`, preserve AGPL-3.0 copyright and
    license notices for copied code, and record changed upstream files. Adopt only
@@ -2326,7 +2327,8 @@ parallel only where explicitly stated below. Otherwise preserve this order:
    https://github.com/Pickle-Pixel/ApplyPilot/tree/4a8d521f67f5139811c0a910ef37410f8e6d836a ;
    https://choosealicense.com/licenses/agpl-3.0/ ;
    https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/licensing-a-repository
-7. [ ] Execute `L-49K5D`, then close `L-49K3A3`, the remaining `L-49K3B`, `L-49K4`,
+7. [ ] Execute the installed resident live proof (`L-49K5D`) immediately after B4,
+   then close `L-49K3A3`, the remaining `L-49K3B`, `L-49K4`,
    and remaining `L-49K0C2` children from measured behavior. Run the installed
    resident against one new eligible non-Workday employer with no prior ambiguous
    click. Formal ATS is first; if it cannot produce authoritative confirmation, send
@@ -3836,13 +3838,16 @@ OpenTelemetry decision and primary sources:
           leads. Any selector/script/extraction-plan key is rejected rather than
           executed. It owns no browser, LLM, queue, or database. Focused tests pass
           3/3, including the empty-URL regression found during GREEN.
-      - [ ] `L-49K5B3c` — Pin the useful direct-career site patterns and run their
+      - [ ] `L-49K5B3c` — **Deferred until after the next installed resident live
+        application proof.** Pin the useful direct-career site patterns and run their
         outputs through B3b and the existing queue. Do not create a second Playwright
         browser, LLM owner, database, or continuous extractor loop.
-    - [ ] `L-49K5B4` — Wire B1–B3 into the resident discovery pass and prove one
-      restart-safe fixture run where duplicated cross-source results become one
-      candidate, official provenance wins, expiry is retained, and the existing
-      Ledger/candidate queue remains the only durable owner.
+    - [ ] `L-49K5B4` — Wire the completed minimum B1/B2/B3a/B3b contracts into the
+      resident discovery pass, build and install the release, and immediately trigger
+      the existing launchd loop. The completion gate is not a large fixture matrix:
+      it is a real run whose discovered candidates remain in the existing queue and
+      which proceeds to ATS-first application with one Gmail fallback. Add only the
+      smallest regression check required by the observed integration boundary.
   - [ ] `L-49K5C` — Port generic Playwright form and CAPTCHA/SSO/page classification
     into the existing fenced CloakBrowser application lane. Keep the resident Terra
     agent as the adaptive owner. Do not use `bypassPermissions`, unpinned packages,
