@@ -141,6 +141,7 @@ def run_worker(
             )
         result = {
             "status": str(pre_submit.get("status") or "pending_verification"),
+            "executor": str(pre_submit.get("executor") or "none"),
             "submitted": [],
             "submit_unknown": [],
             "blocked": list(pre_submit.get("blocked") or []),
@@ -156,6 +157,8 @@ def run_worker(
             {
                 "version": 1,
                 "status": "completed",
+                "actor": "resident_worker",
+                "executor": result["executor"],
                 "run_id": run_id,
                 "worker_pid": os.getpid(),
                 "holder_pid": holder_pid,
