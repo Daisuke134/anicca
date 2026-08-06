@@ -66,3 +66,28 @@ for attempt in {1..10}; do
 done
 [[ "$LOADED" == "1" ]] || { print -u2 "collector bootstrap failed"; exit 70; }
 "$JOB_SEARCH_LAUNCHCTL" kickstart -k "gui/$UID_VALUE/$LABEL"
+HEALTHY=0
+for attempt in {1..20}; do
+  if curl --fail --silent http://127.0.0.1:13133/ >/dev/null; then
+    HEALTHY=1
+    break
+  fi
+  sleep 0.5
+done
+[[ "$HEALTHY" == "1" ]] || { print -u2 "collector health check failed"; exit 71; }
+PID_VALUE="$("$JOB_SEARCH_LAUNCHCTL" print "gui/$UID_VALUE/$LABEL" | awk '/pid =/{print $3; exit}')"
+HEALTH_RECEIPT="$JOB_SEARCH_STATE_ROOT/observability-health.json"
+"$JOB_SEARCH_PYTHON" - "$HEALTH_RECEIPT" "$VERSION" "$PID_VALUE" "$ACTUAL_SHA" <<'PY'
+import json, os, sys
+from pathlib import Path
+output, version, pid, archive_sha = sys.argv[1:]
+path = Path(output)
+temporary = path.with_suffix(".tmp")
+temporary.write_text(json.dumps({
+    "version": 1, "status": "healthy", "collector_version": version,
+    "pid": int(pid), "archive_sha256": archive_sha,
+    "otlp_endpoint": "127.0.0.1:4318", "health_endpoint": "127.0.0.1:13133",
+}, sort_keys=True) + "\n", encoding="utf-8")
+os.chmod(temporary, 0o600)
+temporary.replace(path)
+PY
