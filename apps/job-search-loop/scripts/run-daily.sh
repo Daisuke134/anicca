@@ -175,7 +175,7 @@ chmod 600 "$JOB_SEARCH_PREFILTER_RESULT"
 chmod 600 "$JOB_SEARCH_PREFILTER_QUEUE"
 "$JOB_SEARCH_PYTHON" -m job_search_loop.candidate_queue discover-prefilter \
   --database "$JOB_SEARCH_CANDIDATE_QUEUE" \
-  --input "$JOB_SEARCH_PREFILTER_QUEUE" \
+  --input "$JOB_SEARCH_PREFILTER_RESULT" \
   --output "$EVIDENCE/prefilter-candidate-receipt.json"
 chmod 600 "$EVIDENCE/prefilter-candidate-receipt.json"
 mkdir -p "$EVIDENCE/ats-liveness"

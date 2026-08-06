@@ -7,6 +7,39 @@ from job_search_loop.candidate_queue import CandidateQueue, TerminalResultError
 
 
 class CandidateQueueTests(unittest.TestCase):
+    def test_prefilter_shortlist_becomes_immediately_actionable(self):
+        with tempfile.TemporaryDirectory() as directory:
+            queue = CandidateQueue(Path(directory) / "candidate-queue.sqlite3")
+            try:
+                queue.ingest_prefilter(
+                    [
+                        {
+                            "official_url": "https://jobs.example/roles/agentic-ai",
+                            "provider": "workday_cxs",
+                            "bucket": "dream",
+                            "company": "Example",
+                            "title": "Solution Architect - Agentic AI",
+                            "gate_status": "pass",
+                            "ranking_ready": True,
+                        },
+                        {
+                            "official_url": "https://jobs.example/roles/review",
+                            "provider": "official_ats_boards",
+                            "bucket": "strong_fit",
+                            "company": "Example Two",
+                            "title": "AI Product Lead",
+                            "gate_status": "needs_verification",
+                            "ranking_ready": True,
+                        },
+                    ]
+                )
+                summary = queue.summary()
+            finally:
+                queue.close()
+
+        self.assertEqual(summary["eligible_count"], 1)
+        self.assertEqual(summary["remaining_unverified_count"], 1)
+
     def test_browser_result_contract_requires_discovery_verification_counts(self):
         schema = json.loads(
             (

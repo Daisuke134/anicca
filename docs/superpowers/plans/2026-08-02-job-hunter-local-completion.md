@@ -3854,6 +3854,23 @@ OpenTelemetry decision and primary sources:
         from eight boards, and isolated one board failure without stopping discovery.
         Existing discovery/Workday focused tests pass 9/9. Release installation and
         the resident application receipt remain required before this item is complete.
+      - Installed live run `daily-20260806-234905` used release `7f1e04814185f8e...`,
+        discovered 449 durable links, produced 12 shortlisted candidates, and sent its
+        terminal Telegram report as message `8023`. It did not create a new application:
+        46 links were verified, 403 remained unverified, and the queue exposed only one
+        eligible link, which was an existing OpenAI duplicate. Cursor remained one
+        counted Gmail delivery (`gmail:19fd74214d1fc23e`) plus an at-most-once official
+        ATS `delivery_unknown`; the resident correctly did not click again. The observed
+        integration fault is that `run-daily.sh` persisted the full 441-row prefilter
+        queue as discovered-only instead of promoting the selected `gate_status=pass`
+        and `ranking_ready=true` shortlist. B4 therefore remains open until the shortlist
+        handoff is fixed and a rerun produces a new ATS or Gmail provider receipt.
+      - Local fix verified: `run-daily.sh` now sends the 12-row selected prefilter result
+        to the durable queue, and `CandidateQueue.ingest_prefilter` immediately promotes
+        only `gate_status=pass && ranking_ready=true` rows. Replaying the exact run-67
+        shortlist against an isolated queue produced 9 eligible and 3 still-unverified
+        candidates. Candidate-queue and canonical-runtime focused checks pass 20/20.
+        Release installation and the new provider receipt remain the open completion gate.
   - [ ] `L-49K5C` — Port generic Playwright form and CAPTCHA/SSO/page classification
     into the existing fenced CloakBrowser application lane. Keep the resident Terra
     agent as the adaptive owner. Do not use `bypassPermissions`, unpinned packages,

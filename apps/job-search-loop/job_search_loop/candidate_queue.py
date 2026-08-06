@@ -146,6 +146,39 @@ class CandidateQueue:
             "duplicate_count": duplicate,
         }
 
+    def ingest_prefilter(self, candidates: list[dict[str, Any]]) -> dict[str, int]:
+        links = [
+            {
+                "url": candidate.get("official_url"),
+                "source": candidate.get("provider") or "prefilter",
+                "query_family": candidate.get("bucket") or "unclassified",
+                "company": candidate.get("company"),
+                "title": candidate.get("title"),
+                "jd_fingerprint": candidate.get("jd_fingerprint"),
+            }
+            for candidate in candidates
+        ]
+        receipt = self.discover(links)
+        for candidate in candidates:
+            url = canonical_url(str(candidate.get("official_url") or ""))
+            row = self.connection.execute(
+                "SELECT status FROM candidate_links WHERE canonical_url = ?", (url,)
+            ).fetchone()
+            if row is None or row["status"] != "discovered":
+                continue
+            gate_status = candidate.get("gate_status")
+            if gate_status == "pass" and candidate.get("ranking_ready") is True:
+                self.mark_verified(
+                    url, eligible=True, reason="prefilter_pass_ranking_ready"
+                )
+            elif gate_status == "reject":
+                reasons = candidate.get("gate_reasons")
+                reason = ",".join(str(item) for item in reasons or [])
+                self.mark_verified(
+                    url, eligible=False, reason=reason or "prefilter_rejected"
+                )
+        return receipt
+
     def mark_verified(self, url: str, *, eligible: bool, reason: str) -> None:
         normalized = canonical_url(url)
         reason = reason.strip()
@@ -273,19 +306,14 @@ def main() -> None:
             candidates = payload.get("candidates") if isinstance(payload, dict) else None
             if not isinstance(candidates, list):
                 raise ValueError("prefilter input must contain a candidates array")
-            links = [
-                {
-                    "url": candidate.get("official_url"),
-                    "source": candidate.get("provider") or "prefilter",
-                    "query_family": candidate.get("bucket") or "unclassified",
-                    "company": candidate.get("company"),
-                    "title": candidate.get("title"),
-                    "jd_fingerprint": candidate.get("jd_fingerprint"),
-                }
-                for candidate in candidates
-                if isinstance(candidate, dict)
+            typed_candidates = [
+                candidate for candidate in candidates if isinstance(candidate, dict)
             ]
-            receipt = {"status": "recorded", **queue.discover(links), **queue.summary()}
+            receipt = {
+                "status": "recorded",
+                **queue.ingest_prefilter(typed_candidates),
+                **queue.summary(),
+            }
         elif args.action == "pending":
             receipt = {
                 "status": "ok",
