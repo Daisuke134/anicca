@@ -2731,6 +2731,18 @@ it is easier to demonstrate:
     no-candidate path, so resident provenance is observable. Focused regression tests
     pass 18/18. Remaining before checking D1: pass the complete suite, activate the
     repaired immutable release, and observe the installed resident worker execute it.
+    Resident proof on repaired release
+    `6f8ae371163bcee622a47b5fe9d0cbddfe54fc51`: launchd run
+    `daily-20260806-140524` exited 0; owner PID 30406 acquired fence 106 and exact
+    `browser-use/0.13.7` attached on its first attempt with one context; resident
+    worker PID 31662 completed after discovering 155 links, verifying 37, and trying
+    three ranked candidates. All three truthfully ended
+    `application_surface_not_found`, so confirmed applications remained zero. The
+    daily loop sent Telegram message ID `7660`. This run exposed one evidence defect:
+    `browser-worker-result.json` and its receipt discarded the runner's executor
+    identity. The worker now propagates `executor=browser-use-0.13.7` into both files
+    with `actor=resident_worker`. Remaining before checking D1: full regression and
+    one resident replay proving those durable executor fields.
 - [ ] **L-49K0D2** — Wrap hourly application, five-minute Gmail, weekly learning,
   Telegram delivery, and Guardian reconciliation as Temporal workflows/activities.
   External side effects use explicit idempotency keys and no automatic retry after

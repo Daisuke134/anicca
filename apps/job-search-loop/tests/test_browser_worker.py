@@ -118,6 +118,7 @@ class BrowserWorkerTests(unittest.TestCase):
                     "status": "pending_verification",
                     "blocked": ["no_ranking_ready_candidate"],
                     "attempted_count": 3,
+                    "executor": "browser-use-0.13.7",
                 }
 
             result = run_worker(
@@ -138,6 +139,12 @@ class BrowserWorkerTests(unittest.TestCase):
             self.assertEqual(len(calls), 1)
             self.assertEqual(result["blocked"], ["no_ranking_ready_candidate"])
             self.assertEqual(result["attempted_count"], 3)
+            self.assertEqual(result["executor"], "browser-use-0.13.7")
+            receipt = json.loads(
+                (root / "worker-receipt.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(receipt["executor"], "browser-use-0.13.7")
+            self.assertEqual(receipt["actor"], "resident_worker")
 
     def test_exclusive_worker_rejects_a_second_worker(self):
         with tempfile.TemporaryDirectory() as directory:
