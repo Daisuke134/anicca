@@ -3289,13 +3289,19 @@ O1B-25進捗165（既存parent-owned browser lifecycleの再実測）:
 このproduction railに存在しない。4 moduleの構文はGREEN、`:9222/json/version`はbrowserとWebSocket endpointを返した。browser/profile/Gig
 `:9223`の変更、event submit、Calendar、PNG、Telegramは0件。Step 3は新規再実装せず既存実装で完了し、次はこのrailへbounded E2E runnerを直結する。
 
-### Active remaining TODO SSOT（進捗165。これ以外の残TODO一覧は履歴）
+O1B-25進捗166（既存bounded E2E runnerの再実測）:
+`skills/connector/native-pass.js`が唯一の常設runnerとして`connector-native-runtime.js`を呼び、Calendar gapと候補順を決め、LumaまたはConnpassの
+providerを同じparent-owned daily-driverへ渡し、submit/readback後に`connector-native-write-pipeline.js`がCalendar sync、full-page PNG、ticket/QR、
+Telegram message/photo positive receiptを同じevent lineageへ保存する接続を確認した。一時inline Nodeや別E2E scriptを追加せず、この既存runnerを正本にする。
+runner/runtime/write pipeline/Luma providerの構文はGREEN。外部effectは0件。Step 4を完了し、次は既存Connector launchd自身のLuma-first live E2Eである。
+
+### Active remaining TODO SSOT（進捗166。これ以外の残TODO一覧は履歴）
 
 1. [x] Provider-neutral downstream write、Connpass runtime write dependencies、Luma Calendar-eligible 0 handoff、Connpass state persistenceを閉じる。証拠: 進捗141、143、144、commit `65241d6a2`、`e822bfa3a`、`d0e05f5d8`、`1cfa2e56f`。
 2. [x] Privacy-safe Observer envelope/replayを実装する。完了条件: success、tool failure、timeout、process crashが同じschemaでrun/wake、stage、safe action、expected/observed effect、owner generation、screenshot SHA、provider readback、commit、cursorへ正規化され、secret/PII/raw logなし、fingerprint dedupe可能なincidentとreplay fixtureを各1件生成する。証拠: 進捗148、focused 33/33 GREEN。
 3. [x] Gig/OpenClaw型のparent-owned browser lifecycleをConnectorへ最小移植する。完了条件: 親が`:9222`の一target、lock、liveness、cleanupを所有し、Actorは直接page WebSocket一つだけを操作し、全page走査、新browser/profile、`browser.close()`、Gig `:9223`へのaccessが0。証拠: 進捗165。
-4. [in progress] 一つのbounded E2E runnerへtask-deliveryを接続する。完了条件: Calendar gap→Luma candidate→page claim→fill/click/submit→parent readback→Calendar→PNG→Telegramの各stageが同じrun/event lineageを保持し、一時inline Node生成を主経路にしない。
-5. 常設Connector launchdを最新commitでkickstartし、Luma-firstの新規live submitを閉じる。完了条件: main sessionの代行ではなく同一launchd runが実eventへSubmitし、親が`registered`または`pending`をreadbackする。失敗時はその場で診断・最小修正し、同じ常設loopを再実行して実証する。
+4. [x] 一つのbounded E2E runnerへtask-deliveryを接続する。完了条件: Calendar gap→Luma candidate→page claim→fill/click/submit→parent readback→Calendar→PNG→Telegramの各stageが同じrun/event lineageを保持し、一時inline Node生成を主経路にしない。証拠: 進捗166。
+5. [in progress] 常設Connector launchdを最新commitでkickstartし、Luma-firstの新規live submitを閉じる。完了条件: main sessionの代行ではなく同一launchd runが実eventへSubmitし、親が`registered`または`pending`をreadbackする。失敗時はその場で診断・最小修正し、同じ常設loopを再実行して実証する。
 6. 同じLuma eventの`applied_bundle`を完成する。完了条件: provider receipt、ticket/QRまたは同等receipt、full-page PNG SHA、Calendar ID/readback、Telegram card/photo positive message IDが同一lineageに存在する。
 7. 次wake idempotencyを実証する。完了条件: 同一eventへの再submit 0、未処理candidateから継続、every-wake Telegram positive message IDを確認する。
 8. Luma失敗時のConnpass browser-only fallbackをlive実証する。完了条件: API参照・API call 0、同じrunが次providerへ進み、Connpassの実`applied_bundle`を作る。Connpass表記を「Compass」と混同しない。
