@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any, Iterator, Mapping
 
 from .ats import evaluate_snapshot
+from .dedup import company_role_key
 from .portfolio import PORTFOLIO_LIMITS
 from .state import canonical_job_id, canonical_url, validate_transition
 
@@ -258,6 +259,59 @@ class Ledger:
                 received_at TEXT NOT NULL,
                 created_at TEXT NOT NULL
             );
+            CREATE TABLE IF NOT EXISTS application_routes (
+                route_id TEXT PRIMARY KEY,
+                application_id TEXT NOT NULL REFERENCES applications(id),
+                cross_route_key TEXT NOT NULL,
+                ordinal INTEGER NOT NULL CHECK (ordinal > 0),
+                route_kind TEXT NOT NULL CHECK (route_kind IN
+                    ('canonical_ats', 'alternate_official',
+                     'recruiting_email', 'recruiting_outreach')),
+                endpoint TEXT NOT NULL,
+                source_url TEXT NOT NULL,
+                source_sha256 TEXT NOT NULL,
+                recipient_acceptance TEXT NOT NULL CHECK (recipient_acceptance IN
+                    ('not_applicable', 'accepts_applications', 'outreach_only')),
+                delivery_state TEXT NOT NULL CHECK (delivery_state IN
+                    ('eligible', 'action_started', 'failed', 'delivered',
+                     'delivery_unknown', 'replied')),
+                actor TEXT,
+                fence INTEGER,
+                message_path TEXT,
+                message_sha256 TEXT,
+                resume_path TEXT,
+                resume_sha256 TEXT,
+                provider_id TEXT,
+                delivery_evidence_sha256 TEXT,
+                reply_provider_id TEXT,
+                reply_evidence_sha256 TEXT,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                UNIQUE (application_id, route_kind, endpoint),
+                UNIQUE (cross_route_key, ordinal)
+            );
+            CREATE UNIQUE INDEX IF NOT EXISTS application_routes_one_live_action
+            ON application_routes(cross_route_key)
+            WHERE delivery_state IN
+                ('action_started', 'delivered', 'delivery_unknown', 'replied');
+            CREATE TABLE IF NOT EXISTS application_route_events (
+                event_id TEXT PRIMARY KEY,
+                route_id TEXT NOT NULL REFERENCES application_routes(route_id),
+                from_state TEXT,
+                to_state TEXT NOT NULL,
+                payload_json TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            );
+            CREATE TRIGGER IF NOT EXISTS application_route_events_no_update
+            BEFORE UPDATE ON application_route_events
+            BEGIN
+                SELECT RAISE(ABORT, 'application route events are immutable');
+            END;
+            CREATE TRIGGER IF NOT EXISTS application_route_events_no_delete
+            BEFORE DELETE ON application_route_events
+            BEGIN
+                SELECT RAISE(ABORT, 'application route events are immutable');
+            END;
             CREATE TABLE IF NOT EXISTS gmail_application_matches (
                 message_id TEXT PRIMARY KEY,
                 thread_id TEXT NOT NULL,
@@ -3058,6 +3112,272 @@ class Ledger:
             )
             self._rebuild_strategy_outcome_projection_in_transaction()
             return "reconciled"
+
+    def _append_application_route_event(
+        self,
+        route_id: str,
+        from_state: str | None,
+        to_state: str,
+        payload: Mapping[str, Any] | None = None,
+    ) -> None:
+        self.connection.execute(
+            """
+            INSERT INTO application_route_events
+              (event_id, route_id, from_state, to_state, payload_json, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (
+                uuid.uuid4().hex,
+                route_id,
+                from_state,
+                to_state,
+                json.dumps(dict(payload or {}), ensure_ascii=False, sort_keys=True),
+                _now(),
+            ),
+        )
+
+    def register_application_route(
+        self,
+        application_id: str,
+        *,
+        route_kind: str,
+        endpoint: str,
+        ordinal: int,
+        source_url: str,
+        source_sha256: str,
+        recipient_acceptance: str,
+    ) -> str:
+        route_kinds = {
+            "canonical_ats",
+            "alternate_official",
+            "recruiting_email",
+            "recruiting_outreach",
+        }
+        acceptances = {"not_applicable", "accepts_applications", "outreach_only"}
+        if route_kind not in route_kinds:
+            raise ValueError("application route kind is invalid")
+        if recipient_acceptance not in acceptances:
+            raise ValueError("recipient acceptance is invalid")
+        if not isinstance(ordinal, int) or ordinal <= 0:
+            raise ValueError("application route ordinal is invalid")
+        if re.fullmatch(r"[0-9a-f]{64}", source_sha256) is None:
+            raise ValueError("application route source SHA-256 is invalid")
+        normalized_source = canonical_url(source_url)
+        endpoint_value = endpoint.strip()
+        if not endpoint_value:
+            raise ValueError("application route endpoint is empty")
+        row = self.connection.execute(
+            "SELECT company, title FROM applications WHERE id = ?", (application_id,)
+        ).fetchone()
+        if row is None:
+            raise ValueError("application does not exist")
+        cross_key = company_role_key(row["company"], row["title"])
+        route_id = "route-" + hashlib.sha256(
+            f"{application_id}\0{route_kind}\0{endpoint_value}".encode("utf-8")
+        ).hexdigest()
+        now = _now()
+        with self._transaction():
+            existing = self.connection.execute(
+                "SELECT * FROM application_routes WHERE route_id = ?", (route_id,)
+            ).fetchone()
+            if existing is not None:
+                expected = (
+                    application_id,
+                    cross_key,
+                    ordinal,
+                    route_kind,
+                    endpoint_value,
+                    normalized_source,
+                    source_sha256,
+                    recipient_acceptance,
+                )
+                actual = tuple(
+                    existing[key]
+                    for key in (
+                        "application_id",
+                        "cross_route_key",
+                        "ordinal",
+                        "route_kind",
+                        "endpoint",
+                        "source_url",
+                        "source_sha256",
+                        "recipient_acceptance",
+                    )
+                )
+                if actual != expected:
+                    raise FenceError("application route replay does not match")
+                return route_id
+            self.connection.execute(
+                """
+                INSERT INTO application_routes
+                  (route_id, application_id, cross_route_key, ordinal, route_kind,
+                   endpoint, source_url, source_sha256, recipient_acceptance,
+                   delivery_state, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'eligible', ?, ?)
+                """,
+                (
+                    route_id,
+                    application_id,
+                    cross_key,
+                    ordinal,
+                    route_kind,
+                    endpoint_value,
+                    normalized_source,
+                    source_sha256,
+                    recipient_acceptance,
+                    now,
+                    now,
+                ),
+            )
+            self._append_application_route_event(route_id, None, "eligible")
+        return route_id
+
+    def claim_application_route(
+        self,
+        route_id: str,
+        *,
+        actor: str,
+        fence: int,
+        message_path: str,
+        message_sha256: str,
+        resume_path: str,
+        resume_sha256: str,
+    ) -> None:
+        if actor != "resident_worker":
+            raise FenceError("only resident worker may claim application route")
+        for value in (message_sha256, resume_sha256):
+            if re.fullmatch(r"[0-9a-f]{64}", value) is None:
+                raise ValueError("route material SHA-256 is invalid")
+        if fence <= 0:
+            raise ValueError("route fence is invalid")
+        with self._transaction():
+            row = self.connection.execute(
+                "SELECT * FROM application_routes WHERE route_id = ?", (route_id,)
+            ).fetchone()
+            if row is None:
+                raise ValueError("application route does not exist")
+            if row["delivery_state"] != "eligible":
+                raise FenceError("application route is not eligible")
+            live = self.connection.execute(
+                """
+                SELECT route_id FROM application_routes
+                WHERE cross_route_key = ? AND route_id != ?
+                  AND delivery_state IN
+                    ('action_started', 'delivered', 'delivery_unknown', 'replied')
+                """,
+                (row["cross_route_key"], route_id),
+            ).fetchone()
+            if live is not None:
+                raise FenceError("cross-route action is already fenced")
+            now = _now()
+            self.connection.execute(
+                """
+                UPDATE application_routes
+                SET delivery_state = 'action_started', actor = ?, fence = ?,
+                    message_path = ?, message_sha256 = ?, resume_path = ?,
+                    resume_sha256 = ?, updated_at = ?
+                WHERE route_id = ?
+                """,
+                (
+                    actor,
+                    fence,
+                    message_path,
+                    message_sha256,
+                    resume_path,
+                    resume_sha256,
+                    now,
+                    route_id,
+                ),
+            )
+            self._append_application_route_event(
+                route_id,
+                "eligible",
+                "action_started",
+                {"actor": actor, "fence": fence},
+            )
+
+    def complete_application_route(
+        self,
+        route_id: str,
+        *,
+        fence: int,
+        state: str,
+        provider_id: str,
+        evidence_sha256: str,
+    ) -> None:
+        if state not in {"failed", "delivered", "delivery_unknown"}:
+            raise ValueError("application route completion state is invalid")
+        if re.fullmatch(r"[0-9a-f]{64}", evidence_sha256) is None:
+            raise ValueError("application route evidence SHA-256 is invalid")
+        with self._transaction():
+            row = self.connection.execute(
+                "SELECT delivery_state, fence FROM application_routes WHERE route_id = ?",
+                (route_id,),
+            ).fetchone()
+            if row is None or row["delivery_state"] != "action_started" or int(row["fence"]) != fence:
+                raise FenceError("application route completion fence does not match")
+            now = _now()
+            self.connection.execute(
+                """
+                UPDATE application_routes
+                SET delivery_state = ?, provider_id = ?,
+                    delivery_evidence_sha256 = ?, updated_at = ?
+                WHERE route_id = ?
+                """,
+                (state, provider_id, evidence_sha256, now, route_id),
+            )
+            self._append_application_route_event(
+                route_id,
+                "action_started",
+                state,
+                {"provider_id": provider_id, "evidence_sha256": evidence_sha256},
+            )
+
+    def record_application_route_reply(
+        self,
+        route_id: str,
+        *,
+        provider_id: str,
+        evidence_sha256: str,
+    ) -> None:
+        if re.fullmatch(r"[0-9a-f]{64}", evidence_sha256) is None:
+            raise ValueError("application route reply SHA-256 is invalid")
+        with self._transaction():
+            row = self.connection.execute(
+                "SELECT delivery_state FROM application_routes WHERE route_id = ?",
+                (route_id,),
+            ).fetchone()
+            if row is None or row["delivery_state"] != "delivered":
+                raise FenceError("only a delivered route may record a reply")
+            self.connection.execute(
+                """
+                UPDATE application_routes
+                SET delivery_state = 'replied', reply_provider_id = ?,
+                    reply_evidence_sha256 = ?, updated_at = ?
+                WHERE route_id = ?
+                """,
+                (provider_id, evidence_sha256, _now(), route_id),
+            )
+            self._append_application_route_event(
+                route_id,
+                "delivered",
+                "replied",
+                {"provider_id": provider_id, "evidence_sha256": evidence_sha256},
+            )
+
+    def application_routes(self, application_id: str) -> list[dict[str, Any]]:
+        rows = self.connection.execute(
+            "SELECT * FROM application_routes WHERE application_id = ? ORDER BY ordinal",
+            (application_id,),
+        ).fetchall()
+        return [dict(row) for row in rows]
+
+    def application_route_events(self, route_id: str) -> list[dict[str, Any]]:
+        rows = self.connection.execute(
+            "SELECT * FROM application_route_events WHERE route_id = ? ORDER BY rowid",
+            (route_id,),
+        ).fetchall()
+        return [dict(row) for row in rows]
 
     def submitted_resume_reports(self) -> list[dict[str, str]]:
         rows = self.connection.execute(

@@ -2536,11 +2536,21 @@ the resident worker from producing one authoritative application receipt:
   verified public work-address recruiting outreach, then the next eligible role.
   Bind every route to one cross-route duplicate key and preserve the exact message,
   resume, recipient provenance, provider ID, delivery state, and employer reply.
-  - [ ] `L-49K0C1A` — Add one deterministic ordered route model and append-only ledger
+  - [x] `L-49K0C1A` — Add one deterministic ordered route model and append-only ledger
     projection keyed by the canonical company-role identity. A role may have many
     routes, but only one route may enter `action_started` or a terminal delivered/
     unknown state; persist route kind, official URL, exact message/resume hashes,
     recipient provenance, provider ID, delivery state, and reply evidence.
+    - The existing private ledger now stores canonical ATS, alternate official URL,
+      accepted recruiting email, and outreach routes under one normalized
+      company-role key and deterministic ordinal. A partial unique fence permits only
+      one `action_started`, delivered, unknown-delivery, or replied route across every
+      cross-listed URL. Only `resident_worker` can claim action authority; a proved
+      failure releases the next route, while delivered/unknown permanently prevents a
+      second action. Exact private message/resume paths and hashes, recipient/source
+      provenance, provider ID, delivery evidence, and reply evidence rebuild from the
+      projection plus immutable route events. Focused ledger tests pass 43/43 and the
+      full Job Hunter suite passes 422/422.
   - [ ] `L-49K0C1B` — Discover alternate URLs and recipient addresses only from
     employer-controlled pages or an explicitly linked official recruiting provider.
     Record source URL/content hash and distinguish `accepts_applications` from
