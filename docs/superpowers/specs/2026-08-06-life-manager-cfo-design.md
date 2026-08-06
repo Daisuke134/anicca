@@ -134,6 +134,13 @@ remain visible.
       `stop-review`; it never silently performs the action.
 - [ ] Physical and mental organs report outcomes and costs to Life Manager's value ledger, but do not report fake
       revenue. Avoided cost is labeled `estimated_avoided_cost` and excluded from earnings and net worth.
+- [ ] The CFO issues at most one discretionary-spending intervention at a time, only from a verified outgoing
+      transaction and a material budget/runway impact. Category labels, transfers, card repayments, and positive
+      transactions alone can never trigger a spending accusation.
+- [ ] Every intervention states the observed amount and period, the affected budget or runway, one reversible
+      recommendation, and buttons for immediate action, correction, and detail. It never moralizes or diagnoses.
+- [ ] Business-tool and advertising spend is joined to attributable landed revenue. A high-cost/low-evidence loop
+      produces a `repair` recommendation before more capital is allocated.
 
 ### Controlled-action milestone
 
@@ -446,6 +453,78 @@ CFOの判断: {one_plain_language_recommendation}
 The placeholders above are renderer fields, not fabricated example values. Production shows every registered
 business in stable order, even when its value is zero, unknown, or unavailable.
 
+### Spending guardian — one useful intervention, not notification spam
+
+Sources copied into the design:
+
+- **Actual Budget budgeting workflow** — https://actualbudget.org/docs/budgeting/
+  Core quote: “you can only budget money that you already have.”
+  Decision: discretionary budgets allocate confirmed available cash; expected income cannot fund today's spend.
+- **Actual Budget overspending** — https://actualbudget.org/docs/budgeting/#overspending
+  Core quote: “you need to go back and take it out from somewhere.”
+  Decision: every overspend recommendation names the funding trade-off instead of merely saying “spend less.”
+- **Firefly III budget-limit model** — https://github.com/firefly-iii/firefly-iii/blob/abb769ea7972b0d3f92d897db5e0fd946e8a54d8/app/Models/BudgetLimit.php
+  Core evidence: the canonical OSS model represents limits separately from transactions.
+  Decision: observed spend and owner-approved category limits remain separate immutable records.
+- **Monarch delayed-transaction guidance** — https://help.monarch.com/hc/en-us/articles/360048883651-Troubleshooting-Delayed-Transactions
+  Core quote: “The last update time displayed on the connection status reflects the last time your financial
+  institution sent us transactions.”
+  Decision: intervention eligibility requires source freshness; delayed feeds cannot claim “you spent this today.”
+
+```mermaid
+flowchart LR
+    TX[Verified outgoing transaction] --> CLASS[Merchant + category + business mapping]
+    CLASS --> SAFE{Transfer / repayment / refund?}
+    SAFE -->|yes| NO[No spending Nudge]
+    SAFE -->|no| IMPACT[Budget + runway + repeated pattern]
+    IMPACT --> MAT{Material and actionable?}
+    MAT -->|no| DAILY[Daily summary only]
+    MAT -->|yes| ONE[One plain-language recommendation]
+    ONE --> BTN[Act / correct / details]
+    BTN --> LED[Decision receipt + cooldown]
+```
+
+Materiality is deterministic and owner-scoped: the transaction or rolling merchant/category total crosses its
+approved budget, reduces protected cash/runway, or is a business cost without sufficient attributable landed
+revenue. A model may explain the rule result but cannot invent the threshold or choose a target from prose alone.
+The intervention queue ranks estimated JPY impact, confidence, reversibility, and recency; only the top item is
+sent. The same merchant/category has a seven-day cooldown unless a new transaction crosses a higher severity band.
+
+#### Canonical discretionary-spend intervention
+
+```text
+🍺 今夜は1杯減らすと、今月の予算を守れます
+
+居酒屋・バー：今月 ¥{verified_month_spend}
+予算：¥{approved_budget} / 超過：¥{verified_overage}
+
+今日あと¥{suggested_limit}以内なら、生活防衛資金を崩しません。
+
+[今日は抑える] [必要な支出だった] [内訳を見る]
+```
+
+The pub copy renders only when the underlying rows are verified negative/outgoing transactions. A positive row
+misclassified as `居酒屋・バー`, an ATM movement, or a consolidated card repayment is excluded until detailed
+source evidence resolves it.
+
+#### Canonical business-cost intervention
+
+```text
+💡 今日止めるなら、まず {merchant_or_campaign} です
+
+直近{period}の費用：¥{verified_cost}
+同じ期間に確認できた売上：¥{verified_landed_revenue}
+差額：−¥{verified_gap}
+
+効果を確認できるまで追加費用を止めます。
+
+[一時停止を承認] [この事業に分類] [取引と売上を見る]
+```
+
+The default action is a reversible pause/review, not cancellation or payment execution. The CFO cannot press its
+own approval button. User correction becomes a ledger fact and retrains merchant/business classification; it does
+not rewrite the original transaction.
+
 ### Canonical records
 
 | Record | Purpose | Identity / dedupe key |
@@ -527,6 +606,11 @@ Local and cloud use the same contract. Only infrastructure changes:
 | 29 | Self-heal success | Failure → repair → fresh provider read → reconciliation sends one recovered report | Planned |
 | 30 | Self-heal exhaustion | One actionable deduped alert is sent; durable retries do not create daily spam | Planned |
 | 31 | Complete business UI | Every registry business appears; runtime/channel/agent cannot create duplicate P&L | Planned |
+| 32 | Spending-direction safety | Positive/misclassified pub row, transfer, repayment, and refund fixtures never Nudge | Planned |
+| 33 | Material spending Nudge | Verified outgoing spend crossing a budget produces one amount/impact/action message | Planned |
+| 34 | Business spend versus revenue | Attributable cost and landed revenue produce deterministic repair/hold advice | Planned |
+| 35 | Nudge cooldown | Same state cannot send repeatedly; higher severity may supersede it | Planned |
+| 36 | Correction receipt | “必要な支出” updates classification state without mutating source evidence | Planned |
 
 All rows MUST be `PASS` before the related milestone closes. `Planned` is not completion.
 
@@ -622,6 +706,9 @@ order.
 - [ ] **CFO-2d2** Deliver the real Telegram summary, account/business/accuracy/why drill-downs, deduped message
       receipt, stale-source alert, and non-technical readability E2E. Business profit, total-cost, and cost-based
       advice remain disabled until CFO-2b and CFO-2c are complete and tests 16–18 and 22–28 pass.
+- [ ] **CFO-2d3** Add the spending-guardian rule engine: verified direction, transfer/repayment/refund exclusion,
+      category budget, protected-cash/runway impact, business-cost-to-landed-revenue join, one-item ranking,
+      seven-day cooldown, correction receipt, and inline-button E2E. Tests 32–36 MUST pass before enabling it.
 - [ ] **CFO-2e** Add deterministic `increase / hold / repair / stop-review` recommendations. No execution.
 
 ### M3 — Japan tax evidence and reserve
