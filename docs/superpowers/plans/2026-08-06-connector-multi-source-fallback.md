@@ -58,10 +58,18 @@ The slice is 127 changed lines across its two declared files because the existin
 ## Task 2B2: Native-Pass Provider Cursor Persistence
 
 **Files:**
+- Modify: `apps/life-manager/lib/connector-native-runtime.js`
 - Modify: `skills/connector/native-pass.js`
 - Modify: `skills/connector/test/native-entrypoint.test.js`
 
 **Completion:** Native-pass reads and atomically writes mode-0600 `provider-cursor.json` through the Task 2A store, forwards it into the next wake, and removes the superseded Luma-only `cursor.json` path after migration tests pass.
+
+The runtime file needs an 11-line first-wake initializer because native-pass cannot know the first open date. The total 112 changed lines across three files mostly delete the old cursor validator/writer; splitting migration from persistence would temporarily leave two active cursor SSOTs.
+
+- [x] RED: native-entrypoint existing 25 tests passed and `provider-cursor.json` was absent.
+- [x] GREEN: Task 2A store owns read/write, first wake initializes from the first open date, next wake receives the same cursor, and legacy `cursor.json` is removed only after successful new-state recording.
+- [x] Native-entrypoint 26/26、runtime 16/16、pretest 12/12、outbound 344/344 GREEN。
+- [x] Master specへ進捗132を記録しcommit/push。
 
 ## Task 3: Connpass Discovery in Native Runtime
 

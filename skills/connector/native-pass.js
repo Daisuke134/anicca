@@ -6,6 +6,8 @@ const fs = require("node:fs");
 const { createHash } = require("node:crypto");
 
 const { runNativeConnectorPass } = require("../../apps/life-manager/lib/connector-native-runtime.js");
+const { createEventProviderRegistry } = require("../../apps/life-manager/lib/event-provider-registry.js");
+const { createEventProviderCursorStore } = require("../../apps/life-manager/lib/event-provider-cursor.js");
 const { createGhIssueClient } = require("../../apps/life-manager/lib/feedback-to-issue.js");
 const { recordContinuation } = require("./lib/native-state.js");
 const { loadConnectorEnv } = require("./lib/load-connector-env.js");
@@ -203,29 +205,6 @@ function readCandidateAttempts(stateDir) {
   return Object.freeze(rows);
 }
 
-function readCursor(stateDir) {
-  const file = path.join(stateDir, "cursor.json");
-  let value;
-  try {
-    const stat = fs.statSync(file);
-    if (stat.size > 2_000) unavailable();
-    value = JSON.parse(fs.readFileSync(file, "utf8"));
-  } catch (error) {
-    if (error && error.code === "ENOENT") return null;
-    unavailable();
-  }
-  if (
-    !value || typeof value !== "object" || Array.isArray(value)
-    || Object.keys(value).sort().join(",") !== "date,event_ref,observed_at,status"
-    || value.status !== "resume_after"
-    || !/^\d{4}-\d{2}-\d{2}$/.test(String(value.date || ""))
-    || !/^luma-event:\/\/event\/[A-Za-z0-9_-]+$/.test(String(value.event_ref || ""))
-    || !Number.isFinite(Date.parse(String(value.observed_at || "")))
-    || new Date(Date.parse(value.observed_at)).toISOString() !== value.observed_at
-  ) unavailable();
-  return Object.freeze({ ...value });
-}
-
 function runtimeConfig(options, stateDir) {
   if (options.config && typeof options.config === "object" && !Array.isArray(options.config)) {
     return options.config;
@@ -274,7 +253,6 @@ function runtimeConfig(options, stateDir) {
     repoRoot: absoluteDirectory(options.repoRoot),
     deliveredReceipts: readDeliveryReceipts(stateDir),
     candidateAttempts: readCandidateAttempts(stateDir),
-    cursor: readCursor(stateDir),
     passCandidateBudget: Number(env.LM_CONNECTOR_PASS_CANDIDATE_BUDGET || 3),
     capabilityVersion: "luma-single-terra-v8",
   });
@@ -398,24 +376,13 @@ function boundedResult(result) {
     })
     : [];
   if (candidateAttempts.length > 100) unavailable();
-  const cursor = result.cursor == null ? null : result.cursor;
-  if (
-    cursor !== null && (
-      !cursor || typeof cursor !== "object" || Array.isArray(cursor)
-      || Object.keys(cursor).sort().join(",") !== "date,event_ref,observed_at,status"
-      || cursor.status !== "resume_after"
-      || !/^\d{4}-\d{2}-\d{2}$/.test(String(cursor.date || ""))
-      || !/^luma-event:\/\/event\/[A-Za-z0-9_-]+$/.test(String(cursor.event_ref || ""))
-      || !Number.isFinite(Date.parse(String(cursor.observed_at || "")))
-      || new Date(Date.parse(cursor.observed_at)).toISOString() !== cursor.observed_at
-    )
-  ) unavailable();
+  const providerCursor = result.provider_cursor == null ? null : result.provider_cursor;
   return Object.freeze({
     status,
     complete,
     write,
     candidateAttempts: Object.freeze(candidateAttempts),
-    cursor: cursor === null ? null : Object.freeze({ ...cursor }),
+    providerCursor,
     coverageCounts,
     selection,
   });
@@ -573,17 +540,20 @@ function appendDeliveryReceipt(stateDir, write) {
   }
 }
 
-function recordCursor(stateDir, cursor) {
-  const file = path.join(stateDir, "cursor.json");
+function recordProviderCursor(stateDir, store, cursor) {
+  const file = path.join(stateDir, "provider-cursor.json");
+  const legacyFile = path.join(stateDir, "cursor.json");
   if (cursor === null) {
     try { fs.unlinkSync(file); }
     catch (error) { if (!error || error.code !== "ENOENT") throw error; }
-    return;
+  } else {
+    store.write(cursor);
   }
-  fs.writeFileSync(file, `${JSON.stringify(cursor)}\n`, { encoding: "utf8", mode: 0o600 });
+  try { fs.unlinkSync(legacyFile); }
+  catch (error) { if (!error || error.code !== "ENOENT") throw error; }
 }
 
-function recordLastResult(stateDir, bounded) {
+function recordLastResult(stateDir, bounded, providerCursorStore) {
   const file = path.join(stateDir, "last-result.json");
   fs.mkdirSync(stateDir, { recursive: true, mode: 0o700 });
   fs.writeFileSync(file, `${JSON.stringify({
@@ -596,7 +566,7 @@ function recordLastResult(stateDir, bounded) {
   appendDeliveryReceipt(stateDir, bounded.write);
   appendCandidateAttempts(stateDir, bounded.candidateAttempts);
   recordSelfHealIncident(stateDir, bounded);
-  recordCursor(stateDir, bounded.cursor);
+  recordProviderCursor(stateDir, providerCursorStore, bounded.providerCursor);
 }
 
 function migrateLastResult(stateDir) {
@@ -616,19 +586,28 @@ async function runNativePass(options = {}) {
   const stateDir = absoluteDirectory(options.stateDir);
   requiredToken(options.ownerToken);
   migrateLastResult(stateDir);
+  const providerRegistry = createEventProviderRegistry();
+  const providerCursorStore = createEventProviderCursorStore({
+    registry: providerRegistry,
+    path: path.join(stateDir, "provider-cursor.json"),
+  });
+  const providerCursor = fs.existsSync(path.join(stateDir, "provider-cursor.json"))
+    ? providerCursorStore.read() : null;
 
   const runtime = typeof options.runRuntime === "function"
     ? options.runRuntime
     : runNativeConnectorPass;
   try {
-    const config = runtimeConfig(options, stateDir);
+    const config = Object.freeze({
+      ...runtimeConfig(options, stateDir), providerRegistry, providerCursor,
+    });
     await backfillLegacyPhoto(options, stateDir, config);
     const result = await runtime({
       config,
       deps: options.deps && typeof options.deps === "object" ? options.deps : {},
     });
     const bounded = boundedResult(result);
-    recordLastResult(stateDir, bounded);
+    recordLastResult(stateDir, bounded, providerCursorStore);
     await deliverPendingSelfHealIncident(options, stateDir);
     if (bounded.complete) {
       return Object.freeze({ exitCode: 0, status: "complete" });

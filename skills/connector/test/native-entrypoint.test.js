@@ -565,17 +565,14 @@ test("native-pass appends every bounded candidate attempt to durable history", a
   } finally { fs.rmSync(directory, { recursive: true, force: true }); }
 });
 
-test("native-pass persists a bounded cursor and forwards it into the next wake", async () => {
+test("native-pass atomically persists a provider cursor and forwards it into the next wake", async () => {
   const directory = temporaryDirectory();
   const stateDir = path.join(directory, "state");
-  const cursor = {
-    status: "resume_after",
-    date: "2026-08-05",
-    event_ref: "luma-event://event/unavailable-one",
-    observed_at: "2026-08-06T00:00:00.000Z",
-  };
+  let cursor;
   let phase = 0;
   try {
+    fs.mkdirSync(stateDir, { recursive: true });
+    fs.writeFileSync(path.join(stateDir, "cursor.json"), "{\"status\":\"legacy\"}\n", { mode: 0o600 });
     const options = {
       repoRoot: REPO_ROOT,
       stateDir,
@@ -589,28 +586,35 @@ test("native-pass persists a bounded cursor and forwards it into the next wake",
       runRuntime: async (input) => {
         phase += 1;
         if (phase === 1) {
-          assert.equal(input.config.cursor, null);
+          assert.equal(input.config.providerCursor, null);
+          cursor = require("../../../apps/life-manager/lib/event-provider-cursor.js")
+            .createEventProviderCursor({
+              registry: input.config.providerRegistry,
+              date: "2026-08-05",
+              observedAt: "2026-08-06T00:00:00.000Z",
+            });
           return {
             status: "incomplete",
             coverage: { counts: { open: 21 } },
             continuation: { status: "continue" },
-            cursor,
+            provider_cursor: cursor,
           };
         }
-        assert.deepEqual(input.config.cursor, cursor);
+        assert.deepEqual(input.config.providerCursor, cursor);
         return {
           status: "incomplete",
           coverage: { counts: { open: 21 } },
           continuation: { status: "continue" },
-          cursor: null,
+          provider_cursor: null,
         };
       },
     };
     await runNativePass(options);
-    assert.deepEqual(JSON.parse(fs.readFileSync(path.join(stateDir, "cursor.json"), "utf8")), cursor);
-    assert.equal(fs.statSync(path.join(stateDir, "cursor.json")).mode & 0o777, 0o600);
-    await runNativePass(options);
+    assert.deepEqual(JSON.parse(fs.readFileSync(path.join(stateDir, "provider-cursor.json"), "utf8")), cursor);
+    assert.equal(fs.statSync(path.join(stateDir, "provider-cursor.json")).mode & 0o777, 0o600);
     assert.equal(fs.existsSync(path.join(stateDir, "cursor.json")), false);
+    await runNativePass(options);
+    assert.equal(fs.existsSync(path.join(stateDir, "provider-cursor.json")), false);
   } finally { fs.rmSync(directory, { recursive: true, force: true }); }
 });
 

@@ -38,7 +38,7 @@ const { latestCandidateAttempts } = require("./connector-candidate-suppression.j
 const { createConnectorRouteMinutes } = require("./connector-route-minutes.js");
 const { zonedSlotInstant } = require("./honne-ja-shadow-schedule.js");
 const { isVerifiedEventProviderRegistry } = require("./event-provider-registry.js");
-const { advanceEventProviderCursor } = require("./event-provider-cursor.js");
+const { advanceEventProviderCursor, createEventProviderCursor } = require("./event-provider-cursor.js");
 
 function unavailable() {
   throw new Error("Connector native runtime unavailable");
@@ -366,7 +366,7 @@ async function runNativeConnectorPass(input = {}) {
     const outputCursor = null;
     const providerRegistry = config.providerRegistry == null ? null : config.providerRegistry;
     let providerCursor = config.providerCursor == null ? null : config.providerCursor;
-    if ((providerRegistry === null) !== (providerCursor === null)) unavailable();
+    if (providerRegistry === null && providerCursor !== null) unavailable();
     if (providerRegistry !== null && !isVerifiedEventProviderRegistry(providerRegistry)) unavailable();
     const latestAttempts = latestCandidateAttempts({
       attempts: Array.isArray(config.candidateAttempts) ? config.candidateAttempts : [],
@@ -426,6 +426,13 @@ async function runNativeConnectorPass(input = {}) {
       ) unavailable();
       const policy = await createSpendPolicy({ tenantId, limits: profile.spend_policy && profile.spend_policy.limits });
       judgmentLoop: for (const judgmentDay of judgmentDays) {
+        if (providerRegistry && providerCursor === null) {
+          providerCursor = createEventProviderCursor({
+            registry: providerRegistry,
+            date: judgmentDay.date,
+            observedAt: new Date(Date.parse(now) - 1).toISOString(),
+          });
+        }
         if (providerCursor && (
           providerCursor.date !== judgmentDay.date || providerCursor.provider !== "luma"
         )) continue;
