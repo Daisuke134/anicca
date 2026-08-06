@@ -141,7 +141,7 @@ class BrowserLease:
             now = datetime.now(timezone.utc).isoformat()
             lease_material = f"{self.identity}\n{held['host']}\n{self.holder_pid}\n{held['acquired_at']}\n{held['uuid']}"
             receipt = {
-                "version": 2, "status": "ready", "owner": self.owner,
+                "version": 2, "status": "leased", "owner": self.owner,
                 "identity": self.identity, "endpoint": endpoint,
                 "lease_id": hashlib.sha256(lease_material.encode()).hexdigest(),
                 "fence": fence, "holder_pid": self.holder_pid,
@@ -214,6 +214,7 @@ def acquire_with_attach_recovery(
             restart_browser("ai.anicca.job-search-browser")
             continue
         receipt["attach_status"] = "ready"
+        receipt["status"] = "ready"
         receipt["attach_attempts"] = attempts
         receipt["attach_browser"] = str(attached.get("browser") or "")
         receipt["attach_context_count"] = int(attached.get("context_count") or 0)
