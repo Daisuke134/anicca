@@ -2422,6 +2422,13 @@ O1B-25進捗81（P0-10 Calendar gate bounded diagnostics / RED→GREEN）: runti
 この二stageだけを受理する。実装前はruntime helper不存在、native continuation=`runtime_failed`で個別RED、実装後runtime 12/12、native 24/24
 GREEN。次はfull outbound・push後に既存launchdを一度だけ発火し、実故障の境界をreadbackする。
 
+O1B-25進捗82（P0-10 run 111 / malformed gate result hypothesis RED→GREEN）: push済み診断codeでrun 111を自然終了まで観測したが、
+continuationは新しいINPUT/EXECUTIONではなく旧`connector_native_calendar_gate_failed`のまま12:21 JSTに更新され、heartbeatも同時刻に
+`worker_failed`へ進んだ。したがって「gate内部がthrowする」仮説は否定され、throwせず候補配列のない値を返した後のruntime検証だけが
+残る。malformed返却専用`CONNECTOR_NATIVE_CALENDAR_GATE_RESULT_FAILED`を追加し、raw valueを保存しない。実装前はhelperがEXECUTION、
+native continuationがruntime_failedでRED、実装後runtime 13/13、native 24/24 GREEN。次runでRESULTを確認したら、返却値生成元を
+reference-only実fixtureへ固定して修正する。
+
 完全な残TODO SSOT:
 
 **P0 — task deliveryを前進させる（最優先）**

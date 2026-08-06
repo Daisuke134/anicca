@@ -600,6 +600,7 @@ test("native-pass preserves bounded Calendar gate diagnostic substages", async (
   for (const code of [
     "CONNECTOR_NATIVE_CALENDAR_GATE_INPUT_FAILED",
     "CONNECTOR_NATIVE_CALENDAR_GATE_EXECUTION_FAILED",
+    "CONNECTOR_NATIVE_CALENDAR_GATE_RESULT_FAILED",
   ]) {
     const directory = temporaryDirectory();
     const stateDir = path.join(directory, "state");

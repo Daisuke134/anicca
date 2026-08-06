@@ -30,6 +30,13 @@ test("Calendar gate failures expose only bounded input or execution substages", 
   );
 });
 
+test("Calendar gate malformed results expose a bounded result substage", () => {
+  assert.equal(
+    calendarGateFailureCode(null, { phase: "result" }),
+    "CONNECTOR_NATIVE_CALENDAR_GATE_RESULT_FAILED",
+  );
+});
+
 function coverage() {
   return buildRollingEventCoverage({
     tenantId: TENANT,
