@@ -83,6 +83,11 @@ the dream-role reasoning yourself in this same process. Otherwise use its additi
 own deterministic `classify_portfolio` result is `dream`. Terra high cannot relabel
 a role, weaken a hard gate, claim a slot, or authorize submission.
 Preserve bucket attribution and verify each surviving fact against the official page.
+Interpret the compensation floor exactly as the deterministic ranker does: an
+officially stated minimum below JPY 8,000,000 is ineligible, but absent or unpublished
+compensation is `unknown`, not below-floor, and does not block an otherwise eligible
+application. Never invent a number; preserve `compensation_min_jpy=null` and the
+unknown evidence state so it can be clarified during recruiter screening.
 Use the existing browser for missing official company career and ATS scopes. Do not
 rerun high-volume extraction already completed by the prefilter unless its receipt explicitly
 records a failed provider. Do not use unauthorized LinkedIn scraping or claim that
@@ -121,6 +126,15 @@ Before returning, load `candidate_queue summary` and copy its `discovered_count`
 `discovered_link_count`, `verified_link_count`, and `remaining_unverified_count`.
 The worker must not return `no_eligible_job_found` while
 `remaining_unverified_count` is nonzero. The shell independently enforces this gate.
+Do not perform breadth-first verification of every pending link before the first
+application. First select the highest-ranked `ranking_ready=true`, `gate_status=pass`
+prefilter candidate whose official page confirms its title, Japan/remote-Japan
+location, AI requirement, and no explicit below-floor compensation. Normalize that
+one official posting, mark it eligible in the candidate queue, and carry it through
+form completion and authoritative Submit confirmation. Then continue with the next
+candidate. Remaining pending links require continued work, but they never justify
+ending a pass before processing a verified eligible candidate already present in the
+prefilter result.
 
 For every employer ATS navigation, do not wait for `domcontentloaded` or
 `networkidle`. Use the existing CDP page and:
@@ -140,7 +154,16 @@ popup, and ordinary redirects, then recapture the controls. Repeat only while ea
 transition visibly advances toward the application; never click unrelated controls
 or Submit at this stage. If no application entry is visible, inspect its official
 link destination and attached frames before treating the route as unavailable. Do
-not use generated CSS classes or arbitrary sleeps. Persist a
+not use generated CSS classes or arbitrary sleeps. After reaching an application
+URL or visible application-form heading, explicitly wait for a visible or attached
+form field (`input:not([type=hidden])`, `textarea`, `select`, or a semantic form
+control in an attached frame) before taking the snapshot. Navigation links and tab
+buttons do not satisfy this wait. Recapture after each frame attaches. A previous
+resident run proved the failure mode: the saved snapshot contained only eight
+navigation links while the same live OpenAI and HERP pages already contained twelve
+inputs plus multiple textareas. Therefore a snapshot with only navigation controls
+on `/application` or `/apply` is incomplete and must be retried against the same live
+page, not evaluated or used to reject the candidate. Persist a
 redacted version-1 snapshot beside `$JOB_SEARCH_BROWSER_OWNER_EVIDENCE`, mode 0600,
 with only:
 

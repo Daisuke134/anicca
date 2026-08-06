@@ -3253,6 +3253,25 @@ OpenTelemetry decision and primary sources:
       transitions, and treat this error on a page with an Apply control as an
       executor defect to repair in-process. The application route has only GPT-5.6
       Terra medium; it cannot silently fall back to another model.
+    - Render-race receipt: run `daily-20260806-183755` successfully advanced to
+      OpenAI Ashby `/application` and DeNA HERP `/apply`, but its first 32 saved ATS
+      evaluations still returned `application_surface_not_found`. A simultaneous
+      read-only CDP comparison measured 12 inputs and 2 textareas on the live OpenAI
+      form and 12 inputs and 3 textareas on the live HERP form while the saved
+      snapshots contained only eight navigation controls. The contract now requires
+      a semantic form-field wait and frame recapture; a navigation-only snapshot on
+      an application URL is incomplete evidence and must never be evaluated as a
+      candidate failure.
+    - Eligibility-order correction: that run reached and partially filled live
+      OpenAI and HERP forms but returned zero Submit with blocker
+      `official_posting_requires_full_normalization_and_hard_gate_review`. Prefilter
+      already contained ranking-ready, gate-pass Tokyo candidates such as OpenAI AI
+      Success Engineer (score 95), but the worker left all candidates ineligible and
+      attempted breadth-first verification. The live contract now matches the
+      deterministic ranker: explicit compensation below JPY 8M rejects; unpublished
+      compensation remains truthful `unknown` and does not block. The owner must
+      fully verify and submit the highest-ranked official candidate before resuming
+      breadth-first pending-link verification.
 - [ ] **L-49K2** — Make the resident fill contract complete and inspectable. Route the
   exact accepted resume; fill verified identity/contact/location/start-date fields;
   select work authorization and sponsorship answers from the private profile; verify
