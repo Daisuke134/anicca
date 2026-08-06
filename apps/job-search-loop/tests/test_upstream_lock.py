@@ -168,6 +168,32 @@ class UpstreamLockTests(unittest.TestCase):
         )
         self.assertEqual(sdk["rollback"]["strategy"], "uv_lock_previous_pin")
 
+    def test_telemetry_runtime_is_content_addressed_licensed_and_hash_locked(self):
+        data = json.loads(LOCK.read_text(encoding="utf-8"))
+        python = data["upstreams"]["opentelemetry-python"]
+        collector = data["upstreams"]["opentelemetry-collector-contrib"]
+        backend = data["upstreams"]["grafana-otel-lgtm"]
+
+        self.assertEqual(python["release"], "v1.44.0")
+        self.assertEqual(python["commit_sha"], "53a5a40c9604583c501bcf13970a635f00e62df4")
+        self.assertEqual(python["license"]["spdx"], "Apache-2.0")
+        runtime_lock = python["local_dependency_lock"]
+        self.assertEqual(runtime_lock["requirements"], [
+            "opentelemetry-sdk==1.44.0",
+            "opentelemetry-exporter-otlp-proto-http==1.44.0",
+        ])
+        lock_path = ROOT / runtime_lock["path"]
+        self.assertTrue(lock_path.is_file())
+        self.assertEqual(hashlib.sha256(lock_path.read_bytes()).hexdigest(), runtime_lock["content_sha256"])
+
+        self.assertEqual(collector["release"], "v0.158.0")
+        self.assertEqual(collector["license"]["spdx"], "Apache-2.0")
+        self.assertEqual(collector["artifacts"]["darwin_arm64"]["content_sha256"], "e2b68ae0eeb165795c1c9aecc29d24fe91790dd6ec7d200dd7e5a8b226a2f636")
+
+        self.assertEqual(backend["release"], "v0.30.0")
+        self.assertEqual(backend["license"]["spdx"], "Apache-2.0")
+        self.assertEqual(backend["image"], "grafana/otel-lgtm@sha256:46ca028e294bd728e8e930a28e887f640a8f2a9533cc283f79bcc6ab73d2ffd8")
+
     def test_browser_use_and_temporal_runtime_contracts_have_explicit_authorities(self):
         data = json.loads(RUNTIME_ADOPTION.read_text(encoding="utf-8"))
         self.assertEqual(data["schema_version"], 1)
