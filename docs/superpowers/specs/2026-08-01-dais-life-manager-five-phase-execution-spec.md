@@ -2728,6 +2728,13 @@ O1B-25進捗115（private user-profile SSOT direct read / GREEN）: native-pass�
 関連44/45 GREEN。唯一のfailureは廃止済みcandidate budget cursorを期待する旧testである。次は最新launchdをkickstartし、loop主体の
 live Luma submitと親readbackを実証する16Cである。
 
+O1B-25進捗116（live run 170 / reconciliation continuation fix）: commit `6276dd8a6`の既存launchdをkickstartし、
+CloakBrowser `:9222`、mode 0600 tab-owner receipt、本人SSOT direct readerが実runへ到達した。runはinventory 27、Calendar候補20、
+eligible 5、spend ordered 3を得たが、write attemptは1で登録0だった。原因は旧`unknown_effect`を親readbackで`absent`へ確定した直後に
+`break judgmentLoop`し、再submitも次候補も行わない制御フローである。`absent`は同じcandidateを即retry、`unavailable`は次candidate、
+`unknown/login_required`だけpass停止へ変更した。候補budgetは停止gateにならない現contractへ旧testを更新し、ownership/profile/provider/
+native/launchd focused testは65/65 GREEN。次runでTerra child起動、実submit、親readbackを確認するまで16Cは未完了である。
+
 現在と完成形:
 
 ```mermaid
