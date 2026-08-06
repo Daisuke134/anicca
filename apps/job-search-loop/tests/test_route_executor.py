@@ -105,6 +105,7 @@ class RouteExecutorTests(unittest.TestCase):
         self.assertEqual(first["status"], "delivery_unknown")
         self.assertEqual(second["status"], "cross_route_terminal")
         self.assertEqual(len(calls), 1)
+        self.assertEqual(calls[0]["route_kind"], "recruiting_email")
 
     def test_message_executor_does_not_skip_an_eligible_browser_route(self):
         self._route("canonical_ats", "https://jobs.example.test/role", 1, "not_applicable")
@@ -121,6 +122,84 @@ class RouteExecutorTests(unittest.TestCase):
         )
 
         self.assertEqual(result["status"], "browser_route_required")
+
+    def test_unconfirmed_ats_action_routes_same_application_to_email(self):
+        ats = self._route(
+            "canonical_ats", "https://jobs.example.test/role", 1, "not_applicable"
+        )
+        self._route(
+            "recruiting_email", "jobs@example.test", 3, "accepts_applications"
+        )
+        self.ledger.claim_application_route(
+            ats,
+            actor="resident_worker",
+            fence=1,
+            message_path=str(self.message),
+            message_sha256=hashlib.sha256(self.message.read_bytes()).hexdigest(),
+            resume_path=str(self.resume),
+            resume_sha256=hashlib.sha256(self.resume.read_bytes()).hexdigest(),
+        )
+        calls = []
+
+        def transport(**payload):
+            calls.append(payload)
+            return {
+                "status": "delivered",
+                "provider_id": "gmail:fallback-42",
+                "evidence_sha256": hashlib.sha256(b"fallback sent").hexdigest(),
+            }
+
+        result = execute_next_message_route(
+            ledger=self.ledger,
+            application_id=self.application_id,
+            actor="resident_worker",
+            fence=2,
+            message_path=self.message,
+            resume_path=self.resume,
+            transport=transport,
+        )
+
+        self.assertEqual(result["status"], "delivered")
+        self.assertEqual(result["provider_id"], "gmail:fallback-42")
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(calls[0]["route_kind"], "recruiting_email")
+        self.assertEqual(calls[0]["resume_path"], str(self.resume.resolve()))
+
+    def test_confirmed_ats_application_does_not_send_fallback_email(self):
+        ats = self._route(
+            "canonical_ats", "https://jobs.example.test/role", 1, "not_applicable"
+        )
+        self._route(
+            "recruiting_email", "jobs@example.test", 3, "accepts_applications"
+        )
+        self.ledger.claim_application_route(
+            ats,
+            actor="resident_worker",
+            fence=1,
+            message_path=str(self.message),
+            message_sha256=hashlib.sha256(self.message.read_bytes()).hexdigest(),
+            resume_path=str(self.resume),
+            resume_sha256=hashlib.sha256(self.resume.read_bytes()).hexdigest(),
+        )
+        self.ledger.complete_application_route(
+            ats,
+            fence=1,
+            state="delivered",
+            provider_id="ashby:confirmed-42",
+            evidence_sha256=hashlib.sha256(b"ATS confirmed").hexdigest(),
+        )
+
+        result = execute_next_message_route(
+            ledger=self.ledger,
+            application_id=self.application_id,
+            actor="resident_worker",
+            fence=2,
+            message_path=self.message,
+            resume_path=self.resume,
+            transport=lambda **payload: self.fail("confirmed ATS sent fallback email"),
+        )
+
+        self.assertEqual(result["status"], "ats_confirmed")
 
     def test_malformed_post_send_receipt_becomes_delivery_unknown(self):
         self._route("recruiting_email", "jobs@example.test", 3, "accepts_applications")

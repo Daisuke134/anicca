@@ -7,10 +7,11 @@
 **Configured upstream:** `canonical/docs/job-hunter-spec-20260805`
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-06 JST
-**Active atomic task:** `L-49K3A1c` — finish the minimum ATS-to-email route selection,
-then move directly through semantic Submit, minimum durable receipts, resident release,
-and one real application. Exhaustive hardening and complete dossier work follow the
-first resident `applied_ats` or `applied_email`; they never gate it.
+**Active atomic task:** `L-49K3A2` — expose exactly one semantic resident ATS Submit
+to the LLM and return the live result as an observation; then move directly through
+minimum durable receipts, resident release, and one real application. Exhaustive
+hardening and complete dossier work follow the first resident `applied_ats` or
+`applied_email`; they never gate it.
 **Status:** The immutable four-lane runtime, grounded materials, ownership fences,
 Gmail ingestion, Telegram outbox, quota accounting, Ashby surface classifier, and
 loopback OpenTelemetry Collector/private trace index are implemented. The application
@@ -22,7 +23,7 @@ confirmed applications, zero verified interviews, and zero offers. The owner-aut
 OpenAI Ashby success is `dais_manual`, not resident proof. `L-49K2C1` is complete:
 its isolated CloakBrowser E2E verified changed field layouts across fill, select,
 check, and upload with zero Submit controls/actions and preserved all baseline pages.
-The complete Job Hunter suite passes 506/506. The eight legacy `run-daily.sh`
+The complete Job Hunter suite passes 510/510. The eight legacy `run-daily.sh`
 assertions now verify the active single `application-lane-agent`, deferred ATS
 liveness, and release-contained Ashby CLI contract instead of the superseded Browser
 Worker, composition-agent, Terra-high, and eager ATS-sweep topology.
@@ -3595,7 +3596,7 @@ OpenTelemetry decision and primary sources:
     Submit and connect every non-confirmed result to the existing Gmail application
     executor in the same resident pass. Its only terminal results are `applied_ats`
     and `applied_email`; former blocker values remain diagnostic fields only.
-    - [ ] `L-49K3A1` — Replace the company-role-wide single-action fence with two
+    - [x] `L-49K3A1` — Replace the company-role-wide single-action fence with two
       ordered, independently idempotent route fences: ATS at most once, then email at
       most once only when ATS lacks authoritative confirmation. Reclassify every
       verified official recruiting/careers/hiring-manager/recruiter work address as
@@ -3618,10 +3619,17 @@ OpenTelemetry decision and primary sources:
           classes. The crash fixture rejects a second ATS claim after reopen while
           accepting the email fallback claim. Focused ledger/executor/fixture tests
           pass 9/9.
-      - [ ] `L-49K3A1c` — Make route selection treat only authoritative ATS success
+      - [x] `L-49K3A1c` — Make route selection treat only authoritative ATS success
         as terminal. ATS `failed`, ambiguous, CAPTCHA, timeout, or other unconfirmed
         diagnostics select the first eligible recruiting email; delivered/unknown
         email remains at most once.
+        - RED proved that an ATS `action_started` row incorrectly ended all routing as
+          `cross_route_terminal`. GREEN treats only delivered/replied ATS evidence as
+          confirmed, selects the verified resume-bearing Gmail route for every other
+          ATS state, and normalizes legacy outreach transport to application email.
+          Mutation checks fail when either the ATS-confirmed guard or email
+          normalization is removed. Fresh adjacent tests pass 18/18 and the complete
+          Job Hunter suite passes 510/510.
     - [ ] `L-49K3A2` — Add exactly one semantic ATS Submit to the resident Ashby CLI.
       Attach request/response and visible confirmation observers before the click;
       never retry an ambiguous ATS action and immediately invoke L-49K3A1 email.
