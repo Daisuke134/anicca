@@ -5578,7 +5578,16 @@ official production factoryもCalendar readerと同じ`now`をLuma workflowへ�
 実gog、browser、Submit、Calendar write、PNG、Telegram作用はまだ0。Item 10Aを閉じ、次の一件はschedule disabledのまま
 official foreground runnerをbounded実行するItem 10B。実Luma `registered/pending` parent readbackが得られなければItem 10は完了にしない。
 
-### Active remaining TODO SSOT（進捗193。これ以外の残TODO一覧は履歴）
+### O1B-25進捗194（Item 10B foreground起動failure / executable contract修復）
+
+schedule unloadedのままofficial `skills/connector/run.sh`を660秒hard timeout付きforeground processとして直接起動したが、
+OSが`Permission denied`で即時exit 126を返した。stdout 0 byte、stderrは起動拒否だけで、browser、gog、provider Submit、Calendar write、
+PNG、Telegram作用は0。原因はtracked file modeが100644で、official entrypointにexecute bitがなかったこと。
+
+entrypointのexecute bitを検査するtestを追加してREDを確認し、`run.sh`をmode 100755へ復元した。native entrypoint suiteは4/4 GREEN。
+Item 10Bは未完で、次の一件は同じbounded foreground commandを再実行し、最初に到達する実境界を観測すること。scheduleはunloadedを維持する。
+
+### Active remaining TODO SSOT（進捗194。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
