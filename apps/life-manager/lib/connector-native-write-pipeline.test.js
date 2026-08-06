@@ -5,6 +5,12 @@ const assert = require("node:assert/strict");
 const { createHash } = require("node:crypto");
 
 const { runNativeConnectorWrite } = require("./connector-native-write-pipeline.js");
+const { buildRollingEventCoverage } = require("./rolling-event-coverage.js");
+const { runLumaCandidateSequence } = require("./luma-candidate-loop.js");
+const {
+  createEventSourceCapabilities, executeEventSourceHandoff, planEventSourceHandoff,
+} = require("./event-source-handoff.js");
+const { buildEventProviderDateInventory } = require("./event-provider-date-inventory.js");
 
 const NOW = "2026-08-02T01:00:00.000Z";
 const EVENT_REF = "luma-event://event/founder-night";
@@ -150,8 +156,59 @@ function depsFor(calls, overrides = {}) {
   };
 }
 
+async function connpassInput() {
+  const coverage = buildRollingEventCoverage({
+    tenantId: "dais-local", timeZone: "Asia/Tokyo",
+    now: "2026-08-01T16:00:00.000Z", resolvedDays: [],
+  });
+  const lumaOutcome = await runLumaCandidateSequence({ candidates: [], attempt: async () => {} });
+  const capabilities = createEventSourceCapabilities({ connpassApiKey: "fixture-secret-api-key-1234567890" });
+  const plan = planEventSourceHandoff({ date: "2026-08-05", lumaOutcome, capabilities });
+  const handoff = await executeEventSourceHandoff({
+    plan,
+    connpassClient: { async searchEvents() { return {
+      results_returned: 1, results_available: 1, results_start: 1,
+      events: [{
+        id: 101, title: "Connpass Night", catch: "Public", description: "Public details",
+        started_at: "2026-08-05T19:00:00+09:00", ended_at: "2026-08-05T21:00:00+09:00",
+        place: "Shibuya Hall", address: "Shibuya, Tokyo", group: { subdomain: "tokyo-builders" },
+      }],
+    }; } },
+  });
+  const dateInventory = buildEventProviderDateInventory({
+    coverage, handoff, eligibleCandidates: handoff.advisory_candidates, now: NOW,
+  });
+  const event = dateInventory.days.flatMap((day) => day.events)[0];
+  return input({
+    application: {
+      tenantId: "dais-local", eventUrl: event.canonical_url, eventStartIso: event.starts_at,
+      eventRef: event.event_ref, identityRef: "identity://dais-local/connpass",
+      browserProfileRef: "browser-profile://cloakbrowser/daily-driver",
+      calendarRef: "calendar://google/primary",
+    },
+    dateInventory,
+    currentCoverage: coverage,
+  });
+}
+
 test("a chosen candidate write pipeline is available as an explicit orchestrator", () => {
   assert.equal(typeof runNativeConnectorWrite, "function");
+});
+
+test("verified Connpass inventory enters the common write chain without a fabricated Luma goal", async () => {
+  const calls = [];
+  const result = await runNativeConnectorWrite(await connpassInput(), depsFor(calls, {
+    isVerifiedLumaDateInventory: undefined,
+    buildEventApplicationJob(application) {
+      calls.push(["build", application]);
+      return { job_id: "connpass-job:101", tenant_id: application.tenantId };
+    },
+  }));
+
+  assert.equal(result.status, "complete");
+  assert.equal(result.event_ref, "connpass-event://event/101");
+  assert.equal(calls.some((call) => call[0] === "calendar"), true);
+  assert.equal(calls.some((call) => call[0] === "telegram"), true);
 });
 
 test("an unknown RSVP effect stops before Calendar, coverage, or Telegram", async () => {
