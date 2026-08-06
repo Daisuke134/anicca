@@ -2250,6 +2250,13 @@ heartbeatとcontinuationは更新され続けている。停止しているの�
 `unknown_effect`だけが同一eventの再照合前に別writeを禁止する。1 passの件数・時間上限で終了してもcursorを保存し、次wakeは
 最後の未完位置から再開する。これをtask delivery修復のP0とする。
 
+O1B-25進捗58（登録完了画面をhard evidence化）: `covered_new`とTelegram completion cardの必須証拠へ、
+submit後のLuma公式pageがDais本人の登録済み状態を表示しているfull-page PNGを追加する。画像はevent ref、canonical URL、
+取得時刻、artifact SHA-256、Calendar event ID、Telegram photo/document message IDと同一lineageへ保存する。単なるevent詳細page、
+submit直前page、成功文言の転記、古い画像、別eventの画像は証拠にしない。登録後pageを取得できない場合は登録自体を捏造せず
+`evidence_pending`、外部効果も不明なら`unknown_effect`としてreconciliationへ渡す。Telegramは画像そのものと短い結果cardを送り、
+画像送信のpositive provider IDをreadbackできるまでuser-visible deliveryを完了扱いにしない。
+
 完全な残TODO SSOT:
 
 **P0 — task deliveryを前進させる（最優先）**
@@ -2261,35 +2268,37 @@ heartbeatとcontinuationは更新され続けている。停止しているの�
 5. 同日候補をすべて順番に試し、同日枯渇時は同じpassで次open日へ進む。
 6. pass budget到達時はdate/candidate cursorを保存し、次wakeで続きから再開する。
 7. unknown effectはLuma readbackでpresent/absentを確定するまで再submitしない。
-8. 次の実eventでLuma→mail/QR→Calendar→positive Telegram IDを一巡実証する。
-9. 次wakeで成功eventとknown失敗eventの双方を再選択しないことを実証する。
-10. `open=0`まで反復し、21日統合Telegram briefingを送る。
-11. Mac再起動後のlaunchd、heartbeat、healthcheck、self-healを実機検証する。
-12. canonical branchへ統合し、legacy bridge / Docker worker / 重複scheduleを退役する。
+8. submit後のLuma登録済みpageをfull-page PNGで取得し、event ref、canonical URL、取得時刻、SHA-256、Calendar event IDへbindする。
+9. Telegramへ結果cardと登録済みpage画像を実送信し、画像のpositive provider message IDをdelivery receiptへ保存・readbackする。
+10. 次の実eventでLuma→登録済みpage PNG→mail/QR→Calendar→Telegram画像message IDを一巡実証する。
+11. 次wakeで成功eventとknown失敗eventの双方を再選択しないことを実証する。
+12. `open=0`まで反復し、21日統合Telegram briefingを送る。
+13. Mac再起動後のlaunchd、heartbeat、healthcheck、self-healを実機検証する。
+14. canonical branchへ統合し、legacy bridge / Docker worker / 重複scheduleを退役する。
 
 **P1 — Connectorをconnection-to-cash agentにする（local）**
 
-13. `registered→attended→connected→followed_up→meeting→opportunity→won→cash_received`のforward-only lifecycleを追加する。
-14. event前Telegramへ、目的、会うべき人物像、30秒Life Manager説明、event固有QR/landing linkを送る。公開情報にない参加者名は創作しない。
-15. event固有link、名刺/連絡先交換、inbound message、次回Calendarからconsentあるconnectionだけをeventへ紐付ける。
-16. connectionごとに役割を`potential_user / customer / partner / employer / investor / collaborator`として証拠付き分類する。
-17. 交換済み連絡先またはinbound相手だけへ、会話文脈付きfollow-upを実行し、無差別送信を禁止する。
-18. reply→meeting→opportunityをGmail/Calendarから追跡し、停滞時に次のsafe actionを自動実行する。
-19. payment、invoice、payroll/contract receiptをopportunityへ結び、cash receivedだけをConnector実収益とする。
-20. Telegramへ週次funnelと「どのevent→誰との接点→何の機会→いくら受領」を直接link付きで送る。
-21. 30日local canaryでevent別の登録、参加、connection、meeting、won、cash、costを実測する。
-22. Connector起点の月間実収益が$10Kへ届くまで、conversionが最も弱い一段だけを毎週改善する。
+15. `registered→attended→connected→followed_up→meeting→opportunity→won→cash_received`のforward-only lifecycleを追加する。
+16. event前Telegramへ、目的、会うべき人物像、30秒Life Manager説明、event固有QR/landing linkを送る。公開情報にない参加者名は創作しない。
+17. event固有link、名刺/連絡先交換、inbound message、次回Calendarからconsentあるconnectionだけをeventへ紐付ける。
+18. connectionごとに役割を`potential_user / customer / partner / employer / investor / collaborator`として証拠付き分類する。
+19. 交換済み連絡先またはinbound相手だけへ、会話文脈付きfollow-upを実行し、無差別送信を禁止する。
+20. reply→meeting→opportunityをGmail/Calendarから追跡し、停滞時に次のsafe actionを自動実行する。
+21. payment、invoice、payroll/contract receiptをopportunityへ結び、cash receivedだけをConnector実収益とする。
+22. Telegramへ週次funnelと「どのevent→誰との接点→何の機会→いくら受領」を直接link付きで送る。
+23. 30日local canaryでevent別の登録、参加、connection、meeting、won、cash、costを実測する。
+24. Connector起点の月間実収益が$10Kへ届くまで、conversionが最も弱い一段だけを毎週改善する。
 
 **P2 — 同じcoreをLife Manager Webへ移す**
 
-23. localのidentity、policy、browser、Calendar、Gmail、Telegram、ledgerをtenant interfaceへ分離する。
-24. cloud scheduler/worker、tenant別OAuth/secret/browser isolation、idempotency、rate limitを実装する。
-25. Web panelへConnector funnel、connection graph、opportunity、cash attribution、証拠を投影する。
-26. 別user一人でonboarding→event登録→connection→follow-up→paid outcomeを実証する。
-27. Stripe subscriptionのactive paid、new/expansion/contraction/churn MRRをConnector実収益とは別ledgerで測る。
-28. local Connectorのconnection-to-cash能力とWeb subscription MRRを両方維持し、合算時も内訳を失わない。
+25. localのidentity、policy、browser、Calendar、Gmail、Telegram、ledgerをtenant interfaceへ分離する。
+26. cloud scheduler/worker、tenant別OAuth/secret/browser isolation、idempotency、rate limitを実装する。
+27. Web panelへConnector funnel、connection graph、opportunity、cash attribution、証拠を投影する。
+28. 別user一人でonboarding→event登録→connection→follow-up→paid outcomeを実証する。
+29. Stripe subscriptionのactive paid、new/expansion/contraction/churn MRRをConnector実収益とは別ledgerで測る。
+30. local Connectorのconnection-to-cash能力とWeb subscription MRRを両方維持し、合算時も内訳を失わない。
 
-完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
+完了条件: 実Luma登録、submit後の登録済みpage PNG、確認mail、QR、Calendar、Telegram画像message IDが同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
 - `covered_existing`: 既に参加確定した東京の対面eventがあるため、重複予約しない。
@@ -3375,6 +3384,8 @@ sequenceDiagram
 Telegramを開いた後に起こること:
 
 - `[イベントを見る]`でLuma公式page、`[Calendar]`で実予定、`[証拠を見る]`で認証済み詳細へ直接移動する。
+- completion cardには、Connectorがsubmit後に取得した「登録済み」と読めるLuma公式page画像を直接添付する。DaisはTelegram内だけで登録状態を視認できる。
+- 画像にはevent名、登録済み状態、取得時刻をcaptionで示す。画像のmessage ID、artifact hash、event refが一致しなければ完了扱いにしない。
 - 返信しなくてもloopは次のopen日、応募、reply追跡、財務更新へ進む。
 - Telegram送信成功はpositive `message_id`を保存できた時だけ。表示文面だけを成功証拠にしない。
 - 人間を呼ぶのはpolicy外の送金・売買等だけで、通常の無料event登録や既定範囲の行動には承認を要求しない。
