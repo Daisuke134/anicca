@@ -48,7 +48,10 @@ def _application_entry(snapshot: dict[str, Any]) -> tuple[int, int] | None:
     return None
 
 
-def resolve_application_surface(adapter: Any, evidence_dir: Path, telemetry: Any = None) -> dict[str, Any]:
+def resolve_application_surface(
+    adapter: Any, evidence_dir: Path, telemetry: Any = None,
+    sleeper: Any = time.sleep, render_attempts: int = 10,
+) -> dict[str, Any]:
     telemetry = telemetry or Telemetry()
     started = time.monotonic()
     current_snapshot: dict[str, Any] | None = None
@@ -59,9 +62,13 @@ def resolve_application_surface(adapter: Any, evidence_dir: Path, telemetry: Any
             before = evaluate_snapshot(before_snapshot)
             current_snapshot, current = before_snapshot, before
             controls = [control for frame in before_snapshot.get("frames") or [] for control in frame.get("controls") or []]
-            if not before_snapshot.get("navigation_committed") or not controls:
+            for _ in range(max(0, render_attempts - 1)):
+                if current_snapshot.get("navigation_committed") and controls:
+                    break
+                sleeper(0.5)
                 current_snapshot = adapter.snapshot()
                 current = evaluate_snapshot(current_snapshot)
+                controls = [control for frame in current_snapshot.get("frames") or [] for control in frame.get("controls") or []]
             if not current["claim_ready"]:
                 entry = _application_entry(current_snapshot)
                 if entry is not None:
@@ -77,8 +84,12 @@ def resolve_application_surface(adapter: Any, evidence_dir: Path, telemetry: Any
                             if entry is None:
                                 raise RuntimeError("application surface disappeared after stale control")
                             adapter.open_application(*entry)
-                    current_snapshot = adapter.snapshot()
-                    current = evaluate_snapshot(current_snapshot)
+                    for _ in range(render_attempts):
+                        sleeper(0.5)
+                        current_snapshot = adapter.snapshot()
+                        current = evaluate_snapshot(current_snapshot)
+                        if current["claim_ready"]:
+                            break
             classify_attributes = {"duration.ms": (time.monotonic() - started) * 1000,
                                    "surface.type": str(current.get("surface") or "unknown")}
             if current.get("blockers"):
