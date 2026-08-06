@@ -92,6 +92,68 @@ mode therefore cannot depend on note, Substack, Google, Gmail, or Stripe.
 
 ## 2. Non-negotiable runtime rules
 
+### 2.0 Agent identity — the LLM owns the method
+
+Writer is an AI agent operating inside a bounded runtime, not a static
+publication workflow with LLM text-generation steps. The runtime gives the
+Agent one outcome contract: discover a reader problem with economic evidence,
+research and write a useful article, submit or publish it to every active
+destination, verify the external result, and measure real outcomes. The Agent
+chooses and revises the method from current environmental evidence.
+
+The LLM owns:
+
+- investigation, hypotheses, planning, and replanning;
+- topic, reader, angle, structure, research queries, and source selection;
+- dynamic tool discovery and selection across available MCPs, official APIs,
+  CloakBrowser/CDP, shell, code, and specialist subagents;
+- diagnosis of an unknown publisher failure and selection of the next useful
+  observation or action;
+- bounded repair of prompts, tool use, browser interaction, or publisher
+  adapters, followed by verification and resumption of the same work item;
+- evaluation of whether the observed external result satisfies the goal.
+
+The deterministic runtime owns only constraints that must remain true across
+model changes and process crashes: durable work ownership, credentials and
+permissions, spend limits, secret/PII and unsupported-claim protection,
+idempotency and the effect ledger, immutable artifact identity, external
+readback, payment truth, scheduling, and crash recovery. Tests protect changes
+to these executable boundaries; they are not a substitute for the Agent's
+reasoning and do not prescribe the Agent's investigation path.
+
+A fixed happy path may reduce token use, but it is only a reusable default. Any
+unexpected page, selector, API response, receipt, or error returns rich
+observations to the Agent. It must be free to abandon that path, inspect the
+environment, choose another available tool, repair the failing capability in a
+sandbox when necessary, and continue the same work item. A fixed incident
+taxonomy, selector list, retry count, or `unavailable` label must never become
+the decision-maker.
+
+Writer qualifies as an Agent only when a live acceptance run proves all of the
+following:
+
+1. its plan and tool sequence are produced at runtime rather than selected from
+   one mandatory hard-coded route;
+2. an unseen publisher failure changes the plan from observed evidence;
+3. the Agent can use CloakBrowser, an MCP, an official API, or another available
+   capability without a human choosing the tool;
+4. a failed publication remains owned and loops through
+   `OBSERVE -> DIAGNOSE -> ACT -> VERIFY -> REPLAN` until external success or a
+   genuine external-authority wait;
+5. code constrains irreversible effects but does not decide the article,
+   diagnosis, or repair strategy;
+6. completion requires publisher-native submission/publication readback, not
+   the model's claim that it finished.
+
+Anthropic's production guidance defines agents as LLMs that dynamically direct
+their process and tool use from environmental feedback, and recommends simple,
+transparent agent designs with carefully tested agent-computer interfaces:
+https://www.anthropic.com/engineering/building-effective-agents and
+https://code.claude.com/docs/en/agent-sdk/agent-loop. OpenAI likewise separates
+LLM orchestration, where the model plans and selects tools, from code
+orchestration used for deterministic boundaries:
+https://openai.github.io/openai-agents-python/multi_agent/.
+
 ### 2.1 No passive waiting
 
 If safe work can run now, the Agent runs it now. A missed or incomplete daily
@@ -158,12 +220,16 @@ and recovery receipt, never as "published" or a silent pending state. Only a
 verified public readback counts as published, and only an external receipt
 counts as earned.
 
-**Current divergence, owned by Task 1:** the live runtime still sets
-`MAX_REROUTES = 1`, returns `block_freeze`, and prevents publication-state
-initialization after the second failed quality assessment. The 2026-08-04 run
-therefore produced no publication state or platform dispatch. This is an
-implementation defect against this contract, not an acceptable no-shipment
-outcome.
+**Current divergence, owned by Task 1:** live run `20260806-084924` reached
+publication initialization and attempted all seven configured pairs, but
+returned every failed pair as `unavailable` and ended without a public URL.
+Observed failures were note media S3 `403`, stale-quality-receipt rejection for
+Dev.to and Substack, X Article editor non-detection, and a Zenn result-less
+timeout. Re-kickstarting `ai.anicca.article-daily` exited successfully without
+resuming those unfinished intents because same-day creator deduplication won.
+The safety deduplication is correct; allowing it to terminate unfinished work
+is not. These failures must return to the Agent loop with their observations
+and remain owned by the same run until publisher-native readback succeeds.
 
 ### 2.5 Active-six distribution and dormant-adapter contract
 
@@ -843,6 +909,17 @@ entered generation attempt 1. This proves the poison exit is repaired; it does
 not yet claim the replacement article is published while that real run remains
 `invoking`.
 
+The seventh slice is
+`docs/writer-agent/plans/2026-08-05-reader-terminal-hash-contract.md`.
+Live replacement run `20260804-214206` reached its one allowed reroute, changed
+both article hashes, and executed the reader judges, but its canonical reader
+terminal files were overwritten with raw verdict JSON lacking `status`,
+`article_sha256`, and canonical `payload`. `quality_self_heal` therefore
+correctly remains at `evaluate_reroute`, with no publication state or public
+side effect. This slice makes reader-gate stdout itself a hash-bound compatible
+terminal so autonomous redirection cannot erase the proof needed by the
+quality controller. Implementation evidence is pending.
+
 Decision evidence:
 
 - OpenAI describes Terra as the everyday workhorse and Sol as the model for
@@ -1286,10 +1363,13 @@ work. Tasks 5, 6, and 7 are not skipped: their runtime, live verification, and
 push receipts are recorded as `DONE` in their rows. Task 8's report generator
 is complete, but its public Web route is absent and is therefore reopened.
 
-Task 1 is the first foreground repair. The daily run is loaded, but its current
-quality terminal violates the shipment contract in §2.4 by cancelling all
-destinations. Task 4 follows Task 1: a better topic cannot create revenue while
-the Writer is permitted to ship nothing.
+Task 1 is the first foreground repair. The daily Agent now generates an
+evidence-bound article and reaches every configured publisher, but the latest
+live run converted real publisher failures into terminal `unavailable` rows.
+Task 1 is complete only when the same work item dynamically diagnoses, repairs,
+and retries those failures through the Agent loop and obtains external
+publication readback. Task 4 follows Task 1: a better topic cannot create
+revenue while the Writer is permitted to stop after one failed submission pass.
 
 Task 4 is not complete when another feed has been added. It is complete only
 when one live selected topic begins with paid-market/reader-demand evidence,
@@ -1303,7 +1383,8 @@ change the strategy, but missing conversion does not erase this supply receipt.
 There are three execution lanes:
 
 1. **Foreground development:** complete Task 1's mandatory active-six shipment
-   path first, then complete Task 4 revenue-demand supply.
+   path and Agent-owned submission-repair loop first, then complete Task 4
+   revenue-demand supply.
 2. **Always-running recovery:** Task 1 continues per-destination publication
    recovery whenever a verified public URL is missing. It does not cancel other
    destinations or create a second daily article.
@@ -1334,8 +1415,12 @@ foreground order is binding:
 Read as one end-to-end completion route, the remaining work is:
 
 ```text
-1/3  migrate Luna-xhigh to Terra-medium plus triggered Sol, repair finite-quality
-     shipment, and prove three consecutive active-six days
+1a   finish the reader terminal hash contract for current-artifact evaluation
+  -> 1b   turn publisher errors into Agent observations, not terminal unavailable
+  -> 1c   repair and resume note, Dev.to, Substack, X Article, and Zenn from the
+          same work item until at least two independent publishers return live URLs
+  -> 1d   complete all active-six readbacks and prove three consecutive days,
+          duplicate zero
   -> 4  replace vendor-news supply with full-page paid-demand selection
   -> 8  expose the receipt-backed Money Control publicly
   -> 9/10  advance publisher opportunities to real payment or honest rejection
