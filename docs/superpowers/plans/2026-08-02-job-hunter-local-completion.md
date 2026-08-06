@@ -2975,27 +2975,30 @@ OpenTelemetry decision and primary sources:
         to trace/span IDs inside `L-49K0D2`, where the resident cron migration to
         Temporal is implemented. The measured resident runtime has no Temporal
         Workflow or Activity today, so this gate may not fabricate those IDs early.
-  - [ ] `L-49K0C2O5` — Install the loopback-only Collector/backend, private durable
-    storage, health evidence, bounded retention, and operator dashboard. Export
-    failure must never stop applications. Parent closes only after all children.
-    - [x] `L-49K0C2O5a` — Add the digest-pinned Grafana LGTM service launcher contract:
-      localhost-only OTLP/Grafana bindings, private volume, deterministic container
-      name, bounded logs, and machine-readable health receipt (3 files, soft target
+  - [ ] `L-49K0C2O5` — Install native loopback-only OpenTelemetry collection, private
+    durable trace storage, health evidence, bounded retention, and an operator query
+    view. Docker is not a runtime dependency. Export failure must never stop
+    applications. Parent closes only after all children.
+    - [ ] `L-49K0C2O5a` — Replace the discarded Docker LGTM prototype with the
+      digest-pinned native Collector contract: OTLP HTTP bound only to `127.0.0.1`,
+      private file-backed trace export, bounded queue/batch behavior, and a
+      machine-readable health receipt (3 files, soft target 100 LOC).
+    - [ ] `L-49K0C2O5b` — Install the exact pinned darwin-arm64 Collector binary and a
+      dedicated resident LaunchAgent, then prove checksum, restart, loopback-only
+      listener, and non-blocking exporter failure (3 files, soft target 100 LOC).
+    - [ ] `L-49K0C2O5c` — Add private indexed trace queries and 30-day/size-bounded
+      retention for pass/candidate/route timelines, failure classes, confirmation,
+      repair, promotion/rollback, and resumed outcome. Grafana remains optional for
+      the later web product, not a local Submit dependency (3 files, soft target
       100 LOC).
-      - Completion receipt: RED failed because no resident observability launcher
-        module existed. GREEN accepts only the O1 digest-pinned LGTM image, binds OTLP
-        4318 and Grafana 3000 to `127.0.0.1`, mounts mode-0700 `/data`, caps Docker
-        logs at 10 MB x 3, applies 30-day Prometheus/Loki retention, and emits a
-        mode-0600 payload-free health receipt. Contract tests pass 2/2, adjacent pin
-        and telemetry tests pass 13/13, and the full suite passes 491/491. Primary
-        source: Grafana docker-otel-lgtm README documents `/data`, retention variables,
-        OTLP 4318, and Grafana 3000: https://github.com/grafana/docker-otel-lgtm
-    - [ ] `L-49K0C2O5b` — Install the service as a resident LaunchAgent, pull/verify the
-      exact pinned digest, start it, and prove restart plus loopback-only listeners;
-      exporter unavailability remains non-blocking (3 files, soft target 100 LOC).
-    - [ ] `L-49K0C2O5c` — Provision bounded retention and a Grafana dashboard for
-      pass/candidate/route timelines, failure classes, confirmation rate, repair
-      attempts, promotion/rollback, and resumed outcome (3 files, soft target 100 LOC).
+    - Decision correction: Grafana documents Docker LGTM as the easiest combined
+      backend for development/demo/testing, but Apple recommends `launchd` for macOS
+      user agents and OpenTelemetry documents a same-host Collector agent pattern.
+      Because this Mac has prior Docker operational failures and Submit must not
+      depend on Docker/Colima health, native Collector + launchd is the smaller
+      production failure surface. Sources: https://grafana.com/docs/opentelemetry/docker-lgtm/ ;
+      https://opentelemetry.io/docs/collector/deploy/agent/ ;
+      https://developer.apple.com/library/archive/documentation/MacOSX/Conceptual/BPSystemStartup/Chapters/CreatingLaunchdJobs.html
   - [ ] `L-49K0C2O6` — Trigger the installed resident loop on a no-submit canary and
     prove one trace joins resident PID, release SHA, Browser Use executor, fence,
     candidate, route, detailed blank/overview/form classification, evidence hashes,
