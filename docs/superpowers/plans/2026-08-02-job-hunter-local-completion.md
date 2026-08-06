@@ -2302,19 +2302,45 @@ parallel only where explicitly stated below. Otherwise preserve this order:
    `applied_email`, application ID
    `d11cc27f1bfcadc569c9ce3dcab6cba084c0005fcc832acc9a9c15324659b933`, Gmail
    provider ID `gmail:19fd74214d1fc23e`, Telegram message ID `7950`, exit zero.
-5. [ ] **Resident run active: recover Cursor's formal ATS route for that same role.**
-   Reproduce and diagnose the measured pre-submit timeout in the resident environment;
-   give the Job Hunter the browser capability it currently lacks; resume the same
-   application intent; complete one fenced formal Cursor ATS Submit; require visible
-   or provider-authoritative ATS confirmation; reconcile ATS and Gmail as two receipts
-   for one application ID and count the role once. Never send a second email and never
-   click ATS Submit twice.
-6. [ ] While that resident run proceeds, finish the observability proof in
+5. [x] **Close Cursor recovery at the measured at-most-once boundary.** Resident run
+   `daily-20260806-224128` rediscovered the current official Cursor form, registered
+   it as `alternate_official`, and performed one fenced Submit under browser fence
+   `139`. Post-click observation was interrupted, so Ledger truth is
+   `delivery_unknown`, provider ID `cursor:ambiguous-after-click`; the route is
+   observe-only and MUST NOT be clicked again. The application remains authoritatively
+   applied by its one delivered Gmail receipt and is counted once. Run
+   `daily-20260806-230438` reconciled this state without resubmitting, exited zero,
+   passed terminal validation at 46 verified/110 remaining, and Telegram-reported
+   message ID `7985`.
+6. [ ] **Adopt proven ApplyPilot discovery and form-adaptation components
+   (`L-49K5A`–`L-49K5C`) without replacing Job Hunter truth or ownership.** Pin
+   `Pickle-Pixel/ApplyPilot` commit
+   `4a8d521f67f5139811c0a910ef37410f8e6d836a`, preserve AGPL-3.0 copyright and
+   license notices for copied code, and record changed upstream files. Adopt only
+   JobSpy discovery, Workday/direct-career discovery, SmartExtract enrichment, site
+   patterns, and generic Playwright form/CAPTCHA classification. DO NOT adopt model
+   `RESULT:APPLIED` as truth, `bypassPermissions`, unpinned
+   `@playwright/mcp@latest`, manual-ATS skip, ApplyPilot's jobs table, or a second
+   Chrome/queue/continuous-loop owner. Sources:
+   https://github.com/Pickle-Pixel/ApplyPilot/tree/4a8d521f67f5139811c0a910ef37410f8e6d836a ;
+   https://choosealicense.com/licenses/agpl-3.0/ ;
+   https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/licensing-a-repository
+7. [ ] Execute `L-49K5D`, then close `L-49K3A3`, the remaining `L-49K3B`, `L-49K4`,
+   and remaining `L-49K0C2` children from measured behavior. Run the installed
+   resident against one new eligible non-Workday employer with no prior ambiguous
+   click. Formal ATS is first; if it cannot produce authoritative confirmation, send
+   exactly one verified recruiting-email fallback. Require authoritative ATS or Gmail
+   receipt, exact artifacts, Ledger truth, and Telegram evidence before proceeding.
+8. [ ] `L-51` and `L-52` — run the same adopted generic path against one new eligible
+   Workday employer and prove one authoritative real Workday application, exact
+   artifacts, Ledger receipt, and Telegram evidence. A formal-route failure selects
+   exactly one verified recruiting-email fallback; there is no no-application branch.
+9. [ ] Finish the observability proof in
    `L-49K0C2O6`: index one joined live trace from resident PID/release/browser/fence
    through route/evidence/Telegram, and replace generic surface failure with the
    measured cause. Then close the non-Temporal portions of O3/O4; O4c3 stays owned by
    `L-49K0D2` and must not fabricate Workflow/Activity IDs early.
-7. [ ] Implement `L-66A` through `L-66F` from
+10. [ ] Implement `L-66A` through `L-66F` from
    `docs/superpowers/specs/2026-08-06-job-hunter-self-healing-design.md`. The minimum
    production gate is OpenTelemetry failure → content-addressed Repair Case → isolated
    Terra RED/GREEN repair → fresh Sol falsification → no-send canary → immutable
@@ -2326,28 +2352,22 @@ parallel only where explicitly stated below. Otherwise preserve this order:
    gate rejects the candidate without spending a Sol call. Agents SDK does not own
    scheduling, application truth, or repair truth; launchd, Ledger, OpenTelemetry,
    Guardian, and the subscription-authenticated Codex runtime retain those contracts.
-8. [ ] Replace the resident's disposable `codex exec --ephemeral` invocation with a
+11. [ ] Replace the resident's disposable `codex exec --ephemeral` invocation with a
    persistent Codex thread controlled through the Codex SDK. Persist `thread_id` beside
    the application intent, resume that exact thread after interruption or repair, and
    start a fresh thread only for a genuinely new application. Expose the required
    CloakBrowser, Ledger, Gmail, Telegram, Gmail-monitor, and Calendar capabilities as
    explicit resident tools; do not assume the interactive Codex session's Apps,
    Plugins, Skills, Browser Use, or Computer Use are inherited by a child CLI process.
-9. [ ] After the formal Cursor ATS receipt, close `L-49K3A3`, the remaining
-   `L-49K3B`, `L-49K4`, and the remaining `L-49K0C2` children. Add exhaustive cases
-   and the complete immutable dossier in response to measured live behavior while
-   preserving uninterrupted ATS-or-email application outcomes.
-10. [ ] `L-51` and `L-52` — prove one authoritative real Workday application and its
-   exact artifacts and receipt in Telegram using the self-healing-capable resident.
-11. [ ] `L-49K0D`, `L-49K0D2`, then `L-53` through `L-57` — add tracker projections,
+12. [ ] `L-49K0D`, `L-49K0D2`, then `L-53` through `L-57` — add tracker projections,
    move the four working lanes to restart-safe Temporal workflows, and prove Gmail,
    Calendar, interview preparation, and debrief from authoritative events.
-12. [ ] `L-58` through `L-66` — prove conversion metrics, one-variable learning,
+13. [ ] `L-58` through `L-66` — prove conversion metrics, one-variable learning,
    rollback, Telegram, simultaneous health, and freeze the working local contract.
-13. [ ] `L-67` through `L-73` — operate the Dais campaign through fifty confirmed
+14. [ ] `L-67` through `L-73` — operate the Dais campaign through fifty confirmed
    applications, a verified interview, a qualifying written offer, comparison,
    negotiation brief, and owner decision.
-14. [ ] `W-01` through `W-30` — only after local completion, build and verify the
+15. [ ] `W-01` through `W-30` — only after local completion, build and verify the
    tenant-isolated Web product.
 
 Current production truth measured from the ledger and resident receipts:
@@ -2357,8 +2377,15 @@ Current production truth measured from the ledger and resident receipts:
   `applied_email` under application ID
   `d11cc27f1bfcadc569c9ce3dcab6cba084c0005fcc832acc9a9c15324659b933`; Gmail
   provider ID `gmail:19fd74214d1fc23e` and Telegram message ID `7950` are the
-  authoritative receipts. The formal ATS is not complete: the resident observed
-  `browser_use_pre_submit_error:TimeoutError` before Submit and clicked it zero times;
+  authoritative receipts. The original ATS route failed before Submit. The current
+  official alternate route later received one fenced click, but confirmation
+  observation was interrupted; it is `delivery_unknown` with provider ID
+  `cursor:ambiguous-after-click` and MUST NOT be retried. Latest resident run
+  `daily-20260806-230438` exited zero, returned the existing application under
+  `submit_unknown`, passed terminal validation with 46 verified/110 remaining links,
+  and sent Telegram message ID `7985`. This does not upgrade ATS truth. The private
+  Collector still contains only two old `hourly_pass` spans, so the joined live
+  application trace remains unfinished under `L-49K0C2O6`;
 - one owner-authorized interactive diagnostic successfully submitted OpenAI
   `AI Deployment Engineer, Startups` in Tokyo through the existing dedicated
   CloakBrowser profile. This is a measured reference trace, not resident-loop proof:
@@ -3720,6 +3747,31 @@ OpenTelemetry decision and primary sources:
   that every hash resolves before enqueueing Telegram. Files: create one dossier
   renderer, extend evidence manifest/projection, and focused tests (3 files, soft
   target 100 LOC).
+- [ ] **L-49K5** — Adopt the useful ApplyPilot upstream components into the generic
+  resident Job Hunter while preserving one launchd owner, one CloakBrowser owner, and
+  Ledger-only application truth.
+  - [ ] `L-49K5A` — Add an exact upstream lock and adoption ledger for ApplyPilot
+    commit `4a8d521f67f5139811c0a910ef37410f8e6d836a`. Preserve the upstream AGPL-3.0
+    license and copyright notices, record copied/changed paths, and keep the adopted
+    Job Hunter component's corresponding source publicly available. Do not declare
+    unrelated monorepo code AGPL without a separate license audit.
+  - [ ] `L-49K5B` — Port JobSpy, Workday/direct-career discovery, SmartExtract, and
+    pinned site patterns behind the existing candidate normalization contract. Every
+    discovered role enters the current candidate queue; no ApplyPilot jobs table,
+    continuous poller, scheduler, or second queue is allowed. Prove canonical dedupe,
+    official-source provenance, expiry classification, and restart replay.
+  - [ ] `L-49K5C` — Port generic Playwright form and CAPTCHA/SSO/page classification
+    into the existing fenced CloakBrowser application lane. Keep the resident Terra
+    agent as the adaptive owner. Do not use `bypassPermissions`, unpinned packages,
+    model `RESULT:APPLIED`, manual-ATS skip, or a second Chrome profile owner.
+    Authoritative ATS confirmation or Gmail provider ID remains the only application
+    success evidence.
+  - [ ] `L-49K5D` — Run the installed resident against two new real employers using
+    the adopted path: one non-Workday official ATS first, then Workday under `L-51`.
+    Each role MUST finish through confirmed ATS or one verified email fallback, store
+    its immutable evidence chain, and report its provider receipt to Telegram. A
+    clicked-but-unknown route remains observe-only and the agent continues with a new
+    eligible role rather than replaying it.
 - [ ] **L-49K** — Prove `L-49K1` through `L-49K4` through the installed resident
   LaunchAgent on one eligible Ashby role. The development session only triggers and
   observes. The resident must open the application surface, fill, verify, submit once,
