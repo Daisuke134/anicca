@@ -3272,6 +3272,14 @@ OpenTelemetry decision and primary sources:
       compensation remains truthful `unknown` and does not block. The owner must
       fully verify and submit the highest-ranked official candidate before resuming
       breadth-first pending-link verification.
+    - Browser-owner correction: run `daily-20260806-184621` completed 90 liveness
+      checks but stalled before Terra because `browser_owner.py` still defaulted to
+      `PinnedBrowserUseBackend`. Its domain watchdog closed live HERP and OpenAI tabs
+      as disallowed, popup handlers timed out, and acquire restarted CloakBrowser
+      repeatedly (fences 123 and 124). The owner attach probe now uses only direct
+      Playwright `connect_over_cdp`; stopping the probe disconnects its transport
+      without calling `browser.close()` or touching tabs. No live Job Hunter path
+      imports Browser Use.
 - [ ] **L-49K2** — Make the resident fill contract complete and inspectable. Route the
   exact accepted resume; fill verified identity/contact/location/start-date fields;
   select work authorization and sponsorship answers from the private profile; verify
