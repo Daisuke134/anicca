@@ -10,7 +10,7 @@ from typing import Any
 from urllib.parse import urlparse
 
 from .ats import build_non_submit_fill_plan, evaluate_snapshot, execute_non_submit_fill_plan
-from .browser_use_adapter import AuthorizedBrowserUseAdapter, PinnedBrowserUseBackend
+from .browser_use_adapter import AuthorizedBrowserUseAdapter, BrowserUsePolicyError, PinnedBrowserUseBackend
 from .playwright_ats import (
     _application_url,
     attempt_ranked_candidates,
@@ -33,6 +33,46 @@ def _private_write(path: Path, value: dict[str, Any]) -> None:
         os.chmod(path, 0o600)
     finally:
         temporary.unlink(missing_ok=True)
+
+
+def _application_entry(snapshot: dict[str, Any]) -> tuple[int, int] | None:
+    for frame_index, frame in enumerate(snapshot.get("frames") or []):
+        for control_index, control in enumerate(frame.get("controls") or []):
+            tag = str(control.get("tag") or "").casefold()
+            role = str(control.get("role") or "").casefold()
+            text = " ".join(str(control.get("text") or "").casefold().split())
+            if (tag == "a" and role == "tab" and text == "application") or (tag in {"a", "button"} and text == "apply for this job"):
+                return frame_index, control_index
+    return None
+
+
+def resolve_application_surface(adapter: Any, evidence_dir: Path) -> dict[str, Any]:
+    before_snapshot = adapter.snapshot()
+    before = evaluate_snapshot(before_snapshot)
+    current_snapshot, current = before_snapshot, before
+    controls = [control for frame in before_snapshot.get("frames") or [] for control in frame.get("controls") or []]
+    if not before_snapshot.get("navigation_committed") or not controls:
+        current_snapshot = adapter.snapshot()
+        current = evaluate_snapshot(current_snapshot)
+    if not current["claim_ready"]:
+        entry = _application_entry(current_snapshot)
+        if entry is not None:
+            try:
+                adapter.open_application(*entry)
+            except BrowserUsePolicyError as error:
+                if "stale" not in str(error).casefold():
+                    raise
+                current_snapshot = adapter.snapshot()
+                entry = _application_entry(current_snapshot)
+                if entry is None:
+                    raise RuntimeError("application surface disappeared after stale control")
+                adapter.open_application(*entry)
+            current_snapshot = adapter.snapshot()
+            current = evaluate_snapshot(current_snapshot)
+    _private_write(evidence_dir / "application-surface.json", {"before": before, "after": current})
+    if not current["claim_ready"]:
+        raise RuntimeError("application surface is not a complete form")
+    return {"snapshot": current_snapshot, "evaluation": current}
 
 
 def run_pre_submit(
@@ -75,12 +115,13 @@ def run_pre_submit(
                 provider = detect_provider(url)
             digest = hashlib.sha256(url.encode("utf-8")).hexdigest()
             candidate_evidence = evidence_dir / digest
-            adapter.navigate(_application_url(url, provider))
-            snapshot = adapter.snapshot()
+            adapter.navigate(url if provider == "ashby" else _application_url(url, provider))
+            resolved = resolve_application_surface(adapter, candidate_evidence)
+            snapshot = resolved["snapshot"]
             snapshot_path = candidate_evidence / "ats-snapshot.json"
             _private_write(snapshot_path, snapshot)
             snapshot_sha256 = hashlib.sha256(snapshot_path.read_bytes()).hexdigest()
-            evaluation = evaluate_snapshot(snapshot)
+            evaluation = resolved["evaluation"]
             _private_write(candidate_evidence / "ats-evaluation.json", evaluation)
             before = adapter.capture_evidence("before", candidate_evidence)
             if not evaluation["claim_ready"]:
