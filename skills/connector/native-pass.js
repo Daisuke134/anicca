@@ -258,6 +258,7 @@ function runtimeConfig(options, stateDir) {
     gogBin: String(env.GOG_BIN || "").trim() || undefined,
     gogKeyring: requiredText(env.GOG_KEYRING_PASSWORD),
     profilePath,
+    lumaFormProfilePath: path.join(path.dirname(stateDir), "private", "connector-luma-form-profile.json"),
     lunaEvidenceDir: absoluteDirectory(env.LM_CONNECTOR_LUNA_EVIDENCE_DIR || path.join(stateDir, "luna")),
     telegramTarget: requiredText(env.LM_CONNECTOR_TELEGRAM_TARGET),
     calendarId: requiredText(env.LM_CONNECTOR_CALENDAR_ID || "primary"),
