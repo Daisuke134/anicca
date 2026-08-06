@@ -5322,7 +5322,27 @@ parent readbackは`registered`、`pending`、`absent`、`unavailable`だけへcl
 workflow focused 4/4、既存Luma discovery/detail/form/provider回帰を含む43/43 GREEN、syntax/diff check GREEN。
 実browser target、Submit、Calendar、PNG、Telegram作用は0。Item 8を完了し、Item 9で成功actionをversioned cacheへ保存・replayする。
 
-### Active remaining TODO SSOT（進捗178。これ以外の残TODO一覧は履歴）
+### O1B-25進捗179（Item 9 / versioned provider action cache）
+
+TDD REDで`apps/life-manager/lib/connector-action-cache.test.js`を追加しmodule不存在を確認後、
+`createConnectorActionCache({ path })`を実装した。cache keyはprovider、workflow version、page state、expected effect
+`registered_or_pending`の完全一致で、entryはsafe `purpose/method/control` action列、updated timestamp、content hash IDだけを持つ。
+fileはatomic renameとmode 0600、parentはmode 0700で作る。provider state/receipt、URL、owner token、credential、cookie、private form value、
+raw promptはschemaに存在せず、email/空白/raw text/browser lifecycle methodをvalidationで拒否する。
+
+`saveVerifiedRepair`はparent stateが`registered/pending`の時だけ最大10 actionを保存し、同じprovider/workflow/page state entryだけを置換して
+他provider/versionを維持する。`replay`はcached actionを順番にperformし、agentを呼ばず、全action後のparent readbackが
+`registered/pending`の時だけ`completed`を返す。action failure/readback failure/cache missは外部成功を主張しない。
+
+minimal coreもTDDでcache-firstへ更新した。candidate navigate後に`runCachedAction`を先に実行し、verified cache hitではdirect/agent call 0で
+evidence chainへ進む。cache miss/failureだけdirect→bounded fallbackへ進む。fallback actionは同じpageでparent readback成功後にだけ
+`saveRepairedActions`へ渡し、保存成功後にevidence chainへ進む。cache/core focusedは10/10 GREEN。
+
+実state cache、browser、Submit、Calendar、PNG、Telegram作用は0。Item 9を完了し、次はItem 10。ただしforeground live E2Eの前に、
+official native adapterへ実browser rail、Calendar、Luma workflow、cache、fallback、evidence/report dependenciesを組み立てるproduction compositionを
+Item 10の最初のTDD sliceとして閉じる。scheduleは引き続きunloadedを維持する。
+
+### Active remaining TODO SSOT（進捗179。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
@@ -5334,7 +5354,7 @@ workflow focused 4/4、既存Luma discovery/detail/form/provider回帰を含む4
 6. [x] **provider-neutral minimal runner coreを実装する。** Daily wake→Calendar gap→ordered provider/candidate→same-page navigation→direct action→parent readback→downstream evidence→close owned page→exitを一entrypointへ接続する。action historyはpurpose、safe method、timestamp、result、durationだけをappend-only保存する。証拠: 進捗176、focused 8/8 GREEN。
 7. [x] **Browser Harness bounded adapterを接続する。** Connector-owned claimed pageだけを操作対象にし、AX tree→targeted DOM→screenshot/coordinateの順で観察する。navigate/observe/fill/submit/readbackを一作用ずつ実行し、candidateごと最大10 agent step、browser/session/target作成権限なし、永続更新先はprovider skill/helper/cacheだけに制限する。証拠: 進捗177、adapter/core 9/9 GREEN。
 8. [x] **Luma script-first workflowを接続する。** Lumaを必ず最初に探索し、無料・受付中・Calendar非衝突の最初のcandidateへ既存reader/filler/Submitをdirect actionとして適用する。未知ordinary required fieldまたはUI変更だけBrowser Harnessへ渡す。過去attempt/suppressionを申込停止gateにしない。証拠: 進捗178、Luma関連43/43 GREEN。
-9. [ ] **versioned provider/action cacheを実装する。** provider、workflow version、page state、safe selector/action、expected effectを保存する。fallback成功時は親がexpected stateを確認後、replacement actionだけ更新する。credential、cookie、private value、raw promptは保存しない。
+9. [x] **versioned provider/action cacheを実装する。** provider、workflow version、page state、safe selector/action、expected effectを保存する。fallback成功時は親がexpected stateを確認後、replacement actionだけ更新する。credential、cookie、private value、raw promptは保存しない。証拠: 進捗179、cache/core 10/10 GREEN。
 10. [ ] **foreground Luma live E2Eを実行する。** scheduling disabledのままbounded foreground runnerを起動し、実際の無料・Calendar非衝突Luma eventへSubmitする。失敗時は同じsession/pageで修復または次候補へ進む。完了条件はparent readbackが新規`registered`または`pending`を観測すること。
 11. [ ] **同じLuma registrationのexternal evidence chainを完成する。** Provider receipt/ticket/QRまたは同等receipt、Calendar event IDと独立readback、registered page full-page PNGとSHA-256、Telegram message positive ID、Telegram photo positive IDを同一lineageのdurable `applied_bundle`へ保存する。不足が一つでもあれば成功扱いにしない。
 12. [ ] **post-registration recoveryを実証する。** Calendar、PNG、ticket、Telegram各境界の中断fixtureから、providerへ再Submitせず不足artifactだけを補完する。完了条件は外部registration 1、Calendar event 1、bundle 1、duplicate Submit 0。

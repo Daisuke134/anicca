@@ -56,6 +56,11 @@ function fixture(overrides = {}) {
       calls.push(["direct", selected.event_ref, suppliedPage.page_id]);
       return Object.freeze({ status: "failed", safe_reason: "direct_action_unavailable" });
     },
+    async runCachedAction({ candidate: selected, page: suppliedPage }) {
+      assert.equal(suppliedPage, page);
+      calls.push(["cache", selected.event_ref, suppliedPage.page_id]);
+      return Object.freeze({ status: "cache_miss" });
+    },
     async runAgentFallback({ candidate: selected, page: suppliedPage, maxSteps }) {
       assert.equal(suppliedPage, page);
       assert.equal(maxSteps, 10);
@@ -69,6 +74,10 @@ function fixture(overrides = {}) {
     },
     async completeEvidence() {
       throw new Error("evidence must not run without registered/pending readback");
+    },
+    async saveRepairedActions(input) {
+      calls.push(["cache-save", input.candidate.event_ref]);
+      return Object.freeze({ status: "saved" });
     },
     async reportWake(report) {
       calls.push(["report", report.status, report.safe_reason]);
@@ -144,7 +153,38 @@ test("a failed direct action invokes at most ten agent steps on the exact same p
   }));
   assert.equal(state.calls.filter(([name]) => name === "navigate").length, 1);
   assert.equal(state.calls.filter(([name]) => name === "agent").length, 1);
+  assert.equal(state.calls.filter(([name]) => name === "cache-save").length, 1);
   assert.equal(state.calls.filter(([name]) => name === "close").length, 1);
+});
+
+test("a verified cached replay skips both direct and agent actions", async () => {
+  const state = fixture({
+    async runCachedAction(input) {
+      state.calls.push(["cache", input.candidate.event_ref]);
+      return Object.freeze({
+        status: "completed",
+        provider_state: { status: "registered", provider_receipt_id: "receipt-cache" },
+      });
+    },
+    async runDirectAction() { throw new Error("direct action must not run on cache hit"); },
+    async runAgentFallback() { throw new Error("agent must not run on cache hit"); },
+    async completeEvidence(input) {
+      assert.equal(input.providerState.provider_receipt_id, "receipt-cache");
+      return Object.freeze({ status: "applied_bundle", bundle_id: "applied-bundle-cache" });
+    },
+  });
+
+  const result = await runMinimalConnectorWake({
+    ownerToken: "owner-token-connector-minimal-cache",
+    providers: ["luma", "connpass"],
+  }, state.dependencies);
+
+  assert.equal(result.status, "applied_bundle");
+  assert.equal(result.bundle_id, "applied-bundle-cache");
+  assert.equal(state.calls.filter(([name]) => name === "cache").length, 1);
+  assert.equal(state.calls.filter(([name]) => name === "direct").length, 0);
+  assert.equal(state.calls.filter(([name]) => name === "agent").length, 0);
+  assert.equal(state.calls.filter(([name]) => name === "cache-save").length, 0);
 });
 
 test("three consecutive candidate failures open the circuit before a fourth navigation", async () => {
