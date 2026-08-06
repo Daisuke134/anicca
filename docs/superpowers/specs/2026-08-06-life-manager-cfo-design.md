@@ -105,17 +105,28 @@ remain visible.
 - [ ] No component used by CFO-1 can trade, withdraw, transfer, hire, publish, or terminate a business.
 - [ ] Moneytree records consent status, last successful aggregation time, partial-source status, and re-consent
       requirement. Expired or partial data cannot be labeled current.
+- [ ] A transient source failure enters bounded self-repair before user notification. `自動修復済み` is allowed
+      only after a fresh provider read and reconciliation pass. An unresolved human/provider blocker produces one
+      deduplicated actionable alert and durable retry, never repeated daily error spam.
 
 ### Portfolio-control milestone
 
 - [ ] Each earning loop has one stable `business_id` and reports verified revenue, direct non-LLM cost, token/API
       cost, human cost, capital employed, cash landed, and evidence references.
+- [ ] The business view lists every registered economic business, including zero-revenue and unavailable rows.
+      A launchd job is a runtime, a payment provider is a channel, and an agent is an owner/cost centre; none is
+      silently promoted into a business or hidden because it is not in the top three.
 - [ ] Every LLM call stores provider, model, business ID, owner ID, request/response ID, trace ID, input/output/
       cached/reasoning/audio token counts when supplied, price-card version, evidence status, and reconciliation ID.
 - [ ] The CFO never labels duration-derived or local-tokenizer numbers as measured tokens. Missing provider usage
       remains estimated or unknown.
 - [ ] Daily operational totals reconcile request-level usage without duplication; monthly confirmed totals
       reconcile to provider billing exports/invoices, with an explicit unexplained difference.
+- [ ] Local subscription loops use provider/harness session usage, never prose estimates. Codex takes the latest
+      cumulative total per session; Claude sums per-response deltas. Truncated or missing logs reduce capture
+      coverage instead of becoming zero.
+- [ ] Subscription cash expense and API-equivalent scale cost are separate: the former reconciles the actual plan
+      receipt; the latter is a labeled forecast from measured token mix and a versioned API price card.
 - [ ] Every attempted ledger write has an attempt ID and durable success/failure outcome. Reports show capture
       coverage and failed/unattributed events; a best-effort ledger subtotal is never presented as complete spend.
 - [ ] CFO computes contribution profit, burn, runway, ROI, and evidence completeness per business.
@@ -240,6 +251,57 @@ into the ledger. The implementation MUST pin the then-current OpenTelemetry GenA
 the legacy registry attributes cited above are deprecated/moved. Existing values remain `推定・取得率不明`
 until write coverage and provider evidence are live.
 
+#### Local Codex / Claude subscription loops
+
+```mermaid
+flowchart LR
+    RUN[Business runtime + run ID] --> CX[Codex session JSONL]
+    RUN --> CL[Claude response JSONL]
+    CX -->|latest cumulative usage per session| COL[Usage collector]
+    CL -->|sum response usage deltas| COL
+    COL --> COV[Coverage + dedupe check]
+    COV --> LED[Model usage ledger]
+
+    SUB[Subscription receipt] --> CASH[Actual cash expense]
+    LED --> ALLOC[Versioned business allocation]
+    CASH --> ALLOC
+
+    LED --> RATE[Versioned API price card]
+    RATE --> FORE[API-equivalent scale forecast]
+
+    ALLOC --> UI[CFO: actual / allocated]
+    FORE --> UI2[CFO: forecast, not current spend]
+```
+
+The local JSONL values are provider/harness-reported usage, not numbers invented by the CFO. They are operational
+evidence, not invoices. Codex emits cumulative `total_token_usage`; the collector stores the latest observed value
+for each session and MUST NOT add every cumulative event. Claude emits per-response `message.usage`; the collector
+sums non-synthetic response deltas, including input, cache creation, cache read, and output fields. A file hash,
+byte watermark, terminal state, and discovered-session count expose deleted, truncated, or unread sessions.
+
+Every row maps through explicit `business_id + runtime_label + run_id + cwd`. Anything unmatched is
+`unattributed`, never guessed. While a subscription is used, the real cash cost is its provider receipt and a
+business split is `provider_billed_allocated`. The measured token mix can additionally answer “what would this
+cost on the API?” using a pinned model/rate/context-bracket version; that number is
+`api_equivalent_forecast`, never `spent` or `confirmed`. After cloud/API migration, provider billing exports make
+the API expense confirmed.
+
+### Business registry — economic units, not background jobs
+
+| `business_id` | User-facing name | Revenue evidence | Runtime evidence | Current planning truth |
+|---|---|---|---|---|
+| `life_manager_saas` | Life Manager | Stripe/provider receipts | `ai.anicca.life-manager-*` | Product and web runtime exist; verified revenue is read only from receipts |
+| `anicca_ios` | Anicca iOS | Apple/RevenueCat receipts | iOS + API services | Separate subscription business; legacy CFO estimates are quarantined |
+| `writer_agent` | Writer Agent | Publisher/payment receipts | `ai.anicca.writer-*` | Live loops; current canonical verified revenue is zero until an external receipt lands |
+| `affiliate_agent` | Affiliate Agent | Network commission receipt | Affiliate SSOT/runtime | Legacy core is dead and provider auth is incomplete; current verified new revenue is zero |
+| `gig_work` | Gig Work | Marketplace/client payment receipt | `ai.anicca.hf-gig-*`, outcome watcher | Live work runtime; revenue requires landed external payment |
+| `x402_services` | x402 Services | On-chain customer settlement | `ai.anicca.x402-*` | Transfers/swaps between owned assets are not revenue |
+
+`job_income` is shown separately as employment income, not business revenue. Franklin agents are economic owners
+and cost centres; they are not extra businesses unless they launch a product with an independent P&L. TaskMarket,
+uGig, Stripe, Apple, and x402 are revenue channels. launchd labels are runtimes. This prevents both omission and
+double counting. CFO-0c reconciles this seed list against every live runtime and ledger before it becomes complete.
+
 ### Telegram is the primary financial UI
 
 The user receives one quiet, readable summary every morning. The first screen answers only: “Am I okay?”,
@@ -300,19 +362,63 @@ fresh, reconciliation passes, and required reserves are available. Before M3 tax
 show only a **confirmed subtotal plus a named list of excluded unknown items**. A made-up confidence percentage
 is forbidden.
 
-#### Exceptional message — action is required
+#### Self-healing before Telegram
+
+```mermaid
+stateDiagram-v2
+    [*] --> ReadSource
+    ReadSource --> Reconcile: fresh response
+    ReadSource --> Repair: timeout / auth / schema failure
+    Repair --> RetryRead: retry API / renew safe session / fallback adapter
+    RetryRead --> RepairReconcile: fresh response
+    RepairReconcile --> RecoveredReport: balances and freshness pass
+    RetryRead --> Repair: still failing within repair budget
+    Reconcile --> DailyReport: balances and freshness pass, no prior failure
+    Repair --> OneAlert: bounded repair exhausted and human/provider action required
+    OneAlert --> DurableRetry: one dedupe key, owner and next retry stored
+    DurableRetry --> RetryRead: scheduled retry
+    RecoveredReport --> [*]: accurate values + short repair note
+    DailyReport --> [*]
+```
+
+Normal transient failures do not become Telegram error messages. The repair order is official API retry, safe
+credential/session refresh, alternate export/adapter or isolated browser fallback, then a fresh read and full
+reconciliation. “Fixed” means the source itself returned fresh evidence and the ledger balanced; changing code or
+restarting a process alone is not proof.
+
+#### Recovered message — canonical repair UX
 
 ```text
-⚠️ 確認が1つ必要です
+☀️ おはようございます。今日のお金の状態です
 
-確認できた資産は ¥1,580,000 です
-Binanceは18時間更新されていないため、この金額に含めていません。
-現在の純資産合計は不明です。
+🟢 すべての主要口座を確認しました
+純資産　¥{verified_net_worth}　昨日より {verified_change}
+
+🔧 Binanceの更新停止を自動修復しました
+05:41に検知 → 接続を更新 → 05:48に再取得・照合済み
+操作は必要ありません。
+
+[口座を見る] [仕事別に見る]
+[修復内容] [数字の確かさ]
+```
+
+Only when bounded repair is exhausted by a provider outage or required human re-consent does Telegram send one
+deduplicated alert. It shows the confirmed subtotal, the excluded source, the one required action, and the next
+automatic retry. The same unresolved state is edited or suppressed, never reposted every morning.
+
+#### Last-resort actionable alert
+
+```text
+🟠 Binanceの再認証だけお願いします
+
+確認できた資産は ¥{confirmed_subtotal} です
+Binanceは{stale_duration}更新されていないため、この金額に含めていません。
+現在の純資産合計は、再取得まで確定しません。
 
 安全のため、今日は暗号資産への追加投資を止めています。
 MUFGのお金と支払い予定は正常に確認できています。
 
-[接続を直す] [確認できた数字だけ見る]
+[再認証する] [確認できた数字] [次の再試行]
 ```
 
 #### Business drill-down
@@ -320,19 +426,25 @@ MUFGのお金と支払い予定は正常に確認できています。
 ```text
 💼 今月の仕事
 
-1. Affiliate Agent
-   売上 ¥120,000 確定 − 費用 ¥18,400 確定 = 利益 ¥101,600
+Life Manager　売上 ¥{lm_revenue} − 費用 ¥{lm_cost} = 利益 ¥{lm_profit}
+Anicca iOS　　売上 ¥{ios_revenue} − 費用 ¥{ios_cost} = 利益 ¥{ios_profit}
+Writer Agent　売上 ¥{writer_revenue} {writer_evidence_status}
+Affiliate Agent　売上 ¥{affiliate_revenue} {affiliate_evidence_status}
+Gig Work　　　売上 ¥{gig_revenue} − 費用 ¥{gig_cost} = 利益 ¥{gig_profit}
+x402 Services 売上 ¥{x402_revenue} − 費用 ¥{x402_cost} = 利益 ¥{x402_profit}
 
-2. Writer Agent
-   売上 ¥62,000 確定 − 費用 約¥21,800 配賦 = 利益 約¥40,200
-   AI利用: 8.4M tokens 実測 / provider請求総額は照合済み / 仕事別は配賦
+給与・雇用収入 ¥{job_income}（事業売上とは別）
 
-3. Crypto Trader
-   実現利益 ¥0 / 含み益 +¥14,000（売上には含めません）
+AI費用
+実支出 ¥{subscription_receipts} / 仕事別は配賦
+APIへ移した場合 約¥{api_forecast}（実測tokenによる予測）
 
-CFOの判断: Affiliate Agentを維持。Writer AgentのAI費用を修理対象にします。
-[費用の内訳] [判断の理由] [戻る]
+CFOの判断: {one_plain_language_recommendation}
+[各仕事の詳細] [AI費用] [判断の理由] [戻る]
 ```
+
+The placeholders above are renderer fields, not fabricated example values. Production shows every registered
+business in stable order, even when its value is zero, unknown, or unavailable.
 
 ### Canonical records
 
@@ -408,6 +520,13 @@ Local and cloud use the same contract. Only infrastructure changes:
 | 22 | Ledger capture coverage | Forced persistence failure appears as missing coverage, never zero cost | Planned |
 | 23 | Shared-project allocation | Provider total confirmed; business shares labeled allocated with remainder | Planned |
 | 24 | Fail-closed health UI | Missing material source forbids green/net-worth total/confidence percentage | Planned |
+| 25 | Codex local usage dedupe | Multiple cumulative events produce the latest per-session total, not their sum | Planned |
+| 26 | Claude local usage sum | Non-synthetic response deltas and cache fields sum once; fixtures match JSONL | Planned |
+| 27 | Subscription/API separation | Receipt is actual cash; token-based API equivalent is visibly forecast | Planned |
+| 28 | Log coverage | Truncated/deleted/unmapped sessions reduce coverage and remain unattributed | Planned |
+| 29 | Self-heal success | Failure → repair → fresh provider read → reconciliation sends one recovered report | Planned |
+| 30 | Self-heal exhaustion | One actionable deduped alert is sent; durable retries do not create daily spam | Planned |
+| 31 | Complete business UI | Every registry business appears; runtime/channel/agent cannot create duplicate P&L | Planned |
 
 All rows MUST be `PASS` before the related milestone closes. `Planned` is not completion.
 
@@ -452,9 +571,11 @@ order.
 - [x] **CFO-0b** Add this document to the Life Manager SSOT index and mark older CFO fragments as inputs, not
       competing specs.
 - [ ] **CFO-0c** Inventory every live earning loop and assign a stable `business_id`, owner, ledger source,
-      runtime, and current status. Do not change their execution.
+      runtime, and current status. Reconcile the seed registry in this spec against launchd and canonical ledgers;
+      quarantine legacy/fake MRR and do not change execution.
 - [ ] **CFO-0d** Freeze the Telegram information hierarchy, Japanese/English copy, inline-button contract, and
-      four evidence labels from this spec with accessibility/readability fixtures.
+      four evidence labels from this spec with accessibility/readability fixtures. Include bounded self-heal,
+      recovered-report, one-alert dedupe, and every-business drill-down states.
 
 ### M1 — One truthful read-only snapshot
 
@@ -471,7 +592,9 @@ order.
 - [ ] **CFO-1g** Persist one immutable, idempotent snapshot and reconciliation exceptions.
 - [ ] **CFO-1g2** Enforce owner-timezone `reporting_date`, stable retry `run_id`, Telegram dedupe, and append-only
       superseding corrections.
-- [ ] **CFO-1h2** CFO-1 report is assets/liabilities only. Until tests 16–18 and 22–23 pass, the renderer MUST NOT
+- [ ] **CFO-1g3** Implement bounded adapter self-repair and prove repair only after a fresh source read and
+      reconciliation. Exhausted repairs create one actionable alert plus durable retries, not repeated messages.
+- [ ] **CFO-1h2** CFO-1 report is assets/liabilities only. Until tests 16–18 and 22–28 pass, the renderer MUST NOT
       show token totals, complete API spend, business profit, measured/confirmed cost, or cost-based advice.
 - [ ] **CFO-1h** Send the first real assets/liabilities-only Telegram report and confirm its provider message
       receipt after CFO-1h2's renderer gate is verified.
@@ -482,19 +605,23 @@ order.
 - [ ] **CFO-2a** Define the canonical business ledger event contract and map `lm_api_cost` without rewriting it.
 - [ ] **CFO-2a2** Implement provider usage evidence ingestion and OpenTelemetry GenAI attributes. Existing
       duration/tokenizer values migrate as `locally_estimated`; they are never backfilled as provider-measured.
+- [ ] **CFO-2a2a** Ingest local Codex cumulative session usage and Claude per-response usage with source-specific
+      dedupe, hashes/watermarks, terminal-state coverage, stable runtime-to-business mapping, and unattributed rows.
 - [ ] **CFO-2a2b** Make usage-ledger attempts observable and durable; measure producer attempt/success/failure,
       reject invalid numeric values, and expose capture coverage before any total-cost label is enabled.
 - [ ] **CFO-2a3** Add billing-export/invoice reconciliation; confirmed cost supersedes provisional cost without
       deleting either record, and unexplained differences remain visible.
 - [ ] **CFO-2a3b** Confirm only provider-supported billing dimensions. Shared-project business costs use a versioned
       allocation rule, `provider_billed_allocated`, and a visible unallocated remainder.
+- [ ] **CFO-2a3c** Reconcile actual Codex/Claude subscription receipts separately from the versioned
+      `api_equivalent_forecast`; after API migration reconcile actual provider billing exports.
 - [ ] **CFO-2b** Instrument each existing earning loop in registry order: revenue receipt, landed cash, direct
       cost, tokens, API USD, human USD, capital employed, and evidence.
 - [ ] **CFO-2c** Reconcile per-business totals to provider statements and Fleet totals.
 - [ ] **CFO-2d** Report contribution profit, runway, ROI, and evidence completeness; unknown is distinct from zero.
 - [ ] **CFO-2d2** Deliver the real Telegram summary, account/business/accuracy/why drill-downs, deduped message
       receipt, stale-source alert, and non-technical readability E2E. Business profit, total-cost, and cost-based
-      advice remain disabled until CFO-2b and CFO-2c are complete and tests 16–18 and 22–23 pass.
+      advice remain disabled until CFO-2b and CFO-2c are complete and tests 16–18 and 22–28 pass.
 - [ ] **CFO-2e** Add deterministic `increase / hold / repair / stop-review` recommendations. No execution.
 
 ### M3 — Japan tax evidence and reserve
