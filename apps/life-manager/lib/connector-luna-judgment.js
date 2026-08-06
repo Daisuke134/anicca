@@ -30,6 +30,7 @@ function containedFile(root, value) {
 function runLocalAgentRunner(input = {}, deps = {}) {
   try {
     const prompt = String(input.prompt == null ? "" : input.prompt);
+    const taskClass = input.taskClass == null ? "repeatable-agent" : String(input.taskClass);
     const schema = input.schema;
     const timeoutMs = Number(input.timeoutMs);
     const evidenceDir = absoluteDirectory(input.evidenceDir);
@@ -40,6 +41,7 @@ function runLocalAgentRunner(input = {}, deps = {}) {
     if (
       prompt.trim().length < 100 || prompt.length > 100_000
       || !schema || typeof schema !== "object" || Array.isArray(schema)
+      || !["repeatable-agent", "browser-lane-agent"].includes(taskClass)
       || !Number.isSafeInteger(timeoutMs) || timeoutMs < 1_000 || timeoutMs > 900_000
     ) unavailable();
     const isRunnerFile = typeof deps.isRunnerFile === "function"
@@ -53,11 +55,12 @@ function runLocalAgentRunner(input = {}, deps = {}) {
     const execute = typeof deps.spawnSync === "function" ? deps.spawnSync : spawnSync;
     const completed = execute("python3", [
       runnerPath,
-      "--task-class", "repeatable-agent",
+      "--task-class", taskClass,
       "--prompt-stdin",
       "--schema", schemaPath,
       "--evidence-dir", evidenceDir,
-      "--task-label", "connector-event-judgment",
+      "--task-label", taskClass === "browser-lane-agent"
+        ? "connector-event-application" : "connector-event-judgment",
       "--loop", "connector",
       "--workdir", repoRoot,
     ], {
