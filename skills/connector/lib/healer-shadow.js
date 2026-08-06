@@ -77,7 +77,7 @@ function healerPrompt(incident) {
     "Use Superpowers test-driven-development: observe one focused RED, implement the smallest GREEN, then run fresh verification.",
     "external event submit is forbidden. Browser, Calendar, Gmail, Telegram, payment, launchd, and production deployment are forbidden.",
     "Do not read secrets, PII, raw logs, runtime profiles, CloakBrowser state, Gig state, or port 9223.",
-    "Commit and push only the isolated healer branch. Do not merge or deploy.",
+    "Do not commit, push, merge, or deploy. Parent Healer owns commit and push after your turn.",
     `Privacy-safe incident: ${JSON.stringify({
       fingerprint: incident.fingerprint,
       stage: incident.stage,
@@ -129,6 +129,19 @@ function prepareWorktreeDependencies(repoRoot, worktree) {
   }
 }
 
+function cleanWorktreeStatus(repoRoot, worktree, source) {
+  const target = path.join(repoRoot, "apps/life-manager/node_modules");
+  const link = path.join(worktree, "apps/life-manager/node_modules");
+  let safeLink = false;
+  try {
+    safeLink = fs.lstatSync(link).isSymbolicLink()
+      && fs.realpathSync(link) === fs.realpathSync(target);
+  } catch { safeLink = false; }
+  return String(source || "").split(/\r?\n/).filter(Boolean).filter((line) => (
+    !(safeLink && line === "?? apps/life-manager/node_modules")
+  ));
+}
+
 async function runHealerShadow(options = {}) {
   const repoRoot = path.resolve(String(options.repoRoot || ""));
   const stateDir = path.resolve(String(options.stateDir || ""));
@@ -141,7 +154,10 @@ async function runHealerShadow(options = {}) {
   const incidents = readJsonl(path.join(stateDir, "observer-incidents.jsonl")).map(validateIncident);
   const revisionsFile = path.join(stateDir, "healer-revisions.jsonl");
   const revisions = readJsonl(revisionsFile);
-  const incident = incidents.find((row) => !revisions.some((revision) => revision.fingerprint === row.fingerprint));
+  const incident = [...incidents].reverse().find((row) => {
+    const attempts = revisions.filter((revision) => revision.fingerprint === row.fingerprint);
+    return !attempts.some((revision) => revision.status === "revision_created") && attempts.length < 3;
+  });
   if (!incident) return Object.freeze({ status: "duplicate" });
 
   const now = typeof options.now === "function" ? options.now() : new Date();
@@ -201,6 +217,31 @@ async function runHealerShadow(options = {}) {
     });
     return Object.freeze({ status: timedOut ? "revision_timeout" : "revision_failed", branch, worktree });
   }
+  let preCommitStatus = await execute("git", ["-C", worktree, "status", "--porcelain"], {
+    cwd: worktree, env: healerEnvironment(options.env),
+  });
+  let candidateRows = preCommitStatus && preCommitStatus.status === 0
+    ? cleanWorktreeStatus(repoRoot, worktree, preCommitStatus.stdout) : ["status_failed"];
+  if (candidateRows.length > 0) {
+    const staged = await execute("git", [
+      "-C", worktree, "add", "-A", "--", ".", ":(exclude)apps/life-manager/node_modules",
+    ], { cwd: worktree, env: healerEnvironment(options.env) });
+    const committed = staged && staged.status === 0
+      ? await execute("git", [
+        "-C", worktree, "commit", "-m", `fix(connector): heal ${short}`,
+      ], { cwd: worktree, env: healerEnvironment(options.env) }) : null;
+    const pushed = committed && committed.status === 0
+      ? await execute("git", ["-C", worktree, "push", "-u", "origin", branch], {
+        cwd: worktree, env: healerEnvironment(options.env),
+      }) : null;
+    if (!pushed || pushed.status !== 0) {
+      appendRevision(revisionsFile, {
+        fingerprint: incident.fingerprint, revision, status: "revision_failed",
+        branch, observed_at: observedAt,
+      });
+      return Object.freeze({ status: "revision_failed", branch, worktree });
+    }
+  }
   const commit = await execute("git", ["-C", worktree, "rev-parse", "HEAD"], {
     cwd: worktree, env: healerEnvironment(options.env),
   });
@@ -222,10 +263,12 @@ async function runHealerShadow(options = {}) {
     cwd: worktree, env: healerEnvironment(options.env),
   });
   const remoteLine = String(remote && remote.stdout || "").trim();
+  const dirtyRows = status && status.status === 0
+    ? cleanWorktreeStatus(repoRoot, worktree, status.stdout) : ["status_failed"];
   const verified = commit && commit.status === 0
     && /^[0-9a-f]{40}$/.test(commitId)
     && commitId !== baseCommit
-    && status && status.status === 0 && String(status.stdout || "") === ""
+    && dirtyRows.length === 0
     && secrets && secrets.status === 0
     && pii && pii.status === 0
     && remote && remote.status === 0

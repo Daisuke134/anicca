@@ -54,6 +54,9 @@ test("Healer converts one privacy-safe incident into one isolated Terra Superpow
         if (command === "git" && args.includes("ls-remote")) {
           return { status: 0, stdout: `${"b".repeat(40)}\trefs/heads/healer/connector-aaaaaaaaaaaa-r1\n` };
         }
+        if (command === "git" && args.includes("status")) {
+          return { status: 0, stdout: "?? apps/life-manager/node_modules\n" };
+        }
         return { status: 0, stdout: command === "codex" ? '{"type":"thread.started","thread_id":"thread-1"}\n' : "" };
       },
     });
@@ -68,6 +71,7 @@ test("Healer converts one privacy-safe incident into one isolated Terra Superpow
     assert.equal(codex.options.input.includes("systematic-debugging"), true);
     assert.equal(codex.options.input.includes("test-driven-development"), true);
     assert.equal(codex.options.input.includes("external event submit is forbidden"), true);
+    assert.equal(codex.options.input.includes("Parent Healer owns commit and push"), true);
     assert.equal("LM_CONNECTOR_TELEGRAM_TARGET" in codex.options.env, false);
     assert.equal("GOG_KEYRING_PASSWORD" in codex.options.env, false);
     assert.equal("GOOGLE_API_KEY_DIRECTIONS" in codex.options.env, false);
@@ -144,6 +148,61 @@ test("Healer records a failed Codex revision and stops at three revisions per 24
     assert.deepEqual(revisions.map((row) => row.status), [
       "revision_failed", "revision_failed", "revision_failed",
     ]);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("Healer parent commits and pushes a Terra change while excluding only the dependency symlink", async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "connector-healer-parent-vcs-"));
+  const stateDir = path.join(root, "state");
+  const worktreeRoot = path.join(root, "worktrees");
+  fs.mkdirSync(stateDir, { recursive: true });
+  const fingerprint = `sha256:${"9".repeat(64)}`;
+  const baseCommit = "8".repeat(40);
+  const healedCommit = "7".repeat(40);
+  fs.writeFileSync(path.join(stateDir, "observer-incidents.jsonl"), `${JSON.stringify({
+    schema_version: 1, wake_id: "wake:parent-vcs", run_id: "run:parent-vcs",
+    stage: "native_pass", safe_action: "runtime_execute", expected_effect: "applied_bundle",
+    observed_effect: "tool_failure", incident_class: "tool_failure", owner_generation: 1,
+    code_commit: baseCommit, cursor: "connpass:2026-08-07:0:2",
+    observed_at: "2026-08-07T01:30:00.000Z", fingerprint,
+  })}\n`, { mode: 0o600 });
+  const calls = [];
+  let statusCalls = 0;
+  try {
+    const result = await runHealerShadow({
+      repoRoot: REPO_ROOT, stateDir, worktreeRoot,
+      now: () => new Date("2026-08-07T01:35:00.000Z"),
+      env: { PATH: process.env.PATH, HOME: root },
+      execute: async (command, args) => {
+        calls.push({ command, args });
+        if (command === "git" && args.includes("worktree") && args.includes("add")) {
+          fs.mkdirSync(args[6], { recursive: true });
+          return { status: 0, stdout: "" };
+        }
+        if (command === "codex") return { status: 0, stdout: '{"type":"thread.started"}\n' };
+        if (command === "git" && args.includes("status")) {
+          statusCalls += 1;
+          return { status: 0, stdout: statusCalls === 1
+            ? " M skills/connector/lib/healer-fixture.js\n?? apps/life-manager/node_modules\n"
+            : "?? apps/life-manager/node_modules\n" };
+        }
+        if (command === "git" && args.includes("rev-parse")) {
+          return { status: 0, stdout: `${healedCommit}\n` };
+        }
+        if (command === "git" && args.includes("ls-remote")) {
+          return { status: 0, stdout: `${healedCommit}\trefs/heads/healer/connector-999999999999-r1\n` };
+        }
+        return { status: 0, stdout: "" };
+      },
+    });
+
+    assert.equal(result.status, "revision_created");
+    assert.equal(calls.some((call) => call.command === "git" && call.args.includes("add")
+      && call.args.includes(":(exclude)apps/life-manager/node_modules")), true);
+    assert.equal(calls.some((call) => call.command === "git" && call.args.includes("commit")), true);
+    assert.equal(calls.some((call) => call.command === "git" && call.args.includes("push")), true);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
