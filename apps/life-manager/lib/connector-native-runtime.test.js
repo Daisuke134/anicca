@@ -167,7 +167,7 @@ async function fixture(options = {}) {
       lumaEmail: "dais@example.com",
       lumaName: "Dais Example",
       gogKeyring: "fixture-keyring",
-      gogBin: "/fixture/gog",
+      gogBin: undefined,
     },
     deps: {
       createDailyDriver(input) {

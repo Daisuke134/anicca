@@ -2395,6 +2395,13 @@ auth-aware QR captureを結線し、native-passはconfirmation receipt ref、tic
 個別再現。GREENはmail/QR/write/runtime関連62/62、native 23/23、pretest 12/12、outbound 311/311。P0-10 checkboxはまだ未完であり、次はpush済みcodeを既存launchdで
 実発火し、新規実eventの同一attemptで全receiptとTelegram message IDをreadbackする。
 
+O1B-25進捗78（P0-10 run 105 / optional gog path regression RED→GREEN）: commit `83b9eb4c7`後の既存launchd run 105は
+新attemptを作らず`connector_native_profile_failed`で自然終了した。秘密を出さない環境capability差分ではLuma email/name、keyring、Maps、
+homeは存在し、`GOG_BIN`だけ未設定だった。既存Gmail login readerとCalendar adapterは未指定時にHomebrew標準pathへfallbackするが、追加した
+confirmation reader結線だけが`requiredText(undefined)`で停止していた。実環境同等のbin未指定fixtureは修正前runtime 6件RED、readerへ
+optional pathをそのまま渡して既存fallbackを使う修正後runtime 11/11 GREEN。run 105のattempt/delivery receiptは増えておらず、成功とは扱わない。
+次はfull outbound再検証・push後のrun 106で同じ実loopを再実行する。
+
 完全な残TODO SSOT:
 
 **P0 — task deliveryを前進させる（最優先）**
