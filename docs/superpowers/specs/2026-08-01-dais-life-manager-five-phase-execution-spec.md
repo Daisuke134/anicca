@@ -2598,6 +2598,18 @@ contract testを追加し、変更前5 subcase RED、config統一後runner全12/
 exit 0まで完了したためwrapper root fixはlive GREEN。次はCloakBrowserでLuma一件のhuman-equivalent golden traceを取得し、
 その実DOM/form/submit/readback/screenshotをrequired-form adapterとself-heal canaryの正本にする。
 
+O1B-25進捗100（human-equivalent golden trace / LIVE GREEN、loop移植待ち）: CloakBrowser daily-driverの実sessionで
+Luma候補を操作した。`thirdspace-thirdweeks-gradations`は電話、Instagram handle、推薦文に加え、HTML `required`へ現れない
+custom multi-selectとapp-level required checkboxを要求し、Instagram sessionもsuspendedだったため虚偽handleを入れず中止した。
+次に無料networking event `https://luma.com/vzpwpjg4`（YOKOHAMA CONNÉCT #44）をワンクリック登録し、Luma画面の
+「参加予定」をreadback、full-page PNG SHA-256 `e951d9a3a9708b24f1066417916d089c1c2d75e63f956b01b3422655e7e3a61c`を保存した。
+主催者本文がLumaだけでは不十分と明記したため公式GatherUsへhandoffし、trusted Gmail senderのOTP、newsletter opt-out、
+10-step profile（既知値のみ、未知属性はskip）を完了した。公式画面の「登録をキャンセル」「準備完了」をreadbackし、PNG SHA-256
+`616dd5e543382003f7975999838d2aea557089507dc54c900b67a7c30209adf4`を保存した。Google Calendar event
+`lurekf4ek87ejr13lei3r46p14`をAPI readbackし、Telegram text `7718`、Luma画像 `7720`、公式画像 `7721`を実送信した。
+これはgolden traceでありloop成功とは数えない。次sliceは質問label/control型を読むform adapter、profile answer policy、trusted OTP、
+cross-site completion marker、二枚のscreenshot/Calendar/Telegram receiptを同じevent lineageでloopへ移植する。
+
 現在と完成形:
 
 ```mermaid
