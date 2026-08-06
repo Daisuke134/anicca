@@ -2547,6 +2547,15 @@ event application agentであり、`open`日が残る限りLuma→Connpass→Pea
 継続する。一候補・一providerの失敗をpass終了条件にしない。Connpassは現時点で公式API discovery coreだけが完成しており、
 browser registration/readback/screenshotのlive proof前はregistration capabilityを有効化しない。この差をO1B-20/20A/20Bへ分離した。
 
+O1B-25進捗94（P0-10A self-heal incident envelope / RED→GREEN、live readback待ち）: existing launchd run 132を
+schedule待ちせず実行中から自然終了まで観測し、`inventory=28 / spend ordered=4 / unsuppressed=0 / write attempts=0 / write=null`を
+再確認した。これはpage inspectionだけでApplyを押していない実測証拠である。native-passへ、同selectionかつdurable historyに
+`LUMA_FORM_INPUT_REQUIRED / retry_after=null`がある場合だけ、`schema version / sha256 fingerprint / component /
+incident class / safe reason / observed_at / 7整数selection`のclosed envelopeをmode 0600 `self-heal-incidents.jsonl`へappendする処理を追加した。
+event ref、event名、page本文、個人情報、secretは保存せず、同fingerprintを二回実行しても一行だけにdedupeする。実装前はfile ENOENTで
+focused RED、実装後native 25/25、outbound 314/314 GREEN。次はcommit/push後の本物のlaunchd wakeで一行をreadbackし、その一行を
+`lm:type:self-heal` issue intakeへ配送するP0-10Bへ進む。
+
 完全な残TODO SSOT:
 
 **P0 — task deliveryを前進させる（最優先）**
@@ -2560,7 +2569,8 @@ browser registration/readback/screenshotのlive proof前はregistration capabili
 7. [x] unknown effectはLuma readbackでpresent/absentを確定するまで再submitしない。関連15/15、native 20/20、outbound 302/302。
 8. [x] submit後のLuma登録済みpageをfull-page PNGで取得し、event ref、canonical URL、取得時刻、SHA-256、Calendar event IDへbindする。focused 30/30、native 21/21、outbound 302/302。
 9. [x] Telegramへ結果cardと登録済みpage画像を実送信し、画像のpositive provider message IDをdelivery receiptへ保存・readbackする。run 103、card `7372`、photo `7594`、native 23/23、outbound 307/307。
-10. [進行中] Connectorのcandidate outcomeとselection telemetryから、本文・個人情報・secretを含まないdedupe可能なincident envelopeを生成し、`lm:type:self-heal` issue intakeへ永続配送する。
+10A. [x] Connectorのcandidate outcomeとselection telemetryから、本文・個人情報・secretを含まないdedupe可能なincident envelopeを生成し、mode 0600 local ledgerへ永続化する。native 25/25、outbound 314/314。
+10B. [進行中] incident envelopeを`lm:type:self-heal` issue intakeへdedupe付きで配送し、provider issue IDをdurable receiptとして保存する。
 11. self-fix producerを有効なcanonical path/stateへ修復し、incidentを隔離worktreeのRED test、最小修正、全回帰、PRへ変換する。modelは実装に十分なcoding modelを使うが、model名ではなくmachine resultとdiff/test証拠を合否の正本にする。
 12. self-build consumerを復旧し、protected-path、permission、test、canary、rollback gateを通過したPRだけをmerge・再配備する。producer/consumer双方のlaunchd exit 0と新ledger rowを実測する。
 13. 修復後にConnector loop自身を再wakeし、同じincident fingerprintが消え、実外部effectが成立するまでbounded repair cycleを継続する。通常retry/修復途中はTelegramへ送らない。
