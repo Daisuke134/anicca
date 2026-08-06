@@ -185,6 +185,40 @@ test("native loop backfills one legacy successful card with its real registered-
   } finally { fs.rmSync(directory, { recursive: true, force: true }); }
 });
 
+test("native photo backfill records a bounded send failure stage", async () => {
+  const directory = temporaryDirectory();
+  const stateDir = path.join(directory, "state");
+  const evidenceDir = path.join(stateDir, "evidence");
+  const bytes = Buffer.alloc(5_000, 0x61);
+  Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(bytes);
+  const hash = require("node:crypto").createHash("sha256").update(bytes).digest("hex");
+  fs.mkdirSync(path.join(evidenceDir, "objects/sha256"), { recursive: true });
+  fs.mkdirSync(path.join(evidenceDir, "tenants/dais-local/outbound/luma/artifacts"), { recursive: true });
+  fs.writeFileSync(path.join(evidenceDir, "objects/sha256", hash), bytes);
+  fs.writeFileSync(path.join(evidenceDir, "tenants/dais-local/outbound/luma/artifacts", `${hash}.json`), `${JSON.stringify({
+    sha256: hash, event_ref: "luma-event://event/verified-one",
+  })}\n`);
+  fs.writeFileSync(path.join(stateDir, "delivery-receipts.jsonl"), `${JSON.stringify({
+    event_ref: "luma-event://event/verified-one",
+    calendar_event_ref: `calendar-evidence://google/event/${"a".repeat(64)}`,
+    telegram_provider_id: "7372",
+  })}\n`);
+  try {
+    const result = await runNativePass({
+      repoRoot: REPO_ROOT, stateDir, ownerToken: OWNER_TOKEN,
+      config: { tenantId: "dais-local", evidenceDir, telegramTarget: "fixture-target" },
+      sendPhotoEvidence: async () => { throw new Error("raw transport detail"); },
+      runRuntime: async () => { throw new Error("runtime must not start"); },
+    });
+    assert.equal(result.status, "failed");
+    assert.deepEqual(JSON.parse(fs.readFileSync(path.join(stateDir, "continuation.json"), "utf8")), {
+      reason: "connector_native_photo_send_failed",
+      status: "pending",
+    });
+    assert.doesNotMatch(fs.readFileSync(path.join(stateDir, "continuation.json"), "utf8"), /raw transport detail/);
+  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+});
+
 test("native-pass forwards the complete launchd-owned Connector loop configuration", async () => {
   const directory = temporaryDirectory();
   const stateDir = path.join(directory, "state");
