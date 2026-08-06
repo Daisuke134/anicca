@@ -2324,6 +2324,12 @@ native stateは`ENOENT`でRED。実装後はfocused runtime 1/1・native 1/1、�
 pretest 12/12、outbound 301/301がfresh GREEN。次に既存launchdを実発火し、実候補がbudgetへ達する場合はcursor生成→次wake再開→消去を
 readbackする。実候補が3件未満ならcursorを捏造せず、そのlive制約を記録してP0-7へ進む。
 
+O1B-25進捗69（P0-6 existing launchd live readback）: push済みcommit `ad64caaeb`を参照する既存launchdの通常schedule
+run 92を、別executorや強制停止なしで最後まで監視した。runは自然にlast exit 1で終了し、attempt historyは5→5、`cursor.json`は
+不存在、continuationは`connector_native_calendar_gate_failed`だった。すなわち実環境では候補writeが既定budget 3件へ達する前に
+upstream Calendar gateで停止し、cursor生成条件自体が成立しなかった。これをcursor生成のlive成功とは扱わず、RED→GREEN integration
+contractをP0-6の直接証拠とする。次はP0-7で既存の`unknown_effect`停止を次wakeのreadback reconciliationへ接続する。
+
 完全な残TODO SSOT:
 
 **P0 — task deliveryを前進させる（最優先）**
