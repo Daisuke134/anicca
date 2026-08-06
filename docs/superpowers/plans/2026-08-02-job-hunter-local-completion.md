@@ -2531,7 +2531,7 @@ the resident worker from producing one authoritative application receipt:
         and personal attestation remain explicit. This proves the installed resident
         loop—not the development session—performs bounded ATS fill and continues after
         blocked forms.
-- [ ] **L-49K0C1** — Implement the same-role alternate-route ladder: canonical ATS,
+- [x] **L-49K0C1** — Implement the same-role alternate-route ladder: canonical ATS,
   alternate official employer URL, explicitly accepted recruiting-email application,
   verified public work-address recruiting outreach, then the next eligible role.
   Bind every route to one cross-route duplicate key and preserve the exact message,
@@ -2577,7 +2577,7 @@ the resident worker from producing one authoritative application receipt:
       and unknown routes are at most once across the company-role key. No live email
       was sent in this slice; fake-transport tests pass 14/14 and the full suite passes
       433/433.
-  - [ ] `L-49K0C1D` — Trigger the installed resident worker on a no-send fixture and
+  - [x] `L-49K0C1D` — Trigger the installed resident worker on a no-send fixture and
     prove ATS failure advances through every eligible route in order, cross-route
     duplicate fencing holds across crashes/replay, and the development session
     cannot mint route action authority.
@@ -2595,6 +2595,17 @@ the resident worker from producing one authoritative application receipt:
       build/activate an immutable release, write one fixture request, kickstart the
       existing daily launchd, and inspect its resident receipts before checking this
       task complete.
+    - Resident proof complete: immutable release
+      `c1e7cafa2065c455e7aaed4a3f4228cb8c671751`, existing launchd run
+      `daily-20260806-095413`, holder PID 7783, resident worker PID 7857, lease
+      `eee13486...432d7`, fence 93, exited zero. The worker consumed request
+      `resident-route-fixture-20260806-01` before models/browser work and recorded
+      canonical ATS, alternate official URL, accepted recruiting email, and outreach
+      in exact order; every route transitioned `eligible → action_started → failed`.
+      Replay returned `no_eligible_route`; a persisted `action_started` crash followed
+      by SQLite reopen returned `cross_route_fenced`. The worker/result receipts agree
+      on actor, run, PID, lease, fence, and `send_count=0`; all evidence files are mode
+      0600 and the trigger request was atomically consumed into the run evidence.
 - [ ] **L-49K0C2** — Prove an ATS bot block, CAPTCHA, timeout, or unsupported form
   cannot end an hourly pass. The resident worker records the failure, executes every
   eligible remaining route once, moves to a different supported role during the same
