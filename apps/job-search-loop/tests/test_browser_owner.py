@@ -35,13 +35,14 @@ class _Handler(BaseHTTPRequestHandler):
 
 
 class BrowserOwnerTests(unittest.TestCase):
-    def test_default_attach_probe_is_pinned_browser_use_without_playwright(self):
+    def test_default_attach_probe_is_direct_playwright_cdp(self):
         source = inspect.getsource(browser_owner)
-        self.assertNotIn("from playwright", source)
+        self.assertIn("from playwright", source)
+        self.assertNotIn("PinnedBrowserUseBackend", source)
         default = inspect.signature(
             browser_owner.acquire_with_attach_recovery
         ).parameters["attach_probe"].default
-        self.assertEqual(default.__name__, "attach_browser_use_cdp")
+        self.assertEqual(default.__name__, "attach_playwright_cdp")
 
     def test_browser_owner_exposes_attach_verified_recovery_acquire(self):
         self.assertTrue(hasattr(browser_owner, "acquire_with_attach_recovery"))
@@ -225,7 +226,7 @@ class BrowserOwnerTests(unittest.TestCase):
             self.assertEqual(receipt.stat().st_mode & 0o777, 0o600)
             self.assertEqual(fence.stat().st_mode & 0o777, 0o600)
 
-    def test_receipt_is_not_ready_until_browser_use_attach_succeeds(self):
+    def test_receipt_is_not_ready_until_playwright_attach_succeeds(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             lease_path = root / "job_search_dais.lease"
