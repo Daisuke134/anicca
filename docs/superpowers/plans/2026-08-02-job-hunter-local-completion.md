@@ -2949,9 +2949,18 @@ OpenTelemetry decision and primary sources:
             the existing report; idempotent replay preserves the first correlation.
             Correlation remains diagnostic and does not change the authoritative
             artifact bundle SHA. Focused test passes 1/1; ledger suite passes 44/44.
-    - [ ] `L-49K0C2O4c` — Carry the same IDs through Temporal Workflow/Activity
-      identity, Guardian repair cases, and Telegram reports. Split durable runtime
-      correlation from Telegram projection (each at most 3 files and 100 LOC).
+    - [ ] `L-49K0C2O4c` — Carry the same IDs through owner-visible reporting and
+      runtime repair. Parent closes only after all children close.
+      - [ ] `L-49K0C2O4c1` — Include validated evidence `trace_id`/`span_id` in the
+        private application archive manifest, Telegram message, and delivery receipt;
+        missing IDs remain explicit null (2 files, soft target 70 LOC).
+      - [ ] `L-49K0C2O4c2` — Include validated current `trace_id`/`span_id` in each
+        Guardian recovery case, alert, and receipt without adding private payloads
+        (2 files, soft target 80 LOC).
+      - [ ] `L-49K0C2O4c3` — Require Temporal Workflow/Activity IDs and their mapping
+        to trace/span IDs inside `L-49K0D2`, where the resident cron migration to
+        Temporal is implemented. The measured resident runtime has no Temporal
+        Workflow or Activity today, so this gate may not fabricate those IDs early.
   - [ ] `L-49K0C2O5` — Install the loopback-only Collector/backend LaunchAgent,
     persistent private data volume, health receipt, bounded retention, and Grafana
     dashboard for pass/candidate/route timelines, failure classes, confirmation rate,
