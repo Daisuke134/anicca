@@ -1318,6 +1318,14 @@ Life Manager Core
 
 ### 5.2 Order 1B — イベント
 
+**Multi-source non-negotiable invariant:** ConnectorはLuma agentではなくevent application agentである。
+Lumaは現在の最初のproviderにすぎず、検索・申込scopeをLumaへ限定してはならない。rolling 21日coverageに`open`日が残る限り、
+その日についてcapability registryで許可済みのproviderを順に探索し、登録可能な最上位候補へ実申込する。一providerの候補枯渇、
+満席、required form、selector drift、auth failure、provider障害をpass全体の終了条件にせず、同日次候補、次provider、次日へ進む。
+現在のprovider順は`Luma → Connpass → Peatix → Meetup → Doorkeeper → Eventbrite`とする。各providerは
+`discovery / registration / effect_readback / screenshot_evidence`のlive proofが揃った能力だけを使用し、探索URLだけでは
+登録成功やcoverage達成に数えない。新providerは同じregistry contractへ追加し、特定site名をruntime coreへhardcodeしない。
+
 - [x] O1B-01 偽物の成功判定を削除
 - [x] O1B-02 event URLの2不具合を修正
 - [x] O1B-03 既存CloakBrowser daily-driverを使うLuma discover + RSVP adapterを完成
@@ -1337,7 +1345,9 @@ Life Manager Core
 - [x] O1B-17 Luma mainの東京・対面inventoryを日付ごとに最後まで読み、表示上位数件だけで探索を終えない
 - [x] O1B-18 AI/crypto/英語等は優先順位にだけ使い、eventを捨てるhard category filterにはしない
 - [x] O1B-19 agentがevent本文・参加者・主催者・場所・時間を読み、Daisの目標とserendipityを自然言語で評価
-- [x] O1B-20 Lumaで実参加を確保できない場合、許諾済みsourceを探索する。connpassはkey取得後の公式API read-only discoveryだけとし、自動申込み・coverage達成には使わない
+- [x] O1B-20 Lumaで実参加を確保できない場合、許諾済みsourceを探索する。Connpass公式API read-only discovery coreまでは完成
+- [ ] O1B-20A Connpass browser registration・effect readback・screenshot proofを完成し、live evidence後にregistration capabilityを有効化
+- [ ] O1B-20B Peatix、Meetup、Doorkeeper、Eventbriteを同じcapability registryへ追加し、Luma-only fallbackを除去
 - [ ] O1B-21 一つの候補で申込失敗・満席・不適格になっても同じ日の次候補へ進み、予約確認までloopを継続
 - [ ] O1B-22 「検索一巡」「一件の操作失敗」「一sourceの失敗」を終了条件にしない
 - [x] O1B-23 Google Calendarの全calendarからbusy intervalを読み、前後移動時間を含むfree intervalだけへ予約
@@ -2531,6 +2541,12 @@ coverage_credit=false`であり、Peatix、Meetup、Doorkeeper、Eventbriteの�
 - connpass API v2, https://connpass.com/about/api/v2/ — 「すべてのAPIエンドポイントでは、APIキーによる認証が必須」「1秒間に1リクエストまで」。探索adapterは公式v2 APIとrate limitに固定する。
 - Meetup GraphQL API, https://www.meetup.com/api/general/ — API accessはMeetup Proの提供能力として記載される。契約・権限を実測するまでbrowser/API registration capabilityを宣言しない。
 
+O1B-25進捗93（Luma-only禁止を主要求へ昇格）: multi-sourceを後半TODOだけに置くと、runtime実装者が前半の旧「Luma中心」記述を
+正本と誤認できるため、§5.2のnon-negotiable invariantと§10.1Aの日次UXを更新した。ConnectorのidentityはLuma agentではなく
+event application agentであり、`open`日が残る限りLuma→Connpass→Peatix→Meetup→Doorkeeper→Eventbriteをcapability gate付きで
+継続する。一候補・一providerの失敗をpass終了条件にしない。Connpassは現時点で公式API discovery coreだけが完成しており、
+browser registration/readback/screenshotのlive proof前はregistration capabilityを有効化しない。この差をO1B-20/20A/20Bへ分離した。
+
 完全な残TODO SSOT:
 
 **P0 — task deliveryを前進させる（最優先）**
@@ -3288,10 +3304,10 @@ Connectorは一日一回の検索cronではなく、21日間の空きを継続�
 | 時刻 / trigger | 裏側で行うこと | Daisへ届くもの |
 |---|---|---|
 | 00:05 | 日付を一日進め、今日〜20日後の全Calendar、cancel、変更を再照合 | 通常は無通知 |
-| 00:15〜06:00 | `open`日を日付順にLuma中心で探索・申込・mail/QR/Calendar照合。失敗候補は捨てて次へ進む | 通常は無通知 |
+| 00:15〜06:00 | `open`日を日付順に全許可providerで探索・申込・receipt/Calendar照合。一候補・一providerの失敗では止まらない | 通常は無通知 |
 | 06:30 | 21日coverage、既存予約、今回の新規予約、未処理の空きを集計 | 朝のConnector briefingを一通 |
 | 新規予約成立時 | そのrunで成立した複数eventをまとめて保存 | 3週間の空きを何件埋めたかを一通。eventとCalendarの直接link付き |
-| 09:00 | 夜間に届いたLumaの確認、承認、cancel mailを再照合 | 状態が変わったeventだけ通知 |
+| 09:00 | 夜間に届いた各providerの確認、承認、cancel receiptを再照合 | 状態が変わったeventだけ通知 |
 | 12:00 | 残っている`open`日と、朝以降に公開されたeventを再探索 | 新規予約成立時だけ通知 |
 | 18:00 | cancelや予定変更で再び空いた日を検知し、同日の別候補へ申込 | 置換予約が成立した時だけ通知 |
 | 23:45 | 未確認申込と未処理の空きを次runへ再投入 | 正常時は無通知。翌日も同じ状態から継続 |
