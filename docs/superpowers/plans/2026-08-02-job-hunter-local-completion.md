@@ -2829,15 +2829,20 @@ OpenTelemetry decision and primary sources:
       OTLP protobuf POST to a loopback HTTP receiver, returned 32/16-character trace
       and span IDs, and flushed successfully; the first E2E exposed and then closed
       a missing-provider flush defect.
-  - [ ] `L-49K0C2O3` — Instrument the application trace hierarchy:
-    `hourly_pass → candidate → route → browser.navigate → page.ready →
-    surface.classify → application.open → form.snapshot → form.fill →
-    submit.intent → submit.action → confirmation.observe`. Record redirect count,
-    readyState, DOM/control/text counts, surface type, blocker code, duration,
-    exception class, and evidence SHA—not private values. Files: modify
-    `browser_use_adapter.py`, `browser_use_ats.py`, and their tests (3 files changed
-    plus existing tests, soft target 100 LOC per slice; split navigate/readiness from
-    surface/submit spans before implementation).
+  - [ ] `L-49K0C2O3` — Instrument the application trace hierarchy without private
+    payloads. Parent closes only after both children close.
+    - [ ] `L-49K0C2O3a` — Add `browser.navigate → page.ready` spans at the pinned
+      Browser Use backend boundary. Record redirect count, readyState, DOM control
+      and text counts, duration, and exception class; never record the raw URL or DOM.
+      Files: `browser_use_adapter.py` and `tests/test_browser_use_adapter.py` (2 files,
+      soft target 100 LOC).
+    - [ ] `L-49K0C2O3b` — Add `hourly_pass → candidate → route → surface.classify →
+      application.open → form.snapshot → form.fill → submit.intent → submit.action →
+      confirmation.observe` spans at the resident orchestration/ATS boundaries. Record
+      surface type, blocker code, duration, exception class, and evidence SHA—not
+      private values. Files: `browser_use_ats.py` plus its focused tests, then the
+      resident submit activity plus its focused tests; each slice changes at most
+      3 files and targets 100 LOC.
   - [ ] `L-49K0C2O4` — Correlate `trace_id`/`span_id` through Temporal Workflow and
     Activity IDs, application/route IDs, ledger events, owner/worker receipts,
     evidence manifests, Guardian repair cases, and Telegram reports. OTel remains
