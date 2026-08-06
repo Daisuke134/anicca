@@ -6,21 +6,21 @@
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
 **Configured upstream:** `canonical/docs/job-hunter-spec-20260805`
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
-**Last updated:** 2026-08-06 JST
-**Active atomic task:** minimum `L-49K3B` plus immediate resident live application —
-activate the natural-language application goal, connect the existing durable receipt
-to the resident result, install the immutable release, and trigger one real role to
-`applied_ats` or `applied_email`. Exhaustive hardening and complete dossier work
-follow that first receipt; they never gate it.
+**Last updated:** 2026-08-07 JST
+**Active atomic task:** `L-49K5D` — make the installed resident use the existing
+Ashby/generic browser toolbelt against a new non-Workday employer, finish at
+`applied_ats` or one verified email fallback, then repeat against a different Workday
+employer. Do not build another agent framework or ATS-specific workflow first.
 **Status:** The immutable four-lane runtime, grounded materials, ownership fences,
 Gmail ingestion, Telegram outbox, quota accounting, Ashby surface classifier, and
 loopback OpenTelemetry Collector/private trace index are implemented. The application
-LaunchAgent is loaded on a 3,600-second schedule but is currently not running; the
-CloakBrowser CDP and observability Collector are running. The authoritative ledger
-contains 22 application rows: four historical/reference `submitted`, twelve
-`submit_unknown`, and six `rejected`. It contains zero resident-loop authoritative
-confirmed applications, zero verified interviews, and zero offers. The owner-authorized
-OpenAI Ashby success is `dais_manual`, not resident proof. `L-49K2C1` is complete:
+LaunchAgent is loaded on a 3,600-second schedule and is idle after resident run 72
+exited zero; CloakBrowser CDP and the observability Collector are running. The
+authoritative projection contains seven `submitted`, twelve `submit_unknown`, and six
+`rejected`. Three submissions are resident-loop confirmations: Cursor and two NVIDIA
+roles, all confirmed through Gmail fallback rather than ATS-site confirmation. The
+owner-authorized OpenAI Ashby success is `dais_manual`, not resident proof. There are
+zero verified interviews and zero offers. `L-49K2C1` is complete:
 its isolated CloakBrowser E2E verified changed field layouts across fill, select,
 check, and upload with zero Submit controls/actions and preserved all baseline pages.
 The last complete pre-A2 Job Hunter suite passes 510/510. A2's focused semantic
@@ -212,6 +212,33 @@ browser action as product E2E. If the resident loop cannot complete an ATS, it r
 the failure class, learns through a tested adapter change, or uses the bounded
 human-only handoff below. It then continues to other supported ATS and direct-email
 routes instead of treating one ATS failure as a global stop.
+
+#### 5.1.1 Thin resident agent — execution SSOT
+
+The simplest production architecture is the installed hourly Terra agent plus one
+small browser toolbelt, not a separate workflow per ATS. `job_search_loop.ashby_apply`
+already provides deterministic `inspect → fill → apply → verify` operations for
+Ashby. The generic semantic observer/classifier exposes the same current-page facts
+for Greenhouse, Workday, and direct employer forms. Terra owns adaptation when field
+labels, ordering, widgets, or optional questions differ.
+
+For every selected role, the resident executes this one natural-language goal:
+
+1. reject any durable duplicate and choose a new eligible official posting;
+2. open the official application surface in the existing CloakBrowser profile;
+3. inspect current controls, fill profile-grounded answers, and upload the selected
+   resume;
+4. adapt to harmless form variation, then use the single fenced Submit action once;
+5. verify an authoritative ATS response or confirmation page;
+6. if formal submission cannot be confirmed, use the verified email ladder and then
+   continue to another employer; and
+7. persist the receipt in Ledger and report the exact route and evidence on Telegram.
+
+Scripts supply stable browser, Ledger, receipt, and idempotency primitives; they do
+not replace the agent's judgment. Do not make Terra rediscover CLI usage by reading
+the repository during each hourly pass, and do not add a new ATS-specific state
+machine before a measured form difference proves the existing adaptive path cannot
+handle it.
 
 ### 5.2 Minimal human-only boundary
 
@@ -1058,12 +1085,14 @@ submissions.
 - The private compensation profile, Luna/Terra route map, manual/recruiter ownership
   fences, Palantir manual import, `summary.v2`, and Telegram outbox are implemented.
 - Current `gog gmail search` succeeds.
-- The authoritative ledger contains 22 applications: four historical/reference
-  `submitted` rows, twelve `submit_unknown` rows, and six `rejected` rows. The four
-  submitted rows are the two legacy development E2Es (LayerX and Exture), the
-  Dais-manual Palantir import, and the owner-authorized Dais-manual OpenAI Ashby
-  reference success. It contains zero authoritative ATS/Gmail confirmations for a
-  resident-loop application and zero confirmed resident Ashby or Workday receipts.
+- The authoritative projection contains 25 applications: seven `submitted`, twelve
+  `submit_unknown`, and six `rejected`. The seven submitted rows are three resident
+  Gmail-fallback confirmations (Cursor and two NVIDIA roles), two legacy development
+  E2Es (LayerX and Exture), the Dais-manual Palantir import, and the owner-authorized
+  Dais-manual OpenAI Ashby reference success. It contains zero confirmed resident
+  ATS-site submissions: Cursor's site click is `delivery_unknown`, NVIDIA finished by
+  Gmail rather than Workday, and the successful OpenAI Ashby submission was the
+  owner-authorized development-session reference.
 - No PNG/JPEG/WebP submission screenshot exists in the Sierra, Camunda, or Cohere
   evidence directories. A later screenshot of an ordinary job page MUST NOT be
   presented as historical submission proof.
@@ -2312,7 +2341,7 @@ parallel only where explicitly stated below. Otherwise preserve this order:
    `daily-20260806-230438` reconciled this state without resubmitting, exited zero,
    passed terminal validation at 46 verified/110 remaining, and Telegram-reported
    message ID `7985`.
-6. [ ] **Connect the completed minimum ApplyPilot-inspired discovery components to
+6. [x] **Connect the completed minimum ApplyPilot-inspired discovery components to
    the resident (`L-49K5B4`), then release/install and run the real loop before broad
    site-pattern or form-framework work.** `L-49K5A`, `L-49K5B1`, `L-49K5B2`,
    `L-49K5B3a`, and `L-49K5B3b` are complete. Pin
@@ -2334,7 +2363,14 @@ parallel only where explicitly stated below. Otherwise preserve this order:
    click. Formal ATS is first; if it cannot produce authoritative confirmation, send
    exactly one verified recruiting-email fallback. Require authoritative ATS or Gmail
    receipt, exact artifacts, Ledger truth, and Telegram evidence before proceeding.
-8. [ ] `L-51` and `L-52` — run the same adopted generic path against one new eligible
+   Resident run 72 (`daily-20260807-005344`) did not satisfy this item: it opened the
+   OpenAI Ashby application and observed 31 controls, but chose a posting already
+   owned by `dais_manual`, treated required legal-eligibility answers as ungrounded,
+   clicked no Submit, sent no email, and produced no new application receipt. The
+   next run must choose a genuinely new employer and use the existing Ashby CLI and
+   generic browser toolbelt directly instead of spending the pass rediscovering their
+   commands from repository source.
+8. [x] `L-51` and `L-52` — run the same adopted generic path against one new eligible
    Workday employer and prove one authoritative real Workday application, exact
    artifacts, Ledger receipt, and Telegram evidence. A formal-route failure selects
    exactly one verified recruiting-email fallback; there is no no-application branch.
@@ -2375,9 +2411,11 @@ parallel only where explicitly stated below. Otherwise preserve this order:
 
 Current production truth measured from the ledger and resident receipts:
 
-- the installed resident Job Hunter has one new authoritative application, zero
-  verified interviews, and zero offers. Cursor `Solutions Architect, Japan` is
-  `applied_email` under application ID
+- the installed resident Job Hunter has three authoritative applications, zero
+  verified interviews, and zero offers. All three are website-first attempts that
+  became confirmed applications through Gmail fallback, not confirmed ATS-site
+  submissions. Cursor `Solutions Architect, Japan` is `applied_email` under
+  application ID
   `d11cc27f1bfcadc569c9ce3dcab6cba084c0005fcc832acc9a9c15324659b933`; Gmail
   provider ID `gmail:19fd74214d1fc23e` and Telegram message ID `7950` are the
   authoritative receipts. The original ATS route failed before Submit. The current
@@ -2386,9 +2424,14 @@ Current production truth measured from the ledger and resident receipts:
   `cursor:ambiguous-after-click` and MUST NOT be retried. Latest resident run
   `daily-20260806-230438` exited zero, returned the existing application under
   `submit_unknown`, passed terminal validation with 46 verified/110 remaining links,
-  and sent Telegram message ID `7985`. This does not upgrade ATS truth. The private
-  Collector still contains only two old `hourly_pass` spans, so the joined live
-  application trace remains unfinished under `L-49K0C2O6`;
+  and sent Telegram message ID `7985`. This does not upgrade ATS truth. NVIDIA
+  `Solution Architect - Agentic AI` and `Solution Architect, Generative AI` were
+  attempted on NVIDIA's Workday tenant by resident run `daily-20260807-001435`, but
+  neither finished on Workday. Their authoritative confirmations are Gmail fallback
+  IDs `gmail:19fd7aba7ada5c43` and `gmail:19fd7ad5ec2c290b`, with Telegram messages
+  `8042` and corrected `8046`. Ledger projects Cursor and both NVIDIA roles as
+  `submitted`. The joined live application trace remains unfinished under
+  `L-49K0C2O6`;
 - one owner-authorized interactive diagnostic successfully submitted OpenAI
   `AI Deployment Engineer, Startups` in Tokyo through the existing dedicated
   CloakBrowser profile. This is a measured reference trace, not resident-loop proof:
@@ -2401,9 +2444,10 @@ Current production truth measured from the ledger and resident receipts:
   `8ed35a14223b33357acbb321c3db4e419d226904991242e148d5794646b0f95a`.
   The ledger records this one-off as `dais_manual / submitted`, preserving the
   builder/operator boundary; it cannot satisfy the resident actor or campaign gates;
-- the ledger therefore contains four historical/reference `submitted` rows: two
-  agent-owned development E2E records, one `dais_manual` Palantir record, and the
-  one-off `dais_manual` OpenAI reference success. None is a resident-loop success;
+- the ledger projection contains seven `submitted` rows: the three resident Gmail
+  confirmations above, two historical agent-owned development E2E records, one
+  `dais_manual` Palantir record, and the one-off `dais_manual` OpenAI Ashby reference
+  success. Only the three Gmail-confirmed rows are resident-loop application proof;
 - twelve agent-owned rows remain `submit_unknown` and MUST NOT be counted or blindly
   retried;
 - Gmail contains the OpenAI confirmation above, but the inbox loop acknowledged it
@@ -2418,9 +2462,13 @@ Current production truth measured from the ledger and resident receipts:
   No application was submitted. All three surfaces classified as `none`, but failure
   paths persisted only the classification and not raw non-private controls, so
   selector mismatch versus render timing remains deliberately unknown;
-- Gmail fallback is now connected to the resident pass and produced the Cursor
-  `applied_email` receipt. `C2B2` through `C2D` remain responsible for exhaustive
-  enrichment, reporting, quota, and recovery coverage rather than first connectivity.
+- Gmail fallback is connected to the resident pass and produced the Cursor and two
+  NVIDIA `applied_email` receipts. ATS-site automation is not yet proven end-to-end
+  by the resident: OpenAI Ashby is the development-session reference, Cursor is
+  `delivery_unknown` after one click, and both NVIDIA confirmations came from Gmail.
+  Resident run 72 then reached a live OpenAI Ashby application form but produced no
+  new receipt because it selected a `dais_manual` duplicate and stopped at ungrounded
+  legal questions. `L-49K5D` remains the first atomic task.
 
 Measured reference timing: the final pre-submit image was captured at 15:16:45 JST
 and the terminal success image at 15:17:53 JST, so the verified final submit phase was
@@ -3985,6 +4033,14 @@ OpenTelemetry decision and primary sources:
       diversity: a new non-Workday employer first, then a different Workday employer
       after the first receipt, with later roles continuing to alternate when eligible
       choices remain. This is the daily default, not a one-run test override.
+    - Run 72 evidence: `daily-20260807-005344` used installed release
+      `08ec98f5ad84a82838392e37d60c1912f707c70d`, opened OpenAI's live Ashby
+      application, classified `application_form`, and observed 31 controls including
+      resume upload and `Submit Application`. It performed zero browser actions and
+      zero Submit because the chosen posting was already owned by `dais_manual` and
+      required legal answers were not grounded. No Gmail route was eligible for that
+      duplicate, so the run produced zero new receipts and exited zero. This proves
+      observation, not resident Ashby submission, and leaves `L-49K5D` open.
 - [ ] **L-49K** — Prove `L-49K1` through `L-49K4` through the installed resident
   LaunchAgent on one eligible Ashby role. The development session only triggers and
   observes. The resident must open the application surface, fill, verify, submit once,
