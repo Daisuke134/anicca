@@ -50,7 +50,7 @@ def _application_entry(snapshot: dict[str, Any]) -> tuple[int, int] | None:
 
 def resolve_application_surface(
     adapter: Any, evidence_dir: Path, telemetry: Any = None,
-    sleeper: Any = time.sleep, render_attempts: int = 10,
+    sleeper: Any = time.sleep, render_attempts: int = 60,
 ) -> dict[str, Any]:
     telemetry = telemetry or Telemetry()
     started = time.monotonic()

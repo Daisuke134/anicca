@@ -3192,6 +3192,17 @@ OpenTelemetry decision and primary sources:
       now polls blank render for at most 4.5 seconds and, after exactly one semantic
       open, polls required form controls for at most five seconds. This repairs the
       measured failure without generic click or repeated application-open actions.
+    - Resident recheck receipt: release `1e9bd5ffce95e1398097cab71525cc5217d05b09`,
+      run `daily-20260806-175749`, owner fence 117. The resident worker—not the
+      development session—attempted all three ranked OpenAI Ashby candidates and
+      continued after each failure, but all three remained blank after the former
+      five-second render ceiling and ended `application_surface_not_found`; confirmed
+      submissions remained zero. This proves the remaining defect is the browser
+      boundary's premature render deadline, not model selection or candidate
+      abandonment. The same-page observation window is now bounded at 30 seconds
+      before failover, exits immediately when controls/form appear, and still opens
+      an application entry at most once. Next verification is another installed
+      resident launch, not a development-session form submission.
 - [ ] **L-49K2** — Make the resident fill contract complete and inspectable. Route the
   exact accepted resume; fill verified identity/contact/location/start-date fields;
   select work authorization and sponsorship answers from the private profile; verify
