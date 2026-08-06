@@ -43,6 +43,7 @@ class BrowserWorkerTests(unittest.TestCase):
                 return {
                     "status": "pending_verification",
                     "blocked": ["no_ranking_ready_candidate"],
+                    "attempted_count": 3,
                 }
 
             result = run_worker(
@@ -62,6 +63,7 @@ class BrowserWorkerTests(unittest.TestCase):
 
             self.assertEqual(len(calls), 1)
             self.assertEqual(result["blocked"], ["no_ranking_ready_candidate"])
+            self.assertEqual(result["attempted_count"], 3)
 
     def test_exclusive_worker_rejects_a_second_worker(self):
         with tempfile.TemporaryDirectory() as directory:

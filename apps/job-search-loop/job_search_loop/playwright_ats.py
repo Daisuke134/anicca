@@ -75,8 +75,10 @@ def grounded_profile_answers(profile: dict[str, Any]) -> dict[str, dict[str, Any
             "fact_ids": ["profile.base"],
         }
     phone = candidate.get("phone")
+    phone_status = candidate.get("phone_status")
     if (
-        candidate.get("phone_status") == "verified"
+        isinstance(phone_status, str)
+        and phone_status.startswith("verified")
         and isinstance(phone, str)
         and phone.strip()
     ):
@@ -164,7 +166,10 @@ def capture_snapshot(page: Any, *, navigation_committed: bool) -> dict[str, Any]
       const ownText = clean(n.innerText || n.textContent || '');
       let groupLabel = '';
       const role = n.getAttribute('role') || '';
-      const needsGroup = (!explicit && !associated && !placeholder) || role === 'combobox';
+      const tag = (n.tagName || '').toLowerCase();
+      const choiceText = ownText.toLowerCase();
+      const needsGroup = role === 'combobox' ||
+        ((tag === 'button' || role === 'button') && (choiceText === 'yes' || choiceText === 'no'));
       if (needsGroup) {
         let cursor = n.parentElement;
         for (let depth = 0; cursor && depth < 6; depth += 1, cursor = cursor.parentElement) {
@@ -179,7 +184,7 @@ def capture_snapshot(page: Any, *, navigation_committed: bool) -> dict[str, Any]
         }
       }
       return {
-        tag: (n.tagName || '').toLowerCase(),
+        tag: tag,
         type: n.getAttribute('type') || '',
         role: role,
         label: explicit || associated || placeholder,
