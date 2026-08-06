@@ -122,10 +122,6 @@ set +e
 OFFICIAL_ATS_REFRESH_RC=$?
 set -e
 chmod 600 "$EVIDENCE/official-ats-refresh.json"
-export ANICCA_BUDGET_REQUIRED=1
-export ANICCA_LOOP_DAILY_TOKEN_BUDGET=1048576
-export ANICCA_BUDGET_DAILY_SCOPE="job-search-daily"
-export ANICCA_BUDGET_DAY_TZ="Asia/Tokyo"
 export JOB_SEARCH_PREFILTER_RESULT="$EVIDENCE/prefilter-result.json"
 JOB_SEARCH_PREFILTER_QUEUE="$EVIDENCE/prefilter-queue.json"
 "$JOB_SEARCH_PYTHON" -m job_search_loop.prefilter \
@@ -190,8 +186,6 @@ TRAPEXIT() {
   fi
 }
 set +e
-export ANICCA_BUDGET_SCOPE_ID="job-search-daily:${RUN_ID}:apply"
-export ANICCA_PASS_TOKEN_BUDGET=98304
 "$JOB_SEARCH_PYTHON" "$JOB_SEARCH_RUNNER" \
   --task-class application-lane-agent \
   --prompt-file "$JOB_SEARCH_APP_ROOT/prompts/daily-pass.md" \

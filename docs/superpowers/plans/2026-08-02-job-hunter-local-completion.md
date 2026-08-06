@@ -3225,6 +3225,15 @@ OpenTelemetry decision and primary sources:
       handled by that same process; absence from a predefined action table is never
       a stop reason. Deterministic queue, policy, ledger, and receipt programs remain
       validators and durable tools, not decision-making agents.
+    - First single-agent launch receipt: release `8f37fdf1265b7bccf74c9c2145fd5e1300086bc2`,
+      run `daily-20260806-182545`, fence 120. Candidate refresh and 100-item ATS
+      liveness completed, both former model stages recorded `skipped_single_agent`,
+      but the only Terra application call was rejected before attempt zero because
+      obsolete same-day multi-agent usage had consumed 1,005,084 of the 1,048,576
+      token daily ceiling. The daily application Loop no longer configures a model
+      token gate at all. Confirmed-application quota, truthful-fact policy, Submit
+      confirmation, and duplicate fences remain; token accounting cannot stop the
+      Job Hunter before it attempts work.
 - [ ] **L-49K2** — Make the resident fill contract complete and inspectable. Route the
   exact accepted resume; fill verified identity/contact/location/start-date fields;
   select work authorization and sponsorship answers from the private profile; verify

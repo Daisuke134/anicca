@@ -51,10 +51,12 @@ class PromptInjectionTests(unittest.TestCase):
         self.assertIn("JOB_SEARCH_PREFILTER_RESULT", script)
         self.assertIn("JOB_SEARCH_PREFILTER_RESULT", prompt)
 
-    def test_daily_budget_allows_multiple_hourly_runs_and_repair_retries(self):
+    def test_daily_application_loop_has_no_model_token_gate(self):
         root = Path(__file__).parents[1]
         script = (root / "scripts" / "run-daily.sh").read_text(encoding="utf-8")
-        self.assertIn("ANICCA_LOOP_DAILY_TOKEN_BUDGET=1048576", script)
+        self.assertNotIn("ANICCA_LOOP_DAILY_TOKEN_BUDGET", script)
+        self.assertNotIn("ANICCA_PASS_TOKEN_BUDGET", script)
+        self.assertNotIn("ANICCA_BUDGET_REQUIRED", script)
 
     def test_daily_runtime_gates_terminal_result_on_durable_candidate_queue(self):
         root = Path(__file__).parents[1]
