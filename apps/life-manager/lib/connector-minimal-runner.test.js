@@ -73,6 +73,9 @@ function fixture(overrides = {}) {
       calls.push(["report", report.status, report.safe_reason]);
       return Object.freeze({ telegram_provider_id: "9001" });
     },
+    async recordAction(action) {
+      calls.push(["history", action]);
+    },
     ...overrides,
   };
   return {
@@ -183,4 +186,28 @@ test("the ten-minute wake deadline stops browser churn and still reports the wak
   assert.deepEqual(state.calls.filter(([name]) => name === "report").at(-1), [
     "report", "circuit_open", "wake_deadline",
   ]);
+});
+
+test("every recorded action contains only the safe audit fields", async () => {
+  const state = fixture();
+
+  await runMinimalConnectorWake({
+    ownerToken: "owner-token-connector-minimal-5",
+    providers: ["luma", "connpass"],
+  }, state.dependencies);
+
+  const history = state.calls.filter(([name]) => name === "history").map(([, row]) => row);
+  assert.ok(history.length > 0);
+  for (const row of history) {
+    assert.deepEqual(Object.keys(row).sort(), [
+      "duration_ms", "method", "purpose", "result", "timestamp",
+    ]);
+    assert.match(row.purpose, /^(navigate|observe|fill|submit|readback)$/);
+    assert.match(row.method, /^[a-z][a-z0-9_]{1,63}$/);
+    assert.match(row.result, /^(success|failed)$/);
+    assert.equal(new Date(Date.parse(row.timestamp)).toISOString(), row.timestamp);
+    assert.equal(Number.isInteger(row.duration_ms) && row.duration_ms >= 0, true);
+    assert.equal(JSON.stringify(row).includes("owner-token"), false);
+    assert.equal(JSON.stringify(row).includes("example.test"), false);
+  }
 });
