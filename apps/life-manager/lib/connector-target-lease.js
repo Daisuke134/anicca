@@ -39,9 +39,11 @@ function pageWebsocket(value, expectedTargetId) {
 function canonicalUrl(value) {
   let parsed;
   try { parsed = new URL(String(value || "")); } catch { unavailable("Connector canonical URL invalid"); }
+  const providerHost = ["luma.com", "lu.ma", "connpass.com"].includes(parsed.hostname)
+    || parsed.hostname.endsWith(".connpass.com");
   if (
     parsed.protocol !== "https:"
-    || !["luma.com", "lu.ma"].includes(parsed.hostname)
+    || !providerHost
     || parsed.username || parsed.password || parsed.hash
   ) unavailable("Connector canonical URL invalid");
   parsed.hash = "";
