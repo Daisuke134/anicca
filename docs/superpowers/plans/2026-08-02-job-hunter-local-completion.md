@@ -2875,7 +2875,7 @@ OpenTelemetry decision and primary sources:
             pre-submit, and receipt completion paths. The exact same telemetry object
             is passed to Browser Use pre-submit; focused worker/ATS/privacy tests pass
             18/18. No development-session execution path gains browser authority.
-        - [ ] `L-49K0C2O3b2b` — Add `submit.intent` and `confirmation.observe` at
+        - [x] `L-49K0C2O3b2b` — Add `submit.intent` and `confirmation.observe` at
           the existing ledger claim and authoritative Gmail/ATS reconciliation
           boundaries, split into claim and confirmation slices of at most 3 files
           and 100 LOC each.
@@ -2888,9 +2888,18 @@ OpenTelemetry decision and primary sources:
               `application.id`; focused test passes 1/1 and the complete ledger suite
               passes 42/42. Search inspection also caught and removed an initial span
               insertion at the unrelated artifact transaction before GREEN.
-          - [ ] `L-49K0C2O3b2b2` — Wrap deterministic Gmail/ATS reconciliation in
+          - [x] `L-49K0C2O3b2b2` — Wrap deterministic Gmail/ATS reconciliation in
             `confirmation.observe`, recording only hashed application/evidence IDs,
             matched/blocked status, duration, and exception class.
+            - Completion receipt: one telemetry object is injected into the Gmail
+              reconciliation driver and reopened ledger. RED proved both exact Ashby
+              confirmation and blocked spoof paths emitted zero spans. GREEN emits
+              one observation per valid unseen message: exact matches contain only
+              application ID, evidence SHA, boolean result, and duration; blocked
+              no-match/ambiguous/fence paths contain only boolean result, blocker
+              code, and duration. Gmail message/thread IDs and bodies stay out of
+              telemetry. Focused success/spoof tests pass 2/2 and the complete
+              confirmation suite passes 7/7.
         - [ ] `L-49K0C2O3b2c` — Add `submit.action` inside `L-49K3`'s fenced
           semantic resident Submit activity. This cannot be implemented earlier:
           the measured runtime has ledger intent/click/transport fences but no
