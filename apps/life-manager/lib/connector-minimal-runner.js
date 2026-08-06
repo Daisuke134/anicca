@@ -55,10 +55,12 @@ function config(input) {
 }
 
 function verifiedOwned(value) {
+  const targetId = String(value && value.target_id || "");
   if (
     !value || typeof value !== "object" || Array.isArray(value)
     || !/^[A-Za-z0-9._-]{3,128}$/.test(String(value.session_id || ""))
-    || !/^[A-Za-z0-9._-]{3,128}$/.test(String(value.target_id || ""))
+    || !/^[A-Za-z0-9._-]{3,128}$/.test(targetId)
+    || String(value.page_websocket || "") !== `ws://127.0.0.1:9222/devtools/page/${targetId}`
     || !value.page || typeof value.page !== "object"
   ) invalid();
   return value;
@@ -170,7 +172,9 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
               provider,
               candidate: selected,
               page: owned.page,
+              pageWebsocket: owned.page_websocket,
               maxSteps: settings.maxAgentSteps,
+              expectedState: "registered_or_pending",
             }));
           } catch {
             operation = Object.freeze({ status: "failed", safe_reason: "agent_action_failed" });
