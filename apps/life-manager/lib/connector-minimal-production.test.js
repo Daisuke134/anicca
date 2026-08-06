@@ -9,8 +9,55 @@ const test = require("node:test");
 const {
   createProductionBrowserRail,
   createProductionCalendarReader,
+  createMinimalProductionDependencies,
   createProductionProviderRouter,
 } = require("./connector-minimal-production.js");
+
+test("official production factory exposes the complete minimal wake dependency contract", async () => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-production-deps-"));
+  try {
+    const browserRail = Object.freeze({ open() {}, navigate() {}, close() {} });
+    const calendarReader = Object.freeze({ async readCalendarGaps() { return []; } });
+    const providerRouter = Object.freeze({
+      discoverCandidates() {}, runCachedAction() {}, runDirectAction() {}, runAgentFallback() {},
+      readProviderState() {}, saveRepairedActions() {},
+    });
+    const evidenceChain = Object.freeze({ completeEvidence() {} });
+    const operations = Object.freeze({ reportWake() {}, recordAction() {} });
+    const dependencies = createMinimalProductionDependencies({
+      repoRoot: "/private/repo",
+      stateDir,
+      wakeId: "wake-production-deps-1",
+      calendarAccount: "private-account",
+      gogKeyring: "private-keyring",
+      telegramTarget: "private-target",
+      tenantId: "dais-local",
+      calendarId: "primary",
+      lumaFormProfilePath: "/private/form-profile.json",
+      lunaEvidenceDir: "/private/luna-evidence",
+      browserRail,
+      calendarReader,
+      providerRouter,
+      evidenceChain,
+      operations,
+      now: () => new Date("2026-08-07T08:30:00.000Z"),
+    });
+
+    assert.equal(dependencies.browserRail, browserRail);
+    assert.deepEqual(Object.keys(dependencies).sort(), [
+      "browserRail", "completeEvidence", "discoverCandidates", "now", "readCalendarGaps",
+      "readProviderState", "recordAction", "reportWake", "runAgentFallback", "runCachedAction",
+      "runDirectAction", "saveRepairedActions",
+    ]);
+    assert.deepEqual(await dependencies.readCalendarGaps(), await calendarReader.readCalendarGaps());
+    assert.equal(dependencies.discoverCandidates, providerRouter.discoverCandidates);
+    assert.equal(dependencies.completeEvidence, evidenceChain.completeEvidence);
+    assert.equal(dependencies.reportWake, operations.reportWake);
+    assert.equal(dependencies.now(), "2026-08-07T08:30:00.000Z");
+  } finally {
+    fs.rmSync(stateDir, { recursive: true, force: true });
+  }
+});
 
 test("production provider router keeps Luma cache direct fallback and readback on one page", async () => {
   const calls = [];
