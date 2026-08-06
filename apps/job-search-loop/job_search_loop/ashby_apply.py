@@ -6,7 +6,11 @@ import json
 import os
 import re
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
+
+from .ashby_confirmation import classify_confirmation, submit_operation_from_payload
+from .ledger import Ledger
+from .telemetry import Telemetry
 
 
 FIELD_PATH = re.compile(r"[-A-Za-z0-9_]+")
@@ -18,6 +22,10 @@ STANDARD_PROFILE_ANSWERS = {
     "phone number": ("phone", "profile.phone"),
     "when can you start a new role?": ("start_date", "profile.start_date"),
 }
+ASHBY_SUCCESS_TEXT = (
+    "Your application was successfully submitted. "
+    "We'll contact you if there are next steps."
+)
 
 
 def _normalized(value: Any) -> str:
@@ -219,6 +227,62 @@ def capture_pre_submit_screenshot(page: Any, output_path: Path) -> dict[str, str
     }
 
 
+def execute_semantic_submit(
+    page: Any,
+    *,
+    commit_click: Callable[[], None],
+    commit_request_started: Callable[[], None],
+    timeout_ms: int = 15_000,
+    telemetry: Telemetry | None = None,
+) -> dict[str, Any]:
+    def is_submit_request(request: Any) -> bool:
+        try:
+            return submit_operation_from_payload(request.post_data_json) is not None
+        except (TypeError, ValueError):
+            return False
+
+    telemetry = telemetry or Telemetry()
+    with telemetry.span("submit.action") as submit_span:
+        status = page.get_by_role("status")
+        alert = page.get_by_role("alert")
+        submit = page.get_by_role(
+            "button", name=re.compile(r"^Submit Application$", re.IGNORECASE)
+        )
+        if submit.count() != 1:
+            raise RuntimeError("exactly one Ashby Submit Application action is required")
+        with page.expect_request(is_submit_request, timeout=timeout_ms) as request_info:
+            commit_click()
+            submit.click()
+        request = request_info.value
+        submit_operation = submit_operation_from_payload(request.post_data_json)
+        if submit_operation is None:
+            raise RuntimeError("captured request is not an official Ashby submit operation")
+        commit_request_started()
+        response = request.response()
+        http_status = response.status if response is not None else None
+        payload = response.json() if response is not None else {}
+        confirmation = classify_confirmation(
+            payload,
+            expected_success_text=ASHBY_SUCCESS_TEXT,
+            status_text=status.inner_text() if status.count() else None,
+            alert_text=alert.inner_text() if alert.count() else None,
+        )
+        submit_span.set_attributes(
+            {"confirmation.observed": confirmation["authoritative_success"]}
+        )
+        return {
+            "version": 1,
+            "classification": (
+                "authoritative_success"
+                if confirmation["authoritative_success"]
+                else "unconfirmed"
+            ),
+            "submit_operation": submit_operation,
+            "http_status": http_status,
+            "confirmation": confirmation,
+        }
+
+
 def validate_profile_grounding(
     items: list[dict[str, Any]], profile: dict[str, Any]
 ) -> None:
@@ -299,14 +363,17 @@ def _write_private(path: Path, value: Any) -> None:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Deterministic Ashby inspect/fill CLI")
-    parser.add_argument("mode", choices=("inspect", "fill", "verify"))
+    parser = argparse.ArgumentParser(description="Deterministic Ashby inspect/fill/apply CLI")
+    parser.add_argument("mode", choices=("inspect", "fill", "apply", "verify"))
     parser.add_argument("--endpoint")
     parser.add_argument("--url")
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--answers", type=Path)
     parser.add_argument("--resume", type=Path)
     parser.add_argument("--profile", type=Path)
+    parser.add_argument("--ledger", type=Path)
+    parser.add_argument("--intent-id")
+    parser.add_argument("--fence", type=int)
     args = parser.parse_args()
     if args.mode == "verify":
         if not args.profile:
@@ -329,7 +396,19 @@ def main() -> int:
         print(json.dumps(receipt, sort_keys=True))
         return 0
     if not args.endpoint or not args.url:
-        parser.error("inspect/fill require --endpoint and --url")
+        parser.error("inspect/fill/apply require --endpoint and --url")
+    if args.mode == "apply" and (
+        not args.answers
+        or not args.resume
+        or not args.profile
+        or not args.ledger
+        or not args.intent_id
+        or args.fence is None
+    ):
+        parser.error(
+            "apply requires --answers, --resume, --profile, --ledger, "
+            "--intent-id, and --fence"
+        )
     from playwright.sync_api import sync_playwright
 
     url = args.url if args.url.rstrip("/").endswith("/application") else f"{args.url.rstrip('/')}/application"
@@ -357,6 +436,30 @@ def main() -> int:
                     result["pre_submit_screenshot"] = capture_pre_submit_screenshot(
                         page, args.output
                     )
+                if args.mode == "apply" and plan["status"] == "ready":
+                    ledger = Ledger(args.ledger)
+                    try:
+                        observation = execute_semantic_submit(
+                            page,
+                            commit_click=lambda: ledger.mark_submission_click_phase(
+                                args.intent_id, args.fence, "clicked"
+                            ),
+                            commit_request_started=lambda: ledger.mark_submission_request_started(
+                                args.intent_id, args.fence
+                            ),
+                        )
+                        if observation["classification"] == "authoritative_success":
+                            ledger.mark_submission_click_phase(
+                                args.intent_id, args.fence, "confirmed"
+                            )
+                        result["submit_observation"] = observation
+                        result["status"] = (
+                            "applied_ats"
+                            if observation["classification"] == "authoritative_success"
+                            else "ats_unconfirmed"
+                        )
+                    finally:
+                        ledger.close()
             _write_private(args.output, result)
             print(json.dumps({"status": result["status"], "output": str(args.output)}))
         finally:

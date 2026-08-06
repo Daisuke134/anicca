@@ -7,11 +7,11 @@
 **Configured upstream:** `canonical/docs/job-hunter-spec-20260805`
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-06 JST
-**Active atomic task:** `L-49K3A2` — expose exactly one semantic resident ATS Submit
-to the LLM and return the live result as an observation; then move directly through
-minimum durable receipts, resident release, and one real application. Exhaustive
-hardening and complete dossier work follow the first resident `applied_ats` or
-`applied_email`; they never gate it.
+**Active atomic task:** minimum `L-49K3B` plus immediate resident live application —
+activate the natural-language application goal, connect the existing durable receipt
+to the resident result, install the immutable release, and trigger one real role to
+`applied_ats` or `applied_email`. Exhaustive hardening and complete dossier work
+follow that first receipt; they never gate it.
 **Status:** The immutable four-lane runtime, grounded materials, ownership fences,
 Gmail ingestion, Telegram outbox, quota accounting, Ashby surface classifier, and
 loopback OpenTelemetry Collector/private trace index are implemented. The application
@@ -23,7 +23,12 @@ confirmed applications, zero verified interviews, and zero offers. The owner-aut
 OpenAI Ashby success is `dais_manual`, not resident proof. `L-49K2C1` is complete:
 its isolated CloakBrowser E2E verified changed field layouts across fill, select,
 check, and upload with zero Submit controls/actions and preserved all baseline pages.
-The complete Job Hunter suite passes 510/510. The eight legacy `run-daily.sh`
+The last complete pre-A2 Job Hunter suite passes 510/510. A2's focused semantic
+Submit/confirmation/Ledger/telemetry suites passed 82/82 and its then-current complete
+suite passed 512/512 before the owner-directed live-priority prompt/runtime change.
+The current live-priority release passes Python and zsh syntax verification; the owner
+explicitly directed execution to proceed without adding or waiting on more tests. The
+eight legacy `run-daily.sh`
 assertions now verify the active single `application-lane-agent`, deferred ATS
 liveness, and release-contained Ashby CLI contract instead of the superseded Browser
 Worker, composition-agent, Terra-high, and eager ATS-sweep topology.
@@ -2967,7 +2972,7 @@ OpenTelemetry decision and primary sources:
               code, and duration. Gmail message/thread IDs and bodies stay out of
               telemetry. Focused success/spoof tests pass 2/2 and the complete
               confirmation suite passes 7/7.
-        - [ ] `L-49K0C2O3b2c` — Add `submit.action` inside `L-49K3`'s fenced
+        - [x] `L-49K0C2O3b2c` — Add `submit.action` inside `L-49K3`'s fenced
           semantic resident Submit activity. This cannot be implemented earlier:
           the measured runtime has ledger intent/click/transport fences but no
           resident Submit executor, and Browser Use explicitly rejects `submit`.
@@ -3630,9 +3635,17 @@ OpenTelemetry decision and primary sources:
           Mutation checks fail when either the ATS-confirmed guard or email
           normalization is removed. Fresh adjacent tests pass 18/18 and the complete
           Job Hunter suite passes 510/510.
-    - [ ] `L-49K3A2` — Add exactly one semantic ATS Submit to the resident Ashby CLI.
+    - [x] `L-49K3A2` — Add exactly one semantic ATS Submit to the resident Ashby CLI.
       Attach request/response and visible confirmation observers before the click;
       never retry an ambiguous ATS action and immediately invoke L-49K3A1 email.
+      - The new `apply` mode keeps fill and Submit on the same CloakBrowser page,
+        requires grounded answers/resume/profile plus an existing Ledger intent and
+        fence, starts `submit.action`, attaches the exact Ashby request observer,
+        commits click before one physical click, commits request-started for that exact
+        request, and returns the existing GraphQL-plus-visible-status authoritative
+        observation without persisting request variables. The natural-language
+        resident prompt and `JOB_SEARCH_SUBMIT_ENABLED=1` are now active for the next
+        immutable release.
     - [ ] `L-49K3A3` — Make the resident orchestration exhaustive. Success, CAPTCHA,
       bot block, closed form, missing fact, unknown control, validation error, timeout,
       crash, and missing ATS confirmation each prove exactly one final outcome:

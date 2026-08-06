@@ -1,11 +1,14 @@
 import importlib
 import hashlib
+import inspect
 import json
 import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import MagicMock
 
 
 class AshbyApplyTests(unittest.TestCase):
@@ -174,6 +177,34 @@ class AshbyApplyTests(unittest.TestCase):
 
             self.assertEqual(completed.returncode, 2)
             self.assertIn("verify requires --profile", completed.stderr)
+
+    def test_apply_cli_requires_grounded_inputs_and_existing_submit_fence(self):
+        with tempfile.TemporaryDirectory() as directory:
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "job_search_loop.ashby_apply",
+                    "apply",
+                    "--endpoint",
+                    "http://127.0.0.1:9222",
+                    "--url",
+                    "https://jobs.ashbyhq.com/example/role",
+                    "--output",
+                    str(Path(directory) / "apply-result.json"),
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+
+            self.assertEqual(completed.returncode, 2)
+            self.assertIn(
+                "apply requires --answers, --resume, --profile, --ledger, "
+                "--intent-id, and --fence",
+                completed.stderr,
+            )
+            self.assertNotIn("invalid choice", completed.stderr)
 
     def test_resident_fill_receipt_requires_verified_non_submit_actions(self):
         module = importlib.import_module("job_search_loop.ashby_apply")
@@ -357,6 +388,99 @@ class AshbyApplyTests(unittest.TestCase):
             ["fill", "select", "check", "upload"],
         )
         self.assertNotIn("old-phone-id", repr(result))
+
+    def test_semantic_submit_fences_one_click_and_returns_authoritative_observation(self):
+        from job_search_loop import ashby_apply
+
+        self.assertTrue(
+            hasattr(ashby_apply, "execute_semantic_submit"),
+            "semantic resident Submit action is missing",
+        )
+        execute_semantic_submit = ashby_apply.execute_semantic_submit
+
+        events = []
+        response = SimpleNamespace(status=200)
+        response.json = lambda: {
+            "data": {
+                "submitApplicationFormAction": {
+                    "applicationFormResult": {"__typename": "FormSubmitSuccess"}
+                }
+            }
+        }
+        request = SimpleNamespace(
+            post_data_json={
+                "operationName": "ApiSubmitSingleApplicationFormAction"
+            },
+            response=lambda: response,
+        )
+        observer = MagicMock()
+        observer.__enter__.side_effect = lambda: (
+            events.append("observer_attached")
+            or SimpleNamespace(value=request)
+        )
+        observer.__exit__.return_value = False
+        submit = MagicMock()
+        submit.count.return_value = 1
+        submit.click.side_effect = lambda: events.append("clicked")
+        status = MagicMock()
+        status.count.return_value = 1
+        status.inner_text.return_value = (
+            "Success\nYour application was successfully submitted. "
+            "We'll contact you if there are next steps."
+        )
+        alert = MagicMock()
+        alert.count.return_value = 0
+        page = MagicMock()
+        page.expect_request.return_value = observer
+        locators = {
+            "button": submit,
+            "status": status,
+            "alert": alert,
+        }
+        page.get_by_role.side_effect = lambda role, **_: locators[role]
+        span = MagicMock()
+        span.__enter__.side_effect = lambda: events.append("span_started") or span
+        span.__exit__.side_effect = lambda *_: events.append("span_finished") or False
+        telemetry = MagicMock()
+        telemetry.span.return_value = span
+        self.assertIn(
+            "telemetry",
+            inspect.signature(execute_semantic_submit).parameters,
+            "semantic Submit has no action-span boundary",
+        )
+        receipt = execute_semantic_submit(
+            page,
+            commit_click=lambda: events.append("click_fenced"),
+            commit_request_started=lambda: events.append("request_fenced"),
+            timeout_ms=12_000,
+            telemetry=telemetry,
+        )
+
+        self.assertEqual(
+            events,
+            [
+                "span_started",
+                "observer_attached",
+                "click_fenced",
+                "clicked",
+                "request_fenced",
+                "span_finished",
+            ],
+        )
+        telemetry.span.assert_called_once_with("submit.action")
+        span.set_attributes.assert_called_once_with(
+            {"confirmation.observed": True}
+        )
+        predicate = page.expect_request.call_args.args[0]
+        self.assertTrue(predicate(request))
+        self.assertEqual(page.expect_request.call_args.kwargs["timeout"], 12_000)
+        self.assertEqual(receipt["classification"], "authoritative_success")
+        self.assertEqual(
+            receipt["submit_operation"],
+            "ApiSubmitSingleApplicationFormAction",
+        )
+        self.assertEqual(receipt["http_status"], 200)
+        self.assertNotIn("data", receipt)
 
 
 if __name__ == "__main__":
