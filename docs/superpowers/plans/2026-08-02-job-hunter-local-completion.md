@@ -20,7 +20,7 @@ confirmed applications, zero verified interviews, and zero offers. The owner-aut
 OpenAI Ashby success is `dais_manual`, not resident proof. `L-49K2C1` is complete:
 its isolated CloakBrowser E2E verified changed field layouts across fill, select,
 check, and upload with zero Submit controls/actions and preserved all baseline pages.
-The complete Job Hunter suite passes 500/500. The eight legacy `run-daily.sh`
+The complete Job Hunter suite passes 503/503. The eight legacy `run-daily.sh`
 assertions now verify the active single `application-lane-agent`, deferred ATS
 liveness, and release-contained Ashby CLI contract instead of the superseded Browser
 Worker, composition-agent, Terra-high, and eager ATS-sweep topology.
@@ -3392,7 +3392,7 @@ OpenTelemetry decision and primary sources:
         requires a valid CLI receipt or exits 76 even when the model reports success.
         RED proved missing receipt returned zero; GREEN rejects it. The formerly
         stale eight runtime assertions now cover the single-agent topology, related
-        suites pass 37/37, and the complete suite passes 500/500.
+        suites pass 37/37, and the then-complete suite passed 500/500.
       - [ ] `L-49K2C2C` — Build and install the immutable release, trigger the
         installed LaunchAgent with one explicit no-submit canary, and prove resident
         actor/owner/fence provenance, a valid CLI `pre_submit_ready` receipt, zero
@@ -3422,13 +3422,19 @@ OpenTelemetry decision and primary sources:
           port, and browser UUID, so the guard's heartbeat timestamp refresh cannot
           make the true owner unable to release. The three exact RED reproductions
           are GREEN; adjacent runtime, launchd, browser-owner, reporting, and Ashby
-          suites pass 41/41, and the complete suite passes.
+          suites pass 41/41, and the current complete suite passes 503/503.
         - Repair commit `2979b77ceaf86f94e8c901c3d90376e29976f93e` is pushed,
           built as a commit-pinned artifact, SHA-256 verified, installed read-only,
           and activated as the stable resident release. Previous release
           `538b0728b4c87b0f8f6a17951c0f847b43bb1d42` remains the rollback target. The
-          next canary is intentionally paused only for the missing candidate fact
-          answering when a new role can start; no value may be inferred.
+          The next canary was intentionally paused only for the missing candidate
+          fact answering when a new role can start; no value was inferred.
+        - The user supplied `12/1` and instructed that it be baked into the system.
+          Private profile `candidate.start_date` is `2026-12-01`, and authoritative
+          fact `availability_start_date_20261201` now states availability to start a
+          new role on December 1, 2026 with the user instruction as evidence. Profile
+          validation passes with 26 unique facts, no duplicate IDs, and mode 0600.
+          The installed resident no-submit canary is now the next action.
 - [ ] **L-49K3** — Implement one fenced semantic `Submit Application` action for the
   registered resident worker only. Observe the Ashby submit request, reCAPTCHA
   outcome, HTTP result, terminal success text, URL, and Gmail confirmation; capture
