@@ -281,9 +281,8 @@ async function runNativeConnectorPass(input = {}) {
       readLumaFormProfile: lumaFormProfilePath === null ? undefined : (() => (
         readPrivateLumaFormProfile({ path: lumaFormProfilePath })
       )),
-      agenticRegister: (contract, tabOwnerReceipt) => runConnectorAgenticRegistration({
-        canonicalUrl: contract.canonical_url,
-        tabOwnerReceipt,
+      agenticRegister: (input) => runConnectorAgenticRegistration({
+        ...input,
         profile: userProfilePath === null ? {} : readPrivateUserProfile({ path: userProfilePath }),
         evidenceDir,
         repoRoot: config.repoRoot,

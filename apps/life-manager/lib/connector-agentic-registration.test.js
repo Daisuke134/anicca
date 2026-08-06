@@ -5,72 +5,80 @@ const test = require("node:test");
 
 const { runConnectorAgenticRegistration } = require("./connector-agentic-registration.js");
 
-test("pins Terra to the parent-owned CDP target receipt", async () => {
+const formSchema = Object.freeze({
+  kind: "luma_registration_form",
+  fields: Object.freeze([Object.freeze({
+    key: "registration_answers.0.value",
+    label: "What brings you to this event?",
+    control: "textarea",
+    required: true,
+    options: Object.freeze([]),
+  })]),
+});
+
+test("uses one Terra turn for form decisions without exposing any browser route", async () => {
   let invocation;
+  let calls = 0;
   const value = await runConnectorAgenticRegistration({
     canonicalUrl: "https://luma.com/event-a",
-    tabOwnerReceipt: {
-      schema_version: 1,
-      endpoint: "http://127.0.0.1:9222",
-      owner_token: "owner-token-123",
-      generation: 1,
-      target_id: "OWNED123",
-      page_websocket: "ws://127.0.0.1:9222/devtools/page/OWNED123",
-      baseline_target_ids: ["BASELINE"],
-      canonical_url: "https://luma.com/event-a",
-      observed_at: "2026-08-06T01:02:03.000Z",
-    },
+    schema: formSchema,
     profile: { full_name: "Private Person" },
+    unresolved: [{ key: "registration_answers.0.value", label: "What brings you to this event?" }],
     evidenceDir: "/tmp/connector-evidence",
     repoRoot: "/tmp/repo",
     runnerPath: "/tmp/runner",
   }, {
     async runAgentRunner(input) {
+      calls += 1;
       invocation = input;
       return {
         summary: { selected_model: "gpt-5.6-terra" },
         value: {
-          status: "registered",
-          observed_url: "https://luma.com/event-a",
-          form_visible: false,
-          submit_control_visible: false,
-          observed_marker: "You're Going",
+          status: "ready",
+          answers: [{
+            key: "registration_answers.0.value",
+            value: "I build useful Life Manager and AI agent systems.",
+          }],
         },
       };
     },
   });
 
-  assert.equal(value.status, "registered");
-  assert.equal(invocation.taskClass, "browser-lane-agent");
-  assert.match(invocation.prompt, /targetInfo\.targetId equals receipt\.target_id/);
-  assert.match(invocation.prompt, /"target_id":"OWNED123"/);
-  assert.doesNotMatch(invocation.prompt, /:9223/);
+  assert.equal(calls, 1);
+  assert.deepEqual(value, {
+    status: "ready",
+    answers: [{
+      key: "registration_answers.0.value",
+      control: "textarea",
+      value: "I build useful Life Manager and AI agent systems.",
+    }],
+  });
+  assert.equal(invocation.taskClass, "repeatable-agent");
+  assert.match(invocation.prompt, /What brings you to this event/);
+  assert.doesNotMatch(invocation.prompt, /9222|9223|endpoint|page_websocket|target_id|owner_token/i);
+  assert.doesNotMatch(invocation.prompt, /Playwright|connectOverCDP|browser\.close|context\.pages|require\(/i);
 });
 
-test("refuses to start Terra without a valid parent-owned receipt", async () => {
-  await assert.rejects(
-    runConnectorAgenticRegistration({
-      canonicalUrl: "https://luma.com/event-a",
-      tabOwnerReceipt: null,
-    }, { runAgentRunner: async () => { throw new Error("must not run"); } }),
-    /unavailable/,
-  );
-
-  await assert.rejects(
-    runConnectorAgenticRegistration({
-      canonicalUrl: "https://luma.com/event-a",
-      tabOwnerReceipt: {
-        schema_version: 1,
-        endpoint: "http://127.0.0.1:9222",
-        owner_token: "owner-token-123",
-        generation: 0,
-        target_id: "OWNED123",
-        page_websocket: "ws://127.0.0.1:9222/devtools/page/OWNED123",
-        baseline_target_ids: [],
-        canonical_url: "https://luma.com/event-a",
-        observed_at: "2026-08-06T01:02:03.000Z",
-      },
-    }, { runAgentRunner: async () => { throw new Error("must not run"); } }),
-    /unavailable/,
-  );
+test("rejects incomplete, unknown, duplicate, or option-invalid Terra answers", async () => {
+  const base = {
+    canonicalUrl: "https://luma.com/event-a",
+    schema: formSchema,
+    profile: {},
+    unresolved: [{ key: "registration_answers.0.value", label: "What brings you to this event?" }],
+    evidenceDir: "/tmp/connector-evidence",
+    repoRoot: "/tmp/repo",
+    runnerPath: "/tmp/runner",
+  };
+  for (const answers of [
+    [],
+    [{ key: "other", value: "no" }],
+    [{ key: "registration_answers.0.value", value: "one" }, { key: "registration_answers.0.value", value: "two" }],
+  ]) {
+    await assert.rejects(runConnectorAgenticRegistration(base, {
+      runAgentRunner: async () => ({
+        summary: { selected_model: "gpt-5.6-terra" },
+        value: { status: "ready", answers },
+      }),
+    }), /unavailable/);
+  }
 });

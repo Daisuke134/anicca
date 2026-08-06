@@ -42,7 +42,7 @@ async function exactControlState(page) {
   });
 }
 
-async function fillObservedLumaRegistrationForm(scope, readLumaFormProfile) {
+async function fillObservedLumaRegistrationForm(scope, readLumaFormProfile, agenticRegister, contract) {
   let schema;
   try {
     schema = await readLumaRegistrationForm(scope);
@@ -65,12 +65,28 @@ async function fillObservedLumaRegistrationForm(scope, readLumaFormProfile) {
   } catch {
     throw providerError("Luma RSVP form answer plan unavailable", "LUMA_FORM_PLAN_UNAVAILABLE", false);
   }
-  if (plan.status === "candidate_not_actionable") {
-    throw providerError(
-      "Luma RSVP required profile field unavailable",
-      "LUMA_REQUIRED_PROFILE_FIELD_UNAVAILABLE",
-      false,
-    );
+  if (plan.status === "candidate_not_actionable" && typeof agenticRegister === "function") {
+    let agentPlan;
+    try {
+      agentPlan = await agenticRegister({
+        canonicalUrl: contract.canonical_url,
+        schema,
+        profile,
+        unresolved: plan.unresolved,
+      });
+    } catch {
+      throw providerError("Luma RSVP form answer plan unavailable", "LUMA_FORM_PLAN_UNAVAILABLE", false);
+    }
+    if (!agentPlan || agentPlan.status !== "ready" || !Array.isArray(agentPlan.answers)) {
+      throw providerError("Luma RSVP form answer plan unavailable", "LUMA_FORM_PLAN_UNAVAILABLE", false);
+    }
+    plan = Object.freeze({
+      status: "ready",
+      answers: Object.freeze([...plan.answers, ...agentPlan.answers]),
+      unresolved: Object.freeze([]),
+    });
+  } else if (plan.status === "candidate_not_actionable") {
+    throw providerError("Luma RSVP required profile field unavailable", "LUMA_REQUIRED_PROFILE_FIELD_UNAVAILABLE", false);
   }
   if (plan.status !== "ready" || !Array.isArray(plan.answers) || !Array.isArray(plan.unresolved)) {
     throw providerError("Luma RSVP form answer plan unavailable", "LUMA_FORM_PLAN_UNAVAILABLE", false);
@@ -99,15 +115,6 @@ async function submitLumaOnPage(page, _contract, dependencies = {}) {
   ) {
     throw providerError("Luma RSVP page unavailable", "LUMA_PAGE_UNAVAILABLE", false);
   }
-  if (typeof dependencies.agenticRegister === "function") {
-    await dependencies.agenticRegister(_contract, dependencies.tabOwnerReceipt);
-    if (typeof page.reload === "function") await page.reload({ waitUntil: "domcontentloaded" });
-    await page.waitForTimeout(1500);
-    if ((await exactControlState(page)).registered) {
-      return { status: "registered", effect_started: true };
-    }
-    throw providerError("Luma agentic registration result unverified", "LUMA_AGENTIC_RESULT_UNVERIFIED", true);
-  }
   const register = page.getByRole("button", {
     name: /^(?:参加登録|参加リクエスト|参加をリクエスト|ワンクリックで参加登録|ワンクリック申し込み|Register|Request to Join)$/i,
     exact: true,
@@ -126,7 +133,12 @@ async function submitLumaOnPage(page, _contract, dependencies = {}) {
 
     const dialog = page.getByRole("dialog").last();
     const scope = await dialog.count() === 1 && await dialog.isVisible() ? dialog : page;
-    await fillObservedLumaRegistrationForm(scope, dependencies.readLumaFormProfile);
+    await fillObservedLumaRegistrationForm(
+      scope,
+      dependencies.readLumaFormProfile,
+      dependencies.agenticRegister,
+      _contract,
+    );
     if (typeof scope.getByRole === "function") {
       const confirm = scope.getByRole("button", {
         name: /^(?:参加登録|参加リクエスト|参加をリクエスト|承認をリクエスト|Register|Request to Join|Submit|Confirm RSVP)$/i,
@@ -205,7 +217,6 @@ function createLumaBrowserProvider(options = {}) {
     submitLumaOnPage(page, contract, {
       readLumaFormProfile,
       agenticRegister: options.agenticRegister,
-      tabOwnerReceipt: metadata && metadata.tab_owner_receipt,
     })
   ));
   const authorizeSpendEffect = options.authorizeSpendEffect || authorizeEventSpendEffect;

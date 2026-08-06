@@ -341,6 +341,50 @@ test("a missing private profile answer stops before the Luma confirm click", asy
   assert.deepEqual(calls, ["initial-click"]);
 });
 
+test("Terra resolves an ordinary novel question once while the parent owns every browser action", async () => {
+  const calls = [];
+  const initial = {
+    first() { return this; }, async count() { return 1; }, async isVisible() { return true; },
+    async click() { calls.push("parent-open"); },
+  };
+  const confirm = {
+    last() { return this; }, async count() { return 1; }, async isVisible() { return true; },
+    async click() { calls.push("parent-submit"); },
+  };
+  let filled = "";
+  const dialog = {
+    last() { return this; }, async count() { return 1; }, async isVisible() { return true; },
+    async evaluate() {
+      return [{ label: "What brings you here? *", name: "answer.0", tag: "textarea", type: "", html_required: true, app_required: true, options: [] }];
+    },
+    locator(selector) {
+      assert.equal(selector, '[name="answer.0"]');
+      return { async count() { return 1; }, async fill(value) { filled = value; calls.push("parent-fill"); }, async inputValue() { return filled; } };
+    },
+    getByRole() { return confirm; },
+  };
+  let reads = 0;
+  const page = {
+    getByRole(role) { return role === "button" ? initial : dialog; },
+    async waitForTimeout() {},
+    async evaluate() { reads += 1; return { registered: reads > 1 }; },
+  };
+  let agentCalls = 0;
+  const result = await submitLumaOnPage(page, contract(), {
+    readLumaFormProfile: () => ({ full_name: "Private Person", form_answers: {} }),
+    agenticRegister: async (input) => {
+      agentCalls += 1;
+      assert.equal(input.schema.kind, "luma_registration_form");
+      assert.deepEqual(input.unresolved, [{ key: "answer.0", label: "What brings you here?" }]);
+      return { status: "ready", answers: [{ key: "answer.0", control: "textarea", value: "To meet builders." }] };
+    },
+  });
+
+  assert.equal(agentCalls, 1);
+  assert.deepEqual(result, { status: "registered", effect_started: true });
+  assert.deepEqual(calls, ["parent-open", "parent-fill", "parent-submit"]);
+});
+
 test("provider fills only trusted-profile form answers before locating the confirm control", async () => {
   const calls = [];
   const initial = {
