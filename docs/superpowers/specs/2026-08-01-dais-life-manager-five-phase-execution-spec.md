@@ -4207,6 +4207,12 @@ local完成後
 これらの寄与を同じledgerで計測し、月間1,000万円へのgapを毎月更新する。accelerator採択、
 投資利益、unicorn、billionaireは目標であって保証値ではない。
 
+### 15.9 Codex executor の共通 browser capability
+
+全 Codex agent は native `browser_use`、external browser、full CDP、computer use、in-app browser を利用可能にする。これは Connector 固有の例外ではなく、同じ agent runner を使う全 task class の共通 provider capabilityである。browser taskは既存CloakBrowser daily-driver sessionを直接観測・操作し、site固有selectorや都度生成するPlaywright/CDP scriptを主経路にしない。外部作用の完了はagentの自己申告ではなく、親loopが完了画面・receipt・Calendar readback・Telegram media message IDを独立検証して確定する。
+
+2026-08-06実測: 旧OpenClaw ConnectorはCamofoxのaccessibility snapshotと汎用`click/type/press/screenshot`をagentへ直接渡してLuma/Connpassを操作していた。現行Codex runnerはprovider共通設定で`browser_use`、`browser_use_external`、`browser_use_full_cdp_access`、`computer_use`、`in_app_browser`を明示的にdisableし、Terraへshellだけを渡していた。その結果、run 164ではTerraがPlaywright module pathを誤り、実画面の登録完了markerではなく自分の宣言文を`observed_marker`として返した。根本修正は全Codex agentから上記disableを除去し、native browserを共通能力として宣言する。
+
 ## 16. 実装前に残る不確実性
 
 | # | 不確実性 | 解消方法 / gate |
