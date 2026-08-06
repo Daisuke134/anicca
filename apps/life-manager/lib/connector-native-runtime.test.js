@@ -1060,6 +1060,7 @@ test("a Connpass cursor runs exhaustive official discovery without registration 
     network_call_count: 2, advisory_candidates: Object.freeze([{ provider: "connpass", event_ref: "connpass-event://event/101" }]),
   });
   const calendarGate = Object.freeze({ status: "evaluated" });
+  const providerInventory = Object.freeze({ provider: "connpass" });
   let eligibleCandidates = handoff.advisory_candidates;
   let received;
   input.deps.createPack = () => ({
@@ -1082,6 +1083,7 @@ test("a Connpass cursor runs exhaustive official discovery without registration 
       async gateConnpassCalendar() { return calendarGate; },
       isVerifiedCalendarCandidateGate: (value) => value === calendarGate,
       selectCalendarEligibleConnpass: () => eligibleCandidates,
+      buildEventProviderDateInventory: () => providerInventory,
       isVerifiedEventSourceHandoff: (value) => value === handoff,
     },
   };
@@ -1093,12 +1095,14 @@ test("a Connpass cursor runs exhaustive official discovery without registration 
   assert.equal(result.provider_discovery.status, "advisory_candidates_found");
   assert.equal(result.provider_discovery.coverage_credit_count, 0);
   assert.equal(result.provider_cursor, providerCursor);
+  assert.equal(result.provider_inventory, providerInventory);
   assert.equal(result.write, null);
   assert.equal(JSON.stringify(result).includes("fixture-secret"), false);
   eligibleCandidates = Object.freeze([]);
   const blocked = await runNativeConnectorPass(runtimeInput);
   assert.equal(blocked.provider_cursor.provider, "peatix");
   assert.equal(blocked.provider_discovery.advisory_candidates.length, 0);
+  assert.equal(blocked.provider_inventory, null);
 });
 
 test("native runtime exposes only its bounded failing stage", async () => {

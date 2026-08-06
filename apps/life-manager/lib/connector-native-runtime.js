@@ -45,6 +45,7 @@ const {
   evaluateConnpassCalendarCandidateGate,
   isVerifiedCalendarCandidateGate,
 } = require("./calendar-candidate-gate.js");
+const { buildEventProviderDateInventory } = require("./event-provider-date-inventory.js");
 
 function unavailable() {
   throw new Error("Connector native runtime unavailable");
@@ -615,6 +616,7 @@ async function runNativeConnectorPass(input = {}) {
     }
 
     let providerDiscovery = null;
+    let providerDateInventory = null;
     if (providerCursor && providerCursor.provider === "connpass") {
       if (typeof pack.handoffEventSource !== "function") unavailable();
       failureCode = "CONNECTOR_NATIVE_PROVIDER_DISCOVERY_FAILED";
@@ -667,6 +669,15 @@ async function runNativeConnectorPass(input = {}) {
           calendar_gate_status: calendarGate.status,
           advisory_candidates: Object.freeze([...eligible]),
         });
+        if (calendarGate.status === "evaluated" && eligible.length > 0) {
+          const buildProviderInventory = factory(
+            deps, "buildEventProviderDateInventory", buildEventProviderDateInventory,
+          );
+          providerDateInventory = buildProviderInventory({
+            coverage, handoff, eligibleCandidates: eligible, now,
+          });
+          if (!providerDateInventory || providerDateInventory.provider !== "connpass") unavailable();
+        }
         if (calendarGate.status === "evaluated" && eligible.length === 0) {
           providerCursor = advanceEventProviderCursor({
             cursor: providerCursor, registry: providerRegistry,
@@ -711,6 +722,7 @@ async function runNativeConnectorPass(input = {}) {
       }),
       candidate,
       provider_discovery: providerDiscovery,
+      provider_inventory: providerDateInventory,
       write,
       candidate_attempts: Object.freeze([...candidateAttempts]),
       cursor: outputCursor,
