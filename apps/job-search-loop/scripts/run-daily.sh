@@ -157,14 +157,14 @@ chmod 600 "$JOB_SEARCH_PREFILTER_QUEUE"
   --input "$JOB_SEARCH_PREFILTER_QUEUE" \
   --output "$EVIDENCE/prefilter-candidate-receipt.json"
 chmod 600 "$EVIDENCE/prefilter-candidate-receipt.json"
-"$JOB_SEARCH_PYTHON" -m job_search_loop.ats_liveness sweep \
-  --database "$JOB_SEARCH_CANDIDATE_QUEUE" \
-  --evidence-dir "$EVIDENCE/ats-liveness" \
-  --output "$EVIDENCE/ats-liveness-sweep.json" \
-  --limit 100
-ATS_CHECKED_COUNT=$(find "$EVIDENCE/ats-liveness" -type f -name 'ats-liveness-*.json' | wc -l | tr -d ' ')
+mkdir -p "$EVIDENCE/ats-liveness"
+chmod 700 "$EVIDENCE/ats-liveness"
+"$JOB_SEARCH_JQ" -n '{status:"deferred_until_candidate_selection",checked_count:0}' \
+  >"$EVIDENCE/ats-liveness-sweep.json"
+chmod 600 "$EVIDENCE/ats-liveness-sweep.json"
+ATS_CHECKED_COUNT=0
 report_progress "candidates-checked" \
-  "Job Hunter ${RUN_ID}: ${ATS_CHECKED_COUNT}件の求人URLについてATS生存確認を完了しました。これから単一Terra Job HunterがCloakBrowserで応募処理へ進みます。"
+  "Job Hunter ${RUN_ID}: 候補取得を完了しました。全件事前検査を待たず、単一Terra Job Hunterが最高候補からCloakBrowserで応募します。"
 TERRA_PLAN_EVIDENCE="$EVIDENCE/terra-plan"
 TERRA_HIGH_EVIDENCE="$EVIDENCE/terra-high"
 mkdir -p "$TERRA_PLAN_EVIDENCE" "$TERRA_HIGH_EVIDENCE"
@@ -212,7 +212,7 @@ report_progress "terra-started" \
   "Job Hunter ${RUN_ID}: GPT-5.6 Terra Job Hunterが起動しました。候補評価、フォーム適応、履歴書提出、Submit確認、証拠保存を一体で実行します。"
 "$JOB_SEARCH_PYTHON" "$JOB_SEARCH_RUNNER" \
   --task-class application-lane-agent \
-  --prompt-file "$JOB_SEARCH_APP_ROOT/prompts/daily-pass.md" \
+  --prompt-file "$JOB_SEARCH_APP_ROOT/prompts/daily-apply-simple.md" \
   --schema "$JOB_SEARCH_APP_ROOT/schemas/pass-result.v1.schema.json" \
   --evidence-dir "$EVIDENCE" \
   --task-label job-search-daily \
