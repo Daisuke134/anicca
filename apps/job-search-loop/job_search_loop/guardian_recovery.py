@@ -12,6 +12,7 @@ from typing import Any
 
 from .outbox import Outbox
 from .telegram import send_once
+from .telemetry import Telemetry
 
 
 MAX_ACTIONS_PER_PASS = 3
@@ -26,12 +27,13 @@ def _stored_time(value: Any) -> datetime | None:
     return parsed if parsed.tzinfo is not None else None
 
 
-def bounded_recovery(
+def _bounded_recovery(
     *,
     outbox_database: Path,
     private_paths: list[Path],
     now: datetime | None = None,
     alert: Any,
+    correlation: dict[str, str | None],
 ) -> dict[str, Any]:
     current = now or datetime.now(timezone.utc)
     if current.tzinfo is None:
@@ -116,6 +118,7 @@ def bounded_recovery(
                     "kind": "guardian_recovery_incomplete",
                     "remaining_fault_count": remaining_fault_count,
                     "uncertain_side_effect_count": uncertain_count,
+                    **correlation,
                 }
             )
             alert_sent = True
@@ -130,7 +133,40 @@ def bounded_recovery(
         "uncertain_side_effect_count": uncertain_count,
         "remaining_fault_count": remaining_fault_count,
         "alert_sent": alert_sent,
+        **correlation,
     }
+
+
+def bounded_recovery(
+    *,
+    outbox_database: Path,
+    private_paths: list[Path],
+    now: datetime | None = None,
+    alert: Any,
+    telemetry: Any = None,
+) -> dict[str, Any]:
+    telemetry = telemetry or Telemetry()
+    with telemetry.span("guardian.repair", {"repair.attempt": 1}) as span:
+        trace_id = getattr(span, "trace_id", None)
+        span_id = getattr(span, "span_id", None)
+        valid = (
+            isinstance(trace_id, str)
+            and len(trace_id) == 32
+            and all(character in "0123456789abcdef" for character in trace_id)
+            and isinstance(span_id, str)
+            and len(span_id) == 16
+            and all(character in "0123456789abcdef" for character in span_id)
+        )
+        return _bounded_recovery(
+            outbox_database=outbox_database,
+            private_paths=private_paths,
+            now=now,
+            alert=alert,
+            correlation={
+                "trace_id": trace_id if valid else None,
+                "span_id": span_id if valid else None,
+            },
+        )
 
 
 def main(argv: list[str] | None = None) -> int:

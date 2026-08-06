@@ -108,6 +108,38 @@ class GuardianRecoveryTests(unittest.TestCase):
         self.assertEqual(len(calls), 1)
         self.assertFalse(report["alert_sent"])
 
+    def test_recovery_report_and_alert_share_guardian_span_correlation(self):
+        class Span:
+            trace_id = "a" * 32
+            span_id = "b" * 16
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+        class Telemetry:
+            def span(self, name, attributes=None):
+                self.name = name
+                self.attributes = attributes
+                return Span()
+
+        alerts = []
+        telemetry = Telemetry()
+        report = bounded_recovery(
+            outbox_database=self.database,
+            private_paths=[],
+            now=datetime(2026, 8, 5, 12, 0, tzinfo=timezone.utc),
+            alert=lambda value: alerts.append(value),
+            telemetry=telemetry,
+        )
+        self.assertEqual(telemetry.name, "guardian.repair")
+        self.assertEqual(report["trace_id"], "a" * 32)
+        self.assertEqual(report["span_id"], "b" * 16)
+        self.assertEqual(alerts[0]["trace_id"], report["trace_id"])
+        self.assertEqual(alerts[0]["span_id"], report["span_id"])
+
     def test_cli_migrates_legacy_schema_before_counting_uncertain_rows(self):
         connection = sqlite3.connect(self.database)
         connection.execute(
