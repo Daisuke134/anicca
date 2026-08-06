@@ -2814,12 +2814,21 @@ OpenTelemetry decision and primary sources:
       OpenTelemetry 1.44.0 roots. Focused and full upstream-lock tests pass (1/1,
       8/8); an isolated venv installs and imports the SDK/exporter from the lock,
       and a fresh Docker registry HEAD returns the pinned digest.
-  - [ ] `L-49K0C2O2` — Implement one privacy-fenced telemetry boundary with OTLP
+  - [x] `L-49K0C2O2` — Implement one privacy-fenced telemetry boundary with OTLP
     export and deterministic no-backend fallback. Define resource attributes
     `service.name=anicca-job-hunter`, release SHA, lane, resident actor, and host hash;
     prohibit name, email, phone, resume text, answers, raw HTML, raw URL query, and
     screenshot bytes. Files: create `job_search_loop/telemetry.py` and
     `tests/test_telemetry.py` (2 files, soft target 100 LOC).
+    - Completion receipt: `telemetry.py` exposes one allowlist-only boundary. It
+      hashes the hostname, emits the required service/release/lane/resident resource
+      identity, rejects private keys and non-token string values before the SDK, and
+      turns missing/broken SDK/exporter/span paths into non-recording spans without
+      changing application control flow. Four focused tests pass. A real isolated
+      Python 3.12 runtime installed from the O1 hash lock emitted an `hourly_pass`
+      OTLP protobuf POST to a loopback HTTP receiver, returned 32/16-character trace
+      and span IDs, and flushed successfully; the first E2E exposed and then closed
+      a missing-provider flush defect.
   - [ ] `L-49K0C2O3` — Instrument the application trace hierarchy:
     `hourly_pass → candidate → route → browser.navigate → page.ready →
     surface.classify → application.open → form.snapshot → form.fill →
