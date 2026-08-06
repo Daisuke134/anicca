@@ -2129,10 +2129,26 @@ this spec update → commit/push → Telegram milestone before the next item sta
     Both mode-0600 privacy receipts are `clean`, scanned five still-sensitive values,
     and contain zero leaked fields. The run attempted three ATS forms, clicked Submit
     zero times, and delivered daily Telegram report message ID `7377`.
-- [ ] **L-49K0A1I** — Make the dedicated CloakBrowser owner prove a real Playwright
+- [x] **L-49K0A1I** — Make the dedicated CloakBrowser owner prove a real Playwright
   or Browser Use CDP attach, not HTTP readiness alone. On initialization timeout it
   restarts only `ai.anicca.job-search-browser`, re-resolves `DevToolsActivePort`,
   reacquires the fence, and retries once before the application actor starts.
+  - Receipt: low-level ownership now records `leased`, never `ready`; only a real
+    Playwright CDP attach with a default context promotes the mode-0600 receipt to
+    `ready`. An injected first initialization timeout released the lease, restarted
+    only `ai.anicca.job-search-browser`, waited for bounded guard readiness,
+    re-resolved a different endpoint, acquired fence 99, and succeeded on the one
+    allowed retry against browser PID 95086/context count 1. The lease was released.
+    A second attach failure releases the fresh lease and cannot retry again. Focused
+    owner tests pass 10/10, the full Job Hunter suite passes 445/445, and shell syntax
+    passes. Immutable release `f4fa6c72f0e923b4500f573fbe675c2c2a32409f`
+    (archive SHA-256
+    `3e55982d5f15fb153dcf505f0537f0791a8094497951e85a1dd399f11019f6d8`)
+    is active. Existing launchd run `daily-20260806-112604`, run count 34, holder PID
+    95554, resident worker PID 97447, browser PID 95086, lease `aa56dc50...ec9e`, and
+    fence 100 then attached normally on its first attempt and exited zero. It clicked
+    Submit zero times. Its report reused Telegram message ID 7377, leaving `L-49K0A1J`
+    correctly open.
 - [ ] **L-49K0A1J** — Make each materially changed resident run produce a unique,
   deduplicated Telegram event and provider message ID. A previous deficit message ID
   such as `7173` cannot serve as proof for a later run; confirmed applications attach
@@ -2159,30 +2175,28 @@ Completed foundations are `L-49K0A1G`, `L-49K0B`, `L-49K0C`, and `L-49K0C1`.
 The active cursor is the first item below; do not start a later item merely because
 it is easier to demonstrate:
 
-1. `L-49K0A1I` — make browser readiness require a real CDP attach and self-heal one
-   initialization failure through the existing browser LaunchAgent.
-2. `L-49K0A1J` — issue one fresh deduplicated Telegram event and provider message ID
+1. `L-49K0A1J` — issue one fresh deduplicated Telegram event and provider message ID
    for each materially changed resident run; never reuse message ID `7173` as proof.
-3. `L-49K0A2` — finish the already pinned Temporal slice by proving an isolated
+2. `L-49K0A2` — finish the already pinned Temporal slice by proving an isolated
    worker restart produces exactly one durable activity effect.
-4. `L-49K0B1` — finish the Browser Use/Temporal reuse-adapt-supersede inventory and
+3. `L-49K0B1` — finish the Browser Use/Temporal reuse-adapt-supersede inventory and
    bind each accepted component to a local authority and parity test.
-5. `L-49K0D1` — replace the remaining prompt-owned Playwright execution contract
+4. `L-49K0D1` — replace the remaining prompt-owned Playwright execution contract
    with the pinned Browser Use adapter on the dedicated CloakBrowser identity.
-6. `L-49K0C2` — prove a blocked ATS route cannot end the resident hourly pass and
+5. `L-49K0C2` — prove a blocked ATS route cannot end the resident hourly pass and
    that all remaining eligible routes/roles continue exactly once.
-7. `L-49K0D`, then `L-49K0D2` — build tracker/outcome/digest projections, then move
+6. `L-49K0D`, then `L-49K0D2` — build tracker/outcome/digest projections, then move
    all four resident lanes to restart-safe, idempotent Temporal workflows.
-8. `L-49K0E`, `L-49K`, `L-49`, `L-49A`, `L-50`, `L-51`, `L-52` — prove resident
+7. `L-49K0E`, `L-49K`, `L-49`, `L-49A`, `L-50`, `L-51`, `L-52` — prove resident
    actor provenance, bounded owner handoff where required, and authoritative real
    Ashby plus Workday receipts and screenshots in Telegram.
-9. `L-53` through `L-65` — prove Gmail, Calendar, interview preparation/debrief,
+8. `L-53` through `L-65` — prove Gmail, Calendar, interview preparation/debrief,
     conversion metrics, one-variable learning, rollback, Telegram, and simultaneous
     health of all resident lanes.
-10. `L-66` through `L-73` — operate the Dais campaign through fifty confirmed
+9. `L-66` through `L-73` — operate the Dais campaign through fifty confirmed
     applications, a verified interview, a qualifying written offer, comparison,
     negotiation brief, and owner decision.
-11. `W-01` through `W-30` — only after local completion, build and verify the
+10. `W-01` through `W-30` — only after local completion, build and verify the
     tenant-isolated Web product.
 - [x] **L-49K0B** — Inventory every `career-ops` v1.25.0 capability as `reuse`,
   `adapt`, or `supersede`, including ATS scan providers, liveness, repost/dedup,
