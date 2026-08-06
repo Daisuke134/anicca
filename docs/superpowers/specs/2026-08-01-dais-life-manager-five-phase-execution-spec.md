@@ -3204,7 +3204,17 @@ isolated worktree作成失敗も`worktree_failed`として記録し、同一fail
 存在する場合は4回目をCodex起動前に`revision_cap`で停止する。focused Healer test 2/2 GREEN。残りはtimeoutの明示分類、branch/worktree
 衝突回復、実commit/push readback、常設shadow runner、secret/PII scanであり、Healer TODOは引き続きin progress。
 
-### Active remaining TODO SSOT（進捗154。これ以外の残TODO一覧は履歴）
+O1B-25進捗155（Healer shadow runner render-only配線 / RED→GREEN）:
+`healer-shadow-cli.js`とbounded shell entrypointを追加し、既存render-only launchd rendererから
+`ai.anicca.life-manager-connector-healer-shadow`を15分間隔・5分throttleで生成する。runnerはConnector owner-only stateと隔離worktree rootだけを
+Healerへ渡し、自身ではinstall、load、kickstart、merge、deploy、browser、Calendar、Telegram、event submitを行わない。rendererは従来どおり
+live `~/Library/LaunchAgents`出力を拒否する。rendered contract focused 2/2、Healer focused 2/2 GREEN、shell syntax GREEN、空incident CLIは
+`status=duplicate`、rendered plistは`plutil OK`。live launchd登録・Terra実起動・外部effectは0件。
+
+Healer TODOはまだin progressである。次はCodex timeout分類、branch/worktree衝突回復、Terraが作ったcommit/pushのremote readback、privacy scanを閉じ、
+その後にこのrendered shadow scheduleを安全にinstallして一件のprivacy-safe fixture incidentで実測する。
+
+### Active remaining TODO SSOT（進捗155。これ以外の残TODO一覧は履歴）
 
 1. [x] Provider-neutral downstream write、Connpass runtime write dependencies、Luma Calendar-eligible 0 handoff、Connpass state persistenceを閉じる。証拠: 進捗141、143、144、commit `65241d6a2`、`e822bfa3a`、`d0e05f5d8`、`1cfa2e56f`。
 2. [x] Privacy-safe Observer envelope/replayを実装する。完了条件: success、tool failure、timeout、process crashが同じschemaでrun/wake、stage、safe action、expected/observed effect、owner generation、screenshot SHA、provider readback、commit、cursorへ正規化され、secret/PII/raw logなし、fingerprint dedupe可能なincidentとreplay fixtureを各1件生成する。証拠: 進捗148、focused 33/33 GREEN。
