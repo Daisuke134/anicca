@@ -85,6 +85,8 @@ function safeReceiptProjection(receipt) {
     attempt_ref: receipt.attempt_ref,
     external_receipt_ref: receipt.external_receipt_ref,
     artifact_ref: receipt.artifact_ref,
+    evidence_observed_at: receipt.evidence_observed_at,
+    artifact_sha256: receipt.artifact_sha256,
     canonical_url: receipt.canonical_url,
     verified_at: receipt.verified_at,
   });
