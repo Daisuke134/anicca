@@ -115,6 +115,16 @@ class Telemetry:
         except Exception:
             return False
 
+    def current_correlation(self) -> dict[str, str | None]:
+        try:
+            from opentelemetry.trace import get_current_span
+            context = get_current_span().get_span_context()
+            if not context.is_valid:
+                raise ValueError("current span is invalid")
+            return {"trace_id": f"{context.trace_id:032x}", "span_id": f"{context.span_id:016x}"}
+        except Exception:
+            return {"trace_id": None, "span_id": None}
+
 
 def _otel_tracer(resource_attributes: Mapping[str, str], endpoint: str) -> Any:
     from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter

@@ -2933,6 +2933,16 @@ OpenTelemetry decision and primary sources:
       - [ ] `L-49K0C2O4b2` — Validate and write current correlation IDs at event and
         evidence creation boundaries; reject malformed IDs and keep missing backend
         values null.
+        - [x] `L-49K0C2O4b2a` — Write current validated IDs to immutable application
+          and route events (3 files, soft target 90 LOC).
+          - Completion receipt: RED found both event classes stored null despite an
+            active correlation. GREEN reads the SDK current span through the O2
+            boundary, validates lowercase 32/16-character IDs again at the ledger,
+            and inserts them atomically with immutable application/route events.
+            Missing, malformed, or failing context resolves to null. Focused test
+            passes 1/1; ledger plus telemetry suites pass 49/49.
+        - [ ] `L-49K0C2O4b2b` — Write the same IDs to the submission evidence bundle
+          and prove its content-addressed report preserves them.
     - [ ] `L-49K0C2O4c` — Carry the same IDs through Temporal Workflow/Activity
       identity, Guardian repair cases, and Telegram reports. Split durable runtime
       correlation from Telegram projection (each at most 3 files and 100 LOC).

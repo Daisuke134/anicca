@@ -24,7 +24,32 @@ class RecordingTelemetry:
         span = RecordingSpan(name, attributes); self.spans.append(span); return span
 
 
+class CorrelationTelemetry(RecordingTelemetry):
+    def current_correlation(self):
+        return {"trace_id": "a" * 32, "span_id": "b" * 16}
+
+
 class LedgerTests(unittest.TestCase):
+    def test_application_and_route_events_capture_current_validated_correlation(self):
+        self.ledger.telemetry = CorrelationTelemetry()
+        self._ready()
+        source = "https://jobs.example.com/42"
+        self.ledger.register_application_route(
+            self.application_id, route_kind="canonical_ats", endpoint=source,
+            ordinal=1, source_url=source,
+            source_sha256=hashlib.sha256(source.encode()).hexdigest(),
+            recipient_acceptance="not_applicable",
+        )
+
+        event = self.ledger.connection.execute(
+            "SELECT trace_id, span_id FROM events ORDER BY rowid DESC LIMIT 1"
+        ).fetchone()
+        route = self.ledger.connection.execute(
+            "SELECT trace_id, span_id FROM application_route_events ORDER BY rowid DESC LIMIT 1"
+        ).fetchone()
+        self.assertEqual(tuple(event), ("a" * 32, "b" * 16))
+        self.assertEqual(tuple(route), ("a" * 32, "b" * 16))
+
     def test_trace_correlation_columns_exist_on_all_immutable_submission_records(self):
         for table in ("events", "application_route_events", "submission_evidence_bundles"):
             with self.subTest(table=table):

@@ -896,11 +896,13 @@ class Ledger:
         to_state: str,
         payload: dict[str, Any] | None = None,
     ) -> None:
+        correlation = self._current_correlation()
         self.connection.execute(
             """
             INSERT INTO events
-              (event_id, application_id, from_state, to_state, payload_json, created_at)
-            VALUES (?, ?, ?, ?, ?, ?)
+              (event_id, application_id, from_state, to_state, payload_json, created_at,
+               trace_id, span_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 uuid.uuid4().hex,
@@ -909,8 +911,21 @@ class Ledger:
                 to_state,
                 json.dumps(payload or {}, ensure_ascii=False, sort_keys=True),
                 _now(),
+                correlation["trace_id"], correlation["span_id"],
             ),
         )
+
+    def _current_correlation(self) -> dict[str, str | None]:
+        getter = getattr(self.telemetry, "current_correlation", None)
+        try:
+            value = getter() if callable(getter) else {}
+        except Exception:
+            value = {}
+        trace_id, span_id = value.get("trace_id"), value.get("span_id")
+        return {
+            "trace_id": trace_id if re.fullmatch(r"[a-f0-9]{32}", str(trace_id or "")) else None,
+            "span_id": span_id if re.fullmatch(r"[a-f0-9]{16}", str(span_id or "")) else None,
+        }
 
     def add_application(
         self,
@@ -3157,11 +3172,13 @@ class Ledger:
         to_state: str,
         payload: Mapping[str, Any] | None = None,
     ) -> None:
+        correlation = self._current_correlation()
         self.connection.execute(
             """
             INSERT INTO application_route_events
-              (event_id, route_id, from_state, to_state, payload_json, created_at)
-            VALUES (?, ?, ?, ?, ?, ?)
+              (event_id, route_id, from_state, to_state, payload_json, created_at,
+               trace_id, span_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 uuid.uuid4().hex,
@@ -3170,6 +3187,7 @@ class Ledger:
                 to_state,
                 json.dumps(dict(payload or {}), ensure_ascii=False, sort_keys=True),
                 _now(),
+                correlation["trace_id"], correlation["span_id"],
             ),
         )
 
