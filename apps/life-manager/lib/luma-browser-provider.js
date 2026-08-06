@@ -100,7 +100,7 @@ async function submitLumaOnPage(page, _contract, dependencies = {}) {
     throw providerError("Luma RSVP page unavailable", "LUMA_PAGE_UNAVAILABLE", false);
   }
   if (typeof dependencies.agenticRegister === "function") {
-    await dependencies.agenticRegister(_contract);
+    await dependencies.agenticRegister(_contract, dependencies.tabOwnerReceipt);
     if (typeof page.reload === "function") await page.reload({ waitUntil: "domcontentloaded" });
     await page.waitForTimeout(1500);
     if ((await exactControlState(page)).registered) {
@@ -201,10 +201,11 @@ function createLumaBrowserProvider(options = {}) {
   const readLumaFormProfile = typeof options.readLumaFormProfile === "function"
     ? options.readLumaFormProfile
     : () => (Object.hasOwn(options, "lumaFormProfile") ? options.lumaFormProfile : {});
-  const submitOnPage = options.submitOnPage || ((page, contract) => (
+  const submitOnPage = options.submitOnPage || ((page, contract, metadata) => (
     submitLumaOnPage(page, contract, {
       readLumaFormProfile,
       agenticRegister: options.agenticRegister,
+      tabOwnerReceipt: metadata && metadata.tab_owner_receipt,
     })
   ));
   const authorizeSpendEffect = options.authorizeSpendEffect || authorizeEventSpendEffect;
@@ -273,7 +274,7 @@ function createLumaBrowserProvider(options = {}) {
     },
 
     submitRegistration(contract, spendDecision = null) {
-      return dailyDriver.withLumaPage(contract.canonical_url, async (page) => {
+      return dailyDriver.withLumaPage(contract.canonical_url, async (page, metadata) => {
         const before = await detail(page, contract);
         if (!before) throw providerError("Luma detail unavailable", "LUMA_DETAIL_UNAVAILABLE", false);
         if (before.auth_status === "login_required") {
@@ -296,7 +297,7 @@ function createLumaBrowserProvider(options = {}) {
         }
         let outcome;
         try {
-          outcome = await submitOnPage(page, contract);
+          outcome = await submitOnPage(page, contract, metadata);
         } catch (error) {
           if (error && typeof error === "object" && typeof error.unknownEffect === "boolean") {
             throw error;
