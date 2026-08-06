@@ -5342,7 +5342,21 @@ evidence chainへ進む。cache miss/failureだけdirect→bounded fallbackへ�
 official native adapterへ実browser rail、Calendar、Luma workflow、cache、fallback、evidence/report dependenciesを組み立てるproduction compositionを
 Item 10の最初のTDD sliceとして閉じる。scheduleは引き続きunloadedを維持する。
 
-### Active remaining TODO SSOT（進捗179。これ以外の残TODO一覧は履歴）
+### O1B-25進捗180（Item 10A-1 / pre-submit parent readback refactor）
+
+Refactor Guardでminimal runnerと既存test coverageを確認し、登録済みpageを再訪した時の事前readbackだけが未固定と判定した。
+先にbehavior testを追加し、現行実装が`applied_bundle`ではなくcandidate failure/circuit-openへ進むREDを確認した。
+
+`runMinimalConnectorWake`はcandidate URLへnavigateした直後、cache/direct/agentより前にparent
+`readProviderState({ phase: "pre_submit" })`を実行する。`registered`または`pending`ならSubmit系を一切呼ばず既存のevidence chainへ進み、
+`absent/unavailable`だけ従来のcache→direct→bounded fallbackへ進む。外部action後のreadbackは`phase: "post_submit"`として区別した。
+これによりlive E2E途中でevidence chainが失敗しても、次runがproviderへ重複Submitせず不足evidenceを回収できる。
+
+minimal runner、action cache、Luma workflow、official adapter/rendererのfocused suiteは18/18 GREEN。追加contractは既登録時に
+readback 1、cache 0、direct Submit 0、agent 0を確認した。実browser、Submit、Calendar、PNG、Telegram作用は0。
+Item 10は未完で、次はItem 10A-2 production dependency compositionをTDDで構築する。scheduleは引き続きunloadedを維持する。
+
+### Active remaining TODO SSOT（進捗180。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
