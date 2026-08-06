@@ -2285,8 +2285,8 @@ reveals and prove self-healing before production campaign activation.
 
 Completed foundations include `L-49K0A1G`, `L-49K0B`, `L-49K0C`, `L-49K0C1`,
 `L-49K1`, OpenTelemetry `O1`/`O2`/`O5`, and all currently checked O3/O4 slices.
-The active cursor is the first unchecked item below; do not start a later item merely
-because it is easier to demonstrate:
+The first unchecked resident action and first unchecked development action may run in
+parallel only where explicitly stated below. Otherwise preserve this order:
 
 1. [x] Close `L-49K3A1c` — preserve independent ATS/email fences and make every
    unconfirmed ATS observation select the first verified recruiting-email tool.
@@ -2302,41 +2302,46 @@ because it is easier to demonstrate:
    `applied_email`, application ID
    `d11cc27f1bfcadc569c9ce3dcab6cba084c0005fcc832acc9a9c15324659b933`, Gmail
    provider ID `gmail:19fd74214d1fc23e`, Telegram message ID `7950`, exit zero.
-5. [ ] **First active task: recover Cursor's formal ATS route for that same role.**
+5. [ ] **Resident run active: recover Cursor's formal ATS route for that same role.**
    Reproduce and diagnose the measured pre-submit timeout in the resident environment;
    give the Job Hunter the browser capability it currently lacks; resume the same
    application intent; complete one fenced formal Cursor ATS Submit; require visible
    or provider-authoritative ATS confirmation; reconcile ATS and Gmail as two receipts
    for one application ID and count the role once. Never send a second email and never
    click ATS Submit twice.
-6. [ ] Replace the resident's disposable `codex exec --ephemeral` invocation with a
+6. [ ] While that resident run proceeds, finish the observability proof in
+   `L-49K0C2O6`: index one joined live trace from resident PID/release/browser/fence
+   through route/evidence/Telegram, and replace generic surface failure with the
+   measured cause. Then close the non-Temporal portions of O3/O4; O4c3 stays owned by
+   `L-49K0D2` and must not fabricate Workflow/Activity IDs early.
+7. [ ] Implement `L-66A` through `L-66F` from
+   `docs/superpowers/specs/2026-08-06-job-hunter-self-healing-design.md`. The minimum
+   production gate is OpenTelemetry failure → content-addressed Repair Case → isolated
+   Terra RED/GREEN repair → fresh Sol falsification → no-send canary → immutable
+   promotion/rollback → same-application resume → Telegram receipt, with no main
+   development session in that loop.
+8. [ ] Replace the resident's disposable `codex exec --ephemeral` invocation with a
    persistent Codex thread controlled through the Codex SDK. Persist `thread_id` beside
    the application intent, resume that exact thread after interruption or repair, and
    start a fresh thread only for a genuinely new application. Expose the required
    CloakBrowser, Ledger, Gmail, Telegram, Gmail-monitor, and Calendar capabilities as
    explicit resident tools; do not assume the interactive Codex session's Apps,
    Plugins, Skills, Browser Use, or Computer Use are inherited by a child CLI process.
-7. [ ] After the formal Cursor ATS receipt, close `L-49K3A3`, the remaining
-   `L-49K3B`, `L-49K4`, `L-49K0C2O6`, and the remaining `L-49K0C2` children. Add exhaustive cases and the
-   complete immutable dossier in response to measured live behavior while preserving
-   uninterrupted ATS-or-email application outcomes.
-8. [ ] `L-66A` through `L-66F` — use OpenTelemetry failure spans to create a repair
-   case; have the repair agent diagnose, reproduce, test, patch, run a no-send canary,
-   release or roll back, then resume the saved thread for the same application.
-   prove automated detect, diagnose, reproduce, test, patch, no-send repair canary,
-   immutable release/rollback, resume of that same application, and Telegram receipt.
-   This minimum self-healing proof is required before production campaign activation.
-9. [ ] `L-51` and `L-52` — prove one authoritative real Workday application and its
+9. [ ] After the formal Cursor ATS receipt, close `L-49K3A3`, the remaining
+   `L-49K3B`, `L-49K4`, and the remaining `L-49K0C2` children. Add exhaustive cases
+   and the complete immutable dossier in response to measured live behavior while
+   preserving uninterrupted ATS-or-email application outcomes.
+10. [ ] `L-51` and `L-52` — prove one authoritative real Workday application and its
    exact artifacts and receipt in Telegram using the self-healing-capable resident.
-10. [ ] `L-49K0D`, `L-49K0D2`, then `L-53` through `L-57` — add tracker projections,
+11. [ ] `L-49K0D`, `L-49K0D2`, then `L-53` through `L-57` — add tracker projections,
    move the four working lanes to restart-safe Temporal workflows, and prove Gmail,
    Calendar, interview preparation, and debrief from authoritative events.
-11. [ ] `L-58` through `L-66` — prove conversion metrics, one-variable learning,
+12. [ ] `L-58` through `L-66` — prove conversion metrics, one-variable learning,
    rollback, Telegram, simultaneous health, and freeze the working local contract.
-12. [ ] `L-67` through `L-73` — operate the Dais campaign through fifty confirmed
+13. [ ] `L-67` through `L-73` — operate the Dais campaign through fifty confirmed
    applications, a verified interview, a qualifying written offer, comparison,
    negotiation brief, and owner decision.
-13. [ ] `W-01` through `W-30` — only after local completion, build and verify the
+14. [ ] `W-01` through `W-30` — only after local completion, build and verify the
    tenant-isolated Web product.
 
 Current production truth measured from the ledger and resident receipts:
