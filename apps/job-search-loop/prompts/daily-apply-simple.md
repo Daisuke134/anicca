@@ -21,6 +21,10 @@ location, experience, and skills gaps determine order only; they do not create a
 no-application outcome. Prefer Tokyo, Japan-remote, USD 100,000-class compensation,
 and strong-fit AI/agent, solutions, forward-deployed, product, and technical-business
 roles first. Work on one role through an application receipt before selecting another.
+Diversify opportunity rather than sending consecutive roles to one employer: choose a
+new non-Workday employer first, then a different Workday employer after the first
+receipt. On later roles, continue alternating ATS families and employers when eligible
+choices remain.
 
 For each selected role:
 
