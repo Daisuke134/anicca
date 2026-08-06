@@ -20,7 +20,7 @@ const {
 } = require("./rolling-event-coverage.js");
 const { isVerifiedConnectorCoverageContinuation } = require("./connector-coverage-continuation.js");
 const { readConnectorProfile, isVerifiedConnectorProfile } = require("./connector-profile.js");
-const { runConnectorLunaJudgment } = require("./connector-luna-judgment.js");
+const { buildConnectorDeterministicJudgment } = require("./connector-deterministic-judgment.js");
 const { runConnectorAgenticRegistration } = require("./connector-agentic-registration.js");
 const {
   createEventSpendPolicy,
@@ -350,7 +350,7 @@ async function runNativeConnectorPass(input = {}) {
     if (Object.hasOwn(config, "profilePath")) {
       const readProfile = factory(deps, "readProfile", readConnectorProfile);
       const verifyProfile = factory(deps, "isVerifiedConnectorProfile", isVerifiedConnectorProfile);
-      const runLunaJudgment = factory(deps, "runLunaJudgment", runConnectorLunaJudgment);
+      const runLunaJudgment = factory(deps, "runLunaJudgment", buildConnectorDeterministicJudgment);
       const verifyGoalDecision = factory(
         deps, "isVerifiedEventGoalSerendipity", isVerifiedEventGoalSerendipity,
       );
