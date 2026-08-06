@@ -107,12 +107,24 @@ refresh_summary() {
     --day "$JAPAN_DAY" \
     --reason "hourly_pass_complete" \
     --output "$EVIDENCE/quota-deficit.json"
+  set +e
   "$JOB_SEARCH_PYTHON" -m job_search_loop.daily_reporting deliver \
     --summary "$JOB_SEARCH_STATE_ROOT/summary.v2.json" \
     --outbox "$TELEGRAM_OUTBOX" \
     --release-manifest "$JOB_SEARCH_REPO_ROOT/RELEASE.json" \
     --browser-result "$RESULT_PATH" \
     --output "$EVIDENCE/daily-pipeline-report.json"
+  DAILY_REPORT_RC=$?
+  set -e
+  if [[ "$DAILY_REPORT_RC" -ne 0 ]]; then
+    "$JOB_SEARCH_JQ" -n \
+      --arg status "delivery_failed" \
+      --argjson rc "$DAILY_REPORT_RC" \
+      '{status:$status,rc:$rc}' \
+      >"$EVIDENCE/daily-pipeline-report.json"
+  fi
+  chmod 600 "$EVIDENCE/daily-pipeline-report.json"
+  return 0
 }
 SLOT_COUNT=$("$JOB_SEARCH_PYTHON" - "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" "$JAPAN_DAY" <<'PY'
 import sys
@@ -240,10 +252,9 @@ if [[ "$FILL_CANARY_ACTIVE" == "1" ]]; then
       >"$EVIDENCE/ashby-fill-verification.json"
     FILL_VERIFY_RC=$?
     set -e
+    chmod 600 "$EVIDENCE/ashby-fill-verification.json"
     if [[ "$FILL_VERIFY_RC" -ne 0 ]]; then
       RUNNER_RC=76
-    else
-      chmod 600 "$EVIDENCE/ashby-fill-verification.json"
     fi
   fi
   mv "$FILL_CANARY_REQUEST" "$EVIDENCE/ashby-fill-canary-request.json"
