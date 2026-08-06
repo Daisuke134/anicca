@@ -2944,6 +2944,14 @@ OpenTelemetry decision and primary sources:
     `open_application`, never a generic `click` or Submit. Files: modify
     `browser_use_adapter.py` and `tests/test_browser_use_adapter.py` (2 files, soft
     target 80 LOC).
+  - [ ] `L-49K1B0` — Keep the resident worker moving when canonical-route
+    materialization encounters a posting already owned by the manual or recruiter
+    lane. Preserve the ledger fence, skip only that candidate, persist a hashed skip
+    audit, and continue to the next ranked candidate instead of crashing the whole
+    pass. Reproduce and close resident run `daily-20260806-155557`, which reached a
+    ready CloakBrowser owner at fence 113 but exited 1 on `canonical posting is
+    already owned by dais_manual`. Files: modify `candidate_routes.py` and
+    `tests/test_candidate_routes.py` (2 files, soft target 80 LOC).
   - [ ] `L-49K1B` — Add the deterministic blank/delayed-render/Overview/direct-form/
     stale-ref/no-surface state machine, using `L-49K1A` to open the form and one fresh
     snapshot to recover a stale ref. Persist the before/after surface classification
