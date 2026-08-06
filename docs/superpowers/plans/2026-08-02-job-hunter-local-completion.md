@@ -3398,6 +3398,31 @@ OpenTelemetry decision and primary sources:
         actor/owner/fence provenance, a valid CLI `pre_submit_ready` receipt, zero
         Submit actions, preserved browser pages, and the same candidate retained for
         the next fenced stage.
+        - 2026-08-06 resident attempt `daily-20260806-202525` ran installed immutable
+          release `538b0728b4c87b0f8f6a17951c0f847b43bb1d42` through LaunchAgent
+          `ai.anicca.job-search-daily`. Owner evidence proved identity
+          `job-search:dais`, owner label `ai.anicca.job-search-daily`, holder PID
+          `89208`, dedicated CDP attach ready, and fence `130`. The CLI reached the
+          OpenAI Ashby application and correctly returned `needs_fact` for the
+          unanswered required question `When can you start a new role?`; the private
+          profile contains no start-date/notice-period fact, so the system did not
+          infer one. It executed zero Submit actions, left Ledger at 22 rows
+          (`submitted=4`, `submit_unknown=12`, `rejected=6`), left submit intents at
+          14 and attempts at 25, and preserved all five pre-existing dedicated-browser
+          page IDs. This is a valid fail-closed safety result, not C2C completion.
+          The attempt exposed two runtime defects before retry: failed verification
+          left an empty mode-0644 receipt, and a Telegram daily-report timeout masked canary
+          RC 76 as exit 1 and left owner evidence at `ready` instead of `released`.
+        - The exposed runtime defects are repaired under TDD before the next canary.
+          Invalid CLI verification now emits a structured `rejected` receipt with RC
+          2; the daily wrapper always stores it mode 0600 and preserves primary RC
+          76. Daily-report transport failure is recorded as a mode-0600
+          `delivery_failed` receipt without overriding application-lane status. The
+          browser lease receipt now binds a stable hash of identity, holder, host,
+          port, and browser UUID, so the guard's heartbeat timestamp refresh cannot
+          make the true owner unable to release. The three exact RED reproductions
+          are GREEN; adjacent runtime, launchd, browser-owner, reporting, and Ashby
+          suites pass 41/41, and the complete suite passes.
 - [ ] **L-49K3** — Implement one fenced semantic `Submit Application` action for the
   registered resident worker only. Observe the Ashby submit request, reCAPTCHA
   outcome, HTTP result, terminal success text, URL, and Gmail confirmation; capture

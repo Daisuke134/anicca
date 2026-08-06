@@ -1,8 +1,45 @@
-import unittest
 import importlib
+import json
+import subprocess
+import sys
+import tempfile
+import unittest
+from pathlib import Path
 
 
 class AshbyApplyTests(unittest.TestCase):
+    def test_verify_cli_returns_structured_rejection_for_non_ready_result(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "fill-result.json"
+            output.write_text(
+                json.dumps({"status": "needs_fact", "receipts": []}) + "\n",
+                encoding="utf-8",
+            )
+
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "job_search_loop.ashby_apply",
+                    "verify",
+                    "--output",
+                    str(output),
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+
+            self.assertEqual(completed.returncode, 2, completed.stderr)
+            self.assertEqual(
+                json.loads(completed.stdout),
+                {
+                    "status": "rejected",
+                    "reason": "resident fill result is not ready",
+                },
+            )
+            self.assertEqual(completed.stderr, "")
+
     def test_resident_fill_receipt_requires_verified_non_submit_actions(self):
         module = importlib.import_module("job_search_loop.ashby_apply")
         self.assertTrue(

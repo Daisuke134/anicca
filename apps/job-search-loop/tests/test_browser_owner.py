@@ -310,6 +310,52 @@ class BrowserOwnerTests(unittest.TestCase):
             run.assert_not_called()
             self.assertTrue(lease.exists())
 
+    def test_release_accepts_same_lease_after_heartbeat_refreshes_timestamp(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            lease_path = root / "job_search_dais.lease"
+            receipt_path = root / "browser-owner.json"
+            fence_path = root / "browser-fence"
+            original = {
+                "identity": "job-search:dais",
+                "pid": 123,
+                "host": "test-host",
+                "port": 49152,
+                "uuid": "browser-uuid",
+                "acquired_at": 1785924000,
+            }
+            lease_path.write_text(json.dumps(original) + "\n", encoding="utf-8")
+            completed = type(
+                "Completed",
+                (),
+                {"returncode": 0, "stdout": "http://127.0.0.1:49152\n", "stderr": ""},
+            )()
+            owner = BrowserLease(
+                guard=Path("/guard"),
+                identity="job-search:dais",
+                owner="ai.anicca.job-search-daily",
+                receipt_path=receipt_path,
+                lease_path=lease_path,
+                fence_path=fence_path,
+                holder_pid=123,
+                browser_pid_reader=lambda port: 777,
+            )
+            with patch(
+                "job_search_loop.browser_owner.subprocess.run", return_value=completed
+            ), patch(
+                "job_search_loop.browser_owner.socket.gethostname",
+                return_value="test-host",
+            ):
+                owner.acquire()
+                refreshed = {**original, "acquired_at": original["acquired_at"] + 300}
+                lease_path.write_text(json.dumps(refreshed) + "\n", encoding="utf-8")
+                self.assertTrue(owner.release())
+
+            self.assertEqual(
+                json.loads(receipt_path.read_text(encoding="utf-8"))["status"],
+                "released",
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

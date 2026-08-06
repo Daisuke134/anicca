@@ -99,6 +99,16 @@ class BrowserLease:
     holder_pid: int = os.getpid()
     browser_pid_reader: Callable[[int], int] = _browser_pid
 
+    @staticmethod
+    def _stable_lease_token(held: dict[str, Any]) -> str:
+        material = {
+            key: held.get(key)
+            for key in ("identity", "pid", "host", "port", "uuid")
+        }
+        return hashlib.sha256(
+            json.dumps(material, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+
     def _held_by_self(self, receipt: dict[str, Any] | None = None) -> bool:
         try:
             held = json.loads(self.lease_path.read_text(encoding="utf-8").splitlines()[-1])
@@ -106,7 +116,11 @@ class BrowserLease:
             return False
         matches = held.get("identity") == self.identity and held.get("pid") == self.holder_pid
         if receipt is not None:
-            matches = matches and held.get("acquired_at") == receipt.get("lease_acquired_at")
+            stable_token = receipt.get("lease_token_sha256")
+            if isinstance(stable_token, str):
+                matches = matches and stable_token == self._stable_lease_token(held)
+            else:
+                matches = matches and held.get("acquired_at") == receipt.get("lease_acquired_at")
         return matches
 
     def _guard_release(self) -> bool:
@@ -154,6 +168,7 @@ class BrowserLease:
                 "version": 2, "status": "leased", "owner": self.owner,
                 "identity": self.identity, "endpoint": endpoint,
                 "lease_id": hashlib.sha256(lease_material.encode()).hexdigest(),
+                "lease_token_sha256": self._stable_lease_token(held),
                 "fence": fence, "holder_pid": self.holder_pid,
                 "browser_pid": self.browser_pid_reader(parsed.port),
                 "acquired_at": now, "heartbeat_at": now,

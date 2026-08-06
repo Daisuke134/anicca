@@ -222,7 +222,7 @@ def _write_private(path: Path, value: Any) -> None:
     os.chmod(path, 0o600)
 
 
-def main() -> None:
+def main() -> int:
     parser = argparse.ArgumentParser(description="Deterministic Ashby inspect/fill CLI")
     parser.add_argument("mode", choices=("inspect", "fill", "verify"))
     parser.add_argument("--endpoint")
@@ -232,9 +232,22 @@ def main() -> None:
     parser.add_argument("--resume", type=Path)
     args = parser.parse_args()
     if args.mode == "verify":
-        result = json.loads(args.output.read_text(encoding="utf-8"))
-        print(json.dumps(validate_fill_result(result), sort_keys=True))
-        return
+        try:
+            result = json.loads(args.output.read_text(encoding="utf-8"))
+            receipt = validate_fill_result(result)
+        except (OSError, json.JSONDecodeError):
+            receipt = {
+                "status": "rejected",
+                "reason": "resident fill result is unavailable",
+            }
+            print(json.dumps(receipt, sort_keys=True))
+            return 2
+        except ValueError as error:
+            receipt = {"status": "rejected", "reason": str(error)}
+            print(json.dumps(receipt, sort_keys=True))
+            return 2
+        print(json.dumps(receipt, sort_keys=True))
+        return 0
     if not args.endpoint or not args.url:
         parser.error("inspect/fill require --endpoint and --url")
     from playwright.sync_api import sync_playwright
@@ -261,7 +274,8 @@ def main() -> None:
             print(json.dumps({"status": result["status"], "output": str(args.output)}))
         finally:
             page.close()
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

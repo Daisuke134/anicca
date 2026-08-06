@@ -43,12 +43,21 @@ class CanonicalRuntimeTests(unittest.TestCase):
         executable.chmod(0o700)
         return executable
 
-    def _run_daily_with_fake_python(self, root: Path, slot_count: int, runner_rc: int):
+    def _run_daily_with_fake_python(
+        self,
+        root: Path,
+        slot_count: int,
+        runner_rc: int,
+        *,
+        invalid_fill_result: bool = False,
+        daily_report_rc: int = 0,
+    ):
         fake_python = root / "fake-python"
         calls = root / "python-calls.jsonl"
         fake_python.write_text(
             """#!/usr/bin/env python3
 import json
+import os
 import pathlib
 import sys
 
@@ -61,6 +70,15 @@ if sys.argv[1:2] == ["-"]:
 if sys.argv[1:3] == ["-m", "job_search_loop.summary"]:
     from job_search_loop.summary import main
     raise SystemExit(main(sys.argv[3:]))
+if sys.argv[1:3] == ["-m", "job_search_loop.daily_reporting"]:
+    report_rc = int(os.environ.get("TEST_DAILY_REPORT_RC", "0"))
+    if report_rc == 0:
+        output = pathlib.Path(sys.argv[sys.argv.index("--output") + 1])
+        output.write_text(json.dumps({"status": "sent"}) + "\\n", encoding="utf-8")
+    raise SystemExit(report_rc)
+if sys.argv[1:3] == ["-m", "job_search_loop.ashby_apply"]:
+    print(json.dumps({"status": "rejected", "reason": "resident fill result is not ready"}))
+    raise SystemExit(2)
 if sys.argv[1:3] == ["-m", "job_search_loop.prefilter"]:
     output = pathlib.Path(sys.argv[sys.argv.index("--output") + 1])
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -117,6 +135,11 @@ if sys.argv[1:2] and sys.argv[1].endswith("agent_runner.py"):
     evidence.mkdir(parents=True, exist_ok=True)
     task_class = sys.argv[sys.argv.index("--task-class") + 1]
     runner_rc = %d
+    if os.environ.get("TEST_INVALID_FILL_RESULT") == "1":
+        pathlib.Path(os.environ["JOB_SEARCH_ASHBY_APPLY_RESULT"]).write_text(
+            json.dumps({"status": "needs_fact", "receipts": []}) + "\\n",
+            encoding="utf-8",
+        )
     if task_class == "composition-agent":
         if runner_rc == 75:
             print(json.dumps({"status": "budget_blocked"}))
@@ -178,6 +201,8 @@ raise SystemExit(0)
             "JOB_SEARCH_STATE_ROOT": str(root / "state"),
             "JOB_SEARCH_PYTHON": str(fake_python),
             "JOB_SEARCH_TELEGRAM_MEDIA": str(root / "media"),
+            "TEST_INVALID_FILL_RESULT": "1" if invalid_fill_result else "0",
+            "TEST_DAILY_REPORT_RC": str(daily_report_rc),
         }
         result = subprocess.run(
             ["/bin/zsh", str(APP_ROOT / "scripts" / "run-daily.sh")],
@@ -186,6 +211,7 @@ raise SystemExit(0)
             text=True,
             env=env,
         )
+        self.assertTrue(calls.is_file(), result.stderr)
         recorded = [
             json.loads(line)
             for line in calls.read_text(encoding="utf-8").splitlines()
@@ -291,6 +317,45 @@ raise SystemExit(0)
             evidence = list((state / "evidence").glob("daily-*/"))
             self.assertEqual(len(evidence), 1)
             self.assertFalse((evidence[0] / "ashby-fill-verification.json").is_file())
+
+    def test_daily_fill_canary_preserves_primary_rc_and_private_failure_receipts(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            state = root / "state"
+            state.mkdir(parents=True)
+            (state / "ashby-fill-canary-request.json").write_text(
+                json.dumps({"version": 1, "mode": "no_submit"}) + "\n",
+                encoding="utf-8",
+            )
+
+            result, calls = self._run_daily_with_fake_python(
+                root,
+                0,
+                0,
+                invalid_fill_result=True,
+                daily_report_rc=9,
+            )
+
+            self.assertEqual(result.returncode, 76, result.stderr)
+            evidence = list((state / "evidence").glob("daily-*/"))
+            self.assertEqual(len(evidence), 1)
+            verification = evidence[0] / "ashby-fill-verification.json"
+            self.assertEqual(
+                json.loads(verification.read_text(encoding="utf-8"))["status"],
+                "rejected",
+            )
+            self.assertEqual(verification.stat().st_mode & 0o777, 0o600)
+            reporting = evidence[0] / "daily-pipeline-report.json"
+            self.assertEqual(
+                json.loads(reporting.read_text(encoding="utf-8"))["status"],
+                "delivery_failed",
+            )
+            self.assertEqual(reporting.stat().st_mode & 0o777, 0o600)
+            self.assertIn(
+                ["-m", "job_search_loop.browser_owner", "release"],
+                [call[:3] for call in calls],
+            )
+
 
     def test_runner_config_is_job_scoped_and_contains_no_private_identity(self):
         config_path = REPO_ROOT / "runtime" / "agent-runner" / "config.json"
