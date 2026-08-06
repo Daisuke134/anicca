@@ -12,7 +12,47 @@ from job_search_loop.browser_worker import (
 from job_search_loop.candidate_queue import CandidateQueue
 
 
+class RecordingSpan:
+    recording = True
+    def __init__(self, name): self.name = name
+    def __enter__(self): return self
+    def __exit__(self, *_): return False
+    def set_attributes(self, _attributes): pass
+
+
+class RecordingTelemetry:
+    def __init__(self): self.spans = []
+    def span(self, name, attributes=None):
+        span = RecordingSpan(name); self.spans.append(span); return span
+
+
 class BrowserWorkerTests(unittest.TestCase):
+    def test_resident_worker_owns_hourly_pass_and_propagates_one_telemetry_instance(self):
+        telemetry = RecordingTelemetry()
+        captured = {}
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            queue = CandidateQueue(root / "queue.sqlite3"); queue.close()
+            owner = root / "owner.json"
+            owner.write_text(json.dumps({"status": "ready", "holder_pid": os.getpid(),
+                                         "lease_id": "lease", "fence": 1,
+                                         "endpoint": "http://127.0.0.1:9222"}))
+            prefilter = root / "prefilter.json"; prefilter.write_text('{"candidates": []}')
+            profile = root / "profile.json"; profile.write_text('{"candidate": {}}')
+            def runner(**kwargs):
+                captured.update(kwargs)
+                return {"status": "pending_verification", "executor": "browser-use-0.13.7"}
+
+            run_worker(
+                database=root / "queue.sqlite3", owner_receipt=owner, holder_pid=os.getpid(),
+                run_id="daily-trace", lock_path=root / "lock", worker_receipt=root / "receipt.json",
+                output=root / "output.json", prefilter_result=prefilter, profile_path=profile,
+                materials_root=root / "materials", evidence_dir=root / "evidence",
+                pre_submit_runner=runner, telemetry=telemetry,
+            )
+
+        self.assertEqual([span.name for span in telemetry.spans], ["hourly_pass"])
+        self.assertIs(captured["telemetry"], telemetry)
     def test_default_pre_submit_runner_is_the_pinned_browser_use_adapter(self):
         source = (
             Path(__file__).parents[1] / "job_search_loop" / "browser_worker.py"

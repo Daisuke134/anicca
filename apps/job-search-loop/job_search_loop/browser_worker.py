@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any, Callable, Iterator
 
 from .candidate_queue import CandidateQueue
+from .telemetry import Telemetry
 
 
 class BrowserWorkerBusy(RuntimeError):
@@ -61,8 +62,10 @@ def run_worker(
     pre_submit_runner: Callable[..., dict[str, Any]] | None = None,
     route_fixture: Path | None = None,
     application_ledger: Path | None = None,
+    telemetry: Any = None,
 ) -> dict[str, Any]:
-    with exclusive_worker(lock_path):
+    telemetry = telemetry or Telemetry()
+    with exclusive_worker(lock_path), telemetry.span("hourly_pass"):
         owner = json.loads(owner_receipt.read_text(encoding="utf-8"))
         if owner.get("status") != "ready" or owner.get("holder_pid") != holder_pid:
             raise RuntimeError("browser owner receipt does not match daily owner")
@@ -146,6 +149,7 @@ def run_worker(
                 profile_path=profile_path,
                 materials_root=materials_root,
                 evidence_dir=evidence_dir,
+                telemetry=telemetry,
             )
         result = {
             "status": str(pre_submit.get("status") or "pending_verification"),
