@@ -1,6 +1,6 @@
 "use strict";
 
-const EVENT_REF = /^luma-event:\/\/event\/[A-Za-z0-9_-]+$/;
+const EVENT_REF = /^(?:luma-event:\/\/event\/[A-Za-z0-9_-]+|connpass-event:\/\/event\/[1-9][0-9]*)$/;
 const KNOWN_NO_EFFECT_CODES = new Set([
   "LUMA_CONFIRM_UNAVAILABLE",
   "LUMA_CONTROL_UNAVAILABLE",
@@ -10,6 +10,10 @@ const KNOWN_NO_EFFECT_CODES = new Set([
   "LUMA_FORM_SCHEMA_UNAVAILABLE",
   "LUMA_REQUIRED_PROFILE_FIELD_UNAVAILABLE",
   "LUMA_RSVP_UNAVAILABLE",
+  "CONNPASS_CONTROL_UNAVAILABLE",
+  "CONNPASS_LOGIN_REQUIRED",
+  "CONNPASS_REGISTRATION_UNAVAILABLE",
+  "CONNPASS_RSVP_UNAVAILABLE",
 ]);
 const VERIFIED_SUCCESS_OUTCOMES = new Set([
   "open_coverage",

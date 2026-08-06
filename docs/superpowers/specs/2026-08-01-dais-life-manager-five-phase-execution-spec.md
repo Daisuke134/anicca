@@ -3059,6 +3059,14 @@ screenshot/ticket証拠、open coverage、未配信outbox、incident、self-heal
 message ID取得までdurable outboxから消さない。完了条件はsuccess週、登録0週、process停止を跨ぐ週、Telegram停止週のfault-injectionすべてで
 週次record欠落0、重複delivery0、transport復旧後positive message IDありとなること。
 
+O1B-25進捗143（Task 4B2C2 Connpass runtime execution wiring / RED→GREEN）: 既存Connpass cursor testを
+verified-empty Luma inventoryへ変更し、旧runtimeが`CONNECTOR_NATIVE_PROFILE_FAILED`でConnpass前に停止するREDを確認した。Luma候補0でも
+provider cursorがConnpass以降ならprofileを保持してhandoffを続行し、Connpass専用evidence store、`:9222` parent-owned browser provider、
+deterministic job builder、RSVP executorをcommon write pipelineへ注入する。cursor index以降のeligible候補を順番に試し、verified successで停止、
+known-no-effectで次候補を経てPeatixへhandoff、unknown/recoveryではcursorを進めず再submitを防ぐ。Connpass event refとbounded known failure
+codesもcandidate outcome contractへ追加した。focused 41/41、pretest 21/21、常設outbound suite 349/349 GREEN、失敗0件。次はTask 4B3で
+既存Connector launchdと`:9222`を使う実Connpass registrationを行い、parent readback、PNG、Calendar、Telegramを一lineageで実証する。
+
 現在と完成形:
 
 ```mermaid
