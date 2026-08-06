@@ -6,7 +6,56 @@ const os = require("node:os");
 const path = require("node:path");
 const test = require("node:test");
 
-const { createProductionBrowserRail } = require("./connector-minimal-production.js");
+const {
+  createProductionBrowserRail,
+  createProductionCalendarReader,
+} = require("./connector-minimal-production.js");
+
+test("production calendar reader uses gog for exactly fourteen Tokyo calendar days", async () => {
+  const calls = [];
+  const calendar = Object.freeze({ kind: "gog", ready: () => true });
+  const verifiedInventory = Object.freeze({
+    busy_inventory_id: "google-calendar-busy-inventory:test",
+    busy_intervals: Object.freeze([
+      Object.freeze({
+        kind: "timed",
+        start_at: "2026-08-10T10:00:00.000Z",
+        end_at: "2026-08-10T11:00:00.000Z",
+      }),
+    ]),
+  });
+  const reader = createProductionCalendarReader({
+    gogBin: "/usr/local/bin/gog",
+    account: "private-account",
+    keyring: "private-keyring",
+    now: () => new Date("2026-08-07T08:30:00.000Z"),
+    makeCalendar(input) {
+      calls.push(["make-calendar", input]);
+      return calendar;
+    },
+    async inspectBusyInventory(input) {
+      calls.push(["inspect", input]);
+      return verifiedInventory;
+    },
+    isVerifiedBusyInventory(value) { return value === verifiedInventory; },
+  });
+
+  const intervals = await reader.readCalendarGaps();
+
+  assert.deepEqual(intervals, verifiedInventory.busy_intervals);
+  assert.equal(calls[0][0], "make-calendar");
+  assert.deepEqual(calls[0][1], {
+    bin: "/usr/local/bin/gog",
+    account: "private-account",
+    keyring: "private-keyring",
+  });
+  assert.equal(calls[1][0], "inspect");
+  assert.equal(calls[1][1].calendar, calendar);
+  assert.equal(calls[1][1].timeZone, "Asia/Tokyo");
+  assert.equal(calls[1][1].timeMin, "2026-08-06T15:00:00.000Z");
+  assert.equal(calls[1][1].timeMax, "2026-08-20T15:00:00.000Z");
+  assert.equal(calls[1][1].now, "2026-08-07T08:30:00.000Z");
+});
 
 test("production browser rail owns exactly one :9222 target without closing the browser", async () => {
   const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-production-rail-"));
