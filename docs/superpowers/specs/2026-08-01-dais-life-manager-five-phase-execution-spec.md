@@ -2735,6 +2735,13 @@ eligible 5、spend ordered 3を得たが、write attemptは1で登録0だった�
 `unknown/login_required`だけpass停止へ変更した。候補budgetは停止gateにならない現contractへ旧testを更新し、ownership/profile/provider/
 native/launchd focused testは65/65 GREEN。次runでTerra child起動、実submit、親readbackを確認するまで16Cは未完了である。
 
+O1B-25進捗117（Dream Killer control removal batch 1）: Connector native runtimeでreconciliation readbackが`login_required`、
+`unknown`、`unavailable`になっても`break judgmentLoop`せず、そのcandidateをtelemetryへ記録して次candidateへ進む。
+write outcomeも`verified_success`だけを現在runの成功境界とし、`known_no_effect`、`unknown_effect`、`recovery_required`は次candidateへ
+継続する。legacy candidate sequenceも`adapter_failure`、`login_required`、`transport_unavailable`、`unknown_effect`、未知statusが
+sequence全体を終了する権限を廃止し、各candidateをskip ledgerへ残して全件試行後に`next_provider_required`を返す。
+focused runtime/candidate testsは19/19 GREEN。次は既存launchdをlive実行し、候補間継続とTerra submitを実測する。
+
 現在と完成形:
 
 ```mermaid
@@ -2797,7 +2804,7 @@ flowchart LR
 26. Mac再起動後のConnector、producer、consumer launchd、heartbeat、healthcheck、stale-loop self-healを実機検証する。
 27. canonical branchへ統合し、legacy bridge / Docker worker / 重複scheduleを退役する。
 
-### P0 残TODOの現在順序（進捗115を正本とする）
+### P0 残TODOの現在順序（進捗117を正本とする）
 
 1. 最新Connector launchdをkickstartし、loop主体のLuma実submitと親readbackを成立させる（16C）。
 2. PNG、Calendar ID/readback、Telegram card/photo IDを一つのlineage receiptへ結合する（16D、18）。
