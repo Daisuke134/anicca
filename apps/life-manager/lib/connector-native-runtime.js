@@ -9,6 +9,7 @@ const { createGogLumaConfirmationReader } = require("./gog-luma-confirmation-rea
 const { createConnectorEventsPack } = require("./connector-events-pack.js");
 const { createLumaEvidenceStore } = require("./luma-evidence-store.js");
 const { readLumaFormProfile } = require("./luma-form-profile.js");
+const { readConnectorUserProfile } = require("./connector-user-profile.js");
 const { createLumaConfirmationMailStore } = require("./luma-confirmation-mail.js");
 const { createLumaTicketQrStore } = require("./luma-ticket-qr.js");
 const { makeGogCalendar } = require("./transport/calendar-gog.js");
@@ -218,6 +219,7 @@ async function runNativeConnectorPass(input = {}) {
     const createCalendar = factory(deps, "createCalendar", makeGogCalendar);
     const createPack = factory(deps, "createPack", createConnectorEventsPack);
     const readPrivateLumaFormProfile = factory(deps, "readLumaFormProfile", readLumaFormProfile);
+    const readPrivateUserProfile = factory(deps, "readConnectorUserProfile", readConnectorUserProfile);
 
     const dailyDriver = createDailyDriver({
       endpoint: DAILY_DRIVER_CDP,
@@ -250,6 +252,8 @@ async function runNativeConnectorPass(input = {}) {
     }
     const lumaFormProfilePath = config.lumaFormProfilePath == null
       ? null : absoluteFilePath(config.lumaFormProfilePath);
+    const userProfilePath = config.userProfilePath == null
+      ? lumaFormProfilePath : absoluteFilePath(config.userProfilePath);
     const pack = createPack({
       dailyDriver,
       auth,
@@ -260,7 +264,7 @@ async function runNativeConnectorPass(input = {}) {
       agenticRegister: (contract, tabOwnerReceipt) => runConnectorAgenticRegistration({
         canonicalUrl: contract.canonical_url,
         tabOwnerReceipt,
-        profile: lumaFormProfilePath === null ? {} : readPrivateLumaFormProfile({ path: lumaFormProfilePath }),
+        profile: userProfilePath === null ? {} : readPrivateUserProfile({ path: userProfilePath }),
         evidenceDir,
         repoRoot: config.repoRoot,
         runnerPath: config.runnerPath,

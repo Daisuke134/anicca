@@ -258,6 +258,10 @@ function runtimeConfig(options, stateDir) {
     gogBin: String(env.GOG_BIN || "").trim() || undefined,
     gogKeyring: requiredText(env.GOG_KEYRING_PASSWORD),
     profilePath,
+    userProfilePath: path.resolve(String(
+      env.LM_CONNECTOR_USER_PROFILE_PATH
+        || path.join(env.HOME || process.env.HOME || "", ".config/anicca/job-search/profile.json"),
+    )),
     lumaFormProfilePath: path.join(path.dirname(stateDir), "private", "connector-luma-form-profile.json"),
     lunaEvidenceDir: absoluteDirectory(env.LM_CONNECTOR_LUNA_EVIDENCE_DIR || path.join(stateDir, "luna")),
     telegramTarget: requiredText(env.LM_CONNECTOR_TELEGRAM_TARGET),
