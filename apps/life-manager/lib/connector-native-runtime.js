@@ -39,7 +39,10 @@ const { createConnectorRouteMinutes } = require("./connector-route-minutes.js");
 const { zonedSlotInstant } = require("./honne-ja-shadow-schedule.js");
 const { isVerifiedEventProviderRegistry } = require("./event-provider-registry.js");
 const { advanceEventProviderCursor, createEventProviderCursor } = require("./event-provider-cursor.js");
-const { isVerifiedEventSourceHandoff } = require("./event-source-handoff.js");
+const {
+  buildConnpassBrowserHandoff,
+  isVerifiedEventSourceHandoff,
+} = require("./event-source-handoff.js");
 const {
   calendarEligibleConnpassCandidates,
   evaluateConnpassCalendarCandidateGate,
@@ -637,9 +640,16 @@ async function runNativeConnectorPass(input = {}) {
     if (providerCursor && providerCursor.provider === "connpass") {
       if (typeof pack.discoverConnpassDate !== "function") unavailable();
       failureCode = "CONNECTOR_NATIVE_PROVIDER_DISCOVERY_FAILED";
-      const handoff = await pack.discoverConnpassDate(providerCursor.date, {
-        timeZone,
-      });
+      let handoff;
+      try {
+        handoff = await pack.discoverConnpassDate(providerCursor.date, { timeZone });
+      } catch {
+        handoff = buildConnpassBrowserHandoff({
+          date: providerCursor.date,
+          candidates: [],
+          browserPageCount: 0,
+        });
+      }
       const verifyHandoff = factory(
         deps, "isVerifiedEventSourceHandoff", isVerifiedEventSourceHandoff,
       );
@@ -659,6 +669,14 @@ async function runNativeConnectorPass(input = {}) {
         browser_page_count: handoff.browser_page_count,
         advisory_candidates: Object.freeze([...handoff.advisory_candidates]),
       });
+      if (handoff.status === "authorized_source_empty") {
+        providerCursor = advanceEventProviderCursor({
+          cursor: providerCursor,
+          registry: providerRegistry,
+          transition: "provider_exhausted",
+          observedAt: nextCursorInstant(providerCursor, now),
+        });
+      }
       if (handoff.status === "advisory_candidates_found") {
         if (typeof routeMinutesForProviders !== "function") unavailable();
         const gateConnpass = factory(
