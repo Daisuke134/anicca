@@ -94,6 +94,38 @@ test("Luma candidates are limited to today and the next thirteen Tokyo days", as
   ]);
 });
 
+test("Luma discovery reports only safe aggregate eligibility counts", async () => {
+  const audits = [];
+  const workflow = createLumaScriptFirstWorkflow({
+    now: () => new Date("2026-08-07T08:30:00.000Z"),
+    async discoverOnPage() {
+      return [
+        event("outside", { starts_at: "2026-08-21T10:00:00.000Z", ends_at: "2026-08-21T11:00:00.000Z" }),
+        event("paid", { ticket_price_status: "paid", ticket_price_minor: 1000 }),
+        event("conflict"),
+        event("eligible"),
+      ];
+    },
+    isCalendarFree(candidate) { return candidate.event_ref !== "luma-event://event/conflict"; },
+    async onDiscoveryAudit(value) { audits.push(value); },
+    async submitOnPage() { return { status: "registered" }; },
+    async readProviderStateOnPage() { return { status: "absent" }; },
+  });
+
+  await workflow.discoverCandidates({ page: {}, calendar: [] });
+
+  assert.deepEqual(audits, [{
+    observed_count: 4,
+    normalized_count: 4,
+    window_count: 3,
+    free_open_count: 2,
+    calendar_free_count: 1,
+  }]);
+  assert.deepEqual(Object.keys(audits[0]).sort(), [
+    "calendar_free_count", "free_open_count", "normalized_count", "observed_count", "window_count",
+  ]);
+});
+
 test("Luma direct action uses the retained submit function without agent assistance", async () => {
   const calls = [];
   const page = Object.freeze({ page_id: "owned-page" });
