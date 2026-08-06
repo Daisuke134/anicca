@@ -125,11 +125,18 @@ def classify_confirmation(
     )
     expected = _normalized(expected_success_text)
     status = _normalized(status_text)
+    status_casefold = status.casefold()
+    semantic_success_status = (
+        status_casefold.startswith("success ")
+        and "your application" in status_casefold
+        and "successfully submitted" in status_casefold
+    )
     status_matches = bool(
         status
         and (
             status == expected
             or status == f"Success {expected}"
+            or semantic_success_status
         )
     )
     alert_present = bool(_normalized(alert_text))

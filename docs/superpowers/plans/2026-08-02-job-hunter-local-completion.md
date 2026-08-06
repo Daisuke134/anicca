@@ -2444,10 +2444,16 @@ Current production truth measured from the ledger and resident receipts:
   `8ed35a14223b33357acbb321c3db4e419d226904991242e148d5794646b0f95a`.
   The ledger records this one-off as `dais_manual / submitted`, preserving the
   builder/operator boundary; it cannot satisfy the resident actor or campaign gates;
-- the ledger projection contains seven `submitted` rows: the three resident Gmail
-  confirmations above, two historical agent-owned development E2E records, one
-  `dais_manual` Palantir record, and the one-off `dais_manual` OpenAI Ashby reference
-  success. Only the three Gmail-confirmed rows are resident-loop application proof;
+- the ledger projection contains eight `submitted` rows: five agent-owned rows and
+  three `dais_manual` rows. The manual rows are Palantir, the OpenAI Ashby reference,
+  and Neural Concept `Solution Engineer - Japan`. Only the three Gmail-confirmed
+  Cursor/NVIDIA rows are resident-loop application proof; Neural Concept is the
+  development-session proof of the exact path the resident must now repeat;
+- development-session attempts against Replit `Japan Growth Lead`, Cohere `Partner
+  Development Manager - Japan`, and OpenAI `Forward Deployed Engineer - Tokyo`
+  each received one fenced click but no authoritative terminal confirmation and are
+  `dais_manual / submit_unknown`. They MUST NOT be clicked again. The OpenAI attempt
+  classified `recaptcha_pending`; immediate Gmail searches yielded no new receipt;
 - twelve agent-owned rows remain `submit_unknown` and MUST NOT be counted or blindly
   retried;
 - Gmail contains the OpenAI confirmation above, but the inbox loop acknowledged it
@@ -4041,6 +4047,20 @@ OpenTelemetry decision and primary sources:
       required legal answers were not grounded. No Gmail route was eligible for that
       duplicate, so the run produced zero new receipts and exited zero. This proves
       observation, not resident Ashby submission, and leaves `L-49K5D` open.
+    - Development-session reference: Codex used the same deterministic Ashby CLI
+      primitives against Neural Concept `Solution Engineer - Japan`, verified eight
+      grounded fields and the exact English resume, and clicked Submit exactly once.
+      Ashby returned HTTP 200 with `ApiSubmitSingleApplicationFormAction` and
+      `FormSubmitSuccess`; the visible terminal status stated `Your application has
+      been successfully submitted!`. Terminal image SHA-256 is
+      `e73a212752d3ca020b16bae36ca19578ba437dcf434b054daff414e467cb430b`, and
+      Ledger intent `ba756dd2089745148dfb15da992fd2fa` is `submitted`. This proves
+      the shared browser/CLI path but not the resident actor, so `L-49K5D` remains
+      open until the installed loop repeats it and Telegram acknowledges the result.
+      The measured defect was a company-specific Ashby success sentence: the
+      classifier now accepts only the conjunction of the exact official submit
+      mutation, GraphQL `FormSubmitSuccess`, visible `Success` status containing
+      `your application` plus `successfully submitted`, and no alert.
 - [ ] **L-49K** — Prove `L-49K1` through `L-49K4` through the installed resident
   LaunchAgent on one eligible Ashby role. The development session only triggers and
   observes. The resident must open the application surface, fill, verify, submit once,

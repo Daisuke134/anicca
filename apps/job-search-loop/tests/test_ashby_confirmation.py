@@ -132,6 +132,29 @@ class AshbyConfirmationTests(unittest.TestCase):
         self.assertFalse(receipt["authoritative_success"])
         self.assertFalse(receipt["status_matches"])
 
+    def test_graphql_success_accepts_ashby_employer_success_copy(self):
+        payload = {
+            "data": {
+                "submitApplicationFormAction": {
+                    "applicationFormResult": {"__typename": "FormSubmitSuccess"}
+                }
+            }
+        }
+
+        receipt = classify_confirmation(
+            payload,
+            expected_success_text=SUCCESS,
+            status_text=(
+                "Success\nYour application has been successfully submitted! "
+                "We'll be in touch soon if there are any next steps. "
+                "Thank you for your interest!"
+            ),
+            alert_text=None,
+        )
+
+        self.assertTrue(receipt["authoritative_success"])
+        self.assertTrue(receipt["status_matches"])
+
     def test_multiple_form_requires_application_and_every_survey_success(self):
         payload = {
             "data": {
