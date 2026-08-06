@@ -21,7 +21,27 @@ async function readLumaRegistrationForm(scope) {
   if (!scope || typeof scope.evaluate !== "function") unavailable();
   let rawFields;
   try {
-    rawFields = await scope.evaluate(() => {
+    rawFields = await scope.evaluate((scopeRoot) => {
+      const root = scopeRoot && typeof scopeRoot.querySelectorAll === "function"
+        ? scopeRoot
+        : document;
+      const insideRoot = (node) => root === document || node === root || root.contains(node);
+      const query = (selector) => {
+        const nodes = [...root.querySelectorAll(selector)];
+        if (root !== document && typeof root.matches === "function" && root.matches(selector)) {
+          nodes.unshift(root);
+        }
+        return nodes;
+      };
+      const closestInsideRoot = (node, selector) => {
+        let current = node;
+        while (current && insideRoot(current)) {
+          if (typeof current.matches === "function" && current.matches(selector)) return current;
+          if (current === root) break;
+          current = current.parentElement;
+        }
+        return null;
+      };
       const clean = (value) => String(value == null ? "" : value).replace(/\s+/g, " ").trim();
       const flag = (node, attribute) => {
         const value = node && node.getAttribute(attribute);
@@ -29,7 +49,8 @@ async function readLumaRegistrationForm(scope) {
           String(value).trim().toLowerCase(),
         );
       };
-      const rootFor = (node) => node.closest(
+      const rootFor = (node) => closestInsideRoot(
+        node,
         "[data-luma-form-field], [data-registration-field], [data-field-name], [data-name], fieldset, [role='group']",
       ) || node;
       const htmlRequired = (node) => Boolean(node && (
@@ -57,22 +78,22 @@ async function readLumaRegistrationForm(scope) {
         return names.size === 1 ? [...names][0] : "";
       };
       const labelledText = (node, root) => {
-        const fromIds = (value) => String(value || "").split(/\s+/)
-          .map((id) => document.getElementById(id))
+        const fromIds = (source, value) => String(value || "").split(/\s+/)
+          .map((id) => source.ownerDocument && source.ownerDocument.getElementById(id))
           .map((element) => element && clean(element.textContent))
           .filter(Boolean);
         const labels = node.labels ? [...node.labels].map((label) => clean(label.textContent)) : [];
-        const owner = node.closest("label");
+        const owner = closestInsideRoot(node, "label");
         const rootLabel = root.querySelector("label, legend, [data-label]");
         return [
           node.getAttribute("data-label"),
           node.getAttribute("aria-label"),
-          ...fromIds(node.getAttribute("aria-labelledby")),
+          ...fromIds(node, node.getAttribute("aria-labelledby")),
           ...labels,
           owner && owner.textContent,
           root.getAttribute("data-label"),
           root.getAttribute("aria-label"),
-          ...fromIds(root.getAttribute("aria-labelledby")),
+          ...fromIds(root, root.getAttribute("aria-labelledby")),
           rootLabel && (rootLabel.getAttribute("data-label") || rootLabel.textContent),
         ].map(clean).find(Boolean) || "";
       };
@@ -86,7 +107,7 @@ async function readLumaRegistrationForm(scope) {
         seen.add(node);
         fields.push(raw);
       };
-      const standard = document.querySelectorAll(
+      const standard = query(
         "input[name], textarea[name], select[name], input[required], textarea[required], select[required], input[aria-required='true'], textarea[aria-required='true'], select[aria-required='true']",
       );
       for (const node of standard) {
@@ -108,7 +129,7 @@ async function readLumaRegistrationForm(scope) {
           options: tag === "select" ? optionText(node.querySelectorAll("option")) : [],
         });
       }
-      const multiSelects = document.querySelectorAll([
+      const multiSelects = query([
         "[data-luma-control='multi-select']",
         "[data-control='multi-select']",
         "[data-field-type='multi-select']",
@@ -131,7 +152,7 @@ async function readLumaRegistrationForm(scope) {
           options: optionText(node.querySelectorAll("[role='option'], [aria-pressed]")),
         });
       }
-      const checkboxes = document.querySelectorAll([
+      const checkboxes = query([
         "[role='checkbox']",
         "[data-luma-control='checkbox']",
         "[data-control='checkbox']",
@@ -152,7 +173,7 @@ async function readLumaRegistrationForm(scope) {
           options: [],
         });
       }
-      const requiredControls = document.querySelectorAll(
+      const requiredControls = query(
         "[required], [aria-required='true'], [data-required], [data-app-required]",
       );
       for (const node of requiredControls) {
