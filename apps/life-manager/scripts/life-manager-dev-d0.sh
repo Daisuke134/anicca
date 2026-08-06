@@ -157,6 +157,7 @@ fi
 TEST_LOG="$LOG_DIR/life-manager-dev-test-last.out"
 if ! (
   cd "$WT/apps/life-manager"
+  unset LIFE_MANAGER_REPO
   npm ci --silent
   npm test
   npm run eval
@@ -205,10 +206,14 @@ fi
 
 record "$NUM" "$PR_URL" "pr_open"
 write_result "pr_open" "pr_created" "$NUM" "$PR_URL"
-openclaw message send --channel telegram \
-  --target "${LM_DEV_TELEGRAM_TARGET:?LM_DEV_TELEGRAM_TARGET is required}" \
-  --message "🤖 Life Manager dev loop: issue #$NUM → $PR_URL (tests/evals green, not merged)" \
-  --json >> "$LOG_DIR/life-manager-dev.out.log" 2>&1 || log "Telegram report failed"
+if [ -n "${LM_DEV_TELEGRAM_TARGET:-}" ]; then
+  openclaw message send --channel telegram \
+    --target "$LM_DEV_TELEGRAM_TARGET" \
+    --message "🤖 Life Manager dev loop: issue #$NUM → $PR_URL (tests/evals green, not merged)" \
+    --json >> "$LOG_DIR/life-manager-dev.out.log" 2>&1 || log "Telegram report failed"
+else
+  log "Telegram report skipped: LM_DEV_TELEGRAM_TARGET unavailable"
+fi
 
 if [ "$CREATED_WORKTREE" -eq 1 ]; then
   git -C "$PROJECT" worktree remove "$WT" --force || true
