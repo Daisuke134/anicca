@@ -2153,6 +2153,22 @@ this spec update → commit/push → Telegram milestone before the next item sta
   deduplicated Telegram event and provider message ID. A previous deficit message ID
   such as `7173` cannot serve as proof for a later run; confirmed applications attach
   their exact screenshots and authoritative ATS/Gmail receipt.
+  - Material-state identity complete: the event digest is the canonical hash of the
+    signed summary projection, active immutable release commit, and browser terminal
+    facts; provider message IDs are excluded. An exact replay deduplicates, while a
+    changed release or terminal state creates a new event even when the human-facing
+    funnel text is unchanged. Focused reporting tests pass 7/7 and the full Job
+    Hunter suite passes 448/448. Immutable release
+    `d9645083bdb57048a8db259372f5944e412af8c0` (archive SHA-256
+    `c5db6c1dcf182e68e54f436799a8187b07b031590c69b6f61fd0e28ccba14f3d`)
+    produced resident run `daily-20260806-113230`, run count 35, exit zero. Telegram
+    acknowledged fresh event `job-search-daily:2026-08-06:state:8a890a702b99c40d`
+    with provider message ID `7597`, not prior `7377`; exact replay returned `7597`
+    and SQLite contains exactly one row for that event.
+  - Remaining before checking this task: extend confirmed-application delivery from
+    resume-only to one immutable evidence bundle containing the exact pre-submit,
+    post-action, and terminal screenshots plus the authoritative ATS/Gmail receipt;
+    require hashes and the same application/intent fence before Telegram attachment.
 - [ ] **L-49K0A2** — Pin `temporalio/temporal` v1.31.2 and `temporalio/sdk-python`
   v1.31.0 with MIT licenses, server/CLI/SDK artifacts, protocol versions, and local
   rollback. Prove an isolated local server and Python worker can survive worker
