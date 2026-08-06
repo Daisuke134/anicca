@@ -133,13 +133,21 @@ async function runHealerShadow(options = {}) {
   const recent = revisions.filter((row) => Date.parse(row.observed_at) >= now.getTime() - 24 * 60 * 60 * 1000);
   if (recent.length >= 3) return Object.freeze({ status: "revision_cap" });
   const execute = options.execute || defaultExecute;
+  let baseCommit = incident.code_commit;
+  if (baseCommit === "unknown") {
+    const resolved = await execute("git", ["-C", repoRoot, "rev-parse", "HEAD"], {
+      cwd: repoRoot, env: healerEnvironment(options.env),
+    });
+    baseCommit = String(resolved && resolved.stdout || "").trim();
+    if (!resolved || resolved.status !== 0 || !/^[0-9a-f]{40}$/.test(baseCommit)) invalid();
+  }
   const short = incident.fingerprint.slice("sha256:".length, "sha256:".length + 12);
   const revision = recent.length + 1;
   let branch = `healer/connector-${short}-r${revision}`;
   let worktree = path.join(worktreeRoot, `${short}-r${revision}`);
   fs.mkdirSync(worktreeRoot, { recursive: true, mode: 0o700 });
 
-  let result = await execute("git", ["-C", repoRoot, "worktree", "add", "-b", branch, worktree, incident.code_commit], {
+  let result = await execute("git", ["-C", repoRoot, "worktree", "add", "-b", branch, worktree, baseCommit], {
     cwd: repoRoot, env: healerEnvironment(options.env),
   });
   const collision = result && result.status !== 0
@@ -148,7 +156,7 @@ async function runHealerShadow(options = {}) {
   if (collision) {
     branch = `${branch}-recovery1`;
     worktree = `${worktree}-recovery1`;
-    result = await execute("git", ["-C", repoRoot, "worktree", "add", "-b", branch, worktree, incident.code_commit], {
+    result = await execute("git", ["-C", repoRoot, "worktree", "add", "-b", branch, worktree, baseCommit], {
       cwd: repoRoot, env: healerEnvironment(options.env),
     });
   }
@@ -165,7 +173,7 @@ async function runHealerShadow(options = {}) {
   ], {
     cwd: worktree,
     env: healerEnvironment(options.env),
-    input: healerPrompt(incident),
+    input: healerPrompt({ ...incident, code_commit: baseCommit }),
     timeoutMs: Number(options.codexTimeoutMs || 45 * 60 * 1000),
   });
   const timedOut = result && (result.errorCode === "ETIMEDOUT" || result.signal === "SIGTERM");
@@ -186,7 +194,7 @@ async function runHealerShadow(options = {}) {
   const secrets = await execute("gitleaks", [
     "git", worktree,
     "--config", path.join(repoRoot, ".gitleaks.toml"),
-    "--no-banner", "--redact", "--log-opts", `${incident.code_commit}..${commitId}`,
+    "--no-banner", "--redact", "--log-opts", `${baseCommit}..${commitId}`,
   ], { cwd: worktree, env: healerEnvironment(options.env), timeoutMs: 5 * 60 * 1000 });
   const pii = await execute("python3", [
     path.join(repoRoot, "scripts/security/pii_shape_scan.py"),
@@ -199,7 +207,7 @@ async function runHealerShadow(options = {}) {
   const remoteLine = String(remote && remote.stdout || "").trim();
   const verified = commit && commit.status === 0
     && /^[0-9a-f]{40}$/.test(commitId)
-    && !commitId.startsWith(String(incident.code_commit || ""))
+    && commitId !== baseCommit
     && status && status.status === 0 && String(status.stdout || "") === ""
     && secrets && secrets.status === 0
     && pii && pii.status === 0

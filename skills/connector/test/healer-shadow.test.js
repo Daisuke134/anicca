@@ -210,3 +210,34 @@ test("Healer recovers once from an orphaned branch or worktree collision", async
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("Healer resolves only an unknown incident commit to the parent verified HEAD", async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "connector-healer-base-"));
+  const stateDir = path.join(root, "state");
+  fs.mkdirSync(stateDir, { recursive: true });
+  fs.writeFileSync(path.join(stateDir, "observer-incidents.jsonl"), `${JSON.stringify({
+    schema_version: 1, wake_id: "wake:base", run_id: "run:base", stage: "native_pass",
+    safe_action: "runtime_execute", expected_effect: "applied_bundle", observed_effect: "tool_failure",
+    incident_class: "tool_failure", owner_generation: 1, code_commit: "unknown",
+    cursor: "connpass:2026-08-07:0:2", observed_at: "2026-08-07T01:20:00.000Z",
+    fingerprint: `sha256:${"1".repeat(64)}`,
+  })}\n`, { mode: 0o600 });
+  const calls = [];
+  try {
+    const result = await runHealerShadow({
+      repoRoot: REPO_ROOT, stateDir, worktreeRoot: path.join(root, "worktrees"),
+      now: () => new Date("2026-08-07T01:25:00.000Z"), env: { PATH: process.env.PATH, HOME: root },
+      execute: async (command, args) => {
+        calls.push({ command, args });
+        if (command === "git" && args.includes("rev-parse")) return { status: 0, stdout: `${"2".repeat(40)}\n` };
+        if (command === "codex") return { status: 1, stdout: '{"type":"error"}\n' };
+        return { status: 0, stdout: "" };
+      },
+    });
+    assert.equal(result.status, "revision_failed");
+    const add = calls.find((call) => call.command === "git" && call.args.includes("worktree"));
+    assert.equal(add.args.at(-1), "2".repeat(40));
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
