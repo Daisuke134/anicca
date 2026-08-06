@@ -2831,13 +2831,20 @@ OpenTelemetry decision and primary sources:
       a missing-provider flush defect.
   - [ ] `L-49K0C2O3` — Instrument the application trace hierarchy without private
     payloads. Parent closes only after both children close.
-    - [ ] `L-49K0C2O3a` — Add `browser.navigate → page.ready` spans at the pinned
+    - [x] `L-49K0C2O3a` — Add `browser.navigate → page.ready` spans at the pinned
       Browser Use backend boundary. Record redirect count, readyState, DOM control
       and text counts, duration, and exception class; never record the raw URL or DOM.
       Files: extend the O2 span handle in `telemetry.py`, then modify
       `browser_use_adapter.py` and `tests/test_browser_use_adapter.py` (3 files,
       soft target 100 LOC). The span-handle extension is required because duration
       and exception class are known only after navigation/snapshot starts.
+      - Completion receipt: the pinned backend accepts the O2 boundary and emits
+        `browser.navigate` and `page.ready`. Navigation records duration and only the
+        exception class on failure; readiness records duration, redirect count,
+        readyState, control count, and visible-text character count. Raw URL/query,
+        DOM, and exception message never enter span attributes. The O2 span handle now
+        accepts completion-time attributes through the same allowlist and silently
+        drops SDK/validation faults. Focused adapter plus telemetry tests pass 13/13.
     - [ ] `L-49K0C2O3b` — Add `hourly_pass → candidate → route → surface.classify →
       application.open → form.snapshot → form.fill → submit.intent → submit.action →
       confirmation.observe` spans at the resident orchestration/ATS boundaries. Record
