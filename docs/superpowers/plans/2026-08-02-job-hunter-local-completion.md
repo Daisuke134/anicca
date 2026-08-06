@@ -2868,8 +2868,13 @@ OpenTelemetry decision and primary sources:
           fixture; the O2H boundary independently prevents exception payload leakage.
       - [ ] `L-49K0C2O3b2` — Complete resident pass/submit/confirmation spans.
         Parent closes only after all three children close.
-        - [ ] `L-49K0C2O3b2a` — Add `hourly_pass` at `browser_worker.run_worker`
+        - [x] `L-49K0C2O3b2a` — Add `hourly_pass` at `browser_worker.run_worker`
           with injected telemetry and focused tests (2 files, soft target 60 LOC).
+          - Completion receipt: the span begins only after the exclusive resident
+            worker lock is acquired and covers fixture, candidate queue, resident
+            pre-submit, and receipt completion paths. The exact same telemetry object
+            is passed to Browser Use pre-submit; focused worker/ATS/privacy tests pass
+            18/18. No development-session execution path gains browser authority.
         - [ ] `L-49K0C2O3b2b` — Add `submit.intent` and `confirmation.observe` at
           the existing ledger claim and authoritative Gmail/ATS reconciliation
           boundaries, split into claim and confirmation slices of at most 3 files
