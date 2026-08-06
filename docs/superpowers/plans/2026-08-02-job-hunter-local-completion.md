@@ -2978,10 +2978,18 @@ OpenTelemetry decision and primary sources:
   - [ ] `L-49K0C2O5` — Install the loopback-only Collector/backend, private durable
     storage, health evidence, bounded retention, and operator dashboard. Export
     failure must never stop applications. Parent closes only after all children.
-    - [ ] `L-49K0C2O5a` — Add the digest-pinned Grafana LGTM service launcher contract:
+    - [x] `L-49K0C2O5a` — Add the digest-pinned Grafana LGTM service launcher contract:
       localhost-only OTLP/Grafana bindings, private volume, deterministic container
       name, bounded logs, and machine-readable health receipt (3 files, soft target
       100 LOC).
+      - Completion receipt: RED failed because no resident observability launcher
+        module existed. GREEN accepts only the O1 digest-pinned LGTM image, binds OTLP
+        4318 and Grafana 3000 to `127.0.0.1`, mounts mode-0700 `/data`, caps Docker
+        logs at 10 MB x 3, applies 30-day Prometheus/Loki retention, and emits a
+        mode-0600 payload-free health receipt. Contract tests pass 2/2, adjacent pin
+        and telemetry tests pass 13/13, and the full suite passes 491/491. Primary
+        source: Grafana docker-otel-lgtm README documents `/data`, retention variables,
+        OTLP 4318, and Grafana 3000: https://github.com/grafana/docker-otel-lgtm
     - [ ] `L-49K0C2O5b` — Install the service as a resident LaunchAgent, pull/verify the
       exact pinned digest, start it, and prove restart plus loopback-only listeners;
       exporter unavailability remains non-blocking (3 files, soft target 100 LOC).
