@@ -1,6 +1,6 @@
 # Affiliate Agent — Revenue, Runtime, and Architecture SSOT
 
-Last updated: 2026-08-05 JST
+Last updated: 2026-08-06 JST
 
 Implementation SSOT:
 
@@ -23,8 +23,11 @@ receipts, repairs interrupted runs, and reallocates effort without daily human o
 Codex operation.
 
 English and Japanese never share one social identity, publication history,
-attribution cohort, or experiment. `Anicca EN` is the first X/Postiz surface. A
-dedicated Japanese account/integration is admitted only after English Gate E0.
+attribution cohort, or experiment. English is first, but publication remains
+fail-closed until a dedicated English Postiz/X identity is read back. The only
+currently verified Postiz X integration is Japanese `アニッチャ` / `@aniccaxxx`;
+it must never be used as the English surface. A dedicated Japanese canary is
+admitted only after English Gate E0.
 
 The machine cannot guarantee $10,000, $10,000,000, or $100,000,000 revenue. It guarantees
 measurable attempts, honest receipts, bounded experiments, compliance gates, and
@@ -40,8 +43,8 @@ techniques do not merge the ledgers.
 |---|---|---|
 | Amazon Associates Japan | CDP reached the Amazon sign-in page; approval state is not observable | `AUTH_REQUIRED`, no offer may publish until the account and tag are read back |
 | Rakuten Affiliate | CDP rendered the public home page with `ログイン`; approval state is not observable | `AUTH_REQUIRED`, keep the provider adapter dormant |
-| Postiz | Public web UI is logged out, but the existing Marketing Engine has verified API publication receipts and 29 integrations | Reuse the API lane; do not depend on Web UI login |
-| X | The CDP daily-driver can render individual public X posts; several search tabs are logged out | Use public readback and Postiz for the dedicated Anicca EN account; never infer account identity from an unauthenticated tab |
+| Postiz | CLI auth is valid and the live API returns 29 integrations. The only live X integration is ID `cmm6d7m5703rwpr0yr5vtme3w`, `アニッチャ` / `@aniccaxxx`; the local 31-row snapshot is stale | Keep English X publication disabled until a separate English integration is verified; refresh state from live API rather than hand-editing the snapshot |
+| X | Postiz reports a 4,000-character limit and says body links are stripped; public logged-out readback did not independently prove either expected handle | Use an owned registered page as the initial conversion surface. Treat X as receipted distribution only after identity and program/channel eligibility pass |
 | clip loop | launchd is installed, last exit code is 0, and logs show production/posting through 2026-08-01 | Not banned. Reuse its publisher, renderer, attribution, and scoring contracts |
 | recent clip runs | Contract reports `skipped`; older stderr shows Telegram DNS delivery failures | Diagnose scheduler/business gates separately from platform health |
 
@@ -123,9 +126,10 @@ not a claim about the current runtime.
    and exposes high-rate products and link-level reports.
    Source: [Rakuten Affiliate](https://affiliate.rakuten.co.jp/).
 5. High-value Japanese CPA supply cannot be reduced to Amazon/Rakuten. A8.net
-   supports sites, blogs, and SNS; afb reports roughly 17,000 promotions across
-   18 categories and identifies medical beauty and related lead-gen offers as
-   high-price/high-conversion areas.
+   supports only its registered/approved media and explicitly excludes Twitter
+   advertising; afb reports roughly 17,000 promotions across 18 categories and
+   identifies medical beauty and related lead-gen offers as high-price/high-
+   conversion areas. Supply never implies channel eligibility.
    Sources: [A8.net](https://www.a8.net/), [afb](https://www.afi-b.com/).
 6. Postiz exposes scheduling, articles, a public API, CLI, and MCP. It is a
    publisher adapter, not the Agent's brain or ledger.
@@ -156,15 +160,47 @@ not a claim about the current runtime.
     [Kit Affiliate Terms](https://kit.com/affiliate-tos),
     [HubSpot Affiliate Program](https://www.hubspot.com/partners/affiliates), and
     [Semrush Affiliate Program](https://www.semrush.com/lp/affiliate-program/en/).
+12. A8 forbids affiliate ads on Twitter, unregistered LINE messages and other
+    unregistered media, publication of program reward conditions, and
+    indiscriminate bulk partnership applications. Its high-ticket offers cannot
+    be sent through the article's proposed X → LINE funnel unless a separate
+    provider-specific written permission supersedes the observed terms.
+    Source: [A8.net prohibited matters](https://www.a8.net/compliance/prohibited-matter.php),
+    “Twitterについても広告を掲載することは禁止しています。”
+13. First-person experience cannot be generated when the operator has not used
+    the product. Source: [FTC Disclosures 101](https://www.ftc.gov/business-guidance/resources/disclosures-101-social-media-influencers),
+    “You can’t talk about your experience with a product you haven’t tried.”
 
 Creator revenue screenshots and claims found on X are market signals only. They
 never enter earnings or train a prompt as a winner without a matching external
 receipt from this Agent.
 
+### 2.1 External playbook intake: ブッタ article
+
+The [2026-08 article by `@buttanoteragoya`](https://x.com/i/article/2084059581924454404) is stored as
+`SELF_REPORTED_UNVERIFIED`: the profile and article are real, but the claimed
+monthly income, approval rates, conversion funnel, and one-month result have no
+public provider or payout receipts. It changes the workflow, not the revenue
+forecast.
+
+| Decision | Adopted pattern |
+|---|---|
+| COPY | Four boundaries: authenticated offer discovery → evidence-led decision asset → distribution variants → actual-data learning |
+| COPY | Pain, mechanism, workflow, fit/not-fit, limitations, and one CTA |
+| COPY | Generate hook variants and choose tomorrow's one action plus one stop action from observed data |
+| TWEAK | Rank only offers returned by authenticated ASP/API/browser receipts; unknown approval rate, payout, or channel remains `UNKNOWN` |
+| TWEAK | First-person copy requires an `ExperienceClaimReceipt`; otherwise use official evidence, direct tests, and explicit limitations |
+| TWEAK | X, LINE, email, and owned pages each require a fresh `ChannelEligibilityReceipt`; owned registered pages are the default |
+| REJECT | Revenue promises, predicted impressions/CVR, hidden advertising, fabricated experience, article-volume quotas, automated engagement, and A8 X/LINE direct ads |
+
+Every external playbook stores `source_url`, author, capture time, claim type,
+evidence grade, checked provider terms, `COPY|TWEAK|REJECT`, and reason. A prompt
+is never promoted merely because its author reports income.
+
 ## 3. Single recommended strategy
 
-Start with one narrow English buyer problem and one dedicated `Anicca EN`
-identity. The initial candidate set is non-regulated B2B SaaS and
+Start with one narrow English buyer problem and one dedicated English identity
+that is not yet provisioned. The initial candidate set is non-regulated B2B SaaS and
 creator/productivity software because its official programs expose higher or
 recurring payouts and the existing English publication lane reduces launch
 friction. Exact market-size superiority is unproven and is not a premise.
@@ -238,7 +274,7 @@ prompts and browser sessions are replaceable executors.
 | Evidence pack | Stores official facts, direct product evidence, alternatives, audience pain, counterclaims, and freshness TTL |
 | Content studio | Produces an English article, X thread/post, X Article, carousel, slideshow, or video; the later Japanese pod uses independent evidence, identity, and localization rather than mixed-language reuse |
 | Policy gate | Fail-closed for missing disclosure, unverified claims, prohibited categories, self-dealing, stale price, broken link, or unregistered surface |
-| Publisher adapters | Reuse Writer adapters and Marketing Engine/Postiz. Every publish requires provider receipt plus public readback |
+| Publisher adapters | Build a Postiz adapter over the verified CLI/API contract; current Marketing Engine code supplies generic receipts/rendering but no proven Affiliate Postiz adapter. Every publish requires provider receipt plus public readback |
 | Attribution | Agent-owned redirect records click ID, content, placement, offer, language, and experiment before redirecting to the signed affiliate URL |
 | Receipt reconciler | Joins ASP transaction/sub-ID reports to clicks. Unknown is never zero; pending, approved, reversed, and paid remain distinct |
 | Learner | Promotes a tactic only from mature cohorts and deepest common signal: net commission → approved orders → qualified leads → clicks → engagement |
@@ -246,15 +282,17 @@ prompts and browser sessions are replaceable executors.
 
 ### 4.2 Canonical records
 
-`provider_account`, `offer`, `offer_snapshot`, `evidence_claim`, `content_unit`,
+`provider_account`, `offer`, `offer_snapshot`, `external_playbook_intake`,
+`channel_eligibility_receipt`, `experience_claim_receipt`, `evidence_claim`, `content_unit`,
 `placement`, `publish_intent`, `public_readback`, `click`, `conversion`,
 `commission_receipt`, `experiment`, `policy_decision`, `wait_state`, and
 `recovery_attempt` are the minimum entities.
 
 Every commission receipt stores provider transaction ID, click/sub-ID when
 available, currency, gross commission, reversal/refund, fees, net amount,
-status, observed time, and immutable source hash. Earnings count only `paid` or
-the explicitly reported `approved_not_paid` class; they are never combined.
+status, observed time, and immutable source hash. Canonical states are
+`pending`, `approved`, `reversed`, and `paid`; UI may say “approved, not paid”
+but that phrase is not a fifth storage state. Approved and paid are never combined.
 
 ## 5. Loop and state machine
 
@@ -310,8 +348,9 @@ Reuse from the existing system:
 
 - Writer Agent: research acquisition, JA/EN localization, X/article publisher
   adapters, public readback, same-run resume, claim registry;
-- Marketing Engine: Postiz lane, account isolation, slideshow/video/carousel
-  renderers, attribution records, mature-cohort scoring, Telegram reporting;
+- Marketing Engine: generic publication receipts, account-isolation patterns,
+  slideshow/video/carousel renderers, mature-cohort scoring, and Telegram
+  reporting; a Postiz Affiliate adapter still has to be implemented and verified;
 - Life Manager financial ledgers: verified money semantics and reporting.
 
 OSS inspected:
@@ -364,8 +403,8 @@ Before that, revenue is `unknown`, not a fabricated conversion forecast.
 
 1. Create the Agent schema and append-only Affiliate ledger; add invariants for
    unknown, pending, approved, reversed, and paid money.
-2. Read back the Postiz integration identity for `Anicca EN`; reject any publish
-   when provider, account, or locale differs from the manifest.
+2. Provision/read back a dedicated English Postiz integration; the currently
+   verified Japanese `@aniccaxxx` integration must fail the English manifest.
 3. Apply to/read back at least two English candidate programs; activate only an
    actually authenticated offer with current terms and an executable link.
 4. Implement the signed redirect/sub-ID service and verify click → provider
@@ -409,8 +448,10 @@ without changing the architecture.
 
 - No English affiliate program application, approval, account ownership, or
   executable tracking link has been read back for this Agent.
-- The exact Postiz integration ID and public X identity for `Anicca EN` have not
-  been re-read in this implementation run.
+- Postiz auth and ID are now known, but they prove only Japanese `@aniccaxxx`;
+  no dedicated English Postiz/X integration exists in the live readback.
+- Postiz strips X body links; a separately verified reply-link capability or,
+  preferably, an owned registered landing page is required for conversion.
 - Amazon JP and Rakuten remain `AUTH_REQUIRED`; acceptance is unknown.
 - English total addressable market and the claim that it is larger than Japanese
   are not quantified by the collected primary sources.

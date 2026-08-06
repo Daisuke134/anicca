@@ -50,7 +50,7 @@ commission watermark as newly attributed revenue.
 | Runtime | Legacy core/tmux is absent; hourly and daily launchd services are not registered | Two launchd owners wake one durable queue and resume the same work without duplicate side effects |
 | Agent brain | F2 is pushed and focused tests pass; only fake-provider process replay exists | Terra proposes one typed action and a live allowlisted provider boundary returns a verification receipt |
 | Offers | No English account, approval, terms, or executable link is read back | At least one English offer is `EXECUTABLE` from current ownership, terms, channel, destination, and tracking-link receipts |
-| Publishing | No Affiliate public placement exists | `Anicca EN` publication receipt, public readback, disclosure, redirect, and durable click lineage agree |
+| Publishing | Postiz auth is valid, but its only X integration is Japanese `@aniccaxxx` and X body links are stripped; no Affiliate public placement exists | A dedicated English identity, owned conversion page, publication receipt, public readback, disclosure, redirect, and durable click lineage agree |
 | Money | No new approved Affiliate commission exists | Provider transactions append pending/approved/reversed/paid receipts and join by strongest available attribution key |
 | Telegram | Delivery currently fails with `chat not found`; no provider `message_id` exists | Immediate events and hourly/daily/weekly summaries deliver at-most-once from the same snapshot as Life Manager |
 | Learning | No mature Affiliate cohort exists | One-variable experiments use external net outcomes, then KEEP or REVERT with a consumed strategy hash |
@@ -61,8 +61,9 @@ commission watermark as newly attributed revenue.
 
 The software is complete when all of the following are true:
 
-1. One authenticated English offer has provider-owned account, terms,
-   executable-link, and dedicated `Anicca EN` Postiz integration receipts.
+1. One authenticated English offer has provider-owned account, terms, and
+   executable-link receipts; a dedicated English publication identity is
+   independently verified and cannot resolve to Japanese `@aniccaxxx`.
 2. One English placement passes evidence, disclosure, policy,
    publication, public-readback, redirect, and click-ingest E2E tests.
 3. A real provider report can be reconciled to a placement and click/sub-ID
@@ -170,6 +171,30 @@ remain deterministic.
 
 This approach is selected because it reuses the Writer Agent's verified runtime
 contracts while preventing Writer and Affiliate revenue from being combined.
+
+### 4.1 External playbook intake
+
+Creator workflows enter through a typed intake before they can influence a
+prompt or strategy: source URL/author/capture time, claim type, evidence grade,
+provider-terms receipt, and `COPY|TWEAK|REJECT` decision. The ブッタ August 2026
+article is `SELF_REPORTED_UNVERIFIED`. We copy its four-stage decomposition and
+actual-data feedback cadence; we reject its revenue promise, fabricated
+experience pattern, forecast metrics, volume targets, and A8 X/LINE funnel.
+
+Three fail-closed receipts are added:
+
+- `ChannelEligibilityReceipt`: provider, program, surface, registered URL,
+  allowed flag, terms hash, and read time;
+- `ExperienceClaimReceipt`: product used, evidence reference, owner identity,
+  and observation date;
+- `ForecastPolicy`: impressions, CTR, CVR, and income are `UNKNOWN` until a
+  comparable observed cohort exists; model guesses never enter the ledger.
+
+A8-specific Japanese finance, insurance, medical, education, and other
+high-ticket offers remain quarantined until provider-channel and regulated-claim
+contracts pass. A8's current terms explicitly forbid Twitter advertising and
+ads in unregistered LINE messages, so the default conversion surface is an owned
+registered page, not X or LINE.
 
 ### 4.2 Rejected: independent multi-agent swarm with separate state
 
@@ -432,6 +457,9 @@ honest alternatives. It includes:
 - cost, trade-offs, alternatives, failure modes, and freshness date;
 - adjacent and visible affiliate disclosure;
 - one measurable CTA per placement;
+- no first-person experience unless an `ExperienceClaimReceipt` proves real use;
+- no predicted impressions, saves, registration rate, conversion, or income is
+  stored as fact; absent observed cohorts remain `UNKNOWN`;
 - after English E0 unlocks Japanese production, Japanese and English versions
   are independently localized, never mechanically translated as if local terms
   and availability were identical.
@@ -491,7 +519,8 @@ Hourly workers refresh offer/link health, ingest clicks, reconcile available
 reports, resume failed intents, and quarantine local failures. The daily worker
 measures prior English cohorts, verifies terms, selects one reader problem,
 produces at most one primary English unit until economics justify more, publishes
-derived placements, performs public readback, and emits a report. A Japanese
+derived placements only on receipted eligible surfaces, performs public
+readback, and emits a report. It has no publication-count quota. A Japanese
 daily worker is created only after E0 and uses its own identity and cohorts.
 Outcome windows close at 24 hours, 72 hours, 7 days, and 30 days without replacing
 missing evidence with zero.
@@ -514,9 +543,9 @@ missing evidence with zero.
 ## 14. Learning contract
 
 The learner changes one variable per experiment: offer, hook, proof shape, CTA,
-format, channel, or publish time. A cohort must contain at least ten comparable
-mature placements before promotion unless actual paid outcomes provide a
-stronger deterministic result.
+format, channel, or publish time. One paid outcome may prove that an event
+occurred, but capacity or strategy promotion still requires at least ten
+comparable mature placements and a positive mature cohort.
 
 Reward authority is:
 

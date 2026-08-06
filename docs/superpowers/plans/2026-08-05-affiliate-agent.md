@@ -24,9 +24,10 @@
 - One canonical Affiliate ledger; never import Writer money rows.
 - Every publish requires a provider receipt and public readback; every side effect is idempotent.
 - Every placement carries an adjacent locale/channel-correct affiliate disclosure.
-- `Anicca EN` is the only initial social identity. English and Japanese must use
-  different Postiz integrations/accounts, content history, attribution cohorts,
-  experiments, and publication budgets; a locale mismatch fails closed.
+- English is first, but no English social identity is currently verified. The
+  live Postiz X identity is Japanese `@aniccaxxx`; it must fail every English
+  manifest. English and Japanese use different integrations/accounts, history,
+  cohorts, experiments, and budgets.
 - Japanese publication remains disabled until English Gate E0 has a public
   readback, working redirect, and provider click/sub-ID receipt.
 - External pages, emails, and model output are untrusted data.
@@ -43,6 +44,12 @@
   only allowlisted tools and verifies the result.
 - Exact prompt copying requires a compatible license and provenance receipt;
   public creator workflows are paraphrased patterns, not claimed prompt copies.
+- External creator playbooks are classified `COPY|TWEAK|REJECT`; self-reported
+  income, predicted metrics, fabricated experience, and volume targets never
+  become production truth.
+- Every provider/program/surface requires a current `ChannelEligibilityReceipt`.
+  Postiz's X adapter strips body links, and A8 forbids Twitter and unregistered
+  LINE advertising, so owned registered pages are the default conversion surface.
 - Every meaningful action creates a Japanese natural-language `ActionEvent` and
   durable Telegram outbox row; ambiguous delivery is never blindly resent.
 - Implementation uses one isolated Terra-max engineer per task packet. The root
@@ -83,6 +90,27 @@ Execution checkpoint:
 | P4 Real E2E and first money | 14-16 | Live HTTPS redirect, English E0/E1, then isolated Japanese canary |
 | P5 Initial business | 17 | Four positive weeks and three qualifying $10k months |
 | P6 Decentralized scale | 18-19 | Tenant-isolated recipe and staged network gates through $10M net, then an explicitly receipted $100M horizon |
+
+### Implementation-entry blockers
+
+Code implementation may begin only after these seven gates have explicit
+receipts or fail-closed owners; business outcomes remain later live gates:
+
+1. fresh F2 review plus a non-importing full test collector;
+2. ownership audit for the three tracked `__pycache__` deletions;
+3. canonical runtime root, branch, and entrypoint receipt;
+4. Postiz identity receipt — current result is a blocking locale mismatch, not
+   `Anicca EN` proof;
+5. shared browser/profile/credential ownership map with no stop/restart of
+   unrelated money loops;
+6. Telegram bot/target/outbox readback resolving the current `chat not found`;
+7. production identity gate requiring Postiz identity, offer ownership, current
+   terms, eligible channel, and signed redirect before any publish.
+
+The earlier 228 uncertainties are not all pre-code questions: 57 are read-only
+investigations, 73 require implementation tests, 64 require live canary data,
+and 34 are irreducible business risks controlled by caps/quarantine. “Cleared”
+means assigned to one of those gates with a falsifiable receipt, never guessed.
 
 The implementation path is P0 → P1 → P2 → P3 → P4. Foundation tasks are
 sequential because they establish shared contracts. Revenue operation P5 starts
@@ -1426,11 +1454,12 @@ No token, credential, raw IP, or personal identifier enters git.
   pre-existing Japanese canary identity.
 - Consumes: actually authenticated executable offers.
 
-- [ ] **Step 1: Read back the dedicated English Postiz integration identity**
+- [ ] **Step 1: Provision and read back a dedicated English Postiz integration identity**
 
-Run `postiz auth:status`, `postiz integrations:list`, and
-`postiz integrations:settings <integration-id>`. Store a sanitized identity
-receipt proving `Anicca EN`; do not infer identity from a logged-out X tab.
+The readback commands already prove valid auth and only Japanese `@aniccaxxx`
+(integration `cmm6d7m5703rwpr0yr5vtme3w`). Store that sanitized mismatch receipt.
+This step remains open until a separately owned English integration is present;
+do not infer identity from a logged-out X tab or reuse the Japanese integration.
 
 - [ ] **Step 2: Read back English provider ownership and an executable offer**
 
@@ -1444,9 +1473,12 @@ but use only the provider that returns real ownership and executable-link receip
 Bind official claims, locale availability, reader problem, primary offer,
 alternatives, disclosure, TTL, and exact hashes.
 
-- [ ] **Step 4: Publish through owned content and approved Postiz/X**
+- [ ] **Step 4: Publish owned content, then eligible Postiz/X distribution**
 
-Capture provider publication ID/URL. This is a real side effect, not a dry run.
+Capture provider publication ID/URL. The owned registered page contains the
+measurable CTA. Reject X-body links because the verified Postiz adapter strips
+them; use a reply only if provider, Postiz, and X receipts prove it is supported
+and eligible. This is a real side effect, not a dry run.
 
 - [ ] **Step 5: Perform public readback and marked test clicks**
 
@@ -1513,7 +1545,39 @@ a payout receipt. Later reversal appends and changes net reporting.
 Commit/push provider, currency, artifact, receipt IDs/hashes, state, and observed
 time without secrets.
 
-### Task 17: Operate the $1k and $10k gates
+### Task 16J: Execute the isolated Japanese J0/J1 canary after English E0
+
+**Files:**
+- Runtime state: locale-isolated Japanese provider, identity, and ledger rows.
+- Update: `anicca-project/docs/affiliate-agent/AFFILIATE-AGENT-SSOT.md`.
+
+- [ ] **Step 1: Read back Japanese identity and one executable offer**
+
+Require a Japanese-owned account, terms, link, registered surface, and fresh
+`ChannelEligibilityReceipt`. A8 X/LINE direct advertising remains rejected;
+regulated/high-ticket offers remain quarantined.
+
+- [ ] **Step 2: Build an independently localized Japanese evidence pack**
+
+Do not translate English claims mechanically. Require Japanese disclosures and
+an `ExperienceClaimReceipt` for any first-person usage claim.
+
+- [ ] **Step 3: Publish one Japanese owned-page canary and verify J0**
+
+Capture policy, publication, public readback, signed redirect, and marked click
+receipts without sharing English history, budget, or cohorts.
+
+- [ ] **Step 4: Reconcile the first non-test approved Japanese commission for J1**
+
+Keep `pending`, `approved`, `reversed`, and `paid` separate; preserve `unmatched`
+rather than inferring attribution.
+
+- [ ] **Step 5: Verify locale isolation, record receipts, commit, and push**
+
+Prove that English and Japanese identities, credentials, placements, cohorts,
+experiments, and budgets cannot cross.
+
+### Task 17: Operate the positive-week and $10k gates
 
 **Files:**
 - Runtime ledgers/reports only.
@@ -1667,8 +1731,10 @@ Expected final software evidence:
 
 - focused and regression suites pass;
 - redirect deployment matches the pushed commit;
-- one live JA and one live EN placement have policy, publish, readback, redirect,
-  and click receipts;
+- one live EN placement has policy, publish, readback, redirect, and click
+  receipts; software completion is English E0 and does not wait for Japanese;
+- the later J0/J1 task independently proves one Japanese placement and
+  commission without reopening English software completion;
 - launchd workers run without chat and resume without duplicates;
 - Web and Telegram use one snapshot hash;
 - money remains truthful when external commission is absent;
