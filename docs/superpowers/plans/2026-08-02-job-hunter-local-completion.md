@@ -3203,6 +3203,18 @@ OpenTelemetry decision and primary sources:
       before failover, exits immediately when controls/form appear, and still opens
       an application entry at most once. Next verification is another installed
       resident launch, not a development-session form submission.
+    - Root-cause correction: resident run `daily-20260806-180310`, fence 118,
+      remained on each of three OpenAI Ashby candidates for the expanded window and
+      still produced three empty snapshots, three `application_surface_not_found`
+      failures, and zero submissions. A read-only comparison against the same live
+      CloakBrowser target proved the browser held the correct OpenAI URL/title plus
+      5,908 body-text characters and 14 controls. The delay hypothesis is therefore
+      rejected: Browser Use session/focus translation, not CloakBrowser or Ashby
+      render time, was the failing boundary. Per owner direction, the resident
+      default is now the existing direct CloakBrowser CDP executor
+      (`playwright_ats.py`, receipt executor `cloakbrowser-cdp`); the resident apply
+      path no longer imports or invokes `browser_use_ats.py`. Browser Use remains
+      historical code only and is not an authorized fallback for the live loop.
 - [ ] **L-49K2** — Make the resident fill contract complete and inspectable. Route the
   exact accepted resume; fill verified identity/contact/location/start-date fields;
   select work authorization and sponsorship answers from the private profile; verify
