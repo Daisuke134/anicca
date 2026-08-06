@@ -6,6 +6,7 @@ const { spawnSync } = require("node:child_process");
 
 const SHA = /^sha256:[0-9a-f]{64}$/;
 const SAFE = /^[A-Za-z0-9:._-]{1,160}$/;
+const SAFE_BRANCH = /^[A-Za-z0-9][A-Za-z0-9/._-]{0,159}$/;
 
 function invalid() {
   throw new Error("Connector Healer shadow invalid");
@@ -82,6 +83,28 @@ function healerPrompt(incident) {
   ].join("\n");
 }
 
+function appendRevision(file, input) {
+  const row = {
+    schema_version: 1,
+    fingerprint: input.fingerprint,
+    revision: input.revision,
+    status: input.status,
+    branch: input.branch,
+    commit: input.commit || "none",
+    observed_at: input.observed_at,
+  };
+  if (
+    !SHA.test(String(row.fingerprint || ""))
+    || !Number.isInteger(row.revision) || row.revision < 1 || row.revision > 3
+    || !["revision_created", "revision_failed", "worktree_failed"].includes(row.status)
+    || !SAFE_BRANCH.test(String(row.branch || "")) || !SAFE.test(String(row.commit || ""))
+    || new Date(Date.parse(String(row.observed_at || ""))).toISOString() !== row.observed_at
+  ) invalid();
+  fs.mkdirSync(path.dirname(file), { recursive: true, mode: 0o700 });
+  fs.appendFileSync(file, `${JSON.stringify(row)}\n`, { encoding: "utf8", mode: 0o600 });
+  return row;
+}
+
 async function runHealerShadow(options = {}) {
   const repoRoot = path.resolve(String(options.repoRoot || ""));
   const stateDir = path.resolve(String(options.stateDir || ""));
@@ -111,7 +134,13 @@ async function runHealerShadow(options = {}) {
   let result = await execute("git", ["-C", repoRoot, "worktree", "add", "-b", branch, worktree, incident.code_commit], {
     cwd: repoRoot, env: healerEnvironment(options.env),
   });
-  if (!result || result.status !== 0) invalid();
+  if (!result || result.status !== 0) {
+    appendRevision(revisionsFile, {
+      fingerprint: incident.fingerprint, revision, status: "worktree_failed",
+      branch, observed_at: observedAt,
+    });
+    return Object.freeze({ status: "worktree_failed", branch, worktree });
+  }
   result = await execute("codex", [
     "exec", "--json", "--model", "gpt-5.6-terra",
     "--sandbox", "workspace-write", "-C", worktree, "-",
@@ -120,23 +149,26 @@ async function runHealerShadow(options = {}) {
     env: healerEnvironment(options.env),
     input: healerPrompt(incident),
   });
-  if (!result || result.status !== 0 || !String(result.stdout || "").includes("thread.started")) invalid();
+  if (!result || result.status !== 0 || !String(result.stdout || "").includes("thread.started")) {
+    appendRevision(revisionsFile, {
+      fingerprint: incident.fingerprint, revision, status: "revision_failed",
+      branch, observed_at: observedAt,
+    });
+    return Object.freeze({ status: "revision_failed", branch, worktree });
+  }
   const commit = await execute("git", ["-C", worktree, "rev-parse", "HEAD"], {
     cwd: worktree, env: healerEnvironment(options.env),
   });
   const commitId = String(commit && commit.stdout || "").trim();
   if (!commit || commit.status !== 0 || !SAFE.test(commitId)) invalid();
-  const row = {
-    schema_version: 1,
+  const row = appendRevision(revisionsFile, {
     fingerprint: incident.fingerprint,
     revision,
     status: "revision_created",
     branch,
     commit: commitId,
     observed_at: observedAt,
-  };
-  fs.mkdirSync(stateDir, { recursive: true, mode: 0o700 });
-  fs.appendFileSync(revisionsFile, `${JSON.stringify(row)}\n`, { encoding: "utf8", mode: 0o600 });
+  });
   return Object.freeze({ status: row.status, branch, commit: commitId, worktree });
 }
 

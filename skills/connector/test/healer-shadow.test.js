@@ -80,3 +80,59 @@ test("Healer converts one privacy-safe incident into one isolated Terra Superpow
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("Healer records a failed Codex revision and stops at three revisions per 24 hours", async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "connector-healer-cap-"));
+  const stateDir = path.join(root, "state");
+  const worktreeRoot = path.join(root, "worktrees");
+  fs.mkdirSync(stateDir, { recursive: true });
+  const incidents = ["a", "b", "c", "d"].map((suffix, index) => ({
+    schema_version: 1,
+    wake_id: `wake:cap-${index}`,
+    run_id: `run:cap-${index}`,
+    stage: "native_pass",
+    safe_action: "runtime_execute",
+    expected_effect: "applied_bundle",
+    observed_effect: "tool_failure",
+    incident_class: "tool_failure",
+    owner_generation: 1,
+    code_commit: "52dfb3f2e",
+    cursor: `connpass:2026-08-07:${index}:2`,
+    observed_at: "2026-08-06T16:00:00.000Z",
+    fingerprint: `sha256:${suffix.repeat(64)}`,
+  }));
+  fs.writeFileSync(
+    path.join(stateDir, "observer-incidents.jsonl"),
+    `${incidents.map(JSON.stringify).join("\n")}\n`,
+    { mode: 0o600 },
+  );
+  let codexCalls = 0;
+  const options = {
+    repoRoot: REPO_ROOT, stateDir, worktreeRoot,
+    now: () => new Date("2026-08-06T16:05:00.000Z"),
+    env: { PATH: process.env.PATH, HOME: root },
+    execute: async (command) => {
+      if (command === "codex") {
+        codexCalls += 1;
+        return { status: 1, stdout: '{"type":"error","message":"bounded failure"}\n' };
+      }
+      return { status: 0, stdout: "" };
+    },
+  };
+  try {
+    for (let index = 0; index < 3; index += 1) {
+      const result = await runHealerShadow(options);
+      assert.equal(result.status, "revision_failed");
+    }
+    const capped = await runHealerShadow(options);
+    assert.equal(capped.status, "revision_cap");
+    assert.equal(codexCalls, 3);
+    const revisions = fs.readFileSync(path.join(stateDir, "healer-revisions.jsonl"), "utf8")
+      .trim().split("\n").map(JSON.parse);
+    assert.deepEqual(revisions.map((row) => row.status), [
+      "revision_failed", "revision_failed", "revision_failed",
+    ]);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
