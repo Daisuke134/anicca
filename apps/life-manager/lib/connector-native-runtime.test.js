@@ -156,6 +156,7 @@ async function fixture(options = {}) {
   };
   return {
     calls,
+    pack,
     config: {
       tenantId: TENANT,
       timeZone: "Asia/Tokyo",
@@ -569,6 +570,106 @@ test("a terminal known failure from the previous wake is not written again", asy
   assert.deepEqual(input.calls.filter(([name]) => name === "write").map(([, value]) => value.application.eventRef), [
     "luma-event://event/agent-night",
   ]);
+});
+
+test("an unknown effect is read back before absent retry or registered verification", async () => {
+  const input = await fixture();
+  const profile = Object.freeze({ tenant_id: TENANT, timezone: "Asia/Tokyo" });
+  const goalDecision = Object.freeze({ ranked_events: [{
+    event_ref: "luma-event://event/founder-night",
+  }] });
+  const spendSequence = Object.freeze({
+    ordered_candidates: [{
+      event_ref: "luma-event://event/founder-night",
+      canonical_url: "https://luma.com/founder-night",
+    }],
+    skipped: [],
+  });
+  let inspections = 0;
+  let writes = 0;
+  let providerState = "unknown";
+  const delivered = Object.freeze({
+    status: "incomplete",
+    outcome: "open_coverage",
+    event_ref: "luma-event://event/founder-night",
+  });
+  input.deps.createPack = () => ({
+    ...input.pack,
+    provider: {
+      async inspectRegistration(contract) {
+        inspections += 1;
+        assert.equal(contract.event_ref, "luma-event://event/founder-night");
+        assert.equal(contract.canonical_url, "https://luma.com/founder-night");
+        return { state: providerState };
+      },
+      async submitRegistration() { throw new Error("unknown effect was resubmitted"); },
+    },
+    async gateDateCalendar() {
+      return Object.freeze({ date: "2026-08-05", candidates: [{
+        event_ref: "luma-event://event/founder-night", eligible: true,
+      }] });
+    },
+  });
+  const wake = () => runNativeConnectorPass({
+    ...input,
+    config: {
+      ...input.config,
+      profilePath: "/private/tmp/dais-local.json",
+      lunaEvidenceDir: "/private/tmp/connector-luna",
+      homeLocation: "opaque-home",
+      telegramTarget: "opaque-chat",
+      calendarCoverageUrl: "https://calendar.google.com/calendar/u/0/r",
+      calendarId: "primary",
+      mapsKey: "maps-secret",
+      candidateAttempts: [{
+        event_ref: "luma-event://event/founder-night",
+        outcome: "unknown_effect",
+        safe_reason: "CONNECTOR_EFFECT_UNKNOWN",
+        observed_at: "2026-08-02T00:00:00.000Z",
+        retry_after: null,
+      }],
+    },
+    deps: {
+      ...input.deps,
+      readProfile() { return profile; },
+      async runLunaJudgment() { return goalDecision; },
+      async createSpendPolicy() { return Object.freeze({ limits: [] }); },
+      planDateSpend() { return spendSequence; },
+      async runNativeWrite() { writes += 1; return delivered; },
+      createRouteMinutes() { return async () => 20; },
+      isVerifiedConnectorProfile: (value) => value === profile,
+      isVerifiedEventGoalSerendipity: (value) => value === goalDecision,
+      isVerifiedEventSpendSequence: (value) => value === spendSequence,
+    },
+  });
+
+  const result = await wake();
+  assert.equal(inspections, 1);
+  assert.equal(writes, 0);
+  assert.equal(result.write, null);
+  assert.deepEqual(result.candidate_attempts, [{
+    event_ref: "luma-event://event/founder-night",
+    outcome: "unknown_effect",
+    safe_reason: "CONNECTOR_EFFECT_UNKNOWN",
+    observed_at: NOW,
+    retry_after: null,
+  }]);
+
+  providerState = "absent";
+  const absent = await wake();
+  assert.equal(writes, 0);
+  assert.deepEqual(absent.candidate_attempts, [{
+    event_ref: "luma-event://event/founder-night",
+    outcome: "known_no_effect",
+    safe_reason: "LUMA_RECONCILED_ABSENT",
+    observed_at: NOW,
+    retry_after: NOW,
+  }]);
+
+  providerState = "registered";
+  const registered = await wake();
+  assert.equal(writes, 1);
+  assert.equal(registered.write, delivered);
 });
 
 test("known failures exhausting one date continue to the next open date in the same pass", async () => {
