@@ -3,14 +3,17 @@
 const crypto = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
+const { connectorEventUrl } = require("./cloakbrowser-daily-driver.js");
 
 const CONNECTOR_CDP_ENDPOINT = "http://127.0.0.1:9222";
 
 function normalizedEventUrl(value) {
-  const parsed = new URL(value);
-  if (parsed.protocol !== "https:" || !["luma.com", "lu.ma"].includes(parsed.hostname)) {
-    throw new Error("Connector tab owner requires a public Luma URL");
-  }
+  let parsed;
+  try { parsed = new URL(value); } catch { throw new Error("Connector tab owner requires a public event URL"); }
+  const providers = ["luma", "connpass", "peatix", "meetup", "doorkeeper", "eventbrite"];
+  if (!providers.some((provider) => {
+    try { connectorEventUrl(provider, value); return true; } catch { return false; }
+  })) throw new Error("Connector tab owner requires a public event URL");
   return `${parsed.origin}${parsed.pathname.replace(/\/$/, "") || "/"}`;
 }
 
@@ -93,7 +96,7 @@ function createConnectorTabOwner({
         && validPageWebsocket(target.webSocketDebuggerUrl, target.id)
       ));
       if (matches.length !== 1) {
-        throw new Error(`Expected exactly one owned Luma page; observed ${matches.length}`);
+        throw new Error(`Expected exactly one owned event page; observed ${matches.length}`);
       }
       const target = matches[0];
       if (targetLease) {

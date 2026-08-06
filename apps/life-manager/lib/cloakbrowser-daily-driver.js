@@ -1,23 +1,37 @@
 "use strict";
 
 const DAILY_DRIVER_CDP = "http://127.0.0.1:9222";
-const LUMA_HOSTS = new Set(["luma.com", "www.luma.com", "lu.ma"]);
+const PROVIDER_HOSTS = Object.freeze({
+  luma: Object.freeze(["luma.com", "lu.ma"]),
+  connpass: Object.freeze(["connpass.com"]),
+  peatix: Object.freeze(["peatix.com"]),
+  meetup: Object.freeze(["meetup.com"]),
+  doorkeeper: Object.freeze(["doorkeeper.jp"]),
+  eventbrite: Object.freeze(["eventbrite.com"]),
+});
 
-function lumaUrl(value) {
+function hostMatches(hostname, roots) {
+  return roots.some((root) => hostname === root || hostname.endsWith(`.${root}`));
+}
+
+function connectorEventUrl(provider, value) {
   let url;
   try {
     url = new URL(String(value == null ? "" : value).trim());
   } catch {
-    throw new Error("Luma URL invalid");
+    throw new Error("Connector event URL invalid");
   }
+  const roots = PROVIDER_HOSTS[String(provider || "")];
   const hostname = url.hostname.toLowerCase();
   if (
+    !roots
+    ||
     url.protocol !== "https:"
     || url.username
     || url.password
-    || (!LUMA_HOSTS.has(hostname) && !hostname.endsWith(".luma.com"))
+    || !hostMatches(hostname, roots)
   ) {
-    throw new Error("Luma URL invalid");
+    throw new Error("Connector event URL invalid");
   }
   url.hash = "";
   return url.toString();
@@ -139,9 +153,8 @@ function createCloakBrowserDailyDriver(options = {}) {
     return targetOwnershipPromise;
   }
 
-  return Object.freeze({
-    async withLumaPage(value, task) {
-      const url = lumaUrl(value);
+  async function withEventPage(provider, value, task) {
+      const url = connectorEventUrl(provider, value);
       if (typeof task !== "function") {
         throw new Error("CloakBrowser daily-driver task unavailable");
       }
@@ -209,13 +222,18 @@ function createCloakBrowserDailyDriver(options = {}) {
       } finally {
         if (page && typeof page.close === "function") await page.close();
       }
-    },
+  }
+
+  return Object.freeze({
+    withEventPage,
+    withLumaPage(value, task) { return withEventPage("luma", value, task); },
   });
 }
 
 module.exports = {
   DAILY_DRIVER_CDP,
   classifyLumaLogin,
+  connectorEventUrl,
   createCloakBrowserDailyDriver,
   resolvedDailyDriverEndpoint,
 };

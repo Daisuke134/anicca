@@ -87,7 +87,7 @@ test("refuses another browser owner and ambiguous matching tabs", async () => {
 
   await assert.rejects(
     owner.claim({ canonicalUrl: "https://luma.com/tokyo-ai", baselineTargetIds: [] }),
-    /exactly one owned Luma page/i,
+    /exactly one owned event page/i,
   );
 });
 
@@ -164,4 +164,32 @@ test("claims a parent-created exact target and delegates its fenced lifecycle", 
   assert.equal(await owner.probe(receipt), true);
   assert.equal(await owner.release(receipt), true);
   assert.deepEqual(calls.map(([name]) => name), ["claim", "probe", "release"]);
+});
+
+test("claims a parent-created Connpass target but rejects an arbitrary origin", async () => {
+  const canonicalUrl = "https://tokyo-builders.connpass.com/event/101";
+  const fence = Object.freeze({
+    schema_version: 1, owner_token: "connector-owner-token", generation: 1,
+    target_id: "CONNPASS_TARGET",
+    page_websocket: "ws://127.0.0.1:9222/devtools/page/CONNPASS_TARGET",
+    canonical_url: canonicalUrl,
+    claimed_at: "2026-08-06T01:02:03.000Z", heartbeat_at: "2026-08-06T01:02:03.000Z",
+  });
+  const owner = createConnectorTabOwner({
+    targetLease: {
+      async claim(input) { assert.equal(input.canonicalUrl, canonicalUrl); return fence; },
+      async heartbeat() { return fence; }, async probe() { return true; },
+      async release() { return true; }, async reapStale() { return {}; },
+    },
+    listTargets: async () => [],
+  });
+  const receipt = await owner.claimExact({
+    canonicalUrl: `${canonicalUrl}/?ref=connector`, targetId: "CONNPASS_TARGET",
+    pageWebsocket: "ws://127.0.0.1:9222/devtools/page/CONNPASS_TARGET",
+  });
+  assert.equal(receipt.canonical_url, canonicalUrl);
+  await assert.rejects(owner.claimExact({
+    canonicalUrl: "https://example.com/event/101", targetId: "CONNPASS_TARGET",
+    pageWebsocket: "ws://127.0.0.1:9222/devtools/page/CONNPASS_TARGET",
+  }), /public event URL/i);
 });

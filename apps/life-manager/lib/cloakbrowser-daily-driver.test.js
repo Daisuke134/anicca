@@ -95,11 +95,11 @@ test("refuses another CDP port, non-Luma origins, credentials, and multiple cont
   const driver = createCloakBrowserDailyDriver({ connectOverCDP: fx.connectOverCDP });
   await assert.rejects(
     driver.withLumaPage("https://example.com/event", async () => {}),
-    /Luma URL/i,
+    /event URL/i,
   );
   await assert.rejects(
     driver.withLumaPage("https://user:secret@luma.com/event", async () => {}),
-    /Luma URL/i,
+    /event URL/i,
   );
 
   const multiple = fixture({ contexts: 2 });
@@ -285,4 +285,24 @@ test("uses a parent-created fenced target and releases it only after task readba
     pageWebsocket: "ws://127.0.0.1:9222/devtools/page/PARENT_TARGET",
     receiptPath: "/private/evidence/tab-owner.json",
   }]);
+});
+
+test("uses the same parent-owned rail for a fixed Connpass host and rejects provider mismatch", async () => {
+  const fx = fixture();
+  const driver = createCloakBrowserDailyDriver({ connectOverCDP: fx.connectOverCDP });
+  await driver.withEventPage(
+    "connpass", "https://tokyo-builders.connpass.com/event/101/?ref=connector",
+    async (page) => { assert.equal(page, fx.ownedPage); },
+  );
+  assert.deepEqual(fx.calls.find(([name]) => name === "goto").slice(0, 2), [
+    "goto", "https://tokyo-builders.connpass.com/event/101/?ref=connector",
+  ]);
+  await assert.rejects(
+    driver.withEventPage("connpass", "https://meetup.com/group/events/101", async () => {}),
+    /event URL/i,
+  );
+  await assert.rejects(
+    driver.withEventPage("unknown", "https://example.com/event", async () => {}),
+    /event URL/i,
+  );
 });
