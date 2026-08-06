@@ -119,6 +119,9 @@ class BrowserLease:
     def acquire(self) -> dict[str, Any]:
         environment = os.environ.copy()
         environment["AI_BROWSER_HOLDER_PID"] = str(self.holder_pid)
+        # The holder is the long-lived launchd wrapper. A dead wrapper means a
+        # dead lease, so do not retain the generic agent-shell grace period.
+        environment["AI_BROWSER_STALE_SECONDS"] = "0"
         completed = subprocess.run(
             [str(self.guard), "acquire", self.identity], capture_output=True,
             text=True, check=False, env=environment,
