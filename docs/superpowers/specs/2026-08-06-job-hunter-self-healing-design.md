@@ -13,6 +13,12 @@ agent diagnoses and edits an isolated worktree; an independent verifier attempts
 falsify the repair; the immutable release system promotes or rolls back; durable
 application state resumes the same application.
 
+The resident and self-healing model is Terra. It owns routine diagnosis, RED/GREEN
+repair, and bounded retry using the ChatGPT-authenticated Codex runtime. Sol is a
+scarce release verifier, not a loop worker: it runs at most once, read-only, only after
+the candidate passes every executable gate. Agents SDK is optional future
+orchestration and does not replace launchd, Ledger, Guardian, or the Codex runtime.
+
 Do not replace the resident Job Hunter with a deterministic workflow. Deterministic
 components fence and verify side effects; the agent observes unfamiliar pages,
 chooses tools, diagnoses faults, and writes repairs in natural language.
@@ -71,7 +77,10 @@ A fresh Sol context receives the Repair Case, candidate diff, and executable evi
 It is read-only and attempts to falsify root-cause coverage, at-most-once behavior,
 privacy, and regression claims. Model prose cannot approve a release. Approval
 requires all executable gates plus a structured verifier receipt with no unresolved
-finding.
+finding. No Sol call is made while Terra is diagnosing, editing, or retrying, and no
+Sol call is made for a candidate that has not already passed RED/GREEN, focused,
+full-suite, privacy, and immutable-release checks. One candidate release admits at
+most one fresh Sol verification call.
 
 ### No-send canary and release controller
 
@@ -140,4 +149,3 @@ the installed resident path without sending. It must create one Repair Case, pro
 one minimal patch, pass RED/GREEN/focused/full/privacy gates, pass the no-send canary,
 promote one immutable release, resume the same application once, and Telegram-deliver
 the complete repair receipt. A second identical observation must deduplicate.
-

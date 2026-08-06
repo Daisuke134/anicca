@@ -2319,7 +2319,13 @@ parallel only where explicitly stated below. Otherwise preserve this order:
    production gate is OpenTelemetry failure → content-addressed Repair Case → isolated
    Terra RED/GREEN repair → fresh Sol falsification → no-send canary → immutable
    promotion/rollback → same-application resume → Telegram receipt, with no main
-   development session in that loop.
+   development session in that loop. Terra owns every routine self-healing decision,
+   diagnosis, patch, and retry. Sol is not a resident loop model: invoke one fresh,
+   read-only Sol falsification only after a Terra candidate has already passed RED,
+   GREEN, focused, full-suite, privacy, and release-build gates. A failed executable
+   gate rejects the candidate without spending a Sol call. Agents SDK does not own
+   scheduling, application truth, or repair truth; launchd, Ledger, OpenTelemetry,
+   Guardian, and the subscription-authenticated Codex runtime retain those contracts.
 8. [ ] Replace the resident's disposable `codex exec --ephemeral` invocation with a
    persistent Codex thread controlled through the Codex SDK. Persist `thread_id` beside
    the application intent, resume that exact thread after interruption or repair, and
@@ -3753,6 +3759,10 @@ OpenTelemetry decision and primary sources:
   release build. A fresh Sol verifier MUST independently inspect the repair diff and
   evidence and attempt to falsify the claimed fix before canary activation. Terra or
   Sol model assertions cannot mark a repair successful; only executable evidence can.
+  Terra is the sole routine repair-loop model. Sol is never polled, scheduled, or used
+  for diagnosis/patch iteration; at most one fresh read-only Sol call is admitted per
+  executable-gate-clean candidate release. Candidates that fail any deterministic
+  gate return to Terra without invoking Sol.
 - [ ] **L-66D** — Activate every repair first as an isolated no-send repair canary,
   which is never a production application mode; verify the original
   fault is gone and no safety/confirmation regression exists, then promote or
