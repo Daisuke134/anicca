@@ -262,6 +262,55 @@ test("native-pass appends every bounded candidate attempt to durable history", a
   } finally { fs.rmSync(directory, { recursive: true, force: true }); }
 });
 
+test("native-pass persists a bounded cursor and forwards it into the next wake", async () => {
+  const directory = temporaryDirectory();
+  const stateDir = path.join(directory, "state");
+  const cursor = {
+    status: "resume_after",
+    date: "2026-08-05",
+    event_ref: "luma-event://event/unavailable-one",
+    observed_at: "2026-08-06T00:00:00.000Z",
+  };
+  let phase = 0;
+  try {
+    const options = {
+      repoRoot: REPO_ROOT,
+      stateDir,
+      ownerToken: OWNER_TOKEN,
+      env: {
+        GOG_ACCOUNT: "dais@example.test",
+        LM_CONNECTOR_TELEGRAM_TARGET: "123456",
+        LIFE_HOME_ADDRESS: "Tokyo",
+        GOOGLE_API_KEY_DIRECTIONS: "maps-secret",
+      },
+      runRuntime: async (input) => {
+        phase += 1;
+        if (phase === 1) {
+          assert.equal(input.config.cursor, null);
+          return {
+            status: "incomplete",
+            coverage: { counts: { open: 21 } },
+            continuation: { status: "continue" },
+            cursor,
+          };
+        }
+        assert.deepEqual(input.config.cursor, cursor);
+        return {
+          status: "incomplete",
+          coverage: { counts: { open: 21 } },
+          continuation: { status: "continue" },
+          cursor: null,
+        };
+      },
+    };
+    await runNativePass(options);
+    assert.deepEqual(JSON.parse(fs.readFileSync(path.join(stateDir, "cursor.json"), "utf8")), cursor);
+    assert.equal(fs.statSync(path.join(stateDir, "cursor.json")).mode & 0o777, 0o600);
+    await runNativePass(options);
+    assert.equal(fs.existsSync(path.join(stateDir, "cursor.json")), false);
+  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+});
+
 test("native-pass migrates the previous successful last result before the next runtime", async () => {
   const directory = temporaryDirectory();
   const stateDir = path.join(directory, "state");

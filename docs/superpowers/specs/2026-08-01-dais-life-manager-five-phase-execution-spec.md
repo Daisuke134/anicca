@@ -2316,6 +2316,14 @@ O1B-25進捗67（P0-5 live retry / normal forward progress）: 既存launchd run
 live fixtureは成立しておらず、その証拠を創作しない。P0-5の二日integration testは13/13 suite内で直接write順を検証し、liveは
 実候補空間での正常前進を補足証拠とする。次はP0-6でpass budget/cursorをdurableにする。
 
+O1B-25進捗68（P0-6 pass budget / durable cursor RED→GREEN）: 一回のnative passが候補を無制限に処理せず、既定3件の
+`passCandidateBudget`へ達した時に`status=resume_after / date / event_ref / observed_at`だけのbounded cursorを返すcontractを追加した。
+次wakeは同じ日付のcursor eventより後ろから再開し、後続候補を処理し終えたらcursorをnullへ戻す。native-passはowner-only mode 0600の
+`cursor.json`へ保存し、次wakeのruntime configへforwardし、完了時に固定pathだけを削除する。実装前はruntime cursorが`undefined`、
+native stateは`ENOENT`でRED。実装後はfocused runtime 1/1・native 1/1、関連runtime 14/14、native entrypoint 20/20、
+pretest 12/12、outbound 301/301がfresh GREEN。次に既存launchdを実発火し、実候補がbudgetへ達する場合はcursor生成→次wake再開→消去を
+readbackする。実候補が3件未満ならcursorを捏造せず、そのlive制約を記録してP0-7へ進む。
+
 完全な残TODO SSOT:
 
 **P0 — task deliveryを前進させる（最優先）**
@@ -2325,7 +2333,7 @@ live fixtureは成立しておらず、その証拠を創作しない。P0-5の�
 3. [x] append-only `candidate-attempts.jsonl`を作り、event ref、outcome、safe reason、observed_at、retry_afterを保存する。runtime 9/9、native 18/18、outbound 289/289。
 4. [x] active window内のterminal known failureをactive write rankingから除外し、後続状態observationまたはretry_after後だけ再検査する。runtime 10/10、native 19/19、outbound 299/299。
 5. [x] 同日候補をすべて順番に試し、同日枯渇時は同じpassで次open日へ進む。focused 13/13、native 19/19、outbound 300/300。
-6. pass budget到達時はdate/candidate cursorを保存し、次wakeで続きから再開する。
+6. [x] pass budget到達時はdate/candidate cursorを保存し、次wakeで続きから再開する。runtime 14/14、native 20/20、outbound 301/301。
 7. unknown effectはLuma readbackでpresent/absentを確定するまで再submitしない。
 8. submit後のLuma登録済みpageをfull-page PNGで取得し、event ref、canonical URL、取得時刻、SHA-256、Calendar event IDへbindする。
 9. Telegramへ結果cardと登録済みpage画像を実送信し、画像のpositive provider message IDをdelivery receiptへ保存・readbackする。

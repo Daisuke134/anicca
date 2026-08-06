@@ -90,6 +90,29 @@ function readCandidateAttempts(stateDir) {
   return Object.freeze(rows);
 }
 
+function readCursor(stateDir) {
+  const file = path.join(stateDir, "cursor.json");
+  let value;
+  try {
+    const stat = fs.statSync(file);
+    if (stat.size > 2_000) unavailable();
+    value = JSON.parse(fs.readFileSync(file, "utf8"));
+  } catch (error) {
+    if (error && error.code === "ENOENT") return null;
+    unavailable();
+  }
+  if (
+    !value || typeof value !== "object" || Array.isArray(value)
+    || Object.keys(value).sort().join(",") !== "date,event_ref,observed_at,status"
+    || value.status !== "resume_after"
+    || !/^\d{4}-\d{2}-\d{2}$/.test(String(value.date || ""))
+    || !/^luma-event:\/\/event\/[A-Za-z0-9_-]+$/.test(String(value.event_ref || ""))
+    || !Number.isFinite(Date.parse(String(value.observed_at || "")))
+    || new Date(Date.parse(value.observed_at)).toISOString() !== value.observed_at
+  ) unavailable();
+  return Object.freeze({ ...value });
+}
+
 function runtimeConfig(options, stateDir) {
   if (options.config && typeof options.config === "object" && !Array.isArray(options.config)) {
     return options.config;
@@ -133,6 +156,8 @@ function runtimeConfig(options, stateDir) {
     repoRoot: absoluteDirectory(options.repoRoot),
     deliveredReceipts: readDeliveryReceipts(stateDir),
     candidateAttempts: readCandidateAttempts(stateDir),
+    cursor: readCursor(stateDir),
+    passCandidateBudget: Number(env.LM_CONNECTOR_PASS_CANDIDATE_BUDGET || 3),
   });
 }
 
@@ -188,7 +213,26 @@ function boundedResult(result) {
     })
     : [];
   if (candidateAttempts.length > 100) unavailable();
-  return Object.freeze({ status, complete, write, candidateAttempts: Object.freeze(candidateAttempts), coverageCounts });
+  const cursor = result.cursor == null ? null : result.cursor;
+  if (
+    cursor !== null && (
+      !cursor || typeof cursor !== "object" || Array.isArray(cursor)
+      || Object.keys(cursor).sort().join(",") !== "date,event_ref,observed_at,status"
+      || cursor.status !== "resume_after"
+      || !/^\d{4}-\d{2}-\d{2}$/.test(String(cursor.date || ""))
+      || !/^luma-event:\/\/event\/[A-Za-z0-9_-]+$/.test(String(cursor.event_ref || ""))
+      || !Number.isFinite(Date.parse(String(cursor.observed_at || "")))
+      || new Date(Date.parse(cursor.observed_at)).toISOString() !== cursor.observed_at
+    )
+  ) unavailable();
+  return Object.freeze({
+    status,
+    complete,
+    write,
+    candidateAttempts: Object.freeze(candidateAttempts),
+    cursor: cursor === null ? null : Object.freeze({ ...cursor }),
+    coverageCounts,
+  });
 }
 
 function appendCandidateAttempts(stateDir, attempts) {
@@ -231,6 +275,16 @@ function appendDeliveryReceipt(stateDir, write) {
   }
 }
 
+function recordCursor(stateDir, cursor) {
+  const file = path.join(stateDir, "cursor.json");
+  if (cursor === null) {
+    try { fs.unlinkSync(file); }
+    catch (error) { if (!error || error.code !== "ENOENT") throw error; }
+    return;
+  }
+  fs.writeFileSync(file, `${JSON.stringify(cursor)}\n`, { encoding: "utf8", mode: 0o600 });
+}
+
 function recordLastResult(stateDir, bounded) {
   const file = path.join(stateDir, "last-result.json");
   fs.mkdirSync(stateDir, { recursive: true, mode: 0o700 });
@@ -241,6 +295,7 @@ function recordLastResult(stateDir, bounded) {
   });
   appendDeliveryReceipt(stateDir, bounded.write);
   appendCandidateAttempts(stateDir, bounded.candidateAttempts);
+  recordCursor(stateDir, bounded.cursor);
 }
 
 function migrateLastResult(stateDir) {
