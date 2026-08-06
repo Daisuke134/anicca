@@ -2556,6 +2556,38 @@ event ref、event名、page本文、個人情報、secretは保存せず、同fi
 focused RED、実装後native 25/25、outbound 314/314 GREEN。次はcommit/push後の本物のlaunchd wakeで一行をreadbackし、その一行を
 `lm:type:self-heal` issue intakeへ配送するP0-10Bへ進む。
 
+O1B-25進捗95（P0-10A existing launchd LIVE GREEN / 画面・state照合）: push済みcommit `bab93b34e`を参照する
+既存launchd run 133をkickstartし、別executorを起こさず自然終了まで観測した。実画面/CDPではevent pageを順に開閉した後
+`about:blank`だけが残り、browser telemetryは`page.goto→page.close`を反復し、Apply clickは0回だった。終了後last-resultは
+`inventory=28 / calendar eligible=6 / spend ordered=4 / unsuppressed=0 / write attempts=0 / write=null`、launchd exit 1である。
+同runはmode 0600 `self-heal-incidents.jsonl`へ一行を生成し、closed fieldsはschema version、sha256 fingerprint、component、
+`apply_blocked_by_suppression`、`LUMA_FORM_INPUT_REQUIRED`、observed_at、7整数selectionだけだった。これで「pageを見たが応募していない」
+故障をConnector自身がprivacy-safeに検出・永続化するP0-10Aをlive完了した。登録、Calendar、Telegram screenshot receiptは増えておらず、
+応募成功とは扱わない。次の一件はP0-10Bのincident→self-heal issue deliveryである。
+
+現在と完成形:
+
+```mermaid
+flowchart LR
+  subgraph NOW[現在]
+    N1[Luma 28件] --> N2[候補4件]
+    N2 --> N3[suppressionで0件]
+    N3 --> N4[Apply 0回]
+    N4 --> N5[self-heal incident 1行]
+    N5 -. 未接続 .-> N6[fix producer]
+  end
+  subgraph TARGET[完成形]
+    T1[全provider探索] --> T2[最上位候補へApply]
+    T2 --> T3[form入力・Submit]
+    T3 --> T4[登録済みreadback]
+    T4 --> T5[Calendar・mail/QR]
+    T5 --> T6[Telegram screenshot]
+    T2 -->|故障| T7[incident]
+    T7 --> T8[RED→fix→PR→merge→canary]
+    T8 --> T1
+  end
+```
+
 完全な残TODO SSOT:
 
 **P0 — task deliveryを前進させる（最優先）**
