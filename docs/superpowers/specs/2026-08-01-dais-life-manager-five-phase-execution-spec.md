@@ -2742,6 +2742,37 @@ write outcomeも`verified_success`だけを現在runの成功境界とし、`kno
 sequence全体を終了する権限を廃止し、各candidateをskip ledgerへ残して全件試行後に`next_provider_required`を返す。
 focused runtime/candidate testsは19/19 GREEN。次は既存launchdをlive実行し、候補間継続とTerra submitを実測する。
 
+O1B-25進捗118（browser transaction continuity OSS調査 / spec only、実装なし）: live run 171のTerraはowned targetへ正しく到達し、
+registration form、textbox、checkbox、multi-selectを観測したが、各actionを別々のinline Node processで実行し、毎回
+`chromium.connectOverCDP()`→page再探索→`browser.close()`を繰り返した。このためoverlayとform stateを何度も失い、同じ入力を
+再試行した。Luma selector不足ではなくbrowser session lifecycleが根因である。
+
+採用案はMicrosoft公式OSS `microsoft/playwright-mcp`をConnector専用の長寿命browser tool sessionとして使うことである。
+同READMEはMCPをpersistent state、rich introspection、iterative reasoning、long-running autonomous workflow向けと明記し、
+`--cdp-endpoint`、`--shared-browser-context`、action/navigation/settle timeout、output directoryを提供する。
+Playwright公式APIは`connectOverCDP()`が既存Chromiumへ接続しdefault contextを返す一方、CDP接続はPlaywright protocolより
+low fidelityであり、`browser.close()`はconnected browserから切断してBrowser objectをdisposeすると明記する。したがってTerraへ
+raw shellを許す構成を廃止し、親loopが一度だけMCP sessionを`:9222`へ接続、16A receiptのowned targetをcurrent pageへ固定、
+Terraは同一MCP sessionのaccessibility snapshot、click、fill、check、select、screenshotだけで一transactionを完了し、親readback後に
+MCP clientだけをdetachする。外部CloakBrowser、context、owned pageをTerraにcloseさせない。
+
+比較したOSS:
+
+- `microsoft/playwright-mcp`（採用）: Codexがstdio MCPをnative登録でき、長寿命session、CDP endpoint、shared context、snapshot、
+  monitoring/outputを一体で提供する。Source: https://github.com/microsoft/playwright-mcp
+- `microsoft/playwright-cli`（fallback）: named sessionはCLI call間でcookie/storageを保持し、`attach --cdp=<url>`と外部browserを残す
+  `detach`を提供する。ただしCLI commandを多数生成する現在の癖を残しやすいため第一選択にしない。
+  Source: https://github.com/microsoft/playwright-cli
+- `browser-use/browser-use`（不採用）: `BrowserSession(BrowserProfile(cdp_url=...))`で既存browserへ接続し、一つのAgent runを維持できるが、
+  現在のTerra/Codex runnerを別agent frameworkへ置換する範囲が大きい。Source: https://github.com/browser-use/browser-use
+- `browserbase/stagehand`（不採用）: `act()`/`agent.execute()`、action caching、self-healingは有用だが、別SDK/agent runtimeと
+  Browserbase中心の依存を増やす。Source: https://github.com/browserbase/stagehand
+
+16B補正TODO: (a) Connector専用Playwright MCP sidecarをper-candidateで起動し`:9222`へ一回だけattach、(b) owner receiptのtarget IDを
+MCP current pageへbindして他tab toolをTerraへ公開しない、(c) agent-runnerのTerra turnへbrowser MCPだけを注入しshell browser codeを
+禁止、(d) form openからsubmit/readback/screenshotまで同じsession IDをtrace、(e) parentがreadback後にMCPをdetach、
+(f) action途中のMCP crashは同candidate stateを再読込し、次candidate/providerを止めない。live E2Eはこの移行後に再実行する。
+
 現在と完成形:
 
 ```mermaid
@@ -2804,19 +2835,20 @@ flowchart LR
 26. Mac再起動後のConnector、producer、consumer launchd、heartbeat、healthcheck、stale-loop self-healを実機検証する。
 27. canonical branchへ統合し、legacy bridge / Docker worker / 重複scheduleを退役する。
 
-### P0 残TODOの現在順序（進捗117を正本とする）
+### P0 残TODOの現在順序（進捗118を正本とする）
 
-1. 最新Connector launchdをkickstartし、loop主体のLuma実submitと親readbackを成立させる（16C）。
-2. PNG、Calendar ID/readback、Telegram card/photo IDを一つのlineage receiptへ結合する（16D、18）。
-3. Lumaが主催者公式siteへの追加登録を要求するeventで、trusted Gmail OTPと公式完了markerまで同じlineageで閉じる（17）。
-4. privacy-safe Observer trace packを実装し、action、URL class、control label、validation class、screenshot SHA、provider readbackをrun/event/capability versionへbindする（13）。
-5. source registryを実装し、Luma、Connpass、Peatix、Meetup、Doorkeeper、Eventbriteを`discovery / registration / effect_readback / screenshot_evidence`能力で宣言する（19）。
-6. Connpassの公式API discoveryと認証済みbrowser submit/readbackを実証してからregistrationを有効化する（20〜21）。
-7. Peatix、Meetup、Doorkeeper、Eventbriteを一siteずつlive proof後に有効化し、一source failureでpass全体を止めない（22〜23）。
-8. rolling 21日の`open=0`まで反復し、各日を`covered_existing / covered_new / unavailable`の実証拠で閉じる（25）。
-9. Mac再起動後のlaunchd、CloakBrowser、heartbeat、healthcheck、idempotencyを実機検証する（26）。
-10. self-fix producerはlive task delivery成立まで停止を維持する。成立後にObserver fixture→Terra revision→隔離Connector canary→merge/redeployを復旧する（14〜15）。
-11. canonical branchへ統合し、legacy bridge、Docker worker、重複scheduleを退役する（27）。
+1. Connector専用Playwright MCP sessionを`:9222`へ一度だけattachし、owner receiptの一tabだけをTerraへ公開する。inline Node、反復`connectOverCDP()`、Terra側`browser.close()`を廃止する（16B補正）。
+2. 最新Connector launchdをkickstartし、loop主体のLuma実submitと親readbackを成立させる（16C）。
+3. PNG、Calendar ID/readback、Telegram card/photo IDを一つのlineage receiptへ結合する（16D、18）。
+4. Lumaが主催者公式siteへの追加登録を要求するeventで、trusted Gmail OTPと公式完了markerまで同じlineageで閉じる（17）。
+5. privacy-safe Observer trace packを実装し、action、URL class、control label、validation class、screenshot SHA、provider readbackをrun/event/capability versionへbindする（13）。
+6. source registryを実装し、Luma、Connpass、Peatix、Meetup、Doorkeeper、Eventbriteを`discovery / registration / effect_readback / screenshot_evidence`能力で宣言する（19）。
+7. Connpassの公式API discoveryと認証済みbrowser submit/readbackを実証してからregistrationを有効化する（20〜21）。
+8. Peatix、Meetup、Doorkeeper、Eventbriteを一siteずつlive proof後に有効化し、一source failureでpass全体を止めない（22〜23）。
+9. rolling 21日の`open=0`まで反復し、各日を`covered_existing / covered_new / unavailable`の実証拠で閉じる（25）。
+10. Mac再起動後のlaunchd、CloakBrowser、heartbeat、healthcheck、idempotencyを実機検証する（26）。
+11. self-fix producerはlive task delivery成立まで停止を維持する。成立後にObserver fixture→Terra revision→隔離Connector canary→merge/redeployを復旧する（14〜15）。
+12. canonical branchへ統合し、legacy bridge、Docker worker、重複scheduleを退役する（27）。
 
 ### Browser E2E判定
 
