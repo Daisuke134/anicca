@@ -1,0 +1,138 @@
+{
+  "schema_version": 1,
+  "pins": {
+    "browser_use": "0.13.7@f0aa3a8bb03779c71a5aa262d389e3bfe6b77cdc",
+    "temporal_server": "1.31.2@19a774302c613da9adc4436ab14278ccdca8e0a5",
+    "temporal_sdk_python": "1.31.0@84b519e0ff407b049da88ac7d1711f110494ff4d"
+  },
+  "components": [
+    {
+      "id": "browser_session",
+      "decision": "adapt",
+      "source_paths": ["browser_use/browser/session.py"],
+      "local_authority": "single leased CloakBrowser CDP identity",
+      "parity_tests": ["tests/test_browser_owner.py", "tests/test_guardian_browser.py"],
+      "owner_task": "L-49K0D1"
+    },
+    {
+      "id": "browser_actions",
+      "decision": "adapt",
+      "source_paths": ["browser_use/tools/registry/service.py", "browser_use/tools/service.py"],
+      "local_authority": "allowlisted action adapter under current application fence",
+      "parity_tests": ["tests/test_browser_worker.py", "tests/test_submission_confirmation.py"],
+      "owner_task": "L-49K0D1"
+    },
+    {
+      "id": "browser_history",
+      "decision": "adapt",
+      "source_paths": ["browser_use/agent/views.py"],
+      "local_authority": "append-only ledger event and application attempt history",
+      "parity_tests": ["tests/test_ledger.py", "tests/test_event_reporting.py"],
+      "owner_task": "L-49K0D1"
+    },
+    {
+      "id": "browser_screenshots",
+      "decision": "adapt",
+      "source_paths": ["browser_use/agent/views.py", "browser_use/browser/session.py", "browser_use/tools/service.py"],
+      "local_authority": "fence-bound on-disk SHA-256 evidence bundle",
+      "parity_tests": ["tests/test_event_reporting.py"],
+      "owner_task": "L-49K0D1"
+    },
+    {
+      "id": "browser_best_guess_answers",
+      "decision": "supersede",
+      "source_paths": ["examples/use-cases/apply_to_job.py"],
+      "local_authority": "verified profile facts and fail-closed unknown-question queue",
+      "parity_tests": ["tests/test_materials.py", "tests/test_knockout.py"],
+      "owner_task": "L-49K0D1"
+    },
+    {
+      "id": "browser_self_reported_success",
+      "decision": "supersede",
+      "source_paths": ["browser_use/agent/views.py"],
+      "local_authority": "authoritative ATS completion or Gmail confirmation evidence",
+      "parity_tests": ["tests/test_submission_confirmation.py", "tests/test_ashby_confirmation.py"],
+      "owner_task": "L-49K0D1"
+    },
+    {
+      "id": "browser_unrestricted_submit",
+      "decision": "supersede",
+      "source_paths": ["browser_use/tools/service.py"],
+      "local_authority": "submission intent fence plus authoritative ATS or Gmail confirmation",
+      "parity_tests": ["tests/test_browser_worker.py", "tests/test_submission_confirmation.py"],
+      "owner_task": "L-49K0D1"
+    },
+    {
+      "id": "browser_captcha_handling",
+      "decision": "supersede",
+      "source_paths": ["browser_use/browser/session.py"],
+      "local_authority": "blocked-route outcome followed by alternate official route or lawful contact path",
+      "parity_tests": ["tests/test_browser_worker.py", "tests/test_route_replay.py"],
+      "owner_task": "L-49K0C2"
+    },
+    {
+      "id": "browser_generic_retry",
+      "decision": "supersede",
+      "source_paths": ["browser_use/agent/service.py"],
+      "local_authority": "bounded route-specific retry with durable attempt identity and next-route continuation",
+      "parity_tests": ["tests/test_guardian_ledger.py", "tests/test_route_replay.py"],
+      "owner_task": "L-49K0C2"
+    },
+    {
+      "id": "temporal_workflow",
+      "decision": "adapt",
+      "source_paths": ["temporalio.workflow"],
+      "local_authority": "one ledger run identity per resident lane execution",
+      "parity_tests": ["tests/test_temporal_restart_fixture.py", "tests/test_ledger.py"],
+      "owner_task": "L-49K0D2"
+    },
+    {
+      "id": "temporal_activity",
+      "decision": "adapt",
+      "source_paths": ["temporalio.activity"],
+      "local_authority": "ledger idempotency key and side-effect fence",
+      "parity_tests": ["tests/test_temporal_restart_fixture.py", "tests/test_submission_confirmation.py"],
+      "owner_task": "L-49K0D2"
+    },
+    {
+      "id": "temporal_schedule",
+      "decision": "adapt",
+      "source_paths": ["temporalio.client.Schedule"],
+      "local_authority": "versioned resident lane cadence and overlap policy",
+      "parity_tests": ["tests/test_launchd.py", "tests/test_guardian_schedule.py"],
+      "owner_task": "L-49K0D2"
+    },
+    {
+      "id": "temporal_signal",
+      "decision": "adapt",
+      "source_paths": ["temporalio.workflow.signal"],
+      "local_authority": "validated operator command appended to the ledger",
+      "parity_tests": ["tests/test_agent_runner.py", "tests/test_ledger.py"],
+      "owner_task": "L-49K0D2"
+    },
+    {
+      "id": "temporal_cancellation",
+      "decision": "adapt",
+      "source_paths": ["temporalio.workflow.wait_condition"],
+      "local_authority": "cancelled run state without claiming an uncertain external effect",
+      "parity_tests": ["tests/test_guardian_ledger.py", "tests/test_submission_confirmation.py"],
+      "owner_task": "L-49K0D2"
+    },
+    {
+      "id": "temporal_heartbeat",
+      "decision": "reuse",
+      "source_paths": ["temporalio.activity.heartbeat"],
+      "local_authority": "Guardian-observed activity progress and bounded timeout",
+      "parity_tests": ["tests/test_temporal_restart_fixture.py", "tests/test_guardian_schedule.py"],
+      "owner_task": "L-49K0D2"
+    },
+    {
+      "id": "temporal_history",
+      "decision": "reuse",
+      "source_paths": ["temporal workflow event history"],
+      "local_authority": "immutable replay evidence correlated to ledger run and application IDs",
+      "parity_tests": ["tests/test_temporal_restart_fixture.py", "tests/test_event_reporting.py"],
+      "owner_task": "L-49K0D2"
+    }
+  ]
+}

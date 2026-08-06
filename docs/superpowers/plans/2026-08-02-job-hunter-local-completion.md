@@ -2209,18 +2209,16 @@ Completed foundations are `L-49K0A1G`, `L-49K0B`, `L-49K0C`, and `L-49K0C1`.
 The active cursor is the first item below; do not start a later item merely because
 it is easier to demonstrate:
 
-1. `L-49K0B1` — finish the Browser Use/Temporal reuse-adapt-supersede inventory and
-   bind each accepted component to a local authority and parity test.
-2. `L-49K0D1` — replace the remaining prompt-owned Playwright execution contract
+1. `L-49K0D1` — replace the remaining prompt-owned Playwright execution contract
    with the pinned Browser Use adapter on the dedicated CloakBrowser identity.
-3. `L-49K0C2` — prove a blocked ATS route cannot end the resident hourly pass and
+2. `L-49K0C2` — prove a blocked ATS route cannot end the resident hourly pass and
    that all remaining eligible routes/roles continue exactly once.
-4. `L-49K0D`, then `L-49K0D2` — build tracker/outcome/digest projections, then move
+3. `L-49K0D`, then `L-49K0D2` — build tracker/outcome/digest projections, then move
    all four resident lanes to restart-safe, idempotent Temporal workflows.
-5. `L-49K0E`, `L-49K`, `L-49`, `L-49A`, `L-50`, `L-51`, `L-52` — prove resident
+4. `L-49K0E`, `L-49K`, `L-49`, `L-49A`, `L-50`, `L-51`, `L-52` — prove resident
    actor provenance, bounded owner handoff where required, and authoritative real
    Ashby plus Workday receipts and screenshots in Telegram.
-6. `L-53` through `L-65` — prove Gmail, Calendar, interview preparation/debrief,
+5. `L-53` through `L-65` — prove Gmail, Calendar, interview preparation/debrief,
     conversion metrics, one-variable learning, rollback, Telegram, and simultaneous
     health of all resident lanes.
 8. `L-66` through `L-73` — operate the Dais campaign through fifty confirmed
@@ -2294,11 +2292,21 @@ it is easier to demonstrate:
     liveness-core representative cases 11/11 pass (386 total). These fixtures are
     the parity source for `L-49K0C`; passing upstream alone does not authorize a live
     application or replace local confirmation evidence.
-- [ ] **L-49K0B1** — Inventory Browser Use and Temporal components as `reuse`,
+- [x] **L-49K0B1** — Inventory Browser Use and Temporal components as `reuse`,
   `adapt`, or `supersede`. Explicitly supersede Browser Use's best-guess answers,
   self-reported success, unrestricted Submit action, CAPTCHA handling, and generic
   retry; explicitly map Temporal workflow/activity/schedule/signal/cancellation/
   heartbeat/history contracts to the Job Hunter ledger and Guardian.
+  - Machine-readable runtime adoption inventory now covers 16/16 required
+    components against the exact Browser Use, Temporal Server, and Python SDK pins.
+    Browser best-guess answers, self-reported success, unrestricted Submit, CAPTCHA
+    handling, and generic retry are all `supersede`; each points to the verified
+    profile, receipt fence, blocked-route continuation, or bounded retry authority.
+    Temporal workflow, activity, schedule, signal, cancellation, heartbeat, and
+    history map to run identity, idempotency/side-effect fences, cadence, validated
+    commands, uncertain-effect handling, Guardian progress, and replay evidence.
+    Every parity path is verified to exist. Focused inventory test and the complete
+    Job Hunter suite pass 454/454.
 - [x] **L-49K0C** — Port the non-side-effect `career-ops` capabilities that improve
   coverage before another live application: public ATS discovery, liveness,
   cross-listing/repost dedupe, knockout pre-scan, and ATS-specific form-fill
