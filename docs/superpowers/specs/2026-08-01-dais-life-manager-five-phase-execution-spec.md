@@ -2402,6 +2402,12 @@ confirmation reader結線だけが`requiredText(undefined)`で停止していた
 optional pathをそのまま渡して既存fallbackを使う修正後runtime 11/11 GREEN。run 105のattempt/delivery receiptは増えておらず、成功とは扱わない。
 次はfull outbound再検証・push後のrun 106で同じ実loopを再実行する。
 
+O1B-25進捗79（P0-10 run 106 / upstream Calendar gate failure）: commit `bb2db3990`後の既存launchd run 106は
+profile初期化を越えて約4分で自然終了し、`connector_native_calendar_gate_failed`をreadbackした。attempt history、delivery receipts、
+last-result writeはrun前から増えず、Gmail/QR chainへ入る新規登録候補が確定する前に停止したためP0-10成功とは扱わない。同じupstream gateは
+過去run 90→91で一時失敗後に回復している。コードはfull outbound 311/311 GREENなので、外部境界失敗の既定どおり既存loopを一度だけ再試行し、
+再発時はP0-10の実event E2Eを未完のまま、Calendar gateのbounded診断を次sliceにする。
+
 完全な残TODO SSOT:
 
 **P0 — task deliveryを前進させる（最優先）**
