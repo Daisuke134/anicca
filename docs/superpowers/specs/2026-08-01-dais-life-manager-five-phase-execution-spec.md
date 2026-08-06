@@ -2257,11 +2257,17 @@ submit直前page、成功文言の転記、古い画像、別eventの画像は�
 `evidence_pending`、外部効果も不明なら`unknown_effect`としてreconciliationへ渡す。Telegramは画像そのものと短い結果cardを送り、
 画像送信のpositive provider IDをreadbackできるまでuser-visible deliveryを完了扱いにしない。
 
+O1B-25進捗59（P0-1 candidate outcome 4分類 / RED→GREEN）: 個別error文字列をruntimeで直接分岐する前に、
+write結果を`verified_success / known_no_effect / unknown_effect / recovery_required`へ変換する独立contractを追加した。
+table-driven testは実装前にmodule不在でexit 1を確認し、実装後はfocused 2/2、既存native runtime/write/RSVP境界29/29、
+`npm run test:outbound`のpretest 12/12・outbound 289/289がfresh GREEN。未知またはmalformedな結果は推測せず拒否する。
+このsliceは分類contractだけであり、runtime利用、満席/受付終了の正規化、attempt永続化、次候補/次日継続は未完のままP0順序で続ける。
+
 完全な残TODO SSOT:
 
 **P0 — task deliveryを前進させる（最優先）**
 
-1. candidate outcomeの4分類contractとtable-driven testを追加する。
+1. [x] candidate outcomeの4分類contractとtable-driven testを追加する。focused 2/2、outbound 289/289。
 2. `LUMA_RSVP_UNAVAILABLE`、`LUMA_FORM_INPUT_REQUIRED`、満席、受付終了を`known_no_effect`へ正規化する。
 3. append-only `candidate-attempts.jsonl`を作り、event ref、outcome、safe reason、observed_at、retry_afterを保存する。
 4. active window内のterminal known failureをinventory/rankingから除外し、event状態変更またはretry_after後だけ再検査する。
