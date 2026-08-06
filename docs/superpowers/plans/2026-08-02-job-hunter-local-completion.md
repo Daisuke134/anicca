@@ -7,8 +7,9 @@
 **Configured upstream:** `canonical/docs/job-hunter-spec-20260805`
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-06 JST
-**Active atomic task:** `L-49K2C2C` — prove the installed resident Terra pass
-reaches an evidence-complete Ashby pre-submit boundary under a no-submit fence.
+**Active atomic task:** `L-49K3A1` — replace the resident no-submit boundary with
+application-first routing: attempt the formal ATS first, then send an application
+email in the same pass whenever ATS application is not authoritatively confirmed.
 **Status:** The immutable four-lane runtime, grounded materials, ownership fences,
 Gmail ingestion, Telegram outbox, quota accounting, Ashby surface classifier, and
 loopback OpenTelemetry Collector/private trace index are implemented. The application
@@ -1097,6 +1098,75 @@ submissions.
   `confirmed submitted`.
 
 ## 12. Execution order and remaining TODO
+
+### 12.0 Non-negotiable application-first contract
+
+Job Hunter exists to apply, not to decide whether an eligible discovered role deserves
+an application. Every selected role MUST reach exactly one durable application outcome:
+
+1. `applied_ats` — the formal employer/ATS application is authoritatively confirmed; or
+2. `applied_email` — Job Hunter sends the application by Gmail to a verified recruiting,
+   careers, hiring-manager, or recruiter address when ATS is unavailable or unconfirmed.
+
+There is no terminal `skip`, `blocked`, `needs_fact`, `needs_repair`, `captcha`,
+`no_submit`, or human-handoff outcome for a selected role. Those values may exist only
+as transient diagnostics while the same application remains active. A previously
+applied duplicate already resolves to its existing `applied_ats` or `applied_email`
+outcome and MUST NOT be sent twice.
+
+Formal ATS application is always attempted first. Any ATS obstacle—including a broken
+or unsupported control, uncertain answer, missing non-fraudulent detail, CAPTCHA,
+bot block, timeout, closed form, missing confirmation, screenshot failure, telemetry
+failure, or repair failure—MUST immediately route the same role to email application.
+If no address is known, the agent continues finding an official recruiting/careers
+contact or named recruiter; address discovery is work in progress, never a terminal
+non-application result.
+
+The LLM Job Hunter owns natural-language judgment. It uses the strongest truthful
+profile evidence available, records uncertainty for later correction, omits optional
+questions when possible, and never allows a minor mismatch to prevent application.
+It MUST NOT fabricate identity, employment, education, or legal eligibility. When a
+required answer cannot be stated truthfully, it applies by email with an explicit
+request to clarify rather than abandoning the role.
+
+Evidence, screenshots, telemetry, Gmail matching, and Ledger reconciliation observe
+and improve applications; they do not grant permission to apply. Their failure creates
+repair work after or alongside the application route and MUST NOT suppress ATS Submit
+or the email fallback.
+
+```mermaid
+flowchart LR
+    A[Eligible role selected] --> B[Formal ATS application first]
+    B -->|Authoritative confirmation| C[applied_ats]
+    B -->|Any obstacle or no confirmation| D[Find recruiting contact]
+    D --> E[Send resume and application email]
+    E --> F[applied_email]
+    C --> G[Evidence, Gmail, interview tracking]
+    F --> G
+```
+
+Application-first acceptance matrix:
+
+| Scenario | Required observable outcome |
+|---|---|
+| ATS returns authoritative success | Exactly one `applied_ats`; send no fallback email |
+| CAPTCHA, bot block, closed/broken form, or unsupported control | Exactly one Gmail application with resume; `applied_email` |
+| Required answer is uncertain or unavailable | Record uncertainty, send application email requesting clarification; `applied_email` |
+| ATS action started but confirmation is ambiguous | Never click ATS again; send exactly one application email; `applied_email` |
+| Screenshot, telemetry, or evidence packaging fails | Application route still executes; repair is queued separately |
+| No recipient is initially known | Keep the same application active and continue contact discovery; no terminal blocker |
+| Existing durable application is discovered | Resolve to its existing `applied_ats` or `applied_email`; send nothing twice |
+| Resident crashes or wakes twice | Resume the unfinished route and preserve at-most-once ATS/email effects |
+
+| E2E item | Value |
+|---|---|
+| UI change | None |
+| Maestro | Not required; this is a macOS resident browser/Gmail workflow |
+| Required E2E | Installed LaunchAgent performs one real application ending in authoritative ATS or Gmail evidence |
+
+Boundaries: Job Hunter MUST NOT fabricate identity, employment, education, or legal
+eligibility; MUST NOT duplicate an already applied role; and MUST NOT let observability,
+evidence quality, or missing optional data become application permission gates.
 
 An item is atomic only when it changes one contract and has one independently
 observable completion receipt. Every item closes RED → GREEN → real verification →
@@ -2201,32 +2271,33 @@ Completed foundations include `L-49K0A1G`, `L-49K0B`, `L-49K0C`, `L-49K0C1`,
 The active cursor is the first item below; do not start a later item merely because
 it is easier to demonstrate:
 
-1. `L-49K2C2`, then close `L-49K2C` and `L-49K2` — wire the installed resident
-   Terra pass to use the deterministic CLI for inspect/fill, and prove a no-submit
-   resident canary reaches a fully verified pre-submit state. This slice MUST run
-   through the installed LaunchAgent, but Submit remains disabled and fenced.
-2. `L-49K3A`, `L-49K0C2O3b2c`, and `L-49K3B`, then close `L-49K3` — add exactly
-   one resident-only fenced semantic Submit, attach the missing `submit.action` span,
-   and accept `submitted` only from authoritative ATS or matched Gmail evidence.
-3. `L-49K4`, `L-49K0C2O6`, and the remaining `L-49K0C2` children — build the
-   immutable owner dossier, prove the joined trace/no-send canary, and prove a blocked
-   ATS cannot end the pass or duplicate another route.
-4. `L-49K0E`, `L-49K`, `L-49`, `L-49A`, `L-50`, `L-51`, `L-52` — prove resident
+1. `L-49K3A1` — replace the old cross-route fence and outreach-only classification
+   so one ATS attempt may be followed by exactly one resume-bearing Gmail application.
+2. `L-49K3A2` and `L-49K0C2O3b2c` — add one semantic resident ATS Submit with its
+   action span; every non-confirmed result immediately enters the email route.
+3. `L-49K3A3`, then `L-49K3B`, then close `L-49K3` — prove every branch ends in one
+   of the two application outcomes, persist both outcomes, attach ATS or
+   Gmail provider evidence, update Ledger/Telegram, and resume the same application
+   after a crash without duplicating either route.
+4. `L-49K4`, `L-49K0C2O6`, and the remaining `L-49K0C2` children — build the
+   immutable owner dossier, prove one joined live application trace, and prove every
+   ATS obstacle reaches the email route rather than ending the pass.
+5. `L-49K0E`, `L-49K`, `L-49`, `L-49A`, `L-50`, `L-51`, `L-52` — prove resident
    actor provenance and authoritative real Ashby plus Workday receipts, exact
    submitted documents, complete question/answer dossiers, screenshots, and Gmail
    confirmation in Telegram.
-5. `L-49K0D`, `L-49K0D2`, then `L-53` through `L-57` — add tracker projections,
+6. `L-49K0D`, `L-49K0D2`, then `L-53` through `L-57` — add tracker projections,
    move the four working lanes to restart-safe Temporal workflows, and prove Gmail,
    Calendar, interview preparation, and debrief from authoritative events.
-6. `L-58` through `L-66` — prove conversion metrics, one-variable learning,
+7. `L-58` through `L-66` — prove conversion metrics, one-variable learning,
    rollback, Telegram, simultaneous health, and freeze the working local contract.
-7. `L-66A` through `L-66F` — only after the local contract works, automate the same
+8. `L-66A` through `L-66F` — only after the local contract works, automate the same
    diagnose, reproduce, test, patch, immutable-release, canary, rollback, resume, and
    Telegram repair process currently performed by the architect.
-8. `L-67` through `L-73` — operate the Dais campaign through fifty confirmed
+9. `L-67` through `L-73` — operate the Dais campaign through fifty confirmed
    applications, a verified interview, a qualifying written offer, comparison,
    negotiation brief, and owner decision.
-9. `W-01` through `W-30` — only after local completion, build and verify the
+10. `W-01` through `W-30` — only after local completion, build and verify the
    tenant-isolated Web product.
 
 Current production truth measured from the ledger and resident receipts:
@@ -2692,7 +2763,8 @@ OpenTelemetry decision and primary sources:
         and personal attestation remain explicit. This proves the installed resident
         loop—not the development session—performs bounded ATS fill and continues after
         blocked forms.
-- [x] **L-49K0C1** — Implement the same-role alternate-route ladder: canonical ATS,
+- [x] **L-49K0C1** — Historical route foundation superseded by section 12.0. It
+  implemented the former same-role ladder: canonical ATS,
   alternate official employer URL, explicitly accepted recruiting-email application,
   verified public work-address recruiting outreach, then the next eligible role.
   Bind every route to one cross-route duplicate key and preserve the exact message,
@@ -2738,6 +2810,10 @@ OpenTelemetry decision and primary sources:
       and unknown routes are at most once across the company-role key. No live email
       was sent in this slice; fake-transport tests pass 14/14 and the full suite passes
       433/433.
+    - Section 12.0 supersedes the former `outreach_only` terminal behavior. A verified
+      official recruiting, careers, hiring-manager, or recruiter work address is now
+      an application-email destination and receives the selected resume. L-49K3A1
+      implements the required ledger and executor migration.
   - [x] `L-49K0C1D` — Trigger the installed resident worker on a no-send fixture and
     prove ATS failure advances through every eligible route in order, cross-route
     duplicate fencing holds across crashes/replay, and the development session
@@ -2767,8 +2843,9 @@ OpenTelemetry decision and primary sources:
       by SQLite reopen returned `cross_route_fenced`. The worker/result receipts agree
       on actor, run, PID, lease, fence, and `send_count=0`; all evidence files are mode
       0600 and the trigger request was atomically consumed into the run evidence.
-- [ ] **L-49K0C2** — Prove an ATS bot block, CAPTCHA, timeout, or unsupported form
-  cannot end an hourly pass. The resident worker records the failure, executes every
+- [ ] **L-49K0C2** — Prove an ATS bot block, CAPTCHA, timeout, unsupported form, or
+  uncertain answer cannot end a selected application. The resident worker records the
+  diagnostic, sends the application by email in the same pass, executes every
   eligible remaining route once, moves to a different supported role during the same
   pass, and reports confirmed applications, email applications, outreach, and deficit
   separately. Codex, Claude, and the development shell perform zero live actions.
@@ -3000,7 +3077,7 @@ OpenTelemetry decision and primary sources:
       production failure surface. Sources: https://grafana.com/docs/opentelemetry/docker-lgtm/ ;
       https://opentelemetry.io/docs/collector/deploy/agent/ ;
       https://developer.apple.com/library/archive/documentation/MacOSX/Conceptual/BPSystemStartup/Chapters/CreatingLaunchdJobs.html
-  - [ ] `L-49K0C2O6` — Trigger the installed resident loop on a no-submit canary and
+  - [ ] `L-49K0C2O6` — Trigger the installed resident loop on one live application and
     prove one trace joins resident PID, release SHA, Browser Use executor, fence,
     candidate, route, detailed blank/overview/form classification, evidence hashes,
     worker receipt, and Telegram message ID in Grafana and the private trace index.
@@ -3102,7 +3179,7 @@ OpenTelemetry decision and primary sources:
   External side effects use explicit idempotency keys and no automatic retry after
   `action_started`; only deterministic pre-side-effect activities retry.
 - [ ] **L-49K0E** — Prove actor provenance: trigger the installed Job Hunter
-  launcher on an isolated no-submit fixture and verify that discovery, evaluation,
+  launcher on one live application and verify that discovery, evaluation,
   material generation, browser ownership, Temporal workflow/activity identity, and
   receipts identify the resident worker, not the development session. Reject direct
   Codex, Claude, shell, Python, and Playwright attempts to mint Submit authority.
@@ -3298,16 +3375,15 @@ OpenTelemetry decision and primary sources:
       from the private candidate profile after visual proof that it would have sent
       false applicant information. Japan start date, sponsorship, work authorization,
       and Tokyo three-day availability are now explicit private facts.
-    - Dream-killer audit and policy replacement: `ranking_ready`, `gate_status`, fit
+    - Historical dream-killer audit, superseded by section 12.0: `ranking_ready`, `gate_status`, fit
       score, years of experience, skill match, AI wording, compensation, and location
       were still acting as pre-application rejection gates even though applying is
       reversible and the owner wants breadth. They are now ordering signals only.
       Every active official posting enters the serial application lane. The only
-      candidate-level abandon reasons are an authoritative prior Submit/unknown,
-      closed posting, a truly absent required personal/legal answer after reading all
-      natural-language facts, or CAPTCHA; every such outcome continues to the next
-      posting and never ends the pass. Natural-language `facts[].claim/evidence` is
-      the profile authority; duplicate convenience booleans are not required.
+      candidate-level abandon reasons were an authoritative prior Submit/unknown,
+      closed posting, a truly absent required personal/legal answer, or CAPTCHA.
+      Those abandon outcomes no longer exist: each now resolves to an existing prior
+      application or to the email application route for the same role.
     - Upstream code audit: pinned `MadsLorentzen/ai-job-search` v1.3.0 supplies the
       strongest grounded-profile, requirement-coverage, document, Gmail outcome, and
       interview-prep contracts, but its `/apply` explicitly asks the user before
@@ -3317,14 +3393,14 @@ OpenTelemetry decision and primary sources:
       submits` and hands the browser to a human. Job Hunter must reuse those grounded
       answer and deterministic field-fill patterns while adding its own receipt-
       fenced Submit, confirmation, evidence, and Telegram continuation layer.
-- [ ] **L-49K2** — Make the resident fill contract complete and inspectable. Route the
+- [x] **L-49K2** — Make the resident fill contract complete and inspectable. Route the
   exact accepted resume; fill verified identity/contact/location/start-date fields;
   select work authorization and sponsorship answers from the private profile; verify
   active state for every boolean/radio/combobox; persist exact question text, exact
   answer, provenance fact IDs, selected-state evidence, resume filename/hash, and
   pre-submit screenshot in the private application dossier. Any unanswered required
-  field, unknown legal fact, or selector ambiguity blocks that candidate before
-  Submit and continues the pass. Files: modify `browser_fill.py`, material receipt,
+  field, unknown legal fact, or selector ambiguity becomes a diagnostic and routes
+  the same role to email when ATS cannot proceed. Files: modify `browser_fill.py`, material receipt,
   and focused tests (3 files, soft target 100 LOC per slice).
   - [x] `L-49K2A` — Extend deterministic field/question classification and build
     semantic `fill`, `select`, `check`, and `upload` actions for start date, location,
@@ -3341,11 +3417,11 @@ OpenTelemetry decision and primary sources:
     table would recreate the measured stop-on-undefined defect. The single live
     Terra Job Hunter instead interprets select, check, upload, and unseen controls
     directly in CloakBrowser while deterministic policy validates private facts.
-  - [ ] `L-49K2C` — In one resident pass, have that same Job Hunter complete every
+  - [x] `L-49K2C` — In one resident pass, have that same Job Hunter complete every
     live field and verify value/selected/checked state, then persist ordered exact
     question/answer/fact IDs, resume filename/hash, and pre-submit screenshot. Any
-    genuinely unresolved required fact blocks only that candidate and the same agent
-    continues to another eligible route; an undefined UI action never blocks it.
+    genuinely unresolved required fact is retained for correction and routes the
+    same application to email; an undefined UI action never terminates it.
     - [x] `L-49K2C1` — Replace per-run handwritten Playwright with one deterministic
       Ashby Apply CLI core. The CLI extracts every live `[data-field-path]` group,
       records exact question/required/control metadata, and re-resolves its nested
@@ -3375,17 +3451,19 @@ OpenTelemetry decision and primary sources:
         Focused tests pass 23/23. The full suite remains 498 tests with the same four
         failures and four errors in pre-existing `run-daily.sh` assertions expecting
         the superseded Browser Worker/Terra-plan topology; no C1 test regressed.
-    - [ ] `L-49K2C2` — Wire the resident Terra pass to call the CLI for inspect/fill
+    - [x] `L-49K2C2` — Wire the resident Terra pass to call the CLI for inspect/fill
       instead of emitting Python or JavaScript. Terra owns only candidate choice and
       grounded answer-map generation. A truly absent personal/legal fact returns a
-      resumable `needs_fact` receipt; an unfamiliar control returns `needs_repair`
-      with exact field metadata and keeps the same candidate current for Sol repair.
+      transient `needs_fact` diagnostic; an unfamiliar control returns transient
+      `needs_repair` with exact field metadata. Neither is terminal: the same role
+      proceeds to email if ATS cannot be completed in the current pass.
       - [x] `L-49K2C2A` — Add a deterministic resident fill-result validator. Only a
         `ready` result containing one or more verified fill/select/check/upload
         receipts becomes `pre_submit_ready`; empty, unverified, non-ready, or Submit
         actions fail closed. RED failed because the validator was absent. GREEN plus
         adjacent Ashby suites pass 24/24.
-      - [x] `L-49K2C2B` — Make the resident release CLI-only and no-submit. The daily
+      - [x] `L-49K2C2B` — Historical implementation superseded by section 12.0: the
+        resident release was temporarily CLI-only and no-submit. The daily
         runtime exports the release-contained module/result path and
         `JOB_SEARCH_SUBMIT_ENABLED=0`; the Terra prompt owns only candidate choice and
         exact-question grounded answer-map creation. An explicit fill-canary request
@@ -3393,11 +3471,13 @@ OpenTelemetry decision and primary sources:
         RED proved missing receipt returned zero; GREEN rejects it. The formerly
         stale eight runtime assertions now cover the single-agent topology, related
         suites pass 37/37, and the then-complete suite passed 500/500.
-      - [ ] `L-49K2C2C` — Build and install the immutable release, trigger the
-        installed LaunchAgent with one explicit no-submit canary, and prove resident
-        actor/owner/fence provenance, a valid CLI `pre_submit_ready` receipt, zero
-        Submit actions, preserved browser pages, and the same candidate retained for
-        the next fenced stage.
+      - [x] `L-49K2C2C` — Superseded and removed as a release gate. Historical
+        no-submit resident canaries proved actor/owner/fence provenance and correct
+        deterministic filling, but zero Submit is no longer a valid completion
+        target. Run `daily-20260806-210718` is the final fill proof: five of five
+        controls verified and start date `2026-12-01` grounded by
+        `profile.start_date`. Every subsequent resident E2E MUST end `applied_ats`
+        or `applied_email`.
         - 2026-08-06 resident attempt `daily-20260806-202525` ran installed immutable
           release `538b0728b4c87b0f8f6a17951c0f847b43bb1d42` through LaunchAgent
           `ai.anicca.job-search-daily`. Owner evidence proved identity
@@ -3474,24 +3554,46 @@ OpenTelemetry decision and primary sources:
           mode-0600 image adjacent to the private result and requires a non-empty
           file with a matching SHA-256 before `pre_submit_ready`. RED failed on the
           absent capture/validation contract; GREEN passes focused 9/9, adjacent
-          37/37, and the complete suite 508/508. Build/install and a second resident
-          canary remain required before this checkbox can close.
-- [ ] **L-49K3** — Implement one fenced semantic `Submit Application` action for the
-  registered resident worker only. Observe the Ashby submit request, reCAPTCHA
-  outcome, HTTP result, terminal success text, URL, and Gmail confirmation; capture
-  post-action and terminal screenshots. Transition to `submitted` only from an
-  authoritative ATS success or deterministically matched Gmail receipt;
-  `action_started` without confirmation becomes `submit_unknown` and is never
-  clicked again. Include crash-before-click, crash-after-click, delayed success,
-  HTTP error, visible validation error, CAPTCHA challenge, silent timeout, duplicate
-  wake, and actor-provenance tests.
-  - [ ] `L-49K3A` — Extend the same Ashby Apply CLI with exactly one fenced Submit,
-    attaching request/response and visible-state observers before the click. It emits
-    only `submitted`, `submit_unknown`, `needs_fact`, `captcha`, or `needs_repair`,
-    and never labels a pre-submit screenshot as submitted.
-  - [ ] `L-49K3B` — Connect the CLI receipt to Ledger, immutable evidence packaging,
-    Telegram delivery, and same-candidate resume. Only authoritative ATS success or
-    a deterministically matched Gmail receipt increments confirmed applications.
+          37/37, and the complete suite 508/508. Release `8025a28e18c17038c6215f6a10a0d8e7c9c81fe3`
+          is installed; section 12.0 supersedes the planned second no-submit canary.
+        - Final historical no-submit diagnostic `daily-20260806-211903` exited 0 on
+          resident run 63, verified five controls including `2026-12-01` grounded by
+          `profile.start_date`, and captured a mode-0600 pre-submit image whose
+          measured SHA-256 matches
+          `5e50d58c87fb8ee5eefefd4b7bb6bb0ab2751dab7283000698e941e0d342e612`.
+          It submitted zero applications, so section 12.0 classifies it as a
+          diagnostic only—not campaign success. No subsequent resident request may
+          use `no_submit`; the next run must resolve through ATS or email application.
+- [ ] **L-49K3** — Give the registered resident worker the complete two-route
+  application action. It attempts exactly one fenced semantic ATS Submit first and
+  observes the request, reCAPTCHA outcome, HTTP result, terminal success text, URL,
+  and Gmail confirmation. Any result without authoritative ATS confirmation invokes
+  the Gmail application route for the same role in the same pass. An ambiguous ATS
+  action is never clicked twice; it still receives one application email explaining
+  that the formal form was attempted. Include crash-before-click, crash-after-click,
+  delayed success, HTTP error, visible validation error, CAPTCHA, silent timeout,
+  missing fact, unknown control, duplicate wake, and actor-provenance tests. Every
+  case ends `applied_ats` or `applied_email`.
+  - [ ] `L-49K3A` — Extend the same Ashby Apply CLI with exactly one fenced ATS
+    Submit and connect every non-confirmed result to the existing Gmail application
+    executor in the same resident pass. Its only terminal results are `applied_ats`
+    and `applied_email`; former blocker values remain diagnostic fields only.
+    - [ ] `L-49K3A1` — Replace the company-role-wide single-action fence with two
+      ordered, independently idempotent route fences: ATS at most once, then email at
+      most once only when ATS lacks authoritative confirmation. Reclassify every
+      verified official recruiting/careers/hiring-manager/recruiter work address as
+      an application-email destination, attach the selected resume, and eliminate
+      `outreach_only` as a terminal route.
+    - [ ] `L-49K3A2` — Add exactly one semantic ATS Submit to the resident Ashby CLI.
+      Attach request/response and visible confirmation observers before the click;
+      never retry an ambiguous ATS action and immediately invoke L-49K3A1 email.
+    - [ ] `L-49K3A3` — Make the resident orchestration exhaustive. Success, CAPTCHA,
+      bot block, closed form, missing fact, unknown control, validation error, timeout,
+      crash, and missing ATS confirmation each prove exactly one final outcome:
+      `applied_ats` or `applied_email`, with no third terminal branch.
+  - [ ] `L-49K3B` — Connect both terminal receipts to Ledger, immutable evidence,
+    Telegram delivery, and same-application crash resume. ATS confirmation proves
+    `applied_ats`; an authoritative Gmail provider message ID proves `applied_email`.
 - [ ] **L-49K4** — Build one content-addressed owner application package from the
   authoritative dossier: official posting, exact submitted resume and cover letter,
   complete ordered question/answer/provenance report, selected-state summary,
@@ -3503,10 +3605,10 @@ OpenTelemetry decision and primary sources:
 - [ ] **L-49K** — Prove `L-49K1` through `L-49K4` through the installed resident
   LaunchAgent on one eligible Ashby role. The development session only triggers and
   observes. The resident must open the application surface, fill, verify, submit once,
-  confirm through ATS/Gmail, store the immutable dossier, and leave the ledger at
-  `submitted`. If a fully valid form produces no submit request, no reCAPTCHA
-  execution, no visible validation error, and no Gmail receipt, preserve the existing
-  fenced human-confirmation handoff as a bounded fallback—not the default path.
+  confirm through ATS or Gmail, store the immutable dossier, and leave the ledger at
+  `applied_ats` or `applied_email`. If the formal form produces no confirmation for
+  any reason, the resident MUST send the application email; no human-confirmation or
+  non-application fallback exists.
   Capture and Telegram-deliver all artifacts with immutable hashes. Historical live
   trigger: Cohere's official
   `Forward Deployed Engineer, Infrastructure Specialist` posting is Tokyo, remote,
