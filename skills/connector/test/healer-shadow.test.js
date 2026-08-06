@@ -141,3 +141,35 @@ test("Healer records a failed Codex revision and stops at three revisions per 24
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("Healer records a bounded Codex timeout instead of losing the revision", async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "connector-healer-timeout-"));
+  const stateDir = path.join(root, "state");
+  fs.mkdirSync(stateDir, { recursive: true });
+  fs.writeFileSync(path.join(stateDir, "observer-incidents.jsonl"), `${JSON.stringify({
+    schema_version: 1, wake_id: "wake:timeout", run_id: "run:timeout",
+    stage: "native_pass", safe_action: "runtime_execute", expected_effect: "applied_bundle",
+    observed_effect: "timeout", incident_class: "timeout", owner_generation: 1,
+    code_commit: "3618c3b6a", cursor: "connpass:2026-08-07:0:2",
+    observed_at: "2026-08-07T01:00:00.000Z", fingerprint: `sha256:${"e".repeat(64)}`,
+  })}\n`, { mode: 0o600 });
+  try {
+    const result = await runHealerShadow({
+      repoRoot: REPO_ROOT, stateDir, worktreeRoot: path.join(root, "worktrees"),
+      now: () => new Date("2026-08-07T01:05:00.000Z"),
+      env: { PATH: process.env.PATH, HOME: root }, codexTimeoutMs: 1234,
+      execute: async (command, _args, options) => {
+        if (command === "codex") {
+          assert.equal(options.timeoutMs, 1234);
+          return { status: null, signal: "SIGTERM", errorCode: "ETIMEDOUT", stdout: "" };
+        }
+        return { status: 0, stdout: "" };
+      },
+    });
+    assert.equal(result.status, "revision_timeout");
+    const row = JSON.parse(fs.readFileSync(path.join(stateDir, "healer-revisions.jsonl"), "utf8").trim());
+    assert.equal(row.status, "revision_timeout");
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});

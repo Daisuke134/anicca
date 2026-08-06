@@ -3220,7 +3220,12 @@ incidentのbase commitから前進していること、`git status --porcelain`�
 返すことを独立検証する。dirty worktree、base据え置き、remote欠落・不一致は`revision_failed`としてledgerへ残しpromotion候補にしない。
 Healer focused 2/2 GREEN。外部申込、Calendar、Telegram、browser、live launchd effectは0件。
 
-### Active remaining TODO SSOT（進捗156。これ以外の残TODO一覧は履歴）
+O1B-25進捗157（Healer Codex bounded timeout / RED→GREEN）:
+Codex childへ既定45分のwall-clock timeoutと`SIGTERM`を設定し、`ETIMEDOUT`またはtimeout signalを通常failureと分離して
+`revision_timeout`としてprivacy-safe ledgerへ保存する。timeout revisionも直近24時間3 revision capへ含め、例外だけでledgerが欠落する経路を
+閉じた。Healer focused 3/3 GREEN。外部申込、Calendar、Telegram、browser、live launchd effectは0件。
+
+### Active remaining TODO SSOT（進捗157。これ以外の残TODO一覧は履歴）
 
 1. [x] Provider-neutral downstream write、Connpass runtime write dependencies、Luma Calendar-eligible 0 handoff、Connpass state persistenceを閉じる。証拠: 進捗141、143、144、commit `65241d6a2`、`e822bfa3a`、`d0e05f5d8`、`1cfa2e56f`。
 2. [x] Privacy-safe Observer envelope/replayを実装する。完了条件: success、tool failure、timeout、process crashが同じschemaでrun/wake、stage、safe action、expected/observed effect、owner generation、screenshot SHA、provider readback、commit、cursorへ正規化され、secret/PII/raw logなし、fingerprint dedupe可能なincidentとreplay fixtureを各1件生成する。証拠: 進捗148、focused 33/33 GREEN。
