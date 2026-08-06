@@ -3791,6 +3791,13 @@ OpenTelemetry decision and primary sources:
       provider contract. Use the pinned employer/site patterns, bound pagination and
       timeouts, retain official posting provenance, and enqueue only through the
       existing queue. Prove restart replay and expired/unlisted classification.
+      - [ ] `L-49K5B2a` — Implement the bounded Workday CXS provider contract with
+        strict HTTPS Workday-host validation, safe tenant/site identifiers, POST
+        payload, timeout/no-redirect requirements, bounded pagination, direct official
+        job URLs, and inactive/malformed classification. No persistence in this slice.
+      - [ ] `L-49K5B2b` — Pin the adopted employer/site registry, pass B2a results
+        through the existing `CandidateQueue`, and prove canonical dedupe, official
+        provenance, inactive exclusion, and restart replay without a second database.
     - [ ] `L-49K5B3` — Adapt SmartExtract and detail enrichment behind the existing
       normalized candidate contract. Bound fetched content, retain source URL and
       extraction provenance, and never let enrichment create a second job record or
