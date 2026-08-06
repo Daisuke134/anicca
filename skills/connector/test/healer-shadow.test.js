@@ -173,3 +173,38 @@ test("Healer records a bounded Codex timeout instead of losing the revision", as
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("Healer recovers once from an orphaned branch or worktree collision", async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "connector-healer-collision-"));
+  const stateDir = path.join(root, "state");
+  fs.mkdirSync(stateDir, { recursive: true });
+  fs.writeFileSync(path.join(stateDir, "observer-incidents.jsonl"), `${JSON.stringify({
+    schema_version: 1, wake_id: "wake:collision", run_id: "run:collision",
+    stage: "native_pass", safe_action: "runtime_execute", expected_effect: "applied_bundle",
+    observed_effect: "tool_failure", incident_class: "tool_failure", owner_generation: 1,
+    code_commit: "1e4ea6169", cursor: "connpass:2026-08-07:0:2",
+    observed_at: "2026-08-07T01:10:00.000Z", fingerprint: `sha256:${"f".repeat(64)}`,
+  })}\n`, { mode: 0o600 });
+  const worktreeAdds = [];
+  try {
+    const result = await runHealerShadow({
+      repoRoot: REPO_ROOT, stateDir, worktreeRoot: path.join(root, "worktrees"),
+      now: () => new Date("2026-08-07T01:15:00.000Z"), env: { PATH: process.env.PATH, HOME: root },
+      execute: async (command, args) => {
+        if (command === "git" && args.includes("worktree") && args.includes("add")) {
+          worktreeAdds.push(args);
+          if (worktreeAdds.length === 1) return { status: 128, stderr: "fatal: branch already exists" };
+          return { status: 0, stdout: "" };
+        }
+        if (command === "codex") return { status: 1, stdout: '{"type":"error"}\n' };
+        return { status: 0, stdout: "" };
+      },
+    });
+    assert.equal(result.status, "revision_failed");
+    assert.equal(worktreeAdds.length, 2);
+    assert.notEqual(worktreeAdds[0][5], worktreeAdds[1][5]);
+    assert.notEqual(worktreeAdds[0][6], worktreeAdds[1][6]);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});

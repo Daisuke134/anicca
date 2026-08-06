@@ -135,13 +135,23 @@ async function runHealerShadow(options = {}) {
   const execute = options.execute || defaultExecute;
   const short = incident.fingerprint.slice("sha256:".length, "sha256:".length + 12);
   const revision = recent.length + 1;
-  const branch = `healer/connector-${short}-r${revision}`;
-  const worktree = path.join(worktreeRoot, `${short}-r${revision}`);
+  let branch = `healer/connector-${short}-r${revision}`;
+  let worktree = path.join(worktreeRoot, `${short}-r${revision}`);
   fs.mkdirSync(worktreeRoot, { recursive: true, mode: 0o700 });
 
   let result = await execute("git", ["-C", repoRoot, "worktree", "add", "-b", branch, worktree, incident.code_commit], {
     cwd: repoRoot, env: healerEnvironment(options.env),
   });
+  const collision = result && result.status !== 0
+    && /(?:branch|worktree|path).*(?:already exists|already checked out|already registered)/i
+      .test(String(result.stderr || ""));
+  if (collision) {
+    branch = `${branch}-recovery1`;
+    worktree = `${worktree}-recovery1`;
+    result = await execute("git", ["-C", repoRoot, "worktree", "add", "-b", branch, worktree, incident.code_commit], {
+      cwd: repoRoot, env: healerEnvironment(options.env),
+    });
+  }
   if (!result || result.status !== 0) {
     appendRevision(revisionsFile, {
       fingerprint: incident.fingerprint, revision, status: "worktree_failed",
