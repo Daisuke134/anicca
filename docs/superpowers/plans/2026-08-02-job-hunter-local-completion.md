@@ -3584,6 +3584,17 @@ OpenTelemetry decision and primary sources:
       verified official recruiting/careers/hiring-manager/recruiter work address as
       an application-email destination, attach the selected resume, and eliminate
       `outreach_only` as a terminal route.
+      - [ ] `L-49K3A1a` — Reclassify every verified official recruiting/careers/
+        hiring-manager/recruiter work address as `recruiting_email /
+        accepts_applications`; the message executor always attaches the selected
+        resume and exposes no outreach-only terminal result.
+      - [ ] `L-49K3A1b` — Replace the company-role-wide live-action uniqueness rule
+        with route-kind fences that permit at most one ATS action followed by at most
+        one email action, while preserving at-most-once replay per individual route.
+      - [ ] `L-49K3A1c` — Make route selection treat only authoritative ATS success
+        as terminal. ATS `failed`, ambiguous, CAPTCHA, timeout, or other unconfirmed
+        diagnostics select the first eligible recruiting email; delivered/unknown
+        email remains at most once.
     - [ ] `L-49K3A2` — Add exactly one semantic ATS Submit to the resident Ashby CLI.
       Attach request/response and visible confirmation observers before the click;
       never retry an ambiguous ATS action and immediately invoke L-49K3A1 email.
