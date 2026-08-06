@@ -102,7 +102,21 @@ This slice changes 196 lines across four files because 60 lines move the existin
 - [x] Focused Calendar 6/6 + runtime 17/17、pretest 12/12、outbound 346/346 GREEN。
 - [x] Master specへ進捗134を記録しcommit/push。
 
-## Task 4: Connpass Authenticated Registration Adapter
+## Authorized Browser-Write Premise
+
+Dais confirms he has obtained direct permission from each listed event site for Connector browser registration. Treat that direct authorization as the operative write permission; do not revive the rejected inference that public generic documents prohibit these approved account actions. Provider writes still require the fixed allowlist, Connector-owned `:9222` target, existing spend/Calendar gates, parent effect readback, and external evidence.
+
+## Task 4A: Provider-Neutral Parent-Owned Browser Rail
+
+**Files:**
+- Modify: `apps/life-manager/lib/cloakbrowser-daily-driver.js`
+- Modify: `apps/life-manager/lib/cloakbrowser-daily-driver.test.js`
+- Modify: `apps/life-manager/lib/connector-tab-owner.js`
+- Modify: `apps/life-manager/lib/connector-tab-owner.test.js`
+
+**Completion:** The existing `createTarget → claimExact → probe → heartbeat → goto → parent task/readback → release` lifecycle accepts only the fixed provider/host mapping for Luma, Connpass, Peatix, Meetup, Doorkeeper, and Eventbrite. `withLumaPage` remains a compatibility wrapper. Endpoint stays exactly Connector `:9222`; Gig `:9223` and arbitrary origins remain rejected.
+
+## Task 4B: Connpass Authenticated Registration Adapter
 
 **Completion:** One parent-owned Connector target performs real registration, parent marker readback, PNG, admission ticket/QR or equivalent receipt, Calendar insertion, and Telegram card/photo. Only then promote Connpass registration capabilities to active.
 
