@@ -279,8 +279,15 @@ Dev.to and Substack, X Article editor non-detection, and a Zenn result-less
 timeout. Re-kickstarting `ai.anicca.article-daily` exited successfully without
 resuming those unfinished intents because same-day creator deduplication won.
 The safety deduplication is correct; allowing it to terminate unfinished work
-is not. These failures must return to the Agent loop with their observations
-and remain owned by the same run until publisher-native readback succeeds.
+is not. **1b DONE:** runtime commits `f569336d` and `2e1f4d6d` connect the
+installed resume worker to the existing observability replay and incident
+queue, isolate malformed historical runs, and preserve deduplication. A live
+`ai.anicca.article-resume` wake registered all six current publisher failures
+from run `20260806-084924` as durable `OPEN` incidents owned by
+`writer-self-heal`, with classifications for credential, state corruption,
+DOM/selector, and process failure and `next_action=CLAIM`. Current item 1c must
+make the production repair owner claim, diagnose, repair, and resume those same
+publication intents until publisher-native readback succeeds.
 
 ### 2.5 Active-six distribution and dormant-adapter contract
 
@@ -1475,9 +1482,9 @@ Read as one end-to-end completion route, the remaining work is:
 
 ```text
 1a   DONE: production loop emits hash-bound reader terminals
-  -> 1b   CURRENT: make the loop return publisher errors to its Agent as observations,
-          not terminal unavailable
-  -> 1c   kickstart the installed loop and prove that it diagnoses, repairs, and
+  -> 1b   DONE: loop returns publisher errors to its durable Agent incident queue
+  -> 1c   CURRENT: kickstart the installed repair loop and prove that it claims,
+          diagnoses, repairs, and
           resumes note, Dev.to, Substack, X Article, and Zenn from the same work
           item until at least two independent publishers return live URLs
   -> 1d   keep the installed loop running until its own receipts prove all
