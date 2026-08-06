@@ -2551,10 +2551,18 @@ the resident worker from producing one authoritative application receipt:
       provenance, provider ID, delivery evidence, and reply evidence rebuild from the
       projection plus immutable route events. Focused ledger tests pass 43/43 and the
       full Job Hunter suite passes 422/422.
-  - [ ] `L-49K0C1B` — Discover alternate URLs and recipient addresses only from
+  - [x] `L-49K0C1B` — Discover alternate URLs and recipient addresses only from
     employer-controlled pages or an explicitly linked official recruiting provider.
     Record source URL/content hash and distinguish `accepts_applications` from
     `outreach_only`; a public address alone never implies application acceptance.
+    - Provenance verification now requires HTTPS, exact employer/approved-provider
+      hostname boundaries, an exact content SHA-256, and the complete target URL or
+      recipient address in that official source. A recipient becomes
+      `accepts_applications` only when its same source sentence explicitly directs an
+      application/resume/CV by email; a careers-question/public address is
+      `outreach_only`. Alternate URLs must be exact links to an employer domain or an
+      approved ATS provider; lookalike domains and hash drift fail closed. Provenance
+      and route-ledger tests pass 8/8 and the full suite passes 427/427.
   - [ ] `L-49K0C1C` — Execute the ordered ladder at most once per route. Email an
     application only when the provenance explicitly accepts it; otherwise allow one
     bounded recruiting outreach message, then continue to the next role. Preserve the
