@@ -635,15 +635,10 @@ async function runNativeConnectorPass(input = {}) {
     let providerDiscovery = null;
     let providerDateInventory = null;
     if (providerCursor && providerCursor.provider === "connpass") {
-      if (typeof pack.handoffEventSource !== "function") unavailable();
+      if (typeof pack.discoverConnpassDate !== "function") unavailable();
       failureCode = "CONNECTOR_NATIVE_PROVIDER_DISCOVERY_FAILED";
-      const exhaustedLuma = await pack.runSameDayCandidates([], async () => unavailable());
-      if (
-        !isVerifiedLumaCandidateSequence(exhaustedLuma)
-        || exhaustedLuma.status !== "next_provider_required"
-      ) unavailable();
-      const handoff = await pack.handoffEventSource(providerCursor.date, exhaustedLuma, {
-        connpassApiKey: String(config.connpassApiKey == null ? "" : config.connpassApiKey),
+      const handoff = await pack.discoverConnpassDate(providerCursor.date, {
+        timeZone,
       });
       const verifyHandoff = factory(
         deps, "isVerifiedEventSourceHandoff", isVerifiedEventSourceHandoff,
@@ -661,6 +656,7 @@ async function runNativeConnectorPass(input = {}) {
         coverage_status: "open",
         coverage_credit_count: 0,
         network_call_count: handoff.network_call_count,
+        browser_page_count: handoff.browser_page_count,
         advisory_candidates: Object.freeze([...handoff.advisory_candidates]),
       });
       if (handoff.status === "advisory_candidates_found") {
