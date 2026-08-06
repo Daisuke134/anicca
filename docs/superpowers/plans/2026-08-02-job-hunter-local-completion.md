@@ -3770,7 +3770,7 @@ OpenTelemetry decision and primary sources:
       The complete upstream-lock suite passes 10/10 and the complete Job Hunter suite
       passes 515/515; the previously reported eight full-suite failures do not
       reproduce on this tree.
-  - [ ] `L-49K5B` — Port JobSpy, Workday/direct-career discovery, SmartExtract, and
+  - [x] `L-49K5B` — Port JobSpy, Workday/direct-career discovery, SmartExtract, and
     pinned site patterns behind the existing candidate normalization contract. Every
     discovered role enters the current candidate queue; no ApplyPilot jobs table,
     continuous poller, scheduler, or second queue is allowed. Prove canonical dedupe,
@@ -3814,7 +3814,7 @@ OpenTelemetry decision and primary sources:
           calls the existing `CandidateQueue`; a second identical run inserts zero and
           records the canonical duplicate. No ApplyPilot database, poller, or scheduler
           is imported. Workday focused tests pass 5/5.
-    - [ ] `L-49K5B3` — Adapt SmartExtract and detail enrichment behind the existing
+    - [x] `L-49K5B3` — Adapt SmartExtract and detail enrichment behind the existing
       normalized candidate contract. Bound fetched content, retain source URL and
       extraction provenance, and never let enrichment create a second job record or
       success truth.
@@ -3838,10 +3838,20 @@ OpenTelemetry decision and primary sources:
           leads. Any selector/script/extraction-plan key is rejected rather than
           executed. It owns no browser, LLM, queue, or database. Focused tests pass
           3/3, including the empty-URL regression found during GREEN.
-      - [ ] `L-49K5B3c` — **Deferred until after the next installed resident live
+      - [x] `L-49K5B3c` — **Deferred until after the next installed resident live
         application proof.** Pin the useful direct-career site patterns and run their
         outputs through B3b and the existing queue. Do not create a second Playwright
         browser, LLM owner, database, or continuous extractor loop.
+        - Evidence: `config/direct-career-sites.v1.json` pins twelve global/remote
+          career-discovery targets to ApplyPilot `sites.yaml` blob
+          `5107aca850034334ad351b283e3694db989b2f8d`. The independently implemented
+          `ingest_site_pattern_captures` accepts only captures from a registered HTTPS
+          host, routes passive `json_ld`/`api_response` rows through B3b, preserves
+          official-versus-cross-origin-lead provenance, and calls the existing
+          `CandidateQueue` once. It creates no fetcher, browser, model, database, or
+          scheduler. A real-config focused test proves a nested
+          `hiringOrganization.name` reaches the durable queue; SmartExtract,
+          candidate-queue, and adoption focused tests pass 22/22.
     - [x] `L-49K5B4` — Wire the completed minimum B1/B2/B3a/B3b contracts into the
       resident discovery pass, build and install the release, and immediately trigger
       the existing launchd loop. The completion gate is not a large fixture matrix:

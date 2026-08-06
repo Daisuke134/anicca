@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "source": {
+    "repository": "https://github.com/Pickle-Pixel/ApplyPilot",
+    "commit": "4a8d521f67f5139811c0a910ef37410f8e6d836a",
+    "path": "src/applypilot/config/sites.yaml",
+    "blob_sha": "5107aca850034334ad351b283e3694db989b2f8d"
+  },
+  "source_blob_sha": "5107aca850034334ad351b283e3694db989b2f8d",
+  "sites": [
+    {"id": "techstars_jobs", "url": "https://jobs.techstars.com/jobs?keywords={query_encoded}", "type": "search"},
+    {"id": "startup_jobs", "url": "https://startup.jobs/?q={query_encoded}&remote=true", "type": "search"},
+    {"id": "welcome_to_the_jungle", "url": "https://www.welcometothejungle.com/en/jobs?query={query_encoded}&refinementList%5Bremote%5D%5B%5D=fulltime", "type": "search"},
+    {"id": "remote_ok", "url": "https://remoteok.com/remote-dev-jobs", "type": "static"},
+    {"id": "we_work_remotely", "url": "https://weworkremotely.com/categories/remote-programming-jobs", "type": "static"},
+    {"id": "remotive", "url": "https://remotive.com/remote-jobs/software-dev", "type": "static"},
+    {"id": "himalayas", "url": "https://himalayas.app/jobs/developer", "type": "static"},
+    {"id": "working_nomads", "url": "https://www.workingnomads.com/jobs?category=development", "type": "static"},
+    {"id": "hacker_news_jobs", "url": "https://news.ycombinator.com/jobs", "type": "static"},
+    {"id": "built_in_remote", "url": "https://builtin.com/jobs/remote/dev-engineering", "type": "static"},
+    {"id": "wellfound", "url": "https://wellfound.com/role/l/software-engineer/canada", "type": "static"},
+    {"id": "jobgether", "url": "https://jobgether.com/remote-jobs/software-engineer", "type": "static"}
+  ]
+}

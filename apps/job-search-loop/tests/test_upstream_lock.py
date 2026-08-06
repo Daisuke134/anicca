@@ -88,6 +88,13 @@ class UpstreamLockTests(unittest.TestCase):
                     "license": "MIT",
                     "owner_task": "L-49K5B3b",
                 },
+                {
+                    "local_path": "config/direct-career-sites.v1.json",
+                    "upstream_contract_paths": ["src/applypilot/config/sites.yaml"],
+                    "copied_source_lines": 0,
+                    "license": "MIT",
+                    "owner_task": "L-49K5B3c",
+                },
             ],
         )
 
