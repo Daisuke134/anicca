@@ -2442,7 +2442,7 @@ the resident worker from producing one authoritative application receipt:
           every attempt. A blocked receipt consumes zero slots. Ledger-focused tests
           pass 40/40, cross-module claim tests pass 49/49, and the full Job Hunter
           suite passes 408/408.
-    - [ ] `FILL-1D` — Trigger the installed resident loop and prove it reaches a real
+    - [x] `FILL-1D` — Trigger the installed resident loop and prove it reaches a real
       ATS pre-submit state through the single worker. The development session only
       watches evidence. Any CAPTCHA or unsupported field remains explicit and the
       same pass continues to another eligible role.
@@ -2518,6 +2518,19 @@ the resident worker from producing one authoritative application receipt:
         projects `attempted_count` into the browser result. Related tests pass 27/27
         and the full suite remains 419/419. One resident replay must prove phone and
         location disappear from blockers while the legal questions remain blocked.
+      - Final resident proof: immutable release
+        `5901c32eb1e8446d66c5a5a067d4e527be45f7d4`, run
+        `daily-20260806-091317`, fence 92, processed three ranked OpenAI Ashby
+        applications in one pass and exited zero. Each private receipt contains five
+        verified actions: grounded legal name, application email, verified phone,
+        grounded location, and hash-verified resume upload. The worker persisted three
+        mode-0600 snapshots, fill receipts, and pre-submit screenshots (248,346,
+        254,235, and 240,765 bytes), reported `attempted_count=3`, and clicked Submit
+        zero times. Location and phone no longer appear as blockers. Only ungrounded
+        start date, work authorization, sponsorship, role-specific office attendance,
+        and personal attestation remain explicit. This proves the installed resident
+        loop—not the development session—performs bounded ATS fill and continues after
+        blocked forms.
 - [ ] **L-49K0C1** — Implement the same-role alternate-route ladder: canonical ATS,
   alternate official employer URL, explicitly accepted recruiting-email application,
   verified public work-address recruiting outreach, then the next eligible role.
