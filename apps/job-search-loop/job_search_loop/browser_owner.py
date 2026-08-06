@@ -32,17 +32,22 @@ def probe_cdp(endpoint: str) -> dict[str, str]:
     return {"status": "ready", "endpoint": base, "browser": browser, "websocket": websocket}
 
 
-def attach_playwright_cdp(endpoint: str) -> dict[str, Any]:
-    from playwright.sync_api import sync_playwright
+def attach_browser_use_cdp(endpoint: str) -> dict[str, Any]:
+    from .browser_use_adapter import PinnedBrowserUseBackend
 
-    with sync_playwright() as playwright:
-        browser = playwright.chromium.connect_over_cdp(endpoint, timeout=12_000)
-        if not browser.contexts:
+    backend = PinnedBrowserUseBackend(endpoint, allowed_domains=["jobs.ashbyhq.com"])
+    try:
+        backend.connect()
+        snapshot = backend.snapshot()
+        frames = snapshot.get("frames") if isinstance(snapshot, dict) else None
+        if not isinstance(frames, list) or not frames:
             raise RuntimeError("CloakBrowser default context is missing")
         return {
-            "browser": browser.version,
-            "context_count": len(browser.contexts),
+            "browser": "browser-use/0.13.7",
+            "context_count": len(frames),
         }
+    finally:
+        backend.close()
 
 
 def _restart_browser_launchagent(label: str) -> None:
@@ -198,7 +203,7 @@ class BrowserLease:
 def acquire_with_attach_recovery(
     lease: BrowserLease,
     *,
-    attach_probe: Callable[[str], dict[str, Any]] = attach_playwright_cdp,
+    attach_probe: Callable[[str], dict[str, Any]] = attach_browser_use_cdp,
     restart_browser: Callable[[str], Any] = _restart_browser_launchagent,
     readiness_wait: Callable[[float], Any] = time.sleep,
 ) -> dict[str, Any]:

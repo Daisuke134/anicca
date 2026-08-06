@@ -20,6 +20,9 @@ from .playwright_ats import (
 from .resume_routing import select_resume
 
 
+EXECUTOR = "browser-use-0.13.7"
+
+
 def _private_write(path: Path, value: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     temporary = path.with_name(f".{path.name}.tmp-{os.getpid()}")
@@ -45,10 +48,10 @@ def run_pre_submit(
         json.loads(prefilter_result.read_text(encoding="utf-8")), limit=3
     )
     if not candidates:
-        return {"status": "pending_verification", "blocked": ["no_ranking_ready_candidate"]}
+        return {"status": "pending_verification", "blocked": ["no_ranking_ready_candidate"], "executor": EXECUTOR}
     endpoint = owner_receipt.get("endpoint")
     if not isinstance(endpoint, str) or not endpoint:
-        return {"status": "pending_verification", "blocked": ["browser_owner_endpoint_missing"]}
+        return {"status": "pending_verification", "blocked": ["browser_owner_endpoint_missing"], "executor": EXECUTOR}
     domains = sorted(
         {
             str(urlparse(str(candidate.get("official_url") or "")).hostname or "").lower()
@@ -122,11 +125,14 @@ def run_pre_submit(
                 "blockers": [f"pre_submit_blocked:{item}" for item in receipt.get("blockers", [])],
             }
 
-        return attempt_ranked_candidates(candidates, attempt)
+        result = attempt_ranked_candidates(candidates, attempt)
+        result["executor"] = EXECUTOR
+        return result
     except Exception as error:
         return {
             "status": "pending_verification",
             "blocked": [f"browser_use_pre_submit_error:{type(error).__name__}"],
+            "executor": EXECUTOR,
         }
     finally:
         backend.close()
