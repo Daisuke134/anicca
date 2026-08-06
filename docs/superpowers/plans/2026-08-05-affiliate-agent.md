@@ -16,7 +16,7 @@
 - Runtime changes belong in `/Users/anicca/profitable-claude`; API and documentation changes belong in `/Users/anicca/anicca-project`.
 - Execute in isolated `.worktrees/affiliate-agent-*` worktrees created with `superpowers:using-git-worktrees`; never edit a dirty primary checkout.
 - Use TDD for every behavior change: RED, minimal GREEN, focused suite, commit, push.
-- Bootstrap a pinned runtime on scratch macOS and Ubuntu hosts; do not depend on
+- Bootstrap a pinned runtime on the current macOS host; do not depend on
   an ambient `/usr/bin/python3`. Existing launchd remains untouched until cutover.
 - Pin and checksum every non-system runtime dependency.
 - `unknown`, `pending`, `approved`, `reversed`, and `paid` are distinct; unknown is never zero.
@@ -192,7 +192,7 @@ state, auth, a browser profile, or a branch never execute concurrently.
 
 ---
 
-### Task F0: Bootstrap the Agent from a scratch macOS or Ubuntu computer
+### Task F0: Bootstrap the Agent from a clean state on the current macOS computer
 
 **Files:**
 - Create: `profitable-claude/skills/affiliate/bootstrap/install.sh`
@@ -206,7 +206,7 @@ state, auth, a browser profile, or a branch never execute concurrently.
 **Interfaces:**
 - Produces: `MachineCapabilityReceipt`, `AuthorityReceipt`, and isolated EN/JA
   `BrowserProfileReceipt` records.
-- Consumes: a supported clean host and an explicitly user-authorized authority
+- Consumes: the current macOS host with clean Agent state and an explicitly user-authorized authority
   bundle. Missing identity/OTP/KYC/contract capability becomes
   `EXTERNAL_CHALLENGE`, not invented data.
 
@@ -234,9 +234,10 @@ Discover existing authorized identities and sessions, create locale-isolated
 profiles, verify the account handle after login/recovery, and persist only
 encrypted session material plus sanitized receipts.
 
-- [ ] **Step 5: Run clean-host E2E on macOS and Ubuntu**
+- [ ] **Step 5: Run clean-state E2E on the current macOS host**
 
-Use isolated disposable hosts/VMs. Reboot between bootstrap and resume; prove the
+Use an isolated disposable macOS user/profile without touching running loops.
+Reboot between bootstrap and resume; prove the
 same queue/profile identities return without duplicate account creation or any
 external publication. This is environment E2E, not a mocked success.
 
@@ -244,7 +245,7 @@ external publication. This is environment E2E, not a mocked success.
 
 ```bash
 git add skills/affiliate/bootstrap skills/affiliate/scripts skills/affiliate/tests
-git commit -m "feat(affiliate): bootstrap scratch hosts"
+git commit -m "feat(affiliate): bootstrap clean macOS state"
 git push
 ```
 

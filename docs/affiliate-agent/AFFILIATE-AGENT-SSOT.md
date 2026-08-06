@@ -474,7 +474,7 @@ Before that, revenue is `unknown`, not a fabricated conversion forecast.
 
 ## 9. Ordered implementation backlog
 
-1. Build a reproducible scratch-computer bootstrap for macOS and Ubuntu: install
+1. Build a reproducible scratch-computer bootstrap for the current macOS host: install
    the pinned runtime/browser dependencies, create an encrypted local vault,
    provision isolated EN/JA profiles, and emit a machine capability receipt.
 2. Create the Agent schema and append-only Affiliate ledger; add invariants for
@@ -544,8 +544,9 @@ without changing the architecture.
 
 ### 11.2 Must be cleared by implementation tests
 
-- Reproducible bootstrap parity on macOS and Ubuntu; pinned browser/runtime
-  versions; encrypted secret persistence; upgrades and rollback.
+- Reproducible bootstrap on a clean macOS user/profile; pinned browser/runtime
+  versions; encrypted secret persistence; upgrades and rollback. Ubuntu parity is
+  not an initial completion condition.
 - Semantic action schema, browser profile leases, account switching, downloads,
   DOM/screenshot hashing, selector drift, localization, popups, and crash resume.
 - Signup/login/recovery/profile workflows that resume without duplicating an

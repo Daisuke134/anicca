@@ -240,7 +240,8 @@ migration and are removed from scheduling only after state-parity receipts.
 
 ## 6. Architecture
 
-The completion boundary starts on a scratch macOS or Ubuntu computer. The Agent
+The initial completion boundary starts on this macOS computer with a clean Agent
+state. The Agent
 installs pinned dependencies, creates an encrypted authority vault and isolated
 locale profiles, discovers/creates/recovers/configures authorized accounts,
 applies to programs, polls approvals, publishes, acquires traffic, downloads and
@@ -250,6 +251,10 @@ consent becomes `EXTERNAL_CHALLENGE`; it is never fabricated or bypassed.
 
 External service APIs and Postiz are prohibited. Internal SQLite/local HTTP and
 the Agent-owned signed redirect remain valid implementation boundaries.
+
+Ubuntu and other-host packaging are excluded from the first revenue loop. They
+begin only after the macOS Agent produces a live public placement, attributed
+click, approved commission receipt, and crash-resume receipt.
 
 ```mermaid
 flowchart TD
