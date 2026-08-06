@@ -3375,6 +3375,34 @@ OpenTelemetry decision and primary sources:
     question/answer/fact IDs, resume filename/hash, and pre-submit screenshot. Any
     genuinely unresolved required fact blocks only that candidate and the same agent
     continues to another eligible route; an undefined UI action never blocks it.
+    - [ ] `L-49K2C1` — Replace per-run handwritten Playwright with one deterministic
+      Ashby Apply CLI core. The CLI extracts every live `[data-field-path]` group,
+      records exact question/required/control metadata, and re-resolves its nested
+      live control before every fill, select, check, and resume upload. It accepts a
+      grounded question-to-answer map with fact IDs; it never hardcodes a
+      posting-specific UUID or reuses a stale global control index. Completion
+      receipt: the OpenAI failure class (a UUID copied between applications) fails
+      before implementation, then the CLI fills and verifies a changed field layout
+      without handwritten Playwright. Files: create `ashby_apply.py`, add one focused
+      test file, update this spec (3 files, soft target 180 LOC).
+      - Handover checkpoint: implementation remains unfinished. The CLI now has
+        `inspect`/`fill`, exact-question answer mapping, live `data-field-path`
+        re-resolution, fill/select/check/upload execution, fact-ID receipts, and it
+        closes only its owned page rather than the shared CloakBrowser. RED proved
+        the module missing and then proved Ashby's internal checkbox incorrectly won
+        over its Yes/No buttons. Focused Ashby suites pass 23/23. A read-only live
+        OpenAI Ashby inspection extracted 12 current fields and proved the phone UUID
+        differs from the stale UUID used by run 57; authorization/sponsorship are now
+        classified as select while the standalone attestation is check. The isolated
+        live-control fill E2E was interrupted before a receipt, so this item stays
+        open. Full suite currently runs 498 tests with 4 failures and 4 errors in
+        pre-existing `run-daily.sh` contract assertions that expect the superseded
+        Browser Worker/Terra-plan topology; none touches the three checkpoint files.
+    - [ ] `L-49K2C2` — Wire the resident Terra pass to call the CLI for inspect/fill
+      instead of emitting Python or JavaScript. Terra owns only candidate choice and
+      grounded answer-map generation. A truly absent personal/legal fact returns a
+      resumable `needs_fact` receipt; an unfamiliar control returns `needs_repair`
+      with exact field metadata and keeps the same candidate current for Sol repair.
 - [ ] **L-49K3** — Implement one fenced semantic `Submit Application` action for the
   registered resident worker only. Observe the Ashby submit request, reCAPTCHA
   outcome, HTTP result, terminal success text, URL, and Gmail confirmation; capture
@@ -3384,6 +3412,13 @@ OpenTelemetry decision and primary sources:
   clicked again. Include crash-before-click, crash-after-click, delayed success,
   HTTP error, visible validation error, CAPTCHA challenge, silent timeout, duplicate
   wake, and actor-provenance tests.
+  - [ ] `L-49K3A` — Extend the same Ashby Apply CLI with exactly one fenced Submit,
+    attaching request/response and visible-state observers before the click. It emits
+    only `submitted`, `submit_unknown`, `needs_fact`, `captcha`, or `needs_repair`,
+    and never labels a pre-submit screenshot as submitted.
+  - [ ] `L-49K3B` — Connect the CLI receipt to Ledger, immutable evidence packaging,
+    Telegram delivery, and same-candidate resume. Only authoritative ATS success or
+    a deterministically matched Gmail receipt increments confirmed applications.
 - [ ] **L-49K4** — Build one content-addressed owner application package from the
   authoritative dossier: official posting, exact submitted resume and cover letter,
   complete ordered question/answer/provenance report, selected-state summary,
