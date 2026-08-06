@@ -3848,6 +3848,12 @@ OpenTelemetry decision and primary sources:
       it is a real run whose discovered candidates remain in the existing queue and
       which proceeds to ATS-first application with one Gmail fallback. Add only the
       smallest regression check required by the observed integration boundary.
+      - In progress: `workday_cxs` is now the third default discovery provider beside
+        Firecrawl and official Ashby/Greenhouse boards. A read-only live query for
+        `AI Japan` reached all nine pinned Workday boards, returned 97 official rows
+        from eight boards, and isolated one board failure without stopping discovery.
+        Existing discovery/Workday focused tests pass 9/9. Release installation and
+        the resident application receipt remain required before this item is complete.
   - [ ] `L-49K5C` — Port generic Playwright form and CAPTCHA/SSO/page classification
     into the existing fenced CloakBrowser application lane. Keep the resident Terra
     agent as the adaptive owner. Do not use `bypassPermissions`, unpinned packages,

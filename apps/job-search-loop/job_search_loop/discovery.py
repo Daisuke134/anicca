@@ -158,6 +158,15 @@ def _default_providers(
                 query,
             ),
         ),
+        Provider(
+            "workday_cxs",
+            (
+                os.environ.get("JOB_SEARCH_PYTHON", "/opt/homebrew/bin/python3"),
+                "-m",
+                "job_search_loop.workday_discovery",
+                query,
+            ),
+        ),
     )
 
 
