@@ -8,13 +8,18 @@ import re
 from pathlib import Path
 from typing import Any, Callable
 
-from .ashby_confirmation import classify_confirmation, submit_operation_from_payload
+from .ashby_confirmation import (
+    classify_confirmation,
+    classify_post_click_observation,
+    submit_operation_from_payload,
+)
 from .ledger import Ledger
 from .telemetry import Telemetry
 
 
 FIELD_PATH = re.compile(r"[-A-Za-z0-9_]+")
 STANDARD_PROFILE_ANSWERS = {
+    "name": ("name", "profile.name"),
     "legal name": ("name", "profile.name"),
     "full name": ("name", "profile.name"),
     "email": ("application_email", "profile.application_email"),
@@ -61,14 +66,18 @@ def extract_fields(page: Any) -> list[dict[str, Any]]:
           const file = controls.find(x => x.matches('input[type="file"]'));
           const checkbox = controls.find(x => x.matches('input[type="checkbox"]'));
           const select = controls.find(x => x.matches('select'));
+          const nativeRadios = controls.filter(x => x.matches('input[type="radio"]'));
           const choices = controls.filter(x =>
-            x.matches('button, [role="radio"]') && clean(x.innerText || x.textContent)
+            x.matches('button, [role="radio"], input[type="radio"]')
           );
           const editable = controls.find(x =>
             x.matches('input:not([type="file"]):not([type="checkbox"]):not([type="radio"]), textarea, [role="combobox"]')
           );
           const lines = (group.innerText || '').split('\n').map(clean).filter(Boolean);
-          const optionTexts = choices.map(x => clean(x.innerText || x.textContent));
+          const optionTexts = choices.map(x => clean(
+            x.innerText || x.textContent ||
+            (x.id ? group.querySelector(`label[for="${x.id}"]`)?.textContent : '')
+          )).filter(Boolean);
           const question = lines.find(line => !optionTexts.includes(line)) ||
             clean(group.getAttribute('aria-label')) || 'unlabeled_required_control';
           return {
@@ -76,10 +85,12 @@ def extract_fields(page: Any) -> list[dict[str, Any]]:
             question: question.replace(/\s*\*\s*$/, ''),
             required: lines.some(line => /\*$/.test(line)) || controls.some(x =>
               x.required || x.getAttribute('aria-required') === 'true'
+            ) || Array.from(group.querySelectorAll('label')).some(x =>
+              Array.from(x.classList).some(name => name.includes('_required_'))
             ),
             has_file: Boolean(file),
             has_checkbox: Boolean(checkbox),
-            has_select: Boolean(select),
+            has_select: Boolean(select || nativeRadios.length),
             has_editable: Boolean(editable),
             options: select
               ? Array.from(select.options).map(x => clean(x.textContent)).filter(Boolean)
@@ -165,6 +176,30 @@ def _group(page: Any, field_path: str) -> Any:
     return page.locator(f'[data-field-path="{field_path}"]')
 
 
+def selection_state_is_active(
+    *,
+    class_name: str | None,
+    aria_checked: str | None,
+    aria_pressed: str | None,
+    data_state: str | None,
+    native_checked: bool,
+) -> bool:
+    class_tokens = _normalized(class_name).split()
+    return (
+        aria_checked == "true"
+        or aria_pressed == "true"
+        or data_state in {"checked", "selected", "on"}
+        or native_checked
+        or any("_active_" in token for token in class_tokens)
+    )
+
+
+def combobox_selection_is_committed(
+    *, value: str | None, aria_expanded: str | None
+) -> bool:
+    return bool(_normalized(value)) and aria_expanded == "false"
+
+
 def execute_actions(page: Any, actions: list[dict[str, Any]]) -> list[dict[str, Any]]:
     receipts: list[dict[str, Any]] = []
     for action in actions:
@@ -192,14 +227,30 @@ def execute_actions(page: Any, actions: list[dict[str, Any]]) -> list[dict[str, 
                 if not choice.count():
                     choice = group.get_by_role("radio", name=value, exact=True)
                 choice.click()
-                verified = choice.get_attribute("aria-checked") == "true" or choice.get_attribute("aria-pressed") == "true" or choice.get_attribute("data-state") in {"checked", "selected", "on"}
+                verified = selection_state_is_active(
+                    class_name=choice.get_attribute("class"),
+                    aria_checked=choice.get_attribute("aria-checked"),
+                    aria_pressed=choice.get_attribute("aria-pressed"),
+                    data_state=choice.get_attribute("data-state"),
+                    native_checked=(
+                        choice.get_attribute("type") == "radio" and choice.is_checked()
+                    ),
+                )
         else:
             control = group.locator('input:not([type="file"]), textarea, [role="combobox"]').first
             control.fill(value)
             if control.get_attribute("role") == "combobox":
+                control.page.get_by_role("option").first.wait_for(
+                    state="visible", timeout=5_000
+                )
                 control.press("ArrowDown")
                 control.press("Enter")
-            verified = control.input_value().strip() == value
+                verified = combobox_selection_is_committed(
+                    value=control.input_value(),
+                    aria_expanded=control.get_attribute("aria-expanded"),
+                )
+            else:
+                verified = control.input_value().strip() == value
         if not verified:
             raise RuntimeError(f"field verification failed: {action['question']}")
         receipts.append(
@@ -232,7 +283,7 @@ def execute_semantic_submit(
     *,
     commit_click: Callable[[], None],
     commit_request_started: Callable[[], None],
-    timeout_ms: int = 15_000,
+    timeout_ms: int = 90_000,
     telemetry: Telemetry | None = None,
 ) -> dict[str, Any]:
     def is_submit_request(request: Any) -> bool:
@@ -250,9 +301,34 @@ def execute_semantic_submit(
         )
         if submit.count() != 1:
             raise RuntimeError("exactly one Ashby Submit Application action is required")
-        with page.expect_request(is_submit_request, timeout=timeout_ms) as request_info:
-            commit_click()
-            submit.click()
+        try:
+            with page.expect_request(is_submit_request, timeout=timeout_ms) as request_info:
+                commit_click()
+                submit.click()
+        except Exception as error:
+            if error.__class__.__name__ != "TimeoutError":
+                raise
+            visible_errors = (
+                [value.strip() for value in alert.all_inner_texts() if value.strip()]
+                if alert.count()
+                else []
+            )
+            recaptcha = page.locator('textarea[name="g-recaptcha-response"]')
+            observation = classify_post_click_observation(
+                submit_operation=None,
+                recaptcha_started=bool(recaptcha.count()),
+                visible_error_texts=visible_errors,
+                unselected_required_answers=[],
+                timed_out=True,
+            )
+            submit_span.set_attributes({"confirmation.observed": False})
+            return {
+                "version": 1,
+                "classification": "unconfirmed",
+                "submit_operation": None,
+                "http_status": None,
+                "post_click_observation": observation,
+            }
         request = request_info.value
         submit_operation = submit_operation_from_payload(request.post_data_json)
         if submit_operation is None:

@@ -10,6 +10,8 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
+from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
+
 
 class AshbyApplyTests(unittest.TestCase):
     @staticmethod
@@ -83,6 +85,18 @@ class AshbyApplyTests(unittest.TestCase):
                     "screenshot_sha256": valid["pre_submit_screenshot"]["sha256"],
                 },
             )
+
+        module.validate_profile_grounding(
+            [
+                {
+                    "question": "Name",
+                    "answer": "Candidate Name",
+                    "fact_ids": ["profile.name"],
+                    "kind": "fill",
+                }
+            ],
+            self._grounding_profile(),
+        )
 
     def test_profile_grounding_rejects_unknown_fact_id_for_custom_question(self):
         module = importlib.import_module("job_search_loop.ashby_apply")
@@ -320,6 +334,50 @@ class AshbyApplyTests(unittest.TestCase):
             "select",
         )
 
+    def test_ashby_active_class_confirms_selected_yes_no_button(self):
+        from job_search_loop.ashby_apply import (
+            combobox_selection_is_committed,
+            selection_state_is_active,
+        )
+
+        self.assertTrue(
+            selection_state_is_active(
+                class_name="_container_pjyt6_1 _option_1svni_32 _active_1svni_57",
+                aria_checked=None,
+                aria_pressed=None,
+                data_state=None,
+                native_checked=False,
+            )
+        )
+        self.assertTrue(
+            combobox_selection_is_committed(
+                value="Tokyo, Tokyo Prefecture, Japan", aria_expanded="false"
+            )
+        )
+        self.assertFalse(
+            combobox_selection_is_committed(
+                value="Tokyo, Japan", aria_expanded="true"
+            )
+        )
+        self.assertFalse(
+            selection_state_is_active(
+                class_name="_container_pjyt6_1 _option_1svni_32",
+                aria_checked=None,
+                aria_pressed=None,
+                data_state=None,
+                native_checked=False,
+            )
+        )
+        self.assertTrue(
+            selection_state_is_active(
+                class_name="",
+                aria_checked=None,
+                aria_pressed=None,
+                data_state=None,
+                native_checked=True,
+            )
+        )
+
     def test_plan_uses_current_live_field_paths_not_prior_posting_ids(self):
         from job_search_loop.ashby_apply import build_actions
 
@@ -448,6 +506,12 @@ class AshbyApplyTests(unittest.TestCase):
             inspect.signature(execute_semantic_submit).parameters,
             "semantic Submit has no action-span boundary",
         )
+        self.assertEqual(
+            inspect.signature(execute_semantic_submit)
+            .parameters["timeout_ms"]
+            .default,
+            90_000,
+        )
         receipt = execute_semantic_submit(
             page,
             commit_click=lambda: events.append("click_fenced"),
@@ -481,6 +545,49 @@ class AshbyApplyTests(unittest.TestCase):
         )
         self.assertEqual(receipt["http_status"], 200)
         self.assertNotIn("data", receipt)
+
+    def test_semantic_submit_timeout_returns_post_click_evidence_before_page_closes(self):
+        from job_search_loop.ashby_apply import execute_semantic_submit
+
+        events = []
+        observer = MagicMock()
+        observer.__enter__.return_value = SimpleNamespace(value=None)
+        observer.__exit__.side_effect = PlaywrightTimeoutError("timed out")
+        submit = MagicMock()
+        submit.count.return_value = 1
+        submit.click.side_effect = lambda: events.append("clicked")
+        status = MagicMock()
+        status.count.return_value = 0
+        alert = MagicMock()
+        alert.count.return_value = 1
+        alert.all_inner_texts.return_value = ["Please complete this required field"]
+        recaptcha = MagicMock()
+        recaptcha.count.return_value = 1
+        recaptcha.input_value.return_value = ""
+        page = MagicMock()
+        page.expect_request.return_value = observer
+        page.get_by_role.side_effect = lambda role, **_: {
+            "button": submit,
+            "status": status,
+            "alert": alert,
+        }[role]
+        page.locator.return_value = recaptcha
+
+        receipt = execute_semantic_submit(
+            page,
+            commit_click=lambda: events.append("click_fenced"),
+            commit_request_started=lambda: events.append("request_fenced"),
+            timeout_ms=1,
+        )
+
+        self.assertEqual(events, ["click_fenced", "clicked"])
+        self.assertEqual(receipt["classification"], "unconfirmed")
+        self.assertEqual(
+            receipt["post_click_observation"]["classification"],
+            "validation_rejected",
+        )
+        self.assertTrue(receipt["post_click_observation"]["timed_out"])
+        self.assertNotIn("visible_error_texts", receipt)
 
 
 if __name__ == "__main__":
