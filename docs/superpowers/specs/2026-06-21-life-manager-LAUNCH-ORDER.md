@@ -1,5 +1,14 @@
 # Life Manager — LAUNCH EXECUTION ORDER (do top→bottom, ONE at a time)
 
+## Financial organ / CFO planning SSOT
+
+- Canonical design: `2026-08-06-life-manager-cfo-design.md`
+- Status: planning complete; implementation not started.
+- First active financial item: **CFO-0c — inventory every live earning loop**, followed by CFO-1, one read-only
+  daily snapshot from Moneytree MUFG + Binance + existing Fleet telemetry. All financial, earning-agent,
+  trading, transfer, hiring, and capital-allocation work follows that spec's single ordered queue. Physical and
+  mental work may continue independently but cannot create or fund a money loop outside the CFO queue.
+
 ## ★ REMAINING — DO IN THIS ORDER (updated 2026-06-24 — OpenClaw migration DROPPED, bespoke pooled + Inngest) ★
 ARCHITECTURE LOCKED (research + hands-on, `docs/reference/agentic-saas-architecture.md`): BESPOKE POOLED
 multi-tenant app (apps/life-call, the proven pattern — same as Viktor/Sierra/Lindy) + agent loop =
