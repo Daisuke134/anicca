@@ -3773,6 +3773,24 @@ OpenTelemetry decision and primary sources:
     discovered role enters the current candidate queue; no ApplyPilot jobs table,
     continuous poller, scheduler, or second queue is allowed. Prove canonical dedupe,
     official-source provenance, expiry classification, and restart replay.
+    - [ ] `L-49K5B1` — Adapt ApplyPilot's JobSpy result contract into a bounded
+      provider that emits Job Hunter discovery rows and enqueues them through the
+      existing `CandidateQueue`. Preserve exact upstream-derived paths/notices in the
+      adoption ledger; do not import ApplyPilot database or scheduler ownership.
+      Prove URL normalization, canonical dedupe, source provenance, direct official
+      application URL preference, and malformed-row rejection.
+    - [ ] `L-49K5B2` — Adapt Workday CXS and direct-career discovery behind the same
+      provider contract. Use the pinned employer/site patterns, bound pagination and
+      timeouts, retain official posting provenance, and enqueue only through the
+      existing queue. Prove restart replay and expired/unlisted classification.
+    - [ ] `L-49K5B3` — Adapt SmartExtract and detail enrichment behind the existing
+      normalized candidate contract. Bound fetched content, retain source URL and
+      extraction provenance, and never let enrichment create a second job record or
+      success truth.
+    - [ ] `L-49K5B4` — Wire B1–B3 into the resident discovery pass and prove one
+      restart-safe fixture run where duplicated cross-source results become one
+      candidate, official provenance wins, expiry is retained, and the existing
+      Ledger/candidate queue remains the only durable owner.
   - [ ] `L-49K5C` — Port generic Playwright form and CAPTCHA/SSO/page classification
     into the existing fenced CloakBrowser application lane. Keep the resident Terra
     agent as the adaptive owner. Do not use `bypassPermissions`, unpinned packages,
