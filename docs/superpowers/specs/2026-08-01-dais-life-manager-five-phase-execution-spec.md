@@ -5222,14 +5222,33 @@ Deletion boundaryを再確認した結果、削除禁止対象はCloakBrowser pr
 registration receipt、Calendar evidence、Telegram receipt、PNG/object、ticket/QR、observer/attempt/continuation JSONLである。Item 3ではcode/stateを削除せず、
 inventoryとconsumer proofだけを追加した。次はItem 4でこのinventoryに対するfocused production contractをREDにする。
 
-### Active remaining TODO SSOT（進捗173。これ以外の残TODO一覧は履歴）
+### O1B-25進捗174（Item 4 / minimal production contract RED）
+
+`apps/life-manager/lib/connector-minimal-runner.test.js`を追加し、新production APIを
+`runMinimalConnectorWake(input, dependencies)`に固定した。実browser外部作用はfake boundaryの外へ置き、runnerの実behaviorとして次を要求する。
+
+1. Luma候補からConnpass候補までopen 1、session ID 1、target ID 1、page ID 1、close 1でnavigateする。
+2. direct action failure時だけ同じpageを渡し、agent fallbackへbrowser objectを渡さず`maxSteps = 10`にする。
+3. provider successはparent `readProviderState`の`registered/pending`後だけevidence chainへ進む。
+4. 連続failure 3回で4回目のnavigateを行わずcircuit-openとTelegram wake reportを返す。
+5. wake 600,000ms超過時はagentを追加実行せず、navigate 1で停止してwake reportを返す。
+
+focused REDを実行し、production moduleがまだ存在しないため`MODULE_NOT_FOUND: ./connector-minimal-runner.js`でfail 1となった。
+これはItem 5/6の実装がないことを検出する期待したREDで、syntax checkはGREENである。
+
+`skills/connector/test/minimal-production-contract.test.js`も追加し、実`render-launchd.sh`を隔離temp dirで実行して出力を検査する。
+期待はConnector plist 1個、`StartCalendarInterval` 1個、`StartInterval`/healthcheck/Healer/host bridge/`:9223` 0である。
+focused REDでは実出力がnative、healthcheck、Healerの3 plistだったためfail 1となり、旧duplicate owner wiringを正しく検出した。
+Item 4はRED contract固定として完了し、Item 5で旧production orchestrationを除去してからItem 6でGREENへ進める。
+
+### Active remaining TODO SSOT（進捗174。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
 1. [x] **物理停止状態を再確認する。** Git branch/commit/dirty state、Native/healthcheck/Healer/host bridgeのlaunchd state、Connector process、`:9222` health、最新safe evidence timestampをread-onlyで記録する。Native schedulingはforeground live acceptanceまでdisabledを維持する。Gig code/launchd/browser/lock/profile/state/vault/`:9223`へのwriteは0。証拠: 進捗171。
 2. [x] **Connector ownerとGig consumer境界を確定する。** `rg`とcall pathでHealer shadowとhost bridgeのplist、process、port、token consumerを列挙し、Gig consumer 0とConnector ownershipを証明する。証明後だけHealerとConnector-owned legacy bridgeをunloadする。profile、auth、receipt、append-only stateは削除しない。証拠: 進捗172。
 3. [x] **exact keep / direct-reuse / delete inventoryを作る。** production entrypointから全call pathを追い、file名とsymbol名単位で分類してこのspecへ追記する。`keep`は`:9222` target ownership/fencingとdurable evidence、`direct-reuse`はLuma reader/filler/submit/readback、Calendar、PNG、Telegram、receipt/idempotency、`delete`は旧native-pass orchestration、21日coverage、bulk tab discovery、ranking/gates、spend ordering、suppression stop gate、durable provider cursor、Healer-first wiring、5分retry、重複schedule。consumer未確認の削除は禁止する。証拠: 進捗173 inventory tablesとconsumer call path。
-4. [ ] **production interfaceとfocused destructive-boundary testsを先に固定する。** 一entrypoint、一session、一target、一page、candidate navigationでcreate/close 0、Gig `:9223` write 0、agent `browser.close()` 0、inline generated Node 0、failure 3/10分circuit-openを失敗する契約testとして追加する。大規模test frameworkは作らない。
+4. [x] **production interfaceとfocused destructive-boundary testsを先に固定する。** 一entrypoint、一session、一target、一page、candidate navigationでcreate/close 0、Gig `:9223` write 0、agent `browser.close()` 0、inline generated Node 0、failure 3/10分circuit-openを失敗する契約testとして追加する。大規模test frameworkは作らない。証拠: 進捗174、focused RED 2件。
 5. [ ] **旧production orchestrationをGit patchで除去する。** official Connector entrypointからcoverage/ranking/gate/cursor/Healer/healthcheck/bridge依存を外す。state/evidence/receipt fileは削除しない。broad `rm`は使わない。旧moduleが他trackで必要ならproduction pathからだけ切り離す。
 6. [ ] **provider-neutral minimal runner coreを実装する。** Daily wake→Calendar gap→ordered provider/candidate→same-page navigation→direct action→parent readback→downstream evidence→close owned page→exitを一entrypointへ接続する。action historyはpurpose、safe method、timestamp、result、durationだけをappend-only保存する。
 7. [ ] **Browser Harness bounded adapterを接続する。** Connector-owned claimed pageだけを操作対象にし、AX tree→targeted DOM→screenshot/coordinateの順で観察する。navigate/observe/fill/submit/readbackを一作用ずつ実行し、candidateごと最大10 agent step、browser/session/target作成権限なし、永続更新先はprovider skill/helper/cacheだけに制限する。
