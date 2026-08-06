@@ -562,8 +562,10 @@ without changing the architecture.
 
 ### 11.3 Can only be learned from live canaries
 
-- Which English niche, offer, content format, cadence, and acquisition path
-  produces qualified clicks and approved net commission for this new account.
+- The English niche is fixed to B2B SaaS and creator/productivity software, with
+  Kit, HubSpot, and Semrush as the first browser-verified application candidates.
+  Live canaries still determine which approved offer, content format, cadence,
+  and acquisition path produces the highest approved net commission.
 - Actual reach throttling/suspension rate, UI-drift rate, provider approval rate,
   CTR, partner conversion, reversal/refund rate, payout delay, and unit economics.
 - Time and capacity required for the first approved commission, $10k/month, and
