@@ -3981,6 +3981,10 @@ OpenTelemetry decision and primary sources:
     its immutable evidence chain, and report its provider receipt to Telegram. A
     clicked-but-unknown route remains observe-only and the agent continues with a new
     eligible role rather than replaying it.
+    - In progress: the resident application prompt now requires employer and ATS-family
+      diversity: a new non-Workday employer first, then a different Workday employer
+      after the first receipt, with later roles continuing to alternate when eligible
+      choices remain. This is the daily default, not a one-run test override.
 - [ ] **L-49K** — Prove `L-49K1` through `L-49K4` through the installed resident
   LaunchAgent on one eligible Ashby role. The development session only triggers and
   observes. The resident must open the application surface, fill, verify, submit once,
