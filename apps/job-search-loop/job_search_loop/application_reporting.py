@@ -12,6 +12,23 @@ from .ledger import Ledger
 from .telegram import send_document_once
 
 
+def validated_correlation(value: dict[str, object]) -> dict[str, str | None]:
+    trace_id = value.get("trace_id")
+    span_id = value.get("span_id")
+    valid = (
+        isinstance(trace_id, str)
+        and len(trace_id) == 32
+        and all(character in "0123456789abcdef" for character in trace_id)
+        and isinstance(span_id, str)
+        and len(span_id) == 16
+        and all(character in "0123456789abcdef" for character in span_id)
+    )
+    return {
+        "trace_id": trace_id if valid else None,
+        "span_id": span_id if valid else None,
+    }
+
+
 def build_submission_evidence_archive(
     report: dict[str, object], output_root: Path
 ) -> Path:
@@ -43,6 +60,7 @@ def build_submission_evidence_archive(
             raise ValueError(f"{field} evidence hash mismatch")
         contents[archive_name] = data
         hashes[archive_name] = actual
+    correlation = validated_correlation(report)
     manifest = {
         "version": 1,
         "application_id": str(report.get("application_id") or ""),
@@ -54,6 +72,7 @@ def build_submission_evidence_archive(
         "bundle_sha256": bundle_sha256,
         "confirmation_source": str(report.get("confirmation_source") or ""),
         "confirmation_id": str(report.get("confirmation_id") or ""),
+        **correlation,
         "artifacts": hashes,
     }
     contents["manifest.json"] = (
@@ -137,13 +156,20 @@ def deliver_submitted_evidence_bundles(
         reports = report_reader(Path(ledger_path))
     deliveries = []
     for report in reports:
+        correlation = validated_correlation(report)
         archive = build_submission_evidence_archive(report, media_root)
+        trace_display = (
+            f"{correlation['trace_id']}/{correlation['span_id']}"
+            if correlation["trace_id"] is not None
+            else "unavailable"
+        )
         message = (
             "✅ Confirmed application evidence\n"
             f"{report['company']} — {report['title']}\n"
             f"{report['canonical_url']}\n"
             f"Confirmation: {report['confirmation_source']} / "
-            f"{report['confirmation_id']}"
+            f"{report['confirmation_id']}\n"
+            f"Trace: {trace_display}"
         )
         delivery = sender(
             database=outbox_path,
@@ -160,6 +186,7 @@ def deliver_submitted_evidence_bundles(
                 "application_id": str(report["application_id"]),
                 "status": delivery["status"],
                 "message_id": delivery["message_id"],
+                **correlation,
             }
         )
     return deliveries

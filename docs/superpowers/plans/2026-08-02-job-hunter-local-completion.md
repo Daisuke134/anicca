@@ -2951,9 +2951,16 @@ OpenTelemetry decision and primary sources:
             artifact bundle SHA. Focused test passes 1/1; ledger suite passes 44/44.
     - [ ] `L-49K0C2O4c` — Carry the same IDs through owner-visible reporting and
       runtime repair. Parent closes only after all children close.
-      - [ ] `L-49K0C2O4c1` — Include validated evidence `trace_id`/`span_id` in the
+      - [x] `L-49K0C2O4c1` — Include validated evidence `trace_id`/`span_id` in the
         private application archive manifest, Telegram message, and delivery receipt;
         missing IDs remain explicit null (2 files, soft target 70 LOC).
+        - Completion receipt: RED proved both the owner-facing message and delivery
+          receipt dropped correlation and no validation boundary existed. GREEN
+          accepts only one lowercase 32/16-character hex pair, writes it to the
+          private archive manifest, renders it in the Telegram evidence message, and
+          returns it in the delivery receipt. Missing or malformed correlation becomes
+          an explicit null pair and never leaks arbitrary text. Focused tests pass
+          2/2, application-reporting tests pass 6/6, and the full suite passes 488/488.
       - [ ] `L-49K0C2O4c2` — Include validated current `trace_id`/`span_id` in each
         Guardian recovery case, alert, and receipt without adding private payloads
         (2 files, soft target 80 LOC).
