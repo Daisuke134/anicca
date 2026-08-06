@@ -2310,6 +2310,12 @@ O1B-25進捗66（P0-5 first live attempt / upstream gate failure）: commit `7b3
 pass全体を例外終了させ、途中attemptとcursorを返せないP0-6のdurability gapを示す。外部境界の一時失敗かを既存loopで一度だけ
 再試行し、再発時は結果を捏造せずP0-6を先に実装する。
 
+O1B-25進捗67（P0-5 live retry / normal forward progress）: 既存launchd run 91を一度だけ再試行するとCalendar gate failureは
+再発せず、`continuation=runtime_incomplete`として正常終了した。attempt historyは4→5へ増え、既知4候補を再writeせず新候補
+`thirdspace-thirdweeks-gradations`を処理した。このrunでwrite可能だった未抑止候補は一件だけだったため、複数日の二件writeという
+live fixtureは成立しておらず、その証拠を創作しない。P0-5の二日integration testは13/13 suite内で直接write順を検証し、liveは
+実候補空間での正常前進を補足証拠とする。次はP0-6でpass budget/cursorをdurableにする。
+
 完全な残TODO SSOT:
 
 **P0 — task deliveryを前進させる（最優先）**
