@@ -124,6 +124,56 @@ class BrowserOwnerTests(unittest.TestCase):
             ],
         )
 
+    def test_restart_waits_for_fresh_browser_before_second_attach(self):
+        self.assertIn(
+            "readiness_wait",
+            inspect.signature(browser_owner.acquire_with_attach_recovery).parameters,
+        )
+        events = []
+
+        class Lease:
+            receipt_path = Path("/unused")
+
+            def __init__(self):
+                self.acquire_count = 0
+
+            def acquire(self):
+                self.acquire_count += 1
+                events.append(f"acquire:{self.acquire_count}")
+                if self.acquire_count in {2, 3}:
+                    raise RuntimeError("browser lease unavailable")
+                return {
+                    "status": "leased",
+                    "endpoint": f"http://127.0.0.1:{49150 + self.acquire_count}",
+                }
+
+            def release(self):
+                events.append("release")
+                return True
+
+        attach_count = 0
+
+        def attach(endpoint):
+            nonlocal attach_count
+            attach_count += 1
+            events.append(f"attach:{attach_count}")
+            if attach_count == 1:
+                raise TimeoutError("CDP initialization timed out")
+            return {"browser": "Chrome/140", "context_count": 1}
+
+        result = browser_owner.acquire_with_attach_recovery(
+            Lease(),
+            attach_probe=attach,
+            restart_browser=lambda label: events.append("restart"),
+            readiness_wait=lambda seconds: events.append("wait"),
+        )
+
+        self.assertEqual(result["attach_attempts"], 2)
+        self.assertEqual(attach_count, 2)
+        self.assertEqual(events.count("restart"), 1)
+        self.assertEqual(events.count("wait"), 2)
+        self.assertEqual(events[-1], "attach:2")
+
     def test_running_cdp_is_declared_ready_for_the_existing_loop_owner(self):
         server = ThreadingHTTPServer(("127.0.0.1", 0), _Handler)
         thread = threading.Thread(target=server.serve_forever)

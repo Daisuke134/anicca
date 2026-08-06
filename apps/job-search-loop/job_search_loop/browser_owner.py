@@ -8,6 +8,7 @@ import socket
 import subprocess
 import signal
 import threading
+import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
@@ -199,10 +200,21 @@ def acquire_with_attach_recovery(
     *,
     attach_probe: Callable[[str], dict[str, Any]] = attach_playwright_cdp,
     restart_browser: Callable[[str], Any] = _restart_browser_launchagent,
+    readiness_wait: Callable[[float], Any] = time.sleep,
 ) -> dict[str, Any]:
     attempts = 0
     while attempts < 2:
-        receipt = lease.acquire()
+        if attempts == 0:
+            receipt = lease.acquire()
+        else:
+            for readiness_attempt in range(30):
+                try:
+                    receipt = lease.acquire()
+                    break
+                except RuntimeError as error:
+                    if str(error) != "browser lease unavailable" or readiness_attempt == 29:
+                        raise
+                    readiness_wait(0.5)
         attempts += 1
         try:
             attached = attach_probe(str(receipt["endpoint"]))
