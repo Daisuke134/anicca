@@ -300,14 +300,17 @@ so Task 1 and item 1c remain open. The next acceptance event is a verified live
 URL for at least two independent publishers from this same run; the remaining
 note S3 `403`, X editor detection, Zenn timeout, and any publisher intent that
 still lacks public readback stay in the same incident-driven repair loop.
-The publisher-isolation repair `9f6f2b13` now preserves healthy eligible pairs
+The publisher-isolation repair `9f6f2b13` preserves healthy eligible pairs
 before an ambiguous same-ID recovery, so Dev.to can no longer starve Substack.
-The dispatch-name repair `eef73547` then moved Substack JA from local row
-resolution into its real authenticated preview check. That check currently
-fails closed with `ERR_TOO_MANY_REDIRECTS` at persisted draft `210074287`;
-Substack EN remains intent `210074421`, and the current run still has zero live
-readbacks. Current item 1c therefore continues with the Substack authentication
-redirect repair, followed by the same-ID JA and EN publication attempts.
+The dispatch-name repair `eef73547` and isolated preview-auth repair `bd9472b2`
+then completed both persisted Substack targets. Publisher-native readback is
+`PASS` for Substack JA `210074287` at
+`https://aniccabuddha.substack.com/p/ai4` and Substack EN `210074421` at
+`https://aniccabuddha.substack.com/p/your-ai-revenue-story-is-not-a-tutorial`.
+Both receipts verify public HTML, paid audience, one paywall, immutable article
+hash, and exact-SHA media. Current item 1c now moves to Dev.to same-ID ambiguity;
+Task 1 remains open until another independent publisher and then active-six
+complete their public readbacks.
 
 ### 2.5 Active-six distribution and dormant-adapter contract
 
