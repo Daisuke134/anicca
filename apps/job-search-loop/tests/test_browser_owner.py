@@ -1,4 +1,5 @@
 import json
+import inspect
 import os
 import tempfile
 import threading
@@ -7,6 +8,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from unittest.mock import patch
 
+from job_search_loop import browser_owner
 from job_search_loop.browser_owner import BrowserLease, probe_cdp
 
 
@@ -33,6 +35,95 @@ class _Handler(BaseHTTPRequestHandler):
 
 
 class BrowserOwnerTests(unittest.TestCase):
+    def test_browser_owner_exposes_attach_verified_recovery_acquire(self):
+        self.assertTrue(hasattr(browser_owner, "acquire_with_attach_recovery"))
+
+    def test_attach_timeout_restarts_only_browser_and_reacquires_once(self):
+        self.assertIn(
+            "attach_probe",
+            inspect.signature(browser_owner.acquire_with_attach_recovery).parameters,
+        )
+        events = []
+
+        class Lease:
+            receipt_path = Path("/unused")
+
+            def acquire(self):
+                endpoint = f"http://127.0.0.1:{49151 + events.count('acquire')}"
+                events.append("acquire")
+                return {"status": "ready", "endpoint": endpoint, "fence": len(events)}
+
+            def release(self):
+                events.append("release")
+                return True
+
+        attach_attempts = []
+
+        def attach(endpoint):
+            attach_attempts.append(endpoint)
+            events.append("attach")
+            if len(attach_attempts) == 1:
+                raise TimeoutError("CDP initialization timed out")
+            return {"browser": "Chrome/140", "context_count": 1}
+
+        restarted = []
+
+        result = browser_owner.acquire_with_attach_recovery(
+            Lease(),
+            attach_probe=attach,
+            restart_browser=lambda label: (restarted.append(label), events.append("restart")),
+        )
+
+        self.assertEqual(
+            events,
+            ["acquire", "attach", "release", "restart", "acquire", "attach"],
+        )
+        self.assertEqual(restarted, ["ai.anicca.job-search-browser"])
+        self.assertEqual(
+            attach_attempts,
+            ["http://127.0.0.1:49151", "http://127.0.0.1:49152"],
+        )
+        self.assertEqual(result["attach_status"], "ready")
+        self.assertEqual(result["attach_attempts"], 2)
+
+    def test_second_attach_failure_releases_lease_and_never_retries_again(self):
+        events = []
+
+        class Lease:
+            receipt_path = Path("/unused")
+
+            def acquire(self):
+                events.append("acquire")
+                return {"status": "ready", "endpoint": "http://127.0.0.1:49151"}
+
+            def release(self):
+                events.append("release")
+                return True
+
+        def attach(endpoint):
+            events.append("attach")
+            raise TimeoutError("CDP initialization timed out")
+
+        with self.assertRaisesRegex(TimeoutError, "timed out"):
+            browser_owner.acquire_with_attach_recovery(
+                Lease(),
+                attach_probe=attach,
+                restart_browser=lambda label: events.append(f"restart:{label}"),
+            )
+
+        self.assertEqual(
+            events,
+            [
+                "acquire",
+                "attach",
+                "release",
+                "restart:ai.anicca.job-search-browser",
+                "acquire",
+                "attach",
+                "release",
+            ],
+        )
+
     def test_running_cdp_is_declared_ready_for_the_existing_loop_owner(self):
         server = ThreadingHTTPServer(("127.0.0.1", 0), _Handler)
         thread = threading.Thread(target=server.serve_forever)
