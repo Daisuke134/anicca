@@ -6,6 +6,7 @@ import json
 import os
 import re
 import subprocess
+import time
 import unicodedata
 from datetime import datetime, timezone
 from email.utils import parseaddr
@@ -15,6 +16,7 @@ from urllib.parse import urlsplit
 
 from .inbox import mark_messages_seen, message_is_seen
 from .ledger import FenceError, Ledger
+from .telemetry import Telemetry
 
 
 _WRAPPED_CONTENT = re.compile(
@@ -171,8 +173,10 @@ def reconcile_confirmation_threads(
     threads: list[dict[str, Any]],
     thread_loader: Callable[[str], dict[str, Any]],
     seen_state: Path,
+    telemetry: Any = None,
 ) -> dict[str, Any]:
-    ledger = Ledger(ledger_path)
+    telemetry = telemetry or Telemetry()
+    ledger = Ledger(ledger_path, telemetry=telemetry)
     reconciled: list[dict[str, str]] = []
     blocked: list[dict[str, str]] = []
     checked_threads = 0
@@ -210,6 +214,7 @@ def reconcile_confirmation_threads(
                     received_epoch=received_epoch,
                 ):
                     continue
+                match_started = time.monotonic()
                 candidates = [
                     candidate
                     for candidate in _uncertain_candidates(ledger)
@@ -221,6 +226,12 @@ def reconcile_confirmation_threads(
                         if len(candidates) > 1
                         else "no_exact_uncertain_application"
                     )
+                    with telemetry.span("confirmation.observe") as span:
+                        span.set_attributes({
+                            "confirmation.observed": False,
+                            "failure.code": reason,
+                            "duration.ms": (time.monotonic() - match_started) * 1000,
+                        })
                     blocked.append(
                         {
                             "message_id": message["message_id"],
@@ -230,23 +241,30 @@ def reconcile_confirmation_threads(
                     )
                     continue
                 candidate = candidates[0]
-                try:
-                    status = ledger.reconcile_submission_confirmation(
-                        intent_id=candidate["intent_id"],
-                        message_id=message["message_id"],
-                        thread_id=thread_id,
-                        evidence_sha256=_evidence_sha256(message, candidate),
-                        received_at=message["received_at"],
-                    )
-                except FenceError:
-                    blocked.append(
-                        {
-                            "message_id": message["message_id"],
-                            "thread_id": thread_id,
-                            "status": "ledger_fence_blocked",
-                        }
-                    )
-                    continue
+                evidence_sha256 = _evidence_sha256(message, candidate)
+                started = time.monotonic()
+                with telemetry.span("confirmation.observe") as span:
+                    try:
+                        status = ledger.reconcile_submission_confirmation(
+                            intent_id=candidate["intent_id"],
+                            message_id=message["message_id"],
+                            thread_id=thread_id,
+                            evidence_sha256=evidence_sha256,
+                            received_at=message["received_at"],
+                        )
+                    except FenceError:
+                        span.set_attributes({"confirmation.observed": False,
+                                             "failure.code": "ledger_fence_blocked",
+                                             "duration.ms": (time.monotonic() - started) * 1000})
+                        blocked.append(
+                            {"message_id": message["message_id"], "thread_id": thread_id,
+                             "status": "ledger_fence_blocked"}
+                        )
+                        continue
+                    span.set_attributes({"application.id": candidate["application_id"],
+                                         "evidence.sha256": evidence_sha256,
+                                         "confirmation.observed": True,
+                                         "duration.ms": (time.monotonic() - started) * 1000})
                 reconciled.append(
                     {
                         "application_id": candidate["application_id"],

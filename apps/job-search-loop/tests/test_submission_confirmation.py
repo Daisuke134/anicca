@@ -11,6 +11,20 @@ from job_search_loop.state import InvalidTransition
 from job_search_loop.submission_confirmation import reconcile_confirmation_threads, _gmail_confirmation_threads
 
 
+class RecordingSpan:
+    recording = True
+    def __init__(self, name, attributes): self.name, self.attributes = name, attributes or {}
+    def __enter__(self): return self
+    def __exit__(self, *_): return False
+    def set_attributes(self, attributes): self.attributes.update(attributes)
+
+
+class RecordingTelemetry:
+    def __init__(self): self.spans = []
+    def span(self, name, attributes=None):
+        span = RecordingSpan(name, attributes); self.spans.append(span); return span
+
+
 class SubmissionConfirmationTests(unittest.TestCase):
     def test_confirmation_search_uses_supported_read_only_gog_flags(self):
         completed = type("Completed", (), {"stdout": '{"threads": []}'})()
@@ -275,6 +289,7 @@ class SubmissionConfirmationTests(unittest.TestCase):
                 }
             }
 
+            telemetry = RecordingTelemetry()
             result = reconcile_confirmation_threads(
                 ledger_path=root / "ledger.sqlite3",
                 threads=[
@@ -286,6 +301,7 @@ class SubmissionConfirmationTests(unittest.TestCase):
                 ],
                 thread_loader=lambda thread_id: payload,
                 seen_state=root / "inbox-seen.json",
+                telemetry=telemetry,
             )
 
             self.assertEqual(
@@ -319,6 +335,12 @@ class SubmissionConfirmationTests(unittest.TestCase):
                 ),
                 {"version": 2, "message_ids": ["gmail-message-2"]},
             )
+            self.assertEqual([span.name for span in telemetry.spans], ["confirmation.observe"])
+            attributes = telemetry.spans[0].attributes
+            self.assertEqual(attributes["application.id"], application_id)
+            self.assertTrue(attributes["confirmation.observed"])
+            self.assertRegex(attributes["evidence.sha256"], r"^[a-f0-9]{64}$")
+            self.assertNotIn("gmail-message-2", json.dumps(attributes))
 
     def test_spoofed_sender_cannot_promote_or_acknowledge_thread(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -353,6 +375,7 @@ class SubmissionConfirmationTests(unittest.TestCase):
                 }
             }
 
+            telemetry = RecordingTelemetry()
             result = reconcile_confirmation_threads(
                 ledger_path=root / "ledger.sqlite3",
                 threads=[
@@ -363,6 +386,7 @@ class SubmissionConfirmationTests(unittest.TestCase):
                 ],
                 thread_loader=lambda thread_id: payload,
                 seen_state=root / "inbox-seen.json",
+                telemetry=telemetry,
             )
 
             self.assertEqual(result["reconciled"], [])
@@ -380,6 +404,12 @@ class SubmissionConfirmationTests(unittest.TestCase):
             )
             reopened.close()
             self.assertFalse((root / "inbox-seen.json").exists())
+            self.assertEqual([span.name for span in telemetry.spans], ["confirmation.observe"])
+            self.assertFalse(telemetry.spans[0].attributes["confirmation.observed"])
+            self.assertEqual(
+                telemetry.spans[0].attributes["failure.code"],
+                "no_exact_uncertain_application",
+            )
 
     def test_ambiguous_company_and_role_match_fails_closed(self):
         with tempfile.TemporaryDirectory() as directory:
