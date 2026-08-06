@@ -537,7 +537,7 @@ test("native-pass appends every bounded candidate attempt to durable history", a
     retry_after: null,
     capability_version: "luma-form-submit-v1",
   }, {
-    event_ref: "luma-event://event/verified-one",
+    event_ref: "connpass-event://event/101",
     outcome: "verified_success",
     safe_reason: "open_coverage",
     observed_at: "2026-08-06T00:00:01.000Z",

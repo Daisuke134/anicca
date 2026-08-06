@@ -17,6 +17,7 @@ const {
 } = require("../../apps/life-manager/lib/outbound-guardian.js");
 
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+const EVENT_REF = /^(?:luma-event:\/\/event\/[A-Za-z0-9_-]+|connpass-event:\/\/event\/[1-9][0-9]*)$/;
 
 function unavailable() {
   throw new Error("Connector native pass unavailable");
@@ -60,7 +61,7 @@ function readDeliveryReceipts(stateDir) {
         "calendar_event_ref,event_ref,telegram_provider_id",
         "artifact_sha256,calendar_event_ref,event_ref,telegram_photo_provider_id,telegram_provider_id",
       ].includes(Object.keys(value).sort().join(","))
-      || !/^luma-event:\/\/event\/[A-Za-z0-9_-]+$/.test(String(value.event_ref || ""))
+      || !EVENT_REF.test(String(value.event_ref || ""))
       || !/^calendar-evidence:\/\/google\/event\/[0-9a-f]{64}$/.test(String(value.calendar_event_ref || ""))
       || !/^[^\x00-\x1f\x7f]{1,128}$/.test(String(value.telegram_provider_id || ""))
       || (Object.hasOwn(value, "telegram_photo_provider_id") && (
@@ -91,7 +92,7 @@ function readPhotoDeliveredEvents(stateDir) {
     if (
       !value || typeof value !== "object" || Array.isArray(value)
       || Object.keys(value).sort().join(",") !== "artifact_sha256,event_ref,observed_at,telegram_photo_provider_id,telegram_provider_id"
-      || !/^luma-event:\/\/event\/[A-Za-z0-9_-]+$/.test(String(value.event_ref || ""))
+      || !EVENT_REF.test(String(value.event_ref || ""))
       || !/^[0-9a-f]{64}$/.test(String(value.artifact_sha256 || ""))
       || !/^[^\x00-\x1f\x7f]{1,128}$/.test(String(value.telegram_provider_id || ""))
       || !/^[^\x00-\x1f\x7f]{1,128}$/.test(String(value.telegram_photo_provider_id || ""))
@@ -189,7 +190,7 @@ function readCandidateAttempts(stateDir) {
         "capability_version,event_ref,observed_at,outcome,retry_after,safe_reason",
       ].includes(Object.keys(value).sort().join(","))
       || !(value.capability_version == null || /^[a-z0-9][a-z0-9._-]{0,63}$/.test(value.capability_version))
-      || !/^luma-event:\/\/event\/[A-Za-z0-9_-]+$/.test(String(value.event_ref || ""))
+      || !EVENT_REF.test(String(value.event_ref || ""))
       || !["verified_success", "known_no_effect", "unknown_effect", "recovery_required"].includes(value.outcome)
       || !/^[A-Za-z0-9_:-]{1,100}$/.test(String(value.safe_reason || ""))
       || !Number.isFinite(Date.parse(String(value.observed_at || "")))
@@ -366,7 +367,7 @@ function boundedResult(result) {
           "capability_version,event_ref,observed_at,outcome,retry_after,safe_reason",
         ].includes(Object.keys(attempt).sort().join(","))
         || !(attempt.capability_version == null || /^[a-z0-9][a-z0-9._-]{0,63}$/.test(attempt.capability_version))
-        || !/^luma-event:\/\/event\/[A-Za-z0-9_-]+$/.test(String(attempt.event_ref || ""))
+        || !EVENT_REF.test(String(attempt.event_ref || ""))
         || !["verified_success", "known_no_effect", "unknown_effect", "recovery_required"].includes(attempt.outcome)
         || !/^[A-Za-z0-9_:-]{1,100}$/.test(String(attempt.safe_reason || ""))
         || new Date(Date.parse(String(attempt.observed_at || ""))).toISOString() !== attempt.observed_at
