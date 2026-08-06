@@ -204,6 +204,7 @@ test("confirms an approval-request dialog with the same Japanese action", async 
     last() { return this; },
     async count() { return 1; },
     async isVisible() { return true; },
+    async evaluate() { return null; },
     locator() { return required; },
     getByRole(role, options) {
       assert.equal(role, "button");
@@ -253,14 +254,206 @@ test("a required Luma form without dialog role is a known pre-confirmation failu
       return requiredInput;
     },
     async waitForTimeout() {},
-    async evaluate() { return { registered: false }; },
+    async evaluate(task) {
+      return String(task).includes("data-luma-form-field")
+        ? [{
+          label: "Required question *",
+          name: "registration_answers.0.value",
+          tag: "input",
+          type: "text",
+          html_required: true,
+          app_required: true,
+          options: [],
+        }]
+        : { registered: false };
+    },
   };
 
   await assert.rejects(submitLumaOnPage(page), (error) => {
-    assert.equal(error.code, "LUMA_FORM_INPUT_REQUIRED");
+    assert.equal(error.code, "LUMA_REQUIRED_PROFILE_FIELD_UNAVAILABLE");
     assert.equal(error.unknownEffect, false);
     return true;
   });
+});
+
+test("a missing private profile answer stops before the Luma confirm click", async () => {
+  const calls = [];
+  const initial = {
+    first() { return this; },
+    async count() { return 1; },
+    async isVisible() { return true; },
+    async click() { calls.push("initial-click"); },
+  };
+  const confirm = {
+    last() { return this; },
+    async count() { return 1; },
+    async isVisible() { return true; },
+    async click() { calls.push("confirm-click"); },
+  };
+  const dialog = {
+    last() { return this; },
+    async count() { return 1; },
+    async isVisible() { return true; },
+    async evaluate() {
+      return [{
+        label: "Which Instagram handle do you move through the world with? *",
+        name: "registration_answers.1.value",
+        tag: "input",
+        type: "text",
+        html_required: true,
+        app_required: true,
+        options: [],
+      }];
+    },
+    locator() {
+      return { async count() { return 0; } };
+    },
+    getByRole(role) {
+      assert.equal(role, "button");
+      return confirm;
+    },
+  };
+  let controls = 0;
+  const page = {
+    getByRole(role) {
+      if (role === "button") {
+        controls += 1;
+        return initial;
+      }
+      assert.equal(role, "dialog");
+      return dialog;
+    },
+    async waitForTimeout() {},
+    async evaluate() { return { registered: false }; },
+  };
+
+  await assert.rejects(
+    submitLumaOnPage(page, {}, {
+      readLumaFormProfile: () => ({ form_answers: {} }),
+    }),
+    (error) => {
+      assert.equal(error.code, "LUMA_REQUIRED_PROFILE_FIELD_UNAVAILABLE");
+      assert.equal(error.unknownEffect, false);
+      return true;
+    },
+  );
+  assert.equal(controls, 1);
+  assert.deepEqual(calls, ["initial-click"]);
+});
+
+test("provider fills only trusted-profile form answers before locating the confirm control", async () => {
+  const calls = [];
+  const initial = {
+    first() { return this; },
+    async count() { return 1; },
+    async isVisible() { return true; },
+    async click() { calls.push("initial-click"); },
+  };
+  const confirm = {
+    last() { return this; },
+    async count() { return 1; },
+    async isVisible() { return true; },
+    async click() { calls.push("confirm-click"); },
+  };
+  const selected = new Set();
+  const dialog = {
+    last() { return this; },
+    async count() { return 1; },
+    async isVisible() { return true; },
+    async evaluate() {
+      return [{
+        label: "Which field best describes your work? *",
+        name: "registration_answers.0.value",
+        tag: "div",
+        type: "multi-select",
+        html_required: false,
+        app_required: true,
+        options: ["Technology", "Design"],
+      }, {
+        label: "I agree to the Code of Conduct and Media Release. *",
+        name: "agreement",
+        tag: "div",
+        type: "checkbox",
+        html_required: false,
+        app_required: true,
+        options: [],
+      }];
+    },
+    locator(selector) {
+      assert.equal(selector, '[name="agreement"]');
+      return {
+        async count() { return 1; },
+        async check() { calls.push("check-agreement"); selected.add("agreement"); },
+        async isChecked() { return selected.has("agreement"); },
+      };
+    },
+    getByText(option, options) {
+      assert.equal(option, "Technology");
+      assert.deepEqual(options, { exact: true });
+      return {
+        async count() { return 1; },
+        async click() { calls.push("select-technology"); selected.add("Technology"); },
+        async getAttribute(name) {
+          assert.equal(name, "aria-pressed");
+          return selected.has("Technology") ? "true" : "false";
+        },
+      };
+    },
+    getByRole(role) {
+      assert.equal(role, "button");
+      return confirm;
+    },
+  };
+  let registrationChecks = 0;
+  const page = {
+    getByRole(role) {
+      if (role === "button") return initial;
+      assert.equal(role, "dialog");
+      return dialog;
+    },
+    async waitForTimeout() {},
+    async evaluate() {
+      registrationChecks += 1;
+      return { registered: registrationChecks > 1 };
+    },
+    async screenshot() { return Buffer.from("png-fixture"); },
+  };
+  const profile = Object.freeze({
+    form_answers: { "Which field best describes your work?": ["Technology"] },
+    consents: { code_of_conduct_and_media_release: true },
+  });
+  const provider = createLumaBrowserProvider({
+    dailyDriver: { async withLumaPage(_url, task) { return task(page); } },
+    evidenceStore: {
+      async record() {
+        return {
+          external_receipt_ref: "provider-receipt://luma/proof-1",
+          artifact_ref: "object://sha256/" + "a".repeat(64),
+        };
+      },
+    },
+    readRawDetail: async (_page, url) => ({
+      canonicalUrl: url,
+      jsonLd: eventJson(),
+      controls: ["参加登録"],
+    }),
+    readLumaFormProfile(...args) {
+      assert.deepEqual(args, []);
+      calls.push("profile-read");
+      return profile;
+    },
+  });
+
+  const proof = await provider.submitRegistration(contract());
+
+  assert.equal(proof.state, "registered");
+  assert.deepEqual(calls, [
+    "initial-click",
+    "profile-read",
+    "select-technology",
+    "check-agreement",
+    "confirm-click",
+  ]);
 });
 
 test("paid registration cannot click without a matching verified spend authorization", async () => {
