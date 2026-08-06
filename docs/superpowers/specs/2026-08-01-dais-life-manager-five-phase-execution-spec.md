@@ -2691,16 +2691,31 @@ control/schema/plan/fill/confirm unavailableをknown-no-effectとして同pass�
 lazy reader REDと5 error分類RED後、provider/runtime/profile 35/35、native entrypoint 26/26 GREEN。次の既存runで
 versioned attempt、次候補継続、登録済みreadbackのいずれまで到達するかを確認する。
 
+O1B-25進捗112（browser ownership再監査 / Connector専用railへ収束、live E2E未達）: golden traceの実session logを再読すると、
+成功時の操作主体は`apps/life-manager`に導入済みの`playwright-core`であり、`chromium.connectOverCDP("http://127.0.0.1:9222")`
+から既存CloakBrowser daily-driverを直接操作していた。Gigの成功B0/B1 laneは別の専用CloakBrowser `:9223`、profile、lock、vaultを
+所有し、`browser-foundation`と`cdp_default_tab.py`がtarget IDとtab専用WebSocketを先に確定するため、agentがbrowser discovery、
+window選択、module探索を即興しない。Connector run 164〜169はこのownership railを持たず、raw DOM mutation、desktop-wide
+`Cmd-Tab/cliclick`、未導入`require('playwright')`へ逸れた。run 169は外部submit前に停止し、最新commit `9dc56bd98`は正しい
+`playwright-core` pathを固定したがlive未実証である。
+
+ConnectorはGigの稼働資産を一切変更・参照依存しない。`profitable-claude/skills/gig-work`、Gig launchd、`:9223`、
+`gig-daily-driver` profile、Gig state/lock/vaultはDO NOT TOUCHである。Connector repository内にConnector専用tab-owner railを実装し、
+`:9222`上のtarget ID、page WebSocket、owner token、baseline targetsをprivate receiptとしてTerraへ渡す。Terraは受け取った一tabだけを
+同一turnで観測→入力→submit→明示的完了markerまで操作し、browser/package/tab探索、別browser起動、desktop座標操作をしてはならない。
+候補attempt履歴はtelemetryであり除外gateにしない。生年月日`2002-01-30`はmode 0600 private profileへseed済みだが、全agentの
+個人情報SSOT統合は未完了である。
+
 現在と完成形:
 
 ```mermaid
 flowchart LR
   subgraph NOW[現在]
     N1[Luma 28件] --> N2[候補4件]
-    N2 --> N3[suppressionで0件]
-    N3 --> N4[Apply 0回]
-    N4 --> N5[self-heal incident 1行]
-    N5 -. 未接続 .-> N6[fix producer]
+    N2 --> N3[Connector専用tab-owner未実装]
+    N3 --> N4[Terraが接続codeを即興]
+    N4 --> N5[外部submit前に停止]
+    N5 --> N6[live E2E未達]
   end
   subgraph TARGET[完成形]
     T1[全provider探索] --> T2[最上位候補へApply]
@@ -2721,9 +2736,9 @@ flowchart LR
 1. [x] candidate outcomeの4分類contractとtable-driven testを追加する。focused 2/2、outbound 289/289。
 2. [x] `LUMA_RSVP_UNAVAILABLE`、`LUMA_FORM_INPUT_REQUIRED`、満席、受付終了を`known_no_effect`へ正規化する。focused 9/9、outbound 289/289。
 3. [x] append-only `candidate-attempts.jsonl`を作り、event ref、outcome、safe reason、observed_at、retry_afterを保存する。runtime 9/9、native 18/18、outbound 289/289。
-4. [x] active window内のterminal known failureをactive write rankingから除外し、後続状態observationまたはretry_after後だけ再検査する。runtime 10/10、native 19/19、outbound 299/299。
+4. [x] candidate attempt履歴をappend-only telemetryとして保持するが、active write rankingから候補を除外する停止gateには使わない。過去failureを含むranked candidateは全件attemptableにする。
 5. [x] 同日候補をすべて順番に試し、同日枯渇時は同じpassで次open日へ進む。focused 13/13、native 19/19、outbound 300/300。
-6. [x] pass budget到達時はdate/candidate cursorを保存し、次wakeで続きから再開する。runtime 14/14、native 20/20、outbound 301/301。
+6. [x] candidate budgetによる途中終了を廃止し、`known_no_effect`では同じpass内の次候補・次open日へ進む。process crash用cursorは外部effect境界の復旧にだけ使う。
 7. [x] unknown effectはLuma readbackでpresent/absentを確定するまで再submitしない。関連15/15、native 20/20、outbound 302/302。
 8. [x] submit後のLuma登録済みpageをfull-page PNGで取得し、event ref、canonical URL、取得時刻、SHA-256、Calendar event IDへbindする。focused 30/30、native 21/21、outbound 302/302。
 9. [x] Telegramへ結果cardと登録済みpage画像を実送信し、画像のpositive provider message IDをdelivery receiptへ保存・readbackする。run 103、card `7372`、photo `7594`、native 23/23、outbound 307/307。
@@ -2737,7 +2752,10 @@ flowchart LR
 13. Observer trace packを実装する。run/event/capability versionへaction、URL class、control label、validation class、screenshot SHA、provider readbackをbindし、PII/secretなしのreplay fixtureをincidentへ添付する。
 14. [pause] self-fix producerはDaisの明示指示で停止する。task deliveryのlive E2Eが成立するまで再開しない。
 15. self-build consumerを復旧し、protected-path、permission、focused/full test、rollback、隔離CloakBrowser canaryを通過したrevisionだけをmerge・再配備する。canary failureは同incidentの次revisionへ戻す。
-16. [~] Connector launchd自身を再wakeし、同型live eventでsubmit→登録済みreadback→PNG→Calendar→Telegram positive IDまで成立するまで反復する。run 161はrequired consent/final submit前の自己申告を親readbackが拒否。v7 run 163はraw CDP DOM mutationを選びReact controlled formが全値を空へ戻したため停止。v8はsite固有field hardcodeを増やさず、自然言語tool tipとして既存CDP pageへのPlaywright実ユーザー操作`fill/click/check/keyboard`を必須化し、raw mutationとattendee count誤認を禁止する。
+16A. Connector専用tab-owner railをrepository内へ実装する。`:9222`の既存CloakBrowser default contextから一tabだけをowner token付きで取得し、target ID、page WebSocket、baseline targetsをmode 0600 receiptへ保存する。Gigのcode/state/profile/portへ依存しない。
+16B. Terra browser executorへ16Aのreceiptだけを渡す。browser/package/tab探索、別browser起動、desktop-wide `Cmd-Tab`・AppleScript・`cliclick`、raw DOM mutationを禁止し、所有tabでuser-facing actionを使って同一turnのsubmitまで完了する。
+16C. Connector launchd自身を最新commitでwakeし、実Luma eventでform入力→final submit→登録済みまたは承認待ちmarkerを親loopが独立readbackする。agentのJSON自己申告だけを成功にしない。
+16D. 同じevent lineageへfull-page PNG SHA-256、Google Calendar event ID/readback、Telegram card/photo positive message IDを保存する。4証拠の一つでも欠ければ未完了とする。
 17. golden traceで確認したtrusted Gmail OTPとLuma→主催公式site handoffをprovider capabilityとして実装し、Lumaだけでは本登録にならないeventを公式readbackまで完了する。
 18. Lumaと公式siteの二枚のscreenshot、Calendar event ID、Telegram message IDを一つのevent lineage receiptへ保存し、loop主体のlive E2Eを実証する。
 19. source registry contractを追加し、各providerの`discovery / registration / effect_readback / screenshot_evidence` capabilityをclosed schemaで宣言する。
@@ -2749,6 +2767,31 @@ flowchart LR
 25. `open=0`まで反復し、21日統合Telegram briefingを送る。
 26. Mac再起動後のConnector、producer、consumer launchd、heartbeat、healthcheck、stale-loop self-healを実機検証する。
 27. canonical branchへ統合し、legacy bridge / Docker worker / 重複scheduleを退役する。
+
+### P0 残TODOの現在順序（進捗112を正本とする）
+
+1. Connector専用tab-owner railを実装し、`:9222`の所有tab receiptを生成する（16A）。
+2. Terraを所有tab一つへ固定し、同一turnでform入力・submitまで実行させる（16B）。
+3. 全個人情報をprivate user-profile SSOTへ統合し、Connectorは必要fieldだけを遅延読込する。未知の通常主観質問はtruthful general answerで継続し、質問shape未知を停止理由にしない。
+4. 最新Connector launchdをkickstartし、loop主体のLuma実submitと親readbackを成立させる（16C）。
+5. PNG、Calendar ID/readback、Telegram card/photo IDを一つのlineage receiptへ結合する（16D、18）。
+6. Lumaが主催者公式siteへの追加登録を要求するeventで、trusted Gmail OTPと公式完了markerまで同じlineageで閉じる（17）。
+7. privacy-safe Observer trace packを実装し、action、URL class、control label、validation class、screenshot SHA、provider readbackをrun/event/capability versionへbindする（13）。
+8. source registryを実装し、Luma、Connpass、Peatix、Meetup、Doorkeeper、Eventbriteを`discovery / registration / effect_readback / screenshot_evidence`能力で宣言する（19）。
+9. Connpassの公式API discoveryと認証済みbrowser submit/readbackを実証してからregistrationを有効化する（20〜21）。
+10. Peatix、Meetup、Doorkeeper、Eventbriteを一siteずつlive proof後に有効化し、一source failureでpass全体を止めない（22〜23）。
+11. rolling 21日の`open=0`まで反復し、各日を`covered_existing / covered_new / unavailable`の実証拠で閉じる（25）。
+12. Mac再起動後のlaunchd、CloakBrowser、heartbeat、healthcheck、idempotencyを実機検証する（26）。
+13. self-fix producerはlive task delivery成立まで停止を維持する。成立後にObserver fixture→Terra revision→隔離Connector canary→merge/redeployを復旧する（14〜15）。
+14. canonical branchへ統合し、legacy bridge、Docker worker、重複scheduleを退役する（27）。
+
+### Browser E2E判定
+
+| Item | Value |
+|---|---|
+| UI変更 | あり（外部Luma/各providerの実UIを操作） |
+| 結論 | Maestro: 不要。macOS CloakBrowser CDPの実E2E、provider readback、PNG、Calendar、Telegram receiptを必須とする |
+| Gig境界 | DO NOT TOUCH。Gig repository、launchd、`:9223`、profile、state、lock、vaultをConnector E2Eへ使用しない |
 
 **P1 — Connectorをconnection-to-cash agentにする（local）**
 
