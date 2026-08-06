@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from .ledger import Ledger
+from .ledger import FenceError, Ledger
 from .playwright_ats import ranked_pre_submit_candidates
 
 
@@ -19,11 +19,18 @@ def materialize_canonical_routes(
     try:
         for candidate in candidates:
             official_url = str(candidate.get("official_url") or "")
-            application_id = ledger.add_application(
-                str(candidate.get("company") or ""),
-                str(candidate.get("title") or ""),
-                official_url,
-            )
+            url_sha256 = hashlib.sha256(official_url.encode("utf-8")).hexdigest()
+            try:
+                application_id = ledger.add_application(
+                    str(candidate.get("company") or ""),
+                    str(candidate.get("title") or ""),
+                    official_url,
+                )
+            except FenceError as error:
+                if "canonical posting is already owned by " not in str(error):
+                    raise
+                materialized.append({"status": "skipped_cross_owner", "reason": "canonical_posting_owned_elsewhere", "url_sha256": url_sha256})
+                continue
             source_material = json.dumps(
                 {
                     "official_url": official_url,
@@ -46,7 +53,7 @@ def materialize_canonical_routes(
                 {
                     "application_id": application_id,
                     "route_id": route_id,
-                    "url_sha256": hashlib.sha256(official_url.encode("utf-8")).hexdigest(),
+                    "url_sha256": url_sha256,
                 }
             )
     finally:
