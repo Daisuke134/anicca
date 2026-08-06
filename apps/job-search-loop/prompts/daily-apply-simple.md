@@ -25,7 +25,11 @@ For each selected role:
 
 1. Check the durable Ledger and do not duplicate an existing submitted or
    submit-unknown application.
-2. Attempt the formal ATS first. Use the strongest truthful natural-language evidence
+2. Attempt the formal ATS first. An HTTP-200 shell, `Page not found`, missing form,
+   or stale vendor job ID is not a live ATS. Search the employer's official careers
+   site for the current role, register that verified page as an alternate official
+   route under the same application ID, and try its embedded form before using email.
+   Use the strongest truthful natural-language evidence
    in the private profile, the selected resume, and exact current questions. Never
    fabricate identity, employment, education, legal eligibility, or demographic facts.
 3. Before any Submit side effect, use the existing Ledger intent, material receipt,
@@ -41,6 +45,19 @@ For each selected role:
 5. Persist the authoritative ATS or Gmail receipt and send a natural-language Telegram
    report with the role, company, channel, receipt, submitted resume, and available
    evidence. Diagnostics may be recorded, but they never end the selected application.
+
+Current recovery work comes before selecting a new role: application
+`d11cc27f1bfcadc569c9ce3dcab6cba084c0005fcc832acc9a9c15324659b933` is Cursor
+`Solutions Architect - Japan`. Its old Ashby URL is a measured `Page not found`; its
+verified official live form is
+`https://cursor.com/careers/solutions-architect-japan`. Gmail fallback is already
+delivered, so never send another email. Use the CloakBrowser CDP endpoint and
+Playwright from `$JOB_SEARCH_PYTHON` to inspect and fill the official embedded form.
+Register it as `alternate_official`, claim its ATS route as `resident_worker` before
+the one physical Submit, and complete it only from authoritative visible or provider
+confirmation. Reconcile both receipts under the same application and count it once.
+If the ATS action becomes ambiguous after click, do not click again. Do not select a
+new role until this recovery has an ATS confirmation or an at-most-once unknown receipt.
 
 Continue until the daily confirmed quota is reached or the pass timeout ends. For a
 selected role, the only durable outcomes are `applied_ats` and `applied_email`.
