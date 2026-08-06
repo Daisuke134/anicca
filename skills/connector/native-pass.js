@@ -250,6 +250,7 @@ function runtimeConfig(options, stateDir) {
     ),
     homeLocation: requiredText(env.LIFE_HOME_ADDRESS),
     mapsKey: requiredText(env.GOOGLE_API_KEY_DIRECTIONS),
+    connpassApiKey: String(env.LM_CONNECTOR_CONNPASS_API_KEY || "").trim(),
     repoRoot: absoluteDirectory(options.repoRoot),
     deliveredReceipts: readDeliveryReceipts(stateDir),
     candidateAttempts: readCandidateAttempts(stateDir),

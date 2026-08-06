@@ -13,7 +13,7 @@ const { normalizeLumaEventDetail } = require("./luma-event-detail.js");
 const { buildLumaDateInventory } = require("./luma-date-inventory.js");
 const { planConnectorCoverageContinuation } = require("./connector-coverage-continuation.js");
 const { createEventProviderRegistry } = require("./event-provider-registry.js");
-const { createEventProviderCursor } = require("./event-provider-cursor.js");
+const { advanceEventProviderCursor, createEventProviderCursor } = require("./event-provider-cursor.js");
 const { inspectGoogleCalendarBusyInventory } = require("./google-calendar-busy-inventory.js");
 const { buildRollingEventCoverage } = require("./rolling-event-coverage.js");
 const { runLumaCandidateSequence } = require("./luma-candidate-loop.js");
@@ -993,6 +993,10 @@ test("Luma known-no-effect exhaustion advances the verified provider cursor to C
     }],
     skipped: [],
   });
+  const handoff = Object.freeze({
+    status: "waiting_for_authorized_source", coverage_status: "open",
+    coverage_credit_count: 0, network_call_count: 0, advisory_candidates: Object.freeze([]),
+  });
   const result = await runNativeConnectorPass({
     ...input,
     config: {
@@ -1009,6 +1013,10 @@ test("Luma known-no-effect exhaustion advances the verified provider cursor to C
     },
     deps: {
       ...input.deps,
+      createPack() {
+        return { ...input.pack, async handoffEventSource() { return handoff; } };
+      },
+      isVerifiedEventSourceHandoff: (value) => value === handoff,
       readProfile() { return profile; },
       async runLunaJudgment() { return goalDecision; },
       async gateDateCalendar() {
@@ -1035,6 +1043,50 @@ test("Luma known-no-effect exhaustion advances the verified provider cursor to C
   assert.equal(result.provider_cursor.candidate_index, 0);
   assert.equal(result.provider_cursor.generation, 3);
   assert.equal(JSON.stringify(result.provider_cursor).includes("founder-night"), false);
+});
+
+test("a Connpass cursor runs exhaustive official discovery without registration or coverage credit", async () => {
+  const input = await fixture();
+  const registry = createEventProviderRegistry();
+  const lumaCursor = createEventProviderCursor({
+    registry, date: "2026-08-05", observedAt: "2026-08-05T00:00:00.000Z",
+  });
+  const providerCursor = advanceEventProviderCursor({
+    registry, cursor: lumaCursor, transition: "provider_exhausted",
+    observedAt: "2026-08-05T00:00:01.000Z",
+  });
+  const handoff = Object.freeze({
+    status: "advisory_candidates_found", coverage_status: "open", coverage_credit_count: 0,
+    network_call_count: 2, advisory_candidates: Object.freeze([{ provider: "connpass", event_ref: "connpass-event://event/101" }]),
+  });
+  let received;
+  input.deps.createPack = () => ({
+    ...input.pack,
+    async handoffEventSource(date, lumaOutcome, extra) {
+      received = { date, lumaOutcome, extra };
+      return handoff;
+    },
+  });
+  const result = await runNativeConnectorPass({
+    ...input,
+    config: {
+      ...input.config, providerRegistry: registry, providerCursor,
+      connpassApiKey: "fixture-secret-api-key-1234567890",
+    },
+    deps: {
+      ...input.deps,
+      isVerifiedEventSourceHandoff: (value) => value === handoff,
+    },
+  });
+
+  assert.equal(received.date, "2026-08-05");
+  assert.equal(received.lumaOutcome.status, "next_provider_required");
+  assert.equal(received.extra.connpassApiKey, "fixture-secret-api-key-1234567890");
+  assert.equal(result.provider_discovery.status, "advisory_candidates_found");
+  assert.equal(result.provider_discovery.coverage_credit_count, 0);
+  assert.equal(result.provider_cursor, providerCursor);
+  assert.equal(result.write, null);
+  assert.equal(JSON.stringify(result).includes("fixture-secret"), false);
 });
 
 test("native runtime exposes only its bounded failing stage", async () => {
