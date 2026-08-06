@@ -287,7 +287,19 @@ from run `20260806-084924` as durable `OPEN` incidents owned by
 `writer-self-heal`, with classifications for credential, state corruption,
 DOM/selector, and process failure and `next_action=CLAIM`. Current item 1c must
 make the production repair owner claim, diagnose, repair, and resume those same
-publication intents until publisher-native readback succeeds.
+publication intents until publisher-native readback succeeds. **1c IN
+PROGRESS:** the production repair owner claimed the Dev.to stale-quality
+incident under lease `production-repair-20260806-stale-quality`. Its live TDD
+repair commits `bdbd0f6f` and `6a26dfc3` recover stale quality rejections and
+re-arm stale intents before publication planning. The installed loop then
+re-created real publisher intents for Dev.to EN (`4330381`) and Substack JA
+(`210074287`) while both the self-fix worker and `ai.anicca.article-resume`
+remained running. This is recovery activity, not publication proof: the current
+run still has zero publisher-native public URL readbacks in `articles.jsonl`,
+so Task 1 and item 1c remain open. The next acceptance event is a verified live
+URL for at least two independent publishers from this same run; the remaining
+note S3 `403`, X editor detection, Zenn timeout, and any unrecovered Substack
+intent stay in the same incident-driven repair loop.
 
 ### 2.5 Active-six distribution and dormant-adapter contract
 
