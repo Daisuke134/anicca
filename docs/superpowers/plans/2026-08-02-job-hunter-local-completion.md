@@ -2922,6 +2922,17 @@ OpenTelemetry decision and primary sources:
     - [ ] `L-49K0C2O4b` — Persist validated trace/span IDs with application/route
       ledger events and evidence manifests via one migration. Split ledger schema/
       write and evidence projection into slices of at most 3 files and 100 LOC.
+      - [x] `L-49K0C2O4b1` — Add nullable `trace_id`/`span_id` migration columns to
+        immutable application events, application-route events, and submission
+        evidence bundles without rewriting historical rows (2 files, soft target
+        60 LOC).
+        - Completion receipt: RED failed for all three immutable tables. GREEN uses
+          additive nullable SQLite migration columns, preserves historical rows, and
+          is idempotent on reopen. Focused schema test passes 1/1 and the complete
+          ledger suite passes 43/43.
+      - [ ] `L-49K0C2O4b2` — Validate and write current correlation IDs at event and
+        evidence creation boundaries; reject malformed IDs and keep missing backend
+        values null.
     - [ ] `L-49K0C2O4c` — Carry the same IDs through Temporal Workflow/Activity
       identity, Guardian repair cases, and Telegram reports. Split durable runtime
       correlation from Telegram projection (each at most 3 files and 100 LOC).

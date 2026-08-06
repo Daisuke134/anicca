@@ -722,6 +722,18 @@ class Ledger:
                 "ALTER TABLE daily_slots ADD COLUMN portfolio_bucket TEXT "
                 "NOT NULL DEFAULT 'legacy_unallocated'"
             )
+        for table in (
+            "events", "application_route_events", "submission_evidence_bundles"
+        ):
+            correlation_columns = {
+                str(row["name"])
+                for row in self.connection.execute(f"PRAGMA table_info({table})")
+            }
+            for column in ("trace_id", "span_id"):
+                if column not in correlation_columns:
+                    self.connection.execute(
+                        f"ALTER TABLE {table} ADD COLUMN {column} TEXT"
+                    )
         self.connection.execute(
             """
             INSERT OR IGNORE INTO submission_attempts

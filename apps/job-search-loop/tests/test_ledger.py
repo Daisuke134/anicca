@@ -25,6 +25,16 @@ class RecordingTelemetry:
 
 
 class LedgerTests(unittest.TestCase):
+    def test_trace_correlation_columns_exist_on_all_immutable_submission_records(self):
+        for table in ("events", "application_route_events", "submission_evidence_bundles"):
+            with self.subTest(table=table):
+                columns = {
+                    row["name"] for row in self.ledger.connection.execute(
+                        f"PRAGMA table_info({table})"
+                    )
+                }
+                self.assertTrue({"trace_id", "span_id"}.issubset(columns))
+
     def setUp(self):
         self.tempdir = tempfile.TemporaryDirectory()
         self.db = Path(self.tempdir.name) / "ledger.sqlite3"
