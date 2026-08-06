@@ -1,0 +1,32 @@
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 127.0.0.1:4318
+
+processors:
+  batch:
+    timeout: 2s
+    send_batch_size: 128
+
+exporters:
+  file/job_hunter:
+    path: ${env:JOB_HUNTER_TRACE_PATH}
+    format: json
+    create_directory: true
+    rotation:
+      max_megabytes: 10
+      max_days: 30
+      max_backups: 10
+
+extensions:
+  health_check:
+    endpoint: 127.0.0.1:13133
+
+service:
+  extensions: [health_check]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [file/job_hunter]
