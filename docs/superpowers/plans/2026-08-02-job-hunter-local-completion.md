@@ -3234,6 +3234,13 @@ OpenTelemetry decision and primary sources:
       token gate at all. Confirmed-application quota, truthful-fact policy, Submit
       confirmation, and duplicate fences remain; token accounting cannot stop the
       Job Hunter before it attempts work.
+    - Owner-visibility correction: each resident run sends deduplicated Telegram
+      milestones at exploration start, ATS candidate verification completion, and
+      the single Terra application start; existing terminal and per-application
+      reports remain authoritative. Telegram transport is best-effort and never
+      stops hunting or submission. The first live progress correction was delivered
+      as Telegram message ID `7801` while run `daily-20260806-182939` was actively
+      checking more than 76 ATS URLs.
 - [ ] **L-49K2** — Make the resident fill contract complete and inspectable. Route the
   exact accepted resume; fill verified identity/contact/location/start-date fields;
   select work authorization and sponsorship answers from the private profile; verify

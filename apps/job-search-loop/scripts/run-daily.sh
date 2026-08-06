@@ -69,6 +69,25 @@ fi
   --media-root "$JOB_SEARCH_TELEGRAM_MEDIA" \
   --output "$EVIDENCE/resume-deliver-before.json"
 JAPAN_DAY=$(TZ=Asia/Tokyo /bin/date +%F)
+report_progress() {
+  local stage="$1"
+  local message="$2"
+  "$JOB_SEARCH_PYTHON" - "$TELEGRAM_OUTBOX" "$RUN_ID" "$stage" "$message" <<'PY' || true
+import sys
+from pathlib import Path
+
+from job_search_loop.telegram import send_once
+
+receipt = send_once(
+    database=Path(sys.argv[1]),
+    event_key=f"job-search-progress:{sys.argv[2]}:{sys.argv[3]}",
+    message=sys.argv[4],
+)
+print(receipt)
+PY
+}
+report_progress "started" \
+  "Job Hunter ${RUN_ID}: 求人探索を開始しました。候補取得、ATS確認、Terraによる応募、証拠保存まで同じLoopが続行します。"
 refresh_summary() {
   "$JOB_SEARCH_PYTHON" -m job_search_loop.summary \
     --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
@@ -143,6 +162,9 @@ chmod 600 "$EVIDENCE/prefilter-candidate-receipt.json"
   --evidence-dir "$EVIDENCE/ats-liveness" \
   --output "$EVIDENCE/ats-liveness-sweep.json" \
   --limit 100
+ATS_CHECKED_COUNT=$(find "$EVIDENCE/ats-liveness" -type f -name 'ats-liveness-*.json' | wc -l | tr -d ' ')
+report_progress "candidates-checked" \
+  "Job Hunter ${RUN_ID}: ${ATS_CHECKED_COUNT}件の求人URLについてATS生存確認を完了しました。これから単一Terra Job HunterがCloakBrowserで応募処理へ進みます。"
 TERRA_PLAN_EVIDENCE="$EVIDENCE/terra-plan"
 TERRA_HIGH_EVIDENCE="$EVIDENCE/terra-high"
 mkdir -p "$TERRA_PLAN_EVIDENCE" "$TERRA_HIGH_EVIDENCE"
@@ -186,6 +208,8 @@ TRAPEXIT() {
   fi
 }
 set +e
+report_progress "terra-started" \
+  "Job Hunter ${RUN_ID}: GPT-5.6 Terra Job Hunterが起動しました。候補評価、フォーム適応、履歴書提出、Submit確認、証拠保存を一体で実行します。"
 "$JOB_SEARCH_PYTHON" "$JOB_SEARCH_RUNNER" \
   --task-class application-lane-agent \
   --prompt-file "$JOB_SEARCH_APP_ROOT/prompts/daily-pass.md" \
