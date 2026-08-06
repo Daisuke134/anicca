@@ -2297,6 +2297,13 @@ run 88・89として二回kickstartした。run 88後、`7gy3rv6t`は2→2で増
 append-only historyのbefore/afterによりterminal known failureを再writeせず候補空間を前進したことを実証した。次はP0-5で、
 現在run内に同日候補がすべてknown no-effectになった場合も同じpassで次open日へ戻る。
 
+O1B-25進捗65（P0-5 same-pass next-open-date continuation / RED→GREEN）: runtimeは最初に候補を持つ日を
+`selected`へ入れてday loopを抜け、その外側でwriteしていたため、当日の全候補がknown no-effectでも次open日へ戻れなかった。
+二日fixtureで「8月5日の候補が`LUMA_RSVP_UNAVAILABLE`、8月6日の候補がverified success」を作り、修正前は一日目の失敗を
+最終結果として返すREDを確認した。write loopをverified day loop内へ移し、known no-effectで当日が尽きた時だけ次日へ継続し、
+success・unknown effect・recovery requiredではpassを停止する。focused 13/13、native 19/19、pretest 12/12、outbound 300/300が
+fresh GREEN。次に既存launchd一回の中で複数日/候補へ進むlive historyをreadbackする。
+
 完全な残TODO SSOT:
 
 **P0 — task deliveryを前進させる（最優先）**
@@ -2305,7 +2312,7 @@ append-only historyのbefore/afterによりterminal known failureを再writeせ�
 2. [x] `LUMA_RSVP_UNAVAILABLE`、`LUMA_FORM_INPUT_REQUIRED`、満席、受付終了を`known_no_effect`へ正規化する。focused 9/9、outbound 289/289。
 3. [x] append-only `candidate-attempts.jsonl`を作り、event ref、outcome、safe reason、observed_at、retry_afterを保存する。runtime 9/9、native 18/18、outbound 289/289。
 4. [x] active window内のterminal known failureをactive write rankingから除外し、後続状態observationまたはretry_after後だけ再検査する。runtime 10/10、native 19/19、outbound 299/299。
-5. 同日候補をすべて順番に試し、同日枯渇時は同じpassで次open日へ進む。
+5. [x] 同日候補をすべて順番に試し、同日枯渇時は同じpassで次open日へ進む。focused 13/13、native 19/19、outbound 300/300。
 6. pass budget到達時はdate/candidate cursorを保存し、次wakeで続きから再開する。
 7. unknown effectはLuma readbackでpresent/absentを確定するまで再submitしない。
 8. submit後のLuma登録済みpageをfull-page PNGで取得し、event ref、canonical URL、取得時刻、SHA-256、Calendar event IDへbindする。
