@@ -2845,13 +2845,17 @@ OpenTelemetry decision and primary sources:
         DOM, and exception message never enter span attributes. The O2 span handle now
         accepts completion-time attributes through the same allowlist and silently
         drops SDK/validation faults. Focused adapter plus telemetry tests pass 13/13.
-    - [ ] `L-49K0C2O3b` — Add `hourly_pass → candidate → route → surface.classify →
-      application.open → form.snapshot → form.fill → submit.intent → submit.action →
-      confirmation.observe` spans at the resident orchestration/ATS boundaries. Record
-      surface type, blocker code, duration, exception class, and evidence SHA—not
-      private values. Files: `browser_use_ats.py` plus its focused tests, then the
-      resident submit activity plus its focused tests; each slice changes at most
-      3 files and targets 100 LOC.
+    - [ ] `L-49K0C2O3b` — Complete resident orchestration/ATS spans. Parent closes
+      only after both children close.
+      - [ ] `L-49K0C2O3b1` — Add `candidate → route → surface.classify →
+        application.open → form.snapshot → form.fill` to `browser_use_ats.py` and its
+        focused tests. Pass one telemetry instance into the pinned backend; record
+        surface type, blocker code, duration, exception class, and evidence SHA—not
+        private values (2 files, soft target 100 LOC).
+      - [ ] `L-49K0C2O3b2` — Add `hourly_pass → submit.intent → submit.action →
+        confirmation.observe` at the resident submit activity plus focused tests.
+        Builder/development processes retain zero live-submit authority (at most
+        3 files, soft target 100 LOC).
   - [ ] `L-49K0C2O4` — Correlate `trace_id`/`span_id` through Temporal Workflow and
     Activity IDs, application/route IDs, ledger events, owner/worker receipts,
     evidence manifests, Guardian repair cases, and Telegram reports. OTel remains
