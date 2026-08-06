@@ -2721,6 +2721,13 @@ browser endpointへ接続後、各pageの`Target.getTargetInfo`を使ってrecei
 candidate budget cursorを期待する旧testであり、今回のownership変更による失敗ではない。次はprivate profile SSOT統合後、
 Connector launchd自身でlive submit/readbackを行う。現時点では外部submit成功を主張しない。
 
+O1B-25進捗115（private user-profile SSOT direct read / GREEN）: native-passはTerra実行時の本人情報を、電話番号だけの
+派生Luma profileではなくmode 0600の`~/.config/anicca/job-search/profile.json`から必要時に直接読む。readerはcandidate rootを必須にし、
+256 KiB、深さ、配列数、制御文字、secret-bearing keyをbounded validationし、再帰freezeした値だけを一回のregistration actionへ渡す。
+決定論form executor用の既存最小profileは別境界として維持する。実SSOTは値を表示せずcandidate 23 fields、facts 23件を読めることを確認し、
+関連44/45 GREEN。唯一のfailureは廃止済みcandidate budget cursorを期待する旧testである。次は最新launchdをkickstartし、loop主体の
+live Luma submitと親readbackを実証する16Cである。
+
 現在と完成形:
 
 ```mermaid
@@ -2783,20 +2790,19 @@ flowchart LR
 26. Mac再起動後のConnector、producer、consumer launchd、heartbeat、healthcheck、stale-loop self-healを実機検証する。
 27. canonical branchへ統合し、legacy bridge / Docker worker / 重複scheduleを退役する。
 
-### P0 残TODOの現在順序（進捗114を正本とする）
+### P0 残TODOの現在順序（進捗115を正本とする）
 
-1. 全個人情報をprivate user-profile SSOTへ統合し、Connectorは必要fieldだけを遅延読込する。未知の通常主観質問はtruthful general answerで継続し、質問shape未知を停止理由にしない。
-2. 最新Connector launchdをkickstartし、loop主体のLuma実submitと親readbackを成立させる（16C）。
-3. PNG、Calendar ID/readback、Telegram card/photo IDを一つのlineage receiptへ結合する（16D、18）。
-4. Lumaが主催者公式siteへの追加登録を要求するeventで、trusted Gmail OTPと公式完了markerまで同じlineageで閉じる（17）。
-5. privacy-safe Observer trace packを実装し、action、URL class、control label、validation class、screenshot SHA、provider readbackをrun/event/capability versionへbindする（13）。
-6. source registryを実装し、Luma、Connpass、Peatix、Meetup、Doorkeeper、Eventbriteを`discovery / registration / effect_readback / screenshot_evidence`能力で宣言する（19）。
-7. Connpassの公式API discoveryと認証済みbrowser submit/readbackを実証してからregistrationを有効化する（20〜21）。
-8. Peatix、Meetup、Doorkeeper、Eventbriteを一siteずつlive proof後に有効化し、一source failureでpass全体を止めない（22〜23）。
-9. rolling 21日の`open=0`まで反復し、各日を`covered_existing / covered_new / unavailable`の実証拠で閉じる（25）。
-10. Mac再起動後のlaunchd、CloakBrowser、heartbeat、healthcheck、idempotencyを実機検証する（26）。
-11. self-fix producerはlive task delivery成立まで停止を維持する。成立後にObserver fixture→Terra revision→隔離Connector canary→merge/redeployを復旧する（14〜15）。
-12. canonical branchへ統合し、legacy bridge、Docker worker、重複scheduleを退役する（27）。
+1. 最新Connector launchdをkickstartし、loop主体のLuma実submitと親readbackを成立させる（16C）。
+2. PNG、Calendar ID/readback、Telegram card/photo IDを一つのlineage receiptへ結合する（16D、18）。
+3. Lumaが主催者公式siteへの追加登録を要求するeventで、trusted Gmail OTPと公式完了markerまで同じlineageで閉じる（17）。
+4. privacy-safe Observer trace packを実装し、action、URL class、control label、validation class、screenshot SHA、provider readbackをrun/event/capability versionへbindする（13）。
+5. source registryを実装し、Luma、Connpass、Peatix、Meetup、Doorkeeper、Eventbriteを`discovery / registration / effect_readback / screenshot_evidence`能力で宣言する（19）。
+6. Connpassの公式API discoveryと認証済みbrowser submit/readbackを実証してからregistrationを有効化する（20〜21）。
+7. Peatix、Meetup、Doorkeeper、Eventbriteを一siteずつlive proof後に有効化し、一source failureでpass全体を止めない（22〜23）。
+8. rolling 21日の`open=0`まで反復し、各日を`covered_existing / covered_new / unavailable`の実証拠で閉じる（25）。
+9. Mac再起動後のlaunchd、CloakBrowser、heartbeat、healthcheck、idempotencyを実機検証する（26）。
+10. self-fix producerはlive task delivery成立まで停止を維持する。成立後にObserver fixture→Terra revision→隔離Connector canary→merge/redeployを復旧する（14〜15）。
+11. canonical branchへ統合し、legacy bridge、Docker worker、重複scheduleを退役する（27）。
 
 ### Browser E2E判定
 
