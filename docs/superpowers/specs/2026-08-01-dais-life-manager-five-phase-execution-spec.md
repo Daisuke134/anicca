@@ -2383,6 +2383,18 @@ append-only mode 0600 `photo-delivery-receipts.jsonl`は既存result card ID `73
 `shasum -a 256`と完全一致した。これは手動診断送信ではなくlaunchd loop生成receiptである。fresh native 23/23、pretest 12/12、
 outbound 307/307もGREEN。これでP0-9を完了し、次は新規実eventの同一attemptで全chainを通すP0-10へ進む。
 
+O1B-25進捗77（P0-10 mail/QR chain runtime wiring / RED→GREEN、live未実証）: `luma-confirmation-mail.js`、
+`luma-ticket-qr.js`、`connector-ticket-telegram.js`は個別実装・testが存在したが、native runtimeから一度も呼ばれず、登録後は
+registered-page PNG→Calendar→coverage Telegramへ直行していた。write pipelineを、verified RSVP後にGmail confirmationをpollし、
+同じregistration interval・Luma sender・本人宛・event title/URLを検証してimmutable receiptへ保存し、mail内の同一guest keyから
+opaque bindingを生成、認証済みdaily-driverで公式QRを開きdecoded payloadを照合、tenant-owned objectへ保存する順序へ変更した。
+Calendar sync後は公式QRをevent/title/time/venue/Calendar URL付きTelegram documentとして送りpositive provider IDを必須化し、
+その後だけ従来のcoverage card + registered-page PNGを送る。native runtimeは実`gog gmail` reader、confirmation store、ticket store、
+auth-aware QR captureを結線し、native-passはconfirmation receipt ref、ticket receipt/artifact ref、ticket Telegram IDをmode 0600
+`last-result.json`へfail-closed投影する。REDはchain未実行、Gmail reader不存在、pack QR method不存在、runtime依存欠落、native投影欠落を
+個別再現。GREENはmail/QR/write/runtime関連62/62、native 23/23。P0-10 checkboxはまだ未完であり、次はpush済みcodeを既存launchdで
+実発火し、新規実eventの同一attemptで全receiptとTelegram message IDをreadbackする。
+
 完全な残TODO SSOT:
 
 **P0 — task deliveryを前進させる（最優先）**

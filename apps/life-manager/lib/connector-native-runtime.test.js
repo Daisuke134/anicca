@@ -153,6 +153,7 @@ async function fixture(options = {}) {
     },
     async syncRegistrationCalendar() { throw new Error("calendar sync must stay deferred"); },
     async deliverCoverageTelegram() { throw new Error("Telegram must stay deferred"); },
+    async captureLumaTicketQr() { return "verified-ticket"; },
   };
   return {
     calls,
@@ -163,6 +164,10 @@ async function fixture(options = {}) {
       now: NOW,
       evidenceDir: "/tmp/connector-native-runtime-evidence",
       calendarAccount: "dais@example.test",
+      lumaEmail: "dais@example.com",
+      lumaName: "Dais Example",
+      gogKeyring: "fixture-keyring",
+      gogBin: "/fixture/gog",
     },
     deps: {
       createDailyDriver(input) {
@@ -188,6 +193,11 @@ async function fixture(options = {}) {
       createPack(input) {
         calls.push(["create-pack", input]);
         return pack;
+      },
+      createConfirmationReader() { return async () => ({ id: "mail-1" }); },
+      createConfirmationStore() { return { record: async () => ({}) }; },
+      createTicketStore() {
+        return { record: async () => ({}), readArtifact: async () => Buffer.from("fixture") };
       },
     },
   };
@@ -317,6 +327,10 @@ test("configured native execution gates the date then uses Luna and passes one v
       calendarCoverageUrl: "https://calendar.google.com/calendar/u/0/r",
       calendarId: "primary",
       mapsKey: "maps-secret",
+      lumaEmail: "dais@example.com",
+      lumaName: "Dais Example",
+      gogKeyring: "fixture-keyring",
+      gogBin: "/fixture/gog",
     },
     deps: {
       ...input.deps,
@@ -329,6 +343,21 @@ test("configured native execution gates the date then uses Luna and passes one v
       async createSpendPolicy(value) { input.calls.push(["policy", value]); return Object.freeze({ limits: [] }); },
       planDateSpend(...value) { input.calls.push(["spend", ...value]); return spendSequence; },
       async runNativeWrite(value, dependencies) { input.calls.push(["write", value, dependencies]); return writeResult; },
+      createConfirmationReader(value) {
+        input.calls.push(["confirmation-reader", value]);
+        return async () => ({ id: "mail-1" });
+      },
+      createConfirmationStore(value) {
+        input.calls.push(["confirmation-store", value]);
+        return { record: async () => ({ external_receipt_ref: "gmail-message://fixture" }) };
+      },
+      createTicketStore(value) {
+        input.calls.push(["ticket-store", value]);
+        return {
+          record: async () => ({ ticket_receipt_ref: "ticket://fixture", artifact_ref: "object://fixture" }),
+          readArtifact: async () => Buffer.from("fixture"),
+        };
+      },
       createRouteMinutes(value) {
         input.calls.push(["route-adapter", value]);
         return async () => 20;
@@ -350,6 +379,12 @@ test("configured native execution gates the date then uses Luna and passes one v
   assert.equal(typeof writeDependencies.readExternalReceipt, "function");
   assert.equal(typeof writeDependencies.readArtifact, "function");
   assert.equal(typeof writeDependencies.fetchImpl, "function");
+  assert.equal(typeof writeDependencies.readLumaConfirmation, "function");
+  assert.equal(typeof writeDependencies.recordLumaConfirmation, "function");
+  assert.equal(typeof writeDependencies.captureLumaTicketQr, "function");
+  assert.equal(typeof writeDependencies.recordLumaTicketQr, "function");
+  assert.equal(typeof writeDependencies.readTicketArtifact, "function");
+  assert.equal(writeInput.registrationIdentity, "Dais Example");
   assert.equal(input.calls.find(([name]) => name === "luna")[1].date, "2026-08-05");
 });
 

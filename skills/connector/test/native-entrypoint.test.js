@@ -102,6 +102,14 @@ test("native-pass durably binds the registered-page PNG lineage to its Calendar 
             photo_provider_id: "7577",
             artifact_sha256: hash,
           },
+          confirmation: {
+            external_receipt_ref: `gmail-message://dais-local/${"c".repeat(64)}`,
+          },
+          ticket: {
+            ticket_receipt_ref: `ticket://dais-local/${"d".repeat(64)}`,
+            artifact_ref: `object://sha256/${"e".repeat(64)}`,
+            telegram_provider_id: "7578",
+          },
         },
       }),
     });
@@ -118,6 +126,10 @@ test("native-pass durably binds the registered-page PNG lineage to its Calendar 
       calendar_event_ref: `calendar-evidence://google/event/${"b".repeat(64)}`,
       telegram_provider_id: "7576",
       telegram_photo_provider_id: "7577",
+      confirmation_receipt_ref: `gmail-message://dais-local/${"c".repeat(64)}`,
+      ticket_receipt_ref: `ticket://dais-local/${"d".repeat(64)}`,
+      ticket_artifact_ref: `object://sha256/${"e".repeat(64)}`,
+      ticket_telegram_provider_id: "7578",
     });
     const delivery = JSON.parse(fs.readFileSync(
       path.join(stateDir, "delivery-receipts.jsonl"), "utf8",

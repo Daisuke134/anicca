@@ -27,6 +27,9 @@ const { isVerifiedRollingEventCoverage } = require("./rolling-event-coverage.js"
 const { isVerifiedGoogleCalendarBusyInventory } = require("./google-calendar-busy-inventory.js");
 const { isVerifiedEventGoalSerendipity } = require("./event-goal-serendipity.js");
 const { hashChatId } = require("./telegram.js");
+const { verifyLumaConfirmationMessage } = require("./luma-confirmation-mail.js");
+const { createLumaGuestBinding } = require("./luma-ticket-qr.js");
+const { deliverConnectorTicket } = require("./connector-ticket-telegram.js");
 
 const EVENT_REF = /^luma-event:\/\/event\/[A-Za-z0-9_-]+$/;
 const TENANT = /^[a-z0-9][a-z0-9._-]{0,199}$/;
@@ -215,6 +218,12 @@ function selectedContext(input) {
     || input.calendar_coverage_url
     || application.calendarCoverageUrl
     || application.calendar_coverage_url;
+  const registrationIdentity = text(
+    input.registrationIdentity || input.registration_identity || application.registrationIdentity
+      || application.registration_identity || "Dais",
+    "registration identity",
+    100,
+  );
   return {
     tenantId,
     eventUrl,
@@ -232,6 +241,7 @@ function selectedContext(input) {
     calendarId: calendarId == null ? "" : String(calendarId).trim(),
     telegramTarget: telegramTarget == null ? "" : String(telegramTarget).trim(),
     calendarCoverageUrl: calendarCoverageUrl == null ? "" : String(calendarCoverageUrl).trim(),
+    registrationIdentity,
     unavailableDays: Array.isArray(input.unavailableDays) ? input.unavailableDays : [],
     registrations: Array.isArray(input.registrations) ? input.registrations : [],
   };
@@ -293,6 +303,11 @@ async function runNativeConnectorWrite(input = {}, deps = {}) {
     "deliverConnectorCoverageTelegram",
     deliverConnectorCoverageTelegram,
   );
+  const verifyConfirmation = factory(
+    injected, "verifyLumaConfirmationMessage", verifyLumaConfirmationMessage,
+  );
+  const buildGuestBinding = factory(injected, "createLumaGuestBinding", createLumaGuestBinding);
+  const deliverTicket = factory(injected, "deliverConnectorTicket", deliverConnectorTicket);
 
   let job;
   try {
@@ -340,6 +355,51 @@ async function runNativeConnectorWrite(input = {}, deps = {}) {
     return failureResult("receipt_verification_failed", { ...context, job }, error);
   }
 
+  let confirmation;
+  let ticket;
+  try {
+    if (
+      typeof injected.readLumaConfirmation !== "function"
+      || typeof injected.recordLumaConfirmation !== "function"
+      || typeof injected.captureLumaTicketQr !== "function"
+      || typeof injected.recordLumaTicketQr !== "function"
+    ) throw new Error("Luma mail and ticket services unavailable");
+    const message = await injected.readLumaConfirmation({
+      registrationStartedAt: context.now,
+      registrationCompletedAt: receipt.verified_at,
+      eventUrl: context.eventUrl,
+      eventTitle: event.title,
+    });
+    const verifiedMail = verifyConfirmation({
+      tenantId: context.tenantId,
+      jobId: job.job_id,
+      eventUrl: context.eventUrl,
+      eventTitle: event.title,
+      registrationStartedAt: context.now,
+      registrationCompletedAt: receipt.verified_at,
+      message,
+    });
+    confirmation = await injected.recordLumaConfirmation(verifiedMail);
+    if (!/^gmail-message:\/\/[a-z0-9._-]+\/[0-9a-f]{64}$/i.test(String(confirmation.external_receipt_ref || ""))) {
+      throw new Error("Luma confirmation receipt invalid");
+    }
+    const binding = buildGuestBinding({
+      tenantId: context.tenantId,
+      jobId: job.job_id,
+      eventUrl: context.eventUrl,
+      providerMessageId: message.id,
+      body: message.body,
+    });
+    const verifiedQr = await injected.captureLumaTicketQr(binding);
+    ticket = await injected.recordLumaTicketQr(verifiedQr);
+    if (
+      !/^ticket:\/\/[a-z0-9._-]+\/[0-9a-f]{64}$/i.test(String(ticket.ticket_receipt_ref || ""))
+      || !/^object:\/\/sha256\/[0-9a-f]{64}$/.test(String(ticket.artifact_ref || ""))
+    ) throw new Error("Luma ticket receipt invalid");
+  } catch (error) {
+    return failureResult("ticket_evidence_failed", { ...context, job }, error);
+  }
+
   const syncInput = {
     calendar: context.calendar,
     calendarId: context.calendarId,
@@ -364,6 +424,34 @@ async function runNativeConnectorWrite(input = {}, deps = {}) {
     });
   } catch (error) {
     return failureResult("registration_evidence_failed", { ...context, job }, error);
+  }
+
+  let ticketDelivery;
+  try {
+    ticketDelivery = await deliverTicket({
+      tenantId: context.tenantId,
+      telegramTarget: context.telegramTarget,
+      artifactRef: ticket.artifact_ref,
+      eventTitle: event.title,
+      venue: event.venue_name || event.venue_address,
+      registrationIdentity: context.registrationIdentity,
+      selectionReason: context.goalDecision.ranked_events.find(
+        (candidate) => candidate.event_ref === context.eventRef,
+      ).goal_reason,
+      startsAt: event.starts_at,
+      endsAt: event.ends_at,
+      eventUrl: event.canonical_url,
+      calendarUrl: calendarSync.calendar_event_url,
+    }, {
+      readArtifact: injected.readTicketArtifact,
+      sendMedia: injected.sendTicketMedia,
+      observedAt: injected.observedAt || (() => context.now),
+    });
+    if (!ticketDelivery || !POSITIVE_REF.test(String(ticketDelivery.provider_id || ""))) {
+      throw new Error("Luma ticket Telegram receipt invalid");
+    }
+  } catch (error) {
+    return failureResult("ticket_telegram_failed", { ...context, job }, error);
   }
 
   let coverage;
@@ -444,6 +532,12 @@ async function runNativeConnectorWrite(input = {}, deps = {}) {
     event_ref: context.eventRef,
     canonical_url: event.canonical_url,
     registration_receipt: safeReceiptProjection(receipt),
+    confirmation: Object.freeze({ external_receipt_ref: confirmation.external_receipt_ref }),
+    ticket: Object.freeze({
+      ticket_receipt_ref: ticket.ticket_receipt_ref,
+      artifact_ref: ticket.artifact_ref,
+      telegram_provider_id: String(ticketDelivery.provider_id),
+    }),
     calendar_sync: Object.freeze({
       status: calendarSync.status,
       calendar_sync_id: calendarSync.calendar_sync_id,
