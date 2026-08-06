@@ -59,6 +59,7 @@ function writePrivateJson(filePath, value) {
 function createConnectorTabOwner({
   endpoint = CONNECTOR_CDP_ENDPOINT,
   listTargets = () => defaultListTargets(endpoint),
+  targetLease = null,
   ownerToken = () => crypto.randomUUID(),
   now = () => new Date(),
 } = {}) {
@@ -66,6 +67,9 @@ function createConnectorTabOwner({
     throw new Error("Connector tab owner is restricted to CloakBrowser :9222");
   }
   if (typeof listTargets !== "function") throw new Error("listTargets is required");
+  if (targetLease && typeof targetLease.claim !== "function") {
+    throw new Error("Connector target lease unavailable");
+  }
 
   return Object.freeze({
     async captureBaseline() {
@@ -92,6 +96,35 @@ function createConnectorTabOwner({
         throw new Error(`Expected exactly one owned Luma page; observed ${matches.length}`);
       }
       const target = matches[0];
+      if (targetLease) {
+        const fence = await targetLease.claim({
+          targetId: target.id,
+          pageWebsocket: target.webSocketDebuggerUrl,
+          canonicalUrl: normalizedCanonicalUrl,
+        });
+        if (
+          !fence || fence.schema_version !== 1
+          || fence.target_id !== target.id
+          || fence.page_websocket !== target.webSocketDebuggerUrl
+          || fence.canonical_url !== normalizedCanonicalUrl
+          || typeof fence.owner_token !== "string" || fence.owner_token.length === 0
+          || !Number.isInteger(fence.generation) || fence.generation < 1
+          || !Number.isFinite(Date.parse(fence.claimed_at))
+        ) throw new Error("Connector target lease unavailable");
+        const receipt = Object.freeze({
+          schema_version: 1,
+          endpoint,
+          owner_token: fence.owner_token,
+          generation: fence.generation,
+          target_id: fence.target_id,
+          page_websocket: fence.page_websocket,
+          baseline_target_ids: [...baseline],
+          canonical_url: fence.canonical_url,
+          observed_at: fence.claimed_at,
+        });
+        if (receiptPath !== undefined) writePrivateJson(receiptPath, receipt);
+        return receipt;
+      }
       const token = ownerToken();
       if (typeof token !== "string" || token.length === 0) throw new Error("Owner token is required");
       const receipt = Object.freeze({
