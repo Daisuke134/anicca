@@ -2617,6 +2617,13 @@ unlabeled、duplicate key、secret-shaped label/key、50件超をfail-closedに�
 11/11 GREEN。次はこのschemaとprivate profileを受け、既知fieldだけを回答し、Instagram等の未解決required fieldでは虚偽入力せず
 候補継続を返すprofile answer policyを実装する。
 
+O1B-25進捗102（profile-backed answer policy / RED→GREEN）: form schemaに対し、profileのfield key完全一致、label完全一致、
+許可済みphone mapping、明示済みCode of Conduct/Media Release consentだけを回答へ変換するpolicyを追加した。multi-selectは
+実画面で観測したoptionから最大3件だけ、checkboxは明示trueだけを許可する。Instagram handle等の未解決required fieldは
+`candidate_not_actionable / LUMA_REQUIRED_PROFILE_FIELD_UNAVAILABLE`を返し、`N/A`や架空handleを作らない。form外option、duplicate、
+token/password等のsecret-shaped回答をfail-closedにする。module不存在RED後、schema/provider回帰込み14/14 GREEN。次はこのplanを
+実DOMへ適用するbounded fill executorと、未知field時に同passの次候補へ進むruntime状態遷移を接続する。
+
 現在と完成形:
 
 ```mermaid
