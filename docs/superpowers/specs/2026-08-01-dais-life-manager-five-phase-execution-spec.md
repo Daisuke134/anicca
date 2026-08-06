@@ -2797,16 +2797,44 @@ Connectorは自分の`:9222`、owner namespace、ledger、lock、evidenceを持�
 `browser.close()`、context/page releaseをTerraから除外、(e)一つのagent turnと一つのpage sessionでopen form→全field→submit→markerまで
 実行、(f)親が同じtargetで独立readback・screenshot後にtargetをclose/release、(g)renderer livenessとstale-owner GCをConnector自身が持つ。
 
+O1B-25進捗120（Superpowers型closed-loop self-healingを全loop共通基盤へ昇格 / 実装順序確定）: run 174の実stateを
+read-only再監査した。Connector launchdは累計174 run、直近exit 1、healthcheckは直近exit 0、`:9222`は応答中である。
+run 174はTerraが実Luma formをsubmitし、親loopが`pending approval` markerと登録page PNGを独立readbackした一方、
+confirmation mail / QR取得で`ticket_evidence_failed`となり、現pipelineの順序上CalendarとTelegramへ到達しなかった。
+したがって「外部submit不能」はすでに真ではないが、Gig型page ownershipを持たず、Terraがinline Nodeごとに
+`connectOverCDP()`、全page探索、`browser.close()`を反復するtransaction lifecycleと、登録成功後のoptional evidence failureが
+task delivery全体を止める状態機械が未修復である。
+
+Daisの明示判断により、機能開発の順序を次へ固定する。まずGig資産を変更せずConnector専用`:9222` railでsingle-page transactionを
+成立させる。その一件を閉じた直後はprovider追加より先に、今回の二つの実故障を最初のreplay fixtureとして共通Observer / Fixer /
+Canary / Promotion基盤を完成させる。FixerはCodex/Terra runnerからSuperpowersの`systematic-debugging`、
+`test-driven-development`、`verification-before-completion`を必須工程として使う。issue作成、PR作成、test GREEN、merge、restartの
+いずれもhealedではない。同じfailure classの実taskをproduction loop自身が再実行し、task固有のexternal receipt oracleを満たした時だけ
+`healed`へ遷移する。
+
+共通self-healing contractはbrowser専用にしない。各loop adapterは`observe / classify / expect / reconcile /
+buildReplayFixture / runCanary / verifyExternalEffect / rollback`を実装し、共通control planeは
+`incident_fingerprint + capability_version + revision`、修正budget、protected path、permission、canary、promotion、rollbackを所有する。
+Connectorのexternal oracleはprovider marker、Calendar ID/readback、登録page PNG SHA、Telegram card/photo positive IDである。
+Gigはmarketplace official historyのexact request ID、mailはprovider message ID、paymentはprovider receipt、on-chain effectはtransaction
+signatureを使う。process livenessやagent自己申告をbusiness successへ昇格しない。
+
+Observer envelopeにはrun/task/event、loop、capability/version、stage、safe action class、URL class、control class、期待effect、
+観測effect、target owner/generation、screenshot SHA、provider readback、code commitだけを保存する。raw page本文、cookie、OTP、token、
+email、電話、profile、form回答、raw promptは保存しない。修復は一revisionにつき原因仮説一つ、RED一つ、最小fix一つ、15分以内、
+最大3 revision/24時間とし、historical replay→focused/full test→隔離browser canary→one bounded live effect→external receiptの順で昇格する。
+同じtest/canary failureが3回続いた時だけbackoffし、単なる`attempted`で永久除外しない。
+
 現在と完成形:
 
 ```mermaid
 flowchart LR
   subgraph NOW[現在]
     N1[Luma 28件] --> N2[候補4件]
-    N2 --> N3[Connector専用tab-owner未実装]
-    N3 --> N4[Terraが接続codeを即興]
-    N4 --> N5[外部submit前に停止]
-    N5 --> N6[live E2E未達]
+    N2 --> N3[receiptだけのtab-owner]
+    N3 --> N4[Terraが接続codeを即興・反復]
+    N4 --> N5[submit・親readbackは到達]
+    N5 --> N6[mail/QRでCalendar前に停止]
   end
   subgraph TARGET[完成形]
     T1[全provider探索] --> T2[最上位候補へApply]
@@ -2840,9 +2868,9 @@ flowchart LR
 11C. [x] exact controlだけをfill/check/selectし、各effectをreadbackするbounded executorを追加する。回帰込み16/16。
 11D. [x] live DOM schema reader→private profile loader→answer plan→fill readbackを`submitLumaOnPage`のconfirm click前へ接続し、未知fieldでは同passの次候補へ継続する。
 12. [x] attempt/suppressionへ`capability_version`を追加し、旧form failureを新versionで一度だけ再評価する。同versionの無限retryは禁止する。run 151で`luma-form-submit-v1`再評価を実測済み。
-13. Observer trace packを実装する。run/event/capability versionへaction、URL class、control label、validation class、screenshot SHA、provider readbackをbindし、PII/secretなしのreplay fixtureをincidentへ添付する。
-14. [pause] self-fix producerはDaisの明示指示で停止する。task deliveryのlive E2Eが成立するまで再開しない。
-15. self-build consumerを復旧し、protected-path、permission、focused/full test、rollback、隔離CloakBrowser canaryを通過したrevisionだけをmerge・再配備する。canary failureは同incidentの次revisionへ戻す。
+13. Observer trace packを実装する。run/task/event/capability versionへsafe action class、URL class、control class、expected/observed effect、owner generation、screenshot SHA、provider readback、code commitをbindし、PII/secretなしのreplay fixtureをincidentへ添付する。
+14. [pause] self-fix producerはsingle-page submit transactionのlive acceptanceまで停止する。成立後はSuperpowers `systematic-debugging`→`test-driven-development`→`verification-before-completion`を強制し、一revision一仮説・一RED・一最小fixとして再開する。
+15. self-build consumerをrevision-awareに復旧する。historical replay、protected-path、permission、focused/full test、rollback、隔離CloakBrowser canary、one bounded live effect、external receiptを順に通過したrevisionだけをmerge・再配備する。canary failureは同incidentの次revisionへ戻し、live receiptだけで`healed`にする。
 16A. [x] Connector専用tab-owner railをrepository内へ実装する。`:9222`の既存CloakBrowser default contextから一tabだけをowner token付きで取得し、target ID、page WebSocket、baseline targetsをmode 0600 receiptへ保存する。Gigのcode/state/profile/portへ依存しない。focused 8/8 GREEN。runtimeからの利用は16Bで閉じる。
 16B. [x] Terra browser executorへ16Aのreceiptだけを渡す。browser/package/tab探索、別browser起動、desktop-wide `Cmd-Tab`・AppleScript・`cliclick`、raw DOM mutationを禁止し、所有tabでuser-facing actionを使って同一turnのsubmitまで完了する。focused 36/36 GREEN。live effectは16Cで実証する。
 16C. Connector launchd自身を最新commitでwakeし、実Luma eventでform入力→final submit→登録済みまたは承認待ちmarkerを親loopが独立readbackする。agentのJSON自己申告だけを成功にしない。
@@ -2859,20 +2887,22 @@ flowchart LR
 26. Mac再起動後のConnector、producer、consumer launchd、heartbeat、healthcheck、stale-loop self-healを実機検証する。
 27. canonical branchへ統合し、legacy bridge / Docker worker / 重複scheduleを退役する。
 
-### P0 残TODOの現在順序（進捗119を正本とする）
+### P0 残TODOの現在順序（進捗120を正本とする）
 
 1. Gigの成功browser-foundation patternをConnector側へcopy+tweakする。親が`:9222` default contextにtargetを作成・claimし、page WebSocket一つだけをTerraへ渡し、同一turn後に親がreadback・close・releaseする。inline Node、全page探索、反復`connectOverCDP()`、Terra側`browser.close()`を廃止する（16B再補正）。
-2. 最新Connector launchdをkickstartし、loop主体のLuma実submitと親readbackを成立させる（16C）。
-3. PNG、Calendar ID/readback、Telegram card/photo IDを一つのlineage receiptへ結合する（16D、18）。
-4. Lumaが主催者公式siteへの追加登録を要求するeventで、trusted Gmail OTPと公式完了markerまで同じlineageで閉じる（17）。
-5. privacy-safe Observer trace packを実装し、action、URL class、control label、validation class、screenshot SHA、provider readbackをrun/event/capability versionへbindする（13）。
-6. source registryを実装し、Luma、Connpass、Peatix、Meetup、Doorkeeper、Eventbriteを`discovery / registration / effect_readback / screenshot_evidence`能力で宣言する（19）。
-7. Connpassの公式API discoveryと認証済みbrowser submit/readbackを実証してからregistrationを有効化する（20〜21）。
-8. Peatix、Meetup、Doorkeeper、Eventbriteを一siteずつlive proof後に有効化し、一source failureでpass全体を止めない（22〜23）。
-9. rolling 21日の`open=0`まで反復し、各日を`covered_existing / covered_new / unavailable`の実証拠で閉じる（25）。
-10. Mac再起動後のlaunchd、CloakBrowser、heartbeat、healthcheck、idempotencyを実機検証する（26）。
-11. self-fix producerはlive task delivery成立まで停止を維持する。成立後にObserver fixture→Terra revision→隔離Connector canary→merge/redeployを復旧する（14〜15）。
-12. canonical branchへ統合し、legacy bridge、Docker worker、重複scheduleを退役する（27）。
+2. corrected railを既存Connector launchdでlive実行し、同一page sessionの実submitと親readbackを成立させる。run 174で旧railのsubmit/readbackが成立した事実は維持し、corrected rail acceptanceを別証拠として閉じる（16C）。
+3. 今回の`repeated_connect_over_cdp`と`registration_verified_then_ticket_evidence_failed`を最初のprivacy-safe replay fixtureにし、共通Observer SDK/envelope、expectation state machine、incident fingerprintを実装する（13）。
+4. Superpowers型Fixer producerをrevision-awareに復旧する。各incidentで`systematic-debugging`による単一仮説、TDDの実RED→最小GREEN、fresh verification evidenceを必須にする（14）。
+5. guarded consumerと隔離canaryを復旧する。historical replay→focused/full test→protected-path/permission→rollback→isolated browser canary→one bounded live effect→external receiptを順に通す（15）。
+6. Connector production loopが同型eventを再実行し、provider marker、PNG SHA、Calendar ID/readback、Telegram card/photo IDを一lineageへ揃えた時だけ最初のincidentを`healed`にする（16D、18）。
+7. Observer SDKをGig、mail、Calendar、payment、もう一つの収益loopへadapter方式で展開し、各task固有のexternal oracleを使う。Gigのcode/state/profile/launchd/`:9223`はread-onlyのまま、導入はGig所有repo側の独立sliceで行う。
+8. Lumaが主催者公式siteへの追加登録を要求するeventで、trusted Gmail OTPと公式完了markerまで同じlineageで閉じる（17）。
+9. source registryを実装し、Luma、Connpass、Peatix、Meetup、Doorkeeper、Eventbriteを`discovery / registration / effect_readback / screenshot_evidence`能力で宣言する（19）。
+10. Connpassの公式API discoveryと認証済みbrowser submit/readbackを実証してからregistrationを有効化する（20〜21）。
+11. Peatix、Meetup、Doorkeeper、Eventbriteを一siteずつlive proof後に有効化し、一source failureでpass全体を止めない（22〜23）。
+12. rolling 21日の`open=0`まで反復し、各日を`covered_existing / covered_new / unavailable`の実証拠で閉じる（25）。
+13. Mac再起動後のConnector、Observer、producer、consumer、CloakBrowser、heartbeat、healthcheck、idempotency、stale-owner GCを実機検証する（26）。
+14. canonical branchへ統合し、legacy bridge、Docker worker、重複scheduleを退役する（27）。
 
 ### Browser E2E判定
 
