@@ -2202,30 +2202,49 @@ this spec update → commit/push → Telegram milestone before the next item sta
 ### 12.2A Current blocking execution order
 
 The detailed tasks below remain the requirements, but execution follows this critical
-path. A later platform/product task never delays a task that is currently preventing
-the resident worker from producing one authoritative application receipt:
+path. First make the resident Job Hunter work end to end; only after that contract is
+proven may the repair process itself be automated. A durability, learning, repair, or
+Web task never delays a task currently preventing one authoritative application:
 
 Completed foundations are `L-49K0A1G`, `L-49K0B`, `L-49K0C`, and `L-49K0C1`.
 The active cursor is the first item below; do not start a later item merely because
 it is easier to demonstrate:
 
-1. `L-49K0D1` — replace the remaining prompt-owned Playwright execution contract
-   with the pinned Browser Use adapter on the dedicated CloakBrowser identity.
-2. `L-49K0C2` — prove a blocked ATS route cannot end the resident hourly pass and
+1. `L-49K0C2` — prove a blocked ATS route cannot end the resident hourly pass and
    that all remaining eligible routes/roles continue exactly once.
-3. `L-49K0D`, then `L-49K0D2` — build tracker/outcome/digest projections, then move
-   all four resident lanes to restart-safe, idempotent Temporal workflows.
-4. `L-49K0E`, `L-49K`, `L-49`, `L-49A`, `L-50`, `L-51`, `L-52` — prove resident
+2. `L-49K0E`, `L-49K`, `L-49`, `L-49A`, `L-50`, `L-51`, `L-52` — prove resident
    actor provenance, bounded owner handoff where required, and authoritative real
    Ashby plus Workday receipts and screenshots in Telegram.
-5. `L-53` through `L-65` — prove Gmail, Calendar, interview preparation/debrief,
-    conversion metrics, one-variable learning, rollback, Telegram, and simultaneous
-    health of all resident lanes.
-8. `L-66` through `L-73` — operate the Dais campaign through fifty confirmed
-    applications, a verified interview, a qualifying written offer, comparison,
-    negotiation brief, and owner decision.
-9. `W-01` through `W-30` — only after local completion, build and verify the
-    tenant-isolated Web product.
+3. `L-49K0D`, `L-49K0D2`, then `L-53` through `L-57` — add tracker projections,
+   move the four working lanes to restart-safe Temporal workflows, and prove Gmail,
+   Calendar, interview preparation, and debrief from authoritative events.
+4. `L-58` through `L-66` — prove conversion metrics, one-variable learning,
+   rollback, Telegram, simultaneous health, and freeze the working local contract.
+5. `L-66A` through `L-66F` — only after the local contract works, automate the same
+   diagnose, reproduce, test, patch, immutable-release, canary, rollback, resume, and
+   Telegram repair process currently performed by the architect.
+6. `L-67` through `L-73` — operate the Dais campaign through fifty confirmed
+   applications, a verified interview, a qualifying written offer, comparison,
+   negotiation brief, and owner decision.
+7. `W-01` through `W-30` — only after local completion, build and verify the
+   tenant-isolated Web product.
+
+Current production truth measured from the ledger and resident receipts:
+
+- the installed resident Job Hunter has zero new authoritative confirmed
+  applications, zero verified interviews, zero offers, and zero recruiting-email
+  deliveries;
+- the ledger contains three historical `submitted` rows: two agent-owned development
+  E2E records and one `dais_manual` Palantir record; these are not three resident-loop
+  successes;
+- twelve agent-owned rows remain `submit_unknown` and MUST NOT be counted or blindly
+  retried;
+- Gmail has zero submission confirmations and zero application matches; funnel
+  outcomes and production application routes are empty;
+- the last Browser Use resident pass attempted three candidates, confirmed zero, and
+  truthfully reported `application_surface_not_found` for each; and
+- Gmail fallback components exist but are not connected to the resident pass until
+  `C2B2` through `C2D` complete.
 - [x] **L-49K0B** — Inventory every `career-ops` v1.25.0 capability as `reuse`,
   `adapt`, or `supersede`, including ATS scan providers, liveness, repost/dedup,
   scoring, pipeline, CV fact verification, apply autofill, tracker, outcomes,
@@ -2848,6 +2867,27 @@ it is easier to demonstrate:
   healthy simultaneously.
 - [ ] **L-66** — Freeze the Dais local product contract after real Ashby, Workday,
   Gmail, Calendar, Telegram, and interview receipts all pass.
+- [ ] **L-66A** — Define the post-contract repair-agent authority: it may inspect
+  traces and private receipts, reproduce faults in an isolated worktree, edit only
+  Job Hunter code/tests/spec, and trigger no application, email, Calendar, or other
+  external side effect while repairing.
+- [ ] **L-66B** — Convert Guardian fault classes into content-addressed repair cases
+  containing release SHA, workflow/run/activity IDs, actor PID, browser fence,
+  sanitized exception, failing receipt hashes, and exact reproduction command.
+- [ ] **L-66C** — Run Terra repair in an isolated worktree through mandatory
+  RED test, minimal patch, focused tests, complete suite, privacy scan, and immutable
+  release build. A model assertion cannot mark a repair successful.
+- [ ] **L-66D** — Activate every repair first as a no-send canary, verify the original
+  fault is gone and no safety/confirmation regression exists, then promote or
+  atomically roll back to the last known-good release.
+- [ ] **L-66E** — Re-signal the interrupted Temporal workflow after promotion so the
+  resident Job Hunter—not Codex, Claude, or the repair process—resumes the remaining
+  applications exactly once from the durable pre-side-effect boundary.
+- [ ] **L-66F** — Telegram-deliver one deduplicated natural-language repair receipt:
+  detected fault, diagnosis, changed contract, RED/GREEN/full-suite results, old/new
+  release SHAs, canary, promotion/rollback, resumed run, and resulting authoritative
+  application status. Unknown post-send effects remain human-reviewed and never
+  auto-retried.
 - [ ] **L-67** — Activate the resident production campaign with the 2/5/3 daily
   portfolio, ten-confirmed-per-day cap, spillover policy, and one Telegram daily
   digest. Prove that only the installed Temporal-owned worker performs live actions.
