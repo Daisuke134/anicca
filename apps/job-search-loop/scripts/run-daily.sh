@@ -29,6 +29,7 @@ export PYTHONPATH="$JOB_SEARCH_APP_ROOT"
 export JOB_SEARCH_BROWSER_OWNER_EVIDENCE="$EVIDENCE/browser-owner.json"
 export JOB_SEARCH_CANDIDATE_QUEUE="$JOB_SEARCH_STATE_ROOT/candidate-queue.sqlite3"
 ROUTE_FIXTURE_REQUEST="$JOB_SEARCH_STATE_ROOT/route-fixture-request.json"
+ATS_SURFACE_CANARY_REQUEST="$JOB_SEARCH_STATE_ROOT/ats-surface-canary-request.json"
 if [[ -f "$ROUTE_FIXTURE_REQUEST" ]]; then
   JOB_SEARCH_BROWSER_FENCE="$JOB_SEARCH_STATE_ROOT/browser-fence"
   "$JOB_SEARCH_PYTHON" -m job_search_loop.browser_owner acquire \
@@ -72,6 +73,44 @@ if [[ -f "$ROUTE_FIXTURE_REQUEST" ]]; then
       "$EVIDENCE/summary.json"
   fi
   exit "$ROUTE_FIXTURE_RC"
+fi
+if [[ -f "$ATS_SURFACE_CANARY_REQUEST" ]]; then
+  JOB_SEARCH_BROWSER_FENCE="$JOB_SEARCH_STATE_ROOT/browser-fence"
+  "$JOB_SEARCH_PYTHON" -m job_search_loop.browser_owner acquire \
+    --identity "job-search:dais" \
+    --output "$JOB_SEARCH_BROWSER_OWNER_EVIDENCE" \
+    --fence "$JOB_SEARCH_BROWSER_FENCE" \
+    --holder-pid "$$"
+  "$JOB_SEARCH_PYTHON" -m job_search_loop.browser_owner hold \
+    --identity "job-search:dais" \
+    --output "$JOB_SEARCH_BROWSER_OWNER_EVIDENCE" \
+    --fence "$JOB_SEARCH_BROWSER_FENCE" \
+    --holder-pid "$$" >/dev/null 2>&1 &
+  ATS_CANARY_BEAT_PID=$!
+  set +e
+  "$JOB_SEARCH_PYTHON" -m job_search_loop.ats_surface_canary \
+    --request "$ATS_SURFACE_CANARY_REQUEST" \
+    --owner-receipt "$JOB_SEARCH_BROWSER_OWNER_EVIDENCE" \
+    --profile "$JOB_SEARCH_PROFILE" \
+    --materials-root "$JOB_SEARCH_MATERIALS_ROOT" \
+    --evidence-dir "$EVIDENCE/ats-surface-canary" \
+    --output "$EVIDENCE/ats-surface-canary-result.json" \
+    >"$EVIDENCE/summary.json"
+  ATS_CANARY_RC=$?
+  set -e
+  kill "$ATS_CANARY_BEAT_PID" >/dev/null 2>&1 || true
+  wait "$ATS_CANARY_BEAT_PID" >/dev/null 2>&1 || true
+  "$JOB_SEARCH_PYTHON" -m job_search_loop.browser_owner release \
+    --identity "job-search:dais" \
+    --output "$JOB_SEARCH_BROWSER_OWNER_EVIDENCE" \
+    --fence "$JOB_SEARCH_BROWSER_FENCE" \
+    --holder-pid "$$" >/dev/null 2>&1 || true
+  if [[ "$ATS_CANARY_RC" -eq 0 ]]; then
+    mv "$ATS_SURFACE_CANARY_REQUEST" "$EVIDENCE/ats-surface-canary-request.json"
+    chmod 600 "$EVIDENCE/ats-surface-canary-request.json" \
+      "$EVIDENCE/ats-surface-canary-result.json" "$EVIDENCE/summary.json"
+  fi
+  exit "$ATS_CANARY_RC"
 fi
 "$JOB_SEARCH_PYTHON" -m job_search_loop.application_reporting deliver \
   --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
