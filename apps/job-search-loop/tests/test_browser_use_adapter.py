@@ -1,4 +1,5 @@
 import hashlib
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -40,7 +41,113 @@ class FakeBrowserUseSession:
         return b"real-png-bytes"
 
 
+class FakeElement:
+    def __init__(self):
+        self.value = ""
+        self._backend_node_id = 17
+        self._session_id = "session-1"
+        self._client = FakeCDPClient(self)
+
+    async def fill(self, value):
+        self.value = value
+
+    async def evaluate(self, _script):
+        return self.value
+
+
+class FakeDOM:
+    def __init__(self, element):
+        self.element = element
+
+    async def setFileInputFiles(self, *, params, session_id):
+        assert params["backendNodeId"] == 17
+        assert session_id == "session-1"
+        self.element.value = f"C:\\fakepath\\{Path(params['files'][0]).name}"
+
+
+class FakeSend:
+    def __init__(self, element):
+        self.DOM = FakeDOM(element)
+
+
+class FakeCDPClient:
+    def __init__(self, element):
+        self.send = FakeSend(element)
+
+
+class FakePage:
+    def __init__(self):
+        self.element = FakeElement()
+
+    async def evaluate(self, _script):
+        return json.dumps([{"tag": "input", "type": "text", "required": True}])
+
+    async def get_elements_by_css_selector(self, _selector):
+        return [self.element]
+
+
+class FakeAsyncBrowserSession:
+    def __init__(self, **settings):
+        self.settings = settings
+        self.page = FakePage()
+        self.calls = []
+
+    async def start(self):
+        self.calls.append("start")
+
+    async def navigate_to(self, url):
+        self.calls.append(("navigate", url))
+
+    async def get_current_page(self):
+        return self.page
+
+    async def take_screenshot(self):
+        return b"browser-use-screenshot"
+
+    async def stop(self):
+        self.calls.append("stop")
+
+
 class BrowserUseAdapterTests(unittest.TestCase):
+    def test_pinned_backend_runs_async_browser_session_on_one_bridge(self):
+        backend = PinnedBrowserUseBackend(
+            "http://127.0.0.1:9222",
+            allowed_domains=["jobs.ashbyhq.com"],
+            version_getter=lambda _: "0.13.7",
+            session_factory=FakeAsyncBrowserSession,
+        )
+        backend.connect()
+        backend.navigate("https://jobs.ashbyhq.com/example/application")
+        snapshot = backend.snapshot()
+        backend.fill(0, 0, "Daisuke")
+
+        self.assertEqual(snapshot["frames"][0]["controls"][0]["tag"], "input")
+        self.assertEqual(backend.read_value(0, 0), "Daisuke")
+        self.assertEqual(backend.screenshot(), b"browser-use-screenshot")
+        with self.assertRaisesRegex(BrowserUsePolicyError, "frame"):
+            backend.fill(1, 0, "forbidden")
+        with self.assertRaisesRegex(BrowserUsePolicyError, "allowlist"):
+            backend.navigate("https://attacker.example/application")
+        backend.close()
+        self.assertIn("stop", backend.session.calls)
+
+    def test_pinned_backend_uploads_only_an_existing_file_and_verifies_basename(self):
+        backend = PinnedBrowserUseBackend(
+            "http://127.0.0.1:9222",
+            allowed_domains=["jobs.ashbyhq.com"],
+            version_getter=lambda _: "0.13.7",
+            session_factory=FakeAsyncBrowserSession,
+        )
+        backend.connect()
+        with tempfile.TemporaryDirectory() as directory:
+            resume = Path(directory) / "resume.pdf"
+            resume.write_bytes(b"pdf")
+            backend.upload(0, 0, str(resume))
+            self.assertTrue(backend.upload_matches(0, 0, str(resume)))
+            with self.assertRaisesRegex(BrowserUsePolicyError, "missing"):
+                backend.upload(0, 0, str(Path(directory) / "missing.pdf"))
+        backend.close()
+
     def test_backend_requires_exact_pin_and_disables_captcha_solver(self):
         captured = []
 

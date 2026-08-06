@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
+import json
 import os
+import threading
 from importlib import metadata
 from pathlib import Path
 from typing import Any
@@ -12,6 +15,21 @@ from urllib.parse import urlparse
 
 class BrowserUsePolicyError(RuntimeError):
     pass
+
+
+class _AsyncBridge:
+    def __init__(self):
+        self.loop = asyncio.new_event_loop()
+        self.thread = threading.Thread(target=self.loop.run_forever, daemon=True)
+        self.thread.start()
+
+    def run(self, awaitable: Any) -> Any:
+        return asyncio.run_coroutine_threadsafe(awaitable, self.loop).result(timeout=60)
+
+    def close(self) -> None:
+        self.loop.call_soon_threadsafe(self.loop.stop)
+        self.thread.join(timeout=5)
+        self.loop.close()
 
 
 class PinnedBrowserUseBackend:
@@ -53,6 +71,120 @@ class PinnedBrowserUseBackend:
             captcha_solver=False,
             keep_alive=True,
         )
+        self.allowed_domains = tuple(item.lower() for item in allowed_domains)
+        self._bridge: _AsyncBridge | None = None
+
+    def connect(self) -> None:
+        if self._bridge is not None:
+            raise BrowserUsePolicyError("Browser Use backend is already connected")
+        self._bridge = _AsyncBridge()
+        try:
+            self._bridge.run(self.session.start())
+        except Exception:
+            self._bridge.close()
+            self._bridge = None
+            raise
+
+    def _run(self, awaitable: Any) -> Any:
+        if self._bridge is None:
+            raise BrowserUsePolicyError("Browser Use backend is not connected")
+        return self._bridge.run(awaitable)
+
+    def _allowed_url(self, url: str) -> None:
+        parsed = urlparse(url)
+        hostname = (parsed.hostname or "").lower()
+        if parsed.scheme != "https" or not any(
+            hostname == domain or hostname.endswith(f".{domain}")
+            for domain in self.allowed_domains
+        ):
+            raise BrowserUsePolicyError("navigation URL is outside the official-domain allowlist")
+
+    def navigate(self, url: str) -> None:
+        self._allowed_url(url)
+        self._run(self.session.navigate_to(url))
+
+    def _page(self) -> Any:
+        page = self._run(self.session.get_current_page())
+        if page is None:
+            raise BrowserUsePolicyError("Browser Use current page is missing")
+        return page
+
+    def snapshot(self) -> dict[str, Any]:
+        page = self._page()
+        script = """() => JSON.stringify(Array.from(document.querySelectorAll(
+          'input, textarea, select, button, a, [role=button], [role=alert], [role=status]'
+        )).map(n => ({
+          tag: (n.tagName || '').toLowerCase(),
+          type: n.getAttribute('type') || '',
+          role: n.getAttribute('role') || '',
+          label: n.getAttribute('aria-label') || n.getAttribute('placeholder') || '',
+          name: n.getAttribute('name') || '',
+          text: (n.innerText || n.textContent || '').replace(/\\s+/g, ' ').trim(),
+          group_label: '',
+          required: Boolean(n.required) || n.getAttribute('aria-required') === 'true'
+        })))"""
+        controls = json.loads(self._run(page.evaluate(script)))
+        return {
+            "version": 1,
+            "url": self._run(page.get_url()) if hasattr(page, "get_url") else "",
+            "navigation_committed": True,
+            "frames": [{"url": "", "controls": controls}],
+        }
+
+    def _element(self, frame_index: int, control_index: int) -> Any:
+        if frame_index != 0:
+            raise BrowserUsePolicyError("Browser Use adapter does not authorize cross-origin frame access")
+        if isinstance(control_index, bool) or not isinstance(control_index, int) or control_index < 0:
+            raise BrowserUsePolicyError("Browser Use control index is invalid")
+        elements = self._run(self._page().get_elements_by_css_selector(
+            "input, textarea, select, button, a, [role=button], [role=alert], [role=status]"
+        ))
+        if control_index >= len(elements):
+            raise BrowserUsePolicyError("Browser Use control index is stale")
+        return elements[control_index]
+
+    def fill(self, frame_index: int, control_index: int, value: str) -> None:
+        self._run(self._element(frame_index, control_index).fill(value))
+
+    def read_value(self, frame_index: int, control_index: int) -> str:
+        return str(self._run(self._element(frame_index, control_index).evaluate("() => this.value")))
+
+    def upload(self, frame_index: int, control_index: int, path: str) -> None:
+        file_path = Path(path)
+        if not file_path.is_file():
+            raise BrowserUsePolicyError("Browser Use upload file is missing")
+        element = self._element(frame_index, control_index)
+        backend_node_id = getattr(element, "_backend_node_id", None)
+        session_id = getattr(element, "_session_id", None)
+        client = getattr(element, "_client", None)
+        if not isinstance(backend_node_id, int) or not session_id or client is None:
+            raise BrowserUsePolicyError("pinned Browser Use upload contract changed")
+        self._run(
+            client.send.DOM.setFileInputFiles(
+                params={"files": [str(file_path)], "backendNodeId": backend_node_id},
+                session_id=session_id,
+            )
+        )
+
+    def upload_matches(self, frame_index: int, control_index: int, path: str) -> bool:
+        value = self.read_value(frame_index, control_index)
+        return Path(value.replace("\\", "/")).name == Path(path).name
+
+    def screenshot(self) -> bytes:
+        value = self._run(self.session.take_screenshot())
+        if not isinstance(value, bytes):
+            raise BrowserUsePolicyError("Browser Use screenshot did not return bytes")
+        return value
+
+    def close(self) -> None:
+        if self._bridge is None:
+            return
+        bridge = self._bridge
+        try:
+            bridge.run(self.session.stop())
+        finally:
+            self._bridge = None
+            bridge.close()
 
 
 class AuthorizedBrowserUseAdapter:
@@ -128,3 +260,12 @@ class AuthorizedBrowserUseAdapter:
             "fence": self.fence,
             "holder_pid": self.holder_pid,
         }
+
+    def screenshot(self, path: str) -> None:
+        destination = Path(path)
+        destination.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+        value = self.perform("screenshot")
+        if not isinstance(value, bytes) or not value:
+            raise BrowserUsePolicyError("Browser Use screenshot is empty")
+        destination.write_bytes(value)
+        os.chmod(destination, 0o600)
