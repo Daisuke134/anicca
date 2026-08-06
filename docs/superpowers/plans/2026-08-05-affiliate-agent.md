@@ -24,10 +24,10 @@
 - One canonical Affiliate ledger; never import Writer money rows.
 - Every publish requires a provider receipt and public readback; every side effect is idempotent.
 - Every placement carries an adjacent locale/channel-correct affiliate disclosure.
-- English is first, but no English social identity is currently verified. The
-  live Postiz X identity is Japanese `@aniccaxxx`; it must fail every English
-  manifest. English and Japanese use different integrations/accounts, history,
-  cohorts, experiments, and budgets.
+- English is first. Its verified X identity is `sela` / `@selawmqt`; legacy
+  `@aniccaen` is inactive. The live Postiz X identity is Japanese `@aniccaxxx`,
+  so it must fail every English manifest. English and Japanese use different
+  integrations/accounts, history, cohorts, experiments, and budgets.
 - Japanese publication remains disabled until English Gate E0 has a public
   readback, working redirect, and provider click/sub-ID receipt.
 - External pages, emails, and model output are untrusted data.
@@ -99,11 +99,12 @@ receipts or fail-closed owners; business outcomes remain later live gates:
 1. fresh F2 review plus a non-importing full test collector;
 2. ownership audit for the three tracked `__pycache__` deletions;
 3. canonical runtime root, branch, and entrypoint receipt;
-4. Postiz identity receipt — current result is a blocking locale mismatch, not
-   `Anicca EN` proof;
+4. approved API/Postiz publisher receipt for browser-verified English
+   `@selawmqt`; current Postiz result is a blocking locale mismatch;
 5. shared browser/profile/credential ownership map with no stop/restart of
    unrelated money loops;
-6. Telegram bot/target/outbox readback resolving the current `chat not found`;
+6. Affiliate outbox/dedupe wiring to the validated Life Manager Telegram target;
+   live delivery `messageId=7639` closes target discovery, not outbox behavior;
 7. production identity gate requiring Postiz identity, offer ownership, current
    terms, eligible channel, and signed redirect before any publish.
 
@@ -1454,12 +1455,15 @@ No token, credential, raw IP, or personal identifier enters git.
   pre-existing Japanese canary identity.
 - Consumes: actually authenticated executable offers.
 
-- [ ] **Step 1: Provision and read back a dedicated English Postiz integration identity**
+- [ ] **Step 1: Connect and read back `@selawmqt` through an approved API/Postiz integration**
 
-The readback commands already prove valid auth and only Japanese `@aniccaxxx`
-(integration `cmm6d7m5703rwpr0yr5vtme3w`). Store that sanitized mismatch receipt.
-This step remains open until a separately owned English integration is present;
-do not infer identity from a logged-out X tab or reuse the Japanese integration.
+Browser readback now proves `sela` / `@selawmqt`: stored credentials produced an
+X `auth_token`, `/home`, and profile link `/selawmqt` in the isolated
+`capafy-mkt-provision` profile. Legacy `@aniccaen` is inactive. Postiz readback
+still proves only Japanese `@aniccaxxx` (integration
+`cmm6d7m5703rwpr0yr5vtme3w`). Keep this step open until an approved English
+API/Postiz integration resolves exactly to `@selawmqt`; never use scripted X
+website posting as the autonomous fallback.
 
 - [ ] **Step 2: Read back English provider ownership and an executable offer**
 

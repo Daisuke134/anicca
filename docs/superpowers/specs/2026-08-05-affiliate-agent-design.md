@@ -50,9 +50,9 @@ commission watermark as newly attributed revenue.
 | Runtime | Legacy core/tmux is absent; hourly and daily launchd services are not registered | Two launchd owners wake one durable queue and resume the same work without duplicate side effects |
 | Agent brain | F2 is pushed and focused tests pass; only fake-provider process replay exists | Terra proposes one typed action and a live allowlisted provider boundary returns a verification receipt |
 | Offers | No English account, approval, terms, or executable link is read back | At least one English offer is `EXECUTABLE` from current ownership, terms, channel, destination, and tracking-link receipts |
-| Publishing | Postiz auth is valid, but its only X integration is Japanese `@aniccaxxx` and X body links are stripped; no Affiliate public placement exists | A dedicated English identity, owned conversion page, publication receipt, public readback, disclosure, redirect, and durable click lineage agree |
+| Publishing | English X login is verified as `@selawmqt`, but Postiz's only X integration is Japanese `@aniccaxxx`; X body links are stripped and browser scripting is not a permitted autonomous publisher | An approved API/Postiz integration for `@selawmqt`, owned conversion page, publication receipt, public readback, disclosure, redirect, and durable click lineage agree |
 | Money | No new approved Affiliate commission exists | Provider transactions append pending/approved/reversed/paid receipts and join by strongest available attribution key |
-| Telegram | Delivery currently fails with `chat not found`; no provider `message_id` exists | Immediate events and hourly/daily/weekly summaries deliver at-most-once from the same snapshot as Life Manager |
+| Telegram | The shared Life Manager target delivered Affiliate milestone `messageId=7639`; Affiliate outbox/dedupe and Web snapshot parity are not implemented | Immediate events and hourly/daily/weekly summaries deliver at-most-once from the same snapshot as Life Manager |
 | Learning | No mature Affiliate cohort exists | One-variable experiments use external net outcomes, then KEEP or REVERT with a consumed strategy hash |
 
 ## 2. Definitions of done
@@ -62,8 +62,8 @@ commission watermark as newly attributed revenue.
 The software is complete when all of the following are true:
 
 1. One authenticated English offer has provider-owned account, terms, and
-   executable-link receipts; a dedicated English publication identity is
-   independently verified and cannot resolve to Japanese `@aniccaxxx`.
+   executable-link receipts; the English publication identity is verified as
+   `@selawmqt` and cannot resolve to Japanese `@aniccaxxx`.
 2. One English placement passes evidence, disclosure, policy,
    publication, public-readback, redirect, and click-ingest E2E tests.
 3. A real provider report can be reconciled to a placement and click/sub-ID
@@ -195,6 +195,13 @@ high-ticket offers remain quarantined until provider-channel and regulated-claim
 contracts pass. A8's current terms explicitly forbid Twitter advertising and
 ads in unregistered LINE messages, so the default conversion surface is an owned
 registered page, not X or LINE.
+
+The revenue posture is aggressive within account-survival constraints: increase
+research speed, hook variation, offer turnover, and proven capacity; never hide
+advertising, invent experience, manipulate engagement, or automate X through
+website scripting. X's April 2026 automation rules require an approved API path
+for the production loop, so the verified browser session is used for ownership,
+OAuth, and readback only.
 
 ### 4.2 Rejected: independent multi-agent swarm with separate state
 

@@ -23,11 +23,13 @@ receipts, repairs interrupted runs, and reallocates effort without daily human o
 Codex operation.
 
 English and Japanese never share one social identity, publication history,
-attribution cohort, or experiment. English is first, but publication remains
-fail-closed until a dedicated English Postiz/X identity is read back. The only
-currently verified Postiz X integration is Japanese `アニッチャ` / `@aniccaxxx`;
-it must never be used as the English surface. A dedicated Japanese canary is
-admitted only after English Gate E0.
+attribution cohort, or experiment. English is first. The verified English X
+identity is now `sela` / `@selawmqt`, logged in through the isolated
+`capafy-mkt-provision` CloakBrowser profile; legacy `@aniccaen` is not an active
+X username. The only currently verified Postiz X integration remains Japanese
+`アニッチャ` / `@aniccaxxx`, so autonomous English publication stays fail-closed
+until `@selawmqt` has an approved API/Postiz integration. A dedicated Japanese
+canary is admitted only after English Gate E0.
 
 The machine cannot guarantee $10,000, $10,000,000, or $100,000,000 revenue. It guarantees
 measurable attempts, honest receipts, bounded experiments, compliance gates, and
@@ -44,7 +46,8 @@ techniques do not merge the ledgers.
 | Amazon Associates Japan | CDP reached the Amazon sign-in page; approval state is not observable | `AUTH_REQUIRED`, no offer may publish until the account and tag are read back |
 | Rakuten Affiliate | CDP rendered the public home page with `ログイン`; approval state is not observable | `AUTH_REQUIRED`, keep the provider adapter dormant |
 | Postiz | CLI auth is valid and the live API returns 29 integrations. The only live X integration is ID `cmm6d7m5703rwpr0yr5vtme3w`, `アニッチャ` / `@aniccaxxx`; the local 31-row snapshot is stale | Keep English X publication disabled until a separate English integration is verified; refresh state from live API rather than hand-editing the snapshot |
-| X | Postiz reports a 4,000-character limit and says body links are stripped; public logged-out readback did not independently prove either expected handle | Use an owned registered page as the initial conversion surface. Treat X as receipted distribution only after identity and program/channel eligibility pass |
+| X identity | User screenshot and live browser agree on `sela` / `@selawmqt`, 27 following and 0 followers. Stored credentials produced a real `auth_token`, `/home`, and profile link `/selawmqt` in the isolated profile. X rejected legacy `@aniccaen` as inactive | Make `@selawmqt` the English identity manifest; never use Japanese `@aniccaxxx` or the shared daily-driver |
+| X publication | Postiz reports a 4,000-character limit and says body links are stripped; X's April 2026 automation rules prohibit scripted website automation | Use an owned registered page as the initial conversion surface and an approved API/Postiz adapter for autonomous distribution; browser is auth/readback/emergency-only, not the posting loop |
 | clip loop | launchd is installed, last exit code is 0, and logs show production/posting through 2026-08-01 | Not banned. Reuse its publisher, renderer, attribution, and scoring contracts |
 | recent clip runs | Contract reports `skipped`; older stderr shows Telegram DNS delivery failures | Diagnose scheduler/business gates separately from platform health |
 
@@ -69,7 +72,7 @@ live autonomous operation.
 | Publication | Planned adapters and Postiz reuse path only | No Affiliate JA/EN placement has a provider receipt plus public readback |
 | Attribution | Design and API tasks remain open | No live redirect click is joined to an ASP transaction |
 | Revenue | No new Affiliate revenue receipt | Legacy watermark, fixtures, clicks, estimates, and creator screenshots do not count |
-| Telegram | F1 milestone delivery failed twice with `chat not found` | No provider `messageId`; delivery must not be claimed |
+| Telegram | The shared Life Manager allowlist target delivered a real Affiliate milestone with provider `messageId=7639`; the older F1 path failed because it did not use this resolved target | Reuse the validated target contract and build the Affiliate durable outbox/dedupe layer; delivery identity is no longer unknown |
 | Autonomous operation | Queue, browser harness, recovery, launchd, and reports remain open | No-human-loop behavior is not yet achieved |
 
 ### 1.3 No-dry-run equivalence rule
@@ -170,6 +173,13 @@ not a claim about the current runtime.
 13. First-person experience cannot be generated when the operator has not used
     the product. Source: [FTC Disclosures 101](https://www.ftc.gov/business-guidance/resources/disclosures-101-social-media-influencers),
     “You can’t talk about your experience with a product you haven’t tried.”
+14. X allows separate language-specific brand accounts and localized cross-posts,
+    but prohibits bulk/duplicative content, aggressive automated engagement, and
+    scripted website automation. Source: [X authenticity policy](https://help.x.com/en/rules-and-policies/platform-manipulation),
+    “branded entities specific to unique locations or languages”; and
+    [X automation rules](https://help.x.com/en/rules-and-policies/x-automation),
+    “Use non-API-based forms of automation, such as scripting the X website” may
+    result in permanent suspension.
 
 Creator revenue screenshots and claims found on X are market signals only. They
 never enter earnings or train a prompt as a winner without a matching external
@@ -197,10 +207,22 @@ Every external playbook stores `source_url`, author, capture time, claim type,
 evidence grade, checked provider terms, `COPY|TWEAK|REJECT`, and reason. A prompt
 is never promoted merely because its author reports income.
 
+### 2.2 Aggressive but bounded revenue policy
+
+“Aggressive” means faster evidence collection, more creative variation, quicker
+offer replacement, and higher capacity only after positive net receipts. It does
+not mean hidden advertising, fabricated experience, unauthorized channels,
+scripted X website posting, engagement manipulation, or risking the payout
+account. The Agent may test strong hooks, contrarian angles, reply-versus-profile
+distribution, pricing frames, CTA placement, and content format one variable at
+a time. Any tactic that requires deception or threatens account/payout survival
+has negative expected value and is rejected by the deterministic gate.
+
 ## 3. Single recommended strategy
 
-Start with one narrow English buyer problem and one dedicated English identity
-that is not yet provisioned. The initial candidate set is non-regulated B2B SaaS and
+Start with one narrow English buyer problem on `@selawmqt`. Its X login is
+provisioned, but its autonomous API/Postiz publisher is not. The initial
+candidate set is non-regulated B2B SaaS and
 creator/productivity software because its official programs expose higher or
 recurring payouts and the existing English publication lane reduces launch
 friction. Exact market-size superiority is unproven and is not a premise.
@@ -403,8 +425,9 @@ Before that, revenue is `unknown`, not a fabricated conversion forecast.
 
 1. Create the Agent schema and append-only Affiliate ledger; add invariants for
    unknown, pending, approved, reversed, and paid money.
-2. Provision/read back a dedicated English Postiz integration; the currently
-   verified Japanese `@aniccaxxx` integration must fail the English manifest.
+2. Connect/read back an approved English API/Postiz integration for `@selawmqt`;
+   the currently verified Japanese `@aniccaxxx` integration must fail the
+   English manifest. Browser scripting is not a production publisher fallback.
 3. Apply to/read back at least two English candidate programs; activate only an
    actually authenticated offer with current terms and an executable link.
 4. Implement the signed redirect/sub-ID service and verify click → provider
@@ -448,8 +471,11 @@ without changing the architecture.
 
 - No English affiliate program application, approval, account ownership, or
   executable tracking link has been read back for this Agent.
-- Postiz auth and ID are now known, but they prove only Japanese `@aniccaxxx`;
-  no dedicated English Postiz/X integration exists in the live readback.
+- English X ownership/login is resolved as `sela` / `@selawmqt`; legacy
+  `@aniccaen` is inactive. The account has 0 followers, so audience baseline and
+  organic distribution power remain unproven.
+- Postiz auth and ID are known, but they prove only Japanese `@aniccaxxx`; no
+  approved English API/Postiz integration for `@selawmqt` exists in live readback.
 - Postiz strips X body links; a separately verified reply-link capability or,
   preferably, an owned registered landing page is required for conversion.
 - Amazon JP and Rakuten remain `AUTH_REQUIRED`; acceptance is unknown.
@@ -468,7 +494,8 @@ without changing the architecture.
 - F2 has a pushed implementation and root-verified focused tests, but lacks fresh
   review, live model/provider boundary proof, a clean worktree audit, and a
   collection-safe all-tests command.
-- Telegram delivery remains broken with `chat not found`; no `messageId` exists.
+- Telegram target and provider delivery are resolved by live `messageId=7639`;
+  Affiliate-specific durable outbox, snapshot parity, and dedupe remain unbuilt.
 - No production Affiliate placement, organic click, approved commission, paid
   payout, hourly/daily launchd wake, or crash-recovery E2E exists yet.
 - `ai.anicca.affiliate-hourly` and `ai.anicca.affiliate-daily` are not registered
