@@ -2447,6 +2447,11 @@ O1B-25進捗85（P0-11 next-wake reselection proof / LIVE GREEN）: run 113後�
 成功event `u12izq9i` / `a206zjkz`は各delivery一件、既知失敗event 4件にも新しいattemptは追加されず、last-resultはwrite=nullだった。
 これで次wakeが成功eventをcoverage restorationで、terminal known failureをactive suppressionで再選択しないことをlive実証した。
 
+O1B-25進捗86（P0-13 non-destructive health readback）: run 113後に実`healthcheck.sh`をread-only実行し、
+`{"status":"healthy"}`、healthcheck launchd run 877、last exit 0、interval 60秒を確認した。Connector本体はinterval 300秒で、
+coverage継続中のexit 1を`runtime_incomplete`としてdurable stateへ残す一方、fresh heartbeatとCDP/gog dependencyが正常ならhealthcheckはhealthyになる。
+Mac再起動後の自動復帰、stale heartbeat self-heal、launchd再loadはまだ未実証なのでP0-13 checkboxは未完のまま維持する。
+
 完全な残TODO SSOT:
 
 **P0 — task deliveryを前進させる（最優先）**
