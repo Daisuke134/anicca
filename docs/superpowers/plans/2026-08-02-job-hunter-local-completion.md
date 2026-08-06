@@ -3791,10 +3791,17 @@ OpenTelemetry decision and primary sources:
       provider contract. Use the pinned employer/site patterns, bound pagination and
       timeouts, retain official posting provenance, and enqueue only through the
       existing queue. Prove restart replay and expired/unlisted classification.
-      - [ ] `L-49K5B2a` — Implement the bounded Workday CXS provider contract with
+      - [x] `L-49K5B2a` — Implement the bounded Workday CXS provider contract with
         strict HTTPS Workday-host validation, safe tenant/site identifiers, POST
         payload, timeout/no-redirect requirements, bounded pagination, direct official
         job URLs, and inactive/malformed classification. No persistence in this slice.
+        - Evidence: `job_search_loop/workday_discovery.py` independently implements
+          the pinned CXS contract with zero copied source lines. It permits only fixed
+          HTTPS `myworkdayjobs.com`/`myworkdaysite.com` subdomains, validates tenant,
+          site and relative job paths, requires 12-second no-redirect requests, and
+          caps both pages and results. Active rows retain official Workday provenance;
+          inactive and malformed rows are counted but not emitted. Focused provider
+          tests pass 3/3.
       - [ ] `L-49K5B2b` — Pin the adopted employer/site registry, pass B2a results
         through the existing `CandidateQueue`, and prove canonical dedupe, official
         provenance, inactive exclusion, and restart replay without a second database.
