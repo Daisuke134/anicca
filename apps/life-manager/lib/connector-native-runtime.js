@@ -254,6 +254,7 @@ async function runNativeConnectorPass(input = {}) {
     if (!isVerifiedGoogleCalendarBusyInventory(busyInventory) || busyInventory.transport !== "gog") unavailable();
 
     let write = null;
+    const candidateAttempts = [];
     if (Object.hasOwn(config, "profilePath")) {
       const readProfile = factory(deps, "readProfile", readConnectorProfile);
       const verifyProfile = factory(deps, "isVerifiedConnectorProfile", isVerifiedConnectorProfile);
@@ -343,6 +344,13 @@ async function runNativeConnectorPass(input = {}) {
           ...(deps.writeDependencies || {}),
         });
         const candidateOutcome = classifyConnectorCandidateOutcome(write);
+        candidateAttempts.push(Object.freeze({
+          event_ref: candidateOutcome.event_ref,
+          outcome: candidateOutcome.classification,
+          safe_reason: candidateOutcome.error_code || write.outcome,
+          observed_at: now,
+          retry_after: null,
+        }));
         if (candidateOutcome.classification !== "known_no_effect") break;
       }
     }
@@ -381,6 +389,7 @@ async function runNativeConnectorPass(input = {}) {
       }),
       candidate,
       write,
+      candidate_attempts: Object.freeze([...candidateAttempts]),
       continuation: Object.freeze({
         status: continuation.status,
         open_date_count: continuation.open_date_count,

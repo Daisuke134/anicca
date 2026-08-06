@@ -483,6 +483,19 @@ test("a known unavailable Luma RSVP skips to the next ranked candidate", async (
     "luma-event://event/founder-night",
     "luma-event://event/agent-night",
   ]);
+  assert.deepEqual(result.candidate_attempts, [{
+    event_ref: "luma-event://event/founder-night",
+    outcome: "known_no_effect",
+    safe_reason: "LUMA_RSVP_UNAVAILABLE",
+    observed_at: NOW,
+    retry_after: null,
+  }, {
+    event_ref: "luma-event://event/agent-night",
+    outcome: "verified_success",
+    safe_reason: "open_coverage",
+    observed_at: NOW,
+    retry_after: null,
+  }]);
 });
 
 test("native runtime exposes only its bounded failing stage", async () => {

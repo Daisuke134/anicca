@@ -2269,13 +2269,20 @@ submit前の`unavailable`として判定し、adapterは副作用なしの`LUMA_
 実行するtestを追加し、修正前は一件目で停止してRED、runtimeを4分類contractの`known_no_effect`判定へ接続してGREENにした。
 focused 9/9、`npm run test:outbound`はpretest 12/12・outbound 289/289。attempt履歴未実装のため、次wakeでの再選択抑止はまだ未完。
 
+O1B-25進捗61（P0-3 candidate attempt append-only state / RED→GREEN）: 同一passで複数候補を試してもruntimeが
+最後の`write`しか返さず、native-passもpositive delivery receipt以外を保存しないdata lossを修正した。runtimeは各write直後に
+`event_ref / outcome / safe_reason / observed_at / retry_after`だけのbounded projectionを作り、native-passはschema検証した最大100件を
+owner-only `candidate-attempts.jsonl`へ一括appendする。実装前はruntime側が`undefined`、state側が`ENOENT`でRED。実装後は
+runtime/classification 9/9、native entrypoint 18/18、pretest 12/12、outbound 289/289がfresh GREEN。次のP0-4でこの履歴を
+次wakeのinventory/ranking suppressionへ接続するまでは、保存はされても再選択防止にはまだ使われない。
+
 完全な残TODO SSOT:
 
 **P0 — task deliveryを前進させる（最優先）**
 
 1. [x] candidate outcomeの4分類contractとtable-driven testを追加する。focused 2/2、outbound 289/289。
 2. [x] `LUMA_RSVP_UNAVAILABLE`、`LUMA_FORM_INPUT_REQUIRED`、満席、受付終了を`known_no_effect`へ正規化する。focused 9/9、outbound 289/289。
-3. append-only `candidate-attempts.jsonl`を作り、event ref、outcome、safe reason、observed_at、retry_afterを保存する。
+3. [x] append-only `candidate-attempts.jsonl`を作り、event ref、outcome、safe reason、observed_at、retry_afterを保存する。runtime 9/9、native 18/18、outbound 289/289。
 4. active window内のterminal known failureをinventory/rankingから除外し、event状態変更またはretry_after後だけ再検査する。
 5. 同日候補をすべて順番に試し、同日枯渇時は同じpassで次open日へ進む。
 6. pass budget到達時はdate/candidate cursorを保存し、次wakeで続きから再開する。

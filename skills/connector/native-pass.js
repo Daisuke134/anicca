@@ -138,7 +138,39 @@ function boundedResult(result) {
     unavailable: Number(counts.unavailable || 0),
   });
   if (Object.values(coverageCounts).some((value) => !Number.isSafeInteger(value) || value < 0)) unavailable();
-  return Object.freeze({ status, complete, write, coverageCounts });
+  const candidateAttempts = Array.isArray(result.candidate_attempts)
+    ? result.candidate_attempts.map((attempt) => {
+      if (
+        !attempt || typeof attempt !== "object" || Array.isArray(attempt)
+        || Object.keys(attempt).sort().join(",") !== "event_ref,observed_at,outcome,retry_after,safe_reason"
+        || !/^luma-event:\/\/event\/[A-Za-z0-9_-]+$/.test(String(attempt.event_ref || ""))
+        || !["verified_success", "known_no_effect", "unknown_effect", "recovery_required"].includes(attempt.outcome)
+        || !/^[A-Za-z0-9_:-]{1,100}$/.test(String(attempt.safe_reason || ""))
+        || new Date(Date.parse(String(attempt.observed_at || ""))).toISOString() !== attempt.observed_at
+        || !(attempt.retry_after === null
+          || new Date(Date.parse(String(attempt.retry_after || ""))).toISOString() === attempt.retry_after)
+      ) unavailable();
+      return Object.freeze({ ...attempt });
+    })
+    : [];
+  if (candidateAttempts.length > 100) unavailable();
+  return Object.freeze({ status, complete, write, candidateAttempts: Object.freeze(candidateAttempts), coverageCounts });
+}
+
+function appendCandidateAttempts(stateDir, attempts) {
+  if (!attempts.length) return;
+  const historyFile = path.join(stateDir, "candidate-attempts.jsonl");
+  try {
+    const stat = fs.statSync(historyFile);
+    if (stat.size > 10_000_000) unavailable();
+  } catch (error) {
+    if (!error || error.code !== "ENOENT") throw error;
+  }
+  fs.appendFileSync(
+    historyFile,
+    `${attempts.map((attempt) => JSON.stringify(attempt)).join("\n")}\n`,
+    { encoding: "utf8", mode: 0o600 },
+  );
 }
 
 function appendDeliveryReceipt(stateDir, write) {
@@ -174,6 +206,7 @@ function recordLastResult(stateDir, bounded) {
     encoding: "utf8", mode: 0o600,
   });
   appendDeliveryReceipt(stateDir, bounded.write);
+  appendCandidateAttempts(stateDir, bounded.candidateAttempts);
 }
 
 function migrateLastResult(stateDir) {
