@@ -10,7 +10,7 @@ TELEGRAM_OUTBOX="$JOB_SEARCH_STATE_ROOT/telegram-outbox.sqlite3"
 RESULT_PATH="$EVIDENCE/browser-worker-result.json"
 FILL_CANARY_REQUEST="$JOB_SEARCH_STATE_ROOT/ashby-fill-canary-request.json"
 FILL_CANARY_ACTIVE=0
-export JOB_SEARCH_SUBMIT_ENABLED=0
+export JOB_SEARCH_SUBMIT_ENABLED=1
 export JOB_SEARCH_ASHBY_APPLY_MODULE="job_search_loop.ashby_apply"
 export JOB_SEARCH_ASHBY_APPLY_RESULT="$EVIDENCE/ashby-apply-result.json"
 if [[ -f "$FILL_CANARY_REQUEST" ]]; then
