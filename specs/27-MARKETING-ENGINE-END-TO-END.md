@@ -1637,23 +1637,52 @@ Every generated script carries `script_id`, version, product/account IDs, langua
 
 The scorer stores four distinct scores instead of one fake “viral score”: attention/retention, qualified click, purchase/order, and retained revenue/contribution. A high-view script with no qualified clicks may improve opening craft but cannot become the sales winner. A lower-view script with materially better orders or retained revenue may become the business winner. No winner/loser is emitted before the declared cohort and delay are mature.
 
-## 6. Legacy cron disposition
+## 6. Legacy cron disposition and migration inventory
 
-Verified local state on 2026-08-01:
+Current verified local state supersedes the earlier declared-count-only inventory:
 
-- Larry LaunchAgents declare 22 publication triggers/day across 11 posting jobs.
-- ReelClaw LaunchAgents declare 18 publication triggers/day across 12 card/widget/Anicca/Honne jobs.
-- Watercolor has three JP publication triggers/day.
-- Six additional publication crons are enabled inside OpenClaw, for a cross-runtime declared total of up to 49/day.
-- Marketing metrics, post metrics, score, and dashboard jobs are loaded, but they do not yet form a truthful closed loop.
-- Several loaded jobs last exited non-zero, including Larry strategy updater and multiple ReelClaw card/widget jobs.
+- OpenClaw's public CLI view and its current `~/.openclaw/cron/jobs.json` disagree. The on-disk store still enables `4.7-slideshow-morning`, which publishes through Postiz to the legacy `anicca-en` identity. That identity is absent from the canonical account registry. A CLI listing is therefore not proof that a publisher is inactive.
+- The Larry, ReelClaw, Honne, and watercolor LaunchAgent plists remain on disk but the inspected producer labels are unloaded. Their schedules, account IDs, fixed strings, craft rules, histories, and scripts remain migration inputs—not production ownership proof.
+- `profitable-claude/marketing/engine` already contains a useful product-independent core: product/channel/slice composition, strict product-pack isolation, producer manifests, artifact/publication/metric/reward schemas, bounded one-rule learning, canary rollback, and proof that the next run consumed the promoted weight hash. The migration imports these contracts into the Life Manager SSOT instead of recreating them or keeping a second engine.
+- Life Manager's truth/report jobs are loaded, but creative producers and learning write-back are not yet owned by one canonical supervisor. The loaded `self-improve-evolve` label is not a marketing creative learner.
 
-Disposition:
+### 6.1 Exact producer cron families to migrate
 
-- **Retire as schedulers:** every `larry-*`, `reelclaw-*`, and `watercolor-jp-*` LaunchAgent. Their useful templates/renderers may be called by a canonical lane worker, but they no longer own clocks or accounts.
-- **Migrate:** `marketing-metrics*`, `marketing-post-metrics`, `marketing-score-daily`, and `marketing-dashboard` into leased jobs after their collectors pass the truth contract.
-- **Out of marketing scope:** Capafy, article self-improve, life-manager, conformity/janitor monkey, and unrelated revenue/runtime jobs. They do not appear in this engine's daily posting count or marketing success report.
-- **No duplicate ownership:** during shadow, only the legacy or new worker may perform an external post for a publication key, never both.
+“Migrate” means preserve the useful account/craft/config/state as a producer manifest and adapter. It does **not** mean preserve one cron process per account.
+
+| Product/capability | Legacy cron or LaunchAgent labels discovered | Migration decision |
+|---|---|---|
+| Generic mobile-app slideshow (`Larry`) | `larry-anicca-ja-v1`, `larry-anicca-ja-v2`, `larry-anicca-en-v1`, `larry-anicca-en-v2`, `larry-anicca-en-v3`; older `larry-anicca-{ja,en}-*`, `larry-jp-sunset-*`, `larry-ja-male-{buddha,cta}-*`, `larry-en-female-*` variants | Import fixed strings, language, backgrounds, safe frames, history scopes, Postiz destinations, and craft rules into account/brand profiles. One shared `slideshow-listicle` producer replaces all clocks. Unmapped variants stay quarantined; they never inherit a product by name guessing. |
+| Mobile-app demo stitcher (`ReelClaw`) | `reelclaw-{ja,en}-{card,widget}-*`; `reelclaw-anicca-{ja,en}-{card,widget}-*` | Import demo assets, hook/video mapping, language, card/widget form, destination identity, and stitch procedure into one `app-demo-stitch` producer. “ReelClaw” becomes an adapter name, not an agent or scheduler. |
+| Honne demo/video | `reelclaw-honne-ja`, `reelclaw-honne-ja-fresh`, `reelclaw-honne-en`; historical `reelclaw-honne-{ja,en}-*` | Import as Honne product/account profiles using the same generic demo-stitch contract. JP and EN evidence remain separate cohorts. |
+| Japanese ebook watercolor | `watercolor-jp-morning`, `watercolor-jp-noon`, `watercolor-jp-evening`; OpenClaw `watercolor-jp-0700`, `watercolor-jp-2000`, `watercolor-monk-noon` | Import locked watercolor character/voice/reference assets, script bank and rotation state into one `watercolor-monk` producer for `ebook-ja`. Three legacy clocks become cadence entries in the product manifest. |
+| English ebook fixed-avatar monk | `monk-factory-en-0800`, `monk-factory-en-1400`, `monk-factory-en-2100`, `monk-factory-en-recovery`, `yangmun-monk-noon`, `yangmun-monk-evening` | Import owned avatar identity, voice, script bank, caption style, backgrounds, history, and destinations. Do not migrate HeyGen execution or its recovery cron. The provider-neutral `avatar-monk` producer uses a stable faceless/slideshow safety lane; OmniAvatar remains a challenger until the existing ten-clip, license-chain, visual-quality, cost, reliability, and business-lift gates pass. |
+| Active legacy 4.7 slideshow | OpenClaw `4.7-slideshow-morning`; disabled `4.7-slideshow-ja-morning` | Import the account, slideshow format, history and successful creative receipts only. Do not migrate the Apify dependency or model-owned OpenClaw prompt. Free research adapters and the canonical decision stage replace them. The currently unmapped `anicca-en` destination must be resolved before any handoff. |
+| Upstream learning/research | `larry-strategy-updater`, `larry-trend-hunter-{ja,en}`, `larry-library-filler`, `anicca-pattern-jsonl-refiller` | Import evidence and useful mechanism history. Retire the independent clocks and old `50K views`/`<1K twice` mutation policy; canonical attribution and business-aware bounded learning replace them. |
+| Truth/reporting | `marketing-owner-events`, `marketing-owner-daily`, `marketing-owner-weekly`, `marketing-metrics-daily`, `marketing-score-daily`, `marketing-dashboard`, plus legacy `marketing-post-metrics` | Keep the verified collectors/reporters as stages, remove duplicate/paid legacy collectors, and invoke them from one supervisor/queue contract. Reporting never owns creative generation. |
+
+Excluded from this migration: Capafy/Life Manager's current clipping/account-provisioning publisher, comedy/music/article jobs, OpenClaw conformity/janitor jobs, and unrelated earning loops. The Life Manager clipping lane shares the same metric, attribution, learning, and report contracts later, but keeps its distinct producer/publisher adapter until the in-house account lane is reliable.
+
+### 6.2 Zero-downtime ownership transfer
+
+Each account moves independently through this state machine; bulk cutover is forbidden.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Inventoried
+    Inventoried --> Mapped: product + account + integration + state proven
+    Mapped --> Shadowing: new worker decides/renders without publishing
+    Shadowing --> Ready: 3 equivalent scheduled turns + artifact receipts
+    Ready --> Handoff: acquire account publication lease
+    Handoff --> Canonical: one real new-worker post + native receipt + metrics
+    Handoff --> LegacyOwner: any publication or identity failure
+    Canonical --> LegacyDisabled: natural next legacy schedule is suppressed
+    LegacyDisabled --> Soak: 7 days, zero missed or duplicate posts
+    Soak --> Migrated
+    Soak --> LegacyOwner: rollback lease ownership, not data
+```
+
+The legacy worker continues posting during `Inventoried`, `Mapped`, and `Shadowing`. At `Handoff`, both runtimes may compute but only the account lease holder may call Postiz. No code path disables a legacy schedule before a successful canonical native receipt and a tested rollback.
 
 ## 7. Metric truth contract
 
@@ -2137,10 +2166,10 @@ E2E judgment:
 
 The prior plan incorrectly treated the product accounts and producers as absent and made a human-built `aniccaios` creative the first slice. Verified reality is different: product-specific Postiz accounts and OpenClaw-era ReelClaw/Larry/watercolor producers already exist, but their marketing crons were quarantined during the 2026-08-01 migration and were never closed into one launchd-owned learning loop. The system, not the implementation agent or owner, MUST generate and mutate creatives.
 
-1. **Establish complete runtime truth, duplicate safety, and truthful owner reporting.** Inventory all effective scheduler stores before migration: OpenClaw CLI output, its on-disk `jobs.json`, launchd, and product/account registries MUST reconcile, and every enabled publishing path MUST map to exactly one product and account. Add a cross-scheduler publication lease/duplicate guard before moving schedules. Preserve every known product/account/Postiz mapping, make the exact native post ID and URL mandatory, and collect every available `views`, `impressions`, `likes`, `comments`, `shares`, `saves`, and derived engagement rate. Postiz remains the first adapter; a provider-empty response falls through to a free official/native/public adapter. Product reports also expose ASC downloads and country breakdown, RevenueCat MRR/trials/subscriptions/revenue, and the configured product-analytics source. Telegram MUST render the values and clickable post link already present in evidence, never discard them or print `None`; `not_instrumented`, `credential_missing`, `provider_empty`, `not_mature`, and measured zero are distinct states. **Done:** no enabled publisher or account is unowned, an old-enough real post on every active platform produces a ledger-backed Telegram message whose displayed fields equal the source evidence, overlap cannot duplicate a publication, and replay sends no duplicate message.
-2. **Migrate the existing product agents into one launchd control plane.** Inventory and import the disabled OpenClaw jobs, existing Postiz integrations, schedules, prompt/content libraries, ReelClaw/Larry/watercolor generators, and account histories into four product manifests: `aniccaios`, `honne`, `ebook-ja`, and `ebook-en`. Life Manager's separate publishing pipeline is not migrated here; it consumes the same measurement/learning contracts later. Run shadow equivalence before disabling any surviving legacy schedule. **Done:** launchd is the only scheduler for these four products, every account remains product-isolated, each product maintains a seven-day publication horizon, and no creative is manually produced by the implementation agent.
+1. **Establish complete runtime truth, duplicate safety, and truthful owner reporting.** First generate a machine-readable inventory from every effective scheduler/config source: OpenClaw CLI, current and backup `jobs.json`, launchd plists plus loaded state, `profitable-claude` producer/account configs, canonical product/account registries, and actual Postiz/native receipts. Reconcile each external publisher to `tenant_id + product_id + account_id + integration_id + producer_id + state roots`; unresolved identities remain quarantined. Add the cross-runtime account publication lease before any migration. Then close the report projection: exact native link plus every available social metric, ASC downloads/territories, RevenueCat outcomes, analytics source state, and explicit named-null reasons. **Done:** the inventory accounts for 100% of enabled side-effect paths and every registered account; no enabled publisher is unmapped; real source fixtures equal Telegram fields; overlap cannot duplicate a post; replay sends no duplicate message.
+2. **Absorb the existing shared engine and migrate accounts one by one without stopping daily publication.** Import the useful product-independent contracts already proven in `profitable-claude/marketing/engine` into this SSOT, then represent Larry, ReelClaw, Honne, watercolor and English avatar systems as producer adapters plus product/account/brand manifests—not cron-owned agents. Preserve assets, fixed identities, scripts, histories, craft rules, schedules, and verified Postiz settings; remove OpenClaw paths, prompts, schedulers, paid Apify, and HeyGen execution dependencies. For each account run `inventory -> mapping -> three-turn non-publishing shadow -> leased handoff -> one real native receipt -> suppress next legacy turn -> seven-day soak`; rollback restores lease ownership without deleting evidence. Life Manager's current clipping/account-provisioning lane remains a separate publisher adapter but consumes the shared outcome/learning contract. **Done:** one Life Manager supervisor is the only clock for the four seed products, no runtime imports `~/.openclaw` or `profitable-claude`, daily publication has no gap or duplicate, and adding a product/account requires manifests and assets—not new scheduler code.
 3. **Close autonomous learning, artifact verification, and self-healing.** Join native post metrics and business outcomes to immutable experiment/creative IDs; feed the result into the exact hook, script, CTA, renderer, and format pools consumed by the next generator run. Record source asset hashes and semantic creative signatures, reject accidental repeats, promote evidenced winners, retire only after at least three comparable observations, and reserve at least 20% exploration. Bounded retry, correction/backfill, lease recovery, dead-letter ownership, credential incidents, and artifact-diff evidence are part of the same loop. **Done:** two successive real runs prove that measured evidence changed the next agent decision and artifact, while replay and overlap tests prove zero duplicate external actions.
-4. **Kickstart, prove, soak, then scale all four autonomous economies.** Kickstart the real launchd agent for `aniccaios`, then `honne`, `ebook-ja`, and `ebook-en`; verify generation, visual preflight, Postiz publication, native reconciliation, social checkpoints, business outcome, learning write-back, next scheduling, and truthful Telegram output without a human turn. Run a seven-day shadow/soak before final cutover. Enforce executable `$0 -> $1k -> $3k -> $10k` gates: apps target `$10k gross MRR`; each ebook language product targets `$10k gross monthly revenue`, not MRR. **Done:** every scale increase uses that product's own complete cohort, positive contribution, declared payback, and repeatable results; views alone can never authorize scale.
+4. **Kickstart, prove, soak, then scale all four autonomous economies.** Kickstart the real launchd agent for `aniccaios`, then `honne`, `ebook-ja`, and `ebook-en`; verify generation, visual preflight, Postiz publication, native reconciliation, social checkpoints, business outcome, learning write-back, next scheduling, and truthful Telegram output without a human turn. Run a seven-day shadow/soak before final cutover. First enforce executable `$0 -> $1k -> $3k -> $10k` gates: apps target `$10k gross MRR`; each ebook language product targets `$10k gross monthly revenue`, not MRR. After one product proves `$10k`, scale through independent profitable accounts, channels, markets and worker capacity toward `$100k -> $1m -> $10m`, using the stricter evidence and operational gates in §15.8. **Done:** every scale increase uses that product's own complete cohort, positive contribution, declared payback, repeatable results, and bounded concentration/risk; views alone can never authorize scale.
 
 #### 15.6.1 Verified current state and corrected active slice
 
@@ -2161,8 +2190,12 @@ Product agents own configuration and state; shared stages own behavior. Generato
 skills/earn/marketing-engine/
 ├── contracts/                 # schemas: intent, receipt, metric, outcome, decision
 ├── registry/
-│   ├── accounts/              # existing Postiz account/integration mappings
-│   ├── products/              # economics and source configuration
+│   ├── tenants/               # owner, plan, quota, deployment placement
+│   ├── products/              # economics, claims, destination, outcome contract
+│   ├── accounts/              # product-locked native/Postiz identities
+│   ├── brands/                # avatar, voice, visual system, reusable asset sets
+│   ├── producers/             # slideshow, app-demo-stitch, watercolor, avatar
+│   ├── publishers/            # Postiz now; in-house native lane later
 │   └── channels/              # platform capabilities and fallback policy
 ├── agents/
 │   ├── aniccaios/manifest.json
@@ -2172,6 +2205,7 @@ skills/earn/marketing-engine/
 ├── runtime/
 │   ├── supervisor.py          # launchd entry point and schedule ownership
 │   ├── product_worker.py      # one complete product turn
+│   ├── task_queue.py          # local SQLite / cloud durable queue interface
 │   ├── leases.py              # idempotency, fence, retry, dead letter
 │   └── health.py              # durable recovery ownership
 ├── stages/
@@ -2187,12 +2221,16 @@ skills/earn/marketing-engine/
 │   └── report/                # truthful compact Telegram projection
 ├── adapters/
 │   ├── generators/            # reelclaw.py, larry.py, watercolor.py
-│   ├── publishers/            # postiz.py
+│   ├── publishers/            # postiz.py, native_account.py (quarantined)
+│   ├── models/                # Luna/OpenAI/Hermes/OpenClaw harness boundary
+│   ├── assets/                # local filesystem / S3-compatible object store
+│   ├── secrets/               # local keychain/env / cloud secret manager
 │   └── metrics/               # Postiz, native/free social, ASC, RevenueCat,
 │                              # Mixpanel/PostHog, KDP/direct sales
 ├── state/                     # one canonical append-only ledger family
 ├── evidence/                  # immutable receipts, artifacts, screenshots
 ├── launchd/                   # one supervisor plus product manifests
+├── cloud/                     # API, queue worker, autoscaling deployment
 ├── migrations/openclaw/       # cron inventory, mapping, equivalence receipts
 └── tests/                     # contracts, integration, live E2E, replay/overlap
 ```
@@ -2219,6 +2257,84 @@ flowchart LR
     J --> T2["Telegram truthful result + next change"]
     N --> O
 ```
+
+#### 15.6.4 One engine, two execution placements, many tenants
+
+The engine contract is deployment-neutral. `launchd`, OpenClaw, Hermes, Codex, Luna, or a cloud workflow service may wake a worker, but none owns product state, account truth, learning policy, or publication identity. Harnesses are replaceable execution adapters.
+
+```mermaid
+flowchart TB
+    UI["Life Manager Web/App<br/>products · agents · accounts · evidence"]
+    API["Multi-tenant control plane API<br/>auth · quota · manifests · schedules"]
+    DB[("PostgreSQL<br/>tenant-scoped metadata + leases")]
+    Q["Durable task queues<br/>tenant/product/account partitions"]
+    OBJ[("Object storage<br/>assets · renders · receipts")]
+
+    UI --> API
+    API --> DB
+    API --> Q
+
+    subgraph Local["Bring-your-own computer"]
+        LD["launchd<br/>keeps one worker alive"]
+        LW["Local Life Manager worker<br/>same engine package"]
+        LF[("SQLite + local files<br/>offline/local cache")]
+        LD --> LW
+        LW --> LF
+    end
+
+    subgraph Cloud["Life Manager Cloud subscription"]
+        CW1["Cloud worker 1"]
+        CW2["Cloud worker N"]
+        AUTO["autoscaling + per-tenant quotas"]
+        AUTO --> CW1
+        AUTO --> CW2
+    end
+
+    Q --> LW
+    Q --> CW1
+    Q --> CW2
+    LW --> OBJ
+    CW1 --> OBJ
+    CW2 --> OBJ
+    LW --> DB
+    CW1 --> DB
+    CW2 --> DB
+
+    ENGINE["Shared Marketing Engine<br/>observe · decide · generate · publish · measure · learn"]
+    LW --- ENGINE
+    CW1 --- ENGINE
+    CW2 --- ENGINE
+
+    POSTIZ["Postiz production lane"]
+    NATIVE["In-house account/native lane<br/>quarantined until reliable"]
+    ENGINE --> POSTIZ
+    ENGINE -. later .-> NATIVE
+```
+
+Local placement is not a different product: it runs the same manifests, schemas, stage code, and receipts with a local queue/storage implementation. Cloud placement stores durable tenant metadata in PostgreSQL, large artifacts in object storage, and work in partitioned queues; workers are horizontally replaceable. Every durable entity carries `tenant_id`, then `product_id`, `account_id`, `campaign_id`, and `publication_id` where applicable. Database row-level isolation, object-key prefixes, queue routing, secrets, quotas, costs, and reports all enforce the tenant boundary.
+
+The web app is a projection and control surface, not another engine. It shows the complete catalog of agents/loops, their deployment placement, schedules, account ownership, evidence, metrics, revenue gates, incidents, and next experiment. A user who owns a computer can attach a local worker; a phone-only user buys cloud execution. Moving one product from local to cloud changes placement and secret/asset providers, not its marketing logic or learned state.
+
+This follows the durable-worker separation described by Temporal: workers poll task queues and execute code, while the orchestration service owns state transitions; production can run a fleet of worker processes. Source: <https://docs.temporal.io/workers>. Temporal is a reference architecture here, not a required dependency for the local migration. The first local proof retains the tested SQLite lease; cloud promotion requires the PostgreSQL/queue contract and cross-worker fence tests.
+
+#### 15.6.5 Product and account scale without hard-coded agents
+
+Adding a newly built app or feature is a data onboarding transaction:
+
+```text
+product context + destination + economics + approved claims
+  + owned demo/screenshots/video/assets
+  + one dedicated account or approved existing product account
+  + allowed producer/brand profiles
+  + attribution and revenue adapters
+  -> validated product pack
+  -> initial bounded experiments
+  -> autonomous daily loop
+```
+
+A mobile app agent is not `AniccaAgent` or `HonneAgent` code. It is the shared engine composed with a mobile-app product pack, one or more product-locked account packs, and producers such as `slideshow-listicle` or `app-demo-stitch`. An ebook agent is the same engine composed with ebook economics and an identity-preserving producer: watercolor for the current Japanese account, fixed-avatar monk for the current English account. Avatar identity may remain fixed while script, hook, background, pacing, captions, proof, CTA, and destination treatment vary under declared experiments.
+
+One successful product can add accounts without copying an agent. Each new account receives its own audience/brand profile, Postiz/native identity, exploration budget, history, baseline, and account-level weights while inheriting only mature product-level mechanisms as challengers. Account results never pool blindly; the engine learns at `tenant/product/account/channel/format` scope and promotes upward only after comparable evidence.
 
 ### 15.7 Ideal owner experience in Telegram
 
@@ -2279,7 +2395,7 @@ The loop does not “earn `$10k`” by maximizing views. It repeatedly finds the
 
 ```mermaid
 flowchart TD
-    Goal["Product target<br/>App: $10k gross MRR<br/>Ebook: $10k monthly gross"]
+    Goal["Product growth ladder<br/>$10k → $100k → $1m → $10m monthly"]
     Observe["Observe current funnel<br/>reach → click → install/order → paid → retained revenue"]
     Bottleneck["Select deepest reliable bottleneck"]
     Hypothesis["Create one-variable hypothesis<br/>hook · CTA · renderer · offer · paywall"]
@@ -2292,7 +2408,7 @@ flowchart TD
     Win["Promote winner<br/>≤80% exploitation · ≥20% exploration"]
     Gate{"Scale gate passed?"}
     Hold["Hold volume<br/>fix contribution, churn, or payback"]
-    Scale["Increase bounded volume<br/>$0 → $1k → $3k → $10k"]
+    Scale["Increase bounded capacity<br/>volume → accounts → channels → markets"]
     Memory["Write evidence to product memory"]
     Telegram["Report link, money, decision, next test"]
 
@@ -2314,9 +2430,12 @@ At each gate, the agent uses the product's own receipts:
 | `$0 -> $1k/month` | first attributed paid cohort, complete revenue/refund/cost, positive contribution | repeat the winning mechanism under the same cap |
 | `$1k -> $3k/month` | at least three mature repeatable cohorts and acceptable payback/churn | increase output or spend by one bounded step |
 | `$3k -> $10k/month` | contribution stays positive at higher volume; retention and channel concentration remain inside limits | diversify winning variants/channels while preserving 20% exploration |
+| `$10k -> $100k/month` | at least two independently profitable acquisition lanes or account cohorts, stable retention/refund economics, and no single account/provider as an uncontrolled failure point | add product-dedicated accounts, creative identities, languages or channels through manifests; scale workers and quotas, not copied agent code |
+| `$100k -> $1m/month` | multiple markets with product-level unit economics, capacity forecasts, fraud/policy controls, support and cash-flow limits, and cohort evidence that survives regional/channel expansion | allocate portfolio capital across proven markets; isolate tenant/product/account risk and keep automatic rollback per lane |
+| `$1m -> $10m/month` | durable multi-region operations, financial controls, compliance, incident response, channel/provider redundancy, and executive-level contribution/retention forecasts | treat each product/market lane as a bounded business unit; the engine recommends and executes only within explicit capital, policy and risk envelopes |
 | Gate fails | missing evidence, negative contribution, bad payback, rising churn, or concentration breach | stop scaling, notify Telegram, and run the next bottleneck experiment |
 
-No finite implementation can guarantee market demand. The completed system guarantees truthful observation, bounded autonomous experiments, evidence-based scaling, and visible stopping conditions.
+No finite implementation can guarantee market demand or any revenue threshold. The completed system guarantees truthful observation, bounded autonomous experiments, evidence-based capacity/account expansion, and visible stopping conditions. `$10k` validates one repeatable product economy; later thresholds require adding independent profitable capacity rather than merely posting the same creative more often.
 
 Primary-source alignment:
 
