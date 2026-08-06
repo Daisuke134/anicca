@@ -243,7 +243,18 @@ if os.path.isdir(incident_dir):
     for name in os.listdir(incident_dir):
         incident = load_json(os.path.join(incident_dir, name))
         if incident and incident.get("phase") != "verified": active_incidents.append(incident)
-active_incidents.sort(key=lambda item: item.get("updated_at", ""), reverse=True)
+# Incident `updated_at` is mutable metadata (for example, a retry heartbeat).
+# The canonical event projection deliberately orders incident phases by their
+# immutable phase timestamp, so selecting by updated_at here can make the
+# monitor disagree with its own projection and keep an older incident stuck in
+# `detected` forever. Use the current phase transition time as the authority,
+# with updated_at only for legacy records that predate phase_timestamps.
+def incident_order_key(item):
+    phase = str(item.get("phase") or "")
+    phase_times = item.get("phase_timestamps") or {}
+    return str(phase_times.get(phase) or item.get("updated_at") or "")
+
+active_incidents.sort(key=incident_order_key, reverse=True)
 incident = active_incidents[0] if active_incidents else None
 portfolio = load_json(portfolio_path)
 experiment_products = [
