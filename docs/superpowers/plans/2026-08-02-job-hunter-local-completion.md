@@ -2990,9 +2990,20 @@ OpenTelemetry decision and primary sources:
         rotation, and loopback health endpoint. Contract test passes 1/1, adjacent
         pin/telemetry tests pass 13/13, and the full suite passes 490/490. Exact
         Collector binary validation remains the first gate of O5b.
-    - [ ] `L-49K0C2O5b` — Install the exact pinned darwin-arm64 Collector binary and a
+    - [x] `L-49K0C2O5b` — Install the exact pinned darwin-arm64 Collector binary and a
       dedicated resident LaunchAgent, then prove checksum, restart, loopback-only
       listener, and non-blocking exporter failure (3 files, soft target 100 LOC).
+      - Completion receipt: RED proved no dedicated LaunchAgent/installer existed.
+        GREEN verifies the official v0.158.0 archive SHA-256 before installing a
+        versioned mode-0500 binary, installs the OTel 1.44 SDK from the O1 hash-lock
+        into the actual resident Python with `uv`, writes a mode-0600 plist and trace
+        file, and retries only the dedicated launchd bootstrap across unload races.
+        Real E2E reports Collector v0.158.0 running, restart PID 39212 -> 39664,
+        health ready, OTLP 4318 and health 13133 bound only to `127.0.0.1`, and one
+        resident-Python `hourly_pass` span decoded from the private mode-0600 JSONL.
+        Browser Use and OTel import together. The existing broken-backend test proves
+        exporter initialization failure is non-fatal. Focused launchd/observability
+        tests pass 10/10 and the full suite passes 491/491.
     - [ ] `L-49K0C2O5c` — Add private indexed trace queries and 30-day/size-bounded
       retention for pass/candidate/route timelines, failure classes, confirmation,
       repair, promotion/rollback, and resumed outcome. Grafana remains optional for

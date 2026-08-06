@@ -41,6 +41,33 @@ class LaunchdTests(unittest.TestCase):
         self.assertNotIn('daily-driver', script)
         self.assertNotIn('9222', script)
 
+    def test_native_collector_has_isolated_launchagent_and_checksum_installer(self):
+        root = Path(__file__).parents[1]
+        service = plistlib.loads(
+            (root / "launchd" / "ai.anicca.job-search-observability.plist").read_bytes()
+        )
+        installer = (root / "scripts" / "install-observability.sh").read_text()
+        self.assertEqual(service["Label"], "ai.anicca.job-search-observability")
+        self.assertTrue(service["RunAtLoad"])
+        self.assertTrue(service["KeepAlive"])
+        self.assertEqual(service["Umask"], 0o77)
+        self.assertIn("__COLLECTOR_BINARY__", service["ProgramArguments"])
+        self.assertTrue(
+            any("__COLLECTOR_CONFIG__" in value for value in service["ProgramArguments"])
+        )
+        self.assertIn("JOB_HUNTER_TRACE_PATH", service["EnvironmentVariables"])
+        self.assertIn("shasum -a 256", installer)
+        self.assertIn("otelcol-contrib_0.158.0_darwin_arm64.tar.gz", installer)
+        self.assertIn("opentelemetry-1.44.0-macos-arm64-py312.lock", installer)
+        self.assertIn("--require-hashes", installer)
+        self.assertIn('"$JOB_SEARCH_UV" pip install', installer)
+        self.assertIn('chmod 600 "$TRACE_PATH"', installer)
+        self.assertIn('DATA_ROOT="${JOB_SEARCH_DATA_ROOT:-', installer)
+        self.assertIn("for attempt in {1..10}", installer)
+        self.assertIn('"$JOB_SEARCH_LAUNCHCTL" print', installer)
+        self.assertIn("ai.anicca.job-search-observability", installer)
+        self.assertNotIn("ai.anicca.job-search-daily", installer)
+
     def test_inbox_shell_uses_deterministic_prefilter_before_model(self):
         root = Path(__file__).parents[1]
         script = (root / "scripts" / "run-inbox.sh").read_text(encoding="utf-8")
