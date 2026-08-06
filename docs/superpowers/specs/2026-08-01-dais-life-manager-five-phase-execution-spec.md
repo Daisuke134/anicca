@@ -39,10 +39,11 @@ Life Managerは「検索した」「分析した」「失敗した」と報告�
 その場合も、何もせず閉じるのではなく、停止理由、次の観測、改善案、次回判断時刻という現実の
 次行動を残す。Connectorではno-eventを正常終了にせず、実参加予約までloopを継続する。
 
-### 0.2 現在地と残りの一本道（2026-08-05 JST）
+### 0.2 現在地と残りの一本道
 
-正本実装は`/Users/operator/Projects/life-manager-main`の`main`である。`O1A-01〜06`と
-`O1B-01〜24`は実装・実測・証拠化・push済み。21日coverageの器に加え、実Luma Tokyoを終端まで読み、
+Connectorの進行中正本はbranch `feature/connector-native-completion`のworktree
+`/Users/operator/Projects/life-manager-main/.worktrees/connector-native-completion`である。canonical mergeが完了するまで
+`main`を現在実装の正本とみなさない。`O1A-01〜06`と`O1B-01〜24`は実装・実測・証拠化・push済み。21日coverageの器に加え、実Luma Tokyoを終端まで読み、
 全candidateを21日へ投影し、好みで候補を捨てず、本文・主催者・参加者・場所・時間からgoalと
 serendipityを根拠付き評価するところまで完成した。2026-08-02に最後に証拠化されたcoverageは
 `open=18 / covered_existing=0 / covered_new=1 / unavailable=2`である。これは現在時刻のcoverageではなく
@@ -50,12 +51,12 @@ serendipityを根拠付き評価するところまで完成した。2026-08-02�
 実Calendar blocker付き`unavailable`だった。現在値はnative passが実Calendarとproviderを再読取して
 新しいsnapshotを保存するまでunknownとし、古い18日を現在値として報告しない。
 
-native local runtimeはlock、heartbeat、healthcheck、CloakBrowserの共有page、Luma inventory、全Calendarの
-read-only取得、21日coverage continuationまで`main`へpush済みである。一方、ローカルworking treeには
-登録receipt → Calendar同期 → coverage再構築 → Telegram送信を直列化するTask 5 write pipelineがあり、
-focused testは36/36 PASSしたが、未commit・未pushでdefault native runtimeからも未接続である。
-native launchdとhealthcheckは未登録、native state directoryも未生成である。したがってConnectorは
-「部品実装が進んだ」状態であり、「ユーザーが何も管理せず結果だけ受け取る常駐agent」は未完成である。
+native local runtime、write pipeline、lock、heartbeat、healthcheck、Connector専用CloakBrowser `:9222`、Luma inventory、
+Calendar gate、provider cursor、Connpass downstream write contractはbranchへcommit/push済みである。native launchd
+`ai.anicca.life-manager-connector-native`はこのworktreeを5分間隔で起動し、stateも存在する。live run 190はLuma 27件から
+Calendar eligible 0件を判定し、同runでConnpass cursorへ進んだ。まだConnpass browser discoveryへ到達できず、実submit、
+Calendar readback、PNG、ticket/QRまたは同等receipt、Telegram IDの同一lineage proofは0件である。したがって常駐基盤は動くが、
+task deliveryは未完成である。
 
 `O1C-00 Life Manager startup context正本化`は2026-08-02に実装・監査・pushまで完了した。
 現在の実装優先は、保持していたConnectorの再開位置`O1B-25`である。残作業は、途中へ別trackを混ぜず
@@ -131,27 +132,19 @@ flowchart TD
 ```
 
 Telegramの予約完了messageは、少なくともevent名、日時、場所、選定理由、event URL、Calendar URL、
-ticketまたはQR、現在の21日coverage countsを含む。receiptが検証できない登録、Calendar readbackが無い登録、
-Telegram provider message IDが無い送信を成功として表示しない。日次briefは内部stageやstack traceを見せず、
-成立した現実結果、未処理日数、次にsystemが行うことだけを伝える。
+ticket/QRまたは同等provider receipt、現在の21日coverage countsを含む。receiptが検証できない登録、Calendar readbackが無い登録、
+Telegram provider message IDが無い送信を成功として表示しない。全wakeは`applied / continuing / recovering`を必ず報告し、週次rollupも
+成功0件を含め必ず報告する。報告は内部stack traceを見せず、成立した現実結果、安全なfailure class、未処理日数、次の自動actionを伝える。
 
 #### 0.2.2 Connectorの残TODO — 実行順SSOT
 
-以下はcheckboxの古い完了表示より優先する。各項目は前項のverified outputを入力にするため、順序を入れ替えない。
+実行順の唯一の正本は、このspec内の `### Active remaining TODO SSOT（進捗145。これ以外の残TODO一覧は履歴）` とする。
+この節、Order checkbox、過去の進捗文に異なる「次TODO」が残っていても実行順には使用しない。
 
-1. **Task 5を正本化する**: 未commitのnative write pipelineとTelegram copyをreviewし、focused testを再実行してcommit/pushする。
-2. **Luna判断境界を接続する**: verified inventoryとprofileをLuna bounded workerへ渡し、候補と根拠だけを受け取る。LLMにreceipt成功判定をさせない。
-3. **default native runtimeへwrite pipelineを接続する**: 明示的に選択された候補だけを、登録→receipt→Calendar→coverage→Telegramの順で処理する。
-   - 進捗: opt-in runtime compositionは、verified profile→Luna→Calendar gate→spend gate→既存write pipelineの順序をfocused testで固定した。native entrypointからeffect configを供給する配線と、no-candidate/failure時にwriteを呼ばない回帰は未完了のため、このTODOは未完了。
-   - 停止根因実測: live Macにはnative launchd label、plist、state directory、専用envが存在せず、旧Docker Connector scheduleはretired済みだった。DBの最後の`outbound.event.apply`は2026-08-02で、その後の新規jobは0件。旧loop停止と新loop未配備の移行断絶が日次応募停止の根因である。
-   - 修復進捗: launchd `run.sh`がowner-only OpenClaw envとTelegram allowlistを復元し、native entrypointがprofile、Luna evidence、全Calendar、home/route、Telegram、Calendar URLをruntimeへ渡す契約をRED→GREENで追加した。完了条件は実launchd load後、loop自身による無料イベント2件のverified registration、Calendar readback、Telegram message ID 2件を確認すること。
-4. **Task 6を実装する**: Gmail確認message、guest binding、ticket / QR captureを検証し、Telegram artifactへ接続する。
-5. **event source contractを閉じる**: Lumaをprimaryとする。`Compass`がliteralな別providerならadapter未実装としてsource/auth/apply/receiptを追加する。Daisが`connpass`を指した場合は承認済み公式APIだけをfallback接続する。
-6. **無料Luma一件でnative実E2Eを通す**: 実探索、Luna選定、実登録、provider receipt、確認mail、ticket / QR、Calendar write/readback、Telegram message IDを一つのlineageで証拠化する。
-7. **native launchdをlocalへinstallする**: canonical templateをrenderし、native workerとhealthcheckをloadしてheartbeat、state、logをreadbackする。
-8. **restart/idempotencyを実証する**: concurrent lock、stale recovery、登録直後crash、Telegram retry、unknown effect reconciliationで二重申込みが起きないことを実状態で確認する。
-9. **rolling 21日loopを完了させる**: 各passで次のopen日を処理し、`open=0`まで継続する。各実登録と日次briefをTelegramへ送る。
-10. **O1B-25/26を閉じる**: fresh tests、実service receipt、Calendar readback、Telegram message ID、launchd連続稼働、commit/pushが揃った時だけ完了にする。
+現在の物理状態: native launchd `ai.anicca.life-manager-connector-native`はこのworktreeを5分間隔で起動する。live run 190で
+Luma 27件、Calendar eligible 0件からConnpass cursorへのhandoffを実証した。Connpass APIは使用禁止。次の未完了項目は
+Connector専用CloakBrowser `:9222`によるConnpass browser-only discoveryである。実Connpass submit、Calendar、screenshot、Telegramの
+同一lineage proofはまだ存在しないため未完了である。
 
 Connectorのdoneは「一件予約できた」ではない。`open=0`であり、各日が`covered_existing`、
 `covered_new`、または実Calendar blocker付き`unavailable`のいずれかとして証拠化され、Daisがagentを
@@ -456,7 +449,7 @@ AI登壇枠だけを対象にし、候補0件をexit 0で終了する。Luma dis
 | [browser-use](https://github.com/browser-use/browser-use) | agent向けブラウザ操作基盤。2026-08-01実測で約10.7万stars、MIT | 調査比較だけ。現在のtrackへ導入しない |
 | [Steel Browser](https://github.com/steel-dev/steel-browser) | self-host可能なagent browser API。約7.4千stars、Apache-2.0 | 調査比較だけ。daily-driverの代替として導入しない |
 | [Luma API](https://docs.luma.com/reference/getting-started-with-your-api) | 公式APIは主催者自身のevent/guest管理用で、calendar単位keyとLuma Plusが必要 | 参加者RSVPは既存daily-driverを使う |
-| [connpass API v2](https://connpass.com/about/api/v2/) | API key必須、1秒1request。公式API外の自動アクセスは禁止 | API key取得までconnpass自動操作を止め、Lumaを先に完成させる |
+| [connpass参加者ガイド](https://help.connpass.com/participants/search-for-events.html) | calendar/explore/event pageからイベントを探せる | Connector専用CloakBrowser `:9222`のparent-owned targetだけでdiscover/apply/readbackする。APIは使わない |
 | [YC創業者動画](https://www.ycombinator.com/video/) | 1分、創業者だけ、全創業者、原稿朗読ではなく要点で話す | 58秒の既存候補を実画面で検証して使用する |
 
 ### 4.2 求人応募
@@ -507,7 +500,7 @@ AI登壇枠だけを対象にし、候補0件をexit 0で終了する。Luma dis
 | `ai.anicca.connector-fill-gaps` | 毎朝07:50。CloakBrowser `:9222`と`gog`を使うが、多数のbounded agentがtimeout | schedulerは残し、1日1巨大fan-outをdurable queueへ分解 |
 | `connector_daily_report.sh` | Telegram日報を持つが、送信responseのparseが壊れる | Telegram adapterの戻り値contractを直し、delivery receiptをledger化 |
 | `anicca-meetup-talk-applier` | discover、AI Tinkerers応募、Calendar登録、state JSONが存在 | pitchとplatform知識をevents packへ移植。別loopとしては退役 |
-| `connpass-lt-discover.py` | LT枠を分類できるが、証跡不足のためsubmit直前で停止 | API keyまたは確認mailを含むE1/E2/E3経路ができるまで送信禁止 |
+| `connpass-lt-discover.py` | 旧経路。現在のruntimeから到達禁止 | parent-owned browser discovery、submit、readback、E1/E2/E3をnative runtimeで行う |
 | `apply-to-yc` | 20 text fields、動画、validationまで到達。deprecated | 画面知識だけ`apply-to-funder`へ移植。二重submitしない |
 | `apply-to-funder` | JSON form specとguardrailがある。YC/JSTはdry-run止まり | funders packの入力adapterとして残し、stateは共通ledgerへ移す |
 | `apply-anywhere` | YC、ANRI、Coral、Solo Founders等の過去receiptを記録 | ATS/form routing知識を共通ACTへ移植。未実装shell骨格を正本にしない |
@@ -893,40 +886,10 @@ owner-only archiveとSHA-256 manifestありになった。初回のarchive順序
 run 26、last exit 0、workerはrunning/healthyで`outbound.event.apply`を保持する。events pack live read-onlyも
 認証済み、inventory終端7 rounds、35候補で成功した。outbound 110件、runtime 33件、旧inventory 22件が成功。
 実測証拠: `docs/evidence/outbound/2026-08-01-o1b10-live-legacy-retirement.json`。
-次は固定順序どおりO1B-11で、connpassの現行公式API提供・申請経路を確認し、key取得まで自動アクセスを禁止する。
-
-O1B-11開始: 専用plan
-`docs/superpowers/plans/2026-08-01-connector-o1b11-connpass-api-application.md`を追加した。2026-08-01の
-connpass公式help、v2 reference、利用規約を再調査した。v2は全endpointでAPI key必須。referenceは1秒1requestだが、
-2026-08-01に実画面で確認した個人申請formはさらに厳しく5秒1request以下を要求するため、実装は5秒間隔に固定する。
-個人・コミュニティは無料審査制でkey 1本、審査約5営業日、個人申請は非商用同意必須である。企業利用は
-月額297,000円または年額3,564,000円。v2には参加申込みendpointがなく、events/groups/users等のGETだけである。
-さらに公式API以外の自動crawler/scraper等は規約で禁止される。よって個人keyはDais本人のローカル・非商用・
-read-only event discoveryだけに使い、Life Manager Webへ転用しない。connpass browser自動申込みは行わず、
-Lumaを実予約sourceとしてcoverageを埋める。key受領まではconnpassへの全自動network accessをcodeで0にする。
-
-O1B-11進捗1（RED）: key欠落時network 0、公式`/api/v2/events/` GETと`X-API-Key`だけ、任意URL・POST・
-不正query拒否、公式申請formの厳しい方へ合わせた5秒間隔の直列化、HTTP/schema failure時のsecret非反射を固定するtestを追加した。
-production clientはまだ存在しないためmodule不存在でREDになる。実runtime auditでは旧launchd 2本は退役済みだが、
-stale OpenClaw jobs fileに`connpass-lt-apply-daily`と`anicca-booking-daily`がenabledで残り、正本
-`anicca-booking`にもFirecrawl/ブラウザconnpass経路が残ることを確認した。これらもkey申請前に無効化する。
-
-O1B-11進捗2: 公式v2 GETだけを許すfail-closed clientを実装した。key欠落時network 0、固定endpoint、
-`X-API-Key`、query schema、5秒間隔、secret非反射をtestで固定した。stale OpenClaw jobsは
-`anicca-meetup-discover-daily`、`anicca-meetup-apply-tokyo-weekly`、`connpass-lt-apply-daily`、
-`anicca-booking-daily`の固定4本だけをdisabledへ変更し、自己防衛用`anicca-cron-auto-disable`はenabledのまま
-保持した。旧`anicca-booking`はretired tombstoneへ置換し、runnerはcredential読取・network接続より前にexit 78、
-旧proposerからconnpass URLを削除した。focused 7件とoutbound 117件が成功した。key審査中もConnectorは止めず、
-認証済みLumaだけで21日coverageを埋める。
-
-完了: `O1B-11`。既存の本人設定から申請者名、connpass username、Gmail accountを取得し、raw値を
-specや証拠へ保存せず、公式個人・コミュニティ向けAPI利用申請formへ送信した。用途はDais本人の
-ローカルPCだけ、個人・非商用、1日1回のbatch、東京で今後21日以内のevent、最大30日非公開保存、
-第三者利用なし、リアルタイム呼出しなし、connpass参加申込みなしと明記した。送信後に公式Google Formの
-`formResponse`遷移を確認した。審査目安は約5営業日。key受領まではclientがnetwork 0でfail closedし、
-ConnectorはLumaで継続する。実測証拠:
-`docs/evidence/outbound/2026-08-01-o1b11-connpass-api-application.json`。次は固定順序どおりO1B-12で、
-一般参加eventとLT/CFP/demo登壇応募を別entity・別状態機械として実装する。
+O1B-11（履歴のみ、active runtimeへ適用禁止）: 過去にConnpass API利用を調査・申請しread-only clientを作ったが、
+進捗145のDais直接指示でtransport全体を永久にsupersedeした。API key、API client、API pagination、API responseは
+active discovery、registration、coverage、availability判断に使わない。履歴planとcommitは意思決定根拠ではなく監査記録だけである。
+唯一の現行置換はConnector専用CloakBrowser `:9222`のparent-owned browser discovery→submit→readbackである。
 
 O1B-12開始: 専用plan
 `docs/superpowers/plans/2026-08-01-connector-o1b12-separate-participation-entities.md`を追加した。
@@ -1293,7 +1256,7 @@ Life Manager Core
                  WorkerRuntime
        bounded task / heartbeat / cancel / timeout
                        |
-       CloakBrowser / gog / provider official API
+       CloakBrowser / gog / provider browser pages
                        |
         verified receipt -> local ledger -> Telegram
 ```
@@ -1318,6 +1281,8 @@ Life Manager Core
 
 ### 5.2 Order 1B — イベント
 
+このcheckbox群はmilestone履歴であり、現在の実行順には使わない。現在の順序と完了条件は`Active remaining TODO SSOT（進捗145）`だけを使う。
+
 **Multi-source non-negotiable invariant:** ConnectorはLuma agentではなくevent application agentである。
 Lumaは現在の最初のproviderにすぎず、検索・申込scopeをLumaへ限定してはならない。rolling 21日coverageに`open`日が残る限り、
 その日についてcapability registryで許可済みのproviderを順に探索し、登録可能な最上位候補へ実申込する。一providerの候補枯渇、
@@ -1336,7 +1301,7 @@ Lumaは現在の最初のproviderにすぎず、検索・申込scopeをLumaへ�
 - [x] O1B-08 agentが本文からLT/CFP/demoを判断する実Gemini evalを8/8で通す
 - [x] O1B-09 旧Connector loginを復旧しevents packへ統合
 - [x] O1B-10 重複旧実装を退役
-- [x] O1B-11 connpass API keyを申請。取得まで自動アクセス禁止
+- [x] O1B-11 connpass API key申請履歴。進捗145でactive runtimeへのAPI使用を撤回しbrowser-onlyへ置換
 - [x] O1B-12 一般参加とLT/CFP/demo登壇応募を別entityとしてdiscover・追跡
 - [x] O1B-13 Life Managerの実測demoに合うtalk title、5分outline、応募理由をagent生成
 - [x] O1B-14 accepted後にslide締切、登壇日、会場、QR、follow-upを一つのtimelineで追跡
@@ -1345,8 +1310,8 @@ Lumaは現在の最初のproviderにすぎず、検索・申込scopeをLumaへ�
 - [x] O1B-17 Luma mainの東京・対面inventoryを日付ごとに最後まで読み、表示上位数件だけで探索を終えない
 - [x] O1B-18 AI/crypto/英語等は優先順位にだけ使い、eventを捨てるhard category filterにはしない
 - [x] O1B-19 agentがevent本文・参加者・主催者・場所・時間を読み、Daisの目標とserendipityを自然言語で評価
-- [x] O1B-20 Lumaで実参加を確保できない場合、許諾済みsourceを探索する。Connpass公式API read-only discovery coreまでは完成
-- [ ] O1B-20A Connpass browser registration・effect readback・screenshot proofを完成し、live evidence後にregistration capabilityを有効化
+- [x] O1B-20 Lumaで実参加を確保できない場合、許諾済みsourceを探索する。旧Connpass API coreは履歴のみでactive runtimeから到達禁止
+- [ ] O1B-20A Connpass browser-only discovery・registration・effect readback・screenshot proofを完成し、live evidence後にregistration capabilityを有効化
 - [ ] O1B-20B Peatix、Meetup、Doorkeeper、Eventbriteを同じcapability registryへ追加し、Luma-only fallbackを除去
 - [ ] O1B-21 一つの候補で申込失敗・満席・不適格になっても同じ日の次候補へ進み、予約確認までloopを継続
 - [ ] O1B-22 「検索一巡」「一件の操作失敗」「一sourceの失敗」を終了条件にしない
@@ -1471,7 +1436,7 @@ runで、description、organizer、住所を正規化し、attendee 0を`partici
 174/174成功。証拠: `docs/evidence/outbound/2026-08-02-o1b19-live-grounded-serendipity.json`。
 次は固定順序どおり`O1B-20`で、Lumaで実参加を確保できない日だけ許諾済みsourceへ継続する。
 
-O1B-20開始（2026-08-02）: connpass keyは未配備で、提出日以後の公式API返信mail 0件、credential-like
+O1B-20開始（履歴 / 進捗145でsuperseded）: connpass keyは未配備で、提出日以後の公式API返信mail 0件、credential-like
 value 0件。公式v2はkey必須のGET discoveryだけに使い、API外access、browser申込み、coverage creditを
 禁止する。MeetupはPro OAuth審査、Eventbriteは第三者eventのparticipant registration endpointを確認
 できないためactive sourceへ追加しない。verified Luma exhaustion後、keyありならconnpass公式GET、keyなし
@@ -2540,7 +2505,7 @@ O1B-25進捗92（応募0回とmulti-source未接続の再監査）: existing lau
 同理由の旧suppressionを再評価することである。
 
 multi-sourceについて、`connector-events-pack.js`にはLuma exhaustion後のConnpass handoff部品があるが、native runtimeは
-`luma-event://`だけを受理し`handoffEventSource`を呼ばない。Connpass capabilityも`official_api_discovery_only / registration_allowed=false /
+`luma-event://`だけを受理し`handoffEventSource`を呼ばない。旧Connpass capabilityも`official_api_discovery_only / registration_allowed=false /
 coverage_credit=false`であり、Peatix、Meetup、Doorkeeper、Eventbriteの稼働adapterは存在しない。従って現loopは実質Luma-onlyである。
 正しい完成形はsource registryが各siteのdiscovery、authenticated registration、effect readback、screenshot evidence能力を宣言し、
 一つのsourceで日付を埋められなければ次sourceへ進むことである。単にURLを見つけただけ、read-only API候補を得ただけではcoverage creditを与えない。
@@ -2548,13 +2513,13 @@ coverage_credit=false`であり、Peatix、Meetup、Doorkeeper、Eventbriteの�
 外部根拠:
 
 - Luma Help Center, https://help.luma.com/p/collect-registration-questions — “we collect name and email for all guests, you can collect more information”。required custom questionsを通常flowとして扱う。
-- connpass API v2, https://connpass.com/about/api/v2/ — 「すべてのAPIエンドポイントでは、APIキーによる認証が必須」「1秒間に1リクエストまで」。探索adapterは公式v2 APIとrate limitに固定する。
+- connpass API v2（履歴 / 進捗145で撤回）: active runtimeはAPIを使わず、Connector専用CloakBrowser `:9222`へ固定する。
 - Meetup GraphQL API, https://www.meetup.com/api/general/ — API accessはMeetup Proの提供能力として記載される。契約・権限を実測するまでbrowser/API registration capabilityを宣言しない。
 
 O1B-25進捗93（Luma-only禁止を主要求へ昇格）: multi-sourceを後半TODOだけに置くと、runtime実装者が前半の旧「Luma中心」記述を
 正本と誤認できるため、§5.2のnon-negotiable invariantと§10.1Aの日次UXを更新した。ConnectorのidentityはLuma agentではなく
 event application agentであり、`open`日が残る限りLuma→Connpass→Peatix→Meetup→Doorkeeper→Eventbriteをcapability gate付きで
-継続する。一候補・一providerの失敗をpass終了条件にしない。Connpassは現時点で公式API discovery coreだけが完成しており、
+継続する。一候補・一providerの失敗をpass終了条件にしない。この時点の旧Connpass API discovery coreは進捗145でactive runtimeから撤回し、
 browser registration/readback/screenshotのlive proof前はregistration capabilityを有効化しない。この差をO1B-20/20A/20Bへ分離した。
 
 O1B-25進捗94（P0-10A self-heal incident envelope / RED→GREEN、live readback待ち）: existing launchd run 132を
@@ -2744,7 +2709,7 @@ focused runtime/candidate testsは19/19 GREEN。次は既存launchdをlive実行
 
 O1B-25進捗118（browser transaction continuity OSS調査 / spec only、実装なし）: live run 171のTerraはowned targetへ正しく到達し、
 registration form、textbox、checkbox、multi-selectを観測したが、各actionを別々のinline Node processで実行し、毎回
-`chromium.connectOverCDP()`→page再探索→`browser.close()`を繰り返した。このためoverlayとform stateを何度も失い、同じ入力を
+旧Terra executorは`chromium.connectOverCDP()`→page再探索→`browser.close()`を繰り返した。このためoverlayとform stateを何度も失い、同じ入力を
 再試行した。Luma selector不足ではなくbrowser session lifecycleが根因である。
 
 採用案はMicrosoft公式OSS `microsoft/playwright-mcp`をConnector専用の長寿命browser tool sessionとして使うことである。
@@ -2868,7 +2833,7 @@ provider marker/PNG receiptをcore effect oracleとしてCalendar、coverage、�
 verified artifactが得られた時だけ追加送信するbest-effort enrichmentとした。ticket evidenceまたはticket Telegram failureはbounded
 `unavailable` statusとして返すが、登録済みeventをapplication failureへ戻さない。Calendar receipt、coverage rebuild、Telegram positive
 card/photo IDの既存fail-closed gateは変更していない。回帰testは旧codeで1件RED、修正後focused 21/21、pretest 12/12、
-Connector/outbound 337/337 GREEN、失敗0件。live Calendar/Telegram増分は次の既存launchd runで未実証のため16Dは未完である。
+Connector/outbound 337/337 GREEN、失敗0件。この時点のlive未実証記録は履歴であり、現在状態は進捗145以降とactive TODO SSOTを参照する。
 
 O1B-25進捗126（optional ticket分離のexisting launchd LIVE GREEN / 16D full lineage成立）: commit `84fa453f1`後、
 idleだった既存Connector launchdだけをrun 179として一度kickstartし、自然終了まで観測した。candidate attemptは39→41、
@@ -2901,7 +2866,7 @@ screenshot/QR evidenceまでlive promotionする。その後、Lumaを含む全p
 O1B-25進捗129（multi-source Task 1 closed provider registry / RED→GREEN）: `event-provider-registry.js`を追加し、
 provider順をLuma→Connpass→Peatix→Meetup→Doorkeeper→Eventbriteへ固定した。各providerはexactly
 `discovery / registration / effect_readback / screenshot_evidence / ticket_or_qr`を宣言し、各能力は`active / advisory_only / blocked`
-とbounded safe reasonだけを持つ。Lumaは既存live proofにより全能力active、Connpassは公式API discoveryだけactiveでwrite/evidenceは
+とbounded safe reasonだけを持つ。Lumaは既存live proofにより全能力active、この時点のConnpass API-only状態は進捗145でsupersededされ、
 advisory、残りproviderはadapter live proofまでblockedである。registryはimmutable・content-addressed・in-process provenanceで、
 credential、browser endpoint、個人情報を持たない。Connpass promotionはprovider marker、PNG SHA ref、admission ticket/QR相当ref、
 Calendar evidence ref、Telegram card/photo positive IDの全てが揃わなければ拒否する。module不在RED後、focused 3/3、pretest 12/12、
@@ -2930,10 +2895,10 @@ O1B-25進捗132（multi-source Task 2B2 native-pass persistence / RED→GREEN）
 生成し、mode 0600 `provider-cursor.json`をtemp fsync→renameで保存する。次wakeは同一registry IDのcursorだけをruntimeへ渡す。
 旧`cursor.json`は新cursorまたは明示nullのdurable recordが成功した後にだけ削除し、途中失敗で両方を失わない。event ref、page text、URL、
 identityはprovider cursorへ保存しない。provider file不在RED後、native-entrypoint 26/26、runtime 16/16、pretest 12/12、outbound 344/344 GREEN、
-失敗0件。Task 2のcursor contract・runtime transition・wake間persistenceは完了した。次はTask 3として既存Connpass公式API discoveryを
+失敗0件。Task 2のcursor contract・runtime transition・wake間persistenceは完了した。この次手記録は履歴で、進捗145によりbrowser discoveryへ置換した。
 native runtimeのConnpass cursor branchへ接続する。実network call、browser、registration、Calendar、Telegramはまだ実行していない。
 
-O1B-25進捗133（multi-source Task 3A Connpass official API runtime handoff / RED→GREEN）: Connpass provider cursorを
+O1B-25進捗133（履歴 / 進捗145でsuperseded: Connpass official API runtime handoff）: Connpass provider cursorを
 native runtimeへ接続した。resumed Connpass cursorだけでなく、Lumaが同じpassで枯渇してConnpassへ遷移した場合も、その場で既存packの
 exhaustive official-v2 handoffを呼ぶ。API keyは`LM_CONNECTOR_CONNPASS_API_KEY`からprocess内configへ渡すだけでresult/cursor/stateへ保存しない。
 key不在はnetwork call 0の`waiting_for_authorized_source`、API unavailable/emptyもcoverageをopenに保つ。発見候補は
@@ -3014,7 +2979,7 @@ message IDが同一event lineageに揃うまで成功ではない。Calendarに�
 5. Telegram card IDとphoto IDがともにpositiveで、Calendar event IDと同じlineageを参照する。
 6. 上記未達時は`applied_bundle`を生成せず、候補/provider継続またはdurable recoveryへ遷移する。
 
-no-terminal-failureの残TODO（この順序を実行する）:
+進捗140時点の残TODO（履歴のみ。現在の実行順は進捗145直後のActive TODO SSOTを使う）:
 
 1. Task 4B2C1を閉じる: verified Connpass inventoryをLuma goalへ偽装せず、write、coverage、bounded result、attempt、Telegramの全contractが受理する。完了条件はfocused、pretest、constant outbound suiteが全緑でcommit/push済み。
 2. Task 4B2C2を閉じる: runtimeがConnpass provider/job/evidence storeを生成し、Calendar-eligible候補をcommon write pipelineへ渡す。完了条件はknown no-effectで次候補/providerへ進み、unknownでreconcileし、runtime testが実call順を証明する。
@@ -3080,16 +3045,38 @@ Connector owner ledger、liveness、cleanupに従い、Gig `:9223`、Gig state�
 残してもactive runtimeから到達不能にし、source registryのConnpass transportは`cloakbrowser_daily_driver`とする。完了条件はAPI keyなし・
 network API call 0でverified browser inventoryを作り、Calendar gate後の実eventでapplied bundleが成立すること。
 
+### Active remaining TODO SSOT（進捗145。これ以外の残TODO一覧は履歴）
+
+1. [x] Provider-neutral downstream write、Connpass runtime write dependencies、Luma Calendar-eligible 0 handoff、Connpass state persistenceを閉じる。証拠: 進捗141、143、144、commit `65241d6a2`、`e822bfa3a`、`d0e05f5d8`、`1cfa2e56f`。
+2. [in progress] Connpass browser-only discoveryを実装する。`:9222` parent-owned targetで公式`/calendar/`または`/explore/`をexhaustiveに読み、日付、event URL、title、start、venueをverified inventoryへする。完了条件: API key参照0、API network call 0、browser discovery test/full suite GREEN、live cursorが候補を得る。
+3. Connpass live submitとpromotionを閉じる。完了条件: 親readbackのregistered/pending、provider receipt、PNG SHA、Calendar ID/readback、Telegram card/photo positive IDが一event lineageに揃い、そのproofだけで`registration_allowed=true`。
+4. Every-wake Telegram durable outboxを実装する。完了条件: `applied / continuing / recovering`の全exit pathでwake report欠落0、positive message IDまで保持、再送重複0、報告後も申込み継続。
+5. Weekly Telegram rollupを実装する。完了条件: 成功週、登録0週、process停止週、Telegram停止週で週次record欠落0、復旧後positive message ID、重複0。
+6. Exhaustive continuationを一つのforward-only state machineにする。完了条件: candidate 0、満席、closed、form failure、provider down、browser crashがterminal failureにならず、次candidate→provider→date→windowまたはdurable recoveryへ進む。
+7. Peatixをbrowser-only discovery→parent submit/readback→evidence→isolated live proof→promotionの順で追加する。完了条件は実`applied_bundle`。
+8. Meetupをstep 7と同じgateで追加する。完了条件は実`applied_bundle`。
+9. Doorkeeperをstep 7と同じgateで追加する。完了条件は実`applied_bundle`。
+10. Eventbriteをstep 7と同じgateで追加する。完了条件は実`applied_bundle`。
+11. Cross-provider live acceptanceを行う。完了条件: 一providerのknown-no-effect後、同じrun IDが次providerで実`applied_bundle`を作る。
+12. Post-registration recoveryを閉じる。完了条件: Calendar、PNG、ticket、Telegram各境界の中断後、providerへ再submitせず不足artifactだけを補完し、外部登録1回・bundle1個。
+13. Observer trace packを実装する。完了条件: safe action、expected/observed effect、owner generation、screenshot SHA、provider readback、commit、cursorがprivacy-safe incident/replayへ揃う。
+14. Superpowers Fixerを復旧する。完了条件: incidentごとにsystematic-debugging→一仮説→実RED→最小GREEN→fresh verification→commit/push、上限3 revision/24時間。
+15. Guarded consumer/canaryを復旧する。完了条件: historical replay→focused/full test→protected path/permission→rollback→isolated browser canary→one bounded live effectを通ったrevisionだけmerge/redeploy。
+16. Production self-heal E2Eを実証する。完了条件: Observer→Fixer→consumer→canary→production型再実行が実`applied_bundle`を作った時だけincident=`healed`。
+17. Observer SDKをmail、Calendar、payment、収益loopへadapter展開する。Gigはread-onlyのままGig所有repoの独立sliceで行う。完了条件は各loop固有external oracle。
+18. Rolling coverageを閉じる。完了条件: 21日分の`open=0`、各日が実証拠付き`covered_existing / covered_new / unavailable`、少なくとも一件の新規`applied_bundle`。gapがなければ次windowへ延長。
+19. Restart acceptanceを行う。完了条件: Mac再起動後、Connector、Observer、producer、consumer、CloakBrowser、heartbeat、outbox、idempotency、stale-owner GCが手動介入なしで再開。
+20. Canonical branchへmergeし、legacy bridge、Docker worker、重複scheduleを退役する。完了条件: canonical commitの単一scheduleと次wakeの実bundleまたはidempotent no-duplicate readback。
+
 現在と完成形:
 
 ```mermaid
 flowchart LR
   subgraph NOW[現在]
-    N1[Luma 28件] --> N2[候補4件]
-    N2 --> N3[親がtarget作成・durable claim]
-    N3 --> N4[Terraは接続codeを即興・反復]
-    N4 --> N5[submit・親readbackは到達]
-    N5 --> N6[mail/QRでCalendar前に停止]
+    N1[Luma 27件] --> N2[Calendar eligible 0]
+    N2 --> N3[同runでConnpass cursor]
+    N3 --> N4[Browser discovery未配線]
+    N4 --> N5[実submit未到達]
   end
   subgraph TARGET[完成形]
     T1[全provider探索] --> T2[最上位候補へApply]
@@ -3103,7 +3090,7 @@ flowchart LR
   end
 ```
 
-完全な残TODO SSOT:
+旧P0チェックリスト（履歴のみ。現在の実行順SSOTではない）:
 
 **P0 — task deliveryを前進させる（最優先）**
 
@@ -3133,7 +3120,7 @@ flowchart LR
 17. golden traceで確認したtrusted Gmail OTPとLuma→主催公式site handoffをprovider capabilityとして実装し、Lumaだけでは本登録にならないeventを公式readbackまで完了する。
 18. Lumaと公式siteの二枚のscreenshot、Calendar event ID、Telegram message IDを一つのevent lineage receiptへ保存し、loop主体のlive E2Eを実証する。
 19. source registry contractを追加し、各providerの`discovery / registration / effect_readback / screenshot_evidence` capabilityをclosed schemaで宣言する。
-20. Connpass公式v2 APIの探索handoffをnative runtimeへ接続し、API key、1 req/sec、paginationを守る。read-only候補にcoverage creditを与えない。
+20. [superseded] 旧Connpass API探索。進捗145によりactive runtimeから撤回し、browser-only discoveryへ置換。
 21. Connpassの認証済みbrowser registration adapter、登録済みreadback、screenshot evidenceをTDD/E2Eで追加し、初めて`registration_allowed=true`へpromotionする。
 22. Peatix、Meetup、Doorkeeper、Eventbriteを同じregistryへ一siteずつ追加する。各siteは実account/session、利用規約に沿う探索経路、submit、readback、screenshotのlive proofが揃うまでadvisory-onlyとする。
 23. dateごとにLuma→Connpass→Peatix→Meetup→Doorkeeper→Eventbriteの順でhandoffし、一sourceの候補枯渇・満席・未対応formでpass全体を終了しない。
@@ -3142,12 +3129,12 @@ flowchart LR
 26. Mac再起動後のConnector、producer、consumer launchd、heartbeat、healthcheck、stale-loop self-healを実機検証する。
 27. canonical branchへ統合し、legacy bridge / Docker worker / 重複scheduleを退役する。
 
-### P0 残TODOの現在順序（進捗128を正本とする）
+### 旧P0順序（進捗128の履歴のみ。現在の正本ではない）
 
 1. [x] Gigの成功browser-foundation patternをConnector側へcopy+tweakする。親が`:9222` default contextにtargetを作成・claimし、Terraはsanitized formの回答判断だけを一turn返す。親だけが同一targetでreal action、submit、readback、screenshot、close/releaseを行い、inline Node、全page探索、反復`connectOverCDP()`、Terra側`browser.close()`を廃止する（16B再補正、進捗121〜123）。
 2. [x] source registry contractを実装し、Luma、Connpass、Peatix、Meetup、Doorkeeper、Eventbriteを`discovery / registration / effect_readback / screenshot_evidence / ticket_or_qr`能力でclosed schema宣言する（19、進捗129）。
 3. [x] native runtimeへprovider cursorとhandoff state machineを接続する。Task 2A contract、Task 2B1 runtime transition、Task 2B2 native-pass atomic persistenceを完了。あるproviderの候補0、満席、未対応form、known no-effectで同じpassを終えず、次候補→次providerへ進む（23、進捗130〜132）。
-4. [in progress] Connpass公式API discoveryとprovider-neutral Calendar/移動gateはTask 3A〜3B・進捗133〜134で完了。次は認証済みbrowser submit、親effect readback、PNG、参加票/QRをTDDとlive proofで揃えて`registration_allowed=true`へpromotionする（20〜21）。
+4. [superseded] 旧Connpass API discovery記録。現在は進捗145のbrowser-only contractへ置換済み。
 5. Peatix、Meetup、Doorkeeper、Eventbriteを一siteずつ同じcontractへ追加し、各siteのlive submit/readback/evidence後だけregistrationを有効化する（22）。
 6. promotion済みproviderを横断する既存Connector launchd runで、Calendar gapを持つ実eventへform入力→submit→親marker readbackを成立させる。Lumaに限定せず最初の実登録まで候補/providerを継続する（16C）。
 7. 同一event lineageへprovider marker、ticket/QRまたは同等receipt、PNG SHA、Calendar ID/readback、Telegram card/photo positive IDを揃える（16D、17、18）。
@@ -3217,7 +3204,7 @@ free intervalへ参加できるeventを探す。`unavailable`は、候補event�
   → free intervalと前後移動時間に収まる最上位候補へ申込
   → 満席・失敗・確認なしなら同じ日の次候補へ即時進む
   → Lumaを十分に探索しても確保できない時は別の許諾済み予約sourceへ進む
-  → Connpassは公式APIで候補発見し、browser registration capabilityのlive promotion後だけ予約する
+  → ConnpassはConnector専用CloakBrowserで候補発見し、同じparent-owned railで登録・readbackする
   → Connpassで確保できなければPeatix→Meetup→Doorkeeper→Eventbriteへ同じcapability gateで進む
   → 東京・対面・時間非衝突・自動支出policy内を確認
   → 完了画面または確認mailを取得
@@ -4002,9 +3989,10 @@ Connectorは一日一回の検索cronではなく、21日間の空きを継続�
 [申込内容を見る]({{application_detail_url}})
 ```
 
-一候補の証拠が不足した場合は、通常Telegramへ失敗報告を送らない。未確認候補をCalendarへ
-登録せず、同じ日の次候補へ進む。account lock、予期しない課金、identity不一致のようにDaisの
-資産・accountへ影響する例外だけを即時警告し、Connector本体は安全な別候補で継続する。
+一候補の証拠が不足した場合も、そのwakeのTelegram報告を省略しない。未確認候補をCalendarへ登録せず、
+privacy-safeなfailure class、現在cursor、次の自動actionを`continuing`または`recovering`としてdurable outboxへ記録し、
+同じ日の次候補へ進む。account lock、予期しない課金、identity不一致は同じ必須報告に高severityを付ける。
+Telegram transport自体が故障してもpositive message IDを得るまでoutboxから削除せず、Connector本体は安全な別候補で継続する。
 
 LT・登壇応募:
 
@@ -4643,7 +4631,7 @@ run 169ではTerraがCloakBrowser接続前に未導入の`require('playwright')`
 |---:|---|---|
 | U01 | CloakBrowser `:9222`のlogin sessionがLuma/YC/SPCでfreshか | 各siteをread-onlyで開き、login identityとcookie expiryを記録 |
 | U02 | 直近Connector runner成功が実登録を意味するか | result JSON、完了画面、mail、ledgerを照合。runner successだけでは登録扱い禁止 |
-| U03 | connpassで規約準拠のdiscover/submitと証跡取得が可能か | API key取得、利用規約、確認mailを実測。不可ならorganizer CFPだけを対象 |
+| U03 | connpass browser-only discover/submitと証跡取得が可能か | `:9222` parent-owned discovery、実submit、readback、Calendar、Telegramを一lineageで実測 |
 | U04 | LT応募と一般参加登録をどう区別するか | `attendance_application`と`talk_proposal`を別entity・別receiptにする |
 | U05 | YC既存draftがFall 2026へ安全に移行できるか | current home画面、batch、application ID、submit前previewを実測 |
 | U06 | YC動画・demo・tractionが現在の真実か | application-kit、dashboard、動画実体、production URLを提出当日に照合 |
