@@ -1465,6 +1465,13 @@ still proves only Japanese `@aniccaxxx` (integration
 API/Postiz integration resolves exactly to `@selawmqt`; never use scripted X
 website posting as the autonomous fallback.
 
+- [ ] **Step 1A: Make `@selawmqt` an English-only Affiliate-ready identity**
+
+Public readback shows 128 historical mixed JA/EN posts, display name `sela`, 27
+following, and 0 followers. Before E0, set an English Anicca display name, bio,
+owned-page link, and hard-to-miss affiliate disclosure. Keep historical posts;
+all future Affiliate placements and account-level copy are English-only.
+
 - [ ] **Step 2: Read back English provider ownership and an executable offer**
 
 Store account identity hash, official terms hash, channel rules, destination,

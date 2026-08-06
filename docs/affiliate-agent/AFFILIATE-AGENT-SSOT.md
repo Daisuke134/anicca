@@ -46,7 +46,7 @@ techniques do not merge the ledgers.
 | Amazon Associates Japan | CDP reached the Amazon sign-in page; approval state is not observable | `AUTH_REQUIRED`, no offer may publish until the account and tag are read back |
 | Rakuten Affiliate | CDP rendered the public home page with `ログイン`; approval state is not observable | `AUTH_REQUIRED`, keep the provider adapter dormant |
 | Postiz | CLI auth is valid and the live API returns 29 integrations. The only live X integration is ID `cmm6d7m5703rwpr0yr5vtme3w`, `アニッチャ` / `@aniccaxxx`; the local 31-row snapshot is stale | Keep English X publication disabled until a separate English integration is verified; refresh state from live API rather than hand-editing the snapshot |
-| X identity | User screenshot and live browser agree on `sela` / `@selawmqt`, 27 following and 0 followers. Stored credentials produced a real `auth_token`, `/home`, and profile link `/selawmqt` in the isolated profile. X rejected legacy `@aniccaen` as inactive | Make `@selawmqt` the English identity manifest; never use Japanese `@aniccaxxx` or the shared daily-driver |
+| X identity | User screenshot, authenticated browser, and public CRWL readback agree on `sela` / `@selawmqt`: 128 posts, 27 following, 0 followers, with mixed historical JA/EN Anicca posts. Stored credentials produced a real `auth_token`, `/home`, and profile link `/selawmqt`. X rejected legacy `@aniccaen` as inactive | Reuse `@selawmqt` as the English identity, then make its display name, bio, disclosure, and all future posts English-only before E0; preserve historical posts and never use Japanese `@aniccaxxx` or the shared daily-driver |
 | X publication | Postiz reports a 4,000-character limit and says body links are stripped; X's April 2026 automation rules prohibit scripted website automation | Use an owned registered page as the initial conversion surface and an approved API/Postiz adapter for autonomous distribution; browser is auth/readback/emergency-only, not the posting loop |
 | clip loop | launchd is installed, last exit code is 0, and logs show production/posting through 2026-08-01 | Not banned. Reuse its publisher, renderer, attribution, and scoring contracts |
 | recent clip runs | Contract reports `skipped`; older stderr shows Telegram DNS delivery failures | Diagnose scheduler/business gates separately from platform health |
@@ -226,6 +226,10 @@ candidate set is non-regulated B2B SaaS and
 creator/productivity software because its official programs expose higher or
 recurring payouts and the existing English publication lane reduces launch
 friction. Exact market-size superiority is unproven and is not a premise.
+Before its first Affiliate placement, change the current `sela` presentation to
+an English Anicca identity with an adjacent profile disclosure; future content
+is English-only. The 128 historical mixed-language posts remain historical data,
+not a reason to delete or fabricate a clean track record.
 
 Initial English capacity allocation:
 
@@ -472,8 +476,9 @@ without changing the architecture.
 - No English affiliate program application, approval, account ownership, or
   executable tracking link has been read back for this Agent.
 - English X ownership/login is resolved as `sela` / `@selawmqt`; legacy
-  `@aniccaen` is inactive. The account has 0 followers, so audience baseline and
-  organic distribution power remain unproven.
+  `@aniccaen` is inactive. The account has 128 mixed-language historical posts
+  and 0 followers, so rebranding and audience acquisition are required and
+  organic distribution power remains unproven.
 - Postiz auth and ID are known, but they prove only Japanese `@aniccaxxx`; no
   approved English API/Postiz integration for `@selawmqt` exists in live readback.
 - Postiz strips X body links; a separately verified reply-link capability or,
