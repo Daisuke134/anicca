@@ -653,6 +653,99 @@ test("known failures exhausting one date continue to the next open date in the s
   ]);
 });
 
+test("candidate budget returns a cursor and the next wake resumes after that candidate", async () => {
+  const input = await fixture();
+  const profile = Object.freeze({ tenant_id: TENANT, timezone: "Asia/Tokyo" });
+  const goalDecision = Object.freeze({ ranked_events: [
+    { event_ref: "luma-event://event/founder-night" },
+    { event_ref: "luma-event://event/agent-night" },
+  ] });
+  const spendSequence = Object.freeze({
+    ordered_candidates: [{
+      event_ref: "luma-event://event/founder-night",
+      canonical_url: "https://luma.com/founder-night",
+    }, {
+      event_ref: "luma-event://event/agent-night",
+      canonical_url: "https://luma.com/agent-night",
+    }],
+    skipped: [],
+  });
+  const delivered = Object.freeze({
+    status: "incomplete",
+    outcome: "open_coverage",
+    event_ref: "luma-event://event/agent-night",
+  });
+  const dependencies = {
+    ...input.deps,
+    readProfile() { return profile; },
+    async runLunaJudgment() { return goalDecision; },
+    async gateDateCalendar() {
+      return Object.freeze({
+        date: "2026-08-05",
+        candidates: spendSequence.ordered_candidates.map(({ event_ref }) => ({ event_ref, eligible: true })),
+      });
+    },
+    async createSpendPolicy() { return Object.freeze({ limits: [] }); },
+    planDateSpend() { return spendSequence; },
+    async runNativeWrite(value) {
+      input.calls.push(["write", value]);
+      return value.application.eventRef.endsWith("founder-night")
+        ? Object.freeze({
+          status: "incomplete",
+          outcome: "application_failed",
+          error_code: "LUMA_RSVP_UNAVAILABLE",
+          event_ref: "luma-event://event/founder-night",
+        })
+        : delivered;
+    },
+    createRouteMinutes() { return async () => 20; },
+    isVerifiedConnectorProfile: (value) => value === profile,
+    isVerifiedEventGoalSerendipity: (value) => value === goalDecision,
+    isVerifiedEventSpendSequence: (value) => value === spendSequence,
+  };
+  const baseConfig = {
+    ...input.config,
+    profilePath: "/private/tmp/dais-local.json",
+    lunaEvidenceDir: "/private/tmp/connector-luna",
+    homeLocation: "opaque-home",
+    telegramTarget: "opaque-chat",
+    calendarCoverageUrl: "https://calendar.google.com/calendar/u/0/r",
+    calendarId: "primary",
+    mapsKey: "maps-secret",
+    passCandidateBudget: 1,
+  };
+
+  const first = await runNativeConnectorPass({ ...input, config: baseConfig, deps: dependencies });
+  assert.deepEqual(first.cursor, {
+    status: "resume_after",
+    date: "2026-08-05",
+    event_ref: "luma-event://event/founder-night",
+    observed_at: NOW,
+  });
+  assert.deepEqual(input.calls.filter(([name]) => name === "write").map(([, value]) => value.application.eventRef), [
+    "luma-event://event/founder-night",
+  ]);
+
+  input.calls.length = 0;
+  const second = await runNativeConnectorPass({
+    ...input,
+    config: { ...baseConfig, cursor: first.cursor },
+    deps: {
+      ...dependencies,
+      async runNativeWrite(value) {
+        input.calls.push(["write", value]);
+        if (value.application.eventRef.endsWith("founder-night")) throw new Error("cursor did not advance");
+        return delivered;
+      },
+    },
+  });
+  assert.equal(second.write, delivered);
+  assert.equal(second.cursor, null);
+  assert.deepEqual(input.calls.filter(([name]) => name === "write").map(([, value]) => value.application.eventRef), [
+    "luma-event://event/agent-night",
+  ]);
+});
+
 test("native runtime exposes only its bounded failing stage", async () => {
   const input = await fixture();
   input.deps.createAuth = () => ({ async ensureAuthenticated() { throw new Error("raw cookie leak"); } });

@@ -52,6 +52,26 @@ function requiredText(value) {
   return text;
 }
 
+function passCandidateBudget(value) {
+  if (value == null) return Number.MAX_SAFE_INTEGER;
+  const budget = Number(value);
+  if (!Number.isSafeInteger(budget) || budget < 1 || budget > 100) unavailable();
+  return budget;
+}
+
+function resumeCursor(value) {
+  if (value == null) return null;
+  if (
+    !value || typeof value !== "object" || Array.isArray(value)
+    || Object.keys(value).sort().join(",") !== "date,event_ref,observed_at,status"
+    || value.status !== "resume_after"
+    || !/^\d{4}-\d{2}-\d{2}$/.test(String(value.date || ""))
+    || !/^luma-event:\/\/event\/[A-Za-z0-9_-]+$/.test(String(value.event_ref || ""))
+  ) unavailable();
+  exactInstant(value.observed_at);
+  return Object.freeze({ ...value });
+}
+
 function nextDate(dateKey) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(String(dateKey))) unavailable();
   const [year, month, day] = dateKey.split("-").map(Number);
@@ -256,6 +276,10 @@ async function runNativeConnectorPass(input = {}) {
 
     let write = null;
     const candidateAttempts = [];
+    const candidateBudget = passCandidateBudget(config.passCandidateBudget);
+    const inputCursor = resumeCursor(config.cursor);
+    let outputCursor = null;
+    let attemptCount = 0;
     const suppressedEventRefs = activeSuppressedEventRefs({
       attempts: Array.isArray(config.candidateAttempts) ? config.candidateAttempts : [],
       now,
@@ -290,6 +314,7 @@ async function runNativeConnectorPass(input = {}) {
       const policy = await createSpendPolicy({ tenantId, limits: profile.spend_policy && profile.spend_policy.limits });
       let selected = false;
       judgmentLoop: for (const judgmentDay of judgmentDays) {
+        if (inputCursor && judgmentDay.date < inputCursor.date) continue;
         failureCode = "CONNECTOR_NATIVE_CALENDAR_GATE_FAILED";
         const calendarGate = await gateDateCalendar(
           dateInventory, busyInventory, judgmentDay.date, requiredText(config.homeLocation), routeMinutes,
@@ -309,7 +334,14 @@ async function runNativeConnectorPass(input = {}) {
         failureCode = "CONNECTOR_NATIVE_SPEND_GATE_FAILED";
         const spendSequence = await planDateSpend(policy, dateInventory, calendarGate, goalDecision);
         if (!verifySpendSequence(spendSequence)) unavailable();
-        const orderedCandidates = spendSequence.ordered_candidates.filter(
+        let resumableCandidates = spendSequence.ordered_candidates;
+        if (inputCursor && judgmentDay.date === inputCursor.date) {
+          const cursorIndex = resumableCandidates.findIndex(
+            (candidate) => candidate.event_ref === inputCursor.event_ref,
+          );
+          if (cursorIndex >= 0) resumableCandidates = resumableCandidates.slice(cursorIndex + 1);
+        }
+        const orderedCandidates = resumableCandidates.filter(
           (candidate) => !suppressedEventRefs.has(candidate.event_ref),
         );
         if (orderedCandidates.length === 0) continue;
@@ -354,6 +386,19 @@ async function runNativeConnectorPass(input = {}) {
             observed_at: now,
             retry_after: null,
           }));
+          attemptCount += 1;
+          if (
+            candidateOutcome.classification === "known_no_effect"
+            && attemptCount >= candidateBudget
+          ) {
+            outputCursor = Object.freeze({
+              status: "resume_after",
+              date: judgmentDay.date,
+              event_ref: selectedRef,
+              observed_at: now,
+            });
+            break judgmentLoop;
+          }
           if (candidateOutcome.classification !== "known_no_effect") break judgmentLoop;
         }
       }
@@ -395,6 +440,7 @@ async function runNativeConnectorPass(input = {}) {
       candidate,
       write,
       candidate_attempts: Object.freeze([...candidateAttempts]),
+      cursor: outputCursor,
       continuation: Object.freeze({
         status: continuation.status,
         open_date_count: continuation.open_date_count,
