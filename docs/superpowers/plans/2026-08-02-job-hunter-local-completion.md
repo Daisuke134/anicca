@@ -2975,7 +2975,7 @@ OpenTelemetry decision and primary sources:
         to trace/span IDs inside `L-49K0D2`, where the resident cron migration to
         Temporal is implemented. The measured resident runtime has no Temporal
         Workflow or Activity today, so this gate may not fabricate those IDs early.
-  - [ ] `L-49K0C2O5` — Install native loopback-only OpenTelemetry collection, private
+  - [x] `L-49K0C2O5` — Install native loopback-only OpenTelemetry collection, private
     durable trace storage, health evidence, bounded retention, and an operator query
     view. Docker is not a runtime dependency. Export failure must never stop
     applications. Parent closes only after all children.
@@ -3007,11 +3007,19 @@ OpenTelemetry decision and primary sources:
         post-install probe exposed a readiness race; the installer now waits at most
         ten seconds for health and atomically writes a mode-0600 receipt containing
         only version, PID, archive SHA, and loopback endpoints.
-    - [ ] `L-49K0C2O5c` — Add private indexed trace queries and 30-day/size-bounded
+    - [x] `L-49K0C2O5c` — Add private indexed trace queries and 30-day/size-bounded
       retention for pass/candidate/route timelines, failure classes, confirmation,
       repair, promotion/rollback, and resumed outcome. Grafana remains optional for
       the later web product, not a local Submit dependency (3 files, soft target
       100 LOC).
+      - Completion receipt: RED failed because no trace index existed. GREEN ingests
+        Collector JSONL into a mode-0600 SQLite index keyed by trace/span, indexes
+        failure/application timelines, deduplicates replay, stores only the existing
+        telemetry allowlist, and prunes by nanosecond cutoff. A private email fixture
+        is absent from the stored/query projection. Focused test passes 1/1,
+        observability tests pass 7/7, and the full suite passes 492/492. File rotation
+        remains bounded at 10 MB/30 days/10 backups by O5a; the index exposes an
+        atomic cutoff prune used by maintenance.
     - Decision correction: Grafana documents Docker LGTM as the easiest combined
       backend for development/demo/testing, but Apple recommends `launchd` for macOS
       user agents and OpenTelemetry documents a same-host Collector agent pattern.
