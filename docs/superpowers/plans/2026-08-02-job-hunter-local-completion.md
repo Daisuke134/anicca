@@ -3826,9 +3826,16 @@ OpenTelemetry decision and primary sources:
           retains extraction provider, and has no application status, provider receipt,
           candidate creation, browser, or persistence API. Unsafe apply URLs and
           model-supplied `applied` claims are discarded. Focused tests pass 3/3.
-      - [ ] `L-49K5B3b` — Adapt SmartExtract JSON-LD and captured-API job rows into
+      - [x] `L-49K5B3b` — Adapt SmartExtract JSON-LD and captured-API job rows into
         the existing normalized discovery contract. Bound inspected payloads and
         emitted rows; malformed selectors/data never become executable browser input.
+        - Evidence: `job_search_loop/smart_extract_contract.py` accepts only passive
+          `json_ld` or `api_response` rows, requires an explicit job URL and title,
+          resolves relative links, caps output at 50 and descriptions at 1,000
+          characters, and distinguishes same-origin official results from cross-origin
+          leads. Any selector/script/extraction-plan key is rejected rather than
+          executed. It owns no browser, LLM, queue, or database. Focused tests pass
+          3/3, including the empty-URL regression found during GREEN.
       - [ ] `L-49K5B3c` — Pin the useful direct-career site patterns and run their
         outputs through B3b and the existing queue. Do not create a second Playwright
         browser, LLM owner, database, or continuous extractor loop.
