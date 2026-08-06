@@ -2481,6 +2481,18 @@ the resident worker from producing one authoritative application receipt:
         remains open until group labels are captured, every unanswered required group
         is a blocker, verified phone is filled, and the same resident pass continues
         to another candidate when one role remains blocked.
+      - Local repair complete, resident proof still required: the value-free snapshot
+        now captures nearby question-group labels and treats their explicit required
+        marker as required without collecting entered values. Verified `profile.base`
+        and verified phone are grounded answers; legal/work-authorization/start-date/
+        certification questions remain blockers unless an exact private-profile fact
+        exists. The worker now ranks up to three supported candidates, preserves each
+        candidate's separate snapshot/fill/image evidence, continues after a blocked
+        form, and stops only at a zero-blocker pre-submit state without exposing a
+        Submit operation. Focused tests pass 24/24 and the full Job Hunter suite passes
+        416/416. The next atomic action is immutable release activation followed by a
+        resident launchd run proving group capture and same-pass continuation on real
+        ATS pages.
 - [ ] **L-49K0C1** — Implement the same-role alternate-route ladder: canonical ATS,
   alternate official employer URL, explicitly accepted recruiting-email application,
   verified public work-address recruiting outreach, then the next eligible role.

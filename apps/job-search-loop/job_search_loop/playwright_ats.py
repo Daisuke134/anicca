@@ -4,7 +4,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from .ats import (
     SUPPORTED_FILL_PROVIDERS,
@@ -68,6 +68,12 @@ def grounded_profile_answers(profile: dict[str, Any]) -> dict[str, dict[str, Any
         value = candidate.get(profile_key)
         if isinstance(value, str) and value.strip():
             answers[field_key] = {"value": value.strip(), "fact_ids": [fact_id]}
+    base = candidate.get("base")
+    if isinstance(base, str) and base.strip():
+        answers["location"] = {
+            "value": base.strip(),
+            "fact_ids": ["profile.base"],
+        }
     phone = candidate.get("phone")
     if (
         candidate.get("phone_status") == "verified"
@@ -81,7 +87,9 @@ def grounded_profile_answers(profile: dict[str, Any]) -> dict[str, dict[str, Any
     return answers
 
 
-def select_pre_submit_candidate(payload: dict[str, Any]) -> dict[str, Any] | None:
+def ranked_pre_submit_candidates(
+    payload: dict[str, Any], *, limit: int = 3
+) -> list[dict[str, Any]]:
     candidates = payload.get("candidates")
     if not isinstance(candidates, list):
         raise ValueError("prefilter candidates are missing")
@@ -102,7 +110,33 @@ def select_pre_submit_candidate(payload: dict[str, Any]) -> dict[str, Any] | Non
         ),
         reverse=True,
     )
+    return supported[:limit]
+
+
+def select_pre_submit_candidate(payload: dict[str, Any]) -> dict[str, Any] | None:
+    supported = ranked_pre_submit_candidates(payload, limit=1)
     return supported[0] if supported else None
+
+
+def attempt_ranked_candidates(
+    candidates: list[dict[str, Any]],
+    attempt: Callable[[dict[str, Any]], dict[str, Any]],
+) -> dict[str, Any]:
+    blocked: list[str] = []
+    attempted_count = 0
+    for index, candidate in enumerate(candidates, start=1):
+        attempted_count += 1
+        receipt = attempt(candidate)
+        if receipt.get("claim_ready") is True:
+            blocked.append("pre_submit_claim_ready_no_submit")
+            break
+        reasons = list(receipt.get("blockers") or ["application_surface_not_ready"])
+        blocked.extend(f"candidate_{index}:{reason}" for reason in reasons)
+    return {
+        "status": "pending_verification",
+        "blocked": blocked or ["no_ranking_ready_candidate"],
+        "attempted_count": attempted_count,
+    }
 
 
 def _page_targets(session: Any) -> set[str]:
@@ -117,19 +151,34 @@ def _page_targets(session: Any) -> set[str]:
 def capture_snapshot(page: Any, *, navigation_committed: bool) -> dict[str, Any]:
     frames = []
     script = """nodes => nodes.map(n => {
+      const clean = value => (value || '').replace(/\\s+/g, ' ').trim();
       const explicit = n.getAttribute('aria-label') || '';
       const associated = n.labels && n.labels.length
         ? Array.from(n.labels).map(x => (x.innerText || x.textContent || '').trim()).join(' ')
         : '';
       const placeholder = n.getAttribute('placeholder') || '';
+      const ownText = clean(n.innerText || n.textContent || '');
+      let groupLabel = '';
+      let cursor = n.parentElement;
+      for (let depth = 0; cursor && depth < 6; depth += 1, cursor = cursor.parentElement) {
+        const lines = (cursor.innerText || '').split('\\n').map(clean).filter(Boolean);
+        const question = lines.find(line =>
+          line !== ownText && line.length <= 1000 && (line.endsWith('*') || line.includes('?'))
+        );
+        if (question) {
+          groupLabel = question;
+          break;
+        }
+      }
       return {
         tag: (n.tagName || '').toLowerCase(),
         type: n.getAttribute('type') || '',
         role: n.getAttribute('role') || '',
         label: explicit || associated || placeholder,
         name: n.getAttribute('name') || '',
-        text: (n.innerText || n.textContent || '').trim(),
-        required: Boolean(n.required) || n.getAttribute('aria-required') === 'true'
+        text: ownText,
+        group_label: groupLabel,
+        required: Boolean(n.required) || n.getAttribute('aria-required') === 'true' || groupLabel.endsWith('*')
       };
     })"""
     for frame in page.frames:
@@ -181,19 +230,16 @@ def run_pre_submit(
     materials_root: Path,
     evidence_dir: Path,
 ) -> dict[str, Any]:
-    candidate = select_pre_submit_candidate(
-        json.loads(prefilter_result.read_text(encoding="utf-8"))
+    candidates = ranked_pre_submit_candidates(
+        json.loads(prefilter_result.read_text(encoding="utf-8")), limit=3
     )
-    if candidate is None:
+    if not candidates:
         return {"status": "pending_verification", "blocked": ["no_ranking_ready_candidate"]}
     profile = json.loads(profile_path.read_text(encoding="utf-8"))
     owner_endpoint = owner_receipt.get("endpoint")
     if not isinstance(owner_endpoint, str) or not owner_endpoint:
         return {"status": "pending_verification", "blocked": ["browser_owner_endpoint_missing"]}
-    url = str(candidate.get("official_url") or "")
-    provider = detect_provider(url)
     evidence_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
-    digest = hashlib.sha256(url.encode("utf-8")).hexdigest()
     try:
         from playwright.sync_api import sync_playwright
 
@@ -214,58 +260,66 @@ def run_pre_submit(
             target = page_session.send("Target.getTargetInfo")["targetInfo"]["targetId"]
             ownership.register_created(target)
             try:
-                page.goto(
-                    _application_url(url, provider),
-                    wait_until="commit",
-                    timeout=45_000,
-                )
-                page.locator("input[type=file]").first.wait_for(
-                    state="attached", timeout=20_000
-                )
-                snapshot = capture_snapshot(page, navigation_committed=True)
-                snapshot_path = evidence_dir / f"ats-snapshot-{digest}.json"
-                _private_write(snapshot_path, snapshot)
-                snapshot_sha256 = hashlib.sha256(snapshot_path.read_bytes()).hexdigest()
-                evaluation = evaluate_snapshot(snapshot)
-                _private_write(
-                    evidence_dir / f"ats-evaluation-{digest}.json", evaluation
-                )
-                if not evaluation["claim_ready"]:
+                def attempt(candidate: dict[str, Any]) -> dict[str, Any]:
+                    url = str(candidate.get("official_url") or "")
+                    provider = detect_provider(url)
+                    digest = hashlib.sha256(url.encode("utf-8")).hexdigest()
+                    page.goto(
+                        _application_url(url, provider),
+                        wait_until="commit",
+                        timeout=45_000,
+                    )
+                    page.locator("input[type=file]").first.wait_for(
+                        state="attached", timeout=20_000
+                    )
+                    snapshot = capture_snapshot(page, navigation_committed=True)
+                    snapshot_path = evidence_dir / f"ats-snapshot-{digest}.json"
+                    _private_write(snapshot_path, snapshot)
+                    snapshot_sha256 = hashlib.sha256(snapshot_path.read_bytes()).hexdigest()
+                    evaluation = evaluate_snapshot(snapshot)
+                    _private_write(
+                        evidence_dir / f"ats-evaluation-{digest}.json", evaluation
+                    )
+                    if not evaluation["claim_ready"]:
+                        return {
+                            "claim_ready": False,
+                            "blockers": list(
+                                evaluation.get("blockers")
+                                or ["application_surface_not_ready"]
+                            ),
+                        }
+                    posting_text = " ".join(
+                        str(value) for value in candidate.get("source_spans", [])
+                    )
+                    routed = select_resume(
+                        posting_text=posting_text,
+                        role_family=str(candidate.get("role_family") or "unknown"),
+                        materials_root=materials_root,
+                        posting_language=str(candidate.get("language") or "en"),
+                    )
+                    plan = build_non_submit_fill_plan(
+                        snapshot,
+                        answers=grounded_profile_answers(profile),
+                        resume_path=routed["resume_path"],
+                        resume_sha256=routed["resume_sha256"],
+                    )
+                    receipt = execute_non_submit_fill_plan(
+                        plan,
+                        adapter=PlaywrightFillAdapter(page),
+                        owner_receipt=owner_receipt,
+                        snapshot_sha256=snapshot_sha256,
+                        screenshot_path=evidence_dir / f"pre-submit-{digest}.png",
+                        receipt_path=evidence_dir / f"fill-receipt-{digest}.json",
+                    )
                     return {
-                        "status": "pending_verification",
-                        "blocked": list(evaluation.get("blockers") or ["application_surface_not_ready"]),
+                        "claim_ready": receipt["status"] == "claim_ready",
+                        "blockers": [
+                            f"pre_submit_blocked:{item}"
+                            for item in receipt.get("blockers", [])
+                        ],
                     }
-                posting_text = " ".join(
-                    str(value) for value in candidate.get("source_spans", [])
-                )
-                routed = select_resume(
-                    posting_text=posting_text,
-                    role_family=str(candidate.get("role_family") or "unknown"),
-                    materials_root=materials_root,
-                    posting_language=str(candidate.get("language") or "en"),
-                )
-                plan = build_non_submit_fill_plan(
-                    snapshot,
-                    answers=grounded_profile_answers(profile),
-                    resume_path=routed["resume_path"],
-                    resume_sha256=routed["resume_sha256"],
-                )
-                receipt = execute_non_submit_fill_plan(
-                    plan,
-                    adapter=PlaywrightFillAdapter(page),
-                    owner_receipt=owner_receipt,
-                    snapshot_sha256=snapshot_sha256,
-                    screenshot_path=evidence_dir / f"pre-submit-{digest}.png",
-                    receipt_path=evidence_dir / f"fill-receipt-{digest}.json",
-                )
-                return {
-                    "status": "pending_verification",
-                    "blocked": (
-                        ["pre_submit_claim_ready_no_submit"]
-                        if receipt["status"] == "claim_ready"
-                        else [f"pre_submit_blocked:{item}" for item in receipt["blockers"]]
-                    ),
-                }
+
+                return attempt_ranked_candidates(candidates, attempt)
             finally:
                 current = _page_targets(browser_session)
                 for target_id in ownership.closable(current):

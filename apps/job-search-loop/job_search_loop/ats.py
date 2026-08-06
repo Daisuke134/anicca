@@ -59,6 +59,7 @@ def _field_key(control: dict[str, Any]) -> str | None:
     control_type = _normalized(control.get("type"))
     text = _control_text(control)
     label = _normalized(control.get("label"))
+    group_label = _normalized(control.get("group_label"))
     if control_type == "email" or text in {"email", "email address"}:
         return "email"
     if control_type == "file" and any(
@@ -71,11 +72,19 @@ def _field_key(control: dict[str, Any]) -> str | None:
         return "last_name"
     if label in {"name", "full name", "legal name", "preferred name"}:
         return "full_name"
+    if control_type == "tel" or "phone number" in group_label or "phone number" in text:
+        return "phone"
+    if "where are you currently located" in group_label:
+        return "location"
+    if "linkedin" in group_label or "linkedin" in text:
+        return "linkedin"
+    if "github" in group_label or "github" in text:
+        return "github"
     return None
 
 
 def _question(control: dict[str, Any]) -> str:
-    for key in ("label", "name", "text"):
+    for key in ("group_label", "label", "name", "text"):
         value = control.get(key)
         if isinstance(value, str) and value.strip():
             return re.sub(r"\s+", " ", value).strip()
@@ -143,7 +152,8 @@ def build_non_submit_fill_plan(
                     )
                     continue
             if control.get("required") is True:
-                blockers.append(question)
+                if question not in blockers:
+                    blockers.append(question)
     return {
         "version": 1,
         "provider": provider,
