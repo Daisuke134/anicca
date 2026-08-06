@@ -104,3 +104,19 @@
 - [ ] **Step 6: Run the existing Connector launchd live acceptance** and require one trace with one target, one agent session, zero agent closes, real submit, parent marker readback, PNG SHA, and parent release. Do not touch Gig or `:9223`.
 - Run 178 observation: schedule-owned lifecycle and parent cleanup were healthy, but no new form submit occurred; two existing-effect readbacks produced PNG evidence and then stopped at ticket evidence, while two candidates were unavailable. This is not Step 6 completion.
 - [ ] **Step 7: Update the master spec with measured evidence and commit** using `feat(connector): complete page-scoped registration transaction`.
+
+### Task 4: Keep Optional Ticket Enrichment Out of the Core Delivery Gate
+
+**Files:**
+- Modify: `apps/life-manager/lib/connector-native-write-pipeline.js`
+- Modify: `apps/life-manager/lib/connector-native-write-pipeline.test.js`
+
+**Interfaces:**
+- Consumes: verified provider marker/PNG receipt plus optional confirmation-mail and ticket-QR services.
+- Produces: Calendar, coverage, and registration-page Telegram delivery from the core receipt even when optional mail/QR enrichment is unavailable. A verified ticket is delivered additionally when present.
+
+- [ ] **Step 1: Write a failing regression test** reproducing run 178: confirmation/QR failure after a verified RSVP must still call Calendar, coverage rebuild, message build, and registration-page Telegram delivery; it must not claim ticket delivery.
+- [ ] **Step 2: Run the focused test and verify RED:** `cd apps/life-manager && node --test lib/connector-native-write-pipeline.test.js`.
+- [ ] **Step 3: Implement the smallest state-machine change.** Capture ticket enrichment failure as a bounded optional status, continue the core chain, and attempt ticket Telegram only when a verified ticket artifact exists. Ticket Telegram failure also remains optional and observable.
+- [ ] **Step 4: Run focused, pretest, and full outbound suites.**
+- [ ] **Step 5: Commit/push, then let the existing Connector launchd prove Calendar and registration-page Telegram receipt on the next verified registration readback.** Do not touch Gig or `:9223`.
