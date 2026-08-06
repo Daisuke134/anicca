@@ -6,6 +6,7 @@ source "$SCRIPT_DIR/runtime-paths.sh"
 
 RUN_ID="daily-$(date +%Y%m%d-%H%M%S)"
 EVIDENCE="$JOB_SEARCH_STATE_ROOT/evidence/$RUN_ID"
+export JOB_SEARCH_EVIDENCE_DIR="$EVIDENCE"
 TELEGRAM_OUTBOX="$JOB_SEARCH_STATE_ROOT/telegram-outbox.sqlite3"
 RESULT_PATH="$EVIDENCE/browser-worker-result.json"
 FILL_CANARY_REQUEST="$JOB_SEARCH_STATE_ROOT/ashby-fill-canary-request.json"
