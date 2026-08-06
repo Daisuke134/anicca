@@ -10,6 +10,11 @@ const { runNativePass } = require("../native-pass.js");
 
 const REPO_ROOT = path.resolve(__dirname, "../../..");
 
+test("official foreground entrypoint is directly executable", () => {
+  const mode = fs.statSync(path.join(REPO_ROOT, "skills", "connector", "run.sh")).mode;
+  assert.notEqual(mode & 0o111, 0);
+});
+
 test("official native pass forwards only the bounded minimal wake contract", async () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "connector-native-minimal-"));
   const observed = [];
