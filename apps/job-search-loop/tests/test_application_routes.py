@@ -50,12 +50,21 @@ class ApplicationRouteLedgerTests(unittest.TestCase):
         self.assertEqual(len({route["cross_route_key"] for route in routes}), 1)
         self.assertEqual(routes[0]["cross_route_key"], "example::ai deployment engineer")
 
-    def test_only_one_route_can_hold_action_authority_and_unknown_delivery_fences_replay(self):
+    def test_ats_and_email_have_independent_at_most_once_action_fences(self):
         ats = self._route("canonical_ats", "https://jobs.example.test/role", 1)
+        alternate_ats = self._route(
+            "alternate_official", "https://careers.example.test/role", 2
+        )
         email = self._route(
             "recruiting_email",
             "jobs@example.test",
             3,
+            acceptance="accepts_applications",
+        )
+        second_email = self._route(
+            "recruiting_email",
+            "talent@example.test",
+            4,
             acceptance="accepts_applications",
         )
         message_sha = hashlib.sha256(b"exact message").hexdigest()
@@ -71,7 +80,7 @@ class ApplicationRouteLedgerTests(unittest.TestCase):
         )
         with self.assertRaises(FenceError):
             self.ledger.claim_application_route(
-                email,
+                alternate_ats,
                 actor="resident_worker",
                 fence=2,
                 message_path="/private/message.txt",
@@ -79,14 +88,6 @@ class ApplicationRouteLedgerTests(unittest.TestCase):
                 resume_path="/private/resume.pdf",
                 resume_sha256=resume_sha,
             )
-
-        self.ledger.complete_application_route(
-            ats,
-            fence=1,
-            state="failed",
-            provider_id="ashby:block",
-            evidence_sha256=hashlib.sha256(b"ats failed").hexdigest(),
-        )
         self.ledger.claim_application_route(
             email,
             actor="resident_worker",
@@ -95,6 +96,23 @@ class ApplicationRouteLedgerTests(unittest.TestCase):
             message_sha256=message_sha,
             resume_path="/private/resume.pdf",
             resume_sha256=resume_sha,
+        )
+        with self.assertRaises(FenceError):
+            self.ledger.claim_application_route(
+                second_email,
+                actor="resident_worker",
+                fence=3,
+                message_path="/private/message.txt",
+                message_sha256=message_sha,
+                resume_path="/private/resume.pdf",
+                resume_sha256=resume_sha,
+            )
+        self.ledger.complete_application_route(
+            ats,
+            fence=1,
+            state="failed",
+            provider_id="ashby:block",
+            evidence_sha256=hashlib.sha256(b"ats failed").hexdigest(),
         )
         self.ledger.complete_application_route(
             email,
@@ -114,7 +132,7 @@ class ApplicationRouteLedgerTests(unittest.TestCase):
                 resume_path="/private/resume.pdf",
                 resume_sha256=resume_sha,
             )
-        route = self.ledger.application_routes(self.application_id)[1]
+        route = self.ledger.application_routes(self.application_id)[2]
         self.assertEqual(route["delivery_state"], "delivery_unknown")
         self.assertEqual(route["provider_id"], "gmail:request-started")
         self.assertEqual(route["message_sha256"], message_sha)

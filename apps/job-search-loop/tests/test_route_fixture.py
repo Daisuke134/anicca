@@ -52,7 +52,8 @@ class RouteFixtureTests(unittest.TestCase):
             )
             self.assertTrue(all(item["state"] == "failed" for item in result["ordered_attempts"]))
             self.assertEqual(result["replay_status"], "no_eligible_route")
-            self.assertEqual(result["crash_replay_status"], "cross_route_fenced")
+            self.assertEqual(result["ats_crash_replay_status"], "ats_action_fenced")
+            self.assertEqual(result["email_fallback_status"], "email_claimed")
             self.assertEqual(result["actor_provenance"]["actor"], "resident_worker")
             self.assertEqual(result["actor_provenance"]["worker_pid"], os.getpid())
 
