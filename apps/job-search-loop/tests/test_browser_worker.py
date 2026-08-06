@@ -60,12 +60,12 @@ class BrowserWorkerTests(unittest.TestCase):
         for value in (captured["running_receipt"], completed_receipt, result):
             self.assertEqual(value["trace_id"], "1" * 32)
             self.assertEqual(value["span_id"], "2" * 16)
-    def test_default_pre_submit_runner_is_the_pinned_browser_use_adapter(self):
+    def test_default_pre_submit_runner_is_direct_cloakbrowser_cdp(self):
         source = (
             Path(__file__).parents[1] / "job_search_loop" / "browser_worker.py"
         ).read_text(encoding="utf-8")
-        self.assertIn("from .browser_use_ats import run_pre_submit", source)
-        self.assertNotIn("from .playwright_ats import run_pre_submit", source)
+        self.assertIn("from .playwright_ats import run_pre_submit", source)
+        self.assertNotIn("from .browser_use_ats import run_pre_submit", source)
 
     def test_daily_loop_consumes_route_fixture_before_models_or_live_browser_work(self):
         script = (

@@ -141,7 +141,7 @@ def run_worker(
             if profile_path is None or materials_root is None or evidence_dir is None:
                 raise ValueError("pre-submit runner inputs are incomplete")
             if pre_submit_runner is None:
-                from .browser_use_ats import run_pre_submit
+                from .playwright_ats import run_pre_submit
 
                 pre_submit_runner = run_pre_submit
             route_materialization: list[dict[str, Any]] = []

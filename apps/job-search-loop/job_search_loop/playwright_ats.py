@@ -20,6 +20,7 @@ from .resume_routing import select_resume
 CONTROL_SELECTOR = (
     "input, textarea, select, button, a, [role=button], [role=alert], [role=status]"
 )
+EXECUTOR = "cloakbrowser-cdp"
 
 
 def _private_write(path: Path, value: dict[str, Any]) -> None:
@@ -259,16 +260,17 @@ def run_pre_submit(
     profile_path: Path,
     materials_root: Path,
     evidence_dir: Path,
+    telemetry: Any = None,
 ) -> dict[str, Any]:
     candidates = ranked_pre_submit_candidates(
         json.loads(prefilter_result.read_text(encoding="utf-8")), limit=3
     )
     if not candidates:
-        return {"status": "pending_verification", "blocked": ["no_ranking_ready_candidate"]}
+        return {"status": "pending_verification", "blocked": ["no_ranking_ready_candidate"], "executor": EXECUTOR}
     profile = json.loads(profile_path.read_text(encoding="utf-8"))
     owner_endpoint = owner_receipt.get("endpoint")
     if not isinstance(owner_endpoint, str) or not owner_endpoint:
-        return {"status": "pending_verification", "blocked": ["browser_owner_endpoint_missing"]}
+        return {"status": "pending_verification", "blocked": ["browser_owner_endpoint_missing"], "executor": EXECUTOR}
     evidence_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
     try:
         from playwright.sync_api import sync_playwright
@@ -349,7 +351,7 @@ def run_pre_submit(
                         ],
                     }
 
-                return attempt_ranked_candidates(candidates, attempt)
+                return {**attempt_ranked_candidates(candidates, attempt), "executor": EXECUTOR}
             finally:
                 current = _page_targets(browser_session)
                 for target_id in ownership.closable(current):
@@ -358,4 +360,5 @@ def run_pre_submit(
         return {
             "status": "pending_verification",
             "blocked": [f"pre_submit_error:{type(error).__name__}"],
+            "executor": EXECUTOR,
         }
