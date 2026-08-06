@@ -14,6 +14,7 @@ SENSITIVE_FIELDS = (
     "date_of_birth",
     "mailing_address",
 )
+PUBLIC_MAILING_GEOGRAPHY_FIELDS = frozenset({"city", "state_region", "country"})
 
 
 class ProfileLeakError(RuntimeError):
@@ -49,7 +50,14 @@ def scan_provider_log(
     sensitive: list[tuple[str, str]] = []
     for field in SENSITIVE_FIELDS:
         if field in candidate:
-            sensitive.extend(_values(candidate[field], field))
+            value = candidate[field]
+            if field == "mailing_address" and isinstance(value, dict):
+                value = {
+                    key: item
+                    for key, item in value.items()
+                    if key not in PUBLIC_MAILING_GEOGRAPHY_FIELDS
+                }
+            sensitive.extend(_values(value, field))
     text = log_bytes.decode("utf-8", errors="replace")
     folded = text.casefold()
     leaked_fields = sorted(
