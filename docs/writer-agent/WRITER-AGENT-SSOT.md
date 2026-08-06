@@ -154,6 +154,57 @@ LLM orchestration, where the model plans and selects tools, from code
 orchestration used for deterministic boundaries:
 https://openai.github.io/openai-agents-python/multi_agent/.
 
+#### Execution ownership
+
+The installed production Writer loop is the executor. The primary development
+session is its architect, operator, and verifier; it is not a substitute article
+writer or publisher.
+
+- `ai.anicca.article-daily` creates the daily work item and its Agent writes,
+  researches, selects tools, and attempts publication.
+- the installed same-run recovery owner resumes unfinished destination intents;
+  the primary session does not manually publish them in its place;
+- the learning, demand, opportunity, money, and report workers collect and feed
+  their own production evidence back into the Writer;
+- the primary session reads receipts, repairs the loop or its tools when the
+  production Agent exposes a defect, deploys that repair, kickstarts the real
+  loop, and watches the loop's external receipts;
+- a manual browser/API action by the primary session is diagnostic evidence or
+  an isolated repair verification only. It cannot satisfy a Writer live
+  acceptance criterion unless the installed loop subsequently performs and
+  verifies the same capability itself.
+
+Every remaining implementation TODO is therefore shorthand for **make the
+installed Writer loop own and prove this behavior**. “Publish active-six” means
+kickstart and observe the production loop until it returns six publisher-native
+readbacks; it never means the development session posts six articles by hand.
+
+#### Closed self-healing and self-improvement loop
+
+The complete production cycle is:
+
+```text
+OBSERVE demand + prior metrics
+  -> PLAN reader outcome, article, distribution, and experiment
+  -> ACT research + write + publish through Agent-selected tools
+  -> VERIFY publisher-native readback and payment/metric receipts
+  -> HEAL any runtime/tool/publisher failure and resume the same work item
+  -> EVALUATE matched quality, funnel, revenue, fee, and compute-cost evidence
+  -> LEARN one evidence-backed strategy change
+  -> CANARY the candidate against the retained baseline
+  -> KEEP or REVERT
+  -> CONSUME the winning strategy in a later production article
+  -> repeat
+```
+
+Self-healing means the production Agent detects an incomplete outcome from its
+own external evidence, diagnoses it, repairs or changes its tool path within
+the safety kernel, and resumes the same work item. Self-improvement means a
+measured strategy candidate changes a later article only after matched replay
+and a real canary, with an exact rollback. Neither term is satisfied by a cron
+restart, a prose lesson, a model self-score, or a developer manually completing
+the failed publication.
+
 ### 2.1 No passive waiting
 
 If safe work can run now, the Agent runs it now. A missed or incomplete daily
@@ -1415,12 +1466,14 @@ foreground order is binding:
 Read as one end-to-end completion route, the remaining work is:
 
 ```text
-1a   finish the reader terminal hash contract for current-artifact evaluation
-  -> 1b   turn publisher errors into Agent observations, not terminal unavailable
-  -> 1c   repair and resume note, Dev.to, Substack, X Article, and Zenn from the
-          same work item until at least two independent publishers return live URLs
-  -> 1d   complete all active-six readbacks and prove three consecutive days,
-          duplicate zero
+1a   make the production loop emit hash-bound reader terminals
+  -> 1b   make the loop return publisher errors to its Agent as observations,
+          not terminal unavailable
+  -> 1c   kickstart the installed loop and prove that it diagnoses, repairs, and
+          resumes note, Dev.to, Substack, X Article, and Zenn from the same work
+          item until at least two independent publishers return live URLs
+  -> 1d   keep the installed loop running until its own receipts prove all
+          active-six readbacks for three consecutive days, duplicate zero
   -> 4  replace vendor-news supply with full-page paid-demand selection
   -> 8  expose the receipt-backed Money Control publicly
   -> 9/10  advance publisher opportunities to real payment or honest rejection
