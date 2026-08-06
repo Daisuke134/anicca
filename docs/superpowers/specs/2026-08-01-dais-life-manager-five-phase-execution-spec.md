@@ -2737,7 +2737,7 @@ flowchart LR
 13. Observer trace packを実装する。run/event/capability versionへaction、URL class、control label、validation class、screenshot SHA、provider readbackをbindし、PII/secretなしのreplay fixtureをincidentへ添付する。
 14. [pause] self-fix producerはDaisの明示指示で停止する。task deliveryのlive E2Eが成立するまで再開しない。
 15. self-build consumerを復旧し、protected-path、permission、focused/full test、rollback、隔離CloakBrowser canaryを通過したrevisionだけをmerge・再配備する。canary failureは同incidentの次revisionへ戻す。
-16. [~] Connector launchd自身を再wakeし、同型live eventでsubmit→登録済みreadback→PNG→Calendar→Telegram positive IDまで成立するまで反復する。run 154は旧capability suppressionにより`unsuppressed=0`。`luma-agentic-terra-v2`は、loop内Terraが既存CloakBrowserでフォームを視覚操作し、親providerがreload後に登録済みを再検証する経路として配備中。
+16. [~] Connector launchd自身を再wakeし、同型live eventでsubmit→登録済みreadback→PNG→Calendar→Telegram positive IDまで成立するまで反復する。run 154は旧capability suppressionにより`unsuppressed=0`。run 155のv2は申込Terra起動まで到達したがresponse schemaの`status.type`欠落でHTTP 400。`luma-agentic-terra-v3`で修正し再配備する。
 17. golden traceで確認したtrusted Gmail OTPとLuma→主催公式site handoffをprovider capabilityとして実装し、Lumaだけでは本登録にならないeventを公式readbackまで完了する。
 18. Lumaと公式siteの二枚のscreenshot、Calendar event ID、Telegram message IDを一つのevent lineage receiptへ保存し、loop主体のlive E2Eを実証する。
 19. source registry contractを追加し、各providerの`discovery / registration / effect_readback / screenshot_evidence` capabilityをclosed schemaで宣言する。

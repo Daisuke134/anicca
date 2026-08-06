@@ -23,7 +23,7 @@ async function runConnectorAgenticRegistration(input = {}, deps = {}) {
       type: "object", additionalProperties: false,
       required: ["status", "observed_url"],
       properties: {
-        status: { const: "registered" },
+        status: { type: "string", const: "registered" },
         observed_url: { type: "string", pattern: "^https://luma\\.com/" },
       },
     },
