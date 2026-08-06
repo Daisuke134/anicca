@@ -2228,11 +2228,14 @@ Completed foundations are `L-49K0A1G`, `L-49K0B`, `L-49K0C`, and `L-49K0C1`.
 The active cursor is the first item below; do not start a later item merely because
 it is easier to demonstrate:
 
-1. `L-49K1` through `L-49K4` — copy the measured successful Ashby interaction into
-   the resident Browser Use action contract: open `Application`, complete and verify
-   the form, submit once, confirm success, and build the immutable owner dossier.
-2. `L-49K0C2O1` through `L-49K0C2O6`, then `L-49K0C2` — add the minimum
-   OpenTelemetry trace needed to diagnose the resident application attempt, then
+1. `L-49K0C2O1` through `L-49K0C2O6` — install the complete local OpenTelemetry,
+   Collector, Grafana, trace-correlation, and privacy boundary before another ATS
+   selector diagnosis. A generic surface error without its raw non-private cause is
+   no longer an acceptable repair input.
+2. `L-49K1` through `L-49K4`, then `L-49K0C2` — copy the measured successful Ashby
+   interaction into a deterministic resident apply adapter: open `Application`,
+   complete and verify the form, submit once, confirm success, build the immutable
+   owner dossier, then
    prove a blocked ATS route cannot end the hourly pass and all remaining eligible
    routes/roles continue exactly once.
 3. `L-49K0E`, `L-49K`, `L-49`, `L-49A`, `L-50`, `L-51`, `L-52` — prove resident
@@ -2278,13 +2281,14 @@ Current production truth measured from the ledger and resident receipts:
   with `matched_count=0` because the interactive diagnostic did not create a resident
   submit intent. Resident Gmail submission confirmations, funnel outcomes, and
   production application-route success remain zero;
-- the last Browser Use resident pass attempted three candidates, confirmed zero, and
-  truthfully reported `application_surface_not_found` for each. Candidate evidence
-  now proves the hidden causes: two pages were blank with zero controls because
-  navigation `commit` was treated as ready, while the third rendered the OpenAI
-  Ashby Overview with 14 controls including `Application` and `Apply for this Job`,
-  but the runner neither classified nor opened that pre-submit surface. None reached
-  form filling or Submit; and
+- resident run `daily-20260806-160111` discovered 155 links, verified 37, and selected
+  OpenAI `AI Success Engineer - Tokyo` (95), `Field Security Specialist` (95), and
+  `AI Deployment Engineer, Startups` (80). The third was correctly audited as
+  `skipped_cross_owner` because the owner diagnostic already submitted it; the first
+  two were materialized and all three attempts continued under resident fence 114.
+  No application was submitted. All three surfaces classified as `none`, but failure
+  paths persisted only the classification and not raw non-private controls, so
+  selector mismatch versus render timing remains deliberately unknown;
 - Gmail fallback components exist but are not connected to the resident pass until
   `C2B2` through `C2D` complete.
 
@@ -2317,6 +2321,15 @@ OpenTelemetry decision and primary sources:
   ledger/receipt safety boundary and Temporal durability without implementing the
   standard telemetry layer, so detailed artifacts existed but the final worker result
   collapsed three distinct failures into `application_surface_not_found`.
+- Ashby's official `applicationForm.submit` endpoint cannot serve as a candidate-side
+  shortcut: it requires Basic Auth with an employer-issued API key carrying
+  `candidatesWrite`. Source: https://developers.ashbyhq.com/reference/applicationformsubmit-1.md
+  and https://developers.ashbyhq.com/docs/authentication.md. Public Ashby CLIs either
+  browse job boards or require that same organization API key; they cannot submit an
+  applicant to OpenAI. The reusable shortcut is therefore a release-contained
+  deterministic `ashby_apply` adapter over the existing CloakBrowser session, with
+  models used for ranking, grounded answer composition, and unknown-UI repair—not
+  routine clicking.
 - [x] **L-49K0B** — Inventory every `career-ops` v1.25.0 capability as `reuse`,
   `adapt`, or `supersede`, including ATS scan providers, liveness, repost/dedup,
   scoring, pipeline, CV fact verification, apply autofill, tracker, outcomes,
