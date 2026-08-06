@@ -173,6 +173,38 @@
       },
       "rollback": {"strategy": "uv_lock_previous_pin", "state_policy": "replay_event_history_before_activation"},
       "sources": {"release": "https://github.com/temporalio/sdk-python/releases/tag/1.31.0", "license": "https://github.com/temporalio/sdk-python/blob/1.31.0/LICENSE"}
+    },
+    "opentelemetry-python": {
+      "repository": "https://github.com/open-telemetry/opentelemetry-python",
+      "release": "v1.44.0",
+      "released_at": "2026-07-16T15:25:49Z",
+      "commit_sha": "53a5a40c9604583c501bcf13970a635f00e62df4",
+      "tree_sha": "8856d486f6916e41fc44fff2c53ba8047780b91f",
+      "license": {"spdx": "Apache-2.0", "blob_sha": "261eeb9e9f8b2b4b0d119366dda99c6fd7d35c64", "content_sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"},
+      "local_dependency_lock": {
+        "resolver": "uv 0.10.7", "python_version": "3.12", "platform": "aarch64-apple-darwin", "no_header": true, "no_annotate": true,
+        "requirements": ["opentelemetry-sdk==1.44.0", "opentelemetry-exporter-otlp-proto-http==1.44.0"],
+        "path": "config/upstreams/opentelemetry-1.44.0-macos-arm64-py312.lock",
+        "content_sha256": "9d2fe99ab7f0ba6f3174d83ca403f9fac53ad47efac7601172cc59e8fa36b304"
+      },
+      "sources": {"release": "https://github.com/open-telemetry/opentelemetry-python/releases/tag/v1.44.0", "package": "https://pypi.org/project/opentelemetry-sdk/1.44.0/", "license": "https://github.com/open-telemetry/opentelemetry-python/blob/v1.44.0/LICENSE"}
+    },
+    "opentelemetry-collector-contrib": {
+      "repository": "https://github.com/open-telemetry/opentelemetry-collector-releases",
+      "release": "v0.158.0", "released_at": "2026-08-04T18:54:05Z",
+      "commit_sha": "1400269f8ace841f8d0492f4f9c6c7f305f95268", "tree_sha": "bef8e1dea15566a6beb9a15bcb99927826e64a8d",
+      "license": {"spdx": "Apache-2.0", "blob_sha": "261eeb9e9f8b2b4b0d119366dda99c6fd7d35c64", "content_sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"},
+      "artifacts": {"darwin_arm64": {"url": "https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.158.0/otelcol-contrib_0.158.0_darwin_arm64.tar.gz", "content_sha256": "e2b68ae0eeb165795c1c9aecc29d24fe91790dd6ec7d200dd7e5a8b226a2f636"}},
+      "sources": {"release": "https://github.com/open-telemetry/opentelemetry-collector-releases/releases/tag/v0.158.0", "license": "https://github.com/open-telemetry/opentelemetry-collector-releases/blob/v0.158.0/LICENSE"}
+    },
+    "grafana-otel-lgtm": {
+      "repository": "https://github.com/grafana/docker-otel-lgtm",
+      "release": "v0.30.0", "released_at": "2026-07-31T09:54:10Z",
+      "commit_sha": "a94697a6f6844b61f89b916d32d5a4e6e2cd89be", "tree_sha": "0b022943624376eca0b455619bfe6a7a34e30d51",
+      "license": {"spdx": "Apache-2.0", "blob_sha": "261eeb9e9f8b2b4b0d119366dda99c6fd7d35c64", "content_sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"},
+      "image": "grafana/otel-lgtm@sha256:46ca028e294bd728e8e930a28e887f640a8f2a9533cc283f79bcc6ab73d2ffd8",
+      "scope": "local development, demo, and testing only",
+      "sources": {"release": "https://github.com/grafana/docker-otel-lgtm/releases/tag/v0.30.0", "image": "https://hub.docker.com/r/grafana/otel-lgtm", "license": "https://github.com/grafana/docker-otel-lgtm/blob/v0.30.0/LICENSE"}
     }
   }
 }

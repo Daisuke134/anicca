@@ -2799,13 +2799,21 @@ OpenTelemetry decision and primary sources:
   eligible remaining route once, moves to a different supported role during the same
   pass, and reports confirmed applications, email applications, outreach, and deficit
   separately. Codex, Claude, and the development shell perform zero live actions.
-  - [ ] `L-49K0C2O1` — Pin OpenTelemetry Python `1.44.0`, Collector `0.158.0`, and
+  - [x] `L-49K0C2O1` — Pin OpenTelemetry Python `1.44.0`, Collector `0.158.0`, and
     the `grafana/otel-lgtm` local development backend by immutable image digest and
     license/checksum metadata. The backend bundles Collector, Prometheus, Tempo,
     Loki, Pyroscope, and Grafana; its official repository explicitly limits it to
     development/demo/testing: https://github.com/grafana/docker-otel-lgtm. Files:
     modify `config/upstream-lock.v1.json`, create one hash-locked telemetry runtime
     file, and extend `tests/test_upstream_lock.py` (3 files, soft target 90 LOC).
+    - Completion receipt: official release commits/trees and Apache-2.0 license
+      hashes are pinned for all three upstreams. The Collector darwin-arm64 archive
+      is pinned to SHA-256 `e2b68a...f636`; the multi-architecture LGTM `0.30.0`
+      image is registry-pinned to `sha256:46ca02...ffd8`. A uv 0.10.7-generated,
+      hash-required Python 3.12 arm64 lock resolves 14 packages from the two exact
+      OpenTelemetry 1.44.0 roots. Focused and full upstream-lock tests pass (1/1,
+      8/8); an isolated venv installs and imports the SDK/exporter from the lock,
+      and a fresh Docker registry HEAD returns the pinned digest.
   - [ ] `L-49K0C2O2` — Implement one privacy-fenced telemetry boundary with OTLP
     export and deterministic no-backend fallback. Define resource attributes
     `service.name=anicca-job-hunter`, release SHA, lane, resident actor, and host hash;
