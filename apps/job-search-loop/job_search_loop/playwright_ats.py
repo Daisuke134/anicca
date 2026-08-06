@@ -126,7 +126,11 @@ def attempt_ranked_candidates(
     attempted_count = 0
     for index, candidate in enumerate(candidates, start=1):
         attempted_count += 1
-        receipt = attempt(candidate)
+        try:
+            receipt = attempt(candidate)
+        except Exception as error:
+            blocked.append(f"candidate_{index}:error:{type(error).__name__}")
+            continue
         if receipt.get("claim_ready") is True:
             blocked.append("pre_submit_claim_ready_no_submit")
             break
@@ -159,26 +163,30 @@ def capture_snapshot(page: Any, *, navigation_committed: bool) -> dict[str, Any]
       const placeholder = n.getAttribute('placeholder') || '';
       const ownText = clean(n.innerText || n.textContent || '');
       let groupLabel = '';
-      let cursor = n.parentElement;
-      for (let depth = 0; cursor && depth < 6; depth += 1, cursor = cursor.parentElement) {
-        const lines = (cursor.innerText || '').split('\\n').map(clean).filter(Boolean);
-        const question = lines.find(line =>
-          line !== ownText && line.length <= 1000 && (line.endsWith('*') || line.includes('?'))
-        );
-        if (question) {
-          groupLabel = question;
-          break;
+      const role = n.getAttribute('role') || '';
+      const needsGroup = (!explicit && !associated && !placeholder) || role === 'combobox';
+      if (needsGroup) {
+        let cursor = n.parentElement;
+        for (let depth = 0; cursor && depth < 6; depth += 1, cursor = cursor.parentElement) {
+          const lines = (cursor.innerText || '').split('\\n').map(clean).filter(Boolean);
+          const question = lines.find(line =>
+            line !== ownText && line.length <= 1000 && (line.endsWith('*') || line.includes('?'))
+          );
+          if (question) {
+            groupLabel = question;
+            break;
+          }
         }
       }
       return {
         tag: (n.tagName || '').toLowerCase(),
         type: n.getAttribute('type') || '',
-        role: n.getAttribute('role') || '',
+        role: role,
         label: explicit || associated || placeholder,
         name: n.getAttribute('name') || '',
         text: ownText,
         group_label: groupLabel,
-        required: Boolean(n.required) || n.getAttribute('aria-required') === 'true' || groupLabel.endsWith('*')
+        required: Boolean(n.required) || n.getAttribute('aria-required') === 'true' || groupLabel.endsWith('*') || groupLabel.includes('?')
       };
     })"""
     for frame in page.frames:

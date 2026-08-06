@@ -46,6 +46,8 @@ class PlaywrightAtsTests(unittest.TestCase):
         )
         script = page.frames[0].control_locator.script
         self.assertIn("group_label", script)
+        self.assertIn("needsGroup", script)
+        self.assertIn("groupLabel.includes('?')", script)
         self.assertNotIn("n.value", script)
 
     def test_builds_contact_answers_without_legal_inference(self):
@@ -183,6 +185,31 @@ class PlaywrightAtsTests(unittest.TestCase):
         )
         self.assertEqual(result["attempted_count"], 2)
         self.assertEqual(result["blocked"], ["candidate_1:phone", "pre_submit_claim_ready_no_submit"])
+
+    def test_candidate_exception_is_recorded_and_next_candidate_runs(self):
+        from job_search_loop.playwright_ats import attempt_ranked_candidates
+
+        visited = []
+
+        def attempt(candidate):
+            visited.append(candidate["official_url"])
+            if len(visited) == 1:
+                raise RuntimeError("provider-specific failure")
+            return {"claim_ready": False, "blockers": ["start_date"]}
+
+        result = attempt_ranked_candidates(
+            [
+                {"official_url": "https://jobs.ashbyhq.com/acme/first"},
+                {"official_url": "https://jobs.ashbyhq.com/acme/second"},
+            ],
+            attempt,
+        )
+
+        self.assertEqual(len(visited), 2)
+        self.assertEqual(
+            result["blocked"],
+            ["candidate_1:error:RuntimeError", "candidate_2:start_date"],
+        )
 
 
 if __name__ == "__main__":
