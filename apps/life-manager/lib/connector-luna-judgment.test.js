@@ -77,11 +77,11 @@ async function fixture() {
   }, value, preferenceValue };
 }
 
-test("Connector judgment accepts only a Luna-pinned structured runner result", async () => {
+test("Connector judgment accepts only a Terra-pinned structured runner result", async () => {
   const { input, value } = await fixture();
   const result = await runConnectorLunaJudgment(input, {
     runAgentRunner: async ({ prompt, schema }) => ({
-      summary: { status: "success", selected_provider: "codex", selected_model: "gpt-5.6-luna" },
+      summary: { status: "success", selected_provider: "codex", selected_model: "gpt-5.6-terra" },
       value, prompt, schema,
     }),
   });
@@ -98,12 +98,12 @@ test("Connector judgment rejects fallback models and unverified profiles", async
   }), /Connector Luna judgment unavailable/);
   await assert.rejects(runConnectorLunaJudgment({ ...input, profile: { ...input.profile } }, {
     runAgentRunner: async () => ({
-      summary: { status: "success", selected_provider: "codex", selected_model: "gpt-5.6-luna" }, value,
+      summary: { status: "success", selected_provider: "codex", selected_model: "gpt-5.6-terra" }, value,
     }),
   }), /Connector Luna judgment unavailable/);
 });
 
-test("local runner pins Codex Luna and accepts only an evidence-contained result", async () => {
+test("local runner pins Codex Terra and accepts only an evidence-contained result", async () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "connector-luna-runner-"));
   const evidenceDir = path.join(root, "evidence");
   let invocation;
@@ -122,7 +122,7 @@ test("local runner pins Codex Luna and accepts only an evidence-contained result
       return {
         status: 0,
         stdout: JSON.stringify({
-          status: "success", selected_provider: "codex", selected_model: "gpt-5.6-luna", result_path: resultPath,
+          status: "success", selected_provider: "codex", selected_model: "gpt-5.6-terra", result_path: resultPath,
         }),
         stderr: "",
       };
@@ -146,7 +146,7 @@ test("local runner pins Codex Luna and accepts only an evidence-contained result
     spawnSync: invocation && (() => ({
       status: 0,
       stdout: JSON.stringify({
-        status: "success", selected_provider: "codex", selected_model: "gpt-5.6-luna",
+        status: "success", selected_provider: "codex", selected_model: "gpt-5.6-terra",
         result_path: path.join(evidenceDir, "attempt-01.result.json"),
       }),
       stderr: "",
@@ -164,7 +164,7 @@ test("Luna creates the preference ranking before goal and serendipity judgment",
     runAgentRunner: async ({ prompt }) => {
       calls.push(prompt);
       return {
-        summary: { status: "success", selected_provider: "codex", selected_model: "gpt-5.6-luna" },
+        summary: { status: "success", selected_provider: "codex", selected_model: "gpt-5.6-terra" },
         value: calls.length === 1 ? preferenceValue : value,
       };
     },
