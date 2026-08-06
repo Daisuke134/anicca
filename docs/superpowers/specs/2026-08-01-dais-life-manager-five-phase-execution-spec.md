@@ -2408,6 +2408,13 @@ last-result writeはrun前から増えず、Gmail/QR chainへ入る新規登録�
 過去run 90→91で一時失敗後に回復している。コードはfull outbound 311/311 GREENなので、外部境界失敗の既定どおり既存loopを一度だけ再試行し、
 再発時はP0-10の実event E2Eを未完のまま、Calendar gateのbounded診断を次sliceにする。
 
+O1B-25進捗80（P0-10 run 107 / repeated Calendar contract failure）: 既存launchd run 107も約4分で
+`connector_native_calendar_gate_failed`となり、attempt/delivery/photo receiptはrun 106から不変だった。route provider不通は
+`calendar-candidate-gate`内で`status=recovery_required / reason=route_unavailable`へ正規化される設計なので、二回連続の例外は単純なMaps停止ではなく、
+date inventory / busy inventory / event location / private busy contextのいずれかの入力contract破損である。現runtimeはこれらを一つのstageへ
+潰しており、秘密を漏らさず原因を区別できない。P0-10は未完のまま維持し、次sliceはCalendar gate invalidをbounded substageへ分離し、
+実入力のreference-only fixtureでREDを固定してから修正する。根拠のない再kickstartはしない。
+
 完全な残TODO SSOT:
 
 **P0 — task deliveryを前進させる（最優先）**
@@ -2421,7 +2428,7 @@ last-result writeはrun前から増えず、Gmail/QR chainへ入る新規登録�
 7. [x] unknown effectはLuma readbackでpresent/absentを確定するまで再submitしない。関連15/15、native 20/20、outbound 302/302。
 8. [x] submit後のLuma登録済みpageをfull-page PNGで取得し、event ref、canonical URL、取得時刻、SHA-256、Calendar event IDへbindする。focused 30/30、native 21/21、outbound 302/302。
 9. [x] Telegramへ結果cardと登録済みpage画像を実送信し、画像のpositive provider message IDをdelivery receiptへ保存・readbackする。run 103、card `7372`、photo `7594`、native 23/23、outbound 307/307。
-10. 次の実eventでLuma→登録済みpage PNG→mail/QR→Calendar→Telegram画像message IDを一巡実証する。
+10. [進行中] Calendar gate invalidをbounded substage化・実入力fixture化して修正し、次の実eventでLuma→登録済みpage PNG→mail/QR→Calendar→Telegram画像message IDを一巡実証する。
 11. 次wakeで成功eventとknown失敗eventの双方を再選択しないことを実証する。
 12. `open=0`まで反復し、21日統合Telegram briefingを送る。
 13. Mac再起動後のlaunchd、heartbeat、healthcheck、self-healを実機検証する。
