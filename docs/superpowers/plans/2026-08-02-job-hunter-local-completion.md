@@ -2210,8 +2210,10 @@ Completed foundations are `L-49K0A1G`, `L-49K0B`, `L-49K0C`, and `L-49K0C1`.
 The active cursor is the first item below; do not start a later item merely because
 it is easier to demonstrate:
 
-1. `L-49K0C2` — prove a blocked ATS route cannot end the resident hourly pass and
-   that all remaining eligible routes/roles continue exactly once.
+1. `L-49K0C2O1` through `L-49K0C2O6`, then `L-49K0C2` — add the minimum
+   OpenTelemetry trace needed to diagnose a resident application attempt, then prove
+   a blocked ATS route cannot end the hourly pass and all remaining eligible
+   routes/roles continue exactly once.
 2. `L-49K0E`, `L-49K`, `L-49`, `L-49A`, `L-50`, `L-51`, `L-52` — prove resident
    actor provenance, bounded owner handoff where required, and authoritative real
    Ashby plus Workday receipts and screenshots in Telegram.
@@ -2242,9 +2244,38 @@ Current production truth measured from the ledger and resident receipts:
 - Gmail has zero submission confirmations and zero application matches; funnel
   outcomes and production application routes are empty;
 - the last Browser Use resident pass attempted three candidates, confirmed zero, and
-  truthfully reported `application_surface_not_found` for each; and
+  truthfully reported `application_surface_not_found` for each. Candidate evidence
+  now proves the hidden causes: two pages were blank with zero controls because
+  navigation `commit` was treated as ready, while the third rendered the OpenAI
+  Ashby Overview with 14 controls including `Application` and `Apply for this Job`,
+  but the runner neither classified nor opened that pre-submit surface. None reached
+  form filling or Submit; and
 - Gmail fallback components exist but are not connected to the resident pass until
   `C2B2` through `C2D` complete.
+
+OpenTelemetry decision and primary sources:
+
+- Adopt OpenTelemetry now for cross-process traces, metrics, and correlated logs;
+  retain the event ledger as business truth, immutable receipts/screenshots as
+  action proof, Guardian as the bounded repair policy, and Temporal history as
+  durable workflow state. OpenTelemetry never asserts that an application succeeded.
+- OpenTelemetry's official overview says it generates, collects, and exports traces,
+  metrics, and logs, is vendor/tool agnostic, and "is not an observability backend
+  itself": https://opentelemetry.io/docs/what-is-opentelemetry/
+- The official Collector contract is a proxy that receives, processes, and exports
+  telemetry: https://opentelemetry.io/docs/collector/
+- Temporal's official observability contract exposes Workflow/Activity metrics,
+  tracing, logging, Search Attributes, and Web UI:
+  https://docs.temporal.io/evaluate/development-production-features/observability
+- Exact researched pins are OpenTelemetry Python SDK `1.44.0` and Collector
+  `0.158.0`; dependency hashes and a local backend/UI pin remain release inputs, not
+  floating installs.
+- Current absence is a design omission, not an OpenTelemetry limitation: the Job
+  Hunter dependency locks, runtime, scripts, and code contain no OpenTelemetry SDK,
+  OTLP endpoint, Collector, trace context, or backend. Earlier work optimized the
+  ledger/receipt safety boundary and Temporal durability without implementing the
+  standard telemetry layer, so detailed artifacts existed but the final worker result
+  collapsed three distinct failures into `application_surface_not_found`.
 - [x] **L-49K0B** — Inventory every `career-ops` v1.25.0 capability as `reuse`,
   `adapt`, or `supersede`, including ATS scan providers, liveness, repost/dedup,
   scoring, pipeline, CV fact verification, apply autofill, tracker, outcomes,
@@ -2714,6 +2745,47 @@ Current production truth measured from the ledger and resident receipts:
   eligible remaining route once, moves to a different supported role during the same
   pass, and reports confirmed applications, email applications, outreach, and deficit
   separately. Codex, Claude, and the development shell perform zero live actions.
+  - [ ] `L-49K0C2O1` — Pin OpenTelemetry Python `1.44.0`, Collector `0.158.0`, and
+    the `grafana/otel-lgtm` local development backend by immutable image digest and
+    license/checksum metadata. The backend bundles Collector, Prometheus, Tempo,
+    Loki, Pyroscope, and Grafana; its official repository explicitly limits it to
+    development/demo/testing: https://github.com/grafana/docker-otel-lgtm. Files:
+    modify `config/upstream-lock.v1.json`, create one hash-locked telemetry runtime
+    file, and extend `tests/test_upstream_lock.py` (3 files, soft target 90 LOC).
+  - [ ] `L-49K0C2O2` — Implement one privacy-fenced telemetry boundary with OTLP
+    export and deterministic no-backend fallback. Define resource attributes
+    `service.name=anicca-job-hunter`, release SHA, lane, resident actor, and host hash;
+    prohibit name, email, phone, resume text, answers, raw HTML, raw URL query, and
+    screenshot bytes. Files: create `job_search_loop/telemetry.py` and
+    `tests/test_telemetry.py` (2 files, soft target 100 LOC).
+  - [ ] `L-49K0C2O3` — Instrument the application trace hierarchy:
+    `hourly_pass → candidate → route → browser.navigate → page.ready →
+    surface.classify → application.open → form.snapshot → form.fill →
+    submit.intent → submit.action → confirmation.observe`. Record redirect count,
+    readyState, DOM/control/text counts, surface type, blocker code, duration,
+    exception class, and evidence SHA—not private values. Files: modify
+    `browser_use_adapter.py`, `browser_use_ats.py`, and their tests (3 files changed
+    plus existing tests, soft target 100 LOC per slice; split navigate/readiness from
+    surface/submit spans before implementation).
+  - [ ] `L-49K0C2O4` — Correlate `trace_id`/`span_id` through Temporal Workflow and
+    Activity IDs, application/route IDs, ledger events, owner/worker receipts,
+    evidence manifests, Guardian repair cases, and Telegram reports. OTel remains
+    diagnostic; only authoritative ledger transitions can say `submitted`. Files:
+    modify `browser_worker.py`, `ledger.py`, one migration, and focused tests; split
+    ledger persistence from Telegram projection (each slice at most 3 files and
+    100 LOC).
+  - [ ] `L-49K0C2O5` — Install the loopback-only Collector/backend LaunchAgent,
+    persistent private data volume, health receipt, bounded retention, and Grafana
+    dashboard for pass/candidate/route timelines, failure classes, confirmation rate,
+    repair attempts, promotion/rollback, and resumed outcome. Collector/export failure
+    must never stop applications. Files: one collector/backend launcher, one config,
+    one health test (3 files, soft target 100 LOC).
+  - [ ] `L-49K0C2O6` — Trigger the installed resident loop on a no-submit canary and
+    prove one trace joins resident PID, release SHA, Browser Use executor, fence,
+    candidate, route, detailed blank/overview/form classification, evidence hashes,
+    worker receipt, and Telegram message ID in Grafana and the private trace index.
+    Then rerun a real eligible candidate through the resident actor only. A generic
+    `application_surface_not_found` without its observed cause fails this gate.
   - [x] `C2A` — Persist cross-candidate continuation proof from the release-contained
     browser runner through `browser-worker-result.json`. Each attempt records only
     candidate index, official URL SHA-256, role family, and outcome; raw URLs and
