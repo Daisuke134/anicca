@@ -102,4 +102,5 @@
 - [x] **Step 4: Keep the entire effect in the parent.** The existing owned page opens the form, reads its schema, merges validated Terra decisions, fills using user-facing Playwright actions, clicks final submit once, then performs independent provider readback and PNG capture before fenced cleanup.
 - [x] **Step 5: Run focused tests and the Connector suite:** focused 17/17、pretest 12/12、outbound 336/336 GREEN。
 - [ ] **Step 6: Run the existing Connector launchd live acceptance** and require one trace with one target, one agent session, zero agent closes, real submit, parent marker readback, PNG SHA, and parent release. Do not touch Gig or `:9223`.
+- Run 178 observation: schedule-owned lifecycle and parent cleanup were healthy, but no new form submit occurred; two existing-effect readbacks produced PNG evidence and then stopped at ticket evidence, while two candidates were unavailable. This is not Step 6 completion.
 - [ ] **Step 7: Update the master spec with measured evidence and commit** using `feat(connector): complete page-scoped registration transaction`.
