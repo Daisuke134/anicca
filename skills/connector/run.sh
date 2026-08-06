@@ -68,6 +68,13 @@ if "$NODE_BIN" "$HERE/native-pass.js" \
   exit 0
 else
   EXIT_CODE=$?
+  if [ "$EXIT_CODE" -ge 128 ]; then
+    OBSERVER_ID="${OWNER_TOKEN:0:24}"
+    "$NODE_BIN" "$HERE/lib/observer-envelope.js" process-crash \
+      "$STATE_DIR/observer-replay.jsonl" \
+      "wake:$OBSERVER_ID" "run:$OBSERVER_ID" \
+      "${LM_CONNECTOR_CODE_COMMIT:-unknown}" || exit 2
+  fi
   "$NODE_BIN" "$HERE/lib/native-state.js" heartbeat "$STATE_DIR" "$OWNER_TOKEN" worker_failed >/dev/null 2>&1 || true
   exit "$EXIT_CODE"
 fi

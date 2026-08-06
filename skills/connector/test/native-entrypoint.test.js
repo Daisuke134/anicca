@@ -88,6 +88,78 @@ test("native-pass invokes the direct runtime and keeps open coverage as a contin
   }
 });
 
+test("native-pass records runtime completion and failure through the same observer replay", async () => {
+  const directory = temporaryDirectory();
+  const stateDir = path.join(directory, "state");
+  const observationContext = {
+    wakeId: "connector-wake-200",
+    runId: "connector-run-200",
+    ownerGeneration: 1,
+    codeCommit: "27506a703",
+    cursor: "connpass:2026-08-07:0:2",
+    observedAt: "2026-08-06T13:36:51.928Z",
+  };
+  try {
+    await runNativePass({
+      repoRoot: REPO_ROOT, stateDir, ownerToken: OWNER_TOKEN,
+      config: { tenantId: "dais-local" }, observationContext,
+      runRuntime: async () => ({
+        status: "incomplete",
+        coverage: { counts: { open: 18 } },
+        selection: {
+          inventory_event_count: 27, calendar_gate_event_count: 0,
+          calendar_eligible_count: 0, luna_ranked_count: 0,
+          spend_ordered_count: 0, unsuppressed_count: 0, write_attempt_count: 0,
+        },
+        continuation: { status: "continue" },
+      }),
+    });
+    await runNativePass({
+      repoRoot: REPO_ROOT, stateDir, ownerToken: OWNER_TOKEN,
+      config: { tenantId: "dais-local" },
+      observationContext: { ...observationContext, wakeId: "connector-wake-201" },
+      runRuntime: async () => {
+        const error = new Error("private person@example.com https://example.com/event/1");
+        error.code = "CONNECTOR_NATIVE_PROVIDER_DISCOVERY_FAILED";
+        throw error;
+      },
+    });
+    const rows = fs.readFileSync(path.join(stateDir, "observer-replay.jsonl"), "utf8")
+      .trim().split("\n").map(JSON.parse);
+    assert.equal(rows.length, 2);
+    assert.deepEqual(rows.map((row) => row.observed_effect), ["success", "tool_failure"]);
+    assert.equal(JSON.stringify(rows).includes("person@example.com"), false);
+    assert.equal(JSON.stringify(rows).includes("example.com"), false);
+    const incidents = fs.readFileSync(path.join(stateDir, "observer-incidents.jsonl"), "utf8")
+      .trim().split("\n").map(JSON.parse);
+    assert.equal(incidents.length, 1);
+    assert.equal(incidents[0].observed_effect, "tool_failure");
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test("native-pass classifies a provider deadline as an observer timeout", async () => {
+  const directory = temporaryDirectory();
+  const stateDir = path.join(directory, "state");
+  try {
+    await runNativePass({
+      repoRoot: REPO_ROOT, stateDir, ownerToken: OWNER_TOKEN,
+      config: { tenantId: "dais-local", now: "2026-08-06T13:36:51.928Z" },
+      runRuntime: async () => {
+        const error = new Error("deadline");
+        error.code = "CONNECTOR_NATIVE_PROVIDER_DISCOVERY_TIMEOUT_FAILED";
+        throw error;
+      },
+    });
+    const row = JSON.parse(fs.readFileSync(path.join(stateDir, "observer-replay.jsonl"), "utf8").trim());
+    assert.equal(row.observed_effect, "timeout");
+    assert.equal(row.incident_class, "timeout");
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true });
+  }
+});
+
 test("native-pass persists one privacy-safe self-heal incident when suppression prevents every Apply attempt", async () => {
   const directory = temporaryDirectory();
   const stateDir = path.join(directory, "state");
@@ -655,6 +727,42 @@ test("launchd run script uses an allowlisted Connector env reader instead of the
   const source = fs.readFileSync(path.join(REPO_ROOT, "skills/connector/run.sh"), "utf8");
   assert.match(source, /load-connector-env\.js/);
   assert.doesNotMatch(source, /lm_load_env_file "\$LM_CONNECTOR_SHARED_ENV_FILE"/);
+});
+
+test("launchd parent records a process crash when native-pass exits by signal", () => {
+  const directory = temporaryDirectory();
+  const fakeNode = path.join(directory, "fake-node.sh");
+  const observerCall = path.join(directory, "observer-call.txt");
+  fs.writeFileSync(fakeNode, `#!/bin/bash
+case "$1" in
+  -e) printf '%064d' 0; exit 0 ;;
+  *load-connector-env.js) exit 0 ;;
+  *native-state.js)
+    [ "$2" = acquire ] && printf '{"status":"acquired"}'
+    exit 0
+    ;;
+  *native-pass.js) exit 137 ;;
+  *observer-envelope.js) printf '%s\\n' "$*" > "$OBSERVER_CALL_FILE"; exit 0 ;;
+esac
+exit 2
+`, { mode: 0o700 });
+  try {
+    const result = spawnSync("/bin/bash", [path.join(REPO_ROOT, "skills/connector/run.sh")], {
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        NODE_BIN: fakeNode,
+        OBSERVER_CALL_FILE: observerCall,
+        LM_CONNECTOR_STATE_DIR: path.join(directory, "state"),
+        LM_CONNECTOR_TELEGRAM_TARGET: "123456789",
+        LM_CONNECTOR_CODE_COMMIT: "27506a703",
+      },
+    });
+    assert.equal(result.status, 137);
+    assert.match(fs.readFileSync(observerCall, "utf8"), /observer-envelope\.js process-crash/);
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true });
+  }
 });
 
 test("native-pass ignores CONNECTOR_NATIVE_WORKER_BIN and still invokes the direct runtime", async () => {

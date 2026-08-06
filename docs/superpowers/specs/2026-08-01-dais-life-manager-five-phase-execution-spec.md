@@ -3071,6 +3071,13 @@ local SDK threadのstart/resume、`codex exec --json`のthread/turn/item/error J
 共有backendへ流用しない。Source: https://learn.chatgpt.com/docs/auth 、https://learn.chatgpt.com/docs/codex-sdk 、
 https://learn.chatgpt.com/docs/non-interactive-mode 、https://learn.chatgpt.com/docs/automations 。
 
+O1B-25進捗148（privacy-safe Observer foundation GREEN）: `skills/connector/lib/observer-envelope.js`を追加し、normal completion、
+tool failure、timeout、process crashを同じschemaへ正規化した。envelopeはwake/run、stage、safe action、expected/observed effect、owner generation、
+provider readback、screenshot SHA、code commit、cursor、stable fingerprintだけを許可し、URL、email、Bearer値を拒否する。正常wakeは全件replayへ、
+failureはstable fingerprintでdedupeしたreplayとincidentへmode 0600で保存する。native-passの正常/例外pathとrun.sh親のsignal-exit pathへ配線し、
+Observer/native focused test 33/33 GREEN、失敗0件。実行中run 200は旧process imageのため新Observerを含まず、次wakeのlive traceは未実証である。
+したがってObserver foundation code/testは完了だが、Codex JSONL thread/turn/item adapterはCodex-native Actor移行時、live trace readbackは次wakeで閉じる。
+
 #### Codex-native Connector Actor / Healer contract
 
 **Overview:** 現在のConnectorは独自Node runtimeがTerraへ限定promptを渡すため、TerraはCodex CLIと同じshell、skills、MCP、継続thread、
@@ -3119,8 +3126,8 @@ launchd shadow wake → Actor live canary → default Actor切替 → production
 ### Active remaining TODO SSOT（進捗147。これ以外の残TODO一覧は履歴）
 
 1. [x] Provider-neutral downstream write、Connpass runtime write dependencies、Luma Calendar-eligible 0 handoff、Connpass state persistenceを閉じる。証拠: 進捗141、143、144、commit `65241d6a2`、`e822bfa3a`、`d0e05f5d8`、`1cfa2e56f`。
-2. [in progress] Privacy-safe Observer envelope/replayを実装する。完了条件: success、tool failure、timeout、process crashが同じschemaでrun/wake、stage、safe action、expected/observed effect、owner generation、screenshot SHA、provider readback、commit、cursorへ正規化され、secret/PII/raw logなし、fingerprint dedupe可能なincidentとreplay fixtureを各1件生成する。
-3. Codex-native Superpowers Healerをisolated worktreeでshadow実装する。完了条件: incidentごとにsystematic-debugging→一仮説→実RED→最小GREEN→fresh verification→commit/pushを行い、Actor external-submit権限0、上限3 revision/24時間、production自動merge 0。
+2. [x] Privacy-safe Observer envelope/replayを実装する。完了条件: success、tool failure、timeout、process crashが同じschemaでrun/wake、stage、safe action、expected/observed effect、owner generation、screenshot SHA、provider readback、commit、cursorへ正規化され、secret/PII/raw logなし、fingerprint dedupe可能なincidentとreplay fixtureを各1件生成する。証拠: 進捗148、focused 33/33 GREEN。
+3. [in progress] Codex-native Superpowers Healerをisolated worktreeでshadow実装する。完了条件: incidentごとにsystematic-debugging→一仮説→実RED→最小GREEN→fresh verification→commit/pushを行い、Actor external-submit権限0、上限3 revision/24時間、production自動merge 0。
 4. Guarded consumer/canaryを復旧する。完了条件: historical replay→focused/full test→protected path/permission→rollback→isolated browser canary→one bounded live effectを通ったrevisionだけpromotion可能になる。
 5. Production self-heal E2Eをshadowで実証する。完了条件: Actor fixture→Observer→Healer→consumer→canary→Actor replayがexpected effectを満たした時だけincident=`healed`になり、失敗時はrollbackして次仮説へ進む。
 6. Run 200以降のbrowser discoveryをlive GREENにする。完了条件: API key参照0、API network call 0、既存launchd wakeが対象日のConnpass browser inventory countをbounded batchで返し、provider candidateへ進み、未処理候補をdurable cursorへ残す。

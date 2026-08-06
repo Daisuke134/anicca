@@ -11,6 +11,7 @@ const { createEventProviderCursorStore } = require("../../apps/life-manager/lib/
 const { createGhIssueClient } = require("../../apps/life-manager/lib/feedback-to-issue.js");
 const { recordContinuation } = require("./lib/native-state.js");
 const { loadConnectorEnv } = require("./lib/load-connector-env.js");
+const { appendObservation, buildObservation } = require("./lib/observer-envelope.js");
 const {
   notifyOpenClawPhoto,
   parseOpenClawMessageId,
@@ -582,6 +583,32 @@ function migrateLastResult(stateDir) {
   appendDeliveryReceipt(stateDir, value.write);
 }
 
+function recordRuntimeObservation(options, stateDir, providerCursor, observedEffect, incidentClass) {
+  const supplied = options.observationContext || {};
+  const observedAt = String(supplied.observedAt || options.config && options.config.now || new Date().toISOString());
+  const identity = createHash("sha256").update(`${options.ownerToken}:${observedAt}`).digest("hex").slice(0, 24);
+  const cursor = supplied.cursor || (providerCursor
+    ? `${providerCursor.provider}:${providerCursor.date}:${providerCursor.candidate_index}:${providerCursor.generation}`
+    : "provider:none");
+  const observation = buildObservation({
+    wake_id: supplied.wakeId || `wake:${identity}`,
+    run_id: supplied.runId || `run:${identity}`,
+    stage: "native_pass",
+    safe_action: "runtime_execute",
+    expected_effect: "applied_bundle",
+    observed_effect: observedEffect,
+    incident_class: incidentClass,
+    owner_generation: supplied.ownerGeneration || providerCursor && providerCursor.generation || 1,
+    code_commit: supplied.codeCommit || options.env && options.env.LM_CONNECTOR_CODE_COMMIT || "unknown",
+    cursor,
+    observed_at: observedAt,
+  });
+  appendObservation(path.join(stateDir, "observer-replay.jsonl"), observation);
+  if (incidentClass !== "none") {
+    appendObservation(path.join(stateDir, "observer-incidents.jsonl"), observation);
+  }
+}
+
 async function runNativePass(options = {}) {
   absoluteDirectory(options.repoRoot);
   const stateDir = absoluteDirectory(options.stateDir);
@@ -609,6 +636,7 @@ async function runNativePass(options = {}) {
     });
     const bounded = boundedResult(result);
     recordLastResult(stateDir, bounded, providerCursorStore);
+    recordRuntimeObservation(options, stateDir, bounded.providerCursor || providerCursor, "success", "none");
     await deliverPendingSelfHealIncident(options, stateDir);
     if (bounded.complete) {
       return Object.freeze({ exitCode: 0, status: "complete" });
@@ -620,6 +648,8 @@ async function runNativePass(options = {}) {
     const reason = /^CONNECTOR_NATIVE_(?:CONFIG|AUTH|INVENTORY|CALENDAR_READ|PROFILE|LUNA|CALENDAR_GATE(?:_INPUT|_EXECUTION|_RESULT)?|SPEND_GATE|PROVIDER_DISCOVERY|WRITE|PHOTO_SEND|PHOTO_RECEIPT)_FAILED$/.test(code)
       ? code.toLowerCase()
       : "runtime_failed";
+    const observerClass = /(?:TIMEOUT|DEADLINE)/.test(code) ? "timeout" : "tool_failure";
+    recordRuntimeObservation(options, stateDir, providerCursor, observerClass, observerClass);
     recordContinuation({ stateDir, reason });
     return Object.freeze({ exitCode: 1, status: "failed" });
   }
