@@ -15,6 +15,46 @@ def load_fixture(name):
 
 
 class AtsReadinessTests(unittest.TestCase):
+    def test_builds_grounded_semantic_actions_for_required_application_answers(self):
+        from job_search_loop.ats import build_non_submit_fill_plan
+
+        url = "https://jobs.ashbyhq.com/acme/role/application"
+        snapshot = {"version": 1, "url": url, "navigation_committed": True, "frames": [{
+            "url": url, "controls": [
+                {"tag": "input", "type": "text", "role": "combobox", "label": "Start typing...", "group_label": "Where are you currently located?*", "required": True},
+                {"tag": "input", "type": "text", "label": "Pick date...", "group_label": "When can you start a new role?*", "required": True},
+                {"tag": "button", "type": "button", "text": "Yes", "group_label": "Are you authorized to work in Japan?*", "required": True},
+                {"tag": "button", "type": "button", "text": "No", "group_label": "Are you authorized to work in Japan?*", "required": True},
+                {"tag": "button", "type": "button", "text": "Yes", "group_label": "Will you require sponsorship?*", "required": True},
+                {"tag": "button", "type": "button", "text": "No", "group_label": "Will you require sponsorship?*", "required": True},
+                {"tag": "input", "type": "checkbox", "label": "I confirm", "group_label": "I certify these answers are true.*", "required": True},
+                {"tag": "button", "type": "submit", "text": "Submit Application"},
+            ]
+        }]}
+        plan = build_non_submit_fill_plan(
+            snapshot,
+            answers={
+                "location": {"value": "Tokyo, Japan", "fact_ids": ["profile.location"]},
+                "start_date": {"value": "2026-11-01", "fact_ids": ["profile.start_date"]},
+                "work_authorization": {"value": "Yes", "fact_ids": ["profile.work_authorization.jp"]},
+                "sponsorship": {"value": "No", "fact_ids": ["profile.sponsorship.jp"]},
+                "attestation": {"value": "true", "fact_ids": ["profile.attestation"]},
+            },
+            resume_path="/private/resume.pdf", resume_sha256="a" * 64,
+        )
+
+        self.assertEqual(
+            [(action["kind"], action["field_key"], action.get("answer")) for action in plan["actions"]],
+            [
+                ("select", "location", "Tokyo, Japan"),
+                ("fill", "start_date", "2026-11-01"),
+                ("select", "work_authorization", "Yes"),
+                ("select", "sponsorship", "No"),
+                ("check", "attestation", "true"),
+            ],
+        )
+        self.assertEqual(plan["blockers"], [])
+
     def test_group_location_never_turns_buttons_or_labeled_textarea_into_fill_actions(self):
         from job_search_loop.ats import build_non_submit_fill_plan
 
