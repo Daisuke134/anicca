@@ -2660,6 +2660,12 @@ O1B-25進捗106（11D private profile loader / RED→GREEN、deploy seed待ち�
 provider readerは引数なしで、page/candidate/DOMをprivate loaderへ渡さない。module不存在とworker reader未配線をREDで確認後、
 profile/provider/policy 16/16、worker 28/28 GREEN。残る11Dはprivate volumeへの実seed、worker再配備、live submit readbackである。
 
+O1B-25進捗107（11D private seed/deploy wiring / RED→GREEN、live再配備待ち）: deploy entrypointがowner-only identity profileから
+phoneだけを初回seedし、空のform answersと未同意consentを持つmode 0600 private fileを生成する。既存private fileは上書きせず、
+strict loaderで検証してからread-only bind mountでworkerのdurable private pathへ渡す。token、identity、回答値はstdout/stderrへ出さない。
+deploy test 2/2とmerged compose configがGREEN。次はfeature buildをlocal workerへ再配備し、実container内のmode/loader readback後に
+既存Connector loopをwakeしてlive registration chainを確認する。
+
 現在と完成形:
 
 ```mermaid

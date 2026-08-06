@@ -8,3 +8,5 @@ services:
       LM_CONNECTOR_CALENDAR_ID: ${LM_CONNECTOR_CALENDAR_ID:-primary}
       LM_CONNECTOR_PROFILE_PATH: ${LM_CONNECTOR_PROFILE_PATH:-/app/apps/life-manager/config/connector/dais-local.json}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+    volumes:
+      - ${LM_LUMA_FORM_PROFILE_HOST_PATH:-/dev/null}:/var/lib/life-manager/data/private/connector-luma-form-profile.json:ro
