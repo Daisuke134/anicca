@@ -3926,6 +3926,31 @@ OpenTelemetry decision and primary sources:
     model `RESULT:APPLIED`, manual-ATS skip, or a second Chrome profile owner.
     Authoritative ATS confirmation or Gmail provider ID remains the only application
     success evidence.
+    - [x] `L-49K5C1` — Add a pure bounded classifier for the existing resident semantic
+      snapshot. Distinguish job detail, account/auth, application form, validation
+      error, visible CAPTCHA, blocked SSO, closed posting, confirmation-like page, and
+      unknown without executing browser actions or accepting model success prose.
+      CAPTCHA/SSO/closed classifications route to Gmail fallback rather than a
+      no-application state; confirmation-like pages still require the authoritative
+      ATS confirmation contract.
+      - Evidence: `job_search_loop/ats_page_classifier.py` reads at most 20 frames and
+        500 controls per frame from an HTTP(S) semantic snapshot and emits one of the
+        nine required observations. It performs no navigation, fill, click, Submit,
+        email, or persistence action and always returns `application_confirmed=false`.
+        Visible CAPTCHA, blocked SSO, and closed posting map to
+        `gmail_fallback_required`; confirmation-like text maps only to
+        `authoritative_confirmation_required`. One table-driven regression plus the
+        existing browser boundary and Ashby confirmation suites pass 25/25.
+    - [ ] `L-49K5C2` — Give the classifier result to the same fenced Terra owner and
+      adapt generic form filling to the current semantic controls. Preserve profile
+      grounding, one browser/profile owner, one submit fence, and ATS-first ordering.
+      Unexpected or unsupported controls remain an agent observation and then Gmail
+      fallback, never a terminal skip.
+    - [ ] `L-49K5C3` — Build and install the release, then run no-send canaries across
+      representative Ashby, Greenhouse, and Workday surfaces. Prove page transitions,
+      field grounding, artifact capture, and fallback selection without Submit or
+      email side effects. Do not add a second fixture matrix beyond the smallest
+      regressions exposed by the canary.
   - [ ] `L-49K5D` — Run the installed resident against two new real employers using
     the adopted path: one non-Workday official ATS first, then Workday under `L-51`.
     Each role MUST finish through confirmed ATS or one verified email fallback, store
