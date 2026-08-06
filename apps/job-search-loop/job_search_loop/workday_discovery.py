@@ -7,9 +7,11 @@ integration at 4a8d521f67f5139811c0a910ef37410f8e6d836a. No upstream source is c
 from __future__ import annotations
 
 import re
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from typing import Any
 from urllib.parse import urlsplit
+
+from .candidate_queue import CandidateQueue
 
 
 SAFE_ID = re.compile(r"[A-Za-z0-9_-]+")
@@ -137,4 +139,46 @@ def search_workday_board(
         "malformed_count": malformed,
         "page_count": pages,
         "truncated": total is not None and offset < total,
+    }
+
+
+def ingest_workday_boards(
+    queue: CandidateQueue,
+    query: str,
+    *,
+    query_family: str,
+    boards: Iterable[dict[str, str]],
+    request: Callable[..., Any],
+    max_results_per_board: int = 100,
+) -> dict[str, int]:
+    """Search registered boards and persist active rows through the existing queue."""
+    family = query_family.strip()
+    if not family:
+        raise ValueError("query_family is required")
+    links: list[dict[str, str]] = []
+    inactive = 0
+    malformed = 0
+    for board in boards:
+        result = search_workday_board(
+            query,
+            board=board,
+            request=request,
+            max_results=max_results_per_board,
+        )
+        inactive += result["inactive_count"]
+        malformed += result["malformed_count"]
+        for row in result["results"]:
+            links.append(
+                {
+                    "url": row["url"],
+                    "source": f"official_workday:{row['company']}",
+                    "query_family": family,
+                    "company": row["company"],
+                    "title": row["title"],
+                }
+            )
+    return {
+        **queue.discover(links),
+        "inactive_count": inactive,
+        "malformed_count": malformed,
     }

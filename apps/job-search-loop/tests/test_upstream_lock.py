@@ -32,6 +32,10 @@ class UpstreamLockTests(unittest.TestCase):
             upstream["archive"]["content_sha256"],
             "951f7cf084023ddb4648496f29987ede848e33c64fbaf36468880dc3557bc9d1",
         )
+        self.assertEqual(
+            upstream["candidate_files"]["src/applypilot/config/employers.yaml"],
+            {"blob_sha": "528732e7bebdc0541b538d6e95590e4b651e399b", "size": 7863},
+        )
 
     def test_applypilot_adoption_ledger_separates_planned_agpl_code_from_mit_monorepo(self):
         data = json.loads(APPLYPILOT_ADOPTION.read_text(encoding="utf-8"))
@@ -59,6 +63,13 @@ class UpstreamLockTests(unittest.TestCase):
                     "copied_source_lines": 0,
                     "license": "MIT",
                     "owner_task": "L-49K5B2a",
+                },
+                {
+                    "local_path": "config/workday-boards.v1.json",
+                    "upstream_contract_paths": ["src/applypilot/config/employers.yaml"],
+                    "copied_source_lines": 0,
+                    "license": "MIT",
+                    "owner_task": "L-49K5B2b",
                 },
             ],
         )

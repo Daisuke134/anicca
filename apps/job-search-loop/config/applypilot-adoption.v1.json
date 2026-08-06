@@ -27,6 +27,13 @@
       "copied_source_lines": 0,
       "license": "MIT",
       "owner_task": "L-49K5B2a"
+    },
+    {
+      "local_path": "config/workday-boards.v1.json",
+      "upstream_contract_paths": ["src/applypilot/config/employers.yaml"],
+      "copied_source_lines": 0,
+      "license": "MIT",
+      "owner_task": "L-49K5B2b"
     }
   ],
   "components": [
