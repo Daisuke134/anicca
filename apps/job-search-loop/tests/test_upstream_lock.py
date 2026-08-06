@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 LOCK = ROOT / "config" / "upstream-lock.v1.json"
 ADOPTION = ROOT / "config" / "upstream-adoption.v1.json"
 MASTER_DELTA = ROOT / "config" / "upstream-master-delta.v1.json"
+RUNTIME_ADOPTION = ROOT / "config" / "upstream-runtime-adoption.v1.json"
 
 
 class UpstreamLockTests(unittest.TestCase):
@@ -166,6 +167,49 @@ class UpstreamLockTests(unittest.TestCase):
             {"workflow", "activity", "worker", "schedule", "client", "testing"},
         )
         self.assertEqual(sdk["rollback"]["strategy"], "uv_lock_previous_pin")
+
+    def test_browser_use_and_temporal_runtime_contracts_have_explicit_authorities(self):
+        data = json.loads(RUNTIME_ADOPTION.read_text(encoding="utf-8"))
+        self.assertEqual(data["schema_version"], 1)
+        self.assertEqual(
+            data["pins"],
+            {
+                "browser_use": "0.13.7@f0aa3a8bb03779c71a5aa262d389e3bfe6b77cdc",
+                "temporal_server": "1.31.2@19a774302c613da9adc4436ab14278ccdca8e0a5",
+                "temporal_sdk_python": "1.31.0@84b519e0ff407b049da88ac7d1711f110494ff4d",
+            },
+        )
+        components = {item["id"]: item for item in data["components"]}
+        expected = {
+            "browser_session", "browser_actions", "browser_history", "browser_screenshots",
+            "browser_best_guess_answers", "browser_self_reported_success",
+            "browser_unrestricted_submit", "browser_captcha_handling", "browser_generic_retry",
+            "temporal_workflow", "temporal_activity", "temporal_schedule", "temporal_signal",
+            "temporal_cancellation", "temporal_heartbeat", "temporal_history",
+        }
+        self.assertEqual(set(components), expected)
+        self.assertEqual(len(data["components"]), len(expected))
+        for item in components.values():
+            self.assertIn(item["decision"], {"reuse", "adapt", "supersede"})
+            self.assertTrue(item["source_paths"])
+            self.assertTrue(item["local_authority"].strip())
+            self.assertTrue(item["parity_tests"])
+            for parity_test in item["parity_tests"]:
+                self.assertTrue((ROOT / parity_test).is_file(), parity_test)
+            self.assertRegex(item["owner_task"], r"^L-49K0[A-Z][0-9]?$|^L-49K0D2$")
+        for component_id in {
+            "browser_best_guess_answers", "browser_self_reported_success",
+            "browser_unrestricted_submit", "browser_captcha_handling", "browser_generic_retry",
+        }:
+            self.assertEqual(components[component_id]["decision"], "supersede")
+        self.assertEqual(
+            components["browser_unrestricted_submit"]["local_authority"],
+            "submission intent fence plus authoritative ATS or Gmail confirmation",
+        )
+        self.assertEqual(
+            components["temporal_activity"]["local_authority"],
+            "ledger idempotency key and side-effect fence",
+        )
 
     def test_every_v130_component_has_one_explicit_adoption_decision(self):
         data = json.loads(ADOPTION.read_text(encoding="utf-8"))
