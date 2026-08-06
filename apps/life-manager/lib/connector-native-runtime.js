@@ -464,7 +464,8 @@ async function runNativeConnectorPass(input = {}) {
                 retry_after: reconciledAbsent ? now : null,
                 ...(currentCapabilityVersion ? { capability_version: currentCapabilityVersion } : {}),
               }));
-              break judgmentLoop;
+              if (proof.state === "unavailable") continue;
+              if (proof.state !== "absent") break judgmentLoop;
             }
           }
           write = await runNativeWrite({

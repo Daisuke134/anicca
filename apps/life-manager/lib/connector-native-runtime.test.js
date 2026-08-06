@@ -788,18 +788,24 @@ test("an unknown effect is read back before absent retry or registered verificat
 
   providerState = "absent";
   const absent = await wake();
-  assert.equal(writes, 0);
+  assert.equal(writes, 1);
   assert.deepEqual(absent.candidate_attempts, [{
     event_ref: "luma-event://event/founder-night",
     outcome: "known_no_effect",
     safe_reason: "LUMA_RECONCILED_ABSENT",
     observed_at: NOW,
     retry_after: NOW,
+  }, {
+    event_ref: "luma-event://event/founder-night",
+    outcome: "verified_success",
+    safe_reason: "open_coverage",
+    observed_at: NOW,
+    retry_after: null,
   }]);
 
   providerState = "registered";
   const registered = await wake();
-  assert.equal(writes, 1);
+  assert.equal(writes, 2);
   assert.equal(registered.write, delivered);
 });
 
@@ -885,7 +891,7 @@ test("known failures exhausting one date continue to the next open date in the s
   ]);
 });
 
-test("candidate budget returns a cursor and the next wake resumes after that candidate", async () => {
+test("candidate budget cannot stop the pass before the next actionable candidate", async () => {
   const input = await fixture();
   const profile = Object.freeze({ tenant_id: TENANT, timezone: "Asia/Tokyo" });
   const goalDecision = Object.freeze({ ranked_events: [
@@ -948,32 +954,10 @@ test("candidate budget returns a cursor and the next wake resumes after that can
   };
 
   const first = await runNativeConnectorPass({ ...input, config: baseConfig, deps: dependencies });
-  assert.deepEqual(first.cursor, {
-    status: "resume_after",
-    date: "2026-08-05",
-    event_ref: "luma-event://event/founder-night",
-    observed_at: NOW,
-  });
+  assert.equal(first.cursor, null);
+  assert.equal(first.write, delivered);
   assert.deepEqual(input.calls.filter(([name]) => name === "write").map(([, value]) => value.application.eventRef), [
     "luma-event://event/founder-night",
-  ]);
-
-  input.calls.length = 0;
-  const second = await runNativeConnectorPass({
-    ...input,
-    config: { ...baseConfig, cursor: first.cursor },
-    deps: {
-      ...dependencies,
-      async runNativeWrite(value) {
-        input.calls.push(["write", value]);
-        if (value.application.eventRef.endsWith("founder-night")) throw new Error("cursor did not advance");
-        return delivered;
-      },
-    },
-  });
-  assert.equal(second.write, delivered);
-  assert.equal(second.cursor, null);
-  assert.deepEqual(input.calls.filter(([name]) => name === "write").map(([, value]) => value.application.eventRef), [
     "luma-event://event/agent-night",
   ]);
 });
