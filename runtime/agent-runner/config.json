@@ -10,8 +10,8 @@
       "ssl_cert_file": "/etc/ssl/cert.pem",
       "project_doc_max_bytes": 0,
       "disabled_skills": ["imagegen", "openai-docs", "plugin-creator", "skill-creator", "skill-installer"],
-      "disabled_features": ["apps", "auth_elicitation", "browser_use", "browser_use_external", "browser_use_full_cdp_access", "computer_use", "goals", "hooks", "image_generation", "in_app_browser", "multi_agent", "plugins", "remote_plugin", "tool_call_mcp_elicitation", "tool_suggest", "workspace_dependencies"],
-      "capabilities": {"structured_json": true, "tools": true, "browser": false},
+      "disabled_features": ["apps", "auth_elicitation", "goals", "hooks", "image_generation", "multi_agent", "plugins", "remote_plugin", "tool_call_mcp_elicitation", "tool_suggest", "workspace_dependencies"],
+      "capabilities": {"structured_json": true, "tools": true, "browser": true},
       "cost_tier": "subscription",
       "quota": {"source": "provider"}
     },
