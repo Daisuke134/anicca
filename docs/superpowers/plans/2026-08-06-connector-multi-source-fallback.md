@@ -27,15 +27,21 @@
 - [x] Add the test to `test:outbound`; focused 3/3、pretest 12/12、outbound 340/340 GREEN。
 - [x] Update master spec with RED/GREEN evidence; commit and push.
 
-## Task 2: Durable Provider Cursor and Same-Pass Handoff
+## Task 2A: Durable Provider Cursor Contract
 
 **Files:**
 - Create: `apps/life-manager/lib/event-provider-cursor.js`
 - Create: `apps/life-manager/lib/event-provider-cursor.test.js`
+
+**Completion:** A mode-0600 atomic cursor stores only date, provider, candidate index, generation, and observed time. Exact transitions advance candidate, then provider, then date; unknown effect cannot advance. Forged/stale cursors and provider-order drift fail closed.
+
+## Task 2B: Same-Pass Handoff Runtime Wiring
+
+**Files:**
 - Modify: `apps/life-manager/lib/connector-native-runtime.js`
 - Modify: `skills/connector/native-pass.js`
 
-**Completion:** Luma candidate exhaustion advances to Connpass within the same pass; known no-effect advances candidate; provider exhaustion advances provider; unknown effect reconciles before retry; only all-provider exhaustion advances the date. Cursor survives process exit without storing page text or identity.
+**Completion:** Luma candidate exhaustion advances to Connpass within the same pass; known no-effect advances candidate; provider exhaustion advances provider; unknown effect reconciles before retry; only all-provider exhaustion advances the date. The runtime persists the Task 2A cursor without storing page text or identity.
 
 ## Task 3: Connpass Discovery in Native Runtime
 
