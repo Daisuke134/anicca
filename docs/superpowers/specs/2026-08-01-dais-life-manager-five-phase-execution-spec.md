@@ -2988,6 +2988,12 @@ immutable storeのprovider receiptとPNG objectをE1/E2へ、canonical URL HEAD 
 Luma event ref、Luma job、Luma evidence directoryを使わない。両module不在RED後、focused 4/4、pretest 12/12、常設outbound suite
 348/348 GREEN、失敗0件。次はTask 4B2Cでruntimeのeligible candidateをこのprovider/job/storeとcommon write pipelineへ接続する。
 
+O1B-25進捗139（Task 4B2Cの実装slice固定）: runtime配線の前に、既存write pipeline、coverage evidence、bounded result、
+candidate-attempt、Telegram lineageに残るLuma固有contractをprovider-neutralへするTask 4B2C1を置く。verified Connpass inventoryを
+Luma goal decisionへ偽装せず受け入れ、既存Luma検証を維持することを完了条件とする。その後Task 4B2C2でConnpass provider/job/storeを
+runtimeへ接続し、known no-effectは次候補/providerへ進み、unknown effectはreadback reconciliation前に再submitしない。複数の独立境界を
+一変更に混ぜず、各sliceをRED→GREEN→full suite→commit/pushで閉じる。
+
 現在と完成形:
 
 ```mermaid
