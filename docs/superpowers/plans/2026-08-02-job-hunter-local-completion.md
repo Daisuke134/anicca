@@ -2702,6 +2702,16 @@ it is easier to demonstrate:
   Browser Use adapter connected to the dedicated CloakBrowser profile. The adapter
   exposes only locally authorized actions, captures before/after/terminal images,
   and cannot mark success without an authoritative local confirmation classifier.
+  - Adapter policy slice complete: exact Browser Use `0.13.7` is required before
+    session construction; CDP must be loopback, `captcha_solver=False`,
+    `keep_alive=True`, and a non-empty official-domain allowlist is mandatory.
+    The public action surface contains only navigate, snapshot, fill/read, upload
+    verification, and screenshot. Click, Submit, CAPTCHA solving, and success marking
+    fail before reaching the backend. Before/after/terminal images are owner-fenced,
+    mode 0600, and SHA-256 addressed. Focused tests pass 3/3 and the complete suite
+    passes 457/457. Remaining: install the locked Python 3.12 runtime, implement the
+    BrowserSession-backed operations, switch `browser_worker` from `playwright_ats`,
+    and prove the adapter against the dedicated resident CloakBrowser identity.
 - [ ] **L-49K0D2** — Wrap hourly application, five-minute Gmail, weekly learning,
   Telegram delivery, and Guardian reconciliation as Temporal workflows/activities.
   External side effects use explicit idempotency keys and no automatic retry after
