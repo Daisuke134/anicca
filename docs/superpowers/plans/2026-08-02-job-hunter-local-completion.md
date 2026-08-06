@@ -2908,10 +2908,17 @@ OpenTelemetry decision and primary sources:
   - [ ] `L-49K0C2O4` — Correlate `trace_id`/`span_id` through Temporal Workflow and
     Activity IDs, application/route IDs, ledger events, owner/worker receipts,
     evidence manifests, Guardian repair cases, and Telegram reports. OTel remains
-    diagnostic; only authoritative ledger transitions can say `submitted`. Files:
-    modify `browser_worker.py`, `ledger.py`, one migration, and focused tests; split
-    ledger persistence from Telegram projection (each slice at most 3 files and
-    100 LOC).
+    diagnostic; only authoritative ledger transitions can say `submitted`. Parent
+    closes only after all children close.
+    - [ ] `L-49K0C2O4a` — Persist the resident `hourly_pass` trace/span IDs in the
+      running/completed worker receipt and worker result. Missing backend yields
+      explicit null IDs, never fabricated values (2 files, soft target 80 LOC).
+    - [ ] `L-49K0C2O4b` — Persist validated trace/span IDs with application/route
+      ledger events and evidence manifests via one migration. Split ledger schema/
+      write and evidence projection into slices of at most 3 files and 100 LOC.
+    - [ ] `L-49K0C2O4c` — Carry the same IDs through Temporal Workflow/Activity
+      identity, Guardian repair cases, and Telegram reports. Split durable runtime
+      correlation from Telegram projection (each at most 3 files and 100 LOC).
   - [ ] `L-49K0C2O5` — Install the loopback-only Collector/backend LaunchAgent,
     persistent private data volume, health receipt, bounded retention, and Grafana
     dashboard for pass/candidate/route timelines, failure classes, confirmation rate,
