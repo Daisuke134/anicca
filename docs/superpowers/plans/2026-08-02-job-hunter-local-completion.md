@@ -2149,7 +2149,7 @@ this spec update → commit/push → Telegram milestone before the next item sta
     fence 100 then attached normally on its first attempt and exited zero. It clicked
     Submit zero times. Its report reused Telegram message ID 7377, leaving `L-49K0A1J`
     correctly open.
-- [ ] **L-49K0A1J** — Make each materially changed resident run produce a unique,
+- [x] **L-49K0A1J** — Make each materially changed resident run produce a unique,
   deduplicated Telegram event and provider message ID. A previous deficit message ID
   such as `7173` cannot serve as proof for a later run; confirmed applications attach
   their exact screenshots and authoritative ATS/Gmail receipt.
@@ -2165,10 +2165,21 @@ this spec update → commit/push → Telegram milestone before the next item sta
     acknowledged fresh event `job-search-daily:2026-08-06:state:8a890a702b99c40d`
     with provider message ID `7597`, not prior `7377`; exact replay returned `7597`
     and SQLite contains exactly one row for that event.
-  - Remaining before checking this task: extend confirmed-application delivery from
-    resume-only to one immutable evidence bundle containing the exact pre-submit,
-    post-action, and terminal screenshots plus the authoritative ATS/Gmail receipt;
-    require hashes and the same application/intent fence before Telegram attachment.
+  - Evidence delivery complete: an append-only ledger row binds the submitted intent,
+    exact fence, resume, pre-submit/post-action/terminal screenshots, and authoritative
+    ATS/Gmail receipt to verified on-disk SHA-256 values. Missing files, stale fences,
+    non-submitted intents, hash mismatch, and changed replay fail closed. The reporter
+    creates one deterministic mode-0600 ZIP with six fixed entries (five originals and
+    a path-free canonical manifest) and delivers it once under
+    `application-evidence:{application_id}:{bundle_sha256}`. Bundled applications are
+    excluded from the legacy resume-only delivery. Focused evidence tests pass 7/7;
+    the complete Job Hunter suite passes 452/452. Immutable release
+    `af74945214e1b381f9e9584ad4d17ec68a3bdcc9` (archive SHA-256
+    `38d6f37ed4ff12a8b5013f75c48bd36ff402f9feecc9962a6bbe506bfb0124da`)
+    produced resident run `daily-20260806-122332`, run count 36, exit zero and
+    Telegram message ID `7621`. Production SQLite integrity is `ok`; the new table
+    exists with zero rows, and both reporter passes delivered zero evidence/resume
+    artifacts rather than fabricating a confirmed application.
 - [ ] **L-49K0A2** — Pin `temporalio/temporal` v1.31.2 and `temporalio/sdk-python`
   v1.31.0 with MIT licenses, server/CLI/SDK artifacts, protocol versions, and local
   rollback. Prove an isolated local server and Python worker can survive worker
@@ -2191,28 +2202,26 @@ Completed foundations are `L-49K0A1G`, `L-49K0B`, `L-49K0C`, and `L-49K0C1`.
 The active cursor is the first item below; do not start a later item merely because
 it is easier to demonstrate:
 
-1. `L-49K0A1J` — issue one fresh deduplicated Telegram event and provider message ID
-   for each materially changed resident run; never reuse message ID `7173` as proof.
-2. `L-49K0A2` — finish the already pinned Temporal slice by proving an isolated
+1. `L-49K0A2` — finish the already pinned Temporal slice by proving an isolated
    worker restart produces exactly one durable activity effect.
-3. `L-49K0B1` — finish the Browser Use/Temporal reuse-adapt-supersede inventory and
+2. `L-49K0B1` — finish the Browser Use/Temporal reuse-adapt-supersede inventory and
    bind each accepted component to a local authority and parity test.
-4. `L-49K0D1` — replace the remaining prompt-owned Playwright execution contract
+3. `L-49K0D1` — replace the remaining prompt-owned Playwright execution contract
    with the pinned Browser Use adapter on the dedicated CloakBrowser identity.
-5. `L-49K0C2` — prove a blocked ATS route cannot end the resident hourly pass and
+4. `L-49K0C2` — prove a blocked ATS route cannot end the resident hourly pass and
    that all remaining eligible routes/roles continue exactly once.
-6. `L-49K0D`, then `L-49K0D2` — build tracker/outcome/digest projections, then move
+5. `L-49K0D`, then `L-49K0D2` — build tracker/outcome/digest projections, then move
    all four resident lanes to restart-safe, idempotent Temporal workflows.
-7. `L-49K0E`, `L-49K`, `L-49`, `L-49A`, `L-50`, `L-51`, `L-52` — prove resident
+6. `L-49K0E`, `L-49K`, `L-49`, `L-49A`, `L-50`, `L-51`, `L-52` — prove resident
    actor provenance, bounded owner handoff where required, and authoritative real
    Ashby plus Workday receipts and screenshots in Telegram.
-8. `L-53` through `L-65` — prove Gmail, Calendar, interview preparation/debrief,
+7. `L-53` through `L-65` — prove Gmail, Calendar, interview preparation/debrief,
     conversion metrics, one-variable learning, rollback, Telegram, and simultaneous
     health of all resident lanes.
-9. `L-66` through `L-73` — operate the Dais campaign through fifty confirmed
+8. `L-66` through `L-73` — operate the Dais campaign through fifty confirmed
     applications, a verified interview, a qualifying written offer, comparison,
     negotiation brief, and owner decision.
-10. `W-01` through `W-30` — only after local completion, build and verify the
+9. `W-01` through `W-30` — only after local completion, build and verify the
     tenant-isolated Web product.
 - [x] **L-49K0B** — Inventory every `career-ops` v1.25.0 capability as `reuse`,
   `adapt`, or `supersede`, including ATS scan providers, liveness, repost/dedup,
