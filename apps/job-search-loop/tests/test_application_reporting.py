@@ -3,6 +3,7 @@ import importlib
 import json
 import tempfile
 import unittest
+import zipfile
 from pathlib import Path
 
 from job_search_loop import telegram
@@ -10,6 +11,113 @@ from job_search_loop.ledger import Ledger
 
 
 class ApplicationReportingTests(unittest.TestCase):
+    def test_submission_evidence_archive_is_deterministic_and_complete(self):
+        reporting = importlib.import_module("job_search_loop.application_reporting")
+        self.assertTrue(hasattr(reporting, "build_submission_evidence_archive"))
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            paths = {}
+            for name, content in {
+                "resume": b"%PDF resume",
+                "pre_submit": b"png pre",
+                "post_action": b"png post",
+                "terminal": b"png terminal",
+                "confirmation": b'{"status":"submitted"}',
+            }.items():
+                suffix = ".pdf" if name == "resume" else ".json" if name == "confirmation" else ".png"
+                path = root / f"{name}{suffix}"
+                path.write_bytes(content)
+                paths[name] = path
+            report = {
+                "application_id": "application-1",
+                "company": "Example",
+                "title": "AI Engineer",
+                "canonical_url": "https://jobs.example/1",
+                "intent_id": "intent-1",
+                "fence": 7,
+                "bundle_sha256": "b" * 64,
+                "confirmation_source": "ats",
+                "confirmation_id": "ats-1",
+            }
+            for name, path in paths.items():
+                report[f"{name}_path"] = str(path)
+                report[f"{name}_sha256"] = hashlib.sha256(path.read_bytes()).hexdigest()
+
+            first = reporting.build_submission_evidence_archive(report, root / "media")
+            first_bytes = first.read_bytes()
+            second = reporting.build_submission_evidence_archive(report, root / "media")
+
+            self.assertEqual(first, second)
+            self.assertEqual(second.read_bytes(), first_bytes)
+            self.assertEqual(first.stat().st_mode & 0o777, 0o600)
+            with zipfile.ZipFile(first) as bundle:
+                self.assertEqual(
+                    sorted(bundle.namelist()),
+                    [
+                        "confirmation.json",
+                        "manifest.json",
+                        "post-action.png",
+                        "pre-submit.png",
+                        "resume.pdf",
+                        "terminal.png",
+                    ],
+                )
+                manifest = json.loads(bundle.read("manifest.json"))
+                self.assertEqual(manifest["bundle_sha256"], "b" * 64)
+                self.assertEqual(manifest["intent_id"], "intent-1")
+                self.assertNotIn(str(root), bundle.read("manifest.json").decode())
+
+    def test_complete_evidence_bundle_is_delivered_under_one_idempotency_key(self):
+        reporting = importlib.import_module("job_search_loop.application_reporting")
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            report = {
+                "application_id": "application-1",
+                "company": "Example",
+                "title": "AI Engineer",
+                "canonical_url": "https://jobs.example/1",
+                "intent_id": "intent-1",
+                "fence": 7,
+                "bundle_sha256": "c" * 64,
+                "confirmation_source": "gmail",
+                "confirmation_id": "gmail-message-1",
+            }
+            for name, suffix in {
+                "resume": ".pdf",
+                "pre_submit": ".png",
+                "post_action": ".png",
+                "terminal": ".png",
+                "confirmation": ".json",
+            }.items():
+                path = root / f"{name}{suffix}"
+                path.write_bytes(f"evidence:{name}".encode())
+                report[f"{name}_path"] = str(path)
+                report[f"{name}_sha256"] = hashlib.sha256(path.read_bytes()).hexdigest()
+            calls = []
+
+            result = reporting.deliver_submitted_evidence_bundles(
+                ledger_path=root / "ledger.sqlite3",
+                outbox_path=root / "outbox.sqlite3",
+                media_root=root / "media",
+                report_reader=lambda path: [report],
+                sender=lambda **kwargs: calls.append(kwargs)
+                or {"status": "sent", "message_id": "903"},
+            )
+
+            self.assertEqual(len(calls), 1)
+            self.assertEqual(
+                calls[0]["event_key"],
+                f"application-evidence:application-1:{'c' * 64}",
+            )
+            self.assertEqual(calls[0]["document"].suffix, ".zip")
+            self.assertIn("gmail-message-1", calls[0]["message"])
+            self.assertEqual(result[0]["message_id"], "903")
+
+    def test_ledger_and_reporter_expose_fenced_submission_evidence_bundle(self):
+        self.assertTrue(hasattr(Ledger, "record_submission_evidence_bundle"))
+        reporting = importlib.import_module("job_search_loop.application_reporting")
+        self.assertTrue(hasattr(reporting, "deliver_submitted_evidence_bundles"))
+
     def test_document_delivery_is_private_and_at_most_once(self):
         sender = getattr(telegram, "send_document_once", None)
         self.assertIsNotNone(sender)
