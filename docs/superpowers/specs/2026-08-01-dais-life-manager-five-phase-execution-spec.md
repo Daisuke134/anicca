@@ -3133,7 +3133,7 @@ Codex subscription quota、API usage、browser/site制約は消えない。Actor
 
 **Execution steps:** privacy-safe Observer envelope/replay → isolated Healer shadow → guarded consumer/canary → Codex Actor/JSONL shadow →
 every-wake/weekly Telegram → bounded browser discovery → forward-only continuation → Actor production切替 → live submit → production self-heal →
-fallback provider → rolling coverage → multi-user/restart → canonical mergeの順を固定する。各sliceはfocused test、full relevant suite、spec更新、commit、pushで
+fallback provider → rolling coverage → multi-user/restart → public claim acceptance → canonical mergeの順を固定する。各sliceはfocused test、full relevant suite、spec更新、commit、pushで
 閉じてから次へ進む。live E2Eは既存Connector launchdだけを主体とし、main sessionはeventを手動submitしない。
 
 **E2E judgment:**
@@ -3143,7 +3143,33 @@ fallback provider → rolling coverage → multi-user/restart → canonical merg
 | UI変更 | あり（CloakBrowser上のprovider form操作と登録完了readback） |
 | 結論 | Maestro: 不要。macOS CloakBrowser CDP、provider marker、Calendar readback、PNG SHA、Telegram positive message IDの実E2Eを必須とする |
 
-### Active remaining TODO SSOT（進捗149。これ以外の残TODO一覧は履歴）
+O1B-25進捗150（event registration OSS監査とpublic claim gate / spec only、実装・live effectなし）:
+2026-08-06にGitHub repository/code searchと公開Webを英語・日本語で監査した。Browser Use、Stagehand、Playwright CLI/MCP、
+OpenAI computer useにはagentic browser action、form操作、persistent session、self-healingの再利用可能な基盤がある。一方、公開範囲では
+`event discovery → Calendar conflict gate → Luma/Connpass等へのbrowser submit → parent readback → ticket/QR/PNG → Calendar write/readback
+→ Telegram evidence → wake間continuation`を一製品として閉じるOSSは確認できなかった。Luma webhook/APIとZapier連携は主催者側または
+登録後同期、Calendar assistant研究は予定作成、Browser Useのapply例は汎用form実行であり、Connectorの完成形とは異なる。
+
+この不在確認を「世界に存在しない証明」にしない。public copyは、実証前は「公開OSSでは同一のend-to-end systemを確認できなかった」とだけ述べる。
+`world's first`の無限定断言は禁止する。少なくともLumaとConnpassの各providerで、常設Connector自身による新規submit、providerの
+registered/pending parent readback、Calendar ID/readback、PNG SHA、ticket/QRまたは同等receipt、Telegram card/photo positive message IDを
+同一event lineageへ揃え、cross-provider continuation、restart continuation、公開再現手順を実証した後だけ、日付・調査範囲・機能範囲を付けて
+`To our knowledge, the first open-source/local-first autonomous connection agent ...`と表現できる。private systemや未公開agentの存在可能性を
+留保する。現在は新規live submit証拠0件なので、このclaim gateは未達である。
+
+実装は完全一致OSSを探し続けて停止せず、Stagehand/Browser Use/Playwrightの公開patternとworking Gigのread-only実測patternをcopy+tweakする。
+親が単一target、operation lock、liveness、cleanup、external oracleを所有し、ActorはConnector専用tool/skill経由でそのtargetだけを操作する。
+provider別に固定するのはdiscovery capability、required form schema、success oracle、evidence extractionだけとし、汎用browser action、Observer、
+retry、cursor、Calendar、Telegramを重複実装しない。Connpass旧実装の`キャンセル`文字列一致は登録成功oracleとして永久に再利用しない。
+
+Sources: https://github.com/browserbase/stagehand 、https://github.com/browser-use/browser-use 、
+https://github.com/browser-use/browser-use/blob/main/examples/use-cases/apply_to_job.py 、https://github.com/microsoft/playwright-cli 、
+https://github.com/microsoft/playwright-mcp 、https://developers.openai.com/api/docs/guides/tools-computer-use 、
+https://help.luma.com/p/webhooks 、https://docs.luma.com/reference/post_v1-events-create 、
+https://zapier.com/apps/eventbrite/integrations/luma/255718389/add-new-eventbrite-attendees-to-luma-as-calendar-persons 、
+https://help.connpass.com/organizers/event-admin.html 。
+
+### Active remaining TODO SSOT（進捗150。これ以外の残TODO一覧は履歴）
 
 1. [x] Provider-neutral downstream write、Connpass runtime write dependencies、Luma Calendar-eligible 0 handoff、Connpass state persistenceを閉じる。証拠: 進捗141、143、144、commit `65241d6a2`、`e822bfa3a`、`d0e05f5d8`、`1cfa2e56f`。
 2. [x] Privacy-safe Observer envelope/replayを実装する。完了条件: success、tool failure、timeout、process crashが同じschemaでrun/wake、stage、safe action、expected/observed effect、owner generation、screenshot SHA、provider readback、commit、cursorへ正規化され、secret/PII/raw logなし、fingerprint dedupe可能なincidentとreplay fixtureを各1件生成する。証拠: 進捗148、focused 33/33 GREEN。
@@ -3156,7 +3182,7 @@ fallback provider → rolling coverage → multi-user/restart → canonical merg
 9. Connpass browser discoveryをbounded batchへ修正する。完了条件: API key参照0、API network call 0、対象日のbrowser inventoryを一wakeの上限内で返し、未処理候補をdurable cursorへ残し、次wakeが同じ候補を重複走査せず再開する。
 10. Exhaustive continuationを一つのforward-only state machineにする。完了条件: candidate 0、満席、closed、form failure、provider down、browser crashがterminal failureにならず、次candidate→provider→date→windowまたはdurable recoveryへ進む。
 11. Codex-native Actorをproduction Connectorへ切り替える。完了条件: launchdの単一scheduleがpersistent Terra threadをwake/resumeし、ObserverとTelegram outboxを必ず通り、旧custom Terra runnerとの二重実行0。
-12. 常設loop自身によるConnpass live submitとpromotionを閉じる。完了条件: 一時scriptやmain-session手動申込ではなく同一launchd runがform入力・Submitを行い、親readbackのregistered/pending、provider receipt、PNG SHA、Calendar ID/readback、Telegram card/photo positive IDを一event lineageへ揃え、そのproofだけで`registration_allowed=true`。
+12. 常設loop自身による最初のlive submitをLuma-firstで閉じる。完了条件: 各fresh dateはLumaから開始し、一時scriptやmain-session手動申込ではなく同一launchd runがCalendar gapを持つ実eventへform入力・Submitを行う。Lumaにeligible候補がない、または全候補がknown-no-effectの場合だけ同じrunでConnpassへ進む。LumaまたはConnpassの親readbackによるregistered/pending、provider receipt、PNG SHA、Calendar ID/readback、Telegram card/photo positive IDを一event lineageへ揃える。Connpassはこのproofを得た時だけ`registration_allowed=true`へpromotionする。
 13. Production self-heal E2Eを実証する。完了条件: 実incident→Observer→Healer→consumer→canary→Connector再実行が実`applied_bundle`を作った時だけproduction incident=`healed`になり、失敗revisionはrollbackされる。
 14. Post-registration recoveryを閉じる。完了条件: Calendar、PNG、ticket、Telegram各境界の中断後、providerへ再submitせず不足artifactだけを補完し、外部登録1回・bundle1個。
 15. Peatixをbrowser-only discovery→parent submit/readback→evidence→isolated live proof→promotionの順で追加する。完了条件は実`applied_bundle`。
@@ -3168,7 +3194,8 @@ fallback provider → rolling coverage → multi-user/restart → canonical merg
 21. Observer SDKをmail、Calendar、payment、収益loopへadapter展開する。Gigへの導入はGig所有repoの独立sliceだけで行い、このConnector branchからGig code/state/profile/launchd/`:9223`を変更しない。完了条件は各loop固有external oracleでincident/healedを判定すること。
 22. Local multi-userとcloud isolation acceptanceを行う。完了条件: userごとのauth/browser/Calendar/Telegram/state/thread分離、Dais auth共有0、cloudはtenant service credential、cross-tenant read/write 0。
 23. Restart acceptanceを行う。完了条件: Mac再起動後、Connector Actor、Observer、Healer、consumer、CloakBrowser、heartbeat、outbox、idempotency、stale-owner GCが手動介入なしで再開。
-24. Canonical branchへmergeし、legacy custom Terra runner、legacy bridge、Docker worker、重複scheduleを退役する。完了条件: canonical commitの単一Codex-native scheduleと次wakeの実bundleまたはidempotent no-duplicate readback。
+24. Public differentiation/claim acceptanceを閉じる。完了条件: 少なくともLumaとConnpassの各providerで新規`applied_bundle`、cross-provider continuation、restart continuation、公開再現手順を揃え、第三者が確認できるevidence matrixを作る。それまでは「同一の公開OSSは今回の調査で未確認」とだけ表現し、達成後も日付・調査範囲・機能範囲・`To our knowledge`を伴う限定claimだけを許可する。
+25. Canonical branchへmergeし、legacy custom Terra runner、legacy bridge、Docker worker、重複scheduleを退役する。完了条件: canonical commitの単一Codex-native scheduleと次wakeの実bundleまたはidempotent no-duplicate readback。
 
 現在と完成形:
 
