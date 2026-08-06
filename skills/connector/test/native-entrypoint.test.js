@@ -192,6 +192,43 @@ test("native-pass keeps successful Calendar and Telegram receipts in append-only
   } finally { fs.rmSync(directory, { recursive: true, force: true }); }
 });
 
+test("native-pass appends every bounded candidate attempt to durable history", async () => {
+  const directory = temporaryDirectory();
+  const stateDir = path.join(directory, "state");
+  const candidateAttempts = [{
+    event_ref: "luma-event://event/unavailable-one",
+    outcome: "known_no_effect",
+    safe_reason: "LUMA_RSVP_UNAVAILABLE",
+    observed_at: "2026-08-06T00:00:00.000Z",
+    retry_after: null,
+  }, {
+    event_ref: "luma-event://event/verified-one",
+    outcome: "verified_success",
+    safe_reason: "open_coverage",
+    observed_at: "2026-08-06T00:00:01.000Z",
+    retry_after: null,
+  }];
+  try {
+    await runNativePass({
+      repoRoot: REPO_ROOT,
+      stateDir,
+      ownerToken: OWNER_TOKEN,
+      config: { tenantId: "dais-local" },
+      runRuntime: async () => ({
+        status: "incomplete",
+        coverage: { counts: { open: 20 } },
+        continuation: { status: "continue" },
+        candidate_attempts: candidateAttempts,
+      }),
+    });
+
+    const rows = fs.readFileSync(path.join(stateDir, "candidate-attempts.jsonl"), "utf8")
+      .trim().split("\n").map(JSON.parse);
+    assert.deepEqual(rows, candidateAttempts);
+    assert.equal(fs.statSync(path.join(stateDir, "candidate-attempts.jsonl")).mode & 0o777, 0o600);
+  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+});
+
 test("native-pass migrates the previous successful last result before the next runtime", async () => {
   const directory = temporaryDirectory();
   const stateDir = path.join(directory, "state");
