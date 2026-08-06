@@ -2500,25 +2500,35 @@ guardへ渡すだけである。producerはproduction DBのfeedback/error intake
 Connector self-healingの受入contract:
 
 ```mermaid
-flowchart LR
-    A[Connector launchd] --> B[実ブラウザで探索・応募]
-    B --> C{検証済み外部effect?}
-    C -- Yes --> D[登録済みpage PNG・mail/QR・Calendar]
-    D --> E[Telegram card + screenshot]
-    E --> F[positive message ID + artifact SHA]
-    C -- No --> G[privacy-safe incident envelope]
-    G --> H[Self-fix producer]
-    H --> I[隔離worktreeでRED→GREEN]
-    I --> J[全回帰・policy gate]
-    J --> K[PR + merge guard + canary]
-    K --> A
-    J -- Failed --> L[rollbackして次の修復仮説]
-    L --> H
+flowchart TD
+    A[Connector launchd] --> B[Observer: DOM・trace・receipt]
+    B --> C{実effectを検証できた?}
+    C -- Yes --> D[PNG・Calendar・Telegram ID]
+    D --> E[成功receiptでincident close]
+    C -- No --> F[privacy-safe incident + replay fixture]
+    F --> G[Terra fixer: 原因仮説を1つ選ぶ]
+    G --> H[隔離worktree: RED test]
+    H --> I[最小fix + focused/full GREEN]
+    I --> J[Self-build guard: policy・permission・rollback]
+    J --> K[隔離browser canaryで元fixture再実行]
+    K --> L{外部成功oracleを満たした?}
+    L -- No --> M[同fingerprintのrevisionをappend]
+    M --> G
+    L -- Yes --> N[merge・再配備]
+    N --> O[元eventまたは同型live eventをloopが再実行]
+    O --> C
 ```
 
-運用上Daisと対話中のCodexはこのloopのworkerではない。通常failure、retry、修復途中をTelegramへ連投せず、durable ledgerへ
-保存する。Telegramへ送る正常系は、修復後の実event effectを同一eventの登録済みpage PNG、mail/QR、Calendar、positive
-Telegram message ID、artifact SHAで照合できた時だけである。資金移動、権限拡大、secret/allowlist変更、guard自身の変更は
+運用上Daisと対話中のCodexはこのloopのworkerでも常時監視者でもない。Observerは各browser action、現在URL、control label、
+validation error、network/consoleの安全な分類、screenshot hash、provider readbackを同一run/event/capability versionへbindする。
+raw page本文、cookie、OTP、電話、email、回答値はincidentへ入れない。FixerはTerraだけを使い、一revisionにつき原因仮説一つ、
+RED一つ、最小fix一つに限定する。PR作成、test GREEN、mergeのいずれもincident完了ではない。完了oracleは、元failureが消え、
+実providerでsubmit後の登録済みmarker、full-page PNG、Calendar readback、Telegram positive message IDが同一event lineageに揃うことだけである。
+
+`incident_fingerprint + capability_version + revision`をappend-only SSOTにする。canary失敗は同fingerprintへ新revisionを追加し、
+`attempted`で永久除外しない。最大3 revision/24時間、各revision 15分、同じtest failureまたは同じcanary failureが3回続いた場合だけ
+`blocked`へ遷移し、次wakeまでbackoffする。通常failure、retry、修復途中をTelegramへ連投せずdurable ledgerへ保存し、成功または
+hard-safety blockerだけを一通送る。資金移動、権限拡大、secret/allowlist変更、guard自身の変更、外部規約同意の新規拡大は
 self-fix対象外で、既存hard safetyを維持する。
 
 O1B-25進捗92（応募0回とmulti-source未接続の再監査）: existing launchd run 131中の最新durable stateは
@@ -2630,6 +2640,13 @@ executorを追加した。各操作後にinput value、checked、aria-pressedを
 control、未知control kindは外部effect前にfail-closed。module不存在RED後、schema/policy/provider回帰込み16/16 GREEN。
 次はlive DOM schema readerとprivate profile loaderを合成し、confirm click前にplan→fill→readbackを必須化する。
 
+O1B-25進捗104（self-healing revision contract / TODO順序正本化）: self-healing完成条件を「issue/PRを作る」から、Observerの
+privacy-safe replay fixtureをTerra fixerがRED→最小fix→GREENへ変換し、self-build guardと隔離browser canaryを通し、再配備後の
+Connector自身が同型live eventで登録済みmarker、PNG、Calendar、Telegram positive IDを揃えることへ更新した。
+`incident_fingerprint + capability_version + revision`をappend-only SSOTとし、canary failureはdoneにせず次revisionへ戻す。
+上限は3 revision/24時間・各15分、同一failure 3回だけblocked/backoff。残TODOを11D submit配線→12 capability再評価→13 Observer
+trace→14 revision-aware Terra producer→15 consumer/canary→16 live replay→17 cross-site OTP→18 lineage receiptの依存順へ並べ直した。
+
 現在と完成形:
 
 ```mermaid
@@ -2668,21 +2685,26 @@ flowchart LR
 9. [x] Telegramへ結果cardと登録済みpage画像を実送信し、画像のpositive provider message IDをdelivery receiptへ保存・readbackする。run 103、card `7372`、photo `7594`、native 23/23、outbound 307/307。
 10A. [x] Connectorのcandidate outcomeとselection telemetryから、本文・個人情報・secretを含まないdedupe可能なincident envelopeを生成し、mode 0600 local ledgerへ永続化する。native 25/25、outbound 314/314。
 10B. [x] incident envelopeを`lm:type:self-heal` issue intakeへdedupe付きで配送し、provider issue URLをdurable receiptとして保存する。issue #1409、run 134、mode 0600 receipt一行。
-11. [~] self-fix producerを有効なcanonical path/stateへ修復し、incidentを隔離worktreeのRED test、最小修正、全回帰、PRへ変換する。state migrationとissue→agent→commit→PRはlive実証済み。残りはwrapper root fixのcanonical反映、launchd exit 0/machine result実証、受入不足PRを再修正cycleへ戻すこと。model名ではなくmachine resultとdiff/test証拠を合否の正本にする。
-12. self-build consumerを復旧し、protected-path、permission、test、canary、rollback gateを通過したPRだけをmerge・再配備する。producer/consumer双方のlaunchd exit 0と新ledger rowを実測する。
-13. 修復後にConnector loop自身を再wakeし、同じincident fingerprintが消え、実外部effectが成立するまでbounded repair cycleを継続する。通常retry/修復途中はTelegramへ送らない。
-14. 最初のlive self-fix fixtureとして`LUMA_FORM_INPUT_REQUIRED`を処理する。form schemaとlabelを安全に読み、verified profileと公開event evidenceだけから回答し、各入力をreadbackしてからsubmitする。推測できない質問、同意、公開投稿、支払はfail-closedのままにする。
-15. capability versionをattempt/suppressionへ追加し、required-form対応前の`LUMA_FORM_INPUT_REQUIRED / retry_after=null`だけを一度再評価する。同一capabilityでの永久retry loopは禁止する。
-16. [進行中] Calendar gate誤分類は修正済み。self-fix済みのwritable実eventでLuma→登録済みpage PNG→mail/QR→Calendar→Telegram画像message IDを一巡実証する。
-17. source registry contractを追加し、各providerの`discovery / registration / effect_readback / screenshot_evidence` capabilityをclosed schemaで宣言する。
-18. Connpass公式v2 APIの探索handoffをnative runtimeへ接続し、API key、1 req/sec、paginationを守る。read-only候補にcoverage creditを与えない。
-19. Connpassの認証済みbrowser registration adapter、登録済みreadback、screenshot evidenceをTDD/E2Eで追加し、初めて`registration_allowed=true`へpromotionする。
-20. Peatix、Meetup、Doorkeeper、Eventbriteを同じregistryへ一siteずつ追加する。各siteは実account/session、利用規約に沿う探索経路、submit、readback、screenshotのlive proofが揃うまでadvisory-onlyとする。
-21. dateごとにLuma→Connpass→Peatix→Meetup→Doorkeeper→Eventbriteの順でhandoffし、一sourceの候補枯渇・満席・未対応formでpass全体を終了しない。
-22. [x] 次wakeで成功eventとknown失敗eventの双方を再選択しないことを実証する。run 113、attempt 5行・delivery 2行不変、write=null。
-23. `open=0`まで反復し、21日統合Telegram briefingを送る。
-24. Mac再起動後のConnector、producer、consumer launchd、heartbeat、healthcheck、stale-loop self-healを実機検証する。
-25. canonical branchへ統合し、legacy bridge / Docker worker / 重複scheduleを退役する。
+11A. [x] Luma formを標準required input、custom multi-select、app-level required checkboxを含むclosed schemaへ正規化する。focused 2/2、provider回帰込み11/11。
+11B. [x] verified profileの完全一致回答と明示consentだけをanswer planへ変換し、未知required fieldで虚偽入力せず次候補へ進める。回帰込み14/14。
+11C. [x] exact controlだけをfill/check/selectし、各effectをreadbackするbounded executorを追加する。回帰込み16/16。
+11D. live DOM schema reader→private profile loader→answer plan→fill readbackを`submitLumaOnPage`のconfirm click前へ接続し、未知fieldでは同passの次候補へ継続する。
+12. attempt/suppressionへ`capability_version`を追加し、旧`LUMA_FORM_INPUT_REQUIRED / retry_after=null`を新versionで一度だけ再評価する。同versionの無限retryは禁止する。
+13. Observer trace packを実装する。run/event/capability versionへaction、URL class、control label、validation class、screenshot SHA、provider readbackをbindし、PII/secretなしのreplay fixtureをincidentへ添付する。
+14. [~] Terra self-fix producerをrevision-awareにする。canonical path/stateとexit 0はlive実証済み。残りは`incident_fingerprint + capability_version + revision` ledger、Connector blocker優先queue、PR作成をdoneにしない状態遷移、不十分PR #1410をrevision 2へ戻すことである。
+15. self-build consumerを復旧し、protected-path、permission、focused/full test、rollback、隔離CloakBrowser canaryを通過したrevisionだけをmerge・再配備する。canary failureは同incidentの次revisionへ戻す。
+16. 修復後にConnector launchd自身を再wakeし、元eventまたは同型live eventでsubmit→登録済みreadback→PNG→Calendar→Telegram positive IDまで成立するまで最大3 revision/24時間で反復する。
+17. golden traceで確認したtrusted Gmail OTPとLuma→主催公式site handoffをprovider capabilityとして実装し、Lumaだけでは本登録にならないeventを公式readbackまで完了する。
+18. Lumaと公式siteの二枚のscreenshot、Calendar event ID、Telegram message IDを一つのevent lineage receiptへ保存し、loop主体のlive E2Eを実証する。
+19. source registry contractを追加し、各providerの`discovery / registration / effect_readback / screenshot_evidence` capabilityをclosed schemaで宣言する。
+20. Connpass公式v2 APIの探索handoffをnative runtimeへ接続し、API key、1 req/sec、paginationを守る。read-only候補にcoverage creditを与えない。
+21. Connpassの認証済みbrowser registration adapter、登録済みreadback、screenshot evidenceをTDD/E2Eで追加し、初めて`registration_allowed=true`へpromotionする。
+22. Peatix、Meetup、Doorkeeper、Eventbriteを同じregistryへ一siteずつ追加する。各siteは実account/session、利用規約に沿う探索経路、submit、readback、screenshotのlive proofが揃うまでadvisory-onlyとする。
+23. dateごとにLuma→Connpass→Peatix→Meetup→Doorkeeper→Eventbriteの順でhandoffし、一sourceの候補枯渇・満席・未対応formでpass全体を終了しない。
+24. [x] 次wakeで成功eventとknown失敗eventの双方を再選択しないことを実証する。run 113、attempt 5行・delivery 2行不変、write=null。
+25. `open=0`まで反復し、21日統合Telegram briefingを送る。
+26. Mac再起動後のConnector、producer、consumer launchd、heartbeat、healthcheck、stale-loop self-healを実機検証する。
+27. canonical branchへ統合し、legacy bridge / Docker worker / 重複scheduleを退役する。
 
 **P1 — Connectorをconnection-to-cash agentにする（local）**
 
