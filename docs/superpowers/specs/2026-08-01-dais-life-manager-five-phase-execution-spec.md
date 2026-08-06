@@ -2591,6 +2591,13 @@ focused 3/3、daily loop 13/13 GREENを確認した。PR #1410自体は`LUMA_FOR
 schema読取、入力、Submit、登録済みreadback、screenshotを実装していないため受入不可・未mergeである。次はこのproducer修正をpushし、
 既存launchdのexit 0/machine resultをlive確認した後、insufficient PRを再修正cycleへ戻す。
 
+O1B-25進捗99（全executor Terra統一 / RED→GREEN）: agent runnerの実configを監査すると、browser/tool/applicationは
+`gpt-5.6-terra`だった一方、self-heal producerが使う`high-value-agent`とrepeatable/diagnostic/marketingは
+`gpt-5.6-luna`、escalationはSolが第一候補だった。全ての実行可能task classがCodex `gpt-5.6-terra`一候補だけを持つ
+contract testを追加し、変更前5 subcase RED、config統一後runner全12/12 GREENを確認した。既存producer run 7は修正版mainを使い
+exit 0まで完了したためwrapper root fixはlive GREEN。次はCloakBrowserでLuma一件のhuman-equivalent golden traceを取得し、
+その実DOM/form/submit/readback/screenshotをrequired-form adapterとself-heal canaryの正本にする。
+
 現在と完成形:
 
 ```mermaid

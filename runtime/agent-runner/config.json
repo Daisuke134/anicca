@@ -52,17 +52,15 @@
       "route": "terra-medium-bounded",
       "token_reservation": 16384,
       "candidates": [
-        {"provider": "codex", "model": "gpt-5.6-terra", "effort": "medium"},
-        {"provider": "claude-direct", "model": "sonnet"}
+        {"provider": "codex", "model": "gpt-5.6-terra", "effort": "medium"}
       ]
     },
     "repeatable-agent": {
-      "route": "luna-medium-decision",
+      "route": "terra-medium-decision",
       "token_reservation": 32768,
       "timeout_seconds": 90,
       "candidates": [
-        {"provider": "codex", "model": "gpt-5.6-luna", "effort": "medium"},
-        {"provider": "claude-direct", "model": "sonnet"}
+        {"provider": "codex", "model": "gpt-5.6-terra", "effort": "medium"}
       ]
     },
     "tool-agent": {
@@ -70,8 +68,7 @@
       "token_reservation": 24576,
       "timeout_seconds": 180,
       "candidates": [
-        {"provider": "codex", "model": "gpt-5.6-terra", "effort": "medium"},
-        {"provider": "claude-direct", "model": "sonnet"}
+        {"provider": "codex", "model": "gpt-5.6-terra", "effort": "medium"}
       ]
     },
     "browser-lane-agent": {
@@ -80,8 +77,7 @@
       "_timeout_note": "Split from tool-agent 2026-07-27. The two jobs want opposite bounds: the reality auditor must stay short (180s) so it cannot itself become the stall, while the browser lanes need minutes. Measured on the apply lane: attempt-01 ran 174s against Coconala and was killed as transient_timeout with 289KB of progress already on stdout. Delivery, at 900s, completed; applications, at 180s, ran five times in a week. Scanning postings, opening each and writing a proposal is minutes of browser work, so the old cap made the lane structurally unable to finish. Same 900s as high-value-agent.",
       "timeout_seconds": 900,
       "candidates": [
-        {"provider": "codex", "model": "gpt-5.6-terra", "effort": "medium"},
-        {"provider": "claude-direct", "model": "sonnet"}
+        {"provider": "codex", "model": "gpt-5.6-terra", "effort": "medium"}
       ]
     },
     "application-lane-agent": {
@@ -90,35 +86,31 @@
       "_timeout_note": "B2-only route. Measured 2026-07-29: newest plus 27 category sources plus keyword/pagination had traversed only the first category after three minutes. The shared 900s browser bound contradicts the exhaustive-search completion contract. One hour remains below the launcher's 7200s runaway guard while allowing the money-entry lane to search before it returns.",
       "timeout_seconds": 3600,
       "candidates": [
-        {"provider": "codex", "model": "gpt-5.6-terra", "effort": "medium"},
-        {"provider": "claude-direct", "model": "sonnet"}
+        {"provider": "codex", "model": "gpt-5.6-terra", "effort": "medium"}
       ]
     },
     "diagnostic-agent": {
-      "route": "luna-medium-decision",
+      "route": "terra-medium-decision",
       "token_reservation": 32768,
       "timeout_seconds": 120,
       "candidates": [
-        {"provider": "codex", "model": "gpt-5.6-luna", "effort": "medium"},
-        {"provider": "claude-direct", "model": "sonnet"}
+        {"provider": "codex", "model": "gpt-5.6-terra", "effort": "medium"}
       ]
     },
     "marketing-agent": {
-      "route": "luna-medium-decision",
+      "route": "terra-medium-decision",
       "token_reservation": 49152,
       "timeout_seconds": 900,
       "candidates": [
-        {"provider": "codex", "model": "gpt-5.6-luna", "effort": "medium"},
-        {"provider": "claude-direct", "model": "sonnet"}
+        {"provider": "codex", "model": "gpt-5.6-terra", "effort": "medium"}
       ]
     },
     "high-value-agent": {
-      "route": "luna-medium-decision",
+      "route": "terra-medium-decision",
       "token_reservation": 65536,
       "timeout_seconds": 900,
       "candidates": [
-        {"provider": "codex", "model": "gpt-5.6-luna", "effort": "medium"},
-        {"provider": "claude-direct", "model": "sonnet"}
+        {"provider": "codex", "model": "gpt-5.6-terra", "effort": "medium"}
       ]
     },
     "escalation-agent": {
@@ -127,9 +119,7 @@
       "token_reservation": 65536,
       "timeout_seconds": 900,
       "candidates": [
-        {"provider": "codex", "model": "gpt-5.6-sol", "effort": "medium"},
-        {"provider": "codex", "model": "gpt-5.6-luna", "effort": "high"},
-        {"provider": "claude-direct", "model": "sonnet"}
+        {"provider": "codex", "model": "gpt-5.6-terra", "effort": "medium"}
       ]
     }
   }
