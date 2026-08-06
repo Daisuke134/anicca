@@ -5,6 +5,35 @@ const assert = require("node:assert/strict");
 
 const { createConnectorEventsPack } = require("./connector-events-pack.js");
 
+test("the pack captures an official ticket QR on the authenticated event page", async () => {
+  const calls = [];
+  const page = { kind: "luma-page" };
+  const binding = { event_url: "https://luma.com/event-one" };
+  const pack = createConnectorEventsPack({
+    dailyDriver: { withLumaPage: async () => {} },
+    auth: { ensureAuthenticated: async () => ({ status: "authenticated" }) },
+    evidenceStore: { record: async () => {} },
+    createAuthAwareDriver: () => ({
+      async withLumaPage(url, action) {
+        calls.push(["page", url]);
+        return action(page);
+      },
+    }),
+    createProvider: () => ({ inspectRegistration: async () => {}, submitRegistration: async () => {} }),
+    async captureTicketQr(actualPage, actualBinding, options) {
+      calls.push(["capture", actualPage, actualBinding, options.observedAt()]);
+      return "verified-ticket";
+    },
+    now: () => "2026-08-06T03:00:00.000Z",
+  });
+
+  assert.equal(await pack.captureLumaTicketQr(binding), "verified-ticket");
+  assert.deepEqual(calls, [
+    ["page", "https://luma.com/event-one"],
+    ["capture", page, binding, "2026-08-06T03:00:00.000Z"],
+  ]);
+});
+
 test("the pack gives discovery and RSVP one auth-aware daily-driver", async () => {
   const calls = [];
   const dailyDriver = { withLumaPage: async () => {} };

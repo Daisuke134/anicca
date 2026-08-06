@@ -87,6 +87,24 @@ function depsFor(calls, overrides = {}) {
       return receipt;
     },
     async readArtifact() { return TEST_PNG; },
+    async readLumaConfirmation() { return { id: "gmail-1", body: "verified mail body" }; },
+    verifyLumaConfirmationMessage() {
+      return Object.freeze({ kind: "confirmation_mail", provider_id: "gmail-1" });
+    },
+    async recordLumaConfirmation() {
+      return { external_receipt_ref: `gmail-message://dais-local/${"b".repeat(64)}` };
+    },
+    createLumaGuestBinding() { return Object.freeze({ binding: "verified" }); },
+    async captureLumaTicketQr() { return Object.freeze({ kind: "ticket" }); },
+    async recordLumaTicketQr() {
+      return {
+        ticket_receipt_ref: `ticket://dais-local/${"c".repeat(64)}`,
+        artifact_ref: `object://sha256/${"d".repeat(64)}`,
+      };
+    },
+    async deliverConnectorTicket() {
+      return { kind: "telegram_delivery", provider_id: "323" };
+    },
     async syncVerifiedRegistrationToGoogleCalendar(syncInput) {
       calls.push(["calendar", syncInput]);
       return {
@@ -222,6 +240,60 @@ test("write pipeline reads the verified PNG and binds it to Telegram photo deliv
   assert.equal(result.telegram.photo_provider_id, "322");
   assert.equal(result.telegram.photo_provider_id, "322");
   assert.equal(result.telegram.artifact_sha256, hash);
+});
+
+test("write pipeline requires verified confirmation mail and official QR before final delivery", async () => {
+  const calls = [];
+  const result = await runNativeConnectorWrite(input(), depsFor(calls, {
+    async readLumaConfirmation(inputValue) {
+      calls.push(["confirmation-read", inputValue]);
+      return { id: "gmail-1", body: "verified mail body" };
+    },
+    verifyLumaConfirmationMessage(inputValue) {
+      calls.push(["confirmation-verify", inputValue]);
+      return Object.freeze({ kind: "confirmation_mail", provider_id: "gmail-1" });
+    },
+    async recordLumaConfirmation(receipt) {
+      calls.push(["confirmation-record", receipt]);
+      return { external_receipt_ref: `gmail-message://dais-local/${"b".repeat(64)}` };
+    },
+    createLumaGuestBinding(inputValue) {
+      calls.push(["guest-binding", inputValue]);
+      return Object.freeze({ binding: "verified" });
+    },
+    async captureLumaTicketQr(binding) {
+      calls.push(["qr-capture", binding]);
+      return Object.freeze({ kind: "ticket" });
+    },
+    async recordLumaTicketQr(ticket) {
+      calls.push(["qr-record", ticket]);
+      return {
+        ticket_receipt_ref: `ticket://dais-local/${"c".repeat(64)}`,
+        artifact_ref: `object://sha256/${"d".repeat(64)}`,
+      };
+    },
+    async deliverConnectorTicket(inputValue) {
+      calls.push(["ticket-telegram", inputValue]);
+      return { kind: "telegram_delivery", provider_id: "323" };
+    },
+  }));
+
+  assert.equal(result.status, "complete");
+  assert.deepEqual(result.confirmation, {
+    external_receipt_ref: `gmail-message://dais-local/${"b".repeat(64)}`,
+  });
+  assert.deepEqual(result.ticket, {
+    ticket_receipt_ref: `ticket://dais-local/${"c".repeat(64)}`,
+    artifact_ref: `object://sha256/${"d".repeat(64)}`,
+    telegram_provider_id: "323",
+  });
+  assert.deepEqual(calls.filter(([name]) => [
+    "confirmation-read", "confirmation-verify", "confirmation-record", "guest-binding",
+    "qr-capture", "qr-record", "calendar", "ticket-telegram", "telegram",
+  ].includes(name)).map(([name]) => name), [
+    "confirmation-read", "confirmation-verify", "confirmation-record", "guest-binding",
+    "qr-capture", "qr-record", "calendar", "ticket-telegram", "telegram",
+  ]);
 });
 
 test("an unverified Calendar sync cannot produce coverage evidence or Telegram", async () => {

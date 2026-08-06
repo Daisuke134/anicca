@@ -15,6 +15,7 @@ const {
 } = require("./calendar-candidate-gate.js");
 const { inspectGoogleCalendarBusyInventory } = require("./google-calendar-busy-inventory.js");
 const { syncVerifiedRegistrationToGoogleCalendar } = require("./connector-calendar-sync.js");
+const { captureOfficialLumaTicketQr } = require("./luma-ticket-qr.js");
 const {
   buildConnectorCoverageTelegramMessage,
   deliverConnectorCoverageTelegram,
@@ -71,6 +72,7 @@ function createConnectorEventsPack(options = {}) {
   const inspectBusyCalendar = options.inspectBusyCalendar || inspectGoogleCalendarBusyInventory;
   const evaluateCalendarGate = options.evaluateCalendarGate || evaluateCalendarCandidateGate;
   const syncRegistrationCalendar = options.syncRegistrationCalendar || syncVerifiedRegistrationToGoogleCalendar;
+  const captureTicketQr = options.captureTicketQr || captureOfficialLumaTicketQr;
   const planSpendSequence = options.planSpendSequence || buildEventSpendSequence;
   const spendDecisionForSequence = options.spendDecisionForSequence || eventSpendDecisionForSequence;
   const buildCoverageTelegram = options.buildCoverageTelegram || buildConnectorCoverageTelegramMessage;
@@ -160,6 +162,14 @@ function createConnectorEventsPack(options = {}) {
     },
     syncRegistrationCalendar(input) {
       return syncRegistrationCalendar(input);
+    },
+    captureLumaTicketQr(binding) {
+      if (!binding || typeof binding !== "object" || !/^https:\/\/(?:www\.)?(?:luma\.com|lu\.ma)\//i.test(
+        String(binding.event_url || ""),
+      )) throw invalid();
+      return authAwareDriver.withLumaPage(binding.event_url, (page) => (
+        captureTicketQr(page, binding, { observedAt: options.now })
+      ));
     },
     buildCoverageTelegram(input) {
       return buildCoverageTelegram(input);

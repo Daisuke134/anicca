@@ -3,8 +3,11 @@
 const { DAILY_DRIVER_CDP, createCloakBrowserDailyDriver } = require("./cloakbrowser-daily-driver.js");
 const { createLumaDailyDriverAuth } = require("./luma-daily-driver-auth.js");
 const { createGogLumaCodeReader } = require("./gog-luma-code-reader.js");
+const { createGogLumaConfirmationReader } = require("./gog-luma-confirmation-reader.js");
 const { createConnectorEventsPack } = require("./connector-events-pack.js");
 const { createLumaEvidenceStore } = require("./luma-evidence-store.js");
+const { createLumaConfirmationMailStore } = require("./luma-confirmation-mail.js");
+const { createLumaTicketQrStore } = require("./luma-ticket-qr.js");
 const { makeGogCalendar } = require("./transport/calendar-gog.js");
 const { isVerifiedLumaDateInventory } = require("./luma-date-inventory.js");
 const { isVerifiedLumaEventDetail } = require("./luma-event-detail.js");
@@ -306,6 +309,13 @@ async function runNativeConnectorPass(input = {}) {
         deps, "isVerifiedEventSpendSequence", isVerifiedEventSpendSequence,
       );
       const runNativeWrite = factory(deps, "runNativeWrite", runNativeConnectorWrite);
+      const createConfirmationReader = factory(
+        deps, "createConfirmationReader", createGogLumaConfirmationReader,
+      );
+      const createConfirmationStore = factory(
+        deps, "createConfirmationStore", createLumaConfirmationMailStore,
+      );
+      const createTicketStore = factory(deps, "createTicketStore", createLumaTicketQrStore);
       failureCode = "CONNECTOR_NATIVE_PROFILE_FAILED";
       const profile = readProfile({ tenantId, path: config.profilePath });
       if (!verifyProfile(profile) || profile.tenant_id !== tenantId || profile.timezone !== timeZone) unavailable();
@@ -318,6 +328,24 @@ async function runNativeConnectorPass(input = {}) {
         mapsKey: requiredText(config.mapsKey),
         homeLocation: requiredText(config.homeLocation),
       });
+      const lumaEmail = requiredText(config.lumaEmail);
+      const confirmationReader = createConfirmationReader({
+        gogPath: requiredText(config.gogBin),
+        env: {
+          ...process.env,
+          GOG_ACCOUNT: lumaEmail,
+          GOG_KEYRING_PASSWORD: requiredText(config.gogKeyring),
+        },
+      });
+      const confirmationStore = createConfirmationStore({ dataDir: evidenceDir });
+      const ticketStore = createTicketStore({ dataDir: evidenceDir });
+      if (
+        typeof confirmationReader !== "function"
+        || !confirmationStore || typeof confirmationStore.record !== "function"
+        || !ticketStore || typeof ticketStore.record !== "function"
+        || typeof ticketStore.readArtifact !== "function"
+        || typeof pack.captureLumaTicketQr !== "function"
+      ) unavailable();
       const policy = await createSpendPolicy({ tenantId, limits: profile.spend_policy && profile.spend_policy.limits });
       let selected = false;
       judgmentLoop: for (const judgmentDay of judgmentDays) {
@@ -399,11 +427,20 @@ async function runNativeConnectorPass(input = {}) {
             calendarId: requiredText(config.calendarId),
             telegramTarget: requiredText(config.telegramTarget),
             calendarCoverageUrl: requiredText(config.calendarCoverageUrl),
+            registrationIdentity: requiredText(config.lumaName),
             now,
           }, {
             provider: pack.provider,
             readExternalReceipt: evidenceStore.readExternalReceipt,
             readArtifact: evidenceStore.readArtifact,
+            readLumaConfirmation: ({ registrationStartedAt }) => confirmationReader({
+              account: lumaEmail,
+              afterMs: Date.parse(registrationStartedAt),
+            }),
+            recordLumaConfirmation: confirmationStore.record,
+            captureLumaTicketQr: (binding) => pack.captureLumaTicketQr(binding),
+            recordLumaTicketQr: ticketStore.record,
+            readTicketArtifact: ticketStore.readArtifact,
             fetchImpl: globalThis.fetch,
             ...(deps.writeDependencies || {}),
           });

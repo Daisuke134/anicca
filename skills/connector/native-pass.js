@@ -295,12 +295,25 @@ function boundedResult(result) {
     let canonical;
     try { canonical = new URL(String(receipt.canonical_url || "")); } catch { unavailable(); }
     const photoProviderId = String(rawWrite.telegram && rawWrite.telegram.photo_provider_id || "");
+    const confirmationRef = String(rawWrite.confirmation && rawWrite.confirmation.external_receipt_ref || "");
+    const ticketReceiptRef = String(rawWrite.ticket && rawWrite.ticket.ticket_receipt_ref || "");
+    const ticketArtifactRef = String(rawWrite.ticket && rawWrite.ticket.artifact_ref || "");
+    const ticketTelegramProviderId = String(rawWrite.ticket && rawWrite.ticket.telegram_provider_id || "");
+    const hasTicketChain = Boolean(
+      confirmationRef || ticketReceiptRef || ticketArtifactRef || ticketTelegramProviderId,
+    );
     if (
       !artifactMatch || receipt.artifact_sha256 !== artifactMatch[1]
       || canonical.protocol !== "https:" || canonical.hostname !== "luma.com"
       || new Date(Date.parse(String(receipt.evidence_observed_at || ""))).toISOString() !== receipt.evidence_observed_at
       || !/^[^\x00-\x1f\x7f]{1,128}$/.test(photoProviderId)
       || rawWrite.telegram.artifact_sha256 !== receipt.artifact_sha256
+      || (hasTicketChain && (
+        !/^gmail-message:\/\/[a-z0-9._-]+\/[0-9a-f]{64}$/i.test(confirmationRef)
+        || !/^ticket:\/\/[a-z0-9._-]+\/[0-9a-f]{64}$/i.test(ticketReceiptRef)
+        || !/^object:\/\/sha256\/[0-9a-f]{64}$/.test(ticketArtifactRef)
+        || !/^[^\x00-\x1f\x7f]{1,128}$/.test(ticketTelegramProviderId)
+      ))
     ) unavailable();
     evidence = {
       canonical_url: canonical.toString(),
@@ -308,6 +321,12 @@ function boundedResult(result) {
       artifact_ref: receipt.artifact_ref,
       artifact_sha256: receipt.artifact_sha256,
       telegram_photo_provider_id: photoProviderId,
+      ...(hasTicketChain ? {
+        confirmation_receipt_ref: confirmationRef,
+        ticket_receipt_ref: ticketReceiptRef,
+        ticket_artifact_ref: ticketArtifactRef,
+        ticket_telegram_provider_id: ticketTelegramProviderId,
+      } : {}),
     };
   }
   const write = rawWrite
