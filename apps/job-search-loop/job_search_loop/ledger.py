@@ -3380,7 +3380,7 @@ class Ledger:
             raise ValueError("application route evidence SHA-256 is invalid")
         with self._transaction():
             row = self.connection.execute(
-                "SELECT delivery_state, fence FROM application_routes WHERE route_id = ?",
+                "SELECT * FROM application_routes WHERE route_id = ?",
                 (route_id,),
             ).fetchone()
             if row is None or row["delivery_state"] != "action_started" or int(row["fence"]) != fence:
@@ -3401,6 +3401,105 @@ class Ledger:
                 state,
                 {"provider_id": provider_id, "evidence_sha256": evidence_sha256},
             )
+            if state == "delivered":
+                self._project_delivered_application_route_in_transaction(
+                    row={**dict(row), "updated_at": now},
+                    provider_id=provider_id,
+                    evidence_sha256=evidence_sha256,
+                )
+
+    def _project_delivered_application_route_in_transaction(
+        self,
+        *,
+        row: Mapping[str, Any],
+        provider_id: str,
+        evidence_sha256: str,
+    ) -> None:
+        application_id = str(row["application_id"])
+        route_id = str(row["route_id"])
+        current = self.current_state(application_id)
+        paths = {
+            "discovered": ("qualified", "materials_ready", "submit_claimed", "submitted"),
+            "qualified": ("materials_ready", "submit_claimed", "submitted"),
+            "materials_ready": ("submit_claimed", "submitted"),
+            "not_submitted": ("submit_claimed", "submitted"),
+            "submit_claimed": ("submitted",),
+        }
+        payload = {
+            "route_id": route_id,
+            "provider_id": provider_id,
+            "channel": str(row["route_kind"]),
+        }
+        if current == "submit_unknown":
+            self._append_event(application_id, current, "submitted", payload)
+            self.connection.execute(
+                "UPDATE applications SET current_state = 'submitted' WHERE id = ?",
+                (application_id,),
+            )
+        else:
+            for target in paths.get(current, ()):
+                self._transition_in_transaction(application_id, target, payload)
+
+        delivered_at = datetime.fromisoformat(str(row["updated_at"]))
+        japan_day = delivered_at.astimezone(timezone(timedelta(hours=9))).date().isoformat()
+        existing_slot = self.connection.execute(
+            "SELECT japan_day, slot FROM daily_slots WHERE application_id = ?",
+            (application_id,),
+        ).fetchone()
+        if existing_slot is None:
+            used = {
+                int(slot["slot"])
+                for slot in self.connection.execute(
+                    "SELECT slot FROM daily_slots WHERE japan_day = ?", (japan_day,)
+                ).fetchall()
+            }
+            slot = next(value for value in range(1, len(used) + 2) if value not in used)
+            self.connection.execute(
+                "INSERT INTO daily_slots "
+                "(japan_day, slot, application_id, portfolio_bucket, status) "
+                "VALUES (?, ?, ?, 'legacy_unallocated', 'submitted')",
+                (japan_day, slot, application_id),
+            )
+        else:
+            self.connection.execute(
+                "UPDATE daily_slots SET status = 'submitted' WHERE application_id = ?",
+                (application_id,),
+            )
+
+        evidence_source = (
+            "ats"
+            if str(row["route_kind"]) in {"canonical_ats", "alternate_official"}
+            else "gmail"
+        )
+        identity = {
+            "application_id": application_id,
+            "funnel_stage": "confirmed_application",
+            "disposition": "positive",
+            "evidence_source": evidence_source,
+            "evidence_sha256": evidence_sha256,
+            "occurred_at": str(row["updated_at"]),
+            "observed_at": str(row["updated_at"]),
+            "observation_policy_version": None,
+        }
+        encoded = json.dumps(identity, sort_keys=True, separators=(",", ":"))
+        self._record_funnel_outcome_in_transaction(
+            outcome_id=f"outcome-{hashlib.sha256(encoded.encode()).hexdigest()}",
+            **identity,
+        )
+        self._rebuild_strategy_outcome_projection_in_transaction()
+
+    def reconcile_delivered_application_routes(self) -> dict[str, int]:
+        with self._transaction():
+            rows = self.connection.execute(
+                "SELECT * FROM application_routes WHERE delivery_state = 'delivered'"
+            ).fetchall()
+            for row in rows:
+                self._project_delivered_application_route_in_transaction(
+                    row=row,
+                    provider_id=str(row["provider_id"]),
+                    evidence_sha256=str(row["delivery_evidence_sha256"]),
+                )
+        return {"delivered_route_count": len(rows)}
 
     def record_application_route_reply(
         self,

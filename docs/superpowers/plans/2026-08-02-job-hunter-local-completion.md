@@ -3889,6 +3889,20 @@ OpenTelemetry decision and primary sources:
         report `8037` was sent. B4/L-51 remain open. The next atomic fix is to click the
         visible semantic wrapper, verify the step transition, and prohibit a selected
         role from ending as diagnostic-only `blocked` without ATS/Gmail receipt.
+      - Installed run `daily-20260807-001435` on release `02be66aa6...` completed two
+        new real Workday-posting applications through required Gmail fallback. NVIDIA
+        `Solution Architect - Agentic AI` has authoritative Gmail receipt
+        `19fd7aba7ada5c43` (`SENT`) and Telegram evidence message `8042`. NVIDIA
+        `Solution Architect, Generative AI` has authoritative Gmail receipt
+        `19fd7ad5ec2c290b` (`SENT`); an initial wrong receipt string in Telegram `8045`
+        was corrected by message `8046`. The resident run result is `applied_email`,
+        and daily report `8047` was sent. Both Ledger routes are `delivered` with
+        resident actor, fence 144, and the exact engineering resume. The remaining
+        integration fault is projection: both applications remain `discovered` and
+        daily confirmed count remains zero even though route truth is delivered.
+        `complete_application_route` now projects authoritative delivery into application
+        state, daily slot, and confirmed-application funnel outcome; focused route tests
+        pass 9/9. Reconcile the three existing delivered routes before closing B4/L-51.
   - [ ] `L-49K5C` — Port generic Playwright form and CAPTCHA/SSO/page classification
     into the existing fenced CloakBrowser application lane. Keep the resident Terra
     agent as the adaptive owner. Do not use `bypassPermissions`, unpinned packages,

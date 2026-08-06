@@ -1,6 +1,7 @@
 import hashlib
 import tempfile
 import unittest
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from job_search_loop.ledger import Ledger
@@ -74,6 +75,9 @@ class RouteExecutorTests(unittest.TestCase):
         route = self.ledger.application_routes(self.application_id)[0]
         self.assertEqual(route["message_sha256"], hashlib.sha256(self.message.read_bytes()).hexdigest())
         self.assertEqual(route["resume_sha256"], hashlib.sha256(self.resume.read_bytes()).hexdigest())
+        japan_day = datetime.now(timezone(timedelta(hours=9))).date().isoformat()
+        self.assertEqual(self.ledger.current_state(self.application_id), "submitted")
+        self.assertEqual(self.ledger.confirmed_daily_count(japan_day), 1)
 
     def test_transport_exception_is_unknown_and_never_retried(self):
         self._route("recruiting_outreach", "talent@example.test", 4, "outreach_only")
