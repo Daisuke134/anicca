@@ -183,6 +183,16 @@ async function runHealerShadow(options = {}) {
   const status = await execute("git", ["-C", worktree, "status", "--porcelain"], {
     cwd: worktree, env: healerEnvironment(options.env),
   });
+  const secrets = await execute("gitleaks", [
+    "git", worktree,
+    "--config", path.join(repoRoot, ".gitleaks.toml"),
+    "--no-banner", "--redact", "--log-opts", `${incident.code_commit}..${commitId}`,
+  ], { cwd: worktree, env: healerEnvironment(options.env), timeoutMs: 5 * 60 * 1000 });
+  const pii = await execute("python3", [
+    path.join(repoRoot, "scripts/security/pii_shape_scan.py"),
+    "--allowlist", path.join(repoRoot, ".pii-shape-allowlist"),
+    worktree,
+  ], { cwd: worktree, env: healerEnvironment(options.env), timeoutMs: 5 * 60 * 1000 });
   const remote = await execute("git", ["-C", worktree, "ls-remote", "--heads", "origin", branch], {
     cwd: worktree, env: healerEnvironment(options.env),
   });
@@ -191,6 +201,8 @@ async function runHealerShadow(options = {}) {
     && /^[0-9a-f]{40}$/.test(commitId)
     && !commitId.startsWith(String(incident.code_commit || ""))
     && status && status.status === 0 && String(status.stdout || "") === ""
+    && secrets && secrets.status === 0
+    && pii && pii.status === 0
     && remote && remote.status === 0
     && remoteLine === `${commitId}\trefs/heads/${branch}`;
   if (!verified) {
