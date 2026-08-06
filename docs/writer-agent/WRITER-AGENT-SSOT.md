@@ -1592,8 +1592,19 @@ market research until item C13 permits it.
   historical rows for A11 migration. Real response-worker run `341` exited `0`:
   AppSignal is `NO_RESPONSE`, received amount/currency remain null, and no
   submission, acceptance, or money side effect occurred.
-- A2 RED TECHI: characterize ID `4`, last-known/current availability, illegal
-  transition, and duplicate-submit refusal with one fixture per behavior.
+- A2 DONE TECHI: runtime feature `a6fdec7f`, live `17836bc4`. Existing exact-ID
+  pending/approval, illegal-transition, and duplicate-submit fixtures remain
+  green. New RED proved that a provider poll failure discarded durable
+  last-known `pending`; adversarial REDs also proved generic Gmail outages could
+  be mislabeled as provider outages and a newer wrong-ID evidence row could hide
+  an older valid status. GREEN adds provider fields only at the provider-fetch
+  exception boundary, scans newest-to-oldest for the latest valid evidence bound
+  to submission ID `4`, and mutates no evidence, transition, commercial state,
+  or money. Focused regression passes `31/31`; full Writer regression passes
+  `817/817`; fresh review is `ship`. Real worker run `342` exited `0` with
+  `current_availability=UNAVAILABLE`, `last_known_provider_status=pending`, and
+  `submission_id=4`; durable state stayed `SUBMITTED` and received amount/
+  currency stayed null before and after.
 - A3 SCHEMA INTAKE: version Opportunity and Application; one migration receipt.
 - A4 SCHEMA CONTRACT: version Contract and its blocking terms; one schema test.
 - A5 SCHEMA ASSIGNMENT: version Assignment; one schema test.
