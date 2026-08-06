@@ -3089,6 +3089,9 @@ Telegram outboxが未完成のまま次のlive wakeを意図的に起動しな�
 
 #### Codex-native Connector Actor / Healer contract
 
+> **履歴のみ / 進捗169で失効:** 以下のHealer-first contract、acceptance、test matrix、execution stepsは実装経緯を残すための履歴であり、
+> 現在の設計・順序・完了条件には使わない。現在の正本は進捗169のExternal sources、Core 6、Active remaining TODOだけである。
+
 **Overview:** 現在のConnectorは独自Node runtimeがTerraへ限定promptを渡すため、TerraはCodex CLIと同じshell、skills、MCP、継続thread、
 JSONL observabilityを持たない。Observer foundationの次にHealerとCodex Actorをshadow稼働し、every-wake Telegram outboxがGREENになった後で
 live task deliveryを再開し、常設agentをCodex SDK/CLI harnessへ移す。
@@ -3308,55 +3311,160 @@ discovery call内部ではなく、その後のhandoff検証区間にある。re
 write開始直前までを一つのbounded boundaryにし、その区間の失敗だけを`provider_exhausted`として次日Lumaへ進める。write開始後はfailure codeが
 変わるため握り潰さず、unknown effect readbackを維持する。構文とdiff checkはGREEN。新規申込、Calendar、PNG、delivery receiptは0件。
 
-### Active remaining TODO SSOT（進捗168。これ以外の残TODO一覧は履歴）
+O1B-25進捗169（外部browser-agent best practice調査 / minimal runner設計確定）:
+Browser Use、Stagehandの公式docsとOSS実装を外部クロールし、反復browser業務の主経路は毎回のfull agent explorationではなく、最初の成功runを
+決定的scriptへ固定し、通常はcache/replay、想定外UIだけbounded agent fallbackで修復する構造だと確認した。現在のConnectorはこの逆で、
+`native-pass.js`→21日coverage→大量discovery→ranking/gates→provider cursorを毎wake再実行し、Submit前に失敗する。進捗165/166で確認した
+browser/write部品の存在は維持するが、それらを包む旧orchestrationをproduction runnerとして再利用する判断は撤回する。
+
+#### External sources and adopted decisions
+
+1. Browser Use README: https://github.com/browser-use/browser-use
+   - 核心の引用: “one-off tasks through an agent → CLI. Repeatable automation in code → Python library.”
+   - 決定: 日次Connectorの主経路は決定的code。LLM agentは探索・未知form・修復だけに限定する。
+2. Browser Use Scripts: https://docs.browser-use.com/cloud/agent/scripts
+   - 核心の引用: “Scripts turn a successful browser run into a reusable workspace asset.”
+   - 決定: 最初のLuma成功操作をversioned workflow scriptとして保存し、後続wakeはscript-firstで実行する。
+3. Stagehand Deterministic Agent: https://docs.stagehand.dev/v3/best-practices/deterministic-agent
+   - 核心の引用: “convert agent-discovered workflows into fast, deterministic scripts”
+   - 決定: agentが成功したaction列をcache/replayし、site変更時だけcacheを修復する。
+4. Stagehand Agent Fallbacks: https://docs.stagehand.dev/v3/best-practices/agent-fallbacks
+   - 核心の引用: “Use an agent fallback as a failsafe when a one step action unexpectedly becomes a multi-step flow.”
+   - 決定: direct actionを先に試し、失敗時だけ最大10 stepのagent fallbackを同じpage/sessionで実行する。
+5. Stagehand Prompting Best Practices: https://docs.stagehand.dev/v3/best-practices/prompting-best-practices
+   - 核心の引用: “Use `act()` for single actions on web pages. Each action should be focused and clear.”
+   - 決定: navigate、observe、fill、submit、readbackを別actionにし、agentへ複数作用を一文で委任しない。
+6. Browser Use Sessions: https://docs.browser-use.com/cloud/agent/sessions
+   - 核心の引用: “A session holds the agent’s conversation and can reuse its live browser.”
+   - 決定: 一wakeは一つのConnector-owned session/pageを最後まで再利用し、候補ごとのtarget churnを禁止する。
+7. Stagehand History: https://docs.stagehand.dev/v3/best-practices/history
+   - 核心の引用: “The history API captures every Stagehand operation for debugging, auditing, and workflow analysis.”
+   - 決定: actionごとにmethod、timestamp、safe input、result、durationをappend-only記録する。raw prompt、credential、cookieは記録しない。
+8. Browser Use OSS agent settings: https://github.com/browser-use/browser-use/blob/main/browser_use/agent/views.py
+   - 核心の引用: “max_failures: int = 5” / “step_timeout: int = 180”
+   - 決定: Connectorはより小さく、候補ごとagent fallback最大10 step、連続failure 3回、wake全体10分でcircuit-openにする。
+9. Stagehand self-heal integration: https://github.com/browserbase/stagehand/blob/main/packages/core/tests/integration/agent-cache-self-heal.spec.ts
+   - 核心の引用: “Second run should replay from cache, self-heal, and update the file.”
+   - 決定: self-healはcodebase全体の自動改変ではなく、失敗したcached action/selectorだけを同じfixtureで修復し、成功後にcacheを更新する。
+
+#### 1. Overview
+
+旧Connector loopをproduction pathから削除し、既に存在する`:9222` ownership、Luma submit/readback、Calendar、PNG、Telegram部品を一つの
+minimal script-first runnerへ直結する。目的は一wakeで一件の実`applied_bundle`を完成することであり、21日coverageやHealer完成ではない。
+
+#### 2. Acceptance criteria
+
+1. Connector native本体、healthcheck、Healer、旧bridgeはcleanup中unloadedで、自動wake 0。
+2. production entrypointは一つだけで、旧`native-pass.js`/`connector-native-runtime.js` orchestrationを呼ばない。
+3. 一wakeのbrowser session 1、owned target 1。候補切替は同じpageのnavigateで行い、候補ごとのcreate/close 0。
+4. Lumaから開始し、無料、受付中、Calendar非衝突の最初の候補へdirect actionsでfill→Submitする。
+5. direct action失敗時だけ同じpageでagent fallbackを最大10 step実行し、成功action列をprovider/workflow version付きcacheへ保存する。
+6. agentの`success`文字列を完了証拠にせず、親readbackが`registered`または`pending`を観測する。
+7. provider receipt、Calendar ID/readback、PNG SHA、Telegram message/photo positive IDを同じ`applied_bundle`へ保存する。
+8. 一候補failureは次候補へ進み、Luma枯渇時はConnpassへ進む。連続failure 3回または10分でcircuit-openし、tab churnを停止してTelegram報告する。
+9. foreground live E2Eで実bundleを作るまでlaunchdをloadしない。load後の次wakeで同一event再submit 0。
+10. self-healは失敗したcached actionだけを修復する。repo-wide autonomous code edit、automatic merge/deployは初期production pathに存在しない。
+
+#### 3. As-Is / To-Be
+
+```mermaid
+flowchart LR
+  subgraph ASIS[As-Is: 削除]
+    A1[5分wake] --> A2[21日coverage]
+    A2 --> A3[大量tab discovery]
+    A3 --> A4[ranking・gates]
+    A4 --> A5[provider cursor]
+    A5 --> A6[Submit 0 / retry]
+  end
+  subgraph TOBE[To-Be: script-first]
+    B1[1 daily wake] --> B2[1 session・1 page]
+    B2 --> B3[direct cached actions]
+    B3 -->|UI changed| B4[bounded agent fallback]
+    B4 --> B5[cache repair]
+    B3 --> B6[parent readback]
+    B5 --> B6
+    B6 --> B7[Calendar・PNG・Telegram]
+  end
+```
+
+#### 4. Verification matrix
+
+| # | To-Be | Verification | Cover |
+|---:|---|---|---|
+| 1 | 単一entrypoint | loaded Connector labelとprocess treeが各1 | OK |
+| 2 | 単一session/page | action historyのsession ID 1、target ID 1 | OK |
+| 3 | script-first | 正常fixtureでagent call 0、cached action replay成功 | OK |
+| 4 | bounded fallback | selector変更fixtureでdirect failure→agent最大10 step→cache更新 | OK |
+| 5 | circuit breaker | 連続failure 3で停止、追加target 0、Telegram positive ID | OK |
+| 6 | live submit | 実Luma parent readback=`registered/pending` | OK |
+| 7 | applied bundle | provider/Calendar/PNG/Telegramの同一lineage | OK |
+| 8 | idempotency | 次wakeの同一event Submit 0 | OK |
+
+| Item | Value |
+|---|---|
+| UI変更 | 外部Luma/Connpass UIをbrowserで操作。Anicca app UI変更なし |
+| 結論 | Maestro不要。実CloakBrowser foreground E2Eとparent readbackが必要 |
+
+#### 5. Boundaries
+
+- Gig code/state/profile/launchd/`:9223`はread-only。
+- CloakBrowser profile、credential、cookie、registration receipt、Calendar/Telegram evidence、append-only stateを削除しない。
+- 旧orchestration fileは`rg`で他consumer 0を確認してからGit patchで削除し、broad `rm`を使わない。
+- 有料event、CAPTCHA、決済、未知consentを初期minimal runnerで自動作用しない。無料の別候補へ進む。
+- 21日coverage、multi-user cloud、repo-wide Healer、public claimは最初のlive bundleの前提にしない。
+
+#### 6. Execution steps
+
+1. Connector関連launchd/processを全停止し、旧bridge/Healerを含むloaded owner 0を確認する。
+2. 現production call graphを`keep / direct-reuse / delete`へ分類し、state/evidence consumerを分離する。
+3. 旧entrypoint、coverage/ranking/gate/cursor/Healer production wiringを削除する。
+4. 一session・一pageのminimal runnerを作り、direct action→parent readback→downstream evidenceを接続する。
+5. selector-change時だけbounded agent fallbackを実行し、成功action cacheとsafe historyを保存する。
+6. foregroundでLuma live E2Eを実行し、失敗を同じrunで修正・再実行する。
+7. 実`applied_bundle`後だけ単一daily launchdをloadする。
+8. 次wakeの重複0とTelegram positive receiptを確認する。
+9. Luma failure→Connpass continuationを同じsessionでlive実証する。
+10. 実故障から得たcache repairだけをself-healingとして昇格する。
+
+### Active remaining TODO SSOT（進捗169。これ以外の残TODO一覧は履歴）
 
 1. [x] Provider-neutral downstream write、Connpass runtime write dependencies、Luma Calendar-eligible 0 handoff、Connpass state persistenceを閉じる。証拠: 進捗141、143、144、commit `65241d6a2`、`e822bfa3a`、`d0e05f5d8`、`1cfa2e56f`。
 2. [x] Privacy-safe Observer envelope/replayを実装する。完了条件: success、tool failure、timeout、process crashが同じschemaでrun/wake、stage、safe action、expected/observed effect、owner generation、screenshot SHA、provider readback、commit、cursorへ正規化され、secret/PII/raw logなし、fingerprint dedupe可能なincidentとreplay fixtureを各1件生成する。証拠: 進捗148、focused 33/33 GREEN。
-3. [x] Gig/OpenClaw型のparent-owned browser lifecycleをConnectorへ最小移植する。完了条件: 親が`:9222`の一target、lock、liveness、cleanupを所有し、Actorは直接page WebSocket一つだけを操作し、全page走査、新browser/profile、`browser.close()`、Gig `:9223`へのaccessが0。証拠: 進捗165。
-4. [x] 一つのbounded E2E runnerへtask-deliveryを接続する。完了条件: Calendar gap→Luma candidate→page claim→fill/click/submit→parent readback→Calendar→PNG→Telegramの各stageが同じrun/event lineageを保持し、一時inline Node生成を主経路にしない。証拠: 進捗166。
-5. [in progress] 常設Connector launchdを最新commitでkickstartし、Luma-firstの新規live submitを閉じる。完了条件: main sessionの代行ではなく同一launchd runが実eventへSubmitし、親が`registered`または`pending`をreadbackする。失敗時はその場で診断・最小修正し、同じ常設loopを再実行して実証する。
-6. 同じLuma eventの`applied_bundle`を完成する。完了条件: provider receipt、ticket/QRまたは同等receipt、full-page PNG SHA、Calendar ID/readback、Telegram card/photo positive message IDが同一lineageに存在する。
-7. 次wake idempotencyを実証する。完了条件: 同一eventへの再submit 0、未処理candidateから継続、every-wake Telegram positive message IDを確認する。
-8. Luma失敗時のConnpass browser-only fallbackをlive実証する。完了条件: API参照・API call 0、同じrunが次providerへ進み、Connpassの実`applied_bundle`を作る。Connpass表記を「Compass」と混同しない。
-9. Forward-only continuationを完成する。完了条件: candidate 0、満席、closed、form failure、provider down、browser crashがterminal failureにならず、次candidate→provider→date→windowまたはdurable recoveryへ進む。
-10. Daily schedule acceptanceを閉じる。完了条件: 既存の単一Connector launchdが毎wake同じE2E runnerを起動し、二重owner・二重申込・Telegram無報告が各0。
-11. 実故障だけを対象に最小self-healingを追加する。完了条件: Observerがprivacy-safe incidentを保存し、Healerが外部submit権限0で単一修正を作り、focused replay→isolated canary→rollback可能性を通ったrevisionだけをpromotion候補にする。
-12. Production self-heal E2Eを実証する。完了条件: 実incident→診断→修正→canary→常設Connector再実行が実`applied_bundle`を作った時だけ`healed`となり、失敗revisionはpromotionされない。
-13. Post-registration recoveryを閉じる。完了条件: Calendar、PNG、ticket、Telegram各境界の中断後、providerへ再submitせず不足artifactだけを補完し、外部登録1回・bundle1個。
-14. Peatix、Meetup、Doorkeeper、Eventbriteを一providerずつbrowser-onlyで追加する。各providerの完了条件はparent readbackを含む実`applied_bundle`。
-15. Rolling coverageを閉じる。完了条件: 21日分の`open=0`、各日が実証拠付き`covered_existing / covered_new / unavailable`、少なくとも一件の新規`applied_bundle`。gapがなければ次windowへ延長。
-16. Observer SDKを他loopへ展開する。Gigは引き続きread-onlyであり、このbranchからGig code/state/profile/launchd/`:9223`を変更しない。
-17. Restartとmulti-user isolation acceptanceを閉じる。完了条件: Mac再起動後の無人再開、user別auth/browser/Calendar/Telegram/state分離、二重申込0、cross-tenant read/write 0。
-18. Public claim gate後にcanonical mergeとlegacy退役を行う。完了条件: Luma・Connpass双方の実bundle、cross-provider/restart continuation、公開evidence matrix、canonical単一schedule、legacy runnerと重複schedule 0。
+3. [in progress] 旧Connector production orchestrationを削除し、minimal script-first runnerへ置換する。完了条件: Connector関連loaded owner 0でcleanupし、旧coverage/ranking/gate/cursor/Healer wiringをentrypointから除去し、一session・一page・direct action・bounded agent fallbackだけを残す。
+4. Foreground Luma live E2Eを閉じる。完了条件: minimal runnerが無料・Calendar非衝突eventへ実Submitし、親が`registered`または`pending`をreadbackする。失敗時は同じpage/sessionで最大10 step fallbackし、成功action cacheを保存する。
+5. 同じLuma eventの`applied_bundle`を完成する。完了条件: provider receipt、ticket/QRまたは同等receipt、full-page PNG SHA、Calendar ID/readback、Telegram card/photo positive message IDが同一lineageに存在する。
+6. 次wake idempotencyを実証する。完了条件: 同一eventへの再submit 0、未処理candidateから継続、every-wake Telegram positive message IDを確認する。
+7. Luma失敗時のConnpass browser-only fallbackをlive実証する。完了条件: 同じsession/pageが次providerへ進み、Connpassの実`applied_bundle`を作る。
+8. Circuit breakerとdaily schedule acceptanceを閉じる。完了条件: failure 3または10分でtarget churnを停止し、実bundle後だけ単一daily launchdをload、二重owner・二重申込・Telegram無報告が各0。
+9. Cached action self-healを実証する。完了条件: selector変更fixtureでdirect replay失敗→bounded agent fallback成功→cache更新→次run agent call 0。repo-wide automatic edit/merge/deploy 0。
+10. Post-registration recoveryを閉じる。完了条件: Calendar、PNG、ticket、Telegram各境界の中断後、providerへ再submitせず不足artifactだけを補完し、外部登録1回・bundle1個。
+11. Peatix、Meetup、Doorkeeper、Eventbriteを一providerずつ同じscript-first contractで追加する。各providerの完了条件は実`applied_bundle`。
+12. Restart、multi-user isolation、public claim gate、canonical mergeを順に閉じる。Gigはread-onlyを維持し、legacy runner/bridge/Healer/重複schedule 0を最終確認する。
 
 現在と完成形:
 
 ```mermaid
 flowchart TD
   subgraph NOW[現在]
-    N1[Observer foundation GREEN] --> N2[Healer revision 3 failed]
-    N2 --> N3[Connector live submit未実行]
+    N1[Native・healthcheck unloaded] --> N2[Healer・bridge cleanup待ち]
+    N2 --> N3[旧orchestration残存]
     N3 --> N4[新規登録 0]
-    N4 --> N5[新規Calendar・PNG・Telegram 0]
   end
   subgraph NEXT[次の厳密な順序]
-    S1[Parent-owned :9222 page] --> S2[Bounded E2E runner]
-    S2 --> S3[Launchd Luma live submit]
-    S3 --> S4[Calendar・PNG・Telegram]
-    S4 --> S5[Next-wake dedupe]
-    S5 --> S6[Connpass fallback]
-    S6 --> S7[Daily loop]
+    S1[全Connector owner停止] --> S2[旧orchestration削除]
+    S2 --> S3[Minimal script-first runner]
+    S3 --> S4[Foreground Luma live submit]
+    S4 --> S5[applied bundle]
+    S5 --> S6[Daily launchd]
   end
   subgraph TARGET[完成形]
-    T1[Luma-first全provider探索] --> T2[Calendar gap候補へApply]
-    T2 --> T3[form入力・Submit]
-    T3 --> T4[親readback]
-    T4 --> T5[Calendar・PNG・QR]
-    T5 --> T6[Telegram card・photo]
-    T2 -->|故障| T7[Observer incident]
-    T7 --> T8[最小Healer: diagnose→fix]
-    T8 --> T9[Replay→canary→promotion]
-    T9 --> T1
+    T1[1 session・1 page] --> T2[Cached direct actions]
+    T2 --> T3[Submit→親readback]
+    T3 --> T4[Calendar・PNG・Telegram]
+    T2 -->|UI changed| T5[Agent fallback 最大10 step]
+    T5 --> T6[Action cache修復]
+    T6 --> T3
+    T5 -->|failure 3| T7[Circuit open・報告]
   end
   NOW --> NEXT --> TARGET
 ```
