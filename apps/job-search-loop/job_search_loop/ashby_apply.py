@@ -207,6 +207,18 @@ def execute_actions(page: Any, actions: list[dict[str, Any]]) -> list[dict[str, 
     return receipts
 
 
+def capture_pre_submit_screenshot(page: Any, output_path: Path) -> dict[str, str]:
+    screenshot_path = output_path.with_suffix(".pre-submit.png")
+    page.screenshot(path=str(screenshot_path), full_page=True)
+    if not screenshot_path.is_file() or not screenshot_path.stat().st_size:
+        raise RuntimeError("pre-submit screenshot was not created")
+    os.chmod(screenshot_path, 0o600)
+    return {
+        "path": str(screenshot_path),
+        "sha256": hashlib.sha256(screenshot_path.read_bytes()).hexdigest(),
+    }
+
+
 def validate_profile_grounding(
     items: list[dict[str, Any]], profile: dict[str, Any]
 ) -> None:
@@ -260,7 +272,24 @@ def validate_fill_result(
         raise ValueError("resident fill result contains an unsafe action")
     if profile is not None:
         validate_profile_grounding(receipts, profile)
-    return {"status": "pre_submit_ready", "verified_count": len(receipts)}
+    screenshot = value.get("pre_submit_screenshot")
+    if not isinstance(screenshot, dict):
+        raise ValueError("resident fill result has no pre-submit screenshot")
+    screenshot_path = Path(_normalized(screenshot.get("path")))
+    screenshot_sha256 = _normalized(screenshot.get("sha256"))
+    if (
+        not screenshot_path.is_file()
+        or not screenshot_path.stat().st_size
+        or not re.fullmatch(r"[0-9a-f]{64}", screenshot_sha256)
+        or hashlib.sha256(screenshot_path.read_bytes()).hexdigest()
+        != screenshot_sha256
+    ):
+        raise ValueError("resident fill result has invalid pre-submit screenshot")
+    return {
+        "status": "pre_submit_ready",
+        "verified_count": len(receipts),
+        "screenshot_sha256": screenshot_sha256,
+    }
 
 
 def _write_private(path: Path, value: Any) -> None:
@@ -324,6 +353,10 @@ def main() -> int:
                     validate_profile_grounding(plan["actions"], profile)
                 receipts = execute_actions(page, plan["actions"]) if plan["status"] == "ready" else []
                 result = {**plan, "url": page.url, "fields": fields, "receipts": receipts}
+                if plan["status"] == "ready":
+                    result["pre_submit_screenshot"] = capture_pre_submit_screenshot(
+                        page, args.output
+                    )
             _write_private(args.output, result)
             print(json.dumps({"status": result["status"], "output": str(args.output)}))
         finally:

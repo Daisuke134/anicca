@@ -1,4 +1,5 @@
 import importlib
+import hashlib
 import json
 import subprocess
 import sys
@@ -64,10 +65,21 @@ class AshbyApplyTests(unittest.TestCase):
                 }
             ],
         }
-        self.assertEqual(
-            module.validate_fill_result(valid, profile=self._grounding_profile()),
-            {"status": "pre_submit_ready", "verified_count": 1},
-        )
+        with tempfile.TemporaryDirectory() as directory:
+            screenshot = Path(directory) / "pre-submit.png"
+            screenshot.write_bytes(b"grounded form")
+            valid["pre_submit_screenshot"] = {
+                "path": str(screenshot),
+                "sha256": hashlib.sha256(screenshot.read_bytes()).hexdigest(),
+            }
+            self.assertEqual(
+                module.validate_fill_result(valid, profile=self._grounding_profile()),
+                {
+                    "status": "pre_submit_ready",
+                    "verified_count": 1,
+                    "screenshot_sha256": valid["pre_submit_screenshot"]["sha256"],
+                },
+            )
 
     def test_profile_grounding_rejects_unknown_fact_id_for_custom_question(self):
         module = importlib.import_module("job_search_loop.ashby_apply")
@@ -170,28 +182,98 @@ class AshbyApplyTests(unittest.TestCase):
             "resident fill receipt validator is missing",
         )
 
-        valid = {
-            "status": "ready",
-            "receipts": [
-                {"kind": "fill", "verified": True},
-                {"kind": "select", "verified": True},
-                {"kind": "check", "verified": True},
-                {"kind": "upload", "verified": True},
-            ],
-        }
-        self.assertEqual(
-            module.validate_fill_result(valid),
-            {"status": "pre_submit_ready", "verified_count": 4},
-        )
+        with tempfile.TemporaryDirectory() as directory:
+            screenshot = Path(directory) / "pre-submit.png"
+            screenshot.write_bytes(b"verified form")
+            valid = {
+                "status": "ready",
+                "receipts": [
+                    {"kind": "fill", "verified": True},
+                    {"kind": "select", "verified": True},
+                    {"kind": "check", "verified": True},
+                    {"kind": "upload", "verified": True},
+                ],
+                "pre_submit_screenshot": {
+                    "path": str(screenshot),
+                    "sha256": hashlib.sha256(screenshot.read_bytes()).hexdigest(),
+                },
+            }
+            self.assertEqual(
+                module.validate_fill_result(valid),
+                {
+                    "status": "pre_submit_ready",
+                    "verified_count": 4,
+                    "screenshot_sha256": valid["pre_submit_screenshot"]["sha256"],
+                },
+            )
 
-        for invalid in (
-            {**valid, "receipts": [{"kind": "fill", "verified": False}]},
-            {**valid, "receipts": [{"kind": "submit", "verified": True}]},
-            {**valid, "status": "submitted"},
-            {**valid, "receipts": []},
-        ):
-            with self.assertRaises(ValueError):
-                module.validate_fill_result(invalid)
+            for invalid in (
+                {**valid, "receipts": [{"kind": "fill", "verified": False}]},
+                {**valid, "receipts": [{"kind": "submit", "verified": True}]},
+                {**valid, "status": "submitted"},
+                {**valid, "receipts": []},
+            ):
+                with self.assertRaises(ValueError):
+                    module.validate_fill_result(invalid)
+
+    def test_resident_fill_receipt_requires_matching_pre_submit_screenshot(self):
+        module = importlib.import_module("job_search_loop.ashby_apply")
+        with tempfile.TemporaryDirectory() as directory:
+            screenshot = Path(directory) / "pre-submit.png"
+            screenshot.write_bytes(b"real pre-submit screenshot")
+            valid = {
+                "status": "ready",
+                "receipts": [{"kind": "fill", "verified": True}],
+                "pre_submit_screenshot": {
+                    "path": str(screenshot),
+                    "sha256": hashlib.sha256(screenshot.read_bytes()).hexdigest(),
+                },
+            }
+
+            self.assertEqual(
+                module.validate_fill_result(valid),
+                {
+                    "status": "pre_submit_ready",
+                    "verified_count": 1,
+                    "screenshot_sha256": valid["pre_submit_screenshot"]["sha256"],
+                },
+            )
+            for invalid in (
+                {key: value for key, value in valid.items() if key != "pre_submit_screenshot"},
+                {
+                    **valid,
+                    "pre_submit_screenshot": {
+                        **valid["pre_submit_screenshot"],
+                        "sha256": "0" * 64,
+                    },
+                },
+            ):
+                with self.assertRaisesRegex(ValueError, "pre-submit screenshot"):
+                    module.validate_fill_result(invalid)
+
+    def test_capture_pre_submit_screenshot_records_real_file_and_hash(self):
+        module = importlib.import_module("job_search_loop.ashby_apply")
+
+        class Page:
+            def screenshot(self, *, path, full_page):
+                self.call = (path, full_page)
+                Path(path).write_bytes(b"captured browser page")
+
+        with tempfile.TemporaryDirectory() as directory:
+            page = Page()
+            output = Path(directory) / "ashby-result.json"
+            screenshot = module.capture_pre_submit_screenshot(page, output)
+
+            expected_path = Path(directory) / "ashby-result.pre-submit.png"
+            self.assertEqual(page.call, (str(expected_path), True))
+            self.assertEqual(
+                screenshot,
+                {
+                    "path": str(expected_path),
+                    "sha256": hashlib.sha256(b"captured browser page").hexdigest(),
+                },
+            )
+            self.assertEqual(expected_path.stat().st_mode & 0o777, 0o600)
 
     def test_yes_no_buttons_win_over_internal_checkbox(self):
         from job_search_loop.ashby_apply import classify_control

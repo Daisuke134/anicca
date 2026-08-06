@@ -7,8 +7,8 @@
 **Configured upstream:** `canonical/docs/job-hunter-spec-20260805`
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-06 JST
-**Active atomic task:** `L-49K2C2` — wire the resident Terra pass to use the
-deterministic Ashby Apply CLI for inspect/fill under a no-submit fence.
+**Active atomic task:** `L-49K2C2C` — prove the installed resident Terra pass
+reaches an evidence-complete Ashby pre-submit boundary under a no-submit fence.
 **Status:** The immutable four-lane runtime, grounded materials, ownership fences,
 Gmail ingestion, Telegram outbox, quota accounting, Ashby surface classifier, and
 loopback OpenTelemetry Collector/private trace index are implemented. The application
@@ -3459,6 +3459,23 @@ OpenTelemetry decision and primary sources:
           `verify --profile`. Four focused tests pass, the real bad artifact is now
           rejected with RC 2 / `standard answer is not profile-grounded`, adjacent
           suites pass 48/48, and the complete suite passes 506/506.
+        - Resident rerun `daily-20260806-210718` used installed release
+          `82e6bcd52479c2c81b063cdee3d242e5dd708bb4`, LaunchAgent
+          `ai.anicca.job-search-daily`, identity `job-search:dais`, holder PID
+          96510, browser PID 86406, and fence 132. It exited 0 with CLI status
+          `ready`, five of five controls verified, and the exact start-date answer
+          `2026-12-01` grounded by `profile.start_date`; `submitted` and
+          `submit_unknown` remained empty. The gate stays open because neither the
+          CLI result nor the immutable run directory contained the required
+          pre-submit screenshot.
+        - Root cause is deterministic: `ashby_apply.py` verified fields and closed
+          the page without calling `page.screenshot`, while `validate_fill_result`
+          accepted receipts without image evidence. TDD now captures a full-page
+          mode-0600 image adjacent to the private result and requires a non-empty
+          file with a matching SHA-256 before `pre_submit_ready`. RED failed on the
+          absent capture/validation contract; GREEN passes focused 9/9, adjacent
+          37/37, and the complete suite 508/508. Build/install and a second resident
+          canary remain required before this checkbox can close.
 - [ ] **L-49K3** — Implement one fenced semantic `Submit Application` action for the
   registered resident worker only. Observe the Ashby submit request, reCAPTCHA
   outcome, HTTP result, terminal success text, URL, and Gmail confirmation; capture
