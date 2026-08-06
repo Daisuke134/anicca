@@ -2943,6 +2943,15 @@ key不在はnetwork call 0の`waiting_for_authorized_source`、API unavailable/e
 （https://help.connpass.com/api/）。既存16件PASSかつhandoff未呼出しのRED後、runtime 17/17、native-entrypoint 26/26、pretest 12/12、
 outbound 345/345 GREEN、失敗0件。次はTask 3BでConnpass候補をLuma provenanceへ偽装せず、共通Calendar/移動gateへ通す。
 
+O1B-25進捗134（multi-source Task 3B provider-neutral Calendar/travel gate / RED→GREEN）: 既存Luma Calendar gateの
+候補評価を一つの共有evaluatorへ抽出し、verified Connpass handoffを直接受けるgateを追加した。Luma inventoryへ偽装せず、同じ
+direct timed conflict、all-day conflict、直前/直後location、inbound/outbound route、5分buffer付きexpanded windowを適用する。
+gate receiptにはopaque Calendar event refだけを残し、home、venue、隣接予定locationを出力しない。eligible候補だけをread-only Connpass
+adapter境界へ残し、eligible 0では同じdateのprovider cursorをPeatixへ進める。discoveryだけではcoverage credit、registration、Calendar write、
+Telegramを発生させない。既存5件PASSかつConnpass evaluator未実装のRED後、Calendar focused 6/6、runtime 17/17、pretest 12/12、
+outbound 346/346 GREEN、失敗0件。これでTask 3 official discovery + Calendar/travel gateは完了。次はTask 4 Connpass authenticated
+registration adapterを、親owned Connector target、effect readback、PNG、admission receipt、Calendar、Telegramの順で実装・live promotionする。
+
 現在と完成形:
 
 ```mermaid
@@ -3010,7 +3019,7 @@ flowchart LR
 1. [x] Gigの成功browser-foundation patternをConnector側へcopy+tweakする。親が`:9222` default contextにtargetを作成・claimし、Terraはsanitized formの回答判断だけを一turn返す。親だけが同一targetでreal action、submit、readback、screenshot、close/releaseを行い、inline Node、全page探索、反復`connectOverCDP()`、Terra側`browser.close()`を廃止する（16B再補正、進捗121〜123）。
 2. [x] source registry contractを実装し、Luma、Connpass、Peatix、Meetup、Doorkeeper、Eventbriteを`discovery / registration / effect_readback / screenshot_evidence / ticket_or_qr`能力でclosed schema宣言する（19、進捗129）。
 3. [x] native runtimeへprovider cursorとhandoff state machineを接続する。Task 2A contract、Task 2B1 runtime transition、Task 2B2 native-pass atomic persistenceを完了。あるproviderの候補0、満席、未対応form、known no-effectで同じpassを終えず、次候補→次providerへ進む（23、進捗130〜132）。
-4. [in progress] Connpass公式API discoveryのruntime handoffはTask 3A・進捗133で完了。次はTask 3B provider-neutral Calendar/移動gate、その後に認証済みbrowser submit、親effect readback、PNG、参加票/QRをTDDとlive proofで揃えて`registration_allowed=true`へpromotionする（20〜21）。
+4. [in progress] Connpass公式API discoveryとprovider-neutral Calendar/移動gateはTask 3A〜3B・進捗133〜134で完了。次は認証済みbrowser submit、親effect readback、PNG、参加票/QRをTDDとlive proofで揃えて`registration_allowed=true`へpromotionする（20〜21）。
 5. Peatix、Meetup、Doorkeeper、Eventbriteを一siteずつ同じcontractへ追加し、各siteのlive submit/readback/evidence後だけregistrationを有効化する（22）。
 6. promotion済みproviderを横断する既存Connector launchd runで、Calendar gapを持つ実eventへform入力→submit→親marker readbackを成立させる。Lumaに限定せず最初の実登録まで候補/providerを継続する（16C）。
 7. 同一event lineageへprovider marker、ticket/QRまたは同等receipt、PNG SHA、Calendar ID/readback、Telegram card/photo positive IDを揃える（16D、17、18）。
