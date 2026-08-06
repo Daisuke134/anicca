@@ -617,7 +617,7 @@ async function runNativePass(options = {}) {
     return Object.freeze({ exitCode: 1, status: "incomplete" });
   } catch (error) {
     const code = String(error && error.code || "");
-    const reason = /^CONNECTOR_NATIVE_(?:CONFIG|AUTH|INVENTORY|CALENDAR_READ|PROFILE|LUNA|CALENDAR_GATE(?:_INPUT|_EXECUTION|_RESULT)?|SPEND_GATE|WRITE|PHOTO_SEND|PHOTO_RECEIPT)_FAILED$/.test(code)
+    const reason = /^CONNECTOR_NATIVE_(?:CONFIG|AUTH|INVENTORY|CALENDAR_READ|PROFILE|LUNA|CALENDAR_GATE(?:_INPUT|_EXECUTION|_RESULT)?|SPEND_GATE|PROVIDER_DISCOVERY|WRITE|PHOTO_SEND|PHOTO_RECEIPT)_FAILED$/.test(code)
       ? code.toLowerCase()
       : "runtime_failed";
     recordContinuation({ stateDir, reason });
