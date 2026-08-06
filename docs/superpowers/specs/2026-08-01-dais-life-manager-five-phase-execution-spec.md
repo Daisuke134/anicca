@@ -3243,7 +3243,13 @@ literal `unknown`の場合だけ親Healerがcanonical checkoutの`git rev-parse 
 HEAD前進判定へ一貫して使用する。任意の不正ref、曖昧refにはfallbackしない。Healer focused 5/5 GREEN。live incident 1、revision 0、
 Healer launchd未登録。外部申込、Calendar、Telegram、browser effectは0件。
 
-### Active remaining TODO SSOT（進捗160。これ以外の残TODO一覧は履歴）
+O1B-25進捗161（Healer launchd実登録run 1 / PATH blocker RED→GREEN）:
+rendered `ai.anicca.life-manager-connector-healer-shadow`を実`~/Library/LaunchAgents`へmode 0600で登録し、launchctl bootstrap/kickstartした。
+run 1はlaunchd既定PATHが`/usr/bin:/bin:/usr/sbin:/sbin`のみでNode/Codexを解決できずlast exit 2、revision 0、stdout/stderr 0 bytesで終了した。
+incidentは未消費、外部effectは0件。Healer shellへConnector native runnerと同じHomebrewを含むcanonical PATHを追加し、renderer focused 1/1、
+shell syntax GREEN。次は最新commitでlive labelをreloadし同じprivacy-safe incidentを再実行する。
+
+### Active remaining TODO SSOT（進捗161。これ以外の残TODO一覧は履歴）
 
 1. [x] Provider-neutral downstream write、Connpass runtime write dependencies、Luma Calendar-eligible 0 handoff、Connpass state persistenceを閉じる。証拠: 進捗141、143、144、commit `65241d6a2`、`e822bfa3a`、`d0e05f5d8`、`1cfa2e56f`。
 2. [x] Privacy-safe Observer envelope/replayを実装する。完了条件: success、tool failure、timeout、process crashが同じschemaでrun/wake、stage、safe action、expected/observed effect、owner generation、screenshot SHA、provider readback、commit、cursorへ正規化され、secret/PII/raw logなし、fingerprint dedupe可能なincidentとreplay fixtureを各1件生成する。証拠: 進捗148、focused 33/33 GREEN。
