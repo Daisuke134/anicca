@@ -5356,7 +5356,21 @@ minimal runner、action cache、Luma workflow、official adapter/rendererのfocu
 readback 1、cache 0、direct Submit 0、agent 0を確認した。実browser、Submit、Calendar、PNG、Telegram作用は0。
 Item 10は未完で、次はItem 10A-2 production dependency compositionをTDDで構築する。scheduleは引き続きunloadedを維持する。
 
-### Active remaining TODO SSOT（進捗180。これ以外の残TODO一覧は履歴）
+### O1B-25進捗181（Item 10A-2a / production browser rail）
+
+production compositionの最初の危険境界として`createProductionBrowserRail`のcontractをREDで固定し、module不存在を確認後に実装した。
+railはPlaywright CDPを`http://127.0.0.1:9222`へ一回だけ接続し、parent controllerが`Target.createTarget`で一targetを作る。
+そのexact targetをLuma discovery URLでdurable leaseへclaimし、probe/heartbeat後に同じPlaywright pageをwake全体へ返す。
+
+candidate navigationは同じpageの`goto`だけを使い、前後でfence heartbeatを更新する。正常closeはownerのexact-target releaseだけで、
+browser-level `close()`は呼ばない。claim前に失敗した場合だけparent controllerが自分で作ったtarget IDをexact closeする。
+lease ledgerとtab-owner receiptは既存private evidence pathを再利用し、Gig `:9223`、profile、auth、cookie、credentialへ触れない。
+
+production rail、target controller、target lease、tab ownerのfocused suiteは14/14 GREEN。契約上connect 1、target create 1、claim 1、
+same-page goto 1、release 1、browser close 0を確認した。実`:9222`接続とexternal writeは0。Item 10は未完で、次はLuma/Calendar/cache/fallbackを
+official native adapterへ組み立てる残りのproduction dependenciesをTDDで接続する。scheduleは引き続きunloadedを維持する。
+
+### Active remaining TODO SSOT（進捗181。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
