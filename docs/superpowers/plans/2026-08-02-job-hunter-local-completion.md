@@ -3139,6 +3139,21 @@ OpenTelemetry decision and primary sources:
     worker receipt, and Telegram message ID in Grafana and the private trace index.
     Then rerun a real eligible candidate through the resident actor only. A generic
     `application_surface_not_found` without its observed cause fails this gate.
+    - Joined-index slice receipt: RED failed because `TraceIndex` had no application
+      timeline and discarded resource identity. GREEN now projects only
+      `service.version`, `job_hunter.lane`, and `job_hunter.resident_actor`, joins them
+      with allowlisted application/route/failure/evidence/confirmation span fields,
+      migrates the existing private SQLite index in place, and excludes injected email
+      values. Focused timeline passes 1/1 and telemetry/index passes 7/7. The complete
+      suite runs 513 tests with two pre-existing prompt-topology failures; no trace
+      test fails.
+    - Live gap, therefore O6 remains unchecked: the private Collector JSONL contains
+      only two old-release `hourly_pass` spans. The Cursor application timeline is
+      empty because the resident path emitted no application, route, browser-fence,
+      evidence, or Telegram span. The daily LaunchAgent is not running and its latest
+      exit is `EX_PROTOCOL` (76). The next O6 slice must instrument and release the
+      joined resident spans, repair the measured protocol exit, and obtain one real
+      resident trace; it must not synthesize missing identifiers.
   - [x] `C2A` — Persist cross-candidate continuation proof from the release-contained
     browser runner through `browser-worker-result.json`. Each attempt records only
     candidate index, official URL SHA-256, role family, and outcome; raw URLs and
