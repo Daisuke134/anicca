@@ -115,8 +115,8 @@
 - Consumes: verified provider marker/PNG receipt plus optional confirmation-mail and ticket-QR services.
 - Produces: Calendar, coverage, and registration-page Telegram delivery from the core receipt even when optional mail/QR enrichment is unavailable. A verified ticket is delivered additionally when present.
 
-- [ ] **Step 1: Write a failing regression test** reproducing run 178: confirmation/QR failure after a verified RSVP must still call Calendar, coverage rebuild, message build, and registration-page Telegram delivery; it must not claim ticket delivery.
-- [ ] **Step 2: Run the focused test and verify RED:** `cd apps/life-manager && node --test lib/connector-native-write-pipeline.test.js`.
-- [ ] **Step 3: Implement the smallest state-machine change.** Capture ticket enrichment failure as a bounded optional status, continue the core chain, and attempt ticket Telegram only when a verified ticket artifact exists. Ticket Telegram failure also remains optional and observable.
-- [ ] **Step 4: Run focused, pretest, and full outbound suites.**
+- [x] **Step 1: Write a failing regression test** reproducing run 178: confirmation/QR failure after a verified RSVP must still call Calendar, coverage rebuild, message build, and registration-page Telegram delivery; it must not claim ticket delivery.
+- [x] **Step 2: Run the focused test and verify RED:**旧codeで1件RED。
+- [x] **Step 3: Implement the smallest state-machine change.** Capture ticket enrichment failure as a bounded optional status, continue the core chain, and attempt ticket Telegram only when a verified ticket artifact exists. Ticket Telegram failure also remains optional and observable.
+- [x] **Step 4: Run focused, pretest, and full outbound suites.** focused 21/21、pretest 12/12、outbound 337/337 GREEN。
 - [ ] **Step 5: Commit/push, then let the existing Connector launchd prove Calendar and registration-page Telegram receipt on the next verified registration readback.** Do not touch Gig or `:9223`.
