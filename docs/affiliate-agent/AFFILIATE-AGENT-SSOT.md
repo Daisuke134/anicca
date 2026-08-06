@@ -32,12 +32,16 @@ establish the authorized user account, configure the profile, publish through th
 rendered website, and verify the public result. A dedicated Japanese canary is
 admitted only after English Gate E0 and uses a different browser profile.
 
-“End to end” begins on a scratch computer. Installation, encrypted authority
-inventory, browser/profile provisioning, account discovery/signup/recovery,
-rebranding, affiliate application, offer approval polling, research, content,
-browser publication, acquisition experiments, click attribution, provider
-dashboard/CSV reconciliation, Telegram reporting, recovery, and learning are all
-Agent states. None is an operator setup checklist masquerading as a prerequisite.
+“End to end” is proved first on the current macOS host. The first graduation
+condition is not portability: it is one unattended local run covering authorized
+account recovery, affiliate application/approval polling, research, content,
+browser publication, acquisition, click attribution, provider reconciliation,
+Telegram reporting, recovery, learning, and a real external commission receipt.
+After this local Agent earns with positive unit economics, its proven runtime is
+packaged for a scratch computer. Installation, encrypted authority inventory,
+browser/profile provisioning, and minimal operator credential intake remain Agent
+states in that later packaging phase; they are not allowed to delay the local
+money loop.
 
 The machine cannot guarantee $10,000, $10,000,000, or $100,000,000 revenue. It guarantees
 measurable attempts, honest receipts, bounded experiments, compliance gates, and
@@ -475,10 +479,13 @@ Before that, revenue is `unknown`, not a fabricated conversion forecast.
 
 ## 9. Ordered implementation backlog
 
-1. Build a reproducible scratch-computer bootstrap for the current macOS host: install
-   the pinned runtime/browser dependencies, create an encrypted local vault,
-   provision isolated EN/JA profiles, and emit a machine capability receipt.
-2. Create the Agent schema and append-only Affiliate ledger; add invariants for
+1. Make one narrow English vertical slice run unattended on the current Mac:
+   resume Kit/Amazon/provider state, acquire one executable offer, research one
+   buyer problem, publish one owned placement plus eligible X distribution through
+   the browser, verify the public result, reconcile clicks/commission, and report
+   every transition to Telegram.
+2. Create the minimum Agent schema and append-only Affiliate ledger required by
+   that live slice; add invariants for
    unknown, pending, approved, reversed, and paid money.
 3. Implement the semantic browser harness, typed action grammar, leases,
    screenshots/DOM hashes, download capture, postcondition checks, ambiguous-side-
@@ -495,14 +502,17 @@ Before that, revenue is `unknown`, not a fabricated conversion forecast.
 8. Add English Affiliate manifests for browser-published X and owned articles;
    keep clip/slideshow/video renderers as format adapters.
 9. Add the fail-closed policy/disclosure gate and official-source freshness TTL.
-10. Ship one English end-to-end placement, reconcile a real click, and start the
-   English daily loop; only then provision the separate Japanese canary.
+10. Keep the English local daily loop running until it reconciles a real approved
+   commission; only then provision the separate Japanese canary.
 11. Enable mature-cohort learning only after ten comparable placements; promote
    net commission as the deepest reward when available.
 12. Add provider/channel quarantine, same-run recovery, health reporting, and
    launchd ownership.
 13. Scale content and providers only after the first approved commission and
     positive unit economics.
+14. Only after the local Agent proves positive unit economics, package its proven
+    dependencies, credential-intake contract, isolated profiles, installer, and
+    recovery checks for one-command operator-owned installations.
 
 ## 10. Rejected designs
 

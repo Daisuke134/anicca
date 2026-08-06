@@ -63,6 +63,16 @@
 All checkboxes are initially open. A checkbox closes only with the command or
 external receipt named in that step; prose updates alone do not close work.
 
+Execution-order override: prove the smallest revenue-bearing English vertical
+slice on the current Mac before completing generic scratch-host portability.
+Reuse the already present runtime and browser capabilities, adding only the
+minimum ledger, authority, browser receipts, durable resume, Telegram outbox,
+provider adapter, publication, attribution, and reconciliation needed for a real
+commission. Task F0 remains required for later distribution but is not the first
+runtime milestone. The new milestone order is Local E0 (public placement and
+provider click) → Local E1 (first approved external commission) → stable local
+daily operation → F0 portable bootstrap → tenant isolation and distribution.
+
 Execution checkpoint:
 
 - F1 is complete at runtime HEAD `5b1927dc` with clean task review and fresh
@@ -84,13 +94,13 @@ Execution checkpoint:
 
 | Phase | Tasks | Exit evidence |
 |---|---:|---|
-| P0 Agent foundation | F0-F6, 1 | Scratch-host bootstrap, legacy migration, Terra brain, prompt registry, CloakBrowser harness, durable queue, Telegram action outbox, one runtime root |
+| P0 Local money slice | minimum parts of F2-F6 and 1-13 | Current-Mac unattended application-to-publication-to-reconciliation loop with Telegram receipts |
 | P1 Truth foundation | 2-5 | Typed Affiliate ledger, provider normalization, deployed redirect contract, click sync |
 | P2 Useful production | 6-8 | Evidence/policy pass, locale-isolated manifests, receipted English public placement |
 | P3 Closed loop | 9-13 | Commission reconciliation, learning, recovery, reports, launchd |
-| P4 Real E2E and first money | 14-16 | Live HTTPS redirect, English E0/E1, then isolated Japanese canary |
+| P4 Real E2E and first money | 14-16 | Live HTTPS redirect, English E0/E1, stable local daily loop, then isolated Japanese canary |
 | P5 Initial business | 17 | Four positive weeks and three qualifying $10k months |
-| P6 Decentralized scale | 18-19 | Tenant-isolated recipe and staged network gates through $10M net, then an explicitly receipted $100M horizon |
+| P6 Portability and decentralized scale | F0, 18-19 | One-command scratch-host package, tenant-isolated recipe, and staged network gates through $10M net, then an explicitly receipted $100M horizon |
 
 ### Implementation-entry blockers
 
