@@ -12,6 +12,8 @@ const { collectLumaInventory } = require("./luma-discovery.js");
 const { normalizeLumaEventDetail } = require("./luma-event-detail.js");
 const { buildLumaDateInventory } = require("./luma-date-inventory.js");
 const { planConnectorCoverageContinuation } = require("./connector-coverage-continuation.js");
+const { createEventProviderRegistry } = require("./event-provider-registry.js");
+const { createEventProviderCursor } = require("./event-provider-cursor.js");
 const { inspectGoogleCalendarBusyInventory } = require("./google-calendar-busy-inventory.js");
 const { buildRollingEventCoverage } = require("./rolling-event-coverage.js");
 const { runLumaCandidateSequence } = require("./luma-candidate-loop.js");
@@ -724,6 +726,10 @@ test("an unknown effect is read back before absent retry or registered verificat
   let inspections = 0;
   let writes = 0;
   let providerState = "unknown";
+  const providerRegistry = createEventProviderRegistry();
+  const providerCursor = createEventProviderCursor({
+    registry: providerRegistry, date: "2026-08-05", observedAt: "2026-08-02T00:00:00.000Z",
+  });
   const delivered = Object.freeze({
     status: "incomplete",
     outcome: "open_coverage",
@@ -757,6 +763,8 @@ test("an unknown effect is read back before absent retry or registered verificat
       calendarCoverageUrl: "https://calendar.google.com/calendar/u/0/r",
       calendarId: "primary",
       mapsKey: "maps-secret",
+      providerRegistry,
+      providerCursor,
       candidateAttempts: [{
         event_ref: "luma-event://event/founder-night",
         outcome: "unknown_effect",
@@ -783,6 +791,7 @@ test("an unknown effect is read back before absent retry or registered verificat
   assert.equal(inspections, 1);
   assert.equal(writes, 0);
   assert.equal(result.write, null);
+  assert.equal(result.provider_cursor, providerCursor);
   assert.deepEqual(result.candidate_attempts, [{
     event_ref: "luma-event://event/founder-night",
     outcome: "unknown_effect",
@@ -965,6 +974,67 @@ test("candidate budget cannot stop the pass before the next actionable candidate
     "luma-event://event/founder-night",
     "luma-event://event/agent-night",
   ]);
+});
+
+test("Luma known-no-effect exhaustion advances the verified provider cursor to Connpass", async () => {
+  const input = await fixture();
+  const registry = createEventProviderRegistry();
+  const providerCursor = createEventProviderCursor({
+    registry,
+    date: "2026-08-05",
+    observedAt: "2026-08-05T23:59:59.000Z",
+  });
+  const profile = Object.freeze({ tenant_id: TENANT, timezone: "Asia/Tokyo" });
+  const goalDecision = Object.freeze({ ranked_events: [{ event_ref: "luma-event://event/founder-night" }] });
+  const spendSequence = Object.freeze({
+    ordered_candidates: [{
+      event_ref: "luma-event://event/founder-night",
+      canonical_url: "https://luma.com/founder-night",
+    }],
+    skipped: [],
+  });
+  const result = await runNativeConnectorPass({
+    ...input,
+    config: {
+      ...input.config,
+      providerRegistry: registry,
+      providerCursor,
+      profilePath: "/private/tmp/dais-local.json",
+      lunaEvidenceDir: "/private/tmp/connector-luna",
+      homeLocation: "opaque-home",
+      telegramTarget: "opaque-chat",
+      calendarCoverageUrl: "https://calendar.google.com/calendar/u/0/r",
+      calendarId: "primary",
+      mapsKey: "maps-secret",
+    },
+    deps: {
+      ...input.deps,
+      readProfile() { return profile; },
+      async runLunaJudgment() { return goalDecision; },
+      async gateDateCalendar() {
+        return Object.freeze({ date: "2026-08-05", candidates: [{ event_ref: goalDecision.ranked_events[0].event_ref, eligible: true }] });
+      },
+      async createSpendPolicy() { return Object.freeze({ limits: [] }); },
+      planDateSpend() { return spendSequence; },
+      async runNativeWrite() {
+        return Object.freeze({
+          status: "incomplete",
+          outcome: "application_failed",
+          error_code: "LUMA_RSVP_UNAVAILABLE",
+          event_ref: goalDecision.ranked_events[0].event_ref,
+        });
+      },
+      createRouteMinutes() { return async () => 20; },
+      isVerifiedConnectorProfile: (value) => value === profile,
+      isVerifiedEventGoalSerendipity: (value) => value === goalDecision,
+      isVerifiedEventSpendSequence: (value) => value === spendSequence,
+    },
+  });
+
+  assert.equal(result.provider_cursor.provider, "connpass");
+  assert.equal(result.provider_cursor.candidate_index, 0);
+  assert.equal(result.provider_cursor.generation, 3);
+  assert.equal(JSON.stringify(result.provider_cursor).includes("founder-night"), false);
 });
 
 test("native runtime exposes only its bounded failing stage", async () => {
