@@ -28,13 +28,13 @@ class RouteProvenanceTests(unittest.TestCase):
         self.assertEqual(result["recipient_acceptance"], "accepts_applications")
         self.assertIn("jobs@example.com", result["source_span"])
 
-    def test_public_recruiting_address_without_apply_instruction_is_outreach_only(self):
+    def test_verified_official_careers_address_is_an_application_email_route(self):
         result = self._verify(
             "Questions about careers can be sent to jobs@example.com."
         )
 
-        self.assertEqual(result["route_kind"], "recruiting_outreach")
-        self.assertEqual(result["recipient_acceptance"], "outreach_only")
+        self.assertEqual(result["route_kind"], "recruiting_email")
+        self.assertEqual(result["recipient_acceptance"], "accepts_applications")
 
     def test_third_party_source_or_address_missing_from_source_is_rejected(self):
         with self.assertRaises(ProvenanceError):
