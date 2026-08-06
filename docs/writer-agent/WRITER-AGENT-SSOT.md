@@ -1577,8 +1577,21 @@ market research until item C13 permits it.
 
 **A — refactor the company-paid contract seam first:**
 
-- A1 RED APPSIGNAL: characterize its row, receipt, poll, illegal transition,
-  and duplicate-submit refusal with one fixture per behavior.
+- A1 DONE APPSIGNAL: runtime feature `e6b566b0`, live `f3856d59`. Existing
+  transition/recovery/correlation fixtures plus two observed RED failures prove
+  illegal skips, duplicate submission refusal, exact recovered receipt replay,
+  unique-recipient response correlation, new `.html` alias duplication, and
+  nondeterministic winner selection when historical aliases coexist. GREEN
+  recognizes only the explicit AppSignal `/write-for-us(.html)` alias, prefers
+  the receipted submitted row deterministically, preserves protected commercial
+  next action, and negative fixtures keep unrelated `.html` and case-sensitive
+  paths distinct. Focused opportunity regression passes `36/36`; full Writer
+  regression passes `814/814`; fresh review is `ship`. An isolated copy of the
+  live database selected `opp_890b4de2db49a236f20750ee`, `inserted:false`,
+  `SUBMITTED`, and the exact recovered submission ID while retaining two
+  historical rows for A11 migration. Real response-worker run `341` exited `0`:
+  AppSignal is `NO_RESPONSE`, received amount/currency remain null, and no
+  submission, acceptance, or money side effect occurred.
 - A2 RED TECHI: characterize ID `4`, last-known/current availability, illegal
   transition, and duplicate-submit refusal with one fixture per behavior.
 - A3 SCHEMA INTAKE: version Opportunity and Application; one migration receipt.
