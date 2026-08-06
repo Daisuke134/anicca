@@ -155,6 +155,14 @@ The slice spans seven files because one new SSOT contract must be produced by ru
 
 **Completion:** A Connpass-specific deterministic runtime job, effect key, adapter execution/reconciliation, and provider evidence store produce the same E1/E2/E3 verified outbound receipt contract without Luma refs or paths.
 
+The job/adapter/evidence transaction totals 348 lines across four modules/tests plus constant-suite registration. Splitting the evidence store from execution would leave the adapter unable to produce a verifier receipt; splitting reconciliation would permit duplicate effects after uncertainty.
+
+- [x] Both modules missing REDを確認。
+- [x] Deterministic Connpass job/effect key、inspect→submit fence、unknown reconciliation、E1/E2/E3 receiptを実装。
+- [x] Mode-0600 immutable Connpass PNG/receipt/object storeを実装。
+- [x] Focused 4/4、pretest 12/12、constant outbound suite 348/348 GREEN。
+- [x] Master specへ進捗138を記録しcommit/push。
+
 ## Task 4B2C: Connpass Runtime and Write Pipeline Wiring
 
 **Completion:** Calendar-eligible Connpass candidates enter the common write pipeline with the Connpass provider/job/evidence dependencies, then Calendar and Telegram lineage. Failure advances candidate/provider without stopping the pass; unknown effect reconciles before retry.
