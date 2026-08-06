@@ -48,8 +48,16 @@ function defaultExecute(command, args, options = {}) {
     encoding: "utf8",
     stdio: ["pipe", "pipe", "pipe"],
     maxBuffer: 16 * 1024 * 1024,
+    timeout: Number(options.timeoutMs || 45 * 60 * 1000),
+    killSignal: "SIGTERM",
   });
-  return { status: result.status, stdout: String(result.stdout || ""), stderr: String(result.stderr || "") };
+  return {
+    status: result.status,
+    signal: result.signal || null,
+    errorCode: result.error && result.error.code || null,
+    stdout: String(result.stdout || ""),
+    stderr: String(result.stderr || ""),
+  };
 }
 
 function healerEnvironment(env = process.env) {
@@ -96,7 +104,7 @@ function appendRevision(file, input) {
   if (
     !SHA.test(String(row.fingerprint || ""))
     || !Number.isInteger(row.revision) || row.revision < 1 || row.revision > 3
-    || !["revision_created", "revision_failed", "worktree_failed"].includes(row.status)
+    || !["revision_created", "revision_failed", "revision_timeout", "worktree_failed"].includes(row.status)
     || !SAFE_BRANCH.test(String(row.branch || "")) || !SAFE.test(String(row.commit || ""))
     || new Date(Date.parse(String(row.observed_at || ""))).toISOString() !== row.observed_at
   ) invalid();
@@ -148,13 +156,15 @@ async function runHealerShadow(options = {}) {
     cwd: worktree,
     env: healerEnvironment(options.env),
     input: healerPrompt(incident),
+    timeoutMs: Number(options.codexTimeoutMs || 45 * 60 * 1000),
   });
+  const timedOut = result && (result.errorCode === "ETIMEDOUT" || result.signal === "SIGTERM");
   if (!result || result.status !== 0 || !String(result.stdout || "").includes("thread.started")) {
     appendRevision(revisionsFile, {
-      fingerprint: incident.fingerprint, revision, status: "revision_failed",
+      fingerprint: incident.fingerprint, revision, status: timedOut ? "revision_timeout" : "revision_failed",
       branch, observed_at: observedAt,
     });
-    return Object.freeze({ status: "revision_failed", branch, worktree });
+    return Object.freeze({ status: timedOut ? "revision_timeout" : "revision_failed", branch, worktree });
   }
   const commit = await execute("git", ["-C", worktree, "rev-parse", "HEAD"], {
     cwd: worktree, env: healerEnvironment(options.env),
