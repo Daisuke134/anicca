@@ -38,7 +38,8 @@ function unavailable() {
   throw new Error("Connector native runtime unavailable");
 }
 
-function calendarGateFailureCode(error) {
+function calendarGateFailureCode(error, options = {}) {
+  if (options.phase === "result") return "CONNECTOR_NATIVE_CALENDAR_GATE_RESULT_FAILED";
   return error && error.message === "Calendar candidate gate invalid"
     ? "CONNECTOR_NATIVE_CALENDAR_GATE_INPUT_FAILED"
     : "CONNECTOR_NATIVE_CALENDAR_GATE_EXECUTION_FAILED";
@@ -366,7 +367,10 @@ async function runNativeConnectorPass(input = {}) {
           failureCode = calendarGateFailureCode(error);
           unavailable();
         }
-        if (!calendarGate || !Array.isArray(calendarGate.candidates)) unavailable();
+        if (!calendarGate || !Array.isArray(calendarGate.candidates)) {
+          failureCode = calendarGateFailureCode(null, { phase: "result" });
+          unavailable();
+        }
         if (!calendarGate.candidates.some((candidate) => candidate && candidate.eligible === true)) continue;
         failureCode = "CONNECTOR_NATIVE_LUNA_FAILED";
         const goalDecision = await runLunaJudgment({
