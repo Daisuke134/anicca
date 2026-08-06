@@ -3816,10 +3816,16 @@ OpenTelemetry decision and primary sources:
       normalized candidate contract. Bound fetched content, retain source URL and
       extraction provenance, and never let enrichment create a second job record or
       success truth.
-      - [ ] `L-49K5B3a` — Define a pure bounded enrichment receipt keyed by the
+      - [x] `L-49K5B3a` — Define a pure bounded enrichment receipt keyed by the
         existing canonical candidate URL. Validate source/application URLs, cap text,
         retain provider provenance, and discard model-supplied application status so
         enrichment cannot create a candidate or claim submission success.
+        - Evidence: `job_search_loop/enrichment_contract.py` returns a versioned,
+          SHA-256-addressed receipt keyed to the existing canonical candidate. It caps
+          description text at 4,000 characters, accepts only HTTP(S) source/apply URLs,
+          retains extraction provider, and has no application status, provider receipt,
+          candidate creation, browser, or persistence API. Unsafe apply URLs and
+          model-supplied `applied` claims are discarded. Focused tests pass 3/3.
       - [ ] `L-49K5B3b` — Adapt SmartExtract JSON-LD and captured-API job rows into
         the existing normalized discovery contract. Bound inspected payloads and
         emitted rows; malformed selectors/data never become executable browser input.
