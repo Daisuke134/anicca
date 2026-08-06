@@ -3280,6 +3280,15 @@ OpenTelemetry decision and primary sources:
       Playwright `connect_over_cdp`; stopping the probe disconnects its transport
       without calling `browser.close()` or touching tabs. No live Job Hunter path
       imports Browser Use.
+    - Critical-path simplification: the live daily route no longer uses the historical
+      exhaustive `daily-pass.md` contract or performs a 100-link liveness sweep before
+      Terra. It uses `daily-apply-simple.md`: one Terra process selects the highest
+      grounded candidate, navigates and submits through CloakBrowser, confirms and
+      reports it, then continues. Deterministic liveness runs after candidate
+      selection as needed. The only per-candidate pre-Submit stops are a durable
+      duplicate, genuinely missing required personal/legal facts, visible CAPTCHA,
+      or explicit compensation below JPY 8M. Pending links, unfamiliar UI,
+      unpublished compensation, and evaluator failure cannot end a zero-attempt pass.
 - [ ] **L-49K2** — Make the resident fill contract complete and inspectable. Route the
   exact accepted resume; fill verified identity/contact/location/start-date fields;
   select work authorization and sponsorship answers from the private profile; verify

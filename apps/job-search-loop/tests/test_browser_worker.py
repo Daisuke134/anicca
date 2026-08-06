@@ -86,7 +86,7 @@ class BrowserWorkerTests(unittest.TestCase):
         fixture_end = script.index('fi\n"$JOB_SEARCH_PYTHON" -m job_search_loop.application_reporting deliver')
         live_path = script[fixture_end:]
         self.assertIn("--task-class application-lane-agent", live_path)
-        self.assertIn('prompts/daily-pass.md', live_path)
+        self.assertIn('prompts/daily-apply-simple.md', live_path)
         self.assertNotIn("job_search_loop.browser_worker run", live_path)
         self.assertNotIn("--task-class composition-agent", live_path)
         self.assertNotIn("--task-class job-search-terra-high", live_path)
