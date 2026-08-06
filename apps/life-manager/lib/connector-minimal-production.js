@@ -9,8 +9,15 @@ const {
 } = require("./connector-browser-target-controller.js");
 const { createConnectorTabOwner } = require("./connector-tab-owner.js");
 const { createConnectorTargetLease } = require("./connector-target-lease.js");
+const {
+  inspectGoogleCalendarBusyInventory,
+  isVerifiedGoogleCalendarBusyInventory,
+} = require("./google-calendar-busy-inventory.js");
+const { zonedSlotInstant } = require("./honne-ja-shadow-schedule.js");
+const { makeGogCalendar } = require("./transport/calendar-gog.js");
 
 const LUMA_DISCOVERY_URL = "https://luma.com/tokyo?k=p";
+const PRODUCTION_TIME_ZONE = "Asia/Tokyo";
 
 function invalid() {
   throw new Error("Connector minimal production unavailable");
@@ -26,6 +33,68 @@ function ownerToken(value) {
   const token = String(value || "").trim();
   if (!/^[A-Za-z0-9._-]{16,200}$/.test(token)) invalid();
   return token;
+}
+
+function exactNow(value) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (!Number.isFinite(date.getTime())) invalid();
+  return date;
+}
+
+function localDay(date, timeZone) {
+  const parts = Object.fromEntries(new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date).filter((part) => part.type !== "literal")
+    .map((part) => [part.type, Number(part.value)]));
+  if (![parts.year, parts.month, parts.day].every(Number.isInteger)) invalid();
+  return Object.freeze({ year: parts.year, month: parts.month, day: parts.day });
+}
+
+function addCalendarDays(day, count) {
+  const shifted = new Date(Date.UTC(day.year, day.month - 1, day.day + count));
+  return Object.freeze({
+    year: shifted.getUTCFullYear(),
+    month: shifted.getUTCMonth() + 1,
+    day: shifted.getUTCDate(),
+  });
+}
+
+function createProductionCalendarReader(options = {}) {
+  const timeZone = String(options.timeZone || PRODUCTION_TIME_ZONE);
+  if (timeZone !== PRODUCTION_TIME_ZONE) invalid();
+  const now = options.now || (() => new Date());
+  const makeCalendar = options.makeCalendar || makeGogCalendar;
+  const inspectBusyInventory = options.inspectBusyInventory || inspectGoogleCalendarBusyInventory;
+  const isVerifiedBusyInventory = options.isVerifiedBusyInventory || isVerifiedGoogleCalendarBusyInventory;
+  if (
+    typeof now !== "function" || typeof makeCalendar !== "function"
+    || typeof inspectBusyInventory !== "function" || typeof isVerifiedBusyInventory !== "function"
+  ) invalid();
+  const calendar = makeCalendar({
+    bin: options.gogBin,
+    account: options.account,
+    keyring: options.keyring,
+  });
+  if (!calendar || typeof calendar.ready !== "function" || calendar.ready() !== true) invalid();
+
+  return Object.freeze({
+    async readCalendarGaps() {
+      const observed = exactNow(now());
+      const firstDay = localDay(observed, timeZone);
+      const inventory = await inspectBusyInventory({
+        calendar,
+        timeMin: zonedSlotInstant(firstDay, "00:00", timeZone),
+        timeMax: zonedSlotInstant(addCalendarDays(firstDay, 14), "00:00", timeZone),
+        now: observed.toISOString(),
+        timeZone,
+      });
+      if (!isVerifiedBusyInventory(inventory) || !Array.isArray(inventory.busy_intervals)) invalid();
+      return inventory.busy_intervals;
+    },
+  });
 }
 
 function createProductionBrowserRail(options = {}) {
@@ -118,4 +187,4 @@ function createProductionBrowserRail(options = {}) {
   });
 }
 
-module.exports = { createProductionBrowserRail };
+module.exports = { createProductionBrowserRail, createProductionCalendarReader };
