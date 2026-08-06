@@ -3816,6 +3816,16 @@ OpenTelemetry decision and primary sources:
       normalized candidate contract. Bound fetched content, retain source URL and
       extraction provenance, and never let enrichment create a second job record or
       success truth.
+      - [ ] `L-49K5B3a` — Define a pure bounded enrichment receipt keyed by the
+        existing canonical candidate URL. Validate source/application URLs, cap text,
+        retain provider provenance, and discard model-supplied application status so
+        enrichment cannot create a candidate or claim submission success.
+      - [ ] `L-49K5B3b` — Adapt SmartExtract JSON-LD and captured-API job rows into
+        the existing normalized discovery contract. Bound inspected payloads and
+        emitted rows; malformed selectors/data never become executable browser input.
+      - [ ] `L-49K5B3c` — Pin the useful direct-career site patterns and run their
+        outputs through B3b and the existing queue. Do not create a second Playwright
+        browser, LLM owner, database, or continuous extractor loop.
     - [ ] `L-49K5B4` — Wire B1–B3 into the resident discovery pass and prove one
       restart-safe fixture run where duplicated cross-source results become one
       candidate, official provenance wins, expiry is retained, and the existing
