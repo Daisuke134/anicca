@@ -4,6 +4,7 @@ import argparse
 import fcntl
 import json
 import os
+import re
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
@@ -65,7 +66,11 @@ def run_worker(
     telemetry: Any = None,
 ) -> dict[str, Any]:
     telemetry = telemetry or Telemetry()
-    with exclusive_worker(lock_path), telemetry.span("hourly_pass"):
+    with exclusive_worker(lock_path), telemetry.span("hourly_pass") as pass_span:
+        correlation = {
+            "trace_id": pass_span.trace_id if re.fullmatch(r"[a-f0-9]{32}", str(pass_span.trace_id or "")) else None,
+            "span_id": pass_span.span_id if re.fullmatch(r"[a-f0-9]{16}", str(pass_span.span_id or "")) else None,
+        }
         owner = json.loads(owner_receipt.read_text(encoding="utf-8"))
         if owner.get("status") != "ready" or owner.get("holder_pid") != holder_pid:
             raise RuntimeError("browser owner receipt does not match daily owner")
@@ -82,6 +87,7 @@ def run_worker(
                 "fence": owner.get("fence"),
                 "actor": "resident_worker",
                 "started_at": started_at,
+                **correlation,
             },
         )
         if route_fixture is not None:
@@ -100,6 +106,7 @@ def run_worker(
                     "fence": owner.get("fence"),
                 },
             )
+            result = {**result, **correlation}
             _write_private_json(output, result)
             _write_private_json(
                 worker_receipt,
@@ -116,6 +123,7 @@ def run_worker(
                     "completed_at": datetime.now(timezone.utc).isoformat(),
                     "route_fixture_status": result["status"],
                     "send_count": result["send_count"],
+                    **correlation,
                 },
             )
             return result
@@ -169,6 +177,7 @@ def run_worker(
             "discovered_link_count": summary["discovered_count"],
             "verified_link_count": summary["verified_count"],
             "remaining_unverified_count": remaining,
+            **correlation,
         }
         _write_private_json(output, result)
         _write_private_json(
@@ -187,6 +196,7 @@ def run_worker(
                 "completed_at": datetime.now(timezone.utc).isoformat(),
                 "submitted_count": 0,
                 "remaining_unverified_count": remaining,
+                **correlation,
             },
         )
         return result

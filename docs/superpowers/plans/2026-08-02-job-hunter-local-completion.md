@@ -2910,9 +2910,15 @@ OpenTelemetry decision and primary sources:
     evidence manifests, Guardian repair cases, and Telegram reports. OTel remains
     diagnostic; only authoritative ledger transitions can say `submitted`. Parent
     closes only after all children close.
-    - [ ] `L-49K0C2O4a` — Persist the resident `hourly_pass` trace/span IDs in the
+    - [x] `L-49K0C2O4a` — Persist the resident `hourly_pass` trace/span IDs in the
       running/completed worker receipt and worker result. Missing backend yields
       explicit null IDs, never fabricated values (2 files, soft target 80 LOC).
+      - Completion receipt: RED proved the running receipt lacked `trace_id` and
+        `span_id`. GREEN captures both IDs from the actual `hourly_pass` handle after
+        the resident exclusive lock, accepts only lowercase 32/16-character hex, and
+        writes the same values to running/completed receipts plus normal/fixture
+        results. Invalid or no-backend values become explicit null. Focused worker
+        tests pass 8/8.
     - [ ] `L-49K0C2O4b` — Persist validated trace/span IDs with application/route
       ledger events and evidence manifests via one migration. Split ledger schema/
       write and evidence projection into slices of at most 3 files and 100 LOC.

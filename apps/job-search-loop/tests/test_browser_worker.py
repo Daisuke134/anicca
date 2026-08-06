@@ -14,6 +14,8 @@ from job_search_loop.candidate_queue import CandidateQueue
 
 class RecordingSpan:
     recording = True
+    trace_id = "1" * 32
+    span_id = "2" * 16
     def __init__(self, name): self.name = name
     def __enter__(self): return self
     def __exit__(self, *_): return False
@@ -41,18 +43,23 @@ class BrowserWorkerTests(unittest.TestCase):
             profile = root / "profile.json"; profile.write_text('{"candidate": {}}')
             def runner(**kwargs):
                 captured.update(kwargs)
+                captured["running_receipt"] = json.loads((root / "receipt.json").read_text())
                 return {"status": "pending_verification", "executor": "browser-use-0.13.7"}
 
-            run_worker(
+            result = run_worker(
                 database=root / "queue.sqlite3", owner_receipt=owner, holder_pid=os.getpid(),
                 run_id="daily-trace", lock_path=root / "lock", worker_receipt=root / "receipt.json",
                 output=root / "output.json", prefilter_result=prefilter, profile_path=profile,
                 materials_root=root / "materials", evidence_dir=root / "evidence",
                 pre_submit_runner=runner, telemetry=telemetry,
             )
+            completed_receipt = json.loads((root / "receipt.json").read_text())
 
         self.assertEqual([span.name for span in telemetry.spans], ["hourly_pass"])
         self.assertIs(captured["telemetry"], telemetry)
+        for value in (captured["running_receipt"], completed_receipt, result):
+            self.assertEqual(value["trace_id"], "1" * 32)
+            self.assertEqual(value["span_id"], "2" * 16)
     def test_default_pre_submit_runner_is_the_pinned_browser_use_adapter(self):
         source = (
             Path(__file__).parents[1] / "job_search_loop" / "browser_worker.py"
