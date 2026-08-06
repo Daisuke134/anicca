@@ -143,6 +143,14 @@ The closed adapter and its contract tests total 258 lines. Splitting readback fr
 
 **Completion:** Calendar-eligible Connpass candidates become an immutable, content-addressed, provenance-checked provider event inventory that preserves event ref, canonical URL, time, venue, and source handoff lineage without pretending to be Luma. Calendar sync and the write pipeline accept Luma or this verified common inventory only.
 
+The slice spans seven files because one new SSOT contract must be produced by runtime and consumed at both independent write gates (pipeline and Calendar); tests and constant-suite registration cover those three boundaries. Production changes outside the new module total 23 lines.
+
+- [x] Module-not-found REDを確認。
+- [x] Immutable/content-addressed Connpass inventory、handoff/coverage provenance、runtime productionを実装。
+- [x] Calendar syncとwrite pipelineをLuma-or-verified-provider inventoryへ拡張。
+- [x] Focused 46/46、pretest 12/12、constant outbound suite 348/348 GREEN。
+- [x] Master specへ進捗137を記録しcommit/push。
+
 ## Task 4B2B: Connpass Job and Evidence Receipt
 
 **Completion:** A Connpass-specific deterministic runtime job, effect key, adapter execution/reconciliation, and provider evidence store produce the same E1/E2/E3 verified outbound receipt contract without Luma refs or paths.

@@ -2972,6 +2972,14 @@ page text、cookie、session、identityをresultへ返さない。module不在RE
 失敗0件。これはadapter単体であり外部submitはまだ行っていない。次はTask 4B2でCalendar-eligible Connpass candidateをcommon write/evidence
 pipelineへ接続し、Task 4B3でConnector自身の実browser submitとpromotionを行う。
 
+O1B-25進捗137（Task 4B2A common verified provider event inventory / RED→GREEN）: `event-provider-date-inventory.js`を
+追加した。verified Connpass handoffとrolling coverageのopen date、Calendar-eligible candidateのin-process identityを全て照合し、
+event ref、canonical URL、start/end、venue、source handoff IDをimmutable/content-addressed inventoryへ投影する。API key、page text、identity、
+browser stateは含めない。runtimeはeligible候補が1件以上の時だけこのinventoryを生成し、0件なら次providerへ進む。Calendar syncと
+native write pipelineのinventory gateは、verified Luma inventoryまたはこのverified provider inventoryだけを受ける。ConnpassをLuma refへ
+偽装しない。module不在RED後、inventory/runtime/Calendar/write focused 46/46、pretest 12/12、常設outbound suite 348/348 GREEN、失敗0件。
+次はTask 4B2BでConnpass deterministic job、effect key、execution/reconciliation、provider screenshot evidence storeを追加する。
+
 現在と完成形:
 
 ```mermaid

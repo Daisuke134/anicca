@@ -23,6 +23,7 @@ const {
   deliverConnectorCoverageTelegram,
 } = require("./connector-coverage-telegram.js");
 const { isVerifiedLumaDateInventory } = require("./luma-date-inventory.js");
+const { isVerifiedEventProviderDateInventory } = require("./event-provider-date-inventory.js");
 const { isVerifiedRollingEventCoverage } = require("./rolling-event-coverage.js");
 const { isVerifiedGoogleCalendarBusyInventory } = require("./google-calendar-busy-inventory.js");
 const { isVerifiedEventGoalSerendipity } = require("./event-goal-serendipity.js");
@@ -31,7 +32,7 @@ const { verifyLumaConfirmationMessage } = require("./luma-confirmation-mail.js")
 const { createLumaGuestBinding } = require("./luma-ticket-qr.js");
 const { deliverConnectorTicket } = require("./connector-ticket-telegram.js");
 
-const EVENT_REF = /^luma-event:\/\/event\/[A-Za-z0-9_-]+$/;
+const EVENT_REF = /^(?:luma-event:\/\/event\/[A-Za-z0-9_-]+|connpass-event:\/\/event\/[1-9][0-9]*)$/;
 const TENANT = /^[a-z0-9][a-z0-9._-]{0,199}$/;
 const POSITIVE_REF = /^[^\x00-\x1f\x7f]{1,1024}$/;
 
@@ -248,7 +249,9 @@ function selectedContext(input) {
 }
 
 function assertContext(context, deps) {
-  const verifyDateInventory = factory(deps, "isVerifiedLumaDateInventory", isVerifiedLumaDateInventory);
+  const verifyDateInventory = typeof deps.isVerifiedLumaDateInventory === "function"
+    ? deps.isVerifiedLumaDateInventory
+    : (value) => isVerifiedLumaDateInventory(value) || isVerifiedEventProviderDateInventory(value);
   const verifyCoverage = factory(deps, "isVerifiedRollingEventCoverage", isVerifiedRollingEventCoverage);
   const verifyBusy = factory(deps, "isVerifiedGoogleCalendarBusyInventory", isVerifiedGoogleCalendarBusyInventory);
   if (!verifyDateInventory(context.dateInventory) || !verifyCoverage(context.currentCoverage) || !verifyBusy(context.busyInventory)) {
