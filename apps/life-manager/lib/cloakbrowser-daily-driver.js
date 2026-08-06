@@ -83,6 +83,7 @@ function createCloakBrowserDailyDriver(options = {}) {
   const connectOverCDP = options.connectOverCDP;
   const resolveEndpoint = options.resolveEndpoint || (async () => endpoint);
   const tabOwner = options.tabOwner || null;
+  const createTargetOwnership = options.createTargetOwnership || null;
   const tabOwnerReceiptPath = options.tabOwnerReceiptPath;
   if (endpoint !== DAILY_DRIVER_CDP) {
     throw new Error("CloakBrowser daily-driver endpoint invalid");
@@ -93,12 +94,16 @@ function createCloakBrowserDailyDriver(options = {}) {
   if (typeof resolveEndpoint !== "function") {
     throw new Error("CloakBrowser daily-driver resolver unavailable");
   }
+  if (createTargetOwnership && typeof createTargetOwnership !== "function") {
+    throw new Error("Connector target ownership unavailable");
+  }
   if (tabOwner && (
     typeof tabOwner.captureBaseline !== "function"
     || typeof tabOwner.claim !== "function"
   )) throw new Error("Connector tab owner unavailable");
 
   let browserPromise = null;
+  let targetOwnershipPromise = null;
   async function liveBrowser(connectionEndpoint) {
     if (browserPromise) {
       const current = await browserPromise;
@@ -110,6 +115,28 @@ function createCloakBrowserDailyDriver(options = {}) {
       throw error;
     });
     return browserPromise;
+  }
+
+  async function targetOwnership(browser) {
+    if (!createTargetOwnership) return null;
+    if (!targetOwnershipPromise) {
+      targetOwnershipPromise = Promise.resolve(createTargetOwnership(browser)).then((rail) => {
+        if (
+          !rail || typeof rail !== "object"
+          || !rail.controller || typeof rail.controller.create !== "function"
+          || typeof rail.controller.close !== "function"
+          || !rail.owner || typeof rail.owner.claimExact !== "function"
+          || typeof rail.owner.heartbeat !== "function"
+          || typeof rail.owner.probe !== "function"
+          || typeof rail.owner.release !== "function"
+        ) throw new Error("Connector target ownership unavailable");
+        return rail;
+      }).catch((error) => {
+        targetOwnershipPromise = null;
+        throw error;
+      });
+    }
+    return targetOwnershipPromise;
   }
 
   return Object.freeze({
@@ -128,6 +155,37 @@ function createCloakBrowserDailyDriver(options = {}) {
       }
       const context = contexts[0];
       const existingPages = typeof context.pages === "function" ? context.pages() : [];
+      const ownership = await targetOwnership(browser);
+      if (ownership) {
+        const target = await ownership.controller.create();
+        let receipt = null;
+        try {
+          receipt = await ownership.owner.claimExact({
+            canonicalUrl: url,
+            targetId: target.target_id,
+            pageWebsocket: target.page_websocket,
+            receiptPath: tabOwnerReceiptPath,
+          });
+          if (await ownership.owner.probe(receipt) !== true) {
+            throw new Error("Connector owned target renderer unavailable");
+          }
+          await ownership.owner.heartbeat(receipt);
+          await target.page.goto(url, {
+            waitUntil: "domcontentloaded",
+            timeout: 30_000,
+          });
+          const result = await task(target.page, Object.freeze({
+            endpoint,
+            existing_page_count: Array.isArray(existingPages) ? existingPages.length : 0,
+            tab_owner_receipt: receipt,
+          }));
+          await ownership.owner.heartbeat(receipt);
+          return result;
+        } finally {
+          if (receipt) await ownership.owner.release(receipt);
+          else await ownership.controller.close(target.target_id);
+        }
+      }
       const baselineTargetIds = tabOwner ? await tabOwner.captureBaseline() : null;
       if (typeof context.newPage !== "function") {
         throw new Error("CloakBrowser shared context unavailable");

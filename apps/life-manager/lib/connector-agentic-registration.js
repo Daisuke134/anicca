@@ -11,6 +11,7 @@ function verifiedTabOwnerReceipt(value, canonicalUrl) {
     || value.schema_version !== 1
     || value.endpoint !== "http://127.0.0.1:9222"
     || typeof value.owner_token !== "string" || value.owner_token.length < 8
+    || !Number.isInteger(value.generation) || value.generation < 1
     || typeof value.target_id !== "string" || value.target_id.length < 1
     || value.canonical_url !== canonicalUrl
     || !Array.isArray(value.baseline_target_ids)

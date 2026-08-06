@@ -258,6 +258,11 @@ test("the native runtime composes one shared daily driver, all-calendar gog, and
     "busy-calendar",
     "continuation",
   ]);
+  const dailyDriverInput = input.calls.find(([name]) => name === "create-daily-driver")[1];
+  assert.equal(
+    dailyDriverInput.targetLeaseLedgerPath,
+    "/tmp/connector-native-runtime-evidence/target-leases.json",
+  );
   assert.equal(input.calls[0][1].endpoint, DAILY_DRIVER_CDP);
   assert.equal(input.calls[1][1].dailyDriver, input.calls[4][1].dailyDriver);
   assert.equal(input.calls[7][2].timeMin, "2026-08-01T15:00:00.000Z");

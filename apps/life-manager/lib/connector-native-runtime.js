@@ -3,6 +3,8 @@
 const path = require("node:path");
 const { DAILY_DRIVER_CDP, createCloakBrowserDailyDriver } = require("./cloakbrowser-daily-driver.js");
 const { createConnectorTabOwner } = require("./connector-tab-owner.js");
+const { createConnectorTargetLease } = require("./connector-target-lease.js");
+const { createConnectorBrowserTargetController } = require("./connector-browser-target-controller.js");
 const { createLumaDailyDriverAuth } = require("./luma-daily-driver-auth.js");
 const { createGogLumaCodeReader } = require("./gog-luma-code-reader.js");
 const { createGogLumaConfirmationReader } = require("./gog-luma-confirmation-reader.js");
@@ -116,7 +118,24 @@ function defaultCreateDailyDriver(options = {}) {
   return createCloakBrowserDailyDriver({
     endpoint: DAILY_DRIVER_CDP,
     connectOverCDP,
-    tabOwner: createConnectorTabOwner({ endpoint: DAILY_DRIVER_CDP }),
+    createTargetOwnership(browser) {
+      const controller = createConnectorBrowserTargetController({
+        browser,
+        endpoint: DAILY_DRIVER_CDP,
+      });
+      const targetLease = createConnectorTargetLease({
+        ledgerPath: absoluteFilePath(options.targetLeaseLedgerPath),
+        probeTarget: (pageWebsocket) => controller.probe(pageWebsocket),
+        closeTarget: (targetId) => controller.close(targetId),
+      });
+      return Object.freeze({
+        controller,
+        owner: createConnectorTabOwner({
+          endpoint: DAILY_DRIVER_CDP,
+          targetLease,
+        }),
+      });
+    },
     tabOwnerReceiptPath: options.tabOwnerReceiptPath,
   });
 }
@@ -225,6 +244,7 @@ async function runNativeConnectorPass(input = {}) {
       endpoint: DAILY_DRIVER_CDP,
       connectOverCDP: deps.connectOverCDP,
       tabOwnerReceiptPath: path.join(evidenceDir, "tab-owner.json"),
+      targetLeaseLedgerPath: path.join(evidenceDir, "target-leases.json"),
     });
     if (!dailyDriver || typeof dailyDriver.withLumaPage !== "function") unavailable();
     const auth = createAuth({
