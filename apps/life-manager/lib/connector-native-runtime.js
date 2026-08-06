@@ -288,8 +288,8 @@ async function runNativeConnectorPass(input = {}) {
         homeLocation: requiredText(config.homeLocation),
       });
       const policy = await createSpendPolicy({ tenantId, limits: profile.spend_policy && profile.spend_policy.limits });
-      let selected = null;
-      for (const judgmentDay of judgmentDays) {
+      let selected = false;
+      judgmentLoop: for (const judgmentDay of judgmentDays) {
         failureCode = "CONNECTOR_NATIVE_CALENDAR_GATE_FAILED";
         const calendarGate = await gateDateCalendar(
           dateInventory, busyInventory, judgmentDay.date, requiredText(config.homeLocation), routeMinutes,
@@ -312,55 +312,52 @@ async function runNativeConnectorPass(input = {}) {
         const orderedCandidates = spendSequence.ordered_candidates.filter(
           (candidate) => !suppressedEventRefs.has(candidate.event_ref),
         );
-        if (orderedCandidates.length > 0) {
-          selected = { judgmentDay, goalDecision, spendSequence, orderedCandidates };
-          break;
+        if (orderedCandidates.length === 0) continue;
+        selected = true;
+        failureCode = "CONNECTOR_NATIVE_WRITE_FAILED";
+        for (const chosen of orderedCandidates) {
+          const selectedRef = chosen.event_ref;
+          const selectedEvent = judgmentDay.events.find((event) => event && event.event_ref === selectedRef);
+          if (!selectedEvent || chosen.canonical_url !== selectedEvent.canonical_url) unavailable();
+          write = await runNativeWrite({
+            application: {
+              tenantId,
+              eventRef: selectedRef,
+              eventUrl: selectedEvent.canonical_url,
+              eventStartIso: selectedEvent.starts_at,
+              identityRef: profile.identity_ref,
+              browserProfileRef: profile.browser_profile_ref,
+              calendarRef: profile.calendar_ref,
+            },
+            profile,
+            dateInventory,
+            currentCoverage: coverage,
+            busyInventory,
+            goalDecision,
+            calendar,
+            calendarId: requiredText(config.calendarId),
+            telegramTarget: requiredText(config.telegramTarget),
+            calendarCoverageUrl: requiredText(config.calendarCoverageUrl),
+            now,
+          }, {
+            provider: pack.provider,
+            readExternalReceipt: evidenceStore.readExternalReceipt,
+            readArtifact: evidenceStore.readArtifact,
+            fetchImpl: globalThis.fetch,
+            ...(deps.writeDependencies || {}),
+          });
+          const candidateOutcome = classifyConnectorCandidateOutcome(write);
+          candidateAttempts.push(Object.freeze({
+            event_ref: candidateOutcome.event_ref,
+            outcome: candidateOutcome.classification,
+            safe_reason: candidateOutcome.error_code || write.outcome,
+            observed_at: now,
+            retry_after: null,
+          }));
+          if (candidateOutcome.classification !== "known_no_effect") break judgmentLoop;
         }
       }
       if (!selected) unavailable();
-      const { judgmentDay, goalDecision, orderedCandidates } = selected;
-      failureCode = "CONNECTOR_NATIVE_WRITE_FAILED";
-      for (const chosen of orderedCandidates) {
-        const selectedRef = chosen.event_ref;
-        const selectedEvent = judgmentDay.events.find((event) => event && event.event_ref === selectedRef);
-        if (!selectedEvent || chosen.canonical_url !== selectedEvent.canonical_url) unavailable();
-        write = await runNativeWrite({
-          application: {
-            tenantId,
-            eventRef: selectedRef,
-            eventUrl: selectedEvent.canonical_url,
-            eventStartIso: selectedEvent.starts_at,
-            identityRef: profile.identity_ref,
-            browserProfileRef: profile.browser_profile_ref,
-            calendarRef: profile.calendar_ref,
-          },
-          profile,
-          dateInventory,
-          currentCoverage: coverage,
-          busyInventory,
-          goalDecision,
-          calendar,
-          calendarId: requiredText(config.calendarId),
-          telegramTarget: requiredText(config.telegramTarget),
-          calendarCoverageUrl: requiredText(config.calendarCoverageUrl),
-          now,
-        }, {
-          provider: pack.provider,
-          readExternalReceipt: evidenceStore.readExternalReceipt,
-          readArtifact: evidenceStore.readArtifact,
-          fetchImpl: globalThis.fetch,
-          ...(deps.writeDependencies || {}),
-        });
-        const candidateOutcome = classifyConnectorCandidateOutcome(write);
-        candidateAttempts.push(Object.freeze({
-          event_ref: candidateOutcome.event_ref,
-          outcome: candidateOutcome.classification,
-          safe_reason: candidateOutcome.error_code || write.outcome,
-          observed_at: now,
-          retry_after: null,
-        }));
-        if (candidateOutcome.classification !== "known_no_effect") break;
-      }
     }
 
     let candidate = null;
