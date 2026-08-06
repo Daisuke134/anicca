@@ -35,6 +35,11 @@
 
 **Completion:** A mode-0600 atomic cursor stores only date, provider, candidate index, generation, and observed time. Exact transitions advance candidate, then provider, then date; unknown effect cannot advance. Forged/stale cursors and provider-order drift fail closed.
 
+- [x] Module-not-found REDを確認。
+- [x] Forward-only cursor、0600 atomic store、forgery/order-drift rejectionを実装。
+- [x] Focused 6/6、pretest 12/12、outbound 343/343 GREEN。
+- [x] Master specへ進捗130を記録しcommit/push。
+
 ## Task 2B: Same-Pass Handoff Runtime Wiring
 
 **Files:**

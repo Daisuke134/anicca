@@ -2907,6 +2907,14 @@ credential、browser endpoint、個人情報を持たない。Connpass promotion
 Calendar evidence ref、Telegram card/photo positive IDの全てが揃わなければ拒否する。module不在RED後、focused 3/3、pretest 12/12、
 常設登録後のConnector/outbound 340/340 GREEN、失敗0件。次はTask 2でdurable provider cursorとsame-pass handoffをnative runtimeへ接続する。
 
+O1B-25進捗130（multi-source Task 2A durable provider cursor / RED→GREEN）: `event-provider-cursor.js`を追加した。
+cursorはexactly `schema_version / registry_id / date / provider / candidate_index / generation / observed_at`だけを持ち、event名、URL、
+本文、identity、profileを保存しない。`known_no_effect`は同providerの次candidate、`provider_exhausted`は固定順の次providerへforward-onlyに
+進み、`unknown_effect`、末尾providerからの黙ったwrap、registry drift、stale/forged cursorを拒否する。mode 0600のatomic JSON storeは
+一時fileをfsync後renameし、完全なcursorだけを再読出しする。module不在RED後、registry込みfocused 6/6、pretest 12/12、
+常設登録後のConnector/outbound 343/343 GREEN、失敗0件。これはcursor contract/storeだけであり、native runtimeのsame-pass handoffは
+Task 2Bとして未完である。
+
 現在と完成形:
 
 ```mermaid
