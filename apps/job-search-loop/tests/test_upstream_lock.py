@@ -95,6 +95,16 @@ class UpstreamLockTests(unittest.TestCase):
                     "license": "MIT",
                     "owner_task": "L-49K5B3c",
                 },
+                {
+                    "local_path": "job_search_loop/ats_page_classifier.py",
+                    "upstream_contract_paths": [
+                        "src/applypilot/apply/prompt.py",
+                        "src/applypilot/apply/launcher.py",
+                    ],
+                    "copied_source_lines": 0,
+                    "license": "MIT",
+                    "owner_task": "L-49K5C1",
+                },
             ],
         )
 
