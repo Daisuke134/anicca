@@ -971,10 +971,12 @@ test("rendered native templates contain only canonical launch paths", () => {
       path.join(outputDir, "ai.anicca.life-manager-connector-healer-shadow.plist"),
       "utf8",
     );
+    const healerRunner = fs.readFileSync(path.join(REPO_ROOT, "skills/connector/healer-shadow.sh"), "utf8");
     assert.equal(nativePass.includes(path.join(REPO_ROOT, "skills/connector/run.sh")), true);
     assert.equal(healthcheck.includes(path.join(REPO_ROOT, "skills/connector/healthcheck.sh")), true);
     assert.equal(healer.includes(path.join(REPO_ROOT, "skills/connector/healer-shadow.sh")), true);
     assert.match(healer, /<key>StartInterval<\/key><integer>900<\/integer>/);
+    assert.match(healerRunner, /\/opt\/homebrew\/bin:\/usr\/local\/bin:\/usr\/bin/);
     assert.doesNotMatch(`${nativePass}\n${healthcheck}\n${healer}`, /docker|host\.docker\.internal|connector-host-bridge|profitable-claude|:9223/i);
   } finally {
     fs.rmSync(directory, { recursive: true, force: true });
