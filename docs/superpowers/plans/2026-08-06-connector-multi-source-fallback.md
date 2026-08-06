@@ -123,9 +123,22 @@ This slice changes 103 lines across the four declared files because both the liv
 - [x] Ownership focused 22/22、pretest 12/12、outbound 348/348 GREEN。
 - [x] Master specへdirect authorization premiseと進捗135を記録しcommit/push。
 
-## Task 4B: Connpass Authenticated Registration Adapter
+## Task 4B1: Connpass Parent Readback and Submit Adapter
 
-**Completion:** One parent-owned Connector target performs real registration, parent marker readback, PNG, admission ticket/QR or equivalent receipt, Calendar insertion, and Telegram card/photo. Only then promote Connpass registration capabilities to active.
+**Files:**
+- Create: `apps/life-manager/lib/connpass-browser-provider.js`
+- Create: `apps/life-manager/lib/connpass-browser-provider.test.js`
+- Modify: `apps/life-manager/package.json`
+
+**Completion:** The adapter uses only `dailyDriver.withEventPage("connpass", ...)`, recognizes absent/login-required/registered/pending markers by parent readback, performs only exact approved registration controls, distinguishes known-no-effect from unknown effect, and captures a full-page PNG only after parent readback proves registration or pending approval.
+
+## Task 4B2: Connpass Runtime and Evidence Pipeline Wiring
+
+**Completion:** Calendar-eligible Connpass candidates enter the common write pipeline with provider-specific readback, screenshot, admission receipt, Calendar, and Telegram lineage. Failure advances candidate/provider without stopping the pass; unknown effect reconciles before retry.
+
+## Task 4B3: Connpass Live Submit and Promotion
+
+**Completion:** The existing Connector launchd/browser account performs one real approved-site registration. Parent marker readback, PNG SHA, admission ticket/QR or equivalent receipt, Calendar readback, Telegram card/photo IDs share one event lineage; only then promote Connpass write capabilities to active.
 
 ## Task 5: Remaining Providers One at a Time
 
