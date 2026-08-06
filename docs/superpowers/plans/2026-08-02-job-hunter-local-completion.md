@@ -2110,11 +2110,25 @@ this spec update → commit/push → Telegram milestone before the next item sta
     application was claimed or reported. A `TargetClosedError` interrupted the
     remaining 14 and is retained under browser self-healing task `L-49K0A1I`.
     Telegram still reused message ID 7173 and remains owned by `L-49K0A1J`.
-- [ ] **L-49K0A1H** — Repair privacy classification without weakening real secret
+- [x] **L-49K0A1H** — Repair privacy classification without weakening real secret
   detection. Public job/location terms such as Tokyo and Japan must not become a
   profile leak merely because they equal mailing-address components; exact private
   contact values in model transcripts must still force exit 76. Prove both positive
   and negative fixtures, then rerun the resident pipeline to exit zero.
+  - Receipt: the scanner excludes only mailing-address `city`, `state_region`, and
+    `country` from transcript matching. Application email, phone, date of birth,
+    address line, and postal code remain fail-closed. The public Tokyo/Japan fixture
+    passes while exact private address-line/postal-code evidence still raises
+    `ProfileLeakError`; focused privacy tests pass 4/4 and the complete Job Hunter
+    suite passes 440/440. Immutable release
+    `5d238816dc09aac220ec471c8e9a2999c0401b90` (archive SHA-256
+    `fe28c4ed3a0867b0911e0ed38a74efe8bdfed151a0d7aadaf324bc8ea3d0401a`)
+    is active with previous release `c1e7cafa2065c455e7aaed4a3f4228cb8c671751`
+    rollback-ready. Existing launchd run `daily-20260806-111125`, run count 32,
+    resident worker PID 15329, lease `20366521...eb4eb`, and fence 95 exited zero.
+    Both mode-0600 privacy receipts are `clean`, scanned five still-sensitive values,
+    and contain zero leaked fields. The run attempted three ATS forms, clicked Submit
+    zero times, and delivered daily Telegram report message ID `7377`.
 - [ ] **L-49K0A1I** — Make the dedicated CloakBrowser owner prove a real Playwright
   or Browser Use CDP attach, not HTTP readiness alone. On initialization timeout it
   restarts only `ai.anicca.job-search-browser`, re-resolves `DevToolsActivePort`,
@@ -2145,32 +2159,30 @@ Completed foundations are `L-49K0A1G`, `L-49K0B`, `L-49K0C`, and `L-49K0C1`.
 The active cursor is the first item below; do not start a later item merely because
 it is easier to demonstrate:
 
-1. `L-49K0A1H` — remove the false public-location privacy failure while retaining
-   exact private-contact leak detection, then prove the resident pass exits cleanly.
-2. `L-49K0A1I` — make browser readiness require a real CDP attach and self-heal one
+1. `L-49K0A1I` — make browser readiness require a real CDP attach and self-heal one
    initialization failure through the existing browser LaunchAgent.
-3. `L-49K0A1J` — issue one fresh deduplicated Telegram event and provider message ID
+2. `L-49K0A1J` — issue one fresh deduplicated Telegram event and provider message ID
    for each materially changed resident run; never reuse message ID `7173` as proof.
-4. `L-49K0A2` — finish the already pinned Temporal slice by proving an isolated
+3. `L-49K0A2` — finish the already pinned Temporal slice by proving an isolated
    worker restart produces exactly one durable activity effect.
-5. `L-49K0B1` — finish the Browser Use/Temporal reuse-adapt-supersede inventory and
+4. `L-49K0B1` — finish the Browser Use/Temporal reuse-adapt-supersede inventory and
    bind each accepted component to a local authority and parity test.
-6. `L-49K0D1` — replace the remaining prompt-owned Playwright execution contract
+5. `L-49K0D1` — replace the remaining prompt-owned Playwright execution contract
    with the pinned Browser Use adapter on the dedicated CloakBrowser identity.
-7. `L-49K0C2` — prove a blocked ATS route cannot end the resident hourly pass and
+6. `L-49K0C2` — prove a blocked ATS route cannot end the resident hourly pass and
    that all remaining eligible routes/roles continue exactly once.
-8. `L-49K0D`, then `L-49K0D2` — build tracker/outcome/digest projections, then move
+7. `L-49K0D`, then `L-49K0D2` — build tracker/outcome/digest projections, then move
    all four resident lanes to restart-safe, idempotent Temporal workflows.
-9. `L-49K0E`, `L-49K`, `L-49`, `L-49A`, `L-50`, `L-51`, `L-52` — prove resident
+8. `L-49K0E`, `L-49K`, `L-49`, `L-49A`, `L-50`, `L-51`, `L-52` — prove resident
    actor provenance, bounded owner handoff where required, and authoritative real
    Ashby plus Workday receipts and screenshots in Telegram.
-10. `L-53` through `L-65` — prove Gmail, Calendar, interview preparation/debrief,
+9. `L-53` through `L-65` — prove Gmail, Calendar, interview preparation/debrief,
     conversion metrics, one-variable learning, rollback, Telegram, and simultaneous
     health of all resident lanes.
-11. `L-66` through `L-73` — operate the Dais campaign through fifty confirmed
+10. `L-66` through `L-73` — operate the Dais campaign through fifty confirmed
     applications, a verified interview, a qualifying written offer, comparison,
     negotiation brief, and owner decision.
-12. `W-01` through `W-30` — only after local completion, build and verify the
+11. `W-01` through `W-30` — only after local completion, build and verify the
     tenant-isolated Web product.
 - [x] **L-49K0B** — Inventory every `career-ops` v1.25.0 capability as `reuse`,
   `adapt`, or `supersede`, including ATS scan providers, liveness, repost/dedup,
