@@ -54,6 +54,25 @@ APPLICATION_ARTIFACT_KINDS = frozenset(
     }
 )
 APPLICATION_OWNERS = frozenset({"agent", "dais_manual", "recruiter"})
+RUN_74_APPLICATION_ID = (
+    "fcd5aea271106d3cac08e1dfe42645d29275a4fc5415429bead7dbf485968081"
+)
+OUTREACH_TRUTH_CORRECTION_REASON = "outreach_only_delivery_correction"
+
+
+def is_run_74_outreach_truth_correction(
+    application_id: str, payload: Mapping[str, Any]
+) -> bool:
+    return (
+        application_id == RUN_74_APPLICATION_ID
+        and payload.get("reason") == OUTREACH_TRUTH_CORRECTION_REASON
+        and all(
+            isinstance(payload.get(key), str) and payload[key]
+            for key in ("route_id", "provider_id", "evidence_sha256")
+        )
+    )
+
+
 FOUNDER_OUTREACH_TRANSITIONS = {
     "researched": frozenset({"contribution_ready", "proposal_ready", "closed"}),
     "contribution_ready": frozenset({"outreach_sent", "closed"}),
@@ -2014,6 +2033,17 @@ class Ledger:
             FROM funnel_outcomes AS outcomes
             JOIN application_strategy_assignments AS assignments
               ON assignments.application_id = outcomes.application_id
+            WHERE NOT (
+              outcomes.funnel_stage = 'confirmed_application'
+              AND EXISTS (
+                SELECT 1
+                FROM application_routes AS routes
+                WHERE routes.application_id = outcomes.application_id
+                  AND routes.delivery_state = 'delivered'
+                  AND routes.recipient_acceptance = 'outreach_only'
+                  AND routes.delivery_evidence_sha256 = outcomes.evidence_sha256
+              )
+            )
             GROUP BY assignments.strategy_generation_id, outcomes.funnel_stage
             """
         )
@@ -2331,6 +2361,16 @@ class Ledger:
             )
             if first_state != "discovered" and not external_origin:
                 raise FenceError("application event chain lacks a valid origin")
+            correction_route_ids = {
+                str(payload["route_id"])
+                for event in rows
+                if str(event["from_state"]) == "submitted"
+                and str(event["to_state"]) == "submit_unknown"
+                and is_run_74_outreach_truth_correction(
+                    str(application["id"]),
+                    payload := json.loads(str(event["payload_json"])),
+                )
+            }
             previous = first_state
             ever_submitted = first_state == "submitted"
             submission_attempted = first_state in {"submitted", "submit_unknown"}
@@ -2340,10 +2380,20 @@ class Ledger:
                     raise FenceError("application event chain is discontinuous")
                 if previous == "submit_unknown" and to_state == "submitted":
                     payload = json.loads(str(event["payload_json"]))
-                    if not all(payload.get(key) for key in (
+                    has_gmail_confirmation = all(payload.get(key) for key in (
                         "message_id", "thread_id", "evidence_sha256", "received_at"
-                    )):
+                    ))
+                    if (
+                        not has_gmail_confirmation
+                        and payload.get("route_id") not in correction_route_ids
+                    ):
                         raise FenceError("late confirmation event lacks evidence")
+                elif previous == "submitted" and to_state == "submit_unknown":
+                    payload = json.loads(str(event["payload_json"]))
+                    if not is_run_74_outreach_truth_correction(
+                        str(application["id"]), payload
+                    ):
+                        raise FenceError("submitted application lacks valid correction")
                 else:
                     validate_transition(previous, to_state)
                 previous = to_state
@@ -2354,8 +2404,23 @@ class Ledger:
             positive_stages = {
                 str(row["funnel_stage"])
                 for row in self.connection.execute(
-                    "SELECT funnel_stage FROM funnel_outcomes "
-                    "WHERE application_id = ? AND disposition = 'positive'",
+                    """
+                    SELECT outcomes.funnel_stage
+                    FROM funnel_outcomes AS outcomes
+                    WHERE outcomes.application_id = ?
+                      AND outcomes.disposition = 'positive'
+                      AND NOT (
+                        outcomes.funnel_stage = 'confirmed_application'
+                        AND EXISTS (
+                          SELECT 1
+                          FROM application_routes AS routes
+                          WHERE routes.application_id = outcomes.application_id
+                            AND routes.delivery_state = 'delivered'
+                            AND routes.recipient_acceptance = 'outreach_only'
+                            AND routes.delivery_evidence_sha256 = outcomes.evidence_sha256
+                        )
+                      )
+                    """,
                     (application["id"],),
                 ).fetchall()
             }
@@ -3415,6 +3480,8 @@ class Ledger:
         provider_id: str,
         evidence_sha256: str,
     ) -> None:
+        if str(row["recipient_acceptance"]) == "outreach_only":
+            return
         application_id = str(row["application_id"])
         route_id = str(row["route_id"])
         current = self.current_state(application_id)
@@ -3499,7 +3566,73 @@ class Ledger:
                     provider_id=str(row["provider_id"]),
                     evidence_sha256=str(row["delivery_evidence_sha256"]),
                 )
-        return {"delivered_route_count": len(rows)}
+            corrected = self._reconcile_run_74_outreach_truth_in_transaction()
+        return {
+            "delivered_route_count": len(rows),
+            "outreach_correction_count": int(corrected),
+        }
+
+    def _reconcile_run_74_outreach_truth_in_transaction(self) -> bool:
+        route = self.connection.execute(
+            """
+            SELECT *
+            FROM application_routes
+            WHERE application_id = ?
+              AND route_kind = 'recruiting_outreach'
+              AND delivery_state = 'delivered'
+              AND recipient_acceptance = 'outreach_only'
+            ORDER BY updated_at, route_id
+            LIMIT 1
+            """,
+            (RUN_74_APPLICATION_ID,),
+        ).fetchone()
+        if route is None or self.current_state(RUN_74_APPLICATION_ID) != "submitted":
+            return False
+        event = self.connection.execute(
+            """
+            SELECT from_state, to_state, payload_json
+            FROM events
+            WHERE application_id = ?
+            ORDER BY rowid DESC
+            LIMIT 1
+            """,
+            (RUN_74_APPLICATION_ID,),
+        ).fetchone()
+        if event is None:
+            return False
+        payload = json.loads(str(event["payload_json"]))
+        if (
+            str(event["from_state"]) != "submit_unknown"
+            or str(event["to_state"]) != "submitted"
+            or payload.get("route_id") != str(route["route_id"])
+        ):
+            return False
+        correction = {
+            "route_id": str(route["route_id"]),
+            "provider_id": str(route["provider_id"]),
+            "evidence_sha256": str(route["delivery_evidence_sha256"]),
+            "reason": OUTREACH_TRUTH_CORRECTION_REASON,
+        }
+        self._append_event(
+            RUN_74_APPLICATION_ID,
+            "submitted",
+            "submit_unknown",
+            correction,
+        )
+        self.connection.execute(
+            "UPDATE applications SET current_state = 'submit_unknown' WHERE id = ?",
+            (RUN_74_APPLICATION_ID,),
+        )
+        self.connection.execute(
+            """
+            UPDATE daily_slots
+            SET status = 'submit_unknown'
+            WHERE application_id = ? AND status = 'submitted'
+            """,
+            (RUN_74_APPLICATION_ID,),
+        )
+        self._rebuild_strategy_outcome_projection_in_transaction()
+        return True
 
     def record_application_route_reply(
         self,

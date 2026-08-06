@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any
 
 from .browser_owner import probe_cdp
+from .ledger import is_run_74_outreach_truth_correction
 from .release_activation import ActivationError, LANES, _link_commit, _validate_release
 from .state import InvalidTransition, validate_transition
 
@@ -373,6 +374,21 @@ def _valid_event_projection(connection: sqlite3.Connection) -> bool:
         )
         if previous != "discovered" and not external_origin:
             return False
+        correction_route_ids: set[str] = set()
+        for correction in events:
+            if (
+                str(correction["from_state"]) != "submitted"
+                or str(correction["to_state"]) != "submit_unknown"
+            ):
+                continue
+            try:
+                correction_payload = json.loads(str(correction["payload_json"]))
+            except (json.JSONDecodeError, TypeError):
+                return False
+            if is_run_74_outreach_truth_correction(
+                str(application["id"]), correction_payload
+            ):
+                correction_route_ids.add(str(correction_payload["route_id"]))
         for event in events[1:]:
             to_state = str(event["to_state"])
             if event["from_state"] != previous:
@@ -382,9 +398,18 @@ def _valid_event_projection(connection: sqlite3.Connection) -> bool:
             except (json.JSONDecodeError, TypeError):
                 return False
             if previous == "submit_unknown" and to_state == "submitted":
-                if not all(
+                has_gmail_confirmation = all(
                     payload.get(key)
                     for key in ("message_id", "thread_id", "evidence_sha256", "received_at")
+                )
+                if (
+                    not has_gmail_confirmation
+                    and payload.get("route_id") not in correction_route_ids
+                ):
+                    return False
+            elif previous == "submitted" and to_state == "submit_unknown":
+                if not is_run_74_outreach_truth_correction(
+                    str(application["id"]), payload
                 ):
                     return False
             else:
