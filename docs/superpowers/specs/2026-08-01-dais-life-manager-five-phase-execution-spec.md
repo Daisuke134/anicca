@@ -2773,6 +2773,30 @@ MCP current pageへbindして他tab toolをTerraへ公開しない、(c) agent-r
 禁止、(d) form openからsubmit/readback/screenshotまで同じsession IDをtrace、(e) parentがreadback後にMCPをdetach、
 (f) action途中のMCP crashは同candidate stateを再読込し、次candidate/providerを止めない。live E2Eはこの移行後に再実行する。
 
+O1B-25進捗119（CloakBrowser本体 + successful Gig rail差分監査 / 進捗118を訂正）: ConnectorはCloakBrowserを使っていないのではない。
+実runは既存CloakBrowser `:9222`へPlaywright CDPで接続し、CloakBrowser page上のLuma formまで到達している。CloakBrowser公式は
+Playwright/Puppeteer drop-in stealth Chromiumで、persistent contextとhumanized actionabilityを提供する。今回のform継続失敗はbrowser
+engineではなくConnector harnessの所有権と実行lifecycleである。Source: https://github.com/CloakHQ/CloakBrowser
+
+成功中Gigの実codeは、親が`Target.createTarget`でdefault authenticated contextへ専用tabを作り、`target_ownership.claim_target()`で
+ownerをdurable ledgerへ記録し、`target_id`と直接の`ws://.../devtools/page/<target>`を返す。別経路ではtaskごとのbrowser context、
+token、generation、heartbeat、renderer liveness probe、operation lockを持ち、agentにはそのpage WebSocket一つだけを渡す。
+agentはcontextをreleaseせず、親がagent終了後に同じtargetをreadbackしてcleanupする。Gigはbrowser endpointへ再接続して全pageを
+毎command探索する構成ではない。
+
+Connectorは親がPlaywright `context.newPage()`を作る一方、Terraへbrowser endpointとtarget receiptを文章で渡し、Terra自身が毎actionで
+inline Nodeを生成して`connectOverCDP()`、全page列挙、target再探索、`browser.close()`を繰り返す。つまりCloakBrowser binaryは同じでも、
+成功Gigのpage-scoped ownership rail、operation lock、one-session transaction、parent-owned cleanupをコピーしていなかった。
+
+進捗118の「Playwright MCPを第一選択」は撤回する。既にあるPlaywright CLI/MCPの追加は根因修正ではない。第一選択はGigの汎用browser
+foundation patternをConnector repositoryへcopy+tweakすることとする。ただしGigのcode/state/profile/launchd/`:9223`はread-onlyで、
+Connectorは自分の`:9222`、owner namespace、ledger、lock、evidenceを持つ。
+
+16B再補正TODO: (a) 親がCDP `Target.createTarget`でLuma event tabを作る、(b) Connector専用owner ledgerへtargetをclaim、
+(c) Terraへpage WebSocket一つとowner token/generationだけをtool capabilityとして渡す、(d) browser endpoint、tab一覧、inline Node、
+`browser.close()`、context/page releaseをTerraから除外、(e)一つのagent turnと一つのpage sessionでopen form→全field→submit→markerまで
+実行、(f)親が同じtargetで独立readback・screenshot後にtargetをclose/release、(g)renderer livenessとstale-owner GCをConnector自身が持つ。
+
 現在と完成形:
 
 ```mermaid
@@ -2835,9 +2859,9 @@ flowchart LR
 26. Mac再起動後のConnector、producer、consumer launchd、heartbeat、healthcheck、stale-loop self-healを実機検証する。
 27. canonical branchへ統合し、legacy bridge / Docker worker / 重複scheduleを退役する。
 
-### P0 残TODOの現在順序（進捗118を正本とする）
+### P0 残TODOの現在順序（進捗119を正本とする）
 
-1. Connector専用Playwright MCP sessionを`:9222`へ一度だけattachし、owner receiptの一tabだけをTerraへ公開する。inline Node、反復`connectOverCDP()`、Terra側`browser.close()`を廃止する（16B補正）。
+1. Gigの成功browser-foundation patternをConnector側へcopy+tweakする。親が`:9222` default contextにtargetを作成・claimし、page WebSocket一つだけをTerraへ渡し、同一turn後に親がreadback・close・releaseする。inline Node、全page探索、反復`connectOverCDP()`、Terra側`browser.close()`を廃止する（16B再補正）。
 2. 最新Connector launchdをkickstartし、loop主体のLuma実submitと親readbackを成立させる（16C）。
 3. PNG、Calendar ID/readback、Telegram card/photo IDを一つのlineage receiptへ結合する（16D、18）。
 4. Lumaが主催者公式siteへの追加登録を要求するeventで、trusted Gmail OTPと公式完了markerまで同じlineageで閉じる（17）。
