@@ -23,8 +23,8 @@ function dependencies(input) {
   if (!input || typeof input !== "object" || Array.isArray(input)) invalid();
   const required = [
     "now", "readCalendarGaps", "discoverCandidates", "runDirectAction",
-    "runAgentFallback", "readProviderState", "completeEvidence", "reportWake",
-    "recordAction",
+    "runCachedAction", "runAgentFallback", "readProviderState", "completeEvidence",
+    "saveRepairedActions", "reportWake", "recordAction",
   ];
   for (const name of required) if (typeof input[name] !== "function") invalid();
   if (
@@ -155,6 +155,22 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
         ));
 
         let operation;
+        let providerState = null;
+        let usedFallback = false;
+        try {
+          operation = await action("submit", "provider_cache", () => deps.runCachedAction({
+            provider,
+            candidate: selected,
+            page: owned.page,
+          }));
+        } catch {
+          operation = Object.freeze({ status: "failed", safe_reason: "cached_action_failed" });
+        }
+        if (operation && operation.status === "completed" && registered(operation.provider_state)) {
+          providerState = operation.provider_state;
+        }
+
+        if (!providerState) {
         try {
           operation = await action("submit", "provider_direct", () => deps.runDirectAction({
             provider,
@@ -176,28 +192,43 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
               maxSteps: settings.maxAgentSteps,
               expectedState: "registered_or_pending",
             }));
+            usedFallback = operation && operation.status === "completed";
           } catch {
             operation = Object.freeze({ status: "failed", safe_reason: "agent_action_failed" });
           }
         }
 
         if (operation && operation.status === "completed") {
-          const providerState = await action("readback", "provider_state", () => deps.readProviderState({
+          providerState = await action("readback", "provider_state", () => deps.readProviderState({
             provider,
             candidate: selected,
             page: owned.page,
           }));
-          if (registered(providerState)) {
-            const bundle = await deps.completeEvidence({
+        }
+        }
+
+        if (registered(providerState)) {
+          const repairedActions = usedFallback && operation && Array.isArray(operation.repaired_actions)
+            ? operation.repaired_actions : [];
+          if (repairedActions.length > 0) {
+            const saved = await deps.saveRepairedActions({
               provider,
               candidate: selected,
               page: owned.page,
               providerState,
-              repairedActions: operation.repaired_actions || [],
+              repairedActions,
             });
-            if (!bundle || bundle.status !== "applied_bundle" || !String(bundle.bundle_id || "")) invalid();
-            return finish("applied_bundle", "applied_bundle", bundle);
+            if (!saved || saved.status !== "saved") invalid();
           }
+          const bundle = await deps.completeEvidence({
+            provider,
+            candidate: selected,
+            page: owned.page,
+            providerState,
+            repairedActions,
+          });
+          if (!bundle || bundle.status !== "applied_bundle" || !String(bundle.bundle_id || "")) invalid();
+          return finish("applied_bundle", "applied_bundle", bundle);
         }
 
         consecutiveFailures += 1;
