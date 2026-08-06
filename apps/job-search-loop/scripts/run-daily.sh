@@ -147,90 +147,22 @@ chmod 600 "$EVIDENCE/prefilter-candidate-receipt.json"
   --evidence-dir "$EVIDENCE/ats-liveness" \
   --output "$EVIDENCE/ats-liveness-sweep.json" \
   --limit 100
-export ANICCA_BUDGET_SCOPE_ID="job-search-daily:${RUN_ID}:terra-plan"
-export ANICCA_PASS_TOKEN_BUDGET=65536
 TERRA_PLAN_EVIDENCE="$EVIDENCE/terra-plan"
-mkdir -p "$TERRA_PLAN_EVIDENCE"
-chmod 700 "$TERRA_PLAN_EVIDENCE"
-set +e
-"$JOB_SEARCH_PYTHON" "$JOB_SEARCH_RUNNER" \
-  --task-class composition-agent \
-  --prompt-stdin \
-  --schema "$JOB_SEARCH_APP_ROOT/schemas/terra-plan-result.v1.schema.json" \
-  --evidence-dir "$TERRA_PLAN_EVIDENCE" \
-  --task-label job-search-terra-plan \
-  --loop job-search \
-  --workdir "$JOB_SEARCH_REPO_ROOT" \
-  <"$JOB_SEARCH_APP_ROOT/prompts/terra-plan-pass.md" \
-  >"$EVIDENCE/terra-plan-runner.json"
-TERRA_PLAN_RC=$?
-set -e
-chmod 600 "$EVIDENCE/terra-plan-runner.json"
-TERRA_PLAN_AVAILABLE=1
-if [[ "$TERRA_PLAN_RC" -ne 0 ]]; then
-  if [[ "$TERRA_PLAN_RC" -eq 75 ]] \
-    && "$JOB_SEARCH_JQ" -e '.status == "budget_blocked"' \
-      "$EVIDENCE/terra-plan-runner.json" >/dev/null 2>&1; then
-    TERRA_PLAN_AVAILABLE=0
-  else
-    refresh_summary
-    exit "$TERRA_PLAN_RC"
-  fi
-fi
-export JOB_SEARCH_TERRA_PLAN_RESULT="$EVIDENCE/terra-plan-result.json"
-if [[ "$TERRA_PLAN_AVAILABLE" == "1" ]]; then
-  TERRA_PLAN_RESULT_PATH=$("$JOB_SEARCH_JQ" -er '.result_path' "$EVIDENCE/terra-plan-runner.json")
-  cp "$TERRA_PLAN_RESULT_PATH" "$JOB_SEARCH_TERRA_PLAN_RESULT"
-else
-  "$JOB_SEARCH_JQ" -n \
-    '{status:"blocked",dossiers:[],blocked:["daily_model_budget_exhausted"]}' \
-    >"$JOB_SEARCH_TERRA_PLAN_RESULT"
-fi
-chmod 600 "$JOB_SEARCH_TERRA_PLAN_RESULT"
-export JOB_SEARCH_HIGH_MODE=dream
-export ANICCA_BUDGET_SCOPE_ID="job-search-daily:${RUN_ID}:dream-high"
-export ANICCA_PASS_TOKEN_BUDGET=65536
 TERRA_HIGH_EVIDENCE="$EVIDENCE/terra-high"
-mkdir -p "$TERRA_HIGH_EVIDENCE"
-chmod 700 "$TERRA_HIGH_EVIDENCE"
+mkdir -p "$TERRA_PLAN_EVIDENCE" "$TERRA_HIGH_EVIDENCE"
+chmod 700 "$TERRA_PLAN_EVIDENCE" "$TERRA_HIGH_EVIDENCE"
+export JOB_SEARCH_TERRA_PLAN_RESULT="$EVIDENCE/terra-plan-result.json"
 export JOB_SEARCH_TERRA_HIGH_RESULT="$EVIDENCE/terra-high-result.json"
-if [[ "$TERRA_PLAN_AVAILABLE" == "1" ]]; then
-  set +e
-  "$JOB_SEARCH_PYTHON" "$JOB_SEARCH_RUNNER" \
-    --task-class job-search-terra-high \
-    --escalation-reason "dream application dossier for deterministic dream candidates" \
-    --prompt-file "$JOB_SEARCH_APP_ROOT/prompts/terra-high-pass.md" \
-    --schema "$JOB_SEARCH_APP_ROOT/schemas/terra-high-result.v1.schema.json" \
-    --evidence-dir "$TERRA_HIGH_EVIDENCE" \
-    --task-label job-search-dream-high \
-    --loop job-search \
-    --workdir "$JOB_SEARCH_REPO_ROOT" \
-    >"$EVIDENCE/terra-high-runner.json"
-  TERRA_HIGH_RC=$?
-  set -e
-  chmod 600 "$EVIDENCE/terra-high-runner.json"
-  if [[ "$TERRA_HIGH_RC" -eq 0 ]]; then
-    TERRA_HIGH_RESULT_PATH=$("$JOB_SEARCH_JQ" -er '.result_path' "$EVIDENCE/terra-high-runner.json")
-    cp "$TERRA_HIGH_RESULT_PATH" "$JOB_SEARCH_TERRA_HIGH_RESULT"
-  elif [[ "$TERRA_HIGH_RC" -eq 75 ]] \
-    && "$JOB_SEARCH_JQ" -e '.status == "budget_blocked"' \
-      "$EVIDENCE/terra-high-runner.json" >/dev/null 2>&1; then
-    "$JOB_SEARCH_JQ" -n \
-      '{status:"blocked",mode:"dream",dream_dossiers:[],hypothesis:null,blocked:["daily_model_budget_exhausted"]}' \
-      >"$JOB_SEARCH_TERRA_HIGH_RESULT"
-  else
-    refresh_summary
-    exit "$TERRA_HIGH_RC"
-  fi
-else
-  "$JOB_SEARCH_JQ" -n '{status:"skipped_budget"}' \
-    >"$EVIDENCE/terra-high-runner.json"
-  "$JOB_SEARCH_JQ" -n \
-    '{status:"blocked",mode:"dream",dream_dossiers:[],hypothesis:null,blocked:["daily_model_budget_exhausted"]}' \
-    >"$JOB_SEARCH_TERRA_HIGH_RESULT"
-  chmod 600 "$EVIDENCE/terra-high-runner.json"
-fi
-chmod 600 "$JOB_SEARCH_TERRA_HIGH_RESULT"
+"$JOB_SEARCH_JQ" -n \
+  '{status:"skipped_single_agent",dossiers:[],blocked:["owned_by_application_lane_agent"]}' \
+  >"$JOB_SEARCH_TERRA_PLAN_RESULT"
+"$JOB_SEARCH_JQ" -n \
+  '{status:"skipped_single_agent",mode:"dream",dream_dossiers:[],hypothesis:null,blocked:["owned_by_application_lane_agent"]}' \
+  >"$JOB_SEARCH_TERRA_HIGH_RESULT"
+"$JOB_SEARCH_JQ" -n '{status:"skipped_single_agent"}' >"$EVIDENCE/terra-plan-runner.json"
+"$JOB_SEARCH_JQ" -n '{status:"skipped_single_agent"}' >"$EVIDENCE/terra-high-runner.json"
+chmod 600 "$JOB_SEARCH_TERRA_PLAN_RESULT" "$JOB_SEARCH_TERRA_HIGH_RESULT" \
+  "$EVIDENCE/terra-plan-runner.json" "$EVIDENCE/terra-high-runner.json"
 JOB_SEARCH_BROWSER_FENCE="$JOB_SEARCH_STATE_ROOT/browser-fence"
 "$JOB_SEARCH_PYTHON" -m job_search_loop.browser_owner acquire \
   --identity "job-search:dais" \
@@ -258,23 +190,23 @@ TRAPEXIT() {
   fi
 }
 set +e
-"$JOB_SEARCH_PYTHON" -m job_search_loop.browser_worker run \
-  --database "$JOB_SEARCH_CANDIDATE_QUEUE" \
-  --application-ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
-  --owner-receipt "$JOB_SEARCH_BROWSER_OWNER_EVIDENCE" \
-  --holder-pid "$$" \
-  --run-id "$RUN_ID" \
-  --lock "$JOB_SEARCH_STATE_ROOT/browser-worker.lock" \
-  --worker-receipt "$EVIDENCE/browser-worker-receipt.json" \
-  --prefilter-result "$JOB_SEARCH_PREFILTER_RESULT" \
-  --profile "$JOB_SEARCH_PROFILE" \
-  --materials-root "$JOB_SEARCH_MATERIALS_ROOT" \
+export ANICCA_BUDGET_SCOPE_ID="job-search-daily:${RUN_ID}:apply"
+export ANICCA_PASS_TOKEN_BUDGET=98304
+"$JOB_SEARCH_PYTHON" "$JOB_SEARCH_RUNNER" \
+  --task-class application-lane-agent \
+  --prompt-file "$JOB_SEARCH_APP_ROOT/prompts/daily-pass.md" \
+  --schema "$JOB_SEARCH_APP_ROOT/schemas/pass-result.v1.schema.json" \
   --evidence-dir "$EVIDENCE" \
-  --output "$RESULT_PATH" \
+  --task-label job-search-daily \
+  --loop job-search \
+  --workdir "$JOB_SEARCH_REPO_ROOT" \
   >"$EVIDENCE/summary.json"
 RUNNER_RC=$?
 set -e
 if [[ "$RUNNER_RC" -eq 0 ]]; then
+  RESULT_PATH=$("$JOB_SEARCH_JQ" -er \
+    '.result_path | select(type == "string" and length > 0)' \
+    "$EVIDENCE/summary.json")
   set +e
   "$JOB_SEARCH_PYTHON" -m job_search_loop.candidate_queue validate-terminal \
     --database "$JOB_SEARCH_CANDIDATE_QUEUE" \

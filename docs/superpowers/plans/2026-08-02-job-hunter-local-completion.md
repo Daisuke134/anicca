@@ -2233,9 +2233,10 @@ it is easier to demonstrate:
    trace-correlation, and privacy boundary before another ATS selector diagnosis.
    A generic surface error without its raw non-private cause is no longer acceptable.
 2. `L-49K1` through `L-49K4`, closing `L-49K0C2O3b2c` inside `L-49K3`, then
-   `L-49K0C2O6` and `L-49K0C2` — copy the measured successful Ashby
-   interaction into a deterministic resident apply adapter: open `Application`,
-   complete and verify the form, submit once, confirm success, build the immutable
+   `L-49K0C2O6` and `L-49K0C2` — run one natural-language Terra Job Hunter through
+   the measured successful interaction and unseen ATS variants: open the application
+   route, adapt to the live UI, complete and verify the form, submit once, confirm
+   success, build the immutable
    owner dossier, then
    prove a blocked ATS route cannot end the hourly pass and all remaining eligible
    routes/roles continue exactly once.
@@ -3215,6 +3216,15 @@ OpenTelemetry decision and primary sources:
       (`playwright_ats.py`, receipt executor `cloakbrowser-cdp`); the resident apply
       path no longer imports or invokes `browser_use_ats.py`. Browser Use remains
       historical code only and is not an authorized fallback for the live loop.
+    - Architecture correction: the live daily pass is one GPT-5.6 Terra
+      `application-lane-agent`, not a chain of planning, dream-ranking, and bounded
+      form-action agents. It receives the outcome in natural language, connects
+      directly to the fenced CloakBrowser CDP session, and owns evaluation, live UI
+      interpretation, truthful form completion, Submit, evidence, ledger, Gmail,
+      and Telegram end to end. Unknown websites and controls are observed and
+      handled by that same process; absence from a predefined action table is never
+      a stop reason. Deterministic queue, policy, ledger, and receipt programs remain
+      validators and durable tools, not decision-making agents.
 - [ ] **L-49K2** — Make the resident fill contract complete and inspectable. Route the
   exact accepted resume; fill verified identity/contact/location/start-date fields;
   select work authorization and sponsorship answers from the private profile; verify
@@ -3235,13 +3245,15 @@ OpenTelemetry decision and primary sources:
       only when a non-empty answer/fact-ID pair exists and a live option matches.
       Unknown legal facts, false attestation, and unmatched choices remain blockers.
       Focused test passes 1/1, ATS tests pass 18/18, and the full suite passes 493/493.
-  - [ ] `L-49K2B` — Add only bounded Browser Use `select_answer` and `check_answer`
-    actions that re-read the live group/question/option metadata and reject generic
-    click, Submit, stale refs, and unmatched answers (2 files, soft target 100 LOC).
-  - [ ] `L-49K2C` — Execute every semantic action, verify live value/selected/checked
-    state, and persist ordered exact question/answer/fact IDs, selected-state evidence,
-    resume filename/hash, and pre-submit screenshot. Any failed verification blocks
-    before Submit and continues the resident pass (2 files, soft target 100 LOC).
+  - [x] `L-49K2B` — Superseded, not implemented: a per-control Browser Use action
+    table would recreate the measured stop-on-undefined defect. The single live
+    Terra Job Hunter instead interprets select, check, upload, and unseen controls
+    directly in CloakBrowser while deterministic policy validates private facts.
+  - [ ] `L-49K2C` — In one resident pass, have that same Job Hunter complete every
+    live field and verify value/selected/checked state, then persist ordered exact
+    question/answer/fact IDs, resume filename/hash, and pre-submit screenshot. Any
+    genuinely unresolved required fact blocks only that candidate and the same agent
+    continues to another eligible route; an undefined UI action never blocks it.
 - [ ] **L-49K3** — Implement one fenced semantic `Submit Application` action for the
   registered resident worker only. Observe the Ashby submit request, reCAPTCHA
   outcome, HTTP result, terminal success text, URL, and Gmail confirmation; capture
