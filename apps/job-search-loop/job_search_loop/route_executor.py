@@ -10,6 +10,8 @@ from .ledger import Ledger
 
 
 TERMINAL_OR_LIVE = {"action_started", "delivered", "delivery_unknown", "replied"}
+ATS_ROUTE_KINDS = {"canonical_ats", "alternate_official"}
+EMAIL_ROUTE_KINDS = {"recruiting_email", "recruiting_outreach"}
 
 
 def _sha256(path: Path) -> str:
@@ -47,24 +49,47 @@ def execute_next_message_route(
     transport: Callable[..., dict[str, Any]],
 ) -> dict[str, Any]:
     routes = ledger.application_routes(application_id)
-    if any(route["delivery_state"] in TERMINAL_OR_LIVE for route in routes):
+    if any(
+        route["route_kind"] in EMAIL_ROUTE_KINDS
+        and route["delivery_state"] in TERMINAL_OR_LIVE
+        for route in routes
+    ):
         return {"status": "cross_route_terminal"}
+    if any(
+        route["route_kind"] in ATS_ROUTE_KINDS
+        and route["delivery_state"] in {"delivered", "replied"}
+        for route in routes
+    ):
+        return {"status": "ats_confirmed"}
     eligible = [route for route in routes if route["delivery_state"] == "eligible"]
     if not eligible:
         return {"status": "no_eligible_route"}
-    route = eligible[0]
-    if route["route_kind"] in {"canonical_ats", "alternate_official"}:
-        return {
-            "status": "browser_route_required",
-            "route_id": route["route_id"],
-            "route_kind": route["route_kind"],
-        }
-    expected_acceptance = (
-        "accepts_applications"
-        if route["route_kind"] == "recruiting_email"
-        else "outreach_only"
+    ats_attempted = any(
+        route["route_kind"] in ATS_ROUTE_KINDS
+        and route["delivery_state"] != "eligible"
+        for route in routes
     )
-    if route["recipient_acceptance"] != expected_acceptance:
+    if not ats_attempted:
+        browser_route = next(
+            (route for route in eligible if route["route_kind"] in ATS_ROUTE_KINDS),
+            None,
+        )
+        if browser_route is not None:
+            return {
+                "status": "browser_route_required",
+                "route_id": browser_route["route_id"],
+                "route_kind": browser_route["route_kind"],
+            }
+    route = next(
+        (route for route in eligible if route["route_kind"] in EMAIL_ROUTE_KINDS),
+        None,
+    )
+    if route is None:
+        return {"status": "no_eligible_email_route"}
+    if route["recipient_acceptance"] not in {
+        "accepts_applications",
+        "outreach_only",
+    }:
         raise ValueError("message route recipient acceptance does not match route kind")
     message = Path(message_path).resolve()
     resume = Path(resume_path).resolve()
@@ -83,7 +108,7 @@ def execute_next_message_route(
     try:
         receipt = transport(
             recipient=str(route["endpoint"]),
-            route_kind=str(route["route_kind"]),
+            route_kind="recruiting_email",
             message_path=str(message),
             resume_path=str(resume),
             idempotency_key=f"{route_id}:{fence}",
