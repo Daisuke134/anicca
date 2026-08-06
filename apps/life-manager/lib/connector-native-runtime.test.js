@@ -53,7 +53,7 @@ async function dateInventory(currentCoverage, options = {}) {
   const agentEndsAt = options.agentEndsAt || "2026-08-05T15:00:00+09:00";
   let round = 0;
   const discovered = await collectLumaInventory({
-    readSnapshot: async () => (++round === 1 ? [{
+    readSnapshot: async () => (options.emptyLuma ? [] : ++round === 1 ? [{
       href: "https://luma.com/founder-night",
       title: "Founder Night",
       cardText: "Founder Night",
@@ -98,7 +98,7 @@ async function dateInventory(currentCoverage, options = {}) {
   return buildLumaDateInventory({
     coverage: currentCoverage,
     inventory: discovered,
-    details: [detail, secondDetail],
+    details: options.emptyLuma ? [] : [detail, secondDetail],
     now: NOW,
   });
 }
@@ -1045,8 +1045,8 @@ test("Luma known-no-effect exhaustion advances the verified provider cursor to C
   assert.equal(JSON.stringify(result.provider_cursor).includes("founder-night"), false);
 });
 
-test("a Connpass cursor runs exhaustive official discovery without registration or coverage credit", async () => {
-  const input = await fixture();
+test("an empty Luma inventory hands Connpass discovery into its browser write dependencies", async () => {
+  const input = await fixture({ emptyLuma: true });
   const registry = createEventProviderRegistry();
   const lumaCursor = createEventProviderCursor({
     registry, date: "2026-08-05", observedAt: "2026-08-05T00:00:00.000Z",
@@ -1060,8 +1060,32 @@ test("a Connpass cursor runs exhaustive official discovery without registration 
     network_call_count: 2, advisory_candidates: Object.freeze([{ provider: "connpass", event_ref: "connpass-event://event/101" }]),
   });
   const calendarGate = Object.freeze({ status: "evaluated" });
-  const providerInventory = Object.freeze({ provider: "connpass" });
+  const providerEvent = Object.freeze({
+    provider: "connpass", event_ref: "connpass-event://event/101",
+    canonical_url: "https://tokyo-builders.connpass.com/event/101/",
+    title: "Connpass Night", starts_at: "2026-08-05T10:00:00.000Z",
+    ends_at: "2026-08-05T12:00:00.000Z", venue_name: "Shibuya Hall",
+    venue_address: "Shibuya, Tokyo",
+  });
+  const providerInventory = Object.freeze({
+    provider: "connpass", coverage_snapshot_id: coverage().coverage_snapshot_id,
+    timezone: "Asia/Tokyo", days: Object.freeze([
+      Object.freeze({ date: "2026-08-05", events: Object.freeze([providerEvent]) }),
+    ]),
+  });
+  const profile = Object.freeze({
+    tenant_id: TENANT, timezone: "Asia/Tokyo", identity_ref: "identity://dais-local/connpass",
+    browser_profile_ref: "browser-profile://cloakbrowser/daily-driver",
+    calendar_ref: "calendar://google/primary", spend_policy: Object.freeze({ limits: Object.freeze([]) }),
+  });
+  const connpassStore = Object.freeze({
+    record: async () => ({}), readExternalReceipt: async () => ({}), readArtifact: async () => Buffer.from("fixture"),
+  });
+  const connpassProvider = Object.freeze({ inspectRegistration: async () => ({ state: "absent" }), submitRegistration: async () => ({}) });
   let eligibleCandidates = handoff.advisory_candidates;
+  let writeResult = Object.freeze({
+    status: "incomplete", outcome: "open_coverage", event_ref: providerEvent.event_ref,
+  });
   let received;
   input.deps.createPack = () => ({
     ...input.pack,
@@ -1076,6 +1100,9 @@ test("a Connpass cursor runs exhaustive official discovery without registration 
       ...input.config, providerRegistry: registry, providerCursor,
       connpassApiKey: "fixture-secret-api-key-1234567890",
       mapsKey: "maps-secret", homeLocation: "opaque-home",
+      profilePath: "/private/tmp/dais-local.json", lunaEvidenceDir: "/private/tmp/connector-luna",
+      telegramTarget: "opaque-chat", calendarCoverageUrl: "https://calendar.google.com/calendar/u/0/r",
+      calendarId: "primary",
     },
     deps: {
       ...input.deps,
@@ -1085,6 +1112,16 @@ test("a Connpass cursor runs exhaustive official discovery without registration 
       selectCalendarEligibleConnpass: () => eligibleCandidates,
       buildEventProviderDateInventory: () => providerInventory,
       isVerifiedEventSourceHandoff: (value) => value === handoff,
+      readProfile: () => profile,
+      isVerifiedConnectorProfile: (value) => value === profile,
+      createConnpassEvidenceStore: () => connpassStore,
+      createConnpassProvider: () => connpassProvider,
+      buildConnpassEventApplicationJob: () => Object.freeze({ job_id: "connpass-job:101" }),
+      executeConnpassRsvpJob: async () => Object.freeze({}),
+      async runNativeWrite(writeInput, writeDeps) {
+        received.write = { writeInput, writeDeps };
+        return writeResult;
+      },
     },
   };
   const result = await runNativeConnectorPass(runtimeInput);
@@ -1096,8 +1133,31 @@ test("a Connpass cursor runs exhaustive official discovery without registration 
   assert.equal(result.provider_discovery.coverage_credit_count, 0);
   assert.equal(result.provider_cursor, providerCursor);
   assert.equal(result.provider_inventory, providerInventory);
-  assert.equal(result.write, null);
+  assert.equal(result.write.event_ref, providerEvent.event_ref);
+  assert.equal(received.write.writeInput.dateInventory, providerInventory);
+  assert.equal(received.write.writeInput.goalDecision, undefined);
+  assert.equal(received.write.writeDeps.provider, connpassProvider);
+  assert.equal(received.write.writeDeps.readArtifact, connpassStore.readArtifact);
+  assert.equal(typeof received.write.writeDeps.buildEventApplicationJob, "function");
+  assert.equal(typeof received.write.writeDeps.executeLumaRsvpJob, "function");
   assert.equal(JSON.stringify(result).includes("fixture-secret"), false);
+
+  writeResult = Object.freeze({
+    status: "incomplete", outcome: "application_failed",
+    error_code: "CONNPASS_RSVP_UNAVAILABLE", event_ref: providerEvent.event_ref,
+  });
+  const exhausted = await runNativeConnectorPass(runtimeInput);
+  assert.equal(exhausted.provider_cursor.provider, "peatix");
+  assert.equal(exhausted.candidate_attempts[0].outcome, "known_no_effect");
+
+  writeResult = Object.freeze({
+    status: "reconciliation_required", outcome: "unknown_external_effect",
+    error_code: "CONNPASS_EFFECT_UNKNOWN", event_ref: providerEvent.event_ref,
+  });
+  const unknown = await runNativeConnectorPass(runtimeInput);
+  assert.equal(unknown.provider_cursor, providerCursor);
+  assert.equal(unknown.candidate_attempts[0].outcome, "unknown_effect");
+
   eligibleCandidates = Object.freeze([]);
   const blocked = await runNativeConnectorPass(runtimeInput);
   assert.equal(blocked.provider_cursor.provider, "peatix");

@@ -46,6 +46,11 @@ const {
   isVerifiedCalendarCandidateGate,
 } = require("./calendar-candidate-gate.js");
 const { buildEventProviderDateInventory } = require("./event-provider-date-inventory.js");
+const { createConnpassBrowserProvider } = require("./connpass-browser-provider.js");
+const { createConnpassEvidenceStore } = require("./connpass-evidence-store.js");
+const {
+  buildConnpassEventApplicationJob, executeConnpassRsvpJob,
+} = require("./connpass-rsvp-adapter.js");
 
 function unavailable() {
   throw new Error("Connector native runtime unavailable");
@@ -367,6 +372,8 @@ async function runNativeConnectorPass(input = {}) {
     };
 
     let write = null;
+    let profile = null;
+    const runNativeWrite = factory(deps, "runNativeWrite", runNativeConnectorWrite);
     let routeMinutesForProviders = null;
     const candidateAttempts = [];
     const currentCapabilityVersion = capabilityVersion(config.capabilityVersion);
@@ -401,7 +408,6 @@ async function runNativeConnectorPass(input = {}) {
       const verifySpendSequence = factory(
         deps, "isVerifiedEventSpendSequence", isVerifiedEventSpendSequence,
       );
-      const runNativeWrite = factory(deps, "runNativeWrite", runNativeConnectorWrite);
       const createConfirmationReader = factory(
         deps, "createConfirmationReader", createGogLumaConfirmationReader,
       );
@@ -410,7 +416,7 @@ async function runNativeConnectorPass(input = {}) {
       );
       const createTicketStore = factory(deps, "createTicketStore", createLumaTicketQrStore);
       failureCode = "CONNECTOR_NATIVE_PROFILE_FAILED";
-      const profile = readProfile({ tenantId, path: config.profilePath });
+      profile = readProfile({ tenantId, path: config.profilePath });
       if (!verifyProfile(profile) || profile.tenant_id !== tenantId || profile.timezone !== timeZone) unavailable();
       const createRouteMinutes = factory(deps, "createRouteMinutes", createConnectorRouteMinutes);
       routeMinutesForProviders = createRouteMinutes({
@@ -422,7 +428,7 @@ async function runNativeConnectorPass(input = {}) {
         coverage.days.some((coverageDay) => coverageDay.date === day.date && coverageDay.status === "open")
         && Array.isArray(day.events) && day.events.length > 0
       ));
-      if (judgmentDays.length === 0) unavailable();
+      if (judgmentDays.length === 0 && (!providerCursor || providerCursor.provider === "luma")) unavailable();
       const routeMinutes = routeMinutesForProviders;
       const lumaEmail = requiredText(config.lumaEmail);
       const confirmationReader = createConfirmationReader({
@@ -677,6 +683,93 @@ async function runNativeConnectorPass(input = {}) {
             coverage, handoff, eligibleCandidates: eligible, now,
           });
           if (!providerDateInventory || providerDateInventory.provider !== "connpass") unavailable();
+
+          if (!profile) unavailable();
+          const createProviderEvidence = factory(
+            deps, "createConnpassEvidenceStore", createConnpassEvidenceStore,
+          );
+          const createProvider = factory(deps, "createConnpassProvider", createConnpassBrowserProvider);
+          const providerEvidence = createProviderEvidence({ dataDir: evidenceDir });
+          if (
+            !providerEvidence || typeof providerEvidence.record !== "function"
+            || typeof providerEvidence.readExternalReceipt !== "function"
+            || typeof providerEvidence.readArtifact !== "function"
+          ) unavailable();
+          const connpassProvider = createProvider({
+            dailyDriver, evidenceStore: providerEvidence, now: () => now,
+          });
+          if (
+            !connpassProvider || typeof connpassProvider.inspectRegistration !== "function"
+            || typeof connpassProvider.submitRegistration !== "function"
+          ) unavailable();
+          const providerEvents = providerDateInventory.days
+            .flatMap((day) => day.events || []).slice(providerCursor.candidate_index);
+          let providerHasUnknownEffect = false;
+          let providerVerifiedSuccess = false;
+          for (const selectedEvent of providerEvents) {
+            failureCode = "CONNECTOR_NATIVE_WRITE_FAILED";
+            write = await runNativeWrite({
+              application: {
+                tenantId,
+                eventRef: selectedEvent.event_ref,
+                eventUrl: selectedEvent.canonical_url,
+                eventStartIso: selectedEvent.starts_at,
+                identityRef: profile.identity_ref,
+                browserProfileRef: profile.browser_profile_ref,
+                calendarRef: profile.calendar_ref,
+              },
+              profile,
+              dateInventory: providerDateInventory,
+              currentCoverage: coverage,
+              busyInventory,
+              calendar,
+              calendarId: requiredText(config.calendarId),
+              telegramTarget: requiredText(config.telegramTarget),
+              calendarCoverageUrl: requiredText(config.calendarCoverageUrl),
+              registrationIdentity: requiredText(config.lumaName),
+              now,
+            }, {
+              provider: connpassProvider,
+              readExternalReceipt: providerEvidence.readExternalReceipt,
+              readArtifact: providerEvidence.readArtifact,
+              buildEventApplicationJob: factory(
+                deps, "buildConnpassEventApplicationJob", buildConnpassEventApplicationJob,
+              ),
+              executeLumaRsvpJob: factory(
+                deps, "executeConnpassRsvpJob", executeConnpassRsvpJob,
+              ),
+              fetchImpl: globalThis.fetch,
+              ...(deps.writeDependencies || {}),
+            });
+            selection.write_attempt_count += 1;
+            const candidateOutcome = classifyConnectorCandidateOutcome(write);
+            candidateAttempts.push(Object.freeze({
+              event_ref: candidateOutcome.event_ref,
+              outcome: candidateOutcome.classification,
+              safe_reason: candidateOutcome.error_code || write.outcome,
+              observed_at: now,
+              retry_after: null,
+              ...(currentCapabilityVersion ? { capability_version: currentCapabilityVersion } : {}),
+            }));
+            if (candidateOutcome.classification === "verified_success") {
+              providerVerifiedSuccess = true;
+              break;
+            }
+            if (["unknown_effect", "recovery_required"].includes(candidateOutcome.classification)) {
+              providerHasUnknownEffect = true;
+              break;
+            }
+            providerCursor = advanceEventProviderCursor({
+              cursor: providerCursor, registry: providerRegistry,
+              transition: "known_no_effect", observedAt: nextCursorInstant(providerCursor, now),
+            });
+          }
+          if (!providerVerifiedSuccess && !providerHasUnknownEffect) {
+            providerCursor = advanceEventProviderCursor({
+              cursor: providerCursor, registry: providerRegistry,
+              transition: "provider_exhausted", observedAt: nextCursorInstant(providerCursor, now),
+            });
+          }
         }
         if (calendarGate.status === "evaluated" && eligible.length === 0) {
           providerCursor = advanceEventProviderCursor({
