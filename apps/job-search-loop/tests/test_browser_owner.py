@@ -167,6 +167,68 @@ class BrowserOwnerTests(unittest.TestCase):
             self.assertEqual(receipt.stat().st_mode & 0o777, 0o600)
             self.assertEqual(fence.stat().st_mode & 0o777, 0o600)
 
+    def test_receipt_is_not_ready_until_playwright_attach_succeeds(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            lease_path = root / "job_search_dais.lease"
+            receipt_path = root / "browser-owner.json"
+            fence_path = root / "browser-fence"
+            lease_path.write_text(
+                json.dumps(
+                    {
+                        "identity": "job-search:dais",
+                        "pid": os.getpid(),
+                        "host": "test-host",
+                        "port": 49152,
+                        "uuid": "browser-uuid",
+                        "acquired_at": 1785924000,
+                    }
+                )
+            )
+            completed = type(
+                "Completed",
+                (),
+                {
+                    "returncode": 0,
+                    "stdout": "http://127.0.0.1:49152\n",
+                    "stderr": "",
+                },
+            )()
+            observed = []
+
+            def attach(endpoint):
+                observed.append(
+                    json.loads(receipt_path.read_text(encoding="utf-8"))["status"]
+                )
+                return {"browser": "Chrome/140", "context_count": 1}
+
+            with patch(
+                "job_search_loop.browser_owner.subprocess.run", return_value=completed
+            ), patch(
+                "job_search_loop.browser_owner.socket.gethostname",
+                return_value="test-host",
+            ):
+                result = browser_owner.acquire_with_attach_recovery(
+                    BrowserLease(
+                        guard=Path("/guard"),
+                        identity="job-search:dais",
+                        owner="ai.anicca.job-search-daily",
+                        receipt_path=receipt_path,
+                        lease_path=lease_path,
+                        fence_path=fence_path,
+                        holder_pid=os.getpid(),
+                        browser_pid_reader=lambda port: 777,
+                    ),
+                    attach_probe=attach,
+                )
+
+            self.assertEqual(observed, ["leased"])
+            self.assertEqual(result["status"], "ready")
+            self.assertEqual(
+                json.loads(receipt_path.read_text(encoding="utf-8"))["status"],
+                "ready",
+            )
+
     def test_busy_acquire_fails_closed_without_receipt(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
