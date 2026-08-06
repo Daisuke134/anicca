@@ -2961,9 +2961,16 @@ OpenTelemetry decision and primary sources:
           returns it in the delivery receipt. Missing or malformed correlation becomes
           an explicit null pair and never leaks arbitrary text. Focused tests pass
           2/2, application-reporting tests pass 6/6, and the full suite passes 488/488.
-      - [ ] `L-49K0C2O4c2` — Include validated current `trace_id`/`span_id` in each
+      - [x] `L-49K0C2O4c2` — Include validated current `trace_id`/`span_id` in each
         Guardian recovery case, alert, and receipt without adding private payloads
         (2 files, soft target 80 LOC).
+        - Completion receipt: RED proved Guardian had no telemetry boundary and its
+          repair report and alert could not be joined to a trace. GREEN wraps the
+          unchanged bounded recovery policy in `guardian.repair`, accepts only one
+          lowercase 32/16-character hex pair from that span, and copies it to the
+          repair report and incomplete-recovery alert. Disabled/unavailable telemetry
+          produces explicit null IDs. Focused test passes 1/1, Guardian recovery tests
+          pass 7/7, and the full suite passes 489/489.
       - [ ] `L-49K0C2O4c3` — Require Temporal Workflow/Activity IDs and their mapping
         to trace/span IDs inside `L-49K0D2`, where the resident cron migration to
         Temporal is implemented. The measured resident runtime has no Temporal
