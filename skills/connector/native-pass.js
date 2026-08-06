@@ -422,6 +422,51 @@ function appendCandidateAttempts(stateDir, attempts) {
   );
 }
 
+function recordSelfHealIncident(stateDir, bounded) {
+  const selection = bounded.selection;
+  if (
+    !selection
+    || selection.spend_ordered_count < 1
+    || selection.unsuppressed_count !== 0
+    || selection.write_attempt_count !== 0
+  ) return;
+  const formFailure = [...readCandidateAttempts(stateDir)].reverse().find((attempt) => (
+    attempt.outcome === "known_no_effect"
+    && attempt.safe_reason === "LUMA_FORM_INPUT_REQUIRED"
+    && attempt.retry_after === null
+  ));
+  if (!formFailure) return;
+  const incidentClass = "apply_blocked_by_suppression";
+  const component = "connector-native";
+  const fingerprint = `sha256:${createHash("sha256").update(
+    `${component}:${incidentClass}:${formFailure.safe_reason}`,
+  ).digest("hex")}`;
+  const file = path.join(stateDir, "self-heal-incidents.jsonl");
+  let existing = "";
+  try {
+    const stat = fs.statSync(file);
+    if (stat.size > 1_000_000) unavailable();
+    existing = fs.readFileSync(file, "utf8");
+  } catch (error) {
+    if (!error || error.code !== "ENOENT") throw error;
+  }
+  const duplicate = existing.split(/\r?\n/).filter(Boolean).some((line) => {
+    try { return JSON.parse(line).fingerprint === fingerprint; }
+    catch { unavailable(); }
+  });
+  if (duplicate) return;
+  const incident = {
+    schema_version: 1,
+    fingerprint,
+    component,
+    incident_class: incidentClass,
+    safe_reason: formFailure.safe_reason,
+    observed_at: formFailure.observed_at,
+    selection,
+  };
+  fs.appendFileSync(file, `${JSON.stringify(incident)}\n`, { encoding: "utf8", mode: 0o600 });
+}
+
 function appendDeliveryReceipt(stateDir, write) {
   if (write && write.telegram_provider_id && write.event_ref && write.calendar_event_ref) {
     const hasNewEvidence = Boolean(write.artifact_sha256 || write.telegram_photo_provider_id);
@@ -474,6 +519,7 @@ function recordLastResult(stateDir, bounded) {
   });
   appendDeliveryReceipt(stateDir, bounded.write);
   appendCandidateAttempts(stateDir, bounded.candidateAttempts);
+  recordSelfHealIncident(stateDir, bounded);
   recordCursor(stateDir, bounded.cursor);
 }
 

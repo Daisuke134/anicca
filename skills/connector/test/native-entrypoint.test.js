@@ -88,6 +88,60 @@ test("native-pass invokes the direct runtime and keeps open coverage as a contin
   }
 });
 
+test("native-pass persists one privacy-safe self-heal incident when suppression prevents every Apply attempt", async () => {
+  const directory = temporaryDirectory();
+  const stateDir = path.join(directory, "state");
+  fs.mkdirSync(stateDir, { recursive: true });
+  fs.writeFileSync(path.join(stateDir, "candidate-attempts.jsonl"), `${JSON.stringify({
+    event_ref: "luma-event://event/private-event-ref",
+    outcome: "known_no_effect",
+    safe_reason: "LUMA_FORM_INPUT_REQUIRED",
+    observed_at: "2026-08-06T01:05:01.993Z",
+    retry_after: null,
+  })}\n`, { mode: 0o600 });
+  const runtimeResult = {
+    status: "incomplete",
+    coverage: { counts: { open: 19, covered_new: 2 } },
+    continuation: { status: "continue" },
+    selection: {
+      inventory_event_count: 28,
+      calendar_gate_event_count: 24,
+      calendar_eligible_count: 6,
+      luna_ranked_count: 6,
+      spend_ordered_count: 4,
+      unsuppressed_count: 0,
+      write_attempt_count: 0,
+    },
+  };
+  try {
+    const options = {
+      repoRoot: REPO_ROOT,
+      stateDir,
+      ownerToken: OWNER_TOKEN,
+      config: { tenantId: "dais-local" },
+      runRuntime: async () => runtimeResult,
+    };
+    await runNativePass(options);
+    await runNativePass(options);
+
+    const incidents = fs.readFileSync(path.join(stateDir, "self-heal-incidents.jsonl"), "utf8")
+      .trim().split("\n").map(JSON.parse);
+    assert.equal(incidents.length, 1);
+    assert.deepEqual(Object.keys(incidents[0]).sort(), [
+      "component", "fingerprint", "incident_class", "observed_at", "safe_reason",
+      "schema_version", "selection",
+    ]);
+    assert.equal(incidents[0].component, "connector-native");
+    assert.equal(incidents[0].incident_class, "apply_blocked_by_suppression");
+    assert.equal(incidents[0].safe_reason, "LUMA_FORM_INPUT_REQUIRED");
+    assert.match(incidents[0].fingerprint, /^sha256:[0-9a-f]{64}$/);
+    assert.equal(JSON.stringify(incidents[0]).includes("private-event-ref"), false);
+    assert.equal(fs.statSync(path.join(stateDir, "self-heal-incidents.jsonl")).mode & 0o777, 0o600);
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true });
+  }
+});
+
 test("native-pass durably binds the registered-page PNG lineage to its Calendar event", async () => {
   const directory = temporaryDirectory();
   const stateDir = path.join(directory, "state");
