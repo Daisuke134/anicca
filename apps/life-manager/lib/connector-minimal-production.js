@@ -9,6 +9,18 @@ const {
 } = require("./connector-browser-target-controller.js");
 const { createConnectorTabOwner } = require("./connector-tab-owner.js");
 const { createConnectorTargetLease } = require("./connector-target-lease.js");
+const { createConnectorActionCache } = require("./connector-action-cache.js");
+const { createMinimalEvidenceChain } = require("./connector-minimal-evidence.js");
+const { createMinimalProductionOperations } = require("./connector-minimal-operations.js");
+const { createLumaScriptFirstWorkflow } = require("./connector-luma-workflow.js");
+const { readLumaFormProfile } = require("./luma-form-profile.js");
+const {
+  createBoundedActionProposer,
+  createLumaPrivateValueResolver,
+  createProductionBrowserHarness,
+  inspectPageControls,
+  operatePageControl,
+} = require("./connector-production-browser-harness.js");
 const {
   inspectGoogleCalendarBusyInventory,
   isVerifiedGoogleCalendarBusyInventory,
@@ -36,6 +48,12 @@ function ownerToken(value) {
   const token = String(value || "").trim();
   if (!/^[A-Za-z0-9._-]{16,200}$/.test(token)) invalid();
   return token;
+}
+
+function requiredText(value, max = 2_000) {
+  const result = String(value == null ? "" : value).trim();
+  if (!result || result.length > max || /[\x00-\x1f\x7f]/.test(result)) invalid();
+  return result;
 }
 
 function exactNow(value) {
@@ -181,6 +199,92 @@ function createProductionProviderRouter(options = {}) {
   });
 }
 
+function createMinimalProductionDependencies(options = {}) {
+  const repoRoot = absoluteDirectory(options.repoRoot);
+  const stateDir = absoluteDirectory(options.stateDir);
+  const wakeId = requiredText(options.wakeId, 160);
+  const calendarAccount = requiredText(options.calendarAccount, 1_024);
+  const gogKeyring = requiredText(options.gogKeyring, 2_000);
+  const telegramTarget = requiredText(options.telegramTarget, 200);
+  const tenantId = requiredText(options.tenantId || "dais-local", 128);
+  const calendarId = requiredText(options.calendarId || "primary", 1_024);
+  const lumaFormProfilePath = path.resolve(requiredText(options.lumaFormProfilePath, 2_000));
+  const lunaEvidenceDir = absoluteDirectory(options.lunaEvidenceDir);
+  const now = options.now || (() => new Date());
+  if (typeof now !== "function") invalid();
+  const nowIso = () => exactNow(now()).toISOString();
+
+  const calendar = options.calendar || makeGogCalendar({
+    bin: options.gogBin,
+    account: calendarAccount,
+    keyring: gogKeyring,
+  });
+  const calendarReader = options.calendarReader || createProductionCalendarReader({
+    gogBin: options.gogBin,
+    account: calendarAccount,
+    keyring: gogKeyring,
+    now,
+    makeCalendar: () => calendar,
+  });
+  const browserRail = options.browserRail || createProductionBrowserRail({ stateDir });
+  const lumaWorkflow = options.lumaWorkflow || createLumaScriptFirstWorkflow({
+    readLumaFormProfile: () => readLumaFormProfile({ path: lumaFormProfilePath }),
+  });
+  const actionCache = options.actionCache || createConnectorActionCache({
+    path: path.join(stateDir, "action-cache.json"),
+  });
+  const proposeAction = options.proposeAction || createBoundedActionProposer({
+    repoRoot,
+    evidenceDir: lunaEvidenceDir,
+  });
+  const resolveValue = options.resolveValue || createLumaPrivateValueResolver({
+    readProfile: () => readLumaFormProfile({ path: lumaFormProfilePath }),
+  });
+  const browserHarness = options.browserHarness || createProductionBrowserHarness({
+    lumaWorkflow,
+    inspectControls: inspectPageControls,
+    proposeAction,
+    operateControl: operatePageControl,
+    resolveValue,
+  });
+  const providerRouter = options.providerRouter || createProductionProviderRouter({
+    lumaWorkflow,
+    actionCache,
+    browserHarness,
+    performAction: browserHarness.performAction,
+    now,
+  });
+  const evidenceChain = options.evidenceChain || createMinimalEvidenceChain({
+    stateDir,
+    tenantId,
+    calendar,
+    calendarId,
+    telegramTarget,
+    now,
+  });
+  const operations = options.operations || createMinimalProductionOperations({
+    stateDir,
+    wakeId,
+    telegramTarget,
+    now,
+  });
+
+  return Object.freeze({
+    now: nowIso,
+    browserRail,
+    readCalendarGaps: calendarReader.readCalendarGaps,
+    discoverCandidates: providerRouter.discoverCandidates,
+    runCachedAction: providerRouter.runCachedAction,
+    runDirectAction: providerRouter.runDirectAction,
+    runAgentFallback: providerRouter.runAgentFallback,
+    readProviderState: providerRouter.readProviderState,
+    saveRepairedActions: providerRouter.saveRepairedActions,
+    completeEvidence: evidenceChain.completeEvidence,
+    reportWake: operations.reportWake,
+    recordAction: operations.recordAction,
+  });
+}
+
 function createProductionBrowserRail(options = {}) {
   const stateDir = absoluteDirectory(options.stateDir);
   const connectOverCDP = options.connectOverCDP || ((endpoint) => {
@@ -274,5 +378,6 @@ function createProductionBrowserRail(options = {}) {
 module.exports = {
   createProductionBrowserRail,
   createProductionCalendarReader,
+  createMinimalProductionDependencies,
   createProductionProviderRouter,
 };
