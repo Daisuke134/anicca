@@ -2879,6 +2879,18 @@ OpenTelemetry decision and primary sources:
           the existing ledger claim and authoritative Gmail/ATS reconciliation
           boundaries, split into claim and confirmation slices of at most 3 files
           and 100 LOC each.
+          - [x] `L-49K0C2O3b2b1` — Inject the resident telemetry boundary into
+            `Ledger` and wrap only the validated claim transaction in `submit.intent`.
+            Record the canonical application ID, never resume, answers, receipt body,
+            or URL (2 files, soft target 60 LOC).
+            - Completion receipt: RED proved a real successful claim produced zero
+              spans. GREEN produces exactly one `submit.intent` with only
+              `application.id`; focused test passes 1/1 and the complete ledger suite
+              passes 42/42. Search inspection also caught and removed an initial span
+              insertion at the unrelated artifact transaction before GREEN.
+          - [ ] `L-49K0C2O3b2b2` — Wrap deterministic Gmail/ATS reconciliation in
+            `confirmation.observe`, recording only hashed application/evidence IDs,
+            matched/blocked status, duration, and exception class.
         - [ ] `L-49K0C2O3b2c` — Add `submit.action` inside `L-49K3`'s fenced
           semantic resident Submit activity. This cannot be implemented earlier:
           the measured runtime has ledger intent/click/transport fences but no
