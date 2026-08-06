@@ -1,60 +1,27 @@
 # Job Hunter Local Completion — Progress and Execution Spec
 
-**Branch:** `feat/job-hunter-local-completion-20260802`  
-**Worktree:** `/Users/anicca/Projects/.worktrees/life-manager/job-hunter-local-completion-20260802`  
+**Branch:** `docs/job-hunter-spec-20260805`
+**Worktree:** `/Users/anicca/anicca-project/.worktrees/job-hunter-spec-20260805`
 **Canonical repository:** `https://github.com/Daisuke134/life-manager`  
 **Base:** `origin/main` at `2099a29da61345a120d2f68a819d7b854dcebd83`  
+**Configured upstream:** `canonical/docs/job-hunter-spec-20260805`
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-06 JST
-**Active atomic task:** `L-49K0C/FILL-1D` — prove the resident worker reaches a real ATS pre-submit state
-**Status:** The immutable four-lane runtime, hourly/five-minute schedules, grounded
-materials, ownership fences, Gmail ingestion, Telegram outbox, quota accounting, and
-Ashby observation classifier are implemented and tested. The daily LaunchAgent is
-loaded hourly, but production is not healthy. Release `770e1f6a7` resident run
-`daily-20260806-002415` refreshed 2,722 official Ashby/Greenhouse postings before the
-model sandbox, proving the prior cache-permission fault fixed, but Luna returned no
-structured output; launchd exited 1 and submitted zero applications. A bounded retry
-`daily-20260806-003052` refreshed 2,723 postings but failed identically because six
-parallel tool results still expanded its transcript to 210,336 bytes. The local fix
-removes discovery execution from Luna: deterministic code now runs every recovery
-query, deduplicates the results, and hands a bounded schema-complete artifact to
-Terra. Resident release `cd2866efc`, run `daily-20260806-003739`, produced 80
-deduplicated candidates, including 21 with explicit Japan evidence, and expanded the
-durable queue from 48 to 128 links. SCAN-1 is complete. Terra plan and Terra-high
-then returned zero dossiers because the full 80-candidate batch exceeded bounded
-deep-analysis capacity; the browser actor submitted zero applications and left 91
-links unverified, so terminal validation correctly exited 76. Telegram sent the daily
-report as message `7377`, but it contains no application evidence because none exists.
-The next resident run `daily-20260806-004512` checked 80 supported ATS URLs as active
-and persisted 80 URL-hashed mode-0600 receipts, completing API-2. Terra still produced
-zero grounded dossiers because prefilter source spans contain URLs rather than exact
-job-description evidence, so the browser actor remains unable to submit.
-DEDUP-1 is implemented locally from Career Ops parity: tracking-only URL parameters
-are removed while identity parameters survive, company-role reposts use a 90-day
-non-rejected window, and substantial JDs receive 64-bit 3-token SimHash with a 0.92
-cross-list threshold. A live 80-candidate artifact produced 73 fingerprints and the
-queue retained 77 candidates with 70 fingerprints; three company-role duplicates
-were suppressed. Resident release `c84a2f863`, run `daily-20260806-010005`, then
-suppressed 80/80 repeated candidates without growing the 128-link queue and executed
-ATS liveness before Terra, completing DEDUP-1. That run exposed the missing exact JD
-source spans that GATE-1 now supplies.
-GATE-1 is complete: all 80 leads remain in a private queue artifact while Terra
-receives a 12-candidate, 19KB shortlist containing only explicit title-relevant
-roles, all 12 with Japan evidence and exact title/location/description source spans.
-Unknown compensation remains eligible for verification; only an explicit JPY maximum
-below 8,000,000 is rejected. Full tests pass 402/402. Immutable release `9802c7a00`,
-resident run `daily-20260806-011036`, reproduced the 80/12 split and the normal Terra
-planner returned 12 grounded dossiers with zero blockers, completing GATE-1.
-The downstream browser actor still submitted zero applications: it verified 37 of
-128 durable links and left 91 pending. Terra-high separately returned zero dream
-dossiers because candidates lack committed deterministic portfolio scores and
-normalized compensation/role-family inputs. The prompt-owned actor also launched
-the same temporary browser worker twice; no authoritative submission confirmation
-was produced, but FILL-1 must enforce one browser worker per run before a live click.
-The authoritative ledger still has zero current submission confirmations. Historical
-`submitted` projection rows are not current authoritative confirmation.
-Development-session browser runs are verification evidence only and MUST NOT be
-described as autonomous production work.
+**Active atomic task:** `L-49K2C1` — prove the deterministic Ashby Apply CLI fills and
+verifies changed live control layouts without handwritten Playwright or Submit.
+**Status:** The immutable four-lane runtime, grounded materials, ownership fences,
+Gmail ingestion, Telegram outbox, quota accounting, Ashby surface classifier, and
+loopback OpenTelemetry Collector/private trace index are implemented. The application
+LaunchAgent is loaded on a 3,600-second schedule but is currently not running; the
+CloakBrowser CDP and observability Collector are running. The authoritative ledger
+contains 22 application rows: four historical/reference `submitted`, twelve
+`submit_unknown`, and six `rejected`. It contains zero resident-loop authoritative
+confirmed applications, zero verified interviews, and zero offers. The owner-authorized
+OpenAI Ashby success is `dais_manual`, not resident proof. `L-49K2C1` unit contracts
+pass, but its isolated live-control fill E2E receipt is absent, so it remains open.
+The complete Job Hunter suite runs 498 tests with four failures and four errors in
+legacy `run-daily.sh` assertions that still expect the superseded Browser Worker,
+composition-agent, Terra-high, and eager ATS-sweep topology.
 
 ## 1. Acceptance criteria — done condition
 
@@ -1075,15 +1042,18 @@ submissions.
 
 - The active immutable release has four stable lanes: application, inbox, learning,
   and dedicated browser. The hourly application schedule and five-minute inbox
-  schedule are installed; daily remains deliberately unloaded until L-65.
+  schedule are installed. The application LaunchAgent is loaded with a 3,600-second
+  interval and currently has no running process; L-65 still requires simultaneous
+  health proof for all four lanes.
 - The private compensation profile, Luna/Terra route map, manual/recruiter ownership
   fences, Palantir manual import, `summary.v2`, and Telegram outbox are implemented.
 - Current `gog gmail search` succeeds.
-- The authoritative ledger contains 15 applications: two legacy local `submitted`
-  rows (LayerX and Exture), one Dais-manual Palantir row, and twelve
-  `submit_unknown` rows. It contains zero authoritative ATS/Gmail submission
-  confirmations for an autonomous-loop application, zero confirmed Ashby receipts,
-  and zero confirmed Workday receipts.
+- The authoritative ledger contains 22 applications: four historical/reference
+  `submitted` rows, twelve `submit_unknown` rows, and six `rejected` rows. The four
+  submitted rows are the two legacy development E2Es (LayerX and Exture), the
+  Dais-manual Palantir import, and the owner-authorized Dais-manual OpenAI Ashby
+  reference success. It contains zero authoritative ATS/Gmail confirmations for a
+  resident-loop application and zero confirmed resident Ashby or Workday receipts.
 - No PNG/JPEG/WebP submission screenshot exists in the Sierra, Camunda, or Cohere
   evidence directories. A later screenshot of an ordinary job page MUST NOT be
   presented as historical submission proof.
@@ -1114,9 +1084,9 @@ submissions.
   eligible routes and roles. Job Hunter is not yet producing ten confirmed
   applications per day.
 - Ashby as a platform is not globally skipped. Eligible Ashby postings remain
-  discoverable and rankable, but another physical click is fenced until L-49K adds
-  a one-action human handoff and no-second-click recovery. Workday has not yet had
-  its required real confirmed E2E.
+  discoverable and rankable. No new Submit click is authorized until `L-49K3` adds
+  the resident-only fenced semantic action and no-second-click recovery. Workday has
+  not yet had its required real confirmed E2E.
 - Every future live attempt MUST capture three immutable screenshots: fully validated
   pre-submit form, immediate post-action state, and authoritative confirmation or
   visible failure state. Each image binds application ID, intent fence, URL hash,
@@ -2224,38 +2194,40 @@ path. First make the resident Job Hunter work end to end; only after that contra
 proven may the repair process itself be automated. A durability, learning, repair, or
 Web task never delays a task currently preventing one authoritative application:
 
-Completed foundations are `L-49K0A1G`, `L-49K0B`, `L-49K0C`, and `L-49K0C1`.
+Completed foundations include `L-49K0A1G`, `L-49K0B`, `L-49K0C`, `L-49K0C1`,
+`L-49K1`, OpenTelemetry `O1`/`O2`/`O5`, and all currently checked O3/O4 slices.
 The active cursor is the first item below; do not start a later item merely because
 it is easier to demonstrate:
 
-1. `L-49K0C2O1` through `L-49K0C2O5`, excluding only the action-owned
-   `L-49K0C2O3b2c` — install the local OpenTelemetry, Collector, Grafana,
-   trace-correlation, and privacy boundary before another ATS selector diagnosis.
-   A generic surface error without its raw non-private cause is no longer acceptable.
-2. `L-49K1` through `L-49K4`, closing `L-49K0C2O3b2c` inside `L-49K3`, then
-   `L-49K0C2O6` and `L-49K0C2` — run one natural-language Terra Job Hunter through
-   the measured successful interaction and unseen ATS variants: open the application
-   route, adapt to the live UI, complete and verify the form, submit once, confirm
-   success, build the immutable
-   owner dossier, then
-   prove a blocked ATS route cannot end the hourly pass and all remaining eligible
-   routes/roles continue exactly once.
-3. `L-49K0E`, `L-49K`, `L-49`, `L-49A`, `L-50`, `L-51`, `L-52` — prove resident
+1. `L-49K2C1` — run an isolated local-DOM CloakBrowser E2E for `fill`, `select`,
+   `check`, and `upload`; verify changed `data-field-path` layouts and produce a
+   grounded receipt. This slice MUST NOT start the resident loop or click Submit.
+2. `L-49K2C2`, then close `L-49K2C` and `L-49K2` — wire the installed resident
+   Terra pass to use the deterministic CLI for inspect/fill, and prove a no-submit
+   resident canary reaches a fully verified pre-submit state. This slice MUST run
+   through the installed LaunchAgent, but Submit remains disabled and fenced.
+3. `L-49K3A`, `L-49K0C2O3b2c`, and `L-49K3B`, then close `L-49K3` — add exactly
+   one resident-only fenced semantic Submit, attach the missing `submit.action` span,
+   and accept `submitted` only from authoritative ATS or matched Gmail evidence.
+4. `L-49K4`, `L-49K0C2O6`, and the remaining `L-49K0C2` children — build the
+   immutable owner dossier, prove the joined trace/no-send canary, and prove a blocked
+   ATS cannot end the pass or duplicate another route.
+5. `L-49K0E`, `L-49K`, `L-49`, `L-49A`, `L-50`, `L-51`, `L-52` — prove resident
    actor provenance and authoritative real Ashby plus Workday receipts, exact
    submitted documents, complete question/answer dossiers, screenshots, and Gmail
    confirmation in Telegram.
-4. `L-49K0D`, `L-49K0D2`, then `L-53` through `L-57` — add tracker projections,
+6. `L-49K0D`, `L-49K0D2`, then `L-53` through `L-57` — add tracker projections,
    move the four working lanes to restart-safe Temporal workflows, and prove Gmail,
    Calendar, interview preparation, and debrief from authoritative events.
-5. `L-58` through `L-66` — prove conversion metrics, one-variable learning,
+7. `L-58` through `L-66` — prove conversion metrics, one-variable learning,
    rollback, Telegram, simultaneous health, and freeze the working local contract.
-6. `L-66A` through `L-66F` — only after the local contract works, automate the same
+8. `L-66A` through `L-66F` — only after the local contract works, automate the same
    diagnose, reproduce, test, patch, immutable-release, canary, rollback, resume, and
    Telegram repair process currently performed by the architect.
-7. `L-67` through `L-73` — operate the Dais campaign through fifty confirmed
+9. `L-67` through `L-73` — operate the Dais campaign through fifty confirmed
    applications, a verified interview, a qualifying written offer, comparison,
    negotiation brief, and owner decision.
-8. `W-01` through `W-30` — only after local completion, build and verify the
+10. `W-01` through `W-30` — only after local completion, build and verify the
    tenant-isolated Web product.
 
 Current production truth measured from the ledger and resident receipts:
@@ -3487,9 +3459,11 @@ OpenTelemetry decision and primary sources:
 - [ ] **L-66B** — Convert Guardian fault classes into content-addressed repair cases
   containing release SHA, workflow/run/activity IDs, actor PID, browser fence,
   sanitized exception, failing receipt hashes, and exact reproduction command.
-- [ ] **L-66C** — Run Terra repair in an isolated worktree through mandatory
-  RED test, minimal patch, focused tests, complete suite, privacy scan, and immutable
-  release build. A model assertion cannot mark a repair successful.
+- [ ] **L-66C** — Run Terra repair in an isolated worktree through mandatory RED
+  test, minimal patch, focused tests, complete suite, privacy scan, and immutable
+  release build. A fresh Sol verifier MUST independently inspect the repair diff and
+  evidence and attempt to falsify the claimed fix before canary activation. Terra or
+  Sol model assertions cannot mark a repair successful; only executable evidence can.
 - [ ] **L-66D** — Activate every repair first as a no-send canary, verify the original
   fault is gone and no safety/confirmation regression exists, then promote or
   atomically roll back to the last known-good release.
