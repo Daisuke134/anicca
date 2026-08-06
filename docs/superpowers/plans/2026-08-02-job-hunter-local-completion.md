@@ -3879,6 +3879,16 @@ OpenTelemetry decision and primary sources:
         Terra re-read the already-terminal Cursor Gmail/ATS-unknown history and returned.
         Remove that one-off recovery block and rerun; Ledger dedupe remains the generic
         protection against replay.
+      - Installed run `daily-20260807-000505` on release `4c7902077...` skipped the
+        terminal Cursor history, selected new candidates, opened the real NVIDIA
+        Workday `Solution Architect, Generative AI` application, chose `Apply Manually`,
+        and reached tenant account creation with the private credential store. It did
+        not submit: Workday's visible `data-automation-id=click_filter` wrapper
+        intercepted the hidden `button[type=submit]`; Terra returned `blocked` instead
+        of adapting the selector or executing required Gmail fallback. Telegram daily
+        report `8037` was sent. B4/L-51 remain open. The next atomic fix is to click the
+        visible semantic wrapper, verify the step transition, and prohibit a selected
+        role from ending as diagnostic-only `blocked` without ATS/Gmail receipt.
   - [ ] `L-49K5C` — Port generic Playwright form and CAPTCHA/SSO/page classification
     into the existing fenced CloakBrowser application lane. Keep the resident Terra
     agent as the adaptive owner. Do not use `bypassPermissions`, unpinned packages,
