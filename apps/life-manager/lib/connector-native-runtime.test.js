@@ -599,7 +599,7 @@ test("a known unavailable Luma RSVP skips to the next ranked candidate", async (
   }]);
 });
 
-test("a terminal known failure from the previous wake is not written again", async () => {
+test("a legacy form failure is retried once by the current capability version", async () => {
   const input = await fixture();
   const profile = Object.freeze({ tenant_id: TENANT, timezone: "Asia/Tokyo" });
   const goalDecision = Object.freeze({ ranked_events: [
@@ -632,10 +632,11 @@ test("a terminal known failure from the previous wake is not written again", asy
       calendarCoverageUrl: "https://calendar.google.com/calendar/u/0/r",
       calendarId: "primary",
       mapsKey: "maps-secret",
+      capabilityVersion: "luma-form-submit-v1",
       candidateAttempts: [{
         event_ref: "luma-event://event/founder-night",
         outcome: "known_no_effect",
-        safe_reason: "LUMA_RSVP_UNAVAILABLE",
+        safe_reason: "LUMA_FORM_INPUT_REQUIRED",
         observed_at: "2026-08-02T00:00:00.000Z",
         retry_after: null,
       }],
@@ -654,8 +655,14 @@ test("a terminal known failure from the previous wake is not written again", asy
       planDateSpend() { return spendSequence; },
       async runNativeWrite(value) {
         input.calls.push(["write", value]);
-        if (value.application.eventRef.endsWith("founder-night")) throw new Error("suppressed event was written again");
-        return delivered;
+        return value.application.eventRef.endsWith("founder-night")
+          ? Object.freeze({
+            status: "incomplete",
+            outcome: "application_failed",
+            error_code: "LUMA_REQUIRED_PROFILE_FIELD_UNAVAILABLE",
+            event_ref: "luma-event://event/founder-night",
+          })
+          : delivered;
       },
       createRouteMinutes() { return async () => 20; },
       isVerifiedConnectorProfile: (value) => value === profile,
@@ -666,8 +673,11 @@ test("a terminal known failure from the previous wake is not written again", asy
 
   assert.equal(result.write, delivered);
   assert.deepEqual(input.calls.filter(([name]) => name === "write").map(([, value]) => value.application.eventRef), [
+    "luma-event://event/founder-night",
     "luma-event://event/agent-night",
   ]);
+  assert.equal(result.candidate_attempts[0].capability_version, "luma-form-submit-v1");
+  assert.equal(result.candidate_attempts[1].capability_version, "luma-form-submit-v1");
 });
 
 test("an unknown effect is read back before absent retry or registered verification", async () => {

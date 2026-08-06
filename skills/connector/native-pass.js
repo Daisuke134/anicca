@@ -182,7 +182,11 @@ function readCandidateAttempts(stateDir) {
     try { value = JSON.parse(line); } catch { unavailable(); }
     if (
       !value || typeof value !== "object" || Array.isArray(value)
-      || Object.keys(value).sort().join(",") !== "event_ref,observed_at,outcome,retry_after,safe_reason"
+      || ![
+        "event_ref,observed_at,outcome,retry_after,safe_reason",
+        "capability_version,event_ref,observed_at,outcome,retry_after,safe_reason",
+      ].includes(Object.keys(value).sort().join(","))
+      || !(value.capability_version == null || /^[a-z0-9][a-z0-9._-]{0,63}$/.test(value.capability_version))
       || !/^luma-event:\/\/event\/[A-Za-z0-9_-]+$/.test(String(value.event_ref || ""))
       || !["verified_success", "known_no_effect", "unknown_effect", "recovery_required"].includes(value.outcome)
       || !/^[A-Za-z0-9_:-]{1,100}$/.test(String(value.safe_reason || ""))
@@ -267,6 +271,7 @@ function runtimeConfig(options, stateDir) {
     candidateAttempts: readCandidateAttempts(stateDir),
     cursor: readCursor(stateDir),
     passCandidateBudget: Number(env.LM_CONNECTOR_PASS_CANDIDATE_BUDGET || 3),
+    capabilityVersion: "luma-form-submit-v1",
   });
 }
 
@@ -372,7 +377,11 @@ function boundedResult(result) {
     ? result.candidate_attempts.map((attempt) => {
       if (
         !attempt || typeof attempt !== "object" || Array.isArray(attempt)
-        || Object.keys(attempt).sort().join(",") !== "event_ref,observed_at,outcome,retry_after,safe_reason"
+        || ![
+          "event_ref,observed_at,outcome,retry_after,safe_reason",
+          "capability_version,event_ref,observed_at,outcome,retry_after,safe_reason",
+        ].includes(Object.keys(attempt).sort().join(","))
+        || !(attempt.capability_version == null || /^[a-z0-9][a-z0-9._-]{0,63}$/.test(attempt.capability_version))
         || !/^luma-event:\/\/event\/[A-Za-z0-9_-]+$/.test(String(attempt.event_ref || ""))
         || !["verified_success", "known_no_effect", "unknown_effect", "recovery_required"].includes(attempt.outcome)
         || !/^[A-Za-z0-9_:-]{1,100}$/.test(String(attempt.safe_reason || ""))

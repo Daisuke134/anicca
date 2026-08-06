@@ -535,12 +535,14 @@ test("native-pass appends every bounded candidate attempt to durable history", a
     safe_reason: "LUMA_RSVP_UNAVAILABLE",
     observed_at: "2026-08-06T00:00:00.000Z",
     retry_after: null,
+    capability_version: "luma-form-submit-v1",
   }, {
     event_ref: "luma-event://event/verified-one",
     outcome: "verified_success",
     safe_reason: "open_coverage",
     observed_at: "2026-08-06T00:00:01.000Z",
     retry_after: null,
+    capability_version: "luma-form-submit-v1",
   }];
   try {
     await runNativePass({
