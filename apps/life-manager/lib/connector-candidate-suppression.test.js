@@ -55,3 +55,35 @@ test("a later non-terminal observation supersedes an older known failure", () =>
 
   assert.deepEqual([...suppressed], []);
 });
+
+test("a form capability upgrade re-evaluates an old form failure exactly once", () => {
+  const legacy = {
+    event_ref: "luma-event://event/form-upgrade",
+    outcome: "known_no_effect",
+    safe_reason: "LUMA_FORM_INPUT_REQUIRED",
+    observed_at: "2026-08-06T00:00:00.000Z",
+    retry_after: null,
+    capability_version: null,
+  };
+  assert.deepEqual([...activeSuppressedEventRefs({
+    now: "2026-08-06T01:00:00.000Z",
+    capabilityVersion: "luma-form-submit-v1",
+    attempts: [legacy],
+  })], []);
+
+  const retried = {
+    ...legacy,
+    observed_at: "2026-08-06T01:00:00.000Z",
+    capability_version: "luma-form-submit-v1",
+  };
+  assert.deepEqual([...activeSuppressedEventRefs({
+    now: "2026-08-06T01:01:00.000Z",
+    capabilityVersion: "luma-form-submit-v1",
+    attempts: [legacy, retried],
+  })], [legacy.event_ref]);
+  assert.deepEqual([...activeSuppressedEventRefs({
+    now: "2026-08-06T01:02:00.000Z",
+    capabilityVersion: "luma-form-submit-v2",
+    attempts: [legacy, retried],
+  })], []);
+});
