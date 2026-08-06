@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "upstream": "https://github.com/Pickle-Pixel/ApplyPilot",
+  "upstream_commit": "4a8d521f67f5139811c0a910ef37410f8e6d836a",
+  "license_boundary": {
+    "upstream_spdx": "AGPL-3.0-only",
+    "monorepo_spdx": "MIT",
+    "derived_code_root": "vendor/applypilot-derived",
+    "corresponding_source": "https://github.com/Pickle-Pixel/ApplyPilot/tree/4a8d521f67f5139811c0a910ef37410f8e6d836a",
+    "modified_source_publish_root": "apps/job-search-loop/vendor/applypilot-derived",
+    "preserve_upstream_license_and_notices": true,
+    "publish_modified_corresponding_source": true,
+    "relicense_unrelated_monorepo": false
+  },
+  "copied_paths": [],
+  "components": [
+    {"id": "jobspy_discovery", "decision": "adapt", "source_paths": ["src/applypilot/discovery/jobspy.py"], "local_authority": "existing candidate normalization and queue", "owner_task": "L-49K5B"},
+    {"id": "workday_discovery", "decision": "adapt", "source_paths": ["src/applypilot/discovery/workday.py"], "local_authority": "official-source candidate discovery", "owner_task": "L-49K5B"},
+    {"id": "smartextract_discovery", "decision": "adapt", "source_paths": ["src/applypilot/discovery/smartextract.py"], "local_authority": "existing candidate normalization and provenance", "owner_task": "L-49K5B"},
+    {"id": "detail_enrichment", "decision": "adapt", "source_paths": ["src/applypilot/enrichment/detail.py"], "local_authority": "existing candidate detail and expiry contracts", "owner_task": "L-49K5B"},
+    {"id": "site_patterns", "decision": "adapt", "source_paths": ["src/applypilot/config/sites.yaml"], "local_authority": "pinned official ATS patterns", "owner_task": "L-49K5B"},
+    {"id": "generic_form_classification", "decision": "adapt", "source_paths": ["src/applypilot/apply/prompt.py", "src/applypilot/apply/launcher.py"], "local_authority": "fenced resident Terra agent using the single CloakBrowser owner", "owner_task": "L-49K5C"},
+    {"id": "model_reported_applied", "decision": "supersede", "source_paths": ["src/applypilot/apply/prompt.py"], "local_authority": "authoritative ATS confirmation or Gmail provider receipt", "owner_task": "L-49K5C"},
+    {"id": "permission_bypass", "decision": "supersede", "source_paths": ["src/applypilot/apply/launcher.py"], "local_authority": "subscription-authenticated resident tool allowlist", "owner_task": "L-49K5C"},
+    {"id": "manual_ats_skip", "decision": "supersede", "source_paths": ["src/applypilot/apply/prompt.py"], "local_authority": "formal ATS first then one verified recruiting-email fallback", "owner_task": "L-49K5C"},
+    {"id": "applypilot_database", "decision": "supersede", "source_paths": ["src/applypilot/database.py"], "local_authority": "append-only Job Hunter Ledger and existing candidate queue", "owner_task": "L-49K5B"},
+    {"id": "applypilot_scheduler", "decision": "supersede", "source_paths": ["src/applypilot/pipeline.py"], "local_authority": "one installed launchd resident owner", "owner_task": "L-49K5B"},
+    {"id": "applypilot_browser_owner", "decision": "supersede", "source_paths": ["src/applypilot/apply/chrome.py"], "local_authority": "one leased CloakBrowser CDP identity", "owner_task": "L-49K5C"}
+  ]
+}
