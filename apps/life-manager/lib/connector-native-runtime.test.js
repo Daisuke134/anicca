@@ -298,7 +298,11 @@ test("configured native execution gates the date then uses Luna and passes one v
     }],
     skipped: [],
   });
-  const writeResult = Object.freeze({ status: "incomplete", outcome: "open_coverage" });
+  const writeResult = Object.freeze({
+    status: "incomplete",
+    outcome: "open_coverage",
+    event_ref: "luma-event://event/founder-night",
+  });
   const result = await runNativeConnectorPass({
     ...input,
     config: {
@@ -388,7 +392,83 @@ test("a known missing Luma form answer skips to the next ranked candidate", asyn
       async runNativeWrite(value) {
         input.calls.push(["write", value]);
         return value.application.eventRef.endsWith("founder-night")
-          ? Object.freeze({ status: "incomplete", outcome: "application_failed", error_code: "LUMA_FORM_INPUT_REQUIRED" })
+          ? Object.freeze({
+            status: "incomplete",
+            outcome: "application_failed",
+            error_code: "LUMA_FORM_INPUT_REQUIRED",
+            event_ref: "luma-event://event/founder-night",
+          })
+          : delivered;
+      },
+      createRouteMinutes() { return async () => 20; },
+      isVerifiedConnectorProfile: (value) => value === profile,
+      isVerifiedEventGoalSerendipity: (value) => value === goalDecision,
+      isVerifiedEventSpendSequence: (value) => value === spendSequence,
+    },
+  });
+
+  assert.equal(result.write, delivered);
+  assert.deepEqual(input.calls.filter(([name]) => name === "write").map(([, value]) => value.application.eventRef), [
+    "luma-event://event/founder-night",
+    "luma-event://event/agent-night",
+  ]);
+});
+
+test("a known unavailable Luma RSVP skips to the next ranked candidate", async () => {
+  const input = await fixture();
+  const profile = Object.freeze({ tenant_id: TENANT, timezone: "Asia/Tokyo" });
+  const goalDecision = Object.freeze({ ranked_events: [
+    { event_ref: "luma-event://event/founder-night" },
+    { event_ref: "luma-event://event/agent-night" },
+  ] });
+  const spendSequence = Object.freeze({
+    ordered_candidates: [{
+      event_ref: "luma-event://event/founder-night",
+      canonical_url: "https://luma.com/founder-night",
+    }, {
+      event_ref: "luma-event://event/agent-night",
+      canonical_url: "https://luma.com/agent-night",
+    }],
+    skipped: [],
+  });
+  const delivered = Object.freeze({
+    status: "incomplete",
+    outcome: "open_coverage",
+    event_ref: "luma-event://event/agent-night",
+  });
+  const result = await runNativeConnectorPass({
+    ...input,
+    config: {
+      ...input.config,
+      profilePath: "/private/tmp/dais-local.json",
+      lunaEvidenceDir: "/private/tmp/connector-luna",
+      homeLocation: "opaque-home",
+      telegramTarget: "opaque-chat",
+      calendarCoverageUrl: "https://calendar.google.com/calendar/u/0/r",
+      calendarId: "primary",
+      mapsKey: "maps-secret",
+    },
+    deps: {
+      ...input.deps,
+      readProfile() { return profile; },
+      async runLunaJudgment() { return goalDecision; },
+      async gateDateCalendar() {
+        return Object.freeze({
+          date: "2026-08-05",
+          candidates: spendSequence.ordered_candidates.map(({ event_ref }) => ({ event_ref, eligible: true })),
+        });
+      },
+      async createSpendPolicy() { return Object.freeze({ limits: [] }); },
+      planDateSpend() { return spendSequence; },
+      async runNativeWrite(value) {
+        input.calls.push(["write", value]);
+        return value.application.eventRef.endsWith("founder-night")
+          ? Object.freeze({
+            status: "incomplete",
+            outcome: "application_failed",
+            error_code: "LUMA_RSVP_UNAVAILABLE",
+            event_ref: "luma-event://event/founder-night",
+          })
           : delivered;
       },
       createRouteMinutes() { return async () => 20; },
