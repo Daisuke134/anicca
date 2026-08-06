@@ -3305,6 +3305,16 @@ OpenTelemetry decision and primary sources:
       an already-submitted manual/recruiter record is preserved and skipped without
       mutation, and the same Terra must immediately continue to the next candidate.
       Candidate blockers never end the pass while another eligible candidate exists.
+    - Run-57 live receipt: release `7f14056e0` launched the single Terra on browser
+      fence 127. Terra preserved the prior OpenAI state without a cross-owner crash,
+      opened the OpenAI application route, then continued to the ElevenLabs Japan
+      Ashby application instead of ending the pass. The next observed missing fact
+      was Japan sponsorship. Because the verified profile already establishes
+      Japanese citizenship and unrestricted Japan work authorization, the private
+      profile now explicitly records `requires_employment_sponsorship_in_japan=false`
+      with provenance. This removes repeated legal-answer rediscovery without
+      weakening truthfulness or duplicate-Submit protection. Submit evidence remains
+      required before this run can count an application.
 - [ ] **L-49K2** — Make the resident fill contract complete and inspectable. Route the
   exact accepted resume; fill verified identity/contact/location/start-date fields;
   select work authorization and sponsorship answers from the private profile; verify
