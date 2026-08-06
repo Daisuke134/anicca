@@ -163,9 +163,15 @@ The job/adapter/evidence transaction totals 348 lines across four modules/tests 
 - [x] Focused 4/4、pretest 12/12、constant outbound suite 348/348 GREEN。
 - [x] Master specへ進捗138を記録しcommit/push。
 
-## Task 4B2C: Connpass Runtime and Write Pipeline Wiring
+## Task 4B2C1: Provider-Neutral Downstream Write Contracts
 
-**Completion:** Calendar-eligible Connpass candidates enter the common write pipeline with the Connpass provider/job/evidence dependencies, then Calendar and Telegram lineage. Failure advances candidate/provider without stopping the pass; unknown effect reconciles before retry.
+**Completion:** The common write pipeline, registration coverage evidence, bounded result, candidate-attempt, and Telegram lineage accept a verified Connpass provider inventory and Connpass event reference without requiring a fabricated Luma goal decision. Existing Luma verification remains unchanged.
+
+This slice owns only downstream contract acceptance and regression tests. It does not construct a Connpass provider or perform a browser effect.
+
+## Task 4B2C2: Connpass Runtime Execution Wiring
+
+**Completion:** Calendar-eligible Connpass candidates enter the common write pipeline with the Connpass provider/job/evidence dependencies, then Calendar and Telegram lineage. Known no-effect advances candidate/provider without stopping the pass; unknown effect reconciles before retry.
 
 ## Task 4B3: Connpass Live Submit and Promotion
 
