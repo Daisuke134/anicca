@@ -43,6 +43,18 @@ class UpstreamLockTests(unittest.TestCase):
         self.assertEqual(data["license_boundary"]["derived_code_root"], "vendor/applypilot-derived")
         self.assertFalse(data["license_boundary"]["relicense_unrelated_monorepo"])
         self.assertEqual(data["copied_paths"], [])
+        self.assertEqual(
+            data["implemented_paths"],
+            [
+                {
+                    "local_path": "job_search_loop/jobspy_adapter.py",
+                    "upstream_contract_paths": ["src/applypilot/discovery/jobspy.py"],
+                    "copied_source_lines": 0,
+                    "license": "MIT",
+                    "owner_task": "L-49K5B1",
+                }
+            ],
+        )
 
         components = {item["id"]: item for item in data["components"]}
         self.assertEqual(

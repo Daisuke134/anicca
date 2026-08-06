@@ -13,6 +13,15 @@
     "relicense_unrelated_monorepo": false
   },
   "copied_paths": [],
+  "implemented_paths": [
+    {
+      "local_path": "job_search_loop/jobspy_adapter.py",
+      "upstream_contract_paths": ["src/applypilot/discovery/jobspy.py"],
+      "copied_source_lines": 0,
+      "license": "MIT",
+      "owner_task": "L-49K5B1"
+    }
+  ],
   "components": [
     {"id": "jobspy_discovery", "decision": "adapt", "source_paths": ["src/applypilot/discovery/jobspy.py"], "local_authority": "existing candidate normalization and queue", "owner_task": "L-49K5B"},
     {"id": "workday_discovery", "decision": "adapt", "source_paths": ["src/applypilot/discovery/workday.py"], "local_authority": "official-source candidate discovery", "owner_task": "L-49K5B"},

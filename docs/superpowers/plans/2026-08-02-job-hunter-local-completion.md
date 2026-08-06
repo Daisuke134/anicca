@@ -3773,12 +3773,20 @@ OpenTelemetry decision and primary sources:
     discovered role enters the current candidate queue; no ApplyPilot jobs table,
     continuous poller, scheduler, or second queue is allowed. Prove canonical dedupe,
     official-source provenance, expiry classification, and restart replay.
-    - [ ] `L-49K5B1` — Adapt ApplyPilot's JobSpy result contract into a bounded
+    - [x] `L-49K5B1` — Adapt ApplyPilot's JobSpy result contract into a bounded
       provider that emits Job Hunter discovery rows and enqueues them through the
       existing `CandidateQueue`. Preserve exact upstream-derived paths/notices in the
       adoption ledger; do not import ApplyPilot database or scheduler ownership.
       Prove URL normalization, canonical dedupe, source provenance, direct official
       application URL preference, and malformed-row rejection.
+      - Evidence: `job_search_loop/jobspy_adapter.py` independently implements the
+        pinned upstream row contract with zero copied source lines. It validates
+        HTTP(S), requires company/title, prefers `job_url_direct`, records
+        `jobspy:<site>:official_direct` provenance, and sends every valid row through
+        the existing `CandidateQueue`; malformed rows are counted before persistence.
+        `config/applypilot-adoption.v1.json` retains `copied_paths: []` and records the
+        MIT implementation path plus its exact upstream contract path. The combined
+        JobSpy/adoption focused suite passes 13/13.
     - [ ] `L-49K5B2` — Adapt Workday CXS and direct-career discovery behind the same
       provider contract. Use the pinned employer/site patterns, bound pagination and
       timeouts, retain official posting provenance, and enqueue only through the
