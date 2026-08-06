@@ -178,7 +178,27 @@ function boundedResult(result) {
     && continuation.status === "complete";
   if (status === "complete" && !complete) unavailable();
   if (status === "incomplete" && complete) unavailable();
-  const write = result.write && typeof result.write === "object" && !Array.isArray(result.write)
+  const rawWrite = result.write && typeof result.write === "object" && !Array.isArray(result.write)
+    ? result.write : null;
+  const receipt = rawWrite && rawWrite.registration_receipt;
+  let evidence = {};
+  if (receipt != null) {
+    const artifactMatch = /^object:\/\/sha256\/([0-9a-f]{64})$/.exec(String(receipt.artifact_ref || ""));
+    let canonical;
+    try { canonical = new URL(String(receipt.canonical_url || "")); } catch { unavailable(); }
+    if (
+      !artifactMatch || receipt.artifact_sha256 !== artifactMatch[1]
+      || canonical.protocol !== "https:" || canonical.hostname !== "luma.com"
+      || new Date(Date.parse(String(receipt.evidence_observed_at || ""))).toISOString() !== receipt.evidence_observed_at
+    ) unavailable();
+    evidence = {
+      canonical_url: canonical.toString(),
+      evidence_observed_at: receipt.evidence_observed_at,
+      artifact_ref: receipt.artifact_ref,
+      artifact_sha256: receipt.artifact_sha256,
+    };
+  }
+  const write = rawWrite
     ? {
       status: String(result.write.status || ""),
       outcome: String(result.write.outcome || ""),
@@ -186,6 +206,7 @@ function boundedResult(result) {
         ? { error_code: String(result.write.error_code) }
         : {}),
       event_ref: String(result.write.event_ref || ""),
+      ...evidence,
       calendar_event_ref: String(result.write.calendar_sync && result.write.calendar_sync.calendar_event_ref || ""),
       telegram_provider_id: String(result.write.telegram && result.write.telegram.provider_id || ""),
     }

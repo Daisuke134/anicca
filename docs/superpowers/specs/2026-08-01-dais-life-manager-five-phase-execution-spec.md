@@ -2338,6 +2338,14 @@ gapがあった。最新attemptをeventごとに検証取得し、unknown event�
 実装前はfocused testが`CONNECTOR_NATIVE_WRITE_FAILED`でRED、実装後は三状態integration 1/1、関連runtime/suppression 15/15、
 native 20/20、pretest 12/12、outbound 302/302がfresh GREEN。これでreadbackがpresent/absentを確定する前の再submitを禁止した。
 
+O1B-25進捗71（P0-8 registered-page PNG lineage durability / GREEN）: Luma providerは登録済みcontrolをreadbackした同じpageから
+`screenshot({type:"png", fullPage:true})`を取得し、tenant-scoped evidence storeがPNG signature、5KB以上、SHA-256 immutable objectを
+検証済みだった。一方、verifierから最終native stateへ画像の取得時刻とSHAが伝播せず、Calendar eventとのlineageをreadbackできなかった。
+verified outbound receiptへE1の`observed_at`とE2の`sha256`を追加し、write resultのregistration receiptへsafe projectionした。native-passは
+canonical Luma URL、exact instant、`object://sha256/<hash>`と同一hashを再検証し、event ref、artifact ref/SHA、取得時刻、Calendar event refを
+同じmode 0600 `last-result.json.write`へ保存する。focused evidence/provider/write 30/30、durable lineage 1/1、native 21/21、
+pretest 12/12、outbound 302/302がfresh GREEN。実eventの画像そのもののreadbackとTelegram画像送信はP0-9/10で実証する。
+
 完全な残TODO SSOT:
 
 **P0 — task deliveryを前進させる（最優先）**
@@ -2349,7 +2357,7 @@ native 20/20、pretest 12/12、outbound 302/302がfresh GREEN。これでreadbac
 5. [x] 同日候補をすべて順番に試し、同日枯渇時は同じpassで次open日へ進む。focused 13/13、native 19/19、outbound 300/300。
 6. [x] pass budget到達時はdate/candidate cursorを保存し、次wakeで続きから再開する。runtime 14/14、native 20/20、outbound 301/301。
 7. [x] unknown effectはLuma readbackでpresent/absentを確定するまで再submitしない。関連15/15、native 20/20、outbound 302/302。
-8. submit後のLuma登録済みpageをfull-page PNGで取得し、event ref、canonical URL、取得時刻、SHA-256、Calendar event IDへbindする。
+8. [x] submit後のLuma登録済みpageをfull-page PNGで取得し、event ref、canonical URL、取得時刻、SHA-256、Calendar event IDへbindする。focused 30/30、native 21/21、outbound 302/302。
 9. Telegramへ結果cardと登録済みpage画像を実送信し、画像のpositive provider message IDをdelivery receiptへ保存・readbackする。
 10. 次の実eventでLuma→登録済みpage PNG→mail/QR→Calendar→Telegram画像message IDを一巡実証する。
 11. 次wakeで成功eventとknown失敗eventの双方を再選択しないことを実証する。

@@ -70,6 +70,53 @@ test("native-pass invokes the direct runtime and keeps open coverage as a contin
   }
 });
 
+test("native-pass durably binds the registered-page PNG lineage to its Calendar event", async () => {
+  const directory = temporaryDirectory();
+  const stateDir = path.join(directory, "state");
+  const hash = "a".repeat(64);
+  try {
+    await runNativePass({
+      repoRoot: REPO_ROOT,
+      stateDir,
+      ownerToken: OWNER_TOKEN,
+      config: { tenantId: "dais-local" },
+      runRuntime: async () => ({
+        status: "incomplete",
+        coverage: { counts: { open: 20, covered_new: 1 } },
+        continuation: { status: "continue" },
+        write: {
+          status: "incomplete",
+          outcome: "open_coverage",
+          event_ref: "luma-event://event/founder-night",
+          registration_receipt: {
+            canonical_url: "https://luma.com/founder-night",
+            evidence_observed_at: "2026-08-06T02:00:00.000Z",
+            artifact_ref: `object://sha256/${hash}`,
+            artifact_sha256: hash,
+          },
+          calendar_sync: {
+            calendar_event_ref: `calendar-evidence://google/event/${"b".repeat(64)}`,
+          },
+          telegram: { provider_id: "7576" },
+        },
+      }),
+    });
+    const file = path.join(stateDir, "last-result.json");
+    assert.equal(fs.statSync(file).mode & 0o777, 0o600);
+    assert.deepEqual(JSON.parse(fs.readFileSync(file, "utf8")).write, {
+      status: "incomplete",
+      outcome: "open_coverage",
+      event_ref: "luma-event://event/founder-night",
+      canonical_url: "https://luma.com/founder-night",
+      evidence_observed_at: "2026-08-06T02:00:00.000Z",
+      artifact_ref: `object://sha256/${hash}`,
+      artifact_sha256: hash,
+      calendar_event_ref: `calendar-evidence://google/event/${"b".repeat(64)}`,
+      telegram_provider_id: "7576",
+    });
+  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+});
+
 test("native-pass forwards the complete launchd-owned Connector loop configuration", async () => {
   const directory = temporaryDirectory();
   const stateDir = path.join(directory, "state");

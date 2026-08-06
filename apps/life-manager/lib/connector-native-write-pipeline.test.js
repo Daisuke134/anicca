@@ -73,6 +73,8 @@ function depsFor(calls, overrides = {}) {
         canonical_url: EVENT_URL,
         external_receipt_ref: "provider-receipt://luma/fixture",
         artifact_ref: `object://${"a".repeat(64)}`,
+        evidence_observed_at: NOW,
+        artifact_sha256: "a".repeat(64),
         verified_at: NOW,
       } };
     },
@@ -155,6 +157,16 @@ test("verified RSVP evidence gates Calendar sync and then runs the remaining cha
   ]);
   assert.equal(calls[1][1].attempt, 1);
   assert.equal(result.telegram.provider_id, "321");
+  assert.deepEqual(result.registration_receipt, {
+    attempt_ref: "runtime-attempt://dais-local/outbound-event:job-1/1",
+    external_receipt_ref: "provider-receipt://luma/fixture",
+    artifact_ref: `object://${"a".repeat(64)}`,
+    evidence_observed_at: NOW,
+    artifact_sha256: "a".repeat(64),
+    canonical_url: EVENT_URL,
+    verified_at: NOW,
+  });
+  assert.equal(result.calendar_sync.calendar_event_ref, "calendar-evidence://google/event/event-1");
 });
 
 test("an unverified Calendar sync cannot produce coverage evidence or Telegram", async () => {
