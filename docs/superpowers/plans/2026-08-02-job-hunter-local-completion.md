@@ -2563,10 +2563,20 @@ the resident worker from producing one authoritative application receipt:
       `outreach_only`. Alternate URLs must be exact links to an employer domain or an
       approved ATS provider; lookalike domains and hash drift fail closed. Provenance
       and route-ledger tests pass 8/8 and the full suite passes 427/427.
-  - [ ] `L-49K0C1C` — Execute the ordered ladder at most once per route. Email an
+  - [x] `L-49K0C1C` — Execute the ordered ladder at most once per route. Email an
     application only when the provenance explicitly accepts it; otherwise allow one
     bounded recruiting outreach message, then continue to the next role. Preserve the
     exact provider receipt and never retry an unknown delivery.
+    - The message-route executor refuses to skip an eligible browser route, claims
+      `action_started` before transport, passes a route/fence idempotency key, and
+      permits accepted application email or outreach-only routes according to the
+      provenance class. The `gog gmail send` adapter uses `--body-file` and `--attach`
+      with `--json --no-input`; only an authoritative Gmail message ID becomes
+      delivered. Timeout, transport exception, missing ID, malformed JSON/status, or
+      invalid evidence becomes `delivery_unknown` and cannot be retried. Delivered
+      and unknown routes are at most once across the company-role key. No live email
+      was sent in this slice; fake-transport tests pass 14/14 and the full suite passes
+      433/433.
   - [ ] `L-49K0C1D` — Trigger the installed resident worker on a no-send fixture and
     prove ATS failure advances through every eligible route in order, cross-route
     duplicate fencing holds across crashes/replay, and the development session
