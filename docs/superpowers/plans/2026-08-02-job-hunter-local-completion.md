@@ -522,6 +522,14 @@ Every application stores and links:
 - stage timeline, interview Calendar event ID, follow-ups, and outcome;
 - strategy generation used for the decision.
 
+The owner-facing application dossier is a first-class immutable artifact, not a
+summary reconstructed later. It contains the exact official question text in display
+order, the exact submitted answer, answer provenance (`profile_fact`,
+`owner_verified`, or deterministic legal/profile routing), the selected-state proof
+for every radio/boolean/combobox, the exact submitted document filenames and hashes,
+and the start-date/work-authorization/sponsorship values. The interview pack consumes
+this dossier directly so preparation cannot contradict the submitted application.
+
 No receipt means no `application completed` claim.
 
 ### 6.3 Language routing
@@ -879,13 +887,23 @@ not presented as tappable mobile links.
 AI agent開発、TypeScript/Node.js、日英での業務経験が要件に合っています。
 
 [求人ページを開く]
-[提出したResumeを見る]
-[Cover Letterを見る]
-[提出した質問と回答を見る]
+[提出したResumeを見る・ダウンロード]
+[Cover Letterを見る・ダウンロード]
+[提出した質問と回答を全部見る]
+[応募成功画面を見る]
 
 応募確認:
-企業の応募完了画面で確認しました。これから返信を追跡します。
+企業の応募完了画面と確認メールで確認しました。これから返信を追跡します。
 ```
+
+The same Telegram event delivers or links one content-addressed private application
+package containing: submitted resume; submitted cover letter when present; a mobile-
+readable question/answer dossier; pre-submit, post-action, and terminal screenshots;
+ATS confirmation evidence; Gmail confirmation metadata; official job URL; application
+ID; current stage; and next automatic action. Telegram must ACK every document/link
+separately. A text-only success message, a local filesystem path, or a resume without
+the exact answers fails this UX. Replays deduplicate by application ID plus package
+manifest SHA-256.
 
 ### 7.2 Uncertain submission
 
@@ -2210,39 +2228,56 @@ Completed foundations are `L-49K0A1G`, `L-49K0B`, `L-49K0C`, and `L-49K0C1`.
 The active cursor is the first item below; do not start a later item merely because
 it is easier to demonstrate:
 
-1. `L-49K0C2O1` through `L-49K0C2O6`, then `L-49K0C2` — add the minimum
-   OpenTelemetry trace needed to diagnose a resident application attempt, then prove
-   a blocked ATS route cannot end the hourly pass and all remaining eligible
+1. `L-49K1` through `L-49K4` — copy the measured successful Ashby interaction into
+   the resident Browser Use action contract: open `Application`, complete and verify
+   the form, submit once, confirm success, and build the immutable owner dossier.
+2. `L-49K0C2O1` through `L-49K0C2O6`, then `L-49K0C2` — add the minimum
+   OpenTelemetry trace needed to diagnose the resident application attempt, then
+   prove a blocked ATS route cannot end the hourly pass and all remaining eligible
    routes/roles continue exactly once.
-2. `L-49K0E`, `L-49K`, `L-49`, `L-49A`, `L-50`, `L-51`, `L-52` — prove resident
-   actor provenance, bounded owner handoff where required, and authoritative real
-   Ashby plus Workday receipts and screenshots in Telegram.
-3. `L-49K0D`, `L-49K0D2`, then `L-53` through `L-57` — add tracker projections,
+3. `L-49K0E`, `L-49K`, `L-49`, `L-49A`, `L-50`, `L-51`, `L-52` — prove resident
+   actor provenance and authoritative real Ashby plus Workday receipts, exact
+   submitted documents, complete question/answer dossiers, screenshots, and Gmail
+   confirmation in Telegram.
+4. `L-49K0D`, `L-49K0D2`, then `L-53` through `L-57` — add tracker projections,
    move the four working lanes to restart-safe Temporal workflows, and prove Gmail,
    Calendar, interview preparation, and debrief from authoritative events.
-4. `L-58` through `L-66` — prove conversion metrics, one-variable learning,
+5. `L-58` through `L-66` — prove conversion metrics, one-variable learning,
    rollback, Telegram, simultaneous health, and freeze the working local contract.
-5. `L-66A` through `L-66F` — only after the local contract works, automate the same
+6. `L-66A` through `L-66F` — only after the local contract works, automate the same
    diagnose, reproduce, test, patch, immutable-release, canary, rollback, resume, and
    Telegram repair process currently performed by the architect.
-6. `L-67` through `L-73` — operate the Dais campaign through fifty confirmed
+7. `L-67` through `L-73` — operate the Dais campaign through fifty confirmed
    applications, a verified interview, a qualifying written offer, comparison,
    negotiation brief, and owner decision.
-7. `W-01` through `W-30` — only after local completion, build and verify the
+8. `W-01` through `W-30` — only after local completion, build and verify the
    tenant-isolated Web product.
 
 Current production truth measured from the ledger and resident receipts:
 
-- the installed resident Job Hunter has zero new authoritative confirmed
-  applications, zero verified interviews, zero offers, and zero recruiting-email
-  deliveries;
-- the ledger contains three historical `submitted` rows: two agent-owned development
-  E2E records and one `dais_manual` Palantir record; these are not three resident-loop
-  successes;
+- the installed resident Job Hunter still has zero new authoritative confirmed
+  applications, zero verified interviews, and zero offers;
+- one owner-authorized interactive diagnostic successfully submitted OpenAI
+  `AI Deployment Engineer, Startups` in Tokyo through the existing dedicated
+  CloakBrowser profile. This is a measured reference trace, not resident-loop proof:
+  `Application` tab opened; English resume uploaded; exact required answers selected;
+  Submit executed once; reCAPTCHA completed without a human challenge; Ashby
+  `ApiSubmitSingleApplicationFormAction` returned HTTP 200; the terminal page stated
+  `Your application was successfully submitted`; and Gmail delivered `Thank you for
+  applying to OpenAI` with message ID `19fd5b82e11097f4`;
+- the reference success image SHA-256 is
+  `8ed35a14223b33357acbb321c3db4e419d226904991242e148d5794646b0f95a`.
+  The ledger records this one-off as `dais_manual / submitted`, preserving the
+  builder/operator boundary; it cannot satisfy the resident actor or campaign gates;
+- the ledger therefore contains four historical/reference `submitted` rows: two
+  agent-owned development E2E records, one `dais_manual` Palantir record, and the
+  one-off `dais_manual` OpenAI reference success. None is a resident-loop success;
 - twelve agent-owned rows remain `submit_unknown` and MUST NOT be counted or blindly
   retried;
-- Gmail has zero submission confirmations and zero application matches; funnel
-  outcomes and production application routes are empty;
+- Gmail contains the OpenAI confirmation above, but the inbox loop acknowledged it
+  with `matched_count=0` because the interactive diagnostic did not create a resident
+  submit intent. Resident Gmail submission confirmations, funnel outcomes, and
+  production application-route success remain zero;
 - the last Browser Use resident pass attempted three candidates, confirmed zero, and
   truthfully reported `application_surface_not_found` for each. Candidate evidence
   now proves the hidden causes: two pages were blank with zero controls because
@@ -2252,6 +2287,12 @@ Current production truth measured from the ledger and resident receipts:
   form filling or Submit; and
 - Gmail fallback components exist but are not connected to the resident pass until
   `C2B2` through `C2D` complete.
+
+Measured reference timing: the final pre-submit image was captured at 15:16:45 JST
+and the terminal success image at 15:17:53 JST, so the verified final submit phase was
+68 seconds. The complete interactive diagnostic took several minutes because it
+included inspection and correction. A future 20-second or one-to-three-minute claim
+must come from resident production measurements, never extrapolation from this demo.
 
 OpenTelemetry decision and primary sources:
 
@@ -2887,19 +2928,50 @@ OpenTelemetry decision and primary sources:
   receipts identify the resident worker, not the development session. Reject direct
   Codex, Claude, shell, Python, and Playwright attempts to mint Submit authority.
   Future live E2E MUST use this trigger-and-observe path.
-- [ ] **L-49K** — Replace repeated blind Ashby clicks with a fenced human-confirmation
-  handoff when a fully valid form produces no submit request, no reCAPTCHA execution,
-  no visible validation error, and no Gmail receipt. The agent may discover, rank,
-  fill, upload, validate, and persist exact materials, but must leave one owned
-  application page open under a durable handoff lease and send one natural-language
-  Telegram action with the company, role, expiry, and exact owner action. After the
-  owner acts, the loop must capture the exact ATS request/confirmation or Gmail
-  receipt, close only that handed-off page, and finalize `submitted`,
-  `not_submitted`, or `submit_unknown` without a second click. Add expiry,
-  cancellation, crash recovery, page-identity binding, and duplicate-notification
-  tests before another live Ashby application. Capture and Telegram-deliver the
-  required pre-submit, post-action, and terminal-state screenshots with immutable
-  hashes. Live trigger: Cohere's official
+- [ ] **L-49K1** — Add the Ashby surface state machine measured in the OpenAI
+  reference success. After `page.ready`, recognize Overview separately from the
+  application form, locate the semantic `Application` tab or `Apply for this Job`
+  control by accessible role/name, execute exactly one open action, wait for required
+  form controls rather than navigation `commit`, and persist before/after surface
+  snapshots. Fixtures must cover blank commit, delayed render, Overview with both
+  controls, direct `/application`, stale ref, and no application surface. Files:
+  modify `browser_use_ats.py`, `browser_use_adapter.py`, and focused tests (3 files,
+  soft target 100 LOC; split state classification from action execution if exceeded).
+- [ ] **L-49K2** — Make the resident fill contract complete and inspectable. Route the
+  exact accepted resume; fill verified identity/contact/location/start-date fields;
+  select work authorization and sponsorship answers from the private profile; verify
+  active state for every boolean/radio/combobox; persist exact question text, exact
+  answer, provenance fact IDs, selected-state evidence, resume filename/hash, and
+  pre-submit screenshot in the private application dossier. Any unanswered required
+  field, unknown legal fact, or selector ambiguity blocks that candidate before
+  Submit and continues the pass. Files: modify `browser_fill.py`, material receipt,
+  and focused tests (3 files, soft target 100 LOC per slice).
+- [ ] **L-49K3** — Implement one fenced semantic `Submit Application` action for the
+  registered resident worker only. Observe the Ashby submit request, reCAPTCHA
+  outcome, HTTP result, terminal success text, URL, and Gmail confirmation; capture
+  post-action and terminal screenshots. Transition to `submitted` only from an
+  authoritative ATS success or deterministically matched Gmail receipt;
+  `action_started` without confirmation becomes `submit_unknown` and is never
+  clicked again. Include crash-before-click, crash-after-click, delayed success,
+  HTTP error, visible validation error, CAPTCHA challenge, silent timeout, duplicate
+  wake, and actor-provenance tests.
+- [ ] **L-49K4** — Build one content-addressed owner application package from the
+  authoritative dossier: official posting, exact submitted resume and cover letter,
+  complete ordered question/answer/provenance report, selected-state summary,
+  pre/post/terminal screenshots, ATS request/confirmation metadata, Gmail message
+  metadata, stage, and next action. Validate that the package contains no secret and
+  that every hash resolves before enqueueing Telegram. Files: create one dossier
+  renderer, extend evidence manifest/projection, and focused tests (3 files, soft
+  target 100 LOC).
+- [ ] **L-49K** — Prove `L-49K1` through `L-49K4` through the installed resident
+  LaunchAgent on one eligible Ashby role. The development session only triggers and
+  observes. The resident must open the application surface, fill, verify, submit once,
+  confirm through ATS/Gmail, store the immutable dossier, and leave the ledger at
+  `submitted`. If a fully valid form produces no submit request, no reCAPTCHA
+  execution, no visible validation error, and no Gmail receipt, preserve the existing
+  fenced human-confirmation handoff as a bounded fallback—not the default path.
+  Capture and Telegram-deliver all artifacts with immutable hashes. Historical live
+  trigger: Cohere's official
   `Forward Deployed Engineer, Infrastructure Specialist` posting is Tokyo, remote,
   full-time, scored 85 strong-fit, and used the technical-business resume. Its
   explicit gaps remain business-English level evidence, production Kubernetes,
@@ -2912,7 +2984,12 @@ OpenTelemetry decision and primary sources:
   reCAPTCHA execution. Immediate Cohere/Ashby Gmail search returned zero messages.
   The ledger therefore records `submit_unknown`, forbids retrying Cohere, preserves
   slot 9, has integrity `ok`, and has zero active claims. Cohere must not be retried.
-- [ ] **L-50** — Deliver the Ashby application artifacts and receipt to Telegram.
+- [ ] **L-50** — Deliver the Ashby owner application package to Telegram and prove
+  provider ACKs for the natural-language summary, exact submitted resume, cover letter
+  when present, complete mobile-readable question/answer dossier, pre-submit,
+  post-action, and terminal screenshots, official URL, ATS/Gmail confirmation, stage,
+  and next action. Reopen every delivered artifact from Telegram, verify its SHA-256
+  against the manifest, and prove an interview pack reads the same exact answers.
 - [ ] **L-51** — Submit one eligible real Workday application and store its
   authoritative receipt.
 - [ ] **L-52** — Deliver the Workday application artifacts and receipt to Telegram.
