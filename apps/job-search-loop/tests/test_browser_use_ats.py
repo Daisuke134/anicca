@@ -2,6 +2,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from job_search_loop.browser_use_adapter import BrowserUsePolicyError
 from job_search_loop.browser_use_ats import resolve_application_surface, run_pre_submit
@@ -29,7 +30,61 @@ class SurfaceAdapter:
             raise BrowserUsePolicyError("Browser Use control index is stale")
 
 
+class RecordingSpan:
+    recording = True
+    def __init__(self, name): self.name, self.attributes = name, {}
+    def __enter__(self): return self
+    def __exit__(self, *_): return False
+    def set_attributes(self, attributes): self.attributes.update(attributes)
+
+
+class RecordingTelemetry:
+    def __init__(self): self.spans = []
+    def span(self, name, attributes=None):
+        span = RecordingSpan(name); span.attributes.update(attributes or {}); self.spans.append(span)
+        return span
+
+
+class TraceBackend:
+    def __init__(self, telemetry): self.telemetry, self.connected = telemetry, False
+    def connect(self): self.connected = True
+    def close(self): self.connected = False
+    def navigate(self, _url): pass
+    def snapshot(self): return snapshot(*FORM, url="https://jobs.ashbyhq.com/acme/role/application")
+    def screenshot(self): return b"png"
+
+
 class BrowserUseATSRunnerTests(unittest.TestCase):
+    def test_candidate_route_surface_and_form_share_one_private_safe_trace(self):
+        telemetry = RecordingTelemetry()
+        captured = {}
+        def backend_factory(_endpoint, *, allowed_domains, telemetry):
+            captured["telemetry"] = telemetry
+            return TraceBackend(telemetry)
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            prefilter = root / "prefilter.json"; prefilter.write_text("{}")
+            profile = root / "profile.json"; profile.write_text('{"candidate": {}}')
+            resume = root / "resume.pdf"; resume.write_bytes(b"pdf")
+            candidate = {"official_url": "https://jobs.ashbyhq.com/acme/role?secret=x",
+                         "provider": "ashby", "role_family": "engineering", "language": "en"}
+            with patch("job_search_loop.browser_use_ats.ranked_pre_submit_candidates", return_value=[candidate]), \
+                 patch("job_search_loop.browser_use_ats.select_resume", return_value={"resume_path": str(resume), "resume_sha256": "a" * 64}), \
+                 patch("job_search_loop.browser_use_ats.build_non_submit_fill_plan", return_value=[]), \
+                 patch("job_search_loop.browser_use_ats.execute_non_submit_fill_plan", return_value={"status": "claim_ready", "blockers": []}):
+                run_pre_submit(
+                    owner_receipt={"endpoint": "http://127.0.0.1:9222", "lease_id": "lease", "fence": 1, "holder_pid": 2},
+                    prefilter_result=prefilter, profile_path=profile, materials_root=root,
+                    evidence_dir=root / "evidence", backend_factory=backend_factory,
+                    telemetry=telemetry,
+                )
+
+        self.assertIs(captured["telemetry"], telemetry)
+        names = [span.name for span in telemetry.spans]
+        for expected in ("candidate", "route", "surface.classify", "form.snapshot", "form.fill"):
+            self.assertIn(expected, names)
+        self.assertNotIn("secret", json.dumps([span.attributes for span in telemetry.spans]))
     def test_resolves_blank_delayed_overview_and_direct_form_states(self):
         cases = (
             ([snapshot(committed=False), snapshot(*FORM)], 0),
