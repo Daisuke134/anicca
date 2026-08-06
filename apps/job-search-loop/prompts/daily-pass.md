@@ -16,6 +16,14 @@ unavailable, continue through another official application route or a truthful
 employer contact route when the strategy permits it; record exact evidence rather
 than claiming submission without confirmation.
 
+You have Codex shell/tool execution and unrestricted local process access. The
+built-in Browser Use and computer-use products are intentionally disabled because
+they are not the browser owner. Browser automation is still available: use Python
+Playwright through `chromium.connect_over_cdp` against the endpoint in
+`$JOB_SEARCH_BROWSER_OWNER_EVIDENCE`. Never claim that a browser action, page state,
+or submission happened from reasoning alone. Every claim requires a live CDP
+observation and a private receipt or screenshot created by this process.
+
 This process is the existing `ai.anicca.job-search-daily` launchd owner. Do not
 start another launchd job, agent runner, or Chromium process. Read the JSON path in
 `$JOB_SEARCH_BROWSER_OWNER_EVIDENCE`. When its status is `ready`, connecting
@@ -122,8 +130,17 @@ await page.goto(job_url, wait_until="commit", timeout=45_000)
 ```
 
 Then use Playwright user-facing locators and their auto-waiting to wait up to 20
-seconds for an application surface. Inspect the main frame first, followed by every
-attached frame. Do not use generated CSS classes or arbitrary sleeps. Persist a
+seconds for the current job or application surface. Inspect the main frame first,
+followed by every attached frame. A job-detail page is a navigation surface, not a
+failed application surface. Before running the deterministic ATS evaluator, locate
+and activate the obvious user-facing application entry such as `Apply`, `Apply now`,
+`Apply for this job`, `応募する`, `応募へ進む`, `エントリー`, or an equivalent link or
+button grounded in the live page. Follow same-tab navigation, a newly registered
+popup, and ordinary redirects, then recapture the controls. Repeat only while each
+transition visibly advances toward the application; never click unrelated controls
+or Submit at this stage. If no application entry is visible, inspect its official
+link destination and attached frames before treating the route as unavailable. Do
+not use generated CSS classes or arbitrary sleeps. Persist a
 redacted version-1 snapshot beside `$JOB_SEARCH_BROWSER_OWNER_EVIDENCE`, mode 0600,
 with only:
 
@@ -134,7 +151,8 @@ frames[].controls[].{tag,type,role,label,name,text}
 
 Control metadata may describe labels and visible button text, but never entered
 values, cookies, tokens, addresses, phone numbers, email values, or free-text
-answers. Evaluate the exact snapshot before any ledger claim:
+answers. Evaluate the exact snapshot after application-entry navigation and before
+any ledger claim:
 
 ```bash
 PYTHONPATH=apps/job-search-loop \
@@ -182,8 +200,13 @@ value into a command. Recapture and reevaluate after the transition. If provisio
 or account creation fails, record the exact non-secret blocker, release/avoid the
 slot, and continue to other eligible jobs instead of ending discovery. Never treat
 an invisible reCAPTCHA frame alone as a visible challenge; never bypass or answer an
-actual CAPTCHA. If the evaluator fails, returns not ready, or the application form
-never appears, record `not_submitted` without claiming a slot.
+actual CAPTCHA. If the evaluator fails or returns not ready on a job-detail or
+navigation surface, continue through its grounded application entry and recapture
+instead of stopping. Only after every visible official application route and frame
+has been followed and no form appears may you record `not_submitted` without
+claiming a slot. `application_surface_not_found` on a page containing a visible
+application-entry control is an executor defect, not a valid candidate outcome; fix
+the interaction in this same process and continue.
 
 Before any submit click, save the complete normalized official posting text in a
 private mode-0600 file beside `$JOB_SEARCH_BROWSER_OWNER_EVIDENCE`, determine the
