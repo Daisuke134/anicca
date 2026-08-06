@@ -3067,6 +3067,12 @@ known-no-effectで次候補を経てPeatixへhandoff、unknown/recoveryではcur
 codesもcandidate outcome contractへ追加した。focused 41/41、pretest 21/21、常設outbound suite 349/349 GREEN、失敗0件。次はTask 4B3で
 既存Connector launchdと`:9222`を使う実Connpass registrationを行い、parent readback、PNG、Calendar、Telegramを一lineageで実証する。
 
+O1B-25進捗144（Calendar eligible 0のprovider-stop gate除去 / RED→GREEN）: live state run 189はLuma inventory 27件、
+Calendar eligible 0件、write 0件、provider cursor Luma固定で停止していた。provider cursor付きtestへ全Luma候補eligible=falseを入力し、
+`luma !== connpass`のREDを確認した。Luma calendar gateのeligibleが0件ならLumaを`provider_exhausted`として同じrunでConnpass handoffへ
+進める。provider registryなしの従来単独runtimeはincomplete continuationを維持する。focused runtime 17/17、常設outbound suite
+349/349 GREEN、失敗0件。次は最新commitを向く既存launchdをwakeし、実Connpass applied bundleを検証する。
+
 現在と完成形:
 
 ```mermaid
