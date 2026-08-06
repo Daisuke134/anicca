@@ -124,6 +124,16 @@ class BrowserUseATSRunnerTests(unittest.TestCase):
         self.assertEqual(adapter.opens, [(0, 0)])
         self.assertGreaterEqual(len(waits), 3)
 
+    def test_keeps_observing_a_realistically_slow_ashby_render(self):
+        adapter = SurfaceAdapter([snapshot()] * 20 + [snapshot(*FORM)])
+        waits = []
+        with tempfile.TemporaryDirectory() as directory:
+            resolved = resolve_application_surface(
+                adapter, Path(directory), sleeper=lambda seconds: waits.append(seconds)
+            )
+        self.assertTrue(resolved["evaluation"]["claim_ready"])
+        self.assertEqual(len(waits), 20)
+
     def test_fails_closed_when_no_application_surface_appears(self):
         adapter = SurfaceAdapter([snapshot({"tag": "a", "text": "Company"})])
         with tempfile.TemporaryDirectory() as directory:
