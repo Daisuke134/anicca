@@ -647,12 +647,19 @@ function createWorkerHandlers(env, capabilities, dependencies = {}) {
       const {
         createConnectorEventsPack,
       } = require("../lib/connector-events-pack.js");
+      const { readLumaFormProfile } = require("../lib/luma-form-profile.js");
       const auth = dependencies.lumaAuth || createReadOnlyLumaSessionAuth({ dailyDriver });
+      const readPrivateLumaFormProfile = dependencies.readPrivateLumaFormProfile || readLumaFormProfile;
+      const readTrustedLumaFormProfile = dependencies.readLumaFormProfile || (() => (
+        readPrivateLumaFormProfile({
+          path: path.join(requiredEnv(env, "LM_DATA_DIR"), "private", "connector-luma-form-profile.json"),
+        })
+      ));
       const pack = (dependencies.createConnectorEventsPack || createConnectorEventsPack)({
         dailyDriver,
         auth,
         evidenceStore,
-        readLumaFormProfile: dependencies.readLumaFormProfile,
+        readLumaFormProfile: readTrustedLumaFormProfile,
         now: dependencies.now,
       });
       provider = pack.provider;

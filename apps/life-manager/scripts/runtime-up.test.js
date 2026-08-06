@@ -808,6 +808,34 @@ test("outbound event worker obtains its provider from the canonical events pack"
   assert.equal(services.provider, provider);
 });
 
+test("outbound event worker lazily reads its private Luma form profile from the durable data root", () => {
+  let reader;
+  const calls = [];
+  createWorkerHandlers({
+    LM_RUNTIME_TENANT_ID: "tenant-a",
+    LM_DATA_DIR: "/var/lib/life-manager/data",
+  }, ["outbound.event.apply"], {
+    lumaDailyDriver: { withLumaPage: async () => {} },
+    lumaAuth: { ensureAuthenticated: async () => ({ status: "authenticated" }) },
+    lumaEvidenceStore: {
+      record: async () => {}, readExternalReceipt: async () => {}, readArtifact: async () => {},
+    },
+    readPrivateLumaFormProfile(input) {
+      calls.push(input);
+      return { form_answers: {} };
+    },
+    createConnectorEventsPack(input) {
+      reader = input.readLumaFormProfile;
+      return { provider: { inspectRegistration: async () => {}, submitRegistration: async () => {} } };
+    },
+    createRegistry() { return { hasCapability: () => false }; },
+  });
+
+  assert.equal(calls.length, 0);
+  assert.deepEqual(reader(), { form_answers: {} });
+  assert.deepEqual(calls, [{ path: "/var/lib/life-manager/data/private/connector-luma-form-profile.json" }]);
+});
+
 test("marketing observation worker reads one tenant receipt and preserves empty analytics as unavailable", async () => {
   const publicationJobId = `marketing-daily:${"a".repeat(64)}`;
   const calls = [];
