@@ -2452,6 +2452,11 @@ O1B-25進捗86（P0-13 non-destructive health readback）: run 113後に実`heal
 coverage継続中のexit 1を`runtime_incomplete`としてdurable stateへ残す一方、fresh heartbeatとCDP/gog dependencyが正常ならhealthcheckはhealthyになる。
 Mac再起動後の自動復帰、stale heartbeat self-heal、launchd再loadはまだ未実証なのでP0-13 checkboxは未完のまま維持する。
 
+O1B-25進捗87（schedule-owned run 114 / autonomous continuation）: run 113終了から300秒後、手動kickstartなしで既存launchdが
+run 114を自動起動した。自然終了後は`runtime_incomplete / write=null / open=19 / covered_new=2 / unavailable=0`で、偽Calendar failureは
+再発しなかった。新しいwritable eventがないためmail/QR/Calendar/Telegram receiptは生成されず、P0-10を完了扱いしない。loop ownerは
+launchd interval 300秒で次inventory refreshを継続する。
+
 完全な残TODO SSOT:
 
 **P0 — task deliveryを前進させる（最優先）**
