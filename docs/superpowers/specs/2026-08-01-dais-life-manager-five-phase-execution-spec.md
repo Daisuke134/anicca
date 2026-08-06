@@ -2963,6 +2963,15 @@ Connpass subdomainを含むapproved hostはConnector専用`:9222`のdefault cont
 `:9223`は拒否し、Gigのcode/state/profile/browserへ触れない。既存12件PASSかつ新Connpass rail不在のRED後、ownership focused 22/22、
 pretest 12/12、outbound 348/348 GREEN、失敗0件。次はTask 4B Connpass page adapterでlogin/readback、form、submit、marker、PNGを閉じる。
 
+O1B-25進捗136（Task 4B1 Connpass parent readback/submit adapter / RED→GREEN）: `connpass-browser-provider.js`を追加した。
+adapterは`dailyDriver.withEventPage("connpass", canonical_url)`だけを使い、親owned pageの観測を
+`absent / login_required / registered / pending / unavailable / unknown`へ閉じる。登録済み・抽選/承認待ちmarkerは親が独立readbackし、
+その後だけfull-page PNGを撮り、event ref・observed timeとevidence storeへbindする。approved registration controlはexact accessible nameだけを
+一度clickする。login/unavailable/control不在などclick前失敗はknown no-effect、click後marker不明はunknown effectとして再submitを禁止する。
+page text、cookie、session、identityをresultへ返さない。module不在RED後、focused 3/3、pretest 12/12、常設outbound suite 348/348 GREEN、
+失敗0件。これはadapter単体であり外部submitはまだ行っていない。次はTask 4B2でCalendar-eligible Connpass candidateをcommon write/evidence
+pipelineへ接続し、Task 4B3でConnector自身の実browser submitとpromotionを行う。
+
 現在と完成形:
 
 ```mermaid

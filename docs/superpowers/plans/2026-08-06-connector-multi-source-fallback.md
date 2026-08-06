@@ -132,6 +132,13 @@ This slice changes 103 lines across the four declared files because both the liv
 
 **Completion:** The adapter uses only `dailyDriver.withEventPage("connpass", ...)`, recognizes absent/login-required/registered/pending markers by parent readback, performs only exact approved registration controls, distinguishes known-no-effect from unknown effect, and captures a full-page PNG only after parent readback proves registration or pending approval.
 
+The closed adapter and its contract tests total 258 lines. Splitting readback from submit would create a callable submit path without reconciliation, while splitting screenshot proof would allow an unproven success result; those half-states violate the required transaction boundary.
+
+- [x] Module-not-found REDを確認。
+- [x] Parent readback、exact control、known/unknown effect、registered/pending後だけPNG proofを実装。
+- [x] Focused 3/3、pretest 12/12、constant outbound suite 348/348 GREEN。
+- [x] Master specへ進捗136を記録しcommit/push。
+
 ## Task 4B2: Connpass Runtime and Evidence Pipeline Wiring
 
 **Completion:** Calendar-eligible Connpass candidates enter the common write pipeline with provider-specific readback, screenshot, admission receipt, Calendar, and Telegram lineage. Failure advances candidate/provider without stopping the pass; unknown effect reconciles before retry.
