@@ -41,12 +41,12 @@ class PromptInjectionTests(unittest.TestCase):
     def test_daily_runs_deterministic_prefilter_before_terra_browser_lane(self):
         root = Path(__file__).parents[1]
         script = (root / "scripts" / "run-daily.sh").read_text(encoding="utf-8")
-        prompt = (root / "prompts" / "daily-pass.md").read_text(encoding="utf-8")
+        prompt = (root / "prompts" / "daily-apply-simple.md").read_text(encoding="utf-8")
         self.assertIn("job_search_loop.prefilter", script)
         self.assertNotIn("prompts/prefilter-pass.md", script)
         self.assertLess(
             script.index("job_search_loop.prefilter"),
-            script.index("job_search_loop.browser_worker run"),
+            script.index("--task-class application-lane-agent"),
         )
         self.assertIn("JOB_SEARCH_PREFILTER_RESULT", script)
         self.assertIn("JOB_SEARCH_PREFILTER_RESULT", prompt)
@@ -73,19 +73,13 @@ class PromptInjectionTests(unittest.TestCase):
         self.assertIn("remaining_unverified_count", prompt)
         self.assertIn("must not return `no_eligible_job_found`", prompt)
 
-    def test_daily_prompt_uses_public_ats_liveness_before_browser(self):
+    def test_daily_defers_liveness_until_single_agent_selects_candidate(self):
         root = Path(__file__).parents[1]
-        prompt = (root / "prompts" / "daily-pass.md").read_text(encoding="utf-8")
         script = (root / "scripts" / "run-daily.sh").read_text(encoding="utf-8")
-        self.assertIn("job_search_loop.ats_liveness", prompt)
-        self.assertIn("check_liveness_via_api", prompt)
-        self.assertIn("before opening a pending URL in Playwright", prompt)
-        self.assertIn("timeout, redirect, 429, 5xx", prompt)
-        self.assertIn("must remain pending", prompt)
-        self.assertIn("job_search_loop.ats_liveness sweep", script)
+        self.assertIn('status:"deferred_until_candidate_selection"', script)
         self.assertLess(
-            script.index("job_search_loop.ats_liveness sweep"),
-            script.index("job_search_loop.browser_worker run"),
+            script.index('status:"deferred_until_candidate_selection"'),
+            script.index("--task-class application-lane-agent"),
         )
 
     def test_daily_driver_refreshes_official_ats_cache_before_prefilter(self):
@@ -97,7 +91,7 @@ class PromptInjectionTests(unittest.TestCase):
             script.index("job_search_loop.prefilter"),
         )
 
-    def test_daily_persists_prefilter_candidates_and_sweeps_before_terra(self):
+    def test_daily_persists_prefilter_candidates_before_single_application_agent(self):
         root = Path(__file__).parents[1]
         script = (root / "scripts" / "run-daily.sh").read_text(encoding="utf-8")
         self.assertIn("--queue-output", script)
@@ -105,36 +99,20 @@ class PromptInjectionTests(unittest.TestCase):
         self.assertIn("candidate_queue discover-prefilter", script)
         self.assertLess(
             script.index("candidate_queue discover-prefilter"),
-            script.index("job_search_loop.ats_liveness sweep"),
-        )
-        self.assertLess(
-            script.index("job_search_loop.ats_liveness sweep"),
-            script.index("--task-class composition-agent"),
+            script.index("--task-class application-lane-agent"),
         )
 
-    def test_daily_routes_deep_fit_tailoring_and_answers_through_terra_composition(self):
+    def test_daily_routes_selection_and_answers_through_single_application_agent(self):
         root = Path(__file__).parents[1]
         script = (root / "scripts" / "run-daily.sh").read_text(encoding="utf-8")
-        browser_prompt = (root / "prompts" / "daily-pass.md").read_text(encoding="utf-8")
-        terra_prompt = root / "prompts" / "terra-plan-pass.md"
-        terra_schema = root / "schemas" / "terra-plan-result.v1.schema.json"
-        self.assertTrue(terra_prompt.is_file())
-        self.assertTrue(terra_schema.is_file())
-        contract = terra_prompt.read_text(encoding="utf-8")
-        for phrase in ("deep fit", "resume variant", "employer answers"):
+        contract = (root / "prompts" / "daily-apply-simple.md").read_text(encoding="utf-8")
+        for phrase in ("Choose one eligible Ashby role", "exact-question answer map", "JOB_SEARCH_ASHBY_APPLY_RESULT"):
             self.assertIn(phrase, contract)
         self.assertLess(
             script.index("job_search_loop.prefilter"),
-            script.index("--task-class composition-agent"),
+            script.index("--task-class application-lane-agent"),
         )
-        self.assertLess(
-            script.index("--task-class composition-agent"),
-            script.index("job_search_loop.browser_worker run"),
-        )
-        self.assertIn("JOB_SEARCH_TERRA_PLAN_RESULT", script)
-        self.assertIn("JOB_SEARCH_TERRA_PLAN_RESULT", browser_prompt)
-        self.assertIn('"$TERRA_PLAN_EVIDENCE"/attempt-*.stdout.log', script)
-        self.assertIn('"$JOB_SEARCH_TERRA_PLAN_RESULT"', script)
+        self.assertNotIn("--task-class composition-agent", script)
 
     def test_browser_persists_exact_submission_materials_before_click(self):
         root = Path(__file__).parents[1]
@@ -177,9 +155,9 @@ class PromptInjectionTests(unittest.TestCase):
         high_schema = root / "schemas" / "terra-high-result.v1.schema.json"
         self.assertTrue(high_prompt.is_file())
         self.assertTrue(high_schema.is_file())
-        for script in (daily, weekly):
-            self.assertIn("--task-class job-search-terra-high", script)
-            self.assertIn("--escalation-reason", script)
+        self.assertNotIn("--task-class job-search-terra-high", daily)
+        self.assertIn("--task-class job-search-terra-high", weekly)
+        self.assertIn("--escalation-reason", weekly)
         self.assertIn("JOB_SEARCH_TERRA_HIGH_RESULT", daily)
         self.assertIn("JOB_SEARCH_TERRA_HIGH_RESULT", browser)
         self.assertIn("JOB_SEARCH_WEEKLY_HYPOTHESIS_RESULT", weekly)

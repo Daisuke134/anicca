@@ -1,7 +1,38 @@
 import unittest
+import importlib
 
 
 class AshbyApplyTests(unittest.TestCase):
+    def test_resident_fill_receipt_requires_verified_non_submit_actions(self):
+        module = importlib.import_module("job_search_loop.ashby_apply")
+        self.assertTrue(
+            hasattr(module, "validate_fill_result"),
+            "resident fill receipt validator is missing",
+        )
+
+        valid = {
+            "status": "ready",
+            "receipts": [
+                {"kind": "fill", "verified": True},
+                {"kind": "select", "verified": True},
+                {"kind": "check", "verified": True},
+                {"kind": "upload", "verified": True},
+            ],
+        }
+        self.assertEqual(
+            module.validate_fill_result(valid),
+            {"status": "pre_submit_ready", "verified_count": 4},
+        )
+
+        for invalid in (
+            {**valid, "receipts": [{"kind": "fill", "verified": False}]},
+            {**valid, "receipts": [{"kind": "submit", "verified": True}]},
+            {**valid, "status": "submitted"},
+            {**valid, "receipts": []},
+        ):
+            with self.assertRaises(ValueError):
+                module.validate_fill_result(invalid)
+
     def test_yes_no_buttons_win_over_internal_checkbox(self):
         from job_search_loop.ashby_apply import classify_control
 

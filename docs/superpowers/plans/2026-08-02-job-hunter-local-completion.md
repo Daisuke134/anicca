@@ -20,9 +20,10 @@ confirmed applications, zero verified interviews, and zero offers. The owner-aut
 OpenAI Ashby success is `dais_manual`, not resident proof. `L-49K2C1` is complete:
 its isolated CloakBrowser E2E verified changed field layouts across fill, select,
 check, and upload with zero Submit controls/actions and preserved all baseline pages.
-The complete Job Hunter suite runs 498 tests with four failures and four errors in
-legacy `run-daily.sh` assertions that still expect the superseded Browser Worker,
-composition-agent, Terra-high, and eager ATS-sweep topology.
+The complete Job Hunter suite passes 500/500. The eight legacy `run-daily.sh`
+assertions now verify the active single `application-lane-agent`, deferred ATS
+liveness, and release-contained Ashby CLI contract instead of the superseded Browser
+Worker, composition-agent, Terra-high, and eager ATS-sweep topology.
 
 ## 1. Acceptance criteria — done condition
 
@@ -3379,6 +3380,24 @@ OpenTelemetry decision and primary sources:
       grounded answer-map generation. A truly absent personal/legal fact returns a
       resumable `needs_fact` receipt; an unfamiliar control returns `needs_repair`
       with exact field metadata and keeps the same candidate current for Sol repair.
+      - [x] `L-49K2C2A` — Add a deterministic resident fill-result validator. Only a
+        `ready` result containing one or more verified fill/select/check/upload
+        receipts becomes `pre_submit_ready`; empty, unverified, non-ready, or Submit
+        actions fail closed. RED failed because the validator was absent. GREEN plus
+        adjacent Ashby suites pass 24/24.
+      - [x] `L-49K2C2B` — Make the resident release CLI-only and no-submit. The daily
+        runtime exports the release-contained module/result path and
+        `JOB_SEARCH_SUBMIT_ENABLED=0`; the Terra prompt owns only candidate choice and
+        exact-question grounded answer-map creation. An explicit fill-canary request
+        requires a valid CLI receipt or exits 76 even when the model reports success.
+        RED proved missing receipt returned zero; GREEN rejects it. The formerly
+        stale eight runtime assertions now cover the single-agent topology, related
+        suites pass 37/37, and the complete suite passes 500/500.
+      - [ ] `L-49K2C2C` — Build and install the immutable release, trigger the
+        installed LaunchAgent with one explicit no-submit canary, and prove resident
+        actor/owner/fence provenance, a valid CLI `pre_submit_ready` receipt, zero
+        Submit actions, preserved browser pages, and the same candidate retained for
+        the next fenced stage.
 - [ ] **L-49K3** — Implement one fenced semantic `Submit Application` action for the
   registered resident worker only. Observe the Ashby submit request, reCAPTCHA
   outcome, HTTP result, terminal success text, URL, and Gmail confirmation; capture

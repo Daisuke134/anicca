@@ -199,6 +199,23 @@ def execute_actions(page: Any, actions: list[dict[str, Any]]) -> list[dict[str, 
     return receipts
 
 
+def validate_fill_result(value: Any) -> dict[str, Any]:
+    if not isinstance(value, dict) or value.get("status") != "ready":
+        raise ValueError("resident fill result is not ready")
+    receipts = value.get("receipts")
+    if not isinstance(receipts, list) or not receipts:
+        raise ValueError("resident fill result has no receipts")
+    allowed = {"fill", "select", "check", "upload"}
+    if any(
+        not isinstance(receipt, dict)
+        or receipt.get("kind") not in allowed
+        or receipt.get("verified") is not True
+        for receipt in receipts
+    ):
+        raise ValueError("resident fill result contains an unsafe action")
+    return {"status": "pre_submit_ready", "verified_count": len(receipts)}
+
+
 def _write_private(path: Path, value: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     path.write_text(json.dumps(value, ensure_ascii=False, sort_keys=True) + "\n")
@@ -207,13 +224,19 @@ def _write_private(path: Path, value: Any) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Deterministic Ashby inspect/fill CLI")
-    parser.add_argument("mode", choices=("inspect", "fill"))
-    parser.add_argument("--endpoint", required=True)
-    parser.add_argument("--url", required=True)
+    parser.add_argument("mode", choices=("inspect", "fill", "verify"))
+    parser.add_argument("--endpoint")
+    parser.add_argument("--url")
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--answers", type=Path)
     parser.add_argument("--resume", type=Path)
     args = parser.parse_args()
+    if args.mode == "verify":
+        result = json.loads(args.output.read_text(encoding="utf-8"))
+        print(json.dumps(validate_fill_result(result), sort_keys=True))
+        return
+    if not args.endpoint or not args.url:
+        parser.error("inspect/fill require --endpoint and --url")
     from playwright.sync_api import sync_playwright
 
     url = args.url if args.url.rstrip("/").endswith("/application") else f"{args.url.rstrip('/')}/application"
