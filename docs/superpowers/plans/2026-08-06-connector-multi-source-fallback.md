@@ -21,11 +21,11 @@
 - Luma starts active from existing live proof. Connpass starts discovery active and all write/evidence abilities advisory-only until live promotion. Remaining providers start blocked until their official discovery/auth constraints are measured.
 - Registry is ordered, immutable, content-addressed, contains no credential values, and rejects unknown providers/capabilities/statuses.
 
-- [ ] Write failing tests for exact provider order, exact capability keys, no secret values, immutable provenance, and fail-closed promotion.
-- [ ] Run `node --test lib/event-provider-registry.test.js` and observe RED.
-- [ ] Implement the minimal registry and promotion validator.
-- [ ] Add the test to `test:outbound`; run focused, pretest, and full outbound suites.
-- [ ] Update master spec with RED/GREEN evidence; commit and push.
+- [x] Write failing tests for exact provider order, exact capability keys, no secret values, immutable provenance, and fail-closed promotion.
+- [x] Run `node --test lib/event-provider-registry.test.js` and observe module-not-found RED.
+- [x] Implement the minimal registry and promotion validator.
+- [x] Add the test to `test:outbound`; focused 3/3、pretest 12/12、outbound 340/340 GREEN。
+- [x] Update master spec with RED/GREEN evidence; commit and push.
 
 ## Task 2: Durable Provider Cursor and Same-Pass Handoff
 
