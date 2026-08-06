@@ -29,10 +29,7 @@ const {
 const { isVerifiedEventGoalSerendipity } = require("./event-goal-serendipity.js");
 const { runNativeConnectorWrite } = require("./connector-native-write-pipeline.js");
 const { classifyConnectorCandidateOutcome } = require("./connector-candidate-outcome.js");
-const {
-  activeSuppressedEventRefs,
-  latestCandidateAttempts,
-} = require("./connector-candidate-suppression.js");
+const { latestCandidateAttempts } = require("./connector-candidate-suppression.js");
 const { createConnectorRouteMinutes } = require("./connector-route-minutes.js");
 const { zonedSlotInstant } = require("./honne-ja-shadow-schedule.js");
 
@@ -72,13 +69,6 @@ function requiredText(value) {
   const text = String(value == null ? "" : value).trim();
   if (!text || text.length > 512) unavailable();
   return text;
-}
-
-function passCandidateBudget(value) {
-  if (value == null) return Number.MAX_SAFE_INTEGER;
-  const budget = Number(value);
-  if (!Number.isSafeInteger(budget) || budget < 1 || budget > 100) unavailable();
-  return budget;
 }
 
 function capabilityVersion(value) {
@@ -334,15 +324,8 @@ async function runNativeConnectorPass(input = {}) {
     let write = null;
     const candidateAttempts = [];
     const currentCapabilityVersion = capabilityVersion(config.capabilityVersion);
-    const candidateBudget = passCandidateBudget(config.passCandidateBudget);
     const inputCursor = resumeCursor(config.cursor);
-    let outputCursor = null;
-    let attemptCount = 0;
-    const suppressedEventRefs = activeSuppressedEventRefs({
-      attempts: Array.isArray(config.candidateAttempts) ? config.candidateAttempts : [],
-      capabilityVersion: currentCapabilityVersion,
-      now,
-    });
+    const outputCursor = null;
     const latestAttempts = latestCandidateAttempts({
       attempts: Array.isArray(config.candidateAttempts) ? config.candidateAttempts : [],
       now,
@@ -443,9 +426,7 @@ async function runNativeConnectorPass(input = {}) {
           );
           if (cursorIndex >= 0) resumableCandidates = resumableCandidates.slice(cursorIndex + 1);
         }
-        const orderedCandidates = resumableCandidates.filter(
-          (candidate) => !suppressedEventRefs.has(candidate.event_ref),
-        );
+        const orderedCandidates = resumableCandidates;
         selection.unsuppressed_count += orderedCandidates.length;
         if (orderedCandidates.length === 0) continue;
         failureCode = "CONNECTOR_NATIVE_WRITE_FAILED";
@@ -522,19 +503,6 @@ async function runNativeConnectorPass(input = {}) {
             retry_after: null,
             ...(currentCapabilityVersion ? { capability_version: currentCapabilityVersion } : {}),
           }));
-          attemptCount += 1;
-          if (
-            candidateOutcome.classification === "known_no_effect"
-            && attemptCount >= candidateBudget
-          ) {
-            outputCursor = Object.freeze({
-              status: "resume_after",
-              date: judgmentDay.date,
-              event_ref: selectedRef,
-              observed_at: now,
-            });
-            break judgmentLoop;
-          }
           if (candidateOutcome.classification !== "known_no_effect") break judgmentLoop;
         }
       }
