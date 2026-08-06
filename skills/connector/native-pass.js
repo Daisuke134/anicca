@@ -133,11 +133,24 @@ async function backfillLegacyPhoto(options, stateDir, config) {
   const slug = legacy.event_ref.slice("luma-event://event/".length);
   const sendPhoto = typeof options.sendPhotoEvidence === "function"
     ? options.sendPhotoEvidence : notifyOpenClawPhoto;
-  const response = await sendPhoto(bytes, {
-    telegramTarget: requiredText(config.telegramTarget),
-    caption: `✅ Connector登録済み証拠\nhttps://luma.com/${slug}`,
-  });
-  const photoProviderId = parseOpenClawMessageId(JSON.stringify(response || {}));
+  let response;
+  try {
+    response = await sendPhoto(bytes, {
+      telegramTarget: requiredText(config.telegramTarget),
+      caption: `✅ Connector登録済み証拠\nhttps://luma.com/${slug}`,
+    });
+  } catch {
+    const error = new Error("Connector native photo send failed");
+    error.code = "CONNECTOR_NATIVE_PHOTO_SEND_FAILED";
+    throw error;
+  }
+  let photoProviderId;
+  try { photoProviderId = parseOpenClawMessageId(JSON.stringify(response || {})); }
+  catch {
+    const error = new Error("Connector native photo receipt failed");
+    error.code = "CONNECTOR_NATIVE_PHOTO_RECEIPT_FAILED";
+    throw error;
+  }
   const receipt = {
     event_ref: legacy.event_ref,
     telegram_provider_id: legacy.telegram_provider_id,
@@ -461,7 +474,7 @@ async function runNativePass(options = {}) {
     return Object.freeze({ exitCode: 1, status: "incomplete" });
   } catch (error) {
     const code = String(error && error.code || "");
-    const reason = /^CONNECTOR_NATIVE_(?:CONFIG|AUTH|INVENTORY|CALENDAR_READ|PROFILE|LUNA|CALENDAR_GATE|SPEND_GATE|WRITE)_FAILED$/.test(code)
+    const reason = /^CONNECTOR_NATIVE_(?:CONFIG|AUTH|INVENTORY|CALENDAR_READ|PROFILE|LUNA|CALENDAR_GATE|SPEND_GATE|WRITE|PHOTO_SEND|PHOTO_RECEIPT)_FAILED$/.test(code)
       ? code.toLowerCase()
       : "runtime_failed";
     recordContinuation({ stateDir, reason });
