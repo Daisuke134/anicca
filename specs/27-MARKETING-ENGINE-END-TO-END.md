@@ -2200,6 +2200,26 @@ Status: **IN PROGRESS — Step 1 truth/report closure is first. No creative impl
 - Historical ReelClaw output contains 58 run directories but only 11 unique final-video hashes, with individual assets repeated up to 17 times. A successful process exit or publication receipt is therefore not proof of self-improvement.
 - The loaded `ai.anicca.self-improve-evolve` job targets the earning/Polymarket OpenEvolve path, not marketing creative evolution; the Marketing Engine scorer and write-back runners remain quarantined or connected to legacy state. No current loaded loop proves metric-to-creative mutation.
 
+Research closure verified against the live machine on 2026-08-06:
+
+- The existing scheduler inventory is not complete. It emitted 82 recognized records (41 launchd and 41 OpenClaw) and incorrectly reported `enabled_publishers=0` because its family matcher excludes the enabled `4.7-slideshow-morning` cron. Inventory completion is therefore still RED.
+- `4.7-slideshow-morning` is the only enabled OpenClaw publisher found for the four seed-product producer families. It runs at 09:00, calls the paid Apify TikTok scraper, appends history as `anicca-en`, but its publishing script hard-codes Postiz integration `cmnit95mg015rrm0ye5vm8dhl`, whose live Postiz profile is `honnevideo`. Historical English and Japanese 4.7 receipts both point to this same integration, so the conflict is not limited to one language. This is an account/product identity conflict, not a valid Anicca-English mapping. It remains live until a lease-protected replacement has a native receipt; the new engine MUST NOT copy this mismatch.
+- Every named Larry, ReelClaw, Honne, watercolor, Yangmun, and English monk OpenClaw cron in the current store is disabled. Their code, assets, schedules, and identities are migration inputs, not proof of daily publication. The current `ebook-ja` Postiz queue contains finite scheduled work only; a finite queue is not a durable producer.
+- Eleven Marketing Engine launchd jobs are loaded. Ten invoke Life Manager code, while `ai.anicca.marketing-metrics` still invokes `profitable-claude/marketing/engine/bin/marketing observe` directly. Several Life Manager runners still read `~/.openclaw` state/environment, and `marketing-mine-daily` reaches the paid Apify miner. One supervisor and zero cross-repository executable dependencies remain target conditions, not current facts.
+- Live Postiz lookup verified the old integration identities needed for migration. `cmmzzg2es0539p30ycb94ayx0` is Instagram `anicca.jp.videos`, `cmn1oukj9012nnq0yqhouc3ib` is YouTube `@anicca-jp`, and `cmooplxmu04tpmd0y4h3cpk33` is Instagram `obou.anicca`; all are enabled. Other unregistered integrations include separate affirmation, comedy, and X identities and MUST remain explicitly outside the four seed products until their own product manifests exist.
+- The publication ledger has 107 rows: 87 PUBLISHED identities, 20 ERROR rows, 85 metric-eligible resolved identities, and two ambiguous identities. Thirty-nine PUBLISHED identities still have null `product_id`; the current account registry does not cover several verified historical integrations.
+- The metric ledger has 493 checkpoint rows. It contains 269 measured checkpoints and 212 missed checkpoints across Instagram, TikTok, and YouTube, plus seven unusable X rows. A missed historical 6h/24h/72h checkpoint cannot be reconstructed from a later current counter; it stays missed, while a separately labeled late/current observation may still be collected.
+- The canonical free collector is demonstrably working, not universally broken: recent rows include TikTok `honnevideo` at 304 views/2 likes, Instagram at 1 view/1 like, and an Anicca iOS YouTube post at a measured zero. Its current source order is Postiz/Instagram Graph for Instagram, Postiz/YouTube Data API for YouTube, and isolated CloakBrowser native public response for TikTok.
+- Free-only verification is not closed. `verify_native_metrics.py` still invoked `apify~instagram-scraper` and failed live with HTTP 402; `collect_post_metrics.py`, `audit_accounts.py`, and `mine_daily.sh` also retain executable Apify paths. No charge was authorized or accepted. These paths are removed or quarantined before production verification can pass.
+- Owner delivery works: the latest measured Honne checkpoint was rendered with the native TikTok URL, views, likes, comments, shares, saves, target age, and evidence refs, and Telegram delivery returned message ID `7552`. Report truth is still incomplete because legacy rows can lack product binding, old missed-checkpoint messages dominate, and unavailable fields require named-null projection rather than Python `None`.
+- Mobile business collection works partially. App Store Connect and RevenueCat are `available` for both `aniccaios` and `honne`; Anicca iOS has a readable product-analytics source, while Honne reports `no_verified_readable_funnel`. PostHog is `unavailable` for both because a project read credential is missing. Ebook Stripe reads are available, but KDP is `not_authenticated` and Gumroad is `not_configured`; therefore ebook revenue cannot yet be claimed complete or attributed to a post.
+
+Research sources and locked implications:
+
+- Source: [Postiz Post Analytics](https://docs.postiz.com/public-api/analytics/post). Core quote: “Get analytics data for a specific published post.” Decision: Postiz is the first no-incremental-cost Instagram/YouTube adapter, never the sole truth when native identity is unresolved.
+- Source: [TikTok Display API](https://developers.tiktok.com/doc/display-api-get-started/). Core evidence: the official API exposes `Query Videos`, `List Videos`, and a `Video Object` for authorized owned accounts. Decision: add the official owned-account adapter when tokens/scopes are present; until then the isolated native public read remains the free fallback and failures stay null.
+- Source: [YouTube Videos: list](https://developers.google.com/youtube/v3/docs/videos/list). Core quote: “Returns a list of videos that match the API request parameters”; the documented quota cost is one unit. Decision: exact native video IDs may be read through Postiz's owned integration or the official API within the existing free quota.
+
 #### 15.6.2 Target repository structure
 
 Product agents own configuration and state; shared stages own behavior. Generator names are adapters, not separate schedulers.
@@ -2465,3 +2485,89 @@ Primary-source alignment:
 - YouTube Data API projects receive a default daily quota allocation and read endpoints have published unit costs, so owned-video checks stay inside a measured free quota budget: <https://developers.google.com/youtube/v3/determine_quota_cost>.
 - TikTok's official owned-video query returns `view_count`, `like_count`, `comment_count`, and `share_count` for up to 20 requested video IDs: <https://developers.tiktok.com/doc/tiktok-api-v2-video-query/>.
 - Apify and every other paid scraping/measurement fallback are deliberately outside this production design.
+
+### 15.9 Atomic implementation plan — execution order is locked
+
+**Goal:** Four seed products run a truthful, free-to-measure, self-improving daily marketing loop from Life Manager without an OpenClaw or profitable-claude runtime dependency.
+
+**Architecture:** Preserve the current external publisher until an account-scoped lease handoff succeeds. Move proven contracts into one Life Manager engine, make every stage consume immutable product/account/experiment identities, then cut over one account at a time after shadow equivalence and a native receipt.
+
+**Tech stack:** Python 3.14, shell adapters, SQLite lease/fence for the local worker, append-only JSONL evidence, Postiz, official/free native platform reads, launchd, and Telegram Bot API. Apify and paid fallback are forbidden.
+
+Each checkbox is one independently testable slice. Every behavior slice follows RED -> GREEN -> focused suite -> real read-back -> spec update -> commit/push. No later slice starts while an earlier done condition is false.
+
+#### Phase A — runtime truth and free Metrics Truth
+
+- [ ] **A1 — Make inventory coverage generic.** Modify `ops/scheduler_inventory.py` and `ops/test_scheduler_inventory.py` so any loaded/enabled command capable of upload, Postiz create/promote, browser publish, or native publish is classified, even when its name is new. Include `4.7-slideshow`, finite Postiz queues, loaded launchd state, and conflicting scheduler stores. **Done:** the live output contains `4.7-slideshow-morning`, reports at least one enabled publisher while it remains enabled, and no enabled side-effect path is outside the inventory denominator.
+- [ ] **A2 — Materialize the verified migration map.** Add a machine-readable migration manifest under `migrations/openclaw/` mapping every discovered scheduler/integration to `tenant_id`, `product_id`, `account_id`, `producer_id`, state roots, schedule, enabled/loaded state, and disposition. Add verified manifests for `anicca.jp.videos`, `@anicca-jp`, and `obou.anicca`; keep affirmation, comedy, X, missing integrations, and the `anicca-en`/`honnevideo` conflict quarantined with named reasons. **Done:** every inventory row is mapped or explicitly quarantined; no mapping is inferred from a cron name alone.
+- [ ] **A3 — Enforce the zero-paid-source boundary.** Add an executable dependency test that fails when a production collector, verifier, miner, scheduler command, or fallback contains Apify actor/token/endpoint use. Replace `verify_native_metrics.py` Instagram verification with an isolated public/native read or official owned API; quarantine or replace `collect_post_metrics.py`, `audit_accounts.py`, and `mine_daily.sh`. **Done:** the live verifier completes with `$0` sources and an intentional unavailable value remains null; the static/runtime guard finds zero paid measurement paths.
+- [ ] **A4 — Rebind the complete publication ledger.** Extend the account registry and run `identity/publication_ledger.py` in full-merge mode so every historical and new row receives a verified product/account binding or `product_id_null_reason`. Preserve all ERROR and ambiguous rows. **Done:** all 87 PUBLISHED rows have either a verified product or named quarantine reason, the 85 resolved identities remain unchanged, and rerun is byte-identical.
+- [ ] **A5 — Separate checkpoint truth from late observation.** Update `measure/native_metrics.py` and tests so 6h/24h/72h/168h checkpoints run frequently enough to enter their windows, missed checkpoints remain missed, and later measurements use an explicit `late_current_observation` class rather than pretending to be historical. **Done:** boundary-clock tests pass and a real due checkpoint is collected inside its declared window.
+- [ ] **A6 — Isolate provider failure per publication.** Make Instagram Postiz/Graph, YouTube Postiz/Data API, TikTok official-owned when available, and TikTok isolated native-public adapters independent and bounded by timeout/retry. **Done:** a forced TikTok timeout cannot suppress an Instagram or YouTube row, and real samples return measured values or named nulls without a batch crash.
+- [ ] **A7 — Fix the owner projection.** Update `report/owner_report.py`, `owner_report_cli.py`, and tests to render exact native link, views/reach/impressions, likes, comments, shares, saves, engagement rate, checkpoint age/status, and evidence refs. Never render `None`; distinguish measured zero, unavailable, missed, and provider error. **Done:** fixture-to-message equality passes and one real Telegram checkpoint returns a provider message ID with the same ledger-backed values.
+- [ ] **A8 — Close business-source truth.** Keep ASC and RevenueCat reads for both apps; verify Anicca iOS product analytics, resolve Honne's authoritative funnel, and keep PostHog unavailable until a real read credential exists. For ebooks, verify Stripe destination/product filtering and add authenticated KDP order/royalty evidence; Gumroad remains not configured unless it becomes a real checkout. **Done:** each product's daily snapshot names every source as available/unavailable with evidence, and no aggregate sale is attributed to a post without a campaign token or supported cohort.
+
+#### Phase B — duplicate safety and single-engine absorption
+
+- [ ] **B1 — Add the cross-runtime publication lease.** Implement an SQLite account lease with owner, fence token, expiry, intent key, and atomic claim/renew/release. Require the fence at every Postiz/native side-effect boundary, including the legacy bridge during migration. **Done:** overlap and stale-owner tests prove exactly one create/promote call; rollback changes ownership without deleting evidence.
+- [ ] **B2 — Import proven shared-engine contracts.** Move the useful contracts, registry behavior, bounded-learning controller, canary/weight consumption, and dashboard behavior from `profitable-claude/marketing/engine` into focused Life Manager modules with characterization tests before path removal. **Done:** behavior-equivalence fixtures pass and `ai.anicca.marketing-metrics` no longer invokes profitable-claude.
+- [ ] **B3 — Create four product packs.** Add configuration-only packs for `aniccaios`, `honne`, `ebook-ja`, and `ebook-en` containing economics, destinations, allowed claims, attribution adapters, account packs, brand packs, producer allowlists, cadence, exploration budget, and stop/scale gates. **Done:** schema validation passes and adding a fifth product requires data/assets only, not scheduler code.
+- [ ] **B4 — Wrap Larry as `slideshow-listicle`.** Import its fixed strings, backgrounds, safe frames, body/history rules, platform settings, and receipts behind the common generator contract. Remove account/schedule knowledge from the adapter. **Done:** characterization fixtures render the same approved baseline and a declared variable change produces a new semantic signature.
+- [ ] **B5 — Wrap ReelClaw as `app-demo-stitch`.** Import hook/demo selection, face/demo composition, captions, and visual preflight. Detect source/final hashes so the observed 58-runs/11-unique-artifacts failure cannot pass as improvement. **Done:** repeated final hashes fail preflight and a valid hook/demo mutation is visible in the artifact manifest.
+- [ ] **B6 — Wrap watercolor as the Japanese ebook producer.** Preserve the Japanese watercolor identity and rendering craft while exposing hook, script, background, pacing, caption, CTA, and destination as bounded experiment variables. **Done:** golden-frame tests preserve identity and a one-variable experiment changes only the declared field.
+- [ ] **B7 — Wrap the fixed-avatar English ebook producer.** Preserve avatar identity, replace paid HeyGen execution with the already-proven free avatar renderer discovered in the legacy assets, and expose script/background/pacing/caption/CTA variables. **Done:** a real local render passes lip-sync/visual preflight without a paid call and preserves avatar identity.
+- [ ] **B8 — Add publisher and model boundaries.** Make Postiz a replaceable publisher adapter and Luna the low-cost execution-model adapter; neither owns product state, schedules, metrics, or learning. Keep the in-house account lane quarantined. **Done:** adapter contract tests swap fake/Postiz and fake/Luna without changing a product worker.
+
+#### Phase C — autonomous loop, learning, and self-healing
+
+- [ ] **C1 — Implement one supervisor and one product turn.** Add `runtime/supervisor.py` and `product_worker.py` for observe -> decide -> generate -> preflight -> leased publish -> reconcile -> measure -> attribute -> learn -> report -> reschedule. **Done:** a no-side-effect integration test completes all states and restart resumes from the last durable receipt.
+- [ ] **C2 — Make experiments immutable and causal.** Persist experiment/creative/hook/script/CTA/renderer/format IDs, source hashes, semantic signature, one declared mutation, baseline, maturity window, and stop rule before generation. **Done:** a post without a complete immutable intent cannot publish.
+- [ ] **C3 — Connect evidence to the next generator input.** Score only comparable mature cohorts; require at least three observations before retirement, cap exploitation at 80%, and write weights/pool decisions into the exact input read by the next producer. **Done:** two consecutive fixture turns prove that changed metrics change the next decision input.
+- [ ] **C4 — Prove artifact-level self-improvement.** Store render manifests and artifact hashes, compare them with the prior artifact, reject accidental repeats, and record the exact visible/semantic delta. **Done:** two real generated artifacts show the intended mutation and no undeclared identity drift.
+- [ ] **C5 — Add bounded self-healing.** Implement retry caps, credential incidents, missed-publication recovery, identity backfill, lease recovery, dead-letter ownership, and deduplicated Telegram incidents. **Done:** injected provider, credential, timeout, and crash failures each converge to recovery or one durable dead letter without duplicate post/message.
+
+#### Phase D — shadow, handoff, soak, and scale
+
+- [ ] **D1 — Shadow and hand off `ebook-ja`.** Run three non-publishing equivalent turns, acquire its account lease, publish once, reconcile the exact native URL, measure it, suppress only the next matching legacy turn, and retain rollback. **Done:** no publication gap/duplicate and a truthful Telegram receipt exists.
+- [ ] **D2 — Shadow and hand off `honne`.** First resolve the `4.7-slideshow`/`honnevideo` identity conflict; never inherit English or Japanese 4.7 history as Honne truth. Repeat the D1 proof for the approved Honne account. After the Life Manager native receipt succeeds, suppress `4.7-slideshow-morning` specifically and prove that a forced legacy replay is rejected by the transferred lease. **Done:** product/account identity is consistent from intent through business report, and the legacy cron cannot create a duplicate or language-mixed post.
+- [ ] **D3 — Shadow and hand off `aniccaios`.** Migrate approved Larry/ReelClaw accounts one account at a time across TikTok, Instagram, and YouTube. **Done:** each account has a native receipt and no old scheduler can publish after lease transfer.
+- [ ] **D4 — Shadow and hand off `ebook-en`.** Restore/replace only the verified disabled English monk destinations after the free avatar producer passes; never enable by filename assumption. **Done:** one real cross-platform receipt and measured checkpoint pass under the fixed identity.
+- [ ] **D5 — Run the seven-day soak and dependency gate.** Prove daily supply, no duplicates, checkpoint timeliness, business snapshots, learning write-back, artifact deltas, recovery ownership, and Telegram dedupe for all four products. **Done:** executable scans find zero runtime imports from `~/.openclaw` and `~/profitable-claude`; only migration evidence remains.
+- [ ] **D6 — Enable evidence-gated growth.** Start at the `$0 -> $1k -> $3k -> $10k` gates in §15.8; add accounts/channels/markets only after positive complete contribution and repeatable cohorts. **Done:** every allocation decision carries its own revenue, refund, cost, retention/payback, concentration, and rollback evidence; views alone never scale a product.
+- [ ] **D7 — Promote the proven engine to multi-tenant cloud placement.** After local soak, implement tenant-scoped PostgreSQL metadata/leases, durable queues, object storage, secret isolation, quota/cost caps, and web control-plane projection while retaining the same engine contracts. **Done:** local and cloud workers pass cross-worker fence and tenant-isolation tests; deployment placement changes without forking marketing logic.
+
+Execution dependency:
+
+```mermaid
+flowchart LR
+    A1["A1-A2<br/>Find every publisher and identity"] --> A3["A3-A8<br/>Free truthful metrics + money + Telegram"]
+    A3 --> B1["B1<br/>Cross-runtime lease"]
+    B1 --> B2["B2-B8<br/>Absorb engine + producer adapters"]
+    B2 --> C1["C1-C5<br/>Autonomous learn + self-heal"]
+    C1 --> D1["D1-D4<br/>One-account handoffs"]
+    D1 --> D5["D5<br/>7-day soak + zero dependency"]
+    D5 --> D6["D6<br/>$10k evidence gates"]
+    D6 --> D7["D7<br/>Multi-tenant cloud"]
+```
+
+After implementation, the owner experience is one continuous control loop:
+
+```mermaid
+flowchart TD
+    New["New app or ebook<br/>context + assets + destination"] --> Pack["Validated product/account/brand pack"]
+    Pack --> Agent["Life Manager Marketing Agent<br/>local or cloud"]
+    Agent --> Create["Generate one declared experiment<br/>slideshow · demo stitch · watercolor · avatar"]
+    Create --> Check["Visual/policy/duplicate preflight"]
+    Check --> Publish["Lease-owned Postiz publish"]
+    Publish --> Link["Exact native link → Telegram"]
+    Link --> Social["Free social metrics<br/>6h · 24h · 72h · 7d"]
+    Social --> Money["ASC/KDP · RevenueCat/Stripe · analytics"]
+    Money --> Learn["Find economic bottleneck<br/>change one variable"]
+    Learn --> Agent
+    Money --> Digest["Daily truthful digest<br/>result · bottleneck · next experiment"]
+    Learn --> Gate{"Positive repeatable contribution?"}
+    Gate -->|no| Repair["Hold scale and self-heal/test"]
+    Repair --> Agent
+    Gate -->|yes| Scale["Bounded account/channel/market expansion"]
+    Scale --> Agent
+```
