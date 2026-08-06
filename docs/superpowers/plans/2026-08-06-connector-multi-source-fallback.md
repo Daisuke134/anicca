@@ -139,9 +139,17 @@ The closed adapter and its contract tests total 258 lines. Splitting readback fr
 - [x] Focused 3/3、pretest 12/12、constant outbound suite 348/348 GREEN。
 - [x] Master specへ進捗136を記録しcommit/push。
 
-## Task 4B2: Connpass Runtime and Evidence Pipeline Wiring
+## Task 4B2A: Common Verified Provider Event Inventory
 
-**Completion:** Calendar-eligible Connpass candidates enter the common write pipeline with provider-specific readback, screenshot, admission receipt, Calendar, and Telegram lineage. Failure advances candidate/provider without stopping the pass; unknown effect reconciles before retry.
+**Completion:** Calendar-eligible Connpass candidates become an immutable, content-addressed, provenance-checked provider event inventory that preserves event ref, canonical URL, time, venue, and source handoff lineage without pretending to be Luma. Calendar sync and the write pipeline accept Luma or this verified common inventory only.
+
+## Task 4B2B: Connpass Job and Evidence Receipt
+
+**Completion:** A Connpass-specific deterministic runtime job, effect key, adapter execution/reconciliation, and provider evidence store produce the same E1/E2/E3 verified outbound receipt contract without Luma refs or paths.
+
+## Task 4B2C: Connpass Runtime and Write Pipeline Wiring
+
+**Completion:** Calendar-eligible Connpass candidates enter the common write pipeline with the Connpass provider/job/evidence dependencies, then Calendar and Telegram lineage. Failure advances candidate/provider without stopping the pass; unknown effect reconciles before retry.
 
 ## Task 4B3: Connpass Live Submit and Promotion
 
