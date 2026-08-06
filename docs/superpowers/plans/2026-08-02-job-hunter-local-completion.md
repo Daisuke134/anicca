@@ -20,7 +20,7 @@ confirmed applications, zero verified interviews, and zero offers. The owner-aut
 OpenAI Ashby success is `dais_manual`, not resident proof. `L-49K2C1` is complete:
 its isolated CloakBrowser E2E verified changed field layouts across fill, select,
 check, and upload with zero Submit controls/actions and preserved all baseline pages.
-The complete Job Hunter suite passes 503/503. The eight legacy `run-daily.sh`
+The complete Job Hunter suite passes 506/506. The eight legacy `run-daily.sh`
 assertions now verify the active single `application-lane-agent`, deferred ATS
 liveness, and release-contained Ashby CLI contract instead of the superseded Browser
 Worker, composition-agent, Terra-high, and eager ATS-sweep topology.
@@ -3435,6 +3435,30 @@ OpenTelemetry decision and primary sources:
           new role on December 1, 2026 with the user instruction as evidence. Profile
           validation passes with 26 unique facts, no duplicate IDs, and mode 0600.
           The installed resident no-submit canary is now the next action.
+        - Resident retry `daily-20260806-204901` ran installed release
+          `2979b77ceaf86f94e8c901c3d90376e29976f93e` through LaunchAgent
+          `ai.anicca.job-search-daily` with identity `job-search:dais`, fence 131,
+          and holder PID 41907. It exited 0, verified five non-Submit controls, kept
+          `submitted` and `submit_unknown` empty, preserved all five baseline browser
+          page IDs, left Ledger at 22 rows / 14 submit intents / 25 attempts, released
+          the lease, and sent private evidence with Telegram message ID 7889. This is
+          still not C2C completion: the answer map filled `When can you start a new
+          role?` with the unrelated Tokyo-office-availability claim and cited
+          `availability_tokyo_office_three_days_20260806`. The CLI accepted it because
+          `build_actions` checks only non-empty fact IDs and `validate_fill_result`
+          checks only action kind and browser verification; neither binds standard
+          answers to the private profile. Add deterministic profile grounding at fill
+          and verify boundaries, then rerun the same installed no-submit canary.
+        - Deterministic profile grounding is implemented under TDD. RED reproduced
+          three defects: the grounding function was absent for both an unrelated
+          standard answer and an invented custom fact ID, and CLI `verify` accepted a
+          ready receipt without any private profile. GREEN binds Legal Name, Email,
+          Phone Number, and start date to exact `candidate` values plus canonical
+          `profile.*` IDs; custom questions may cite only IDs present in `facts[]`.
+          The same validator runs before browser actions and again in resident
+          `verify --profile`. Four focused tests pass, the real bad artifact is now
+          rejected with RC 2 / `standard answer is not profile-grounded`, adjacent
+          suites pass 48/48, and the complete suite passes 506/506.
 - [ ] **L-49K3** — Implement one fenced semantic `Submit Application` action for the
   registered resident worker only. Observe the Ashby submit request, reCAPTCHA
   outcome, HTTP result, terminal success text, URL, and Gmail confirmation; capture

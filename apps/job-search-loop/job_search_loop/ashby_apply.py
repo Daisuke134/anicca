@@ -10,6 +10,14 @@ from typing import Any
 
 
 FIELD_PATH = re.compile(r"[-A-Za-z0-9_]+")
+STANDARD_PROFILE_ANSWERS = {
+    "legal name": ("name", "profile.name"),
+    "full name": ("name", "profile.name"),
+    "email": ("application_email", "profile.application_email"),
+    "email address": ("application_email", "profile.application_email"),
+    "phone number": ("phone", "profile.phone"),
+    "when can you start a new role?": ("start_date", "profile.start_date"),
+}
 
 
 def _normalized(value: Any) -> str:
@@ -199,7 +207,44 @@ def execute_actions(page: Any, actions: list[dict[str, Any]]) -> list[dict[str, 
     return receipts
 
 
-def validate_fill_result(value: Any) -> dict[str, Any]:
+def validate_profile_grounding(
+    items: list[dict[str, Any]], profile: dict[str, Any]
+) -> None:
+    candidate = profile.get("candidate")
+    facts = profile.get("facts")
+    if not isinstance(candidate, dict) or not isinstance(facts, list):
+        raise ValueError("private profile grounding is unavailable")
+    known_fact_ids = {
+        fact.get("id")
+        for fact in facts
+        if isinstance(fact, dict) and isinstance(fact.get("id"), str)
+    }
+    for item in items:
+        if item.get("kind") == "upload":
+            continue
+        question = _normalized(item.get("question")).casefold()
+        answer = _normalized(item.get("answer"))
+        fact_ids = item.get("fact_ids")
+        if not isinstance(fact_ids, list) or not fact_ids:
+            raise ValueError("profile grounding has no fact ids")
+        binding = STANDARD_PROFILE_ANSWERS.get(question)
+        if binding is not None:
+            profile_key, expected_fact_id = binding
+            expected = _normalized(candidate.get(profile_key))
+            if (
+                not expected
+                or answer.casefold() != expected.casefold()
+                or fact_ids != [expected_fact_id]
+            ):
+                raise ValueError("standard answer is not profile-grounded")
+            continue
+        if any(fact_id not in known_fact_ids for fact_id in fact_ids):
+            raise ValueError("unknown profile fact id")
+
+
+def validate_fill_result(
+    value: Any, *, profile: dict[str, Any] | None = None
+) -> dict[str, Any]:
     if not isinstance(value, dict) or value.get("status") != "ready":
         raise ValueError("resident fill result is not ready")
     receipts = value.get("receipts")
@@ -213,6 +258,8 @@ def validate_fill_result(value: Any) -> dict[str, Any]:
         for receipt in receipts
     ):
         raise ValueError("resident fill result contains an unsafe action")
+    if profile is not None:
+        validate_profile_grounding(receipts, profile)
     return {"status": "pre_submit_ready", "verified_count": len(receipts)}
 
 
@@ -230,11 +277,15 @@ def main() -> int:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--answers", type=Path)
     parser.add_argument("--resume", type=Path)
+    parser.add_argument("--profile", type=Path)
     args = parser.parse_args()
     if args.mode == "verify":
+        if not args.profile:
+            parser.error("verify requires --profile")
         try:
             result = json.loads(args.output.read_text(encoding="utf-8"))
-            receipt = validate_fill_result(result)
+            profile = json.loads(args.profile.read_text(encoding="utf-8"))
+            receipt = validate_fill_result(result, profile=profile)
         except (OSError, json.JSONDecodeError):
             receipt = {
                 "status": "rejected",
@@ -263,11 +314,14 @@ def main() -> int:
             if args.mode == "inspect":
                 result = {"version": 1, "status": "inspected", "url": page.url, "fields": fields}
             else:
-                if not args.answers or not args.resume:
-                    parser.error("fill requires --answers and --resume")
+                if not args.answers or not args.resume or not args.profile:
+                    parser.error("fill requires --answers, --resume, and --profile")
                 answer_map = json.loads(args.answers.read_text(encoding="utf-8"))
+                profile = json.loads(args.profile.read_text(encoding="utf-8"))
                 resume_sha256 = hashlib.sha256(args.resume.read_bytes()).hexdigest()
                 plan = build_actions(fields, answer_map=answer_map, resume_path=str(args.resume.resolve()), resume_sha256=resume_sha256)
+                if plan["status"] == "ready":
+                    validate_profile_grounding(plan["actions"], profile)
                 receipts = execute_actions(page, plan["actions"]) if plan["status"] == "ready" else []
                 result = {**plan, "url": page.url, "fields": fields, "receipts": receipts}
             _write_private(args.output, result)

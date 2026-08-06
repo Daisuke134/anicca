@@ -45,10 +45,13 @@ For the selected Ashby candidate:
    Read its exact ordered questions and current `data-field-path` metadata from the
    private output. Never copy a field path from another posting.
 3. Create one mode-0600 exact-question answer map. Each answer includes non-empty
-   private-profile fact IDs. Use the committed resume-routing helper and the selected
+   private-profile fact IDs. Standard fields use the exact candidate value and its
+   canonical ID: `profile.name`, `profile.application_email`, `profile.phone`, or
+   `profile.start_date`. Use the committed resume-routing helper and the selected
    accepted resume; do not invent or infer a missing personal/legal fact.
-4. Call the CLI `fill` mode with that answer map and resume. The CLI, not Terra,
-   re-resolves and operates every nested live control. Its output path MUST be
+4. Call the CLI `fill` mode with that answer map, resume, and
+   `--profile "$JOB_SEARCH_PROFILE"`. The CLI, not Terra, re-resolves and operates
+   every nested live control. Its output path MUST be
    `$JOB_SEARCH_ASHBY_APPLY_RESULT`.
 5. Accept only CLI status `ready` with one or more receipts and every receipt
    `verified=true`. Preserve its ordered questions, answers, fact IDs, field paths,
