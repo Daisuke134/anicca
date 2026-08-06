@@ -2276,6 +2276,13 @@ owner-only `candidate-attempts.jsonl`へ一括appendする。実装前はruntime
 runtime/classification 9/9、native entrypoint 18/18、pretest 12/12、outbound 289/289がfresh GREEN。次のP0-4でこの履歴を
 次wakeのinventory/ranking suppressionへ接続するまでは、保存はされても再選択防止にはまだ使われない。
 
+O1B-25進捗62（P0-3 existing launchd live proof）: commit `d5aa72917`をpush後、別executorを起こさず既存
+`ai.anicca.life-manager-connector-native`をkickstartした。run countは85→86、終了後last exit 1（coverage未完）で、実stateに
+mode 0600の`candidate-attempts.jsonl`が生成された。保存行は実候補`luma-event://event/7gy3rv6t`、
+`outcome=known_no_effect`、`safe_reason=LUMA_RSVP_UNAVAILABLE`、`observed_at=2026-08-06T00:37:48.523Z`、
+`retry_after=null`であり、秘密・page本文・個人情報を含まない。これでP0-3のlive write/readbackを完了し、次はP0-4で
+この行を次wakeの候補除外へ使う。
+
 完全な残TODO SSOT:
 
 **P0 — task deliveryを前進させる（最優先）**
