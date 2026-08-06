@@ -4217,6 +4217,8 @@ run 165でnative computer pathを実測すると、Terraは全画面`screencaptu
 
 候補attempt履歴は観測telemetryであり、申込停止gateではない。過去`known_no_effect`や期限付きretryを理由にranked candidateを除外せず、全候補をattemptableに保つ。一候補の`known_no_effect`やcandidate budget到達でpassを終了せず、同じrunで次候補へ進む。`unknown_effect`は同じURLを再送信する前にprovider readbackで登録有無を確定する。
 
+run 169ではTerraがCloakBrowser接続前に未導入の`require('playwright')`を選び、`MODULE_NOT_FOUND`になった。production executorはrepo rootの既存`apps/life-manager/node_modules/playwright-core`を絶対解決して読み、package探索を行わず直ちに`:9222`へ接続する。
+
 ## 16. 実装前に残る不確実性
 
 | # | 不確実性 | 解消方法 / gate |
