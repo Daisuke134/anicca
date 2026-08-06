@@ -72,6 +72,28 @@ test("Luma default conflict filter consumes the minimal runner busy interval arr
   assert.deepEqual(result.map((candidate) => candidate.event_ref), [free.event_ref]);
 });
 
+test("Luma candidates are limited to today and the next thirteen Tokyo days", async () => {
+  const workflow = createLumaScriptFirstWorkflow({
+    now: () => new Date("2026-08-07T08:30:00.000Z"),
+    async discoverOnPage() {
+      return [
+        event("before-window", { starts_at: "2026-08-06T14:59:59.000Z", ends_at: "2026-08-06T15:30:00.000Z" }),
+        event("today", { starts_at: "2026-08-06T15:00:00.000Z", ends_at: "2026-08-06T16:00:00.000Z" }),
+        event("last-day", { starts_at: "2026-08-20T14:59:59.000Z", ends_at: "2026-08-20T15:30:00.000Z" }),
+        event("after-window", { starts_at: "2026-08-20T15:00:00.000Z", ends_at: "2026-08-20T16:00:00.000Z" }),
+      ];
+    },
+    async submitOnPage() { return { status: "registered" }; },
+    async readProviderStateOnPage() { return { status: "absent" }; },
+  });
+
+  const result = await workflow.discoverCandidates({ page: {}, calendar: [] });
+  assert.deepEqual(result.map((candidate) => candidate.event_ref), [
+    "luma-event://event/today",
+    "luma-event://event/last-day",
+  ]);
+});
+
 test("Luma direct action uses the retained submit function without agent assistance", async () => {
   const calls = [];
   const page = Object.freeze({ page_id: "owned-page" });

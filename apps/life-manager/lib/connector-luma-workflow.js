@@ -10,8 +10,10 @@ const {
   readRawLumaEventDetail,
 } = require("./luma-event-detail.js");
 const { submitLumaOnPage } = require("./luma-browser-provider.js");
+const { zonedSlotInstant } = require("./honne-ja-shadow-schedule.js");
 
 const TOKYO_DISCOVER_URL = "https://luma.com/tokyo?k=p";
+const PRODUCTION_TIME_ZONE = "Asia/Tokyo";
 const EVENT_REF = /^luma-event:\/\/event\/[A-Za-z0-9_-]+$/;
 const CANONICAL_URL = /^https:\/\/luma\.com\/[A-Za-z0-9_-]+$/;
 const FALLBACK_CODES = new Set([
@@ -26,6 +28,28 @@ const FALLBACK_CODES = new Set([
 
 function invalid() {
   throw new Error("Luma script-first workflow invalid");
+}
+
+function candidateWindow(now) {
+  const observed = now();
+  if (!(observed instanceof Date) || !Number.isFinite(observed.getTime())) invalid();
+  const parts = Object.fromEntries(new Intl.DateTimeFormat("en-CA", {
+    timeZone: PRODUCTION_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(observed).filter((part) => part.type !== "literal")
+    .map((part) => [part.type, Number(part.value)]));
+  if (![parts.year, parts.month, parts.day].every(Number.isInteger)) invalid();
+  const end = new Date(Date.UTC(parts.year, parts.month - 1, parts.day + 14));
+  return Object.freeze({
+    start: Date.parse(zonedSlotInstant(parts, "00:00", PRODUCTION_TIME_ZONE)),
+    end: Date.parse(zonedSlotInstant({
+      year: end.getUTCFullYear(),
+      month: end.getUTCMonth() + 1,
+      day: end.getUTCDate(),
+    }, "00:00", PRODUCTION_TIME_ZONE)),
+  });
 }
 
 function exactEvent(input) {
@@ -103,13 +127,15 @@ function normalizedProviderState(value) {
 }
 
 function createLumaScriptFirstWorkflow(options = {}) {
+  const now = options.now || (() => new Date());
   const discoverOnPage = options.discoverOnPage || defaultDiscoverOnPage;
   const isCalendarFree = options.isCalendarFree || defaultCalendarFree;
   const submitOnPage = options.submitOnPage || submitLumaOnPage;
   const readProviderStateOnPage = options.readProviderStateOnPage || defaultReadProviderStateOnPage;
   const readLumaFormProfile = options.readLumaFormProfile;
   if (
-    typeof discoverOnPage !== "function" || typeof isCalendarFree !== "function"
+    typeof now !== "function" || typeof discoverOnPage !== "function"
+    || typeof isCalendarFree !== "function"
     || typeof submitOnPage !== "function" || typeof readProviderStateOnPage !== "function"
     || (readLumaFormProfile != null && typeof readLumaFormProfile !== "function")
   ) invalid();
@@ -118,9 +144,12 @@ function createLumaScriptFirstWorkflow(options = {}) {
     async discoverCandidates({ page, calendar }) {
       const observed = await discoverOnPage({ page });
       if (!Array.isArray(observed) || observed.length > 500) invalid();
+      const window = candidateWindow(now);
       const result = [];
       for (const raw of observed) {
         const candidate = exactEvent(raw);
+        const startsAt = Date.parse(candidate.starts_at);
+        if (startsAt < window.start || startsAt >= window.end) continue;
         if (!isFreeOpen(candidate)) continue;
         if (!await isCalendarFree(candidate, calendar)) continue;
         result.push(Object.freeze({ ...candidate }));
