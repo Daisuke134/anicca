@@ -2695,6 +2695,19 @@ it is easier to demonstrate:
   eligible remaining route once, moves to a different supported role during the same
   pass, and reports confirmed applications, email applications, outreach, and deficit
   separately. Codex, Claude, and the development shell perform zero live actions.
+  - [x] `C2A` — Persist cross-candidate continuation proof from the release-contained
+    browser runner through `browser-worker-result.json`. Each attempt records only
+    candidate index, official URL SHA-256, role family, and outcome; raw URLs and
+    private answers are excluded. `continued_after_failure` becomes true only when a
+    failed first candidate is followed by another attempt. RED proved the audit was
+    absent; focused runner/worker regressions pass 14/14 after propagation.
+  - [ ] `C2B` — After a canonical or alternate browser route reaches a definite
+    pre-send failure, consume every remaining eligible alternate/email/outreach route
+    exactly once under the same resident actor, run ID, application ID, and fence.
+  - [ ] `C2C` — Persist and Telegram-report per-pass confirmed ATS, confirmed email,
+    outreach-only, delivery-unknown, and deficit counts without conflation.
+  - [ ] `C2D` — Trigger the installed resident loop and prove a failed first browser
+    candidate continues to another role and its eligible routes in the same pass.
 - [ ] **L-49K0D** — Port `career-ops` tracker, outcome, follow-up, and weekly-digest
   behavior only as projections over the existing event ledger. They MUST NOT become
   a second source of truth or weaken deterministic Gmail matching.

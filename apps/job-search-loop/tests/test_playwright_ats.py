@@ -186,6 +186,11 @@ class PlaywrightAtsTests(unittest.TestCase):
         )
         self.assertEqual(result["attempted_count"], 2)
         self.assertEqual(result["blocked"], ["candidate_1:phone", "pre_submit_claim_ready_no_submit"])
+        self.assertEqual(len(result["attempt_audit"]), 2)
+        self.assertEqual(result["attempt_audit"][0]["outcome"], "blocked")
+        self.assertEqual(result["attempt_audit"][1]["outcome"], "claim_ready")
+        self.assertNotIn("official_url", result["attempt_audit"][0])
+        self.assertTrue(result["continued_after_failure"])
 
     def test_candidate_exception_is_recorded_and_next_candidate_runs(self):
         from job_search_loop.playwright_ats import attempt_ranked_candidates
@@ -211,6 +216,11 @@ class PlaywrightAtsTests(unittest.TestCase):
             result["blocked"],
             ["candidate_1:error:RuntimeError", "candidate_2:start_date"],
         )
+        self.assertEqual(
+            [item["outcome"] for item in result["attempt_audit"]],
+            ["error:RuntimeError", "blocked"],
+        )
+        self.assertTrue(result["continued_after_failure"])
 
 
 if __name__ == "__main__":

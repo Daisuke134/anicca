@@ -125,23 +125,40 @@ def attempt_ranked_candidates(
     attempt: Callable[[dict[str, Any]], dict[str, Any]],
 ) -> dict[str, Any]:
     blocked: list[str] = []
+    attempt_audit: list[dict[str, Any]] = []
     attempted_count = 0
     for index, candidate in enumerate(candidates, start=1):
         attempted_count += 1
+        audit = {
+            "candidate_index": index,
+            "url_sha256": hashlib.sha256(
+                str(candidate.get("official_url") or "").encode("utf-8")
+            ).hexdigest(),
+            "role_family": str(candidate.get("role_family") or "unknown"),
+        }
         try:
             receipt = attempt(candidate)
         except Exception as error:
+            audit["outcome"] = f"error:{type(error).__name__}"
+            attempt_audit.append(audit)
             blocked.append(f"candidate_{index}:error:{type(error).__name__}")
             continue
         if receipt.get("claim_ready") is True:
+            audit["outcome"] = "claim_ready"
+            attempt_audit.append(audit)
             blocked.append("pre_submit_claim_ready_no_submit")
             break
+        audit["outcome"] = "blocked"
+        attempt_audit.append(audit)
         reasons = list(receipt.get("blockers") or ["application_surface_not_ready"])
         blocked.extend(f"candidate_{index}:{reason}" for reason in reasons)
     return {
         "status": "pending_verification",
         "blocked": blocked or ["no_ranking_ready_candidate"],
         "attempted_count": attempted_count,
+        "attempt_audit": attempt_audit,
+        "continued_after_failure": len(attempt_audit) > 1
+        and attempt_audit[0]["outcome"] != "claim_ready",
     }
 
 
