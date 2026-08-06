@@ -2127,6 +2127,13 @@ this spec update → commit/push → Telegram milestone before the next item sta
   v1.31.0 with MIT licenses, server/CLI/SDK artifacts, protocol versions, and local
   rollback. Prove an isolated local server and Python worker can survive worker
   restart without duplicating an activity.
+  - Supply-chain pin complete: server `v1.31.2` commit
+    `19a774302c613da9adc4436ab14278ccdca8e0a5` and Python SDK `1.31.0` commit
+    `84b519e0ff407b049da88ac7d1711f110494ff4d` are content-addressed with MIT
+    license hashes, official macOS arm64 artifact/checksum hashes, consumed SDK
+    contracts, and explicit local rollback policies. The focused lock test and all
+    438 Job Hunter tests pass. Remaining before checking this task: run the isolated
+    server/worker restart fixture and prove one durable activity effect.
 
 ### 12.2A Blocking execution order from the measured 2026-08-05 state
 
