@@ -71,9 +71,23 @@ The runtime file needs an 11-line first-wake initializer because native-pass can
 - [x] Native-entrypoint 26/26、runtime 16/16、pretest 12/12、outbound 344/344 GREEN。
 - [x] Master specへ進捗132を記録しcommit/push。
 
-## Task 3: Connpass Discovery in Native Runtime
+## Task 3A: Connpass Official-API Runtime Handoff
 
-**Completion:** The official API client exhausts every page for the target date, normalizes candidates into the common inventory, runs Calendar/travel gates, and hands them to the Connpass adapter. Discovery alone never creates coverage.
+**Files:**
+- Modify: `apps/life-manager/lib/connector-native-runtime.js`
+- Modify: `apps/life-manager/lib/connector-native-runtime.test.js`
+- Modify: `skills/connector/native-pass.js`
+
+**Completion:** A Connpass provider cursor invokes the existing exhaustive official-v2 API handoff for its date in the same runtime pass. The API key remains private, missing/unavailable API stays open, normalized discovery is advisory-only, and discovery never creates coverage or invokes registration.
+
+## Task 3B: Provider-Neutral Calendar and Travel Gate
+
+**Files:**
+- Modify: `apps/life-manager/lib/calendar-candidate-gate.js`
+- Modify: `apps/life-manager/lib/calendar-candidate-gate.test.js`
+- Modify: `apps/life-manager/lib/connector-native-runtime.js`
+
+**Completion:** Verified Connpass discovery candidates pass through the same direct-conflict, all-day, inbound-route, outbound-route, and expanded-window checks as Luma without forging Luma provenance. Only eligible candidates are handed to the still-read-only Connpass adapter boundary; zero eligible candidates advances the provider cursor and coverage remains open.
 
 ## Task 4: Connpass Authenticated Registration Adapter
 
