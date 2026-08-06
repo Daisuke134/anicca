@@ -3871,6 +3871,14 @@ OpenTelemetry decision and primary sources:
         shortlist against an isolated queue produced 9 eligible and 3 still-unverified
         candidates. Candidate-queue and canonical-runtime focused checks pass 20/20.
         Release installation and the new provider receipt remain the open completion gate.
+      - Installed rerun `daily-20260806-235928` on release `f02f826c7...` proved the
+        shortlist handoff in production: 12 candidates were observed, durable eligible
+        count rose from 1 to 5, verified count rose from 46 to 50, and Telegram terminal
+        report `8030` was sent. It still created no new receipt because the application
+        prompt contained a static Cursor recovery block; despite five eligible roles,
+        Terra re-read the already-terminal Cursor Gmail/ATS-unknown history and returned.
+        Remove that one-off recovery block and rerun; Ledger dedupe remains the generic
+        protection against replay.
   - [ ] `L-49K5C` — Port generic Playwright form and CAPTCHA/SSO/page classification
     into the existing fenced CloakBrowser application lane. Keep the resident Terra
     agent as the adaptive owner. Do not use `bypassPermissions`, unpinned packages,
