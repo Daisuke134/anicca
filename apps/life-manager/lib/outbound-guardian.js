@@ -146,7 +146,7 @@ async function notifyOpenClawPhoto(bytes, options = {}) {
     fs.writeFileSync(file, bytes, { mode: 0o600, flag: "wx" });
     const result = spawn("openclaw", [
       "message", "send", "--channel", "telegram", "--target", target,
-      "--media", file, "--message", String(options.caption || ""), "--json",
+      "--media", file, "--force-document", "--message", String(options.caption || ""), "--json",
     ], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
     if (!result || result.status !== 0) {
       throw new Error(String(result && result.stderr || "Telegram photo delivery failed").trim());
