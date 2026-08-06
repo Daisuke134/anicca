@@ -119,4 +119,4 @@
 - [x] **Step 2: Run the focused test and verify RED:**旧codeで1件RED。
 - [x] **Step 3: Implement the smallest state-machine change.** Capture ticket enrichment failure as a bounded optional status, continue the core chain, and attempt ticket Telegram only when a verified ticket artifact exists. Ticket Telegram failure also remains optional and observable.
 - [x] **Step 4: Run focused, pretest, and full outbound suites.** focused 21/21、pretest 12/12、outbound 337/337 GREEN。
-- [ ] **Step 5: Commit/push, then let the existing Connector launchd prove Calendar and registration-page Telegram receipt on the next verified registration readback.** Do not touch Gig or `:9223`.
+- [x] **Step 5: Commit/push, then let the existing Connector launchd prove Calendar and registration-page Telegram receipt on the next verified registration readback.** run 179でdelivery 2→3、PNG SHA、Calendar ref、Telegram card `7864` / photo `7865`を同一lineageでlive確認。Gig/`:9223`は未変更。
