@@ -79,6 +79,7 @@ test("production provider router keeps Luma cache direct fallback and readback o
   assert.equal(typeof replay.readExpectedState, "function");
   assert.equal(calls.find(([name]) => name === "discover")[1].calendar, calendar);
   assert.equal(calls.find(([name]) => name === "fallback")[1].page, page);
+  assert.equal(calls.find(([name]) => name === "fallback")[1].candidate, candidate);
   assert.equal(calls.find(([name]) => name === "cache-save")[1].observedAt, "2026-08-07T08:30:00.000Z");
 });
 

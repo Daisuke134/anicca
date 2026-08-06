@@ -1,6 +1,9 @@
 "use strict";
 
+const path = require("node:path");
+
 const { createBrowserHarnessAdapter } = require("./connector-browser-harness-adapter.js");
+const { runLocalAgentRunner } = require("./connector-luna-judgment.js");
 
 const CONTROL = /^[a-z][a-z0-9_-]{1,63}$/;
 const KINDS = new Set(["input", "textarea", "select", "checkbox", "radio", "button", "link"]);
@@ -20,6 +23,163 @@ function safeControl(input) {
     || /[\x00-\x1f\x7f]/.test(label) || typeof input.required !== "boolean"
   ) invalid();
   return Object.freeze({ control, kind, label, required: input.required });
+}
+
+async function inspectPageControls(input = {}) {
+  const page = input.page;
+  if (!page || typeof page.locator !== "function") invalid();
+  const locator = page.locator("input, textarea, select, button, a[role=button]");
+  if (!locator || typeof locator.evaluateAll !== "function") invalid();
+  const observed = await locator.evaluateAll((elements) => elements.slice(0, 100).flatMap((element, index) => {
+    const tag = String(element.tagName || "").toLowerCase();
+    const type = String(element.type || "").toLowerCase();
+    if (type === "hidden" || element.disabled === true) return [];
+    const kind = tag === "input" && ["checkbox", "radio"].includes(type)
+      ? type : tag === "a" ? "link" : tag;
+    if (!["input", "textarea", "select", "checkbox", "radio", "button", "link"].includes(kind)) return [];
+    const labels = Array.from(element.labels || []).map((label) => label.innerText || label.textContent || "");
+    const label = [
+      ...labels,
+      element.getAttribute && element.getAttribute("aria-label"),
+      element.getAttribute && element.getAttribute("placeholder"),
+      element.getAttribute && element.getAttribute("name"),
+      element.innerText,
+    ].map((value) => String(value || "").replace(/\s+/g, " ").trim()).find(Boolean);
+    if (!label) return [];
+    const control = `control_${index + 1}`;
+    element.dataset.lmConnectorControl = control;
+    return [{ control, kind, label, required: element.required === true }];
+  }));
+  if (!Array.isArray(observed)) invalid();
+  return Object.freeze(observed.map(safeControl));
+}
+
+async function operatePageControl(input = {}) {
+  if (!input.page || typeof input.page.locator !== "function" || !input.control || !input.action) invalid();
+  const token = String(input.control.control || "");
+  if (!CONTROL.test(token) || input.action.control !== token) invalid();
+  const locator = input.page.locator(`[data-lm-connector-control="${token}"]`);
+  if (!locator || typeof locator.count !== "function" || await locator.count() !== 1) {
+    return Object.freeze({ status: "failed" });
+  }
+  switch (input.action.method) {
+    case "ax_fill":
+    case "dom_fill":
+      if (typeof input.value !== "string" || typeof locator.fill !== "function") return Object.freeze({ status: "failed" });
+      await locator.fill(input.value);
+      break;
+    case "ax_check":
+      if (typeof locator.check !== "function") return Object.freeze({ status: "failed" });
+      await locator.check();
+      break;
+    case "ax_select":
+      if (typeof locator.selectOption !== "function") return Object.freeze({ status: "failed" });
+      await locator.selectOption(input.value);
+      break;
+    case "ax_click":
+    case "coordinate_click":
+      if (typeof locator.click !== "function") return Object.freeze({ status: "failed" });
+      await locator.click();
+      break;
+    case "keyboard_submit":
+      if (!input.page.keyboard || typeof input.page.keyboard.press !== "function") return Object.freeze({ status: "failed" });
+      await input.page.keyboard.press("Enter");
+      break;
+    case "ax_inspect":
+    case "dom_inspect":
+    case "parent_readback":
+      break;
+    default:
+      return Object.freeze({ status: "failed" });
+  }
+  return Object.freeze({ status: "success" });
+}
+
+function normalizedLabel(value) {
+  return String(value || "").replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+function createLumaPrivateValueResolver(options = {}) {
+  const readProfile = options.readProfile;
+  if (typeof readProfile !== "function") invalid();
+  return async function resolveValue(input = {}) {
+    const control = safeControl(input.control);
+    const profile = await readProfile();
+    if (!profile || typeof profile !== "object" || Array.isArray(profile)) invalid();
+    const label = normalizedLabel(control.label);
+    if (/\b(phone|telephone|mobile|電話|携帯)\b/i.test(label)) {
+      return typeof profile.phone === "string" ? profile.phone : null;
+    }
+    const answers = profile.form_answers;
+    if (!answers || typeof answers !== "object" || Array.isArray(answers)) return null;
+    const match = Object.entries(answers).find(([key]) => normalizedLabel(key) === label);
+    return match ? match[1] : null;
+  };
+}
+
+function absoluteDirectory(value) {
+  const directory = path.resolve(String(value || ""));
+  if (!path.isAbsolute(directory) || directory === path.parse(directory).root) invalid();
+  return directory;
+}
+
+function createBoundedActionProposer(options = {}) {
+  const repoRoot = absoluteDirectory(options.repoRoot);
+  const evidenceDir = absoluteDirectory(options.evidenceDir);
+  const runAgentRunner = options.runAgentRunner || runLocalAgentRunner;
+  if (typeof runAgentRunner !== "function") invalid();
+  return async function proposeAction(input = {}) {
+    const targetId = String(input.target_id || "");
+    const step = Number(input.step);
+    if (
+      input.provider !== "luma" || !/^[A-Za-z0-9._-]{3,128}$/.test(targetId)
+      || input.expected_state !== "registered_or_pending"
+      || !Number.isInteger(step) || step < 1 || step > 10
+      || !input.observation || !Array.isArray(input.observation.controls)
+    ) invalid();
+    const controls = input.observation.controls.map(safeControl);
+    const result = await runAgentRunner({
+      prompt: [
+        "Choose exactly one browser action for the current Luma registration page.",
+        "Return only purpose, method, and one control token from the supplied list.",
+        "Prefer filling required ordinary fields before submitting. Never navigate, open or close pages, run commands, or edit code.",
+        "The parent process owns all private values, executes the action, and verifies registered or pending state.",
+        `Step: ${step} of 10`,
+        `Page state: ${String(input.observation.state || "registration_page")}`,
+        `Controls: ${JSON.stringify(controls)}`,
+      ].join("\n"),
+      schema: {
+        type: "object",
+        additionalProperties: false,
+        required: ["purpose", "method", "control"],
+        properties: {
+          purpose: { type: "string", enum: ["observe", "fill", "submit", "readback"] },
+          method: {
+            type: "string",
+            enum: [
+              "ax_inspect", "dom_inspect", "parent_readback", "ax_fill", "dom_fill",
+              "ax_check", "ax_select", "ax_click", "coordinate_click", "keyboard_submit",
+            ],
+          },
+          control: { type: "string", enum: controls.map((control) => control.control) },
+        },
+      },
+      taskClass: "browser-lane-agent",
+      timeoutMs: 30_000,
+      evidenceDir: path.join(evidenceDir, `target-${targetId}`, `step-${step}`),
+      repoRoot,
+    });
+    if (
+      !result || !result.summary || result.summary.status !== "success"
+      || result.summary.selected_provider !== "codex" || result.summary.selected_model !== "gpt-5.6-terra"
+      || !result.value || typeof result.value !== "object" || Array.isArray(result.value)
+    ) invalid();
+    return Object.freeze({
+      purpose: String(result.value.purpose || ""),
+      method: String(result.value.method || ""),
+      control: String(result.value.control || ""),
+    });
+  };
 }
 
 function createProductionBrowserHarness(options = {}) {
@@ -90,4 +250,10 @@ function createProductionBrowserHarness(options = {}) {
   return Object.freeze({ performAction, runFallback });
 }
 
-module.exports = { createProductionBrowserHarness };
+module.exports = {
+  createBoundedActionProposer,
+  createLumaPrivateValueResolver,
+  createProductionBrowserHarness,
+  inspectPageControls,
+  operatePageControl,
+};

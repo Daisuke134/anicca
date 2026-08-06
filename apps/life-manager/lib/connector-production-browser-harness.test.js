@@ -3,7 +3,119 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
 
-const { createProductionBrowserHarness } = require("./connector-production-browser-harness.js");
+const {
+  createBoundedActionProposer,
+  createLumaPrivateValueResolver,
+  createProductionBrowserHarness,
+  inspectPageControls,
+  operatePageControl,
+} = require("./connector-production-browser-harness.js");
+
+test("bounded proposer requests one structured action from Terra with sanitized controls only", async () => {
+  let request;
+  const proposer = createBoundedActionProposer({
+    repoRoot: "/private/repo",
+    evidenceDir: "/private/evidence",
+    async runAgentRunner(input) {
+      request = input;
+      return {
+        summary: { status: "success", selected_provider: "codex", selected_model: "gpt-5.6-terra" },
+        value: { purpose: "submit", method: "ax_click", control: "register_button" },
+      };
+    },
+  });
+  const action = await proposer({
+    provider: "luma",
+    page_websocket: "ws://127.0.0.1:9222/devtools/page/OWNEDTARGET1",
+    target_id: "OWNEDTARGET1",
+    expected_state: "registered_or_pending",
+    step: 2,
+    observation: {
+      state: "registration_page",
+      controls: [{ control: "register_button", kind: "button", label: "Register", required: false }],
+    },
+  });
+  assert.deepEqual(action, { purpose: "submit", method: "ax_click", control: "register_button" });
+  assert.equal(request.taskClass, "browser-lane-agent");
+  assert.equal(request.timeoutMs, 30_000);
+  assert.match(request.prompt, /one browser action/i);
+  assert.match(request.prompt, /register_button/);
+  assert.doesNotMatch(request.prompt, /private-phone|cookie|password/i);
+  assert.equal(JSON.stringify(request).includes("page_websocket"), false);
+  assert.equal(JSON.stringify(request).includes("ws://"), false);
+});
+
+test("default page adapter observes labels and parent resolves private values before DOM actions", async () => {
+  const phoneElement = {
+    tagName: "INPUT",
+    type: "tel",
+    required: true,
+    dataset: {},
+    labels: [{ innerText: "Phone number" }],
+    innerText: "",
+    options: [],
+    getAttribute(name) { return name === "role" ? null : ""; },
+  };
+  const buttonElement = {
+    tagName: "BUTTON",
+    type: "submit",
+    required: false,
+    dataset: {},
+    labels: [],
+    innerText: "Register",
+    options: [],
+    getAttribute(name) { return name === "aria-label" ? "Register" : null; },
+  };
+  const calls = [];
+  const locators = new Map();
+  const page = {
+    locator(selector) {
+      if (selector === "input, textarea, select, button, a[role=button]") {
+        return { async evaluateAll(callback) { return callback([phoneElement, buttonElement]); } };
+      }
+      if (!locators.has(selector)) {
+        locators.set(selector, {
+          async count() { return 1; },
+          async fill(value) { calls.push(["fill", selector, value]); },
+          async click() { calls.push(["click", selector]); },
+          async check() { calls.push(["check", selector]); },
+          async selectOption(value) { calls.push(["select", selector, value]); },
+        });
+      }
+      return locators.get(selector);
+    },
+    keyboard: { async press(key) { calls.push(["key", key]); } },
+  };
+  const controls = await inspectPageControls({ page });
+  assert.deepEqual(controls.map(({ kind, label, required }) => ({ kind, label, required })), [
+    { kind: "input", label: "Phone number", required: true },
+    { kind: "button", label: "Register", required: false },
+  ]);
+  assert.match(controls[0].control, /^control_[0-9]+$/);
+  assert.equal(phoneElement.dataset.lmConnectorControl, controls[0].control);
+
+  const resolveValue = createLumaPrivateValueResolver({
+    readProfile: async () => ({ phone: "private-phone", form_answers: {} }),
+  });
+  const value = await resolveValue({ control: controls[0] });
+  assert.equal(value, "private-phone");
+  await operatePageControl({
+    page,
+    control: controls[0],
+    action: { purpose: "fill", method: "ax_fill", control: controls[0].control },
+    value,
+  });
+  await operatePageControl({
+    page,
+    control: controls[1],
+    action: { purpose: "submit", method: "ax_click", control: controls[1].control },
+    value: null,
+  });
+  assert.deepEqual(calls.map(([name, , input]) => [name, input]), [
+    ["fill", "private-phone"],
+    ["click", undefined],
+  ]);
+});
 
 test("production harness lets the model choose controls but parent owns values actions and readback", async () => {
   const calls = [];
