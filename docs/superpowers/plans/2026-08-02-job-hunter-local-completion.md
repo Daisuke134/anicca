@@ -3184,6 +3184,14 @@ OpenTelemetry decision and primary sources:
       now atomically stores the last raw snapshot plus classification on both success
       and failure. Focused adapter/surface tests pass 14/14 and the full suite passes
       492/492. K1 is complete without authorizing generic click or Submit.
+    - Resident repair receipt: run `daily-20260806-175239` attempted three OpenAI
+      Ashby candidates. Two snapshots were still blank after the former single retry;
+      the third exposed the semantic `Application` tab and `Apply for this Job` but
+      the immediate post-open snapshot was still Overview. All three therefore ended
+      `RuntimeError`, submitted zero, and continued across candidates. The resolver
+      now polls blank render for at most 4.5 seconds and, after exactly one semantic
+      open, polls required form controls for at most five seconds. This repairs the
+      measured failure without generic click or repeated application-open actions.
 - [ ] **L-49K2** — Make the resident fill contract complete and inspectable. Route the
   exact accepted resume; fill verified identity/contact/location/start-date fields;
   select work authorization and sponsorship answers from the private profile; verify

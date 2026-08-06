@@ -110,6 +110,20 @@ class BrowserUseATSRunnerTests(unittest.TestCase):
         self.assertTrue(resolved["evaluation"]["claim_ready"])
         self.assertEqual(adapter.opens, [(0, 0), (0, 0)])
 
+    def test_waits_for_delayed_controls_and_form_after_one_open(self):
+        adapter = SurfaceAdapter([
+            snapshot(), snapshot(), snapshot(APPLICATION),
+            snapshot(APPLICATION), snapshot(APPLICATION), snapshot(*FORM),
+        ])
+        waits = []
+        with tempfile.TemporaryDirectory() as directory:
+            resolved = resolve_application_surface(
+                adapter, Path(directory), sleeper=lambda seconds: waits.append(seconds)
+            )
+        self.assertTrue(resolved["evaluation"]["claim_ready"])
+        self.assertEqual(adapter.opens, [(0, 0)])
+        self.assertGreaterEqual(len(waits), 3)
+
     def test_fails_closed_when_no_application_surface_appears(self):
         adapter = SurfaceAdapter([snapshot({"tag": "a", "text": "Company"})])
         with tempfile.TemporaryDirectory() as directory:
