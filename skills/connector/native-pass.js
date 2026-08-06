@@ -272,7 +272,7 @@ function runtimeConfig(options, stateDir) {
     candidateAttempts: readCandidateAttempts(stateDir),
     cursor: readCursor(stateDir),
     passCandidateBudget: Number(env.LM_CONNECTOR_PASS_CANDIDATE_BUDGET || 3),
-    capabilityVersion: "luma-agentic-terra-v3",
+    capabilityVersion: "luma-agentic-terra-v4",
   });
 }
 
