@@ -7,8 +7,8 @@
 **Configured upstream:** `canonical/docs/job-hunter-spec-20260805`
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-06 JST
-**Active atomic task:** `L-49K2C1` — prove the deterministic Ashby Apply CLI fills and
-verifies changed live control layouts without handwritten Playwright or Submit.
+**Active atomic task:** `L-49K2C2` — wire the resident Terra pass to use the
+deterministic Ashby Apply CLI for inspect/fill under a no-submit fence.
 **Status:** The immutable four-lane runtime, grounded materials, ownership fences,
 Gmail ingestion, Telegram outbox, quota accounting, Ashby surface classifier, and
 loopback OpenTelemetry Collector/private trace index are implemented. The application
@@ -17,8 +17,9 @@ CloakBrowser CDP and observability Collector are running. The authoritative ledg
 contains 22 application rows: four historical/reference `submitted`, twelve
 `submit_unknown`, and six `rejected`. It contains zero resident-loop authoritative
 confirmed applications, zero verified interviews, and zero offers. The owner-authorized
-OpenAI Ashby success is `dais_manual`, not resident proof. `L-49K2C1` unit contracts
-pass, but its isolated live-control fill E2E receipt is absent, so it remains open.
+OpenAI Ashby success is `dais_manual`, not resident proof. `L-49K2C1` is complete:
+its isolated CloakBrowser E2E verified changed field layouts across fill, select,
+check, and upload with zero Submit controls/actions and preserved all baseline pages.
 The complete Job Hunter suite runs 498 tests with four failures and four errors in
 legacy `run-daily.sh` assertions that still expect the superseded Browser Worker,
 composition-agent, Terra-high, and eager ATS-sweep topology.
@@ -2199,35 +2200,32 @@ Completed foundations include `L-49K0A1G`, `L-49K0B`, `L-49K0C`, `L-49K0C1`,
 The active cursor is the first item below; do not start a later item merely because
 it is easier to demonstrate:
 
-1. `L-49K2C1` — run an isolated local-DOM CloakBrowser E2E for `fill`, `select`,
-   `check`, and `upload`; verify changed `data-field-path` layouts and produce a
-   grounded receipt. This slice MUST NOT start the resident loop or click Submit.
-2. `L-49K2C2`, then close `L-49K2C` and `L-49K2` — wire the installed resident
+1. `L-49K2C2`, then close `L-49K2C` and `L-49K2` — wire the installed resident
    Terra pass to use the deterministic CLI for inspect/fill, and prove a no-submit
    resident canary reaches a fully verified pre-submit state. This slice MUST run
    through the installed LaunchAgent, but Submit remains disabled and fenced.
-3. `L-49K3A`, `L-49K0C2O3b2c`, and `L-49K3B`, then close `L-49K3` — add exactly
+2. `L-49K3A`, `L-49K0C2O3b2c`, and `L-49K3B`, then close `L-49K3` — add exactly
    one resident-only fenced semantic Submit, attach the missing `submit.action` span,
    and accept `submitted` only from authoritative ATS or matched Gmail evidence.
-4. `L-49K4`, `L-49K0C2O6`, and the remaining `L-49K0C2` children — build the
+3. `L-49K4`, `L-49K0C2O6`, and the remaining `L-49K0C2` children — build the
    immutable owner dossier, prove the joined trace/no-send canary, and prove a blocked
    ATS cannot end the pass or duplicate another route.
-5. `L-49K0E`, `L-49K`, `L-49`, `L-49A`, `L-50`, `L-51`, `L-52` — prove resident
+4. `L-49K0E`, `L-49K`, `L-49`, `L-49A`, `L-50`, `L-51`, `L-52` — prove resident
    actor provenance and authoritative real Ashby plus Workday receipts, exact
    submitted documents, complete question/answer dossiers, screenshots, and Gmail
    confirmation in Telegram.
-6. `L-49K0D`, `L-49K0D2`, then `L-53` through `L-57` — add tracker projections,
+5. `L-49K0D`, `L-49K0D2`, then `L-53` through `L-57` — add tracker projections,
    move the four working lanes to restart-safe Temporal workflows, and prove Gmail,
    Calendar, interview preparation, and debrief from authoritative events.
-7. `L-58` through `L-66` — prove conversion metrics, one-variable learning,
+6. `L-58` through `L-66` — prove conversion metrics, one-variable learning,
    rollback, Telegram, simultaneous health, and freeze the working local contract.
-8. `L-66A` through `L-66F` — only after the local contract works, automate the same
+7. `L-66A` through `L-66F` — only after the local contract works, automate the same
    diagnose, reproduce, test, patch, immutable-release, canary, rollback, resume, and
    Telegram repair process currently performed by the architect.
-9. `L-67` through `L-73` — operate the Dais campaign through fifty confirmed
+8. `L-67` through `L-73` — operate the Dais campaign through fifty confirmed
    applications, a verified interview, a qualifying written offer, comparison,
    negotiation brief, and owner decision.
-10. `W-01` through `W-30` — only after local completion, build and verify the
+9. `W-01` through `W-30` — only after local completion, build and verify the
    tenant-isolated Web product.
 
 Current production truth measured from the ledger and resident receipts:
@@ -3347,7 +3345,7 @@ OpenTelemetry decision and primary sources:
     question/answer/fact IDs, resume filename/hash, and pre-submit screenshot. Any
     genuinely unresolved required fact blocks only that candidate and the same agent
     continues to another eligible route; an undefined UI action never blocks it.
-    - [ ] `L-49K2C1` — Replace per-run handwritten Playwright with one deterministic
+    - [x] `L-49K2C1` — Replace per-run handwritten Playwright with one deterministic
       Ashby Apply CLI core. The CLI extracts every live `[data-field-path]` group,
       records exact question/required/control metadata, and re-resolves its nested
       live control before every fill, select, check, and resume upload. It accepts a
@@ -3357,7 +3355,7 @@ OpenTelemetry decision and primary sources:
       before implementation, then the CLI fills and verifies a changed field layout
       without handwritten Playwright. Files: create `ashby_apply.py`, add one focused
       test file, update this spec (3 files, soft target 180 LOC).
-      - Handover checkpoint: implementation remains unfinished. The CLI now has
+      - Completion receipt: the CLI has
         `inspect`/`fill`, exact-question answer mapping, live `data-field-path`
         re-resolution, fill/select/check/upload execution, fact-ID receipts, and it
         closes only its owned page rather than the shared CloakBrowser. RED proved
@@ -3366,10 +3364,16 @@ OpenTelemetry decision and primary sources:
         OpenAI Ashby inspection extracted 12 current fields and proved the phone UUID
         differs from the stale UUID used by run 57; authorization/sponsorship are now
         classified as select while the standalone attestation is check. The isolated
-        live-control fill E2E was interrupted before a receipt, so this item stays
-        open. Full suite currently runs 498 tests with 4 failures and 4 errors in
-        pre-existing `run-daily.sh` contract assertions that expect the superseded
-        Browser Worker/Terra-plan topology; none touches the three checkpoint files.
+        local-DOM E2E used the real CloakBrowser CDP at `127.0.0.1:9222`, re-resolved
+        four changed field paths, and verified one fill, select, check, and upload.
+        It found zero Submit controls, executed zero Submit actions, preserved all 14
+        baseline pages, closed only its owned page, and wrote a mode-0600 receipt at
+        `~/.local/state/anicca/job-search/evidence/l49k2c1-20260806T111322Z/e2e-receipt.json`.
+        The result SHA-256 is
+        `c29799375faa86d53c0c8d59ab9d0eb55e56b99350b10b5300deab3605bad35c`.
+        Focused tests pass 23/23. The full suite remains 498 tests with the same four
+        failures and four errors in pre-existing `run-daily.sh` assertions expecting
+        the superseded Browser Worker/Terra-plan topology; no C1 test regressed.
     - [ ] `L-49K2C2` — Wire the resident Terra pass to call the CLI for inspect/fill
       instead of emitting Python or JavaScript. Terra owns only candidate choice and
       grounded answer-map generation. A truly absent personal/legal fact returns a
