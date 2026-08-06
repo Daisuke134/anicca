@@ -3193,11 +3193,17 @@ OpenTelemetry decision and primary sources:
   field, unknown legal fact, or selector ambiguity blocks that candidate before
   Submit and continues the pass. Files: modify `browser_fill.py`, material receipt,
   and focused tests (3 files, soft target 100 LOC per slice).
-  - [ ] `L-49K2A` — Extend deterministic field/question classification and build
+  - [x] `L-49K2A` — Extend deterministic field/question classification and build
     semantic `fill`, `select`, `check`, and `upload` actions for start date, location,
     work authorization, sponsorship, and attestations only from non-empty private
     fact IDs. Unknown/ambiguous required groups remain blockers (2 files, soft target
     100 LOC).
+    - Completion receipt: RED showed only location became a plain fill while start
+      date, work authorization, sponsorship, and attestation all remained blockers.
+      GREEN groups each exact question once and creates `select`, `fill`, or `check`
+      only when a non-empty answer/fact-ID pair exists and a live option matches.
+      Unknown legal facts, false attestation, and unmatched choices remain blockers.
+      Focused test passes 1/1, ATS tests pass 18/18, and the full suite passes 493/493.
   - [ ] `L-49K2B` — Add only bounded Browser Use `select_answer` and `check_answer`
     actions that re-read the live group/question/option metadata and reject generic
     click, Submit, stale refs, and unmatched answers (2 files, soft target 100 LOC).

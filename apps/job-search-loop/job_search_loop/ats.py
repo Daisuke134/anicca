@@ -86,6 +86,14 @@ def _field_key(control: dict[str, Any]) -> str | None:
         return "linkedin"
     if tag in {"input", "textarea"} and ("github" in group_label or "github" in text):
         return "github"
+    if "when can you start" in group_label or "available to start" in group_label:
+        return "start_date"
+    if "authorized to work" in group_label:
+        return "work_authorization"
+    if "sponsorship" in group_label:
+        return "sponsorship"
+    if control_type == "checkbox" and label.startswith("i confirm"):
+        return "attestation"
     return None
 
 
@@ -114,6 +122,7 @@ def build_non_submit_fill_plan(
         raise ValueError("resume_sha256 must be lowercase SHA-256")
     actions: list[dict[str, Any]] = []
     blockers: list[str] = []
+    handled_select_groups: set[str] = set()
     for frame_index, frame in enumerate(value["frames"]):
         for control_index, control in enumerate(frame["controls"]):
             if _normalized(control.get("type")) == "submit":
@@ -149,9 +158,44 @@ def build_non_submit_fill_plan(
                     and fact_ids
                     and all(isinstance(item, str) and item.strip() for item in fact_ids)
                 ):
+                    control_type = _normalized(control.get("type"))
+                    role = _normalized(control.get("role"))
+                    selectable = role in {"combobox", "radio"} or control_type == "radio" or _normalized(control.get("tag")) == "button"
+                    if selectable:
+                        group_key = _normalized(question)
+                        if group_key in handled_select_groups:
+                            continue
+                        handled_select_groups.add(group_key)
+                        candidates = [
+                            (index, item) for index, item in enumerate(frame["controls"])
+                            if _normalized(_question(item)) == group_key
+                        ]
+                        chosen = next(
+                            (
+                                (index, item) for index, item in candidates
+                                if role == "combobox"
+                                or _normalized(item.get("text") or item.get("label"))
+                                == _normalized(answer_value)
+                            ),
+                            None,
+                        )
+                        if chosen is None:
+                            if question not in blockers:
+                                blockers.append(question)
+                            continue
+                        control_index, _ = chosen
+                        kind = "select"
+                    elif control_type == "checkbox":
+                        if _normalized(answer_value) not in {"true", "yes", "confirmed"}:
+                            if question not in blockers:
+                                blockers.append(question)
+                            continue
+                        kind = "check"
+                    else:
+                        kind = "fill"
                     actions.append(
                         {
-                            "kind": "fill",
+                            "kind": kind,
                             "field_key": field_key,
                             "frame_index": frame_index,
                             "control_index": control_index,
