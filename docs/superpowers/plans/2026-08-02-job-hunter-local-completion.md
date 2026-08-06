@@ -3144,13 +3144,19 @@ OpenTelemetry decision and primary sources:
   controls, direct `/application`, stale ref, and no application surface. Files:
   modify `browser_use_ats.py`, `browser_use_adapter.py`, and focused tests (3 files,
   soft target 100 LOC; split state classification from action execution if exceeded).
-  - [ ] `L-49K1A` — Add only a semantic application-entry action to the Browser Use
+  - [x] `L-49K1A` — Add only a semantic application-entry action to the Browser Use
     boundary. The backend may click an element only when its live accessible role,
     tag, and normalized text identify the `Application` tab or `Apply for this Job`;
     stale indices and every other element fail closed. The authorized surface exposes
     `open_application`, never a generic `click` or Submit. Files: modify
     `browser_use_adapter.py` and `tests/test_browser_use_adapter.py` (2 files, soft
     target 80 LOC).
+    - Completion receipt: commit `d3b1a427a` added only `open_application` to the
+      authorized boundary. The backend re-reads the live element metadata and clicks
+      only anchor+tab `Application` or anchor/button `Apply for this Job`; a live
+      `Submit Application`, generic click, cross-frame, and stale index fail closed.
+      Current adapter plus surface suites pass 14/14. K1 remains open because K1B
+      still lacks the required raw failure snapshot.
   - [x] `L-49K1B0` — Keep the resident worker moving when canonical-route
     materialization encounters a posting already owned by the manual or recruiter
     lane. Preserve the ledger fence, skip only that candidate, persist a hashed skip
