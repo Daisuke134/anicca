@@ -2135,30 +2135,43 @@ this spec update → commit/push → Telegram milestone before the next item sta
     438 Job Hunter tests pass. Remaining before checking this task: run the isolated
     server/worker restart fixture and prove one durable activity effect.
 
-### 12.2A Blocking execution order from the measured 2026-08-05 state
+### 12.2A Current blocking execution order
 
 The detailed tasks below remain the requirements, but execution follows this critical
 path. A later platform/product task never delays a task that is currently preventing
 the resident worker from producing one authoritative application receipt:
 
-1. `L-49K0A1G` — turn discovered links into a durable verified candidate queue.
-2. `L-49K0B` — inventory Career Ops before porting its discovery/form capabilities.
-3. `L-49K0C` — port ATS discovery, liveness, dedupe, knockout, and form-fill coverage.
-4. `L-49K0D1` — replace prompt-authored browser scripts with pinned Browser Use on the
-   dedicated CloakBrowser identity.
-5. `L-49K0C1` then `L-49K0C2` — alternate routes and same-pass continuation.
-6. `L-49K0A1H`, `L-49K0A1I`, `L-49K0A1J` — remove false privacy failure, self-heal
-   browser attach, and deliver fresh Telegram evidence.
-7. `L-49K0A2`, `L-49K0B1`, `L-49K0D2` — pin and map Temporal, then make all four
-   lanes restart-safe and idempotent.
-8. `L-49K0E`, `L-49K`, `L-49`, `L-50`, `L-51`, `L-52` — prove resident ownership and
-   real Ashby plus Workday receipts in Telegram.
-9. `L-53` through `L-65` — Gmail, Calendar, interview, metrics, learning, and all-lane
-   health.
-10. `L-66` through `L-73` — run the Dais campaign through a qualifying written offer
-    and owner decision.
-11. `W-01` through `W-30` — only then turn the local product into a multi-tenant Web
-    product.
+Completed foundations are `L-49K0A1G`, `L-49K0B`, `L-49K0C`, and `L-49K0C1`.
+The active cursor is the first item below; do not start a later item merely because
+it is easier to demonstrate:
+
+1. `L-49K0A1H` — remove the false public-location privacy failure while retaining
+   exact private-contact leak detection, then prove the resident pass exits cleanly.
+2. `L-49K0A1I` — make browser readiness require a real CDP attach and self-heal one
+   initialization failure through the existing browser LaunchAgent.
+3. `L-49K0A1J` — issue one fresh deduplicated Telegram event and provider message ID
+   for each materially changed resident run; never reuse message ID `7173` as proof.
+4. `L-49K0A2` — finish the already pinned Temporal slice by proving an isolated
+   worker restart produces exactly one durable activity effect.
+5. `L-49K0B1` — finish the Browser Use/Temporal reuse-adapt-supersede inventory and
+   bind each accepted component to a local authority and parity test.
+6. `L-49K0D1` — replace the remaining prompt-owned Playwright execution contract
+   with the pinned Browser Use adapter on the dedicated CloakBrowser identity.
+7. `L-49K0C2` — prove a blocked ATS route cannot end the resident hourly pass and
+   that all remaining eligible routes/roles continue exactly once.
+8. `L-49K0D`, then `L-49K0D2` — build tracker/outcome/digest projections, then move
+   all four resident lanes to restart-safe, idempotent Temporal workflows.
+9. `L-49K0E`, `L-49K`, `L-49`, `L-49A`, `L-50`, `L-51`, `L-52` — prove resident
+   actor provenance, bounded owner handoff where required, and authoritative real
+   Ashby plus Workday receipts and screenshots in Telegram.
+10. `L-53` through `L-65` — prove Gmail, Calendar, interview preparation/debrief,
+    conversion metrics, one-variable learning, rollback, Telegram, and simultaneous
+    health of all resident lanes.
+11. `L-66` through `L-73` — operate the Dais campaign through fifty confirmed
+    applications, a verified interview, a qualifying written offer, comparison,
+    negotiation brief, and owner decision.
+12. `W-01` through `W-30` — only after local completion, build and verify the
+    tenant-isolated Web product.
 - [x] **L-49K0B** — Inventory every `career-ops` v1.25.0 capability as `reuse`,
   `adapt`, or `supersede`, including ATS scan providers, liveness, repost/dedup,
   scoring, pipeline, CV fact verification, apply autofill, tracker, outcomes,
@@ -2230,7 +2243,7 @@ the resident worker from producing one authoritative application receipt:
   self-reported success, unrestricted Submit action, CAPTCHA handling, and generic
   retry; explicitly map Temporal workflow/activity/schedule/signal/cancellation/
   heartbeat/history contracts to the Job Hunter ledger and Guardian.
-- [ ] **L-49K0C** — Port the non-side-effect `career-ops` capabilities that improve
+- [x] **L-49K0C** — Port the non-side-effect `career-ops` capabilities that improve
   coverage before another live application: public ATS discovery, liveness,
   cross-listing/repost dedupe, knockout pre-scan, and ATS-specific form-fill
   behaviors for Ashby, Greenhouse, Lever, Workable, and Workday. Preserve local
@@ -2384,7 +2397,7 @@ the resident worker from producing one authoritative application receipt:
       zero blockers. The browser actor then reported zero submissions, 37 verified
       durable links, and 91 pending links; these are FILL-1 failures, not fabricated
       GATE-1 success or application evidence.
-  - [ ] `FILL-1` — Port ATS-specific non-submit form behavior behind local fences.
+  - [x] `FILL-1` — Port ATS-specific non-submit form behavior behind local fences.
     - [x] `FILL-1A` — Persist the local deterministic ranking result, normalized
       compensation evidence, role-family inputs, and exact official description
       span on each shortlisted candidate before any model runs. Produce at least one
