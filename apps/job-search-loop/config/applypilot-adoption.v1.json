@@ -20,6 +20,13 @@
       "copied_source_lines": 0,
       "license": "MIT",
       "owner_task": "L-49K5B1"
+    },
+    {
+      "local_path": "job_search_loop/workday_discovery.py",
+      "upstream_contract_paths": ["src/applypilot/discovery/workday.py"],
+      "copied_source_lines": 0,
+      "license": "MIT",
+      "owner_task": "L-49K5B2a"
     }
   ],
   "components": [
