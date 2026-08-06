@@ -80,6 +80,11 @@ The runtime file needs an 11-line first-wake initializer because native-pass can
 
 **Completion:** A Connpass provider cursor invokes the existing exhaustive official-v2 API handoff for its date in the same runtime pass. The API key remains private, missing/unavailable API stays open, normalized discovery is advisory-only, and discovery never creates coverage or invokes registration.
 
+- [x] RED: existing runtime 16 tests passed and the Connpass cursor never invoked handoff.
+- [x] GREEN: both a resumed Connpass cursor and same-pass Luma exhaustion invoke official-v2 handoff; missing key is zero-network/open and discovered candidates remain advisory with coverage credit zero.
+- [x] Runtime 17/17、native-entrypoint 26/26、pretest 12/12、outbound 345/345 GREEN。
+- [x] Master specへ進捗133を記録しcommit/push。
+
 ## Task 3B: Provider-Neutral Calendar and Travel Gate
 
 **Files:**

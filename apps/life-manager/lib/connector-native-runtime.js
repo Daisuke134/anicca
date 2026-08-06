@@ -39,6 +39,7 @@ const { createConnectorRouteMinutes } = require("./connector-route-minutes.js");
 const { zonedSlotInstant } = require("./honne-ja-shadow-schedule.js");
 const { isVerifiedEventProviderRegistry } = require("./event-provider-registry.js");
 const { advanceEventProviderCursor, createEventProviderCursor } = require("./event-provider-cursor.js");
+const { isVerifiedEventSourceHandoff } = require("./event-source-handoff.js");
 
 function unavailable() {
   throw new Error("Connector native runtime unavailable");
@@ -597,6 +598,38 @@ async function runNativeConnectorPass(input = {}) {
       }
     }
 
+    let providerDiscovery = null;
+    if (providerCursor && providerCursor.provider === "connpass") {
+      if (typeof pack.handoffEventSource !== "function") unavailable();
+      failureCode = "CONNECTOR_NATIVE_PROVIDER_DISCOVERY_FAILED";
+      const exhaustedLuma = await pack.runSameDayCandidates([], async () => unavailable());
+      if (
+        !isVerifiedLumaCandidateSequence(exhaustedLuma)
+        || exhaustedLuma.status !== "next_provider_required"
+      ) unavailable();
+      const handoff = await pack.handoffEventSource(providerCursor.date, exhaustedLuma, {
+        connpassApiKey: String(config.connpassApiKey == null ? "" : config.connpassApiKey),
+      });
+      const verifyHandoff = factory(
+        deps, "isVerifiedEventSourceHandoff", isVerifiedEventSourceHandoff,
+      );
+      if (
+        !verifyHandoff(handoff)
+        || handoff.coverage_status !== "open"
+        || handoff.coverage_credit_count !== 0
+        || !Array.isArray(handoff.advisory_candidates)
+      ) unavailable();
+      providerDiscovery = Object.freeze({
+        provider: "connpass",
+        date: providerCursor.date,
+        status: handoff.status,
+        coverage_status: "open",
+        coverage_credit_count: 0,
+        network_call_count: handoff.network_call_count,
+        advisory_candidates: Object.freeze([...handoff.advisory_candidates]),
+      });
+    }
+
     let candidate = null;
     const observedOutcomes = [];
     const candidateConfigured = Object.hasOwn(config, "candidates") || Object.hasOwn(config, "attemptCandidate");
@@ -631,6 +664,7 @@ async function runNativeConnectorPass(input = {}) {
         busy_event_count: busyInventory.busy_event_count,
       }),
       candidate,
+      provider_discovery: providerDiscovery,
       write,
       candidate_attempts: Object.freeze([...candidateAttempts]),
       cursor: outputCursor,
