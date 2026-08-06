@@ -15,10 +15,17 @@ def send_daily_report(
     database: Path,
     japan_day: str,
     message: str,
+    material_digest: str | None = None,
     target: str = "8547730585",
     executable: str = "/opt/homebrew/bin/openclaw",
 ) -> dict[str, str | None]:
     base_key = f"job-search-daily:{japan_day}"
+    if material_digest is not None:
+        if len(material_digest) != 64 or any(
+            character not in "0123456789abcdef" for character in material_digest
+        ):
+            raise ValueError("daily material digest is invalid")
+        base_key = f"{base_key}:state:{material_digest[:16]}"
     outbox = Outbox(database)
     try:
         existing = outbox.connection.execute(
