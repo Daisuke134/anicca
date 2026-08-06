@@ -30,25 +30,25 @@
 - Consumes: Connector-owned absolute ledger directory, target ID, direct page WebSocket, canonical Luma URL.
 - Produces: `createConnectorTargetLease(options)` with `claim(input)`, `heartbeat(fence)`, `probe(fence)`, and `release(fence)`; fence fields are `owner_token`, `generation`, and `target_id`.
 
-- [ ] **Step 1: Write the failing lease tests**
+- [x] **Step 1: Write the failing lease tests**
 
   Add real filesystem tests proving: mode-0600 atomic claim; a second owner cannot claim the target; wrong token/generation cannot heartbeat or release; `probe()` returns false for an unresponsive renderer; stale rows are reaped only after their operation lock is acquired; release removes only the fenced Connector target.
 
-- [ ] **Step 2: Run the focused test and verify RED**
+- [x] **Step 2: Run the focused test and verify RED**
 
   Run: `cd apps/life-manager && node --test lib/connector-target-lease.test.js`
 
   Expected: FAIL because `connector-target-lease.js` does not exist.
 
-- [ ] **Step 3: Implement the minimal lease**
+- [x] **Step 3: Implement the minimal lease**
 
   Use an atomic JSON ledger guarded by a filesystem lock, schema version 1, random owner token, monotonic generation, heartbeat timestamp, direct `ws://127.0.0.1:9222/devtools/page/<target>` validation, and injected `probeTarget`/`closeTarget` functions. Do not copy or import Gig files.
 
-- [ ] **Step 4: Connect tab-owner receipt generation to the lease**
+- [x] **Step 4: Connect tab-owner receipt generation to the lease**
 
   `connector-tab-owner.claim()` must claim the uniquely observed target through `targetLease.claim()` and return the lease fence in its private receipt. The receipt must not be considered ownership if durable claim fails.
 
-- [ ] **Step 5: Run focused tests and verify GREEN**
+- [x] **Step 5: Run focused tests and verify GREEN**
 
   Run: `cd apps/life-manager && node --test lib/connector-target-lease.test.js lib/connector-tab-owner.test.js`
 
@@ -97,4 +97,3 @@
 - [ ] **Step 5: Run focused tests and the Connector suite:** `cd apps/life-manager && node --test lib/connector-page-session.test.js lib/connector-agentic-registration.test.js lib/luma-browser-provider.test.js && npm run pretest:outbound && npm run test:outbound`.
 - [ ] **Step 6: Run the existing Connector launchd live acceptance** and require one trace with one target, one agent session, zero agent closes, real submit, parent marker readback, PNG SHA, and parent release. Do not touch Gig or `:9223`.
 - [ ] **Step 7: Update the master spec with measured evidence and commit** using `feat(connector): complete page-scoped registration transaction`.
-

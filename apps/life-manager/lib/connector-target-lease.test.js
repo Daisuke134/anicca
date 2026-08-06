@@ -1,0 +1,134 @@
+"use strict";
+
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const os = require("node:os");
+const path = require("node:path");
+const test = require("node:test");
+
+const { createConnectorTargetLease } = require("./connector-target-lease.js");
+
+function fixture(t, overrides = {}) {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "connector-target-lease-"));
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
+  const calls = [];
+  const lease = createConnectorTargetLease({
+    ledgerPath: path.join(directory, "target-leases.json"),
+    now: () => new Date("2026-08-06T12:00:00.000Z"),
+    ownerToken: () => "connector-owner-token-0001",
+    probeTarget: async (pageWebsocket) => {
+      calls.push(["probe", pageWebsocket]);
+      return true;
+    },
+    closeTarget: async (targetId) => {
+      calls.push(["close", targetId]);
+      return true;
+    },
+    ...overrides,
+  });
+  return { calls, directory, lease, ledgerPath: path.join(directory, "target-leases.json") };
+}
+
+function claimInput(targetId = "TARGET_A") {
+  return {
+    targetId,
+    pageWebsocket: `ws://127.0.0.1:9222/devtools/page/${targetId}`,
+    canonicalUrl: "https://luma.com/tokyo-ai",
+  };
+}
+
+test("durably fences one Connector target and writes only private safe ownership fields", async (t) => {
+  const fx = fixture(t);
+  const fence = await fx.lease.claim(claimInput());
+
+  assert.deepEqual(fence, {
+    schema_version: 1,
+    owner_token: "connector-owner-token-0001",
+    generation: 1,
+    target_id: "TARGET_A",
+    page_websocket: "ws://127.0.0.1:9222/devtools/page/TARGET_A",
+    canonical_url: "https://luma.com/tokyo-ai",
+    claimed_at: "2026-08-06T12:00:00.000Z",
+    heartbeat_at: "2026-08-06T12:00:00.000Z",
+  });
+  assert.equal(fs.statSync(fx.ledgerPath).mode & 0o777, 0o600);
+  assert.deepEqual(JSON.parse(fs.readFileSync(fx.ledgerPath, "utf8")), {
+    schema_version: 1,
+    targets: { TARGET_A: fence },
+  });
+
+  await assert.rejects(fx.lease.claim(claimInput()), /already claimed/i);
+});
+
+test("rejects stale fences and releases only the exactly fenced target", async (t) => {
+  let tokenNumber = 0;
+  const fx = fixture(t, { ownerToken: () => `connector-owner-token-000${++tokenNumber}` });
+  const first = await fx.lease.claim(claimInput("TARGET_A"));
+  const second = await fx.lease.claim(claimInput("TARGET_B"));
+
+  await assert.rejects(
+    fx.lease.heartbeat({ ...first, owner_token: "wrong-owner-token-0000" }),
+    /fence mismatch/i,
+  );
+  await assert.rejects(
+    fx.lease.release({ ...first, generation: 2 }),
+    /fence mismatch/i,
+  );
+  assert.deepEqual(fx.calls, []);
+
+  assert.equal(await fx.lease.release(first), true);
+  assert.deepEqual(fx.calls, [["close", "TARGET_A"]]);
+  const ledger = JSON.parse(fs.readFileSync(fx.ledgerPath, "utf8"));
+  assert.deepEqual(Object.keys(ledger.targets), ["TARGET_B"]);
+  assert.equal(ledger.targets.TARGET_B.owner_token, second.owner_token);
+});
+
+test("reports renderer death without closing or releasing the live ownership fence", async (t) => {
+  const fx = fixture(t, {
+    probeTarget: async (pageWebsocket) => {
+      fx.calls.push(["probe", pageWebsocket]);
+      return false;
+    },
+  });
+  const fence = await fx.lease.claim(claimInput());
+
+  assert.equal(await fx.lease.probe(fence), false);
+  assert.deepEqual(fx.calls, [["probe", fence.page_websocket]]);
+  const ledger = JSON.parse(fs.readFileSync(fx.ledgerPath, "utf8"));
+  assert.equal(ledger.targets.TARGET_A.owner_token, fence.owner_token);
+});
+
+test("refuses non-Connector websocket endpoints and credential-bearing event URLs", async (t) => {
+  const fx = fixture(t);
+  await assert.rejects(fx.lease.claim({
+    ...claimInput(),
+    pageWebsocket: "ws://127.0.0.1:9223/devtools/page/TARGET_A",
+  }), /page websocket/i);
+  await assert.rejects(fx.lease.claim({
+    ...claimInput(),
+    canonicalUrl: "https://user:secret@luma.com/tokyo-ai",
+  }), /canonical url/i);
+  assert.equal(fs.existsSync(fx.ledgerPath), false);
+});
+
+test("reaps only heartbeat-expired Connector targets while preserving a fresh owner", async (t) => {
+  let clock = new Date("2026-08-06T10:00:00.000Z");
+  let tokenNumber = 0;
+  const fx = fixture(t, {
+    now: () => clock,
+    ownerToken: () => `connector-owner-token-000${++tokenNumber}`,
+  });
+  await fx.lease.claim(claimInput("STALE_TARGET"));
+  clock = new Date("2026-08-06T11:50:00.000Z");
+  const fresh = await fx.lease.claim(claimInput("FRESH_TARGET"));
+  clock = new Date("2026-08-06T12:00:00.000Z");
+
+  assert.deepEqual(await fx.lease.reapStale({ maxIdleMs: 30 * 60 * 1000 }), {
+    reaped_target_ids: ["STALE_TARGET"],
+    retained_target_ids: ["FRESH_TARGET"],
+  });
+  assert.deepEqual(fx.calls, [["close", "STALE_TARGET"]]);
+  const ledger = JSON.parse(fs.readFileSync(fx.ledgerPath, "utf8"));
+  assert.deepEqual(Object.keys(ledger.targets), ["FRESH_TARGET"]);
+  assert.equal(ledger.targets.FRESH_TARGET.owner_token, fresh.owner_token);
+});

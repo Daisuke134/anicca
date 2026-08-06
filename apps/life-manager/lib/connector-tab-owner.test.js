@@ -90,3 +90,45 @@ test("refuses another browser owner and ambiguous matching tabs", async () => {
     /exactly one owned Luma page/i,
   );
 });
+
+test("does not issue an ownership receipt until the durable target lease claims the exact page", async () => {
+  const calls = [];
+  const fence = Object.freeze({
+    schema_version: 1,
+    owner_token: "connector-owner-token",
+    generation: 7,
+    target_id: "OWNED123",
+    page_websocket: "ws://127.0.0.1:9222/devtools/page/OWNED123",
+    canonical_url: "https://luma.com/tokyo-ai",
+    claimed_at: "2026-08-06T01:02:03.000Z",
+    heartbeat_at: "2026-08-06T01:02:03.000Z",
+  });
+  const owner = createConnectorTabOwner({
+    listTargets: async () => [{
+      id: "OWNED123",
+      type: "page",
+      url: "https://luma.com/tokyo-ai?tk=invite",
+      webSocketDebuggerUrl: "ws://127.0.0.1:9222/devtools/page/OWNED123",
+    }],
+    targetLease: {
+      async claim(input) {
+        calls.push(input);
+        return fence;
+      },
+    },
+  });
+
+  const receipt = await owner.claim({
+    canonicalUrl: "https://luma.com/tokyo-ai",
+    baselineTargetIds: [],
+  });
+
+  assert.deepEqual(calls, [{
+    targetId: "OWNED123",
+    pageWebsocket: "ws://127.0.0.1:9222/devtools/page/OWNED123",
+    canonicalUrl: "https://luma.com/tokyo-ai",
+  }]);
+  assert.equal(receipt.owner_token, fence.owner_token);
+  assert.equal(receipt.generation, 7);
+  assert.equal(receipt.target_id, fence.target_id);
+});
