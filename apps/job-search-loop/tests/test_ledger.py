@@ -932,6 +932,60 @@ class LedgerTests(unittest.TestCase):
             ],
         )
 
+    def test_submission_evidence_bundle_is_hash_and_fence_bound(self):
+        self._ready()
+        intent = self._claim(
+            self.ledger, self.application_id, "2026-08-06", "bundle-payload"
+        )
+        self.ledger.complete_submission(intent.intent_id, intent.fence, "submitted")
+
+        artifacts = {}
+        for name in ("pre_submit", "post_action", "terminal"):
+            path = Path(self.tempdir.name) / f"{name}.png"
+            path.write_bytes(f"png:{name}".encode())
+            artifacts[name] = (
+                path,
+                hashlib.sha256(path.read_bytes()).hexdigest(),
+            )
+        confirmation = Path(self.tempdir.name) / "confirmation.json"
+        confirmation.write_text(
+            json.dumps({"source": "ats", "result": "submitted"}),
+            encoding="utf-8",
+        )
+        confirmation_sha256 = hashlib.sha256(confirmation.read_bytes()).hexdigest()
+        arguments = {
+            "intent_id": intent.intent_id,
+            "fence": intent.fence,
+            "pre_submit_path": artifacts["pre_submit"][0],
+            "pre_submit_sha256": artifacts["pre_submit"][1],
+            "post_action_path": artifacts["post_action"][0],
+            "post_action_sha256": artifacts["post_action"][1],
+            "terminal_path": artifacts["terminal"][0],
+            "terminal_sha256": artifacts["terminal"][1],
+            "confirmation_path": confirmation,
+            "confirmation_sha256": confirmation_sha256,
+            "confirmation_source": "ats",
+            "confirmation_id": "ats-receipt-1",
+        }
+
+        with self.assertRaisesRegex(FenceError, "fence"):
+            self.ledger.record_submission_evidence_bundle(
+                **{**arguments, "fence": intent.fence + 1}
+            )
+        recorded = self.ledger.record_submission_evidence_bundle(**arguments)
+        replay = self.ledger.record_submission_evidence_bundle(**arguments)
+        self.assertEqual(replay, recorded)
+        self.assertRegex(recorded, r"^[a-f0-9]{64}$")
+
+        reports = self.ledger.submitted_evidence_reports()
+        self.assertEqual(len(reports), 1)
+        self.assertEqual(reports[0]["application_id"], self.application_id)
+        self.assertEqual(reports[0]["intent_id"], intent.intent_id)
+        self.assertEqual(reports[0]["fence"], intent.fence)
+        self.assertEqual(reports[0]["resume_sha256"], self.resume_sha256)
+        self.assertEqual(reports[0]["bundle_sha256"], recorded)
+        self.assertEqual(reports[0]["confirmation_source"], "ats")
+
     def test_submission_material_receipt_binds_exact_inputs_to_intent_fence(self):
         self._ready()
         intent = self._claim(

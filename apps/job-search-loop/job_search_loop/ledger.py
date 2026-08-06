@@ -259,6 +259,27 @@ class Ledger:
                 received_at TEXT NOT NULL,
                 created_at TEXT NOT NULL
             );
+            CREATE TABLE IF NOT EXISTS submission_evidence_bundles (
+                intent_id TEXT NOT NULL,
+                fence INTEGER NOT NULL,
+                application_id TEXT NOT NULL REFERENCES applications(id),
+                pre_submit_path TEXT NOT NULL,
+                pre_submit_sha256 TEXT NOT NULL,
+                post_action_path TEXT NOT NULL,
+                post_action_sha256 TEXT NOT NULL,
+                terminal_path TEXT NOT NULL,
+                terminal_sha256 TEXT NOT NULL,
+                confirmation_path TEXT NOT NULL,
+                confirmation_sha256 TEXT NOT NULL,
+                confirmation_source TEXT NOT NULL CHECK
+                    (confirmation_source IN ('ats', 'gmail')),
+                confirmation_id TEXT NOT NULL,
+                bundle_sha256 TEXT NOT NULL UNIQUE,
+                recorded_at TEXT NOT NULL,
+                PRIMARY KEY (intent_id, fence),
+                FOREIGN KEY (intent_id, fence)
+                    REFERENCES submission_attempts(intent_id, fence)
+            );
             CREATE TABLE IF NOT EXISTS application_routes (
                 route_id TEXT PRIMARY KEY,
                 application_id TEXT NOT NULL REFERENCES applications(id),
@@ -3394,6 +3415,11 @@ class Ledger:
             WHERE submit_intents.status = 'submitted'
               AND submit_intents.resume_path IS NOT NULL
               AND submit_intents.resume_sha256 IS NOT NULL
+              AND NOT EXISTS (
+                SELECT 1 FROM submission_evidence_bundles
+                WHERE submission_evidence_bundles.intent_id = submit_intents.intent_id
+                  AND submission_evidence_bundles.fence = submit_intents.fence
+              )
             ORDER BY submit_intents.completed_at, submit_intents.rowid
             """
         ).fetchall()
@@ -3408,3 +3434,115 @@ class Ledger:
             }
             for row in rows
         ]
+
+    def record_submission_evidence_bundle(
+        self,
+        *,
+        intent_id: str,
+        fence: int,
+        pre_submit_path: Path,
+        pre_submit_sha256: str,
+        post_action_path: Path,
+        post_action_sha256: str,
+        terminal_path: Path,
+        terminal_sha256: str,
+        confirmation_path: Path,
+        confirmation_sha256: str,
+        confirmation_source: str,
+        confirmation_id: str,
+    ) -> str:
+        if confirmation_source not in {"ats", "gmail"}:
+            raise ValueError("confirmation source is not authoritative")
+        if not confirmation_id.strip():
+            raise ValueError("confirmation ID is required")
+        artifacts = (
+            ("pre_submit", Path(pre_submit_path), pre_submit_sha256),
+            ("post_action", Path(post_action_path), post_action_sha256),
+            ("terminal", Path(terminal_path), terminal_sha256),
+            ("confirmation", Path(confirmation_path), confirmation_sha256),
+        )
+        normalized: dict[str, str] = {}
+        for name, path, claimed in artifacts:
+            resolved = path.expanduser().resolve()
+            if not resolved.is_file():
+                raise ValueError(f"{name} evidence file is missing")
+            if not re.fullmatch(r"[a-f0-9]{64}", claimed):
+                raise ValueError(f"{name} evidence hash is invalid")
+            actual = hashlib.sha256(resolved.read_bytes()).hexdigest()
+            if actual != claimed:
+                raise ValueError(f"{name} evidence hash mismatch")
+            normalized[f"{name}_path"] = str(resolved)
+            normalized[f"{name}_sha256"] = claimed
+        payload = {
+            "intent_id": intent_id,
+            "fence": fence,
+            **normalized,
+            "confirmation_source": confirmation_source,
+            "confirmation_id": confirmation_id,
+        }
+        bundle_sha256 = hashlib.sha256(
+            json.dumps(
+                payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+            ).encode("utf-8")
+        ).hexdigest()
+        with self._transaction():
+            intent = self.connection.execute(
+                "SELECT application_id, fence, status FROM submit_intents "
+                "WHERE intent_id = ?",
+                (intent_id,),
+            ).fetchone()
+            if intent is None or int(intent["fence"]) != fence:
+                raise FenceError("submission evidence fence mismatch")
+            if str(intent["status"]) != "submitted":
+                raise FenceError("submission evidence requires submitted intent")
+            existing = self.connection.execute(
+                "SELECT bundle_sha256 FROM submission_evidence_bundles "
+                "WHERE intent_id = ? AND fence = ?",
+                (intent_id, fence),
+            ).fetchone()
+            if existing is not None:
+                if str(existing["bundle_sha256"]) != bundle_sha256:
+                    raise FenceError("submission evidence bundle is already bound")
+                return bundle_sha256
+            self.connection.execute(
+                """
+                INSERT INTO submission_evidence_bundles
+                  (intent_id, fence, application_id,
+                   pre_submit_path, pre_submit_sha256,
+                   post_action_path, post_action_sha256,
+                   terminal_path, terminal_sha256,
+                   confirmation_path, confirmation_sha256,
+                   confirmation_source, confirmation_id, bundle_sha256, recorded_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    intent_id, fence, str(intent["application_id"]),
+                    normalized["pre_submit_path"], normalized["pre_submit_sha256"],
+                    normalized["post_action_path"], normalized["post_action_sha256"],
+                    normalized["terminal_path"], normalized["terminal_sha256"],
+                    normalized["confirmation_path"], normalized["confirmation_sha256"],
+                    confirmation_source, confirmation_id, bundle_sha256, _now(),
+                ),
+            )
+        return bundle_sha256
+
+    def submitted_evidence_reports(self) -> list[dict[str, Any]]:
+        rows = self.connection.execute(
+            """
+            SELECT applications.id AS application_id, applications.company,
+                   applications.title, applications.canonical_url,
+                   submit_intents.intent_id, submit_intents.fence,
+                   submit_intents.resume_path, submit_intents.resume_sha256,
+                   submission_evidence_bundles.*
+            FROM submission_evidence_bundles
+            JOIN submit_intents
+              ON submit_intents.intent_id = submission_evidence_bundles.intent_id
+             AND submit_intents.fence = submission_evidence_bundles.fence
+            JOIN applications
+              ON applications.id = submission_evidence_bundles.application_id
+            WHERE submit_intents.status = 'submitted'
+            ORDER BY submission_evidence_bundles.recorded_at,
+                     submission_evidence_bundles.rowid
+            """
+        ).fetchall()
+        return [dict(row) for row in rows]
