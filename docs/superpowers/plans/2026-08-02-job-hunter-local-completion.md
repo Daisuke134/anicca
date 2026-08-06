@@ -2536,6 +2536,23 @@ the resident worker from producing one authoritative application receipt:
   verified public work-address recruiting outreach, then the next eligible role.
   Bind every route to one cross-route duplicate key and preserve the exact message,
   resume, recipient provenance, provider ID, delivery state, and employer reply.
+  - [ ] `L-49K0C1A` — Add one deterministic ordered route model and append-only ledger
+    projection keyed by the canonical company-role identity. A role may have many
+    routes, but only one route may enter `action_started` or a terminal delivered/
+    unknown state; persist route kind, official URL, exact message/resume hashes,
+    recipient provenance, provider ID, delivery state, and reply evidence.
+  - [ ] `L-49K0C1B` — Discover alternate URLs and recipient addresses only from
+    employer-controlled pages or an explicitly linked official recruiting provider.
+    Record source URL/content hash and distinguish `accepts_applications` from
+    `outreach_only`; a public address alone never implies application acceptance.
+  - [ ] `L-49K0C1C` — Execute the ordered ladder at most once per route. Email an
+    application only when the provenance explicitly accepts it; otherwise allow one
+    bounded recruiting outreach message, then continue to the next role. Preserve the
+    exact provider receipt and never retry an unknown delivery.
+  - [ ] `L-49K0C1D` — Trigger the installed resident worker on a no-send fixture and
+    prove ATS failure advances through every eligible route in order, cross-route
+    duplicate fencing holds across crashes/replay, and the development session
+    cannot mint route action authority.
 - [ ] **L-49K0C2** — Prove an ATS bot block, CAPTCHA, timeout, or unsupported form
   cannot end an hourly pass. The resident worker records the failure, executes every
   eligible remaining route once, moves to a different supported role during the same
