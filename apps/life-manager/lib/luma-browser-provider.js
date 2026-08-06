@@ -99,6 +99,15 @@ async function submitLumaOnPage(page, _contract, dependencies = {}) {
   ) {
     throw providerError("Luma RSVP page unavailable", "LUMA_PAGE_UNAVAILABLE", false);
   }
+  if (typeof dependencies.agenticRegister === "function") {
+    await dependencies.agenticRegister(_contract);
+    if (typeof page.reload === "function") await page.reload({ waitUntil: "domcontentloaded" });
+    await page.waitForTimeout(1500);
+    if ((await exactControlState(page)).registered) {
+      return { status: "registered", effect_started: true };
+    }
+    throw providerError("Luma agentic registration result unverified", "LUMA_AGENTIC_RESULT_UNVERIFIED", true);
+  }
   const register = page.getByRole("button", {
     name: /^(?:参加登録|参加リクエスト|参加をリクエスト|ワンクリックで参加登録|ワンクリック申し込み|Register|Request to Join)$/i,
     exact: true,
@@ -193,7 +202,10 @@ function createLumaBrowserProvider(options = {}) {
     ? options.readLumaFormProfile
     : () => (Object.hasOwn(options, "lumaFormProfile") ? options.lumaFormProfile : {});
   const submitOnPage = options.submitOnPage || ((page, contract) => (
-    submitLumaOnPage(page, contract, { readLumaFormProfile })
+    submitLumaOnPage(page, contract, {
+      readLumaFormProfile,
+      agenticRegister: options.agenticRegister,
+    })
   ));
   const authorizeSpendEffect = options.authorizeSpendEffect || authorizeEventSpendEffect;
   const now = options.now || (() => new Date().toISOString());

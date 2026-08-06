@@ -21,6 +21,7 @@ const {
 const { isVerifiedConnectorCoverageContinuation } = require("./connector-coverage-continuation.js");
 const { readConnectorProfile, isVerifiedConnectorProfile } = require("./connector-profile.js");
 const { runConnectorLunaJudgment } = require("./connector-luna-judgment.js");
+const { runConnectorAgenticRegistration } = require("./connector-agentic-registration.js");
 const {
   createEventSpendPolicy,
   isVerifiedEventSpendSequence,
@@ -261,6 +262,13 @@ async function runNativeConnectorPass(input = {}) {
       readLumaFormProfile: lumaFormProfilePath === null ? undefined : (() => (
         readPrivateLumaFormProfile({ path: lumaFormProfilePath })
       )),
+      agenticRegister: (contract) => runConnectorAgenticRegistration({
+        canonicalUrl: contract.canonical_url,
+        profile: lumaFormProfilePath === null ? {} : readPrivateLumaFormProfile({ path: lumaFormProfilePath }),
+        evidenceDir,
+        repoRoot: config.repoRoot,
+        runnerPath: config.runnerPath,
+      }),
       now: () => now,
     });
     if (

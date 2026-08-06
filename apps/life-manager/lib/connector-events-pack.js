@@ -87,6 +87,7 @@ function createConnectorEventsPack(options = {}) {
     dailyDriver: authAwareDriver,
     evidenceStore,
     readLumaFormProfile: options.readLumaFormProfile,
+    agenticRegister: options.agenticRegister,
     now: options.now,
   });
   if (
