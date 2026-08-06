@@ -62,6 +62,8 @@ class LaunchdTests(unittest.TestCase):
         self.assertIn("--require-hashes", installer)
         self.assertIn('"$JOB_SEARCH_UV" pip install', installer)
         self.assertIn('chmod 600 "$TRACE_PATH"', installer)
+        self.assertIn("for attempt in {1..20}", installer)
+        self.assertIn("observability-health.json", installer)
         self.assertIn('DATA_ROOT="${JOB_SEARCH_DATA_ROOT:-', installer)
         self.assertIn("for attempt in {1..10}", installer)
         self.assertIn('"$JOB_SEARCH_LAUNCHCTL" print', installer)

@@ -3003,7 +3003,10 @@ OpenTelemetry decision and primary sources:
         resident-Python `hourly_pass` span decoded from the private mode-0600 JSONL.
         Browser Use and OTel import together. The existing broken-backend test proves
         exporter initialization failure is non-fatal. Focused launchd/observability
-        tests pass 10/10 and the full suite passes 491/491.
+        tests pass 10/10 and the full suite passes 491/491. A measured immediate
+        post-install probe exposed a readiness race; the installer now waits at most
+        ten seconds for health and atomically writes a mode-0600 receipt containing
+        only version, PID, archive SHA, and loopback endpoints.
     - [ ] `L-49K0C2O5c` — Add private indexed trace queries and 30-day/size-bounded
       retention for pass/candidate/route timelines, failure classes, confirmation,
       repair, promotion/rollback, and resumed outcome. Grafana remains optional for
