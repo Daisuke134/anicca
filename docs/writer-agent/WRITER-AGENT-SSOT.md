@@ -969,7 +969,15 @@ terminal files were overwritten with raw verdict JSON lacking `status`,
 correctly remains at `evaluate_reroute`, with no publication state or public
 side effect. This slice makes reader-gate stdout itself a hash-bound compatible
 terminal so autonomous redirection cannot erase the proof needed by the
-quality controller. Implementation evidence is pending.
+quality controller. **DONE:** runtime commit `e9c68de9` made stdout retain the
+backward-compatible verdict fields plus `status`, `article_sha256`, and
+canonical `payload`; its TDD fixture passes fresh. The installed production
+script has the exact same SHA-256 as the verified worktree script
+(`f479e9085971109b201e3b7546a762df536208c1c30d0f9f70d1bd0cbef45eeb`).
+Live run `20260806-084924` persisted hash-bound JA and EN reader terminals and
+continued into publisher attempts, proving the installed loop consumed the
+contract. The current foreground item is 1b: publisher errors must return to
+the production Agent as observations rather than terminal `unavailable`.
 
 Decision evidence:
 
@@ -1466,8 +1474,8 @@ foreground order is binding:
 Read as one end-to-end completion route, the remaining work is:
 
 ```text
-1a   make the production loop emit hash-bound reader terminals
-  -> 1b   make the loop return publisher errors to its Agent as observations,
+1a   DONE: production loop emits hash-bound reader terminals
+  -> 1b   CURRENT: make the loop return publisher errors to its Agent as observations,
           not terminal unavailable
   -> 1c   kickstart the installed loop and prove that it diagnoses, repairs, and
           resumes note, Dev.to, Substack, X Article, and Zenn from the same work
