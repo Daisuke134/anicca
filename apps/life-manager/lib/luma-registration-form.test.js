@@ -124,6 +124,64 @@ test("reads a closed structural schema without reading form values or a raw page
   );
 });
 
+test("observes only controls under the evaluated dialog scope", async () => {
+  const field = (name, label) => ({
+    tagName: "INPUT",
+    labels: [],
+    parentElement: null,
+    getAttribute(attribute) {
+      return {
+        name,
+        type: "text",
+        "aria-label": label,
+      }[attribute] || null;
+    },
+    hasAttribute(attribute) { return attribute === "required"; },
+    matches() { return false; },
+    closest() { return null; },
+    querySelector() { return null; },
+    querySelectorAll() { return []; },
+    contains() { return false; },
+    ownerDocument: { getElementById() { return null; } },
+  });
+  const pageOnlyField = field("page_only", "Page-only required question *");
+  const dialogField = field("dialog_answer", "Dialog question *");
+  const scopeRoot = (fields) => ({
+    parentElement: null,
+    querySelectorAll(selector) {
+      return selector.includes("input[name]") || selector.includes("[required]") ? fields : [];
+    },
+    querySelector() { return null; },
+    getElementById() { return null; },
+    getAttribute() { return null; },
+    matches() { return false; },
+    contains(node) { return fields.includes(node); },
+  });
+  const pageRoot = scopeRoot([pageOnlyField]);
+  const dialogRoot = scopeRoot([dialogField]);
+  const hadDocument = Object.hasOwn(global, "document");
+  const previousDocument = global.document;
+  global.document = pageRoot;
+  try {
+    const schema = await readLumaRegistrationForm({
+      async evaluate(observer) { return observer(dialogRoot); },
+    });
+    assert.deepEqual(schema, {
+      kind: "luma_registration_form",
+      fields: [{
+        key: "dialog_answer",
+        label: "Dialog question",
+        control: "text",
+        required: true,
+        options: [],
+      }],
+    });
+  } finally {
+    if (hadDocument) global.document = previousDocument;
+    else delete global.document;
+  }
+});
+
 test("the browser observer rejects one-time-code controls instead of treating them as phone fields", async () => {
   let observerSource = "";
   const result = await readLumaRegistrationForm({
