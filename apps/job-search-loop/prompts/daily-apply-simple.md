@@ -10,19 +10,24 @@ Browser Use and computer-use are intentionally unavailable and are not needed. Y
 have shell, Python, filesystem, and network tools. Every browser claim must come from
 a live CDP observation. Never invent a click, answer, confirmation, or submission.
 
-Load `$JOB_SEARCH_PREFILTER_RESULT` privately. Start with the highest-ranked candidate
-where `ranking_ready=true`, `gate_status=pass`, and the official page confirms Tokyo,
-Japan, or remote-from-Japan plus an AI/LLM requirement. Unpublished compensation is
-truthful `unknown` and does not block. Explicit compensation below JPY 8,000,000 is
-ineligible. After each completed or blocked candidate, continue to the next candidate
-until the daily confirmed quota is reached or the pass timeout ends.
+Load `$JOB_SEARCH_PREFILTER_RESULT` privately. Every active official job posting is an
+application candidate. Ranking, score, role requirements, years of experience,
+skills gaps, AI/LLM wording, location, and compensation are ordering signals only;
+none may reject a candidate or prevent an application. Prefer Tokyo, Japan-remote,
+high-compensation, and strong-fit roles first, then continue through the rest. Apply
+to exactly one candidate from opening through evidence and Telegram before opening
+the next candidate. Continue until the daily confirmed quota is reached or the pass
+timeout ends.
 
-The private profile is at `$JOB_SEARCH_PROFILE`. Read it only inside the automation
-program and pass values directly to browser fields. Never print profile values,
-cookies, tokens, or answers into provider output. Use the committed resume-routing
-helper and upload exactly its selected resume. Never invent work authorization,
-sponsorship, address, phone, employment dates, degrees, experience, or demographic
-answers. Decline optional demographic questions when possible.
+The private profile is at `$JOB_SEARCH_PROFILE`. Its natural-language `facts[].claim`
+and `facts[].evidence` are the authoritative context. Read them as a normal person
+would; do not require a hard-coded boolean or schema key when the same answer is
+clearly established in natural language. Read profile values only inside the
+automation program and pass values directly to browser fields. Never print profile
+values, cookies, tokens, or answers into provider output. Use the committed resume-
+routing helper and upload exactly its selected resume. Never invent work
+authorization, sponsorship, address, phone, employment dates, degrees, experience,
+or demographic answers. Decline optional demographic questions when possible.
 
 For each candidate:
 
@@ -63,14 +68,16 @@ For each candidate:
    state, why it matched, outcome, screenshot, exact submitted resume, and submitted
    question/answer dossier. Require a Telegram message ID before claiming delivery.
 
-There are only four reasons to abandon one candidate before Submit: a durable
-duplicate, a genuinely missing required personal/legal fact, a visible CAPTCHA, or
-explicit below-floor compensation. None of them ends the pass. Record the candidate
-outcome and immediately continue to another eligible candidate. An unsupported ATS,
-unfamiliar control, missing predefined action, evaluator failure, ledger ownership,
-unpublished compensation, or another candidate remaining unverified is not a pass
-stop reason. Adapt with live Playwright inspection. Do not end the pass with zero
-attempts while any eligible candidate remains.
+There are only four reasons to abandon one candidate before Submit: a durable prior
+Submit/submit-unknown duplicate, an officially closed or expired posting, a genuinely
+missing truthful answer to an ATS-required personal/legal question after reading all
+natural-language profile facts, or a visible CAPTCHA. None ends the pass. Record the
+candidate outcome and immediately continue to the next active official posting. Low
+fit, missing preferred qualifications, years-of-experience gaps, low or unknown
+compensation, nonpreferred location, unsupported ATS, unfamiliar control, missing
+predefined action, evaluator failure, ledger ownership, or pending verification are
+never rejection or pass-stop reasons. Adapt with live Playwright inspection. Do not
+end the pass with zero attempts while any active official posting remains.
 
 Do not require every discovered link to be verified before the first Submit. Do not
 call a deterministic ATS evaluator on a job-detail page. Deterministic helpers may
