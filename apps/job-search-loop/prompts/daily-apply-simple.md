@@ -35,6 +35,10 @@ For each selected role:
    Use the strongest truthful natural-language evidence
    in the private profile, the selected resume, and exact current questions. Never
    fabricate identity, employment, education, legal eligibility, or demographic facts.
+   On Workday account/application steps, the visible semantic control may be a wrapper
+   such as `[data-automation-id="click_filter"]` while a hidden submit button sits
+   underneath it. If the hidden button reports intercepted pointer events, click the
+   visible wrapper/role control and verify the page or step transition before continuing.
 3. Before any Submit side effect, use the existing Ledger intent, material receipt,
    click fence, and request fence. Execute Submit once. Treat only the existing
    authoritative ATS confirmation classifier as `applied_ats`; HTTP 200 or model prose
@@ -51,6 +55,9 @@ For each selected role:
 
 Continue until the daily confirmed quota is reached or the pass timeout ends. For a
 selected role, the only durable outcomes are `applied_ats` and `applied_email`.
+`blocked` is diagnostic evidence, never a valid final outcome for a selected role that
+lacks either receipt. Before returning final JSON, continue the same role through its
+remaining official routes and Gmail fallback until one provider receipt exists.
 
 Return only JSON matching the supplied schema. Put canonical identifiers for
 authoritatively confirmed ATS applications in `submitted`; put only genuinely
