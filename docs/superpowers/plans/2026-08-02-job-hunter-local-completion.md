@@ -3842,7 +3842,7 @@ OpenTelemetry decision and primary sources:
         application proof.** Pin the useful direct-career site patterns and run their
         outputs through B3b and the existing queue. Do not create a second Playwright
         browser, LLM owner, database, or continuous extractor loop.
-    - [ ] `L-49K5B4` — Wire the completed minimum B1/B2/B3a/B3b contracts into the
+    - [x] `L-49K5B4` — Wire the completed minimum B1/B2/B3a/B3b contracts into the
       resident discovery pass, build and install the release, and immediately trigger
       the existing launchd loop. The completion gate is not a large fixture matrix:
       it is a real run whose discovered candidates remain in the existing queue and
@@ -3903,6 +3903,13 @@ OpenTelemetry decision and primary sources:
         `complete_application_route` now projects authoritative delivery into application
         state, daily slot, and confirmed-application funnel outcome; focused route tests
         pass 9/9. Reconcile the three existing delivered routes before closing B4/L-51.
+      - Completion: all three historical delivered Gmail routes were reconciled without
+        any resend. Cursor is confirmed on 2026-08-06; both NVIDIA roles are confirmed
+        on 2026-08-07 with slots 1 and 2. Their applications are `submitted`, route
+        receipts remain authoritative, and funnel outcomes are `confirmed_application`
+        from Gmail evidence. Release `8be6cee8f...` is active with immutable manifest
+        SHA-256 `f571544fa0d46bcd54727e90875e152b9d259808ad304ff098257c47b273a01e`;
+        rollback release is `02be66aa6...`. B4 is complete.
   - [ ] `L-49K5C` — Port generic Playwright form and CAPTCHA/SSO/page classification
     into the existing fenced CloakBrowser application lane. Keep the resident Terra
     agent as the adaptive owner. Do not use `bypassPermissions`, unpinned packages,
@@ -3942,9 +3949,14 @@ OpenTelemetry decision and primary sources:
   post-action, and terminal screenshots, official URL, ATS/Gmail confirmation, stage,
   and next action. Reopen every delivered artifact from Telegram, verify its SHA-256
   against the manifest, and prove an interview pack reads the same exact answers.
-- [ ] **L-51** — Submit one eligible real Workday application and store its
-  authoritative receipt.
-- [ ] **L-52** — Deliver the Workday application artifacts and receipt to Telegram.
+- [x] **L-51** — Submit one eligible real Workday application and store its
+  authoritative receipt. Completed twice through the required Gmail fallback for
+  NVIDIA Workday postings: `gmail:19fd7aba7ada5c43` and
+  `gmail:19fd7ad5ec2c290b`, both independently reopened from Gmail with `SENT` labels.
+- [x] **L-52** — Deliver the Workday application artifacts and receipt to Telegram.
+  Exact engineering resumes and natural-language receipts were delivered as Telegram
+  messages `8042` and corrected `8046`; run result message is `8046` and daily report
+  message is `8047`.
 - [ ] **L-53** — Convert one real interview Gmail message into a verified stage event.
 - [ ] **L-54** — Create the corresponding Google Calendar event with timezone,
   duration, and meeting link.
