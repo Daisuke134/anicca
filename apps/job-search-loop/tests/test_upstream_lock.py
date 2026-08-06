@@ -71,6 +71,16 @@ class UpstreamLockTests(unittest.TestCase):
                     "license": "MIT",
                     "owner_task": "L-49K5B2b",
                 },
+                {
+                    "local_path": "job_search_loop/enrichment_contract.py",
+                    "upstream_contract_paths": [
+                        "src/applypilot/discovery/smartextract.py",
+                        "src/applypilot/enrichment/detail.py",
+                    ],
+                    "copied_source_lines": 0,
+                    "license": "MIT",
+                    "owner_task": "L-49K5B3a",
+                },
             ],
         )
 
