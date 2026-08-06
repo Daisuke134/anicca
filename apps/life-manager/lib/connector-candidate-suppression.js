@@ -32,7 +32,7 @@ function checkedAttempt(attempt) {
   return { ...attempt, observedAt, retryAfter };
 }
 
-function activeSuppressedEventRefs(input = {}) {
+function latestCandidateAttempts(input = {}) {
   const now = exactInstant(input.now);
   if (!Array.isArray(input.attempts) || input.attempts.length > 10_000) invalid();
   const latest = new Map();
@@ -41,6 +41,11 @@ function activeSuppressedEventRefs(input = {}) {
     const previous = latest.get(attempt.event_ref);
     if (!previous || attempt.observedAt > previous.observedAt) latest.set(attempt.event_ref, attempt);
   }
+  return Object.freeze({ now, latest });
+}
+
+function activeSuppressedEventRefs(input = {}) {
+  const { now, latest } = latestCandidateAttempts(input);
   const suppressed = new Set();
   for (const attempt of latest.values()) {
     if (
@@ -51,4 +56,4 @@ function activeSuppressedEventRefs(input = {}) {
   return suppressed;
 }
 
-module.exports = { activeSuppressedEventRefs };
+module.exports = { activeSuppressedEventRefs, latestCandidateAttempts };

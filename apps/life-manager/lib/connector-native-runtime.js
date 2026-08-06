@@ -24,7 +24,10 @@ const {
 const { isVerifiedEventGoalSerendipity } = require("./event-goal-serendipity.js");
 const { runNativeConnectorWrite } = require("./connector-native-write-pipeline.js");
 const { classifyConnectorCandidateOutcome } = require("./connector-candidate-outcome.js");
-const { activeSuppressedEventRefs } = require("./connector-candidate-suppression.js");
+const {
+  activeSuppressedEventRefs,
+  latestCandidateAttempts,
+} = require("./connector-candidate-suppression.js");
 const { createConnectorRouteMinutes } = require("./connector-route-minutes.js");
 const { zonedSlotInstant } = require("./honne-ja-shadow-schedule.js");
 
@@ -284,6 +287,10 @@ async function runNativeConnectorPass(input = {}) {
       attempts: Array.isArray(config.candidateAttempts) ? config.candidateAttempts : [],
       now,
     });
+    const latestAttempts = latestCandidateAttempts({
+      attempts: Array.isArray(config.candidateAttempts) ? config.candidateAttempts : [],
+      now,
+    }).latest;
     if (Object.hasOwn(config, "profilePath")) {
       const readProfile = factory(deps, "readProfile", readConnectorProfile);
       const verifyProfile = factory(deps, "isVerifiedConnectorProfile", isVerifiedConnectorProfile);
@@ -351,6 +358,28 @@ async function runNativeConnectorPass(input = {}) {
           const selectedRef = chosen.event_ref;
           const selectedEvent = judgmentDay.events.find((event) => event && event.event_ref === selectedRef);
           if (!selectedEvent || chosen.canonical_url !== selectedEvent.canonical_url) unavailable();
+          const previousAttempt = latestAttempts.get(selectedRef);
+          if (previousAttempt && previousAttempt.outcome === "unknown_effect") {
+            const proof = await pack.provider.inspectRegistration({
+              tenant_id: tenantId,
+              event_ref: selectedRef,
+              canonical_url: selectedEvent.canonical_url,
+            });
+            if (!proof || !["absent", "registered", "login_required", "unavailable", "unknown"].includes(proof.state)) {
+              unavailable();
+            }
+            if (proof.state !== "registered") {
+              const reconciledAbsent = ["absent", "unavailable"].includes(proof.state);
+              candidateAttempts.push(Object.freeze({
+                event_ref: selectedRef,
+                outcome: reconciledAbsent ? "known_no_effect" : "unknown_effect",
+                safe_reason: reconciledAbsent ? "LUMA_RECONCILED_ABSENT" : "CONNECTOR_EFFECT_UNKNOWN",
+                observed_at: now,
+                retry_after: reconciledAbsent ? now : null,
+              }));
+              break judgmentLoop;
+            }
+          }
           write = await runNativeWrite({
             application: {
               tenantId,

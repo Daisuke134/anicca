@@ -2330,6 +2330,14 @@ run 92を、別executorや強制停止なしで最後まで監視した。runは
 upstream Calendar gateで停止し、cursor生成条件自体が成立しなかった。これをcursor生成のlive成功とは扱わず、RED→GREEN integration
 contractをP0-6の直接証拠とする。次はP0-7で既存の`unknown_effect`停止を次wakeのreadback reconciliationへ接続する。
 
+O1B-25進捗70（P0-7 unknown-effect reconciliation gate / RED→GREEN）: attempt historyの`unknown_effect`は保存されても
+active suppressionが`known_no_effect`しか扱わず、次wakeの通常writeへ戻り、effect fenceが`absent`を読むと同じ呼出しで再submitする
+gapがあった。最新attemptをeventごとに検証取得し、unknown eventだけwrite前にLuma `inspectRegistration`を独立実行するgateを追加した。
+`unknown/login_required`は新しいunknown observationをappendしてwrite 0回、`absent/unavailable`は
+`LUMA_RECONCILED_ABSENT`と`retry_after=observed_at`をappendして同wakeのwrite 0回、`registered`だけ既存のreceipt verification chainへ進む。
+実装前はfocused testが`CONNECTOR_NATIVE_WRITE_FAILED`でRED、実装後は三状態integration 1/1、関連runtime/suppression 15/15、
+native 20/20、pretest 12/12、outbound 302/302がfresh GREEN。これでreadbackがpresent/absentを確定する前の再submitを禁止した。
+
 完全な残TODO SSOT:
 
 **P0 — task deliveryを前進させる（最優先）**
@@ -2340,7 +2348,7 @@ contractをP0-6の直接証拠とする。次はP0-7で既存の`unknown_effect`
 4. [x] active window内のterminal known failureをactive write rankingから除外し、後続状態observationまたはretry_after後だけ再検査する。runtime 10/10、native 19/19、outbound 299/299。
 5. [x] 同日候補をすべて順番に試し、同日枯渇時は同じpassで次open日へ進む。focused 13/13、native 19/19、outbound 300/300。
 6. [x] pass budget到達時はdate/candidate cursorを保存し、次wakeで続きから再開する。runtime 14/14、native 20/20、outbound 301/301。
-7. unknown effectはLuma readbackでpresent/absentを確定するまで再submitしない。
+7. [x] unknown effectはLuma readbackでpresent/absentを確定するまで再submitしない。関連15/15、native 20/20、outbound 302/302。
 8. submit後のLuma登録済みpageをfull-page PNGで取得し、event ref、canonical URL、取得時刻、SHA-256、Calendar event IDへbindする。
 9. Telegramへ結果cardと登録済みpage画像を実送信し、画像のpositive provider message IDをdelivery receiptへ保存・readbackする。
 10. 次の実eventでLuma→登録済みpage PNG→mail/QR→Calendar→Telegram画像message IDを一巡実証する。
