@@ -130,7 +130,7 @@ class LaunchdTests(unittest.TestCase):
         acquire = "job_search_loop.browser_owner acquire"
         release = "job_search_loop.browser_owner release"
         beat = "job_search_loop.browser_owner hold"
-        runner = "job_search_loop.browser_worker run"
+        runner = "--task-class application-lane-agent"
         self.assertIn(acquire, script)
         self.assertIn(release, script)
         self.assertIn(beat, script)

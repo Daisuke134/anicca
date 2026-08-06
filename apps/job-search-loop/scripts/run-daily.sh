@@ -8,6 +8,15 @@ RUN_ID="daily-$(date +%Y%m%d-%H%M%S)"
 EVIDENCE="$JOB_SEARCH_STATE_ROOT/evidence/$RUN_ID"
 TELEGRAM_OUTBOX="$JOB_SEARCH_STATE_ROOT/telegram-outbox.sqlite3"
 RESULT_PATH="$EVIDENCE/browser-worker-result.json"
+FILL_CANARY_REQUEST="$JOB_SEARCH_STATE_ROOT/ashby-fill-canary-request.json"
+FILL_CANARY_ACTIVE=0
+export JOB_SEARCH_SUBMIT_ENABLED=0
+export JOB_SEARCH_ASHBY_APPLY_MODULE="job_search_loop.ashby_apply"
+export JOB_SEARCH_ASHBY_APPLY_RESULT="$EVIDENCE/ashby-apply-result.json"
+if [[ -f "$FILL_CANARY_REQUEST" ]]; then
+  FILL_CANARY_ACTIVE=1
+  export JOB_SEARCH_NO_SUBMIT_CANARY=1
+fi
 
 mkdir -p "$EVIDENCE" "$JOB_SEARCH_STATE_ROOT/logs"
 chmod 700 \
@@ -221,6 +230,25 @@ report_progress "terra-started" \
   >"$EVIDENCE/summary.json"
 RUNNER_RC=$?
 set -e
+if [[ "$FILL_CANARY_ACTIVE" == "1" ]]; then
+  if [[ ! -f "$JOB_SEARCH_ASHBY_APPLY_RESULT" ]]; then
+    RUNNER_RC=76
+  else
+    set +e
+    "$JOB_SEARCH_PYTHON" -m job_search_loop.ashby_apply verify \
+      --output "$JOB_SEARCH_ASHBY_APPLY_RESULT" \
+      >"$EVIDENCE/ashby-fill-verification.json"
+    FILL_VERIFY_RC=$?
+    set -e
+    if [[ "$FILL_VERIFY_RC" -ne 0 ]]; then
+      RUNNER_RC=76
+    else
+      chmod 600 "$EVIDENCE/ashby-fill-verification.json"
+    fi
+  fi
+  mv "$FILL_CANARY_REQUEST" "$EVIDENCE/ashby-fill-canary-request.json"
+  chmod 600 "$EVIDENCE/ashby-fill-canary-request.json"
+fi
 if [[ "$RUNNER_RC" -eq 0 ]]; then
   RESULT_PATH=$("$JOB_SEARCH_JQ" -er \
     '.result_path | select(type == "string" and length > 0)' \

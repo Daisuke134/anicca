@@ -226,29 +226,21 @@ raise SystemExit(0)
             ]
             self.assertEqual(
                 [call[call.index("--task-class") + 1] for call in runner_calls],
-                ["composition-agent", "job-search-terra-high"],
+                ["application-lane-agent"],
             )
             browser_worker_calls = [
                 call
                 for call in calls
                 if call[:3] == ["-m", "job_search_loop.browser_worker", "run"]
             ]
-            self.assertEqual(len(browser_worker_calls), 1)
-            worker_call = browser_worker_calls[0]
-            for argument in (
-                "--prefilter-result",
-                "--profile",
-                "--materials-root",
-                "--evidence-dir",
-            ):
-                self.assertIn(argument, worker_call)
+            self.assertEqual(browser_worker_calls, [])
             terra_results = list(
                 (root / "state" / "evidence").glob("daily-*/terra-plan-result.json")
             )
             self.assertEqual(len(terra_results), 1)
             self.assertEqual(terra_results[0].stat().st_mode & 0o777, 0o600)
 
-    def test_daily_terra_budget_block_still_runs_deterministic_browser_worker(self):
+    def test_daily_application_agent_budget_block_preserves_browser_fence(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             result, calls = self._run_daily_with_fake_python(root, 0, 75)
@@ -256,12 +248,12 @@ raise SystemExit(0)
             self.assertEqual(result.returncode, 0, result.stderr)
             encoded = json.dumps(calls)
             self.assertIn("job_search_loop.browser_owner", encoded)
-            self.assertIn("job_search_loop.browser_worker", encoded)
+            self.assertNotIn("job_search_loop.browser_worker", encoded)
             summaries = list((root / "state" / "evidence").glob("daily-*/summary.json"))
             self.assertEqual(len(summaries), 1)
             self.assertEqual(
                 json.loads(summaries[0].read_text(encoding="utf-8"))["status"],
-                "ok",
+                "budget_blocked",
             )
             projection = root / "state" / "summary.v2.json"
             self.assertTrue(projection.is_file())
@@ -282,6 +274,23 @@ raise SystemExit(0)
                 ).date().isoformat(),
             )
             self.assertIn("job_search_loop.summary", json.dumps(calls))
+
+    def test_daily_fill_canary_rejects_model_success_without_cli_receipt(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            state = root / "state"
+            state.mkdir(parents=True)
+            (state / "ashby-fill-canary-request.json").write_text(
+                json.dumps({"version": 1, "mode": "no_submit"}) + "\n",
+                encoding="utf-8",
+            )
+
+            result, _ = self._run_daily_with_fake_python(root, 0, 0)
+
+            self.assertEqual(result.returncode, 76, result.stderr)
+            evidence = list((state / "evidence").glob("daily-*/"))
+            self.assertEqual(len(evidence), 1)
+            self.assertFalse((evidence[0] / "ashby-fill-verification.json").is_file())
 
     def test_runner_config_is_job_scoped_and_contains_no_private_identity(self):
         config_path = REPO_ROOT / "runtime" / "agent-runner" / "config.json"
