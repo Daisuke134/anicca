@@ -133,6 +133,7 @@ test("a failed direct action invokes at most ten agent steps on the exact same p
     },
     async readProviderState(input) {
       assert.equal(input.page.page_id, "page-owned-1");
+      if (input.phase === "pre_submit") return Object.freeze({ status: "absent" });
       return Object.freeze({ status: "registered", provider_receipt_id: "provider-receipt-1" });
     },
     async completeEvidence(input) {
@@ -185,6 +186,38 @@ test("a verified cached replay skips both direct and agent actions", async () =>
   assert.equal(state.calls.filter(([name]) => name === "direct").length, 0);
   assert.equal(state.calls.filter(([name]) => name === "agent").length, 0);
   assert.equal(state.calls.filter(([name]) => name === "cache-save").length, 0);
+});
+
+test("a parent readback after navigation skips every submit path when already registered", async () => {
+  const state = fixture({
+    async readProviderState(input) {
+      assert.equal(input.page.page_id, "page-owned-1");
+      state.calls.push(["readback", input.candidate.event_ref, input.page.page_id]);
+      return Object.freeze({
+        status: "registered",
+        provider_receipt_id: "receipt-existing",
+      });
+    },
+    async runCachedAction() { throw new Error("cache must not replay after registered readback"); },
+    async runDirectAction() { throw new Error("direct Submit must not run after registered readback"); },
+    async runAgentFallback() { throw new Error("agent must not run after registered readback"); },
+    async completeEvidence(input) {
+      assert.equal(input.providerState.provider_receipt_id, "receipt-existing");
+      return Object.freeze({ status: "applied_bundle", bundle_id: "applied-bundle-existing" });
+    },
+  });
+
+  const result = await runMinimalConnectorWake({
+    ownerToken: "owner-token-connector-minimal-existing",
+    providers: ["luma", "connpass"],
+  }, state.dependencies);
+
+  assert.equal(result.status, "applied_bundle");
+  assert.equal(result.bundle_id, "applied-bundle-existing");
+  assert.equal(state.calls.filter(([name]) => name === "readback").length, 1);
+  assert.equal(state.calls.filter(([name]) => name === "cache").length, 0);
+  assert.equal(state.calls.filter(([name]) => name === "direct").length, 0);
+  assert.equal(state.calls.filter(([name]) => name === "agent").length, 0);
 });
 
 test("three consecutive candidate failures open the circuit before a fourth navigation", async () => {

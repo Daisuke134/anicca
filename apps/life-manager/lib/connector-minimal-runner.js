@@ -155,8 +155,15 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
         ));
 
         let operation;
-        let providerState = null;
+        let providerState = await action("readback", "provider_state", () => deps.readProviderState({
+          provider,
+          candidate: selected,
+          page: owned.page,
+          phase: "pre_submit",
+        }));
         let usedFallback = false;
+        if (!registered(providerState)) providerState = null;
+        if (!providerState) {
         try {
           operation = await action("submit", "provider_cache", () => deps.runCachedAction({
             provider,
@@ -203,7 +210,9 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
             provider,
             candidate: selected,
             page: owned.page,
+            phase: "post_submit",
           }));
+        }
         }
         }
 
