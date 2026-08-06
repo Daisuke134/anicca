@@ -46,6 +46,10 @@ test("Healer converts one privacy-safe incident into one isolated Terra Superpow
       },
       execute: async (command, args, options) => {
         calls.push({ command, args, options });
+        if (command === "git" && args.includes("worktree") && args.includes("add")) {
+          fs.mkdirSync(args[6], { recursive: true });
+          return { status: 0, stdout: "" };
+        }
         if (command === "git" && args.includes("rev-parse")) return { status: 0, stdout: `${"b".repeat(40)}\n` };
         if (command === "git" && args.includes("ls-remote")) {
           return { status: 0, stdout: `${"b".repeat(40)}\trefs/heads/healer/connector-aaaaaaaaaaaa-r1\n` };
@@ -67,6 +71,7 @@ test("Healer converts one privacy-safe incident into one isolated Terra Superpow
     assert.equal("LM_CONNECTOR_TELEGRAM_TARGET" in codex.options.env, false);
     assert.equal("GOG_KEYRING_PASSWORD" in codex.options.env, false);
     assert.equal("GOOGLE_API_KEY_DIRECTIONS" in codex.options.env, false);
+    assert.equal(fs.lstatSync(path.join(result.worktree, "apps/life-manager/node_modules")).isSymbolicLink(), true);
     assert.equal(calls.some((call) => call.command === "git" && call.args.includes("status")), true);
     assert.equal(calls.some((call) => call.command === "git" && call.args.includes("ls-remote")), true);
     assert.equal(calls.some((call) => call.command === "gitleaks" && call.args.includes("--redact")), true);

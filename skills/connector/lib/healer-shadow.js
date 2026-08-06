@@ -113,6 +113,22 @@ function appendRevision(file, input) {
   return row;
 }
 
+function prepareWorktreeDependencies(repoRoot, worktree) {
+  const target = path.join(repoRoot, "apps/life-manager/node_modules");
+  const link = path.join(worktree, "apps/life-manager/node_modules");
+  let targetStat;
+  try { targetStat = fs.lstatSync(target); } catch { invalid(); }
+  if (!targetStat.isDirectory() || targetStat.isSymbolicLink()) invalid();
+  fs.mkdirSync(path.dirname(link), { recursive: true, mode: 0o700 });
+  try {
+    const linkStat = fs.lstatSync(link);
+    if (!linkStat.isSymbolicLink() || fs.realpathSync(link) !== fs.realpathSync(target)) invalid();
+  } catch (error) {
+    if (!error || error.code !== "ENOENT") throw error;
+    fs.symlinkSync(target, link, "dir");
+  }
+}
+
 async function runHealerShadow(options = {}) {
   const repoRoot = path.resolve(String(options.repoRoot || ""));
   const stateDir = path.resolve(String(options.stateDir || ""));
@@ -167,6 +183,7 @@ async function runHealerShadow(options = {}) {
     });
     return Object.freeze({ status: "worktree_failed", branch, worktree });
   }
+  prepareWorktreeDependencies(repoRoot, worktree);
   result = await execute("codex", [
     "exec", "--json", "--model", "gpt-5.6-terra",
     "--sandbox", "workspace-write", "-C", worktree, "-",
