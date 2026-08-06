@@ -3154,6 +3154,17 @@ OpenTelemetry decision and primary sources:
       exit is `EX_PROTOCOL` (76). The next O6 slice must instrument and release the
       joined resident spans, repair the measured protocol exit, and obtain one real
       resident trace; it must not synthesize missing identifiers.
+    - Protocol root-cause and GREEN receipt: run `daily-20260806-224128` correctly
+      re-read the durable queue before returning, but it invented direct SQL that
+      counted a nonexistent `status='verified'`. The queue represents verified rows
+      as terminal `eligible` or `rejected`, so Terra reported 0 verified/156 remaining
+      while the canonical `candidate_queue summary` contract computes the projection.
+      The resident prompt now requires that canonical CLI immediately before final
+      JSON, forbids direct-SQL count reconstruction, and exposes the deterministic
+      prefilter artifact. The obsolete Ashby-only prompt assertion now verifies the
+      generic one-official-role-at-a-time contract. RED reproduced the missing summary
+      instruction; GREEN passes prompt contracts 14/14 and the complete suite 513/513.
+      O6 remains unchecked until this release produces the joined live resident trace.
   - [x] `C2A` — Persist cross-candidate continuation proof from the release-contained
     browser runner through `browser-worker-result.json`. Each attempt records only
     candidate index, official URL SHA-256, role family, and outcome; raw URLs and

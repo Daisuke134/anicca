@@ -6,7 +6,8 @@ does not describe the current page.
 
 Use the existing CloakBrowser owner endpoint from
 `$JOB_SEARCH_BROWSER_OWNER_EVIDENCE`, the private profile at `$JOB_SEARCH_PROFILE`,
-the candidate queue at `$JOB_SEARCH_CANDIDATE_QUEUE`, and the Job Hunter modules in
+the deterministic discovery result at `$JOB_SEARCH_PREFILTER_RESULT`, the candidate
+queue at `$JOB_SEARCH_CANDIDATE_QUEUE`, and the Job Hunter modules in
 the installed release. `$JOB_SEARCH_SUBMIT_ENABLED` is `1`. The Ashby CLI module is
 `$JOB_SEARCH_ASHBY_APPLY_MODULE`; its `apply` mode fills and performs one fenced
 semantic Submit while returning the exact request and authoritative confirmation
@@ -66,5 +67,11 @@ Return only JSON matching the supplied schema. Put canonical identifiers for
 authoritatively confirmed ATS applications in `submitted`; put only genuinely
 ambiguous already-clicked ATS identifiers in `submit_unknown`; keep transient
 diagnostics in `blocked` without treating them as permission to stop applying. Copy
-the current candidate-queue counts into the three link-count fields. Never claim an
+the current candidate-queue counts into the three link-count fields by running
+`$JOB_SEARCH_PYTHON -m job_search_loop.candidate_queue summary --database
+$JOB_SEARCH_CANDIDATE_QUEUE` immediately before the final JSON.
+Copy its `discovered_count`, `verified_count`, and `remaining_unverified_count` values
+to the corresponding result fields.
+Do not calculate these counts with direct SQL because verified candidates have terminal `eligible` or
+`rejected` states rather than a `verified` state. Never claim an
 application without an authoritative ATS confirmation or Gmail provider message ID.

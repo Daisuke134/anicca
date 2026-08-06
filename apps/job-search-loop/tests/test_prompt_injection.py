@@ -61,17 +61,16 @@ class PromptInjectionTests(unittest.TestCase):
     def test_daily_runtime_gates_terminal_result_on_durable_candidate_queue(self):
         root = Path(__file__).parents[1]
         script = (root / "scripts" / "run-daily.sh").read_text(encoding="utf-8")
-        prompt = (root / "prompts" / "daily-pass.md").read_text(encoding="utf-8")
+        prompt = (root / "prompts" / "daily-apply-simple.md").read_text(encoding="utf-8")
         self.assertIn("JOB_SEARCH_CANDIDATE_QUEUE", script)
         self.assertIn("job_search_loop.candidate_queue validate-terminal", script)
         self.assertLess(
             script.index("job_search_loop.candidate_queue validate-terminal"),
             script.rindex("job_search_loop.application_reporting deliver"),
         )
-        self.assertIn("already persisted prefilter candidates", prompt)
-        self.assertIn("job_search_loop.candidate_queue verify", prompt)
+        self.assertIn("job_search_loop.candidate_queue summary", prompt)
+        self.assertIn("Do not calculate these counts with direct SQL", prompt)
         self.assertIn("remaining_unverified_count", prompt)
-        self.assertIn("must not return `no_eligible_job_found`", prompt)
 
     def test_daily_defers_liveness_until_single_agent_selects_candidate(self):
         root = Path(__file__).parents[1]
@@ -106,7 +105,11 @@ class PromptInjectionTests(unittest.TestCase):
         root = Path(__file__).parents[1]
         script = (root / "scripts" / "run-daily.sh").read_text(encoding="utf-8")
         contract = (root / "prompts" / "daily-apply-simple.md").read_text(encoding="utf-8")
-        for phrase in ("Choose one eligible Ashby role", "exact-question answer map", "JOB_SEARCH_ASHBY_APPLY_RESULT"):
+        for phrase in (
+            "Every active official posting is an application candidate",
+            "Work on one role through an application receipt before selecting another",
+            "exact current questions",
+        ):
             self.assertIn(phrase, contract)
         self.assertLess(
             script.index("job_search_loop.prefilter"),
