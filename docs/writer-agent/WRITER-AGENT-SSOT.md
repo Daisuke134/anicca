@@ -1587,7 +1587,7 @@ responses concurrently. External waiting never blocks the foreground queue.
 
 | Order | Atomic work item | Owner | Completion receipt |
 |---:|---|---|---|
-| 1 | Observe the already-kickstarted `daily-2026-08-07` until the installed loop exits or exposes a durable incident | production Writer + primary verifier | run terminal state plus generated artifact hashes |
+| 1 | Observe the already-kickstarted `daily-2026-08-07` until the installed loop exits or exposes a durable incident | production Writer + primary verifier | run terminal state plus generated artifact hashes — OBSERVED 2026-08-07 12:55 JST: PID 28513 is gone, `ai.anicca.article-daily` is `not running` with last exit `0`, and `gates/publication-state.json` last changed at 01:47:49 JST. The revenue set did not ship: `note/ja` (`n47735d9811e8`), `substack/ja` (`210098888`), and `substack/en` (`210098890`) are all `intent` with `readback` null; `devto/en` (`4334072`) is `intent`; `zenn-article/ja` (`2026-08-07-snsai`) is deferred `pending` with `retry_at` 18:03 JST; `x-article/ja` is `live` on an editor URL with no readback; `x-article/en` and `x-post/ja` carry dormant skip receipts. `gates/resume-failure-circuit.json` holds `note/ja` `open=true`, `count=2`, signature `NoteNativePublishError: Note native publish HTTP 422 {"error":{"code":"invalid","message":"本文に利用できない内容が含まれています。"}}`, and `gates/note-eyecatch-blocker.json` records `ModuleNotFoundError: cloakbrowser under system python3`. `state/self-heal/incident-queue.json` reports `incident_count = 0`, so no durable incident exists for that circuit. `ai.anicca.article-resume` shows `runs = 1345`, last exit `0`, and no log write since 01:00:44 JST, so roughly 140 five-minute ticks produced no output while three revenue intents stayed unpublished. `ai.anicca.article-healthcheck` has failed since 2026-07-17 with `/Users/anicca/profitable-claude/skills/human-funded/article/article-healthcheck.sh: No such file or directory` while the real file is `skills/writer-agent/article-healthcheck.sh` |
 | 2 | Require publisher-native public readback for note JA, Substack JA, and Substack EN from that run | production Writer | three §2.5 revenue-set URLs with owner, content hash, and paywall readback |
 | 3 | If any revenue-set intent fails, create or reuse exactly one incident keyed by `run_id + artifact_id + destination + failure_class` | recovery loop | durable incident ID with observed error and lease owner |
 | 4 | Route known failure classes through deterministic runbooks and unknown failures to Terra; never use Sol for routine repair | self-heal worker | repair-attempt receipt naming tool path, model, tokens, latency, and cost |
@@ -1608,9 +1608,35 @@ responses concurrently. External waiting never blocks the foreground queue.
 | 19 | Add only positive-net subject/language/publisher units through sandbox, canary, staged promotion, and rollback | scale controller | Tasks 24–25 receipts |
 | 20 | Advance $100K, $1M, and $10M gates only from external receipts and bounded-spend positive-net units | scale controller | Tasks 26–28 receipts |
 
-The current foreground item is Order 1. Orders 1–8 close availability and
-self-healing without waiting for a natural schedule. Orders 9–14 close the
-money-directed self-improvement loop. Orders 15–20 operate and scale it.
+Orders 1–8 close availability and self-healing without waiting for a natural
+schedule. Orders 9–14 close the money-directed self-improvement loop. Orders
+15–20 operate and scale it.
+
+#### Refactor gate — R items precede Order 1
+
+Order 1's observation proved that the loop's failure to detect its own unshipped
+revenue set is caused by duplicate and stale entry points, not by publisher
+logic. `ai.anicca.article-healthcheck` has pointed at a deleted
+`skills/human-funded/article/` path since 2026-07-17, so no detector existed
+while three revenue intents stayed unpublished for eleven hours. The same
+duplication makes `note` reachable through ten separate scripts, so no agent can
+prove which implementation is authoritative. Unbounded derived state compounds
+it: `state/interrupted-generation` has no pruner and holds 250 MB, and
+`article-daily.log` plus `article-resume.log` have no rotation and hold 127 MB.
+
+The refactor gate below therefore runs before Order 1 resumes. It removes stale
+and duplicate entry points and bounds derived state. It MUST NOT rewrite
+`article-daily.sh`, publisher adapters, the publication contract, or the state
+machine, and it MUST NOT delete any receipt. §9.3 is its binding specification.
+
+| Order | Atomic work item | Owner | Completion receipt |
+|---:|---|---|---|
+| R1 | Classify every `skills/writer-agent/state` path and every Writer log path as `immutable-receipt`, `derived-artifact`, or `transient-log` in one committed registry | primary implementer | `config/state-lifecycle.json` covering every existing top-level path with no unclassified remainder |
+| R2 | Bound `derived-artifact` and `transient-log` growth and prune only what the registry marks reclaimable | primary implementer | `du -sh` before/after plus an unchanged SHA-256 manifest of every `immutable-receipt` path |
+| R3 | Declare exactly one canonical entry point per destination and make every non-canonical publisher path refuse outside the managed run/state/ledger boundary | primary implementer | `config/entrypoints.json` with one canonical path per destination and a non-zero exit from each non-canonical invocation |
+| R4 | Make every loaded launchd label resolve to an existing program path inside the canonical tree, repairing `ai.anicca.article-healthcheck` as the first instance | primary implementer | launchd path audit receipt plus a healthcheck run that exits `0` and names the current unshipped revenue-set pairs |
+| R5 | Move the five disabled legacy Writer plists into a versioned archive and prove they cannot load after login or installation | primary implementer | archive path, `launchctl print-disabled` still reporting them disabled, and absent labels after reload |
+| R6 | Prove exactly one daily creator and exactly one same-run recovery owner remain, then hand control back to Order 1 | primary verifier | label census showing one creator, one recovery owner, and the R1–R5 receipts |
 
 Task numbers below remain stable audit identities. `DONE` rows are evidence,
 not remaining work. Tasks 9–14 may accumulate external observations while an
@@ -1879,6 +1905,127 @@ auto-generated product was introduced.
   next external transition is acceptance or rejection; only later published
   work and a positive non-test Stripe receipt can become revenue.
 
+### 9.3 Refactor gate specification — remove stale duplicates, bound derived state
+
+#### 1. Overview — what and why
+
+Measured on the live host at 2026-08-07 12:55 JST:
+
+| Measurement | Value | Producer | Bound today |
+|---|---|---|---|
+| `skills/writer-agent` total | 690 MB | — | none |
+| `state/runs` | 410 MB across 30 runs | daily runs | count only: `article-daily.sh:658` calls `prune-article-runs.py --keep 30`; no size bound |
+| `state/interrupted-generation` | 250 MB across 7 run folders, 233 MB in `daily-2026-07-25` alone | `scripts/article_generation_state.py:444` | none; no pruner references this path |
+| `article-daily.log` + `article-resume.log` | 127 MB | launchd `StandardOutPath` | none; no rotation |
+| `article-daily.err` + `article-resume.err` | 27 MB | launchd `StandardErrorPath` | none; no rotation |
+| Writer scripts | 106 Python plus 48 shell, and a 79.4 KB `article-daily.sh` | — | none |
+| Publisher entry points for one destination | 10 for note, 7 for Zenn, 3 for Substack | — | none |
+
+Two distinct failures follow from this, and they need different treatment.
+
+Stale duplication already caused a silent production outage.
+`ai.anicca.article-healthcheck` executes
+`skills/human-funded/article/article-healthcheck.sh`, a path deleted by the
+canonical-tree migration recorded in Task 4, while the real file is
+`skills/writer-agent/article-healthcheck.sh`. It has failed with
+`No such file or directory` since 2026-07-17. Because the detector was dead, the
+`daily-2026-08-07` run left `note/ja`, `substack/ja`, and `substack/en` at
+`intent` for eleven hours with an open `note/ja` repair circuit, zero incidents,
+and roughly 140 silent recovery ticks. Removing stale entry points is therefore
+availability work, not cosmetics.
+
+Unbounded derived state is the second failure. It is not yet fatal, but it grows
+without limit and will eventually consume the host, and its bulk hides the small
+receipt files that matter during an incident.
+
+This gate removes what is old and duplicated and puts a bound on what is
+regenerable. It does not redesign the Writer.
+
+#### 2. Acceptance criteria
+
+| # | Criterion | Evidence required |
+|---|---|---|
+| A1 | Every existing top-level path under `skills/writer-agent/state` and every Writer log path carries exactly one lifecycle class | `config/state-lifecycle.json` and an audit run reporting zero unclassified paths |
+| A2 | No `immutable-receipt` path changes during pruning | SHA-256 manifest of all `immutable-receipt` files, identical before and after |
+| A3 | `skills/writer-agent` state is at most 150 MB and Writer logs are at most 128 MB after pruning | `du -sh` before and after |
+| A4 | Derived artifacts of a run that still has a pending pair or an open repair circuit are never removed | prune receipt naming the protected run IDs, including `daily-2026-08-07` |
+| A5 | Each destination resolves to exactly one canonical entry point | `config/entrypoints.json` plus an audit run |
+| A6 | Every non-canonical publisher path refuses outside the managed run/state/ledger boundary | non-zero exit and an `UNMANAGED_ENTRYPOINT` receipt per non-canonical path |
+| A7 | Every loaded `ai.anicca.article-*` and `ai.anicca.writer-*` label executes an existing file inside `skills/writer-agent` | launchd audit output listing every label with a resolved path |
+| A8 | `ai.anicca.article-healthcheck` exits `0` and names the current unshipped revenue-set pairs | live run output listing `note/ja`, `substack/ja`, `substack/en` |
+| A9 | The five legacy Writer plists live in a versioned in-repository archive and cannot load | archive path, absent labels after reload, and `launchctl print-disabled` still reporting them disabled |
+| A10 | Exactly one daily creator and exactly one same-run recovery owner exist | label census output |
+| A11 | The full Writer test suite passes after the gate | suite pass count |
+
+#### 3. As-Is / To-Be
+
+| # | As-Is | To-Be |
+|---|---|---|
+| 1 | Lifecycle rules exist only inside `prune-article-runs.py`, which knows one protected condition (`gates/zenn-deferred.json` status) | One committed registry `config/state-lifecycle.json` assigns every path a class of `immutable-receipt`, `derived-artifact`, or `transient-log`. An unclassified path MUST be treated as `immutable-receipt` |
+| 2 | `immutable-receipt` is implicit and unenumerated | A path is `immutable-receipt` when it holds a publication receipt, a money row, a claim, opportunity evidence, a learning receipt, a state migration record, or a credential. These MUST NOT be deleted, moved, or rewritten by any prune path |
+| 3 | Run pruning is by count only; a terminal run keeps its 3.6 MB model log and 1.6 MB images forever until it falls out of the newest 30 | A terminal run older than the newest three keeps only its `gates/*.json` receipts and `*.meta.json`; its `model-stdout.log`, images, and other `derived-artifact` files are reclaimable |
+| 4 | `state/interrupted-generation` has no pruner | An interrupted run folder is reclaimable when its `run_id` has reached a terminal publication state; otherwise its newest attempt is retained |
+| 5 | A run with a pending pair or an open circuit has no explicit protection from derived-artifact deletion | Any run with a non-terminal pair or an open entry in `gates/resume-failure-circuit.json` is protected in full, so same-run resume can still reproduce the identical content hash |
+| 6 | Writer logs grow without rotation | Writer stdout and stderr rotate at 32 MB with three compressed generations retained |
+| 7 | Ten note, seven Zenn, and three Substack entry points coexist with no machine-readable authority | `config/entrypoints.json` names exactly one canonical entry per destination |
+| 8 | Only `publish-devto.sh` and `publish-note-managed.py` refuse unmanaged invocation | Every non-canonical publisher path refuses with a non-zero exit and an `UNMANAGED_ENTRYPOINT` receipt, using that existing pattern. Files are NOT deleted, so historical receipts stay reproducible |
+| 9 | `ai.anicca.article-healthcheck` points at the deleted `skills/human-funded/article/` tree | Its program path is the canonical `skills/writer-agent/article-healthcheck.sh`, and an audit asserts the same property for every loaded Writer label |
+| 10 | Five disabled legacy plists remain in `~/Library/LaunchAgents` | They live in `skills/writer-agent/runtime/legacy-launchd/2026-08-07/`, outside any directory launchd scans |
+| 11 | Creator and recovery uniqueness is asserted in prose | A census command prints exactly one daily creator and one same-run recovery owner |
+
+#### 4. Test matrix
+
+| # | To-Be | Test name | Cover |
+|---|---|---|---|
+| 1 | Total lifecycle registry | `test_state_lifecycle_registry_is_total` | OK |
+| 2 | Immutable receipts never touched | `test_prune_preserves_immutable_manifest` | OK |
+| 3 | Old terminal runs keep receipts only | `test_prune_strips_derived_from_old_terminal_runs` | OK |
+| 4 | Interrupted generation pruned by terminal state | `test_prune_interrupted_generation_by_terminal_state` | OK |
+| 5 | Pending or circuit-open runs fully protected | `test_prune_protects_pending_and_circuit_open_runs` | OK |
+| 6 | Log rotation bound | `test_writer_log_rotation_caps_size` | OK |
+| 7 | One canonical entry per destination | `test_entrypoint_registry_single_canonical` | OK |
+| 8 | Non-canonical paths refuse | `test_unmanaged_entrypoint_refuses` | OK |
+| 9 | launchd paths resolve in canonical tree | `test_launchd_program_paths_resolve_in_canonical_tree` | OK |
+| 10 | Healthcheck reports unshipped pairs | `test_healthcheck_reports_unshipped_revenue_pairs` | OK |
+| 11 | Legacy plists archived and unloadable | `test_legacy_plists_absent_and_disabled` | OK |
+| 12 | Single creator and single recovery owner | `test_single_daily_creator_and_single_recovery_owner` | OK |
+
+E2E judgment:
+
+| Item | Value |
+|------|-------|
+| UI変更 | なし |
+| 結論 | Maestro: 不要（本ゲートは launchd と CLI のみを変更し、iOS UI を含まない。live 検証は healthcheck 実走と launchd audit で行う） |
+
+#### 5. Boundaries — out of scope for this gate
+
+- Rewriting `article-daily.sh`, publisher adapters, the publication contract, or the state machine.
+- Deleting any receipt, credential, effect ledger, money ledger, or claim store.
+- Deleting any publisher script; non-canonical paths are made to refuse, not removed.
+- Incident creation, classification, Terra routing, repair, and resume; those remain Orders 3–5 and start after R6.
+- Reducing the destination set, disabling media generation, and one-language-per-account separation; those are separate decisions recorded in §10 until an explicit gate opens them.
+- `~/.openclaw` runtime state and any non-Writer launchd label.
+
+#### 6. Execution steps
+
+```bash
+# baseline
+du -sh /Users/anicca/profitable-claude/skills/writer-agent/state
+du -sh /Users/anicca/.openclaw/logs
+python3 skills/writer-agent/scripts/state-lifecycle-audit.py --manifest-out /tmp/immutable-before.json
+
+# gate work R1..R5, then verify
+python3 skills/writer-agent/scripts/state-lifecycle-audit.py --manifest-out /tmp/immutable-after.json
+diff /tmp/immutable-before.json /tmp/immutable-after.json
+python3 skills/writer-agent/scripts/entrypoint-audit.py
+python3 skills/writer-agent/scripts/launchd-path-audit.py
+bash skills/writer-agent/article-healthcheck.sh
+launchctl print-disabled "gui/$(id -u)" | grep -E 'writer|article'
+
+# regression
+bash skills/writer-agent/tests/run-all.sh
+```
+
 ## 10. Explicitly deferred
 
 These do not block first article revenue:
@@ -1892,6 +2039,26 @@ These do not block first article revenue:
 
 They return only after the preceding stage gate supplies evidence that they are
 the smallest next step.
+
+#### Surface-reduction candidates deferred until the first external payment
+
+These reduce failure surface rather than add capability. Each is deferred until
+Order 11 produces the first external payment receipt, because none of them can
+increase revenue while received revenue is zero, and each would otherwise be
+maintained without evidence.
+
+| Candidate | Failure surface removed | Revenue lost while deferred | Gate that opens it |
+|---|---|---|---|
+| Reduce the daily shipment to note JA alone until the first payment | five destinations' publish, readback, and repair paths | zero; §2.5 already classifies Dev.to, Zenn, X Article, and X Post as non-money surfaces, and Substack MRR is currently `unknown` rather than measured | Order 11 |
+| Stop generating headline, body, and eyecatch media | the CloakBrowser, S3, and dHash dependencies, including the observed `ModuleNotFoundError: cloakbrowser` blocker | unmeasured; no receipt joins media to revenue | a canary that measures media against no-media on the paying destination |
+| Make every quality gate advisory except safety, identity, and duplicate-effect | quality-driven shipment blocking | zero; §9.0 Order 6 already forbids `block_freeze` as a terminal daily outcome | Order 6 |
+| Freeze the launchd labels that are not creator, recovery, or report | concurrent lease contention and token spend | zero while received revenue is zero | Order 11 |
+| Separate one language per account, including a new English X account and a Japanese Substack account | new-account signup, warmup, and ban risk | zero; both languages currently earn nothing, so separation would duplicate zero | Order 11, then replicate the paying Japanese unit into English |
+
+The current destination identities record the conflict this list resolves:
+`substack/ja` and `substack/en` both resolve to `aniccabuddha.substack.com`, and
+`x-article/ja` and `x-article/en` both resolve to `diceai0`. One language per
+account is therefore a stated future contract, not the present state.
 
 ## 11. Completion definition
 
