@@ -9,7 +9,12 @@
 **Last updated:** 2026-08-07 JST
 **Active atomic task:** `PERSIST-05a` — canonicalize candidate URLs and Ledger
 aliases, then exclude every terminal, submitted, rejected, and submit-unknown
-application before selecting the installed no-submit Ashby canary.
+application before selecting the installed no-submit Ashby canary. The resident
+thread must receive capability parity with the primary Codex session for the
+Job Hunter scope: the same applicable skill roots, browser/ATS tools, network and
+filesystem access, and `approvalPolicy=never`. Capability parity does not mean raw
+credential propagation; deterministic tools continue to resolve their own existing
+private credentials and return redacted receipts.
 `PERSIST-04` proved the secret-reference-only boundary between the persistent thread
 and the existing private profile/credential stores. `PERSIST-03` added and live-proved
 the thin direct-stdio Codex app-server protocol

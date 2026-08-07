@@ -222,6 +222,13 @@ Only the first unchecked item is active.
      contained no sentinel value in the event stream. No real secret value was read,
      printed, moved, or rewritten.
 5. [ ] **PERSIST-05 — Job Hunter canary**, closed in this fixed internal order:
+   0. give the resident thread Job Hunter capability parity with the primary Codex
+      session: load the same applicable skill roots and expose browser, official ATS
+      CLI, Ledger, profile, Gmail, Telegram, Calendar, shell, filesystem, and network
+      capabilities with no interactive approval stop. Tool availability, permission,
+      and credential exposure are separate controls: tools resolve credentials from
+      existing private stores internally; raw tokens, passwords, and cookies never
+      enter thread input, argv, event history, or general shell inheritance;
    1. canonicalize candidate URLs and Ledger aliases; exclude every terminal,
       `submitted`, `rejected`, and `submit_unknown` application;
    2. inspect one genuinely new official Ashby form and generate its answers artifact
