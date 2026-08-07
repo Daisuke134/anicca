@@ -80,3 +80,15 @@ test("Connpass browser detail reads public offers controls and price labels", as
     global.location = previousLocation;
   }
 });
+
+test("Connpass detail normalization exposes only the missing public contract field", () => {
+  const cases = [
+    [raw({ title: "" }), "CONNPASS_DETAIL_TITLE_INVALID_FAILED"],
+    [raw({ starts_at: null }), "CONNPASS_DETAIL_START_INVALID_FAILED"],
+    [raw({ ends_at: null }), "CONNPASS_DETAIL_END_INVALID_FAILED"],
+    [raw({ ends_at: "2026-08-10T18:00:00+09:00" }), "CONNPASS_DETAIL_RANGE_INVALID_FAILED"],
+  ];
+  for (const [input, code] of cases) {
+    assert.throws(() => normalizeConnpassEventDetail(input), (error) => error.code === code);
+  }
+});

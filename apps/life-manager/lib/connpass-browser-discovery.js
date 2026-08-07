@@ -8,6 +8,12 @@ const EVENT_PATH = /^\/event\/([1-9][0-9]*)\/?$/;
 
 function invalid() { throw new Error("Connpass browser discovery unavailable"); }
 
+function detailFieldInvalid(code) {
+  const error = new Error("Connpass browser detail field unavailable");
+  error.code = code;
+  throw error;
+}
+
 function eventBinding(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)) invalid();
   const canonical = canonicalEventUrl(value.canonical_url);
@@ -62,7 +68,10 @@ function normalizeConnpassEventDetail(input = {}) {
   const title = String(input.title || "").replace(/\s+/g, " ").trim();
   const startsAt = Date.parse(String(input.starts_at || ""));
   const endsAt = Date.parse(String(input.ends_at || ""));
-  if (!title || title.length > 300 || !Number.isFinite(startsAt) || !Number.isFinite(endsAt) || endsAt <= startsAt) invalid();
+  if (!title || title.length > 300) detailFieldInvalid("CONNPASS_DETAIL_TITLE_INVALID_FAILED");
+  if (!Number.isFinite(startsAt)) detailFieldInvalid("CONNPASS_DETAIL_START_INVALID_FAILED");
+  if (!Number.isFinite(endsAt)) detailFieldInvalid("CONNPASS_DETAIL_END_INVALID_FAILED");
+  if (endsAt <= startsAt) detailFieldInvalid("CONNPASS_DETAIL_RANGE_INVALID_FAILED");
   return Object.freeze({
     provider: "connpass",
     event_ref: binding.event_ref,

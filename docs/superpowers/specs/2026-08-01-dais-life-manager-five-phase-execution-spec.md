@@ -5867,6 +5867,23 @@ raw rowsは最大5,000でfail-closed、先に14日filterとevent-ref dedupeを�
 Item 10B/14は未完。次の一件はofficial foreground wakeでConnpass discoveryがroot causeを越え、実candidate/action/readbackへ進むか確認すること。
 scheduleはunloadedを維持する。
 
+### O1B-25進捗217（Connpass detail contractのpublic field分離）
+
+進捗216のcalendar noise修復後、live wakeの最後のsafe failureは`connpass_detail_read_failed`だった。
+このcodeはdetail normalizationの全失敗を一つに潰しており、どのpublic fieldが壊れているか親コードから判別できなかった。
+
+`normalizeConnpassEventDetail`をfield別にfail-closedへ分離した。
+title empty/300超は`CONNPASS_DETAIL_TITLE_INVALID_FAILED`、start不正は`CONNPASS_DETAIL_START_INVALID_FAILED`、
+end不正は`CONNPASS_DETAIL_END_INVALID_FAILED`、`end <= start`は`CONNPASS_DETAIL_RANGE_INVALID_FAILED`とする。
+`connector-connpass-workflow.js`のdetail catchはこの4 codeだけをpreserveし、それ以外のtransport/reader failureだけ`CONNPASS_DETAIL_READ_FAILED`にする。
+`connector-minimal-runner.js`のsafe discovery allowlistへ同4 stageを追加し、every-wake reportで正確なstageが出るようにした。
+
+保存・送信するのはstage code名だけで、fieldの値、DOM、raw JSON-LD、個人情報は保存しない。
+Connpass discovery/workflow/minimal runner/production focused suiteは27/27 GREEN。
+
+Item 10B/14は未完。実registration evidenceは0のままで、Submit 0、Calendar write 0、PNG/applied_bundle 0。
+次の一件はscheduling disabledのままofficial foreground runnerを実行し、新しいexact failure codeを取得すること。scheduleはunloadedを維持する。
+
 ### Active remaining TODO SSOT（進捗216。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
