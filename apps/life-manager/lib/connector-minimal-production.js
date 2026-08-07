@@ -227,8 +227,15 @@ function createMinimalProductionDependencies(options = {}) {
     makeCalendar: () => calendar,
   });
   const browserRail = options.browserRail || createProductionBrowserRail({ stateDir });
+  const operations = options.operations || createMinimalProductionOperations({
+    stateDir,
+    wakeId,
+    telegramTarget,
+    now,
+  });
   const lumaWorkflow = options.lumaWorkflow || createLumaScriptFirstWorkflow({
     now,
+    onDiscoveryAudit: operations.recordDiscoveryAudit || (() => {}),
     readLumaFormProfile: () => readLumaFormProfile({ path: lumaFormProfilePath }),
   });
   const actionCache = options.actionCache || createConnectorActionCache({
@@ -263,13 +270,6 @@ function createMinimalProductionDependencies(options = {}) {
     telegramTarget,
     now,
   });
-  const operations = options.operations || createMinimalProductionOperations({
-    stateDir,
-    wakeId,
-    telegramTarget,
-    now,
-  });
-
   return Object.freeze({
     now: nowIso,
     browserRail,

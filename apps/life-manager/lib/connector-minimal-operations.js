@@ -85,6 +85,27 @@ function safeReport(input, wakeId, createdAt) {
   });
 }
 
+function safeDiscoveryAudit(input, wakeId, recordedAt) {
+  const keys = [
+    "calendar_free_count", "free_open_count", "normalized_count", "observed_count", "window_count",
+  ];
+  if (
+    !input || typeof input !== "object" || Array.isArray(input)
+    || Object.keys(input).sort().join(",") !== keys.join(",")
+    || keys.some((key) => !Number.isInteger(input[key]) || input[key] < 0 || input[key] > 500)
+    || input.normalized_count > input.observed_count
+    || input.window_count > input.normalized_count
+    || input.free_open_count > input.window_count
+    || input.calendar_free_count > input.free_open_count
+  ) invalid();
+  return Object.freeze({
+    schema_version: 1,
+    wake_id: wakeId,
+    ...input,
+    recorded_at: recordedAt,
+  });
+}
+
 function reportMessage(row) {
   const label = row.status === "applied_bundle" ? "申込と証拠保存が完了"
     : row.status === "circuit_open" ? "安全停止" : "今回の新規申込なし";
@@ -109,10 +130,15 @@ function createMinimalProductionOperations(options = {}) {
   const historyFile = path.join(stateDir, "action-history.jsonl");
   const reportFile = path.join(stateDir, "wake-reports.jsonl");
   const deliveryFile = path.join(stateDir, "wake-report-deliveries.jsonl");
+  const discoveryAuditFile = path.join(stateDir, "luma-discovery-audits.jsonl");
 
   async function recordAction(input) {
     const action = safeAction(input);
     append(historyFile, Object.freeze({ schema_version: 1, wake_id: wakeId, ...action }));
+  }
+
+  async function recordDiscoveryAudit(input) {
+    append(discoveryAuditFile, safeDiscoveryAudit(input, wakeId, exactInstant(now())));
   }
 
   async function reportWake(input) {
@@ -146,7 +172,7 @@ function createMinimalProductionOperations(options = {}) {
     return Object.freeze({ telegram_provider_id: current.telegram_provider_id });
   }
 
-  return Object.freeze({ recordAction, reportWake });
+  return Object.freeze({ recordAction, recordDiscoveryAudit, reportWake });
 }
 
 module.exports = { createMinimalProductionOperations };
