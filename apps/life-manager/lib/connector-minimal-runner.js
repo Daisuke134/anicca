@@ -90,6 +90,7 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
   const startedAt = Date.parse(exactInstant(deps.now()));
   let owned = null;
   let consecutiveFailures = 0;
+  let providerDiscoveryFailed = false;
 
   const elapsed = () => Date.parse(exactInstant(deps.now())) - startedAt;
   const deadlineReached = () => elapsed() >= settings.maxWakeMs;
@@ -144,10 +145,20 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
     owned = verifiedOwned(await deps.browserRail.open(Object.freeze({ ownerToken: settings.ownerToken })));
 
     for (const provider of settings.providers) {
-      const candidates = verifiedCandidates(
-        await action("observe", "provider_discovery", () => deps.discoverCandidates(provider, gaps, owned.page)),
-        provider,
-      );
+      let candidates;
+      try {
+        candidates = verifiedCandidates(
+          await action("observe", "provider_discovery", () => deps.discoverCandidates(provider, gaps, owned.page)),
+          provider,
+        );
+      } catch {
+        providerDiscoveryFailed = true;
+        consecutiveFailures += 1;
+        if (consecutiveFailures >= settings.maxConsecutiveFailures) {
+          return finish("circuit_open", "consecutive_failure_limit");
+        }
+        continue;
+      }
       for (const selected of candidates) {
         if (deadlineReached()) return finish("circuit_open", "wake_deadline");
         await action("navigate", "browser_rail", () => (
@@ -246,7 +257,8 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
         }
       }
     }
-    return finish("completed_no_effect", "providers_exhausted");
+    return finish("completed_no_effect", providerDiscoveryFailed
+      ? "provider_discovery_failed" : "providers_exhausted");
   } finally {
     if (owned) await deps.browserRail.close(owned);
   }
