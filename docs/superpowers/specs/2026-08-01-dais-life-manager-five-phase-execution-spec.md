@@ -5775,7 +5775,20 @@ Connpass workflow/minimal runner/production focused suiteは18/18 GREEN。実bro
 Item 10B/14は未完。次の一件はofficial foreground wakeを再実行し、safe stage codeで壊れたConnpass actionを一つに特定して修復すること。
 scheduleはunloadedを維持する。
 
-### Active remaining TODO SSOT（進捗208。これ以外の残TODO一覧は履歴）
+### O1B-25進捗209（Connpass same-event canonical redirect修復）
+
+safe diagnosis wakeはLuma成功後、Connpass discovery 815msでfailedしたが、provider isolationにより
+`completed_no_effect / provider_discovery_failed`をTelegram positive ID `8240`で報告し、owned leaseを解放した。Submit 0。
+終了後のread-only target URLはroot `connpass.com/event/393711/`で、calendarとdetail navigation/readまで到達したことを確認した。
+
+calendar bindingのgroup subdomain URLと、同じevent IDのdetail canonical root URLが異なるfixtureを追加し、旧exact URL一致がinvalidになるREDを確認した。
+両URLはそれぞれHTTPS Connpass allowlistで正規化済みのため、event refが同一ならdetail canonicalを採用する。event ID不一致は引き続き拒否する。
+Connpass workflow/discovery/minimal runner/production focused suiteは21/21 GREEN。
+
+Item 10B/14は未完。次の一件は同じofficial foreground wakeを再実行し、Connpass discovery継続と実candidate/action/readbackを観測すること。
+scheduleはunloadedを維持する。
+
+### Active remaining TODO SSOT（進捗209。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
