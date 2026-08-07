@@ -12,7 +12,10 @@ the installed release. `$JOB_SEARCH_SUBMIT_ENABLED` is `1`. The Ashby CLI module
 `$JOB_SEARCH_ASHBY_APPLY_MODULE`; its `apply` mode fills and performs one fenced
 semantic Submit while returning the exact request and authoritative confirmation
 observation. Use the installed Job Hunter modules directly; do not rediscover their
-CLI help or source during a live pass.
+CLI help or source during a live pass. Never run `--help`, `inspect.getsource`,
+`inspect.signature`, `dir(...)`, `rg` over Job Hunter source, or read this prompt
+back from disk. A CLI precondition failure is a data-preparation failure, not a
+reason to inspect implementation code.
 Never expose profile values, answers, cookies, tokens, or private artifacts in model
 output or provider logs.
 Do not embed private profile values in shell commands, command arguments, generated
@@ -60,6 +63,15 @@ For each selected role:
    such as `[data-automation-id="click_filter"]` while a hidden submit button sits
    underneath it. If the hidden button reports intercepted pointer events, click the
    visible wrapper/role control and verify the page or step transition before continuing.
+   For Ashby, the command contract is fixed. `inspect` requires `--endpoint`, `--url`,
+   and `--output`. Both `fill` and `verify` additionally require one private
+   `--answers` JSON, one exact `--resume` PDF, and `--profile`. `apply` requires all
+   of those plus `--ledger`, the existing `--intent-id`, and its integer `--fence`.
+   Do not invoke `fill`, `verify`, or `apply` until every required argument exists.
+   Reuse a prior answer only when its question has the same meaning and its fact is
+   still present in the private profile; otherwise report the exact missing fact and
+   keep the intent pre-click. Never use a wildcard as `--resume` and never invent an
+   intent ID or fence.
 4. Before any Submit side effect, use the existing Ledger intent, material receipt,
    click fence, and request fence. Execute Submit once. Treat only the existing
    authoritative ATS confirmation classifier as `applied_ats`; HTTP 200 or model prose

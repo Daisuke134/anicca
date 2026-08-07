@@ -4468,6 +4468,18 @@ item before starting the next.
       empty, and no duplicate resident was started.
 13. [ ] **L-49K5W1 — Prove one Workday submission.** Produce one real official
     Workday receipt with the exact submitted dossier and Telegram message IDs.
+    - First post-activation run `daily-20260807-124649` used release
+      `49940572e97ef9434ceb5824b6d1c470ac280e22`, resident PID `85686`, and browser
+      fence `154`. It found 451 links, verified 51, and had 6 eligible candidates.
+      It made no Submit request and ended safely blocked on ungrounded sponsorship
+      and personal-certification answers for OpenAI Partner Director. Before that,
+      it wasted time rediscovering source and invoked Ashby `apply` without answers,
+      resume, intent, or fence, then `fill` without answers. Both calls failed before
+      mutation. The measured cause is that Browser Harness domain skills are not
+      injected into the resident model context. The prompt now directly forbids
+      help/source introspection and fixes the exact required argument contract for
+      inspect/fill/verify/apply. No test was run per the owner's explicit instruction;
+      the next proof is a resident execution from a new immutable release.
 14. [ ] **L-49K5G1 — Route the cheap model.** Use Luna for one known-ATS
     observe/map/fill/verify pass with no Submit authority.
 15. [ ] **L-49K5G2 — Gate escalation.** Give Terra the same fenced intent only after
