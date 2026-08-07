@@ -184,3 +184,34 @@ test("production harness lets the model choose controls but parent owns values a
   });
   assert.deepEqual(replay, { status: "success" });
 });
+
+test("production harness uses Connpass parent readback for a Connpass fallback", async () => {
+  const page = Object.freeze({ page_id: "owned-page" });
+  let operated = false;
+  const harness = createProductionBrowserHarness({
+    lumaWorkflow: { async readProviderState() { throw new Error("wrong provider"); } },
+    connpassWorkflow: {
+      async readProviderState(input) {
+        assert.equal(input.page, page);
+        return operated ? { status: "pending" } : { status: "absent" };
+      },
+    },
+    async inspectControls() {
+      return [{ control: "apply_button", kind: "button", label: "Apply", required: false }];
+    },
+    async proposeAction() { return { purpose: "submit", method: "ax_click", control: "apply_button" }; },
+    async operateControl() { operated = true; return { status: "success" }; },
+    async resolveValue() { return null; },
+  });
+
+  const result = await harness.runFallback({
+    provider: "connpass",
+    candidate: { event_ref: "connpass-event://event/401001" },
+    page,
+    pageWebsocket: "ws://127.0.0.1:9222/devtools/page/OWNEDTARGET1",
+    maxSteps: 10,
+    expectedState: "registered_or_pending",
+  });
+
+  assert.equal(result.status, "completed");
+});

@@ -5734,7 +5734,21 @@ discovery、cache replay後readback、direct action、fallback、parent readback
 Item 10B/14は未完。次の一件はofficial factoryでConnpass workflowを一度構築し、production Browser Harnessのexpected-state readbackも
 provider-neutral mapへするTDD slice。scheduleはunloadedを維持する。
 
-### Active remaining TODO SSOT（進捗205。これ以外の残TODO一覧は履歴）
+### O1B-25進捗206（Item 14前倒し / official Connpass factory and bounded fallback）
+
+production Browser HarnessがConnpass providerを拒否するREDと、official factoryがConnpass workflowをrouterへ渡さずinvalidになるREDを確認した。
+HarnessはLuma/Connpass workflow mapからinput providerのparent readbackだけを選ぶ。観察、agent proposal、parent control operation、private value resolver、
+最大10 step、same page contractは共通で、agentにpage/browser objectやprivate valueを渡さない。
+
+official factoryはConnpass workflowをwakeごとに一度構築し、Browser Harnessとproduction routerの双方へ渡す。
+Connpass fallback fixtureはsame page operation後のConnpass parent `pending`だけでcompletedとなる。factory/router/Harness/workflow/minimal runnerの
+focused suiteは20/20 GREEN。実browser、Submit、Calendar write、PNG、Telegram作用は0。
+
+Item 10B/14は未完。次の一件はschedule unloadedのままofficial foreground wakeをbounded実行し、Luma conflict後の実Connpass discovery、
+候補/action/readbackの最初の外部境界を観測すること。evidence chainのConnpass一般化前なので、登録後にevidenceで中断してもpre-submit parent readbackで
+重複Submit 0を維持し、その不足artifactだけを次sliceで補完する。
+
+### Active remaining TODO SSOT（進捗206。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 

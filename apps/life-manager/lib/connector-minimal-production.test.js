@@ -59,6 +59,30 @@ test("official production factory exposes the complete minimal wake dependency c
   }
 });
 
+test("official production factory installs the Connpass workflow into the default router", async () => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-production-connpass-"));
+  const candidate = { provider: "connpass", event_ref: "connpass-event://event/401001", canonical_url: "https://tokyo.connpass.com/event/401001/" };
+  const emptyWorkflow = { async discoverCandidates() { return []; }, async runDirectAction() {}, async readProviderState() { return { status: "absent" }; } };
+  const connpassWorkflow = { ...emptyWorkflow, async discoverCandidates() { return [candidate]; } };
+  try {
+    const dependencies = createMinimalProductionDependencies({
+      repoRoot: "/private/repo", stateDir, wakeId: "wake-production-connpass-1",
+      calendarAccount: "private-account", gogKeyring: "private-keyring", telegramTarget: "private-target",
+      lumaFormProfilePath: "/private/form-profile.json", lunaEvidenceDir: "/private/luna-evidence",
+      browserRail: { open() {}, navigate() {}, close() {} },
+      calendarReader: { async readCalendarGaps() { return []; } },
+      lumaWorkflow: emptyWorkflow, connpassWorkflow,
+      actionCache: { async replay() {}, saveVerifiedRepair() {} },
+      browserHarness: { async runFallback() {}, async performAction() {} },
+      evidenceChain: { async completeEvidence() {} },
+      operations: { async reportWake() {}, async recordAction() {} },
+    });
+    assert.deepEqual(await dependencies.discoverCandidates("connpass", [], {}), [candidate]);
+  } finally {
+    fs.rmSync(stateDir, { recursive: true, force: true });
+  }
+});
+
 test("production provider router keeps Luma cache direct fallback and readback on one page", async () => {
   const calls = [];
   const page = Object.freeze({ page_id: "owned-page-1" });
