@@ -1,3 +1,4 @@
+import os
 import unittest
 from io import StringIO
 from unittest.mock import patch
@@ -27,10 +28,26 @@ class CodexAppServerTests(unittest.TestCase):
             stdout = StringIO()
             stderr = StringIO()
 
-        with patch("job_search_loop.codex_app_server.subprocess.Popen", return_value=Process()) as popen:
+        environment = {
+            "HOME": "/Users/test",
+            "PATH": "/usr/bin",
+            "SHELL": "/bin/zsh",
+            "TELEGRAM_BOT_TOKEN": "must-not-pass",
+            "GMAIL_CLIENT_SECRET": "must-not-pass",
+            "SESSION_COOKIE": "must-not-pass",
+        }
+        with patch.dict(os.environ, environment, clear=True), patch(
+            "job_search_loop.codex_app_server.subprocess.Popen", return_value=Process()
+        ) as popen:
             JsonLineProcessTransport.stdio(codex="/opt/codex")
 
         self.assertEqual(popen.call_args.args[0], ["/opt/codex", "app-server", "--stdio"])
+        child_environment = popen.call_args.kwargs["env"]
+        self.assertEqual(child_environment["HOME"], "/Users/test")
+        self.assertEqual(child_environment["PATH"], "/usr/bin")
+        self.assertNotIn("TELEGRAM_BOT_TOKEN", child_environment)
+        self.assertNotIn("GMAIL_CLIENT_SECRET", child_environment)
+        self.assertNotIn("SESSION_COOKIE", child_environment)
 
     def test_initialize_and_request_stream_notifications(self):
         transport = FakeTransport(
@@ -95,6 +112,14 @@ class CodexAppServerTests(unittest.TestCase):
             ["thread/start", "thread/resume", "thread/read", "thread/archive"],
         )
         self.assertEqual(transport.sent[0]["params"]["sandbox"], "read-only")
+        self.assertEqual(
+            transport.sent[0]["params"]["config"]["shell_environment_policy"],
+            {
+                "inherit": "core",
+                "ignore_default_excludes": False,
+                "exclude": ["*PASSWORD*", "*COOKIE*"],
+            },
+        )
 
 
 if __name__ == "__main__":
