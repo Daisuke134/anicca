@@ -184,7 +184,11 @@ Only the first unchecked item is active.
    Keychain and prove no secret appears in prompts, argv, artifacts, or traces.
 5. [ ] **PERSIST-05 — Job Hunter canary.** Replace only the Job Hunter application
    lane's `codex exec --ephemeral`; preserve Ledger, browser fence, exact Submit
-   authority, Gmail, Telegram, and immutable release contracts.
+   authority, Gmail, Telegram, and immutable release contracts. Before any resident
+   kickstart, deterministically filter terminal/canonical-alias duplicates, generate
+   the private Ashby answers artifact from stored profile facts, and connect the
+   selected application through material, intent, and fence to the existing Ashby
+   CLI. The canary MUST reach `pre_submit_ready` with Submit disabled.
 6. [ ] **PERSIST-06 — Job Hunter restart proof.** Exit between two non-side-effect
    form steps, resume the same thread/application, and prove no repeated question,
    command rediscovery, page-owner collision, or duplicate Submit.
@@ -219,3 +223,12 @@ not exist before `PERSIST-03`.
 
 Release order is Job Hunter → Gig Work → Writer → adaptive Connector. Each canary
 MUST be independently reversible and MUST NOT change the domain side-effect fence.
+
+### No broken-run gate
+
+Do not activate or kickstart another Job Hunter resident release until
+`PERSIST-01` through `PERSIST-05` pass. Re-running the known disposable resident to
+reconfirm missing answers, missing intent/material/fence, or Workday account handling
+is forbidden. The next live resident run occurs only after the subscription-authenticated
+app-server thread resumes successfully and the installed no-submit Ashby canary is
+`pre_submit_ready`.
