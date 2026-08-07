@@ -2055,16 +2055,42 @@ Measured current invocation in `skills/writer-agent/runtime/model-runner.sh`:
 `codex exec --ephemeral --model <model> -c model_reasoning_effort=<effort>
 --sandbox <read-only|danger-full-access> -C <root> -` with the prompt on stdin.
 
+Primary-source verification via the Context7 CLI against `/openai/codex`
+(2026-08-07). Every flag below is read from the upstream Rust source, not from a
+blog or a secondary summary.
+
+`codex-rs/exec/src/cli.rs` defines, all as global flags on `codex exec`:
+`--json` ("Print events to stdout as JSONL"), `-o/--output-last-message FILE`
+("Specifies file where the last message from the agent should be written"),
+`--output-schema FILE` ("Path to a JSON Schema file describing the model's final
+response shape"), `--ephemeral` ("Run without persisting session files to disk"),
+and a `Resume` subcommand ("Resume a previous session by id or pick the most
+recent with `--last`").
+
+`codex-rs/exec/src/lib.rs` fixes the error contract: headless mode forces
+`approval_policy: Some(AskForApproval::Never)`, so an unattended run never blocks
+on an approval prompt; `error_seen` is set when a `ServerNotification::Error`
+arrives for the current turn and will not be retried, or when `TurnCompleted`
+carries status `Failed` or `Interrupted`; and the process then calls
+`std::process::exit(1)`, otherwise returning `0`. The exit status is therefore
+binary by construction, and failure class is recoverable only from the event
+stream.
+
+`codex-rs/exec/tests/suite/resume.rs` shows the supported resume shape directly:
+`codex exec -C <dir> --json resume --last <prompt>`, with no
+`--dangerously-bypass-approvals-and-sandbox` flag required.
+
 | Gap | Evidence | Item |
 |---|---|---|
-| No `--json`, so failures are not machine-readable | grep count `0` in `model-runner.sh`; `codex-rs/exec/src/lib.rs` exits only `0` or `1`, so exit status cannot distinguish error classes | C1 |
+| No `--json`, so failures are not machine-readable | grep count `0` in `model-runner.sh`; per `codex-rs/exec/src/lib.rs` the process exits only `0` or `1`, so exit status cannot distinguish error classes | C1 |
 | No `-o/--output-last-message`, so the final message is recovered by parsing prose | grep count `0` | C1 |
+| No `--output-schema`, so the daily article contract is enforced by prose parsing rather than by a JSON Schema the model must satisfy | grep count `0`; the flag exists upstream in `cli.rs` | C1 |
 | No timeout wrapper around the Codex call | the only two `timeout` matches in `model-runner.sh` are comments on lines 52 and 111; the CLI ships no internal timeout, and openai/codex issues #27019, #34397, #31376, and #7852 document indefinite hangs precisely under non-TTY headless conditions, which is what launchd provides | C2 |
 | `--ephemeral` makes same-session resume structurally impossible | grep shows `--ephemeral` present and `resume` absent | C3 |
 
 | Item | Work | Sequenced after |
 |---|---|---|
-| C1 | Add `--json` and `-o <file>`; determine failure class by parsing the JSONL `turn.failed` and `error` events rather than the exit code | R3 |
+| C1 | Add `--json` and `-o <file>`; determine failure class from the JSONL `Error` and `TurnCompleted{status: Failed\|Interrupted}` events rather than the exit code. Add `--output-schema` so the daily article contract is enforced by schema instead of prose parsing | R3 |
 | C2 | Wrap the Codex invocation in an external timeout and explicitly reap orphaned children, which openai/codex#7852 shows survive the parent | with C1 |
 | C3 | Drop `--ephemeral`, persist the session, and resume with `codex exec resume --last` guarded by a liveness check, because openai/codex#37047 shows resume itself hangs on an inconsistent active thread | after C1 |
 
