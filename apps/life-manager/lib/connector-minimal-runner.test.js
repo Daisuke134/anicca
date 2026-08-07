@@ -121,6 +121,30 @@ test("one wake reuses one owned session, target, and page across candidates and 
   );
 });
 
+test("provider discovery failure continues and still reports the wake", async () => {
+  const state = fixture({
+    async discoverCandidates(provider) {
+      state.calls.push(["discover", provider]);
+      if (provider === "luma") throw new Error("provider changed");
+      return [];
+    },
+  });
+
+  const result = await runMinimalConnectorWake({
+    ownerToken: "owner-token-connector-minimal-1",
+    providers: ["luma", "connpass"],
+  }, state.dependencies);
+
+  assert.deepEqual(state.calls.filter(([name]) => name === "discover").map(([, provider]) => provider), [
+    "luma", "connpass",
+  ]);
+  assert.deepEqual(state.calls.find(([name]) => name === "report").slice(1), [
+    "completed_no_effect", "provider_discovery_failed",
+  ]);
+  assert.equal(state.calls.filter(([name]) => name === "close").length, 1);
+  assert.equal(result.telegram_provider_id, "9001");
+});
+
 test("a failed direct action invokes at most ten agent steps on the exact same page", async () => {
   const state = fixture({
     async runAgentFallback(input) {

@@ -5748,7 +5748,22 @@ Item 10B/14は未完。次の一件はschedule unloadedのままofficial foregro
 候補/action/readbackの最初の外部境界を観測すること。evidence chainのConnpass一般化前なので、登録後にevidenceで中断してもpre-submit parent readbackで
 重複Submit 0を維持し、その不足artifactだけを次sliceで補完する。
 
-### Active remaining TODO SSOT（進捗206。これ以外の残TODO一覧は履歴）
+### O1B-25進捗207（foreground Connpass wake / provider failure isolation修復）
+
+schedule unloaded、Connector process 0、`:9222` healthyを再確認後、official foreground wakeを660秒hard timeoutで実行した。
+Calendar read 2,634ms、Luma discovery 47,528msはsuccessし、aggregateは37/37/22/free-open 3/Calendar-free 0。
+続くConnpass provider discoveryは1,085msでfailedし、wakeはexit 2。Submit、Calendar write、PNG、bundleは0。
+
+このrunで、provider discovery例外がwake全体へ漏れ、Telegram every-wake reportも送られないcore contract違反を確認した。
+TDD REDでLuma discovery例外後にConnpassへ進めずthrowすることを再現し、provider単位のfailure isolationを実装した。
+discovery failureはsafe action historyへfailedを残し、consecutive failureを加算して次providerへ継続する。3件でcircuit-open、provider exhausted時も
+`completed_no_effect / provider_discovery_failed`をTelegram報告し、finallyでowned pageをreleaseする。
+
+minimal runner/factory/Harness focused suiteは18/18 GREEN。Item 10B/14は未完。次の一件はConnpass discovery内部の
+calendar navigation/binding read/detail navigation/detail normalizationへsafe error codeを付け、再foreground wakeでexact broken actionを特定すること。
+scheduleはunloadedを維持する。
+
+### Active remaining TODO SSOT（進捗207。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
