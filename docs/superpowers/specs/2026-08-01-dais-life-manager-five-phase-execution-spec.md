@@ -5651,7 +5651,25 @@ Item 10Bの新規Luma external successは現在の外部候補状態では成立
 次の一件はItem 14のConnpass actionをこの環境blocker解消として前倒しし、旧provider cursor/coverage runtimeを復活させず、
 既存Connpass codeをfile/symbol/call path単位で再inventoryすること。scheduleはunloadedを維持する。
 
-### Active remaining TODO SSOT（進捗199。これ以外の残TODO一覧は履歴）
+### O1B-25進捗200（Item 14前倒し / Connpass exact reuse inventory）
+
+Connpassの現行file/symbol/call pathを再inventoryした。productionへdirect-reuseするのは
+`connpass-browser-discovery.js::{readCalendarBindings,readEventDetail}`、
+`connpass-browser-provider.js::{readConnpassRegistrationStateOnPage,submitConnpassOnPage}`、
+`connpass-evidence-store.js::createConnpassEvidenceStore`。canonical subdomain/event identity contractも維持する。
+
+そのままproductionへ戻さないのは`discoverConnpassDateWithBrowser`。これは日単位calendar pageに加え候補ごとに
+`dailyDriver.withEventPage`を呼ぶため、one wake/one target/same page contractに合わない。`connector-events-pack`、Connpass API capability handoff、
+coverage/date inventory/provider cursor、`buildConnpassEventApplicationJob`、`executeConnpassRsvpJob`の旧runtime job orchestrationもminimal pathへ戻さない。
+
+新規wrapperは`ConnpassScriptFirstWorkflow`一つだけとし、同じowned pageをcalendar→detail→candidate navigationへ再利用する。
+今日を含む14日、Tokyo、無料/受付中/Calendar非衝突だけをprovider orderで返す。direct actionは既存`submitConnpassOnPage`を使い、
+申込後のアンケート/確認画面またはUI変更は同じpageの最大10 step Browser Harnessへ渡す。成功は親
+`readConnpassRegistrationStateOnPage`の`registered/pending`だけ。candidateごとのtarget create/close、旧cursor、coverage、ranking、gateは0。
+
+Item 10B/14は未完。次の一件はこのminimal Connpass workflow contractをTDD REDで固定すること。scheduleはunloadedを維持する。
+
+### Active remaining TODO SSOT（進捗200。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
