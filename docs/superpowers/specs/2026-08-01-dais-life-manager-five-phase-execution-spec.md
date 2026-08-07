@@ -5854,7 +5854,20 @@ parent candidate contract診断後のlive wakeも865msでgeneric failure、Teleg
 Item 10B/14は未完。次の一件はofficial foreground wakeでexact safe stageを得て、その一箇所だけを修復すること。
 scheduleはunloadedを維持する。
 
-### Active remaining TODO SSOT（進捗215。これ以外の残TODO一覧は履歴）
+### O1B-25進捗216（Connpass calendar noise root cause and fix）
+
+全remaining contract診断後のlive wakeでexact reason `connpass_calendar_rows_contract_failed`を取得した。
+Calendar read 2,636ms、Luma discovery 33,976ms、Connpass failure 947ms。Telegram positive ID `8260`、Submit 0。
+root causeはConnpass calendarのraw event anchorsが500件超で、14日filter前のcapが全体を拒否したこと。
+
+501件の14日外noiseと1件の有効binding fixtureを先に追加し、旧実装がrows contract failureになるREDを確認した。
+raw rowsは最大5,000でfail-closed、先に14日filterとevent-ref dedupeを実行し、その後のeligible bindingsは最大500のままにした。
+無制限化せず、candidate detail churnも14日内最大500に制限する。Connpass workflow/discovery/minimal runner/production focused suiteは26/26 GREEN。
+
+Item 10B/14は未完。次の一件はofficial foreground wakeでConnpass discoveryがroot causeを越え、実candidate/action/readbackへ進むか確認すること。
+scheduleはunloadedを維持する。
+
+### Active remaining TODO SSOT（進捗216。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 

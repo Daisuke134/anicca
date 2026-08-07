@@ -211,7 +211,7 @@ test("Connpass classifies remaining parent discovery contracts without leaking e
   };
   const rowsWorkflow = createConnpassScriptFirstWorkflow({
     ...common,
-    async readCalendarBindings() { return Array.from({ length: 501 }, () => ({})); },
+    async readCalendarBindings() { return Array.from({ length: 5001 }, () => ({})); },
     async readEventDetail() { return {}; },
   });
   await assert.rejects(
@@ -237,4 +237,35 @@ test("Connpass classifies remaining parent discovery contracts without leaking e
     calendarWorkflow.discoverCandidates({ page: {}, calendar: [] }),
     (error) => error.code === "CONNPASS_CALENDAR_CONFLICT_CHECK_FAILED",
   );
+});
+
+test("Connpass filters large calendar noise before enforcing the eligible binding cap", async () => {
+  const noise = Array.from({ length: 501 }, (_, index) => ({
+    event_ref: `connpass-event://event/${500000 + index}`,
+    canonical_url: `https://connpass.com/event/${500000 + index}/`,
+    calendar_date: "2026-07-01",
+  }));
+  const workflow = createConnpassScriptFirstWorkflow({
+    now: () => new Date("2026-08-07T03:00:00.000Z"),
+    async readCalendarBindings() {
+      return [...noise, {
+        event_ref: "connpass-event://event/393711",
+        canonical_url: "https://connpass.com/event/393711/",
+        calendar_date: "2026-08-10",
+      }];
+    },
+    async readEventDetail() {
+      return {
+        event_ref: "connpass-event://event/393711", canonical_url: "https://connpass.com/event/393711/",
+        title: "Public event", starts_at: "2026-08-10T10:00:00.000Z", ends_at: "2026-08-10T11:00:00.000Z",
+        venue_name: "Public venue", address: "Tokyo", controls: ["このイベントに申し込む"],
+        offers: [{ price: "0", priceCurrency: "JPY" }], price_labels: ["参加費 無料"],
+      };
+    },
+    async submitOnPage() { return { status: "registered" }; },
+    async readStateOnPage() { return { state: "registered" }; },
+  });
+
+  const result = await workflow.discoverCandidates({ page: { async goto() {} }, calendar: [] });
+  assert.deepEqual(result.map((candidate) => candidate.event_ref), ["connpass-event://event/393711"]);
 });
