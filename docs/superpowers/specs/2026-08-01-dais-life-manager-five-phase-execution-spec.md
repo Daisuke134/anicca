@@ -5884,6 +5884,22 @@ Connpass discovery/workflow/minimal runner/production focused suiteは27/27 GREE
 Item 10B/14は未完。実registration evidenceは0のままで、Submit 0、Calendar write 0、PNG/applied_bundle 0。
 次の一件はscheduling disabledのままofficial foreground runnerを実行し、新しいexact failure codeを取得すること。scheduleはunloadedを維持する。
 
+### O1B-25進捗218（Connpass detail titleの現行公開DOM修復）
+
+進捗217後のofficial foreground wake `wake-87a44a029ad3077540cf6485`をscheduling disabledのまま実行した。
+Calendar read 2,632ms success、Luma discovery 36,099ms success、Connpass discovery 1,500ms failed。
+exact safe reasonは新codeの`connpass_detail_title_invalid_failed`で、field分離が意図どおり機能した。Submit 0、Calendar write 0。
+
+現行公開DOMをread-onlyで実測した。Connpass detailページは`application/ld+json`を0ブロックしか持たず、
+`<time datetime>`も0で、先頭`<h1>`はsite headerのためtextが空だった。旧実装のtitle源`event.name || h1`は両方nullになる。
+実際のtitleは`h2.event_title`内の`div.current_event_title`にある（実測: `明るい宇宙農村 第31作`）。
+
+壊れている一箇所だけを直し、title源を`event.name || .current_event_title || h1`にした。start/end/rangeとeligibility条件は緩めていない。
+JSON-LD無し・空h1・`.current_event_title`ありのREDを先に確認し、focused suiteは28/28 GREEN。
+
+Item 10B/14は未完。実registration evidenceは0、Submit 0、Calendar write 0、PNG/applied_bundle 0。
+次の一件は同じofficial foreground runnerを再実行し、title通過後の次のexact failure codeを取得すること。scheduleはunloadedを維持する。
+
 ### Active remaining TODO SSOT（進捗216。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。

@@ -81,6 +81,30 @@ test("Connpass browser detail reads public offers controls and price labels", as
   }
 });
 
+test("Connpass browser detail reads the public header title without JSON-LD", async () => {
+  const previousDocument = global.document;
+  const previousLocation = global.location;
+  global.location = { href: "https://openforce.connpass.com/event/399614/" };
+  global.document = {
+    querySelector(selector) {
+      if (selector === 'link[rel="canonical"]') return { href: global.location.href };
+      if (selector === ".current_event_title") return { textContent: " 明るい宇宙農村  第31作 " };
+      if (selector === "h1") return { textContent: "" };
+      return null;
+    },
+    querySelectorAll() { return []; },
+  };
+  const page = { async evaluate(callback) { return callback(); } };
+  try {
+    const result = await readEventDetail(page);
+    assert.equal(result.title, "明るい宇宙農村 第31作");
+    assert.equal(result.event_ref, "connpass-event://event/399614");
+  } finally {
+    global.document = previousDocument;
+    global.location = previousLocation;
+  }
+});
+
 test("Connpass detail normalization exposes only the missing public contract field", () => {
   const cases = [
     [raw({ title: "" }), "CONNPASS_DETAIL_TITLE_INVALID_FAILED"],

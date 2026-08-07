@@ -141,7 +141,7 @@ async function readEventDetail(page) {
     return {
       event_ref: match ? `connpass-event://event/${match[1]}` : null,
       canonical_url: match ? `${new URL(canonical, location.href).origin}/event/${match[1]}/` : null,
-      title: event.name || text("h1"),
+      title: event.name || text(".current_event_title") || text("h1"),
       summary: event.headline || null,
       description: event.description || text('[class*="description"]'),
       starts_at: event.startDate || null,
