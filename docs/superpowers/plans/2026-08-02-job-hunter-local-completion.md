@@ -4492,6 +4492,14 @@ item before starting the next.
       contains fact `application_source_job_board_20260807`: candidates discovered
       through `official_ats_boards` or `workday_cxs` answer the matching `Job board`
       option. The JSON was validated and the fact is stored exactly once.
+    - Added `job_search_loop.submission_prepare`, a no-submit CLI that accepts only
+      an existing application plus exact resume, claim-ready ATS snapshot, claim-ready
+      fill receipt, and private answers. It delegates intent/fence creation and exact
+      material persistence to the existing Ledger APIs and returns `pre_click` /
+      `pre_request`; it cannot click or operate the browser. The resident prompt now
+      derives Workday `Job board` from candidate provenance and invokes this fixed CLI
+      instead of SQL or source discovery. Per owner instruction, no test was added or
+      run; the next verification is the installed resident run.
 14. [ ] **L-49K5G1 — Route the cheap model.** Use Luna for one known-ATS
     observe/map/fill/verify pass with no Submit authority.
 15. [ ] **L-49K5G2 — Gate escalation.** Give Terra the same fenced intent only after
