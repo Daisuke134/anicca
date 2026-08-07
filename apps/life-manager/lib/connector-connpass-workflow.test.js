@@ -109,3 +109,20 @@ test("Connpass default discovery reuses one page across two calendar months and 
   assert.equal(navigations.filter((url) => url.includes("/calendar/")).length, 2);
   assert.equal(navigations.filter((url) => url.includes("/event/")).length, 2);
 });
+
+test("Connpass default discovery identifies the exact failed browser stage safely", async () => {
+  const workflow = createConnpassScriptFirstWorkflow({
+    now: () => new Date("2026-08-07T03:00:00.000Z"),
+    async readCalendarBindings() { return []; },
+    async readEventDetail() { return {}; },
+    async submitOnPage() { return { status: "registered" }; },
+    async readStateOnPage() { return { state: "registered" }; },
+  });
+  const page = { async goto() { throw new Error("private browser error"); } };
+
+  await assert.rejects(
+    workflow.discoverCandidates({ page, calendar: [] }),
+    (error) => error.code === "CONNPASS_CALENDAR_NAVIGATION_FAILED"
+      && error.message === "Connpass discovery stage failed",
+  );
+});

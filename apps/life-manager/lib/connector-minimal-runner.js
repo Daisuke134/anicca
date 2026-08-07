@@ -84,6 +84,12 @@ function registered(value) {
   return Boolean(value && ["registered", "pending"].includes(value.status));
 }
 
+function safeDiscoveryReason(error) {
+  const code = String(error && error.code || "");
+  return /^CONNPASS_(?:CALENDAR_NAVIGATION|CALENDAR_BINDINGS|DETAIL_NAVIGATION|DETAIL_READ)_FAILED$/.test(code)
+    ? code.toLowerCase() : "provider_discovery_failed";
+}
+
 async function runMinimalConnectorWake(input = {}, injected = {}) {
   const settings = config(input);
   const deps = dependencies(injected);
@@ -91,6 +97,7 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
   let owned = null;
   let consecutiveFailures = 0;
   let providerDiscoveryFailed = false;
+  let discoveryFailureReason = "provider_discovery_failed";
 
   const elapsed = () => Date.parse(exactInstant(deps.now())) - startedAt;
   const deadlineReached = () => elapsed() >= settings.maxWakeMs;
@@ -151,8 +158,9 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
           await action("observe", "provider_discovery", () => deps.discoverCandidates(provider, gaps, owned.page)),
           provider,
         );
-      } catch {
+      } catch (error) {
         providerDiscoveryFailed = true;
+        discoveryFailureReason = safeDiscoveryReason(error);
         consecutiveFailures += 1;
         if (consecutiveFailures >= settings.maxConsecutiveFailures) {
           return finish("circuit_open", "consecutive_failure_limit");
@@ -258,7 +266,7 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
       }
     }
     return finish("completed_no_effect", providerDiscoveryFailed
-      ? "provider_discovery_failed" : "providers_exhausted");
+      ? discoveryFailureReason : "providers_exhausted");
   } finally {
     if (owned) await deps.browserRail.close(owned);
   }

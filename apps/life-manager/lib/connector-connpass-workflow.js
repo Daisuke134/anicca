@@ -16,6 +16,11 @@ const EVENT_URL = /^https:\/\/(?:[a-z0-9-]+\.)?connpass\.com\/event\/[1-9][0-9]*
 const TIME_ZONE = "Asia/Tokyo";
 
 function invalid() { throw new Error("Connpass script-first workflow invalid"); }
+function stageError(code) {
+  const error = new Error("Connpass discovery stage failed");
+  error.code = code;
+  return error;
+}
 
 function exactCandidate(value) {
   if (
@@ -72,10 +77,14 @@ function createDefaultDiscovery({ now, readBindings, readDetail }) {
     const bindings = [];
     const seen = new Set();
     for (const month of months) {
-      await page.goto(`https://connpass.com/calendar/?ym=${month}&prefectures=13`, {
-        waitUntil: "domcontentloaded", timeout: 30_000,
-      });
-      const rows = await readBindings(page);
+      try {
+        await page.goto(`https://connpass.com/calendar/?ym=${month}&prefectures=13`, {
+          waitUntil: "domcontentloaded", timeout: 30_000,
+        });
+      } catch { throw stageError("CONNPASS_CALENDAR_NAVIGATION_FAILED"); }
+      let rows;
+      try { rows = await readBindings(page); }
+      catch { throw stageError("CONNPASS_CALENDAR_BINDINGS_FAILED"); }
       if (!Array.isArray(rows) || rows.length > 500) invalid();
       for (const row of rows) {
         const eventRef = String(row && row.event_ref || "");
@@ -89,8 +98,12 @@ function createDefaultDiscovery({ now, readBindings, readDetail }) {
     }
     const result = [];
     for (const binding of bindings) {
-      await page.goto(binding.canonical_url, { waitUntil: "domcontentloaded", timeout: 30_000 });
-      const detail = normalizeConnpassEventDetail(await readDetail(page));
+      try {
+        await page.goto(binding.canonical_url, { waitUntil: "domcontentloaded", timeout: 30_000 });
+      } catch { throw stageError("CONNPASS_DETAIL_NAVIGATION_FAILED"); }
+      let detail;
+      try { detail = normalizeConnpassEventDetail(await readDetail(page)); }
+      catch { throw stageError("CONNPASS_DETAIL_READ_FAILED"); }
       if (detail.event_ref !== binding.event_ref || detail.canonical_url !== binding.canonical_url) invalid();
       result.push(detail);
     }

@@ -5763,7 +5763,19 @@ minimal runner/factory/Harness focused suiteは18/18 GREEN。Item 10B/14は未�
 calendar navigation/binding read/detail navigation/detail normalizationへsafe error codeを付け、再foreground wakeでexact broken actionを特定すること。
 scheduleはunloadedを維持する。
 
-### Active remaining TODO SSOT（進捗207。これ以外の残TODO一覧は履歴）
+### O1B-25進捗208（Connpass safe stage diagnosis）
+
+Connpass calendar navigationのprivate browser errorがそのまま漏れるREDと、runner reportがgeneric
+`provider_discovery_failed`へ潰れるREDを確認した。default discoveryはcalendar navigation、calendar bindings read、detail navigation、
+detail read/normalizationの4境界をsafe codeへ変換する。元error message、URL、page text、credentialは保存・送信しない。
+
+runnerはallowlist済み4 codeだけをlowercase safe reasonとしてTelegramへ渡し、未知errorはgeneric reasonのままにする。
+Connpass workflow/minimal runner/production focused suiteは18/18 GREEN。実browser action/Submit/Calendar write/PNG作用は0。
+
+Item 10B/14は未完。次の一件はofficial foreground wakeを再実行し、safe stage codeで壊れたConnpass actionを一つに特定して修復すること。
+scheduleはunloadedを維持する。
+
+### Active remaining TODO SSOT（進捗208。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
