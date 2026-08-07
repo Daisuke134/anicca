@@ -5614,7 +5614,19 @@ event identity、title、URL、date、provider text、form valueはaudit schema�
 Item 10Bは未完。次の一件はこのaggregate auditだけをmode 0600 append-only stateへ保存するminimal operations配線をTDDで追加し、
 official foreground wakeで37件がどのfilterで0になるかを実測すること。scheduleはunloadedを維持する。
 
-### Active remaining TODO SSOT（進捗196。これ以外の残TODO一覧は履歴）
+### O1B-25進捗197（Item 10B diagnosis slice 2 / aggregate audit production persistence）
+
+minimal operationsへ`recordDiscoveryAudit`が存在しないREDを確認後、mode 0600 append-only
+`luma-discovery-audits.jsonl`を追加した。schemaはwake ID、recorded timestamp、`observed / normalized / window / free_open /
+calendar_free`の5整数だけで、各値0..500と`observed >= normalized >= window >= free_open >= calendar_free`をparentが検証する。
+余計なfieldを拒否し、URL、title、provider text、form value、credential、cookie、raw promptは保存できない。
+
+official production factoryはminimal operationsをLuma workflowより先に一度だけ構築し、このaudit callbackをdefault workflowへ渡す。
+minimal operations、production factory、Luma workflow、minimal runnerのfocused suiteは21/21 GREEN。
+
+Item 10Bは未完。次の一件はschedule unloadedのままofficial foreground wakeを再実行し、実aggregate countから0候補のexact filterを特定すること。
+
+### Active remaining TODO SSOT（進捗197。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 

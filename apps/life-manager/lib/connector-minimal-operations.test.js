@@ -119,3 +119,34 @@ test("a later wake retries a durable Telegram report left pending by send failur
     fs.rmSync(stateDir, { recursive: true, force: true });
   }
 });
+
+test("operations persist only safe Luma discovery aggregate counts", async () => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-minimal-discovery-"));
+  try {
+    const operations = createMinimalProductionOperations({
+      stateDir,
+      wakeId: "wake-20260807-discovery",
+      telegramTarget: "private-target",
+      now: () => new Date("2026-08-07T08:30:00.000Z"),
+      async sendMessage() { return { messageId: 7001 }; },
+    });
+    await operations.recordDiscoveryAudit({
+      observed_count: 37,
+      normalized_count: 36,
+      window_count: 12,
+      free_open_count: 4,
+      calendar_free_count: 2,
+    });
+
+    const file = path.join(stateDir, "luma-discovery-audits.jsonl");
+    const row = JSON.parse(fs.readFileSync(file, "utf8").trim());
+    assert.deepEqual(Object.keys(row).sort(), [
+      "calendar_free_count", "free_open_count", "normalized_count", "observed_count",
+      "recorded_at", "schema_version", "wake_id", "window_count",
+    ]);
+    assert.equal(fs.statSync(file).mode & 0o777, 0o600);
+    assert.equal(JSON.stringify(row).includes("https://"), false);
+  } finally {
+    fs.rmSync(stateDir, { recursive: true, force: true });
+  }
+});
