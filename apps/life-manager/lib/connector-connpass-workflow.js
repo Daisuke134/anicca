@@ -91,7 +91,9 @@ function createDefaultDiscovery({ now, readBindings, readDetail }) {
         const url = String(row && row.canonical_url || "");
         const date = String(row && row.calendar_date || "");
         if (!allowedDates.has(date) || seen.has(eventRef)) continue;
-        if (!EVENT_REF.test(eventRef) || !EVENT_URL.test(url)) invalid();
+        if (!EVENT_REF.test(eventRef) || !EVENT_URL.test(url)) {
+          throw stageError("CONNPASS_CALENDAR_BINDING_VALIDATION_FAILED");
+        }
         seen.add(eventRef);
         bindings.push(Object.freeze({ event_ref: eventRef, canonical_url: url }));
       }
@@ -147,7 +149,9 @@ function createConnpassScriptFirstWorkflow(options = {}) {
       const window = candidateWindow(now);
       const result = [];
       for (const raw of observed) {
-        const candidate = exactCandidate(raw);
+        let candidate;
+        try { candidate = exactCandidate(raw); }
+        catch { throw stageError("CONNPASS_CANDIDATE_VALIDATION_FAILED"); }
         const startsAt = Date.parse(candidate.starts_at);
         if (startsAt < window.start || startsAt >= window.end) continue;
         if (candidate.registration_status !== "available") continue;

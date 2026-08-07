@@ -127,7 +127,7 @@ test("provider discovery failure continues and still reports the wake", async ()
       state.calls.push(["discover", provider]);
       if (provider === "luma") {
         const error = new Error("provider changed");
-        error.code = "CONNPASS_DETAIL_IDENTITY_MISMATCH_FAILED";
+        error.code = "CONNPASS_CANDIDATE_VALIDATION_FAILED";
         throw error;
       }
       return [];
@@ -143,7 +143,7 @@ test("provider discovery failure continues and still reports the wake", async ()
     "luma", "connpass",
   ]);
   assert.deepEqual(state.calls.find(([name]) => name === "report").slice(1), [
-    "completed_no_effect", "connpass_detail_identity_mismatch_failed",
+    "completed_no_effect", "connpass_candidate_validation_failed",
   ]);
   assert.equal(state.calls.filter(([name]) => name === "close").length, 1);
   assert.equal(result.telegram_provider_id, "9001");
