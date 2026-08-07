@@ -98,6 +98,63 @@ class AshbyApplyTests(unittest.TestCase):
             self._grounding_profile(),
         )
 
+    def test_live_questions_generate_complete_grounded_answers_from_profile(self):
+        from job_search_loop.ashby_apply import build_actions, generate_grounded_answers
+
+        profile = {
+            "candidate": {
+                "name": "Candidate Name",
+                "preferred_name": "Candidate",
+                "application_email": "candidate@example.test",
+                "phone": "+81-00-0000-0000",
+                "phone_status": "verified",
+                "base": "Tokyo, Japan",
+                "start_date": "2026-12-01",
+            },
+            "facts": [
+                {"id": "profile.current_location_20260807", "claim": "Tokyo, Japan"},
+                {"id": "legal_japan_work_authorization_20260730", "claim": "Authorized"},
+                {"id": "legal_no_japan_sponsorship_required_20260806", "claim": "No sponsorship"},
+                {"id": "availability_tokyo_office_three_days_20260806", "claim": "Available five days"},
+                {"id": "ordinary_truthful_application_attestation_20260807", "claim": "Authorized attestation"},
+            ],
+        }
+        questions = [
+            ("Legal Name", "fill", True),
+            ("Preferred Name (if applicable)", "fill", False),
+            ("Email", "fill", True),
+            ("Resume", "upload", True),
+            ("Phone Number", "fill", True),
+            ("Where are you currently located?", "fill", True),
+            ("When can you start a new role?", "fill", True),
+            ("Are you authorized to work in the country where the job is located?", "select", True),
+            ("Will you now or in the future require sponsorship for employment visa status in this country?", "select", True),
+            ("Are you able to work from our Tokyo office three days per week?", "select", True),
+            ("Additional Information", "fill", False),
+            ("I hereby certify that the answers given by me are true and correct.", "check", True),
+        ]
+        fields = [
+            {"field_path": f"field-{index}", "question": question, "control": control, "required": required, "options": ["Yes", "No"] if control == "select" else []}
+            for index, (question, control, required) in enumerate(questions)
+        ]
+
+        result = generate_grounded_answers(fields, profile)
+
+        self.assertEqual(result["status"], "ready")
+        self.assertEqual(result["missing_required"], [])
+        self.assertNotIn("Additional Information", result["answers"])
+        self.assertEqual(result["answers"][questions[7][0]]["answer"], "Yes")
+        self.assertEqual(result["answers"][questions[8][0]]["answer"], "No")
+        self.assertEqual(result["answers"][questions[9][0]]["answer"], "Yes")
+        self.assertEqual(result["answers"][questions[11][0]]["answer"], "true")
+        plan = build_actions(
+            fields,
+            answer_map=result,
+            resume_path="/private/resume.pdf",
+            resume_sha256="a" * 64,
+        )
+        self.assertEqual(plan["status"], "ready")
+
     def test_profile_grounding_rejects_unknown_fact_id_for_custom_question(self):
         module = importlib.import_module("job_search_loop.ashby_apply")
         self.assertTrue(
@@ -158,6 +215,33 @@ class AshbyApplyTests(unittest.TestCase):
                 },
             )
             self.assertEqual(completed.stderr, "")
+
+    def test_answers_cli_writes_grounded_artifact_from_inspect_result(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            inspected = root / "inspect.json"
+            profile = root / "profile.json"
+            output = root / "answers.json"
+            inspected.write_text(
+                json.dumps({"fields": [
+                    {"field_path": "name", "question": "Legal Name", "control": "fill", "required": True, "options": []},
+                    {"field_path": "resume", "question": "Resume", "control": "upload", "required": True, "options": []},
+                ]}) + "\n",
+                encoding="utf-8",
+            )
+            profile.write_text(json.dumps(self._grounding_profile()) + "\n", encoding="utf-8")
+
+            completed = subprocess.run(
+                [sys.executable, "-m", "job_search_loop.ashby_apply", "answers", "--inspect-result", str(inspected), "--profile", str(profile), "--output", str(output)],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            artifact = json.loads(output.read_text(encoding="utf-8"))
+            self.assertEqual(artifact["status"], "ready")
+            self.assertEqual(artifact["answers"]["Legal Name"]["fact_ids"], ["profile.name"])
 
     def test_verify_cli_requires_private_profile(self):
         with tempfile.TemporaryDirectory() as directory:

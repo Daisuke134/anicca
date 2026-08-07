@@ -249,9 +249,17 @@ Only the first unchecked item is active.
         prefilter artifact, the production Ledger excluded 8 of 12 candidates
         (`submitted` 2, `rejected` 6) and retained 4. Resident remained idle at 92
         runs; no release activation, browser action, or Submit occurred.
-   2. inspect one genuinely new official Ashby form and generate its answers artifact
+   2. [x] inspect one genuinely new official Ashby form and generate its answers artifact
       deterministically from private profile facts, leaving only truly optional fields
       blank and asking Telegram only for an unknown required personal fact;
+      - Receipt: the official OpenAI Ashby posting `Solutions Engineer, Pre-Sales -
+        Tokyo` was absent from terminal Ledger matches and live inspection returned 12
+        fields. The deterministic `ashby_apply answers` CLI mapped every non-upload
+        required question by semantics rather than field ID, omitted optional
+        Additional Information, and wrote a mode-0600 artifact with status `ready`,
+        10 grounded answers, zero missing required facts, and SHA-256
+        `18e5f4a4a753b962d9cb3b0401fbcff65ecf1b1457592598267d762257b17d09`.
+        The 15 focused Ashby tests passed. No fill or Submit occurred.
    3. materialize the application, grounded material, submit intent, browser fence,
       and exact artifact hashes before browser fill;
    4. replace only the Job Hunter application lane's `codex exec --ephemeral` with

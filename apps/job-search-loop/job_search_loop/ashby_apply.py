@@ -25,6 +25,7 @@ STANDARD_PROFILE_ANSWERS = {
     "email": ("application_email", "profile.application_email"),
     "email address": ("application_email", "profile.application_email"),
     "phone number": ("phone", "profile.phone"),
+    "preferred name (if applicable)": ("preferred_name", "profile.preferred_name"),
     "when can you start a new role?": ("start_date", "profile.start_date"),
 }
 ASHBY_SUCCESS_TEXT = (
@@ -35,6 +36,60 @@ ASHBY_SUCCESS_TEXT = (
 
 def _normalized(value: Any) -> str:
     return re.sub(r"\s+", " ", value if isinstance(value, str) else "").strip()
+
+
+def generate_grounded_answers(
+    fields: list[dict[str, Any]], profile: dict[str, Any]
+) -> dict[str, Any]:
+    candidate = profile.get("candidate")
+    facts = profile.get("facts")
+    if not isinstance(candidate, dict) or not isinstance(facts, list):
+        raise ValueError("private profile grounding is unavailable")
+    known_fact_ids = {
+        str(fact.get("id"))
+        for fact in facts
+        if isinstance(fact, dict) and isinstance(fact.get("id"), str)
+    }
+    answers: dict[str, dict[str, Any]] = {}
+    missing_required: list[str] = []
+    for field in fields:
+        question = _normalized(field.get("question"))
+        key = question.casefold()
+        if field.get("control") == "upload":
+            continue
+        answer: str | None = None
+        fact_id: str | None = None
+        standard = STANDARD_PROFILE_ANSWERS.get(key)
+        if standard is not None:
+            profile_key, fact_id = standard
+            answer = _normalized(candidate.get(profile_key))
+        elif "currently located" in key:
+            answer = _normalized(candidate.get("base"))
+            fact_id = "profile.current_location_20260807"
+        elif "authorized to work" in key:
+            answer = "Yes"
+            fact_id = "legal_japan_work_authorization_20260730"
+        elif "require sponsorship" in key:
+            answer = "No"
+            fact_id = "legal_no_japan_sponsorship_required_20260806"
+        elif "tokyo office" in key and "days per week" in key:
+            answer = "Yes"
+            fact_id = "availability_tokyo_office_three_days_20260806"
+        elif "hereby certify" in key or "true and correct" in key:
+            answer = "true"
+            fact_id = "ordinary_truthful_application_attestation_20260807"
+        if answer and fact_id and (
+            fact_id.startswith("profile.") or fact_id in known_fact_ids
+        ):
+            answers[question] = {"answer": answer, "fact_ids": [fact_id]}
+        elif field.get("required") is True:
+            missing_required.append(question)
+    return {
+        "version": 1,
+        "status": "ready" if not missing_required else "needs_fact",
+        "answers": answers,
+        "missing_required": missing_required,
+    }
 
 
 def classify_control(
@@ -116,6 +171,8 @@ def build_actions(
     resume_path: str,
     resume_sha256: str,
 ) -> dict[str, Any]:
+    if isinstance(answer_map.get("answers"), dict):
+        answer_map = answer_map["answers"]
     answers = {_normalized(key).casefold(): value for key, value in answer_map.items()}
     actions: list[dict[str, Any]] = []
     missing: list[dict[str, str]] = []
@@ -440,17 +497,30 @@ def _write_private(path: Path, value: Any) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Deterministic Ashby inspect/fill/apply CLI")
-    parser.add_argument("mode", choices=("inspect", "fill", "apply", "verify"))
+    parser.add_argument("mode", choices=("inspect", "answers", "fill", "apply", "verify"))
     parser.add_argument("--endpoint")
     parser.add_argument("--url")
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--answers", type=Path)
+    parser.add_argument("--inspect-result", type=Path)
     parser.add_argument("--resume", type=Path)
     parser.add_argument("--profile", type=Path)
     parser.add_argument("--ledger", type=Path)
     parser.add_argument("--intent-id")
     parser.add_argument("--fence", type=int)
     args = parser.parse_args()
+    if args.mode == "answers":
+        if not args.inspect_result or not args.profile:
+            parser.error("answers requires --inspect-result and --profile")
+        inspected = json.loads(args.inspect_result.read_text(encoding="utf-8"))
+        profile = json.loads(args.profile.read_text(encoding="utf-8"))
+        fields = inspected.get("fields")
+        if not isinstance(fields, list):
+            parser.error("inspect result has no fields")
+        result = generate_grounded_answers(fields, profile)
+        _write_private(args.output, result)
+        print(json.dumps({"status": result["status"], "output": str(args.output)}))
+        return 0 if result["status"] == "ready" else 2
     if args.mode == "verify":
         if not args.profile:
             parser.error("verify requires --profile")
