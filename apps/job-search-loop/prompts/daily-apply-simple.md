@@ -72,6 +72,18 @@ For each selected role:
    still present in the private profile; otherwise report the exact missing fact and
    keep the intent pre-click. Never use a wildcard as `--resume` and never invent an
    intent ID or fence.
+   When a Workday form asks how the role was found and its candidate provenance is
+   `official_ats_boards` or `workday_cxs`, use the exact matching `Job board` option
+   with fact `application_source_job_board_20260807`; this is observed route
+   provenance, not a private fact to ask again.
+   After a deterministic non-submit fill produces a claim-ready ATS snapshot and fill
+   receipt, create the missing Ledger fence only with:
+   `$JOB_SEARCH_PYTHON -m job_search_loop.submission_prepare --ledger
+   "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" --application-id APPLICATION_ID
+   --japan-day YYYY-MM-DD --portfolio-bucket BUCKET --resume EXACT_RESUME_PDF
+   --snapshot ATS_SNAPSHOT_JSON --fill-receipt FILL_RECEIPT_JSON --answers
+   PRIVATE_ANSWERS_JSON --output "$JOB_SEARCH_EVIDENCE_DIR/submission-prepare.json"`.
+   Read `intent_id` and `fence` from that receipt. Never create these rows with SQL.
 4. Before any Submit side effect, use the existing Ledger intent, material receipt,
    click fence, and request fence. Execute Submit once. Treat only the existing
    authoritative ATS confirmation classifier as `applied_ats`; HTTP 200 or model prose
