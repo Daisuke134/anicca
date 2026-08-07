@@ -7,8 +7,8 @@
 **Configured upstream:** `canonical/docs/job-hunter-spec-20260805`
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-07 JST
-**Active atomic task:** `L-49K5E6` — encode the Greenhouse inspect, fill, verify,
-submit-once, and authoritative-receipt sequence without opening an employer form.
+**Active atomic task:** `L-49K5E7` — encode the authenticated Workday multi-step
+sequence without opening an employer form.
 **Status:** The immutable four-lane runtime, grounded materials, ownership fences,
 Gmail ingestion, Telegram outbox, quota accounting, Ashby surface classifier, and
 loopback OpenTelemetry Collector/private trace index are implemented. The application
@@ -4413,8 +4413,16 @@ item before starting the next.
      wording differences, forbids retry after clicked/request-started unknown, and
      stores no private answers or GraphQL variables. No employer page or Submit was
      touched while creating it.
-9. [ ] **L-49K5E6 — Bake the Greenhouse recipe.** Encode the equivalent inspect,
+9. [x] **L-49K5E6 — Bake the Greenhouse recipe.** Encode the equivalent inspect,
    fill, verify, submit-once, and receipt sequence without opening an employer form.
+   - Added a 61-line `job-boards.greenhouse.io/application.md` domain skill to the
+     versioned source and active Browser Harness workspace. Both copies have SHA-256
+     `d8c42d2f8de58ac720064c567cb64e1b5e4dd6711f2b54cfd4ee281a0e4580c4`.
+     It uses the public questions API only for structure, operates the official
+     embedded form, never requests an employer's private API key, binds one click to
+     network plus visible confirmation, and turns disagreement into non-retryable
+     `submit_unknown`. It stores no request body or private answers in logs. No
+     employer form or Submit was opened while creating it.
 10. [ ] **L-49K5E7 — Bake the Workday recipe.** Encode the equivalent authenticated
     multi-step sequence without opening an employer form.
 11. [ ] **L-49K5F1 — Classify anti-bot outcomes.** Distinguish invisible reCAPTCHA,
