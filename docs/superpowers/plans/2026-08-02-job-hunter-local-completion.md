@@ -4083,6 +4083,15 @@ OpenTelemetry decision and primary sources:
       this run produced neither a confirmed ATS application nor an explicitly accepted
       email application. The resident must continue with a new eligible role rather
       than replaying either action.
+      Post-correction runtime projection separately exposes Neural Concept Ashby event
+      row 144 for application `16d3…`: `submit_unknown -> submitted` is bound to
+      intent `ba756dd2089745148dfb15da992fd2fa`, fence `1`, source
+      `ashby_graphql_plus_visible_success`, and terminal SHA-256
+      `e73a212752d3ca020b16bae36ca19578ba437dcf434b054daff414e467cb430b`.
+      Summary and Guardian accept that event only through the matching authoritative
+      browser contract (submitted intent/attempt, materials receipt, confirmed click,
+      request-started transport, and ATS evidence bundle). The installed runtime must
+      not be kickstarted until the tested replacement release is activated.
 - [ ] **L-49K** — Prove `L-49K1` through `L-49K4` through the installed resident
   LaunchAgent on one eligible Ashby role. The development session only triggers and
   observes. The resident must open the application surface, fill, verify, submit once,

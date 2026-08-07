@@ -15,7 +15,10 @@ from pathlib import Path
 from typing import Any
 
 from .browser_owner import probe_cdp
-from .ledger import is_run_74_outreach_truth_correction
+from .ledger import (
+    is_authoritative_ashby_browser_confirmation,
+    is_run_74_outreach_truth_correction,
+)
 from .release_activation import ActivationError, LANES, _link_commit, _validate_release
 from .state import InvalidTransition, validate_transition
 
@@ -390,8 +393,16 @@ def _valid_event_projection(connection: sqlite3.Connection) -> bool:
                     payload.get(key)
                     for key in ("message_id", "thread_id", "evidence_sha256", "received_at")
                 )
+                has_authoritative_ashby_confirmation = (
+                    is_authoritative_ashby_browser_confirmation(
+                        connection,
+                        str(application["id"]),
+                        event,
+                    )
+                )
                 if (
                     not has_gmail_confirmation
+                    and not has_authoritative_ashby_confirmation
                     and (
                         index + 1 >= len(events)
                         or not is_run_74_outreach_truth_correction(
