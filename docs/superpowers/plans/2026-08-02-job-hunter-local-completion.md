@@ -7,8 +7,10 @@
 **Configured upstream:** `canonical/docs/job-hunter-spec-20260805`
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-07 JST
-**Active atomic task:** `L-49K5W1` — produce one real official Workday application
-receipt with the exact submitted dossier and Telegram message IDs.
+**Active atomic task:** `PERSIST-01` — prove the subscription-authenticated Codex
+app-server thread can start, survive client exit, and resume. No Job Hunter resident
+release is activated or kicked until `PERSIST-01` through `PERSIST-05` and the
+no-submit Ashby `pre_submit_ready` canary pass.
 **Status:** The immutable four-lane runtime, grounded materials, ownership fences,
 Gmail ingestion, Telegram outbox, quota accounting, Ashby surface classifier, and
 loopback OpenTelemetry Collector/private trace index are implemented. The application
@@ -4555,6 +4557,16 @@ item before starting the next.
       persistent per-application Codex app-server thread specified by
       `2026-08-07-life-manager-persistent-agent-runtime.md`; until then, known
       ATS recipes and prior answers are loaded directly rather than rediscovered.
+    - Release gate correction: changing ATS priority alone does not make the resident
+      submit-ready. Live Ashby inspection proves the CLI extracts all 11 required
+      controls, and the private profile already contains Japan work authorization,
+      no-sponsorship, start-date, location, and truthful-attestation facts. The missing
+      component is deterministic creation of the private answers artifact plus the
+      application → material → intent → fence connection. Candidate selection also
+      requires terminal and canonical-alias filtering because an already-submitted
+      role can remain visible under another official URL. No further resident run is
+      permitted until fleet tasks `PERSIST-01` through `PERSIST-05` complete and an
+      installed Submit-disabled Ashby canary reaches `pre_submit_ready`.
 14. [ ] **L-49K5G1 — Route the cheap model.** Use Luna for one known-ATS
     observe/map/fill/verify pass with no Submit authority.
 15. [ ] **L-49K5G2 — Gate escalation.** Give Terra the same fenced intent only after
