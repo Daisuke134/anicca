@@ -354,7 +354,8 @@ def _valid_event_projection(connection: sqlite3.Connection) -> bool:
     ).fetchall()
     for application in applications:
         events = connection.execute(
-            "SELECT from_state, to_state, payload_json FROM events "
+            "SELECT rowid AS event_rowid, from_state, to_state, "
+            "payload_json FROM events "
             "WHERE application_id=? ORDER BY rowid",
             (application["id"],),
         ).fetchall()
@@ -374,28 +375,15 @@ def _valid_event_projection(connection: sqlite3.Connection) -> bool:
         )
         if previous != "discovered" and not external_origin:
             return False
-        correction_route_ids: set[str] = set()
-        for correction in events:
-            if (
-                str(correction["from_state"]) != "submitted"
-                or str(correction["to_state"]) != "submit_unknown"
-            ):
-                continue
-            try:
-                correction_payload = json.loads(str(correction["payload_json"]))
-            except (json.JSONDecodeError, TypeError):
-                return False
-            if is_run_74_outreach_truth_correction(
-                str(application["id"]), correction_payload
-            ):
-                correction_route_ids.add(str(correction_payload["route_id"]))
-        for event in events[1:]:
+        for index, event in enumerate(events[1:], start=1):
             to_state = str(event["to_state"])
             if event["from_state"] != previous:
                 return False
             try:
                 payload = json.loads(str(event["payload_json"]))
             except (json.JSONDecodeError, TypeError):
+                return False
+            if not isinstance(payload, dict):
                 return False
             if previous == "submit_unknown" and to_state == "submitted":
                 has_gmail_confirmation = all(
@@ -404,12 +392,21 @@ def _valid_event_projection(connection: sqlite3.Connection) -> bool:
                 )
                 if (
                     not has_gmail_confirmation
-                    and payload.get("route_id") not in correction_route_ids
+                    and (
+                        index + 1 >= len(events)
+                        or not is_run_74_outreach_truth_correction(
+                            connection,
+                            str(application["id"]),
+                            events[index + 1],
+                        )
+                    )
                 ):
                     return False
             elif previous == "submitted" and to_state == "submit_unknown":
                 if not is_run_74_outreach_truth_correction(
-                    str(application["id"]), payload
+                    connection,
+                    str(application["id"]),
+                    event,
                 ):
                     return False
             else:
