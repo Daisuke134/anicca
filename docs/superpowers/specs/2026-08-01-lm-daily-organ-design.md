@@ -196,6 +196,24 @@ daily journey を完成させ、友人・家族を含む利用者へ通常どお
   現 `externalAttendees()` / `notify.js` はCalendar attendeeだけを読み、organizerを除外する。Gmail・Contacts・
   Webの人物探索は宛先解決に未接続。したがって2cと#5はこのまま完成扱いにしない。
 
+**2026-08-08 の live 実測（08-02 の行と矛盾したらこちらが勝つ。すべてこの日に自分で叩いた値）**:
+
+| 観測 | 実測値 | 取り方 |
+|---|---|---|
+| 本番 build | `https://life-call-production.up.railway.app/health` → 200 `{"ok":true,"service":"life-call","build":"lm2a-webhook-retry-v1"}` = commit `c6ce45fdb`（08-02） | curl |
+| `origin/main` HEAD | `c849fecda`（08-06、connector 系）。daily 差分ではない | git |
+| 出発連投 branch | `origin/feature/lm-departure-nudge` `923a412fd` は **main の祖先ではない**（`git merge-base --is-ancestor` → NO）= 2c は未 merge・未 deploy | git |
+| QR 導線 | `aniccaai.com/life-manager` → 200、body に `LifeManagerBotbot?start=lp`。`/start` → `onboardLink()` → `aniccaai.com/lm?tg=<chatId>` | curl + `lib/telegram.js:123-126` |
+| Telegram | webhook mode、`last_error_date: null`、`@LifeManagerBotbot`。`telegram_chat_id` で multi-tenant 解決 | getWebhookInfo / getMe |
+| 利用者 | `lm_users` = **3行**（すべて 06-18〜06-25 の検証行）= 他人が登録を完走した実績は**まだ0** | PostgREST `Content-Range: 0-2/3` |
+| local 依存 | DAILY 実行経路（`server.js` / `scheduler.js` / `lib/*`）に `/Users/operator` · `~/.openclaw` · `launchctl` · `osascript` の参照 **0**。`~/Library/LaunchAgents` の `life-manager-*` は Dais 個人の earn / connector job で、新規 user の daily 経路には乗らない | grep + plist 実物 |
+
+**この実測から出る結論**:
+
+- ★cloud-only は「設計目標」ではなく**ほぼ現状**★。Railway プロセス内 60秒 tick で完結し、Mac が落ちても他人の1日は回る。残るのは**停止させて7 cycle 数える実 receipt**だけ（下の #7）。
+- ★配布を止めているのは cloud 移行ではなく、#5（無断送信）・#2c 未 deploy（電話 OFF の人に出発 push が1通も行かない）・監視不在の3点★。
+- ★親 spec 側（`2026-07-19-anicca-one-repo-consolidation-spec.md`）に daily の残作業を書き足さない★。2026-08-08 に PR #1392 が親 spec へ §9.5.1 / §9.8.1 / 8j / 8k / 8l を足そうとしたが、内容は本 spec の §5.3.1 / §3.0.1 と重複していた。**daily の正本はこのファイル1つ**。親 spec に残すのは portfolio 順序（§0.4.6）だけとし、PR #1392 は cloud-only(#7) と監視(#8) をここへ移した上で閉じる。
+
 ### 3.0.1 hard-code禁止契約（2026-08-02追加）
 
 **禁止するもの**:
@@ -256,7 +274,10 @@ https://developers.google.com/workspace/gmail/api/reference/rest/v1/users.messag
 6. #3 家を出た検知と、位置なし縮退 UX を完成する。
 7. #4 乗換ステップを完成し、実予定で地図アプリを開かず到着する。
 8. #6 電話なし・位置なし・Gmail/Contactsなしを含む実user E2Eと、全failure UXを通す。
-9. 友人・家族へ通常のlaunch済み製品として案内し、実利用feedbackを回収して継続改善する。
+9. #7 Mac Mini を停止したまま7 cycle 回し、cloud-only を receipt で閉じる（2026-08-08 追加）。
+10. #8 死活監視を cloud 側に置き、意図的に落として5分以内の実TG警告を受け取る（2026-08-08 追加）。
+11. #9 登録契約を §5.1 の必須項目へ戻す（名前・言語・自宅の欠落、電話の必須化、英語固定を直す。2026-08-08 追加）。
+12. 友人・家族へ通常のlaunch済み製品として案内し、実利用feedbackを回収して継続改善する。
 
 ★ **この表の「DONE」は "branch に入った" という意味であって "本番で効いている" ではない。両者を混同すると、
 2026-08-01 16:56 の実測（下の #0）と同じ嘘を繰り返す。** ★
@@ -279,6 +300,9 @@ https://developers.google.com/workspace/gmail/api/reference/rest/v1/users.messag
 | **4** | 乗換ステップ + 取得できる出口番号 | **これが無いと地図アプリを消せない** = 商品の主張が嘘になる | 実イベント1件で徒歩・路線・行先・乗換・乗降時刻・到着ETAを1通で受信し、地図アプリを開かず到着。番線/出口は実dataがある時だけ表示し、推測しない |
 | **5** | ★ 自動送信を廃止し、動的recipient resolver + 宛先・本文を見せる1タップ承認へ ★ | 現コードは自動送信し、Calendar attendeeしか見ずorganizerを落とす。Gmail/Contacts/Web evidenceを使わず、相手も遅れている・連絡済み・私的contextがある場合に誤送信する | Calendar organizer/attendees → 接続Gmail → 許可済みContacts → 公開Web → 必要なら本人選択で実在recipientを解決。氏名/email/source evidenceと本文全文を表示し `[送る][送らない]`。押すまで0、送るexactly-once + receipt、送らない永久終了。推測email禁止 |
 | **6** | 電話なし・位置なしでもdaily coreが動く（両方任意、推奨機能） | 任意permissionを必須にすると通常利用できず、逆にpermissionなしで現在地を知るふりをすると嘘になる | 実userで4 matrix（位置×電話）をE2E。全員に連投・予定経路・承認が届く。位置ONだけ出発自動検知/現在地ETA、電話ONだけ追加架電。留守電即切断。失敗時は沈黙せずTelegramで説明 |
+| **7** | ★ Mac Mini を停止したまま7 cycle 回し、cloud-only を receipt で閉じる ★（2026-08-08 追加。旧 PR #1392 の 8k を移設） | 「Dais の Mac でだけ動く」機能が daily に混ざったまま配ると、他人の1日が他人の電源に依存する。user に要求してよいのは **Telegram と QR 1枚だけ**で、install・端末・鍵・ローカル環境を要求した瞬間この製品は配れない | Mac 停止状態で7 cycle: 全 user の travel autofill / 出発連投 / 遅刻承認 / panel が無傷。DAILY 実行経路の local 参照 grep 0 hit（2026-08-08 時点で既に 0、停止 receipt だけが未取得）。local 一式は**別 deployment の選択肢**として同一 commit SHA で起動できる |
+| **8** | ★ 死活監視を cloud 側に置く ★（2026-08-08 追加。旧 PR #1392 の 8l を移設） | 落ちたことに気付けないまま他人の1日を預かる状態になる。今は webhook `last_error` も scheduler tick の停止も、誰も見ていない | webhook `last_error` / `/health` / scheduler tick の3点を **cloud から**周期監視し、意図的に落として **5分以内に実 TG 警告**が届く。`pending_update_count` 閾値超過でも同様。監視経路の local 依存 grep 0 hit |
+| **9** | ★ 登録契約を §5.1 の必須項目へ戻す ★（2026-08-08 実測で発覚） | 実装の登録は Calendar → **電話番号（必須）** → Stripe → Gmail(任意) で、しかも全文が英語。§5.1 の必須は **名前・言語・自宅・Calendar** で電話は任意 = 契約が逆転している。自宅が無ければ「自宅からの出発時刻」を名乗れず、言語が無ければ日本語の user に英語で話しかける | `/start` 直後に名前・言語・自宅を chat 内で取得し、`lm_users` に永続化。電話は任意（skip 可）へ戻す。言語設定に応じて登録文面が切り替わる。実 user 1人で登録完走の receipt |
 
 **運用規則（今回の教訓）**: ★試験中に本番へ env を設定しない★ — Railway では変数設定が再デプロイを誘発し、
 発火窓を破壊する。試験の前後30分は本番の設定変更を行わない。
@@ -645,7 +669,7 @@ daily が閉じたら、同じ「チャットで完結・外部actionの承認�
 |---:|---|---|
 | 1 | #1（1a/1b/1c）+ #2 + #3 | 実予定で呼び出しが鳴り、出たかが記録され、出発が検知される。**逃した時は自分から言う** |
 | 2 | #4 | ★ Dais が Google Maps を消す ★ = daily の合格判定。他の指標は見ない |
-| 3 | #5 + #6 | 他人に渡しても事故らない（無断送信0・番号なしでも全部届く） |
+| 3 | #5 + #6 + #7 + #8 + #9 | 他人に渡しても事故らない（無断送信0・番号なしでも全部届く・Mac が落ちても回る・落ちたら5分で気付く・登録が §5.1 の契約どおり） |
 | 4 | 友人・家族へ通常の製品として案内する | beta/testerと呼ばない。見るのは1つ:「地図アプリを開いたか」。開いたなら理由を聞き、そのjourney gapを直す |
 | 5 | promotionを拡大 | 利用receiptとfeedbackを根拠に案内先を増やす。売り文句は「乗換案内アプリの代わり」ではなく **「もう調べなくていい」** |
 
