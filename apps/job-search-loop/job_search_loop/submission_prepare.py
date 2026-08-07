@@ -18,7 +18,10 @@ def _sha256(path: Path) -> str:
 def prepare_submission(
     *,
     ledger_path: Path,
-    application_id: str,
+    application_id: str | None,
+    company: str | None = None,
+    title: str | None = None,
+    official_url: str | None = None,
     japan_day: str,
     portfolio_bucket: str,
     resume_path: Path,
@@ -41,22 +44,49 @@ def prepare_submission(
     answers = json.loads(answers_path.read_text(encoding="utf-8"))
     if not isinstance(answers, list):
         raise ValueError("answers must be an array")
-    payload_hash = hashlib.sha256(
-        json.dumps(
-            {
-                "application_id": application_id,
-                "resume_sha256": _sha256(resume_path),
-                "snapshot_sha256": _sha256(snapshot_path),
-                "fill_receipt_sha256": _sha256(fill_receipt_path),
-                "answers": answers,
-            },
-            ensure_ascii=False,
-            sort_keys=True,
-            separators=(",", ":"),
-        ).encode("utf-8")
-    ).hexdigest()
     ledger = Ledger(Path(ledger_path))
     try:
+        if application_id is None:
+            if not all(str(value or "").strip() for value in (company, title, official_url)):
+                raise ValueError(
+                    "company, title, and official URL are required when application ID is absent"
+                )
+            application_id = ledger.add_application(
+                str(company), str(title), str(official_url)
+            )
+            source_sha256 = hashlib.sha256(str(official_url).encode("utf-8")).hexdigest()
+            ledger.register_application_route(
+                application_id,
+                route_kind="canonical_ats",
+                endpoint=str(official_url),
+                ordinal=1,
+                source_url=str(official_url),
+                source_sha256=source_sha256,
+                recipient_acceptance="not_applicable",
+            )
+        state = ledger.current_state(application_id)
+        if state == "discovered":
+            ledger.transition(application_id, "qualified")
+            state = "qualified"
+        if state == "qualified":
+            ledger.transition(application_id, "materials_ready")
+            state = "materials_ready"
+        if state != "materials_ready":
+            raise RuntimeError(f"application state is not claimable: {state}")
+        payload_hash = hashlib.sha256(
+            json.dumps(
+                {
+                    "application_id": application_id,
+                    "resume_sha256": _sha256(resume_path),
+                    "snapshot_sha256": _sha256(snapshot_path),
+                    "fill_receipt_sha256": _sha256(fill_receipt_path),
+                    "answers": answers,
+                },
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        ).hexdigest()
         intent = ledger.claim_submission(
             application_id,
             japan_day,
@@ -96,7 +126,10 @@ def prepare_submission(
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--ledger", required=True, type=Path)
-    parser.add_argument("--application-id", required=True)
+    parser.add_argument("--application-id")
+    parser.add_argument("--company")
+    parser.add_argument("--title")
+    parser.add_argument("--official-url")
     parser.add_argument("--japan-day", required=True)
     parser.add_argument("--portfolio-bucket", required=True)
     parser.add_argument("--resume", required=True, type=Path)
@@ -109,6 +142,9 @@ def main(argv: list[str] | None = None) -> int:
         result = prepare_submission(
             ledger_path=args.ledger,
             application_id=args.application_id,
+            company=args.company,
+            title=args.title,
+            official_url=args.official_url,
             japan_day=args.japan_day,
             portfolio_bucket=args.portfolio_bucket,
             resume_path=args.resume,

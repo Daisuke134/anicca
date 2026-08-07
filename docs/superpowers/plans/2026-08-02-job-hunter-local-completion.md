@@ -4521,6 +4521,15 @@ item before starting the next.
       Telegram report `8375`. OpenAI Partner Director lacked a registered Ledger
       application and private answers artifact; AI Deployment Engineer, Cyber lacked
       all required answer bindings. No click, request, or ambiguous state exists.
+    - Measured correction: `run-daily.sh` does not call the existing route
+      materializer before the model lane, so the prepare CLI can receive a valid
+      posting with no application ID. `submission_prepare` now accepts company,
+      title, and official URL, idempotently materializes the canonical Ledger
+      application and ATS route, advances only discovered/qualified state to
+      `materials_ready`, then uses the existing fenced claim/material APIs. Until
+      this task has an authoritative receipt, the resident prompt explicitly selects
+      the highest-ranked eligible non-terminal Workday role before Ashby. No test was
+      run per owner instruction.
 14. [ ] **L-49K5G1 — Route the cheap model.** Use Luna for one known-ATS
     observe/map/fill/verify pass with no Submit authority.
 15. [ ] **L-49K5G2 — Gate escalation.** Give Terra the same fenced intent only after
