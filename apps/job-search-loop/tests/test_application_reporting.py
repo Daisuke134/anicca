@@ -11,6 +11,46 @@ from job_search_loop.ledger import Ledger
 
 
 class ApplicationReportingTests(unittest.TestCase):
+    def test_outreach_report_is_explicit_and_includes_full_sent_content(self):
+        reporting = importlib.import_module("job_search_loop.application_reporting")
+        calls = []
+        report = {
+            "application_id": "application-outreach-1",
+            "company": "Example",
+            "title": "AI Engineer",
+            "canonical_url": "https://jobs.example/1",
+            "recipient": "talent@example.test",
+            "subject": "Application — AI Engineer",
+            "route_kind": "recruiting_outreach",
+            "recipient_acceptance": "outreach_only",
+            "provider_id": "gmail:outreach-1",
+            "message_sha256": "a" * 64,
+            "resume_sha256": "b" * 64,
+            "message_body": "Dear Hiring Team,\n\nThis is the complete sent message.",
+            "resume_path": "/private/resume.pdf",
+        }
+
+        result = reporting.deliver_outreach_dossiers(
+            ledger_path=Path("unused.sqlite3"),
+            outbox_path=Path("outbox.sqlite3"),
+            media_root=Path("media"),
+            report_reader=lambda _: [report],
+            sender=lambda **kwargs: calls.append(kwargs)
+            or {"status": "sent", "message_id": "904"},
+        )
+
+        self.assertEqual(result[0]["message_id"], "904")
+        self.assertEqual(len(calls), 1)
+        message = calls[0]["message"]
+        self.assertIn("Recruiting outreach — not an application", message)
+        self.assertIn("Recipient: talent@example.test", message)
+        self.assertIn("Subject: Application — AI Engineer", message)
+        self.assertIn("Route: recruiting_outreach / outreach_only", message)
+        self.assertIn("Receipt: gmail:outreach-1", message)
+        self.assertIn("This is the complete sent message.", message)
+        self.assertNotIn("Application sent", message)
+        self.assertEqual(calls[0]["document"], Path("/private/resume.pdf"))
+
     def test_submission_evidence_archive_is_deterministic_and_complete(self):
         reporting = importlib.import_module("job_search_loop.application_reporting")
         self.assertTrue(hasattr(reporting, "build_submission_evidence_archive"))

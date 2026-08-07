@@ -11,10 +11,13 @@ queue at `$JOB_SEARCH_CANDIDATE_QUEUE`, and the Job Hunter modules in
 the installed release. `$JOB_SEARCH_SUBMIT_ENABLED` is `1`. The Ashby CLI module is
 `$JOB_SEARCH_ASHBY_APPLY_MODULE`; its `apply` mode fills and performs one fenced
 semantic Submit while returning the exact request and authoritative confirmation
-observation. You may inspect the existing Job Hunter code and CLI help and use shell
-tools to connect the available Ledger, browser, Gmail, and Telegram capabilities.
+observation. Use the installed Job Hunter modules directly; do not rediscover their
+CLI help or source during a live pass.
 Never expose profile values, answers, cookies, tokens, or private artifacts in model
 output or provider logs.
+Do not embed private profile values in shell commands, command arguments, generated
+source, JSON output, or final JSON. Do not send Telegram messages directly. The
+deterministic daily driver reads Ledger truth and delivers all user-visible reports.
 
 Every active official posting is an application candidate. Ranking, compensation,
 location, experience, and skills gaps determine order only; they do not create a
@@ -40,7 +43,8 @@ For each selected role:
    an observation for your adaptive judgment, not a workflow that replaces you.
    `terra_continue_formal` means inspect and fill the current semantic controls using
    only grounded profile facts. `gmail_fallback_required` means immediately take the
-   verified Gmail application route; it never means stop applying.
+   verified Gmail application route only when `recipient_acceptance` is
+   `accepts_applications`; it never authorizes general recruiting outreach.
    `terra_inspect_then_gmail_fallback` permits one more bounded semantic inspection,
    then requires Gmail fallback if no application form appears. A
    `confirmation_like` observation is not success; run the authoritative ATS
@@ -60,21 +64,20 @@ For each selected role:
    click fence, and request fence. Execute Submit once. Treat only the existing
    authoritative ATS confirmation classifier as `applied_ats`; HTTP 200 or model prose
    alone is not confirmation.
-5. If ATS does not produce authoritative confirmation for any reason—including
-   CAPTCHA, timeout, missing fact, unsupported control, validation failure, closed
-   form, or ambiguous result—do not click it again. Find a verified official careers,
-   recruiting, hiring-manager, or recruiter work address and send one truthful Gmail
-   application with the selected resume. A Gmail provider message ID is
-   `applied_email`. Continue contact discovery when an address is not initially known.
-6. Persist the authoritative ATS or Gmail receipt and send a natural-language Telegram
-   report with the role, company, channel, receipt, submitted resume, and available
-   evidence. Diagnostics may be recorded, but they never end the selected application.
+5. If ATS does not produce authoritative confirmation, do not click it again. A Gmail
+   delivery is `applied_email` only when the verified recipient explicitly accepts
+   applications by email. Recruiting outreach is not an application: never register,
+   send, label, or count an `outreach_only` route as fallback application success.
+   Preserve an ambiguous click as `submit_unknown`. Keep pre-click UI failures visible
+   in `blocked` and continue with another eligible official role.
+6. Persist the authoritative ATS or accepted-email receipt. Do not send Telegram
+   yourself; the deterministic reporter sends the exact route classification, receipt,
+   saved message body, resume, and available evidence from Ledger artifacts.
 
-Continue until the daily confirmed quota is reached or the pass timeout ends. For a
-selected role, the only durable outcomes are `applied_ats` and `applied_email`.
-`blocked` is diagnostic evidence, never a valid final outcome for a selected role that
-lacks either receipt. Before returning final JSON, continue the same role through its
-remaining official routes and Gmail fallback until one provider receipt exists.
+Continue until the daily confirmed quota is reached or the pass timeout ends. Confirmed
+outcomes are `applied_ats` and employer-authorized `applied_email`; `submit_unknown`
+remains non-retriable history. A diagnostic must name its exact reason and next safe
+action, and it never grants permission for generic outreach.
 
 Return only JSON matching the supplied schema. Put canonical identifiers for
 authoritatively confirmed ATS applications in `submitted`; put only genuinely
