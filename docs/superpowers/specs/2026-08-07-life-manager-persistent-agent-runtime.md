@@ -222,13 +222,22 @@ Only the first unchecked item is active.
      contained no sentinel value in the event stream. No real secret value was read,
      printed, moved, or rewritten.
 5. [ ] **PERSIST-05 — Job Hunter canary**, closed in this fixed internal order:
-   0. give the resident thread Job Hunter capability parity with the primary Codex
+   0. [x] give the resident thread Job Hunter capability parity with the primary Codex
       session: load the same applicable skill roots and expose browser, official ATS
       CLI, Ledger, profile, Gmail, Telegram, Calendar, shell, filesystem, and network
       capabilities with no interactive approval stop. Tool availability, permission,
       and credential exposure are separate controls: tools resolve credentials from
       existing private stores internally; raw tokens, passwords, and cookies never
       enter thread input, argv, event history, or general shell inheritance;
+      - Receipt: official generated schema fixed Full Access to
+        `sandbox=danger-full-access` with `approvalPolicy=never`; the adapter exposes
+        it only through the explicit `job-hunter` profile while keeping probes
+        read-only and retaining the core-only secret-filtered environment. Focused
+        tests passed 5/5. A no-submit Luna canary thread
+        `019fdab6-5058-74e2-a3b0-88548d2078fc` completed 76 events and returned
+        `CAPABILITY_PARITY_OK` after verifying the shared Context7 skill, official
+        Ashby CLI source, `crwl`, outbound HTTPS to the public Ashby board, and `/tmp`
+        access. It did not open a form, fill a field, or click Submit.
    1. canonicalize candidate URLs and Ledger aliases; exclude every terminal,
       `submitted`, `rejected`, and `submit_unknown` application;
    2. inspect one genuinely new official Ashby form and generate its answers artifact
