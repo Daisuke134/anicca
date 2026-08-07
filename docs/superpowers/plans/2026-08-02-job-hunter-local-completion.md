@@ -23,7 +23,7 @@ owner-authorized OpenAI Ashby success is `dais_manual`, not resident proof. Ther
 zero verified interviews and zero offers. `L-49K2C1` is complete:
 its isolated CloakBrowser E2E verified changed field layouts across fill, select,
 check, and upload with zero Submit controls/actions and preserved all baseline pages.
-The active immutable release is `f9047684fbdaea8379037381a56343744bd240cd`.
+The active immutable release is `b925ebc1de62984d3d2233fa5e19ce3ad5d7cbd7`.
 The complete Job Hunter suite passes 547/547. Run 85 proves truthful outreach
 reporting and clean provider logs but does not prove a new resident ATS submission.
 
@@ -4318,6 +4318,10 @@ item before starting the next.
      alias rule exposed the valid counterexample of two distinct postings with the
      same company/title; the evidence-only boundary preserves those separately.
      Focused tests pass 62/62 and the full suite passes 548/548.
+     Commit `b925ebc1de62984d3d2233fa5e19ce3ad5d7cbd7` is pushed and active as the
+     immutable resident release; the previous release is
+     `f9047684fbdaea8379037381a56343744bd240cd`. No resident loop was started and no
+     application form, Submit control, or email route was touched in this task.
 3. [ ] **L-49K5D3 — Apply to OpenAI one role at a time.** Start with Tokyo roles in
    current actionable order: Solutions Engineer, Pre-Sales, then Technical Deployment
    Lead. Never reopen Builder (`rejected`), Deployment Engineer (`submit_unknown`),
