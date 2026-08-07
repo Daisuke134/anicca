@@ -5788,7 +5788,18 @@ Connpass workflow/discovery/minimal runner/production focused suiteは21/21 GREE
 Item 10B/14は未完。次の一件は同じofficial foreground wakeを再実行し、Connpass discovery継続と実candidate/action/readbackを観測すること。
 scheduleはunloadedを維持する。
 
-### Active remaining TODO SSOT（進捗209。これ以外の残TODO一覧は履歴）
+### O1B-25進捗210（Connpass canonical修復後のlive再検証）
+
+commit `84bb86ee5`でsame-event canonical redirect修復後、schedule unloadedのofficial foreground wakeを再実行した。
+Calendar read 2,978ms、Luma discovery 35,849msはsuccess。Connpass discoveryは1,055msでfailedし、
+`completed_no_effect / provider_discovery_failed`をTelegram positive ID `8241`で報告した。Submit、Calendar write、PNG、bundleは0。
+
+canonical host差だけが根因という仮説はliveで反証された。4つのwrapped browser stage codeにも該当しないため、残るfailure locationは
+calendar rows shape/size validation、calendar binding validation、またはdetail event-ref identity mismatchのparent validationに限定された。
+Item 10B/14は未完。次の一件はこの3validationを別safe codeへ分け、再wakeで一つを特定してそのactionだけを修復すること。
+scheduleはunloadedを維持する。
+
+### Active remaining TODO SSOT（進捗210。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
