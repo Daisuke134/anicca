@@ -5669,7 +5669,21 @@ coverage/date inventory/provider cursor、`buildConnpassEventApplicationJob`、`
 
 Item 10B/14は未完。次の一件はこのminimal Connpass workflow contractをTDD REDで固定すること。scheduleはunloadedを維持する。
 
-### Active remaining TODO SSOT（進捗200。これ以外の残TODO一覧は履歴）
+### O1B-25進捗201（Item 14前倒し / minimal Connpass workflow core）
+
+TDD REDで`connector-connpass-workflow.js` module不存在を確認し、`createConnpassScriptFirstWorkflow`を実装した。
+workflowのproduction-facing APIは`discoverCandidates / runDirectAction / readProviderState`の3操作だけで、Lumaと同じminimal core contractへ揃えた。
+
+discoveryはConnpass event refとgroup subdomainを保持したcanonical URL、開始/終了時刻をparent validationし、Asia/Tokyoの今日00:00以上、
+14日後00:00未満、registration available、price free/0、Google Calendar timed interval非衝突だけをprovider orderで返す。
+direct actionは既存`submitConnpassOnPage`、readbackは既存`readConnpassRegistrationStateOnPage`を同じsupplied owned pageで呼ぶ。
+`registered/pending`以外を成功にせず、target/session create、page close、cursor、coverage、ranking、LLM callは0。
+
+Connpass workflow/provider、Luma workflow、minimal runnerのfocused suiteは19/19 GREEN。実browser、Submit、Calendar write、PNG、Telegram作用は0。
+Item 10B/14は未完。次の一件は`readCalendarBindings`と`readEventDetail`を同じpageで14日分だけ巡回するdefault Connpass discoveryをTDDで実装し、
+price/open stateを公開DOMからfail-closedで正規化すること。scheduleはunloadedを維持する。
+
+### Active remaining TODO SSOT（進捗201。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
