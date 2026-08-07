@@ -4543,6 +4543,17 @@ item before starting the next.
       is an account-creation/resume path for this same canonical Workday application;
       it MUST NOT create a second application or click Submit without the existing
       Ledger intent and browser fence.
+    - Correction after comparing the live trace: this was not evidence of a lost
+      browser login. The resident deliberately chose Workday's visible `アカウントの作成`
+      branch and then incorrectly treated tenant-required account creation as an
+      unauthorized external action. Browser ownership was healthy and released at
+      fence `158`; no competing actor was observed. The temporary Workday-before-Ashby
+      ordering was itself counterproductive and is removed. Selection returns to the
+      highest-ranked eligible role across ATS families, so the already-proven Ashby
+      recipe can submit while Workday credential creation is repaired independently.
+      Resident memory MUST move from disposable `codex exec --ephemeral` to the
+      persistent per-application thread in the later runtime task; until then, known
+      ATS recipes and prior answers are loaded directly rather than rediscovered.
 14. [ ] **L-49K5G1 — Route the cheap model.** Use Luna for one known-ATS
     observe/map/fill/verify pass with no Submit authority.
 15. [ ] **L-49K5G2 — Gate escalation.** Give Terra the same fenced intent only after
