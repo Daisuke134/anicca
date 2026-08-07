@@ -125,7 +125,11 @@ test("provider discovery failure continues and still reports the wake", async ()
   const state = fixture({
     async discoverCandidates(provider) {
       state.calls.push(["discover", provider]);
-      if (provider === "luma") throw new Error("provider changed");
+      if (provider === "luma") {
+        const error = new Error("provider changed");
+        error.code = "CONNPASS_CALENDAR_NAVIGATION_FAILED";
+        throw error;
+      }
       return [];
     },
   });
@@ -139,7 +143,7 @@ test("provider discovery failure continues and still reports the wake", async ()
     "luma", "connpass",
   ]);
   assert.deepEqual(state.calls.find(([name]) => name === "report").slice(1), [
-    "completed_no_effect", "provider_discovery_failed",
+    "completed_no_effect", "connpass_calendar_navigation_failed",
   ]);
   assert.equal(state.calls.filter(([name]) => name === "close").length, 1);
   assert.equal(result.telegram_provider_id, "9001");
