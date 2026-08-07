@@ -202,3 +202,39 @@ test("Connpass distinguishes binding validation from candidate validation", asyn
     (error) => error.code === "CONNPASS_CANDIDATE_VALIDATION_FAILED",
   );
 });
+
+test("Connpass classifies remaining parent discovery contracts without leaking errors", async () => {
+  const common = {
+    now: () => new Date("2026-08-07T03:00:00.000Z"),
+    async submitOnPage() { return { status: "registered" }; },
+    async readStateOnPage() { return { state: "registered" }; },
+  };
+  const rowsWorkflow = createConnpassScriptFirstWorkflow({
+    ...common,
+    async readCalendarBindings() { return Array.from({ length: 501 }, () => ({})); },
+    async readEventDetail() { return {}; },
+  });
+  await assert.rejects(
+    rowsWorkflow.discoverCandidates({ page: { async goto() {} }, calendar: [] }),
+    (error) => error.code === "CONNPASS_CALENDAR_ROWS_CONTRACT_FAILED",
+  );
+
+  const resultWorkflow = createConnpassScriptFirstWorkflow({
+    ...common,
+    async discoverOnPage() { return {}; },
+  });
+  await assert.rejects(
+    resultWorkflow.discoverCandidates({ page: {}, calendar: [] }),
+    (error) => error.code === "CONNPASS_DISCOVERY_RESULT_CONTRACT_FAILED",
+  );
+
+  const calendarWorkflow = createConnpassScriptFirstWorkflow({
+    ...common,
+    async discoverOnPage() { return [event(301)]; },
+    async isCalendarFree() { throw new Error("private calendar error"); },
+  });
+  await assert.rejects(
+    calendarWorkflow.discoverCandidates({ page: {}, calendar: [] }),
+    (error) => error.code === "CONNPASS_CALENDAR_CONFLICT_CHECK_FAILED",
+  );
+});

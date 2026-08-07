@@ -5842,7 +5842,19 @@ Connpass workflow/minimal runner/production focused suiteは22/22 GREEN。実bro
 Item 10B/14は未完。次の一件はofficial foreground wakeでgeneric failureがparent candidate contractかを確認すること。
 scheduleはunloadedを維持する。
 
-### Active remaining TODO SSOT（進捗214。これ以外の残TODO一覧は履歴）
+### O1B-25進捗215（Connpass remaining contract diagnosis complete）
+
+parent candidate contract診断後のlive wakeも865msでgeneric failure、Telegram positive ID `8254`、Submit 0となり、その仮説も反証された。
+全throw pathを行単位で再監査し、未分類runtime contractはcalendar rows shape/size、discovery result shape/size、Calendar conflict checkerに限定した。
+
+3 fixtureがgenericになるRED後、それぞれ`CONNPASS_CALENDAR_ROWS_CONTRACT_FAILED`、
+`CONNPASS_DISCOVERY_RESULT_CONTRACT_FAILED`、`CONNPASS_CALENDAR_CONFLICT_CHECK_FAILED`へ分離し、runner allowlistへ追加した。
+条件は緩めず、raw values/errorは保存・送信しない。Connpass workflow/minimal runner/production focused suiteは23/23 GREEN。
+
+Item 10B/14は未完。次の一件はofficial foreground wakeでexact safe stageを得て、その一箇所だけを修復すること。
+scheduleはunloadedを維持する。
+
+### Active remaining TODO SSOT（進捗215。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
