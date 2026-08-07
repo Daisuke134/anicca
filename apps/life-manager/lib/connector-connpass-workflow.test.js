@@ -66,3 +66,46 @@ test("Connpass direct action and parent readback use the supplied owned page", a
   assert.deepEqual(await workflow.readProviderState({ page, candidate }), { status: "pending" });
   assert.equal(calls.every((entry) => entry[1] === page), true);
 });
+
+test("Connpass default discovery reuses one page across two calendar months and event details", async () => {
+  const navigations = [];
+  const page = {
+    current: "",
+    async goto(url) { this.current = url; navigations.push(url); },
+  };
+  const workflow = createConnpassScriptFirstWorkflow({
+    now: () => new Date("2026-08-27T03:00:00.000Z"),
+    async readCalendarBindings(suppliedPage) {
+      assert.equal(suppliedPage, page);
+      return suppliedPage.current.includes("ym=202608") ? [{
+        event_ref: "connpass-event://event/201",
+        canonical_url: "https://tokyo-builders.connpass.com/event/201/",
+        calendar_date: "2026-08-30",
+      }] : [{
+        event_ref: "connpass-event://event/202",
+        canonical_url: "https://tokyo-builders.connpass.com/event/202/",
+        calendar_date: "2026-09-03",
+      }];
+    },
+    async readEventDetail(suppliedPage) {
+      assert.equal(suppliedPage, page);
+      const id = suppliedPage.current.includes("/201/") ? 201 : 202;
+      const date = id === 201 ? "2026-08-30" : "2026-09-03";
+      return {
+        ...event(id, { starts_at: `${date}T10:00:00.000Z`, ends_at: `${date}T11:00:00.000Z` }),
+        controls: ["このイベントに申し込む"], offers: [{ price: "0", priceCurrency: "JPY" }],
+        venue_name: "Public venue", address: "Tokyo",
+      };
+    },
+    async submitOnPage() { return { status: "registered" }; },
+    async readStateOnPage() { return { state: "registered" }; },
+  });
+
+  const result = await workflow.discoverCandidates({ page, calendar: [] });
+
+  assert.deepEqual(result.map((candidate) => candidate.event_ref), [
+    "connpass-event://event/201", "connpass-event://event/202",
+  ]);
+  assert.equal(navigations.filter((url) => url.includes("/calendar/")).length, 2);
+  assert.equal(navigations.filter((url) => url.includes("/event/")).length, 2);
+});

@@ -5708,7 +5708,20 @@ readerはJSON-LD Eventのoffersからprice/priceCurrencyだけ、visible control
 Item 10B/14は未完。次の一件は同じowned pageで必要なcalendar monthを最大2回、各event detailを順次`goto`するdefault discoveryをTDDで接続し、
 candidateごとのtarget create/close 0を固定すること。scheduleはunloadedを維持する。
 
-### Active remaining TODO SSOT（進捗203。これ以外の残TODO一覧は履歴）
+### O1B-25進捗204（Item 14前倒し / one-page 14日Connpass default discovery）
+
+月跨ぎfixtureでdefault discoveryが存在せずworkflow validationに失敗するREDを確認後、同じowned pageだけを使うConnpass discoveryを実装した。
+Asia/Tokyoの今日を含む14 local datesからcalendar monthを一つまたは最大二つ生成し、各month URLへ同じpageでnavigateする。
+14日内のbindingだけをevent refで重複排除した後、同じpageで各canonical detailへ順次navigateし、進捗202/203のfail-closed normalizationを適用する。
+
+month/pageごと、candidateごとのbrowser session/target create/closeは0。旧date loop、coverage、provider cursor、API handoffは参照しない。
+月跨ぎcontractはcalendar navigation 2、detail navigation 2、supplied page identity一つを確認した。Connpass workflow/discovery/providerとminimal runnerの
+focused suiteは15/15 GREEN。実browser、Submit、Calendar write、PNG、Telegram作用は0。
+
+Item 10B/14は未完。次の一件はofficial production factory/routerへConnpass workflowを接続し、provider-specific cache/readback/direct/fallbackを
+同じpageへroutingするTDD slice。scheduleはunloadedを維持する。
+
+### Active remaining TODO SSOT（進捗204。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 

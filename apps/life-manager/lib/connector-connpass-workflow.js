@@ -4,6 +4,11 @@ const {
   readConnpassRegistrationStateOnPage,
   submitConnpassOnPage,
 } = require("./connpass-browser-provider.js");
+const {
+  normalizeConnpassEventDetail,
+  readCalendarBindings,
+  readEventDetail,
+} = require("./connpass-browser-discovery.js");
 const { zonedSlotInstant } = require("./honne-ja-shadow-schedule.js");
 
 const EVENT_REF = /^connpass-event:\/\/event\/[1-9][0-9]*$/;
@@ -42,6 +47,57 @@ function candidateWindow(now) {
   });
 }
 
+function discoveryDates(now) {
+  const observed = now();
+  if (!(observed instanceof Date) || !Number.isFinite(observed.getTime())) invalid();
+  const parts = Object.fromEntries(new Intl.DateTimeFormat("en-CA", {
+    timeZone: TIME_ZONE, year: "numeric", month: "2-digit", day: "2-digit",
+  }).formatToParts(observed).filter((part) => part.type !== "literal")
+    .map((part) => [part.type, Number(part.value)]));
+  const dates = [];
+  for (let offset = 0; offset < 14; offset += 1) {
+    const date = new Date(Date.UTC(parts.year, parts.month - 1, parts.day + offset));
+    dates.push(date.toISOString().slice(0, 10));
+  }
+  return Object.freeze(dates);
+}
+
+function createDefaultDiscovery({ now, readBindings, readDetail }) {
+  return async ({ page }) => {
+    if (!page || typeof page.goto !== "function") invalid();
+    const dates = discoveryDates(now);
+    const allowedDates = new Set(dates);
+    const months = [...new Set(dates.map((date) => date.slice(0, 7).replace("-", "")))];
+    if (months.length < 1 || months.length > 2) invalid();
+    const bindings = [];
+    const seen = new Set();
+    for (const month of months) {
+      await page.goto(`https://connpass.com/calendar/?ym=${month}&prefectures=13`, {
+        waitUntil: "domcontentloaded", timeout: 30_000,
+      });
+      const rows = await readBindings(page);
+      if (!Array.isArray(rows) || rows.length > 500) invalid();
+      for (const row of rows) {
+        const eventRef = String(row && row.event_ref || "");
+        const url = String(row && row.canonical_url || "");
+        const date = String(row && row.calendar_date || "");
+        if (!allowedDates.has(date) || seen.has(eventRef)) continue;
+        if (!EVENT_REF.test(eventRef) || !EVENT_URL.test(url)) invalid();
+        seen.add(eventRef);
+        bindings.push(Object.freeze({ event_ref: eventRef, canonical_url: url }));
+      }
+    }
+    const result = [];
+    for (const binding of bindings) {
+      await page.goto(binding.canonical_url, { waitUntil: "domcontentloaded", timeout: 30_000 });
+      const detail = normalizeConnpassEventDetail(await readDetail(page));
+      if (detail.event_ref !== binding.event_ref || detail.canonical_url !== binding.canonical_url) invalid();
+      result.push(detail);
+    }
+    return Object.freeze(result);
+  };
+}
+
 function defaultCalendarFree(candidate, calendar) {
   const intervals = Array.isArray(calendar) ? calendar
     : (calendar && Array.isArray(calendar.busy_intervals) ? calendar.busy_intervals : []);
@@ -60,11 +116,13 @@ function normalizedState(value) {
 
 function createConnpassScriptFirstWorkflow(options = {}) {
   const now = options.now || (() => new Date());
-  const discoverOnPage = options.discoverOnPage;
+  const readBindings = options.readCalendarBindings || readCalendarBindings;
+  const readDetail = options.readEventDetail || readEventDetail;
+  const discoverOnPage = options.discoverOnPage || createDefaultDiscovery({ now, readBindings, readDetail });
   const isCalendarFree = options.isCalendarFree || defaultCalendarFree;
   const submitOnPage = options.submitOnPage || submitConnpassOnPage;
   const readStateOnPage = options.readStateOnPage || readConnpassRegistrationStateOnPage;
-  if ([now, discoverOnPage, isCalendarFree, submitOnPage, readStateOnPage]
+  if ([now, readBindings, readDetail, discoverOnPage, isCalendarFree, submitOnPage, readStateOnPage]
     .some((value) => typeof value !== "function")) invalid();
 
   return Object.freeze({
