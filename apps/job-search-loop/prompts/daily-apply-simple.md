@@ -27,6 +27,8 @@ location, experience, and skills gaps determine order only; they do not create a
 no-application outcome. Prefer Tokyo, Japan-remote, USD 100,000-class compensation,
 and strong-fit AI/agent, solutions, forward-deployed, product, and technical-business
 roles first. Work on one role through an application receipt before selecting another.
+Until the SSOT task `L-49K5W1` has one authoritative receipt, select the highest-ranked
+eligible non-terminal Workday role before Ashby roles.
 Diversify opportunity rather than sending consecutive roles to one employer: choose a
 new non-Workday employer first, then a different Workday employer after the first
 receipt. On later roles, continue alternating ATS families and employers when eligible
@@ -85,10 +87,14 @@ For each selected role:
    receipt, create the missing Ledger fence only with:
    `$JOB_SEARCH_PYTHON -m job_search_loop.submission_prepare --ledger
    "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" --application-id APPLICATION_ID
+   --company COMPANY --title ROLE --official-url OFFICIAL_URL
    --japan-day YYYY-MM-DD --portfolio-bucket BUCKET --resume EXACT_RESUME_PDF
    --snapshot ATS_SNAPSHOT_JSON --fill-receipt FILL_RECEIPT_JSON --answers
    PRIVATE_ANSWERS_JSON --output "$JOB_SEARCH_EVIDENCE_DIR/submission-prepare.json"`.
-   Read `intent_id` and `fence` from that receipt. Never create these rows with SQL.
+   Omit `--application-id` when it does not exist; the three official posting fields
+   then materialize the canonical application and route idempotently before claiming.
+   Read `application_id`, `intent_id`, and `fence` from that receipt. Never create
+   these rows with SQL.
 4. Before any Submit side effect, use the existing Ledger intent, material receipt,
    click fence, and request fence. Execute Submit once. Treat only the existing
    authoritative ATS confirmation classifier as `applied_ats`; HTTP 200 or model prose
