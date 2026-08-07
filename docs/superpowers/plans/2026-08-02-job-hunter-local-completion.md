@@ -23,7 +23,7 @@ owner-authorized OpenAI Ashby success is `dais_manual`, not resident proof. Ther
 zero verified interviews and zero offers. `L-49K2C1` is complete:
 its isolated CloakBrowser E2E verified changed field layouts across fill, select,
 check, and upload with zero Submit controls/actions and preserved all baseline pages.
-The active immutable release is `f8bf09032b5ce566ee584d08363d92687bcaaf6b`.
+The active immutable release is `49940572e97ef9434ceb5824b6d1c470ac280e22`.
 The complete Job Hunter suite passes 549/549. Run 85 proves truthful outreach
 reporting and clean provider logs but does not prove a new resident ATS submission.
 
@@ -4456,6 +4456,16 @@ item before starting the next.
       `CAMOFOX_CRASH_REPORT_ENABLED=false`. Both services are healthy with zero active
       tabs/sessions. No CamoFox tab was created because no measured eligible
       fingerprint rejection exists. Focused tests pass 2/2; no full suite was run.
+    - The resulting immutable release
+      `49940572e97ef9434ceb5824b6d1c470ac280e22` is active; previous is
+      `f8bf09032b5ce566ee584d08363d92687bcaaf6b`. Its deterministic archive SHA-256
+      is `92e87d89e11a1729d53537b3fec1ac00c511a388ec1ada580b6771b9132a8197`.
+      Resident run `daily-20260807-123630` was allowed to finish before activation.
+      It discovered 451 links, verified 51, and stopped before Submit: OpenAI AI
+      Success Engineer already had terminal Ledger history, while OpenAI Partner
+      Director had a fully prepared form but no durable application or submit intent.
+      `attempt-01.result.json` is `blocked`; submitted and submit_unknown are both
+      empty, and no duplicate resident was started.
 13. [ ] **L-49K5W1 — Prove one Workday submission.** Produce one real official
     Workday receipt with the exact submitted dossier and Telegram message IDs.
 14. [ ] **L-49K5G1 — Route the cheap model.** Use Luna for one known-ATS
