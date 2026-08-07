@@ -85,7 +85,9 @@ function createDefaultDiscovery({ now, readBindings, readDetail }) {
       let rows;
       try { rows = await readBindings(page); }
       catch { throw stageError("CONNPASS_CALENDAR_BINDINGS_FAILED"); }
-      if (!Array.isArray(rows) || rows.length > 500) invalid();
+      if (!Array.isArray(rows) || rows.length > 500) {
+        throw stageError("CONNPASS_CALENDAR_ROWS_CONTRACT_FAILED");
+      }
       for (const row of rows) {
         const eventRef = String(row && row.event_ref || "");
         const url = String(row && row.canonical_url || "");
@@ -145,7 +147,9 @@ function createConnpassScriptFirstWorkflow(options = {}) {
   return Object.freeze({
     async discoverCandidates({ page, calendar }) {
       const observed = await discoverOnPage({ page });
-      if (!Array.isArray(observed) || observed.length > 500) invalid();
+      if (!Array.isArray(observed) || observed.length > 500) {
+        throw stageError("CONNPASS_DISCOVERY_RESULT_CONTRACT_FAILED");
+      }
       const window = candidateWindow(now);
       const result = [];
       for (const raw of observed) {
@@ -156,7 +160,10 @@ function createConnpassScriptFirstWorkflow(options = {}) {
         if (startsAt < window.start || startsAt >= window.end) continue;
         if (candidate.registration_status !== "available") continue;
         if (candidate.ticket_price_status !== "free" || candidate.ticket_price_minor !== 0) continue;
-        if (!await isCalendarFree(candidate, calendar)) continue;
+        let calendarFree;
+        try { calendarFree = await isCalendarFree(candidate, calendar); }
+        catch { throw stageError("CONNPASS_CALENDAR_CONFLICT_CHECK_FAILED"); }
+        if (!calendarFree) continue;
         result.push(Object.freeze({ ...candidate }));
       }
       return Object.freeze(result);
