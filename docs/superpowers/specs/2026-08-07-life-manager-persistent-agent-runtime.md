@@ -186,19 +186,31 @@ Only the first unchecked item is active.
      were observed. The first protocol attempt was rejected before thread creation
      because the valid sandbox enum is `read-only`, not `readOnly`; the corrected
      request passed. No Job Hunter run, browser action, or external send occurred.
-2. [ ] **PERSIST-02 — Binding store.** Add the common thread-binding schema, atomic
-   start/resume/archive operations, active uniqueness, lease, and fence.
+2. [ ] **PERSIST-02 — Minimal work-thread registry.** Persist only the stable
+   `work_type + work_id -> thread_id` binding, generation/lineage, status, and joined
+   run/release identifiers. Delegate rollout history, resume, item paging, and archive
+   to Codex app-server. Do not create a second conversation store or reimplement
+   app-server session semantics. Keep the existing domain/browser/Submit fences as
+   the authority for external side effects.
 3. [ ] **PERSIST-03 — Thin runtime adapter.** Expose start, resume, compact, fork,
    read, archive, and event streaming without recreating app-server behavior.
 4. [ ] **PERSIST-04 — Secret boundary.** Connect credential references to macOS
    Keychain and prove no secret appears in prompts, argv, artifacts, or traces.
-5. [ ] **PERSIST-05 — Job Hunter canary.** Replace only the Job Hunter application
-   lane's `codex exec --ephemeral`; preserve Ledger, browser fence, exact Submit
-   authority, Gmail, Telegram, and immutable release contracts. Before any resident
-   kickstart, deterministically filter terminal/canonical-alias duplicates, generate
-   the private Ashby answers artifact from stored profile facts, and connect the
-   selected application through material, intent, and fence to the existing Ashby
-   CLI. The canary MUST reach `pre_submit_ready` with Submit disabled.
+5. [ ] **PERSIST-05 — Job Hunter canary**, closed in this fixed internal order:
+   1. canonicalize candidate URLs and Ledger aliases; exclude every terminal,
+      `submitted`, `rejected`, and `submit_unknown` application;
+   2. inspect one genuinely new official Ashby form and generate its answers artifact
+      deterministically from private profile facts, leaving only truly optional fields
+      blank and asking Telegram only for an unknown required personal fact;
+   3. materialize the application, grounded material, submit intent, browser fence,
+      and exact artifact hashes before browser fill;
+   4. replace only the Job Hunter application lane's `codex exec --ephemeral` with
+      app-server resume while preserving Ledger, browser fence, exact Submit authority,
+      Gmail, Telegram, and immutable release contracts; and
+   5. run the installed canary with Submit disabled. It MUST reach
+      `pre_submit_ready`, verify every required field, show zero unresolved blockers,
+      record zero Submit clicks, and emit joined application/material/intent/fence/
+      thread receipts. No resident kickstart is permitted before this proof.
 6. [ ] **PERSIST-06 — Job Hunter restart proof.** Exit between two non-side-effect
    form steps, resume the same thread/application, and prove no repeated question,
    command rediscovery, page-owner collision, or duplicate Submit.
