@@ -4517,6 +4517,10 @@ item before starting the next.
       is active with archive SHA-256
       `1b36d1b3dc2f14832a53bb32830132e097fe5b98e294f0fb74088fdeab3e42e6`;
       resident proof run `daily-20260807-132052` started as PID `95603`.
+    - Run `daily-20260807-132052` ended `blocked_preclick` with zero Submit and
+      Telegram report `8375`. OpenAI Partner Director lacked a registered Ledger
+      application and private answers artifact; AI Deployment Engineer, Cyber lacked
+      all required answer bindings. No click, request, or ambiguous state exists.
 14. [ ] **L-49K5G1 — Route the cheap model.** Use Luna for one known-ATS
     observe/map/fill/verify pass with no Submit authority.
 15. [ ] **L-49K5G2 — Gate escalation.** Give Terra the same fenced intent only after
@@ -4531,50 +4535,76 @@ item before starting the next.
 18. [ ] **L-49K5H3 — Prove full phone visibility.** For one application, Telegram
     MUST contain the role, decision, exact resume, every answer, outcome reason,
     receipt when present, and remaining quota.
-19. [ ] **L-49K5M1 — Install isolated Hermes.** Create one Job Hunter-only Hermes
+19. [ ] **L-49K5R1 — Emit durable repair cases.** Guardian converts every actionable
+    resident fault into one content-addressed case containing release SHA, run and
+    workflow IDs, actor PID, browser fence, side-effect phase, sanitized exception,
+    receipt hashes, and an exact isolated reproduction command.
+20. [ ] **L-49K5R2 — Install isolated Symphony.** Use the Apache-2.0 OpenAI Symphony
+    preview as the engineering repair orchestrator only: it polls repair issues,
+    creates one Git worktree per case, owns retry/reconciliation, and never owns the
+    live application schedule or browser Submit authority. Sources:
+    `https://github.com/openai/symphony` and
+    `https://github.com/openai/symphony/blob/main/SPEC.md`.
+21. [ ] **L-49K5R3 — Run bounded automatic repair.** A repair worker may inspect
+    traces and private receipts, reproduce the fault, and edit only Job Hunter
+    code/spec in its isolated worktree. It cannot apply, email, schedule Calendar,
+    mutate the production Ledger, or reuse a live browser fence.
+22. [ ] **L-49K5R4 — Verify with deterministic gates.** The repair case must reproduce
+    the original failure, show it absent after the patch, pass privacy and structural
+    checks, and build an immutable release. Model prose, a clean exit, or a PR alone
+    cannot approve promotion.
+23. [ ] **L-49K5R5 — Canary, promote, and resume.** Activate the candidate first in a
+    no-send browser canary, atomically promote or roll back, then have Temporal—not
+    Symphony or the repair agent—resume the original workflow exactly once from its
+    durable pre-side-effect boundary. Clicked or request-started unknowns never retry.
+24. [ ] **L-49K5R6 — Prove one zero-human repair.** Detect one real resident fault,
+    create its issue, repair it in an isolated worktree, verify it, promote the
+    immutable release, resume the interrupted run, and Telegram-deliver the complete
+    repair receipt without Codex, Claude, or Dais intervening.
+25. [ ] **L-49K5M1 — Install isolated Hermes.** Create one Job Hunter-only Hermes
     profile without changing the active launchd runtime or importing unrelated state.
-20. [ ] **L-49K5M2 — Expose read-only Job Hunter tools.** Connect profile lookup,
+26. [ ] **L-49K5M2 — Expose read-only Job Hunter tools.** Connect profile lookup,
     Ledger reads, candidate inspection, and evidence reads to Hermes; mutation and
     Submit remain disabled.
-21. [ ] **L-49K5M3 — Run one shadow cycle.** Hermes evaluates the same candidate set
+27. [ ] **L-49K5M3 — Run one shadow cycle.** Hermes evaluates the same candidate set
     as the resident, performs zero external mutations, and records a comparable
     decision artifact.
-22. [ ] **L-49K5M4 — Run one fenced live cycle.** Hermes owns one eligible intent and
+28. [ ] **L-49K5M4 — Run one fenced live cycle.** Hermes owns one eligible intent and
     calls the existing deterministic ATS, Ledger, evidence, and Telegram tools. It
     MUST NOT implement these guarantees in prompts.
-23. [ ] **L-49K5M5 — Cut over Job Hunter.** Move only the Job Hunter schedule to the
+29. [ ] **L-49K5M5 — Cut over Job Hunter.** Move only the Job Hunter schedule to the
     proven Hermes profile, disable its former executor without creating overlap, and
     prove one post-cutover hourly cycle.
-24. [ ] **L-49K5M6 — Migrate one additional loop.** Move Writer through the same
+30. [ ] **L-49K5M6 — Migrate one additional loop.** Move Writer through the same
     shadow, live, cutover sequence while Job Hunter remains healthy.
-25. [ ] **L-49K5M7 — Migrate Gig.** Move Gig through the same sequence while Job
+31. [ ] **L-49K5M7 — Migrate Gig.** Move Gig through the same sequence while Job
     Hunter and Writer remain healthy.
-26. [ ] **L-49K5M8 — Migrate remaining loops one at a time.** Each loop receives an
+32. [ ] **L-49K5M8 — Migrate remaining loops one at a time.** Each loop receives an
     isolated profile, one shadow cycle, one live cycle, one cutover, and one rollback
     point before the next loop starts.
-27. [ ] **L-53A — Ingest one real employer reply.** Bind its Gmail thread ID to the
+33. [ ] **L-53A — Ingest one real employer reply.** Bind its Gmail thread ID to the
     correct application and send the stage change to Telegram.
-28. [ ] **L-54A — Schedule one real interview.** Create a verified Calendar event
+34. [ ] **L-54A — Schedule one real interview.** Create a verified Calendar event
     from the employer thread and report its event ID to Telegram.
-29. [ ] **L-55A — Generate one interview brief.** Use the exact submitted dossier,
+35. [ ] **L-55A — Generate one interview brief.** Use the exact submitted dossier,
     company evidence, interviewer evidence when available, and meeting details.
-30. [ ] **L-56A — Capture one debrief.** Persist interview outcome, evidence, next
+36. [ ] **L-56A — Capture one debrief.** Persist interview outcome, evidence, next
     action, and funnel stage without losing the original submitted materials.
-31. [ ] **L-58A — Publish one funnel snapshot.** Report application, reply,
+37. [ ] **L-58A — Publish one funnel snapshot.** Report application, reply,
     interview, final-round, and offer counts without treating unknown as zero.
-32. [ ] **L-59A — Run one bounded improvement.** Change one strategy variable at the
+38. [ ] **L-59A — Run one bounded improvement.** Change one strategy variable at the
     weakest measured funnel stage, record its hypothesis, and retain a rollback.
-33. [ ] **L-65A — Isolate a second user.** Prove separate credentials, profile,
+39. [ ] **L-65A — Isolate a second user.** Prove separate credentials, profile,
     browser, Ledger, evidence, Telegram destination, and Hermes profile with no
     cross-user reads.
-34. [ ] **L-66A — Add the hosted durable owner.** Put Temporal outside the agent as
+40. [ ] **L-66A — Add the hosted durable owner.** Put Temporal outside the agent as
     schedule, retry, signal, cancellation, and resume authority; Hermes remains an
     isolated worker, not the multi-tenant control plane.
-35. [ ] **L-67A — Add campaign controls.** Prove pause, resume, stop, export, and
+41. [ ] **L-67A — Add campaign controls.** Prove pause, resume, stop, export, and
     delete for one isolated campaign.
-36. [ ] **L-68A — Package onboarding.** Create a reproducible private onboarding
+42. [ ] **L-68A — Package onboarding.** Create a reproducible private onboarding
     path from Telegram/profile setup to the first visible candidate decision.
-37. [ ] **L-69A — Reach and demonstrate the employment outcome.** Continue the Dais
+43. [ ] **L-69A — Reach and demonstrate the employment outcome.** Continue the Dais
     campaign through verified replies, interviews, final rounds, offer comparison,
     and one authoritative accepted offer, then generate a redacted demo from that real
     winning path.
@@ -4636,34 +4666,10 @@ item before starting the next.
   healthy simultaneously.
 - [ ] **L-66** — Freeze the Dais local product contract after real Ashby, Workday,
   Gmail, Calendar, Telegram, and interview receipts all pass.
-- [ ] **L-66A** — Define the pre-production repair-agent authority: it may inspect
-  traces and private receipts, reproduce faults in an isolated worktree, edit only
-  Job Hunter code/tests/spec, and trigger no application, email, Calendar, or other
-  external side effect while repairing.
-- [ ] **L-66B** — Convert Guardian fault classes into content-addressed repair cases
-  containing release SHA, workflow/run/activity IDs, actor PID, browser fence,
-  sanitized exception, failing receipt hashes, and exact reproduction command.
-- [ ] **L-66C** — Run Terra repair in an isolated worktree through mandatory RED
-  test, minimal patch, focused tests, complete suite, privacy scan, and immutable
-  release build. A fresh Sol verifier MUST independently inspect the repair diff and
-  evidence and attempt to falsify the claimed fix before canary activation. Terra or
-  Sol model assertions cannot mark a repair successful; only executable evidence can.
-  Terra is the sole routine repair-loop model. Sol is never polled, scheduled, or used
-  for diagnosis/patch iteration; at most one fresh read-only Sol call is admitted per
-  executable-gate-clean candidate release. Candidates that fail any deterministic
-  gate return to Terra without invoking Sol.
-- [ ] **L-66D** — Activate every repair first as an isolated no-send repair canary,
-  which is never a production application mode; verify the original
-  fault is gone and no safety/confirmation regression exists, then promote or
-  atomically roll back to the last known-good release.
-- [ ] **L-66E** — Re-signal the interrupted Temporal workflow after promotion so the
-  resident Job Hunter—not Codex, Claude, or the repair process—resumes the remaining
-  applications exactly once from the durable pre-side-effect boundary.
-- [ ] **L-66F** — Telegram-deliver one deduplicated natural-language repair receipt:
-  detected fault, diagnosis, changed contract, RED/GREEN/full-suite results, old/new
-  release SHAs, canary, promotion/rollback, resumed run, and resulting authoritative
-  application status. Unknown post-send effects remain human-reviewed and never
-  auto-retried.
+Repair-agent authority, cases, isolated repair, deterministic verification, canary,
+Temporal resume, and Telegram repair reporting are moved forward to
+`L-49K5R1`–`L-49K5R6`. They are no longer deferred L-66 work and MUST be complete
+before Hermes live cutover.
 - [ ] **L-67** — Activate the resident production campaign with the 2/5/3 daily
   portfolio, ten-confirmed-per-day cap, spillover policy, and one Telegram daily
   digest. Prove that only the installed Temporal-owned worker performs live actions.
