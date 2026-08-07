@@ -23,7 +23,7 @@ owner-authorized OpenAI Ashby success is `dais_manual`, not resident proof. Ther
 zero verified interviews and zero offers. `L-49K2C1` is complete:
 its isolated CloakBrowser E2E verified changed field layouts across fill, select,
 check, and upload with zero Submit controls/actions and preserved all baseline pages.
-The active immutable release is `49940572e97ef9434ceb5824b6d1c470ac280e22`.
+The active immutable release is `6c2fe05909fd350563676dff059f0ef5fb28b5fb`.
 The complete Job Hunter suite passes 549/549. Run 85 proves truthful outreach
 reporting and clean provider logs but does not prove a new resident ATS submission.
 
@@ -4480,6 +4480,11 @@ item before starting the next.
       help/source introspection and fixes the exact required argument contract for
       inspect/fill/verify/apply. No test was run per the owner's explicit instruction;
       the next proof is a resident execution from a new immutable release.
+    - Prompt repair release `6c2fe05909fd350563676dff059f0ef5fb28b5fb`
+      is active with archive SHA-256
+      `d67abee4d55cd96772629b7b2a6f8e69bf47c13e6e1e6f37aad3f6d5f711da36`;
+      previous is `49940572e97ef9434ceb5824b6d1c470ac280e22`. Resident proof run
+      `daily-20260807-125608` started as PID `5775`; its terminal result is pending.
 14. [ ] **L-49K5G1 — Route the cheap model.** Use Luna for one known-ATS
     observe/map/fill/verify pass with no Submit authority.
 15. [ ] **L-49K5G2 — Gate escalation.** Give Terra the same fenced intent only after
