@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 from collections.abc import Callable
 from typing import Any, Protocol, TextIO
@@ -26,6 +27,17 @@ class JsonLineProcessTransport:
 
     @classmethod
     def stdio(cls, *, codex: str = "codex"):
+        allowed = {
+            "HOME",
+            "PATH",
+            "SHELL",
+            "USER",
+            "LOGNAME",
+            "TMPDIR",
+            "LANG",
+            "LC_ALL",
+            "LC_CTYPE",
+        }
         return cls(
             subprocess.Popen(
                 [codex, "app-server", "--stdio"],
@@ -34,6 +46,7 @@ class JsonLineProcessTransport:
                 stderr=subprocess.PIPE,
                 text=True,
                 bufsize=1,
+                env={name: value for name, value in os.environ.items() if name in allowed},
             )
         )
 
@@ -110,6 +123,13 @@ class CodexAppServer:
                 "sandbox": "read-only",
                 "ephemeral": False,
                 "serviceName": "job-hunter",
+                "config": {
+                    "shell_environment_policy": {
+                        "inherit": "core",
+                        "ignore_default_excludes": False,
+                        "exclude": ["*PASSWORD*", "*COOKIE*"],
+                    }
+                },
             },
         )
 

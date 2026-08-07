@@ -209,8 +209,18 @@ Only the first unchecked item is active.
      daemon was not restarted. Its `proxy` path accepted bytes but returned no
      initialize response in this environment, so the unproved proxy path is not part
      of the adapter. No browser, application, email, or external send occurred.
-4. [ ] **PERSIST-04 — Secret boundary.** Connect credential references to macOS
+4. [x] **PERSIST-04 — Secret boundary.** Connect credential references to macOS
    Keychain and prove no secret appears in prompts, argv, artifacts, or traces.
+   - Receipt: the adapter passes only non-secret core OS variables to the app-server
+     process and sets Codex's official shell environment policy to `inherit=core`,
+     enable default `*KEY*/*SECRET*/*TOKEN*` exclusion, and additionally exclude
+     `*PASSWORD*/*COOKIE*`. Codex continues to read subscription authentication from
+     its existing private `HOME/.codex/auth.json`; no credential is added to a thread
+     request. Focused tests passed 4/4. A real Luna read-only probe started thread
+     `019fdab1-daeb-76e0-b499-07006412adb4` with a fake parent-process token sentinel,
+     completed 58 events, reported the sentinel environment variable `ABSENT`, and
+     contained no sentinel value in the event stream. No real secret value was read,
+     printed, moved, or rewritten.
 5. [ ] **PERSIST-05 — Job Hunter canary**, closed in this fixed internal order:
    1. canonicalize candidate URLs and Ledger aliases; exclude every terminal,
       `submitted`, `rejected`, and `submit_unknown` application;
