@@ -4061,9 +4061,9 @@ OpenTelemetry decision and primary sources:
       classifier now accepts only the conjunction of the exact official submit
       mutation, GraphQL `FormSubmitSuccess`, visible `Success` status containing
       `your application` plus `successfully submitted`, and no alert.
-    - Release/run status: commit `dfbebb3e2018d1a42a6b916c4e355b937f06377a`
+    - Release/run status: commit `66f9c760e8a4bc3db7bead03e53f5cce2986eebd`
       is the active immutable release; the previous release is
-      `e9eaad517988e0da75f39dd5afe98f05462971af`. The complete Job Hunter suite
+      `dfbebb3e2018d1a42a6b916c4e355b937f06377a`. The complete Job Hunter suite
       passed 544/544 before activation, live summary reconstruction passes, and
       Guardian reports `healthy`. Launchd run 74,
       `daily-20260807-015421`, attempted LangChain Ashby for application
@@ -4102,8 +4102,80 @@ OpenTelemetry decision and primary sources:
       The driver now gates only on `confirmed_daily_count >= 10`; failed and unknown
       historical slots cannot suppress the remaining application work. Focused shell
       and canonical-runtime tests pass 1/1 and 12/12, and the full suite passes
-      544/544. The next installed run must prove this corrected gate before any
-      Browser Harness integration begins.
+      544/544. Launchd run 83 (`daily-20260807-093721`) proved the corrected gate:
+      it continued past seven confirmed applications, discovered 450 links, verified
+      50, found five eligible roles, acquired the browser fence, and entered the
+      application lane. It did not prove `L-49K5D`. OpenAI Ashby liveness failed;
+      Salesforce Workday then stopped at
+      `workday:unsupported_required_question_gmail_fallback`. The delivered Gmail
+      receipt `gmail:19fd9aed461fb89c` is explicitly
+      `route_kind=recruiting_outreach`, `recipient_acceptance=outreach_only`, and the
+      Ledger application remains `materials_ready`; it is not an application and
+      must not count toward quota. Agent report Telegram message `8252` and daily
+      report message `8253` exist. The run exited 76 because the privacy scan found
+      `application_email` in a provider log. Its Telegram phrase “Application sent”
+      is materially misleading for outreach-only delivery and must be corrected
+      before another external send.
+
+### Ordered remaining execution — Big Two first, then general browser coverage
+
+This order is authoritative. Complete, verify, update this SSOT, commit, and push one
+item before starting the next.
+
+1. [ ] **L-49K5D1 — Repair send truth and privacy.** Make outreach-only Gmail
+   impossible to label or count as an application; deliver the full email body,
+   recipient, subject, route kind, acceptance class, reason, resume, and all answered
+   questions to Telegram; redact `application_email` from provider logs without
+   removing it from the private evidence store. No new external application send is
+   allowed until focused tests, the full suite, immutable release activation, and an
+   installed-run Telegram proof pass.
+2. [ ] **L-49K5D2 — Register and deduplicate the Big Two queue.** Put the selected
+   official OpenAI and Anthropic roles into the Ledger before opening a form. Preserve
+   every historical `submitted`, `submit_unknown`, `materials_ready`, and
+   `dais_manual` ownership state so no role can be clicked or mailed twice.
+3. [ ] **L-49K5D3 — Apply to OpenAI one role at a time.** Start with Tokyo roles in
+   this order: AI Deployment Manager (Builder), AI Deployment Engineer (Codex), then
+   AI Deployment Engineer. Use the official application form only; do not convert a
+   failed form into recruiting outreach. Ask only an actually missing private fact on
+   Telegram, persist the answer privately, resume the same fenced intent, and send
+   the exact resume plus every answer and authoritative receipt to Telegram.
+4. [ ] **L-49K5D4 — Apply to Anthropic one role at a time.** Start with Product
+   Support Specialist, Applied AI Architect, then Partner Solutions Architect —
+   Applied AI. Apply through each official Greenhouse form under the same fence,
+   private-profile, evidence, Telegram-full-visibility, and dedupe rules.
+5. [ ] **L-49K5E — Install the general browser execution boundary.** Keep
+   [CloakBrowser](https://github.com/CloakHQ/CloakBrowser) as the single persistent
+   stealth-Chromium/session owner and attach
+   [Browser Harness](https://github.com/browser-use/browser-harness) through its
+   documented `BU_CDP_URL` boundary. Browser Harness supplies raw CDP, accessibility
+   inspection, editable helpers, recordings, and learned domain skills; CloakBrowser
+   does not contain this harness. Encode proven Ashby and Workday recipes as domain
+   skills/adapters so the resident does not rediscover CLI help or source on each run.
+6. [ ] **L-49K5F — Add CamoFox only as an isolated blocked-site fallback.** Do not
+   replace the primary Chromium owner with
+   [camofox-browser](https://github.com/jo-inc/camofox-browser). Its implementation is
+   a Firefox/Camoufox process controlled by Playwright behind REST/MCP, with separate
+   profiles and sessions; it is not Browser Harness's Chrome CDP endpoint. Invoke it
+   only after a measured bot/detection failure, keep its fence and evidence explicit,
+   disable optional crash telemetry in production, and never share a live intent
+   between the two browser owners.
+7. [ ] **L-49K5G — Route models by difficulty.** Use Luna for deterministic
+   observe/map/fill/verify and known ATS skills. Escalate the same fenced intent to
+   Terra only for novel required questions, unfamiliar widgets, or measured recovery;
+   never let two models own the same browser or Submit authority concurrently.
+8. [ ] **L-49K5H — Prove hourly phone-visible operation.** Trigger the existing Mac
+   mini launchd resident through `codex exec`; do not add a desktop-only scheduler or
+   a duplicate loop. Every cycle sends Telegram start, candidate decisions, missing
+   information questions, full pre-submit dossier, success/unknown/failure reason,
+   receipt, resume, answers, and remaining quota with provider message IDs.
+9. [ ] **L-53 through L-57 — Close the interview loop.** Convert real Gmail outcomes
+   into Ledger stages, schedule verified Calendar meetings, send Telegram receipts,
+   generate preparation from the exact submitted dossier, and persist debrief and
+   next action.
+10. [ ] **L-58 through L-64 — Close self-improvement.** Measure reply, interview,
+    final-round, and offer conversion; change only one grounded strategy variable per
+    experiment; promote only with sufficient evidence; roll back safety regressions;
+    and report every decision to Telegram.
 - [ ] **L-49K** — Prove `L-49K1` through `L-49K4` through the installed resident
   LaunchAgent on one eligible Ashby role. The development session only triggers and
   observes. The resident must open the application surface, fill, verify, submit once,
