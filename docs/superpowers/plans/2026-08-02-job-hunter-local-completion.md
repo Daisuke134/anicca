@@ -4404,7 +4404,7 @@ item before starting the next.
 8. [x] **L-49K5E5 — Bake the Ashby recipe.** Turn the proven inspect, map, fill,
    verify, single-click, request observation, and receipt classification sequence into
    one reusable domain skill. The resident MUST NOT rediscover CLI help or source.
-   - Added the 78-line `jobs.ashbyhq.com/application.md` domain skill to the
+   - Added the 78-line `jobs/application.md` domain skill to the
      versioned Job Hunter source and the active Browser Harness workspace. Both copies
      have SHA-256
      `4b36a92e96e2d02912f36e0ba73e84c930f4f202a68f9593dbd510f434a545ca`.
@@ -4415,7 +4415,7 @@ item before starting the next.
      touched while creating it.
 9. [x] **L-49K5E6 — Bake the Greenhouse recipe.** Encode the equivalent inspect,
    fill, verify, submit-once, and receipt sequence without opening an employer form.
-   - Added a 61-line `job-boards.greenhouse.io/application.md` domain skill to the
+   - Added a 61-line `job-boards/application.md` domain skill to the
      versioned source and active Browser Harness workspace. Both copies have SHA-256
      `d8c42d2f8de58ac720064c567cb64e1b5e4dd6711f2b54cfd4ee281a0e4580c4`.
      It uses the public questions API only for structure, operates the official
