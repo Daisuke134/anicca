@@ -7,8 +7,10 @@
 **Configured upstream:** `canonical/docs/job-hunter-spec-20260805`
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-07 JST
-**Active atomic task:** `PERSIST-01` — prove the subscription-authenticated Codex
-app-server thread can start, survive client exit, and resume. No Job Hunter resident
+**Active atomic task:** `PERSIST-02` — add the common atomic thread binding store,
+active uniqueness, lease, and monotonic fence. `PERSIST-01` proved the
+subscription-authenticated Codex app-server thread can start, survive client exit,
+and resume. No Job Hunter resident
 release is activated or kicked until `PERSIST-01` through `PERSIST-05` and the
 no-submit Ashby `pre_submit_ready` canary pass.
 **Status:** The immutable four-lane runtime, grounded materials, ownership fences,

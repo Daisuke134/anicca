@@ -173,9 +173,19 @@ The unique active key is `(work_type, work_id, generation, status=active)`.
 
 Only the first unchecked item is active.
 
-1. [ ] **PERSIST-01 — App-server spike.** Start one local app-server, initialize,
+1. [x] **PERSIST-01 — App-server spike.** Start one local app-server, initialize,
    start a thread, record its ID, stop the client, resume it, run a second turn, and
    capture structured events. No external side effect.
+   - Receipt: installed `codex-cli 0.147.0` used the existing ChatGPT subscription
+     Codex home `/Users/anicca/.codex`. Client process one started thread
+     `019fda9e-5a3c-7083-9415-8d318c7cccfb`, completed a read-only Luna turn with
+     exact output `PERSIST_ONE`, and exited. A separately started app-server process
+     resumed that exact thread ID and completed a second turn that recovered the exact
+     prior token `PERSIST_ONE`. Both `turn/completed` statuses were `completed` and
+     structured thread, turn, item, token-usage, MCP-startup, hook, and status events
+     were observed. The first protocol attempt was rejected before thread creation
+     because the valid sandbox enum is `read-only`, not `readOnly`; the corrected
+     request passed. No Job Hunter run, browser action, or external send occurred.
 2. [ ] **PERSIST-02 — Binding store.** Add the common thread-binding schema, atomic
    start/resume/archive operations, active uniqueness, lease, and fence.
 3. [ ] **PERSIST-03 — Thin runtime adapter.** Expose start, resume, compact, fork,
