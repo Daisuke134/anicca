@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>ai.anicca.job-search-camofox</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/opt/homebrew/bin/node</string>
+    <string>/Users/anicca/Developer/camofox-browser/server.js</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>/Users/anicca/Developer/camofox-browser</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>CAMOFOX_PORT</key>
+    <string>9378</string>
+    <key>CAMOFOX_PROFILE_DIR</key>
+    <string>/Users/anicca/.local/state/anicca/job-search/camofox/profiles</string>
+    <key>CAMOFOX_CRASH_REPORT_ENABLED</key>
+    <string>false</string>
+  </dict>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>ProcessType</key>
+  <string>Background</string>
+  <key>StandardOutPath</key>
+  <string>/Users/anicca/.local/state/anicca/job-search/logs/camofox.stdout.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/anicca/.local/state/anicca/job-search/logs/camofox.stderr.log</string>
+</dict>
+</plist>

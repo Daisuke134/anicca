@@ -7,8 +7,8 @@
 **Configured upstream:** `canonical/docs/job-hunter-spec-20260805`
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-07 JST
-**Active atomic task:** `L-49K5F2` — connect isolated CamoFox only to a measured
-pre-submit fingerprint rejection without sharing a live browser owner or intent.
+**Active atomic task:** `L-49K5W1` — produce one real official Workday application
+receipt with the exact submitted dossier and Telegram message IDs.
 **Status:** The immutable four-lane runtime, grounded materials, ownership fences,
 Gmail ingestion, Telegram outbox, quota accounting, Ashby surface classifier, and
 loopback OpenTelemetry Collector/private trace index are implemented. The application
@@ -4444,9 +4444,18 @@ item before starting the next.
       receipt to `submitted`. Every result requires Telegram and preserves the fence;
       no classifier can click or confirm an application. Focused tests pass 2/2; no
       full suite was run.
-12. [ ] **L-49K5F2 — Add CamoFox fallback.** Invoke isolated CamoFox only for a
+12. [x] **L-49K5F2 — Add CamoFox fallback.** Invoke isolated CamoFox only for a
     measured fingerprint rejection before Submit. Never transfer a clicked intent or
     share a live browser owner between CloakBrowser and CamoFox.
+    - Added a pure authorization gate that accepts only `fingerprint_rejected`,
+      `pre_click`, and `pre_request`; it derives an isolated session key from the
+      application, intent, and fence and rejects visible challenge, clicked, and
+      request-started states. Added and loaded the dedicated
+      `ai.anicca.job-search-camofox` service on loopback `9378`, separate from the
+      shared `9377` service, with a Job Hunter-only profile root and
+      `CAMOFOX_CRASH_REPORT_ENABLED=false`. Both services are healthy with zero active
+      tabs/sessions. No CamoFox tab was created because no measured eligible
+      fingerprint rejection exists. Focused tests pass 2/2; no full suite was run.
 13. [ ] **L-49K5W1 — Prove one Workday submission.** Produce one real official
     Workday receipt with the exact submitted dossier and Telegram message IDs.
 14. [ ] **L-49K5G1 — Route the cheap model.** Use Luna for one known-ATS
