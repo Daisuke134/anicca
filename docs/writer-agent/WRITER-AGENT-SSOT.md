@@ -1637,7 +1637,12 @@ machine, and it MUST NOT delete any receipt. §9.3 is its binding specification.
 | R4 | Make every loaded launchd label resolve to an existing program path inside the canonical tree, repairing `ai.anicca.article-healthcheck` as the first instance | primary implementer | launchd path audit receipt plus a healthcheck run that exits `0` and names the current unshipped revenue-set pairs |
 | R5 | Move the five disabled legacy Writer plists into a versioned archive and prove they cannot load after login or installation | primary implementer | archive path, `launchctl print-disabled` still reporting them disabled, and absent labels after reload |
 | R6 | Prove exactly one daily creator and exactly one same-run recovery owner remain, then hand control back to Order 1 | primary verifier | label census showing one creator, one recovery owner, and the R1–R5 receipts |
-| R7 | Close every `profitable-claude` worktree whose branch is fully merged and whose tree is clean; keep the rest with a named owner | primary implementer | per-worktree disposition receipt and a `git worktree list` census with no unowned entry |
+R7 was proposed and WITHDRAWN on 2026-08-07. It would have disposed of
+`profitable-claude` worktrees, but that directory is a shared workspace owned by
+other concurrently running agents, not Writer state. Writer work MUST NOT remove,
+prune, or reassign a worktree it did not create. A Writer worktree ends when the
+Writer merges and removes its own branch, and no other entry is Writer's to
+touch.
 
 Task numbers below remain stable audit identities. `DONE` rows are evidence,
 not remaining work. Tasks 9–14 may accumulate external observations while an
@@ -1957,7 +1962,7 @@ regenerable. It does not redesign the Writer.
 | A9 | The five legacy Writer plists live in a versioned in-repository archive and cannot load | archive path, absent labels after reload, and `launchctl print-disabled` still reporting them disabled |
 | A10 | Exactly one daily creator and exactly one same-run recovery owner exist | label census output |
 | A11 | The full Writer test suite passes after the gate | suite pass count |
-| A12 | Every remaining `profitable-claude` worktree is either merged-and-removed or retained with a named owner and reason | per-worktree disposition receipt; a worktree is removable only when its branch is fully merged into its integration target and `git status` is clean, so unpushed work is never destroyed |
+| A12 | No worktree, branch, or working tree created by another agent is removed, pruned, or reassigned by this gate | `git worktree list` count and entries unchanged except for worktrees this gate created and merged itself |
 
 #### 3. As-Is / To-Be
 
@@ -1974,7 +1979,7 @@ regenerable. It does not redesign the Writer.
 | 9 | `ai.anicca.article-healthcheck` points at the deleted `skills/human-funded/article/` tree | Its program path is the canonical `skills/writer-agent/article-healthcheck.sh`, and an audit asserts the same property for every loaded Writer label |
 | 10 | Five disabled legacy plists remain in `~/Library/LaunchAgents` | They live in `skills/writer-agent/runtime/legacy-launchd/2026-08-07/`, outside any directory launchd scans |
 | 11 | Creator and recovery uniqueness is asserted in prose | A census command prints exactly one daily creator and one same-run recovery owner |
-| 12 | `profitable-claude` holds 55 worktrees and 881 MB under `.worktrees` inside a 2.8 GB repository, with no rule ending a worktree's life | A worktree ends as merged-and-removed or retained with a named owner and reason. Removal requires a fully merged branch and a clean tree, so unpushed work is never destroyed |
+| 12 | This gate briefly treated the shared `profitable-claude` worktrees as Writer garbage | Worktrees created by other agents are out of scope and MUST NOT be removed. Only a worktree this gate created and merged may be removed by it |
 
 #### 4. Test matrix
 
@@ -1992,7 +1997,7 @@ regenerable. It does not redesign the Writer.
 | 10 | Healthcheck reports unshipped pairs | `test_healthcheck_reports_unshipped_revenue_pairs` | OK |
 | 11 | Legacy plists archived and unloadable | `test_legacy_plists_absent_and_disabled` | OK |
 | 12 | Single creator and single recovery owner | `test_single_daily_creator_and_single_recovery_owner` | OK |
-| 13 | Worktree disposition rule | `test_worktree_removal_requires_merged_and_clean` | OK |
+| 13 | Foreign worktrees untouched | `test_gate_never_removes_foreign_worktrees` | OK |
 
 E2E judgment:
 
@@ -2009,6 +2014,7 @@ E2E judgment:
 - Incident creation, classification, Terra routing, repair, and resume; those remain Orders 3–5 and start after R6.
 - Reducing the destination set, disabling media generation, and one-language-per-account separation; those are separate decisions recorded in §10 until an explicit gate opens them.
 - `~/.openclaw` runtime state and any non-Writer launchd label.
+- Any git worktree, branch, or working tree this gate did not create. `profitable-claude/.worktrees` is a shared workspace for concurrently running agents, and their unmerged work is not this gate's to judge or reclaim.
 
 #### 6. Execution steps
 
