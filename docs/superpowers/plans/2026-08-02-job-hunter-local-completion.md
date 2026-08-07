@@ -4534,6 +4534,15 @@ item before starting the next.
       is active with archive SHA-256
       `ffdec1afc0465bf77531630c7cc433076a84fdaf4df1716c01ea5632eeb27e9d`;
       resident proof run `daily-20260807-133343` started as PID `37236`.
+    - Run `daily-20260807-133343` selected official Workday Account Executive
+      `JR-0103573`, opened the application surface, and chose `Apply Manually`.
+      Workday then required an account password absent from the private profile, so
+      the run ended safely `blocked` before Submit with zero submitted and zero
+      submit_unknown. The daily Telegram report was delivered as message `8379`.
+      Launchd is no longer running and its run counter is `92`. The next atomic repair
+      is an account-creation/resume path for this same canonical Workday application;
+      it MUST NOT create a second application or click Submit without the existing
+      Ledger intent and browser fence.
 14. [ ] **L-49K5G1 — Route the cheap model.** Use Luna for one known-ATS
     observe/map/fill/verify pass with no Submit authority.
 15. [ ] **L-49K5G2 — Gate escalation.** Give Terra the same fenced intent only after
