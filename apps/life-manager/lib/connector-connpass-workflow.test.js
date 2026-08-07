@@ -126,3 +126,26 @@ test("Connpass default discovery identifies the exact failed browser stage safel
       && error.message === "Connpass discovery stage failed",
   );
 });
+
+test("Connpass accepts a verified same-event redirect from group subdomain to root host", async () => {
+  const page = { current: "", async goto(url) { this.current = url; } };
+  const workflow = createConnpassScriptFirstWorkflow({
+    now: () => new Date("2026-08-07T03:00:00.000Z"),
+    async readCalendarBindings() {
+      return [{ event_ref: "connpass-event://event/393711", canonical_url: "https://group.connpass.com/event/393711/", calendar_date: "2026-08-10" }];
+    },
+    async readEventDetail() {
+      return {
+        event_ref: "connpass-event://event/393711", canonical_url: "https://connpass.com/event/393711/",
+        title: "Public event", starts_at: "2026-08-10T10:00:00.000Z", ends_at: "2026-08-10T11:00:00.000Z",
+        venue_name: "Public venue", address: "Tokyo", controls: ["このイベントに申し込む"],
+        offers: [{ price: "0", priceCurrency: "JPY" }], price_labels: ["参加費 無料"],
+      };
+    },
+    async submitOnPage() { return { status: "registered" }; },
+    async readStateOnPage() { return { state: "registered" }; },
+  });
+
+  const result = await workflow.discoverCandidates({ page, calendar: [] });
+  assert.equal(result[0].canonical_url, "https://connpass.com/event/393711/");
+});

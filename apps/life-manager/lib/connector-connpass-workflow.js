@@ -104,7 +104,7 @@ function createDefaultDiscovery({ now, readBindings, readDetail }) {
       let detail;
       try { detail = normalizeConnpassEventDetail(await readDetail(page)); }
       catch { throw stageError("CONNPASS_DETAIL_READ_FAILED"); }
-      if (detail.event_ref !== binding.event_ref || detail.canonical_url !== binding.canonical_url) invalid();
+      if (detail.event_ref !== binding.event_ref) invalid();
       result.push(detail);
     }
     return Object.freeze(result);
