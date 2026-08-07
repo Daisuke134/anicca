@@ -5626,7 +5626,20 @@ minimal operations、production factory、Luma workflow、minimal runnerのfocus
 
 Item 10Bは未完。次の一件はschedule unloadedのままofficial foreground wakeを再実行し、実aggregate countから0候補のexact filterを特定すること。
 
-### Active remaining TODO SSOT（進捗197。これ以外の残TODO一覧は履歴）
+### O1B-25進捗198（Item 10B foreground wake 2 / Luma zeroのexact filter確定）
+
+schedule unloadedのまま3回目のofficial foreground wakeを実行した。safe aggregateはobserved 37、normalized 37、14日window 22、
+free/open 3、Calendar free 0。37件すべてのdetail readerは有効で、候補0のexact reasonは3件の無料受付中Luma候補がすべて
+Google Calendar busy intervalとoverlapしたこと。discoveryは37,821ms、Calendar readは2,589msでsuccess。
+
+wakeは`completed_no_effect / providers_exhausted`、provider Submit 0、Calendar write 0、PNG 0、bundle 0。
+every-wake Telegram positive provider ID `8228`を保存し、owned leaseを解放した。schedule load、browser-level close、Gig writeは0。
+
+Item 10Bは未完。次の一件はCalendar title、ID、locationを出さず、busy inventoryがcancelled/transparentを除外し、3候補とのoverlapが
+実blocking intervalであることをread-only確認する。正当な衝突ならLumaへ無理にSubmitせず、同一wakeで次providerへ進むため
+Item 14のConnpass actionをItem 10B blockerとして前倒しする。14日窓は変更しない。
+
+### Active remaining TODO SSOT（進捗198。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
