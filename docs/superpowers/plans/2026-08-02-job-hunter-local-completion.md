@@ -7,8 +7,8 @@
 **Configured upstream:** `canonical/docs/job-hunter-spec-20260805`
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-07 JST
-**Active atomic task:** `L-49K5D3` — apply to the first still-actionable OpenAI role
-one at a time, without reopening any preserved terminal or uncertain application.
+**Active atomic task:** `L-49K5E` — iterate the general ATS CLI/browser harness from
+the measured OpenAI reCAPTCHA boundary before opening another employer form.
 **Status:** The immutable four-lane runtime, grounded materials, ownership fences,
 Gmail ingestion, Telegram outbox, quota accounting, Ashby surface classifier, and
 loopback OpenTelemetry Collector/private trace index are implemented. The application
@@ -4351,19 +4351,19 @@ item before starting the next.
      English business resume and the natural role-specific Additional Information.
      The pre-submit screenshot SHA-256 is
      `d8736eabd8232f72dd0c51b7485e5a7c84f003a1f99b206dd404c8424ccf7467`.
-     Submit remained zero because Japan-day slots 1–10 were already occupied by seven
-     `submitted` and three `submit_unknown` attempts; no eleventh click or false next-
-     day claim was permitted. The application is durably `agent/materials_ready` with
-     zero submit intents and evidence at
+     The user explicitly updated the private profile: Tokyo office attendance is
+     available five days per week, three days is not a maximum, and remote work is
+     neither required nor sought. Profile validation and all 11 grounded fill receipts
+     remained valid. The named application was then claimed under an explicit
+     user-authorized overflow fence as intent `8e4f8c8e3aaa429a90165ac34c614407`,
+     fence 1, slot 12. Submit was clicked exactly once. Ashby exposed reCAPTCHA pending,
+     but no application API request, HTTP status, or authoritative success UI before
+     timeout. The application is therefore durably `agent/submit_unknown`; it MUST NOT
+     be clicked again. Evidence is at
      `~/.local/state/anicca/job-search/evidence/openai-solutions-pre-sales-20260807T015903Z/`.
-     Telegram summary `8292`, exact full answers `8293`, resume `8295`, and the direct
-     transport proof above make the state visible. Resume this same Ledger row on the
-     first unoccupied Japan-day slot; do not open the second OpenAI role first.
-4. [ ] **L-49K5D4 — Apply to Anthropic one role at a time.** Start with Product
-   Support Specialist, Applied AI Architect, then Partner Solutions Architect —
-   Applied AI. Apply through each official Greenhouse form under the same fence,
-   private-profile, evidence, Telegram-full-visibility, and dedupe rules.
-5. [ ] **L-49K5E — Install the general browser execution boundary.** Keep
+     Telegram summary `8292`, exact full answers `8293`, resume `8295`, and final
+     truthful outcome `8312` make the state visible.
+4. [ ] **L-49K5E — Install the general browser execution boundary.** Keep
    [CloakBrowser](https://github.com/CloakHQ/CloakBrowser) as the single persistent
    stealth-Chromium/session owner and attach
    [Browser Harness](https://github.com/browser-use/browser-harness) through its
@@ -4371,7 +4371,17 @@ item before starting the next.
    inspection, editable helpers, recordings, and learned domain skills; CloakBrowser
    does not contain this harness. Encode proven Ashby and Workday recipes as domain
    skills/adapters so the resident does not rediscover CLI help or source on each run.
-6. [ ] **L-49K5F — Add CamoFox only as an isolated blocked-site fallback.** Do not
+   The harness decision is incremental rather than a rewrite: pilot Hermes as the
+   local agent shell because its documented agent core serves CLI, gateway, cron,
+   and API paths and it provides profile-isolated sessions, tools, and skills. Keep
+   Ledger, submit fences, ATS adapters, evidence, and direct Telegram transport as
+   deterministic Job Hunter-owned tools. Do not move the system wholesale to
+   OpenClaw: its documented primary architecture is a long-lived personal Gateway,
+   while the product needs tenant isolation and durable business workflows. For the
+   hosted product, use Temporal as the outer durable workflow owner and a separate
+   isolated browser/sandbox per user; Hermes may remain an isolated worker shell only
+   if this pilot beats the current CLI on measured ATS completion.
+5. [ ] **L-49K5F — Add CamoFox only as an isolated blocked-site fallback.** Do not
    replace the primary Chromium owner with
    [camofox-browser](https://github.com/jo-inc/camofox-browser). Its implementation is
    a Firefox/Camoufox process controlled by Playwright behind REST/MCP, with separate
@@ -4379,6 +4389,11 @@ item before starting the next.
    only after a measured bot/detection failure, keep its fence and evidence explicit,
    disable optional crash telemetry in production, and never share a live intent
    between the two browser owners.
+6. [ ] **L-49K5D4 — Apply to Anthropic one role at a time.** Start with Product
+   Support Specialist, Applied AI Architect, then Partner Solutions Architect —
+   Applied AI. Apply through each official Greenhouse form under the same fence,
+   private-profile, evidence, Telegram-full-visibility, and dedupe rules. This begins
+   only after the CLI/harness iteration above, per the user's explicit ordering.
 7. [ ] **L-49K5G — Route models by difficulty.** Use Luna for deterministic
    observe/map/fill/verify and known ATS skills. Escalate the same fenced intent to
    Terra only for novel required questions, unfamiliar widgets, or measured recovery;
