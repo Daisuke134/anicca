@@ -7,8 +7,8 @@
 **Configured upstream:** `canonical/docs/job-hunter-spec-20260805`
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-07 JST
-**Active atomic task:** `L-49K5E1` — reconcile the clicked OpenAI application from
-Gmail and authoritative ATS evidence without reopening or resubmitting the form.
+**Active atomic task:** `L-49K5E2` — pin Browser Harness in the Job Hunter
+environment and prove only that its CLI starts, without touching a live application.
 **Status:** The immutable four-lane runtime, grounded materials, ownership fences,
 Gmail ingestion, Telegram outbox, quota accounting, Ashby surface classifier, and
 loopback OpenTelemetry Collector/private trace index are implemented. The application
@@ -4363,10 +4363,18 @@ item before starting the next.
      `~/.local/state/anicca/job-search/evidence/openai-solutions-pre-sales-20260807T015903Z/`.
      Telegram summary `8292`, exact full answers `8293`, resume `8295`, and final
      truthful outcome `8312` make the state visible.
-4. [ ] **L-49K5E1 — Reconcile the OpenAI unknown.** Search Gmail and authoritative
+4. [x] **L-49K5E1 — Reconcile the OpenAI unknown.** Search Gmail and authoritative
    Ashby evidence for the already-clicked Solutions Engineer intent. Record either a
    receipt-backed `submitted` or the continuing `submit_unknown`; MUST NOT reopen or
    click the application again.
+   - Closed without reopening the form. Three independent Gmail searches for the
+     company, role, Ashby sender, and application-received/submitted language returned
+     zero messages. The immutable apply artifact remains `ats_unconfirmed` with
+     `recaptcha_pending`, no HTTP status, and no submit operation. Ledger intent
+     `8e4f8c8e3aaa429a90165ac34c614407` remains durably `submit_unknown`, click phase
+     `clicked`, and transport phase `pre_request`. This is the final truthful state;
+     the application MUST NOT be retried. Telegram reconciliation report `8327`
+     exposes the final state to the owner.
 5. [ ] **L-49K5E2 — Install Browser Harness.** Pin one Browser Harness version in the
    Job Hunter environment and prove its CLI starts. Do not touch a live application.
 6. [ ] **L-49K5E3 — Attach the persistent browser.** Connect Browser Harness through
