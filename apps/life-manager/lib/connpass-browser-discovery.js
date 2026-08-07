@@ -38,6 +38,45 @@ function localDate(instant, timeZone) {
   return `${parts.year}-${parts.month}-${parts.day}`;
 }
 
+function normalizedRegistrationStatus(controls) {
+  const text = (Array.isArray(controls) ? controls : []).map((value) => String(value).trim());
+  if (text.some((value) => /^(?:参加票を表示|受付票を見る|申し込みをキャンセル|キャンセルする|Registered)$/.test(value))) return "registered";
+  if (text.some((value) => /受付終了|募集終了|満員|定員に達しました/.test(value))) return "closed";
+  if (text.some((value) => /^(?:このイベントに申し込む|イベントに申し込む|参加申し込み|申し込む)$/.test(value))) return "available";
+  return "unknown";
+}
+
+function normalizedPrice(offers, labels) {
+  const rows = Array.isArray(offers) ? offers : [];
+  const explicitFree = rows.some((offer) => offer && typeof offer === "object"
+    && /^(?:0|0\.0+)$/.test(String(offer.price == null ? "" : offer.price).trim()));
+  const labelFree = (Array.isArray(labels) ? labels : [])
+    .some((value) => /(?:^|\s|参加費)(?:無料|free)(?:\s|$)/i.test(String(value)));
+  return explicitFree || labelFree
+    ? Object.freeze({ ticket_price_status: "free", ticket_price_minor: 0 })
+    : Object.freeze({ ticket_price_status: "unknown", ticket_price_minor: null });
+}
+
+function normalizeConnpassEventDetail(input = {}) {
+  const binding = eventBinding(input);
+  const title = String(input.title || "").replace(/\s+/g, " ").trim();
+  const startsAt = Date.parse(String(input.starts_at || ""));
+  const endsAt = Date.parse(String(input.ends_at || ""));
+  if (!title || title.length > 300 || !Number.isFinite(startsAt) || !Number.isFinite(endsAt) || endsAt <= startsAt) invalid();
+  return Object.freeze({
+    provider: "connpass",
+    event_ref: binding.event_ref,
+    canonical_url: binding.canonical_url,
+    title,
+    starts_at: new Date(startsAt).toISOString(),
+    ends_at: new Date(endsAt).toISOString(),
+    venue_name: String(input.venue_name || "").replace(/\s+/g, " ").trim(),
+    venue_address: String(input.address || "").replace(/\s+/g, " ").trim(),
+    registration_status: normalizedRegistrationStatus(input.controls),
+    ...normalizedPrice(input.offers, input.price_labels),
+  });
+}
+
 async function readCalendarBindings(page) {
   if (!page || typeof page.evaluate !== "function") invalid();
   return page.evaluate(() => [...document.querySelectorAll('a[href*="/event/"]')].map((anchor) => {
@@ -127,6 +166,7 @@ async function discoverConnpassDateWithBrowser(input = {}) {
 
 module.exports = {
   discoverConnpassDateWithBrowser,
+  normalizeConnpassEventDetail,
   readCalendarBindings,
   readEventDetail,
 };

@@ -5683,7 +5683,20 @@ Connpass workflow/provider、Luma workflow、minimal runnerのfocused suiteは19
 Item 10B/14は未完。次の一件は`readCalendarBindings`と`readEventDetail`を同じpageで14日分だけ巡回するdefault Connpass discoveryをTDDで実装し、
 price/open stateを公開DOMからfail-closedで正規化すること。scheduleはunloadedを維持する。
 
-### Active remaining TODO SSOT（進捗201。これ以外の残TODO一覧は履歴）
+### O1B-25進捗202（Item 14前倒し / Connpass detail fail-closed normalization）
+
+公開Connpass calendarの直接curlはHTTP 403で失敗したため、取得不能と一般化せず、既存CloakBrowser readerへ接続するpure normalizationを先に固定した。
+TDD REDで`normalizeConnpassEventDetail`不存在を確認後、canonical group subdomain/event identity、title、開始/終了時刻、venue、controls、
+JSON-LD offersとpublic price labelを正規化する関数を追加した。
+
+registrationは明示申込controlだけ`available`、受付終了/満員だけ`closed`、既登録controlだけ`registered`、それ以外`unknown`。
+priceは明示的な0円offerまたは無料/free labelだけ`free/0`で、それ以外`unknown/null`。未知状態を無料・受付中と推定しない。
+Connpass discovery/workflow/provider focused suiteは6/6 GREEN。実browser、Submit、Calendar write、PNG、Telegram作用は0。
+
+Item 10B/14は未完。次の一件は`readEventDetail`がoffers、controls、price labelsを公開DOMから返すcontractをREDで追加し、
+同じowned pageのdefault 14日discoveryへ接続すること。scheduleはunloadedを維持する。
+
+### Active remaining TODO SSOT（進捗202。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
