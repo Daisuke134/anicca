@@ -7,8 +7,8 @@
 **Configured upstream:** `canonical/docs/job-hunter-spec-20260805`
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-07 JST
-**Active atomic task:** `L-49K5D2` — register and deduplicate the selected official
-OpenAI and Anthropic queue before opening or submitting another application form.
+**Active atomic task:** `L-49K5D3` — apply to the first still-actionable OpenAI role
+one at a time, without reopening any preserved terminal or uncertain application.
 **Status:** The immutable four-lane runtime, grounded materials, ownership fences,
 Gmail ingestion, Telegram outbox, quota accounting, Ashby surface classifier, and
 loopback OpenTelemetry Collector/private trace index are implemented. The application
@@ -4296,15 +4296,36 @@ item before starting the next.
      message `8286`. The run made zero Submit and zero Gmail side effects, found 450
      links, verified 50, preserved five eligible roles, and left its two application
      blockers visible rather than inventing success. This item is complete.
-2. [ ] **L-49K5D2 — Register and deduplicate the Big Two queue.** Put the selected
+2. [x] **L-49K5D2 — Register and deduplicate the Big Two queue.** Put the selected
    official OpenAI and Anthropic roles into the Ledger before opening a form. Preserve
    every historical `submitted`, `submit_unknown`, `materials_ready`, and
    `dais_manual` ownership state so no role can be clicked or mailed twice.
+   - Completion receipt: official pages were remeasured before registration. OpenAI's
+     Tokyo list still exposed AI Deployment Engineer, AI Deployment Manager (Builder),
+     Solutions Engineer (Pre-Sales), Technical Deployment Lead, and AI Deployment
+     Engineer (Startups); the previously planned Codex role was not a current Tokyo
+     listing. Anthropic's official Greenhouse forms for Product Support Specialist,
+     Applied AI Architect, and Partner Solutions Architect — Applied AI were all live.
+     Ledger registration preserved OpenAI Startups as `dais_manual/submitted`, Tokyo
+     Deployment Engineer as `agent/submit_unknown`, and Builder as `agent/rejected`.
+     It created only five `agent/discovered` rows: the two remaining OpenAI roles and
+     all three Anthropic roles. The mode-0600 receipt is
+     `~/.local/state/anicca/job-search/evidence/big-two-register-20260807T014649Z.json`.
+     A RED regression proved that an evidence URL and official ATS URL for the same
+     company/title previously created two applications. `Ledger.add_application()`
+     now resolves the existing posting alias when either side is an `evidence://`
+     submission record and preserves its ID, owner, URL, and state. The first broad
+     alias rule exposed the valid counterexample of two distinct postings with the
+     same company/title; the evidence-only boundary preserves those separately.
+     Focused tests pass 62/62 and the full suite passes 548/548.
 3. [ ] **L-49K5D3 — Apply to OpenAI one role at a time.** Start with Tokyo roles in
-   this order: AI Deployment Manager (Builder), AI Deployment Engineer (Codex), then
-   AI Deployment Engineer. Use the official application form only; do not convert a
-   failed form into recruiting outreach. Ask only an actually missing private fact on
-   Telegram, persist the answer privately, resume the same fenced intent, and send
+   current actionable order: Solutions Engineer, Pre-Sales, then Technical Deployment
+   Lead. Never reopen Builder (`rejected`), Deployment Engineer (`submit_unknown`),
+   Startups (`dais_manual/submitted`), or the separately fenced manual Forward
+   Deployed Engineer. The former Codex-Tokyo slot is removed because it is not on the
+   current official Tokyo list. Use the official application form only; do not convert
+   a failed form into recruiting outreach. Ask only an actually missing private fact
+   on Telegram, persist the answer privately, resume the same fenced intent, and send
    the exact resume plus every answer and authoritative receipt to Telegram.
 4. [ ] **L-49K5D4 — Apply to Anthropic one role at a time.** Start with Product
    Support Specialist, Applied AI Architect, then Partner Solutions Architect —
