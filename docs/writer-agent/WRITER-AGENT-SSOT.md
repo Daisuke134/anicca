@@ -2170,6 +2170,55 @@ today, so Orders 1–5 run first. C1 and C2 execute as one slice alongside R3
 because both concern which entry point is authoritative and how its failure is
 observed.
 
+### 9.0.1 State and remaining work as of 2026-08-08
+
+Verified state, each line from a tool result rather than from memory:
+
+| Fact | Value | How it was verified |
+|---|---|---|
+| note JA for `daily-2026-08-07` | LIVE and paid | anonymous note API `status published`, `price 500`, `publish_at 2026-08-08T00:48:32+09:00`; public page HTTP 200 containing 「ここから先は」 and 「購入」 |
+| Substack JA | NOT published | pair `status intent`, target `210098888` |
+| Substack EN | NOT published | pair `status intent`, target `210098890` |
+| Dev.to EN, Zenn JA | NOT published | pair `status intent` |
+| X Article JA | editor URL only, no public readback | pair `status live` with a `compose/articles/edit` target |
+| Received money | **zero** | `money_events`, `subscription_contracts`, `payouts` all count `0` in `state/money.sqlite3` |
+| Published artifacts registered | 73 | `money_artifacts` count |
+| Metric observations | 2,518 | `metric_observations` count |
+
+So the daily revenue set stands at one of three, and revenue is zero. The
+publishing pipe is proven; the earning is not started.
+
+Hard blocker recorded 2026-08-08: the Anthropic monthly spend limit was reached,
+which terminated two running executors mid-task. No further subagent work is
+possible until the limit is raised. Everything below is therefore written to be
+executable by a future session without re-deriving today's findings.
+
+Work left, in order, with its owner and the receipt that closes it:
+
+| # | Item | Owner | Closing receipt | State |
+|---:|---|---|---|---|
+| 1 | Canonical readback after normalisation. The pair is `ambiguous` with `canonical-content-readback-failed` because the content hash predates the deliberate body transform, so the system cannot state that it shipped and revenue cannot be attributed to the artifact | executor | the live pair self-resolves to `live` through loop code with an evidence gate, and the check still fails loudly on an unexpected difference | started, uncommitted on `fix/writer-canonical-readback-after-normalization`, killed by the spend limit |
+| 2 | Substack JA and EN publish, or record why they do not | executor, then the loop | two public readbacks, or a per-pair terminal receipt naming the failure | not started. This is item 3b. Unlike note, which returned an explicit 422, Substack is silent: both pairs sit at `intent` with no circuit entry and no failure receipt anywhere in the run tree. Silence cannot be diagnosed, so the first work is to make the publisher record why it stopped |
+| 3 | H1 invariant watchdog | executor | replay opens an incident for all four 2026-08-07 defects | committed as `0f78ca09` on `feature/writer-h1-watchdog`, but that branch is seven commits behind live and its suite reports 22 failures against the stale base. Merge live into it and re-run before judging the work |
+| 4 | H4 outcome gate scored only on publisher-native readback and verified received money | executor | a repair marked REVERTED or a gate marked MISCALIBRATED from external evidence alone | not started |
+| 5 | Order 5: deploy a candidate, resume the same work item, public readback | loop | effect-ledger entry plus public URL | not started |
+| 6 | Order 6: quality exhaustion publishes the best safe draft; `block_freeze` is never a terminal daily outcome | executor | forced run reaches publication initialisation after exhausted editorial feedback | not started |
+| 7 | R2–R6 and C1–C3: reclaim derived state, bound logs, one canonical entry per destination, launchd path audit, legacy plist archive, uniqueness proof, and the Codex `--json`/`-o`/`--output-schema`/timeout/resume flags | executor | per §9.3 acceptance criteria | R1 done and merged; the rest not started |
+| 8 | Order 9: paid-demand topic selection binding buyer, problem, transformation, deliverable, price hypothesis and distribution path | demand loop | first production topic card and its published revenue-set article | not started |
+| 9 | Order 11: the first external payment | loop | positive non-test processor or publisher receipt joined to one article | not started |
+
+Economics, stated so a future session does not mistake the goal for the
+mechanism. Ten thousand dollars a month is roughly ¥1.5M. At the current note
+price of ¥500 that is three thousand purchases a month, or one hundred a day,
+from an account with no audience. Direct article sales alone therefore cannot
+reach the target, and treating them as the path would waste months. The
+plausible order is editorial fees first, because a single commission is worth
+hundreds of dollars and two evidence-backed submissions already exist in the
+opportunity ledger awaiting a reply; then Substack subscriptions, because they
+compound; with note serving as the proof of work that makes both credible rather
+than as the revenue engine itself. §4 already models this; this note exists to
+stop a future session from optimising the wrong number.
+
 ### 9.4.1 The note 422 is solved — verified live 2026-08-08
 
 `daily-2026-08-07`'s note article is live and paid. Verified by the primary
