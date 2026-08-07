@@ -4387,73 +4387,66 @@ item before starting the next.
 12. [ ] **L-49K5F2 — Add CamoFox fallback.** Invoke isolated CamoFox only for a
     measured fingerprint rejection before Submit. Never transfer a clicked intent or
     share a live browser owner between CloakBrowser and CamoFox.
-13. [ ] **L-49K5D4A — Submit one Anthropic application.** Apply to Product Support
-    Specialist through the official Greenhouse form with one fence, the exact resume
-    and answers on Telegram, and an authoritative receipt or truthful unknown.
-14. [ ] **L-49K5D4B — Submit the second Anthropic application.** Apply to Applied AI
-    Architect only after `L-49K5D4A` is durably closed.
-15. [ ] **L-49K5D4C — Submit the third Anthropic application.** Apply to Partner
-    Solutions Architect — Applied AI only after `L-49K5D4B` is durably closed.
-16. [ ] **L-49K5W1 — Prove one Workday submission.** Produce one real official
+13. [ ] **L-49K5W1 — Prove one Workday submission.** Produce one real official
     Workday receipt with the exact submitted dossier and Telegram message IDs.
-17. [ ] **L-49K5G1 — Route the cheap model.** Use Luna for one known-ATS
+14. [ ] **L-49K5G1 — Route the cheap model.** Use Luna for one known-ATS
     observe/map/fill/verify pass with no Submit authority.
-18. [ ] **L-49K5G2 — Gate escalation.** Give Terra the same fenced intent only after
+15. [ ] **L-49K5G2 — Gate escalation.** Give Terra the same fenced intent only after
     one measured unfamiliar-widget or recovery condition; two models MUST never own
     the browser or Submit authority concurrently.
-19. [ ] **L-49K5H1 — Prove one hourly cycle.** Kickstart the existing Mac mini
+16. [ ] **L-49K5H1 — Prove one hourly cycle.** Kickstart the existing Mac mini
     resident once and prove Telegram start and terminal message IDs. Do not create a
     second scheduler.
-20. [ ] **L-49K5H2 — Prove missing-fact resume.** Ask one genuinely absent private
+17. [ ] **L-49K5H2 — Prove missing-fact resume.** Ask one genuinely absent private
     fact on Telegram, store the answer once, and resume the same fenced intent without
     asking it again.
-21. [ ] **L-49K5H3 — Prove full phone visibility.** For one application, Telegram
+18. [ ] **L-49K5H3 — Prove full phone visibility.** For one application, Telegram
     MUST contain the role, decision, exact resume, every answer, outcome reason,
     receipt when present, and remaining quota.
-22. [ ] **L-49K5M1 — Install isolated Hermes.** Create one Job Hunter-only Hermes
+19. [ ] **L-49K5M1 — Install isolated Hermes.** Create one Job Hunter-only Hermes
     profile without changing the active launchd runtime or importing unrelated state.
-23. [ ] **L-49K5M2 — Expose read-only Job Hunter tools.** Connect profile lookup,
+20. [ ] **L-49K5M2 — Expose read-only Job Hunter tools.** Connect profile lookup,
     Ledger reads, candidate inspection, and evidence reads to Hermes; mutation and
     Submit remain disabled.
-24. [ ] **L-49K5M3 — Run one shadow cycle.** Hermes evaluates the same candidate set
+21. [ ] **L-49K5M3 — Run one shadow cycle.** Hermes evaluates the same candidate set
     as the resident, performs zero external mutations, and records a comparable
     decision artifact.
-25. [ ] **L-49K5M4 — Run one fenced live cycle.** Hermes owns one eligible intent and
+22. [ ] **L-49K5M4 — Run one fenced live cycle.** Hermes owns one eligible intent and
     calls the existing deterministic ATS, Ledger, evidence, and Telegram tools. It
     MUST NOT implement these guarantees in prompts.
-26. [ ] **L-49K5M5 — Cut over Job Hunter.** Move only the Job Hunter schedule to the
+23. [ ] **L-49K5M5 — Cut over Job Hunter.** Move only the Job Hunter schedule to the
     proven Hermes profile, disable its former executor without creating overlap, and
     prove one post-cutover hourly cycle.
-27. [ ] **L-49K5M6 — Migrate one additional loop.** Move Writer through the same
+24. [ ] **L-49K5M6 — Migrate one additional loop.** Move Writer through the same
     shadow, live, cutover sequence while Job Hunter remains healthy.
-28. [ ] **L-49K5M7 — Migrate Gig.** Move Gig through the same sequence while Job
+25. [ ] **L-49K5M7 — Migrate Gig.** Move Gig through the same sequence while Job
     Hunter and Writer remain healthy.
-29. [ ] **L-49K5M8 — Migrate remaining loops one at a time.** Each loop receives an
+26. [ ] **L-49K5M8 — Migrate remaining loops one at a time.** Each loop receives an
     isolated profile, one shadow cycle, one live cycle, one cutover, and one rollback
     point before the next loop starts.
-30. [ ] **L-53A — Ingest one real employer reply.** Bind its Gmail thread ID to the
+27. [ ] **L-53A — Ingest one real employer reply.** Bind its Gmail thread ID to the
     correct application and send the stage change to Telegram.
-31. [ ] **L-54A — Schedule one real interview.** Create a verified Calendar event
+28. [ ] **L-54A — Schedule one real interview.** Create a verified Calendar event
     from the employer thread and report its event ID to Telegram.
-32. [ ] **L-55A — Generate one interview brief.** Use the exact submitted dossier,
+29. [ ] **L-55A — Generate one interview brief.** Use the exact submitted dossier,
     company evidence, interviewer evidence when available, and meeting details.
-33. [ ] **L-56A — Capture one debrief.** Persist interview outcome, evidence, next
+30. [ ] **L-56A — Capture one debrief.** Persist interview outcome, evidence, next
     action, and funnel stage without losing the original submitted materials.
-34. [ ] **L-58A — Publish one funnel snapshot.** Report application, reply,
+31. [ ] **L-58A — Publish one funnel snapshot.** Report application, reply,
     interview, final-round, and offer counts without treating unknown as zero.
-35. [ ] **L-59A — Run one bounded improvement.** Change one strategy variable at the
+32. [ ] **L-59A — Run one bounded improvement.** Change one strategy variable at the
     weakest measured funnel stage, record its hypothesis, and retain a rollback.
-36. [ ] **L-65A — Isolate a second user.** Prove separate credentials, profile,
+33. [ ] **L-65A — Isolate a second user.** Prove separate credentials, profile,
     browser, Ledger, evidence, Telegram destination, and Hermes profile with no
     cross-user reads.
-37. [ ] **L-66A — Add the hosted durable owner.** Put Temporal outside the agent as
+34. [ ] **L-66A — Add the hosted durable owner.** Put Temporal outside the agent as
     schedule, retry, signal, cancellation, and resume authority; Hermes remains an
     isolated worker, not the multi-tenant control plane.
-38. [ ] **L-67A — Add campaign controls.** Prove pause, resume, stop, export, and
+35. [ ] **L-67A — Add campaign controls.** Prove pause, resume, stop, export, and
     delete for one isolated campaign.
-39. [ ] **L-68A — Package onboarding.** Create a reproducible private onboarding
+36. [ ] **L-68A — Package onboarding.** Create a reproducible private onboarding
     path from Telegram/profile setup to the first visible candidate decision.
-40. [ ] **L-69A — Reach and demonstrate the employment outcome.** Continue the Dais
+37. [ ] **L-69A — Reach and demonstrate the employment outcome.** Continue the Dais
     campaign through verified replies, interviews, final rounds, offer comparison,
     and one authoritative accepted offer, then generate a redacted demo from that real
     winning path.
