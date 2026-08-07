@@ -5811,7 +5811,17 @@ event-ref mismatchは`CONNPASS_DETAIL_IDENTITY_MISMATCH_FAILED`へ変換し、ru
 Item 10B/14は未完。次の一件はofficial foreground wakeを再実行し、identity mismatch仮説をliveで確認または反証すること。
 scheduleはunloadedを維持する。
 
-### Active remaining TODO SSOT（進捗211。これ以外の残TODO一覧は履歴）
+### O1B-25進捗212（Connpass identity仮説のlive反証）
+
+identity mismatch safe diagnosis後のofficial foreground wakeでもConnpass discoveryは779msでgeneric failureとなった。
+wakeは`completed_no_effect / provider_discovery_failed`、Telegram positive ID `8249`、Submit/Calendar write/PNG/bundle 0。
+終了pageは再びroot `connpass.com/event/393711/`。detail identity mismatch仮説はliveで反証された。
+
+calendar pageを離れてdetailへ到達しているためrows shape/size failureも除外できる。残るgeneric locationは複数binding内の後続binding validation、
+またはdefault discovery後のouter candidate validationに限定された。Item 10B/14は未完。次の一件はこの2境界だけを別safe codeへ分けること。
+scheduleはunloadedを維持する。
+
+### Active remaining TODO SSOT（進捗212。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
