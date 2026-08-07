@@ -2170,6 +2170,40 @@ today, so Orders 1–5 run first. C1 and C2 execute as one slice alongside R3
 because both concern which entry point is authoritative and how its failure is
 observed.
 
+### 9.5 The note 422 elimination table
+
+Every hypothesis below was closed by measurement, not by argument. Each row
+names the evidence that decided it. The purpose of this table is to stop a
+future agent from re-testing something already refuted.
+
+| Hypothesis | Verdict | Deciding evidence |
+|---|---|---|
+| The payload key set is wrong | REFUTED | Replaying the recovered nineteen-key builder over the failing article reproduces `payload_sha256 4e06c659`, which is exactly the payload that received the 422 |
+| `image_keys` was missing | REFUTED | note's shipped bundle always sends it, so it was added and merged as `86df50eb`; the production loop retried on its own with `code_sha256` moving `64a6fec` to `11f0d3ca` and the payload hash moving to `cff52232`, and the response was the identical 422 |
+| Either half is malformed HTML | REFUTED | Both halves parse as balanced HTML |
+| The request headers differ | REFUTED | The draft and publish requests were replayed against a local socket and their heads compared; `Origin`, `Referer`, `X-Requested-With`, `Content-Type` and XSRF carriage are identical. The two 422 classes are also distinguishable by response size: a request-shape 422 returns 32 bytes, this one returns 101 |
+| The separator names a disallowed element type | REFUTED | It is a `<p>`, which is in note's own UUID-stamped tag set, and the boundary falls between top-level siblings, cutting no element |
+| A mid-body boundary is not allowed | REFUTED | note's own editor produced `n7a0eac82f085`, live at ¥500, with a `<p>` separator at block 22 of 36 and a `<figure>` in the free half |
+| The separator UUID is stale | REFUTED | An authenticated read shows the UUID present in the body note holds right now, on block 37 of 62, and it is the last element of the computed free half |
+| note was never told the boundary | REFUTED 2026-08-08 | The two-step was implemented, and the production receipt records `draft_split_saved: true` with `draft_save_separator d44c0a65`, so note held the boundary on the draft, and the publish still returned the identical 422 |
+
+What survives is narrow and specific: note accepts this exact body on the draft
+surface and rejects it on the paid publish surface. So the rejected property is
+something the paid publish validator checks and the draft validator does not.
+The next measurement is a read-only element inventory of the paid half against
+the paid halves of every article note has actually accepted, looking for an
+element class present in ours and absent from all of theirs.
+
+Two findings are retained because they cost real time to obtain:
+
+- A note 422 is not always about content. `DELETE /api/v1/notes/n/{key}` returns
+  422 without the editor headers and 200 with them.
+- The split-carrying `draft_save` never becomes public. Measured on throwaway
+  scratch drafts at two prices: `status draft`, `publish_at null`,
+  `is_limited false`, anonymous API 404 and anonymous public URL 404, then
+  deleted and confirmed `deleted` with a 404. Unexplained and recorded rather
+  than guessed: note returns `price 300` regardless of the price sent.
+
 ## 10. Explicitly deferred
 
 These do not block first article revenue:
