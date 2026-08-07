@@ -121,6 +121,26 @@ class CodexAppServerTests(unittest.TestCase):
             },
         )
 
+    def test_job_hunter_profile_has_full_access_without_secret_inheritance(self):
+        transport = FakeTransport(
+            [{"id": 1, "result": {"thread": {"id": "thread-1"}}}]
+        )
+        client = CodexAppServer(transport)
+
+        client.thread_start(
+            cwd="/tmp/work",
+            model="gpt-5.6-luna",
+            capability_profile="job-hunter",
+        )
+
+        params = transport.sent[0]["params"]
+        self.assertEqual(params["approvalPolicy"], "never")
+        self.assertEqual(params["sandbox"], "danger-full-access")
+        self.assertNotIn("permissions", params)
+        self.assertEqual(
+            params["config"]["shell_environment_policy"]["inherit"], "core"
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

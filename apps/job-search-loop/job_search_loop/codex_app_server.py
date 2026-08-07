@@ -113,14 +113,26 @@ class CodexAppServer:
             if message.get("method") == method:
                 return message
 
-    def thread_start(self, *, cwd: str, model: str) -> dict[str, Any]:
+    def thread_start(
+        self,
+        *,
+        cwd: str,
+        model: str,
+        capability_profile: str = "read-only",
+    ) -> dict[str, Any]:
+        sandboxes = {
+            "read-only": "read-only",
+            "job-hunter": "danger-full-access",
+        }
+        if capability_profile not in sandboxes:
+            raise ValueError(f"unknown capability profile: {capability_profile}")
         return self._request(
             "thread/start",
             {
                 "cwd": cwd,
                 "model": model,
                 "approvalPolicy": "never",
-                "sandbox": "read-only",
+                "sandbox": sandboxes[capability_profile],
                 "ephemeral": False,
                 "serviceName": "job-hunter",
                 "config": {
