@@ -4262,6 +4262,20 @@ item before starting the next.
    removing it from the private evidence store. No new external application send is
    allowed until focused tests, the full suite, immutable release activation, and an
    installed-run Telegram proof pass.
+   - Implementation GREEN: run 83 proved the resident embedded the private profile
+     email in an ad-hoc shell command, invoked Telegram directly, and labeled a
+     delivered `outreach_only` route “Application sent.” RED added exactly two
+     regressions for the prompt boundary and deterministic dossier. The live prompt
+     now forbids direct Telegram, private values in shell/source/output, generic
+     outreach fallback, and per-run CLI/source rediscovery. The deterministic reporter
+     reads delivered outreach truth plus hash-verified saved message/resume artifacts,
+     labels it `Recruiting outreach — not an application`, and sends recipient,
+     canonical subject, exact full saved body, route/acceptance, receipt, and resume
+     under one idempotency key. Focused tests pass 2/2 and the adjacent
+     reporting/prompt/route/privacy tests pass 37/37. The first full-suite attempt used
+     the incomplete worktree virtualenv and had one Playwright import error; the
+     installed runtime Python then passed the complete suite 546/546. Installed-run
+     proof and Telegram provider ACK remain required before checking this item.
 2. [ ] **L-49K5D2 — Register and deduplicate the Big Two queue.** Put the selected
    official OpenAI and Anthropic roles into the Ledger before opening a form. Preserve
    every historical `submitted`, `submit_unknown`, `materials_ready`, and

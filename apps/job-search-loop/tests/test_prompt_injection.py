@@ -117,6 +117,17 @@ class PromptInjectionTests(unittest.TestCase):
         )
         self.assertNotIn("--task-class composition-agent", script)
 
+    def test_daily_agent_cannot_label_or_report_outreach_as_an_application(self):
+        root = Path(__file__).parents[1]
+        contract = (root / "prompts" / "daily-apply-simple.md").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("Recruiting outreach is not an application", contract)
+        self.assertIn("Do not send Telegram messages directly", contract)
+        self.assertIn("Do not embed private profile values in shell commands", contract)
+        self.assertNotIn("A Gmail provider message ID is `applied_email`", contract)
+
     def test_browser_persists_exact_submission_materials_before_click(self):
         root = Path(__file__).parents[1]
         prompts = [
