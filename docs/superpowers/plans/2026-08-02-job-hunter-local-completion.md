@@ -7,8 +7,8 @@
 **Configured upstream:** `canonical/docs/job-hunter-spec-20260805`
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-07 JST
-**Active atomic task:** `L-49K5E5` — encode the already-proven Ashby inspect, fill,
-verify, single-click, request-observation, and receipt sequence as one domain skill.
+**Active atomic task:** `L-49K5E6` — encode the Greenhouse inspect, fill, verify,
+submit-once, and authoritative-receipt sequence without opening an employer form.
 **Status:** The immutable four-lane runtime, grounded materials, ownership fences,
 Gmail ingestion, Telegram outbox, quota accounting, Ashby surface classifier, and
 loopback OpenTelemetry Collector/private trace index are implemented. The application
@@ -4401,9 +4401,18 @@ item before starting the next.
      RootWebArea, heading, and link role/name pairs. The snapshot SHA-256 is
      `62a034b37a0ed99cb795b4719815a73c8ba862df03c475896e5402160055dc74`.
      No target creation, navigation, click, typing, or Submit occurred.
-8. [ ] **L-49K5E5 — Bake the Ashby recipe.** Turn the proven inspect, map, fill,
+8. [x] **L-49K5E5 — Bake the Ashby recipe.** Turn the proven inspect, map, fill,
    verify, single-click, request observation, and receipt classification sequence into
    one reusable domain skill. The resident MUST NOT rediscover CLI help or source.
+   - Added the 78-line `jobs.ashbyhq.com/application.md` domain skill to the
+     versioned Job Hunter source and the active Browser Harness workspace. Both copies
+     have SHA-256
+     `4b36a92e96e2d02912f36e0ba73e84c930f4f202a68f9593dbd510f434a545ca`.
+     The recipe delegates all mutation to the deterministic Ashby CLI and existing
+     Ledger fence, requires GraphQL plus semantic visible success, preserves company
+     wording differences, forbids retry after clicked/request-started unknown, and
+     stores no private answers or GraphQL variables. No employer page or Submit was
+     touched while creating it.
 9. [ ] **L-49K5E6 — Bake the Greenhouse recipe.** Encode the equivalent inspect,
    fill, verify, submit-once, and receipt sequence without opening an employer form.
 10. [ ] **L-49K5E7 — Bake the Workday recipe.** Encode the equivalent authenticated
