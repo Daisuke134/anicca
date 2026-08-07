@@ -5639,7 +5639,19 @@ Item 10Bは未完。次の一件はCalendar title、ID、locationを出さず、
 実blocking intervalであることをread-only確認する。正当な衝突ならLumaへ無理にSubmitせず、同一wakeで次providerへ進むため
 Item 14のConnpass actionをItem 10B blockerとして前倒しする。14日窓は変更しない。
 
-### Active remaining TODO SSOT（進捗198。これ以外の残TODO一覧は履歴）
+### O1B-25進捗199（Item 10B blocker確認 / Calendar conflictは正当）
+
+gogから同じ東京時間14日rangeをread-only再取得し、title、Calendar ID、event ID、location、attendee identityを出力せずaggregateだけを検査した。
+source event 91件は全件confirmed、transparent 1件、opaqueまたはmissing 90件、timed 90件、all-day 1件。
+self attendee responseはaccepted 1、needsAction 10、self attendeeなし80で、declinedは0。busy inventory実装はcancelledとtransparentを除外し、
+Luma conflict filterはtimedだけを見るため、3件が全除外された原因はcancelled/transparent/declined/all-dayの誤blockingではない。
+
+14日内のLuma free/open candidate 3件は実timed予定と正当に重なる。14日窓を拡張したり重複時間へSubmitしたりしない。
+Item 10Bの新規Luma external successは現在の外部候補状態では成立不能だが、Connector本来の要件どおり同じwakeで次providerへ進む必要がある。
+次の一件はItem 14のConnpass actionをこの環境blocker解消として前倒しし、旧provider cursor/coverage runtimeを復活させず、
+既存Connpass codeをfile/symbol/call path単位で再inventoryすること。scheduleはunloadedを維持する。
+
+### Active remaining TODO SSOT（進捗199。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
