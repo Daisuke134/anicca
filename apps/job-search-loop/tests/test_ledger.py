@@ -118,6 +118,8 @@ class LedgerTests(unittest.TestCase):
         *,
         portfolio_bucket=None,
         record_materials=True,
+        user_authorized_overflow=False,
+        overflow_reason=None,
     ):
         row = ledger.connection.execute(
             "SELECT canonical_url FROM applications WHERE id = ?",
@@ -183,6 +185,8 @@ class LedgerTests(unittest.TestCase):
             fill_receipt_path=fill_receipt,
             fill_receipt_sha256=fill_receipt_sha256,
             portfolio_bucket=portfolio_bucket,
+            user_authorized_overflow=user_authorized_overflow,
+            overflow_reason=overflow_reason,
         )
         if intent is not None and record_materials:
             ledger.record_submission_materials(
@@ -539,6 +543,41 @@ class LedgerTests(unittest.TestCase):
             self._claim(self.ledger, eleventh_id, "2026-07-28", "hash-11")
         )
         self.assertEqual(self.ledger.daily_slot_count("2026-07-28"), 10)
+
+    def test_explicit_user_authorization_claims_one_overflow_slot_with_reason(self):
+        for index in range(10):
+            application_id = self.ledger.add_application(
+                f"Company {index}",
+                "GenAI Engineer",
+                f"https://jobs.example.com/authorized-{index}",
+            )
+            self._ready(application_id)
+            intent = self._claim(
+                self.ledger, application_id, "2026-07-28", f"hash-{index}"
+            )
+            self.ledger.complete_submission(intent.intent_id, intent.fence, "submitted")
+
+        overflow_id = self.ledger.add_application(
+            "OpenAI", "Solutions Engineer", "https://jobs.example.com/authorized-11"
+        )
+        self._ready(overflow_id)
+        intent = self._claim(
+            self.ledger,
+            overflow_id,
+            "2026-07-28",
+            "user-authorized-hash",
+            user_authorized_overflow=True,
+            overflow_reason="user explicitly requested this named application",
+        )
+
+        self.assertIsNotNone(intent)
+        self.assertEqual(intent.slot, 11)
+        event = self.ledger.events(overflow_id)[-1]
+        self.assertTrue(event["payload"]["user_authorized_overflow"])
+        self.assertEqual(
+            event["payload"]["overflow_reason"],
+            "user explicitly requested this named application",
+        )
 
     def test_not_submitted_releases_observable_daily_slot(self):
         self._ready()

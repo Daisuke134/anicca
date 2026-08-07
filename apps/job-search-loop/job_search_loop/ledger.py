@@ -2749,7 +2749,13 @@ class Ledger:
         fill_receipt_path: Path | None = None,
         fill_receipt_sha256: str | None = None,
         portfolio_bucket: str | None = None,
+        user_authorized_overflow: bool = False,
+        overflow_reason: str | None = None,
     ) -> SubmitIntent | None:
+        if user_authorized_overflow and not str(overflow_reason or "").strip():
+            raise ValueError("user-authorized overflow requires a reason")
+        if not user_authorized_overflow and overflow_reason is not None:
+            raise ValueError("overflow reason requires user authorization")
         if portfolio_bucket is not None and portfolio_bucket not in PORTFOLIO_LIMITS:
             raise ValueError("portfolio_bucket is invalid")
         resolved_resume = Path(resume_path).expanduser().resolve()
@@ -2856,6 +2862,8 @@ class Ledger:
                 ).fetchall()
             }
             slot = next((candidate for candidate in range(1, 11) if candidate not in used), None)
+            if slot is None and user_authorized_overflow:
+                slot = max(used, default=10) + 1
             if slot is None:
                 return None
             claimed_at = _now()
@@ -2988,6 +2996,8 @@ class Ledger:
                     "resume_sha256": resume_sha256,
                     "ats_snapshot_sha256": ats_snapshot_sha256,
                     "fill_receipt_sha256": fill_receipt_sha256,
+                    "user_authorized_overflow": user_authorized_overflow,
+                    "overflow_reason": overflow_reason,
                 },
             )
             return intent
