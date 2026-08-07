@@ -13,7 +13,7 @@ import os
 import re
 import secrets
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from pathlib import Path
 from typing import Any, Callable
@@ -59,6 +59,16 @@ def _is_https_url(value: Any, *, host_suffix: str | None = None) -> bool:
         return True
     host = (parsed.hostname or "").lower()
     return host == host_suffix or host.endswith(f".{host_suffix}")
+
+
+def _is_timestamp(value: Any) -> bool:
+    if not isinstance(value, str) or not value:
+        return False
+    try:
+        datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    return True
 
 
 def validate_outcome(data: dict) -> list[str]:
@@ -586,6 +596,16 @@ def transition_incident(
         raise ValueError(f"incident phase cannot move backwards: {current} -> {phase}")
     if current == "unresolved" and phase == "repair_started":
         record["attempts"] = int(record.get("attempts", 0)) + 1
+    now = _now()
+    # Retry scheduling is a machine contract. Older callers supplied prose
+    # such as "the next repair cycle", which made the health watchdog treat a
+    # real retry as missing forever. Preserve the incident but repair that
+    # boundary to a concrete, near-term retry timestamp.
+    if phase == "unresolved":
+        retry_at = update.get("next_retry_at", record.get("next_retry_at"))
+        if not _is_timestamp(retry_at):
+            retry_dt = datetime.fromisoformat(now.replace("Z", "+00:00")) + timedelta(hours=1)
+            update["next_retry_at"] = retry_dt.isoformat().replace("+00:00", "Z")
     for field in (
         "phase",
         "summary",
@@ -598,7 +618,6 @@ def transition_incident(
     ):
         if field in update:
             record[field] = update[field]
-    now = _now()
     phase_timestamps = record.setdefault("phase_timestamps", {})
     phase_timestamps.setdefault("detected", record.get("detected_at") or now)
     phase_timestamps.setdefault(phase, now)

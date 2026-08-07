@@ -1,6 +1,7 @@
 import json
 import subprocess
 import sys
+from datetime import datetime
 from pathlib import Path
 
 import pytest
@@ -80,6 +81,30 @@ def incident_record(phase: str) -> dict:
         "next_retry_at": "2026-08-01T21:00:00Z" if phase == "unresolved" else None,
         "attempts": 1,
     }
+
+
+def test_unresolved_transition_repairs_human_retry_sentinel(tmp_path: Path) -> None:
+    incident = incident_record("detected")
+    incident["next_retry_at"] = None
+    write_path = tmp_path / "capafy-incidents" / f"{incident['incident_id']}.json"
+    write_path.parent.mkdir(parents=True)
+    write_path.write_text(json.dumps(incident), encoding="utf-8")
+
+    result = run_cli_args(
+        "transition-incident",
+        payload={
+            "incident_id": incident["incident_id"],
+            "phase": "unresolved",
+            "next_retry_at": "the next repair cycle",
+        },
+        state_dir=tmp_path,
+    )
+
+    assert result.returncode == 0, result.stderr
+    repaired = json.loads(result.stdout)
+    assert repaired["phase"] == "unresolved"
+    assert repaired["next_retry_at"].endswith("Z")
+    datetime.fromisoformat(repaired["next_retry_at"].replace("Z", "+00:00"))
 
 
 @pytest.mark.parametrize(
