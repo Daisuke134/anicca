@@ -2071,6 +2071,33 @@ Four organs are missing. Each has an atomic item.
 | H3 | A budget that checkpoints instead of truncating | The live receipt shows `model.status TIMEOUT` at exactly the 120-second budget, so the only diagnosis attempt produced no verdict at all. A hard cap that discards partial work converts a slow investigation into a permanent unknown | an investigation that exceeds its slice persists partial findings and resumes on a later tick, with the same incident and no duplicate model spend |
 | H4 | An outcome gate scored on external evidence | Nothing currently grades whether a repair worked, or whether the editorial gates themselves are correctly calibrated. Self-reported success is not evidence | a scorer whose only inputs are publisher-native readback and verified received money, which can mark a repair REVERTED and a gate MISCALIBRATED |
 
+Prior-art decision, researched 2026-08-07 with sources confirmed by fetching the
+documents and by `gh repo view`:
+
+| Organ | Verdict | Deciding evidence |
+|---|---|---|
+| H1 watchdog | COPY THE PATTERN, BUILD THIN | Absent-metric alerting, dead-man's-switch start/success pings, burn-rate SLO alerting, and zero-rows assertions all reduce to one query against the existing SQLite ledgers. `absent_over_time()` (prometheus.io), healthchecks.io's `/start` ping with a grace window, Google SRE Workbook multi-window burn rate, and dbt's data test whose passing condition is "returns zero rows" express the same idea without adding infrastructure |
+| H2 repair channel | COPY THE GUARDRAILS WHOLESALE | Renovate gates automerge strictly on green required checks and merges one branch per run because "merging more than one branch in a row does not work reliably"; Meta's SapFix validates each patch in an isolated crash-reproduction environment against existing plus generated tests and degrades to full or partial revert when every candidate fails. Their structure matches the worktree plus test-gate flow this project already runs, so only a thin wrapper is needed |
+| H3 checkpointing | DO NOT BUY; REUSE CODEX'S OWN SESSION | DBOS Transact is "built on top of Postgres" and does not support SQLite; Temporal requires a resident server. Both conflict with the single-Mac launchd constraint. Upstream Codex already supplies the needed primitives: `--output-schema`, `-o/--output-last-message`, non-ephemeral sessions, and `codex exec --json resume --last`. H3 is therefore the same work as C1 and C3, not a separate durable-execution layer |
+| H4 outcome gate | COPY THE PRINCIPLE, BUILD THIN | Flagger evaluates only external metric thresholds and rolls back after a set number of failed checks, then does not retry until a new commit arrives; Argo Rollouts stops at `Degraded` past `FailureLimit`; promptfoo's `type: python` assertion scores an output by an independent function's return value rather than the model's self-report. The rule to adopt is that a score may only be a function of publisher-native readback and verified received money |
+
+Escalation rule, taken from the same sources rather than invented: no surveyed
+system retries forever. Each uses bounded attempts, then degrades to the safest
+known state, then stops and waits for a new trigger. The circuit-breaker
+transition Closed to Open to Half-Open is the canonical form, SapFix's fallback
+is a full or partial revert, and Flagger's terminal state is a completed
+rollback that will not re-run until new input arrives. The Writer's existing
+`resume-failure-circuit.json` is already this mechanism and MUST NOT be replaced.
+
+Sequencing decision: H3 runs first, merged into C1 and C3, because the live
+production receipt shows the only diagnosis attempt died at `TIMEOUT` with no
+verdict, so nothing downstream can act. H2 follows, then H1, then H4. This
+deliberately departs from the research's recommendation to build H1 first. The
+research's own strongest counter-argument is decisive: a detector without a
+write-capable repair channel converts the human from problem-finder into
+problem-fixer and raises notification load without removing anyone from the
+loop. H1 remains cheap and independent and is scheduled immediately after H2.
+
 Exit proof for this contract, and the point at which the foreground agent's
 routine role ends: one real defect completes detect, classify, repair, isolated
 test, staged deploy, same-work-item resume, and publisher-native public readback
