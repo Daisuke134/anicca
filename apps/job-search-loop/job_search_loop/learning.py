@@ -12,7 +12,7 @@ from typing import Any, Mapping, Sequence
 
 from .experiments import ExperimentResult, evaluate_candidate
 from .ledger import FUNNEL_STAGES, Ledger
-from .telegram import send_once
+from .telegram import TelegramRequester, _telegram_request, send_once
 
 
 LEARNING_SCOPE = "default"
@@ -582,7 +582,9 @@ def deliver_learning_report(
     report: Mapping[str, Any],
     *,
     database: Path,
-    executable: str = "/opt/homebrew/bin/openclaw",
+    token: str | None = None,
+    target: str | None = None,
+    requester: TelegramRequester = _telegram_request,
 ) -> dict[str, str | None]:
     message = (
         "🧠 Job-search learning pass\n"
@@ -596,7 +598,9 @@ def deliver_learning_report(
         database=database,
         event_key=f"job-search-learning:{report['decision_id']}",
         message=message,
-        executable=executable,
+        target=target,
+        token=token,
+        requester=requester,
     )
 
 
@@ -652,7 +656,6 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--occurred-at")
     parser.add_argument("--report", type=Path)
     parser.add_argument("--outbox", type=Path)
-    parser.add_argument("--telegram-executable", default="/opt/homebrew/bin/openclaw")
     parsed = parser.parse_args(argv)
 
     ledger = Ledger(parsed.ledger)
@@ -670,7 +673,6 @@ def main(argv: list[str] | None = None) -> int:
             delivery = deliver_learning_report(
                 result,
                 database=parsed.outbox,
-                executable=parsed.telegram_executable,
             )
             output = {
                 "status": "success",

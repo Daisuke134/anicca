@@ -174,8 +174,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--outbox", type=Path, required=True)
     parser.add_argument("--private-path", type=Path, action="append", default=[])
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--target", default="8547730585")
-    parser.add_argument("--openclaw", default="/opt/homebrew/bin/openclaw")
+    parser.add_argument("--target")
     args = parser.parse_args(argv)
     delivery: dict[str, Any] = {}
     outbox = Outbox(args.outbox)
@@ -196,7 +195,6 @@ def main(argv: list[str] | None = None) -> int:
                 event_key=f"guardian-recovery:{digest}",
                 message=message,
                 target=args.target,
-                executable=args.openclaw,
             )
         )
 

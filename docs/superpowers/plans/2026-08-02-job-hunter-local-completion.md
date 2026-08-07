@@ -15,7 +15,7 @@ loopback OpenTelemetry Collector/private trace index are implemented. The applic
 LaunchAgent is loaded on a 3,600-second schedule and is idle after resident run 85;
 CloakBrowser CDP and the observability Collector are running. The
 authoritative projection contains ten historical `submitted`, sixteen
-`submit_unknown`, six `rejected`, one `materials_ready`, and one `discovered`.
+`submit_unknown`, six `rejected`, two `materials_ready`, and five `discovered`.
 Seven submissions count toward the current day's confirmed quota. Three historical
 submissions are resident-loop confirmations: Cursor and two NVIDIA
 roles, all confirmed through Gmail fallback rather than ATS-site confirmation. The
@@ -24,7 +24,7 @@ zero verified interviews and zero offers. `L-49K2C1` is complete:
 its isolated CloakBrowser E2E verified changed field layouts across fill, select,
 check, and upload with zero Submit controls/actions and preserved all baseline pages.
 The active immutable release is `b925ebc1de62984d3d2233fa5e19ce3ad5d7cbd7`.
-The complete Job Hunter suite passes 547/547. Run 85 proves truthful outreach
+The complete Job Hunter suite passes 549/549. Run 85 proves truthful outreach
 reporting and clean provider logs but does not prove a new resident ATS submission.
 
 ## 1. Acceptance criteria — done condition
@@ -4331,6 +4331,31 @@ item before starting the next.
    a failed form into recruiting outreach. Ask only an actually missing private fact
    on Telegram, persist the answer privately, resume the same fenced intent, and send
    the exact resume plus every answer and authoritative receipt to Telegram.
+   - Direct Telegram transport repair: owner reporting no longer spawns or depends on
+     OpenClaw. The production transport uses Telegram's official HTTPS Bot API
+     directly: JSON `sendMessage`, multipart `sendDocument`, and authoritative
+     `result.message_id`, while retaining the existing durable Outbox fence. The
+     implementation has no `openclaw` or `subprocess` dependency, performs no media
+     staging copy, and reads token plus per-user chat ID from the mode-0600 private
+     `~/.config/anicca/job-search/telegram.env`; the chat ID is no longer embedded in
+     source. The async `python-telegram-bot` framework was rejected as unnecessary for
+     a synchronous send-only client; stdlib HTTPS adds zero dependencies. Focused
+     direct/reporting/learning/guardian tests pass 30/30 and the full suite passes
+     549/549. Real direct Bot API E2E acknowledged text message `8298` and PDF document
+     `8299`; no staging directory was created.
+   - Solutions Engineer progress receipt: the official Ashby form was inspected and
+     the deterministic CLI filled and browser-verified 11/11 actions, including the
+     English business resume and the natural role-specific Additional Information.
+     The pre-submit screenshot SHA-256 is
+     `d8736eabd8232f72dd0c51b7485e5a7c84f003a1f99b206dd404c8424ccf7467`.
+     Submit remained zero because Japan-day slots 1–10 were already occupied by seven
+     `submitted` and three `submit_unknown` attempts; no eleventh click or false next-
+     day claim was permitted. The application is durably `agent/materials_ready` with
+     zero submit intents and evidence at
+     `~/.local/state/anicca/job-search/evidence/openai-solutions-pre-sales-20260807T015903Z/`.
+     Telegram summary `8292`, exact full answers `8293`, resume `8295`, and the direct
+     transport proof above make the state visible. Resume this same Ledger row on the
+     first unoccupied Japan-day slot; do not open the second OpenAI role first.
 4. [ ] **L-49K5D4 — Apply to Anthropic one role at a time.** Start with Product
    Support Specialist, Applied AI Architect, then Partner Solutions Architect —
    Applied AI. Apply through each official Greenhouse form under the same fence,

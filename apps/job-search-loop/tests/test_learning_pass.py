@@ -5,7 +5,9 @@ import sqlite3
 import subprocess
 import sys
 import tempfile
+import threading
 import unittest
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 from job_search_loop.ledger import Ledger
@@ -366,56 +368,56 @@ class LearningPassTests(unittest.TestCase):
             _, ledger, driver = self._new_driver(root)
             report = driver.run()
             ledger.close()
-            executable = root / "fake-openclaw"
-            executable.write_text(
-                """#!/usr/bin/env python3
-import json
-import pathlib
-
-counter = pathlib.Path(__file__).with_suffix(".count")
-count = int(counter.read_text()) if counter.exists() else 0
-counter.write_text(str(count + 1))
-print(json.dumps({"messageId": "learning-901"}))
-""",
-                encoding="utf-8",
-            )
-            executable.chmod(0o700)
+            requests = []
+            def requester(**request):
+                requests.append(request)
+                return {"ok": True, "result": {"message_id": "learning-901"}}
 
             first = learning.deliver_learning_report(
                 report,
                 database=root / "telegram.sqlite3",
-                executable=str(executable),
+                token="test-token",
+                target="test-chat",
+                requester=requester,
             )
             second = learning.deliver_learning_report(
                 report,
                 database=root / "telegram.sqlite3",
-                executable=str(executable),
+                token="test-token",
+                target="test-chat",
+                requester=requester,
             )
 
             self.assertEqual(first["status"], "sent")
             self.assertEqual(first["message_id"], "learning-901")
             self.assertEqual(second, first)
-            self.assertEqual(executable.with_suffix(".count").read_text(), "1")
+            self.assertEqual(len(requests), 1)
             self.assertNotIn("Held-out Employer", json.dumps(report))
 
     def test_resident_script_writes_private_receipt_and_reuses_telegram_ack(self):
         app_root = Path(__file__).resolve().parents[1]
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            executable = root / "fake-openclaw"
-            executable.write_text(
-                """#!/usr/bin/env python3
-import json
-import pathlib
-
-counter = pathlib.Path(__file__).with_suffix(".count")
-count = int(counter.read_text()) if counter.exists() else 0
-counter.write_text(str(count + 1))
-print(json.dumps({"messageId": "learning-script-902"}))
-""",
-                encoding="utf-8",
-            )
-            executable.chmod(0o700)
+            class TelegramHandler(BaseHTTPRequestHandler):
+                count = 0
+                def do_POST(self):
+                    type(self).count += 1
+                    length = int(self.headers.get("Content-Length", "0"))
+                    self.rfile.read(length)
+                    payload = json.dumps({
+                        "ok": True,
+                        "result": {"message_id": "learning-script-902"},
+                    }).encode()
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/json")
+                    self.send_header("Content-Length", str(len(payload)))
+                    self.end_headers()
+                    self.wfile.write(payload)
+                def log_message(self, *_):
+                    return
+            server = ThreadingHTTPServer(("127.0.0.1", 0), TelegramHandler)
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start()
             provider = root / "fake-codex"
             provider.write_text(
                 """#!/usr/bin/env python3
@@ -460,7 +462,11 @@ print(json.dumps({"type": "turn.completed", "usage": {"input_tokens": 10, "outpu
                 "XDG_STATE_HOME": str(root / "state"),
                 "JOB_SEARCH_STATE_ROOT": str(root / "job-state"),
                 "JOB_SEARCH_PYTHON": sys.executable,
-                "JOB_SEARCH_OPENCLAW": str(executable),
+                "TELEGRAM_BOT_TOKEN": "test-token",
+                "JOB_SEARCH_TELEGRAM_CHAT_ID": "test-chat",
+                "TELEGRAM_BOT_API_BASE_URL": (
+                    f"http://127.0.0.1:{server.server_port}/bot"
+                ),
                 "AGENT_RUNNER_CONFIG": str(runner_config),
                 "AGENT_RUNNER_PROVIDER": "codex",
             }
@@ -479,6 +485,9 @@ print(json.dumps({"type": "turn.completed", "usage": {"input_tokens": 10, "outpu
                 text=True,
                 env=env,
             )
+            server.shutdown()
+            thread.join(timeout=2)
+            server.server_close()
 
             self.assertEqual(first.returncode, 0, first.stderr)
             self.assertEqual(second.returncode, 0, second.stderr)
@@ -514,7 +523,7 @@ print(json.dumps({"type": "turn.completed", "usage": {"input_tokens": 10, "outpu
                     for path in summaries
                 )
             )
-            self.assertEqual(executable.with_suffix(".count").read_text(), "1")
+            self.assertEqual(TelegramHandler.count, 1)
 
 
 if __name__ == "__main__":
