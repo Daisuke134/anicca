@@ -27,8 +27,8 @@ location, experience, and skills gaps determine order only; they do not create a
 no-application outcome. Prefer Tokyo, Japan-remote, USD 100,000-class compensation,
 and strong-fit AI/agent, solutions, forward-deployed, product, and technical-business
 roles first. Work on one role through an application receipt before selecting another.
-Until the SSOT task `L-49K5W1` has one authoritative receipt, select the highest-ranked
-eligible non-terminal Workday role before Ashby roles.
+Choose the highest-ranked eligible non-terminal role across all official ATS families.
+Never delay a ready Ashby application merely to prove a Workday-specific milestone.
 Diversify opportunity rather than sending consecutive roles to one employer: choose a
 new non-Workday employer first, then a different Workday employer after the first
 receipt. On later roles, continue alternating ATS families and employers when eligible
@@ -65,6 +65,12 @@ For each selected role:
    such as `[data-automation-id="click_filter"]` while a hidden submit button sits
    underneath it. If the hidden button reports intercepted pointer events, click the
    visible wrapper/role control and verify the page or step transition before continuing.
+   A tenant-required Workday account creation screen is an application step, not a
+   reason to stop or ask for authorization. Continue through account creation using
+   the private application email and the installed private credential store; never
+   expose a generated credential in commands, logs, artifacts, or model output. If
+   that private credential capability is genuinely unavailable, keep only that role
+   pre-click and immediately continue to the next eligible official ATS role.
    For Ashby, the command contract is fixed. `inspect` requires `--endpoint`, `--url`,
    and `--output`. Both `fill` and `verify` additionally require one private
    `--answers` JSON, one exact `--resume` PDF, and `--profile`. `apply` requires all
