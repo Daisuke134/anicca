@@ -7,8 +7,8 @@
 **Configured upstream:** `canonical/docs/job-hunter-spec-20260805`
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-07 JST
-**Active atomic task:** `L-49K5E3` — attach Browser Harness read-only to the existing
-CloakBrowser CDP owner and capture one non-application page observation.
+**Active atomic task:** `L-49K5E4` — capture one inspectable Browser Harness recording
+and accessibility snapshot from a non-application page without mutation.
 **Status:** The immutable four-lane runtime, grounded materials, ownership fences,
 Gmail ingestion, Telegram outbox, quota accounting, Ashby surface classifier, and
 loopback OpenTelemetry Collector/private trace index are implemented. The application
@@ -4383,9 +4383,16 @@ item before starting the next.
      `browser-harness skill` both returned successfully. No CDP connection, browser
      navigation, application form, or external side effect occurred. Telegram report
      `8329` exposes the completion to the owner.
-6. [ ] **L-49K5E3 — Attach the persistent browser.** Connect Browser Harness through
+6. [x] **L-49K5E3 — Attach the persistent browser.** Connect Browser Harness through
    `BU_CDP_URL` to the existing CloakBrowser owner and capture one read-only page
    observation. No form mutation or Submit is allowed.
+   - Connected Browser Harness `0.1.8` to CloakBrowser Chrome 145 at loopback CDP
+     `127.0.0.1:9222`. It attached by `targetId` to the already-open non-application
+     connpass page and read only its title and URL. No target was created, activated,
+     navigated, clicked, typed into, or submitted. Runtime `list_tabs()` exposes
+     `targetId`, not the `id` key shown in the tabs interaction example; the first
+     read-only attempt therefore raised `KeyError` with zero browser mutation before
+     the corrected observation succeeded.
 7. [ ] **L-49K5E4 — Record one browser trace.** Produce one inspectable recording and
    accessibility snapshot from the attached session, with no application mutation.
 8. [ ] **L-49K5E5 — Bake the Ashby recipe.** Turn the proven inspect, map, fill,
