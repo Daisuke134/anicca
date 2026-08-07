@@ -149,6 +149,22 @@ test("provider discovery failure continues and still reports the wake", async ()
   assert.equal(result.telegram_provider_id, "9001");
 });
 
+test("malformed provider candidates report the parent contract boundary", async () => {
+  const state = fixture({
+    async discoverCandidates(provider) {
+      state.calls.push(["discover", provider]);
+      return provider === "luma" ? [{ provider: "luma" }] : [];
+    },
+  });
+  await runMinimalConnectorWake({
+    ownerToken: "owner-token-connector-minimal-1",
+    providers: ["luma", "connpass"],
+  }, state.dependencies);
+  assert.deepEqual(state.calls.find(([name]) => name === "report").slice(1), [
+    "completed_no_effect", "provider_candidate_contract_failed",
+  ]);
+});
+
 test("a failed direct action invokes at most ten agent steps on the exact same page", async () => {
   const state = fixture({
     async runAgentFallback(input) {
