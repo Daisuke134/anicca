@@ -174,3 +174,31 @@ test("Connpass reports a safe code when detail redirects to a different event id
     (error) => error.code === "CONNPASS_DETAIL_IDENTITY_MISMATCH_FAILED",
   );
 });
+
+test("Connpass distinguishes binding validation from candidate validation", async () => {
+  const common = {
+    now: () => new Date("2026-08-07T03:00:00.000Z"),
+    async submitOnPage() { return { status: "registered" }; },
+    async readStateOnPage() { return { state: "registered" }; },
+  };
+  const bindingWorkflow = createConnpassScriptFirstWorkflow({
+    ...common,
+    async readCalendarBindings() {
+      return [{ event_ref: "connpass-event://event/393711", canonical_url: "https://example.com/event/393711/", calendar_date: "2026-08-10" }];
+    },
+    async readEventDetail() { return {}; },
+  });
+  await assert.rejects(
+    bindingWorkflow.discoverCandidates({ page: { async goto() {} }, calendar: [] }),
+    (error) => error.code === "CONNPASS_CALENDAR_BINDING_VALIDATION_FAILED",
+  );
+
+  const candidateWorkflow = createConnpassScriptFirstWorkflow({
+    ...common,
+    async discoverOnPage() { return [{ provider: "connpass" }]; },
+  });
+  await assert.rejects(
+    candidateWorkflow.discoverCandidates({ page: {}, calendar: [] }),
+    (error) => error.code === "CONNPASS_CANDIDATE_VALIDATION_FAILED",
+  );
+});

@@ -86,7 +86,7 @@ function registered(value) {
 
 function safeDiscoveryReason(error) {
   const code = String(error && error.code || "");
-  return /^CONNPASS_(?:CALENDAR_NAVIGATION|CALENDAR_BINDINGS|DETAIL_NAVIGATION|DETAIL_READ|DETAIL_IDENTITY_MISMATCH)_FAILED$/.test(code)
+  return /^CONNPASS_(?:CALENDAR_NAVIGATION|CALENDAR_BINDINGS|CALENDAR_BINDING_VALIDATION|DETAIL_NAVIGATION|DETAIL_READ|DETAIL_IDENTITY_MISMATCH|CANDIDATE_VALIDATION)_FAILED$/.test(code)
     ? code.toLowerCase() : "provider_discovery_failed";
 }
 

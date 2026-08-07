@@ -5821,7 +5821,17 @@ calendar pageを離れてdetailへ到達しているためrows shape/size failur
 またはdefault discovery後のouter candidate validationに限定された。Item 10B/14は未完。次の一件はこの2境界だけを別safe codeへ分けること。
 scheduleはunloadedを維持する。
 
-### Active remaining TODO SSOT（進捗212。これ以外の残TODO一覧は履歴）
+### O1B-25進捗213（Connpass remaining parent validation diagnosis）
+
+calendar binding invalid fixtureとouter candidate invalid fixtureがどちらもgeneric invalidになるREDを確認した。
+前者を`CONNPASS_CALENDAR_BINDING_VALIDATION_FAILED`、後者を`CONNPASS_CANDIDATE_VALIDATION_FAILED`へ分離し、runner safe reason allowlistへ追加した。
+URL、event title、page text、raw errorは保存・送信せず、validation条件自体も緩めていない。
+
+Connpass workflow/minimal runner/production focused suiteは21/21 GREEN。実browser、Submit、Calendar write、PNG作用は0。
+Item 10B/14は未完。次の一件はofficial foreground wakeで二つのどちらが実failureか確定し、そのvalidationだけを修復すること。
+scheduleはunloadedを維持する。
+
+### Active remaining TODO SSOT（進捗213。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
