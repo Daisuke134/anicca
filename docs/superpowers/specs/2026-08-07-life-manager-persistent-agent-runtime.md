@@ -260,8 +260,20 @@ Only the first unchecked item is active.
         10 grounded answers, zero missing required facts, and SHA-256
         `18e5f4a4a753b962d9cb3b0401fbcff65ecf1b1457592598267d762257b17d09`.
         The 15 focused Ashby tests passed. No fill or Submit occurred.
-   3. materialize the application, grounded material, submit intent, browser fence,
-      and exact artifact hashes before browser fill;
+   3. [x] before browser fill, materialize the application, canonical route, grounded
+      posting/resume/answers artifacts, and exact hashes. Do not claim a submit intent
+      yet: the existing Ledger correctly requires a verified no-submit fill receipt
+      containing the live browser owner lease and fence. The canary acquires that
+      browser fence, fills and verifies without Submit, then claims the submit intent
+      from those exact hashes before any live click;
+      - Receipt: `prefill_prepare` composes existing Ledger APIs without weakening
+        their fences. For application
+        `d129c4711ff8733a066137766df6f32cfa312cc544e37a9a8b603bea3e66c1c3`,
+        the production Ledger independently reports `materials_ready`, one eligible
+        canonical ATS route, three private artifacts (`posting`, `resume_draft`,
+        `answers_draft`) with matching SHA-256 values, and zero submission attempts.
+        The private receipt is mode 0600. Focused test passed 1/1. No form fill,
+        submit intent, or Submit occurred.
    4. replace only the Job Hunter application lane's `codex exec --ephemeral` with
       app-server resume while preserving Ledger, browser fence, exact Submit authority,
       Gmail, Telegram, and immutable release contracts; and
