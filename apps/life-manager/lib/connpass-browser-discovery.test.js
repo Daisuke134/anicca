@@ -3,7 +3,10 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
 
-const { normalizeConnpassEventDetail } = require("./connpass-browser-discovery.js");
+const {
+  normalizeConnpassEventDetail,
+  readEventDetail,
+} = require("./connpass-browser-discovery.js");
 
 function raw(overrides = {}) {
   return {
@@ -37,4 +40,43 @@ test("Connpass detail normalization requires explicit free price and open regist
   });
   assert.equal(normalizeConnpassEventDetail(raw({ offers: [], price_labels: [] })).ticket_price_status, "unknown");
   assert.equal(normalizeConnpassEventDetail(raw({ controls: ["受付終了"] })).registration_status, "closed");
+});
+
+test("Connpass browser detail reads public offers controls and price labels", async () => {
+  const previousDocument = global.document;
+  const previousLocation = global.location;
+  const event = {
+    "@type": "Event",
+    name: "Public event",
+    startDate: "2026-08-10T19:00:00+09:00",
+    endDate: "2026-08-10T21:00:00+09:00",
+    offers: [{ "@type": "Offer", price: "0", priceCurrency: "JPY" }],
+    location: { name: "Public venue", address: "Tokyo" },
+  };
+  const scripts = [{ textContent: JSON.stringify(event) }];
+  const controls = [{ innerText: "このイベントに申し込む", value: "", getAttribute() { return ""; } }];
+  const priceNodes = [{ textContent: "参加費 無料" }];
+  global.location = { href: "https://tokyo-builders.connpass.com/event/401001/" };
+  global.document = {
+    querySelector(selector) {
+      if (selector === 'link[rel="canonical"]') return { href: global.location.href };
+      return null;
+    },
+    querySelectorAll(selector) {
+      if (selector === 'script[type="application/ld+json"]') return scripts;
+      if (selector === 'button,a[role="button"],a.btn,input[type="submit"]') return controls;
+      if (selector === '[class*="price"],[class*="fee"],[class*="amount"],dt,dd') return priceNodes;
+      return [];
+    },
+  };
+  const page = { async evaluate(callback) { return callback(); } };
+  try {
+    const result = await readEventDetail(page);
+    assert.deepEqual(result.offers, [{ price: "0", priceCurrency: "JPY" }]);
+    assert.deepEqual(result.controls, ["このイベントに申し込む"]);
+    assert.deepEqual(result.price_labels, ["参加費 無料"]);
+  } finally {
+    global.document = previousDocument;
+    global.location = previousLocation;
+  }
 });

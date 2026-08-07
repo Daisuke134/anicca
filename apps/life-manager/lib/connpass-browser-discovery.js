@@ -116,6 +116,19 @@ async function readEventDetail(page) {
       .replace(/\s+/g, " ").trim() || null;
     const canonical = document.querySelector('link[rel="canonical"]')?.href || location.href;
     const match = /\/event\/([1-9][0-9]*)\/?/.exec(new URL(canonical, location.href).pathname);
+    const offers = (Array.isArray(event.offers) ? event.offers : [event.offers])
+      .filter((offer) => offer && typeof offer === "object").slice(0, 100)
+      .map((offer) => ({ price: offer.price, priceCurrency: offer.priceCurrency }));
+    const controls = [...document.querySelectorAll(
+      'button,a[role="button"],a.btn,input[type="submit"]',
+    )].map((element) => String(
+      element.innerText || element.value || element.getAttribute("aria-label") || "",
+    ).replace(/\s+/g, " ").trim()).filter(Boolean).slice(0, 100);
+    const priceLabels = [...document.querySelectorAll(
+      '[class*="price"],[class*="fee"],[class*="amount"],dt,dd',
+    )].map((element) => String(element.textContent || "").replace(/\s+/g, " ").trim())
+      .filter((value) => value && value.length <= 300 && /(?:無料|free|参加費|¥|円)/i.test(value))
+      .slice(0, 100);
     return {
       event_ref: match ? `connpass-event://event/${match[1]}` : null,
       canonical_url: match ? `${new URL(canonical, location.href).origin}/event/${match[1]}/` : null,
@@ -128,6 +141,9 @@ async function readEventDetail(page) {
       address: typeof addressValue === "string" ? addressValue
         : [addressValue.streetAddress, addressValue.addressLocality, addressValue.addressRegion]
           .filter(Boolean).join(" ") || null,
+      offers,
+      controls,
+      price_labels: priceLabels,
     };
   });
 }

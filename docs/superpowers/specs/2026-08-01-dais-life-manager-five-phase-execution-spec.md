@@ -5696,7 +5696,19 @@ Connpass discovery/workflow/provider focused suiteは6/6 GREEN。実browser、Su
 Item 10B/14は未完。次の一件は`readEventDetail`がoffers、controls、price labelsを公開DOMから返すcontractをREDで追加し、
 同じowned pageのdefault 14日discoveryへ接続すること。scheduleはunloadedを維持する。
 
-### Active remaining TODO SSOT（進捗202。これ以外の残TODO一覧は履歴）
+### O1B-25進捗203（Item 14前倒し / Connpass real DOM eligibility extraction）
+
+`readEventDetail`のbrowser callbackを最小DOM fixture上で実行するTDD testを追加し、offers未返却のREDを確認した。
+readerはJSON-LD Eventのoffersからprice/priceCurrencyだけ、visible control候補からpublic labelだけ、price/fee/amount/dt/dd nodeから
+無料/free/参加費/円に関係する300文字以下のpublic labelだけを各最大100件抽出する。HTML全体、入力値、cookie、credentialは返さない。
+
+このraw出力を進捗202のfail-closed normalizationへ渡せる。Connpass discovery/workflow/provider focused suiteは7/7 GREEN。
+実CloakBrowser、Submit、Calendar write、PNG、Telegram作用は0。
+
+Item 10B/14は未完。次の一件は同じowned pageで必要なcalendar monthを最大2回、各event detailを順次`goto`するdefault discoveryをTDDで接続し、
+candidateごとのtarget create/close 0を固定すること。scheduleはunloadedを維持する。
+
+### Active remaining TODO SSOT（進捗203。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
