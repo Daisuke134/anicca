@@ -41,6 +41,58 @@ ACCOUNT_RE = re.compile(r"\b(?:create account|sign in|log in|password)\b", re.IG
 APPLY_RE = re.compile(r"\b(?:apply|start application|apply for this job)\b", re.IGNORECASE)
 
 
+def classify_execution_outcome(
+    *,
+    recaptcha_present: bool,
+    visible_challenge: bool,
+    fingerprint_rejected: bool,
+    request_started: bool,
+    authoritative_receipt: bool,
+) -> dict[str, Any]:
+    """Classify one fenced browser attempt without granting Submit authority."""
+    flags = (
+        recaptcha_present,
+        visible_challenge,
+        fingerprint_rejected,
+        request_started,
+        authoritative_receipt,
+    )
+    if any(not isinstance(value, bool) for value in flags):
+        raise ValueError("execution outcome flags must be booleans")
+    if authoritative_receipt and not request_started:
+        raise ValueError("authoritative receipt requires a started request")
+    if visible_challenge and fingerprint_rejected:
+        raise ValueError("challenge and fingerprint rejection are mutually exclusive")
+
+    if authoritative_receipt:
+        classification = "confirmed_receipt"
+        next_route = "complete_submitted"
+    elif request_started:
+        classification = "request_started_unknown"
+        next_route = "complete_submit_unknown"
+    elif visible_challenge:
+        classification = "visible_challenge"
+        next_route = "same_fence_captcha_recovery"
+    elif fingerprint_rejected:
+        classification = "fingerprint_rejected"
+        next_route = "same_fence_camofox_recovery"
+    elif recaptcha_present:
+        classification = "invisible_recaptcha"
+        next_route = "same_fence_continue_observation"
+    else:
+        classification = "no_anti_bot_signal"
+        next_route = "same_fence_continue"
+
+    return {
+        "version": 1,
+        "classification": classification,
+        "next_route": next_route,
+        "preserve_fence": True,
+        "telegram_required": True,
+        "application_confirmed": classification == "confirmed_receipt",
+    }
+
+
 def _bounded_controls(snapshot: Mapping[str, Any]) -> list[dict[str, Any]]:
     controls: list[dict[str, Any]] = []
     frames = snapshot.get("frames")
