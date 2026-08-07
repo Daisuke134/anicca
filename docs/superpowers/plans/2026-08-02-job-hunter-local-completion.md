@@ -7,28 +7,25 @@
 **Configured upstream:** `canonical/docs/job-hunter-spec-20260805`
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-07 JST
-**Active atomic task:** `L-49K5D1` — repair send truth and privacy before another
-external application action. Outreach-only mail must never be labeled or counted as
-an application; Telegram must show the exact action, full content, artifacts, reason,
-and authoritative receipt.
+**Active atomic task:** `L-49K5D2` — register and deduplicate the selected official
+OpenAI and Anthropic queue before opening or submitting another application form.
 **Status:** The immutable four-lane runtime, grounded materials, ownership fences,
 Gmail ingestion, Telegram outbox, quota accounting, Ashby surface classifier, and
 loopback OpenTelemetry Collector/private trace index are implemented. The application
-LaunchAgent is loaded on a 3,600-second schedule and is idle after resident run 83;
+LaunchAgent is loaded on a 3,600-second schedule and is idle after resident run 85;
 CloakBrowser CDP and the observability Collector are running. The
-authoritative projection contains seven `submitted`, twelve `submit_unknown`, and six
-`rejected`. Three submissions are resident-loop confirmations: Cursor and two NVIDIA
+authoritative projection contains ten historical `submitted`, sixteen
+`submit_unknown`, six `rejected`, one `materials_ready`, and one `discovered`.
+Seven submissions count toward the current day's confirmed quota. Three historical
+submissions are resident-loop confirmations: Cursor and two NVIDIA
 roles, all confirmed through Gmail fallback rather than ATS-site confirmation. The
 owner-authorized OpenAI Ashby success is `dais_manual`, not resident proof. There are
 zero verified interviews and zero offers. `L-49K2C1` is complete:
 its isolated CloakBrowser E2E verified changed field layouts across fill, select,
 check, and upload with zero Submit controls/actions and preserved all baseline pages.
-active immutable release is `66f9c760e8a4bc3db7bead03e53f5cce2986eebd`.
-Its focused launchd and canonical-runtime tests pass 1/1 and 12/12, and the complete
-Job Hunter suite passes 544/544. Run 83 proved the corrected quota gate but did not
-prove a resident ATS submission: its Salesforce message was recruiting outreach,
-the Ledger remained `materials_ready`, Telegram used misleading application wording,
-and the privacy scan exited 76 after finding a private email in a provider log.
+The active immutable release is `f9047684fbdaea8379037381a56343744bd240cd`.
+The complete Job Hunter suite passes 547/547. Run 85 proves truthful outreach
+reporting and clean provider logs but does not prove a new resident ATS submission.
 
 ## 1. Acceptance criteria — done condition
 
@@ -4255,7 +4252,7 @@ test/domain skill before release—not that a third-party website can never chan
 This order is authoritative. Complete, verify, update this SSOT, commit, and push one
 item before starting the next.
 
-1. [ ] **L-49K5D1 — Repair send truth and privacy.** Make outreach-only Gmail
+1. [x] **L-49K5D1 — Repair send truth and privacy.** Make outreach-only Gmail
    impossible to label or count as an application; deliver the full email body,
    recipient, subject, route kind, acceptance class, reason, resume, and all answered
    questions to Telegram; redact `application_email` from provider logs without
@@ -4285,6 +4282,20 @@ item before starting the next.
      resident pass: the dossier result is `delivery_unknown`, later retry is fenced,
      and application work continues. Reporting/prompt tests pass 23/23 and the full
      suite passes 547/547. A new immutable release and installed run remain required.
+   - Completion receipt: immutable release
+     `f9047684fbdaea8379037381a56343744bd240cd` is active. Installed run 85
+     (`daily-20260807-102339`, launchd run count 85) crossed the historical outreach
+     transport failure, completed discovery and the application lane, released the
+     browser, and exited zero. All three provider-log privacy receipts are `clean`;
+     the resident issued zero commands containing `application_email` and zero direct
+     Telegram commands. Deterministic outreach corrections with the explicit
+     `not an application` classification, full saved body, route truth, provider
+     receipt, and resume were acknowledged as Telegram messages `8268`, `8273`,
+     `8275`, `8277`, `8279`, `8282`, and `8285`; existing uncertain Cursor/NVIDIA
+     outbox rows were not blindly retried. The final daily pipeline report is Telegram
+     message `8286`. The run made zero Submit and zero Gmail side effects, found 450
+     links, verified 50, preserved five eligible roles, and left its two application
+     blockers visible rather than inventing success. This item is complete.
 2. [ ] **L-49K5D2 — Register and deduplicate the Big Two queue.** Put the selected
    official OpenAI and Anthropic roles into the Ledger before opening a form. Preserve
    every historical `submitted`, `submit_unknown`, `materials_ready`, and
