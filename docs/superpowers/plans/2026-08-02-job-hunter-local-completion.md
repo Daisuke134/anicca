@@ -4088,10 +4088,15 @@ OpenTelemetry decision and primary sources:
       intent `ba756dd2089745148dfb15da992fd2fa`, fence `1`, source
       `ashby_graphql_plus_visible_success`, and terminal SHA-256
       `e73a212752d3ca020b16bae36ca19578ba437dcf434b054daff414e467cb430b`.
-      Summary and Guardian accept that event only through the matching authoritative
-      browser contract (submitted intent/attempt, materials receipt, confirmed click,
-      request-started transport, and ATS evidence bundle). The installed runtime must
-      not be kickstarted until the tested replacement release is activated.
+      The post-`e9eaad517` live projection check found no
+      `submission_evidence_bundles` row and no `application_artifacts` row for that
+      confirmation, so the earlier fixture's ATS bundle was not a durable runtime
+      fact and no screenshot path is invented. Summary and Guardian accept the
+      immutable event only when its exact source and terminal SHA above are present
+      alongside the same application/intent/fence's submitted intent and attempt,
+      immutable materials receipt, confirmed click, and request-started transport.
+      The installed runtime must not be kickstarted until the tested replacement
+      release is activated.
 - [ ] **L-49K** — Prove `L-49K1` through `L-49K4` through the installed resident
   LaunchAgent on one eligible Ashby role. The development session only triggers and
   observes. The resident must open the application surface, fill, verify, submit once,
