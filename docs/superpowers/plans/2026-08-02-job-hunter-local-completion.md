@@ -4276,6 +4276,15 @@ item before starting the next.
      the incomplete worktree virtualenv and had one Playwright import error; the
      installed runtime Python then passed the complete suite 546/546. Installed-run
      proof and Telegram provider ACK remain required before checking this item.
+   - Installed run 84 (`daily-20260807-101843`) used release `448554daf31bd7fad6684decbbe897aa982785b0`
+     and made no ATS, Gmail, or application side effect. It stopped before discovery
+     because the first historical outreach dossier's `openclaw` document transport
+     timed out after 60 seconds; its outbox row is durably `send_started`, so blind
+     retry is forbidden. One measured regression now makes `DeliveryUncertain`,
+     transport timeout, nonzero transport failure, and invalid ACK nonfatal to the
+     resident pass: the dossier result is `delivery_unknown`, later retry is fenced,
+     and application work continues. Reporting/prompt tests pass 23/23 and the full
+     suite passes 547/547. A new immutable release and installed run remain required.
 2. [ ] **L-49K5D2 — Register and deduplicate the Big Two queue.** Put the selected
    official OpenAI and Anthropic roles into the Ledger before opening a form. Preserve
    every historical `submitted`, `submit_unknown`, `materials_ready`, and

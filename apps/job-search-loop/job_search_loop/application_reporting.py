@@ -4,11 +4,13 @@ import argparse
 import hashlib
 import json
 import os
+import subprocess
 import zipfile
 from pathlib import Path
 from typing import Callable
 
 from .ledger import Ledger
+from .outbox import DeliveryUncertain
 from .telegram import send_document_once
 
 
@@ -226,17 +228,38 @@ def deliver_outreach_dossiers(
         )
         if len(message) > 4096:
             raise ValueError("outreach Telegram dossier exceeds message limit")
-        delivery = sender(
-            database=outbox_path,
-            event_key=(
-                f"outreach-dossier:{report['application_id']}:"
-                f"{report['provider_id']}:{report['message_sha256']}:"
-                f"{report['resume_sha256']}"
-            ),
-            message=message,
-            document=Path(report["resume_path"]),
-            media_root=media_root,
-        )
+        try:
+            delivery = sender(
+                database=outbox_path,
+                event_key=(
+                    f"outreach-dossier:{report['application_id']}:"
+                    f"{report['provider_id']}:{report['message_sha256']}:"
+                    f"{report['resume_sha256']}"
+                ),
+                message=message,
+                document=Path(report["resume_path"]),
+                media_root=media_root,
+            )
+        except DeliveryUncertain as error:
+            deliveries.append(
+                {
+                    "application_id": report["application_id"],
+                    "status": "delivery_unknown",
+                    "message_id": None,
+                    "reason": type(error).__name__,
+                }
+            )
+            continue
+        except (subprocess.TimeoutExpired, RuntimeError, json.JSONDecodeError) as error:
+            deliveries.append(
+                {
+                    "application_id": report["application_id"],
+                    "status": "delivery_unknown",
+                    "message_id": None,
+                    "reason": type(error).__name__,
+                }
+            )
+            break
         deliveries.append(
             {
                 "application_id": report["application_id"],
