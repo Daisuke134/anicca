@@ -4505,6 +4505,14 @@ item before starting the next.
       `c665565c9eb604be078fd82f2a6b79ae5361b9d12ab903dd94c4a4bf8b85d00c`;
       previous is `6c2fe05909fd350563676dff059f0ef5fb28b5fb`. Resident proof run
       `daily-20260807-131005` started as PID `34910`; terminal evidence is pending.
+    - Run `daily-20260807-131005` ended blocked with zero Submit and Telegram report
+      `8367`. It reached OpenAI Partner Director fill but returned `needs_fact` because
+      current location had no dedicated fact ID and the existing ordinary attestation
+      ID was not selected. The private profile now stores exactly one
+      `profile.current_location_20260807` fact, and the resident prompt directly maps
+      the location and certification questions to that ID and
+      `ordinary_truthful_application_attestation_20260807`; it forbids historical-run
+      searches for these known answers. No test was run per owner instruction.
 14. [ ] **L-49K5G1 — Route the cheap model.** Use Luna for one known-ATS
     observe/map/fill/verify pass with no Submit authority.
 15. [ ] **L-49K5G2 — Gate escalation.** Give Terra the same fenced intent only after

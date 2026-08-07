@@ -76,6 +76,11 @@ For each selected role:
    `official_ats_boards` or `workday_cxs`, use the exact matching `Job board` option
    with fact `application_source_job_board_20260807`; this is observed route
    provenance, not a private fact to ask again.
+   For Ashby `Where are you currently located?`, use the private profile candidate
+   base with fact `profile.current_location_20260807`. For the ordinary truthful
+   application certification, answer Yes with fact
+   `ordinary_truthful_application_attestation_20260807`. Do not search prior run
+   directories for either answer.
    After a deterministic non-submit fill produces a claim-ready ATS snapshot and fill
    receipt, create the missing Ledger fence only with:
    `$JOB_SEARCH_PYTHON -m job_search_loop.submission_prepare --ledger
