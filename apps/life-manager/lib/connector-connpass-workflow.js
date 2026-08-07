@@ -16,6 +16,13 @@ const EVENT_URL = /^https:\/\/(?:[a-z0-9-]+\.)?connpass\.com\/event\/[1-9][0-9]*
 const TIME_ZONE = "Asia/Tokyo";
 
 function invalid() { throw new Error("Connpass script-first workflow invalid"); }
+const DETAIL_FIELD_CODES = new Set([
+  "CONNPASS_DETAIL_TITLE_INVALID_FAILED",
+  "CONNPASS_DETAIL_START_INVALID_FAILED",
+  "CONNPASS_DETAIL_END_INVALID_FAILED",
+  "CONNPASS_DETAIL_RANGE_INVALID_FAILED",
+]);
+
 function stageError(code) {
   const error = new Error("Connpass discovery stage failed");
   error.code = code;
@@ -110,7 +117,10 @@ function createDefaultDiscovery({ now, readBindings, readDetail }) {
       } catch { throw stageError("CONNPASS_DETAIL_NAVIGATION_FAILED"); }
       let detail;
       try { detail = normalizeConnpassEventDetail(await readDetail(page)); }
-      catch { throw stageError("CONNPASS_DETAIL_READ_FAILED"); }
+      catch (error) {
+        const code = String(error && error.code || "");
+        throw stageError(DETAIL_FIELD_CODES.has(code) ? code : "CONNPASS_DETAIL_READ_FAILED");
+      }
       if (detail.event_ref !== binding.event_ref) {
         throw stageError("CONNPASS_DETAIL_IDENTITY_MISMATCH_FAILED");
       }
