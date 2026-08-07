@@ -4485,6 +4485,13 @@ item before starting the next.
       `d67abee4d55cd96772629b7b2a6f8e69bf47c13e6e1e6f37aad3f6d5f711da36`;
       previous is `49940572e97ef9434ceb5824b6d1c470ac280e22`. Resident proof run
       `daily-20260807-125608` started as PID `5775`; its terminal result is pending.
+    - Run `daily-20260807-125608` ended safely blocked with zero Submit and Telegram
+      daily report `8360`. Salesforce MuleSoft stopped because its required
+      application-source answer was absent; OpenAI Partner Director stopped because
+      no durable application/intent/material/fence existed. The private profile now
+      contains fact `application_source_job_board_20260807`: candidates discovered
+      through `official_ats_boards` or `workday_cxs` answer the matching `Job board`
+      option. The JSON was validated and the fact is stored exactly once.
 14. [ ] **L-49K5G1 — Route the cheap model.** Use Luna for one known-ATS
     observe/map/fill/verify pass with no Submit authority.
 15. [ ] **L-49K5G2 — Gate escalation.** Give Terra the same fenced intent only after
