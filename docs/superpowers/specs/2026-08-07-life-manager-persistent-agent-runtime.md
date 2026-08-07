@@ -238,8 +238,17 @@ Only the first unchecked item is active.
         `CAPABILITY_PARITY_OK` after verifying the shared Context7 skill, official
         Ashby CLI source, `crwl`, outbound HTTPS to the public Ashby board, and `/tmp`
         access. It did not open a form, fill a field, or click Submit.
-   1. canonicalize candidate URLs and Ledger aliases; exclude every terminal,
+   1. [x] canonicalize candidate URLs and Ledger aliases; exclude every terminal,
       `submitted`, `rejected`, and `submit_unknown` application;
+      - Receipt: `filter_terminal_candidates` canonicalizes tracking-parameter URL
+        variants and bridges only immutable `evidence://` company/title aliases, so a
+        genuinely new requisition with the same title remains eligible. The browser
+        worker writes and consumes one private filtered artifact for both route
+        materialization and pre-submit. Focused candidate-route tests passed 3/3 and
+        browser-worker tests passed 9/9. Against the latest available resident
+        prefilter artifact, the production Ledger excluded 8 of 12 candidates
+        (`submitted` 2, `rejected` 6) and retained 4. Resident remained idle at 92
+        runs; no release activation, browser action, or Submit occurred.
    2. inspect one genuinely new official Ashby form and generate its answers artifact
       deterministically from private profile facts, leaving only truly optional fields
       blank and asking Telegram only for an unknown required personal fact;
