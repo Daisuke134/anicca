@@ -2194,6 +2194,57 @@ The next measurement is a read-only element inventory of the paid half against
 the paid halves of every article note has actually accepted, looking for an
 element class present in ours and absent from all of theirs.
 
+#### The element inventory — 2026-08-08
+
+That inventory was taken. Authenticated read-only `GET /api/v3/notes/{key}` for
+the rejected draft and for the four paid articles note has actually accepted at
+¥500, each split on the `separator` note itself stores, then tag, attribute,
+link-host, image-source, embed, code-block and character-class counts for both
+halves of all five. No writes, no publish, no scratch artifact.
+
+| Property | Rejected paid half | All four accepted paid halves |
+|---|---|---|
+| `<img>` sources | `assets.st-note.com` ×1, **`headline-image.png`, `body-diagram.png`** | `assets.st-note.com` only |
+| `contenteditable`/`draggable` on `<img>` | present | absent everywhere |
+| `<a>` without `rel="nofollow noopener"` | 3 | 0 |
+| iframe, embed, script, object, video, audio, table | none | none |
+| control, zero-width, NBSP characters | none | none |
+| `<pre>`/`<code>` | none | none in any paid half |
+
+Everything else matches. `body_length` is the text-content length in both, which
+is what note's own editor sends, so it is not a candidate either.
+
+The decisive candidate is the first row, and one more read decides between it
+and the other two: **note's own stored render of that same draft deletes exactly
+those two `<img>` elements while keeping the three note-hosted ones**, and in the
+same render it keeps the anchors and merely adds `rel`, and keeps the images and
+merely strips `contenteditable`/`draggable`. note normalises rows two and three
+and cannot represent row one. `headline-image.png` and `body-diagram.png` are
+bare run-directory filenames the media stager never uploaded; the run staged
+them to `raw.githubusercontent.com` for Dev.to and Zenn and the note path never
+consumed that receipt.
+
+Fix, branch `fix/writer-paid-element-inventory`, commit `46f8eedd`, not merged
+and not published from that branch: `publish-paid.py` degrades the class in the
+publish path before the split. Transform rather than delete — the `<figure>`
+becomes a `<p>` carrying the same `name`/`id`, so the block count and every
+block id are unchanged and the boundary arithmetic is untouched (verified on the
+real 62-block body: 62 blocks before and after, identical id sequence, identical
+separator). With the run's own `media-urls.json` it degrades into an anchor to
+the staged public URL, a shape note has accepted inside a paid half —
+`n7a0eac82f085` publishes `raw.githubusercontent.com` anchors behind its
+paywall; without it, into the caption text. The editor-only attributes are
+stripped in the same pass. The payload key set, request shape, boundary logic
+and guards are unchanged, and `body_normalization` is recorded on the effect
+receipt as evidence: a future 422 whose report is empty means the image class
+was not the cause.
+
+No external document explains the message. A search of note's help centre,
+terms, and GitHub found zero occurrences of 「本文に利用できない内容が含まれています」
+in any public repository or note document, which agrees with the earlier
+`known_absent` finding in Order 4c. The verdict above therefore rests entirely
+on the control comparison, not on a published rule.
+
 Two findings are retained because they cost real time to obtain:
 
 - A note 422 is not always about content. `DELETE /api/v1/notes/n/{key}` returns
