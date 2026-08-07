@@ -7,9 +7,11 @@
 **Configured upstream:** `canonical/docs/job-hunter-spec-20260805`
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-07 JST
-**Active atomic task:** `PERSIST-05a` — canonicalize candidate URLs and Ledger
-aliases, then exclude every terminal, submitted, rejected, and submit-unknown
-application before selecting the installed no-submit Ashby canary. The resident
+**Active atomic task:** `PERSIST-05b` — inspect one genuinely new official Ashby
+form and deterministically generate its answers artifact from private profile facts.
+`PERSIST-05a` now canonicalizes candidate URLs and Ledger evidence aliases, then
+excludes every terminal, submitted, rejected, and submit-unknown application before
+route materialization or browser pre-submit. The resident
 thread now has the proved `job-hunter` capability profile: `danger-full-access`,
 network, shell/filesystem, the shared Codex skill home, Job Hunter ATS CLI access,
 and `approvalPolicy=never`, while retaining the PERSIST-04 secret filter.

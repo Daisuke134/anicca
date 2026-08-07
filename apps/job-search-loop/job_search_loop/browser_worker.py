@@ -145,15 +145,26 @@ def run_worker(
 
                 pre_submit_runner = run_pre_submit
             route_materialization: list[dict[str, Any]] = []
+            effective_prefilter_result = prefilter_result
             if application_ledger is not None:
-                from .candidate_routes import materialize_canonical_routes
+                from .candidate_routes import (
+                    filter_terminal_candidates,
+                    materialize_canonical_routes,
+                )
+
+                filtered_payload = filter_terminal_candidates(
+                    application_ledger,
+                    json.loads(prefilter_result.read_text(encoding="utf-8")),
+                )
+                effective_prefilter_result = evidence_dir / "terminal-filtered-candidates.json"
+                _write_private_json(effective_prefilter_result, filtered_payload)
 
                 route_materialization = materialize_canonical_routes(
-                    application_ledger, prefilter_result
+                    application_ledger, effective_prefilter_result
                 )
             pre_submit = pre_submit_runner(
                 owner_receipt=owner,
-                prefilter_result=prefilter_result,
+                prefilter_result=effective_prefilter_result,
                 profile_path=profile_path,
                 materials_root=materials_root,
                 evidence_dir=evidence_dir,

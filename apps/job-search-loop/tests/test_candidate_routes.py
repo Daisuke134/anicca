@@ -4,11 +4,56 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from job_search_loop.candidate_routes import materialize_canonical_routes
+from job_search_loop.candidate_routes import (
+    filter_terminal_candidates,
+    materialize_canonical_routes,
+)
 from job_search_loop.ledger import Ledger
 
 
 class CandidateRouteTests(unittest.TestCase):
+    def test_terminal_urls_and_evidence_aliases_are_removed_before_browser(self):
+        with tempfile.TemporaryDirectory() as directory:
+            database = Path(directory) / "ledger.sqlite3"
+            ledger = Ledger(database)
+            submitted = ledger.add_application(
+                "Submitted AI", "Engineer", "https://jobs.example/role?utm_source=old"
+            )
+            rejected = ledger.add_application(
+                "Rejected AI", "Architect", "https://jobs.example/rejected"
+            )
+            aliased = ledger.add_application(
+                "Alias AI", "Solutions Engineer", "evidence://gmail/manual-1"
+            )
+            ledger._append_event(submitted, "discovered", "submitted")
+            ledger.connection.execute(
+                "UPDATE applications SET current_state='submitted' WHERE id=?", (submitted,)
+            )
+            ledger.transition(rejected, "rejected")
+            ledger._append_event(aliased, "discovered", "submit_unknown")
+            ledger.connection.execute(
+                "UPDATE applications SET current_state='submit_unknown' WHERE id=?", (aliased,)
+            )
+            ledger.connection.commit()
+            ledger.close()
+            payload = {"candidates": [
+                {"company": "Submitted AI", "title": "Engineer", "official_url": "https://jobs.example/role?utm_campaign=new"},
+                {"company": "Rejected AI", "title": "Architect", "official_url": "https://jobs.example/rejected"},
+                {"company": "Alias AI", "title": "Solutions Engineer", "official_url": "https://jobs.ashbyhq.com/alias/role"},
+                {"company": "Fresh AI", "title": "Engineer", "official_url": "https://jobs.example/fresh"},
+            ]}
+
+            filtered = filter_terminal_candidates(database, payload)
+
+            self.assertEqual(
+                [item["company"] for item in filtered["candidates"]], ["Fresh AI"]
+            )
+            self.assertEqual(filtered["terminal_filter"]["excluded_count"], 3)
+            self.assertEqual(
+                set(filtered["terminal_filter"]["reasons"]),
+                {"submitted", "rejected", "submit_unknown"},
+            )
+
     def test_manual_owned_candidate_is_audited_and_next_candidate_materializes(self):
         with tempfile.TemporaryDirectory() as directory:
             root, database = Path(directory), Path(directory) / "ledger.sqlite3"
