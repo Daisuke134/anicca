@@ -85,7 +85,7 @@ function createDefaultDiscovery({ now, readBindings, readDetail }) {
       let rows;
       try { rows = await readBindings(page); }
       catch { throw stageError("CONNPASS_CALENDAR_BINDINGS_FAILED"); }
-      if (!Array.isArray(rows) || rows.length > 500) {
+      if (!Array.isArray(rows) || rows.length > 5_000) {
         throw stageError("CONNPASS_CALENDAR_ROWS_CONTRACT_FAILED");
       }
       for (const row of rows) {
@@ -98,6 +98,9 @@ function createDefaultDiscovery({ now, readBindings, readDetail }) {
         }
         seen.add(eventRef);
         bindings.push(Object.freeze({ event_ref: eventRef, canonical_url: url }));
+        if (bindings.length > 500) {
+          throw stageError("CONNPASS_CALENDAR_ROWS_CONTRACT_FAILED");
+        }
       }
     }
     const result = [];
