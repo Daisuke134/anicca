@@ -5799,7 +5799,19 @@ calendar rows shape/size validation、calendar binding validation、またはdet
 Item 10B/14は未完。次の一件はこの3validationを別safe codeへ分け、再wakeで一つを特定してそのactionだけを修復すること。
 scheduleはunloadedを維持する。
 
-### Active remaining TODO SSOT（進捗210。これ以外の残TODO一覧は履歴）
+### O1B-25進捗211（Connpass detail identity safe diagnosis）
+
+実pageがdetailまで到達後にgeneric parent validationで落ちたため、最有力のdetail event-ref mismatchだけを次の単一仮説とした。
+異なるevent IDへredirectするfixtureがgeneric invalidになるREDと、そのcodeがrunnerでgeneric reasonへ潰れるREDを確認した。
+
+event-ref mismatchは`CONNPASS_DETAIL_IDENTITY_MISMATCH_FAILED`へ変換し、runner allowlistから同じlowercase safe reasonをTelegramへ渡す。
+一致条件自体は緩めず、別eventへのredirectを候補として受け入れない。Connpass workflow/minimal runner/production focused suiteは20/20 GREEN。
+実browser、Submit、Calendar write、PNG作用は0。
+
+Item 10B/14は未完。次の一件はofficial foreground wakeを再実行し、identity mismatch仮説をliveで確認または反証すること。
+scheduleはunloadedを維持する。
+
+### Active remaining TODO SSOT（進捗211。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
