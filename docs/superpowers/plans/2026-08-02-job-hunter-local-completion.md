@@ -2474,13 +2474,13 @@ parallel only where explicitly stated below. Otherwise preserve this order:
    gate rejects the candidate without spending a Sol call. Agents SDK does not own
    scheduling, application truth, or repair truth; launchd, Ledger, OpenTelemetry,
    Guardian, and the subscription-authenticated Codex runtime retain those contracts.
-11. [ ] Replace the resident's disposable `codex exec --ephemeral` invocation with a
-   persistent Codex thread controlled through the Codex SDK. Persist `thread_id` beside
-   the application intent, resume that exact thread after interruption or repair, and
-   start a fresh thread only for a genuinely new application. Expose the required
-   CloakBrowser, Ledger, Gmail, Telegram, Gmail-monitor, and Calendar capabilities as
-   explicit resident tools; do not assume the interactive Codex session's Apps,
-   Plugins, Skills, Browser Use, or Computer Use are inherited by a child CLI process.
+11. [ ] Complete `PERSIST-01` through `PERSIST-07` in
+   `docs/superpowers/specs/2026-08-07-life-manager-persistent-agent-runtime.md`.
+   The adopted runtime is Codex app-server, not a custom conversation server or the
+   disposable `codex exec --ephemeral` path. Persist one fenced thread binding per
+   application, resume it after interruption or repair, compact it without losing
+   work identity, and expose CloakBrowser, Ledger, Gmail, Telegram, Gmail-monitor,
+   and Calendar as explicit resident capabilities.
 12. [ ] `L-49K0D`, `L-49K0D2`, then `L-53` through `L-57` — add tracker projections,
    move the four working lanes to restart-safe Temporal workflows, and prove Gmail,
    Calendar, interview preparation, and debrief from authoritative events.
@@ -4552,7 +4552,8 @@ item before starting the next.
       highest-ranked eligible role across ATS families, so the already-proven Ashby
       recipe can submit while Workday credential creation is repaired independently.
       Resident memory MUST move from disposable `codex exec --ephemeral` to the
-      persistent per-application thread in the later runtime task; until then, known
+      persistent per-application Codex app-server thread specified by
+      `2026-08-07-life-manager-persistent-agent-runtime.md`; until then, known
       ATS recipes and prior answers are loaded directly rather than rediscovered.
 14. [ ] **L-49K5G1 — Route the cheap model.** Use Luna for one known-ATS
     observe/map/fill/verify pass with no Submit authority.
