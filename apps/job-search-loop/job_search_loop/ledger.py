@@ -60,16 +60,136 @@ RUN_74_APPLICATION_ID = (
 OUTREACH_TRUTH_CORRECTION_REASON = "outreach_only_delivery_correction"
 
 
-def is_run_74_outreach_truth_correction(
-    application_id: str, payload: Mapping[str, Any]
+def _has_immutable_outreach_delivery(
+    connection: sqlite3.Connection,
+    *,
+    application_id: str,
+    route_id: str,
+    provider_id: str,
+    evidence_sha256: str,
 ) -> bool:
-    return (
-        application_id == RUN_74_APPLICATION_ID
-        and payload.get("reason") == OUTREACH_TRUTH_CORRECTION_REASON
-        and all(
-            isinstance(payload.get(key), str) and payload[key]
-            for key in ("route_id", "provider_id", "evidence_sha256")
+    route = connection.execute(
+        """
+        SELECT route_id
+        FROM application_routes
+        WHERE route_id = ?
+          AND application_id = ?
+          AND route_kind = 'recruiting_outreach'
+          AND recipient_acceptance = 'outreach_only'
+          AND delivery_state = 'delivered'
+          AND provider_id = ?
+          AND delivery_evidence_sha256 = ?
+        """,
+        (route_id, application_id, provider_id, evidence_sha256),
+    ).fetchone()
+    if route is None:
+        return False
+    delivery_events = connection.execute(
+        """
+        SELECT payload_json
+        FROM application_route_events
+        WHERE route_id = ?
+          AND from_state = 'action_started'
+          AND to_state = 'delivered'
+        ORDER BY rowid
+        """,
+        (route_id,),
+    ).fetchall()
+    for delivery_event in delivery_events:
+        try:
+            payload = json.loads(str(delivery_event["payload_json"]))
+        except (json.JSONDecodeError, TypeError):
+            continue
+        if (
+            isinstance(payload, dict)
+            and payload.get("provider_id") == provider_id
+            and payload.get("evidence_sha256") == evidence_sha256
+        ):
+            return True
+    return False
+
+
+def is_run_74_outreach_truth_correction(
+    connection: sqlite3.Connection,
+    application_id: str,
+    correction_event: Mapping[str, Any],
+) -> bool:
+    """Return whether one immutable event is the sole run-74 truth correction."""
+    if application_id != RUN_74_APPLICATION_ID:
+        return False
+    try:
+        correction_rowid = int(correction_event["event_rowid"])
+    except (KeyError, TypeError, ValueError):
+        return False
+    correction = connection.execute(
+        """
+        SELECT rowid AS event_rowid, from_state, to_state, payload_json
+        FROM events
+        WHERE application_id = ? AND rowid = ?
+        """,
+        (application_id, correction_rowid),
+    ).fetchone()
+    if (
+        correction is None
+        or str(correction["from_state"]) != "submitted"
+        or str(correction["to_state"]) != "submit_unknown"
+    ):
+        return False
+    try:
+        payload = json.loads(str(correction["payload_json"]))
+    except (json.JSONDecodeError, TypeError):
+        return False
+    if (
+        not isinstance(payload, dict)
+        or payload.get("reason") != OUTREACH_TRUTH_CORRECTION_REASON
+    ):
+        return False
+    route_id = payload.get("route_id")
+    provider_id = payload.get("provider_id")
+    evidence_sha256 = payload.get("evidence_sha256")
+    if not all(
+        isinstance(value, str) and value
+        for value in (route_id, provider_id, evidence_sha256)
+    ):
+        return False
+    previous = connection.execute(
+        """
+        SELECT from_state, to_state, payload_json
+        FROM events
+        WHERE application_id = ? AND rowid < ?
+        ORDER BY rowid DESC
+        LIMIT 1
+        """,
+        (application_id, correction_rowid),
+    ).fetchone()
+    if (
+        previous is None
+        or str(previous["from_state"]) != "submit_unknown"
+        or str(previous["to_state"]) != "submitted"
+    ):
+        return False
+    try:
+        previous_payload = json.loads(str(previous["payload_json"]))
+    except (json.JSONDecodeError, TypeError):
+        return False
+    if not isinstance(previous_payload, dict):
+        return False
+    if (
+        previous_payload.get("route_id") != route_id
+        or previous_payload.get("provider_id") != provider_id
+        or previous_payload.get("channel") != "recruiting_outreach"
+        or all(
+            previous_payload.get(key)
+            for key in ("message_id", "thread_id", "evidence_sha256", "received_at")
         )
+    ):
+        return False
+    return _has_immutable_outreach_delivery(
+        connection,
+        application_id=application_id,
+        route_id=route_id,
+        provider_id=provider_id,
+        evidence_sha256=evidence_sha256,
     )
 
 
@@ -2345,7 +2465,8 @@ class Ledger:
         projection: list[dict[str, Any]] = []
         for application in applications:
             rows = self.connection.execute(
-                "SELECT from_state, to_state, payload_json FROM events "
+                "SELECT rowid AS event_rowid, from_state, to_state, "
+                "payload_json FROM events "
                 "WHERE application_id = ? ORDER BY rowid",
                 (application["id"],),
             ).fetchall()
@@ -2361,43 +2482,45 @@ class Ledger:
             )
             if first_state != "discovered" and not external_origin:
                 raise FenceError("application event chain lacks a valid origin")
-            correction_route_ids = {
-                str(payload["route_id"])
-                for event in rows
-                if str(event["from_state"]) == "submitted"
-                and str(event["to_state"]) == "submit_unknown"
-                and is_run_74_outreach_truth_correction(
-                    str(application["id"]),
-                    payload := json.loads(str(event["payload_json"])),
-                )
-            }
             previous = first_state
             ever_submitted = first_state == "submitted"
             submission_attempted = first_state in {"submitted", "submit_unknown"}
-            for event in rows[1:]:
+            for index, event in enumerate(rows[1:], start=1):
                 to_state = str(event["to_state"])
                 if str(event["from_state"]) != previous:
                     raise FenceError("application event chain is discontinuous")
+                paired_correction = False
                 if previous == "submit_unknown" and to_state == "submitted":
                     payload = json.loads(str(event["payload_json"]))
+                    if not isinstance(payload, dict):
+                        raise FenceError("late confirmation event lacks evidence")
                     has_gmail_confirmation = all(payload.get(key) for key in (
                         "message_id", "thread_id", "evidence_sha256", "received_at"
                     ))
+                    if index + 1 < len(rows):
+                        paired_correction = is_run_74_outreach_truth_correction(
+                            self.connection,
+                            str(application["id"]),
+                            rows[index + 1],
+                        )
                     if (
                         not has_gmail_confirmation
-                        and payload.get("route_id") not in correction_route_ids
+                        and not paired_correction
                     ):
                         raise FenceError("late confirmation event lacks evidence")
                 elif previous == "submitted" and to_state == "submit_unknown":
-                    payload = json.loads(str(event["payload_json"]))
                     if not is_run_74_outreach_truth_correction(
-                        str(application["id"]), payload
+                        self.connection,
+                        str(application["id"]),
+                        event,
                     ):
                         raise FenceError("submitted application lacks valid correction")
                 else:
                     validate_transition(previous, to_state)
                 previous = to_state
-                ever_submitted = ever_submitted or to_state == "submitted"
+                ever_submitted = ever_submitted or (
+                    to_state == "submitted" and not paired_correction
+                )
                 submission_attempted = submission_attempted or to_state in {
                     "submitted", "submit_unknown"
                 }
@@ -3588,6 +3711,17 @@ class Ledger:
         ).fetchone()
         if route is None or self.current_state(RUN_74_APPLICATION_ID) != "submitted":
             return False
+        route_id = str(route["route_id"])
+        provider_id = str(route["provider_id"])
+        evidence_sha256 = str(route["delivery_evidence_sha256"])
+        if not _has_immutable_outreach_delivery(
+            self.connection,
+            application_id=RUN_74_APPLICATION_ID,
+            route_id=route_id,
+            provider_id=provider_id,
+            evidence_sha256=evidence_sha256,
+        ):
+            return False
         event = self.connection.execute(
             """
             SELECT from_state, to_state, payload_json
@@ -3601,16 +3735,24 @@ class Ledger:
         if event is None:
             return False
         payload = json.loads(str(event["payload_json"]))
+        if not isinstance(payload, dict):
+            return False
         if (
             str(event["from_state"]) != "submit_unknown"
             or str(event["to_state"]) != "submitted"
-            or payload.get("route_id") != str(route["route_id"])
+            or payload.get("route_id") != route_id
+            or payload.get("provider_id") != provider_id
+            or payload.get("channel") != "recruiting_outreach"
+            or all(
+                payload.get(key)
+                for key in ("message_id", "thread_id", "evidence_sha256", "received_at")
+            )
         ):
             return False
         correction = {
-            "route_id": str(route["route_id"]),
-            "provider_id": str(route["provider_id"]),
-            "evidence_sha256": str(route["delivery_evidence_sha256"]),
+            "route_id": route_id,
+            "provider_id": provider_id,
+            "evidence_sha256": evidence_sha256,
             "reason": OUTREACH_TRUTH_CORRECTION_REASON,
         }
         self._append_event(

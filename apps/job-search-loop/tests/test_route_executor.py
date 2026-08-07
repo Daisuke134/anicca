@@ -6,8 +6,9 @@ from pathlib import Path
 from unittest.mock import patch
 
 from job_search_loop.guardian import ledger_health
-from job_search_loop.ledger import Ledger
+from job_search_loop.ledger import FenceError, Ledger
 from job_search_loop.route_executor import execute_next_message_route
+from job_search_loop.summary import build_summary_v2
 
 
 class RouteExecutorTests(unittest.TestCase):
@@ -38,6 +39,50 @@ class RouteExecutorTests(unittest.TestCase):
             source_sha256=self.source_sha,
             recipient_acceptance=acceptance,
         )
+
+    def _advance_to(self, state):
+        for target in ("qualified", "materials_ready", "submit_claimed", state):
+            self.ledger.transition(self.application_id, target)
+
+    def _deliver_route(self, route_id, *, fence, provider_id, evidence_sha256):
+        self.ledger.claim_application_route(
+            route_id,
+            actor="resident_worker",
+            fence=fence,
+            message_path=str(self.message),
+            message_sha256=hashlib.sha256(self.message.read_bytes()).hexdigest(),
+            resume_path=str(self.resume),
+            resume_sha256=hashlib.sha256(self.resume.read_bytes()).hexdigest(),
+        )
+        self.ledger.complete_application_route(
+            route_id,
+            fence=fence,
+            state="delivered",
+            provider_id=provider_id,
+            evidence_sha256=evidence_sha256,
+        )
+        return self.ledger.application_routes(self.application_id)[0]
+
+    def _append_forged_correction(
+        self, route, *, provider_id=None, evidence_sha256=None
+    ):
+        with self.ledger._transaction():
+            self.ledger._append_event(
+                self.application_id,
+                "submitted",
+                "submit_unknown",
+                {
+                    "route_id": str(route["route_id"]),
+                    "provider_id": provider_id or str(route["provider_id"]),
+                    "evidence_sha256": evidence_sha256
+                    or str(route["delivery_evidence_sha256"]),
+                    "reason": "outreach_only_delivery_correction",
+                },
+            )
+            self.ledger.connection.execute(
+                "UPDATE applications SET current_state = 'submit_unknown' WHERE id = ?",
+                (self.application_id,),
+            )
 
     def test_delivered_email_is_sent_once_and_exact_artifacts_are_preserved(self):
         self._route("recruiting_email", "jobs@example.test", 3, "accepts_applications")
@@ -166,8 +211,90 @@ class RouteExecutorTests(unittest.TestCase):
             ["eligible", "action_started", "delivered"],
         )
         self.assertEqual(summary["current_state"], "submit_unknown")
+        self.assertFalse(summary["ever_submitted"])
+        self.assertTrue(summary["submission_attempted"])
         self.assertNotIn("confirmed_application", summary["positive_funnel_stages"])
         self.assertEqual(health["status"], "healthy")
+        summary_value = build_summary_v2(
+            day=japan_day,
+            applications=[
+                {
+                    **summary,
+                    "canonical_url": "https://jobs.ashbyhq.com/example/run-74",
+                }
+            ],
+        )
+        self.assertEqual(summary_value["ats_progress"]["confirmed_adapters"], [])
+
+    def test_correction_rejects_accepted_email_route(self):
+        self._advance_to("submit_unknown")
+        route = self._deliver_route(
+            self._route(
+                "recruiting_email", "jobs@example.test", 3, "accepts_applications"
+            ),
+            fence=74,
+            provider_id="gmail:accepted-email",
+            evidence_sha256=hashlib.sha256(b"accepted email receipt").hexdigest(),
+        )
+        self._append_forged_correction(route)
+
+        with patch("job_search_loop.ledger.RUN_74_APPLICATION_ID", self.application_id):
+            with self.assertRaises(FenceError):
+                self.ledger.event_summary_rows()
+            self.assertEqual(ledger_health(self.ledger.path)["status"], "unhealthy")
+
+    def test_correction_rejects_mismatched_delivery_receipt(self):
+        self._advance_to("submit_unknown")
+        route = self._deliver_route(
+            self._route(
+                "recruiting_outreach", "talent@example.test", 4, "outreach_only"
+            ),
+            fence=74,
+            provider_id="gmail:outreach-verified",
+            evidence_sha256=hashlib.sha256(b"verified outreach receipt").hexdigest(),
+        )
+        with self.ledger._transaction():
+            self.ledger._project_delivered_application_route_in_transaction(
+                row={**route, "recipient_acceptance": "accepts_applications"},
+                provider_id=str(route["provider_id"]),
+                evidence_sha256=str(route["delivery_evidence_sha256"]),
+            )
+        self._append_forged_correction(route, provider_id="gmail:forged")
+
+        with patch("job_search_loop.ledger.RUN_74_APPLICATION_ID", self.application_id):
+            with self.assertRaises(FenceError):
+                self.ledger.event_summary_rows()
+            self.assertEqual(ledger_health(self.ledger.path)["status"], "unhealthy")
+
+    def test_guardian_requires_correction_to_follow_legacy_projection(self):
+        self._advance_to("submitted")
+        route = self._deliver_route(
+            self._route(
+                "recruiting_outreach", "talent@example.test", 4, "outreach_only"
+            ),
+            fence=74,
+            provider_id="gmail:outreach-verified",
+            evidence_sha256=hashlib.sha256(b"verified outreach receipt").hexdigest(),
+        )
+        self._append_forged_correction(route)
+        with self.ledger._transaction():
+            self.ledger._append_event(
+                self.application_id,
+                "submit_unknown",
+                "submitted",
+                {
+                    "route_id": str(route["route_id"]),
+                    "provider_id": str(route["provider_id"]),
+                    "channel": "recruiting_outreach",
+                },
+            )
+            self.ledger.connection.execute(
+                "UPDATE applications SET current_state = 'submitted' WHERE id = ?",
+                (self.application_id,),
+            )
+
+        with patch("job_search_loop.ledger.RUN_74_APPLICATION_ID", self.application_id):
+            self.assertEqual(ledger_health(self.ledger.path)["status"], "unhealthy")
 
     def test_transport_exception_is_unknown_and_never_retried(self):
         self._route("recruiting_outreach", "talent@example.test", 4, "outreach_only")

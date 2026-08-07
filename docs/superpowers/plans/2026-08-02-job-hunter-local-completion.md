@@ -4076,7 +4076,10 @@ OpenTelemetry decision and primary sources:
       `applied_email` or a confirmed application and must not be resent. Telegram
       message ID `8109` records that truthful outreach delivery. Ledger reconciliation
       preserves the ambiguous ATS click and immutable delivered-route evidence while
-      removing the false confirmed-application projection. `L-49K5D` remains open:
+      removing the false confirmed-application projection. The correction is accepted
+      only when its adjacent legacy projection, exact delivered outreach route, and
+      immutable delivery receipt all agree; it does not count as `ever_submitted` or
+      Ashby progress. `L-49K5D` remains open:
       this run produced neither a confirmed ATS application nor an explicitly accepted
       email application. The resident must continue with a new eligible role rather
       than replaying either action.
