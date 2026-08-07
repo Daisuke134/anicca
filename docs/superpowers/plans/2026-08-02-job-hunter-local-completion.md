@@ -7,8 +7,11 @@
 **Configured upstream:** `canonical/docs/job-hunter-spec-20260805`
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-07 JST
-**Active atomic task:** `PERSIST-05b` — inspect one genuinely new official Ashby
-form and deterministically generate its answers artifact from private profile facts.
+**Active atomic task:** `PERSIST-05c` — materialize the selected application,
+grounded resume/material, submit intent, browser fence, and exact artifact hashes
+before any browser fill. `PERSIST-05b` live-inspected one genuinely new official
+Ashby form and deterministically generated its ready answers artifact from private
+profile facts with zero missing required answers.
 `PERSIST-05a` now canonicalizes candidate URLs and Ledger evidence aliases, then
 excludes every terminal, submitted, rejected, and submit-unknown application before
 route materialization or browser pre-submit. The resident
