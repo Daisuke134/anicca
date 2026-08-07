@@ -7,8 +7,8 @@
 **Configured upstream:** `canonical/docs/job-hunter-spec-20260805`
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-07 JST
-**Active atomic task:** `L-49K5E2` — pin Browser Harness in the Job Hunter
-environment and prove only that its CLI starts, without touching a live application.
+**Active atomic task:** `L-49K5E3` — attach Browser Harness read-only to the existing
+CloakBrowser CDP owner and capture one non-application page observation.
 **Status:** The immutable four-lane runtime, grounded materials, ownership fences,
 Gmail ingestion, Telegram outbox, quota accounting, Ashby surface classifier, and
 loopback OpenTelemetry Collector/private trace index are implemented. The application
@@ -4375,8 +4375,14 @@ item before starting the next.
      `clicked`, and transport phase `pre_request`. This is the final truthful state;
      the application MUST NOT be retried. Telegram reconciliation report `8327`
      exposes the final state to the owner.
-5. [ ] **L-49K5E2 — Install Browser Harness.** Pin one Browser Harness version in the
+5. [x] **L-49K5E2 — Install Browser Harness.** Pin one Browser Harness version in the
    Job Hunter environment and prove its CLI starts. Do not touch a live application.
+   - Upgraded the existing user-level tool from `0.1.0` to official stable `0.1.8`
+     with `uv tool install --force`, pinned to Homebrew Python 3.12. The installed
+     version appears in `uv tool list`; `browser-harness --help` and
+     `browser-harness skill` both returned successfully. No CDP connection, browser
+     navigation, application form, or external side effect occurred. Telegram report
+     `8329` exposes the completion to the owner.
 6. [ ] **L-49K5E3 — Attach the persistent browser.** Connect Browser Harness through
    `BU_CDP_URL` to the existing CloakBrowser owner and capture one read-only page
    observation. No form mutation or Submit is allowed.
