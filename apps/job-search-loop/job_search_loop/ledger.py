@@ -58,6 +58,7 @@ RUN_74_APPLICATION_ID = (
     "fcd5aea271106d3cac08e1dfe42645d29275a4fc5415429bead7dbf485968081"
 )
 OUTREACH_TRUTH_CORRECTION_REASON = "outreach_only_delivery_correction"
+ASHBY_GRAPHQL_VISIBLE_SUCCESS_SOURCE = "ashby_graphql_plus_visible_success"
 
 
 def _has_immutable_outreach_delivery(
@@ -191,6 +192,95 @@ def is_run_74_outreach_truth_correction(
         provider_id=provider_id,
         evidence_sha256=evidence_sha256,
     )
+
+
+def is_authoritative_ashby_browser_confirmation(
+    connection: sqlite3.Connection,
+    application_id: str,
+    confirmation_event: Mapping[str, Any],
+) -> bool:
+    """Return whether an event is bound to an authoritative Ashby submit receipt."""
+    try:
+        event_rowid = int(confirmation_event["event_rowid"])
+    except (KeyError, TypeError, ValueError):
+        return False
+    event = connection.execute(
+        """
+        SELECT from_state, to_state, payload_json
+        FROM events
+        WHERE application_id = ? AND rowid = ?
+        """,
+        (application_id, event_rowid),
+    ).fetchone()
+    if (
+        event is None
+        or str(event["from_state"]) != "submit_unknown"
+        or str(event["to_state"]) != "submitted"
+    ):
+        return False
+    try:
+        payload = json.loads(str(event["payload_json"]))
+    except (json.JSONDecodeError, TypeError):
+        return False
+    if not isinstance(payload, dict):
+        return False
+    intent_id = payload.get("intent_id")
+    fence = payload.get("fence")
+    evidence_sha256 = payload.get("evidence_sha256")
+    if (
+        payload.get("evidence_source") != ASHBY_GRAPHQL_VISIBLE_SUCCESS_SOURCE
+        or not isinstance(intent_id, str)
+        or not intent_id
+        or isinstance(fence, bool)
+        or not isinstance(fence, int)
+        or fence <= 0
+        or not isinstance(evidence_sha256, str)
+        or re.fullmatch(r"[a-f0-9]{64}", evidence_sha256) is None
+    ):
+        return False
+    bound = connection.execute(
+        """
+        SELECT 1
+        FROM submit_intents AS intents
+        JOIN submission_attempts AS attempts
+          ON attempts.intent_id = intents.intent_id
+         AND attempts.fence = intents.fence
+        JOIN submission_material_receipts AS materials
+          ON materials.intent_id = intents.intent_id
+         AND materials.fence = intents.fence
+        JOIN submission_click_phases AS click_phases
+          ON click_phases.intent_id = intents.intent_id
+         AND click_phases.fence = intents.fence
+        JOIN submission_transport_phases AS transport_phases
+          ON transport_phases.intent_id = intents.intent_id
+         AND transport_phases.fence = intents.fence
+        JOIN submission_evidence_bundles AS evidence
+          ON evidence.intent_id = intents.intent_id
+         AND evidence.fence = intents.fence
+        WHERE intents.intent_id = ?
+          AND intents.application_id = ?
+          AND intents.fence = ?
+          AND intents.status = 'submitted'
+          AND attempts.application_id = ?
+          AND attempts.status = 'submitted'
+          AND materials.application_id = ?
+          AND click_phases.phase = 'confirmed'
+          AND transport_phases.phase = 'request_started'
+          AND evidence.application_id = ?
+          AND evidence.confirmation_source = 'ats'
+          AND evidence.terminal_sha256 = ?
+        """,
+        (
+            intent_id,
+            application_id,
+            fence,
+            application_id,
+            application_id,
+            application_id,
+            evidence_sha256,
+        ),
+    ).fetchone()
+    return bound is not None
 
 
 FOUNDER_OUTREACH_TRANSITIONS = {
@@ -2497,6 +2587,13 @@ class Ledger:
                     has_gmail_confirmation = all(payload.get(key) for key in (
                         "message_id", "thread_id", "evidence_sha256", "received_at"
                     ))
+                    has_authoritative_ashby_confirmation = (
+                        is_authoritative_ashby_browser_confirmation(
+                            self.connection,
+                            str(application["id"]),
+                            event,
+                        )
+                    )
                     if index + 1 < len(rows):
                         paired_correction = is_run_74_outreach_truth_correction(
                             self.connection,
@@ -2505,6 +2602,7 @@ class Ledger:
                         )
                     if (
                         not has_gmail_confirmation
+                        and not has_authoritative_ashby_confirmation
                         and not paired_correction
                     ):
                         raise FenceError("late confirmation event lacks evidence")

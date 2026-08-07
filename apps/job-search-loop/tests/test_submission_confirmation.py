@@ -6,9 +6,11 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import patch
 
-from job_search_loop.ledger import Ledger
+from job_search_loop.guardian import ledger_health
+from job_search_loop.ledger import FenceError, Ledger
 from job_search_loop.state import InvalidTransition
 from job_search_loop.submission_confirmation import reconcile_confirmation_threads, _gmail_confirmation_threads
+from job_search_loop.summary import build_summary_v2
 
 
 class RecordingSpan:
@@ -47,6 +49,7 @@ class SubmissionConfirmationTests(unittest.TestCase):
             "https://jobs.ashbyhq.com/dream/"
             "agent-product-engineer/application"
         ),
+        confirmed_browser: bool = False,
     ) -> tuple[Ledger, str, str]:
         ledger = Ledger(root / "ledger.sqlite3")
         application_id = ledger.add_application(
@@ -124,10 +127,152 @@ class SubmissionConfirmationTests(unittest.TestCase):
             cover_letter=None,
             employer_answers=[],
         )
+        if confirmed_browser:
+            ledger.mark_submission_click_phase(intent.intent_id, intent.fence, "clicked")
+            ledger.mark_submission_request_started(intent.intent_id, intent.fence)
+            ledger.mark_submission_click_phase(intent.intent_id, intent.fence, "confirmed")
         ledger.complete_submission(
             intent.intent_id, intent.fence, "submit_unknown"
         )
         return ledger, application_id, intent.intent_id
+
+    def _authoritative_ashby_projection(
+        self,
+        root: Path,
+        *,
+        evidence_source: str = "ashby_graphql_plus_visible_success",
+        evidence_sha256: str = (
+            "e73a212752d3ca020b16bae36ca19578ba437dcf434b054daff414e467cb430b"
+        ),
+        bundle_terminal_sha256: str | None = None,
+        event_fence: int = 1,
+        event_intent_id: str | None = None,
+    ) -> tuple[Ledger, str, str]:
+        ledger, application_id, intent_id = self._unknown_submission(
+            root,
+            company="Neural Concept",
+            title="Solution Engineer - Japan",
+            url="https://jobs.ashbyhq.com/neuralconcept/solution-engineer/application",
+            confirmed_browser=True,
+        )
+        with ledger._transaction():
+            ledger._append_event(
+                application_id,
+                "submit_unknown",
+                "submitted",
+                {
+                    "evidence_sha256": evidence_sha256,
+                    "evidence_source": evidence_source,
+                    "fence": event_fence,
+                    "intent_id": event_intent_id or intent_id,
+                },
+            )
+            ledger.connection.execute(
+                "UPDATE submit_intents SET status = 'submitted' "
+                "WHERE intent_id = ? AND fence = 1 AND status = 'submit_unknown'",
+                (intent_id,),
+            )
+            ledger.connection.execute(
+                "UPDATE submission_attempts SET status = 'submitted' "
+                "WHERE intent_id = ? AND fence = 1 AND status = 'submit_unknown'",
+                (intent_id,),
+            )
+            ledger.connection.execute(
+                "UPDATE daily_slots SET status = 'submitted' "
+                "WHERE application_id = ? AND status = 'submit_unknown'",
+                (application_id,),
+            )
+            ledger.connection.execute(
+                "UPDATE applications SET current_state = 'submitted' WHERE id = ?",
+                (application_id,),
+            )
+            ledger.connection.execute(
+                """
+                INSERT INTO submission_evidence_bundles
+                  (intent_id, fence, application_id,
+                   pre_submit_path, pre_submit_sha256,
+                   post_action_path, post_action_sha256,
+                   terminal_path, terminal_sha256,
+                   confirmation_path, confirmation_sha256,
+                   confirmation_source, confirmation_id, bundle_sha256, recorded_at)
+                VALUES (?, 1, ?,
+                        '/private/pre-submit.png', ?,
+                        '/private/post-action.png', ?,
+                        '/private/terminal.png', ?,
+                        '/private/confirmation.json', ?,
+                        'ats', 'ashby_graphql_plus_visible_success', ?,
+                        '2026-08-07T00:00:00+00:00')
+                """,
+                (
+                    intent_id,
+                    application_id,
+                    "a" * 64,
+                    "b" * 64,
+                    bundle_terminal_sha256 or evidence_sha256,
+                    "c" * 64,
+                    "d" * 64,
+                ),
+            )
+        return ledger, application_id, intent_id
+
+    def test_authoritative_ashby_projection_is_counted_in_summary_and_guardian(self):
+        with tempfile.TemporaryDirectory() as directory:
+            ledger, application_id, _ = self._authoritative_ashby_projection(
+                Path(directory)
+            )
+            summary = next(
+                row
+                for row in ledger.event_summary_rows()
+                if row["application_id"] == application_id
+            )
+
+            self.assertTrue(summary["ever_submitted"])
+            self.assertTrue(summary["submission_attempted"])
+            self.assertEqual(ledger_health(ledger.path)["status"], "healthy")
+            summary_value = build_summary_v2(
+                day="2026-08-07",
+                applications=[
+                    {
+                        **summary,
+                        "canonical_url": (
+                            "https://jobs.ashbyhq.com/neuralconcept/"
+                            "solution-engineer/application"
+                        ),
+                    }
+                ],
+            )
+            self.assertEqual(
+                summary_value["ats_progress"]["confirmed_adapters"], ["ashby"]
+            )
+            ledger.close()
+
+    def test_ashby_projection_rejects_unbound_source_or_evidence(self):
+        cases = (
+            {
+                "evidence_source": "untrusted_browser_claim",
+                "evidence_sha256": "e73a" + "0" * 60,
+            },
+            {
+                "evidence_source": "ashby_graphql_plus_visible_success",
+                "evidence_sha256": "f" * 64,
+                "bundle_terminal_sha256": (
+                    "e73a212752d3ca020b16bae36ca19578ba437dcf434b054daff414e467cb430b"
+                ),
+            },
+            {"event_fence": 2},
+            {"event_intent_id": "other-intent"},
+        )
+        for case in cases:
+            with self.subTest(case=case), tempfile.TemporaryDirectory() as directory:
+                ledger, _, _ = self._authoritative_ashby_projection(
+                    Path(directory),
+                    **case,
+                )
+
+                with self.assertRaises(FenceError):
+                    ledger.event_summary_rows()
+                self.assertEqual(ledger_health(ledger.path)["status"], "unhealthy")
+                ledger.close()
 
     def test_late_confirmation_promotes_every_row_once_without_resubmit(self):
         with tempfile.TemporaryDirectory() as directory:
