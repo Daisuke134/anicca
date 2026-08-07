@@ -5721,7 +5721,20 @@ focused suiteは15/15 GREEN。実browser、Submit、Calendar write、PNG、Teleg
 Item 10B/14は未完。次の一件はofficial production factory/routerへConnpass workflowを接続し、provider-specific cache/readback/direct/fallbackを
 同じpageへroutingするTDD slice。scheduleはunloadedを維持する。
 
-### Active remaining TODO SSOT（進捗204。これ以外の残TODO一覧は履歴）
+### O1B-25進捗205（Item 14前倒し / provider-neutral production router）
+
+production routerがConnpass discoveryへ常に空配列を返すREDを確認後、Luma/Connpass workflow mapへ置換した。
+providerごとにworkflowだけを選び、cache、performAction、Browser Harness、same owned pageは共有する。Connpass cache keyは
+provider `connpass`、workflow `connpass_registration_v1`、page state `registration_page_v1`、expected effect `registered_or_pending`。
+
+discovery、cache replay後readback、direct action、fallback、parent readback、verified repair saveを選択provider workflowへrouteする。
+未知providerは拒否し、旧cursor/coverage/runtime jobへfallbackしない。production/router/workflow/minimal runner focused suiteは15/15 GREEN。
+実browser、Submit、Calendar write、PNG、Telegram作用は0。
+
+Item 10B/14は未完。次の一件はofficial factoryでConnpass workflowを一度構築し、production Browser Harnessのexpected-state readbackも
+provider-neutral mapへするTDD slice。scheduleはunloadedを維持する。
+
+### Active remaining TODO SSOT（進捗205。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
