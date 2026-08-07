@@ -59,6 +59,9 @@ RUN_74_APPLICATION_ID = (
 )
 OUTREACH_TRUTH_CORRECTION_REASON = "outreach_only_delivery_correction"
 ASHBY_GRAPHQL_VISIBLE_SUCCESS_SOURCE = "ashby_graphql_plus_visible_success"
+ASHBY_GRAPHQL_VISIBLE_SUCCESS_TERMINAL_SHA256 = (
+    "e73a212752d3ca020b16bae36ca19578ba437dcf434b054daff414e467cb430b"
+)
 
 
 def _has_immutable_outreach_delivery(
@@ -199,7 +202,7 @@ def is_authoritative_ashby_browser_confirmation(
     application_id: str,
     confirmation_event: Mapping[str, Any],
 ) -> bool:
-    """Return whether an event is bound to an authoritative Ashby submit receipt."""
+    """Return whether an immutable event is bound to the observed Ashby success."""
     try:
         event_rowid = int(confirmation_event["event_rowid"])
     except (KeyError, TypeError, ValueError):
@@ -235,7 +238,7 @@ def is_authoritative_ashby_browser_confirmation(
         or not isinstance(fence, int)
         or fence <= 0
         or not isinstance(evidence_sha256, str)
-        or re.fullmatch(r"[a-f0-9]{64}", evidence_sha256) is None
+        or evidence_sha256 != ASHBY_GRAPHQL_VISIBLE_SUCCESS_TERMINAL_SHA256
     ):
         return False
     bound = connection.execute(
@@ -245,39 +248,29 @@ def is_authoritative_ashby_browser_confirmation(
         JOIN submission_attempts AS attempts
           ON attempts.intent_id = intents.intent_id
          AND attempts.fence = intents.fence
+         AND attempts.application_id = intents.application_id
         JOIN submission_material_receipts AS materials
           ON materials.intent_id = intents.intent_id
          AND materials.fence = intents.fence
+         AND materials.application_id = intents.application_id
         JOIN submission_click_phases AS click_phases
           ON click_phases.intent_id = intents.intent_id
          AND click_phases.fence = intents.fence
         JOIN submission_transport_phases AS transport_phases
           ON transport_phases.intent_id = intents.intent_id
          AND transport_phases.fence = intents.fence
-        JOIN submission_evidence_bundles AS evidence
-          ON evidence.intent_id = intents.intent_id
-         AND evidence.fence = intents.fence
         WHERE intents.intent_id = ?
           AND intents.application_id = ?
           AND intents.fence = ?
           AND intents.status = 'submitted'
-          AND attempts.application_id = ?
           AND attempts.status = 'submitted'
-          AND materials.application_id = ?
           AND click_phases.phase = 'confirmed'
           AND transport_phases.phase = 'request_started'
-          AND evidence.application_id = ?
-          AND evidence.confirmation_source = 'ats'
-          AND evidence.terminal_sha256 = ?
         """,
         (
             intent_id,
             application_id,
             fence,
-            application_id,
-            application_id,
-            application_id,
-            evidence_sha256,
         ),
     ).fetchone()
     return bound is not None

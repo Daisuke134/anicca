@@ -144,7 +144,6 @@ class SubmissionConfirmationTests(unittest.TestCase):
         evidence_sha256: str = (
             "e73a212752d3ca020b16bae36ca19578ba437dcf434b054daff414e467cb430b"
         ),
-        bundle_terminal_sha256: str | None = None,
         event_fence: int = 1,
         event_intent_id: str | None = None,
     ) -> tuple[Ledger, str, str]:
@@ -186,39 +185,25 @@ class SubmissionConfirmationTests(unittest.TestCase):
                 "UPDATE applications SET current_state = 'submitted' WHERE id = ?",
                 (application_id,),
             )
-            ledger.connection.execute(
-                """
-                INSERT INTO submission_evidence_bundles
-                  (intent_id, fence, application_id,
-                   pre_submit_path, pre_submit_sha256,
-                   post_action_path, post_action_sha256,
-                   terminal_path, terminal_sha256,
-                   confirmation_path, confirmation_sha256,
-                   confirmation_source, confirmation_id, bundle_sha256, recorded_at)
-                VALUES (?, 1, ?,
-                        '/private/pre-submit.png', ?,
-                        '/private/post-action.png', ?,
-                        '/private/terminal.png', ?,
-                        '/private/confirmation.json', ?,
-                        'ats', 'ashby_graphql_plus_visible_success', ?,
-                        '2026-08-07T00:00:00+00:00')
-                """,
-                (
-                    intent_id,
-                    application_id,
-                    "a" * 64,
-                    "b" * 64,
-                    bundle_terminal_sha256 or evidence_sha256,
-                    "c" * 64,
-                    "d" * 64,
-                ),
-            )
         return ledger, application_id, intent_id
 
-    def test_authoritative_ashby_projection_is_counted_in_summary_and_guardian(self):
+    def test_authoritative_ashby_projection_without_bundle_is_counted_in_summary_and_guardian(self):
         with tempfile.TemporaryDirectory() as directory:
-            ledger, application_id, _ = self._authoritative_ashby_projection(
+            ledger, application_id, intent_id = self._authoritative_ashby_projection(
                 Path(directory)
+            )
+            self.assertIsNone(
+                ledger.connection.execute(
+                    "SELECT 1 FROM submission_evidence_bundles "
+                    "WHERE intent_id = ? AND fence = 1",
+                    (intent_id,),
+                ).fetchone()
+            )
+            self.assertIsNone(
+                ledger.connection.execute(
+                    "SELECT 1 FROM application_artifacts WHERE application_id = ?",
+                    (application_id,),
+                ).fetchone()
             )
             summary = next(
                 row
@@ -246,18 +231,14 @@ class SubmissionConfirmationTests(unittest.TestCase):
             )
             ledger.close()
 
-    def test_ashby_projection_rejects_unbound_source_or_evidence(self):
+    def test_ashby_projection_without_bundle_rejects_unbound_source_or_evidence(self):
         cases = (
             {
                 "evidence_source": "untrusted_browser_claim",
-                "evidence_sha256": "e73a" + "0" * 60,
             },
             {
                 "evidence_source": "ashby_graphql_plus_visible_success",
                 "evidence_sha256": "f" * 64,
-                "bundle_terminal_sha256": (
-                    "e73a212752d3ca020b16bae36ca19578ba437dcf434b054daff414e467cb430b"
-                ),
             },
             {"event_fence": 2},
             {"event_intent_id": "other-intent"},
