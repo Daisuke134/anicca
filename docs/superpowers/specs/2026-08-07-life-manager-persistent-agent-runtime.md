@@ -197,8 +197,18 @@ Only the first unchecked item is active.
      one idempotent active thread per work item, rejects a conflicting active thread,
      and records archived predecessor lineage for the next generation. Focused test
      `PYTHONPATH=. python3 -m unittest tests.test_thread_registry -v` passed 2/2.
-3. [ ] **PERSIST-03 — Thin runtime adapter.** Expose start, resume, compact, fork,
+3. [x] **PERSIST-03 — Thin runtime adapter.** Expose start, resume, compact, fork,
    read, archive, and event streaming without recreating app-server behavior.
+   - Receipt: `job_search_loop.codex_app_server` implements only the official
+     line-delimited app-server protocol over direct `codex app-server --stdio`.
+     Focused tests passed 4/4. A subscription-authenticated Luna read-only E2E
+     initialized the server, started thread
+     `019fdaad-4870-76b2-94fc-8ee2a90ff09c`, completed turn
+     `019fdaad-49cd-70b0-b94f-bccde07c7378`, streamed 54 structured events with
+     terminal status `completed`, and read back the identical thread ID. The installed
+     daemon was not restarted. Its `proxy` path accepted bytes but returned no
+     initialize response in this environment, so the unproved proxy path is not part
+     of the adapter. No browser, application, email, or external send occurred.
 4. [ ] **PERSIST-04 — Secret boundary.** Connect credential references to macOS
    Keychain and prove no secret appears in prompts, argv, artifacts, or traces.
 5. [ ] **PERSIST-05 — Job Hunter canary**, closed in this fixed internal order:

@@ -7,9 +7,11 @@
 **Configured upstream:** `canonical/docs/job-hunter-spec-20260805`
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-07 JST
-**Active atomic task:** `PERSIST-03` — add the thin Codex app-server protocol client
-for start, resume, turn, read, archive, and structured events without recreating
-app-server behavior. `PERSIST-02` added the minimal atomic
+**Active atomic task:** `PERSIST-04` — enforce the secret-reference-only boundary
+between the persistent thread and the existing private profile/credential stores.
+`PERSIST-03` added and live-proved the thin direct-stdio Codex app-server protocol
+client for start, resume, turn, read, archive, compact, fork, and structured events
+without recreating app-server behavior. `PERSIST-02` added the minimal atomic
 `work_type + work_id -> app-server thread_id` registry with active uniqueness,
 generation lineage, and joined run/release identifiers. Codex app-server remains
 the owner of persisted rollout history and thread event semantics. `PERSIST-01` proved the
