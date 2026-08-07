@@ -7,8 +7,8 @@
 **Configured upstream:** `canonical/docs/job-hunter-spec-20260805`
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-07 JST
-**Active atomic task:** `L-49K5F1` — classify invisible reCAPTCHA, visible challenge,
-fingerprint rejection, request-started unknown, and confirmed receipt under one fence.
+**Active atomic task:** `L-49K5F2` — connect isolated CamoFox only to a measured
+pre-submit fingerprint rejection without sharing a live browser owner or intent.
 **Status:** The immutable four-lane runtime, grounded materials, ownership fences,
 Gmail ingestion, Telegram outbox, quota accounting, Ashby surface classifier, and
 loopback OpenTelemetry Collector/private trace index are implemented. The application
@@ -4434,9 +4434,16 @@ item before starting the next.
       application email remains outside the recipe and is allowed only after every
       official Workday route is proven unavailable. No employer form or Submit was
       opened while creating it.
-11. [ ] **L-49K5F1 — Classify anti-bot outcomes.** Distinguish invisible reCAPTCHA,
+11. [x] **L-49K5F1 — Classify anti-bot outcomes.** Distinguish invisible reCAPTCHA,
     visible challenge, fingerprint rejection, request-started unknown, and confirmed
     receipt. Every class MUST preserve the same intent fence and report to Telegram.
+    - Added one pure `classify_execution_outcome` boundary. It routes invisible
+      reCAPTCHA to continued observation, a visible challenge to same-fence CAPTCHA
+      recovery, a pre-request fingerprint rejection to same-fence CamoFox recovery,
+      request-started ambiguity to terminal `submit_unknown`, and an authoritative
+      receipt to `submitted`. Every result requires Telegram and preserves the fence;
+      no classifier can click or confirm an application. Focused tests pass 2/2; no
+      full suite was run.
 12. [ ] **L-49K5F2 — Add CamoFox fallback.** Invoke isolated CamoFox only for a
     measured fingerprint rejection before Submit. Never transfer a clicked intent or
     share a live browser owner between CloakBrowser and CamoFox.
