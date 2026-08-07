@@ -300,6 +300,22 @@ class LedgerTests(unittest.TestCase):
         )
         self.assertEqual(replay, first)
 
+    def test_same_posting_alias_with_different_evidence_url_is_idempotent(self):
+        submitted = self.ledger.add_application(
+            "OpenAI",
+            "AI Deployment Engineer, Startups",
+            "evidence://ashby_success_email/receipt",
+            owner="dais_manual",
+        )
+        replay = self.ledger.add_application(
+            "OpenAI",
+            "AI Deployment Engineer, Startups",
+            "https://jobs.ashbyhq.com/openai/posting/application",
+            owner="dais_manual",
+        )
+        self.assertEqual(replay, submitted)
+        self.assertEqual(self.ledger.application_owner(replay), "dais_manual")
+
     def test_cross_owner_canonical_url_is_fenced(self):
         self.ledger.add_application(
             "Manual Co",

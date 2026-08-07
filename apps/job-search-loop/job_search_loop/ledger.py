@@ -1183,6 +1183,28 @@ class Ledger:
                         f"canonical posting is already owned by {imported_owner}"
                     )
                 return str(imported["application_id"])
+            existing_alias = next(
+                (
+                    row
+                    for row in self.connection.execute(
+                        "SELECT id, owner, company, title, canonical_url FROM applications"
+                    )
+                    if self._posting_alias(str(row["company"]), str(row["title"]))
+                    == posting_alias
+                    and (
+                        normalized_url.startswith("evidence://")
+                        or str(row["canonical_url"]).startswith("evidence://")
+                    )
+                ),
+                None,
+            )
+            if existing_alias is not None:
+                existing_owner = str(existing_alias["owner"])
+                if existing_owner != owner:
+                    raise FenceError(
+                        f"canonical posting is already owned by {existing_owner}"
+                    )
+                return str(existing_alias["id"])
             existing_url = self.connection.execute(
                 "SELECT id, owner FROM applications WHERE canonical_url = ?",
                 (normalized_url,),
