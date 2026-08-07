@@ -184,12 +184,14 @@ function createBoundedActionProposer(options = {}) {
 
 function createProductionBrowserHarness(options = {}) {
   const lumaWorkflow = options.lumaWorkflow;
+  const connpassWorkflow = options.connpassWorkflow;
   const inspectControls = options.inspectControls;
   const proposeAction = options.proposeAction;
   const operateControl = options.operateControl;
   const resolveValue = options.resolveValue;
   if (
     !lumaWorkflow || typeof lumaWorkflow.readProviderState !== "function"
+    || (connpassWorkflow != null && typeof connpassWorkflow.readProviderState !== "function")
     || typeof inspectControls !== "function" || typeof proposeAction !== "function"
     || typeof operateControl !== "function" || typeof resolveValue !== "function"
   ) invalid();
@@ -234,12 +236,14 @@ function createProductionBrowserHarness(options = {}) {
   }
 
   async function runFallback(input = {}) {
-    if (input.provider !== "luma" || !input.candidate) invalid();
+    if (!["luma", "connpass"].includes(input.provider) || !input.candidate) invalid();
+    const workflow = input.provider === "luma" ? lumaWorkflow : connpassWorkflow;
+    if (!workflow || typeof workflow.readProviderState !== "function") invalid();
     const adapter = createBrowserHarnessAdapter({
       observePage: ({ page }) => observed(page),
       proposeAction,
       performAction,
-      readExpectedState: ({ page }) => lumaWorkflow.readProviderState({
+      readExpectedState: ({ page }) => workflow.readProviderState({
         page,
         candidate: input.candidate,
       }),

@@ -13,6 +13,7 @@ const { createConnectorActionCache } = require("./connector-action-cache.js");
 const { createMinimalEvidenceChain } = require("./connector-minimal-evidence.js");
 const { createMinimalProductionOperations } = require("./connector-minimal-operations.js");
 const { createLumaScriptFirstWorkflow } = require("./connector-luma-workflow.js");
+const { createConnpassScriptFirstWorkflow } = require("./connector-connpass-workflow.js");
 const { readLumaFormProfile } = require("./luma-form-profile.js");
 const {
   createBoundedActionProposer,
@@ -246,6 +247,7 @@ function createMinimalProductionDependencies(options = {}) {
     onDiscoveryAudit: operations.recordDiscoveryAudit || (() => {}),
     readLumaFormProfile: () => readLumaFormProfile({ path: lumaFormProfilePath }),
   });
+  const connpassWorkflow = options.connpassWorkflow || createConnpassScriptFirstWorkflow({ now });
   const actionCache = options.actionCache || createConnectorActionCache({
     path: path.join(stateDir, "action-cache.json"),
   });
@@ -258,6 +260,7 @@ function createMinimalProductionDependencies(options = {}) {
   });
   const browserHarness = options.browserHarness || createProductionBrowserHarness({
     lumaWorkflow,
+    connpassWorkflow,
     inspectControls: inspectPageControls,
     proposeAction,
     operateControl: operatePageControl,
@@ -265,6 +268,7 @@ function createMinimalProductionDependencies(options = {}) {
   });
   const providerRouter = options.providerRouter || createProductionProviderRouter({
     lumaWorkflow,
+    connpassWorkflow,
     actionCache,
     browserHarness,
     performAction: browserHarness.performAction,
