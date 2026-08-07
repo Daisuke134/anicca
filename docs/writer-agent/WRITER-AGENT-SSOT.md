@@ -2170,6 +2170,53 @@ today, so Orders 1–5 run first. C1 and C2 execute as one slice alongside R3
 because both concern which entry point is authoritative and how its failure is
 observed.
 
+### 9.4.1 The note 422 is solved — verified live 2026-08-08
+
+`daily-2026-08-07`'s note article is live and paid. Verified by the primary
+session against the anonymous surface, with no session at all: the note API
+reports `status published`, `price 500`, `publish_at 2026-08-08T00:48:32+09:00`
+and the intended title, and `https://note.com/anicca123/n/n47735d9811e8` returns
+HTTP 200 containing the paywall marker 「ここから先は」 and 「購入」. The
+foreground session only ran `launchctl kickstart`; the installed loop performed
+the publish.
+
+The cause was the ninth hypothesis, found by comparing the rejected paid half
+against the paid halves of the four articles note has actually accepted. Every
+accepted paid half sources its images from `assets.st-note.com`. The rejected
+one carried `<img src="headline-image.png">` and `<img src="body-diagram.png">`,
+bare run-directory filenames the media stager had uploaded for Dev.to and Zenn
+but never for note. The decisive observation is note's own: its stored render of
+that same draft deletes exactly those two `<img>` elements while keeping the
+three note-hosted ones, and in the same render it keeps the anchors and merely
+adds `rel`, and keeps the images and merely strips `contenteditable`. note can
+normalise the other candidates and cannot represent this one. That is the whole
+asymmetry the elimination table had narrowed to: `draft_save` stores what it is
+sent and sanitises on read, while the paid publish validates.
+
+The repair transforms rather than deletes, and the reason is structural rather
+than aesthetic: removing the block would shift the sequence the separator
+indexes into. Each unhostable `<figure>` becomes a `<p>` carrying the same
+`name` and `id`, degrading to an anchor to the already-staged public URL, or to
+the caption text when no URL was staged. Verified on the real 62-block body:
+62 blocks before and after, identical id sequence, identical separator. The
+production receipt records `body_normalization` with `images_degraded`,
+`images_linked: 2`, `editor_only_attrs_stripped: 6` and `changed: true`, so a
+future 422 carrying an empty report would refute this cause rather than leaving
+it standing by default.
+
+Honest note on how it was found: the runtime autonomously detected, classified,
+routed, diagnosed, deployed and then falsified three of its own repair
+hypotheses without help. It did not find this one. The answer came from a
+foreground search of note's own accepted articles and shipped client code, which
+is precisely the capability organ H2 exists to give the runtime and does not yet
+have in production.
+
+Remaining defect from this success, now the foreground item: the pair is
+recorded as `status ambiguous` with `error canonical-content-readback-failed`,
+because the canonical content hash predates the deliberate normalisation. Until
+that is corrected the system cannot state that it shipped, and revenue cannot be
+attributed to the artifact.
+
 ### 9.5 The note 422 elimination table
 
 Every hypothesis below was closed by measurement, not by argument. Each row
