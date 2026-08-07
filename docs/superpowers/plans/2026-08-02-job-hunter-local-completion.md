@@ -7,8 +7,8 @@
 **Configured upstream:** `canonical/docs/job-hunter-spec-20260805`
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-07 JST
-**Active atomic task:** `L-49K5E7` — encode the authenticated Workday multi-step
-sequence without opening an employer form.
+**Active atomic task:** `L-49K5F1` — classify invisible reCAPTCHA, visible challenge,
+fingerprint rejection, request-started unknown, and confirmed receipt under one fence.
 **Status:** The immutable four-lane runtime, grounded materials, ownership fences,
 Gmail ingestion, Telegram outbox, quota accounting, Ashby surface classifier, and
 loopback OpenTelemetry Collector/private trace index are implemented. The application
@@ -4423,8 +4423,17 @@ item before starting the next.
      network plus visible confirmation, and turns disagreement into non-retryable
      `submit_unknown`. It stores no request body or private answers in logs. No
      employer form or Submit was opened while creating it.
-10. [ ] **L-49K5E7 — Bake the Workday recipe.** Encode the equivalent authenticated
+10. [x] **L-49K5E7 — Bake the Workday recipe.** Encode the equivalent authenticated
     multi-step sequence without opening an employer form.
+    - Added a 70-line tenant-scoped `workday/application.md` domain skill to the
+      versioned source and active Browser Harness workspace. Both copies have SHA-256
+      `ad6f6150efbdef4db2b53561513b7fe6c2ec19c77761ed5dece6f2c687a70fc5`.
+      It fixes the evaluated job/apply-choice/account/application surface sequence,
+      private tenant credential and email-verification boundaries, dynamic field
+      verification, one-click request/receipt binding, and non-retryable unknown. An
+      application email remains outside the recipe and is allowed only after every
+      official Workday route is proven unavailable. No employer form or Submit was
+      opened while creating it.
 11. [ ] **L-49K5F1 — Classify anti-bot outcomes.** Distinguish invisible reCAPTCHA,
     visible challenge, fingerprint rejection, request-started unknown, and confirmed
     receipt. Every class MUST preserve the same intent fence and report to Telegram.
