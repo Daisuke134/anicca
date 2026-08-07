@@ -4061,11 +4061,11 @@ OpenTelemetry decision and primary sources:
       classifier now accepts only the conjunction of the exact official submit
       mutation, GraphQL `FormSubmitSuccess`, visible `Success` status containing
       `your application` plus `successfully submitted`, and no alert.
-    - Release/run status: commit `2cd4b5aeaa553c837df428bd079e682c3a891301`
+    - Release/run status: commit `dfbebb3e2018d1a42a6b916c4e355b937f06377a`
       is the active immutable release; the previous release is
-      `08ec98f5ad84a82838392e37d60c1912f707c70d`. The complete Job Hunter suite
-      passed 537/537 before activation, and an installed-release import classified
-      the Neural Concept success variant as authoritative. Launchd run 74,
+      `e9eaad517988e0da75f39dd5afe98f05462971af`. The complete Job Hunter suite
+      passed 544/544 before activation, live summary reconstruction passes, and
+      Guardian reports `healthy`. Launchd run 74,
       `daily-20260807-015421`, attempted LangChain Ashby for application
       `fcd5aea271106d3cac08e1dfe42645d29275a4fc5415429bead7dbf485968081`.
       Its deterministic Submit path stopped at the exact failure class
@@ -4095,8 +4095,15 @@ OpenTelemetry decision and primary sources:
       immutable event only when its exact source and terminal SHA above are present
       alongside the same application/intent/fence's submitted intent and attempt,
       immutable materials receipt, confirmed click, and request-started transport.
-      The installed runtime must not be kickstarted until the tested replacement
-      release is activated.
+      Launchd run 82 (`daily-20260807-093423`) then exited zero on the replacement
+      release and sent Telegram message `8243`, but its terminal
+      `daily_quota_reached` was false: quota evidence reported seven confirmed and a
+      deficit of three while the shell stopped on eleven historical daily-slot rows.
+      The driver now gates only on `confirmed_daily_count >= 10`; failed and unknown
+      historical slots cannot suppress the remaining application work. Focused shell
+      and canonical-runtime tests pass 1/1 and 12/12, and the full suite passes
+      544/544. The next installed run must prove this corrected gate before any
+      Browser Harness integration begins.
 - [ ] **L-49K** — Prove `L-49K1` through `L-49K4` through the installed resident
   LaunchAgent on one eligible Ashby role. The development session only triggers and
   observes. The resident must open the application surface, fill, verify, submit once,

@@ -118,8 +118,9 @@ class LaunchdTests(unittest.TestCase):
     def test_daily_shell_skips_model_when_submission_quota_is_full(self):
         root = Path(__file__).parents[1]
         script = (root / "scripts" / "run-daily.sh").read_text(encoding="utf-8")
-        self.assertIn("daily_slot_count", script)
-        self.assertIn('if [[ "$SLOT_COUNT" -ge "10" ]]', script)
+        self.assertIn("confirmed_daily_count", script)
+        self.assertNotIn("daily_slot_count", script)
+        self.assertIn('if [[ "$CONFIRMED_COUNT" -ge "10" ]]', script)
         self.assertIn("daily_quota_reached", script)
         self.assertIn("job_search_loop.quota", script)
         self.assertIn('--identity "job-search:dais"', script)

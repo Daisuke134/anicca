@@ -166,7 +166,7 @@ refresh_summary() {
   chmod 600 "$EVIDENCE/daily-pipeline-report.json"
   return 0
 }
-SLOT_COUNT=$("$JOB_SEARCH_PYTHON" - "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" "$JAPAN_DAY" <<'PY'
+CONFIRMED_COUNT=$("$JOB_SEARCH_PYTHON" - "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" "$JAPAN_DAY" <<'PY'
 import sys
 from pathlib import Path
 
@@ -174,17 +174,17 @@ from job_search_loop.ledger import Ledger
 
 ledger = Ledger(Path(sys.argv[1]))
 try:
-    print(ledger.daily_slot_count(sys.argv[2]))
+    print(ledger.confirmed_daily_count(sys.argv[2]))
 finally:
     ledger.close()
 PY
 )
-if [[ "$SLOT_COUNT" -ge "10" ]]; then
+if [[ "$CONFIRMED_COUNT" -ge "10" ]]; then
   "$JOB_SEARCH_JQ" -n \
     --arg status "daily_quota_reached" \
     --arg japan_day "$JAPAN_DAY" \
-    --argjson slot_count "$SLOT_COUNT" \
-    '{status:$status,japan_day:$japan_day,slot_count:$slot_count}' \
+    --argjson confirmed_count "$CONFIRMED_COUNT" \
+    '{status:$status,japan_day:$japan_day,confirmed_count:$confirmed_count}' \
     >"$EVIDENCE/summary.json"
   chmod 600 "$EVIDENCE/summary.json"
   refresh_summary
