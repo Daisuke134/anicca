@@ -186,12 +186,17 @@ Only the first unchecked item is active.
      were observed. The first protocol attempt was rejected before thread creation
      because the valid sandbox enum is `read-only`, not `readOnly`; the corrected
      request passed. No Job Hunter run, browser action, or external send occurred.
-2. [ ] **PERSIST-02 — Minimal work-thread registry.** Persist only the stable
+2. [x] **PERSIST-02 — Minimal work-thread registry.** Persist only the stable
    `work_type + work_id -> thread_id` binding, generation/lineage, status, and joined
    run/release identifiers. Delegate rollout history, resume, item paging, and archive
    to Codex app-server. Do not create a second conversation store or reimplement
    app-server session semantics. Keep the existing domain/browser/Submit fences as
    the authority for external side effects.
+   - Receipt: `job_search_loop.thread_registry.ThreadRegistry` stores no conversation
+     content. Its private SQLite binding is atomic under `BEGIN IMMEDIATE`, permits
+     one idempotent active thread per work item, rejects a conflicting active thread,
+     and records archived predecessor lineage for the next generation. Focused test
+     `PYTHONPATH=. python3 -m unittest tests.test_thread_registry -v` passed 2/2.
 3. [ ] **PERSIST-03 — Thin runtime adapter.** Expose start, resume, compact, fork,
    read, archive, and event streaming without recreating app-server behavior.
 4. [ ] **PERSIST-04 — Secret boundary.** Connect credential references to macOS
