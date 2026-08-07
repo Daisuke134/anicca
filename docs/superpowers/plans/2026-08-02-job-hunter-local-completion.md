@@ -7,8 +7,8 @@
 **Configured upstream:** `canonical/docs/job-hunter-spec-20260805`
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-07 JST
-**Active atomic task:** `L-49K5E4` — capture one inspectable Browser Harness recording
-and accessibility snapshot from a non-application page without mutation.
+**Active atomic task:** `L-49K5E5` — encode the already-proven Ashby inspect, fill,
+verify, single-click, request-observation, and receipt sequence as one domain skill.
 **Status:** The immutable four-lane runtime, grounded materials, ownership fences,
 Gmail ingestion, Telegram outbox, quota accounting, Ashby surface classifier, and
 loopback OpenTelemetry Collector/private trace index are implemented. The application
@@ -4393,8 +4393,14 @@ item before starting the next.
      `targetId`, not the `id` key shown in the tabs interaction example; the first
      read-only attempt therefore raised `KeyError` with zero browser mutation before
      the corrected observation succeeded.
-7. [ ] **L-49K5E4 — Record one browser trace.** Produce one inspectable recording and
+7. [x] **L-49K5E4 — Record one browser trace.** Produce one inspectable recording and
    accessibility snapshot from the attached session, with no application mutation.
+   - Browser Harness recorded three frames and `events.jsonl` under the exact local
+     path `~/.config/browser-harness/agent-workspace/recordings/job-hunter-readonly-ax`.
+     The same existing connpass target produced an Accessibility tree snapshot with
+     RootWebArea, heading, and link role/name pairs. The snapshot SHA-256 is
+     `62a034b37a0ed99cb795b4719815a73c8ba862df03c475896e5402160055dc74`.
+     No target creation, navigation, click, typing, or Submit occurred.
 8. [ ] **L-49K5E5 — Bake the Ashby recipe.** Turn the proven inspect, map, fill,
    verify, single-click, request observation, and receipt classification sequence into
    one reusable domain skill. The resident MUST NOT rediscover CLI help or source.
