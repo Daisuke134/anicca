@@ -1,6 +1,7 @@
 import hashlib
 import importlib
 import json
+import subprocess
 import tempfile
 import unittest
 import zipfile
@@ -50,6 +51,46 @@ class ApplicationReportingTests(unittest.TestCase):
         self.assertIn("This is the complete sent message.", message)
         self.assertNotIn("Application sent", message)
         self.assertEqual(calls[0]["document"], Path("/private/resume.pdf"))
+
+    def test_outreach_transport_timeout_is_reported_without_stopping_the_loop(self):
+        reporting = importlib.import_module("job_search_loop.application_reporting")
+        report = {
+            "application_id": "application-outreach-timeout",
+            "company": "Example",
+            "title": "AI Engineer",
+            "canonical_url": "https://jobs.example/1",
+            "recipient": "talent@example.test",
+            "subject": "Application — AI Engineer",
+            "route_kind": "recruiting_outreach",
+            "recipient_acceptance": "outreach_only",
+            "provider_id": "gmail:outreach-timeout",
+            "message_sha256": "a" * 64,
+            "resume_sha256": "b" * 64,
+            "message_body": "Complete sent message.",
+            "resume_path": "/private/resume.pdf",
+        }
+
+        result = reporting.deliver_outreach_dossiers(
+            ledger_path=Path("unused.sqlite3"),
+            outbox_path=Path("outbox.sqlite3"),
+            media_root=Path("media"),
+            report_reader=lambda _: [report],
+            sender=lambda **_: (_ for _ in ()).throw(
+                subprocess.TimeoutExpired("openclaw", 60)
+            ),
+        )
+
+        self.assertEqual(
+            result,
+            [
+                {
+                    "application_id": "application-outreach-timeout",
+                    "status": "delivery_unknown",
+                    "message_id": None,
+                    "reason": "TimeoutExpired",
+                }
+            ],
+        )
 
     def test_submission_evidence_archive_is_deterministic_and_complete(self):
         reporting = importlib.import_module("job_search_loop.application_reporting")
