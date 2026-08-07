@@ -5831,7 +5831,18 @@ Connpass workflow/minimal runner/production focused suiteは21/21 GREEN。実bro
 Item 10B/14は未完。次の一件はofficial foreground wakeで二つのどちらが実failureか確定し、そのvalidationだけを修復すること。
 scheduleはunloadedを維持する。
 
-### Active remaining TODO SSOT（進捗213。これ以外の残TODO一覧は履歴）
+### O1B-25進捗214（runner provider candidate contract diagnosis）
+
+workflow全throw path監査で、workflow成功後のrunner `verifiedCandidates`が未分類境界として残っていることを確認した。
+malformed candidate fixtureがgeneric discovery failureになるRED後、`PROVIDER_CANDIDATE_CONTRACT_FAILED`を追加した。
+provider/canonical URL/event ref contract failureは次providerへ継続し、safe reason `provider_candidate_contract_failed`だけをTelegramへ送る。
+candidate内容、URL、title、raw errorは保存・送信しない。
+
+Connpass workflow/minimal runner/production focused suiteは22/22 GREEN。実browser、Submit、Calendar write、PNG作用は0。
+Item 10B/14は未完。次の一件はofficial foreground wakeでgeneric failureがparent candidate contractかを確認すること。
+scheduleはunloadedを維持する。
+
+### Active remaining TODO SSOT（進捗214。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 

@@ -86,6 +86,7 @@ function registered(value) {
 
 function safeDiscoveryReason(error) {
   const code = String(error && error.code || "");
+  if (code === "PROVIDER_CANDIDATE_CONTRACT_FAILED") return "provider_candidate_contract_failed";
   return /^CONNPASS_(?:CALENDAR_NAVIGATION|CALENDAR_BINDINGS|CALENDAR_BINDING_VALIDATION|DETAIL_NAVIGATION|DETAIL_READ|DETAIL_IDENTITY_MISMATCH|CANDIDATE_VALIDATION)_FAILED$/.test(code)
     ? code.toLowerCase() : "provider_discovery_failed";
 }
@@ -154,10 +155,15 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
     for (const provider of settings.providers) {
       let candidates;
       try {
-        candidates = verifiedCandidates(
-          await action("observe", "provider_discovery", () => deps.discoverCandidates(provider, gaps, owned.page)),
-          provider,
+        const discovered = await action(
+          "observe", "provider_discovery", () => deps.discoverCandidates(provider, gaps, owned.page),
         );
+        try { candidates = verifiedCandidates(discovered, provider); }
+        catch {
+          const error = new Error("Provider candidate contract failed");
+          error.code = "PROVIDER_CANDIDATE_CONTRACT_FAILED";
+          throw error;
+        }
       } catch (error) {
         providerDiscoveryFailed = true;
         discoveryFailureReason = safeDiscoveryReason(error);
