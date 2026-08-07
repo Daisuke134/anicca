@@ -89,6 +89,11 @@ test("production provider router keeps Luma cache direct fallback and readback o
   const performAction = async () => ({ status: "success" });
   const router = createProductionProviderRouter({
     lumaWorkflow,
+    connpassWorkflow: {
+      async discoverCandidates() { return []; },
+      async runDirectAction() { return { status: "failed" }; },
+      async readProviderState() { return { status: "unavailable" }; },
+    },
     actionCache,
     browserHarness,
     performAction,
@@ -128,6 +133,48 @@ test("production provider router keeps Luma cache direct fallback and readback o
   assert.equal(calls.find(([name]) => name === "fallback")[1].page, page);
   assert.equal(calls.find(([name]) => name === "fallback")[1].candidate, candidate);
   assert.equal(calls.find(([name]) => name === "cache-save")[1].observedAt, "2026-08-07T08:30:00.000Z");
+});
+
+test("production provider router continues from Luma to Connpass on the same page", async () => {
+  const calls = [];
+  const page = Object.freeze({ page_id: "owned-page-1" });
+  const candidate = Object.freeze({
+    provider: "connpass",
+    event_ref: "connpass-event://event/401001",
+    canonical_url: "https://tokyo-builders.connpass.com/event/401001/",
+  });
+  const workflow = {
+    async discoverCandidates(input) { calls.push(["discover", input]); return [candidate]; },
+    async runDirectAction(input) { calls.push(["direct", input]); return { status: "completed" }; },
+    async readProviderState(input) { calls.push(["readback", input]); return { status: "pending" }; },
+  };
+  const actionCache = {
+    async replay(input) { calls.push(["cache", input]); return { status: "cache_miss" }; },
+    saveVerifiedRepair(input) { calls.push(["save", input]); return { status: "saved" }; },
+  };
+  const browserHarness = {
+    async runFallback(input) { calls.push(["fallback", input]); return { status: "failed" }; },
+  };
+  const router = createProductionProviderRouter({
+    lumaWorkflow: workflow,
+    connpassWorkflow: workflow,
+    actionCache,
+    browserHarness,
+    async performAction() { return { status: "success" }; },
+    now: () => new Date("2026-08-07T08:30:00.000Z"),
+  });
+
+  assert.deepEqual(await router.discoverCandidates("connpass", [], page), [candidate]);
+  await router.runCachedAction({ provider: "connpass", candidate, page });
+  await router.runDirectAction({ provider: "connpass", candidate, page });
+  await router.readProviderState({ provider: "connpass", candidate, page });
+
+  const cached = calls.find(([name]) => name === "cache")[1];
+  assert.equal(cached.provider, "connpass");
+  assert.equal(cached.workflowVersion, "connpass_registration_v1");
+  assert.equal(cached.pageState, "registration_page_v1");
+  assert.equal(cached.page, page);
+  assert.equal(calls.filter(([name]) => name === "discover")[0][1].page, page);
 });
 
 test("production calendar reader uses gog for exactly fourteen Tokyo calendar days", async () => {

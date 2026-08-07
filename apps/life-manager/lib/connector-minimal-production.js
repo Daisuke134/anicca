@@ -31,6 +31,7 @@ const { makeGogCalendar } = require("./transport/calendar-gog.js");
 const LUMA_DISCOVERY_URL = "https://luma.com/tokyo?k=p";
 const PRODUCTION_TIME_ZONE = "Asia/Tokyo";
 const LUMA_WORKFLOW_VERSION = "luma_registration_v1";
+const CONNPASS_WORKFLOW_VERSION = "connpass_registration_v1";
 const LUMA_PAGE_STATE = "registration_page_v1";
 const EXPECTED_REGISTRATION_EFFECT = "registered_or_pending";
 
@@ -120,6 +121,7 @@ function createProductionCalendarReader(options = {}) {
 
 function createProductionProviderRouter(options = {}) {
   const lumaWorkflow = options.lumaWorkflow;
+  const connpassWorkflow = options.connpassWorkflow;
   const actionCache = options.actionCache;
   const browserHarness = options.browserHarness;
   const performAction = options.performAction;
@@ -128,71 +130,77 @@ function createProductionProviderRouter(options = {}) {
     !lumaWorkflow || typeof lumaWorkflow.discoverCandidates !== "function"
     || typeof lumaWorkflow.runDirectAction !== "function"
     || typeof lumaWorkflow.readProviderState !== "function"
+    || !connpassWorkflow || typeof connpassWorkflow.discoverCandidates !== "function"
+    || typeof connpassWorkflow.runDirectAction !== "function"
+    || typeof connpassWorkflow.readProviderState !== "function"
     || !actionCache || typeof actionCache.replay !== "function"
     || typeof actionCache.saveVerifiedRepair !== "function"
     || !browserHarness || typeof browserHarness.runFallback !== "function"
     || typeof performAction !== "function" || typeof now !== "function"
   ) invalid();
 
-  function luma(input) {
-    if (!input || input.provider !== "luma") invalid();
-    return input;
+  function selected(input) {
+    if (!input || !["luma", "connpass"].includes(input.provider)) invalid();
+    return Object.freeze({
+      input,
+      workflow: input.provider === "luma" ? lumaWorkflow : connpassWorkflow,
+      workflowVersion: input.provider === "luma" ? LUMA_WORKFLOW_VERSION : CONNPASS_WORKFLOW_VERSION,
+    });
   }
 
   return Object.freeze({
     discoverCandidates(provider, calendar, page) {
-      if (provider === "connpass") return Promise.resolve(Object.freeze([]));
-      if (provider !== "luma") invalid();
-      return lumaWorkflow.discoverCandidates({ page, calendar });
+      const route = selected({ provider });
+      return route.workflow.discoverCandidates({ page, calendar });
     },
 
     runCachedAction(input) {
-      const selected = luma(input);
+      const route = selected(input);
       return actionCache.replay({
-        provider: "luma",
-        workflowVersion: LUMA_WORKFLOW_VERSION,
+        provider: route.input.provider,
+        workflowVersion: route.workflowVersion,
         pageState: LUMA_PAGE_STATE,
         expectedEffect: EXPECTED_REGISTRATION_EFFECT,
-        page: selected.page,
+        page: route.input.page,
         performAction,
-        readExpectedState: ({ page }) => lumaWorkflow.readProviderState({
+        readExpectedState: ({ page }) => route.workflow.readProviderState({
           page,
-          candidate: selected.candidate,
+          candidate: route.input.candidate,
         }),
       });
     },
 
     runDirectAction(input) {
-      const selected = luma(input);
-      return lumaWorkflow.runDirectAction({ page: selected.page, candidate: selected.candidate });
+      const route = selected(input);
+      return route.workflow.runDirectAction({ page: route.input.page, candidate: route.input.candidate });
     },
 
     runAgentFallback(input) {
-      const selected = luma(input);
+      const route = selected(input);
       return browserHarness.runFallback({
-        provider: "luma",
-        candidate: selected.candidate,
-        page: selected.page,
-        pageWebsocket: selected.pageWebsocket,
-        maxSteps: selected.maxSteps,
-        expectedState: selected.expectedState,
+        provider: route.input.provider,
+        candidate: route.input.candidate,
+        page: route.input.page,
+        pageWebsocket: route.input.pageWebsocket,
+        maxSteps: route.input.maxSteps,
+        expectedState: route.input.expectedState,
       });
     },
 
     readProviderState(input) {
-      const selected = luma(input);
-      return lumaWorkflow.readProviderState({ page: selected.page, candidate: selected.candidate });
+      const route = selected(input);
+      return route.workflow.readProviderState({ page: route.input.page, candidate: route.input.candidate });
     },
 
     saveRepairedActions(input) {
-      const selected = luma(input);
+      const route = selected(input);
       return actionCache.saveVerifiedRepair({
-        provider: "luma",
-        workflowVersion: LUMA_WORKFLOW_VERSION,
+        provider: route.input.provider,
+        workflowVersion: route.workflowVersion,
         pageState: LUMA_PAGE_STATE,
         expectedEffect: EXPECTED_REGISTRATION_EFFECT,
-        providerState: selected.providerState,
-        actions: selected.repairedActions,
+        providerState: route.input.providerState,
+        actions: route.input.repairedActions,
         observedAt: exactNow(now()).toISOString(),
       });
     },
