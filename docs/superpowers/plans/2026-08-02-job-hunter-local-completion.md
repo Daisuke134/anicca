@@ -7,15 +7,15 @@
 **Configured upstream:** `canonical/docs/job-hunter-spec-20260805`
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-07 JST
-**Active atomic task:** `L-49K5D` — make the installed resident use the existing
-Ashby/generic browser toolbelt against a new non-Workday employer, finish at
-`applied_ats` or one verified email fallback, then repeat against a different Workday
-employer. Do not build another agent framework or ATS-specific workflow first.
+**Active atomic task:** `L-49K5D1` — repair send truth and privacy before another
+external application action. Outreach-only mail must never be labeled or counted as
+an application; Telegram must show the exact action, full content, artifacts, reason,
+and authoritative receipt.
 **Status:** The immutable four-lane runtime, grounded materials, ownership fences,
 Gmail ingestion, Telegram outbox, quota accounting, Ashby surface classifier, and
 loopback OpenTelemetry Collector/private trace index are implemented. The application
-LaunchAgent is loaded on a 3,600-second schedule and is idle after resident run 72
-exited zero; CloakBrowser CDP and the observability Collector are running. The
+LaunchAgent is loaded on a 3,600-second schedule and is idle after resident run 83;
+CloakBrowser CDP and the observability Collector are running. The
 authoritative projection contains seven `submitted`, twelve `submit_unknown`, and six
 `rejected`. Three submissions are resident-loop confirmations: Cursor and two NVIDIA
 roles, all confirmed through Gmail fallback rather than ATS-site confirmation. The
@@ -23,15 +23,12 @@ owner-authorized OpenAI Ashby success is `dais_manual`, not resident proof. Ther
 zero verified interviews and zero offers. `L-49K2C1` is complete:
 its isolated CloakBrowser E2E verified changed field layouts across fill, select,
 check, and upload with zero Submit controls/actions and preserved all baseline pages.
-The last complete pre-A2 Job Hunter suite passes 510/510. A2's focused semantic
-Submit/confirmation/Ledger/telemetry suites passed 82/82 and its then-current complete
-suite passed 512/512 before the owner-directed live-priority prompt/runtime change.
-The current live-priority release passes Python and zsh syntax verification; the owner
-explicitly directed execution to proceed without adding or waiting on more tests. The
-eight legacy `run-daily.sh`
-assertions now verify the active single `application-lane-agent`, deferred ATS
-liveness, and release-contained Ashby CLI contract instead of the superseded Browser
-Worker, composition-agent, Terra-high, and eager ATS-sweep topology.
+active immutable release is `66f9c760e8a4bc3db7bead03e53f5cce2986eebd`.
+Its focused launchd and canonical-runtime tests pass 1/1 and 12/12, and the complete
+Job Hunter suite passes 544/544. Run 83 proved the corrected quota gate but did not
+prove a resident ATS submission: its Salesforce message was recruiting outreach,
+the Ledger remained `materials_ready`, Telegram used misleading application wording,
+and the privacy scan exited 76 after finding a private email in a provider log.
 
 ## 1. Acceptance criteria — done condition
 
@@ -79,6 +76,82 @@ user can build and improve advanced AI systems. Foreign-capital companies in Jap
 Tokyo-based global teams, and employers supporting Japan-based remote employment,
 EOR, or contracting are preferred. Traditional Japanese employers are not a default
 target, but Japanese application documents remain supported when explicitly needed.
+
+### 2.1 End-to-end user experience — from first Telegram message to accepted offer
+
+Telegram is the primary product surface; the Mac mini resident is the executor, and
+the Ledger is the truth. A user never has to operate an ATS, remember what was sent,
+or manually reconstruct the hiring funnel.
+
+```mermaid
+journey
+    title Job Hunter — first hello to accepted job
+    section Onboard once
+      Open Telegram and choose job goal: 5: User
+      Import resume and known profile facts: 4: User, Agent
+      Confirm target compensation and location: 5: User, Agent
+      See privacy and automatic-application policy: 5: User
+    section Agent builds the campaign
+      Discover official jobs continuously: 5: Agent
+      Rank fit and verify duplicates: 5: Agent
+      Tailor truthful resume and answers: 5: Agent
+    section Apply with full visibility
+      Send pre-submit dossier to Telegram: 5: Agent
+      Submit official form exactly once: 5: Agent
+      Show success unknown or failure evidence: 5: Agent
+      Ask only a genuinely missing private fact: 4: User, Agent
+    section Manage the funnel
+      Match recruiter emails to the application: 5: Agent
+      Schedule confirmed interviews: 5: Agent
+      Deliver company and interview preparation: 5: Agent
+      Track feedback follow-ups and next action: 5: Agent
+    section Win and learn
+      Compare verified offers and compensation: 5: User, Agent
+      Record accepted offer and start date: 5: User, Agent
+      Improve sourcing resume and interview strategy: 5: Agent
+```
+
+The visible Telegram contract is:
+
+| Moment | What the user sees | Required receipt |
+|---|---|---|
+| First start | Campaign goal, compensation, locations, role families, autonomy and privacy summary | Profile version and campaign ID |
+| Candidate chosen | Company, role, official URL, fit thesis, gaps, duplicate state and intended route | Ledger application ID |
+| Before submit | Exact resume, cover letter, every question and proposed answer, plus missing-fact status | Materials manifest and hashes |
+| Missing fact | One concise Telegram question with why the official form requires it | Question ID; answer saved to private profile once |
+| After action | Exact `submitted`, `submit_unknown`, `failed`, or `outreach_only` wording; never euphemisms | ATS/Gmail response, screenshots, intent and fence |
+| Daily progress | Confirmed applications, unknown attempts, failures by reason, interviews, remaining quota and next action | Projection version and Telegram message ID |
+| Recruiter reply | Company, stage change, full relevant message, deadline and response action | Gmail message/thread ID |
+| Interview | Calendar time/link, participants, submitted dossier, likely questions and practice pack | Calendar event ID and artifact hashes |
+| Offer | Base, bonus, equity, currency, verified conversion, deadline and comparison | Offer evidence and decision state |
+| Accepted | Employer, role, compensation, start date, closed follow-ups and retained campaign history | Authoritative acceptance event |
+
+### 2.2 Demo and productization contract
+
+The first public demo is a real, redacted replay of one complete resident-owned path:
+onboarding → discovery → exact materials → official ATS Submit → authoritative receipt
+→ Telegram report → matched recruiter reply → Calendar interview → preparation pack.
+It must use Browser Harness/CloakBrowser recordings and immutable Ledger events; it
+must not reenact a completed application or show mock success as live proof.
+
+Public sourcing is allowed only after the Dais proof gate below passes. Secrets,
+private profile facts, employer correspondence, resumes, recordings, and raw browser
+profiles stay outside the repository. The sourced package may include the orchestration
+engine, provider interfaces, ATS domain skills, schemas, tests, redacted demo fixtures,
+and local installation instructions.
+
+Public-launch gate:
+
+1. one resident-owned authoritative ATS submission, not a development-session action;
+2. one full Telegram dossier reopened and hash-verified on a phone;
+3. one missing-fact Telegram answer persisted and reused without a second question;
+4. one honest failure/unknown report with no silent stop or misleading success label;
+5. one real recruiter email matched to the correct application and stage;
+6. one real interview Calendar event and preparation pack;
+7. duplicate, privacy, concurrency, and crash-recovery E2Es green;
+8. tenant-isolated storage, credentials, browser profile, Ledger, retention, deletion,
+   export, consent, and pause/stop controls for a non-Dais user; and
+9. a redacted end-to-end demo generated from real evidence.
 
 ## 3. Compensation policy — single source of truth
 
@@ -1144,48 +1217,55 @@ section remains the outcome contract and execution-order SSOT. Any prompt or cod
 that prescribes a complete decision tree, makes a diagnostic terminal, or restores a
 production no-submit mode contradicts both documents.
 
-Job Hunter exists to apply, not to decide whether an eligible discovered role deserves
-an application. Every selected role MUST reach exactly one durable application outcome:
+Job Hunter exists to apply, not to silently abandon eligible roles. Every selected
+role remains active until it reaches one truthful durable state:
 
 1. `applied_ats` — the formal employer/ATS application is authoritatively confirmed; or
-2. `applied_email` — Job Hunter sends the application by Gmail to a verified recruiting,
-   careers, hiring-manager, or recruiter address when ATS is unavailable or unconfirmed.
+2. `applied_email` — a verified recipient explicitly accepts applications by email and
+   Job Hunter sends the complete application there; or
+3. `submit_unknown` — the ATS action may have happened but confirmation is insufficient,
+   retry is forbidden, the reason is visible on Telegram, and reconciliation continues.
 
-There is no terminal `skip`, `blocked`, `needs_fact`, `needs_repair`, `captcha`,
-`no_submit`, or human-handoff outcome for a selected role. Those values may exist only
-as transient diagnostics while the same application remains active. A previously
-applied duplicate already resolves to its existing `applied_ats` or `applied_email`
-outcome and MUST NOT be sent twice.
+There is no silent terminal `skip`, `blocked`, `needs_fact`, `needs_repair`, `captcha`,
+or `no_submit` outcome. These are visible transient states with an owner and next
+action. A previously applied or ambiguously clicked duplicate resolves to its existing
+durable state and MUST NOT be clicked or mailed twice.
 
-Formal ATS application is always attempted first. Any ATS obstacle—including a broken
-or unsupported control, uncertain answer, missing non-fraudulent detail, CAPTCHA,
-bot block, timeout, closed form, missing confirmation, screenshot failure, telemetry
-failure, or repair failure—MUST immediately route the same role to email application.
-If no address is known, the agent continues finding an official recruiting/careers
-contact or named recruiter; address discovery is work in progress, never a terminal
-non-application result.
+Formal ATS application is the default and must receive bounded self-healing before any
+route change: deterministic ATS recipe → Browser Harness semantic recovery → CamoFox
+only after measured bot blocking → Terra only for an unfamiliar required question or
+widget. Missing private facts route to Telegram, are saved once, and resume the same
+intent. Email application is a rare fallback, never a generic escape hatch: the
+employer or verified recipient must explicitly accept applications by email. Recruiting
+outreach is a separate funnel and can never satisfy an application outcome or quota.
 
 The LLM Job Hunter owns natural-language judgment. It uses the strongest truthful
 profile evidence available, records uncertainty for later correction, omits optional
 questions when possible, and never allows a minor mismatch to prevent application.
 It MUST NOT fabricate identity, employment, education, or legal eligibility. When a
-required answer cannot be stated truthfully, it applies by email with an explicit
-request to clarify rather than abandoning the role.
+required answer cannot be stated truthfully, it asks the user on Telegram, persists the
+answer privately, and resumes; if no truthful answer can legally exist, it reports the
+exact ineligibility instead of sending a disguised application email.
 
 Evidence, screenshots, telemetry, Gmail matching, and Ledger reconciliation observe
 and improve applications; they do not grant permission to apply. Their failure creates
 repair work after or alongside the application route and MUST NOT suppress ATS Submit
-or the email fallback.
+or an employer-authorized email-application route.
 
 ```mermaid
 flowchart LR
     A[Eligible role selected] --> B[Formal ATS application first]
     B -->|Authoritative confirmation| C[applied_ats]
-    B -->|Any obstacle or no confirmation| D[Find recruiting contact]
-    D --> E[Send resume and application email]
+    B -->|UI or bot obstacle| D[Bounded self-healing]
+    D --> B
+    B -->|Missing private fact| Q[Ask once on Telegram]
+    Q --> B
+    B -->|Ambiguous post-click evidence| U[submit_unknown and reconcile]
+    B -->|Employer explicitly accepts email applications| E[Send complete application email]
     E --> F[applied_email]
     C --> G[Evidence, Gmail, interview tracking]
     F --> G
+    U --> G
 ```
 
 Application-first acceptance matrix:
@@ -1193,11 +1273,12 @@ Application-first acceptance matrix:
 | Scenario | Required observable outcome |
 |---|---|
 | ATS returns authoritative success | Exactly one `applied_ats`; send no fallback email |
-| CAPTCHA, bot block, closed/broken form, or unsupported control | Exactly one Gmail application with resume; `applied_email` |
-| Required answer is uncertain or unavailable | Record uncertainty, send application email requesting clarification; `applied_email` |
-| ATS action started but confirmation is ambiguous | Never click ATS again; send exactly one application email; `applied_email` |
+| CAPTCHA, bot block, or unsupported control | Browser Harness/CamoFox/Terra recovery under the same fence; report every attempt |
+| Required private answer is unknown | Ask once on Telegram, save privately, then resume the same official form |
+| ATS action started but confirmation is ambiguous | Never click or mail again; `submit_unknown`; reconcile ATS/Gmail and report visibly |
 | Screenshot, telemetry, or evidence packaging fails | Application route still executes; repair is queued separately |
-| No recipient is initially known | Keep the same application active and continue contact discovery; no terminal blocker |
+| Employer explicitly accepts application email | Exactly one complete email application with resume and full Telegram copy |
+| Only a general recruiter/contact address exists | Optional `outreach_only`; never label/count it as an application |
 | Existing durable application is discovered | Resolve to its existing `applied_ats` or `applied_email`; send nothing twice |
 | Resident crashes or wakes twice | Resume the unfinished route and preserve at-most-once ATS/email effects |
 
@@ -2302,7 +2383,12 @@ this spec update → commit/push → Telegram milestone before the next item sta
     `effect_count=1`. The fixture keeps the retry side effect idempotent under a
     unique key. Its focused test and the complete Job Hunter suite pass 453/453.
 
-### 12.2A Current blocking execution order
+### 12.2A Historical blocking execution order
+
+This subsection preserves the route by which the current runtime was built. Its
+unchecked language is superseded by **Ordered remaining execution — Big Two first,
+then general browser coverage** below; in particular, recruiting outreach is no longer
+an application fallback.
 
 The detailed tasks below remain the requirements, but execution follows this critical
 path. The first milestone is not a complete framework: it is one real resident
@@ -2360,8 +2446,8 @@ parallel only where explicitly stated below. Otherwise preserve this order:
    then close `L-49K3A3`, the remaining `L-49K3B`, `L-49K4`,
    and remaining `L-49K0C2` children from measured behavior. Run the installed
    resident against one new eligible non-Workday employer with no prior ambiguous
-   click. Formal ATS is first; if it cannot produce authoritative confirmation, send
-   exactly one verified recruiting-email fallback. Require authoritative ATS or Gmail
+   click. Formal ATS is first; email is permitted only when an authoritative employer
+   route explicitly accepts applications by email. Require authoritative ATS or Gmail
    receipt, exact artifacts, Ledger truth, and Telegram evidence before proceeding.
    Resident run 72 (`daily-20260807-005344`) did not satisfy this item: it opened the
    OpenAI Ashby application and observed 31 controls, but chose a posting already
@@ -2370,10 +2456,10 @@ parallel only where explicitly stated below. Otherwise preserve this order:
    next run must choose a genuinely new employer and use the existing Ashby CLI and
    generic browser toolbelt directly instead of spending the pass rediscovering their
    commands from repository source.
-8. [x] `L-51` and `L-52` — run the same adopted generic path against one new eligible
+8. [x] `L-51` and `L-52` — historical Workday/Gmail route proof against one new eligible
    Workday employer and prove one authoritative real Workday application, exact
-   artifacts, Ledger receipt, and Telegram evidence. A formal-route failure selects
-   exactly one verified recruiting-email fallback; there is no no-application branch.
+   artifacts, Ledger receipt, and Telegram evidence. These receipts do not authorize
+   future generic recruiting outreach as an application fallback.
 9. [ ] Finish the observability proof in
    `L-49K0C2O6`: index one joined live trace from resident PID/release/browser/fence
    through route/evidence/Telegram, and replace generic surface failure with the
@@ -4031,7 +4117,8 @@ OpenTelemetry decision and primary sources:
         canonical-runtime focused tests pass 26/26.
   - [ ] `L-49K5D` — Run the installed resident against two new real employers using
     the adopted path: one non-Workday official ATS first, then Workday under `L-51`.
-    Each role MUST finish through confirmed ATS or one verified email fallback, store
+    Each role MUST finish through confirmed ATS or a verified employer-authorized
+    application-email route, store
     its immutable evidence chain, and report its provider receipt to Telegram. A
     clicked-but-unknown route remains observe-only and the agent continues with a new
     eligible role rather than replaying it.
@@ -4117,6 +4204,52 @@ OpenTelemetry decision and primary sources:
       is materially misleading for outreach-only delivery and must be corrected
       before another external send.
 
+### Why completion took so long — measured failure chain and permanent gates
+
+The problem was not one broken selector. The system repeatedly crossed layers without
+one end-to-end owner and then treated partial evidence as completion. The permanent
+answer is not “never encounter a failure”; external ATS pages will change. The promise
+is that failures become bounded, visible, non-duplicating states that the resident can
+recover from without the user spending another development session supervising it.
+
+| Measured failure class | What happened | Why it consumed repeated work | Permanent gate |
+|---|---|---|---|
+| Actor mismatch | Development Codex proved Neural Concept Ashby, but the installed resident did not | A successful browser action was mistaken for product E2E | Only installed-resident application IDs can close the live proof gate |
+| Evidence mismatch | A physical click existed without official request/success evidence | Click, delivery, outreach, and accepted application were conflated | State transition requires provider-specific authoritative evidence; otherwise `submit_unknown` |
+| Unsafe retry pressure | Ambiguous Ashby clicks invited another attempt | No single fence initially owned click and reconciliation together | One intent, one browser owner, one Submit authority; ambiguous means no re-click/no mail |
+| Wrong fallback semantics | General recruiting outreach was counted/described as an application | “Email sent” was treated as “application accepted” | `recipient_acceptance` is mandatory; `outreach_only` is a separate funnel and quota-excluded |
+| Silent UX | Failures and exact sent contents were not consistently visible in Telegram | Runtime artifacts existed but the user could not trust or understand the agent | Every state change requires a natural-language Telegram event plus exact dossier and provider message ID |
+| Missing-fact dead end | Unsupported/unknown required answers stopped a run | Private profile memory and resumable Telegram question were not the same state machine | Durable question ID → one answer → private profile version → same fenced intent resumes |
+| Rediscovery tax | Resident spent early runtime rereading CLI help and source | Successful Ashby/Workday mechanics were not compiled into its tool boundary | Known ATS domain skill loads before browsing; help/source discovery is a tested failure |
+| Quota truth bug | Run 82 stopped on historical slots despite only seven confirmed | Historical attempts and confirmed submissions shared a stop condition | Only authoritative confirmed count controls quota; unknown/failure cannot suppress work |
+| Privacy/reporting coupling | Run 83 leaked a private email into provider logs and exited 76 | Private evidence and observable diagnostics lacked a strict projection boundary | Private store allowlist plus public-log redaction test before activation |
+| Framework churn | ATS-specific fixes accumulated before the general browser boundary was proven | Each new page variation looked like a new workflow | CloakBrowser owner + Browser Harness recovery + small ATS skills; CamoFox/Terra only on measured escalation |
+
+The non-regression invariant is:
+
+```mermaid
+stateDiagram-v2
+    [*] --> FencedIntent
+    FencedIntent --> WaitingForFact: required private fact missing
+    WaitingForFact --> FencedIntent: answer saved once
+    FencedIntent --> Submitted: authoritative ATS success
+    FencedIntent --> SubmitUnknown: action started but proof ambiguous
+    FencedIntent --> AppliedEmail: verified email-application route
+    FencedIntent --> Recovering: UI or bot failure before action
+    Recovering --> FencedIntent: bounded repair succeeds
+    Recovering --> VisibleFailure: bounded repair exhausted
+    Submitted --> Reported
+    SubmitUnknown --> Reported
+    AppliedEmail --> Reported
+    VisibleFailure --> Reported
+    Reported --> [*]
+```
+
+No path permits silent disappearance, duplicate Submit, generic-outreach success, or a
+status that Telegram cannot explain. “Never fail again” therefore means every external
+failure is classified, visible, resumable where safe, and converted into a regression
+test/domain skill before release—not that a third-party website can never change.
+
 ### Ordered remaining execution — Big Two first, then general browser coverage
 
 This order is authoritative. Complete, verify, update this SSOT, commit, and push one
@@ -4176,13 +4309,22 @@ item before starting the next.
     final-round, and offer conversion; change only one grounded strategy variable per
     experiment; promote only with sufficient evidence; roll back safety regressions;
     and report every decision to Telegram.
+11. [ ] **L-65 through L-68 — Productize without exposing private state.** Prove all
+    resident lanes healthy together, add campaign pause/stop/export/delete, isolate a
+    second user's credentials/profile/browser/Ledger, package a reproducible install,
+    and publish only after the public-launch gate in section 2.2 passes.
+12. [ ] **L-69 and campaign completion — Reach the employment outcome.** Continue the
+    Dais campaign through replies, interviews, final rounds, offer comparison, and one
+    authoritative accepted offer. If a funnel has insufficient conversion, diagnose
+    that stage and change one strategy variable; application volume alone never closes
+    the project. Generate the redacted end-to-end demo from the real winning path.
 - [ ] **L-49K** — Prove `L-49K1` through `L-49K4` through the installed resident
   LaunchAgent on one eligible Ashby role. The development session only triggers and
   observes. The resident must open the application surface, fill, verify, submit once,
-  confirm through ATS or Gmail, store the immutable dossier, and leave the ledger at
-  `applied_ats` or `applied_email`. If the formal form produces no confirmation for
-  any reason, the resident MUST send the application email; no human-confirmation or
-  non-application fallback exists.
+  confirm through ATS or an explicitly accepted email-application route, store the
+  immutable dossier, and leave the ledger at `applied_ats`, `applied_email`, or a
+  truthful non-retriable `submit_unknown`. It MUST NOT disguise general recruiting
+  outreach as an application.
   Capture and Telegram-deliver all artifacts with immutable hashes. Historical live
   trigger: Cohere's official
   `Forward Deployed Engineer, Infrastructure Specialist` posting is Tokyo, remote,
