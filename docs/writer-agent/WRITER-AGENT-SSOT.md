@@ -1589,8 +1589,8 @@ responses concurrently. External waiting never blocks the foreground queue.
 |---:|---|---|---|
 | 1 | Observe the already-kickstarted `daily-2026-08-07` until the installed loop exits or exposes a durable incident | production Writer + primary verifier | run terminal state plus generated artifact hashes — OBSERVED 2026-08-07 12:55 JST: PID 28513 is gone, `ai.anicca.article-daily` is `not running` with last exit `0`, and `gates/publication-state.json` last changed at 01:47:49 JST. The revenue set did not ship: `note/ja` (`n47735d9811e8`), `substack/ja` (`210098888`), and `substack/en` (`210098890`) are all `intent` with `readback` null; `devto/en` (`4334072`) is `intent`; `zenn-article/ja` (`2026-08-07-snsai`) is deferred `pending` with `retry_at` 18:03 JST; `x-article/ja` is `live` on an editor URL with no readback; `x-article/en` and `x-post/ja` carry dormant skip receipts. `gates/resume-failure-circuit.json` holds `note/ja` `open=true`, `count=2`, signature `NoteNativePublishError: Note native publish HTTP 422 {"error":{"code":"invalid","message":"本文に利用できない内容が含まれています。"}}`, and `gates/note-eyecatch-blocker.json` records `ModuleNotFoundError: cloakbrowser under system python3`. `state/self-heal/incident-queue.json` reports `incident_count = 0`, so no durable incident exists for that circuit. `ai.anicca.article-resume` shows `runs = 1345`, last exit `0`, and no log write since 01:00:44 JST, so roughly 140 five-minute ticks produced no output while three revenue intents stayed unpublished. `ai.anicca.article-healthcheck` has failed since 2026-07-17 with `/Users/anicca/profitable-claude/skills/human-funded/article/article-healthcheck.sh: No such file or directory` while the real file is `skills/writer-agent/article-healthcheck.sh` |
 | 2 | Require publisher-native public readback for note JA, Substack JA, and Substack EN from that run | production Writer | three §2.5 revenue-set URLs with owner, content hash, and paywall readback |
-| 3 | If any revenue-set intent fails, create or reuse exactly one incident keyed by `run_id + artifact_id + destination + failure_class` | recovery loop | durable incident ID with observed error and lease owner |
-| 4 | Route known failure classes through deterministic runbooks and unknown failures to Terra; never use Sol for routine repair | self-heal worker | repair-attempt receipt naming tool path, model, tokens, latency, and cost |
+| 3 | If any revenue-set intent fails, create or reuse exactly one incident keyed by `run_id + artifact_id + destination + failure_class` | recovery loop | durable incident ID with observed error and lease owner — ROOT CAUSE FOUND 2026-08-07: the machinery is installed but the filter discards every candidate. `article-resume-pending.sh:403` calls `writer_unavailable_incident_bridge.py` on every five-minute tick, and that bridge keeps only replay rows whose `phase` starts with `destination:` before ingesting them. The live `state/self-heal/replay-daily-2026-08-07.json` records `span_count 69`, `incident_count 8`, and eight `slo_work_ids`, yet the post-filter `slo_work_count` is `0` and `slo_work` is `[]`, so `enqueued` was zero and `incident-queue.json` stayed at `incident_count 0` while the `note/ja` circuit was open. The defect is the phase classification of publish failures, not a missing worker |
+| 4 | Route known failure classes through deterministic runbooks and unknown failures to Terra; never use Sol for routine repair | self-heal worker | repair-attempt receipt naming tool path, model, tokens, latency, and cost — MEASURED 2026-08-07: `scripts/writer_repair_router.py` and `scripts/writer_unknown_investigation.py` exist with tests but have zero callers outside their own tests. Only `writer_unavailable_incident_bridge.py` is wired into the resume loop, so routing never executes even when an incident exists. This is unwired equipment, not missing code |
 | 5 | Verify a repair in isolation, deploy it, and resume the same work item without changing its content hash or duplicating an external effect | self-heal worker | test receipt, deployed commit, effect-ledger entry, and public readback |
 | 6 | Make quality exhaustion choose the best safe draft or a newly generated safe replacement; prohibit `block_freeze` as a terminal daily outcome | daily Writer | forced-run fixture and live run reach publication initialization after exhausted editorial feedback |
 | 7 | Record Dev.to, X Article, and Zenn as independent non-blocking distribution outcomes; their failure cannot reopen or fail the revenue shipment | distribution workers | per-destination PASS, PENDING-with-owner, or SLO-breach receipt |
@@ -2035,6 +2035,43 @@ launchctl print-disabled "gui/$(id -u)" | grep -E 'writer|article'
 # regression
 bash skills/writer-agent/tests/run-all.sh
 ```
+
+### 9.4 Codex execution contract for unattended loops
+
+Researched and measured 2026-08-07. The Writer already runs on the execution
+surface OpenAI recommends, so no migration is warranted; what is missing is the
+automation-grade flags on that surface.
+
+Surface decision, with sources:
+
+| Surface | Verdict | Source |
+|---|---|---|
+| `codex exec` | ADOPTED. OpenAI's stated recommendation for scheduled jobs | learn.chatgpt.com/docs/non-interactive-mode: "Use `codex exec` when you want Codex to: Run as part of a pipeline (CI, pre-merge checks, scheduled jobs)." |
+| Codex SDK (TypeScript/Python) | Equivalent, not an alternative architecture; it wraps the same CLI | github.com/openai/codex `sdk/typescript/README.md` |
+| `codex app-server` | REJECTED for automation by its own documentation | learn.chatgpt.com/docs/app-server: "If you are automating jobs or running Codex in CI, use the Codex SDK instead." |
+| "Hermes" | NOT an OpenAI product. `gh repo view openai/hermes` does not resolve, and the local `~/.hermes` is this project's Anicca instance #2 running on xAI/Grok. It has no bearing on Codex loop design | `gh` output plus this repository's `CLAUDE.md` |
+
+Measured current invocation in `skills/writer-agent/runtime/model-runner.sh`:
+`codex exec --ephemeral --model <model> -c model_reasoning_effort=<effort>
+--sandbox <read-only|danger-full-access> -C <root> -` with the prompt on stdin.
+
+| Gap | Evidence | Item |
+|---|---|---|
+| No `--json`, so failures are not machine-readable | grep count `0` in `model-runner.sh`; `codex-rs/exec/src/lib.rs` exits only `0` or `1`, so exit status cannot distinguish error classes | C1 |
+| No `-o/--output-last-message`, so the final message is recovered by parsing prose | grep count `0` | C1 |
+| No timeout wrapper around the Codex call | the only two `timeout` matches in `model-runner.sh` are comments on lines 52 and 111; the CLI ships no internal timeout, and openai/codex issues #27019, #34397, #31376, and #7852 document indefinite hangs precisely under non-TTY headless conditions, which is what launchd provides | C2 |
+| `--ephemeral` makes same-session resume structurally impossible | grep shows `--ephemeral` present and `resume` absent | C3 |
+
+| Item | Work | Sequenced after |
+|---|---|---|
+| C1 | Add `--json` and `-o <file>`; determine failure class by parsing the JSONL `turn.failed` and `error` events rather than the exit code | R3 |
+| C2 | Wrap the Codex invocation in an external timeout and explicitly reap orphaned children, which openai/codex#7852 shows survive the parent | with C1 |
+| C3 | Drop `--ephemeral`, persist the session, and resume with `codex exec resume --last` guarded by a liveness check, because openai/codex#37047 shows resume itself hangs on an inconsistent active thread | after C1 |
+
+Ordering decision 2026-08-07: C1–C3 are infrastructure and produce no revenue
+today, so Orders 1–5 run first. C1 and C2 execute as one slice alongside R3
+because both concern which entry point is authoritative and how its failure is
+observed.
 
 ## 10. Explicitly deferred
 
