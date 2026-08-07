@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.anicca.codex-progress-reporter</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/bin/python3</string>
+    <string>/Users/anicca/anicca-project/scripts/runtime/codex-progress-reporter.py</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>StartInterval</key>
+  <integer>300</integer>
+  <key>StandardOutPath</key>
+  <string>/Users/anicca/.codex/log/codex-progress-reporter.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/anicca/.codex/log/codex-progress-reporter.err.log</string>
+</dict>
+</plist>
