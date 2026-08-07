@@ -7,8 +7,8 @@
 **Configured upstream:** `canonical/docs/job-hunter-spec-20260805`
 **Scope:** Job Hunter only. Connector, Fundraising, CFO, Crypto, and Gig Work are excluded.  
 **Last updated:** 2026-08-07 JST
-**Active atomic task:** `L-49K5E` — iterate the general ATS CLI/browser harness from
-the measured OpenAI reCAPTCHA boundary before opening another employer form.
+**Active atomic task:** `L-49K5E1` — reconcile the clicked OpenAI application from
+Gmail and authoritative ATS evidence without reopening or resubmitting the form.
 **Status:** The immutable four-lane runtime, grounded materials, ownership fences,
 Gmail ingestion, Telegram outbox, quota accounting, Ashby surface classifier, and
 loopback OpenTelemetry Collector/private trace index are implemented. The application
@@ -4363,63 +4363,100 @@ item before starting the next.
      `~/.local/state/anicca/job-search/evidence/openai-solutions-pre-sales-20260807T015903Z/`.
      Telegram summary `8292`, exact full answers `8293`, resume `8295`, and final
      truthful outcome `8312` make the state visible.
-4. [ ] **L-49K5E — Install the general browser execution boundary.** Keep
-   [CloakBrowser](https://github.com/CloakHQ/CloakBrowser) as the single persistent
-   stealth-Chromium/session owner and attach
-   [Browser Harness](https://github.com/browser-use/browser-harness) through its
-   documented `BU_CDP_URL` boundary. Browser Harness supplies raw CDP, accessibility
-   inspection, editable helpers, recordings, and learned domain skills; CloakBrowser
-   does not contain this harness. Encode proven Ashby and Workday recipes as domain
-   skills/adapters so the resident does not rediscover CLI help or source on each run.
-   The harness decision is incremental rather than a rewrite: pilot Hermes as the
-   local agent shell because its documented agent core serves CLI, gateway, cron,
-   and API paths and it provides profile-isolated sessions, tools, and skills. Keep
-   Ledger, submit fences, ATS adapters, evidence, and direct Telegram transport as
-   deterministic Job Hunter-owned tools. Do not move the system wholesale to
-   OpenClaw: its documented primary architecture is a long-lived personal Gateway,
-   while the product needs tenant isolation and durable business workflows. For the
-   hosted product, use Temporal as the outer durable workflow owner and a separate
-   isolated browser/sandbox per user; Hermes may remain an isolated worker shell only
-   if this pilot beats the current CLI on measured ATS completion.
-5. [ ] **L-49K5F — Add CamoFox only as an isolated blocked-site fallback.** Do not
-   replace the primary Chromium owner with
-   [camofox-browser](https://github.com/jo-inc/camofox-browser). Its implementation is
-   a Firefox/Camoufox process controlled by Playwright behind REST/MCP, with separate
-   profiles and sessions; it is not Browser Harness's Chrome CDP endpoint. Invoke it
-   only after a measured bot/detection failure, keep its fence and evidence explicit,
-   disable optional crash telemetry in production, and never share a live intent
-   between the two browser owners.
-6. [ ] **L-49K5D4 — Apply to Anthropic one role at a time.** Start with Product
-   Support Specialist, Applied AI Architect, then Partner Solutions Architect —
-   Applied AI. Apply through each official Greenhouse form under the same fence,
-   private-profile, evidence, Telegram-full-visibility, and dedupe rules. This begins
-   only after the CLI/harness iteration above, per the user's explicit ordering.
-7. [ ] **L-49K5G — Route models by difficulty.** Use Luna for deterministic
-   observe/map/fill/verify and known ATS skills. Escalate the same fenced intent to
-   Terra only for novel required questions, unfamiliar widgets, or measured recovery;
-   never let two models own the same browser or Submit authority concurrently.
-8. [ ] **L-49K5H — Prove hourly phone-visible operation.** Trigger the existing Mac
-   mini launchd resident through `codex exec`; do not add a desktop-only scheduler or
-   a duplicate loop. Every cycle sends Telegram start, candidate decisions, missing
-   information questions, full pre-submit dossier, success/unknown/failure reason,
-   receipt, resume, answers, and remaining quota with provider message IDs.
-9. [ ] **L-53 through L-57 — Close the interview loop.** Convert real Gmail outcomes
-   into Ledger stages, schedule verified Calendar meetings, send Telegram receipts,
-   generate preparation from the exact submitted dossier, and persist debrief and
-   next action.
-10. [ ] **L-58 through L-64 — Close self-improvement.** Measure reply, interview,
-    final-round, and offer conversion; change only one grounded strategy variable per
-    experiment; promote only with sufficient evidence; roll back safety regressions;
-    and report every decision to Telegram.
-11. [ ] **L-65 through L-68 — Productize without exposing private state.** Prove all
-    resident lanes healthy together, add campaign pause/stop/export/delete, isolate a
-    second user's credentials/profile/browser/Ledger, package a reproducible install,
-    and publish only after the public-launch gate in section 2.2 passes.
-12. [ ] **L-69 and campaign completion — Reach the employment outcome.** Continue the
-    Dais campaign through replies, interviews, final rounds, offer comparison, and one
-    authoritative accepted offer. If a funnel has insufficient conversion, diagnose
-    that stage and change one strategy variable; application volume alone never closes
-    the project. Generate the redacted end-to-end demo from the real winning path.
+4. [ ] **L-49K5E1 — Reconcile the OpenAI unknown.** Search Gmail and authoritative
+   Ashby evidence for the already-clicked Solutions Engineer intent. Record either a
+   receipt-backed `submitted` or the continuing `submit_unknown`; MUST NOT reopen or
+   click the application again.
+5. [ ] **L-49K5E2 — Install Browser Harness.** Pin one Browser Harness version in the
+   Job Hunter environment and prove its CLI starts. Do not touch a live application.
+6. [ ] **L-49K5E3 — Attach the persistent browser.** Connect Browser Harness through
+   `BU_CDP_URL` to the existing CloakBrowser owner and capture one read-only page
+   observation. No form mutation or Submit is allowed.
+7. [ ] **L-49K5E4 — Record one browser trace.** Produce one inspectable recording and
+   accessibility snapshot from the attached session, with no application mutation.
+8. [ ] **L-49K5E5 — Bake the Ashby recipe.** Turn the proven inspect, map, fill,
+   verify, single-click, request observation, and receipt classification sequence into
+   one reusable domain skill. The resident MUST NOT rediscover CLI help or source.
+9. [ ] **L-49K5E6 — Bake the Greenhouse recipe.** Encode the equivalent inspect,
+   fill, verify, submit-once, and receipt sequence without opening an employer form.
+10. [ ] **L-49K5E7 — Bake the Workday recipe.** Encode the equivalent authenticated
+    multi-step sequence without opening an employer form.
+11. [ ] **L-49K5F1 — Classify anti-bot outcomes.** Distinguish invisible reCAPTCHA,
+    visible challenge, fingerprint rejection, request-started unknown, and confirmed
+    receipt. Every class MUST preserve the same intent fence and report to Telegram.
+12. [ ] **L-49K5F2 — Add CamoFox fallback.** Invoke isolated CamoFox only for a
+    measured fingerprint rejection before Submit. Never transfer a clicked intent or
+    share a live browser owner between CloakBrowser and CamoFox.
+13. [ ] **L-49K5D4A — Submit one Anthropic application.** Apply to Product Support
+    Specialist through the official Greenhouse form with one fence, the exact resume
+    and answers on Telegram, and an authoritative receipt or truthful unknown.
+14. [ ] **L-49K5D4B — Submit the second Anthropic application.** Apply to Applied AI
+    Architect only after `L-49K5D4A` is durably closed.
+15. [ ] **L-49K5D4C — Submit the third Anthropic application.** Apply to Partner
+    Solutions Architect — Applied AI only after `L-49K5D4B` is durably closed.
+16. [ ] **L-49K5W1 — Prove one Workday submission.** Produce one real official
+    Workday receipt with the exact submitted dossier and Telegram message IDs.
+17. [ ] **L-49K5G1 — Route the cheap model.** Use Luna for one known-ATS
+    observe/map/fill/verify pass with no Submit authority.
+18. [ ] **L-49K5G2 — Gate escalation.** Give Terra the same fenced intent only after
+    one measured unfamiliar-widget or recovery condition; two models MUST never own
+    the browser or Submit authority concurrently.
+19. [ ] **L-49K5H1 — Prove one hourly cycle.** Kickstart the existing Mac mini
+    resident once and prove Telegram start and terminal message IDs. Do not create a
+    second scheduler.
+20. [ ] **L-49K5H2 — Prove missing-fact resume.** Ask one genuinely absent private
+    fact on Telegram, store the answer once, and resume the same fenced intent without
+    asking it again.
+21. [ ] **L-49K5H3 — Prove full phone visibility.** For one application, Telegram
+    MUST contain the role, decision, exact resume, every answer, outcome reason,
+    receipt when present, and remaining quota.
+22. [ ] **L-49K5M1 — Install isolated Hermes.** Create one Job Hunter-only Hermes
+    profile without changing the active launchd runtime or importing unrelated state.
+23. [ ] **L-49K5M2 — Expose read-only Job Hunter tools.** Connect profile lookup,
+    Ledger reads, candidate inspection, and evidence reads to Hermes; mutation and
+    Submit remain disabled.
+24. [ ] **L-49K5M3 — Run one shadow cycle.** Hermes evaluates the same candidate set
+    as the resident, performs zero external mutations, and records a comparable
+    decision artifact.
+25. [ ] **L-49K5M4 — Run one fenced live cycle.** Hermes owns one eligible intent and
+    calls the existing deterministic ATS, Ledger, evidence, and Telegram tools. It
+    MUST NOT implement these guarantees in prompts.
+26. [ ] **L-49K5M5 — Cut over Job Hunter.** Move only the Job Hunter schedule to the
+    proven Hermes profile, disable its former executor without creating overlap, and
+    prove one post-cutover hourly cycle.
+27. [ ] **L-49K5M6 — Migrate one additional loop.** Move Writer through the same
+    shadow, live, cutover sequence while Job Hunter remains healthy.
+28. [ ] **L-49K5M7 — Migrate Gig.** Move Gig through the same sequence while Job
+    Hunter and Writer remain healthy.
+29. [ ] **L-49K5M8 — Migrate remaining loops one at a time.** Each loop receives an
+    isolated profile, one shadow cycle, one live cycle, one cutover, and one rollback
+    point before the next loop starts.
+30. [ ] **L-53A — Ingest one real employer reply.** Bind its Gmail thread ID to the
+    correct application and send the stage change to Telegram.
+31. [ ] **L-54A — Schedule one real interview.** Create a verified Calendar event
+    from the employer thread and report its event ID to Telegram.
+32. [ ] **L-55A — Generate one interview brief.** Use the exact submitted dossier,
+    company evidence, interviewer evidence when available, and meeting details.
+33. [ ] **L-56A — Capture one debrief.** Persist interview outcome, evidence, next
+    action, and funnel stage without losing the original submitted materials.
+34. [ ] **L-58A — Publish one funnel snapshot.** Report application, reply,
+    interview, final-round, and offer counts without treating unknown as zero.
+35. [ ] **L-59A — Run one bounded improvement.** Change one strategy variable at the
+    weakest measured funnel stage, record its hypothesis, and retain a rollback.
+36. [ ] **L-65A — Isolate a second user.** Prove separate credentials, profile,
+    browser, Ledger, evidence, Telegram destination, and Hermes profile with no
+    cross-user reads.
+37. [ ] **L-66A — Add the hosted durable owner.** Put Temporal outside the agent as
+    schedule, retry, signal, cancellation, and resume authority; Hermes remains an
+    isolated worker, not the multi-tenant control plane.
+38. [ ] **L-67A — Add campaign controls.** Prove pause, resume, stop, export, and
+    delete for one isolated campaign.
+39. [ ] **L-68A — Package onboarding.** Create a reproducible private onboarding
+    path from Telegram/profile setup to the first visible candidate decision.
+40. [ ] **L-69A — Reach and demonstrate the employment outcome.** Continue the Dais
+    campaign through verified replies, interviews, final rounds, offer comparison,
+    and one authoritative accepted offer, then generate a redacted demo from that real
+    winning path.
 - [ ] **L-49K** — Prove `L-49K1` through `L-49K4` through the installed resident
   LaunchAgent on one eligible Ashby role. The development session only triggers and
   observes. The resident must open the application surface, fill, verify, submit once,
