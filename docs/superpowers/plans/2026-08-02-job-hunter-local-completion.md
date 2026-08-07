@@ -23,7 +23,7 @@ owner-authorized OpenAI Ashby success is `dais_manual`, not resident proof. Ther
 zero verified interviews and zero offers. `L-49K2C1` is complete:
 its isolated CloakBrowser E2E verified changed field layouts across fill, select,
 check, and upload with zero Submit controls/actions and preserved all baseline pages.
-The active immutable release is `b925ebc1de62984d3d2233fa5e19ce3ad5d7cbd7`.
+The active immutable release is `f8bf09032b5ce566ee584d08363d92687bcaaf6b`.
 The complete Job Hunter suite passes 549/549. Run 85 proves truthful outreach
 reporting and clean provider logs but does not prove a new resident ATS submission.
 
@@ -4342,7 +4342,10 @@ item before starting the next.
      a synchronous send-only client; stdlib HTTPS adds zero dependencies. Focused
      direct/reporting/learning/guardian tests pass 30/30 and the full suite passes
      549/549. Real direct Bot API E2E acknowledged text message `8298` and PDF document
-     `8299`; no staging directory was created.
+     `8299`; no staging directory was created. Commit
+     `f8bf09032b5ce566ee584d08363d92687bcaaf6b` is pushed and active as the immutable
+     resident release; `b925ebc1de62984d3d2233fa5e19ce3ad5d7cbd7` is the rollback
+     release.
    - Solutions Engineer progress receipt: the official Ashby form was inspected and
      the deterministic CLI filled and browser-verified 11/11 actions, including the
      English business resume and the natural role-specific Additional Information.
