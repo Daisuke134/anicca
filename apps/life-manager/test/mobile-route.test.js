@@ -80,6 +80,7 @@ test("production structured providers reach route_ready through Transit and cach
   const calls = [];
   const providers = createStructuredRouteProviders({
     mapsKey: "maps-test-key",
+    cacheStore: new Map(),
     fetchImpl: async (url) => {
       calls.push(String(url));
       if (String(url).includes("geocode")) {
@@ -97,6 +98,25 @@ test("production structured providers reach route_ready through Transit and cach
   assert.equal(second.provider, "transit");
   assert.equal(calls.filter((url) => url.includes("transit.ls8h.com")).length, 1);
   assert.equal(calls.some((url) => url.includes("directions")), false);
+});
+
+test("router-shaped production dependencies reuse the structured provider cache", async () => {
+  let transitCalls = 0;
+  const providers = createStructuredRouteProviders({
+    mapsKey: "maps-test-key",
+    cacheStore: new Map(),
+    fetchImpl: async (url) => {
+      if (String(url).includes("geocode")) {
+        return { ok: true, json: async () => ({ status: "OK", results: [{ geometry: { location: { lat: 35.681, lng: 139.767 } } }] }) };
+      }
+      transitCalls++;
+      return { ok: true, json: async () => ({ journeys: [{ arrivalSecs: 1_029, durationSecs: 1_029, legs: [{ mode: "rail", routeName: "Chuo Line" }] }] }) };
+    },
+  });
+  const runtime = { routeProviders: providers };
+  await computeMobileRoute({ uid: "user-a" }, event, "Shibuya", runtime);
+  await computeMobileRoute({ uid: "user-a" }, event, "Shibuya", runtime);
+  assert.equal(transitCalls, 1);
 });
 
 test("route projection preserves access, egress, freshness, and explicit nullable attribution", () => {

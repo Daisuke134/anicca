@@ -63,14 +63,14 @@ function routeAccepted(value) {
 
 async function readCache(scope, request, deps) {
   if (typeof deps.readRouteCache === "function") return deps.readRouteCache({ scope, request });
-  const cache = deps.routeCache || deps.cache;
+  const cache = deps.routeCache || deps.cache || (deps.routeProviders && deps.routeProviders.routeCache);
   if (!cache || typeof cache.get !== "function") return null;
   return cache.get(JSON.stringify([scope.uid, request.origin, request.destination, request.arriveBy, request.departAt, request.timezone]));
 }
 
 async function writeCache(scope, request, value, deps) {
   if (typeof deps.writeRouteCache === "function") return deps.writeRouteCache({ scope, request, value });
-  const cache = deps.routeCache || deps.cache;
+  const cache = deps.routeCache || deps.cache || (deps.routeProviders && deps.routeProviders.routeCache);
   if (!cache || typeof cache.set !== "function") return;
   return cache.set(JSON.stringify([scope.uid, request.origin, request.destination, request.arriveBy, request.departAt, request.timezone]), value);
 }
