@@ -85,6 +85,25 @@ test("known Japanese provider names use deterministic English transliteration wi
   assert.equal(projected.route.localization_source, "transliteration");
 });
 
+test("bounded provider coordinate labels project to English without changing Japanese", () => {
+  assert.equal(projectLocalizedRouteName("地点(35.6633, 139.7321)", "en"), "Point (35.6633, 139.7321)");
+  assert.equal(projectLocalizedRouteName("地点( 35.6633000 ,139.7321000 )", "en"), "Point (35.6633, 139.7321)");
+  assert.equal(projectLocalizedRouteName({ displayNames: { en: "地点(35.6633, 139.7321)", ja: "地点(35.6633, 139.7321)" } }, "en"), "Point (35.6633, 139.7321)");
+  assert.equal(projectLocalizedRouteName("地点(35.6633, 139.7321)", "ja"), "地点(35.6633, 139.7321)");
+});
+
+test("coordinate projection is strict and rejects arbitrary Japanese provider text", () => {
+  for (const value of [
+    "地点(90.0001, 139.7321)",
+    "地点(35.6633, 180.0001)",
+    "地点(35.6633, nope)",
+    "地点(35.6633)",
+    "渋谷の入口",
+  ]) {
+    assert.throws(() => projectLocalizedRouteName(value, "en"), (error) => error.code === "localization_unavailable");
+  }
+});
+
 test("plain provider navigation instructions cannot bypass locale projection", () => {
   assert.throws(() => projectSemanticMessage({
     ...row(),

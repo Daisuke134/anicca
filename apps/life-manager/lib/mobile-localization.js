@@ -9,6 +9,24 @@ const TRANSLITERATIONS = new Map([
   ["渋谷駅", "Shibuya Station"], ["渋谷", "Shibuya"], ["六本木", "Roppongi"], ["東京駅", "Tokyo Station"],
   ["新宿駅", "Shinjuku Station"], ["都営大江戸線", "Toei Oedo Line"], ["大門", "Daimon"],
 ]);
+const GENERIC_COORDINATE_RE = /^地点\(\s*([+-]?(?:\d+(?:\.\d+)?|\.\d+))\s*,\s*([+-]?(?:\d+(?:\.\d+)?|\.\d+))\s*\)$/u;
+
+function normalizeCoordinatePart(value) {
+  const number = Number(value);
+  if (Object.is(number, -0)) return "0";
+  return number.toString();
+}
+
+function projectGenericCoordinate(value) {
+  if (typeof value !== "string") return null;
+  const match = GENERIC_COORDINATE_RE.exec(value.trim());
+  if (!match) return null;
+  const latitude = Number(match[1]);
+  const longitude = Number(match[2]);
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)
+    || latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) return null;
+  return `Point (${normalizeCoordinatePart(match[1])}, ${normalizeCoordinatePart(match[2])})`;
+}
 
 function assertLocalizedText(locale, text, allowlist = []) {
   const active = normalizeLocale(locale);
@@ -35,6 +53,12 @@ function nameParts(value) {
 function projectRouteName(value, locale) {
   const active = normalizeLocale(locale);
   const parts = nameParts(value);
+  if (active === "en") {
+    const coordinate = projectGenericCoordinate(parts.raw)
+      || projectGenericCoordinate(parts.en)
+      || projectGenericCoordinate(parts.ja);
+    if (coordinate) return { value: coordinate, source: "coordinate" };
+  }
   if (typeof parts[active] === "string" && parts[active].trim()) return { value: parts[active].trim(), source: "provider" };
   if (active === "en" && typeof parts.raw === "string" && !CJK_RE.test(parts.raw)) return { value: parts.raw.trim(), source: "provider" };
   if (active === "en" && typeof parts.raw === "string" && TRANSLITERATIONS.has(parts.raw.trim())) return { value: TRANSLITERATIONS.get(parts.raw.trim()), source: "transliteration" };
