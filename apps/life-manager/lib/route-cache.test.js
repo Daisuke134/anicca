@@ -22,6 +22,7 @@ test("cacheKey: stable for same (uid, from, to, bucket)", () => {
   const k1 = cacheKey("u1", G(35.68, 139.76), G(35.69, 139.70), 42);
   const k2 = cacheKey("u1", G(35.68, 139.76), G(35.69, 139.70), 42);
   assert.equal(k1, k2);
+  assert.equal(k1, cacheKey("u2", G(35.68, 139.76), G(35.69, 139.70), 42));
   assert.notEqual(k1, cacheKey("u1", G(35.68, 139.76), G(35.69, 139.70), 43));
 });
 
@@ -105,7 +106,7 @@ test("getOrCompute: concurrent first writers spend once and a stale row recomput
   assert.equal(rows.size, 1);
 });
 
-test("Supabase route store persists structured route result across cache instances", async () => {
+test("Supabase route store persists structured route result across cache instances with tenant-scoped identity", async () => {
   const rows = new Map();
   const calls = [];
   const fetchImpl = async (input, init = {}) => {
@@ -113,11 +114,12 @@ test("Supabase route store persists structured route result across cache instanc
     calls.push({ url, init });
     if (init.method === "POST") {
       const body = JSON.parse(init.body);
-      rows.set(body.cache_key, body);
+      rows.set(`${body.uid}:${body.cache_key}`, body);
       return { ok: true, status: 201, json: async () => [] };
     }
     const keyExpr = url.searchParams.get("cache_key") || "";
-    const row = rows.get(keyExpr.replace(/^eq\./u, ""));
+    const uidExpr = url.searchParams.get("uid") || "";
+    const row = rows.get(`${uidExpr.replace(/^eq\./u, "")}:${keyExpr.replace(/^eq\./u, "")}`);
     return { ok: true, status: 200, json: async () => (row ? [row] : []) };
   };
   const storeA = createSupabaseRouteStore({ supaUrl: "https://supa.invalid", supaKey: "service", fetchImpl });
@@ -139,6 +141,8 @@ test("Supabase route store persists structured route result across cache instanc
   assert.equal(callsB, 0);
   assert.equal(rows.size, 1);
   assert.equal(calls.filter((call) => call.init.method === "POST").length, 1);
+  const read = calls.find((call) => !call.init.method);
+  assert.equal(read.url.searchParams.get("uid"), "eq.u1");
 });
 
 test("Supabase route store writes every legacy NOT NULL route column and explicit cache conflict target", async () => {
@@ -160,7 +164,47 @@ test("Supabase route store writes every legacy NOT NULL route column and explici
   assert.equal(body.to_geo, "35.69,139.7");
   assert.equal(body.time_bucket, 42);
   assert.equal(body.duration_secs, 900);
-  assert.match(post.url.search, /on_conflict=cache_key/);
+  assert.equal(post.url.searchParams.get("on_conflict"), "uid,cache_key");
+});
+
+test("Supabase route store isolates equal cache keys for different tenants", async () => {
+  const rows = new Map();
+  const fetchImpl = async (input, init = {}) => {
+    const url = new URL(String(input));
+    if (init.method === "POST") {
+      const body = JSON.parse(init.body);
+      rows.set(`${body.uid}:${body.cache_key}`, body);
+      return { ok: true, status: 201, json: async () => [] };
+    }
+    const uid = String(url.searchParams.get("uid") || "").replace(/^eq\./u, "");
+    const key = String(url.searchParams.get("cache_key") || "").replace(/^eq\./u, "");
+    const row = rows.get(`${uid}:${key}`);
+    return { ok: true, status: 200, json: async () => (row ? [row] : []) };
+  };
+  const store = createSupabaseRouteStore({ supaUrl: "https://supa.invalid", supaKey: "service", fetchImpl });
+  const record = (uid, durationSecs) => ({
+    uid, value: { durationSecs }, computedAt: 1000, ttlMs: 600000,
+    fromGeo: G(35.68, 139.76), toGeo: G(35.69, 139.70), timeBucket: 42,
+    provider: "transit",
+  });
+  assert.equal(await store.set("same-key", record("u1", 900), { uid: "u1" }), true);
+  assert.equal(await store.set("same-key", record("u2", 1200), { uid: "u2" }), true);
+  assert.equal((await store.get("same-key", { uid: "u1" })).value.durationSecs, 900);
+  assert.equal((await store.get("same-key", { uid: "u2" })).value.durationSecs, 1200);
+});
+
+test("provider route store surfaces HTTP write failures through the cache", async () => {
+  const store = createSupabaseRouteStore({
+    supaUrl: "https://supa.invalid", supaKey: "service",
+    fetchImpl: async () => ({ ok: false, status: 503, json: async () => ({}) }),
+  });
+  const cache = makeRouteCache({ store, ttlMs: 600000, now: () => 1000 });
+  await assert.rejects(
+    cache.getOrCompute("u1", G(35.68, 139.76), G(35.69, 139.70), 42,
+      async () => ({ durationSecs: 900 }),
+      { provider: "transit" }),
+    /durable route cache write failed/
+  );
 });
 
 test("route cache surfaces a failed durable write instead of silently claiming persistence", async () => {

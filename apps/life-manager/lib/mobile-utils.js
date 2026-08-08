@@ -74,7 +74,6 @@ function canonicalJson(value) {
 function mobileRouteCacheKey(scope, request = {}) {
   if (!scope || typeof scope.uid !== "string" || !scope.uid) throw new MobileError("scope_required", "An authenticated mobile scope is required.", 401);
   return sha256(canonicalJson({
-    uid: scope.uid,
     eventId: request.eventId || null,
     eventDate: request.eventDate || null,
     timezone: request.timezone || null,

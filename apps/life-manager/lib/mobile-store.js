@@ -21,12 +21,52 @@ function asRows(body) {
 }
 
 function routeCacheEntry(row, now = Date.now) {
-  const route = row && (row.route || row.value);
+  const route = row && (row.route_result == null ? (row.route == null ? row.value : row.route) : row.route_result);
   if (!route || !row.computed_at) return null;
   const computedAt = Date.parse(row.computed_at);
   const ttlSecs = Number(row.ttl_secs);
   if (!Number.isFinite(computedAt) || !Number.isFinite(ttlSecs) || ttlSecs < 0 || now() - computedAt >= ttlSecs * 1000) return null;
   return { value: route, computedAt };
+}
+
+function routeCacheColumnMissing(error) {
+  const status = error && error.details && Number(error.details.status);
+  return status === 400 || status === 404;
+}
+
+function legacyRouteEndpoint(value) {
+  if (typeof value === "string") return value.trim() || null;
+  if (!value || typeof value !== "object") return null;
+  const endpoint = value.displayName || value.display_name || value.address || value.name;
+  return endpoint == null ? null : String(endpoint).trim() || null;
+}
+
+function routeCacheLegacyRow(scope, routeRequest, value, computedAt) {
+  const origin = legacyRouteEndpoint(routeRequest && routeRequest.origin);
+  const destination = legacyRouteEndpoint(routeRequest && routeRequest.destination);
+  const anchor = routeRequest && (routeRequest.direction === "return" ? routeRequest.departAt : routeRequest.arriveBy);
+  const anchorMs = Date.parse(String(anchor || ""));
+  const timeBucket = Number.isFinite(anchorMs) ? Math.floor(anchorMs / 600000) : null;
+  const duration = Number(value && (value.durationSeconds ?? value.duration_secs));
+  const provider = value && value.provider != null ? String(value.provider).trim() : "";
+  const computedMs = Date.parse(String(computedAt || ""));
+  const ttlSecs = Number(value && (value.ttlSecs ?? value.ttl_secs ?? 600));
+  if (!origin || !destination || !Number.isFinite(timeBucket) || !Number.isFinite(duration) || duration < 0 || !provider
+    || !Number.isFinite(computedMs) || !Number.isFinite(ttlSecs) || ttlSecs <= 0) {
+    throw new MobileError("route_cache_write_failed", "The route result is missing durable cache facts.", 503, true);
+  }
+  return {
+    uid: scope.uid,
+    from_geo: origin,
+    to_geo: destination,
+    time_bucket: timeBucket,
+    provider,
+    duration_secs: Math.floor(duration),
+    geometry: value && value.geometry !== undefined ? value.geometry : null,
+    route_result: value || null,
+    computed_at: new Date(computedMs).toISOString(),
+    ttl_secs: Math.floor(ttlSecs),
+  };
 }
 
 function createSupabaseMobileStore(options = {}) {
@@ -99,33 +139,36 @@ function createSupabaseMobileStore(options = {}) {
       return asRow(result.body) || state;
     },
     async readRouteCache(scope, routeRequest) {
-      const cacheKey = mobileRouteCacheKey(requireScope(scope), routeRequest);
-      const found = await rows("lm_route_cache", scopedParams(scope, {
+      const scoped = requireScope(scope);
+      const cacheKey = mobileRouteCacheKey(scoped, routeRequest);
+      const params = scopedParams(scoped, {
         cache_key: `eq.${encodeFilter(cacheKey)}`,
-        select: "cache_key,route,computed_at,ttl_secs",
+        select: "cache_key,route_result,route,computed_at,ttl_secs",
         limit: "1",
-      }));
+      });
+      let found;
+      try {
+        found = await rows("lm_route_cache", params);
+      } catch (error) {
+        // During the additive migration window, older deployments may not have
+        // route_result yet. Retry only the scoped legacy projection; do not hide
+        // auth/network/storage failures behind a broad fallback.
+        if (!routeCacheColumnMissing(error)) throw error;
+        found = await rows("lm_route_cache", scopedParams(scoped, {
+          cache_key: `eq.${encodeFilter(cacheKey)}`,
+          select: "cache_key,route,computed_at,ttl_secs",
+          limit: "1",
+        }));
+      }
       return routeCacheEntry(found[0]);
     },
     async writeRouteCache(scope, routeRequest, value) {
       const scoped = requireScope(scope);
       const cacheKey = mobileRouteCacheKey(scoped, routeRequest);
       const computedAt = value && value.computedAt ? value.computedAt : new Date().toISOString();
-      const duration = Number(value && (value.durationSeconds ?? value.duration_secs));
       const row = {
-        uid: scoped.uid,
+        ...routeCacheLegacyRow(scoped, routeRequest, value, computedAt),
         cache_key: cacheKey,
-        // Keep the legacy Gate 1 columns populated so existing pruning/observability
-        // continues to work, while `route` carries the complete structured result.
-        from_geo: `mobile:${cacheKey}`,
-        to_geo: "mobile:v1",
-        time_bucket: 0,
-        provider: value && value.provider ? String(value.provider) : "mobile",
-        duration_secs: Number.isFinite(duration) ? Math.max(0, Math.floor(duration)) : 0,
-        geometry: value && value.geometry !== undefined ? value.geometry : null,
-        route: value || null,
-        computed_at: computedAt,
-        ttl_secs: 600,
       };
       const result = await request("/rest/v1/lm_route_cache?on_conflict=uid%2Ccache_key", {
         method: "POST",
@@ -413,7 +456,7 @@ function createMemoryMobileStore(options = {}) {
       const uid = scoped(scope);
       const key = mobileRouteCacheKey({ uid }, routeRequest);
       const computedAt = value && value.computedAt ? value.computedAt : new Date(memoryNow()).toISOString();
-      routeCache.set(key, { value, computed_at: computedAt, ttl_secs: 600 });
+      routeCache.set(key, { route_result: value, computed_at: computedAt, ttl_secs: 600 });
       return { value, computedAt: Date.parse(computedAt) };
     },
     async createOAuthState(row) { states.set(row.stateHash, { ...row }); },

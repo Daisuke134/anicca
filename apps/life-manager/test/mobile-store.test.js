@@ -3,6 +3,8 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { createSupabaseMobileStore, createMemoryMobileStore } = require("../lib/mobile-store.js");
+const { createSupabaseRouteStore } = require("../lib/route-cache.js");
+const { mobileRouteCacheKey } = require("../lib/mobile-utils.js");
 
 function response(body, status = 200) {
   return { ok: status >= 200 && status < 300, status, json: async () => body, text: async () => JSON.stringify(body) };
@@ -95,10 +97,129 @@ test("Supabase mobile route cache persists the tenant-safe request digest and co
   assert.equal(firstBody.uid, "tenant-a");
   assert.match(firstBody.cache_key, /^[0-9a-f]{64}$/u);
   assert.equal(firstBody.cache_key, secondBody.cache_key);
-  assert.equal(firstBody.from_geo, `mobile:${firstBody.cache_key}`);
-  assert.deepEqual(secondBody.route, updatedRoute);
+  assert.equal(firstBody.from_geo, routeRequest.origin);
+  assert.equal(firstBody.to_geo, routeRequest.destination);
+  assert.deepEqual(secondBody.route_result, updatedRoute);
   assert.equal(writes[0].url.searchParams.get("on_conflict"), "uid,cache_key");
   assert.equal(writes[1].url.searchParams.get("on_conflict"), "uid,cache_key");
+});
+
+test("Supabase mobile route store reads route_result and keeps route as a migration fallback", async () => {
+  const routeRequest = {
+    eventId: "event-fallback", eventDate: "2026-08-10", timezone: "Asia/Tokyo",
+    origin: "Shibuya", destination: "Tokyo", direction: "outbound",
+    arriveBy: "2026-08-10T09:00:00.000+09:00", departAt: null,
+  };
+  const legacyRoute = { status: "route_ready", provider: "transit", durationSeconds: 600 };
+  let calls = 0;
+  const store = createSupabaseMobileStore({
+    supaUrl: "https://supa.example", supaKey: "service-key",
+    fetchImpl: async (input) => {
+      calls += 1;
+      const url = new URL(String(input));
+      assert.equal(url.searchParams.get("uid"), "eq.tenant-a");
+      if (calls === 1) return response([{ route_result: legacyRoute, computed_at: "2026-08-10T08:10:00.000Z", ttl_secs: 600 }]);
+      return response([{ route: legacyRoute, computed_at: "2026-08-10T08:10:00.000Z", ttl_secs: 600 }]);
+    },
+  });
+  const hit = await store.readRouteCache({ uid: "tenant-a" }, routeRequest);
+  assert.deepEqual(hit.value, legacyRoute);
+  assert.equal(calls, 1, "the route-column fallback remains a read projection, not a second unscoped query");
+});
+
+test("Supabase mobile route store falls back to route when route_result is unavailable", async () => {
+  const routeRequest = {
+    eventId: "event-fallback-column", eventDate: "2026-08-10", timezone: "Asia/Tokyo",
+    origin: "Shibuya", destination: "Tokyo", direction: "outbound",
+    arriveBy: "2026-08-10T09:00:00.000+09:00", departAt: null,
+  };
+  const legacyRoute = { status: "route_ready", provider: "transit", durationSeconds: 600 };
+  let calls = 0;
+  const store = createSupabaseMobileStore({
+    supaUrl: "https://supa.example", supaKey: "service-key",
+    fetchImpl: async (input) => {
+      calls += 1;
+      const url = new URL(String(input));
+      assert.equal(url.searchParams.get("uid"), "eq.tenant-a");
+      if (calls === 1) return response({ code: "column_not_found" }, 400);
+      return response([{ route: legacyRoute, computed_at: "2026-08-10T08:10:00.000Z", ttl_secs: 600 }]);
+    },
+  });
+  const hit = await store.readRouteCache({ uid: "tenant-a" }, routeRequest);
+  assert.deepEqual(hit.value, legacyRoute);
+  assert.equal(calls, 2);
+});
+
+test("mobile route cache legacy fields are derived from the request and provider result", async () => {
+  const routeRequest = {
+    eventId: "event-honest", eventDate: "2026-08-10", timezone: "Asia/Tokyo",
+    origin: "Shibuya", destination: "Tokyo", direction: "outbound",
+    arriveBy: "2026-08-10T09:00:00.000+09:00", departAt: null,
+  };
+  let body;
+  const store = createSupabaseMobileStore({
+    supaUrl: "https://supa.example", supaKey: "service-key",
+    fetchImpl: async (_input, init = {}) => {
+      if (init.method === "POST") body = JSON.parse(init.body);
+      return response(body ? [body] : []);
+    },
+  });
+  await store.writeRouteCache({ uid: "tenant-a" }, routeRequest, {
+    status: "route_ready", provider: "transit", durationSeconds: 900,
+  });
+  assert.equal(body.from_geo, "Shibuya");
+  assert.equal(body.to_geo, "Tokyo");
+  assert.equal(body.time_bucket, Math.floor(Date.parse(routeRequest.arriveBy) / 600000));
+  assert.equal(body.duration_secs, 900);
+  assert.equal(body.provider, "transit");
+  assert.deepEqual(body.route_result, { status: "route_ready", provider: "transit", durationSeconds: 900 });
+  assert.equal(Object.hasOwn(body, "route"), false);
+});
+
+test("mobile route cache rejects a result without honest provider or duration", async () => {
+  const request = {
+    eventId: "event-invalid", eventDate: "2026-08-10", timezone: "Asia/Tokyo",
+    origin: "Shibuya", destination: "Tokyo", direction: "outbound",
+    arriveBy: "2026-08-10T09:00:00.000+09:00", departAt: null,
+  };
+  const store = createSupabaseMobileStore({
+    supaUrl: "https://supa.example", supaKey: "service-key",
+    fetchImpl: async () => response({}, 200),
+  });
+  await assert.rejects(
+    () => store.writeRouteCache({ uid: "tenant-a" }, request, { status: "route_ready" }),
+    (error) => error.code === "route_cache_write_failed" && error.retryable === true,
+  );
+});
+
+test("provider adapter reads the mobile adapter's canonical route_result under the same tenant key", async () => {
+  const routeRequest = {
+    eventId: "event-cross-adapter", eventDate: "2026-08-10", timezone: "Asia/Tokyo",
+    origin: "Shibuya", destination: "Tokyo", direction: "outbound",
+    arriveBy: "2026-08-10T09:00:00.000+09:00", departAt: null,
+  };
+  const rows = new Map();
+  const fetchImpl = async (input, init = {}) => {
+    const url = new URL(String(input));
+    if (init.method === "POST") {
+      const body = JSON.parse(init.body);
+      rows.set(`${body.uid}:${body.cache_key}`, body);
+      return response([body], 201);
+    }
+    const uid = String(url.searchParams.get("uid") || "").replace(/^eq\./u, "");
+    const cacheKey = String(url.searchParams.get("cache_key") || "").replace(/^eq\./u, "");
+    const row = rows.get(`${uid}:${cacheKey}`);
+    return response(row ? [row] : []);
+  };
+  const scope = { uid: "tenant-cross" };
+  const mobile = createSupabaseMobileStore({ supaUrl: "https://supa.example", supaKey: "service", fetchImpl });
+  const provider = createSupabaseRouteStore({ supaUrl: "https://supa.example", supaKey: "service", fetchImpl });
+  const route = { status: "route_ready", provider: "transit", durationSeconds: 900 };
+  await mobile.writeRouteCache(scope, routeRequest, route);
+  const key = mobileRouteCacheKey(scope, routeRequest);
+  const hit = await provider.get(key, scope);
+  assert.deepEqual(hit.value, route);
+  assert.equal(key, mobileRouteCacheKey({ uid: "another-tenant" }, routeRequest));
 });
 
 test("Supabase mobile route cache surfaces a write failure instead of claiming persistence", async () => {
