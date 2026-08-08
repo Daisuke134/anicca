@@ -20,12 +20,44 @@ struct BootstrapUser: Codable, Equatable, Sendable {
 
 enum HomeAddressStatus: String, Codable, Equatable, Sendable {
     case missing
-    case present
+    case ready
 }
 
 struct HomeAddress: Codable, Equatable, Sendable {
     let status: HomeAddressStatus
     let display: String?
+}
+
+struct UserProfile: Codable, Equatable, Sendable {
+    let id: String
+    let name: String?
+    let home: HomeAddress
+    let productLocale: ProductLocale
+    let timezone: String
+
+    init(
+        id: String,
+        name: String?,
+        home: HomeAddress,
+        productLocale: ProductLocale,
+        timezone: String
+    ) {
+        self.id = id
+        self.name = name
+        self.home = home
+        self.productLocale = productLocale
+        self.timezone = timezone
+    }
+
+    init(bootstrap: Bootstrap) {
+        self.init(
+            id: bootstrap.user.id,
+            name: bootstrap.user.name,
+            home: bootstrap.user.home,
+            productLocale: bootstrap.product.locale,
+            timezone: bootstrap.product.timezone
+        )
+    }
 }
 
 enum CalendarConnectionStatus: String, Codable, Equatable, Sendable {

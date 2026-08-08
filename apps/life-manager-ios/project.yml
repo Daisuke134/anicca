@@ -65,6 +65,7 @@ targets:
       - LifeManagerTests/ModelTests
       - LifeManagerTests/NetworkingTests
       - LifeManagerTests/SecurityTests
+      - LifeManagerTests/ServiceTests
       - LifeManagerTests/Support
     settings:
       base:

@@ -1,6 +1,15 @@
 import Foundation
 
-actor APIClient {
+protocol APIRequesting: Sendable {
+    func send<Response: Decodable & Sendable>(
+        _ endpoint: APIEndpoint,
+        as responseType: Response.Type,
+        idempotencyKey: UUID?
+    ) async throws -> Response
+    func sendVoid(_ endpoint: APIEndpoint, idempotencyKey: UUID?) async throws
+}
+
+actor APIClient: APIRequesting {
     typealias Refresh = @Sendable (Session) async throws -> Session
 
     private let baseURL: URL
@@ -24,7 +33,7 @@ actor APIClient {
         self.refresh = refresh
     }
 
-    func send<Response: Decodable>(
+    func send<Response: Decodable & Sendable>(
         _ endpoint: APIEndpoint,
         as responseType: Response.Type,
         idempotencyKey: UUID? = nil
@@ -35,6 +44,10 @@ actor APIClient {
         } catch {
             throw APIError.decodingFailed
         }
+    }
+
+    func sendVoid(_ endpoint: APIEndpoint, idempotencyKey: UUID? = nil) async throws {
+        _ = try await request(endpoint, idempotencyKey: idempotencyKey, retryAfterRefresh: true)
     }
 
     private func request(
