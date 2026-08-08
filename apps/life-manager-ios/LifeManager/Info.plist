@@ -16,6 +16,10 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>LIFEMANAGER_API_BASE_URL</key>
+	<string>$(LIFEMANAGER_API_BASE_URL)</string>
+	<key>LIFEMANAGER_CALLBACK_SCHEME</key>
+	<string>$(LIFEMANAGER_CALLBACK_SCHEME)</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
