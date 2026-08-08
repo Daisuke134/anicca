@@ -61,14 +61,14 @@ async function runTravelBlock(scope, user, event, route, input, deps) {
   const sourceEventId = String(event && event.id || route && (route.eventId || route.event_id) || "");
   const owner = user.calendar_composio_user_id || user.calendarComposioUserId || null;
   const account = user.gmail_account_id || user.gmailAccountId || null;
-  const operation = deps.ensureMobileTravelBlock || deps.ensureTravelBlock || ensureMobileTravelBlock;
-  const provider = deps.travelBlockProvider || deps.calendar || getCalendar({
+  const operation = deps.ensureMobileTravelBlock || deps.ensureTravelBlock || deps.createTravelBlock || ensureMobileTravelBlock;
+  const provider = deps.travelBlockProvider || deps.calendar || deps.provider || getCalendar({
     apiKey: deps.composioKey || deps.apiKey || process.env.COMPOSIO_API_KEY,
     composioUserId: owner || scope.uid,
     connectedAccountId: account,
     recordCall: deps.recordCall,
     recordProviderCost: deps.recordProviderCost,
-    authorizeProviderOperation: deps.authorizeProviderOperation,
+    authorizeProviderOperation: deps.authorizeProviderOperation || deps.providerBudgetGate,
   });
   return operation({
     uid: scope.uid,
