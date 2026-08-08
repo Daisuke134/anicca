@@ -85,6 +85,67 @@ final class ContractFixtureDecodingTests: XCTestCase {
         XCTAssertEqual(chat.messages[1].route?.origin.userContent, "Shipathon Roppongi")
     }
 
+    func testTravelReceiptSemanticKeysDecodeWithoutChangingStableIDOrCursor() throws {
+        let data = Data(#"""
+        {
+          "messages": [
+            {
+              "id": "message:v1:travel-confirmed",
+              "cursor": "cursor:v1:travel-confirmed",
+              "createdAt": "2026-08-10T08:31:00.000Z",
+              "locale": "en",
+              "type": "system",
+              "text": "Travel time was added to your Calendar and verified.",
+              "semanticKey": "chat.travel_block_confirmed",
+              "userContent": { "eventTitle": "Tokyo Tower visit", "eventLocation": "Tokyo Tower" },
+              "question": null,
+              "route": null,
+              "actions": []
+            },
+            {
+              "id": "message:v1:travel-not-added",
+              "cursor": "cursor:v1:travel-not-added",
+              "createdAt": "2026-08-10T08:32:00.000Z",
+              "locale": "ja",
+              "type": "system",
+              "text": "移動時間をカレンダーに追加できませんでした。",
+              "semanticKey": "chat.travel_block_not_added",
+              "userContent": { "eventTitle": "東京タワー", "eventLocation": "東京タワー" },
+              "question": null,
+              "route": null,
+              "actions": []
+            }
+          ],
+          "nextCursor": "cursor:v1:travel-not-added",
+          "hasMore": false
+        }
+        """#.utf8)
+
+        let page = try decoder.decode(ChatPage.self, from: data)
+
+        XCTAssertEqual(page.messages.map(\.id), [
+            "message:v1:travel-confirmed",
+            "message:v1:travel-not-added"
+        ])
+        XCTAssertEqual(page.messages.map(\.cursor), [
+            "cursor:v1:travel-confirmed",
+            "cursor:v1:travel-not-added"
+        ])
+        XCTAssertEqual(page.messages[0].semanticKey, "chat.travel_block_confirmed")
+        XCTAssertEqual(page.messages[1].semanticKey, "chat.travel_block_not_added")
+        XCTAssertEqual(page.messages.map(\.locale), [.en, .ja])
+        XCTAssertEqual(page.nextCursor, "cursor:v1:travel-not-added")
+    }
+
+    func testLegacyChatMessagesDecodeWithNilSemanticKey() throws {
+        let chat = try decoder.decode(
+            ChatPage.self,
+            from: ContractFixtureLoader.data(named: "chat-page.json")
+        )
+
+        XCTAssertTrue(chat.messages.allSatisfy { $0.semanticKey == nil })
+    }
+
     func testEveryNonAnalysisCanonicalFixtureDecodesIntoItsTypedModel() throws {
         let device = try decoder.decode(
             APNsDeviceReceipt.self,

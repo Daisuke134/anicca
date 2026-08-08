@@ -1,5 +1,18 @@
 import SwiftUI
 
+enum ChatMessageAccessibility {
+    static func identifier(for message: ChatMessage) -> String {
+        switch message.semanticKey {
+        case "chat.travel_block_confirmed":
+            return "calendar.travelBlock.confirmed.\(message.id)"
+        case "chat.travel_block_not_added":
+            return "calendar.travelBlock.notAdded.\(message.id)"
+        default:
+            return "chat.message.\(message.id)"
+        }
+    }
+}
+
 @MainActor
 protocol ChatForegroundRefreshing: AnyObject {
     func refreshFromForeground() async
@@ -172,7 +185,7 @@ struct ChatView: View {
             .padding()
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 14))
-            .accessibilityIdentifier("chat.message.\(message.id)")
+            .accessibilityIdentifier(ChatMessageAccessibility.identifier(for: message))
         }
     }
 

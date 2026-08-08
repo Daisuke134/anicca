@@ -26,6 +26,7 @@ struct ChatMessage: Codable, Equatable, Sendable, Identifiable {
     let question: ChatQuestion?
     let route: Route?
     let actions: [ChatAction]
+    var semanticKey: String? = nil
 }
 
 struct CalendarUserContent: Codable, Equatable, Sendable {

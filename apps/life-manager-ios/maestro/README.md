@@ -9,8 +9,11 @@
 3. 実Calendarに、現在の時刻から18時間以内の移動先付き予定を1件だけ用意する。タイトル・場所・時刻・routeの各値はprovider readbackから取得し、YAMLへコピーしません。
 4. profileにname、home、product localeを保存する。`phone`はnull、callsはdisabled、analysisはidleにする。`staging-seed-and-cleanup.sh seed`がこの状態をHTTP readbackで確認します。
 5. `ROUTE_MESSAGE_ID`は、実analysis後に `/api/mobile/v1/chat` から読み取ったroute messageのopaque IDだけを指定する。推測したIDやfixture IDは使用しません。
+6. `TRAVEL_RECEIPT_MESSAGE_ID`は、同じ実chat readbackで `semanticKey=chat.travel_block_confirmed` のmessageに付いた正確なopaque IDを指定する。failure flowだけを実行する場合は、`TRAVEL_FAILURE_MESSAGE_ID`に `semanticKey=chat.travel_block_not_added` の正確なIDを指定する。IDを生成・推測・fixtureからコピーしてはいけません。
 
-アプリのKeychainを消去する `clearState` / `clearKeychain` は、pre-authorizedフローの実行コマンドにはありません。旧Swift静的テストとの互換用コメントは実行命令ではありません。
+`STAGING_SESSION_ID`、`TRAVEL_RECEIPT_MESSAGE_ID`、`TRAVEL_FAILURE_MESSAGE_ID`、`ROUTE_MESSAGE_ID`はMaestro実行時のプロセス環境から渡します。`LM_STAGING_BEARER_TOKEN`もseed/readbackプロセスの環境変数だけに置き、YAML、ログ、commitへ書きません。共有pre-authorizedアカウントのGoogle外部chooser/consentはMaestroの外側で一度だけ人間が完了し、MaestroはKeychainに保存済みの実sessionを使います。
+
+アプリのKeychainを消去する `clearState` / `clearKeychain` は、pre-authorizedフローの実行コマンドにはありません。実行命令と説明コメントを混同しないよう、静的harnessはコメント行を解析対象から除外します。
 
 ## staging seed readback / cleanup
 
@@ -30,17 +33,25 @@ route/chatのreadbackを確認するときは、analysis完了後に同じ隔離
 ```bash
 export LM_STAGING_VERIFY_MODE=chat
 export LM_ROUTE_MESSAGE_ID='(実chat readbackのroute message ID)'
+export LM_TRAVEL_RECEIPT_MESSAGE_ID='(実chat readbackのconfirmed receipt message ID)'
 ./staging-seed-and-cleanup.sh seed
 ```
 
-cleanupはstagingの使い捨てアカウントだけを対象にし、production host/refを厳密に拒否します。外部削除を行うため、実行時に明示的な確認値が必要です。
+failure receiptだけをreadbackするときは、`LM_STAGING_VERIFY_MODE=failure` と `LM_TRAVEL_FAILURE_MESSAGE_ID`（`semanticKey=chat.travel_block_not_added` の実ID）を指定します。
+
+cleanupは共有pre-authorized Composioアカウントへ触れず、隔離staging DBの対象uidに属するmobile session/outbox/analysis/cache行だけを削除します。mobile `/account`、Composio disconnect、revoke、disable、provider event削除はこのscriptから実行しません。production host/refを厳密に拒否し、DB cleanupには実行時の明示的な確認値が必要です。
 
 ```bash
 export LM_STAGING_CLEANUP_CONFIRM=DELETE_STAGING_ONLY
+export LM_STAGING_API_BASE_URL='https://life-call-staging-staging.up.railway.app/api/mobile/v1'
+export LM_STAGING_SUPABASE_REF='ulhsqqkyejzvqgoyjwte'
+export LM_STAGING_SUPABASE_URL='https://ulhsqqkyejzvqgoyjwte.supabase.co'
+export LM_STAGING_DB_SERVICE_ROLE_KEY='(staging service-role key; process environment only)'
+export LM_STAGING_UID='(exact isolated staging uid)'
 ./staging-seed-and-cleanup.sh cleanup
 ```
 
-tokenは標準出力・YAML・commitに出しません。productionのhost/ref、未指定のhost/ref、誤ったproject refはいずれもfail closedです。
+tokenとservice-role keyは標準出力・YAML・commitに出しません。productionのhost/ref、未指定のhost/ref、誤ったproject refはいずれもfail closedです。
 
 ## Maestro flows
 
@@ -48,7 +59,13 @@ tokenは標準出力・YAML・commitに出しません。productionのhost/ref�
 maestro test \
   -e STAGING_SESSION_ID='(opaque staging session id)' \
   -e ROUTE_MESSAGE_ID='(real route message id)' \
+  -e TRAVEL_RECEIPT_MESSAGE_ID='(exact provider-confirmed chat message id)' \
   apps/life-manager-ios/maestro/preauthorized-bootstrap-chat.yaml
+
+maestro test \
+  -e STAGING_SESSION_ID='(opaque staging session id)' \
+  -e TRAVEL_FAILURE_MESSAGE_ID='(exact real not-added chat message id)' \
+  apps/life-manager-ios/maestro/preauthorized-travel-failure.yaml
 
 maestro test \
   -e STAGING_SESSION_ID='(opaque staging session id)' \
@@ -61,7 +78,7 @@ maestro test \
   apps/life-manager-ios/maestro/japanese-onboarding-route.yaml
 ```
 
-`preauthorized-bootstrap-chat`はbootstrap復元、chat、route card、refreshを確認します。locale flowはphone skip → 実next-event analysis → route card → 詳細sheet → soft paywallのfree path → settingsまでを1シナリオとして確認します。英語flowでは日本語のgenerated chrome、日語flowでは英語のgenerated chromeを明示的に否定します。
+`preauthorized-bootstrap-chat`はbootstrap復元、chat、route card、refresh、provider read-back後の `calendar.travelBlock.confirmed.<message-id>` receiptを確認します。`preauthorized-travel-failure`は、実readbackで取得したfailure message IDに対して `calendar.travelBlock.notAdded.<message-id>` が見えることを確認します。locale flowはphone skip → 実next-event analysis → route card → 詳細sheet → soft paywallのfree path → settingsまでを1シナリオとして確認します。英語flowでは日本語のgenerated chrome、日語flowでは英語のgenerated chromeを明示的に否定します。
 
 ## Push deep-linkの境界
 
@@ -85,10 +102,17 @@ maestro record --local \
   -e ROUTE_MESSAGE_ID='(real route message id)' \
   apps/life-manager-ios/maestro/english-onboarding-route.yaml \
   "$HOME/Library/Logs/life-manager-maestro/life-manager-english-route.mp4"
+
+maestro record --local \
+  -e STAGING_SESSION_ID='(opaque staging session id)' \
+  -e ROUTE_MESSAGE_ID='(real route message id)' \
+  -e TRAVEL_RECEIPT_MESSAGE_ID='(exact provider-confirmed chat message id)' \
+  apps/life-manager-ios/maestro/preauthorized-bootstrap-chat.yaml \
+  "$HOME/Library/Logs/life-manager-maestro/life-manager-travel-receipt.mp4"
 ```
 
 録画の後続TestFlight gateでは、同じシナリオを実Google OAuth、実Calendar event、実Transit/Google route、production APNs、必要時の確認済みcallで実機再実行します。Maestro staging動画やコンパイル成功だけをTestFlight/App Storeの証跡に置き換えてはいけません。
 
-## 受け入れ条件の限界（未実装面を隠さない）
+## 受け入れ条件の境界
 
-現在のnative mobile contractには、webのdaily loopが作る `[Travel]` Calendar blockを表示する専用chat messageまたは専用accessibility IDがありません。したがって、このMaestro sliceはroute card/detailをtravel routeの証跡として確認しますが、「auto-added travel block confirmation」をPASSとは主張しません。そこを実E2Eで完了するには、backendが実Calendarのinsert/readback結果をmobile outboxへ意味付きmessageとして返し、Swiftに専用の安定IDを追加した後、別flowを追加する必要があります。推測したroute cardやfixtureでこの穴を埋めることは禁止です。
+Googleのpasskey/consent/account chooserはMaestroの外部認証境界です。Maestroはprovider接続を作らず、共有pre-authorizedアカウントに保存された実sessionを使います。receiptのPASS条件は、実provider read-backで得たmessage IDを環境変数から受け取り、Swiftがbackendの `semanticKey` だけから成功/失敗の安定IDを表示することです。route cardやmessage本文だけからCalendar追加成功を推測してはいけません。

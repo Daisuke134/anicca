@@ -1,13 +1,8 @@
 # Real staging only. A human performs the external Google consent once, then
 # the resulting session remains in this app's Keychain for this flow. This
 # flow never opens a provider URL and never creates a fixture or fake message.
-#
-# Legacy static-test markers only (not executable commands): clearState: true,
-# clearKeychain: true, STAGING_CALLBACK_URL, profile.name, profile.home,
-# profile.continue, phone.skip, analysis.phase, route.showDetails,
-# route.detail.close, chat.upgrade, paywall.continueFree, chat.settings.
 appId: ai.anicca.life-manager
-name: Pre-authorized staging bootstrap and chat route
+name: Pre-authorized staging bootstrap, route, and confirmed travel receipt
 tags:
   - smokeTest
   - staging
@@ -16,6 +11,7 @@ tags:
 env:
   STAGING_SESSION_ID: ${STAGING_SESSION_ID}
   ROUTE_MESSAGE_ID: ${ROUTE_MESSAGE_ID}
+  TRAVEL_RECEIPT_MESSAGE_ID: ${TRAVEL_RECEIPT_MESSAGE_ID}
 ---
 - launchApp
 - extendedWaitUntil:
@@ -38,4 +34,11 @@ env:
     timeout: 30000
 - assertVisible:
     id: "route.card.${ROUTE_MESSAGE_ID}"
+- extendedWaitUntil:
+    visible:
+      id: "calendar.travelBlock.confirmed.${TRAVEL_RECEIPT_MESSAGE_ID}"
+    timeout: 60000
+- assertVisible:
+    id: "calendar.travelBlock.confirmed.${TRAVEL_RECEIPT_MESSAGE_ID}"
 - takeScreenshot: "bootstrap-chat-route"
+- takeScreenshot: "bootstrap-chat-travel-block-confirmed"

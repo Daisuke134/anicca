@@ -56,6 +56,7 @@ require_active_id() {
 for flow in \
   config.yaml \
   preauthorized-bootstrap-chat.yaml \
+  preauthorized-travel-failure.yaml \
   english-onboarding-route.yaml \
   japanese-onboarding-route.yaml \
   push-deep-link.yaml \
@@ -63,7 +64,7 @@ for flow in \
   require_file "$flow"
 done
 
-for flow in preauthorized-bootstrap-chat.yaml english-onboarding-route.yaml japanese-onboarding-route.yaml push-deep-link.yaml; do
+for flow in preauthorized-bootstrap-chat.yaml preauthorized-travel-failure.yaml english-onboarding-route.yaml japanese-onboarding-route.yaml push-deep-link.yaml; do
   require_active_text "$flow" 'appId: ai.anicca.life-manager'
   if grep -Eiq 'accessToken|refreshToken|authorization:[[:space:]]*bearer|bearer[[:space:]]+[A-Za-z0-9._-]{12,}' "$ROOT_DIR/$flow"; then
     fail "$flow: bearer/session secret appears in flow"
@@ -73,7 +74,7 @@ done
 # The bootstrap and push flows run after the one-time external consent
 # boundary. They must use a real isolated staging session and keep its
 # keychain intact.
-for flow in preauthorized-bootstrap-chat.yaml push-deep-link.yaml; do
+for flow in preauthorized-bootstrap-chat.yaml preauthorized-travel-failure.yaml push-deep-link.yaml; do
   require_active_text "$flow" 'STAGING_SESSION_ID'
   require_absent_active_text "$flow" 'clearState:'
   require_absent_active_text "$flow" 'clearKeychain:'
@@ -83,6 +84,10 @@ done
 for id in chat.list chat.refresh; do
   require_active_id preauthorized-bootstrap-chat.yaml "$id"
 done
+require_active_text preauthorized-bootstrap-chat.yaml 'TRAVEL_RECEIPT_MESSAGE_ID'
+require_active_id preauthorized-bootstrap-chat.yaml 'calendar.travelBlock.confirmed.${TRAVEL_RECEIPT_MESSAGE_ID}'
+require_active_text preauthorized-travel-failure.yaml 'TRAVEL_FAILURE_MESSAGE_ID'
+require_active_id preauthorized-travel-failure.yaml 'calendar.travelBlock.notAdded.${TRAVEL_FAILURE_MESSAGE_ID}'
 
 for flow in english-onboarding-route.yaml japanese-onboarding-route.yaml; do
   require_active_text "$flow" 'STAGING_CALLBACK_URL'
@@ -105,11 +110,19 @@ require_active_id push-deep-link.yaml 'chat.refresh'
 require_text staging-seed-and-cleanup.sh 'life-call-staging-staging.up.railway.app'
 require_text staging-seed-and-cleanup.sh 'ulhsqqkyejzvqgoyjwte'
 require_text staging-seed-and-cleanup.sh 'production configuration is forbidden'
+require_text staging-seed-and-cleanup.sh 'LM_STAGING_DB_SERVICE_ROLE_KEY'
+require_text staging-seed-and-cleanup.sh 'LM_STAGING_SUPABASE_URL'
+require_text staging-seed-and-cleanup.sh 'LM_TRAVEL_RECEIPT_MESSAGE_ID'
+require_text staging-seed-and-cleanup.sh 'chat.travel_block_confirmed'
+require_text staging-seed-and-cleanup.sh 'LM_TRAVEL_FAILURE_MESSAGE_ID'
+require_text staging-seed-and-cleanup.sh 'chat.travel_block_not_added'
+require_absent_active_text staging-seed-and-cleanup.sh '/account'
 require_text staging-seed-and-cleanup.sh 'LM_STAGING_CLEANUP_CONFIRM'
 
 if command -v maestro >/dev/null 2>&1; then
   for flow in \
     preauthorized-bootstrap-chat.yaml \
+    preauthorized-travel-failure.yaml \
     english-onboarding-route.yaml \
     japanese-onboarding-route.yaml \
     push-deep-link.yaml; do

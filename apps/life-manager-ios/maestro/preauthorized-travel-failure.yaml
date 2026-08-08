@@ -1,0 +1,27 @@
+# Real staging only. The operator supplies the exact message ID returned by
+# the staging chat readback for a real not-added travel receipt. This flow does
+# not create or inject a failure message.
+appId: ai.anicca.life-manager
+name: Pre-authorized staging visible travel block failure
+tags:
+  - regression
+  - staging
+  - preauthorized
+  - travel-receipt
+  - failure
+env:
+  STAGING_SESSION_ID: ${STAGING_SESSION_ID}
+  TRAVEL_FAILURE_MESSAGE_ID: ${TRAVEL_FAILURE_MESSAGE_ID}
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: "chat.list"
+    timeout: 30000
+- extendedWaitUntil:
+    visible:
+      id: "calendar.travelBlock.notAdded.${TRAVEL_FAILURE_MESSAGE_ID}"
+    timeout: 60000
+- assertVisible:
+    id: "calendar.travelBlock.notAdded.${TRAVEL_FAILURE_MESSAGE_ID}"
+- takeScreenshot: "bootstrap-chat-travel-block-not-added"

@@ -5,12 +5,18 @@ final class MaestroFlowContractTests: XCTestCase {
     func testRealStagingFlowsUseStableIDsAndNoStaticWaitOrBearerSecrets() throws {
         let english = try Self.flow(named: "english-onboarding-route.yaml")
         let japanese = try Self.flow(named: "japanese-onboarding-route.yaml")
+        let preauthorized = try Self.flow(named: "preauthorized-bootstrap-chat.yaml")
+        let failure = try Self.flow(named: "preauthorized-travel-failure.yaml")
         let push = try Self.flow(named: "push-deep-link.yaml")
 
         XCTAssertTrue(english.contains("STAGING_CALLBACK_URL"))
         XCTAssertTrue(japanese.contains("STAGING_CALLBACK_URL"))
+        XCTAssertTrue(preauthorized.contains("TRAVEL_RECEIPT_MESSAGE_ID"))
+        XCTAssertTrue(preauthorized.contains("calendar.travelBlock.confirmed.${TRAVEL_RECEIPT_MESSAGE_ID}"))
+        XCTAssertTrue(failure.contains("TRAVEL_FAILURE_MESSAGE_ID"))
+        XCTAssertTrue(failure.contains("calendar.travelBlock.notAdded.${TRAVEL_FAILURE_MESSAGE_ID}"))
         XCTAssertTrue(push.contains("PUSH_MESSAGE_ID"))
-        for (name, flow) in [("english", english), ("japanese", japanese), ("push", push)] {
+        for (name, flow) in [("english", english), ("japanese", japanese), ("preauthorized", preauthorized), ("failure", failure), ("push", push)] {
             XCTAssertTrue(flow.contains("appId: ai.anicca.life-manager"), name)
             XCTAssertFalse(flow.range(of: "\\n- wait:", options: .regularExpression) != nil, name)
             XCTAssertFalse(flow.localizedCaseInsensitiveContains("accessToken"), name)

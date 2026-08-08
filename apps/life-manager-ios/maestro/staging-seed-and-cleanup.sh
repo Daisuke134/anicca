@@ -8,6 +8,7 @@ set -euo pipefail
 
 readonly STAGING_HOST="life-call-staging-staging.up.railway.app"
 readonly STAGING_SUPABASE_REF="ulhsqqkyejzvqgoyjwte"
+readonly STAGING_SUPABASE_URL="https://${STAGING_SUPABASE_REF}.supabase.co"
 
 fail() {
   echo "staging harness error: $*" >&2
@@ -32,6 +33,17 @@ require_token() {
     || fail "LM_STAGING_BEARER_TOKEN is required only in the calling shell; it is never written to the flow"
 }
 
+require_db_cleanup_inputs() {
+  [[ -n "${LM_STAGING_DB_SERVICE_ROLE_KEY:-}" ]] \
+    || fail "LM_STAGING_DB_SERVICE_ROLE_KEY is required only in the cleanup shell; it is never written to the flow"
+  [[ -n "${LM_STAGING_UID:-}" ]] \
+    || fail "LM_STAGING_UID is required to scope database-only cleanup"
+  [[ "${LM_STAGING_SUPABASE_URL:-}" == "$STAGING_SUPABASE_URL" ]] \
+    || fail "database cleanup must target the isolated staging Supabase URL"
+  [[ "${LM_STAGING_UID}" =~ ^[A-Za-z0-9_-]+$ ]] \
+    || fail "LM_STAGING_UID contains characters outside the opaque staging UID format"
+}
+
 api_get() {
   local path="$1"
   curl --fail --silent --show-error --retry 2 \
@@ -45,12 +57,13 @@ verify_seed() {
   require_token
   command -v jq >/dev/null 2>&1 || fail "jq is required for fail-closed readback"
 
-  local bootstrap messages mode locale route_id
+  local bootstrap messages mode locale route_id receipt_id failure_id
   bootstrap="$(api_get /bootstrap)" || fail "staging bootstrap read failed"
   mode="${LM_STAGING_VERIFY_MODE:-analysis}"
   locale="${LM_STAGING_EXPECTED_LOCALE:-en}"
   [[ "$locale" == "en" || "$locale" == "ja" ]] || fail "expected locale must be en or ja"
-  [[ "$mode" == "analysis" || "$mode" == "chat" ]] || fail "verify mode must be analysis or chat"
+  [[ "$mode" == "analysis" || "$mode" == "chat" || "$mode" == "failure" ]] \
+    || fail "verify mode must be analysis, chat, or failure"
 
   jq -e \
     --arg locale "$locale" \
@@ -65,14 +78,26 @@ verify_seed() {
   if [[ "$mode" == "analysis" ]]; then
     jq -e '.analysis.status == "idle"' <<<"$bootstrap" >/dev/null \
       || fail "staging seed is not waiting for the real next-event analysis"
-  else
+  elif [[ "$mode" == "chat" ]]; then
     route_id="${LM_ROUTE_MESSAGE_ID:-}"
     [[ -n "$route_id" ]] || fail "LM_ROUTE_MESSAGE_ID is required in chat verification mode"
+    receipt_id="${LM_TRAVEL_RECEIPT_MESSAGE_ID:-}"
+    [[ -n "$receipt_id" ]] || fail "LM_TRAVEL_RECEIPT_MESSAGE_ID is required in chat verification mode"
     messages="$(api_get /chat)" || fail "staging chat read failed"
-    jq -e --arg route_id "$route_id" \
-      '.messages | any(.[]; .id == $route_id and .type == "route" and .route.status == "route_ready")' \
+    jq -e --arg route_id "$route_id" --arg receipt_id "$receipt_id" \
+      '.messages
+        | any(.[]; .id == $route_id and .type == "route" and .route.status == "route_ready")
+        and any(.[]; .id == $receipt_id and .semanticKey == "chat.travel_block_confirmed")' \
       <<<"$messages" >/dev/null \
-      || fail "staging chat has no provider-backed route message with the requested ID"
+      || fail "staging chat has no provider-backed route and confirmed travel receipt with the requested IDs"
+  else
+    failure_id="${LM_TRAVEL_FAILURE_MESSAGE_ID:-}"
+    [[ -n "$failure_id" ]] || fail "LM_TRAVEL_FAILURE_MESSAGE_ID is required in failure verification mode"
+    messages="$(api_get /chat)" || fail "staging chat read failed"
+    jq -e --arg failure_id "$failure_id" \
+      '.messages | any(.[]; .id == $failure_id and .semanticKey == "chat.travel_block_not_added")' \
+      <<<"$messages" >/dev/null \
+      || fail "staging chat has no provider-backed not-added travel receipt with the requested ID"
   fi
 
   echo "PASS: pre-authorized isolated staging seed verified (mode=${mode}, locale=${locale})"
@@ -80,25 +105,40 @@ verify_seed() {
 
 cleanup_seed() {
   require_staging
-  require_token
+  require_db_cleanup_inputs
   [[ "${LM_STAGING_CLEANUP_CONFIRM:-}" == "DELETE_STAGING_ONLY" ]] \
     || fail "cleanup requires LM_STAGING_CLEANUP_CONFIRM=DELETE_STAGING_ONLY"
-  command -v uuidgen >/dev/null 2>&1 || fail "uuidgen is required for an idempotent cleanup request"
 
-  local response_file status
-  response_file="$(mktemp -t life-manager-maestro-cleanup.XXXXXX)"
-  trap 'rm -f "$response_file"' EXIT
-  status="$(curl --silent --show-error --retry 1 --output "$response_file" --write-out '%{http_code}' \
-    -X DELETE \
-    -H "Accept: application/json" \
-    -H "Content-Type: application/json" \
-    -H "Authorization: Bearer ${LM_STAGING_BEARER_TOKEN}" \
-    -H "Idempotency-Key: $(uuidgen)" \
-    --data '{"confirmed":true}' \
-    "${LM_STAGING_API_BASE_URL}/account")" \
-    || fail "staging account cleanup request failed"
-  [[ "$status" == "200" ]] || fail "staging cleanup returned HTTP ${status}"
-  echo "PASS: disposable isolated staging account cleanup completed"
+  # DB-only cleanup is deliberately explicit. It removes mobile rows for the
+  # supplied staging UID and never calls the mobile account-deletion route or a
+  # provider disconnect/revoke operation on the shared pre-authorized account.
+  local table status
+  for table in \
+    lm_mobile_deletion_receipts \
+    lm_mobile_idempotency \
+    lm_mobile_oauth_states \
+    lm_mobile_calendar_connections \
+    lm_mobile_sessions \
+    lm_mobile_analysis_states \
+    lm_mobile_outbox \
+    lm_mobile_questions \
+    lm_mobile_call_attempts \
+    lm_mobile_devices \
+    lm_route_cache \
+    lm_travel_log \
+    lm_users; do
+    status="$(curl --silent --show-error --retry 1 --output /dev/null --write-out '%{http_code}' \
+      -X DELETE \
+      -H "Accept: application/json" \
+      -H "Authorization: Bearer ${LM_STAGING_DB_SERVICE_ROLE_KEY}" \
+      -H "apikey: ${LM_STAGING_DB_SERVICE_ROLE_KEY}" \
+      -H "Prefer: return=minimal" \
+      "${LM_STAGING_SUPABASE_URL}/rest/v1/${table}?uid=eq.${LM_STAGING_UID}")" \
+      || fail "staging database cleanup request failed for ${table}"
+    [[ "$status" == "200" || "$status" == "204" ]] \
+      || fail "staging database cleanup returned HTTP ${status} for ${table}"
+  done
+  echo "PASS: mobile rows for the isolated staging UID were deleted; provider connection and events were untouched"
 }
 
 case "${1:-}" in
