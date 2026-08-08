@@ -3,6 +3,7 @@
 // so the same JS runs cloud (this) or local (calendar-gog.js, slice 5). Behaviour-identical to the
 // inline Composio calls it replaces — the live caller is unchanged.
 "use strict";
+const crypto = require("node:crypto");
 const { recordComposioOperation } = require("../provider-cost-adapters.js");
 const { authorizeProviderOperation: authorizeBudget } = require("../provider-budget.js");
 
@@ -27,14 +28,14 @@ function makeComposioCalendar({ apiKey, recordCall, recordProviderCost, fetchImp
     ? (input) => authorizeBudget(input, { supaUrl: process.env.SUPABASE_URL, supaKey: process.env.SUPABASE_SERVICE_ROLE_KEY })
     : undefined);
   const execute = async (tool, uid, args, operationOptions = {}) => {
+    const requestId = `composio:${uid || "anonymous"}:${tool}:${Date.now()}:${crypto.randomUUID()}`;
     if (typeof budgetGate === "function") {
       const decision = await budgetGate({
         uid, provider: "composio", operation: operationOptions.operation || "refresh",
-        essential: operationOptions.essential === true, cacheHit: operationOptions.cacheHit === true,
+        essential: operationOptions.essential === true, cacheHit: operationOptions.cacheHit === true, requestId,
       });
       if (decision && decision.allowed === false) throw new Error(`provider budget denied: ${decision.reason || "stopped"}`);
     }
-    const requestId = `composio:${uid || "anonymous"}:${tool}:${Date.now()}`;
     let result;
     let failure;
     try {

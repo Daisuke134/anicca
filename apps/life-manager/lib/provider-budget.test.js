@@ -4,12 +4,18 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
-const { evaluateProviderBudget, authorizeProviderOperation } = require("./provider-budget.js");
+const { evaluateProviderBudget, aggregateCostRows, authorizeProviderOperation, settleProviderVoice } = require("./provider-budget.js");
 
 test("migration provides a unique atomic daily claim identity", () => {
   const sql = fs.readFileSync(path.join(__dirname, "../migrations/2026-08-08-lm-provider-cost.sql"), "utf8").toLowerCase();
   assert.match(sql, /lm_provider_budget_claims/);
   assert.match(sql, /primary key \(uid, budget_day, request_id\)/);
+  assert.match(sql, /create table if not exists public\.lm_provider_voice_buckets/);
+  assert.match(sql, /create or replace function public\.lm_claim_provider_budget/);
+  assert.match(sql, /for update/);
+  assert.match(sql, /reserved_usd/);
+  assert.match(sql, /settled_usd/);
+  assert.match(sql, /lm_settle_provider_voice/);
 });
 
 test("daily provider budget boundaries are normal, warning, degraded, then stopped", () => {
@@ -24,6 +30,26 @@ test("unknown billing is visible in reasons and never contributes numeric zero a
   assert.equal(budget.totalUsd, 0);
   assert.equal(budget.state, "normal");
   assert.ok(budget.reasons.some((reason) => /unknown/i.test(reason)));
+});
+
+test("row aggregation keeps unknown null estimates out of numeric spend", () => {
+  const result = aggregateCostRows([
+    { provider: "google", operation: "geocoding", actual_status: "unknown", actual_billed_usd: null, estimated_usd: null, est_usd: null },
+    { provider: "google", operation: "routes", actual_status: "unknown", actual_billed_usd: null, estimated_usd: 0.01 },
+    { provider: "telnyx", operation: "call_cdr", actual_status: "known", actual_billed_usd: 0.03, estimated_usd: null },
+  ]);
+  assert.equal(result.unknownCount, 1);
+  assert.equal(result.estimatedUsd, 0.01);
+  assert.equal(result.measuredUsd, 0.03);
+});
+
+test("voice-only aggregation excludes non-voice provider rows", () => {
+  const result = aggregateCostRows([
+    { provider: "google", operation: "routes", actual_status: "unknown", estimated_usd: 0.5 },
+    { provider: "telnyx", operation: "call_cdr", actual_status: "known", actual_billed_usd: 0.03 },
+  ], { voiceOnly: true });
+  assert.equal(result.measuredUsd, 0.03);
+  assert.equal(result.estimatedUsd, 0);
 });
 
 test("paid fallback is disabled at one dollar while essential work remains available", async () => {
@@ -79,4 +105,56 @@ test("a failed budget read fails closed for non-cache work", async () => {
   });
   assert.equal(result.allowed, false);
   assert.equal(result.reason, "budget_unavailable");
+});
+
+test("production authorization atomically claims a nonzero projection through the Postgres RPC", async () => {
+  const calls = [];
+  const result = await authorizeProviderOperation({
+    uid: "u1", provider: "telnyx", operation: "call_session", essential: true,
+    requestId: "call-attempt-1", projectedUsd: 0,
+  }, {
+    supaUrl: "https://db.example", supaKey: "service",
+    readDailySpend: async () => ({ measuredUsd: 0, estimatedUsd: 0, unknownCount: 0 }),
+    readVoiceSpend: async () => ({ measuredUsd: 0, estimatedUsd: 0, unknownCount: 0 }),
+    fetchImpl: async (url, init = {}) => {
+      calls.push({ url: String(url), init });
+      if (String(url).includes("/rpc/lm_claim_provider_budget")) {
+        return { ok: true, status: 200, json: async () => ({ allowed: true, request_id: "call-attempt-1" }) };
+      }
+      return { ok: true, status: 200, json: async () => [] };
+    },
+  });
+  assert.equal(result.allowed, true);
+  const rpc = calls.find((call) => call.url.includes("/rpc/lm_claim_provider_budget"));
+  assert.ok(rpc, "the production path must use the transactional RPC");
+  const body = JSON.parse(rpc.init.body);
+  assert.equal(body.p_request_id, "call-attempt-1");
+  assert.ok(body.p_projected_usd > 0, "voice claims must never reserve a zero projection");
+  assert.equal(body.p_is_voice, true);
+});
+
+test("cached reads bypass both budget reads and the atomic claim RPC", async () => {
+  let calls = 0;
+  const result = await authorizeProviderOperation({ uid: "u1", provider: "google", operation: "routes", cacheHit: true }, {
+    supaUrl: "https://db.example", supaKey: "service", fetchImpl: async () => { calls += 1; return { ok: true }; },
+    readDailySpend: async () => { calls += 1; return { measuredUsd: 99, estimatedUsd: 0, unknownCount: 0 }; },
+  });
+  assert.equal(result.allowed, true);
+  assert.equal(calls, 0);
+});
+
+test("known Telnyx CDR settlement uses the transactional voice settlement RPC", async () => {
+  const calls = [];
+  const ok = await settleProviderVoice({ uid: "u1", requestId: "cdr-1", actualBilledUsd: 0.037, reservationRequestId: "call-1" }, {
+    supaUrl: "https://db.example", supaKey: "service",
+    fetchImpl: async (url, init = {}) => {
+      calls.push({ url: String(url), init });
+      return { ok: true, status: 200, json: async () => ({ settled: true }) };
+    },
+  });
+  assert.equal(ok, true);
+  const body = JSON.parse(calls[0].init.body);
+  assert.equal(body.p_request_id, "cdr-1");
+  assert.equal(body.p_actual_usd, 0.037);
+  assert.equal(body.p_reservation_request_id, "call-1");
 });

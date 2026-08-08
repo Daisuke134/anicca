@@ -124,7 +124,8 @@ async function recordTelnyxCdr(input = {}, deps = {}) {
     estimatedUsd: null, actualBilledUsd: actual, actualStatus: actual == null ? "unknown" : "known",
     costClassification: actual == null ? "unknown" : "measured",
     metadata: { ...objectOrEmpty(input.metadata), ...(cdr.id ? { cdrId: String(cdr.id) } : {}),
-      ...(cdr.call_control_id ? { callControlId: String(cdr.call_control_id) } : {}) },
+      ...(cdr.call_control_id ? { callControlId: String(cdr.call_control_id) } : {}),
+      ...(input.reservationRequestId ? { reservationRequestId: String(input.reservationRequestId) } : {}) },
   }, deps);
 }
 

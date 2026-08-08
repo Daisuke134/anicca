@@ -165,6 +165,20 @@ async function recordProviderCost(input = {}, opts = {}) {
       error.status = response && response.status;
       throw error;
     }
+    if (event.provider === "telnyx" && event.actualStatus === "known" && event.actualBilledUsd != null && event.operation === "call_cdr") {
+      try {
+        const { settleProviderVoice } = require("./provider-budget.js");
+        const settled = await settleProviderVoice({
+          uid: event.uid,
+          requestId: event.requestId,
+          actualBilledUsd: event.actualBilledUsd,
+          reservationRequestId: event.metadata && event.metadata.reservationRequestId,
+        }, opts);
+        if (!settled) (opts.log || console.error)("[ledger] voice settlement failed", event.requestId);
+      } catch (settlementError) {
+        try { (opts.log || console.error)("[ledger] voice settlement failed", settlementError && settlementError.message); } catch { /* best effort */ }
+      }
+    }
     return true;
   } catch (error) {
     await emitProviderCostFailure(event, error, opts);

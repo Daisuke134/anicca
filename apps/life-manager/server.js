@@ -74,6 +74,8 @@ const { startBrowserJobLoop } = require("./lib/browser-job-runtime.js");
 const { claimEvent, unclaimEvent, applyBilling } = require("./lib/billing.js");
 const { recordProviderCost: writeProviderCost } = require("./lib/ledger.js");
 const { recordGeminiSession } = require("./lib/provider-cost-adapters.js");
+const { recordTelnyxCdr } = require("./lib/provider-cost-adapters.js");
+const { startProviderCostImportLoop } = require("./lib/provider-cost-imports.js");
 const { authorizeProviderOperation: authorizeBudget } = require("./lib/provider-budget.js");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY || "sk_test_placeholder"); // apiKey unused by constructEvent
 const SUPA_URL = process.env.SUPABASE_URL, SUPA_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -295,6 +297,26 @@ const server = http.createServer((req, res) => {
       catch { res.writeHead(400); res.end("invalid json"); return; }
       const data = event && event.data;
       const payload = data && data.payload;
+      // Telnyx CDR/call-ended deliveries are a production measurement source,
+      // not a best-effort dashboard import. Persist one CDR row per event ID
+      // before acknowledging the webhook; the provider/request unique index
+      // makes redelivery idempotent.
+      if (data && payload && /call\.(?:hangup|ended|cost|cdr)/iu.test(String(data.event_type || ""))) {
+        const state = decodeCallClientState(payload.client_state);
+        const cdrUid = state && state.kind === "wake" ? state.wakeUid : state && state.kind === "test" ? state.testUid : null;
+        const cdrId = payload.id || payload.call_control_id || data.id || crypto.randomUUID();
+        const cdrRecorded = await recordTelnyxCdr({
+          uid: cdrUid,
+          requestId: `telnyx:cdr:${String(cdrId)}`,
+          durationSeconds: payload.billed_duration || payload.duration_seconds || payload.duration,
+          cdr: payload,
+        }, { supaUrl: SUPA_URL, supaKey: SUPA_KEY });
+        if (!cdrRecorded && SUPA_URL && SUPA_KEY) {
+          res.writeHead(503, { "content-type": "text/plain" });
+          res.end("cdr record failed; send it again");
+          return;
+        }
+      }
       if (!data || data.event_type !== "call.machine.detection.ended" || !payload) {
         res.writeHead(200); res.end("ignored"); return;
       }
@@ -463,7 +485,11 @@ const server = http.createServer((req, res) => {
         // unnamed call is what made the detection webhook return "no wake context" and let every test
         // call that hit a voicemail run to the carrier's 120-second recording limit.
         const result = await placeCall({
-          to: phone, streamUrl, clientState: encodeTestCallClientState({ testUid: body.uid }),
+          to: phone, uid: body.uid, streamUrl, clientState: encodeTestCallClientState({ testUid: body.uid }),
+          projectedUsd: Number(process.env.LM_TELNYX_PROJECTED_CALL_USD) > 0
+            ? Number(process.env.LM_TELNYX_PROJECTED_CALL_USD) : 0.05,
+          authorizeProviderOperation: SUPA_URL && SUPA_KEY
+            ? (input) => authorizeBudget(input, { supaUrl: SUPA_URL, supaKey: SUPA_KEY }) : undefined,
         });
         return reply(result.ok ? 200 : 502, result);
       } catch (e) {
@@ -897,10 +923,13 @@ wss.on("connection", (carrierWs, req) => {
   async function openGeminiLive() {
     if (gemini || geminiOpening) return;
     geminiOpening = true;
+    const geminiRequestId = `gemini:session:${wakeUid || "anonymous"}:${Date.now()}:${crypto.randomUUID()}`;
+    const geminiProjection = Number(process.env.LM_GEMINI_PROJECTED_SESSION_USD) > 0
+      ? Number(process.env.LM_GEMINI_PROJECTED_SESSION_USD) : 0.023;
     if (SUPA_URL && SUPA_KEY) {
       const decision = await authorizeBudget({
         uid: wakeUid || null, provider: "gemini", operation: "session", essential: true,
-        projectedUsd: Number(process.env.LM_GEMINI_PROJECTED_SESSION_USD) || 0,
+        requestId: geminiRequestId, projectedUsd: geminiProjection,
       }, { supaUrl: SUPA_URL, supaKey: SUPA_KEY });
       if (!decision.allowed) {
         geminiOpening = false;
@@ -954,7 +983,7 @@ wss.on("connection", (carrierWs, req) => {
         // Google bills Live API by token usage. Preserve provider usage metadata when supplied;
         // otherwise the adapter records a wall-time estimate with actual_status=unknown.
         void recordGeminiSession({
-          uid: wakeUid || null, requestId: `gemini:${wakeUid || "anonymous"}:${geminiStartedAtMs}`,
+          uid: wakeUid || null, requestId: geminiRequestId,
           durationSeconds: quantity, usageMetadata: geminiUsageMetadata,
           metadata: { kind: "gemini_live", reconnect: geminiReconnects },
         }, { supaUrl: SUPA_URL, supaKey: SUPA_KEY }).catch(() => false);
@@ -1029,6 +1058,12 @@ if (require.main === module) {
     const loops = maybeStartLoops(process.env, {
       startScheduler, startWakeLoop, startTravelLoop, startAskLoop, startOnboardLoop, startDiscoveryLoop,
     });
+    // Measurement imports are independent from the user-facing scheduler. They
+    // run in production whenever a provider source is configured, and a failed
+    // source produces a visible receipt instead of a synthetic zero.
+    if (SUPA_URL && SUPA_KEY) {
+      startProviderCostImportLoop({ options: { supaUrl: SUPA_URL, supaKey: SUPA_KEY } });
+    }
     console.log(`[life-call] ${loops.started ? "loops ON (standalone)" : "VOICE DAEMON (loops OFF)"} — ${loops.reason}`);
     const browserJobs = startBrowserJobLoop({
       enabled: process.env.LM_BROWSER_TASKS_ENABLED === "1",

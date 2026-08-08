@@ -479,6 +479,8 @@ async function wakeCallOnce(u, nowMs, deps = {}) {
         try {
           res = await (deps.placeCall || placeCall)({
             to: u.phone, streamUrl, uid: u.uid,
+            projectedUsd: Number(process.env.LM_TELNYX_PROJECTED_CALL_USD) > 0
+              ? Number(process.env.LM_TELNYX_PROJECTED_CALL_USD) : 0.05,
             authorizeProviderOperation: deps.authorizeProviderOperation || (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
               ? (input) => authorizeBudget(input, { supaUrl: process.env.SUPABASE_URL, supaKey: process.env.SUPABASE_SERVICE_ROLE_KEY })
               : undefined),

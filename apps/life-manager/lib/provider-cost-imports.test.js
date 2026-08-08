@@ -7,6 +7,7 @@ const {
   importRailwayAllocations,
   importSupabaseAllocations,
   importScheduledMeasurements,
+  runScheduledProviderCostImports,
 } = require("./provider-cost-imports.js");
 
 function recorder() {
@@ -50,4 +51,20 @@ test("a failed scheduled measurement import returns failure and emits no synthet
   assert.equal(result.failed, 1);
   assert.equal(r.events.length, 0);
   assert.match(result.error, /usage API down/);
+});
+
+test("production import runner invokes Telnyx, Railway, and Supabase loaders and reports each result", async () => {
+  const r = recorder();
+  const loaded = [];
+  const result = await runScheduledProviderCostImports({
+    loaders: {
+      telnyx: async () => { loaded.push("telnyx"); return [{ id: "cdr-run", cost: { amount: "0.01", currency: "USD" } }]; },
+      railway: async () => { loaded.push("railway"); return [{ period: "2026-08-08", amount_usd: "0.20" }]; },
+      supabase: async () => { loaded.push("supabase"); return [{ period: "2026-08-08", amount_usd: "0.10" }]; },
+    },
+    options: { uid: "u1", ...r.deps },
+  });
+  assert.deepEqual(loaded, ["telnyx", "railway", "supabase"]);
+  assert.deepEqual(result.map((item) => item.provider), ["telnyx", "railway", "supabase"]);
+  assert.ok(result.every((item) => item.receipt.recorded === 1 && item.receipt.failed === 0));
 });

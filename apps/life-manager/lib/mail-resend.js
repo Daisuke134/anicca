@@ -1,4 +1,5 @@
 "use strict";
+const crypto = require("node:crypto");
 // Own-domain email for the WEB ask/reply loop. We NEVER read the user's Gmail — we SEND from our own
 // verified domain via Resend, and route replies back via a short opaque token in the Reply-To local-part
 // (reply+<token>@reply.aniccaai.com → Cloudflare Email Routing → POST /inbound-email, which looks the token
@@ -8,6 +9,7 @@ const FROM = process.env.LM_MAIL_FROM || "Life Manager <hello@aniccaai.com>";
 const REPLY_DOMAIN = process.env.LM_REPLY_DOMAIN || "reply.aniccaai.com";
 const RESEND_URL = "https://api.resend.com/emails";
 const { recordResendSend } = require("./provider-cost-adapters.js");
+const { authorizeProviderOperation: authorizeBudget } = require("./provider-budget.js");
 
 // reply+<token>@reply.aniccaai.com — the catch-all inbound address. Local part = 6 + 22 = 28 chars (< 64).
 function replyToFor(token) {
@@ -15,11 +17,18 @@ function replyToFor(token) {
 }
 
 // Low-level Resend send. Fail-closed (no key / no recipient → {sent:false}), never throws.
-async function resendSend({ to, subject, text, replyTo, resendKey, fetchImpl, idempotencyKey, uid, recordProviderCost, costRequestId }) {
+async function resendSend({ to, subject, text, replyTo, resendKey, fetchImpl, idempotencyKey, uid, recordProviderCost, costRequestId, authorizeProviderOperation }) {
   if (!resendKey) return { sent: false, error: "no RESEND_API_KEY" };
   if (!to || (Array.isArray(to) && to.length === 0) || !subject) return { sent: false, error: "missing to/subject" };
   const f = fetchImpl || fetch;
   const recipientCount = Array.isArray(to) ? to.length : 1;
+  const requestId = costRequestId || idempotencyKey || `resend:send:${uid || "anonymous"}:${Date.now()}:${crypto.randomUUID()}`;
+  const budgetGate = authorizeProviderOperation || (uid != null && process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
+    ? (input) => authorizeBudget(input, { supaUrl: process.env.SUPABASE_URL, supaKey: process.env.SUPABASE_SERVICE_ROLE_KEY }) : undefined);
+  if (typeof budgetGate === "function") {
+    const decision = await budgetGate({ uid, provider: "resend", operation: "send", essential: false, cacheHit: false, requestId, projectedUsd: 0.001 });
+    if (decision && decision.allowed === false) return { sent: false, error: `provider budget denied: ${decision.reason || "stopped"}` };
+  }
   let responseId;
   const costRecorder = typeof recordProviderCost === "function"
     ? recordProviderCost
@@ -41,12 +50,12 @@ async function resendSend({ to, subject, text, replyTo, resendKey, fetchImpl, id
     responseId = d.id;
     const result = { sent: !!r.ok, id: d.id, status: r.status, error: r.ok ? undefined : (d.message || `http ${r.status}`) };
     if (costRecorder) {
-      await recordResendSend({ uid, requestId: costRequestId || idempotencyKey, recipientCount, responseId }, { recordProviderCost: costRecorder }).catch(() => false);
+      await recordResendSend({ uid, requestId, recipientCount, responseId }, { recordProviderCost: costRecorder }).catch(() => false);
     }
     return result;
   } catch (e) {
     if (costRecorder) {
-      await recordResendSend({ uid, requestId: costRequestId || idempotencyKey, recipientCount, responseId }, { recordProviderCost: costRecorder }).catch(() => false);
+      await recordResendSend({ uid, requestId, recipientCount, responseId }, { recordProviderCost: costRecorder }).catch(() => false);
     }
     return { sent: false, error: String(e) };
   }
@@ -54,18 +63,18 @@ async function resendSend({ to, subject, text, replyTo, resendKey, fetchImpl, id
 
 // Ask the USER where an event is. Reply-To carries the signed token → their reply hits /inbound-email,
 // which parses the token, matches the event, and patches the calendar.
-async function sendAsk({ to, replyToken, event, resendKey, fetchImpl, uid, recordProviderCost }) {
+async function sendAsk({ to, replyToken, event, resendKey, fetchImpl, uid, recordProviderCost, authorizeProviderOperation }) {
   const name = (event && event.summary) || "your event";
   const subject = `Where is “${name}”?`;
   const text =
     `Hi — I'm setting up travel time for “${name}”, but I can't find where it is.\n\n` +
     `Just reply to this email with the address or place name, and I'll add it to your calendar and call you in time.\n\n— Life Manager`;
-  return resendSend({ to, subject, text, replyTo: replyToFor(replyToken), resendKey, fetchImpl, uid, recordProviderCost });
+  return resendSend({ to, subject, text, replyTo: replyToFor(replyToken), resendKey, fetchImpl, uid, recordProviderCost, authorizeProviderOperation });
 }
 
 // Tell the ATTENDEES the user is running late. Sent from our domain "on behalf of <userName>"; Reply-To is
 // the user's REAL email so attendee replies reach the human directly.
-async function sendLateNotice({ toAttendees, userName, event, etaMinutes, userEmail, resendKey, fetchImpl, bodySnapshot, idempotencyKey, uid, recordProviderCost }) {
+async function sendLateNotice({ toAttendees, userName, event, etaMinutes, userEmail, resendKey, fetchImpl, bodySnapshot, idempotencyKey, uid, recordProviderCost, authorizeProviderOperation }) {
   const name = (event && event.summary) || "the meeting";
   const who = userName || "Your contact";
   const subject = `Running late: ${name}`;
@@ -73,7 +82,7 @@ async function sendLateNotice({ toAttendees, userName, event, etaMinutes, userEm
   const text = bodySnapshot ||
     `Hi — ${who} is running ${eta} late to “${name}” and wanted you to know.\n\n` +
     `(Sent automatically by Life Manager on ${who}'s behalf — reply to reach ${who} directly.)`;
-  return resendSend({ to: toAttendees, subject, text, replyTo: userEmail, resendKey, fetchImpl, idempotencyKey, uid, recordProviderCost });
+  return resendSend({ to: toAttendees, subject, text, replyTo: userEmail, resendKey, fetchImpl, idempotencyKey, uid, recordProviderCost, authorizeProviderOperation });
 }
 
 module.exports = { sendAsk, sendLateNotice, resendSend, replyToFor, FROM, REPLY_DOMAIN };

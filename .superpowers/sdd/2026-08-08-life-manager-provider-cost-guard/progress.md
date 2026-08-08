@@ -105,3 +105,10 @@ Result: 43/43 passed, 0 failed, 0 skipped (2026-08-08).
 - RED: added failure-path and request-identity tests required a geocode ledger row for empty/HTTP-error/thrown responses and distinct IDs for concurrent Google SKUs.
 - GREEN: `node --test lib/geocode-cache.test.js lib/provider-cost-adapters.test.js` → 17/17 passed.
 - Geocoding records exactly once immediately before each actual Google request, including failures and empty results; cache hits and budget-denied calls remain unrecorded. Routes/legacy Transit and free transit plan/guidance now append a UUID to every actual-attempt request ID, preventing provider/request uniqueness collisions.
+
+## Fresh review fix 4 receipt — atomic budget/voice claims and production wiring
+
+- RED: migration/RPC tests failed because budget claims were an optional REST insert and there were no voice reservation/settlement buckets (2 failures).
+- GREEN: complete focused guard suite → 106/106 passed.
+- Added `lm_provider_voice_buckets`, idempotent settlements, and transactional `lm_claim_provider_budget`/`lm_settle_provider_voice` RPCs. The claim locks user then global daily buckets and atomically accounts for reservations; known Telnyx CDRs settle actuals without turning unknown into zero.
+- Production authorization now claims every billable provider operation with a unique request ID and non-zero projection (Telnyx default `$0.05`, Gemini `$0.023`, Google SKU defaults, Composio/Resend defaults); cache-hit exits before reads/claims. Telnyx dial, Gemini Live, Composio, Resend, CDR webhook/imports, Railway/Supabase scheduled measurement loaders are wired.

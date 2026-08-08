@@ -112,8 +112,8 @@ CREATE INDEX IF NOT EXISTS lm_provider_cost_failures_failed_at_idx
 ALTER TABLE public.lm_provider_cost_failures ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.lm_provider_cost_failures FORCE ROW LEVEL SECURITY;
 
--- Optional atomic gate claims. The provider ledger remains the cost source of truth; this narrow table
--- only prevents two workers from authorizing the same request id in one user/day budget window.
+-- Atomic budget claims. The ledger remains the audit source of truth; claims
+-- reserve projected spend before a paid provider request leaves the process.
 CREATE TABLE IF NOT EXISTS public.lm_provider_budget_claims (
   uid            text NOT NULL,
   budget_day     date NOT NULL,
@@ -121,10 +121,165 @@ CREATE TABLE IF NOT EXISTS public.lm_provider_budget_claims (
   operation      text NOT NULL,
   request_id     text NOT NULL,
   projected_usd  numeric NOT NULL DEFAULT 0 CHECK (projected_usd >= 0),
+  is_voice       boolean NOT NULL DEFAULT false,
   claimed_at     timestamptz NOT NULL DEFAULT now(),
   PRIMARY KEY (uid, budget_day, request_id)
 );
+ALTER TABLE public.lm_provider_budget_claims
+  ADD COLUMN IF NOT EXISTS is_voice boolean NOT NULL DEFAULT false;
 CREATE INDEX IF NOT EXISTS lm_provider_budget_claims_global_idx
   ON public.lm_provider_budget_claims (budget_day, provider, operation);
 ALTER TABLE public.lm_provider_budget_claims ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.lm_provider_budget_claims FORCE ROW LEVEL SECURITY;
+
+CREATE TABLE IF NOT EXISTS public.lm_provider_voice_buckets (
+  scope        text NOT NULL CHECK (scope IN ('user', 'global')),
+  uid          text NOT NULL DEFAULT '',
+  budget_day   date NOT NULL,
+  settled_usd  numeric NOT NULL DEFAULT 0 CHECK (settled_usd >= 0),
+  reserved_usd numeric NOT NULL DEFAULT 0 CHECK (reserved_usd >= 0),
+  updated_at   timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (scope, uid, budget_day),
+  CHECK ((scope = 'global' AND uid = '') OR (scope = 'user' AND uid <> ''))
+);
+CREATE INDEX IF NOT EXISTS lm_provider_voice_buckets_day_idx
+  ON public.lm_provider_voice_buckets (budget_day, scope);
+ALTER TABLE public.lm_provider_voice_buckets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.lm_provider_voice_buckets FORCE ROW LEVEL SECURITY;
+
+CREATE TABLE IF NOT EXISTS public.lm_provider_voice_settlements (
+  request_id  text PRIMARY KEY,
+  uid         text NOT NULL,
+  budget_day  date NOT NULL,
+  amount_usd  numeric NOT NULL CHECK (amount_usd >= 0),
+  settled_at  timestamptz NOT NULL DEFAULT now()
+);
+ALTER TABLE public.lm_provider_voice_settlements ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.lm_provider_voice_settlements FORCE ROW LEVEL SECURITY;
+
+-- The user and global rows are locked in one deterministic order. This makes
+-- reservations race-safe across Railway instances; a boolean REST insert is
+-- insufficient because two workers could both pass the pre-read cap check.
+CREATE OR REPLACE FUNCTION public.lm_claim_provider_budget(
+  p_uid text,
+  p_budget_day date,
+  p_provider text,
+  p_operation text,
+  p_request_id text,
+  p_projected_usd numeric,
+  p_is_voice boolean,
+  p_user_voice_cap numeric,
+  p_global_voice_cap numeric
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_uid text := nullif(trim(p_uid), '');
+  v_day date := coalesce(p_budget_day, current_date);
+  v_user_settled numeric := 0;
+  v_user_reserved numeric := 0;
+  v_global_settled numeric := 0;
+  v_global_reserved numeric := 0;
+  v_projected numeric := coalesce(p_projected_usd, 0);
+BEGIN
+  IF v_uid IS NULL OR nullif(trim(p_request_id), '') IS NULL OR v_projected < 0 THEN
+    RETURN jsonb_build_object('allowed', false, 'reason', 'invalid_claim');
+  END IF;
+
+  IF coalesce(p_is_voice, false) THEN
+    INSERT INTO lm_provider_voice_buckets(scope, uid, budget_day)
+      VALUES ('user', v_uid, v_day), ('global', '', v_day)
+      ON CONFLICT (scope, uid, budget_day) DO NOTHING;
+    SELECT settled_usd, reserved_usd INTO v_user_settled, v_user_reserved
+      FROM lm_provider_voice_buckets
+      WHERE scope = 'user' AND uid = v_uid AND budget_day = v_day
+      FOR UPDATE;
+    SELECT settled_usd, reserved_usd INTO v_global_settled, v_global_reserved
+      FROM lm_provider_voice_buckets
+      WHERE scope = 'global' AND uid = '' AND budget_day = v_day
+      FOR UPDATE;
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM lm_provider_budget_claims
+    WHERE uid = v_uid AND budget_day = v_day AND request_id = p_request_id
+  ) THEN
+    RETURN jsonb_build_object('allowed', true, 'duplicate', true, 'request_id', p_request_id);
+  END IF;
+
+  IF coalesce(p_is_voice, false) AND v_user_settled + v_user_reserved + v_projected >= coalesce(p_user_voice_cap, 0) THEN
+    RETURN jsonb_build_object('allowed', false, 'reason', 'voice_user_cap');
+  END IF;
+  IF coalesce(p_is_voice, false) AND v_global_settled + v_global_reserved + v_projected >= coalesce(p_global_voice_cap, 0) THEN
+    RETURN jsonb_build_object('allowed', false, 'reason', 'voice_global_cap');
+  END IF;
+
+  INSERT INTO lm_provider_budget_claims(uid, budget_day, provider, operation, request_id, projected_usd, is_voice)
+    VALUES (v_uid, v_day, coalesce(nullif(trim(p_provider), ''), 'unknown'), coalesce(nullif(trim(p_operation), ''), 'unknown'), p_request_id, v_projected, coalesce(p_is_voice, false));
+  IF coalesce(p_is_voice, false) THEN
+    UPDATE lm_provider_voice_buckets
+      SET reserved_usd = reserved_usd + v_projected, updated_at = now()
+      WHERE scope = 'user' AND uid = v_uid AND budget_day = v_day;
+    UPDATE lm_provider_voice_buckets
+      SET reserved_usd = reserved_usd + v_projected, updated_at = now()
+      WHERE scope = 'global' AND uid = '' AND budget_day = v_day;
+  END IF;
+  RETURN jsonb_build_object('allowed', true, 'duplicate', false, 'request_id', p_request_id);
+END;
+$$;
+
+-- CDR/usage imports settle an actual voice amount exactly once and release the
+-- matching reservation when the caller supplies its claim request id.
+CREATE OR REPLACE FUNCTION public.lm_settle_provider_voice(
+  p_uid text,
+  p_budget_day date,
+  p_request_id text,
+  p_actual_usd numeric,
+  p_reservation_request_id text DEFAULT NULL
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_uid text := nullif(trim(p_uid), '');
+  v_day date := coalesce(p_budget_day, current_date);
+  v_amount numeric := coalesce(p_actual_usd, 0);
+  v_reserved numeric := 0;
+BEGIN
+  IF v_uid IS NULL OR nullif(trim(p_request_id), '') IS NULL OR v_amount < 0 THEN
+    RETURN jsonb_build_object('settled', false, 'reason', 'invalid_settlement');
+  END IF;
+  INSERT INTO lm_provider_voice_buckets(scope, uid, budget_day)
+    VALUES ('user', v_uid, v_day), ('global', '', v_day)
+    ON CONFLICT (scope, uid, budget_day) DO NOTHING;
+  PERFORM 1 FROM lm_provider_voice_buckets
+    WHERE scope = 'user' AND uid = v_uid AND budget_day = v_day FOR UPDATE;
+  PERFORM 1 FROM lm_provider_voice_buckets
+    WHERE scope = 'global' AND uid = '' AND budget_day = v_day FOR UPDATE;
+  INSERT INTO lm_provider_voice_settlements(request_id, uid, budget_day, amount_usd)
+    VALUES (p_request_id, v_uid, v_day, v_amount)
+    ON CONFLICT (request_id) DO NOTHING;
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('settled', true, 'duplicate', true);
+  END IF;
+  IF p_reservation_request_id IS NOT NULL THEN
+    SELECT projected_usd INTO v_reserved FROM lm_provider_budget_claims
+      WHERE uid = v_uid AND budget_day = v_day AND request_id = p_reservation_request_id AND is_voice = true;
+    v_reserved := coalesce(v_reserved, 0);
+  END IF;
+  UPDATE lm_provider_voice_buckets
+    SET settled_usd = settled_usd + v_amount,
+        reserved_usd = greatest(0, reserved_usd - v_reserved), updated_at = now()
+    WHERE scope = 'user' AND uid = v_uid AND budget_day = v_day;
+  UPDATE lm_provider_voice_buckets
+    SET settled_usd = settled_usd + v_amount,
+        reserved_usd = greatest(0, reserved_usd - v_reserved), updated_at = now()
+    WHERE scope = 'global' AND uid = '' AND budget_day = v_day;
+  RETURN jsonb_build_object('settled', true, 'duplicate', false);
+END;
+$$;
