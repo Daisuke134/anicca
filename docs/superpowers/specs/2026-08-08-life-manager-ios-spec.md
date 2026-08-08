@@ -1,6 +1,6 @@
 # Life Manager iOS — Product and UX Specification
 
-Status: **Approved by Dais. The active delivery target is an English-only native Simulator demo with real backend data and a Maestro video.**
+Status: **Approved by Dais. Full production implementation is in progress through TestFlight, App Store submission, and real provider/device receipts.**
 
 ## Source of truth
 
@@ -31,14 +31,6 @@ The behavioral promise is the same as the web and Telegram product:
 > Connect the calendar once. Life Manager understands the next commitment, determines when the user must leave, and presents the next physical action in one conversation.
 
 The iOS difference is onboarding. Telegram must collect setup data inside chat and open a browser for OAuth. iOS MUST use native screens for setup, then move the user into the same chat-first managed-day experience.
-
-### 1.0 Active demo cutoff
-
-The current deliverable is one native, English-only, end-to-end Simulator demo. It MUST use the owner's real pre-connected Calendar account. A current Shipathon Calendar event supplies the Roppongi origin and a real just-in-time Tokyo Tower Calendar event supplies the destination. The demo MUST demonstrate bounded event detection, direct next-event analysis, an automatically inserted Calendar travel block, an event-anchored route card and full provider-authored route detail appearing in chat, durable foreground refresh, and a recorded Maestro journey.
-
-The demo user MUST NOT open Google Maps or complete OAuth, profile, or location-permission screens. Google Calendar remains the backend schedule and location source, but after the seed events are visibly created, the native Life Manager app is the only user-facing surface. Foreground detection MAY poll for the new event for at most 60 seconds and MUST stop after the matching durable chat message appears. CoreLocation, continuous location tracking, and background location tracking are prohibited.
-
-Japanese localization, phone collection and calling, APNs, late notices, live location, soft paywall, account deletion, TestFlight distribution, and App Store submission are outside the active demo cutoff. They MUST NOT block or expand the current implementation path. HTML or web prototypes are not acceptance evidence.
 
 ### 1.1 Product decisions
 
@@ -519,9 +511,13 @@ Google consent/account chooser is not asserted by Maestro because it is an exter
 
 - Gate 0 Task 1 is complete on `feat/lm-daily-late-approval`: resolver focused tests and fresh review are green and the commits are pushed.
 - Gate 0 Task 2 is complete on the same branch: durable decision/claim/receipt tests are green, isolated staging PostgreSQL role/RPC read-back is complete, fresh re-review is green, and production Supabase was not touched.
-- Gate 0 Task 3 review fixes are GREEN and pushed at `3e89a4133`: later ticks reuse the immutable draft and the scheduler no longer owns the pre-approval mail capability. The remaining DAILY tasks are outside the active Simulator-demo cutoff.
-- Native iOS product Task 1 is running in isolated worktree `feat/lm-ios-product` under Dais's explicit non-colliding parallelization approval. This is app-skeleton preparation only; it does not satisfy Gate 4 before Gate 2 fixtures exist.
-- Local delivery tooling is ready: Xcode `26.6 (17F113)`, iOS `26.3` Simulator devices, and Maestro `2.8.0` are verified.
+- Gate 0 Task 3 review fixes are GREEN and pushed at `3e89a4133`: later ticks reuse the immutable draft and the scheduler no longer owns the pre-approval mail capability. Gate 0 Tasks 4–6 remain incomplete.
+- Gate 1 is incomplete. Two uncommitted RED cost-guard tests exist in the DAILY worktree and are not completion evidence.
+- Gate 2 is complete on `feat/lm-mobile-contract-luna` at `ada35f98c`: the English mobile contract suite is 15/15 GREEN and pushed. This freezes fixtures only; it is not a deployed mobile API.
+- Gate 3 is not implemented. Its worktree contains no completion commit or GREEN backend receipt.
+- Gate 4 Task 1 has generated the native Xcode skeleton in `feat/lm-ios-product`, but it remains uncommitted and has no GREEN Swift test receipt. It is not a working app.
+- Local delivery tooling is ready: Xcode `26.6 (17F113)`, matching iOS `26.5 (23F77)` Simulator runtime, and Maestro `2.8.0` are installed. The prior iOS `26.3` runtime mismatch is removed.
+- The Calendar seed utility has 12/12 focused tests GREEN in its isolated worktree, but it is test support and not product completion evidence.
 - HTML and web prototypes are not delivery artifacts and MUST NOT be used for the demo or any acceptance receipt. The first showable product MUST be the native iOS app running in an iOS Simulator or on an iPhone; the distributable demo MUST be a real TestFlight build.
 
 The following order is the only execution order. A later gate does not begin before the dependency named in its row is green. The executable Superpowers plans are:
@@ -533,17 +529,6 @@ The following order is the only execution order. A later gate does not begin bef
 - Native iOS product: `docs/superpowers/plans/2026-08-08-life-manager-ios-product.md`
 - Sync, APNs, Maestro, and TestFlight: `docs/superpowers/plans/2026-08-08-life-manager-ios-integration.md`
 - App Store release: `docs/superpowers/plans/2026-08-08-life-manager-ios-app-store.md`
-
-For the active demo cutoff, only these four deliverables remain:
-
-| Order | Remaining demo deliverable | Completion receipt |
-|---:|---|---|
-| 1 | Native Xcode project launches and tests in iOS Simulator | Simulator build and Swift smoke tests green |
-| 2 | English mobile contract/backend restores the pre-connected session and supports bounded event detection, current-event origin resolution, next-event analysis, exactly-once Calendar travel-block insertion, route, durable chat, and manual refresh | Real staging API contract suite green |
-| 3 | The English native app opens directly to connected chat; route card/detail and refresh are connected to that API | Swift unit/UI tests green with real contract fixtures |
-| 4 | Create real current Shipathon and future Tokyo Tower Calendar events, observe the exactly-once travel block and route chat, and record the full journey | Provider/Calendar receipts, Maestro flow green, and video artifact |
-
-The broader gates below remain the post-demo product roadmap and do not block the active demo cutoff.
 
 | Gate | Remaining deliverable | Dependency | Primary ownership | Completion receipt |
 |---:|---|---|---|---|
