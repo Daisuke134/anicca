@@ -53,6 +53,24 @@ final class APIClientTests: XCTestCase {
         XCTAssertEqual(requests[0].url?.path, "/profile")
     }
 
+    func testExplicitSessionPropagationUpdatesCachedSessionForLogout() async throws {
+        let store = InMemorySessionStore(session: nil)
+        let transport = ScriptedTransport(statuses: [204], payload: Data())
+        let client = APIClient(
+            baseURL: URL(string: "https://life-manager.example")!,
+            transport: transport,
+            sessionStore: store,
+            refresh: { _ in throw APIError.refreshRejected }
+        )
+
+        await client.setSession(TestSessionFactory.make(accessToken: "oauth-access"))
+        try await client.sendVoid(.mutation(path: "/session", method: .delete), idempotencyKey: UUID())
+
+        let requests = await transport.requestsSnapshot()
+        let request = try XCTUnwrap(requests.first)
+        XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer oauth-access")
+    }
+
     func testConcurrentUnauthorizedRequestsPerformOneRefreshAndReplayTheirOriginalKeys() async throws {
         let oldSession = TestSessionFactory.make(accessToken: "old-access")
         let rotatedSession = TestSessionFactory.make(accessToken: "rotated-access")

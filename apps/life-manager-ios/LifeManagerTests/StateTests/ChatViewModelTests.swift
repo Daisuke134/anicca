@@ -174,6 +174,34 @@ final class ChatViewModelTests: XCTestCase {
         XCTAssertEqual(replyCount, 1)
     }
 
+    func testAmbiguousReplyRetainsTextAndIdempotencyKeyForRetry() async {
+        let question = ChatFixtures.message(
+            id: "question-message",
+            type: .question,
+            createdAt: "2026-08-10T08:00:00.000Z",
+            question: ChatQuestion(id: "question-1", prompt: "Where are you starting from?")
+        )
+        let service = RetryingChatService(question: question)
+        let store = TestOperationRetryStore()
+        let viewModel = ChatViewModel(service: service, retryStore: store)
+
+        await viewModel.loadInitial()
+        await viewModel.reply(text: "Home")
+
+        XCTAssertEqual(viewModel.composerText, "Home")
+        let pendingAfterFailure = await store.pending(for: .reply)
+        XCTAssertNotNil(pendingAfterFailure)
+
+        await viewModel.reply()
+
+        XCTAssertEqual(viewModel.composerText, "")
+        let pendingAfterSuccess = await store.pending(for: .reply)
+        XCTAssertNil(pendingAfterSuccess)
+        let keys = await service.keys()
+        XCTAssertEqual(keys.count, 2)
+        XCTAssertEqual(keys.first, keys.last)
+    }
+
     func testStaleReplyIsNotInsertedAfterChatRefreshChangesOpenQuestion() async {
         let question = ChatFixtures.message(
             id: "question-message",
@@ -275,6 +303,27 @@ private actor ChatTestService: ChatServicing {
 
     func fetchCursors() -> [String?] { cursors }
     func replyCount() -> Int { replies }
+}
+
+private actor RetryingChatService: ChatServicing {
+    private let question: ChatMessage
+    private var attempts = 0
+    private var recordedKeys: [UUID] = []
+
+    init(question: ChatMessage) { self.question = question }
+
+    func fetch(after cursor: String?) async throws -> ChatPage {
+        ChatPage(messages: [question], nextCursor: nil, hasMore: false)
+    }
+
+    func reply(questionID: String, text: String, idempotencyKey: UUID) async throws -> ChatMessage {
+        attempts += 1
+        recordedKeys.append(idempotencyKey)
+        if attempts == 1 { throw APIError.transport("offline") }
+        return ChatFixtures.message(id: "reply-1", type: .system, createdAt: "2026-08-10T08:01:00.000Z")
+    }
+
+    func keys() -> [UUID] { recordedKeys }
 }
 
 private actor FetchGate {

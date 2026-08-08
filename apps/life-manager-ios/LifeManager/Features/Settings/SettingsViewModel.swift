@@ -19,7 +19,9 @@ final class SettingsViewModel {
     private let callService: CallServicing
     private let accountService: AccountServicing
     private let deviceService: DeviceServicing?
+    private let retryStore: OperationRetryStoring
     private var profileChangedHandler: (@MainActor (UserProfile) async -> Void)?
+    private var signedOutHandler: (@MainActor () async -> Void)?
 
     private(set) var profile: UserProfile?
     private(set) var calendarStatus: CalendarConnectionStatus = .disconnected
@@ -41,17 +43,23 @@ final class SettingsViewModel {
         auth: AuthServicing,
         calls: CallServicing,
         account: AccountServicing,
-        device: DeviceServicing? = nil
+        device: DeviceServicing? = nil,
+        retryStore: OperationRetryStoring = UserDefaultsOperationRetryStore()
     ) {
         profileService = profile
         self.auth = auth
         callService = calls
         accountService = account
         deviceService = device
+        self.retryStore = retryStore
     }
 
     func setProfileChangedHandler(_ handler: (@MainActor (UserProfile) async -> Void)?) {
         profileChangedHandler = handler
+    }
+
+    func setSignedOutHandler(_ handler: (@MainActor () async -> Void)?) {
+        signedOutHandler = handler
     }
 
     var phoneConfigured: Bool {
@@ -93,6 +101,7 @@ final class SettingsViewModel {
 
     func callMeNow() async {
         phoneValidationError = nil
+        failure = nil
         guard callsEnabled else {
             phoneValidationError = "settings.callsDisabled"
             return
@@ -103,20 +112,31 @@ final class SettingsViewModel {
         }
 
         do {
-            callReceipt = try await callService.placeTestCall(idempotencyKey: UUID())
+            let operationKey = await operationKey(for: .call)
+            callReceipt = try await callService.placeTestCall(idempotencyKey: operationKey)
+            await retryStore.clear(.call)
         } catch {
+            if !MutationRetryPolicy.shouldRetain(after: error) {
+                await retryStore.clear(.call)
+            }
             failure = AppErrorState(error: error)
         }
     }
 
     func deleteAccount() async {
         failure = nil
+        let operationKey = await operationKey(for: .deletion)
         do {
             try await deviceService?.unregister(idempotencyKey: UUID())
-            let receipt = try await accountService.deleteAccount(idempotencyKey: UUID())
+            let receipt = try await accountService.deleteAccount(idempotencyKey: operationKey)
+            await retryStore.clear(.deletion)
             deletionReceipt = receipt
             try? await auth.signOut()
+            await signedOutHandler?()
         } catch {
+            if !MutationRetryPolicy.shouldRetain(after: error) {
+                await retryStore.clear(.deletion)
+            }
             failure = AppErrorState(error: error)
         }
     }
@@ -134,6 +154,7 @@ final class SettingsViewModel {
         } catch {
             firstError = firstError ?? error
         }
+        await signedOutHandler?()
         if let firstError {
             failure = AppErrorState(error: firstError)
         }
@@ -161,11 +182,36 @@ final class SettingsViewModel {
 
     private func save(_ draft: ProfileDraft) async {
         failure = nil
+        let operationKey = await operationKey(for: .profile, draft: draft)
         do {
-            await apply(try await profileService.update(draft, idempotencyKey: UUID()))
+            await apply(try await profileService.update(draft, idempotencyKey: operationKey))
+            await retryStore.clear(.profile)
         } catch {
+            if !MutationRetryPolicy.shouldRetain(after: error) {
+                await retryStore.clear(.profile)
+            }
             failure = AppErrorState(error: error)
         }
+    }
+
+    private func operationKey(for operation: RetryOperation, draft: ProfileDraft? = nil) async -> UUID {
+        if let pending = await retryStore.pending(for: operation) {
+            if let draft,
+               let data = pending.input,
+               let persistedDraft = try? JSONDecoder.lifeManager.decode(ProfileDraft.self, from: data),
+               persistedDraft != draft {
+                let key = UUID()
+                let input = try? JSONEncoder.lifeManager.encode(draft)
+                await retryStore.save(operation, value: PendingOperation(idempotencyKey: key, input: input))
+                return key
+            }
+            return pending.idempotencyKey
+        }
+
+        let key = UUID()
+        let input = draft.flatMap { try? JSONEncoder.lifeManager.encode($0) }
+        await retryStore.save(operation, value: PendingOperation(idempotencyKey: key, input: input))
+        return key
     }
 
     private func apply(_ value: UserProfile) async {

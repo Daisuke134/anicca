@@ -103,6 +103,36 @@ final class ServiceProtocolTests: XCTestCase {
         XCTAssertEqual(exchangeJSON["state"], "state:v1:calendar-consent-8f3a")
         XCTAssertEqual(savedSession, TestFixtures.rotatedSession)
     }
+
+    func testOAuthExchangePropagatesSessionToAuthenticatedAPI() async throws {
+        let store = InMemorySessionStore(session: nil)
+        let api = RecordingAPI()
+        await api.setSessionStart(TestFixtures.sessionStart)
+        await api.setSession(TestFixtures.rotatedSession)
+        let sink = SessionPropagationProbe()
+        let relay = SessionPropagationRelay()
+        relay.attach(sink)
+        let callback = URL(string: "lifemanager://oauth/callback?code=one-use-code&state=state:v1:calendar-consent-8f3a")!
+        let service = AuthService(
+            api: api,
+            sessionStore: store,
+            callbackAuthorizer: TestOAuthCallbackAuthorizer(callback: callback),
+            sessionRelay: relay
+        )
+
+        _ = try await service.connectCalendar()
+
+        let propagatedSession = await sink.session()
+        XCTAssertEqual(propagatedSession, TestFixtures.rotatedSession)
+    }
+
+    func testMutationRetryPolicyRetainsAmbiguousFailuresOnly() {
+        XCTAssertTrue(MutationRetryPolicy.shouldRetain(after: APIError.transport("offline")))
+        XCTAssertTrue(MutationRetryPolicy.shouldRetain(after: APIError.server(statusCode: 409)))
+        XCTAssertTrue(MutationRetryPolicy.shouldRetain(after: APIError.server(statusCode: 500)))
+        XCTAssertFalse(MutationRetryPolicy.shouldRetain(after: APIError.server(statusCode: 400)))
+        XCTAssertFalse(MutationRetryPolicy.shouldRetain(after: APIError.server(statusCode: 422)))
+    }
 }
 
 private enum TestFixtures {
@@ -233,4 +263,14 @@ private actor InMemorySessionStore: SessionStoring {
     func save(_ session: Session) async throws { self.session = session }
     func clear() async throws { session = nil }
     func currentSession() -> Session? { session }
+}
+
+private actor SessionPropagationProbe: SessionPropagating {
+    private var current: Session?
+
+    func setSession(_ session: Session?) async {
+        current = session
+    }
+
+    func session() -> Session? { current }
 }

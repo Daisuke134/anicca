@@ -56,15 +56,18 @@ struct AuthService: AuthServicing {
     private let api: APIRequesting
     private let sessionStore: SessionStoring
     private let callbackAuthorizer: OAuthCallbackAuthorizing?
+    private let sessionRelay: SessionPropagationRelay?
 
     init(
         api: APIRequesting,
         sessionStore: SessionStoring,
-        callbackAuthorizer: OAuthCallbackAuthorizing? = nil
+        callbackAuthorizer: OAuthCallbackAuthorizing? = nil,
+        sessionRelay: SessionPropagationRelay? = nil
     ) {
         self.api = api
         self.sessionStore = sessionStore
         self.callbackAuthorizer = callbackAuthorizer
+        self.sessionRelay = sessionRelay
     }
 
     func restoreSession() async throws -> Session? {
@@ -100,6 +103,7 @@ struct AuthService: AuthServicing {
             idempotencyKey: UUID()
         )
         try await sessionStore.save(session)
+        await sessionRelay?.propagate(session)
         return session
     }
 
@@ -111,6 +115,7 @@ struct AuthService: AuthServicing {
             idempotencyKey: UUID()
         )
         try await sessionStore.save(rotated)
+        await sessionRelay?.propagate(rotated)
         return rotated
     }
 
@@ -122,9 +127,11 @@ struct AuthService: AuthServicing {
             )
         } catch {
             try? await sessionStore.clear()
+            await sessionRelay?.propagate(nil)
             throw error
         }
         try await sessionStore.clear()
+        await sessionRelay?.propagate(nil)
     }
 }
 

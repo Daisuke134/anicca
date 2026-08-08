@@ -7,6 +7,7 @@ final class AppComposition {
 
     init(baseURL: URL, callbackScheme: String) {
         let sessionStore = KeychainSessionStore()
+        let sessionRelay = SessionPropagationRelay()
         let sessionAPI = APIClient(
             baseURL: baseURL,
             sessionStore: sessionStore,
@@ -15,13 +16,15 @@ final class AppComposition {
         let auth = AuthService(
             api: sessionAPI,
             sessionStore: sessionStore,
-            callbackAuthorizer: WebOAuthCallbackAuthorizer(callbackScheme: callbackScheme)
+            callbackAuthorizer: WebOAuthCallbackAuthorizer(callbackScheme: callbackScheme),
+            sessionRelay: sessionRelay
         )
         let authenticatedAPI = APIClient(
             baseURL: baseURL,
             sessionStore: sessionStore,
             refresh: { session in try await auth.refresh(session) }
         )
+        sessionRelay.attach(authenticatedAPI)
         let profileService = ProfileService(api: authenticatedAPI)
         let callService = CallService(api: authenticatedAPI)
         let accountService = AccountService(api: authenticatedAPI)

@@ -6,6 +6,7 @@ import Observation
 final class ChatViewModel {
     private let service: ChatServicing
     private let coordinator: ChatSyncCoordinator
+    private let retryStore: OperationRetryStoring
     private var fetchGeneration = 0
     private var answeredQuestionIDs = Set<String>()
     private var pendingPushTargetMessageID: String?
@@ -22,9 +23,13 @@ final class ChatViewModel {
 
     var composerText = ""
 
-    init(service: ChatServicing) {
+    init(
+        service: ChatServicing,
+        retryStore: OperationRetryStoring = UserDefaultsOperationRetryStore()
+    ) {
         self.service = service
         coordinator = ChatSyncCoordinator(service: service)
+        self.retryStore = retryStore
     }
 
     var openQuestion: ChatQuestion? {
@@ -78,6 +83,22 @@ final class ChatViewModel {
         isLoadingMore = false
         await coordinator.reset()
         await sync(reason: .launch)
+    }
+
+    func clearProjection() async {
+        fetchGeneration &+= 1
+        pendingPushTargetMessageID = nil
+        answeredQuestionIDs.removeAll()
+        messages = []
+        nextCursor = nil
+        hasMore = false
+        failure = nil
+        staleReply = false
+        scrollAnchorID = nil
+        composerText = ""
+        isLoading = false
+        isLoadingMore = false
+        await coordinator.reset()
     }
 
     func syncFromPush(targetMessageID: String) async {
@@ -134,8 +155,28 @@ final class ChatViewModel {
 
     func reply(text: String? = nil) async {
         guard let question = openQuestion else { return }
-        let value = (text ?? composerText).trimmingCharacters(in: .whitespacesAndNewlines)
+        let pending = await retryStore.pending(for: .reply)
+        let pendingInput = pending.flatMap { operation in
+            operation.input.flatMap { try? JSONDecoder.lifeManager.decode(PendingReplyInput.self, from: $0) }
+        }
+        let canReusePending = text == nil && pendingInput?.questionID == question.id
+        let value = (canReusePending ? pendingInput?.text : (text ?? composerText))?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         guard !value.isEmpty, !isReplying else { return }
+
+        let operationKey: UUID
+        if canReusePending, let pending {
+            operationKey = pending.idempotencyKey
+        } else {
+            operationKey = UUID()
+            let input = try? JSONEncoder.lifeManager.encode(
+                PendingReplyInput(questionID: question.id, text: value)
+            )
+            await retryStore.save(
+                .reply,
+                value: PendingOperation(idempotencyKey: operationKey, input: input)
+            )
+        }
 
         let generation = fetchGeneration
         let questionID = question.id
@@ -148,8 +189,9 @@ final class ChatViewModel {
             let message = try await service.reply(
                 questionID: questionID,
                 text: value,
-                idempotencyKey: UUID()
+                idempotencyKey: operationKey
             )
+            await retryStore.clear(.reply)
             guard generation == fetchGeneration, openQuestion?.id == questionID else {
                 staleReply = true
                 isReplying = false
@@ -158,6 +200,12 @@ final class ChatViewModel {
             answeredQuestionIDs.insert(questionID)
             merge([message], replacing: false)
         } catch {
+            if MutationRetryPolicy.shouldRetain(after: error) {
+                composerText = value
+            } else {
+                await retryStore.clear(.reply)
+                composerText = ""
+            }
             failure = AppErrorState(error: error)
         }
 
@@ -216,6 +264,16 @@ final class ChatViewModel {
                 return $0.createdAt < $1.createdAt
             }
             return $0.id < $1.id
+        }
+    }
+
+    private struct PendingReplyInput: Codable, Sendable {
+        let questionID: String
+        let text: String
+
+        enum CodingKeys: String, CodingKey {
+            case questionID = "questionId"
+            case text
         }
     }
 }

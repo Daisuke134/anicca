@@ -134,6 +134,99 @@ final class SettingsViewModelTests: XCTestCase {
         XCTAssertEqual(disabledRequestCount, 0)
     }
 
+    func testAmbiguousCallReusesOperationKeyUntilSuccess() async {
+        let callService = RetryingCallService()
+        let store = TestOperationRetryStore()
+        let profile = SettingsFixtures.profile(callsEnabled: true, phone: .configured("+81••••••5678"), callLanguage: .en)
+        let viewModel = SettingsViewModel(
+            profile: SettingsProfileTestService(profile: profile),
+            auth: SettingsAuthTestService(),
+            calls: callService,
+            account: SettingsAccountTestService(receipt: nil),
+            retryStore: store
+        )
+        await viewModel.load()
+
+        await viewModel.callMeNow()
+        XCTAssertNotNil(viewModel.failure)
+        let pendingAfterFailure = await store.pending(for: .call)
+        XCTAssertNotNil(pendingAfterFailure)
+
+        await viewModel.callMeNow()
+        XCTAssertNil(viewModel.failure)
+        let pendingAfterSuccess = await store.pending(for: .call)
+        XCTAssertNil(pendingAfterSuccess)
+        let keys = await callService.keys()
+        XCTAssertEqual(keys.count, 2)
+        XCTAssertEqual(keys.first, keys.last)
+    }
+
+    func testAmbiguousProfileUpdateReusesDraftAndOperationKey() async {
+        let profileService = RetryingProfileService(profile: SettingsFixtures.profile(callsEnabled: false, phone: .missing, callLanguage: nil))
+        let store = TestOperationRetryStore()
+        let viewModel = SettingsViewModel(
+            profile: profileService,
+            auth: SettingsAuthTestService(),
+            calls: SettingsCallTestService(receipt: nil),
+            account: SettingsAccountTestService(receipt: nil),
+            retryStore: store
+        )
+        await viewModel.load()
+        viewModel.name = "Updated"
+
+        await viewModel.saveProfile()
+        XCTAssertNotNil(viewModel.failure)
+        let pendingAfterFailure = await store.pending(for: .profile)
+        XCTAssertNotNil(pendingAfterFailure)
+
+        await viewModel.saveProfile()
+        XCTAssertNil(viewModel.failure)
+        let pendingAfterSuccess = await store.pending(for: .profile)
+        XCTAssertNil(pendingAfterSuccess)
+        let keys = await profileService.keys()
+        XCTAssertEqual(keys.count, 2)
+        XCTAssertEqual(keys.first, keys.last)
+        let drafts = await profileService.drafts()
+        XCTAssertEqual(drafts.map(\.name), ["Updated", "Updated"])
+    }
+
+    func testAmbiguousDeletionReusesOperationKeyUntilReceipt() async {
+        let accountService = RetryingAccountService()
+        let store = TestOperationRetryStore()
+        let viewModel = SettingsViewModel(
+            profile: SettingsProfileTestService(profile: SettingsFixtures.profile(callsEnabled: false, phone: .missing, callLanguage: nil)),
+            auth: SettingsAuthTestService(),
+            calls: SettingsCallTestService(receipt: nil),
+            account: accountService,
+            retryStore: store
+        )
+        await viewModel.load()
+
+        await viewModel.deleteAccount()
+        XCTAssertNotNil(viewModel.failure)
+        let pendingAfterFailure = await store.pending(for: .deletion)
+        XCTAssertNotNil(pendingAfterFailure)
+
+        await viewModel.deleteAccount()
+        XCTAssertNil(viewModel.failure)
+        let pendingAfterSuccess = await store.pending(for: .deletion)
+        XCTAssertNil(pendingAfterSuccess)
+        let keys = await accountService.keys()
+        XCTAssertEqual(keys.count, 2)
+        XCTAssertEqual(keys.first, keys.last)
+    }
+
+    func testSignOutNotifiesRootAfterSessionRevocationAttempt() async {
+        let auth = SettingsAuthTestService()
+        let viewModel = makeViewModel(auth: auth)
+        var signOutCount = 0
+        viewModel.setSignedOutHandler { signOutCount += 1 }
+
+        await viewModel.signOut()
+
+        XCTAssertEqual(signOutCount, 1)
+    }
+
     func testDeletionDisplaysBackendReceiptThenClearsLocalSession() async {
         let receipt = AccountDeletionReceipt(
             receiptID: "deletion-1",
@@ -232,6 +325,74 @@ private actor SettingsCallTestService: CallServicing {
     }
 
     func requestCount() -> Int { requests }
+}
+
+private actor RetryingCallService: CallServicing {
+    private var attempts = 0
+    private var recordedKeys: [UUID] = []
+
+    func placeTestCall(idempotencyKey: UUID) async throws -> CallReceipt {
+        attempts += 1
+        recordedKeys.append(idempotencyKey)
+        if attempts == 1 { throw APIError.transport("offline") }
+        return CallReceipt(requestID: "call-1", status: .placed, cooldownSeconds: nil, dailyRemaining: 1, message: nil)
+    }
+
+    func keys() -> [UUID] { recordedKeys }
+}
+
+private actor RetryingProfileService: ProfileServicing {
+    private var profileValue: UserProfile
+    private var attempts = 0
+    private var recordedKeys: [UUID] = []
+    private var recordedDrafts: [ProfileDraft] = []
+
+    init(profile: UserProfile) { profileValue = profile }
+
+    func fetch() async throws -> UserProfile { profileValue }
+
+    func update(_ draft: ProfileDraft, idempotencyKey: UUID) async throws -> UserProfile {
+        attempts += 1
+        recordedKeys.append(idempotencyKey)
+        recordedDrafts.append(draft)
+        if attempts == 1 { throw APIError.transport("offline") }
+        profileValue = UserProfile(
+            id: profileValue.id,
+            name: draft.name,
+            home: HomeAddress(status: draft.home == nil ? .missing : .ready, display: draft.home),
+            productLocale: draft.productLocale,
+            timezone: profileValue.timezone,
+            phone: draft.phone.map { .configured($0) } ?? .missing,
+            callsEnabled: draft.callsEnabled,
+            callLanguage: draft.callLanguage,
+            calendarStatus: profileValue.calendarStatus,
+            offerStatus: profileValue.offerStatus,
+            analysisStatus: profileValue.analysisStatus
+        )
+        return profileValue
+    }
+
+    func keys() -> [UUID] { recordedKeys }
+    func drafts() -> [ProfileDraft] { recordedDrafts }
+}
+
+private actor RetryingAccountService: AccountServicing {
+    private var attempts = 0
+    private var recordedKeys: [UUID] = []
+
+    func deleteAccount(idempotencyKey: UUID) async throws -> AccountDeletionReceipt {
+        attempts += 1
+        recordedKeys.append(idempotencyKey)
+        if attempts == 1 { throw APIError.transport("offline") }
+        return AccountDeletionReceipt(
+            receiptID: "deletion-1",
+            deletedAt: Date.iso8601("2026-08-10T08:20:00.000Z"),
+            sessionsRevoked: true,
+            providerConnectionsRevoked: true
+        )
+    }
+
+    func keys() -> [UUID] { recordedKeys }
 }
 
 private actor SettingsAccountTestService: AccountServicing {

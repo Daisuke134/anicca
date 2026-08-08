@@ -9,7 +9,7 @@ protocol APIRequesting: Sendable {
     func sendVoid(_ endpoint: APIEndpoint, idempotencyKey: UUID?) async throws
 }
 
-actor APIClient: APIRequesting {
+actor APIClient: APIRequesting, SessionPropagating {
     typealias Refresh = @Sendable (Session) async throws -> Session
 
     private let baseURL: URL
@@ -32,6 +32,14 @@ actor APIClient: APIRequesting {
         self.transport = transport
         self.sessionStore = sessionStore
         self.refresh = refresh
+    }
+
+    func setSession(_ session: Session?) {
+        sessionLoadTask?.cancel()
+        sessionLoadTask = nil
+        self.session = session
+        didLoadSession = true
+        lastRefresh = nil
     }
 
     func send<Response: Decodable & Sendable>(
@@ -114,7 +122,7 @@ actor APIClient: APIRequesting {
         let basePath = baseComponents.path == "/" ? "" : baseComponents.path
         let endpointPath = endpointComponents.path.hasPrefix("/")
             ? endpointComponents.path
-            : "/(endpointComponents.path)"
+            : "/\(endpointComponents.path)"
         baseComponents.path = basePath + endpointPath
         baseComponents.queryItems = endpointComponents.queryItems
         guard let url = baseComponents.url else {

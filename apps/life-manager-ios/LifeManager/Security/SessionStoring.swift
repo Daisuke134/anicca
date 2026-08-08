@@ -6,6 +6,32 @@ protocol SessionStoring: Sendable {
     func clear() async throws
 }
 
+protocol SessionPropagating: Sendable {
+    func setSession(_ session: Session?) async
+}
+
+final class SessionPropagationRelay: @unchecked Sendable {
+    private let lock = NSLock()
+    private var target: (any SessionPropagating)?
+
+    func attach(_ target: any SessionPropagating) {
+        lock.lock()
+        self.target = target
+        lock.unlock()
+    }
+
+    func propagate(_ session: Session?) async {
+        let target = targetSnapshot()
+        await target?.setSession(session)
+    }
+
+    private func targetSnapshot() -> (any SessionPropagating)? {
+        lock.lock()
+        defer { lock.unlock() }
+        return target
+    }
+}
+
 struct KeychainQuery: Equatable, Sendable {
     let service: String
     let account: String

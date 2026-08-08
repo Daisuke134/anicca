@@ -322,3 +322,44 @@ Required profile test:         1/1 passed
 Receipt/paywall test:          1/1 passed
 Combined targeted tests:       3/3 passed, 0 failures
 ```
+
+## Fresh review round 1 — operation-scoped idempotency and OAuth session propagation
+
+### RED
+
+The mutation/session regression lane was added before retry state and the
+authenticated API session bridge existed:
+
+```text
+xcodebuild ... test \
+  -only-testing:LifeManagerUnitTests/APIClientTests/testExplicitSessionPropagationUpdatesCachedSessionForLogout \
+  -only-testing:LifeManagerUnitTests/ServiceProtocolTests/testOAuthExchangePropagatesSessionToAuthenticatedAPI \
+  -only-testing:LifeManagerUnitTests/ChatViewModelTests/testAmbiguousReplyRetainsTextAndIdempotencyKeyForRetry \
+  -only-testing:LifeManagerUnitTests/SettingsViewModelTests/testAmbiguousCallReusesOperationKeyUntilSuccess \
+  -only-testing:LifeManagerUnitTests/SettingsViewModelTests/testAmbiguousProfileUpdateReusesDraftAndOperationKey \
+  -only-testing:LifeManagerUnitTests/SettingsViewModelTests/testAmbiguousDeletionReusesOperationKeyUntilReceipt \
+  -only-testing:LifeManagerUnitTests/SettingsViewModelTests/testSignOutNotifiesRootAfterSessionRevocationAttempt
+```
+
+RED failed at the missing retry-store/session-propagation APIs. The prior
+implementation generated a fresh UUID on every call, cleared reply text before
+an ambiguous error, and did not notify the root after local logout cleanup.
+
+### GREEN
+
+`UserDefaultsOperationRetryStore` persists operation-scoped UUIDs plus profile
+draft/reply text. Ambiguous transport/5xx/409 failures retain the operation;
+successful or definitive 4xx responses clear it. Calls, replies, profile
+updates, and deletion all use the same key on retry. OAuth exchange and refresh
+now propagate the new session into authenticated `APIClient`; sign-out clears
+both caches and notifies the root to render welcome.
+
+```text
+APIClient session test:       1/1 passed
+OAuth propagation test:      1/1 passed
+Reply retry test:            1/1 passed
+Call/profile/delete retry:   3/3 passed
+Logout root callback:        1/1 passed
+Retry policy test:            1/1 passed
+Combined mutation lane:      7/7 passed, 0 failures
+```

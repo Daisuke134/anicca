@@ -64,6 +64,7 @@ final class AppViewModel {
     private let auth: AuthServicing
     private let profileService: ProfileServicing
     private let analysisService: AnalysisServicing
+    private let retryStore: OperationRetryStoring
     let chatViewModel: ChatViewModel?
     let settingsViewModel: SettingsViewModel?
     let paywallViewModel: SoftPaywallViewModel?
@@ -83,11 +84,13 @@ final class AppViewModel {
         analysis: AnalysisServicing,
         chat: ChatServicing? = nil,
         settings: SettingsViewModel? = nil,
-        paywall: SoftPaywallViewModel? = nil
+        paywall: SoftPaywallViewModel? = nil,
+        retryStore: OperationRetryStoring = UserDefaultsOperationRetryStore()
     ) {
         self.auth = auth
         profileService = profile
         analysisService = analysis
+        self.retryStore = retryStore
         if let chat {
             chatViewModel = ChatViewModel(service: chat)
         } else {
@@ -109,6 +112,9 @@ final class AppViewModel {
         settingsViewModel?.setProfileChangedHandler { [weak self] profile in
             await self?.acceptProfile(profile)
         }
+        settingsViewModel?.setSignedOutHandler { [weak self] in
+            await self?.handleSignedOut()
+        }
     }
 
     func acceptProfile(_ value: UserProfile) async {
@@ -118,6 +124,14 @@ final class AppViewModel {
             await chatViewModel?.resetForLocaleChange()
         }
         await profileChangedHandler?(value)
+    }
+
+    private func handleSignedOut() async {
+        route = .welcome
+        profile = nil
+        lastAnalysisStatus = nil
+        lastAnalysisReceipt = nil
+        await chatViewModel?.clearProjection()
     }
 
     func restoreSession() async {
@@ -167,10 +181,17 @@ final class AppViewModel {
         route = .profile
         phoneValidationError = nil
         do {
-            let updatedProfile = try await profileService.update(draft, idempotencyKey: UUID())
+            let updatedProfile = try await profileService.update(
+                draft,
+                idempotencyKey: await operationKey(for: .profile, draft: draft)
+            )
+            await retryStore.clear(.profile)
             await acceptProfile(updatedProfile)
             route = .phone
         } catch {
+            if !MutationRetryPolicy.shouldRetain(after: error) {
+                await retryStore.clear(.profile)
+            }
             present(error)
         }
     }
@@ -234,25 +255,50 @@ final class AppViewModel {
         }
 
         do {
-            let updatedProfile = try await profileService.update(
-                ProfileDraft(
-                    name: profile.name,
-                    home: profile.home.display,
-                    productLocale: profile.productLocale,
-                    phone: phone,
-                    callsEnabled: false,
-                    callLanguage: nil
-                ),
-                idempotencyKey: UUID()
+            let draft = ProfileDraft(
+                name: profile.name,
+                home: profile.home.display,
+                productLocale: profile.productLocale,
+                phone: phone,
+                callsEnabled: false,
+                callLanguage: nil
             )
+            let updatedProfile = try await profileService.update(
+                draft,
+                idempotencyKey: await operationKey(for: .profile, draft: draft)
+            )
+            await retryStore.clear(.profile)
             await acceptProfile(updatedProfile)
             await runAnalysis()
         } catch {
+            if !MutationRetryPolicy.shouldRetain(after: error) {
+                await retryStore.clear(.profile)
+            }
             present(error)
         }
     }
 
     private func present(_ error: Error) {
         route = .fatal(AppErrorState(error: error))
+    }
+
+    private func operationKey(for operation: RetryOperation, draft: ProfileDraft? = nil) async -> UUID {
+        if let pending = await retryStore.pending(for: operation) {
+            if let draft,
+               let data = pending.input,
+               let persistedDraft = try? JSONDecoder.lifeManager.decode(ProfileDraft.self, from: data),
+               persistedDraft != draft {
+                let key = UUID()
+                let input = try? JSONEncoder.lifeManager.encode(draft)
+                await retryStore.save(operation, value: PendingOperation(idempotencyKey: key, input: input))
+                return key
+            }
+            return pending.idempotencyKey
+        }
+
+        let key = UUID()
+        let input = draft.flatMap { try? JSONEncoder.lifeManager.encode($0) }
+        await retryStore.save(operation, value: PendingOperation(idempotencyKey: key, input: input))
+        return key
     }
 }
