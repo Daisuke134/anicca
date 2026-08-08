@@ -170,22 +170,63 @@ async function directionsMinutesGoogle(src, dst, mapsKey, departAtMs = Date.now(
   return acceptRouteResults({ legacyTransit: transit, routesDrive: drive }).minutes;
 }
 
-// C2: real FREE JP transit fetch (api.transit.ls8h.com /plan). Injected in tests via opts._transitFetch.
-async function transitFetchPlan(srcGeo, dstGeo) {
+function transitQueryTime(eventAt, timezone) {
+  const instant = new Date(eventAt);
+  if (!Number.isFinite(instant.getTime())) return null;
+  const parts = Object.fromEntries(new Intl.DateTimeFormat("en-CA", {
+    timeZone: timezone || "UTC", year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23",
+  }).formatToParts(instant).filter((part) => part.type !== "literal")
+    .map((part) => [part.type, part.value]));
+  return {
+    date: `${parts.year}${parts.month}${parts.day}`,
+    time: `${parts.hour}:${parts.minute}:${parts.second}`,
+  };
+}
+
+// C2: real FREE JP transit fetch (api.transit.ls8h.com /plan + guidance).
+// Both requests carry the same event date/time and type. Injected in tests via
+// opts._transitFetch so no network is needed for unit tests.
+async function transitFetchPlan(srcGeo, dstGeo, {
+  eventAt,
+  timezone = "UTC",
+  direction = "outbound",
+  fetchImpl = globalThis.fetch,
+} = {}) {
   try {
-    const u = `https://api.transit.ls8h.com/api/v1/plan?from=geo:${srcGeo.lat},${srcGeo.lon}&to=geo:${dstGeo.lat},${dstGeo.lon}`;
-    return await (await fetch(u)).json();
+    const query = new URLSearchParams({
+      from: `geo:${srcGeo.lat},${srcGeo.lon}`,
+      to: `geo:${dstGeo.lat},${dstGeo.lon}`,
+    });
+    const local = transitQueryTime(eventAt, timezone);
+    if (local) {
+      query.set("date", local.date);
+      query.set("time", local.time);
+      query.set("type", direction === "return" ? "departure" : "arrival");
+    }
+    const planUrl = `https://api.transit.ls8h.com/api/v1/plan?${query}`;
+    const planResponse = await fetchImpl(planUrl);
+    if (!planResponse || !planResponse.ok) return null;
+    const plan = await planResponse.json();
+    // Guidance is display-only enrichment. A guidance outage must not discard
+    // a valid journey plan; the two requests still share exactly one query.
+    const guidanceResponse = await fetchImpl(`https://api.transit.ls8h.com/api/v1/guidance/plan?${query}`);
+    const guidance = guidanceResponse && guidanceResponse.ok ? await guidanceResponse.json().catch(() => null) : null;
+    return guidance ? { ...plan, guidance } : plan;
   } catch { return null; }
 }
 
 // C2/C3 WIRE: try the FREE JP transit path first (geocode both → JP bbox → /plan), fall back to Google.
-async function directionsMinutes(src, dst, mapsKey, departAtMs = Date.now(), nowMs = Date.now(), departureMode = false, opts = {}) {
+async function directionsRoute(src, dst, mapsKey, departAtMs = Date.now(), nowMs = Date.now(), departureMode = false, opts = {}) {
   const geocode = opts._geocode || ((address, key) => geocodeAddress(address, key, {
     store: opts._geocodeStore,
     fetchImpl: opts._fetchImpl,
     now: opts._now,
   }));
-  const transitFetch = opts._transitFetch || transitFetchPlan;
+  const transitFetch = opts._transitFetch || ((from, to, options) => transitFetchPlan(from, to, {
+    ...options,
+    fetchImpl: opts._transitFetchImpl || globalThis.fetch,
+  }));
   const googleFn = opts._directionsMinutesGoogle || directionsMinutesGoogle;
   const cache = opts._routeCache || _routeCache; // tests inject a fresh cache to avoid cross-test leakage
   const google = () => googleFn(src, dst, mapsKey, departAtMs, nowMs, departureMode);
@@ -207,15 +248,22 @@ async function directionsMinutes(src, dst, mapsKey, departAtMs = Date.now(), now
   // Transit result can never be mistaken for a Google fallback, and a failed
   // Transit attempt does not make the fallback key look fresh.
   const transitCompute = async () => {
-    const plan = await transitFetch(srcGeo, dstGeo);
-    const parsed = plan && parseTransitPlan(plan);
+    const plan = await transitFetch(srcGeo, dstGeo, {
+      eventAt: new Date(departAtMs).toISOString(),
+      timezone: opts._timezone || "UTC",
+      direction: departureMode ? "return" : "outbound",
+    });
+    const parsed = plan && parseTransitPlan(plan, {
+      eventAt: new Date(departAtMs).toISOString(),
+      timezone: opts._timezone || "UTC",
+    });
     return parsed && parsed.durationSecs != null
-      ? { minutes: minutesFromSeconds(parsed.durationSecs), provider: "transit" }
+      ? { minutes: minutesFromSeconds(parsed.durationSecs), provider: "transit", route: parsed }
       : null;
   };
   const googleCompute = async () => {
     const minutes = await google();
-    return minutes == null ? null : { minutes, provider: "google" };
+    return minutes == null ? null : { minutes, provider: "google", route: null };
   };
   const result = srcGeo && dstGeo
     ? isTransit
@@ -233,7 +281,14 @@ async function directionsMinutes(src, dst, mapsKey, departAtMs = Date.now(), now
       })
     : googleCompute(); // un-geocodable address → uncached (rare)
   const resolved = await result;
-  return resolved && resolved.minutes != null ? resolved.minutes : null;
+  return resolved || null;
+}
+
+// Existing scheduler callers consume integer minutes. Mobile/API callers use
+// directionsRoute to retain the structured provider facts.
+async function directionsMinutes(...args) {
+  const result = await directionsRoute(...args);
+  return result && result.minutes != null ? result.minutes : null;
 }
 
 async function createTravelBlock(uid, apiKey, leaveMs, arriveMs, fromName, toName, dstAddr, calendar, gmailAccountId) {
@@ -461,7 +516,7 @@ function returnDecision(ev, next, home) {
 }
 
 module.exports = {
-  fillTravel, directionsMinutes, isTravel, travelDecision, returnDecision, claimTravel, unclaimTravel,
+  fillTravel, directionsMinutes, directionsRoute, transitFetchPlan, isTravel, travelDecision, returnDecision, claimTravel, unclaimTravel,
   // #71 pure helpers (unit-tested)
   parseDurationSeconds, minutesFromSeconds, buildDriveBody, clampDepartIso, acceptRouteResults,
 };

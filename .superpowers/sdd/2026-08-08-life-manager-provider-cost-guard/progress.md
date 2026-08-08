@@ -19,7 +19,7 @@
 |---|---|---|---|---|
 | 1. Persistent geocodes | GREEN | missing-module | 6/6 focused + 43/43 baseline | pending |
 | 2. Durable route cache | GREEN | original suite + new scope tests | 15/15 route/transit + 62/62 travel regression | pending |
-| 3. Transit facts/fallback | pending | — | — | — |
+| 3. Transit facts/fallback | GREEN | structured projection + anchor tests | 31/31 transit/route tests; 59/59 combined focused | pending |
 | 4. Truthful cost event | pending | — | — | — |
 | 5. Provider instrumentation | pending | — | — | — |
 | 6. Budget policy | pending | — | — | — |
@@ -54,3 +54,10 @@ Result: 43/43 passed, 0 failed, 0 skipped (2026-08-08).
 - Key now scopes uid, normalized origin/destination, event anchor, timezone, direction, provider, and route mode; in-flight coalescing prevents concurrent duplicate provider work.
 - `createSupabaseRouteStore` uses `cache_key` upsert and stores structured `route_result`; `fillTravel` injects durable geocode and route stores when Supabase credentials are present.
 - Migration extends `lm_route_cache` and drops the old shared uniqueness constraint before creating the complete-key index.
+
+## Task 3 receipt
+
+- GREEN: Transit parser now preserves provider, computed timestamp when supplied, IANA timezone, event-date departure/arrival instants, access/egress walks, transfer count, fare, ordered steps, nullable platform/geometry, and explicit availability flags. Unsupported entrance/exit/best-car/crowding fields are not copied.
+- GREEN: free provider queries `/plan` and `/guidance/plan` sequentially with the same date/time and `type=arrival` for outbound or `type=departure` for return.
+- GREEN: `directionsRoute` returns structured `{provider, minutes, route}` while `directionsMinutes` remains the integer-minute adapter for existing scheduler callers.
+- Verification: `node --test lib/transit.test.js lib/travel-transit-wire.test.js lib/travel-routes.test.js` → 31/31; combined cost/route/geocode focus → 59/59.

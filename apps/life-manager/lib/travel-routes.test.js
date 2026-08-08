@@ -3,7 +3,7 @@
 "use strict";
 const { test } = require("node:test");
 const assert = require("node:assert");
-const { parseDurationSeconds, minutesFromSeconds, buildDriveBody, clampDepartIso, directionsMinutes, acceptRouteResults } = require("./travel.js");
+const { parseDurationSeconds, minutesFromSeconds, buildDriveBody, clampDepartIso, directionsMinutes, acceptRouteResults, transitFetchPlan } = require("./travel.js");
 
 // ── fetch-injection helpers for the never-late ordering tests ────────────────────────────────────
 // Route by URL: legacy Directions (transit) vs Routes API (drive). Each test supplies the two bodies.
@@ -138,4 +138,30 @@ test("neither mode resolves → null (caller asks)", async () => {
 test("missing key/src/dst → null without any fetch", async () => {
   assert.equal(await directionsMinutes("", "B", "k"), null);
   assert.equal(await directionsMinutes("A", "B", ""), null);
+});
+
+test("transitFetchPlan anchors /plan and /guidance to the same event date/time and type", async () => {
+  const urls = [];
+  const response = (body) => ({ ok: true, json: async () => body });
+  const fetchImpl = async (url) => {
+    urls.push(String(url));
+    return response(url.includes("guidance") ? { options: [] } : { journeys: [] });
+  };
+  const eventAt = Date.parse("2026-08-09T09:00:00+09:00");
+  await transitFetchPlan({ lat: 35.68, lon: 139.76 }, { lat: 35.69, lon: 139.70 }, {
+    eventAt, timezone: "Asia/Tokyo", direction: "outbound", fetchImpl,
+  });
+  assert.equal(urls.length, 2);
+  for (const url of urls) {
+    assert.match(url, /date=20260809/u);
+    assert.match(url, /time=09%3A00%3A00/u);
+    assert.match(url, /type=arrival/u);
+  }
+  urls.length = 0;
+  await transitFetchPlan({ lat: 35.68, lon: 139.76 }, { lat: 35.69, lon: 139.70 }, {
+    eventAt, timezone: "Asia/Tokyo", direction: "return", fetchImpl,
+  });
+  assert.equal(urls.length, 2);
+  assert.match(urls[0], /type=departure/u);
+  assert.match(urls[1], /type=departure/u);
 });
