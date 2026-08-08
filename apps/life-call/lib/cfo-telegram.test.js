@@ -3,7 +3,7 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
 
-const { renderCfoTelegram } = require("./cfo-telegram.js");
+const { renderCfoTelegram, callbackData, evidenceLabel } = require("./cfo-telegram.js");
 
 function completeSnapshot() {
   return {
@@ -189,6 +189,57 @@ test("interpolated source and repair labels are Telegram-HTML escaped", () => {
   const text = renderCfoTelegram({ locale: "ja", view: "summary", snapshot }).text;
   assert.match(text, /銀行 &lt;普通預金&gt; &amp; 家計/);
   assert.doesNotMatch(text, /銀行 <普通預金>/);
+});
+
+test("all drill-down callbacks are deterministic and at most 64 bytes", () => {
+  for (const view of ["summary", "accounts", "accuracy", "why"]) {
+    const result = renderCfoTelegram({ locale: "ja", view, snapshot: completeSnapshot() });
+    for (const row of result.extra.reply_markup.inline_keyboard) {
+      for (const button of row) {
+        assert.ok(Buffer.byteLength(button.callback_data, "utf8") <= 64);
+        assert.match(button.callback_data, /^cfo:(summary|accounts|accuracy|why):20260808:1$/);
+      }
+    }
+  }
+});
+
+test("drill-downs explain accounts and evidence without private payload fields", () => {
+  const snapshot = completeSnapshot();
+  snapshot.sources[0].label = "三菱UFJ銀行 <普通預金>";
+  snapshot.sources[0].accountNumber = "1234567";
+  snapshot.rawPayload = { credential: "secret-value" };
+  const outputs = ["summary", "accounts", "accuracy", "why"]
+    .map((view) => renderCfoTelegram({ locale: "ja", view, snapshot }));
+  const serialized = JSON.stringify(outputs);
+  assert.doesNotMatch(serialized, /1234567|secret-value|rawPayload|credential/);
+  assert.match(outputs[1].text, /&lt;普通預金&gt;/);
+  assert.match(outputs[2].text, /実測/);
+  assert.match(outputs[3].text, /資産.*負債/s);
+  for (const view of ["accounts", "accuracy", "why"]) {
+    assert.ok(outputs[["summary", "accounts", "accuracy", "why"].indexOf(view)]
+      .extra.reply_markup.inline_keyboard.flat()
+      .some((button) => button.callback_data === callbackData({ view: "summary", reportingDate: "2026-08-08", revision: 1 })));
+  }
+  for (const locale of ["ja", "en"]) {
+    for (const [status, expected] of Object.entries({
+      provider_billed: locale === "ja" ? "確定" : "Confirmed",
+      provider_reported: locale === "ja" ? "実測" : "Measured",
+      locally_estimated: locale === "ja" ? "推定" : "Estimated",
+      unavailable: locale === "ja" ? "不明" : "Unknown",
+    })) assert.equal(evidenceLabel(locale, status), expected);
+    const unavailable = renderCfoTelegram({ locale, view: "accounts", snapshot: actionRequiredSnapshot() }).text;
+    assert.match(unavailable, locale === "ja" ? /不明/ : /Unknown/);
+  }
+  assert.doesNotMatch(serialized, /stack|exception|JSON|payload|token/i);
+});
+
+test("fixed callback builder rejects invalid view, date, and revision", () => {
+  assert.equal(callbackData({ view: "accounts", reportingDate: "2026-08-08", revision: 1 }), "cfo:accounts:20260808:1");
+  for (const input of [
+    { view: "connect", reportingDate: "2026-08-08", revision: 1 },
+    { view: "accounts", reportingDate: "2026/08/08", revision: 1 },
+    { view: "accounts", reportingDate: "2026-08-08", revision: 0 },
+  ]) assert.throws(() => callbackData(input), /^Error: cfo_telegram_invalid:/);
 });
 
 module.exports = { completeSnapshot, partialSnapshot, recoveredSnapshot, actionRequiredSnapshot };

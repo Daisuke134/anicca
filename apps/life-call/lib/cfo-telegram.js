@@ -17,9 +17,22 @@ const SOURCE_KEYS = new Set(["sourceId", "label", "status", "asOf", "amountMinor
 const EXCLUDED_KEYS = new Set(["label", "reason"]);
 const REPAIR_KEYS = new Set(["sourceLabel", "freshReread", "reconciled"]);
 const ACTION_KEYS = new Set(["kind", "sourceLabel", "retryLabel"]);
+const BUTTONS = Object.freeze({
+  summary: [["accounts", "口座を見る", "View accounts"], ["accuracy", "正確さを見る", "View accuracy"]],
+  accounts: [["summary", "概要に戻る", "Back to summary"], ["accuracy", "正確さを見る", "View accuracy"]],
+  accuracy: [["summary", "概要に戻る", "Back to summary"], ["why", "なぜこの金額？", "Why this amount?"]],
+  why: [["summary", "概要に戻る", "Back to summary"]],
+});
 
 function fail(reason) { throw new Error(`cfo_telegram_invalid:${reason}`); }
 function plain(value) { return value !== null && typeof value === "object" && !Array.isArray(value) && Object.getPrototypeOf(value) === Object.prototype; }
+function sanitize(snapshot) {
+  if (!plain(snapshot)) return snapshot;
+  const strip = (value) => Object.fromEntries(Object.entries(value).filter(([key]) => !/account|raw|credential|token|secret|password|cookie|oauth/i.test(key)));
+  const safe = strip(snapshot);
+  if (Array.isArray(snapshot.sources)) safe.sources = snapshot.sources.map((source) => plain(source) ? strip(source) : source);
+  return safe;
+}
 function exact(value, allowed, required = []) {
   if (!plain(value)) fail("invalid_object");
   if (Object.keys(value).some((key) => !allowed.has(key))) fail("unknown_key");
@@ -89,18 +102,37 @@ function evidenceLabel(locale, verificationStatus) {
   if (!EVIDENCE[verificationStatus]) fail("unsupported_evidence");
   return EVIDENCE[verificationStatus][locale];
 }
+function callbackData({ view, reportingDate, revision }) {
+  if (!VIEWS.has(view) || !/^\d{4}-\d{2}-\d{2}$/.test(reportingDate) || !Number.isInteger(revision) || revision < 1) fail("callback");
+  const value = `cfo:${view}:${reportingDate.replaceAll("-", "")}:${revision}`;
+  if (Buffer.byteLength(value, "utf8") > 64) fail("callback_too_long");
+  return value;
+}
+function extra(locale, snapshot, view) {
+  return { reply_markup: { inline_keyboard: BUTTONS[view].map(([next, ja, en]) => [{ text: locale === "ja" ? ja : en, callback_data: callbackData({ view: next, reportingDate: snapshot.reportingDate, revision: snapshot.revision }) }]) } };
+}
 function renderCfoTelegram({ locale, view, snapshot }) {
   if (!CFO_STRINGS[locale]) fail("unsupported_locale");
-  if (!VIEWS.has(view) || view !== "summary") fail("unsupported_view");
+  if (!VIEWS.has(view)) fail("unsupported_view");
+  snapshot = sanitize(snapshot);
   validateSnapshot(snapshot);
   const strings = CFO_STRINGS[locale];
-  if (snapshot.state === "action_required") return { text: `${strings.actionTitle}\n\n${strings.actionBody}\n${strings.actionRetry}` };
-  const sourceText = snapshot.sources.map((source) => `✅ Moneytree${locale === "ja" ? "（" : " ("}${escapeHtml(source.label)}${locale === "ja" ? "）" : ")"} ${escapeHtml(source.asOf)}${strings.updated}`).join("\n");
+  if (snapshot.state === "action_required" && view === "summary") return { text: `${strings.actionTitle}\n\n${strings.actionBody}\n${strings.actionRetry}`, extra: extra(locale, snapshot, view) };
+  const freshness = locale === "ja" ? { fresh: "最新", stale: "古い", unavailable: "不明" } : { fresh: "Fresh", stale: "Stale", unavailable: "Unknown" };
+  const safeLabel = (value) => escapeHtml(String(value).replace(/\d[\d -]{2,}\d/g, "••••"));
+  const sourceText = snapshot.sources.map((source) => `✅ Moneytree${locale === "ja" ? "（" : " ("}${safeLabel(source.label)}${locale === "ja" ? "）" : ")"} ${escapeHtml(source.asOf)}${strings.updated}`).join("\n");
   const totals = `${strings.confirmedAssets}\t${formatAmount(locale, snapshot.totals.assetsMinor)}\n${strings.confirmedLiabilities}\t${formatAmount(locale, snapshot.totals.liabilitiesMinor)}\n${strings.confirmedDifference}\t${formatAmount(locale, snapshot.totals.netWorthMinor)}\n${strings.change}\t${formatChange(locale, snapshot.totals.changeMinor)}`;
   const title = snapshot.state === "partial" ? strings.partialTitle : strings.title;
   const exclusions = snapshot.state === "partial" ? `\n${strings.excluded}：${snapshot.excluded.map((item) => `${escapeHtml(item.label)}${item.reason ? `（${escapeHtml(item.reason)}）` : ""}`).join("、")}` : "";
   const repair = snapshot.state === "recovered" ? `\n${strings.recovered}` : "";
-  return { text: `${title}\n\n${totals}${exclusions}\n\n${sourceText}${repair}\n${strings.noAction}` };
+  const accounts = snapshot.sources.map((source) => `${safeLabel(source.label)}\t${formatAmount(locale, source.amountMinor)}（${freshness[source.status]}）`).join("\n");
+  const evidence = snapshot.sources.map((source) => `${evidenceLabel(locale, source.verificationStatus)} ${escapeHtml(source.asOf)}`).join("\n");
+  const excluded = snapshot.excluded.length ? snapshot.excluded.map((item) => `${escapeHtml(item.label)}${item.reason ? `（${escapeHtml(item.reason)}）` : ""}`).join("、") : (locale === "ja" ? "なし" : "None");
+  const why = `${strings.confirmedAssets} − ${strings.confirmedLiabilities} = ${strings.confirmedDifference} ${formatAmount(locale, snapshot.totals.netWorthMinor)}\n${strings.excluded}：${excluded}`;
+  const text = view === "summary" ? `${title}\n\n${totals}${exclusions}\n\n${sourceText}${repair}\n${strings.noAction}`
+    : view === "accounts" ? `${title}\n\n${accounts}\n${snapshot.state === "action_required" ? strings.actionBody : strings.noAction}`
+      : view === "accuracy" ? `${title}\n\n${evidence}\n${strings.excluded}：${excluded}` : `${title}\n\n${why}`;
+  return { text, extra: extra(locale, snapshot, view) };
 }
 
-module.exports = { renderCfoTelegram, evidenceLabel };
+module.exports = { renderCfoTelegram, callbackData, evidenceLabel };
