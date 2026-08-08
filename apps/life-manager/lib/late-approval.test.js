@@ -1,0 +1,238 @@
+"use strict";
+
+const test = require("node:test");
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
+
+const {
+  createLateDraft,
+  decideLateDraft,
+  claimApprovedDelivery,
+  recordLateDelivery,
+  createInMemoryLateApprovalStore,
+  createSupabaseLateApprovalStore,
+  LateApprovalError,
+} = require("./late-approval.js");
+
+const NOW = Date.parse("2026-08-08T06:00:00.000Z");
+
+function resolvedInput(overrides = {}) {
+  return {
+    uid: "lm-user-1",
+    eventKey: "calendar:event-1",
+    recipientStatus: "resolved",
+    recipients: [{
+      display_name: "Meeting partner",
+      email: "partner@example.invalid",
+      source: "calendar",
+      evidence_refs: ["calendar:event:event-1:attendee:0"],
+      confidence: 1,
+      event_role: "attendee",
+    }],
+    evidenceSnapshot: {
+      refs: ["calendar:event:event-1:attendee:0"],
+      source: "calendar",
+    },
+    bodySnapshot: "到着予定が遅れるため、06:20ごろに着く見込みです。",
+    etaEvidence: {
+      route_eta: "2026-08-08T06:20:00.000Z",
+      event_start: "2026-08-08T06:10:00.000Z",
+      basis: "route_eta_from_live_location",
+    },
+    nowMs: NOW,
+    ...overrides,
+  };
+}
+
+function missingInput(status) {
+  return resolvedInput({
+    eventKey: `calendar:${status}-event`,
+    recipientStatus: status,
+    recipients: [],
+    evidenceSnapshot: { refs: [], status },
+  });
+}
+
+test("migration defines immutable late approval snapshots, unique event claims, and atomic RPCs", () => {
+  const sql = fs.readFileSync(path.join(__dirname, "../migrations/2026-08-08-lm-late-approval.sql"), "utf8");
+  assert.match(sql, /CREATE TABLE IF NOT EXISTS public\.lm_late_approval_drafts/i);
+  assert.match(sql, /UNIQUE\s*\(\s*uid\s*,\s*event_key\s*\)/i);
+  assert.match(sql, /recipient_snapshot\s+jsonb/i);
+  assert.match(sql, /evidence_snapshot\s+jsonb/i);
+  assert.match(sql, /body_snapshot\s+text/i);
+  assert.match(sql, /immutable.*snapshot|snapshot.*immutable/i);
+  assert.match(sql, /claim_token/i);
+  assert.match(sql, /provider_message_id/i);
+  assert.match(sql, /CREATE OR REPLACE FUNCTION public\.lm_create_late_draft/i);
+  assert.match(sql, /CREATE OR REPLACE FUNCTION public\.lm_decide_late_draft/i);
+  assert.match(sql, /CREATE OR REPLACE FUNCTION public\.lm_claim_late_delivery/i);
+  assert.match(sql, /CREATE OR REPLACE FUNCTION public\.lm_record_late_delivery/i);
+  assert.match(sql, /FOR UPDATE/i);
+  assert.match(sql, /SECURITY DEFINER/i);
+});
+test("resolved draft stores one immutable evidence/body snapshot and is idempotent by uid and event key", async () => {
+  const store = createInMemoryLateApprovalStore({ nowMs: NOW });
+  const input = resolvedInput();
+  const first = await createLateDraft(input, store);
+  input.bodySnapshot = "mutated after the write";
+  input.evidenceSnapshot.refs.push("forged-ref");
+
+  assert.equal(first.status, "awaiting_decision");
+  assert.equal(first.recipientStatus, "resolved");
+  assert.equal(first.bodySnapshot, "到着予定が遅れるため、06:20ごろに着く見込みです。");
+  assert.deepEqual(first.evidenceSnapshot.refs, ["calendar:event:event-1:attendee:0"]);
+
+  const retry = await createLateDraft(resolvedInput(), store);
+  assert.equal(retry.draftId, first.draftId);
+  assert.equal(retry.duplicate, true);
+  assert.equal(retry.bodySnapshot, first.bodySnapshot);
+  assert.deepEqual(retry.evidenceSnapshot, first.evidenceSnapshot);
+});
+
+test("recipient missing and ambiguous drafts are terminal and cannot be sent", async () => {
+  for (const status of ["recipient_missing", "recipient_ambiguous"]) {
+    const store = createInMemoryLateApprovalStore({ nowMs: NOW });
+    const draft = await createLateDraft(missingInput(status), store);
+    assert.equal(draft.status, status);
+    assert.equal(draft.decision, null);
+
+    await assert.rejects(
+      decideLateDraft({
+        uid: "lm-user-1", draftId: draft.draftId, decision: "send", idempotencyKey: `send-${status}`,
+      }, store),
+      (error) => error instanceof LateApprovalError && error.code === "recipient_not_sendable",
+    );
+    const claim = await claimApprovedDelivery({ draftId: draft.draftId, workerId: "worker-1" }, store);
+    assert.equal(claim.claimed, false);
+    assert.equal(claim.reason, status);
+  }
+});
+
+test("double-tap send has one durable winner and duplicate same decision returns the original row", async () => {
+  const store = createInMemoryLateApprovalStore({ nowMs: NOW });
+  const draft = await createLateDraft(resolvedInput(), store);
+  const [first, second] = await Promise.all([
+    decideLateDraft({ uid: draft.uid, draftId: draft.draftId, decision: "send", idempotencyKey: "tap-1" }, store),
+    decideLateDraft({ uid: draft.uid, draftId: draft.draftId, decision: "send", idempotencyKey: "tap-2" }, store),
+  ]);
+
+  assert.equal(first.decision, "send");
+  assert.equal(second.decision, "send");
+  assert.equal([first, second].filter((row) => row.duplicate !== true).length, 1);
+  assert.equal(first.draftId, second.draftId);
+  assert.equal(first.status, "awaiting_decision");
+});
+
+test("conflicting decision loses atomically, while do_not_send is permanent and suppresses claim", async () => {
+  const store = createInMemoryLateApprovalStore({ nowMs: NOW });
+  const draft = await createLateDraft(resolvedInput({ eventKey: "calendar:event-no-send" }), store);
+  const noSend = await decideLateDraft({
+    uid: draft.uid, draftId: draft.draftId, decision: "do_not_send", idempotencyKey: "tap-no-send",
+  }, store);
+  assert.equal(noSend.status, "do_not_send");
+  assert.equal(noSend.decision, "do_not_send");
+
+  const duplicate = await decideLateDraft({
+    uid: draft.uid, draftId: draft.draftId, decision: "do_not_send", idempotencyKey: "retry-no-send",
+  }, store);
+  assert.equal(duplicate.duplicate, true);
+  assert.equal(duplicate.status, "do_not_send");
+  await assert.rejects(
+    decideLateDraft({
+      uid: draft.uid, draftId: draft.draftId, decision: "send", idempotencyKey: "late-send",
+    }, store),
+    (error) => error instanceof LateApprovalError && error.code === "decision_conflict",
+  );
+  const claim = await claimApprovedDelivery({ draftId: draft.draftId, workerId: "worker-1" }, store);
+  assert.equal(claim.claimed, false);
+  assert.equal(claim.reason, "do_not_send");
+});
+
+test("only one worker owns an approved delivery claim and the receipt makes it sent exactly once", async () => {
+  const store = createInMemoryLateApprovalStore({ nowMs: NOW });
+  const draft = await createLateDraft(resolvedInput({ eventKey: "calendar:event-claim" }), store);
+  await decideLateDraft({ uid: draft.uid, draftId: draft.draftId, decision: "send", idempotencyKey: "tap-send" }, store);
+
+  const first = await claimApprovedDelivery({ draftId: draft.draftId, workerId: "worker-a" }, store);
+  const second = await claimApprovedDelivery({ draftId: draft.draftId, workerId: "worker-b" }, store);
+  assert.equal(first.claimed, true);
+  assert.ok(first.claimToken);
+  assert.equal(first.status, "send_claimed");
+  assert.equal(second.claimed, false);
+  assert.equal(second.reason, "claimed_by_other_worker");
+
+  const sent = await recordLateDelivery({
+    draftId: draft.draftId,
+    providerMessageId: "resend-msg-1",
+    deliveredAt: "2026-08-08T06:01:00.000Z",
+    claimToken: first.claimToken,
+  }, store);
+  assert.equal(sent.status, "sent");
+  assert.equal(sent.providerMessageId, "resend-msg-1");
+
+  const retry = await recordLateDelivery({
+    draftId: draft.draftId,
+    providerMessageId: "resend-msg-1",
+    deliveredAt: "2026-08-08T06:01:00.000Z",
+  }, store);
+  assert.equal(retry.duplicate, true);
+  await assert.rejects(
+    recordLateDelivery({
+      draftId: draft.draftId,
+      providerMessageId: "resend-msg-2",
+      deliveredAt: "2026-08-08T06:02:00.000Z",
+    }, store),
+    (error) => error instanceof LateApprovalError && error.code === "receipt_conflict",
+  );
+});
+
+test("an interrupted worker can retry its claim, and an expired claim can be recovered by another worker", async () => {
+  const store = createInMemoryLateApprovalStore({ nowMs: NOW, leaseMs: 1_000 });
+  const draft = await createLateDraft(resolvedInput({ eventKey: "calendar:event-retry" }), store);
+  await decideLateDraft({ uid: draft.uid, draftId: draft.draftId, decision: "send", idempotencyKey: "tap-retry" }, store);
+
+  const first = await claimApprovedDelivery({ draftId: draft.draftId, workerId: "worker-a", nowMs: NOW }, store);
+  const retry = await claimApprovedDelivery({ draftId: draft.draftId, workerId: "worker-a", nowMs: NOW + 500 }, store);
+  assert.equal(retry.claimed, true);
+  assert.equal(retry.claimToken, first.claimToken);
+  assert.equal(retry.retry, true);
+
+  const takeover = await claimApprovedDelivery({ draftId: draft.draftId, workerId: "worker-b", nowMs: NOW + 2_000 }, store);
+  assert.equal(takeover.claimed, true);
+  assert.notEqual(takeover.claimToken, first.claimToken);
+  assert.equal(takeover.workerId, "worker-b");
+  assert.equal(takeover.status, "send_claimed");
+});
+
+test("Supabase store calls only the four named atomic RPCs and preserves a non-2xx failure", async () => {
+  const calls = [];
+  const replies = [{
+    ok: true,
+    status: 200,
+    json: async () => ({
+      draft_id: "draft-1", uid: "lm-user-1", event_key: "calendar:event-rpc",
+      status: "awaiting_decision", recipient_status: "resolved", decision: null,
+      recipient_snapshot: resolvedInput().recipients, evidence_snapshot: resolvedInput().evidenceSnapshot,
+      body_snapshot: resolvedInput().bodySnapshot, eta_evidence_snapshot: resolvedInput().etaEvidence,
+    }),
+  }];
+  const store = createSupabaseLateApprovalStore({
+    supaUrl: "https://staging.supabase.test",
+    supaKey: "service-role-test",
+    fetchImpl: async (url, init) => { calls.push({ url, init }); return replies.shift(); },
+  });
+  const row = await createLateDraft(resolvedInput({ eventKey: "calendar:event-rpc" }), store);
+  assert.equal(row.draftId, "draft-1");
+  assert.match(calls[0].url, /\/rest\/v1\/rpc\/lm_create_late_draft$/);
+  assert.equal(JSON.parse(calls[0].init.body).p_event_key, "calendar:event-rpc");
+
+  const failingStore = createSupabaseLateApprovalStore({
+    supaUrl: "https://staging.supabase.test", supaKey: "service-role-test",
+    fetchImpl: async () => ({ ok: false, status: 409, json: async () => ({ message: "decision_conflict" }) }),
+  });
+  await assert.rejects(
+    decideLateDraft({ uid: "lm-user-1", draftId: "draft-1", decision: "send", idempotencyKey: "tap" }, failingStore),
+    (error) => error instanceof LateApprovalError && error.code === "storage_error" && error.status === 409,
+  );
+});
