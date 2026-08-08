@@ -33,6 +33,17 @@ test("provider cost migration adds complete dimensions and separate actual statu
   assert.match(sql, /cost_classification/);
   assert.match(sql, /actual_status[^;]+known/);
   assert.match(sql, /lm_provider_cost_failures/);
+  assert.match(sql, /add column if not exists metadata/);
+});
+
+test("voice reservation identity is wired through scheduler, bridge, webhook, and import paths", () => {
+  const server = fs.readFileSync(path.join(__dirname, "../server.js"), "utf8");
+  const scheduler = fs.readFileSync(path.join(__dirname, "../scheduler.js"), "utf8");
+  const imports = fs.readFileSync(path.join(__dirname, "../lib/provider-cost-imports.js"), "utf8");
+  assert.match(scheduler, /reservationRequestId/);
+  assert.match(server, /reservationRequestId/);
+  assert.match(server, /legacyKind:\s*["']telnyx_call["']/);
+  assert.match(imports, /reservationRequestId/);
 });
 
 test("recordProviderCost records all dimensions and known actual billing", async () => {
@@ -65,6 +76,32 @@ test("recordProviderCost records all dimensions and known actual billing", async
     est_usd: 0.005,
     metadata: { source: "travel" },
   });
+});
+
+test("a new Telnyx 60-second row preserves legacy summary dimensions alongside provider fields", async () => {
+  const calls = [];
+  const ok = await loadLedger().recordProviderCost({
+    provider: "telnyx", sku: "voice", operation: "call_cdr", uid: "u1", requestId: "cdr-summary-1",
+    quantity: 60, unit: "seconds", pricingVersion: "telnyx-cdr-test-1", estimatedUsd: null,
+    actualBilledUsd: 0.02, actualStatus: "known", costClassification: "measured",
+    metadata: { reservationRequestId: "call-reservation-1" },
+    legacyKind: "telnyx_call", legacyMeta: { kind: "telnyx_call", reservationRequestId: "call-reservation-1" },
+  }, {
+    supaUrl: "https://db.example", supaKey: "service",
+    fetchImpl: async (...args) => { calls.push(args); return { ok: true, status: 201 }; },
+  });
+  assert.equal(ok, true);
+  const body = JSON.parse(calls[0][1].body);
+  assert.equal(body.provider, "telnyx");
+  assert.equal(body.operation, "call_cdr");
+  assert.equal(body.kind, "telnyx_call");
+  assert.equal(body.meta.reservationRequestId, "call-reservation-1");
+  const summary = loadLedger().businessSummary(1, [{
+    ts: new Date().toISOString(), uid: body.uid, kind: body.kind, quantity: body.quantity, est_usd: body.est_usd,
+    provider: body.provider, operation: body.operation,
+  }], Date.now());
+  assert.equal(summary.calls, 1);
+  assert.equal(summary.call_minutes, 1);
 });
 
 test("missing provider billing is stored as null/unknown and never coerced to zero", async () => {

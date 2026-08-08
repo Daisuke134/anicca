@@ -126,6 +126,10 @@ async function recordTelnyxCdr(input = {}, deps = {}) {
     metadata: { ...objectOrEmpty(input.metadata), ...(cdr.id ? { cdrId: String(cdr.id) } : {}),
       ...(cdr.call_control_id ? { callControlId: String(cdr.call_control_id) } : {}),
       ...(input.reservationRequestId ? { reservationRequestId: String(input.reservationRequestId) } : {}) },
+    legacyKind: "telnyx_call",
+    legacyMeta: { kind: "telnyx_call", ...(cdr.id ? { cdrId: String(cdr.id) } : {}),
+      ...(cdr.call_control_id ? { callControlId: String(cdr.call_control_id) } : {}),
+      ...(input.reservationRequestId ? { reservationRequestId: String(input.reservationRequestId) } : {}) },
   }, deps);
 }
 

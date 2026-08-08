@@ -84,6 +84,17 @@ test("Telnyx CDR records provider-measured actual cost", async () => {
   assert.equal(r.events[0].estimatedUsd, null);
 });
 
+test("Telnyx CDR keeps the dial reservation id and legacy call dimensions", async () => {
+  const r = recorder();
+  await adapters.recordTelnyxCdr({
+    uid: "u1", requestId: "cdr-reservation-1", reservationRequestId: "call-reservation-1", durationSeconds: 60,
+    cdr: { id: "cdr-1", call_control_id: "cc-1", cost: { amount: "0.02", currency: "USD" } },
+  }, r.deps);
+  assert.equal(r.events[0].metadata.reservationRequestId, "call-reservation-1");
+  assert.equal(r.events[0].legacyKind, "telnyx_call");
+  assert.equal(r.events[0].legacyMeta.reservationRequestId, "call-reservation-1");
+});
+
 test("Resend sends record recipient quantity and retain unknown billing", async () => {
   const r = recorder();
   await adapters.recordResendSend({ uid: "u1", requestId: "mail-1", recipientCount: 2, responseId: "re-1" }, r.deps);
