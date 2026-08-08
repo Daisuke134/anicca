@@ -63,6 +63,7 @@ test("migration defines immutable late approval snapshots, unique event claims, 
   assert.match(sql, /body_snapshot\s+text/i);
   assert.match(sql, /immutable.*snapshot|snapshot.*immutable/i);
   assert.match(sql, /claim_token/i);
+  assert.match(sql, /provider_idempotency_key\s+text\s+NOT NULL/i);
   assert.match(sql, /provider_message_id/i);
   assert.match(sql, /CREATE OR REPLACE FUNCTION public\.lm_create_late_draft/i);
   assert.match(sql, /CREATE OR REPLACE FUNCTION public\.lm_decide_late_draft/i);
@@ -70,6 +71,22 @@ test("migration defines immutable late approval snapshots, unique event claims, 
   assert.match(sql, /CREATE OR REPLACE FUNCTION public\.lm_record_late_delivery/i);
   assert.match(sql, /FOR UPDATE/i);
   assert.match(sql, /SECURITY DEFINER/i);
+  for (const signature of [
+    "lm_create_late_draft\\(text,text,text,jsonb,jsonb,text,jsonb,text\\)",
+    "lm_decide_late_draft\\(text,text,text,text\\)",
+    "lm_claim_late_delivery\\(text,text,integer\\)",
+    "lm_record_late_delivery\\(text,text,text,timestamptz,text,text\\)",
+  ]) {
+    assert.match(
+      sql,
+      new RegExp(`REVOKE\\s+ALL\\s+ON\\s+FUNCTION\\s+public\\.${signature}\\s+FROM\\s+PUBLIC,\\s*anon,\\s*authenticated;`, "i"),
+    );
+    assert.match(sql, new RegExp(`GRANT\\s+EXECUTE\\s+ON\\s+FUNCTION\\s+public\\.${signature}\\s+TO\\s+service_role`, "i"));
+  }
+  assert.match(
+    sql,
+    /REVOKE\s+ALL\s+ON\s+TABLE\s+public\.lm_late_approval_drafts,\s*public\.lm_late_approval_decisions,\s*public\.lm_late_approval_claims,\s*public\.lm_late_approval_receipts\s+FROM\s+PUBLIC,\s*anon,\s*authenticated;/i,
+  );
 });
 test("resolved draft stores one immutable evidence/body snapshot and is idempotent by uid and event key", async () => {
   const store = createInMemoryLateApprovalStore({ nowMs: NOW });
@@ -80,6 +97,7 @@ test("resolved draft stores one immutable evidence/body snapshot and is idempote
 
   assert.equal(first.status, "awaiting_decision");
   assert.equal(first.recipientStatus, "resolved");
+  assert.match(first.providerIdempotencyKey, /^[a-f0-9]{64}$/);
   assert.equal(first.bodySnapshot, "到着予定が遅れるため、06:20ごろに着く見込みです。");
   assert.deepEqual(first.evidenceSnapshot.refs, ["calendar:event:event-1:attendee:0"]);
 
@@ -88,6 +106,7 @@ test("resolved draft stores one immutable evidence/body snapshot and is idempote
   assert.equal(retry.duplicate, true);
   assert.equal(retry.bodySnapshot, first.bodySnapshot);
   assert.deepEqual(retry.evidenceSnapshot, first.evidenceSnapshot);
+  assert.equal(retry.providerIdempotencyKey, first.providerIdempotencyKey);
 });
 
 test("recipient missing and ambiguous drafts are terminal and cannot be sent", async () => {
@@ -163,28 +182,75 @@ test("only one worker owns an approved delivery claim and the receipt makes it s
   assert.equal(second.reason, "claimed_by_other_worker");
 
   const sent = await recordLateDelivery({
+    uid: draft.uid,
     draftId: draft.draftId,
     providerMessageId: "resend-msg-1",
     deliveredAt: "2026-08-08T06:01:00.000Z",
     claimToken: first.claimToken,
+    workerId: "worker-a",
   }, store);
   assert.equal(sent.status, "sent");
   assert.equal(sent.providerMessageId, "resend-msg-1");
 
   const retry = await recordLateDelivery({
+    uid: draft.uid,
     draftId: draft.draftId,
     providerMessageId: "resend-msg-1",
     deliveredAt: "2026-08-08T06:01:00.000Z",
+    claimToken: first.claimToken,
+    workerId: "worker-a",
   }, store);
   assert.equal(retry.duplicate, true);
   await assert.rejects(
     recordLateDelivery({
+      uid: draft.uid,
       draftId: draft.draftId,
       providerMessageId: "resend-msg-2",
       deliveredAt: "2026-08-08T06:02:00.000Z",
+      claimToken: first.claimToken,
+      workerId: "worker-a",
     }, store),
     (error) => error instanceof LateApprovalError && error.code === "receipt_conflict",
   );
+});
+
+test("receipt requires the draft uid and the current claim token and worker", async () => {
+  const store = createInMemoryLateApprovalStore({ nowMs: NOW });
+  const draft = await createLateDraft(resolvedInput({ eventKey: "calendar:event-receipt-scope" }), store);
+  await decideLateDraft({ uid: draft.uid, draftId: draft.draftId, decision: "send", idempotencyKey: "tap-scope" }, store);
+  const claim = await claimApprovedDelivery({ draftId: draft.draftId, workerId: "worker-scope" }, store);
+  const base = {
+    draftId: draft.draftId,
+    providerMessageId: "scope-msg",
+    deliveredAt: "2026-08-08T06:01:00.000Z",
+    claimToken: claim.claimToken,
+    workerId: "worker-scope",
+  };
+
+  for (const [label, input] of [
+    ["uid", { ...base }],
+    ["claim token", { ...base, uid: draft.uid, claimToken: undefined }],
+    ["worker", { ...base, uid: draft.uid, workerId: undefined }],
+  ]) {
+    await assert.rejects(
+      recordLateDelivery(input, store),
+      (error) => error instanceof LateApprovalError && error.code === "invalid_input" && error.message.includes(label),
+    );
+  }
+  await assert.rejects(
+    recordLateDelivery({ ...base, uid: "another-user" }, store),
+    (error) => error instanceof LateApprovalError && error.code === "scope_mismatch",
+  );
+  await assert.rejects(
+    recordLateDelivery({ ...base, uid: draft.uid, claimToken: "wrong-token" }, store),
+    (error) => error instanceof LateApprovalError && error.code === "claim_token_mismatch",
+  );
+  await assert.rejects(
+    recordLateDelivery({ ...base, uid: draft.uid, workerId: "another-worker" }, store),
+    (error) => error instanceof LateApprovalError && error.code === "claim_worker_mismatch",
+  );
+  const sent = await recordLateDelivery({ ...base, uid: draft.uid }, store);
+  assert.equal(sent.status, "sent");
 });
 
 test("an interrupted worker can retry its claim, and an expired claim can be recovered by another worker", async () => {
@@ -201,6 +267,7 @@ test("an interrupted worker can retry its claim, and an expired claim can be rec
   const takeover = await claimApprovedDelivery({ draftId: draft.draftId, workerId: "worker-b", nowMs: NOW + 2_000 }, store);
   assert.equal(takeover.claimed, true);
   assert.notEqual(takeover.claimToken, first.claimToken);
+  assert.equal(takeover.providerIdempotencyKey, first.providerIdempotencyKey);
   assert.equal(takeover.workerId, "worker-b");
   assert.equal(takeover.status, "send_claimed");
 });
