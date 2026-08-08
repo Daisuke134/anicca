@@ -191,6 +191,25 @@ const UNAVAILABLE_REASONS = {
   },
 };
 
+const TRAVEL_BLOCK_FAILURE_REASONS = {
+  en: {
+    provider_write_failed: "the Calendar write failed",
+    provider_readback_failed: "the Calendar result could not be verified",
+    claim_pending: "another Calendar update is still in progress",
+    budget_denied: "the provider budget is unavailable",
+    analysis_conflict: "the route data changed before the Calendar update",
+    provider_collision: "the Calendar event ID is already in use",
+  },
+  ja: {
+    provider_write_failed: "カレンダーへの書き込みに失敗しました",
+    provider_readback_failed: "カレンダーの結果を確認できませんでした",
+    claim_pending: "別のカレンダー更新が進行中です",
+    budget_denied: "プロバイダー予算を利用できません",
+    analysis_conflict: "カレンダー更新前に経路情報が変わりました",
+    provider_collision: "カレンダーの予定IDがすでに使われています",
+  },
+};
+
 function action(id, locale) {
   return { id, label: ACTION_LABELS[locale][id] || id };
 }
@@ -269,6 +288,24 @@ function projectSemanticMessage(row, locale = "en") {
       text = active === "ja" ? "次の予定を分析できませんでした。もう一度お試しください。" : "I could not analyze your next event. Try again.";
       actions = [action("refresh", active)];
       break;
+    case "chat.travel_block_confirmed":
+      type = "system";
+      text = active === "ja"
+        ? (args.status === "existing" ? "移動時間はカレンダーに登録済みで、確認できました。" : "移動時間をカレンダーに追加し、確認できました。")
+        : (args.status === "existing" ? "Travel time was already on your Calendar and was verified." : "Travel time was added to your Calendar and verified.");
+      actions = [action("refresh", active)];
+      break;
+    case "chat.travel_block_not_added":
+      type = "system";
+      {
+        const reasonKey = typeof args.reason === "string" ? args.reason : "provider_write_failed";
+        const reason = TRAVEL_BLOCK_FAILURE_REASONS[active][reasonKey] || TRAVEL_BLOCK_FAILURE_REASONS[active].provider_write_failed;
+        text = active === "ja"
+          ? `移動時間をカレンダーに追加できませんでした。理由：${reason}。もう一度お試しください。`
+          : `Travel time was not added to your Calendar because ${reason}. Try again.`;
+      }
+      actions = [action("refresh", active)];
+      break;
     case "chat.welcome":
     default:
       type = row.type || "system";
@@ -279,7 +316,7 @@ function projectSemanticMessage(row, locale = "en") {
   assertLocalizedText(active, text);
   if (route && route.providerAttribution) assertLocalizedText(active, route.providerAttribution, ["Google", "Transit", "API"]);
   const kind = type === "route_unavailable" ? "error" : type;
-  return {
+  const projected = {
     id: row.id,
     cursor: row.cursor,
     createdAt: row.createdAt || row.created_at,
@@ -291,6 +328,10 @@ function projectSemanticMessage(row, locale = "en") {
     route,
     actions,
   };
+  // The native client uses semantic IDs only for the new travel receipts. Keep
+  // the existing message shape unchanged for the frozen Gate 3 fixtures.
+  if (row.key === "chat.travel_block_confirmed" || row.key === "chat.travel_block_not_added") projected.semanticKey = row.key;
+  return projected;
 }
 
 module.exports = { CJK_RE, assertLocalizedText, projectLocalizedRouteName, projectRouteName, projectSemanticMessage, routeValue, formatTime };

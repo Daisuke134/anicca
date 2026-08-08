@@ -3,6 +3,8 @@
 const { MobileError, randomOpaque, normalizeLocale, sha256 } = require("./mobile-utils.js");
 const { appendMobileMessage } = require("./mobile-outbox.js");
 const { computeMobileRoute } = require("./mobile-route.js");
+const { ensureMobileTravelBlock } = require("./mobile-travel-block.js");
+const { getCalendar } = require("./transport/index.js");
 
 const TERMINAL_STATES = Object.freeze(["route_ready", "needs_information", "no_upcoming_event", "route_unavailable", "failed"]);
 
@@ -13,6 +15,106 @@ function userField(user, ...names) {
 
 function messageKey(status) {
   return `chat.${status}`;
+}
+
+const TRAVEL_FAILURE_CODES = new Set([
+  "provider_write_failed", "provider_readback_failed", "claim_pending", "budget_denied", "analysis_conflict", "provider_collision",
+]);
+
+function eventDateTime(event, field) {
+  const value = event && event[field];
+  if (typeof value === "string") return value;
+  if (value && typeof value === "object") return value.dateTime || value.date_time || null;
+  return null;
+}
+
+function travelReceiptId(uid, sourceEventId, leg = "go") {
+  return `message:v1:travel-${sha256(`${uid}\u0000${sourceEventId}\u0000${leg}`).slice(0, 40)}`;
+}
+
+function travelPayload(event, route) {
+  const startAt = route && (route.leaveAt || route.leave_at);
+  const endAt = eventDateTime(event, "startIso") || eventDateTime(event, "start");
+  const timezone = (event && (event.timezone || event.timeZone)) || (route && (route.timezone || route.timeZone));
+  return {
+    summary: `[Travel] ${event && (event.summary || event.id) || "Travel time"}`,
+    description: "",
+    location: event && event.location || "",
+    timezone,
+    start: { dateTime: startAt, timeZone: timezone },
+    end: { dateTime: endAt, timeZone: timezone },
+  };
+}
+
+function failureCode(result) {
+  const status = result && (result.errorCode || result.error_code || result.status);
+  if (status === "busy") return "claim_pending";
+  if (TRAVEL_FAILURE_CODES.has(status)) return status;
+  return "provider_write_failed";
+}
+
+function verifiedTravelResult(result) {
+  return result && (result.status === "created" || result.status === "existing") && typeof result.providerEventId === "string" && result.providerEventId;
+}
+
+async function runTravelBlock(scope, user, event, route, input, deps) {
+  const sourceEventId = String(event && event.id || route && (route.eventId || route.event_id) || "");
+  const owner = user.calendar_composio_user_id || user.calendarComposioUserId || null;
+  const account = user.gmail_account_id || user.gmailAccountId || null;
+  const operation = deps.ensureMobileTravelBlock || deps.ensureTravelBlock || deps.createTravelBlock || ensureMobileTravelBlock;
+  const provider = deps.travelBlockProvider || deps.calendar || deps.provider || getCalendar({
+    apiKey: deps.composioKey || deps.apiKey || process.env.COMPOSIO_API_KEY,
+    composioUserId: owner || scope.uid,
+    connectedAccountId: account,
+    recordCall: deps.recordCall,
+    recordProviderCost: deps.recordProviderCost,
+    authorizeProviderOperation: deps.authorizeProviderOperation || deps.providerBudgetGate,
+  });
+  return operation({
+    uid: scope.uid,
+    eventKey: sourceEventId,
+    sourceEventId,
+    leg: "go",
+    calendarId: "primary",
+    analysisKey: input.analysisId,
+    connectedAccountId: account,
+    gmailAccountId: account,
+    composioUserId: owner,
+    calendarComposioUserId: owner,
+    workerId: deps.workerId || "mobile-analysis",
+    payload: travelPayload(event, route),
+  }, {
+    ...deps,
+    store: deps.store,
+    provider,
+    serverSecret: deps.serverSecret || deps.travelBlockSecret || process.env.LM_TRAVEL_BLOCK_SECRET || process.env.LM_UID_SECRET,
+  });
+}
+
+async function appendTravelReceipt(scope, event, route, result, deps, analysisId) {
+  const sourceEventId = String(event && event.id || route && (route.eventId || route.event_id) || "");
+  const payload = travelPayload(event, route);
+  const success = verifiedTravelResult(result);
+  const key = success ? "chat.travel_block_confirmed" : "chat.travel_block_not_added";
+  const args = success
+    ? {
+      status: result.status,
+      sourceEventId,
+      providerEventId: result.providerEventId,
+      calendar: "primary",
+      leg: "go",
+      blockStart: payload.start.dateTime,
+      blockEnd: payload.end.dateTime,
+      timezone: payload.timezone || null,
+      verification: "provider_readback",
+      verifiedAt: result.verifiedAt || result.verified_at || null,
+    }
+    : { reason: failureCode(result), sourceEventId, calendar: "primary", leg: "go" };
+  return appendMobileMessage({ ...scope, productLocale: scope.productLocale || "en" }, {
+    id: travelReceiptId(scope.uid, sourceEventId || analysisId, "go"),
+    type: "system", key, args,
+    userContent: { eventTitle: event && (event.summary || null), eventLocation: event && (event.location || null) },
+  }, deps);
 }
 
 function requiredQuestion(type, event, deps = {}, analysisId = "") {
@@ -115,7 +217,18 @@ async function analyzeNextEvent(scope, input = {}, deps = {}) {
   }
   await setState(scope, { status: "route_ready", analysisId }, deps);
   try {
-    return await appendTerminal({ ...scope, productLocale: locale }, "route_ready", event, route, null, deps, analysisId);
+    // Persist the route card before attempting the provider side effect. The
+    // durable travel state machine is the only code allowed to create/read back
+    // the Calendar block; a route card alone is never an insertion receipt.
+    const routeResult = await appendTerminal({ ...scope, productLocale: locale }, "route_ready", event, route, null, deps, analysisId);
+    let travelResult;
+    try {
+      travelResult = await runTravelBlock({ ...scope, productLocale: locale }, user, event, route, { ...input, analysisId }, deps);
+    } catch (error) {
+      travelResult = { status: failureCode({ errorCode: error && error.code }), errorCode: failureCode({ errorCode: error && error.code }) };
+    }
+    await appendTravelReceipt({ ...scope, productLocale: locale }, event, route, travelResult, deps, analysisId);
+    return routeResult;
   } catch (error) {
     if (error && (error.code === "localization_unavailable" || error.code === "mixed_locale")) {
       await setState(scope, { status: "route_unavailable", analysisId }, deps);

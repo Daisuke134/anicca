@@ -38,3 +38,19 @@ test("semantic outbox rejects an unknown generated message key", async () => {
   const store = createMemoryMobileStore({ users: [{ uid: "user-a" }] });
   await assert.rejects(() => appendMobileMessage({ uid: "user-a" }, { key: "chat.arbitrary_prose" }, { store }), (error) => error.code === "message_key_invalid");
 });
+
+test("travel receipt keys are deduplicated by stable message id and expose only semanticKey", async () => {
+  const store = createMemoryMobileStore({ users: [{ uid: "user-a" }] });
+  const input = {
+    id: "message:v1:travel-opaque", type: "system", key: "chat.travel_block_confirmed",
+    args: { status: "existing", providerEventId: "lmaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", verification: "provider_readback" },
+    userContent: { eventTitle: "Meeting", eventLocation: "Roppongi" },
+  };
+  const first = await appendMobileMessage({ uid: "user-a", productLocale: "en" }, input, { store });
+  const second = await appendMobileMessage({ uid: "user-a", productLocale: "en" }, { ...input, args: { ...input.args, marker: "must-not-project" } }, { store });
+  assert.equal(first.id, second.id);
+  assert.equal(first.semanticKey, "chat.travel_block_confirmed");
+  assert.equal(second.semanticKey, "chat.travel_block_confirmed");
+  assert.equal(store._outbox.get("user-a").length, 1);
+  assert.equal(JSON.stringify(second).includes("must-not-project"), false);
+});
