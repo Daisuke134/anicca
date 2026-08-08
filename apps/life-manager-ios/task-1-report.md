@@ -516,3 +516,34 @@ UI tests:   2/2 passed
 Unit tests: 91/91 passed
 Total:      93/93 passed, 0 failures
 ```
+
+## Fresh final review — frozen mobile-v1 fixture synchronization
+
+### RED
+
+The frozen backend contract hash gate was added against commit `78bcadf98`:
+
+```text
+xcodebuild ... test \
+  -only-testing:LifeManagerUnitTests/ContractFixtureDecodingTests/testBundledFixturesMatchFrozenBackendContractHashes
+
+Executed 1 test, with 9 failures (0 unexpected)
+```
+
+The failures identified stale local copies for route/analysis/chat/contract
+and deletion fixtures. The old loader also searched an environment override,
+the sibling backend path, and sibling worktrees, allowing stale fixtures to
+win in a clean test lane.
+
+### GREEN
+
+All 20 bundled JSON fixtures now byte-match the frozen `78bcadf98`
+`apps/life-manager/contracts/mobile-v1` files, including canonical cursors,
+timezone/route text, and deletion capability fields. The loader prefers the
+unit-test bundle and only falls back to the same checkout's fixture directory;
+environment, backend-sibling, and sibling-worktree fallbacks are removed.
+
+```text
+ContractFixtureDecodingTests: 8/8 passed, 0 failures
+Hash + loader regression pair: 2/2 passed, 0 failures
+```

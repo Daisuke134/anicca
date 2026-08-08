@@ -5,14 +5,24 @@
   "computedAt": "2026-08-10T08:10:00.000Z",
   "timezone": "America/Los_Angeles",
   "eventId": "calendar-event:v1:tokyo-tower-2026-08-10",
-  "origin": { "displayName": "Shipathon Roppongi", "userContent": "Shipathon Roppongi" },
-  "destination": { "displayName": "Tokyo Tower", "userContent": "Tokyo Tower" },
+  "origin": {
+    "displayName": "Shipathon Roppongi",
+    "userContent": "Shipathon Roppongi"
+  },
+  "destination": {
+    "displayName": "Tokyo Tower",
+    "userContent": "Tokyo Tower"
+  },
   "leaveAt": "2026-08-10T08:35:00.000Z",
   "arriveAt": "2026-08-10T09:02:00.000Z",
   "durationSeconds": 1620,
   "bufferSeconds": 180,
   "transferCount": 1,
-  "fare": { "currency": "JPY", "amount": 220, "medium": "IC" },
+  "fare": {
+    "currency": "JPY",
+    "amount": 220,
+    "medium": "IC"
+  },
   "geometry": null,
   "steps": [
     {

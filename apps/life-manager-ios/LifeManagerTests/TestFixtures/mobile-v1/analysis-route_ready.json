@@ -1,15 +1,18 @@
 {
   "status": "route_ready",
   "analysisId": "analysis:v1:route-ready-8f3a",
-  "nextCursor": "cursor:v1:Qp7mV2xR8aK",
+  "nextCursor": "cursor:v1:c2VxOjE6djE",
   "message": {
     "id": "message:v1:route-ready-8f3a",
-    "cursor": "cursor:v1:Qp7mV2xR8aK",
+    "cursor": "cursor:v1:c2VxOjE6djE",
     "createdAt": "2026-08-10T08:10:00.000Z",
     "locale": "en",
     "type": "route",
-    "text": "Your next event is Tokyo Tower visit. Leave by 8:35 AM to arrive with 3 minutes of buffer.",
-    "userContent": { "eventTitle": "Tokyo Tower visit", "eventLocation": "Tokyo Tower" },
+    "text": "Your next event is Tokyo Tower visit. Leave by 1:35 AM to arrive with 3 minutes of buffer.",
+    "userContent": {
+      "eventTitle": "Tokyo Tower visit",
+      "eventLocation": "Tokyo Tower"
+    },
     "question": null,
     "route": {
       "status": "route_ready",
@@ -18,22 +21,32 @@
       "computedAt": "2026-08-10T08:10:00.000Z",
       "timezone": "America/Los_Angeles",
       "eventId": "calendar-event:v1:tokyo-tower-2026-08-10",
-      "origin": { "displayName": "Shipathon Roppongi", "userContent": "Shipathon Roppongi" },
-      "destination": { "displayName": "Tokyo Tower", "userContent": "Tokyo Tower" },
+      "origin": {
+        "displayName": "Shipathon Roppongi",
+        "userContent": "Shipathon Roppongi"
+      },
+      "destination": {
+        "displayName": "Tokyo Tower",
+        "userContent": "Tokyo Tower"
+      },
       "leaveAt": "2026-08-10T08:35:00.000Z",
       "arriveAt": "2026-08-10T09:02:00.000Z",
       "durationSeconds": 1620,
       "bufferSeconds": 180,
       "transferCount": 1,
-      "fare": { "currency": "JPY", "amount": 220, "medium": "IC" },
+      "fare": {
+        "currency": "JPY",
+        "amount": 220,
+        "medium": "IC"
+      },
       "geometry": null,
       "steps": [
         {
           "sequence": 1,
           "mode": "walk",
-          "instruction": "Walk to Roppongi Station",
-          "from": "Shipathon Roppongi",
-          "to": "Roppongi Station",
+            "instruction": "Walk to Roppongi Station",
+            "from": "Shipathon Roppongi",
+            "to": "Roppongi Station",
           "service": null,
           "headsign": null,
           "platform": null,
@@ -44,11 +57,11 @@
         {
           "sequence": 2,
           "mode": "train",
-          "instruction": "Take the Toei Oedo Line toward Daimon",
-          "from": "Roppongi Station",
-          "to": "Akabanebashi Station",
-          "service": "Toei Oedo Line",
-          "headsign": "toward Daimon",
+            "instruction": "Take the Toei Oedo Line toward Daimon",
+            "from": "Roppongi Station",
+            "to": "Akabanebashi Station",
+            "service": "Toei Oedo Line",
+            "headsign": "toward Daimon",
           "platform": "Platform 2",
           "departAt": "2026-08-10T08:45:00.000Z",
           "arriveAt": "2026-08-10T08:56:00.000Z",
@@ -57,9 +70,9 @@
         {
           "sequence": 3,
           "mode": "walk",
-          "instruction": "Walk to Tokyo Tower",
-          "from": "Akabanebashi Station",
-          "to": "Tokyo Tower",
+            "instruction": "Walk to Tokyo Tower",
+            "from": "Akabanebashi Station",
+            "to": "Tokyo Tower",
           "service": null,
           "headsign": null,
           "platform": null,

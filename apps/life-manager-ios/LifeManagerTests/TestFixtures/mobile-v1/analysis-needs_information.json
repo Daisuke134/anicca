@@ -9,7 +9,10 @@
     "locale": "en",
     "type": "question",
     "text": "I need your starting point before I can calculate the route.",
-    "userContent": { "eventTitle": "Tokyo Tower visit", "eventLocation": "Tokyo Tower" },
+    "userContent": {
+      "eventTitle": "Tokyo Tower visit",
+      "eventLocation": "Tokyo Tower"
+    },
     "question": {
       "id": "question:v1:home-for-design-review-8f3a",
       "prompt": "Where will you be leaving from for Tokyo Tower visit?"

@@ -9,9 +9,14 @@
     "locale": "en",
     "type": "route_unavailable",
     "text": "The route is unavailable because the transit provider returned no journey.",
-    "userContent": { "eventTitle": "Tokyo Tower visit", "eventLocation": "Tokyo Tower" },
+    "userContent": {
+      "eventTitle": "Tokyo Tower visit",
+      "eventLocation": "Tokyo Tower"
+    },
     "question": null,
     "route": null,
-    "actions": [{ "id": "refresh", "label": "Refresh" }]
+    "actions": [
+      { "id": "refresh", "label": "Refresh" }
+    ]
   }
 }

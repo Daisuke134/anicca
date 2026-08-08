@@ -69,5 +69,9 @@
     { "method": "DELETE", "path": "/devices/apns", "requiresBearer": true, "mutation": true, "idempotencyKey": true },
     { "method": "DELETE", "path": "/account", "requiresBearer": true, "mutation": true, "idempotencyKey": true }
   ],
-  "forbiddenSurfaces": ["late_notice", "scheduler", "cost_guard"]
+  "forbiddenSurfaces": [
+    "late_notice",
+    "scheduler",
+    "cost_guard"
+  ]
 }

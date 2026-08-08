@@ -9,9 +9,14 @@
     "locale": "en",
     "type": "system",
     "text": "There are no upcoming events that need a route.",
-    "userContent": { "eventTitle": null, "eventLocation": null },
+    "userContent": {
+      "eventTitle": null,
+      "eventLocation": null
+    },
     "question": null,
     "route": null,
-    "actions": [{ "id": "refresh", "label": "Refresh" }]
+    "actions": [
+      { "id": "refresh", "label": "Refresh" }
+    ]
   }
 }

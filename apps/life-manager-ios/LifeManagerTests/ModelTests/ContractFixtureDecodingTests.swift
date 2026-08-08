@@ -1,4 +1,5 @@
 import Foundation
+import CryptoKit
 import XCTest
 @testable import LifeManager
 
@@ -49,6 +50,28 @@ final class ContractFixtureDecodingTests: XCTestCase {
             let data = try ContractFixtureLoader.data(named: name)
             XCTAssertFalse(data.isEmpty, name)
         }
+    }
+
+    func testBundledFixturesMatchFrozenBackendContractHashes() throws {
+        for (name, expectedHash) in Self.frozenFixtureHashes {
+            let actualHash = SHA256.hash(data: try ContractFixtureLoader.data(named: name))
+                .map { String(format: "%02x", $0) }
+                .joined()
+            XCTAssertEqual(actualHash, expectedHash, name)
+        }
+    }
+
+    func testFixtureLoaderHasNoStaleSiblingOrEnvironmentFallback() throws {
+        let sourceURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("Support/ContractFixtureLoader.swift")
+        let source = try String(contentsOf: sourceURL, encoding: .utf8)
+
+        XCTAssertTrue(source.contains("Bundle(for: ContractFixtureBundleMarker.self)"))
+        XCTAssertFalse(source.contains("LIFEMANAGER_CONTRACT_FIXTURES"))
+        XCTAssertFalse(source.contains("siblingWorktrees"))
+        XCTAssertFalse(source.contains("life-manager/contracts/mobile-v1"))
     }
 
     func testCanonicalChatPageIncludesAnalysisAndCallStatusKinds() throws {
@@ -180,4 +203,27 @@ final class ContractFixtureDecodingTests: XCTestCase {
         XCTAssertEqual(session.expiresAt, Date.iso8601("2026-08-10T08:20:00.000Z"))
         XCTAssertEqual(session.refreshExpiresAt, Date.iso8601("2026-09-09T08:05:00.000Z"))
     }
+
+    private static let frozenFixtureHashes: [String: String] = [
+        "account-deletion.json": "e18c0e585bad3f42dcc77fbf2b9c90959e8678a2a25436b440aab2a58cb614d6",
+        "analysis-failed.json": "efa3e05c0301b6756cf0b83e24cebc272b7c5f62e646fd5ef5813f16489080ef",
+        "analysis-needs_information.json": "ba37e43754889d031f6a7f1138507406376d7d515807f9cbb885e084105f5bf6",
+        "analysis-no_upcoming_event.json": "54478abcbfcb3414874e2bbb85676a6597ad00181228f1b2cd2f42783478cef1",
+        "analysis-route_ready.json": "93abf39f534c9c1e5d4f47e47f7470db28927fe5381ede6557acf7894f7c351b",
+        "analysis-route_unavailable.json": "b52c11580b78ec7ee5d957e1e769c62f27819faad15b5cd368b8b40451b5dd70",
+        "apns-device.json": "48d6f8546c60d67875bb50320ed6fedcfac0b92129d1e001527d14ddf9fcf428",
+        "bootstrap.json": "6d80e0fc53356025453f8d27fd323774cad7647842a5ee36fd080c7156544025",
+        "call.json": "804c54effcc908a083a2c0bd7160b4d5142c07e543301fa10e4aac58b2fbfd6f",
+        "chat-page.json": "c05036c0c74d94bf219face809d8523e472cdfbc9eb4a8665f860dfc50494984",
+        "contract.json": "17bd0a7631e56e07643eadbf3f2cdec7f65500bdf9bb44fa2831cb6987daa83c",
+        "device-deleted.json": "abac99a55c31e8a7ee0acdb496014ee9ac7b07b1d5fb4b03605a43565818db89",
+        "error.json": "2921fcf2c0b7ee76200bfcb3b3372486887f3542220790d55c33f123ad4e0f0f",
+        "profile-patch.json": "4de6ebfd30b43ad7ee9d42b2c11176b2854f4af5a4b14bac187c963ec01e9138",
+        "question-reply.json": "b0d74d3d82eeb07cb1ff374eac2a8020d59ad95672046e6f0e6e2ef608cee965",
+        "route.json": "eb291b81ef82a3baca4bd29b4d3913151667e61f0bc96eb663e00f5820f33197",
+        "semantic-outbox.json": "239e35fc84b4d45163a1c18e0f407d7d4fe851a1f0d14dd0c7d2bf3b6d8c58a1",
+        "session-revoked.json": "1ad336ebe2b1d44e3dca20d5d849eb6c72e0cad52081e689d826c1b7f175dc67",
+        "session-start.json": "b6c3e1044c5568474b38c1af48d3669e71fc70f885c7d3f9bbee4e55412639d8",
+        "session.json": "59590e5f6d715b78e8ea0402280c761e6e0560577d97af144e42395417d750e4"
+    ]
 }
