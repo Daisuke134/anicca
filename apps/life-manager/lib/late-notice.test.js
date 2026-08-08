@@ -13,6 +13,7 @@ const {
   deleteLiveLocation,
   claimLateEvent,
   processLocationLateNotice,
+  enqueueLateApprovalCard,
   markAnswered,
   recordAmdResult,
   applyAmdDetection,
@@ -188,6 +189,42 @@ test("late ticks create one immutable draft/card request and reuse the stored ro
   assert.equal(first.draft.etaEvidence.eventStartMs, EVENT.startMs);
   assert.deepEqual(cards[0].extra.reply_markup.inline_keyboard[0].map((button) => button.text), ["送る", "送らない"]);
   assert.match(cards[0].text, /about 15 minutes late/);
+});
+
+test("Telegram approval card escapes calendar-controlled HTML before sending", async () => {
+  const draft = await createLateDraft({
+    uid: "u1",
+    eventKey: "event-html-card",
+    recipientStatus: "resolved",
+    recipients: [{
+      display_name: "A & B",
+      email: "guest@example.com",
+      source: "calendar<&",
+      evidence_refs: ["calendar:event:<1>"],
+    }],
+    evidenceSnapshot: { status: "resolved" },
+    bodySnapshot: "Hi — A & B is running late to <meeting>.",
+    etaEvidence: { basis: "route_eta_from_live_location", routeMinutes: 43, etaMinutes: 15 },
+    nowMs: NOW,
+  }, createInMemoryLateApprovalStore({ nowMs: NOW }));
+  const sent = [];
+  const result = await enqueueLateApprovalCard({
+    telegramToken: "telegram-token",
+    user: { uid: "u1", telegram_chat_id: "100" },
+    nowMs: NOW,
+    callbackSecret: "fixture-secret",
+  }, { id: draft.eventKey, summary: "meeting" }, draft, {
+    sendMessage: async (...args) => {
+      sent.push(args);
+      return { ok: true, result: { message_id: 7 } };
+    },
+  });
+  assert.equal(result.queued, true);
+  assert.match(result.request.text, /A & B <guest@example\.com>/);
+  assert.match(sent[0][2], /A &amp; B/);
+  assert.match(sent[0][2], /&lt;guest@example\.com&gt;/);
+  assert.match(sent[0][2], /calendar&lt;&amp;/);
+  assert.match(sent[0][2], /calendar:event:&lt;1&gt;/);
 });
 
 test("a real 60-second retry returns the first immutable draft without collision or a second card", async () => {

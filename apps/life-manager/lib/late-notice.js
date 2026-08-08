@@ -16,6 +16,16 @@ const {
 const NO_DESTINATION_MESSAGE = "⚠️ 先方の連絡先が見つからず、遅刻連絡は送れていません";
 const MAIL_FAILURE_MESSAGE = "⚠️ 遅刻連絡メールを送信できませんでした";
 
+// sendMessage uses Telegram's HTML parse mode globally.  Card text contains calendar-controlled
+// recipient names, addresses, evidence, and event text, so send the wire copy escaped while keeping
+// the unescaped request snapshot available to the callback/contract boundary.
+function escapeTelegramHtml(value) {
+  return String(value == null ? "" : value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
 function evaluateLateArrival({ nowMs, event, travelMinutes, location }) {
   if (!location) return { decision: "location_missing" };
   const expiresMs = Date.parse(location.expires_at || location.expiresAt || "");
@@ -173,7 +183,12 @@ async function enqueueLateApprovalCard(input, event, draft, deps) {
   const enqueue = deps.enqueueLateApprovalCard || deps.enqueueApprovalCard || deps.enqueueTelegramApprovalCard;
   if (typeof enqueue === "function") return { ...(await enqueue(request) || {}), request };
   if (typeof deps.sendMessage !== "function") return { queued: false, reason: "telegram_unavailable", request };
-  const sent = await deps.sendMessage(request.token, request.chatId, request.text, request.extra);
+  const sent = await deps.sendMessage(
+    request.token,
+    request.chatId,
+    escapeTelegramHtml(request.text),
+    request.extra,
+  );
   const result = { queued: Boolean(sent && sent.ok !== false), request };
   const messageId = sent && sent.result && sent.result.message_id;
   if (messageId !== undefined && messageId !== null) {
