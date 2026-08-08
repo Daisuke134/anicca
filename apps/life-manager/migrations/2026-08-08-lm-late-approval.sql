@@ -39,6 +39,16 @@ CREATE TABLE IF NOT EXISTS public.lm_late_approval_drafts (
   claim_expires_at timestamptz,
   provider_message_id text,
   delivered_at timestamptz,
+  telegram_receipt_status text NOT NULL DEFAULT 'pending' CHECK (telegram_receipt_status IN ('pending', 'send_claimed', 'sent')),
+  telegram_receipt_chat_id text CHECK (telegram_receipt_chat_id IS NULL OR char_length(telegram_receipt_chat_id) BETWEEN 1 AND 256),
+  telegram_receipt_text text CHECK (telegram_receipt_text IS NULL OR char_length(telegram_receipt_text) BETWEEN 1 AND 4096),
+  telegram_receipt_claim_token text,
+  telegram_receipt_worker_id text,
+  telegram_receipt_claimed_at timestamptz,
+  telegram_receipt_claim_expires_at timestamptz,
+  telegram_receipt_message_id text,
+  telegram_receipt_error text,
+  telegram_receipt_attempts integer NOT NULL DEFAULT 0 CHECK (telegram_receipt_attempts >= 0),
   created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
   updated_at timestamptz NOT NULL DEFAULT clock_timestamp(),
   UNIQUE (uid, event_key),
@@ -65,6 +75,14 @@ CREATE TABLE IF NOT EXISTS public.lm_late_approval_drafts (
   CHECK (
     status <> 'do_not_send'
     OR (claim_token IS NULL AND provider_message_id IS NULL AND delivered_at IS NULL)
+  ),
+  CHECK (
+    telegram_receipt_status <> 'sent'
+    OR (telegram_receipt_message_id IS NOT NULL AND telegram_receipt_chat_id IS NOT NULL AND telegram_receipt_text IS NOT NULL)
+  ),
+  CHECK (
+    telegram_receipt_status <> 'send_claimed'
+    OR (telegram_receipt_claim_token IS NOT NULL AND telegram_receipt_worker_id IS NOT NULL AND telegram_receipt_claimed_at IS NOT NULL)
   )
 );
 
@@ -116,6 +134,72 @@ WHERE provider_idempotency_key IS NULL;
 ALTER TABLE public.lm_late_approval_drafts
   ALTER COLUMN provider_idempotency_key SET DEFAULT encode(gen_random_bytes(32), 'hex'),
   ALTER COLUMN provider_idempotency_key SET NOT NULL;
+ALTER TABLE public.lm_late_approval_drafts
+  ADD COLUMN IF NOT EXISTS telegram_receipt_status text,
+  ADD COLUMN IF NOT EXISTS telegram_receipt_chat_id text,
+  ADD COLUMN IF NOT EXISTS telegram_receipt_text text,
+  ADD COLUMN IF NOT EXISTS telegram_receipt_claim_token text,
+  ADD COLUMN IF NOT EXISTS telegram_receipt_worker_id text,
+  ADD COLUMN IF NOT EXISTS telegram_receipt_claimed_at timestamptz,
+  ADD COLUMN IF NOT EXISTS telegram_receipt_claim_expires_at timestamptz,
+  ADD COLUMN IF NOT EXISTS telegram_receipt_message_id text,
+  ADD COLUMN IF NOT EXISTS telegram_receipt_error text,
+  ADD COLUMN IF NOT EXISTS telegram_receipt_attempts integer;
+UPDATE public.lm_late_approval_drafts
+SET telegram_receipt_status = COALESCE(telegram_receipt_status, 'pending'),
+    telegram_receipt_attempts = COALESCE(telegram_receipt_attempts, 0)
+WHERE telegram_receipt_status IS NULL OR telegram_receipt_attempts IS NULL;
+ALTER TABLE public.lm_late_approval_drafts
+  ALTER COLUMN telegram_receipt_status SET DEFAULT 'pending',
+  ALTER COLUMN telegram_receipt_status SET NOT NULL,
+  ALTER COLUMN telegram_receipt_attempts SET DEFAULT 0,
+  ALTER COLUMN telegram_receipt_attempts SET NOT NULL;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conrelid = 'public.lm_late_approval_drafts'::regclass
+      AND conname = 'lm_late_approval_drafts_telegram_receipt_status'
+  ) THEN
+    ALTER TABLE public.lm_late_approval_drafts
+      ADD CONSTRAINT lm_late_approval_drafts_telegram_receipt_status
+      CHECK (telegram_receipt_status IN ('pending', 'send_claimed', 'sent'));
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conrelid = 'public.lm_late_approval_drafts'::regclass
+      AND conname = 'lm_late_approval_drafts_telegram_receipt_attempts'
+  ) THEN
+    ALTER TABLE public.lm_late_approval_drafts
+      ADD CONSTRAINT lm_late_approval_drafts_telegram_receipt_attempts
+      CHECK (telegram_receipt_attempts >= 0);
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conrelid = 'public.lm_late_approval_drafts'::regclass
+      AND conname = 'lm_late_approval_drafts_telegram_receipt_sent_fields'
+  ) THEN
+    ALTER TABLE public.lm_late_approval_drafts
+      ADD CONSTRAINT lm_late_approval_drafts_telegram_receipt_sent_fields
+      CHECK (
+        telegram_receipt_status <> 'sent'
+        OR (telegram_receipt_message_id IS NOT NULL AND telegram_receipt_chat_id IS NOT NULL AND telegram_receipt_text IS NOT NULL)
+      );
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conrelid = 'public.lm_late_approval_drafts'::regclass
+      AND conname = 'lm_late_approval_drafts_telegram_receipt_claim_fields'
+  ) THEN
+    ALTER TABLE public.lm_late_approval_drafts
+      ADD CONSTRAINT lm_late_approval_drafts_telegram_receipt_claim_fields
+      CHECK (
+        telegram_receipt_status <> 'send_claimed'
+        OR (telegram_receipt_claim_token IS NOT NULL AND telegram_receipt_worker_id IS NOT NULL AND telegram_receipt_claimed_at IS NOT NULL)
+      );
+  END IF;
+END
+$$;
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -436,6 +520,214 @@ BEGIN
 END;
 $$;
 
+CREATE OR REPLACE FUNCTION public.lm_enqueue_late_telegram_receipt(
+  p_uid text,
+  p_draft_id text,
+  p_chat_id text,
+  p_receipt_text text
+) RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_row public.lm_late_approval_drafts%ROWTYPE;
+BEGIN
+  IF p_uid IS NULL OR char_length(p_uid) = 0 OR char_length(p_uid) > 256
+    OR p_draft_id IS NULL OR char_length(p_draft_id) = 0 OR char_length(p_draft_id) > 128
+    OR p_chat_id IS NULL OR char_length(p_chat_id) = 0 OR char_length(p_chat_id) > 256
+    OR p_receipt_text IS NULL OR char_length(p_receipt_text) = 0 OR char_length(p_receipt_text) > 4096 THEN
+    RAISE EXCEPTION 'invalid Telegram receipt queue item';
+  END IF;
+  SELECT * INTO v_row
+  FROM public.lm_late_approval_drafts
+  WHERE draft_id = p_draft_id AND uid = p_uid
+  FOR UPDATE;
+  IF v_row.draft_id IS NULL THEN RAISE EXCEPTION 'late draft not found'; END IF;
+  IF v_row.status <> 'sent' OR v_row.provider_message_id IS NULL THEN
+    RAISE EXCEPTION 'Telegram receipt requires a durable provider receipt';
+  END IF;
+  IF v_row.telegram_receipt_chat_id IS NOT NULL AND v_row.telegram_receipt_chat_id <> p_chat_id THEN
+    RAISE EXCEPTION 'Telegram receipt chat collision';
+  END IF;
+  IF v_row.telegram_receipt_text IS NOT NULL AND v_row.telegram_receipt_text <> p_receipt_text THEN
+    RAISE EXCEPTION 'Telegram receipt text collision';
+  END IF;
+  UPDATE public.lm_late_approval_drafts
+  SET telegram_receipt_chat_id = p_chat_id,
+      telegram_receipt_text = p_receipt_text,
+      telegram_receipt_status = COALESCE(telegram_receipt_status, 'pending'),
+      updated_at = clock_timestamp()
+  WHERE draft_id = p_draft_id
+  RETURNING * INTO v_row;
+  RETURN to_jsonb(v_row);
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.lm_claim_late_telegram_receipt(
+  p_uid text,
+  p_draft_id text,
+  p_worker_id text,
+  p_lease_seconds integer DEFAULT 120
+) RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_row public.lm_late_approval_drafts%ROWTYPE;
+  v_token text;
+  v_now timestamptz := clock_timestamp();
+  v_recovered boolean := false;
+BEGIN
+  IF p_uid IS NULL OR char_length(p_uid) = 0 OR char_length(p_uid) > 256
+    OR p_draft_id IS NULL OR char_length(p_draft_id) = 0 OR char_length(p_draft_id) > 128
+    OR p_worker_id IS NULL OR char_length(p_worker_id) = 0 OR char_length(p_worker_id) > 256
+    OR p_lease_seconds < 1 OR p_lease_seconds > 900 THEN
+    RAISE EXCEPTION 'invalid Telegram receipt claim';
+  END IF;
+  SELECT * INTO v_row
+  FROM public.lm_late_approval_drafts
+  WHERE draft_id = p_draft_id AND uid = p_uid
+  FOR UPDATE;
+  IF v_row.draft_id IS NULL THEN RAISE EXCEPTION 'late draft not found'; END IF;
+  IF v_row.status <> 'sent' OR v_row.provider_message_id IS NULL THEN
+    RETURN to_jsonb(v_row) || jsonb_build_object('claimed', false, 'reason', 'provider_receipt_required');
+  END IF;
+  IF v_row.telegram_receipt_chat_id IS NULL OR v_row.telegram_receipt_text IS NULL THEN
+    RETURN to_jsonb(v_row) || jsonb_build_object('claimed', false, 'reason', 'receipt_not_queued');
+  END IF;
+  IF v_row.telegram_receipt_status = 'sent' THEN
+    RETURN to_jsonb(v_row) || jsonb_build_object('claimed', false, 'reason', 'telegram_sent');
+  END IF;
+  IF v_row.telegram_receipt_status = 'send_claimed'
+    AND v_row.telegram_receipt_claim_expires_at > v_now THEN
+    RETURN to_jsonb(v_row) || jsonb_build_object('claimed', false, 'reason', 'receipt_claimed_by_other_worker');
+  END IF;
+  IF v_row.telegram_receipt_status = 'send_claimed' THEN v_recovered := true; END IF;
+
+  v_token := md5(v_now::text || random()::text || p_draft_id || p_worker_id)
+    || md5(clock_timestamp()::text || random()::text);
+  UPDATE public.lm_late_approval_drafts
+  SET telegram_receipt_status = 'send_claimed',
+      telegram_receipt_claim_token = v_token,
+      telegram_receipt_worker_id = p_worker_id,
+      telegram_receipt_claimed_at = v_now,
+      telegram_receipt_claim_expires_at = v_now + make_interval(secs => p_lease_seconds),
+      telegram_receipt_attempts = COALESCE(telegram_receipt_attempts, 0) + 1,
+      telegram_receipt_error = NULL,
+      updated_at = v_now
+  WHERE draft_id = p_draft_id
+  RETURNING * INTO v_row;
+  RETURN to_jsonb(v_row) || jsonb_build_object('claimed', true)
+    || CASE WHEN v_recovered THEN jsonb_build_object('recovered', true) ELSE '{}'::jsonb END;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.lm_record_late_telegram_receipt(
+  p_uid text,
+  p_draft_id text,
+  p_claim_token text,
+  p_worker_id text,
+  p_telegram_message_id text
+) RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_row public.lm_late_approval_drafts%ROWTYPE;
+BEGIN
+  IF p_uid IS NULL OR char_length(p_uid) = 0 OR char_length(p_uid) > 256
+    OR p_draft_id IS NULL OR char_length(p_draft_id) = 0 OR char_length(p_draft_id) > 128
+    OR p_claim_token IS NULL OR char_length(p_claim_token) = 0 OR char_length(p_claim_token) > 512
+    OR p_worker_id IS NULL OR char_length(p_worker_id) = 0 OR char_length(p_worker_id) > 256
+    OR p_telegram_message_id IS NULL OR char_length(p_telegram_message_id) = 0 OR char_length(p_telegram_message_id) > 512 THEN
+    RAISE EXCEPTION 'invalid Telegram receipt';
+  END IF;
+  SELECT * INTO v_row
+  FROM public.lm_late_approval_drafts
+  WHERE draft_id = p_draft_id AND uid = p_uid
+  FOR UPDATE;
+  IF v_row.draft_id IS NULL THEN RAISE EXCEPTION 'late draft not found'; END IF;
+  IF v_row.telegram_receipt_status = 'sent' THEN
+    IF v_row.telegram_receipt_message_id = p_telegram_message_id THEN
+      RETURN to_jsonb(v_row) || jsonb_build_object('duplicate', true);
+    END IF;
+    RAISE EXCEPTION 'Telegram receipt conflict';
+  END IF;
+  IF v_row.telegram_receipt_status <> 'send_claimed' THEN
+    RAISE EXCEPTION 'Telegram receipt was not claimed';
+  END IF;
+  IF v_row.telegram_receipt_claim_token IS DISTINCT FROM p_claim_token THEN
+    RAISE EXCEPTION 'Telegram receipt claim token mismatch';
+  END IF;
+  IF v_row.telegram_receipt_worker_id IS DISTINCT FROM p_worker_id THEN
+    RAISE EXCEPTION 'Telegram receipt claim worker mismatch';
+  END IF;
+  UPDATE public.lm_late_approval_drafts
+  SET telegram_receipt_status = 'sent',
+      telegram_receipt_message_id = p_telegram_message_id,
+      telegram_receipt_error = NULL,
+      updated_at = clock_timestamp()
+  WHERE draft_id = p_draft_id
+  RETURNING * INTO v_row;
+  RETURN to_jsonb(v_row);
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.lm_release_late_telegram_receipt(
+  p_uid text,
+  p_draft_id text,
+  p_claim_token text,
+  p_worker_id text,
+  p_error text
+) RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_row public.lm_late_approval_drafts%ROWTYPE;
+BEGIN
+  IF p_uid IS NULL OR char_length(p_uid) = 0 OR char_length(p_uid) > 256
+    OR p_draft_id IS NULL OR char_length(p_draft_id) = 0 OR char_length(p_draft_id) > 128
+    OR p_claim_token IS NULL OR char_length(p_claim_token) = 0 OR char_length(p_claim_token) > 512
+    OR p_worker_id IS NULL OR char_length(p_worker_id) = 0 OR char_length(p_worker_id) > 256
+    OR p_error IS NOT NULL AND char_length(p_error) > 1024 THEN
+    RAISE EXCEPTION 'invalid Telegram receipt release';
+  END IF;
+  SELECT * INTO v_row
+  FROM public.lm_late_approval_drafts
+  WHERE draft_id = p_draft_id AND uid = p_uid
+  FOR UPDATE;
+  IF v_row.draft_id IS NULL THEN RAISE EXCEPTION 'late draft not found'; END IF;
+  IF v_row.telegram_receipt_status = 'sent' THEN
+    RETURN to_jsonb(v_row) || jsonb_build_object('duplicate', true);
+  END IF;
+  IF v_row.telegram_receipt_status <> 'send_claimed' THEN
+    RAISE EXCEPTION 'Telegram receipt was not claimed';
+  END IF;
+  IF v_row.telegram_receipt_claim_token IS DISTINCT FROM p_claim_token THEN
+    RAISE EXCEPTION 'Telegram receipt claim token mismatch';
+  END IF;
+  IF v_row.telegram_receipt_worker_id IS DISTINCT FROM p_worker_id THEN
+    RAISE EXCEPTION 'Telegram receipt claim worker mismatch';
+  END IF;
+  UPDATE public.lm_late_approval_drafts
+  SET telegram_receipt_status = 'pending',
+      telegram_receipt_claim_token = NULL,
+      telegram_receipt_worker_id = NULL,
+      telegram_receipt_claimed_at = NULL,
+      telegram_receipt_claim_expires_at = NULL,
+      telegram_receipt_error = p_error,
+      updated_at = clock_timestamp()
+  WHERE draft_id = p_draft_id
+  RETURNING * INTO v_row;
+  RETURN to_jsonb(v_row);
+END;
+$$;
+
 ALTER TABLE public.lm_late_approval_drafts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.lm_late_approval_drafts FORCE ROW LEVEL SECURITY;
 ALTER TABLE public.lm_late_approval_decisions ENABLE ROW LEVEL SECURITY;
@@ -445,7 +737,7 @@ ALTER TABLE public.lm_late_approval_claims FORCE ROW LEVEL SECURITY;
 ALTER TABLE public.lm_late_approval_receipts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.lm_late_approval_receipts FORCE ROW LEVEL SECURITY;
 
--- The five SECURITY DEFINER functions are deny-by-default.  PUBLIC is explicit here because
+-- The nine SECURITY DEFINER functions are deny-by-default.  PUBLIC is explicit here because
 -- PostgreSQL grants new functions to PUBLIC unless it is revoked by name.
 REVOKE ALL ON TABLE
   public.lm_late_approval_drafts,
@@ -470,6 +762,14 @@ REVOKE ALL ON FUNCTION public.lm_claim_late_delivery(text,text,integer)
   FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.lm_record_late_delivery(text,text,text,timestamptz,text,text)
   FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.lm_enqueue_late_telegram_receipt(text,text,text,text)
+  FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.lm_claim_late_telegram_receipt(text,text,text,integer)
+  FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.lm_record_late_telegram_receipt(text,text,text,text,text)
+  FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.lm_release_late_telegram_receipt(text,text,text,text,text)
+  FROM PUBLIC, anon, authenticated;
 
 -- Role fixtures are installed by the isolated staging preflight when this migration is exercised
 -- outside Supabase.  The conditional grants allow only service_role to cross the RPC boundary
@@ -482,6 +782,10 @@ BEGIN
     EXECUTE 'GRANT EXECUTE ON FUNCTION public.lm_decide_late_draft(text,text,text,text) TO service_role';
     EXECUTE 'GRANT EXECUTE ON FUNCTION public.lm_claim_late_delivery(text,text,integer) TO service_role';
     EXECUTE 'GRANT EXECUTE ON FUNCTION public.lm_record_late_delivery(text,text,text,timestamptz,text,text) TO service_role';
+    EXECUTE 'GRANT EXECUTE ON FUNCTION public.lm_enqueue_late_telegram_receipt(text,text,text,text) TO service_role';
+    EXECUTE 'GRANT EXECUTE ON FUNCTION public.lm_claim_late_telegram_receipt(text,text,text,integer) TO service_role';
+    EXECUTE 'GRANT EXECUTE ON FUNCTION public.lm_record_late_telegram_receipt(text,text,text,text,text) TO service_role';
+    EXECUTE 'GRANT EXECUTE ON FUNCTION public.lm_release_late_telegram_receipt(text,text,text,text,text) TO service_role';
   END IF;
 END
 $$;

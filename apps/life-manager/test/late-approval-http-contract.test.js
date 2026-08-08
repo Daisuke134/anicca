@@ -10,6 +10,9 @@ const http = require("node:http");
 const {
   createLateDraft,
   createInMemoryLateApprovalStore,
+  decideLateDraft,
+  claimApprovedDelivery,
+  recordLateDelivery,
   createLateApprovalCallbackData,
   handleLateApprovalCallback,
 } = require("../lib/late-approval.js");
@@ -114,6 +117,104 @@ test("signed and owned Send decides, claims, mails, records the provider receipt
   assert.equal(replay.ok, true);
   assert.equal(replay.sent, false);
   assert.deepEqual(opts.calls.map((entry) => entry[0]), ["mail", "reflect", "telegram"]);
+});
+
+test("concurrent copies of one signed callback produce one provider send and one Telegram receipt", async () => {
+  const store = createInMemoryLateApprovalStore({ nowMs: NOW });
+  const draft = await createLateDraft({ ...draftInput(), eventKey: "calendar:event-concurrent-receipt" }, store);
+  let mailCalls = 0;
+  let telegramCalls = 0;
+  let mailStarted;
+  let resolveMailStarted;
+  mailStarted = new Promise((resolve) => { resolveMailStarted = resolve; });
+  const options = baseOptions(store, {
+    sendLateNotice: async () => {
+      mailCalls += 1;
+      resolveMailStarted();
+      if (mailCalls === 1) await new Promise((resolve) => setTimeout(resolve, 20));
+      return { sent: true, id: "resend-concurrent-1" };
+    },
+    sendMessage: async () => {
+      telegramCalls += 1;
+      return { ok: true, result: { message_id: 700 + telegramCalls } };
+    },
+  });
+  const data = callback("send", draft.draftId);
+  const first = handleLateApprovalCallback(data, { ...options, callbackQueryId: "same-callback" });
+  await mailStarted;
+  const second = handleLateApprovalCallback(data, { ...options, callbackQueryId: "same-callback" });
+  await Promise.all([first, second]);
+
+  assert.equal(mailCalls, 1);
+  assert.equal(telegramCalls, 1);
+});
+
+test("a concurrent callback that sees the old draft recovers a durable provider receipt into the Telegram outbox", async () => {
+  const durableStore = createInMemoryLateApprovalStore({ nowMs: NOW });
+  const draft = await createLateDraft({ ...draftInput(), eventKey: "calendar:event-stale-callback" }, durableStore);
+  const decision = await decideLateDraft({
+    uid: draft.uid, draftId: draft.draftId, decision: "send", idempotencyKey: "seed-decision", nowMs: NOW,
+  }, durableStore);
+  const claim = await claimApprovedDelivery({ draftId: draft.draftId, workerId: "seed-worker", nowMs: NOW }, durableStore);
+  await recordLateDelivery({
+    uid: draft.uid, draftId: draft.draftId, providerMessageId: "resend-stale-1",
+    deliveredAt: new Date(NOW).toISOString(), claimToken: claim.claimToken, workerId: "seed-worker", nowMs: NOW,
+  }, durableStore);
+
+  // The callback read happened before the provider receipt committed; all subsequent operations
+  // must still use the durable row and enqueue/send only the Telegram receipt.
+  const staleSnapshot = {
+    ...draft,
+    status: "awaiting_decision",
+    decision: decision.decision,
+    idempotencyKey: decision.idempotencyKey,
+  };
+  const store = {
+    ...durableStore,
+    async getLateDraft() { return staleSnapshot; },
+  };
+  let mailCalls = 0;
+  let telegramCalls = 0;
+  const result = await handleLateApprovalCallback(callback("send", draft.draftId), baseOptions(store, {
+    sendLateNotice: async () => { mailCalls += 1; throw new Error("provider must not resend"); },
+    sendMessage: async () => {
+      telegramCalls += 1;
+      return { ok: true, result: { message_id: 702 } };
+    },
+  }));
+
+  assert.equal(result.ok, true);
+  assert.equal(result.sent, true);
+  assert.equal(mailCalls, 0);
+  assert.equal(telegramCalls, 1);
+});
+
+test("Telegram receipt failure retries the receipt without resending the provider email", async () => {
+  const store = createInMemoryLateApprovalStore({ nowMs: NOW });
+  const draft = await createLateDraft({ ...draftInput(), eventKey: "calendar:event-receipt-retry" }, store);
+  let mailCalls = 0;
+  let telegramCalls = 0;
+  const options = baseOptions(store, {
+    sendLateNotice: async () => {
+      mailCalls += 1;
+      return { sent: true, id: "resend-retry-1" };
+    },
+    sendMessage: async () => {
+      telegramCalls += 1;
+      return telegramCalls === 1
+        ? { ok: false, error: "telegram unavailable" }
+        : { ok: true, result: { message_id: 701 } };
+    },
+  });
+  const data = callback("send", draft.draftId);
+  const first = await handleLateApprovalCallback(data, { ...options, callbackQueryId: "retry-1" });
+  assert.equal(first.sent, true);
+  assert.equal(first.ok, false);
+  const retry = await handleLateApprovalCallback(data, { ...options, callbackQueryId: "retry-2" });
+
+  assert.equal(retry.ok, true);
+  assert.equal(mailCalls, 1);
+  assert.equal(telegramCalls, 2);
 });
 
 test("callback ownership, signature, and expiry fail closed before any state mutation", async () => {
@@ -254,6 +355,29 @@ test("POST /telegram routes the signed late callback through the production serv
         row.status = "sent";
         row.provider_message_id = body.p_provider_message_id;
         row.delivered_at = body.p_delivered_at;
+        return response(200, jsonClone(row));
+      }
+      if (rpc === "lm_enqueue_late_telegram_receipt") {
+        row.telegram_receipt_status = row.telegram_receipt_status || "pending";
+        row.telegram_receipt_chat_id = body.p_chat_id;
+        row.telegram_receipt_text = body.p_receipt_text;
+        return response(200, jsonClone(row));
+      }
+      if (rpc === "lm_claim_late_telegram_receipt") {
+        if (row.telegram_receipt_status === "sent") {
+          return response(200, { ...jsonClone(row), claimed: false, reason: "telegram_sent" });
+        }
+        row.telegram_receipt_status = "send_claimed";
+        row.telegram_receipt_claim_token = "telegram-claim-http-token-123456789012345678901234";
+        row.telegram_receipt_worker_id = body.p_worker_id;
+        row.telegram_receipt_claimed_at = new Date().toISOString();
+        row.telegram_receipt_claim_expires_at = new Date(Date.now() + 120_000).toISOString();
+        row.telegram_receipt_attempts = Number(row.telegram_receipt_attempts || 0) + 1;
+        return response(200, { ...jsonClone(row), claimed: true });
+      }
+      if (rpc === "lm_record_late_telegram_receipt") {
+        row.telegram_receipt_status = "sent";
+        row.telegram_receipt_message_id = body.p_telegram_message_id;
         return response(200, jsonClone(row));
       }
     }
