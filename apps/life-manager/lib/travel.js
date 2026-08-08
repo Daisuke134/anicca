@@ -8,6 +8,7 @@
 const { getCalendar } = require("./transport/index.js");
 const { chooseRouter, parseTransitPlan } = require("./transit.js");
 const { makeRouteCache, timeBucket } = require("./route-cache.js");
+const { geocodeAddress, createSupabaseGeocodeStore } = require("./geocode-cache.js");
 const { interpretCalendarEvent } = require("./calendar-interpreter.js");
 
 // C3 (FIND-002): a process-lifetime route-result cache so the 60s scheduler tick does NOT recompute a
@@ -169,23 +170,6 @@ async function directionsMinutesGoogle(src, dst, mapsKey, departAtMs = Date.now(
   return acceptRouteResults({ legacyTransit: transit, routesDrive: drive }).minutes;
 }
 
-// C3: address→geo memo — the 60s scheduler tick must NOT re-geocode the same home/event address every
-// time. Keyed on the address string; a geo rarely changes for a fixed address. Process-lifetime cache.
-const _geoMemo = new Map();
-
-// C2: geocode a JP address ONCE via Google Geocoding (cheap, one-time; NOT the Routes-Pro cost driver).
-// Returns {lat,lon} or null. Injected in tests via opts._geocode.
-async function geocodeAddress(addr, mapsKey) {
-  if (!addr || !mapsKey) return null;
-  if (_geoMemo.has(addr)) return _geoMemo.get(addr);
-  try {
-    const u = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(addr)}&key=${mapsKey}`;
-    const j = await (await fetch(u)).json();
-    const loc = j && j.results && j.results[0] && j.results[0].geometry && j.results[0].geometry.location;
-    return loc ? { lat: loc.lat, lon: loc.lng } : null;
-  } catch { return null; }
-}
-
 // C2: real FREE JP transit fetch (api.transit.ls8h.com /plan). Injected in tests via opts._transitFetch.
 async function transitFetchPlan(srcGeo, dstGeo) {
   try {
@@ -196,13 +180,20 @@ async function transitFetchPlan(srcGeo, dstGeo) {
 
 // C2/C3 WIRE: try the FREE JP transit path first (geocode both → JP bbox → /plan), fall back to Google.
 async function directionsMinutes(src, dst, mapsKey, departAtMs = Date.now(), nowMs = Date.now(), departureMode = false, opts = {}) {
-  const geocode = opts._geocode || geocodeAddress;
+  const geocode = opts._geocode || ((address, key) => geocodeAddress(address, key, {
+    store: opts._geocodeStore,
+    fetchImpl: opts._fetchImpl,
+    now: opts._now,
+  }));
   const transitFetch = opts._transitFetch || transitFetchPlan;
   const googleFn = opts._directionsMinutesGoogle || directionsMinutesGoogle;
   const cache = opts._routeCache || _routeCache; // tests inject a fresh cache to avoid cross-test leakage
   const google = () => googleFn(src, dst, mapsKey, departAtMs, nowMs, departureMode);
   if (!mapsKey || !src || !dst) return null;
-  const [srcGeo, dstGeo] = await Promise.all([geocode(src, mapsKey), geocode(dst, mapsKey)]);
+  const [srcGeo, dstGeo] = await Promise.all([
+    geocode(src, mapsKey, opts),
+    geocode(dst, mapsKey, opts),
+  ]);
   // The expensive part = the transit/Google provider call. Cache it per (from_geo, to_geo, time_bucket)
   // so repeated 60s ticks for the same event reuse one result (FIND-002).
   const compute = async () => {
@@ -259,6 +250,7 @@ async function unclaimTravel(uid, eventKey, leg, supaUrl, supaKey) {
 async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, nowMs = Date.now(), bufferMin = 5, calendar, supaUrl, supaKey, _directionsMinutes, gmailAccountId } = {}) {
   const directionsFn = _directionsMinutes || directionsMinutes;
   const cal = calendar || getCalendar({ apiKey, gmailAccountId });
+  const geocodeStore = supaUrl && supaKey ? createSupabaseGeocodeStore({ supaUrl, supaKey }) : undefined;
   const events = await listEvents7d(uid, apiKey, nowMs, cal, gmailAccountId);
   let inserted = 0, checked = 0, skipped = 0;
   const outboundReports = [];
@@ -289,7 +281,10 @@ async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, nowMs = Date.
         // outbound block already exists — fall through to return-leg so it can backfill a missing return block
       } else {
         let dest = ev.location;
-        let mins = await directionsFn(origin, dest, mapsKey, ev.startMs, nowMs);
+        let mins = await directionsFn(origin, dest, mapsKey, ev.startMs, nowMs, false, {
+          _geocodeStore: geocodeStore,
+          _now: () => new Date(nowMs).toISOString(),
+        });
         if (mins == null && geminiKey) {
           // The location is a room name / unroutable string (e.g. "情報科学大講義室[L1]（IS）"). Let the
           // agent web-search the REAL venue address so a must-travel event still gets a block instead of a
@@ -303,7 +298,10 @@ async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, nowMs = Date.
             }
             if (res && res.kind === "filled" && res.location) {
               dest = res.location;
-              mins = await directionsFn(origin, dest, mapsKey, ev.startMs, nowMs);
+              mins = await directionsFn(origin, dest, mapsKey, ev.startMs, nowMs, false, {
+                _geocodeStore: geocodeStore,
+                _now: () => new Date(nowMs).toISOString(),
+              });
             }
           } catch { /* fall through to null-mins skip below */ }
         }
@@ -375,7 +373,10 @@ async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, nowMs = Date.
     // outbound was skipped due to dedup/no-origin — returnDecision already checked venue non-empty).
     const venue = resolvedDest;
     if (!home) { skipped++; continue; }
-    const retMins = await directionsFn(venue, home, mapsKey, ev.endMs, nowMs, /* departureMode= */ true);
+    const retMins = await directionsFn(venue, home, mapsKey, ev.endMs, nowMs, /* departureMode= */ true, {
+      _geocodeStore: geocodeStore,
+      _now: () => new Date(nowMs).toISOString(),
+    });
     if (retMins == null) { skipped++; continue; }
     const retLeaveMs = ev.endMs;                           // depart immediately after event ends
     const retArriveMs = retLeaveMs + retMins * 60000;
