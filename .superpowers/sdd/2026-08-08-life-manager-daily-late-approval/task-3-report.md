@@ -140,3 +140,14 @@ Before the fixes:
 
 The broad scheduler test remains environment-blocked at collection by the pre-existing missing
 `canonicalize` package; the source contract was run in isolation with its test-name pattern.
+
+## Final review-fix receipt
+
+- Fix commit: `1d6559b38` — `fix(life-manager): reuse late approval drafts on tick retries`.
+- Push: **PASS** — `canonical/feat/lm-daily-late-approval` advanced from `10c2eae5e` to
+  `1d6559b38` after `git fetch canonical`.
+- The commit contains only the expanded Task 3 scope: `lib/late-notice.js`,
+  `lib/late-notice.test.js`, `scheduler.js`, `test/scheduler.test.js`, and this report.
+- Self-review: the retry lookup is read-only and cloned before returning; missing/ambiguous
+  recipients still enqueue no card and invoke no external sender; no mail transport, delivery
+  claim, or receipt was added to the tick path.
