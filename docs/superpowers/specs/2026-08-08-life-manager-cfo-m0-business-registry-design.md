@@ -310,8 +310,8 @@ The implementation plan supplies exact files, function signatures, test code, co
 **Status:** `IMPLEMENTED — LIVE E2E PASS`
 
 - Correction commits: `be53043ce` (complete runtime census), `7f56f93fb` (canonical ledger-source inventory), and
-  `86afe492d` (privacy, immutable hash, and normal CI). The F4 documentation closure commit is recorded in this
-  section and the final execution report.
+  `86afe492d` (privacy, immutable hash, and normal CI). F4 documentation closure is `ce2c99239`
+  (`docs(cfo): close complete runtime inventory`).
 - Focused command: `npm run test:cfo` — 35/35 tests passed.
 - Full command: `npm test` — exit code 0 after `npm ci --no-audit --no-fund` restored the worktree's missing `ws`
   dependency; the fresh full run passed.

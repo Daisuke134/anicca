@@ -672,7 +672,7 @@ The child spec narrows M0 without replacing this document's financial truth, saf
 
 `CFO-0c` is complete. The correction wave was closed in order with commits `be53043ce` (complete runtime census),
 `7f56f93fb` (canonical ledger-source inventory), and `86afe492d` (privacy, immutable hash, and normal CI). The
-documentation closure commit is recorded in the child spec and final execution report.
+documentation closure commit is `ce2c99239` (`docs(cfo): close complete runtime inventory`).
 
 - Focused `npm run test:cfo`: 35/35 tests passed.
 - Full `npm test`: exit code 0 after `npm ci --no-audit --no-fund` restored the worktree's missing `ws` dependency.

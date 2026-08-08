@@ -11,8 +11,7 @@ Base: `2641e0445`
 - F1 complete runtime census: `be53043ce` — `fix(cfo): inventory every live runtime`
 - F2 canonical ledger-source inventory: `7f56f93fb` — `feat(cfo): inventory canonical ledger sources`
 - F3 privacy, immutable hash, and normal CI: `86afe492d` — `fix(cfo): close privacy hash and ci gaps`
-- F4 documentation closure: the scoped commit `docs(cfo): close complete runtime inventory` is recorded after
-  commit publication; this report is updated with its exact hash before handoff.
+- F4 documentation closure: `ce2c99239` — `docs(cfo): close complete runtime inventory`.
 
 ## Verification evidence
 

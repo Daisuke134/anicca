@@ -652,8 +652,8 @@ balance, amount, transaction, or customer data.
 - [x] F2 canonical ledger-source inventory — `7f56f93fb` — nine catalogue entries and nine redacted observations;
       status counts `planned=3`, `unavailable=6`.
 - [x] F3 privacy, immutable hash, and normal CI — `86afe492d` — focused CFO tests are on the normal test chain.
-- [x] F4 live repair verification and honest closure — documentation commit `docs(cfo): close complete runtime inventory`
-      (hash recorded in the final execution report); live counts are `unit_count=9`, `unmapped_count=0`, and
+- [x] F4 live repair verification and honest closure — documentation commit `ce2c99239`
+      (`docs(cfo): close complete runtime inventory`); live counts are `unit_count=9`, `unmapped_count=0`, and
       `ambiguous_count=0`.
 - Focused verification: `npm run test:cfo` passed 35/35. Full verification: fresh `npm test` exited 0 after
   `npm ci --no-audit --no-fund` restored the worktree's missing `ws` dependency.
