@@ -274,9 +274,10 @@ Task 3 corrective state and implementation are recorded by `aeae05398` and
 exit 0 after `npm ci --no-audit --no-fund`. The fresh Task 3 and whole-plan reviews are clean, and the validator
 remains 136 LOC with `git diff --check` passing.
 
-This completion does not include a real Moneytree sync, live balance read, provider credential, normalized live
-source, or real CFO Telegram report. Every M1 real-source/report acceptance checkbox above remains unchecked. The
-active next item is CFO-1b — Moneytree source adapter.
+This completion does not include a real Moneytree sync, provider credential, normalized live-source ingestion or
+persistence from the earlier interactive read, or a real CFO Telegram report. That earlier interactive read existed
+but was not ingested, persisted, or reported by CFO-1a. Every M1 real-source/report acceptance checkbox above remains
+unchecked. The active next item is CFO-1b — Moneytree source adapter.
 
 ## 11. Ordered Implementation
 

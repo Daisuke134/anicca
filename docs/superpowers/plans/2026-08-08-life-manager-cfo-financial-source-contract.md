@@ -340,4 +340,4 @@ Commit and push state-only docs separately. Completion is a tested normalized co
 - Final CFO suite: `npm run test:cfo` — 75/75 passed.
 - Fresh full package verification after `npm ci --no-audit --no-fund`: `npm test` — exit 0.
 - Production validator remains 136 LOC (maximum 144); `git diff --check` passed. Fresh task and whole-plan reviews are clean.
-- This closes the tested provider-neutral normalized contract and synthetic fixtures only. No real Moneytree sync, live balance read, or real CFO Telegram report has occurred; every M1 real-source/report acceptance remains unchecked.
+- This closes the tested provider-neutral normalized contract and synthetic fixtures only. An earlier interactive Moneytree read existed, but CFO-1a did not ingest or persist it as a normalized live source or report it; no real Moneytree sync or real CFO Telegram report occurred as part of CFO-1a. Every M1 real-source/report acceptance remains unchecked.

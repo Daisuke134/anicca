@@ -703,8 +703,10 @@ state and implementation are recorded by `aeae05398` and
 exit 0 after `npm ci --no-audit --no-fund`; the fresh Task 3 and whole-plan reviews are clean. The validator remains
 136 LOC and `git diff --check` passes.
 
-No real Moneytree sync, live balance read, provider credential, normalized live source, or real CFO Telegram report
-has occurred. Only CFO-1a is checked below; CFO-1b onward and every live M1 acceptance remain unchecked.
+No real Moneytree sync, provider credential, normalized live-source ingestion or persistence from the earlier
+interactive read, or real CFO Telegram report occurred as part of CFO-1a. That earlier interactive read existed but
+was not ingested, persisted, or reported by CFO-1a. Only CFO-1a is checked below; CFO-1b onward and every live M1
+acceptance remain unchecked.
 
 ### M1 — One truthful Moneytree-first read-only snapshot
 
