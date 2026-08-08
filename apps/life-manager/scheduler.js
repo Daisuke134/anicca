@@ -255,8 +255,10 @@ function buildStreamUrl(ev, urgency, lang, name) {
   const nm = String(name || "").replace(/[\r\n]/g, " ").slice(0, 60); // address the user by name on the call
   const wakeUid = String(ev.wakeUid || "");
   const wakeEventKey = String(ev.wakeEventKey || "");
-  const sig = signCtx([summary, dateTime, location, urg, lg, nm, wakeUid, wakeEventKey]);
+  const reservationRequestId = String(ev.reservationRequestId || "");
+  const sig = signCtx([summary, dateTime, location, urg, lg, nm, wakeUid, wakeEventKey, reservationRequestId]);
   const qs = new URLSearchParams({ summary, dateTime, location, urgency: urg, lang: lg, name: nm, wakeUid, wakeEventKey, sig });
+  if (reservationRequestId) qs.set("reservationRequestId", reservationRequestId);
   return `${base}/ws?${qs.toString()}`;
 }
 
@@ -474,11 +476,13 @@ async function wakeCallOnce(u, nowMs, deps = {}) {
         // A coarser level the call above superseded must never ring later, so it is CLAIMED here and
         // left uncalled — the claim is what stops a future tick from resurrecting it.
         if (lvl !== due[0]) continue;
-        const streamUrl = buildStreamUrl({ ...ev, wakeUid: u.uid, wakeEventKey: eventKey }, lvl.urgency, langForUser(u), u.name);
+        const reservationRequestId = `telnyx:call_session:${Date.now()}:${crypto.randomUUID()}`;
+        const streamUrl = buildStreamUrl({ ...ev, wakeUid: u.uid, wakeEventKey: eventKey, reservationRequestId }, lvl.urgency, langForUser(u), u.name);
         let res;
         try {
           res = await (deps.placeCall || placeCall)({
             to: u.phone, streamUrl, uid: u.uid,
+            requestId: reservationRequestId,
             projectedUsd: Number(process.env.LM_TELNYX_PROJECTED_CALL_USD) > 0
               ? Number(process.env.LM_TELNYX_PROJECTED_CALL_USD) : 0.05,
             authorizeProviderOperation: deps.authorizeProviderOperation || (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY

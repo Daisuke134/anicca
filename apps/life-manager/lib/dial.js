@@ -43,8 +43,9 @@ function amdDialOptions(streamUrl, env = process.env, opts = {}) {
   const url = new URL(streamUrl);
   const wakeUid = url.searchParams.get("wakeUid") || "";
   const wakeEventKey = url.searchParams.get("wakeEventKey") || "";
+  const reservationRequestId = url.searchParams.get("reservationRequestId") || "";
   const webhookProtocol = url.protocol === "ws:" ? "http:" : "https:";
-  const clientState = opts.clientState || encodeWakeClientState({ wakeUid, wakeEventKey });
+  const clientState = opts.clientState || encodeWakeClientState({ wakeUid, wakeEventKey, reservationRequestId });
   return {
     answering_machine_detection: "detect",
     webhook_url: `${webhookProtocol}//${url.host}/telnyx-events`,

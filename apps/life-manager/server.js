@@ -214,15 +214,25 @@ function ctxFromReq(req) {
   const name = (q.get("name") || "").slice(0, 60); // who to address on the call (already sanitized when signed)
   const wakeUid = (q.get("wakeUid") || "").slice(0, 100);
   const wakeEventKey = (q.get("wakeEventKey") || "").slice(0, 300);
+  const reservationRequestId = (q.get("reservationRequestId") || "").slice(0, 200);
   const sig = q.get("sig") || "";
 
   const secret = process.env.LM_CALL_SECRET || "";
-  const expected = crypto.createHmac("sha256", secret).update([summary, dateTime, location, urgency, lang, name, wakeUid, wakeEventKey].join("\n")).digest("base64url");
+  const expected = crypto.createHmac("sha256", secret).update([summary, dateTime, location, urgency, lang, name, wakeUid, wakeEventKey, reservationRequestId].join("\n")).digest("base64url");
   const a = Buffer.from(sig);
   const b = Buffer.from(expected);
-  if (!secret || a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
+  let verified = secret && a.length === b.length && crypto.timingSafeEqual(a, b);
+  // Keep already-minted wake URLs valid during a rolling deploy. The legacy
+  // signature had no reservation field; only accept it when the new field is
+  // absent, never as a general fallback for a tampered reservation.
+  if (!verified && !reservationRequestId) {
+    const legacy = crypto.createHmac("sha256", secret).update([summary, dateTime, location, urgency, lang, name, wakeUid, wakeEventKey].join("\n")).digest("base64url");
+    const legacyBuffer = Buffer.from(legacy);
+    verified = secret && a.length === legacyBuffer.length && crypto.timingSafeEqual(a, legacyBuffer);
+  }
+  if (!verified) return null;
 
-  return { event: { summary, start: { dateTime }, location }, urgency, lang, name, wakeUid, wakeEventKey };
+  return { event: { summary, start: { dateTime }, location }, urgency, lang, name, wakeUid, wakeEventKey, reservationRequestId };
 }
 
 const server = http.createServer((req, res) => {
@@ -304,12 +314,12 @@ const server = http.createServer((req, res) => {
       if (data && payload && /call\.(?:hangup|ended|cost|cdr)/iu.test(String(data.event_type || ""))) {
         const state = decodeCallClientState(payload.client_state);
         const cdrUid = state && state.kind === "wake" ? state.wakeUid : state && state.kind === "test" ? state.testUid : null;
-        const cdrId = payload.id || payload.call_control_id || data.id || crypto.randomUUID();
+        const cdrId = payload.id || payload.call_control_id || data.id || "unknown";
         const cdrRecorded = await recordTelnyxCdr({
           uid: cdrUid,
           requestId: `telnyx:cdr:${String(cdrId)}`,
           durationSeconds: payload.billed_duration || payload.duration_seconds || payload.duration,
-          cdr: payload,
+          cdr: payload, reservationRequestId: state && state.reservationRequestId,
         }, { supaUrl: SUPA_URL, supaKey: SUPA_KEY });
         if (!cdrRecorded && SUPA_URL && SUPA_KEY) {
           res.writeHead(503, { "content-type": "text/plain" });
@@ -479,13 +489,15 @@ const server = http.createServer((req, res) => {
           location: (body.location || "").toString().slice(0, 200),
         };
         const urgency = ["gentle", "firm", "harsh"].includes(body.urgency) ? body.urgency : "gentle";
-        const streamUrl = buildStreamUrl(ev, urgency, lang, u.name);
+        const reservationRequestId = `telnyx:call_session:${Date.now()}:${crypto.randomUUID()}`;
+        const streamUrl = buildStreamUrl({ ...ev, reservationRequestId }, urgency, lang, u.name);
         // spec §3 row 2d: say who this call is. The stream URL cannot carry it — its query is signed
         // by signCtx over a fixed array the /ws bridge re-verifies — so the state rides beside it. An
         // unnamed call is what made the detection webhook return "no wake context" and let every test
         // call that hit a voicemail run to the carrier's 120-second recording limit.
         const result = await placeCall({
-          to: phone, uid: body.uid, streamUrl, clientState: encodeTestCallClientState({ testUid: body.uid }),
+          to: phone, uid: body.uid, streamUrl, requestId: reservationRequestId,
+          clientState: encodeTestCallClientState({ testUid: body.uid, reservationRequestId }),
           projectedUsd: Number(process.env.LM_TELNYX_PROJECTED_CALL_USD) > 0
             ? Number(process.env.LM_TELNYX_PROJECTED_CALL_USD) : 0.05,
           authorizeProviderOperation: SUPA_URL && SUPA_KEY
@@ -898,7 +910,7 @@ wss.on("connection", (carrierWs, req) => {
     return;
   }
   liveCalls++;
-  const { event, urgency, lang, name, wakeUid, wakeEventKey } = ctx;
+  const { event, urgency, lang, name, wakeUid, wakeEventKey, reservationRequestId } = ctx;
   console.log(`[bridge] carrier connected urgency=${urgency} live=${liveCalls}`);
   const state = { streamSid: null, inFrames: 0, outFrames: 0, setupComplete: false };
 
@@ -1032,10 +1044,12 @@ wss.on("connection", (carrierWs, req) => {
       const quantity = Math.max(0, (Date.now() - callStartedAtMs) / 1000);
       void writeProviderCost({
         uid: wakeUid || null, provider: "telnyx", sku: "voice", operation: "call_session",
-        requestId: `telnyx:${wakeUid || "anonymous"}:${callStartedAtMs}`, quantity, unit: "seconds",
+        requestId: reservationRequestId || `telnyx:${wakeUid || "anonymous"}:${callStartedAtMs}`, quantity, unit: "seconds",
         pricingVersion: "telnyx-session-estimate-2026-08", estimatedUsd: quantity / 60 * 0.002,
         actualBilledUsd: null, actualStatus: "unknown",
-        metadata: { kind: "telnyx_call", stream_id: state.streamSid || null },
+        metadata: { kind: "telnyx_call", stream_id: state.streamSid || null, reservationRequestId: reservationRequestId || null },
+        legacyKind: "telnyx_call",
+        legacyMeta: { kind: "telnyx_call", stream_id: state.streamSid || null, reservationRequestId: reservationRequestId || null },
       }, { supaUrl: SUPA_URL, supaKey: SUPA_KEY }).catch(() => false);
     }
     if (gemini) { try { gemini.close(); } catch {} }

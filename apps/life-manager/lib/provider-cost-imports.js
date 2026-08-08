@@ -35,7 +35,10 @@ async function importTelnyxCdrs(rows, options = {}) {
   return importRows(rows, (row, index) => recordTelnyxCdr({
     uid: row && row.uid != null ? row.uid : options.uid,
     requestId: row && (row.requestId || row.request_id) || idFor("telnyx", row, index, options.requestIdPrefix),
-    durationSeconds: durationFor(row), cdr: row, metadata: options.metadata,
+    durationSeconds: durationFor(row), cdr: row,
+    reservationRequestId: row && (row.reservationRequestId || row.reservation_request_id)
+      || options.reservationRequestId,
+    metadata: options.metadata,
   }, options), options);
 }
 

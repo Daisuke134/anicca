@@ -32,6 +32,15 @@ test("Telnyx CDR import stores measured cost and keeps a missing CDR amount unkn
   assert.equal(r.events[1].actualBilledUsd, null);
 });
 
+test("Telnyx import propagates a row reservation id to the CDR settlement event", async () => {
+  const r = recorder();
+  await importTelnyxCdrs([
+    { id: "cdr-reservation", call_control_id: "cc-reservation", billed_duration: 60,
+      reservation_request_id: "call-reservation-1", cost: { amount: "0.02", currency: "USD" } },
+  ], { uid: "u1", ...r.deps });
+  assert.equal(r.events[0].metadata.reservationRequestId, "call-reservation-1");
+});
+
 test("Railway and Supabase allocation imports preserve owner measurements", async () => {
   const r = recorder();
   await importRailwayAllocations([{ period: "2026-08-08", amount_usd: "1.25" }], { uid: "u1", ...r.deps });

@@ -126,7 +126,10 @@ test("a /test-call that reaches voicemail is hung up on, and writes nothing", as
     //    test call could never be hung up on.
     const clientState = dialBodies[0].client_state;
     assert.ok(clientState, "a /test-call dial body must carry a client_state");
-    assert.deepEqual(decodeCallClientState(clientState), { kind: "test", testUid: uid });
+    const decodedClientState = decodeCallClientState(clientState);
+    assert.equal(decodedClientState.kind, "test");
+    assert.equal(decodedClientState.testUid, uid);
+    assert.match(decodedClientState.reservationRequestId, /^telnyx:call_session:/);
     assert.equal(dialBodies[0].answering_machine_detection, "detect");
 
     // 3. The stream URL is signed by signCtx over a FIXED ordered array that the /ws bridge verifies
@@ -134,8 +137,8 @@ test("a /test-call that reaches voicemail is hung up on, and writes nothing", as
     //    signature covers on one end only, so the query must stay exactly what it was.
     const streamQuery = [...new URL(dialBodies[0].stream_url).searchParams.keys()].sort();
     assert.deepEqual(streamQuery,
-      ["dateTime", "lang", "location", "name", "sig", "summary", "urgency", "wakeEventKey", "wakeUid"],
-      "buildStreamUrl's signed query must not gain items");
+      ["dateTime", "lang", "location", "name", "reservationRequestId", "sig", "summary", "urgency", "wakeEventKey", "wakeUid"],
+      "buildStreamUrl carries only the signed reservation context in addition to the existing query");
 
     // 4. Voicemail → the call is ended, and the response says so rather than "no wake context".
     const machine = await detection({ result: "machine", call_control_id: "v2:fixture-ccid", client_state: clientState });

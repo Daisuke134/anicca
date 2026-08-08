@@ -153,8 +153,14 @@ CREATE TABLE IF NOT EXISTS public.lm_provider_voice_settlements (
   uid         text NOT NULL,
   budget_day  date NOT NULL,
   amount_usd  numeric NOT NULL CHECK (amount_usd >= 0),
+  reservation_request_id text,
   settled_at  timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE public.lm_provider_voice_settlements
+  ADD COLUMN IF NOT EXISTS reservation_request_id text;
+CREATE UNIQUE INDEX IF NOT EXISTS lm_provider_voice_settlement_reservation_idx
+  ON public.lm_provider_voice_settlements (uid, budget_day, reservation_request_id)
+  WHERE reservation_request_id IS NOT NULL;
 ALTER TABLE public.lm_provider_voice_settlements ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.lm_provider_voice_settlements FORCE ROW LEVEL SECURITY;
 
@@ -339,8 +345,8 @@ BEGIN
     WHERE scope = 'user' AND uid = v_uid AND budget_day = v_day FOR UPDATE;
   PERFORM 1 FROM lm_provider_voice_buckets
     WHERE scope = 'global' AND uid = '' AND budget_day = v_day FOR UPDATE;
-  INSERT INTO lm_provider_voice_settlements(request_id, uid, budget_day, amount_usd)
-    VALUES (p_request_id, v_uid, v_day, v_amount)
+  INSERT INTO lm_provider_voice_settlements(request_id, uid, budget_day, amount_usd, reservation_request_id)
+    VALUES (p_request_id, v_uid, v_day, v_amount, p_reservation_request_id)
     ON CONFLICT (request_id) DO NOTHING;
   IF NOT FOUND THEN
     RETURN jsonb_build_object('settled', true, 'duplicate', true);

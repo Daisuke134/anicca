@@ -13,6 +13,17 @@ test("a wake client_state decodes as kind=wake", () => {
   });
 });
 
+test("wake and test client states carry the exact dial reservation request id", () => {
+  const wake = encodeWakeClientState({ wakeUid: "lm_abc", wakeEventKey: "event-1", reservationRequestId: "telnyx:reservation-1" });
+  assert.deepEqual(decodeCallClientState(wake), {
+    kind: "wake", wakeUid: "lm_abc", wakeEventKey: "event-1", reservationRequestId: "telnyx:reservation-1",
+  });
+  const testCall = encodeTestCallClientState({ testUid: "lm_abc", reservationRequestId: "telnyx:reservation-2" });
+  assert.deepEqual(decodeCallClientState(testCall), {
+    kind: "test", testUid: "lm_abc", reservationRequestId: "telnyx:reservation-2",
+  });
+});
+
 test("a test-call client_state decodes as kind=test", () => {
   const encoded = encodeTestCallClientState({ testUid: "lm_abc" });
   assert.deepEqual(decodeCallClientState(encoded), { kind: "test", testUid: "lm_abc" });

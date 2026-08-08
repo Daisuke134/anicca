@@ -16,6 +16,8 @@ test("migration provides a unique atomic daily claim identity", () => {
   assert.match(sql, /reserved_usd/);
   assert.match(sql, /settled_usd/);
   assert.match(sql, /lm_settle_provider_voice/);
+  assert.match(sql, /reservation_request_id/);
+  assert.match(sql, /lm_provider_voice_settlement_reservation_idx/);
 });
 
 test("security-definer budget RPCs are callable only by service_role", () => {
