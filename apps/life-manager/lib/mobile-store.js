@@ -124,7 +124,7 @@ function createSupabaseMobileStore(options = {}) {
     async findAccessSession(accessTokenHash) {
       const found = await rows("lm_mobile_sessions", {
         access_token_hash: `eq.${accessTokenHash}`,
-        select: "session_id,family_id,uid,product_locale,access_expires_at,refresh_expires_at,revoked_at,rotated_at",
+        select: "session_id,family_id,uid,access_token_hash,product_locale,access_expires_at,refresh_expires_at,revoked_at,rotated_at",
         limit: "1",
       });
       return found[0] || null;
@@ -132,7 +132,7 @@ function createSupabaseMobileStore(options = {}) {
     async findRefreshSession(refreshTokenHash) {
       const found = await rows("lm_mobile_sessions", {
         refresh_token_hash: `eq.${refreshTokenHash}`,
-        select: "session_id,family_id,uid,product_locale,access_expires_at,refresh_expires_at,revoked_at,rotated_at",
+        select: "session_id,family_id,uid,refresh_token_hash,product_locale,access_expires_at,refresh_expires_at,revoked_at,rotated_at",
         limit: "1",
       });
       return found[0] || null;
@@ -221,6 +221,10 @@ function createSupabaseMobileStore(options = {}) {
           status: question.status || "open",
         }),
       }, "question_write_failed");
+      if (result.conflict) {
+        const found = await rows("lm_mobile_questions", scopedParams(scope, { id: `eq.${encodeFilter(question.id)}`, limit: "1" }));
+        return found[0] || question;
+      }
       return asRow(result.body) || question;
     },
     async consumeOpenQuestion(scope, questionId, answer) {
@@ -250,7 +254,13 @@ function createSupabaseMobileStore(options = {}) {
     },
     async writeDeletionReceipt(scope, receipt) {
       const result = await request("/rest/v1/lm_mobile_deletion_receipts", {
-        method: "POST", headers: { "content-type": "application/json", Prefer: "resolution=merge-duplicates,return=representation" }, body: JSON.stringify({ uid: requireScope(scope).uid, ...receipt }),
+        method: "POST", headers: { "content-type": "application/json", Prefer: "resolution=merge-duplicates,return=representation" }, body: JSON.stringify({
+          uid: requireScope(scope).uid,
+          operation_id: receipt.operationId || receipt.operation_id,
+          status: receipt.status,
+          completed_at: receipt.completedAt || receipt.completed_at || null,
+          provider_cleanup: receipt.providerCleanup || receipt.provider_cleanup || [],
+        }),
       }, "deletion_receipt_failed");
       return asRow(result.body) || receipt;
     },
@@ -262,8 +272,11 @@ function createSupabaseMobileStore(options = {}) {
       }));
       return found[0] || null;
     },
-    async deleteAccount(scope) {
-      return rpc("delete_lm_mobile_account", { p_uid: requireScope(scope).uid }, "account_delete_failed");
+    async deleteAccount(scope, options2 = {}) {
+      return rpc("delete_lm_mobile_account", {
+        p_uid: requireScope(scope).uid,
+        p_preserve_idempotency_key: options2.preserveIdempotencyKey || null,
+      }, "account_delete_failed");
     },
   };
 }
@@ -278,6 +291,10 @@ function createMemoryMobileStore(options = {}) {
   const devices = new Map();
   const calls = new Map();
   const deletionReceipts = new Map();
+  const callDailyUserLimit = Number.isSafeInteger(options.callDailyUserLimit) && options.callDailyUserLimit > 0 ? options.callDailyUserLimit : 5;
+  const callDailyGlobalLimit = Number.isSafeInteger(options.callDailyGlobalLimit) && options.callDailyGlobalLimit > 0 ? options.callDailyGlobalLimit : 100;
+  const callCooldownMs = Number.isSafeInteger(options.callCooldownMs) && options.callCooldownMs >= 0 ? options.callCooldownMs : 10 * 60 * 1000;
+  const memoryNow = typeof options.now === "function" ? options.now : Date.now;
   let sequence = 0;
   function scoped(scope, expectedUid) {
     requireScope(scope);
@@ -295,7 +312,14 @@ function createMemoryMobileStore(options = {}) {
     async readAnalysisState(scope) { const row = user(scope); return row && row.analysisState ? { ...row.analysisState } : { status: "idle" }; },
     async writeAnalysisState(scope, state) { const row = user(scope); if (!row) throw new MobileError("account_not_found", "Account not found.", 404); row.analysisState = { ...state, updatedAt: state.updatedAt || nowIso() }; return { ...row.analysisState }; },
     async createOAuthState(row) { states.set(row.stateHash, { ...row }); },
-    async claimOAuthState(hash, expected = {}) { const row = states.get(hash); if (!row || row.usedAt || (row.uid && expected.uid && row.uid !== expected.uid)) return null; row.usedAt = nowIso(); return { ...row }; },
+    async claimOAuthState(hash, expected = {}) {
+      const row = states.get(hash);
+      if (!row || row.usedAt || (row.expiresAt && Date.parse(row.expiresAt) <= memoryNow())) return null;
+      if (row.uid && row.uid !== expected.uid) return null;
+      if (row.subject && expected.subject && row.subject !== expected.subject) return null;
+      row.usedAt = nowIso();
+      return { ...row };
+    },
     async createMobileSession(row) { sessions.set(row.sessionId, { ...row }); },
     async findAccessSession(hash) { return [...sessions.values()].find((row) => row.accessTokenHash === hash) || null; },
     async findRefreshSession(hash) { return [...sessions.values()].find((row) => row.refreshTokenHash === hash) || null; },
@@ -315,18 +339,40 @@ function createMemoryMobileStore(options = {}) {
       return { ...item };
     },
     async listOutbox(scope, after = 0, limit = 50) { return (outbox.get(scoped(scope)) || []).filter((row) => row.sequence > after).slice(0, limit).map((row) => ({ ...row })); },
-    async createQuestion(scope, question) { const uid = scoped(scope); const row = { ...question, uid, status: "open" }; questions.set(`${uid}:${row.id}`, row); return { ...row }; },
+    async createQuestion(scope, question) {
+      const uid = scoped(scope);
+      const key = `${uid}:${question.id}`;
+      const existing = questions.get(key);
+      if (existing) return { ...existing };
+      const row = { ...question, uid, status: question.status || "open" };
+      questions.set(key, row);
+      return { ...row };
+    },
     async consumeOpenQuestion(scope, id, answer) { const uid = scoped(scope); const row = questions.get(`${uid}:${id}`); if (!row || row.status !== "open") return null; row.status = "answered"; row.answer = answer; return { ...row }; },
-    async claimCallAttempt(scope, value) { const uid = scoped(scope); const day = String(value.now || "").slice(0, 10); const existing = [...calls.values()].filter((row) => row.uid === uid && row.day === day); if (existing.length >= 5) return { rateLimited: true, reason: "daily_user_limit" }; if (existing.some((row) => row.createdAt && Date.parse(value.now) - Date.parse(row.createdAt) < 10 * 60 * 1000)) return { rateLimited: true, reason: "cooldown" }; const attemptId = `call:v1:${uid}:${calls.size + 1}`; const row = { attemptId, uid, day, status: "claimed", idempotencyKey: value.idempotencyKey, createdAt: value.now || nowIso() }; calls.set(attemptId, row); return { ...row }; },
+    async claimCallAttempt(scope, value) {
+      const uid = scoped(scope);
+      const day = String(value.now || "").slice(0, 10);
+      const existing = [...calls.values()].filter((row) => row.uid === uid && row.day === day);
+      if (existing.length >= callDailyUserLimit) return { rateLimited: true, reason: "daily_user_limit" };
+      if ([...calls.values()].filter((row) => row.day === day).length >= callDailyGlobalLimit) return { rateLimited: true, reason: "daily_global_limit" };
+      if (existing.some((row) => row.createdAt && Date.parse(value.now) - Date.parse(row.createdAt) < callCooldownMs)) return { rateLimited: true, reason: "cooldown" };
+      if (existing.some((row) => row.idempotencyKey === value.idempotencyKey)) return { rateLimited: true, reason: "duplicate_request" };
+      const attemptId = `call:v1:${uid}:${calls.size + 1}`;
+      const row = { attemptId, uid, day, status: "claimed", idempotencyKey: value.idempotencyKey, createdAt: value.now || nowIso() };
+      calls.set(attemptId, row);
+      return { ...row };
+    },
     async finishCallAttempt(scope, value) { const row = calls.get(value.attemptId); if (row && row.uid === scoped(scope)) Object.assign(row, value); },
     async upsertDevice(scope, value) { const uid = scoped(scope); const row = { ...value, uid, deviceId: value.deviceId || `device:v1:${uid}:${value.token.slice(-8)}` }; devices.set(`${uid}:${value.token}`, row); return { ...row }; },
     async deleteDevice(scope, token) { devices.delete(`${scoped(scope)}:${token}`); return { deleted: true }; },
     async readDeletionReceipt(scope, operationId) { const uid = scoped(scope); return deletionReceipts.get(`${uid}:${operationId}`) || null; },
     async writeDeletionReceipt(scope, receipt) { const uid = scoped(scope); deletionReceipts.set(`${uid}:${receipt.operationId}`, { ...receipt }); return receipt; },
-    async deleteAccount(scope) {
+    async deleteAccount(scope, options2 = {}) {
       const uid = scoped(scope);
       users.delete(uid);
       for (const key of sessions.keys()) if (sessions.get(key).uid === uid) sessions.delete(key);
+      const preserve = options2.preserveIdempotencyKey ? `${uid}:${options2.preserveIdempotencyKey}` : null;
+      for (const key of idempotency.keys()) if (key.startsWith(`${uid}:`) && key !== preserve) idempotency.delete(key);
       outbox.delete(uid);
       for (const key of questions.keys()) if (key.startsWith(`${uid}:`)) questions.delete(key);
       for (const key of devices.keys()) if (key.startsWith(`${uid}:`)) devices.delete(key);

@@ -2,7 +2,7 @@
 
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { buildAnchoredRouteRequest, computeMobileRoute, projectMobileRoute } = require("../lib/mobile-route.js");
+const { buildAnchoredRouteRequest, computeMobileRoute, projectMobileRoute, routeAccepted } = require("../lib/mobile-route.js");
 
 const event = {
   id: "event-1", summary: "Meeting", location: "Roppongi", timezone: "America/Los_Angeles",
@@ -50,4 +50,51 @@ test("route projection keeps provider facts, nullable values, and omits unsuppor
   assert.equal(value.steps[0].platform, null);
   assert.equal(Object.hasOwn(value, "entrance"), false);
   assert.equal(Object.hasOwn(value.steps[0], "entrance"), false);
+});
+
+test("outbound anchors use the event local date and reject malformed provider success", () => {
+  const overnight = buildAnchoredRouteRequest({
+    event: { id: "overnight", location: "Destination", startIso: "2026-11-01T00:30:00.000Z", timezone: "America/Los_Angeles" },
+    origin: "Origin",
+  });
+  assert.equal(overnight.eventDate, "2026-10-31");
+  assert.equal(overnight.arriveBy, "2026-11-01T00:30:00.000Z");
+  assert.equal(routeAccepted({ provider: "transit" }), false);
+  assert.equal(routeAccepted({ status: "route_ready" }), false);
+  assert.throws(() => buildAnchoredRouteRequest({
+    event: { id: "return-without-end", location: "Destination", startIso: "2026-11-01T00:30:00.000Z", timezone: "UTC" },
+    origin: "Origin", direction: "return",
+  }), (error) => error.code === "route_anchor_invalid");
+  assert.throws(() => buildAnchoredRouteRequest({
+    event: { id: "missing-destination", startIso: "2026-11-01T00:30:00.000Z", timezone: "UTC" },
+    origin: "Origin",
+  }), (error) => error.code === "missing_destination");
+});
+
+test("route projection preserves access, egress, freshness, and explicit nullable attribution", () => {
+  const value = projectMobileRoute({
+    status: "route_ready", provider: "transit", providerAttribution: null,
+    accessWalkSeconds: 120, egressWalkSeconds: null,
+    freshness: { source: "provider", computedAt: "2026-08-08T00:00:00.000Z" },
+    eventId: "event-1", timezone: "UTC",
+    origin: { displayNames: { en: "Origin", ja: "出発" } },
+    destination: { displayNames: { en: "Destination", ja: "目的地" } },
+    steps: [],
+  }, "en");
+  assert.equal(value.accessWalkSeconds, 120);
+  assert.equal(value.egressWalkSeconds, null);
+  assert.deepEqual(value.freshness, { source: "provider", computedAt: "2026-08-08T00:00:00.000Z" });
+  assert.equal(value.providerAttribution, null);
+});
+
+test("route projection leaves absent provider facts null instead of manufacturing defaults", () => {
+  const value = projectMobileRoute({
+    status: "route_ready", provider: "transit", eventId: "event-1", timezone: "UTC",
+    origin: { displayNames: { en: "Origin", ja: "出発" } },
+    destination: { displayNames: { en: "Destination", ja: "目的地" } }, steps: [],
+  }, "en");
+  assert.equal(value.computedAt, null);
+  assert.equal(value.durationSeconds, null);
+  assert.equal(value.bufferSeconds, null);
+  assert.equal(value.transferCount, null);
 });

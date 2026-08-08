@@ -42,7 +42,7 @@ const { amdEnabled, shouldMarkAnswered } = require("./lib/answered.js");
 const { decodeCallClientState, encodeTestCallClientState, verifyTelnyxSignature } = require("./lib/telnyx-webhook.js");
 const { parseUpdate, sendMessage, answerCallbackQuery, isPanelCommand, isPanelDeepLink, routeCallbackData } = require("./lib/telegram.js");
 const { sendPanelLink, handlePanelRequest, panelDeviceCodeFromCommand, confirmPanelDeviceCode } = require("./lib/panel-auth.js");
-const { handlePanelApiRequest, handlePanelOAuthCallback, composioCalendarStart, composioCalendarDisconnect } = require("./lib/panel-api.js");
+const { handlePanelApiRequest, handlePanelOAuthCallback, composioCalendarStatus, composioCalendarStart, composioCalendarDisconnect } = require("./lib/panel-api.js");
 const { createSupabaseCommandStore } = require("./lib/panel-api.js");
 const { parseUserCommand, dispatchParsedControl, executeUserCommand } = require("./lib/user-command.js");
 const { parseSlashCommand, slashAliasText, handleSlashCommand } = require("./lib/slash-command.js");
@@ -56,6 +56,7 @@ const {
 } = require("./lib/telegram-onboard.js");
 const { createHostedGmailLink } = require("./lib/gmail-onboard.js");
 const { mailAvailable } = require("./lib/mail-availability.js");
+const { handleMobileV1Request, buildComposioAuthorizationUrl } = require("./lib/mobile-v1-router.js");
 const {
   markAnswered, applyAmdDetection, applyTestCallDetection, upsertLiveLocation,
 } = require("./lib/late-notice.js");
@@ -216,6 +217,35 @@ function ctxFromReq(req) {
 
 const server = http.createServer((req, res) => {
   const path = (req.url || "").split("?")[0];
+  if (path === "/api/mobile/v1" || path.startsWith("/api/mobile/v1/")) {
+    handleMobileV1Request(req, res, {
+      supaUrl: SUPA_URL,
+      supaKey: SUPA_KEY,
+      composioKey: COMPOSIO_KEY,
+      composioAuthConfig: process.env.COMPOSIO_GCAL_AUTH_CONFIG,
+      apiKey: COMPOSIO_KEY,
+      mapsKey: process.env.LIFE_MAPS_KEY || process.env.GOOGLE_API_KEY,
+      buildAuthorizationUrl: (input) => buildComposioAuthorizationUrl(input, {
+        composioKey: COMPOSIO_KEY,
+        composioAuthConfig: process.env.COMPOSIO_GCAL_AUTH_CONFIG,
+      }),
+      verifyCalendarOwnership: async ({ uid }) => {
+        const state = await composioCalendarStatus({ uid }, { supaUrl: SUPA_URL, supaKey: SUPA_KEY, composioKey: COMPOSIO_KEY });
+        return state === "ACTIVE";
+      },
+      placeCall: (input) => {
+        if (!process.env.PUBLIC_WSS) return { ok: false, error: "PUBLIC_WSS is not configured" };
+        const streamUrl = buildStreamUrl({ summary: input.summary || "Life Manager call", startIso: input.dateTime || "", location: input.location || "" }, "gentle", input.callLanguage, input.name);
+        return placeCall({ ...input, streamUrl });
+      },
+      disconnectCalendar: (scope) => composioCalendarDisconnect(scope, { supaUrl: SUPA_URL, supaKey: SUPA_KEY, composioKey: COMPOSIO_KEY }),
+    }).catch((error) => {
+      console.error("[mobile-v1] request failed", error && error.message);
+      if (!res.headersSent) res.writeHead(503, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" });
+      res.end(JSON.stringify({ error: { code: "mobile_unavailable", retryable: true } }));
+    });
+    return;
+  }
   if (path === "/api/panel/session/telegram" || path === "/api/panel/session/device") {
     handlePanelRequest(req, res, {
       supaUrl: SUPA_URL, supaKey: SUPA_KEY, token: LM_TG_TOKEN,

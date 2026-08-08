@@ -18,5 +18,27 @@ test("bootstrap projects only authenticated profile, connection, and analysis st
       callsEnabled: false, callLanguage: null,
     },
     calendar: { status: "connected" }, offer: { status: "available" }, analysis: { status: "idle" },
+    connections: {
+      calendar: { status: "connected", provider: "google_calendar" },
+      phone: { status: "connected", masked: "+81••••••••78" },
+      billing: { status: "payment_required" },
+    },
+    subscriptionOffer: { status: "available" },
   });
+});
+
+test("bootstrap rejects a mismatched store row and exposes running analysis without internal phases", async () => {
+  await assert.rejects(() => readMobileBootstrap({ uid: "user-a" }, {
+    store: { async readUser() { return { uid: "user-b" }; } },
+  }), (error) => error.code === "scope_mismatch");
+  const result = await readMobileBootstrap({ uid: "user-a" }, {
+    store: {
+      async readUser() { return { uid: "user-a", calls_enabled: true, phone: null, call_language: "ja", calendar_status: "unknown" }; },
+      async readAnalysisState() { return { status: "calculating_route" }; },
+    },
+  });
+  assert.equal(result.analysis.status, "running");
+  assert.equal(result.user.callsEnabled, false);
+  assert.equal(result.user.callLanguage, null);
+  assert.equal(result.calendar.status, "error");
 });

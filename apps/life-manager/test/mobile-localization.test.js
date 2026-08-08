@@ -58,3 +58,78 @@ test("question and route-unavailable projections localize their concrete reason"
   }, "en");
   assert.match(unavailable.text, /provider/u);
 });
+
+test("semantic route projection omits unsupported top-level precision", () => {
+  const projected = projectSemanticMessage({
+    ...row(),
+    route: { ...row().route, entrance: "unknown", exit: "unknown", optimalCar: true, crowding: "busy" },
+  }, "en");
+  assert.equal(Object.hasOwn(projected.route, "entrance"), false);
+  assert.equal(Object.hasOwn(projected.route, "exit"), false);
+  assert.equal(Object.hasOwn(projected.route, "optimalCar"), false);
+  assert.equal(Object.hasOwn(projected.route, "crowding"), false);
+});
+
+test("known Japanese provider names use deterministic English transliteration with provenance", () => {
+  const projected = projectSemanticMessage({
+    ...row(),
+    route: {
+      ...row().route,
+      origin: "渋谷駅",
+      destination: "六本木",
+      steps: [{ ...row().route.steps[0], from: "渋谷駅", to: "六本木", service: "都営大江戸線", headsign: "大門" }],
+    },
+  }, "en");
+  assert.equal(projected.route.origin.displayName, "Shibuya Station");
+  assert.equal(projected.route.destination.displayName, "Roppongi");
+  assert.equal(projected.route.localization_source, "transliteration");
+});
+
+test("plain provider navigation instructions cannot bypass locale projection", () => {
+  assert.throws(() => projectSemanticMessage({
+    ...row(),
+    route: { ...row().route, steps: [{ ...row().route.steps[0], instruction: "未知駅へ移動" }] },
+  }, "en"), (error) => error.code === "localization_unavailable");
+});
+
+test("localized routes do not leak the provider's alternate display map", () => {
+  const english = projectSemanticMessage(row(), "en");
+  const japanese = projectSemanticMessage(row(), "ja");
+  for (const projected of [english, japanese]) {
+    assert.equal(Object.hasOwn(projected.route.origin, "displayNames"), false);
+    assert.equal(Object.hasOwn(projected.route.destination, "displayNames"), false);
+  }
+});
+
+test("localized route legs expose only the frozen provider facts", () => {
+  const projected = projectSemanticMessage({
+    ...row(),
+    route: { ...row().route, steps: [{ ...row().route.steps[0], displayNames: { en: "leak", ja: "漏れ" } }] },
+  }, "en");
+  assert.equal(Object.hasOwn(projected.route.steps[0], "displayNames"), false);
+});
+
+test("localized route projection does not expose tenant authority fields", () => {
+  const projected = projectSemanticMessage({
+    ...row(), route: { ...row().route, uid: "user-a", accountId: "provider-account" },
+  }, "en");
+  assert.equal(Object.hasOwn(projected.route, "uid"), false);
+  assert.equal(Object.hasOwn(projected.route, "accountId"), false);
+});
+
+test("localized question projection exposes only the reply contract", () => {
+  const projected = projectSemanticMessage({
+    ...row(), key: "chat.needs_information", type: "question",
+    question: { id: "question-1", type: "name", prompt: "What should Life Manager call you?", eventId: null, uid: "user-a" },
+    route: null,
+  }, "en");
+  assert.equal(Object.hasOwn(projected.question, "uid"), false);
+  assert.deepEqual(Object.keys(projected.question).sort(), ["eventId", "id", "prompt", "type"].sort());
+});
+
+test("calendar user content keeps only title and location", () => {
+  const projected = projectSemanticMessage({
+    ...row(), userContent: { eventTitle: "Meeting", eventLocation: "Tokyo", uid: "user-a" },
+  }, "en");
+  assert.deepEqual(projected.userContent, { eventTitle: "Meeting", eventLocation: "Tokyo" });
+});

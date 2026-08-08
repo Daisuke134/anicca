@@ -15,7 +15,7 @@ function text(value, fieldName, max = 500) {
   return result;
 }
 
-function validateMobileProfilePatch(body = {}) {
+function validateMobileProfilePatch(body = {}, existing = {}) {
   if (!body || typeof body !== "object" || Array.isArray(body)) throw new MobileError("invalid_profile", "Profile data is invalid.");
   const allowed = new Set(["name", "home", "productLocale", "phone", "callsEnabled", "callLanguage", "timezone"]);
   for (const key of Object.keys(body)) if (!allowed.has(key)) throw new MobileError("unknown_profile_field", `Profile field ${key} is not allowed.`);
@@ -37,13 +37,20 @@ function validateMobileProfilePatch(body = {}) {
   }
   if (Object.hasOwn(body, "timezone")) patch.timezone = safeTimeZone(body.timezone);
 
-  if (patch.phone === null && patch.callsEnabled === true) patch.callsEnabled = false;
-  if (patch.callsEnabled === true && !patch.phone) throw new MobileError("call_language_required", "Add a phone number before enabling calls.");
-  if (patch.callsEnabled !== true && Object.hasOwn(patch, "callLanguage") && patch.callLanguage !== null) {
+  if (patch.phone === null) {
+    patch.callsEnabled = false;
+    if (Object.hasOwn(body, "callLanguage")) patch.callLanguage = null;
+  }
+  const existingPhone = existing && (existing.phone || existing.phone_number);
+  const effectivePhone = patch.phone !== undefined ? patch.phone : existingPhone;
+  if (patch.callsEnabled === true && !effectivePhone) throw new MobileError("call_language_required", "Add a phone number before enabling calls.");
+  const existingCallsEnabled = existing && (existing.callsEnabled === true || existing.calls_enabled === true);
+  const effectiveCallsEnabled = patch.callsEnabled === undefined ? existingCallsEnabled : patch.callsEnabled;
+  if (!effectiveCallsEnabled && Object.hasOwn(patch, "callLanguage") && patch.callLanguage !== null) {
     throw new MobileError("calls_disabled", "Call language can be changed after calls are enabled.");
   }
   if (patch.callsEnabled === true && !Object.hasOwn(patch, "callLanguage")) {
-    patch.callLanguage = patch.productLocale || "en";
+    patch.callLanguage = patch.productLocale || existing.callLanguage || existing.call_language || existing.productLocale || existing.product_locale || "en";
   }
   return patch;
 }
@@ -58,15 +65,18 @@ function outputProfile(row, patch) {
     productLocale: source.productLocale || source.product_locale || "en",
     phone: source.phone === undefined ? null : source.phone,
     callsEnabled: callsEnabled === true,
-    callLanguage: callLanguage || null,
+    callLanguage: callsEnabled === true ? (callLanguage || null) : null,
   };
 }
 
 async function patchMobileProfile(scope, body, deps = {}) {
   if (!scope || !scope.uid) throw new MobileError("scope_required", "An authenticated mobile scope is required.", 401);
-  const patch = validateMobileProfilePatch(body);
   const store = deps.store;
   if (!store || typeof store.patchUser !== "function") throw new MobileError("profile_store_unavailable", "Profile storage is unavailable.", 503, true);
+  const needsExisting = body && (body.callsEnabled === true || Object.hasOwn(body, "callLanguage"));
+  const existing = needsExisting && typeof store.readUser === "function" ? await store.readUser(scope) : null;
+  const patch = validateMobileProfilePatch(body, existing || {});
+  if (patch.phone === null && !Object.hasOwn(patch, "callLanguage")) patch.callLanguage = null;
   const stored = await store.patchUser(scope, {
     ...(patch.name !== undefined ? { name: patch.name } : {}),
     ...(patch.home !== undefined ? { home_address: patch.home } : {}),
@@ -76,7 +86,7 @@ async function patchMobileProfile(scope, body, deps = {}) {
     ...(patch.callLanguage !== undefined ? { call_language: patch.callLanguage } : {}),
     ...(patch.timezone !== undefined ? { time_zone: patch.timezone } : {}),
   });
-  return outputProfile(stored, patch);
+  return outputProfile({ ...(existing || {}), ...(stored || {}) }, patch);
 }
 
 module.exports = { E164_RE, isValidE164, validateMobileProfilePatch, patchMobileProfile, outputProfile };

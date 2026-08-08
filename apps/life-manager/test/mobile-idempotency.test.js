@@ -48,3 +48,19 @@ test("same key with different payload returns 409 and performs no side effect", 
   );
   assert.equal(sideEffects, 1);
 });
+
+test("idempotency keys meet the durable receipt minimum length", async () => {
+  await assert.rejects(() => withMobileIdempotency({
+    scope: { uid: "user-a" }, key: "short", payload: {}, operation: async () => ({ ok: true }),
+  }, deps()), (error) => error.code === "idempotency_required");
+});
+
+test("failed idempotent mutations replay structured details", async () => {
+  const d = deps();
+  const input = {
+    scope: { uid: "user-a" }, key: "detail-1", payload: { call: true },
+    operation: async () => { throw new MobileError("call_rate_limited", "Calls are temporarily rate-limited.", 429, true, { reason: "cooldown" }); },
+  };
+  await assert.rejects(() => withMobileIdempotency(input, d), (error) => error.details.reason === "cooldown");
+  await assert.rejects(() => withMobileIdempotency(input, d), (error) => error.details.reason === "cooldown");
+});

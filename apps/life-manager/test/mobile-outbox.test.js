@@ -33,3 +33,8 @@ test("invalid cursor is a structured 400 and locale switch re-projects history w
   const refetch = await listMobileMessages(scope, null, { store });
   assert.equal(new Set(refetch.messages.map((message) => message.id)).size, 1);
 });
+
+test("semantic outbox rejects an unknown generated message key", async () => {
+  const store = createMemoryMobileStore({ users: [{ uid: "user-a" }] });
+  await assert.rejects(() => appendMobileMessage({ uid: "user-a" }, { key: "chat.arbitrary_prose" }, { store }), (error) => error.code === "message_key_invalid");
+});

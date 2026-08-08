@@ -32,39 +32,107 @@ function nameParts(value) {
   return { raw: value };
 }
 
-function projectLocalizedRouteName(value, locale) {
+function projectRouteName(value, locale) {
   const active = normalizeLocale(locale);
   const parts = nameParts(value);
-  if (typeof parts[active] === "string" && parts[active].trim()) return parts[active].trim();
-  if (active === "en" && typeof parts.raw === "string" && !CJK_RE.test(parts.raw)) return parts.raw.trim();
-  if (active === "en" && typeof parts.ja === "string" && TRANSLITERATIONS.has(parts.ja.trim())) return TRANSLITERATIONS.get(parts.ja.trim());
-  if (active === "ja" && typeof parts.raw === "string" && CJK_RE.test(parts.raw)) return parts.raw.trim();
+  if (typeof parts[active] === "string" && parts[active].trim()) return { value: parts[active].trim(), source: "provider" };
+  if (active === "en" && typeof parts.raw === "string" && !CJK_RE.test(parts.raw)) return { value: parts.raw.trim(), source: "provider" };
+  if (active === "en" && typeof parts.raw === "string" && TRANSLITERATIONS.has(parts.raw.trim())) return { value: TRANSLITERATIONS.get(parts.raw.trim()), source: "transliteration" };
+  if (active === "en" && typeof parts.ja === "string" && TRANSLITERATIONS.has(parts.ja.trim())) return { value: TRANSLITERATIONS.get(parts.ja.trim()), source: "transliteration" };
+  if (active === "ja" && typeof parts.raw === "string" && CJK_RE.test(parts.raw)) return { value: parts.raw.trim(), source: "provider" };
   throw new MobileError("localization_unavailable", "A provider navigation name could not be localized.", 422);
+}
+
+function projectLocalizedRouteName(value, locale) {
+  return projectRouteName(value, locale).value;
 }
 
 function routeValue(route, locale) {
   if (!route) return null;
-  const output = { ...route };
+  const active = normalizeLocale(locale);
+  const provider = route.provider || null;
+  const providerAttribution = Object.hasOwn(route, "providerAttribution")
+    ? route.providerAttribution
+    : (Object.hasOwn(route, "provider_attribution") ? route.provider_attribution : null);
+  const output = {
+    status: route.status || "route_ready",
+    provider,
+    providerAttribution,
+    computedAt: route.computedAt || route.computed_at || null,
+    timezone: route.timezone || null,
+    eventId: route.eventId || route.event_id || null,
+    origin: null,
+    destination: null,
+    leaveAt: route.leaveAt || route.leave_at || null,
+    arriveAt: route.arriveAt || route.arrive_at || null,
+    durationSeconds: route.durationSeconds === undefined && route.duration_secs === undefined
+      ? null : Number(route.durationSeconds ?? route.duration_secs),
+    bufferSeconds: route.bufferSeconds === undefined && route.buffer_secs === undefined
+      ? null : Number(route.bufferSeconds ?? route.buffer_secs),
+    transferCount: route.transferCount === undefined && route.transfer_count === undefined
+      ? null : Number(route.transferCount ?? route.transfer_count),
+    fare: route.fare === undefined ? null : route.fare,
+    geometry: route.geometry === undefined ? null : route.geometry,
+    steps: [],
+  };
+  let usedTransliteration = false;
+  for (const unsupported of ["entrance", "exit", "optimalCar", "crowding"]) delete output[unsupported];
   for (const key of ["origin", "destination"]) {
-    if (route[key]) output[key] = { ...route[key], displayName: projectLocalizedRouteName(route[key], locale) };
+    if (route[key] !== null && route[key] !== undefined) {
+      const projected = projectRouteName(route[key], active);
+      usedTransliteration ||= projected.source === "transliteration";
+      const userContent = typeof route[key] === "object"
+        ? (route[key].userContent ?? route[key].user_content ?? null)
+        : route[key];
+      output[key] = { displayName: projected.value, userContent };
+    }
   }
   if (Array.isArray(route.steps)) {
-    output.steps = route.steps.map((step) => {
-      const item = { ...step };
+    output.steps = route.steps.map((step, index) => {
+      const item = {
+        sequence: Number.isSafeInteger(step.sequence) ? step.sequence : index + 1,
+        mode: String(step.mode || step.kind || "other"),
+        instruction: null,
+        from: null,
+        to: null,
+        service: null,
+        headsign: null,
+        platform: step.platform === undefined ? null : step.platform,
+        departAt: step.departAt || step.depart_at || null,
+        arriveAt: step.arriveAt || step.arrive_at || null,
+        durationSeconds: step.durationSeconds === undefined && step.duration_secs === undefined
+          ? null
+          : Number(step.durationSeconds ?? step.duration_secs),
+      };
       for (const key of ["from", "to", "service", "headsign"]) {
-        if (step[key] !== null && step[key] !== undefined) item[key] = projectLocalizedRouteName(step[key], locale);
+        if (step[key] !== null && step[key] !== undefined) {
+          const projected = projectRouteName(step[key], active);
+          usedTransliteration ||= projected.source === "transliteration";
+          item[key] = projected.value;
+        }
         else item[key] = null;
       }
-      if (step.instruction && typeof step.instruction === "object") item.instruction = projectLocalizedRouteName(step.instruction, locale);
-      if (typeof item.instruction !== "string") item.instruction = String(item.instruction || "");
+      if (step.instruction !== null && step.instruction !== undefined) {
+        const projected = projectRouteName(step.instruction, active);
+        usedTransliteration ||= projected.source === "transliteration";
+        item.instruction = projected.value;
+      } else {
+        item.instruction = null;
+      }
       for (const unsupported of ["entrance", "exit", "optimalCar", "crowding"]) delete item[unsupported];
       return item;
     });
   }
-  if (locale === "ja") {
-    if (output.provider === "transit") output.providerAttribution = "交通情報（非公式）";
-    else if (output.provider === "google") output.providerAttribution = "Google経路情報";
+  for (const [key, aliases] of [["accessWalkSeconds", ["access_walk_seconds"]], ["egressWalkSeconds", ["egress_walk_seconds"]], ["freshness", ["sourceFreshness", "source_freshness"]]]) {
+    const source = [key, ...aliases].find((candidate) => Object.hasOwn(route, candidate));
+    if (source) output[key] = route[source] === undefined ? null : route[source];
   }
+  if (route.bufferReason !== undefined) output.bufferReason = route.bufferReason;
+  if (active === "ja") {
+    if (provider === "transit" && output.providerAttribution !== null) output.providerAttribution = "交通情報（非公式）";
+    else if (provider === "google" && output.providerAttribution !== null) output.providerAttribution = "Google経路情報";
+  }
+  if (usedTransliteration) output.localization_source = "transliteration";
   return output;
 }
 
@@ -126,10 +194,22 @@ function projectQuestion(value, locale) {
   if (!value) return null;
   const active = normalizeLocale(locale);
   const prompt = QUESTION_PROMPTS[active][value.type];
-  if (prompt) return { ...value, prompt };
-  if (active === "en") return { ...value };
-  if (typeof value.prompt === "string") assertLocalizedText(active, value.prompt);
-  return { ...value };
+  const projectedPrompt = prompt || (typeof value.prompt === "string" ? value.prompt : null);
+  if (typeof projectedPrompt === "string") assertLocalizedText(active, projectedPrompt);
+  return {
+    id: value.id || null,
+    type: value.type || null,
+    prompt: projectedPrompt,
+    eventId: value.eventId || value.event_id || null,
+  };
+}
+
+function projectUserContent(value) {
+  const source = value && typeof value === "object" ? value : {};
+  return {
+    eventTitle: source.eventTitle === undefined ? null : source.eventTitle,
+    eventLocation: source.eventLocation === undefined ? null : source.eventLocation,
+  };
 }
 
 function projectSemanticMessage(row, locale = "en") {
@@ -190,18 +270,22 @@ function projectSemanticMessage(row, locale = "en") {
   }
   assertLocalizedText(active, text);
   if (route && route.providerAttribution) assertLocalizedText(active, route.providerAttribution, ["Google", "Transit", "API"]);
+  const kind = type === "route_unavailable" ? "error" : type;
   return {
     id: row.id,
     cursor: row.cursor,
     createdAt: row.createdAt || row.created_at,
     locale: active,
     type,
+    kind,
     text,
-    userContent: row.userContent || row.user_content || { eventTitle: null, eventLocation: null },
+    commitmentId: row.commitmentId || row.commitment_id || null,
+    userContent: projectUserContent(row.userContent || row.user_content),
     question,
     route,
     actions,
+    status: row.status || "sent",
   };
 }
 
-module.exports = { CJK_RE, assertLocalizedText, projectLocalizedRouteName, projectSemanticMessage, routeValue, formatTime };
+module.exports = { CJK_RE, assertLocalizedText, projectLocalizedRouteName, projectRouteName, projectSemanticMessage, routeValue, formatTime };

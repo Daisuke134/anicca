@@ -5,6 +5,7 @@ const {
   nowMs,
   randomOpaque,
   sha256,
+  timingEqual,
   parseBearer,
   normalizeLocale,
   safeTimeZone,
@@ -20,6 +21,66 @@ function storeOf(deps) {
   return store;
 }
 
+async function validateSupabaseIdentity(token, deps = {}) {
+  if (typeof token !== "string" || !token.trim()) throw new MobileError("identity_invalid", "The identity could not be validated.", 401);
+  const base = String(deps.supaUrl || process.env.SUPABASE_URL || "").replace(/\/$/u, "");
+  const key = String(deps.supaKey || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || "");
+  if (!base || !key) throw new MobileError("identity_unavailable", "The identity provider is unavailable.", 503, true);
+  const fetchImpl = deps.fetchImpl || fetch;
+  const headers = { apikey: key, Authorization: `Bearer ${token}` };
+  const identityResponse = await fetchImpl(`${base}/auth/v1/user`, { headers });
+  if (!identityResponse.ok) throw new MobileError("identity_invalid", "The identity could not be validated.", 401);
+  const identity = await identityResponse.json().catch(() => null);
+  if (!identity || typeof identity.id !== "string" || !identity.id) throw new MobileError("identity_invalid", "The identity could not be validated.", 401);
+  const uid = `lm_${identity.id}`;
+  const profileUrl = `${base}/rest/v1/lm_users?uid=eq.${encodeURIComponent(uid)}&select=product_locale&limit=1`;
+  const profileResponse = await fetchImpl(profileUrl, { headers: { apikey: key, Authorization: `Bearer ${key}` } });
+  if (!profileResponse.ok) throw new MobileError("identity_unavailable", "The Life Manager account is temporarily unavailable.", 503, true);
+  const profiles = await profileResponse.json().catch(() => []);
+  const profile = Array.isArray(profiles) ? profiles[0] : null;
+  if (!profile) {
+    const createResponse = await fetchImpl(`${base}/rest/v1/lm_users`, {
+      method: "POST",
+      headers: { apikey: key, Authorization: `Bearer ${key}`, "content-type": "application/json", Prefer: "resolution=merge-duplicates,return=minimal" },
+      body: JSON.stringify({ uid, product_locale: "en", calls_enabled: false }),
+    });
+    if (!createResponse.ok && createResponse.status !== 409) throw new MobileError("identity_unavailable", "The Life Manager account is temporarily unavailable.", 503, true);
+  }
+  return { uid, subject: identity.id, productLocale: normalizeLocale((profile && profile.product_locale) || "en"), email: identity.email || null };
+}
+
+async function buildComposioAuthorizationUrl(input = {}, deps = {}) {
+  if (!input.uid || !input.state || !input.redirectUri) throw new MobileError("oauth_input_invalid", "A Calendar redirect URI is required.");
+  const apiKey = String(deps.composioKey || "");
+  const authConfigId = String(deps.composioAuthConfig || deps.authConfigId || "");
+  if (!apiKey || !authConfigId) throw new MobileError("oauth_unavailable", "Calendar connection is temporarily unavailable.", 503, true);
+  let callbackUrl;
+  try {
+    const parsed = new URL(String(input.redirectUri));
+    if (!["https:", "life-manager:", "lifemanager:"].includes(parsed.protocol)) throw new Error("protocol");
+    parsed.searchParams.set("state", input.state);
+    callbackUrl = parsed.toString();
+  } catch {
+    throw new MobileError("oauth_input_invalid", "The Calendar redirect URI is invalid.");
+  }
+  const fetchImpl = deps.fetchImpl || fetch;
+  const response = await fetchImpl("https://backend.composio.dev/api/v3/connected_accounts/link", {
+    method: "POST",
+    headers: { "x-api-key": apiKey, "content-type": "application/json" },
+    body: JSON.stringify({ auth_config_id: authConfigId, user_id: input.uid, callback_url: callbackUrl }),
+  });
+  const body = await response.json().catch(() => ({}));
+  const redirect = body.redirect_url || body.redirect_uri || body?.connectionData?.val?.redirectUrl;
+  if (!response.ok || typeof redirect !== "string") throw new MobileError("oauth_unavailable", "Calendar connection is temporarily unavailable.", 503, true);
+  try {
+    const parsed = new URL(redirect);
+    if (parsed.protocol !== "https:") throw new Error("provider_protocol");
+  } catch {
+    throw new MobileError("oauth_unavailable", "Calendar connection is temporarily unavailable.", 503, true);
+  }
+  return redirect;
+}
+
 function field(row, ...names) {
   for (const name of names) if (row && row[name] !== undefined) return row[name];
   return undefined;
@@ -29,7 +90,8 @@ async function identityFor(input, deps) {
   if (input && Object.hasOwn(input, "uid")) throw new MobileError("client_uid_forbidden", "The server derives the account from the validated identity.", 400);
   const token = input && (input.identityToken || input.supabaseToken || input.googleIdentityToken);
   if (!token) return null;
-  const validator = deps.validateIdentity || deps.validateSupabaseIdentity || deps.supabaseUser;
+  const validator = deps.validateIdentity || deps.validateSupabaseIdentity || deps.supabaseUser
+    || ((deps.supaUrl || process.env.SUPABASE_URL) ? (value) => validateSupabaseIdentity(value, deps) : null);
   if (typeof validator !== "function") throw new MobileError("identity_unavailable", "The identity provider is unavailable.", 503, true);
   const identity = await validator(token);
   if (!identity || !identity.uid) throw new MobileError("identity_invalid", "The identity could not be validated.", 401);
@@ -87,7 +149,7 @@ async function startCalendarSession(input = {}, deps = {}) {
   });
   const builder = deps.buildAuthorizationUrl || deps.calendarAuthorizationUrl;
   const authorizationUrl = typeof builder === "function"
-    ? await builder({ state, redirectUri: input.redirectUri || null, provider: "google_calendar" })
+    ? await builder({ state, redirectUri: input.redirectUri || null, provider: "google_calendar", uid: identity && identity.uid ? identity.uid : null })
     : `https://accounts.google.com/o/oauth2/v2/auth?response_type=code&state=${encodeURIComponent(state)}`;
   if (typeof authorizationUrl !== "string" || !/^https:\/\//u.test(authorizationUrl)) {
     throw new MobileError("oauth_unavailable", "Calendar connection is temporarily unavailable.", 503, true);
@@ -110,7 +172,7 @@ async function exchangeMobileSession(input = {}, deps = {}) {
   const exchanged = typeof deps.exchangeCalendarCode === "function"
     ? await deps.exchangeCalendarCode({ code: input.code, state: claimed, identity })
     : {};
-  const resolved = identity || exchanged.identity || exchanged.user || exchanged;
+  const resolved = identity || exchanged.identity || exchanged.user || (claimed.uid ? { uid: claimed.uid, productLocale: claimed.productLocale || "en" } : exchanged);
   const uid = resolved && (resolved.uid || resolved.lifeManagerUid || resolved.userId);
   if (!uid || Object.hasOwn(input, "uid")) throw new MobileError("identity_invalid", "The calendar identity could not be linked to a Life Manager account.", 401);
   if (claimed.uid && String(claimed.uid) !== String(uid)) throw new MobileError("oauth_owner_mismatch", "The callback belongs to a different account.", 403);
@@ -131,8 +193,11 @@ async function authenticateMobileRequest(req, deps = {}) {
   const raw = parseBearer(req);
   if (!raw) throw new MobileError("unauthorized", "A mobile bearer session is required.", 401);
   const store = storeOf(deps);
-  const row = await store.findAccessSession(sha256(raw));
+  const tokenHash = sha256(raw);
+  const row = await store.findAccessSession(tokenHash);
   if (!row) throw new MobileError("unauthorized", "The mobile session is invalid.", 401);
+  const storedHash = field(row, "accessTokenHash", "access_token_hash");
+  if (!storedHash || !timingEqual(storedHash, tokenHash)) throw new MobileError("unauthorized", "The mobile session is invalid.", 401);
   const at = nowMs(deps);
   const accessExpiry = Date.parse(field(row, "accessExpiresAt", "access_expires_at") || "");
   if (field(row, "revokedAt", "revoked_at")) throw new MobileError("unauthorized", "The mobile session is revoked.", 401);
@@ -149,8 +214,11 @@ async function authenticateMobileRequest(req, deps = {}) {
 async function refreshMobileSession(refreshToken, deps = {}) {
   if (!refreshToken || typeof refreshToken !== "string") throw new MobileError("refresh_invalid", "A refresh token is required.", 401);
   const store = storeOf(deps);
-  const row = await store.findRefreshSession(sha256(refreshToken));
+  const tokenHash = sha256(refreshToken);
+  const row = await store.findRefreshSession(tokenHash);
   if (!row) throw new MobileError("refresh_invalid", "The refresh token is invalid.", 401);
+  const storedHash = field(row, "refreshTokenHash", "refresh_token_hash");
+  if (!storedHash || !timingEqual(storedHash, tokenHash)) throw new MobileError("refresh_invalid", "The refresh token is invalid.", 401);
   const at = nowMs(deps);
   const expiry = Date.parse(field(row, "refreshExpiresAt", "refresh_expires_at") || "");
   if (!Number.isFinite(expiry) || expiry <= at || field(row, "revokedAt", "revoked_at")) throw new MobileError("refresh_expired", "The refresh token has expired.", 401);
@@ -171,6 +239,8 @@ module.exports = {
   STATE_TTL_MS,
   ACCESS_TTL_MS,
   REFRESH_TTL_MS,
+  validateSupabaseIdentity,
+  buildComposioAuthorizationUrl,
   startCalendarSession,
   exchangeMobileSession,
   authenticateMobileRequest,

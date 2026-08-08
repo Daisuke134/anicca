@@ -1,6 +1,6 @@
 "use strict";
 
-const { MobileError, randomOpaque, normalizeLocale } = require("./mobile-utils.js");
+const { MobileError, randomOpaque, normalizeLocale, sha256 } = require("./mobile-utils.js");
 const { appendMobileMessage } = require("./mobile-outbox.js");
 const { computeMobileRoute } = require("./mobile-route.js");
 
@@ -15,7 +15,7 @@ function messageKey(status) {
   return `chat.${status}`;
 }
 
-function requiredQuestion(type, event, deps = {}) {
+function requiredQuestion(type, event, deps = {}, analysisId = "") {
   const prompts = {
     calendar: "Connect Google Calendar to analyze your next event.",
     name: "What should Life Manager call you?",
@@ -23,7 +23,7 @@ function requiredQuestion(type, event, deps = {}) {
     destination: "Where will this event take place?",
   };
   return {
-    id: randomOpaque("question:v1:", deps),
+    id: `question:v1:${sha256(`${analysisId}:${type}:${event && event.id || ""}`).slice(0, 32)}`,
     type,
     prompt: prompts[type] || "I need one more detail before I can continue.",
     eventId: event && event.id ? event.id : null,
@@ -61,13 +61,13 @@ async function analyzeNextEvent(scope, input = {}, deps = {}) {
     || (Boolean(user.calendar_provider) && Boolean(user.gmail_account_id || user.gmailAccountId));
   if (!calendarConnected) {
     await setState(scope, { status: "needs_information", analysisId }, deps);
-    const question = requiredQuestion("calendar", null, deps);
+    const question = requiredQuestion("calendar", null, deps, analysisId);
     if (typeof store.createQuestion === "function") await store.createQuestion(scope, question);
     return appendTerminal({ ...scope, productLocale: locale }, "needs_information", null, null, question, deps, analysisId);
   }
   if (typeof user.name !== "string" || !user.name.trim()) {
     await setState(scope, { status: "needs_information", analysisId }, deps);
-    const question = requiredQuestion("name", null, deps);
+    const question = requiredQuestion("name", null, deps, analysisId);
     if (typeof store.createQuestion === "function") await store.createQuestion(scope, question);
     return appendTerminal({ ...scope, productLocale: locale }, "needs_information", null, null, question, deps, analysisId);
   }
@@ -87,7 +87,7 @@ async function analyzeNextEvent(scope, input = {}, deps = {}) {
   const home = user.home_address || user.home || input.origin || null;
   if (!home || !event.location) {
     await setState(scope, { status: "needs_information", analysisId }, deps);
-    const question = requiredQuestion(!home ? "origin" : "destination", event, deps);
+    const question = requiredQuestion(!home ? "origin" : "destination", event, deps, analysisId);
     if (typeof store.createQuestion === "function") await store.createQuestion(scope, question);
     return appendTerminal({ ...scope, productLocale: locale }, "needs_information", event, null, question, deps, analysisId);
   }
@@ -105,7 +105,15 @@ async function analyzeNextEvent(scope, input = {}, deps = {}) {
     return appendTerminal({ ...scope, productLocale: locale }, "route_unavailable", event, null, null, deps, analysisId, "provider_unavailable");
   }
   await setState(scope, { status: "route_ready", analysisId }, deps);
-  return appendTerminal({ ...scope, productLocale: locale }, "route_ready", event, route, null, deps, analysisId);
+  try {
+    return await appendTerminal({ ...scope, productLocale: locale }, "route_ready", event, route, null, deps, analysisId);
+  } catch (error) {
+    if (error && (error.code === "localization_unavailable" || error.code === "mixed_locale")) {
+      await setState(scope, { status: "route_unavailable", analysisId }, deps);
+      return appendTerminal({ ...scope, productLocale: locale }, "route_unavailable", event, null, null, deps, analysisId, "localization_unavailable");
+    }
+    throw error;
+  }
 }
 
 module.exports = { TERMINAL_STATES, analyzeNextEvent };

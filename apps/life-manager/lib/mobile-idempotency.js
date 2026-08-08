@@ -8,7 +8,7 @@ function canonicalPayloadHash(payload) {
 
 function validateKey(key) {
   const value = String(key || "").trim();
-  if (!value || value.length > 200 || /[\x00-\x1f\x7f]/u.test(value)) {
+  if (value.length < 8 || value.length > 128 || /[\x00-\x1f\x7f]/u.test(value)) {
     throw new MobileError("idempotency_required", "Idempotency-Key is required for this mutation.");
   }
   return value;
@@ -17,7 +17,11 @@ function validateKey(key) {
 function asReplayError(row) {
   const error = row && row.error;
   if (!error) return null;
-  return new MobileError(error.code || "mutation_failed", error.message || "The previous mutation failed.", error.status || 502, Boolean(error.retryable));
+  return new MobileError(error.code || "mutation_failed", error.message || "The previous mutation failed.", error.status || 502, Boolean(error.retryable), error.details);
+}
+
+function isCompleted(status) {
+  return status === "succeeded" || status === "completed";
 }
 
 async function withMobileIdempotency({ scope, key, payload, operation }, deps = {}) {
@@ -35,7 +39,7 @@ async function withMobileIdempotency({ scope, key, payload, operation }, deps = 
       throw new MobileError("idempotency_conflict", "The idempotency key was already used for a different request.", 409);
     }
     const status = existing.status;
-    if (status === "completed" || status === "failed") {
+    if (isCompleted(status) || status === "failed") {
       const replayError = asReplayError(existing);
       if (replayError) throw replayError;
       return existing.result === undefined ? existing.result_json : existing.result;
@@ -49,7 +53,7 @@ async function withMobileIdempotency({ scope, key, payload, operation }, deps = 
     if (raced && String(raced.requestHash || raced.request_hash) !== requestHash) {
       throw new MobileError("idempotency_conflict", "The idempotency key was already used for a different request.", 409);
     }
-    if (raced && (raced.status === "completed" || raced.status === "failed")) {
+    if (raced && (isCompleted(raced.status) || raced.status === "failed")) {
       const replayError = asReplayError(raced);
       if (replayError) throw replayError;
       return raced.result === undefined ? raced.result_json : raced.result;
@@ -59,7 +63,7 @@ async function withMobileIdempotency({ scope, key, payload, operation }, deps = 
 
   try {
     const result = await operation();
-    await store.completeIdempotency(scope, value, { requestHash, status: "completed", result });
+    await store.completeIdempotency(scope, value, { requestHash, status: "succeeded", result });
     return result;
   } catch (error) {
     const normalized = error instanceof MobileError
@@ -68,7 +72,10 @@ async function withMobileIdempotency({ scope, key, payload, operation }, deps = 
     await store.completeIdempotency(scope, value, {
       requestHash,
       status: "failed",
-      error: { code: normalized.code, message: normalized.message, status: normalized.status, retryable: normalized.retryable },
+      error: {
+        code: normalized.code, message: normalized.message, status: normalized.status, retryable: normalized.retryable,
+        ...(normalized.details === undefined ? {} : { details: normalized.details }),
+      },
     }).catch(() => {});
     throw error;
   }

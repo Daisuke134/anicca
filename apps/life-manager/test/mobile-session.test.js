@@ -8,6 +8,8 @@ const {
   authenticateMobileRequest,
   refreshMobileSession,
   revokeMobileSession,
+  validateSupabaseIdentity,
+  buildComposioAuthorizationUrl,
 } = require("../lib/mobile-session.js");
 
 const NOW = Date.parse("2026-08-08T00:00:00.000Z");
@@ -105,4 +107,53 @@ test("refresh rotates token and replay revokes the whole family; logout revokes 
   const scope = await authenticateMobileRequest({ headers: { authorization: `Bearer ${token.accessToken}` } }, freshDeps);
   await revokeMobileSession(scope, freshDeps);
   await assert.rejects(() => authenticateMobileRequest({ headers: { authorization: `Bearer ${token.accessToken}` } }, freshDeps), (error) => error.code === "unauthorized");
+});
+
+test("default Supabase identity validation derives the Life Manager uid and never trusts a body uid", async () => {
+  const requests = [];
+  const result = await validateSupabaseIdentity("supabase-access", {
+    supaUrl: "https://supabase.example.test",
+    supaKey: "service-key",
+    fetchImpl: async (url, init) => {
+      requests.push([url, init]);
+      if (url.endsWith("/auth/v1/user")) return { ok: true, async json() { return { id: "auth-user-1", email: "person@example.test" }; } };
+      return { ok: true, async json() { return [{ product_locale: "ja" }]; } };
+    },
+  });
+  assert.deepEqual(result, { uid: "lm_auth-user-1", subject: "auth-user-1", productLocale: "ja", email: "person@example.test" });
+  assert.equal(requests[0][1].headers.Authorization, "Bearer supabase-access");
+  assert.doesNotMatch(JSON.stringify(requests), /uid=eq\.auth-user-1/u);
+});
+
+test("Composio authorization adapter binds the server UID and one-use state to the app callback", async () => {
+  let request;
+  const redirect = await buildComposioAuthorizationUrl({ uid: "lm_user-a", state: "state:v1:one", redirectUri: "life-manager://oauth" }, {
+    composioKey: "composio-key", composioAuthConfig: "gcal-config",
+    fetchImpl: async (url, init) => { request = { url, init }; return { ok: true, async json() { return { redirect_url: "https://accounts.google.test/authorize" }; } }; },
+  });
+  assert.equal(redirect, "https://accounts.google.test/authorize");
+  const body = JSON.parse(request.init.body);
+  assert.deepEqual(body, { auth_config_id: "gcal-config", user_id: "lm_user-a", callback_url: "life-manager://oauth?state=state%3Av1%3Aone" });
+});
+
+test("Composio authorization rejects executable callback schemes", async () => {
+  await assert.rejects(() => buildComposioAuthorizationUrl({
+    uid: "lm_user-a", state: "state:v1:one", redirectUri: "javascript:alert(1)",
+  }, { composioKey: "composio-key", composioAuthConfig: "gcal-config", fetchImpl: async () => {
+    throw new Error("provider must not be called");
+  } }), (error) => error.code === "oauth_input_invalid");
+});
+
+test("bearer authentication rejects a row whose stored hash does not match", async () => {
+  await assert.rejects(() => authenticateMobileRequest({ headers: { authorization: "Bearer access" } }, {
+    store: {
+      async findAccessSession() {
+        return {
+          accessTokenHash: "f".repeat(64), uid: "user-a", sessionId: "session-a",
+          accessExpiresAt: "2099-01-01T00:00:00.000Z", revokedAt: null,
+        };
+      },
+      async readUser() { return { product_locale: "en" }; },
+    },
+  }), (error) => error.code === "unauthorized");
 });

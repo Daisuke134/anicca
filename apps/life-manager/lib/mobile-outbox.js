@@ -3,6 +3,11 @@
 const { MobileError, nowIso, randomOpaque } = require("./mobile-utils.js");
 const { projectSemanticMessage } = require("./mobile-localization.js");
 
+const SEMANTIC_KEYS = new Set([
+  "chat.welcome", "chat.route_ready", "chat.needs_information", "chat.no_upcoming_event",
+  "chat.route_unavailable", "chat.failed",
+]);
+
 function encodeCursor(sequence) {
   const value = Number(sequence);
   if (!Number.isSafeInteger(value) || value < 0) throw new MobileError("invalid_cursor", "The chat cursor is invalid.", 400);
@@ -42,7 +47,7 @@ function projectMobileMessage(row, locale = "en") {
 
 async function appendMobileMessage(scope, input = {}, deps = {}) {
   if (!scope || !scope.uid) throw new MobileError("scope_required", "An authenticated mobile scope is required.", 401);
-  if (!input.key || typeof input.key !== "string") throw new MobileError("message_key_invalid", "A semantic message key is required.");
+  if (!input.key || typeof input.key !== "string" || !SEMANTIC_KEYS.has(input.key)) throw new MobileError("message_key_invalid", "A supported semantic message key is required.");
   const store = deps.store;
   if (!store || typeof store.appendOutbox !== "function") throw new MobileError("outbox_unavailable", "Chat storage is unavailable.", 503, true);
   const row = {
@@ -51,6 +56,9 @@ async function appendMobileMessage(scope, input = {}, deps = {}) {
     userContent: input.userContent || { eventTitle: null, eventLocation: null }, question: input.question || null, route: input.route || null,
     createdAt: input.createdAt || nowIso(deps), mutationKey: input.mutationKey || null,
   };
+  // Validate provider names and locale before persisting a route row. A projection failure must not
+  // leave an unrenderable route in the durable outbox that a later retry would replay forever.
+  projectSemanticMessage({ ...row, sequence: Number.isSafeInteger(row.sequence) ? row.sequence : 0 }, scope.productLocale || input.locale || "en");
   const stored = semanticRow(await store.appendOutbox(scope, row));
   if (!Number.isSafeInteger(stored.sequence)) throw new MobileError("outbox_sequence_missing", "Chat storage returned no monotonic sequence.", 503, true);
   stored.cursor = encodeCursor(stored.sequence);
@@ -71,4 +79,4 @@ async function listMobileMessages(scope, cursor, deps = {}) {
   return { messages, nextCursor: encodeCursor(nextSequence), hasMore };
 }
 
-module.exports = { encodeCursor, decodeCursor, appendMobileMessage, listMobileMessages, projectMobileMessage, semanticRow };
+module.exports = { SEMANTIC_KEYS, encodeCursor, decodeCursor, appendMobileMessage, listMobileMessages, projectMobileMessage, semanticRow };

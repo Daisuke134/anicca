@@ -76,3 +76,28 @@ test("replaying one analysis identifier keeps one durable terminal message", asy
   assert.equal(one.message.id, two.message.id);
   assert.equal(store._outbox.get("user-a").length, 1);
 });
+
+test("replaying a missing-information analysis keeps one open question", async () => {
+  const store = baseStore({ home_address: null });
+  const deps = { store, fetchUpcomingEvents: async () => [event] };
+  const one = await analyzeNextEvent({ uid: "user-a", productLocale: "en" }, { analysisId: "same-question-analysis" }, deps);
+  const two = await analyzeNextEvent({ uid: "user-a", productLocale: "en" }, { analysisId: "same-question-analysis" }, deps);
+  assert.equal(one.message.id, two.message.id);
+  assert.equal(store._outbox.get("user-a").length, 1);
+  assert.equal(store._questions.size, 1);
+});
+
+test("unlocalizable provider navigation facts become a truthful route-unavailable terminal", async () => {
+  const store = baseStore();
+  const result = await analyzeNextEvent({ uid: "user-a", productLocale: "en" }, {}, {
+    store,
+    fetchUpcomingEvents: async () => [event],
+    computeMobileRoute: async () => ({
+      status: "route_ready", provider: "transit", eventId: event.id, timezone: event.timezone,
+      origin: { displayNames: { ja: "未知駅" } }, destination: { displayNames: { ja: "未知目的地" } },
+      leaveAt: event.startIso, arriveAt: event.endIso, steps: [],
+    }),
+  });
+  assert.equal(result.status, "route_unavailable");
+  assert.equal(result.message.route, null);
+});
