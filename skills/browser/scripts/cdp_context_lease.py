@@ -249,6 +249,17 @@ def heartbeat(task, token=None, generation=None):
         leases = _leases()
         held = leases.get(task)
         if not held:
+            leases_path = _leases_path()
+            try:
+                ledger_mtime = os.path.getmtime(leases_path)
+            except OSError:
+                ledger_mtime = None
+            print(json.dumps({
+                "event": "heartbeat_lease_not_found",
+                "task": task,
+                "ledger_path": leases_path,
+                "ledger_mtime": ledger_mtime,
+            }), file=sys.stderr)
             return {"ok": False, "reason": "lease_not_found"}
         if not _fence_matches(held, token, generation):
             return {"ok": False, "reason": "lease_fence_mismatch"}
@@ -300,20 +311,50 @@ def release(task, token=None, generation=None):
 
 
 def gc(idle_min=45):
-    """A loop killed with -9 never releases. Reap whatever it left holding."""
-    leases = _leases()
+    """A loop killed with -9 never releases. Reap whatever it left holding.
+
+    gc used to read+dispose+save without the ledger lock -- the only such path in this
+    file. Its dispose calls are slow (real CDP round trips), so any heartbeat()/acquire()
+    write landing during that window got silently overwritten by gc's unconditional
+    `_save(leases)` of its stale start-of-call snapshot: the victim's next heartbeat then
+    returned lease_not_found. Fix: read candidates under the lock, dispose outside it (so
+    other callers are not blocked on slow CDP calls), then re-open the lock per row and
+    only pop it if the ledger still shows the *same* lease (same context/target id) and it
+    is *still* stale -- a concurrent heartbeat or re-acquire between read and finalize
+    survives untouched.
+    """
     now = time.time()
+    with _ledger_lock():
+        leases = _leases()
+        candidates = {
+            task: dict(held)
+            for task, held in leases.items()
+            if now - held.get("ts", 0) > idle_min * 60
+        }
+
     reaped = []
-    for task, held in list(leases.items()):
-        if now - held.get("ts", 0) > idle_min * 60:
-            try:
-                asyncio.run(_calls([("Target.disposeBrowserContext", {"browserContextId": held["context_id"]})]))
-            except Exception:
-                pass
-            leases.pop(task, None)
-            reaped.append(task)
-    _save(leases)
-    return {"ok": True, "reaped": reaped, "still_held": list(leases)}
+    for task, held in candidates.items():
+        try:
+            asyncio.run(_calls([("Target.disposeBrowserContext", {"browserContextId": held["context_id"]})]))
+        except Exception:
+            pass
+        with _ledger_lock():
+            leases = _leases()
+            current = leases.get(task)
+            same_lease = (
+                current is not None
+                and current.get("context_id") == held.get("context_id")
+                and current.get("target_id") == held.get("target_id")
+            )
+            still_stale = same_lease and now - current.get("ts", 0) > idle_min * 60
+            if still_stale:
+                leases.pop(task, None)
+                _save(leases)
+                reaped.append(task)
+
+    with _ledger_lock():
+        still_held = list(_leases())
+    return {"ok": True, "reaped": reaped, "still_held": still_held}
 
 
 if __name__ == "__main__":
