@@ -24,13 +24,13 @@
 
 | File | Responsibility | Soft target |
 |---|---|---:|
-| `apps/life-call/lib/cfo-telegram.js` | Closed input validation, JPY/text formatting, view renderer, buttons | 100 production LOC |
+| `apps/life-call/lib/cfo-telegram.js` | Closed input validation, JPY/text formatting, view renderer, buttons | 170 production LOC |
 | `apps/life-call/lib/cfo-telegram.test.js` | Four states/views, JA/EN, privacy, honesty, callback fixtures | 150 test LOC |
 | `apps/life-call/lib/i18n.js` | CFO copy dictionary only | +55 production LOC |
 | `apps/life-call/package.json` | Add one test file to existing `test:cfo` | +1 LOC |
 | Parent/child specs and this plan | State/evidence update only | +12 documentation LOC |
 
-The four-file total is split into two commits; no task edits more than three files. Production is intentionally below 160 LOC. If either production file exceeds its soft target by more than 20%, stop and simplify the input contract before continuing.
+The four-file total is split into two implementation commits; no implementation task edits more than three files. Task 1's measured summary contract is 106 LOC, leaving at most 64 LOC for all Task 2 views and buttons. Keeping one closed pure renderer avoids an extra module and cross-file state contract; this is the reason the single file may exceed 100 LOC. If either production file exceeds its soft target, stop and simplify before continuing.
 
 ## Closed Renderer Input
 
@@ -223,7 +223,7 @@ cd ../..
 git diff --check
 ```
 
-Expected: Task 1 tests pass; production module is at or below 120 LOC; diff check exits zero.
+Expected: Task 1 tests pass; production module is at or below 120 LOC before Task 2; diff check exits zero.
 
 - [ ] **Step 6: Commit and push Task 1**
 
