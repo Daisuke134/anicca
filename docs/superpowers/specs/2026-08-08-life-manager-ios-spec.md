@@ -1,6 +1,6 @@
 # Life Manager iOS — Product and UX Specification
 
-Status: **Ready for user review. Implementation is blocked until this spec is approved.**
+Status: **Approved by Dais. Ready for Superpowers implementation planning.**
 
 ## Source of truth
 
