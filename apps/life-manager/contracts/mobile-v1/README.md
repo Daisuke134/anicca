@@ -1,8 +1,8 @@
-# Life Manager mobile v1 — Gate 2 contract
+# Life Manager mobile v1 — Gate 3 contract
 
-These JSON files are the frozen decoder contract for the English-first native demo. They are
-fixtures for Node and Swift contract tests; they are not runtime seed data and must never be used
-as a production success fallback.
+These JSON files are the frozen decoder contract for the native demo and authenticated mobile
+backend. They are fixtures for Node and Swift contract tests; they are not runtime seed data and
+must never be used as a production success fallback.
 
 ## Surface
 
@@ -18,9 +18,14 @@ reconnection work.
 | POST | `/session/refresh` | refresh token | required | Rotate the refresh family |
 | DELETE | `/session` | bearer | required | Revoke the current mobile session |
 | GET | `/bootstrap` | bearer | n/a | Read server-derived user, Calendar, locale, and analysis state |
-| PATCH | `/profile` | bearer | required | Save allowlisted `name`, `home`, and English `productLocale` |
+| PATCH | `/profile` | bearer | required | Save allowlisted profile, phone, call, locale, and timezone fields |
 | POST | `/analysis` | bearer | required | Run `initial` or `manual_refresh` next-event analysis |
 | GET | `/chat?cursor=<opaque>` | bearer | n/a | Read the durable chronological outbox page |
+| POST | `/questions/{id}/reply` | bearer | required | Apply and resume a question answer |
+| POST | `/calls/test` | bearer | required | Place an explicitly confirmed test call |
+| PUT | `/devices/apns` | bearer | required | Register or transfer one APNs token |
+| DELETE | `/devices/apns` | bearer | required | Remove the authenticated tenant's APNs token |
+| DELETE | `/account` | bearer | required | Clean up providers and delete the account |
 
 Every mutation rejects a client `uid`, `userId`, `tenantId`, `ownerId`, or `scopeUid`. The server
 derives the tenant from the validated identity/session. Repeating an idempotency key with the same
@@ -41,16 +46,20 @@ precision remains `null` or is omitted, and entrance/exit/best-car/crowding clai
 The backend owns any exactly-once Calendar travel-block write under the analysis idempotency key;
 these fixtures do not claim that a write occurred.
 
-## Durable English chat
+## Durable semantic chat
 
 The outbox stores a monotonic sequence, stable message ID, semantic key, structured arguments, and
-separate Calendar-authored `userContent`. Generated prose is projected into English at read time;
+separate Calendar-authored `userContent`. Generated prose is projected into the requested locale at read time;
 `semantic-outbox.json` deliberately has no final `text` field. Cursor values are opaque and are
 never decoded or reset by the client. Manual refresh is a new idempotent `POST /analysis`, followed
 by a cursor fetch; it must not duplicate an existing message.
 
-## Explicitly outside this Gate 2 contract
+Account deletion returns an opaque `deletionCapability` in the public response. Generic idempotency
+receipts never persist that capability or access/refresh tokens in plaintext; token-bearing replay
+payloads are short-lived encrypted envelopes.
 
-Japanese localization, soft paywall, APNs, Core Location, phone/calls, late notice, account
-deletion, TestFlight/App Store, scheduler changes, cost-guard route/cache changes, and production
-database/router implementation belong to later gates or other owners.
+## Explicitly outside this Gate 3 contract
+
+Late notice, scheduler, cost-guard state, Core Location, TestFlight/App Store, and production
+deployment/provider/migration execution belong to later gates or other owners. Staging verification
+is planned only after code review; this fixture directory contains no live staging evidence.
