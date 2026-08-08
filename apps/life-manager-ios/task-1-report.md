@@ -685,3 +685,19 @@ before returning. No archive, ASC mutation, or upload was run in this slice.
 ```text
 SigningConfigurationTests: 10/10 passed, 0 failures
 ```
+
+## Final verification after fresh review
+
+The clean serial simulator lane completed with both UI smoke tests and all
+unit tests green. Fastlane's test lane reproduced the same counts, and the
+simulator build lane produced a successful unsigned Debug app. The
+TestFlight lane was exercised without ASC inputs and stopped at the required
+`ASC_API_KEY_PATH` fetch before increment/build, so no archive, ASC mutation,
+or upload occurred.
+
+```text
+xcodebuild test: LifeManagerSmokeTests 2/2 + LifeManagerUnitTests 109/109 = 111/111 passed
+Fastlane test: UI 2/2 + Unit 109/109 passed
+Fastlane build_for_simulator: Build Succeeded
+build_for_testflight without ASC inputs: fail-closed at missing ASC_API_KEY_PATH (exit 1)
+```
