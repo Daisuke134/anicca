@@ -347,7 +347,7 @@ function parseLateApprovalCallback(data, options = {}) {
     code,
     draftId,
     expiresAtMs: expiresAtSeconds * 1000,
-    expired: nowMs > expiresAtSeconds * 1000,
+    expired: nowMs >= expiresAtSeconds * 1000,
     callbackData: raw,
   };
 }
