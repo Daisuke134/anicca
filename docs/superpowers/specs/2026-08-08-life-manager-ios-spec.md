@@ -34,9 +34,9 @@ The iOS difference is onboarding. Telegram must collect setup data inside chat a
 
 ### 1.0 Active demo cutoff
 
-The current deliverable is one native, English-only, end-to-end Simulator demo. It MUST use the real staging backend and MUST demonstrate Calendar connection/session restoration, name and home onboarding, a real just-in-time Google Calendar event for Tokyo Tower, one foreground location fix from the Roppongi venue, direct next-event analysis, an automatically inserted Calendar travel block, an event-anchored route card and full provider-authored route detail appearing in chat, durable foreground refresh, the non-blocking soft paywall, and a recorded Maestro journey.
+The current deliverable is one native, English-only, end-to-end Simulator demo. It MUST use a real pre-connected staging Calendar session. A current Shipathon Calendar event supplies the Roppongi origin and a real just-in-time Tokyo Tower Calendar event supplies the destination. The demo MUST demonstrate bounded event detection, direct next-event analysis, an automatically inserted Calendar travel block, an event-anchored route card and full provider-authored route detail appearing in chat, durable foreground refresh, the non-blocking soft paywall, and a recorded Maestro journey.
 
-The demo user MUST NOT open Google Maps after onboarding. Google Calendar remains the backend schedule source, but after the seed event is visibly created, the native Life Manager app is the only user-facing surface. Foreground detection MAY poll for the new event for at most 60 seconds and MUST stop after the matching durable chat message appears. Continuous or background location tracking is prohibited.
+The demo user MUST NOT open Google Maps or complete OAuth, profile, or location-permission screens. Google Calendar remains the backend schedule and location source, but after the seed events are visibly created, the native Life Manager app is the only user-facing surface. Foreground detection MAY poll for the new event for at most 60 seconds and MUST stop after the matching durable chat message appears. CoreLocation, continuous location tracking, and background location tracking are prohibited.
 
 Japanese localization, phone collection and calling, APNs, late notices, live location, account deletion, TestFlight distribution, and App Store submission are outside the active demo cutoff. They MUST NOT block or expand the current implementation path. HTML or web prototypes are not acceptance evidence.
 
@@ -539,9 +539,9 @@ For the active demo cutoff, only these four deliverables remain:
 | Order | Remaining demo deliverable | Completion receipt |
 |---:|---|---|
 | 1 | Native Xcode project launches and tests in iOS Simulator | Simulator build and Swift smoke tests green |
-| 2 | English mobile contract/backend supports session, name/home, bounded event detection, one-shot origin coordinates, next-event analysis, exactly-once Calendar travel-block insertion, route, durable chat, and manual refresh | Real staging API contract suite green |
-| 3 | English native onboarding, one-time foreground location permission, route card/detail, chat, soft paywall, and refresh are connected to that API | Swift unit/UI tests green with real contract fixtures |
-| 4 | Create a real Tokyo Tower Calendar event, observe its exactly-once travel block and route chat from the Roppongi location, and record the full journey | Provider/Calendar receipts, Maestro flow green, and video artifact |
+| 2 | English mobile contract/backend restores the pre-connected session and supports bounded event detection, current-event origin resolution, next-event analysis, exactly-once Calendar travel-block insertion, route, durable chat, and manual refresh | Real staging API contract suite green |
+| 3 | The English native app opens directly to connected chat; route card/detail, soft paywall, and refresh are connected to that API | Swift unit/UI tests green with real contract fixtures |
+| 4 | Create real current Shipathon and future Tokyo Tower Calendar events, observe the exactly-once travel block and route chat, and record the full journey | Provider/Calendar receipts, Maestro flow green, and video artifact |
 
 The broader gates below remain the post-demo product roadmap and do not block the active demo cutoff.
 
