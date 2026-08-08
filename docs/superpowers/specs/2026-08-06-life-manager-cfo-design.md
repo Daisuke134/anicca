@@ -687,11 +687,12 @@ remain unverified and are not converted into zero revenue.
 
 ### CFO-0d closure evidence
 
-The Moneytree-first Telegram UI contract is complete: Task 1 commit `a42839db7`, Task 2 commit `d85aaca6d`, and
-review-round 1 fix `38d34993d`. Focused renderer tests pass 13/13, CFO tests pass 48/48, and the full package passes
-680/680; Task 1 review was Approved and the Task 2 Important finding was fixed with a scoped re-review Approved.
-This closes only the pure, privacy-safe renderer contract. No Moneytree sync and no real finance Telegram message
-has been delivered yet. The first unfinished item is now CFO-1a.
+The Moneytree-first Telegram UI contract is complete: Task 1 commit `a42839db7`, Task 2 commit `d85aaca6d`, review-
+round 1 fix `38d34993d`, and final estimate/punctuation fix `61e41c2b3`. Final focused renderer tests pass 15/15, CFO
+tests pass 50/50, and a fresh HEAD full `npm test` exits 0 after `npm ci`; Task 1 review was Approved and the final
+scoped re-review is Approved with Important+Minors ADDRESSED. This closes only the pure, privacy-safe renderer
+contract. No Moneytree sync and no real finance Telegram message has been delivered yet. The first unfinished item is
+now CFO-1a (Yes); every M1 live acceptance checkbox remains unchecked.
 
 ### M1 — One truthful Moneytree-first read-only snapshot
 

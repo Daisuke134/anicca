@@ -263,7 +263,7 @@ The user sees success and truth. Internal stack traces, repeated health noise, g
 
 ### CFO-0d closure evidence
 
-The pure renderer contract is implemented in `a42839db7` and extended in `d85aaca6d`; review-round 1's Important exclusion-display finding was fixed in `38d34993d` and the scoped re-review was Approved. Focused renderer tests pass 13/13, CFO tests pass 48/48, and the full package passes 680/680. This is a tested UI contract only: no Moneytree sync and no real finance Telegram message has been delivered. The next active item is CFO-1a; all M1 real Moneytree acceptance items above remain unchecked.
+The pure renderer contract is implemented in `a42839db7` and extended in `d85aaca6d`; review-round 1's Important exclusion-display finding was fixed in `38d34993d`, and the final estimate/punctuation fix is `61e41c2b3`. Final focused renderer tests pass 15/15, CFO tests pass 50/50, and a fresh HEAD full `npm test` exits 0 after `npm ci`. The final scoped re-review is Approved with Important+Minors ADDRESSED. This is a tested UI contract only: no Moneytree sync and no real finance Telegram message has been delivered. The next CFO item is CFO-1a (Yes); all M1 real Moneytree acceptance items above remain unchecked.
 
 ## 11. Ordered Implementation
 
