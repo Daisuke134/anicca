@@ -7,11 +7,17 @@ struct RouteCardPresentation: Equatable, Sendable {
     let leaveAt: Date
     let arriveAt: Date
     let timezone: String
+    let computedAt: Date
+    let provider: String
     let durationSeconds: Int
     let bufferSeconds: Int
     let fare: RouteFare?
     let legSummary: [String]
     let providerAttribution: String
+
+    var isUnofficialSource: Bool {
+        provider.caseInsensitiveCompare("transit") == .orderedSame
+    }
 }
 
 struct RouteStepPresentation: Equatable, Sendable, Identifiable {
@@ -34,9 +40,15 @@ struct RouteDetailPresentation: Equatable, Sendable {
     let leaveAt: Date
     let arriveAt: Date
     let timezone: String
+    let computedAt: Date
+    let provider: String
     let bufferSeconds: Int
     let providerAttribution: String
     let steps: [RouteStepPresentation]
+
+    var isUnofficialSource: Bool {
+        provider.caseInsensitiveCompare("transit") == .orderedSame
+    }
 }
 
 enum RoutePresentation {
@@ -52,6 +64,8 @@ enum RoutePresentation {
             leaveAt: route.leaveAt,
             arriveAt: route.arriveAt,
             timezone: route.timezone,
+            computedAt: route.computedAt,
+            provider: route.provider,
             durationSeconds: route.durationSeconds,
             bufferSeconds: route.bufferSeconds,
             fare: route.fare,
@@ -87,6 +101,8 @@ enum RoutePresentation {
             leaveAt: card.leaveAt,
             arriveAt: card.arriveAt,
             timezone: route.timezone,
+            computedAt: card.computedAt,
+            provider: card.provider,
             bufferSeconds: card.bufferSeconds,
             providerAttribution: card.providerAttribution,
             steps: steps

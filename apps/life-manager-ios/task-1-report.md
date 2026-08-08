@@ -391,3 +391,41 @@ replacement field.
 ```text
 Targeted tests: 2/2 passed, 0 failures
 ```
+
+## Fresh review round 1 — honest route timing, source, and unsupported facts
+
+### RED
+
+The route regression tests were added before the presentation exposed server
+freshness/source facts and before either route view rendered the required
+semantic honesty labels:
+
+```text
+xcodebuild ... test \
+  -only-testing:LifeManagerUnitTests/RoutePresentationTests/testCollapsedRouteCardProjectsActionableFieldsAndOrderedLegSummary \
+  -only-testing:LifeManagerUnitTests/RoutePresentationTests/testRouteViewsExposeSemanticTimingSourceFreshnessAndHonestyLabels
+
+Build failed: RouteCardPresentation has no members computedAt, provider, or isUnofficialSource
+```
+
+After the presentation fields compiled, the source contract failed with 12
+missing card/detail labels for leave, arrival, buffer reason, source,
+freshness, non-official warning, live-location honesty, and unsupported-field
+honesty.
+
+### GREEN
+
+Route presentation now carries the server's `computedAt` and `provider` and
+derives the non-official warning only for the Transit provider. The card and
+read-only detail sheet show explicit leave/arrival labels, arrival-buffer
+reason, provider source, freshness, and a localized non-official service
+warning. The detail sheet also states that live location is off and that
+unsupported entrance/exit/best-car/crowding facts are omitted. Existing
+nullable fare, platform, geometry, and step locations remain omitted rather
+than replaced with guesses.
+
+```text
+RoutePresentationTests:       4/4 passed
+LocalizationConsistencyTests: 2/2 passed
+Combined targeted tests:      6/6 passed, 0 failures
+```

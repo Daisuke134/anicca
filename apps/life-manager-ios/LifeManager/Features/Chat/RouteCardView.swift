@@ -17,15 +17,19 @@ struct RouteCardView: View {
                     .font(.subheadline.weight(.semibold))
                     .accessibilityLabel(Text("\(presentation.origin) → \(presentation.destination)"))
 
-                HStack(spacing: 16) {
-                    Label(time(presentation.leaveAt, timezone: presentation.timezone), systemImage: "figure.walk")
-                    Label(time(presentation.arriveAt, timezone: presentation.timezone), systemImage: "flag")
+                HStack(alignment: .top, spacing: 16) {
+                    timingLabel("route.leave", presentation.leaveAt, timezone: presentation.timezone, systemImage: "figure.walk")
+                    timingLabel("route.arrive", presentation.arriveAt, timezone: presentation.timezone, systemImage: "flag")
                 }
                 .font(.subheadline)
 
                 HStack(spacing: 16) {
                     durationLabel(presentation.durationSeconds)
-                    bufferLabel(presentation.bufferSeconds)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("route.bufferReason")
+                            .font(.caption)
+                        bufferLabel(presentation.bufferSeconds)
+                    }
                 }
                 .font(.subheadline)
 
@@ -47,9 +51,21 @@ struct RouteCardView: View {
                     .buttonStyle(.borderedProminent)
                     .accessibilityIdentifier("route.showDetails")
 
-                Text(presentation.providerAttribution)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 4) {
+                        Text("route.source")
+                        Text(presentation.providerAttribution)
+                    }
+                    HStack(spacing: 4) {
+                        Text("route.updated")
+                        Text(time(presentation.computedAt, timezone: presentation.timezone))
+                    }
+                    if presentation.isUnofficialSource {
+                        Text("route.unofficialWarning")
+                    }
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
             }
             .padding()
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -65,6 +81,14 @@ struct RouteCardView: View {
         formatter.timeStyle = .short
         formatter.timeZone = TimeZone(identifier: timezone) ?? .current
         return formatter.string(from: date)
+    }
+
+    private func timingLabel(_ label: LocalizedStringKey, _ date: Date, timezone: String, systemImage: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Label(label, systemImage: systemImage)
+                .font(.caption)
+            Text(time(date, timezone: timezone))
+        }
     }
 
     private func durationLabel(_ seconds: Int) -> some View {

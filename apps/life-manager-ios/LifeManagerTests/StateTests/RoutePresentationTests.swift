@@ -13,6 +13,9 @@ final class RoutePresentationTests: XCTestCase {
         XCTAssertEqual(presentation?.destination, "Tokyo Tower")
         XCTAssertEqual(presentation?.leaveAt, Date.iso8601("2026-08-10T08:35:00.000Z"))
         XCTAssertEqual(presentation?.arriveAt, Date.iso8601("2026-08-10T09:02:00.000Z"))
+        XCTAssertEqual(presentation?.computedAt, Date.iso8601("2026-08-10T08:10:00.000Z"))
+        XCTAssertEqual(presentation?.provider, "transit")
+        XCTAssertTrue(presentation?.isUnofficialSource == true)
         XCTAssertEqual(presentation?.durationSeconds, 1620)
         XCTAssertEqual(presentation?.bufferSeconds, 180)
         XCTAssertEqual(presentation?.fare, RouteFare(currency: "JPY", amount: 220, medium: "IC"))
@@ -48,6 +51,30 @@ final class RoutePresentationTests: XCTestCase {
 
         XCTAssertNil(RoutePresentation.card(for: message))
         XCTAssertNil(RoutePresentation.detail(for: message))
+    }
+
+    func testRouteViewsExposeSemanticTimingSourceFreshnessAndHonestyLabels() throws {
+        let card = try Self.source(named: "RouteCardView.swift")
+        let detail = try Self.source(named: "RouteDetailSheet.swift")
+
+        for key in ["route.leave", "route.arrive", "route.bufferReason", "route.updated", "route.source", "route.unofficialWarning"] {
+            XCTAssertTrue(card.contains(key), "card must render \(key)")
+        }
+        for key in ["route.leave", "route.arrive", "route.bufferReason", "route.updated", "route.source", "route.liveLocationOff", "route.unsupportedFieldsOmitted"] {
+            XCTAssertTrue(detail.contains(key), "detail must render \(key)")
+        }
+    }
+
+    private static func source(named name: String) throws -> String {
+        let current = URL(fileURLWithPath: #filePath)
+        let root = current
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        return try String(
+            contentsOf: root.appendingPathComponent("LifeManager/Features/Chat").appendingPathComponent(name),
+            encoding: .utf8
+        )
     }
 }
 

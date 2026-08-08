@@ -16,6 +16,17 @@ struct RouteDetailSheet: View {
                     Text("\(presentation.origin) → \(presentation.destination)")
                         .font(.headline)
 
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 4) {
+                            Text("route.leave")
+                            Text(time(presentation.leaveAt, timezone: presentation.timezone))
+                        }
+                        HStack(spacing: 4) {
+                            Text("route.arrive")
+                            Text(time(presentation.arriveAt, timezone: presentation.timezone))
+                        }
+                    }
+
                     ForEach(presentation.steps) { step in
                         VStack(alignment: .leading, spacing: 4) {
                             if let departAt = step.departAt {
@@ -55,16 +66,33 @@ struct RouteDetailSheet: View {
                     }
 
                     HStack(spacing: 4) {
-                        Text("route.arrive")
-                        Text(time(presentation.arriveAt, timezone: presentation.timezone))
-                        Text("·")
+                        Text("route.bufferReason")
                         bufferLabel(presentation.bufferSeconds)
                     }
                     .font(.body.weight(.medium))
 
-                    Text(presentation.providerAttribution)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 4) {
+                            Text("route.source")
+                            Text(presentation.providerAttribution)
+                        }
+                        HStack(spacing: 4) {
+                            Text("route.updated")
+                            Text(time(presentation.computedAt, timezone: presentation.timezone))
+                        }
+                        if presentation.isUnofficialSource {
+                            Text("route.unofficialWarning")
+                        }
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("route.liveLocationOff")
+                        Text("route.unsupportedFieldsOmitted")
+                    }
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding()
