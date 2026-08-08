@@ -27,6 +27,8 @@
     "paywall.title" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "More support when you want it" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "必要なときに、もっとサポート" } } } },
     "paywall.upgrade" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Upgrade" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "アップグレード" } } } },
     "phone.prompt" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Add a phone number for optional calls later." } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "後で任意の通話を使う場合は電話番号を追加してください。" } } } },
+    "phone.add" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Add phone number" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "電話番号を追加" } } } },
+    "phone.number" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Phone number (+country code)" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "電話番号（国番号付き）" } } } },
     "phone.skip" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Skip for now" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "今はスキップ" } } } },
     "profile.continue" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Continue" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "続ける" } } } },
     "profile.home" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Home or usual starting point" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "自宅または普段の出発地点" } } } },

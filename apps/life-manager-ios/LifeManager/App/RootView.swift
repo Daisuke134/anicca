@@ -37,6 +37,8 @@ private struct RouteSurface: View {
     private let onChatReady: (@MainActor () async -> Void)?
     @State private var profileName = ""
     @State private var profileHome = ""
+    @State private var profileLocale: ProductLocale
+    @State private var phoneNumber = ""
 
     init(
         viewModel: AppViewModel,
@@ -44,6 +46,7 @@ private struct RouteSurface: View {
     ) {
         _viewModel = State(initialValue: viewModel)
         self.onChatReady = onChatReady
+        _profileLocale = State(initialValue: Self.preferredProductLocale)
     }
 
     var body: some View {
@@ -68,7 +71,8 @@ private struct RouteSurface: View {
                         ChatView(
                             viewModel: chatViewModel,
                             settingsViewModel: viewModel.settingsViewModel,
-                            paywallViewModel: viewModel.paywallViewModel
+                            paywallViewModel: viewModel.paywallViewModel,
+                            onShowPaywall: { viewModel.showSoftPaywall() }
                         )
                     } else {
                         chatView
@@ -116,11 +120,26 @@ private struct RouteSurface: View {
                 Button("profile.continue") {
                     Task {
                         await viewModel.submitProfile(
-                            ProfileDraft(name: profileName.isEmpty ? nil : profileName, home: profileHome.isEmpty ? nil : profileHome)
+                            ProfileDraft(
+                                name: profileName.isEmpty ? nil : profileName,
+                                home: profileHome.isEmpty ? nil : profileHome,
+                                productLocale: profileLocale
+                            )
                         )
                     }
                 }
                 .accessibilityIdentifier("profile.continue")
+            }
+            Section("settings.productLanguage") {
+                Picker("settings.productLanguage", selection: $profileLocale) {
+                    Text("settings.english")
+                        .tag(ProductLocale.en)
+                        .accessibilityIdentifier("profile.locale.en")
+                    Text("settings.japanese")
+                        .tag(ProductLocale.ja)
+                        .accessibilityIdentifier("profile.locale.ja")
+                }
+                .accessibilityIdentifier("profile.productLocale")
             }
         }
         .frame(maxWidth: 520)
@@ -130,12 +149,34 @@ private struct RouteSurface: View {
         VStack(spacing: 16) {
             Text("phone.prompt")
                 .multilineTextAlignment(.center)
+            TextField("phone.number", text: $phoneNumber)
+                .keyboardType(.phonePad)
+                .textFieldStyle(.roundedBorder)
+                .accessibilityIdentifier("phone.number")
+            if let phoneValidationError = viewModel.phoneValidationError {
+                Text(LocalizedStringKey(phoneValidationError))
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("phone.error")
+            }
+            Button("phone.add") {
+                Task { await viewModel.submitPhone(phoneNumber) }
+            }
+            .buttonStyle(.borderedProminent)
+            .accessibilityIdentifier("phone.add")
             Button("phone.skip") {
                 Task { await viewModel.skipPhone() }
             }
             .accessibilityIdentifier("phone.skip")
         }
         .padding()
+    }
+
+    private static var preferredProductLocale: ProductLocale {
+        guard let language = Locale.preferredLanguages.first?.lowercased(), language.hasPrefix("ja") else {
+            return .en
+        }
+        return .ja
     }
 
     private var chatView: some View {

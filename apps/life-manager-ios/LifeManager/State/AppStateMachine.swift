@@ -72,6 +72,7 @@ final class AppViewModel {
     private(set) var profile: UserProfile?
     private(set) var lastAnalysisStatus: AnalysisStatus?
     private(set) var phoneSkipped = false
+    private(set) var phoneValidationError: String?
 
     init(
         auth: AuthServicing,
@@ -118,6 +119,7 @@ final class AppViewModel {
 
     func submitProfile(_ draft: ProfileDraft) async {
         route = .profile
+        phoneValidationError = nil
         do {
             profile = try await profileService.update(draft, idempotencyKey: UUID())
             route = .phone
@@ -128,7 +130,18 @@ final class AppViewModel {
 
     func skipPhone() async {
         phoneSkipped = true
-        await runAnalysis()
+        await persistPhoneAndAnalyze(nil)
+    }
+
+    func submitPhone(_ value: String) async {
+        phoneValidationError = nil
+        guard E164PhoneValidator.isValid(value) else {
+            phoneValidationError = "settings.phoneInvalid"
+            route = .phone
+            return
+        }
+        phoneSkipped = false
+        await persistPhoneAndAnalyze(value)
     }
 
     func retryAnalysis() async {
@@ -160,6 +173,30 @@ final class AppViewModel {
             let result = try await analysisService.analyzeNextCommitment(idempotencyKey: UUID())
             lastAnalysisStatus = result.status
             route = .chat
+        } catch {
+            present(error)
+        }
+    }
+
+    private func persistPhoneAndAnalyze(_ phone: String?) async {
+        guard let profile else {
+            await runAnalysis()
+            return
+        }
+
+        do {
+            self.profile = try await profileService.update(
+                ProfileDraft(
+                    name: profile.name,
+                    home: profile.home.display,
+                    productLocale: profile.productLocale,
+                    phone: phone,
+                    callsEnabled: false,
+                    callLanguage: nil
+                ),
+                idempotencyKey: UUID()
+            )
+            await runAnalysis()
         } catch {
             present(error)
         }

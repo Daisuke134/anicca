@@ -26,6 +26,48 @@ final class AppViewModelTests: XCTestCase {
         XCTAssertEqual(requestCount, 1)
     }
 
+    func testSkippingPhonePersistsNullAndKeepsCallsDisabledBeforeAnalysis() async {
+        let auth = StateAuthService(restored: nil, connected: StateFixtures.session)
+        let profile = StateProfileService(profile: StateFixtures.profile)
+        let analysis = StateAnalysisService(results: [StateFixtures.analysis(status: .routeReady)])
+        let viewModel = AppViewModel(auth: auth, profile: profile, analysis: analysis)
+
+        await viewModel.restoreSession()
+        await viewModel.connectCalendar()
+        await viewModel.submitProfile(ProfileDraft(name: "Alex", home: "Home", productLocale: .ja))
+        await viewModel.skipPhone()
+
+        let drafts = await profile.drafts()
+        XCTAssertEqual(drafts.last?.phone, nil)
+        XCTAssertEqual(drafts.last?.callsEnabled, false)
+        XCTAssertEqual(drafts.last?.productLocale, .ja)
+        XCTAssertEqual(viewModel.route, .chat)
+    }
+
+    func testAddingPhoneValidatesE164AndStillLeavesCallsDisabled() async {
+        let auth = StateAuthService(restored: nil, connected: StateFixtures.session)
+        let profile = StateProfileService(profile: StateFixtures.profile)
+        let analysis = StateAnalysisService(results: [StateFixtures.analysis(status: .routeReady)])
+        let viewModel = AppViewModel(auth: auth, profile: profile, analysis: analysis)
+
+        await viewModel.restoreSession()
+        await viewModel.connectCalendar()
+        await viewModel.submitProfile(ProfileDraft(name: "Alex", home: "Home"))
+        await viewModel.submitPhone("not-a-phone")
+
+        XCTAssertEqual(viewModel.phoneValidationError, "settings.phoneInvalid")
+        XCTAssertEqual(viewModel.route, .phone)
+        let invalidDrafts = await profile.drafts()
+        XCTAssertEqual(invalidDrafts.count, 1)
+
+        await viewModel.submitPhone("+14155552671")
+
+        let draft = await profile.drafts().last
+        XCTAssertEqual(draft?.phone, "+14155552671")
+        XCTAssertEqual(draft?.callsEnabled, false)
+        XCTAssertEqual(viewModel.route, .chat)
+    }
+
     func testAllTerminalAnalysisStatesEnterChat() async {
         for status in AnalysisStatus.allCases {
             let auth = StateAuthService(restored: StateFixtures.session, connected: StateFixtures.session)
@@ -130,13 +172,30 @@ private actor StateAuthService: AuthServicing {
 
 private actor StateProfileService: ProfileServicing {
     private let profile: UserProfile
+    private var recordedDrafts: [ProfileDraft] = []
 
     init(profile: UserProfile) {
         self.profile = profile
     }
 
     func fetch() async throws -> UserProfile { profile }
-    func update(_ draft: ProfileDraft, idempotencyKey: UUID) async throws -> UserProfile { profile }
+    func update(_ draft: ProfileDraft, idempotencyKey: UUID) async throws -> UserProfile {
+        recordedDrafts.append(draft)
+        return UserProfile(
+            id: profile.id,
+            name: draft.name,
+            home: HomeAddress(status: draft.home == nil ? .missing : .ready, display: draft.home),
+            productLocale: draft.productLocale,
+            timezone: profile.timezone,
+            phone: draft.phone.map(PhoneSettings.configured) ?? .missing,
+            callsEnabled: draft.callsEnabled,
+            callLanguage: draft.callLanguage,
+            calendarStatus: profile.calendarStatus,
+            offerStatus: profile.offerStatus
+        )
+    }
+
+    func drafts() -> [ProfileDraft] { recordedDrafts }
 }
 
 private actor StateAnalysisService: AnalysisServicing {

@@ -17,6 +17,7 @@ struct ChatView: View {
     private let settingsViewModel: SettingsViewModel?
     private let paywallViewModel: SoftPaywallViewModel?
     private let pushRouter: PushNotificationRouter
+    private let onShowPaywall: (() -> Void)?
     @State private var selectedRouteMessage: ChatMessage?
     @State private var showingSettings = false
 
@@ -25,12 +26,14 @@ struct ChatView: View {
         viewModel: ChatViewModel,
         settingsViewModel: SettingsViewModel? = nil,
         paywallViewModel: SoftPaywallViewModel? = nil,
-        pushRouter: PushNotificationRouter? = nil
+        pushRouter: PushNotificationRouter? = nil,
+        onShowPaywall: (() -> Void)? = nil
     ) {
         _viewModel = State(initialValue: viewModel)
         self.settingsViewModel = settingsViewModel
         self.paywallViewModel = paywallViewModel
         self.pushRouter = pushRouter ?? .shared
+        self.onShowPaywall = onShowPaywall
     }
 
     var body: some View {
@@ -86,9 +89,19 @@ struct ChatView: View {
                 showingSettings = true
             }
             .accessibilityIdentifier("chat.settings")
+            if hasUsefulRoute, let onShowPaywall {
+                Button("paywall.upgrade", action: onShowPaywall)
+                    .accessibilityIdentifier("chat.upgrade")
+            }
         }
         .padding(.horizontal)
         .padding(.vertical, 12)
+    }
+
+    private var hasUsefulRoute: Bool {
+        viewModel.messages.contains { message in
+            message.type == .route && RoutePresentation.card(for: message) != nil
+        }
     }
 
     private var messageList: some View {
@@ -154,6 +167,7 @@ struct ChatView: View {
             .padding()
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 14))
+            .accessibilityIdentifier("chat.message.\(message.id)")
         }
     }
 

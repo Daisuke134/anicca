@@ -1,0 +1,82 @@
+# Real staging journey on a Japanese-configured simulator. The callback URL
+# and profile values come from the operator; no bearer token is placed in YAML.
+appId: ai.anicca.life-manager
+name: Japanese real-staging onboarding to route and free chat
+tags:
+  - regression
+  - staging
+  - japanese
+env:
+  STAGING_CALLBACK_URL: ${STAGING_CALLBACK_URL}
+  PROFILE_NAME: ${PROFILE_NAME}
+  PROFILE_HOME: ${PROFILE_HOME}
+---
+- launchApp:
+    clearState: true
+    clearKeychain: true
+    permissions:
+      notifications: allow
+- extendedWaitUntil:
+    visible:
+      id: "welcome.connectCalendar"
+    timeout: 30000
+- tapOn:
+    id: "welcome.connectCalendar"
+- openLink: ${STAGING_CALLBACK_URL}
+- extendedWaitUntil:
+    visible:
+      id: "profile.name"
+    timeout: 30000
+- tapOn:
+    id: "profile.name"
+- inputText: ${PROFILE_NAME}
+- tapOn:
+    id: "profile.home"
+- inputText: ${PROFILE_HOME}
+- hideKeyboard
+- tapOn:
+    id: "profile.locale.ja"
+- tapOn:
+    id: "profile.continue"
+- extendedWaitUntil:
+    visible:
+      id: "phone.skip"
+    timeout: 30000
+- tapOn:
+    id: "phone.skip"
+- extendedWaitUntil:
+    visible:
+      id: "analysis.phase"
+    timeout: 30000
+- extendedWaitUntil:
+    visible:
+      id: "route.showDetails"
+    timeout: 60000
+- takeScreenshot: "japanese-route-card"
+- tapOn:
+    id: "route.showDetails"
+- extendedWaitUntil:
+    visible:
+      id: "route.detail.close"
+    timeout: 10000
+- takeScreenshot: "japanese-route-detail"
+- tapOn:
+    id: "route.detail.close"
+- tapOn:
+    id: "chat.upgrade"
+- extendedWaitUntil:
+    visible:
+      id: "paywall.continueFree"
+    timeout: 10000
+- tapOn:
+    id: "paywall.continueFree"
+- extendedWaitUntil:
+    visible:
+      id: "chat.settings"
+    timeout: 10000
+- tapOn:
+    id: "chat.settings"
+- extendedWaitUntil:
+    visible: "設定"
+    timeout: 10000
+- takeScreenshot: "japanese-settings"

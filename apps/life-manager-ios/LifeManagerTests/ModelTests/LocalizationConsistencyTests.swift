@@ -49,7 +49,7 @@ final class LocalizationConsistencyTests: XCTestCase {
     private static let requiredKeys: Set<String> = [
         "app.name", "welcome.promise", "welcome.connectCalendar", "onboarding.restoring",
         "onboarding.connectingCalendar", "onboarding.analyzing", "profile.title", "profile.name",
-        "profile.home", "profile.continue", "phone.prompt", "phone.skip", "analysis.checking",
+        "profile.home", "profile.continue", "phone.prompt", "phone.number", "phone.add", "phone.skip", "analysis.checking",
         "chat.settings", "chat.refresh", "chat.loading", "chat.send", "chat.answerOpenQuestion",
         "chat.staleReply", "chat.staleReplyAccessibility", "chat.tryAgain", "route.showFull",
         "route.close", "route.arrive", "route.details", "route.minutes", "route.minutesBuffer",
