@@ -17,11 +17,11 @@
 
 | Slice | Status | RED | GREEN | Commit |
 |---|---|---|---|---|
-| 1. Persistent geocodes | GREEN | missing-module | 6/6 focused + 43/43 baseline | pending |
-| 2. Durable route cache | GREEN | original suite + new scope tests | 15/15 route/transit + 62/62 travel regression | pending |
-| 3. Transit facts/fallback | GREEN | structured projection + anchor tests | 31/31 transit/route tests; 59/59 combined focused | pending |
-| 4. Truthful cost event | GREEN | 5 contract failures (missing API) | 12/12 ledger contract | pending |
-| 5. Provider instrumentation | GREEN | adapter module/import module missing | 72/72 provider + focused regression | pending |
+| 1. Persistent geocodes | GREEN | missing-module | 6/6 focused + 43/43 baseline | `3381cf717` |
+| 2. Durable route cache | GREEN | original suite + new scope tests | 15/15 route/transit + 62/62 travel regression | `826d2837d` |
+| 3. Transit facts/fallback | GREEN | structured projection + anchor tests | 31/31 transit/route tests; 59/59 combined focused | `19f411f39` |
+| 4. Truthful cost event | GREEN | 5 contract failures (missing API) | 12/12 ledger contract | `062663d73` |
+| 5. Provider instrumentation | GREEN | adapter module/import module missing | 77/77 provider + focused regression | `0c6616b86` |
 | 6. Budget policy | pending | — | — | — |
 | 7. Owner report/deploy/measure | code-only pending | — | — | — |
 
@@ -76,4 +76,4 @@ Result: 43/43 passed, 0 failed, 0 skipped (2026-08-08).
 - GREEN (adapter core): the new recorder adapters cover Google Geocoding/Routes, Transit, Composio, Gemini, Telnyx CDR, Resend, Railway, and Supabase; `node --test lib/provider-cost-adapters.test.js` → 10/10 passed.
 - GREEN (runtime wiring): geocode misses, Google Routes/legacy transit, Transit `/plan` + guidance, Composio calls, Resend sends, Gemini Live sessions, and Telnyx call sessions now emit complete events. Cache hits do not emit provider spend.
 - GREEN (scheduled imports): `provider-cost-imports.js` imports Telnyx CDR actuals and Railway/Supabase allocations; loader failures return a failure receipt and write no synthetic zero row. `node --test lib/provider-cost-imports.test.js` → 3/3 passed.
-- GREEN focused verification: `node --test lib/provider-cost-adapters.test.js lib/provider-cost-imports.test.js lib/composio-budget.test.js lib/mail-resend.test.js lib/ledger.test.js lib/travel-transit-wire.test.js lib/transit.test.js lib/route-cache.test.js lib/travel-routes.test.js` → 72/72 passed.
+- GREEN focused verification: `node --test lib/provider-cost-adapters.test.js lib/provider-cost-imports.test.js lib/composio-budget.test.js lib/mail-resend.test.js lib/ledger.test.js lib/travel-transit-wire.test.js lib/transit.test.js lib/route-cache.test.js lib/travel-routes.test.js test/provider-cost-contract.test.js` → 77/77 passed.
