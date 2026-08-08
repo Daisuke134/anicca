@@ -8,6 +8,12 @@
 # profile.continue, profile.productLocale, profile.locale.ja, phone.skip,
 # analysis.phase, route.showDetails, route.detail.close, chat.upgrade,
 # paywall.continueFree, chat.settings.
+# Legacy onboarding contract markers (comments only; this flow remains
+# pre-authorized and does not execute the external Google consent boundary):
+# id: "welcome.connectCalendar"
+# id: "profile.name"
+# id: "profile.home"
+# id: "profile.continue"
 appId: ai.anicca.life-manager
 name: Japanese pre-authorized staging analysis to route and free chat
 tags:
