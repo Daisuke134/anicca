@@ -111,6 +111,18 @@ flowchart LR
 | 6 | `x402_services` | `business` | x402 Services | `ai.anicca.x402-*`, with Franklin runtime ownership | Facilitator/on-chain customer settlement receipts |
 | 7 | `job_income` | `personal_income` | Employment Income | `ai.anicca.job-search-*` | Payroll/bank receipts; excluded from business revenue |
 
+Localized identity and evidence are exact, not executor-selected:
+
+| ID | Exact `display_name` | Exact `evidence_refs` |
+|---|---|---|
+| `life_manager_saas` | `{"en":"Life Manager","ja":"ライフマネージャー"}` | `["docs/superpowers/specs/2026-06-21-life-manager-LAUNCH-ORDER.md"]` |
+| `anicca_ios` | `{"en":"Anicca iOS","ja":"アニッチャ iOS"}` | `["AGENTS.md"]` |
+| `writer_agent` | `{"en":"Writer Agent","ja":"ライターエージェント"}` | `["docs/writer-agent/WRITER-AGENT-SSOT.md"]` |
+| `affiliate_agent` | `{"en":"Affiliate Agent","ja":"アフィリエイトエージェント"}` | `["docs/affiliate-agent/AFFILIATE-AGENT-SSOT.md"]` |
+| `gig_work` | `{"en":"Gig Work","ja":"ギグワーク"}` | `["docs/loop-engineering/26-gig-loop-asis-tobe-plan.md"]` |
+| `x402_services` | `{"en":"x402 Services","ja":"x402サービス"}` | `["apps/x402-agents/package.json"]` |
+| `job_income` | `{"en":"Employment Income","ja":"給与所得"}` | `["launchd:ai.anicca.job-search-*"]` |
+
 ### Explicit exclusions
 
 | Matcher | Classification | Cost treatment |

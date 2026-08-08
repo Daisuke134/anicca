@@ -215,9 +215,17 @@ Use these exact values:
 | `x402_services` | `business` | `active` | `ai.anicca.x402-*` | `x402_onchain` | `x402_settlement_receipts` | `agent:franklin1`, `agent:franklin2` |
 | `job_income` | `personal_income` | `active` | `ai.anicca.job-search-*` | `payroll_bank` | `payroll_bank_receipts` | none |
 
-Every row uses `owner_ref: "human:dais"`, its table order as `display_order`, and localized display names from the
-design spec. Evidence refs are respectively: Life Manager launch order, the project AGENTS iOS section, Writer
-SSOT, Affiliate SSOT, Gig plan, `apps/x402-agents/package.json`, and `launchd:ai.anicca.job-search-*`.
+Every row uses `owner_ref: "human:dais"` and its table order as `display_order`. Use these exact identity fields:
+
+| ID | Exact `display_name` | Exact `evidence_refs` |
+|---|---|---|
+| `life_manager_saas` | `{"en":"Life Manager","ja":"ライフマネージャー"}` | `["docs/superpowers/specs/2026-06-21-life-manager-LAUNCH-ORDER.md"]` |
+| `anicca_ios` | `{"en":"Anicca iOS","ja":"アニッチャ iOS"}` | `["AGENTS.md"]` |
+| `writer_agent` | `{"en":"Writer Agent","ja":"ライターエージェント"}` | `["docs/writer-agent/WRITER-AGENT-SSOT.md"]` |
+| `affiliate_agent` | `{"en":"Affiliate Agent","ja":"アフィリエイトエージェント"}` | `["docs/affiliate-agent/AFFILIATE-AGENT-SSOT.md"]` |
+| `gig_work` | `{"en":"Gig Work","ja":"ギグワーク"}` | `["docs/loop-engineering/26-gig-loop-asis-tobe-plan.md"]` |
+| `x402_services` | `{"en":"x402 Services","ja":"x402サービス"}` | `["apps/x402-agents/package.json"]` |
+| `job_income` | `{"en":"Employment Income","ja":"給与所得"}` | `["launchd:ai.anicca.job-search-*"]` |
 
 Set `relevant_runtime_prefixes` to the literal prefixes covered above plus `ai.anicca.cfo-`, `ai.anicca.fleet-`,
 `ai.anicca.franklin`, `ai.anicca.self-fix-`, and `ai.anicca.connector-healer-`.
