@@ -3,7 +3,7 @@
 const { createHmac } = require("node:crypto");
 const { validateFinancialSourceResult } = require("./cfo-financial-source.js");
 const ERROR_PREFIX = "moneytree_adapter_invalid:";
-const RFC3339 = /^(\d{4})-(\d{2})-(\d{2})T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/;
+const RFC3339 = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(Z|([+-])(\d{2}):(\d{2}))$/;
 const REF_PREFIXES = { account: "source_account:mt_", transaction: "transaction:mt_", evidence: "evidence:mt_" };
 
 function plain(value) {
@@ -102,7 +102,7 @@ function bookingDate(value) {
   if (!match) fail("invalid_booking_date");
   const monthEnd = new Date(0);
   monthEnd.setUTCFullYear(Number(match[1]), Number(match[2]), 0);
-  if (Number(match[2]) < 1 || Number(match[2]) > 12 || Number(match[3]) < 1 || Number(match[3]) > monthEnd.getUTCDate() || !Number.isFinite(Date.parse(value))) fail("invalid_booking_date");
+  if (Number(match[2]) < 1 || Number(match[2]) > 12 || Number(match[3]) < 1 || Number(match[3]) > monthEnd.getUTCDate() || Number(match[4]) > 23 || Number(match[5]) > 59 || Number(match[6]) > 59 || (match[7] !== "Z" && (Number(match[9]) > 23 || Number(match[10]) > 59)) || !Number.isFinite(Date.parse(value))) fail("invalid_booking_date");
   return `${match[1]}-${match[2]}-${match[3]}`;
 }
 
@@ -137,11 +137,9 @@ function adaptMoneytreeTransactions(input) {
     if (!Array.isArray(rows)) fail("invalid_transactions");
     const totalCount = parsed.data.totalCount;
     if (!Number.isSafeInteger(totalCount) || totalCount < rows.length) fail("invalid_total_count");
-    const transactionIds = new Set();
     const transactionRefs = new Set();
     const transactions = rows.map((row) => {
-      if (!plain(row) || !Number.isSafeInteger(row.id) || transactionIds.has(row.id)) fail("invalid_transaction_id");
-      transactionIds.add(row.id);
+      if (!plain(row) || !Number.isSafeInteger(row.id)) fail("invalid_transaction_id");
       if (!Number.isSafeInteger(row.account_id) || !accountRefs.has(row.account_id)) fail("invalid_account_id");
       if (!Number.isSafeInteger(row.amount)) fail("invalid_amount");
       if (row.currency !== "JPY") fail("unsupported_currency");

@@ -219,8 +219,9 @@ test("keeps transaction refs stable, tenant-scoped, and domain-separated", () =>
   const otherTenant = adaptMoneytreeTransactions({ ...input, referenceKey: "different-synthetic-reference-key-32" });
   assert.deepEqual(repeated.transactions.map((row) => row.transactionRef), result.transactions.map((row) => row.transactionRef));
   assert.deepEqual(otherTenant.transactions.map((row) => row.transactionRef).map((ref, index) => ref !== result.transactions[index].transactionRef), [true, true, true]);
-  assert.notEqual(result.transactions[0].transactionRef.slice(-24), result.transactions[0].accountRef.slice(-24));
+  const sameId = syntheticTransactions(); sameId.data.transactions[0].id = 1001; assert.notEqual(adaptMoneytreeTransactions(transactionInput({ transactions: sameId })).transactions[0].transactionRef.slice(-24), result.transactions[0].accountRef.slice(-24));
 });
+test("rejects duplicate transaction refs", () => assert.throws(() => adaptMoneytreeTransactions(invalidTransactionInput((_accounts, transactions) => { transactions.data.transactions[1].id = 2001; })), (error) => error.message === "moneytree_adapter_invalid:duplicate_transaction_ref"));
 
 test("reports transaction pagination honestly", () => {
   const partial = syntheticTransactions();
@@ -240,6 +241,7 @@ const invalidTransactionCases = [
   ["missing total count", (_accounts, transactions) => { delete transactions.data.totalCount; }],
   ["missing booking date", (_accounts, transactions) => { delete transactions.data.transactions[0].date; }],
   ["invalid booking date", (_accounts, transactions) => { transactions.data.transactions[0].date = "2026-02-30T00:00:00+09:00"; }],
+  ["invalid booking clock", (_accounts, transactions) => { transactions.data.transactions[0].date = "2026-08-06T24:00:00Z"; }],
   ["float amount", (_accounts, transactions) => { transactions.data.transactions[0].amount = 1.5; }],
   ["unsafe amount", (_accounts, transactions) => { transactions.data.transactions[0].amount = Number.MAX_SAFE_INTEGER + 1; }],
   ["string amount", (_accounts, transactions) => { transactions.data.transactions[0].amount = "1234"; }],
