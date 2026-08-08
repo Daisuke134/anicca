@@ -50,7 +50,7 @@ Dais が headed CloakBrowser で**1回ログイン済**(Google/freee/Stripe card
 | 禁止 | 代わりに |
 |---|---|
 | ★ `vcsdd` plugin / `vcsdd:vcsdd-adversary` / `/vcsdd-*` を **一切呼ばない** ★（nitpick を返すだけで仕事をしない） | **superpowers の 8-stage flow**（HARD RULE #0）を1件ずつ回す |
-| ★ 実装・レビューに **GPT系（Sol / codex / gpt-*）を使わない** ★ | ★ **Claude モデルのみ**（executor = Opus 5 subagent。Sonnet に実装させるのも禁止） ★ |
+| ★ 実装・レビューに **GPT系（Sol / codex / gpt-*）を使わない** ★ | ★ **Claude モデルのみ**（★実装 executor = **Sonnet 5**（Dais 2026-08-08 指示。旧「Opus 5 / Sonnet 禁止 — 2026-07-30」を撤回）★／review ゲートは Opus 5 fresh one-shot のまま） ★ |
 | 「4-D convergence」等の VSDD 語彙 | **build → verify → 直す → 再verify** を done まで回すだけ |
 
 **検証は adversary ではなく実物で行う**: 実ブラウザ / 実API / 実コマンドを走らせ、**自分の目で side effect を見る**。「コンパイルが通った」「cron がある」は done ではない。1件ずつ、次に行く前に閉じる。
