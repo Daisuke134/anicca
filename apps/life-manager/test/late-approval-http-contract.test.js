@@ -13,6 +13,7 @@ const {
   decideLateDraft,
   claimApprovedDelivery,
   recordLateDelivery,
+  recordLateApprovalCard,
   createLateApprovalCallbackData,
   handleLateApprovalCallback,
 } = require("../lib/late-approval.js");
@@ -208,7 +209,7 @@ test("an accepted Telegram edit followed by a timeout retries the same approval 
       editAttempts += 1;
       editCalls.push({ chatId, messageId, text });
       if (editAttempts === 1) throw new Error("Telegram timed out after accepting the edit");
-      return { ok: true, result: { message_id: Number(messageId) } };
+      return { ok: false, description: "Bad Request: message is not modified" };
     },
   });
 
@@ -248,7 +249,9 @@ test("an accepted Telegram edit followed by a receipt-record failure retries the
     sendMessage: async () => { throw new Error("receipt must edit the approval card"); },
     editMessageText: async (_token, _chatId, messageId) => {
       editCalls += 1;
-      return { ok: true, result: { message_id: Number(messageId) } };
+      return editCalls === 1
+        ? { ok: true, result: { message_id: Number(messageId) } }
+        : { ok: false, description: "Bad Request: message is not modified" };
     },
   });
 
@@ -262,6 +265,29 @@ test("an accepted Telegram edit followed by a receipt-record failure retries the
   assert.equal(editCalls, 2);
   assert.equal(recordCalls, 2);
   assert.equal((await durableStore.getDraft(draft.draftId)).telegramReceiptMessageId, "778");
+});
+
+test("a replayed callback message id cannot override the durable approval card target", async () => {
+  const store = createInMemoryLateApprovalStore({ nowMs: NOW });
+  const draft = await createLateDraft({ ...draftInput(), eventKey: "calendar:event-durable-card-target" }, store);
+  await recordLateApprovalCard({
+    uid: draft.uid, draftId: draft.draftId, chatId: "100", telegramMessageId: "700", nowMs: NOW,
+  }, store);
+  const editCalls = [];
+  const options = baseOptions(store, {
+    // This is a replayed/stale callback value; the stored approval card is message 700.
+    messageId: "777",
+    editMessageText: async (_token, chatId, messageId) => {
+      editCalls.push({ chatId, messageId });
+      return { ok: true, result: { message_id: Number(messageId) } };
+    },
+  });
+
+  const result = await handleLateApprovalCallback(callback("send", draft.draftId), options);
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(editCalls, [{ chatId: "100", messageId: "700" }]);
+  assert.equal((await store.getDraft(draft.draftId)).telegramReceiptMessageId, "700");
 });
 
 test("Telegram receipt failure retries the receipt without resending the provider email", async () => {

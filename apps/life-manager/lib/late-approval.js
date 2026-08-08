@@ -1081,6 +1081,15 @@ function approvalReceiptText(row, providerId) {
   return `✅ 遅刻連絡を送信しました\n宛先: ${identity}\nResend: ${providerId}`;
 }
 
+const TELEGRAM_MESSAGE_NOT_MODIFIED = "Bad Request: message is not modified";
+
+function telegramReceiptEditAccepted(result) {
+  return Boolean(result) && (
+    result.ok !== false ||
+    (result.ok === false && result.description === TELEGRAM_MESSAGE_NOT_MODIFIED)
+  );
+}
+
 async function handleLateApprovalCallback(data, options = {}) {
   const parsed = parseLateApprovalCallback(data, options);
   if (!parsed) return { handled: true, ok: false, reason: "invalid_callback" };
@@ -1240,10 +1249,10 @@ async function handleLateApprovalCallback(data, options = {}) {
   }
 
   const approvalMessageId = String(
-    options.messageId || receipt.telegramApprovalMessageId || draft.telegramApprovalMessageId || "",
+    receipt.telegramApprovalMessageId || draft.telegramApprovalMessageId || options.messageId || "",
   ).trim();
   const approvalChatId = String(
-    options.chatId || receipt.telegramApprovalChatId || draft.telegramApprovalChatId || "",
+    receipt.telegramApprovalChatId || draft.telegramApprovalChatId || options.chatId || "",
   ).trim();
   if (!approvalMessageId || !approvalChatId) {
     await releaseLateTelegramReceipt({
@@ -1275,7 +1284,7 @@ async function handleLateApprovalCallback(data, options = {}) {
   } catch (error) {
     telegramReceipt = { ok: false, error: String(error && error.message || error) };
   }
-  if (!telegramReceipt || telegramReceipt.ok === false) {
+  if (!telegramReceiptEditAccepted(telegramReceipt)) {
     await releaseLateTelegramReceipt({
       uid: owner.uid, draftId: parsed.draftId, claimToken: receiptClaim.telegramReceiptClaimToken,
       workerId: receiptWorkerId, error: String(telegramReceipt && telegramReceipt.error || "Telegram receipt failed"), nowMs,
