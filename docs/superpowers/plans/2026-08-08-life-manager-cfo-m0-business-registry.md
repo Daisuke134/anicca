@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build a strict seven-unit financial registry and a read-only live Mac inventory receipt that closes CFO-0c without changing any running loop.
+**Goal:** Build a strict nine-unit financial registry and a read-only live Mac inventory receipt that closes CFO-0c without changing any running loop.
 
 **Architecture:** A Git-tracked JSON registry defines stable economic identity. Pure CommonJS modules validate and classify injected launchd observations. A thin CLI is the only process/filesystem boundary and atomically appends receipts below the Life Manager state root.
 
@@ -25,7 +25,7 @@
 |---|---|---:|
 | `apps/life-call/lib/cfo-registry.js` | Strict schema, canonical JSON, SHA-256, runtime matcher | 95 production LOC |
 | `apps/life-call/lib/cfo-registry.test.js` | Validator and mapping contract | 95 test LOC |
-| `apps/life-call/config/cfo-financial-units.json` | Seven declarative units and exclusions | 125 data LOC; not split because one atomic registry SSOT is safer than cross-file identity |
+| `apps/life-call/config/cfo-financial-units.json` | Nine declarative units, nine ledger sources, and exclusions | 125 data LOC; not split because one atomic registry SSOT is safer than cross-file identity |
 | `apps/life-call/lib/cfo-inventory.js` | Deterministic observations and receipt construction | 90 production LOC |
 | `apps/life-call/lib/cfo-inventory.test.js` | Classification, ambiguity, determinism | 95 test LOC |
 | `apps/life-call/scripts/cfo-business-inventory.js` | Read-only launchctl adapter and atomic receipt writer | 85 production LOC |
@@ -173,7 +173,7 @@ reference contract above, targeted tests, fresh review, state commit, and push b
 
 ---
 
-### Task 2: Canonical seven-unit registry
+### Task 2: Canonical nine-unit registry
 
 **Files:**
 - Create: `apps/life-call/config/cfo-financial-units.json`
@@ -182,20 +182,21 @@ reference contract above, targeted tests, fresh review, state commit, and push b
 **Interfaces:**
 - Consumes: `validateRegistry` and `classifyLabel` from Task 1.
 - Produces: the sole registry file with ordered IDs:
-  `life_manager_saas`, `anicca_ios`, `writer_agent`, `affiliate_agent`, `gig_work`, `x402_services`, `job_income`.
+  `life_manager_saas`, `anicca_ios`, `writer_agent`, `affiliate_agent`, `gig_work`, `x402_services`, `job_income`,
+  `capafy_marketplace`, `proprietary_investing`.
 
 - [x] **Step 1: Add failing canonical-registry tests**
 
 ```js
-test("canonical registry exposes exactly seven ordered financial units", () => {
+test("canonical registry exposes exactly nine ordered financial units", () => {
   const raw = JSON.parse(fs.readFileSync(path.join(__dirname, "../config/cfo-financial-units.json"), "utf8"));
   const registry = validateRegistry(raw);
   assert.deepEqual(registry.financial_units.map(x => x.financial_unit_id), [
     "life_manager_saas", "anicca_ios", "writer_agent", "affiliate_agent",
-    "gig_work", "x402_services", "job_income",
+    "gig_work", "x402_services", "job_income", "capafy_marketplace", "proprietary_investing",
   ]);
-  assert.equal(registry.financial_units.at(-1).unit_kind, "personal_income");
-  assert.ok(registry.financial_units.slice(0, -1).every(x => x.unit_kind === "business"));
+  assert.equal(registry.financial_units.find(x => x.financial_unit_id === "job_income").unit_kind, "personal_income");
+  assert.ok(registry.financial_units.filter(x => x.financial_unit_id !== "job_income").every(x => x.unit_kind === "business"));
 });
 ```
 
@@ -216,13 +217,15 @@ Use these exact values:
 
 | ID | Kind | Lifecycle | Runtime matchers | Channel IDs | Ledger IDs | Cost centres |
 |---|---|---|---|---|---|---|
-| `life_manager_saas` | `business` | `active` | `ai.anicca.life-manager-*` | `stripe_life_manager`, `taskmarket_life_manager`, `ugig_life_manager` | `lm_financial_ledger` | none |
-| `anicca_ios` | `business` | `active` | none | `apple_app_store_anicca` | `revenuecat_anicca_ios` | none |
+| `life_manager_saas` | `business` | `active` | `ai.anicca.life-manager-*` | `stripe_life_manager`, `taskmarket_life_manager`, `ugig_life_manager` | `lm_agent_earnings` | none |
+| `anicca_ios` | `business` | `active` | none | `apple_app_store_anicca` | `revenuecat_subscription_events` | none |
 | `writer_agent` | `business` | `active` | `ai.anicca.writer-*` | `note_writer`, `substack_writer`, `publisher_writer` | `writer_receipts` | none |
 | `affiliate_agent` | `business` | `building` | `ai.anicca.affiliate-*` | `amazon_associates`, `rakuten_affiliate`, `affiliate_networks` | `affiliate_commission_receipts` | none |
 | `gig_work` | `business` | `active` | `ai.anicca.hf-gig-*`, `ai.anicca.gig-outcome-watch` | `gig_marketplaces`, `direct_gig_clients` | `gig_payment_receipts` | none |
 | `x402_services` | `business` | `active` | `ai.anicca.x402-*` | `x402_onchain` | `x402_settlement_receipts` | `agent:franklin1`, `agent:franklin2` |
 | `job_income` | `personal_income` | `active` | `ai.anicca.job-search-*` | `payroll_bank` | `payroll_bank_receipts` | none |
+| `capafy_marketplace` | `business` | `building` | `ai.anicca.capafy-*`, Capafy provisioner | `capafy_sales` | `capafy_sales_receipts` | none |
+| `proprietary_investing` | `business` | `planned` | `ai.anicca.autohedge`, `ai.anicca.pm-*`, `ai.anicca.reinvest` | `proprietary_investing` | `proprietary_investing_receipts` | none |
 
 Every row uses `owner_ref: "human:dais"` and its table order as `display_order`. Use these exact identity fields:
 
@@ -512,7 +515,8 @@ cd apps/life-call
 npm run cfo:inventory
 ```
 
-Expected summary: `result="pass"`, `unit_count=7`, `unmapped_count=0`, `ambiguous_count=0`.
+Expected summary: `result="pass"`, `unit_count=9`, `unmapped_count=0`, `ambiguous_count=0`; the receipt contains one
+redacted ledger observation for each of the nine catalogue entries.
 
 If the result fails, change only registry mappings justified by observed labels, add a failing regression test,
 then repeat RED → GREEN and rerun live inventory. Do not mutate a launchd job to make the test pass.
@@ -536,7 +540,7 @@ caused by this slice.
 - [x] **Step 5: Close state without embedding private receipt data**
 
 Mark `CFO-0c` checked in the parent. Change child status to `IMPLEMENTED — LIVE E2E PASS` and record only the commit,
-test command, seven-unit count, zero finding counts, and receipt SHA-256 references. Do not commit the local receipt
+test command, nine-unit count, zero finding counts, ledger status counts, and receipt SHA-256 references. Do not commit the local receipt
 or expanded state path. Check every plan checkbox completed.
 
 - [x] **Step 6: Final verification, commit, and push**
@@ -555,11 +559,11 @@ git push
 | Spec requirement | Implemented by |
 |---|---|
 | Strict identity/schema/privacy | Tasks 1–2 |
-| Seven units and explicit exclusions | Task 2 |
+| Nine units and explicit exclusions | Task 2 |
 | One/zero/multiple runtime mapping | Tasks 1 and 3 |
 | Deterministic immutable receipt | Tasks 3–4 |
 | Read-only effect boundary | Task 4 |
-| Live seven-unit, zero-finding E2E | Task 5 |
+| Live nine-unit, zero-finding E2E | Task 5 |
 | SSOT state transition | Task 5 |
 
 ---
@@ -640,3 +644,39 @@ recompute both hashes; assert the receipt observed all live `ai.anicca.*` labels
 ambiguous, and one ledger observation per catalogue entry. Check every acceptance item, record exact commit hashes,
 then mark CFO-0c complete and CFO-0d active. Do not commit a receipt, raw label list, expanded private path, secret,
 balance, amount, transaction, or customer data.
+
+### Final correction closure (2026-08-08)
+
+- [x] F1 complete runtime census — `be53043ce` — 139 live labels classified as 84 financial units and 55 explicit
+      exclusions; unknown labels fail closed.
+- [x] F2 canonical ledger-source inventory — `7f56f93fb` — nine catalogue entries and nine redacted observations;
+      status counts `planned=3`, `unavailable=6`.
+- [x] F3 privacy, immutable hash, and normal CI — `86afe492d` — focused CFO tests are on the normal test chain.
+- [x] F4 live repair verification and honest closure — documentation commit `docs(cfo): close complete runtime inventory`
+      (hash recorded in the final execution report); live counts are `unit_count=9`, `unmapped_count=0`, and
+      `ambiguous_count=0`.
+- Focused verification: `npm run test:cfo` passed 35/35. Full verification: fresh `npm test` exited 0 after
+  `npm ci --no-audit --no-fund` restored the worktree's missing `ws` dependency.
+- Independently verified hashes: `registry_sha256=32c3d67f09d3e72b6fdc8a4a8f5d95d38f14a9edd33e8d913238bf65b0868375`;
+  `observation_hash=f459730c8505cf22b9f58d45287a6d382b10971b64e0199cf637bad92279046c`.
+- Safety checks: receipt mode `0600`, containing directory mode `0700`, receipt not tracked, and no launchd/ledger/
+  database/network-write/Telegram mutation.
+
+#### Measured LOC versus cumulative soft targets
+
+Measured with `wc -l` after F3. Test-file overages retain privacy, hash, catalogue, and live-census regression coverage;
+the soft targets are not a reason to remove safety tests.
+
+| File | Measured lines | Cumulative soft target | Difference |
+|---|---:|---:|---:|
+| `config/cfo-financial-units.json` | 245 | 355 | -110 |
+| `lib/cfo-registry.js` | 221 | 155 | +66 |
+| `lib/cfo-registry.test.js` | 460 | 265 | +195 |
+| `lib/cfo-inventory.js` | 151 | 128 | +23 |
+| `lib/cfo-inventory.test.js` | 251 | 220 | +31 |
+| `scripts/cfo-business-inventory.js` | 130 | 120 | +10 |
+| `scripts/cfo-business-inventory.test.js` | 206 | 135 | +71 |
+
+The three F4 documents measured `+176/-57` with `git diff --numstat` against base, versus the `+45` documentation
+soft target. The `+131` added-line overage records the expanded nine-source catalogue, redacted receipt contract,
+acceptance evidence, and replacement of the invalid seven-unit evidence; it does not expand runtime scope.
