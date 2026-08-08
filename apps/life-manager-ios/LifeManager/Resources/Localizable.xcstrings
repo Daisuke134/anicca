@@ -2,6 +2,9 @@
   "sourceLanguage" : "en",
   "strings" : {
     "analysis.checking" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Checking your next commitment" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "次の予定を確認しています" } } } },
+    "account.deletionCompletedAt" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Completed" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "完了日時" } } } },
+    "account.deletionReceipt" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Account deletion complete" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "アカウント削除完了" } } } },
+    "account.deletionReceiptID" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Receipt ID" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "レシートID" } } } },
     "app.name" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Life Manager" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "Life Manager" } } } },
     "chat.answerOpenQuestion" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Answer the open question" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "未回答の質問に答える" } } } },
     "chat.loading" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Loading your chat" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "チャットを読み込んでいます" } } } },

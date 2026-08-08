@@ -58,6 +58,18 @@ final class MaestroFlowContractTests: XCTestCase {
         XCTAssertLessThan(picker.lowerBound, japaneseChoice.lowerBound)
     }
 
+    func testWelcomeDeletionReceiptUsesLocalizedEvidenceAndStableAccessibilityID() throws {
+        let root = try Self.resource(named: "RootView.swift", in: "LifeManager/App")
+
+        for key in ["account.deletionReceipt", "account.deletionReceiptID", "account.deletionCompletedAt"] {
+            XCTAssertTrue(root.contains(key), "welcome receipt must use localized key \(key)")
+        }
+        XCTAssertTrue(root.contains("receipt.receiptID"))
+        XCTAssertTrue(root.contains("receipt.completedAt"))
+        XCTAssertTrue(root.contains(".accessibilityIdentifier(\"account.deletionReceipt\")"))
+        XCTAssertTrue(root.contains("terminalDeletionReceipt"))
+    }
+
     func testCleanFastlaneLaneBuildsAndPackagesCheckoutFixtures() throws {
         let fastfile = try Self.resource(named: "Fastfile", in: "fastlane")
         let project = try Self.resource(named: "project.yml")

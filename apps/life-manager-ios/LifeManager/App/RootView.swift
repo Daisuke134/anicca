@@ -108,6 +108,22 @@ private struct RouteSurface: View {
                 .fontWeight(.semibold)
             Text("welcome.promise")
                 .multilineTextAlignment(.center)
+            if let receipt = viewModel.terminalDeletionReceipt {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("account.deletionReceipt")
+                        .font(.headline)
+                    Text("account.deletionReceiptID")
+                        .font(.subheadline)
+                    Text(receipt.receiptID)
+                        .font(.footnote)
+                        .monospaced()
+                    Text("account.deletionCompletedAt")
+                        .font(.subheadline)
+                    Text(receipt.completedAt, style: .date)
+                        .font(.footnote)
+                }
+                .accessibilityIdentifier("account.deletionReceipt")
+            }
             Button("welcome.connectCalendar") {
                 Task { await viewModel.connectCalendar() }
             }
