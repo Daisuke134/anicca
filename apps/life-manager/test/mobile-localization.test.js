@@ -124,7 +124,7 @@ test("localized question projection exposes only the reply contract", () => {
     route: null,
   }, "en");
   assert.equal(Object.hasOwn(projected.question, "uid"), false);
-  assert.deepEqual(Object.keys(projected.question).sort(), ["eventId", "id", "prompt", "type"].sort());
+  assert.deepEqual(Object.keys(projected.question).sort(), ["id", "prompt"].sort());
 });
 
 test("calendar user content keeps only title and location", () => {

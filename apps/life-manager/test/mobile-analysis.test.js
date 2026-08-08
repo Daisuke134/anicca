@@ -46,7 +46,7 @@ test("analysis does not read a disconnected calendar or bypass the required name
     fetchUpcomingEvents: async () => { reads++; return [event]; },
   });
   assert.equal(disconnectedResult.status, "needs_information");
-  assert.equal(disconnectedResult.message.question.type, "calendar");
+  assert.equal(disconnectedResult.message.type, "question");
   assert.equal(reads, 0);
 
   const missingName = baseStore({ name: null });
@@ -55,7 +55,7 @@ test("analysis does not read a disconnected calendar or bypass the required name
     fetchUpcomingEvents: async () => { reads++; return [event]; },
   });
   assert.equal(nameResult.status, "needs_information");
-  assert.equal(nameResult.message.question.type, "name");
+  assert.equal(nameResult.message.type, "question");
   assert.equal(reads, 0);
 });
 

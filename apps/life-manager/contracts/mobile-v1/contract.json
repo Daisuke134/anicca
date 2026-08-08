@@ -12,15 +12,21 @@
     "analysis-no_upcoming_event.json",
     "analysis-route_ready.json",
     "analysis-route_unavailable.json",
+    "apns-device.json",
+    "account-deletion.json",
     "bootstrap.json",
+    "call.json",
     "chat-page.json",
     "contract.json",
     "error.json",
     "profile-patch.json",
+    "question-reply.json",
     "route.json",
     "semantic-outbox.json",
     "session-start.json",
-    "session.json"
+    "session.json",
+    "session-revoked.json",
+    "device-deleted.json"
   ],
   "session": {
     "uidSource": "validated_identity_server_side",
@@ -56,14 +62,16 @@
     { "method": "GET", "path": "/bootstrap", "requiresBearer": true, "mutation": false, "idempotencyKey": false },
     { "method": "PATCH", "path": "/profile", "requiresBearer": true, "mutation": true, "idempotencyKey": true },
     { "method": "POST", "path": "/analysis", "requiresBearer": true, "mutation": true, "idempotencyKey": true },
-    { "method": "GET", "path": "/chat", "requiresBearer": true, "mutation": false, "idempotencyKey": false }
+    { "method": "GET", "path": "/chat", "requiresBearer": true, "mutation": false, "idempotencyKey": false },
+    { "method": "POST", "path": "/questions/{id}/reply", "requiresBearer": true, "mutation": true, "idempotencyKey": true },
+    { "method": "POST", "path": "/calls/test", "requiresBearer": true, "mutation": true, "idempotencyKey": true },
+    { "method": "PUT", "path": "/devices/apns", "requiresBearer": true, "mutation": true, "idempotencyKey": true },
+    { "method": "DELETE", "path": "/devices/apns", "requiresBearer": true, "mutation": true, "idempotencyKey": true },
+    { "method": "DELETE", "path": "/account", "requiresBearer": true, "mutation": true, "idempotencyKey": true }
   ],
   "forbiddenSurfaces": [
-    "apns",
-    "account_deletion",
-    "calls",
-    "japanese_localization",
     "late_notice",
-    "phone"
+    "scheduler",
+    "cost_guard"
   ]
 }

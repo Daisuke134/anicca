@@ -18,12 +18,6 @@ test("bootstrap projects only authenticated profile, connection, and analysis st
       callsEnabled: false, callLanguage: null,
     },
     calendar: { status: "connected" }, offer: { status: "available" }, analysis: { status: "idle" },
-    connections: {
-      calendar: { status: "connected", provider: "google_calendar" },
-      phone: { status: "connected", masked: "+81••••••••78" },
-      billing: { status: "payment_required" },
-    },
-    subscriptionOffer: { status: "available" },
   });
 });
 

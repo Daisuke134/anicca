@@ -203,9 +203,7 @@ function projectQuestion(value, locale) {
   if (typeof projectedPrompt === "string") assertLocalizedText(active, projectedPrompt);
   return {
     id: value.id || null,
-    type: value.type || null,
     prompt: projectedPrompt,
-    eventId: value.eventId || value.event_id || null,
   };
 }
 
@@ -224,7 +222,8 @@ function projectSemanticMessage(row, locale = "en") {
   const timezone = (route && route.timezone) || "UTC";
   let type = row.type || "system";
   let text;
-  let question = projectQuestion(row.question || null, active);
+  const questionSource = row.question || null;
+  let question = projectQuestion(questionSource, active);
   let actions;
   switch (row.key) {
     case "chat.route_ready":
@@ -237,11 +236,11 @@ function projectSemanticMessage(row, locale = "en") {
       break;
     case "chat.needs_information":
       type = "question";
-      if (question && question.type === "destination") {
+      if (questionSource && questionSource.type === "destination") {
         text = active === "ja" ? "経路を計算するため、予定の場所を教えてください。" : "I need the event destination before I can calculate the route.";
-      } else if (question && question.type === "calendar") {
+      } else if (questionSource && questionSource.type === "calendar") {
         text = active === "ja" ? "経路を計算するには、Googleカレンダーを接続してください。" : "Connect Google Calendar before I can analyze your next event.";
-      } else if (question && question.type === "name") {
+      } else if (questionSource && questionSource.type === "name") {
         text = active === "ja" ? "分析を始める前に、お名前を教えてください。" : "Tell me your name before I analyze your next event.";
       } else {
         text = active === "ja" ? "経路を計算するため、出発地点を教えてください。" : "I need your starting point before I can calculate the route.";
@@ -283,14 +282,11 @@ function projectSemanticMessage(row, locale = "en") {
     createdAt: row.createdAt || row.created_at,
     locale: active,
     type,
-    kind,
     text,
-    commitmentId: row.commitmentId || row.commitment_id || null,
     userContent: projectUserContent(row.userContent || row.user_content),
     question,
     route,
     actions,
-    status: row.status || "sent",
   };
 }
 

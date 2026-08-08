@@ -13,17 +13,20 @@ const {
 
 test("mobile bootstrap freezes English demo profile and calendar state", () => {
   const bootstrap = fixture("bootstrap.json");
-  assertAllowedKeys(bootstrap, ["analysis", "calendar", "product", "user"], "bootstrap");
-  assertAllowedKeys(bootstrap.product, ["locale", "timezone"], "bootstrap.product");
-  assert.equal(bootstrap.product.locale, "en");
-  assert.equal(typeof bootstrap.product.timezone, "string");
-  assertAllowedKeys(bootstrap.user, ["home", "id", "name"], "bootstrap.user");
+  assertAllowedKeys(bootstrap, ["analysis", "calendar", "offer", "user"], "bootstrap");
+  assertAllowedKeys(bootstrap.user, ["callLanguage", "callsEnabled", "home", "id", "name", "phone", "productLocale", "timezone"], "bootstrap.user");
   assert.equal(bootstrap.user.name, null);
   assertAllowedKeys(bootstrap.user.home, ["display", "status"], "bootstrap.user.home");
   assert.equal(bootstrap.user.home.status, "missing");
   assert.equal(bootstrap.user.home.display, null);
+  assert.equal(bootstrap.user.productLocale, "en");
+  assert.equal(typeof bootstrap.user.timezone, "string");
+  assert.deepEqual(bootstrap.user.phone, { status: "missing", masked: null });
+  assert.equal(bootstrap.user.callsEnabled, false);
+  assert.equal(bootstrap.user.callLanguage, null);
   assertOpaque(bootstrap.user.id, "server-derived bootstrap user id");
   assert.deepEqual(bootstrap.calendar, { status: "connected" });
+  assert.deepEqual(bootstrap.offer, { status: "available" });
   assert.deepEqual(bootstrap.analysis, { status: "idle" });
   assertGeneratedEnglish(bootstrap, "bootstrap");
   assertNoClientAuthority(bootstrap, "bootstrap");
@@ -38,7 +41,7 @@ test("profile patch is allowlisted to name, home, and English product locale", (
   assertNoClientAuthority(patch, "profile patch");
 });
 
-test("contract directory contains only declared Gate 2 JSON fixtures", () => {
+test("contract directory contains only declared Gate 3 JSON fixtures", () => {
   const contract = fixture("contract.json");
   assert.deepEqual(fixtureNames(), [...contract.fixtures].sort());
 });

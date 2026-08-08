@@ -34,7 +34,6 @@ async function readMobileBootstrap(scope, deps = {}) {
   const callsEnabled = (row.calls_enabled === true || row.callsEnabled === true) && Boolean(phone);
   const callLanguage = callsEnabled ? (row.call_language || row.callLanguage || null) : null;
   const calendarStatus = calendarState(row);
-  const billingStatus = row.billing_status || row.billingStatus || (row.paid === true ? "active" : "payment_required");
   return {
     user: {
       id: String(row.uid || scope.uid),
@@ -49,12 +48,6 @@ async function readMobileBootstrap(scope, deps = {}) {
     calendar: { status: calendarStatus },
     offer: { status: "available" },
     analysis: { status },
-    connections: {
-      calendar: { status: calendarStatus, provider: "google_calendar" },
-      phone: { status: phone ? "connected" : "missing", masked: maskPhone(phone) },
-      billing: { status: ["active", "payment_required", "past_due"].includes(billingStatus) ? billingStatus : "payment_required" },
-    },
-    subscriptionOffer: { status: "available" },
   };
 }
 
