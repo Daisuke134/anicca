@@ -3,6 +3,8 @@
 // callers inject the Supabase store below.
 "use strict";
 
+const { legacyMobileRouteCacheKey, tenantRouteCacheKey } = require("./mobile-utils.js");
+
 const BUCKET_MS = 10 * 60_000; // coarse 10-min bucket: a moved event lands in a new bucket → recompute.
 
 // Round a departure epoch (ms) down to a coarse bucket index.
@@ -132,6 +134,15 @@ function scopedProcessKey(uid, fingerprint) {
   return `${uid == null ? "" : String(uid)}\u0000${fingerprint}`;
 }
 
+function legacyProviderCacheKey(uid, fingerprint) {
+  try {
+    const parts = JSON.parse(fingerprint);
+    return Array.isArray(parts) ? JSON.stringify([String(uid), ...parts]) : null;
+  } catch {
+    return null;
+  }
+}
+
 // Store rows by an opaque canonical key. The migration adds cache_key so the
 // complete context key is durable instead of relying on the old shared geo
 // identity. All writes use Supabase upsert semantics (one winner per key).
@@ -142,11 +153,21 @@ function createSupabaseRouteStore({ supaUrl, supaKey, fetchImpl = globalThis.fet
     const uid = scope && scope.uid != null ? String(scope.uid) : "";
     if (!baseUrl || !supaKey || typeof fetchImpl !== "function" || !key || !uid) return null;
     try {
-      const query = `${path}?uid=eq.${encodeURIComponent(uid)}&cache_key=eq.${encodeURIComponent(key)}&select=*&limit=1`;
-      const response = await fetchImpl(query, { headers: authHeaders(supaKey) });
-      if (!response || !response.ok) return null;
-      const rows = await response.json();
-      return routeValueFromRow(Array.isArray(rows) ? rows[0] : null);
+      const keys = [
+        tenantRouteCacheKey(uid, key),
+        key,
+        legacyProviderCacheKey(uid, key),
+        legacyMobileRouteCacheKey(uid, key),
+      ].filter((candidate, index, all) => candidate && all.indexOf(candidate) === index);
+      for (const storageKey of keys) {
+        const query = `${path}?uid=eq.${encodeURIComponent(uid)}&cache_key=eq.${encodeURIComponent(storageKey)}&select=*&limit=1`;
+        const response = await fetchImpl(query, { headers: authHeaders(supaKey) });
+        if (!response || !response.ok) continue;
+        const rows = await response.json();
+        const hit = routeValueFromRow(Array.isArray(rows) ? rows[0] : null);
+        if (hit) return hit;
+      }
+      return null;
     } catch {
       return null;
     }
@@ -164,8 +185,9 @@ function createSupabaseRouteStore({ supaUrl, supaKey, fetchImpl = globalThis.fet
     if (!Number.isFinite(computedDate.getTime())) return false;
     const computedAt = computedDate.toISOString();
     const provider = record.provider || value.provider;
+    const storageKey = tenantRouteCacheKey(uid, key);
     const body = {
-      cache_key: key,
+      cache_key: storageKey,
       uid,
       from_geo: canonicalGeo(record.fromGeo),
       to_geo: canonicalGeo(record.toGeo),

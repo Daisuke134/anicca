@@ -61,12 +61,29 @@ function routeAccepted(value) {
   ));
 }
 
+function scopedMapKey(uid, key) {
+  return `${String(uid || "")}\u0000${key}`;
+}
+
+// A bare process Map has no way to consume the second `{ uid }` argument that
+// the durable cache contract uses. Wrap it at the injection boundary so a
+// caller cannot accidentally turn an authenticated route cache into a global
+// process cache. Map-like adapters keep their own scoped get/set contract.
+function scopedInjectedCache(cache) {
+  if (!(cache instanceof Map)) return cache;
+  return {
+    get(key, scope = {}) { return cache.get(scopedMapKey(scope.uid, key)); },
+    set(key, value, scope = {}) { cache.set(scopedMapKey(scope.uid, key), value); return value; },
+    delete(key, scope = {}) { return cache.delete(scopedMapKey(scope.uid, key)); },
+  };
+}
+
 async function readCache(scope, request, deps) {
   if (typeof deps.readRouteCache === "function") return deps.readRouteCache({ scope, request });
   if (deps.store && typeof deps.store.readRouteCache === "function") return deps.store.readRouteCache(scope, request);
   const cache = deps.routeCache || deps.cache || (deps.routeProviders && deps.routeProviders.routeCache);
   if (!cache || typeof cache.get !== "function") return null;
-  return cache.get(mobileRouteCacheKey(scope, request), { uid: scope.uid });
+  return scopedInjectedCache(cache).get(mobileRouteCacheKey(scope, request), { uid: scope.uid });
 }
 
 async function writeCache(scope, request, value, deps) {
@@ -74,7 +91,7 @@ async function writeCache(scope, request, value, deps) {
   if (deps.store && typeof deps.store.writeRouteCache === "function") return deps.store.writeRouteCache(scope, request, value);
   const cache = deps.routeCache || deps.cache || (deps.routeProviders && deps.routeProviders.routeCache);
   if (!cache || typeof cache.set !== "function") return;
-  return cache.set(mobileRouteCacheKey(scope, request), value, { uid: scope.uid });
+  return scopedInjectedCache(cache).set(mobileRouteCacheKey(scope, request), value, { uid: scope.uid });
 }
 
 async function computeMobileRoute(scope, event, origin, deps = {}) {
@@ -109,7 +126,9 @@ async function computeMobileRoute(scope, event, origin, deps = {}) {
 }
 
 function routeCacheFor(options = {}) {
-  if (options.routeCache && typeof options.routeCache.get === "function" && typeof options.routeCache.set === "function") return options.routeCache;
+  if (options.routeCache && typeof options.routeCache.get === "function" && typeof options.routeCache.set === "function") {
+    return scopedInjectedCache(options.routeCache);
+  }
   const store = options.cacheStore;
   const ttlMs = Number.isFinite(options.cacheTtlMs) ? Math.max(0, options.cacheTtlMs) : 10 * 60_000;
   const now = typeof options.now === "function" ? options.now : Date.now;

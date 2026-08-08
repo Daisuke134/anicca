@@ -1,6 +1,14 @@
 "use strict";
 
-const { MobileError, mobileRouteCacheKey, nowIso, safeTimeZone, sha256 } = require("./mobile-utils.js");
+const {
+  MobileError,
+  legacyMobileRouteCacheKey,
+  mobileRouteCacheKey,
+  nowIso,
+  safeTimeZone,
+  sha256,
+  tenantRouteCacheKey,
+} = require("./mobile-utils.js");
 
 function requireScope(scope) {
   if (!scope || !scope.uid || typeof scope.uid !== "string") throw new MobileError("scope_required", "An authenticated mobile scope is required.", 401);
@@ -145,26 +153,32 @@ function createSupabaseMobileStore(options = {}) {
     async readRouteCache(scope, routeRequest) {
       const scoped = requireScope(scope);
       const cacheKey = mobileRouteCacheKey(scoped, routeRequest);
-      const params = scopedParams(scoped, {
-        cache_key: `eq.${encodeFilter(cacheKey)}`,
-        select: "cache_key,route_result,route,computed_at,ttl_secs",
-        limit: "1",
-      });
-      let found;
-      try {
-        found = await rows("lm_route_cache", params);
-      } catch (error) {
-        // During the additive migration window, older deployments may not have
-        // route_result yet. Retry only the scoped legacy projection; do not hide
-        // auth/network/storage failures behind a broad fallback.
-        if (!routeCacheColumnMissing(error)) throw error;
-        found = await rows("lm_route_cache", scopedParams(scoped, {
-          cache_key: `eq.${encodeFilter(cacheKey)}`,
-          select: "cache_key,route,computed_at,ttl_secs",
+      const storageKeys = [tenantRouteCacheKey(scoped.uid, cacheKey), cacheKey, legacyMobileRouteCacheKey(scoped.uid, cacheKey)];
+      for (const storageKey of storageKeys) {
+        const params = scopedParams(scoped, {
+          cache_key: `eq.${encodeFilter(storageKey)}`,
+          select: "cache_key,legacy_cache_key,route_result,route,computed_at,ttl_secs",
           limit: "1",
-        }));
+        });
+        let found;
+        try {
+          found = await rows("lm_route_cache", params);
+        } catch (error) {
+          // During the additive migration window, older deployments may not have
+          // route_result or legacy_cache_key yet. Retry only the scoped legacy
+          // projection; do not hide auth/network/storage failures behind a broad
+          // fallback.
+          if (!routeCacheColumnMissing(error)) throw error;
+          found = await rows("lm_route_cache", scopedParams(scoped, {
+            cache_key: `eq.${encodeFilter(storageKey)}`,
+            select: "cache_key,route,computed_at,ttl_secs",
+            limit: "1",
+          }));
+        }
+        const hit = routeCacheEntry(found[0]);
+        if (hit) return hit;
       }
-      return routeCacheEntry(found[0]);
+      return null;
     },
     async writeRouteCache(scope, routeRequest, value) {
       const scoped = requireScope(scope);
@@ -172,7 +186,7 @@ function createSupabaseMobileStore(options = {}) {
       const computedAt = value && value.computedAt ? value.computedAt : new Date().toISOString();
       const row = {
         ...routeCacheLegacyRow(scoped, routeRequest, value, computedAt),
-        cache_key: cacheKey,
+        cache_key: tenantRouteCacheKey(scoped.uid, cacheKey),
       };
       const result = await request("/rest/v1/lm_route_cache?on_conflict=uid%2Ccache_key", {
         method: "POST",

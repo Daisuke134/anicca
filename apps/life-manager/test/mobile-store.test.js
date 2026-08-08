@@ -4,7 +4,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const { createSupabaseMobileStore, createMemoryMobileStore } = require("../lib/mobile-store.js");
 const { createSupabaseRouteStore } = require("../lib/route-cache.js");
-const { mobileRouteCacheKey } = require("../lib/mobile-utils.js");
+const { legacyMobileRouteCacheKey, mobileRouteCacheKey } = require("../lib/mobile-utils.js");
 
 function response(body, status = 200) {
   return { ok: status >= 200 && status < 300, status, json: async () => body, text: async () => JSON.stringify(body) };
@@ -113,7 +113,7 @@ test("Supabase mobile route cache persists the tenant-safe request digest and co
   const firstBody = JSON.parse(writes[0].init.body);
   const secondBody = JSON.parse(writes[1].init.body);
   assert.equal(firstBody.uid, "tenant-a");
-  assert.match(firstBody.cache_key, /^[0-9a-f]{64}$/u);
+  assert.match(firstBody.cache_key, /^v2:[0-9a-f]{64}$/u);
   assert.equal(firstBody.cache_key, secondBody.cache_key);
   assert.equal(firstBody.from_geo, routeRequest.origin);
   assert.equal(firstBody.to_geo, routeRequest.destination);
@@ -166,6 +166,29 @@ test("Supabase mobile route store falls back to route when route_result is unava
   const hit = await store.readRouteCache({ uid: "tenant-a" }, routeRequest);
   assert.deepEqual(hit.value, legacyRoute);
   assert.equal(calls, 2);
+});
+
+test("Supabase mobile route store reads a trigger-namespaced legacy route-only row", async () => {
+  const routeRequest = {
+    eventId: "event-legacy-trigger", eventDate: "2026-08-10", timezone: "Asia/Tokyo",
+    origin: "Shibuya", destination: "Tokyo", direction: "outbound",
+    arriveBy: "2026-08-10T09:00:00.000+09:00", departAt: null,
+  };
+  const scope = { uid: "tenant-a" };
+  const legacyRoute = { status: "route_ready", provider: "transit", durationSeconds: 600 };
+  const rawKey = mobileRouteCacheKey(scope, routeRequest);
+  const triggerKey = legacyMobileRouteCacheKey(scope.uid, rawKey);
+  const store = createSupabaseMobileStore({
+    supaUrl: "https://supa.example", supaKey: "service-key",
+    fetchImpl: async (input) => {
+      const url = new URL(String(input));
+      return response(decodeURIComponent(String(url.searchParams.get("cache_key") || "").replace(/^eq\./u, "")) === triggerKey
+        ? [{ cache_key: triggerKey, route: legacyRoute, computed_at: "2026-08-10T08:10:00.000Z", ttl_secs: 600 }]
+        : []);
+    },
+  });
+  const hit = await store.readRouteCache(scope, routeRequest);
+  assert.deepEqual(hit.value, legacyRoute);
 });
 
 test("mobile route cache legacy fields are derived from the request and provider result", async () => {

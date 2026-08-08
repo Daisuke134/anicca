@@ -85,6 +85,20 @@ function mobileRouteCacheKey(scope, request = {}) {
   }));
 }
 
+// The durable table retains a global legacy conflict arbiter during rollout.
+// Prefix the new storage key with a tenant-bound digest so canonical writes
+// remain safe even while that old index still exists. The request fingerprint
+// itself stays tenant-independent for cache semantics and cross-adapter reads.
+function tenantRouteCacheKey(uid, cacheKey) {
+  if (typeof uid !== "string" || !uid) throw new MobileError("scope_required", "An authenticated mobile scope is required.", 401);
+  return `v2:${sha256(`${uid}\u0000${cacheKey}`)}`;
+}
+
+function legacyMobileRouteCacheKey(uid, cacheKey) {
+  if (typeof uid !== "string" || !uid) throw new MobileError("scope_required", "An authenticated mobile scope is required.", 401);
+  return `legacy-mobile-v1:${crypto.createHash("md5").update(`${uid}\u0000${cacheKey}`).digest("hex")}`;
+}
+
 function safeTimeZone(value, fallback = "UTC") {
   const candidate = String(value || fallback);
   try {
@@ -113,6 +127,8 @@ module.exports = {
   maskPhone,
   canonicalJson,
   mobileRouteCacheKey,
+  tenantRouteCacheKey,
+  legacyMobileRouteCacheKey,
   safeTimeZone,
   requestId,
 };

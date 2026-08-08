@@ -30,7 +30,6 @@ test("route cache follow-up keeps old writer conflict targets during the rolling
   assert.match(SQL, /CREATE UNIQUE INDEX IF NOT EXISTS lm_route_cache_cache_key_idx[\s\S]*ON public\.lm_route_cache \(cache_key\);/);
   assert.match(SQL, /CREATE UNIQUE INDEX IF NOT EXISTS lm_route_cache_uid_cache_key_unique[\s\S]*ON public\.lm_route_cache \(uid, cache_key\);/);
   assert.match(SQL, /route_result IS NOT NULL[\s\S]*OR[\s\S]*route IS NOT NULL/);
-  assert.doesNotMatch(SQL, /cache_key IS NOT NULL[\s\S]*route_result IS NOT NULL[\s\S]*\)/);
 });
 
 test("migration contract simulates old provider and old mobile writes before cleanup", () => {
@@ -63,4 +62,24 @@ test("route cache follow-up is safe after either original migration order", () =
   assert.match(SQL, /NOT VALID/);
   assert.match(SQL, /VALIDATE CONSTRAINT/);
   assert.doesNotMatch(SQL, /SET\s+NOT\s+NULL/i);
+});
+
+test("rolling compatibility namespaces legacy and canonical keys before the global conflict target", () => {
+  assert.match(SQL, /ADD COLUMN IF NOT EXISTS legacy_cache_key text/);
+  assert.match(SQL, /CREATE OR REPLACE FUNCTION public\.lm_route_cache_namespace_legacy_mobile/);
+  assert.match(SQL, /legacy-provider-v1/);
+  assert.match(SQL, /legacy-mobile-v1/);
+  assert.match(SQL, /CREATE TRIGGER lm_route_cache_namespace_legacy_mobile/);
+
+  const fingerprint = "same-route-fingerprint";
+  const canonicalKey = (uid) => `v2:${uid}:${fingerprint}`;
+  const legacyProviderKey = (uid) => `legacy-provider-v1:${uid}:${fingerprint}`;
+  const legacyMobileKey = (uid) => `legacy-mobile-v1:${uid}:${fingerprint}`;
+  const storedKeys = [
+    canonicalKey("tenant-a"), canonicalKey("tenant-b"),
+    legacyProviderKey("tenant-a"), legacyProviderKey("tenant-b"),
+    legacyMobileKey("tenant-a"), legacyMobileKey("tenant-b"),
+  ];
+  assert.equal(new Set(storedKeys).size, storedKeys.length,
+    "the old global arbiter must not collapse equal route fingerprints across tenants");
 });

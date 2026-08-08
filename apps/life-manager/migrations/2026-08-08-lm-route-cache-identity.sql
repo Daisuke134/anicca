@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS public.lm_route_cache (
   cache_key text,
   route jsonb,
   route_result jsonb,
+  legacy_cache_key text,
   event_anchor text,
   timezone text,
   direction text,
@@ -28,6 +29,7 @@ ALTER TABLE public.lm_route_cache
   ADD COLUMN IF NOT EXISTS cache_key text,
   ADD COLUMN IF NOT EXISTS route jsonb,
   ADD COLUMN IF NOT EXISTS route_result jsonb,
+  ADD COLUMN IF NOT EXISTS legacy_cache_key text,
   ADD COLUMN IF NOT EXISTS event_anchor text,
   ADD COLUMN IF NOT EXISTS timezone text,
   ADD COLUMN IF NOT EXISTS direction text,
@@ -40,6 +42,43 @@ UPDATE public.lm_route_cache
    SET route_result = route
  WHERE route_result IS NULL
    AND route IS NOT NULL;
+
+-- The old writers send an unscoped digest. The old mobile writer uses
+-- `ON CONFLICT (uid,cache_key)` and route-only payloads; the old provider
+-- writer uses `ON CONFLICT (cache_key)` and a route_result payload. The global
+-- arbiter must remain available for the old provider's conflict inference, but
+-- it must never see the same raw digest for two tenants. Namespace both old
+-- payloads before either unique index sees them, while retaining the raw key
+-- for migration-period readers and diagnostics. Canonical v2 writers are not
+-- rewritten by this trigger.
+CREATE OR REPLACE FUNCTION public.lm_route_cache_namespace_legacy_mobile()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  IF NEW.uid IS NOT NULL
+     AND NEW.cache_key IS NOT NULL
+     AND NEW.cache_key NOT LIKE 'v2:%'
+     AND NEW.cache_key NOT LIKE 'legacy-provider-v1:%'
+     AND NEW.cache_key NOT LIKE 'legacy-mobile-v1:%'
+     AND (NEW.route_result IS NOT NULL OR NEW.route IS NOT NULL) THEN
+    NEW.legacy_cache_key := NEW.cache_key;
+    IF NEW.route_result IS NULL THEN
+      NEW.cache_key := 'legacy-mobile-v1:' || md5(NEW.uid || chr(0) || NEW.cache_key);
+    ELSE
+      NEW.cache_key := 'legacy-provider-v1:' || md5(NEW.uid || chr(0) || NEW.cache_key);
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS lm_route_cache_namespace_legacy_mobile ON public.lm_route_cache;
+CREATE TRIGGER lm_route_cache_namespace_legacy_mobile
+BEFORE INSERT OR UPDATE OF uid, cache_key, route, route_result
+ON public.lm_route_cache
+FOR EACH ROW
+EXECUTE FUNCTION public.lm_route_cache_namespace_legacy_mobile();
 
 -- Remove only the pre-cache-key identity. The old provider and mobile conflict
 -- targets must remain during the rolling window: old provider instances still

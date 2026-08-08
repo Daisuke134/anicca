@@ -23,6 +23,31 @@ test("route requests preserve event timezone/date and use arrive-by outbound or 
   assert.equal(returned.eventDate, "2026-11-01");
 });
 
+test("an injected bare Map route cache is tenant-scoped", async () => {
+  const routeCache = new Map();
+  let providerCalls = 0;
+  const resultFor = (uid) => ({
+    status: "route_ready", provider: "transit", eventId: event.id,
+    leaveAt: "2026-11-01T16:00:00.000Z", arriveAt: "2026-11-01T16:27:00.000Z",
+    durationSeconds: uid === "tenant-a" ? 900 : 1200,
+  });
+  const deps = {
+    routeCache,
+    transitProvider: async (_request, { scope }) => {
+      providerCalls += 1;
+      return resultFor(scope.uid);
+    },
+  };
+
+  const first = await computeMobileRoute({ uid: "tenant-a" }, event, "Shibuya", deps);
+  const second = await computeMobileRoute({ uid: "tenant-b" }, event, "Shibuya", deps);
+
+  assert.equal(providerCalls, 2, "equal route fingerprints must not reuse a bare Map entry across tenants");
+  assert.equal(first.durationSeconds, 900);
+  assert.equal(second.durationSeconds, 1200);
+  assert.equal(routeCache.size, 2, "bare Map entries must carry a tenant namespace");
+});
+
 test("accepted Transit result prevents Google fallback; provider failure falls back once", async () => {
   let transitCalls = 0;
   let googleCalls = 0;

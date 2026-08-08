@@ -81,6 +81,39 @@ node --test lib/provider-cost-adapters.test.js lib/provider-cost-imports.test.js
 The provider run required the declared local dependencies (`npm ci --ignore-scripts`); it changed
 only the untracked `node_modules` directory. No tracked package or lockfile changed.
 
+## Fresh route-cache re-review — GREEN
+
+The re-review reproduced and closed two tenant-isolation regressions. An injected bare process
+`Map` is wrapped at the mobile route boundary with a UID-prefixed physical key; a two-tenant
+provider-call test proves identical request fingerprints never reuse one tenant's result. Durable
+canonical writers store `v2:<tenant-bound digest>` keys while retaining the tenant-independent
+request fingerprint for cache semantics and cross-adapter lookup. During the rolling window, a
+database trigger namespaces old route-only mobile writes as `legacy-mobile-v1:<uid digest>` and
+old provider `route_result` writes as `legacy-provider-v1:<uid digest>` before the retained global
+`UNIQUE(cache_key)` arbiter sees them. The raw key remains in `legacy_cache_key`; current readers
+fall back across canonical, raw, and legacy namespaces. No legacy row is deleted, and the exact
+old `cache_key` and new `(uid,cache_key)` conflict targets remain available until old instances
+drain.
+
+```text
+node --test test/mobile-*.test.js
+124 passing, 0 failing
+
+node --test test/mobile-route.test.js test/mobile-store.test.js test/mobile-migration-contract.test.js \
+  test/route-cache-identity-migration.test.js lib/route-cache.test.js
+50 passing, 0 failing
+
+node --test lib/provider-cost-adapters.test.js lib/provider-cost-imports.test.js lib/composio-budget.test.js \
+  lib/mail-resend.test.js lib/ledger.test.js lib/travel-transit-wire.test.js lib/transit.test.js \
+  lib/route-cache.test.js lib/travel-routes.test.js test/provider-cost-contract.test.js lib/provider-budget.test.js \
+  test/provider-budget-gate.test.js test/testcall-amd-hangup-http-contract.test.js
+122 passing, 0 failing
+```
+
+The first provider attempt was blocked only by an absent local `ws` dependency (`MODULE_NOT_FOUND`);
+`npm ci --ignore-scripts` restored declared dependencies and the exact rerun passed. PostgreSQL was
+not available locally, so migration evidence remains the exact SQL contract and adapter tests.
+
 ## Remaining integration gates
 
 - Fresh review of this integration diff.

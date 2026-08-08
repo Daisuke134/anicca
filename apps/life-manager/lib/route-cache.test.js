@@ -224,6 +224,26 @@ test("Supabase route store isolates equal cache keys for different tenants", asy
   assert.equal((await store.get("same-key", { uid: "u2" })).value.durationSecs, 1200);
 });
 
+test("provider route store reads the old uid-prefixed key during migration", async () => {
+  const fingerprint = cacheKey("u1", G(35.68, 139.76), G(35.69, 139.70), 42);
+  const oldKey = JSON.stringify(["u1", ...JSON.parse(fingerprint)]);
+  const legacy = {
+    uid: "u1", cache_key: oldKey, route_result: { durationSecs: 900, provider: "transit" },
+    computed_at: new Date(1000).toISOString(), ttl_secs: 600,
+  };
+  const store = createSupabaseRouteStore({
+    supaUrl: "https://supa.invalid", supaKey: "service",
+    fetchImpl: async (input) => {
+      const url = new URL(String(input));
+      return { ok: true, status: 200, json: async () => (
+        String(url.searchParams.get("cache_key") || "").replace(/^eq\./u, "") === oldKey ? [legacy] : []
+      ) };
+    },
+  });
+  const hit = await store.get(fingerprint, { uid: "u1" });
+  assert.deepEqual(hit.value, legacy.route_result);
+});
+
 test("provider route store surfaces HTTP write failures through the cache", async () => {
   const store = createSupabaseRouteStore({
     supaUrl: "https://supa.invalid", supaKey: "service",
