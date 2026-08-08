@@ -126,15 +126,20 @@ CREATE TABLE IF NOT EXISTS public.lm_mobile_questions (
   type text NOT NULL,
   prompt text,
   event_id text,
-  status text NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'answered', 'stale')),
+  status text NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'claimed', 'answered', 'stale')),
   answer text,
   created_at timestamptz NOT NULL DEFAULT now(),
+  claimed_at timestamptz,
   answered_at timestamptz,
   PRIMARY KEY (uid, id)
 );
 
 CREATE INDEX IF NOT EXISTS lm_mobile_questions_open_idx
   ON public.lm_mobile_questions (uid, status, created_at);
+
+ALTER TABLE public.lm_mobile_questions DROP CONSTRAINT IF EXISTS lm_mobile_questions_status_check;
+ALTER TABLE public.lm_mobile_questions
+  ADD CONSTRAINT lm_mobile_questions_status_check CHECK (status IN ('open', 'claimed', 'answered', 'stale'));
 
 CREATE TABLE IF NOT EXISTS public.lm_mobile_call_attempts (
   attempt_id text PRIMARY KEY,
@@ -322,6 +327,35 @@ BEGIN
 END;
 $$;
 
+CREATE OR REPLACE FUNCTION public.claim_lm_mobile_question(
+  p_uid text, p_question_id text, p_answer text
+)
+RETURNS TABLE(uid text, id text, type text, prompt text, event_id text, status text, answer text, answered_at timestamptz, claimed_at timestamptz)
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
+BEGIN
+  RETURN QUERY
+  UPDATE public.lm_mobile_questions AS q
+     SET status = 'claimed', answer = p_answer, claimed_at = COALESCE(q.claimed_at, now())
+   WHERE q.uid = p_uid AND q.id = p_question_id
+     AND (q.status = 'open' OR (q.status = 'claimed' AND q.answer = p_answer))
+  RETURNING q.uid, q.id, q.type, q.prompt, q.event_id, q.status, q.answer, q.answered_at, q.claimed_at;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.complete_lm_mobile_question(
+  p_uid text, p_question_id text, p_answer text
+)
+RETURNS TABLE(uid text, id text, type text, prompt text, event_id text, status text, answer text, answered_at timestamptz, claimed_at timestamptz)
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
+BEGIN
+  RETURN QUERY
+  UPDATE public.lm_mobile_questions AS q
+     SET status = 'answered', answer = p_answer, answered_at = now()
+   WHERE q.uid = p_uid AND q.id = p_question_id AND q.status = 'claimed' AND q.answer = p_answer
+  RETURNING q.uid, q.id, q.type, q.prompt, q.event_id, q.status, q.answer, q.answered_at, q.claimed_at;
+END;
+$$;
+
 CREATE OR REPLACE FUNCTION public.claim_lm_mobile_device(
   p_uid text, p_token text, p_environment text, p_locale text,
   p_timezone text, p_last_seen_at timestamptz DEFAULT now()
@@ -450,6 +484,8 @@ REVOKE ALL ON FUNCTION public.claim_lm_mobile_idempotency(text, text, text) FROM
 REVOKE ALL ON FUNCTION public.complete_lm_mobile_idempotency(text, text, text, jsonb, jsonb, integer) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.rotate_lm_mobile_refresh(text, text, text, text, text, text, timestamptz, timestamptz, text) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.consume_lm_mobile_question(text, text, text) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.claim_lm_mobile_question(text, text, text) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.complete_lm_mobile_question(text, text, text) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.claim_lm_mobile_device(text, text, text, text, text, timestamptz) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.finalize_lm_mobile_deletion(text, text, text, jsonb, text) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.claim_lm_mobile_call(text, text, timestamptz) FROM PUBLIC, anon, authenticated;
@@ -459,6 +495,8 @@ GRANT EXECUTE ON FUNCTION public.claim_lm_mobile_idempotency(text, text, text) T
 GRANT EXECUTE ON FUNCTION public.complete_lm_mobile_idempotency(text, text, text, jsonb, jsonb, integer) TO service_role;
 GRANT EXECUTE ON FUNCTION public.rotate_lm_mobile_refresh(text, text, text, text, text, text, timestamptz, timestamptz, text) TO service_role;
 GRANT EXECUTE ON FUNCTION public.consume_lm_mobile_question(text, text, text) TO service_role;
+GRANT EXECUTE ON FUNCTION public.claim_lm_mobile_question(text, text, text) TO service_role;
+GRANT EXECUTE ON FUNCTION public.complete_lm_mobile_question(text, text, text) TO service_role;
 GRANT EXECUTE ON FUNCTION public.claim_lm_mobile_device(text, text, text, text, text, timestamptz) TO service_role;
 GRANT EXECUTE ON FUNCTION public.finalize_lm_mobile_deletion(text, text, text, jsonb, text) TO service_role;
 GRANT EXECUTE ON FUNCTION public.claim_lm_mobile_call(text, text, timestamptz) TO service_role;

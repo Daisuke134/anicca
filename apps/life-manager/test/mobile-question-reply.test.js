@@ -35,3 +35,30 @@ test("destination replies patch the stored Calendar event before re-analysis", a
   assert.equal(result.status, "answered");
   assert.deepEqual(patches, [{ uid: "user-a", input: { calendar_id: "primary", event_id: "event-1", location: "Tokyo Tower" } }]);
 });
+
+test("question claim survives downstream failure and resumes apply/outbox before final answer", async () => {
+  const calls = [];
+  let applyAttempts = 0;
+  let status = "open";
+  const question = { id: "question-resume", type: "origin", prompt: "Where?", eventId: null, answer: null };
+  const store = {
+    async claimOpenQuestion(_scope, id, answer) {
+      assert.equal(id, question.id);
+      if (status === "answered") return null;
+      if (status === "claimed" && question.answer !== answer) throw new Error("answer conflict");
+      status = "claimed"; question.answer = answer; return { ...question, status };
+    },
+    async completeQuestionReply() { status = "answered"; calls.push("complete"); return { ...question, status }; },
+  };
+  const deps = {
+    store,
+    applyAnswer: async () => { applyAttempts++; calls.push("apply"); if (applyAttempts === 1) throw new (require("../lib/mobile-utils.js").MobileError)("question_apply_failed", "temporary", 502, true); },
+    analyzeNextEvent: async (_scope, input) => { calls.push(input.analysisId); return { status: "route_ready" }; },
+  };
+  await assert.rejects(() => replyMobileQuestion({ uid: "user-a" }, { questionId: question.id, answer: "Shibuya" }, deps), (error) => error.code === "question_apply_failed");
+  assert.equal(status, "claimed");
+  const result = await replyMobileQuestion({ uid: "user-a" }, { questionId: question.id, answer: "Shibuya" }, deps);
+  assert.equal(result.status, "answered");
+  assert.equal(status, "answered");
+  assert.deepEqual(calls, ["apply", "apply", "question-reply:question-resume", "complete"]);
+});

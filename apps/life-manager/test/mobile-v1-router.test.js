@@ -181,3 +181,25 @@ test("account deletion replay uses its capability receipt after terminal bearer 
   assert.equal(parsed(replay).status, "completed");
   assert.equal(parsed(replay).deletionCapability, capability);
 });
+
+test("retryable question idempotency reopens the claim after downstream failure", async () => {
+  let attempts = 0;
+  const deps = {
+    authenticateMobileRequest: async () => ({ uid: "user-a", sessionId: "session-a", productLocale: "en" }),
+    idempotencyStore: new Map(),
+    replyMobileQuestion: async () => {
+      attempts++;
+      if (attempts === 1) throw new (require("../lib/mobile-utils.js").MobileError)("question_apply_failed", "temporary", 502, true);
+      return { status: "answered", questionId: "question-a", analysis: null };
+    },
+  };
+  const headers = { authorization: "Bearer access", "idempotency-key": "question-retry-1", "content-type": "application/json" };
+  const first = response();
+  await handleMobileV1Request(request("POST", "/api/mobile/v1/questions/question-a/reply", { answer: "Tokyo" }, headers), first, deps);
+  assert.equal(first.statusCode, 502);
+  const second = response();
+  await handleMobileV1Request(request("POST", "/api/mobile/v1/questions/question-a/reply", { answer: "Tokyo" }, headers), second, deps);
+  assert.equal(second.statusCode, 200);
+  assert.equal(parsed(second).status, "answered");
+  assert.equal(attempts, 2);
+});

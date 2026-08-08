@@ -42,13 +42,24 @@ async function replyMobileQuestion(scope, questionIdOrInput, answerOrDeps, deps)
   if (!questionId) throw new MobileError("question_required", "An open question is required.");
   if (typeof input.answer !== "string" || !input.answer.trim() || input.answer.length > 1_000) throw new MobileError("answer_invalid", "A short answer is required.");
   const store = activeDeps.store;
-  if (!store || typeof store.consumeOpenQuestion !== "function") throw new MobileError("question_store_unavailable", "Question storage is unavailable.", 503, true);
-  const question = await store.consumeOpenQuestion(scope, questionId, input.answer.trim());
+  if (!store || (typeof store.claimOpenQuestion !== "function" && typeof store.consumeOpenQuestion !== "function")) throw new MobileError("question_store_unavailable", "Question storage is unavailable.", 503, true);
+  const answer = input.answer.trim();
+  // Claiming is deliberately separate from completion. A claimed row keeps the answer so a
+  // Calendar/provider or outbox failure can be retried without reopening a different question.
+  const question = typeof store.claimOpenQuestion === "function"
+    ? await store.claimOpenQuestion(scope, questionId, answer)
+    : await store.consumeOpenQuestion(scope, questionId, answer);
   if (!question) throw new MobileError("question_stale", "That question is no longer open.", 409);
-  if (typeof activeDeps.applyAnswer === "function") await activeDeps.applyAnswer(scope, question, input.answer.trim());
-  else await applyDefaultAnswer(scope, question, input.answer.trim(), activeDeps);
+  if (typeof activeDeps.applyAnswer === "function") await activeDeps.applyAnswer(scope, question, answer);
+  else await applyDefaultAnswer(scope, question, answer, activeDeps);
   let analysis = null;
-  if (typeof activeDeps.analyzeNextEvent === "function") analysis = await activeDeps.analyzeNextEvent(scope, { trigger: "question_reply", questionId }, activeDeps);
+  if (typeof activeDeps.analyzeNextEvent === "function") {
+    analysis = await activeDeps.analyzeNextEvent(scope, { trigger: "question_reply", questionId, analysisId: `question-reply:${questionId}` }, activeDeps);
+  }
+  const completed = typeof store.completeQuestionReply === "function"
+    ? await store.completeQuestionReply(scope, questionId, answer)
+    : question;
+  if (!completed) throw new MobileError("question_complete_failed", "The answer could not be finalized.", 503, true);
   return { status: "answered", questionId: String(questionId), analysis };
 }
 

@@ -186,6 +186,13 @@ function createSupabaseMobileStore(options = {}) {
         }),
       }, "idempotency_failed");
     },
+    async reopenIdempotency(scope, key, value) {
+      requireScope(scope);
+      const result = await request(`/rest/v1/lm_mobile_idempotency?uid=eq.${encodeFilter(scope.uid)}&idempotency_key=eq.${encodeFilter(key)}&status=eq.failed&request_hash=eq.${encodeFilter(value.requestHash)}`, {
+        method: "PATCH", headers: { "content-type": "application/json", Prefer: "return=representation" }, body: JSON.stringify({ status: "pending", result: null, result_expires_at: null, error: null, status_code: null, updated_at: new Date().toISOString() }),
+      }, "idempotency_failed");
+      return Boolean(asRow(result.body));
+    },
     async appendOutbox(scope, row) {
       requireScope(scope);
       const result = await request("/rest/v1/lm_mobile_outbox", {
@@ -231,6 +238,14 @@ function createSupabaseMobileStore(options = {}) {
     async consumeOpenQuestion(scope, questionId, answer) {
       const value = await rpc("consume_lm_mobile_question", { p_uid: requireScope(scope).uid, p_question_id: questionId, p_answer: answer }, "question_reply_failed");
       return asRow(value) || (value === true ? { id: questionId, answer } : null);
+    },
+    async claimOpenQuestion(scope, questionId, answer) {
+      const value = await rpc("claim_lm_mobile_question", { p_uid: requireScope(scope).uid, p_question_id: questionId, p_answer: answer }, "question_reply_failed");
+      return asRow(value) || null;
+    },
+    async completeQuestionReply(scope, questionId, answer) {
+      const value = await rpc("complete_lm_mobile_question", { p_uid: requireScope(scope).uid, p_question_id: questionId, p_answer: answer }, "question_reply_failed");
+      return asRow(value) || null;
     },
     async claimCallAttempt(scope, value) {
       const result = await rpc("claim_lm_mobile_call", { p_uid: requireScope(scope).uid, p_idempotency_key: value.idempotencyKey, p_now: value.now || new Date().toISOString() }, "call_limit_failed");
@@ -351,6 +366,13 @@ function createMemoryMobileStore(options = {}) {
     async readIdempotency(scope, key) { return idempotency.get(`${scoped(scope)}:${key}`) || null; },
     async claimIdempotency(scope, key, value) { const id = `${scoped(scope)}:${key}`; if (idempotency.has(id)) return false; idempotency.set(id, { ...value }); return true; },
     async completeIdempotency(scope, key, value) { const id = `${scoped(scope)}:${key}`; idempotency.set(id, { ...idempotency.get(id), ...value }); },
+    async reopenIdempotency(scope, key, value) {
+      const id = `${scoped(scope)}:${key}`;
+      const row = idempotency.get(id);
+      if (!row || row.status !== "failed" || row.requestHash !== value.requestHash) return false;
+      row.status = "pending"; row.result = null; row.error = null; row.statusCode = null;
+      return true;
+    },
     async appendOutbox(scope, row) {
       const uid = scoped(scope);
       const existing = (outbox.get(uid) || []).find((item) => item.id === row.id);
@@ -368,6 +390,25 @@ function createMemoryMobileStore(options = {}) {
       if (existing) return { ...existing };
       const row = { ...question, uid, status: question.status || "open" };
       questions.set(key, row);
+      return { ...row };
+    },
+    async claimOpenQuestion(scope, id, answer) {
+      const uid = scoped(scope);
+      const row = questions.get(`${uid}:${id}`);
+      if (!row || row.status === "answered" || row.status === "stale") return null;
+      if (row.status === "claimed" && row.answer !== answer) throw new MobileError("question_answer_conflict", "A different answer is already being applied.", 409);
+      row.status = "claimed";
+      row.answer = answer;
+      row.claimedAt = row.claimedAt || nowIso();
+      return { ...row };
+    },
+    async completeQuestionReply(scope, id, answer) {
+      const uid = scoped(scope);
+      const row = questions.get(`${uid}:${id}`);
+      if (!row || row.status === "answered" || (row.status !== "claimed" && row.status !== "open")) return null;
+      if (row.answer !== answer) throw new MobileError("question_answer_conflict", "A different answer is already being applied.", 409);
+      row.status = "answered";
+      row.answeredAt = nowIso();
       return { ...row };
     },
     async consumeOpenQuestion(scope, id, answer) { const uid = scoped(scope); const row = questions.get(`${uid}:${id}`); if (!row || row.status !== "open") return null; row.status = "answered"; row.answer = answer; return { ...row }; },

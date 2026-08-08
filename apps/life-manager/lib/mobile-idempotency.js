@@ -86,21 +86,28 @@ async function withMobileIdempotency({ scope, key, payload, operation }, deps = 
   }
   const value = validateKey(key);
   const requestHash = canonicalPayloadHash(payload);
-  const existing = await store.readIdempotency(scope, value);
+  let existing = await store.readIdempotency(scope, value);
+  let resumedClaim = false;
   if (existing) {
     if (String(existing.requestHash || existing.request_hash) !== requestHash) {
       throw new MobileError("idempotency_conflict", "The idempotency key was already used for a different request.", 409);
     }
     const status = existing.status;
-    if (isCompleted(status) || status === "failed") {
-      const replayError = asReplayError(existing, requestHash, deps);
-      if (replayError) throw replayError;
-      return storedResult(existing, requestHash, deps);
+    if (status === "failed" && deps.retryFailed && existing.error && existing.error.retryable && typeof store.reopenIdempotency === "function") {
+      resumedClaim = await store.reopenIdempotency(scope, value, { requestHash });
+      if (resumedClaim) existing = null;
     }
-    throw new MobileError("idempotency_in_progress", "The same mutation is already in progress.", 409, true);
+    if (existing) {
+      if (isCompleted(status) || status === "failed") {
+        const replayError = asReplayError(existing, requestHash, deps);
+        if (replayError) throw replayError;
+        return storedResult(existing, requestHash, deps);
+      }
+      throw new MobileError("idempotency_in_progress", "The same mutation is already in progress.", 409, true);
+    }
   }
 
-  const claimed = await store.claimIdempotency(scope, value, { requestHash, status: "pending" });
+  const claimed = resumedClaim || await store.claimIdempotency(scope, value, { requestHash, status: "pending" });
   if (!claimed) {
     const raced = await store.readIdempotency(scope, value);
     if (raced && String(raced.requestHash || raced.request_hash) !== requestHash) {

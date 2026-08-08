@@ -62,6 +62,16 @@ function mapIdempotencyStore(map) {
     async readIdempotency(scope, key) { return map.get(`${scope.uid}:${key}`) || null; },
     async claimIdempotency(scope, key, value) { const id = `${scope.uid}:${key}`; if (map.has(id)) return false; map.set(id, { ...value, status: "pending" }); return true; },
     async completeIdempotency(scope, key, value) { map.set(`${scope.uid}:${key}`, { ...map.get(`${scope.uid}:${key}`), ...value }); },
+    async reopenIdempotency(scope, key, value) {
+      const id = `${scope.uid}:${key}`;
+      const row = map.get(id);
+      if (!row || row.status !== "failed" || row.requestHash !== value.requestHash) return false;
+      row.status = "pending";
+      row.result = null;
+      row.error = null;
+      row.statusCode = null;
+      return true;
+    },
   };
 }
 
@@ -92,7 +102,10 @@ async function executeMutation(req, body, scope, runtime, operation) {
   if (!key) throw new MobileError("idempotency_required", "Idempotency-Key is required for this mutation.");
   const idempotency = runtime.idempotency || runtime.store;
   if (!idempotency) throw new MobileError("idempotency_unavailable", "Mutation storage is unavailable.", 503, true);
-  return withMobileIdempotency({ scope, key, payload: { method: req.method, path: parsePath(req).path, body }, operation }, { store: idempotency });
+  return withMobileIdempotency({ scope, key, payload: { method: req.method, path: parsePath(req).path, body }, operation }, {
+    store: idempotency,
+    ...(parsePath(req).path.startsWith("/questions/") ? { retryFailed: true } : {}),
+  });
 }
 
 async function handleMobileV1Request(req, res, dependencies = {}) {
