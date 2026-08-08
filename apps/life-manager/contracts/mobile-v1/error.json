@@ -1,0 +1,8 @@
+{
+  "error": {
+    "code": "analysis_failed",
+    "message": "I could not analyze your next event. Try again.",
+    "retryable": true,
+    "requestId": "request:v1:analysis-failed-8f3a"
+  }
+}
