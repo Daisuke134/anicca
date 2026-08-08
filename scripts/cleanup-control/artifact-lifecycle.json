@@ -500,6 +500,18 @@
         "kind": "remote_recoverable_remove",
         "child_name_prefix": "anicca-"
       }
+    },
+    {
+      "id": "learned-home-library-caches-com.openai.codex",
+      "path": "$HOME/Library/Caches/com.openai.codex",
+      "owner": "disk-sentinel-learning",
+      "class": "ephemeral",
+      "ttl_seconds": 604800,
+      "quota_bytes": 0,
+      "lease": null,
+      "finalizer": {
+        "kind": "off_volume_quarantine"
+      }
     }
   ]
 }
