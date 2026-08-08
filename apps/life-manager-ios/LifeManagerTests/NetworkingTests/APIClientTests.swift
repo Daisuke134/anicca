@@ -158,6 +158,30 @@ final class APIClientTests: XCTestCase {
         XCTAssertNil(currentSession)
         XCTAssertEqual(clearCount, 1)
     }
+
+    func testAmbiguousRefreshFailureRetainsSessionForDurableRetry() async throws {
+        let original = TestSessionFactory.make()
+        let store = InMemorySessionStore(session: original)
+        let transport = ScriptedTransport(statuses: [401], payload: Data())
+        let client = APIClient(
+            baseURL: URL(string: "https://life-manager.example")!,
+            transport: transport,
+            sessionStore: store,
+            refresh: { _ in throw APIError.transport("offline") }
+        )
+
+        do {
+            let _: ValueResponse = try await client.send(.get(path: "/bootstrap"), as: ValueResponse.self)
+            XCTFail("expected an ambiguous refresh failure")
+        } catch let error as APIError {
+            XCTAssertEqual(error, .transport("offline"))
+        }
+
+        let currentSession = await store.currentSession()
+        let clearCount = await store.clearCount()
+        XCTAssertEqual(currentSession, original)
+        XCTAssertEqual(clearCount, 0)
+    }
 }
 
 private struct ValueResponse: Codable, Equatable, Sendable {

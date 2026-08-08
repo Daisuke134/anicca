@@ -5,6 +5,13 @@ enum RetryOperation: String, Codable, CaseIterable, Hashable, Sendable {
     case reply
     case call
     case deletion
+    case analysis
+    case deviceRegistration
+    case deviceUnregistration
+    case sessionStart
+    case sessionExchange
+    case sessionRefresh
+    case sessionRevoke
 }
 
 struct PendingOperation: Codable, Equatable, Sendable {
@@ -21,6 +28,23 @@ protocol OperationRetryStoring: Sendable {
     func pending(for operation: RetryOperation) async -> PendingOperation?
     func save(_ operation: RetryOperation, value: PendingOperation) async
     func clear(_ operation: RetryOperation) async
+}
+
+extension OperationRetryStoring {
+    func operationKey(for operation: RetryOperation, input: Data? = nil) async -> UUID {
+        if let pending = await pending(for: operation), pending.input == input {
+            return pending.idempotencyKey
+        }
+
+        let key = UUID()
+        await save(operation, value: PendingOperation(idempotencyKey: key, input: input))
+        return key
+    }
+
+    func clearIfDefinitive(_ operation: RetryOperation, after error: Error) async {
+        guard !MutationRetryPolicy.shouldRetain(after: error) else { return }
+        await clear(operation)
+    }
 }
 
 actor UserDefaultsOperationRetryStore: OperationRetryStoring {
@@ -56,6 +80,14 @@ actor UserDefaultsOperationRetryStore: OperationRetryStoring {
 
 enum MutationRetryPolicy {
     static func shouldRetain(after error: Error) -> Bool {
+        if let error = error as? APIError {
+            switch error {
+            case .noSession, .unauthorized, .refreshRejected, .invalidURL, .invalidAPNsToken, .missingIdempotencyKey:
+                return false
+            default:
+                break
+            }
+        }
         guard case let APIError.server(statusCode) = error else {
             return true
         }

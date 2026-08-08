@@ -154,6 +154,96 @@ final class ServiceProtocolTests: XCTestCase {
         XCTAssertEqual(authenticatedAPISession, TestFixtures.rotatedSession)
     }
 
+    func testOAuthExchangeReusesDurableKeyAndBodyAfterAmbiguousFailure() async throws {
+        let store = TestOperationRetryStore()
+        let api = RetryingAuthMutationAPI(mode: .exchange)
+        let callback = URL(string: "lifemanager://oauth/callback?code=one-use-code&state=state:v1:calendar-consent-8f3a")!
+        let service = AuthService(
+            api: api,
+            sessionStore: InMemorySessionStore(session: nil),
+            callbackAuthorizer: TestOAuthCallbackAuthorizer(callback: callback),
+            retryStore: store
+        )
+
+        do {
+            _ = try await service.connectCalendar()
+            XCTFail("expected an ambiguous exchange failure")
+        } catch let error as APIError {
+            XCTAssertEqual(error, .transport("offline"))
+        }
+        let pendingValue = await store.pending(for: .sessionExchange)
+        let pending = try XCTUnwrap(pendingValue)
+
+        _ = try await service.connectCalendar()
+
+        let exchangeRequests = await api.requests(path: "/session/exchange")
+        XCTAssertEqual(exchangeRequests.count, 2)
+        XCTAssertEqual(exchangeRequests[0].idempotencyKey, pending.idempotencyKey)
+        XCTAssertEqual(exchangeRequests[1].idempotencyKey, pending.idempotencyKey)
+        XCTAssertEqual(exchangeRequests[0].body, pending.input)
+        XCTAssertEqual(exchangeRequests[1].body, pending.input)
+        let exchangePendingAfterSuccess = await store.pending(for: .sessionExchange)
+        XCTAssertNil(exchangePendingAfterSuccess)
+    }
+
+    func testSessionRefreshReusesDurableKeyAndBodyAfterAmbiguousFailure() async throws {
+        let store = TestOperationRetryStore()
+        let api = RetryingAuthMutationAPI(mode: .refresh)
+        let service = AuthService(
+            api: api,
+            sessionStore: InMemorySessionStore(session: TestFixtures.session),
+            retryStore: store
+        )
+
+        do {
+            _ = try await service.refresh(TestFixtures.session)
+            XCTFail("expected an ambiguous refresh failure")
+        } catch let error as APIError {
+            XCTAssertEqual(error, .transport("offline"))
+        }
+        let pendingValue = await store.pending(for: .sessionRefresh)
+        let pending = try XCTUnwrap(pendingValue)
+
+        _ = try await service.refresh(TestFixtures.session)
+
+        let refreshRequests = await api.requests(path: "/session/refresh")
+        XCTAssertEqual(refreshRequests.count, 2)
+        XCTAssertEqual(refreshRequests[0].idempotencyKey, pending.idempotencyKey)
+        XCTAssertEqual(refreshRequests[1].idempotencyKey, pending.idempotencyKey)
+        XCTAssertEqual(refreshRequests[0].body, pending.input)
+        XCTAssertEqual(refreshRequests[1].body, pending.input)
+        let refreshPendingAfterSuccess = await store.pending(for: .sessionRefresh)
+        XCTAssertNil(refreshPendingAfterSuccess)
+    }
+
+    func testSessionRevokeReusesDurableKeyAfterAmbiguousFailure() async throws {
+        let store = TestOperationRetryStore()
+        let api = RetryingAuthMutationAPI(mode: .revoke)
+        let service = AuthService(
+            api: api,
+            sessionStore: InMemorySessionStore(session: TestFixtures.session),
+            retryStore: store
+        )
+
+        do {
+            try await service.signOut()
+            XCTFail("expected an ambiguous revoke failure")
+        } catch let error as APIError {
+            XCTAssertEqual(error, .transport("offline"))
+        }
+        let pendingValue = await store.pending(for: .sessionRevoke)
+        let pending = try XCTUnwrap(pendingValue)
+
+        try await service.signOut()
+
+        let revokeRequests = await api.requests(path: "/session")
+        XCTAssertEqual(revokeRequests.count, 2)
+        XCTAssertEqual(revokeRequests[0].idempotencyKey, pending.idempotencyKey)
+        XCTAssertEqual(revokeRequests[1].idempotencyKey, pending.idempotencyKey)
+        let revokePendingAfterSuccess = await store.pending(for: .sessionRevoke)
+        XCTAssertNil(revokePendingAfterSuccess)
+    }
+
     func testMutationRetryPolicyRetainsAmbiguousFailuresOnly() {
         XCTAssertTrue(MutationRetryPolicy.shouldRetain(after: APIError.transport("offline")))
         XCTAssertTrue(MutationRetryPolicy.shouldRetain(after: APIError.server(statusCode: 409)))
@@ -301,4 +391,86 @@ private actor SessionPropagationProbe: SessionPropagating {
     }
 
     func session() -> Session? { current }
+}
+
+private enum AuthRetryMutationMode: Sendable {
+    case exchange
+    case refresh
+    case revoke
+}
+
+private struct RecordedAuthMutation: Sendable {
+    let endpoint: APIEndpoint
+    let idempotencyKey: UUID?
+    let body: Data?
+}
+
+private actor RetryingAuthMutationAPI: APIRequesting {
+    private let mode: AuthRetryMutationMode
+    private var shouldFail = true
+    private var recorded: [RecordedAuthMutation] = []
+
+    init(mode: AuthRetryMutationMode) {
+        self.mode = mode
+    }
+
+    func send<Response: Decodable & Sendable>(
+        _ endpoint: APIEndpoint,
+        as responseType: Response.Type,
+        idempotencyKey: UUID?
+    ) async throws -> Response {
+        recorded.append(RecordedAuthMutation(endpoint: endpoint, idempotencyKey: idempotencyKey, body: endpoint.body))
+        if shouldFail && isTarget(endpoint) {
+            shouldFail = false
+            throw APIError.transport("offline")
+        }
+        if Response.self == SessionStart.self {
+            return ServiceProtocolTests.sessionStartFixture as! Response
+        }
+        if Response.self == Session.self {
+            return ServiceProtocolTests.rotatedSessionFixture as! Response
+        }
+        throw APIError.server(statusCode: 500)
+    }
+
+    func sendVoid(_ endpoint: APIEndpoint, idempotencyKey: UUID?) async throws {
+        recorded.append(RecordedAuthMutation(endpoint: endpoint, idempotencyKey: idempotencyKey, body: endpoint.body))
+        if shouldFail && isTarget(endpoint) {
+            shouldFail = false
+            throw APIError.transport("offline")
+        }
+    }
+
+    func requests(path: String) -> [RecordedAuthMutation] {
+        recorded.filter { $0.endpoint.path == path }
+    }
+
+    private func isTarget(_ endpoint: APIEndpoint) -> Bool {
+        switch (mode, endpoint.path) {
+        case (.exchange, "/session/exchange"), (.refresh, "/session/refresh"), (.revoke, "/session"):
+            return true
+        default:
+            return false
+        }
+    }
+}
+
+private extension ServiceProtocolTests {
+    static var sessionStartFixture: SessionStart {
+        SessionStart(
+            state: "state:v1:calendar-consent-8f3a",
+            authorizationURL: URL(string: "https://accounts.google.com/o/oauth2/v2/auth")!,
+            expiresAt: Date.iso8601("2026-08-10T08:05:00.000Z")
+        )
+    }
+
+    static var rotatedSessionFixture: Session {
+        Session(
+            accessToken: "rotated-access",
+            refreshToken: "rotated-refresh",
+            tokenType: "Bearer",
+            expiresAt: Date.iso8601("2026-08-10T09:20:00.000Z"),
+            refreshExpiresAt: Date.iso8601("2026-09-09T09:05:00.000Z")
+        )
+    }
 }

@@ -208,6 +208,12 @@ actor APIClient: APIRequesting, SessionPropagating {
                 let rotated = try await refresh(currentSession)
                 try await store.save(rotated)
                 return rotated
+            } catch let error as APIError {
+                if !MutationRetryPolicy.shouldRetain(after: error) {
+                    try? await store.clear()
+                    throw APIError.refreshRejected
+                }
+                throw error
             } catch {
                 try? await store.clear()
                 throw APIError.refreshRejected
@@ -223,6 +229,12 @@ actor APIClient: APIRequesting, SessionPropagating {
             }
             refreshTask = nil
             return rotated
+        } catch let error as APIError {
+            session = MutationRetryPolicy.shouldRetain(after: error) ? currentSession : nil
+            didLoadSession = true
+            lastRefresh = nil
+            refreshTask = nil
+            throw error
         } catch {
             session = nil
             didLoadSession = true

@@ -593,3 +593,26 @@ implicit UUID fallback. Callers must persist and pass their operation key.
 ```text
 APIClient fail-closed + explicit-key regression: 2/2 passed, 0 failures
 ```
+
+## Fresh final review — durable session mutation keys and bodies
+
+### RED
+
+The new session mutation tests first failed to compile because `AuthService`
+had no durable operation store. After wiring the store, the exchange test
+showed the second callback request generated a different key/body rather than
+replaying the persisted request.
+
+### GREEN
+
+`RetryOperation` now includes session start/exchange/refresh/revoke. Auth
+persists each mutation key before sending, retains the exact exchange/refresh
+body through transport/invalid-response ambiguity, and clears only after a
+successful response or definitive rejection. APIClient also keeps the current
+session on an ambiguous refresh failure so the persisted refresh operation can
+be retried; definitive refresh-family rejection still clears it.
+
+```text
+OAuth exchange + refresh + revoke durable retry: 3/3 passed, 0 failures
+Ambiguous APIClient refresh retention + definitive rejection: 2/2 passed, 0 failures
+```

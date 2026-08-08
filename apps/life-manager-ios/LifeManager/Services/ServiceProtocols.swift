@@ -57,17 +57,20 @@ struct AuthService: AuthServicing {
     private let sessionStore: SessionStoring
     private let callbackAuthorizer: OAuthCallbackAuthorizing?
     private let sessionRelay: SessionPropagationRelay?
+    private let retryStore: OperationRetryStoring
 
     init(
         api: APIRequesting,
         sessionStore: SessionStoring,
         callbackAuthorizer: OAuthCallbackAuthorizing? = nil,
-        sessionRelay: SessionPropagationRelay? = nil
+        sessionRelay: SessionPropagationRelay? = nil,
+        retryStore: OperationRetryStoring = UserDefaultsOperationRetryStore()
     ) {
         self.api = api
         self.sessionStore = sessionStore
         self.callbackAuthorizer = callbackAuthorizer
         self.sessionRelay = sessionRelay
+        self.retryStore = retryStore
     }
 
     func restoreSession() async throws -> Session? {
@@ -78,11 +81,19 @@ struct AuthService: AuthServicing {
         guard let callbackAuthorizer else {
             throw APIError.transport("OAuth callback authorizer is unavailable")
         }
-        let start: SessionStart = try await api.send(
-            .unauthenticatedMutation(path: "/session/calendar/start", method: .post),
-            as: SessionStart.self,
-            idempotencyKey: UUID()
-        )
+        let startKey = await retryStore.operationKey(for: .sessionStart)
+        let start: SessionStart
+        do {
+            start = try await api.send(
+                .unauthenticatedMutation(path: "/session/calendar/start", method: .post),
+                as: SessionStart.self,
+                idempotencyKey: startKey
+            )
+        } catch {
+            await retryStore.clearIfDefinitive(.sessionStart, after: error)
+            throw error
+        }
+        await retryStore.clear(.sessionStart)
         let callback = try await callbackAuthorizer.authorize(
             url: start.authorizationURL,
             expectedState: start.state
@@ -96,40 +107,75 @@ struct AuthService: AuthServicing {
             throw APIError.transport("OAuth callback state or code is invalid")
         }
 
-        let body = try JSONEncoder.lifeManager.encode(CalendarExchangeRequest(code: code, state: state))
-        let session: Session = try await api.send(
-            .unauthenticatedMutation(path: "/session/exchange", method: .post, body: body),
-            as: Session.self,
-            idempotencyKey: UUID()
-        )
+        let proposedBody = try JSONEncoder.lifeManager.encode(CalendarExchangeRequest(code: code, state: state))
+        let pendingExchange = await retryStore.pending(for: .sessionExchange)
+        let body = pendingExchange?.input ?? proposedBody
+        let exchangeKey: UUID
+        if let pendingExchange {
+            exchangeKey = pendingExchange.idempotencyKey
+        } else {
+            exchangeKey = await retryStore.operationKey(for: .sessionExchange, input: body)
+        }
+        let session: Session
+        do {
+            session = try await api.send(
+                .unauthenticatedMutation(path: "/session/exchange", method: .post, body: body),
+                as: Session.self,
+                idempotencyKey: exchangeKey
+            )
+        } catch {
+            await retryStore.clearIfDefinitive(.sessionExchange, after: error)
+            throw error
+        }
+        await retryStore.clear(.sessionExchange)
         try await sessionStore.save(session)
         await sessionRelay?.propagate(session)
         return session
     }
 
     func refresh(_ session: Session) async throws -> Session {
-        let body = try JSONEncoder.lifeManager.encode(RefreshRequest(refreshToken: session.refreshToken))
-        let rotated: Session = try await api.send(
-            .unauthenticatedMutation(path: "/session/refresh", method: .post, body: body),
-            as: Session.self,
-            idempotencyKey: UUID()
-        )
+        let proposedBody = try JSONEncoder.lifeManager.encode(RefreshRequest(refreshToken: session.refreshToken))
+        let pendingRefresh = await retryStore.pending(for: .sessionRefresh)
+        let body = pendingRefresh?.input ?? proposedBody
+        let refreshKey: UUID
+        if let pendingRefresh {
+            refreshKey = pendingRefresh.idempotencyKey
+        } else {
+            refreshKey = await retryStore.operationKey(for: .sessionRefresh, input: body)
+        }
+        let rotated: Session
+        do {
+            rotated = try await api.send(
+                .unauthenticatedMutation(path: "/session/refresh", method: .post, body: body),
+                as: Session.self,
+                idempotencyKey: refreshKey
+            )
+        } catch {
+            await retryStore.clearIfDefinitive(.sessionRefresh, after: error)
+            throw error
+        }
+        await retryStore.clear(.sessionRefresh)
         try await sessionStore.save(rotated)
         await sessionRelay?.propagate(rotated)
         return rotated
     }
 
     func signOut() async throws {
+        let revokeKey = await retryStore.operationKey(for: .sessionRevoke)
         do {
             try await api.sendVoid(
                 .mutation(path: "/session", method: .delete),
-                idempotencyKey: UUID()
+                idempotencyKey: revokeKey
             )
         } catch {
-            try? await sessionStore.clear()
-            await sessionRelay?.propagate(nil)
+            await retryStore.clearIfDefinitive(.sessionRevoke, after: error)
+            if !MutationRetryPolicy.shouldRetain(after: error) {
+                try? await sessionStore.clear()
+                await sessionRelay?.propagate(nil)
+            }
             throw error
         }
+        await retryStore.clear(.sessionRevoke)
         try await sessionStore.clear()
         await sessionRelay?.propagate(nil)
     }
