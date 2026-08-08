@@ -730,3 +730,27 @@ exchange → bootstrap → PATCH → bootstrap boundary.
 OAuth/profile targeted suites: AppComposition 2/2 + ServiceProtocol 11/11 = 13/13
 PATCH consumer regressions: AppViewModel 9/9 + Settings 16/16 + Paywall 6/6 = 31/31
 ```
+
+## Final review round — APNs locale/timezone replay convergence
+
+### RED
+
+The regression test with a persisted `ja`/`Asia/Tokyo` body and current
+desired `en`/`UTC` state reproduced the old behavior: the persisted request
+was replayed once and the changed desired state was silently dropped.
+
+```text
+APNs replay regression (old implementation): failed, registrations 1 != expected 2
+```
+
+### GREEN
+
+AppDelegate now keeps configured desired locale/timezone separate from a
+persisted ambiguous body. After the old body succeeds, it compares the
+current desired state, requeues the token when changed, and sends a follow-up
+PUT after clearing the old operation so the key is fresh.
+
+```text
+APNs replay convergence test: 1/1 passed, 0 failures
+AppDelegatePushTests targeted suite: 9/9 passed, 0 failures
+```

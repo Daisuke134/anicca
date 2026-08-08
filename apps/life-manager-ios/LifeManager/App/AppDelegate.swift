@@ -111,6 +111,7 @@ final class LifeManagerAppDelegate: NSObject, UIApplicationDelegate, @preconcurr
     private var deviceService: DeviceServicing?
     private var deviceLocale: ProductLocale = .en
     private var deviceTimezone = TimeZone.current.identifier
+    private var hasConfiguredDeviceState = false
     private var pendingDeviceToken: Data?
     private var lastRegisteredDeviceToken: Data?
     private var registrationInFlight = false
@@ -176,6 +177,7 @@ final class LifeManagerAppDelegate: NSObject, UIApplicationDelegate, @preconcurr
         self.deviceService = deviceService
         deviceLocale = locale
         deviceTimezone = timezone
+        hasConfiguredDeviceState = true
         guard registrationWasRequested, pendingDeviceToken != nil else { return }
         Task { await registerPendingDeviceTokenIfReady() }
     }
@@ -327,8 +329,15 @@ final class LifeManagerAppDelegate: NSObject, UIApplicationDelegate, @preconcurr
                 idempotencyKey: operationKey
             )
             await retryStore.clear(.deviceRegistration)
-            lastRegisteredDeviceToken = token
-            self.pendingDeviceToken = nil
+            let desiredStateChanged = deviceLocale != request.locale || deviceTimezone != request.timezone
+            if desiredStateChanged {
+                lastRegisteredDeviceToken = nil
+                self.pendingDeviceToken = token
+                registrationRetryRequested = true
+            } else {
+                lastRegisteredDeviceToken = token
+                self.pendingDeviceToken = nil
+            }
             lastDeviceRegistrationError = nil
         } catch {
             await retryStore.clearIfDefinitive(.deviceRegistration, after: error)
@@ -347,8 +356,10 @@ final class LifeManagerAppDelegate: NSObject, UIApplicationDelegate, @preconcurr
             return
         }
         pendingDeviceToken = token
-        deviceLocale = request.locale
-        deviceTimezone = request.timezone
+        if !hasConfiguredDeviceState {
+            deviceLocale = request.locale
+            deviceTimezone = request.timezone
+        }
     }
 
     private static func data(fromHex value: String) throws -> Data {

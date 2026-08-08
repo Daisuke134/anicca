@@ -102,7 +102,7 @@ final class AppDelegatePushTests: XCTestCase {
         XCTAssertEqual(recorder.registration?.timezone, "Asia/Tokyo")
     }
 
-    func testAmbiguousAPNsRegistrationReusesDurableKeyAndBodyAfterRestart() async throws {
+    func testAmbiguousAPNsRegistrationReplaysOldBodyThenFollowsUpWithCurrentLocale() async throws {
         let store = TestOperationRetryStore()
         let firstRecorder = PushDeviceServiceStub(failRegistrationOnce: true)
         let firstDelegate = LifeManagerAppDelegate(
@@ -131,12 +131,20 @@ final class AppDelegatePushTests: XCTestCase {
         _ = try await secondDelegate.requestAuthorizationAndRegisterIfNeeded()
         await secondDelegate.retryDeviceRegistration()
 
+        for _ in 0..<20 where secondRecorder.registrations.count < 2 {
+            await Task.yield()
+        }
+
         let registrations = secondRecorder.registrations
-        XCTAssertEqual(registrations.count, 1)
+        XCTAssertEqual(registrations.count, 2)
         XCTAssertEqual(registrations[0].token, Data(repeating: 0xAB, count: 32))
         XCTAssertEqual(registrations[0].locale, .ja)
         XCTAssertEqual(registrations[0].timezone, "Asia/Tokyo")
         XCTAssertEqual(registrations[0].idempotencyKey, pending.idempotencyKey)
+        XCTAssertEqual(registrations[1].token, Data(repeating: 0xAB, count: 32))
+        XCTAssertEqual(registrations[1].locale, .en)
+        XCTAssertEqual(registrations[1].timezone, "UTC")
+        XCTAssertNotEqual(registrations[1].idempotencyKey, pending.idempotencyKey)
         let pendingAfterSuccess = await store.pending(for: .deviceRegistration)
         XCTAssertNil(pendingAfterSuccess)
     }
