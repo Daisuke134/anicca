@@ -20,3 +20,4 @@ ALTER TABLE public.lm_mobile_apns_results ENABLE ROW LEVEL SECURITY;
 
 REVOKE ALL ON TABLE public.lm_mobile_apns_results FROM PUBLIC, anon, authenticated;
 GRANT SELECT, INSERT ON TABLE public.lm_mobile_apns_results TO service_role;
+GRANT USAGE, SELECT ON SEQUENCE public.lm_mobile_apns_results_id_seq TO service_role;

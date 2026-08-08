@@ -209,7 +209,7 @@ test("APNs migration stores no device token or payload columns in the result log
   assert.match(sql, /status integer/u);
   assert.match(sql, /reason text/u);
   assert.match(sql, /environment text/u);
+  assert.match(sql, /GRANT USAGE, SELECT ON SEQUENCE public\.lm_mobile_apns_results_id_seq TO service_role;/u);
   assert.doesNotMatch(sql, /token text/u);
   assert.doesNotMatch(sql, /payload jsonb/u);
 });
-
