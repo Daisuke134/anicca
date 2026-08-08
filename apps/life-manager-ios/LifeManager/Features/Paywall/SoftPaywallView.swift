@@ -4,8 +4,12 @@ struct SoftPaywallView: View {
     @State private var viewModel: SoftPaywallViewModel
     private let onContinueFree: () -> Void
 
-    init(purchasing: PaywallPurchasing? = nil, onContinueFree: @escaping () -> Void) {
-        _viewModel = State(initialValue: SoftPaywallViewModel(purchasing: purchasing))
+    init(
+        viewModel: SoftPaywallViewModel? = nil,
+        purchasing: PaywallPurchasing? = nil,
+        onContinueFree: @escaping () -> Void
+    ) {
+        _viewModel = State(initialValue: viewModel ?? SoftPaywallViewModel(purchasing: purchasing))
         self.onContinueFree = onContinueFree
     }
 

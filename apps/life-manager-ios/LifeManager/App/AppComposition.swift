@@ -21,11 +21,22 @@ final class AppComposition {
             sessionStore: sessionStore,
             refresh: { session in try await auth.refresh(session) }
         )
+        let profileService = ProfileService(api: authenticatedAPI)
+        let callService = CallService(api: authenticatedAPI)
+        let accountService = AccountService(api: authenticatedAPI)
+        let paywallViewModel = SoftPaywallViewModel(purchasing: nil)
         viewModel = AppViewModel(
             auth: auth,
-            profile: ProfileService(api: authenticatedAPI),
+            profile: profileService,
             analysis: AnalysisService(api: authenticatedAPI),
-            chat: ChatService(api: authenticatedAPI)
+            chat: ChatService(api: authenticatedAPI),
+            settings: SettingsViewModel(
+                profile: profileService,
+                auth: auth,
+                calls: callService,
+                account: accountService
+            ),
+            paywall: paywallViewModel
         )
     }
 }

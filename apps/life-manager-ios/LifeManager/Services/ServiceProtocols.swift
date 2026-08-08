@@ -21,6 +21,14 @@ protocol ChatServicing: Sendable {
     func reply(questionID: String, text: String, idempotencyKey: UUID) async throws -> ChatMessage
 }
 
+protocol CallServicing: Sendable {
+    func placeTestCall(idempotencyKey: UUID) async throws -> CallReceipt
+}
+
+protocol AccountServicing: Sendable {
+    func deleteAccount(idempotencyKey: UUID) async throws -> AccountDeletionReceipt
+}
+
 protocol OAuthCallbackAuthorizing: Sendable {
     func authorize(url: URL, expectedState: String) async throws -> URL
 }
@@ -197,6 +205,38 @@ struct ChatService: ChatServicing {
                 body: body
             ),
             as: ChatMessage.self,
+            idempotencyKey: idempotencyKey
+        )
+    }
+}
+
+struct CallService: CallServicing {
+    private let api: APIRequesting
+
+    init(api: APIRequesting) {
+        self.api = api
+    }
+
+    func placeTestCall(idempotencyKey: UUID) async throws -> CallReceipt {
+        try await api.send(
+            .mutation(path: "/calls/test", method: .post),
+            as: CallReceipt.self,
+            idempotencyKey: idempotencyKey
+        )
+    }
+}
+
+struct AccountService: AccountServicing {
+    private let api: APIRequesting
+
+    init(api: APIRequesting) {
+        self.api = api
+    }
+
+    func deleteAccount(idempotencyKey: UUID) async throws -> AccountDeletionReceipt {
+        try await api.send(
+            .mutation(path: "/account", method: .delete),
+            as: AccountDeletionReceipt.self,
             idempotencyKey: idempotencyKey
         )
     }

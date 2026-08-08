@@ -65,6 +65,8 @@ final class AppViewModel {
     private let profileService: ProfileServicing
     private let analysisService: AnalysisServicing
     let chatViewModel: ChatViewModel?
+    let settingsViewModel: SettingsViewModel?
+    let paywallViewModel: SoftPaywallViewModel?
 
     private(set) var route: AppRoute = .restoring
     private(set) var profile: UserProfile?
@@ -75,7 +77,9 @@ final class AppViewModel {
         auth: AuthServicing,
         profile: ProfileServicing,
         analysis: AnalysisServicing,
-        chat: ChatServicing? = nil
+        chat: ChatServicing? = nil,
+        settings: SettingsViewModel? = nil,
+        paywall: SoftPaywallViewModel? = nil
     ) {
         self.auth = auth
         profileService = profile
@@ -85,6 +89,8 @@ final class AppViewModel {
         } else {
             chatViewModel = nil
         }
+        settingsViewModel = settings
+        paywallViewModel = paywall
     }
 
     func restoreSession() async {

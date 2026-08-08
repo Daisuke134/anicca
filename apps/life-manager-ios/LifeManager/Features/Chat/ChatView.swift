@@ -13,11 +13,19 @@ extension ChatViewModel: ChatForegroundRefreshing {
 
 struct ChatView: View {
     @State private var viewModel: ChatViewModel
+    private let settingsViewModel: SettingsViewModel?
+    private let paywallViewModel: SoftPaywallViewModel?
     @State private var selectedRouteMessage: ChatMessage?
     @State private var showingSettings = false
 
-    init(viewModel: ChatViewModel) {
+    init(
+        viewModel: ChatViewModel,
+        settingsViewModel: SettingsViewModel? = nil,
+        paywallViewModel: SoftPaywallViewModel? = nil
+    ) {
         _viewModel = State(initialValue: viewModel)
+        self.settingsViewModel = settingsViewModel
+        self.paywallViewModel = paywallViewModel
     }
 
     var body: some View {
@@ -34,9 +42,13 @@ struct ChatView: View {
             }
         }
         .sheet(isPresented: $showingSettings) {
-            Text("Settings")
-                .font(.title2)
-                .padding()
+            if let settingsViewModel {
+                SettingsView(viewModel: settingsViewModel, paywallViewModel: paywallViewModel)
+            } else {
+                Text("Settings")
+                    .font(.title2)
+                    .padding()
+            }
         }
         .task {
             await viewModel.loadInitial()

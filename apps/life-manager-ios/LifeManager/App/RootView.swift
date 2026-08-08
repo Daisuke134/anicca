@@ -50,7 +50,11 @@ private struct RouteSurface: View {
                     .accessibilityIdentifier("analysis.phase")
             case .chat:
                 if let chatViewModel = viewModel.chatViewModel {
-                    ChatView(viewModel: chatViewModel)
+                    ChatView(
+                        viewModel: chatViewModel,
+                        settingsViewModel: viewModel.settingsViewModel,
+                        paywallViewModel: viewModel.paywallViewModel
+                    )
                 } else {
                     chatView
                 }
@@ -129,7 +133,7 @@ private struct RouteSurface: View {
     }
 
     private var softPaywallView: some View {
-        SoftPaywallView {
+        SoftPaywallView(viewModel: viewModel.paywallViewModel) {
             viewModel.continueFree()
         }
     }
