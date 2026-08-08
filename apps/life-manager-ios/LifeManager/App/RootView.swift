@@ -3,15 +3,21 @@ import SwiftUI
 struct RootView: View {
     let environment: AppEnvironment
     private let viewModel: AppViewModel?
+    private let onChatReady: (@MainActor () async -> Void)?
 
-    init(environment: AppEnvironment, viewModel: AppViewModel? = nil) {
+    init(
+        environment: AppEnvironment,
+        viewModel: AppViewModel? = nil,
+        onChatReady: (@MainActor () async -> Void)? = nil
+    ) {
         self.environment = environment
         self.viewModel = viewModel
+        self.onChatReady = onChatReady
     }
 
     var body: some View {
         if let viewModel {
-            RouteSurface(viewModel: viewModel)
+            RouteSurface(viewModel: viewModel, onChatReady: onChatReady)
         } else {
             VStack(spacing: 12) {
                 Text("app.name")
@@ -28,11 +34,16 @@ struct RootView: View {
 
 private struct RouteSurface: View {
     @State private var viewModel: AppViewModel
+    private let onChatReady: (@MainActor () async -> Void)?
     @State private var profileName = ""
     @State private var profileHome = ""
 
-    init(viewModel: AppViewModel) {
+    init(
+        viewModel: AppViewModel,
+        onChatReady: (@MainActor () async -> Void)? = nil
+    ) {
         _viewModel = State(initialValue: viewModel)
+        self.onChatReady = onChatReady
     }
 
     var body: some View {
@@ -52,14 +63,19 @@ private struct RouteSurface: View {
                 ProgressView("onboarding.analyzing")
                     .accessibilityIdentifier("analysis.phase")
             case .chat:
-                if let chatViewModel = viewModel.chatViewModel {
-                    ChatView(
-                        viewModel: chatViewModel,
-                        settingsViewModel: viewModel.settingsViewModel,
-                        paywallViewModel: viewModel.paywallViewModel
-                    )
-                } else {
-                    chatView
+                Group {
+                    if let chatViewModel = viewModel.chatViewModel {
+                        ChatView(
+                            viewModel: chatViewModel,
+                            settingsViewModel: viewModel.settingsViewModel,
+                            paywallViewModel: viewModel.paywallViewModel
+                        )
+                    } else {
+                        chatView
+                    }
+                }
+                .task {
+                    await onChatReady?()
                 }
             case .softPaywall:
                 softPaywallView

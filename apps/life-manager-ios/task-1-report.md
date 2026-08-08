@@ -55,3 +55,21 @@ git diff --check                          exit 0
 ```
 
 Generated `.xcodeproj`, DerivedData, and Fastlane reports remain ignored.
+
+## Gate 4 integration follow-up: sync and APNs boundary
+
+The iOS-owned integration slice was verified with the installed Xcode 26.6 and
+iOS 26.5 simulator runtime after the Task 1 closeout:
+
+```text
+xcodebuild -scheme LifeManager -project LifeManager.xcodeproj \
+  -derivedDataPath build/DerivedData \
+  -destination 'platform=iOS Simulator,id=32CBF714-48D7-45DC-B3E3-6941C5210F2D' \
+  -parallel-testing-enabled NO test
+```
+
+Observed result: exit 0, UI 2/2 and unit 54/54, for 56/56 tests with zero
+failures. The unit count includes the six AppDelegate permission/token/router
+tests and three device/payload tests. The parallel test runner was also
+observed to stop in the existing coalescing harness once; the serial command
+above is the reproducible green gate.

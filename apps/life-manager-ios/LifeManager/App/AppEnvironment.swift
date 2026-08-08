@@ -13,8 +13,13 @@ struct AppEnvironment: Equatable {
     }
 
     @MainActor
-    func makeViewModel() -> AppViewModel? {
+    func makeComposition() -> AppComposition? {
         guard !isUITesting, let apiBaseURL else { return nil }
-        return AppComposition(baseURL: apiBaseURL, callbackScheme: callbackScheme).viewModel
+        return AppComposition(baseURL: apiBaseURL, callbackScheme: callbackScheme)
+    }
+
+    @MainActor
+    func makeViewModel() -> AppViewModel? {
+        makeComposition()?.viewModel
     }
 }

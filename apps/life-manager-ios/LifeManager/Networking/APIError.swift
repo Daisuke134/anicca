@@ -9,4 +9,5 @@ enum APIError: Error, Equatable, Sendable {
     case server(statusCode: Int)
     case decodingFailed
     case transport(String)
+    case invalidAPNsToken
 }

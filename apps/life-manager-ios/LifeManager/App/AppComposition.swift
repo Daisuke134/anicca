@@ -3,6 +3,7 @@ import Foundation
 @MainActor
 final class AppComposition {
     let viewModel: AppViewModel
+    let deviceService: DeviceServicing
 
     init(baseURL: URL, callbackScheme: String) {
         let sessionStore = KeychainSessionStore()
@@ -24,6 +25,7 @@ final class AppComposition {
         let profileService = ProfileService(api: authenticatedAPI)
         let callService = CallService(api: authenticatedAPI)
         let accountService = AccountService(api: authenticatedAPI)
+        deviceService = DeviceService(api: authenticatedAPI)
         let paywallViewModel = SoftPaywallViewModel(purchasing: nil)
         viewModel = AppViewModel(
             auth: auth,
@@ -34,7 +36,8 @@ final class AppComposition {
                 profile: profileService,
                 auth: auth,
                 calls: callService,
-                account: accountService
+                account: accountService,
+                device: deviceService
             ),
             paywall: paywallViewModel
         )

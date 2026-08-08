@@ -16,17 +16,21 @@ struct ChatView: View {
     @Environment(\.scenePhase) private var scenePhase
     private let settingsViewModel: SettingsViewModel?
     private let paywallViewModel: SoftPaywallViewModel?
+    private let pushRouter: PushNotificationRouter
     @State private var selectedRouteMessage: ChatMessage?
     @State private var showingSettings = false
 
+    @MainActor
     init(
         viewModel: ChatViewModel,
         settingsViewModel: SettingsViewModel? = nil,
-        paywallViewModel: SoftPaywallViewModel? = nil
+        paywallViewModel: SoftPaywallViewModel? = nil,
+        pushRouter: PushNotificationRouter? = nil
     ) {
         _viewModel = State(initialValue: viewModel)
         self.settingsViewModel = settingsViewModel
         self.paywallViewModel = paywallViewModel
+        self.pushRouter = pushRouter ?? .shared
     }
 
     var body: some View {
@@ -57,6 +61,14 @@ struct ChatView: View {
         .onChange(of: scenePhase) { _, phase in
             guard phase == .active else { return }
             Task { await viewModel.refreshFromForeground() }
+        }
+        .onAppear {
+            pushRouter.setHandler { destination in
+                Task { await viewModel.syncFromPush(targetMessageID: destination.messageID) }
+            }
+        }
+        .onDisappear {
+            pushRouter.clearHandler()
         }
     }
 

@@ -18,6 +18,7 @@ final class SettingsViewModel {
     private let auth: AuthServicing
     private let callService: CallServicing
     private let accountService: AccountServicing
+    private let deviceService: DeviceServicing?
 
     private(set) var profile: UserProfile?
     private(set) var calendarStatus: CalendarConnectionStatus = .disconnected
@@ -38,12 +39,14 @@ final class SettingsViewModel {
         profile: ProfileServicing,
         auth: AuthServicing,
         calls: CallServicing,
-        account: AccountServicing
+        account: AccountServicing,
+        device: DeviceServicing? = nil
     ) {
         profileService = profile
         self.auth = auth
         callService = calls
         accountService = account
+        deviceService = device
     }
 
     var phoneConfigured: Bool {
@@ -104,6 +107,7 @@ final class SettingsViewModel {
     func deleteAccount() async {
         failure = nil
         do {
+            try await deviceService?.unregister(idempotencyKey: UUID())
             let receipt = try await accountService.deleteAccount(idempotencyKey: UUID())
             deletionReceipt = receipt
             try? await auth.signOut()
@@ -114,10 +118,19 @@ final class SettingsViewModel {
 
     func signOut() async {
         failure = nil
+        var firstError: Error?
+        do {
+            try await deviceService?.unregister(idempotencyKey: UUID())
+        } catch {
+            firstError = error
+        }
         do {
             try await auth.signOut()
         } catch {
-            failure = AppErrorState(error: error)
+            firstError = firstError ?? error
+        }
+        if let firstError {
+            failure = AppErrorState(error: firstError)
         }
     }
 
