@@ -6,6 +6,7 @@
 // read-through optimization; it is never the production source of truth.
 "use strict";
 
+const crypto = require("node:crypto");
 const DEFAULT_TABLE = "lm_geocode_cache";
 const { recordGoogleGeocoding } = require("./provider-cost-adapters.js");
 
@@ -161,8 +162,16 @@ async function geocodeAddress(addr, mapsKey, {
     if (decision && decision.allowed === false) return null;
   }
   if (typeof fetchImpl !== "function") return null;
+  const attemptId = requestId || `google:geocoding:${Date.now()}:${crypto.randomUUID()}`;
   try {
     const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(addr)}&key=${encodeURIComponent(mapsKey)}`;
+    // Charge/record the attempt before the network call. This preserves one
+    // truthful ledger event when Google returns an empty result, HTTP error, or
+    // throws before a response exists. Cache hits and budget-denied calls stay
+    // above this point and therefore remain free.
+    if (typeof recordProviderCost === "function") {
+      await recordGoogleGeocoding({ uid, requestId: attemptId, metadata: { cache: "miss" } }, { recordProviderCost }).catch(() => false);
+    }
     const response = await fetchImpl(url);
     if (!response || !response.ok) return null;
     const json = await response.json();
@@ -178,13 +187,6 @@ async function geocodeAddress(addr, mapsKey, {
     const geo = { lat: value.lat, lon: value.lng };
     processMemo.set(addressKey, geo);
     if (store && typeof store.put === "function") await Promise.resolve(store.put(addressKey, value)).catch(() => false);
-    if (typeof recordProviderCost === "function") {
-      await recordGoogleGeocoding({
-        uid,
-        requestId: requestId || `google:geocoding:${addressKey}`,
-        metadata: { cache: "miss" },
-      }, { recordProviderCost }).catch(() => false);
-    }
     return geo;
   } catch {
     return null;

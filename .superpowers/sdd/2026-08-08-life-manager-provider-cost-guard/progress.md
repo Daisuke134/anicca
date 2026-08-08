@@ -99,3 +99,9 @@ Result: 43/43 passed, 0 failed, 0 skipped (2026-08-08).
 - GREEN: `node --test lib/provider-cost-adapters.test.js lib/provider-cost-imports.test.js lib/ledger.test.js test/provider-cost-contract.test.js` → 25/25 passed.
 - `actual_status` is now only `known|unknown`; measured/estimated/fixed/unknown move to `cost_classification`. The migration normalizes prior rows before installing both checks.
 - Provider writes include `cost_classification` and atomically dual-write `estimated_usd` plus legacy `est_usd`. Google Geocoding, Routes, and Directions Transit have versioned non-zero per-SKU projections; Telnyx/imported allocations use `known` + `measured` when an actual amount exists.
+
+## Fresh review fix 3 receipt — Google attempt accounting
+
+- RED: added failure-path and request-identity tests required a geocode ledger row for empty/HTTP-error/thrown responses and distinct IDs for concurrent Google SKUs.
+- GREEN: `node --test lib/geocode-cache.test.js lib/provider-cost-adapters.test.js` → 17/17 passed.
+- Geocoding records exactly once immediately before each actual Google request, including failures and empty results; cache hits and budget-denied calls remain unrecorded. Routes/legacy Transit and free transit plan/guidance now append a UUID to every actual-attempt request ID, preventing provider/request uniqueness collisions.

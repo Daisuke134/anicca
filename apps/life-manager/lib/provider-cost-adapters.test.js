@@ -4,7 +4,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 
 const adapters = require("./provider-cost-adapters.js");
-const { routesDriveMinutes, legacyTransitMinutes, transitFetchPlan } = require("./travel.js");
+const { routesDriveMinutes, legacyTransitMinutes, directionsMinutesGoogle, transitFetchPlan } = require("./travel.js");
 const { geocodeAddress, clearGeocodeProcessMemo } = require("./geocode-cache.js");
 
 function recorder() {
@@ -146,6 +146,21 @@ test("route providers record each attempted Google operation and transit plan/gu
   assert.deepEqual(r.events.map((event) => [event.provider, event.operation]), [
     ["google", "routes"], ["google", "transit"], ["transit", "plan"], ["transit", "guidance"],
   ]);
+});
+
+test("each actual Google request gets a unique ledger request id even when a caller supplies one operation prefix", async () => {
+  const r = recorder();
+  const original = global.fetch;
+  global.fetch = async (url) => String(url).includes("routes.googleapis.com")
+    ? { ok: true, json: async () => ({ routes: [{ duration: "120s" }] }) }
+    : { ok: true, json: async () => ({ status: "OK", routes: [{ legs: [{ duration: { value: 180 } }] }] }) };
+  try {
+    await directionsMinutesGoogle("a", "b", "k", Date.now() + 60000, Date.now(), false, {
+      uid: "u1", requestId: "google:attempt-prefix", recordProviderCost: r.deps.recordProviderCost,
+    });
+  } finally { global.fetch = original; }
+  assert.equal(r.events.length, 2);
+  assert.equal(new Set(r.events.map((event) => event.requestId)).size, 2);
 });
 
 test("a successful Google geocode miss records one operation while a cache hit records none", async () => {

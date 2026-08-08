@@ -108,6 +108,27 @@ test("empty or failed Google responses remain misses and are never persisted", a
   assert.equal(db.calls.filter((call) => call.init.method === "POST").length, 0);
 });
 
+test("every attempted Google geocode is recorded once, including empty, HTTP failure, and thrown requests", async () => {
+  const events = [];
+  let calls = 0;
+  const fetchImpl = async () => {
+    calls += 1;
+    if (calls === 1) return response({ results: [] });
+    if (calls === 2) return response({ status: "REQUEST_DENIED", results: [] }, 403);
+    throw new Error("network down");
+  };
+  const recordProviderCost = async (event) => { events.push(event); return true; };
+  const common = { fetchImpl, recordProviderCost, uid: "u1", store: new Map() };
+  assert.equal(await geocodeAddress("unique-empty-guard-place", "maps-key", common), null);
+  assert.equal(await geocodeAddress("unique-http-guard-place", "maps-key", common), null);
+  assert.equal(await geocodeAddress("unique-throw-guard-place", "maps-key", common), null);
+  assert.equal(calls, 3);
+  assert.equal(events.length, 3);
+  assert.equal(new Set(events.map((event) => event.requestId)).size, 3);
+  assert.ok(events.every((event) => event.actualStatus === "unknown" && event.actualBilledUsd === null));
+  assert.ok(events.every((event) => event.estimatedUsd > 0 && event.costClassification === "estimated"));
+});
+
 test("cache keys carry no tenant identity or caller-controlled query fragments", async () => {
   const db = persistentFetch();
   const store = createSupabaseGeocodeStore({ ...SUPA, fetchImpl: db.fetchImpl });

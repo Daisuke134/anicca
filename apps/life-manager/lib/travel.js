@@ -5,6 +5,7 @@
 // Idempotent: never inserts a second [Travel] for an event that already has one.
 "use strict";
 
+const crypto = require("node:crypto");
 const { getCalendar } = require("./transport/index.js");
 const { chooseRouter, parseTransitPlan } = require("./transit.js");
 const { makeRouteCache, createSupabaseRouteStore, timeBucket } = require("./route-cache.js");
@@ -17,6 +18,11 @@ const { authorizeProviderOperation: authorizeBudget } = require("./provider-budg
 // C3 (FIND-002): a process-lifetime route-result cache so the 60s scheduler tick does NOT recompute a
 // route it already has (~30 paid provider calls/event → 1). Keyed on (from_geo, to_geo, time_bucket).
 const _routeCache = makeRouteCache({ store: new Map(), ttlMs: 10 * 60_000 });
+
+function providerAttemptId(provider, operation, prefix) {
+  const base = prefix == null || String(prefix).trim() === "" ? provider : String(prefix);
+  return `${base}:${operation}:${Date.now()}:${crypto.randomUUID()}`;
+}
 
 function isoNaiveUTC(ms) {
   // Timezone-agnostic: pass the UTC wall clock paired with timezone:"UTC" (set in createTravelBlock).
@@ -114,8 +120,9 @@ function clampDepartIso(departAtMs, nowMs) {
 
 async function routesDriveMinutes(src, dst, mapsKey, departAtMs, nowMs, opts = {}) {
   const body = JSON.stringify(buildDriveBody(src, dst, clampDepartIso(departAtMs, nowMs)));
+  const attemptId = providerAttemptId("google", "routes", opts.requestId);
   const record = typeof opts.recordProviderCost === "function"
-    ? () => recordGoogleRoutes({ uid: opts.uid, requestId: opts.requestId, metadata: { cache: "miss" } }, {
+    ? () => recordGoogleRoutes({ uid: opts.uid, requestId: attemptId, metadata: { cache: "miss" } }, {
       recordProviderCost: opts.recordProviderCost,
     }).catch(() => false)
     : null;
@@ -151,8 +158,9 @@ async function legacyTransitMinutes(src, dst, mapsKey, arriveByMs, nowMs = Date.
   } else {
     p.set("departure_time", "now");
   }
+  const attemptId = providerAttemptId("google", "transit", opts.requestId);
   const record = typeof opts.recordProviderCost === "function"
-    ? () => recordGoogleTransit({ uid: opts.uid, requestId: opts.requestId }, {
+    ? () => recordGoogleTransit({ uid: opts.uid, requestId: attemptId }, {
       recordProviderCost: opts.recordProviderCost,
     }).catch(() => false)
     : null;
@@ -223,7 +231,7 @@ async function transitFetchPlan(srcGeo, dstGeo, {
     }
     const planUrl = `https://api.transit.ls8h.com/api/v1/plan?${query}`;
     if (typeof recordProviderCost === "function") {
-      await recordTransitOperation({ uid, requestId: `transit:plan:${local ? `${local.date}T${local.time}` : "now"}`, operation: "plan" }, {
+      await recordTransitOperation({ uid, requestId: providerAttemptId("transit", "plan", local ? `${local.date}T${local.time}` : "now") , operation: "plan" }, {
         recordProviderCost,
       }).catch(() => false);
     }
@@ -233,7 +241,7 @@ async function transitFetchPlan(srcGeo, dstGeo, {
     // Guidance is display-only enrichment. A guidance outage must not discard
     // a valid journey plan; the two requests still share exactly one query.
     if (typeof recordProviderCost === "function") {
-      await recordTransitOperation({ uid, requestId: `transit:guidance:${local ? `${local.date}T${local.time}` : "now"}`, operation: "guidance" }, {
+      await recordTransitOperation({ uid, requestId: providerAttemptId("transit", "guidance", local ? `${local.date}T${local.time}` : "now"), operation: "guidance" }, {
         recordProviderCost,
       }).catch(() => false);
     }
