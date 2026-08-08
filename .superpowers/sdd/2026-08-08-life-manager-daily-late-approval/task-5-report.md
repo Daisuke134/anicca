@@ -57,7 +57,7 @@ the new RED assertions.
 
 ```text
 cd apps/life-manager && npm ci --ignore-scripts --no-audit --no-fund
-  added 452 packages, audited 452 packages
+  added 452 packages in 8s (peer/deprecation warnings only)
 
 cd apps/life-manager && node --test test/late-approval-http-contract.test.js
   9 tests, 9 pass, 0 fail
@@ -77,6 +77,51 @@ cd apps/life-manager && node --test test/daily-journey-contract.test.js
 
 The new HTTP contracts assert both accepted-edit failure modes, one provider mail call, two
 attempts against the same Telegram `(chat_id,message_id)`, and one durable receipt message id.
+
+## Round 3 — idempotent no-op and durable target precedence
+
+Telegram's exact `{ok:false, description:"Bad Request: message is not modified"}` response now
+counts as successful receipt delivery: the durable receipt record is written against the original
+approval card.  Any other `{ok:false}` still releases the receipt claim for retry.  The edit target
+selection now orders durable stored card `chat_id`/`message_id` before callback/options values, so
+a stale replay cannot redirect the receipt to another message.
+
+### RED contracts before the fix
+
+```text
+cd apps/life-manager && node --test --test-name-pattern='accepted Telegram edit followed by|replayed callback message id' test/late-approval-http-contract.test.js
+  3 tests, 0 pass, 3 fail
+  timeout retry: false !== true
+  receipt-record-failure retry: false !== true
+  durable target: actual messageId 777, expected 700
+```
+
+### GREEN contracts after the fix
+
+```text
+cd apps/life-manager && node --test --test-name-pattern='accepted Telegram edit followed by|replayed callback message id' test/late-approval-http-contract.test.js
+  3 tests, 3 pass, 0 fail
+
+cd apps/life-manager && node --test test/late-approval-http-contract.test.js
+  10 tests, 10 pass, 0 fail
+
+cd apps/life-manager && node --test lib/late-recipient-resolver.test.js lib/late-approval.test.js lib/late-notice.test.js
+  55 tests, 55 pass, 0 fail
+
+cd apps/life-manager && node --test test/telegram-callback-http-contract.test.js lib/telegram-onboard.test.js
+  33 tests, 33 pass, 0 fail
+
+cd apps/life-manager && node --test lib/late-approval-boundary.test.js lib/mail-resend.test.js && git diff --check
+  9 tests, 9 pass, 0 fail; diff check passed
+
+cd apps/life-manager && node --test test/daily-journey-contract.test.js
+  2 tests, 2 pass, 0 fail
+```
+
+The first GREEN contract covers both accepted-edit uncertainty paths: the second same-card edit
+returns `message is not modified`, the email count remains one, and the durable Telegram receipt
+status becomes sent.  The adversarial contract supplies callback message `777` while the durable
+approval card is `700` and asserts that only `700` is edited.
 
 ## Focused verification
 
