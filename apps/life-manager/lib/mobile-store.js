@@ -53,6 +53,8 @@ function normalizeTravelRow(row) {
     analysisKey: row.analysisKey || row.analysis_key,
     payloadHash: row.payloadHash || row.payload_hash,
     providerEventId: row.providerEventId || row.provider_event_id,
+    composioUserId: row.composioUserId || row.composio_user_id,
+    connectedAccountId: row.connectedAccountId || row.connected_account_id,
     providerEtag: row.providerEtag || row.provider_etag,
     claimToken: row.claimToken || row.claim_token,
     claimWorkerId: row.claimWorkerId || row.claim_worker_id,
@@ -83,6 +85,8 @@ function travelInputBody(input = {}) {
     p_payload_hash: input.payloadHash || input.payload_hash,
     p_marker: input.marker,
     p_provider_event_id: input.providerEventId || input.provider_event_id,
+    p_composio_user_id: input.composioUserId || input.composio_user_id || input.calendarComposioUserId,
+    p_connected_account_id: input.connectedAccountId || input.connected_account_id || input.gmailAccountId,
     p_claim_worker_id: input.claimWorkerId || input.claim_worker_id || "mobile",
     p_lease_seconds: input.leaseSeconds == null ? 120 : input.leaseSeconds,
   };
@@ -627,6 +631,15 @@ function createMemoryMobileStore(options = {}) {
       const calendarId = input.calendarId || input.calendar_id || "primary";
       const providerEventId = input.providerEventId || input.provider_event_id;
       const marker = input.marker;
+      const composioUserId = input.composioUserId || input.composio_user_id || input.calendarComposioUserId;
+      const connectedAccountId = input.connectedAccountId || input.connected_account_id || input.gmailAccountId;
+      if (!composioUserId || !connectedAccountId) return { decision: "provider_binding_invalid", row: null };
+      const tenant = users.get(uid);
+      if (tenant) {
+        const durableOwner = tenant.calendar_composio_user_id || tenant.calendarComposioUserId;
+        const durableAccount = tenant.gmail_account_id || tenant.gmailAccountId;
+        if (durableOwner !== composioUserId || durableAccount !== connectedAccountId) return { decision: "provider_binding_invalid", row: null };
+      }
       const requestedLeaseSeconds = input.leaseSeconds == null
         ? (input.leaseMs == null ? 120 : Number(input.leaseMs) / 1000)
         : Number(input.leaseSeconds);
@@ -637,6 +650,7 @@ function createMemoryMobileStore(options = {}) {
           uid, event_key: eventKey, leg, status: "claimed", calendar_id: calendarId,
           analysis_key: input.analysisKey || input.analysis_key, payload_hash: payloadHash,
           marker, provider_event_id: providerEventId,
+          composio_user_id: composioUserId, connected_account_id: connectedAccountId,
           claim_token: randomOpaque("travel_claim:", {}, 18),
           claim_worker_id: input.claimWorkerId || input.claim_worker_id || "mobile",
           claim_acquired_at: nowDate, lease_expires_at: new Date(now + leaseMs).toISOString(),
@@ -646,6 +660,9 @@ function createMemoryMobileStore(options = {}) {
         return { decision: "claimed", row, ...row };
       }
       if (row.status === "legacy_terminal") return { decision: "legacy_terminal", row, ...row };
+      if (row.composioUserId !== composioUserId || row.connectedAccountId !== connectedAccountId) {
+        return { decision: "provider_binding_invalid", row, ...row };
+      }
       if (row.calendarId !== calendarId || row.payloadHash !== payloadHash || row.marker !== marker || row.providerEventId !== providerEventId) {
         return { decision: "analysis_conflict", row, ...row };
       }

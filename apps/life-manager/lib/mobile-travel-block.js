@@ -127,6 +127,7 @@ function rowFrom(result) {
 }
 
 function output(input, facts = {}) {
+  const { composioUserId: _composioUserId, connectedAccountId: _connectedAccountId, ...safeFacts } = facts;
   return {
     uid: input.uid,
     sourceEventId: input.sourceEventId || input.source_event_id,
@@ -136,8 +137,15 @@ function output(input, facts = {}) {
     providerEventId: facts.providerEventId,
     marker: facts.marker,
     payloadHash: facts.payloadHash,
-    ...facts,
+    ...safeFacts,
   };
+}
+
+function boundedProviderErrorCode(error, fallback) {
+  const code = error && (error.code || error.errorCode || error.error_code);
+  if (code === "budget_denied") return "budget_denied";
+  if (code === "provider_binding_invalid") return "provider_binding_invalid";
+  return fallback;
 }
 
 async function exactGet(provider, input, facts) {
@@ -145,13 +153,13 @@ async function exactGet(provider, input, facts) {
     const response = await provider.getExactEvent(input.uid, {
       calendarId: facts.calendarId,
       providerEventId: facts.providerEventId,
-      connectedAccountId: input.connectedAccountId || input.gmailAccountId,
-      composioUserId: input.composioUserId || input.calendarComposioUserId,
+      connectedAccountId: facts.connectedAccountId,
+      composioUserId: facts.composioUserId,
       marker: facts.marker,
     });
     return { response, status: statusOf(response), match: providerEventMatches(response, facts) };
-  } catch {
-    return { response: null, status: 0, match: { matched: false, event: null, etag: null } };
+  } catch (error) {
+    return { response: null, status: 0, errorCode: boundedProviderErrorCode(error, "provider_readback_failed"), match: { matched: false, event: null, etag: null } };
   }
 }
 
@@ -179,13 +187,18 @@ async function ensureMobileTravelBlock(input = {}, deps = {}) {
   if (!LEG_SET.has(leg)) throw new MobileError("travel_block_invalid", "Travel leg is invalid.");
   const calendarId = text(input.calendarId || input.calendar_id || "primary", "calendarId", { required: true, max: 1024 });
   const analysisKey = text(input.analysisKey || input.analysis_key, "analysisKey", { required: true, max: 1024 });
+  const composioUserId = text(input.composioUserId || input.composio_user_id || input.calendarComposioUserId, "composioUserId", { max: 1024 });
+  const connectedAccountId = text(input.connectedAccountId || input.connected_account_id || input.gmailAccountId, "connectedAccountId", { max: 1024 });
   const payload = canonicalTravelPayload(input.payload || input.event || {});
   const providerEventId = deriveTravelProviderEventId({ secret: deps.serverSecret || deps.secret || input.serverSecret, uid, calendarId, sourceEventId, leg });
   const marker = deriveTravelMarker(providerEventId, payload.hash);
   const currentNow = nowIso(deps);
-  const facts = { calendarId, providerEventId, marker, payloadHash: payload.hash };
+  const facts = { calendarId, providerEventId, marker, payloadHash: payload.hash, composioUserId, connectedAccountId };
+  if (!composioUserId || !connectedAccountId) {
+    return output(input, { ...facts, status: "provider_binding_invalid", errorCode: "provider_binding_invalid" });
+  }
   const claim = await store.claimTravelBlock({
-    uid, eventKey, leg, calendarId, analysisKey, payloadHash: payload.hash, marker, providerEventId,
+    uid, eventKey, leg, calendarId, analysisKey, payloadHash: payload.hash, marker, providerEventId, composioUserId, connectedAccountId,
     claimWorkerId: input.workerId || input.claimWorkerId || deps.workerId || "mobile",
     leaseSeconds: input.leaseSeconds == null ? DEFAULT_LEASE_SECONDS : input.leaseSeconds,
     now: currentNow,
@@ -195,12 +208,20 @@ async function ensureMobileTravelBlock(input = {}, deps = {}) {
   if (decision === "analysis_conflict") return output(input, { ...facts, status: "analysis_conflict", errorCode: "analysis_conflict" });
   if (decision === "legacy_terminal") return output(input, { ...facts, status: "legacy_terminal", errorCode: "legacy_terminal" });
   if (decision === "busy") return output(input, { ...facts, status: "busy", errorCode: "claim_pending" });
-  if (decision === "reused" || row.status === "confirmed") return output(input, { ...facts, status: "existing", verifiedAt: row.confirmedAt || row.confirmed_at || null });
   if (decision === "blocked_collision" || row.status === "blocked_collision") return output(input, { ...facts, status: "provider_collision", errorCode: "provider_collision" });
+  if (decision === "provider_binding_invalid") return output(input, { ...facts, status: "provider_binding_invalid", errorCode: "provider_binding_invalid" });
+  if (decision === "reused" || row.status === "confirmed") return output(input, { ...facts, status: "existing", verifiedAt: row.confirmedAt || row.confirmed_at || null });
   const claimToken = row.claimToken || row.claim_token;
   if (decision !== "claimed" || !claimToken) return output(input, { ...facts, status: "claim_pending", errorCode: "claim_pending" });
 
-  const before = await exactGet(provider, { ...input, uid, eventKey }, facts);
+  const durableComposioUserId = text(row.composioUserId || row.composio_user_id, "storedComposioUserId", { required: true, max: 1024 });
+  const durableConnectedAccountId = text(row.connectedAccountId || row.connected_account_id, "storedConnectedAccountId", { required: true, max: 1024 });
+  if (durableComposioUserId !== composioUserId || durableConnectedAccountId !== connectedAccountId) {
+    return output(input, { ...facts, status: "provider_binding_invalid", errorCode: "provider_binding_invalid" });
+  }
+  const boundFacts = { ...facts, composioUserId: durableComposioUserId, connectedAccountId: durableConnectedAccountId };
+
+  const before = await exactGet(provider, { ...input, uid, eventKey }, boundFacts);
   if (before.match.matched) {
     const confirmed = await store.confirmTravelBlock({ uid, eventKey, leg, claimToken, providerEtag: before.match.etag, providerObservedAt: currentNow, now: currentNow });
     if (confirmed && confirmed.confirmed === false) return output(input, { ...facts, status: "claim_pending", errorCode: "claim_pending" });
@@ -214,8 +235,9 @@ async function ensureMobileTravelBlock(input = {}, deps = {}) {
     return output(input, { ...facts, status: "provider_collision", errorCode: "provider_collision" });
   }
   if (before.status !== 404) {
-    await release(store, { ...input, uid, eventKey }, claimToken, "provider_readback_failed", currentNow);
-    return output(input, { ...facts, status: "provider_readback_failed", errorCode: "provider_readback_failed" });
+    const errorCode = before.errorCode || "provider_readback_failed";
+    await release(store, { ...input, uid, eventKey }, claimToken, errorCode, currentNow);
+    return output(input, { ...facts, status: errorCode, errorCode });
   }
 
   const started = await store.markTravelCreateStarted({ uid, eventKey, leg, claimToken, now: currentNow });
@@ -230,18 +252,20 @@ async function ensureMobileTravelBlock(input = {}, deps = {}) {
     extendedProperties: { private: { lm_travel_block: marker } },
   };
   let created;
+  let postErrorCode = null;
   try {
     created = await provider.createExactEvent(uid, {
-      calendarId, providerEventId, connectedAccountId: input.connectedAccountId || input.gmailAccountId,
-      composioUserId: input.composioUserId || input.calendarComposioUserId, body, marker,
+      calendarId, providerEventId, connectedAccountId: durableConnectedAccountId,
+      composioUserId: durableComposioUserId, body, marker,
     });
-  } catch {
+  } catch (error) {
+    postErrorCode = boundedProviderErrorCode(error, "provider_write_failed");
     created = { status: 0, data: null };
   }
   // Every POST outcome, including timeout and 5xx, converges through one exact
   // GET.  No POST response alone can become a success receipt.
   const postStatus = statusOf(created);
-  const after = await exactGet(provider, { ...input, uid, eventKey }, facts);
+  const after = await exactGet(provider, { ...input, uid, eventKey }, boundFacts);
   if (after.match.matched) {
     const confirmed = await store.confirmTravelBlock({ uid, eventKey, leg, claimToken, providerEtag: after.match.etag, providerObservedAt: currentNow, now: currentNow });
     if (confirmed && confirmed.confirmed === false) return output(input, { ...facts, status: "claim_pending", errorCode: "claim_pending" });
@@ -251,8 +275,11 @@ async function ensureMobileTravelBlock(input = {}, deps = {}) {
     await store.blockTravelCollision({ uid, eventKey, leg, claimToken, errorCode: "provider_collision", now: currentNow });
     return output(input, { ...facts, status: "provider_collision", errorCode: "provider_collision" });
   }
-  await release(store, { ...input, uid, eventKey }, claimToken, "provider_readback_failed", currentNow);
-  return output(input, { ...facts, status: "provider_readback_failed", errorCode: "provider_readback_failed" });
+  const errorCode = postErrorCode === "budget_denied" || after.errorCode === "budget_denied" ? "budget_denied"
+    : after.status !== 404 ? "provider_readback_failed"
+      : postErrorCode || (postStatus >= 400 || postStatus === 0 ? "provider_write_failed" : "provider_readback_failed");
+  await release(store, { ...input, uid, eventKey }, claimToken, errorCode, currentNow);
+  return output(input, { ...facts, status: errorCode, errorCode });
 }
 
 module.exports = {
