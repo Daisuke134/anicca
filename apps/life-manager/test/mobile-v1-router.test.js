@@ -153,6 +153,29 @@ test("refresh retries replay the exact token set while the generic receipt keeps
   assert.equal(JSON.stringify(receipt).includes(tokens.refreshToken), false);
 });
 
+test("refresh replay scope is stable when the client user-agent changes", async () => {
+  let refreshes = 0;
+  const tokens = {
+    accessToken: "access:v1:ua-stable", refreshToken: "refresh:v1:ua-stable", tokenType: "Bearer",
+    expiresAt: "2026-08-08T00:20:00.000Z", refreshExpiresAt: "2026-09-08T00:00:00.000Z",
+  };
+  const deps = {
+    idempotencyStore: new Map(),
+    refreshMobileSession: async () => { refreshes++; return tokens; },
+  };
+  const first = response();
+  await handleMobileV1Request(request("POST", "/api/mobile/v1/session/refresh", { refreshToken: "refresh:v1:old" }, {
+    "idempotency-key": "refresh-ua-stable", "content-type": "application/json", "user-agent": "ios/1",
+  }), first, deps);
+  const replay = response();
+  await handleMobileV1Request(request("POST", "/api/mobile/v1/session/refresh", { refreshToken: "refresh:v1:old" }, {
+    "idempotency-key": "refresh-ua-stable", "content-type": "application/json", "user-agent": "ios/2",
+  }), replay, deps);
+  assert.equal(replay.statusCode, 200);
+  assert.deepEqual(parsed(replay), tokens);
+  assert.equal(refreshes, 1);
+});
+
 test("account deletion replay uses its capability receipt after terminal bearer revocation", async () => {
   let authCalls = 0;
   const capability = "delete-capability-router-1";

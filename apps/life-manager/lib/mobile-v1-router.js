@@ -77,7 +77,11 @@ function mapIdempotencyStore(map) {
 
 function anonymousScope(req, key, body = {}) {
   const identity = body.identityToken || body.supabaseToken || body.googleIdentityToken || "";
-  const client = identity || (req.headers && req.headers["user-agent"] || "");
+  // Refresh retries are authenticated by the refresh token itself. Hashing it into the
+  // pre-auth scope keeps the durable receipt stable across client/user-agent changes without
+  // persisting the raw token as tenant authority.
+  const refresh = body.refreshToken || body.refresh_token || "";
+  const client = identity || refresh || (req.headers && req.headers["user-agent"] || "");
   return { uid: `preauth:${sha256(`${key}:${client}`).slice(0, 40)}`, sessionId: null, productLocale: "en", timezone: "UTC" };
 }
 
