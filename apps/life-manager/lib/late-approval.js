@@ -639,19 +639,11 @@ function createSupabaseLateApprovalStore(options = {}) {
     async getLateDraft(input) {
       const uid = text(input && input.uid, "uid", 256);
       const draftId = text(input && (input.draftId || input.draft_id), "draft id", 128);
-      const url = `${credentials.supaUrl}/rest/v1/lm_late_approval_drafts` +
-        `?uid=eq.${encodeURIComponent(uid)}&draft_id=eq.${encodeURIComponent(draftId)}&select=*&limit=1`;
-      const response = await credentials.fetchImpl(url, { headers: rpcHeaders(credentials.supaKey) })
-        .catch((error) => ({ __error: String(error && error.message || error) }));
-      if (!response || response.__error || !response.ok) {
-        fail("storage_error", "late approval draft lookup failed", {
-          status: response && response.status, cause: response && response.__error,
-        });
-      }
-      const body = await response.json().catch(() => null);
-      const row = rowFromPersistence(body);
-      if (!row) fail("draft_not_found", "late draft was not found");
-      return row;
+      const body = await rpc("lm_get_late_draft", {
+        p_uid: uid,
+        p_draft_id: draftId,
+      });
+      return rowFromPersistence(body);
     },
     async createLateDraft(input) {
       const body = await rpc("lm_create_late_draft", {

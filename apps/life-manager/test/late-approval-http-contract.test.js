@@ -131,7 +131,9 @@ test("callback ownership, signature, and expiry fail closed before any state mut
   assert.deepEqual(stranger, { handled: true, ok: false, reason: "scope_mismatch" });
   assert.equal((await store.getDraft(draft.draftId)).decision, null);
 
-  const tampered = `${callback("send", draft.draftId).slice(0, -1)}x`;
+  const signed = callback("send", draft.draftId);
+  const tamperChar = signed.endsWith("x") ? "y" : "x";
+  const tampered = `${signed.slice(0, -1)}${tamperChar}`;
   const forged = await handleLateApprovalCallback(tampered, common);
   assert.equal(forged.reason, "invalid_callback");
   assert.equal((await store.getDraft(draft.draftId)).decision, null);
@@ -229,15 +231,13 @@ test("POST /telegram routes the signed late callback through the production serv
         ? { uid: "uid-other", telegram_chat_id: "200" }
         : { uid: "uid-1", telegram_chat_id: "100", name: "Dais", email: "dais@example.invalid" }]);
     }
-    if (url.pathname === "/rest/v1/lm_late_approval_drafts" && method === "GET") {
-      const uid = String(url.searchParams.get("uid") || "").replace(/^eq\./, "");
-      const draftId = String(url.searchParams.get("draft_id") || "").replace(/^eq\./, "");
-      return response(200, uid === row.uid && draftId === row.draft_id ? [jsonClone(row)] : []);
-    }
     if (url.pathname.startsWith("/rest/v1/rpc/") && method === "POST") {
       const rpc = url.pathname.split("/").pop();
       const body = JSON.parse(init.body || "{}");
       calls.push([`rpc:${rpc}`, body]);
+      if (rpc === "lm_get_late_draft") {
+        return response(200, body.p_uid === row.uid && body.p_draft_id === row.draft_id ? jsonClone(row) : []);
+      }
       if (rpc === "lm_decide_late_draft") {
         row.decision = body.p_decision;
         return response(200, jsonClone(row));
@@ -301,9 +301,12 @@ test("POST /telegram routes the signed late callback through the production serv
     assert.equal(row.status, "sent");
 
     // The same signed button copied into another Telegram chat never reaches a decision/claim RPC.
-    const beforeRpc = calls.filter((entry) => entry[0].startsWith("rpc:")).length;
+    const stateRpc = (entry) => [
+      "rpc:lm_decide_late_draft", "rpc:lm_claim_late_delivery", "rpc:lm_record_late_delivery",
+    ].includes(entry[0]);
+    const beforeRpc = calls.filter(stateRpc).length;
     assert.equal(await post("200", "200", sendData, "cb-http-cross-tenant"), 200);
-    assert.equal(calls.filter((entry) => entry[0].startsWith("rpc:")).length, beforeRpc);
+    assert.equal(calls.filter(stateRpc).length, beforeRpc);
   } finally {
     console.log = originalLog;
     http.createServer = originalCreateServer;

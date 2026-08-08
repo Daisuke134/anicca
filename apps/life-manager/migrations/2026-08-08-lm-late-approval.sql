@@ -159,6 +159,33 @@ CREATE TRIGGER lm_late_approval_snapshot_guard
   BEFORE UPDATE ON public.lm_late_approval_drafts
   FOR EACH ROW EXECUTE FUNCTION public.lm_late_approval_snapshot_guard();
 
+-- Draft reads use the same deny-by-default RPC boundary as every state transition.  The callback
+-- needs the immutable snapshot after Telegram authenticates the chat, but the table itself stays
+-- inaccessible to application roles (including service_role) so a future read path cannot bypass
+-- the tenant filter by accident.
+CREATE OR REPLACE FUNCTION public.lm_get_late_draft(
+  p_uid text,
+  p_draft_id text
+) RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_row public.lm_late_approval_drafts%ROWTYPE;
+BEGIN
+  IF p_uid IS NULL OR char_length(p_uid) = 0 OR char_length(p_uid) > 256
+    OR p_draft_id IS NULL OR char_length(p_draft_id) = 0 OR char_length(p_draft_id) > 128 THEN
+    RAISE EXCEPTION 'invalid late draft lookup';
+  END IF;
+  SELECT * INTO v_row
+  FROM public.lm_late_approval_drafts
+  WHERE uid = p_uid AND draft_id = p_draft_id;
+  IF v_row.draft_id IS NULL THEN RAISE EXCEPTION 'late draft not found'; END IF;
+  RETURN to_jsonb(v_row);
+END;
+$$;
+
 CREATE OR REPLACE FUNCTION public.lm_late_approval_append_only_guard()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -418,7 +445,7 @@ ALTER TABLE public.lm_late_approval_claims FORCE ROW LEVEL SECURITY;
 ALTER TABLE public.lm_late_approval_receipts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.lm_late_approval_receipts FORCE ROW LEVEL SECURITY;
 
--- The four SECURITY DEFINER functions are deny-by-default.  PUBLIC is explicit here because
+-- The five SECURITY DEFINER functions are deny-by-default.  PUBLIC is explicit here because
 -- PostgreSQL grants new functions to PUBLIC unless it is revoked by name.
 REVOKE ALL ON TABLE
   public.lm_late_approval_drafts,
@@ -435,6 +462,8 @@ FROM service_role;
 
 REVOKE ALL ON FUNCTION public.lm_create_late_draft(text,text,text,jsonb,jsonb,text,jsonb,text)
   FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.lm_get_late_draft(text,text)
+  FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.lm_decide_late_draft(text,text,text,text)
   FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.lm_claim_late_delivery(text,text,integer)
@@ -449,6 +478,7 @@ DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'service_role') THEN
     EXECUTE 'GRANT EXECUTE ON FUNCTION public.lm_create_late_draft(text,text,text,jsonb,jsonb,text,jsonb,text) TO service_role';
+    EXECUTE 'GRANT EXECUTE ON FUNCTION public.lm_get_late_draft(text,text) TO service_role';
     EXECUTE 'GRANT EXECUTE ON FUNCTION public.lm_decide_late_draft(text,text,text,text) TO service_role';
     EXECUTE 'GRANT EXECUTE ON FUNCTION public.lm_claim_late_delivery(text,text,integer) TO service_role';
     EXECUTE 'GRANT EXECUTE ON FUNCTION public.lm_record_late_delivery(text,text,text,timestamptz,text,text) TO service_role';

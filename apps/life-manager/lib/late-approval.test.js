@@ -12,6 +12,7 @@ const {
   recordLateDelivery,
   createInMemoryLateApprovalStore,
   createSupabaseLateApprovalStore,
+  getLateDraft,
   LateApprovalError,
 } = require("./late-approval.js");
 
@@ -54,7 +55,7 @@ function missingInput(status) {
   });
 }
 
-test("migration defines immutable late approval snapshots, unique event claims, and atomic RPCs", () => {
+test("migration defines immutable late approval snapshots, unique event claims, and allowlisted RPCs", () => {
   const sql = fs.readFileSync(path.join(__dirname, "../migrations/2026-08-08-lm-late-approval.sql"), "utf8");
   assert.match(sql, /CREATE TABLE IF NOT EXISTS public\.lm_late_approval_drafts/i);
   assert.match(sql, /UNIQUE\s*\(\s*uid\s*,\s*event_key\s*\)/i);
@@ -66,6 +67,7 @@ test("migration defines immutable late approval snapshots, unique event claims, 
   assert.match(sql, /provider_idempotency_key\s+text\s+NOT NULL/i);
   assert.match(sql, /provider_message_id/i);
   assert.match(sql, /CREATE OR REPLACE FUNCTION public\.lm_create_late_draft/i);
+  assert.match(sql, /CREATE OR REPLACE FUNCTION public\.lm_get_late_draft/i);
   assert.match(sql, /CREATE OR REPLACE FUNCTION public\.lm_decide_late_draft/i);
   assert.match(sql, /CREATE OR REPLACE FUNCTION public\.lm_claim_late_delivery/i);
   assert.match(sql, /CREATE OR REPLACE FUNCTION public\.lm_record_late_delivery/i);
@@ -73,6 +75,7 @@ test("migration defines immutable late approval snapshots, unique event claims, 
   assert.match(sql, /SECURITY DEFINER/i);
   for (const signature of [
     "lm_create_late_draft\\(text,text,text,jsonb,jsonb,text,jsonb,text\\)",
+    "lm_get_late_draft\\(text,text\\)",
     "lm_decide_late_draft\\(text,text,text,text\\)",
     "lm_claim_late_delivery\\(text,text,integer\\)",
     "lm_record_late_delivery\\(text,text,text,timestamptz,text,text\\)",
@@ -86,6 +89,10 @@ test("migration defines immutable late approval snapshots, unique event claims, 
   assert.match(
     sql,
     /REVOKE\s+ALL\s+ON\s+TABLE\s+public\.lm_late_approval_drafts,\s*public\.lm_late_approval_decisions,\s*public\.lm_late_approval_claims,\s*public\.lm_late_approval_receipts\s+FROM\s+PUBLIC,\s*anon,\s*authenticated;/i,
+  );
+  assert.match(
+    sql,
+    /REVOKE\s+ALL\s+ON\s+TABLE\s+public\.lm_late_approval_drafts,\s*public\.lm_late_approval_decisions,\s*public\.lm_late_approval_claims,\s*public\.lm_late_approval_receipts\s+FROM\s+service_role;/i,
   );
 });
 test("resolved draft stores one immutable evidence/body snapshot and is idempotent by uid and event key", async () => {
@@ -272,7 +279,7 @@ test("an interrupted worker can retry its claim, and an expired claim can be rec
   assert.equal(takeover.status, "send_claimed");
 });
 
-test("Supabase store calls only the four named atomic RPCs and preserves a non-2xx failure", async () => {
+test("Supabase store calls only the named RPCs and preserves a non-2xx failure", async () => {
   const calls = [];
   const replies = [{
     ok: true,
@@ -302,4 +309,40 @@ test("Supabase store calls only the four named atomic RPCs and preserves a non-2
     decideLateDraft({ uid: "lm-user-1", draftId: "draft-1", decision: "send", idempotencyKey: "tap" }, failingStore),
     (error) => error instanceof LateApprovalError && error.code === "storage_error" && error.status === 409,
   );
+});
+
+test("Supabase draft lookup uses the allowlisted read RPC instead of revoked table access", async () => {
+  const calls = [];
+  const store = createSupabaseLateApprovalStore({
+    supaUrl: "https://staging.supabase.test",
+    supaKey: "service-role-test",
+    fetchImpl: async (url, init) => {
+      calls.push({ url, init });
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          draft_id: "draft-read",
+          uid: "lm-user-1",
+          event_key: "calendar:event-read",
+          status: "awaiting_decision",
+          recipient_status: "resolved",
+          recipient_snapshot: resolvedInput().recipients,
+          evidence_snapshot: resolvedInput().evidenceSnapshot,
+          body_snapshot: resolvedInput().bodySnapshot,
+          eta_evidence_snapshot: resolvedInput().etaEvidence,
+          provider_idempotency_key: "b".repeat(64),
+        }),
+      };
+    },
+  });
+
+  const row = await getLateDraft({ uid: "lm-user-1", draftId: "draft-read" }, store);
+  assert.equal(row.draftId, "draft-read");
+  assert.match(calls[0].url, /\/rest\/v1\/rpc\/lm_get_late_draft$/);
+  assert.equal(calls[0].init.method, "POST");
+  assert.deepEqual(JSON.parse(calls[0].init.body), {
+    p_uid: "lm-user-1",
+    p_draft_id: "draft-read",
+  });
 });
