@@ -171,16 +171,16 @@ function makeComposioCalendar({ apiKey, recordCall, recordProviderCost, fetchImp
     // machine.  The stable Life Manager uid is used only for budget/cost
     // attribution; provider ownership is selected exclusively by the exact
     // stored connected_account_id.
-    async getExactEvent(uid, { calendarId = "primary", providerEventId, connectedAccountId } = {}) {
-      if (!connectedAccountId || !providerEventId) return { status: 400, data: null, headers: {} };
+    async getExactEvent(uid, { calendarId = "primary", providerEventId, composioUserId, connectedAccountId } = {}) {
+      if (!composioUserId || !connectedAccountId || !providerEventId) return { status: 400, data: null, headers: {} };
       return executeProxy(uid, {
         connectedAccountId,
         endpoint: `/calendar/v3/calendars/${encodeURIComponent(String(calendarId))}/events/${encodeURIComponent(String(providerEventId))}`,
         method: "GET",
       }, { operation: "travel_block_read", essential: true });
     },
-    async createExactEvent(uid, { calendarId = "primary", providerEventId, connectedAccountId, body } = {}) {
-      if (!connectedAccountId || !providerEventId || !body || typeof body !== "object") return { status: 400, data: null, headers: {} };
+    async createExactEvent(uid, { calendarId = "primary", providerEventId, composioUserId, connectedAccountId, body } = {}) {
+      if (!composioUserId || !connectedAccountId || !providerEventId || !body || typeof body !== "object") return { status: 400, data: null, headers: {} };
       return executeProxy(uid, {
         connectedAccountId,
         endpoint: `/calendar/v3/calendars/${encodeURIComponent(String(calendarId))}/events`,

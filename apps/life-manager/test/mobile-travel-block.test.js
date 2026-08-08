@@ -96,7 +96,7 @@ test("proxy contract uses exact connected account and never stable UID as provid
     },
   });
   await calendar.getExactEvent("lm_stable_user", {
-    calendarId: "primary", providerEventId: "lmx", connectedAccountId: "ca_exact_account",
+    calendarId: "primary", providerEventId: "lmx", composioUserId: "owner_exact", connectedAccountId: "ca_exact_account",
   });
   assert.equal(calls[0].url, "https://backend.composio.dev/api/v3.1/tools/execute/proxy");
   assert.equal(calls[0].body.connected_account_id, "ca_exact_account");
@@ -118,7 +118,7 @@ test("proxy create contract is v3.1 only and sends the exact Google POST body", 
     },
   });
   await calendar.createExactEvent("lm_stable_user", {
-    calendarId: "primary", providerEventId: "lmx", connectedAccountId: "ca_exact_account",
+    calendarId: "primary", providerEventId: "lmx", composioUserId: "owner_exact", connectedAccountId: "ca_exact_account",
     body: {
       id: "must-be-replaced",
       summary: "[Travel] Home to Studio",
@@ -308,6 +308,130 @@ test("initial GET failure never reaches POST", async () => {
   }
 });
 
+test("blocked collision is terminal on every retry and is never reported as existing", async () => {
+  const store = createMemoryMobileStore({ now: () => Date.parse("2026-08-10T00:00:00.000Z") });
+  let reads = 0;
+  const provider = makeProvider({
+    get: async (args) => {
+      reads += 1;
+      if (reads === 1) return { status: 404 };
+      return { status: 200, data: providerEvent({ id: args.providerEventId, marker: "different-marker" }) };
+    },
+    post: async () => ({ status: 409 }),
+  });
+  const first = await ensureMobileTravelBlock(input(), { store, provider, serverSecret: SECRET });
+  assert.equal(first.status, "provider_collision");
+  const callsAfterCollision = provider.calls.length;
+  const second = await ensureMobileTravelBlock(input({ analysisKey: "analysis-retry" }), { store, provider, serverSecret: SECRET });
+  assert.equal(second.status, "provider_collision");
+  assert.equal(second.errorCode, "provider_collision");
+  assert.equal(provider.calls.length, callsAfterCollision, "a terminal collision must make zero provider calls on retry");
+  assert.equal((await store.readTravelBlock(input())).status, "blocked_collision");
+});
+
+test("provider proxy requires a durable owner/account pair and passes the exact pair", async () => {
+  const noOwnerCalls = [];
+  const calendar = makeComposioCalendar({
+    apiKey: "composio-proxy-key",
+    recordCall: async () => false,
+    authorizeProviderOperation: async () => ({ allowed: true }),
+    fetchImpl: async (...args) => {
+      noOwnerCalls.push(args);
+      return { ok: true, status: 200, async json() { return { status: 404, data: null, headers: {} }; } };
+    },
+  });
+  await calendar.getExactEvent("lm_stable_user", { calendarId: "primary", providerEventId: "lmx", connectedAccountId: "ca_exact_account" });
+  assert.equal(noOwnerCalls.length, 0, "missing provisional owner must not reach Proxy");
+
+  const noAccountCalls = [];
+  const noAccountCalendar = makeComposioCalendar({
+    apiKey: "composio-proxy-key",
+    recordCall: async () => false,
+    authorizeProviderOperation: async () => ({ allowed: true }),
+    fetchImpl: async (...args) => {
+      noAccountCalls.push(args);
+      return { ok: true, status: 200, async json() { return { status: 404, data: null, headers: {} }; } };
+    },
+  });
+  await noAccountCalendar.getExactEvent("lm_stable_user", { calendarId: "primary", providerEventId: "lmx", composioUserId: "owner_exact" });
+  assert.equal(noAccountCalls.length, 0, "missing exact connected account must not reach Proxy");
+
+  const store = createMemoryMobileStore({
+    now: () => Date.parse("2026-08-10T00:00:00.000Z"),
+    users: [{ uid: BASE.uid, calendar_composio_user_id: "owner-durable", gmail_account_id: "account-durable" }],
+  });
+  const provider = makeProvider({
+    get: async (args, calls) => calls.filter((call) => call.kind === "get").length === 1
+      ? { status: 404 }
+      : { status: 200, data: providerEvent({ id: args.providerEventId, marker: args.marker }) },
+    post: async () => ({ status: 201 }),
+  });
+  const missing = await ensureMobileTravelBlock(input({ composioUserId: null }), {
+    store, provider, serverSecret: SECRET,
+  });
+  assert.equal(missing.status, "provider_binding_invalid");
+  assert.equal(provider.calls.length, 0, "missing durable binding must make zero provider calls");
+  const mismatch = await ensureMobileTravelBlock(input({ composioUserId: "owner-wrong", connectedAccountId: "account-wrong" }), {
+    store, provider, serverSecret: SECRET,
+  });
+  assert.equal(mismatch.status, "provider_binding_invalid");
+  assert.equal(provider.calls.length, 0, "mismatched durable binding must make zero provider calls");
+
+  const exact = await ensureMobileTravelBlock(input({ composioUserId: "owner-durable", connectedAccountId: "account-durable" }), {
+    store, provider, serverSecret: SECRET,
+  });
+  assert.equal(exact.status, "created");
+  for (const call of provider.calls) {
+    assert.equal(call.args.composioUserId, "owner-durable");
+    assert.equal(call.args.connectedAccountId, "account-durable");
+  }
+});
+
+test("budget, write, and readback failures retain their bounded taxonomy", async (t) => {
+  await t.test("budget denial on exact GET", async () => {
+    const store = createMemoryMobileStore({ now: () => Date.parse("2026-08-10T00:00:00.000Z") });
+    const provider = makeProvider({
+      get: async () => { const error = new Error("budget"); error.code = "budget_denied"; throw error; },
+      post: async () => ({ status: 201 }),
+    });
+    const result = await ensureMobileTravelBlock(input(), { store, provider, serverSecret: SECRET });
+    assert.equal(result.status, "budget_denied");
+    assert.equal(provider.calls.filter((call) => call.kind === "post").length, 0);
+    assert.equal((await store.readTravelBlock(input())).lastErrorCode, "budget_denied");
+  });
+
+  for (const [label, postOutcome] of [
+    ["400", { status: 400 }],
+    ["500", { status: 500 }],
+    ["timeout", Object.assign(new Error("timeout"), { code: "timeout" })],
+  ]) {
+    await t.test(`POST ${label} is a provider write failure when exact readback is absent`, async () => {
+      const store = createMemoryMobileStore({ now: () => Date.parse("2026-08-10T00:00:00.000Z") });
+      const provider = makeProvider({
+        get: async () => ({ status: 404 }),
+        post: async () => { if (postOutcome instanceof Error) throw postOutcome; return postOutcome; },
+      });
+      const result = await ensureMobileTravelBlock(input(), { store, provider, serverSecret: SECRET });
+      assert.equal(result.status, "provider_write_failed");
+      assert.equal(result.errorCode, "provider_write_failed");
+      assert.equal((await store.readTravelBlock(input())).lastErrorCode, "provider_write_failed");
+    });
+  }
+
+  await t.test("a write outcome with an unavailable exact readback remains readback failure", async () => {
+    const store = createMemoryMobileStore({ now: () => Date.parse("2026-08-10T00:00:00.000Z") });
+    let reads = 0;
+    const provider = makeProvider({
+      get: async () => (++reads === 1 ? { status: 404 } : { status: 503 }),
+      post: async () => ({ status: 400 }),
+    });
+    const result = await ensureMobileTravelBlock(input(), { store, provider, serverSecret: SECRET });
+    assert.equal(result.status, "provider_readback_failed");
+    assert.equal(result.errorCode, "provider_readback_failed");
+    assert.equal((await store.readTravelBlock(input())).lastErrorCode, "provider_readback_failed");
+  });
+});
+
 test("legacy pre-migration row remains terminal and is never recreated", async () => {
   const store = createMemoryMobileStore({
     now: () => Date.parse("2026-08-10T00:00:00.000Z"),
@@ -323,7 +447,7 @@ test("migration has durable fields, token-fenced RPCs, and service-role-only gra
   const fs = require("node:fs");
   const path = require("node:path");
   const sql = fs.readFileSync(path.join(__dirname, "../migrations/2026-08-09-lm-travel-block-state.sql"), "utf8");
-  for (const column of ["status", "calendar_id", "analysis_key", "payload_hash", "marker", "provider_event_id", "provider_etag", "claim_token", "claim_worker_id", "claim_acquired_at", "lease_expires_at", "create_started_at", "provider_observed_at", "confirmed_at", "attempt_count", "last_error_code", "updated_at"]) assert.match(sql, new RegExp(`\\b${column}\\b`));
+  for (const column of ["status", "calendar_id", "analysis_key", "payload_hash", "marker", "provider_event_id", "composio_user_id", "connected_account_id", "provider_etag", "claim_token", "claim_worker_id", "claim_acquired_at", "lease_expires_at", "create_started_at", "provider_observed_at", "confirmed_at", "attempt_count", "last_error_code", "updated_at"]) assert.match(sql, new RegExp(`\\b${column}\\b`));
   for (const fn of ["claim_lm_travel_block", "mark_lm_travel_create_started", "confirm_lm_travel_block", "release_lm_travel_claim", "block_lm_travel_collision"]) {
     assert.match(sql, new RegExp(`CREATE OR REPLACE FUNCTION public\\.${fn}\\b`));
     assert.match(sql, new RegExp(`REVOKE ALL ON FUNCTION public\\.${fn}`));

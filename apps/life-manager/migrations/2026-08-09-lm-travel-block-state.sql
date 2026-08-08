@@ -11,6 +11,8 @@ ALTER TABLE public.lm_travel_log
   ADD COLUMN IF NOT EXISTS payload_hash text,
   ADD COLUMN IF NOT EXISTS marker text,
   ADD COLUMN IF NOT EXISTS provider_event_id text,
+  ADD COLUMN IF NOT EXISTS composio_user_id text,
+  ADD COLUMN IF NOT EXISTS connected_account_id text,
   ADD COLUMN IF NOT EXISTS provider_etag text,
   ADD COLUMN IF NOT EXISTS claim_token text,
   ADD COLUMN IF NOT EXISTS claim_worker_id text,
@@ -62,7 +64,7 @@ BEGIN
   ) THEN
     ALTER TABLE public.lm_travel_log
       ADD CONSTRAINT lm_travel_log_provider_event_id_check
-      CHECK (provider_event_id IS NULL OR provider_event_id ~ '^[a-v0-9]{5,1024}$');
+      CHECK (provider_event_id IS NULL OR (provider_event_id ~ '^[a-v0-9]+$' AND char_length(provider_event_id) BETWEEN 5 AND 1024));
   END IF;
   IF NOT EXISTS (
     SELECT 1 FROM pg_constraint WHERE conname = 'lm_travel_log_attempt_count_check'
@@ -90,6 +92,12 @@ ALTER TABLE public.lm_travel_log ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON TABLE public.lm_travel_log FROM PUBLIC, anon, authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.lm_travel_log TO service_role;
 
+-- The owner/account binding is part of the claim identity.  Remove both the
+-- pre-review signature and the current signature before recreating it so this
+-- additive migration is safe on a database that already has the old RPC.
+DROP FUNCTION IF EXISTS public.claim_lm_travel_block(text, text, text, text, text, text, text, text, text, integer, timestamptz);
+DROP FUNCTION IF EXISTS public.claim_lm_travel_block(text, text, text, text, text, text, text, text, text, text, text, integer, timestamptz);
+
 CREATE OR REPLACE FUNCTION public.claim_lm_travel_block(
   p_uid text,
   p_event_key text,
@@ -99,6 +107,8 @@ CREATE OR REPLACE FUNCTION public.claim_lm_travel_block(
   p_payload_hash text,
   p_marker text,
   p_provider_event_id text,
+  p_composio_user_id text,
+  p_connected_account_id text,
   p_claim_worker_id text,
   p_lease_seconds integer DEFAULT 120,
   p_now timestamptz DEFAULT now()
@@ -108,6 +118,8 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
 DECLARE
   current_row public.lm_travel_log%ROWTYPE;
   next_token text;
+  tenant_owner text;
+  tenant_account text;
   lease_seconds integer := GREATEST(1, LEAST(COALESCE(p_lease_seconds, 120), 3600));
 BEGIN
   IF p_uid IS NULL OR char_length(p_uid) = 0
@@ -117,29 +129,60 @@ BEGIN
      OR p_analysis_key IS NULL OR char_length(p_analysis_key) = 0
      OR p_payload_hash IS NULL OR p_payload_hash !~ '^[0-9a-f]{64}$'
      OR p_marker IS NULL OR char_length(p_marker) = 0 OR char_length(p_marker) > 255
-     OR p_provider_event_id IS NULL OR p_provider_event_id !~ '^[a-v0-9]{5,1024}$'
+     OR p_provider_event_id IS NULL OR p_provider_event_id !~ '^[a-v0-9]+$'
+     OR char_length(p_provider_event_id) NOT BETWEEN 5 AND 1024
+     OR p_composio_user_id IS NULL OR char_length(p_composio_user_id) = 0 OR char_length(p_composio_user_id) > 1024
+     OR p_connected_account_id IS NULL OR char_length(p_connected_account_id) = 0 OR char_length(p_connected_account_id) > 1024
      OR p_claim_worker_id IS NULL OR char_length(p_claim_worker_id) = 0
   THEN
     RAISE EXCEPTION 'travel block claim facts invalid' USING ERRCODE = '22023';
   END IF;
 
-  SELECT * INTO current_row
-    FROM public.lm_travel_log
-   WHERE uid = p_uid AND event_key = p_event_key AND leg = p_leg
+  -- Bind the operation to the durable tenant identity before creating or
+  -- reading a claim.  The stable LM uid is only the tenant/budget key.
+  SELECT calendar_composio_user_id, gmail_account_id
+    INTO tenant_owner, tenant_account
+    FROM public.lm_users
+   WHERE uid = p_uid
    FOR UPDATE;
+  IF NOT FOUND
+     OR tenant_owner IS DISTINCT FROM p_composio_user_id
+     OR tenant_account IS DISTINCT FROM p_connected_account_id
+  THEN
+    RETURN jsonb_build_object('decision', 'provider_binding_invalid');
+  END IF;
 
-  IF NOT FOUND THEN
+  -- INSERT ... ON CONFLICT closes the absent-row race.  The unique-key
+  -- conflict waits for the competing transaction; the locked reread then
+  -- observes exactly one durable row without advisory locks.
+  LOOP
     next_token := 'travel_claim:' || replace(gen_random_uuid()::text, '-', '');
     INSERT INTO public.lm_travel_log(
       uid, event_key, leg, status, calendar_id, analysis_key, payload_hash,
-      marker, provider_event_id, claim_token, claim_worker_id,
-      claim_acquired_at, lease_expires_at, updated_at
+      marker, provider_event_id, composio_user_id, connected_account_id,
+      claim_token, claim_worker_id, claim_acquired_at, lease_expires_at, updated_at
     ) VALUES (
       p_uid, p_event_key, p_leg, 'claimed', p_calendar_id, p_analysis_key, p_payload_hash,
-      p_marker, p_provider_event_id, next_token, p_claim_worker_id,
-      p_now, p_now + make_interval(secs => lease_seconds), p_now
-    ) RETURNING * INTO current_row;
-    RETURN jsonb_build_object('decision', 'claimed', 'row', to_jsonb(current_row));
+      p_marker, p_provider_event_id, p_composio_user_id, p_connected_account_id,
+      next_token, p_claim_worker_id, p_now,
+      p_now + make_interval(secs => lease_seconds), p_now
+    ) ON CONFLICT (uid, event_key, leg) DO NOTHING
+    RETURNING * INTO current_row;
+    IF FOUND THEN
+      RETURN jsonb_build_object('decision', 'claimed', 'row', to_jsonb(current_row));
+    END IF;
+
+    SELECT * INTO current_row
+      FROM public.lm_travel_log
+     WHERE uid = p_uid AND event_key = p_event_key AND leg = p_leg
+     FOR UPDATE;
+    EXIT WHEN FOUND;
+  END LOOP;
+
+  IF current_row.composio_user_id IS DISTINCT FROM p_composio_user_id
+     OR current_row.connected_account_id IS DISTINCT FROM p_connected_account_id
+  THEN
+    RETURN jsonb_build_object('decision', 'provider_binding_invalid', 'row', to_jsonb(current_row));
   END IF;
 
   -- A legacy row came from the old write path and has no provider proof.
@@ -269,13 +312,13 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.claim_lm_travel_block(text, text, text, text, text, text, text, text, text, integer, timestamptz) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.claim_lm_travel_block(text, text, text, text, text, text, text, text, text, text, text, integer, timestamptz) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.mark_lm_travel_create_started(text, text, text, text, timestamptz) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.confirm_lm_travel_block(text, text, text, text, text, timestamptz, timestamptz) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.release_lm_travel_claim(text, text, text, text, text, timestamptz) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.block_lm_travel_collision(text, text, text, text, text, timestamptz) FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.claim_lm_travel_block(text, text, text, text, text, text, text, text, text, integer, timestamptz) TO service_role;
+GRANT EXECUTE ON FUNCTION public.claim_lm_travel_block(text, text, text, text, text, text, text, text, text, text, text, integer, timestamptz) TO service_role;
 GRANT EXECUTE ON FUNCTION public.mark_lm_travel_create_started(text, text, text, text, timestamptz) TO service_role;
 GRANT EXECUTE ON FUNCTION public.confirm_lm_travel_block(text, text, text, text, text, timestamptz, timestamptz) TO service_role;
-GRANT EXECUTE ON FUNCTION public.release_lm_travel_claim(text, text, text, text, text, timestamptz, timestamptz) TO service_role;
+GRANT EXECUTE ON FUNCTION public.release_lm_travel_claim(text, text, text, text, text, timestamptz) TO service_role;
 GRANT EXECUTE ON FUNCTION public.block_lm_travel_collision(text, text, text, text, text, timestamptz) TO service_role;
