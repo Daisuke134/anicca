@@ -105,6 +105,7 @@ test("Gate 3 response fixtures contain only public bounded fields", () => {
   const call = fixture("call.json");
   assert.deepEqual(Object.keys(call).sort(), ["attemptId", "callLanguage", "providerReceipt", "status"].sort());
   const deletion = fixture("account-deletion.json");
-  assert.deepEqual(Object.keys(deletion).sort(), ["completedAt", "operationId", "providerCleanup", "status"].sort());
+  assert.deepEqual(Object.keys(deletion).sort(), ["completedAt", "deletionCapability", "operationId", "providerCleanup", "status"].sort());
+  assert.match(deletion.deletionCapability, /^delete-capability:v1:/u);
   assert.equal(Object.hasOwn(call.providerReceipt, "rawToken"), false);
 });
