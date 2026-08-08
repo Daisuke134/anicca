@@ -104,8 +104,22 @@ actor APIClient: APIRequesting {
         session: Session?,
         idempotencyKey: UUID?
     ) throws -> URLRequest {
-        let path = endpoint.path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-        let url = baseURL.appendingPathComponent(path)
+        guard
+            var baseComponents = URLComponents(url: baseURL, resolvingAgainstBaseURL: false),
+            let endpointComponents = URLComponents(string: endpoint.path)
+        else {
+            throw APIError.invalidURL
+        }
+
+        let basePath = baseComponents.path == "/" ? "" : baseComponents.path
+        let endpointPath = endpointComponents.path.hasPrefix("/")
+            ? endpointComponents.path
+            : "/(endpointComponents.path)"
+        baseComponents.path = basePath + endpointPath
+        baseComponents.queryItems = endpointComponents.queryItems
+        guard let url = baseComponents.url else {
+            throw APIError.invalidURL
+        }
         var request = URLRequest(url: url)
         request.httpMethod = endpoint.method.rawValue
         request.setValue("application/json", forHTTPHeaderField: "Accept")

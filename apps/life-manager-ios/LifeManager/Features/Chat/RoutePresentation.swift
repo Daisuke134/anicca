@@ -17,13 +17,13 @@ struct RouteCardPresentation: Equatable, Sendable {
 struct RouteStepPresentation: Equatable, Sendable, Identifiable {
     let id: Int
     let instruction: String
-    let from: String
-    let to: String
+    let from: String?
+    let to: String?
     let service: String?
     let headsign: String?
     let platform: String?
-    let departAt: Date
-    let arriveAt: Date
+    let departAt: Date?
+    let arriveAt: Date?
     let durationSeconds: Int
 }
 

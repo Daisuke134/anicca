@@ -1,0 +1,23 @@
+{
+  "status": "needs_information",
+  "analysisId": "analysis:v1:needs-information-8f3a",
+  "nextCursor": "cursor:v1:K8rN4sY2dFq",
+  "message": {
+    "id": "message:v1:needs-information-8f3a",
+    "cursor": "cursor:v1:K8rN4sY2dFq",
+    "createdAt": "2026-08-10T08:10:00.000Z",
+    "locale": "en",
+    "type": "question",
+    "text": "I need your starting point before I can calculate the route.",
+    "userContent": { "eventTitle": "Tokyo Tower visit", "eventLocation": "Tokyo Tower" },
+    "question": {
+      "id": "question:v1:home-for-design-review-8f3a",
+      "prompt": "Where will you be leaving from for Tokyo Tower visit?"
+    },
+    "route": null,
+    "actions": [
+      { "id": "reply", "label": "Reply" },
+      { "id": "refresh", "label": "Refresh" }
+    ]
+  }
+}

@@ -1,20 +1,17 @@
 import Foundation
 
 struct Bootstrap: Codable, Equatable, Sendable {
-    let product: BootstrapProduct
     let user: BootstrapUser
     let calendar: CalendarConnection
     let analysis: BootstrapAnalysis
     let offer: BootstrapOffer?
 
     init(
-        product: BootstrapProduct,
         user: BootstrapUser,
         calendar: CalendarConnection,
         analysis: BootstrapAnalysis,
         offer: BootstrapOffer? = nil
     ) {
-        self.product = product
         self.user = user
         self.calendar = calendar
         self.analysis = analysis
@@ -22,14 +19,11 @@ struct Bootstrap: Codable, Equatable, Sendable {
     }
 }
 
-struct BootstrapProduct: Codable, Equatable, Sendable {
-    let locale: ProductLocale
-    let timezone: String
-}
-
 struct BootstrapUser: Codable, Equatable, Sendable {
     let id: String
     let name: String?
+    let productLocale: ProductLocale
+    let timezone: String
     let home: HomeAddress
     let phone: PhoneSettings
     let callsEnabled: Bool
@@ -38,6 +32,8 @@ struct BootstrapUser: Codable, Equatable, Sendable {
     init(
         id: String,
         name: String?,
+        productLocale: ProductLocale = .en,
+        timezone: String = "UTC",
         home: HomeAddress,
         phone: PhoneSettings = .missing,
         callsEnabled: Bool = false,
@@ -45,6 +41,8 @@ struct BootstrapUser: Codable, Equatable, Sendable {
     ) {
         self.id = id
         self.name = name
+        self.productLocale = productLocale
+        self.timezone = timezone
         self.home = home
         self.phone = phone
         self.callsEnabled = callsEnabled
@@ -56,6 +54,8 @@ struct BootstrapUser: Codable, Equatable, Sendable {
         self.init(
             id: try container.decode(String.self, forKey: .id),
             name: try container.decodeIfPresent(String.self, forKey: .name),
+            productLocale: try container.decode(ProductLocale.self, forKey: .productLocale),
+            timezone: try container.decode(String.self, forKey: .timezone),
             home: try container.decode(HomeAddress.self, forKey: .home),
             phone: try container.decodeIfPresent(PhoneSettings.self, forKey: .phone) ?? .missing,
             callsEnabled: try container.decodeIfPresent(Bool.self, forKey: .callsEnabled) ?? false,
@@ -66,6 +66,8 @@ struct BootstrapUser: Codable, Equatable, Sendable {
     private enum CodingKeys: String, CodingKey {
         case id
         case name
+        case productLocale
+        case timezone
         case home
         case phone
         case callsEnabled
@@ -140,8 +142,8 @@ struct UserProfile: Codable, Equatable, Sendable {
             id: bootstrap.user.id,
             name: bootstrap.user.name,
             home: bootstrap.user.home,
-            productLocale: bootstrap.product.locale,
-            timezone: bootstrap.product.timezone,
+            productLocale: bootstrap.user.productLocale,
+            timezone: bootstrap.user.timezone,
             phone: bootstrap.user.phone,
             callsEnabled: bootstrap.user.callsEnabled,
             callLanguage: bootstrap.user.callLanguage,

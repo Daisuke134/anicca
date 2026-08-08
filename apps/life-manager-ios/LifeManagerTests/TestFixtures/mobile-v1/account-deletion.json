@@ -1,0 +1,6 @@
+{
+  "operationId": "deletion:v1:opaque-8f3a",
+  "status": "completed",
+  "completedAt": "2026-08-10T08:10:00.000Z",
+  "providerCleanup": [{ "provider": "calendar", "status": "disconnected" }]
+}

@@ -178,14 +178,12 @@ struct ChatService: ChatServicing {
     }
 
     func fetch(after cursor: String?) async throws -> ChatPage {
-        let path: String
+        var components = URLComponents()
+        components.path = "/chat"
         if let cursor {
-            let unreserved = CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~")
-            let encodedCursor = cursor.addingPercentEncoding(withAllowedCharacters: unreserved) ?? cursor
-            path = "/chat?cursor=\(encodedCursor)"
-        } else {
-            path = "/chat"
+            components.queryItems = [URLQueryItem(name: "cursor", value: cursor)]
         }
+        let path = components.string ?? "/chat"
         return try await api.send(
             .get(path: path),
             as: ChatPage.self,

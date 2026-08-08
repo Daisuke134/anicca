@@ -44,7 +44,7 @@ struct Route: Codable, Equatable, Sendable {
 
 struct RoutePlace: Codable, Equatable, Sendable {
     let displayName: String
-    let userContent: String
+    let userContent: String?
 }
 
 struct RouteFare: Codable, Equatable, Sendable {
@@ -57,12 +57,12 @@ struct RouteStep: Codable, Equatable, Sendable {
     let sequence: Int
     let mode: String
     let instruction: String
-    let from: String
-    let to: String
+    let from: String?
+    let to: String?
     let service: String?
     let headsign: String?
     let platform: String?
-    let departAt: Date
-    let arriveAt: Date
+    let departAt: Date?
+    let arriveAt: Date?
     let durationSeconds: Int
 }

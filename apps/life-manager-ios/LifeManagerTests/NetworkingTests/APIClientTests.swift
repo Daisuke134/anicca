@@ -3,6 +3,30 @@ import XCTest
 @testable import LifeManager
 
 final class APIClientTests: XCTestCase {
+    func testCursorQueryRemainsAQueryInTheRealURL() async throws {
+        let store = InMemorySessionStore(session: TestSessionFactory.make())
+        let transport = ScriptedTransport(statuses: [200], payload: Data(#"{"value":"ok"}"#.utf8))
+        let client = APIClient(
+            baseURL: URL(string: "https://life-manager.example/api/mobile/v1")!,
+            transport: transport,
+            sessionStore: store,
+            refresh: { _ in XCTFail("refresh should not run"); throw APIError.refreshRejected }
+        )
+
+        let endpoint = APIEndpoint.get(path: "/chat?cursor=cursor:v1/a?next")
+        _ = try await client.send(endpoint, as: ValueResponse.self)
+
+        let requests = await transport.requestsSnapshot()
+        let request = try XCTUnwrap(requests.first)
+        XCTAssertEqual(request.url?.path, "/api/mobile/v1/chat")
+        XCTAssertEqual(request.url?.query, "cursor=cursor:v1/a?next")
+        XCTAssertEqual(
+            URLComponents(url: try XCTUnwrap(request.url), resolvingAgainstBaseURL: false)?
+                .queryItems?.first(where: { $0.name == "cursor" })?.value,
+            "cursor:v1/a?next"
+        )
+    }
+
     func testRequestAddsBearerAndMutationIdempotencyHeaders() async throws {
         let store = InMemorySessionStore(session: TestSessionFactory.make(accessToken: "access-token"))
         let transport = ScriptedTransport(statuses: [200], payload: Data(#"{"value":"ok"}"#.utf8))

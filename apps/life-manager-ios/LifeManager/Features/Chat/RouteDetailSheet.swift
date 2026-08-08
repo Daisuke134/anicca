@@ -18,11 +18,26 @@ struct RouteDetailSheet: View {
 
                     ForEach(presentation.steps) { step in
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("\(time(step.departAt, timezone: presentation.timezone))  \(step.instruction)")
-                                .font(.body.weight(.medium))
-                            Text("\(step.from) → \(step.to)")
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
+                            if let departAt = step.departAt {
+                                Text("\(time(departAt, timezone: presentation.timezone))  \(step.instruction)")
+                                    .font(.body.weight(.medium))
+                            } else {
+                                Text(step.instruction)
+                                    .font(.body.weight(.medium))
+                            }
+                            if let from = step.from, let to = step.to {
+                                Text("\(from) → \(to)")
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                            } else if let from = step.from {
+                                Text(from)
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                            } else if let to = step.to {
+                                Text(to)
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                            }
                             if let service = step.service {
                                 Text(service)
                                     .font(.subheadline)

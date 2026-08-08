@@ -174,6 +174,7 @@ struct SettingsView: View {
 
     private func callStatusKey(for status: CallReceiptStatus) -> LocalizedStringKey {
         switch status {
+        case .placed: return "settings.callPlaced"
         case .accepted: return "settings.callAccepted"
         case .cooldown: return "settings.callCooldown"
         case .dailyLimit: return "settings.callDailyLimit"

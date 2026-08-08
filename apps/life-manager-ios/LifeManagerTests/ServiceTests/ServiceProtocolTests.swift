@@ -51,7 +51,7 @@ final class ServiceProtocolTests: XCTestCase {
         XCTAssertEqual(page, TestFixtures.chatPage)
         XCTAssertEqual(reply, TestFixtures.chatPage.messages[0])
         let endpoints = await api.endpoints()
-        XCTAssertEqual(endpoints[0].path, "/chat?cursor=cursor%3Av1%2Fa")
+        XCTAssertEqual(endpoints[0].path, "/chat?cursor=cursor:v1/a")
         XCTAssertEqual(endpoints[1].path, "/questions/question%3Av1%3A8f3a/reply")
         let replyJSON = try JSONSerialization.jsonObject(with: endpoints[1].body!) as! [String: String]
         XCTAssertEqual(replyJSON["questionId"], "question:v1:8f3a")
@@ -107,10 +107,11 @@ final class ServiceProtocolTests: XCTestCase {
 
 private enum TestFixtures {
     static let bootstrap = Bootstrap(
-        product: BootstrapProduct(locale: .en, timezone: "America/Los_Angeles"),
         user: BootstrapUser(
             id: "user:v1:server-derived-8f3a",
             name: nil,
+            productLocale: .en,
+            timezone: "America/Los_Angeles",
             home: HomeAddress(status: .missing, display: nil)
         ),
         calendar: CalendarConnection(status: .connected),

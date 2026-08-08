@@ -44,6 +44,7 @@
     "settings.account" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Account" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "アカウント" } } } },
     "settings.calendar" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Calendar" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "カレンダー" } } } },
     "settings.callAccepted" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Call accepted" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "通話を受け付けました" } } } },
+    "settings.callPlaced" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Call placed" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "通話を発信しました" } } } },
     "settings.callCooldown" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Call cooldown active" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "通話のクールダウン中です" } } } },
     "settings.callDailyLimit" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Daily call limit reached" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "1日の通話上限に達しました" } } } },
     "settings.callLanguage" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Call language" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "通話の言語" } } } },

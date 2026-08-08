@@ -3,7 +3,12 @@ import Foundation
 enum ContractFixtureLoader {
     static func data(named name: String, filePath: String = #filePath) throws -> Data {
         let fileManager = FileManager.default
+        let checkoutFixtures = URL(fileURLWithPath: filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("TestFixtures/mobile-v1")
         var candidates: [String?] = [
+            checkoutFixtures.path,
             ProcessInfo.processInfo.environment["LIFEMANAGER_CONTRACT_FIXTURES"],
             fileManager.currentDirectoryPath + "/../life-manager/contracts/mobile-v1",
             URL(fileURLWithPath: filePath)
@@ -37,21 +42,11 @@ enum ContractFixtureLoader {
             let url = URL(fileURLWithPath: candidate, isDirectory: true)
                 .appendingPathComponent(name)
             if fileManager.fileExists(atPath: url.path) {
-                let data = try Data(contentsOf: url)
-                guard isCompatible(data: data, name: name) else { continue }
-                return data
+                return try Data(contentsOf: url)
             }
         }
 
         throw FixtureError.missing(name, candidates: candidates.compactMap({ $0 }))
-    }
-
-    private static func isCompatible(data: Data, name: String) -> Bool {
-        guard name == "bootstrap.json" else { return true }
-        guard let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-            return false
-        }
-        return object["product"] != nil
     }
 
     enum FixtureError: Error, CustomStringConvertible {

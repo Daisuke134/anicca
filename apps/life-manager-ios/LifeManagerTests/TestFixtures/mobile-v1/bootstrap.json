@@ -1,0 +1,15 @@
+{
+  "user": {
+    "id": "user:v1:server-derived-8f3a",
+    "name": null,
+    "productLocale": "en",
+    "timezone": "America/Los_Angeles",
+    "home": { "status": "missing", "display": null },
+    "phone": { "status": "missing", "masked": null },
+    "callsEnabled": false,
+    "callLanguage": null
+  },
+  "calendar": { "status": "connected" },
+  "offer": { "status": "available" },
+  "analysis": { "status": "idle" }
+}

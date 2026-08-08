@@ -68,6 +68,8 @@ targets:
       - LifeManagerTests/ServiceTests
       - LifeManagerTests/StateTests
       - LifeManagerTests/Support
+    resources:
+      - LifeManagerTests/TestFixtures/mobile-v1
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: ai.anicca.life-manager.unit-tests

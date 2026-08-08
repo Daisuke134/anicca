@@ -2,9 +2,11 @@ import Foundation
 
 enum ChatMessageType: String, Codable, Equatable, Sendable {
     case system
+    case analysis
     case route
     case question
     case routeUnavailable = "route_unavailable"
+    case callStatus = "call_status"
 }
 
 struct ChatPage: Codable, Equatable, Sendable {

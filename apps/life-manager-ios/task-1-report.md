@@ -217,3 +217,41 @@ CODE_SIGNING_REQUIRED = NO
 xcodebuild ... test -only-testing:LifeManagerUnitTests/SigningConfigurationTests
 Executed 5 tests, with 0 failures (0 unexpected)
 ```
+
+## Fresh review round 1 — URL cursor and canonical mobile-v1 fixtures
+
+### RED
+
+The cursor regression and fixture contract tests were run before the URL/model
+changes were complete:
+
+```text
+xcodebuild ... test \
+  -only-testing:LifeManagerUnitTests/APIClientTests \
+  -only-testing:LifeManagerUnitTests/ServiceProtocolTests \
+  -only-testing:LifeManagerUnitTests/ContractFixtureDecodingTests
+Executed 15 tests, with 6 failures (0 unexpected)
+```
+
+The real URL assertion observed the cursor appended to the path, with no
+`URLComponents.queryItems`; the chat service emitted percent-escaped cursor
+text; and the existing fixture lookup decoded the stale bootstrap shape. The
+typed fixture test also initially failed to compile until the canonical nullable
+route fields and all frozen response models were represented.
+
+### GREEN
+
+`APIClient` now merges endpoint path and query through `URLComponents`, and
+`ChatService.fetch` creates a `cursor` query item without path encoding. The
+same checkout packages all 20 canonical `mobile-v1` fixtures from the Gate 3
+contract commit. Swift models now decode the canonical `user.productLocale` /
+`timezone`, all terminal analysis statuses, `analysis` and `call_status`
+message kinds, nullable route facts/times, APNs/call/deletion/session/error/
+contract receipts, and the canonical operation IDs.
+
+```text
+APIClientTests:               4/4 passed
+ServiceProtocolTests:         5/5 passed
+ContractFixtureDecodingTests: 7/7 passed
+Combined targeted tests:     16/16 passed, 0 failures
+```
