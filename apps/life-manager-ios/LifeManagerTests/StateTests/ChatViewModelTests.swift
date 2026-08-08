@@ -102,6 +102,31 @@ final class ChatViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.messages.map(\.id), ["message-1", "message-2"])
     }
 
+    func testPushDuringInitialSyncIsRetriedAndAnchorsStableMessage() async {
+        let first = ChatFixtures.message(id: "message-1", type: .system, createdAt: "2026-08-10T08:00:00.000Z")
+        let pushed = ChatFixtures.message(id: "message-2", type: .system, createdAt: "2026-08-10T08:10:00.000Z")
+        let gate = FetchGate()
+        let service = ChatTestService(
+            pages: [
+                nil: [ChatPage(messages: [first], nextCursor: "cursor-1", hasMore: true)],
+                "cursor-1": [ChatPage(messages: [pushed], nextCursor: nil, hasMore: false)]
+            ],
+            fetchGate: gate
+        )
+        let viewModel = ChatViewModel(service: service)
+
+        let initialTask = Task { await viewModel.loadInitial() }
+        await gate.waitUntilFirstFetchStarted()
+        await viewModel.syncFromPush(targetMessageID: pushed.id)
+        await gate.releaseFirstFetch()
+        await initialTask.value
+
+        let cursors = await service.fetchCursors()
+        XCTAssertEqual(cursors, [nil, "cursor-1"])
+        XCTAssertEqual(viewModel.scrollAnchorID, pushed.id)
+        XCTAssertEqual(viewModel.messages.map(\.id), [first.id, pushed.id])
+    }
+
     func testComposerIsAvailableOnlyForAnOpenQuestion() async {
         let question = ChatFixtures.message(
             id: "question-message",
@@ -191,19 +216,23 @@ private actor ChatTestService: ChatServicing {
     private var cursors: [String?] = []
     private var replies = 0
     private let replyGate: ReplyGate?
+    private let fetchGate: FetchGate?
 
     init(
         pages: [String?: [ChatPage]],
         fetchErrors: [Error] = [],
-        replyGate: ReplyGate? = nil
+        replyGate: ReplyGate? = nil,
+        fetchGate: FetchGate? = nil
     ) {
         self.pages = pages
         self.fetchErrors = fetchErrors
         self.replyGate = replyGate
+        self.fetchGate = fetchGate
     }
 
     func fetch(after cursor: String?) async throws -> ChatPage {
         cursors.append(cursor)
+        await fetchGate?.waitForFirstFetch()
         if !fetchErrors.isEmpty {
             throw fetchErrors.removeFirst()
         }
@@ -225,6 +254,34 @@ private actor ChatTestService: ChatServicing {
 
     func fetchCursors() -> [String?] { cursors }
     func replyCount() -> Int { replies }
+}
+
+private actor FetchGate {
+    private var startedContinuation: CheckedContinuation<Void, Never>?
+    private var releaseContinuation: CheckedContinuation<Void, Never>?
+    private var didStart = false
+
+    func waitForFirstFetch() async {
+        guard !didStart else { return }
+        didStart = true
+        startedContinuation?.resume()
+        startedContinuation = nil
+        await withCheckedContinuation { continuation in
+            releaseContinuation = continuation
+        }
+    }
+
+    func waitUntilFirstFetchStarted() async {
+        if didStart { return }
+        await withCheckedContinuation { continuation in
+            startedContinuation = continuation
+        }
+    }
+
+    func releaseFirstFetch() {
+        releaseContinuation?.resume()
+        releaseContinuation = nil
+    }
 }
 
 private actor ReplyGate {

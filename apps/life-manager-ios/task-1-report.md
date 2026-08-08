@@ -126,3 +126,37 @@ Number of tests: 62
 Number of failures: 0
 Test Succeeded
 ```
+
+## APNs deferred-tap follow-up
+
+### RED
+
+The targeted regression test reproduced the lost deep link when a notification
+arrived during the initial chat fetch:
+
+```text
+xcodebuild ... test \
+  -only-testing:LifeManagerUnitTests/ChatViewModelTests/testPushDuringInitialSyncIsRetriedAndAnchorsStableMessage
+
+Executed 1 test, with 3 failures
+fetch cursors: [nil] (expected [nil, "cursor-1"])
+scroll anchor: nil (expected "message-2")
+messages: ["message-1"] (expected ["message-1", "message-2"])
+```
+
+### GREEN
+
+`ChatViewModel` now retains the latest push target while a fetch is active,
+then drains it through the same cursor coordinator after the active fetch
+finishes. If the target is already present, it anchors without a duplicate
+fetch.
+
+```text
+Targeted regression: 1/1 passed
+Full serial xcodebuild: UI 2/2, unit 61/61, total 63/63, failures 0
+```
+
+The coalescing test harness now waits until both actor callers have entered
+the coordinator before releasing its blocked fetch. This removes the
+scheduler-dependent Fastlane stop while preserving the one-fetch assertion.
+The final Fastlane verification also exited 0 with 63 tests and 0 failures.

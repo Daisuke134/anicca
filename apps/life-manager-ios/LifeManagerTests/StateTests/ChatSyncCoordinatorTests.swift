@@ -33,6 +33,9 @@ final class ChatSyncCoordinatorTests: XCTestCase {
         let launch = Task { try await coordinator.sync(reason: .launch) }
         await gate.waitUntilStarted()
         let foreground = Task { try await coordinator.sync(reason: .foreground) }
+        while await coordinator.testingActiveSyncWaiters() < 2 {
+            await Task.yield()
+        }
         await gate.release(page)
 
         let launchResult = try await launch.value

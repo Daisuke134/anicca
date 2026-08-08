@@ -8,6 +8,7 @@ final class ChatViewModel {
     private let coordinator: ChatSyncCoordinator
     private var fetchGeneration = 0
     private var answeredQuestionIDs = Set<String>()
+    private var pendingPushTargetMessageID: String?
 
     private(set) var messages: [ChatMessage] = []
     private(set) var nextCursor: String?
@@ -63,7 +64,10 @@ final class ChatViewModel {
     }
 
     func syncFromPush(targetMessageID: String) async {
-        guard !isLoading else { return }
+        guard !isLoading else {
+            pendingPushTargetMessageID = targetMessageID
+            return
+        }
         await sync(reason: .push, targetMessageID: targetMessageID)
     }
 
@@ -154,6 +158,7 @@ final class ChatViewModel {
             let result = try await coordinator.sync(reason: reason, targetMessageID: targetMessageID)
             guard generation == fetchGeneration else {
                 isLoading = false
+                await drainPendingPushIfNeeded()
                 return
             }
             merge(result.page.messages, replacing: result.requestedCursor == nil)
@@ -169,6 +174,19 @@ final class ChatViewModel {
         }
 
         isLoading = false
+        await drainPendingPushIfNeeded()
+    }
+
+    private func drainPendingPushIfNeeded() async {
+        guard let targetMessageID = pendingPushTargetMessageID else { return }
+        pendingPushTargetMessageID = nil
+
+        if messages.contains(where: { $0.id == targetMessageID }) {
+            scrollAnchorID = targetMessageID
+            return
+        }
+
+        await sync(reason: .push, targetMessageID: targetMessageID)
     }
 
     private func merge(_ incoming: [ChatMessage], replacing: Bool) {

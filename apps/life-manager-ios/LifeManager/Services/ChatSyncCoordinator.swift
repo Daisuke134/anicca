@@ -17,6 +17,9 @@ actor ChatSyncCoordinator {
     private let service: ChatServicing
     private var cursor: String?
     private var inFlight: Task<ChatPage, Error>?
+#if DEBUG
+    private var activeSyncWaiters = 0
+#endif
 
     init(service: ChatServicing, initialCursor: String? = nil) {
         self.service = service
@@ -24,6 +27,10 @@ actor ChatSyncCoordinator {
     }
 
     func sync(reason: SyncReason, targetMessageID: String? = nil) async throws -> ChatSyncResult {
+#if DEBUG
+        activeSyncWaiters += 1
+        defer { activeSyncWaiters -= 1 }
+#endif
         _ = reason
         let requestedCursor = cursor
         let task: Task<ChatPage, Error>
@@ -54,4 +61,10 @@ actor ChatSyncCoordinator {
             throw error
         }
     }
+
+#if DEBUG
+    func testingActiveSyncWaiters() -> Int {
+        activeSyncWaiters
+    }
+#endif
 }
