@@ -39,6 +39,16 @@ function validResult() {
   };
 }
 
+function unknownProviderOutageResult() {
+  return {
+    schemaVersion: 1, sourceId: "moneytree_mufg", consent: "unknown", freshness: "unavailable",
+    asOf: "2026-08-08T06:02:00+09:00",
+    accounts: [{ accountRef: "source_account:synthetic_deposit", label: "サンプル銀行", kind: "deposit", currency: "JPY", balanceMinor: null, verificationStatus: "unavailable" }],
+    liabilities: [], evidenceRef: "evidence:synthetic_moneytree_outage", partial: true,
+    actionRequired: { kind: "provider_outage", sourceLabel: "Moneytree", actionRef: "action:moneytree_outage" },
+  };
+}
+
 const invalidMutations = [
   ["unknown root key", (value) => { value.unknown = true; }],
   ["unknown account key", (value) => { value.accounts[0].unknown = true; }],
@@ -100,6 +110,35 @@ test("valid fresh provider result is cloned and deeply frozen", () => {
   assert.equal(Object.isFrozen(result.accounts[0]), true);
   input.accounts[0].label = "changed";
   assert.equal(result.accounts[0].label, "サンプル銀行");
+});
+
+test("unknown consent provider outage source is cloned and deeply frozen", () => {
+  const input = unknownProviderOutageResult();
+  const result = validateFinancialSourceResult(input);
+  assert.notEqual(result, input);
+  assert.equal(result.consent, "unknown");
+  assert.equal(result.freshness, "unavailable");
+  assert.equal(result.accounts[0].balanceMinor, null);
+  assert.equal(result.actionRequired.kind, "provider_outage");
+  assert.equal(result.actionRequired.actionRef, "action:moneytree_outage");
+  assert.equal(Object.isFrozen(result), true);
+  assert.equal(Object.isFrozen(result.accounts[0]), true);
+  assert.equal(Object.isFrozen(result.actionRequired), true);
+});
+
+test("consent action mapping rejects null and mismatched actions with redacted errors", () => {
+  const cases = [
+    ["unknown", null, "provider_outage_required"],
+    ["unknown", { kind: "reconsent", sourceLabel: "Moneytree", actionRef: "action:moneytree_reconsent" }, "provider_outage_required"],
+    ["expired", { kind: "provider_outage", sourceLabel: "Moneytree", actionRef: "action:moneytree_outage" }, "reconsent_required"],
+    ["revoked", { kind: "provider_outage", sourceLabel: "Moneytree", actionRef: "action:moneytree_outage" }, "reconsent_required"],
+  ];
+  for (const [consent, actionRequired, reason] of cases) {
+    const input = unknownProviderOutageResult();
+    input.consent = consent;
+    input.actionRequired = actionRequired;
+    assert.throws(() => validateFinancialSourceResult(input), new RegExp(`^Error: cfo_financial_source_invalid:${reason}$`));
+  }
 });
 
 test("unavailable values are null and never silently become zero", () => {

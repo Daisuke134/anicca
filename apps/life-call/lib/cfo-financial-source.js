@@ -127,7 +127,9 @@ function validateFinancialSourceResult(input) {
   if (input.freshness === "unavailable" && input.partial !== true) fail("invalid_unavailable_state");
   if (input.consent === "valid") {
     if (input.actionRequired && input.actionRequired.kind === "reconsent") fail("unexpected_reconsent");
-  } else if (input.freshness !== "unavailable" || !input.actionRequired || input.actionRequired.kind !== "reconsent") fail("reconsent_required");
+  } else if (input.freshness !== "unavailable") fail("reconsent_required");
+  else if (input.consent === "unknown" && (!input.actionRequired || input.actionRequired.kind !== "provider_outage")) fail("provider_outage_required");
+  else if (input.consent !== "unknown" && (!input.actionRequired || input.actionRequired.kind !== "reconsent")) fail("reconsent_required");
   let clone;
   try { clone = structuredClone(input); } catch { fail("non_json_value"); }
   return freeze(clone);
