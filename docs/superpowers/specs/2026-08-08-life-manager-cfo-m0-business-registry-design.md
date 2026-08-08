@@ -187,6 +187,28 @@ Angle-bracket values denote runtime-generated typed values, not product placehol
 both finding arrays are empty and every registry row validates. Receipt files live under
 `$LIFE_MANAGER_STATE_HOME/cfo/business-inventory/`; the registry never embeds that expanded absolute path.
 
+Array items use a closed minimal schema:
+
+```json
+{
+  "financial_unit": {
+    "financial_unit_id": "<registry id>", "unit_kind": "<registry kind>", "display_order": 1,
+    "display_name": {"en":"<registry name>","ja":"<registry name>"}, "lifecycle": "<registry lifecycle>",
+    "runtime_labels": [], "source_evidence_refs": [], "evidence_status": "observed|unverified"
+  },
+  "runtime_observation": {
+    "label": "<launchd label>", "state": "running|not_running|unknown", "last_exit_code": null,
+    "classification": "financial_unit|exclusion|unmapped|ambiguous", "target_ids": []
+  },
+  "source_observation": {"evidence_ref":"<registry evidence ref>","availability":"present|unavailable|not_applicable"},
+  "ambiguous_label": {"label":"<launchd label>","target_ids":[]}
+}
+```
+
+This `evidence_status` describes inventory evidence only. It never asserts revenue, profit, financial health, or a
+zero value. The observation hash covers every deterministic receipt field except `inventory_id`, `generated_at`,
+and `observation_hash` itself.
+
 ## 4. Test Matrix
 
 | # | To-Be | Test evidence | Required |

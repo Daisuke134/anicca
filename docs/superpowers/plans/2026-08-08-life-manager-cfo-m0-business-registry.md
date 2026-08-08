@@ -340,6 +340,32 @@ Sort labels, units, findings, and source observations before hashing. Exclude `i
 the final `observation_hash` from the hash input. Derive unit evidence status as `observed` when any runtime or
 source is observed, otherwise `unverified`. Never emit `healthy`, `revenue`, or numeric money fields.
 
+Use these exact minimal item shapes:
+
+```js
+financial_units: [{
+  financial_unit_id, unit_kind, display_order, display_name, lifecycle,
+  runtime_labels: [], source_evidence_refs: [], evidence_status: "observed" | "unverified",
+}],
+runtime_observations: [{
+  label, state, last_exit_code, classification: "financial_unit" | "exclusion" | "unmapped" | "ambiguous",
+  target_ids: [],
+}],
+source_observations: [{ evidence_ref, availability: "present" | "unavailable" | "not_applicable" }],
+ambiguous_labels: [{ label, target_ids: [] }]
+```
+
+`source_observations` is the unique sorted union of unit and exclusion `evidence_refs`. A repo-relative ref calls
+the injected `exists(ref)` and becomes `present` or `unavailable`; a URI-like ref becomes `not_applicable` without
+calling `exists`. A unit's `source_evidence_refs` contains only its own present refs. `evidence_status` is inventory
+evidence only: it is `observed` when `runtime_labels` or `source_evidence_refs` is non-empty, and never implies
+revenue or health. Include every relevant runtime label, drop irrelevant labels, and sort all `target_ids`.
+
+Set `registry_sha256 = sha256Canonical(registry)`. Hash exactly
+`{registry_sha256, financial_units, runtime_observations, source_observations, unmapped_relevant_labels,
+ambiguous_labels, result}`. `result` is `fail` only when an unmapped or ambiguous relevant label exists; missing
+units and any exit code remain evidence, not failure.
+
 ```js
 function observationHash(core) {
   return sha256Canonical(core);
