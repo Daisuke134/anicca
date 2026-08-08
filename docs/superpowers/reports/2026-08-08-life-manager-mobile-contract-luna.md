@@ -115,7 +115,7 @@ Current Gate 3 focused run:
 
 ```text
 cd apps/life-manager && node --test test/mobile-*.test.js
-109 passing, 0 failing
+112 passing, 0 failing
 ```
 
 The focused run covers session, profile/bootstrap, all five terminal analysis states, production-
@@ -170,3 +170,60 @@ GREEN proves code-level and injected-adapter contracts only. It does not claim l
 responses, a Supabase migration receipt, Calendar mutation, APNs registration, call placement,
 provider route response, simulator build, or TestFlight receipt. The committed staging plan remains
 `planned_not_executed`; review must complete before any isolated staging evidence is recorded.
+
+## Gate 3 review fix round 2/5 — SDD ledger append
+
+### Finding #1 — persistent route cache and structured provider facts
+
+RED evidence (before the fix):
+
+```text
+cd apps/life-manager && node --test test/mobile-route.test.js
+9 passing, 2 failing
+- reconstructed providers invoked Transit twice instead of reusing the mobile store cache
+- accessWalkSecs was absent from the structured route
+```
+
+GREEN evidence:
+
+```text
+cd apps/life-manager && node --test test/mobile-route.test.js test/mobile-store.test.js
+14 passing, 0 failing
+```
+
+The mobile store now owns `readRouteCache`/`writeRouteCache` for the Supabase-backed
+`lm_route_cache` rows. The request digest is tenant-scoped and covers event anchor, direction,
+origin, destination, and IANA timezone; the complete route is retained in `route` while legacy
+Gate 1 columns stay populated for pruning/observability. The process-global structured-route
+`Map` is no longer the production default. Transit and Google shaping preserves access/egress
+walking seconds, fare, leg train type, headsign, platform, provider timestamps, and availability
+when returned, while unsupported entrance/car-position facts remain absent. Unknown event
+timezones still fail closed.
+
+### Finding #2 — real router contract validation
+
+The tautological fixture-returning handler overrides were removed from
+`mobile-v1-runtime-contract.test.js`. The test now drives the real router, authentication,
+session, bootstrap, profile, analysis, outbox/chat, question, call, APNs, and deletion handlers
+for all 13 approved endpoints. Only Calendar/route/call provider and store seams are deterministic;
+the response is deep-compared to the frozen fixture for every case.
+
+RED evidence during replacement included the expected failures for random session state, profile
+shape, stable analysis message/cursor, call/device IDs, and deletion clock. GREEN evidence:
+
+```text
+cd apps/life-manager && node --test test/mobile-v1-runtime-contract.test.js
+4 passing, 0 failing (including all 13 endpoint cases)
+
+cd apps/life-manager && node --test test/mobile-*.test.js
+112 passing, 0 failing
+```
+
+The route fixture text was corrected from `8:35 AM` to `1:35 AM` because its authoritative
+timestamp is `08:35Z` and its preserved IANA timezone is `America/Los_Angeles`; this corrects a
+fixture contradiction without dropping fields or weakening assertions. No live migration,
+provider, Calendar, APNs, call, account-deletion, staging, or production side effect was run.
+
+Implementation commits for this round: `54eb58d1e` (persistent route cache/facts),
+`2dc2c0b42` (real router fixture validation). Finding #9 remains the separate truthful live-staging
+verification gate and is intentionally `planned_not_executed`.
