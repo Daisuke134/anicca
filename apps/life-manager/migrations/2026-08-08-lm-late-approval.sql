@@ -4,6 +4,8 @@
 -- are separate append-only ledgers so a retry can never rewrite the evidence that was shown before
 -- the user tapped a button.  All transitions below lock the draft row with FOR UPDATE.
 
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 CREATE TABLE IF NOT EXISTS public.lm_late_approval_drafts (
   draft_id text PRIMARY KEY DEFAULT md5(clock_timestamp()::text || random()::text || txid_current()::text),
   uid text NOT NULL CHECK (char_length(uid) BETWEEN 1 AND 256),
@@ -29,6 +31,8 @@ CREATE TABLE IF NOT EXISTS public.lm_late_approval_drafts (
   eta_evidence_snapshot jsonb NOT NULL CHECK (jsonb_typeof(eta_evidence_snapshot) IN ('array', 'object')),
   decision text CHECK (decision IN ('send', 'do_not_send')),
   idempotency_key text CHECK (idempotency_key IS NULL OR char_length(idempotency_key) BETWEEN 1 AND 512),
+  provider_idempotency_key text NOT NULL DEFAULT encode(gen_random_bytes(32), 'hex')
+    CHECK (provider_idempotency_key ~ '^[0-9a-f]{64}$'),
   claim_token text,
   claim_worker_id text,
   claim_acquired_at timestamptz,
@@ -101,6 +105,33 @@ CREATE INDEX IF NOT EXISTS lm_late_approval_drafts_uid_idx
 CREATE INDEX IF NOT EXISTS lm_late_approval_claims_active_idx
   ON public.lm_late_approval_claims (draft_id, lease_expires_at DESC);
 
+-- Keep a rerun safe for a database that already has the pre-provider-key draft table.  Existing
+-- rows receive one cryptographically random key, and the unique index prevents two drafts from
+-- sharing a provider idempotency identity.
+ALTER TABLE public.lm_late_approval_drafts
+  ADD COLUMN IF NOT EXISTS provider_idempotency_key text;
+UPDATE public.lm_late_approval_drafts
+SET provider_idempotency_key = encode(gen_random_bytes(32), 'hex')
+WHERE provider_idempotency_key IS NULL;
+ALTER TABLE public.lm_late_approval_drafts
+  ALTER COLUMN provider_idempotency_key SET DEFAULT encode(gen_random_bytes(32), 'hex'),
+  ALTER COLUMN provider_idempotency_key SET NOT NULL;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conrelid = 'public.lm_late_approval_drafts'::regclass
+      AND conname = 'lm_late_approval_drafts_provider_idempotency_key_format'
+  ) THEN
+    ALTER TABLE public.lm_late_approval_drafts
+      ADD CONSTRAINT lm_late_approval_drafts_provider_idempotency_key_format
+      CHECK (provider_idempotency_key ~ '^[0-9a-f]{64}$');
+  END IF;
+END
+$$;
+CREATE UNIQUE INDEX IF NOT EXISTS lm_late_approval_drafts_provider_idempotency_key_idx
+  ON public.lm_late_approval_drafts (provider_idempotency_key);
+
 -- Evidence, recipient, ETA, and full body are the exact facts rendered in the approval card.  They
 -- may never be changed after create, even by a retrying service-role request.
 CREATE OR REPLACE FUNCTION public.lm_late_approval_snapshot_guard()
@@ -115,7 +146,8 @@ BEGIN
     OR NEW.recipient_snapshot IS DISTINCT FROM OLD.recipient_snapshot
     OR NEW.evidence_snapshot IS DISTINCT FROM OLD.evidence_snapshot
     OR NEW.body_snapshot IS DISTINCT FROM OLD.body_snapshot
-    OR NEW.eta_evidence_snapshot IS DISTINCT FROM OLD.eta_evidence_snapshot THEN
+    OR NEW.eta_evidence_snapshot IS DISTINCT FROM OLD.eta_evidence_snapshot
+    OR NEW.provider_idempotency_key IS DISTINCT FROM OLD.provider_idempotency_key THEN
     RAISE EXCEPTION 'late approval evidence/body snapshot is immutable';
   END IF;
   RETURN NEW;
@@ -324,12 +356,16 @@ BEGIN
 END;
 $$;
 
+-- The receipt boundary is deliberately replaced rather than overloaded: callers must provide the
+-- tenant and the exact current claim identity on every attempt.
+DROP FUNCTION IF EXISTS public.lm_record_late_delivery(text, text, timestamptz, text, text);
 CREATE OR REPLACE FUNCTION public.lm_record_late_delivery(
+  p_uid text,
   p_draft_id text,
   p_provider_message_id text,
   p_delivered_at timestamptz,
-  p_claim_token text DEFAULT NULL,
-  p_worker_id text DEFAULT NULL
+  p_claim_token text,
+  p_worker_id text
 ) RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -338,23 +374,29 @@ AS $$
 DECLARE
   v_row public.lm_late_approval_drafts%ROWTYPE;
 BEGIN
-  IF p_provider_message_id IS NULL OR char_length(p_provider_message_id) = 0 OR char_length(p_provider_message_id) > 512
+  IF p_uid IS NULL OR char_length(p_uid) = 0 OR char_length(p_uid) > 256
+    OR p_claim_token IS NULL OR char_length(p_claim_token) = 0 OR char_length(p_claim_token) > 512
+    OR p_worker_id IS NULL OR char_length(p_worker_id) = 0 OR char_length(p_worker_id) > 256
+    OR p_provider_message_id IS NULL OR char_length(p_provider_message_id) = 0 OR char_length(p_provider_message_id) > 512
     OR p_delivered_at IS NULL THEN
     RAISE EXCEPTION 'invalid provider receipt';
   END IF;
-  SELECT * INTO v_row FROM public.lm_late_approval_drafts WHERE draft_id = p_draft_id FOR UPDATE;
+  SELECT * INTO v_row
+  FROM public.lm_late_approval_drafts
+  WHERE draft_id = p_draft_id AND uid = p_uid
+  FOR UPDATE;
   IF v_row.draft_id IS NULL THEN RAISE EXCEPTION 'late draft not found'; END IF;
+  IF v_row.claim_token IS DISTINCT FROM p_claim_token THEN
+    RAISE EXCEPTION 'late claim token mismatch';
+  END IF;
+  IF v_row.claim_worker_id IS DISTINCT FROM p_worker_id THEN
+    RAISE EXCEPTION 'late claim worker mismatch';
+  END IF;
   IF v_row.status = 'sent' THEN
     IF v_row.provider_message_id = p_provider_message_id THEN RETURN to_jsonb(v_row) || jsonb_build_object('duplicate', true); END IF;
     RAISE EXCEPTION 'late provider receipt conflict';
   END IF;
   IF v_row.status <> 'send_claimed' THEN RAISE EXCEPTION 'late delivery was not claimed'; END IF;
-  IF p_claim_token IS NOT NULL AND v_row.claim_token IS DISTINCT FROM p_claim_token THEN
-    RAISE EXCEPTION 'late claim token mismatch';
-  END IF;
-  IF p_worker_id IS NOT NULL AND v_row.claim_worker_id IS DISTINCT FROM p_worker_id THEN
-    RAISE EXCEPTION 'late claim worker mismatch';
-  END IF;
 
   UPDATE public.lm_late_approval_drafts
   SET status = 'sent', provider_message_id = p_provider_message_id, delivered_at = p_delivered_at,
@@ -376,31 +418,40 @@ ALTER TABLE public.lm_late_approval_claims FORCE ROW LEVEL SECURITY;
 ALTER TABLE public.lm_late_approval_receipts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.lm_late_approval_receipts FORCE ROW LEVEL SECURITY;
 
--- Keep this migration runnable against the isolated Railway schema-only database, which does not
--- define Supabase's anon/authenticated/service_role roles.  On Supabase, the same block closes all
--- direct table access and grants only the four SECURITY DEFINER RPCs to service_role.
+-- The four SECURITY DEFINER functions are deny-by-default.  PUBLIC is explicit here because
+-- PostgreSQL grants new functions to PUBLIC unless it is revoked by name.
+REVOKE ALL ON TABLE
+  public.lm_late_approval_drafts,
+  public.lm_late_approval_decisions,
+  public.lm_late_approval_claims,
+  public.lm_late_approval_receipts
+FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON TABLE
+  public.lm_late_approval_drafts,
+  public.lm_late_approval_decisions,
+  public.lm_late_approval_claims,
+  public.lm_late_approval_receipts
+FROM service_role;
+
+REVOKE ALL ON FUNCTION public.lm_create_late_draft(text,text,text,jsonb,jsonb,text,jsonb,text)
+  FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.lm_decide_late_draft(text,text,text,text)
+  FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.lm_claim_late_delivery(text,text,integer)
+  FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.lm_record_late_delivery(text,text,text,timestamptz,text,text)
+  FROM PUBLIC, anon, authenticated;
+
+-- Role fixtures are installed by the isolated staging preflight when this migration is exercised
+-- outside Supabase.  The conditional grants allow only service_role to cross the RPC boundary
+-- where that role exists; direct table access remains revoked for every application role.
 DO $$
-DECLARE r text;
 BEGIN
-  FOREACH r IN ARRAY ARRAY['public', 'anon', 'authenticated', 'service_role'] LOOP
-    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = r) THEN
-      EXECUTE format('REVOKE ALL ON TABLE public.lm_late_approval_drafts, public.lm_late_approval_decisions, public.lm_late_approval_claims, public.lm_late_approval_receipts FROM %I', r);
-    END IF;
-  END LOOP;
-  FOREACH r IN ARRAY ARRAY['anon', 'authenticated'] LOOP
-    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = r) THEN
-      EXECUTE format('REVOKE ALL ON FUNCTION public.lm_create_late_draft(text,text,text,jsonb,jsonb,text,jsonb,text) FROM %I', r);
-      EXECUTE format('REVOKE ALL ON FUNCTION public.lm_decide_late_draft(text,text,text,text) FROM %I', r);
-      EXECUTE format('REVOKE ALL ON FUNCTION public.lm_claim_late_delivery(text,text,integer) FROM %I', r);
-      EXECUTE format('REVOKE ALL ON FUNCTION public.lm_record_late_delivery(text,text,timestamptz,text,text) FROM %I', r);
-    END IF;
-  END LOOP;
   IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'service_role') THEN
-    GRANT SELECT ON TABLE public.lm_late_approval_drafts, public.lm_late_approval_decisions, public.lm_late_approval_claims, public.lm_late_approval_receipts TO service_role;
-    GRANT EXECUTE ON FUNCTION public.lm_create_late_draft(text,text,text,jsonb,jsonb,text,jsonb,text) TO service_role;
-    GRANT EXECUTE ON FUNCTION public.lm_decide_late_draft(text,text,text,text) TO service_role;
-    GRANT EXECUTE ON FUNCTION public.lm_claim_late_delivery(text,text,integer) TO service_role;
-    GRANT EXECUTE ON FUNCTION public.lm_record_late_delivery(text,text,timestamptz,text,text) TO service_role;
+    EXECUTE 'GRANT EXECUTE ON FUNCTION public.lm_create_late_draft(text,text,text,jsonb,jsonb,text,jsonb,text) TO service_role';
+    EXECUTE 'GRANT EXECUTE ON FUNCTION public.lm_decide_late_draft(text,text,text,text) TO service_role';
+    EXECUTE 'GRANT EXECUTE ON FUNCTION public.lm_claim_late_delivery(text,text,integer) TO service_role';
+    EXECUTE 'GRANT EXECUTE ON FUNCTION public.lm_record_late_delivery(text,text,text,timestamptz,text,text) TO service_role';
   END IF;
 END
 $$;

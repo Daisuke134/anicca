@@ -176,11 +176,12 @@ function normalizeClaimInput(input = {}) {
 
 function normalizeDeliveryInput(input = {}) {
   return {
+    uid: text(input.uid, "uid", 256),
     draftId: text(input.draftId || input.draft_id, "draft id", 128),
     providerMessageId: text(input.providerMessageId || input.provider_message_id, "provider message id", 512),
     deliveredAt: iso(input.deliveredAt || input.delivered_at, "deliveredAt"),
-    claimToken: optionalText(input.claimToken || input.claim_token, "claim token", 512),
-    workerId: optionalText(input.workerId || input.worker_id, "worker id", 256),
+    claimToken: text(input.claimToken ?? input.claim_token, "claim token", 512),
+    workerId: text(input.workerId ?? input.worker_id, "worker id", 256),
     nowMs: finiteNow(input.nowMs),
     __nowProvided: Object.prototype.hasOwnProperty.call(input, "nowMs"),
   };
@@ -197,6 +198,7 @@ function exposeRow(row, flags = {}) {
     body_snapshot: "bodySnapshot", eta_evidence_snapshot: "etaEvidence",
     idempotency_key: "idempotencyKey", claim_token: "claimToken", claim_worker_id: "workerId",
     claim_acquired_at: "claimedAt", claim_expires_at: "claimExpiresAt",
+    provider_idempotency_key: "providerIdempotencyKey",
     provider_message_id: "providerMessageId", delivered_at: "deliveredAt",
     created_at: "createdAt", updated_at: "updatedAt",
   };
@@ -224,6 +226,7 @@ function rowFromPersistence(raw) {
     etaEvidence: clone(value.etaEvidence ?? value.eta_evidence_snapshot ?? {}),
     decision: value.decision ?? null,
     idempotencyKey: value.idempotencyKey ?? value.idempotency_key ?? null,
+    providerIdempotencyKey: value.providerIdempotencyKey ?? value.provider_idempotency_key ?? null,
     claimToken: value.claimToken ?? value.claim_token ?? null,
     workerId: value.workerId ?? value.claim_worker_id ?? null,
     claimedAt: value.claimedAt ?? value.claim_acquired_at ?? null,
@@ -261,6 +264,10 @@ function newClaimToken() {
   return `${randomUUID()}.${randomBytes(18).toString("hex")}`;
 }
 
+function newProviderIdempotencyKey() {
+  return randomBytes(32).toString("hex");
+}
+
 function initialLateDraft(input) {
   const normalized = normalizeDraftInput(input);
   const now = iso(normalized.nowMs, "createdAt");
@@ -279,6 +286,9 @@ function initialLateDraft(input) {
     etaEvidence: normalized.etaEvidence,
     decision: null,
     idempotencyKey: null,
+    // This identity belongs to the provider callback boundary, not to a lease.  It must survive
+    // every claim recovery so a provider can deduplicate an accepted send before its receipt lands.
+    providerIdempotencyKey: newProviderIdempotencyKey(),
     claimToken: null,
     workerId: null,
     claimedAt: null,
@@ -354,18 +364,21 @@ function transitionLateClaim(row, input) {
 function transitionLateDelivery(row, input) {
   const normalized = normalizeDeliveryInput(input);
   assertRowId(row);
+  assertTenant(row, normalized.uid);
   const next = clone(row);
+  if (row.status === "send_claimed" || row.status === "sent") {
+    if (row.claimToken !== normalized.claimToken) {
+      fail("claim_token_mismatch", "delivery receipt does not belong to the current claim");
+    }
+    if (row.workerId !== normalized.workerId) {
+      fail("claim_worker_mismatch", "delivery receipt worker does not own the claim");
+    }
+  }
   if (row.status === "sent") {
     if (row.providerMessageId === normalized.providerMessageId) return { row: next, duplicate: true };
     fail("receipt_conflict", "a different provider receipt already won");
   }
   if (row.status !== "send_claimed") fail("delivery_not_claimed", `late draft is ${row.status}`);
-  if (normalized.claimToken && row.claimToken !== normalized.claimToken) {
-    fail("claim_token_mismatch", "delivery receipt does not belong to the current claim");
-  }
-  if (normalized.workerId && row.workerId !== normalized.workerId) {
-    fail("claim_worker_mismatch", "delivery receipt worker does not own the claim");
-  }
   next.status = "sent";
   next.providerMessageId = normalized.providerMessageId;
   next.deliveredAt = normalized.deliveredAt;
@@ -556,6 +569,7 @@ function createSupabaseLateApprovalStore(options = {}) {
     },
     async recordLateDelivery(input) {
       const body = await rpc("lm_record_late_delivery", {
+        p_uid: input.uid,
         p_draft_id: input.draftId,
         p_provider_message_id: input.providerMessageId,
         p_delivered_at: input.deliveredAt,
