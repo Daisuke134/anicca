@@ -15,6 +15,15 @@ const ERROR_PREFIX = "cfo_financial_source_invalid:";
 
 function fail(reason) { throw new Error(`${ERROR_PREFIX}${reason}`); }
 function plain(value) { return value !== null && typeof value === "object" && !Array.isArray(value) && Object.getPrototypeOf(value) === Object.prototype; }
+function dataOnly(value, seen = new WeakSet()) {
+  if (value === null || typeof value !== "object" || seen.has(value)) return;
+  seen.add(value);
+  for (const key of Reflect.ownKeys(value)) {
+    const descriptor = Object.getOwnPropertyDescriptor(value, key);
+    if (!descriptor || !Object.prototype.hasOwnProperty.call(descriptor, "value")) fail("accessor_property");
+    dataOnly(descriptor.value, seen);
+  }
+}
 function keys(value, allowed) {
   if (!plain(value)) fail("invalid_object");
   const own = Reflect.ownKeys(value);
@@ -27,6 +36,7 @@ function label(value) {
   if (typeof value !== "string" || value.length === 0 || value.length > 80) fail("invalid_label");
   if (/\d{6}/.test(value) || /^(?:\/|~\/|[A-Za-z]:[\\/]|\\\\)/.test(value)
     || /^[a-z][a-z0-9+.-]*:\/\//i.test(value)
+    || /[a-z][a-z0-9+.-]*:\/\/[^\/\s@]+(?::[^\/\s@]*)?@/i.test(value)
     || /(?:api[ _-]?key|secret|private[ _-]?key|password|token|credential|bearer)/i.test(value)) fail("unsafe_label");
 }
 function timestamp(value) {
@@ -86,6 +96,7 @@ function freeze(value, seen = new WeakSet()) {
 }
 
 function validateFinancialSourceResult(input) {
+  dataOnly(input);
   keys(input, ROOT_KEYS);
   if (input.schemaVersion !== 1) fail("invalid_schema_version");
   typedRef(input.sourceId, ID, "invalid_source_id");

@@ -105,6 +105,59 @@ test("raw payloads, account numbers, URLs, paths, and secret-shaped labels fail 
   for (const mutate of privateMutations()) assertInvalid(mutate(validResult()));
 });
 
+test("embedded credential-bearing URLs in labels fail closed", () => {
+  const input = validResult();
+  input.accounts[0].label = "Bank https://alice:p4ss@example.com";
+  assert.throws(() => validateFinancialSourceResult(input), /:unsafe_label$/);
+});
+
+test("accessor properties are rejected before a changing getter can be cloned", () => {
+  const input = validResult();
+  let reads = 0;
+  Object.defineProperty(input, "sourceId", {
+    enumerable: true,
+    get() {
+      reads += 1;
+      return reads === 1 ? "moneytree_mufg" : "/Users/private/source";
+    },
+  });
+  assert.throws(() => validateFinancialSourceResult(input), /:accessor_property$/);
+  assert.equal(reads, 0);
+});
+
+test("unknown liability keys fail at the liability schema boundary", () => {
+  const input = validResult();
+  input.partial = true;
+  input.liabilities = [{ accountRef: "source_account:synthetic_loan", label: "サンプルローン", currency: "JPY", balanceMinor: 100, verificationStatus: "provider_reported", unknown: true }];
+  assert.throws(() => validateFinancialSourceResult(input), /:invalid_keys$/);
+});
+
+test("account, evidence, unavailable-state, reconsent, and action branches stay isolated", () => {
+  const invalidAccountRef = validResult();
+  invalidAccountRef.accounts[0].accountRef = "not-an-account-ref";
+  assert.throws(() => validateFinancialSourceResult(invalidAccountRef), /:invalid_account_ref$/);
+
+  const invalidEvidenceRef = validResult();
+  invalidEvidenceRef.evidenceRef = "not-an-evidence-ref";
+  assert.throws(() => validateFinancialSourceResult(invalidEvidenceRef), /:invalid_evidence_ref$/);
+
+  const unavailableWithoutPartial = validResult();
+  unavailableWithoutPartial.freshness = "unavailable";
+  unavailableWithoutPartial.partial = false;
+  unavailableWithoutPartial.accounts[0].balanceMinor = null;
+  unavailableWithoutPartial.accounts[0].verificationStatus = "unavailable";
+  assert.throws(() => validateFinancialSourceResult(unavailableWithoutPartial), /:invalid_unavailable_state$/);
+
+  const missingReconsent = structuredClone(unavailableWithoutPartial);
+  missingReconsent.partial = true;
+  missingReconsent.consent = "expired";
+  assert.throws(() => validateFinancialSourceResult(missingReconsent), /:reconsent_required$/);
+
+  const unexpectedReconsent = validResult();
+  unexpectedReconsent.actionRequired = { kind: "reconsent", sourceLabel: "Moneytree", actionRef: "action:moneytree_reconsent" };
+  assert.throws(() => validateFinancialSourceResult(unexpectedReconsent), /:unexpected_reconsent$/);
+});
+
 test("closed schema and state invariants reject invalid mutations", () => {
   for (const [name, mutate] of invalidMutations) {
     assert.throws(() => validateFinancialSourceResult(mutate(structuredClone(validResult()))), /^Error: cfo_financial_source_invalid:/, name);
