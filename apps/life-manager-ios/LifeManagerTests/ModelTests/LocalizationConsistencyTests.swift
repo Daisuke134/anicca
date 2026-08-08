@@ -57,7 +57,7 @@ final class LocalizationConsistencyTests: XCTestCase {
         "paywall.restore", "paywall.continueFree", "paywall.notNow", "settings.title",
         "settings.calendar", "settings.profile", "settings.calls", "settings.subscription",
         "settings.account", "settings.productLanguage", "settings.english", "settings.japanese",
-        "settings.save", "settings.phone", "settings.enableCalls", "settings.callLanguage",
+        "settings.save", "settings.phone", "settings.phoneCurrent", "settings.enableCalls", "settings.callLanguage",
         "settings.callNow", "settings.cancel", "settings.deleteAccount", "settings.restore",
         "settings.freePath", "settings.logout", "settings.deletionReceipt", "settings.cooldown",
         "settings.callsRemaining", "settings.calendarConnected", "settings.calendarActionRequired",

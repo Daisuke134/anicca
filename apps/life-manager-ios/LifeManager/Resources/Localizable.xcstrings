@@ -67,6 +67,7 @@
     "settings.japanese" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Japanese" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "日本語" } } } },
     "settings.logout" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Log out" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "ログアウト" } } } },
     "settings.phone" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Phone number (+country code)" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "電話番号（国番号付き）" } } } },
+    "settings.phoneCurrent" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Current phone" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "登録済み電話番号" } } } },
     "settings.phoneInvalid" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Enter a valid E.164 phone number" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "有効なE.164電話番号を入力してください" } } } },
     "settings.phoneRequired" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Add a phone number before enabling calls" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "通話を有効にする前に電話番号を追加してください" } } } },
     "settings.productLanguage" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Product language" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "アプリの言語" } } } },

@@ -82,6 +82,14 @@ struct SettingsView: View {
 
     private var phoneSection: some View {
         Section("settings.calls") {
+            if let phoneDisplay = viewModel.phoneDisplay {
+                HStack {
+                    Text("settings.phoneCurrent")
+                    Spacer()
+                    Text(phoneDisplay)
+                }
+                .accessibilityIdentifier("settings.phoneCurrent")
+            }
             TextField("settings.phone", text: $viewModel.phone)
                 .keyboardType(.phonePad)
                 .accessibilityIdentifier("settings.phone")

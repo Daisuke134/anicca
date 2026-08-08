@@ -34,6 +34,9 @@ final class SettingsViewModel {
     var name = ""
     var home = ""
     var productLocale: ProductLocale = .en
+    /// A server-confirmed, masked value for display only. Never reuse this as an edit payload.
+    private(set) var phoneDisplay: String?
+    /// A replacement E.164 value entered by the user. Empty means keep the existing number.
     var phone = ""
     var callsEnabled = false
     var callLanguage: ProductLocale = .en
@@ -219,9 +222,10 @@ final class SettingsViewModel {
         name = value.name ?? ""
         home = value.home.display ?? ""
         productLocale = value.productLocale
-        phone = value.phone.masked ?? ""
+        phoneDisplay = value.phone.masked
+        phone = ""
         callsEnabled = value.callsEnabled && value.phone.status == .configured
-        callLanguage = value.callLanguage ?? .en
+        callLanguage = value.callLanguage ?? value.productLocale
         calendarStatus = value.calendarStatus
         await profileChangedHandler?(value)
     }

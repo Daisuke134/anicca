@@ -363,3 +363,31 @@ Logout root callback:        1/1 passed
 Retry policy test:            1/1 passed
 Combined mutation lane:      7/7 passed, 0 failures
 ```
+
+## Fresh review round 1 — masked phone display boundary and call-language default
+
+### RED
+
+The regression tests were added before separating the server's masked phone
+display value from the replacement input:
+
+```text
+xcodebuild ... test \
+  -only-testing:LifeManagerUnitTests/SettingsViewModelTests/testMaskedPhoneStaysDisplayOnlyAndIsOmittedFromUnchangedPayload \
+  -only-testing:LifeManagerUnitTests/SettingsViewModelTests/testCallLanguageDefaultsToConfirmedProductLocaleWhenServerOmitsIt
+
+Build failed: SettingsViewModel has no member 'phoneDisplay'
+```
+
+### GREEN
+
+Settings now keeps the server-confirmed masked value in `phoneDisplay` and
+starts the editable replacement field empty. An unchanged profile mutation
+therefore omits `phone` instead of sending the masked display value. When the
+server omits `callLanguage`, the confirmed `productLocale` is used as the
+default. The settings UI labels the current masked value separately from the
+replacement field.
+
+```text
+Targeted tests: 2/2 passed, 0 failures
+```

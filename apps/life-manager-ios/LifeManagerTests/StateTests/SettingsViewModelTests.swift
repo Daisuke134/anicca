@@ -28,6 +28,39 @@ final class SettingsViewModelTests: XCTestCase {
         XCTAssertTrue(viewModel.callLanguageVisible)
     }
 
+    func testMaskedPhoneStaysDisplayOnlyAndIsOmittedFromUnchangedPayload() async {
+        let profileService = SettingsProfileTestService(
+            profile: SettingsFixtures.profile(callsEnabled: true, phone: .configured("+81••••••5678"), callLanguage: .ja)
+        )
+        let viewModel = makeViewModel(profileService: profileService)
+
+        await viewModel.load()
+        await viewModel.saveProfile()
+
+        XCTAssertEqual(viewModel.phoneDisplay, "+81••••••5678")
+        XCTAssertEqual(viewModel.phone, "")
+        let draft = await profileService.drafts().last
+        XCTAssertNil(draft?.phone)
+    }
+
+    func testCallLanguageDefaultsToConfirmedProductLocaleWhenServerOmitsIt() async {
+        let profile = UserProfile(
+            id: "user-ja",
+            name: "Alex",
+            home: HomeAddress(status: .ready, display: "Home"),
+            productLocale: .ja,
+            timezone: "Asia/Tokyo",
+            phone: .configured("+81••••••5678"),
+            callsEnabled: true,
+            callLanguage: nil
+        )
+        let viewModel = makeViewModel(profile: profile)
+
+        await viewModel.load()
+
+        XCTAssertEqual(viewModel.callLanguage, .ja)
+    }
+
     func testSavedProductLocaleNotifiesTheAppAfterServerConfirmation() async {
         let profileService = SettingsProfileTestService(profile: SettingsFixtures.profile(callsEnabled: false, phone: .missing, callLanguage: nil))
         let viewModel = makeViewModel(profileService: profileService)
@@ -301,7 +334,8 @@ private actor SettingsProfileTestService: ProfileServicing {
             home: HomeAddress(status: draft.home == nil ? .missing : .ready, display: draft.home),
             productLocale: draft.productLocale,
             timezone: profileValue.timezone,
-            phone: draft.phone.map { .configured($0) } ?? .missing,
+            // The mobile profile PATCH omits an unchanged phone, so the response keeps it configured.
+            phone: draft.phone.map { .configured($0) } ?? profileValue.phone,
             callsEnabled: draft.callsEnabled,
             callLanguage: draft.callLanguage,
             calendarStatus: profileValue.calendarStatus,
