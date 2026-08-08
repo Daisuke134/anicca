@@ -134,7 +134,9 @@ function matchesLabel(matcher, label) {
 }
 ```
 
-Validation must recursively reject key names matching
+Validation must first accept only the exact schema keys in the constant sets above; those permitted keys take
+precedence over the secret/money-name scan (so `revenue_channel_ids` remains valid). For every non-schema key,
+reject names matching
 `/(?:amount|balance|revenue|profit|secret|token|api.?key|account.?number|private.?key|seed)/i`, string values starting
 with `/Users/` or `/home/`, non-exact keys, and duplicate IDs. Deep-freeze a
 cloned value so caller mutation cannot alter validated state. `classifyLabel` returns sorted target IDs.
