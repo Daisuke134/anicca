@@ -164,9 +164,9 @@ git commit -m "feat(cfo): validate financial unit registry"
 git push
 ```
 
-Completion evidence: commits `b1063e627` and `5622b0312`; focused tests 5/5 PASS; fix round 1 review clean.
+Completion evidence: commits `b1063e627`, `5622b0312`, and `f7b67187b`; focused tests 7/7 PASS; fix rounds 1-2 review clean.
 
-- [ ] **Downstream correction: accept strict typed owner and cost-centre references**
+- [x] **Downstream correction: accept strict typed owner and cost-centre references**
 
 Task 2 preflight exposed that the exact `agent:franklin1` values cannot pass a generic `ID` regex. Add the typed
 reference contract above, targeted tests, fresh review, state commit, and push before Task 2 resumes.
