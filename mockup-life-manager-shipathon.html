@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0b1220">
+  <title>Life Manager — Shipathon Pitch</title>
+  <style>
+    :root[data-theme="dark"] {
+      --color-bg: #0b1220;
+      --color-surface: #121c2e;
+      --color-surface-2: #18263b;
+      --color-text: #f7f4ed;
+      --color-muted: #a9b5c6;
+      --color-accent: #ff725e;
+      --color-accent-2: #8de3c1;
+      --color-border: rgba(255,255,255,.12);
+      --color-shadow: rgba(0,0,0,.35);
+    }
+    :root[data-theme="light"] {
+      --color-bg: #f3efe7;
+      --color-surface: #fffdf8;
+      --color-surface-2: #e9f4ee;
+      --color-text: #132033;
+      --color-muted: #657286;
+      --color-accent: #e5523f;
+      --color-accent-2: #278f72;
+      --color-border: rgba(19,32,51,.13);
+      --color-shadow: rgba(40,35,25,.14);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 80% 0%, rgba(255,114,94,.18), transparent 30rem),
+        radial-gradient(circle at 0% 35%, rgba(141,227,193,.11), transparent 28rem),
+        var(--color-bg);
+      color: var(--color-text);
+      font-family: ui-rounded, "Avenir Next", "Helvetica Neue", sans-serif;
+      -webkit-font-smoothing: antialiased;
+      transition: background .3s ease, color .3s ease;
+    }
+    button { font: inherit; }
+    button:focus-visible, a:focus-visible { outline: 3px solid var(--color-accent-2); outline-offset: 4px; }
+    .theme-toggle {
+      position: fixed; top: 18px; right: 18px; z-index: 20;
+      border: 1px solid var(--color-border); background: var(--color-surface);
+      color: var(--color-text); border-radius: 999px; width: 42px; height: 42px;
+      cursor: pointer; box-shadow: 0 12px 24px var(--color-shadow);
+    }
+    .shell { width: min(1120px, calc(100% - 32px)); margin: 0 auto; padding: 76px 0 64px; }
+    .eyebrow { color: var(--color-accent-2); letter-spacing: .14em; text-transform: uppercase; font-size: 11px; font-weight: 800; }
+    h1, h2, h3, p { margin: 0; }
+    h1, h2 { font-family: Georgia, "Times New Roman", serif; font-weight: 500; letter-spacing: -.04em; }
+    h1 { font-size: clamp(48px, 9vw, 112px); line-height: .92; max-width: 920px; margin-top: 18px; }
+    h1 em { color: var(--color-accent); font-style: normal; }
+    h2 { font-size: clamp(34px, 5vw, 64px); line-height: .98; }
+    h3 { font-size: 16px; }
+    .lead { max-width: 680px; margin-top: 26px; color: var(--color-muted); font-size: clamp(18px, 2.4vw, 25px); line-height: 1.45; }
+    .hero { min-height: 680px; display: grid; align-content: center; position: relative; }
+    .hero-stamp { position: absolute; right: 4%; bottom: 15%; transform: rotate(-8deg); color: var(--color-accent); border: 2px solid var(--color-accent); padding: 12px 16px; font-size: 12px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+    .hero-rule { width: 130px; height: 5px; margin-top: 36px; background: var(--color-accent); }
+    .section { padding: 86px 0 0; }
+    .section-head { display: flex; justify-content: space-between; gap: 24px; align-items: end; margin-bottom: 26px; }
+    .section-note { color: var(--color-muted); max-width: 430px; line-height: 1.55; }
+    .answer-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+    .answer-card { background: var(--color-surface); border: 1px solid var(--color-border); padding: 25px; min-height: 190px; box-shadow: 0 20px 50px var(--color-shadow); }
+    .answer-card .q { color: var(--color-accent); font-size: 12px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 18px; }
+    .answer-card p { color: var(--color-muted); line-height: 1.55; margin-top: 11px; }
+    .answer-card strong { color: var(--color-text); font-size: 22px; line-height: 1.15; display: block; }
+    .split { display: grid; grid-template-columns: 1fr 1fr; gap: 34px; align-items: center; }
+    .decision { border-left: 4px solid var(--color-accent-2); padding: 24px 0 24px 24px; }
+    .decision p { color: var(--color-muted); line-height: 1.6; margin-top: 13px; }
+    .choice { display: grid; gap: 12px; }
+    .choice-card { display: flex; justify-content: space-between; gap: 18px; padding: 18px 20px; border: 1px solid var(--color-border); background: var(--color-surface); }
+    .choice-card small { color: var(--color-muted); line-height: 1.4; }
+    .choice-card .verdict { color: var(--color-accent-2); font-weight: 900; white-space: nowrap; }
+
+    .demo-wrap { display: grid; grid-template-columns: minmax(280px, 390px) 1fr; gap: clamp(28px, 6vw, 86px); align-items: center; }
+    .phone { width: min(100%, 360px); margin: 0 auto; padding: 11px; border-radius: 42px; background: #05070c; box-shadow: 0 28px 80px rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.14); }
+    .phone-screen { overflow: hidden; border-radius: 32px; background: #f4f6f3; color: #132033; min-height: 650px; position: relative; }
+    .notch { width: 112px; height: 27px; background: #05070c; border-radius: 0 0 18px 18px; margin: 0 auto; position: relative; z-index: 2; }
+    .app-top { padding: 18px 20px 14px; background: #f4f6f3; display: flex; justify-content: space-between; align-items: center; }
+    .app-top b { font-size: 17px; }
+    .avatar { width: 32px; height: 32px; border-radius: 50%; background: #132033; color: #8de3c1; display: grid; place-items: center; font-size: 11px; font-weight: 900; }
+    .chat { padding: 12px 16px 90px; display: grid; gap: 12px; }
+    .bubble { max-width: 90%; padding: 13px 15px; border-radius: 18px; font-size: 14px; line-height: 1.38; box-shadow: 0 5px 14px rgba(19,32,51,.08); }
+    .bubble.ai { background: white; border: 1px solid #e3e8e4; border-bottom-left-radius: 5px; }
+    .bubble.you { justify-self: end; background: #132033; color: white; border-bottom-right-radius: 5px; }
+    .route-card { background: #132033; color: #fff; padding: 17px; border-radius: 22px; margin-top: 4px; }
+    .route-card .route-head { display: flex; justify-content: space-between; align-items: center; color: #8de3c1; font-size: 12px; font-weight: 800; }
+    .route-card h3 { margin-top: 13px; font-size: 23px; }
+    .route-card .meta { color: #b8c5d2; margin-top: 7px; font-size: 12px; }
+    .route-line { display: grid; grid-template-columns: 20px 1fr; gap: 10px; margin-top: 18px; align-items: start; }
+    .rail { position: relative; display: grid; justify-items: center; gap: 27px; padding: 3px 0; }
+    .rail::before { content: ""; position: absolute; top: 10px; bottom: 10px; width: 2px; background: #ff725e; }
+    .dot { width: 9px; height: 9px; border-radius: 50%; background: #ff725e; position: relative; z-index: 1; border: 2px solid #132033; }
+    .steps { display: grid; gap: 18px; font-size: 13px; color: #e9f0f3; }
+    .steps span { display: block; color: #8de3c1; font-size: 11px; margin-bottom: 3px; }
+    .leave-button { margin-top: 18px; width: 100%; padding: 12px; border: 0; border-radius: 12px; background: #ff725e; color: white; font-weight: 900; cursor: pointer; }
+    .composer { position: absolute; bottom: 0; left: 0; right: 0; padding: 12px 14px 18px; background: rgba(244,246,243,.94); display: flex; gap: 8px; }
+    .composer input { min-width: 0; flex: 1; border: 1px solid #dae2dd; border-radius: 20px; padding: 10px 13px; color: #132033; background: white; }
+    .composer button { border: 0; border-radius: 50%; width: 40px; background: #132033; color: white; cursor: pointer; }
+    .demo-copy { display: grid; gap: 18px; }
+    .demo-copy p { color: var(--color-muted); line-height: 1.6; }
+    .demo-callout { background: var(--color-surface-2); padding: 22px; border: 1px solid var(--color-border); }
+    .demo-callout strong { display: block; font-size: 26px; color: var(--color-accent-2); margin-bottom: 9px; }
+    .demo-controls { display: flex; flex-wrap: wrap; gap: 10px; }
+    .demo-controls button { border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text); padding: 11px 14px; cursor: pointer; }
+    .demo-controls button.active, .demo-controls button:hover { border-color: var(--color-accent); color: var(--color-accent); }
+    .footer { margin-top: 100px; padding-top: 24px; border-top: 1px solid var(--color-border); display: flex; justify-content: space-between; gap: 20px; color: var(--color-muted); font-size: 12px; }
+    @media (max-width: 760px) {
+      .shell { width: min(100% - 28px, 600px); padding-top: 72px; }
+      .hero { min-height: 570px; }
+      .hero-stamp { position: static; display: inline-block; margin-top: 44px; transform: rotate(-4deg); justify-self: start; }
+      .answer-grid, .split, .demo-wrap { grid-template-columns: 1fr; }
+      .answer-card { min-height: 0; }
+      .demo-copy { order: -1; }
+      .section { padding-top: 64px; }
+      .footer { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <button class="theme-toggle" aria-label="Toggle theme" title="Toggle theme"><span class="theme-icon">☾</span></button>
+  <main class="shell">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="eyebrow">Shipathon / Life Manager</div>
+      <h1 id="hero-title">Never be late<br><em>again.</em></h1>
+      <p class="lead">You tell Life Manager where you need to go. It tells you when to leave, how to get there, and calls you before it is too late.</p>
+      <div class="hero-rule"></div>
+      <div class="hero-stamp">One clear problem.<br>One working demo.</div>
+    </section>
+
+    <section class="section" aria-labelledby="answers-title">
+      <div class="section-head">
+        <div><div class="eyebrow">The four answers</div><h2 id="answers-title">What are we building?</h2></div>
+        <p class="section-note">The first Life Manager feature removes one invisible burden: planning the trip between where you are and where you need to be.</p>
+      </div>
+      <div class="answer-grid">
+        <article class="answer-card"><div class="q">WHAT APP?</div><strong>Life Manager</strong><p>A chat-first life assistant. You tell it a destination or an event, and it turns that into a plan you can actually follow.</p><p><b>Example:</b> “I need to get to Shibuya Station by 14:00.”</p></article>
+        <article class="answer-card"><div class="q">FOR WHO?</div><strong>People who have places to be</strong><p>Students, workers, founders, travelers, and anyone who moves between appointments, stations, campuses, and events.</p><p><b>Example:</b> Anyone who has been late because they forgot the trip itself.</p></article>
+        <article class="answer-card"><div class="q">WHAT PROBLEM?</div><strong>Travel time creates invisible mental load</strong><p>Calendar shows the event. Maps shows the route. You still have to connect them, calculate the buffer, remember when to leave, and notice the notification.</p><p><b>Example:</b> The event starts at 14:00, but you only realize at 13:55 that the trip takes 35 minutes.</p></article>
+        <article class="answer-card"><div class="q">SOLVE HOW?</div><strong>Turn the destination into a departure plan</strong><p>Life Manager uses your current location and destination, calculates the route, explains every step in chat, and calls before it is time to leave.</p><p><b>Example:</b> “Leave at 13:18. Walk to the station, take the recommended train, and arrive at Shibuya Station by 13:52.”</p></article>
+      </div>
+    </section>
+
+    <section class="section split" aria-labelledby="example-title">
+      <div class="decision"><div class="eyebrow">A real example</div><h2 id="example-title">From where I am to Shibuya Station.</h2><p>The user does not open Google Calendar, then Google Maps, then calculate the buffer. They simply tell Life Manager the destination. The plan comes back in the same chat.</p></div>
+      <div class="choice">
+        <div class="choice-card"><div><h3>Before</h3><small>Open Calendar → open Maps → search → calculate → remember</small></div><div class="verdict">Mental load</div></div>
+        <div class="choice-card"><div><h3>After</h3><small>“Get me to Shibuya Station by 14:00.” → route + leave time + call</small></div><div class="verdict">One message</div></div>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="demo-title">
+      <div class="section-head"><div><div class="eyebrow">The phone demo</div><h2 id="demo-title">A route card, not another calendar.</h2></div><p class="section-note">Tap the event buttons to change the demo. The screen is designed to be shown directly from a phone.</p></div>
+      <div class="demo-wrap">
+        <div class="phone" aria-label="Life Manager mobile app mockup">
+          <div class="phone-screen">
+            <div class="notch"></div>
+            <header class="app-top"><b>Life Manager</b><div class="avatar">LM</div></header>
+            <div class="chat">
+              <div class="bubble ai">Good morning. You have one physical event today.</div>
+              <div class="bubble you" id="event-bubble">I need to get to Shibuya Station by 14:00.</div>
+              <div class="bubble ai">I found the route from your current location and added a 10-minute buffer.</div>
+              <div class="route-card">
+                <div class="route-head"><span id="route-label">SHIBUYA · 14:00</span><span id="route-status">READY</span></div>
+                <h3 id="route-title">Leave at 13:18</h3>
+                <div class="meta" id="route-meta">Current location → Shibuya Station · 34 min</div>
+                <div class="route-line">
+                  <div class="rail"><i class="dot"></i><i class="dot"></i><i class="dot"></i></div>
+                  <div class="steps"><div><span id="step-one-time">13:18</span>Walk to the nearest station</div><div><span id="step-two-time">13:25</span>Take the recommended train</div><div><span id="step-three-time">14:00</span>Arrive at Shibuya Station with time to spare</div></div>
+                </div>
+                <button class="leave-button" id="call-button">Call me before I leave</button>
+              </div>
+            </div>
+            <div class="composer"><input aria-label="Message Life Manager" value="What do I need to do next?" /><button aria-label="Send message" id="send-button">↑</button></div>
+          </div>
+        </div>
+        <div class="demo-copy">
+          <div class="demo-callout"><strong id="callout-title">No more late arrivals.</strong><span id="callout-copy">The user never has to open Calendar, open Maps, calculate the buffer, or remember when to leave.</span></div>
+          <p>The demo loop is deliberately narrow: tell Life Manager where you are going, get the route in chat, and receive a call before departure.</p>
+          <div class="demo-controls" role="group" aria-label="Change demo destination"><button class="active" data-event="shibuya">Shibuya Station · 14:00</button><button data-event="campus">Campus · 09:30</button><button data-event="dinner">Dinner · 19:00</button></div>
+          <p class="eyebrow">The promise</p>
+          <h3>“I do not need to check where I am going. Life Manager already told me.”</h3>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="scope-title">
+      <div class="section-head"><div><div class="eyebrow">What ships today</div><h2 id="scope-title">Small enough to finish.</h2></div></div>
+      <div class="answer-grid">
+        <article class="answer-card"><div class="q">INPUT</div><strong>Destination + arrival time</strong><p>“I need to get to Shibuya Station by 14:00.” The phone can provide the current location.</p></article>
+        <article class="answer-card"><div class="q">OUTPUT</div><strong>One route card in chat</strong><p>Leave time, travel duration, each step of the route, arrival buffer, and a call button.</p></article>
+        <article class="answer-card"><div class="q">TRUST</div><strong>Explain the plan</strong><p>“I added 10 minutes because the station walk is uncertain.” The user can understand why the timing changed.</p></article>
+        <article class="answer-card"><div class="q">NEXT</div><strong>Automatic event detection</strong><p>After the demo: connect calendar events, detect physical destinations, and make every plan proactive.</p></article>
+      </div>
+    </section>
+
+    <footer class="footer"><span>Life Manager / Daily Organ</span><span>Shipathon prototype · designed for a phone screen</span></footer>
+  </main>
+  <script>
+    const root = document.documentElement;
+    const themeButton = document.querySelector('.theme-toggle');
+    themeButton.addEventListener('click', () => {
+      const dark = root.dataset.theme === 'dark';
+      root.dataset.theme = dark ? 'light' : 'dark';
+      document.querySelector('.theme-icon').textContent = dark ? '☀' : '☾';
+    });
+
+    const events = {
+      shibuya: { bubble: 'I need to get to Shibuya Station by 14:00.', label: 'SHIBUYA · 14:00', leave: 'Leave at 13:18', meta: 'Current location → Shibuya Station · 34 min', one: '13:18', two: '13:25', three: '14:00', callout: 'No more late arrivals.', copy: 'The user never has to open Calendar, open Maps, calculate the buffer, or remember when to leave.' },
+      campus: { bubble: 'I have class at 09:30.', label: 'TODAY · 09:30', leave: 'Leave at 08:47', meta: 'Home → Campus · 33 min', one: '08:47', two: '08:54', three: '09:30', callout: 'The morning starts on time.', copy: 'The plan arrives before the rush: route, buffer, and the exact moment to leave.' },
+      dinner: { bubble: 'I have dinner at 19:00.', label: 'TODAY · 19:00', leave: 'Leave at 18:16', meta: 'Home → Restaurant · 34 min', one: '18:16', two: '18:25', three: '19:00', callout: 'Plans become actions.', copy: 'A calendar entry is passive. A departure plan tells the user what to do next.' }
+    };
+    function setEvent(key) {
+      const e = events[key];
+      document.querySelector('#event-bubble').textContent = e.bubble;
+      document.querySelector('#route-label').textContent = e.label;
+      document.querySelector('#route-title').textContent = e.leave;
+      document.querySelector('#route-meta').textContent = e.meta;
+      document.querySelector('#step-one-time').textContent = e.one;
+      document.querySelector('#step-two-time').textContent = e.two;
+      document.querySelector('#step-three-time').textContent = e.three;
+      document.querySelector('#callout-title').textContent = e.callout;
+      document.querySelector('#callout-copy').textContent = e.copy;
+      document.querySelectorAll('[data-event]').forEach(button => button.classList.toggle('active', button.dataset.event === key));
+    }
+    document.querySelectorAll('[data-event]').forEach(button => button.addEventListener('click', () => setEvent(button.dataset.event)));
+    document.querySelector('#call-button').addEventListener('click', (event) => {
+      event.currentTarget.textContent = '✓ Call scheduled for 13:12';
+      event.currentTarget.style.background = '#278f72';
+      document.querySelector('#route-status').textContent = 'SCHEDULED';
+    });
+    document.querySelector('#send-button').addEventListener('click', () => {
+      document.querySelector('#callout-title').textContent = 'Life Manager is listening.';
+      document.querySelector('#callout-copy').textContent = 'The next version turns this prototype into a real calendar and route connector.';
+    });
+  </script>
+</body>
+</html>
