@@ -186,7 +186,7 @@ final class ChatViewModel {
         staleReply = false
 
         do {
-            let message = try await service.reply(
+            _ = try await service.reply(
                 questionID: questionID,
                 text: value,
                 idempotencyKey: operationKey
@@ -198,7 +198,7 @@ final class ChatViewModel {
                 return
             }
             answeredQuestionIDs.insert(questionID)
-            merge([message], replacing: false)
+            await sync(reason: .manual)
         } catch {
             if MutationRetryPolicy.shouldRetain(after: error) {
                 composerText = value

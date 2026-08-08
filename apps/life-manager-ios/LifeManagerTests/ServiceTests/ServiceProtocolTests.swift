@@ -42,6 +42,7 @@ final class ServiceProtocolTests: XCTestCase {
         let api = RecordingAPI()
         await api.setChat(TestFixtures.chatPage)
         await api.setMessage(TestFixtures.chatPage.messages[0])
+        await api.setQuestionReply(TestFixtures.questionReply)
         let service = ChatService(api: api)
         let key = UUID(uuidString: "66666666-7777-8888-9999-AAAAAAAAAAAA")!
 
@@ -49,13 +50,18 @@ final class ServiceProtocolTests: XCTestCase {
         let reply = try await service.reply(questionID: "question:v1:8f3a", text: "yes", idempotencyKey: key)
 
         XCTAssertEqual(page, TestFixtures.chatPage)
-        XCTAssertEqual(reply, TestFixtures.chatPage.messages[0])
+        XCTAssertEqual(
+            String(reflecting: type(of: reply)),
+            String(reflecting: QuestionReplyReceipt.self)
+        )
+        XCTAssertEqual((reply as Any) as? QuestionReplyReceipt, TestFixtures.questionReply)
         let endpoints = await api.endpoints()
         XCTAssertEqual(endpoints[0].path, "/chat?cursor=cursor:v1/a")
         XCTAssertEqual(endpoints[1].path, "/questions/question%3Av1%3A8f3a/reply")
         let replyJSON = try JSONSerialization.jsonObject(with: endpoints[1].body!) as! [String: String]
         XCTAssertEqual(replyJSON["questionId"], "question:v1:8f3a")
-        XCTAssertEqual(replyJSON["text"], "yes")
+        XCTAssertEqual(replyJSON["answer"], "yes")
+        XCTAssertNil(replyJSON["text"])
         let replyKeys = await api.idempotencyKeys()
         XCTAssertEqual(replyKeys, [key])
     }
@@ -338,6 +344,11 @@ private enum TestFixtures {
     )
 
     static let chatPage = ChatPage(messages: [analysis.message], nextCursor: nil, hasMore: false)
+    static let questionReply = QuestionReplyReceipt(
+        status: "answered",
+        questionID: "question:v1:8f3a",
+        analysis: nil
+    )
     static let session = Session(
         accessToken: "old-access",
         refreshToken: "old-refresh",
@@ -366,6 +377,7 @@ private actor RecordingAPI: APIRequesting {
     private var analysis: AnalysisResult?
     private var chat: ChatPage?
     private var message: ChatMessage?
+    private var questionReply: QuestionReplyReceipt?
     private var session: Session?
     private var recordedEndpoints: [APIEndpoint] = []
     private var recordedKeys: [UUID] = []
@@ -377,6 +389,7 @@ private actor RecordingAPI: APIRequesting {
     func setAnalysis(_ value: AnalysisResult) { analysis = value }
     func setChat(_ value: ChatPage) { chat = value }
     func setMessage(_ value: ChatMessage) { message = value }
+    func setQuestionReply(_ value: QuestionReplyReceipt) { questionReply = value }
     func setSession(_ value: Session) { session = value }
 
     func send<Response: Decodable & Sendable>(
@@ -391,6 +404,7 @@ private actor RecordingAPI: APIRequesting {
         if Response.self == SessionStart.self, let value = sessionStart { return value as! Response }
         if Response.self == AnalysisResult.self, let value = analysis { return value as! Response }
         if Response.self == ChatPage.self, let value = chat { return value as! Response }
+        if Response.self == QuestionReplyReceipt.self, let value = questionReply { return value as! Response }
         if Response.self == ChatMessage.self, let value = message { return value as! Response }
         if Response.self == Session.self, let value = session { return value as! Response }
         throw APIError.server(statusCode: 500)

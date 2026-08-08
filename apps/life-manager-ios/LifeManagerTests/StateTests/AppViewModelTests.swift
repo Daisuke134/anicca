@@ -319,7 +319,7 @@ private actor RestoreChatService: ChatServicing {
         return page
     }
 
-    func reply(questionID: String, text: String, idempotencyKey: UUID) async throws -> ChatMessage {
+    func reply(questionID: String, text: String, idempotencyKey: UUID) async throws -> QuestionReplyReceipt {
         fatalError("not used")
     }
 

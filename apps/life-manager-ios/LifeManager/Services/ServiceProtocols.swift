@@ -18,7 +18,7 @@ protocol AnalysisServicing: Sendable {
 
 protocol ChatServicing: Sendable {
     func fetch(after cursor: String?) async throws -> ChatPage
-    func reply(questionID: String, text: String, idempotencyKey: UUID) async throws -> ChatMessage
+    func reply(questionID: String, text: String, idempotencyKey: UUID) async throws -> QuestionReplyReceipt
 }
 
 protocol CallServicing: Sendable {
@@ -95,12 +95,16 @@ private struct RefreshRequest: Codable, Sendable {
 
 private struct ReplyRequest: Codable, Sendable {
     let questionID: String
-    let text: String
+    let answer: String
 
     enum CodingKeys: String, CodingKey {
         case questionID = "questionId"
-        case text
+        case answer
     }
+}
+
+private struct ConfirmedActionRequest: Encodable, Sendable {
+    let confirmed: Bool
 }
 
 struct AuthService: AuthServicing {
@@ -294,8 +298,8 @@ struct ChatService: ChatServicing {
         )
     }
 
-    func reply(questionID: String, text: String, idempotencyKey: UUID) async throws -> ChatMessage {
-        let body = try JSONEncoder.lifeManager.encode(ReplyRequest(questionID: questionID, text: text))
+    func reply(questionID: String, text: String, idempotencyKey: UUID) async throws -> QuestionReplyReceipt {
+        let body = try JSONEncoder.lifeManager.encode(ReplyRequest(questionID: questionID, answer: text))
         let encodedQuestionID = questionID.addingPercentEncoding(
             withAllowedCharacters: CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~")
         ) ?? questionID
@@ -305,7 +309,7 @@ struct ChatService: ChatServicing {
                 method: .post,
                 body: body
             ),
-            as: ChatMessage.self,
+            as: QuestionReplyReceipt.self,
             idempotencyKey: idempotencyKey
         )
     }
@@ -319,8 +323,9 @@ struct CallService: CallServicing {
     }
 
     func placeTestCall(idempotencyKey: UUID) async throws -> CallReceipt {
-        try await api.send(
-            .mutation(path: "/calls/test", method: .post),
+        let body = try JSONEncoder.lifeManager.encode(ConfirmedActionRequest(confirmed: true))
+        return try await api.send(
+            .mutation(path: "/calls/test", method: .post, body: body),
             as: CallReceipt.self,
             idempotencyKey: idempotencyKey
         )
@@ -335,8 +340,9 @@ struct AccountService: AccountServicing {
     }
 
     func deleteAccount(idempotencyKey: UUID) async throws -> AccountDeletionReceipt {
-        try await api.send(
-            .mutation(path: "/account", method: .delete),
+        let body = try JSONEncoder.lifeManager.encode(ConfirmedActionRequest(confirmed: true))
+        return try await api.send(
+            .mutation(path: "/account", method: .delete, body: body),
             as: AccountDeletionReceipt.self,
             idempotencyKey: idempotencyKey
         )
