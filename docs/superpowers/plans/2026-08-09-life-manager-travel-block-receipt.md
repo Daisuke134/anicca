@@ -128,12 +128,16 @@ Required tests: fixture hashes/decoding, semantic ID mapping, EN/JA localization
 1. Fresh review the integrated diff once. VCSDD and Codex Review are prohibited.
 2. Apply the follow-up migration only to the isolated Supabase staging project and read back columns, indexes, RPCs, and service-role-only grants.
 3. Deploy only Railway `staging/life-call-staging`; production phone/email/Telegram credentials remain absent.
-4. Use a real pre-authorized Google Calendar connection with a location-bearing future source event.
-5. Call mobile analysis and read chat until both route and provider-confirmed travel IDs appear.
-6. Exact GET the deterministic Google event and match provider ID, marker, summary prefix, start/end, timezone, and payload hash.
-7. Repeat the same idempotency key, then a new analysis key. Prove one provider event, one semantic claim, and one confirmed outbox receipt.
-8. Exercise crash-before-create, crash-after-create, timeout, 409-match, and 409-collision in isolated provider/test seams before declaring exactly-once.
-9. Run English/Japanese Maestro and record MP4 only after the provider receipt exists.
+4. Re-run the exact pre-authorization gate immediately before seeding: the intersection of ACTIVE Google Calendar status, selected primary identity hash, current auth config, and expected provider owner MUST contain exactly one account. Identity-only matching is insufficient and MUST fail closed.
+5. Pin that exact owner/account to a newly generated opaque staging-only LM user through `link_lm_mobile_calendar_identity`. Copy no production profile, event, session, or DB row. Seed only demo name/home/locale/timezone, `phone=null`, `calls_enabled=false`, and `paid=false`.
+6. Before any provider write, prove the v3.1 exact account GET and primary Calendar read succeed, the mapping join count is one, the source event exists exactly once with a location, and production DB fingerprints/counts are unchanged.
+7. Use the real pre-authorized Google Calendar connection with that location-bearing future source event.
+8. Call mobile analysis and read chat until both route and provider-confirmed travel IDs appear.
+9. Exact GET the deterministic Google event and match provider ID, marker, summary prefix, start/end, timezone, and payload hash.
+10. Repeat the same idempotency key, then a new analysis key. Prove one provider event, one semantic claim, and one confirmed outbox receipt.
+11. Exercise crash-before-create, crash-after-create, timeout, 409-match, and 409-collision in isolated provider/test seams before declaring exactly-once.
+12. Run English/Japanese Maestro and record MP4 only after the provider receipt exists.
+13. Cleanup deletes the exact provider event ID and staging DB rows only. It MUST NOT call mobile `/account`, disconnect, disable, revoke, or delete the shared Composio account.
 
 ## Stop conditions
 
