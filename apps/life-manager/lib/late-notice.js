@@ -6,7 +6,7 @@ const { isHelperBlock } = require("./wake-filter.js");
 const { shouldMarkAnswered } = require("./answered.js");
 const { hangupCall } = require("./dial.js");
 const { resolveLateRecipients } = require("./late-recipient-resolver.js");
-const { createLateDraft } = require("./late-approval.js");
+const { createLateDraft, createLateApprovalCallbackData } = require("./late-approval.js");
 
 const NO_DESTINATION_MESSAGE = "⚠️ 先方の連絡先が見つからず、遅刻連絡は送れていません";
 const MAIL_FAILURE_MESSAGE = "⚠️ 遅刻連絡メールを送信できませんでした";
@@ -127,6 +127,11 @@ function lateApprovalCardRequest(input, event, draft) {
     "",
     draft.bodySnapshot,
   ].join("\n");
+  const callbackSecret = input.callbackSecret || input.lateApprovalCallbackSecret;
+  const callbackNowMs = input.nowMs === undefined ? Date.now() : input.nowMs;
+  const callbackExpiresAtMs = input.callbackExpiresAtMs === undefined
+    ? callbackNowMs + 10 * 60_000
+    : input.callbackExpiresAtMs;
   const draftId = String(draft.draftId);
   return {
     token: input.telegramToken,
@@ -135,8 +140,20 @@ function lateApprovalCardRequest(input, event, draft) {
     extra: {
       reply_markup: {
         inline_keyboard: [[
-          { text: "送る", callback_data: `late:send:${draftId}` },
-          { text: "送らない", callback_data: `late:do_not_send:${draftId}` },
+          {
+            text: "送る",
+            callback_data: createLateApprovalCallbackData({
+              action: "send", draftId, secret: callbackSecret,
+              nowMs: callbackNowMs, expiresAtMs: callbackExpiresAtMs,
+            }),
+          },
+          {
+            text: "送らない",
+            callback_data: createLateApprovalCallbackData({
+              action: "do_not_send", draftId, secret: callbackSecret,
+              nowMs: callbackNowMs, expiresAtMs: callbackExpiresAtMs,
+            }),
+          },
         ]],
       },
     },
@@ -488,6 +505,7 @@ async function applyTestCallDetection(opts = {}) {
 module.exports = {
   NO_DESTINATION_MESSAGE, MAIL_FAILURE_MESSAGE,
   evaluateLateArrival, formatLateSuccessMessage, externalAttendees,
-  processLocationLateNotice, upsertLiveLocation, getLiveLocation, deleteLiveLocation, claimLateEvent,
+  processLocationLateNotice, lateApprovalCardRequest, enqueueLateApprovalCard,
+  upsertLiveLocation, getLiveLocation, deleteLiveLocation, claimLateEvent,
   markAnswered, recordAmdResult, applyAmdDetection, applyTestCallDetection,
 };

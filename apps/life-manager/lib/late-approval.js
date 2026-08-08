@@ -5,7 +5,12 @@
 // record one provider receipt.  The Supabase implementation below is deliberately an RPC-only
 // adapter; no caller can turn a failed read/insert into an optimistic send.
 
-const { randomBytes, randomUUID } = require("node:crypto");
+const {
+  createHmac,
+  randomBytes,
+  randomUUID,
+  timingSafeEqual,
+} = require("node:crypto");
 const { isDeepStrictEqual } = require("node:util");
 
 const APPROVAL_STATES = Object.freeze([
@@ -15,6 +20,11 @@ const APPROVAL_STATES = Object.freeze([
 const RECIPIENT_STATUSES = new Set(["resolved", "recipient_missing", "recipient_ambiguous"]);
 const DECISIONS = new Set(["send", "do_not_send"]);
 const DEFAULT_LEASE_MS = 120_000;
+const DEFAULT_CALLBACK_TTL_MS = 10 * 60_000;
+// Existing late-notice unit tests run without a process env.  Production cards use one of the
+// explicit secrets below; this fallback keeps local card construction signed (never plaintext) while
+// making it obvious that a deployed service must configure a secret of its own.
+const DEVELOPMENT_CALLBACK_SECRET = "lm-late-approval-callback-development-only";
 const MAX_BODY_LENGTH = 64_000;
 const MAX_JSON_LENGTH = 128_000;
 
@@ -268,6 +278,80 @@ function newProviderIdempotencyKey() {
   return randomBytes(32).toString("hex");
 }
 
+function callbackSecret(options = {}) {
+  const explicit = options.secret ?? options.callbackSecret;
+  if (explicit !== undefined) return String(explicit);
+  return String(
+    process.env.LM_LATE_APPROVAL_CALLBACK_SECRET
+      || process.env.LM_UID_SECRET
+      || process.env.LM_TELEGRAM_WEBHOOK_SECRET
+      || DEVELOPMENT_CALLBACK_SECRET,
+  );
+}
+
+function callbackActionCode(action) {
+  const value = String(action || "").trim().toLowerCase();
+  if (value === "send" || value === "s") return "s";
+  if (value === "do_not_send" || value === "dont_send" || value === "don't_send" || value === "d") return "d";
+  fail("invalid_callback", "late approval callback action is invalid");
+}
+
+function callbackAction(code) {
+  return code === "s" ? "send" : "do_not_send";
+}
+
+function callbackPayload(code, draftId, expiresAtSeconds) {
+  return `late:v1:${code}:${draftId}:${expiresAtSeconds}`;
+}
+
+function callbackSignature(payload, secret) {
+  // Telegram limits callback_data to 64 bytes.  An 8-byte truncated HMAC is encoded in 11 URL-safe
+  // characters and still makes a copied/tampered draft id or action unverifiable at the webhook.
+  return createHmac("sha256", secret).update(payload, "utf8").digest("base64url").slice(0, 11);
+}
+
+function createLateApprovalCallbackData(input = {}) {
+  const action = callbackActionCode(input.action);
+  const draftId = text(input.draftId || input.draft_id, "draft id", 128);
+  const nowMs = finiteNow(input.nowMs, "callback timestamp");
+  const expiryMs = input.expiresAtMs == null
+    ? nowMs + DEFAULT_CALLBACK_TTL_MS
+    : finiteNow(input.expiresAtMs, "callback expiry");
+  const expiresAtSeconds = Math.floor(expiryMs / 1000);
+  if (!Number.isSafeInteger(expiresAtSeconds) || expiresAtSeconds <= 0) {
+    fail("invalid_callback", "late approval callback expiry is invalid");
+  }
+  const expiresToken = expiresAtSeconds.toString(36);
+  const payload = callbackPayload(action, draftId, expiresToken);
+  const signature = callbackSignature(payload, callbackSecret(input));
+  const result = `late:${action}:${draftId}:${expiresToken}:${signature}`;
+  if (Buffer.byteLength(result, "utf8") > 64) fail("invalid_callback", "late approval callback is too long");
+  return result;
+}
+
+function parseLateApprovalCallback(data, options = {}) {
+  const raw = String(data || "");
+  const match = /^late:([sd]):([A-Za-z0-9._-]{1,128}):([0-9a-z]{1,8}):([A-Za-z0-9_-]{11})$/.exec(raw);
+  if (!match) return null;
+  const [, code, draftId, expiresToken, receivedSignature] = match;
+  const payload = callbackPayload(code, draftId, expiresToken);
+  const expectedSignature = callbackSignature(payload, callbackSecret(options));
+  const received = Buffer.from(receivedSignature, "utf8");
+  const expected = Buffer.from(expectedSignature, "utf8");
+  if (received.length !== expected.length || !timingSafeEqual(received, expected)) return null;
+  const expiresAtSeconds = Number.parseInt(expiresToken, 36);
+  if (!Number.isSafeInteger(expiresAtSeconds) || expiresAtSeconds <= 0) return null;
+  const nowMs = finiteNow(options.nowMs, "callback timestamp");
+  return {
+    action: callbackAction(code),
+    code,
+    draftId,
+    expiresAtMs: expiresAtSeconds * 1000,
+    expired: nowMs > expiresAtSeconds * 1000,
+    callbackData: raw,
+  };
+}
+
 function initialLateDraft(input) {
   const normalized = normalizeDraftInput(input);
   const now = iso(normalized.nowMs, "createdAt");
@@ -391,6 +475,19 @@ function lookupOperation(store, names) {
   fail("store_invalid", `late approval store needs ${names[0]}`);
 }
 
+async function getLateDraft(input, store) {
+  const normalized = {
+    uid: text(input && input.uid, "uid", 256),
+    draftId: text(input && (input.draftId || input.draft_id), "draft id", 128),
+  };
+  const target = store || createSupabaseLateApprovalStore();
+  const result = await lookupOperation(target, ["getLateDraft", "getDraft"])(normalized);
+  const row = rowFromPersistence(result);
+  assertRowId(row);
+  assertTenant(row, normalized.uid);
+  return exposeRow(row);
+}
+
 async function createLateDraft(input, store) {
   const normalized = normalizeDraftInput(input);
   const target = store || createSupabaseLateApprovalStore();
@@ -495,6 +592,12 @@ function createInMemoryLateApprovalStore(options = {}) {
       return exposeRow(transition.row, transition.duplicate ? { duplicate: true } : {});
     },
     getDraft(draftId) { return exposeRow(get(draftId)); },
+    async getLateDraft(input) {
+      const uid = text(input && input.uid, "uid", 256);
+      const row = get(text(input && (input.draftId || input.draft_id), "draft id", 128));
+      assertTenant(row, uid);
+      return exposeRow(row);
+    },
     size() { return rowsById.size; },
   };
 }
@@ -533,6 +636,23 @@ function createSupabaseLateApprovalStore(options = {}) {
     return body;
   }
   return {
+    async getLateDraft(input) {
+      const uid = text(input && input.uid, "uid", 256);
+      const draftId = text(input && (input.draftId || input.draft_id), "draft id", 128);
+      const url = `${credentials.supaUrl}/rest/v1/lm_late_approval_drafts` +
+        `?uid=eq.${encodeURIComponent(uid)}&draft_id=eq.${encodeURIComponent(draftId)}&select=*&limit=1`;
+      const response = await credentials.fetchImpl(url, { headers: rpcHeaders(credentials.supaKey) })
+        .catch((error) => ({ __error: String(error && error.message || error) }));
+      if (!response || response.__error || !response.ok) {
+        fail("storage_error", "late approval draft lookup failed", {
+          status: response && response.status, cause: response && response.__error,
+        });
+      }
+      const body = await response.json().catch(() => null);
+      const row = rowFromPersistence(body);
+      if (!row) fail("draft_not_found", "late draft was not found");
+      return row;
+    },
     async createLateDraft(input) {
       const body = await rpc("lm_create_late_draft", {
         p_uid: input.uid,
@@ -581,6 +701,171 @@ function createSupabaseLateApprovalStore(options = {}) {
   };
 }
 
+function callbackOwner(options = {}) {
+  const owner = options.owner || options.row || options.user;
+  if (!owner || !owner.uid) return null;
+  const chatId = String(options.chatId || "");
+  if (!chatId || String(options.actorId || "") !== chatId) return null;
+  if (owner.telegram_chat_id != null && String(owner.telegram_chat_id) !== chatId) return null;
+  return owner;
+}
+
+function providerMessageId(result) {
+  if (!result || typeof result !== "object") return "";
+  return String(result.id || result.providerMessageId || result.provider_message_id || "").trim();
+}
+
+function approvalReceiptText(row, providerId) {
+  const recipient = Array.isArray(row && row.recipients) && row.recipients[0];
+  const identity = recipient && recipient.email
+    ? `${recipient.display_name || recipient.displayName || "宛先"} <${recipient.email}>`
+    : "宛先";
+  return `✅ 遅刻連絡を送信しました\n宛先: ${identity}\nResend: ${providerId}`;
+}
+
+async function handleLateApprovalCallback(data, options = {}) {
+  const parsed = parseLateApprovalCallback(data, options);
+  if (!parsed) return { handled: true, ok: false, reason: "invalid_callback" };
+  if (parsed.expired) return { handled: true, ok: false, reason: "expired" };
+
+  const owner = callbackOwner(options);
+  if (!owner) return { handled: true, ok: false, reason: "scope_mismatch" };
+  const store = options.store || options.lateApprovalStore || createSupabaseLateApprovalStore({
+    supaUrl: options.supaUrl,
+    supaKey: options.supaKey,
+    fetchImpl: options.fetchImpl,
+  });
+  let current;
+  try {
+    current = options.draft || await getLateDraft({ uid: owner.uid, draftId: parsed.draftId }, store);
+  } catch (error) {
+    const code = error && error.code;
+    return {
+      handled: true,
+      ok: false,
+      reason: code === "draft_not_found" ? "expired" : (code || "draft_lookup_failed"),
+    };
+  }
+
+  // A missing/ambiguous resolution is terminal at creation time.  Even a valid signed callback
+  // cannot turn an evidence gap into an email address, and the card renderer never gives these rows
+  // buttons in the first place.
+  if (["recipient_missing", "recipient_ambiguous"].includes(current.status)) {
+    return { handled: true, ok: false, reason: current.status, draft: current };
+  }
+  if (current.status === "do_not_send" && parsed.action === "send") {
+    return { handled: true, ok: false, reason: "do_not_send", draft: current };
+  }
+  if (current.status === "sent" && parsed.action === "send") {
+    return { handled: true, ok: true, sent: false, reason: "already_sent", draft: current };
+  }
+
+  const nowMs = options.nowMs === undefined ? Date.now() : options.nowMs;
+  const idempotencyKey = `telegram:${parsed.callbackData}`;
+  let decided;
+  try {
+    decided = await decideLateDraft({
+      uid: owner.uid, draftId: parsed.draftId, decision: parsed.action,
+      idempotencyKey, nowMs,
+    }, store);
+  } catch (error) {
+    return { handled: true, ok: false, reason: (error && error.code) || "decision_failed" };
+  }
+
+  if (parsed.action === "do_not_send") {
+    if (!decided.duplicate && typeof options.reflectAnswer === "function") {
+      await options.reflectAnswer({
+        token: options.token, chatId: options.chatId, messageId: options.messageId,
+        messageText: options.messageText, label: "送らない", fetchImpl: options.fetchImpl,
+      }).catch(() => {});
+    }
+    return { handled: true, ok: true, sent: false, decision: "do_not_send", draft: decided };
+  }
+
+  const workerId = String(options.workerId ||
+    `telegram:${owner.uid}:${parsed.draftId}:${options.callbackQueryId || parsed.callbackData}`).slice(0, 256);
+  let claim;
+  try {
+    claim = await claimApprovedDelivery({ draftId: parsed.draftId, workerId, nowMs }, store);
+  } catch (error) {
+    return { handled: true, ok: false, reason: (error && error.code) || "claim_failed", draft: decided };
+  }
+  if (!claim.claimed) {
+    if (claim.status === "sent") return { handled: true, ok: true, sent: false, reason: "already_sent", draft: claim };
+    return { handled: true, ok: false, reason: claim.reason || "claim_unavailable", draft: claim };
+  }
+
+  const sendLateNotice = options.sendLateNotice || require("./notify.js").sendLateNotice;
+  const draft = claim;
+  const recipients = Array.isArray(draft.recipients) ? draft.recipients : [];
+  const event = options.event || {
+    id: draft.eventKey,
+    summary: draft.eventKey,
+    attendees: recipients.map((recipient) => ({
+      email: recipient.email,
+      displayName: recipient.display_name || recipient.displayName,
+    })),
+  };
+  let provider;
+  try {
+    provider = await sendLateNotice(owner.uid, event, {
+      userName: owner.name,
+      userEmail: owner.email,
+      etaMinutes: draft.etaEvidence && draft.etaEvidence.etaMinutes,
+      recipientSnapshot: recipients,
+      bodySnapshot: draft.bodySnapshot,
+      providerIdempotencyKey: draft.providerIdempotencyKey,
+      idempotencyKey: draft.providerIdempotencyKey,
+      resendKey: options.resendKey || process.env.RESEND_API_KEY,
+      fetchImpl: options.providerFetchImpl || options.fetchImpl,
+    });
+  } catch (error) {
+    return { handled: true, ok: false, sent: false, reason: "provider_send_failed", error: String(error && error.message || error), draft };
+  }
+  const providerId = providerMessageId(provider);
+  if (!provider || provider.sent !== true || !providerId) {
+    return { handled: true, ok: false, sent: false, reason: "provider_receipt_missing", draft };
+  }
+
+  let receipt;
+  try {
+    receipt = await recordLateDelivery({
+      uid: owner.uid, draftId: parsed.draftId, providerMessageId: providerId,
+      deliveredAt: new Date(nowMs).toISOString(), claimToken: draft.claimToken,
+      workerId, nowMs,
+    }, store);
+  } catch (error) {
+    return { handled: true, ok: false, sent: true, reason: "provider_receipt_failed", error: String(error && error.message || error), draft };
+  }
+
+  if (typeof options.reflectAnswer === "function") {
+    await options.reflectAnswer({
+      token: options.token, chatId: options.chatId, messageId: options.messageId,
+      messageText: options.messageText, label: "送る", fetchImpl: options.fetchImpl,
+    }).catch(() => {});
+  }
+  const sendMessage = options.sendMessage || require("./telegram.js").sendMessage;
+  let telegramReceipt;
+  try {
+    telegramReceipt = await sendMessage(
+      options.token || process.env.LM_TELEGRAM_BOT_TOKEN,
+      options.chatId,
+      approvalReceiptText(draft, providerId),
+    );
+  } catch (error) {
+    telegramReceipt = { ok: false, error: String(error && error.message || error) };
+  }
+  return {
+    handled: true,
+    ok: Boolean(telegramReceipt && telegramReceipt.ok !== false),
+    sent: true,
+    decision: "send",
+    providerMessageId: providerId,
+    telegramMessageId: telegramReceipt && telegramReceipt.result && telegramReceipt.result.message_id,
+    draft: receipt,
+  };
+}
+
 module.exports = {
   APPROVAL_STATES,
   DECISIONS,
@@ -596,4 +881,8 @@ module.exports = {
   transitionLateDecision,
   transitionLateClaim,
   transitionLateDelivery,
+  getLateDraft,
+  createLateApprovalCallbackData,
+  parseLateApprovalCallback,
+  handleLateApprovalCallback,
 };
