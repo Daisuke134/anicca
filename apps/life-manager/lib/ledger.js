@@ -4,6 +4,149 @@ function headers(key, extra) {
   return Object.assign({ apikey: key, Authorization: `Bearer ${key}` }, extra || {});
 }
 
+const ACTUAL_STATUS = new Set(["measured", "estimated", "unknown"]);
+
+function nonEmpty(value, field) {
+  const text = value == null ? "" : String(value).trim();
+  if (!text) throw new Error(`${field} is required`);
+  return text;
+}
+
+function nonNegative(value, field, { nullable = false } = {}) {
+  if (value == null && nullable) return null;
+  const number = Number(value);
+  if (!Number.isFinite(number) || number < 0) throw new Error(`${field} must be a non-negative number or null`);
+  return number;
+}
+
+function validateProviderCostEvent(input = {}) {
+  const provider = nonEmpty(input.provider, "provider");
+  const sku = nonEmpty(input.sku, "sku");
+  const operation = nonEmpty(input.operation, "operation");
+  const requestId = nonEmpty(input.requestId, "requestId");
+  const unit = nonEmpty(input.unit, "unit");
+  const pricingVersion = nonEmpty(input.pricingVersion, "pricingVersion");
+  const quantity = nonNegative(input.quantity, "quantity");
+  const estimatedUsd = nonNegative(input.estimatedUsd, "estimatedUsd", { nullable: true });
+  const actualBilledUsd = nonNegative(input.actualBilledUsd, "actualBilledUsd", { nullable: true });
+  const actualStatus = input.actualStatus == null
+    ? (actualBilledUsd == null ? "unknown" : "measured")
+    : String(input.actualStatus);
+  if (!ACTUAL_STATUS.has(actualStatus)) throw new Error(`actualStatus must be one of ${Array.from(ACTUAL_STATUS).join(", ")}`);
+  if (actualStatus === "measured" && actualBilledUsd == null) throw new Error("measured billing requires actualBilledUsd");
+  if (actualStatus !== "measured" && actualBilledUsd != null) throw new Error("non-measured billing must keep actualBilledUsd null");
+  if (actualStatus === "estimated" && estimatedUsd == null) throw new Error("estimated billing requires estimatedUsd");
+  const metadata = input.metadata == null ? {} : input.metadata;
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) throw new Error("metadata must be an object");
+  return {
+    uid: input.uid == null ? null : String(input.uid),
+    provider, sku, operation, requestId, quantity, unit, pricingVersion,
+    estimatedUsd, actualBilledUsd, actualStatus,
+    metadata,
+  };
+}
+
+function failureShape(event, error) {
+  return {
+    kind: "provider_cost_ledger_write_failed",
+    provider: event.provider,
+    sku: event.sku,
+    operation: event.operation,
+    requestId: event.requestId,
+    uid: event.uid,
+    quantity: event.quantity,
+    unit: event.unit,
+    error: {
+      message: error && error.message ? String(error.message) : String(error),
+      status: error && Number.isFinite(Number(error.status)) ? Number(error.status) : null,
+    },
+    failedAt: new Date().toISOString(),
+  };
+}
+
+async function emitProviderCostFailure(event, error, opts = {}) {
+  const failure = failureShape(event, error);
+  const log = opts.log || console.error;
+  try { log("[ledger] provider cost write failed", JSON.stringify(failure)); } catch { /* logging is best effort */ }
+  if (opts.outboxStore && typeof opts.outboxStore.insert === "function") {
+    try { await opts.outboxStore.insert(failure); } catch (outboxError) {
+      try { log("[ledger] provider cost failure outbox failed", outboxError && outboxError.message ? outboxError.message : outboxError); } catch { /* noop */ }
+    }
+  } else if (opts.failureOutboxUrl && opts.fetchImpl && typeof opts.fetchImpl === "function") {
+    try {
+      await opts.fetchImpl(opts.failureOutboxUrl, {
+        method: "POST",
+        headers: Object.assign({ "Content-Type": "application/json" }, opts.failureOutboxHeaders || {}),
+        body: JSON.stringify(failure),
+      });
+    } catch { /* owner alert below remains the visible signal */ }
+  }
+  if (typeof opts.ownerAlert === "function") {
+    try { await opts.ownerAlert(failure); } catch (alertError) {
+      try { log("[ledger] provider cost owner alert failed", alertError && alertError.message ? alertError.message : alertError); } catch { /* noop */ }
+    }
+  }
+  return failure;
+}
+
+// Complete provider cost event. Unlike the legacy recordCost wrapper below,
+// this function never fills an absent actual amount with zero.
+async function recordProviderCost(input = {}, opts = {}) {
+  let event;
+  try {
+    event = validateProviderCostEvent(input);
+  } catch (error) {
+    const invalidEvent = {
+      provider: input.provider == null ? "unknown" : String(input.provider),
+      sku: input.sku == null ? "unknown" : String(input.sku),
+      operation: input.operation == null ? "unknown" : String(input.operation),
+      requestId: input.requestId == null ? "unknown" : String(input.requestId),
+      uid: input.uid == null ? null : String(input.uid),
+      quantity: null,
+      unit: input.unit == null ? "unknown" : String(input.unit),
+    };
+    await emitProviderCostFailure(invalidEvent, error, opts);
+    return false;
+  }
+  const supaUrl = opts.supaUrl || process.env.SUPABASE_URL;
+  const supaKey = opts.supaKey || process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const fetchImpl = opts.fetchImpl || globalThis.fetch;
+  if (!supaUrl || !supaKey || typeof fetchImpl !== "function") {
+    await emitProviderCostFailure(event, new Error("Supabase credentials or fetch implementation missing"), opts);
+    return false;
+  }
+  const body = {
+    uid: event.uid,
+    provider: event.provider,
+    sku: event.sku,
+    operation: event.operation,
+    request_id: event.requestId,
+    quantity: event.quantity,
+    unit: event.unit,
+    pricing_version: event.pricingVersion,
+    estimated_usd: event.estimatedUsd,
+    actual_billed_usd: event.actualBilledUsd,
+    actual_status: event.actualStatus,
+    metadata: event.metadata,
+  };
+  try {
+    const response = await fetchImpl(`${supaUrl.replace(/\/$/u, "")}/rest/v1/lm_api_cost`, {
+      method: "POST",
+      headers: headers(supaKey, { "Content-Type": "application/json", Prefer: "return=minimal" }),
+      body: JSON.stringify(body),
+    });
+    if (!response || !response.ok) {
+      const error = new Error(`Supabase provider cost insert failed (${response && response.status})`);
+      error.status = response && response.status;
+      throw error;
+    }
+    return true;
+  } catch (error) {
+    await emitProviderCostFailure(event, error, opts);
+    return false;
+  }
+}
+
 // Best-effort cost persistence. Ledger failures must never break a call or scheduler tick.
 async function recordCost({ uid, kind, quantity, unit, estUsd, meta } = {}, opts = {}) {
   const supaUrl = opts.supaUrl || process.env.SUPABASE_URL;
@@ -137,4 +280,11 @@ function businessSummary(daysBack, rows, nowMs) {
   return summary;
 }
 
-module.exports = { recordCost, recordDailyComposioPoll, monthlyComposioCallCount, businessSummary };
+module.exports = {
+  recordCost,
+  recordProviderCost,
+  validateProviderCostEvent,
+  recordDailyComposioPoll,
+  monthlyComposioCallCount,
+  businessSummary,
+};

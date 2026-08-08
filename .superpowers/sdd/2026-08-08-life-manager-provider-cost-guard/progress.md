@@ -20,7 +20,7 @@
 | 1. Persistent geocodes | GREEN | missing-module | 6/6 focused + 43/43 baseline | pending |
 | 2. Durable route cache | GREEN | original suite + new scope tests | 15/15 route/transit + 62/62 travel regression | pending |
 | 3. Transit facts/fallback | GREEN | structured projection + anchor tests | 31/31 transit/route tests; 59/59 combined focused | pending |
-| 4. Truthful cost event | pending | — | — | — |
+| 4. Truthful cost event | GREEN | 5 contract failures (missing API) | 12/12 ledger contract | pending |
 | 5. Provider instrumentation | pending | — | — | — |
 | 6. Budget policy | pending | — | — | — |
 | 7. Owner report/deploy/measure | code-only pending | — | — | — |
@@ -61,3 +61,11 @@ Result: 43/43 passed, 0 failed, 0 skipped (2026-08-08).
 - GREEN: free provider queries `/plan` and `/guidance/plan` sequentially with the same date/time and `type=arrival` for outbound or `type=departure` for return.
 - GREEN: `directionsRoute` returns structured `{provider, minutes, route}` while `directionsMinutes` remains the integer-minute adapter for existing scheduler callers.
 - Verification: `node --test lib/transit.test.js lib/travel-transit-wire.test.js lib/travel-routes.test.js` → 31/31; combined cost/route/geocode focus → 59/59.
+
+## Task 4 receipt
+
+- RED: `node --test lib/ledger.test.js test/provider-cost-contract.test.js` → legacy 7 tests passed, all 5 new contract tests failed (missing migration failure table and `recordProviderCost`).
+- GREEN: same command → 12/12 passed.
+- `recordProviderCost` validates all dimensions, preserves nullable actual billing, defaults absent actuals to `actual_status="unknown"`, and rejects contradictory/invalid statuses without writing.
+- Ledger failures return `false` and emit a structured `provider_cost_ledger_write_failed` event through the configured owner alert and durable outbox seam.
+- Migration adds additive ledger columns, actual-status check, request idempotency index, and service-role-only failure outbox table.

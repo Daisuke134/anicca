@@ -50,6 +50,19 @@ ALTER TABLE public.lm_api_cost
   ADD COLUMN IF NOT EXISTS failed_at timestamptz,
   ADD COLUMN IF NOT EXISTS failure_reason text;
 
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conrelid = 'public.lm_api_cost'::regclass
+      AND conname = 'lm_api_cost_actual_status_check'
+  ) THEN
+    ALTER TABLE public.lm_api_cost
+      ADD CONSTRAINT lm_api_cost_actual_status_check
+      CHECK (actual_status IS NULL OR actual_status IN ('measured', 'estimated', 'unknown'));
+  END IF;
+END $$;
+
 UPDATE public.lm_api_cost
 SET estimated_usd = est_usd
 WHERE estimated_usd IS NULL AND est_usd IS NOT NULL;
@@ -58,3 +71,23 @@ CREATE INDEX IF NOT EXISTS lm_api_cost_uid_ts_idx
   ON public.lm_api_cost (uid, ts);
 CREATE INDEX IF NOT EXISTS lm_api_cost_provider_ts_idx
   ON public.lm_api_cost (provider, ts);
+CREATE UNIQUE INDEX IF NOT EXISTS lm_api_cost_provider_request_idx
+  ON public.lm_api_cost (provider, request_id)
+  WHERE request_id IS NOT NULL;
+
+CREATE TABLE IF NOT EXISTS public.lm_provider_cost_failures (
+  id           bigint generated always as identity primary key,
+  failed_at    timestamptz NOT NULL DEFAULT now(),
+  uid          text,
+  provider     text NOT NULL,
+  sku          text NOT NULL,
+  operation    text NOT NULL,
+  request_id   text NOT NULL,
+  quantity     numeric,
+  unit         text,
+  error        jsonb NOT NULL
+);
+CREATE INDEX IF NOT EXISTS lm_provider_cost_failures_failed_at_idx
+  ON public.lm_provider_cost_failures (failed_at);
+ALTER TABLE public.lm_provider_cost_failures ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.lm_provider_cost_failures FORCE ROW LEVEL SECURITY;
