@@ -511,10 +511,10 @@ Google consent/account chooser is not asserted by Maestro because it is an exter
 
 - Gate 0 Task 1 is complete on `feat/lm-daily-late-approval`: resolver focused tests and fresh review are green and the commits are pushed.
 - Gate 0 Task 2 is complete on the same branch: durable decision/claim/receipt tests are green, isolated staging PostgreSQL role/RPC read-back is complete, fresh re-review is green, and production Supabase was not touched.
-- Gate 0 Task 3 implementation is pushed and its fresh review is in progress. Gate 0 remains incomplete until Tasks 3–6 are reviewed, deployed, verified with the production-safe receipt, and recorded in the DAILY SSOT.
+- Gate 0 Task 3 implementation is pushed. Its fresh review found two Important defects: a later tick can collide with the immutable draft snapshot instead of reusing it, and the scheduler still owns the pre-approval mail capability. The original Luna executor is fixing both under RED-first tests. Gate 0 remains incomplete until the Task 3 re-review and Tasks 4–6 are green, deployed, verified with the production-safe receipt, and recorded in the DAILY SSOT.
 - Native iOS product Task 1 is running in isolated worktree `feat/lm-ios-product` under Dais's explicit non-colliding parallelization approval. This is app-skeleton preparation only; it does not satisfy Gate 4 before Gate 2 fixtures exist.
 - Local delivery tooling is ready: Xcode `26.6 (17F113)`, iOS `26.3` Simulator devices, and Maestro `2.8.0` are verified.
-- `https://daisuke134.github.io/life-manager-ios-demo/` is a public interactive presentation prototype. It is not the native app, a Maestro receipt, a TestFlight build, or an acceptance-criteria completion receipt.
+- HTML and web prototypes are not delivery artifacts and MUST NOT be used for the demo or any acceptance receipt. The first showable product MUST be the native iOS app running in an iOS Simulator or on an iPhone; the distributable demo MUST be a real TestFlight build.
 
 The following order is the only execution order. A later gate does not begin before the dependency named in its row is green. The executable Superpowers plans are:
 
