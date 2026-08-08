@@ -2,16 +2,14 @@
 
 const { createHmac } = require("node:crypto");
 const { validateFinancialSourceResult } = require("./cfo-financial-source.js");
-
 const ERROR_PREFIX = "moneytree_adapter_invalid:";
-const RFC3339 = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/;
+const RFC3339 = /^(\d{4})-(\d{2})-(\d{2})T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/;
 const REF_PREFIXES = { account: "source_account:mt_", transaction: "transaction:mt_", evidence: "evidence:mt_" };
 
 function plain(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value)
     && Object.getPrototypeOf(value) === Object.prototype;
 }
-
 function fail(reason) {
   throw new Error(`${ERROR_PREFIX}${reason}`);
 }
@@ -40,7 +38,6 @@ function opaqueRef(kind, referenceKey, providerId) {
   if (!REF_PREFIXES[kind]) fail("invalid_ref_kind");
   return `${REF_PREFIXES[kind]}${digest(referenceKey, `moneytree:${kind}:${providerId}`)}`;
 }
-
 function evidenceRef(referenceKey, observedAt, parsed) {
   keyBytes(referenceKey);
   return `evidence:mt_${digest(referenceKey, `moneytree:evidence:${observedAt}:${JSON.stringify(parsed)}`)}`;
@@ -55,7 +52,6 @@ function adaptMoneytreeAccounts(input) {
     if (parsed.data.baseCurrency !== "JPY") fail("unsupported_base_currency");
     const groups = parsed.data.accountGroups;
     if (!plain(groups) || !Array.isArray(groups.banks)) fail("invalid_account_groups");
-
     const selected = [];
     for (const group of groups.banks) {
       if (!plain(group)) fail("invalid_bank_group");
@@ -64,7 +60,6 @@ function adaptMoneytreeAccounts(input) {
       selected.push(...group.accounts);
     }
     if (selected.length === 0) fail("no_mufg_accounts");
-
     const providerIds = new Set();
     const accounts = selected.map((account) => {
       if (!plain(account)) fail("invalid_account");
@@ -102,4 +97,72 @@ function adaptMoneytreeAccounts(input) {
   }
 }
 
-module.exports = { adaptMoneytreeAccounts };
+function bookingDate(value) {
+  const match = typeof value === "string" && RFC3339.exec(value);
+  if (!match) fail("invalid_booking_date");
+  const monthEnd = new Date(0);
+  monthEnd.setUTCFullYear(Number(match[1]), Number(match[2]), 0);
+  if (Number(match[2]) < 1 || Number(match[2]) > 12 || Number(match[3]) < 1 || Number(match[3]) > monthEnd.getUTCDate() || !Number.isFinite(Date.parse(value))) fail("invalid_booking_date");
+  return `${match[1]}-${match[2]}-${match[3]}`;
+}
+
+function transactionAccountRefs(parsed, referenceKey) {
+  const refs = new Map();
+  for (const group of parsed.data.accountGroups.banks) {
+    if (group.institutionKey !== "mufg_bank") continue;
+    for (const account of group.accounts) {
+      if (refs.has(account.id)) fail("duplicate_provider_id");
+      refs.set(account.id, opaqueRef("account", referenceKey, account.id));
+    }
+  }
+  return refs;
+}
+function deepFreeze(value, seen = new WeakSet()) {
+  if (value === null || typeof value !== "object" || seen.has(value)) return value;
+  seen.add(value);
+  Object.values(value).forEach((child) => deepFreeze(child, seen));
+  return Object.freeze(value);
+}
+
+function adaptMoneytreeTransactions(input) {
+  try {
+    if (!plain(input)) fail("invalid_input");
+    const { accountsJson, transactionsJson, observedAt, referenceKey } = input;
+    const accountInput = { accountsJson, observedAt, referenceKey };
+    adaptMoneytreeAccounts(accountInput);
+    const accounts = parseJson(accountsJson, "accounts");
+    const accountRefs = transactionAccountRefs(accounts, referenceKey);
+    const parsed = parseJson(transactionsJson, "transactions");
+    const rows = parsed.data.transactions;
+    if (!Array.isArray(rows)) fail("invalid_transactions");
+    const totalCount = parsed.data.totalCount;
+    if (!Number.isSafeInteger(totalCount) || totalCount < rows.length) fail("invalid_total_count");
+    const transactionIds = new Set();
+    const transactionRefs = new Set();
+    const transactions = rows.map((row) => {
+      if (!plain(row) || !Number.isSafeInteger(row.id) || transactionIds.has(row.id)) fail("invalid_transaction_id");
+      transactionIds.add(row.id);
+      if (!Number.isSafeInteger(row.account_id) || !accountRefs.has(row.account_id)) fail("invalid_account_id");
+      if (!Number.isSafeInteger(row.amount)) fail("invalid_amount");
+      if (row.currency !== "JPY") fail("unsupported_currency");
+      const transactionRef = opaqueRef("transaction", referenceKey, row.id);
+      if (transactionRefs.has(transactionRef)) fail("duplicate_transaction_ref");
+      transactionRefs.add(transactionRef);
+      return {
+        transactionRef, accountRef: accountRefs.get(row.account_id), bookingDate: bookingDate(row.date),
+        amountMinor: row.amount, currency: "JPY", flow: row.amount > 0 ? "inflow" : row.amount < 0 ? "outflow" : "neutral",
+        verificationStatus: "provider_reported",
+      };
+    });
+    const result = {
+      schemaVersion: 1, sourceId: "moneytree_mufg", asOf: observedAt, transactions,
+      evidenceRef: evidenceRef(referenceKey, observedAt, { accounts, transactions: parsed }), pagePartial: totalCount > rows.length,
+    };
+    return deepFreeze(structuredClone(result));
+  } catch (error) {
+    if (error && typeof error.message === "string" && error.message.startsWith(ERROR_PREFIX)) throw error;
+    throw new Error(`${ERROR_PREFIX}invalid_payload`);
+  }
+}
+
+module.exports = { adaptMoneytreeAccounts, adaptMoneytreeTransactions };
