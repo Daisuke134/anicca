@@ -288,3 +288,37 @@ Chat locale reset test:    1/1 passed
 Settings callback + map:   2/2 passed
 Combined targeted tests:   4/4 passed, 0 failures
 ```
+
+## Fresh review round 1 — restore/bootstrap, chat state, and soft paywall receipt
+
+### RED
+
+The restore and receipt tests were added before `AppViewModel` fetched server
+state or retained the analysis response:
+
+```text
+xcodebuild ... test \
+  -only-testing:LifeManagerUnitTests/AppViewModelTests/testRestoreFetchesBootstrapAndChatProjectionBeforeChoosingChat \
+  -only-testing:LifeManagerUnitTests/AppViewModelTests/testRestoreValidatesRequiredServerProfileBeforeChat \
+  -only-testing:LifeManagerUnitTests/AppViewModelTests/testUsefulAnalysisReceiptIsRetainedAndSoftPaywallAppearsOnlyOnce
+```
+
+The RED build exposed the missing terminal bootstrap status representation,
+missing receipt property, and the old restore path that stopped after reading
+Keychain session state. It did not fetch `/bootstrap` or the initial `/chat`
+projection, and it had no required-profile validation.
+
+### GREEN
+
+Restore now requires an authenticated session, fetches bootstrap, applies the
+server calendar/profile/phone/analysis state, validates calendar/name/home
+before entering chat, and loads the server chat projection when the account is
+ready. `AnalysisResult` is retained as `lastAnalysisReceipt`; the soft paywall
+is one-shot after the first useful result and `Continue free` preserves chat.
+
+```text
+Restore/chat projection test:  1/1 passed
+Required profile test:         1/1 passed
+Receipt/paywall test:          1/1 passed
+Combined targeted tests:       3/3 passed, 0 failures
+```

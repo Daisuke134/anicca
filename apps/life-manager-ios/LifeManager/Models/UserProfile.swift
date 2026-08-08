@@ -110,6 +110,7 @@ struct UserProfile: Codable, Equatable, Sendable {
     let phone: PhoneSettings
     let callsEnabled: Bool
     let callLanguage: ProductLocale?
+    let analysisStatus: BootstrapAnalysisStatus
     let calendarStatus: CalendarConnectionStatus
     let offerStatus: OfferStatus
 
@@ -123,7 +124,8 @@ struct UserProfile: Codable, Equatable, Sendable {
         callsEnabled: Bool = false,
         callLanguage: ProductLocale? = nil,
         calendarStatus: CalendarConnectionStatus = .connected,
-        offerStatus: OfferStatus = .unavailable
+        offerStatus: OfferStatus = .unavailable,
+        analysisStatus: BootstrapAnalysisStatus = .idle
     ) {
         self.id = id
         self.name = name
@@ -133,6 +135,7 @@ struct UserProfile: Codable, Equatable, Sendable {
         self.phone = phone
         self.callsEnabled = callsEnabled
         self.callLanguage = callLanguage
+        self.analysisStatus = analysisStatus
         self.calendarStatus = calendarStatus
         self.offerStatus = offerStatus
     }
@@ -148,7 +151,8 @@ struct UserProfile: Codable, Equatable, Sendable {
             callsEnabled: bootstrap.user.callsEnabled,
             callLanguage: bootstrap.user.callLanguage,
             calendarStatus: bootstrap.calendar.status,
-            offerStatus: bootstrap.offer?.status ?? .unavailable
+            offerStatus: bootstrap.offer?.status ?? .unavailable,
+            analysisStatus: bootstrap.analysis.status
         )
     }
 }
@@ -175,9 +179,15 @@ struct BootstrapOffer: Codable, Equatable, Sendable {
 
 enum BootstrapAnalysisStatus: String, Codable, Equatable, Sendable {
     case idle
+    case running
     case readingEvents = "reading_events"
     case checkingLocations = "checking_locations"
     case calculatingRoute = "calculating_route"
+    case routeReady = "route_ready"
+    case needsInformation = "needs_information"
+    case noUpcomingEvent = "no_upcoming_event"
+    case routeUnavailable = "route_unavailable"
+    case failed
 }
 
 struct BootstrapAnalysis: Codable, Equatable, Sendable {

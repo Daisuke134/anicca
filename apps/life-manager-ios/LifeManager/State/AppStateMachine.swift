@@ -71,9 +71,11 @@ final class AppViewModel {
     private(set) var route: AppRoute = .restoring
     private(set) var profile: UserProfile?
     private(set) var lastAnalysisStatus: AnalysisStatus?
+    private(set) var lastAnalysisReceipt: AnalysisResult?
     private(set) var phoneSkipped = false
     private(set) var phoneValidationError: String?
     private var profileChangedHandler: (@MainActor (UserProfile) async -> Void)?
+    private var hasPresentedSoftPaywall = false
 
     init(
         auth: AuthServicing,
@@ -110,7 +112,7 @@ final class AppViewModel {
     }
 
     func acceptProfile(_ value: UserProfile) async {
-        let localeChanged = profile?.productLocale != value.productLocale
+        let localeChanged = profile.map { $0.productLocale != value.productLocale } ?? false
         profile = value
         if localeChanged {
             await chatViewModel?.resetForLocaleChange()
@@ -121,11 +123,31 @@ final class AppViewModel {
     func restoreSession() async {
         route = .restoring
         do {
-            if try await auth.restoreSession() == nil {
+            guard try await auth.restoreSession() != nil else {
                 route = .welcome
-            } else {
-                route = .profile
+                return
             }
+
+            let restoredProfile = try await profileService.fetch()
+            await acceptProfile(restoredProfile)
+            guard restoredProfile.calendarStatus == .connected else {
+                route = .welcome
+                return
+            }
+            guard restoredProfile.name != nil, restoredProfile.home.status == .ready else {
+                route = .profile
+                return
+            }
+            if restoredProfile.analysisStatus == .idle && restoredProfile.phone.status == .missing {
+                route = .phone
+                return
+            }
+
+            if let status = AnalysisStatus(rawValue: restoredProfile.analysisStatus.rawValue) {
+                lastAnalysisStatus = status
+            }
+            await chatViewModel?.loadInitial()
+            route = .chat
         } catch {
             present(error)
         }
@@ -174,7 +196,8 @@ final class AppViewModel {
     }
 
     func showSoftPaywall() {
-        guard route == .chat, lastAnalysisStatus == .routeReady else { return }
+        guard route == .chat, lastAnalysisStatus == .routeReady, !hasPresentedSoftPaywall else { return }
+        hasPresentedSoftPaywall = true
         route = .softPaywall
     }
 
@@ -196,6 +219,7 @@ final class AppViewModel {
         route = .analyzing
         do {
             let result = try await analysisService.analyzeNextCommitment(idempotencyKey: UUID())
+            lastAnalysisReceipt = result
             lastAnalysisStatus = result.status
             route = .chat
         } catch {

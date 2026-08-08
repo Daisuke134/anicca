@@ -101,6 +101,76 @@ final class AppViewModelTests: XCTestCase {
         XCTAssertEqual(error.localizedMessageKey, "error.server")
         XCTAssertTrue(error.retryAllowed)
     }
+
+    func testRestoreFetchesBootstrapAndChatProjectionBeforeChoosingChat() async {
+        let auth = StateAuthService(restored: StateFixtures.session, connected: StateFixtures.session)
+        let profile = StateProfileService(profile: StateFixtures.profile(analysisStatus: .routeReady, phone: .configured("+14155552671")))
+        let chat = RestoreChatService(page: ChatPage(
+            messages: [StateFixtures.analysis(status: .routeReady).message],
+            nextCursor: nil,
+            hasMore: false
+        ))
+        let viewModel = AppViewModel(
+            auth: auth,
+            profile: profile,
+            analysis: StateAnalysisService(results: []),
+            chat: chat
+        )
+
+        await viewModel.restoreSession()
+
+        XCTAssertEqual(viewModel.route, .chat)
+        XCTAssertEqual(viewModel.profile?.productLocale, .en)
+        let profileFetchCount = await profile.fetchCount()
+        let chatFetchCount = await chat.fetchCount()
+        XCTAssertEqual(profileFetchCount, 1)
+        XCTAssertEqual(chatFetchCount, 1)
+        XCTAssertEqual(viewModel.chatViewModel?.messages.count, 1)
+    }
+
+    func testRestoreValidatesRequiredServerProfileBeforeChat() async {
+        let auth = StateAuthService(restored: StateFixtures.session, connected: StateFixtures.session)
+        let incomplete = UserProfile(
+            id: "user:v1:incomplete",
+            name: nil,
+            home: HomeAddress(status: .missing, display: nil),
+            productLocale: .en,
+            timezone: "America/Los_Angeles",
+            analysisStatus: .routeReady
+        )
+        let chat = RestoreChatService(page: ChatPage(messages: [], nextCursor: nil, hasMore: false))
+        let viewModel = AppViewModel(
+            auth: auth,
+            profile: StateProfileService(profile: incomplete),
+            analysis: StateAnalysisService(results: []),
+            chat: chat
+        )
+
+        await viewModel.restoreSession()
+
+        XCTAssertEqual(viewModel.route, .profile)
+        let chatFetchCount = await chat.fetchCount()
+        XCTAssertEqual(chatFetchCount, 0)
+    }
+
+    func testUsefulAnalysisReceiptIsRetainedAndSoftPaywallAppearsOnlyOnce() async {
+        let result = StateFixtures.analysis(status: .routeReady)
+        let viewModel = AppViewModel(
+            auth: StateAuthService(restored: StateFixtures.session, connected: StateFixtures.session),
+            profile: StateProfileService(profile: StateFixtures.profile),
+            analysis: StateAnalysisService(results: [result])
+        )
+
+        await viewModel.restoreSession()
+        await viewModel.retryAnalysis()
+        XCTAssertEqual(viewModel.lastAnalysisReceipt, result)
+
+        viewModel.showSoftPaywall()
+        XCTAssertEqual(viewModel.route, .softPaywall)
+        viewModel.continueFree()
+        viewModel.showSoftPaywall()
+        XCTAssertEqual(viewModel.route, .chat)
+    }
 }
 
 private enum StateFixtures {
@@ -112,13 +182,22 @@ private enum StateFixtures {
         refreshExpiresAt: Date.iso8601("2026-09-09T08:05:00.000Z")
     )
 
-    static let profile = UserProfile(
+    static let profile = profile()
+
+    static func profile(
+        analysisStatus: BootstrapAnalysisStatus = .idle,
+        phone: PhoneSettings = .missing
+    ) -> UserProfile {
+        UserProfile(
         id: "user:v1:server-derived-8f3a",
         name: "Alex Morgan",
         home: HomeAddress(status: .ready, display: "100 Market Street"),
         productLocale: .en,
-        timezone: "America/Los_Angeles"
-    )
+        timezone: "America/Los_Angeles",
+        phone: phone,
+        analysisStatus: analysisStatus
+        )
+    }
 
     static func analysis(status: AnalysisStatus) -> AnalysisResult {
         AnalysisResult(
@@ -173,12 +252,16 @@ private actor StateAuthService: AuthServicing {
 private actor StateProfileService: ProfileServicing {
     private let profile: UserProfile
     private var recordedDrafts: [ProfileDraft] = []
+    private var fetches = 0
 
     init(profile: UserProfile) {
         self.profile = profile
     }
 
-    func fetch() async throws -> UserProfile { profile }
+    func fetch() async throws -> UserProfile {
+        fetches += 1
+        return profile
+    }
     func update(_ draft: ProfileDraft, idempotencyKey: UUID) async throws -> UserProfile {
         recordedDrafts.append(draft)
         return UserProfile(
@@ -196,6 +279,26 @@ private actor StateProfileService: ProfileServicing {
     }
 
     func drafts() -> [ProfileDraft] { recordedDrafts }
+    func fetchCount() -> Int { fetches }
+}
+
+private actor RestoreChatService: ChatServicing {
+    private let page: ChatPage
+    private var fetches = 0
+
+    init(page: ChatPage) { self.page = page }
+
+    func fetch(after cursor: String?) async throws -> ChatPage {
+        XCTAssertNil(cursor)
+        fetches += 1
+        return page
+    }
+
+    func reply(questionID: String, text: String, idempotencyKey: UUID) async throws -> ChatMessage {
+        fatalError("not used")
+    }
+
+    func fetchCount() -> Int { fetches }
 }
 
 private actor StateAnalysisService: AnalysisServicing {
