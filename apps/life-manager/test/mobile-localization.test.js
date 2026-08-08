@@ -133,3 +133,29 @@ test("calendar user content keeps only title and location", () => {
   }, "en");
   assert.deepEqual(projected.userContent, { eventTitle: "Meeting", eventLocation: "Tokyo" });
 });
+
+test("travel receipts project bounded confirmed and not-added copy in one locale", () => {
+  const confirmed = projectSemanticMessage({
+    id: "message:v1:travel-confirmed", sequence: 2, createdAt: "2026-08-08T02:31:00.000Z",
+    key: "chat.travel_block_confirmed", type: "system",
+    args: {
+      status: "created", sourceEventId: "event-1", providerEventId: "lmaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      calendar: "primary", leg: "go", blockStart: "2026-08-08T02:30:00.000Z", blockEnd: "2026-08-08T03:00:00.000Z",
+      timezone: "Asia/Tokyo", verification: "provider_readback", verifiedAt: "2026-08-08T02:31:00.000Z",
+    }, userContent: { eventTitle: "Meeting", eventLocation: "Roppongi" }, route: null,
+  }, "en");
+  assert.equal(confirmed.semanticKey, "chat.travel_block_confirmed");
+  assert.match(confirmed.text, /Travel/u);
+  assert.doesNotMatch(confirmed.text, /[\u3040-\u30ff\u3400-\u9fff]/u);
+  assert.equal(confirmed.userContent.eventLocation, "Roppongi");
+  assert.equal(Object.hasOwn(confirmed, "providerAccountId"), false);
+  assert.equal(Object.hasOwn(confirmed, "marker"), false);
+
+  const notAdded = projectSemanticMessage({
+    id: "message:v1:travel-failed", sequence: 3, createdAt: "2026-08-08T02:31:00.000Z",
+    key: "chat.travel_block_not_added", type: "system", args: { reason: "budget_denied" }, userContent: { eventTitle: "Meeting", eventLocation: "Roppongi" }, route: null,
+  }, "ja");
+  assert.equal(notAdded.semanticKey, "chat.travel_block_not_added");
+  assert.match(notAdded.text, /カレンダー|追加/u);
+  assert.doesNotMatch(notAdded.text, /Travel|budget|provider|account/u);
+});

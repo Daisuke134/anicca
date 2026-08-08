@@ -5,7 +5,7 @@ const { projectSemanticMessage } = require("./mobile-localization.js");
 
 const SEMANTIC_KEYS = new Set([
   "chat.welcome", "chat.route_ready", "chat.needs_information", "chat.no_upcoming_event",
-  "chat.route_unavailable", "chat.failed",
+  "chat.route_unavailable", "chat.failed", "chat.travel_block_confirmed", "chat.travel_block_not_added",
 ]);
 
 function encodeCursor(sequence) {
