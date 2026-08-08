@@ -63,7 +63,8 @@ const { createHostedGmailLink } = require("./lib/gmail-onboard.js");
 const { mailAvailable } = require("./lib/mail-availability.js");
 const { handleMobileV1Request, buildComposioAuthorizationLink } = require("./lib/mobile-v1-router.js");
 const { createApnsClient } = require("./lib/apns-client.js");
-const { createMobilePushOrchestrator } = require("./lib/mobile-push.js");
+const { createMobilePushOrchestrator, drainMobilePushJobs } = require("./lib/mobile-push.js");
+const { createSupabaseMobileStore } = require("./lib/mobile-store.js");
 const { createStructuredRouteProviders } = require("./lib/mobile-route.js");
 const {
   markAnswered, applyAmdDetection, applyTestCallDetection, upsertLiveLocation,
@@ -108,8 +109,19 @@ function createMobilePushRuntime(env = process.env, overrides = {}) {
     : null);
 
   async function notifyMobilePush(scope, row, context = {}) {
-    if (!apnsClient) return { enabled: false, reason: "credentials_missing" };
     const store = context.store || null;
+    if (!apnsClient) {
+      if (store && typeof store.readMobilePushJob === "function" && typeof store.markMobilePushJobFailure === "function") {
+        const job = await store.readMobilePushJob(scope, row && row.id);
+        if (job && job.status !== "completed" && job.status !== "failed") {
+          await store.markMobilePushJobFailure(scope, row.id, { code: "credentials_missing" });
+        }
+      }
+      return { enabled: false, reason: "credentials_missing" };
+    }
+    if (store && typeof store.listMobilePushJobs === "function" && typeof store.claimMobilePushJob === "function") {
+      return drainMobilePushJobs({ store, scope, messageId: row && row.id, apnsClient, maxJobs: 1 });
+    }
     const orchestrator = createMobilePushOrchestrator({ apnsClient, store });
     return orchestrator.notifyCommittedOutbox(scope, row);
   }
@@ -130,13 +142,69 @@ function createMobilePushRuntime(env = process.env, overrides = {}) {
 
   return {
     enabled: Boolean(apnsClient),
+    health: () => ({ enabled: Boolean(apnsClient), credentials: credentialsPresent ? "present" : "missing", delivery: credentialsPresent ? "ready" : "pending" }),
     ...(apnsClient ? { apnsClient } : {}),
     notifyMobilePush,
     recordMobilePushFailure,
+    drainMobilePushJobs: (store, options = {}) => {
+      if (!apnsClient) {
+        return (async () => {
+          if (!store || typeof store.listMobilePushJobs !== "function" || typeof store.claimMobilePushJob !== "function") {
+            return { processed: 0, completed: 0, retried: 0, reason: "credentials_missing" };
+          }
+          const now = options.now === undefined ? Date.now() : options.now;
+          const listed = await store.listMobilePushJobs(options.scope || null, { now, limit: options.maxJobs || options.limit || 10 });
+          const jobs = options.messageId ? listed.filter((job) => job.messageId === options.messageId) : listed;
+          let processed = 0;
+          for (const job of jobs) {
+            const scope = { uid: job.uid };
+            const claimed = await store.claimMobilePushJob(scope, job.messageId, { now, leaseMs: options.leaseMs });
+            if (!claimed) continue;
+            processed += 1;
+            if (typeof store.markMobilePushJobFailure === "function") await store.markMobilePushJobFailure(scope, job.messageId, { code: "credentials_missing" }, { now });
+          }
+          return { processed, completed: 0, retried: processed, reason: "credentials_missing" };
+        })();
+      }
+      return drainMobilePushJobs({ ...options, store, apnsClient });
+    },
   };
 }
 
 const MOBILE_PUSH_RUNTIME = createMobilePushRuntime(process.env);
+
+function startMobilePushDrain(env = process.env, overrides = {}) {
+  const runtime = overrides.runtime || MOBILE_PUSH_RUNTIME;
+  const supaUrl = envValue(env, ["SUPABASE_URL"]);
+  const supaKey = envValue(env, ["SUPABASE_SERVICE_ROLE_KEY"]);
+  if (!supaUrl || !supaKey || !runtime || typeof runtime.drainMobilePushJobs !== "function") {
+    return { enabled: false, reason: !supaUrl || !supaKey ? "storage_missing" : "runtime_unavailable", stop() {} };
+  }
+  const store = overrides.store || createSupabaseMobileStore({ supaUrl, supaKey, fetchImpl: overrides.fetchImpl });
+  const intervalValue = Number(env.LM_MOBILE_PUSH_DRAIN_INTERVAL_MS);
+  const intervalMs = Number.isFinite(intervalValue) && intervalValue >= 1_000 ? intervalValue : 15_000;
+  let running = false;
+  const tick = async () => {
+    if (running) return { skipped: true };
+    running = true;
+    try {
+      return await runtime.drainMobilePushJobs(store, { maxJobs: Number(env.LM_MOBILE_PUSH_DRAIN_BATCH || 10) });
+    } catch (error) {
+      console.error(`[mobile-push] drain failed: ${error && error.message}`);
+      return { processed: 0, completed: 0, retried: 0, error: "drain_failed" };
+    } finally {
+      running = false;
+    }
+  };
+  const timer = overrides.setIntervalImpl
+    ? overrides.setIntervalImpl(() => { void tick(); }, intervalMs)
+    : setInterval(() => { void tick(); }, intervalMs);
+  if (timer && typeof timer.unref === "function") timer.unref();
+  void tick();
+  const clearTimer = overrides.clearIntervalImpl || clearInterval;
+  return { enabled: true, intervalMs, timer, tick, stop: () => { if (typeof clearTimer === "function") clearTimer(timer); } };
+}
+
 const LM_INBOUND_SECRET = process.env.LM_INBOUND_SECRET || ""; // shared secret in the Resend inbound webhook URL
 
 const LM_TG_TOKEN = process.env.LM_TELEGRAM_BOT_TOKEN || "";
@@ -376,7 +444,7 @@ const server = http.createServer((req, res) => {
   if (path === "/health" || path === "/") {
     res.writeHead(200, { "content-type": "application/json" });
     // `build` lets any deploy be verified from outside (curl /health) — proves new code is live.
-    res.end(JSON.stringify({ ok: true, service: "life-call", ws: "/ws", build: BUILD_TAG }));
+    res.end(JSON.stringify({ ok: true, service: "life-call", ws: "/ws", build: BUILD_TAG, mobilePush: MOBILE_PUSH_RUNTIME.health() }));
     return;
   }
   // Telnyx Call Control webhook. Standard AMD produces call.machine.detection.ended with
@@ -1176,6 +1244,8 @@ if (require.main === module) {
       enabled: process.env.LM_BROWSER_TASKS_ENABLED === "1",
     });
     console.log(`[life-call] browser jobs ${browserJobs.enabled ? "ON (Railway private Steel)" : "OFF"}`);
+    const mobilePushDrain = startMobilePushDrain(process.env, { runtime: MOBILE_PUSH_RUNTIME });
+    console.log(`[life-call] mobile push drain ${mobilePushDrain.enabled ? `ON (${mobilePushDrain.intervalMs}ms)` : `OFF (${mobilePushDrain.reason})`}`);
     // INC-3: register our own webhook from our own env — registration and comparison are one value.
     selfHealWebhook(process.env).then((r) => {
       console.log(`[life-call] webhook self-heal: healed=${r.healed} ${r.reason}`);
@@ -1188,5 +1258,5 @@ if (require.main === module) {
 // Export pure helpers for unit tests (FIND-005).
 module.exports = {
   inngestServeAllowed, testCallAllowed, TEST_CALL_COOLDOWN_MS, TEST_CALL_DAILY_MAX,
-  createMobilePushRuntime,
+  createMobilePushRuntime, startMobilePushDrain,
 };

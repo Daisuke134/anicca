@@ -52,6 +52,44 @@ function normalizeApnsResult(scope, input = {}) {
   };
 }
 
+const MOBILE_PUSH_DEFAULT_LEASE_MS = 60_000;
+const MOBILE_PUSH_DEFAULT_BACKOFF_MS = 30_000;
+const MOBILE_PUSH_MAX_ATTEMPTS = 8;
+
+function mobilePushNow(value) {
+  if (typeof value === "function") return Number(value());
+  if (value instanceof Date) return value.getTime();
+  if (typeof value === "string") {
+    const parsed = Date.parse(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  const number = Number(value);
+  return Number.isFinite(number) ? number : Date.now();
+}
+
+function normalizeMobilePushJob(row) {
+  if (!row || typeof row !== "object") return null;
+  const nextAttempt = row.nextAttemptAt || row.next_attempt_at;
+  const leaseExpires = row.leaseExpiresAt || row.lease_expires_at;
+  return {
+    ...row,
+    uid: row.uid,
+    messageId: row.messageId || row.message_id,
+    status: row.status || "pending",
+    attempts: Number(row.attempts || 0),
+    nextAttemptAt: nextAttempt == null ? null : nextAttempt,
+    leaseExpiresAt: leaseExpires == null ? null : leaseExpires,
+    lastError: row.lastError || row.last_error || null,
+    createdAt: row.createdAt || row.created_at,
+    updatedAt: row.updatedAt || row.updated_at,
+    completedAt: row.completedAt || row.completed_at || null,
+  };
+}
+
+function mobilePushKey(uid, messageId) {
+  return `${String(uid)}\u0000${String(messageId)}`;
+}
+
 function normalizeOAuthStateRow(row) {
   if (!row || typeof row !== "object") return row;
   return {
@@ -472,27 +510,72 @@ function createSupabaseMobileStore(options = {}) {
     },
     async appendOutbox(scope, row) {
       requireScope(scope);
-      const result = await request("/rest/v1/lm_mobile_outbox", {
-        method: "POST", headers: { "content-type": "application/json", Prefer: "return=representation" }, body: JSON.stringify({
-          uid: scope.uid, id: row.id, key: row.key, type: row.type || null, args: row.args || {},
-          user_content: row.userContent || null, question: row.question || null, route: row.route || null,
-          created_at: row.createdAt || new Date().toISOString(), mutation_key: row.mutationKey || null,
-        }),
-      }, "outbox_write_failed");
-      if (result.conflict) {
-        const existing = await rows("lm_mobile_outbox", scopedParams(scope, {
-          id: `eq.${encodeFilter(row.id)}`,
-          limit: "1",
-        }));
-        return { ...(existing[0] || row), __inserted: false };
-      }
-      return { ...(asRow(result.body) || row), __inserted: true };
+      const body = {
+        p_uid: scope.uid, p_id: row.id, p_key: row.key, p_type: row.type || null,
+        p_args: row.args || {}, p_user_content: row.userContent || null, p_question: row.question || null,
+        p_route: row.route || null, p_created_at: row.createdAt || new Date().toISOString(),
+        p_mutation_key: row.mutationKey || null,
+      };
+      // The RPC inserts the semantic row and its dispatch job in one database
+      // transaction. A deployment that has not applied the durable-delivery
+      // migration is rejected instead of silently falling back to a split write.
+      const value = await rpc("append_lm_mobile_outbox_with_push_job", body, "outbox_write_failed");
+      const stored = asRow(value && value.row) || asRow(value) || row;
+      return { ...stored, __inserted: value && value.inserted === false ? false : true };
     },
     async listOutbox(scope, afterSequence = 0, limit = 50) {
       const found = await rows("lm_mobile_outbox", scopedParams(scope, {
         sequence: `gt.${Math.max(0, Number(afterSequence) || 0)}`, order: "sequence.asc", limit: String(Math.min(100, Math.max(1, limit))),
       }));
       return found;
+    },
+    async readOutbox(scope, messageId) {
+      const found = await rows("lm_mobile_outbox", scopedParams(scope, {
+        id: `eq.${encodeFilter(messageId)}`, limit: "1",
+      }));
+      return found[0] || null;
+    },
+    async readMobilePushJob(scope, messageId) {
+      const found = await rows("lm_mobile_push_jobs", scopedParams(scope, {
+        message_id: `eq.${encodeFilter(messageId)}`, limit: "1",
+      }));
+      return normalizeMobilePushJob(found[0] || null);
+    },
+    async listMobilePushJobs(scope, options2 = {}) {
+      const params = scope && scope.uid ? scopedParams(scope, {}) : {};
+      const statuses = Array.isArray(options2.statuses) && options2.statuses.length
+        ? options2.statuses.map((value) => String(value)).join(",") : "pending,processing";
+      params.status = `in.(${statuses})`;
+      if (options2.now !== undefined) params.next_attempt_at = `lte.${encodeFilter(new Date(mobilePushNow(options2.now)).toISOString())}`;
+      params.order = "next_attempt_at.asc,created_at.asc";
+      params.limit = String(Math.min(100, Math.max(1, Number(options2.limit || 20))));
+      const found = await rows("lm_mobile_push_jobs", params);
+      return found.map(normalizeMobilePushJob).filter(Boolean);
+    },
+    async claimMobilePushJob(scope, messageId, options2 = {}) {
+      const value = await rpc("claim_lm_mobile_push_job", {
+        p_uid: requireScope(scope).uid, p_message_id: messageId,
+        p_now: new Date(mobilePushNow(options2.now)).toISOString(),
+        p_lease_seconds: Math.max(1, Math.floor(Number(options2.leaseMs || MOBILE_PUSH_DEFAULT_LEASE_MS) / 1000)),
+      }, "push_job_claim_failed");
+      return normalizeMobilePushJob(asRow(value));
+    },
+    async markMobilePushJobSuccess(scope, messageId, result) {
+      const value = await rpc("complete_lm_mobile_push_job", {
+        p_uid: requireScope(scope).uid, p_message_id: messageId, p_result: result || {},
+      }, "push_job_complete_failed");
+      return normalizeMobilePushJob(asRow(value));
+    },
+    async markMobilePushJobFailure(scope, messageId, error, options2 = {}) {
+      const now = mobilePushNow(options2.now);
+      const attempts = Number(options2.attempts || 1);
+      const backoffMs = Number(options2.backoffMs || MOBILE_PUSH_DEFAULT_BACKOFF_MS) * (2 ** Math.max(0, attempts - 1));
+      const value = await rpc("retry_lm_mobile_push_job", {
+        p_uid: requireScope(scope).uid, p_message_id: messageId,
+        p_error: String(error && (error.code || error.reason || error.message) || "apns_push_failed"),
+        p_next_attempt_at: new Date(now + backoffMs).toISOString(), p_max_attempts: MOBILE_PUSH_MAX_ATTEMPTS,
+      }, "push_job_retry_failed");
+      return normalizeMobilePushJob(asRow(value));
     },
     async createQuestion(scope, question) {
       requireScope(scope);
@@ -643,6 +726,7 @@ function createMemoryMobileStore(options = {}) {
   const calls = new Map();
   const deletionReceipts = new Map();
   const apnsResults = [];
+  const mobilePushJobs = new Map();
   const calendarConnections = new Map();
   const travelBlocks = new Map();
   const routeCache = options.routeCacheStore || new Map();
@@ -676,7 +760,7 @@ function createMemoryMobileStore(options = {}) {
     return users.get(uid) || null;
   }
   return {
-    _users: users, _sessions: sessions, _states: states, _idempotency: idempotency, _outbox: outbox, _questions: questions, _devices: devices, _calls: calls, _callDayGuards: callDayGuards, _deletionReceipts: deletionReceipts, _apnsResults: apnsResults, _routeCache: routeCache, _calendarConnections: calendarConnections, _travelBlocks: travelBlocks,
+    _users: users, _sessions: sessions, _states: states, _idempotency: idempotency, _outbox: outbox, _mobilePushJobs: mobilePushJobs, _questions: questions, _devices: devices, _calls: calls, _callDayGuards: callDayGuards, _deletionReceipts: deletionReceipts, _apnsResults: apnsResults, _routeCache: routeCache, _calendarConnections: calendarConnections, _travelBlocks: travelBlocks,
     async readUser(scope) { const row = user(scope); return row ? { ...row } : null; },
     async patchUser(scope, patch, options2 = {}) { const row = user(scope, options2.expectedUid); if (!row) throw new MobileError("account_not_found", "Account not found.", 404); Object.assign(row, patch); return { ...row }; },
     async readAnalysisState(scope) { const row = user(scope); return row && row.analysisState ? { ...row.analysisState } : { status: "idle" }; },
@@ -855,9 +939,70 @@ function createMemoryMobileStore(options = {}) {
       const item = { ...row, uid, sequence: ++sequence, createdAt: row.createdAt || nowIso() };
       if (!outbox.has(uid)) outbox.set(uid, []);
       outbox.get(uid).push(item);
+      // In-memory storage mirrors the production transaction: the semantic
+      // row and its pending dispatch job become visible together.
+      mobilePushJobs.set(mobilePushKey(uid, item.id), {
+        uid, messageId: item.id, status: "pending", attempts: 0,
+        nextAttemptAt: memoryNow(), leaseExpiresAt: null, lastError: null,
+        createdAt: item.createdAt, updatedAt: item.createdAt, completedAt: null,
+      });
       return { ...item, __inserted: true };
     },
     async listOutbox(scope, after = 0, limit = 50) { return (outbox.get(scoped(scope)) || []).filter((row) => row.sequence > after).slice(0, limit).map((row) => ({ ...row })); },
+    async readOutbox(scope, messageId) {
+      const row = (outbox.get(scoped(scope)) || []).find((item) => item.id === messageId);
+      return row ? { ...row } : null;
+    },
+    async readMobilePushJob(scope, messageId) {
+      const row = mobilePushJobs.get(mobilePushKey(scoped(scope), messageId));
+      return row ? { ...row } : null;
+    },
+    async listMobilePushJobs(scope, options2 = {}) {
+      const uid = scope && scope.uid ? scoped(scope) : null;
+      const now = mobilePushNow(options2.now === undefined ? memoryNow() : options2.now);
+      const statuses = Array.isArray(options2.statuses) && options2.statuses.length ? new Set(options2.statuses) : new Set(["pending", "processing"]);
+      return [...mobilePushJobs.values()]
+        .filter((row) => (!uid || row.uid === uid) && statuses.has(row.status))
+        .filter((row) => row.status === "pending" ? mobilePushNow(row.nextAttemptAt) <= now : (!row.leaseExpiresAt || mobilePushNow(row.leaseExpiresAt) <= now))
+        .sort((a, b) => mobilePushNow(a.nextAttemptAt) - mobilePushNow(b.nextAttemptAt))
+        .slice(0, Math.min(100, Math.max(1, Number(options2.limit || 20))))
+        .map((row) => ({ ...row }));
+    },
+    async claimMobilePushJob(scope, messageId, options2 = {}) {
+      const row = mobilePushJobs.get(mobilePushKey(scoped(scope), messageId));
+      if (!row || row.status === "completed" || row.status === "failed") return null;
+      const now = mobilePushNow(options2.now === undefined ? memoryNow() : options2.now);
+      if (row.status === "pending" && mobilePushNow(row.nextAttemptAt) > now) return null;
+      if (row.status === "processing" && row.leaseExpiresAt && mobilePushNow(row.leaseExpiresAt) > now) return null;
+      row.status = "processing";
+      row.attempts += 1;
+      row.leaseExpiresAt = now + Math.max(1, Number(options2.leaseMs || MOBILE_PUSH_DEFAULT_LEASE_MS));
+      row.updatedAt = new Date(now).toISOString();
+      return { ...row };
+    },
+    async markMobilePushJobSuccess(scope, messageId, result = {}) {
+      const row = mobilePushJobs.get(mobilePushKey(scoped(scope), messageId));
+      if (!row) return null;
+      row.status = "completed";
+      row.result = result;
+      row.completedAt = new Date(memoryNow()).toISOString();
+      row.leaseExpiresAt = null;
+      row.updatedAt = row.completedAt;
+      return { ...row };
+    },
+    async markMobilePushJobFailure(scope, messageId, error, options2 = {}) {
+      const row = mobilePushJobs.get(mobilePushKey(scoped(scope), messageId));
+      if (!row) return null;
+      const now = mobilePushNow(options2.now === undefined ? memoryNow() : options2.now);
+      const attempts = Math.max(1, Number(row.attempts || options2.attempts || 1));
+      const base = Math.max(1, Number(options2.backoffMs || MOBILE_PUSH_DEFAULT_BACKOFF_MS));
+      row.status = attempts >= MOBILE_PUSH_MAX_ATTEMPTS ? "failed" : "pending";
+      row.lastError = String(error && (error.code || error.reason || error.message) || "apns_push_failed");
+      row.nextAttemptAt = now + base * (2 ** Math.max(0, attempts - 1));
+      row.leaseExpiresAt = null;
+      row.updatedAt = new Date(now).toISOString();
+      return { ...row };
+    },
     async createQuestion(scope, question) {
       const uid = scoped(scope);
       const key = `${uid}:${question.id}`;

@@ -160,10 +160,66 @@ function makeTransportError(error) {
   return new ApnsError("apns_transport_error", message, { cause: error });
 }
 
-async function issueHttp2Request({ connect, authority, headers, body, environment, requestId }) {
+function timeoutValue(value, fallback) {
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? number : fallback;
+}
+
+function closeTransport(stream, session, force = false) {
+  const closeOne = (resource) => {
+    if (!resource) return;
+    try {
+      if (force && typeof resource.destroy === "function") resource.destroy();
+      else if (typeof resource.close === "function") resource.close();
+      else if (typeof resource.destroy === "function") resource.destroy();
+    } catch { /* transport cleanup is best effort */ }
+  };
+  closeOne(stream);
+  closeOne(session);
+}
+
+function connectWithTimeout(connect, authority, options = {}) {
+  const connectTimeoutMs = timeoutValue(options.connectTimeoutMs, 15_000);
+  const setTimer = options.setTimeoutImpl || options.setTimeout || setTimeout;
+  const clearTimer = options.clearTimeoutImpl || options.clearTimeout || clearTimeout;
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    let timer;
+    const finish = (error, session) => {
+      if (settled) {
+        if (!error && session) closeTransport(null, session, true);
+        return;
+      }
+      settled = true;
+      if (timer !== undefined) clearTimer(timer);
+      if (error) reject(error); else resolve(session);
+    };
+    timer = setTimer(() => finish(new ApnsError("apns_connect_timeout", "The APNs connection timed out.", { retryable: true, timeoutMs: connectTimeoutMs })), connectTimeoutMs);
+    Promise.resolve()
+      .then(() => connect(authority, { ALPNProtocols: ["h2"] }))
+      .then((session) => finish(null, session), (error) => finish(makeTransportError(error)));
+  });
+}
+
+async function issueHttp2Request({
+  connect,
+  authority,
+  headers,
+  body,
+  environment,
+  requestId,
+  connectTimeoutMs,
+  streamTimeoutMs,
+  setTimeoutImpl,
+  clearTimeoutImpl,
+}) {
   let session;
   try {
-    session = await connect(authority, { ALPNProtocols: ["h2"] });
+    session = await connectWithTimeout(connect, authority, {
+      connectTimeoutMs,
+      setTimeoutImpl,
+      clearTimeoutImpl,
+    });
     if (!session || typeof session.request !== "function") throw new Error("APNs HTTP/2 session is unavailable.");
     const stream = session.request(headers);
     if (!stream || typeof stream.on !== "function") throw new Error("APNs HTTP/2 request stream is unavailable.");
@@ -172,15 +228,23 @@ async function issueHttp2Request({ connect, authority, headers, body, environmen
       let responseHeaders = null;
       const chunks = [];
       let settled = false;
+      let timer;
+      const streamTimeout = timeoutValue(streamTimeoutMs, 15_000);
       const finish = (error, value) => {
         if (settled) return;
         settled = true;
+        if (timer !== undefined) (clearTimeoutImpl || clearTimeout)(timer);
         if (error) reject(error); else resolve(value);
       };
+      timer = (setTimeoutImpl || setTimeout)(() => {
+        const error = new ApnsError("apns_stream_timeout", "The APNs request stream timed out.", { retryable: true, timeoutMs: streamTimeout });
+        closeTransport(stream, session, true);
+        finish(error);
+      }, streamTimeout);
       stream.on("response", (value) => { responseHeaders = value || {}; });
       stream.on("data", (chunk) => { chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk))); });
       stream.on("end", () => finish(null, { responseHeaders, body: Buffer.concat(chunks).toString("utf8") }));
-      stream.on("error", (error) => finish(error));
+      stream.on("error", (error) => finish(makeTransportError(error)));
       if (typeof session.on === "function") session.on("error", (error) => finish(error));
       try {
         if (typeof stream.setEncoding === "function") stream.setEncoding("utf8");
@@ -191,7 +255,7 @@ async function issueHttp2Request({ connect, authority, headers, body, environmen
       } catch (error) {
         finish(error);
       }
-    });
+      });
     const status = Number(responseHeader(response.responseHeaders, ":status"));
     const providerBody = parseProviderBody(response.body);
     const reason = providerBody && providerBody.reason != null
@@ -213,9 +277,7 @@ async function issueHttp2Request({ connect, authority, headers, body, environmen
     // A sender can later pool sessions without changing this contract. Closing
     // the injected session here keeps one request's provider state isolated and
     // ensures test/failure sessions cannot leak handles.
-    try {
-      if (session && typeof session.close === "function") session.close();
-    } catch { /* close is best effort after the response */ }
+    closeTransport(null, session);
   }
 }
 
@@ -226,6 +288,12 @@ function createApnsClient(options = {}) {
     || (typeof http2 === "function" ? http2 : http2 && http2.connect);
   if (typeof connect !== "function") throw new ApnsError("apns_http2_invalid", "An HTTP/2 connect implementation is required.");
   const now = typeof options.now === "function" ? options.now : () => Math.floor(Date.now() / 1000);
+  const sharedTimeoutMs = options.timeoutMs;
+  const connectTimeoutMs = options.connectTimeoutMs === undefined ? sharedTimeoutMs : options.connectTimeoutMs;
+  const streamTimeoutMs = options.streamTimeoutMs === undefined ? sharedTimeoutMs : options.streamTimeoutMs;
+  const timer = options.timer || (options.clock && typeof options.clock === "object" ? options.clock : null);
+  const setTimeoutImpl = options.setTimeoutImpl || options.setTimeout || (timer && timer.setTimeout);
+  const clearTimeoutImpl = options.clearTimeoutImpl || options.clearTimeout || (timer && timer.clearTimeout);
   const requestIdFactory = typeof options.requestIdFactory === "function" ? options.requestIdFactory : () => crypto.randomUUID();
   let tokenProvider;
   if (typeof options.tokenProvider === "function") tokenProvider = options.tokenProvider;
@@ -266,6 +334,10 @@ function createApnsClient(options = {}) {
       body: JSON.stringify(payload),
       environment,
       requestId,
+      connectTimeoutMs,
+      streamTimeoutMs,
+      setTimeoutImpl,
+      clearTimeoutImpl,
     });
   }
 
