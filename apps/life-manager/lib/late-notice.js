@@ -5,6 +5,8 @@
 const { isHelperBlock } = require("./wake-filter.js");
 const { shouldMarkAnswered } = require("./answered.js");
 const { hangupCall } = require("./dial.js");
+const { resolveLateRecipients } = require("./late-recipient-resolver.js");
+const { createLateDraft } = require("./late-approval.js");
 
 const NO_DESTINATION_MESSAGE = "⚠️ 先方の連絡先が見つからず、遅刻連絡は送れていません";
 const MAIL_FAILURE_MESSAGE = "⚠️ 遅刻連絡メールを送信できませんでした";
@@ -56,27 +58,116 @@ function eventKey(event) {
   return String(event.id || `${event.startIso || event.startMs}|${event.summary || "event"}`);
 }
 
-async function processLocationLateNotice(input, deps) {
+function lateRecipientStatus(status) {
+  if (status === "resolved") return "resolved";
+  if (status === "ambiguous" || status === "recipient_ambiguous") return "recipient_ambiguous";
+  return "recipient_missing";
+}
+
+function userActorEmails(user = {}) {
+  return [
+    user.email,
+    user.email_address,
+    user.emailAddress,
+    ...(Array.isArray(user.emails) ? user.emails : []),
+  ].filter(Boolean);
+}
+
+function normalizeRecipientResolution(result) {
+  const value = result && typeof result === "object" ? result : {};
+  const candidates = Array.isArray(value.candidates) ? value.candidates : [];
+  const status = value.status || value.recipientStatus || value.recipient_status;
+  return {
+    status: status === "resolved" ? "resolved" : (status === "ambiguous" || status === "recipient_ambiguous" ? "ambiguous" : "missing"),
+    candidates,
+    evidenceRefs: Array.isArray(value.evidenceRefs)
+      ? value.evidenceRefs
+      : (Array.isArray(value.evidence_refs) ? value.evidence_refs : []),
+  };
+}
+
+function lateBodySnapshot(event, user, etaMinutes) {
+  const name = user && user.name ? user.name : "Your contact";
+  const meeting = event && event.summary ? event.summary : "the meeting";
+  const eta = Number.isFinite(etaMinutes) ? `about ${etaMinutes} minutes` : "a little";
+  return `Hi — ${name} is running ${eta} late to “${meeting}” and wanted you to know.\n\n` +
+    `(Sent automatically by Life Manager on ${name}'s behalf — reply to reach ${name} directly.)`;
+}
+
+function lateEtaSnapshot({ nowMs, event, location, travelMinutes, assessment, etaMinutes }) {
+  return {
+    basis: "route_eta_from_live_location",
+    calculatedAt: new Date(nowMs).toISOString(),
+    routeMinutes: travelMinutes,
+    lateMinutes: assessment.lateMinutes,
+    etaMinutes,
+    arrivalMs: assessment.arrivalMs,
+    arrivalIso: new Date(assessment.arrivalMs).toISOString(),
+    eventStartMs: event.startMs,
+    eventStartIso: event.startIso || new Date(event.startMs).toISOString(),
+    locationObservedAt: location.observed_at || location.observedAt || location.observed_at_ms || null,
+    locationExpiresAt: location.expires_at || location.expiresAt || location.expires_at_ms || null,
+  };
+}
+
+function lateApprovalCardRequest(input, event, draft) {
+  const recipients = draft.recipients.map((recipient) => {
+    const name = recipient.display_name || recipient.displayName || "(名前不明)";
+    return `${name} <${recipient.email}>`;
+  }).join(", ");
+  const sources = draft.recipients.map((recipient) => recipient.source || "unknown").join(", ");
+  const evidence = draft.recipients.flatMap((recipient) => recipient.evidence_refs || []).join(", ");
+  const eta = draft.etaEvidence || {};
+  const text = [
+    "⚠️ 遅刻連絡の確認",
+    `宛先: ${recipients}`,
+    `source: ${sources}`,
+    `evidence: ${evidence || "none"}`,
+    `ETA根拠: ${eta.basis || "unknown"} (${eta.routeMinutes}分 → ${eta.etaMinutes}分遅れ見込み)`,
+    "",
+    draft.bodySnapshot,
+  ].join("\n");
+  const draftId = String(draft.draftId);
+  return {
+    token: input.telegramToken,
+    chatId: input.user && input.user.telegram_chat_id,
+    text,
+    extra: {
+      reply_markup: {
+        inline_keyboard: [[
+          { text: "送る", callback_data: `late:send:${draftId}` },
+          { text: "送らない", callback_data: `late:do_not_send:${draftId}` },
+        ]],
+      },
+    },
+    draft,
+    event,
+  };
+}
+
+async function enqueueLateApprovalCard(input, event, draft, deps) {
+  const request = lateApprovalCardRequest(input, event, draft);
+  if (!request.token || !request.chatId) return { queued: false, reason: "telegram_unavailable", request };
+  const enqueue = deps.enqueueLateApprovalCard || deps.enqueueApprovalCard || deps.enqueueTelegramApprovalCard;
+  if (typeof enqueue === "function") return { ...(await enqueue(request) || {}), request };
+  if (typeof deps.sendMessage !== "function") return { queued: false, reason: "telegram_unavailable", request };
+  const sent = await deps.sendMessage(request.token, request.chatId, request.text, request.extra);
+  const result = { queued: Boolean(sent && sent.ok !== false), request };
+  const messageId = sent && sent.result && sent.result.message_id;
+  if (messageId !== undefined && messageId !== null) result.telegramMessageId = messageId;
+  return result;
+}
+
+async function processLocationLateNotice(input, deps = {}) {
   const nowMs = input.nowMs === undefined ? Date.now() : input.nowMs;
   const candidates = (input.events || []).filter((candidate) => candidate && !isHelperBlock(candidate.summary) &&
     candidate.location && Number.isFinite(candidate.startMs));
   const gate = evaluateLateArrival({ nowMs, event: candidates[0] || null, travelMinutes: null, location: input.location });
   if (["location_missing", "location_expired", "no_event"].includes(gate.decision)) return gate;
 
-  // Keep the id Telegram hands back: without it the journey's Telegram leg cannot be audited later.
-  let telegramMessageId;
-  const notifyTelegram = async (text) => {
-    if (!input.telegramToken || !input.user.telegram_chat_id) return;
-    const sent = await deps.sendMessage(input.telegramToken, input.user.telegram_chat_id, text);
-    const id = sent && sent.result && sent.result.message_id;
-    if (id !== undefined && id !== null) telegramMessageId = id;
-  };
-  const withTelegramId = (result) => (telegramMessageId === undefined ? result : { ...result, telegramMessageId });
-
   // A meeting we already acted on must not hide the rest of the day. Seen in production 2026-07-25:
   // an all-day located event was claimed in the morning and ran until evening, so every later event
-  // was unreachable — the old code stopped at the first located event and gave up on a failed claim.
-  let deduplicated = false;
+  // was unreachable — continue to the next event if the first one is not late.
   for (const event of candidates) {
     const travelMinutes = await deps.routeMinutes(
       locationOrigin(input.location), event.location, input.mapsKey, event.startMs, nowMs,
@@ -84,34 +175,63 @@ async function processLocationLateNotice(input, deps) {
     const assessment = evaluateLateArrival({ nowMs, event, travelMinutes, location: input.location });
     if (assessment.decision !== "late") return assessment;
 
-    const fresh = await deps.claimEvent(input.user.uid, eventKey(event));
-    if (!fresh) { deduplicated = true; continue; }
-
-    const attendees = externalAttendees(event);
-    if (!attendees.length) {
-      await notifyTelegram(NO_DESTINATION_MESSAGE);
-      return withTelegramId({ ...assessment, notified: true, sent: false, reason: "no_destination" });
-    }
-
-    const etaMinutes = roundedEtaMinutes(assessment.lateMinutes);
-    let result;
+    const resolver = deps.resolveLateRecipients || deps.recipientResolver || resolveLateRecipients;
+    let resolution;
     try {
-      result = await deps.sendLateNotice(input.user.uid, event, {
-        ...(input.noticeOpts || {}), etaMinutes,
-        userEmail: input.user.email, userName: input.user.name,
-      });
+      resolution = normalizeRecipientResolution(await resolver({
+        uid: input.user && input.user.uid,
+        event,
+        actorEmails: userActorEmails(input.user),
+      }, deps.recipientResolverDeps || deps));
     } catch (error) {
-      result = { sent: false, reason: "send_failed", error: String(error && error.message || error) };
+      resolution = { status: "missing", candidates: [], evidenceRefs: [], error: String(error && error.message || error) };
     }
-    if (!result || !result.sent) {
-      const noDestination = result && result.reason === "no_destination";
-      await notifyTelegram(noDestination ? NO_DESTINATION_MESSAGE : MAIL_FAILURE_MESSAGE);
-      return withTelegramId({ ...assessment, notified: true, sent: false, reason: noDestination ? "no_destination" : "send_failed" });
+    const etaMinutes = roundedEtaMinutes(assessment.lateMinutes);
+    const recipientStatus = lateRecipientStatus(resolution.status);
+    const draftInput = {
+      uid: input.user && input.user.uid,
+      eventKey: eventKey(event),
+      recipientStatus,
+      recipients: resolution.candidates,
+      evidenceSnapshot: {
+        refs: resolution.evidenceRefs,
+        candidates: resolution.candidates,
+        status: resolution.status,
+      },
+      bodySnapshot: lateBodySnapshot(event, input.user || {}, etaMinutes),
+      etaEvidence: lateEtaSnapshot({ nowMs, event, location: input.location, travelMinutes, assessment, etaMinutes }),
+      nowMs,
+    };
+    let draft;
+    try {
+      const persistDraft = deps.createLateDraft || createLateDraft;
+      draft = await persistDraft(draftInput, deps.lateApprovalStore || deps.approvalStore || input.lateApprovalStore);
+    } catch (error) {
+      return {
+        ...assessment,
+        sent: false,
+        notified: false,
+        reason: "draft_failed",
+        error: String(error && error.message || error),
+      };
     }
-    await notifyTelegram(formatLateSuccessMessage(event, assessment.arrivalMs, assessment.lateMinutes));
-    return withTelegramId({ ...assessment, notified: true, sent: true, result });
+
+    const result = {
+      ...assessment,
+      decision: "late",
+      sent: false,
+      notified: false,
+      approvalRequired: draft.status === "awaiting_decision",
+      draft,
+    };
+    if (draft.status !== "awaiting_decision" || draft.duplicate) return result;
+    const card = await enqueueLateApprovalCard(input, event, draft, deps);
+    result.card = card;
+    result.notified = Boolean(card && card.queued);
+    if (card && card.telegramMessageId !== undefined) result.telegramMessageId = card.telegramMessageId;
+    return result;
   }
-  return deduplicated ? { decision: "late", deduped: true } : gate;
+  return gate;
 }
 
 function supaHeaders(key, prefer) {
