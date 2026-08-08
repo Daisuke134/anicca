@@ -21,6 +21,10 @@ final class CallAccountServiceTests: XCTestCase {
         let endpoints = await api.endpoints()
         XCTAssertEqual(endpoints.map(\.path), ["/calls/test"])
         XCTAssertEqual(endpoints[0].method, .post)
+        let callBody = try XCTUnwrap(endpoints[0].body)
+        let callJSON = try XCTUnwrap(JSONSerialization.jsonObject(with: callBody) as? [String: Any])
+        XCTAssertEqual(callJSON["confirmed"] as? Bool, true)
+        XCTAssertEqual(callJSON.count, 1)
         let callKeys = await api.idempotencyKeys()
         XCTAssertEqual(callKeys, [key])
     }
@@ -42,6 +46,10 @@ final class CallAccountServiceTests: XCTestCase {
         let endpoints = await api.endpoints()
         XCTAssertEqual(endpoints.map(\.path), ["/account"])
         XCTAssertEqual(endpoints[0].method, .delete)
+        let deletionBody = try XCTUnwrap(endpoints[0].body)
+        let deletionJSON = try XCTUnwrap(JSONSerialization.jsonObject(with: deletionBody) as? [String: Any])
+        XCTAssertEqual(deletionJSON["confirmed"] as? Bool, true)
+        XCTAssertEqual(deletionJSON.count, 1)
         let deletionKeys = await api.idempotencyKeys()
         XCTAssertEqual(deletionKeys, [key])
     }

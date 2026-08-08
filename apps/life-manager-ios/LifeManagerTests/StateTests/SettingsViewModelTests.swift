@@ -306,6 +306,26 @@ final class SettingsViewModelTests: XCTestCase {
         XCTAssertEqual(signOutCount, 1)
     }
 
+    func testDeletionReceiptIsAvailableToRootRouteHandlerBeforeRouteChanges() async {
+        let receipt = AccountDeletionReceipt(
+            receiptID: "deletion-root-1",
+            deletedAt: Date.iso8601("2026-08-10T08:20:00.000Z"),
+            sessionsRevoked: true,
+            providerConnectionsRevoked: true
+        )
+        let viewModel = makeViewModel(accountService: SettingsAccountTestService(receipt: receipt))
+        var receiptObservedByRoot: AccountDeletionReceipt?
+        viewModel.setSignedOutHandler {
+            receiptObservedByRoot = viewModel.deletionReceipt
+        }
+
+        await viewModel.load()
+        await viewModel.deleteAccount()
+
+        XCTAssertEqual(receiptObservedByRoot, receipt)
+        XCTAssertEqual(viewModel.deletionReceipt, receipt)
+    }
+
     private func makeViewModel(
         profile: UserProfile = SettingsFixtures.profile(callsEnabled: false, phone: .missing, callLanguage: nil),
         profileService: SettingsProfileTestService? = nil,

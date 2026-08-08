@@ -174,6 +174,36 @@ final class ChatViewModelTests: XCTestCase {
         XCTAssertEqual(replyCount, 1)
     }
 
+    func testReplyRefreshesDurableOutboxAfterQuestionReply() async {
+        let question = ChatFixtures.message(
+            id: "question-message",
+            type: .question,
+            createdAt: "2026-08-10T08:00:00.000Z",
+            question: ChatQuestion(id: "question-1", prompt: "Where are you starting from?")
+        )
+        let durableReply = ChatFixtures.message(
+            id: "durable-reply",
+            type: .system,
+            createdAt: "2026-08-10T08:01:00.000Z"
+        )
+        let service = ChatTestService(pages: [
+            nil: [
+                ChatPage(messages: [question], nextCursor: "cursor-question", hasMore: false)
+            ],
+            "cursor-question": [
+                ChatPage(messages: [durableReply], nextCursor: "cursor-reply", hasMore: false)
+            ]
+        ])
+        let viewModel = ChatViewModel(service: service)
+
+        await viewModel.loadInitial()
+        await viewModel.reply(text: "Home")
+
+        XCTAssertEqual(viewModel.messages.map(\.id), [question.id, durableReply.id])
+        let cursors = await service.fetchCursors()
+        XCTAssertEqual(cursors, [nil, "cursor-question"])
+    }
+
     func testAmbiguousReplyRetainsTextAndIdempotencyKeyForRetry() async {
         let question = ChatFixtures.message(
             id: "question-message",
@@ -210,7 +240,7 @@ final class ChatViewModelTests: XCTestCase {
             question: ChatQuestion(id: "question-1", prompt: "Where are you starting from?")
         )
         let refreshed = ChatFixtures.message(id: "message-2", type: .system, createdAt: "2026-08-10T08:10:00.000Z")
-        let reply = ChatFixtures.message(id: "reply-1", type: .system, createdAt: "2026-08-10T08:11:00.000Z")
+        let reply = QuestionReplyReceipt(status: "answered", questionID: question.id, analysis: nil)
         let gate = ReplyGate()
         let service = ChatTestService(
             pages: [
@@ -293,12 +323,12 @@ private actor ChatTestService: ChatServicing {
         return page
     }
 
-    func reply(questionID: String, text: String, idempotencyKey: UUID) async throws -> ChatMessage {
+    func reply(questionID: String, text: String, idempotencyKey: UUID) async throws -> QuestionReplyReceipt {
         replies += 1
         if let replyGate {
             return await replyGate.waitForReply()
         }
-        return ChatFixtures.message(id: "reply-\(questionID)", type: .system, createdAt: "2026-08-10T08:01:00.000Z")
+        return QuestionReplyReceipt(status: "answered", questionID: questionID, analysis: nil)
     }
 
     func fetchCursors() -> [String?] { cursors }
@@ -316,11 +346,11 @@ private actor RetryingChatService: ChatServicing {
         ChatPage(messages: [question], nextCursor: nil, hasMore: false)
     }
 
-    func reply(questionID: String, text: String, idempotencyKey: UUID) async throws -> ChatMessage {
+    func reply(questionID: String, text: String, idempotencyKey: UUID) async throws -> QuestionReplyReceipt {
         attempts += 1
         recordedKeys.append(idempotencyKey)
         if attempts == 1 { throw APIError.transport("offline") }
-        return ChatFixtures.message(id: "reply-1", type: .system, createdAt: "2026-08-10T08:01:00.000Z")
+        return QuestionReplyReceipt(status: "answered", questionID: questionID, analysis: nil)
     }
 
     func keys() -> [UUID] { recordedKeys }
@@ -355,11 +385,11 @@ private actor FetchGate {
 }
 
 private actor ReplyGate {
-    private var replyContinuation: CheckedContinuation<ChatMessage, Never>?
+    private var replyContinuation: CheckedContinuation<QuestionReplyReceipt, Never>?
     private var startedContinuation: CheckedContinuation<Void, Never>?
     private var didStart = false
 
-    func waitForReply() async -> ChatMessage {
+    func waitForReply() async -> QuestionReplyReceipt {
         didStart = true
         startedContinuation?.resume()
         startedContinuation = nil
@@ -375,8 +405,8 @@ private actor ReplyGate {
         }
     }
 
-    func release(_ message: ChatMessage) {
-        replyContinuation?.resume(returning: message)
+    func release(_ receipt: QuestionReplyReceipt) {
+        replyContinuation?.resume(returning: receipt)
         replyContinuation = nil
     }
 }

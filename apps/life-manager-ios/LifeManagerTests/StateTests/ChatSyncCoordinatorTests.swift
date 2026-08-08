@@ -124,7 +124,7 @@ private actor SyncChatService: ChatServicing {
         return page
     }
 
-    func reply(questionID: String, text: String, idempotencyKey: UUID) async throws -> ChatMessage {
+    func reply(questionID: String, text: String, idempotencyKey: UUID) async throws -> QuestionReplyReceipt {
         throw APIError.transport("not used")
     }
 
