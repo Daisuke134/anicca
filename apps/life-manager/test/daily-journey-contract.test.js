@@ -6,6 +6,7 @@ const assert = require("node:assert/strict");
 const {
   WAKE_LEVELS, lateNoticeUserOnce, travelUserOnce, wakeUserOnce,
 } = require("../scheduler.js");
+const { createInMemoryLateApprovalStore } = require("../lib/late-approval.js");
 
 const MINUTE = 60_000;
 const EVENT_START_ISO = "2026-07-23T14:00:00+09:00";
@@ -93,6 +94,7 @@ test("CORE 8e drives the production DAILY journey with provider-ordered reportin
   });
   const calendar = new JourneyCalendar([prior, commitment]);
   const telegramMessages = [];
+  const telegramExtras = [];
   const user = {
     uid: "controlled-user",
     name: "Controlled User",
@@ -105,8 +107,9 @@ test("CORE 8e drives the production DAILY journey with provider-ordered reportin
     notifications_enabled: true,
     call_enabled: true,
   };
-  const sendMessage = async (_token, _chatId, text) => {
+  const sendMessage = async (_token, _chatId, text, extra) => {
     telegramMessages.push(text);
+    telegramExtras.push(extra);
     return { ok: true, result: { message_id: telegramMessages.length } };
   };
   const travelDeps = {
@@ -180,10 +183,9 @@ test("CORE 8e drives the production DAILY journey with provider-ordered reportin
     longitude: 139.0,
     expires_at: "2026-07-23T16:00:00+09:00",
   };
-  const lateClaims = new Set();
-  let claimAttempts = 0;
   let routeMinutes = 20;
   const emails = [];
+  const lateApprovalStore = createInMemoryLateApprovalStore({ nowMs: decisionNowMs });
   const lateDeps = {
     supaUrl: "https://controlled-db.invalid",
     supaKey: "controlled-service-key",
@@ -192,22 +194,13 @@ test("CORE 8e drives the production DAILY journey with provider-ordered reportin
     mapsKey: "controlled-maps-key",
     telegramToken: "controlled-telegram-token",
     routeMinutes: async () => routeMinutes,
-    claimEvent: async (_uid, key) => {
-      claimAttempts++;
-      if (lateClaims.has(key)) return false;
-      lateClaims.add(key);
-      return true;
-    },
-    sendLateNotice: async (uid, event, opts) => {
-      emails.push({ uid, eventId: event.id, etaMinutes: opts.etaMinutes });
-      return { sent: true, providerId: "controlled-email-provider-id" };
-    },
+    lateApprovalStore,
+    sendLateNotice: async () => { throw new Error("tick must not send mail before approval"); },
     sendMessage,
   };
 
   const onTime = await lateNoticeUserOnce(user, decisionNowMs, lateDeps);
   assert.equal(onTime.decision, "on_time");
-  assert.equal(claimAttempts, 0, "on-time performs zero claim I/O");
   assert.equal(emails.length, 0, "on-time performs zero email I/O");
   assert.equal(telegramMessages.length, 1, "on-time performs zero late Telegram I/O");
 
@@ -215,17 +208,18 @@ test("CORE 8e drives the production DAILY journey with provider-ordered reportin
   const late = await lateNoticeUserOnce(user, decisionNowMs, lateDeps);
   const repeatedLate = await lateNoticeUserOnce(user, decisionNowMs, lateDeps);
   assert.equal(late.decision, "late");
-  assert.equal(late.sent, true);
-  assert.equal(repeatedLate.deduped, true);
-  assert.equal(lateClaims.size, 1);
-  assert.equal(claimAttempts, 2, "repeated late ticks re-check the durable claim");
-  assert.deepEqual(emails, [{
-    uid: "controlled-user", eventId: "controlled-commitment", etaMinutes: 10,
-  }], "the late path emails the real commitment, never its [Travel] helper");
-  assert.deepEqual(telegramMessages, [
-    "📅 明日14:00「新宿で打ち合わせ」を確認しました。自宅からの移動時間40分をカレンダーに入れておきました。13:20発です。",
-    "📨 現在地から見て14:00に間に合わないため、先方に「10分ほど遅れます」とメールを送っておきました。次の電車なら14:10着です。",
-  ], "late email/report emit once while the prior travel report remains the only on-time report");
+  assert.equal(late.sent, false, "the late tick never sends before a Telegram decision");
+  assert.equal(late.approvalRequired, true);
+  assert.equal(late.draft.status, "awaiting_decision");
+  assert.equal(repeatedLate.draft.duplicate, true, "repeated ticks reuse the durable draft");
+  assert.equal(emails.length, 0, "the late tick performs zero mail I/O");
+  assert.equal(telegramMessages.length, 2, "the late tick sends one approval card after the travel report");
+  assert.match(telegramMessages[1], /⚠️ 遅刻連絡の確認/);
+  assert.deepEqual(
+    telegramExtras[1].reply_markup.inline_keyboard[0].map((button) => button.text),
+    ["送る", "送らない"],
+    "the approval card exposes exactly two decisions",
+  );
 });
 
 test("CORE 8e preserves accepted travel results and continues reports when one Telegram send fails", async () => {
