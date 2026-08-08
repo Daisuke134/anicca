@@ -254,7 +254,7 @@ In one tool orchestration, call `show_accounts(locale="ja")`, extract connected 
 
 - [ ] **Step 2: Stream both live responses through the adapter**
 
-Start a non-TTY Node process that reads exactly one JSON envelope from stdin. The orchestrator sends this envelope and EOF through `write_stdin`; non-TTY stdin is never echoed:
+Start a non-TTY Node process that reads exactly one newline-terminated JSON envelope from stdin with `readline.createInterface({ input: process.stdin }).once("line", verifyLine)`. The orchestrator sends `JSON.stringify(envelope) + "\n"` through `write_stdin`; non-TTY stdin is never echoed, and the verifier closes the readline interface and exits after that one line rather than waiting for EOF:
 
 ```js
 JSON.stringify({
@@ -262,7 +262,7 @@ JSON.stringify({
   transactions: transactionsResult.structuredContent,
   observedAt: new Date().toISOString(),
   referenceKey: crypto.randomBytes(32).toString("hex"),
-})
+}) + "\n"
 ```
 
 The Node process parses the envelope, calls both adapter functions, and evaluates named predicates with a constant-code checker. It MUST NOT use `assert.deepEqual`/`assert.equal` on private objects or amounts because Node prints actual/expected values on failure:
