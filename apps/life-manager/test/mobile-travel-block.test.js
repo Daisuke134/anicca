@@ -101,7 +101,7 @@ test("proxy contract uses exact connected account and never stable UID as provid
   assert.equal(calls[0].url, "https://backend.composio.dev/api/v3.1/tools/execute/proxy");
   assert.equal(calls[0].body.connected_account_id, "ca_exact_account");
   assert.equal(calls[0].body.method, "GET");
-  assert.equal(calls[0].body.endpoint, "/calendar/v3/calendars/primary/events/lmx");
+  assert.equal(calls[0].body.endpoint, "/calendars/primary/events/lmx");
   assert.equal(Object.hasOwn(calls[0].body, "user_id"), false);
   assert.equal(Object.hasOwn(calls[0].body, "uid"), false);
 });
@@ -131,7 +131,7 @@ test("proxy create contract is v3.1 only and sends the exact Google POST body", 
   assert.equal(calls[0].url, "https://backend.composio.dev/api/v3.1/tools/execute/proxy");
   assert.doesNotMatch(calls[0].url, /\/api\/v3\/tools\/execute(?:\/|$)/u);
   assert.equal(calls[0].body.connected_account_id, "ca_exact_account");
-  assert.equal(calls[0].body.endpoint, "/calendar/v3/calendars/primary/events");
+  assert.equal(calls[0].body.endpoint, "/calendars/primary/events");
   assert.equal(calls[0].body.method, "POST");
   assert.equal(calls[0].body.body.id, "lmx");
   assert.equal(calls[0].body.body.extendedProperties.private.lm_travel_block, "opaque-marker");

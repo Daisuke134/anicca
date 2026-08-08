@@ -175,7 +175,7 @@ function makeComposioCalendar({ apiKey, recordCall, recordProviderCost, fetchImp
       if (!composioUserId || !connectedAccountId || !providerEventId) return { status: 400, data: null, headers: {} };
       return executeProxy(uid, {
         connectedAccountId,
-        endpoint: `/calendar/v3/calendars/${encodeURIComponent(String(calendarId))}/events/${encodeURIComponent(String(providerEventId))}`,
+        endpoint: `/calendars/${encodeURIComponent(String(calendarId))}/events/${encodeURIComponent(String(providerEventId))}`,
         method: "GET",
       }, { operation: "travel_block_read", essential: true });
     },
@@ -183,7 +183,7 @@ function makeComposioCalendar({ apiKey, recordCall, recordProviderCost, fetchImp
       if (!composioUserId || !connectedAccountId || !providerEventId || !body || typeof body !== "object") return { status: 400, data: null, headers: {} };
       return executeProxy(uid, {
         connectedAccountId,
-        endpoint: `/calendar/v3/calendars/${encodeURIComponent(String(calendarId))}/events`,
+        endpoint: `/calendars/${encodeURIComponent(String(calendarId))}/events`,
         method: "POST",
         body: { ...body, id: providerEventId },
       }, { operation: "travel_block_create", essential: true });
