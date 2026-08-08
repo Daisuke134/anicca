@@ -250,4 +250,41 @@ test("action-required why names unavailable sources among excluded items", () =>
   assert.doesNotMatch(text, /合計に入れていません：なし/);
 });
 
+test("unconfirmed source amounts fail closed for complete and partial in both locales", () => {
+  for (const factory of [completeSnapshot, partialSnapshot]) {
+    for (const verificationStatus of ["locally_estimated", "unavailable"]) {
+      for (const locale of ["ja", "en"]) {
+        const snapshot = factory();
+        snapshot.sources[0].verificationStatus = verificationStatus;
+        assert.throws(
+          () => renderCfoTelegram({ locale, view: "summary", snapshot }),
+          /^Error: cfo_telegram_invalid:unconfirmed_amount$/,
+        );
+      }
+    }
+  }
+});
+
+test("English drill-down punctuation is localized while Japanese punctuation stays unchanged", () => {
+  const snapshot = partialSnapshot();
+  snapshot.excluded = [
+    { label: "カードA", reason: "未接続" },
+    { label: "カードB", reason: "確認待ち" },
+  ];
+  const outputs = Object.fromEntries(["summary", "accounts", "accuracy", "why"]
+    .map((view) => [view, {
+      ja: renderCfoTelegram({ locale: "ja", view, snapshot }).text,
+      en: renderCfoTelegram({ locale: "en", view, snapshot }).text,
+    }]));
+  for (const output of Object.values(outputs)) assert.doesNotMatch(output.en, /：|（|）|、/);
+  assert.match(outputs.summary.ja, /合計に入れていません：カードA（未接続）、カードB（確認待ち）/);
+  assert.match(outputs.summary.en, /Not included in the total: カードA \(未接続\), カードB \(確認待ち\)/);
+  assert.match(outputs.accounts.ja, /¥420,000（最新）/);
+  assert.match(outputs.accounts.en, /JPY 420,000 \(Fresh\)/);
+  assert.match(outputs.accuracy.ja, /合計に入れていません：カードA（未接続）、カードB（確認待ち）/);
+  assert.match(outputs.accuracy.en, /Not included in the total: カードA \(未接続\), カードB \(確認待ち\)/);
+  assert.match(outputs.why.ja, /合計に入れていません：カードA（未接続）、カードB（確認待ち）/);
+  assert.match(outputs.why.en, /Not included in the total: カードA \(未接続\), カードB \(確認待ち\)/);
+});
+
 module.exports = { completeSnapshot, partialSnapshot, recoveredSnapshot, actionRequiredSnapshot };

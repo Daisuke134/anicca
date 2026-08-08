@@ -70,6 +70,7 @@ function validateSnapshot(snapshot) {
     [source.sourceId, source.label, source.asOf].forEach(label);
     if (!STATUSES.has(source.status) || !Object.prototype.hasOwnProperty.call(EVIDENCE, source.verificationStatus)) fail("invalid_source");
     if (!safeAmount(source.amountMinor)) fail("invalid_amount");
+    if (source.amountMinor !== null && ["locally_estimated", "unavailable"].includes(source.verificationStatus)) fail("unconfirmed_amount");
     if (source.status === "unavailable" && (source.amountMinor !== null || source.verificationStatus !== "unavailable")) fail("inconsistent_source");
     if (source.status === "fresh" && (source.amountMinor === null || source.verificationStatus === "unavailable")) fail("inconsistent_source");
   });
@@ -119,20 +120,21 @@ function renderCfoTelegram({ locale, view, snapshot }) {
   const strings = CFO_STRINGS[locale];
   if (snapshot.state === "action_required" && view === "summary") return { text: `${strings.actionTitle}\n\n${strings.actionBody}\n${strings.actionRetry}`, extra: extra(locale, snapshot, view) };
   const freshness = locale === "ja" ? { fresh: "最新", stale: "古い", unavailable: "不明" } : { fresh: "Fresh", stale: "Stale", unavailable: "Unknown" };
+  const marks = locale === "ja" ? { colon: "：", open: "（", close: "）", join: "、" } : { colon: ": ", open: " (", close: ")", join: ", " };
   const safeLabel = (value) => escapeHtml(String(value).replace(/\d[\d -]{2,}\d/g, "••••"));
   const sourceText = snapshot.sources.map((source) => `✅ Moneytree${locale === "ja" ? "（" : " ("}${safeLabel(source.label)}${locale === "ja" ? "）" : ")"} ${escapeHtml(source.asOf)}${strings.updated}`).join("\n");
   const totals = `${strings.confirmedAssets}\t${formatAmount(locale, snapshot.totals.assetsMinor)}\n${strings.confirmedLiabilities}\t${formatAmount(locale, snapshot.totals.liabilitiesMinor)}\n${strings.confirmedDifference}\t${formatAmount(locale, snapshot.totals.netWorthMinor)}\n${strings.change}\t${formatChange(locale, snapshot.totals.changeMinor)}`;
   const title = snapshot.state === "partial" ? strings.partialTitle : strings.title;
   const excludedItems = [...snapshot.excluded, ...snapshot.sources.filter((source) => source.status !== "fresh").map((source) => ({ label: source.label }))];
-  const excluded = [...new Map(excludedItems.map((item) => [item.label, item])).values()].map((item) => `${safeLabel(item.label)}${item.reason ? `（${escapeHtml(item.reason)}）` : ""}`).join("、") || (locale === "ja" ? "なし" : "None");
-  const exclusions = snapshot.state === "partial" ? `\n${strings.excluded}：${excluded}` : "";
+  const excluded = [...new Map(excludedItems.map((item) => [item.label, item])).values()].map((item) => `${safeLabel(item.label)}${item.reason ? `${marks.open}${escapeHtml(item.reason)}${marks.close}` : ""}`).join(marks.join) || (locale === "ja" ? "なし" : "None");
+  const exclusions = snapshot.state === "partial" ? `\n${strings.excluded}${marks.colon}${excluded}` : "";
   const repair = snapshot.state === "recovered" ? `\n${strings.recovered}` : "";
-  const accounts = snapshot.sources.map((source) => `${safeLabel(source.label)}\t${formatAmount(locale, source.amountMinor)}（${freshness[source.status]}）`).join("\n");
+  const accounts = snapshot.sources.map((source) => `${safeLabel(source.label)}\t${formatAmount(locale, source.amountMinor)}${marks.open}${freshness[source.status]}${marks.close}`).join("\n");
   const evidence = snapshot.sources.map((source) => `${evidenceLabel(locale, source.verificationStatus)} ${escapeHtml(source.asOf)}`).join("\n");
-  const why = `${strings.confirmedAssets} − ${strings.confirmedLiabilities} = ${strings.confirmedDifference} ${formatAmount(locale, snapshot.totals.netWorthMinor)}\n${strings.excluded}：${excluded}`;
+  const why = `${strings.confirmedAssets} − ${strings.confirmedLiabilities} = ${strings.confirmedDifference} ${formatAmount(locale, snapshot.totals.netWorthMinor)}\n${strings.excluded}${marks.colon}${excluded}`;
   const text = view === "summary" ? `${title}\n\n${totals}${exclusions}\n\n${sourceText}${repair}\n${strings.noAction}`
     : view === "accounts" ? `${title}\n\n${accounts}\n${snapshot.state === "action_required" ? strings.actionBody : strings.noAction}`
-      : view === "accuracy" ? `${title}\n\n${evidence}\n${strings.excluded}：${excluded}` : `${title}\n\n${why}`;
+      : view === "accuracy" ? `${title}\n\n${evidence}\n${strings.excluded}${marks.colon}${excluded}` : `${title}\n\n${why}`;
   return { text, extra: extra(locale, snapshot, view) };
 }
 
