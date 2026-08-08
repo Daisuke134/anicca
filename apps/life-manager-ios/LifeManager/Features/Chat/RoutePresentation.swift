@@ -10,7 +10,7 @@ struct RouteCardPresentation: Equatable, Sendable {
     let computedAt: Date
     let provider: String
     let durationSeconds: Int
-    let bufferSeconds: Int
+    let bufferSeconds: Int?
     let fare: RouteFare?
     let legSummary: [String]
     let providerAttribution: String
@@ -42,7 +42,7 @@ struct RouteDetailPresentation: Equatable, Sendable {
     let timezone: String
     let computedAt: Date
     let provider: String
-    let bufferSeconds: Int
+    let bufferSeconds: Int?
     let providerAttribution: String
     let steps: [RouteStepPresentation]
 

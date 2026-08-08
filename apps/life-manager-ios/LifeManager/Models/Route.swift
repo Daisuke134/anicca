@@ -16,7 +16,7 @@ struct Route: Codable, Equatable, Sendable {
     let leaveAt: Date
     let arriveAt: Date
     let durationSeconds: Int
-    let bufferSeconds: Int
+    let bufferSeconds: Int?
     let transferCount: Int
     let fare: RouteFare?
     let geometry: JSONValue?

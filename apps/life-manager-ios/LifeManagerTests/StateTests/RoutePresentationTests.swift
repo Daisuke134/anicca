@@ -46,6 +46,13 @@ final class RoutePresentationTests: XCTestCase {
         XCTAssertFalse(renderedText.contains("crowding"))
     }
 
+    func testMissingBufferRemainsAbsentWithoutInventingZeroMinutes() {
+        let message = RouteFixtures.message(route: RouteFixtures.route(bufferSeconds: nil))
+
+        XCTAssertNil(RoutePresentation.card(for: message)?.bufferSeconds)
+        XCTAssertNil(RoutePresentation.detail(for: message)?.bufferSeconds)
+    }
+
     func testRoutePresentationRequiresRouteMessageAndDoesNotInventRouteForStatusOnlyMessage() {
         let message = RouteFixtures.message(route: nil, type: .routeUnavailable)
 
@@ -100,7 +107,8 @@ private enum RouteFixtures {
     static func route(
         fare: RouteFare? = RouteFare(currency: "JPY", amount: 220, medium: "IC"),
         platform: String? = "Platform 2",
-        geometry: JSONValue? = nil
+        geometry: JSONValue? = nil,
+        bufferSeconds: Int? = 180
     ) -> Route {
         Route(
             status: .routeReady,
@@ -114,7 +122,7 @@ private enum RouteFixtures {
             leaveAt: Date.iso8601("2026-08-10T08:35:00.000Z"),
             arriveAt: Date.iso8601("2026-08-10T09:02:00.000Z"),
             durationSeconds: 1620,
-            bufferSeconds: 180,
+            bufferSeconds: bufferSeconds,
             transferCount: 1,
             fare: fare,
             geometry: geometry,

@@ -25,10 +25,12 @@ struct RouteCardView: View {
 
                 HStack(spacing: 16) {
                     durationLabel(presentation.durationSeconds)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("route.bufferReason")
-                            .font(.caption)
-                        bufferLabel(presentation.bufferSeconds)
+                    if let bufferSeconds = presentation.bufferSeconds {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("route.bufferReason")
+                                .font(.caption)
+                            bufferLabel(bufferSeconds)
+                        }
                     }
                 }
                 .font(.subheadline)

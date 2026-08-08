@@ -65,11 +65,13 @@ struct RouteDetailSheet: View {
                         .accessibilityElement(children: .combine)
                     }
 
-                    HStack(spacing: 4) {
-                        Text("route.bufferReason")
-                        bufferLabel(presentation.bufferSeconds)
+                    if let bufferSeconds = presentation.bufferSeconds {
+                        HStack(spacing: 4) {
+                            Text("route.bufferReason")
+                            bufferLabel(bufferSeconds)
+                        }
+                        .font(.body.weight(.medium))
                     }
-                    .font(.body.weight(.medium))
 
                     VStack(alignment: .leading, spacing: 4) {
                         HStack(spacing: 4) {

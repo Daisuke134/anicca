@@ -85,6 +85,61 @@ final class ContractFixtureDecodingTests: XCTestCase {
         XCTAssertEqual(chat.messages[1].route?.origin.userContent, "Shipathon Roppongi")
     }
 
+    func testChatPageDecodesRouteWhenProviderOmitsBufferSeconds() throws {
+        let data = Data(#"""
+        {
+          "messages": [
+            {
+              "id": "message:v1:route-null-buffer",
+              "cursor": "cursor:v1:route-null-buffer",
+              "createdAt": "2026-08-10T08:10:00.000Z",
+              "locale": "en",
+              "type": "route",
+              "text": "Your next event is Tokyo Tower visit.",
+              "userContent": {
+                "eventTitle": "Tokyo Tower visit",
+                "eventLocation": "Tokyo Tower"
+              },
+              "question": null,
+              "route": {
+                "status": "route_ready",
+                "provider": "transit",
+                "providerAttribution": "Transit API",
+                "computedAt": "2026-08-10T08:10:00.000Z",
+                "timezone": "America/Los_Angeles",
+                "eventId": "calendar-event:v1:tokyo-tower-2026-08-10",
+                "origin": {
+                  "displayName": "Shipathon Roppongi",
+                  "userContent": "Shipathon Roppongi"
+                },
+                "destination": {
+                  "displayName": "Tokyo Tower",
+                  "userContent": "Tokyo Tower"
+                },
+                "leaveAt": "2026-08-10T08:35:00.000Z",
+                "arriveAt": "2026-08-10T09:02:00.000Z",
+                "durationSeconds": 1620,
+                "bufferSeconds": null,
+                "transferCount": 1,
+                "fare": null,
+                "geometry": null,
+                "steps": []
+              },
+              "actions": []
+            }
+          ],
+          "nextCursor": "cursor:v1:route-null-buffer",
+          "hasMore": false
+        }
+        """#.utf8)
+
+        let chat = try decoder.decode(ChatPage.self, from: data)
+
+        XCTAssertEqual(chat.messages.count, 1)
+        XCTAssertEqual(chat.messages[0].route?.durationSeconds, 1620)
+        XCTAssertNil(chat.messages[0].route?.bufferSeconds)
+    }
+
     func testTravelReceiptSemanticKeysDecodeWithoutChangingStableIDOrCursor() throws {
         let data = Data(#"""
         {
