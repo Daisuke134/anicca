@@ -73,3 +73,56 @@ failures. The unit count includes the six AppDelegate permission/token/router
 tests and three device/payload tests. The parallel test runner was also
 observed to stop in the existing coalescing harness once; the serial command
 above is the reproducible green gate.
+
+## Gate 4 signing and TestFlight configuration slice
+
+### RED
+
+The new `SigningConfigurationTests` were run before adding the iOS signing
+configuration and TestFlight lanes:
+
+```text
+SigningConfigurationTests: 2 tests, 7 failures
+```
+
+The failures were the missing Debug/Release APNs entitlement files, missing
+iphoneos signing configuration, and missing credential-gated TestFlight lanes.
+
+### GREEN
+
+The slice now has explicit environment-specific entitlements and keeps
+simulator/debug builds unsigned while requiring signing for Release iphoneos:
+
+```text
+Release + iphoneos:
+CODE_SIGNING_ALLOWED = YES
+CODE_SIGNING_REQUIRED = YES
+CODE_SIGN_ENTITLEMENTS = LifeManager/Config/Release.entitlements
+
+Release + iphonesimulator:
+CODE_SIGNING_ALLOWED = NO
+CODE_SIGNING_REQUIRED = NO
+
+Debug + iphoneos:
+CODE_SIGNING_ALLOWED = NO
+CODE_SIGNING_REQUIRED = NO
+CODE_SIGN_ENTITLEMENTS = LifeManager/Config/Debug.entitlements
+```
+
+The TestFlight lanes require `LIFEMANAGER_BUILD_NUMBER` and external
+App Store Connect credentials (`ASC_KEY_ID`, `ASC_ISSUER_ID`,
+`ASC_API_KEY_PATH`); no credential or archive is committed.
+
+Verification from `apps/life-manager-ios/`:
+
+```text
+PATH="/opt/homebrew/opt/ruby/bin:$PATH" bundle exec fastlane build_for_simulator
+Build Succeeded
+
+PATH="/opt/homebrew/opt/ruby/bin:$PATH" bundle exec fastlane test
+UI tests: 2/2 passed
+Unit tests: 60/60 passed
+Number of tests: 62
+Number of failures: 0
+Test Succeeded
+```

@@ -1,6 +1,18 @@
 default_platform(:ios)
 
 platform :ios do
+  def app_store_connect_api_key_from_env
+    key_path = ENV.fetch("ASC_API_KEY_PATH")
+    UI.user_error!("ASC_API_KEY_PATH does not point to a file") unless File.file?(key_path)
+
+    app_store_connect_api_key(
+      key_id: ENV.fetch("ASC_KEY_ID"),
+      issuer_id: ENV.fetch("ASC_ISSUER_ID"),
+      key_filepath: key_path,
+      in_house: false
+    )
+  end
+
   def simulator_destination
     simulator_udid = ENV["LIFEMANAGER_SIMULATOR_UDID"] || `xcrun simctl list devices available`.lines
       .find { |line| line.include?("iPhone 17 Pro") }
@@ -21,7 +33,9 @@ platform :ios do
       skip_detect_devices: true,
       derived_data_path: "build/DerivedData",
       clean: false,
-      skip_build: true
+      skip_build: true,
+      disable_concurrent_testing: true,
+      xcargs: "-parallel-testing-enabled NO"
     )
   end
 
@@ -36,6 +50,36 @@ platform :ios do
       skip_archive: true,
       skip_codesigning: true,
       clean: true
+    )
+  end
+
+  desc "Archive and export the signed App Store/TestFlight build"
+  lane :build_for_testflight do
+    build_number = ENV.fetch("LIFEMANAGER_BUILD_NUMBER")
+    increment_build_number(
+      xcodeproj: "LifeManager.xcodeproj",
+      build_number: build_number
+    )
+    build_app(
+      project: "LifeManager.xcodeproj",
+      scheme: "LifeManager",
+      configuration: "Release",
+      export_method: "app-store",
+      output_directory: "build/TestFlight",
+      output_name: "LifeManager.ipa",
+      clean: true,
+      skip_codesigning: false,
+      xcargs: "CODE_SIGNING_ALLOWED=YES CODE_SIGNING_REQUIRED=YES"
+    )
+  end
+
+  desc "Upload an already-built IPA to TestFlight"
+  lane :upload_testflight do
+    upload_to_testflight(
+      api_key: app_store_connect_api_key_from_env,
+      ipa: ENV.fetch("LIFEMANAGER_IPA_PATH", "build/TestFlight/LifeManager.ipa"),
+      skip_waiting_for_build_processing: false,
+      distribute_external: false
     )
   end
 end
