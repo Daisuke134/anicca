@@ -14,6 +14,9 @@ env:
   TRAVEL_RECEIPT_MESSAGE_ID: ${TRAVEL_RECEIPT_MESSAGE_ID}
 ---
 - launchApp
+- tapOn:
+    id: "paywall.continueFree"
+    optional: true
 - extendedWaitUntil:
     visible:
       id: "chat.list"

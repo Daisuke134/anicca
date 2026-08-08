@@ -31,7 +31,7 @@ final class RoutePresentationTests: XCTestCase {
 
         let card = RoutePresentation.card(for: message)
         let detail = RoutePresentation.detail(for: message)
-        let renderedText = ([card?.legSummary.joined(separator: " "), detail?.steps.map(\.instruction).joined(separator: " ")]
+        let renderedText = ([card?.legSummary.joined(separator: " "), detail?.steps.compactMap(\.instruction).joined(separator: " ")]
             .compactMap { $0 }
             .joined(separator: " "))
             .lowercased()
@@ -51,6 +51,16 @@ final class RoutePresentationTests: XCTestCase {
 
         XCTAssertNil(RoutePresentation.card(for: message)?.bufferSeconds)
         XCTAssertNil(RoutePresentation.detail(for: message)?.bufferSeconds)
+    }
+
+    func testMissingStepInstructionIsOmittedWithoutInventingCopy() {
+        let message = RouteFixtures.message(route: RouteFixtures.route(firstInstruction: nil))
+
+        XCTAssertEqual(
+            RoutePresentation.card(for: message)?.legSummary,
+            ["Take the Toei Oedo Line toward Daimon", "Walk to Tokyo Tower"]
+        )
+        XCTAssertNil(RoutePresentation.detail(for: message)?.steps.first?.instruction)
     }
 
     func testRoutePresentationRequiresRouteMessageAndDoesNotInventRouteForStatusOnlyMessage() {
@@ -108,7 +118,8 @@ private enum RouteFixtures {
         fare: RouteFare? = RouteFare(currency: "JPY", amount: 220, medium: "IC"),
         platform: String? = "Platform 2",
         geometry: JSONValue? = nil,
-        bufferSeconds: Int? = 180
+        bufferSeconds: Int? = 180,
+        firstInstruction: String? = "Walk to Roppongi Station"
     ) -> Route {
         Route(
             status: .routeReady,
@@ -130,7 +141,7 @@ private enum RouteFixtures {
                 RouteStep(
                     sequence: 1,
                     mode: "walk",
-                    instruction: "Walk to Roppongi Station",
+                    instruction: firstInstruction,
                     from: "Shipathon Roppongi",
                     to: "Roppongi Station",
                     service: nil,

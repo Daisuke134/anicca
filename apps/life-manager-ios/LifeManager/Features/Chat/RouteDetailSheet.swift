@@ -29,11 +29,14 @@ struct RouteDetailSheet: View {
 
                     ForEach(presentation.steps) { step in
                         VStack(alignment: .leading, spacing: 4) {
-                            if let departAt = step.departAt {
-                                Text("\(time(departAt, timezone: presentation.timezone))  \(step.instruction)")
+                            if let instruction = step.instruction, let departAt = step.departAt {
+                                Text("\(time(departAt, timezone: presentation.timezone))  \(instruction)")
                                     .font(.body.weight(.medium))
-                            } else {
-                                Text(step.instruction)
+                            } else if let instruction = step.instruction {
+                                Text(instruction)
+                                    .font(.body.weight(.medium))
+                            } else if let departAt = step.departAt {
+                                Text(time(departAt, timezone: presentation.timezone))
                                     .font(.body.weight(.medium))
                             }
                             if let from = step.from, let to = step.to {

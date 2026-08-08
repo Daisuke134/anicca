@@ -22,7 +22,7 @@ struct RouteCardPresentation: Equatable, Sendable {
 
 struct RouteStepPresentation: Equatable, Sendable, Identifiable {
     let id: Int
-    let instruction: String
+    let instruction: String?
     let from: String?
     let to: String?
     let service: String?
@@ -69,7 +69,7 @@ enum RoutePresentation {
             durationSeconds: route.durationSeconds,
             bufferSeconds: route.bufferSeconds,
             fare: route.fare,
-            legSummary: route.steps.sorted { $0.sequence < $1.sequence }.map(\.instruction),
+            legSummary: route.steps.sorted { $0.sequence < $1.sequence }.compactMap(\.instruction),
             providerAttribution: route.providerAttribution
         )
     }

@@ -56,7 +56,7 @@ struct RouteFare: Codable, Equatable, Sendable {
 struct RouteStep: Codable, Equatable, Sendable {
     let sequence: Int
     let mode: String
-    let instruction: String
+    let instruction: String?
     let from: String?
     let to: String?
     let service: String?

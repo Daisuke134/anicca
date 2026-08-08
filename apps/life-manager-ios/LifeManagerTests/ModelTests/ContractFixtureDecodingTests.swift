@@ -123,7 +123,21 @@ final class ContractFixtureDecodingTests: XCTestCase {
                 "transferCount": 1,
                 "fare": null,
                 "geometry": null,
-                "steps": []
+                "steps": [
+                  {
+                    "sequence": 1,
+                    "mode": "walk",
+                    "instruction": null,
+                    "from": "Shipathon Roppongi",
+                    "to": "Roppongi Station",
+                    "service": null,
+                    "headsign": null,
+                    "platform": null,
+                    "departAt": null,
+                    "arriveAt": null,
+                    "durationSeconds": 420
+                  }
+                ]
               },
               "actions": []
             }
@@ -138,6 +152,7 @@ final class ContractFixtureDecodingTests: XCTestCase {
         XCTAssertEqual(chat.messages.count, 1)
         XCTAssertEqual(chat.messages[0].route?.durationSeconds, 1620)
         XCTAssertNil(chat.messages[0].route?.bufferSeconds)
+        XCTAssertNil(chat.messages[0].route?.steps[0].instruction)
     }
 
     func testTravelReceiptSemanticKeysDecodeWithoutChangingStableIDOrCursor() throws {
