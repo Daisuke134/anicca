@@ -109,6 +109,25 @@ test("refresh rotates token and replay revokes the whole family; logout revokes 
   await assert.rejects(() => authenticateMobileRequest({ headers: { authorization: `Bearer ${token.accessToken}` } }, freshDeps), (error) => error.code === "unauthorized");
 });
 
+test("a rotated refresh row that is already marked revoked still reaches the atomic family replay boundary", async () => {
+  let rotations = 0;
+  const deps = memorySessionDeps({
+    store: {
+      async findRefreshSession() {
+        return {
+          sessionId: "session:v1:old", familyId: "family:v1:old", uid: "user-a",
+          refreshTokenHash: require("../lib/mobile-utils.js").sha256("refresh-token:v1:replayed"),
+          productLocale: "en", refreshExpiresAt: "2099-01-01T00:00:00.000Z",
+          rotatedAt: "2026-08-08T00:01:00.000Z", revokedAt: "2026-08-08T00:01:00.000Z",
+        };
+      },
+      async rotateRefreshSession() { rotations++; return { replay: true }; },
+    },
+  });
+  await assert.rejects(() => refreshMobileSession("refresh-token:v1:replayed", deps), (error) => error.code === "refresh_replay");
+  assert.equal(rotations, 1);
+});
+
 test("default Supabase identity validation derives the Life Manager uid and never trusts a body uid", async () => {
   const requests = [];
   const result = await validateSupabaseIdentity("supabase-access", {

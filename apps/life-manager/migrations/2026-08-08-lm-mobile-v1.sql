@@ -80,6 +80,7 @@ CREATE TABLE IF NOT EXISTS public.lm_mobile_idempotency (
   request_hash text NOT NULL CHECK (length(request_hash) = 64),
   status text NOT NULL CHECK (status IN ('pending', 'succeeded', 'failed')),
   result jsonb,
+  result_expires_at timestamptz,
   error jsonb,
   status_code integer,
   created_at timestamptz NOT NULL DEFAULT now(),
@@ -89,6 +90,9 @@ CREATE TABLE IF NOT EXISTS public.lm_mobile_idempotency (
 
 CREATE INDEX IF NOT EXISTS lm_mobile_idempotency_updated_idx
   ON public.lm_mobile_idempotency (updated_at);
+
+ALTER TABLE public.lm_mobile_idempotency
+  ADD COLUMN IF NOT EXISTS result_expires_at timestamptz;
 
 CREATE TABLE IF NOT EXISTS public.lm_mobile_analysis_states (
   uid text PRIMARY KEY REFERENCES public.lm_users(uid) ON DELETE CASCADE,

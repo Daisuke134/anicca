@@ -221,7 +221,14 @@ async function refreshMobileSession(refreshToken, deps = {}) {
   if (!storedHash || !timingEqual(storedHash, tokenHash)) throw new MobileError("refresh_invalid", "The refresh token is invalid.", 401);
   const at = nowMs(deps);
   const expiry = Date.parse(field(row, "refreshExpiresAt", "refresh_expires_at") || "");
-  if (!Number.isFinite(expiry) || expiry <= at || field(row, "revokedAt", "revoked_at")) throw new MobileError("refresh_expired", "The refresh token has expired.", 401);
+  const rotatedAt = field(row, "rotatedAt", "rotated_at");
+  const revokedAt = field(row, "revokedAt", "revoked_at");
+  // A rotated row is a replay signal even when the first successful rotation already marked it
+  // revoked. Let the database/memory store atomically revoke the complete family again; returning
+  // refresh_expired here would leave a stolen old token looking like a harmless expiry.
+  if (!rotatedAt && (!Number.isFinite(expiry) || expiry <= at || revokedAt)) {
+    throw new MobileError("refresh_expired", "The refresh token has expired.", 401);
+  }
   const next = tokenSet(field(row, "uid"), field(row, "productLocale", "product_locale") || "en", deps, at);
   next.familyId = field(row, "familyId", "family_id") || next.familyId;
   const rotated = await store.rotateRefreshSession(row, next);

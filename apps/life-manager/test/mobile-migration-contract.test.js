@@ -23,6 +23,7 @@ test("mobile migration persists the Gate 3 tenant, replay, cursor, device, call,
   assert.match(SQL, /state_hash text PRIMARY KEY/);
   assert.match(SQL, /access_token_hash text NOT NULL UNIQUE/);
   assert.match(SQL, /refresh_token_hash text NOT NULL UNIQUE/);
+  assert.match(SQL, /result_expires_at timestamptz/);
   assert.match(SQL, /sequence bigint GENERATED ALWAYS AS IDENTITY/);
   assert.match(SQL, /token text NOT NULL CHECK \(token ~ '\^\[0-9a-fA-F\]\{64\}\$'/);
   assert.doesNotMatch(SQL, /raw_access_token|raw_refresh_token|raw_bearer/i);

@@ -3,6 +3,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { canonicalPayloadHash, withMobileIdempotency, MobileError } = require("../lib/mobile-idempotency.js");
+const { createMemoryMobileStore } = require("../lib/mobile-store.js");
 
 function deps() {
   const receipts = new Map();
@@ -63,4 +64,22 @@ test("failed idempotent mutations replay structured details", async () => {
   };
   await assert.rejects(() => withMobileIdempotency(input, d), (error) => error.details.reason === "cooldown");
   await assert.rejects(() => withMobileIdempotency(input, d), (error) => error.details.reason === "cooldown");
+});
+
+test("token-bearing idempotent results are encrypted per request and replay exactly without plaintext secrets", async () => {
+  const store = createMemoryMobileStore({ users: [{ uid: "user-a" }] });
+  const scope = { uid: "user-a" };
+  const payload = { method: "POST", path: "/session/refresh", body: { refreshToken: "refresh-token:v1:secret" } };
+  const expected = {
+    accessToken: "access:v1:secret", refreshToken: "refresh:v1:next", tokenType: "Bearer",
+    expiresAt: "2026-08-08T00:20:00.000Z", refreshExpiresAt: "2026-09-08T00:00:00.000Z",
+  };
+  const first = await withMobileIdempotency({ scope, key: "refresh-replay-1", payload, operation: async () => expected }, { store });
+  const receipt = store._idempotency.get("user-a:refresh-replay-1");
+  assert.deepEqual(first, expected);
+  assert.equal(receipt.result.accessToken, undefined);
+  assert.equal(receipt.result.refreshToken, undefined);
+  assert.equal(receipt.result.kind, "encrypted_replay:v1");
+  const replay = await withMobileIdempotency({ scope, key: "refresh-replay-1", payload, operation: async () => { throw new Error("must replay"); } }, { store });
+  assert.deepEqual(replay, expected);
 });

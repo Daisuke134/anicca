@@ -163,7 +163,7 @@ function createSupabaseMobileStore(options = {}) {
     },
     async readIdempotency(scope, key) {
       const found = await rows("lm_mobile_idempotency", scopedParams(scope, {
-        idempotency_key: `eq.${encodeFilter(key)}`, select: "request_hash,status,result,error,status_code", limit: "1",
+        idempotency_key: `eq.${encodeFilter(key)}`, select: "request_hash,status,result,result_expires_at,error,status_code", limit: "1",
       }));
       return found[0] || null;
     },
@@ -181,6 +181,7 @@ function createSupabaseMobileStore(options = {}) {
       await request(`/rest/v1/lm_mobile_idempotency?uid=eq.${encodeFilter(scope.uid)}&idempotency_key=eq.${encodeFilter(key)}`, {
         method: "PATCH", headers: { "content-type": "application/json", Prefer: "return=minimal" }, body: JSON.stringify({
           status: value.status, result: value.result === undefined ? null : value.result,
+          result_expires_at: value.resultExpiresAt || value.result_expires_at || null,
           error: value.error || null, status_code: value.statusCode || null, updated_at: new Date().toISOString(),
         }),
       }, "idempotency_failed");

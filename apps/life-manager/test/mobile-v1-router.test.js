@@ -134,3 +134,21 @@ test("pre-auth idempotency scopes session starts by the validated identity token
   }
   assert.equal(starts, 2);
 });
+
+test("refresh retries replay the exact token set while the generic receipt keeps no plaintext token", async () => {
+  const idempotencyStore = new Map();
+  const tokens = {
+    accessToken: "access:v1:secret", refreshToken: "refresh:v1:next", tokenType: "Bearer",
+    expiresAt: "2026-08-08T00:20:00.000Z", refreshExpiresAt: "2026-09-08T00:00:00.000Z",
+  };
+  const deps = { idempotencyStore, refreshMobileSession: async () => tokens };
+  const headers = { "idempotency-key": "refresh-router-1", "content-type": "application/json" };
+  const first = response();
+  await handleMobileV1Request(request("POST", "/api/mobile/v1/session/refresh", { refreshToken: "refresh:v1:old" }, headers), first, deps);
+  const replay = response();
+  await handleMobileV1Request(request("POST", "/api/mobile/v1/session/refresh", { refreshToken: "refresh:v1:old" }, headers), replay, deps);
+  assert.deepEqual(parsed(replay), tokens);
+  const receipt = [...idempotencyStore.values()][0];
+  assert.equal(JSON.stringify(receipt).includes(tokens.accessToken), false);
+  assert.equal(JSON.stringify(receipt).includes(tokens.refreshToken), false);
+});
