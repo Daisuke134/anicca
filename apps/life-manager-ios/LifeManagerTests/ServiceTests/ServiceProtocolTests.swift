@@ -82,12 +82,12 @@ final class ServiceProtocolTests: XCTestCase {
         XCTAssertEqual(lastEndpointPath, "/session")
     }
 
-    func testAuthServiceExchangesOnlyTheBackendValidatedOAuthState() async throws {
+    func testAuthServiceSendsExplicitEmptyStartAndExchangesComposioCallbackFacts() async throws {
         let store = InMemorySessionStore(session: nil)
         let api = RecordingAPI()
         await api.setSessionStart(TestFixtures.sessionStart)
         await api.setSession(TestFixtures.rotatedSession)
-        let callback = URL(string: "lifemanager://oauth/callback?code=one-use-code&state=state:v1:calendar-consent-8f3a")!
+        let callback = URL(string: "lifemanager://oauth/callback?state=state:v1:calendar-consent-8f3a&status=success&connected_account_id=ca_calendar_8f3a")!
         let authorizer = TestOAuthCallbackAuthorizer(callback: callback)
         let service = AuthService(api: api, sessionStore: store, callbackAuthorizer: authorizer)
 
@@ -97,11 +97,50 @@ final class ServiceProtocolTests: XCTestCase {
         let endpoints = await api.endpoints()
         let savedSession = await store.currentSession()
         XCTAssertEqual(endpoints.map(\.path), ["/session/calendar/start", "/session/exchange"])
+        XCTAssertEqual(endpoints[0].body, Data("{}".utf8))
         let exchangeBody = endpoints[1].body!
         let exchangeJSON = try JSONSerialization.jsonObject(with: exchangeBody) as! [String: String]
-        XCTAssertEqual(exchangeJSON["code"], "one-use-code")
         XCTAssertEqual(exchangeJSON["state"], "state:v1:calendar-consent-8f3a")
+        XCTAssertEqual(exchangeJSON["status"], "success")
+        XCTAssertEqual(exchangeJSON["connectedAccountId"], "ca_calendar_8f3a")
+        XCTAssertNil(exchangeJSON["code"])
+        XCTAssertNil(exchangeJSON["uid"])
+        XCTAssertNil(exchangeJSON["email"])
         XCTAssertEqual(savedSession, TestFixtures.rotatedSession)
+    }
+
+    func testAuthServiceRejectsInvalidComposioCallbacksBeforeExchangeOrPersistence() async throws {
+        let invalidCallbacks = [
+            URL(string: "lifemanager://oauth/callback?status=success&connected_account_id=ca_calendar_8f3a")!,
+            URL(string: "lifemanager://oauth/callback?state=state:v1:calendar-consent-8f3a&connected_account_id=ca_calendar_8f3a")!,
+            URL(string: "lifemanager://oauth/callback?state=state:v1:calendar-consent-8f3a&status=failed&connected_account_id=ca_calendar_8f3a")!,
+            URL(string: "lifemanager://oauth/callback?state=state:v1:other&status=success&connected_account_id=ca_calendar_8f3a")!,
+            URL(string: "lifemanager://oauth/callback?state=state:v1:calendar-consent-8f3a&status=success&connected_account_id=not-a-composio-id")!
+        ]
+
+        for callback in invalidCallbacks {
+            let store = InMemorySessionStore(session: nil)
+            let api = RecordingAPI()
+            await api.setSessionStart(TestFixtures.sessionStart)
+            await api.setSession(TestFixtures.rotatedSession)
+            let service = AuthService(
+                api: api,
+                sessionStore: store,
+                callbackAuthorizer: TestOAuthCallbackAuthorizer(callback: callback)
+            )
+
+            do {
+                _ = try await service.connectCalendar()
+                XCTFail("invalid Composio callback must fail closed: \(callback)")
+            } catch {
+                // Expected: no callback fact may reach the exchange endpoint.
+            }
+
+            let endpoints = await api.endpoints()
+            XCTAssertEqual(endpoints.map(\.path), ["/session/calendar/start"])
+            let savedSession = await store.currentSession()
+            XCTAssertNil(savedSession)
+        }
     }
 
     func testOAuthExchangePropagatesSessionToAuthenticatedAPI() async throws {
@@ -114,7 +153,7 @@ final class ServiceProtocolTests: XCTestCase {
         let relay = SessionPropagationRelay()
         relay.attach(sessionAPISink)
         relay.attach(authenticatedAPISink)
-        let callback = URL(string: "lifemanager://oauth/callback?code=one-use-code&state=state:v1:calendar-consent-8f3a")!
+        let callback = URL(string: "lifemanager://oauth/callback?state=state:v1:calendar-consent-8f3a&status=success&connected_account_id=ca_calendar_8f3a")!
         let service = AuthService(
             api: api,
             sessionStore: store,
@@ -157,7 +196,7 @@ final class ServiceProtocolTests: XCTestCase {
     func testOAuthExchangeReusesDurableKeyAndBodyAfterAmbiguousFailure() async throws {
         let store = TestOperationRetryStore()
         let api = RetryingAuthMutationAPI(mode: .exchange)
-        let callback = URL(string: "lifemanager://oauth/callback?code=one-use-code&state=state:v1:calendar-consent-8f3a")!
+        let callback = URL(string: "lifemanager://oauth/callback?state=state:v1:calendar-consent-8f3a&status=success&connected_account_id=ca_calendar_8f3a")!
         let service = AuthService(
             api: api,
             sessionStore: InMemorySessionStore(session: nil),

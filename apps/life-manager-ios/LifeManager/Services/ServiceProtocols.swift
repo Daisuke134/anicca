@@ -33,9 +33,60 @@ protocol OAuthCallbackAuthorizing: Sendable {
     func authorize(url: URL, expectedState: String) async throws -> URL
 }
 
+private struct CalendarStartRequest: Encodable, Sendable {}
+
 private struct CalendarExchangeRequest: Codable, Sendable {
-    let code: String
     let state: String
+    let status: String
+    let connectedAccountId: String
+
+    enum CodingKeys: String, CodingKey {
+        case state
+        case status
+        case connectedAccountId
+    }
+}
+
+private struct CalendarOAuthCallback: Sendable {
+    let state: String
+    let status: String
+    let connectedAccountId: String
+
+    static func parse(url: URL, expectedState: String) throws -> Self {
+        guard
+            !expectedState.isEmpty,
+            expectedState.rangeOfCharacter(from: .whitespacesAndNewlines.union(.controlCharacters)) == nil,
+            let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+        else {
+            throw APIError.transport("OAuth callback state is invalid")
+        }
+
+        let queryItems = components.queryItems ?? []
+        func uniqueValue(named name: String) -> String? {
+            let values = queryItems.filter { $0.name == name }.compactMap(\.value)
+            guard values.count == 1 else { return nil }
+            return values[0]
+        }
+
+        guard
+            let state = uniqueValue(named: "state"),
+            !state.isEmpty,
+            state.rangeOfCharacter(from: .whitespacesAndNewlines.union(.controlCharacters)) == nil,
+            state == expectedState,
+            let status = uniqueValue(named: "status"),
+            status == "success",
+            let connectedAccountId = uniqueValue(named: "connected_account_id"),
+            connectedAccountId.hasPrefix("ca_"),
+            connectedAccountId.count > 3,
+            connectedAccountId.rangeOfCharacter(
+                from: CharacterSet(charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-").inverted
+            ) == nil
+        else {
+            throw APIError.transport("OAuth callback state, status, or connected account is invalid")
+        }
+
+        return Self(state: state, status: status, connectedAccountId: connectedAccountId)
+    }
 }
 
 private struct RefreshRequest: Codable, Sendable {
@@ -81,11 +132,12 @@ struct AuthService: AuthServicing {
         guard let callbackAuthorizer else {
             throw APIError.transport("OAuth callback authorizer is unavailable")
         }
-        let startKey = await retryStore.operationKey(for: .sessionStart)
+        let startBody = try JSONEncoder.lifeManager.encode(CalendarStartRequest())
+        let startKey = await retryStore.operationKey(for: .sessionStart, input: startBody)
         let start: SessionStart
         do {
             start = try await api.send(
-                .unauthenticatedMutation(path: "/session/calendar/start", method: .post),
+                .unauthenticatedMutation(path: "/session/calendar/start", method: .post, body: startBody),
                 as: SessionStart.self,
                 idempotencyKey: startKey
             )
@@ -98,16 +150,14 @@ struct AuthService: AuthServicing {
             url: start.authorizationURL,
             expectedState: start.state
         )
-        guard
-            let components = URLComponents(url: callback, resolvingAgainstBaseURL: false),
-            let code = components.queryItems?.first(where: { $0.name == "code" })?.value,
-            let state = components.queryItems?.first(where: { $0.name == "state" })?.value,
-            state == start.state
-        else {
-            throw APIError.transport("OAuth callback state or code is invalid")
-        }
-
-        let proposedBody = try JSONEncoder.lifeManager.encode(CalendarExchangeRequest(code: code, state: state))
+        let callbackFacts = try CalendarOAuthCallback.parse(url: callback, expectedState: start.state)
+        let proposedBody = try JSONEncoder.lifeManager.encode(
+            CalendarExchangeRequest(
+                state: callbackFacts.state,
+                status: callbackFacts.status,
+                connectedAccountId: callbackFacts.connectedAccountId
+            )
+        )
         let pendingExchange = await retryStore.pending(for: .sessionExchange)
         let body = pendingExchange?.input ?? proposedBody
         let exchangeKey: UUID

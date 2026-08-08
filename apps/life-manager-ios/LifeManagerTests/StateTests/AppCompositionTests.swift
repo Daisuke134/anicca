@@ -9,7 +9,7 @@ final class AppCompositionTests: XCTestCase {
             bootstrap: ContractFixtureLoader.data(named: "bootstrap.json"),
             profilePatch: ContractFixtureLoader.data(named: "profile-patch.json")
         )
-        let callback = URL(string: "lifemanager://oauth/callback?code=one-use-code&state=state:v1:calendar-consent-8f3a")!
+        let callback = URL(string: "lifemanager://oauth/callback?state=state:v1:calendar-consent-8f3a&status=success&connected_account_id=ca_calendar_8f3a")!
         let composition = AppComposition(
             baseURL: URL(string: "https://life-manager.example/api/mobile/v1")!,
             callbackScheme: "lifemanager",
@@ -47,7 +47,7 @@ final class AppCompositionTests: XCTestCase {
     func testOAuthExchangePropagatesToSessionAPIAndRevokesBeforeWelcome() async throws {
         let store = CompositionSessionStore()
         let transport = OAuthLogoutTransport()
-        let callback = URL(string: "lifemanager://oauth/callback?code=one-use-code&state=state:v1:calendar-consent-8f3a")!
+        let callback = URL(string: "lifemanager://oauth/callback?state=state:v1:calendar-consent-8f3a&status=success&connected_account_id=ca_calendar_8f3a")!
         let composition = AppComposition(
             baseURL: URL(string: "https://life-manager.example/api/mobile/v1")!,
             callbackScheme: "lifemanager",

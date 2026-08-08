@@ -53,6 +53,42 @@ final class APIClientTests: XCTestCase {
         XCTAssertEqual(requests[0].url?.path, "/profile")
     }
 
+    func testUnauthenticatedCalendarStartSendsExplicitEmptyJSONBody() async throws {
+        let store = InMemorySessionStore(session: nil)
+        let response = try JSONEncoder.lifeManager.encode(
+            SessionStart(
+                state: "state:v1:calendar-consent-8f3a",
+                authorizationURL: URL(string: "https://accounts.google.com/o/oauth2/v2/auth")!,
+                expiresAt: Date.iso8601("2026-08-10T08:05:00.000Z")
+            )
+        )
+        let transport = ScriptedTransport(statuses: [200], payload: response)
+        let client = APIClient(
+            baseURL: URL(string: "https://life-manager.example/api/mobile/v1")!,
+            transport: transport,
+            sessionStore: store,
+            refresh: { _ in XCTFail("refresh should not run"); throw APIError.refreshRejected }
+        )
+        let key = UUID(uuidString: "AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE")!
+
+        let _: SessionStart = try await client.send(
+            .unauthenticatedMutation(
+                path: "/session/calendar/start",
+                method: .post,
+                body: Data("{}".utf8)
+            ),
+            as: SessionStart.self,
+            idempotencyKey: key
+        )
+
+        let requests = await transport.requestsSnapshot()
+        let request = try XCTUnwrap(requests.first)
+        XCTAssertEqual(request.httpBody, Data("{}".utf8))
+        XCTAssertEqual(request.value(forHTTPHeaderField: "Content-Type"), "application/json")
+        XCTAssertNil(request.value(forHTTPHeaderField: "Authorization"))
+        XCTAssertEqual(request.value(forHTTPHeaderField: "Idempotency-Key"), key.uuidString)
+    }
+
     func testMutationWithoutIdempotencyKeyFailsClosedBeforeTransport() async throws {
         let store = InMemorySessionStore(session: TestSessionFactory.make())
         let transport = ScriptedTransport(statuses: [200], payload: Data(#"{"value":"ok"}"#.utf8))
