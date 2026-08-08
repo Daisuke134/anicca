@@ -4,6 +4,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const { Readable } = require("node:stream");
 const { handleMobileV1Request } = require("../lib/mobile-v1-router.js");
+const { createMemoryMobileStore } = require("../lib/mobile-store.js");
 
 function request(method, url, body, headers = {}) {
   const req = Readable.from(body === undefined ? [] : [JSON.stringify(body)]);
@@ -225,4 +226,52 @@ test("retryable question idempotency reopens the claim after downstream failure"
   assert.equal(second.statusCode, 200);
   assert.equal(parsed(second).status, "answered");
   assert.equal(attempts, 2);
+});
+
+test("analysis idempotency replays a failed travel attempt, while a new key converges to one confirmation", async () => {
+  const store = createMemoryMobileStore({ users: [{
+    uid: "user-a", name: "A", home_address: "Shibuya", phone: null, paid: false, product_locale: "en",
+    calendar_provider: "composio_gcal", gmail_account_id: "account-a", calendar_composio_user_id: "owner-a",
+  }] });
+  const event = {
+    id: "event-router-1", summary: "Meeting", location: "Roppongi", startIso: "2026-08-08T03:00:00.000Z",
+    endIso: "2026-08-08T04:00:00.000Z", timezone: "Asia/Tokyo", startMs: Date.parse("2026-08-08T03:00:00.000Z"),
+  };
+  let travelAttempts = 0;
+  const deps = {
+    store,
+    idempotencyStore: new Map(),
+    authenticateMobileRequest: async () => ({ uid: "user-a", sessionId: "session-a", productLocale: "en", timezone: "Asia/Tokyo" }),
+    fetchUpcomingEvents: async () => [event],
+    computeMobileRoute: async () => ({
+      status: "route_ready", provider: "transit", eventId: event.id, timezone: event.timezone,
+      origin: { displayNames: { en: "Shibuya", ja: "渋谷" } }, destination: { displayNames: { en: "Roppongi", ja: "六本木" } },
+      leaveAt: "2026-08-08T02:30:00.000Z", arriveAt: "2026-08-08T02:57:00.000Z",
+      durationSeconds: 1620, bufferSeconds: 180, steps: [],
+    }),
+    ensureMobileTravelBlock: async () => {
+      travelAttempts += 1;
+      return travelAttempts === 1
+        ? { status: "provider_readback_failed", errorCode: "provider_readback_failed" }
+        : { status: "existing", providerEventId: "lmaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", verifiedAt: "2026-08-08T02:31:00.000Z" };
+    },
+  };
+  const firstHeaders = { authorization: "Bearer access", "idempotency-key": "analysis-http-attempt-1", "content-type": "application/json" };
+  const first = response();
+  await handleMobileV1Request(request("POST", "/api/mobile/v1/analysis", { analysisId: "analysis-http-failed" }, firstHeaders), first, deps);
+  const replay = response();
+  await handleMobileV1Request(request("POST", "/api/mobile/v1/analysis", { analysisId: "analysis-http-failed" }, firstHeaders), replay, deps);
+  const recovered = response();
+  await handleMobileV1Request(request("POST", "/api/mobile/v1/analysis", { analysisId: "analysis-http-recovered" }, {
+    ...firstHeaders, "idempotency-key": "analysis-http-recovery-2",
+  }), recovered, deps);
+
+  assert.equal(first.statusCode, 200);
+  assert.equal(replay.statusCode, 200);
+  assert.deepEqual(parsed(replay), parsed(first));
+  assert.equal(recovered.statusCode, 200);
+  assert.equal(travelAttempts, 2);
+  assert.deepEqual(store._outbox.get("user-a").map((row) => row.key), [
+    "chat.route_ready", "chat.travel_block_not_added", "chat.route_ready", "chat.travel_block_confirmed",
+  ]);
 });

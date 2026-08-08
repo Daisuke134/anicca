@@ -199,6 +199,7 @@ const TRAVEL_BLOCK_FAILURE_REASONS = {
     budget_denied: "the provider budget is unavailable",
     analysis_conflict: "the route data changed before the Calendar update",
     provider_collision: "the Calendar event ID is already in use",
+    provider_unknown: "the provider result could not be determined",
   },
   ja: {
     provider_write_failed: "カレンダーへの書き込みに失敗しました",
@@ -207,6 +208,7 @@ const TRAVEL_BLOCK_FAILURE_REASONS = {
     budget_denied: "プロバイダー予算を利用できません",
     analysis_conflict: "カレンダー更新前に経路情報が変わりました",
     provider_collision: "カレンダーの予定IDがすでに使われています",
+    provider_unknown: "プロバイダーの結果を特定できませんでした",
   },
 };
 
@@ -298,8 +300,8 @@ function projectSemanticMessage(row, locale = "en") {
     case "chat.travel_block_not_added":
       type = "system";
       {
-        const reasonKey = typeof args.reason === "string" ? args.reason : "provider_write_failed";
-        const reason = TRAVEL_BLOCK_FAILURE_REASONS[active][reasonKey] || TRAVEL_BLOCK_FAILURE_REASONS[active].provider_write_failed;
+        const reasonKey = typeof args.reason === "string" ? args.reason : "provider_unknown";
+        const reason = TRAVEL_BLOCK_FAILURE_REASONS[active][reasonKey] || TRAVEL_BLOCK_FAILURE_REASONS[active].provider_unknown;
         text = active === "ja"
           ? `移動時間をカレンダーに追加できませんでした。理由：${reason}。もう一度お試しください。`
           : `Travel time was not added to your Calendar because ${reason}. Try again.`;

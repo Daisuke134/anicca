@@ -28,8 +28,12 @@ function eventDateTime(event, field) {
   return null;
 }
 
-function travelReceiptId(uid, sourceEventId, leg = "go") {
-  return `message:v1:travel-${sha256(`${uid}\u0000${sourceEventId}\u0000${leg}`).slice(0, 40)}`;
+function travelOperationId(uid, sourceEventId, leg = "go") {
+  return `message:v1:travel-confirmed-${sha256(`${uid}\u0000${sourceEventId}\u0000${leg}`).slice(0, 40)}`;
+}
+
+function travelAttemptId(uid, sourceEventId, analysisId, leg = "go") {
+  return `message:v1:travel-attempt-${sha256(`${uid}\u0000${sourceEventId}\u0000${analysisId || ""}\u0000${leg}`).slice(0, 40)}`;
 }
 
 function travelPayload(event, route) {
@@ -47,14 +51,20 @@ function travelPayload(event, route) {
 }
 
 function failureCode(result) {
-  const status = result && (result.errorCode || result.error_code || result.status);
-  if (status === "busy") return "claim_pending";
-  if (TRAVEL_FAILURE_CODES.has(status)) return status;
-  return "provider_write_failed";
+  const statuses = result && [result.errorCode, result.error_code, result.status].filter((value) => typeof value === "string");
+  for (const status of statuses || []) {
+    if (status === "busy") return "claim_pending";
+    if (TRAVEL_FAILURE_CODES.has(status)) return status;
+  }
+  return "provider_unknown";
 }
 
 function verifiedTravelResult(result) {
-  return result && (result.status === "created" || result.status === "existing") && typeof result.providerEventId === "string" && result.providerEventId;
+  const verifiedAt = result && (result.verifiedAt || result.verified_at);
+  return result
+    && (result.status === "created" || result.status === "existing")
+    && typeof result.providerEventId === "string" && result.providerEventId
+    && typeof verifiedAt === "string" && verifiedAt;
 }
 
 async function runTravelBlock(scope, user, event, route, input, deps) {
@@ -111,7 +121,9 @@ async function appendTravelReceipt(scope, event, route, result, deps, analysisId
     }
     : { reason: failureCode(result), sourceEventId, calendar: "primary", leg: "go" };
   return appendMobileMessage({ ...scope, productLocale: scope.productLocale || "en" }, {
-    id: travelReceiptId(scope.uid, sourceEventId || analysisId, "go"),
+    id: success
+      ? travelOperationId(scope.uid, sourceEventId || analysisId, "go")
+      : travelAttemptId(scope.uid, sourceEventId || analysisId, analysisId, "go"),
     type: "system", key, args,
     userContent: { eventTitle: event && (event.summary || null), eventLocation: event && (event.location || null) },
   }, deps);

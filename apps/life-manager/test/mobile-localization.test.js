@@ -159,3 +159,18 @@ test("travel receipts project bounded confirmed and not-added copy in one locale
   assert.match(notAdded.text, /カレンダー|追加/u);
   assert.doesNotMatch(notAdded.text, /Travel|budget|provider|account/u);
 });
+
+test("unknown travel failure reason is localized without pretending it was a write failure", () => {
+  const base = {
+    id: "message:v1:travel-unknown", sequence: 4, createdAt: "2026-08-08T02:31:00.000Z",
+    key: "chat.travel_block_not_added", type: "system",
+    args: { reason: "provider_result_unmapped" },
+    userContent: { eventTitle: "Meeting", eventLocation: "Roppongi" }, route: null,
+  };
+  const english = projectSemanticMessage(base, "en");
+  const japanese = projectSemanticMessage(base, "ja");
+  assert.match(english.text, /could not be determined/u);
+  assert.doesNotMatch(english.text, /write failed/u);
+  assert.match(japanese.text, /結果を特定できませんでした/u);
+  assert.doesNotMatch(japanese.text, /書き込みに失敗/u);
+});

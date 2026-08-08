@@ -88,6 +88,64 @@ test("the travel receipt is stable across analysis keys while route messages rem
   assert.deepEqual(travelCalls, ["analysis-one", "analysis-one", "analysis-two"]);
 });
 
+test("a failed travel attempt remains visible while provider recovery appends one stable confirmation", async () => {
+  const store = baseStore();
+  let attempts = 0;
+  const deps = {
+    store,
+    fetchUpcomingEvents: async () => [event],
+    computeMobileRoute: async () => ({
+      status: "route_ready", provider: "transit", eventId: event.id, timezone: event.timezone,
+      origin: { displayNames: { en: "Shibuya", ja: "渋谷" } },
+      destination: { displayNames: { en: "Roppongi", ja: "六本木" } },
+      leaveAt: "2026-08-08T02:30:00.000Z", arriveAt: "2026-08-08T02:57:00.000Z",
+      durationSeconds: 1620, bufferSeconds: 180, steps: [],
+    }),
+    ensureMobileTravelBlock: async () => {
+      attempts += 1;
+      return attempts === 1
+        ? { status: "provider_readback_failed", errorCode: "provider_readback_failed" }
+        : { status: "created", providerEventId: "lmaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", verifiedAt: "2026-08-08T02:31:00.000Z" };
+    },
+  };
+
+  await analyzeNextEvent({ uid: "user-a", productLocale: "en" }, { analysisId: "analysis-failed" }, deps);
+  await analyzeNextEvent({ uid: "user-a", productLocale: "en" }, { analysisId: "analysis-recovered" }, deps);
+  await analyzeNextEvent({ uid: "user-a", productLocale: "en" }, { analysisId: "analysis-recovered-again" }, deps);
+
+  const rows = store._outbox.get("user-a");
+  assert.deepEqual(rows.map((row) => row.key), [
+    "chat.route_ready", "chat.travel_block_not_added",
+    "chat.route_ready", "chat.travel_block_confirmed",
+    "chat.route_ready",
+  ]);
+  const failures = rows.filter((row) => row.key === "chat.travel_block_not_added");
+  const confirmations = rows.filter((row) => row.key === "chat.travel_block_confirmed");
+  assert.equal(failures.length, 1);
+  assert.equal(confirmations.length, 1);
+  assert.notEqual(failures[0].id, confirmations[0].id);
+  assert.deepEqual(rows.map((row) => row.sequence), [1, 2, 3, 4, 5]);
+});
+
+test("unknown travel provider errors keep an explicit unknown reason", async () => {
+  const store = baseStore();
+  await analyzeNextEvent({ uid: "user-a", productLocale: "en" }, { analysisId: "analysis-unknown-provider" }, {
+    store,
+    fetchUpcomingEvents: async () => [event],
+    computeMobileRoute: async () => ({
+      status: "route_ready", provider: "transit", eventId: event.id, timezone: event.timezone,
+      origin: { displayNames: { en: "Shibuya", ja: "渋谷" } },
+      destination: { displayNames: { en: "Roppongi", ja: "六本木" } },
+      leaveAt: "2026-08-08T02:30:00.000Z", arriveAt: "2026-08-08T02:57:00.000Z",
+      durationSeconds: 1620, bufferSeconds: 180, steps: [],
+    }),
+    ensureMobileTravelBlock: async () => ({ status: "provider exploded", errorCode: "provider exploded" }),
+  });
+  const failure = store._outbox.get("user-a").find((row) => row.key === "chat.travel_block_not_added");
+  assert.ok(failure);
+  assert.equal(failure.args.reason, "provider_unknown");
+});
+
 test("travel receipt projection is locale-switchable and does not expose provider authority", async () => {
   const store = baseStore();
   await analyzeNextEvent({ uid: "user-a", productLocale: "en" }, { analysisId: "locale-analysis" }, {
