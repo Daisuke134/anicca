@@ -15,7 +15,7 @@
 - RED must be observed before production edits in each task.
 - No real balance, merchant, account identifier, path, token, payload, or user fixture may enter Git.
 - Unknown is not zero. `partial` and `action_required` cannot render a complete-net-worth claim.
-- `recovered` requires `repair.freshReread === true` and `repair.reconciled === true`; otherwise validation fails.
+- `recovered` requires `repair.freshReread === true`, `repair.reconciled === true`, and every required source to be fresh; otherwise validation fails.
 - Callback payloads contain only view, compact owner-local date, and revision; every payload is at most 64 UTF-8 bytes.
 - No dependency additions.
 - Only the current task's files are staged. Each task ends with focused tests, `git diff --check`, commit, and push.
@@ -138,7 +138,7 @@ Also assert:
 
 - `totals` values must be safe integers or `null`; strings, `NaN`, and floats fail.
 - reporting date is exact `YYYY-MM-DD`; revision is a positive integer.
-- stale/unavailable source with `complete` fails closed.
+- stale/unavailable source with `complete` or `recovered` fails closed.
 - `partial` requires an excluded label and null net worth.
 - `action_required` requires an action and null net worth.
 - recovered text contains a short repair note but no stack/error/debug vocabulary.
