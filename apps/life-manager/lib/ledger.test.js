@@ -187,6 +187,26 @@ test("businessSummary is pure and groups calls and total cost per uid", () => {
   assert.deepEqual(rows, frozen);
 });
 
+test("businessSummary counts one call for a 60-second session plus its CDR without dropping cost rows", () => {
+  const summary = ledger().businessSummary(1, [
+    {
+      ts: "2026-08-08T10:00:00Z", uid: "u1", kind: "telnyx_call", provider: "telnyx",
+      operation: "call_session", request_id: "telnyx:call_session:reservation-1", quantity: 60,
+      est_usd: 0.002, meta: { kind: "telnyx_call", reservationRequestId: "reservation-1" },
+    },
+    {
+      ts: "2026-08-08T10:01:00Z", uid: "u1", kind: "telnyx_call", provider: "telnyx",
+      operation: "call_cdr", request_id: "telnyx:cdr:cdr-1", quantity: 60,
+      est_usd: 0.034, actual_billed_usd: 0.034,
+      meta: { kind: "telnyx_call", reservationRequestId: "reservation-1", cdrId: "cdr-1" },
+    },
+  ], Date.parse("2026-08-08T12:00:00Z"));
+  assert.equal(summary.calls, 1);
+  assert.equal(summary.call_minutes, 1);
+  assert.equal(summary.est_cost_usd, 0.036, "deduplication must not discard either cost receipt");
+  assert.deepEqual(summary.per_uid.u1, { calls: 1, call_minutes: 1, est_cost_usd: 0.036 });
+});
+
 test("production bridge and scheduler contain all three LM-7 recording points", () => {
   const server = fs.readFileSync(path.join(__dirname, "../server.js"), "utf8");
   const scheduler = fs.readFileSync(path.join(__dirname, "../scheduler.js"), "utf8");

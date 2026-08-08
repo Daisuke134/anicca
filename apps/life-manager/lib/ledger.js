@@ -321,22 +321,46 @@ function rounded(value) {
   return Number(value.toFixed(12));
 }
 
+function telnyxCallIdentity(row) {
+  const metadata = [row && row.metadata, row && row.meta].filter((value) => value && typeof value === "object");
+  const fields = ["reservationRequestId", "reservation_request_id", "callControlId", "call_control_id", "stream_id"];
+  for (const source of metadata) {
+    for (const field of fields) {
+      if (source[field] != null && String(source[field]).trim()) return String(source[field]);
+    }
+  }
+  for (const field of ["reservationRequestId", "reservation_request_id", "call_control_id", "callControlId"]) {
+    if (row && row[field] != null && String(row[field]).trim()) return String(row[field]);
+  }
+  return null;
+}
+
 // Pure rows -> JSON summary. `rows` and `nowMs` are injected; no DB, clock, or mutation occurs here.
 function businessSummary(daysBack, rows, nowMs) {
   const days = Math.max(0, finite(daysBack));
   const now = finite(nowMs);
   const since = now - days * 86400000;
   const summary = { calls: 0, call_minutes: 0, est_cost_usd: 0, per_uid: {} };
-  for (const row of Array.isArray(rows) ? rows : []) {
+  const inputRows = Array.isArray(rows) ? rows : [];
+  const cdrIdentities = new Set(inputRows
+    .filter((row) => row && row.kind === "telnyx_call" && String(row.operation || "").toLowerCase() === "call_cdr")
+    .map(telnyxCallIdentity)
+    .filter(Boolean));
+  const countedCallIdentities = new Set();
+  for (const row of inputRows) {
     const ts = Date.parse(row && row.ts);
     if (!Number.isFinite(ts) || ts < since || ts > now) continue;
     const uid = row.uid == null || row.uid === "" ? "unknown" : String(row.uid);
     const item = summary.per_uid[uid] || { calls: 0, call_minutes: 0, est_cost_usd: 0 };
-    if (row.kind === "telnyx_call") {
+    const identity = row.kind === "telnyx_call" ? telnyxCallIdentity(row) : null;
+    const isSessionSuperseded = identity && String(row.operation || "").toLowerCase() === "call_session" && cdrIdentities.has(identity);
+    const isDuplicateLifecycleRow = identity && countedCallIdentities.has(identity);
+    if (row.kind === "telnyx_call" && !isSessionSuperseded && !isDuplicateLifecycleRow) {
       summary.calls += 1;
       item.calls += 1;
       summary.call_minutes += finite(row.quantity) / 60;
       item.call_minutes += finite(row.quantity) / 60;
+      if (identity) countedCallIdentities.add(identity);
     }
     summary.est_cost_usd += finite(row.est_usd);
     item.est_cost_usd += finite(row.est_usd);
