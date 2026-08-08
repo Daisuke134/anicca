@@ -1,6 +1,6 @@
 # Life Manager iOS — Product and UX Specification
 
-Status: **Approved by Dais. Ready for Superpowers implementation planning.**
+Status: **Approved by Dais. Superpowers implementation plans are ready.**
 
 ## Source of truth
 
@@ -500,7 +500,15 @@ Google consent/account chooser is not asserted by Maestro because it is an exter
 
 ## 8. Remaining work — execution order and delegation boundary
 
-The following order is the only execution order. A later gate does not begin before the dependency named in its row is green. Detailed code steps are written in separate Superpowers implementation plans after this spec is approved.
+The following order is the only execution order. A later gate does not begin before the dependency named in its row is green. The executable Superpowers plans are:
+
+- Master coordination: `docs/superpowers/plans/2026-08-08-life-manager-ios-master.md`
+- DAILY late approval: `docs/superpowers/plans/2026-08-08-life-manager-daily-late-approval.md`
+- Provider cost guard: `docs/superpowers/plans/2026-08-08-life-manager-provider-cost-guard.md`
+- Mobile backend: `docs/superpowers/plans/2026-08-08-life-manager-mobile-backend.md`
+- Native iOS product: `docs/superpowers/plans/2026-08-08-life-manager-ios-product.md`
+- Sync, APNs, Maestro, and TestFlight: `docs/superpowers/plans/2026-08-08-life-manager-ios-integration.md`
+- App Store release: `docs/superpowers/plans/2026-08-08-life-manager-ios-app-store.md`
 
 | Gate | Remaining deliverable | Dependency | Primary ownership | Completion receipt |
 |---:|---|---|---|---|
