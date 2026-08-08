@@ -137,7 +137,9 @@ async function authorizeProviderOperation(input = {}, deps = {}) {
     return { allowed: false, reason: "paid_fallback_disabled", ...budget };
   }
   if (isVoiceOperation(input.provider, input.operation)) {
-    const reader = deps.readVoiceSpend || (async ({ scope }) => readDailySpend({ uid: scope === "user" ? input.uid : null, nowMs: input.nowMs }, deps));
+    const reader = deps.readVoiceSpend || (async ({ scope }) => readDailySpend({
+      uid: scope === "user" ? input.uid : null, nowMs: input.nowMs, voiceOnly: true,
+    }, deps));
     try {
       const userVoice = await reader({ scope: "user", uid: input.uid, nowMs: input.nowMs, voiceOnly: true });
       if (finiteUsd(userVoice.measuredUsd) + finiteUsd(userVoice.estimatedUsd) + projectedUsd >= Number(thresholds.voiceUserCapUsd)) {

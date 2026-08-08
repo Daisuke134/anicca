@@ -4,7 +4,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
-const { evaluateProviderBudget, aggregateCostRows, authorizeProviderOperation, settleProviderVoice } = require("./provider-budget.js");
+const { evaluateProviderBudget, aggregateCostRows, readDailySpend, authorizeProviderOperation, settleProviderVoice } = require("./provider-budget.js");
 
 test("migration provides a unique atomic daily claim identity", () => {
   const sql = fs.readFileSync(path.join(__dirname, "../migrations/2026-08-08-lm-provider-cost.sql"), "utf8").toLowerCase();
@@ -50,6 +50,17 @@ test("voice-only aggregation excludes non-voice provider rows", () => {
   ], { voiceOnly: true });
   assert.equal(result.measuredUsd, 0.03);
   assert.equal(result.estimatedUsd, 0);
+});
+
+test("default voice spend reader requests only voice operations", async () => {
+  let requested;
+  await readDailySpend({ uid: "u1", voiceOnly: true }, {
+    supaUrl: "https://db.example", supaKey: "service",
+    fetchImpl: async (url) => { requested = String(url); return { ok: true, json: async () => [] }; },
+  });
+  assert.match(requested, /provider\.eq\.telnyx/);
+  assert.match(requested, /provider\.eq\.gemini/);
+  assert.match(requested, /operation\.ilike/);
 });
 
 test("paid fallback is disabled at one dollar while essential work remains available", async () => {
