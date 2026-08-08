@@ -105,6 +105,7 @@ final class LifeManagerAppDelegate: NSObject, UIApplicationDelegate, @preconcurr
     private let pushRouter: PushNotificationRouter
     private let environment: APNsEnvironment
     private let notificationCenter: UNUserNotificationCenter?
+    private let retryStore: OperationRetryStoring
 
     private var registrationWasRequested = false
     private var deviceService: DeviceServicing?
@@ -112,6 +113,8 @@ final class LifeManagerAppDelegate: NSObject, UIApplicationDelegate, @preconcurr
     private var deviceTimezone = TimeZone.current.identifier
     private var pendingDeviceToken: Data?
     private var lastRegisteredDeviceToken: Data?
+    private var registrationInFlight = false
+    private var registrationRetryRequested = false
 
     private(set) var lastDeviceRegistrationError: AppErrorState?
 
@@ -120,13 +123,15 @@ final class LifeManagerAppDelegate: NSObject, UIApplicationDelegate, @preconcurr
         registrar: RemoteNotificationRegistering,
         pushRouter: PushNotificationRouter,
         environment: APNsEnvironment,
-        notificationCenter: UNUserNotificationCenter? = nil
+        notificationCenter: UNUserNotificationCenter? = nil,
+        retryStore: OperationRetryStoring = UserDefaultsOperationRetryStore()
     ) {
         self.permissionService = permissionService
         self.registrar = registrar
         self.pushRouter = pushRouter
         self.environment = environment
         self.notificationCenter = notificationCenter
+        self.retryStore = retryStore
         super.init()
     }
 
@@ -171,6 +176,7 @@ final class LifeManagerAppDelegate: NSObject, UIApplicationDelegate, @preconcurr
         self.deviceService = deviceService
         deviceLocale = locale
         deviceTimezone = timezone
+        guard registrationWasRequested, pendingDeviceToken != nil else { return }
         Task { await registerPendingDeviceTokenIfReady() }
     }
 
@@ -188,12 +194,15 @@ final class LifeManagerAppDelegate: NSObject, UIApplicationDelegate, @preconcurr
 
     func unregisterDevice() async throws {
         guard let deviceService else { return }
+        let operationKey = await retryStore.operationKey(for: .deviceUnregistration)
         do {
-            try await deviceService.unregister(idempotencyKey: UUID())
+            try await deviceService.unregister(idempotencyKey: operationKey)
+            await retryStore.clear(.deviceUnregistration)
             pendingDeviceToken = nil
             lastRegisteredDeviceToken = nil
             lastDeviceRegistrationError = nil
         } catch {
+            await retryStore.clearIfDefinitive(.deviceUnregistration, after: error)
             lastDeviceRegistrationError = AppErrorState(error: error)
             throw error
         }
@@ -252,6 +261,21 @@ final class LifeManagerAppDelegate: NSObject, UIApplicationDelegate, @preconcurr
     }
 
     private func registerPendingDeviceTokenIfReady() async {
+        if registrationInFlight {
+            registrationRetryRequested = true
+            return
+        }
+        registrationInFlight = true
+        defer {
+            registrationInFlight = false
+            if registrationRetryRequested {
+                registrationRetryRequested = false
+                Task { @MainActor [weak self] in
+                    await self?.registerPendingDeviceTokenIfReady()
+                }
+            }
+        }
+        await restorePendingDeviceRegistrationIfNeeded()
         guard
             registrationWasRequested,
             let pendingDeviceToken,
@@ -262,20 +286,84 @@ final class LifeManagerAppDelegate: NSObject, UIApplicationDelegate, @preconcurr
             return
         }
 
+        let proposedRequest = DeviceRegistrationRequest(
+            token: pendingDeviceToken.map { String(format: "%02x", $0) }.joined(),
+            environment: environment,
+            locale: deviceLocale,
+            timezone: deviceTimezone
+        )
+        let pending = await retryStore.pending(for: .deviceRegistration)
+        let request: DeviceRegistrationRequest
+        if
+            let pending,
+            let input = pending.input,
+            let persistedRequest = try? JSONDecoder.lifeManager.decode(DeviceRegistrationRequest.self, from: input),
+            persistedRequest.token == proposedRequest.token
+        {
+            request = persistedRequest
+        } else {
+            request = proposedRequest
+        }
+        let operationKey: UUID
+        if
+            let pending,
+            let input = pending.input,
+            let persistedRequest = try? JSONDecoder.lifeManager.decode(DeviceRegistrationRequest.self, from: input),
+            persistedRequest.token == proposedRequest.token
+        {
+            operationKey = pending.idempotencyKey
+        } else {
+            let body = try? JSONEncoder.lifeManager.encode(request)
+            operationKey = await retryStore.operationKey(for: .deviceRegistration, input: body)
+        }
+
         do {
+            let token = try Self.data(fromHex: request.token)
             try await deviceService.register(
-                token: pendingDeviceToken,
-                environment: environment,
-                locale: deviceLocale,
-                timezone: deviceTimezone,
-                idempotencyKey: UUID()
+                token: token,
+                environment: request.environment,
+                locale: request.locale,
+                timezone: request.timezone,
+                idempotencyKey: operationKey
             )
-            lastRegisteredDeviceToken = pendingDeviceToken
+            await retryStore.clear(.deviceRegistration)
+            lastRegisteredDeviceToken = token
             self.pendingDeviceToken = nil
             lastDeviceRegistrationError = nil
         } catch {
+            await retryStore.clearIfDefinitive(.deviceRegistration, after: error)
             lastDeviceRegistrationError = AppErrorState(error: error)
         }
+    }
+
+    private func restorePendingDeviceRegistrationIfNeeded() async {
+        guard pendingDeviceToken == nil else { return }
+        guard
+            let pending = await retryStore.pending(for: .deviceRegistration),
+            let input = pending.input,
+            let request = try? JSONDecoder.lifeManager.decode(DeviceRegistrationRequest.self, from: input),
+            let token = try? Self.data(fromHex: request.token)
+        else {
+            return
+        }
+        pendingDeviceToken = token
+        deviceLocale = request.locale
+        deviceTimezone = request.timezone
+    }
+
+    private static func data(fromHex value: String) throws -> Data {
+        let bytes = Array(value.utf8)
+        guard bytes.count.isMultiple(of: 2) else { throw APIError.invalidAPNsToken }
+        var result: [UInt8] = []
+        result.reserveCapacity(bytes.count / 2)
+        for index in stride(from: 0, to: bytes.count, by: 2) {
+            guard let byte = UInt8(String(bytes: bytes[index..<(index + 2)], encoding: .utf8) ?? "", radix: 16) else {
+                throw APIError.invalidAPNsToken
+            }
+            result.append(byte)
+        }
+        guard result.count == 32 else { throw APIError.invalidAPNsToken }
+        return Data(result)
     }
 }
 

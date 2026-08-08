@@ -616,3 +616,25 @@ be retried; definitive refresh-family rejection still clears it.
 OAuth exchange + refresh + revoke durable retry: 3/3 passed, 0 failures
 Ambiguous APIClient refresh retention + definitive rejection: 2/2 passed, 0 failures
 ```
+
+## Fresh final review — analysis and APNs durable mutation coverage
+
+### RED
+
+The new analysis/APNs tests reproduced missing durable state: analysis used a
+fresh UUID after an ambiguous failure, APNs registration had no persisted body
+for restart, and Settings logout generated a separate APNs DELETE key from the
+AppDelegate path.
+
+### GREEN
+
+Analysis now stores its operation key until the analysis receipt succeeds.
+AppDelegate persists the APNs PUT body/key, restores the pending token and
+server-confirmed locale/timezone after restart, and reuses the key through an
+ambiguous response. APNs DELETE uses the same durable operation in AppDelegate
+and Settings. Concurrent registration attempts are coalesced so one mutation
+cannot clear another request's pending operation.
+
+```text
+Analysis + APNs durable regression set: 4/4 passed, 0 failures
+```

@@ -171,6 +171,29 @@ final class AppViewModelTests: XCTestCase {
         viewModel.showSoftPaywall()
         XCTAssertEqual(viewModel.route, .chat)
     }
+
+    func testAmbiguousAnalysisReusesDurableOperationKeyUntilReceipt() async {
+        let store = TestOperationRetryStore()
+        let analysis = RetryingAnalysisService()
+        let viewModel = AppViewModel(
+            auth: StateAuthService(restored: StateFixtures.session, connected: StateFixtures.session),
+            profile: StateProfileService(profile: StateFixtures.profile),
+            analysis: analysis,
+            retryStore: store
+        )
+
+        await viewModel.retryAnalysis()
+        let pendingAfterFailure = await store.pending(for: .analysis)
+        XCTAssertNotNil(pendingAfterFailure)
+
+        await viewModel.retryAnalysis()
+        let pendingAfterSuccess = await store.pending(for: .analysis)
+        XCTAssertNil(pendingAfterSuccess)
+        let keys = await analysis.keys()
+        XCTAssertEqual(keys.count, 2)
+        XCTAssertEqual(keys.first, keys.last)
+        XCTAssertEqual(viewModel.route, .chat)
+    }
 }
 
 private enum StateFixtures {
@@ -316,4 +339,18 @@ private actor StateAnalysisService: AnalysisServicing {
     }
 
     func requestCount() -> Int { requests }
+}
+
+private actor RetryingAnalysisService: AnalysisServicing {
+    private var attempts = 0
+    private var recordedKeys: [UUID] = []
+
+    func analyzeNextCommitment(idempotencyKey: UUID) async throws -> AnalysisResult {
+        attempts += 1
+        recordedKeys.append(idempotencyKey)
+        if attempts == 1 { throw APIError.transport("offline") }
+        return StateFixtures.analysis(status: .routeReady)
+    }
+
+    func keys() -> [UUID] { recordedKeys }
 }

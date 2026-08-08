@@ -238,12 +238,17 @@ final class AppViewModel {
 
     private func runAnalysis() async {
         route = .analyzing
+        let operationKey = await operationKey(for: .analysis)
         do {
-            let result = try await analysisService.analyzeNextCommitment(idempotencyKey: UUID())
+            let result = try await analysisService.analyzeNextCommitment(idempotencyKey: operationKey)
+            await retryStore.clear(.analysis)
             lastAnalysisReceipt = result
             lastAnalysisStatus = result.status
             route = .chat
         } catch {
+            if !MutationRetryPolicy.shouldRetain(after: error) {
+                await retryStore.clear(.analysis)
+            }
             present(error)
         }
     }

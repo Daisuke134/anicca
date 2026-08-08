@@ -128,10 +128,12 @@ final class SettingsViewModel {
 
     func deleteAccount() async {
         failure = nil
-        let operationKey = await operationKey(for: .deletion)
+        let deletionOperationKey = await operationKey(for: .deletion)
         do {
-            try await deviceService?.unregister(idempotencyKey: UUID())
-            let receipt = try await accountService.deleteAccount(idempotencyKey: operationKey)
+            let deviceOperationKey = await operationKey(for: .deviceUnregistration)
+            try await deviceService?.unregister(idempotencyKey: deviceOperationKey)
+            await retryStore.clear(.deviceUnregistration)
+            let receipt = try await accountService.deleteAccount(idempotencyKey: deletionOperationKey)
             await retryStore.clear(.deletion)
             deletionReceipt = receipt
             try? await auth.signOut()
@@ -147,9 +149,14 @@ final class SettingsViewModel {
     func signOut() async {
         failure = nil
         var firstError: Error?
+        let deviceOperationKey = await operationKey(for: .deviceUnregistration)
         do {
-            try await deviceService?.unregister(idempotencyKey: UUID())
+            try await deviceService?.unregister(idempotencyKey: deviceOperationKey)
+            await retryStore.clear(.deviceUnregistration)
         } catch {
+            if !MutationRetryPolicy.shouldRetain(after: error) {
+                await retryStore.clear(.deviceUnregistration)
+            }
             firstError = error
         }
         do {

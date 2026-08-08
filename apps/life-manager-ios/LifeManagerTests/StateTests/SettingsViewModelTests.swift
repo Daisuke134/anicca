@@ -260,6 +260,31 @@ final class SettingsViewModelTests: XCTestCase {
         XCTAssertEqual(signOutCount, 1)
     }
 
+    func testAmbiguousAPNsUnregistrationReusesOperationKeyOnSettingsSignOut() async {
+        let store = TestOperationRetryStore()
+        let device = RetryingSettingsDeviceService()
+        let viewModel = SettingsViewModel(
+            profile: SettingsProfileTestService(profile: SettingsFixtures.profile(callsEnabled: false, phone: .missing, callLanguage: nil)),
+            auth: SettingsAuthTestService(),
+            calls: SettingsCallTestService(receipt: nil),
+            account: SettingsAccountTestService(receipt: nil),
+            device: device,
+            retryStore: store
+        )
+
+        await viewModel.signOut()
+        let pendingValue = await store.pending(for: .deviceUnregistration)
+        XCTAssertNotNil(pendingValue)
+
+        await viewModel.signOut()
+
+        let keys = await device.unregisterKeys()
+        XCTAssertEqual(keys.count, 2)
+        XCTAssertEqual(keys.first, keys.last)
+        let pendingAfterSuccess = await store.pending(for: .deviceUnregistration)
+        XCTAssertNil(pendingAfterSuccess)
+    }
+
     func testDeletionDisplaysBackendReceiptThenClearsLocalSession() async {
         let receipt = AccountDeletionReceipt(
             receiptID: "deletion-1",
@@ -450,4 +475,27 @@ private actor SettingsAuthTestService: AuthServicing {
     func refresh(_ session: Session) async throws -> Session { session }
     func signOut() async throws { signOuts += 1 }
     func signOutCount() -> Int { signOuts }
+}
+
+private actor RetryingSettingsDeviceService: DeviceServicing {
+    private var attempts = 0
+    private var keys: [UUID] = []
+
+    func register(
+        token: Data,
+        environment: APNsEnvironment,
+        locale: ProductLocale,
+        timezone: String,
+        idempotencyKey: UUID
+    ) async throws {
+        fatalError("not used")
+    }
+
+    func unregister(idempotencyKey: UUID) async throws {
+        attempts += 1
+        keys.append(idempotencyKey)
+        if attempts == 1 { throw APIError.transport("offline") }
+    }
+
+    func unregisterKeys() -> [UUID] { keys }
 }
