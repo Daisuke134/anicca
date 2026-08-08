@@ -68,13 +68,15 @@ composeMoneytreeRead({ source, state }) => Readonly<{
 - Modify: `apps/life-call/lib/cfo-financial-source.js`
 - Modify: `apps/life-call/lib/cfo-financial-source.test.js`
 
-- [ ] **Step 1: RED — unknown consent with outage action**
+- [x] **Step 1: RED — unknown consent with outage action**
 
 Add a literal unavailable source with `consent: "unknown"`, unavailable/null account value, `partial: true`, and `{ kind: "provider_outage", sourceLabel: "Moneytree", actionRef: "action:moneytree_outage" }`. It must validate and freeze. Add negative cases: unknown consent with null/reconsent action, and expired/revoked consent with outage action must fail.
 
-- [ ] **Step 2: GREEN — split unknown outage from expired/revoked reconsent**
+- [x] **Step 2: GREEN — split unknown outage from expired/revoked reconsent**
 
 Keep valid-consent rules unchanged. Require expired/revoked consent to use `reconsent`; require unknown consent to use `provider_outage`; all non-valid states remain unavailable and partial. Run contract/CFO tests, keep production at or below 144 LOC, diff check, commit `fix(cfo): distinguish provider outage consent`, push, and pass fresh review.
+
+Evidence: commit `28be202ef`; RED 25/27, GREEN contract 27/27 and CFO 128/128; production 138 LOC; fresh review Approved with no findings.
 
 ---
 
