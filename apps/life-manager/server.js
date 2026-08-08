@@ -111,12 +111,6 @@ function createMobilePushRuntime(env = process.env, overrides = {}) {
   async function notifyMobilePush(scope, row, context = {}) {
     const store = context.store || null;
     if (!apnsClient) {
-      if (store && typeof store.readMobilePushJob === "function" && typeof store.markMobilePushJobFailure === "function") {
-        const job = await store.readMobilePushJob(scope, row && row.id);
-        if (job && job.status !== "completed" && job.status !== "failed") {
-          await store.markMobilePushJobFailure(scope, row.id, { code: "credentials_missing" });
-        }
-      }
       return { enabled: false, reason: "credentials_missing" };
     }
     if (store && typeof store.listMobilePushJobs === "function" && typeof store.claimMobilePushJob === "function") {
@@ -148,23 +142,7 @@ function createMobilePushRuntime(env = process.env, overrides = {}) {
     recordMobilePushFailure,
     drainMobilePushJobs: (store, options = {}) => {
       if (!apnsClient) {
-        return (async () => {
-          if (!store || typeof store.listMobilePushJobs !== "function" || typeof store.claimMobilePushJob !== "function") {
-            return { processed: 0, completed: 0, retried: 0, reason: "credentials_missing" };
-          }
-          const now = options.now === undefined ? Date.now() : options.now;
-          const listed = await store.listMobilePushJobs(options.scope || null, { now, limit: options.maxJobs || options.limit || 10 });
-          const jobs = options.messageId ? listed.filter((job) => job.messageId === options.messageId) : listed;
-          let processed = 0;
-          for (const job of jobs) {
-            const scope = { uid: job.uid };
-            const claimed = await store.claimMobilePushJob(scope, job.messageId, { now, leaseMs: options.leaseMs });
-            if (!claimed) continue;
-            processed += 1;
-            if (typeof store.markMobilePushJobFailure === "function") await store.markMobilePushJobFailure(scope, job.messageId, { code: "credentials_missing" }, { now });
-          }
-          return { processed, completed: 0, retried: processed, reason: "credentials_missing" };
-        })();
+        return Promise.resolve({ processed: 0, completed: 0, retried: 0, reason: "credentials_missing" });
       }
       return drainMobilePushJobs({ ...options, store, apnsClient });
     },

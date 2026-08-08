@@ -185,10 +185,16 @@ test("missing APNs credentials leaves the durable job pending and exposes owner 
     id: MESSAGE_ID, key: "chat.welcome", args: {}, userContent: { eventTitle: null, eventLocation: null },
   }, { store });
 
-  const result = await runtime.drainMobilePushJobs(store, { now: () => 1000, maxJobs: 1 });
-  assert.equal(result.processed, 1);
-  assert.equal(result.reason, "credentials_missing");
-  assert.equal((await store.readMobilePushJob(scope, MESSAGE_ID)).status, "pending");
+  const before = await store.readMobilePushJob(scope, MESSAGE_ID);
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    const result = await runtime.drainMobilePushJobs(store, { now: () => 1000, maxJobs: 1 });
+    assert.deepEqual(result, { processed: 0, completed: 0, retried: 0, reason: "credentials_missing" });
+  }
+  const after = await store.readMobilePushJob(scope, MESSAGE_ID);
+  assert.equal(after.status, "pending");
+  assert.equal(after.attempts, before.attempts);
+  assert.equal(after.nextAttemptAt, before.nextAttemptAt);
+  assert.equal(after.leaseExpiresAt, before.leaseExpiresAt);
   assert.deepEqual(runtime.health(), { enabled: false, credentials: "missing", delivery: "pending" });
 });
 
