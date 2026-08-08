@@ -18,10 +18,11 @@ function validateKey(key) {
   return value;
 }
 
-function asReplayError(row) {
+function asReplayError(row, requestHash, deps = {}) {
   const error = row && row.error;
   if (!error) return null;
-  return new MobileError(error.code || "mutation_failed", error.message || "The previous mutation failed.", error.status || 502, Boolean(error.retryable), error.details);
+  const details = decryptReplayResult(error.details, requestHash, deps);
+  return new MobileError(error.code || "mutation_failed", error.message || "The previous mutation failed.", error.status || 502, Boolean(error.retryable), details);
 }
 
 function isCompleted(status) {
@@ -31,7 +32,7 @@ function isCompleted(status) {
 function hasTokenField(value) {
   if (Array.isArray(value)) return value.some(hasTokenField);
   if (!value || typeof value !== "object") return false;
-  return Object.entries(value).some(([key, child]) => /^(?:access|refresh)(?:Token|_token)$/u.test(key) || hasTokenField(child));
+  return Object.entries(value).some(([key, child]) => /^(?:access|refresh)(?:Token|_token)$|^deletion(?:Capability|_capability)$/u.test(key) || hasTokenField(child));
 }
 
 function replayKey(requestHash, deps = {}) {
@@ -92,7 +93,7 @@ async function withMobileIdempotency({ scope, key, payload, operation }, deps = 
     }
     const status = existing.status;
     if (isCompleted(status) || status === "failed") {
-      const replayError = asReplayError(existing);
+      const replayError = asReplayError(existing, requestHash, deps);
       if (replayError) throw replayError;
       return storedResult(existing, requestHash, deps);
     }
@@ -106,7 +107,7 @@ async function withMobileIdempotency({ scope, key, payload, operation }, deps = 
       throw new MobileError("idempotency_conflict", "The idempotency key was already used for a different request.", 409);
     }
     if (raced && (isCompleted(raced.status) || raced.status === "failed")) {
-      const replayError = asReplayError(raced);
+      const replayError = asReplayError(raced, requestHash, deps);
       if (replayError) throw replayError;
       return storedResult(raced, requestHash, deps);
     }
@@ -125,12 +126,13 @@ async function withMobileIdempotency({ scope, key, payload, operation }, deps = 
     const normalized = error instanceof MobileError
       ? error
       : new MobileError("mutation_failed", "The mutation could not be completed.", 502, true);
+    const errorDetails = normalized.details === undefined ? undefined : encryptReplayResult(normalized.details, requestHash, deps);
     await store.completeIdempotency(scope, value, {
       requestHash,
       status: "failed",
       error: {
         code: normalized.code, message: normalized.message, status: normalized.status, retryable: normalized.retryable,
-        ...(normalized.details === undefined ? {} : { details: normalized.details }),
+        ...(errorDetails === undefined ? {} : { details: errorDetails }),
       },
     }).catch(() => {});
     throw error;

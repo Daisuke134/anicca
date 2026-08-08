@@ -11,7 +11,7 @@ const { listMobileMessages } = require("./mobile-outbox.js");
 const { replyMobileQuestion } = require("./mobile-question.js");
 const { requestMobileCall } = require("./mobile-call.js");
 const { upsertMobileDevice, removeMobileDevice } = require("./mobile-device.js");
-const { deleteMobileAccount } = require("./mobile-account.js");
+const { deleteMobileAccount, outputReceipt } = require("./mobile-account.js");
 
 const PREFIX = "/api/mobile/v1";
 const MAX_BODY_BYTES = 256 * 1024;
@@ -116,7 +116,27 @@ async function handleMobileV1Request(req, res, dependencies = {}) {
     const isPublicSession = path === "/session/calendar/start" || path === "/session/exchange" || path === "/session/refresh";
     const needsAuth = !isPublicSession;
     const auth = handler(runtime, "authenticateMobileRequest", session.authenticateMobileRequest);
-    const scope = needsAuth ? await auth(req, runtime) : anonymousScope(req, idempotencyKey(req) || path, body);
+    let scope;
+    try {
+      scope = needsAuth ? await auth(req, runtime) : anonymousScope(req, idempotencyKey(req) || path, body);
+    } catch (authError) {
+      // Terminal deletion revokes every bearer session. A lost HTTP response must still be
+      // replayable, but only through the deletion-specific capability + operation pair; no other
+      // mobile endpoint receives this bearer bypass.
+      if ((authError && (authError.status === 401 || authError.code === "unauthorized")) && method === "DELETE" && path === "/account" && body.confirmed === true) {
+        const capability = body.deletionCapability || body.capability || idempotencyKey(req);
+        const operationId = body.operationId || (capability ? `deletion:v1:${sha256(capability).slice(0, 32)}` : null);
+        const reader = runtime.readDeletionReceiptByCapability || (runtime.store && runtime.store.readDeletionReceiptByCapability);
+        if (capability && operationId && typeof reader === "function") {
+          const receipt = await reader.call(runtime.readDeletionReceiptByCapability ? runtime : runtime.store, capability, operationId);
+          if (receipt && receipt.status === "completed") {
+            writeJson(res, 200, outputReceipt(receipt, capability));
+            return;
+          }
+        }
+      }
+      throw authError;
+    }
     const result = await dispatch({ req, method, path, query, body, scope, runtime, isPublicSession });
     writeJson(res, 200, result);
   } catch (error) {

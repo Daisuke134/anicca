@@ -83,3 +83,14 @@ test("token-bearing idempotent results are encrypted per request and replay exac
   const replay = await withMobileIdempotency({ scope, key: "refresh-replay-1", payload, operation: async () => { throw new Error("must replay"); } }, { store });
   assert.deepEqual(replay, expected);
 });
+
+test("deletion capability details are not persisted in plaintext error receipts", async () => {
+  const d = deps();
+  const input = {
+    scope: { uid: "user-a" }, key: "delete-error-1", payload: { confirmed: true },
+    operation: async () => { throw new MobileError("deletion_incomplete", "retry", 502, true, { receipt: { deletionCapability: "capability-secret" } }); },
+  };
+  await assert.rejects(() => withMobileIdempotency(input, d));
+  assert.equal(JSON.stringify([...d.receipts.values()]).includes("capability-secret"), false);
+  await assert.rejects(() => withMobileIdempotency(input, d), (error) => error.details.receipt.deletionCapability === "capability-secret");
+});

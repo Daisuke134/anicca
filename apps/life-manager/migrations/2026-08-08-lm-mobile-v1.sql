@@ -176,6 +176,7 @@ CREATE TABLE IF NOT EXISTS public.lm_mobile_deletion_receipts (
   operation_id text NOT NULL,
   status text NOT NULL CHECK (status IN ('incomplete', 'completed')),
   completed_at timestamptz,
+  capability_hash text CHECK (capability_hash IS NULL OR length(capability_hash) = 64),
   provider_cleanup jsonb NOT NULL DEFAULT '[]'::jsonb,
   created_at timestamptz NOT NULL DEFAULT now(),
   PRIMARY KEY (uid, operation_id)
@@ -183,6 +184,12 @@ CREATE TABLE IF NOT EXISTS public.lm_mobile_deletion_receipts (
 
 CREATE INDEX IF NOT EXISTS lm_mobile_deletion_receipts_uid_idx
   ON public.lm_mobile_deletion_receipts (uid, created_at);
+
+ALTER TABLE public.lm_mobile_deletion_receipts
+  ADD COLUMN IF NOT EXISTS capability_hash text;
+
+CREATE INDEX IF NOT EXISTS lm_mobile_deletion_receipts_capability_idx
+  ON public.lm_mobile_deletion_receipts (operation_id, capability_hash);
 
 ALTER TABLE public.lm_mobile_oauth_states ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.lm_mobile_sessions ENABLE ROW LEVEL SECURITY;
@@ -337,6 +344,44 @@ BEGIN
 END;
 $$;
 
+CREATE OR REPLACE FUNCTION public.finalize_lm_mobile_deletion(
+  p_uid text, p_operation_id text, p_capability_hash text,
+  p_provider_cleanup jsonb DEFAULT '[]'::jsonb,
+  p_preserve_idempotency_key text DEFAULT NULL
+)
+RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
+DECLARE completed timestamptz := now(); existing public.lm_mobile_deletion_receipts%ROWTYPE;
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM public.lm_users WHERE uid = p_uid) THEN
+    SELECT * INTO existing FROM public.lm_mobile_deletion_receipts
+     WHERE uid = p_uid AND operation_id = p_operation_id AND capability_hash = p_capability_hash;
+    IF existing.status = 'completed' THEN
+      RETURN jsonb_build_object(
+        'operationId', existing.operation_id, 'status', existing.status,
+        'completedAt', existing.completed_at, 'providerCleanup', existing.provider_cleanup
+      );
+    END IF;
+    RAISE EXCEPTION 'account_not_found' USING ERRCODE = 'P0002';
+  END IF;
+
+  -- Provider cleanup has already completed in the application layer. This
+  -- transaction is the terminal boundary: revoke every session, persist the
+  -- receipt, remove all account rows, and preserve the proof outside cascade.
+  UPDATE public.lm_mobile_sessions SET revoked_at = completed WHERE uid = p_uid;
+  INSERT INTO public.lm_mobile_deletion_receipts(uid, operation_id, status, completed_at, capability_hash, provider_cleanup)
+       VALUES (p_uid, p_operation_id, 'completed', completed, p_capability_hash, p_provider_cleanup)
+  ON CONFLICT (uid, operation_id) DO UPDATE SET
+    status = 'completed', completed_at = EXCLUDED.completed_at,
+    capability_hash = EXCLUDED.capability_hash, provider_cleanup = EXCLUDED.provider_cleanup;
+  DELETE FROM public.lm_mobile_idempotency
+   WHERE uid = p_uid
+     AND (p_preserve_idempotency_key IS NULL OR idempotency_key <> p_preserve_idempotency_key);
+  DELETE FROM public.lm_users WHERE uid = p_uid;
+  RETURN jsonb_build_object('operationId', p_operation_id, 'status', 'completed', 'completedAt', completed, 'providerCleanup', p_provider_cleanup);
+END;
+$$;
+
 CREATE OR REPLACE FUNCTION public.claim_lm_mobile_call(
   p_uid text, p_idempotency_key text, p_now timestamptz DEFAULT now()
 )
@@ -406,6 +451,7 @@ REVOKE ALL ON FUNCTION public.complete_lm_mobile_idempotency(text, text, text, j
 REVOKE ALL ON FUNCTION public.rotate_lm_mobile_refresh(text, text, text, text, text, text, timestamptz, timestamptz, text) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.consume_lm_mobile_question(text, text, text) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.claim_lm_mobile_device(text, text, text, text, text, timestamptz) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.finalize_lm_mobile_deletion(text, text, text, jsonb, text) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.claim_lm_mobile_call(text, text, timestamptz) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.delete_lm_mobile_account(text, text) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.claim_lm_mobile_oauth_state(text, text, text) TO service_role;
@@ -414,5 +460,6 @@ GRANT EXECUTE ON FUNCTION public.complete_lm_mobile_idempotency(text, text, text
 GRANT EXECUTE ON FUNCTION public.rotate_lm_mobile_refresh(text, text, text, text, text, text, timestamptz, timestamptz, text) TO service_role;
 GRANT EXECUTE ON FUNCTION public.consume_lm_mobile_question(text, text, text) TO service_role;
 GRANT EXECUTE ON FUNCTION public.claim_lm_mobile_device(text, text, text, text, text, timestamptz) TO service_role;
+GRANT EXECUTE ON FUNCTION public.finalize_lm_mobile_deletion(text, text, text, jsonb, text) TO service_role;
 GRANT EXECUTE ON FUNCTION public.claim_lm_mobile_call(text, text, timestamptz) TO service_role;
 GRANT EXECUTE ON FUNCTION public.delete_lm_mobile_account(text, text) TO service_role;

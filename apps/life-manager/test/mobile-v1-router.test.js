@@ -152,3 +152,32 @@ test("refresh retries replay the exact token set while the generic receipt keeps
   assert.equal(JSON.stringify(receipt).includes(tokens.accessToken), false);
   assert.equal(JSON.stringify(receipt).includes(tokens.refreshToken), false);
 });
+
+test("account deletion replay uses its capability receipt after terminal bearer revocation", async () => {
+  let authCalls = 0;
+  const capability = "delete-capability-router-1";
+  const operationId = "deletion:v1:router-1";
+  const deps = {
+    idempotencyStore: new Map(),
+    authenticateMobileRequest: async () => {
+      authCalls++;
+      if (authCalls > 1) throw new (require("../lib/mobile-utils.js").MobileError)("unauthorized", "revoked", 401);
+      return { uid: "user-a", sessionId: "session-a", productLocale: "en" };
+    },
+    deleteMobileAccount: async () => ({ operationId, status: "completed", completedAt: "2026-08-08T00:00:00.000Z", providerCleanup: [{ provider: "calendar", status: "disconnected" }], deletionCapability: capability }),
+    store: {
+      async readDeletionReceiptByCapability(value, id) {
+        assert.equal(value, capability); assert.equal(id, operationId);
+        return { operation_id: operationId, status: "completed", completed_at: "2026-08-08T00:00:00.000Z", provider_cleanup: [{ provider: "calendar", status: "disconnected" }] };
+      },
+    },
+  };
+  const headers = { authorization: "Bearer access", "idempotency-key": "delete-router-key", "content-type": "application/json" };
+  const first = response();
+  await handleMobileV1Request(request("DELETE", "/api/mobile/v1/account", { confirmed: true, operationId, deletionCapability: capability }, headers), first, deps);
+  const replay = response();
+  await handleMobileV1Request(request("DELETE", "/api/mobile/v1/account", { confirmed: true, operationId, deletionCapability: capability }, headers), replay, deps);
+  assert.equal(replay.statusCode, 200);
+  assert.equal(parsed(replay).status, "completed");
+  assert.equal(parsed(replay).deletionCapability, capability);
+});

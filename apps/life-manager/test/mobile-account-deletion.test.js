@@ -67,3 +67,26 @@ test("already-disabled provider cleanup is a completed disconnect", async () => 
   assert.equal(result.status, "completed");
   assert.equal(result.providerCleanup[0].status, "disconnected");
 });
+
+test("provider cleanup is resumable and precedes atomic terminal session revocation", async () => {
+  const order = [];
+  let attempts = 0;
+  const receipts = new Map();
+  const store = {
+    async readDeletionReceipt(_scope, operationId) { return receipts.get(operationId) || null; },
+    async writeDeletionReceipt(_scope, receipt) { receipts.set(receipt.operationId, { ...receipt }); return receipt; },
+    async revokeAllSessions() { order.push("revoke"); },
+    async finalizeAccountDeletion() { order.push("finalize"); return { operationId: "delete-resume", status: "completed", completedAt: "2026-08-08T00:00:00.000Z", providerCleanup: [{ provider: "calendar", status: "disconnected" }] }; },
+  };
+  await assert.rejects(() => deleteMobileAccount({ uid: "user-a" }, { confirmed: true, operationId: "delete-resume", idempotencyKey: "delete-capability-1" }, {
+    store, disconnectCalendar: async () => { attempts++; return undefined; },
+  }), (error) => error.code === "deletion_incomplete");
+  assert.deepEqual(order, []);
+  await deleteMobileAccount({ uid: "user-a" }, { confirmed: true, operationId: "delete-resume", idempotencyKey: "delete-capability-1" }, {
+    store, disconnectCalendar: async () => { attempts++; return { state: "disconnected" }; },
+  });
+  assert.deepEqual(order, ["finalize"]);
+  assert.equal(attempts, 2);
+  assert.match(receipts.get("delete-resume").capabilityHash, /^[0-9a-f]{64}$/u);
+  assert.equal(JSON.stringify(receipts).includes("delete-capability-1"), false);
+});

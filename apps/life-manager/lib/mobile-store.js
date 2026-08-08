@@ -1,6 +1,6 @@
 "use strict";
 
-const { MobileError, nowIso, safeTimeZone } = require("./mobile-utils.js");
+const { MobileError, nowIso, safeTimeZone, sha256 } = require("./mobile-utils.js");
 
 function requireScope(scope) {
   if (!scope || !scope.uid || typeof scope.uid !== "string") throw new MobileError("scope_required", "An authenticated mobile scope is required.", 401);
@@ -261,6 +261,7 @@ function createSupabaseMobileStore(options = {}) {
           operation_id: receipt.operationId || receipt.operation_id,
           status: receipt.status,
           completed_at: receipt.completedAt || receipt.completed_at || null,
+          capability_hash: receipt.capabilityHash || receipt.capability_hash || null,
           provider_cleanup: receipt.providerCleanup || receipt.provider_cleanup || [],
         }),
       }, "deletion_receipt_failed");
@@ -269,10 +270,29 @@ function createSupabaseMobileStore(options = {}) {
     async readDeletionReceipt(scope, operationId) {
       const found = await rows("lm_mobile_deletion_receipts", scopedParams(scope, {
         operation_id: `eq.${encodeFilter(operationId)}`,
-        select: "operation_id,status,completed_at,provider_cleanup",
+        select: "operation_id,status,completed_at,provider_cleanup,capability_hash",
         limit: "1",
       }));
       return found[0] || null;
+    },
+    async readDeletionReceiptByCapability(capability, operationId) {
+      const found = await rows("lm_mobile_deletion_receipts", {
+        capability_hash: `eq.${encodeFilter(sha256(capability))}`,
+        operation_id: `eq.${encodeFilter(operationId)}`,
+        select: "operation_id,status,completed_at,provider_cleanup,capability_hash",
+        limit: "1",
+      });
+      return found[0] || null;
+    },
+    async finalizeAccountDeletion(scope, options2 = {}) {
+      const value = await rpc("finalize_lm_mobile_deletion", {
+        p_uid: requireScope(scope).uid,
+        p_operation_id: options2.operationId,
+        p_capability_hash: options2.capabilityHash,
+        p_provider_cleanup: options2.providerCleanup || [],
+        p_preserve_idempotency_key: options2.preserveIdempotencyKey || null,
+      }, "account_delete_failed");
+      return asRow(value) || value;
     },
     async deleteAccount(scope, options2 = {}) {
       return rpc("delete_lm_mobile_account", {
@@ -379,7 +399,31 @@ function createMemoryMobileStore(options = {}) {
       return { deleted: true };
     },
     async readDeletionReceipt(scope, operationId) { const uid = scoped(scope); return deletionReceipts.get(`${uid}:${operationId}`) || null; },
+    async readDeletionReceiptByCapability(capability, operationId) {
+      const hash = sha256(capability);
+      for (const receipt of deletionReceipts.values()) if (receipt.operationId === operationId && receipt.capabilityHash === hash) return { ...receipt };
+      return null;
+    },
     async writeDeletionReceipt(scope, receipt) { const uid = scoped(scope); deletionReceipts.set(`${uid}:${receipt.operationId}`, { ...receipt }); return receipt; },
+    async finalizeAccountDeletion(scope, options2 = {}) {
+      const uid = scoped(scope);
+      if (!users.has(uid)) throw new MobileError("account_not_found", "Account not found.", 404);
+      const receipt = {
+        operationId: options2.operationId, status: "completed", completedAt: nowIso(),
+        providerCleanup: options2.providerCleanup || [], capabilityHash: options2.capabilityHash,
+      };
+      for (const row of sessions.values()) if (row.uid === uid) row.revokedAt = nowIso();
+      deletionReceipts.set(`${uid}:${receipt.operationId}`, { ...receipt });
+      users.delete(uid);
+      for (const key of sessions.keys()) if (sessions.get(key).uid === uid) sessions.delete(key);
+      const preserve = options2.preserveIdempotencyKey ? `${uid}:${options2.preserveIdempotencyKey}` : null;
+      for (const key of idempotency.keys()) if (key.startsWith(`${uid}:`) && key !== preserve) idempotency.delete(key);
+      outbox.delete(uid);
+      for (const key of questions.keys()) if (key.startsWith(`${uid}:`)) questions.delete(key);
+      for (const key of devices.keys()) if (devices.get(key).uid === uid) devices.delete(key);
+      for (const key of calls.keys()) if (calls.get(key).uid === uid) calls.delete(key);
+      return { ...receipt };
+    },
     async deleteAccount(scope, options2 = {}) {
       const uid = scoped(scope);
       users.delete(uid);
@@ -388,7 +432,7 @@ function createMemoryMobileStore(options = {}) {
       for (const key of idempotency.keys()) if (key.startsWith(`${uid}:`) && key !== preserve) idempotency.delete(key);
       outbox.delete(uid);
       for (const key of questions.keys()) if (key.startsWith(`${uid}:`)) questions.delete(key);
-      for (const key of devices.keys()) if (key.startsWith(`${uid}:`)) devices.delete(key);
+      for (const [key, row] of devices) if (row.uid === uid) devices.delete(key);
       for (const key of calls.keys()) if (calls.get(key).uid === uid) calls.delete(key);
       return { deleted: true };
     },
