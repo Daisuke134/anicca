@@ -115,3 +115,18 @@ def test_gc_does_not_remove_a_row_reacquired_with_a_new_identity(monkeypatch, tm
     assert "gig-task" not in result["reaped"]
     saved = json.loads(leases_file.read_text(encoding="utf-8"))
     assert saved["gig-task"]["context_id"] == "new-context"
+
+
+def test_heartbeat_lease_not_found_reason_carries_ledger_mtime(monkeypatch, tmp_path):
+    # The reason string is the only channel that reaches real logs: LeaseHandle raises
+    # lease_command_failed:{reason} and discards stderr. Pin that the diagnostic rides it.
+    module = load_module()
+    leases_file = tmp_path / "leases.json"
+    monkeypatch.setenv("CLOAK_CONTEXT_LEASES_FILE", str(leases_file))
+    _write_leases(leases_file, {})
+
+    result = module.heartbeat("gig-task", token="a" * 32, generation=1)
+
+    assert result["ok"] is False
+    assert result["reason"].startswith("lease_not_found")
+    assert "ledger_mtime=" in result["reason"]

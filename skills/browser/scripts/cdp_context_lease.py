@@ -249,18 +249,18 @@ def heartbeat(task, token=None, generation=None):
         leases = _leases()
         held = leases.get(task)
         if not held:
-            leases_path = _leases_path()
+            # The ledger mtime rides inside `reason` because that is the only field
+            # callers propagate: application_parent's LeaseHandle raises
+            # lease_command_failed:{reason} from the returned JSON, and its stderr is
+            # captured but never read. No caller string-matches "lease_not_found"
+            # exactly (grepped ~/anicca + ~/profitable-claude, 2026-08-08), so
+            # extending the string is safe -- and if any residual clobberer remains,
+            # the mtime in the parent-error evidence pinpoints the overwrite.
             try:
-                ledger_mtime = os.path.getmtime(leases_path)
+                ledger_mtime = os.path.getmtime(_leases_path())
             except OSError:
                 ledger_mtime = None
-            print(json.dumps({
-                "event": "heartbeat_lease_not_found",
-                "task": task,
-                "ledger_path": leases_path,
-                "ledger_mtime": ledger_mtime,
-            }), file=sys.stderr)
-            return {"ok": False, "reason": "lease_not_found"}
+            return {"ok": False, "reason": f"lease_not_found ledger_mtime={ledger_mtime}"}
         if not _fence_matches(held, token, generation):
             return {"ok": False, "reason": "lease_fence_mismatch"}
         held["ts"] = int(time.time())
@@ -322,6 +322,10 @@ def gc(idle_min=45):
     only pop it if the ledger still shows the *same* lease (same context/target id) and it
     is *still* stale -- a concurrent heartbeat or re-acquire between read and finalize
     survives untouched.
+
+    Accepted edge: a 45-min-stale row re-acquired via acquire's reuse path during the
+    dispose window survives with a dead context; the next acquire's target_responds
+    check detects the corpse and rebuilds it (self-healing, reviewer-accepted).
     """
     now = time.time()
     with _ledger_lock():
