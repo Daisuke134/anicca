@@ -7,7 +7,7 @@
 
 const { getCalendar } = require("./transport/index.js");
 const { chooseRouter, parseTransitPlan } = require("./transit.js");
-const { makeRouteCache, timeBucket } = require("./route-cache.js");
+const { makeRouteCache, createSupabaseRouteStore, timeBucket } = require("./route-cache.js");
 const { geocodeAddress, createSupabaseGeocodeStore } = require("./geocode-cache.js");
 const { interpretCalendarEvent } = require("./calendar-interpreter.js");
 
@@ -194,18 +194,46 @@ async function directionsMinutes(src, dst, mapsKey, departAtMs = Date.now(), now
     geocode(src, mapsKey, opts),
     geocode(dst, mapsKey, opts),
   ]);
-  // The expensive part = the transit/Google provider call. Cache it per (from_geo, to_geo, time_bucket)
-  // so repeated 60s ticks for the same event reuse one result (FIND-002).
-  const compute = async () => {
-    if (srcGeo && dstGeo && chooseRouter(srcGeo, dstGeo) === "transit") {
-      const plan = await transitFetch(srcGeo, dstGeo);
-      const parsed = plan && parseTransitPlan(plan);
-      if (parsed && parsed.durationSecs != null) return minutesFromSeconds(parsed.durationSecs);
-    }
-    return google(); // non-JP / unresolvable / transit empty → Google Routes (as before)
+  const routeBucket = timeBucket(departAtMs);
+  const cacheUid = opts._uid == null ? "anonymous" : String(opts._uid);
+  const anchor = new Date(departAtMs).toISOString();
+  const commonContext = {
+    eventAnchor: anchor,
+    timezone: opts._timezone || "UTC",
+    direction: departureMode ? "return" : "outbound",
   };
-  if (srcGeo && dstGeo) return cache.getOrCompute("_shared", srcGeo, dstGeo, timeBucket(departAtMs), compute);
-  return compute(); // un-geocodable address → uncached (rare)
+  const isTransit = srcGeo && dstGeo && chooseRouter(srcGeo, dstGeo) === "transit";
+  // Transit and Google have separate durable identities. A cached accepted
+  // Transit result can never be mistaken for a Google fallback, and a failed
+  // Transit attempt does not make the fallback key look fresh.
+  const transitCompute = async () => {
+    const plan = await transitFetch(srcGeo, dstGeo);
+    const parsed = plan && parseTransitPlan(plan);
+    return parsed && parsed.durationSecs != null
+      ? { minutes: minutesFromSeconds(parsed.durationSecs), provider: "transit" }
+      : null;
+  };
+  const googleCompute = async () => {
+    const minutes = await google();
+    return minutes == null ? null : { minutes, provider: "google" };
+  };
+  const result = srcGeo && dstGeo
+    ? isTransit
+      ? await (async () => {
+        const transit = await cache.getOrCompute(cacheUid, srcGeo, dstGeo, routeBucket, transitCompute, {
+          ...commonContext, provider: "transit", routeMode: "transit",
+        });
+        if (transit) return transit;
+        return cache.getOrCompute(cacheUid, srcGeo, dstGeo, routeBucket, googleCompute, {
+          ...commonContext, provider: "google", routeMode: "fallback",
+        });
+      })()
+      : cache.getOrCompute(cacheUid, srcGeo, dstGeo, routeBucket, googleCompute, {
+        ...commonContext, provider: "google", routeMode: "google",
+      })
+    : googleCompute(); // un-geocodable address → uncached (rare)
+  const resolved = await result;
+  return resolved && resolved.minutes != null ? resolved.minutes : null;
 }
 
 async function createTravelBlock(uid, apiKey, leaveMs, arriveMs, fromName, toName, dstAddr, calendar, gmailAccountId) {
@@ -247,10 +275,12 @@ async function unclaimTravel(uid, eventKey, leg, supaUrl, supaKey) {
   }).catch(() => {});
 }
 
-async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, nowMs = Date.now(), bufferMin = 5, calendar, supaUrl, supaKey, _directionsMinutes, gmailAccountId } = {}) {
+async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, nowMs = Date.now(), bufferMin = 5, calendar, supaUrl, supaKey, _directionsMinutes, gmailAccountId, timezone = "UTC" } = {}) {
   const directionsFn = _directionsMinutes || directionsMinutes;
   const cal = calendar || getCalendar({ apiKey, gmailAccountId });
   const geocodeStore = supaUrl && supaKey ? createSupabaseGeocodeStore({ supaUrl, supaKey }) : undefined;
+  const routeStore = supaUrl && supaKey ? createSupabaseRouteStore({ supaUrl, supaKey }) : undefined;
+  const routeCache = routeStore ? makeRouteCache({ store: routeStore, ttlMs: 10 * 60_000 }) : _routeCache;
   const events = await listEvents7d(uid, apiKey, nowMs, cal, gmailAccountId);
   let inserted = 0, checked = 0, skipped = 0;
   const outboundReports = [];
@@ -283,6 +313,9 @@ async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, nowMs = Date.
         let dest = ev.location;
         let mins = await directionsFn(origin, dest, mapsKey, ev.startMs, nowMs, false, {
           _geocodeStore: geocodeStore,
+          _routeCache: routeCache,
+          _uid: uid,
+          _timezone: timezone,
           _now: () => new Date(nowMs).toISOString(),
         });
         if (mins == null && geminiKey) {
@@ -300,6 +333,9 @@ async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, nowMs = Date.
               dest = res.location;
               mins = await directionsFn(origin, dest, mapsKey, ev.startMs, nowMs, false, {
                 _geocodeStore: geocodeStore,
+                _routeCache: routeCache,
+                _uid: uid,
+                _timezone: timezone,
                 _now: () => new Date(nowMs).toISOString(),
               });
             }
@@ -375,6 +411,9 @@ async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, nowMs = Date.
     if (!home) { skipped++; continue; }
     const retMins = await directionsFn(venue, home, mapsKey, ev.endMs, nowMs, /* departureMode= */ true, {
       _geocodeStore: geocodeStore,
+      _routeCache: routeCache,
+      _uid: uid,
+      _timezone: timezone,
       _now: () => new Date(nowMs).toISOString(),
     });
     if (retMins == null) { skipped++; continue; }

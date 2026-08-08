@@ -18,7 +18,7 @@
 | Slice | Status | RED | GREEN | Commit |
 |---|---|---|---|---|
 | 1. Persistent geocodes | GREEN | missing-module | 6/6 focused + 43/43 baseline | pending |
-| 2. Durable route cache | pending | — | — | — |
+| 2. Durable route cache | GREEN | original suite + new scope tests | 15/15 route/transit + 62/62 travel regression | pending |
 | 3. Transit facts/fallback | pending | — | — | — |
 | 4. Truthful cost event | pending | — | — | — |
 | 5. Provider instrumentation | pending | — | — | — |
@@ -45,3 +45,12 @@ Result: 43/43 passed, 0 failed, 0 skipped (2026-08-08).
 - Implementation: normalized NFKC/case/whitespace keys, Supabase REST get/merge-put adapter, valid-result-only persistence, process read-through, and `travel.js` production injection via `supaUrl`/`supaKey`.
 - Migration added: `apps/life-manager/migrations/2026-08-08-lm-provider-cost.sql`.
 - No staging/production mutation was performed; migration application is intentionally deferred to the integration/deploy gate.
+
+## Task 2 receipt
+
+- RED intent: the added scope/persistence tests target the old cache's shared geo/bucket identity and process-only Map; implementation was then replaced with the complete context key and durable adapter.
+- GREEN: `node --test lib/route-cache.test.js lib/travel-transit-wire.test.js` → 15/15 passed.
+- GREEN regression: `node --test lib/route-cache.test.js lib/travel-transit-wire.test.js lib/travel-routes.test.js lib/travel.test.js lib/travel-return.test.js` → 62/62 passed.
+- Key now scopes uid, normalized origin/destination, event anchor, timezone, direction, provider, and route mode; in-flight coalescing prevents concurrent duplicate provider work.
+- `createSupabaseRouteStore` uses `cache_key` upsert and stores structured `route_result`; `fillTravel` injects durable geocode and route stores when Supabase credentials are present.
+- Migration extends `lm_route_cache` and drops the old shared uniqueness constraint before creating the complete-key index.

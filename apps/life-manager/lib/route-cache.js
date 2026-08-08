@@ -1,8 +1,6 @@
-// lib/route-cache.js — C3 (VCSDD life-manager-cost-connect-reliability): route-result cache so the 60s
-// scheduler tick does NOT recompute a route it already has. This is a NEW store, distinct from
-// lm_travel_log (which stays a dedup/claim ledger). In production the `store` is Supabase `lm_route_cache`
-// (uid, from_geo, to_geo, time_bucket, provider, duration_secs, geometry, computed_at, ttl); here it is
-// injected so the logic is pure + unit-testable.
+// lib/route-cache.js — durable route-result cache. The Map used by the original
+// implementation is retained as a read-through optimization only; production
+// callers inject the Supabase store below.
 "use strict";
 
 const BUCKET_MS = 10 * 60_000; // coarse 10-min bucket: a moved event lands in a new bucket → recompute.
@@ -13,25 +11,235 @@ function timeBucket(epochMs, bucketMs = BUCKET_MS) {
 }
 
 // Round a coordinate so trivially-different geos share a cache row (~11m at 4 dp is plenty for a route).
-const q = (n) => Math.round(n * 1e4) / 1e4;
+const q = (n) => {
+  const value = Number(n);
+  return Number.isFinite(value) ? Math.round(value * 1e4) / 1e4 : null;
+};
 
-function cacheKey(uid, fromGeo, toGeo, bucket) {
-  return [uid, q(fromGeo.lat), q(fromGeo.lon), q(toGeo.lat), q(toGeo.lon), bucket].join("|");
+function coordinateLongitude(geo) {
+  return geo && (geo.lon == null ? geo.lng : geo.lon);
+}
+
+function contextValue(context, keys, fallback = "") {
+  for (const key of keys) {
+    if (context && context[key] != null && context[key] !== "") return String(context[key]);
+  }
+  return fallback;
+}
+
+function normalizeContext(context = {}) {
+  const direction = context.direction || (context.departureMode ? "return" : "outbound");
+  return {
+    eventAnchor: contextValue(context, ["eventAnchor", "anchor", "event_at"]),
+    timezone: contextValue(context, ["timezone", "tz"]),
+    direction: String(direction || ""),
+    provider: contextValue(context, ["provider"]),
+    routeMode: contextValue(context, ["routeMode", "mode"]),
+  };
+}
+
+function resolveBucketAndContext(bucket, context) {
+  if (bucket && typeof bucket === "object" && !Array.isArray(bucket)) {
+    const next = normalizeContext(bucket);
+    const value = bucket.timeBucket == null
+      ? (bucket.eventAnchor ? timeBucket(Date.parse(bucket.eventAnchor)) : "")
+      : bucket.timeBucket;
+    return { bucket: value, context: next };
+  }
+  return { bucket, context: normalizeContext(context) };
+}
+
+function cacheKey(uid, fromGeo, toGeo, bucket, context = {}) {
+  const resolved = resolveBucketAndContext(bucket, context);
+  return JSON.stringify([
+    uid == null ? "" : String(uid),
+    q(fromGeo && fromGeo.lat), q(coordinateLongitude(fromGeo)),
+    q(toGeo && toGeo.lat), q(coordinateLongitude(toGeo)),
+    resolved.bucket == null ? "" : String(resolved.bucket),
+    resolved.context.eventAnchor,
+    resolved.context.timezone,
+    resolved.context.direction,
+    resolved.context.provider,
+    resolved.context.routeMode,
+  ]);
+}
+
+function isRecord(value) {
+  return Boolean(value && typeof value === "object" && Object.prototype.hasOwnProperty.call(value, "value"));
+}
+
+function recordComputedAt(record) {
+  if (!record) return null;
+  const raw = record.computedAt == null ? record.computed_at : record.computedAt;
+  const n = typeof raw === "number" ? raw : Date.parse(raw);
+  return Number.isFinite(n) ? n : null;
+}
+
+function routeRecord(value, computedAt, context, ttlMs) {
+  return {
+    value,
+    computedAt,
+    ttlMs,
+    provider: context.provider || null,
+    eventAnchor: context.eventAnchor || null,
+    timezone: context.timezone || null,
+    direction: context.direction || null,
+    routeMode: context.routeMode || null,
+  };
+}
+
+function routeValueFromRow(row) {
+  if (!row || typeof row !== "object") return null;
+  const value = row.route_result == null ? row.value : row.route_result;
+  if (value == null) return null;
+  return {
+    value,
+    computedAt: row.computed_at || row.computedAt,
+    ttlMs: row.ttl_secs == null ? undefined : Number(row.ttl_secs) * 1000,
+    provider: row.provider || null,
+    eventAnchor: row.event_anchor || row.eventAnchor || null,
+    timezone: row.timezone || null,
+    direction: row.direction || null,
+    routeMode: row.route_mode || row.routeMode || null,
+  };
+}
+
+function authHeaders(key, extra) {
+  return Object.assign({ apikey: key, Authorization: `Bearer ${key}` }, extra || {});
+}
+
+// Store rows by an opaque canonical key. The migration adds cache_key so the
+// complete context key is durable instead of relying on the old shared geo
+// identity. All writes use Supabase upsert semantics (one winner per key).
+function createSupabaseRouteStore({ supaUrl, supaKey, fetchImpl = globalThis.fetch, table = "lm_route_cache" } = {}) {
+  const baseUrl = String(supaUrl || "").replace(/\/$/u, "");
+  const path = `${baseUrl}/rest/v1/${encodeURIComponent(table)}`;
+  async function get(key) {
+    if (!baseUrl || !supaKey || typeof fetchImpl !== "function" || !key) return null;
+    try {
+      const query = `${path}?cache_key=eq.${encodeURIComponent(key)}&select=*&limit=1`;
+      const response = await fetchImpl(query, { headers: authHeaders(supaKey) });
+      if (!response || !response.ok) return null;
+      const rows = await response.json();
+      return routeValueFromRow(Array.isArray(rows) ? rows[0] : null);
+    } catch {
+      return null;
+    }
+  }
+  async function set(key, record) {
+    if (!baseUrl || !supaKey || typeof fetchImpl !== "function" || !key || !record || record.value == null) return false;
+    const value = record.value;
+    const duration = value.durationSeconds == null
+      ? (value.durationSecs == null ? null : value.durationSecs)
+      : value.durationSeconds;
+    const computedAt = record.computedAt == null ? new Date().toISOString() : new Date(record.computedAt).toISOString();
+    const body = {
+      cache_key: key,
+      uid: record.uid == null ? null : String(record.uid),
+      from_geo: record.fromGeo || null,
+      to_geo: record.toGeo || null,
+      time_bucket: record.timeBucket == null ? null : Number(record.timeBucket),
+      provider: record.provider || "unknown",
+      duration_secs: duration == null ? null : Number(duration),
+      geometry: value.geometry == null ? null : value.geometry,
+      route_result: value,
+      computed_at: computedAt,
+      ttl_secs: Math.max(1, Math.round((record.ttlMs == null ? BUCKET_MS : record.ttlMs) / 1000)),
+      event_anchor: record.eventAnchor || null,
+      timezone: record.timezone || null,
+      direction: record.direction || null,
+      route_mode: record.routeMode || null,
+    };
+    try {
+      const response = await fetchImpl(path, {
+        method: "POST",
+        headers: authHeaders(supaKey, {
+          "Content-Type": "application/json",
+          Prefer: "resolution=merge-duplicates,return=minimal",
+        }),
+        body: JSON.stringify(body),
+      });
+      return Boolean(response && response.ok);
+    } catch {
+      return false;
+    }
+  }
+  return { get, set };
+}
+
+function readStore(store, key) {
+  return store && typeof store.get === "function" ? Promise.resolve(store.get(key)) : Promise.resolve(null);
+}
+
+function writeStore(store, key, value) {
+  if (!store || typeof store.set !== "function") return Promise.resolve(false);
+  return Promise.resolve(store.set(key, value));
 }
 
 // makeRouteCache({ store: Map-like {get,set}, ttlMs, now }) → { getOrCompute }.
-// INVARIANT: the provider is called at most once per (uid, from, to, bucket) within ttlMs.
-function makeRouteCache({ store, ttlMs = BUCKET_MS, now = Date.now }) {
-  async function getOrCompute(uid, fromGeo, toGeo, bucket, provider) {
-    const key = cacheKey(uid, fromGeo, toGeo, bucket);
-    const hit = store.get(key);
-    const t = now();
-    if (hit && t - hit.computedAt < ttlMs) return hit.value;
-    const value = await provider();
-    store.set(key, { value, computedAt: t });
-    return value;
+// INVARIANT: provider is called at most once per canonical key in this process;
+// a durable store makes the completed value survive process restarts.
+function makeRouteCache({ store = new Map(), ttlMs = BUCKET_MS, now = Date.now } = {}) {
+  const inFlight = new Map();
+  const readThrough = new Map();
+
+  async function getOrCompute(uid, fromGeo, toGeo, bucket, provider, context = {}) {
+    let compute = provider;
+    let metadata = context;
+    if (typeof bucket === "function") {
+      // Defensive support for a compact `(uid, from, to, provider, context)` call.
+      compute = bucket;
+      bucket = timeBucket(now());
+      metadata = provider || {};
+    }
+    if (typeof compute !== "function") throw new TypeError("route cache provider must be a function");
+    const resolved = resolveBucketAndContext(bucket, metadata);
+    const key = cacheKey(uid, fromGeo, toGeo, resolved.bucket, resolved.context);
+    const t = Number(now());
+    const isFresh = (record) => {
+      const computedAt = recordComputedAt(record);
+      if (computedAt == null || t - computedAt < 0) return false;
+      const effectiveTtl = Number(record && record.ttlMs);
+      return t - computedAt < (Number.isFinite(effectiveTtl) ? effectiveTtl : ttlMs);
+    };
+    const localHit = readThrough.get(key);
+    if (localHit && isFresh(localHit)) return localHit.value;
+    const durableHit = await readStore(store, key);
+    if (durableHit && isFresh(durableHit)) {
+      readThrough.set(key, durableHit);
+      return durableHit.value;
+    }
+    if (inFlight.has(key)) return inFlight.get(key);
+    const pending = (async () => {
+      // A concurrent caller can have populated the durable store between the
+      // initial read and this claim, so re-read before spending on the provider.
+      const secondHit = await readStore(store, key);
+      if (secondHit && isFresh(secondHit)) {
+        readThrough.set(key, secondHit);
+        return secondHit.value;
+      }
+      const value = await compute();
+      if (value == null) return value;
+      const record = routeRecord(value, Number(now()), resolved.context, ttlMs);
+      readThrough.set(key, record);
+      await writeStore(store, key, record);
+      return value;
+    })();
+    inFlight.set(key, pending);
+    try {
+      return await pending;
+    } finally {
+      inFlight.delete(key);
+    }
   }
   return { getOrCompute };
 }
 
-module.exports = { timeBucket, cacheKey, makeRouteCache, BUCKET_MS };
+module.exports = {
+  timeBucket,
+  cacheKey,
+  makeRouteCache,
+  createSupabaseRouteStore,
+  normalizeContext,
+  BUCKET_MS,
+};
