@@ -242,4 +242,12 @@ test("fixed callback builder rejects invalid view, date, and revision", () => {
   ]) assert.throws(() => callbackData(input), /^Error: cfo_telegram_invalid:/);
 });
 
+test("action-required why names unavailable sources among excluded items", () => {
+  const snapshot = actionRequiredSnapshot();
+  snapshot.sources[0].label = "三菱UFJ銀行 <普通預金>";
+  const text = renderCfoTelegram({ locale: "ja", view: "why", snapshot }).text;
+  assert.match(text, /合計に入れていません.*三菱UFJ銀行.*&lt;普通預金&gt;/s);
+  assert.doesNotMatch(text, /合計に入れていません：なし/);
+});
+
 module.exports = { completeSnapshot, partialSnapshot, recoveredSnapshot, actionRequiredSnapshot };

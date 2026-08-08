@@ -123,11 +123,12 @@ function renderCfoTelegram({ locale, view, snapshot }) {
   const sourceText = snapshot.sources.map((source) => `✅ Moneytree${locale === "ja" ? "（" : " ("}${safeLabel(source.label)}${locale === "ja" ? "）" : ")"} ${escapeHtml(source.asOf)}${strings.updated}`).join("\n");
   const totals = `${strings.confirmedAssets}\t${formatAmount(locale, snapshot.totals.assetsMinor)}\n${strings.confirmedLiabilities}\t${formatAmount(locale, snapshot.totals.liabilitiesMinor)}\n${strings.confirmedDifference}\t${formatAmount(locale, snapshot.totals.netWorthMinor)}\n${strings.change}\t${formatChange(locale, snapshot.totals.changeMinor)}`;
   const title = snapshot.state === "partial" ? strings.partialTitle : strings.title;
-  const exclusions = snapshot.state === "partial" ? `\n${strings.excluded}：${snapshot.excluded.map((item) => `${escapeHtml(item.label)}${item.reason ? `（${escapeHtml(item.reason)}）` : ""}`).join("、")}` : "";
+  const excludedItems = [...snapshot.excluded, ...snapshot.sources.filter((source) => source.status !== "fresh").map((source) => ({ label: source.label }))];
+  const excluded = [...new Map(excludedItems.map((item) => [item.label, item])).values()].map((item) => `${safeLabel(item.label)}${item.reason ? `（${escapeHtml(item.reason)}）` : ""}`).join("、") || (locale === "ja" ? "なし" : "None");
+  const exclusions = snapshot.state === "partial" ? `\n${strings.excluded}：${excluded}` : "";
   const repair = snapshot.state === "recovered" ? `\n${strings.recovered}` : "";
   const accounts = snapshot.sources.map((source) => `${safeLabel(source.label)}\t${formatAmount(locale, source.amountMinor)}（${freshness[source.status]}）`).join("\n");
   const evidence = snapshot.sources.map((source) => `${evidenceLabel(locale, source.verificationStatus)} ${escapeHtml(source.asOf)}`).join("\n");
-  const excluded = snapshot.excluded.length ? snapshot.excluded.map((item) => `${escapeHtml(item.label)}${item.reason ? `（${escapeHtml(item.reason)}）` : ""}`).join("、") : (locale === "ja" ? "なし" : "None");
   const why = `${strings.confirmedAssets} − ${strings.confirmedLiabilities} = ${strings.confirmedDifference} ${formatAmount(locale, snapshot.totals.netWorthMinor)}\n${strings.excluded}：${excluded}`;
   const text = view === "summary" ? `${title}\n\n${totals}${exclusions}\n\n${sourceText}${repair}\n${strings.noAction}`
     : view === "accounts" ? `${title}\n\n${accounts}\n${snapshot.state === "action_required" ? strings.actionBody : strings.noAction}`
