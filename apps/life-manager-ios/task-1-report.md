@@ -701,3 +701,32 @@ Fastlane test: UI 2/2 + Unit 109/109 passed
 Fastlane build_for_simulator: Build Succeeded
 build_for_testflight without ASC inputs: fail-closed at missing ASC_API_KEY_PATH (exit 1)
 ```
+
+## Final review round — OAuth bootstrap and partial profile receipt
+
+### RED
+
+The new canonical composition contract could not compile because the client
+had no model for the partial `/profile` PATCH receipt (`ProfilePatchReceipt`),
+and the existing OAuth composition transport had no `/bootstrap` response for
+the required post-exchange fetch. The old service contract attempted to decode
+the three-field PATCH body as a complete `UserProfile`.
+
+```text
+Initial targeted RED: build failed with 4 ProfilePatchReceipt compiler errors
+```
+
+### GREEN
+
+`ProfileService.update` now decodes `ProfilePatchReceipt` and every profile
+mutation fetches the authoritative `/bootstrap` projection before updating
+AppViewModel/Settings state. OAuth onboarding fetches bootstrap immediately
+after exchange, so server id, timezone, and offer status reach the state
+machine and paywall gate. The real AppComposition test uses the canonical
+`profile-patch.json` and `bootstrap.json` fixtures and asserts the exact
+exchange → bootstrap → PATCH → bootstrap boundary.
+
+```text
+OAuth/profile targeted suites: AppComposition 2/2 + ServiceProtocol 11/11 = 13/13
+PATCH consumer regressions: AppViewModel 9/9 + Settings 16/16 + Paywall 6/6 = 31/31
+```

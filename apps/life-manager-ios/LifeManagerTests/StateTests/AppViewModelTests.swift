@@ -274,7 +274,7 @@ private actor StateAuthService: AuthServicing {
 }
 
 private actor StateProfileService: ProfileServicing {
-    private let profile: UserProfile
+    private var profile: UserProfile
     private var recordedDrafts: [ProfileDraft] = []
     private var fetches = 0
 
@@ -286,9 +286,9 @@ private actor StateProfileService: ProfileServicing {
         fetches += 1
         return profile
     }
-    func update(_ draft: ProfileDraft, idempotencyKey: UUID) async throws -> UserProfile {
+    func update(_ draft: ProfileDraft, idempotencyKey: UUID) async throws -> ProfilePatchReceipt {
         recordedDrafts.append(draft)
-        return UserProfile(
+        profile = UserProfile(
             id: profile.id,
             name: draft.name,
             home: HomeAddress(status: draft.home == nil ? .missing : .ready, display: draft.home),
@@ -300,6 +300,7 @@ private actor StateProfileService: ProfileServicing {
             calendarStatus: profile.calendarStatus,
             offerStatus: profile.offerStatus
         )
+        return ProfilePatchReceipt(name: draft.name, home: draft.home, productLocale: draft.productLocale)
     }
 
     func drafts() -> [ProfileDraft] { recordedDrafts }

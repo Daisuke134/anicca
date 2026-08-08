@@ -351,7 +351,7 @@ private actor SettingsProfileTestService: ProfileServicing {
 
     func fetch() async throws -> UserProfile { profileValue }
 
-    func update(_ draft: ProfileDraft, idempotencyKey: UUID) async throws -> UserProfile {
+    func update(_ draft: ProfileDraft, idempotencyKey: UUID) async throws -> ProfilePatchReceipt {
         recordedDrafts.append(draft)
         profileValue = UserProfile(
             id: profileValue.id,
@@ -366,7 +366,7 @@ private actor SettingsProfileTestService: ProfileServicing {
             calendarStatus: profileValue.calendarStatus,
             offerStatus: profileValue.offerStatus
         )
-        return profileValue
+        return ProfilePatchReceipt(name: draft.name, home: draft.home, productLocale: draft.productLocale)
     }
 
     func drafts() -> [ProfileDraft] { recordedDrafts }
@@ -410,7 +410,7 @@ private actor RetryingProfileService: ProfileServicing {
 
     func fetch() async throws -> UserProfile { profileValue }
 
-    func update(_ draft: ProfileDraft, idempotencyKey: UUID) async throws -> UserProfile {
+    func update(_ draft: ProfileDraft, idempotencyKey: UUID) async throws -> ProfilePatchReceipt {
         attempts += 1
         recordedKeys.append(idempotencyKey)
         recordedDrafts.append(draft)
@@ -428,7 +428,7 @@ private actor RetryingProfileService: ProfileServicing {
             offerStatus: profileValue.offerStatus,
             analysisStatus: profileValue.analysisStatus
         )
-        return profileValue
+        return ProfilePatchReceipt(name: draft.name, home: draft.home, productLocale: draft.productLocale)
     }
 
     func keys() -> [UUID] { recordedKeys }

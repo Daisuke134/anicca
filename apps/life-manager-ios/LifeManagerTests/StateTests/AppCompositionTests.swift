@@ -4,6 +4,46 @@ import XCTest
 
 @MainActor
 final class AppCompositionTests: XCTestCase {
+    func testOAuthOnboardingBootstrapsAuthoritativeProfileAfterExchangeAndPartialPatch() async throws {
+        let transport = try OAuthBootstrapTransport(
+            bootstrap: ContractFixtureLoader.data(named: "bootstrap.json"),
+            profilePatch: ContractFixtureLoader.data(named: "profile-patch.json")
+        )
+        let callback = URL(string: "lifemanager://oauth/callback?code=one-use-code&state=state:v1:calendar-consent-8f3a")!
+        let composition = AppComposition(
+            baseURL: URL(string: "https://life-manager.example/api/mobile/v1")!,
+            callbackScheme: "lifemanager",
+            transport: transport,
+            sessionStore: CompositionSessionStore(),
+            callbackAuthorizer: CompositionCallbackAuthorizer(callback: callback)
+        )
+
+        await composition.viewModel.connectCalendar()
+
+        XCTAssertEqual(composition.viewModel.route, .profile)
+        XCTAssertEqual(composition.viewModel.profile?.id, "user:v1:server-derived-8f3a")
+        XCTAssertEqual(composition.viewModel.profile?.timezone, "America/Los_Angeles")
+        XCTAssertEqual(composition.viewModel.profile?.offerStatus, .available)
+
+        await composition.viewModel.submitProfile(ProfileDraft(name: "Alex Morgan", home: "100 Market Street"))
+
+        XCTAssertEqual(composition.viewModel.route, .phone)
+        XCTAssertEqual(composition.viewModel.profile?.id, "user:v1:server-derived-8f3a")
+        XCTAssertEqual(composition.viewModel.profile?.timezone, "America/Los_Angeles")
+        XCTAssertEqual(composition.viewModel.profile?.offerStatus, .available)
+        let paths = await transport.paths()
+        XCTAssertEqual(
+            paths,
+            [
+                "/api/mobile/v1/session/calendar/start",
+                "/api/mobile/v1/session/exchange",
+                "/api/mobile/v1/bootstrap",
+                "/api/mobile/v1/profile",
+                "/api/mobile/v1/bootstrap"
+            ]
+        )
+    }
+
     func testOAuthExchangePropagatesToSessionAPIAndRevokesBeforeWelcome() async throws {
         let store = CompositionSessionStore()
         let transport = OAuthLogoutTransport()
@@ -50,6 +90,54 @@ private struct CompositionCallbackAuthorizer: OAuthCallbackAuthorizing, Sendable
     }
 }
 
+private actor OAuthBootstrapTransport: HTTPTransport {
+    private let session = Session(
+        accessToken: "oauth-access",
+        refreshToken: "oauth-refresh",
+        tokenType: "Bearer",
+        expiresAt: Date.iso8601("2026-08-10T08:20:00.000Z"),
+        refreshExpiresAt: Date.iso8601("2026-09-09T08:05:00.000Z")
+    )
+    private let bootstrap: Data
+    private let profilePatch: Data
+    private var recordedPaths: [String] = []
+
+    init(bootstrap: Data, profilePatch: Data) {
+        self.bootstrap = bootstrap
+        self.profilePatch = profilePatch
+    }
+
+    func data(for request: URLRequest) async throws -> (Data, HTTPURLResponse) {
+        let path = request.url?.path ?? ""
+        recordedPaths.append(path)
+        switch (request.httpMethod, path) {
+        case ("POST", "/api/mobile/v1/session/calendar/start"):
+            let body = Data(#"{"state":"state:v1:calendar-consent-8f3a","authorizationURL":"https://accounts.google.com/o/oauth2/v2/auth","expiresAt":"2026-08-10T08:05:00.000Z"}"#.utf8)
+            return response(for: request, statusCode: 200, body: body)
+        case ("POST", "/api/mobile/v1/session/exchange"):
+            return response(for: request, statusCode: 200, body: try JSONEncoder.lifeManager.encode(session))
+        case ("GET", "/api/mobile/v1/bootstrap"):
+            return response(for: request, statusCode: 200, body: bootstrap)
+        case ("PATCH", "/api/mobile/v1/profile"):
+            return response(for: request, statusCode: 200, body: profilePatch)
+        default:
+            return response(for: request, statusCode: 404, body: Data())
+        }
+    }
+
+    func paths() -> [String] { recordedPaths }
+
+    private func response(for request: URLRequest, statusCode: Int, body: Data) -> (Data, HTTPURLResponse) {
+        let response = HTTPURLResponse(
+            url: request.url!,
+            statusCode: statusCode,
+            httpVersion: nil,
+            headerFields: nil
+        )!
+        return (body, response)
+    }
+}
+
 private actor CompositionSessionStore: SessionStoring {
     private var session: Session?
 
@@ -83,6 +171,9 @@ private actor OAuthLogoutTransport: HTTPTransport {
             return response(for: request, statusCode: 200, body: body)
         case ("POST", "/api/mobile/v1/session/exchange"):
             let body = try JSONEncoder.lifeManager.encode(session)
+            return response(for: request, statusCode: 200, body: body)
+        case ("GET", "/api/mobile/v1/bootstrap"):
+            let body = try ContractFixtureLoader.data(named: "bootstrap.json")
             return response(for: request, statusCode: 200, body: body)
         case ("DELETE", "/api/mobile/v1/devices/apns"):
             return response(for: request, statusCode: 204, body: Data())

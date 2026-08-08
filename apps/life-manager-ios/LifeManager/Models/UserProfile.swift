@@ -177,6 +177,14 @@ struct BootstrapOffer: Codable, Equatable, Sendable {
     let status: OfferStatus
 }
 
+/// The mobile PATCH /profile response is intentionally only the accepted
+/// profile fields. Fetch /bootstrap for the authoritative full profile.
+struct ProfilePatchReceipt: Codable, Equatable, Sendable {
+    let name: String?
+    let home: String?
+    let productLocale: ProductLocale
+}
+
 enum BootstrapAnalysisStatus: String, Codable, Equatable, Sendable {
     case idle
     case running

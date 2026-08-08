@@ -6,18 +6,18 @@ final class ServiceProtocolTests: XCTestCase {
     func testProfileServiceProjectsBootstrapAndSendsAllowlistedDraft() async throws {
         let api = RecordingAPI()
         await api.setBootstrap(TestFixtures.bootstrap)
-        await api.setProfile(TestFixtures.profile)
+        await api.setProfilePatch(TestFixtures.profilePatch)
         let service = ProfileService(api: api)
 
         let profile = try await service.fetch()
-        let updated = try await service.update(
+        let patch = try await service.update(
             ProfileDraft(name: "Alex Morgan", home: "100 Market Street"),
             idempotencyKey: UUID(uuidString: "AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE")!
         )
 
         XCTAssertEqual(profile.id, "user:v1:server-derived-8f3a")
         XCTAssertEqual(profile.home.display, nil)
-        XCTAssertEqual(updated, TestFixtures.profile)
+        XCTAssertEqual(patch, TestFixtures.profilePatch)
         let endpoints = await api.endpoints()
         XCTAssertEqual(endpoints.map(\.path), ["/bootstrap", "/profile"])
         XCTAssertEqual(endpoints[1].method, .patch)
@@ -274,6 +274,12 @@ private enum TestFixtures {
         timezone: "America/Los_Angeles"
     )
 
+    static let profilePatch = ProfilePatchReceipt(
+        name: "Alex Morgan",
+        home: "100 Market Street",
+        productLocale: .en
+    )
+
     static let analysis = AnalysisResult(
         status: .noUpcomingEvent,
         analysisID: "analysis:v1:no-event-8f3a",
@@ -316,7 +322,7 @@ private enum TestFixtures {
 
 private actor RecordingAPI: APIRequesting {
     private var bootstrap: Bootstrap?
-    private var profile: UserProfile?
+    private var profilePatch: ProfilePatchReceipt?
     private var sessionStart: SessionStart?
     private var analysis: AnalysisResult?
     private var chat: ChatPage?
@@ -327,7 +333,7 @@ private actor RecordingAPI: APIRequesting {
     private var voidCalls = 0
 
     func setBootstrap(_ value: Bootstrap) { bootstrap = value }
-    func setProfile(_ value: UserProfile) { profile = value }
+    func setProfilePatch(_ value: ProfilePatchReceipt) { profilePatch = value }
     func setSessionStart(_ value: SessionStart) { sessionStart = value }
     func setAnalysis(_ value: AnalysisResult) { analysis = value }
     func setChat(_ value: ChatPage) { chat = value }
@@ -342,7 +348,7 @@ private actor RecordingAPI: APIRequesting {
         recordedEndpoints.append(endpoint)
         if let idempotencyKey { recordedKeys.append(idempotencyKey) }
         if Response.self == Bootstrap.self, let value = bootstrap { return value as! Response }
-        if Response.self == UserProfile.self, let value = profile { return value as! Response }
+        if Response.self == ProfilePatchReceipt.self, let value = profilePatch { return value as! Response }
         if Response.self == SessionStart.self, let value = sessionStart { return value as! Response }
         if Response.self == AnalysisResult.self, let value = analysis { return value as! Response }
         if Response.self == ChatPage.self, let value = chat { return value as! Response }

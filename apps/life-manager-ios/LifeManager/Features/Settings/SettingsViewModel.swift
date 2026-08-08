@@ -194,7 +194,8 @@ final class SettingsViewModel {
         failure = nil
         let operationKey = await operationKey(for: .profile, draft: draft)
         do {
-            await apply(try await profileService.update(draft, idempotencyKey: operationKey))
+            _ = try await profileService.update(draft, idempotencyKey: operationKey)
+            await apply(try await profileService.fetch())
             await retryStore.clear(.profile)
         } catch {
             if !MutationRetryPolicy.shouldRetain(after: error) {

@@ -174,6 +174,7 @@ final class AppViewModel {
         route = .calendarConnecting
         do {
             _ = try await auth.connectCalendar()
+            await acceptProfile(try await profileService.fetch())
             route = .profile
         } catch {
             present(error)
@@ -184,12 +185,12 @@ final class AppViewModel {
         route = .profile
         phoneValidationError = nil
         do {
-            let updatedProfile = try await profileService.update(
+            _ = try await profileService.update(
                 draft,
                 idempotencyKey: await operationKey(for: .profile, draft: draft)
             )
             await retryStore.clear(.profile)
-            await acceptProfile(updatedProfile)
+            await acceptProfile(try await profileService.fetch())
             route = .phone
         } catch {
             if !MutationRetryPolicy.shouldRetain(after: error) {
@@ -294,12 +295,12 @@ final class AppViewModel {
                 callsEnabled: false,
                 callLanguage: nil
             )
-            let updatedProfile = try await profileService.update(
+            _ = try await profileService.update(
                 draft,
                 idempotencyKey: await operationKey(for: .profile, draft: draft)
             )
             await retryStore.clear(.profile)
-            await acceptProfile(updatedProfile)
+            await acceptProfile(try await profileService.fetch())
             await runAnalysis()
         } catch {
             if !MutationRetryPolicy.shouldRetain(after: error) {

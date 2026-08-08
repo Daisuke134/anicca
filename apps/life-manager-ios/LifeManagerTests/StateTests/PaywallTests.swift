@@ -188,7 +188,9 @@ private actor PaywallProfileService: ProfileServicing {
     let profile: UserProfile
     init(profile: UserProfile) { self.profile = profile }
     func fetch() async throws -> UserProfile { profile }
-    func update(_ draft: ProfileDraft, idempotencyKey: UUID) async throws -> UserProfile { profile }
+    func update(_ draft: ProfileDraft, idempotencyKey: UUID) async throws -> ProfilePatchReceipt {
+        ProfilePatchReceipt(name: draft.name, home: draft.home, productLocale: draft.productLocale)
+    }
 }
 
 private actor PaywallAnalysisService: AnalysisServicing {

@@ -9,7 +9,7 @@ protocol AuthServicing: Sendable {
 
 protocol ProfileServicing: Sendable {
     func fetch() async throws -> UserProfile
-    func update(_ draft: ProfileDraft, idempotencyKey: UUID) async throws -> UserProfile
+    func update(_ draft: ProfileDraft, idempotencyKey: UUID) async throws -> ProfilePatchReceipt
 }
 
 protocol AnalysisServicing: Sendable {
@@ -197,11 +197,11 @@ struct ProfileService: ProfileServicing {
         return UserProfile(bootstrap: bootstrap)
     }
 
-    func update(_ draft: ProfileDraft, idempotencyKey: UUID) async throws -> UserProfile {
+    func update(_ draft: ProfileDraft, idempotencyKey: UUID) async throws -> ProfilePatchReceipt {
         let body = try JSONEncoder.lifeManager.encode(draft)
         return try await api.send(
             .mutation(path: "/profile", method: .patch, body: body),
-            as: UserProfile.self,
+            as: ProfilePatchReceipt.self,
             idempotencyKey: idempotencyKey
         )
     }
