@@ -49,7 +49,7 @@
   - `matchesLabel(matcher, label): boolean`; exact or terminal-star prefix only.
   - `classifyLabel(registry, label): { kind: "financial_unit"|"exclusion"|"unmapped"|"ambiguous", targetIds: string[] }`.
 
-- [ ] **Step 1: Write the failing contract tests**
+- [x] **Step 1: Write the failing contract tests**
 
 Create tests using `node:test` and `node:assert/strict`. The minimum fixture has one `business` unit, one channel,
 one ledger source, one evidence reference, one relevant prefix, and one exclusion. Assert:
@@ -103,7 +103,7 @@ invalid `unit_kind`, invalid `lifecycle`, empty `evidence_refs`, `monthly_revenu
 and an internal-star matcher. The final overlap case belongs to Task 3 because syntactically valid matchers can
 become ambiguous only when applied to an observed label.
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
 Run:
 
@@ -114,7 +114,7 @@ node --test lib/cfo-registry.test.js
 
 Expected: FAIL because `./cfo-registry.js` does not exist.
 
-- [ ] **Step 3: Implement the minimal strict validator**
+- [x] **Step 3: Implement the minimal strict validator**
 
 Use constant key sets and enums; do not add a schema dependency:
 
@@ -141,7 +141,7 @@ reject names matching
 with `/Users/` or `/home/`, non-exact keys, and duplicate IDs. Deep-freeze a
 cloned value so caller mutation cannot alter validated state. `classifyLabel` returns sorted target IDs.
 
-- [ ] **Step 4: Run GREEN and diff check**
+- [x] **Step 4: Run GREEN and diff check**
 
 ```bash
 cd apps/life-call
@@ -152,13 +152,15 @@ git diff --check
 
 Expected: all Task 1 tests pass; diff check exits zero.
 
-- [ ] **Step 5: Commit and push Task 1**
+- [x] **Step 5: Commit and push Task 1**
 
 ```bash
 git add apps/life-call/lib/cfo-registry.js apps/life-call/lib/cfo-registry.test.js
 git commit -m "feat(cfo): validate financial unit registry"
 git push
 ```
+
+Completion evidence: commits `b1063e627` and `5622b0312`; focused tests 5/5 PASS; fix round 1 review clean.
 
 ---
 
