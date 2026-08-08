@@ -20,6 +20,7 @@ actor APIClient: APIRequesting {
     private var didLoadSession = false
     private var sessionLoadTask: Task<Session?, Error>?
     private var refreshTask: Task<Session, Error>?
+    private var lastRefresh: (failedAccessToken: String, session: Session)?
 
     init(
         baseURL: URL,
@@ -84,7 +85,7 @@ actor APIClient: APIRequesting {
             guard retryAfterRefresh, endpoint.requiresAuthentication else {
                 throw APIError.unauthorized
             }
-            let rotatedSession = try await refreshOnce()
+            let rotatedSession = try await refreshOnce(afterFailedAccessToken: session?.accessToken)
             return try await request(
                 endpoint,
                 idempotencyKey: resolvedIdempotencyKey,
@@ -154,9 +155,16 @@ actor APIClient: APIRequesting {
         }
     }
 
-    private func refreshOnce() async throws -> Session {
+    private func refreshOnce(afterFailedAccessToken: String?) async throws -> Session {
         if let refreshTask {
             return try await refreshTask.value
+        }
+        if
+            let afterFailedAccessToken,
+            let lastRefresh,
+            lastRefresh.failedAccessToken == afterFailedAccessToken
+        {
+            return lastRefresh.session
         }
         guard let currentSession = try await currentSession(required: true) else {
             throw APIError.noSession
@@ -179,11 +187,15 @@ actor APIClient: APIRequesting {
             let rotated = try await task.value
             session = rotated
             didLoadSession = true
+            if let afterFailedAccessToken {
+                lastRefresh = (afterFailedAccessToken, rotated)
+            }
             refreshTask = nil
             return rotated
         } catch {
             session = nil
             didLoadSession = true
+            lastRefresh = nil
             refreshTask = nil
             throw error
         }
