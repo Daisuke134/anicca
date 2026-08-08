@@ -2,10 +2,10 @@
 
 | Field | Value |
 |---|---|
-| Status | IMPLEMENTED — LIVE E2E PASS |
+| Status | FIX REQUIRED — FINAL REVIEW |
 | Parent SSOT | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
-| Active item | `CFO-0d` |
-| Done | A versioned registry and a live inventory receipt classify every relevant earning runtime exactly once, with zero unexplained financial units or runtime labels |
+| Active item | `CFO-0c` final-review correction |
+| Done | Every live `ai.anicca.*` runtime and every declared ledger source is observed fail-closed, with zero unexplained labels and no private payloads |
 | Authority | Read-only inventory; no loop, ledger, credential, payment, or scheduler mutation |
 
 ## 1. Overview — What and Why

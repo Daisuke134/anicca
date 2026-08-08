@@ -561,3 +561,82 @@ git push
 | Read-only effect boundary | Task 4 |
 | Live seven-unit, zero-finding E2E | Task 5 |
 | SSOT state transition | Task 5 |
+
+---
+
+## Final-review correction wave
+
+The first live receipt was internally valid but fail-open: it filtered 139 live `ai.anicca.*` labels down to 45
+before classification, so `unmapped_count=0` did not describe the complete Mac. Final review also found that ledger
+source IDs were declared but never inventoried, privacy validation allowed repo escape and sensitive values,
+`receipt_version` was outside the observation hash, locale-dependent sorting weakened cross-host determinism, and
+the CFO tests were absent from the normal `npm test` path. CFO-0c is reopened until all four slices below close.
+
+### F1 — Complete runtime census
+
+**Goal:** classify all 139 observed `ai.anicca.*` labels exactly once and fail any future unknown label.
+
+**Files / soft targets:**
+- `apps/life-call/config/cfo-financial-units.json`: +150 data LOC
+- `apps/life-call/lib/cfo-registry.test.js`: +70 test LOC
+- `apps/life-call/lib/cfo-inventory.test.js`: +45 test LOC
+
+The data file exceeds 100 LOC because it records the explicit business/exclusion ownership boundary; no service or
+new abstraction is permitted. Add two verified units: `capafy_marketplace` for six Capafy sales runtimes and
+`proprietary_investing` for AutoHedge, Polymarket, and reinvest. Map 33 ignored labels to existing units and 51 to
+explicit shared/controller/observer/repair exclusions. `relevant_runtime_prefixes` becomes exactly
+`["ai.anicca."]`; an unknown label is unmapped and fails.
+
+### F2 — Canonical ledger-source inventory
+
+**Goal:** resolve every unit ledger ID through one closed catalogue and emit availability only, never money or raw
+rows.
+
+**Files / soft targets:**
+- `apps/life-call/config/cfo-financial-units.json`: +80 data LOC
+- `apps/life-call/lib/cfo-registry.js`: +35 production LOC
+- `apps/life-call/lib/cfo-registry.test.js`: +55 test LOC
+- `apps/life-call/lib/cfo-inventory.js`: +30 production LOC
+- `apps/life-call/lib/cfo-inventory.test.js`: +55 test LOC
+- `apps/life-call/scripts/cfo-business-inventory.js`: +35 production LOC
+- `apps/life-call/scripts/cfo-business-inventory.test.js`: +45 test LOC
+
+This slice crosses files because one schema must be validated, inventoried, executed, and regression-tested as one
+vertical boundary. The catalogue uses opaque, non-secret locators and closed statuses
+`available|present_empty|stale_alias|planned|unavailable`. It records source availability/shape only. It does not
+read balances, aggregate amounts, copy rows, or write any ledger. Missing/planned sources remain visible and can
+never become revenue evidence.
+
+Canonical corrections: replace stale `lm_financial_ledger` with `lm_agent_earnings`; bind RevenueCat to the
+`subscription_events` audit source rather than Apple payout truth; retain the real Writer SQLite, Gig JSONL, and
+x402 settlement sources; keep Affiliate and payroll adapters planned; add Capafy and proprietary-investing source
+identities without inventing receipts.
+
+### F3 — Privacy, immutable hash, and normal CI
+
+**Goal:** close the three independent everlasting-safety gaps without expanding product behavior.
+
+**Files / soft targets:**
+- `apps/life-call/lib/cfo-registry.js`: +25 production LOC
+- `apps/life-call/lib/cfo-registry.test.js`: +45 test LOC
+- `apps/life-call/lib/cfo-inventory.js`: +8 production LOC
+- `apps/life-call/lib/cfo-inventory.test.js`: +25 test LOC
+- `apps/life-call/package.json`: +3 LOC
+
+Reject absolute paths, `..` traversal, credentialed/query-bearing refs, secret-shaped values, and long account-like
+digit runs. Resolve repo evidence only after proving the path stays below `REPO_ROOT`. Include `receipt_version` in
+the observation hash and use locale-independent bytewise ordering. Add one `test:cfo` script and invoke it from the
+normal `npm test` chain.
+
+### F4 — Live repair verification and honest closure
+
+**Goal:** replace the invalid 7/0/0 evidence with a complete live receipt and close documentation truth.
+
+**Files / soft targets:**
+- the parent spec, child spec, and this plan: +45 documentation LOC total
+
+Run RED → GREEN for every correction; run the complete `npm test`; run the real read-only inventory; independently
+recompute both hashes; assert the receipt observed all live `ai.anicca.*` labels, nine units, zero unmapped, zero
+ambiguous, and one ledger observation per catalogue entry. Check every acceptance item, record exact commit hashes,
+then mark CFO-0c complete and CFO-0d active. Do not commit a receipt, raw label list, expanded private path, secret,
+balance, amount, transaction, or customer data.
