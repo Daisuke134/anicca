@@ -59,10 +59,35 @@ async function appendMobileMessage(scope, input = {}, deps = {}) {
   // Validate provider names and locale before persisting a route row. A projection failure must not
   // leave an unrenderable route in the durable outbox that a later retry would replay forever.
   projectSemanticMessage({ ...row, sequence: Number.isSafeInteger(row.sequence) ? row.sequence : 0 }, scope.productLocale || input.locale || "en");
-  const stored = semanticRow(await store.appendOutbox(scope, row));
-  if (!Number.isSafeInteger(stored.sequence)) throw new MobileError("outbox_sequence_missing", "Chat storage returned no monotonic sequence.", 503, true);
+  const persisted = await store.appendOutbox(scope, row);
+  const inserted = !(persisted && persisted.__inserted === false);
+  const durable = persisted && typeof persisted === "object" ? { ...persisted } : persisted;
+  if (durable && typeof durable === "object") delete durable.__inserted;
+  const stored = semanticRow(durable);
+  if (!Number.isSafeInteger(stored.sequence) || stored.sequence <= 0) throw new MobileError("outbox_sequence_missing", "Chat storage returned no monotonic sequence.", 503, true);
   const encode = typeof deps.encodeCursor === "function" ? deps.encodeCursor : encodeCursor;
   stored.cursor = stored.cursor || encode(stored.sequence);
+  if (inserted && typeof deps.notifyMobilePush === "function") {
+    try {
+      await deps.notifyMobilePush(scope, stored, deps);
+    } catch (error) {
+      const recorder = typeof deps.recordMobilePushFailure === "function"
+        ? deps.recordMobilePushFailure
+        : (deps.store && typeof deps.store.recordApnsResult === "function"
+          ? (failureScope, failureRow, failure) => deps.store.recordApnsResult(failureScope, {
+            messageId: failureRow.id,
+            deviceId: null,
+            apnsId: failure && (failure.apnsId || failure.apns_id) || null,
+            status: failure && Number.isInteger(Number(failure.status)) ? Number(failure.status) : null,
+            reason: failure && (failure.reason || failure.code || failure.message) || "apns_push_failed",
+            environment: failure && failure.environment || null,
+          })
+          : null);
+      if (recorder) {
+        try { await recorder(scope, stored, error); } catch { /* preserve the committed outbox result */ }
+      }
+    }
+  }
   return projectMobileMessage(stored, scope.productLocale || input.locale || "en");
 }
 

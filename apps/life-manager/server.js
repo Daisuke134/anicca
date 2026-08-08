@@ -62,6 +62,8 @@ const {
 const { createHostedGmailLink } = require("./lib/gmail-onboard.js");
 const { mailAvailable } = require("./lib/mail-availability.js");
 const { handleMobileV1Request, buildComposioAuthorizationLink } = require("./lib/mobile-v1-router.js");
+const { createApnsClient } = require("./lib/apns-client.js");
+const { createMobilePushOrchestrator } = require("./lib/mobile-push.js");
 const { createStructuredRouteProviders } = require("./lib/mobile-route.js");
 const {
   markAnswered, applyAmdDetection, applyTestCallDetection, upsertLiveLocation,
@@ -85,6 +87,56 @@ const COMPOSIO_KEY = process.env.COMPOSIO_API_KEY;
 const MOBILE_ROUTE_PROVIDERS = createStructuredRouteProviders({
   mapsKey: process.env.LIFE_MAPS_KEY || process.env.GOOGLE_API_KEY,
 });
+
+function envValue(env, names) {
+  for (const name of names) {
+    const value = env && env[name];
+    if (value != null && String(value).trim()) return String(value).trim();
+  }
+  return "";
+}
+
+function createMobilePushRuntime(env = process.env, overrides = {}) {
+  const teamId = envValue(env, ["APNS_TEAM_ID", "APPLE_APNS_TEAM_ID", "APPLE_TEAM_ID"]);
+  const keyId = envValue(env, ["APNS_KEY_ID", "APPLE_APNS_KEY_ID", "APPLE_KEY_ID"]);
+  const privateKeyValue = envValue(env, ["APNS_PRIVATE_KEY", "APPLE_APNS_PRIVATE_KEY"]);
+  const privateKey = privateKeyValue.replace(/\\n/gu, "\n");
+  const topic = envValue(env, ["APNS_TOPIC", "APNS_BUNDLE_ID", "APPLE_APNS_TOPIC", "APPLE_BUNDLE_ID", "IOS_BUNDLE_ID"]);
+  const credentialsPresent = Boolean(teamId && keyId && privateKey && topic);
+  const apnsClient = overrides.apnsClient || (credentialsPresent
+    ? createApnsClient({ teamId, keyId, privateKey, topic })
+    : null);
+
+  async function notifyMobilePush(scope, row, context = {}) {
+    if (!apnsClient) return { enabled: false, reason: "credentials_missing" };
+    const store = context.store || null;
+    const orchestrator = createMobilePushOrchestrator({ apnsClient, store });
+    return orchestrator.notifyCommittedOutbox(scope, row);
+  }
+
+  async function recordMobilePushFailure(scope, row, error, context = {}) {
+    const store = context.store || null;
+    if (!store || typeof store.recordApnsResult !== "function") return false;
+    const status = error && Number(error.status);
+    return store.recordApnsResult(scope, {
+      messageId: row && row.id,
+      deviceId: null,
+      apnsId: error && (error.apnsId || error.apns_id) || null,
+      status: Number.isInteger(status) ? status : null,
+      reason: error && (error.reason || error.code || error.message) || "apns_push_failed",
+      environment: error && error.environment || null,
+    });
+  }
+
+  return {
+    enabled: Boolean(apnsClient),
+    ...(apnsClient ? { apnsClient } : {}),
+    notifyMobilePush,
+    recordMobilePushFailure,
+  };
+}
+
+const MOBILE_PUSH_RUNTIME = createMobilePushRuntime(process.env);
 const LM_INBOUND_SECRET = process.env.LM_INBOUND_SECRET || ""; // shared secret in the Resend inbound webhook URL
 
 const LM_TG_TOKEN = process.env.LM_TELEGRAM_BOT_TOKEN || "";
@@ -251,6 +303,8 @@ const server = http.createServer((req, res) => {
       apiKey: COMPOSIO_KEY,
       mapsKey: process.env.LIFE_MAPS_KEY || process.env.GOOGLE_API_KEY,
       routeProviders: MOBILE_ROUTE_PROVIDERS,
+      notifyMobilePush: MOBILE_PUSH_RUNTIME.notifyMobilePush,
+      recordMobilePushFailure: MOBILE_PUSH_RUNTIME.recordMobilePushFailure,
       buildAuthorizationLink: (input) => buildComposioAuthorizationLink(input, {
         composioKey: COMPOSIO_KEY,
         composioAuthConfig: process.env.COMPOSIO_GCAL_AUTH_CONFIG,
@@ -1132,4 +1186,7 @@ if (require.main === module) {
 // redeploy trigger 010026
 
 // Export pure helpers for unit tests (FIND-005).
-module.exports = { inngestServeAllowed, testCallAllowed, TEST_CALL_COOLDOWN_MS, TEST_CALL_DAILY_MAX };
+module.exports = {
+  inngestServeAllowed, testCallAllowed, TEST_CALL_COOLDOWN_MS, TEST_CALL_DAILY_MAX,
+  createMobilePushRuntime,
+};

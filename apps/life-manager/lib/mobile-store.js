@@ -29,6 +29,29 @@ function asRows(body) {
   return Array.isArray(body) ? body : [];
 }
 
+function normalizeApnsResult(scope, input = {}) {
+  requireScope(scope);
+  const messageId = String(input.messageId || input.message_id || "").trim();
+  if (!messageId) throw new MobileError("apns_result_invalid", "An APNs result needs a message id.", 400);
+  const environmentValue = input.environment == null ? null : String(input.environment).trim().toLowerCase();
+  if (environmentValue !== null && !["production", "development"].includes(environmentValue)) {
+    throw new MobileError("apns_result_invalid", "An APNs result has an invalid environment.", 400);
+  }
+  const statusValue = input.status == null ? null : Number(input.status);
+  if (statusValue !== null && !Number.isInteger(statusValue)) {
+    throw new MobileError("apns_result_invalid", "An APNs result has an invalid status.", 400);
+  }
+  return {
+    uid: scope.uid,
+    deviceId: input.deviceId || input.device_id || null,
+    apnsId: input.apnsId || input.apns_id || null,
+    status: statusValue,
+    reason: input.reason == null ? null : String(input.reason),
+    environment: environmentValue,
+    messageId,
+  };
+}
+
 function normalizeOAuthStateRow(row) {
   if (!row || typeof row !== "object") return row;
   return {
@@ -165,7 +188,7 @@ function createSupabaseMobileStore(options = {}) {
   }
   async function rows(table, params = {}) {
     const query = new URLSearchParams(params);
-    const result = await request(`/rest/v1/${table}?${query.toString()}`, {}, "mobile_store_read_failed");
+    const result = await request(`/rest/v1/${table}?${query.toString()}`, { method: "GET" }, "mobile_store_read_failed");
     return asRows(result.body);
   }
   function scopedParams(scope, params = {}) {
@@ -461,9 +484,9 @@ function createSupabaseMobileStore(options = {}) {
           id: `eq.${encodeFilter(row.id)}`,
           limit: "1",
         }));
-        return existing[0] || row;
+        return { ...(existing[0] || row), __inserted: false };
       }
-      return asRow(result.body) || row;
+      return { ...(asRow(result.body) || row), __inserted: true };
     },
     async listOutbox(scope, afterSequence = 0, limit = 50) {
       const found = await rows("lm_mobile_outbox", scopedParams(scope, {
@@ -522,6 +545,43 @@ function createSupabaseMobileStore(options = {}) {
       requireScope(scope);
       await request(`/rest/v1/lm_mobile_devices?uid=eq.${encodeFilter(scope.uid)}&token=eq.${encodeFilter(token)}`, { method: "DELETE", headers: { Prefer: "return=minimal" } }, "device_delete_failed");
       return { deleted: true };
+    },
+    async listDevices(scope) {
+      const scoped = requireScope(scope);
+      const found = await rows("lm_mobile_devices", scopedParams(scoped, {
+        select: "token,environment,locale,timezone,last_seen_at,created_at,updated_at",
+        order: "updated_at.desc",
+      }));
+      return found.map((row) => ({
+        ...row,
+        deviceId: row.deviceId || row.device_id || `device:v1:${scoped.uid}:${String(row.token || "").slice(-8)}`,
+        token: row.token,
+        environment: row.environment,
+        locale: row.locale,
+        timezone: row.timezone,
+      }));
+    },
+    async removeDevice(scope, token) {
+      requireScope(scope);
+      await request(`/rest/v1/lm_mobile_devices?uid=eq.${encodeFilter(scope.uid)}&token=eq.${encodeFilter(token)}`, { method: "DELETE", headers: { Prefer: "return=minimal" } }, "device_delete_failed");
+      return { deleted: true };
+    },
+    async recordApnsResult(scope, input) {
+      const result = normalizeApnsResult(scope, input);
+      await request("/rest/v1/lm_mobile_apns_results", {
+        method: "POST",
+        headers: { "content-type": "application/json", Prefer: "return=representation" },
+        body: JSON.stringify({
+          uid: result.uid,
+          message_id: result.messageId,
+          device_id: result.deviceId,
+          apns_id: result.apnsId,
+          status: result.status,
+          reason: result.reason,
+          environment: result.environment,
+        }),
+      }, "apns_result_write_failed");
+      return { ...result };
     },
     async writeDeletionReceipt(scope, receipt) {
       const result = await request("/rest/v1/lm_mobile_deletion_receipts", {
@@ -582,6 +642,7 @@ function createMemoryMobileStore(options = {}) {
   const devices = new Map();
   const calls = new Map();
   const deletionReceipts = new Map();
+  const apnsResults = [];
   const calendarConnections = new Map();
   const travelBlocks = new Map();
   const routeCache = options.routeCacheStore || new Map();
@@ -615,7 +676,7 @@ function createMemoryMobileStore(options = {}) {
     return users.get(uid) || null;
   }
   return {
-    _users: users, _sessions: sessions, _states: states, _idempotency: idempotency, _outbox: outbox, _questions: questions, _devices: devices, _calls: calls, _callDayGuards: callDayGuards, _deletionReceipts: deletionReceipts, _routeCache: routeCache, _calendarConnections: calendarConnections, _travelBlocks: travelBlocks,
+    _users: users, _sessions: sessions, _states: states, _idempotency: idempotency, _outbox: outbox, _questions: questions, _devices: devices, _calls: calls, _callDayGuards: callDayGuards, _deletionReceipts: deletionReceipts, _apnsResults: apnsResults, _routeCache: routeCache, _calendarConnections: calendarConnections, _travelBlocks: travelBlocks,
     async readUser(scope) { const row = user(scope); return row ? { ...row } : null; },
     async patchUser(scope, patch, options2 = {}) { const row = user(scope, options2.expectedUid); if (!row) throw new MobileError("account_not_found", "Account not found.", 404); Object.assign(row, patch); return { ...row }; },
     async readAnalysisState(scope) { const row = user(scope); return row && row.analysisState ? { ...row.analysisState } : { status: "idle" }; },
@@ -790,11 +851,11 @@ function createMemoryMobileStore(options = {}) {
     async appendOutbox(scope, row) {
       const uid = scoped(scope);
       const existing = (outbox.get(uid) || []).find((item) => item.id === row.id);
-      if (existing) return { ...existing };
+      if (existing) return { ...existing, __inserted: false };
       const item = { ...row, uid, sequence: ++sequence, createdAt: row.createdAt || nowIso() };
       if (!outbox.has(uid)) outbox.set(uid, []);
       outbox.get(uid).push(item);
-      return { ...item };
+      return { ...item, __inserted: true };
     },
     async listOutbox(scope, after = 0, limit = 50) { return (outbox.get(scoped(scope)) || []).filter((row) => row.sequence > after).slice(0, limit).map((row) => ({ ...row })); },
     async createQuestion(scope, question) {
@@ -860,6 +921,21 @@ function createMemoryMobileStore(options = {}) {
       const row = devices.get(token);
       if (row && row.uid === uid) devices.delete(token);
       return { deleted: true };
+    },
+    async listDevices(scope) {
+      const uid = scoped(scope);
+      return [...devices.values()].filter((row) => row.uid === uid).map((row) => ({ ...row }));
+    },
+    async removeDevice(scope, token) {
+      const uid = scoped(scope);
+      const row = devices.get(token);
+      if (row && row.uid === uid) devices.delete(token);
+      return { deleted: true };
+    },
+    async recordApnsResult(scope, input) {
+      const result = normalizeApnsResult(scope, input);
+      apnsResults.push({ ...result });
+      return { ...result };
     },
     async readDeletionReceipt(scope, operationId) { const uid = scoped(scope); return deletionReceipts.get(`${uid}:${operationId}`) || null; },
     async readDeletionReceiptByCapability(capability, operationId) {
