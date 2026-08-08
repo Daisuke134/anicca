@@ -2,11 +2,11 @@
 
 | Field | Value |
 |---|---|
-| Status | IMPLEMENTED — LIVE E2E PASS |
+| Status | CFO-0c COMPLETE — MONEYTREE-FIRST M1 APPROVED |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
-| Existing foundations | `apps/life-call`, Moneytree connector, Fleet telemetry, `lm_api_cost`, and the canonical `lm_agent_earnings` source (the panel's `lm_financial_ledger` name is a stale alias) |
+| Existing foundations | `apps/life-call`, interactive Moneytree App access, Fleet telemetry, `lm_api_cost`, and the canonical `lm_agent_earnings` source (the panel's `lm_financial_ledger` name is a stale alias) |
 | First unfinished item | **CFO-0d: freeze the Telegram information hierarchy, copy, inline-button contract, and evidence fixtures** |
 
 ## 1. Overview — What and Why
@@ -20,8 +20,10 @@ Life Manager needs one financial leader that answers four questions with evidenc
 
 The current repository already has useful fragments, but no canonical personal-CFO loop. `apps/life-call`
 records estimated API costs in `lm_api_cost` and exposes a read-only ledger endpoint. The landing/Fleet system
-already aggregates chain-verified wallet net worth, earnings, and burn. Moneytree is connected and can read the
-owner's MUFG account. These MUST be composed before another earning agent is created.
+already aggregates chain-verified wallet net worth, earnings, and burn. The interactive Moneytree App can read the
+owner's MUFG account, but the scheduled Life Manager runtime has no Moneytree adapter yet. These MUST be composed
+before another earning agent is created. The approved Moneytree-first child design is
+`docs/superpowers/specs/2026-08-08-life-manager-cfo-moneytree-daily-report-design.md`.
 
 The enduring rule is **one closed slice at a time**:
 
@@ -52,14 +54,10 @@ remain visible.
 
 ### Evidence behind the architecture decisions
 
-- **Binance Developer Docs** — https://developers.binance.com/en/docs/products/spot/rest-api  
-  Core quote: “API keys can be configured to allow access only to certain types of secure endpoints.”  
-  Decision: CFO-1 uses a dedicated `USER_DATA` key with trading and withdrawals disabled. Later trading uses a
-  different key, service, policy, and audit trail.
 - **Moneytree LINK API** — https://docs.link.getmoneytree.com/docs/getting-started  
   Core quote: “Moneytree LINK APIは実際の利用者のデータを取り扱う本番環境以外…検証環境もあります。”  
-  Decision: the installed Moneytree connector is the first MUFG adapter; direct MUFG browser automation is only
-  a degraded fallback.
+  Decision: the interactive Moneytree App proves the MUFG read path. Scheduled production uses Moneytree LINK,
+  with an official export as the interim fallback; browser automation is only a degraded fallback.
 - **Steel Sessions API** — https://docs.steel.dev/overview/sessions-api/overview  
   Core quote: “Each session maintains its own state, cookies, and storage.”  
   Decision: browser fallback implements the same adapter contract locally and on Steel; it never becomes domain
@@ -89,7 +87,7 @@ remain visible.
 
 - [ ] A single scheduled run creates exactly one immutable snapshot per owner-local `reporting_date`; retries use
       the same `run_id`, report sends use one dedupe key, and a correction supersedes rather than overwrites it.
-- [ ] The snapshot reads MUFG balances through Moneytree and Binance balances through the official API.
+- [ ] The M1 snapshot reads MUFG balances through Moneytree. Binance is explicitly deferred and cannot block M1.
 - [ ] The snapshot imports existing Fleet wallet net worth, verified earnings, and compute/API burn without
       duplicating their ledgers.
 - [ ] Every amount carries `owner_id`, `source`, `account_ref`, `asset`, `quantity`, `currency`, `as_of`,
@@ -156,7 +154,7 @@ remain visible.
 | Capability | Current evidence | Gap |
 |---|---|---|
 | MUFG | Installed Moneytree connector; live read found one MUFG deposit account | Not persisted in a CFO snapshot |
-| Binance | No canonical adapter found | Balance, history, Earn, and tax lots absent |
+| Binance | Deferred by owner after M1 | Not part of the Moneytree-first critical path |
 | API cost | `apps/life-call/lib/ledger.js` → `lm_api_cost` | Not attributed consistently to a business |
 | Financial ledger | CFO inventory observes canonical `lm_agent_earnings`; the panel still exposes the legacy `lm_financial_ledger` alias | Availability is observed; balance, transaction, and P&L adapters remain later CFO work |
 | Fleet economics | Chain-verified net worth/revenue/burn aggregation exists | Not joined to personal bank/exchange assets |
@@ -181,7 +179,7 @@ flowchart TB
     CFO --> REP[Daily report]
 
     OBS --> MT[Moneytree adapter: MUFG]
-    OBS --> BN[Binance USER_DATA adapter]
+    OBS -. later milestone .-> BN[Deferred crypto adapter]
     OBS --> FL[Fleet telemetry adapter]
     OBS --> FX[Price and FX adapter]
 
@@ -196,7 +194,7 @@ flowchart TB
 
     LED --> TAX[Tax-lot and reserve view]
     MT --> SNAP[Immutable daily snapshot]
-    BN --> SNAP
+    BN -. later milestone .-> SNAP
     FL --> SNAP
     FX --> SNAP
     TAX --> SNAP
@@ -325,7 +323,7 @@ flowchart TD
     TG --> C[What changed]
     TG --> A[Action needed]
 
-    TG -->|Accounts| AC[MUFG / Binance / wallets]
+    TG -->|Accounts| AC[MUFG / verified wallets]
     TG -->|Businesses| BU[Revenue / cost / profit by agent]
     TG -->|Accuracy| EV[Confirmed / measured / estimated / unknown]
     TG -->|Why?| WH[Plain-language explanation + evidence time]
@@ -356,7 +354,7 @@ flowchart TD
 ・ありません。生活防衛資金は6.2か月分あります。
 
 主要口座はすべて確認できました
-MUFG: 06:02更新 / Binance: 06:01更新 / 負債: 確認済み / 税reserve: 計算済み
+Moneytree: 06:02更新 / 確認できない口座: なし
 AI費用: 7月のprovider総額まで請求照合済み（仕事別は配賦）
 
 [口座を見る] [仕事別に見る]
@@ -405,7 +403,7 @@ restarting a process alone is not proof.
 🟢 すべての主要口座を確認しました
 純資産　¥{verified_net_worth}　昨日より {verified_change}
 
-🔧 Binanceの更新停止を自動修復しました
+🔧 Moneytreeの更新停止を自動修復しました
 05:41に検知 → 接続を更新 → 05:48に再取得・照合済み
 操作は必要ありません。
 
@@ -420,16 +418,15 @@ automatic retry. The same unresolved state is edited or suppressed, never repost
 #### Last-resort actionable alert
 
 ```text
-🟠 Binanceの再認証だけお願いします
+🟠 Moneytreeの接続更新だけお願いします
 
 確認できた資産は ¥{confirmed_subtotal} です
-Binanceは{stale_duration}更新されていないため、この金額に含めていません。
+Moneytreeは{stale_duration}更新されていないため、古い残高はこの金額に含めていません。
 現在の純資産合計は、再取得まで確定しません。
 
-安全のため、今日は暗号資産への追加投資を止めています。
-MUFGのお金と支払い予定は正常に確認できています。
+接続後は自動で再確認し、今日のレポートを送ります。
 
-[再認証する] [確認できた数字] [次の再試行]
+[接続を更新] [確認できた数字] [次の再試行]
 ```
 
 #### Business drill-down
@@ -569,8 +566,7 @@ Local and cloud use the same contract. Only infrastructure changes:
 
 | Concern | Local | Cloud |
 |---|---|---|
-| MUFG | Moneytree connector | Moneytree LINK/connector tenant credential |
-| Binance | Official signed REST API | Same API through tenant secret + fixed egress IP |
+| MUFG | Interactive App pilot, then LINK or official export | Moneytree LINK tenant credential |
 | Browser fallback | Existing local browser profile | Isolated Steel profile per tenant |
 | Scheduler | Local controlled trigger | Durable per-owner scheduler with concurrency 1 |
 | Secrets | Local secret store | Managed secret store; no DB plaintext |
@@ -580,7 +576,7 @@ Local and cloud use the same contract. Only infrastructure changes:
 | # | To-Be | Test / evidence | Cover |
 |---|---|---|---|
 | 1 | Moneytree MUFG adapter | Connected account read; identifiers redacted | Planned |
-| 2 | Binance read-only adapter | Signed account request; trade/withdraw attempt impossible | Planned |
+| 2 | Deferred crypto adapter | Outside M1; no completion credit | Deferred |
 | 3 | Fleet adapter | Known signed telemetry fixture equals normalized positions/P&L | Planned |
 | 4 | Immutable idempotent snapshot | Same `owner_id + reporting_date + run_id` retries one revision; correction appends and supersedes | Planned |
 | 5 | Reconciliation | Assets = liabilities + owner equity within explicit tolerance; missing liabilities incomplete | Planned |
@@ -624,13 +620,13 @@ All rows MUST be `PASS` before the related milestone closes. `Planned` is not co
 |---|---|
 | UI change | Yes — Telegram daily summary and inline drill-downs |
 | Maestro | Not required — no iOS UI change |
-| Real E2E | Required — live Moneytree read, live Binance read-only request, live Fleet import, real Telegram receipt |
+| Real E2E | Required — live Moneytree read, live Fleet import, real Telegram receipt |
 
 ## 5. Boundaries
 
 ### In scope
 
-- Dais's MUFG, Binance, and already-registered Fleet/agent economy.
+- Dais's Moneytree-connected MUFG accounts and already-registered Fleet/agent economy.
 - Moneytree-connected liabilities plus an explicit incomplete flag for liabilities outside connected sources.
 - JPY base-currency net worth; gross and after-tax-reserve views.
 - Revenue, landed cash, direct costs, API/token costs, human costs, and capital per business.
@@ -645,6 +641,7 @@ All rows MUST be `PASS` before the related milestone closes. `Planned` is not co
 - Exact final tax advice. The CFO maintains evidence and estimates; filing classification requires the applicable
   law and professional review when material.
 - New earning agents. Existing agents first adopt the business ledger contract and prove positive contribution.
+- Binance and other crypto exchanges. They resume only after the Moneytree-first M1 closes.
 
 ## 6. Execution Steps — Full Ordered TODO
 
@@ -688,16 +685,12 @@ documentation closure commit is `ce2c99239` (`docs(cfo): close complete runtime 
 `CFO-0d` is now the only active financial item. Missing or planned receipt sources remain unverified and are not
 converted into zero revenue.
 
-### M1 — One truthful read-only snapshot
+### M1 — One truthful Moneytree-first read-only snapshot
 
 - [ ] **CFO-1a** Specify provider-neutral adapter contracts and redacted fixtures.
 - [ ] **CFO-1b** Implement Moneytree MUFG balance/transaction adapter; verify against the live connected account.
 - [ ] **CFO-1b2** Ingest Moneytree-connected liabilities and record consent, aggregation freshness, partial-source,
       expiry, and re-consent states.
-- [ ] **CFO-1c** Create a dedicated Binance read-only API key with `USER_DATA`, trading/withdrawal disabled, and
-      the minimum supported IP restriction; implement Spot balance and trade-history ingestion.
-- [ ] **CFO-1d** Add Binance Earn/funding sources only after the Spot snapshot reconciles; unsupported products
-      remain explicitly unavailable.
 - [ ] **CFO-1e** Normalize Fleet wallet positions, verified earnings, and burn from existing telemetry.
 - [ ] **CFO-1f** Add timestamped JPY valuation and staleness rules.
 - [ ] **CFO-1g** Persist one immutable, idempotent snapshot and reconciliation exceptions.
@@ -710,6 +703,9 @@ converted into zero revenue.
 - [ ] **CFO-1h** Send the first real assets/liabilities-only Telegram report and confirm its provider message
       receipt after CFO-1h2's renderer gate is verified.
 - [ ] **CFO-1i** Run the same snapshot on the next day without manual repair; two consecutive correct runs close M1.
+
+Deferred after M1 by explicit owner decision: Binance Spot, trade history, Earn/funding sources, and their tax-lot
+ingestion. They are not unchecked M1 items and cannot become the active CFO item before CFO-1i closes.
 
 ### M2 — Business P&L and resource accounting
 
