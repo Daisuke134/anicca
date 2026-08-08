@@ -63,6 +63,7 @@ targets:
     platform: iOS
     sources:
       - LifeManagerTests/ModelTests
+      - LifeManagerTests/NetworkingTests
       - LifeManagerTests/SecurityTests
       - LifeManagerTests/Support
     settings:

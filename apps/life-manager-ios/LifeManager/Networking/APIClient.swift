@@ -1,0 +1,178 @@
+import Foundation
+
+actor APIClient {
+    typealias Refresh = @Sendable (Session) async throws -> Session
+
+    private let baseURL: URL
+    private let transport: HTTPTransport
+    private let sessionStore: SessionStoring
+    private let refresh: Refresh
+    private var session: Session?
+    private var didLoadSession = false
+    private var sessionLoadTask: Task<Session?, Error>?
+    private var refreshTask: Task<Session, Error>?
+
+    init(
+        baseURL: URL,
+        transport: HTTPTransport = URLSessionTransport(),
+        sessionStore: SessionStoring,
+        refresh: @escaping Refresh
+    ) {
+        self.baseURL = baseURL
+        self.transport = transport
+        self.sessionStore = sessionStore
+        self.refresh = refresh
+    }
+
+    func send<Response: Decodable>(
+        _ endpoint: APIEndpoint,
+        as responseType: Response.Type,
+        idempotencyKey: UUID? = nil
+    ) async throws -> Response {
+        let data = try await request(endpoint, idempotencyKey: idempotencyKey, retryAfterRefresh: true)
+        do {
+            return try JSONDecoder.lifeManager.decode(responseType, from: data)
+        } catch {
+            throw APIError.decodingFailed
+        }
+    }
+
+    private func request(
+        _ endpoint: APIEndpoint,
+        idempotencyKey: UUID?,
+        retryAfterRefresh: Bool,
+        sessionOverride: Session? = nil
+    ) async throws -> Data {
+        let session: Session?
+        if let sessionOverride {
+            session = sessionOverride
+        } else {
+            session = try await currentSession(required: endpoint.requiresAuthentication)
+        }
+        let resolvedIdempotencyKey = endpoint.requiresIdempotencyKey
+            ? (idempotencyKey ?? UUID())
+            : idempotencyKey
+        let urlRequest = try makeRequest(
+            endpoint,
+            session: session,
+            idempotencyKey: resolvedIdempotencyKey
+        )
+        let data: Data
+        let response: HTTPURLResponse
+        do {
+            (data, response) = try await transport.data(for: urlRequest)
+        } catch let error as APIError {
+            throw error
+        } catch {
+            throw APIError.transport(String(describing: error))
+        }
+
+        guard response.statusCode != 401 else {
+            guard retryAfterRefresh, endpoint.requiresAuthentication else {
+                throw APIError.unauthorized
+            }
+            let rotatedSession = try await refreshOnce()
+            return try await request(
+                endpoint,
+                idempotencyKey: resolvedIdempotencyKey,
+                retryAfterRefresh: false,
+                sessionOverride: rotatedSession
+            )
+        }
+        guard (200..<300).contains(response.statusCode) else {
+            throw APIError.server(statusCode: response.statusCode)
+        }
+        return data
+    }
+
+    private func makeRequest(
+        _ endpoint: APIEndpoint,
+        session: Session?,
+        idempotencyKey: UUID?
+    ) throws -> URLRequest {
+        let path = endpoint.path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        let url = baseURL.appendingPathComponent(path)
+        var request = URLRequest(url: url)
+        request.httpMethod = endpoint.method.rawValue
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        if let body = endpoint.body {
+            request.httpBody = body
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        }
+        if let session {
+            request.setValue(
+                "\(session.tokenType) \(session.accessToken)",
+                forHTTPHeaderField: "Authorization"
+            )
+        }
+        if endpoint.requiresIdempotencyKey {
+            request.setValue(
+                (idempotencyKey ?? UUID()).uuidString,
+                forHTTPHeaderField: "Idempotency-Key"
+            )
+        }
+        return request
+    }
+
+    private func currentSession(required: Bool) async throws -> Session? {
+        if didLoadSession {
+            guard !required || session != nil else { throw APIError.noSession }
+            return session
+        }
+        if let sessionLoadTask {
+            let loaded = try await sessionLoadTask.value
+            guard !required || loaded != nil else { throw APIError.noSession }
+            return loaded
+        }
+
+        let store = sessionStore
+        let task = Task { try await store.load() }
+        sessionLoadTask = task
+        do {
+            let loaded = try await task.value
+            session = loaded
+            didLoadSession = true
+            sessionLoadTask = nil
+            guard !required || loaded != nil else { throw APIError.noSession }
+            return loaded
+        } catch {
+            sessionLoadTask = nil
+            throw error
+        }
+    }
+
+    private func refreshOnce() async throws -> Session {
+        if let refreshTask {
+            return try await refreshTask.value
+        }
+        guard let currentSession = try await currentSession(required: true) else {
+            throw APIError.noSession
+        }
+
+        let refresh = self.refresh
+        let store = sessionStore
+        let task = Task { () throws -> Session in
+            do {
+                let rotated = try await refresh(currentSession)
+                try await store.save(rotated)
+                return rotated
+            } catch {
+                try? await store.clear()
+                throw APIError.refreshRejected
+            }
+        }
+        refreshTask = task
+        do {
+            let rotated = try await task.value
+            session = rotated
+            didLoadSession = true
+            refreshTask = nil
+            return rotated
+        } catch {
+            session = nil
+            didLoadSession = true
+            refreshTask = nil
+            throw error
+        }
+    }
+}
