@@ -179,17 +179,17 @@ test("canonical hash ignores object insertion order but preserves array order", 
   assert.match(sha256Canonical({ a: 1 }), /^[0-9a-f]{64}$/);
 });
 
-test("canonical registry exposes exactly seven ordered financial units", () => {
+test("canonical registry exposes exactly nine ordered financial units", () => {
   const raw = JSON.parse(fs.readFileSync(path.join(__dirname, "../config/cfo-financial-units.json"), "utf8"));
   const registry = validateRegistry(raw);
   assert.deepEqual(registry.financial_units.map((unit) => unit.financial_unit_id), [
     "life_manager_saas", "anicca_ios", "writer_agent", "affiliate_agent",
-    "gig_work", "x402_services", "job_income",
+    "gig_work", "x402_services", "job_income", "capafy_marketplace", "proprietary_investing",
   ]);
-  assert.equal(registry.financial_units.at(-1).unit_kind, "personal_income");
-  assert.ok(registry.financial_units.slice(0, -1).every((unit) => unit.unit_kind === "business"));
-  assert.deepEqual(registry.financial_units.map((unit) => unit.display_order), [1, 2, 3, 4, 5, 6, 7]);
-  assert.deepEqual(registry.financial_units.map((unit) => unit.owner_ref), Array(7).fill("human:dais"));
+  assert.equal(registry.financial_units.find((unit) => unit.financial_unit_id === "job_income").unit_kind, "personal_income");
+  assert.ok(registry.financial_units.filter((unit) => unit.financial_unit_id !== "job_income").every((unit) => unit.unit_kind === "business"));
+  assert.deepEqual(registry.financial_units.map((unit) => unit.display_order), [1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  assert.deepEqual(registry.financial_units.map((unit) => unit.owner_ref), Array(9).fill("human:dais"));
   assert.deepEqual(registry.financial_units.map((unit) => unit.display_name), [
     { en: "Life Manager", ja: "ライフマネージャー" },
     { en: "Anicca iOS", ja: "アニッチャ iOS" },
@@ -198,28 +198,34 @@ test("canonical registry exposes exactly seven ordered financial units", () => {
     { en: "Gig Work", ja: "ギグワーク" },
     { en: "x402 Services", ja: "x402サービス" },
     { en: "Employment Income", ja: "給与所得" },
+    { en: "Capafy Marketplace", ja: "Capafyマーケットプレイス" },
+    { en: "Proprietary Investing", ja: "プロプライエタリ投資" },
   ]);
   assert.deepEqual(registry.financial_units.map((unit) => unit.lifecycle), [
-    "active", "active", "active", "building", "active", "active", "active",
+    "active", "active", "active", "building", "active", "active", "active", "building", "planned",
   ]);
   assert.deepEqual(registry.financial_units.map((unit) => unit.runtime_matchers), [
-    ["ai.anicca.life-manager-*"], [], ["ai.anicca.writer-*"], ["ai.anicca.affiliate-*"],
-    ["ai.anicca.hf-gig-*", "ai.anicca.gig-outcome-watch"], ["ai.anicca.x402-*"],
+    ["ai.anicca.life-manager-*", "ai.anicca.agent-economy-loop", "ai.anicca.hf-reddit-loop-*", "ai.anicca.reddit-loop-*", "ai.anicca.lateness-heartbeat", "ai.anicca.lm-recording-store", "ai.anicca.outbound-runtime-healthcheck", "ai.anicca.phone-conversation", "ai.anicca.pipecat-phone", "ai.anicca.realtime-guide", "ai.anicca.telegram-bot", "ai.anicca.phone-tunnel*"], [], ["ai.anicca.writer-*", "ai.anicca.article-*"], ["ai.anicca.affiliate-*", "ai.anicca.clip-loop"],
+    ["ai.anicca.hf-gig-*", "ai.anicca.gig-outcome-watch", "ai.anicca.hf-bounty-daily", "ai.anicca.bounty-core-healthcheck", "ai.anicca.freelancer-bid-watch"], ["ai.anicca.x402-*", "ai.anicca.image-claude-p", "ai.anicca.image-franklin1", "ai.anicca.image-franklin2", "ai.anicca.mcp-claude-p", "ai.anicca.mcp-franklin1", "ai.anicca.mcp-franklin2", "ai.anicca.the402-*"],
     ["ai.anicca.job-search-*"],
+    ["ai.anicca.capafy-*", "ai.anicca.provision-browser.instagram.capafy-provision"],
+    ["ai.anicca.autohedge", "ai.anicca.pm-*", "ai.anicca.reinvest"],
   ]);
   assert.deepEqual(registry.financial_units.map((unit) => unit.revenue_channel_ids), [
     ["stripe_life_manager", "taskmarket_life_manager", "ugig_life_manager"],
     ["apple_app_store_anicca"], ["note_writer", "substack_writer", "publisher_writer"],
     ["amazon_associates", "rakuten_affiliate", "affiliate_networks"],
     ["gig_marketplaces", "direct_gig_clients"], ["x402_onchain"], ["payroll_bank"],
+    ["capafy_sales"], ["proprietary_investing"],
   ]);
   assert.deepEqual(registry.financial_units.map((unit) => unit.ledger_source_ids), [
     ["lm_financial_ledger"], ["revenuecat_anicca_ios"], ["writer_receipts"],
     ["affiliate_commission_receipts"], ["gig_payment_receipts"],
     ["x402_settlement_receipts"], ["payroll_bank_receipts"],
+    ["capafy_sales_receipts"], ["proprietary_investing_receipts"],
   ]);
   assert.deepEqual(registry.financial_units.map((unit) => unit.cost_center_refs), [
-    [], [], [], [], [], ["agent:franklin1", "agent:franklin2"], [],
+    [], [], [], [], [], ["agent:franklin1", "agent:franklin2"], [], [], [],
   ]);
   assert.deepEqual(registry.financial_units.map((unit) => unit.evidence_refs), [
     ["docs/superpowers/specs/2026-06-21-life-manager-LAUNCH-ORDER.md"],
@@ -227,13 +233,10 @@ test("canonical registry exposes exactly seven ordered financial units", () => {
     ["docs/affiliate-agent/AFFILIATE-AGENT-SSOT.md"],
     ["docs/loop-engineering/26-gig-loop-asis-tobe-plan.md"],
     ["apps/x402-agents/package.json"], ["launchd:ai.anicca.job-search-*"],
+    ["docs/superpowers/specs/2026-07-30-capafy-10k-mrr-game-plan.md"],
+    ["docs/superpowers/specs/2026-06-10-ai-entity-content-engine-design.md"],
   ]);
-  assert.deepEqual(registry.relevant_runtime_prefixes, [
-    "ai.anicca.life-manager-", "ai.anicca.writer-", "ai.anicca.affiliate-",
-    "ai.anicca.hf-gig-", "ai.anicca.gig-outcome-watch", "ai.anicca.x402-",
-    "ai.anicca.job-search-", "ai.anicca.cfo-", "ai.anicca.fleet-",
-    "ai.anicca.franklin", "ai.anicca.self-fix-", "ai.anicca.connector-healer-",
-  ]);
+  assert.deepEqual(registry.relevant_runtime_prefixes, ["ai.anicca."]);
   assert.deepEqual(registry.runtime_exclusions, [
     {
       exclusion_id: "cfo_controller", runtime_matchers: ["ai.anicca.cfo-*"],
@@ -257,7 +260,121 @@ test("canonical registry exposes exactly seven ordered financial units", () => {
       classification: "agent_cost_centre", cost_treatment: "x402_services",
       evidence_refs: ["docs/superpowers/specs/2026-08-08-life-manager-cfo-m0-business-registry-design.md"],
     },
+    {
+      exclusion_id: "shared_marketing",
+      runtime_matchers: ["ai.anicca.marketing-*", "ai.anicca.self-improve-evolve", "ai.anicca.warmup-flip-daily"],
+      classification: "shared_marketing", cost_treatment: "shared_overhead",
+      evidence_refs: ["docs/superpowers/specs/2026-06-06-anicca-marketing-aso-overhaul-design.md"],
+    },
+    {
+      exclusion_id: "financial_observer",
+      runtime_matchers: ["ai.anicca.daily-nl-report", "ai.anicca.earn-watch", "ai.anicca.earning-health-allslots", "ai.anicca.sbi-usdc-monitor", "ai.anicca.stripe-revenue-listener", "ai.anicca.stripe-revenue-poller"],
+      classification: "observer", cost_treatment: "shared_overhead",
+      evidence_refs: ["docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md"],
+    },
+    {
+      exclusion_id: "economic_controller",
+      runtime_matchers: ["ai.anicca.ceo-runner", "ai.anicca.citizen-refill", "ai.anicca.founder-loop-cadence"],
+      classification: "controller", cost_treatment: "shared_overhead",
+      evidence_refs: ["docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md"],
+    },
+    {
+      exclusion_id: "shared_connector",
+      runtime_matchers: ["ai.anicca.agentmail-*", "ai.anicca.clawrouter", "ai.anicca.slack-bridge", "ai.anicca.tsbridge"],
+      classification: "connector", cost_treatment: "shared_overhead",
+      evidence_refs: ["docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md"],
+    },
+    {
+      exclusion_id: "shared_ops_repair",
+      runtime_matchers: ["ai.anicca.agents-skills-sync", "ai.anicca.browser-state-backup", "ai.anicca.cadence-deadline-check", "ai.anicca.cdp-daily-driver-owner", "ai.anicca.citizens-diff-monitor", "ai.anicca.claude-projects-backup", "ai.anicca.colima-autostart", "ai.anicca.disk-autoprune", "ai.anicca.disk-janitor", "ai.anicca.effect-watch", "ai.anicca.f7-silence-check", "ai.anicca.fuel-watch", "ai.anicca.monkey-watchdog", "ai.anicca.openclaw-conformity-monkey", "ai.anicca.openclaw-core-backup", "ai.anicca.openclaw-janitor-monkey", "ai.anicca.session-vault", "ai.anicca.sync-memory", "ai.anicca.tier1-remediate", "ai.anicca.tier2-agent-diagnose", "ai.anicca.token-daily-report", "ai.anicca.verify-loops-audit", "ai.anicca.watchdog"],
+      classification: "repair_infrastructure", cost_treatment: "shared_overhead",
+      evidence_refs: ["docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md"],
+    },
   ]);
+});
+
+test("final census uses the complete runtime root and two verified units", () => {
+  const raw = JSON.parse(fs.readFileSync(path.join(__dirname, "../config/cfo-financial-units.json"), "utf8"));
+  const registry = validateRegistry(raw);
+  assert.deepEqual(registry.financial_units.map((unit) => unit.financial_unit_id), [
+    "life_manager_saas", "anicca_ios", "writer_agent", "affiliate_agent",
+    "gig_work", "x402_services", "job_income", "capafy_marketplace",
+    "proprietary_investing",
+  ]);
+  assert.deepEqual(registry.relevant_runtime_prefixes, ["ai.anicca."]);
+  assert.deepEqual(registry.financial_units.find((unit) => unit.financial_unit_id === "capafy_marketplace").runtime_matchers, [
+    "ai.anicca.capafy-*", "ai.anicca.provision-browser.instagram.capafy-provision",
+  ]);
+  assert.deepEqual(registry.financial_units.find((unit) => unit.financial_unit_id === "proprietary_investing").runtime_matchers, [
+    "ai.anicca.autohedge", "ai.anicca.pm-*", "ai.anicca.reinvest",
+  ]);
+});
+
+test("verified runtime extensions classify once", () => {
+  const raw = JSON.parse(fs.readFileSync(path.join(__dirname, "../config/cfo-financial-units.json"), "utf8"));
+  const registry = validateRegistry(raw);
+  const cases = [
+    ["ai.anicca.agent-economy-loop", "life_manager_saas"],
+    ["ai.anicca.hf-reddit-loop-daily", "life_manager_saas"],
+    ["ai.anicca.reddit-loop-healthcheck", "life_manager_saas"],
+    ["ai.anicca.lateness-heartbeat", "life_manager_saas"],
+    ["ai.anicca.lm-recording-store", "life_manager_saas"],
+    ["ai.anicca.outbound-runtime-healthcheck", "life_manager_saas"],
+    ["ai.anicca.phone-conversation", "life_manager_saas"],
+    ["ai.anicca.pipecat-phone", "life_manager_saas"],
+    ["ai.anicca.realtime-guide", "life_manager_saas"],
+    ["ai.anicca.telegram-bot", "life_manager_saas"],
+    ["ai.anicca.phone-tunnel-watcher", "life_manager_saas"],
+    ["ai.anicca.article-daily", "writer_agent"],
+    ["ai.anicca.hf-bounty-daily", "gig_work"],
+    ["ai.anicca.bounty-core-healthcheck", "gig_work"],
+    ["ai.anicca.freelancer-bid-watch", "gig_work"],
+    ["ai.anicca.clip-loop", "affiliate_agent"],
+    ["ai.anicca.image-claude-p", "x402_services"],
+    ["ai.anicca.image-franklin1", "x402_services"],
+    ["ai.anicca.image-franklin2", "x402_services"],
+    ["ai.anicca.mcp-claude-p", "x402_services"],
+    ["ai.anicca.mcp-franklin1", "x402_services"],
+    ["ai.anicca.mcp-franklin2", "x402_services"],
+    ["ai.anicca.the402-worker", "x402_services"],
+    ["ai.anicca.the402-provider", "x402_services"],
+    ["ai.anicca.capafy-goal-monitor", "capafy_marketplace"],
+    ["ai.anicca.provision-browser.instagram.capafy-provision", "capafy_marketplace"],
+    ["ai.anicca.autohedge", "proprietary_investing"],
+    ["ai.anicca.pm-live-trade", "proprietary_investing"],
+    ["ai.anicca.reinvest", "proprietary_investing"],
+  ];
+  for (const [label, targetId] of cases) {
+    assert.deepEqual(classifyLabel(registry, label), {
+      kind: "financial_unit", targetIds: [targetId],
+    }, label);
+  }
+});
+
+test("final census exclusions classify shared runtimes exactly once", () => {
+  const raw = JSON.parse(fs.readFileSync(path.join(__dirname, "../config/cfo-financial-units.json"), "utf8"));
+  const registry = validateRegistry(raw);
+  const cases = [
+    ["ai.anicca.marketing-dashboard", "shared_marketing"],
+    ["ai.anicca.self-improve-evolve", "shared_marketing"],
+    ["ai.anicca.warmup-flip-daily", "shared_marketing"],
+    ["ai.anicca.daily-nl-report", "financial_observer"],
+    ["ai.anicca.stripe-revenue-poller", "financial_observer"],
+    ["ai.anicca.ceo-runner", "economic_controller"],
+    ["ai.anicca.citizen-refill", "economic_controller"],
+    ["ai.anicca.agentmail-nudge", "shared_connector"],
+    ["ai.anicca.clawrouter", "shared_connector"],
+    ["ai.anicca.slack-bridge", "shared_connector"],
+    ["ai.anicca.tsbridge", "shared_connector"],
+    ["ai.anicca.agents-skills-sync", "shared_ops_repair"],
+    ["ai.anicca.watchdog", "shared_ops_repair"],
+    ["ai.anicca.verify-loops-audit", "shared_ops_repair"],
+  ];
+  for (const [label, targetId] of cases) {
+    assert.deepEqual(classifyLabel(registry, label), {
+      kind: "exclusion", targetIds: [targetId],
+    }, label);
+  }
 });
 
 test("canonical runtime namespaces classify financial units and exclusions", () => {

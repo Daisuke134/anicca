@@ -81,8 +81,15 @@ test("unmapped relevant and ambiguous labels fail closed", () => {
   assert.equal(ambiguous.runtime_observations[0].classification, "ambiguous");
 });
 
+test("unknown ai.anicca money runtime fails closed under the complete census root", () => {
+  const inventory = buildInventory(makeInput(["ai.anicca.unknown-money-loop"]));
+  assert.deepEqual(inventory.unmapped_relevant_labels, ["ai.anicca.unknown-money-loop"]);
+  assert.equal(inventory.runtime_observations[0].classification, "unmapped");
+  assert.equal(inventory.result, "fail");
+});
+
 test("irrelevant labels are ignored and missing-runtime units stay unverified", () => {
-  const inventory = buildInventory(makeInput(["completely.irrelevant", "ai.anicca.unregistered"]));
+  const inventory = buildInventory(makeInput(["completely.irrelevant", "com.example.unregistered"]));
   assert.deepEqual(inventory.runtime_observations, []);
   assert.deepEqual(inventory.unmapped_relevant_labels, []);
   assert.equal(inventory.result, "pass");
