@@ -47,11 +47,28 @@ targets:
     type: bundle.ui-testing
     platform: iOS
     sources:
-      - LifeManagerTests
+      - LifeManagerTests/SmokeTests.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: ai.anicca.life-manager.tests
         GENERATE_INFOPLIST_FILE: YES
+        TARGETED_DEVICE_FAMILY: "1"
+        SUPPORTS_MACCATALYST: NO
+        SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: NO
+    dependencies:
+      - target: LifeManager
+
+  LifeManagerUnitTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - LifeManagerTests/ModelTests
+      - LifeManagerTests/Support
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: ai.anicca.life-manager.unit-tests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/LifeManager.app/LifeManager"
         TARGETED_DEVICE_FAMILY: "1"
         SUPPORTS_MACCATALYST: NO
         SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: NO
@@ -64,9 +81,11 @@ schemes:
       targets:
         LifeManager: all
         LifeManagerTests: [test]
+        LifeManagerUnitTests: [test]
     test:
       config: Debug
       targets:
         - LifeManagerTests
+        - LifeManagerUnitTests
     run:
       config: Debug
