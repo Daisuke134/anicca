@@ -40,6 +40,7 @@ test("memory store rejects a scope mismatch instead of permitting a client-selec
 
 test("Supabase mobile route cache persists the tenant-safe request digest and complete structured route", async () => {
   const calls = [];
+  let persisted = null;
   const routeRequest = {
     eventId: "event-1", eventDate: "2026-08-10", timezone: "Asia/Tokyo",
     origin: "Shibuya", destination: "Tokyo", direction: "outbound",
@@ -53,23 +54,52 @@ test("Supabase mobile route cache persists the tenant-safe request digest and co
     const url = new URL(String(input));
     calls.push({ url, init });
     if (url.pathname.endsWith("/lm_route_cache") && init.method === "POST") {
-      return response([{ ...JSON.parse(init.body), computed_at: new Date().toISOString() }], 201);
+      const next = JSON.parse(init.body);
+      const wasEmpty = !persisted;
+      persisted = { ...next, computed_at: "2026-08-10T08:10:00.000Z" };
+      return response([persisted], wasEmpty ? 201 : 200);
     }
     if (url.pathname.endsWith("/lm_route_cache")) {
-      return response([{ cache_key: url.searchParams.get("cache_key").slice(3), route, computed_at: new Date().toISOString(), ttl_secs: 600 }]);
+      return response(persisted ? [persisted] : []);
     }
     return response({}, 200);
   };
   const store = createSupabaseMobileStore({ supaUrl: "https://supa.example", supaKey: "service-key", fetchImpl });
   const scope = { uid: "tenant-a" };
+  assert.equal(await store.readRouteCache(scope, routeRequest), null);
+  const inserted = await store.writeRouteCache(scope, routeRequest, route);
+  assert.deepEqual(inserted.value, route);
+  const updatedRoute = { ...route, durationSeconds: 960, fare: { currency: "JPY", amount: 240 } };
+  const updated = await store.writeRouteCache(scope, routeRequest, updatedRoute);
+  assert.deepEqual(updated.value, updatedRoute);
   const hit = await store.readRouteCache(scope, routeRequest);
-  assert.deepEqual(hit.value, route);
-  await store.writeRouteCache(scope, routeRequest, route);
-  const write = calls.find((call) => call.init.method === "POST");
-  const body = JSON.parse(write.init.body);
-  assert.equal(body.uid, "tenant-a");
-  assert.match(body.cache_key, /^[0-9a-f]{64}$/u);
-  assert.equal(body.from_geo, `mobile:${body.cache_key}`);
-  assert.deepEqual(body.route, route);
-  assert.equal(write.url.searchParams.get("on_conflict"), "uid,cache_key");
+  assert.deepEqual(hit.value, updatedRoute);
+
+  const writes = calls.filter((call) => call.init.method === "POST");
+  assert.equal(writes.length, 2, "same request digest must update the existing cache row");
+  const firstBody = JSON.parse(writes[0].init.body);
+  const secondBody = JSON.parse(writes[1].init.body);
+  assert.equal(firstBody.uid, "tenant-a");
+  assert.match(firstBody.cache_key, /^[0-9a-f]{64}$/u);
+  assert.equal(firstBody.cache_key, secondBody.cache_key);
+  assert.equal(firstBody.from_geo, `mobile:${firstBody.cache_key}`);
+  assert.deepEqual(secondBody.route, updatedRoute);
+  assert.equal(writes[0].url.searchParams.get("on_conflict"), "uid,cache_key");
+  assert.equal(writes[1].url.searchParams.get("on_conflict"), "uid,cache_key");
+});
+
+test("Supabase mobile route cache surfaces a write failure instead of claiming persistence", async () => {
+  const routeRequest = {
+    eventId: "event-failure", eventDate: "2026-08-10", timezone: "Asia/Tokyo",
+    origin: "Shibuya", destination: "Tokyo", direction: "outbound",
+    arriveBy: "2026-08-10T09:00:00.000+09:00", departAt: null,
+  };
+  const store = createSupabaseMobileStore({
+    supaUrl: "https://supa.example", supaKey: "service-key",
+    fetchImpl: async () => response({ code: "constraint_error" }, 409),
+  });
+  await assert.rejects(
+    () => store.writeRouteCache({ uid: "tenant-a" }, routeRequest, { status: "route_ready", provider: "transit" }),
+    (error) => error.code === "route_cache_write_failed" && error.status === 503 && error.retryable === true,
+  );
 });

@@ -237,9 +237,12 @@ ALTER TABLE public.lm_route_cache
   ADD COLUMN IF NOT EXISTS cache_key text,
   ADD COLUMN IF NOT EXISTS route jsonb;
 
+-- `ON CONFLICT (uid, cache_key)` in the mobile store must infer an exact
+-- non-partial unique index.  Replace the earlier partial index shape rather
+-- than leaving a 409/no-inference path that can be mistaken for persistence.
+DROP INDEX IF EXISTS public.lm_route_cache_mobile_key_unique;
 CREATE UNIQUE INDEX IF NOT EXISTS lm_route_cache_mobile_key_unique
-  ON public.lm_route_cache (uid, cache_key)
- WHERE cache_key IS NOT NULL;
+  ON public.lm_route_cache (uid, cache_key);
 
 CREATE INDEX IF NOT EXISTS lm_route_cache_mobile_expiry_idx
   ON public.lm_route_cache (uid, computed_at);

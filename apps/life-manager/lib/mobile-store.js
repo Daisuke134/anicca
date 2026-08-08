@@ -131,7 +131,14 @@ function createSupabaseMobileStore(options = {}) {
         headers: { "content-type": "application/json", Prefer: "resolution=merge-duplicates,return=representation" },
         body: JSON.stringify(row),
       }, "route_cache_write_failed");
-      return routeCacheEntry(asRow(result.body)) || { value, computedAt: Date.parse(computedAt) };
+      if (result.conflict) {
+        throw new MobileError("route_cache_write_failed", "The route cache could not be persisted.", 503, true, { status: result.status });
+      }
+      const persisted = routeCacheEntry(asRow(result.body));
+      if (!persisted) {
+        throw new MobileError("route_cache_write_failed", "The route cache returned no persisted route.", 503, true);
+      }
+      return persisted;
     },
     async createOAuthState(row) {
       const body = {

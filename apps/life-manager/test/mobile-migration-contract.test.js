@@ -11,6 +11,7 @@ test("mobile migration persists the Gate 3 tenant, replay, cursor, device, call,
   for (const table of [
     "lm_mobile_oauth_states", "lm_mobile_sessions", "lm_mobile_idempotency", "lm_mobile_analysis_states",
     "lm_mobile_outbox", "lm_mobile_questions", "lm_mobile_call_attempts", "lm_mobile_call_day_guards", "lm_mobile_devices", "lm_mobile_deletion_receipts",
+    "lm_route_cache",
   ]) assert.match(SQL, new RegExp(`CREATE TABLE IF NOT EXISTS public\\.${table}\\b`));
   for (const fn of [
     "claim_lm_mobile_oauth_state", "claim_lm_mobile_idempotency", "complete_lm_mobile_idempotency",
@@ -29,6 +30,9 @@ test("mobile migration persists the Gate 3 tenant, replay, cursor, device, call,
   assert.match(SQL, /token text NOT NULL CHECK \(token ~ '\^\[0-9a-fA-F\]\{64\}\$'/);
   assert.match(SQL, /CREATE UNIQUE INDEX IF NOT EXISTS lm_mobile_devices_token_unique/);
   assert.match(SQL, /capability_hash text/);
+  assert.match(SQL, /DROP INDEX IF EXISTS public\.lm_route_cache_mobile_key_unique/);
+  assert.match(SQL, /CREATE UNIQUE INDEX IF NOT EXISTS lm_route_cache_mobile_key_unique[\s\S]*?ON public\.lm_route_cache \(uid, cache_key\);/);
+  assert.doesNotMatch(SQL, /lm_route_cache_mobile_key_unique[\s\S]*?WHERE cache_key IS NOT NULL/);
   assert.match(SQL, /UPDATE public\.lm_mobile_sessions SET revoked_at/);
   assert.match(SQL, /status IN \('open', 'claimed', 'answered', 'stale'\)/);
   assert.match(SQL, /global_count integer NOT NULL DEFAULT 0/);
