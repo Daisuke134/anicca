@@ -120,7 +120,8 @@ test("raw payloads, account numbers, URLs, paths, and secret-shaped labels fail 
 
 Add table-driven literal mutations for:
 
-- unknown root/account/action key,
+- unknown root/account/liability/action key,
+- unknown enumerable/non-enumerable/symbol properties on the accounts and liabilities containers, sparse and non-canonical array indices, custom array prototypes, and array accessor properties,
 - invalid schema/source ID/consent/freshness/kind/currency/status,
 - invalid or timezone-free `asOf`,
 - float/unsafe integer/string amount,
@@ -130,7 +131,7 @@ Add table-driven literal mutations for:
 - expired/revoked consent without unavailable freshness and `reconsent`,
 - fresh result with non-valid consent or without an account,
 - stale result without `partial: true`,
-- full account-like digit sequence, absolute private path, credential-bearing URL, secret-shaped label,
+- full account-like digit sequence, absolute or embedded private path, embedded credential-bearing or ordinary URL, secret-shaped label,
 - `actionRef` that is a URL or is not `action:<opaque_id>`.
 
 - [ ] **Step 2: Run RED**
@@ -153,6 +154,9 @@ const ROOT_KEYS = new Set([
 ]);
 const ACCOUNT_KEYS = new Set([
   "accountRef", "label", "kind", "currency", "balanceMinor", "verificationStatus",
+]);
+const LIABILITY_KEYS = new Set([
+  "accountRef", "label", "currency", "balanceMinor", "verificationStatus",
 ]);
 const ACTION_KEYS = new Set(["kind", "sourceLabel", "actionRef"]);
 const CONSENTS = new Set(["valid", "expired", "revoked", "unknown"]);

@@ -10,6 +10,7 @@ const KINDS = new Set(["deposit", "card", "loan", "investment", "other"]);
 const STATUSES = new Set(["provider_reported", "unavailable"]);
 const ACTIONS = new Set(["reconsent", "provider_outage"]);
 const ID = /^[a-z][a-z0-9_]{2,63}$/;
+const ARRAY_INDEX = /^(0|[1-9]\d*)$/;
 const RFC3339 = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(\.\d+)?(Z|[+-]\d{2}:\d{2})$/;
 const ERROR_PREFIX = "cfo_financial_source_invalid:";
 
@@ -20,6 +21,18 @@ function dataProperties(value) {
   for (const key of Reflect.ownKeys(value)) {
     const descriptor = Object.getOwnPropertyDescriptor(value, key);
     if (!descriptor || !Object.prototype.hasOwnProperty.call(descriptor, "value")) fail("accessor_property");
+  }
+}
+function denseArray(value) {
+  if (!Array.isArray(value) || Object.getPrototypeOf(value) !== Array.prototype) fail("invalid_array");
+  dataProperties(value);
+  const own = Reflect.ownKeys(value), length = value.length;
+  const lengthDescriptor = Object.getOwnPropertyDescriptor(value, "length");
+  if (!lengthDescriptor || !Object.prototype.hasOwnProperty.call(lengthDescriptor, "value") || lengthDescriptor.value !== length || lengthDescriptor.enumerable) fail("invalid_array");
+  if (own.length !== length + 1 || own.some((key) => key !== "length" && (typeof key !== "string" || !ARRAY_INDEX.test(key) || Number(key) >= 4294967295))) fail("invalid_array");
+  for (let index = 0; index < length; index += 1) {
+    const descriptor = Object.getOwnPropertyDescriptor(value, String(index));
+    if (!descriptor || !Object.prototype.hasOwnProperty.call(descriptor, "value") || !descriptor.enumerable) fail("invalid_array");
   }
 }
 function keys(value, allowed) {
@@ -33,8 +46,8 @@ function enumValue(value, allowed, reason = "invalid_enum") { if (typeof value !
 function typedRef(value, pattern, reason) { if (typeof value !== "string" || !pattern.test(value)) fail(reason); }
 function label(value) {
   if (typeof value !== "string" || value.length === 0 || value.length > 80) fail("invalid_label");
-  if (/\d{6}/.test(value) || /^(?:\/|~\/|[A-Za-z]:[\\/]|\\\\)/.test(value)
-    || /^[a-z][a-z0-9+.-]*:\/\//i.test(value)
+  if (/\d{6}/.test(value) || /(?:^|[^\w])(?:\/|~\/|[A-Za-z]:[\\/]|\\\\)/i.test(value)
+    || /[a-z][a-z0-9+.-]*:\/\//i.test(value)
     || /[a-z][a-z0-9+.-]*:\/\/[^\/\s@]+(?::[^\/\s@]*)?@/i.test(value)
     || /(?:api[ _-]?key|secret|private[ _-]?key|password|token|credential|bearer)/i.test(value)) fail("unsafe_label");
 }
@@ -102,8 +115,8 @@ function validateFinancialSourceResult(input) {
   enumValue(input.freshness, FRESHNESS, "invalid_freshness");
   timestamp(input.asOf);
   if (!Array.isArray(input.accounts) || !Array.isArray(input.liabilities) || typeof input.partial !== "boolean") fail("invalid_shape");
-  dataProperties(input.accounts);
-  dataProperties(input.liabilities);
+  denseArray(input.accounts);
+  denseArray(input.liabilities);
   const references = new Set();
   for (const value of input.accounts) entry(value, false, references, input.freshness);
   for (const value of input.liabilities) entry(value, true, references, input.freshness);

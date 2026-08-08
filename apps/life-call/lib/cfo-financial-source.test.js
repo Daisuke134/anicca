@@ -154,6 +154,48 @@ test("deep unknown raw payloads fail with a stable contract error, not RangeErro
   });
 });
 
+const containerMutations = [
+  ["accounts enumerable custom key", (value) => { value.accounts.rawPayload = { secret: "leak" }; return value; }],
+  ["liabilities enumerable custom key", (value) => {
+    value.partial = true;
+    value.liabilities = [{ accountRef: "source_account:synthetic_loan", label: "サンプルローン", currency: "JPY", balanceMinor: 100, verificationStatus: "provider_reported" }];
+    value.liabilities.rawPayload = { secret: "leak" };
+    return value;
+  }],
+  ["accounts non-enumerable custom key", (value) => { Object.defineProperty(value.accounts, "rawPayload", { value: {}, enumerable: false }); return value; }],
+  ["liabilities symbol custom key", (value) => {
+    const liabilityKey = Symbol("rawPayload");
+    value.liabilities[liabilityKey] = {};
+    return value;
+  }],
+  ["accounts custom prototype", (value) => { Object.setPrototypeOf(value.accounts, Object.create(Array.prototype)); return value; }],
+  ["accounts non-canonical index", (value) => { value.accounts["01"] = {}; return value; }],
+  ["accounts sparse index", (value) => { delete value.accounts[0]; return value; }],
+  ["accounts accessor index", (value) => { Object.defineProperty(value.accounts, "0", { enumerable: true, get: () => value.accounts[0] }); return value; }],
+];
+
+for (const [name, mutate] of containerMutations) {
+  test(`source containers reject ${name}`, () => assertInvalid(mutate(validResult())));
+}
+
+test("embedded non-credential URLs in labels fail closed", () => {
+  const input = validResult();
+  input.accounts[0].label = "Bank https://example.com/private";
+  assert.throws(() => validateFinancialSourceResult(input), /:unsafe_label$/);
+});
+
+test("embedded Users paths in labels fail closed", () => {
+  const input = validResult();
+  input.accounts[0].label = "Bank /Users/dais/private";
+  assert.throws(() => validateFinancialSourceResult(input), /:unsafe_label$/);
+});
+
+test("embedded home paths in labels fail closed", () => {
+  const input = validResult();
+  input.accounts[0].label = "Bank /home/name/private";
+  assert.throws(() => validateFinancialSourceResult(input), /:unsafe_label$/);
+});
+
 test("unknown liability keys fail at the liability schema boundary", () => {
   const input = validResult();
   input.partial = true;
