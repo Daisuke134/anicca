@@ -127,6 +127,11 @@ flowchart LR
 44. Google fallback MUST execute only after an explicit provider failure or unsupported journey. It MUST NOT run in parallel with an accepted Transit API result.
 45. Reusing the same normalized address MUST cause zero new Google Geocoding requests after the first successful persistent cache write.
 46. An unavailable route MUST explain one concrete reason: missing origin, missing destination, provider unavailable, localization unavailable, no journey, or timeout.
+46a. A successful outbound analysis MUST place one matching `[Travel]` block in the authenticated user's primary Google Calendar and emit `chat.travel_block_confirmed` only after an exact provider read-back. `chat.route_ready` alone is not an insertion receipt.
+46b. The provider event ID MUST be deterministic for `(uid, calendar_id, source_event_id, leg)`, opaque, and valid under Google Calendar's caller-generated ID rules. Every create retry MUST converge on that same provider event ID; a new retry ID is forbidden.
+46c. The Calendar side effect MUST occur only after a durable token-fenced claim enters `creating`. A crash before create, after create, after timeout, or before DB confirmation MUST recover by exact provider GET before any further create attempt. Provider 409 is success only when GET proves the same marker and payload; otherwise it is a terminal collision.
+46d. The create and read-back MUST use the session's stored provisional Composio owner and exact connected account. Stable Life Manager UID remains the tenant/DB authority and MUST NOT replace the provider owner.
+46e. Provider write, read-back, budget, busy-claim, or collision failure MUST emit an honest localized `chat.travel_block_not_added` state and MUST NOT emit a success receipt. The Swift client and Maestro MUST identify both outcomes by stable semantic accessibility IDs.
 
 ### E. Session and tenant boundary
 
