@@ -21,6 +21,8 @@
 
 | File | Responsibility | Soft target |
 |---|---|---:|
+| `apps/life-call/lib/cfo-financial-source.js` | Permit unknown-consent provider outage without weakening reconsent | +4 LOC; total max 144 |
+| `apps/life-call/lib/cfo-financial-source.test.js` | Outage/reconsent regression matrix | +18 LOC |
 | `apps/life-call/lib/cfo-moneytree-state.js` | Closed state contract, source composition, and invariants | 120 production LOC; max 144 |
 | `apps/life-call/lib/cfo-moneytree-state.test.js` | Literal state matrix, composition, and invalid mutations | 190 test LOC; max 228 |
 | `apps/life-call/package.json` | Add state test once to `test:cfo` | +1 LOC |
@@ -60,7 +62,23 @@ composeMoneytreeRead({ source, state }) => Readonly<{
 
 ---
 
-### Task 1: Closed consent/freshness/liability state and source composition
+### Task 1: Correct provider-outage source contract
+
+**Files:**
+- Modify: `apps/life-call/lib/cfo-financial-source.js`
+- Modify: `apps/life-call/lib/cfo-financial-source.test.js`
+
+- [ ] **Step 1: RED — unknown consent with outage action**
+
+Add a literal unavailable source with `consent: "unknown"`, unavailable/null account value, `partial: true`, and `{ kind: "provider_outage", sourceLabel: "Moneytree", actionRef: "action:moneytree_outage" }`. It must validate and freeze. Add negative cases: unknown consent with null/reconsent action, and expired/revoked consent with outage action must fail.
+
+- [ ] **Step 2: GREEN — split unknown outage from expired/revoked reconsent**
+
+Keep valid-consent rules unchanged. Require expired/revoked consent to use `reconsent`; require unknown consent to use `provider_outage`; all non-valid states remain unavailable and partial. Run contract/CFO tests, keep production at or below 144 LOC, diff check, commit `fix(cfo): distinguish provider outage consent`, push, and pass fresh review.
+
+---
+
+### Task 2: Closed consent/freshness/liability state and source composition
 
 **Files:**
 - Create: `apps/life-call/lib/cfo-moneytree-state.js`
@@ -79,7 +97,7 @@ Assert exact objects for:
 
 Assert exact input/root/action key sets and deep freeze. Add invalid mutations for unknown keys/signal, invalid timestamp/cutoff, only one of timestamp/cutoff, aggregation metadata without `authorized`, `liabilitiesExposed:false` with any numeric count, exposed liabilities with null/negative/float/unsafe count, exposed liabilities on any non-`authorized` signal, and secret/raw-shaped extra values.
 
-Add composition tests using real `adaptMoneytreeAccounts` output plus `interactive_success` state. Require matching `sourceId`, `source.asOf === state.observedAt`, consent agreement, identical partial flag, and complete-liability count agreement. Mismatches fail with stable redacted errors. Assert exact bundle keys and deep freeze.
+Add successful composition tests for all five signals using validated literal source results, including the corrected unknown-consent provider-outage source. The interactive case also uses real `adaptMoneytreeAccounts` output. Require matching `sourceId`, `source.asOf === state.observedAt`, consent agreement, retrieval succeeded↔source available and unavailable↔source unavailable, identical partial flag, complete-liability count agreement, and matching action kind/ref. Availability/action/consent/partial/liability mismatches fail with stable redacted errors. Assert exact bundle keys and deep freeze.
 
 - [ ] **Step 2: Run RED**
 
@@ -112,7 +130,7 @@ Commit `feat(cfo): model Moneytree coverage state`, push, and pass a fresh task 
 
 ---
 
-### Task 2: Live App truth check and CFO-1b2 closure
+### Task 3: Live App truth check and CFO-1b2 closure
 
 **Files:**
 - Modify: this plan
