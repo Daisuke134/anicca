@@ -1,6 +1,6 @@
 # Life Manager iOS — Product and UX Specification
 
-Status: **Approved by Dais. Superpowers implementation plans are ready.**
+Status: **Approved by Dais. Superpowers implementation is in progress; no TestFlight completion receipt exists yet.**
 
 ## Source of truth
 
@@ -175,6 +175,13 @@ The following values were read from provider monitoring, provider records, Railw
 | Composio | Rolling seven-day `14,164` calls; month-to-date `15,038 / 20,000` free calls | At the measured pace, the free cap is reached in about 2.45 days |
 | Transit API | Free, read-only, no authentication | Call count, uptime, and source freshness are not measured |
 | Supabase / Resend | Cost attribution unavailable | Unknown is currently indistinguishable from zero in product reporting |
+
+#### 3.1.1 Remaining-build cost truth
+
+- The confirmed rolling-seven-day variable-cost estimate is `$31.253`, or `$4.465/day` when linearized. At that unchanged rate, another 12–18 hours is approximately `$2.23–$3.35`; 48 hours is approximately `$8.93`. These values are risk indicators, not an invoice or a promise that traffic is linear.
+- Xcode, XcodeGen, Maestro, and the selected Transit API add `$0` of measured per-use provider cost. TestFlight upload has no measured incremental fee beyond the existing Apple Developer account.
+- Executor/model spend, Apple Developer fixed membership allocation, Railway subscription/credits, Supabase plan allocation, Resend cost, and final Google/Gemini discounts or credits remain `unknown`. They MUST NOT be reported as zero.
+- Gate 1 remains the cost emergency: it MUST remove repeated Geocoding, persist route/geocode results, reduce Composio polling, and enforce the `$0.50/$1.00/$2.00` daily degradation thresholds before public beta traffic.
 
 ### 3.2 Product and architecture change
 
@@ -499,6 +506,15 @@ Google consent/account chooser is not asserted by Maestro because it is an exter
 - Replacing Google Calendar, Telegram, the web control center, or the existing backend.
 
 ## 8. Remaining work — execution order and delegation boundary
+
+### 8.0 Current execution receipt
+
+- Gate 0 Task 1 is complete on `feat/lm-daily-late-approval`: resolver focused tests and fresh review are green and the commits are pushed.
+- Gate 0 Task 2 is complete on the same branch: durable decision/claim/receipt tests are green, isolated staging PostgreSQL role/RPC read-back is complete, fresh re-review is green, and production Supabase was not touched.
+- Gate 0 Task 3 implementation is pushed and its fresh review is in progress. Gate 0 remains incomplete until Tasks 3–6 are reviewed, deployed, verified with the production-safe receipt, and recorded in the DAILY SSOT.
+- Native iOS product Task 1 is running in isolated worktree `feat/lm-ios-product` under Dais's explicit non-colliding parallelization approval. This is app-skeleton preparation only; it does not satisfy Gate 4 before Gate 2 fixtures exist.
+- Local delivery tooling is ready: Xcode `26.6 (17F113)`, iOS `26.3` Simulator devices, and Maestro `2.8.0` are verified.
+- `https://daisuke134.github.io/life-manager-ios-demo/` is a public interactive presentation prototype. It is not the native app, a Maestro receipt, a TestFlight build, or an acceptance-criteria completion receipt.
 
 The following order is the only execution order. A later gate does not begin before the dependency named in its row is green. The executable Superpowers plans are:
 
