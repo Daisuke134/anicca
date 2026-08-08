@@ -163,6 +163,12 @@ CREATE TABLE IF NOT EXISTS public.lm_mobile_devices (
   PRIMARY KEY (uid, token)
 );
 
+-- APNs tokens identify one physical app installation globally.  The composite
+-- tenant key remains for compatibility, while this unique index makes the
+-- ownership transfer RPC atomic across tenants.
+CREATE UNIQUE INDEX IF NOT EXISTS lm_mobile_devices_token_unique
+  ON public.lm_mobile_devices (token);
+
 -- A deletion receipt must survive the lm_users cascade so the client can
 -- display proof of completion after the account row is gone.
 CREATE TABLE IF NOT EXISTS public.lm_mobile_deletion_receipts (
@@ -309,6 +315,28 @@ BEGIN
 END;
 $$;
 
+CREATE OR REPLACE FUNCTION public.claim_lm_mobile_device(
+  p_uid text, p_token text, p_environment text, p_locale text,
+  p_timezone text, p_last_seen_at timestamptz DEFAULT now()
+)
+RETURNS public.lm_mobile_devices
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
+DECLARE claimed public.lm_mobile_devices;
+BEGIN
+  -- Delete any stale tenant owner and then upsert under the global token key in
+  -- one transaction. The unique index is the final race-safe arbiter.
+  DELETE FROM public.lm_mobile_devices
+   WHERE token = p_token AND uid <> p_uid;
+  INSERT INTO public.lm_mobile_devices(uid, token, environment, locale, timezone, last_seen_at, updated_at)
+       VALUES (p_uid, p_token, p_environment, p_locale, p_timezone, p_last_seen_at, now())
+  ON CONFLICT (token) DO UPDATE SET
+    uid = EXCLUDED.uid, environment = EXCLUDED.environment, locale = EXCLUDED.locale,
+    timezone = EXCLUDED.timezone, last_seen_at = EXCLUDED.last_seen_at, updated_at = now()
+  RETURNING * INTO claimed;
+  RETURN claimed;
+END;
+$$;
+
 CREATE OR REPLACE FUNCTION public.claim_lm_mobile_call(
   p_uid text, p_idempotency_key text, p_now timestamptz DEFAULT now()
 )
@@ -377,6 +405,7 @@ REVOKE ALL ON FUNCTION public.claim_lm_mobile_idempotency(text, text, text) FROM
 REVOKE ALL ON FUNCTION public.complete_lm_mobile_idempotency(text, text, text, jsonb, jsonb, integer) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.rotate_lm_mobile_refresh(text, text, text, text, text, text, timestamptz, timestamptz, text) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.consume_lm_mobile_question(text, text, text) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.claim_lm_mobile_device(text, text, text, text, text, timestamptz) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.claim_lm_mobile_call(text, text, timestamptz) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.delete_lm_mobile_account(text, text) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.claim_lm_mobile_oauth_state(text, text, text) TO service_role;
@@ -384,5 +413,6 @@ GRANT EXECUTE ON FUNCTION public.claim_lm_mobile_idempotency(text, text, text) T
 GRANT EXECUTE ON FUNCTION public.complete_lm_mobile_idempotency(text, text, text, jsonb, jsonb, integer) TO service_role;
 GRANT EXECUTE ON FUNCTION public.rotate_lm_mobile_refresh(text, text, text, text, text, text, timestamptz, timestamptz, text) TO service_role;
 GRANT EXECUTE ON FUNCTION public.consume_lm_mobile_question(text, text, text) TO service_role;
+GRANT EXECUTE ON FUNCTION public.claim_lm_mobile_device(text, text, text, text, text, timestamptz) TO service_role;
 GRANT EXECUTE ON FUNCTION public.claim_lm_mobile_call(text, text, timestamptz) TO service_role;
 GRANT EXECUTE ON FUNCTION public.delete_lm_mobile_account(text, text) TO service_role;

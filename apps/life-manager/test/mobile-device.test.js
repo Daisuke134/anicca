@@ -23,3 +23,17 @@ test("device deletion is authenticated and idempotent", async () => {
   assert.deepEqual(await removeMobileDevice({ uid: "user-a" }, { token }, { store }), { deleted: true });
   assert.deepEqual(await removeMobileDevice({ uid: "user-a" }, { token }, { store }), { deleted: true });
 });
+
+test("the APNs token is globally unique and registration atomically transfers ownership", async () => {
+  const store = createMemoryMobileStore({ users: [{ uid: "user-a" }, { uid: "user-b" }] });
+  const token = "bb".repeat(32);
+  const first = await upsertMobileDevice({ uid: "user-a" }, { token, environment: "production", locale: "en", timezone: "UTC" }, { store });
+  const second = await upsertMobileDevice({ uid: "user-b" }, { token, environment: "production", locale: "ja", timezone: "Asia/Tokyo" }, { store });
+  assert.notEqual(first.deviceId, second.deviceId);
+  assert.equal(store._devices.size, 1);
+  assert.equal([...store._devices.values()][0].uid, "user-b");
+  await removeMobileDevice({ uid: "user-a" }, { token }, { store });
+  assert.equal(store._devices.size, 1);
+  await removeMobileDevice({ uid: "user-b" }, { token }, { store });
+  assert.equal(store._devices.size, 0);
+});

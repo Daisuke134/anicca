@@ -243,10 +243,11 @@ function createSupabaseMobileStore(options = {}) {
       }, "call_write_failed");
     },
     async upsertDevice(scope, value) {
-      const result = await request("/rest/v1/lm_mobile_devices", {
-        method: "POST", headers: { "content-type": "application/json", Prefer: "resolution=merge-duplicates,return=representation" }, body: JSON.stringify({ uid: requireScope(scope).uid, ...value }),
+      const result = await rpc("claim_lm_mobile_device", {
+        p_uid: requireScope(scope).uid, p_token: value.token, p_environment: value.environment,
+        p_locale: value.locale, p_timezone: value.timezone, p_last_seen_at: value.last_seen_at || new Date().toISOString(),
       }, "device_write_failed");
-      return asRow(result.body) || value;
+      return asRow(result) || value;
     },
     async deleteDevice(scope, token) {
       requireScope(scope);
@@ -364,8 +365,19 @@ function createMemoryMobileStore(options = {}) {
       return { ...row };
     },
     async finishCallAttempt(scope, value) { const row = calls.get(value.attemptId); if (row && row.uid === scoped(scope)) Object.assign(row, value); },
-    async upsertDevice(scope, value) { const uid = scoped(scope); const row = { ...value, uid, deviceId: value.deviceId || `device:v1:${uid}:${value.token.slice(-8)}` }; devices.set(`${uid}:${value.token}`, row); return { ...row }; },
-    async deleteDevice(scope, token) { devices.delete(`${scoped(scope)}:${token}`); return { deleted: true }; },
+    async upsertDevice(scope, value) {
+      const uid = scoped(scope);
+      for (const [key, row] of devices) if (row.token === value.token && row.uid !== uid) devices.delete(key);
+      const row = { ...value, uid, deviceId: value.deviceId || `device:v1:${uid}:${value.token.slice(-8)}` };
+      devices.set(value.token, row);
+      return { ...row };
+    },
+    async deleteDevice(scope, token) {
+      const uid = scoped(scope);
+      const row = devices.get(token);
+      if (row && row.uid === uid) devices.delete(token);
+      return { deleted: true };
+    },
     async readDeletionReceipt(scope, operationId) { const uid = scoped(scope); return deletionReceipts.get(`${uid}:${operationId}`) || null; },
     async writeDeletionReceipt(scope, receipt) { const uid = scoped(scope); deletionReceipts.set(`${uid}:${receipt.operationId}`, { ...receipt }); return receipt; },
     async deleteAccount(scope, options2 = {}) {

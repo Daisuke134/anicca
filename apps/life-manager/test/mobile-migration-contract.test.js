@@ -15,6 +15,7 @@ test("mobile migration persists the Gate 3 tenant, replay, cursor, device, call,
   for (const fn of [
     "claim_lm_mobile_oauth_state", "claim_lm_mobile_idempotency", "complete_lm_mobile_idempotency",
     "rotate_lm_mobile_refresh", "consume_lm_mobile_question", "claim_lm_mobile_call", "delete_lm_mobile_account",
+    "claim_lm_mobile_device",
   ]) assert.match(SQL, new RegExp(`CREATE OR REPLACE FUNCTION public\\.${fn}\\b`));
   assert.match(SQL, /product_locale[^\n]*text/);
   assert.match(SQL, /calls_enabled boolean/);
@@ -26,5 +27,6 @@ test("mobile migration persists the Gate 3 tenant, replay, cursor, device, call,
   assert.match(SQL, /result_expires_at timestamptz/);
   assert.match(SQL, /sequence bigint GENERATED ALWAYS AS IDENTITY/);
   assert.match(SQL, /token text NOT NULL CHECK \(token ~ '\^\[0-9a-fA-F\]\{64\}\$'/);
+  assert.match(SQL, /CREATE UNIQUE INDEX IF NOT EXISTS lm_mobile_devices_token_unique/);
   assert.doesNotMatch(SQL, /raw_access_token|raw_refresh_token|raw_bearer/i);
 });
