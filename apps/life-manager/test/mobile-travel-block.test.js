@@ -84,6 +84,20 @@ test("canonical payload hashing ignores key order but changes event facts", () =
   assert.notEqual(a.hash, canonicalTravelPayload({ ...BASE.payload, location: "Different Station" }).hash);
 });
 
+test("canonical payload hashing treats Google's offset-normalized timestamps as the same instants", () => {
+  const stored = canonicalTravelPayload({
+    ...BASE.payload,
+    start: { dateTime: "2026-08-08T20:21:06.000Z", timeZone: "Asia/Tokyo" },
+    end: { dateTime: "2026-08-08T20:51:06.000Z", timeZone: "Asia/Tokyo" },
+  });
+  const provider = canonicalTravelPayload({
+    ...BASE.payload,
+    start: { dateTime: "2026-08-09T05:21:06+09:00", timeZone: "Asia/Tokyo" },
+    end: { dateTime: "2026-08-09T05:51:06+09:00", timeZone: "Asia/Tokyo" },
+  });
+  assert.equal(provider.hash, stored.hash);
+});
+
 test("proxy contract uses exact connected account and never stable UID as provider owner", async () => {
   const calls = [];
   const calendar = makeComposioCalendar({

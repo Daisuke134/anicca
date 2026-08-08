@@ -19,11 +19,15 @@ function text(value, field, { required = false, max = 2048 } = {}) {
 function datePart(value, timezone, field) {
   const source = value && typeof value === "object" ? value : { dateTime: value };
   const dateTime = text(source.dateTime || source.date_time, `${field}.dateTime`, { required: true, max: 128 });
-  if (!Number.isFinite(Date.parse(dateTime)) || !/(?:Z|[+-]\d\d:\d\d)$/u.test(dateTime)) {
+  const parsedMs = Date.parse(dateTime);
+  if (!Number.isFinite(parsedMs) || !/(?:Z|[+-]\d\d:\d\d)$/u.test(dateTime)) {
     throw new MobileError("travel_block_invalid", `Invalid ${field}.dateTime.`);
   }
+  // Google Calendar may rewrite the same instant from UTC to the event's IANA offset.
+  // Hash the instant, not the provider's RFC3339 spelling, while retaining timeZone for display.
+  const canonicalDateTime = new Date(parsedMs).toISOString();
   const timeZone = text(source.timeZone || source.timezone || timezone, `${field}.timeZone`, { max: 128 });
-  return timeZone ? { dateTime, timeZone } : { dateTime };
+  return timeZone ? { dateTime: canonicalDateTime, timeZone } : { dateTime: canonicalDateTime };
 }
 
 function normalizeTravelPayload(payload = {}) {
