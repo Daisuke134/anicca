@@ -7,6 +7,7 @@ const DECLINED_STATUSES = new Set(["declined", "cancelled", "canceled"]);
 const SOURCE_RANK = Object.freeze({ calendar: 0, gmail: 1, contacts: 2, public_web: 3, user_confirmation: 4 });
 const DEFAULT_CONFIDENCE = Object.freeze({ calendar: 1, gmail: 0.9, contacts: 0.9, public_web: 0.4, user_confirmation: 1 });
 const EMAIL_RE = /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/;
+const APPROVED_CONTACT_PROVIDER_NAMES = new Set(["approvedContacts", "approved_contacts", "searchApprovedContacts"]);
 
 const PROVIDER_NAMES = Object.freeze({
   gmail: ["connectedGmail", "connected_gmail", "searchConnectedGmail", "searchGmail", "gmail"],
@@ -80,6 +81,7 @@ function readEvidenceRefs(value) {
     ...readReferenceValues(value.evidenceRefs),
     ...readReferenceValues(value.evidence_ref),
     ...readReferenceValues(value.evidenceReference),
+    ...readReferenceValues(value.evidence),
   ];
 }
 
@@ -145,10 +147,10 @@ function providerEvidenceRefs(payload) {
 function providerFunction(deps, names) {
   if (!deps || typeof deps !== "object") return null;
   for (const name of names) {
-    if (typeof deps[name] === "function") return deps[name].bind(deps);
+    if (typeof deps[name] === "function") return { name, fn: deps[name].bind(deps) };
     const adapter = deps[name];
-    if (adapter && typeof adapter.search === "function") return adapter.search.bind(adapter);
-    if (adapter && typeof adapter.resolve === "function") return adapter.resolve.bind(adapter);
+    if (adapter && typeof adapter.search === "function") return { name, fn: adapter.search.bind(adapter) };
+    if (adapter && typeof adapter.resolve === "function") return { name, fn: adapter.resolve.bind(adapter) };
   }
   return null;
 }
@@ -157,9 +159,12 @@ function fallbackEvidenceRef(stage, event, index) {
   return `${stage}:event:${eventReference(event)}:candidate:${index}`;
 }
 
-function normalizeCandidate(raw, { stage, event, index, actorSet, defaultRole, defaultRefs = [] }) {
+function normalizeCandidate(raw, {
+  stage, event, index, actorSet, defaultRole, defaultRefs = [], requireApproved = false,
+}) {
   if (!raw || typeof raw !== "object") return null;
   if (raw.verified === false || raw.isVerified === false) return null;
+  if (stage === "contacts" && (requireApproved && raw.approved !== true && raw.isApproved !== true)) return null;
   if (stage === "contacts" && (raw.approved === false || raw.isApproved === false)) return null;
   if (stage === "public_web" && (raw.public === false || raw.isPublic === false ||
       String(raw.visibility || "").toLowerCase() === "private")) return null;
@@ -169,7 +174,10 @@ function normalizeCandidate(raw, { stage, event, index, actorSet, defaultRole, d
     ...defaultRefs,
     ...readEvidenceRefs(raw),
   ];
-  if (refs.length === 0) refs.push(fallbackEvidenceRef(stage, event, index));
+  if (refs.length === 0) {
+    if (stage !== "calendar" && stage !== "user_confirmation") return null;
+    refs.push(fallbackEvidenceRef(stage, event, index));
+  }
   const source = text(raw.source || raw.source_type || raw.sourceType) || stage;
   const confidence = raw.confidence === undefined || raw.confidence === null
     ? DEFAULT_CONFIDENCE[stage]
@@ -228,6 +236,7 @@ function unwrapConfirmation(payload) {
 
 function confirmationSelection(payload, existing, context) {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) return null;
+  const providerRefs = providerEvidenceRefs(payload);
   const selectedEmail = normalizeEmail(
     payload.selectedEmail || payload.selected_email || payload.confirmedEmail || payload.confirmed_email,
   );
@@ -239,6 +248,7 @@ function confirmationSelection(payload, existing, context) {
         evidence_refs: [...new Set([
           ...found.evidence_refs,
           ...readEvidenceRefs(payload),
+          ...providerRefs,
           `user_confirmation:event:${eventReference(context.event)}:selected`,
         ])].sort(),
       };
@@ -246,11 +256,11 @@ function confirmationSelection(payload, existing, context) {
     return normalizeCandidate({
       email: selectedEmail,
       display_name: payload.display_name || payload.displayName || payload.name,
-      evidence_refs: readEvidenceRefs(payload),
+      evidence_refs: [...readEvidenceRefs(payload), ...providerRefs],
       confidence: payload.confidence,
       event_role: payload.event_role || payload.eventRole,
     }, { stage: "user_confirmation", event: context.event, index: 0, actorSet: context.actorSet,
-      defaultRole: "attendee" });
+      defaultRole: "attendee", defaultRefs: providerRefs });
   }
 
   const selected = unwrapConfirmation(payload);
@@ -258,7 +268,7 @@ function confirmationSelection(payload, existing, context) {
   if (candidates.length === 0) return null;
   const normalized = candidates.map((raw, index) => normalizeCandidate(raw, {
     stage: "user_confirmation", event: context.event, index, actorSet: context.actorSet,
-    defaultRole: "attendee",
+    defaultRole: "attendee", defaultRefs: providerRefs,
   })).filter(Boolean);
   return normalized.length === 1 ? normalized[0] : normalized;
 }
@@ -296,9 +306,9 @@ async function resolveLateRecipients({ uid, event, actorEmails } = {}, deps = {}
   const merged = new Map();
   const evidenceRefs = new Set();
 
-  const add = (raw, stage, index, defaultRole = "attendee", defaultRefs = []) => {
+  const add = (raw, stage, index, defaultRole = "attendee", defaultRefs = [], options = {}) => {
     const candidate = normalizeCandidate(raw, {
-      stage, event: inputEvent, index, actorSet, defaultRole, defaultRefs,
+      stage, event: inputEvent, index, actorSet, defaultRole, defaultRefs, ...options,
     });
     if (!candidate) return;
     for (const ref of candidate.evidence_refs) evidenceRefs.add(ref);
@@ -317,12 +327,16 @@ async function resolveLateRecipients({ uid, event, actorEmails } = {}, deps = {}
     if (!provider) return;
     let payload;
     try {
-      payload = await provider(context);
+      payload = await provider.fn(context);
     } catch {
       return;
     }
-    for (const ref of providerEvidenceRefs(payload)) evidenceRefs.add(ref);
-    for (const [index, candidate] of providerCandidates(payload).entries()) add(candidate, stage, index);
+    const stageEvidenceRefs = providerEvidenceRefs(payload);
+    for (const ref of stageEvidenceRefs) evidenceRefs.add(ref);
+    const requireApproved = stage === "contacts" && !APPROVED_CONTACT_PROVIDER_NAMES.has(provider.name);
+    for (const [index, candidate] of providerCandidates(payload).entries()) {
+      add(candidate, stage, index, "attendee", stageEvidenceRefs, { requireApproved });
+    }
   };
 
   await runStage("gmail", PROVIDER_NAMES.gmail);
@@ -338,7 +352,7 @@ async function resolveLateRecipients({ uid, event, actorEmails } = {}, deps = {}
     if (confirmation) {
       let payload;
       try {
-        payload = await confirmation({
+        payload = await confirmation.fn({
           ...context,
           candidates: candidates.map(publicCandidate),
           evidenceRefs: [...evidenceRefs].sort(),
@@ -347,7 +361,12 @@ async function resolveLateRecipients({ uid, event, actorEmails } = {}, deps = {}
       } catch {
         payload = null;
       }
+      for (const ref of providerEvidenceRefs(payload)) evidenceRefs.add(ref);
       const selection = confirmationSelection(payload, candidates, { event: inputEvent, actorSet });
+      const selectedCandidates = Array.isArray(selection) ? selection : [selection];
+      for (const selected of selectedCandidates) {
+        for (const ref of (selected && selected.evidence_refs) || []) evidenceRefs.add(ref);
+      }
       if (Array.isArray(selection)) {
         if (selection.length === 1) {
           merged.clear();
