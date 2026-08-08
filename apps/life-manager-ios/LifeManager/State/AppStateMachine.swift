@@ -65,6 +65,7 @@ final class AppViewModel {
     private let profileService: ProfileServicing
     private let analysisService: AnalysisServicing
     private let retryStore: OperationRetryStoring
+    private let paywallReceiptStore: SoftPaywallReceiptStoring
     let chatViewModel: ChatViewModel?
     let settingsViewModel: SettingsViewModel?
     let paywallViewModel: SoftPaywallViewModel?
@@ -85,12 +86,14 @@ final class AppViewModel {
         chat: ChatServicing? = nil,
         settings: SettingsViewModel? = nil,
         paywall: SoftPaywallViewModel? = nil,
-        retryStore: OperationRetryStoring = UserDefaultsOperationRetryStore()
+        retryStore: OperationRetryStoring = UserDefaultsOperationRetryStore(),
+        paywallReceiptStore: SoftPaywallReceiptStoring = UserDefaultsSoftPaywallReceiptStore()
     ) {
         self.auth = auth
         profileService = profile
         analysisService = analysis
         self.retryStore = retryStore
+        self.paywallReceiptStore = paywallReceiptStore
         if let chat {
             chatViewModel = ChatViewModel(service: chat)
         } else {
@@ -217,7 +220,30 @@ final class AppViewModel {
     }
 
     func showSoftPaywall() {
-        guard route == .chat, lastAnalysisStatus == .routeReady, !hasPresentedSoftPaywall else { return }
+        guard
+            route == .chat,
+            lastAnalysisStatus == .routeReady,
+            profile?.offerStatus == .available,
+            !hasPresentedSoftPaywall
+        else { return }
+        hasPresentedSoftPaywall = true
+        route = .softPaywall
+    }
+
+    func presentSoftPaywallIfEligible() async {
+        guard
+            route == .chat,
+            lastAnalysisStatus == .routeReady,
+            profile?.offerStatus == .available,
+            !hasPresentedSoftPaywall,
+            let userID = profile?.id,
+            hasUsefulRouteCard
+        else { return }
+        guard !(await paywallReceiptStore.hasPresented(for: userID)) else {
+            hasPresentedSoftPaywall = true
+            return
+        }
+        await paywallReceiptStore.markPresented(for: userID)
         hasPresentedSoftPaywall = true
         route = .softPaywall
     }
@@ -285,6 +311,13 @@ final class AppViewModel {
 
     private func present(_ error: Error) {
         route = .fatal(AppErrorState(error: error))
+    }
+
+    private var hasUsefulRouteCard: Bool {
+        if let message = lastAnalysisReceipt?.message, RoutePresentation.card(for: message) != nil {
+            return true
+        }
+        return chatViewModel?.messages.contains { RoutePresentation.card(for: $0) != nil } == true
     }
 
     private func operationKey(for operation: RetryOperation, draft: ProfileDraft? = nil) async -> UUID {

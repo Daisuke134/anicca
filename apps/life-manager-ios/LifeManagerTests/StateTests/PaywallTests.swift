@@ -33,6 +33,75 @@ final class PaywallTests: XCTestCase {
         XCTAssertEqual(viewModel.route, .chat)
     }
 
+    func testAutomaticPaywallUsesBootstrapOfferAndDurableOneShotReceiptAfterRouteCard() async throws {
+        let receiptStore = TestSoftPaywallReceiptStore()
+        let routeAnalysis = try JSONDecoder.lifeManager.decode(
+            AnalysisResult.self,
+            from: ContractFixtureLoader.data(named: "analysis-route_ready.json")
+        )
+        let first = makeAppViewModel(
+            result: routeAnalysis,
+            offerStatus: .available,
+            receiptStore: receiptStore
+        )
+
+        await first.restoreSession()
+        await first.retryAnalysis()
+        XCTAssertEqual(first.route, .chat)
+        await first.presentSoftPaywallIfEligible()
+        XCTAssertEqual(first.route, .softPaywall)
+
+        first.continueFree()
+        await first.presentSoftPaywallIfEligible()
+        XCTAssertEqual(first.route, .chat)
+
+        let second = makeAppViewModel(
+            result: routeAnalysis,
+            offerStatus: .available,
+            receiptStore: receiptStore
+        )
+        await second.restoreSession()
+        await second.retryAnalysis()
+        await second.presentSoftPaywallIfEligible()
+        XCTAssertEqual(second.route, .chat)
+    }
+
+    func testAutomaticPaywallDoesNotPresentWhenBootstrapOfferIsUnavailable() async throws {
+        let routeAnalysis = try JSONDecoder.lifeManager.decode(
+            AnalysisResult.self,
+            from: ContractFixtureLoader.data(named: "analysis-route_ready.json")
+        )
+        let viewModel = makeAppViewModel(result: routeAnalysis, offerStatus: .unavailable)
+
+        await viewModel.restoreSession()
+        await viewModel.retryAnalysis()
+        await viewModel.presentSoftPaywallIfEligible()
+
+        XCTAssertEqual(viewModel.route, .chat)
+    }
+
+    func testChatProjectionWiresAutomaticPaywallAfterInitialRouteCard() throws {
+        let chatSource = try String(
+            contentsOf: URL(fileURLWithPath: #filePath)
+                .deletingLastPathComponent()
+                .deletingLastPathComponent()
+                .deletingLastPathComponent()
+                .appendingPathComponent("LifeManager/Features/Chat/ChatView.swift"),
+            encoding: .utf8
+        )
+        let rootSource = try String(
+            contentsOf: URL(fileURLWithPath: #filePath)
+                .deletingLastPathComponent()
+                .deletingLastPathComponent()
+                .deletingLastPathComponent()
+                .appendingPathComponent("LifeManager/App/RootView.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(chatSource.contains("await onUsefulRouteCard?()"))
+        XCTAssertTrue(rootSource.contains("presentSoftPaywallIfEligible"))
+    }
+
     func testPurchaseAndRestoreFailuresRemainVisibleAndDoNotClaimSuccess() async {
         let paywall = SoftPaywallViewModel(purchasing: FailingPaywallPurchasing())
 
@@ -45,11 +114,17 @@ final class PaywallTests: XCTestCase {
         XCTAssertFalse(paywall.didRestore)
     }
 
-    private func makeAppViewModel(status: AnalysisStatus) -> AppViewModel {
+    private func makeAppViewModel(
+        status: AnalysisStatus = .routeReady,
+        result: AnalysisResult? = nil,
+        offerStatus: OfferStatus = .available,
+        receiptStore: SoftPaywallReceiptStoring = TestSoftPaywallReceiptStore()
+    ) -> AppViewModel {
         AppViewModel(
             auth: PaywallAuthService(session: PaywallFixtures.session),
-            profile: PaywallProfileService(profile: PaywallFixtures.profile),
-            analysis: PaywallAnalysisService(result: PaywallFixtures.analysis(status: status))
+            profile: PaywallProfileService(profile: PaywallFixtures.profile(offerStatus: offerStatus)),
+            analysis: PaywallAnalysisService(result: result ?? PaywallFixtures.analysis(status: status)),
+            paywallReceiptStore: receiptStore
         )
     }
 }
@@ -68,13 +143,16 @@ private enum PaywallFixtures {
         refreshExpiresAt: Date.iso8601("2026-09-09T08:05:00.000Z")
     )
 
-    static let profile = UserProfile(
-        id: "user-1",
-        name: "Alex",
-        home: HomeAddress(status: .ready, display: "Home"),
-        productLocale: .en,
-        timezone: "America/Los_Angeles"
-    )
+    static func profile(offerStatus: OfferStatus) -> UserProfile {
+        UserProfile(
+            id: "user-1",
+            name: "Alex",
+            home: HomeAddress(status: .ready, display: "Home"),
+            productLocale: .en,
+            timezone: "America/Los_Angeles",
+            offerStatus: offerStatus
+        )
+    }
 
     static func analysis(status: AnalysisStatus) -> AnalysisResult {
         AnalysisResult(
@@ -117,4 +195,16 @@ private actor PaywallAnalysisService: AnalysisServicing {
     let result: AnalysisResult
     init(result: AnalysisResult) { self.result = result }
     func analyzeNextCommitment(idempotencyKey: UUID) async throws -> AnalysisResult { result }
+}
+
+private actor TestSoftPaywallReceiptStore: SoftPaywallReceiptStoring {
+    private var presentedUserIDs = Set<String>()
+
+    func hasPresented(for userID: String) async -> Bool {
+        presentedUserIDs.contains(userID)
+    }
+
+    func markPresented(for userID: String) async {
+        presentedUserIDs.insert(userID)
+    }
 }

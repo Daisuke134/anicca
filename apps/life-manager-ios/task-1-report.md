@@ -638,3 +638,25 @@ cannot clear another request's pending operation.
 ```text
 Analysis + APNs durable regression set: 4/4 passed, 0 failures
 ```
+
+## Fresh final review — bootstrap-gated automatic soft paywall
+
+### RED
+
+The new paywall contract initially could not compile because the app had no
+durable presentation-receipt store or automatic route-card callback. The
+existing UI only reached the paywall through the Upgrade button.
+
+### GREEN
+
+`AppViewModel` now gates presentation on bootstrap-derived
+`UserProfile.offerStatus == .available` and a useful `RoutePresentation.card`.
+`UserDefaultsSoftPaywallReceiptStore` records a one-shot receipt per user ID;
+the receipt is checked before every automatic/Upgrade presentation and is
+retained across a new view model. `ChatView` invokes the eligibility callback
+after its initial projection yields a route card, and RootView routes both the
+automatic callback and Upgrade action through it.
+
+```text
+Paywall + AppViewModel automatic presentation regressions: 7/7 passed, 0 failures
+```

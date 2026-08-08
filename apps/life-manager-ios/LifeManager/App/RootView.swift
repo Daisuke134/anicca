@@ -72,7 +72,12 @@ private struct RouteSurface: View {
                             viewModel: chatViewModel,
                             settingsViewModel: viewModel.settingsViewModel,
                             paywallViewModel: viewModel.paywallViewModel,
-                            onShowPaywall: { viewModel.showSoftPaywall() }
+                            onShowPaywall: {
+                                Task { await viewModel.presentSoftPaywallIfEligible() }
+                            },
+                            onUsefulRouteCard: {
+                                await viewModel.presentSoftPaywallIfEligible()
+                            }
                         )
                     } else {
                         chatView

@@ -218,6 +218,7 @@ private enum StateFixtures {
         productLocale: .en,
         timezone: "America/Los_Angeles",
         phone: phone,
+        offerStatus: .available,
         analysisStatus: analysisStatus
         )
     }

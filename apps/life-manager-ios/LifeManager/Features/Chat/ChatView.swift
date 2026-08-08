@@ -18,6 +18,7 @@ struct ChatView: View {
     private let paywallViewModel: SoftPaywallViewModel?
     private let pushRouter: PushNotificationRouter
     private let onShowPaywall: (() -> Void)?
+    private let onUsefulRouteCard: (@MainActor () async -> Void)?
     @State private var selectedRouteMessage: ChatMessage?
     @State private var showingSettings = false
 
@@ -27,13 +28,15 @@ struct ChatView: View {
         settingsViewModel: SettingsViewModel? = nil,
         paywallViewModel: SoftPaywallViewModel? = nil,
         pushRouter: PushNotificationRouter? = nil,
-        onShowPaywall: (() -> Void)? = nil
+        onShowPaywall: (() -> Void)? = nil,
+        onUsefulRouteCard: (@MainActor () async -> Void)? = nil
     ) {
         _viewModel = State(initialValue: viewModel)
         self.settingsViewModel = settingsViewModel
         self.paywallViewModel = paywallViewModel
         self.pushRouter = pushRouter ?? .shared
         self.onShowPaywall = onShowPaywall
+        self.onUsefulRouteCard = onUsefulRouteCard
     }
 
     var body: some View {
@@ -60,6 +63,8 @@ struct ChatView: View {
         }
         .task {
             await viewModel.loadInitial()
+            await Task.yield()
+            await onUsefulRouteCard?()
         }
         .onChange(of: scenePhase) { _, phase in
             guard phase == .active else { return }
