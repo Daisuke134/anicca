@@ -74,6 +74,9 @@ final class SettingsViewModelTests: XCTestCase {
         await viewModel.saveProfile()
 
         XCTAssertEqual(changedProfiles.map(\.productLocale), [.en, .ja])
+        XCTAssertEqual(changedProfiles.last?.name, "Alex")
+        XCTAssertEqual(changedProfiles.last?.home.display, "Home")
+        XCTAssertEqual(changedProfiles.last?.calendarStatus, .connected)
     }
 
     func testProductLocaleMapsToSwiftUILocaleIdentifier() {

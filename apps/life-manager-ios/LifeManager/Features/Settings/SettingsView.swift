@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @State private var viewModel: SettingsViewModel
+    @Environment(\.locale) private var locale
     private let paywallViewModel: SoftPaywallViewModel?
     @State private var showingCallConfirmation = false
     @State private var showingDeleteConfirmation = false
@@ -53,6 +54,7 @@ struct SettingsView: View {
                 Button("settings.cancel", role: .cancel) {}
             }
         }
+        .id(locale.identifier)
     }
 
     private var calendarSection: some View {

@@ -70,6 +70,14 @@ final class MaestroFlowContractTests: XCTestCase {
         XCTAssertTrue(root.contains("terminalDeletionReceipt"))
     }
 
+    func testSettingsNavigationTitleRebuildsWhenProductLocaleChanges() throws {
+        let settings = try Self.resource(named: "SettingsView.swift", in: "LifeManager/Features/Settings")
+
+        XCTAssertTrue(settings.contains("@Environment(\\.locale) private var locale"))
+        XCTAssertTrue(settings.contains(".id(locale.identifier)"))
+        XCTAssertTrue(settings.contains(".navigationTitle(\"settings.title\")"))
+    }
+
     func testCleanFastlaneLaneBuildsAndPackagesCheckoutFixtures() throws {
         let fastfile = try Self.resource(named: "Fastfile", in: "fastlane")
         let project = try Self.resource(named: "project.yml")
