@@ -184,7 +184,7 @@ reference contract above, targeted tests, fresh review, state commit, and push b
 - Produces: the sole registry file with ordered IDs:
   `life_manager_saas`, `anicca_ios`, `writer_agent`, `affiliate_agent`, `gig_work`, `x402_services`, `job_income`.
 
-- [ ] **Step 1: Add failing canonical-registry tests**
+- [x] **Step 1: Add failing canonical-registry tests**
 
 ```js
 test("canonical registry exposes exactly seven ordered financial units", () => {
@@ -201,7 +201,7 @@ test("canonical registry exposes exactly seven ordered financial units", () => {
 
 Also assert representative mappings for every runtime namespace, `cfo`/`fleet` exclusions, and Franklin exclusions.
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
 ```bash
 cd apps/life-call
@@ -210,7 +210,7 @@ node --test lib/cfo-registry.test.js
 
 Expected: FAIL with `ENOENT` for `config/cfo-financial-units.json`.
 
-- [ ] **Step 3: Create the complete registry**
+- [x] **Step 3: Create the complete registry**
 
 Use these exact values:
 
@@ -250,7 +250,7 @@ Create exclusions:
 ]
 ```
 
-- [ ] **Step 4: Run GREEN and diff check**
+- [x] **Step 4: Run GREEN and diff check**
 
 ```bash
 cd apps/life-call
@@ -259,13 +259,15 @@ cd ../..
 git diff --check
 ```
 
-- [ ] **Step 5: Commit and push Task 2**
+- [x] **Step 5: Commit and push Task 2**
 
 ```bash
 git add apps/life-call/config/cfo-financial-units.json apps/life-call/lib/cfo-registry.test.js
 git commit -m "feat(cfo): register canonical financial units"
 git push
 ```
+
+Completion evidence: commit `51cf20fa3`; focused tests 9/9 PASS; task review approved with no findings.
 
 ---
 
