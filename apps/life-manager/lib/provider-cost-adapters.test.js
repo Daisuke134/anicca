@@ -4,6 +4,8 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 
 const adapters = require("./provider-cost-adapters.js");
+const { routesDriveMinutes, legacyTransitMinutes, transitFetchPlan } = require("./travel.js");
+const { geocodeAddress, clearGeocodeProcessMemo } = require("./geocode-cache.js");
 
 function recorder() {
   const events = [];
@@ -112,4 +114,59 @@ test("a failed adapter write returns the recorder result and does not synthesize
   assert.equal(ok, false);
   assert.equal(seen[0].actualBilledUsd, null);
   assert.notEqual(seen[0].estimatedUsd, 0);
+});
+
+test("route providers record each attempted Google operation and transit plan/guidance", async () => {
+  const r = recorder();
+  const original = global.fetch;
+  const urls = [];
+  global.fetch = async (url) => {
+    urls.push(String(url));
+    if (String(url).includes("routes.googleapis.com")) {
+      return { ok: true, json: async () => ({ routes: [{ duration: "120s" }] }) };
+    }
+    if (String(url).includes("maps.googleapis.com")) {
+      return { ok: true, json: async () => ({ status: "OK", routes: [{ legs: [{ duration: { value: 180 } }] }] }) };
+    }
+    return { ok: true, json: async () => ({ durationSecs: 120 }) };
+  };
+  try {
+    await routesDriveMinutes("a", "b", "k", Date.now() + 60000, Date.now(), { uid: "u1", requestId: "google-route", recordProviderCost: r.deps.recordProviderCost });
+    await legacyTransitMinutes("a", "b", "k", Date.now() + 60000, Date.now(), null, { uid: "u1", requestId: "google-transit", recordProviderCost: r.deps.recordProviderCost });
+    await transitFetchPlan({ lat: 35.6, lon: 139.7 }, { lat: 35.7, lon: 139.8 }, {
+      eventAt: "2026-08-08T02:00:00.000Z", timezone: "UTC", uid: "u1",
+      fetchImpl: async (url) => ({ ok: true, json: async () => ({ durationSecs: 120, url }) }),
+      recordProviderCost: r.deps.recordProviderCost,
+    });
+  } finally { global.fetch = original; }
+  assert.ok(urls.some((url) => url.includes("routes.googleapis.com")));
+  assert.ok(urls.some((url) => url.includes("maps.googleapis.com")));
+  assert.deepEqual(r.events.map((event) => [event.provider, event.operation]), [
+    ["google", "routes"], ["google", "transit"], ["transit", "plan"], ["transit", "guidance"],
+  ]);
+});
+
+test("a successful Google geocode miss records one operation while a cache hit records none", async () => {
+  const r = recorder();
+  clearGeocodeProcessMemo();
+  const store = new Map();
+  const cache = {
+    get: async (key) => store.get(key) || null,
+    put: async (key, value) => { store.set(key, value); return true; },
+  };
+  let googleCalls = 0;
+  const fetchImpl = async () => {
+    googleCalls += 1;
+    return { ok: true, json: async () => ({ results: [{ geometry: { location: { lat: 35.6, lng: 139.7 } } }] }) };
+  };
+  await geocodeAddress("Unique Cost Guard Place", "maps", {
+    store: cache, fetchImpl, recordProviderCost: r.deps.recordProviderCost, uid: "u1", requestId: "geo-unique",
+  });
+  clearGeocodeProcessMemo();
+  await geocodeAddress("Unique Cost Guard Place", "maps", {
+    store: cache, fetchImpl, recordProviderCost: r.deps.recordProviderCost, uid: "u1", requestId: "geo-unique-hit",
+  });
+  assert.equal(googleCalls, 1);
+  assert.equal(r.events.length, 1);
+  assert.equal(r.events[0].operation, "geocoding");
 });

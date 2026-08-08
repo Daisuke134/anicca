@@ -72,7 +72,8 @@ const { handleTypedPayoutAddress } = require("./lib/payout-address-intake.js");
 const { handleBrowserTaskMessage } = require("./lib/browser-task-intake.js");
 const { startBrowserJobLoop } = require("./lib/browser-job-runtime.js");
 const { claimEvent, unclaimEvent, applyBilling } = require("./lib/billing.js");
-const { recordCost } = require("./lib/ledger.js");
+const { recordProviderCost: writeProviderCost } = require("./lib/ledger.js");
+const { recordGeminiSession } = require("./lib/provider-cost-adapters.js");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY || "sk_test_placeholder"); // apiKey unused by constructEvent
 const SUPA_URL = process.env.SUPABASE_URL, SUPA_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const COMPOSIO_KEY = process.env.COMPOSIO_API_KEY;
@@ -883,6 +884,7 @@ wss.on("connection", (carrierWs, req) => {
   let liveWsOpened = 0;
   let gotAudio = false;       // has Gemini emitted any audio yet on this call?
   let geminiReconnects = 0;   // one-retry guard for a pre-audio socket drop
+  let geminiUsageMetadata = null;
   const carrierSend = (o) => { if (carrierWs.readyState === WebSocket.OPEN) carrierWs.send(JSON.stringify(o)); };
   const geminiSend = (o) => { if (gemini && gemini.readyState === WebSocket.OPEN) gemini.send(JSON.stringify(o)); };
 
@@ -901,6 +903,8 @@ wss.on("connection", (carrierWs, req) => {
     gemini.on("message", (data) => {
       let msg;
       try { msg = JSON.parse(data.toString()); } catch { return; }
+      const usage = msg.usageMetadata || msg.usage_metadata || (msg.serverContent && msg.serverContent.usageMetadata);
+      if (usage && typeof usage === "object" && !Array.isArray(usage)) geminiUsageMetadata = usage;
       const r = routeGeminiMessage(msg, state, carrierSend, buildTelnyxMediaFrame);
       if (r.kind === "setupComplete") geminiSend(buildGeminiTurn(openingTurnForLang(lang)));
       if (r.kind === "audio") gotAudio = true;
@@ -931,11 +935,13 @@ wss.on("connection", (carrierWs, req) => {
       if (!geminiCostRecorded) {
         geminiCostRecorded = true;
         const quantity = Math.max(0, (Date.now() - geminiStartedAtMs) / 1000);
-        // Duration proxy from spec §13's measured ~$0.023/min. Google bills Live API by actual
-        // token usage, not wall time (https://ai.google.dev/gemini-api/docs/live-api/best-practices#pricing-billing),
-        // but this bridge does not receive billable token totals, so the ledger stores this explicit estimate.
-        recordCost({ uid: wakeUid || null, kind: "gemini_live", quantity, unit: "seconds",
-          estUsd: quantity / 60 * 0.023, meta: { reconnect: geminiReconnects } });
+        // Google bills Live API by token usage. Preserve provider usage metadata when supplied;
+        // otherwise the adapter records a wall-time estimate with actual_status=unknown.
+        void recordGeminiSession({
+          uid: wakeUid || null, requestId: `gemini:${wakeUid || "anonymous"}:${geminiStartedAtMs}`,
+          durationSeconds: quantity, usageMetadata: geminiUsageMetadata,
+          metadata: { kind: "gemini_live", reconnect: geminiReconnects },
+        }, { supaUrl: SUPA_URL, supaKey: SUPA_KEY }).catch(() => false);
       }
       onGeminiEnd("closed");
     });
@@ -979,8 +985,13 @@ wss.on("connection", (carrierWs, req) => {
     console.log(`[bridge] carrier closed in=${state.inFrames} out=${state.outFrames} live_ws_opened=${liveWsOpened} live=${liveCalls}`);
     if (callStartedAtMs != null) {
       const quantity = Math.max(0, (Date.now() - callStartedAtMs) / 1000);
-      recordCost({ uid: wakeUid || null, kind: "telnyx_call", quantity, unit: "seconds",
-        estUsd: quantity / 60 * 0.002, meta: { stream_id: state.streamSid || null } });
+      void writeProviderCost({
+        uid: wakeUid || null, provider: "telnyx", sku: "voice", operation: "call_session",
+        requestId: `telnyx:${wakeUid || "anonymous"}:${callStartedAtMs}`, quantity, unit: "seconds",
+        pricingVersion: "telnyx-session-estimate-2026-08", estimatedUsd: quantity / 60 * 0.002,
+        actualBilledUsd: null, actualStatus: "unknown",
+        metadata: { kind: "telnyx_call", stream_id: state.streamSid || null },
+      }, { supaUrl: SUPA_URL, supaKey: SUPA_KEY }).catch(() => false);
     }
     if (gemini) { try { gemini.close(); } catch {} }
   });

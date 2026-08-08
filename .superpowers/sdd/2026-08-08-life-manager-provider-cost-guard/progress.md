@@ -21,7 +21,7 @@
 | 2. Durable route cache | GREEN | original suite + new scope tests | 15/15 route/transit + 62/62 travel regression | pending |
 | 3. Transit facts/fallback | GREEN | structured projection + anchor tests | 31/31 transit/route tests; 59/59 combined focused | pending |
 | 4. Truthful cost event | GREEN | 5 contract failures (missing API) | 12/12 ledger contract | pending |
-| 5. Provider instrumentation | GREEN (adapter core) | adapter module missing | 8/8 adapter contracts | pending |
+| 5. Provider instrumentation | GREEN | adapter module/import module missing | 72/72 provider + focused regression | pending |
 | 6. Budget policy | pending | — | — | — |
 | 7. Owner report/deploy/measure | code-only pending | — | — | — |
 
@@ -73,4 +73,7 @@ Result: 43/43 passed, 0 failed, 0 skipped (2026-08-08).
 ## Task 5 receipt
 
 - RED: `node --test lib/provider-cost-adapters.test.js` failed at module load with `Cannot find module './provider-cost-adapters.js'`.
-- GREEN (adapter core): the new recorder adapters cover Google Geocoding/Routes, Transit, Composio, Gemini, Telnyx CDR, Resend, Railway, and Supabase; `node --test lib/provider-cost-adapters.test.js` → 8/8 passed. Runtime call-path wiring and import scheduling remain for the next adapter-sized slices.
+- GREEN (adapter core): the new recorder adapters cover Google Geocoding/Routes, Transit, Composio, Gemini, Telnyx CDR, Resend, Railway, and Supabase; `node --test lib/provider-cost-adapters.test.js` → 10/10 passed.
+- GREEN (runtime wiring): geocode misses, Google Routes/legacy transit, Transit `/plan` + guidance, Composio calls, Resend sends, Gemini Live sessions, and Telnyx call sessions now emit complete events. Cache hits do not emit provider spend.
+- GREEN (scheduled imports): `provider-cost-imports.js` imports Telnyx CDR actuals and Railway/Supabase allocations; loader failures return a failure receipt and write no synthetic zero row. `node --test lib/provider-cost-imports.test.js` → 3/3 passed.
+- GREEN focused verification: `node --test lib/provider-cost-adapters.test.js lib/provider-cost-imports.test.js lib/composio-budget.test.js lib/mail-resend.test.js lib/ledger.test.js lib/travel-transit-wire.test.js lib/transit.test.js lib/route-cache.test.js lib/travel-routes.test.js` → 72/72 passed.

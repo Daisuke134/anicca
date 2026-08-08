@@ -47,3 +47,18 @@ test("sendLateNotice replies to the USER's real email (so attendees reach the hu
   assert.match(cap.body.text, /Dais/);
   assert.match(cap.body.text, /12 minutes/);
 });
+
+test("a successful Resend request records recipient quantity with unknown provider billing", async () => {
+  const cap = {};
+  const events = [];
+  const r = await resendSend({
+    to: ["a@x.com", "b@y.com"], subject: "x", text: "y", resendKey: "k", fetchImpl: fakeFetch(cap), uid: "u1",
+    recordProviderCost: async (event) => { events.push(event); return true; },
+  });
+  assert.equal(r.sent, true);
+  assert.equal(events.length, 1);
+  assert.equal(events[0].provider, "resend");
+  assert.equal(events[0].quantity, 2);
+  assert.equal(events[0].actualStatus, "unknown");
+  assert.equal(events[0].actualBilledUsd, null);
+});

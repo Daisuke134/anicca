@@ -13,6 +13,7 @@ async function sendLateNotice(_uid, event, opts = {}) {
   if (!toAttendees.length) return { sent: false, reason: "no_destination" };
   const result = await resendLateNotice({
     toAttendees,
+    uid: _uid,
     userName: opts.userName,
     event,
     etaMinutes: opts.etaMinutes,

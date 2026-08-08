@@ -56,6 +56,14 @@ async function recordGoogleRoutes(input = {}, deps = {}) {
   }), deps);
 }
 
+async function recordGoogleTransit(input = {}, deps = {}) {
+  return write(unknownEvent({
+    provider: "google", sku: "directions-transit", operation: "transit", uid: input.uid,
+    requestId: input.requestId, quantity: input.quantity, unit: "request",
+    pricingVersion: "google-maps-2026-08", metadata: input.metadata,
+  }), deps);
+}
+
 async function recordTransitOperation(input = {}, deps = {}) {
   const operation = String(input.operation || "plan");
   return write(unknownEvent({
@@ -147,6 +155,7 @@ async function recordSupabaseAllocation(input = {}, deps = {}) {
 module.exports = {
   recordGoogleGeocoding,
   recordGoogleRoutes,
+  recordGoogleTransit,
   recordTransitOperation,
   recordComposioOperation,
   recordGeminiSession,

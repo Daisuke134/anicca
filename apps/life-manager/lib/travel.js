@@ -10,6 +10,8 @@ const { chooseRouter, parseTransitPlan } = require("./transit.js");
 const { makeRouteCache, createSupabaseRouteStore, timeBucket } = require("./route-cache.js");
 const { geocodeAddress, createSupabaseGeocodeStore } = require("./geocode-cache.js");
 const { interpretCalendarEvent } = require("./calendar-interpreter.js");
+const { recordGoogleRoutes, recordGoogleTransit, recordTransitOperation } = require("./provider-cost-adapters.js");
+const { recordProviderCost: writeProviderCost } = require("./ledger.js");
 
 // C3 (FIND-002): a process-lifetime route-result cache so the 60s scheduler tick does NOT recompute a
 // route it already has (~30 paid provider calls/event → 1). Keyed on (from_geo, to_geo, time_bucket).
@@ -109,8 +111,14 @@ function clampDepartIso(departAtMs, nowMs) {
   return new Date(ms).toISOString().replace(/\.\d{3}Z$/, "Z");
 }
 
-async function routesDriveMinutes(src, dst, mapsKey, departAtMs, nowMs) {
+async function routesDriveMinutes(src, dst, mapsKey, departAtMs, nowMs, opts = {}) {
   const body = JSON.stringify(buildDriveBody(src, dst, clampDepartIso(departAtMs, nowMs)));
+  const record = typeof opts.recordProviderCost === "function"
+    ? () => recordGoogleRoutes({ uid: opts.uid, requestId: opts.requestId, metadata: { cache: "miss" } }, {
+      recordProviderCost: opts.recordProviderCost,
+    }).catch(() => false)
+    : null;
+  if (record) await record();
   try {
     const r = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
       method: "POST",
@@ -130,7 +138,7 @@ async function routesDriveMinutes(src, dst, mapsKey, departAtMs, nowMs) {
 
 // arriveByMs: used for outbound (arrive-by event start). departAtMs: used for return legs (depart at
 // event end). Only one should be non-null; if neither is a future time, falls back to departure_time="now".
-async function legacyTransitMinutes(src, dst, mapsKey, arriveByMs, nowMs = Date.now(), departAtMs = null) {
+async function legacyTransitMinutes(src, dst, mapsKey, arriveByMs, nowMs = Date.now(), departAtMs = null, opts = {}) {
   const p = new URLSearchParams({ origin: src, destination: dst, mode: "transit", key: mapsKey });
   // NEVER-LATE: anchor transit to the EVENT, not "now". Future event → arrival_time = event start, so
   // the train time reflects the schedule the user will actually ride. Past/missing → fall back to now.
@@ -142,6 +150,12 @@ async function legacyTransitMinutes(src, dst, mapsKey, arriveByMs, nowMs = Date.
   } else {
     p.set("departure_time", "now");
   }
+  const record = typeof opts.recordProviderCost === "function"
+    ? () => recordGoogleTransit({ uid: opts.uid, requestId: opts.requestId }, {
+      recordProviderCost: opts.recordProviderCost,
+    }).catch(() => false)
+    : null;
+  if (record) await record();
   try {
     const r = await fetch(`https://maps.googleapis.com/maps/api/directions/json?${p}`);
     const j = await r.json();
@@ -159,13 +173,13 @@ async function legacyTransitMinutes(src, dst, mapsKey, arriveByMs, nowMs = Date.
 // Outbound (default false): transit uses arrival_time = event start (arrive-by).
 // Return (true): transit uses departure_time = ev.endMs (depart-at, not arrive-by).
 // The Google path (Routes Pro drive + legacy transit, never-late MAX bias). This is the FALLBACK now.
-async function directionsMinutesGoogle(src, dst, mapsKey, departAtMs = Date.now(), nowMs = Date.now(), departureMode = false) {
+async function directionsMinutesGoogle(src, dst, mapsKey, departAtMs = Date.now(), nowMs = Date.now(), departureMode = false, opts = {}) {
   if (!mapsKey || !src || !dst) return null;
   const [transit, drive] = await Promise.all([
     departureMode
-      ? legacyTransitMinutes(src, dst, mapsKey, null, nowMs, departAtMs)
-      : legacyTransitMinutes(src, dst, mapsKey, departAtMs, nowMs),
-    routesDriveMinutes(src, dst, mapsKey, departAtMs, nowMs),
+      ? legacyTransitMinutes(src, dst, mapsKey, null, nowMs, departAtMs, opts)
+      : legacyTransitMinutes(src, dst, mapsKey, departAtMs, nowMs, null, opts),
+    routesDriveMinutes(src, dst, mapsKey, departAtMs, nowMs, opts),
   ]);
   return acceptRouteResults({ legacyTransit: transit, routesDrive: drive }).minutes;
 }
@@ -192,6 +206,8 @@ async function transitFetchPlan(srcGeo, dstGeo, {
   timezone = "UTC",
   direction = "outbound",
   fetchImpl = globalThis.fetch,
+  uid = null,
+  recordProviderCost,
 } = {}) {
   try {
     const query = new URLSearchParams({
@@ -205,11 +221,21 @@ async function transitFetchPlan(srcGeo, dstGeo, {
       query.set("type", direction === "return" ? "departure" : "arrival");
     }
     const planUrl = `https://api.transit.ls8h.com/api/v1/plan?${query}`;
+    if (typeof recordProviderCost === "function") {
+      await recordTransitOperation({ uid, requestId: `transit:plan:${local ? `${local.date}T${local.time}` : "now"}`, operation: "plan" }, {
+        recordProviderCost,
+      }).catch(() => false);
+    }
     const planResponse = await fetchImpl(planUrl);
     if (!planResponse || !planResponse.ok) return null;
     const plan = await planResponse.json();
     // Guidance is display-only enrichment. A guidance outage must not discard
     // a valid journey plan; the two requests still share exactly one query.
+    if (typeof recordProviderCost === "function") {
+      await recordTransitOperation({ uid, requestId: `transit:guidance:${local ? `${local.date}T${local.time}` : "now"}`, operation: "guidance" }, {
+        recordProviderCost,
+      }).catch(() => false);
+    }
     const guidanceResponse = await fetchImpl(`https://api.transit.ls8h.com/api/v1/guidance/plan?${query}`);
     const guidance = guidanceResponse && guidanceResponse.ok ? await guidanceResponse.json().catch(() => null) : null;
     return guidance ? { ...plan, guidance } : plan;
@@ -222,14 +248,23 @@ async function directionsRoute(src, dst, mapsKey, departAtMs = Date.now(), nowMs
     store: opts._geocodeStore,
     fetchImpl: opts._fetchImpl,
     now: opts._now,
+    uid: opts._uid,
+    requestId: opts._geocodeRequestId,
+    recordProviderCost: opts._recordProviderCost,
   }));
   const transitFetch = opts._transitFetch || ((from, to, options) => transitFetchPlan(from, to, {
     ...options,
     fetchImpl: opts._transitFetchImpl || globalThis.fetch,
+    uid: opts._uid,
+    recordProviderCost: opts._recordProviderCost,
   }));
   const googleFn = opts._directionsMinutesGoogle || directionsMinutesGoogle;
   const cache = opts._routeCache || _routeCache; // tests inject a fresh cache to avoid cross-test leakage
-  const google = () => googleFn(src, dst, mapsKey, departAtMs, nowMs, departureMode);
+  const google = () => googleFn(src, dst, mapsKey, departAtMs, nowMs, departureMode, {
+    uid: opts._uid,
+    requestId: opts._googleRequestId || `google:routes:${new Date(departAtMs).toISOString()}:${departureMode ? "return" : "outbound"}`,
+    recordProviderCost: opts._recordProviderCost,
+  });
   if (!mapsKey || !src || !dst) return null;
   const [srcGeo, dstGeo] = await Promise.all([
     geocode(src, mapsKey, opts),
@@ -335,6 +370,9 @@ async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, nowMs = Date.
   const cal = calendar || getCalendar({ apiKey, gmailAccountId });
   const geocodeStore = supaUrl && supaKey ? createSupabaseGeocodeStore({ supaUrl, supaKey }) : undefined;
   const routeStore = supaUrl && supaKey ? createSupabaseRouteStore({ supaUrl, supaKey }) : undefined;
+  const providerCost = supaUrl && supaKey
+    ? (event) => writeProviderCost(event, { supaUrl, supaKey })
+    : undefined;
   const routeCache = routeStore ? makeRouteCache({ store: routeStore, ttlMs: 10 * 60_000 }) : _routeCache;
   const events = await listEvents7d(uid, apiKey, nowMs, cal, gmailAccountId);
   let inserted = 0, checked = 0, skipped = 0;
@@ -372,6 +410,7 @@ async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, nowMs = Date.
           _uid: uid,
           _timezone: timezone,
           _now: () => new Date(nowMs).toISOString(),
+          _recordProviderCost: providerCost,
         });
         if (mins == null && geminiKey) {
           // The location is a room name / unroutable string (e.g. "情報科学大講義室[L1]（IS）"). Let the
@@ -392,6 +431,7 @@ async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, nowMs = Date.
                 _uid: uid,
                 _timezone: timezone,
                 _now: () => new Date(nowMs).toISOString(),
+                _recordProviderCost: providerCost,
               });
             }
           } catch { /* fall through to null-mins skip below */ }
@@ -470,6 +510,7 @@ async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, nowMs = Date.
       _uid: uid,
       _timezone: timezone,
       _now: () => new Date(nowMs).toISOString(),
+      _recordProviderCost: providerCost,
     });
     if (retMins == null) { skipped++; continue; }
     const retLeaveMs = ev.endMs;                           // depart immediately after event ends
@@ -519,4 +560,5 @@ module.exports = {
   fillTravel, directionsMinutes, directionsRoute, transitFetchPlan, isTravel, travelDecision, returnDecision, claimTravel, unclaimTravel,
   // #71 pure helpers (unit-tested)
   parseDurationSeconds, minutesFromSeconds, buildDriveBody, clampDepartIso, acceptRouteResults,
+  routesDriveMinutes, legacyTransitMinutes, directionsMinutesGoogle,
 };

@@ -129,6 +129,10 @@ async function recordProviderCost(input = {}, opts = {}) {
     actual_status: event.actualStatus,
     metadata: event.metadata,
   };
+  // Existing daily/financial readers still understand the legacy kind/meta pair. Emit it only for
+  // explicitly migrated compatibility events; the provider contract itself remains complete above.
+  if (input.legacyKind != null) body.kind = String(input.legacyKind);
+  if (input.legacyMeta != null) body.meta = input.legacyMeta;
   try {
     const response = await fetchImpl(`${supaUrl.replace(/\/$/u, "")}/rest/v1/lm_api_cost`, {
       method: "POST",
@@ -205,9 +209,15 @@ async function recordDailyComposioPoll(uid, opts = {}) {
     if (!response.ok) throw new Error(`Supabase daily lookup failed (${response.status})`);
     const rows = await response.json().catch(() => []);
     if (Array.isArray(rows) && rows.length > 0) return false;
-    return recordCost({
-      uid, kind: "composio_poll", quantity: 1, unit: "day", estUsd: 0,
-      meta: { day: dayStart.toISOString().slice(0, 10) },
+    // The migrated daily row carries legacy kind explicitly, so the existing indexed query remains
+    // the single duplicate guard while provider dimensions are added to the same insert.
+    return recordProviderCost({
+      uid, provider: "composio", sku: "calendar_poll", operation: "daily_poll",
+      requestId: `composio:daily_poll:${uid}:${dayStart.toISOString().slice(0, 10)}`,
+      quantity: 1, unit: "day", pricingVersion: "composio-2026-08",
+      estimatedUsd: null, actualBilledUsd: null, actualStatus: "unknown",
+      metadata: { day: dayStart.toISOString().slice(0, 10) },
+      legacyKind: "composio_poll", legacyMeta: { day: dayStart.toISOString().slice(0, 10) },
     }, { supaUrl, supaKey, fetchImpl, log });
   } catch (error) {
     log("[ledger] composio daily aggregation failed", error && error.message ? error.message : error);
@@ -234,7 +244,20 @@ async function monthlyComposioCallCount(opts = {}) {
     if (!response.ok) throw new Error(`Supabase monthly count failed (${response.status})`);
     const range = response.headers && response.headers.get("content-range");
     const match = String(range || "").match(/\/(\d+)$/);
-    return match ? Number(match[1]) : 0;
+    const legacyCount = match ? Number(match[1]) : 0;
+    if (legacyCount > 0) return legacyCount;
+    // New provider rows use provider/operation dimensions. Keep the legacy query first so mixed
+    // deployments and existing budget dashboards continue to work without a migration race.
+    const providerQuery = ["select=id", "provider=eq.composio", "operation=eq.tool_execute",
+      `ts=gte.${encodeURIComponent(monthStart.toISOString())}`,
+      `ts=lt.${encodeURIComponent(nextMonth.toISOString())}`, "limit=1"].join("&");
+    const providerResponse = await fetchImpl(`${supaUrl}/rest/v1/lm_api_cost?${providerQuery}`, {
+      headers: headers(supaKey, { Prefer: "count=exact" }),
+    });
+    if (!providerResponse.ok) throw new Error(`Supabase provider monthly count failed (${providerResponse.status})`);
+    const providerRange = providerResponse.headers && providerResponse.headers.get("content-range");
+    const providerMatch = String(providerRange || "").match(/\/(\d+)$/);
+    return providerMatch ? Number(providerMatch[1]) : 0;
   } catch (error) {
     log("[ledger] monthly Composio count failed", error && error.message ? error.message : error);
     return null;

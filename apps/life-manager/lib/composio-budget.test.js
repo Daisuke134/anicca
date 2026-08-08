@@ -38,3 +38,24 @@ test("each real Composio execution records one composio_call without making ledg
     assert.deepEqual(await resilient.listEventsRaw("u1", {}), []);
   } finally { global.fetch = original; }
 });
+
+test("default Composio path records the complete provider event after a real tool request", async () => {
+  const providerCalls = [];
+  let composioCalls = 0;
+  const calendar = makeComposioCalendar({
+    apiKey: "k",
+    fetchImpl: async () => {
+      composioCalls += 1;
+      return { json: async () => ({ successful: true, data: { items: [] } }) };
+    },
+    recordProviderCost: async (event) => { providerCalls.push(event); return true; },
+  });
+  assert.deepEqual(await calendar.listEventsRaw("u1", {}), []);
+  assert.equal(composioCalls, 1);
+  assert.equal(providerCalls.length, 1);
+  assert.equal(providerCalls[0].provider, "composio");
+  assert.equal(providerCalls[0].operation, "tool_execute");
+  assert.equal(providerCalls[0].quantity, 1);
+  assert.equal(providerCalls[0].actualBilledUsd, null);
+  assert.equal(providerCalls[0].actualStatus, "unknown");
+});

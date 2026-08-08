@@ -7,6 +7,7 @@
 "use strict";
 
 const DEFAULT_TABLE = "lm_geocode_cache";
+const { recordGoogleGeocoding } = require("./provider-cost-adapters.js");
 
 function normalizeGeocodeAddress(value) {
   if (value == null) return "";
@@ -136,6 +137,9 @@ async function geocodeAddress(addr, mapsKey, {
   store = getDefaultStore(),
   fetchImpl = globalThis.fetch,
   now = () => new Date().toISOString(),
+  uid = null,
+  requestId,
+  recordProviderCost,
 } = {}) {
   const addressKey = normalizeGeocodeAddress(addr);
   if (!addressKey || !mapsKey) return null;
@@ -167,6 +171,13 @@ async function geocodeAddress(addr, mapsKey, {
     const geo = { lat: value.lat, lon: value.lng };
     processMemo.set(addressKey, geo);
     if (store && typeof store.put === "function") await Promise.resolve(store.put(addressKey, value)).catch(() => false);
+    if (typeof recordProviderCost === "function") {
+      await recordGoogleGeocoding({
+        uid,
+        requestId: requestId || `google:geocoding:${addressKey}`,
+        metadata: { cache: "miss" },
+      }, { recordProviderCost }).catch(() => false);
+    }
     return geo;
   } catch {
     return null;
