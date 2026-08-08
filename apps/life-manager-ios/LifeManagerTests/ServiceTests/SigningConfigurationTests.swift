@@ -52,6 +52,15 @@ final class SigningConfigurationTests: XCTestCase {
         XCTAssertTrue(debug.contains("CODE_SIGNING_REQUIRED[sdk=iphonesimulator*] = NO"))
     }
 
+    func testDebugUsesAutomaticDevelopmentSigningTeamForDeviceBuilds() throws {
+        let debug = try Self.resourceText(named: "Debug.xcconfig", in: "LifeManager/Config")
+
+        XCTAssertTrue(debug.contains("CODE_SIGN_STYLE = Automatic"))
+        XCTAssertTrue(debug.contains("DEVELOPMENT_TEAM = S5U8UH3JLJ"))
+        XCTAssertTrue(debug.contains("CODE_SIGN_IDENTITY = Apple Development"))
+        XCTAssertTrue(debug.contains("CODE_SIGN_IDENTITY[sdk=iphoneos*] = Apple Development"))
+    }
+
     func testReleaseUsesAutomaticDistributionSigningTeamAndPreservesSimulatorDebugOverrides() throws {
         let release = try Self.resourceText(named: "Release.xcconfig", in: "LifeManager/Config")
         let debug = try Self.resourceText(named: "Debug.xcconfig", in: "LifeManager/Config")
@@ -99,6 +108,18 @@ final class SigningConfigurationTests: XCTestCase {
         XCTAssertTrue(fastfile.contains("build_number.to_i.positive?"))
         XCTAssertTrue(fastfile.contains("ASC_API_KEY_PATH does not point to a file"))
         XCTAssertTrue(fastfile.contains("must not be empty"))
+    }
+
+    func testBuildForTestflightValidatesASCAndConfirmsIPABeforeReturning() throws {
+        let fastfile = try Self.resourceText(named: "Fastfile", in: "fastlane")
+        let laneStart = try XCTUnwrap(fastfile.range(of: "lane :build_for_testflight"))
+        let uploadStart = try XCTUnwrap(fastfile.range(of: "lane :upload_testflight"))
+        let lane = String(fastfile[laneStart.lowerBound..<uploadStart.lowerBound])
+
+        XCTAssertTrue(lane.contains("app_store_connect_api_key_from_env"))
+        XCTAssertTrue(lane.contains("File.file?(ipa_path)"))
+        XCTAssertTrue(lane.contains("File.size(ipa_path).positive?"))
+        XCTAssertTrue(lane.contains("system(\"unzip\", \"-tqq\", ipa_path)"))
     }
 
     private static func resourceURL(named name: String, in directory: String? = nil) -> URL {

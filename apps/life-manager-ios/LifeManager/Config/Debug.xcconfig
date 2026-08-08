@@ -1,6 +1,10 @@
 // Non-secret debug configuration. Local overrides are optional and ignored by git.
 LIFEMANAGER_API_BASE_URL = https:/$()/life-call-staging-staging.up.railway.app/api/mobile/v1
 LIFEMANAGER_CALLBACK_SCHEME = lifemanager
+CODE_SIGN_STYLE = Automatic
+DEVELOPMENT_TEAM = S5U8UH3JLJ
+CODE_SIGN_IDENTITY = Apple Development
+CODE_SIGN_IDENTITY[sdk=iphoneos*] = Apple Development
 CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*] = LifeManager/Config/Debug.entitlements
 CODE_SIGNING_ALLOWED[sdk=iphoneos*] = YES
 CODE_SIGNING_REQUIRED[sdk=iphoneos*] = YES

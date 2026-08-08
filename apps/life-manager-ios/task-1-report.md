@@ -660,3 +660,28 @@ automatic callback and Upgrade action through it.
 ```text
 Paywall + AppViewModel automatic presentation regressions: 7/7 passed, 0 failures
 ```
+
+## Fresh final review — Debug device signing and TestFlight preflight
+
+### RED
+
+The new signing/preflight regressions reproduced both gaps: Debug had no
+automatic development team/identity contract, and `build_for_testflight`
+returned after `build_app` without validating ASC credentials or the exported
+IPA.
+
+```text
+SigningConfigurationTests targeted review additions: 0/2 passed, 2 failures (8 failed assertions)
+```
+
+### GREEN
+
+Debug device builds now use automatic Development signing with team
+`S5U8UH3JLJ`, while the existing simulator overrides remain unsigned.
+`build_for_testflight` validates the required ASC environment/key file before
+the build and checks that the expected IPA is non-empty and passes `unzip -tqq`
+before returning. No archive, ASC mutation, or upload was run in this slice.
+
+```text
+SigningConfigurationTests: 10/10 passed, 0 failures
+```
