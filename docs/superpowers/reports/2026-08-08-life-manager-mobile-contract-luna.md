@@ -115,7 +115,7 @@ Current Gate 3 focused run:
 
 ```text
 cd apps/life-manager && node --test test/mobile-*.test.js
-112 passing, 0 failing
+115 passing, 0 failing
 ```
 
 The focused run covers session, profile/bootstrap, all five terminal analysis states, production-
@@ -227,3 +227,71 @@ provider, Calendar, APNs, call, account-deletion, staging, or production side ef
 Implementation commits for this round: `54eb58d1e` (persistent route cache/facts),
 `2dc2c0b42` (real router fixture validation). Finding #9 remains the separate truthful live-staging
 verification gate and is intentionally `planned_not_executed`.
+
+## Gate 3 review fix round 3/5 — SDD ledger append
+
+### Finding #1 — conflict-compatible persistent route cache writes
+
+RED evidence before the fix:
+
+```text
+cd apps/life-manager && node --test test/mobile-store.test.js test/mobile-migration-contract.test.js
+3 passing, 2 failing
+- migration still declared a partial (uid, cache_key) unique index, which cannot be inferred by ON CONFLICT (uid, cache_key)
+- a Supabase 409 was returned as a successful fallback value instead of surfacing route-cache write failure
+```
+
+GREEN evidence:
+
+```text
+cd apps/life-manager && node --test test/mobile-store.test.js test/mobile-migration-contract.test.js
+5 passing, 0 failing
+```
+
+The migration now drops/replaces the old partial index with a non-partial unique index on
+`(uid, cache_key)`, matching the store's `ON CONFLICT` target. Route writes require a persisted
+representation and surface 409 or missing-row responses as retryable `route_cache_write_failed`;
+they never claim persistence on a failure. Tests cover insert, same-key update/read, Supabase
+failure propagation, and the migration contract. The memory store also uses the authenticated UID
+object when deriving its tenant-safe cache key.
+
+### Finding #2 — real route domain and cursor contract
+
+The runtime contract no longer injects a route handler that returns `route.json`, nor a fixture-based
+cursor encoder. The analysis case drives the actual `computeMobileRoute` path with deterministic
+geocoding and Transit provider payloads, then compares the router's localized projection to the
+frozen fixture. Chat rows are real stored rows without prefilled cursors; the actual cursor encoder
+and decoder are exercised across two pages.
+
+RED evidence while removing the seams:
+
+```text
+cd apps/life-manager && node --test test/mobile-v1-runtime-contract.test.js
+4 passing, 1 failing
+- the real route path initially failed at the memory route-cache scope boundary
+
+cd apps/life-manager && node --test test/mobile-*.test.js
+113 passing, 2 failing
+- actual cursor payloads were seven characters and violated the frozen opaque-token minimum
+```
+
+GREEN evidence:
+
+```text
+cd apps/life-manager && node --test test/mobile-v1-runtime-contract.test.js
+10 passing, 0 failing (including all 13 endpoint cases and cursor round-trip)
+
+cd apps/life-manager && node --test test/mobile-*.test.js
+115 passing, 0 failing
+```
+
+Cursor encoding now uses a versioned `seq:<n>:v1` payload (with backward-compatible decoding),
+and the route/chat fixtures record the actual encoded values. The structured route adapter applies
+provider buffer seconds and preserves provider leg instructions while retaining nullable facts; no
+unsupported precision is fabricated. Syntax checks for all changed mobile JS files and
+`git diff --check` both passed. No live migration, provider, Calendar, APNs, call, deletion,
+staging, or production side effect was run.
+
+Implementation commits for this round: `341a8bfab` (cache upsert/failure semantics) and
+`78bcadf98` (real route/cursor runtime contract). Finding #9 remains the separate truthful
+live-staging verification gate and is intentionally `planned_not_executed`.
