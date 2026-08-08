@@ -379,3 +379,7 @@ remote: ff9413b890937b79199acda66a74f2bd72f32b2d refs/heads/feat/lm-daily-late-a
 The only remaining worktree modifications are another agent's uncommitted Task 3 files
 `apps/life-manager/lib/late-notice.js` and `apps/life-manager/lib/late-notice.test.js`; they were
 not staged, committed, reverted, or otherwise touched by this task.
+
+The receipt append itself was the report-only commit `4f7248b9a` and was pushed after a fresh
+`git fetch canonical`; the final remote verification returned
+`4f7248b9acade169a73aa23846ff3591bc2929c9` for `feat/lm-daily-late-approval`.
