@@ -109,9 +109,11 @@ final class ServiceProtocolTests: XCTestCase {
         let api = RecordingAPI()
         await api.setSessionStart(TestFixtures.sessionStart)
         await api.setSession(TestFixtures.rotatedSession)
-        let sink = SessionPropagationProbe()
+        let sessionAPISink = SessionPropagationProbe()
+        let authenticatedAPISink = SessionPropagationProbe()
         let relay = SessionPropagationRelay()
-        relay.attach(sink)
+        relay.attach(sessionAPISink)
+        relay.attach(authenticatedAPISink)
         let callback = URL(string: "lifemanager://oauth/callback?code=one-use-code&state=state:v1:calendar-consent-8f3a")!
         let service = AuthService(
             api: api,
@@ -122,8 +124,34 @@ final class ServiceProtocolTests: XCTestCase {
 
         _ = try await service.connectCalendar()
 
-        let propagatedSession = await sink.session()
-        XCTAssertEqual(propagatedSession, TestFixtures.rotatedSession)
+        let sessionAPISession = await sessionAPISink.session()
+        let authenticatedAPISession = await authenticatedAPISink.session()
+        XCTAssertEqual(sessionAPISession, TestFixtures.rotatedSession)
+        XCTAssertEqual(authenticatedAPISession, TestFixtures.rotatedSession)
+    }
+
+    func testRefreshPropagatesRotatedSessionToSessionAndAuthenticatedAPIs() async throws {
+        let store = InMemorySessionStore(session: TestFixtures.session)
+        let api = RecordingAPI()
+        let sessionAPISink = SessionPropagationProbe()
+        let authenticatedAPISink = SessionPropagationProbe()
+        let relay = SessionPropagationRelay()
+        relay.attach(sessionAPISink)
+        relay.attach(authenticatedAPISink)
+        let service = AuthService(
+            api: api,
+            sessionStore: store,
+            sessionRelay: relay
+        )
+        await api.setSession(TestFixtures.rotatedSession)
+
+        let refreshed = try await service.refresh(TestFixtures.session)
+
+        XCTAssertEqual(refreshed, TestFixtures.rotatedSession)
+        let sessionAPISession = await sessionAPISink.session()
+        let authenticatedAPISession = await authenticatedAPISink.session()
+        XCTAssertEqual(sessionAPISession, TestFixtures.rotatedSession)
+        XCTAssertEqual(authenticatedAPISession, TestFixtures.rotatedSession)
     }
 
     func testMutationRetryPolicyRetainsAmbiguousFailuresOnly() {

@@ -547,3 +547,27 @@ environment, backend-sibling, and sibling-worktree fallbacks are removed.
 ContractFixtureDecodingTests: 8/8 passed, 0 failures
 Hash + loader regression pair: 2/2 passed, 0 failures
 ```
+
+## Fresh final review — OAuth session propagation and revoke ordering
+
+### RED
+
+The new real-composition regression initially could not compile because
+`AppComposition` had no injectable transport/store/callback authorizer, and the
+OAuth relay had only one target. The test contract requires the exchange and
+refresh session to reach both the unauthenticated session API and the
+authenticated API before logout.
+
+### GREEN
+
+`SessionPropagationRelay` now fans out every exchange, refresh, and clear to
+all attached API clients. `AppComposition` injects the same transport/store and
+attaches both `sessionAPI` and `authenticatedAPI`; production construction
+still uses Keychain, URLSession, and the web OAuth authorizer. The real
+composition test pauses the server's `DELETE /session`, asserts the OAuth
+Bearer header and server revoke while the root is not yet `.welcome`, then
+releases the response and verifies the root transitions to `.welcome`.
+
+```text
+OAuth exchange + refresh + AppComposition logout: 3/3 passed, 0 failures
+```

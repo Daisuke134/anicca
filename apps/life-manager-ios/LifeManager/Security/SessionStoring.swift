@@ -12,23 +12,24 @@ protocol SessionPropagating: Sendable {
 
 final class SessionPropagationRelay: @unchecked Sendable {
     private let lock = NSLock()
-    private var target: (any SessionPropagating)?
+    private var targets: [any SessionPropagating] = []
 
     func attach(_ target: any SessionPropagating) {
         lock.lock()
-        self.target = target
+        targets.append(target)
         lock.unlock()
     }
 
     func propagate(_ session: Session?) async {
-        let target = targetSnapshot()
-        await target?.setSession(session)
+        for target in targetSnapshot() {
+            await target.setSession(session)
+        }
     }
 
-    private func targetSnapshot() -> (any SessionPropagating)? {
+    private func targetSnapshot() -> [any SessionPropagating] {
         lock.lock()
         defer { lock.unlock() }
-        return target
+        return targets
     }
 }
 

@@ -5,25 +5,35 @@ final class AppComposition {
     let viewModel: AppViewModel
     let deviceService: DeviceServicing
 
-    init(baseURL: URL, callbackScheme: String) {
-        let sessionStore = KeychainSessionStore()
+    init(
+        baseURL: URL,
+        callbackScheme: String,
+        transport: HTTPTransport? = nil,
+        sessionStore: SessionStoring? = nil,
+        callbackAuthorizer: OAuthCallbackAuthorizing? = nil
+    ) {
+        let sessionStore = sessionStore ?? KeychainSessionStore()
+        let transport = transport ?? URLSessionTransport()
         let sessionRelay = SessionPropagationRelay()
         let sessionAPI = APIClient(
             baseURL: baseURL,
+            transport: transport,
             sessionStore: sessionStore,
             refresh: { _ in throw APIError.refreshRejected }
         )
         let auth = AuthService(
             api: sessionAPI,
             sessionStore: sessionStore,
-            callbackAuthorizer: WebOAuthCallbackAuthorizer(callbackScheme: callbackScheme),
+            callbackAuthorizer: callbackAuthorizer ?? WebOAuthCallbackAuthorizer(callbackScheme: callbackScheme),
             sessionRelay: sessionRelay
         )
         let authenticatedAPI = APIClient(
             baseURL: baseURL,
+            transport: transport,
             sessionStore: sessionStore,
             refresh: { session in try await auth.refresh(session) }
         )
+        sessionRelay.attach(sessionAPI)
         sessionRelay.attach(authenticatedAPI)
         let profileService = ProfileService(api: authenticatedAPI)
         let callService = CallService(api: authenticatedAPI)
