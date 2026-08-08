@@ -335,6 +335,7 @@ test("the approval-card Telegram message id is carried on the result", async () 
   });
   assert.equal(result.sent, false);
   assert.equal(result.telegramMessageId, 4242);
+  assert.equal((await store.getDraft(result.draft.draftId)).telegramApprovalMessageId, "4242");
 });
 
 test("an approval-card Telegram send that returns no id leaves the field absent", async () => {

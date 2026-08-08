@@ -11,6 +11,7 @@ const {
   claimApprovedDelivery,
   recordLateDelivery,
   enqueueLateTelegramReceipt,
+  recordLateApprovalCard,
   claimLateTelegramReceipt,
   recordLateTelegramReceipt,
   releaseLateTelegramReceipt,
@@ -73,12 +74,14 @@ test("migration defines immutable late approval snapshots, unique event claims, 
   assert.match(sql, /telegram_receipt_status\s+text\s+NOT NULL/i);
   assert.match(sql, /telegram_receipt_claim_token/i);
   assert.match(sql, /telegram_receipt_message_id/i);
+  assert.match(sql, /telegram_approval_message_id/i);
   assert.match(sql, /CREATE OR REPLACE FUNCTION public\.lm_create_late_draft/i);
   assert.match(sql, /CREATE OR REPLACE FUNCTION public\.lm_get_late_draft/i);
   assert.match(sql, /CREATE OR REPLACE FUNCTION public\.lm_decide_late_draft/i);
   assert.match(sql, /CREATE OR REPLACE FUNCTION public\.lm_claim_late_delivery/i);
   assert.match(sql, /CREATE OR REPLACE FUNCTION public\.lm_record_late_delivery/i);
   assert.match(sql, /CREATE OR REPLACE FUNCTION public\.lm_enqueue_late_telegram_receipt/i);
+  assert.match(sql, /CREATE OR REPLACE FUNCTION public\.lm_record_late_approval_card/i);
   assert.match(sql, /CREATE OR REPLACE FUNCTION public\.lm_claim_late_telegram_receipt/i);
   assert.match(sql, /CREATE OR REPLACE FUNCTION public\.lm_record_late_telegram_receipt/i);
   assert.match(sql, /CREATE OR REPLACE FUNCTION public\.lm_release_late_telegram_receipt/i);
@@ -91,6 +94,7 @@ test("migration defines immutable late approval snapshots, unique event claims, 
     "lm_claim_late_delivery\\(text,text,integer\\)",
     "lm_record_late_delivery\\(text,text,text,timestamptz,text,text\\)",
     "lm_enqueue_late_telegram_receipt\\(text,text,text,text\\)",
+    "lm_record_late_approval_card\\(text,text,text,text\\)",
     "lm_claim_late_telegram_receipt\\(text,text,text,integer\\)",
     "lm_record_late_telegram_receipt\\(text,text,text,text,text\\)",
     "lm_release_late_telegram_receipt\\(text,text,text,text,text\\)",
@@ -294,6 +298,26 @@ test("an interrupted worker can retry its claim, and an expired claim can be rec
   assert.equal(takeover.status, "send_claimed");
 });
 
+test("the approval card message id is durable and idempotent before receipt edits", async () => {
+  const store = createInMemoryLateApprovalStore({ nowMs: NOW });
+  const draft = await createLateDraft(resolvedInput({ eventKey: "calendar:event-telegram-card" }), store);
+  const recorded = await recordLateApprovalCard({
+    uid: draft.uid, draftId: draft.draftId, chatId: "100", telegramMessageId: "777", nowMs: NOW,
+  }, store);
+  const duplicate = await recordLateApprovalCard({
+    uid: draft.uid, draftId: draft.draftId, chatId: "100", telegramMessageId: "777", nowMs: NOW,
+  }, store);
+  assert.equal(recorded.telegramApprovalMessageId, "777");
+  assert.equal(recorded.telegramApprovalChatId, "100");
+  assert.equal(duplicate.duplicate, true);
+  await assert.rejects(
+    () => recordLateApprovalCard({
+      uid: draft.uid, draftId: draft.draftId, chatId: "100", telegramMessageId: "778", nowMs: NOW,
+    }, store),
+    (error) => error && error.code === "approval_card_collision",
+  );
+});
+
 test("Telegram receipt outbox has one active claimant and releases a failed attempt for retry", async () => {
   const store = createInMemoryLateApprovalStore({ nowMs: NOW, leaseMs: 1_000 });
   const draft = await createLateDraft(resolvedInput({ eventKey: "calendar:event-telegram-outbox" }), store);
@@ -432,6 +456,10 @@ test("Supabase Telegram receipt outbox uses durable queue, claim, record, and re
       const rpc = String(url).split("/").pop();
       const body = JSON.parse(init.body || "{}");
       calls.push({ rpc, body });
+      if (rpc === "lm_record_late_approval_card") return {
+        ok: true, status: 200,
+        json: async () => ({ ...base, telegram_approval_chat_id: body.p_chat_id, telegram_approval_message_id: body.p_telegram_message_id }),
+      };
       if (rpc === "lm_enqueue_late_telegram_receipt") return { ok: true, status: 200, json: async () => base };
       if (rpc === "lm_claim_late_telegram_receipt") return {
         ok: true, status: 200,
@@ -449,16 +477,19 @@ test("Supabase Telegram receipt outbox uses durable queue, claim, record, and re
     },
   });
 
+  const card = await recordLateApprovalCard({ uid: "lm-user-1", draftId: base.draft_id, chatId: "100", telegramMessageId: "777" }, store);
   const queued = await enqueueLateTelegramReceipt({ uid: "lm-user-1", draftId: base.draft_id, chatId: "100", receiptText: "receipt body" }, store);
   const claimed = await claimLateTelegramReceipt({ uid: "lm-user-1", draftId: base.draft_id, workerId: "telegram-rpc-worker" }, store);
   const recorded = await recordLateTelegramReceipt({ uid: "lm-user-1", draftId: base.draft_id, claimToken: "claim-telegram-rpc", workerId: "telegram-rpc-worker", telegramMessageId: "702" }, store);
   const released = await releaseLateTelegramReceipt({ uid: "lm-user-1", draftId: base.draft_id, claimToken: "claim-telegram-rpc", workerId: "telegram-rpc-worker", error: "retry" }, store);
 
+  assert.equal(card.telegramApprovalMessageId, "777");
   assert.equal(queued.draftId, base.draft_id);
   assert.equal(claimed.claimed, true);
   assert.equal(recorded.telegramReceiptStatus, "sent");
   assert.equal(released.telegramReceiptStatus, "pending");
   assert.deepEqual(calls.map((call) => call.rpc), [
+    "lm_record_late_approval_card",
     "lm_enqueue_late_telegram_receipt",
     "lm_claim_late_telegram_receipt",
     "lm_record_late_telegram_receipt",

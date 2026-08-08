@@ -246,6 +246,18 @@ function normalizeTelegramReceiptReleaseInput(input = {}) {
   };
 }
 
+function normalizeTelegramApprovalCardInput(input = {}) {
+  return {
+    uid: text(input.uid, "uid", 256),
+    draftId: text(input.draftId || input.draft_id, "draft id", 128),
+    chatId: text(input.chatId || input.chat_id, "Telegram chat id", 256),
+    telegramMessageId: text(input.telegramMessageId || input.telegram_message_id || input.messageId || input.message_id,
+      "Telegram approval message id", 512),
+    nowMs: finiteNow(input.nowMs),
+    __nowProvided: Object.prototype.hasOwnProperty.call(input, "nowMs"),
+  };
+}
+
 function exposeRow(row, flags = {}) {
   if (!row) return null;
   const result = { ...clone(row), ...flags };
@@ -265,6 +277,7 @@ function exposeRow(row, flags = {}) {
     telegram_receipt_claim_expires_at: "telegramReceiptClaimExpiresAt",
     telegram_receipt_message_id: "telegramReceiptMessageId", telegram_receipt_error: "telegramReceiptError",
     telegram_receipt_attempts: "telegramReceiptAttempts",
+    telegram_approval_chat_id: "telegramApprovalChatId", telegram_approval_message_id: "telegramApprovalMessageId",
     created_at: "createdAt", updated_at: "updatedAt",
   };
   for (const [alias, key] of Object.entries(aliases)) {
@@ -308,6 +321,8 @@ function rowFromPersistence(raw) {
     telegramReceiptMessageId: value.telegramReceiptMessageId ?? value.telegram_receipt_message_id ?? null,
     telegramReceiptError: value.telegramReceiptError ?? value.telegram_receipt_error ?? null,
     telegramReceiptAttempts: Number(value.telegramReceiptAttempts ?? value.telegram_receipt_attempts ?? 0),
+    telegramApprovalChatId: value.telegramApprovalChatId ?? value.telegram_approval_chat_id ?? null,
+    telegramApprovalMessageId: value.telegramApprovalMessageId ?? value.telegram_approval_message_id ?? null,
     createdAt: value.createdAt ?? value.created_at ?? null,
     updatedAt: value.updatedAt ?? value.updated_at ?? null,
     ...(value.duplicate === true ? { duplicate: true } : {}),
@@ -454,6 +469,8 @@ function initialLateDraft(input) {
     telegramReceiptMessageId: null,
     telegramReceiptError: null,
     telegramReceiptAttempts: 0,
+    telegramApprovalChatId: null,
+    telegramApprovalMessageId: null,
     createdAt: now,
     updatedAt: now,
   };
@@ -563,6 +580,27 @@ function transitionLateTelegramReceiptEnqueue(row, input) {
   next.telegramReceiptStatus = row.telegramReceiptStatus || "pending";
   next.telegramReceiptChatId = normalized.chatId;
   next.telegramReceiptText = normalized.receiptText;
+  next.updatedAt = new Date(normalized.nowMs).toISOString();
+  return { row: next, duplicate };
+}
+
+function transitionLateApprovalCardRecord(row, input) {
+  const normalized = normalizeTelegramApprovalCardInput(input);
+  assertRowId(row);
+  assertTenant(row, normalized.uid);
+  if (row.recipientStatus !== "resolved") {
+    fail("approval_card_not_sendable", "only a resolved late draft can own an approval card");
+  }
+  const next = clone(row);
+  if (row.telegramApprovalMessageId != null && String(row.telegramApprovalMessageId) !== normalized.telegramMessageId) {
+    fail("approval_card_collision", "a different Telegram approval card already exists");
+  }
+  if (row.telegramApprovalChatId != null && String(row.telegramApprovalChatId) !== normalized.chatId) {
+    fail("approval_card_collision", "a different Telegram approval chat already exists");
+  }
+  const duplicate = row.telegramApprovalMessageId != null;
+  next.telegramApprovalChatId = normalized.chatId;
+  next.telegramApprovalMessageId = normalized.telegramMessageId;
   next.updatedAt = new Date(normalized.nowMs).toISOString();
   return { row: next, duplicate };
 }
@@ -722,6 +760,16 @@ async function enqueueLateTelegramReceipt(input, store) {
   });
 }
 
+async function recordLateApprovalCard(input, store) {
+  const normalized = normalizeTelegramApprovalCardInput(input);
+  const target = store || createSupabaseLateApprovalStore();
+  const result = await lookupOperation(target, ["recordLateApprovalCard", "recordApprovalCard"])(normalized);
+  const row = rowFromPersistence(result && result.row ? result.row : result);
+  return exposeRow(row, {
+    ...(result && result.duplicate ? { duplicate: true } : {}),
+  });
+}
+
 async function claimLateTelegramReceipt(input, store) {
   const normalized = normalizeTelegramReceiptClaimInput(input);
   const target = store || createSupabaseLateApprovalStore();
@@ -817,6 +865,13 @@ function createInMemoryLateApprovalStore(options = {}) {
       const normalized = normalizeTelegramReceiptQueueInput(nowInput(input));
       const current = get(normalized.draftId);
       const transition = transitionLateTelegramReceiptEnqueue(current, normalized);
+      if (!transition.duplicate) rowsById.set(current.draftId, transition.row);
+      return exposeRow(transition.row, transition.duplicate ? { duplicate: true } : {});
+    },
+    async recordLateApprovalCard(input) {
+      const normalized = normalizeTelegramApprovalCardInput(nowInput(input));
+      const current = get(normalized.draftId);
+      const transition = transitionLateApprovalCardRecord(current, normalized);
       if (!transition.duplicate) rowsById.set(current.draftId, transition.row);
       return exposeRow(transition.row, transition.duplicate ? { duplicate: true } : {});
     },
@@ -953,6 +1008,15 @@ function createSupabaseLateApprovalStore(options = {}) {
         p_draft_id: input.draftId,
         p_chat_id: input.chatId,
         p_receipt_text: input.receiptText,
+      });
+      return rowFromPersistence(body);
+    },
+    async recordLateApprovalCard(input) {
+      const body = await rpc("lm_record_late_approval_card", {
+        p_uid: input.uid,
+        p_draft_id: input.draftId,
+        p_chat_id: input.chatId,
+        p_telegram_message_id: input.telegramMessageId,
       });
       return rowFromPersistence(body);
     },
@@ -1175,25 +1239,43 @@ async function handleLateApprovalCallback(data, options = {}) {
     return { handled: true, ok: false, sent: true, reason: receiptClaim.reason || "telegram_receipt_unavailable", draft: receiptClaim };
   }
 
+  const approvalMessageId = String(
+    options.messageId || receipt.telegramApprovalMessageId || draft.telegramApprovalMessageId || "",
+  ).trim();
+  const approvalChatId = String(
+    options.chatId || receipt.telegramApprovalChatId || draft.telegramApprovalChatId || "",
+  ).trim();
+  if (!approvalMessageId || !approvalChatId) {
+    await releaseLateTelegramReceipt({
+      uid: owner.uid, draftId: parsed.draftId, claimToken: receiptClaim.telegramReceiptClaimToken,
+      workerId: receiptWorkerId, error: "Telegram approval card message is unavailable", nowMs,
+    }, store).catch(() => {});
+    return {
+      handled: true, ok: false, sent: true, reason: "telegram_approval_card_missing",
+      providerMessageId: providerId, draft: receiptClaim,
+    };
+  }
+
   if (decisionRecorded && typeof options.reflectAnswer === "function") {
     await options.reflectAnswer({
       token: options.token, chatId: options.chatId, messageId: options.messageId,
       messageText: options.messageText, label: "送る", fetchImpl: options.fetchImpl,
     }).catch(() => {});
   }
-  const sendMessage = options.sendMessage || require("./telegram.js").sendMessage;
+  const editMessageText = options.editMessageText || require("./telegram.js").editMessageText;
   let telegramReceipt;
   try {
-    telegramReceipt = await sendMessage(
+    telegramReceipt = await editMessageText(
       options.token || process.env.LM_TELEGRAM_BOT_TOKEN,
-      options.chatId,
+      approvalChatId,
+      approvalMessageId,
       receiptClaim.telegramReceiptText,
+      { reply_markup: { inline_keyboard: [] } },
     );
   } catch (error) {
     telegramReceipt = { ok: false, error: String(error && error.message || error) };
   }
-  const telegramMessageId = telegramReceipt && telegramReceipt.result && telegramReceipt.result.message_id;
-  if (!telegramReceipt || telegramReceipt.ok === false || telegramMessageId == null) {
+  if (!telegramReceipt || telegramReceipt.ok === false) {
     await releaseLateTelegramReceipt({
       uid: owner.uid, draftId: parsed.draftId, claimToken: receiptClaim.telegramReceiptClaimToken,
       workerId: receiptWorkerId, error: String(telegramReceipt && telegramReceipt.error || "Telegram receipt failed"), nowMs,
@@ -1208,9 +1290,13 @@ async function handleLateApprovalCallback(data, options = {}) {
   try {
     deliveredReceipt = await recordLateTelegramReceipt({
       uid: owner.uid, draftId: parsed.draftId, claimToken: receiptClaim.telegramReceiptClaimToken,
-      workerId: receiptWorkerId, telegramMessageId: String(telegramMessageId), nowMs,
+      workerId: receiptWorkerId, telegramMessageId: approvalMessageId, nowMs,
     }, store);
   } catch (error) {
+    await releaseLateTelegramReceipt({
+      uid: owner.uid, draftId: parsed.draftId, claimToken: receiptClaim.telegramReceiptClaimToken,
+      workerId: receiptWorkerId, error: "Telegram receipt record failed after card edit", nowMs,
+    }, store).catch(() => {});
     return {
       handled: true, ok: false, sent: true, reason: "telegram_receipt_record_failed",
       providerMessageId: providerId, error: String(error && error.message || error), draft: receiptClaim,
@@ -1222,7 +1308,7 @@ async function handleLateApprovalCallback(data, options = {}) {
     sent: true,
     decision: "send",
     providerMessageId: providerId,
-    telegramMessageId,
+    telegramMessageId: approvalMessageId,
     draft: deliveredReceipt,
   };
 }
@@ -1237,6 +1323,7 @@ module.exports = {
   claimApprovedDelivery,
   recordLateDelivery,
   enqueueLateTelegramReceipt,
+  recordLateApprovalCard,
   claimLateTelegramReceipt,
   recordLateTelegramReceipt,
   releaseLateTelegramReceipt,
@@ -1248,6 +1335,7 @@ module.exports = {
   transitionLateClaim,
   transitionLateDelivery,
   transitionLateTelegramReceiptEnqueue,
+  transitionLateApprovalCardRecord,
   transitionLateTelegramReceiptClaim,
   transitionLateTelegramReceiptRecord,
   transitionLateTelegramReceiptRelease,

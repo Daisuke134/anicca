@@ -6,7 +6,12 @@ const { isHelperBlock } = require("./wake-filter.js");
 const { shouldMarkAnswered } = require("./answered.js");
 const { hangupCall } = require("./dial.js");
 const { resolveLateRecipients } = require("./late-recipient-resolver.js");
-const { createLateDraft, createLateApprovalCallbackData } = require("./late-approval.js");
+const {
+  createLateDraft,
+  createLateApprovalCallbackData,
+  recordLateApprovalCard,
+  createSupabaseLateApprovalStore,
+} = require("./late-approval.js");
 
 const NO_DESTINATION_MESSAGE = "⚠️ 先方の連絡先が見つからず、遅刻連絡は送れていません";
 const MAIL_FAILURE_MESSAGE = "⚠️ 遅刻連絡メールを送信できませんでした";
@@ -171,7 +176,40 @@ async function enqueueLateApprovalCard(input, event, draft, deps) {
   const sent = await deps.sendMessage(request.token, request.chatId, request.text, request.extra);
   const result = { queued: Boolean(sent && sent.ok !== false), request };
   const messageId = sent && sent.result && sent.result.message_id;
-  if (messageId !== undefined && messageId !== null) result.telegramMessageId = messageId;
+  if (messageId !== undefined && messageId !== null) {
+    result.telegramMessageId = messageId;
+    const store = deps.lateApprovalStore || deps.approvalStore || input.lateApprovalStore;
+    let productionStore = store;
+    if (!productionStore && (deps.supaUrl || input.supaUrl)) {
+      try {
+        productionStore = createSupabaseLateApprovalStore({
+          supaUrl: deps.supaUrl || input.supaUrl,
+          supaKey: deps.supaKey || input.supaKey,
+          fetchImpl: deps.fetchImpl || input.fetchImpl,
+        });
+      } catch {
+        productionStore = null;
+      }
+    }
+    const recorder = deps.recordLateApprovalCard ||
+      (productionStore && typeof productionStore.recordLateApprovalCard === "function" ?
+        (input) => recordLateApprovalCard(input, productionStore) : null);
+    if (recorder) {
+      try {
+        result.draft = await recorder({
+          uid: input.user && input.user.uid,
+          draftId: draft.draftId,
+          chatId: request.chatId,
+          telegramMessageId: String(messageId),
+        });
+      } catch (error) {
+        // Telegram accepted the card, so never send a second card. The callback update still carries
+        // this message id and can repair the durable record before editing the same card on receipt.
+        result.cardRecordFailed = true;
+        result.cardRecordError = String(error && error.message || error);
+      }
+    }
+  }
   return result;
 }
 

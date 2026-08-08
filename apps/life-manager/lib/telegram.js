@@ -26,6 +26,12 @@ async function tgCall(token, method, body) {
 const sendMessage = (token, chatId, text, extra) =>
   tgCall(token, "sendMessage", { chat_id: chatId, text, parse_mode: "HTML", disable_web_page_preview: true, ...(extra || {}) });
 
+const editMessageText = (token, chatId, messageId, text, extra) =>
+  tgCall(token, "editMessageText", {
+    chat_id: chatId, message_id: messageId, text, parse_mode: "HTML", disable_web_page_preview: true,
+    ...(extra || {}),
+  });
+
 async function sendPhoto(token, chatId, bytes, caption) {
   try {
     const form = new FormData();
@@ -145,6 +151,7 @@ function startReply(chatId, base) {
 module.exports = {
   tgCall,
   sendMessage,
+  editMessageText,
   sendPhoto,
   getMe,
   setWebhook,
