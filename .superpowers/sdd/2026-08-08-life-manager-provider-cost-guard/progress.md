@@ -21,7 +21,7 @@
 | 2. Durable route cache | GREEN | original suite + new scope tests | 15/15 route/transit + 62/62 travel regression | pending |
 | 3. Transit facts/fallback | GREEN | structured projection + anchor tests | 31/31 transit/route tests; 59/59 combined focused | pending |
 | 4. Truthful cost event | GREEN | 5 contract failures (missing API) | 12/12 ledger contract | pending |
-| 5. Provider instrumentation | pending | — | — | — |
+| 5. Provider instrumentation | GREEN (adapter core) | adapter module missing | 8/8 adapter contracts | pending |
 | 6. Budget policy | pending | — | — | — |
 | 7. Owner report/deploy/measure | code-only pending | — | — | — |
 
@@ -69,3 +69,8 @@ Result: 43/43 passed, 0 failed, 0 skipped (2026-08-08).
 - `recordProviderCost` validates all dimensions, preserves nullable actual billing, defaults absent actuals to `actual_status="unknown"`, and rejects contradictory/invalid statuses without writing.
 - Ledger failures return `false` and emit a structured `provider_cost_ledger_write_failed` event through the configured owner alert and durable outbox seam.
 - Migration adds additive ledger columns, actual-status check, request idempotency index, and service-role-only failure outbox table.
+
+## Task 5 receipt
+
+- RED: `node --test lib/provider-cost-adapters.test.js` failed at module load with `Cannot find module './provider-cost-adapters.js'`.
+- GREEN (adapter core): the new recorder adapters cover Google Geocoding/Routes, Transit, Composio, Gemini, Telnyx CDR, Resend, Railway, and Supabase; `node --test lib/provider-cost-adapters.test.js` → 8/8 passed. Runtime call-path wiring and import scheduling remain for the next adapter-sized slices.
