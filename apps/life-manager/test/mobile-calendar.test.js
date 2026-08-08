@@ -53,3 +53,61 @@ test("mobile Calendar reads use the persisted Composio owner with the exact acco
   assert.equal(calls[0].body.connected_account_id, "ca_exact");
   assert.notEqual(calls[0].body.user_id, "lm_stable");
 });
+
+test("mobile Calendar skips generated travel blocks and selects the next real commitment", async () => {
+  const events = await fetchMobileUpcomingEvents("user-a", {
+    nowMs: Date.parse("2026-08-08T00:00:00.000Z"),
+    horizonH: 18,
+    calendar: {
+      async listEventsRaw() {
+        return [
+          {
+            id: "generated-mobile-travel",
+            summary: "Generated route block",
+            location: "Destination",
+            description: "User-facing route details",
+            extendedProperties: { private: { lm_travel_block: `lm_travel_v1_${"a".repeat(64)}` } },
+            start: { dateTime: "2026-08-08T00:30:00Z", timeZone: "UTC" },
+            end: { dateTime: "2026-08-08T01:00:00Z", timeZone: "UTC" },
+          },
+          {
+            id: "generated-web-travel",
+            summary: "[Travel] route block",
+            location: "Destination",
+            description: "Auto-inserted by Life Manager — adjust if the route is wrong.",
+            start: { dateTime: "2026-08-08T01:30:00Z", timeZone: "UTC" },
+            end: { dateTime: "2026-08-08T02:00:00Z", timeZone: "UTC" },
+          },
+          {
+            id: "real-commitment",
+            summary: "Life Manager Demo",
+            location: "Destination",
+            start: { dateTime: "2026-08-08T03:00:00Z", timeZone: "UTC" },
+            end: { dateTime: "2026-08-08T04:00:00Z", timeZone: "UTC" },
+          },
+        ];
+      },
+    },
+  });
+  assert.deepEqual(events.map((event) => event.id), ["real-commitment"]);
+});
+
+test("mobile Calendar keeps a user event with an accidental Travel prefix", async () => {
+  const events = await fetchMobileUpcomingEvents("user-a", {
+    nowMs: Date.parse("2026-08-08T00:00:00.000Z"),
+    horizonH: 18,
+    calendar: {
+      async listEventsRaw() {
+        return [{
+          id: "user-travel-title",
+          summary: "[Travel] personal appointment",
+          location: "Destination",
+          description: "A note written by the user",
+          start: { dateTime: "2026-08-08T03:00:00Z", timeZone: "UTC" },
+          end: { dateTime: "2026-08-08T04:00:00Z", timeZone: "UTC" },
+        }];
+      },
+    },
+  });
+  assert.deepEqual(events.map((event) => event.id), ["user-travel-title"]);
+});

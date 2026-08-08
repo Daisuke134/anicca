@@ -3,6 +3,26 @@
 const { getCalendar } = require("./transport/index.js");
 const { interpretCalendarEvent } = require("./calendar-interpreter.js");
 
+const MOBILE_TRAVEL_MARKER = /^lm_travel_v1_[0-9a-f]{64}$/u;
+const LEGACY_WEB_TRAVEL_DESCRIPTION = "Auto-inserted by Life Manager — adjust if the route is wrong.";
+
+function privateTravelMarker(event) {
+  const modern = event && event.extendedProperties && event.extendedProperties.private;
+  const legacy = event && event.extended_properties && event.extended_properties.private;
+  const values = modern && typeof modern === "object" ? modern : legacy;
+  if (!values || typeof values !== "object") return null;
+  return values.lm_travel_block || values.life_manager_travel_block || values.lmTravelBlock || null;
+}
+
+function isGeneratedTravelBlock(event) {
+  const marker = privateTravelMarker(event);
+  // A marker is authoritative. If a provider returns an invalid value under our
+  // private key, fail closed and do not reinterpret a user title as a legacy block.
+  if (marker !== null) return typeof marker === "string" && MOBILE_TRAVEL_MARKER.test(marker);
+  return String(event && event.summary || "").startsWith("[Travel]")
+    && String(event && event.description || "") === LEGACY_WEB_TRAVEL_DESCRIPTION;
+}
+
 function isoZ(ms) {
   return new Date(ms).toISOString().replace(/\.\d{3}Z$/u, "Z");
 }
@@ -37,6 +57,7 @@ async function fetchMobileUpcomingEvents(uid, options = {}) {
   });
   const output = [];
   for (const event of Array.isArray(items) ? items : []) {
+    if (isGeneratedTravelBlock(event)) continue;
     if (interpretCalendarEvent(event).decision === "no_call") continue;
     const startIso = event && event.start && event.start.dateTime;
     if (!startIso) continue;
