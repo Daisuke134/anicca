@@ -1,0 +1,510 @@
+# Life Manager CFO M0 Business Registry Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Build a strict seven-unit financial registry and a read-only live Mac inventory receipt that closes CFO-0c without changing any running loop.
+
+**Architecture:** A Git-tracked JSON registry defines stable economic identity. Pure CommonJS modules validate and classify injected launchd observations. A thin CLI is the only process/filesystem boundary and atomically appends receipts below the Life Manager state root.
+
+**Tech Stack:** Node.js 20+, CommonJS, `node:test`, Node standard library only, JSON, launchctl read-only commands.
+
+## Global Constraints
+
+- Parent design: `docs/superpowers/specs/2026-08-08-life-manager-cfo-m0-business-registry-design.md`.
+- No dependency additions, database migrations, network requests, Telegram sends, or launchctl mutation.
+- Production code must follow RED → observed failure → minimal GREEN for every task.
+- The registry contains identity only: no balances, amounts, account numbers, secrets, PIDs, or copied ledger payloads.
+- Runtime globs support exact strings or one terminal `*`; overlapping matches are errors.
+- Missing revenue evidence means `unverified`, never zero and never healthy.
+- Only the current task's files are staged. Preserve unrelated worktree changes.
+- Every task ends with fresh targeted tests, `git diff --check`, commit, and push before the next task.
+
+## File Map and Size Targets
+
+| File | Responsibility | Soft target |
+|---|---|---:|
+| `apps/life-call/lib/cfo-registry.js` | Strict schema, canonical JSON, SHA-256, runtime matcher | 95 production LOC |
+| `apps/life-call/lib/cfo-registry.test.js` | Validator and mapping contract | 95 test LOC |
+| `apps/life-call/config/cfo-financial-units.json` | Seven declarative units and exclusions | 125 data LOC; not split because one atomic registry SSOT is safer than cross-file identity |
+| `apps/life-call/lib/cfo-inventory.js` | Deterministic observations and receipt construction | 90 production LOC |
+| `apps/life-call/lib/cfo-inventory.test.js` | Classification, ambiguity, determinism | 95 test LOC |
+| `apps/life-call/scripts/cfo-business-inventory.js` | Read-only launchctl adapter and atomic receipt writer | 85 production LOC |
+| `apps/life-call/scripts/cfo-business-inventory.test.js` | CLI effect boundary and immutability | 90 test LOC |
+| Parent/child specs | State and evidence update only | 15 documentation LOC |
+
+---
+
+### Task 1: Strict registry validator and matcher
+
+**Files:**
+- Create: `apps/life-call/lib/cfo-registry.js`
+- Create: `apps/life-call/lib/cfo-registry.test.js`
+
+**Interfaces:**
+- Consumes: plain parsed JSON objects only.
+- Produces:
+  - `validateRegistry(input): Readonly<object>`; throws `Error("cfo_registry_invalid:<reason>")`.
+  - `canonicalJson(value): string`; recursively sorted object keys, array order preserved, no whitespace.
+  - `sha256Canonical(value): string`; 64 lowercase hexadecimal characters.
+  - `matchesLabel(matcher, label): boolean`; exact or terminal-star prefix only.
+  - `classifyLabel(registry, label): { kind: "financial_unit"|"exclusion"|"unmapped"|"ambiguous", targetIds: string[] }`.
+
+- [ ] **Step 1: Write the failing contract tests**
+
+Create tests using `node:test` and `node:assert/strict`. The minimum fixture has one `business` unit, one channel,
+one ledger source, one evidence reference, one relevant prefix, and one exclusion. Assert:
+
+```js
+function validFixture() {
+  return {
+    schema_version: 1,
+    registry_id: "life_manager_cfo_financial_units",
+    relevant_runtime_prefixes: ["ai.anicca.writer-", "ai.anicca.cfo-"],
+    financial_units: [{
+      financial_unit_id: "writer_agent", unit_kind: "business", display_order: 1,
+      display_name: { en: "Writer Agent", ja: "Writer Agent" }, owner_ref: "human:dais",
+      cost_center_refs: [], lifecycle: "active", runtime_matchers: ["ai.anicca.writer-*"],
+      revenue_channel_ids: ["publisher_writer"], ledger_source_ids: ["writer_receipts"],
+      evidence_refs: ["docs/writer-agent/WRITER-AGENT-SSOT.md"],
+    }],
+    runtime_exclusions: [{
+      exclusion_id: "cfo_controller", runtime_matchers: ["ai.anicca.cfo-*"],
+      classification: "controller", cost_treatment: "shared_overhead",
+      evidence_refs: ["docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md"],
+    }],
+  };
+}
+
+test("valid registry is frozen and exact/terminal-star labels classify once", () => {
+  const registry = validateRegistry(validFixture());
+  assert.equal(Object.isFrozen(registry), true);
+  assert.deepEqual(classifyLabel(registry, "ai.anicca.writer-report"), {
+    kind: "financial_unit", targetIds: ["writer_agent"],
+  });
+  assert.equal(matchesLabel("ai.anicca.writer-*", "ai.anicca.writer-report"), true);
+  assert.equal(matchesLabel("ai.*.writer-*", "ai.anicca.writer-report"), false);
+});
+
+test("duplicates, unknown keys, money, secret-like keys, unsafe paths, and overlap fail", () => {
+  for (const mutate of invalidMutations()) {
+    assert.throws(() => validateRegistry(mutate(validFixture())), /^Error: cfo_registry_invalid:/);
+  }
+});
+
+test("canonical hash ignores object insertion order but preserves array order", () => {
+  assert.equal(sha256Canonical({ b: 2, a: 1 }), sha256Canonical({ a: 1, b: 2 }));
+  assert.notEqual(sha256Canonical({ a: [1, 2] }), sha256Canonical({ a: [2, 1] }));
+});
+```
+
+Define `invalidMutations()` as an array of functions that each clone and change exactly one field. It must cover:
+unknown root key, unknown unit key, duplicate unit ID, duplicate channel ID,
+invalid `unit_kind`, invalid `lifecycle`, empty `evidence_refs`, `monthly_revenue`, `api_secret`, `/Users/name/state`,
+and an internal-star matcher. The final overlap case belongs to Task 3 because syntactically valid matchers can
+become ambiguous only when applied to an observed label.
+
+- [ ] **Step 2: Run RED**
+
+Run:
+
+```bash
+cd apps/life-call
+node --test lib/cfo-registry.test.js
+```
+
+Expected: FAIL because `./cfo-registry.js` does not exist.
+
+- [ ] **Step 3: Implement the minimal strict validator**
+
+Use constant key sets and enums; do not add a schema dependency:
+
+```js
+const ROOT_KEYS = new Set(["schema_version", "registry_id", "relevant_runtime_prefixes", "financial_units", "runtime_exclusions"]);
+const UNIT_KEYS = new Set(["financial_unit_id", "unit_kind", "display_order", "display_name", "owner_ref", "cost_center_refs", "lifecycle", "runtime_matchers", "revenue_channel_ids", "ledger_source_ids", "evidence_refs"]);
+const EXCLUSION_KEYS = new Set(["exclusion_id", "runtime_matchers", "classification", "cost_treatment", "evidence_refs"]);
+const UNIT_KINDS = new Set(["business", "personal_income"]);
+const LIFECYCLES = new Set(["active", "building", "planned", "retired"]);
+const ID = /^[a-z][a-z0-9_]*$/;
+
+function matchesLabel(matcher, label) {
+  if (typeof matcher !== "string" || typeof label !== "string") return false;
+  const star = matcher.indexOf("*");
+  if (star < 0) return matcher === label;
+  return star === matcher.length - 1 && matcher.indexOf("*", star + 1) < 0 && label.startsWith(matcher.slice(0, -1));
+}
+```
+
+Validation must recursively reject key names matching
+`/(?:amount|balance|revenue|profit|secret|token|api.?key|account.?number|private.?key|seed)/i`, string values starting
+with `/Users/` or `/home/`, non-exact keys, and duplicate IDs. Deep-freeze a
+cloned value so caller mutation cannot alter validated state. `classifyLabel` returns sorted target IDs.
+
+- [ ] **Step 4: Run GREEN and diff check**
+
+```bash
+cd apps/life-call
+node --test lib/cfo-registry.test.js
+cd ../..
+git diff --check
+```
+
+Expected: all Task 1 tests pass; diff check exits zero.
+
+- [ ] **Step 5: Commit and push Task 1**
+
+```bash
+git add apps/life-call/lib/cfo-registry.js apps/life-call/lib/cfo-registry.test.js
+git commit -m "feat(cfo): validate financial unit registry"
+git push
+```
+
+---
+
+### Task 2: Canonical seven-unit registry
+
+**Files:**
+- Create: `apps/life-call/config/cfo-financial-units.json`
+- Modify: `apps/life-call/lib/cfo-registry.test.js`
+
+**Interfaces:**
+- Consumes: `validateRegistry` and `classifyLabel` from Task 1.
+- Produces: the sole registry file with ordered IDs:
+  `life_manager_saas`, `anicca_ios`, `writer_agent`, `affiliate_agent`, `gig_work`, `x402_services`, `job_income`.
+
+- [ ] **Step 1: Add failing canonical-registry tests**
+
+```js
+test("canonical registry exposes exactly seven ordered financial units", () => {
+  const raw = JSON.parse(fs.readFileSync(path.join(__dirname, "../config/cfo-financial-units.json"), "utf8"));
+  const registry = validateRegistry(raw);
+  assert.deepEqual(registry.financial_units.map(x => x.financial_unit_id), [
+    "life_manager_saas", "anicca_ios", "writer_agent", "affiliate_agent",
+    "gig_work", "x402_services", "job_income",
+  ]);
+  assert.equal(registry.financial_units.at(-1).unit_kind, "personal_income");
+  assert.ok(registry.financial_units.slice(0, -1).every(x => x.unit_kind === "business"));
+});
+```
+
+Also assert representative mappings for every runtime namespace, `cfo`/`fleet` exclusions, and Franklin exclusions.
+
+- [ ] **Step 2: Run RED**
+
+```bash
+cd apps/life-call
+node --test lib/cfo-registry.test.js
+```
+
+Expected: FAIL with `ENOENT` for `config/cfo-financial-units.json`.
+
+- [ ] **Step 3: Create the complete registry**
+
+Use these exact values:
+
+| ID | Kind | Lifecycle | Runtime matchers | Channel IDs | Ledger IDs | Cost centres |
+|---|---|---|---|---|---|---|
+| `life_manager_saas` | `business` | `active` | `ai.anicca.life-manager-*` | `stripe_life_manager`, `taskmarket_life_manager`, `ugig_life_manager` | `lm_financial_ledger` | none |
+| `anicca_ios` | `business` | `active` | none | `apple_app_store_anicca` | `revenuecat_anicca_ios` | none |
+| `writer_agent` | `business` | `active` | `ai.anicca.writer-*` | `note_writer`, `substack_writer`, `publisher_writer` | `writer_receipts` | none |
+| `affiliate_agent` | `business` | `building` | `ai.anicca.affiliate-*` | `amazon_associates`, `rakuten_affiliate`, `affiliate_networks` | `affiliate_commission_receipts` | none |
+| `gig_work` | `business` | `active` | `ai.anicca.hf-gig-*`, `ai.anicca.gig-outcome-watch` | `gig_marketplaces`, `direct_gig_clients` | `gig_payment_receipts` | none |
+| `x402_services` | `business` | `active` | `ai.anicca.x402-*` | `x402_onchain` | `x402_settlement_receipts` | `agent:franklin1`, `agent:franklin2` |
+| `job_income` | `personal_income` | `active` | `ai.anicca.job-search-*` | `payroll_bank` | `payroll_bank_receipts` | none |
+
+Every row uses `owner_ref: "human:dais"`, its table order as `display_order`, and localized display names from the
+design spec. Evidence refs are respectively: Life Manager launch order, the project AGENTS iOS section, Writer
+SSOT, Affiliate SSOT, Gig plan, `apps/x402-agents/package.json`, and `launchd:ai.anicca.job-search-*`.
+
+Set `relevant_runtime_prefixes` to the literal prefixes covered above plus `ai.anicca.cfo-`, `ai.anicca.fleet-`,
+`ai.anicca.franklin`, `ai.anicca.self-fix-`, and `ai.anicca.connector-healer-`.
+
+Create exclusions:
+
+```json
+[
+  {"exclusion_id":"cfo_controller","runtime_matchers":["ai.anicca.cfo-*"],"classification":"controller","cost_treatment":"shared_overhead","evidence_refs":["docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md"]},
+  {"exclusion_id":"fleet_observer","runtime_matchers":["ai.anicca.fleet-*"],"classification":"observer","cost_treatment":"shared_overhead","evidence_refs":["docs/superpowers/specs/2026-08-04-fleet-and-remote-stability-design.md"]},
+  {"exclusion_id":"repair_infrastructure","runtime_matchers":["ai.anicca.self-fix-*","ai.anicca.connector-healer-*"],"classification":"repair_infrastructure","cost_treatment":"shared_overhead","evidence_refs":["docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md"]},
+  {"exclusion_id":"franklin_cost_centres","runtime_matchers":["ai.anicca.franklin-loop","ai.anicca.franklin2-loop"],"classification":"agent_cost_centre","cost_treatment":"x402_services","evidence_refs":["docs/superpowers/specs/2026-08-08-life-manager-cfo-m0-business-registry-design.md"]}
+]
+```
+
+- [ ] **Step 4: Run GREEN and diff check**
+
+```bash
+cd apps/life-call
+node --test lib/cfo-registry.test.js
+cd ../..
+git diff --check
+```
+
+- [ ] **Step 5: Commit and push Task 2**
+
+```bash
+git add apps/life-call/config/cfo-financial-units.json apps/life-call/lib/cfo-registry.test.js
+git commit -m "feat(cfo): register canonical financial units"
+git push
+```
+
+---
+
+### Task 3: Deterministic inventory core
+
+**Files:**
+- Create: `apps/life-call/lib/cfo-inventory.js`
+- Create: `apps/life-call/lib/cfo-inventory.test.js`
+
+**Interfaces:**
+- Consumes: validated registry and injected observations shaped as
+  `{ label: string, state: "running"|"not_running"|"unknown", last_exit_code: number|null }`.
+- Produces:
+  - `normalizeLaunchctlList(stdout): Array<{ label: string, state: "running"|"not_running"|"unknown", last_exit_code: number|null }>`.
+  - `collectSourceObservations(registry, exists): Array<{ evidence_ref: string, availability: "present"|"unavailable"|"not_applicable" }>`.
+  - `buildInventory({ registry, runtimeObservations, sourceObservations, generatedAt, inventoryId }): object`.
+  - `observationHash(receiptCore): string`.
+
+- [ ] **Step 1: Write failing inventory tests**
+
+```js
+test("inventory maps known labels and is deterministic across input order", () => {
+  const first = buildInventory(makeInput(["ai.anicca.writer-report", "ai.anicca.x402-monitor"]));
+  const second = buildInventory(makeInput(["ai.anicca.x402-monitor", "ai.anicca.writer-report"]));
+  assert.equal(first.observation_hash, second.observation_hash);
+  assert.equal(first.result, "pass");
+});
+
+test("unmapped relevant and ambiguous labels fail closed", () => {
+  const unmapped = buildInventory(makeInput(["ai.anicca.franklin3-loop"]));
+  assert.deepEqual(unmapped.unmapped_relevant_labels, ["ai.anicca.franklin3-loop"]);
+  const ambiguous = buildInventory(makeInput(["ai.anicca.writer-report"], registryWithSecondWriterMatcher()));
+  assert.deepEqual(ambiguous.ambiguous_labels.map(x => x.label), ["ai.anicca.writer-report"]);
+  assert.equal(unmapped.result, "fail");
+  assert.equal(ambiguous.result, "fail");
+});
+```
+
+`makeInput(labels, registry = canonicalRegistry)` maps each label to state `unknown` and `last_exit_code: null`,
+uses empty source observations, fixed `generatedAt: "2026-08-08T00:00:00.000Z"`, and fixed UUID
+`00000000-0000-4000-8000-000000000001`. `registryWithSecondWriterMatcher()` deep-clones the canonical registry
+and appends this syntactically valid exclusion before validation:
+
+```js
+{
+  exclusion_id: "synthetic_writer_overlap",
+  runtime_matchers: ["ai.anicca.writer-report"],
+  classification: "controller",
+  cost_treatment: "shared_overhead",
+  evidence_refs: ["docs/superpowers/specs/2026-08-08-life-manager-cfo-m0-business-registry-design.md"],
+}
+```
+
+Also test irrelevant labels are ignored, missing-runtime units are `unverified`, positive/negative exit codes are
+observations rather than financial health, repo-relative evidence refs use the injected `exists` function, URI-like
+refs are `not_applicable`, and receipt output contains no raw source payload.
+
+- [ ] **Step 2: Run RED**
+
+```bash
+cd apps/life-call
+node --test lib/cfo-inventory.test.js
+```
+
+Expected: FAIL because `./cfo-inventory.js` does not exist.
+
+- [ ] **Step 3: Implement normalized classification and receipt construction**
+
+Sort labels, units, findings, and source observations before hashing. Exclude `inventory_id`, `generated_at`, and
+the final `observation_hash` from the hash input. Derive unit evidence status as `observed` when any runtime or
+source is observed, otherwise `unverified`. Never emit `healthy`, `revenue`, or numeric money fields.
+
+```js
+function observationHash(core) {
+  return sha256Canonical(core);
+}
+
+function normalizeLaunchctlList(stdout) {
+  return String(stdout).split(/\r?\n/).slice(1).map(line => line.trim().split(/\s+/)).filter(parts => parts.length >= 3)
+    .map(([pid, status, label]) => ({
+      label,
+      state: /^\d+$/.test(pid) ? "running" : pid === "-" ? "not_running" : "unknown",
+      last_exit_code: /^-?\d+$/.test(status) ? Number(status) : null,
+    })).filter(item => /^ai\.anicca\./.test(item.label)).sort((a, b) => a.label.localeCompare(b.label));
+}
+```
+
+- [ ] **Step 4: Run GREEN and diff check**
+
+```bash
+cd apps/life-call
+node --test lib/cfo-registry.test.js lib/cfo-inventory.test.js
+cd ../..
+git diff --check
+```
+
+- [ ] **Step 5: Commit and push Task 3**
+
+```bash
+git add apps/life-call/lib/cfo-inventory.js apps/life-call/lib/cfo-inventory.test.js
+git commit -m "feat(cfo): build deterministic business inventory"
+git push
+```
+
+---
+
+### Task 4: Read-only CLI and immutable receipt
+
+**Files:**
+- Create: `apps/life-call/scripts/cfo-business-inventory.js`
+- Create: `apps/life-call/scripts/cfo-business-inventory.test.js`
+- Modify: `apps/life-call/package.json`
+
+**Interfaces:**
+- Consumes environment `LIFE_MANAGER_STATE_HOME`, defaulting to `~/.local/state/life-manager`.
+- Produces receipt path
+  `$LIFE_MANAGER_STATE_HOME/cfo/business-inventory/<generated-at-safe>--<inventory-id>.json` and one redacted JSON
+  summary on stdout: `{ result, receipt_path, registry_sha256, observation_hash, unit_count, unmapped_count, ambiguous_count }`.
+- Produces `main({ env, now, randomUUID, launchctlList, stdout }): { exitCode: number, summary: object }`; the
+  executable entry supplies real defaults, while tests inject deterministic values.
+
+- [ ] **Step 1: Write failing CLI tests**
+
+Call exported `main` in a temporary state root with injected `now`, `randomUUID`, and launchctl fixture containing
+representative unit and exclusion labels. Assert exit zero, one receipt, mode `0600`, JSON re-read, hash match, and
+no mutation commands. Run again with an unmapped relevant label and assert exit one plus an immutable failure
+receipt. Pre-create the deterministic final receipt path and assert the CLI refuses overwrite.
+
+```js
+const output = [];
+const result = main({
+  env: { LIFE_MANAGER_STATE_HOME: stateRoot },
+  now: () => new Date("2026-08-08T00:00:00.000Z"),
+  randomUUID: () => "00000000-0000-4000-8000-000000000001",
+  launchctlList: () => fixtureText,
+  stdout: line => output.push(line),
+});
+assert.equal(result.exitCode, 0);
+assert.equal(fs.readdirSync(receiptDir).length, 1);
+assert.equal(fs.statSync(receiptPath).mode & 0o777, 0o600);
+```
+
+- [ ] **Step 2: Run RED**
+
+```bash
+cd apps/life-call
+node --test scripts/cfo-business-inventory.test.js
+```
+
+Expected: FAIL because the CLI does not exist.
+
+- [ ] **Step 3: Implement the minimal boundary**
+
+Use `execFileSync("launchctl", ["list"], { encoding: "utf8", timeout: 10000 })` only in the executable default.
+Do not call `launchctl print`, kickstart, stop, unload, network, database, or Telegram commands. Read the registry,
+validate it, collect repo-relative evidence availability with `fs.existsSync`, build the receipt, create directories
+with `0700`, open a unique temporary file using `wx` and mode
+`0600`, write + `fsyncSync`, close, atomically publish with `linkSync(temporary, final)` so an existing final path
+raises `EEXIST`, then unlink only the temporary name. On any error, clean up only that unique temporary file.
+
+Add package script:
+
+```json
+"cfo:inventory": "node scripts/cfo-business-inventory.js"
+```
+
+- [ ] **Step 4: Run GREEN, full targeted suite, and purity scan**
+
+```bash
+cd apps/life-call
+node --test lib/cfo-registry.test.js lib/cfo-inventory.test.js scripts/cfo-business-inventory.test.js
+! rg -n "kickstart|bootout|unload|stop|sendMessage|fetch\(|SUPABASE|TELEGRAM" scripts/cfo-business-inventory.js
+cd ../..
+git diff --check
+```
+
+- [ ] **Step 5: Commit and push Task 4**
+
+```bash
+git add apps/life-call/scripts/cfo-business-inventory.js apps/life-call/scripts/cfo-business-inventory.test.js apps/life-call/package.json
+git commit -m "feat(cfo): write immutable live inventory receipts"
+git push
+```
+
+---
+
+### Task 5: Live Mac E2E and CFO-0c state closure
+
+**Files:**
+- Modify: `docs/superpowers/specs/2026-08-08-life-manager-cfo-m0-business-registry-design.md`
+- Modify: `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md`
+- Modify: `docs/superpowers/plans/2026-08-08-life-manager-cfo-m0-business-registry.md`
+
+**Interfaces:**
+- Consumes: Tasks 1–4 and live read-only launchctl.
+- Produces: one real receipt, its verified hashes, and `CFO-0c` checked complete. `CFO-0d` remains unchecked and
+  becomes the only active financial item.
+
+- [ ] **Step 1: Run all targeted tests fresh**
+
+```bash
+cd apps/life-call
+node --test lib/cfo-registry.test.js lib/cfo-inventory.test.js scripts/cfo-business-inventory.test.js
+```
+
+Expected: zero failures.
+
+- [ ] **Step 2: Run the real read-only inventory**
+
+```bash
+cd apps/life-call
+npm run cfo:inventory
+```
+
+Expected summary: `result="pass"`, `unit_count=7`, `unmapped_count=0`, `ambiguous_count=0`.
+
+If the result fails, change only registry mappings justified by observed labels, add a failing regression test,
+then repeat RED → GREEN and rerun live inventory. Do not mutate a launchd job to make the test pass.
+
+- [ ] **Step 3: Verify the receipt independently**
+
+Use a one-shot Node command to parse the emitted receipt, reload the registry, recompute `registry_sha256`, rebuild
+the hash input with volatile fields removed, and assert both hashes plus `result === "pass"`. The command must print
+only `{result, unit_count, unmapped_count, ambiguous_count, hashes_verified}` and no raw paths or observations.
+
+- [ ] **Step 4: Run the existing Life Manager test suite**
+
+```bash
+cd apps/life-call
+npm test
+```
+
+Expected: zero failures. A pre-existing unrelated failure is not waived; record exact evidence and repair only when
+caused by this slice.
+
+- [ ] **Step 5: Close state without embedding private receipt data**
+
+Mark `CFO-0c` checked in the parent. Change child status to `IMPLEMENTED — LIVE E2E PASS` and record only the commit,
+test command, seven-unit count, zero finding counts, and receipt SHA-256 references. Do not commit the local receipt
+or expanded state path. Check every plan checkbox completed.
+
+- [ ] **Step 6: Final verification, commit, and push**
+
+```bash
+rg -n "CFO-0c|CFO-0d|IMPLEMENTED — LIVE E2E PASS" docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md docs/superpowers/specs/2026-08-08-life-manager-cfo-m0-business-registry-design.md
+git diff --check
+git status --short
+git add docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md docs/superpowers/specs/2026-08-08-life-manager-cfo-m0-business-registry-design.md docs/superpowers/plans/2026-08-08-life-manager-cfo-m0-business-registry.md
+git commit -m "docs(cfo): close financial unit inventory"
+git push
+```
+
+## Plan Self-Review Coverage
+
+| Spec requirement | Implemented by |
+|---|---|
+| Strict identity/schema/privacy | Tasks 1–2 |
+| Seven units and explicit exclusions | Task 2 |
+| One/zero/multiple runtime mapping | Tasks 1 and 3 |
+| Deterministic immutable receipt | Tasks 3–4 |
+| Read-only effect boundary | Task 4 |
+| Live seven-unit, zero-finding E2E | Task 5 |
+| SSOT state transition | Task 5 |

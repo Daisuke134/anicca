@@ -58,7 +58,8 @@ numbers, PIDs, last-run timestamps, or copied private ledger payloads. Those bel
 - [ ] `franklin1` and `franklin2` are owners/cost centres under `x402_services`, not duplicate financial units.
 - [ ] Registry validation rejects unknown keys, duplicate IDs, duplicate channel IDs, empty evidence, unsafe absolute
       home paths, account numbers, wallet secrets, and mutable financial amounts.
-- [ ] The live inventory writes one append-only JSON receipt below the Life Manager state root using atomic rename.
+- [ ] The live inventory writes one append-only JSON receipt below the Life Manager state root using an atomic,
+      no-overwrite publish operation.
 - [ ] Re-running with identical registry and observations produces the same `observation_hash`; it may create a new
       receipt envelope but cannot change an older receipt.
 - [ ] The receipt records registry SHA-256, observed label, matched target, observed launchd state, last exit code
