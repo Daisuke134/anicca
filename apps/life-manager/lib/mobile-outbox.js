@@ -11,7 +11,7 @@ const SEMANTIC_KEYS = new Set([
 function encodeCursor(sequence) {
   const value = Number(sequence);
   if (!Number.isSafeInteger(value) || value < 0) throw new MobileError("invalid_cursor", "The chat cursor is invalid.", 400);
-  return `cursor:v1:${Buffer.from(`seq:${value}`).toString("base64url")}`;
+  return `cursor:v1:${Buffer.from(`seq:${value}:v1`).toString("base64url")}`;
 }
 
 function decodeCursor(cursor) {
@@ -20,7 +20,7 @@ function decodeCursor(cursor) {
   if (!match) throw new MobileError("invalid_cursor", "The chat cursor is invalid.", 400);
   let decoded;
   try { decoded = Buffer.from(match[1], "base64url").toString("utf8"); } catch { throw new MobileError("invalid_cursor", "The chat cursor is invalid.", 400); }
-  const value = /^seq:(\d+)$/u.exec(decoded);
+  const value = /^seq:(\d+)(?::v1)?$/u.exec(decoded);
   if (!value || !Number.isSafeInteger(Number(value[1]))) throw new MobileError("invalid_cursor", "The chat cursor is invalid.", 400);
   return Number(value[1]);
 }

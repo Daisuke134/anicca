@@ -2,7 +2,7 @@
   "messages": [
     {
       "id": "message:v1:welcome-8f3a",
-      "cursor": "cursor:v1:P4nG8vL2xTq",
+      "cursor": "cursor:v1:c2VxOjE6djE",
       "createdAt": "2026-08-10T08:00:00.000Z",
       "locale": "en",
       "type": "system",
@@ -19,7 +19,7 @@
     },
     {
       "id": "message:v1:route-ready-8f3a",
-      "cursor": "cursor:v1:Qp7mV2xR8aK",
+      "cursor": "cursor:v1:c2VxOjI6djE",
       "createdAt": "2026-08-10T08:10:00.000Z",
       "locale": "en",
       "type": "route",
@@ -103,6 +103,6 @@
       ]
     }
   ],
-  "nextCursor": "cursor:v1:J7mC5zR9hVk",
+  "nextCursor": "cursor:v1:c2VxOjI6djE",
   "hasMore": false
 }

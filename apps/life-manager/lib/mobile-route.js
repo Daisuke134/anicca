@@ -132,11 +132,12 @@ function structuredName(value) {
   return { displayNames: { en: text, ja: text }, userContent: text || null };
 }
 
-function anchorTimes(request, durationSeconds, now = Date.now) {
+function anchorTimes(request, durationSeconds, now = Date.now, bufferSeconds = 0) {
   const anchor = Date.parse(request.direction === "return" ? request.departAt : request.arriveBy);
   if (!Number.isFinite(anchor) || !Number.isFinite(durationSeconds) || durationSeconds <= 0) return null;
-  const leaveMs = request.direction === "return" ? anchor : anchor - durationSeconds * 1000;
-  const arriveMs = request.direction === "return" ? anchor + durationSeconds * 1000 : anchor;
+  const buffer = Number.isFinite(Number(bufferSeconds)) ? Math.max(0, Number(bufferSeconds)) : 0;
+  const leaveMs = request.direction === "return" ? anchor : anchor - buffer * 1000 - durationSeconds * 1000;
+  const arriveMs = request.direction === "return" ? anchor + durationSeconds * 1000 : anchor - buffer * 1000;
   return { leaveAt: new Date(leaveMs).toISOString(), arriveAt: new Date(arriveMs).toISOString(), computedAt: nowIso({ now }) };
 }
 
@@ -146,6 +147,7 @@ function firstDefined(value, ...keys) {
 }
 
 function numberOrNull(value) {
+  if (value === undefined || value === null || value === "") return null;
   const number = Number(value);
   return Number.isFinite(number) ? number : null;
 }
@@ -196,6 +198,7 @@ function parseStructuredTransitPlan(plan) {
     inVehicleSecs: numberOrNull(firstDefined(best, "inVehicleSecs", "in_vehicle_secs")) ?? baseDuration,
     accessWalkSecs,
     egressWalkSecs,
+    bufferSeconds: numberOrNull(firstDefined(best, "bufferSeconds", "buffer_seconds", "bufferSecs", "buffer_secs")),
     transferCount: numberOrNull(firstDefined(best, "transferCount", "transfer_count")),
     fare: firstDefined(best, "fare", "fareInfo", "fare_info"),
     legs: legs.map((leg) => {
@@ -226,17 +229,17 @@ function parseStructuredTransitPlan(plan) {
 }
 
 function routeFromTransit(request, parsed, now) {
-  const times = anchorTimes(request, parsed && parsed.durationSecs, now);
+  const times = anchorTimes(request, parsed && parsed.durationSecs, now, parsed && parsed.bufferSeconds);
   if (!times) return null;
   return {
     status: "route_ready", provider: "transit", providerAttribution: "Transit API", eventId: request.eventId,
     computedAt: times.computedAt, timezone: request.timezone,
     origin: structuredName(request.origin), destination: structuredName(request.destination), ...times,
-    durationSeconds: parsed.durationSecs, bufferSeconds: null, transferCount: parsed.transferCount ?? null,
+    durationSeconds: parsed.durationSecs, bufferSeconds: parsed.bufferSeconds ?? null, transferCount: parsed.transferCount ?? null,
     accessWalkSecs: parsed.accessWalkSecs ?? null, egressWalkSecs: parsed.egressWalkSecs ?? null,
     fare: parsed.fare ?? null, geometry: null,
     steps: (parsed.legs || []).map((leg, index) => ({
-      sequence: index + 1, mode: leg.mode || leg.kind || "other", instruction: leg.routeName || null,
+      sequence: index + 1, mode: leg.mode || leg.kind || "other", instruction: leg.instruction || null,
       from: leg.from || null, to: leg.to || null, service: leg.routeName || null,
       headsign: leg.headsign === undefined ? null : leg.headsign,
       platform: leg.platform === undefined ? null : leg.platform,

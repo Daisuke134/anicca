@@ -38,6 +38,19 @@ test("memory store rejects a scope mismatch instead of permitting a client-selec
   await assert.rejects(() => store.patchUser({ uid: "user-b" }, { name: "B" }, { expectedUid: "user-a" }), (error) => error.code === "scope_mismatch");
 });
 
+test("memory route cache accepts the authenticated scope and survives a same-process restart seam", async () => {
+  const routeRequest = {
+    eventId: "event-memory", eventDate: "2026-08-10", timezone: "Asia/Tokyo",
+    origin: "Shibuya", destination: "Tokyo", direction: "outbound",
+    arriveBy: "2026-08-10T09:00:00.000+09:00", departAt: null,
+  };
+  const route = { status: "route_ready", provider: "transit", timezone: "Asia/Tokyo", durationSeconds: 900 };
+  const store = createMemoryMobileStore({ now: () => Date.parse("2026-08-10T08:10:00.000Z") });
+  await store.writeRouteCache({ uid: "tenant-memory" }, routeRequest, route);
+  const hit = await store.readRouteCache({ uid: "tenant-memory" }, routeRequest);
+  assert.deepEqual(hit.value, route);
+});
+
 test("Supabase mobile route cache persists the tenant-safe request digest and complete structured route", async () => {
   const calls = [];
   let persisted = null;

@@ -21,11 +21,12 @@ function asRows(body) {
 }
 
 function routeCacheEntry(row, now = Date.now) {
-  if (!row || !row.route || !row.computed_at) return null;
+  const route = row && (row.route || row.value);
+  if (!route || !row.computed_at) return null;
   const computedAt = Date.parse(row.computed_at);
   const ttlSecs = Number(row.ttl_secs);
   if (!Number.isFinite(computedAt) || !Number.isFinite(ttlSecs) || ttlSecs < 0 || now() - computedAt >= ttlSecs * 1000) return null;
-  return { value: row.route, computedAt };
+  return { value: route, computedAt };
 }
 
 function createSupabaseMobileStore(options = {}) {
@@ -404,11 +405,13 @@ function createMemoryMobileStore(options = {}) {
     async readAnalysisState(scope) { const row = user(scope); return row && row.analysisState ? { ...row.analysisState } : { status: "idle" }; },
     async writeAnalysisState(scope, state) { const row = user(scope); if (!row) throw new MobileError("account_not_found", "Account not found.", 404); row.analysisState = { ...state, updatedAt: state.updatedAt || nowIso() }; return { ...row.analysisState }; },
     async readRouteCache(scope, routeRequest) {
-      const key = mobileRouteCacheKey(scoped(scope), routeRequest);
+      const uid = scoped(scope);
+      const key = mobileRouteCacheKey({ uid }, routeRequest);
       return routeCacheEntry(routeCache.get(key), memoryNow);
     },
     async writeRouteCache(scope, routeRequest, value) {
-      const key = mobileRouteCacheKey(scoped(scope), routeRequest);
+      const uid = scoped(scope);
+      const key = mobileRouteCacheKey({ uid }, routeRequest);
       const computedAt = value && value.computedAt ? value.computedAt : new Date(memoryNow()).toISOString();
       routeCache.set(key, { value, computed_at: computedAt, ttl_secs: 600 });
       return { value, computedAt: Date.parse(computedAt) };

@@ -4,10 +4,11 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const { Readable } = require("node:stream");
 const { readMobileBootstrap } = require("../lib/mobile-bootstrap.js");
-const { projectMobileMessage } = require("../lib/mobile-outbox.js");
+const { decodeCursor, encodeCursor, listMobileMessages, projectMobileMessage } = require("../lib/mobile-outbox.js");
 const { fixture } = require("./mobile-contract-support.js");
 const { handleMobileV1Request } = require("../lib/mobile-v1-router.js");
 const { createMemoryMobileStore } = require("../lib/mobile-store.js");
+const { createStructuredRouteProviders } = require("../lib/mobile-route.js");
 const { sha256 } = require("../lib/mobile-utils.js");
 
 function request(method, path, body, headers = {}) {
@@ -56,6 +57,48 @@ function fixtureUser(overrides = {}) {
     calendar_provider: "composio_gcal", gmail_account_id: "calendar-account-8f3a",
     phone: null, calls_enabled: false, call_language: null, ...overrides,
   };
+}
+
+function fixtureRouteProviders(now) {
+  return createStructuredRouteProviders({
+    mapsKey: "maps-test-key",
+    now,
+    fetchImpl: async (input) => {
+      const url = String(input);
+      if (url.includes("geocode")) {
+        return { ok: true, json: async () => ({ status: "OK", results: [{ geometry: { location: { lat: 35.6586, lng: 139.7454 } } }] }) };
+      }
+      if (url.includes("transit.ls8h.com")) {
+        return {
+          ok: true,
+          json: async () => ({
+            journeys: [{
+              durationSecs: 1620,
+              bufferSeconds: 180,
+              transferCount: 1,
+              fare: { currency: "JPY", amount: 220, medium: "IC" },
+              legs: [
+                {
+                  mode: "walk", instruction: "Walk to Roppongi Station", from: { name: "Shipathon Roppongi" }, to: { name: "Roppongi Station" },
+                  departureTime: "2026-08-10T08:35:00.000Z", arrivalTime: "2026-08-10T08:42:00.000Z", durationSecs: 420,
+                },
+                {
+                  mode: "train", instruction: "Take the Toei Oedo Line toward Daimon", routeName: "Toei Oedo Line", headsign: "toward Daimon", platform: "Platform 2",
+                  from: { name: "Roppongi Station" }, to: { name: "Akabanebashi Station" },
+                  departureTime: "2026-08-10T08:45:00.000Z", arrivalTime: "2026-08-10T08:56:00.000Z", durationSecs: 660,
+                },
+                {
+                  mode: "walk", instruction: "Walk to Tokyo Tower", from: { name: "Akabanebashi Station" }, to: { name: "Tokyo Tower" },
+                  departureTime: "2026-08-10T08:56:00.000Z", arrivalTime: "2026-08-10T09:02:00.000Z", durationSecs: 360,
+                },
+              ],
+            }],
+          }),
+        };
+      }
+      throw new Error(`unexpected deterministic route provider request: ${url}`);
+    },
+  });
 }
 
 async function seedAccessSession(store, now = FIXTURE_TIME) {
@@ -107,25 +150,22 @@ async function realFixtureRuntime(kind) {
     });
   }
   if (kind === "analysis") {
-    const analysisFixture = fixture("analysis-route_ready.json");
     deps.fetchUpcomingEvents = async () => [{
       id: "calendar-event:v1:tokyo-tower-2026-08-10", summary: "Tokyo Tower visit", location: "Tokyo Tower",
       timezone: "America/Los_Angeles", startIso: "2026-08-10T09:05:00.000Z", endIso: "2026-08-10T10:05:00.000Z",
     }];
-    deps.computeMobileRoute = async () => fixture("route.json");
-    deps.encodeCursor = () => analysisFixture.message.cursor;
+    deps.routeProviders = fixtureRouteProviders(deps.now);
   }
   if (kind === "chat") {
     const chat = fixture("chat-page.json");
     await store.appendOutbox({ uid: FIXTURE_UID }, {
-      id: chat.messages[0].id, cursor: chat.messages[0].cursor, type: "system", key: "chat.welcome",
+      id: chat.messages[0].id, type: "system", key: "chat.welcome",
       args: {}, userContent: chat.messages[0].userContent, createdAt: chat.messages[0].createdAt,
     });
     await store.appendOutbox({ uid: FIXTURE_UID }, {
-      id: chat.messages[1].id, cursor: chat.messages[1].cursor, type: "route", key: "chat.route_ready",
+      id: chat.messages[1].id, type: "route", key: "chat.route_ready",
       args: {}, userContent: chat.messages[1].userContent, route: chat.messages[1].route, createdAt: chat.messages[1].createdAt,
     });
-    deps.encodeCursor = (sequence) => sequence === 2 ? chat.nextCursor : `cursor:v1:fixture-${sequence}`;
   }
   if (kind === "question") {
     await store.createQuestion({ uid: FIXTURE_UID }, { id: "question:v1:home-8f3a", type: "origin", prompt: "Where?" });
@@ -189,6 +229,18 @@ test("real router domain handlers are fixture-validated across the complete Gate
     assert.equal(result.statusCode, 200, `${method} ${path}`);
     assert.deepEqual(parsed(result), fixture(fixtureName), `${method} ${path} response drifted from fixture`);
   }
+});
+
+test("runtime chat rows use the real cursor encode/decode boundary", async () => {
+  const deps = await realFixtureRuntime("chat");
+  const scope = { uid: FIXTURE_UID, productLocale: "en" };
+  const first = await listMobileMessages(scope, null, { store: deps.store, pageSize: 1 });
+  assert.equal(first.messages[0].cursor, encodeCursor(1));
+  assert.equal(decodeCursor(first.nextCursor), 1);
+  const second = await listMobileMessages(scope, first.nextCursor, { store: deps.store, pageSize: 1 });
+  assert.equal(second.messages[0].cursor, encodeCursor(2));
+  assert.equal(decodeCursor(second.nextCursor), 2);
+  assert.equal(second.messages[0].id, fixture("chat-page.json").messages[1].id);
 });
 
 test("Gate 3 response fixtures contain only public bounded fields", () => {
