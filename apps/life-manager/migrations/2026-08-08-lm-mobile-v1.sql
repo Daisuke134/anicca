@@ -156,6 +156,26 @@ CREATE TABLE IF NOT EXISTS public.lm_mobile_call_attempts (
 CREATE INDEX IF NOT EXISTS lm_mobile_call_attempts_day_idx
   ON public.lm_mobile_call_attempts (day, uid, created_at);
 
+-- One row is the globally shared daily call budget.  Claims increment this
+-- row with a guarded UPDATE so concurrent tenants cannot both consume the
+-- final slot after observing the same count.
+CREATE TABLE IF NOT EXISTS public.lm_mobile_call_day_guards (
+  day date PRIMARY KEY,
+  global_count integer NOT NULL DEFAULT 0 CHECK (global_count >= 0),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- Preserve the budget when this migration is applied after call attempts
+-- already exist.  GREATEST keeps a previously claimed guard from decreasing
+-- on a repeated migration run.
+INSERT INTO public.lm_mobile_call_day_guards AS guard(day, global_count)
+SELECT day, count(*)::integer
+  FROM public.lm_mobile_call_attempts
+ GROUP BY day
+ON CONFLICT (day) DO UPDATE
+   SET global_count = GREATEST(guard.global_count, EXCLUDED.global_count),
+       updated_at = now();
+
 CREATE TABLE IF NOT EXISTS public.lm_mobile_devices (
   uid text NOT NULL REFERENCES public.lm_users(uid) ON DELETE CASCADE,
   token text NOT NULL CHECK (token ~ '^[0-9a-fA-F]{64}$'),
@@ -203,6 +223,7 @@ ALTER TABLE public.lm_mobile_analysis_states ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.lm_mobile_outbox ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.lm_mobile_questions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.lm_mobile_call_attempts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.lm_mobile_call_day_guards ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.lm_mobile_devices ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.lm_mobile_deletion_receipts ENABLE ROW LEVEL SECURITY;
 
@@ -423,12 +444,15 @@ RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
 DECLARE
   user_count integer;
-  global_count integer;
+  day_slot integer;
+  claim_day date;
   last_created timestamptz;
   attempt text;
 BEGIN
   PERFORM 1 FROM public.lm_users WHERE uid = p_uid FOR UPDATE;
   IF NOT FOUND THEN RETURN jsonb_build_object('rateLimited', true, 'reason', 'account_not_found'); END IF;
+
+  claim_day := (p_now AT TIME ZONE 'UTC')::date;
 
   IF EXISTS (
     SELECT 1 FROM public.lm_mobile_call_attempts
@@ -440,7 +464,7 @@ BEGIN
   SELECT count(*)::integer, max(created_at)
     INTO user_count, last_created
     FROM public.lm_mobile_call_attempts
-   WHERE uid = p_uid AND created_at >= date_trunc('day', p_now);
+   WHERE uid = p_uid AND day = claim_day;
   IF user_count >= 5 THEN
     RETURN jsonb_build_object('rateLimited', true, 'reason', 'daily_user_limit');
   END IF;
@@ -448,16 +472,20 @@ BEGIN
     RETURN jsonb_build_object('rateLimited', true, 'reason', 'cooldown');
   END IF;
 
-  SELECT count(*)::integer INTO global_count
-    FROM public.lm_mobile_call_attempts
-   WHERE created_at >= date_trunc('day', p_now);
-  IF global_count >= 100 THEN
+  INSERT INTO public.lm_mobile_call_day_guards(day, global_count)
+       VALUES (claim_day, 0)
+  ON CONFLICT (day) DO NOTHING;
+  UPDATE public.lm_mobile_call_day_guards
+     SET global_count = global_count + 1, updated_at = now()
+   WHERE day = claim_day AND global_count < 100
+  RETURNING global_count INTO day_slot;
+  IF day_slot IS NULL THEN
     RETURN jsonb_build_object('rateLimited', true, 'reason', 'daily_global_limit');
   END IF;
 
   attempt := 'call:v1:' || replace(gen_random_uuid()::text, '-', '');
   INSERT INTO public.lm_mobile_call_attempts(attempt_id, uid, idempotency_key, day, status, created_at)
-       VALUES (attempt, p_uid, p_idempotency_key, (p_now AT TIME ZONE 'UTC')::date, 'claimed', p_now);
+       VALUES (attempt, p_uid, p_idempotency_key, claim_day, 'claimed', p_now);
   RETURN jsonb_build_object('attemptId', attempt, 'status', 'claimed', 'createdAt', p_now);
 END;
 $$;

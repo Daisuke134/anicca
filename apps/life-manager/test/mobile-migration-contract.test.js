@@ -10,7 +10,7 @@ const SQL = fs.readFileSync(path.join(__dirname, "../migrations/2026-08-08-lm-mo
 test("mobile migration persists the Gate 3 tenant, replay, cursor, device, call, and deletion boundaries", () => {
   for (const table of [
     "lm_mobile_oauth_states", "lm_mobile_sessions", "lm_mobile_idempotency", "lm_mobile_analysis_states",
-    "lm_mobile_outbox", "lm_mobile_questions", "lm_mobile_call_attempts", "lm_mobile_devices", "lm_mobile_deletion_receipts",
+    "lm_mobile_outbox", "lm_mobile_questions", "lm_mobile_call_attempts", "lm_mobile_call_day_guards", "lm_mobile_devices", "lm_mobile_deletion_receipts",
   ]) assert.match(SQL, new RegExp(`CREATE TABLE IF NOT EXISTS public\\.${table}\\b`));
   for (const fn of [
     "claim_lm_mobile_oauth_state", "claim_lm_mobile_idempotency", "complete_lm_mobile_idempotency",
@@ -31,5 +31,13 @@ test("mobile migration persists the Gate 3 tenant, replay, cursor, device, call,
   assert.match(SQL, /capability_hash text/);
   assert.match(SQL, /UPDATE public\.lm_mobile_sessions SET revoked_at/);
   assert.match(SQL, /status IN \('open', 'claimed', 'answered', 'stale'\)/);
+  assert.match(SQL, /global_count integer NOT NULL DEFAULT 0/);
+  assert.match(SQL, /global_count = global_count \+ 1/);
+  assert.match(SQL, /global_count < 100/);
+  assert.match(SQL, /claim_day := \(p_now AT TIME ZONE 'UTC'\)::date/);
+  assert.match(SQL, /day = claim_day/);
+  assert.match(SQL, /GREATEST\(guard\.global_count, EXCLUDED\.global_count\)/);
+  assert.doesNotMatch(SQL, /SELECT count\(\*\)::integer INTO global_count/);
+  assert.doesNotMatch(SQL, /pg_advisory_(?:lock|xact_lock|unlock)/i);
   assert.doesNotMatch(SQL, /raw_access_token|raw_refresh_token|raw_bearer/i);
 });

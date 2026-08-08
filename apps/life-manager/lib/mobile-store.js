@@ -328,6 +328,7 @@ function createMemoryMobileStore(options = {}) {
   const devices = new Map();
   const calls = new Map();
   const deletionReceipts = new Map();
+  const callDayGuards = new Map();
   const callDailyUserLimit = Number.isSafeInteger(options.callDailyUserLimit) && options.callDailyUserLimit > 0 ? options.callDailyUserLimit : 5;
   const callDailyGlobalLimit = Number.isSafeInteger(options.callDailyGlobalLimit) && options.callDailyGlobalLimit > 0 ? options.callDailyGlobalLimit : 100;
   const callCooldownMs = Number.isSafeInteger(options.callCooldownMs) && options.callCooldownMs >= 0 ? options.callCooldownMs : 10 * 60 * 1000;
@@ -343,7 +344,7 @@ function createMemoryMobileStore(options = {}) {
     return users.get(uid) || null;
   }
   return {
-    _users: users, _sessions: sessions, _states: states, _idempotency: idempotency, _outbox: outbox, _questions: questions, _devices: devices, _calls: calls, _deletionReceipts: deletionReceipts,
+    _users: users, _sessions: sessions, _states: states, _idempotency: idempotency, _outbox: outbox, _questions: questions, _devices: devices, _calls: calls, _callDayGuards: callDayGuards, _deletionReceipts: deletionReceipts,
     async readUser(scope) { const row = user(scope); return row ? { ...row } : null; },
     async patchUser(scope, patch, options2 = {}) { const row = user(scope, options2.expectedUid); if (!row) throw new MobileError("account_not_found", "Account not found.", 404); Object.assign(row, patch); return { ...row }; },
     async readAnalysisState(scope) { const row = user(scope); return row && row.analysisState ? { ...row.analysisState } : { status: "idle" }; },
@@ -414,12 +415,17 @@ function createMemoryMobileStore(options = {}) {
     async consumeOpenQuestion(scope, id, answer) { const uid = scoped(scope); const row = questions.get(`${uid}:${id}`); if (!row || row.status !== "open") return null; row.status = "answered"; row.answer = answer; return { ...row }; },
     async claimCallAttempt(scope, value) {
       const uid = scoped(scope);
-      const day = String(value.now || "").slice(0, 10);
+      const timestamp = Date.parse(value.now || "");
+      const day = Number.isNaN(timestamp)
+        ? new Date(memoryNow()).toISOString().slice(0, 10)
+        : new Date(timestamp).toISOString().slice(0, 10);
       const existing = [...calls.values()].filter((row) => row.uid === uid && row.day === day);
       if (existing.length >= callDailyUserLimit) return { rateLimited: true, reason: "daily_user_limit" };
-      if ([...calls.values()].filter((row) => row.day === day).length >= callDailyGlobalLimit) return { rateLimited: true, reason: "daily_global_limit" };
       if (existing.some((row) => row.createdAt && Date.parse(value.now) - Date.parse(row.createdAt) < callCooldownMs)) return { rateLimited: true, reason: "cooldown" };
       if (existing.some((row) => row.idempotencyKey === value.idempotencyKey)) return { rateLimited: true, reason: "duplicate_request" };
+      const current = callDayGuards.get(day) || 0;
+      if (current >= callDailyGlobalLimit) return { rateLimited: true, reason: "daily_global_limit" };
+      callDayGuards.set(day, current + 1);
       const attemptId = `call:v1:${uid}:${calls.size + 1}`;
       const row = { attemptId, uid, day, status: "claimed", idempotencyKey: value.idempotencyKey, createdAt: value.now || nowIso() };
       calls.set(attemptId, row);

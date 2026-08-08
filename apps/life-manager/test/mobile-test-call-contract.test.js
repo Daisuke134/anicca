@@ -40,3 +40,35 @@ test("call claims enforce a global daily cap in addition to the tenant cooldown"
   await requestMobileCall({ uid: "user-a" }, { confirmed: true, idempotencyKey: "global-a" }, deps);
   await assert.rejects(() => requestMobileCall({ uid: "user-b" }, { confirmed: true, idempotencyKey: "global-b" }, deps), (error) => error.code === "call_rate_limited");
 });
+
+test("concurrent tenants consume one atomic global day slot", async () => {
+  const db = createMemoryMobileStore({
+    callDailyGlobalLimit: 1,
+    users: [
+      { uid: "user-a", phone: "+819012345678", calls_enabled: true, product_locale: "en" },
+      { uid: "user-b", phone: "+819012345679", calls_enabled: true, product_locale: "en" },
+    ],
+  });
+  const deps = { store: db, now: () => Date.parse("2026-08-08T00:00:00.000Z"), placeCall: async () => ({ ok: true, ccid: "call" }) };
+  const outcomes = await Promise.allSettled([
+    requestMobileCall({ uid: "user-a" }, { confirmed: true, idempotencyKey: "atomic-a" }, deps),
+    requestMobileCall({ uid: "user-b" }, { confirmed: true, idempotencyKey: "atomic-b" }, deps),
+  ]);
+  assert.equal(outcomes.filter((item) => item.status === "fulfilled").length, 1);
+  assert.equal(outcomes.filter((item) => item.status === "rejected" && item.reason.code === "call_rate_limited").length, 1);
+});
+
+test("call day guards use the UTC day for offset timestamps", async () => {
+  const db = createMemoryMobileStore({
+    callDailyGlobalLimit: 1,
+    users: [
+      { uid: "user-a", phone: "+819012345678", calls_enabled: true, product_locale: "en" },
+      { uid: "user-b", phone: "+819012345679", calls_enabled: true, product_locale: "en" },
+    ],
+  });
+  let current = "2026-08-08T00:30:00+02:00";
+  const deps = { store: db, now: () => Date.parse(current), placeCall: async () => ({ ok: true, ccid: "call" }) };
+  await requestMobileCall({ uid: "user-a" }, { confirmed: true, idempotencyKey: "utc-day-a" }, deps);
+  current = "2026-08-08T00:00:00Z";
+  await requestMobileCall({ uid: "user-b" }, { confirmed: true, idempotencyKey: "utc-day-b" }, deps);
+});
