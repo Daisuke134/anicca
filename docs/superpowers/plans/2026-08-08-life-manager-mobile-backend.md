@@ -64,16 +64,17 @@
 ```javascript
 async function startCalendarSession(input, deps)
 async function exchangeMobileSession(input, deps)
-async function authenticateMobileRequest(req, deps) // -> { uid, sessionId, productLocale }
+async function authenticateMobileRequest(req, deps) // -> { uid, sessionId, productLocale, providerConnection }
 async function refreshMobileSession(refreshToken, deps)
 async function revokeMobileSession(scope, deps)
 ```
 
-- [ ] Write `mobile-calendar-session-contract.test.js` for invalid, expired, replayed, and wrong-owner state; all produce zero sessions.
+- [ ] **Task 2A — callback/store contract (5–7 files, 180–300 changed LOC):** write `mobile-calendar-session-contract.test.js` for invalid, expired, replayed, `status!=success`, mismatched connected-account ID, wrong Composio owner/toolkit/auth config, and missing primary Calendar identity; all produce zero sessions. Extend the OAuth state with a server-generated provisional Composio `user_id`, exact `connected_account_id`, and auth-config ID. The client sends no UID and no Google authorization code.
+- [ ] **Task 2B — provider identity/session binding (6–9 files, 250–450 changed LOC):** read the connected account back from Composio, execute the minimum primary-Calendar identity read through the exact `connected_account_id`, hash the provider identity, and atomically find/create its opaque Life Manager UID. Persist the exact account ID in the mobile session and calendar profile; Composio tool execution uses that connection ID for mobile while existing UID-based web callers remain compatible.
+- [ ] **Task 2C — native callback contract (4–7 files, 120–250 changed LOC):** keep one `Connect Google Calendar` action, parse Composio's preserved `state` plus appended `status` and `connected_account_id`, send `{state,status,connectedAccountId}` to exchange, and reject missing/mismatched callback facts before session persistence.
 - [ ] Add refresh tests for rotation, concurrent replay, family revocation, expiry, and logout revocation.
-- [ ] Validate the Supabase/Google identity through Supabase `/auth/v1/user`; derive the Life Manager UID server-side using the existing landing precedent.
-- [ ] Reuse Composio OAuth ownership patterns, but issue mobile bearer tokens rather than panel cookies.
-- [ ] Hash stored tokens and compare constant-time; never log raw codes or tokens.
+- [ ] Reuse Composio OAuth ownership/read-back patterns, but issue mobile bearer tokens only after the provider identity mapping succeeds. Supabase remains the durable store; it is not a second login screen.
+- [ ] Hash stored tokens and provider identity, compare tokens constant-time, and never log raw callback state, provider identity, or tokens.
 - [ ] Run session tests and commit/push.
 
 ### Task 3: Enforce Tenant Scope and Idempotency
