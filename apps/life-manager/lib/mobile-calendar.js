@@ -28,7 +28,10 @@ async function fetchMobileUpcomingEvents(uid, options = {}) {
     composioUserId,
     connectedAccountId,
   });
-  const items = await calendar.listEventsRaw(uid, {
+  // `uid` is the stable Life Manager tenant key. Provider execution must use the
+  // Composio provisional owner persisted during OAuth, paired with the exact
+  // connected account, or Composio can resolve a different owner/account.
+  const items = await calendar.listEventsRaw(composioUserId, {
     timeMin: isoZ(nowMs), timeMax: isoZ(nowMs + horizonH * 3600 * 1000),
     connectedAccountId,
   });

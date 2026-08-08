@@ -4,6 +4,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const { replyMobileQuestion } = require("../lib/mobile-question.js");
 const { createMemoryMobileStore } = require("../lib/mobile-store.js");
+const { makeComposioCalendar } = require("../lib/transport/calendar-composio.js");
 
 test("reply consumes only the authenticated user's open question once", async () => {
   const store = createMemoryMobileStore({ users: [{ uid: "user-a", product_locale: "en" }, { uid: "user-b", product_locale: "en" }] });
@@ -34,6 +35,28 @@ test("destination replies patch the stored Calendar event before re-analysis", a
   });
   assert.equal(result.status, "answered");
   assert.deepEqual(patches, [{ uid: "user-a", input: { calendar_id: "primary", event_id: "event-1", location: "Tokyo Tower" } }]);
+});
+
+test("destination replies use the persisted Composio owner with the exact account", async () => {
+  const store = createMemoryMobileStore({ users: [{
+    uid: "lm_stable", calendar_composio_user_id: "lm_provisional", gmail_account_id: "ca_exact", calendar_provider: "composio_gcal",
+  }] });
+  await store.createQuestion({ uid: "lm_stable" }, { id: "question:v1:destination-routing", type: "destination", eventId: "event-1", prompt: "Where?" });
+  const calls = [];
+  const calendar = makeComposioCalendar({
+    apiKey: "composio-test-key",
+    recordCall: async () => false,
+    fetchImpl: async (url, init) => {
+      calls.push({ url: String(url), body: JSON.parse(init.body) });
+      return { ok: true, async json() { return { successful: true }; } };
+    },
+  });
+  const result = await replyMobileQuestion({ uid: "lm_stable" }, "question:v1:destination-routing", "Tokyo Tower", { store, calendar });
+  assert.equal(result.status, "answered");
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].body.user_id, "lm_provisional");
+  assert.equal(calls[0].body.connected_account_id, "ca_exact");
+  assert.notEqual(calls[0].body.user_id, "lm_stable");
 });
 
 test("question claim survives downstream failure and resumes apply/outbox before final answer", async () => {
