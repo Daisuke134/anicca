@@ -200,3 +200,167 @@ not touch that file.
 
 - The report body was committed and pushed as `5c46a565c`; this append-only receipt is the final
   report amendment for the task.
+
+## Review-fix addendum (2026-08-08)
+
+The review identified three contract defects and one validation gap: SECURITY DEFINER RPCs still
+had PostgreSQL's default PUBLIC execute privilege, receipt recording did not require tenant/current
+claim identity, recovery claims did not carry a stable provider idempotency key, and the isolated
+staging target had no Supabase-compatible roles. The following evidence is the strict regression
+cycle for those fixes. The earlier report counts above describe the pre-review implementation;
+these addendum counts supersede them for the final state.
+
+### Review-fix RED
+
+Tests were changed first, while the pre-fix implementation and migration remained untouched:
+
+```text
+cd apps/life-manager && node --test lib/late-approval.test.js
+```
+
+Exact result: **9 tests, 6 pass, 3 fail**. The three expected failures were:
+
+```text
+The input did not match /provider_idempotency_key\s+text\s+NOT NULL/i
+The "string" argument must be of type string. Received type undefined
+Missing expected rejection.
+```
+
+The first was the missing migration key/privilege contract, the second was the missing stable key
+on a created draft, and the third showed that a receipt without the new required identity was
+accepted by the old in-memory transition.
+
+### Review-fix GREEN
+
+Focused state-machine suite after the minimal JS/SQL changes:
+
+```text
+cd apps/life-manager && node --test lib/late-approval.test.js
+```
+
+Result: **9 tests, 9 pass, 0 fail**.
+
+Required regression suite:
+
+```text
+cd apps/life-manager && node --test lib/late-approval.test.js lib/late-recipient-resolver.test.js lib/late-notice.test.js
+```
+
+Result: **48 tests, 48 pass, 0 fail**.
+
+Syntax and full-range whitespace checks:
+
+```text
+cd apps/life-manager && node --check lib/late-approval.js
+cd apps/life-manager && node --check lib/late-approval.test.js
+git diff --check
+```
+
+All exited 0. The public receipt interface now requires `uid`, `claimToken`, and `workerId`; the
+transition rejects missing identity, wrong uid, wrong token, wrong worker, and an old token after
+lease recovery. Draft creation generates a 64-hex-character value from `randomBytes(32)`, exposes
+it as `providerIdempotencyKey`, and claim recovery preserves it. The SQL record RPC has the exact
+six-argument identity-bound signature and locks by `draft_id AND uid`.
+
+### Isolated staging role and migration evidence
+
+The shared Supabase URL was not used. Every Railway command asserted these exact IDs before opening
+`DATABASE_PUBLIC_URL`:
+
+```text
+project     f9c524cb-ba4a-43bb-9639-ff736afd9ec1
+environment 0437b714-7f05-44d7-9c46-9409-a6e3a99c
+service     a8a0a844-4cde-4a86-8902-63fc2ad58cf8 (Postgres)
+```
+
+The role preflight created or enforced `NOLOGIN` for `anon`, `authenticated`, and `service_role`.
+Read-back was:
+
+```text
+    rolname    | rolcanlogin
+---------------+-------------
+ anon          | f
+ authenticated | f
+ service_role  | f
+```
+
+The migration was then reapplied to that isolated database with the same three-ID guard and
+`psql "$DATABASE_PUBLIC_URL" -v ON_ERROR_STOP=1 -X -f -` fed from
+`apps/life-manager/migrations/2026-08-08-lm-late-approval.sql`; it exited 0. The rerun reported
+expected `already exists, skipping` notices for prior relations, and completed `ALTER TABLE`,
+`CREATE FUNCTION`, `REVOKE`, and conditional service-role grant statements successfully. No
+production Railway environment and no Supabase endpoint was contacted.
+
+Schema and RPC read-back from the isolated database:
+
+- `provider_idempotency_key` is `text NOT NULL DEFAULT encode(gen_random_bytes(32), 'hex')` and
+  has a unique index; the key format is 64 lowercase hex characters.
+- The record RPC identity is
+  `p_uid text, p_draft_id text, p_provider_message_id text, p_delivered_at timestamp with time zone,
+  p_claim_token text, p_worker_id text`.
+- All four transition RPCs have `prosecdef=t` and
+  `proconfig={"search_path=public, pg_temp"}`. The record definition read-back contains
+  `WHERE draft_id = p_draft_id AND uid = p_uid FOR UPDATE`.
+- The four LM tables have `relrowsecurity=t` and `relforcerowsecurity=t`; no application role has a
+  direct table grant (`information_schema.role_table_grants` returned 0 rows).
+- Function privilege matrix was 12 rows: `create`, `decide`, `claim`, and `record` were each
+  `anon=false`, `authenticated=false`, `service_role=true`.
+- Each function ACL read back as
+  `{postgres=X/postgres,service_role=X/postgres}` with no PUBLIC `=X` entry. The SQL migration
+  unconditionally revokes exact function signatures from `PUBLIC, anon, authenticated` and
+  conditionally grants `EXECUTE` only to `service_role`.
+
+Actual role calls matched the matrix. Each of these eight calls exited `rc=1` with permission
+denied, and none changed state:
+
+```text
+anon create rejected (rc=1)
+anon decide rejected (rc=1)
+anon claim rejected (rc=1)
+anon record rejected (rc=1)
+authenticated create rejected (rc=1)
+authenticated decide rejected (rc=1)
+authenticated claim rejected (rc=1)
+authenticated record rejected (rc=1)
+```
+
+With `SET LOCAL ROLE service_role`, a transaction executed and then rolled back all four required
+transitions. Exact read-back notice:
+
+```text
+staging transitions: awaiting_decision -> send_claimed -> sent; stable provider key=d772bc91bd4329d9157a4b66e88b9d04933666a6b662fde711576825144bdad5; duplicate receipt=true
+```
+
+A second transaction used a one-second lease and recovery worker. It proved the first token was
+rejected after recovery, wrong uid and worker were rejected, NULL uid/token/worker were rejected,
+the provider key remained stable, and the recovered worker could record the receipt:
+
+```text
+staging recovery: old token rejected, wrong uid/worker rejected, required identity enforced, stable provider key=50d1ec5c42326c9a5933795c41e5803e83f10473681e4ff9daa593422aa8215e
+```
+
+These are isolated PostgreSQL role/SQL validations, not staging app/PostgREST E2E: the isolated
+Railway service has no Life Manager app credentials or Supabase PostgREST topology. The plan's
+staging wording should be narrowed by the controller to this honest validation boundary; the plan
+file was not edited by this task.
+
+### Review-fix mutation reasoning and self-review
+
+- Removing `REVOKE ... FROM PUBLIC, anon, authenticated` restores the default ACL and is caught by
+  the migration contract test plus the isolated `proacl`/role-call matrix.
+- Making uid/token/worker optional lets a draft ID alone reach `sent`; the RED receipt test,
+  required-input checks, SQL tenant predicate, and recovery probes catch that mutation.
+- Generating the provider key per claim instead of per draft changes it across recovery; the
+  recovery test and both staging notices catch that mutation.
+- Removing the unique receipt constraints still permits a second provider id or draft receipt;
+  existing receipt conflict/idempotency tests and schema read-back retain both uniqueness guards.
+- The provider key is surfaced on the claim row for the callback-owned provider call in the later
+  transport slice; this Task 2 module still performs no mail, Telegram, or provider I/O.
+
+The known full-suite dependency failure remains outside the owned files (`viem` is missing through
+`base-usdc-payout.js`); no unrelated dependency or Task 3 file was changed. No Telegram was sent.
+
+### Review-fix commits
+
+- Code/test/migration fix: `7a6b07bf8` — `fix(life-manager): close late approval delivery boundaries`.
+- The report addendum commit and its push receipt are appended below after the required fetch/push.
