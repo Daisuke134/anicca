@@ -198,6 +198,15 @@ test("known Telnyx CDR settlement uses the transactional voice settlement RPC", 
   assert.equal(body.p_reservation_request_id, "call-1");
 });
 
+test("voice settlement finds the original reservation day and dedupes by reservation across CDR ids", () => {
+  const sql = fs.readFileSync(path.join(__dirname, "../migrations/2026-08-08-lm-provider-cost.sql"), "utf8").toLowerCase();
+  assert.match(sql, /v_reservation_day/);
+  assert.match(sql, /from lm_provider_budget_claims[\s\S]*where c\.uid = v_uid[\s\S]*c\.request_id = v_reservation_request_id[\s\S]*c\.is_voice = true/);
+  assert.match(sql, /create unique index if not exists lm_provider_voice_settlement_reservation_idx\s+on public\.lm_provider_voice_settlements \(uid, reservation_request_id\)/);
+  assert.match(sql, /on conflict \(uid, reservation_request_id\) do nothing/);
+  assert.match(sql, /reserved_usd - v_reserved/);
+});
+
 test("a provider claim replay after a conflict is an allowed duplicate receipt", async () => {
   const result = await authorizeProviderOperation({
     uid: "u1", provider: "google", operation: "routes", essential: false,

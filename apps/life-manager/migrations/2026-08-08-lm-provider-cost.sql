@@ -158,9 +158,12 @@ CREATE TABLE IF NOT EXISTS public.lm_provider_voice_settlements (
 );
 ALTER TABLE public.lm_provider_voice_settlements
   ADD COLUMN IF NOT EXISTS reservation_request_id text;
+-- A reservation may be settled by a delayed CDR after midnight.  The
+-- reservation identity therefore cannot include the settlement day: the same
+-- uid + reservation must be one settlement even when CDR IDs differ.
+DROP INDEX IF EXISTS public.lm_provider_voice_settlement_reservation_idx;
 CREATE UNIQUE INDEX IF NOT EXISTS lm_provider_voice_settlement_reservation_idx
-  ON public.lm_provider_voice_settlements (uid, budget_day, reservation_request_id)
-  WHERE reservation_request_id IS NOT NULL;
+  ON public.lm_provider_voice_settlements (uid, reservation_request_id);
 ALTER TABLE public.lm_provider_voice_settlements ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.lm_provider_voice_settlements FORCE ROW LEVEL SECURITY;
 
@@ -333,10 +336,41 @@ DECLARE
   v_uid text := nullif(trim(p_uid), '');
   v_day date := coalesce(p_budget_day, current_date);
   v_amount numeric := coalesce(p_actual_usd, 0);
+  v_reservation_request_id text := nullif(trim(p_reservation_request_id), '');
+  v_reservation_day date := coalesce(p_budget_day, current_date);
   v_reserved numeric := 0;
+  v_inserted boolean := false;
 BEGIN
   IF v_uid IS NULL OR nullif(trim(p_request_id), '') IS NULL OR v_amount < 0 THEN
     RETURN jsonb_build_object('settled', false, 'reason', 'invalid_settlement');
+  END IF;
+
+  -- Imports can arrive after midnight. Resolve the original claim day by the
+  -- stable reservation identity instead of assuming it is today's settlement
+  -- day; the reservation bucket must be released where it was claimed.
+  IF v_reservation_request_id IS NOT NULL THEN
+    SELECT c.budget_day, c.projected_usd
+      INTO v_reservation_day, v_reserved
+      FROM lm_provider_budget_claims c
+      WHERE c.uid = v_uid
+        AND c.request_id = v_reservation_request_id
+        AND c.is_voice = true
+      ORDER BY c.claimed_at ASC, c.budget_day ASC
+      LIMIT 1;
+    v_reservation_day := coalesce(v_reservation_day, v_day);
+    v_reserved := coalesce(v_reserved, 0);
+  END IF;
+
+  -- Lock both affected days in date order, and user before global on each
+  -- day, so delayed settlement cannot deadlock with a new reservation.
+  IF v_reservation_day < v_day THEN
+    INSERT INTO lm_provider_voice_buckets(scope, uid, budget_day)
+      VALUES ('user', v_uid, v_reservation_day), ('global', '', v_reservation_day)
+      ON CONFLICT (scope, uid, budget_day) DO NOTHING;
+    PERFORM 1 FROM lm_provider_voice_buckets
+      WHERE scope = 'user' AND uid = v_uid AND budget_day = v_reservation_day FOR UPDATE;
+    PERFORM 1 FROM lm_provider_voice_buckets
+      WHERE scope = 'global' AND uid = '' AND budget_day = v_reservation_day FOR UPDATE;
   END IF;
   INSERT INTO lm_provider_voice_buckets(scope, uid, budget_day)
     VALUES ('user', v_uid, v_day), ('global', '', v_day)
@@ -345,25 +379,58 @@ BEGIN
     WHERE scope = 'user' AND uid = v_uid AND budget_day = v_day FOR UPDATE;
   PERFORM 1 FROM lm_provider_voice_buckets
     WHERE scope = 'global' AND uid = '' AND budget_day = v_day FOR UPDATE;
-  INSERT INTO lm_provider_voice_settlements(request_id, uid, budget_day, amount_usd, reservation_request_id)
-    VALUES (p_request_id, v_uid, v_day, v_amount, p_reservation_request_id)
-    ON CONFLICT (request_id) DO NOTHING;
-  IF NOT FOUND THEN
-    RETURN jsonb_build_object('settled', true, 'duplicate', true);
+
+  IF v_reservation_day > v_day THEN
+    INSERT INTO lm_provider_voice_buckets(scope, uid, budget_day)
+      VALUES ('user', v_uid, v_reservation_day), ('global', '', v_reservation_day)
+      ON CONFLICT (scope, uid, budget_day) DO NOTHING;
+    PERFORM 1 FROM lm_provider_voice_buckets
+      WHERE scope = 'user' AND uid = v_uid AND budget_day = v_reservation_day FOR UPDATE;
+    PERFORM 1 FROM lm_provider_voice_buckets
+      WHERE scope = 'global' AND uid = '' AND budget_day = v_reservation_day FOR UPDATE;
   END IF;
-  IF p_reservation_request_id IS NOT NULL THEN
-    SELECT projected_usd INTO v_reserved FROM lm_provider_budget_claims
-      WHERE uid = v_uid AND budget_day = v_day AND request_id = p_reservation_request_id AND is_voice = true;
-    v_reserved := coalesce(v_reserved, 0);
+
+  -- A CDR id is not the reservation identity.  A replay with a new CDR id
+  -- must hit the reservation conflict target and return a durable duplicate
+  -- receipt rather than raising a second unique violation.
+  IF v_reservation_request_id IS NOT NULL THEN
+    BEGIN
+      INSERT INTO lm_provider_voice_settlements(request_id, uid, budget_day, amount_usd, reservation_request_id)
+        VALUES (p_request_id, v_uid, v_day, v_amount, v_reservation_request_id)
+        ON CONFLICT (uid, reservation_request_id) DO NOTHING;
+      v_inserted := FOUND;
+    EXCEPTION WHEN unique_violation THEN
+      v_inserted := false;
+    END;
+  ELSE
+    INSERT INTO lm_provider_voice_settlements(request_id, uid, budget_day, amount_usd, reservation_request_id)
+      VALUES (p_request_id, v_uid, v_day, v_amount, NULL)
+      ON CONFLICT (request_id) DO NOTHING;
+    v_inserted := FOUND;
+  END IF;
+  IF NOT v_inserted THEN
+    RETURN jsonb_build_object('settled', true, 'duplicate', true);
   END IF;
   UPDATE lm_provider_voice_buckets
     SET settled_usd = settled_usd + v_amount,
-        reserved_usd = greatest(0, reserved_usd - v_reserved), updated_at = now()
+        reserved_usd = CASE WHEN v_reservation_day = v_day
+          THEN greatest(0, reserved_usd - v_reserved) ELSE reserved_usd END,
+        updated_at = now()
     WHERE scope = 'user' AND uid = v_uid AND budget_day = v_day;
   UPDATE lm_provider_voice_buckets
     SET settled_usd = settled_usd + v_amount,
-        reserved_usd = greatest(0, reserved_usd - v_reserved), updated_at = now()
+        reserved_usd = CASE WHEN v_reservation_day = v_day
+          THEN greatest(0, reserved_usd - v_reserved) ELSE reserved_usd END,
+        updated_at = now()
     WHERE scope = 'global' AND uid = '' AND budget_day = v_day;
+  IF v_reservation_day <> v_day AND v_reserved > 0 THEN
+    UPDATE lm_provider_voice_buckets
+      SET reserved_usd = greatest(0, reserved_usd - v_reserved), updated_at = now()
+      WHERE scope = 'user' AND uid = v_uid AND budget_day = v_reservation_day;
+    UPDATE lm_provider_voice_buckets
+      SET reserved_usd = greatest(0, reserved_usd - v_reserved), updated_at = now()
+      WHERE scope = 'global' AND uid = '' AND budget_day = v_reservation_day;
+  END IF;
   RETURN jsonb_build_object('settled', true, 'duplicate', false);
 END;
 $$;
