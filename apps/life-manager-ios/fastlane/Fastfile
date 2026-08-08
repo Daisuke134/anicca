@@ -82,7 +82,7 @@ platform :ios do
       xcargs: "CODE_SIGNING_ALLOWED=YES CODE_SIGNING_REQUIRED=YES"
     )
 
-    ipa_path = File.join("build/TestFlight", "LifeManager.ipa")
+    ipa_path = lane_context[SharedValues::IPA_OUTPUT_PATH] || File.expand_path(File.join("build/TestFlight", "LifeManager.ipa"))
     UI.user_error!("LifeManager.ipa is missing or empty") unless File.file?(ipa_path) && File.size(ipa_path).positive?
     UI.user_error!("LifeManager.ipa is not a valid IPA archive") unless system("unzip", "-tqq", ipa_path)
   end

@@ -1,10 +1,11 @@
 // Non-secret release configuration. Local overrides are optional and ignored by git.
 LIFEMANAGER_API_BASE_URL = https:/$()/life-call-production.up.railway.app/api/mobile/v1
 LIFEMANAGER_CALLBACK_SCHEME = lifemanager
-CODE_SIGN_STYLE = Automatic
+CODE_SIGN_STYLE = Manual
 DEVELOPMENT_TEAM = S5U8UH3JLJ
 CODE_SIGN_IDENTITY = Apple Distribution
 CODE_SIGN_IDENTITY[sdk=iphoneos*] = Apple Distribution
+PROVISIONING_PROFILE_SPECIFIER = Life Manager App Store 2026
 CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*] = LifeManager/Config/Release.entitlements
 CODE_SIGNING_ALLOWED[sdk=iphoneos*] = YES
 CODE_SIGNING_REQUIRED[sdk=iphoneos*] = YES

@@ -61,14 +61,15 @@ final class SigningConfigurationTests: XCTestCase {
         XCTAssertTrue(debug.contains("CODE_SIGN_IDENTITY[sdk=iphoneos*] = Apple Development"))
     }
 
-    func testReleaseUsesAutomaticDistributionSigningTeamAndPreservesSimulatorDebugOverrides() throws {
+    func testReleaseUsesManualAppStoreProfileAndPreservesSimulatorDebugOverrides() throws {
         let release = try Self.resourceText(named: "Release.xcconfig", in: "LifeManager/Config")
         let debug = try Self.resourceText(named: "Debug.xcconfig", in: "LifeManager/Config")
 
-        XCTAssertTrue(release.contains("CODE_SIGN_STYLE = Automatic"))
+        XCTAssertTrue(release.contains("CODE_SIGN_STYLE = Manual"))
         XCTAssertTrue(release.contains("DEVELOPMENT_TEAM = S5U8UH3JLJ"))
         XCTAssertTrue(release.contains("CODE_SIGN_IDENTITY = Apple Distribution"))
         XCTAssertTrue(release.contains("CODE_SIGN_IDENTITY[sdk=iphoneos*] = Apple Distribution"))
+        XCTAssertTrue(release.contains("PROVISIONING_PROFILE_SPECIFIER = Life Manager App Store 2026"))
         XCTAssertTrue(release.contains("CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*] = LifeManager/Config/Release.entitlements"))
         XCTAssertTrue(release.contains("CODE_SIGNING_ALLOWED[sdk=iphonesimulator*] = NO"))
         XCTAssertTrue(release.contains("CODE_SIGNING_REQUIRED[sdk=iphonesimulator*] = NO"))
@@ -117,6 +118,7 @@ final class SigningConfigurationTests: XCTestCase {
         let lane = String(fastfile[laneStart.lowerBound..<uploadStart.lowerBound])
 
         XCTAssertTrue(lane.contains("app_store_connect_api_key_from_env"))
+        XCTAssertTrue(lane.contains("lane_context[SharedValues::IPA_OUTPUT_PATH]"))
         XCTAssertTrue(lane.contains("File.file?(ipa_path)"))
         XCTAssertTrue(lane.contains("File.size(ipa_path).positive?"))
         XCTAssertTrue(lane.contains("system(\"unzip\", \"-tqq\", ipa_path)"))
