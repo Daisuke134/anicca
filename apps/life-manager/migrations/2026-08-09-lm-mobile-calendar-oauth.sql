@@ -98,7 +98,7 @@ BEGIN
     ) VALUES (
       p_uid, CASE WHEN p_product_locale IN ('en', 'ja') THEN p_product_locale ELSE 'en' END,
       false, 'connected', 'composio_gcal', p_connected_account_id, p_composio_user_id
-    ) ON CONFLICT (uid) DO UPDATE SET
+    ) ON CONFLICT ON CONSTRAINT lm_users_pkey DO UPDATE SET
       calendar_status = 'connected', calendar_provider = 'composio_gcal',
       gmail_account_id = EXCLUDED.gmail_account_id,
       calendar_composio_user_id = EXCLUDED.calendar_composio_user_id,
@@ -119,12 +119,12 @@ BEGIN
            auth_config_id = p_auth_config_id,
            updated_at = now()
      WHERE provider = p_provider AND provider_subject_hash = p_provider_subject_hash;
-    UPDATE public.lm_users
+    UPDATE public.lm_users AS u
        SET calendar_status = 'connected', calendar_provider = 'composio_gcal',
            gmail_account_id = p_connected_account_id,
            calendar_composio_user_id = p_composio_user_id,
            updated_at = now()
-     WHERE uid = mapped_uid;
+     WHERE u.uid = mapped_uid;
   END IF;
 
   SELECT u.product_locale INTO mapped_locale FROM public.lm_users AS u WHERE u.uid = mapped_uid;

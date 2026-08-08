@@ -56,5 +56,6 @@ test("follow-up OAuth migration keeps provider facts hashed and RPCs service-rol
     assert.match(OAUTH_SQL, new RegExp(`REVOKE ALL ON FUNCTION public\\.${signature} FROM PUBLIC, anon, authenticated`));
     assert.match(OAUTH_SQL, new RegExp(`GRANT EXECUTE ON FUNCTION public\\.${signature} TO service_role`));
   }
+  assert.match(OAUTH_SQL, /ON CONFLICT ON CONSTRAINT lm_users_pkey DO UPDATE SET/);
   assert.doesNotMatch(OAUTH_SQL, /raw_provider_identity|provider_email|provider_subject(?!_hash)/i);
 });
