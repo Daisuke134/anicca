@@ -22,7 +22,7 @@
 | 3. Transit facts/fallback | GREEN | structured projection + anchor tests | 31/31 transit/route tests; 59/59 combined focused | `19f411f39` |
 | 4. Truthful cost event | GREEN | 5 contract failures (missing API) | 12/12 ledger contract | `062663d73` |
 | 5. Provider instrumentation | GREEN | adapter module/import module missing | 77/77 provider + focused regression | `0c6616b86` |
-| 6. Budget policy | pending | — | — | — |
+| 6. Budget policy | GREEN | missing-module | 12/12 budget/gate + 90/90 full focused | pending |
 | 7. Owner report/deploy/measure | code-only pending | — | — | — |
 
 ## Known baseline
@@ -77,3 +77,11 @@ Result: 43/43 passed, 0 failed, 0 skipped (2026-08-08).
 - GREEN (runtime wiring): geocode misses, Google Routes/legacy transit, Transit `/plan` + guidance, Composio calls, Resend sends, Gemini Live sessions, and Telnyx call sessions now emit complete events. Cache hits do not emit provider spend.
 - GREEN (scheduled imports): `provider-cost-imports.js` imports Telnyx CDR actuals and Railway/Supabase allocations; loader failures return a failure receipt and write no synthetic zero row. `node --test lib/provider-cost-imports.test.js` → 3/3 passed.
 - GREEN focused verification: `node --test lib/provider-cost-adapters.test.js lib/provider-cost-imports.test.js lib/composio-budget.test.js lib/mail-resend.test.js lib/ledger.test.js lib/travel-transit-wire.test.js lib/transit.test.js lib/route-cache.test.js lib/travel-routes.test.js test/provider-cost-contract.test.js` → 77/77 passed.
+
+## Task 6 receipt
+
+- RED: `node --test lib/provider-budget.test.js` failed at module load with `Cannot find module './provider-budget.js'`.
+- GREEN: pure policy covers normal/warning/degraded/stopped thresholds at `$0.50/$1.00/$2.00`, preserves unknown billing as a reason, and enforces independent user/global voice caps.
+- GREEN: cached route/calendar/geocode reads bypass budget reads; denied Google geocoding/fallback, nonessential Composio refresh, and Telnyx calls make zero paid-provider requests. Gemini Live checks the gate before opening a session.
+- GREEN: migration adds unique `(uid,budget_day,request_id)` atomic claim identity; `claimProviderBudget` provides the service-role insert seam.
+- Verification: `node --test lib/provider-budget.test.js test/provider-budget-gate.test.js` → 12/12 passed; the complete plan verification command (baseline + geocode + cost adapters/imports + budget + all contract tests) → 90/90 passed. The original pre-change baseline remains the recorded 43/43; the 54/54 route/ledger/Composio run includes the Task 5 Composio assertion added afterward.

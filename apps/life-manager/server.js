@@ -74,6 +74,7 @@ const { startBrowserJobLoop } = require("./lib/browser-job-runtime.js");
 const { claimEvent, unclaimEvent, applyBilling } = require("./lib/billing.js");
 const { recordProviderCost: writeProviderCost } = require("./lib/ledger.js");
 const { recordGeminiSession } = require("./lib/provider-cost-adapters.js");
+const { authorizeProviderOperation: authorizeBudget } = require("./lib/provider-budget.js");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY || "sk_test_placeholder"); // apiKey unused by constructEvent
 const SUPA_URL = process.env.SUPABASE_URL, SUPA_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const COMPOSIO_KEY = process.env.COMPOSIO_API_KEY;
@@ -885,6 +886,7 @@ wss.on("connection", (carrierWs, req) => {
   let gotAudio = false;       // has Gemini emitted any audio yet on this call?
   let geminiReconnects = 0;   // one-retry guard for a pre-audio socket drop
   let geminiUsageMetadata = null;
+  let geminiOpening = false;
   const carrierSend = (o) => { if (carrierWs.readyState === WebSocket.OPEN) carrierWs.send(JSON.stringify(o)); };
   const geminiSend = (o) => { if (gemini && gemini.readyState === WebSocket.OPEN) gemini.send(JSON.stringify(o)); };
 
@@ -892,8 +894,22 @@ wss.on("connection", (carrierWs, req) => {
   // answered) — this IS the default path now, not an escalation. If the socket drops before any audio
   // was heard, retry ONCE; a second pre-audio failure ends the call cleanly (never silence, never a
   // clip fallback).
-  function openGeminiLive() {
-    if (gemini) return;
+  async function openGeminiLive() {
+    if (gemini || geminiOpening) return;
+    geminiOpening = true;
+    if (SUPA_URL && SUPA_KEY) {
+      const decision = await authorizeBudget({
+        uid: wakeUid || null, provider: "gemini", operation: "session", essential: true,
+        projectedUsd: Number(process.env.LM_GEMINI_PROJECTED_SESSION_USD) || 0,
+      }, { supaUrl: SUPA_URL, supaKey: SUPA_KEY });
+      if (!decision.allowed) {
+        geminiOpening = false;
+        console.error(`[bridge] Gemini session blocked by provider budget: ${decision.reason}`);
+        try { carrierWs.close(1013, "provider budget"); } catch {}
+        return;
+      }
+    }
+    geminiOpening = false;
     liveWsOpened++;
     console.log(`[bridge] opening Gemini Live live_ws_opened=${liveWsOpened}`);
     gemini = new WebSocket(geminiLiveWsUrl(GEMINI_KEY));
@@ -926,7 +942,7 @@ wss.on("connection", (carrierWs, req) => {
       getReconnects: () => geminiReconnects,
       incReconnects: () => { geminiReconnects++; },
       carrierOpen: () => carrierWs.readyState === WebSocket.OPEN,
-      onReconnect: () => { gemini = null; openGeminiLive(); },
+      onReconnect: () => { gemini = null; void openGeminiLive().catch((error) => console.error(`[bridge] Gemini open failed: ${error && error.message}`)); },
       onClose: () => { try { carrierWs.close(); } catch {} },
       log: (reason) => console.log(`[bridge] gemini ${reason} gotAudio=${gotAudio} reconnects=${geminiReconnects}`),
     });
@@ -973,7 +989,7 @@ wss.on("connection", (carrierWs, req) => {
           else console.error(`[bridge] record_start FAILED: ${r.error}`);
         });
       }
-      if (!gemini) openGeminiLive(); // DEFAULT: two-way Gemini Live from second 1
+      if (!gemini) void openGeminiLive().catch((error) => console.error(`[bridge] Gemini open failed: ${error && error.message}`)); // DEFAULT: two-way Gemini Live from second 1
     }
     if (kind === "dtmf") console.log("[bridge] DTMF ignored (Gemini Live already open)");
     if (kind === "stop" && gemini) { try { gemini.close(); } catch {} }

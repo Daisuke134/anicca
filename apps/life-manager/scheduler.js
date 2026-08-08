@@ -36,6 +36,7 @@ const { onboardNudgeAll } = require("./lib/telegram-onboard.js");
 const { sendMessage } = require("./lib/telegram.js");
 const { langForPhone } = require("./lib/call-language.js");
 const { recordDailyComposioPoll } = require("./lib/ledger.js");
+const { authorizeProviderOperation: authorizeBudget } = require("./lib/provider-budget.js");
 const { schedulerPollInterval } = require("./lib/composio-budget.js");
 const {
   processLocationLateNotice, getLiveLocation,
@@ -476,7 +477,12 @@ async function wakeCallOnce(u, nowMs, deps = {}) {
         const streamUrl = buildStreamUrl({ ...ev, wakeUid: u.uid, wakeEventKey: eventKey }, lvl.urgency, langForUser(u), u.name);
         let res;
         try {
-          res = await (deps.placeCall || placeCall)({ to: u.phone, streamUrl });
+          res = await (deps.placeCall || placeCall)({
+            to: u.phone, streamUrl, uid: u.uid,
+            authorizeProviderOperation: deps.authorizeProviderOperation || (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
+              ? (input) => authorizeBudget(input, { supaUrl: process.env.SUPABASE_URL, supaKey: process.env.SUPABASE_SERVICE_ROLE_KEY })
+              : undefined),
+          });
         } catch (e) {
           res = { ok: false, error: String((e && e.message) || e) };
         }
@@ -814,6 +820,9 @@ async function travelUserOnce(u, deps = {}) {
       nowMs: deps.nowMs === undefined ? Date.now() : deps.nowMs,
       calendar: deps.calendar, supaUrl, supaKey,
       _directionsMinutes: deps.directionsMinutes,
+      authorizeProviderOperation: deps.authorizeProviderOperation || (supaUrl && supaKey
+        ? (input) => authorizeBudget(input, { supaUrl, supaKey })
+        : undefined),
       gmailAccountId: u.gmail_account_id,
     });
     if (r.inserted) console.log(`[travel] uid=${u.uid.slice(0, 12)} inserted=${r.inserted} checked=${r.checked}`);

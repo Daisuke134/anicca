@@ -12,6 +12,7 @@ const { geocodeAddress, createSupabaseGeocodeStore } = require("./geocode-cache.
 const { interpretCalendarEvent } = require("./calendar-interpreter.js");
 const { recordGoogleRoutes, recordGoogleTransit, recordTransitOperation } = require("./provider-cost-adapters.js");
 const { recordProviderCost: writeProviderCost } = require("./ledger.js");
+const { authorizeProviderOperation: authorizeBudget } = require("./provider-budget.js");
 
 // C3 (FIND-002): a process-lifetime route-result cache so the 60s scheduler tick does NOT recompute a
 // route it already has (~30 paid provider calls/event → 1). Keyed on (from_geo, to_geo, time_bucket).
@@ -251,6 +252,7 @@ async function directionsRoute(src, dst, mapsKey, departAtMs = Date.now(), nowMs
     uid: opts._uid,
     requestId: opts._geocodeRequestId,
     recordProviderCost: opts._recordProviderCost,
+    authorizeProviderOperation: opts._authorizeProviderOperation,
   }));
   const transitFetch = opts._transitFetch || ((from, to, options) => transitFetchPlan(from, to, {
     ...options,
@@ -260,11 +262,19 @@ async function directionsRoute(src, dst, mapsKey, departAtMs = Date.now(), nowMs
   }));
   const googleFn = opts._directionsMinutesGoogle || directionsMinutesGoogle;
   const cache = opts._routeCache || _routeCache; // tests inject a fresh cache to avoid cross-test leakage
-  const google = () => googleFn(src, dst, mapsKey, departAtMs, nowMs, departureMode, {
-    uid: opts._uid,
-    requestId: opts._googleRequestId || `google:routes:${new Date(departAtMs).toISOString()}:${departureMode ? "return" : "outbound"}`,
-    recordProviderCost: opts._recordProviderCost,
-  });
+  const google = async () => {
+    if (typeof opts._authorizeProviderOperation === "function") {
+      const decision = await opts._authorizeProviderOperation({
+        uid: opts._uid, provider: "google", operation: "fallback", essential: false, cacheHit: false,
+      });
+      if (decision && decision.allowed === false) return null;
+    }
+    return googleFn(src, dst, mapsKey, departAtMs, nowMs, departureMode, {
+      uid: opts._uid,
+      requestId: opts._googleRequestId || `google:routes:${new Date(departAtMs).toISOString()}:${departureMode ? "return" : "outbound"}`,
+      recordProviderCost: opts._recordProviderCost,
+    });
+  };
   if (!mapsKey || !src || !dst) return null;
   const [srcGeo, dstGeo] = await Promise.all([
     geocode(src, mapsKey, opts),
@@ -365,7 +375,7 @@ async function unclaimTravel(uid, eventKey, leg, supaUrl, supaKey) {
   }).catch(() => {});
 }
 
-async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, nowMs = Date.now(), bufferMin = 5, calendar, supaUrl, supaKey, _directionsMinutes, gmailAccountId, timezone = "UTC" } = {}) {
+async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, nowMs = Date.now(), bufferMin = 5, calendar, supaUrl, supaKey, _directionsMinutes, gmailAccountId, timezone = "UTC", authorizeProviderOperation } = {}) {
   const directionsFn = _directionsMinutes || directionsMinutes;
   const cal = calendar || getCalendar({ apiKey, gmailAccountId });
   const geocodeStore = supaUrl && supaKey ? createSupabaseGeocodeStore({ supaUrl, supaKey }) : undefined;
@@ -373,6 +383,9 @@ async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, nowMs = Date.
   const providerCost = supaUrl && supaKey
     ? (event) => writeProviderCost(event, { supaUrl, supaKey })
     : undefined;
+  const budgetGate = authorizeProviderOperation || (supaUrl && supaKey
+    ? (input) => authorizeBudget(input, { supaUrl, supaKey })
+    : undefined);
   const routeCache = routeStore ? makeRouteCache({ store: routeStore, ttlMs: 10 * 60_000 }) : _routeCache;
   const events = await listEvents7d(uid, apiKey, nowMs, cal, gmailAccountId);
   let inserted = 0, checked = 0, skipped = 0;
@@ -411,6 +424,7 @@ async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, nowMs = Date.
           _timezone: timezone,
           _now: () => new Date(nowMs).toISOString(),
           _recordProviderCost: providerCost,
+          _authorizeProviderOperation: budgetGate,
         });
         if (mins == null && geminiKey) {
           // The location is a room name / unroutable string (e.g. "情報科学大講義室[L1]（IS）"). Let the
@@ -432,6 +446,7 @@ async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, nowMs = Date.
                 _timezone: timezone,
                 _now: () => new Date(nowMs).toISOString(),
                 _recordProviderCost: providerCost,
+                _authorizeProviderOperation: budgetGate,
               });
             }
           } catch { /* fall through to null-mins skip below */ }
@@ -511,6 +526,7 @@ async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, nowMs = Date.
       _timezone: timezone,
       _now: () => new Date(nowMs).toISOString(),
       _recordProviderCost: providerCost,
+      _authorizeProviderOperation: budgetGate,
     });
     if (retMins == null) { skipped++; continue; }
     const retLeaveMs = ev.endMs;                           // depart immediately after event ends

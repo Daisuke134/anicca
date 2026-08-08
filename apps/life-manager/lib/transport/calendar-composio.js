@@ -4,6 +4,7 @@
 // inline Composio calls it replaces — the live caller is unchanged.
 "use strict";
 const { recordComposioOperation } = require("../provider-cost-adapters.js");
+const { authorizeProviderOperation: authorizeBudget } = require("../provider-budget.js");
 
 const COMPOSIO_EXEC = "https://backend.composio.dev/api/v3/tools/execute";
 
@@ -16,13 +17,23 @@ async function exec(tool, uid, args, apiKey, fetchImpl = globalThis.fetch) {
   return r.json();
 }
 
-function makeComposioCalendar({ apiKey, recordCall, recordProviderCost, fetchImpl } = {}) {
+function makeComposioCalendar({ apiKey, recordCall, recordProviderCost, fetchImpl, authorizeProviderOperation } = {}) {
   const key = apiKey || process.env.COMPOSIO_API_KEY;
   const ledger = recordCall || ((uid, tool, requestId) => {
     if (!recordProviderCost && (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY)) return false;
     return recordComposioOperation({ uid, tool, requestId }, { recordProviderCost });
   });
-  const execute = async (tool, uid, args) => {
+  const budgetGate = authorizeProviderOperation || (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
+    ? (input) => authorizeBudget(input, { supaUrl: process.env.SUPABASE_URL, supaKey: process.env.SUPABASE_SERVICE_ROLE_KEY })
+    : undefined);
+  const execute = async (tool, uid, args, operationOptions = {}) => {
+    if (typeof budgetGate === "function") {
+      const decision = await budgetGate({
+        uid, provider: "composio", operation: operationOptions.operation || "refresh",
+        essential: operationOptions.essential === true, cacheHit: operationOptions.cacheHit === true,
+      });
+      if (decision && decision.allowed === false) throw new Error(`provider budget denied: ${decision.reason || "stopped"}`);
+    }
     const requestId = `composio:${uid || "anonymous"}:${tool}:${Date.now()}`;
     let result;
     let failure;
@@ -48,7 +59,7 @@ function makeComposioCalendar({ apiKey, recordCall, recordProviderCost, fetchImp
   // Error contract unchanged and shared with listEventsRaw: default (wake path) swallows every
   // failure to an empty page — load-bearing, a transport blip must not crash the 60s tick — while
   // strict (history path) THROWS, because "empty calendar" and "the read failed" must never merge.
-  const listEventsPage = async (uid, { timeMin, timeMax, maxResults, pageToken, strict } = {}) => {
+  const listEventsPage = async (uid, { timeMin, timeMax, maxResults, pageToken, strict, cacheHit } = {}) => {
     const empty = { items: [], nextPageToken: null };
     if (!key || !uid) {
       if (strict) throw new Error(`calendar transport not ready (missing ${key ? "uid" : "API key"})`);
@@ -59,7 +70,7 @@ function makeComposioCalendar({ apiKey, recordCall, recordProviderCost, fetchImp
     if (pageToken) args.pageToken = pageToken;
     let j;
     try {
-      j = await execute("GOOGLECALENDAR_EVENTS_LIST", uid, args);
+      j = await execute("GOOGLECALENDAR_EVENTS_LIST", uid, args, { essential: false, cacheHit });
     } catch (e) {
       if (strict) throw e;
       return empty;

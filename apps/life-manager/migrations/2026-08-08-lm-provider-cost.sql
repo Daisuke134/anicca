@@ -91,3 +91,20 @@ CREATE INDEX IF NOT EXISTS lm_provider_cost_failures_failed_at_idx
   ON public.lm_provider_cost_failures (failed_at);
 ALTER TABLE public.lm_provider_cost_failures ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.lm_provider_cost_failures FORCE ROW LEVEL SECURITY;
+
+-- Optional atomic gate claims. The provider ledger remains the cost source of truth; this narrow table
+-- only prevents two workers from authorizing the same request id in one user/day budget window.
+CREATE TABLE IF NOT EXISTS public.lm_provider_budget_claims (
+  uid            text NOT NULL,
+  budget_day     date NOT NULL,
+  provider       text NOT NULL,
+  operation      text NOT NULL,
+  request_id     text NOT NULL,
+  projected_usd  numeric NOT NULL DEFAULT 0 CHECK (projected_usd >= 0),
+  claimed_at     timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (uid, budget_day, request_id)
+);
+CREATE INDEX IF NOT EXISTS lm_provider_budget_claims_global_idx
+  ON public.lm_provider_budget_claims (budget_day, provider, operation);
+ALTER TABLE public.lm_provider_budget_claims ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.lm_provider_budget_claims FORCE ROW LEVEL SECURITY;

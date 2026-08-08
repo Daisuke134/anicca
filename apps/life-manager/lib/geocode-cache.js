@@ -140,6 +140,7 @@ async function geocodeAddress(addr, mapsKey, {
   uid = null,
   requestId,
   recordProviderCost,
+  authorizeProviderOperation,
 } = {}) {
   const addressKey = normalizeGeocodeAddress(addr);
   if (!addressKey || !mapsKey) return null;
@@ -153,6 +154,12 @@ async function geocodeAddress(addr, mapsKey, {
     }
   }
 
+  if (typeof authorizeProviderOperation === "function") {
+    const decision = await authorizeProviderOperation({
+      uid, provider: "google", operation: "geocoding", essential: false, cacheHit: false,
+    });
+    if (decision && decision.allowed === false) return null;
+  }
   if (typeof fetchImpl !== "function") return null;
   try {
     const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(addr)}&key=${encodeURIComponent(mapsKey)}`;
