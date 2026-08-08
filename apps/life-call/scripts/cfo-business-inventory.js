@@ -28,6 +28,13 @@ function receiptPath(home, generatedAt, inventoryId) {
   return path.join(home, "cfo", "business-inventory", `${safeTime}--${inventoryId}.json`);
 }
 
+function repoEvidenceExists(evidenceRef, existsSync = fs.existsSync) {
+  const resolved = path.resolve(REPO_ROOT, evidenceRef);
+  const relative = path.relative(REPO_ROOT, resolved);
+  if (relative.startsWith(`..${path.sep}`) || relative === ".." || path.isAbsolute(relative)) return false;
+  return existsSync(resolved);
+}
+
 function publishReceipt(finalPath, receipt, randomUUID) {
   const temporaryPath = `${finalPath}.${randomUUID()}.tmp`;
   let created = false;
@@ -74,6 +81,7 @@ function main({
   randomUUID = generateUUID,
   launchctlList,
   ledgerProbe,
+  existsSync = fs.existsSync,
   stdout = (line) => process.stdout.write(`${line}\n`),
 } = {}) {
   let inventory;
@@ -85,7 +93,7 @@ function main({
     if (typeof launchctlList !== "function") throw new Error("launchctl_list_required");
     const runtimeObservations = normalizeLaunchctlList(launchctlList());
     const sourceObservations = collectSourceObservations(registry, (evidenceRef) => (
-      fs.existsSync(path.resolve(REPO_ROOT, evidenceRef))
+      repoEvidenceExists(evidenceRef, existsSync)
     ));
     const ledgerObservations = collectLedgerObservations(registry, ledgerProbe);
     inventory = buildInventory({
@@ -119,4 +127,4 @@ if (require.main === module) {
   process.exitCode = result.exitCode;
 }
 
-module.exports = { main };
+module.exports = { main, repoEvidenceExists };

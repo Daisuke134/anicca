@@ -6,7 +6,14 @@ const URI_SCHEME = /^[a-z][a-z0-9+.-]*:/i;
 const LEDGER_STATUSES = new Set(["available", "present_empty", "stale_alias", "planned", "unavailable"]);
 
 function compareText(left, right) {
-  return left.localeCompare(right);
+  const leftText = String(left);
+  const rightText = String(right);
+  const length = Math.min(leftText.length, rightText.length);
+  for (let index = 0; index < length; index += 1) {
+    const difference = leftText.charCodeAt(index) - rightText.charCodeAt(index);
+    if (difference !== 0) return difference;
+  }
+  return leftText.length - rightText.length;
 }
 
 function evidenceRefs(registry) {
@@ -22,7 +29,7 @@ function normalizeLaunchctlList(stdout) {
       label,
       state: /^\d+$/.test(pid) ? "running" : pid === "-" ? "not_running" : "unknown",
       last_exit_code: /^-?\d+$/.test(status) ? Number(status) : null,
-    })).filter((item) => /^ai\.anicca\./.test(item.label)).sort((a, b) => a.label.localeCompare(b.label));
+    })).filter((item) => /^ai\.anicca\./.test(item.label)).sort((a, b) => compareText(a.label, b.label));
 }
 
 function collectSourceObservations(registry, exists) {
@@ -120,12 +127,13 @@ function buildInventory({ registry, runtimeObservations = [], sourceObservations
   const ledger_observations = ledgerObservations === undefined
     ? collectLedgerObservations(registry)
     : normalizeLedgerObservations(registry, ledgerObservations);
-  const core = { registry_sha256, financial_units, runtime_observations, source_observations, ledger_observations, unmapped_relevant_labels, ambiguous_labels, result };
+  const core = { receipt_version: 1, registry_sha256, financial_units, runtime_observations, source_observations, ledger_observations, unmapped_relevant_labels, ambiguous_labels, result };
+  const { receipt_version, ...deterministic } = core;
   return {
-    receipt_version: 1,
+    receipt_version,
     inventory_id: inventoryId,
     generated_at: generatedAt,
-    ...core,
+    ...deterministic,
     observation_hash: observationHash(core),
   };
 }

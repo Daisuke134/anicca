@@ -8,7 +8,7 @@ const path = require("node:path");
 const { spawnSync } = require("node:child_process");
 
 const { sha256Canonical } = require("../lib/cfo-registry.js");
-const { main } = require("./cfo-business-inventory.js");
+const { main, repoEvidenceExists } = require("./cfo-business-inventory.js");
 
 const NOW = new Date("2026-08-08T00:00:00.000Z");
 const UUID = "00000000-0000-4000-8000-000000000001";
@@ -79,6 +79,7 @@ test("writes one redacted pass receipt from launchctl observations", () => {
     assert.equal(receipt.registry_sha256, summary.registry_sha256);
     assert.equal(receipt.observation_hash, summary.observation_hash);
     assert.equal(receipt.observation_hash, sha256Canonical({
+      receipt_version: receipt.receipt_version,
       registry_sha256: receipt.registry_sha256,
       financial_units: receipt.financial_units,
       runtime_observations: receipt.runtime_observations,
@@ -182,4 +183,24 @@ test("executable boundary failure exits nonzero with only a redacted summary", (
   } finally {
     fs.rmSync(stateRoot, { recursive: true, force: true });
   }
+});
+
+test("repo evidence resolution never probes outside REPO_ROOT", () => {
+  const calls = [];
+  assert.equal(repoEvidenceExists("AGENTS.md", (resolved) => {
+    calls.push(resolved);
+    return true;
+  }), true);
+  assert.equal(calls.length, 1);
+  assert.equal(repoEvidenceExists("../../etc/passwd", (resolved) => {
+    calls.push(resolved);
+    return true;
+  }), false);
+  assert.equal(calls.length, 1);
+});
+
+test("package test script includes CFO focused suite in the normal npm test chain", () => {
+  const packageJson = JSON.parse(fs.readFileSync(path.join(__dirname, "../package.json"), "utf8"));
+  assert.match(packageJson.scripts["test:cfo"], /cfo-registry\.test\.js/);
+  assert.match(packageJson.scripts.pretest, /npm run test:cfo/);
 });

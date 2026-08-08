@@ -212,3 +212,40 @@ test("observation hash is canonical and excludes receipt metadata", () => {
   assert.notEqual(first.generated_at, second.generated_at);
   assert.notEqual(first.inventory_id, second.inventory_id);
 });
+
+test("receipt version participates in the observation hash", () => {
+  const receipt = buildInventory(makeInput(["ai.anicca.writer-report"]));
+  const core = {
+    receipt_version: receipt.receipt_version,
+    registry_sha256: receipt.registry_sha256,
+    financial_units: receipt.financial_units,
+    runtime_observations: receipt.runtime_observations,
+    source_observations: receipt.source_observations,
+    ledger_observations: receipt.ledger_observations,
+    unmapped_relevant_labels: receipt.unmapped_relevant_labels,
+    ambiguous_labels: receipt.ambiguous_labels,
+    result: receipt.result,
+  };
+  assert.equal(receipt.observation_hash, observationHash(core));
+  assert.notEqual(receipt.observation_hash, observationHash({ ...core, receipt_version: 2 }));
+});
+
+test("runtime and receipt ordering is independent of localeCompare", () => {
+  const original = String.prototype.localeCompare;
+  String.prototype.localeCompare = () => -1;
+  try {
+    assert.deepEqual(normalizeLaunchctlList([
+      "PID Status Label",
+      "123 0 ai.anicca.x402-monitor",
+      "123 0 ai.anicca.writer-report",
+    ].join("\n")).map((item) => item.label), [
+      "ai.anicca.writer-report", "ai.anicca.x402-monitor",
+    ]);
+    const inventory = buildInventory(makeInput(["ai.anicca.x402-monitor", "ai.anicca.writer-report"]));
+    assert.deepEqual(inventory.runtime_observations.map((item) => item.label), [
+      "ai.anicca.writer-report", "ai.anicca.x402-monitor",
+    ]);
+  } finally {
+    String.prototype.localeCompare = original;
+  }
+});

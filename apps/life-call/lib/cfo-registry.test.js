@@ -418,6 +418,25 @@ test("ledger catalogue rejects duplicate, missing, orphaned, unsafe, and secret-
   }
 });
 
+test("evidence and locator refs reject traversal, query, credentials, secrets, private keys, and account-like digits", () => {
+  const mutations = [
+    (raw) => { raw.financial_units[0].evidence_refs = ["../escape.md"]; },
+    (raw) => { raw.financial_units[0].evidence_refs = ["docs/\u0000escape.md"]; },
+    (raw) => { raw.financial_units[0].evidence_refs = ["https://example.test/report?token=secret"]; },
+    (raw) => { raw.financial_units[0].evidence_refs = ["https://user:pass@example.test/report"]; },
+    (raw) => { raw.financial_units[0].evidence_refs = ["receipt-123456789012"]; },
+    (raw) => { raw.ledger_sources[0].locator = "../../outside"; },
+    (raw) => { raw.ledger_sources[0].locator = "https://example.test/ledger#fragment"; },
+    (raw) => { raw.ledger_sources[0].locator = "private_key=-----BEGIN PRIVATE KEY-----"; },
+    (raw) => { raw.ledger_sources[0].locator = "account-123456789012"; },
+  ];
+  for (const mutate of mutations) {
+    const raw = structuredClone(JSON.parse(fs.readFileSync(path.join(__dirname, "../config/cfo-financial-units.json"), "utf8")));
+    mutate(raw);
+    assert.throws(() => validateRegistry(raw), /^Error: cfo_registry_invalid:/);
+  }
+});
+
 test("canonical runtime namespaces classify financial units and exclusions", () => {
   const raw = JSON.parse(fs.readFileSync(path.join(__dirname, "../config/cfo-financial-units.json"), "utf8"));
   const registry = validateRegistry(raw);

@@ -38,16 +38,25 @@ function id(value) {
 function typedRef(value, pattern) {
   if (typeof value !== "string" || !pattern.test(value)) fail("invalid_typed_ref");
 }
-function safeLocator(value) {
+function safeReference(value) {
   text(value);
-  if (/^(?:~|\/)/.test(value) || /(?:api[_-]?key|secret|token|private[_-]?key)/i.test(value)) fail("unsafe_locator");
+  if (value.includes("\0") || /(?:^|[\\/])\.\.(?:[\\/]|$)/.test(value)) fail("unsafe_reference");
+  if (/^(?:~|\/|[A-Za-z]:[\\/]|\\\\)/.test(value)) fail("unsafe_reference");
+  if (/^file:/i.test(value) || /[?#]/.test(value)) fail("unsafe_reference");
+  if (/^[a-z][a-z0-9+.-]*:\/\/[^/]*@/i.test(value)) fail("unsafe_reference");
+  if (/(?:api[_-]?key|secret|token|private[_-]?key)/i.test(value)
+    || /-----BEGIN [A-Z ]+ PRIVATE KEY-----/.test(value)
+    || /\d{12,}/.test(value)) fail("unsafe_reference");
+}
+function safeLocator(value) {
+  safeReference(value);
 }
 function unique(values, reason = "duplicate_id") {
   if (new Set(values).size !== values.length) fail(reason);
 }
 function textList(value, required = false) {
   if (!Array.isArray(value) || required && value.length === 0) fail(required ? "empty_evidence_refs" : "invalid_array");
-  value.forEach(text);
+  value.forEach(safeReference);
   unique(value, "duplicate_evidence_ref");
   return value;
 }
