@@ -1,0 +1,69 @@
+{
+  "version": "mobile-v1",
+  "locale": "en",
+  "demo": {
+    "calendarConnection": "preconnected_session_restore",
+    "oauthUi": false,
+    "softPaywall": false
+  },
+  "fixtures": [
+    "analysis-failed.json",
+    "analysis-needs_information.json",
+    "analysis-no_upcoming_event.json",
+    "analysis-route_ready.json",
+    "analysis-route_unavailable.json",
+    "bootstrap.json",
+    "chat-page.json",
+    "contract.json",
+    "error.json",
+    "profile-patch.json",
+    "route.json",
+    "semantic-outbox.json",
+    "session-start.json",
+    "session.json"
+  ],
+  "session": {
+    "uidSource": "validated_identity_server_side",
+    "clientAuthorityFields": [],
+    "refreshRotation": "required",
+    "replayRevokesFamily": true
+  },
+  "analysis": {
+    "manualRefreshPath": "POST /analysis",
+    "foregroundDetectionMaxSeconds": 60,
+    "originSource": "most_recent_physical_calendar_event",
+    "destinationSource": "next_event_location",
+    "calendarTravelBlock": "backend_owned_exactly_once_by_idempotency_key"
+  },
+  "semanticMessageKeys": [
+    "chat.welcome",
+    "chat.route_ready",
+    "chat.needs_information",
+    "chat.no_upcoming_event",
+    "chat.route_unavailable",
+    "chat.failed"
+  ],
+  "headers": {
+    "bearer": "Authorization: Bearer <mobile-access-token>",
+    "idempotency": "Idempotency-Key: <opaque-request-key>",
+    "cacheControl": "no-store"
+  },
+  "endpoints": [
+    { "method": "POST", "path": "/session/calendar/start", "requiresBearer": false, "mutation": true, "idempotencyKey": true },
+    { "method": "POST", "path": "/session/exchange", "requiresBearer": false, "mutation": true, "idempotencyKey": true },
+    { "method": "POST", "path": "/session/refresh", "requiresBearer": false, "mutation": true, "idempotencyKey": true },
+    { "method": "DELETE", "path": "/session", "requiresBearer": true, "mutation": true, "idempotencyKey": true },
+    { "method": "GET", "path": "/bootstrap", "requiresBearer": true, "mutation": false, "idempotencyKey": false },
+    { "method": "PATCH", "path": "/profile", "requiresBearer": true, "mutation": true, "idempotencyKey": true },
+    { "method": "POST", "path": "/analysis", "requiresBearer": true, "mutation": true, "idempotencyKey": true },
+    { "method": "GET", "path": "/chat", "requiresBearer": true, "mutation": false, "idempotencyKey": false }
+  ],
+  "forbiddenSurfaces": [
+    "apns",
+    "account_deletion",
+    "calls",
+    "japanese_localization",
+    "late_notice",
+    "phone"
+  ]
+}

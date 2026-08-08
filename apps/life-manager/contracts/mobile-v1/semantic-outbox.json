@@ -1,0 +1,15 @@
+{
+  "sequence": 42,
+  "id": "message:v1:route-ready-8f3a",
+  "key": "chat.route_ready",
+  "args": {
+    "eventTitle": "userContent.eventTitle",
+    "leaveAt": "route.leaveAt",
+    "arriveAt": "route.arriveAt",
+    "bufferSeconds": "route.bufferSeconds"
+  },
+  "userContent": {
+    "eventTitle": "Tokyo Tower visit",
+    "eventLocation": "Tokyo Tower"
+  }
+}

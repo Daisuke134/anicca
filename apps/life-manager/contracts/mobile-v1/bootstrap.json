@@ -1,0 +1,20 @@
+{
+  "product": {
+    "locale": "en",
+    "timezone": "America/Los_Angeles"
+  },
+  "user": {
+    "id": "user:v1:server-derived-8f3a",
+    "name": null,
+    "home": {
+      "status": "missing",
+      "display": null
+    }
+  },
+  "calendar": {
+    "status": "connected"
+  },
+  "analysis": {
+    "status": "idle"
+  }
+}

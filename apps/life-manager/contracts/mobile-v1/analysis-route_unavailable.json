@@ -1,0 +1,22 @@
+{
+  "status": "route_unavailable",
+  "analysisId": "analysis:v1:route-unavailable-8f3a",
+  "nextCursor": "cursor:v1:W6tB2mX8qNz",
+  "message": {
+    "id": "message:v1:route-unavailable-8f3a",
+    "cursor": "cursor:v1:W6tB2mX8qNz",
+    "createdAt": "2026-08-10T08:10:00.000Z",
+    "locale": "en",
+    "type": "route_unavailable",
+    "text": "The route is unavailable because the transit provider returned no journey.",
+    "userContent": {
+      "eventTitle": "Tokyo Tower visit",
+      "eventLocation": "Tokyo Tower"
+    },
+    "question": null,
+    "route": null,
+    "actions": [
+      { "id": "refresh", "label": "Refresh" }
+    ]
+  }
+}
