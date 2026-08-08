@@ -158,6 +158,81 @@ async function enqueueLateApprovalCard(input, event, draft, deps) {
   return result;
 }
 
+function cloneLateDraft(value) {
+  if (!value || typeof value !== "object") return null;
+  return JSON.parse(JSON.stringify(value));
+}
+
+function normalizeExistingLateDraft(value) {
+  if (Array.isArray(value)) return normalizeExistingLateDraft(value[0]);
+  if (!value || typeof value !== "object") return null;
+  const row = value.row && typeof value.row === "object" ? value.row : value;
+  const draftId = row.draftId || row.draft_id;
+  if (!draftId) return null;
+  const draft = {
+    ...row,
+    draftId,
+    uid: row.uid,
+    eventKey: row.eventKey || row.event_key,
+    status: row.status,
+    recipientStatus: row.recipientStatus || row.recipient_status,
+    recipients: row.recipients || row.recipient_snapshot || [],
+    evidenceSnapshot: row.evidenceSnapshot || row.evidence_snapshot || {},
+    bodySnapshot: row.bodySnapshot || row.body_snapshot,
+    etaEvidence: row.etaEvidence || row.eta_evidence_snapshot || {},
+  };
+  return cloneLateDraft(draft);
+}
+
+async function findExistingLateDraft(input, event, deps) {
+  const uid = input.user && input.user.uid;
+  const key = eventKey(event);
+  const request = { uid, eventKey: key, event_key: key };
+  const direct = deps.getLateDraft || deps.findLateDraft;
+  if (typeof direct === "function") {
+    try { return normalizeExistingLateDraft(await direct(request)); } catch { return null; }
+  }
+
+  const store = deps.lateApprovalStore || deps.approvalStore || input.lateApprovalStore;
+  if (store && typeof store.getLateDraft === "function") {
+    try { return normalizeExistingLateDraft(await store.getLateDraft(request)); } catch { return null; }
+  }
+  if (store && typeof store.findLateDraft === "function") {
+    try { return normalizeExistingLateDraft(await store.findLateDraft(request)); } catch { return null; }
+  }
+  if (store && typeof store.getDraftByEventKey === "function") {
+    try { return normalizeExistingLateDraft(await store.getDraftByEventKey(uid, key)); } catch { return null; }
+  }
+
+  // Production fallback: the approval RPC is intentionally create-only, so the tick reads the
+  // immutable row first through service-role PostgREST. A failed read is fail-closed for the card
+  // path but does not weaken the Task 2 collision guard: createLateDraft still owns collision checks.
+  const supaUrl = String(deps.supaUrl || input.supaUrl || process.env.SUPABASE_URL || "").replace(/\/$/, "");
+  const supaKey = deps.supaKey || input.supaKey || process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const fetchImpl = deps.fetchImpl || input.fetchImpl || globalThis.fetch;
+  if (!supaUrl || !supaKey || typeof fetchImpl !== "function") return null;
+  const url = `${supaUrl}/rest/v1/lm_late_approval_drafts?uid=eq.${encodeURIComponent(uid)}` +
+    `&event_key=eq.${encodeURIComponent(key)}&select=*&limit=1`;
+  try {
+    const response = await fetchImpl(url, { headers: supaHeaders(supaKey) });
+    if (!response || !response.ok) return null;
+    return normalizeExistingLateDraft(await response.json());
+  } catch {
+    return null;
+  }
+}
+
+function existingLateDraftResult(draft) {
+  const duplicate = { ...draft, duplicate: true };
+  return {
+    decision: "late",
+    sent: false,
+    notified: false,
+    approvalRequired: draft.status === "awaiting_decision",
+    draft: duplicate,
+  };
+}
+
 async function processLocationLateNotice(input, deps = {}) {
   const nowMs = input.nowMs === undefined ? Date.now() : input.nowMs;
   const candidates = (input.events || []).filter((candidate) => candidate && !isHelperBlock(candidate.summary) &&
@@ -169,6 +244,9 @@ async function processLocationLateNotice(input, deps = {}) {
   // an all-day located event was claimed in the morning and ran until evening, so every later event
   // was unreachable — continue to the next event if the first one is not late.
   for (const event of candidates) {
+    const existing = await findExistingLateDraft(input, event, deps);
+    if (existing) return existingLateDraftResult(existing);
+
     const travelMinutes = await deps.routeMinutes(
       locationOrigin(input.location), event.location, input.mapsKey, event.startMs, nowMs,
     );
