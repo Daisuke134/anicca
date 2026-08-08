@@ -1,8 +1,8 @@
 "use strict";
 
-const { MobileError, normalizeLocale, nowIso, safeTimeZone } = require("./mobile-utils.js");
+const { MobileError, mobileRouteCacheKey, normalizeLocale, nowIso, safeTimeZone } = require("./mobile-utils.js");
 const { projectRouteName } = require("./mobile-localization.js");
-const { chooseRouter, parseTransitPlan } = require("./transit.js");
+const { chooseRouter } = require("./transit.js");
 
 function eventInstant(event, kind) {
   const value = event && (event[`${kind}Iso`] || (event[kind] && (event[kind].dateTime || event[kind].date)));
@@ -63,16 +63,18 @@ function routeAccepted(value) {
 
 async function readCache(scope, request, deps) {
   if (typeof deps.readRouteCache === "function") return deps.readRouteCache({ scope, request });
+  if (deps.store && typeof deps.store.readRouteCache === "function") return deps.store.readRouteCache(scope, request);
   const cache = deps.routeCache || deps.cache || (deps.routeProviders && deps.routeProviders.routeCache);
   if (!cache || typeof cache.get !== "function") return null;
-  return cache.get(JSON.stringify([scope.uid, request.origin, request.destination, request.arriveBy, request.departAt, request.timezone]));
+  return cache.get(mobileRouteCacheKey(scope, request));
 }
 
 async function writeCache(scope, request, value, deps) {
   if (typeof deps.writeRouteCache === "function") return deps.writeRouteCache({ scope, request, value });
+  if (deps.store && typeof deps.store.writeRouteCache === "function") return deps.store.writeRouteCache(scope, request, value);
   const cache = deps.routeCache || deps.cache || (deps.routeProviders && deps.routeProviders.routeCache);
   if (!cache || typeof cache.set !== "function") return;
-  return cache.set(JSON.stringify([scope.uid, request.origin, request.destination, request.arriveBy, request.departAt, request.timezone]), value);
+  return cache.set(mobileRouteCacheKey(scope, request), value);
 }
 
 async function computeMobileRoute(scope, event, origin, deps = {}) {
@@ -106,15 +108,14 @@ async function computeMobileRoute(scope, event, origin, deps = {}) {
   return null;
 }
 
-const structuredRouteCache = new Map();
-
 function routeCacheFor(options = {}) {
   if (options.routeCache && typeof options.routeCache.get === "function" && typeof options.routeCache.set === "function") return options.routeCache;
-  const store = options.cacheStore || structuredRouteCache;
+  const store = options.cacheStore;
   const ttlMs = Number.isFinite(options.cacheTtlMs) ? Math.max(0, options.cacheTtlMs) : 10 * 60_000;
   const now = typeof options.now === "function" ? options.now : Date.now;
   return {
     get(key) {
+      if (!store || typeof store.get !== "function") return null;
       const hit = store.get(key);
       if (!hit || now() - hit.computedAt >= ttlMs) {
         if (hit) store.delete(key);
@@ -122,7 +123,7 @@ function routeCacheFor(options = {}) {
       }
       return hit;
     },
-    set(key, value) { store.set(key, { value, computedAt: now() }); },
+    set(key, value) { if (store && typeof store.set === "function") store.set(key, { value, computedAt: now() }); },
   };
 }
 
@@ -139,6 +140,91 @@ function anchorTimes(request, durationSeconds, now = Date.now) {
   return { leaveAt: new Date(leaveMs).toISOString(), arriveAt: new Date(arriveMs).toISOString(), computedAt: nowIso({ now }) };
 }
 
+function firstDefined(value, ...keys) {
+  for (const key of keys) if (value && value[key] !== undefined && value[key] !== null) return value[key];
+  return null;
+}
+
+function numberOrNull(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function providerTime(value) {
+  if (value === undefined || value === null || value === "") return null;
+  const numeric = Number(value);
+  if (Number.isFinite(numeric)) {
+    const milliseconds = Math.abs(numeric) >= 1e12 ? numeric : numeric * 1000;
+    const date = new Date(milliseconds);
+    return Number.isNaN(date.getTime()) ? null : date.toISOString();
+  }
+  const date = new Date(String(value));
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
+function providerName(value) {
+  if (value === null || value === undefined) return null;
+  if (typeof value === "string") return value;
+  if (typeof value === "object") return firstDefined(value, "name", "displayName", "display_name") || null;
+  return String(value);
+}
+
+// Keep this parser beside the mobile adapter so the public route can retain
+// facts that the legacy wake-loop parser intentionally reduced away.
+function parseStructuredTransitPlan(plan) {
+  const journeys = plan && Array.isArray(plan.journeys) ? plan.journeys : [];
+  if (!journeys.length) return null;
+  const best = journeys.reduce((left, right) => {
+    const leftArrival = numberOrNull(firstDefined(left, "arrivalSecs", "arrival_sec", "arrival"));
+    const rightArrival = numberOrNull(firstDefined(right, "arrivalSecs", "arrival_sec", "arrival"));
+    if (leftArrival === null) return right;
+    if (rightArrival === null) return left;
+    return rightArrival < leftArrival ? right : left;
+  });
+  const accessWalkSecs = numberOrNull(firstDefined(best, "accessWalkSecs", "access_walk_secs"));
+  const egressWalkSecs = numberOrNull(firstDefined(best, "egressWalkSecs", "egress_walk_secs"));
+  const baseDuration = numberOrNull(firstDefined(best, "durationSecs", "duration_sec"))
+    ?? (() => {
+      const departure = numberOrNull(firstDefined(best, "departureSecs", "departure_sec"));
+      const arrival = numberOrNull(firstDefined(best, "arrivalSecs", "arrival_sec"));
+      return departure !== null && arrival !== null ? Math.max(0, arrival - departure) : null;
+    })();
+  if (baseDuration === null) return null;
+  const legs = Array.isArray(best.legs) ? best.legs : [];
+  return {
+    durationSecs: baseDuration + Math.max(0, accessWalkSecs || 0),
+    inVehicleSecs: numberOrNull(firstDefined(best, "inVehicleSecs", "in_vehicle_secs")) ?? baseDuration,
+    accessWalkSecs,
+    egressWalkSecs,
+    transferCount: numberOrNull(firstDefined(best, "transferCount", "transfer_count")),
+    fare: firstDefined(best, "fare", "fareInfo", "fare_info"),
+    legs: legs.map((leg) => {
+      const departure = firstDefined(leg, "departureSecs", "departure_sec", "departureTime", "departure_time");
+      const arrival = firstDefined(leg, "arrivalSecs", "arrival_sec", "arrivalTime", "arrival_time");
+      const result = {
+        kind: firstDefined(leg, "kind", "mode"), mode: firstDefined(leg, "mode", "kind") || "other",
+        routeName: firstDefined(leg, "routeName", "route_name", "service"),
+        from: providerName(firstDefined(leg, "from", "origin")), to: providerName(firstDefined(leg, "to", "destination")),
+        instruction: firstDefined(leg, "instruction", "instructions"),
+        departAt: providerTime(departure), arriveAt: providerTime(arrival),
+        durationSeconds: numberOrNull(firstDefined(leg, "durationSecs", "duration_sec"))
+          ?? (numberOrNull(departure) !== null && numberOrNull(arrival) !== null ? Math.max(0, numberOrNull(arrival) - numberOrNull(departure)) : null),
+      };
+      const optional = [
+        ["trainType", ["trainType", "train_type"]],
+        ["headsign", ["headsign", "direction"]],
+        ["platform", ["platform", "platformName", "platform_name"]],
+        ["availability", ["availability", "serviceAvailability", "service_availability"]],
+      ];
+      for (const [output, keys] of optional) {
+        const value = firstDefined(leg, ...keys);
+        if (value !== null) result[output] = value;
+      }
+      return result;
+    }),
+  };
+}
+
 function routeFromTransit(request, parsed, now) {
   const times = anchorTimes(request, parsed && parsed.durationSecs, now);
   if (!times) return null;
@@ -147,11 +233,16 @@ function routeFromTransit(request, parsed, now) {
     computedAt: times.computedAt, timezone: request.timezone,
     origin: structuredName(request.origin), destination: structuredName(request.destination), ...times,
     durationSeconds: parsed.durationSecs, bufferSeconds: null, transferCount: parsed.transferCount ?? null,
-    fare: null, geometry: null,
+    accessWalkSecs: parsed.accessWalkSecs ?? null, egressWalkSecs: parsed.egressWalkSecs ?? null,
+    fare: parsed.fare ?? null, geometry: null,
     steps: (parsed.legs || []).map((leg, index) => ({
       sequence: index + 1, mode: leg.mode || leg.kind || "other", instruction: leg.routeName || null,
-      from: leg.from || null, to: leg.to || null, service: leg.routeName || null, headsign: null,
-      platform: null, departAt: null, arriveAt: null, durationSeconds: null,
+      from: leg.from || null, to: leg.to || null, service: leg.routeName || null,
+      headsign: leg.headsign === undefined ? null : leg.headsign,
+      platform: leg.platform === undefined ? null : leg.platform,
+      departAt: leg.departAt || null, arriveAt: leg.arriveAt || null, durationSeconds: leg.durationSeconds ?? null,
+      ...(leg.trainType === undefined ? {} : { trainType: leg.trainType }),
+      ...(leg.availability === undefined ? {} : { availability: leg.availability }),
     })),
   };
 }
@@ -166,8 +257,9 @@ function routeFromGoogle(request, body, now) {
     status: "route_ready", provider: "google", providerAttribution: "Google Maps", eventId: request.eventId,
     computedAt: times.computedAt, timezone: request.timezone,
     origin: structuredName(request.origin), destination: structuredName(request.destination), ...times,
-    durationSeconds, bufferSeconds: null, transferCount: null, fare: null, geometry: null,
-    steps: (leg.steps || []).map((step, index) => ({
+    durationSeconds, bufferSeconds: null, transferCount: null,
+    fare: source && (source.fare || source.fare_info) || null, geometry: null,
+    steps: (leg && leg.steps || []).map((step, index) => ({
       sequence: index + 1, mode: String(step.travel_mode || "other").toLowerCase(),
       instruction: typeof step.html_instructions === "string" ? step.html_instructions.replace(/<[^>]+>/gu, "") : null,
       from: step.start_address || null, to: step.end_address || null, service: null, headsign: null,
@@ -175,6 +267,15 @@ function routeFromGoogle(request, body, now) {
       departAt: step.departure_time && step.departure_time.value ? new Date(step.departure_time.value * 1000).toISOString() : null,
       arriveAt: step.arrival_time && step.arrival_time.value ? new Date(step.arrival_time.value * 1000).toISOString() : null,
       durationSeconds: Number(step.duration && step.duration.value) || null,
+      ...(step.transit_details && step.transit_details.headsign ? { headsign: step.transit_details.headsign } : {}),
+      ...(step.transit_details && step.transit_details.line && step.transit_details.line.vehicle && step.transit_details.line.vehicle.type
+        ? { trainType: step.transit_details.line.vehicle.type } : {}),
+      ...(step.transit_details && step.transit_details.departure_stop && step.transit_details.departure_stop.name
+        ? { from: step.transit_details.departure_stop.name } : {}),
+      ...(step.transit_details && step.transit_details.arrival_stop && step.transit_details.arrival_stop.name
+        ? { to: step.transit_details.arrival_stop.name } : {}),
+      ...(step.transit_details && step.transit_details.departure_stop && step.transit_details.departure_stop.platform
+        ? { platform: step.transit_details.departure_stop.platform } : {}),
     })),
   };
 }
@@ -206,7 +307,7 @@ function createStructuredRouteProviders(options = {}) {
     try {
       const url = `https://api.transit.ls8h.com/api/v1/plan?from=geo:${from.lat},${from.lon}&to=geo:${to.lat},${to.lon}`;
       const response = await fetchImpl(url);
-      const parsed = parseTransitPlan(await response.json());
+      const parsed = parseStructuredTransitPlan(await response.json());
       return parsed ? routeFromTransit(request, parsed, now) : null;
     } catch { return null; }
   }
@@ -246,6 +347,10 @@ function projectStep(step, locale, sequence, provenance) {
     durationSeconds: step.durationSeconds === undefined && step.duration_secs === undefined
       ? null : Number(step.durationSeconds ?? step.duration_secs),
   };
+  const trainType = step.trainType === undefined ? step.train_type : step.trainType;
+  if (trainType !== undefined) output.trainType = trainType;
+  const availability = step.availability === undefined ? step.serviceAvailability : step.availability;
+  if (availability !== undefined) output.availability = availability;
   for (const unsupported of ["entrance", "exit", "optimalCar", "crowding"]) delete output[unsupported];
   return output;
 }
@@ -270,7 +375,11 @@ function projectMobileRoute(route, locale = "en") {
     transferCount: route.transferCount === undefined && route.transfer_count === undefined ? null : Number(route.transferCount ?? route.transfer_count), fare: route.fare === undefined ? null : route.fare, geometry: route.geometry === undefined ? null : route.geometry,
     steps: sourceSteps.map((step, index) => projectStep(step, active, index + 1, provenance)),
   };
-  for (const [key, aliases] of [["accessWalkSeconds", ["access_walk_seconds"]], ["egressWalkSeconds", ["egress_walk_seconds"]], ["freshness", ["sourceFreshness", "source_freshness"]]]) {
+  for (const [key, aliases] of [
+    ["accessWalkSeconds", ["access_walk_seconds", "accessWalkSecs", "access_walk_secs"]],
+    ["egressWalkSeconds", ["egress_walk_seconds", "egressWalkSecs", "egress_walk_secs"]],
+    ["freshness", ["sourceFreshness", "source_freshness"]],
+  ]) {
     const source = [key, ...aliases].find((candidate) => Object.hasOwn(route, candidate));
     if (source) result[key] = route[source] === undefined ? null : route[source];
   }

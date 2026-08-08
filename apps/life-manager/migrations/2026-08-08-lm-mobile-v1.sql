@@ -216,6 +216,36 @@ ALTER TABLE public.lm_mobile_deletion_receipts
 CREATE INDEX IF NOT EXISTS lm_mobile_deletion_receipts_capability_idx
   ON public.lm_mobile_deletion_receipts (operation_id, capability_hash);
 
+-- Mobile route results reuse the Gate 1 lm_route_cache table, but need a
+-- request digest and the complete structured route (not only duration/geometry)
+-- to survive process restarts.  The tenant UID remains the storage boundary;
+-- the digest covers the event anchor, direction, addresses, and IANA timezone.
+CREATE TABLE IF NOT EXISTS public.lm_route_cache (
+  uid text NOT NULL,
+  from_geo text NOT NULL,
+  to_geo text NOT NULL,
+  time_bucket bigint NOT NULL,
+  provider text NOT NULL,
+  duration_secs integer NOT NULL,
+  geometry jsonb,
+  computed_at timestamptz NOT NULL DEFAULT now(),
+  ttl_secs integer NOT NULL DEFAULT 600,
+  UNIQUE (uid, from_geo, to_geo, time_bucket)
+);
+
+ALTER TABLE public.lm_route_cache
+  ADD COLUMN IF NOT EXISTS cache_key text,
+  ADD COLUMN IF NOT EXISTS route jsonb;
+
+CREATE UNIQUE INDEX IF NOT EXISTS lm_route_cache_mobile_key_unique
+  ON public.lm_route_cache (uid, cache_key)
+ WHERE cache_key IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS lm_route_cache_mobile_expiry_idx
+  ON public.lm_route_cache (uid, computed_at);
+
+ALTER TABLE public.lm_route_cache ENABLE ROW LEVEL SECURITY;
+
 ALTER TABLE public.lm_mobile_oauth_states ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.lm_mobile_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.lm_mobile_idempotency ENABLE ROW LEVEL SECURITY;

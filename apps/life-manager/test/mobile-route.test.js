@@ -119,6 +119,97 @@ test("router-shaped production dependencies reuse the structured provider cache"
   assert.equal(transitCalls, 1);
 });
 
+test("anchored route cache survives structured-provider reconstruction through the mobile store", async () => {
+  const rows = new Map();
+  const cacheKey = (scope, request) => `${scope.uid}:${JSON.stringify(request)}`;
+  const store = {
+    async readRouteCache(scope, request) { return rows.get(cacheKey(scope, request)) || null; },
+    async writeRouteCache(scope, request, value) {
+      rows.set(cacheKey(scope, request), { value, computedAt: Date.now() });
+    },
+  };
+  let transitCalls = 0;
+  const makeProviders = () => createStructuredRouteProviders({
+    mapsKey: "maps-test-key",
+    cacheStore: new Map(),
+    fetchImpl: async (url) => {
+      if (String(url).includes("geocode")) {
+        return { ok: true, json: async () => ({ status: "OK", results: [{ geometry: { location: { lat: 35.681, lng: 139.767 } } }] }) };
+      }
+      transitCalls++;
+      return { ok: true, json: async () => ({ journeys: [{ arrivalSecs: 1_029, durationSecs: 1_029, legs: [{ mode: "rail", routeName: "Chuo Line" }] }] }) };
+    },
+  });
+  const scope = { uid: "tenant-cache-restart" };
+  const first = await computeMobileRoute(scope, event, "Shibuya", { store, routeProviders: makeProviders() });
+  const second = await computeMobileRoute(scope, event, "Shibuya", { store, routeProviders: makeProviders() });
+  assert.equal(first.status, "route_ready");
+  assert.equal(second.status, "route_ready");
+  assert.equal(transitCalls, 1, "a reconstructed provider must reuse the persistent mobile cache");
+});
+
+test("structured Transit facts survive provider shaping and localized projection", async () => {
+  const anchorSecs = Math.floor(Date.parse(event.startIso) / 1000);
+  const providers = createStructuredRouteProviders({
+    mapsKey: "maps-test-key",
+    cacheStore: new Map(),
+    fetchImpl: async (url) => {
+      if (String(url).includes("geocode")) {
+        return { ok: true, json: async () => ({ status: "OK", results: [{ geometry: { location: { lat: 35.681, lng: 139.767 } } }] }) };
+      }
+      return {
+        ok: true,
+        json: async () => ({
+          journeys: [{
+            arrivalSecs: anchorSecs - 300,
+            departureSecs: anchorSecs - 2_100,
+            durationSecs: 1_800,
+            accessWalkSecs: 120,
+            egressWalkSecs: 180,
+            transferCount: 1,
+            fare: { currency: "JPY", amount: 220, medium: "IC" },
+            legs: [
+              {
+                mode: "walk", from: { name: "Shibuya" }, to: { name: "Shibuya Station" },
+                departureSecs: anchorSecs - 2_100, arrivalSecs: anchorSecs - 1_980,
+              },
+              {
+                mode: "rail", trainType: "rapid", routeName: "Chuo Line", headsign: "Tokyo",
+                platform: "2", availability: "scheduled", from: { name: "Shibuya Station" }, to: { name: "Tokyo" },
+                departureSecs: anchorSecs - 1_800, arrivalSecs: anchorSecs - 300,
+              },
+            ],
+          }],
+        }),
+      };
+    },
+  });
+  const route = await computeMobileRoute({ uid: "tenant-structured-facts" }, event, "Shibuya", { routeProviders: providers });
+  assert.equal(route.accessWalkSecs, 120);
+  assert.equal(route.egressWalkSecs, 180);
+  assert.deepEqual(route.fare, { currency: "JPY", amount: 220, medium: "IC" });
+  const train = route.steps.find((step) => step.mode === "rail");
+  assert.equal(train.trainType, "rapid");
+  assert.equal(train.headsign, "Tokyo");
+  assert.equal(train.platform, "2");
+  assert.equal(train.departAt, new Date((anchorSecs - 1_800) * 1000).toISOString());
+  assert.equal(train.arriveAt, new Date((anchorSecs - 300) * 1000).toISOString());
+  assert.equal(train.availability, "scheduled");
+  assert.equal(Object.hasOwn(train, "entrance"), false);
+  assert.equal(Object.hasOwn(train, "optimalCar"), false);
+
+  const projected = projectMobileRoute(route, "en");
+  assert.equal(projected.accessWalkSeconds, 120);
+  assert.equal(projected.egressWalkSeconds, 180);
+  assert.deepEqual(projected.fare, { currency: "JPY", amount: 220, medium: "IC" });
+  const projectedTrain = projected.steps.find((step) => step.mode === "rail");
+  assert.equal(projectedTrain.trainType, "rapid");
+  assert.equal(projectedTrain.headsign, "Tokyo");
+  assert.equal(projectedTrain.platform, "2");
+  assert.equal(projectedTrain.availability, "scheduled");
+  assert.equal(Object.hasOwn(projectedTrain, "entrance"), false);
+});
+
 test("route projection preserves access, egress, freshness, and explicit nullable attribution", () => {
   const value = projectMobileRoute({
     status: "route_ready", provider: "transit", providerAttribution: null,

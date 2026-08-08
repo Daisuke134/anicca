@@ -67,6 +67,25 @@ function canonicalJson(value) {
   return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${canonicalJson(value[key])}`).join(",")}}`;
 }
 
+// The mobile route cache is tenant-scoped in storage and request-scoped in its
+// digest.  Hashing the canonical request keeps addresses/timezone data out of
+// cache URLs while retaining the Gate 1 invariant that every route anchor and
+// direction change produces a distinct key.
+function mobileRouteCacheKey(scope, request = {}) {
+  if (!scope || typeof scope.uid !== "string" || !scope.uid) throw new MobileError("scope_required", "An authenticated mobile scope is required.", 401);
+  return sha256(canonicalJson({
+    uid: scope.uid,
+    eventId: request.eventId || null,
+    eventDate: request.eventDate || null,
+    timezone: request.timezone || null,
+    origin: request.origin || null,
+    destination: request.destination || null,
+    direction: request.direction || null,
+    arriveBy: request.arriveBy || null,
+    departAt: request.departAt || null,
+  }));
+}
+
 function safeTimeZone(value, fallback = "UTC") {
   const candidate = String(value || fallback);
   try {
@@ -94,6 +113,7 @@ module.exports = {
   normalizeLocale,
   maskPhone,
   canonicalJson,
+  mobileRouteCacheKey,
   safeTimeZone,
   requestId,
 };

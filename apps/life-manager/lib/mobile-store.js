@@ -1,6 +1,6 @@
 "use strict";
 
-const { MobileError, nowIso, safeTimeZone, sha256 } = require("./mobile-utils.js");
+const { MobileError, mobileRouteCacheKey, nowIso, safeTimeZone, sha256 } = require("./mobile-utils.js");
 
 function requireScope(scope) {
   if (!scope || !scope.uid || typeof scope.uid !== "string") throw new MobileError("scope_required", "An authenticated mobile scope is required.", 401);
@@ -18,6 +18,14 @@ function asRow(body) {
 
 function asRows(body) {
   return Array.isArray(body) ? body : [];
+}
+
+function routeCacheEntry(row, now = Date.now) {
+  if (!row || !row.route || !row.computed_at) return null;
+  const computedAt = Date.parse(row.computed_at);
+  const ttlSecs = Number(row.ttl_secs);
+  if (!Number.isFinite(computedAt) || !Number.isFinite(ttlSecs) || ttlSecs < 0 || now() - computedAt >= ttlSecs * 1000) return null;
+  return { value: row.route, computedAt };
 }
 
 function createSupabaseMobileStore(options = {}) {
@@ -88,6 +96,42 @@ function createSupabaseMobileStore(options = {}) {
         }),
       }, "analysis_state_write_failed");
       return asRow(result.body) || state;
+    },
+    async readRouteCache(scope, routeRequest) {
+      const cacheKey = mobileRouteCacheKey(requireScope(scope), routeRequest);
+      const found = await rows("lm_route_cache", scopedParams(scope, {
+        cache_key: `eq.${encodeFilter(cacheKey)}`,
+        select: "cache_key,route,computed_at,ttl_secs",
+        limit: "1",
+      }));
+      return routeCacheEntry(found[0]);
+    },
+    async writeRouteCache(scope, routeRequest, value) {
+      const scoped = requireScope(scope);
+      const cacheKey = mobileRouteCacheKey(scoped, routeRequest);
+      const computedAt = value && value.computedAt ? value.computedAt : new Date().toISOString();
+      const duration = Number(value && (value.durationSeconds ?? value.duration_secs));
+      const row = {
+        uid: scoped.uid,
+        cache_key: cacheKey,
+        // Keep the legacy Gate 1 columns populated so existing pruning/observability
+        // continues to work, while `route` carries the complete structured result.
+        from_geo: `mobile:${cacheKey}`,
+        to_geo: "mobile:v1",
+        time_bucket: 0,
+        provider: value && value.provider ? String(value.provider) : "mobile",
+        duration_secs: Number.isFinite(duration) ? Math.max(0, Math.floor(duration)) : 0,
+        geometry: value && value.geometry !== undefined ? value.geometry : null,
+        route: value || null,
+        computed_at: computedAt,
+        ttl_secs: 600,
+      };
+      const result = await request("/rest/v1/lm_route_cache?on_conflict=uid%2Ccache_key", {
+        method: "POST",
+        headers: { "content-type": "application/json", Prefer: "resolution=merge-duplicates,return=representation" },
+        body: JSON.stringify(row),
+      }, "route_cache_write_failed");
+      return routeCacheEntry(asRow(result.body)) || { value, computedAt: Date.parse(computedAt) };
     },
     async createOAuthState(row) {
       const body = {
@@ -328,6 +372,7 @@ function createMemoryMobileStore(options = {}) {
   const devices = new Map();
   const calls = new Map();
   const deletionReceipts = new Map();
+  const routeCache = options.routeCacheStore || new Map();
   const callDayGuards = new Map();
   const callDailyUserLimit = Number.isSafeInteger(options.callDailyUserLimit) && options.callDailyUserLimit > 0 ? options.callDailyUserLimit : 5;
   const callDailyGlobalLimit = Number.isSafeInteger(options.callDailyGlobalLimit) && options.callDailyGlobalLimit > 0 ? options.callDailyGlobalLimit : 100;
@@ -344,11 +389,21 @@ function createMemoryMobileStore(options = {}) {
     return users.get(uid) || null;
   }
   return {
-    _users: users, _sessions: sessions, _states: states, _idempotency: idempotency, _outbox: outbox, _questions: questions, _devices: devices, _calls: calls, _callDayGuards: callDayGuards, _deletionReceipts: deletionReceipts,
+    _users: users, _sessions: sessions, _states: states, _idempotency: idempotency, _outbox: outbox, _questions: questions, _devices: devices, _calls: calls, _callDayGuards: callDayGuards, _deletionReceipts: deletionReceipts, _routeCache: routeCache,
     async readUser(scope) { const row = user(scope); return row ? { ...row } : null; },
     async patchUser(scope, patch, options2 = {}) { const row = user(scope, options2.expectedUid); if (!row) throw new MobileError("account_not_found", "Account not found.", 404); Object.assign(row, patch); return { ...row }; },
     async readAnalysisState(scope) { const row = user(scope); return row && row.analysisState ? { ...row.analysisState } : { status: "idle" }; },
     async writeAnalysisState(scope, state) { const row = user(scope); if (!row) throw new MobileError("account_not_found", "Account not found.", 404); row.analysisState = { ...state, updatedAt: state.updatedAt || nowIso() }; return { ...row.analysisState }; },
+    async readRouteCache(scope, routeRequest) {
+      const key = mobileRouteCacheKey(scoped(scope), routeRequest);
+      return routeCacheEntry(routeCache.get(key), memoryNow);
+    },
+    async writeRouteCache(scope, routeRequest, value) {
+      const key = mobileRouteCacheKey(scoped(scope), routeRequest);
+      const computedAt = value && value.computedAt ? value.computedAt : new Date(memoryNow()).toISOString();
+      routeCache.set(key, { value, computed_at: computedAt, ttl_secs: 600 });
+      return { value, computedAt: Date.parse(computedAt) };
+    },
     async createOAuthState(row) { states.set(row.stateHash, { ...row }); },
     async claimOAuthState(hash, expected = {}) {
       const row = states.get(hash);
