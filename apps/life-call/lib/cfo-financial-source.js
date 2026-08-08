@@ -46,7 +46,7 @@ function enumValue(value, allowed, reason = "invalid_enum") { if (typeof value !
 function typedRef(value, pattern, reason) { if (typeof value !== "string" || !pattern.test(value)) fail(reason); }
 function label(value) {
   if (typeof value !== "string" || value.length === 0 || value.length > 80) fail("invalid_label");
-  if (/\d{6}/.test(value) || /(?:^|[^\w])(?:\/|~\/|[A-Za-z]:[\\/]|\\\\)/i.test(value)
+  if (/\d{6}/.test(value) || /(?:\/Users\/|\/home\/)/.test(value)
     || /[a-z][a-z0-9+.-]*:\/\//i.test(value)
     || /[a-z][a-z0-9+.-]*:\/\/[^\/\s@]+(?::[^\/\s@]*)?@/i.test(value)
     || /(?:api[ _-]?key|secret|private[ _-]?key|password|token|credential|bearer)/i.test(value)) fail("unsafe_label");

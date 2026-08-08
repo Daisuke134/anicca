@@ -196,6 +196,20 @@ test("embedded home paths in labels fail closed", () => {
   assert.throws(() => validateFinancialSourceResult(input), /:unsafe_label$/);
 });
 
+test("attached private paths fail closed", () => {
+  for (const privatePath of ["Bank/Users/dais/private", "Bank/home/name/private"]) {
+    const input = validResult();
+    input.accounts[0].label = privatePath;
+    assert.throws(() => validateFinancialSourceResult(input), /:unsafe_label$/);
+  }
+});
+
+test("harmless spaced slash validates", () => {
+  const input = validResult();
+  input.accounts[0].label = "Bank / Savings";
+  assert.doesNotThrow(() => validateFinancialSourceResult(input));
+});
+
 test("unknown liability keys fail at the liability schema boundary", () => {
   const input = validResult();
   input.partial = true;
