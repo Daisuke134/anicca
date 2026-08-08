@@ -24,7 +24,7 @@ test("Telnyx CDR import stores measured cost and keeps a missing CDR amount unkn
     { id: "cdr-2", call_control_id: "cc-2", billed_duration: 30 },
   ], { uid: "u1", ...r.deps });
   assert.deepEqual(result, { attempted: 2, recorded: 2, failed: 0 });
-  assert.equal(r.events[0].actualStatus, "measured");
+  assert.equal(r.events[0].actualStatus, "known");
   assert.equal(r.events[0].actualBilledUsd, 0.037);
   assert.equal(r.events[1].actualStatus, "unknown");
   assert.equal(r.events[1].actualBilledUsd, null);
@@ -37,7 +37,7 @@ test("Railway and Supabase allocation imports preserve owner measurements", asyn
   assert.deepEqual(r.events.map((event) => [event.provider, event.actualBilledUsd]), [
     ["railway", 1.25], ["supabase", 0.4],
   ]);
-  assert.ok(r.events.every((event) => event.actualStatus === "measured"));
+  assert.ok(r.events.every((event) => event.actualStatus === "known"));
 });
 
 test("a failed scheduled measurement import returns failure and emits no synthetic zero row", async () => {

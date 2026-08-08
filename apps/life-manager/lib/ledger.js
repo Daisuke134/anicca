@@ -4,7 +4,11 @@ function headers(key, extra) {
   return Object.assign({ apikey: key, Authorization: `Bearer ${key}` }, extra || {});
 }
 
-const ACTUAL_STATUS = new Set(["measured", "estimated", "unknown"]);
+// `actualStatus` answers only whether a provider invoice/measurement exists.
+// The way a number was obtained lives in `costClassification` so an estimate
+// can never masquerade as a known billed amount.
+const ACTUAL_STATUS = new Set(["known", "unknown"]);
+const COST_CLASSIFICATION = new Set(["measured", "estimated", "fixed", "unknown"]);
 
 function nonEmpty(value, field) {
   const text = value == null ? "" : String(value).trim();
@@ -30,18 +34,31 @@ function validateProviderCostEvent(input = {}) {
   const estimatedUsd = nonNegative(input.estimatedUsd, "estimatedUsd", { nullable: true });
   const actualBilledUsd = nonNegative(input.actualBilledUsd, "actualBilledUsd", { nullable: true });
   const actualStatus = input.actualStatus == null
-    ? (actualBilledUsd == null ? "unknown" : "measured")
+    ? (actualBilledUsd == null ? "unknown" : "known")
     : String(input.actualStatus);
   if (!ACTUAL_STATUS.has(actualStatus)) throw new Error(`actualStatus must be one of ${Array.from(ACTUAL_STATUS).join(", ")}`);
-  if (actualStatus === "measured" && actualBilledUsd == null) throw new Error("measured billing requires actualBilledUsd");
-  if (actualStatus !== "measured" && actualBilledUsd != null) throw new Error("non-measured billing must keep actualBilledUsd null");
-  if (actualStatus === "estimated" && estimatedUsd == null) throw new Error("estimated billing requires estimatedUsd");
+  if (actualStatus === "known" && actualBilledUsd == null) throw new Error("known billing requires actualBilledUsd");
+  if (actualStatus === "unknown" && actualBilledUsd != null) throw new Error("unknown billing must keep actualBilledUsd null");
+  const costClassification = input.costClassification == null
+    ? (actualBilledUsd != null ? "measured" : estimatedUsd != null ? "estimated" : "unknown")
+    : String(input.costClassification);
+  if (!COST_CLASSIFICATION.has(costClassification)) {
+    throw new Error(`costClassification must be one of ${Array.from(COST_CLASSIFICATION).join(", ")}`);
+  }
+  if (costClassification === "measured" && actualBilledUsd == null) throw new Error("measured classification requires actualBilledUsd");
+  if (costClassification === "estimated" && estimatedUsd == null) throw new Error("estimated classification requires estimatedUsd");
+  if (costClassification === "fixed" && actualBilledUsd == null && estimatedUsd == null) {
+    throw new Error("fixed classification requires actualBilledUsd or estimatedUsd");
+  }
+  if (actualStatus === "known" && !["measured", "fixed"].includes(costClassification)) {
+    throw new Error("known billing must use measured or fixed classification");
+  }
   const metadata = input.metadata == null ? {} : input.metadata;
   if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) throw new Error("metadata must be an object");
   return {
     uid: input.uid == null ? null : String(input.uid),
     provider, sku, operation, requestId, quantity, unit, pricingVersion,
-    estimatedUsd, actualBilledUsd, actualStatus,
+    estimatedUsd, actualBilledUsd, actualStatus, costClassification,
     metadata,
   };
 }
@@ -125,8 +142,12 @@ async function recordProviderCost(input = {}, opts = {}) {
     unit: event.unit,
     pricing_version: event.pricingVersion,
     estimated_usd: event.estimatedUsd,
+    // Keep the old reader column populated in the same insert while the
+    // additive migration rolls through mixed deployments.
+    est_usd: event.estimatedUsd,
     actual_billed_usd: event.actualBilledUsd,
     actual_status: event.actualStatus,
+    cost_classification: event.costClassification,
     metadata: event.metadata,
   };
   // Existing daily/financial readers still understand the legacy kind/meta pair. Emit it only for
@@ -215,7 +236,7 @@ async function recordDailyComposioPoll(uid, opts = {}) {
       uid, provider: "composio", sku: "calendar_poll", operation: "daily_poll",
       requestId: `composio:daily_poll:${uid}:${dayStart.toISOString().slice(0, 10)}`,
       quantity: 1, unit: "day", pricingVersion: "composio-2026-08",
-      estimatedUsd: null, actualBilledUsd: null, actualStatus: "unknown",
+      estimatedUsd: null, actualBilledUsd: null, actualStatus: "unknown", costClassification: "unknown",
       metadata: { day: dayStart.toISOString().slice(0, 10) },
       legacyKind: "composio_poll", legacyMeta: { day: dayStart.toISOString().slice(0, 10) },
     }, { supaUrl, supaKey, fetchImpl, log });
@@ -304,6 +325,8 @@ function businessSummary(daysBack, rows, nowMs) {
 }
 
 module.exports = {
+  ACTUAL_STATUS,
+  COST_CLASSIFICATION,
   recordCost,
   recordProviderCost,
   validateProviderCostEvent,

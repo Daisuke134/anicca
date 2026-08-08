@@ -49,7 +49,7 @@ test("Composio records one real tool operation and never reports unknown as an e
   assert.deepEqual(r.events[0], {
     uid: "u1", provider: "composio", sku: "GOOGLECALENDAR_EVENTS_LIST", operation: "tool_execute",
     requestId: "composio-1", quantity: 1, unit: "call", pricingVersion: "composio-2026-08",
-    estimatedUsd: null, actualBilledUsd: null, actualStatus: "unknown",
+    estimatedUsd: null, actualBilledUsd: null, actualStatus: "unknown", costClassification: "unknown",
     metadata: { tool: "GOOGLECALENDAR_EVENTS_LIST" },
   });
 });
@@ -78,7 +78,8 @@ test("Telnyx CDR records provider-measured actual cost", async () => {
     cdr: { cost: { amount: "0.037", currency: "USD" }, call_control_id: "cc-1" },
   }, r.deps);
   assert.equal(r.events[0].provider, "telnyx");
-  assert.equal(r.events[0].actualStatus, "measured");
+  assert.equal(r.events[0].actualStatus, "known");
+  assert.equal(r.events[0].costClassification, "measured");
   assert.equal(r.events[0].actualBilledUsd, 0.037);
   assert.equal(r.events[0].estimatedUsd, null);
 });
@@ -98,7 +99,8 @@ test("Railway and Supabase allocations are measured when imported and unknown wh
   await adapters.recordRailwayAllocation({ uid: "u1", requestId: "rail-1", amountUsd: "1.25", period: "2026-08-08" }, r.deps);
   await adapters.recordSupabaseAllocation({ uid: "u1", requestId: "supa-1", period: "2026-08-08" }, r.deps);
   assert.equal(r.events[0].provider, "railway");
-  assert.equal(r.events[0].actualStatus, "measured");
+  assert.equal(r.events[0].actualStatus, "known");
+  assert.equal(r.events[0].costClassification, "measured");
   assert.equal(r.events[0].actualBilledUsd, 1.25);
   assert.equal(r.events[1].provider, "supabase");
   assert.equal(r.events[1].actualStatus, "unknown");

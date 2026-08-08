@@ -92,3 +92,10 @@ Result: 43/43 passed, 0 failed, 0 skipped (2026-08-08).
 - GREEN: `node --test lib/route-cache.test.js lib/travel-transit-wire.test.js lib/travel-routes.test.js` → 37/37 passed.
 - Route records now carry canonical uid/geos/time bucket through the cache boundary; the REST writer serializes legacy `text` geos, rejects incomplete NOT NULL rows, uses `on_conflict=cache_key`, and propagates failed durable writes instead of returning an unpersisted result.
 - Migration replaces the prior partial cache-key index with a non-partial unique index usable by Supabase conflict resolution. Cross-instance contention and failed writes are covered by tests.
+
+## Fresh review fix 2 receipt — actual status contract and SKU estimates
+
+- RED: contract tests rejected the old `measured|estimated|unknown` status model and exposed missing `cost_classification`/legacy `est_usd` dual writes (9 failures across ledger/adapters/imports).
+- GREEN: `node --test lib/provider-cost-adapters.test.js lib/provider-cost-imports.test.js lib/ledger.test.js test/provider-cost-contract.test.js` → 25/25 passed.
+- `actual_status` is now only `known|unknown`; measured/estimated/fixed/unknown move to `cost_classification`. The migration normalizes prior rows before installing both checks.
+- Provider writes include `cost_classification` and atomically dual-write `estimated_usd` plus legacy `est_usd`. Google Geocoding, Routes, and Directions Transit have versioned non-zero per-SKU projections; Telnyx/imported allocations use `known` + `measured` when an actual amount exists.

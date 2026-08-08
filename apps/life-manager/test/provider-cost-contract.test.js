@@ -24,21 +24,24 @@ const BASE = {
   metadata: { source: "travel" },
 };
 
-test("provider cost migration adds complete dimensions and explicit actual status", () => {
+test("provider cost migration adds complete dimensions and separate actual status/classification", () => {
   const sql = fs.readFileSync(path.join(__dirname, "../migrations/2026-08-08-lm-provider-cost.sql"), "utf8").toLowerCase();
   for (const field of ["provider", "sku", "operation", "request_id", "pricing_version", "estimated_usd", "actual_billed_usd", "actual_status"]) {
     assert.match(sql, new RegExp(`add column if not exists ${field}`));
   }
   assert.match(sql, /actual_status/);
+  assert.match(sql, /cost_classification/);
+  assert.match(sql, /actual_status[^;]+known/);
   assert.match(sql, /lm_provider_cost_failures/);
 });
 
-test("recordProviderCost records all dimensions and measured actual billing", async () => {
+test("recordProviderCost records all dimensions and known actual billing", async () => {
   const calls = [];
   const ok = await loadLedger().recordProviderCost({
     ...BASE,
     actualBilledUsd: 0.0042,
-    actualStatus: "measured",
+    actualStatus: "known",
+    costClassification: "measured",
   }, {
     supaUrl: "https://db.example", supaKey: "service",
     fetchImpl: async (...args) => { calls.push(args); return { ok: true, status: 201 }; },
@@ -57,7 +60,9 @@ test("recordProviderCost records all dimensions and measured actual billing", as
     pricing_version: "maps-2026-01",
     estimated_usd: 0.005,
     actual_billed_usd: 0.0042,
-    actual_status: "measured",
+    actual_status: "known",
+    cost_classification: "measured",
+    est_usd: 0.005,
     metadata: { source: "travel" },
   });
 });
@@ -71,6 +76,7 @@ test("missing provider billing is stored as null/unknown and never coerced to ze
   assert.equal(ok, true);
   const body = JSON.parse(calls[0][1].body);
   assert.equal(body.actual_status, "unknown");
+  assert.equal(body.cost_classification, "estimated");
   assert.equal(body.actual_billed_usd, null);
   assert.notEqual(body.actual_billed_usd, 0);
   assert.equal(body.estimated_usd, BASE.estimatedUsd);
@@ -83,8 +89,9 @@ test("invalid actual status or dimensions fail closed without a provider write",
     fetchImpl: async () => { calls += 1; return { ok: true, status: 201 }; },
   };
   assert.equal(await loadLedger().recordProviderCost({ ...BASE, actualStatus: "fake" }, deps), false);
+  assert.equal(await loadLedger().recordProviderCost({ ...BASE, actualStatus: "measured", actualBilledUsd: 0.1 }, deps), false);
   assert.equal(await loadLedger().recordProviderCost({ ...BASE, quantity: -1 }, deps), false);
-  assert.equal(await loadLedger().recordProviderCost({ ...BASE, actualStatus: "measured" }, deps), false);
+  assert.equal(await loadLedger().recordProviderCost({ ...BASE, actualStatus: "known" }, deps), false);
   assert.equal(calls, 0);
 });
 

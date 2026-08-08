@@ -49,20 +49,38 @@ ALTER TABLE public.lm_api_cost
   ADD COLUMN IF NOT EXISTS estimated_usd numeric,
   ADD COLUMN IF NOT EXISTS actual_billed_usd numeric,
   ADD COLUMN IF NOT EXISTS actual_status text,
+  ADD COLUMN IF NOT EXISTS cost_classification text,
   ADD COLUMN IF NOT EXISTS failed_at timestamptz,
   ADD COLUMN IF NOT EXISTS failure_reason text;
 
+-- Normalize the first version of this gate (`measured|estimated|unknown` in
+-- actual_status) before installing the stricter two-state status contract.
+-- The old distinction is retained in the new classification column.
+UPDATE public.lm_api_cost
+SET cost_classification = CASE
+  WHEN actual_status = 'measured' OR (actual_status = 'known' AND actual_billed_usd IS NOT NULL) THEN 'measured'
+  WHEN actual_status = 'estimated' OR estimated_usd IS NOT NULL THEN 'estimated'
+  ELSE 'unknown'
+END
+WHERE cost_classification IS NULL;
+
+UPDATE public.lm_api_cost
+SET actual_status = CASE
+  WHEN actual_status = 'measured' OR actual_billed_usd IS NOT NULL THEN 'known'
+  ELSE 'unknown'
+END
+WHERE actual_status IS NULL OR actual_status NOT IN ('known', 'unknown');
+
 DO $$
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint
-    WHERE conrelid = 'public.lm_api_cost'::regclass
-      AND conname = 'lm_api_cost_actual_status_check'
-  ) THEN
-    ALTER TABLE public.lm_api_cost
-      ADD CONSTRAINT lm_api_cost_actual_status_check
-      CHECK (actual_status IS NULL OR actual_status IN ('measured', 'estimated', 'unknown'));
-  END IF;
+  ALTER TABLE public.lm_api_cost DROP CONSTRAINT IF EXISTS lm_api_cost_actual_status_check;
+  ALTER TABLE public.lm_api_cost
+    ADD CONSTRAINT lm_api_cost_actual_status_check
+    CHECK (actual_status IN ('known', 'unknown'));
+  ALTER TABLE public.lm_api_cost DROP CONSTRAINT IF EXISTS lm_api_cost_cost_classification_check;
+  ALTER TABLE public.lm_api_cost
+    ADD CONSTRAINT lm_api_cost_cost_classification_check
+    CHECK (cost_classification IN ('measured', 'estimated', 'fixed', 'unknown'));
 END $$;
 
 UPDATE public.lm_api_cost

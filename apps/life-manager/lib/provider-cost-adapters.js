@@ -4,6 +4,14 @@ const crypto = require("node:crypto");
 const { recordProviderCost } = require("./ledger.js");
 
 const GEMINI_WALL_TIME_USD_PER_MINUTE = 0.023;
+const GOOGLE_PRICING_VERSION = "google-maps-2026-08";
+// Versioned conservative projections are deliberately non-zero. Actual Google
+// invoices remain unknown until an import supplies `actualBilledUsd`.
+const GOOGLE_SKU_ESTIMATES_USD = Object.freeze({
+  geocoding: 0.005,
+  routes: 0.01,
+  "directions-transit": 0.005,
+});
 
 function requestId(provider, input = {}) {
   if (input.requestId != null && String(input.requestId).trim()) return String(input.requestId);
@@ -36,6 +44,7 @@ function unknownEvent({ provider, sku, operation, uid, requestId: id, quantity: 
     uid: uid == null ? null : String(uid), provider, sku, operation,
     requestId: requestId(provider, { requestId: id }), quantity: quantity(amount), unit, pricingVersion,
     estimatedUsd: money(estimatedUsd), actualBilledUsd: null, actualStatus: "unknown",
+    costClassification: money(estimatedUsd) == null ? "unknown" : "estimated",
     metadata: objectOrEmpty(metadata),
   };
 }
@@ -44,7 +53,7 @@ async function recordGoogleGeocoding(input = {}, deps = {}) {
   return write(unknownEvent({
     provider: "google", sku: "geocoding", operation: "geocoding", uid: input.uid,
     requestId: input.requestId, quantity: input.quantity, unit: "request",
-    pricingVersion: "google-maps-2026-08", metadata: input.metadata,
+    pricingVersion: GOOGLE_PRICING_VERSION, metadata: input.metadata, estimatedUsd: input.estimatedUsd == null ? GOOGLE_SKU_ESTIMATES_USD.geocoding : input.estimatedUsd,
   }), deps);
 }
 
@@ -52,7 +61,7 @@ async function recordGoogleRoutes(input = {}, deps = {}) {
   return write(unknownEvent({
     provider: "google", sku: "routes", operation: "routes", uid: input.uid,
     requestId: input.requestId, quantity: input.quantity, unit: "request",
-    pricingVersion: "google-maps-2026-08", metadata: input.metadata,
+    pricingVersion: GOOGLE_PRICING_VERSION, metadata: input.metadata, estimatedUsd: input.estimatedUsd == null ? GOOGLE_SKU_ESTIMATES_USD.routes : input.estimatedUsd,
   }), deps);
 }
 
@@ -60,7 +69,7 @@ async function recordGoogleTransit(input = {}, deps = {}) {
   return write(unknownEvent({
     provider: "google", sku: "directions-transit", operation: "transit", uid: input.uid,
     requestId: input.requestId, quantity: input.quantity, unit: "request",
-    pricingVersion: "google-maps-2026-08", metadata: input.metadata,
+    pricingVersion: GOOGLE_PRICING_VERSION, metadata: input.metadata, estimatedUsd: input.estimatedUsd == null ? GOOGLE_SKU_ESTIMATES_USD["directions-transit"] : input.estimatedUsd,
   }), deps);
 }
 
@@ -112,7 +121,8 @@ async function recordTelnyxCdr(input = {}, deps = {}) {
     uid: input.uid == null ? null : String(input.uid), provider: "telnyx", sku: "voice",
     operation: "call_cdr", requestId: requestId("telnyx", { requestId: input.requestId, id: cdr.id || cdr.call_control_id }),
     quantity: quantity(input.durationSeconds, 0), unit: "seconds", pricingVersion: "telnyx-cdr-2026-08",
-    estimatedUsd: null, actualBilledUsd: actual, actualStatus: actual == null ? "unknown" : "measured",
+    estimatedUsd: null, actualBilledUsd: actual, actualStatus: actual == null ? "unknown" : "known",
+    costClassification: actual == null ? "unknown" : "measured",
     metadata: { ...objectOrEmpty(input.metadata), ...(cdr.id ? { cdrId: String(cdr.id) } : {}),
       ...(cdr.call_control_id ? { callControlId: String(cdr.call_control_id) } : {}) },
   }, deps);
@@ -139,7 +149,8 @@ async function recordAllocation(input = {}, deps = {}) {
     quantity: quantity(input.quantity), unit: String(input.unit || "period"),
     pricingVersion: String(input.pricingVersion || `${provider}-allocation-2026-08`),
     estimatedUsd: money(input.estimatedUsd), actualBilledUsd: actual,
-    actualStatus: actual == null ? "unknown" : "measured",
+    actualStatus: actual == null ? "unknown" : "known",
+    costClassification: actual == null ? (money(input.estimatedUsd) == null ? "unknown" : "estimated") : "measured",
     metadata: { ...objectOrEmpty(input.metadata), ...(period ? { period } : {}) },
   }, deps);
 }
