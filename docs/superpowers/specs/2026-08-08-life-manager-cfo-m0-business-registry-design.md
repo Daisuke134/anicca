@@ -2,9 +2,9 @@
 
 | Field | Value |
 |---|---|
-| Status | APPROVED FOR IMPLEMENTATION |
+| Status | IMPLEMENTED — LIVE E2E PASS |
 | Parent SSOT | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
-| Active item | `CFO-0c` |
+| Active item | `CFO-0d` |
 | Done | A versioned registry and a live inventory receipt classify every relevant earning runtime exactly once, with zero unexplained financial units or runtime labels |
 | Authority | Read-only inventory; no loop, ledger, credential, payment, or scheduler mutation |
 
@@ -262,3 +262,11 @@ Only these tasks implement CFO-0c. Each task uses RED → GREEN → fresh verifi
    only active financial item.
 
 The implementation plan supplies exact files, function signatures, test code, commands, and per-task estimated LOC.
+
+## 7. CFO-0c completion evidence
+
+- Commit: `docs(cfo): close financial unit inventory`
+- Test command: `node --test lib/cfo-registry.test.js lib/cfo-inventory.test.js scripts/cfo-business-inventory.test.js`; `npm run cfo:inventory`; independent receipt hash verification; `npm test`
+- Financial-unit count: `7`
+- Finding counts: `unmapped_count=0`, `ambiguous_count=0`
+- Receipt SHA-256 references: `registry_sha256=ca4628472d4c5a8fd0cdd5b64b3c4da23c4938ef9cd3a2b96b36faa3d4d9efed`; `observation_hash=cc6730daf632a269265c10085174e77247578c88f2dfe61c81000178f9efef65`

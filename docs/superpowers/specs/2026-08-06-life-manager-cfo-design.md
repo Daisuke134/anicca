@@ -7,7 +7,7 @@
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
 | Existing foundations | `apps/life-call`, Moneytree connector, Fleet telemetry, `lm_api_cost`, `lm_financial_ledger` |
-| First unfinished item | **CFO-0c: implement the financial-unit registry child spec; then CFO-0d freezes Telegram UX** |
+| First unfinished item | **CFO-0d: freeze the Telegram information hierarchy, copy, inline-button contract, and evidence labels** |
 
 ## 1. Overview — What and Why
 
@@ -657,7 +657,7 @@ The child spec narrows M0 without replacing this document's financial truth, saf
 - [x] **CFO-0** Create this canonical design and name the first slice.
 - [x] **CFO-0b** Add this document to the Life Manager SSOT index and mark older CFO fragments as inputs, not
       competing specs.
-- [ ] **CFO-0c** Inventory every live earning loop and assign a stable `business_id`, owner, ledger source,
+- [x] **CFO-0c** Inventory every live earning loop and assign a stable `business_id`, owner, ledger source,
       runtime, and current status. Reconcile the seed registry in this spec against launchd and canonical ledgers;
       quarantine legacy/fake MRR and do not change execution.
 - [ ] **CFO-0d** Freeze the Telegram information hierarchy, Japanese/English copy, inline-button contract, and

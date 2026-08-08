@@ -496,7 +496,7 @@ Completion evidence: commit `19ad38c86`; targeted tests 21/21 PASS; purity/diff 
 - Produces: one real receipt, its verified hashes, and `CFO-0c` checked complete. `CFO-0d` remains unchecked and
   becomes the only active financial item.
 
-- [ ] **Step 1: Run all targeted tests fresh**
+- [x] **Step 1: Run all targeted tests fresh**
 
 ```bash
 cd apps/life-call
@@ -505,7 +505,7 @@ node --test lib/cfo-registry.test.js lib/cfo-inventory.test.js scripts/cfo-busin
 
 Expected: zero failures.
 
-- [ ] **Step 2: Run the real read-only inventory**
+- [x] **Step 2: Run the real read-only inventory**
 
 ```bash
 cd apps/life-call
@@ -517,13 +517,13 @@ Expected summary: `result="pass"`, `unit_count=7`, `unmapped_count=0`, `ambiguou
 If the result fails, change only registry mappings justified by observed labels, add a failing regression test,
 then repeat RED → GREEN and rerun live inventory. Do not mutate a launchd job to make the test pass.
 
-- [ ] **Step 3: Verify the receipt independently**
+- [x] **Step 3: Verify the receipt independently**
 
 Use a one-shot Node command to parse the emitted receipt, reload the registry, recompute `registry_sha256`, rebuild
 the hash input with volatile fields removed, and assert both hashes plus `result === "pass"`. The command must print
 only `{result, unit_count, unmapped_count, ambiguous_count, hashes_verified}` and no raw paths or observations.
 
-- [ ] **Step 4: Run the existing Life Manager test suite**
+- [x] **Step 4: Run the existing Life Manager test suite**
 
 ```bash
 cd apps/life-call
@@ -533,13 +533,13 @@ npm test
 Expected: zero failures. A pre-existing unrelated failure is not waived; record exact evidence and repair only when
 caused by this slice.
 
-- [ ] **Step 5: Close state without embedding private receipt data**
+- [x] **Step 5: Close state without embedding private receipt data**
 
 Mark `CFO-0c` checked in the parent. Change child status to `IMPLEMENTED — LIVE E2E PASS` and record only the commit,
 test command, seven-unit count, zero finding counts, and receipt SHA-256 references. Do not commit the local receipt
 or expanded state path. Check every plan checkbox completed.
 
-- [ ] **Step 6: Final verification, commit, and push**
+- [x] **Step 6: Final verification, commit, and push**
 
 ```bash
 rg -n "CFO-0c|CFO-0d|IMPLEMENTED — LIVE E2E PASS" docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md docs/superpowers/specs/2026-08-08-life-manager-cfo-m0-business-registry-design.md
