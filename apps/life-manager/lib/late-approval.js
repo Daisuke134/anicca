@@ -1083,6 +1083,13 @@ function approvalReceiptText(row, providerId) {
 
 const TELEGRAM_MESSAGE_NOT_MODIFIED = "Bad Request: message is not modified";
 
+function escapeTelegramHtml(value) {
+  return String(value == null ? "" : value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
 function telegramReceiptEditAccepted(result) {
   return Boolean(result) && (
     result.ok !== false ||
@@ -1278,7 +1285,7 @@ async function handleLateApprovalCallback(data, options = {}) {
       options.token || process.env.LM_TELEGRAM_BOT_TOKEN,
       approvalChatId,
       approvalMessageId,
-      receiptClaim.telegramReceiptText,
+      escapeTelegramHtml(receiptClaim.telegramReceiptText),
       { reply_markup: { inline_keyboard: [] } },
     );
   } catch (error) {

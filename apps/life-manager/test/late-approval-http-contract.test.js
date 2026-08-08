@@ -111,6 +111,7 @@ test("signed and owned Send decides, claims, mails, records the provider receipt
   assert.equal(opts.calls[0][1].providerIdempotencyKey, draft.providerIdempotencyKey);
   assert.equal(opts.calls[0][1].bodySnapshot, draft.bodySnapshot);
   assert.match(opts.calls[2][1], /resend-message-1/);
+  assert.match(opts.calls[2][1], /&lt;partner@example\.invalid&gt;/);
 
   // A replay observes the durable sent row and cannot call either external transport again.
   const replay = await handleLateApprovalCallback(callback("send", draft.draftId), {
