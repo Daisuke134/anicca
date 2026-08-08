@@ -232,7 +232,7 @@ final class ChatViewModelTests: XCTestCase {
         XCTAssertEqual(keys.first, keys.last)
     }
 
-    func testStaleReplyIsNotInsertedAfterChatRefreshChangesOpenQuestion() async {
+    func testSuccessfulReplyForcesFreshSyncAfterChatRefreshChangesProjection() async {
         let question = ChatFixtures.message(
             id: "question-message",
             type: .question,
@@ -240,13 +240,15 @@ final class ChatViewModelTests: XCTestCase {
             question: ChatQuestion(id: "question-1", prompt: "Where are you starting from?")
         )
         let refreshed = ChatFixtures.message(id: "message-2", type: .system, createdAt: "2026-08-10T08:10:00.000Z")
+        let durable = ChatFixtures.message(id: "message-3", type: .system, createdAt: "2026-08-10T08:20:00.000Z")
         let reply = QuestionReplyReceipt(status: "answered", questionID: question.id, analysis: nil)
         let gate = ReplyGate()
         let service = ChatTestService(
             pages: [
                 nil: [
                     ChatPage(messages: [question], nextCursor: nil, hasMore: false),
-                    ChatPage(messages: [refreshed], nextCursor: nil, hasMore: false)
+                    ChatPage(messages: [refreshed], nextCursor: nil, hasMore: false),
+                    ChatPage(messages: [durable], nextCursor: nil, hasMore: false)
                 ]
             ],
             replyGate: gate
@@ -261,9 +263,53 @@ final class ChatViewModelTests: XCTestCase {
         await gate.release(reply)
         await replyTask.value
 
-        XCTAssertTrue(viewModel.staleReply)
-        XCTAssertEqual(viewModel.messages.map(\.id), ["message-2"])
+        XCTAssertFalse(viewModel.staleReply)
+        XCTAssertEqual(viewModel.messages.map(\.id), [durable.id])
+        XCTAssertNil(viewModel.openQuestion)
+        XCTAssertFalse(viewModel.canReply)
         XCTAssertFalse(viewModel.isReplying)
+        let cursors = await service.fetchCursors()
+        XCTAssertEqual(cursors, [nil, nil, nil])
+
+        await viewModel.reply(text: "duplicate")
+
+        let replyCount = await service.replyCount()
+        XCTAssertEqual(replyCount, 1)
+    }
+
+    func testReplyCompletingAfterProjectionClearDoesNotRepopulateOrReplay() async {
+        let question = ChatFixtures.message(
+            id: "question-message",
+            type: .question,
+            createdAt: "2026-08-10T08:00:00.000Z",
+            question: ChatQuestion(id: "question-1", prompt: "Where are you starting from?")
+        )
+        let gate = ReplyGate()
+        let service = ChatTestService(
+            pages: [nil: [ChatPage(messages: [question], nextCursor: nil, hasMore: false)]],
+            replyGate: gate
+        )
+        let viewModel = ChatViewModel(service: service)
+
+        await viewModel.loadInitial()
+        let replyTask = Task { await viewModel.reply(text: "Home") }
+        await gate.waitUntilReplyStarted()
+
+        await viewModel.clearProjection()
+        await gate.release(QuestionReplyReceipt(status: "answered", questionID: question.id, analysis: nil))
+        await replyTask.value
+
+        XCTAssertEqual(viewModel.messages, [])
+        XCTAssertNil(viewModel.openQuestion)
+        XCTAssertFalse(viewModel.canReply)
+        XCTAssertTrue(viewModel.staleReply)
+        XCTAssertFalse(viewModel.isReplying)
+        let cursors = await service.fetchCursors()
+        XCTAssertEqual(cursors, [nil])
+
+        await viewModel.reply(text: "duplicate")
+        let replyCount = await service.replyCount()
+        XCTAssertEqual(replyCount, 1)
     }
 }
 
@@ -325,7 +371,7 @@ private actor ChatTestService: ChatServicing {
 
     func reply(questionID: String, text: String, idempotencyKey: UUID) async throws -> QuestionReplyReceipt {
         replies += 1
-        if let replyGate {
+        if replies == 1, let replyGate {
             return await replyGate.waitForReply()
         }
         return QuestionReplyReceipt(status: "answered", questionID: questionID, analysis: nil)

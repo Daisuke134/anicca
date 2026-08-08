@@ -75,6 +75,7 @@ final class AppViewModel {
     private(set) var lastAnalysisStatus: AnalysisStatus?
     private(set) var lastAnalysisReceipt: AnalysisResult?
     private(set) var terminalDeletionReceipt: AccountDeletionReceipt?
+    private(set) var terminalDeletionLocale: ProductLocale?
     private(set) var phoneSkipped = false
     private(set) var phoneValidationError: String?
     private var profileChangedHandler: (@MainActor (UserProfile) async -> Void)?
@@ -105,7 +106,7 @@ final class AppViewModel {
     }
 
     var productLocale: ProductLocale {
-        profile?.productLocale ?? .en
+        terminalDeletionLocale ?? profile?.productLocale ?? .en
     }
 
     func setProfileChangedHandler(_ handler: (@MainActor (UserProfile) async -> Void)?) {
@@ -118,7 +119,12 @@ final class AppViewModel {
         }
         settingsViewModel?.setSignedOutHandler { [weak self] in
             guard let self else { return }
-            await self.handleSignedOut(deletionReceipt: self.settingsViewModel?.deletionReceipt)
+            let deletionReceipt = self.settingsViewModel?.deletionReceipt
+            let deletionLocale = deletionReceipt == nil ? nil : self.settingsViewModel?.productLocale
+            await self.handleSignedOut(
+                deletionReceipt: deletionReceipt,
+                deletionLocale: deletionLocale
+            )
         }
     }
 
@@ -131,8 +137,12 @@ final class AppViewModel {
         await profileChangedHandler?(value)
     }
 
-    private func handleSignedOut(deletionReceipt: AccountDeletionReceipt?) async {
+    private func handleSignedOut(
+        deletionReceipt: AccountDeletionReceipt?,
+        deletionLocale: ProductLocale?
+    ) async {
         terminalDeletionReceipt = deletionReceipt
+        terminalDeletionLocale = deletionReceipt == nil ? nil : deletionLocale ?? profile?.productLocale
         route = .welcome
         profile = nil
         lastAnalysisStatus = nil
@@ -142,6 +152,7 @@ final class AppViewModel {
 
     func restoreSession() async {
         terminalDeletionReceipt = nil
+        terminalDeletionLocale = nil
         route = .restoring
         do {
             guard try await auth.restoreSession() != nil else {
@@ -176,6 +187,7 @@ final class AppViewModel {
 
     func connectCalendar() async {
         terminalDeletionReceipt = nil
+        terminalDeletionLocale = nil
         route = .calendarConnecting
         do {
             _ = try await auth.connectCalendar()

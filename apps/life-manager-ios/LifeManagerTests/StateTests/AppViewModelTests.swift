@@ -206,6 +206,24 @@ final class AppViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.terminalDeletionReceipt, receipt)
     }
 
+    func testJapaneseDeletionReceiptRetainsTerminalLocaleAfterProfileClears() async {
+        let receipt = StateFixtures.deletionReceipt(id: "deletion-ja-1")
+        let (viewModel, settings) = makeDeletionFlow(
+            profileValue: StateFixtures.profile(productLocale: .ja),
+            accountReceipt: receipt
+        )
+        viewModel.bindSettingsProfileHandler()
+        await settings.load()
+
+        await settings.deleteAccount()
+
+        XCTAssertEqual(viewModel.route, .welcome)
+        XCTAssertNil(viewModel.profile)
+        XCTAssertEqual(viewModel.terminalDeletionReceipt, receipt)
+        XCTAssertEqual(viewModel.terminalDeletionLocale, .ja)
+        XCTAssertEqual(viewModel.productLocale, .ja)
+    }
+
     func testOrdinarySignOutDoesNotCreateTerminalDeletionReceipt() async {
         let (viewModel, settings) = makeDeletionFlow(accountReceipt: nil)
         viewModel.bindSettingsProfileHandler()
@@ -214,6 +232,7 @@ final class AppViewModelTests: XCTestCase {
 
         XCTAssertEqual(viewModel.route, .welcome)
         XCTAssertNil(viewModel.terminalDeletionReceipt)
+        XCTAssertNil(viewModel.terminalDeletionLocale)
     }
 
     func testRestoreSessionClearsTerminalDeletionReceiptForANewSession() async {
@@ -227,6 +246,7 @@ final class AppViewModelTests: XCTestCase {
 
         XCTAssertEqual(viewModel.route, .welcome)
         XCTAssertNil(viewModel.terminalDeletionReceipt)
+        XCTAssertNil(viewModel.terminalDeletionLocale)
     }
 
     func testConnectCalendarClearsTerminalDeletionReceiptForAReconnection() async {
@@ -240,11 +260,15 @@ final class AppViewModelTests: XCTestCase {
 
         XCTAssertEqual(viewModel.route, .profile)
         XCTAssertNil(viewModel.terminalDeletionReceipt)
+        XCTAssertNil(viewModel.terminalDeletionLocale)
     }
 
-    private func makeDeletionFlow(accountReceipt: AccountDeletionReceipt?) -> (AppViewModel, SettingsViewModel) {
+    private func makeDeletionFlow(
+        profileValue: UserProfile = StateFixtures.profile,
+        accountReceipt: AccountDeletionReceipt?
+    ) -> (AppViewModel, SettingsViewModel) {
         let auth = StateAuthService(restored: StateFixtures.session, connected: StateFixtures.session)
-        let profile = StateProfileService(profile: StateFixtures.profile)
+        let profile = StateProfileService(profile: profileValue)
         let settings = SettingsViewModel(
             profile: profile,
             auth: auth,
@@ -277,13 +301,14 @@ private enum StateFixtures {
 
     static func profile(
         analysisStatus: BootstrapAnalysisStatus = .idle,
-        phone: PhoneSettings = .missing
+        phone: PhoneSettings = .missing,
+        productLocale: ProductLocale = .en
     ) -> UserProfile {
         UserProfile(
         id: "user:v1:server-derived-8f3a",
         name: "Alex Morgan",
         home: HomeAddress(status: .ready, display: "100 Market Street"),
-        productLocale: .en,
+        productLocale: productLocale,
         timezone: "America/Los_Angeles",
         phone: phone,
         offerStatus: .available,

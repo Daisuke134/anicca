@@ -8,6 +8,7 @@ final class ChatViewModel {
     private let coordinator: ChatSyncCoordinator
     private let retryStore: OperationRetryStoring
     private var fetchGeneration = 0
+    private var replyInvalidationGeneration = 0
     private var answeredQuestionIDs = Set<String>()
     private var pendingPushTargetMessageID: String?
 
@@ -70,6 +71,7 @@ final class ChatViewModel {
 
     func resetForLocaleChange() async {
         fetchGeneration &+= 1
+        replyInvalidationGeneration &+= 1
         pendingPushTargetMessageID = nil
         answeredQuestionIDs.removeAll()
         messages = []
@@ -87,6 +89,7 @@ final class ChatViewModel {
 
     func clearProjection() async {
         fetchGeneration &+= 1
+        replyInvalidationGeneration &+= 1
         pendingPushTargetMessageID = nil
         answeredQuestionIDs.removeAll()
         messages = []
@@ -179,6 +182,7 @@ final class ChatViewModel {
         }
 
         let generation = fetchGeneration
+        let replyInvalidation = replyInvalidationGeneration
         let questionID = question.id
         composerText = ""
         isReplying = true
@@ -192,13 +196,15 @@ final class ChatViewModel {
                 idempotencyKey: operationKey
             )
             await retryStore.clear(.reply)
-            guard generation == fetchGeneration, openQuestion?.id == questionID else {
+            if replyInvalidation != replyInvalidationGeneration {
                 staleReply = true
-                isReplying = false
-                return
+            } else {
+                answeredQuestionIDs.insert(questionID)
+                if generation != fetchGeneration {
+                    await coordinator.reset()
+                }
+                await sync(reason: .manual)
             }
-            answeredQuestionIDs.insert(questionID)
-            await sync(reason: .manual)
         } catch {
             if MutationRetryPolicy.shouldRetain(after: error) {
                 composerText = value
