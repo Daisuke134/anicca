@@ -18,6 +18,7 @@
 - Provider JSON exists in process memory only for the live check. The live checker prints only boolean/count assertions and opaque references; it never prints amounts or source strings.
 - Output account and transaction references are HMAC-derived from a tenant-scoped key of at least 32 UTF-8 bytes. Raw IDs are never concatenated into references.
 - Amounts are safe integer minor units. Successful values are `provider_reported`; unknown is never zero.
+- In CFO-1b, `observedAt` and `fresh` mean only that the interactive connector read succeeded at that retrieval time. They do not claim Moneytree's underlying aggregation timestamp or durable consent freshness; CFO-1b2 owns those truths.
 - CFO-1b has not ingested liabilities, so its source result is always `partial: true` even after a successful live read.
 - The adapter accepts only the Moneytree App `structuredContent` shapes observed from `show_accounts(locale="ja")` and `show_transactions(locale="ja")`; it does not persist the outer MCP envelope.
 - No dependency addition. Only current-task files are staged. Each task closes with tests, diff check, commit, push, and fresh review.
@@ -62,11 +63,11 @@ The closed transaction result is:
     verificationStatus: "provider_reported",
   }],
   evidenceRef: "evidence:mt_0123456789abcdef01234567",
-  partial: true,
+  pagePartial: true,
 }
 ```
 
-`partial` is true when the connector reports more matching transactions than the returned page. Transaction descriptions and provider categories are deliberately absent; spending classification is a later milestone.
+`pagePartial` is true exactly when the connector reports more matching transactions than the returned page. It describes transaction pagination only and MUST NOT be interpreted as source completeness. Transaction descriptions and provider categories are deliberately absent; spending classification is a later milestone.
 
 ---
 
@@ -102,9 +103,14 @@ assert.match(source.accounts[0].accountRef, /^source_account:mt_[a-f0-9]{24}$/);
 assert.match(source.evidenceRef, /^evidence:mt_[a-f0-9]{24}$/);
 assert.doesNotMatch(JSON.stringify(source), /9999999|secret\.example|1001|秘密口座/);
 assert.equal(Object.isFrozen(source.accounts[0]), true);
+
+const repeated = adaptMoneytreeAccounts(sameInput);
+const otherTenant = adaptMoneytreeAccounts({ ...sameInput, referenceKey: "different-synthetic-reference-key-32" });
+assert.equal(repeated.accounts[0].accountRef, source.accounts[0].accountRef);
+assert.notEqual(otherTenant.accounts[0].accountRef, source.accounts[0].accountRef);
 ```
 
-Add table-driven cases for invalid JSON, wrong root type, wrong `type`, missing data/groups, non-JPY base/account currency, non-integer/unsafe/null balance, missing/nonnumeric provider ID, zero MUFG accounts, duplicate provider account ID, weak reference key, and invalid `observedAt`. All errors are stable `moneytree_adapter_invalid:<reason>` and never contain input values.
+Add table-driven cases for invalid JSON, wrong root type, wrong `type`, missing data/groups, non-JPY base/account currency, non-integer/unsafe/null balance, missing/nonnumeric/unsafe provider ID, zero MUFG accounts, duplicate provider account ID, weak reference key, and invalid `observedAt`. Through the public account result, prove the same provider ID produces distinct account-reference and evidence-reference digest suffixes. All errors are stable `moneytree_adapter_invalid:<reason>` and never contain input values.
 
 Before writing the test body, name the production mutation it catches: using `totalBalance`, copying raw label/ID, accepting unsafe money, emitting a reversible ref, weakening the key, or claiming a missing source is fresh.
 
@@ -122,7 +128,7 @@ Expected: FAIL because `./cfo-moneytree.js` does not exist.
 Implement only:
 
 1. `parseJson(value, expectedType)` rejects non-string/invalid/non-plain JSON roots and verifies `{ type, data }` before field access.
-2. `opaqueRef(kind, referenceKey, providerId)` requires a string key of at least 32 UTF-8 bytes and returns the first 24 hex characters of `HMAC-SHA256(referenceKey, "moneytree:<kind>:<providerId>")` under the typed prefix.
+2. `opaqueRef(kind, referenceKey, providerId)` requires a string key of at least 32 UTF-8 bytes and a safe-integer provider ID, and returns the first 24 hex characters of `HMAC-SHA256(referenceKey, "moneytree:<kind>:<providerId>")` under the typed prefix. Account, transaction, and evidence domains are distinct.
 3. Select accounts only from `data.accountGroups.banks` where `institutionKey === "mufg_bank"`. Reject zero matches and duplicate provider IDs. Do not consume `totalBalance`, nickname, institution name, account number, or `connectUrl`.
 4. Map `account_subtype === "savings"` to fixed label `MUFG 普通預金` and kind `deposit`; map any other subtype to fixed label `MUFG 口座` and kind `other`.
 5. Require JPY and safe integer `current_balance`; construct `consent: "valid"`, `freshness: "fresh"`, `liabilities: []`, `partial: true`, and `actionRequired: null`.
@@ -167,7 +173,7 @@ Review gates: source-contract compliance, HMAC opacity, raw-field exclusion, par
 
 - [ ] **Step 1: Write RED transaction tests**
 
-Use a synthetic `type: "transactions"` response containing three transactions for the synthetic MUFG provider account ID: positive `1234`, negative `-500`, and zero `0`. Include decoy provider transaction IDs, full account number, merchant descriptions, institution name, provider category IDs/names, and running balance.
+Use two synthetic MUFG accounts with provider IDs `1001` and `1002`, then a `type: "transactions"` response containing three interleaved transactions: positive `1234` on the first account, negative `-500` on the second, and zero `0` on the first. Include decoy provider transaction IDs, full account numbers, merchant descriptions, institution names, provider category IDs/names, and running balances.
 
 Assert literal outputs:
 
@@ -177,12 +183,18 @@ assert.deepEqual(result.transactions.map((row) => row.amountMinor), [1234, -500,
 assert.deepEqual(result.transactions.map((row) => row.bookingDate), ["2026-08-06", "2026-08-05", "2026-08-04"]);
 assert.match(result.transactions[0].transactionRef, /^transaction:mt_[a-f0-9]{24}$/);
 assert.equal(result.transactions[0].accountRef, source.accounts[0].accountRef);
-assert.equal(result.partial, false);
+assert.equal(result.transactions[1].accountRef, source.accounts[1].accountRef);
+assert.equal(result.pagePartial, false);
 assert.doesNotMatch(JSON.stringify(result), /9999999|merchant-secret|provider-category|1001|2001/);
 assert.equal(Object.isFrozen(result.transactions[0]), true);
+
+const rootKeys = ["asOf", "evidenceRef", "pagePartial", "schemaVersion", "sourceId", "transactions"];
+const rowKeys = ["accountRef", "amountMinor", "bookingDate", "currency", "flow", "transactionRef", "verificationStatus"];
+assert.deepEqual(Object.keys(result).sort(), rootKeys);
+for (const row of result.transactions) assert.deepEqual(Object.keys(row).sort(), rowKeys);
 ```
 
-Add failures for invalid transaction JSON/type/shape, invalid or impossible booking date, float/unsafe/string amount, non-JPY currency, missing/nonnumeric/duplicate transaction ID, unknown account ID, duplicate transaction ref, and total count smaller than page length. Add one pagination case where `totalCount > transactions.length` produces `partial: true`, never a false complete state.
+Add failures for invalid transaction JSON/type/required shape, invalid or impossible booking date, float/unsafe/string amount, non-JPY currency, missing/nonnumeric/unsafe/duplicate transaction ID, unknown/unsafe account ID, duplicate transaction ref, negative/float/unsafe/string `totalCount`, and total count smaller than page length. Raw provider extras remain ignored rather than copied. Add one pagination case proving `pagePartial === (totalCount > transactions.length)`, never a false complete state. Repeat the same input and assert every transaction reference is stable; change only `referenceKey` and assert every reference changes; assert account and transaction HMAC domains never collide for the same provider ID.
 
 - [ ] **Step 2: Run RED**
 
@@ -195,7 +207,7 @@ Expected: FAIL because `adaptMoneytreeTransactions` is not exported.
 
 - [ ] **Step 3: Implement the minimum transaction adapter**
 
-Parse both JSON strings, rebuild the MUFG provider-ID set from the accounts response, and require every transaction to reference that set. Produce only the closed transaction keys above. Derive references by HMAC, derive `flow` only from the signed amount, convert RFC 3339 provider date to its literal `YYYY-MM-DD` booking date after calendar validation, and set `verificationStatus: "provider_reported"`. Derive a separate evidence ref and deep-freeze a cloned result. Do not copy descriptions, categories, balances, account numbers, institution labels, or raw IDs.
+Parse both JSON strings, rebuild the MUFG provider-ID→opaque-account-ref map from the accounts response, and require every transaction to resolve through that exact map. Validate `totalCount` as a nonnegative safe integer. Construct only the exact closed root/row keys above while ignoring extra raw provider keys. Derive references by HMAC, derive `flow` only from the signed amount, convert RFC 3339 provider date to its literal `YYYY-MM-DD` booking date after calendar validation, and set `verificationStatus: "provider_reported"`. Set `pagePartial` to the literal comparison `totalCount > transactions.length`, derive a separate evidence ref, and deep-freeze a cloned result. Do not copy descriptions, categories, balances, account numbers, institution labels, or raw IDs.
 
 - [ ] **Step 4: Verify focused and regression paths**
 
@@ -221,7 +233,7 @@ git commit -m "feat(cfo): adapt Moneytree transactions"
 git push canonical HEAD
 ```
 
-Review gates: closed output, amount/date truth, account cross-reference, pagination honesty, raw-field exclusion, stable HMAC refs, no categorization claim, no effect, and production/test size.
+Review gates: exact closed root/row keys, two-account cross-reference, amount/date truth, `pagePartial` pagination honesty, raw-field exclusion, stable tenant- and domain-separated HMAC refs, no categorization claim, no effect, and production/test size.
 
 ---
 
@@ -242,7 +254,18 @@ In one tool orchestration, call `show_accounts(locale="ja")`, extract connected 
 
 - [ ] **Step 2: Stream both live responses through the adapter**
 
-Start a non-TTY Node process that reads one JSON envelope from stdin, calls both adapter functions with a fresh in-memory 32-byte reference key, and performs these assertions without printing values:
+Start a non-TTY Node process that reads exactly one JSON envelope from stdin. The orchestrator sends this envelope and EOF through `write_stdin`; non-TTY stdin is never echoed:
+
+```js
+JSON.stringify({
+  accounts: accountsResult.structuredContent,
+  transactions: transactionsResult.structuredContent,
+  observedAt: new Date().toISOString(),
+  referenceKey: crypto.randomBytes(32).toString("hex"),
+})
+```
+
+The Node process parses the envelope, calls both adapter functions, and evaluates named predicates with a constant-code checker. It MUST NOT use `assert.deepEqual`/`assert.equal` on private objects or amounts because Node prints actual/expected values on failure:
 
 ```js
 const liveMufgAccounts = accounts.data.accountGroups.banks
@@ -257,19 +280,26 @@ const forbidden = [
   ...liveRows.flatMap((row) => [row.id, row.account_id, row.account_number, row.description]),
 ].filter((value) => value !== null && value !== undefined && String(value).length >= 6);
 
-assert.deepEqual(validateFinancialSourceResult(source), source);
-assert.equal(Object.isFrozen(source), true);
-assert.ok(source.accounts.length > 0);
-assert.equal(source.partial, true);
-assert.equal(
-  source.accounts.reduce((sum, row) => sum + row.balanceMinor, 0),
-  liveMufgAccounts.reduce((sum, row) => sum + row.current_balance, 0),
-);
-assert.equal(transactions.transactions.length, liveRows.length);
-assert.ok(transactions.transactions.every((row) => sourceRefs.has(row.accountRef)));
-assert.ok(forbidden.every((value) => !normalizedJson.includes(String(value))));
-assert.ok(source.accounts.every((row) => ["MUFG 普通預金", "MUFG 口座"].includes(row.label)));
+function check(code, predicate) {
+  if (!predicate) { const error = new Error(code); error.code = code; throw error; }
+}
+
+check("source_contract", JSON.stringify(validateFinancialSourceResult(source)) === JSON.stringify(source));
+check("source_frozen", Object.isFrozen(source) && source.accounts.every(Object.isFrozen));
+check("mufg_accounts", source.accounts.length > 0);
+check("source_partial", source.partial === true);
+check("balance_parity",
+  source.accounts.reduce((sum, row) => sum + row.balanceMinor, 0)
+    === liveMufgAccounts.reduce((sum, row) => sum + row.current_balance, 0));
+check("transaction_page_parity", transactions.transactions.length === liveRows.length);
+check("transaction_page_partial",
+  transactions.pagePartial === (transactionResponse.data.totalCount > liveRows.length));
+check("account_cross_reference", transactions.transactions.every((row) => sourceRefs.has(row.accountRef)));
+check("raw_field_leak", forbidden.every((value) => !normalizedJson.includes(String(value))));
+check("fixed_labels", source.accounts.every((row) => ["MUFG 普通預金", "MUFG 口座"].includes(row.label)));
 ```
+
+Wrap the entire process in `try/catch`. On success, stdout contains only the fixed receipt below. On any failure, stdout contains only `{"verified":false,"error_code":"<one allowlisted constant code>"}` and exits nonzero. Adapter exceptions map to `adapter_rejected`; JSON/unknown exceptions map to `verification_failed`. Never print `error.message`, stack, actual/expected values, stdin, or the normalized result.
 
 Write only this receipt to the plan-owned ignored workspace with mode `0600`:
 
@@ -279,6 +309,7 @@ Write only this receipt to the plan-owned ignored workspace with mode `0600`:
   "connected_mufg_accounts_positive": true,
   "balance_parity": true,
   "transaction_page_parity": true,
+  "transaction_page_partial": true,
   "raw_field_leak": false,
   "source_partial_until_cfo_1b2": true
 }
@@ -298,7 +329,7 @@ After clean review:
 - set child active item to `CFO-1b2`,
 - check only the child M1 acceptance that a fresh Moneytree/MUFG read became a redacted normalized source result,
 - change parent test-matrix row 1 from `Planned` to `PASS`,
-- record exact commits, test counts, review verdict, and the six boolean receipt fields,
+- record exact commits, test counts, review verdict, and the seven boolean receipt fields,
 - keep liabilities, snapshot, Telegram receipt, and all later M1 acceptance boxes unchecked.
 
 Commit and push the three state documents separately with `docs(cfo): close live Moneytree adapter`. CFO-1b completion means live read parity and privacy-safe normalization only; it is not durable ingestion, a scheduled cloud read, a net-worth snapshot, or a finance Telegram delivery.
