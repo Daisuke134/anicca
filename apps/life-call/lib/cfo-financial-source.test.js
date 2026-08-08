@@ -1,8 +1,21 @@
 "use strict";
 
+const fs = require("node:fs");
+const path = require("node:path");
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const { validateFinancialSourceResult } = require("./cfo-financial-source.js");
+
+const FIXTURE_PATH = path.join(__dirname, "..", "test", "fixtures", "cfo-financial-source.json");
+
+function collectStrings(value) {
+  if (typeof value === "string") return [value];
+  if (Array.isArray(value)) return value.flatMap(collectStrings);
+  if (value !== null && typeof value === "object" && Object.getPrototypeOf(value) === Object.prototype) {
+    return Object.values(value).flatMap(collectStrings);
+  }
+  return [];
+}
 
 function validResult() {
   return {
@@ -199,4 +212,21 @@ test("valid stale, partial liability, and reconsent states remain normalized", (
   reconsent.accounts[0].verificationStatus = "unavailable";
   reconsent.actionRequired = { kind: "reconsent", sourceLabel: "Moneytree", actionRef: "action:moneytree_reconsent" };
   assert.equal(validateFinancialSourceResult(reconsent).actionRequired.kind, "reconsent");
+});
+
+test("synthetic fixture covers the four closed source states", () => {
+  const fixture = JSON.parse(fs.readFileSync(FIXTURE_PATH, "utf8"));
+  assert.equal(fixture.schemaVersion, 1);
+  assert.deepEqual(fixture.cases.map((entry) => entry.name), [
+    "fresh_complete", "fresh_partial", "stale_auto_retry", "reconsent_required",
+  ]);
+  for (const entry of fixture.cases) assert.doesNotThrow(() => validateFinancialSourceResult(entry.result));
+});
+
+test("fixture is synthetic and contains no private transport material", () => {
+  const text = fs.readFileSync(FIXTURE_PATH, "utf8");
+  const fixture = JSON.parse(text);
+  assert.doesNotMatch(text, /Dais|三菱UFJ|accountNumber|rawPayload|credential|\/Users\/|https?:\/\//i);
+  const strings = collectStrings(fixture);
+  assert.ok(strings.every((value) => !/\d{6,}/.test(value)));
 });

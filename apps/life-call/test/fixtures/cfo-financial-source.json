@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 1,
+  "cases": [
+    {
+      "name": "fresh_complete",
+      "result": {
+        "schemaVersion": 1,
+        "sourceId": "moneytree_mufg",
+        "consent": "valid",
+        "freshness": "fresh",
+        "asOf": "2026-08-08T06:02:00+09:00",
+        "accounts": [
+          {
+            "accountRef": "source_account:synthetic_deposit",
+            "label": "サンプル銀行",
+            "kind": "deposit",
+            "currency": "JPY",
+            "balanceMinor": 420000,
+            "verificationStatus": "provider_reported"
+          }
+        ],
+        "liabilities": [],
+        "evidenceRef": "evidence:synthetic_moneytree_read",
+        "partial": false,
+        "actionRequired": null
+      }
+    },
+    {
+      "name": "fresh_partial",
+      "result": {
+        "schemaVersion": 1,
+        "sourceId": "moneytree_mufg",
+        "consent": "valid",
+        "freshness": "fresh",
+        "asOf": "2026-08-08T06:02:00+09:00",
+        "accounts": [
+          {
+            "accountRef": "source_account:synthetic_deposit",
+            "label": "サンプル銀行",
+            "kind": "deposit",
+            "currency": "JPY",
+            "balanceMinor": 310000,
+            "verificationStatus": "provider_reported"
+          }
+        ],
+        "liabilities": [
+          {
+            "accountRef": "source_account:synthetic_loan",
+            "label": "サンプルローン",
+            "currency": "JPY",
+            "balanceMinor": 120000,
+            "verificationStatus": "provider_reported"
+          }
+        ],
+        "evidenceRef": "evidence:synthetic_moneytree_partial",
+        "partial": true,
+        "actionRequired": null
+      }
+    },
+    {
+      "name": "stale_auto_retry",
+      "result": {
+        "schemaVersion": 1,
+        "sourceId": "moneytree_mufg",
+        "consent": "valid",
+        "freshness": "stale",
+        "asOf": "2026-08-07T06:02:00+09:00",
+        "accounts": [
+          {
+            "accountRef": "source_account:synthetic_deposit",
+            "label": "サンプル銀行",
+            "kind": "deposit",
+            "currency": "JPY",
+            "balanceMinor": 275000,
+            "verificationStatus": "provider_reported"
+          }
+        ],
+        "liabilities": [],
+        "evidenceRef": "evidence:synthetic_moneytree_stale",
+        "partial": true,
+        "actionRequired": null
+      }
+    },
+    {
+      "name": "reconsent_required",
+      "result": {
+        "schemaVersion": 1,
+        "sourceId": "moneytree_mufg",
+        "consent": "expired",
+        "freshness": "unavailable",
+        "asOf": "2026-08-08T06:02:00+09:00",
+        "accounts": [
+          {
+            "accountRef": "source_account:synthetic_deposit",
+            "label": "サンプル銀行",
+            "kind": "deposit",
+            "currency": "JPY",
+            "balanceMinor": null,
+            "verificationStatus": "unavailable"
+          }
+        ],
+        "liabilities": [],
+        "evidenceRef": "evidence:synthetic_moneytree_unavailable",
+        "partial": true,
+        "actionRequired": {
+          "kind": "reconsent",
+          "sourceLabel": "サンプル銀行",
+          "actionRef": "action:synthetic_reconsent"
+        }
+      }
+    }
+  ]
+}
