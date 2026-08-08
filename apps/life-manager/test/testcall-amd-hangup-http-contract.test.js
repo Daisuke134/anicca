@@ -8,9 +8,9 @@
 // one POST /test-call, then the detection webhook Telnyx would really send back, carrying the exact
 // client_state the dial body went out with.
 //
-// The fake fetch THROWS on any host or path it was not told about, which is what makes "a test call
-// never writes to Supabase" a physical property of this test rather than a claim: a PATCH at
-// lm_wake_log would be an unexpected fetch and would fail the test.
+// The fake fetch THROWS on any host or path it was not told about, which makes the important
+// boundary physical: the real cost gate may read the ledger and create one atomic claim, but a
+// test call must never write a wake-log row or touch any unrelated Supabase path.
 "use strict";
 
 const test = require("node:test");
@@ -55,6 +55,7 @@ test("a /test-call that reaches voicemail is hung up on, and writes nothing", as
   };
 
   const dialBodies = [];
+  let budgetClaims = 0;
   const hangups = [];
   global.fetch = async (input, init = {}) => {
     const url = new URL(String(input));
@@ -62,6 +63,12 @@ test("a /test-call that reaches voicemail is hung up on, and writes nothing", as
     if (url.hostname === "fixture.supabase.co") {
       if (url.pathname === "/rest/v1/lm_users" && method === "GET") {
         return response(200, [{ phone: "+819012345678", call_language: "ja", name: "Fixture", gmail_account_id: null }]);
+      }
+      if (url.pathname === "/rest/v1/lm_api_cost" && method === "GET") return response(200, []);
+      if (url.pathname === "/rest/v1/rpc/lm_claim_provider_budget" && method === "POST") {
+        const claim = JSON.parse(init.body || "{}");
+        budgetClaims += 1;
+        return response(200, [{ allowed: true, request_id: claim.p_request_id }]);
       }
       // Any other Supabase traffic on this route is the bug this design exists to prevent.
       throw new Error(`a test call must not touch Supabase: ${method} ${url.pathname}`);
@@ -121,6 +128,7 @@ test("a /test-call that reaches voicemail is hung up on, and writes nothing", as
     const placed = await post("/test-call", JSON.stringify({ uid, sig }));
     assert.equal(placed.status, 200);
     assert.equal(dialBodies.length, 1);
+    assert.equal(budgetClaims, 1, "the real paid call must have exactly one atomic budget claim");
 
     // 2. THE REGRESSION: this dial body used to carry no client_state, which is the entire reason a
     //    test call could never be hung up on.
