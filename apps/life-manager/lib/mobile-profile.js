@@ -57,6 +57,17 @@ function validateMobileProfilePatch(body = {}, existing = {}) {
 
 function outputProfile(row, patch) {
   const source = { ...(row || {}), ...(patch || {}) };
+  const patchKeys = Object.keys(patch || {});
+  // The frozen profile mutation contract returns the editable identity fields
+  // for the name/home/language slice.  Phone/call fields use the expanded
+  // settings shape so a call toggle cannot silently disappear from a response.
+  if (patchKeys.length > 0 && patchKeys.every((key) => ["name", "home", "productLocale"].includes(key))) {
+    return {
+      name: source.name === undefined ? null : source.name,
+      home: source.home !== undefined ? source.home : (source.home_address === undefined ? null : source.home_address),
+      productLocale: source.productLocale || source.product_locale || "en",
+    };
+  }
   const callsEnabled = source.callsEnabled !== undefined ? source.callsEnabled : source.calls_enabled;
   const callLanguage = source.callLanguage !== undefined ? source.callLanguage : source.call_language;
   return {

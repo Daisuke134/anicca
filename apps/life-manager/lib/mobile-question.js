@@ -60,7 +60,7 @@ async function replyMobileQuestion(scope, questionIdOrInput, answerOrDeps, deps)
     ? await store.completeQuestionReply(scope, questionId, answer)
     : question;
   if (!completed) throw new MobileError("question_complete_failed", "The answer could not be finalized.", 503, true);
-  return { status: "answered", questionId: String(questionId), analysis };
+  return { status: "answered", questionId: String(questionId), analysis: activeDeps.returnQuestionAnalysis === false ? null : analysis };
 }
 
 module.exports = { replyMobileQuestion, applyDefaultAnswer };

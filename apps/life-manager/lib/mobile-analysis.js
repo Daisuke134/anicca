@@ -37,13 +37,16 @@ async function setState(scope, state, deps) {
 
 async function appendTerminal(scope, status, event, route, question, deps, analysisId, reason) {
   const userContent = { eventTitle: event ? (event.summary || null) : null, eventLocation: event ? (event.location || null) : null };
+  const messageId = String(analysisId || "").startsWith("analysis:v1:")
+    ? `message:v1:${String(analysisId).slice("analysis:v1:".length)}`
+    : `message:v1:${String(analysisId || "").replace(/[^A-Za-z0-9_-]/gu, "")}`;
   const message = await appendMobileMessage(scope, {
     type: status === "route_ready" ? "route" : status === "needs_information" ? "question" : status === "route_unavailable" ? "route_unavailable" : "system",
     key: messageKey(status),
     args: {
       eventTitle: "userContent.eventTitle", leaveAt: "route.leaveAt", arriveAt: "route.arriveAt", bufferSeconds: "route.bufferSeconds", reason: reason || null,
     },
-    userContent, route, question, id: `message:v1:${analysisId.replace(/[^A-Za-z0-9_-]/gu, "")}`,
+    userContent, route, question, id: messageId,
   }, deps);
   return { status, analysisId, nextCursor: message.cursor, message };
 }

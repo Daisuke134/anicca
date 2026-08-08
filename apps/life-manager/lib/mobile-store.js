@@ -377,6 +377,8 @@ function createMemoryMobileStore(options = {}) {
   const callDailyUserLimit = Number.isSafeInteger(options.callDailyUserLimit) && options.callDailyUserLimit > 0 ? options.callDailyUserLimit : 5;
   const callDailyGlobalLimit = Number.isSafeInteger(options.callDailyGlobalLimit) && options.callDailyGlobalLimit > 0 ? options.callDailyGlobalLimit : 100;
   const callCooldownMs = Number.isSafeInteger(options.callCooldownMs) && options.callCooldownMs >= 0 ? options.callCooldownMs : 10 * 60 * 1000;
+  const callAttemptIdFactory = typeof options.callAttemptIdFactory === "function" ? options.callAttemptIdFactory : null;
+  const deviceIdFactory = typeof options.deviceIdFactory === "function" ? options.deviceIdFactory : null;
   const memoryNow = typeof options.now === "function" ? options.now : Date.now;
   let sequence = 0;
   function scoped(scope, expectedUid) {
@@ -481,7 +483,9 @@ function createMemoryMobileStore(options = {}) {
       const current = callDayGuards.get(day) || 0;
       if (current >= callDailyGlobalLimit) return { rateLimited: true, reason: "daily_global_limit" };
       callDayGuards.set(day, current + 1);
-      const attemptId = `call:v1:${uid}:${calls.size + 1}`;
+      const attemptId = callAttemptIdFactory
+        ? callAttemptIdFactory({ uid, day, idempotencyKey: value.idempotencyKey, sequence: calls.size + 1 })
+        : `call:v1:${uid}:${calls.size + 1}`;
       const row = { attemptId, uid, day, status: "claimed", idempotencyKey: value.idempotencyKey, createdAt: value.now || nowIso() };
       calls.set(attemptId, row);
       return { ...row };
@@ -490,7 +494,8 @@ function createMemoryMobileStore(options = {}) {
     async upsertDevice(scope, value) {
       const uid = scoped(scope);
       for (const [key, row] of devices) if (row.token === value.token && row.uid !== uid) devices.delete(key);
-      const row = { ...value, uid, deviceId: value.deviceId || `device:v1:${uid}:${value.token.slice(-8)}` };
+      const deviceId = value.deviceId || (deviceIdFactory && deviceIdFactory({ uid, value })) || `device:v1:${uid}:${value.token.slice(-8)}`;
+      const row = { ...value, uid, deviceId };
       devices.set(value.token, row);
       return { ...row };
     },
@@ -510,11 +515,12 @@ function createMemoryMobileStore(options = {}) {
     async finalizeAccountDeletion(scope, options2 = {}) {
       const uid = scoped(scope);
       if (!users.has(uid)) throw new MobileError("account_not_found", "Account not found.", 404);
+      const completionNow = () => nowIso({ now: memoryNow });
       const receipt = {
-        operationId: options2.operationId, status: "completed", completedAt: nowIso(),
+        operationId: options2.operationId, status: "completed", completedAt: completionNow(),
         providerCleanup: options2.providerCleanup || [], capabilityHash: options2.capabilityHash,
       };
-      for (const row of sessions.values()) if (row.uid === uid) row.revokedAt = nowIso();
+      for (const row of sessions.values()) if (row.uid === uid) row.revokedAt = completionNow();
       deletionReceipts.set(`${uid}:${receipt.operationId}`, { ...receipt });
       users.delete(uid);
       for (const key of sessions.keys()) if (sessions.get(key).uid === uid) sessions.delete(key);

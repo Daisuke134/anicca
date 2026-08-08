@@ -61,7 +61,8 @@ async function appendMobileMessage(scope, input = {}, deps = {}) {
   projectSemanticMessage({ ...row, sequence: Number.isSafeInteger(row.sequence) ? row.sequence : 0 }, scope.productLocale || input.locale || "en");
   const stored = semanticRow(await store.appendOutbox(scope, row));
   if (!Number.isSafeInteger(stored.sequence)) throw new MobileError("outbox_sequence_missing", "Chat storage returned no monotonic sequence.", 503, true);
-  stored.cursor = encodeCursor(stored.sequence);
+  const encode = typeof deps.encodeCursor === "function" ? deps.encodeCursor : encodeCursor;
+  stored.cursor = stored.cursor || encode(stored.sequence);
   return projectMobileMessage(stored, scope.productLocale || input.locale || "en");
 }
 
@@ -76,7 +77,8 @@ async function listMobileMessages(scope, cursor, deps = {}) {
   const pageRows = hasMore ? rows.slice(0, pageSize) : rows;
   const messages = pageRows.map((row) => projectMobileMessage(row, scope.productLocale || "en"));
   const nextSequence = pageRows.length ? pageRows[pageRows.length - 1].sequence : after;
-  return { messages, nextCursor: encodeCursor(nextSequence), hasMore };
+  const encode = typeof deps.encodeCursor === "function" ? deps.encodeCursor : encodeCursor;
+  return { messages, nextCursor: encode(nextSequence), hasMore };
 }
 
 module.exports = { SEMANTIC_KEYS, encodeCursor, decodeCursor, appendMobileMessage, listMobileMessages, projectMobileMessage, semanticRow };

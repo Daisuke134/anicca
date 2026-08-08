@@ -229,9 +229,12 @@ function projectSemanticMessage(row, locale = "en") {
     case "chat.route_ready":
       type = "route";
       if (!route || !route.timezone) throw new MobileError("route_timezone_required", "The Calendar event timezone is required for route messaging.");
+      const rawEventTitle = row.userContent && typeof row.userContent.eventTitle === "string" ? row.userContent.eventTitle.trim() : "";
+      const eventTitle = (active === "en" && rawEventTitle && !CJK_RE.test(rawEventTitle))
+        || (active === "ja" && rawEventTitle && CJK_RE.test(rawEventTitle)) ? rawEventTitle : "";
       text = active === "ja"
-        ? `次の予定を確認しました。${formatTime(route && route.leaveAt, active, timezone)}に出発すると、${bufferMinutes(route && route.bufferSeconds)}分の余裕を持って到着できます。`
-        : `Your next event is ready. Leave by ${formatTime(route && route.leaveAt, active, timezone)} to arrive with ${bufferMinutes(route && route.bufferSeconds)} minutes of buffer.`;
+        ? `${eventTitle ? `次の予定は${eventTitle}です。` : "次の予定を確認しました。"}${formatTime(route && route.leaveAt, active, timezone)}に出発すると、${bufferMinutes(route && route.bufferSeconds)}分の余裕を持って到着できます。`
+        : `${eventTitle ? `Your next event is ${eventTitle}.` : "Your next event is ready."} Leave by ${formatTime(route && route.leaveAt, active, timezone)} to arrive with ${bufferMinutes(route && route.bufferSeconds)} minutes of buffer.`;
       actions = [action("show_route", active), action("refresh", active)];
       break;
     case "chat.needs_information":

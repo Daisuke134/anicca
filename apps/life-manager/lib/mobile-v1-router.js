@@ -91,6 +91,7 @@ function makeRuntime(overrides = {}) {
     : null);
   const runtime = { ...overrides, store, ...(overrides.idempotencyStore ? { idempotency: mapIdempotencyStore(overrides.idempotencyStore) } : {}) };
   if (typeof runtime.analyzeNextEvent !== "function") runtime.analyzeNextEvent = analyzeNextEvent;
+  if (runtime.returnQuestionAnalysis === undefined) runtime.returnQuestionAnalysis = false;
   if (typeof runtime.validateIdentity !== "function" && (runtime.supaUrl || process.env.SUPABASE_URL)) {
     runtime.validateIdentity = (token) => session.validateSupabaseIdentity(token, runtime);
   }

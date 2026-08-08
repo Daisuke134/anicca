@@ -21,6 +21,10 @@ function storeOf(deps) {
   return store;
 }
 
+function opaque(prefix, deps = {}) {
+  return typeof deps.randomOpaque === "function" ? deps.randomOpaque(prefix) : randomOpaque(prefix, deps);
+}
+
 async function validateSupabaseIdentity(token, deps = {}) {
   if (typeof token !== "string" || !token.trim()) throw new MobileError("identity_invalid", "The identity could not be validated.", 401);
   const base = String(deps.supaUrl || process.env.SUPABASE_URL || "").replace(/\/$/u, "");
@@ -103,10 +107,10 @@ function expiresAt(ms) {
 }
 
 function tokenSet(uid, productLocale, deps, at = nowMs(deps)) {
-  const accessToken = randomOpaque("access:v1:", deps);
-  const refreshToken = randomOpaque("refresh:v1:", deps);
-  const sessionId = randomOpaque("session:v1:", deps);
-  const familyId = randomOpaque("family:v1:", deps);
+  const accessToken = opaque("access:v1:", deps);
+  const refreshToken = opaque("refresh:v1:", deps);
+  const sessionId = opaque("session:v1:", deps);
+  const familyId = opaque("family:v1:", deps);
   return {
     sessionId,
     familyId,
@@ -136,7 +140,7 @@ async function startCalendarSession(input = {}, deps = {}) {
   const store = storeOf(deps);
   const identity = await identityFor(input, deps);
   const at = nowMs(deps);
-  const state = randomOpaque("state:v1:", deps);
+  const state = opaque("state:v1:", deps);
   const expires = expiresAt(at + STATE_TTL_MS);
   await store.createOAuthState({
     state,
