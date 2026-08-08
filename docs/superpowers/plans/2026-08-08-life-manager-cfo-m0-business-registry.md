@@ -286,7 +286,7 @@ Completion evidence: commit `51cf20fa3`; focused tests 9/9 PASS; task review app
   - `buildInventory({ registry, runtimeObservations, sourceObservations, generatedAt, inventoryId }): object`.
   - `observationHash(receiptCore): string`.
 
-- [ ] **Step 1: Write failing inventory tests**
+- [x] **Step 1: Write failing inventory tests**
 
 ```js
 test("inventory maps known labels and is deterministic across input order", () => {
@@ -325,7 +325,7 @@ Also test irrelevant labels are ignored, missing-runtime units are `unverified`,
 observations rather than financial health, repo-relative evidence refs use the injected `exists` function, URI-like
 refs are `not_applicable`, and receipt output contains no raw source payload.
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
 ```bash
 cd apps/life-call
@@ -334,7 +334,7 @@ node --test lib/cfo-inventory.test.js
 
 Expected: FAIL because `./cfo-inventory.js` does not exist.
 
-- [ ] **Step 3: Implement normalized classification and receipt construction**
+- [x] **Step 3: Implement normalized classification and receipt construction**
 
 Sort labels, units, findings, and source observations before hashing. Exclude `inventory_id`, `generated_at`, and
 the final `observation_hash` from the hash input. Derive unit evidence status as `observed` when any runtime or
@@ -381,7 +381,7 @@ function normalizeLaunchctlList(stdout) {
 }
 ```
 
-- [ ] **Step 4: Run GREEN and diff check**
+- [x] **Step 4: Run GREEN and diff check**
 
 ```bash
 cd apps/life-call
@@ -390,13 +390,15 @@ cd ../..
 git diff --check
 ```
 
-- [ ] **Step 5: Commit and push Task 3**
+- [x] **Step 5: Commit and push Task 3**
 
 ```bash
 git add apps/life-call/lib/cfo-inventory.js apps/life-call/lib/cfo-inventory.test.js
 git commit -m "feat(cfo): build deterministic business inventory"
 git push
 ```
+
+Completion evidence: commits `d0f27282e` and `29a9062dc`; focused tests 17/17 PASS; fix round 1 review clean.
 
 ---
 
