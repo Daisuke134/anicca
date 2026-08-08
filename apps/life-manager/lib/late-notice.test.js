@@ -17,6 +17,7 @@ const {
   recordAmdResult,
   applyAmdDetection,
 } = require("./late-notice.js");
+const { createInMemoryLateApprovalStore } = require("./late-approval.js");
 const { sendLateNotice } = require("./notify.js");
 
 const NOW = Date.parse("2026-07-21T09:45:00+09:00");
@@ -129,49 +130,127 @@ test("gate-closed and on-time decisions perform no claim, email, or Telegram I/O
   assert.equal(sideEffects, 0);
 });
 
-test("late event with no external email is claimed once and reports the exact honest failure copy", async () => {
-  let claimed = false, mailCalls = 0;
-  const messages = [];
+function resolvedRecipient() {
+  return {
+    display_name: "Meeting partner",
+    email: "guest@example.com",
+    source: "calendar",
+    evidence_refs: ["calendar:event:event-1:attendee:0"],
+    confidence: 1,
+    event_role: "attendee",
+  };
+}
+
+function lateApprovalDeps({ store, resolution = { status: "resolved", candidates: [resolvedRecipient()], evidenceRefs: ["calendar:event:event-1:attendee:0"] }, cards, sendLateNotice = async () => { throw new Error("tick must never send mail"); }, sendMessage = async () => ({ ok: true }) } = {}) {
+  return {
+    routeMinutes: async () => 43,
+    claimEvent: async () => true,
+    sendLateNotice,
+    resolveLateRecipients: async () => resolution,
+    lateApprovalStore: store,
+    enqueueLateApprovalCard: async (request) => { cards.push(request); return { queued: true }; },
+    sendMessage,
+  };
+}
+
+test("late tick never invokes the injectable mail sender", async () => {
+  const store = createInMemoryLateApprovalStore({ nowMs: NOW });
+  const cards = [];
+  const result = await processLocationLateNotice({
+    user: { uid: "u1", name: "Dais", email: "me@example.com", telegram_chat_id: "7" },
+    location: LIVE, events: [EVENT], nowMs: NOW, telegramToken: "tg",
+  }, lateApprovalDeps({ store, cards, sendLateNotice: async () => {
+    throw new Error("sendLateNotice must not run from a late tick");
+  } }));
+
+  assert.equal(result.decision, "late");
+  assert.equal(result.sent, false);
+  assert.equal(result.draft.status, "awaiting_decision");
+  assert.equal(cards.length, 1);
+});
+
+test("late ticks create one immutable draft/card request and reuse the stored row", async () => {
+  const store = createInMemoryLateApprovalStore({ nowMs: NOW });
+  const cards = [];
   const input = {
+    user: { uid: "u1", name: "Dais", email: "me@example.com", telegram_chat_id: "7" },
+    location: LIVE, events: [EVENT], nowMs: NOW, telegramToken: "tg",
+  };
+  const first = await processLocationLateNotice(input, lateApprovalDeps({ store, cards }));
+  const second = await processLocationLateNotice(input, lateApprovalDeps({ store, cards }));
+
+  assert.equal(first.draft.draftId, second.draft.draftId);
+  assert.equal(second.draft.duplicate, true);
+  assert.equal(store.size(), 1);
+  assert.equal(cards.length, 1, "a retry must not enqueue a second Telegram card");
+  assert.match(first.draft.bodySnapshot, /about 15 minutes late/);
+  assert.equal(first.draft.etaEvidence.routeMinutes, 43);
+  assert.equal(first.draft.etaEvidence.eventStartMs, EVENT.startMs);
+  assert.deepEqual(cards[0].extra.reply_markup.inline_keyboard[0].map((button) => button.text), ["送る", "送らない"]);
+  assert.match(cards[0].text, /about 15 minutes late/);
+});
+
+for (const status of ["missing", "ambiguous"]) {
+  test(`${status} recipient resolution stores no-send state without a button or external operation`, async () => {
+    const store = createInMemoryLateApprovalStore({ nowMs: NOW });
+    const cards = [];
+    let telegramCalls = 0;
+    const result = await processLocationLateNotice({
+      user: { uid: "u1", name: "Dais", email: "me@example.com", telegram_chat_id: "7" },
+      location: LIVE, events: [EVENT], nowMs: NOW, telegramToken: "tg",
+    }, lateApprovalDeps({
+      store,
+      cards,
+      resolution: { status, candidates: status === "ambiguous" ? [resolvedRecipient(), { ...resolvedRecipient(), email: "other@example.com" }] : [], evidenceRefs: [] },
+      sendLateNotice: async () => { throw new Error("mail must not run"); },
+      sendMessage: async () => { telegramCalls++; throw new Error("Telegram must not run"); },
+    }));
+
+    assert.equal(result.decision, "late");
+    assert.equal(result.draft.status, `recipient_${status}`);
+    assert.equal(cards.length, 0);
+    assert.equal(telegramCalls, 0);
+    assert.equal(store.size(), 1);
+  });
+}
+
+test("missing Calendar recipients become a terminal draft without the old failure message", async () => {
+  const store = createInMemoryLateApprovalStore({ nowMs: NOW });
+  const cards = [];
+  const result = await processLocationLateNotice({
     user: { uid: "u1", telegram_chat_id: "7" }, location: LIVE,
     events: [{ ...EVENT, attendees: [] }], nowMs: NOW, telegramToken: "tg",
-  };
-  const deps = {
-    routeMinutes: async () => 43,
-    claimEvent: async () => { if (claimed) return false; claimed = true; return true; },
-    sendLateNotice: async () => { mailCalls++; return { sent: false }; },
-    sendMessage: async (_token, _chat, text) => { messages.push(text); return { ok: true }; },
-  };
-  assert.equal((await processLocationLateNotice(input, deps)).reason, "no_destination");
-  assert.deepEqual(await processLocationLateNotice(input, deps), { decision: "late", deduped: true });
-  assert.equal(mailCalls, 0);
-  assert.deepEqual(messages, [NO_DESTINATION_MESSAGE]);
+  }, lateApprovalDeps({
+    store,
+    cards,
+    resolution: { status: "missing", candidates: [], evidenceRefs: [] },
+  }));
+  assert.equal(result.draft.status, "recipient_missing");
+  assert.equal(result.approvalRequired, false);
+  assert.deepEqual(cards, []);
   assert.equal(NO_DESTINATION_MESSAGE, "⚠️ 先方の連絡先が見つからず、遅刻連絡は送れていません");
 });
 
-test("late event sends one Resend notice then the exact success report", async () => {
-  const mail = [], messages = [];
+test("late tick renders the complete approval card but never sends the Resend notice", async () => {
+  const store = createInMemoryLateApprovalStore({ nowMs: NOW });
+  const cards = [];
+  const mail = [];
   const result = await processLocationLateNotice({
     user: { uid: "u1", name: "Dais", email: "dais@example.com", telegram_chat_id: "7" },
     location: LIVE, events: [EVENT], nowMs: NOW, telegramToken: "tg", noticeOpts: { resendKey: "r" },
-  }, {
-    routeMinutes: async (origin, destination) => {
-      assert.equal(origin, "35.681236,139.767125");
-      assert.equal(destination, EVENT.location);
-      return 43;
-    },
-    claimEvent: async (_uid, key) => { assert.equal(key, EVENT.id); return true; },
-    sendLateNotice: async (...args) => { mail.push(args); return { sent: true, to: "guest@example.com" }; },
-    sendMessage: async (_token, _chat, text) => { messages.push(text); return { ok: true }; },
-  });
-  assert.equal(result.sent, true);
-  assert.equal(mail.length, 1);
-  assert.equal(mail[0][0], "u1");
-  assert.equal(mail[0][1].id, EVENT.id);
-  assert.equal(mail[0][2].etaMinutes, 15);
-  assert.deepEqual(messages, [
-    "📨 現在地から見て10:15に間に合わないため、先方に「15分ほど遅れます」とメールを送っておきました。次の電車なら10:28着です。",
-  ]);
+  }, lateApprovalDeps({
+    store,
+    cards,
+    sendLateNotice: async (...args) => { mail.push(args); return { sent: true }; },
+  }));
+  assert.equal(result.sent, false);
+  assert.equal(result.draft.status, "awaiting_decision");
+  assert.deepEqual(mail, []);
+  assert.equal(cards.length, 1);
+  assert.match(cards[0].text, /guest@example\.com/);
+  assert.match(cards[0].text, /calendar/);
+  assert.match(cards[0].text, /calendar:event:event-1:attendee:0/);
+  assert.match(cards[0].text, /Sent automatically by Life Manager/);
 });
 
 test("structured notice reuses the Resend mail path and excludes self/organizer attendees", async () => {
@@ -204,81 +283,32 @@ test("migration creates additive location and event-dedup tables", () => {
   assert.match(sql, /PRIMARY KEY \(uid, event_key\)/);
 });
 
-// Found in production on 2026-07-25: an all-day meeting with a location was claimed at 09:31 JST and
-// runs until 18:00, so every later event that day was unreachable — the finder takes only the FIRST
-// event with a location, and a failed claim returned immediately instead of considering the next one.
-test("a deduplicated leading event does not suppress the next event's late notice", async () => {
-  const leading = { ...EVENT, id: "already-claimed" };
-  const next = { ...EVENT, id: "still-actionable" };
-  const claimed = new Set(["already-claimed"]);
-  const notified = [];
-  const messages = [];
-  const deps = {
-    routeMinutes: async () => 43,
-    claimEvent: async (_uid, key) => { if (claimed.has(key)) return false; claimed.add(key); return true; },
-    sendLateNotice: async (_uid, event) => { notified.push(event.id); return { sent: true, id: "resend-1" }; },
-    sendMessage: async (_token, _chat, text) => { messages.push(text); return { ok: true }; },
-  };
-
-  const result = await processLocationLateNotice({
-    user: { uid: "u1", telegram_chat_id: "7" }, location: LIVE,
-    events: [leading, next], nowMs: NOW, telegramToken: "tg",
-  }, deps);
-
-  assert.equal(result.sent, true);
-  assert.deepEqual(notified, ["still-actionable"], "the notice must be about the event we could claim");
-  assert.equal(messages.length, 1);
-});
-
-test("when every candidate is already claimed the run stays deduplicated and silent", async () => {
-  let mailCalls = 0;
-  const messages = [];
-  const deps = {
-    routeMinutes: async () => 43,
-    claimEvent: async () => false,
-    sendLateNotice: async () => { mailCalls++; return { sent: true }; },
-    sendMessage: async (_token, _chat, text) => { messages.push(text); return { ok: true }; },
-  };
-
-  const result = await processLocationLateNotice({
-    user: { uid: "u1", telegram_chat_id: "7" }, location: LIVE,
-    events: [{ ...EVENT, id: "a" }, { ...EVENT, id: "b" }], nowMs: NOW, telegramToken: "tg",
-  }, deps);
-
-  assert.deepEqual(result, { decision: "late", deduped: true });
-  assert.equal(mailCalls, 0);
-  assert.deepEqual(messages, []);
-});
-
-// The journey's Telegram leg was unauditable: the send result was discarded, so nothing downstream
-// could name the message that was actually delivered. Carry the id the provider returns.
-test("the delivered Telegram message id is carried on the result", async () => {
-  const deps = {
-    routeMinutes: async () => 43,
-    claimEvent: async () => true,
-    sendLateNotice: async () => ({ sent: true, id: "resend-1" }),
-    sendMessage: async () => ({ ok: true, result: { message_id: 4242 } }),
-  };
+// The Telegram leg remains auditable, but the message is now the approval card, not a delivery receipt.
+test("the approval-card Telegram message id is carried on the result", async () => {
+  const store = createInMemoryLateApprovalStore({ nowMs: NOW });
   const result = await processLocationLateNotice({
     user: { uid: "u1", telegram_chat_id: "7" }, location: LIVE,
     events: [EVENT], nowMs: NOW, telegramToken: "tg",
-  }, deps);
-  assert.equal(result.sent, true);
+  }, {
+    ...lateApprovalDeps({ store, cards: [] }),
+    enqueueLateApprovalCard: undefined,
+    sendMessage: async () => ({ ok: true, result: { message_id: 4242 } }),
+  });
+  assert.equal(result.sent, false);
   assert.equal(result.telegramMessageId, 4242);
 });
 
-test("a Telegram send that returns no id leaves the field absent rather than inventing one", async () => {
-  const deps = {
-    routeMinutes: async () => 43,
-    claimEvent: async () => true,
-    sendLateNotice: async () => ({ sent: true, id: "resend-1" }),
-    sendMessage: async () => ({ ok: false }),
-  };
+test("an approval-card Telegram send that returns no id leaves the field absent", async () => {
+  const store = createInMemoryLateApprovalStore({ nowMs: NOW });
   const result = await processLocationLateNotice({
     user: { uid: "u1", telegram_chat_id: "7" }, location: LIVE,
     events: [EVENT], nowMs: NOW, telegramToken: "tg",
-  }, deps);
-  assert.equal(result.sent, true);
+  }, {
+    ...lateApprovalDeps({ store, cards: [] }),
+    enqueueLateApprovalCard: undefined,
+    sendMessage: async () => ({ ok: false }),
+  });
+  assert.equal(result.sent, false);
   assert.equal("telegramMessageId" in result, false);
 });
 
