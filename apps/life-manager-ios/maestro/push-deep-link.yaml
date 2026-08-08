@@ -1,13 +1,17 @@
-# Preconditions: a real staging session is already authenticated and the
-# operator has delivered a local/sandbox APNs payload whose stable messageId is
-# PUSH_MESSAGE_ID. This flow only observes the durable outbox; it never inserts
-# a message or pretends that a push was delivered.
+# Preconditions: a real staging session is already authenticated and a real
+# staging APNs payload has been delivered by the operator outside Maestro. The
+# operator taps that notification before starting this flow (Maestro cannot
+# manufacture an APNs delivery). This flow only observes the durable outbox;
+# it never inserts a message or pretends that a push was delivered.
 appId: ai.anicca.life-manager
-name: Push opens one stable chat message and refresh keeps one copy
+name: Push deep-link opens one durable chat message and refresh deduplicates
 tags:
   - regression
+  - staging
+  - preauthorized
   - push
 env:
+  STAGING_SESSION_ID: ${STAGING_SESSION_ID}
   PUSH_MESSAGE_ID: ${PUSH_MESSAGE_ID}
 ---
 - launchApp
@@ -29,4 +33,4 @@ env:
     timeout: 30000
 - assertVisible:
     id: "chat.message.${PUSH_MESSAGE_ID}"
-- takeScreenshot: "push-stable-message"
+- takeScreenshot: "push-deep-link-stable-message"

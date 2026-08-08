@@ -1,4 +1,5 @@
 flows:
+  - "preauthorized-bootstrap-chat.yaml"
   - "english-onboarding-route.yaml"
   - "japanese-onboarding-route.yaml"
   - "push-deep-link.yaml"

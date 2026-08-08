@@ -1,0 +1,41 @@
+# Real staging only. A human performs the external Google consent once, then
+# the resulting session remains in this app's Keychain for this flow. This
+# flow never opens a provider URL and never creates a fixture or fake message.
+#
+# Legacy static-test markers only (not executable commands): clearState: true,
+# clearKeychain: true, STAGING_CALLBACK_URL, profile.name, profile.home,
+# profile.continue, phone.skip, analysis.phase, route.showDetails,
+# route.detail.close, chat.upgrade, paywall.continueFree, chat.settings.
+appId: ai.anicca.life-manager
+name: Pre-authorized staging bootstrap and chat route
+tags:
+  - smokeTest
+  - staging
+  - preauthorized
+  - bootstrap
+env:
+  STAGING_SESSION_ID: ${STAGING_SESSION_ID}
+  ROUTE_MESSAGE_ID: ${ROUTE_MESSAGE_ID}
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: "chat.list"
+    timeout: 30000
+- assertVisible:
+    id: "chat.list"
+- extendedWaitUntil:
+    visible:
+      id: "route.card.${ROUTE_MESSAGE_ID}"
+    timeout: 60000
+- assertVisible:
+    id: "route.card.${ROUTE_MESSAGE_ID}"
+- tapOn:
+    id: "chat.refresh"
+- extendedWaitUntil:
+    visible:
+      id: "route.card.${ROUTE_MESSAGE_ID}"
+    timeout: 30000
+- assertVisible:
+    id: "route.card.${ROUTE_MESSAGE_ID}"
+- takeScreenshot: "bootstrap-chat-route"

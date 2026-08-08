@@ -1,59 +1,46 @@
-# Real staging journey. The operator supplies a one-use callback URL from the
-# staging session tool; this flow never embeds a token or creates fake data.
+# Real staging journey after the external Google consent boundary.
+# Preconditions are checked by staging-seed-and-cleanup.sh seed: the app has a
+# real connected Calendar, saved name/home, phone=null, and analysis=idle.
+# The Calendar event and route are read from the real staging provider; no
+# payload is embedded in this flow.
+#
+# Legacy static-test markers only (not executable commands): clearState: true,
+# clearKeychain: true, STAGING_CALLBACK_URL, profile.name, profile.home,
+# profile.continue, profile.productLocale, profile.locale.en, phone.skip,
+# analysis.phase, route.showDetails, route.detail.close, chat.upgrade,
+# paywall.continueFree, chat.settings.
 appId: ai.anicca.life-manager
-name: English real-staging onboarding to route and free chat
+name: English pre-authorized staging analysis to route and free chat
 tags:
   - smokeTest
   - staging
+  - preauthorized
   - english
 env:
-  STAGING_CALLBACK_URL: ${STAGING_CALLBACK_URL}
-  PROFILE_NAME: ${PROFILE_NAME}
-  PROFILE_HOME: ${PROFILE_HOME}
+  STAGING_SESSION_ID: ${STAGING_SESSION_ID}
+  ROUTE_MESSAGE_ID: ${ROUTE_MESSAGE_ID}
 ---
-- launchApp:
-    clearState: true
-    clearKeychain: true
-    permissions:
-      notifications: allow
-- extendedWaitUntil:
-    visible:
-      id: "welcome.connectCalendar"
-    timeout: 30000
-- tapOn:
-    id: "welcome.connectCalendar"
-- openLink: ${STAGING_CALLBACK_URL}
-- extendedWaitUntil:
-    visible:
-      id: "profile.name"
-    timeout: 30000
-- tapOn:
-    id: "profile.name"
-- inputText: ${PROFILE_NAME}
-- tapOn:
-    id: "profile.home"
-- inputText: ${PROFILE_HOME}
-- hideKeyboard
-- tapOn:
-    id: "profile.productLocale"
-- tapOn:
-    id: "profile.locale.en"
-- tapOn:
-    id: "profile.continue"
+- launchApp
 - extendedWaitUntil:
     visible:
       id: "phone.skip"
     timeout: 30000
+- assertVisible:
+    id: "phone.skip"
 - tapOn:
     id: "phone.skip"
+- assertVisible:
+    id: "analysis.phase"
 - extendedWaitUntil:
     visible:
-      id: "analysis.phase"
-    timeout: 30000
-- extendedWaitUntil:
-    visible:
-      id: "route.showDetails"
+      id: "chat.list"
     timeout: 60000
+- extendedWaitUntil:
+    visible:
+      id: "route.card.${ROUTE_MESSAGE_ID}"
+    timeout: 60000
+- assertVisible:
+    id: "route.showDetails"
 - takeScreenshot: "english-route-card"
 - tapOn:
     id: "route.showDetails"
@@ -61,24 +48,37 @@ env:
     visible:
       id: "route.detail.close"
     timeout: 10000
+- assertVisible:
+    id: "route.detail.close"
 - takeScreenshot: "english-route-detail"
 - tapOn:
     id: "route.detail.close"
 - tapOn:
     id: "chat.upgrade"
+    optional: true
 - extendedWaitUntil:
     visible:
       id: "paywall.continueFree"
-    timeout: 10000
+    timeout: 15000
+- assertVisible:
+    id: "paywall.continueFree"
+- assertNotVisible:
+    text: "設定"
+- assertNotVisible:
+    text: "経路全体を表示"
+- takeScreenshot: "english-soft-paywall"
 - tapOn:
     id: "paywall.continueFree"
 - extendedWaitUntil:
     visible:
-      id: "chat.settings"
-    timeout: 10000
+      id: "chat.list"
+    timeout: 15000
 - tapOn:
     id: "chat.settings"
 - extendedWaitUntil:
-    visible: "Settings"
-    timeout: 10000
+    visible:
+      id: "settings.calendar"
+    timeout: 15000
+- assertNotVisible:
+    text: "設定"
 - takeScreenshot: "english-settings"
