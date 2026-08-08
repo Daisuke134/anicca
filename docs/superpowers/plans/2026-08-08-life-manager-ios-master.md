@@ -6,7 +6,7 @@
 
 **Architecture:** The existing `apps/life-manager/` process remains the identity, Calendar, analysis, route, call, cost, and side-effect authority. A versioned mobile adapter exposes server-derived tenant state and a semantic outbox. `apps/life-manager-ios/` is a SwiftUI projection with Keychain-backed sessions and protocol-injected services; it never runs its own scheduler, route engine, or call timer. Safety and cost gates ship independently before production enrollment.
 
-**Tech Stack:** Node.js 20 CommonJS, `node:test`, PostgreSQL/Supabase, Composio, Transit API, Google Maps fallback, Swift 6, SwiftUI, Observation, AuthenticationServices, Security/Keychain, XcodeGen, XCTest, Fastlane, Maestro, APNs, App Store Connect CLI.
+**Tech Stack:** Node.js 20 CommonJS, `node:test`, PostgreSQL/Supabase, Composio, Transit API, Google Maps fallback, Swift 5.9, SwiftUI, Observation, AuthenticationServices, Security/Keychain, XcodeGen, XCTest, Fastlane, Maestro, APNs, App Store Connect CLI.
 
 ## Global Constraints
 
@@ -127,4 +127,3 @@ Gate 0 and Gate 1 may run concurrently only after `git diff --name-only` proves 
 - [ ] Open a PR containing plan/spec links, RED/GREEN commands, real E2E evidence, cost effect, and remaining external gates.
 - [ ] After merge, verify Railway deployed the merge commit before reporting backend completion.
 - [ ] Begin the App Store plan only when Gate 9 receipts are complete.
-
