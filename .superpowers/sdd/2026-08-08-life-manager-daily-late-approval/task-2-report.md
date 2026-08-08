@@ -363,4 +363,19 @@ The known full-suite dependency failure remains outside the owned files (`viem` 
 ### Review-fix commits
 
 - Code/test/migration fix: `7a6b07bf8` — `fix(life-manager): close late approval delivery boundaries`.
-- The report addendum commit and its push receipt are appended below after the required fetch/push.
+- Report addendum commit: `ff9413b89` — `docs(life-manager): record late approval review fixes`.
+
+### Review-fix push receipt
+
+After the required fetch, the Task 2 branch was pushed successfully:
+
+```text
+git fetch canonical
+git push canonical HEAD:feat/lm-daily-late-approval
+dc91d9e96..ff9413b89  HEAD -> feat/lm-daily-late-approval
+remote: ff9413b890937b79199acda66a74f2bd72f32b2d refs/heads/feat/lm-daily-late-approval
+```
+
+The only remaining worktree modifications are another agent's uncommitted Task 3 files
+`apps/life-manager/lib/late-notice.js` and `apps/life-manager/lib/late-notice.test.js`; they were
+not staged, committed, reverted, or otherwise touched by this task.
