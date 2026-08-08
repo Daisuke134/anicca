@@ -509,15 +509,15 @@ Google consent/account chooser is not asserted by Maestro because it is an exter
 
 ### 8.0 Current execution receipt
 
-- Gate 0 Task 1 is complete on `feat/lm-daily-late-approval`: resolver focused tests and fresh review are green and the commits are pushed.
-- Gate 0 Task 2 is complete on the same branch: durable decision/claim/receipt tests are green, isolated staging PostgreSQL role/RPC read-back is complete, fresh re-review is green, and production Supabase was not touched.
-- Gate 0 Task 3 review fixes are GREEN and pushed at `3e89a4133`: later ticks reuse the immutable draft and the scheduler no longer owns the pre-approval mail capability. Gate 0 Tasks 4–6 remain incomplete.
-- Gate 1 is incomplete. Two uncommitted RED cost-guard tests exist in the DAILY worktree and are not completion evidence.
-- Gate 2 is complete on `feat/lm-mobile-contract-luna` at `ada35f98c`: the English mobile contract suite is 15/15 GREEN and pushed. This freezes fixtures only; it is not a deployed mobile API.
-- Gate 3 is not implemented. Its worktree contains no completion commit or GREEN backend receipt.
-- Gate 4 Task 1 has generated the native Xcode skeleton in `feat/lm-ios-product`, but it remains uncommitted and has no GREEN Swift test receipt. It is not a working app.
-- Local delivery tooling is ready: Xcode `26.6 (17F113)`, matching iOS `26.5 (23F77)` Simulator runtime, and Maestro `2.8.0` are installed. The prior iOS `26.3` runtime mismatch is removed.
-- The Calendar seed utility has 12/12 focused tests GREEN in its isolated worktree, but it is test support and not product completion evidence.
+- Gate 0 is complete and merged through `006a4d862`. Production receipts contain one exactly-once approved Resend delivery plus Telegram receipt, one permanent `do_not_send`, missing/ambiguous terminal decisions with no send control, and zero duplicate event groups. Focused verification is 66/66 and 33/33 GREEN; the fresh final review verdict is `ship`.
+- Gate 1 implementation and three bounded review/fix rounds are complete on `feat/lm-provider-cost-guard` through `2fd0edea6`. The focused lifecycle suite is 69/69 GREEN and the combined worker receipt is 126/126 GREEN. This is implementation evidence, not a production cost-reduction receipt; no provider-cost deployment has occurred yet.
+- Gate 2 remains complete at the frozen mobile contract boundary.
+- Gate 3 backend implementation is complete and reviewed `ship` on `feat/lm-mobile-backend-luna` through `fec844d5f`. Its isolated live-staging receipt is still blocked: the existing Railway staging service points to production Supabase, the alternate Supabase reference is unreachable, and no authenticated Supabase management session is available to create a free isolated branch. Production Supabase MUST NOT be used as staging.
+- Gates 4–7 native implementation are complete and fresh-review `ship` on `feat/lm-ios-product` through `7cd6d321a`. Serial Xcode verification is 110 unit tests plus 2 UI tests, and the simulator build is GREEN. A signed archive attempt exposed a Release signing conflict; a TDD signing fix and a new real archive are in progress. No archive has been uploaded.
+- Backend integration is complete on `feat/lm-ios-integration-final` through `1baa0457a`. The merge fixes tenant-scoped process caches, rolling-compatible route-cache identity, and the late-approval provider-budget regression. Current focused receipts are late approval 63/63, mobile 122/122, route/schema 46/46, and provider cost 121/121 GREEN. The bounded re-review is pending.
+- Apple delivery assets now exist for bundle `ai.anicca.life-manager`: Bundle ID record `X3V59R96FS`, Push Notifications capability, and App Store provisioning profile `PYZ6W5GQNZ` (`Life Manager App Store 2026`). The App Store Connect app record does not yet exist. The approved creation path requires an authenticated App Store Connect browser session; `asc web apps create` is not accepted as a substitute because it uses an undocumented web path.
+- Gates 8–10 remain incomplete. No real-provider Maestro video, TestFlight build, TestFlight device receipt, production APNs receipt, or App Store submission receipt exists yet. Those artifacts MUST remain explicit holes and MUST NOT be replaced by mock, fixture, simulator-only, or compilation success.
+- Local delivery tooling remains ready: Xcode `26.6 (17F113)`, matching iOS `26.5 (23F77)` Simulator runtime, and Maestro `2.8.0` are installed.
 - HTML and web prototypes are not delivery artifacts and MUST NOT be used for the demo or any acceptance receipt. The first showable product MUST be the native iOS app running in an iOS Simulator or on an iPhone; the distributable demo MUST be a real TestFlight build.
 
 The following order is the only execution order. A later gate does not begin before the dependency named in its row is green. The executable Superpowers plans are:
