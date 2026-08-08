@@ -21,6 +21,7 @@ External primary evidence used by this revision:
 - [Transit API terms](https://transit.ls8h.com/terms) — the API is free and unauthenticated but provides no continuity, response-time, completeness, or freshness guarantee.
 - [Google Maps pricing](https://developers.google.com/maps/billing-and-pricing/pricing) — Geocoding and route SKUs have separate billable usage and no-cost caps.
 - [Composio pricing](https://www.composio.dev/pricing) — the free plan contains 20,000 tool calls per month.
+- [Composio redirect authentication](https://docs.composio.dev/docs/tools-direct/authenticating-tools#redirecting-users-after-authentication) — a custom callback preserves the original query and appends `status` plus `connected_account_id`; it does not return a Google authorization `code` to the client.
 
 ## 1. Overview — What and why
 
@@ -129,7 +130,7 @@ flowchart LR
 
 ### E. Session and tenant boundary
 
-47. The app MUST exchange the existing Supabase/Google identity result for a versioned mobile session.
+47. The Calendar button MUST use one Composio hosted consent journey, not a separate Life Manager login. Before opening it, the backend MUST create a one-use state and a server-generated provisional Composio `user_id`. After callback, the backend MUST require the stored state, `status=success`, and the exact stored `connected_account_id`; read that account back as active Google Calendar under the provisional owner; resolve the provider-authored primary Calendar identity to a stable Life Manager user; and only then issue the versioned mobile session. A callback `code`, client-supplied UID, or unverified provider account MUST NOT create a session.
 48. Every backend user ID MUST be derived from the validated session. A client-supplied UID MUST never authorize data access.
 49. Access and refresh tokens MUST be stored in Keychain. Refresh token rotation and server-side revocation are required.
 50. Every profile, event, message, route, question, call, subscription, device, and deletion operation MUST reject cross-tenant access.
@@ -335,8 +336,8 @@ All endpoints use `/api/mobile/v1` and `Authorization: Bearer <mobile-access-tok
 
 | Method | Path | Purpose |
 |---|---|---|
-| POST | `/session/calendar/start` | Create one-use OAuth state and callback URL |
-| POST | `/session/exchange` | Exchange the validated callback code for mobile tokens |
+| POST | `/session/calendar/start` | Create one-use state, server-owned provisional Composio user, stored connected-account ID, and Connect Link |
+| POST | `/session/exchange` | Verify callback `status` and exact connected-account ID, resolve the provider identity, and issue mobile tokens |
 | POST | `/session/refresh` | Rotate refresh token and return a new access token |
 | DELETE | `/session` | Revoke current mobile session |
 | GET | `/bootstrap` | Return localized profile, connections, settings, offer, and first-analysis state |
@@ -350,6 +351,8 @@ All endpoints use `/api/mobile/v1` and `Authorization: Bearer <mobile-access-tok
 | DELETE | `/account` | Delete the authenticated account after confirmed request |
 
 Every mutation requires `Idempotency-Key`. Duplicate keys with the same payload return the original result. A duplicate key with a different payload returns `409` and creates no side effect.
+
+`/session/calendar/start` returns `{state, authorizationUrl, expiresAt}`. The app opens only `authorizationUrl`. Composio redirects to the allowlisted custom scheme while preserving `state` and adding `status` plus `connected_account_id`. `/session/exchange` accepts only `{state, status, connectedAccountId}`. It MUST reject `uid`, a Google OAuth `code`, a mismatched account ID, a non-active account, a non-Google-Calendar toolkit, a different auth config, an unreadable primary Calendar identity, and a replayed state. Provider identity is stored as a one-way subject hash mapped to an opaque server-generated Life Manager UID. The raw Google identity is not used as a client-visible UID.
 
 ### 5.2 Bootstrap projection
 
@@ -439,7 +442,7 @@ Every To-be requirement has an OK path.
 
 | # | To-be behavior | Test name | OK coverage |
 |---:|---|---|---|
-| 1 | OAuth one-use ownership | `mobile-calendar-session-contract.test.js` | Invalid, expired, replayed, and wrong-owner state create zero sessions |
+| 1 | OAuth one-use ownership | `mobile-calendar-session-contract.test.js` | Invalid, expired, replayed, failed-status, mismatched connected-account, wrong-owner/toolkit/auth-config, and unreadable provider identity create zero sessions |
 | 2 | Server-derived tenant | `mobile-tenant-isolation.test.js` | User A cannot read or mutate user B data |
 | 3 | Required profile | `mobile-profile-contract.test.js` | Analysis waits for name/home/locale/Calendar |
 | 4 | Phone skip | `mobile-phone-null-contract.test.js` | `phone=null`, `paid=false` reaches real analysis and chat |
