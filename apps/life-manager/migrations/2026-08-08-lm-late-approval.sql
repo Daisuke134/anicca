@@ -49,6 +49,8 @@ CREATE TABLE IF NOT EXISTS public.lm_late_approval_drafts (
   telegram_receipt_message_id text,
   telegram_receipt_error text,
   telegram_receipt_attempts integer NOT NULL DEFAULT 0 CHECK (telegram_receipt_attempts >= 0),
+  telegram_approval_chat_id text CHECK (telegram_approval_chat_id IS NULL OR char_length(telegram_approval_chat_id) BETWEEN 1 AND 256),
+  telegram_approval_message_id text CHECK (telegram_approval_message_id IS NULL OR char_length(telegram_approval_message_id) BETWEEN 1 AND 512),
   created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
   updated_at timestamptz NOT NULL DEFAULT clock_timestamp(),
   UNIQUE (uid, event_key),
@@ -83,6 +85,10 @@ CREATE TABLE IF NOT EXISTS public.lm_late_approval_drafts (
   CHECK (
     telegram_receipt_status <> 'send_claimed'
     OR (telegram_receipt_claim_token IS NOT NULL AND telegram_receipt_worker_id IS NOT NULL AND telegram_receipt_claimed_at IS NOT NULL)
+  ),
+  CHECK (
+    (telegram_approval_message_id IS NULL AND telegram_approval_chat_id IS NULL)
+    OR (telegram_approval_message_id IS NOT NULL AND telegram_approval_chat_id IS NOT NULL)
   )
 );
 
@@ -144,7 +150,9 @@ ALTER TABLE public.lm_late_approval_drafts
   ADD COLUMN IF NOT EXISTS telegram_receipt_claim_expires_at timestamptz,
   ADD COLUMN IF NOT EXISTS telegram_receipt_message_id text,
   ADD COLUMN IF NOT EXISTS telegram_receipt_error text,
-  ADD COLUMN IF NOT EXISTS telegram_receipt_attempts integer;
+  ADD COLUMN IF NOT EXISTS telegram_receipt_attempts integer,
+  ADD COLUMN IF NOT EXISTS telegram_approval_chat_id text,
+  ADD COLUMN IF NOT EXISTS telegram_approval_message_id text;
 UPDATE public.lm_late_approval_drafts
 SET telegram_receipt_status = COALESCE(telegram_receipt_status, 'pending'),
     telegram_receipt_attempts = COALESCE(telegram_receipt_attempts, 0)
@@ -196,6 +204,18 @@ BEGIN
       CHECK (
         telegram_receipt_status <> 'send_claimed'
         OR (telegram_receipt_claim_token IS NOT NULL AND telegram_receipt_worker_id IS NOT NULL AND telegram_receipt_claimed_at IS NOT NULL)
+      );
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conrelid = 'public.lm_late_approval_drafts'::regclass
+      AND conname = 'lm_late_approval_drafts_telegram_approval_card_fields'
+  ) THEN
+    ALTER TABLE public.lm_late_approval_drafts
+      ADD CONSTRAINT lm_late_approval_drafts_telegram_approval_card_fields
+      CHECK (
+        (telegram_approval_message_id IS NULL AND telegram_approval_chat_id IS NULL)
+        OR (telegram_approval_message_id IS NOT NULL AND telegram_approval_chat_id IS NOT NULL)
       );
   END IF;
 END
@@ -564,6 +584,51 @@ BEGIN
 END;
 $$;
 
+CREATE OR REPLACE FUNCTION public.lm_record_late_approval_card(
+  p_uid text,
+  p_draft_id text,
+  p_chat_id text,
+  p_telegram_message_id text
+) RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_row public.lm_late_approval_drafts%ROWTYPE;
+BEGIN
+  IF p_uid IS NULL OR char_length(p_uid) = 0 OR char_length(p_uid) > 256
+    OR p_draft_id IS NULL OR char_length(p_draft_id) = 0 OR char_length(p_draft_id) > 128
+    OR p_chat_id IS NULL OR char_length(p_chat_id) = 0 OR char_length(p_chat_id) > 256
+    OR p_telegram_message_id IS NULL OR char_length(p_telegram_message_id) = 0 OR char_length(p_telegram_message_id) > 512 THEN
+    RAISE EXCEPTION 'invalid Telegram approval card';
+  END IF;
+  SELECT * INTO v_row
+  FROM public.lm_late_approval_drafts
+  WHERE draft_id = p_draft_id AND uid = p_uid
+  FOR UPDATE;
+  IF v_row.draft_id IS NULL THEN RAISE EXCEPTION 'late draft not found'; END IF;
+  IF v_row.recipient_status <> 'resolved' THEN
+    RAISE EXCEPTION 'only a resolved late draft can own an approval card';
+  END IF;
+  IF v_row.telegram_approval_message_id IS NOT NULL
+    AND v_row.telegram_approval_message_id <> p_telegram_message_id THEN
+    RAISE EXCEPTION 'Telegram approval card message collision';
+  END IF;
+  IF v_row.telegram_approval_chat_id IS NOT NULL
+    AND v_row.telegram_approval_chat_id <> p_chat_id THEN
+    RAISE EXCEPTION 'Telegram approval card chat collision';
+  END IF;
+  UPDATE public.lm_late_approval_drafts
+  SET telegram_approval_chat_id = p_chat_id,
+      telegram_approval_message_id = p_telegram_message_id,
+      updated_at = clock_timestamp()
+  WHERE draft_id = p_draft_id
+  RETURNING * INTO v_row;
+  RETURN to_jsonb(v_row);
+END;
+$$;
+
 CREATE OR REPLACE FUNCTION public.lm_claim_late_telegram_receipt(
   p_uid text,
   p_draft_id text,
@@ -737,7 +802,7 @@ ALTER TABLE public.lm_late_approval_claims FORCE ROW LEVEL SECURITY;
 ALTER TABLE public.lm_late_approval_receipts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.lm_late_approval_receipts FORCE ROW LEVEL SECURITY;
 
--- The nine SECURITY DEFINER functions are deny-by-default.  PUBLIC is explicit here because
+-- The ten SECURITY DEFINER functions are deny-by-default.  PUBLIC is explicit here because
 -- PostgreSQL grants new functions to PUBLIC unless it is revoked by name.
 REVOKE ALL ON TABLE
   public.lm_late_approval_drafts,
@@ -764,6 +829,8 @@ REVOKE ALL ON FUNCTION public.lm_record_late_delivery(text,text,text,timestamptz
   FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.lm_enqueue_late_telegram_receipt(text,text,text,text)
   FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.lm_record_late_approval_card(text,text,text,text)
+  FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.lm_claim_late_telegram_receipt(text,text,text,integer)
   FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.lm_record_late_telegram_receipt(text,text,text,text,text)
@@ -783,6 +850,7 @@ BEGIN
     EXECUTE 'GRANT EXECUTE ON FUNCTION public.lm_claim_late_delivery(text,text,integer) TO service_role';
     EXECUTE 'GRANT EXECUTE ON FUNCTION public.lm_record_late_delivery(text,text,text,timestamptz,text,text) TO service_role';
     EXECUTE 'GRANT EXECUTE ON FUNCTION public.lm_enqueue_late_telegram_receipt(text,text,text,text) TO service_role';
+    EXECUTE 'GRANT EXECUTE ON FUNCTION public.lm_record_late_approval_card(text,text,text,text) TO service_role';
     EXECUTE 'GRANT EXECUTE ON FUNCTION public.lm_claim_late_telegram_receipt(text,text,text,integer) TO service_role';
     EXECUTE 'GRANT EXECUTE ON FUNCTION public.lm_record_late_telegram_receipt(text,text,text,text,text) TO service_role';
     EXECUTE 'GRANT EXECUTE ON FUNCTION public.lm_release_late_telegram_receipt(text,text,text,text,text) TO service_role';

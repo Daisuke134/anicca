@@ -40,7 +40,7 @@ const inngestHandler = inngestServe({ client: inngest, functions: inngestFunctio
 const { placeCall, startRecording } = require("./lib/dial.js");
 const { amdEnabled, shouldMarkAnswered } = require("./lib/answered.js");
 const { decodeCallClientState, encodeTestCallClientState, verifyTelnyxSignature } = require("./lib/telnyx-webhook.js");
-const { parseUpdate, sendMessage, answerCallbackQuery, isPanelCommand, isPanelDeepLink, routeCallbackData } = require("./lib/telegram.js");
+const { parseUpdate, sendMessage, editMessageText, answerCallbackQuery, isPanelCommand, isPanelDeepLink, routeCallbackData } = require("./lib/telegram.js");
 const { reflectAnswer } = require("./lib/telegram-callback-visibility.js");
 const {
   createSupabaseLateApprovalStore,
@@ -596,6 +596,7 @@ const server = http.createServer((req, res) => {
                   supaKey: SUPA_KEY,
                   reflectAnswer,
                   sendMessage,
+                  editMessageText,
                   resendKey: process.env.RESEND_API_KEY,
                 });
                 if (outcome && outcome.handled) {

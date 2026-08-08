@@ -31,6 +31,53 @@ callback retries only Telegram while retaining the provider receipt/idempotency 
 callback snapshot that observes a newly durable provider receipt also recovers the outbox without
 resending the provider email.
 
+## Round 2 — accepted Telegram edit ambiguity
+
+The approval card's Telegram `chat_id` and `message_id` are now durable on the late draft through
+the idempotent `lm_record_late_approval_card` RPC.  The receipt path edits that original card and
+removes its buttons; it does not send a second Telegram message.  If Telegram accepted the edit but
+the caller sees a timeout, or if the receipt record fails after Telegram accepted the edit, the
+claim is released for retry while the provider delivery remains durable.  The retry edits the same
+original message, so the provider email stays exactly once and the visible receipt stays exactly
+once.  A deterministic pre-accept Telegram `{ok:false}` still releases the claim and retries.
+
+### RED contracts before the fix
+
+```text
+cd apps/life-manager && node --test --test-name-pattern='accepted Telegram edit followed by' test/late-approval-http-contract.test.js
+  timeout case: not ok — Expected retry.ok=true, received false
+  receipt-record-failure case: not ok — Expected retry.ok=true, received false
+```
+
+The same pre-fix command also reported the existing dependency issue for the production HTTP
+contract (`Cannot find module 'ws'`) before `npm ci` restored `node_modules`; that was unrelated to
+the new RED assertions.
+
+### GREEN contracts after the fix
+
+```text
+cd apps/life-manager && npm ci --ignore-scripts --no-audit --no-fund
+  added 452 packages, audited 452 packages
+
+cd apps/life-manager && node --test test/late-approval-http-contract.test.js
+  9 tests, 9 pass, 0 fail
+
+cd apps/life-manager && node --test lib/late-recipient-resolver.test.js lib/late-approval.test.js lib/late-notice.test.js test/late-approval-http-contract.test.js
+  64 tests, 64 pass, 0 fail
+
+cd apps/life-manager && node --test test/telegram-callback-http-contract.test.js lib/telegram-onboard.test.js
+  33 tests, 33 pass, 0 fail
+
+cd apps/life-manager && node --test lib/late-approval-boundary.test.js lib/mail-resend.test.js && git diff --check
+  9 tests, 9 pass, 0 fail; diff check passed
+
+cd apps/life-manager && node --test test/daily-journey-contract.test.js
+  2 tests, 2 pass, 0 fail
+```
+
+The new HTTP contracts assert both accepted-edit failure modes, one provider mail call, two
+attempts against the same Telegram `(chat_id,message_id)`, and one durable receipt message id.
+
 ## Focused verification
 
 ```text
@@ -38,7 +85,7 @@ cd apps/life-manager && node --test lib/late-approval-boundary.test.js lib/mail-
   9 tests, 9 pass, 0 fail; diff check passed
 
 cd apps/life-manager && node --test lib/late-recipient-resolver.test.js lib/late-approval.test.js lib/late-notice.test.js test/late-approval-http-contract.test.js
-  61 tests, 61 pass, 0 fail
+  64 tests, 64 pass, 0 fail
 
 cd apps/life-manager && node --test test/daily-journey-contract.test.js
   2 tests, 2 pass, 0 fail; tick creates a durable awaiting-decision card and sends zero mail
@@ -68,7 +115,7 @@ otherwise reaches the legacy-path stage with the reviewed suites green.
 
 ## Review handoff
 
-The source, mutation, tenant-read, callback, concurrent receipt, Telegram retry, and no-send
-contracts are green.  The focused full-late suite is 61/61, the DAILY journey is 2/2, the Telegram
+The source, mutation, tenant-read, callback, concurrent receipt, accepted-edit retry, Telegram
+retry, and no-send contracts are green.  The focused full-late suite is 64/64, the DAILY journey is 2/2, the Telegram
 callback/onboard suite is 33/33, and the boundary/mail suite is 9/9.  No production provider,
 database, deploy, or merge was touched.

@@ -65,15 +65,17 @@ function baseOptions(store, overrides = {}) {
     owner: { uid: "uid-1", telegram_chat_id: "100" },
     nowMs: NOW,
     callbackQueryId: "cb-1",
+    messageId: "777",
     token: "telegram-token",
     sendLateNotice: async (_uid, _event, options) => {
       calls.push(["mail", options]);
       return { sent: true, id: "resend-message-1" };
     },
-    sendMessage: async (_token, _chat, text, extra) => {
-      calls.push(["telegram", text, extra]);
+    editMessageText: async (_token, chatId, messageId, text, extra) => {
+      calls.push(["edit", text, extra, chatId, messageId]);
       return { ok: true, result: { message_id: 77 } };
     },
+    sendMessage: async () => { throw new Error("late receipt must edit the approval card"); },
     reflectAnswer: async (input) => {
       calls.push(["reflect", input.label]);
       return { ok: true };
@@ -104,7 +106,7 @@ test("signed and owned Send decides, claims, mails, records the provider receipt
   assert.equal(result.ok, true);
   assert.equal(result.sent, true);
   assert.equal(result.draft.status, "sent");
-  assert.deepEqual(opts.calls.map((entry) => entry[0]), ["mail", "reflect", "telegram"]);
+  assert.deepEqual(opts.calls.map((entry) => entry[0]), ["mail", "reflect", "edit"]);
   assert.equal(opts.calls[0][1].providerIdempotencyKey, draft.providerIdempotencyKey);
   assert.equal(opts.calls[0][1].bodySnapshot, draft.bodySnapshot);
   assert.match(opts.calls[2][1], /resend-message-1/);
@@ -116,7 +118,7 @@ test("signed and owned Send decides, claims, mails, records the provider receipt
   });
   assert.equal(replay.ok, true);
   assert.equal(replay.sent, false);
-  assert.deepEqual(opts.calls.map((entry) => entry[0]), ["mail", "reflect", "telegram"]);
+  assert.deepEqual(opts.calls.map((entry) => entry[0]), ["mail", "reflect", "edit"]);
 });
 
 test("concurrent copies of one signed callback produce one provider send and one Telegram receipt", async () => {
@@ -134,7 +136,7 @@ test("concurrent copies of one signed callback produce one provider send and one
       if (mailCalls === 1) await new Promise((resolve) => setTimeout(resolve, 20));
       return { sent: true, id: "resend-concurrent-1" };
     },
-    sendMessage: async () => {
+    editMessageText: async () => {
       telegramCalls += 1;
       return { ok: true, result: { message_id: 700 + telegramCalls } };
     },
@@ -177,7 +179,7 @@ test("a concurrent callback that sees the old draft recovers a durable provider 
   let telegramCalls = 0;
   const result = await handleLateApprovalCallback(callback("send", draft.draftId), baseOptions(store, {
     sendLateNotice: async () => { mailCalls += 1; throw new Error("provider must not resend"); },
-    sendMessage: async () => {
+    editMessageText: async () => {
       telegramCalls += 1;
       return { ok: true, result: { message_id: 702 } };
     },
@@ -187,6 +189,79 @@ test("a concurrent callback that sees the old draft recovers a durable provider 
   assert.equal(result.sent, true);
   assert.equal(mailCalls, 0);
   assert.equal(telegramCalls, 1);
+});
+
+test("an accepted Telegram edit followed by a timeout retries the same approval card without duplicate email or visible receipt", async () => {
+  const store = createInMemoryLateApprovalStore({ nowMs: NOW });
+  const draft = await createLateDraft({ ...draftInput(), eventKey: "calendar:event-edit-timeout" }, store);
+  let mailCalls = 0;
+  const editCalls = [];
+  let editAttempts = 0;
+  const options = baseOptions(store, {
+    messageId: "777",
+    sendLateNotice: async () => {
+      mailCalls += 1;
+      return { sent: true, id: "resend-edit-timeout-1" };
+    },
+    sendMessage: async () => { throw new Error("receipt must edit the approval card"); },
+    editMessageText: async (_token, chatId, messageId, text) => {
+      editAttempts += 1;
+      editCalls.push({ chatId, messageId, text });
+      if (editAttempts === 1) throw new Error("Telegram timed out after accepting the edit");
+      return { ok: true, result: { message_id: Number(messageId) } };
+    },
+  });
+
+  const data = callback("send", draft.draftId);
+  const first = await handleLateApprovalCallback(data, { ...options, callbackQueryId: "edit-timeout-1" });
+  const retry = await handleLateApprovalCallback(data, { ...options, callbackQueryId: "edit-timeout-2" });
+
+  assert.equal(first.ok, false);
+  assert.equal(retry.ok, true);
+  assert.equal(mailCalls, 1);
+  assert.equal(editCalls.length, 2);
+  assert.deepEqual(editCalls.map((call) => [call.chatId, call.messageId]), [["100", "777"], ["100", "777"]]);
+  assert.equal(new Set(editCalls.map((call) => call.messageId)).size, 1, "one visible Telegram message is edited");
+  assert.equal((await store.getDraft(draft.draftId)).telegramReceiptMessageId, "777");
+});
+
+test("an accepted Telegram edit followed by a receipt-record failure retries the same approval card without resending email", async () => {
+  const durableStore = createInMemoryLateApprovalStore({ nowMs: NOW });
+  const draft = await createLateDraft({ ...draftInput(), eventKey: "calendar:event-edit-record-failure" }, durableStore);
+  let mailCalls = 0;
+  let editCalls = 0;
+  let recordCalls = 0;
+  const store = {
+    ...durableStore,
+    async recordLateTelegramReceipt(input) {
+      recordCalls += 1;
+      if (recordCalls === 1) throw new Error("receipt database write failed after Telegram accepted");
+      return durableStore.recordLateTelegramReceipt(input);
+    },
+  };
+  const options = baseOptions(store, {
+    messageId: "778",
+    sendLateNotice: async () => {
+      mailCalls += 1;
+      return { sent: true, id: "resend-edit-record-failure-1" };
+    },
+    sendMessage: async () => { throw new Error("receipt must edit the approval card"); },
+    editMessageText: async (_token, _chatId, messageId) => {
+      editCalls += 1;
+      return { ok: true, result: { message_id: Number(messageId) } };
+    },
+  });
+
+  const data = callback("send", draft.draftId);
+  const first = await handleLateApprovalCallback(data, { ...options, callbackQueryId: "edit-record-failure-1" });
+  const retry = await handleLateApprovalCallback(data, { ...options, callbackQueryId: "edit-record-failure-2" });
+
+  assert.equal(first.ok, false);
+  assert.equal(retry.ok, true);
+  assert.equal(mailCalls, 1);
+  assert.equal(editCalls, 2);
+  assert.equal(recordCalls, 2);
+  assert.equal((await durableStore.getDraft(draft.draftId)).telegramReceiptMessageId, "778");
 });
 
 test("Telegram receipt failure retries the receipt without resending the provider email", async () => {
@@ -199,7 +274,7 @@ test("Telegram receipt failure retries the receipt without resending the provide
       mailCalls += 1;
       return { sent: true, id: "resend-retry-1" };
     },
-    sendMessage: async () => {
+    editMessageText: async () => {
       telegramCalls += 1;
       return telegramCalls === 1
         ? { ok: false, error: "telegram unavailable" }
@@ -308,6 +383,8 @@ test("POST /telegram routes the signed late callback through the production serv
     claim_worker_id: null,
     provider_message_id: null,
     delivered_at: null,
+    telegram_approval_chat_id: "100",
+    telegram_approval_message_id: "777",
   };
   const calls = [];
 
@@ -355,6 +432,11 @@ test("POST /telegram routes the signed late callback through the production serv
         row.status = "sent";
         row.provider_message_id = body.p_provider_message_id;
         row.delivered_at = body.p_delivered_at;
+        return response(200, jsonClone(row));
+      }
+      if (rpc === "lm_record_late_approval_card") {
+        row.telegram_approval_chat_id = body.p_chat_id;
+        row.telegram_approval_message_id = body.p_telegram_message_id;
         return response(200, jsonClone(row));
       }
       if (rpc === "lm_enqueue_late_telegram_receipt") {
@@ -420,7 +502,8 @@ test("POST /telegram routes the signed late callback through the production serv
     assert.equal(await post("100", "100", sendData, "cb-http-replay"), 200);
     assert.equal(calls.filter((entry) => entry[0] === "resend").length, 1);
     assert.equal(calls.filter((entry) => entry[0] === "rpc:lm_record_late_delivery").length, 1);
-    assert.equal(calls.filter((entry) => entry[0] === "telegram:sendMessage").length, 1);
+    assert.equal(calls.filter((entry) => entry[0] === "telegram:editMessageText").length, 2,
+      "one edit acknowledges the callback and one edit replaces the card with the receipt");
     assert.equal(calls.find((entry) => entry[0] === "resend")[1].headers["Idempotency-Key"], "a".repeat(64));
     assert.equal(row.status, "sent");
 
