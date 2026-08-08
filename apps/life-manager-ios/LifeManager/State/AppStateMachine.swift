@@ -18,6 +18,12 @@ struct AppErrorState: Equatable, Sendable {
     let localizedMessageKey: String
     let retryAllowed: Bool
 
+    init(backendErrorCode: String, localizedMessageKey: String, retryAllowed: Bool) {
+        self.backendErrorCode = backendErrorCode
+        self.localizedMessageKey = localizedMessageKey
+        self.retryAllowed = retryAllowed
+    }
+
     init(error: Error) {
         switch error {
         case let APIError.server(statusCode):
@@ -124,13 +130,17 @@ final class AppViewModel {
     }
 
     func showSoftPaywall() {
-        guard route == .chat else { return }
+        guard route == .chat, lastAnalysisStatus == .routeReady else { return }
         route = .softPaywall
     }
 
     func continueFree() {
         guard route == .softPaywall else { return }
         route = .chat
+    }
+
+    func cancelSoftPaywall() {
+        continueFree()
     }
 
     func retryAfterFatal() async {

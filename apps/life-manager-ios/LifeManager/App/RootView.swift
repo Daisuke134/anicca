@@ -129,15 +129,9 @@ private struct RouteSurface: View {
     }
 
     private var softPaywallView: some View {
-        VStack(spacing: 16) {
-            Text("Upgrade when you want more support.")
-                .multilineTextAlignment(.center)
-            Button("Continue free") {
-                viewModel.continueFree()
-            }
-            .accessibilityIdentifier("paywall.continueFree")
+        SoftPaywallView {
+            viewModel.continueFree()
         }
-        .padding()
     }
 
     private func fatalView(_ error: AppErrorState) -> some View {

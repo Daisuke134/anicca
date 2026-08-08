@@ -28,6 +28,7 @@ targets:
           - Config/**
           - Resources/**
       - path: LifeManager/Features/Chat
+      - path: LifeManager/Features/Paywall
     resources:
       - path: LifeManager/Resources
     configFiles:
