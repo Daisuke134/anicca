@@ -1,0 +1,4 @@
+// Non-secret debug configuration. Local overrides are optional and ignored by git.
+LIFEMANAGER_API_BASE_URL = https://api.anicca.ai
+LIFEMANAGER_CALLBACK_SCHEME = lifemanager
+#include? "Debug.local.xcconfig"

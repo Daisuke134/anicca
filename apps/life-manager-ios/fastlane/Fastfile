@@ -1,0 +1,41 @@
+default_platform(:ios)
+
+platform :ios do
+  def simulator_destination
+    simulator_udid = ENV["LIFEMANAGER_SIMULATOR_UDID"] || `xcrun simctl list devices available`.lines
+      .find { |line| line.include?("iPhone 17 Pro") }
+      &.match(/\(([0-9A-F-]{36})\)/i)
+      &.captures
+      &.first
+
+    simulator_udid ||= "9B260E35-98C8-46A8-B10B-39AE1427C219"
+    "platform=iOS Simulator,id=#{simulator_udid}"
+  end
+
+  desc "Run the Life Manager smoke tests"
+  lane :test do
+    run_tests(
+      project: "LifeManager.xcodeproj",
+      scheme: "LifeManager",
+      destination: simulator_destination,
+      skip_detect_devices: true,
+      derived_data_path: "build/DerivedData",
+      clean: false,
+      skip_build: true
+    )
+  end
+
+  desc "Build the Life Manager app for the iOS Simulator"
+  lane :build_for_simulator do
+    build_app(
+      project: "LifeManager.xcodeproj",
+      scheme: "LifeManager",
+      configuration: "Debug",
+      destination: "generic/platform=iOS Simulator",
+      derived_data_path: "build/DerivedData",
+      skip_archive: true,
+      skip_codesigning: true,
+      clean: true
+    )
+  end
+end
