@@ -49,7 +49,11 @@ private struct RouteSurface: View {
                 ProgressView("Checking your next commitment")
                     .accessibilityIdentifier("analysis.phase")
             case .chat:
-                chatView
+                if let chatViewModel = viewModel.chatViewModel {
+                    ChatView(viewModel: chatViewModel)
+                } else {
+                    chatView
+                }
             case .softPaywall:
                 softPaywallView
             case let .fatal(error):

@@ -58,6 +58,7 @@ final class AppViewModel {
     private let auth: AuthServicing
     private let profileService: ProfileServicing
     private let analysisService: AnalysisServicing
+    let chatViewModel: ChatViewModel?
 
     private(set) var route: AppRoute = .restoring
     private(set) var profile: UserProfile?
@@ -67,11 +68,17 @@ final class AppViewModel {
     init(
         auth: AuthServicing,
         profile: ProfileServicing,
-        analysis: AnalysisServicing
+        analysis: AnalysisServicing,
+        chat: ChatServicing? = nil
     ) {
         self.auth = auth
         profileService = profile
         analysisService = analysis
+        if let chat {
+            chatViewModel = ChatViewModel(service: chat)
+        } else {
+            chatViewModel = nil
+        }
     }
 
     func restoreSession() async {

@@ -24,7 +24,8 @@ final class AppComposition {
         viewModel = AppViewModel(
             auth: auth,
             profile: ProfileService(api: authenticatedAPI),
-            analysis: AnalysisService(api: authenticatedAPI)
+            analysis: AnalysisService(api: authenticatedAPI),
+            chat: ChatService(api: authenticatedAPI)
         )
     }
 }
