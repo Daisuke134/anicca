@@ -66,7 +66,7 @@ async function readCache(scope, request, deps) {
   if (deps.store && typeof deps.store.readRouteCache === "function") return deps.store.readRouteCache(scope, request);
   const cache = deps.routeCache || deps.cache || (deps.routeProviders && deps.routeProviders.routeCache);
   if (!cache || typeof cache.get !== "function") return null;
-  return cache.get(mobileRouteCacheKey(scope, request));
+  return cache.get(mobileRouteCacheKey(scope, request), { uid: scope.uid });
 }
 
 async function writeCache(scope, request, value, deps) {
@@ -74,7 +74,7 @@ async function writeCache(scope, request, value, deps) {
   if (deps.store && typeof deps.store.writeRouteCache === "function") return deps.store.writeRouteCache(scope, request, value);
   const cache = deps.routeCache || deps.cache || (deps.routeProviders && deps.routeProviders.routeCache);
   if (!cache || typeof cache.set !== "function") return;
-  return cache.set(mobileRouteCacheKey(scope, request), value);
+  return cache.set(mobileRouteCacheKey(scope, request), value, { uid: scope.uid });
 }
 
 async function computeMobileRoute(scope, event, origin, deps = {}) {
@@ -113,17 +113,21 @@ function routeCacheFor(options = {}) {
   const store = options.cacheStore;
   const ttlMs = Number.isFinite(options.cacheTtlMs) ? Math.max(0, options.cacheTtlMs) : 10 * 60_000;
   const now = typeof options.now === "function" ? options.now : Date.now;
+  const scopedKey = (key, scope = {}) => `${scope.uid == null ? "" : String(scope.uid)}\u0000${key}`;
   return {
-    get(key) {
+    get(key, scope = {}) {
       if (!store || typeof store.get !== "function") return null;
-      const hit = store.get(key);
+      const processKey = scopedKey(key, scope);
+      const hit = store.get(processKey);
       if (!hit || now() - hit.computedAt >= ttlMs) {
-        if (hit) store.delete(key);
+        if (hit) store.delete(processKey);
         return null;
       }
       return hit;
     },
-    set(key, value) { if (store && typeof store.set === "function") store.set(key, { value, computedAt: now() }); },
+    set(key, value, scope = {}) {
+      if (store && typeof store.set === "function") store.set(scopedKey(key, scope), { value, computedAt: now() });
+    },
   };
 }
 

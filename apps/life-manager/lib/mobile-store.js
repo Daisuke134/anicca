@@ -69,6 +69,10 @@ function routeCacheLegacyRow(scope, routeRequest, value, computedAt) {
   };
 }
 
+function scopedMemoryRouteKey(uid, cacheKey) {
+  return `${String(uid)}\u0000${cacheKey}`;
+}
+
 function createSupabaseMobileStore(options = {}) {
   const base = String(options.supaUrl || "").replace(/\/$/u, "");
   const key = String(options.supaKey || "");
@@ -449,12 +453,12 @@ function createMemoryMobileStore(options = {}) {
     async writeAnalysisState(scope, state) { const row = user(scope); if (!row) throw new MobileError("account_not_found", "Account not found.", 404); row.analysisState = { ...state, updatedAt: state.updatedAt || nowIso() }; return { ...row.analysisState }; },
     async readRouteCache(scope, routeRequest) {
       const uid = scoped(scope);
-      const key = mobileRouteCacheKey({ uid }, routeRequest);
+      const key = scopedMemoryRouteKey(uid, mobileRouteCacheKey({ uid }, routeRequest));
       return routeCacheEntry(routeCache.get(key), memoryNow);
     },
     async writeRouteCache(scope, routeRequest, value) {
       const uid = scoped(scope);
-      const key = mobileRouteCacheKey({ uid }, routeRequest);
+      const key = scopedMemoryRouteKey(uid, mobileRouteCacheKey({ uid }, routeRequest));
       const computedAt = value && value.computedAt ? value.computedAt : new Date(memoryNow()).toISOString();
       routeCache.set(key, { route_result: value, computed_at: computedAt, ttl_secs: 600 });
       return { value, computedAt: Date.parse(computedAt) };

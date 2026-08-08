@@ -53,6 +53,24 @@ test("memory route cache accepts the authenticated scope and survives a same-pro
   assert.deepEqual(hit.value, route);
 });
 
+test("memory route cache never reuses one tenant's route for another tenant", async () => {
+  const routeRequest = {
+    eventId: "event-memory-isolation", eventDate: "2026-08-10", timezone: "Asia/Tokyo",
+    origin: "Shibuya", destination: "Tokyo", direction: "outbound",
+    arriveBy: "2026-08-10T09:00:00.000+09:00", departAt: null,
+  };
+  const store = createMemoryMobileStore({
+    users: [{ uid: "tenant-a", name: "A" }, { uid: "tenant-b", name: "B" }],
+    now: () => Date.parse("2026-08-10T08:10:00.000Z"),
+  });
+  const routeA = { status: "route_ready", provider: "transit", durationSeconds: 900 };
+  const routeB = { status: "route_ready", provider: "transit", durationSeconds: 1200 };
+  await store.writeRouteCache({ uid: "tenant-a" }, routeRequest, routeA);
+  await store.writeRouteCache({ uid: "tenant-b" }, routeRequest, routeB);
+  assert.deepEqual((await store.readRouteCache({ uid: "tenant-a" }, routeRequest)).value, routeA);
+  assert.deepEqual((await store.readRouteCache({ uid: "tenant-b" }, routeRequest)).value, routeB);
+});
+
 test("Supabase mobile route cache persists the tenant-safe request digest and complete structured route", async () => {
   const calls = [];
   let persisted = null;

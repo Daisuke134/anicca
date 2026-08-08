@@ -125,6 +125,13 @@ function authHeaders(key, extra) {
   return Object.assign({ apikey: key, Authorization: `Bearer ${key}` }, extra || {});
 }
 
+// The route fingerprint intentionally remains tenant-independent so the
+// durable store can use the explicit (uid, cache_key) conflict identity. The
+// process-local maps need the same tenant boundary even before persistence.
+function scopedProcessKey(uid, fingerprint) {
+  return `${uid == null ? "" : String(uid)}\u0000${fingerprint}`;
+}
+
 // Store rows by an opaque canonical key. The migration adds cache_key so the
 // complete context key is durable instead of relying on the old shared geo
 // identity. All writes use Supabase upsert semantics (one winner per key).
@@ -194,13 +201,19 @@ function createSupabaseRouteStore({ supaUrl, supaKey, fetchImpl = globalThis.fet
   return { get, set };
 }
 
+function durableStoreKey(store, key, uid) {
+  // The default/injected process-local Map has no second-argument scope
+  // contract, so namespace its physical key as well as the read-through maps.
+  return store instanceof Map ? scopedProcessKey(uid, key) : key;
+}
+
 function readStore(store, key, uid) {
-  return store && typeof store.get === "function" ? Promise.resolve(store.get(key, { uid })) : Promise.resolve(null);
+  return store && typeof store.get === "function" ? Promise.resolve(store.get(durableStoreKey(store, key, uid), { uid })) : Promise.resolve(null);
 }
 
 function writeStore(store, key, value, uid) {
   if (!store || typeof store.set !== "function") return Promise.resolve(false);
-  return Promise.resolve(store.set(key, value, { uid }));
+  return Promise.resolve(store.set(durableStoreKey(store, key, uid), value, { uid }));
 }
 
 // makeRouteCache({ store: Map-like {get,set}, ttlMs, now }) → { getOrCompute }.
@@ -222,6 +235,7 @@ function makeRouteCache({ store = new Map(), ttlMs = BUCKET_MS, now = Date.now }
     if (typeof compute !== "function") throw new TypeError("route cache provider must be a function");
     const resolved = resolveBucketAndContext(bucket, metadata);
     const key = cacheKey(uid, fromGeo, toGeo, resolved.bucket, resolved.context);
+    const processKey = scopedProcessKey(uid, key);
     const t = Number(now());
     const isFresh = (record) => {
       const computedAt = recordComputedAt(record);
@@ -229,20 +243,20 @@ function makeRouteCache({ store = new Map(), ttlMs = BUCKET_MS, now = Date.now }
       const effectiveTtl = Number(record && record.ttlMs);
       return t - computedAt < (Number.isFinite(effectiveTtl) ? effectiveTtl : ttlMs);
     };
-    const localHit = readThrough.get(key);
+    const localHit = readThrough.get(processKey);
     if (localHit && isFresh(localHit)) return localHit.value;
     const durableHit = await readStore(store, key, uid);
     if (durableHit && isFresh(durableHit)) {
-      readThrough.set(key, durableHit);
+      readThrough.set(processKey, durableHit);
       return durableHit.value;
     }
-    if (inFlight.has(key)) return inFlight.get(key);
+    if (inFlight.has(processKey)) return inFlight.get(processKey);
     const pending = (async () => {
       // A concurrent caller can have populated the durable store between the
       // initial read and this claim, so re-read before spending on the provider.
       const secondHit = await readStore(store, key, uid);
       if (secondHit && isFresh(secondHit)) {
-        readThrough.set(key, secondHit);
+        readThrough.set(processKey, secondHit);
         return secondHit.value;
       }
       const value = await compute();
@@ -253,19 +267,19 @@ function makeRouteCache({ store = new Map(), ttlMs = BUCKET_MS, now = Date.now }
         toGeo,
         timeBucket: resolved.bucket,
       });
-      readThrough.set(key, record);
+      readThrough.set(processKey, record);
       const persisted = await writeStore(store, key, record, uid);
       if (!persisted) {
-        readThrough.delete(key);
+        readThrough.delete(processKey);
         throw new Error("durable route cache write failed");
       }
       return value;
     })();
-    inFlight.set(key, pending);
+    inFlight.set(processKey, pending);
     try {
       return await pending;
     } finally {
-      inFlight.delete(key);
+      inFlight.delete(processKey);
     }
   }
   return { getOrCompute };

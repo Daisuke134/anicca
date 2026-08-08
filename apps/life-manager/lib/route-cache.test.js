@@ -38,6 +38,37 @@ test("getOrCompute: provider called at most ONCE per key within TTL", async () =
   assert.equal(calls, 1); // second hit is cached
 });
 
+test("getOrCompute: process-local read-through is tenant-scoped even when route fingerprints match", async () => {
+  const store = new Map();
+  const cache = makeRouteCache({ store, ttlMs: 600000, now: () => 1000 });
+  let calls = 0;
+  const route = async (durationSecs) => { calls += 1; return { durationSecs, provider: "transit" }; };
+  const args = [G(35.68, 139.76), G(35.69, 139.70), 42];
+  const first = await cache.getOrCompute("tenant-a", ...args, () => route(900), { provider: "transit" });
+  const second = await cache.getOrCompute("tenant-b", ...args, () => route(1200), { provider: "transit" });
+  assert.equal(first.durationSecs, 900);
+  assert.equal(second.durationSecs, 1200);
+  assert.equal(calls, 2);
+});
+
+test("getOrCompute: concurrent in-flight work is tenant-scoped even when route fingerprints match", async () => {
+  const cache = makeRouteCache({ store: new Map(), ttlMs: 600000, now: () => 1000 });
+  let calls = 0;
+  const compute = (durationSecs) => async () => {
+    calls += 1;
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    return { durationSecs, provider: "transit" };
+  };
+  const args = [G(35.68, 139.76), G(35.69, 139.70), 42];
+  const [first, second] = await Promise.all([
+    cache.getOrCompute("tenant-a", ...args, compute(900), { provider: "transit" }),
+    cache.getOrCompute("tenant-b", ...args, compute(1200), { provider: "transit" }),
+  ]);
+  assert.equal(first.durationSecs, 900);
+  assert.equal(second.durationSecs, 1200);
+  assert.equal(calls, 2);
+});
+
 test("getOrCompute: moved event (new bucket) recomputes", async () => {
   let calls = 0;
   const provider = async () => { calls++; return { durationSecs: 1029 }; };
