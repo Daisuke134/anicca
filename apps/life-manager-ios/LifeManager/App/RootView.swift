@@ -14,7 +14,7 @@ struct RootView: View {
             RouteSurface(viewModel: viewModel)
         } else {
             VStack {
-                Text("Life Manager")
+                Text("app.name")
                     .font(.largeTitle)
                     .fontWeight(.semibold)
             }
@@ -36,17 +36,17 @@ private struct RouteSurface: View {
         Group {
             switch viewModel.route {
             case .restoring:
-                ProgressView("Restoring your Life Manager")
+                ProgressView("onboarding.restoring")
             case .welcome:
                 welcomeView
             case .calendarConnecting:
-                ProgressView("Connecting Calendar")
+                ProgressView("onboarding.connectingCalendar")
             case .profile:
                 profileView
             case .phone:
                 phoneView
             case .analyzing:
-                ProgressView("Checking your next commitment")
+                ProgressView("onboarding.analyzing")
                     .accessibilityIdentifier("analysis.phase")
             case .chat:
                 if let chatViewModel = viewModel.chatViewModel {
@@ -74,12 +74,12 @@ private struct RouteSurface: View {
 
     private var welcomeView: some View {
         VStack(spacing: 16) {
-            Text("Life Manager")
+            Text("app.name")
                 .font(.largeTitle)
                 .fontWeight(.semibold)
-            Text("Connect your Calendar to get one clear next step.")
+            Text("welcome.promise")
                 .multilineTextAlignment(.center)
-            Button("Connect Calendar") {
+            Button("welcome.connectCalendar") {
                 Task { await viewModel.connectCalendar() }
             }
             .accessibilityIdentifier("welcome.connectCalendar")
@@ -89,12 +89,12 @@ private struct RouteSurface: View {
 
     private var profileView: some View {
         Form {
-            Section("Your profile") {
-                TextField("Name", text: $profileName)
+            Section("profile.title") {
+                TextField("profile.name", text: $profileName)
                     .accessibilityIdentifier("profile.name")
-                TextField("Home or usual starting point", text: $profileHome)
+                TextField("profile.home", text: $profileHome)
                     .accessibilityIdentifier("profile.home")
-                Button("Continue") {
+                Button("profile.continue") {
                     Task {
                         await viewModel.submitProfile(
                             ProfileDraft(name: profileName.isEmpty ? nil : profileName, home: profileHome.isEmpty ? nil : profileHome)
@@ -109,9 +109,9 @@ private struct RouteSurface: View {
 
     private var phoneView: some View {
         VStack(spacing: 16) {
-            Text("Add a phone number for optional calls later.")
+            Text("phone.prompt")
                 .multilineTextAlignment(.center)
-            Button("Skip for now") {
+            Button("phone.skip") {
                 Task { await viewModel.skipPhone() }
             }
             .accessibilityIdentifier("phone.skip")
@@ -121,10 +121,10 @@ private struct RouteSurface: View {
 
     private var chatView: some View {
         VStack(spacing: 16) {
-            Text("Life Manager")
+            Text("app.name")
                 .font(.title)
-            Text("Your next step is ready.")
-            Button("See upgrade options") {
+            Text("analysis.checking")
+            Button("paywall.upgrade") {
                 viewModel.showSoftPaywall()
             }
         }
@@ -140,9 +140,9 @@ private struct RouteSurface: View {
 
     private func fatalView(_ error: AppErrorState) -> some View {
         VStack(spacing: 16) {
-            Text(error.localizedMessageKey)
+            Text(LocalizedStringKey(error.localizedMessageKey))
             if error.retryAllowed {
-                Button("Try again") {
+                Button("chat.tryAgain") {
                     Task { await viewModel.retryAfterFatal() }
                 }
                 .accessibilityIdentifier("error.retry")

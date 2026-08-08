@@ -26,12 +26,11 @@ targets:
         excludes:
           - Info.plist
           - Config/**
-          - Resources/**
       - path: LifeManager/Features/Chat
       - path: LifeManager/Features/Paywall
       - path: LifeManager/Features/Settings
     resources:
-      - path: LifeManager/Resources
+      - LifeManager/Resources
     configFiles:
       Debug: LifeManager/Config/Debug.xcconfig
       Release: LifeManager/Config/Release.xcconfig

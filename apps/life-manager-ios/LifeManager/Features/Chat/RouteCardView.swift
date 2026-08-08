@@ -10,12 +10,12 @@ struct RouteCardView: View {
                 if let eventTitle = presentation.eventTitle {
                     Text(eventTitle)
                         .font(.headline)
-                        .accessibilityLabel("Event (eventTitle)")
+                        .accessibilityLabel(Text(eventTitle))
                 }
 
                 Text("\(presentation.origin) → \(presentation.destination)")
                     .font(.subheadline.weight(.semibold))
-                    .accessibilityLabel("From \(presentation.origin) to \(presentation.destination)")
+                    .accessibilityLabel(Text("\(presentation.origin) → \(presentation.destination)"))
 
                 HStack(spacing: 16) {
                     Label(time(presentation.leaveAt, timezone: presentation.timezone), systemImage: "figure.walk")
@@ -24,8 +24,8 @@ struct RouteCardView: View {
                 .font(.subheadline)
 
                 HStack(spacing: 16) {
-                    Text(duration(presentation.durationSeconds))
-                    Text(buffer(presentation.bufferSeconds))
+                    durationLabel(presentation.durationSeconds)
+                    bufferLabel(presentation.bufferSeconds)
                 }
                 .font(.subheadline)
 
@@ -43,7 +43,7 @@ struct RouteCardView: View {
                     }
                 }
 
-                Button("Show full route", action: onShowDetails)
+                Button("route.showFull", action: onShowDetails)
                     .buttonStyle(.borderedProminent)
                     .accessibilityIdentifier("route.showDetails")
 
@@ -67,14 +67,20 @@ struct RouteCardView: View {
         return formatter.string(from: date)
     }
 
-    private func duration(_ seconds: Int) -> String {
+    private func durationLabel(_ seconds: Int) -> some View {
         let minutes = max(0, seconds / 60)
-        return "\(minutes) min"
+        return HStack(spacing: 4) {
+            Text("\(minutes)")
+            Text("route.minutes")
+        }
     }
 
-    private func buffer(_ seconds: Int) -> String {
+    private func bufferLabel(_ seconds: Int) -> some View {
         let minutes = max(0, seconds / 60)
-        return "\(minutes) min buffer"
+        return HStack(spacing: 4) {
+            Text("\(minutes)")
+            Text("route.minutesBuffer")
+        }
     }
 
     private func fareText(_ fare: RouteFare) -> String {

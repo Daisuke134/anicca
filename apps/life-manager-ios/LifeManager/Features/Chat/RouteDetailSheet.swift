@@ -39,8 +39,13 @@ struct RouteDetailSheet: View {
                         .accessibilityElement(children: .combine)
                     }
 
-                    Text("Arrive \(time(presentation.arriveAt, timezone: presentation.timezone)) · \(buffer(presentation.bufferSeconds))")
-                        .font(.body.weight(.medium))
+                    HStack(spacing: 4) {
+                        Text("route.arrive")
+                        Text(time(presentation.arriveAt, timezone: presentation.timezone))
+                        Text("·")
+                        bufferLabel(presentation.bufferSeconds)
+                    }
+                    .font(.body.weight(.medium))
 
                     Text(presentation.providerAttribution)
                         .font(.caption)
@@ -49,11 +54,11 @@ struct RouteDetailSheet: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding()
             }
-            .navigationTitle("Route details")
+            .navigationTitle("route.details")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Close") { dismiss() }
+                    Button("route.close") { dismiss() }
                         .accessibilityIdentifier("route.detail.close")
                 }
             }
@@ -68,7 +73,10 @@ struct RouteDetailSheet: View {
         return formatter.string(from: date)
     }
 
-    private func buffer(_ seconds: Int) -> String {
-        "\(max(0, seconds / 60)) min early"
+    private func bufferLabel(_ seconds: Int) -> some View {
+        HStack(spacing: 4) {
+            Text("\(max(0, seconds / 60))")
+            Text("route.minutesEarly")
+        }
     }
 }

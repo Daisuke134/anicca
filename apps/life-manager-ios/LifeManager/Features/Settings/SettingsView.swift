@@ -21,59 +21,59 @@ struct SettingsView: View {
                 accountSection
 
                 if let failure = viewModel.failure {
-                    Text(failure.localizedMessageKey)
+                    Text(LocalizedStringKey(failure.localizedMessageKey))
                         .foregroundStyle(.secondary)
                         .accessibilityIdentifier("settings.failure")
                 }
             }
-            .navigationTitle("Settings")
+            .navigationTitle("settings.title")
             .task {
                 await viewModel.load()
             }
             .confirmationDialog(
-                "Call your configured number now?",
+                "settings.callNow",
                 isPresented: $showingCallConfirmation,
                 titleVisibility: .visible
             ) {
-                Button("Call me now") {
+                Button("settings.callNow") {
                     Task { await viewModel.callMeNow() }
                 }
                 .accessibilityIdentifier("settings.callConfirm")
-                Button("Cancel", role: .cancel) {}
+                Button("settings.cancel", role: .cancel) {}
             }
             .confirmationDialog(
-                "Delete your Life Manager account?",
+                "settings.deleteAccount",
                 isPresented: $showingDeleteConfirmation,
                 titleVisibility: .visible
             ) {
-                Button("Delete account", role: .destructive) {
+                Button("settings.deleteAccount", role: .destructive) {
                     Task { await viewModel.deleteAccount() }
                 }
                 .accessibilityIdentifier("settings.deletionConfirm")
-                Button("Cancel", role: .cancel) {}
+                Button("settings.cancel", role: .cancel) {}
             }
         }
     }
 
     private var calendarSection: some View {
-        Section("Calendar") {
-            Text(calendarStatusText)
+        Section("settings.calendar") {
+            Text(calendarStatusKey)
                 .accessibilityIdentifier("settings.calendar")
         }
     }
 
     private var profileSection: some View {
-        Section("Profile") {
-            TextField("Name", text: $viewModel.name)
+        Section("settings.profile") {
+            TextField("profile.name", text: $viewModel.name)
                 .accessibilityIdentifier("settings.name")
-            TextField("Home or usual starting point", text: $viewModel.home)
+            TextField("settings.home", text: $viewModel.home)
                 .accessibilityIdentifier("settings.home")
-            Picker("Product language", selection: $viewModel.productLocale) {
-                Text("English").tag(ProductLocale.en)
-                Text("日本語").tag(ProductLocale.ja)
+            Picker("settings.productLanguage", selection: $viewModel.productLocale) {
+                Text("settings.english").tag(ProductLocale.en)
+                Text("settings.japanese").tag(ProductLocale.ja)
             }
             .accessibilityIdentifier("settings.productLocale")
-            Button("Save profile") {
+            Button("settings.save") {
                 Task { await viewModel.saveProfile() }
             }
             .accessibilityIdentifier("settings.saveProfile")
@@ -81,39 +81,49 @@ struct SettingsView: View {
     }
 
     private var phoneSection: some View {
-        Section("Calls") {
-            TextField("Phone number (+country code)", text: $viewModel.phone)
+        Section("settings.calls") {
+            TextField("settings.phone", text: $viewModel.phone)
                 .keyboardType(.phonePad)
                 .accessibilityIdentifier("settings.phone")
             if let phoneValidationError = viewModel.phoneValidationError {
-                Text(phoneValidationError)
+                Text(LocalizedStringKey(phoneValidationError))
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .accessibilityIdentifier("settings.phoneError")
             }
-            Toggle("Enable calls", isOn: Binding(
+            Toggle("settings.enableCalls", isOn: Binding(
                 get: { viewModel.callsEnabled },
                 set: { value in Task { await viewModel.setCallsEnabled(value) } }
             ))
             .accessibilityIdentifier("settings.callsEnabled")
             if viewModel.callLanguageVisible {
-                Picker("Call language", selection: $viewModel.callLanguage) {
-                    Text("English").tag(ProductLocale.en)
-                    Text("日本語").tag(ProductLocale.ja)
+                Picker("settings.callLanguage", selection: $viewModel.callLanguage) {
+                    Text("settings.english").tag(ProductLocale.en)
+                    Text("settings.japanese").tag(ProductLocale.ja)
                 }
                 .accessibilityIdentifier("settings.callLanguage")
-                Button("Call me now") {
+                Button("settings.callNow") {
                     showingCallConfirmation = true
                 }
                 .accessibilityIdentifier("settings.callMeNow")
                 if let receipt = viewModel.callReceipt {
                     VStack(alignment: .leading) {
-                        Text(receipt.message ?? receipt.status.rawValue)
+                        if let message = receipt.message {
+                            Text(message)
+                        } else {
+                            Text(callStatusKey(for: receipt.status))
+                        }
                         if let cooldownSeconds = receipt.cooldownSeconds {
-                            Text("Cooldown: \(cooldownSeconds)s")
+                            HStack(spacing: 4) {
+                                Text("settings.cooldown")
+                                Text("\(cooldownSeconds)s")
+                            }
                         }
                         if let dailyRemaining = receipt.dailyRemaining {
-                            Text("Calls remaining today: \(dailyRemaining)")
+                            HStack(spacing: 4) {
+                                Text("settings.callsRemaining")
+                                Text("\(dailyRemaining)")
+                            }
                         }
                     }
                     .accessibilityIdentifier("settings.callReceipt")
@@ -123,39 +133,51 @@ struct SettingsView: View {
     }
 
     private var subscriptionSection: some View {
-        Section("Subscription") {
-            Button("Restore purchases") {
+        Section("settings.subscription") {
+            Button("settings.restore") {
                 Task { await paywallViewModel?.restorePurchases() }
             }
             .accessibilityIdentifier("settings.restore")
-            Text("Route and chat remain available on the free path.")
+            Text("settings.freePath")
                 .font(.footnote)
         }
     }
 
     private var accountSection: some View {
-        Section("Account") {
-            Button("Log out") {
+        Section("settings.account") {
+            Button("settings.logout") {
                 Task { await viewModel.signOut() }
             }
             .accessibilityIdentifier("settings.logout")
-            Button("Delete account", role: .destructive) {
+            Button("settings.deleteAccount", role: .destructive) {
                 showingDeleteConfirmation = true
             }
             .accessibilityIdentifier("settings.deleteAccount")
             if let receipt = viewModel.deletionReceipt {
-                Text("Deletion receipt: \(receipt.receiptID)")
+                HStack(spacing: 4) {
+                    Text("settings.deletionReceipt")
+                    Text(receipt.receiptID)
+                }
                     .accessibilityIdentifier("settings.deletionReceipt")
             }
         }
     }
 
-    private var calendarStatusText: String {
+    private var calendarStatusKey: LocalizedStringKey {
         switch viewModel.calendarStatus {
-        case .connected: return "Connected"
-        case .actionRequired: return "Action required"
-        case .error: return "Calendar error"
-        case .disconnected: return "Disconnected"
+        case .connected: return "settings.calendarConnected"
+        case .actionRequired: return "settings.calendarActionRequired"
+        case .error: return "settings.calendarError"
+        case .disconnected: return "settings.calendarDisconnected"
+        }
+    }
+
+    private func callStatusKey(for status: CallReceiptStatus) -> LocalizedStringKey {
+        switch status {
+        case .accepted: return "settings.callAccepted"
+        case .cooldown: return "settings.callCooldown"
+        case .dailyLimit: return "settings.callDailyLimit"
+        case .disabled: return "settings.callsDisabled"
         }
     }
 }

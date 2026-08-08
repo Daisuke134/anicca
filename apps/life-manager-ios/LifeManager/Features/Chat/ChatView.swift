@@ -45,7 +45,7 @@ struct ChatView: View {
             if let settingsViewModel {
                 SettingsView(viewModel: settingsViewModel, paywallViewModel: paywallViewModel)
             } else {
-                Text("Settings")
+                Text("settings.title")
                     .font(.title2)
                     .padding()
             }
@@ -57,15 +57,15 @@ struct ChatView: View {
 
     private var header: some View {
         HStack {
-            Text("Life Manager")
+            Text("app.name")
                 .font(.headline)
                 .accessibilityIdentifier("chat.list")
             Spacer()
-            Button("Refresh") {
+            Button("chat.refresh") {
                 Task { await viewModel.refresh() }
             }
             .accessibilityIdentifier("chat.refresh")
-            Button("Settings") {
+            Button("chat.settings") {
                 showingSettings = true
             }
             .accessibilityIdentifier("chat.settings")
@@ -88,10 +88,10 @@ struct ChatView: View {
                     }
 
                     if viewModel.staleReply {
-                        Text("Your answer arrived after this chat changed. Review the latest question before replying.")
+                        Text("chat.staleReply")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
-                            .accessibilityLabel("The answer was stale after the chat refreshed")
+                            .accessibilityLabel(LocalizedStringKey("chat.staleReplyAccessibility"))
                     }
                 }
                 .padding()
@@ -106,7 +106,7 @@ struct ChatView: View {
         }
         .overlay {
             if viewModel.isLoading && viewModel.messages.isEmpty {
-                ProgressView("Loading your chat")
+                ProgressView("chat.loading")
             }
         }
     }
@@ -142,10 +142,10 @@ struct ChatView: View {
 
     private func failureRow(_ failure: AppErrorState) -> some View {
         HStack(spacing: 12) {
-            Text(failure.localizedMessageKey)
+            Text(LocalizedStringKey(failure.localizedMessageKey))
                 .font(.footnote)
             if failure.retryAllowed {
-                Button("Try again") {
+                Button("chat.tryAgain") {
                     Task { await viewModel.retry() }
                 }
                 .buttonStyle(.bordered)
@@ -156,10 +156,10 @@ struct ChatView: View {
 
     private var composer: some View {
         HStack(spacing: 8) {
-            TextField("Answer the open question", text: $viewModel.composerText)
+            TextField("chat.answerOpenQuestion", text: $viewModel.composerText)
                 .textFieldStyle(.roundedBorder)
                 .accessibilityIdentifier("chat.composer")
-            Button("Send") {
+            Button("chat.send") {
                 Task { await viewModel.reply() }
             }
             .disabled(!viewModel.canReply || viewModel.composerText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)

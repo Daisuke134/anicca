@@ -15,32 +15,32 @@ struct SoftPaywallView: View {
 
     var body: some View {
         VStack(spacing: 18) {
-            Text("More support when you want it")
+            Text("paywall.title")
                 .font(.title2.weight(.semibold))
-            Text("Keep using your route and chat for free. Upgrade only when it helps.")
+            Text("paywall.subtitle")
                 .multilineTextAlignment(.center)
 
-            Button("Upgrade") {
+            Button("paywall.upgrade") {
                 Task { await viewModel.upgrade() }
             }
             .buttonStyle(.borderedProminent)
             .accessibilityIdentifier("paywall.upgrade")
 
-            Button("Restore purchases") {
+            Button("paywall.restore") {
                 Task { await viewModel.restorePurchases() }
             }
             .accessibilityIdentifier("paywall.restore")
 
             if let failure = viewModel.failure {
-                Text(failure.localizedMessageKey)
+                Text(LocalizedStringKey(failure.localizedMessageKey))
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .accessibilityIdentifier("paywall.failure")
             }
 
-            Button("Continue free", action: onContinueFree)
+            Button("paywall.continueFree", action: onContinueFree)
                 .accessibilityIdentifier("paywall.continueFree")
-            Button("Not now", action: onContinueFree)
+            Button("paywall.notNow", action: onContinueFree)
                 .accessibilityIdentifier("paywall.cancel")
         }
         .padding()
