@@ -2,9 +2,9 @@
 
 | Field | Value |
 |---|---|
-| Status | APPROVED FOR IMPLEMENTATION |
+| Status | IMPLEMENTED — CFO-0d UI CONTRACT COMPLETE |
 | Parent SSOT | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
-| Active item | CFO-0d — Telegram information contract |
+| Active item | CFO-1a — Provider-neutral adapter contract and redacted fixtures |
 | First real source | Moneytree-connected MUFG accounts |
 | Deferred | Binance and every write-capable financial action |
 
@@ -242,13 +242,13 @@ The user sees success and truth. Internal stack traces, repeated health noise, g
 
 ### CFO-0d — UI contract
 
-- [ ] Pure renderer supports Japanese and English without network or database access.
-- [ ] `complete`, `partial`, `recovered`, and `action_required` fixtures render deterministically.
-- [ ] `summary`, `accounts`, `accuracy`, and `why` use one fixed callback contract under 64 bytes.
-- [ ] Unknown or stale amounts never render as zero or enter a complete-net-worth total.
-- [ ] No fixture/output contains full account IDs, credentials, raw payloads, or real owner data.
-- [ ] Copy is readable without finance or engineering vocabulary.
-- [ ] Existing CFO tests and the normal package test path include the renderer tests.
+- [x] Pure renderer supports Japanese and English without network or database access.
+- [x] `complete`, `partial`, `recovered`, and `action_required` fixtures render deterministically.
+- [x] `summary`, `accounts`, `accuracy`, and `why` use one fixed callback contract under 64 bytes.
+- [x] Unknown or stale amounts never render as zero or enter a complete-net-worth total.
+- [x] No fixture/output contains full account IDs, credentials, raw payloads, or real owner data.
+- [x] Copy is readable without finance or engineering vocabulary.
+- [x] Existing CFO tests and the normal package test path include the renderer tests.
 
 ### M1 — real Moneytree report
 
@@ -260,6 +260,10 @@ The user sees success and truth. Internal stack traces, repeated health noise, g
 - [ ] A transient failure can recover only through fresh reread plus reconciliation.
 - [ ] An exhausted failure sends one actionable alert, not repeated daily spam.
 - [ ] A second owner-local day completes without manual repair.
+
+### CFO-0d closure evidence
+
+The pure renderer contract is implemented in `a42839db7` and extended in `d85aaca6d`; review-round 1's Important exclusion-display finding was fixed in `38d34993d` and the scoped re-review was Approved. Focused renderer tests pass 13/13, CFO tests pass 48/48, and the full package passes 680/680. This is a tested UI contract only: no Moneytree sync and no real finance Telegram message has been delivered. The next active item is CFO-1a; all M1 real Moneytree acceptance items above remain unchecked.
 
 ## 11. Ordered Implementation
 

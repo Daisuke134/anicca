@@ -2,12 +2,12 @@
 
 | Field | Value |
 |---|---|
-| Status | CFO-0c COMPLETE — MONEYTREE-FIRST M1 APPROVED |
+| Status | CFO-0d COMPLETE — MONEYTREE-FIRST M1 DESIGN APPROVED |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
 | Existing foundations | `apps/life-call`, interactive Moneytree App access, Fleet telemetry, `lm_api_cost`, and the canonical `lm_agent_earnings` source (the panel's `lm_financial_ledger` name is a stale alias) |
-| First unfinished item | **CFO-0d: freeze the Telegram information hierarchy, copy, inline-button contract, and evidence fixtures** |
+| First unfinished item | **CFO-1a: specify provider-neutral adapter contracts and redacted fixtures** |
 
 ## 1. Overview — What and Why
 
@@ -661,7 +661,7 @@ The child spec narrows M0 without replacing this document's financial truth, saf
 - [x] **CFO-0c** Inventory every live earning loop and assign a stable `business_id`, owner, ledger source,
       runtime, and current status. Reconcile the seed registry in this spec against launchd and canonical ledgers;
       quarantine legacy/fake MRR and do not change execution.
-- [ ] **CFO-0d** Freeze the Telegram information hierarchy, Japanese/English copy, inline-button contract, and
+- [x] **CFO-0d** Freeze the Telegram information hierarchy, Japanese/English copy, inline-button contract, and
       four evidence labels from this spec with accessibility/readability fixtures. Include bounded self-heal,
       recovered-report, one-alert dedupe, and every-business drill-down states.
 
@@ -682,8 +682,16 @@ documentation closure commit is `ce2c99239` (`docs(cfo): close complete runtime 
 - Receipt permissions were `0600`, containing-directory permissions were `0700`, and no receipt or private path was
   tracked. The inventory performed no launchd, ledger, database, network-write, or Telegram mutation.
 
-`CFO-0d` is now the only active financial item. Missing or planned receipt sources remain unverified and are not
-converted into zero revenue.
+Before the UI-contract closure, `CFO-0d` was the only active financial item. Missing or planned receipt sources
+remain unverified and are not converted into zero revenue.
+
+### CFO-0d closure evidence
+
+The Moneytree-first Telegram UI contract is complete: Task 1 commit `a42839db7`, Task 2 commit `d85aaca6d`, and
+review-round 1 fix `38d34993d`. Focused renderer tests pass 13/13, CFO tests pass 48/48, and the full package passes
+680/680; Task 1 review was Approved and the Task 2 Important finding was fixed with a scoped re-review Approved.
+This closes only the pure, privacy-safe renderer contract. No Moneytree sync and no real finance Telegram message
+has been delivered yet. The first unfinished item is now CFO-1a.
 
 ### M1 — One truthful Moneytree-first read-only snapshot
 

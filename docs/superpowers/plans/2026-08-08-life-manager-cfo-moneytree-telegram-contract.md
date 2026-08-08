@@ -11,7 +11,7 @@
 ## Global Constraints
 
 - Parent design: `docs/superpowers/specs/2026-08-08-life-manager-cfo-moneytree-daily-report-design.md`.
-- Active TODO is CFO-0d only. Do not implement Moneytree reads, persistence, Telegram sends, callback handlers, schedulers, business P&L, token cost, tax, spending advice, or Binance.
+- Task 1–2 implementation scope is CFO-0d only. Do not implement Moneytree reads, persistence, Telegram sends, callback handlers, schedulers, business P&L, token cost, tax, spending advice, or Binance.
 - RED must be observed before production edits in each task.
 - No real balance, merchant, account identifier, path, token, payload, or user fixture may enter Git.
 - Unknown is not zero. `partial` and `action_required` cannot render a complete-net-worth claim.
@@ -93,7 +93,7 @@ Allowed views are `summary`, `accounts`, `accuracy`, and `why`. Allowed evidence
 - Amounts are integer JPY minor units and format with locale-aware grouping.
 - All interpolated labels are Telegram-HTML escaped.
 
-- [ ] **Step 1: Write RED tests for all four states**
+- [x] **Step 1: Write RED tests for all four states**
 
 Start with a `completeSnapshot()` factory containing only synthetic values. Add these tests:
 
@@ -143,7 +143,7 @@ Also assert:
 - `action_required` requires an action and null net worth.
 - recovered text contains a short repair note but no stack/error/debug vocabulary.
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
 ```bash
 cd apps/life-call
@@ -152,7 +152,7 @@ node --test lib/cfo-telegram.test.js
 
 Expected: FAIL because `./cfo-telegram.js` does not exist.
 
-- [ ] **Step 3: Add the smallest CFO i18n dictionary**
+- [x] **Step 3: Add the smallest CFO i18n dictionary**
 
 Append one `CFO_STRINGS` object to `lib/i18n.js` and export it. Keep sentences as plain-language fragments rather than prebuilt HTML. Minimum keys:
 
@@ -189,7 +189,7 @@ const CFO_STRINGS = Object.freeze({
 
 Add only the remaining fragments needed by the tested output. Do not add business, token, tax, spending, or Binance copy.
 
-- [ ] **Step 4: Implement strict validation and summary rendering**
+- [x] **Step 4: Implement strict validation and summary rendering**
 
 Use small closed constants and formatters:
 
@@ -213,7 +213,7 @@ function formatAmount(locale, value) {
 
 Validation reads only the closed fields above. It rejects unsupported locale/view/state/currency, unsafe integers, missing sources, inconsistent state data, and unproven recovery. Escape `&`, `<`, and `>` in every interpolated label. Do not include `JSON.stringify(snapshot)` or raw errors in the result.
 
-- [ ] **Step 5: Run GREEN and size check**
+- [x] **Step 5: Run GREEN and size check**
 
 ```bash
 cd apps/life-call
@@ -225,7 +225,7 @@ git diff --check
 
 Expected: Task 1 tests pass; production module is at or below 120 LOC before Task 2; diff check exits zero.
 
-- [ ] **Step 6: Commit and push Task 1**
+- [x] **Step 6: Commit and push Task 1**
 
 ```bash
 git add apps/life-call/lib/cfo-telegram.js apps/life-call/lib/cfo-telegram.test.js apps/life-call/lib/i18n.js
@@ -242,7 +242,7 @@ git push
 - Modify: `apps/life-call/lib/cfo-telegram.js`
 - Modify: `apps/life-call/package.json`
 
-- [ ] **Step 1: Add RED tests for the four views and privacy boundary**
+- [x] **Step 1: Add RED tests for the four views and privacy boundary**
 
 ```js
 test("all drill-down callbacks are deterministic and at most 64 bytes", () => {
@@ -279,7 +279,7 @@ test("fixed callback builder rejects invalid view, date, and revision", () => {
 
 Also assert every non-summary view has a route back to `summary`, evidence status labels round-trip in Japanese and English, unavailable amounts render `不明/Unknown`, and no output contains the words `stack`, `exception`, `JSON`, `payload`, or `token`.
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
 ```bash
 cd apps/life-call
@@ -288,7 +288,7 @@ node --test lib/cfo-telegram.test.js
 
 Expected: FAIL because drill-down rendering and/or callback exports are incomplete.
 
-- [ ] **Step 3: Implement fixed callbacks and four views**
+- [x] **Step 3: Implement fixed callbacks and four views**
 
 Use the one compact format:
 
@@ -305,7 +305,7 @@ function callbackData({ view, reportingDate, revision }) {
 
 The renderer builds buttons from view names, not caller-supplied callback strings. `accounts` shows each redacted label, amount or Unknown, and freshness. `accuracy` shows the four evidence labels and source `asOf`. `why` states that the confirmed difference is confirmed assets minus confirmed liabilities and names excluded items. In `partial`/`action_required`, call it a confirmed subtotal/difference, never complete net worth.
 
-- [ ] **Step 4: Wire into the existing CFO and normal test path**
+- [x] **Step 4: Wire into the existing CFO and normal test path**
 
 Change only `test:cfo`:
 
@@ -315,7 +315,7 @@ Change only `test:cfo`:
 
 Because `pretest` already calls `npm run test:cfo`, no second test hook is added.
 
-- [ ] **Step 5: Verify focused and regression paths**
+- [x] **Step 5: Verify focused and regression paths**
 
 ```bash
 cd apps/life-call
@@ -327,7 +327,7 @@ git diff --check
 
 Expected: all CFO tests and the full package test pass; no network or Telegram send occurs.
 
-- [ ] **Step 6: Fresh review**
+- [x] **Step 6: Fresh review**
 
 A fresh read-only reviewer checks only the Task 1–2 diff against the approved child spec. Required questions:
 
@@ -339,7 +339,7 @@ A fresh read-only reviewer checks only the Task 1–2 diff against the approved 
 
 Fix Critical/Important findings with RED → GREEN and repeat this focused review once. Do not create a generic code-review stage.
 
-- [ ] **Step 7: Close CFO-0d, commit, and push**
+- [x] **Step 7: Close CFO-0d, commit, and push**
 
 Update:
 
@@ -359,3 +359,7 @@ git push
 ```
 
 Completion means a pure, tested UI contract only. It is not a real Moneytree sync or Telegram delivery. The next active item is CFO-1a.
+
+### Task 1–2 closure evidence
+
+Task 1 committed as `a42839db7` and was reviewed Approved. Task 2 committed as `d85aaca6d`; review-round 1 found one Important exclusion-display issue, fixed with RED → GREEN in `38d34993d`, and the scoped re-review was Approved. Focused renderer verification is 13/13, CFO verification is 48/48, and the full package is 680/680 after the existing lockfile dependency install. This closes the pure UI contract only: no Moneytree sync and no real finance Telegram message has been delivered. The next active item is CFO-1a.
