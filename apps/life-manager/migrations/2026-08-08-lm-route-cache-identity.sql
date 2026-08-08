@@ -41,13 +41,26 @@ UPDATE public.lm_route_cache
  WHERE route_result IS NULL
    AND route IS NOT NULL;
 
--- Remove every old identity that can make PostgREST infer the wrong conflict
--- target. The old rows remain in place, including rows whose cache_key is NULL.
+-- Remove only the pre-cache-key identity. The old provider and mobile conflict
+-- targets must remain during the rolling window: old provider instances still
+-- send `on_conflict=cache_key`, while old mobile instances still send
+-- `on_conflict=uid,cache_key` and a route-only payload. The old rows remain in
+-- place, including rows whose cache_key is NULL.
 ALTER TABLE public.lm_route_cache
   DROP CONSTRAINT IF EXISTS lm_route_cache_uid_from_geo_to_geo_time_bucket_key;
 DROP INDEX IF EXISTS public.lm_route_cache_uid_from_geo_to_geo_time_bucket_key;
-DROP INDEX IF EXISTS public.lm_route_cache_cache_key_idx;
-DROP INDEX IF EXISTS public.lm_route_cache_mobile_key_unique;
+
+-- Compatibility target for the old provider writer. Keep this index until all
+-- old provider instances have drained; a later cleanup migration may remove it
+-- after the canonical tenant-scoped writer is the only writer.
+CREATE UNIQUE INDEX IF NOT EXISTS lm_route_cache_cache_key_idx
+  ON public.lm_route_cache (cache_key);
+
+-- Compatibility target for the old mobile writer. Keep the named index as well
+-- as the canonical index below so either migration order remains safe and both
+-- conflict clauses can be inferred during a rolling deployment.
+CREATE UNIQUE INDEX IF NOT EXISTS lm_route_cache_mobile_key_unique
+  ON public.lm_route_cache (uid, cache_key);
 
 -- Non-partial means `on_conflict=uid,cache_key` is an exact inference target.
 -- NULL cache_key values on retained legacy rows are allowed by PostgreSQL's
@@ -61,7 +74,8 @@ CREATE INDEX IF NOT EXISTS lm_route_cache_uid_computed_at_idx
 -- Staged validation: validate canonical rows without a rolling column rewrite,
 -- which would lock or reject retained legacy rows during deployment. A null
 -- cache_key marks a legacy row; once a key is present every durable field and
--- the structured result must be present.
+-- either the canonical structured result or the legacy route payload must be
+-- present. The latter keeps route-only old mobile writers valid until cleanup.
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -83,7 +97,7 @@ BEGIN
           AND duration_secs IS NOT NULL
           AND computed_at IS NOT NULL
           AND ttl_secs IS NOT NULL
-          AND route_result IS NOT NULL
+          AND (route_result IS NOT NULL OR route IS NOT NULL)
         )
       ) NOT VALID;
   END IF;

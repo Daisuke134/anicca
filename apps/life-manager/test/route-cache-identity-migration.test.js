@@ -14,12 +14,46 @@ test("route cache follow-up migration is additive and does not delete legacy row
   assert.doesNotMatch(SQL, /DROP\s+TABLE\s+public\.lm_route_cache/i);
 });
 
-test("route cache follow-up drops old global identities and creates exact tenant key", () => {
-  assert.match(SQL, /DROP INDEX IF EXISTS public\.lm_route_cache_cache_key_idx/);
-  assert.match(SQL, /DROP INDEX IF EXISTS public\.lm_route_cache_mobile_key_unique/);
+test("route cache follow-up retains rolling identities and creates exact tenant key", () => {
+  // The old provider still sends on_conflict=cache_key and old mobile instances
+  // still send route-only rows while this migration rolls through the fleet.
+  assert.doesNotMatch(SQL, /DROP INDEX IF EXISTS public\.lm_route_cache_cache_key_idx/);
+  assert.doesNotMatch(SQL, /DROP INDEX IF EXISTS public\.lm_route_cache_mobile_key_unique/);
+  assert.match(SQL, /CREATE UNIQUE INDEX IF NOT EXISTS lm_route_cache_cache_key_idx[\s\S]*ON public\.lm_route_cache \(cache_key\);/);
   assert.match(SQL, /CREATE UNIQUE INDEX IF NOT EXISTS lm_route_cache_uid_cache_key_unique[\s\S]*ON public\.lm_route_cache \(uid, cache_key\);/);
-  assert.doesNotMatch(SQL, /CREATE UNIQUE INDEX[^;]*ON public\.lm_route_cache \(cache_key\)/);
   assert.doesNotMatch(SQL, /WHERE\s+cache_key\s+IS\s+NOT\s+NULL/i);
+});
+
+test("route cache follow-up keeps old writer conflict targets during the rolling window", () => {
+  assert.doesNotMatch(SQL, /DROP INDEX IF EXISTS public\.lm_route_cache_cache_key_idx/);
+  assert.doesNotMatch(SQL, /DROP INDEX IF EXISTS public\.lm_route_cache_mobile_key_unique/);
+  assert.match(SQL, /CREATE UNIQUE INDEX IF NOT EXISTS lm_route_cache_cache_key_idx[\s\S]*ON public\.lm_route_cache \(cache_key\);/);
+  assert.match(SQL, /CREATE UNIQUE INDEX IF NOT EXISTS lm_route_cache_uid_cache_key_unique[\s\S]*ON public\.lm_route_cache \(uid, cache_key\);/);
+  assert.match(SQL, /route_result IS NOT NULL[\s\S]*OR[\s\S]*route IS NOT NULL/);
+  assert.doesNotMatch(SQL, /cache_key IS NOT NULL[\s\S]*route_result IS NOT NULL[\s\S]*\)/);
+});
+
+test("migration contract simulates old provider and old mobile writes before cleanup", () => {
+  const hasGlobalTarget = /CREATE UNIQUE INDEX IF NOT EXISTS lm_route_cache_cache_key_idx[\s\S]*ON public\.lm_route_cache \(cache_key\);/.test(SQL);
+  const hasTenantTarget = /CREATE UNIQUE INDEX IF NOT EXISTS lm_route_cache_uid_cache_key_unique[\s\S]*ON public\.lm_route_cache \(uid, cache_key\);/.test(SQL);
+  assert.equal(hasGlobalTarget, true, "old provider on_conflict=cache_key must still infer a unique target");
+  assert.equal(hasTenantTarget, true, "new provider/mobile on_conflict=uid,cache_key must infer a target");
+
+  const rows = [];
+  const oldProviderWrite = (row) => {
+    assert.equal(hasGlobalTarget, true);
+    rows.push({ ...row, route_result: row.route_result || null });
+  };
+  const oldMobileWrite = (row) => {
+    assert.equal(hasTenantTarget, true);
+    assert.ok(row.route, "old mobile instances only send route");
+    rows.push({ ...row, route_result: null });
+  };
+  oldProviderWrite({ uid: "tenant-a", cache_key: "legacy-provider-key", route_result: { durationSecs: 900 } });
+  oldMobileWrite({ uid: "tenant-a", cache_key: "legacy-mobile-key", route: { durationSeconds: 1200 } });
+  assert.equal(rows.length, 2, "both old writers remain accepted until cleanup");
+  assert.deepEqual(rows[1].route, { durationSeconds: 1200 });
+  assert.equal(rows[1].route_result, null, "backfill is additive; old route-only payload is not rejected");
 });
 
 test("route cache follow-up is safe after either original migration order", () => {
