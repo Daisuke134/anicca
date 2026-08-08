@@ -194,6 +194,74 @@ final class AppViewModelTests: XCTestCase {
         XCTAssertEqual(keys.first, keys.last)
         XCTAssertEqual(viewModel.route, .chat)
     }
+
+    func testDeletionReceiptIsCapturedBeforeSignedOutRouteShowsWelcome() async {
+        let receipt = StateFixtures.deletionReceipt(id: "deletion-root-1")
+        let (viewModel, settings) = makeDeletionFlow(accountReceipt: receipt)
+        viewModel.bindSettingsProfileHandler()
+
+        await settings.deleteAccount()
+
+        XCTAssertEqual(viewModel.route, .welcome)
+        XCTAssertEqual(viewModel.terminalDeletionReceipt, receipt)
+    }
+
+    func testOrdinarySignOutDoesNotCreateTerminalDeletionReceipt() async {
+        let (viewModel, settings) = makeDeletionFlow(accountReceipt: nil)
+        viewModel.bindSettingsProfileHandler()
+
+        await settings.signOut()
+
+        XCTAssertEqual(viewModel.route, .welcome)
+        XCTAssertNil(viewModel.terminalDeletionReceipt)
+    }
+
+    func testRestoreSessionClearsTerminalDeletionReceiptForANewSession() async {
+        let receipt = StateFixtures.deletionReceipt(id: "deletion-restore-1")
+        let (viewModel, settings) = makeDeletionFlow(accountReceipt: receipt)
+        viewModel.bindSettingsProfileHandler()
+        await settings.deleteAccount()
+        XCTAssertEqual(viewModel.terminalDeletionReceipt, receipt)
+
+        await viewModel.restoreSession()
+
+        XCTAssertEqual(viewModel.route, .welcome)
+        XCTAssertNil(viewModel.terminalDeletionReceipt)
+    }
+
+    func testConnectCalendarClearsTerminalDeletionReceiptForAReconnection() async {
+        let receipt = StateFixtures.deletionReceipt(id: "deletion-reconnect-1")
+        let (viewModel, settings) = makeDeletionFlow(accountReceipt: receipt)
+        viewModel.bindSettingsProfileHandler()
+        await settings.deleteAccount()
+        XCTAssertEqual(viewModel.terminalDeletionReceipt, receipt)
+
+        await viewModel.connectCalendar()
+
+        XCTAssertEqual(viewModel.route, .profile)
+        XCTAssertNil(viewModel.terminalDeletionReceipt)
+    }
+
+    private func makeDeletionFlow(accountReceipt: AccountDeletionReceipt?) -> (AppViewModel, SettingsViewModel) {
+        let auth = StateAuthService(restored: StateFixtures.session, connected: StateFixtures.session)
+        let profile = StateProfileService(profile: StateFixtures.profile)
+        let settings = SettingsViewModel(
+            profile: profile,
+            auth: auth,
+            calls: AppStateCallService(),
+            account: AppStateAccountService(receipt: accountReceipt),
+            retryStore: TestOperationRetryStore()
+        )
+        return (
+            AppViewModel(
+                auth: auth,
+                profile: profile,
+                analysis: StateAnalysisService(results: []),
+                settings: settings
+            ),
+            settings
+        )
+    }
 }
 
 private enum StateFixtures {
@@ -241,6 +309,34 @@ private enum StateFixtures {
                 actions: []
             )
         )
+    }
+
+    static func deletionReceipt(id: String) -> AccountDeletionReceipt {
+        AccountDeletionReceipt(
+            receiptID: id,
+            deletedAt: Date.iso8601("2026-08-10T08:20:00.000Z"),
+            sessionsRevoked: true,
+            providerConnectionsRevoked: true
+        )
+    }
+}
+
+private actor AppStateCallService: CallServicing {
+    func placeTestCall(idempotencyKey: UUID) async throws -> CallReceipt {
+        fatalError("not used")
+    }
+}
+
+private actor AppStateAccountService: AccountServicing {
+    private let receipt: AccountDeletionReceipt?
+
+    init(receipt: AccountDeletionReceipt?) {
+        self.receipt = receipt
+    }
+
+    func deleteAccount(idempotencyKey: UUID) async throws -> AccountDeletionReceipt {
+        guard let receipt else { throw APIError.server(statusCode: 503) }
+        return receipt
     }
 }
 

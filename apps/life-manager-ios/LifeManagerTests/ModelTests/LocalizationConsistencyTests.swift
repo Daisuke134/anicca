@@ -66,7 +66,8 @@ final class LocalizationConsistencyTests: XCTestCase {
         "settings.calendarError", "settings.calendarDisconnected", "settings.callAccepted",
         "settings.callCooldown", "settings.callDailyLimit", "error.server",
         "error.sessionExpired", "error.generic", "error.network", "paywall.purchaseFailed",
-        "paywall.restoreFailed", "settings.phoneInvalid", "settings.phoneRequired", "settings.callsDisabled"
+        "paywall.restoreFailed", "settings.phoneInvalid", "settings.phoneRequired", "settings.callsDisabled",
+        "account.deletionReceipt", "account.deletionReceiptID", "account.deletionCompletedAt"
     ]
 }
 

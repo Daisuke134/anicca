@@ -74,6 +74,7 @@ final class AppViewModel {
     private(set) var profile: UserProfile?
     private(set) var lastAnalysisStatus: AnalysisStatus?
     private(set) var lastAnalysisReceipt: AnalysisResult?
+    private(set) var terminalDeletionReceipt: AccountDeletionReceipt?
     private(set) var phoneSkipped = false
     private(set) var phoneValidationError: String?
     private var profileChangedHandler: (@MainActor (UserProfile) async -> Void)?
@@ -116,7 +117,8 @@ final class AppViewModel {
             await self?.acceptProfile(profile)
         }
         settingsViewModel?.setSignedOutHandler { [weak self] in
-            await self?.handleSignedOut()
+            guard let self else { return }
+            await self.handleSignedOut(deletionReceipt: self.settingsViewModel?.deletionReceipt)
         }
     }
 
@@ -129,7 +131,8 @@ final class AppViewModel {
         await profileChangedHandler?(value)
     }
 
-    private func handleSignedOut() async {
+    private func handleSignedOut(deletionReceipt: AccountDeletionReceipt?) async {
+        terminalDeletionReceipt = deletionReceipt
         route = .welcome
         profile = nil
         lastAnalysisStatus = nil
@@ -138,6 +141,7 @@ final class AppViewModel {
     }
 
     func restoreSession() async {
+        terminalDeletionReceipt = nil
         route = .restoring
         do {
             guard try await auth.restoreSession() != nil else {
@@ -171,6 +175,7 @@ final class AppViewModel {
     }
 
     func connectCalendar() async {
+        terminalDeletionReceipt = nil
         route = .calendarConnecting
         do {
             _ = try await auth.connectCalendar()
