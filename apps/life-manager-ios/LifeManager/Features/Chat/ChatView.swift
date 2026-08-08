@@ -7,12 +7,13 @@ protocol ChatForegroundRefreshing: AnyObject {
 
 extension ChatViewModel: ChatForegroundRefreshing {
     func refreshFromForeground() async {
-        await refresh()
+        await syncFromForeground()
     }
 }
 
 struct ChatView: View {
     @State private var viewModel: ChatViewModel
+    @Environment(\.scenePhase) private var scenePhase
     private let settingsViewModel: SettingsViewModel?
     private let paywallViewModel: SoftPaywallViewModel?
     @State private var selectedRouteMessage: ChatMessage?
@@ -52,6 +53,10 @@ struct ChatView: View {
         }
         .task {
             await viewModel.loadInitial()
+        }
+        .onChange(of: scenePhase) { _, phase in
+            guard phase == .active else { return }
+            Task { await viewModel.refreshFromForeground() }
         }
     }
 

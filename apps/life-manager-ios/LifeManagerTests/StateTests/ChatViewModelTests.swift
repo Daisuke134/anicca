@@ -65,7 +65,10 @@ final class ChatViewModelTests: XCTestCase {
         let second = ChatFixtures.message(id: "message-2", type: .system, createdAt: "2026-08-10T08:10:00.000Z")
         let service = ChatTestService(pages: [
             nil: [ChatPage(messages: [first], nextCursor: "cursor-1", hasMore: true)],
-            "cursor-1": [ChatPage(messages: [second], nextCursor: nil, hasMore: false)]
+            "cursor-1": [
+                ChatPage(messages: [second], nextCursor: nil, hasMore: false),
+                ChatPage(messages: [second], nextCursor: nil, hasMore: false)
+            ]
         ])
         let viewModel = ChatViewModel(service: service)
 
@@ -74,6 +77,28 @@ final class ChatViewModelTests: XCTestCase {
         await viewModel.loadMore()
 
         XCTAssertEqual(viewModel.scrollAnchorID, "message-1")
+        XCTAssertEqual(viewModel.messages.map(\.id), ["message-1", "message-2"])
+    }
+
+    func testForegroundSyncPreservesAnchorAndPushSyncTargetsStableMessage() async {
+        let first = ChatFixtures.message(id: "message-1", type: .system, createdAt: "2026-08-10T08:00:00.000Z")
+        let second = ChatFixtures.message(id: "message-2", type: .route, createdAt: "2026-08-10T08:10:00.000Z")
+        let service = ChatTestService(pages: [
+            nil: [ChatPage(messages: [first], nextCursor: "cursor-1", hasMore: true)],
+            "cursor-1": [
+                ChatPage(messages: [second], nextCursor: nil, hasMore: false),
+                ChatPage(messages: [second], nextCursor: nil, hasMore: false)
+            ]
+        ])
+        let viewModel = ChatViewModel(service: service)
+
+        await viewModel.loadInitial()
+        viewModel.rememberScrollAnchor("message-1")
+        await viewModel.syncFromForeground()
+        XCTAssertEqual(viewModel.scrollAnchorID, "message-1")
+
+        await viewModel.syncFromPush(targetMessageID: "message-2")
+        XCTAssertEqual(viewModel.scrollAnchorID, "message-2")
         XCTAssertEqual(viewModel.messages.map(\.id), ["message-1", "message-2"])
     }
 

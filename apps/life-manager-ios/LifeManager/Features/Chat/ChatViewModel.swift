@@ -5,6 +5,7 @@ import Observation
 @Observable
 final class ChatViewModel {
     private let service: ChatServicing
+    private let coordinator: ChatSyncCoordinator
     private var fetchGeneration = 0
     private var answeredQuestionIDs = Set<String>()
 
@@ -22,6 +23,7 @@ final class ChatViewModel {
 
     init(service: ChatServicing) {
         self.service = service
+        coordinator = ChatSyncCoordinator(service: service)
     }
 
     var openQuestion: ChatQuestion? {
@@ -47,12 +49,22 @@ final class ChatViewModel {
 
     func loadInitial() async {
         guard !isLoading else { return }
-        await fetchFirstPage()
+        await sync(reason: .launch)
     }
 
     func refresh() async {
         guard !isLoading else { return }
-        await fetchFirstPage()
+        await sync(reason: .manual)
+    }
+
+    func syncFromForeground() async {
+        guard !isLoading else { return }
+        await sync(reason: .foreground)
+    }
+
+    func syncFromPush(targetMessageID: String) async {
+        guard !isLoading else { return }
+        await sync(reason: .push, targetMessageID: targetMessageID)
     }
 
     func retry() async {
@@ -64,7 +76,7 @@ final class ChatViewModel {
             !isLoadingMore,
             !isLoading,
             hasMore,
-            let cursor = nextCursor
+            nextCursor != nil
         else {
             return
         }
@@ -75,14 +87,14 @@ final class ChatViewModel {
         let existingAnchor = scrollAnchorID ?? messages.first?.id
 
         do {
-            let page = try await service.fetch(after: cursor)
+            let result = try await coordinator.sync(reason: .manual)
             guard generation == fetchGeneration else {
                 isLoadingMore = false
                 return
             }
-            merge(page.messages, replacing: false)
-            nextCursor = page.nextCursor
-            hasMore = page.hasMore
+            merge(result.page.messages, replacing: result.requestedCursor == nil)
+            nextCursor = result.page.nextCursor
+            hasMore = result.page.hasMore
             if scrollAnchorID == nil {
                 scrollAnchorID = existingAnchor
             }
@@ -131,7 +143,7 @@ final class ChatViewModel {
         isReplying = false
     }
 
-    private func fetchFirstPage() async {
+    private func sync(reason: SyncReason, targetMessageID: String? = nil) async {
         isLoading = true
         failure = nil
         staleReply = false
@@ -139,14 +151,17 @@ final class ChatViewModel {
         let generation = fetchGeneration
 
         do {
-            let page = try await service.fetch(after: nil)
+            let result = try await coordinator.sync(reason: reason, targetMessageID: targetMessageID)
             guard generation == fetchGeneration else {
                 isLoading = false
                 return
             }
-            merge(page.messages, replacing: true)
-            nextCursor = page.nextCursor
-            hasMore = page.hasMore
+            merge(result.page.messages, replacing: result.requestedCursor == nil)
+            nextCursor = result.page.nextCursor
+            hasMore = result.page.hasMore
+            if let target = result.targetMessageID, messages.contains(where: { $0.id == target }) {
+                scrollAnchorID = target
+            }
         } catch {
             if generation == fetchGeneration {
                 failure = AppErrorState(error: error)
