@@ -116,6 +116,32 @@ test("valid registry is frozen and exact/terminal-star labels classify once", ()
   assert.equal(matchesLabel("ai.anicca.writer-*", "ai.anicca.writer"), false);
 });
 
+test("wildcard-only matcher is accepted consistently by the public and registry contracts", () => {
+  assert.equal(matchesLabel("*", "any.launchd.label"), true);
+  const fixture = validFixture();
+  fixture.financial_units[0].runtime_matchers = ["*"];
+  const registry = validateRegistry(fixture);
+  assert.deepEqual(classifyLabel(registry, "any.launchd.label"), {
+    kind: "financial_unit", targetIds: ["writer_agent"],
+  });
+});
+
+test("class instances and custom prototypes are rejected before cloning", () => {
+  class RegistryLike {}
+  const root = Object.assign(new RegistryLike(), validFixture());
+  assert.throws(() => validateRegistry(root), /^Error: cfo_registry_invalid:/);
+
+  const unit = Object.assign(Object.create({ custom: true }), validFixture().financial_units[0]);
+  const unitFixture = validFixture();
+  unitFixture.financial_units[0] = unit;
+  assert.throws(() => validateRegistry(unitFixture), /^Error: cfo_registry_invalid:/);
+
+  const displayName = Object.assign(Object.create({ custom: true }), { en: "Writer Agent", ja: "Writer Agent" });
+  const displayNameFixture = validFixture();
+  displayNameFixture.financial_units[0].display_name = displayName;
+  assert.throws(() => validateRegistry(displayNameFixture), /^Error: cfo_registry_invalid:/);
+});
+
 test("duplicates, unknown keys, money, secret-like keys, unsafe paths, and overlap fail", () => {
   for (const mutate of invalidMutations()) {
     assert.throws(() => validateRegistry(mutate(validFixture())), /^Error: cfo_registry_invalid:/);

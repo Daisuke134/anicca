@@ -16,7 +16,7 @@ function fail(reason) { throw new Error(`${ERROR_PREFIX}${reason}`); }
 function plain(value) {
   if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
   const prototype = Object.getPrototypeOf(value);
-  return prototype === Object.prototype || prototype === null;
+  return prototype === Object.prototype;
 }
 function keys(value, allowed) {
   const unknown = Object.keys(value).find((key) => !allowed.has(key));
@@ -51,7 +51,7 @@ function enumValue(value, allowed) {
 function validMatcher(value) {
   if (typeof value !== "string" || value.length === 0) return false;
   const star = value.indexOf("*");
-  return star < 0 || star > 0 && star === value.length - 1 && value.indexOf("*", star + 1) < 0;
+  return star < 0 || star === value.length - 1 && value.indexOf("*", star + 1) < 0;
 }
 function matcherList(value, required = false) {
   if (!Array.isArray(value) || required && value.length === 0) fail("invalid_matchers");
@@ -68,9 +68,30 @@ function freeze(value, seen = new WeakSet()) {
   return Object.freeze(value);
 }
 
+function assertParsedShape(input) {
+  if (!plain(input)) fail("invalid_root");
+  if (Array.isArray(input.financial_units)) {
+    input.financial_units.forEach((unit) => {
+      if (!plain(unit)) fail("invalid_unit");
+      if (!plain(unit.display_name)) fail("invalid_display_name");
+    });
+  }
+  if (Array.isArray(input.runtime_exclusions)) {
+    input.runtime_exclusions.forEach((exclusion) => {
+      if (!plain(exclusion)) fail("invalid_exclusion");
+    });
+  }
+}
+
 function validateRegistry(input) {
   let registry;
-  try { registry = structuredClone(input); } catch { fail("non_json_value"); }
+  try {
+    assertParsedShape(input);
+    registry = structuredClone(input);
+  } catch (error) {
+    if (error instanceof Error && error.message.startsWith(ERROR_PREFIX)) throw error;
+    fail("non_json_value");
+  }
   try {
     if (!plain(registry)) fail("invalid_root");
     keys(registry, ROOT_KEYS);
