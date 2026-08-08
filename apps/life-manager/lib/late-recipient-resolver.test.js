@@ -100,6 +100,7 @@ test("uses an approved Contacts candidate when Calendar and Gmail have no addres
       return [{
         display_name: "Contact Person",
         email: "contact@example.invalid",
+        approved: true,
         evidence_refs: ["contacts:person-1"],
         confidence: "high",
         event_role: "attendee",
@@ -112,6 +113,72 @@ test("uses an approved Contacts candidate when Calendar and Gmail have no addres
   assert.equal(result.candidates[0].email, "contact@example.invalid");
   assert.equal(result.candidates[0].source, "contacts");
   assert.deepEqual(calls, ["gmail", ["contacts", "user-1", "Project sync"], "web"]);
+});
+
+test("does not resolve a generic Contacts candidate when approval is absent or false", async () => {
+  for (const approval of [undefined, false]) {
+    let confirmationRequests = 0;
+    const candidate = {
+      display_name: "Unapproved Contact",
+      email: approval === undefined ? "missing-approval@example.invalid" : "false-approval@example.invalid",
+      evidence_refs: ["contacts:unapproved"],
+      ...(approval === undefined ? {} : { approved: approval }),
+    };
+    const result = await resolveLateRecipients({
+      uid: "user-1",
+      actorEmails: [],
+      event: { id: `event-unapproved-${approval === undefined ? "missing" : "false"}`, attendees: [] },
+    }, emptyDeps({
+      approvedContacts: null,
+      searchContacts: async () => [candidate],
+      requestUserConfirmation: async () => { confirmationRequests += 1; return null; },
+    }));
+
+    assert.equal(result.status, "missing");
+    assert.deepEqual(result.candidates, []);
+    assert.equal(confirmationRequests, 1);
+  }
+});
+
+test("does not auto-resolve a Gmail address without a concrete Gmail evidence reference", async () => {
+  const result = await resolveLateRecipients({
+    uid: "user-1",
+    actorEmails: [],
+    event: { id: "event-gmail-no-evidence", attendees: [] },
+  }, emptyDeps({
+    connectedGmail: async () => [{ display_name: "Gmail Person", email: "gmail-no-evidence@example.invalid" }],
+  }));
+
+  assert.equal(result.status, "missing");
+  assert.deepEqual(result.candidates, []);
+});
+
+test("does not auto-resolve an approved Contacts address without a concrete Contacts evidence reference", async () => {
+  const result = await resolveLateRecipients({
+    uid: "user-1",
+    actorEmails: [],
+    event: { id: "event-contacts-no-evidence", attendees: [] },
+  }, emptyDeps({
+    approvedContacts: async () => [{
+      display_name: "Contact Person", email: "contacts-no-evidence@example.invalid", approved: true,
+    }],
+  }));
+
+  assert.equal(result.status, "missing");
+  assert.deepEqual(result.candidates, []);
+});
+
+test("does not keep a public-web address without a concrete web evidence reference", async () => {
+  const result = await resolveLateRecipients({
+    uid: "user-1",
+    actorEmails: [],
+    event: { id: "event-web-no-evidence", attendees: [] },
+  }, emptyDeps({
+    publicWeb: async () => [{ display_name: "Web Person", email: "web-no-evidence@example.invalid" }],
+  }));
+
+  assert.equal(result.status, "missing");
+  assert.deepEqual(result.candidates, []);
 });
 
 test("does not auto-resolve a public-web-only candidate and requests confirmation once", async () => {
@@ -194,6 +261,33 @@ test("accepts one explicit user-confirmed email without inventing an address", a
     confidence: 1,
     event_role: "attendee",
   }]);
+  assert.ok(result.evidenceRefs.includes("telegram:confirmation-1"));
+  assert.ok(!Object.hasOwn(result, "send"));
+});
+
+test("includes confirmation evidence when the user selects an existing candidate", async () => {
+  const result = await resolveLateRecipients({
+    uid: "user-1",
+    actorEmails: [],
+    event: {
+      id: "event-existing-selection",
+      organizer: { displayName: "Organizer", email: "organizer@example.invalid" },
+    },
+  }, emptyDeps({
+    connectedGmail: async () => [{
+      display_name: "Other Person", email: "other@example.invalid", evidence_refs: ["gmail:other-thread"],
+    }],
+    requestUserConfirmation: async () => ({
+      selectedEmail: "organizer@example.invalid",
+      evidence_refs: ["telegram:selection-1"],
+    }),
+  }));
+
+  assert.equal(result.status, "resolved");
+  assert.equal(result.candidates[0].email, "organizer@example.invalid");
+  assert.ok(result.evidenceRefs.includes("telegram:selection-1"));
+  assert.ok(result.evidenceRefs.includes("user_confirmation:event:event-existing-selection:selected"));
+  assert.ok(result.candidates[0].evidence_refs.includes("telegram:selection-1"));
   assert.ok(!Object.hasOwn(result, "send"));
 });
 
