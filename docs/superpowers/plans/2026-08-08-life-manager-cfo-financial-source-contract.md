@@ -31,7 +31,7 @@
 | `apps/life-call/package.json` | Include contract test in existing `test:cfo` | +1 LOC |
 | Parent/child specs and this plan | Closure evidence only | +12 documentation LOC |
 
-The implementation is split into two commits; no implementation task edits more than three files. If production exceeds 144 LOC, stop and simplify the schema checks instead of adding helpers or another module.
+The implementation is split into three bounded tasks; no implementation task edits more than three files. If production exceeds 144 LOC, stop and simplify the schema checks instead of adding helpers or another module.
 
 ## Closed Result Shape
 
@@ -279,7 +279,47 @@ A fresh read-only reviewer checks:
 
 Critical/Important findings enter the bounded Superpowers fix loop. Minor findings are recorded for final review.
 
-- [ ] **Step 6: Close CFO-1a after clean final review**
+### Task 3: Position-independent private-path boundary
+
+**Why this task exists:** The first whole-plan review found that the current path check accepts private paths attached directly to preceding text while rejecting a harmless spaced slash. Dais explicitly authorized continuous no-human correction, so this is a visible independent task rather than a hidden second final-review fix wave.
+
+**Files:**
+- Modify: `apps/life-call/lib/cfo-financial-source.test.js`
+- Modify: `apps/life-call/lib/cfo-financial-source.js`
+- Modify: this plan only for task evidence
+
+**Soft target:** production stays at or below 144 LOC; prefer replacing the current broad path expression over adding an abstraction.
+
+- [ ] **Step 1: RED — prove the two attached private-path bypasses and harmless label**
+
+Add behavior tests showing that `Bank/Users/dais/private` and `Bank/home/name/private` throw the stable private-text validation error, while `Bank / Savings` validates. The expected values are literals and the tests exercise the real validator.
+
+```bash
+cd apps/life-call
+node --test --test-name-pattern='attached private paths|harmless spaced slash' lib/cfo-financial-source.test.js
+```
+
+Expected RED: the two private-path cases are accepted and the harmless label is rejected.
+
+- [ ] **Step 2: GREEN — use direct position-independent private-path detection**
+
+Reject literal `/Users/` and `/home/` wherever they occur in a label. Keep the existing URL and credential checks. Do not reject a generic slash or add provider-specific behavior.
+
+- [ ] **Step 3: Verify, commit, push, and review**
+
+```bash
+cd apps/life-call
+node --test --test-name-pattern='attached private paths|harmless spaced slash' lib/cfo-financial-source.test.js
+node --test lib/cfo-financial-source.test.js
+npm run test:cfo
+cd ../..
+test "$(wc -l < apps/life-call/lib/cfo-financial-source.js)" -le 144
+git diff --check
+```
+
+Commit `fix(cfo): reject attached private paths`, push, then run one fresh task review and a fresh whole-plan review.
+
+- [ ] **Step 4: Close CFO-1a after clean final review**
 
 After the whole-plan review is clean:
 
