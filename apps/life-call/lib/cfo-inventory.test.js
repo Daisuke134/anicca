@@ -93,12 +93,12 @@ test("irrelevant labels are ignored and missing-runtime units stay unverified", 
 test("exit codes are observations and do not become financial health", () => {
   const inventory = buildInventory(makeInput([], canonicalRegistry, {
     runtimeObservations: [
-      { label: "ai.anicca.writer-report", state: "running", last_exit_code: 0 },
+      { label: "ai.anicca.writer-report", state: "running", last_exit_code: 7 },
       { label: "ai.anicca.x402-monitor", state: "not_running", last_exit_code: -9 },
     ],
   }));
   assert.equal(inventory.result, "pass");
-  assert.deepEqual(inventory.runtime_observations.map((item) => item.last_exit_code), [0, -9]);
+  assert.deepEqual(inventory.runtime_observations.map((item) => item.last_exit_code), [7, -9]);
   const output = JSON.stringify(inventory);
   assert.doesNotMatch(output, /healthy|revenue|profit|balance|amount|currency/i);
   assert.ok(!Object.hasOwn(inventory, "health"));
