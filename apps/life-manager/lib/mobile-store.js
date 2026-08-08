@@ -28,6 +28,21 @@ function asRows(body) {
   return Array.isArray(body) ? body : [];
 }
 
+function normalizeOAuthStateRow(row) {
+  if (!row || typeof row !== "object") return row;
+  return {
+    ...row,
+    stateHash: row.stateHash || row.state_hash,
+    subjectHash: row.subjectHash || row.subject_hash,
+    redirectUri: row.redirectUri || row.redirect_uri,
+    expiresAt: row.expiresAt || row.expires_at,
+    usedAt: row.usedAt || row.used_at,
+    composioUserId: row.composioUserId || row.composio_user_id,
+    connectedAccountId: row.connectedAccountId || row.connected_account_id,
+    authConfigId: row.authConfigId || row.auth_config_id,
+  };
+}
+
 function routeCacheEntry(row, now = Date.now) {
   const route = row && (row.route_result == null ? (row.route == null ? row.value : row.route) : row.route_result);
   if (!route || !row.computed_at) return null;
@@ -118,7 +133,7 @@ function createSupabaseMobileStore(options = {}) {
   return {
     async readUser(scope) {
       const rowsFound = await rows("lm_users", scopedParams(scope, {
-        select: "uid,name,phone,paid,home_address,calendar_provider,gmail_account_id,product_locale,calls_enabled,call_language,time_zone,calendar_status",
+        select: "uid,name,phone,paid,home_address,calendar_provider,gmail_account_id,calendar_composio_user_id,product_locale,calls_enabled,call_language,time_zone,calendar_status",
         limit: "1",
       }));
       return rowsFound[0] || null;
@@ -209,6 +224,9 @@ function createSupabaseMobileStore(options = {}) {
         subject_hash: row.subject ? require("node:crypto").createHash("sha256").update(String(row.subject)).digest("hex") : null,
         provider: row.provider,
         redirect_uri: row.redirectUri || null,
+        composio_user_id: row.composioUserId || null,
+        connected_account_id: row.connectedAccountId || null,
+        auth_config_id: row.authConfigId || null,
         expires_at: row.expiresAt,
       };
       const result = await request("/rest/v1/lm_mobile_oauth_states", {
@@ -216,12 +234,30 @@ function createSupabaseMobileStore(options = {}) {
       }, "oauth_state_failed");
       if (result.conflict) throw new MobileError("oauth_state_failed", "Calendar connection is temporarily unavailable.", 503, true);
     },
-    async claimOAuthState(stateHash, expected = {}) {
-      const value = await rpc("claim_lm_mobile_oauth_state", {
-        p_state_hash: stateHash, p_uid: expected.uid || null,
-        p_subject_hash: expected.subject ? require("node:crypto").createHash("sha256").update(String(expected.subject)).digest("hex") : null,
+    async updateOAuthState(stateHash, patch) {
+      const result = await request(`/rest/v1/lm_mobile_oauth_states?state_hash=eq.${encodeFilter(stateHash)}`, {
+        method: "PATCH", headers: { "content-type": "application/json", Prefer: "return=minimal" },
+        body: JSON.stringify({
+          connected_account_id: patch.connectedAccountId || null,
+        }),
       }, "oauth_state_failed");
-      return asRow(value) || (value === true ? { stateHash } : null);
+      if (result.conflict) throw new MobileError("oauth_state_failed", "Calendar connection is temporarily unavailable.", 503, true);
+    },
+    async claimOAuthState(stateHash, expected = {}) {
+      const value = await rpc("claim_lm_mobile_oauth_state_v2", { p_state_hash: stateHash }, "oauth_state_failed");
+      return normalizeOAuthStateRow(asRow(value)) || (value === true ? { stateHash } : null);
+    },
+    async linkCalendarIdentity(value) {
+      const result = await rpc("link_lm_mobile_calendar_identity", {
+        p_provider: value.provider || "google_calendar",
+        p_provider_subject_hash: value.providerSubjectHash,
+        p_uid: value.uid,
+        p_composio_user_id: value.composioUserId,
+        p_connected_account_id: value.connectedAccountId,
+        p_auth_config_id: value.authConfigId,
+        p_product_locale: value.productLocale || "en",
+      }, "oauth_identity_failed");
+      return asRow(result);
     },
     async createMobileSession(row) {
       const result = await request("/rest/v1/lm_mobile_sessions", {
@@ -441,6 +477,7 @@ function createMemoryMobileStore(options = {}) {
   const devices = new Map();
   const calls = new Map();
   const deletionReceipts = new Map();
+  const calendarConnections = new Map();
   const routeCache = options.routeCacheStore || new Map();
   const callDayGuards = new Map();
   const callDailyUserLimit = Number.isSafeInteger(options.callDailyUserLimit) && options.callDailyUserLimit > 0 ? options.callDailyUserLimit : 5;
@@ -460,7 +497,7 @@ function createMemoryMobileStore(options = {}) {
     return users.get(uid) || null;
   }
   return {
-    _users: users, _sessions: sessions, _states: states, _idempotency: idempotency, _outbox: outbox, _questions: questions, _devices: devices, _calls: calls, _callDayGuards: callDayGuards, _deletionReceipts: deletionReceipts, _routeCache: routeCache,
+    _users: users, _sessions: sessions, _states: states, _idempotency: idempotency, _outbox: outbox, _questions: questions, _devices: devices, _calls: calls, _callDayGuards: callDayGuards, _deletionReceipts: deletionReceipts, _routeCache: routeCache, _calendarConnections: calendarConnections,
     async readUser(scope) { const row = user(scope); return row ? { ...row } : null; },
     async patchUser(scope, patch, options2 = {}) { const row = user(scope, options2.expectedUid); if (!row) throw new MobileError("account_not_found", "Account not found.", 404); Object.assign(row, patch); return { ...row }; },
     async readAnalysisState(scope) { const row = user(scope); return row && row.analysisState ? { ...row.analysisState } : { status: "idle" }; },
@@ -477,14 +514,45 @@ function createMemoryMobileStore(options = {}) {
       routeCache.set(key, { route_result: value, computed_at: computedAt, ttl_secs: 600 });
       return { value, computedAt: Date.parse(computedAt) };
     },
-    async createOAuthState(row) { states.set(row.stateHash, { ...row }); },
+    async createOAuthState(row) { states.set(row.stateHash, { ...row, composioUserId: row.composioUserId || null, connectedAccountId: row.connectedAccountId || null, authConfigId: row.authConfigId || null }); },
+    async updateOAuthState(stateHash, patch) {
+      const row = states.get(stateHash);
+      if (!row) throw new MobileError("oauth_state_failed", "Calendar connection is temporarily unavailable.", 503, true);
+      row.connectedAccountId = patch.connectedAccountId || null;
+    },
     async claimOAuthState(hash, expected = {}) {
       const row = states.get(hash);
       if (!row || row.usedAt || (row.expiresAt && Date.parse(row.expiresAt) <= memoryNow())) return null;
-      if (row.uid && row.uid !== expected.uid) return null;
-      if (row.subject && expected.subject && row.subject !== expected.subject) return null;
+      if (expected.uid !== undefined && row.uid && row.uid !== expected.uid) return null;
+      if (expected.subject !== undefined && row.subject && expected.subject && row.subject !== expected.subject) return null;
       row.usedAt = nowIso();
       return { ...row };
+    },
+    async linkCalendarIdentity(value) {
+      const key = `${String(value.provider || "google_calendar")}:${String(value.providerSubjectHash || "")}`;
+      if (!value.providerSubjectHash || String(value.providerSubjectHash).length !== 64) throw new MobileError("oauth_identity_failed", "The Calendar identity could not be linked.", 503, true);
+      const existing = calendarConnections.get(key);
+      if (existing) {
+        existing.composioUserId = value.composioUserId;
+        existing.connectedAccountId = value.connectedAccountId;
+        existing.authConfigId = value.authConfigId;
+        existing.updatedAt = nowIso();
+        const row = users.get(existing.uid);
+        if (row) Object.assign(row, { calendar_status: "connected", calendar_provider: "composio_gcal", gmail_account_id: value.connectedAccountId, calendar_composio_user_id: value.composioUserId });
+        return { uid: existing.uid, productLocale: row && row.product_locale || "en" };
+      }
+      const uid = String(value.uid || "");
+      if (!/^lm_[A-Za-z0-9_-]+$/u.test(uid)) throw new MobileError("oauth_identity_failed", "The Calendar identity could not be linked.", 503, true);
+      if (![...calendarConnections.values()].every((row) => row.uid !== uid)) throw new MobileError("oauth_identity_failed", "The Calendar identity could not be linked.", 503, true);
+      const userRow = users.get(uid) || { uid, product_locale: value.productLocale || "en", calls_enabled: false };
+      Object.assign(userRow, { calendar_status: "connected", calendar_provider: "composio_gcal", gmail_account_id: value.connectedAccountId, calendar_composio_user_id: value.composioUserId });
+      users.set(uid, userRow);
+      calendarConnections.set(key, {
+        provider: value.provider || "google_calendar", providerSubjectHash: value.providerSubjectHash, uid,
+        composioUserId: value.composioUserId, connectedAccountId: value.connectedAccountId, authConfigId: value.authConfigId,
+        createdAt: nowIso(), updatedAt: nowIso(),
+      });
+      return { uid, productLocale: userRow.product_locale || "en" };
     },
     async createMobileSession(row) { sessions.set(row.sessionId, { ...row }); },
     async findAccessSession(hash) { return [...sessions.values()].find((row) => row.accessTokenHash === hash) || null; },

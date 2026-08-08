@@ -9,11 +9,16 @@ const { authorizeProviderOperation: authorizeBudget } = require("../provider-bud
 
 const COMPOSIO_EXEC = "https://backend.composio.dev/api/v3/tools/execute";
 
-async function exec(tool, uid, args, apiKey, fetchImpl = globalThis.fetch) {
+async function exec(tool, uid, args, apiKey, fetchImpl = globalThis.fetch, connectedAccountId = null) {
+  const payload = { user_id: uid, arguments: args };
+  // A mobile Calendar connection is routed by the exact provider account returned by
+  // Composio's callback.  Keep the legacy user_id-only payload for web callers, but never
+  // silently substitute a different connected account when the mobile path supplies one.
+  if (connectedAccountId) payload.connected_account_id = connectedAccountId;
   const r = await fetchImpl(`${COMPOSIO_EXEC}/${tool}`, {
     method: "POST",
     headers: { "x-api-key": apiKey, "Content-Type": "application/json" },
-    body: JSON.stringify({ user_id: uid, arguments: args }),
+    body: JSON.stringify(payload),
   });
   return r.json();
 }
@@ -39,7 +44,7 @@ function makeComposioCalendar({ apiKey, recordCall, recordProviderCost, fetchImp
     let result;
     let failure;
     try {
-      result = await exec(tool, uid, args, key, fetchImpl || globalThis.fetch);
+      result = await exec(tool, uid, args, key, fetchImpl || globalThis.fetch, operationOptions.connectedAccountId || null);
     } catch (error) {
       failure = error;
     } finally {
@@ -60,7 +65,7 @@ function makeComposioCalendar({ apiKey, recordCall, recordProviderCost, fetchImp
   // Error contract unchanged and shared with listEventsRaw: default (wake path) swallows every
   // failure to an empty page — load-bearing, a transport blip must not crash the 60s tick — while
   // strict (history path) THROWS, because "empty calendar" and "the read failed" must never merge.
-  const listEventsPage = async (uid, { timeMin, timeMax, maxResults, pageToken, strict, cacheHit } = {}) => {
+  const listEventsPage = async (uid, { timeMin, timeMax, maxResults, pageToken, strict, cacheHit, connectedAccountId } = {}) => {
     const empty = { items: [], nextPageToken: null };
     if (!key || !uid) {
       if (strict) throw new Error(`calendar transport not ready (missing ${key ? "uid" : "API key"})`);
@@ -71,7 +76,7 @@ function makeComposioCalendar({ apiKey, recordCall, recordProviderCost, fetchImp
     if (pageToken) args.pageToken = pageToken;
     let j;
     try {
-      j = await execute("GOOGLECALENDAR_EVENTS_LIST", uid, args, { essential: false, cacheHit });
+      j = await execute("GOOGLECALENDAR_EVENTS_LIST", uid, args, { essential: false, cacheHit, connectedAccountId });
     } catch (e) {
       if (strict) throw e;
       return empty;
@@ -96,13 +101,24 @@ function makeComposioCalendar({ apiKey, recordCall, recordProviderCost, fetchImp
     async listEventsRaw(uid, opts = {}) {
       return (await listEventsPage(uid, opts)).items;
     },
-    async createEvent(uid, args) {
-      if (!key) return { successful: false };
-      try { return await execute("GOOGLECALENDAR_CREATE_EVENT", uid, args); } catch { return { successful: false }; }
+    async readPrimaryCalendar(uid, { connectedAccountId } = {}) {
+      if (!key || !uid || !connectedAccountId) throw new Error("calendar connection is not routed");
+      const response = await execute("GOOGLECALENDAR_CALENDAR_LIST_GET", uid, { calendarId: "primary" }, {
+        essential: true,
+        connectedAccountId,
+      });
+      if (!response || !response.successful) throw new Error("calendar primary read failed");
+      const data = response.data?.response_data || response.response_data || response.data || {};
+      const items = Array.isArray(data.items) ? data.items : Array.isArray(data.calendars) ? data.calendars : [];
+      return items.find((item) => item && (item.id === "primary" || item.primary === true)) || items[0] || data;
     },
-    async patchEvent(uid, args) {
+    async createEvent(uid, args, { connectedAccountId } = {}) {
       if (!key) return { successful: false };
-      try { return await execute("GOOGLECALENDAR_PATCH_EVENT", uid, args); } catch { return { successful: false }; }
+      try { return await execute("GOOGLECALENDAR_CREATE_EVENT", uid, args, { connectedAccountId }); } catch { return { successful: false }; }
+    },
+    async patchEvent(uid, args, { connectedAccountId } = {}) {
+      if (!key) return { successful: false };
+      try { return await execute("GOOGLECALENDAR_PATCH_EVENT", uid, args, { connectedAccountId }); } catch { return { successful: false }; }
     },
   };
 }

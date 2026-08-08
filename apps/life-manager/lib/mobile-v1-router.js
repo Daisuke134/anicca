@@ -191,4 +191,8 @@ async function dispatch({ req, method, path, query, body, scope, runtime, isPubl
   throw new MobileError("not_found", "The mobile route was not found.", 404);
 }
 
-module.exports = { PREFIX, MAX_BODY_BYTES, handleMobileV1Request, parsePath, readBody, buildComposioAuthorizationUrl: session.buildComposioAuthorizationUrl };
+module.exports = {
+  PREFIX, MAX_BODY_BYTES, handleMobileV1Request, parsePath, readBody,
+  buildComposioAuthorizationUrl: session.buildComposioAuthorizationUrl,
+  buildComposioAuthorizationLink: session.buildComposioAuthorizationLink,
+};

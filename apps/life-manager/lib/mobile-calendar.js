@@ -20,9 +20,17 @@ async function fetchMobileUpcomingEvents(uid, options = {}) {
   if (!uid) return [];
   const nowMs = Number.isFinite(options.nowMs) ? options.nowMs : Date.now();
   const horizonH = Number.isFinite(options.horizonH) ? options.horizonH : 18;
-  const calendar = options.calendar || getCalendar({ apiKey: options.apiKey, gmailAccountId: options.gmailAccountId });
+  const composioUserId = options.composioUserId || options.calendarComposioUserId || uid;
+  const connectedAccountId = options.connectedAccountId || options.gmailAccountId || null;
+  const calendar = options.calendar || getCalendar({
+    apiKey: options.apiKey,
+    gmailAccountId: connectedAccountId,
+    composioUserId,
+    connectedAccountId,
+  });
   const items = await calendar.listEventsRaw(uid, {
     timeMin: isoZ(nowMs), timeMax: isoZ(nowMs + horizonH * 3600 * 1000),
+    connectedAccountId,
   });
   const output = [];
   for (const event of Array.isArray(items) ? items : []) {

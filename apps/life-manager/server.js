@@ -61,7 +61,7 @@ const {
 } = require("./lib/telegram-onboard.js");
 const { createHostedGmailLink } = require("./lib/gmail-onboard.js");
 const { mailAvailable } = require("./lib/mail-availability.js");
-const { handleMobileV1Request, buildComposioAuthorizationUrl } = require("./lib/mobile-v1-router.js");
+const { handleMobileV1Request, buildComposioAuthorizationLink } = require("./lib/mobile-v1-router.js");
 const { createStructuredRouteProviders } = require("./lib/mobile-route.js");
 const {
   markAnswered, applyAmdDetection, applyTestCallDetection, upsertLiveLocation,
@@ -251,9 +251,10 @@ const server = http.createServer((req, res) => {
       apiKey: COMPOSIO_KEY,
       mapsKey: process.env.LIFE_MAPS_KEY || process.env.GOOGLE_API_KEY,
       routeProviders: MOBILE_ROUTE_PROVIDERS,
-      buildAuthorizationUrl: (input) => buildComposioAuthorizationUrl(input, {
+      buildAuthorizationLink: (input) => buildComposioAuthorizationLink(input, {
         composioKey: COMPOSIO_KEY,
         composioAuthConfig: process.env.COMPOSIO_GCAL_AUTH_CONFIG,
+        mobileOAuthCallbackUrl: process.env.LM_MOBILE_OAUTH_CALLBACK_URL || "lifemanager://oauth/callback",
       }),
       verifyCalendarOwnership: async ({ uid }) => {
         const state = await composioCalendarStatus({ uid }, { supaUrl: SUPA_URL, supaKey: SUPA_KEY, composioKey: COMPOSIO_KEY });
@@ -264,7 +265,10 @@ const server = http.createServer((req, res) => {
         const streamUrl = buildStreamUrl({ summary: input.summary || "Life Manager call", startIso: input.dateTime || "", location: input.location || "" }, "gentle", input.callLanguage, input.name);
         return placeCall({ ...input, streamUrl });
       },
-      disconnectCalendar: (scope) => composioCalendarDisconnect(scope, { supaUrl: SUPA_URL, supaKey: SUPA_KEY, composioKey: COMPOSIO_KEY }),
+      disconnectCalendar: (scope) => composioCalendarDisconnect({
+        ...scope,
+        uid: scope.calendarComposioUserId || scope.uid,
+      }, { supaUrl: SUPA_URL, supaKey: SUPA_KEY, composioKey: COMPOSIO_KEY }),
     }).catch((error) => {
       console.error("[mobile-v1] request failed", error && error.message);
       if (!res.headersSent) res.writeHead(503, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" });

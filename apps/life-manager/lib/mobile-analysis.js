@@ -77,7 +77,13 @@ async function analyzeNextEvent(scope, input = {}, deps = {}) {
   let events;
   try {
     const reader = deps.fetchUpcomingEvents || require("./mobile-calendar.js").fetchMobileUpcomingEvents;
-    events = await reader(scope.uid, { nowMs: deps.now ? deps.now() : Date.now(), horizonH: input.horizonH || 18, calendar: deps.calendar, gmailAccountId: user.gmail_account_id || user.gmailAccountId, apiKey: deps.composioKey || deps.apiKey });
+    events = await reader(scope.uid, {
+      nowMs: deps.now ? deps.now() : Date.now(), horizonH: input.horizonH || 18, calendar: deps.calendar,
+      gmailAccountId: user.gmail_account_id || user.gmailAccountId,
+      connectedAccountId: user.gmail_account_id || user.gmailAccountId,
+      composioUserId: user.calendar_composio_user_id || user.calendarComposioUserId || scope.uid,
+      apiKey: deps.composioKey || deps.apiKey,
+    });
   } catch {
     await setState(scope, { status: "failed", analysisId }, deps);
     return appendTerminal({ ...scope, productLocale: locale }, "failed", null, null, null, deps, analysisId);

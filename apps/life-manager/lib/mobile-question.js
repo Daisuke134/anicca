@@ -22,9 +22,13 @@ async function applyDefaultAnswer(scope, question, answer, deps) {
   const calendar = deps.calendar || getCalendar({
     apiKey: deps.composioKey || deps.apiKey || process.env.COMPOSIO_API_KEY,
     gmailAccountId: user && (user.gmail_account_id || user.gmailAccountId),
+    connectedAccountId: user && (user.gmail_account_id || user.gmailAccountId),
+    composioUserId: user && (user.calendar_composio_user_id || user.calendarComposioUserId) || scope.uid,
   });
   if (!calendar || typeof calendar.patchEvent !== "function") throw new MobileError("question_apply_unavailable", "The Calendar connection is unavailable.", 503, true);
-  const result = await calendar.patchEvent(scope.uid, { calendar_id: "primary", event_id: eventId, location: answer });
+  const result = await calendar.patchEvent(scope.uid, { calendar_id: "primary", event_id: eventId, location: answer }, {
+    connectedAccountId: user && (user.gmail_account_id || user.gmailAccountId),
+  });
   if (!result || result.successful === false || result.ok === false) throw new MobileError("question_apply_failed", "The Calendar event could not be updated.", 502, true);
 }
 

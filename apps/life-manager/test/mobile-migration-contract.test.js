@@ -6,6 +6,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const SQL = fs.readFileSync(path.join(__dirname, "../migrations/2026-08-08-lm-mobile-v1.sql"), "utf8");
+const OAUTH_SQL = fs.readFileSync(path.join(__dirname, "../migrations/2026-08-09-lm-mobile-calendar-oauth.sql"), "utf8");
 
 test("mobile migration persists the Gate 3 tenant, replay, cursor, device, call, and deletion boundaries", () => {
   for (const table of [
@@ -44,4 +45,16 @@ test("mobile migration persists the Gate 3 tenant, replay, cursor, device, call,
   assert.doesNotMatch(SQL, /SELECT count\(\*\)::integer INTO global_count/);
   assert.doesNotMatch(SQL, /pg_advisory_(?:lock|xact_lock|unlock)/i);
   assert.doesNotMatch(SQL, /raw_access_token|raw_refresh_token|raw_bearer/i);
+});
+
+test("follow-up OAuth migration keeps provider facts hashed and RPCs service-role-only", () => {
+  assert.match(OAUTH_SQL, /ADD COLUMN IF NOT EXISTS composio_user_id text/);
+  assert.match(OAUTH_SQL, /ADD COLUMN IF NOT EXISTS connected_account_id text/);
+  assert.match(OAUTH_SQL, /CREATE TABLE IF NOT EXISTS public\.lm_mobile_calendar_connections/);
+  assert.match(OAUTH_SQL, /provider_subject_hash text NOT NULL CHECK \(length\(provider_subject_hash\) = 64\)/);
+  for (const signature of ["claim_lm_mobile_oauth_state_v2\\(text\\)", "link_lm_mobile_calendar_identity\\(text, text, text, text, text, text, text\\)"]) {
+    assert.match(OAUTH_SQL, new RegExp(`REVOKE ALL ON FUNCTION public\\.${signature} FROM PUBLIC, anon, authenticated`));
+    assert.match(OAUTH_SQL, new RegExp(`GRANT EXECUTE ON FUNCTION public\\.${signature} TO service_role`));
+  }
+  assert.doesNotMatch(OAUTH_SQL, /raw_provider_identity|provider_email|provider_subject(?!_hash)/i);
 });

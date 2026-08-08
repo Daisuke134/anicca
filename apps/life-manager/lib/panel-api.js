@@ -413,13 +413,18 @@ async function composioCalendarStatus(scope, opts = {}) {
 
 async function composioCalendarAccounts(scope, opts = {}) {
   if (!opts.composioKey) throw new Error("provider_unavailable");
-  const url = `https://backend.composio.dev/api/v3/connected_accounts?user_ids=${encodeURIComponent(scope.uid)}&toolkit_slugs=googlecalendar`;
+  const providerUid = scope.composioUserId || scope.calendarComposioUserId || scope.uid;
+  const providerScope = providerUid === scope.uid ? scope : { ...scope, uid: providerUid };
+  const url = `https://backend.composio.dev/api/v3/connected_accounts?user_ids=${encodeURIComponent(providerUid)}&toolkit_slugs=googlecalendar`;
   const response = await (opts.fetchImpl || fetch)(url, { headers: { "x-api-key": opts.composioKey } });
   if (!response.ok) throw new Error("provider_failed");
   const body = await jsonOr(response, {});
   const items = Array.isArray(body.items) ? body.items : [];
-  if (items.some(item => !exactCalendarAccount(scope, item))) throw new Error("provider_ownership");
-  return items;
+  const selected = scope.connectedAccountId
+    ? items.filter(item => item && item.id === scope.connectedAccountId)
+    : items;
+  if (selected.some(item => !exactCalendarAccount(providerScope, item))) throw new Error("provider_ownership");
+  return selected;
 }
 
 async function composioCalendarDisconnect(scope, opts = {}) {

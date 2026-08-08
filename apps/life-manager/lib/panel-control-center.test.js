@@ -138,6 +138,18 @@ test("PANEL-0 Composio disconnect disables only the user account and requires in
   assert.match(requests[2].url, /user_ids=u-a/);
 });
 
+test("PANEL-0 mobile disconnect selects the persisted exact provider account", async () => {
+  const requests = [], response = (items) => ({ ok: true, json: async () => ({ items }) });
+  const account = (id, extra = {}) => ({ id, user_id: "lm_provider_owner", toolkit: { slug: "googlecalendar" }, status: "ACTIVE", is_disabled: false, enabled: true, ...extra });
+  const scope = { uid: "lm_stable", composioUserId: "lm_provider_owner", connectedAccountId: "ca-mobile" };
+  const sequence = [response([account("ca-mobile"), account("ca-other")]), { ok: true, json: async () => ({}) }, response([account("ca-mobile", { status: "INACTIVE", is_disabled: true, enabled: false })])];
+  const result = await composioCalendarDisconnect(scope, { composioKey: "test-key", fetchImpl: async (url, init = {}) => { requests.push({ url: String(url), init }); return sequence.shift(); } });
+  assert.deepEqual(result, { provider: "calendar", state: "action_required" });
+  assert.match(requests[0].url, /user_ids=lm_provider_owner/);
+  assert.match(requests[1].url, /connected_accounts\/ca-mobile\/status$/);
+  assert.equal(requests.some(({ url }) => url.includes("ca-other")), false);
+});
+
 test("PANEL-0 Composio disconnect fails closed on ambiguous ownership or ACTIVE readback", async () => {
   const response = (items) => ({ ok: true, json: async () => ({ items }) });
   const account = id => ({ id, user_id: "u-a", toolkit: { slug: "googlecalendar" }, status: "ACTIVE", is_disabled: false, enabled: true });

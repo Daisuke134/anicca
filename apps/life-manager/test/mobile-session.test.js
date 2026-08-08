@@ -17,20 +17,32 @@ const NOW = Date.parse("2026-08-08T00:00:00.000Z");
 function memorySessionDeps(overrides = {}) {
   const states = new Map();
   const sessions = new Map();
+  const calendarConnections = new Map();
   let randomCounter = 0;
   const identities = new Map([["identity-token", { uid: "user-a", subject: "google-a", productLocale: "en" }]]);
   const deps = {
     now: () => NOW,
     randomBytes: (size) => Buffer.alloc(size, ++randomCounter),
     validateIdentity: async (token) => identities.get(token) || null,
-    buildAuthorizationUrl: ({ state }) => `https://accounts.example.test/authorize?state=${state}`,
+    buildAuthorizationLink: ({ state }) => ({ authorizationUrl: `https://accounts.example.test/authorize?state=${state}`, connectedAccountId: "ca_google_test" }),
+    readConnectedAccount: async ({ connectedAccountId, composioUserId }) => ({ id: connectedAccountId, user_id: composioUserId, status: "ACTIVE", toolkit: { slug: "googlecalendar" }, auth_config: { id: "ac_gcal_test" } }),
+    readPrimaryCalendar: async () => ({ id: "person@example.test" }),
+    composioAuthConfig: "ac_gcal_test",
     store: {
       async createOAuthState(row) { states.set(row.stateHash, { ...row }); },
+      async updateOAuthState(stateHash, patch) { states.get(stateHash).connectedAccountId = patch.connectedAccountId; },
       async claimOAuthState(stateHash) {
         const row = states.get(stateHash);
         if (!row || row.usedAt || Date.parse(row.expiresAt) <= NOW) return null;
         row.usedAt = new Date(NOW).toISOString();
         return { ...row };
+      },
+      async linkCalendarIdentity(value) {
+        const key = `${value.provider}:${value.providerSubjectHash}`;
+        const existing = calendarConnections.get(key);
+        if (existing) return { uid: existing.uid, productLocale: "en" };
+        calendarConnections.set(key, { ...value });
+        return { uid: value.uid, productLocale: "en" };
       },
       async createMobileSession(row) { sessions.set(row.sessionId, { ...row }); },
       async findAccessSession(hash) {
@@ -56,54 +68,83 @@ function memorySessionDeps(overrides = {}) {
     },
     _states: states,
     _sessions: sessions,
+    _calendarConnections: calendarConnections,
   };
   return { ...deps, ...overrides, store: { ...deps.store, ...(overrides.store || {}) } };
 }
 
-test("calendar start creates one-use opaque state without accepting client uid", async () => {
+test("calendar start creates one-use opaque state without accepting client authority", async () => {
   const deps = memorySessionDeps();
-  const result = await startCalendarSession({ identityToken: "identity-token", redirectUri: "life-manager://oauth" }, deps);
+  const result = await startCalendarSession({}, deps);
   assert.match(result.state, /^state:v1:/u);
   assert.match(result.authorizationUrl, /^https:\/\//u);
   assert.equal(result.expiresAt, "2026-08-08T00:05:00.000Z");
-  await assert.rejects(() => startCalendarSession({ uid: "user-b" }, deps), (error) => error.code === "client_uid_forbidden");
+  await assert.rejects(() => startCalendarSession({ uid: "user-b" }, deps), (error) => error.code === "oauth_input_invalid");
 });
 
 test("exchange rejects expired, replayed, and wrong-owner state before creating a session", async () => {
   const deps = memorySessionDeps();
-  const started = await startCalendarSession({ identityToken: "identity-token" }, deps);
+  const started = await startCalendarSession({}, deps);
   const wrong = memorySessionDeps({ validateIdentity: async () => ({ uid: "user-b", subject: "google-b", productLocale: "en" }) });
-  await assert.rejects(() => exchangeMobileSession({ state: started.state, code: "code" }, wrong), (error) => error.code === "oauth_state_invalid");
+  await assert.rejects(() => exchangeMobileSession({ state: started.state, status: "success", connectedAccountId: "ca_google_test" }, wrong), (error) => error.code === "oauth_state_invalid");
 
-  const exchanged = await exchangeMobileSession({ state: started.state, code: "code", identityToken: "identity-token" }, deps);
+  const exchanged = await exchangeMobileSession({ state: started.state, status: "success", connectedAccountId: "ca_google_test" }, deps);
   assert.equal(exchanged.tokenType, "Bearer");
   assert.match(exchanged.accessToken, /^access:v1:/u);
-  await assert.rejects(() => exchangeMobileSession({ state: started.state, code: "code", identityToken: "identity-token" }, deps), (error) => error.code === "oauth_state_invalid");
+  await assert.rejects(() => exchangeMobileSession({ state: started.state, status: "success", connectedAccountId: "ca_google_test" }, deps), (error) => error.code === "oauth_state_invalid");
   assert.equal(deps._sessions.size, 1);
 });
 
 test("bearer authentication derives tenant scope from stored session, never request uid", async () => {
   const deps = memorySessionDeps();
-  const started = await startCalendarSession({ identityToken: "identity-token" }, deps);
-  const session = await exchangeMobileSession({ state: started.state, code: "code", identityToken: "identity-token" }, deps);
+  const started = await startCalendarSession({}, deps);
+  const session = await exchangeMobileSession({ state: started.state, status: "success", connectedAccountId: "ca_google_test" }, deps);
   const scope = await authenticateMobileRequest({ headers: { authorization: `Bearer ${session.accessToken}`, "x-uid": "user-b" } }, deps);
-  assert.deepEqual(scope, { uid: "user-a", sessionId: scope.sessionId, productLocale: "en", timezone: "Asia/Tokyo" });
+  assert.match(scope.uid, /^lm_[A-Za-z0-9_-]+$/u);
+  assert.deepEqual(scope, { uid: scope.uid, sessionId: scope.sessionId, productLocale: "en", timezone: "Asia/Tokyo" });
   assert.notEqual(scope.sessionId, "");
   await assert.rejects(() => authenticateMobileRequest({ headers: {} }, deps), (error) => error.code === "unauthorized");
 });
 
+test("bearer authentication carries only stored provider routing facts for mobile cleanup", async () => {
+  const deps = memorySessionDeps({
+    store: {
+      async readUser(scope) {
+        return {
+          uid: scope.uid,
+          product_locale: "en",
+          time_zone: "Asia/Tokyo",
+          calendar_composio_user_id: "lm_provider_owner",
+          gmail_account_id: "ca_mobile_exact",
+        };
+      },
+    },
+  });
+  const started = await startCalendarSession({}, deps);
+  const token = await exchangeMobileSession({ state: started.state, status: "success", connectedAccountId: "ca_google_test" }, deps);
+  const scope = await authenticateMobileRequest({ headers: { authorization: `Bearer ${token.accessToken}` } }, deps);
+  assert.deepEqual(scope, {
+    uid: scope.uid,
+    sessionId: scope.sessionId,
+    productLocale: "en",
+    timezone: "Asia/Tokyo",
+    calendarComposioUserId: "lm_provider_owner",
+    connectedAccountId: "ca_mobile_exact",
+  });
+});
+
 test("refresh rotates token and replay revokes the whole family; logout revokes current session", async () => {
   const deps = memorySessionDeps();
-  const started = await startCalendarSession({ identityToken: "identity-token" }, deps);
-  const first = await exchangeMobileSession({ state: started.state, code: "code", identityToken: "identity-token" }, deps);
+  const started = await startCalendarSession({}, deps);
+  const first = await exchangeMobileSession({ state: started.state, status: "success", connectedAccountId: "ca_google_test" }, deps);
   const second = await refreshMobileSession(first.refreshToken, deps);
   assert.notEqual(second.refreshToken, first.refreshToken);
   await assert.rejects(() => refreshMobileSession(first.refreshToken, deps), (error) => error.code === "refresh_replay");
   assert.equal([...deps._sessions.values()].every((row) => row.revokedAt), true);
 
   const freshDeps = memorySessionDeps();
-  const s = await startCalendarSession({ identityToken: "identity-token" }, freshDeps);
-  const token = await exchangeMobileSession({ state: s.state, code: "code", identityToken: "identity-token" }, freshDeps);
+  const s = await startCalendarSession({}, freshDeps);
+  const token = await exchangeMobileSession({ state: s.state, status: "success", connectedAccountId: "ca_google_test" }, freshDeps);
   const scope = await authenticateMobileRequest({ headers: { authorization: `Bearer ${token.accessToken}` } }, freshDeps);
   await revokeMobileSession(scope, freshDeps);
   await assert.rejects(() => authenticateMobileRequest({ headers: { authorization: `Bearer ${token.accessToken}` } }, freshDeps), (error) => error.code === "unauthorized");
@@ -146,9 +187,9 @@ test("default Supabase identity validation derives the Life Manager uid and neve
 
 test("Composio authorization adapter binds the server UID and one-use state to the app callback", async () => {
   let request;
-  const redirect = await buildComposioAuthorizationUrl({ uid: "lm_user-a", state: "state:v1:one", redirectUri: "life-manager://oauth" }, {
+  const redirect = await buildComposioAuthorizationUrl({ composioUserId: "lm_user-a", state: "state:v1:one", callbackUrl: "life-manager://oauth" }, {
     composioKey: "composio-key", composioAuthConfig: "gcal-config",
-    fetchImpl: async (url, init) => { request = { url, init }; return { ok: true, async json() { return { redirect_url: "https://accounts.google.test/authorize" }; } }; },
+    fetchImpl: async (url, init) => { request = { url, init }; return { ok: true, async json() { return { redirect_url: "https://accounts.google.test/authorize", connected_account_id: "ca_google_test" }; } }; },
   });
   assert.equal(redirect, "https://accounts.google.test/authorize");
   const body = JSON.parse(request.init.body);
@@ -157,7 +198,7 @@ test("Composio authorization adapter binds the server UID and one-use state to t
 
 test("Composio authorization rejects executable callback schemes", async () => {
   await assert.rejects(() => buildComposioAuthorizationUrl({
-    uid: "lm_user-a", state: "state:v1:one", redirectUri: "javascript:alert(1)",
+    composioUserId: "lm_user-a", state: "state:v1:one", callbackUrl: "javascript:alert(1)",
   }, { composioKey: "composio-key", composioAuthConfig: "gcal-config", fetchImpl: async () => {
     throw new Error("provider must not be called");
   } }), (error) => error.code === "oauth_input_invalid");

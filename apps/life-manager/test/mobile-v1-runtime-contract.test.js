@@ -129,17 +129,21 @@ async function realFixtureRuntime(kind) {
     await seedAccessSession(store, now);
   }
   if (kind === "session-start") {
-    deps.validateIdentity = async () => ({ uid: FIXTURE_UID, subject: "calendar-subject-8f3a", productLocale: "en" });
-    deps.buildAuthorizationUrl = async () => fixture("session-start.json").authorizationUrl;
+    deps.composioAuthConfig = "ac_gcal_fixture";
+    deps.buildAuthorizationLink = async () => ({ authorizationUrl: fixture("session-start.json").authorizationUrl, connectedAccountId: "calendar-account-8f3a" });
   }
   if (kind === "session-exchange") {
     await store.createOAuthState({
       state: "state:v1:calendar-consent-8f3a", stateHash: sha256("state:v1:calendar-consent-8f3a"),
-      uid: FIXTURE_UID, subject: "calendar-subject-8f3a", provider: "google_calendar",
+      uid: null, subject: null, provider: "google_calendar", composioUserId: "lm_provisional-8f3a",
+      connectedAccountId: "calendar-account-8f3a", authConfigId: "ac_gcal_fixture",
       expiresAt: "2026-08-10T08:10:00.000Z",
     });
-    deps.validateIdentity = async () => ({ uid: FIXTURE_UID, subject: "calendar-subject-8f3a", productLocale: "en" });
-    deps.exchangeCalendarCode = async () => ({ connection: { provider: "google_calendar" } });
+    deps.readConnectedAccount = async ({ connectedAccountId, composioUserId }) => ({
+      id: connectedAccountId, user_id: composioUserId, status: "ACTIVE",
+      toolkit: { slug: "googlecalendar" }, auth_config: { id: "ac_gcal_fixture" },
+    });
+    deps.readPrimaryCalendar = async () => ({ id: "calendar-subject-8f3a" });
   }
   if (kind === "session-refresh") {
     // The refresh fixture is a real stored session, not a handler return override.
@@ -206,8 +210,8 @@ test("chat runtime messages are directly frozen by the Gate 3 chat fixture", () 
 
 test("real router domain handlers are fixture-validated across the complete Gate 3 surface", async () => {
   const cases = [
-    ["session-start", "POST", "/session/calendar/start", { identityToken: "identity:v1:fixture" }, "session-start.json", false],
-    ["session-exchange", "POST", "/session/exchange", { state: "state:v1:calendar-consent-8f3a", code: "code:v1:fixture", identityToken: "identity:v1:fixture" }, "session.json", false],
+    ["session-start", "POST", "/session/calendar/start", {}, "session-start.json", false],
+    ["session-exchange", "POST", "/session/exchange", { state: "state:v1:calendar-consent-8f3a", status: "success", connectedAccountId: "calendar-account-8f3a" }, "session.json", false],
     ["session-refresh", "POST", "/session/refresh", { refreshToken: REFRESH_TOKEN }, "session.json", false],
     ["session-revoke", "DELETE", "/session", undefined, "session-revoked.json", true],
     ["bootstrap", "GET", "/bootstrap", undefined, "bootstrap.json", true],

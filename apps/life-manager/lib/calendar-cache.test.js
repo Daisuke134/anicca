@@ -12,7 +12,7 @@ const WINDOW = {
 };
 
 function fakeCalendar() {
-  const calls = { list: 0, create: 0, patch: 0 };
+  const calls = { list: 0, create: 0, patch: 0, patchOptions: null };
   const inner = {
     kind: "fake",
     ready: () => true,
@@ -24,8 +24,9 @@ function fakeCalendar() {
       calls.create += 1;
       return { successful: true, uid, input };
     },
-    async patchEvent(uid, input) {
+    async patchEvent(uid, input, options) {
       calls.patch += 1;
+      calls.patchOptions = options;
       return { successful: true, uid, input };
     },
   };
@@ -204,6 +205,15 @@ test("patchEvent invalidates that uid without invalidating another uid", async (
 
   assert.equal(calls.patch, 1);
   assert.equal(calls.list, 3);
+});
+
+test("patchEvent preserves exact provider routing through the cache wrapper", async () => {
+  const { inner, calls } = fakeCalendar();
+  const calendar = makeCachedCalendar(inner, { now: () => 1_000 });
+
+  await calendar.patchEvent("u1", { event_id: "e1", location: "Tokyo Tower" }, { connectedAccountId: "ca-mobile" });
+
+  assert.deepEqual(calls.patchOptions, { connectedAccountId: "ca-mobile" });
 });
 
 test("different uids use different cache keys", async () => {
