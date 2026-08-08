@@ -121,6 +121,13 @@ function clampDepartIso(departAtMs, nowMs) {
 async function routesDriveMinutes(src, dst, mapsKey, departAtMs, nowMs, opts = {}) {
   const body = JSON.stringify(buildDriveBody(src, dst, clampDepartIso(departAtMs, nowMs)));
   const attemptId = providerAttemptId("google", "routes", opts.requestId);
+  if (typeof opts.authorizeProviderOperation === "function") {
+    const decision = await opts.authorizeProviderOperation({
+      uid: opts.uid, provider: "google", operation: "routes", essential: false, cacheHit: false,
+      requestId: attemptId, projectedUsd: 0.01,
+    });
+    if (decision && decision.allowed === false) return null;
+  }
   const record = typeof opts.recordProviderCost === "function"
     ? () => recordGoogleRoutes({ uid: opts.uid, requestId: attemptId, metadata: { cache: "miss" } }, {
       recordProviderCost: opts.recordProviderCost,
@@ -159,6 +166,13 @@ async function legacyTransitMinutes(src, dst, mapsKey, arriveByMs, nowMs = Date.
     p.set("departure_time", "now");
   }
   const attemptId = providerAttemptId("google", "transit", opts.requestId);
+  if (typeof opts.authorizeProviderOperation === "function") {
+    const decision = await opts.authorizeProviderOperation({
+      uid: opts.uid, provider: "google", operation: "transit", essential: false, cacheHit: false,
+      requestId: attemptId, projectedUsd: 0.005,
+    });
+    if (decision && decision.allowed === false) return null;
+  }
   const record = typeof opts.recordProviderCost === "function"
     ? () => recordGoogleTransit({ uid: opts.uid, requestId: attemptId }, {
       recordProviderCost: opts.recordProviderCost,
@@ -173,9 +187,9 @@ async function legacyTransitMinutes(src, dst, mapsKey, arriveByMs, nowMs = Date.
   } catch { return null; }
 }
 
-// Query BOTH transit (anchored to event start) and traffic-aware drive, then take the LARGER —
-// never-late bias: we don't yet know the user's mode, so assume the slower so we never under-estimate.
-// departAtMs ≈ event start. Returns null only if neither mode resolves (caller then asks). floor 5 min.
+// Try Routes first, then make one Directions request only when Routes did not
+// resolve. Each actual attempt owns its own budget claim and ledger request ID;
+// this keeps a denied fallback from leaking a second paid request.
 // TODO(#69/#70): per-user travel_mode preference → trust the chosen mode instead of max().
 //
 // departureMode: when true, the time arg is a DEPARTURE anchor (for return legs — FIND-004).
@@ -184,13 +198,12 @@ async function legacyTransitMinutes(src, dst, mapsKey, arriveByMs, nowMs = Date.
 // The Google path (Routes Pro drive + legacy transit, never-late MAX bias). This is the FALLBACK now.
 async function directionsMinutesGoogle(src, dst, mapsKey, departAtMs = Date.now(), nowMs = Date.now(), departureMode = false, opts = {}) {
   if (!mapsKey || !src || !dst) return null;
-  const [transit, drive] = await Promise.all([
-    departureMode
-      ? legacyTransitMinutes(src, dst, mapsKey, null, nowMs, departAtMs, opts)
-      : legacyTransitMinutes(src, dst, mapsKey, departAtMs, nowMs, null, opts),
-    routesDriveMinutes(src, dst, mapsKey, departAtMs, nowMs, opts),
-  ]);
-  return acceptRouteResults({ legacyTransit: transit, routesDrive: drive }).minutes;
+  const drive = await routesDriveMinutes(src, dst, mapsKey, departAtMs, nowMs, opts);
+  if (Number.isFinite(drive)) return drive;
+  const transit = departureMode
+    ? await legacyTransitMinutes(src, dst, mapsKey, null, nowMs, departAtMs, opts)
+    : await legacyTransitMinutes(src, dst, mapsKey, departAtMs, nowMs, null, opts);
+  return Number.isFinite(transit) ? transit : null;
 }
 
 function transitQueryTime(eventAt, timezone) {
@@ -271,9 +284,13 @@ async function directionsRoute(src, dst, mapsKey, departAtMs = Date.now(), nowMs
   const googleFn = opts._directionsMinutesGoogle || directionsMinutesGoogle;
   const cache = opts._routeCache || _routeCache; // tests inject a fresh cache to avoid cross-test leakage
   const google = async () => {
-    if (typeof opts._authorizeProviderOperation === "function") {
+    // Test/integration seams may replace the whole Google operation. Keep the
+    // shared fallback gate around that seam; production directionsMinutesGoogle
+    // performs one claim immediately before each concrete provider request.
+    if (opts._directionsMinutesGoogle && typeof opts._authorizeProviderOperation === "function") {
       const decision = await opts._authorizeProviderOperation({
         uid: opts._uid, provider: "google", operation: "fallback", essential: false, cacheHit: false,
+        requestId: providerAttemptId("google", "fallback", opts._googleRequestId), projectedUsd: 0.01,
       });
       if (decision && decision.allowed === false) return null;
     }
@@ -281,6 +298,7 @@ async function directionsRoute(src, dst, mapsKey, departAtMs = Date.now(), nowMs
       uid: opts._uid,
       requestId: opts._googleRequestId || `google:routes:${new Date(departAtMs).toISOString()}:${departureMode ? "return" : "outbound"}`,
       recordProviderCost: opts._recordProviderCost,
+      authorizeProviderOperation: opts._authorizeProviderOperation,
     });
   };
   if (!mapsKey || !src || !dst) return null;

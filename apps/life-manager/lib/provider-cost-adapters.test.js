@@ -152,7 +152,7 @@ test("each actual Google request gets a unique ledger request id even when a cal
   const r = recorder();
   const original = global.fetch;
   global.fetch = async (url) => String(url).includes("routes.googleapis.com")
-    ? { ok: true, json: async () => ({ routes: [{ duration: "120s" }] }) }
+    ? { ok: false, status: 503, json: async () => ({}) }
     : { ok: true, json: async () => ({ status: "OK", routes: [{ legs: [{ duration: { value: 180 } }] }] }) };
   try {
     await directionsMinutesGoogle("a", "b", "k", Date.now() + 60000, Date.now(), false, {
@@ -161,6 +161,33 @@ test("each actual Google request gets a unique ledger request id even when a cal
   } finally { global.fetch = original; }
   assert.equal(r.events.length, 2);
   assert.equal(new Set(r.events.map((event) => event.requestId)).size, 2);
+});
+
+test("Google fallback authorizes each actual attempt and skips Directions when its claim is denied", async () => {
+  const r = recorder();
+  const original = global.fetch;
+  const urls = [];
+  const decisions = [];
+  global.fetch = async (url) => {
+    urls.push(String(url));
+    if (String(url).includes("routes.googleapis.com")) return { ok: false, status: 503, json: async () => ({}) };
+    throw new Error("Directions must not run after its claim is denied");
+  };
+  try {
+    const result = await directionsMinutesGoogle("a", "b", "k", Date.now() + 60000, Date.now(), false, {
+      uid: "u1", requestId: "google:fallback", recordProviderCost: r.deps.recordProviderCost,
+      authorizeProviderOperation: async (input) => {
+        decisions.push(input);
+        return { allowed: decisions.length === 1 };
+      },
+    });
+    assert.equal(result, null);
+  } finally { global.fetch = original; }
+  assert.equal(decisions.length, 2);
+  assert.equal(urls.filter((url) => url.includes("routes.googleapis.com")).length, 1);
+  assert.equal(urls.filter((url) => url.includes("maps.googleapis.com")).length, 0);
+  assert.equal(r.events.length, 1);
+  assert.equal(new Set(decisions.map((decision) => decision.requestId)).size, 2);
 });
 
 test("a successful Google geocode miss records one operation while a cache hit records none", async () => {

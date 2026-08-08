@@ -26,6 +26,16 @@ test("security-definer budget RPCs are callable only by service_role", () => {
   assert.match(sql, /grant execute on function public\.lm_settle_provider_voice\([^)]*\)\s+to service_role/);
 });
 
+test("the transactional claim contract includes the daily cap and settled ledger", () => {
+  const sql = fs.readFileSync(path.join(__dirname, "../migrations/2026-08-08-lm-provider-cost.sql"), "utf8").toLowerCase();
+  assert.match(sql, /p_daily_cap\s+numeric/);
+  assert.match(sql, /from lm_api_cost/);
+  assert.match(sql, /actual_billed_usd/);
+  assert.match(sql, /estimated_usd/);
+  assert.match(sql, /lm_provider_budget_claims/);
+  assert.match(sql, /for update/);
+});
+
 test("daily provider budget boundaries are normal, warning, degraded, then stopped", () => {
   assert.equal(evaluateProviderBudget({ measuredUsd: 0.49, estimatedUsd: 0 }).state, "normal");
   assert.equal(evaluateProviderBudget({ measuredUsd: 0.50, estimatedUsd: 0 }).state, "warning");
@@ -150,6 +160,7 @@ test("production authorization atomically claims a nonzero projection through th
   assert.equal(body.p_request_id, "call-attempt-1");
   assert.ok(body.p_projected_usd > 0, "voice claims must never reserve a zero projection");
   assert.equal(body.p_is_voice, true);
+  assert.equal(body.p_daily_cap, 2);
 });
 
 test("cached reads bypass both budget reads and the atomic claim RPC", async () => {

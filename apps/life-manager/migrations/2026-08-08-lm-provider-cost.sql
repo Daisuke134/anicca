@@ -51,7 +51,8 @@ ALTER TABLE public.lm_api_cost
   ADD COLUMN IF NOT EXISTS actual_status text,
   ADD COLUMN IF NOT EXISTS cost_classification text,
   ADD COLUMN IF NOT EXISTS failed_at timestamptz,
-  ADD COLUMN IF NOT EXISTS failure_reason text;
+  ADD COLUMN IF NOT EXISTS failure_reason text,
+  ADD COLUMN IF NOT EXISTS metadata jsonb;
 
 -- Normalize the first version of this gate (`measured|estimated|unknown` in
 -- actual_status) before installing the stricter two-state status contract.
@@ -160,6 +161,10 @@ ALTER TABLE public.lm_provider_voice_settlements FORCE ROW LEVEL SECURITY;
 -- The user and global rows are locked in one deterministic order. This makes
 -- reservations race-safe across Railway instances; a boolean REST insert is
 -- insufficient because two workers could both pass the pre-read cap check.
+-- The 9-argument function shipped in the first version cannot be replaced with
+-- a different signature in PostgreSQL, so remove it before installing the
+-- version that also receives the atomic daily-cap parameters.
+DROP FUNCTION IF EXISTS public.lm_claim_provider_budget(text, date, text, text, text, numeric, boolean, numeric, numeric);
 CREATE OR REPLACE FUNCTION public.lm_claim_provider_budget(
   p_uid text,
   p_budget_day date,
@@ -169,7 +174,9 @@ CREATE OR REPLACE FUNCTION public.lm_claim_provider_budget(
   p_projected_usd numeric,
   p_is_voice boolean,
   p_user_voice_cap numeric,
-  p_global_voice_cap numeric
+  p_global_voice_cap numeric,
+  p_daily_cap numeric,
+  p_enforce_daily_cap boolean
 )
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -183,20 +190,28 @@ DECLARE
   v_user_reserved numeric := 0;
   v_global_settled numeric := 0;
   v_global_reserved numeric := 0;
+  v_daily_spend numeric := 0;
+  v_outstanding_reserved numeric := 0;
   v_projected numeric := coalesce(p_projected_usd, 0);
 BEGIN
   IF v_uid IS NULL OR nullif(trim(p_request_id), '') IS NULL OR v_projected < 0 THEN
     RETURN jsonb_build_object('allowed', false, 'reason', 'invalid_claim');
   END IF;
 
+  -- Always create/lock the user row. Non-voice claims use this row as the
+  -- per-user mutex for their atomic daily cap; voice claims also lock global
+  -- after user so every instance observes the same lock order.
+  INSERT INTO lm_provider_voice_buckets(scope, uid, budget_day)
+    VALUES ('user', v_uid, v_day)
+    ON CONFLICT (scope, uid, budget_day) DO NOTHING;
+  SELECT settled_usd, reserved_usd INTO v_user_settled, v_user_reserved
+    FROM lm_provider_voice_buckets
+    WHERE scope = 'user' AND uid = v_uid AND budget_day = v_day
+    FOR UPDATE;
   IF coalesce(p_is_voice, false) THEN
     INSERT INTO lm_provider_voice_buckets(scope, uid, budget_day)
-      VALUES ('user', v_uid, v_day), ('global', '', v_day)
+      VALUES ('global', '', v_day)
       ON CONFLICT (scope, uid, budget_day) DO NOTHING;
-    SELECT settled_usd, reserved_usd INTO v_user_settled, v_user_reserved
-      FROM lm_provider_voice_buckets
-      WHERE scope = 'user' AND uid = v_uid AND budget_day = v_day
-      FOR UPDATE;
     SELECT settled_usd, reserved_usd INTO v_global_settled, v_global_reserved
       FROM lm_provider_voice_buckets
       WHERE scope = 'global' AND uid = '' AND budget_day = v_day
@@ -208,6 +223,56 @@ BEGIN
     WHERE uid = v_uid AND budget_day = v_day AND request_id = p_request_id
   ) THEN
     RETURN jsonb_build_object('allowed', true, 'duplicate', true, 'request_id', p_request_id);
+  END IF;
+
+  -- Settled spend is read from the ledger inside this transaction. Unknown
+  -- rows contribute their persisted estimate only; null remains unknown and
+  -- contributes nothing. A call-session estimate is superseded by a known CDR
+  -- for the same reservation, preventing one call from being counted twice.
+  SELECT coalesce(sum(
+    CASE
+      WHEN l.actual_status = 'known' AND l.actual_billed_usd IS NOT NULL THEN l.actual_billed_usd
+      WHEN l.actual_status = 'unknown' THEN coalesce(l.estimated_usd, l.est_usd, 0)
+      ELSE 0
+    END
+  ), 0)
+  INTO v_daily_spend
+  FROM lm_api_cost l
+  WHERE l.uid = v_uid
+    AND l.ts >= v_day::timestamptz
+    AND l.ts < (v_day + 1)::timestamptz
+    AND NOT (
+      l.operation = 'call_session'
+      AND l.actual_status = 'unknown'
+      AND EXISTS (
+        SELECT 1 FROM lm_api_cost cdr
+        WHERE cdr.uid = l.uid
+          AND cdr.operation = 'call_cdr'
+          AND coalesce(cdr.metadata, cdr.meta)->>'reservationRequestId' = l.request_id
+      )
+    );
+
+  -- Non-voice claims remain outstanding until their exact provider request is
+  -- represented in the ledger. Voice claims use the locked bucket, whose
+  -- reserved_usd is released by lm_settle_provider_voice.
+  SELECT coalesce(sum(c.projected_usd), 0)
+  INTO v_outstanding_reserved
+  FROM lm_provider_budget_claims c
+  WHERE c.uid = v_uid
+    AND c.budget_day = v_day
+    AND c.is_voice = false
+    AND NOT EXISTS (
+      SELECT 1 FROM lm_api_cost l
+      WHERE l.uid = c.uid
+        AND l.provider = c.provider
+        AND l.request_id = c.request_id
+    );
+  v_outstanding_reserved := v_outstanding_reserved + CASE WHEN coalesce(p_is_voice, false) THEN v_user_reserved ELSE 0 END;
+
+  IF coalesce(p_enforce_daily_cap, true)
+     AND coalesce(p_daily_cap, 0) > 0
+     AND v_daily_spend + v_outstanding_reserved + v_projected >= p_daily_cap THEN
+    RETURN jsonb_build_object('allowed', false, 'reason', 'daily_provider_cap');
   END IF;
 
   IF coalesce(p_is_voice, false) AND v_user_settled + v_user_reserved + v_projected >= coalesce(p_user_voice_cap, 0) THEN
@@ -287,9 +352,9 @@ $$;
 -- These functions mutate reservations and billing buckets.  SECURITY DEFINER
 -- must never make them callable by browser roles; only the server-side
 -- service-role key may invoke them.
-REVOKE ALL ON FUNCTION public.lm_claim_provider_budget(text, date, text, text, text, numeric, boolean, numeric, numeric)
+REVOKE ALL ON FUNCTION public.lm_claim_provider_budget(text, date, text, text, text, numeric, boolean, numeric, numeric, numeric, boolean)
   FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.lm_claim_provider_budget(text, date, text, text, text, numeric, boolean, numeric, numeric)
+GRANT EXECUTE ON FUNCTION public.lm_claim_provider_budget(text, date, text, text, text, numeric, boolean, numeric, numeric, numeric, boolean)
   TO service_role;
 REVOKE ALL ON FUNCTION public.lm_settle_provider_voice(text, date, text, numeric, text)
   FROM PUBLIC, anon, authenticated;

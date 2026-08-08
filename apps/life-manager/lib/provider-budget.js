@@ -161,6 +161,8 @@ async function authorizeProviderOperation(input = {}, deps = {}) {
     const claim = await claimProviderBudget({
       ...input, requestId, projectedUsd, isVoice: voice,
       userVoiceCapUsd: thresholds.voiceUserCapUsd, globalVoiceCapUsd: thresholds.voiceGlobalCapUsd,
+      dailyCapUsd: input.dailyCapUsd == null ? thresholds.stoppedUsd : input.dailyCapUsd,
+      enforceDailyCap: input.enforceDailyCap !== false,
     }, deps);
     if (!claim.allowed) return { allowed: false, reason: claim.reason || "budget_claim_failed", ...budget, requestId, projectedUsd };
   }
@@ -186,6 +188,7 @@ async function claimProviderBudget(input = {}, deps = {}) {
       p_operation: String(input.operation || "unknown"), p_request_id: String(input.requestId),
       p_projected_usd: finiteUsd(input.projectedUsd), p_is_voice: Boolean(input.isVoice),
       p_user_voice_cap: finiteUsd(input.userVoiceCapUsd), p_global_voice_cap: finiteUsd(input.globalVoiceCapUsd),
+      p_daily_cap: finiteUsd(input.dailyCapUsd), p_enforce_daily_cap: input.enforceDailyCap !== false,
     }),
     });
   } catch (error) {

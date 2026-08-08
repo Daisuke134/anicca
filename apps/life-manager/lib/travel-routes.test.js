@@ -115,7 +115,7 @@ test("transit returns empty routes[] → null path, drive used (no crash)", asyn
 test("transit anchors arrival_time to EVENT start (not departure_time=now) for a future event", async () => {
   let transitUrl = "";
   const restore = stubFetch({
-    transit: transitOK(20), drive: driveOK(10),
+    transit: transitOK(20), drive: {},
     capture: (u) => { if (u.includes("/maps/api/directions")) transitUrl = u; },
   });
   try {
