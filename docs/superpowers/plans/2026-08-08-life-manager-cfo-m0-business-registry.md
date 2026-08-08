@@ -125,6 +125,8 @@ const EXCLUSION_KEYS = new Set(["exclusion_id", "runtime_matchers", "classificat
 const UNIT_KINDS = new Set(["business", "personal_income"]);
 const LIFECYCLES = new Set(["active", "building", "planned", "retired"]);
 const ID = /^[a-z][a-z0-9_]*$/;
+const OWNER_REF = /^human:[a-z][a-z0-9_]*$/;
+const COST_CENTER_REF = /^agent:[a-z][a-z0-9_]*$/;
 
 function matchesLabel(matcher, label) {
   if (typeof matcher !== "string" || typeof label !== "string") return false;
@@ -139,7 +141,9 @@ precedence over the secret/money-name scan (so `revenue_channel_ids` remains val
 reject names matching
 `/(?:amount|balance|revenue|profit|secret|token|api.?key|account.?number|private.?key|seed)/i`, string values starting
 with `/Users/` or `/home/`, non-exact keys, and duplicate IDs. Deep-freeze a
-cloned value so caller mutation cannot alter validated state. `classifyLabel` returns sorted target IDs.
+cloned value so caller mutation cannot alter validated state. Apply `ID` to registry/unit/channel/ledger/exclusion IDs,
+`OWNER_REF` only to `owner_ref`, and `COST_CENTER_REF` only to `cost_center_refs`; typed references are not generic IDs.
+Add invalid owner/cost-centre reference mutations. `classifyLabel` returns sorted target IDs.
 
 - [x] **Step 4: Run GREEN and diff check**
 
@@ -161,6 +165,11 @@ git push
 ```
 
 Completion evidence: commits `b1063e627` and `5622b0312`; focused tests 5/5 PASS; fix round 1 review clean.
+
+- [ ] **Downstream correction: accept strict typed owner and cost-centre references**
+
+Task 2 preflight exposed that the exact `agent:franklin1` values cannot pass a generic `ID` regex. Add the typed
+reference contract above, targeted tests, fresh review, state commit, and push before Task 2 resumes.
 
 ---
 

@@ -161,6 +161,10 @@ The implementation contains all seven full rows. The shortened JSON above define
 is not permission to omit rows. Globs support only a terminal `*`. Matchers are evaluated by descending literal
 prefix length. Multiple matches remain an error even when one prefix is longer.
 
+Reference namespaces are part of identity: `owner_ref` is exactly `human:<id>` and every `cost_center_refs` entry
+is exactly `agent:<id>`, where `<id>` matches `[a-z][a-z0-9_]*`. Registry, unit, channel, ledger, and exclusion IDs
+remain unprefixed snake-case IDs. Validators must not apply the unprefixed ID regex to typed references.
+
 ### Inventory receipt contract
 
 ```json
