@@ -4,6 +4,7 @@
 // Railway public wss. Returns { ok, ccid } | { ok:false, error }.
 "use strict";
 
+const crypto = require("node:crypto");
 const { telnyxDialBody, telnyxStreamingStartBody } = require("./call-logic.js");
 const { amdEnabled } = require("./answered.js");
 const { encodeWakeClientState } = require("./telnyx-webhook.js");
@@ -42,8 +43,9 @@ function amdDialOptions(streamUrl, env = process.env, opts = {}) {
   const url = new URL(streamUrl);
   const wakeUid = url.searchParams.get("wakeUid") || "";
   const wakeEventKey = url.searchParams.get("wakeEventKey") || "";
+  const reservationRequestId = url.searchParams.get("reservationRequestId") || "";
   const webhookProtocol = url.protocol === "ws:" ? "http:" : "https:";
-  const clientState = opts.clientState || encodeWakeClientState({ wakeUid, wakeEventKey });
+  const clientState = opts.clientState || encodeWakeClientState({ wakeUid, wakeEventKey, reservationRequestId });
   return {
     answering_machine_detection: "detect",
     webhook_url: `${webhookProtocol}//${url.host}/telnyx-events`,
@@ -56,12 +58,23 @@ function amdDialOptions(streamUrl, env = process.env, opts = {}) {
 // clientState: OPTIONAL, for a caller whose identity is not in the stream URL (/test-call). Omitted,
 // the wake path derives it from the URL exactly as before.
 // Returns the call_control_id so the caller can issue record_start / streaming_start.
-async function placeCall({ to, streamUrl, clientState }) {
+async function placeCall({ to, streamUrl, clientState, uid, authorizeProviderOperation, projectedUsd, requestId }) {
   const API = process.env.TELNYX_API_KEY;
   const CONN = process.env.TELNYX_CONNECTION_ID;
   const FROM = process.env.TELNYX_PHONE_NUMBER;
   if (!API || !CONN || !FROM) return { ok: false, error: "telnyx env missing (API/CONN/FROM)" };
   if (!to || !streamUrl) return { ok: false, error: "to/streamUrl required" };
+  const callRequestId = requestId || `telnyx:call_session:${Date.now()}:${crypto.randomUUID()}`;
+  const callProjection = Number.isFinite(Number(projectedUsd)) && Number(projectedUsd) > 0
+    ? Number(projectedUsd)
+    : Number(process.env.LM_TELNYX_PROJECTED_CALL_USD) > 0 ? Number(process.env.LM_TELNYX_PROJECTED_CALL_USD) : 0.05;
+  if (typeof authorizeProviderOperation === "function") {
+    const decision = await authorizeProviderOperation({
+      uid, provider: "telnyx", operation: "call_session", essential: true, cacheHit: false,
+      requestId: callRequestId, projectedUsd: callProjection,
+    });
+    if (decision && decision.allowed === false) return { ok: false, error: `provider budget denied: ${decision.reason || "stopped"}` };
+  }
 
   // Preflight: never dial on an empty balance (a mid-call cutoff is a fake "connected").
   const usd = await balanceUsd().catch(() => NaN);
@@ -83,7 +96,7 @@ async function placeCall({ to, streamUrl, clientState }) {
   // NOTE: do NOT record_start here — the call is still RINGING (not answered), so Telnyx rejects
   // record_start ("call is not in a valid state"). Recording is started by the bridge the moment the
   // media `start` frame arrives (= call answered). See startRecording() + the server.js start handler.
-  return { ok: true, ccid };
+  return { ok: true, ccid, requestId: callRequestId };
 }
 
 // Start mp3 recording on an ANSWERED call. Telnyx record_start requires the call to be active

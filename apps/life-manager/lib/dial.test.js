@@ -8,6 +8,11 @@ const { encodeTestCallClientState, decodeCallClientState } = require("./telnyx-w
 const WAKE_URL = "wss://life-call-production.up.railway.app/ws?summary=x&wakeUid=lm_abc&wakeEventKey=k1";
 const TEST_URL = "wss://life-call-production.up.railway.app/ws?summary=x&wakeUid=&wakeEventKey=";
 
+test("a wake dial carries its reservation id into Telnyx client_state", () => {
+  const opts = amdDialOptions(`${WAKE_URL}&reservationRequestId=telnyx%3Areservation-1`, { LM_AMD: "on" });
+  assert.equal(decodeCallClientState(opts.client_state).reservationRequestId, "telnyx:reservation-1");
+});
+
 test("a wake stream url still derives its client_state from the url", () => {
   // The wake path is the one that already works in production; the test-call fix must not move it.
   const opts = amdDialOptions(WAKE_URL, { LM_AMD: "on" });

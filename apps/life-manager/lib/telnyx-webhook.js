@@ -5,9 +5,13 @@ const crypto = require("node:crypto");
 const ED25519_SPKI_PREFIX = Buffer.from("302a300506032b6570032100", "hex");
 const MAX_WEBHOOK_AGE_SECONDS = 5 * 60;
 
-function encodeWakeClientState({ wakeUid, wakeEventKey } = {}) {
+function encodeWakeClientState({ wakeUid, wakeEventKey, reservationRequestId } = {}) {
   if (!wakeUid || !wakeEventKey) return "";
-  return Buffer.from(JSON.stringify({ wakeUid, wakeEventKey }), "utf8").toString("base64");
+  const state = { wakeUid, wakeEventKey };
+  if (reservationRequestId != null && String(reservationRequestId).trim()) {
+    state.reservationRequestId = String(reservationRequestId).slice(0, 200);
+  }
+  return Buffer.from(JSON.stringify(state), "utf8").toString("base64");
 }
 
 function decodeWakeClientState(value) {
@@ -16,10 +20,14 @@ function decodeWakeClientState(value) {
     const parsed = JSON.parse(Buffer.from(String(value), "base64").toString("utf8"));
     if (!parsed || typeof parsed.wakeUid !== "string" || typeof parsed.wakeEventKey !== "string") return null;
     if (!parsed.wakeUid || !parsed.wakeEventKey) return null;
-    return {
+    const state = {
       wakeUid: parsed.wakeUid.slice(0, 100),
       wakeEventKey: parsed.wakeEventKey.slice(0, 300),
     };
+    if (typeof parsed.reservationRequestId === "string" && parsed.reservationRequestId.trim()) {
+      state.reservationRequestId = parsed.reservationRequestId.slice(0, 200);
+    }
+    return state;
   } catch {
     return null;
   }
@@ -32,11 +40,15 @@ function decodeWakeClientState(value) {
 // lm_wake_log row to write amd_result onto, a test call has none. Writing the same shape for both
 // would aim a PATCH at a row that does not exist and turn matched=0 (the "a wake row went missing"
 // alarm of §1.3) into routine noise.
-function encodeTestCallClientState({ testUid } = {}) {
+function encodeTestCallClientState({ testUid, reservationRequestId } = {}) {
   // "" and not a decodable blob: dial.js omits client_state entirely on a falsy value, and a call we
   // cannot name in a log is worse than a call that carries no state at all.
   if (!testUid) return "";
-  return Buffer.from(JSON.stringify({ testUid }), "utf8").toString("base64");
+  const state = { testUid };
+  if (reservationRequestId != null && String(reservationRequestId).trim()) {
+    state.reservationRequestId = String(reservationRequestId).slice(0, 200);
+  }
+  return Buffer.from(JSON.stringify(state), "utf8").toString("base64");
 }
 
 // One decoder for both kinds so the webhook branches on `kind` instead of trying each decoder in turn
@@ -51,7 +63,11 @@ function decodeCallClientState(value) {
     if (!parsed || typeof parsed.testUid !== "string" || !parsed.testUid) return null;
     // Same slice as the wake fields: this ends up in a log line, and Telnyx echoes client_state back
     // verbatim, so its length is attacker-controlled input to our own logs.
-    return { kind: "test", testUid: parsed.testUid.slice(0, 100) };
+    const state = { kind: "test", testUid: parsed.testUid.slice(0, 100) };
+    if (typeof parsed.reservationRequestId === "string" && parsed.reservationRequestId.trim()) {
+      state.reservationRequestId = parsed.reservationRequestId.slice(0, 200);
+    }
+    return state;
   } catch {
     return null;
   }

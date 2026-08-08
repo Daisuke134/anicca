@@ -68,3 +68,64 @@ test("parseTransitPlan: picks EARLIEST ARRIVAL, not journeys[0] — FIND-006", (
   const r = parseTransitPlan(plan);
   assert.equal(r.durationSecs, 500); // the 2nd journey, proving it's not journeys[0]
 });
+
+test("parseTransitPlan: preserves anchor, walking, fare, nullable provider facts, and ordered steps", () => {
+  const r = parseTransitPlan({
+    date: "20260809",
+    timezone: "Asia/Tokyo",
+    provider: "transit.ls8h",
+    computedAt: "2026-08-08T06:00:00.000Z",
+    journeys: [{
+      departureSecs: 8 * 3600,
+      arrivalSecs: 9 * 3600 + 5 * 60,
+      durationSecs: 3600,
+      accessWalkSecs: 420,
+      egressWalkSecs: 300,
+      transferCount: 1,
+      fare: { currency: "JPY", amount: 210, medium: "IC" },
+      legs: [
+        {
+          kind: "walk", mode: "walk", from: { name: "Home" }, to: { name: "Station" },
+          departureSecs: 8 * 3600, arrivalSecs: 8 * 3600 + 420,
+          geometry: { type: "LineString", coordinates: [] },
+        },
+        {
+          kind: "transit", mode: "rail", routeName: "Yamanote", headsign: "Shibuya",
+          from: { name: "Station" }, to: { name: "Shibuya" }, platform: null,
+          departureSecs: 8 * 3600 + 480, arrivalSecs: 8 * 3600 + 3600,
+        },
+      ],
+    }],
+  });
+  assert.equal(r.provider, "transit.ls8h");
+  assert.equal(r.timezone, "Asia/Tokyo");
+  assert.equal(r.computedAt, "2026-08-08T06:00:00.000Z");
+  assert.equal(r.durationSecs, 4020); // provider journey + access, egress is already in arrival
+  assert.equal(r.accessWalkSecs, 420);
+  assert.equal(r.egressWalkSecs, 300);
+  assert.equal(r.transferCount, 1);
+  assert.deepEqual(r.fare, { currency: "JPY", amount: 210, medium: "IC" });
+  assert.equal(r.steps.length, 2);
+  assert.equal(r.steps[0].mode, "walk");
+  assert.equal(r.steps[1].service, "Yamanote");
+  assert.equal(r.steps[1].headsign, "Shibuya");
+  assert.equal(r.steps[1].platform, null);
+  assert.equal(r.steps[1].from, "Station");
+  assert.equal(r.steps[1].to, "Shibuya");
+  assert.equal(Object.prototype.hasOwnProperty.call(r.steps[1], "entrance"), false);
+  assert.equal(Object.prototype.hasOwnProperty.call(r.steps[1], "bestCar"), false);
+  assert.equal(Object.prototype.hasOwnProperty.call(r.steps[1], "crowding"), false);
+  assert.deepEqual(r.availability, { platform: false, fare: true, geometry: true });
+});
+
+test("parseTransitPlan: missing nullable facts stay null instead of guessed text", () => {
+  const r = parseTransitPlan({
+    date: "20260809", timezone: "UTC",
+    journeys: [{ departureSecs: 10, arrivalSecs: 20, durationSecs: 10, legs: [{ mode: "rail" }] }],
+  });
+  assert.equal(r.fare, null);
+  assert.equal(r.steps[0].platform, null);
+  assert.equal(r.steps[0].geometry, null);
+  assert.equal(r.availability.fare, false);
+  assert.equal(r.availability.platform, false);
+});

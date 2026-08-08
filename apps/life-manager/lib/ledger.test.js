@@ -55,6 +55,82 @@ test("recordCost logs and resolves false when Supabase fails", async () => {
   assert.match(errors[0], /offline/);
 });
 
+test("provider ledger duplicate conflicts are idempotent success without an owner failure", async () => {
+  const failures = [];
+  const result = await ledger().recordProviderCost({
+    uid: "u1", provider: "google", sku: "routes", operation: "routes", requestId: "route-replay",
+    quantity: 1, unit: "request", pricingVersion: "google-test-1", estimatedUsd: 0.01,
+    actualStatus: "unknown", actualBilledUsd: null,
+  }, {
+    supaUrl: "https://db.example", supaKey: "service",
+    fetchImpl: async () => ({ ok: false, status: 409, json: async () => ({ code: "23505" }) }),
+    ownerAlert: (failure) => failures.push(failure),
+  });
+  assert.equal(result, true);
+  assert.equal(failures.length, 0);
+});
+
+test("legacy ledger duplicate conflicts are idempotent success", async () => {
+  const result = await ledger().recordCost({ uid: "u1", kind: "telnyx_call", quantity: 60, estUsd: 0.01 }, {
+    supaUrl: "https://db.example", supaKey: "service",
+    fetchImpl: async () => ({ ok: false, status: 409 }),
+  });
+  assert.equal(result, true);
+});
+
+test("concurrent provider ledger retries resolve as one write plus one successful no-op", async () => {
+  let requests = 0;
+  const failures = [];
+  const input = {
+    uid: "u1", provider: "telnyx", sku: "voice", operation: "call_cdr", requestId: "cdr-concurrent",
+    quantity: 60, unit: "seconds", pricingVersion: "telnyx-test-1", actualBilledUsd: 0.02,
+    actualStatus: "known", costClassification: "measured",
+  };
+  const opts = {
+    supaUrl: "https://db.example", supaKey: "service",
+    fetchImpl: async (url) => {
+      if (!String(url).includes("/rest/v1/lm_api_cost")) return { ok: true, status: 200, json: async () => ({ settled: true }) };
+      requests += 1;
+      return requests === 1 ? { ok: true, status: 201 } : { ok: false, status: 409 };
+    },
+    ownerAlert: (failure) => failures.push(failure),
+  };
+  const results = await Promise.all([ledger().recordProviderCost(input, opts), ledger().recordProviderCost(input, opts)]);
+  assert.deepEqual(results, [true, true]);
+  assert.equal(requests, 2);
+  assert.equal(failures.length, 0);
+});
+
+test("a replayed Telnyx CDR retries settlement after its first ledger write settled nothing", async () => {
+  let ledgerWrites = 0;
+  let settlementAttempts = 0;
+  const input = {
+    uid: "u1", provider: "telnyx", sku: "voice", operation: "call_cdr", requestId: "cdr-replay-settlement",
+    quantity: 60, unit: "seconds", pricingVersion: "telnyx-test-1", actualBilledUsd: 0.02,
+    actualStatus: "known", costClassification: "measured", metadata: { reservationRequestId: "call-reservation-1" },
+  };
+  const opts = {
+    supaUrl: "https://db.example", supaKey: "service", log: () => {},
+    fetchImpl: async (url) => {
+      if (String(url).includes("/rest/v1/lm_api_cost")) {
+        ledgerWrites += 1;
+        return ledgerWrites === 1 ? { ok: true, status: 201 } : { ok: false, status: 409 };
+      }
+      if (String(url).includes("lm_settle_provider_voice")) {
+        settlementAttempts += 1;
+        return settlementAttempts === 1
+          ? { ok: false, status: 503 }
+          : { ok: true, status: 200, json: async () => ({ settled: true, duplicate: false }) };
+      }
+      throw new Error(`unexpected provider-cost request ${url}`);
+    },
+  };
+  assert.equal(await ledger().recordProviderCost(input, opts), true);
+  assert.equal(await ledger().recordProviderCost(input, opts), true);
+  assert.equal(ledgerWrites, 2);
+  assert.equal(settlementAttempts, 2, "the ledger replay must retry the missing settlement exactly once");
+});
+
 test("recordDailyComposioPoll uses a DB day query and inserts at most one row", async () => {
   const requests = [];
   const responses = [
@@ -109,6 +185,26 @@ test("businessSummary is pure and groups calls and total cost per uid", () => {
     },
   });
   assert.deepEqual(rows, frozen);
+});
+
+test("businessSummary counts one call for a 60-second session plus its CDR without dropping cost rows", () => {
+  const summary = ledger().businessSummary(1, [
+    {
+      ts: "2026-08-08T10:00:00Z", uid: "u1", kind: "telnyx_call", provider: "telnyx",
+      operation: "call_session", request_id: "telnyx:call_session:reservation-1", quantity: 60,
+      est_usd: 0.002, meta: { kind: "telnyx_call", reservationRequestId: "reservation-1" },
+    },
+    {
+      ts: "2026-08-08T10:01:00Z", uid: "u1", kind: "telnyx_call", provider: "telnyx",
+      operation: "call_cdr", request_id: "telnyx:cdr:cdr-1", quantity: 60,
+      est_usd: 0.034, actual_billed_usd: 0.034,
+      meta: { kind: "telnyx_call", reservationRequestId: "reservation-1", cdrId: "cdr-1" },
+    },
+  ], Date.parse("2026-08-08T12:00:00Z"));
+  assert.equal(summary.calls, 1);
+  assert.equal(summary.call_minutes, 1);
+  assert.equal(summary.est_cost_usd, 0.036, "deduplication must not discard either cost receipt");
+  assert.deepEqual(summary.per_uid.u1, { calls: 1, call_minutes: 1, est_cost_usd: 0.036 });
 });
 
 test("production bridge and scheduler contain all three LM-7 recording points", () => {

@@ -3,12 +3,14 @@
 // so the same JS runs cloud (this) or local (calendar-gog.js, slice 5). Behaviour-identical to the
 // inline Composio calls it replaces — the live caller is unchanged.
 "use strict";
-const { recordCost } = require("../ledger.js");
+const crypto = require("node:crypto");
+const { recordComposioOperation } = require("../provider-cost-adapters.js");
+const { authorizeProviderOperation: authorizeBudget } = require("../provider-budget.js");
 
 const COMPOSIO_EXEC = "https://backend.composio.dev/api/v3/tools/execute";
 
-async function exec(tool, uid, args, apiKey) {
-  const r = await fetch(`${COMPOSIO_EXEC}/${tool}`, {
+async function exec(tool, uid, args, apiKey, fetchImpl = globalThis.fetch) {
+  const r = await fetchImpl(`${COMPOSIO_EXEC}/${tool}`, {
     method: "POST",
     headers: { "x-api-key": apiKey, "Content-Type": "application/json" },
     body: JSON.stringify({ user_id: uid, arguments: args }),
@@ -16,15 +18,34 @@ async function exec(tool, uid, args, apiKey) {
   return r.json();
 }
 
-function makeComposioCalendar({ apiKey, recordCall } = {}) {
+function makeComposioCalendar({ apiKey, recordCall, recordProviderCost, fetchImpl, authorizeProviderOperation } = {}) {
   const key = apiKey || process.env.COMPOSIO_API_KEY;
-  const ledger = recordCall || ((uid, tool) => {
-    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) return false;
-    return recordCost({ uid, kind: "composio_call", quantity: 1, unit: "call", estUsd: 0, meta: { tool } });
+  const ledger = recordCall || ((uid, tool, requestId) => {
+    if (!recordProviderCost && (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY)) return false;
+    return recordComposioOperation({ uid, tool, requestId }, { recordProviderCost });
   });
-  const execute = async (tool, uid, args) => {
-    const result = await exec(tool, uid, args, key);
-    await Promise.resolve(ledger(uid, tool)).catch(() => false);
+  const budgetGate = authorizeProviderOperation || (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
+    ? (input) => authorizeBudget(input, { supaUrl: process.env.SUPABASE_URL, supaKey: process.env.SUPABASE_SERVICE_ROLE_KEY })
+    : undefined);
+  const execute = async (tool, uid, args, operationOptions = {}) => {
+    const requestId = `composio:${uid || "anonymous"}:${tool}:${Date.now()}:${crypto.randomUUID()}`;
+    if (typeof budgetGate === "function") {
+      const decision = await budgetGate({
+        uid, provider: "composio", operation: operationOptions.operation || "refresh",
+        essential: operationOptions.essential === true, cacheHit: operationOptions.cacheHit === true, requestId,
+      });
+      if (decision && decision.allowed === false) throw new Error(`provider budget denied: ${decision.reason || "stopped"}`);
+    }
+    let result;
+    let failure;
+    try {
+      result = await exec(tool, uid, args, key, fetchImpl || globalThis.fetch);
+    } catch (error) {
+      failure = error;
+    } finally {
+      await Promise.resolve(ledger(uid, tool, requestId)).catch(() => false);
+    }
+    if (failure) throw failure;
     return result;
   };
   // ONE page of Google Calendar items PLUS the cursor that unlocks the next. events.list returns at
@@ -39,7 +60,7 @@ function makeComposioCalendar({ apiKey, recordCall } = {}) {
   // Error contract unchanged and shared with listEventsRaw: default (wake path) swallows every
   // failure to an empty page — load-bearing, a transport blip must not crash the 60s tick — while
   // strict (history path) THROWS, because "empty calendar" and "the read failed" must never merge.
-  const listEventsPage = async (uid, { timeMin, timeMax, maxResults, pageToken, strict } = {}) => {
+  const listEventsPage = async (uid, { timeMin, timeMax, maxResults, pageToken, strict, cacheHit } = {}) => {
     const empty = { items: [], nextPageToken: null };
     if (!key || !uid) {
       if (strict) throw new Error(`calendar transport not ready (missing ${key ? "uid" : "API key"})`);
@@ -50,7 +71,7 @@ function makeComposioCalendar({ apiKey, recordCall } = {}) {
     if (pageToken) args.pageToken = pageToken;
     let j;
     try {
-      j = await execute("GOOGLECALENDAR_EVENTS_LIST", uid, args);
+      j = await execute("GOOGLECALENDAR_EVENTS_LIST", uid, args, { essential: false, cacheHit });
     } catch (e) {
       if (strict) throw e;
       return empty;

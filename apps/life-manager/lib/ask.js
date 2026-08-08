@@ -443,7 +443,7 @@ async function askTick(uid, opts) {
       const r = await tgSend(opts.telegramToken, opts.telegramChatId, message.text, message.extra);
       sent = !!(r && r.ok);
     } else if (questionType !== "calendar_online" && userEmail && resendKey) {
-      const r = await sendAsk({ to: userEmail, replyToken, event, resendKey });
+      const r = await sendAsk({ to: userEmail, replyToken, event, resendKey, uid });
       sent = !!(r && r.sent);
     }
     if (sent) asked++;

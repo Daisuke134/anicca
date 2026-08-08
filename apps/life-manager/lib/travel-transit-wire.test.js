@@ -70,3 +70,52 @@ test("directionsMinutes: repeated ticks (same event) call the provider ONCE — 
   await travel.directionsMinutes("新宿区A", "渋谷区B", "k", at, Date.now() + 60000, false, opts); // next tick, same event
   assert.equal(transitCalls, 1); // second tick is a cache hit
 });
+
+test("directionsRoute: Transit receives the event anchor and accepted result never calls Google", async () => {
+  let anchor;
+  let googleCalls = 0;
+  const eventAt = Date.parse("2026-08-09T09:00:00+09:00");
+  const route = await travel.directionsRoute("新宿区A", "渋谷区B", "mapsKey", eventAt, eventAt - 60000, false, {
+    _geocode: fakeGeocode,
+    _transitFetch: async (_from, _to, options) => {
+      anchor = options;
+      return {
+        date: "20260809", timezone: "Asia/Tokyo", journeys: [{
+          departureSecs: 100, arrivalSecs: 1000, durationSecs: 900,
+          accessWalkSecs: 120, egressWalkSecs: 60, transferCount: 1,
+          fare: { currency: "JPY", amount: 210 },
+          legs: [{ mode: "rail", routeName: "Ginza", headsign: "渋谷", departureSecs: 100, arrivalSecs: 900 }],
+        }],
+      };
+    },
+    _directionsMinutesGoogle: async () => { googleCalls += 1; return 45; },
+    _routeCache: freshCache(),
+    _timezone: "Asia/Tokyo",
+  });
+  assert.equal(route.provider, "transit");
+  assert.equal(route.route.transferCount, 1);
+  assert.equal(route.route.accessWalkSecs, 120);
+  assert.equal(route.minutes, 17);
+  assert.equal(anchor.eventAt, new Date(eventAt).toISOString());
+  assert.equal(anchor.timezone, "Asia/Tokyo");
+  assert.equal(anchor.direction, "outbound");
+  assert.equal(googleCalls, 0);
+});
+
+test("directionsRoute: return query uses depart-at semantics with the same event anchor", async () => {
+  let anchor;
+  const eventEnd = Date.parse("2026-08-09T18:00:00+09:00");
+  const route = await travel.directionsRoute("渋谷区B", "新宿区A", "mapsKey", eventEnd, eventEnd - 60000, true, {
+    _geocode: fakeGeocode,
+    _transitFetch: async (_from, _to, options) => {
+      anchor = options;
+      return { date: "20260809", timezone: "Asia/Tokyo", journeys: [{ departureSecs: 100, arrivalSecs: 700, durationSecs: 600, legs: [] }] };
+    },
+    _routeCache: freshCache(),
+    _timezone: "Asia/Tokyo",
+  });
+  assert.equal(route.provider, "transit");
+  assert.equal(route.minutes, 10);
+  assert.equal(anchor.eventAt, new Date(eventEnd).toISOString());
+  assert.equal(anchor.direction, "return");
+});
