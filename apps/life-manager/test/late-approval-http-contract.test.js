@@ -1,0 +1,319 @@
+"use strict";
+
+// DAILY #5 Task 4: the callback is the only path that may cross the mail boundary.  These are
+// intentionally transport-shaped contract tests even though the state store is in-memory: the
+// production HTTP route supplies the same chat ownership, signed callback, and store calls.
+const test = require("node:test");
+const assert = require("node:assert/strict");
+const http = require("node:http");
+
+const {
+  createLateDraft,
+  createInMemoryLateApprovalStore,
+  createLateApprovalCallbackData,
+  handleLateApprovalCallback,
+} = require("../lib/late-approval.js");
+const { lateApprovalCardRequest } = require("../lib/late-notice.js");
+
+const NOW = Date.parse("2026-08-08T06:00:00.000Z");
+const SECRET = "fixture-late-approval-secret";
+
+function response(status, body) {
+  return { ok: status >= 200 && status < 300, status, json: async () => body, text: async () => JSON.stringify(body) };
+}
+
+function draftInput(status = "resolved") {
+  return {
+    uid: "uid-1",
+    eventKey: `calendar:event-${status}`,
+    recipientStatus: status,
+    recipients: status === "resolved" ? [{
+      display_name: "Meeting partner",
+      email: "partner@example.invalid",
+      source: "calendar",
+      evidence_refs: ["calendar:event:1:attendee:0"],
+      confidence: 1,
+      event_role: "attendee",
+    }] : [],
+    evidenceSnapshot: { refs: status === "resolved" ? ["calendar:event:1:attendee:0"] : [], status },
+    bodySnapshot: "Hi — Dais is running 15 minutes late to the meeting.",
+    etaEvidence: { basis: "route_eta_from_live_location", routeMinutes: 43, etaMinutes: 15 },
+    nowMs: NOW,
+  };
+}
+
+function callback(action, draftId, overrides = {}) {
+  return createLateApprovalCallbackData({
+    action,
+    draftId,
+    secret: SECRET,
+    expiresAtMs: NOW + 10 * 60_000,
+    ...overrides,
+  });
+}
+
+function baseOptions(store, overrides = {}) {
+  const calls = [];
+  return {
+    store,
+    secret: SECRET,
+    chatId: "100",
+    actorId: "100",
+    owner: { uid: "uid-1", telegram_chat_id: "100" },
+    nowMs: NOW,
+    callbackQueryId: "cb-1",
+    token: "telegram-token",
+    sendLateNotice: async (_uid, _event, options) => {
+      calls.push(["mail", options]);
+      return { sent: true, id: "resend-message-1" };
+    },
+    sendMessage: async (_token, _chat, text, extra) => {
+      calls.push(["telegram", text, extra]);
+      return { ok: true, result: { message_id: 77 } };
+    },
+    reflectAnswer: async (input) => {
+      calls.push(["reflect", input.label]);
+      return { ok: true };
+    },
+    calls,
+    ...overrides,
+  };
+}
+
+test("signed and owned Send decides, claims, mails, records the provider receipt, then posts one Telegram receipt", async () => {
+  const store = createInMemoryLateApprovalStore({ nowMs: NOW });
+  const draft = await createLateDraft(draftInput(), store);
+  const card = lateApprovalCardRequest({
+    telegramToken: "telegram-token", nowMs: NOW, callbackSecret: SECRET,
+    user: { uid: draft.uid, telegram_chat_id: "100" },
+  }, { id: draft.eventKey, summary: "the meeting" }, draft);
+  assert.match(card.text, /Meeting partner <partner@example\.invalid>/);
+  assert.match(card.text, /source: calendar/);
+  assert.match(card.text, /evidence: calendar:event:1:attendee:0/);
+  assert.match(card.text, /ETA.*route_eta_from_live_location/);
+  assert.match(card.text, /Hi — Dais is running/);
+  assert.equal(card.extra.reply_markup.inline_keyboard[0].length, 2);
+  assert.ok(card.extra.reply_markup.inline_keyboard[0].every((button) => button.callback_data.startsWith("late:")));
+  const opts = baseOptions(store);
+  const result = await handleLateApprovalCallback(callback("send", draft.draftId), opts);
+
+  assert.equal(result.handled, true);
+  assert.equal(result.ok, true);
+  assert.equal(result.sent, true);
+  assert.equal(result.draft.status, "sent");
+  assert.deepEqual(opts.calls.map((entry) => entry[0]), ["mail", "reflect", "telegram"]);
+  assert.equal(opts.calls[0][1].providerIdempotencyKey, draft.providerIdempotencyKey);
+  assert.equal(opts.calls[0][1].bodySnapshot, draft.bodySnapshot);
+  assert.match(opts.calls[2][1], /resend-message-1/);
+
+  // A replay observes the durable sent row and cannot call either external transport again.
+  const replay = await handleLateApprovalCallback(callback("send", draft.draftId), {
+    ...opts,
+    callbackQueryId: "cb-replay",
+  });
+  assert.equal(replay.ok, true);
+  assert.equal(replay.sent, false);
+  assert.deepEqual(opts.calls.map((entry) => entry[0]), ["mail", "reflect", "telegram"]);
+});
+
+test("callback ownership, signature, and expiry fail closed before any state mutation", async () => {
+  const store = createInMemoryLateApprovalStore({ nowMs: NOW });
+  const draft = await createLateDraft(draftInput(), store);
+  const calls = [];
+  const common = baseOptions(store, {
+    sendLateNotice: async () => { calls.push("mail"); throw new Error("must not send"); },
+    sendMessage: async () => { calls.push("telegram"); },
+  });
+
+  const stranger = await handleLateApprovalCallback(callback("send", draft.draftId), {
+    ...common, actorId: "999",
+  });
+  assert.deepEqual(stranger, { handled: true, ok: false, reason: "scope_mismatch" });
+  assert.equal((await store.getDraft(draft.draftId)).decision, null);
+
+  const tampered = `${callback("send", draft.draftId).slice(0, -1)}x`;
+  const forged = await handleLateApprovalCallback(tampered, common);
+  assert.equal(forged.reason, "invalid_callback");
+  assert.equal((await store.getDraft(draft.draftId)).decision, null);
+
+  const expired = await handleLateApprovalCallback(callback("send", draft.draftId, { expiresAtMs: NOW - 1 }), common);
+  assert.deepEqual(expired, { handled: true, ok: false, reason: "expired" });
+  assert.equal((await store.getDraft(draft.draftId)).decision, null);
+  assert.deepEqual(calls, []);
+});
+
+test("Don't send is terminal and missing or ambiguous recipients never expose a send boundary", async () => {
+  const noSendStore = createInMemoryLateApprovalStore({ nowMs: NOW });
+  const noSendDraft = await createLateDraft(draftInput(), noSendStore);
+  const noSendOptions = baseOptions(noSendStore, {
+    sendLateNotice: async () => { throw new Error("do_not_send must never mail"); },
+  });
+  const declined = await handleLateApprovalCallback(callback("do_not_send", noSendDraft.draftId), noSendOptions);
+  assert.equal(declined.ok, true);
+  assert.equal(declined.sent, false);
+  assert.equal((await noSendStore.getDraft(noSendDraft.draftId)).status, "do_not_send");
+  assert.deepEqual(noSendOptions.calls.map((entry) => entry[0]), ["reflect"]);
+
+  for (const status of ["recipient_missing", "recipient_ambiguous"]) {
+    const store = createInMemoryLateApprovalStore({ nowMs: NOW });
+    const draft = await createLateDraft(draftInput(status), store);
+    let mailCalls = 0;
+    const result = await handleLateApprovalCallback(callback("send", draft.draftId), baseOptions(store, {
+      sendLateNotice: async () => { mailCalls += 1; throw new Error("recipient must not mail"); },
+    }));
+    assert.equal(result.ok, false);
+    assert.equal(result.reason, status);
+    assert.equal(mailCalls, 0);
+    assert.equal((await store.getDraft(draft.draftId)).status, status);
+  }
+});
+
+test("POST /telegram routes the signed late callback through the production server and sends once", { concurrency: false }, async () => {
+  const envKeys = [
+    "LM_TELEGRAM_BOT_TOKEN", "LM_TELEGRAM_WEBHOOK_SECRET", "LM_LATE_APPROVAL_CALLBACK_SECRET",
+    "LM_UID_SECRET", "SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "RESEND_API_KEY", "LIFE_RUN_LOOPS",
+  ];
+  const previousEnv = Object.fromEntries(envKeys.map((key) => [key, process.env[key]]));
+  Object.assign(process.env, {
+    LM_TELEGRAM_BOT_TOKEN: "fixture-telegram-token",
+    LM_TELEGRAM_WEBHOOK_SECRET: "fixture-webhook-secret",
+    LM_LATE_APPROVAL_CALLBACK_SECRET: SECRET,
+    LM_UID_SECRET: "fixture-uid-secret",
+    SUPABASE_URL: "https://fixture.supabase.co",
+    SUPABASE_SERVICE_ROLE_KEY: "fixture-service-role",
+    RESEND_API_KEY: "fixture-resend-key",
+    LIFE_RUN_LOOPS: "false",
+  });
+
+  const originalCreateServer = http.createServer;
+  const originalFetch = global.fetch;
+  const originalLog = console.log;
+  let productionServer;
+  const row = {
+    draft_id: "draft-http-1",
+    uid: "uid-1",
+    event_key: "calendar:event-http-1",
+    status: "awaiting_decision",
+    recipient_status: "resolved",
+    recipient_snapshot: [{ display_name: "Meeting partner", email: "partner@example.invalid", source: "calendar", evidence_refs: ["calendar:event-http-1:attendee:0"] }],
+    evidence_snapshot: { refs: ["calendar:event-http-1:attendee:0"], source: "calendar" },
+    body_snapshot: "Stored HTTP body — do not regenerate",
+    eta_evidence_snapshot: { basis: "route_eta_from_live_location", routeMinutes: 43, etaMinutes: 15 },
+    decision: null,
+    provider_idempotency_key: "a".repeat(64),
+    claim_token: null,
+    claim_worker_id: null,
+    provider_message_id: null,
+    delivered_at: null,
+  };
+  const calls = [];
+
+  function jsonClone(value) {
+    return JSON.parse(JSON.stringify(value));
+  }
+  global.fetch = async (input, init = {}) => {
+    const url = new URL(String(input));
+    const method = String(init.method || "GET").toUpperCase();
+    if (url.hostname === "api.telegram.org") {
+      const operation = url.pathname.split("/").pop();
+      calls.push([`telegram:${operation}`, JSON.parse(init.body || "{}")]);
+      return response(200, { ok: true, result: { message_id: 9001 } });
+    }
+    if (url.hostname === "api.resend.com") {
+      calls.push(["resend", { headers: init.headers, body: JSON.parse(init.body || "{}") }]);
+      return response(200, { id: "resend-http-1" });
+    }
+    if (url.pathname === "/rest/v1/lm_users" && method === "GET") {
+      const chat = String(url.searchParams.get("telegram_chat_id") || "").replace(/^eq\./, "");
+      return response(200, [chat === "200"
+        ? { uid: "uid-other", telegram_chat_id: "200" }
+        : { uid: "uid-1", telegram_chat_id: "100", name: "Dais", email: "dais@example.invalid" }]);
+    }
+    if (url.pathname === "/rest/v1/lm_late_approval_drafts" && method === "GET") {
+      const uid = String(url.searchParams.get("uid") || "").replace(/^eq\./, "");
+      const draftId = String(url.searchParams.get("draft_id") || "").replace(/^eq\./, "");
+      return response(200, uid === row.uid && draftId === row.draft_id ? [jsonClone(row)] : []);
+    }
+    if (url.pathname.startsWith("/rest/v1/rpc/") && method === "POST") {
+      const rpc = url.pathname.split("/").pop();
+      const body = JSON.parse(init.body || "{}");
+      calls.push([`rpc:${rpc}`, body]);
+      if (rpc === "lm_decide_late_draft") {
+        row.decision = body.p_decision;
+        return response(200, jsonClone(row));
+      }
+      if (rpc === "lm_claim_late_delivery") {
+        row.status = "send_claimed";
+        row.claim_token = "claim-http-token-123456789012345678901234";
+        row.claim_worker_id = body.p_worker_id;
+        row.claim_acquired_at = new Date().toISOString();
+        row.claim_expires_at = new Date(Date.now() + 120_000).toISOString();
+        return response(200, { ...jsonClone(row), claimed: true });
+      }
+      if (rpc === "lm_record_late_delivery") {
+        row.status = "sent";
+        row.provider_message_id = body.p_provider_message_id;
+        row.delivered_at = body.p_delivered_at;
+        return response(200, jsonClone(row));
+      }
+    }
+    throw new Error(`unexpected ${method} ${url}`);
+  };
+  http.createServer = (handler) => {
+    productionServer = originalCreateServer(handler);
+    return productionServer;
+  };
+  console.log = () => {};
+
+  try {
+    const serverPath = require.resolve("../server.js");
+    delete require.cache[serverPath];
+    require(serverPath);
+    assert.ok(productionServer, "the production HTTP server must be captured");
+    await new Promise((resolve) => productionServer.listen(0, "127.0.0.1", resolve));
+    const origin = `http://127.0.0.1:${productionServer.address().port}`;
+    const post = (chatId, actorId, data, callbackId) => new Promise((resolve, reject) => {
+      const body = JSON.stringify({ callback_query: {
+        id: callbackId,
+        from: { id: Number(actorId) },
+        data,
+        message: { message_id: 777, chat: { id: Number(chatId) }, text: row.body_snapshot },
+      } });
+      const request = http.request(`${origin}/telegram`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "content-length": Buffer.byteLength(body),
+          "x-telegram-bot-api-secret-token": "fixture-webhook-secret",
+        },
+      }, (res) => { res.resume(); res.on("end", () => resolve(res.statusCode)); });
+      request.on("error", reject);
+      request.end(body);
+    });
+
+    const sendData = callback("send", row.draft_id, { nowMs: Date.now(), expiresAtMs: Date.now() + 600_000 });
+    assert.equal(await post("100", "100", sendData, "cb-http-send"), 200);
+    assert.equal(await post("100", "100", sendData, "cb-http-replay"), 200);
+    assert.equal(calls.filter((entry) => entry[0] === "resend").length, 1);
+    assert.equal(calls.filter((entry) => entry[0] === "rpc:lm_record_late_delivery").length, 1);
+    assert.equal(calls.filter((entry) => entry[0] === "telegram:sendMessage").length, 1);
+    assert.equal(calls.find((entry) => entry[0] === "resend")[1].headers["Idempotency-Key"], "a".repeat(64));
+    assert.equal(row.status, "sent");
+
+    // The same signed button copied into another Telegram chat never reaches a decision/claim RPC.
+    const beforeRpc = calls.filter((entry) => entry[0].startsWith("rpc:")).length;
+    assert.equal(await post("200", "200", sendData, "cb-http-cross-tenant"), 200);
+    assert.equal(calls.filter((entry) => entry[0].startsWith("rpc:")).length, beforeRpc);
+  } finally {
+    console.log = originalLog;
+    http.createServer = originalCreateServer;
+    global.fetch = originalFetch;
+    if (productionServer && productionServer.listening) {
+      await new Promise((resolve) => productionServer.close(resolve));
+    }
+    for (const key of envKeys) {
+      if (previousEnv[key] === undefined) delete process.env[key];
+      else process.env[key] = previousEnv[key];
+    }
+  }
+});

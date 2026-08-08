@@ -41,6 +41,11 @@ const { placeCall, startRecording } = require("./lib/dial.js");
 const { amdEnabled, shouldMarkAnswered } = require("./lib/answered.js");
 const { decodeCallClientState, encodeTestCallClientState, verifyTelnyxSignature } = require("./lib/telnyx-webhook.js");
 const { parseUpdate, sendMessage, answerCallbackQuery, isPanelCommand, isPanelDeepLink, routeCallbackData } = require("./lib/telegram.js");
+const { reflectAnswer } = require("./lib/telegram-callback-visibility.js");
+const {
+  createSupabaseLateApprovalStore,
+  handleLateApprovalCallback,
+} = require("./lib/late-approval.js");
 const { sendPanelLink, handlePanelRequest, panelDeviceCodeFromCommand, confirmPanelDeviceCode } = require("./lib/panel-auth.js");
 const { handlePanelApiRequest, handlePanelOAuthCallback, composioCalendarStart, composioCalendarDisconnect } = require("./lib/panel-api.js");
 const { createSupabaseCommandStore } = require("./lib/panel-api.js");
@@ -75,6 +80,8 @@ const LM_INBOUND_SECRET = process.env.LM_INBOUND_SECRET || ""; // shared secret 
 
 const LM_TG_TOKEN = process.env.LM_TELEGRAM_BOT_TOKEN || "";
 const LM_TG_SECRET = process.env.LM_TELEGRAM_WEBHOOK_SECRET || "";
+const LM_LATE_APPROVAL_CALLBACK_SECRET = process.env.LM_LATE_APPROVAL_CALLBACK_SECRET
+  || process.env.LM_UID_SECRET || LM_TG_SECRET || undefined;
 const PUBLIC_BASE = process.env.PUBLIC_BASE || "https://aniccaai.com";
 // The panel is served by this life-call HTTP service, not by the /lm onboarding site.
 // Railway supplies RAILWAY_PUBLIC_DOMAIN; LM_PANEL_BASE_URL is the explicit override for custom domains.
@@ -564,6 +571,35 @@ const server = http.createServer((req, res) => {
                 // which is already public shape; the label the user read never reaches the log.
                 if (outcome && outcome.handled) {
                   console.log(`[precepts] callback answer=${outcome.answer} ok=${outcome.ok}${outcome.reason ? ` reason=${outcome.reason}` : ""}`);
+                }
+                return outcome;
+              }, late: async (data) => {
+                // The row selected by chat id is the tenant boundary.  The signed button authenticates
+                // the draft/action; this lookup authenticates which uid may consume it.  A callback
+                // forwarded into another chat therefore reaches the state machine with the wrong uid
+                // and cannot decide or claim the original draft.
+                const row = await rowByChatId(u.chatId, SUPA_URL, SUPA_KEY);
+                const store = createSupabaseLateApprovalStore({
+                  supaUrl: SUPA_URL, supaKey: SUPA_KEY,
+                });
+                const outcome = await handleLateApprovalCallback(data, {
+                  callbackSecret: LM_LATE_APPROVAL_CALLBACK_SECRET,
+                  owner: row,
+                  chatId: u.chatId,
+                  actorId: u.userId,
+                  callbackQueryId: u.callbackQueryId,
+                  messageId: u.messageId,
+                  messageText: u.messageText,
+                  token: LM_TG_TOKEN,
+                  store,
+                  supaUrl: SUPA_URL,
+                  supaKey: SUPA_KEY,
+                  reflectAnswer,
+                  sendMessage,
+                  resendKey: process.env.RESEND_API_KEY,
+                });
+                if (outcome && outcome.handled) {
+                  console.log(`[late] callback decision=${outcome.decision || "none"} ok=${outcome.ok} sent=${outcome.sent === true} reason=${outcome.reason || "none"}`);
                 }
                 return outcome;
               } });

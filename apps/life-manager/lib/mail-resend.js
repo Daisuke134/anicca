@@ -14,14 +14,17 @@ function replyToFor(token) {
 }
 
 // Low-level Resend send. Fail-closed (no key / no recipient → {sent:false}), never throws.
-async function resendSend({ to, subject, text, replyTo, resendKey, fetchImpl }) {
+async function resendSend({ to, subject, text, replyTo, resendKey, fetchImpl, idempotencyKey }) {
   if (!resendKey) return { sent: false, error: "no RESEND_API_KEY" };
   if (!to || (Array.isArray(to) && to.length === 0) || !subject) return { sent: false, error: "missing to/subject" };
   const f = fetchImpl || fetch;
   try {
     const r = await f(RESEND_URL, {
       method: "POST",
-      headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
+      headers: {
+        Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json",
+        ...(idempotencyKey ? { "Idempotency-Key": String(idempotencyKey) } : {}),
+      },
       body: JSON.stringify({ from: FROM, to: Array.isArray(to) ? to : [to], subject, text, reply_to: replyTo }),
     });
     const d = await r.json().catch(() => ({}));
@@ -44,15 +47,15 @@ async function sendAsk({ to, replyToken, event, resendKey, fetchImpl }) {
 
 // Tell the ATTENDEES the user is running late. Sent from our domain "on behalf of <userName>"; Reply-To is
 // the user's REAL email so attendee replies reach the human directly.
-async function sendLateNotice({ toAttendees, userName, event, etaMinutes, userEmail, resendKey, fetchImpl }) {
+async function sendLateNotice({ toAttendees, userName, event, etaMinutes, userEmail, resendKey, fetchImpl, bodySnapshot, idempotencyKey }) {
   const name = (event && event.summary) || "the meeting";
   const who = userName || "Your contact";
   const subject = `Running late: ${name}`;
   const eta = Number.isFinite(etaMinutes) ? `about ${etaMinutes} minutes` : "a little";
-  const text =
+  const text = bodySnapshot ||
     `Hi — ${who} is running ${eta} late to “${name}” and wanted you to know.\n\n` +
     `(Sent automatically by Life Manager on ${who}'s behalf — reply to reach ${who} directly.)`;
-  return resendSend({ to: toAttendees, subject, text, replyTo: userEmail, resendKey, fetchImpl });
+  return resendSend({ to: toAttendees, subject, text, replyTo: userEmail, resendKey, fetchImpl, idempotencyKey });
 }
 
 module.exports = { sendAsk, sendLateNotice, resendSend, replyToFor, FROM, REPLY_DOMAIN };
