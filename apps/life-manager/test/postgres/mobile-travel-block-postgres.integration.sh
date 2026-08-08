@@ -51,13 +51,6 @@ CREATE TABLE public.lm_users (
 );
 INSERT INTO public.lm_users(uid, calendar_composio_user_id, gmail_account_id)
 VALUES ('tenant-a', 'owner-a', 'account-a');
-CREATE TABLE public.lm_travel_log (
-  uid text NOT NULL,
-  event_key text NOT NULL,
-  leg text NOT NULL CHECK (leg IN ('go', 'return')),
-  created_at timestamptz NOT NULL DEFAULT now(),
-  UNIQUE (uid, event_key, leg)
-);
 CREATE TABLE public.lm_test_provider_posts (
   provider_event_id text PRIMARY KEY,
   connected_account_id text NOT NULL,
@@ -68,9 +61,30 @@ SQL
 # Applying the production migration itself is part of this test; a regex-only
 # assertion cannot detect an invalid function signature or an SQL syntax error.
 "${PSQL[@]}" -f "$MIGRATION" >/dev/null
-# A follow-up application proves the additive migration and exact function
-# signatures are safe across a deploy retry.
+[[ "$("${PSQL[@]}" -Atqc "SELECT to_regclass('public.lm_travel_log');")" == "public.lm_travel_log" ]]
+[[ "$("${PSQL[@]}" -Atqc "SELECT count(*) FROM public.lm_travel_log;")" == "0" ]]
+
+# Re-run against an existing legacy table with a row.  The table creation is
+# deliberately outside the follow-up migration so this proves both clean
+# install and additive preservation of legacy state.
+"${PSQL[@]}" >/dev/null <<'SQL'
+DROP TABLE public.lm_travel_log CASCADE;
+CREATE TABLE public.lm_travel_log (
+  uid text NOT NULL,
+  event_key text NOT NULL,
+  leg text NOT NULL CHECK (leg IN ('go', 'return')),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (uid, event_key, leg)
+);
+INSERT INTO public.lm_travel_log(uid, event_key, leg) VALUES ('tenant-a', 'legacy-event', 'go');
+SQL
 "${PSQL[@]}" -f "$MIGRATION" >/dev/null
+[[ "$("${PSQL[@]}" -Atqc "SELECT count(*) FROM public.lm_travel_log;")" == "1" ]]
+[[ "$("${PSQL[@]}" -Atqc "SELECT status FROM public.lm_travel_log WHERE uid='tenant-a' AND event_key='legacy-event' AND leg='go';")" == "legacy_terminal" ]]
+
+# A deploy retry must be idempotent and keep the legacy row.
+"${PSQL[@]}" -f "$MIGRATION" >/dev/null
+[[ "$("${PSQL[@]}" -Atqc "SELECT count(*) FROM public.lm_travel_log;")" == "1" ]]
 
 "${PSQL[@]}" >/dev/null <<'SQL'
 DO $$
@@ -139,4 +153,4 @@ BAD_BINDING="${BAD_BINDING/account-a/account-wrong}"
 [[ "$("${PSQL[@]}" -Atqc "$BAD_BINDING" | jq -r '.decision')" == "provider_binding_invalid" ]]
 [[ "$("${PSQL[@]}" -Atqc "SELECT count(*) FROM public.lm_test_provider_posts;")" == "1" ]]
 
-printf '%s\n' 'mobile-travel-block-postgres: PASS migration=applied concurrent_claims=2 decisions=claimed+busy rows=1 tokens=1 provider_posts=1 binding=fail-closed'
+printf '%s\n' 'mobile-travel-block-postgres: PASS clean_install=1 legacy_preserved=1 rerun=1 concurrent_claims=2 decisions=claimed+busy rows=1 tokens=1 provider_posts=1 binding=fail-closed'

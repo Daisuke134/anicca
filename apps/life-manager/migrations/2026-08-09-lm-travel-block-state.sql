@@ -4,6 +4,19 @@
 -- writer.  Existing rows cannot be proven against a provider event, so they
 -- are terminal and are never recreated by the mobile path.
 
+-- This follow-up is also the clean-install owner of the small legacy ledger
+-- that the mobile state machine extends.  Do not apply the unrelated 2026-06-24
+-- atomic-dedup migration here: it also creates lm_ask_log and is not a
+-- prerequisite for travel blocks.  IF NOT EXISTS preserves every legacy row.
+CREATE TABLE IF NOT EXISTS public.lm_travel_log (
+  uid text NOT NULL,
+  event_key text NOT NULL,
+  leg text NOT NULL CHECK (leg IN ('go', 'return')),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (uid, event_key, leg)
+);
+CREATE INDEX IF NOT EXISTS lm_travel_log_uid_idx ON public.lm_travel_log (uid);
+
 ALTER TABLE public.lm_travel_log
   ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'legacy_terminal',
   ADD COLUMN IF NOT EXISTS calendar_id text NOT NULL DEFAULT 'primary',
