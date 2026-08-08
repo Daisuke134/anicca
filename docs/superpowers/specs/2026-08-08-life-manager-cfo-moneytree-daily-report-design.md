@@ -2,9 +2,9 @@
 
 | Field | Value |
 |---|---|
-| Status | IMPLEMENTED — CFO-1a NORMALIZED CONTRACT COMPLETE |
+| Status | IMPLEMENTED — CFO-1b LIVE ADAPTER COMPLETE — CFO-1b2 NEXT |
 | Parent SSOT | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
-| Active item | CFO-1b — Moneytree source adapter |
+| Active item | CFO-1b2 — Moneytree consent, liabilities, and freshness state |
 | First real source | Moneytree-connected MUFG accounts |
 | Deferred | Binance and every write-capable financial action |
 
@@ -252,7 +252,7 @@ The user sees success and truth. Internal stack traces, repeated health noise, g
 
 ### M1 — real Moneytree report
 
-- [ ] A fresh Moneytree/MUFG read becomes a redacted normalized source result.
+- [x] A fresh Moneytree/MUFG read becomes a redacted normalized source result.
 - [ ] Consent, freshness, partial status, connected liabilities, and re-consent are persisted.
 - [ ] One immutable owner-local snapshot reconciles the named confirmed sources.
 - [ ] One real Telegram message is sent and its provider `message_id` is stored.
@@ -276,8 +276,16 @@ remains 136 LOC with `git diff --check` passing.
 
 This completion does not include a real Moneytree sync, provider credential, normalized live-source ingestion or
 persistence from the earlier interactive read, or a real CFO Telegram report. That earlier interactive read existed
-but was not ingested, persisted, or reported by CFO-1a. Every M1 real-source/report acceptance checkbox above remains
-unchecked. The active next item is CFO-1b — Moneytree source adapter.
+but was not ingested, persisted, or reported by CFO-1a. At that CFO-1a closure, only CFO-1a was checked; CFO-1b
+onward and every live M1 acceptance remained unchecked. The next item at that point was CFO-1b.
+
+### CFO-1b completion evidence
+
+CFO-1b closes only live Moneytree/MUFG read parity and privacy-safe normalization. Implementation commits are `ee1966d827290a1d091f64ab6f12ad7c05298062`, `99c20d3de166097b66c2c45502c0b316854eaf03`, and `0aee20df13e1bcb5d05df7e89be2432f7b0832f1`. Controller evidence is adapter 51/51, CFO 126/126, `npm ci --no-audit --no-fund` followed by full `npm test` exit 0, production 166 LOC, tests 264 LOC, and `git diff --check` PASS. Final review is Critical 0, Important 0, Minor 0.
+
+A fresh interactive Moneytree/MUFG read was verified in memory and became a redacted normalized source result; no raw provider payload was persisted. The fixed receipt booleans are `source_contract_valid=true`, `connected_mufg_accounts_positive=true`, `balance_parity=true`, `transaction_page_parity=true`, `transaction_page_partial=true`, `raw_field_leak=false`, and `source_partial_until_cfo_1b2=true`.
+
+CFO-1b leaves the source partial until CFO-1b2. Liabilities, durable ingestion, scheduled/cloud read, snapshot, reconciliation, and every later M1 acceptance remain unchecked. No real finance Telegram delivery has occurred.
 
 ## 11. Ordered Implementation
 

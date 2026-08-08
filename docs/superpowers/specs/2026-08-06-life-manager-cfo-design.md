@@ -2,12 +2,12 @@
 
 | Field | Value |
 |---|---|
-| Status | CFO-1a COMPLETE — CFO-1b NEXT |
+| Status | CFO-1b COMPLETE — CFO-1b2 NEXT |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
 | Existing foundations | `apps/life-call`, interactive Moneytree App access, Fleet telemetry, `lm_api_cost`, and the canonical `lm_agent_earnings` source (the panel's `lm_financial_ledger` name is a stale alias) |
-| First unfinished item | **CFO-1b: implement the Moneytree MUFG source adapter** |
+| First unfinished item | **CFO-1b2: ingest Moneytree-connected liabilities and record consent/freshness state** |
 
 ## 1. Overview — What and Why
 
@@ -575,7 +575,7 @@ Local and cloud use the same contract. Only infrastructure changes:
 
 | # | To-Be | Test / evidence | Cover |
 |---|---|---|---|
-| 1 | Moneytree MUFG adapter | Connected account read; identifiers redacted | Planned |
+| 1 | Moneytree MUFG adapter | Connected account read; identifiers redacted | PASS |
 | 2 | Deferred crypto adapter | Outside M1; no completion credit | Deferred |
 | 3 | Fleet adapter | Known signed telemetry fixture equals normalized positions/P&L | Planned |
 | 4 | Immutable idempotent snapshot | Same `owner_id + reporting_date + run_id` retries one revision; correction appends and supersedes | Planned |
@@ -705,13 +705,21 @@ exit 0 after `npm ci --no-audit --no-fund`; the fresh Task 3 and whole-plan revi
 
 No real Moneytree sync, provider credential, normalized live-source ingestion or persistence from the earlier
 interactive read, or real CFO Telegram report occurred as part of CFO-1a. That earlier interactive read existed but
-was not ingested, persisted, or reported by CFO-1a. Only CFO-1a is checked below; CFO-1b onward and every live M1
-acceptance remain unchecked.
+was not ingested, persisted, or reported by CFO-1a. At that closure, only CFO-1a was checked; CFO-1b onward and
+every live M1 acceptance remained unchecked.
+
+### CFO-1b completion evidence
+
+CFO-1b closes only live Moneytree/MUFG read parity and privacy-safe normalization. Implementation commits are `ee1966d827290a1d091f64ab6f12ad7c05298062`, `99c20d3de166097b66c2c45502c0b316854eaf03`, and `0aee20df13e1bcb5d05df7e89be2432f7b0832f1`. Controller evidence is adapter 51/51, CFO 126/126, `npm ci --no-audit --no-fund` followed by full `npm test` exit 0, production 166 LOC, tests 264 LOC, and `git diff --check` PASS. Final review is Critical 0, Important 0, Minor 0.
+
+A fresh interactive Moneytree/MUFG read was verified in memory and became a redacted normalized source result; no raw provider payload was persisted. The fixed receipt booleans are `source_contract_valid=true`, `connected_mufg_accounts_positive=true`, `balance_parity=true`, `transaction_page_parity=true`, `transaction_page_partial=true`, `raw_field_leak=false`, and `source_partial_until_cfo_1b2=true`.
+
+CFO-1b leaves the source partial until CFO-1b2. Liabilities, durable ingestion, scheduled/cloud read, snapshot, reconciliation, and every later M1 acceptance remain unchecked. No real finance Telegram delivery has occurred.
 
 ### M1 — One truthful Moneytree-first read-only snapshot
 
 - [x] **CFO-1a** Specify provider-neutral adapter contracts and redacted fixtures.
-- [ ] **CFO-1b** Implement Moneytree MUFG balance/transaction adapter; verify against the live connected account.
+- [x] **CFO-1b** Implement Moneytree MUFG balance/transaction adapter; verify against the live connected account.
 - [ ] **CFO-1b2** Ingest Moneytree-connected liabilities and record consent, aggregation freshness, partial-source,
       expiry, and re-consent states.
 - [ ] **CFO-1e** Normalize Fleet wallet positions, verified earnings, and burn from existing telemetry.

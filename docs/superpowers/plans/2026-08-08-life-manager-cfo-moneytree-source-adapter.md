@@ -81,7 +81,7 @@ The closed transaction result is:
 - Consumes: `validateFinancialSourceResult(input)` from `./cfo-financial-source.js`.
 - Produces: `adaptMoneytreeAccounts({ accountsJson, observedAt, referenceKey })` exactly as declared above.
 
-- [ ] **Step 1: Write the failing real-behavior tests**
+- [x] **Step 1: Write the failing real-behavior tests**
 
 Create a literal synthetic connector response with `type: "accounts"`, `data.baseCurrency: "JPY"`, one `mufg_bank` savings account, and decoy raw fields `institution_account_number: "9999999"`, `connectUrl: "https://secret.example/connect"`, numeric provider ID `1001`, and private nickname `"秘密口座"`. Use arbitrary balance `420000`.
 
@@ -114,7 +114,7 @@ Add table-driven cases for invalid JSON, wrong root type, wrong `type`, missing 
 
 Before writing the test body, name the production mutation it catches: using `totalBalance`, copying raw label/ID, accepting unsafe money, emitting a reversible ref, weakening the key, or claiming a missing source is fresh.
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
 ```bash
 cd apps/life-call
@@ -123,7 +123,7 @@ node --test lib/cfo-moneytree.test.js
 
 Expected: FAIL because `./cfo-moneytree.js` does not exist.
 
-- [ ] **Step 3: Implement the minimum balance adapter**
+- [x] **Step 3: Implement the minimum balance adapter**
 
 Implement only:
 
@@ -136,7 +136,7 @@ Implement only:
 
 Do not add storage, logging, raw-payload hashing without HMAC, callback abstractions, classes, retries, or provider clients.
 
-- [ ] **Step 4: Run GREEN, mutation checks, and size check**
+- [x] **Step 4: Run GREEN, mutation checks, and size check**
 
 ```bash
 cd apps/life-call
@@ -148,7 +148,7 @@ git diff --check
 
 Manually mutate the account reference derivation to concatenate the raw ID and confirm a privacy test fails; restore the code and rerun GREEN.
 
-- [ ] **Step 5: Commit, push, and fresh task review**
+- [x] **Step 5: Commit, push, and fresh task review**
 
 ```bash
 git add apps/life-call/lib/cfo-moneytree.js apps/life-call/lib/cfo-moneytree.test.js
@@ -171,7 +171,7 @@ Review gates: source-contract compliance, HMAC opacity, raw-field exclusion, par
 - Consumes: the exact accounts JSON and HMAC helpers from Task 1.
 - Produces: `adaptMoneytreeTransactions({ accountsJson, transactionsJson, observedAt, referenceKey })` exactly as declared above.
 
-- [ ] **Step 1: Write RED transaction tests**
+- [x] **Step 1: Write RED transaction tests**
 
 Use two synthetic MUFG accounts with provider IDs `1001` and `1002`, then a `type: "transactions"` response containing three interleaved transactions: positive `1234` on the first account, negative `-500` on the second, and zero `0` on the first. Include decoy provider transaction IDs, full account numbers, merchant descriptions, institution names, provider category IDs/names, and running balances.
 
@@ -196,7 +196,7 @@ for (const row of result.transactions) assert.deepEqual(Object.keys(row).sort(),
 
 Add failures for invalid transaction JSON/type/required shape, invalid or impossible booking date, float/unsafe/string amount, non-JPY currency, missing/nonnumeric/unsafe/duplicate transaction ID, unknown/unsafe account ID, duplicate transaction ref, negative/float/unsafe/string `totalCount`, and total count smaller than page length. Raw provider extras remain ignored rather than copied. Add one pagination case proving `pagePartial === (totalCount > transactions.length)`, never a false complete state. Repeat the same input and assert every transaction reference is stable; change only `referenceKey` and assert every reference changes; assert account and transaction HMAC domains never collide for the same provider ID.
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
 ```bash
 cd apps/life-call
@@ -205,11 +205,11 @@ node --test --test-name-pattern='transaction|pagination' lib/cfo-moneytree.test.
 
 Expected: FAIL because `adaptMoneytreeTransactions` is not exported.
 
-- [ ] **Step 3: Implement the minimum transaction adapter**
+- [x] **Step 3: Implement the minimum transaction adapter**
 
 Parse both JSON strings, rebuild the MUFG provider-ID→opaque-account-ref map from the accounts response, and require every transaction to resolve through that exact map. Validate `totalCount` as a nonnegative safe integer. Construct only the exact closed root/row keys above while ignoring extra raw provider keys. Derive references by HMAC, derive `flow` only from the signed amount, convert RFC 3339 provider date to its literal `YYYY-MM-DD` booking date after calendar validation, and set `verificationStatus: "provider_reported"`. Set `pagePartial` to the literal comparison `totalCount > transactions.length`, derive a separate evidence ref, and deep-freeze a cloned result. Do not copy descriptions, categories, balances, account numbers, institution labels, or raw IDs.
 
-- [ ] **Step 4: Verify focused and regression paths**
+- [x] **Step 4: Verify focused and regression paths**
 
 ```bash
 cd apps/life-call
@@ -225,7 +225,7 @@ git diff --check
 
 Expected: adapter tests, CFO suite, and full package suite pass with no provider or Telegram effect.
 
-- [ ] **Step 5: Commit, push, and fresh task review**
+- [x] **Step 5: Commit, push, and fresh task review**
 
 ```bash
 git add apps/life-call/lib/cfo-moneytree.js apps/life-call/lib/cfo-moneytree.test.js apps/life-call/package.json
@@ -248,11 +248,11 @@ Review gates: exact closed root/row keys, two-account cross-reference, amount/da
 - Consumes: the installed Moneytree App `show_accounts(locale="ja")` and `show_transactions(locale="ja")`, plus both Task 1–2 adapter exports at the reviewed HEAD.
 - Produces: a private ignored verification receipt and state transition to CFO-1b2. It does not produce a snapshot or Telegram report.
 
-- [ ] **Step 1: Read the live connected account without logging raw data**
+- [x] **Step 1: Read the live connected account without logging raw data**
 
 In one tool orchestration, call `show_accounts(locale="ja")`, extract connected MUFG account numbers only in memory, and call `show_transactions(locale="ja", account_numbers=<in-memory>, limit=20, sort_key="date", sort_order="desc")`. Do not print either response or any extracted field.
 
-- [ ] **Step 2: Stream both live responses through the adapter**
+- [x] **Step 2: Stream both live responses through the adapter**
 
 Start a non-TTY Node process that reads exactly one newline-terminated JSON envelope from stdin with `readline.createInterface({ input: process.stdin }).once("line", verifyLine)`. The orchestrator sends `JSON.stringify(envelope) + "\n"` through `write_stdin`; non-TTY stdin is never echoed, and the verifier closes the readline interface and exits after that one line rather than waiting for EOF:
 
@@ -317,11 +317,11 @@ Write only this receipt to the plan-owned ignored workspace with mode `0600`:
 
 No amount, raw string, raw ID, account suffix, provider response, or reference key may appear in the receipt or task report.
 
-- [ ] **Step 3: Fresh review and controller verification**
+- [x] **Step 3: Fresh review and controller verification**
 
 A fresh read-only reviewer checks the full CFO-1b range. The controller reruns adapter tests, CFO tests, a fresh full package suite after `npm ci`, size gates, and diff check. Critical/Important findings enter the bounded Superpowers loop.
 
-- [ ] **Step 4: Close only CFO-1b**
+- [x] **Step 4: Close only CFO-1b**
 
 After clean review:
 
@@ -333,3 +333,12 @@ After clean review:
 - keep liabilities, snapshot, Telegram receipt, and all later M1 acceptance boxes unchecked.
 
 Commit and push the three state documents separately with `docs(cfo): close live Moneytree adapter`. CFO-1b completion means live read parity and privacy-safe normalization only; it is not durable ingestion, a scheduled cloud read, a net-worth snapshot, or a finance Telegram delivery.
+
+## CFO-1b closure evidence
+
+- Task 1 closed at `ee1966d827290a1d091f64ab6f12ad7c05298062`; Task 2 closed at `99c20d3de166097b66c2c45502c0b316854eaf03`; the transaction-boundary fix is `0aee20df13e1bcb5d05df7e89be2432f7b0832f1`.
+- Controller evidence: adapter suite 51/51, CFO suite 126/126, `npm ci --no-audit --no-fund` succeeded, then the full `npm test` exited 0; production adapter 166 LOC and test file 264 LOC; `git diff --check` passed.
+- Fresh review verdict: Critical 0, Important 0, Minor 0.
+- Task 3 used one fresh interactive Moneytree/MUFG read; account selectors and both provider responses remained in memory, the guarded adapter produced a redacted normalized source result, and raw payloads were not persisted.
+- Fixed redacted receipt: `source_contract_valid=true`, `connected_mufg_accounts_positive=true`, `balance_parity=true`, `transaction_page_parity=true`, `transaction_page_partial=true`, `raw_field_leak=false`, `source_partial_until_cfo_1b2=true`.
+- State closure: parent first unfinished item is CFO-1b2 and child active item is CFO-1b2. Liabilities, durable ingestion, scheduled/cloud read, snapshot, reconciliation, and all later M1 acceptance remain unchecked. No real finance Telegram delivery has occurred.
