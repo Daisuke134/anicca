@@ -17,7 +17,7 @@ const {
   recordAmdResult,
   applyAmdDetection,
 } = require("./late-notice.js");
-const { createInMemoryLateApprovalStore } = require("./late-approval.js");
+const { createLateDraft, createInMemoryLateApprovalStore } = require("./late-approval.js");
 const { sendLateNotice } = require("./notify.js");
 
 const NOW = Date.parse("2026-07-21T09:45:00+09:00");
@@ -188,6 +188,45 @@ test("late ticks create one immutable draft/card request and reuse the stored ro
   assert.equal(first.draft.etaEvidence.eventStartMs, EVENT.startMs);
   assert.deepEqual(cards[0].extra.reply_markup.inline_keyboard[0].map((button) => button.text), ["送る", "送らない"]);
   assert.match(cards[0].text, /about 15 minutes late/);
+});
+
+test("a real 60-second retry returns the first immutable draft without collision or a second card", async () => {
+  const store = createInMemoryLateApprovalStore({ nowMs: NOW });
+  const cards = [];
+  let existingDraft = null;
+  let routeCalls = 0;
+  let resolverCalls = 0;
+  const input = {
+    user: { uid: "u1", name: "Dais", email: "me@example.com", telegram_chat_id: "7" },
+    location: LIVE, events: [EVENT], telegramToken: "tg",
+  };
+  const deps = {
+    ...lateApprovalDeps({ store, cards }),
+    routeMinutes: async () => { routeCalls++; return 43; },
+    resolveLateRecipients: async () => {
+      resolverCalls++;
+      return { status: "resolved", candidates: [resolvedRecipient()], evidenceRefs: ["calendar:event:event-1:attendee:0"] };
+    },
+    getLateDraft: async ({ uid, eventKey }) => existingDraft && existingDraft.uid === uid && existingDraft.eventKey === eventKey
+      ? existingDraft
+      : null,
+    createLateDraft: async (draftInput, draftStore) => {
+      existingDraft = await createLateDraft(draftInput, draftStore);
+      return existingDraft;
+    },
+  };
+  const first = await processLocationLateNotice({ ...input, nowMs: NOW }, deps);
+  const second = await processLocationLateNotice({ ...input, nowMs: NOW + 60_000 }, deps);
+
+  assert.equal(first.draft.status, "awaiting_decision");
+  assert.equal(second.draft.draftId, first.draft.draftId);
+  assert.equal(second.draft.duplicate, true);
+  assert.notEqual(second.reason, "draft_failed");
+  assert.equal(cards.length, 1, "a real retry must not enqueue a second Telegram card");
+  assert.equal(second.draft.bodySnapshot, first.draft.bodySnapshot);
+  assert.deepEqual(second.draft.etaEvidence, first.draft.etaEvidence);
+  assert.equal(routeCalls, 1, "a retry returns the stored row before routing again");
+  assert.equal(resolverCalls, 1, "a retry returns the stored row before resolving again");
 });
 
 for (const status of ["missing", "ambiguous"]) {

@@ -106,3 +106,37 @@ was used.
   `13ae0044e`.
 - The report itself is intentionally staged separately with `git add -f` because the repository's
   `.superpowers/sdd/.gitignore` ignores generated task reports.  No broad staging was used.
+
+## Fresh-review fixes
+
+The fresh review over `11f6cbc8d..28b3c3999` found two Important issues: a real 60-second retry
+could collide with the immutable snapshot, and `scheduler.js` still imported/injected
+`sendLateNotice` into the tick surface.
+
+### Review RED
+
+Before the fixes:
+
+- `node --test lib/late-notice.test.js` — **29 tests, 28 pass, 1 fail**.  The new `NOW + 60_000`
+  retry had no `draft` because the old path converted Task 2's changed-snapshot collision into
+  `draft_failed`.
+- `node --test --test-name-pattern='late tick scheduler surface has no mail sender dependency' test/scheduler.test.js`
+  — **1 test, 0 pass, 1 fail** because the old scheduler still contained the `notify.js` import.
+
+### Review GREEN
+
+- `findExistingLateDraft()` now checks an injected/store-backed lookup before route/resolver/snapshot
+  work, and has a service-role PostgREST fallback for production wiring.  It returns a cloned
+  `duplicate: true` row, preserving the first immutable body/ETA snapshot and never weakening
+  Task 2 collision protection.
+- `scheduler.js` no longer imports `notify.js`, builds `noticeOpts`, or injects `sendLateNotice`/
+  `claimLateEvent` into the late tick.  It passes only the Supabase lookup context and approval
+  dependencies needed by the detection/card path.
+- `node --test lib/late-notice.test.js lib/late-approval.test.js lib/late-recipient-resolver.test.js`
+  — **51 tests, 51 pass, 0 fail**.
+- `node --test --test-name-pattern='late tick scheduler surface has no mail sender dependency' test/scheduler.test.js`
+  — **1 test, 1 pass, 0 fail**.
+- `node --check lib/late-notice.js`, `node --check scheduler.js`, and `git diff --check` — PASS.
+
+The broad scheduler test remains environment-blocked at collection by the pre-existing missing
+`canonicalize` package; the source contract was run in isolation with its test-name pattern.

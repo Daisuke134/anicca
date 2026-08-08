@@ -34,12 +34,11 @@ const { formatTravelAutofillMessage } = require("./lib/i18n.js");
 const { askTick } = require("./lib/ask.js");
 const { onboardNudgeAll } = require("./lib/telegram-onboard.js");
 const { sendMessage } = require("./lib/telegram.js");
-const { sendLateNotice } = require("./lib/notify.js");
 const { langForPhone } = require("./lib/call-language.js");
 const { recordDailyComposioPoll } = require("./lib/ledger.js");
 const { schedulerPollInterval } = require("./lib/composio-budget.js");
 const {
-  processLocationLateNotice, getLiveLocation, claimLateEvent,
+  processLocationLateNotice, getLiveLocation,
 } = require("./lib/late-notice.js");
 const {
   DISCOVERY_WEEK_MS, listDiscoveryUsers, runDiscoveryForUser,
@@ -280,14 +279,16 @@ async function lateNoticeUserOnce(u, nowMs, deps = {}) {
     user: u, location, events, nowMs: now,
     mapsKey: deps.mapsKey || process.env.LIFE_MAPS_KEY || process.env.GOOGLE_API_KEY,
     telegramToken: deps.telegramToken !== undefined ? deps.telegramToken : process.env.LM_TELEGRAM_BOT_TOKEN,
-    noticeOpts: {
-      resendKey: process.env.RESEND_API_KEY, userEmail: u.email, userName: u.name,
-    },
+    supaUrl, supaKey, fetchImpl: deps.fetchImpl,
   }, {
     routeMinutes: deps.routeMinutes || directionsMinutes,
-    claimEvent: deps.claimEvent || ((uid, eventKey) => claimLateEvent(uid, eventKey, dbOpts)),
-    sendLateNotice: deps.sendLateNotice || sendLateNotice,
+    getLateDraft: deps.getLateDraft,
+    lateApprovalStore: deps.lateApprovalStore,
+    resolveLateRecipients: deps.resolveLateRecipients,
+    recipientResolverDeps: deps.recipientResolverDeps,
+    createLateDraft: deps.createLateDraft,
     sendMessage: deps.sendMessage || sendMessage,
+    supaUrl, supaKey, fetchImpl: deps.fetchImpl,
   });
 }
 
