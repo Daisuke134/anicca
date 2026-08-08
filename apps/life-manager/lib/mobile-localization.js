@@ -137,9 +137,14 @@ function routeValue(route, locale) {
 }
 
 function formatTime(value, locale, timezone) {
+  if (!timezone) throw new MobileError("route_timezone_required", "The Calendar event timezone is required to format route times.");
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
-  return new Intl.DateTimeFormat(locale === "ja" ? "ja-JP" : "en-US", { timeZone: timezone || "UTC", hour: "numeric", minute: "2-digit" }).format(date);
+  try {
+    return new Intl.DateTimeFormat(locale === "ja" ? "ja-JP" : "en-US", { timeZone: timezone, hour: "numeric", minute: "2-digit" }).format(date);
+  } catch {
+    throw new MobileError("route_timezone_invalid", "The Calendar event timezone is not a valid IANA timezone.");
+  }
 }
 
 function bufferMinutes(value) {
@@ -224,6 +229,7 @@ function projectSemanticMessage(row, locale = "en") {
   switch (row.key) {
     case "chat.route_ready":
       type = "route";
+      if (!route || !route.timezone) throw new MobileError("route_timezone_required", "The Calendar event timezone is required for route messaging.");
       text = active === "ja"
         ? `次の予定を確認しました。${formatTime(route && route.leaveAt, active, timezone)}に出発すると、${bufferMinutes(route && route.bufferSeconds)}分の余裕を持って到着できます。`
         : `Your next event is ready. Leave by ${formatTime(route && route.leaveAt, active, timezone)} to arrive with ${bufferMinutes(route && route.bufferSeconds)} minutes of buffer.`;

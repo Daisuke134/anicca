@@ -1,7 +1,8 @@
 "use strict";
 
-const { MobileError, normalizeLocale } = require("./mobile-utils.js");
+const { MobileError, normalizeLocale, nowIso, safeTimeZone } = require("./mobile-utils.js");
 const { projectRouteName } = require("./mobile-localization.js");
+const { chooseRouter, parseTransitPlan } = require("./transit.js");
 
 function eventInstant(event, kind) {
   const value = event && (event[`${kind}Iso`] || (event[kind] && (event[kind].dateTime || event[kind].date)));
@@ -9,7 +10,12 @@ function eventInstant(event, kind) {
 }
 
 function eventTimezone(event) {
-  return (event && (event.timezone || event.timeZone || (event.start && (event.start.timeZone || event.start.timezone)))) || "UTC";
+  const value = event && (event.timezone || event.timeZone || (event.start && (event.start.timeZone || event.start.timezone)));
+  if (!value) throw new MobileError("route_timezone_required", "The calendar event timezone is required for an anchored route.");
+  try { return safeTimeZone(value); } catch (error) {
+    if (error && error.code === "invalid_timezone") throw new MobileError("route_timezone_invalid", "The calendar event timezone is not a valid IANA timezone.");
+    throw error;
+  }
 }
 
 function localEventDate(instant, timezone) {
@@ -74,8 +80,14 @@ async function computeMobileRoute(scope, event, origin, deps = {}) {
   const request = buildAnchoredRouteRequest({ event, origin, direction: deps.direction || "outbound" });
   const cached = await readCache(scope, request, deps);
   if (cached && routeAccepted(cached.value || cached)) return cached.value || cached;
-  const transit = deps.transitProvider || deps.transitRoute || deps.transit;
-  const google = deps.googleProvider || deps.googleRoute || deps.google;
+  const production = deps.routeProviders || (deps.mapsKey ? createStructuredRouteProviders({
+    mapsKey: deps.mapsKey,
+    fetchImpl: deps.fetchImpl,
+    routeCache: deps.routeCache,
+    now: deps.now,
+  }) : null);
+  const transit = deps.transitProvider || deps.transitRoute || deps.transit || (production && production.transitProvider);
+  const google = deps.googleProvider || deps.googleRoute || deps.google || (production && production.googleProvider);
   let candidate = null;
   if (typeof transit === "function") {
     try { candidate = await transit(request, { scope }); } catch { candidate = null; }
@@ -92,6 +104,125 @@ async function computeMobileRoute(scope, event, origin, deps = {}) {
     return candidate;
   }
   return null;
+}
+
+const structuredRouteCache = new Map();
+
+function routeCacheFor(options = {}) {
+  if (options.routeCache && typeof options.routeCache.get === "function" && typeof options.routeCache.set === "function") return options.routeCache;
+  const store = options.cacheStore || structuredRouteCache;
+  const ttlMs = Number.isFinite(options.cacheTtlMs) ? Math.max(0, options.cacheTtlMs) : 10 * 60_000;
+  const now = typeof options.now === "function" ? options.now : Date.now;
+  return {
+    get(key) {
+      const hit = store.get(key);
+      if (!hit || now() - hit.computedAt >= ttlMs) {
+        if (hit) store.delete(key);
+        return null;
+      }
+      return hit;
+    },
+    set(key, value) { store.set(key, { value, computedAt: now() }); },
+  };
+}
+
+function structuredName(value) {
+  const text = String(value || "").trim();
+  return { displayNames: { en: text, ja: text }, userContent: text || null };
+}
+
+function anchorTimes(request, durationSeconds, now = Date.now) {
+  const anchor = Date.parse(request.direction === "return" ? request.departAt : request.arriveBy);
+  if (!Number.isFinite(anchor) || !Number.isFinite(durationSeconds) || durationSeconds <= 0) return null;
+  const leaveMs = request.direction === "return" ? anchor : anchor - durationSeconds * 1000;
+  const arriveMs = request.direction === "return" ? anchor + durationSeconds * 1000 : anchor;
+  return { leaveAt: new Date(leaveMs).toISOString(), arriveAt: new Date(arriveMs).toISOString(), computedAt: nowIso({ now }) };
+}
+
+function routeFromTransit(request, parsed, now) {
+  const times = anchorTimes(request, parsed && parsed.durationSecs, now);
+  if (!times) return null;
+  return {
+    status: "route_ready", provider: "transit", providerAttribution: "Transit API", eventId: request.eventId,
+    computedAt: times.computedAt, timezone: request.timezone,
+    origin: structuredName(request.origin), destination: structuredName(request.destination), ...times,
+    durationSeconds: parsed.durationSecs, bufferSeconds: null, transferCount: parsed.transferCount ?? null,
+    fare: null, geometry: null,
+    steps: (parsed.legs || []).map((leg, index) => ({
+      sequence: index + 1, mode: leg.mode || leg.kind || "other", instruction: leg.routeName || null,
+      from: leg.from || null, to: leg.to || null, service: leg.routeName || null, headsign: null,
+      platform: null, departAt: null, arriveAt: null, durationSeconds: null,
+    })),
+  };
+}
+
+function routeFromGoogle(request, body, now) {
+  const source = body && Array.isArray(body.routes) ? body.routes[0] : null;
+  const leg = source && Array.isArray(source.legs) ? source.legs[0] : null;
+  const durationSeconds = Number(leg && leg.duration && leg.duration.value);
+  const times = anchorTimes(request, durationSeconds, now);
+  if (!times) return null;
+  return {
+    status: "route_ready", provider: "google", providerAttribution: "Google Maps", eventId: request.eventId,
+    computedAt: times.computedAt, timezone: request.timezone,
+    origin: structuredName(request.origin), destination: structuredName(request.destination), ...times,
+    durationSeconds, bufferSeconds: null, transferCount: null, fare: null, geometry: null,
+    steps: (leg.steps || []).map((step, index) => ({
+      sequence: index + 1, mode: String(step.travel_mode || "other").toLowerCase(),
+      instruction: typeof step.html_instructions === "string" ? step.html_instructions.replace(/<[^>]+>/gu, "") : null,
+      from: step.start_address || null, to: step.end_address || null, service: null, headsign: null,
+      platform: null,
+      departAt: step.departure_time && step.departure_time.value ? new Date(step.departure_time.value * 1000).toISOString() : null,
+      arriveAt: step.arrival_time && step.arrival_time.value ? new Date(step.arrival_time.value * 1000).toISOString() : null,
+      durationSeconds: Number(step.duration && step.duration.value) || null,
+    })),
+  };
+}
+
+function createStructuredRouteProviders(options = {}) {
+  const mapsKey = String(options.mapsKey || process.env.LIFE_MAPS_KEY || process.env.GOOGLE_API_KEY || "");
+  const fetchImpl = options.fetchImpl || fetch;
+  const now = typeof options.now === "function" ? options.now : Date.now;
+  const cache = routeCacheFor(options);
+  const geocodes = options.geocodeCache || new Map();
+  async function geocode(address) {
+    const key = String(address || "");
+    if (geocodes.has(key)) return geocodes.get(key);
+    if (!mapsKey || !key) return null;
+    try {
+      const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(key)}&key=${encodeURIComponent(mapsKey)}`;
+      const response = await fetchImpl(url);
+      const body = await response.json();
+      const location = body && body.status === "OK" && body.results && body.results[0] && body.results[0].geometry && body.results[0].geometry.location;
+      const value = location && Number.isFinite(Number(location.lat)) && Number.isFinite(Number(location.lng))
+        ? { lat: Number(location.lat), lon: Number(location.lng) } : null;
+      geocodes.set(key, value);
+      return value;
+    } catch { return null; }
+  }
+  async function transitProvider(request) {
+    const [from, to] = await Promise.all([geocode(request.origin), geocode(request.destination)]);
+    if (!from || !to || chooseRouter(from, to) !== "transit") return null;
+    try {
+      const url = `https://api.transit.ls8h.com/api/v1/plan?from=geo:${from.lat},${from.lon}&to=geo:${to.lat},${to.lon}`;
+      const response = await fetchImpl(url);
+      const parsed = parseTransitPlan(await response.json());
+      return parsed ? routeFromTransit(request, parsed, now) : null;
+    } catch { return null; }
+  }
+  async function googleProvider(request) {
+    if (!mapsKey) return null;
+    try {
+      const params = new URLSearchParams({ origin: String(request.origin), destination: String(request.destination), mode: "transit", key: mapsKey });
+      const anchor = Date.parse(request.direction === "return" ? request.departAt : request.arriveBy);
+      if (Number.isFinite(anchor)) params.set(request.direction === "return" ? "departure_time" : "arrival_time", String(Math.floor(anchor / 1000)));
+      const response = await fetchImpl(`https://maps.googleapis.com/maps/api/directions/json?${params.toString()}`);
+      const body = await response.json();
+      if (body && body.status === "OK") return routeFromGoogle(request, body, now);
+    } catch { /* fall through to truthful unavailable */ }
+    return null;
+  }
+  return { transitProvider, googleProvider, routeCache: cache };
 }
 
 function nullableName(value, locale, provenance) {
@@ -149,4 +280,4 @@ function projectMobileRoute(route, locale = "en") {
   return result;
 }
 
-module.exports = { buildAnchoredRouteRequest, computeMobileRoute, projectMobileRoute, routeAccepted };
+module.exports = { buildAnchoredRouteRequest, computeMobileRoute, createStructuredRouteProviders, projectMobileRoute, routeAccepted };

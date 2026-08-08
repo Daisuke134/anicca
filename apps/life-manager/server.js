@@ -57,6 +57,7 @@ const {
 const { createHostedGmailLink } = require("./lib/gmail-onboard.js");
 const { mailAvailable } = require("./lib/mail-availability.js");
 const { handleMobileV1Request, buildComposioAuthorizationUrl } = require("./lib/mobile-v1-router.js");
+const { createStructuredRouteProviders } = require("./lib/mobile-route.js");
 const {
   markAnswered, applyAmdDetection, applyTestCallDetection, upsertLiveLocation,
 } = require("./lib/late-notice.js");
@@ -72,6 +73,9 @@ const { recordCost } = require("./lib/ledger.js");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY || "sk_test_placeholder"); // apiKey unused by constructEvent
 const SUPA_URL = process.env.SUPABASE_URL, SUPA_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const COMPOSIO_KEY = process.env.COMPOSIO_API_KEY;
+const MOBILE_ROUTE_PROVIDERS = createStructuredRouteProviders({
+  mapsKey: process.env.LIFE_MAPS_KEY || process.env.GOOGLE_API_KEY,
+});
 const LM_INBOUND_SECRET = process.env.LM_INBOUND_SECRET || ""; // shared secret in the Resend inbound webhook URL
 
 const LM_TG_TOKEN = process.env.LM_TELEGRAM_BOT_TOKEN || "";
@@ -225,6 +229,7 @@ const server = http.createServer((req, res) => {
       composioAuthConfig: process.env.COMPOSIO_GCAL_AUTH_CONFIG,
       apiKey: COMPOSIO_KEY,
       mapsKey: process.env.LIFE_MAPS_KEY || process.env.GOOGLE_API_KEY,
+      routeProviders: MOBILE_ROUTE_PROVIDERS,
       buildAuthorizationUrl: (input) => buildComposioAuthorizationUrl(input, {
         composioKey: COMPOSIO_KEY,
         composioAuthConfig: process.env.COMPOSIO_GCAL_AUTH_CONFIG,

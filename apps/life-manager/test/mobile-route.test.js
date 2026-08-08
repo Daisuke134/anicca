@@ -2,7 +2,8 @@
 
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { buildAnchoredRouteRequest, computeMobileRoute, projectMobileRoute, routeAccepted } = require("../lib/mobile-route.js");
+const { buildAnchoredRouteRequest, computeMobileRoute, createStructuredRouteProviders, projectMobileRoute, routeAccepted } = require("../lib/mobile-route.js");
+const { projectSemanticMessage } = require("../lib/mobile-localization.js");
 
 const event = {
   id: "event-1", summary: "Meeting", location: "Roppongi", timezone: "America/Los_Angeles",
@@ -69,6 +70,33 @@ test("outbound anchors use the event local date and reject malformed provider su
     event: { id: "missing-destination", startIso: "2026-11-01T00:30:00.000Z", timezone: "UTC" },
     origin: "Origin",
   }), (error) => error.code === "missing_destination");
+  assert.throws(() => buildAnchoredRouteRequest({
+    event: { id: "unknown-zone", location: "Destination", startIso: "2026-11-01T00:30:00.000Z" },
+    origin: "Origin",
+  }), (error) => error.code === "route_timezone_required");
+});
+
+test("production structured providers reach route_ready through Transit and cache the anchored result", async () => {
+  const calls = [];
+  const providers = createStructuredRouteProviders({
+    mapsKey: "maps-test-key",
+    fetchImpl: async (url) => {
+      calls.push(String(url));
+      if (String(url).includes("geocode")) {
+        return { ok: true, json: async () => ({ status: "OK", results: [{ geometry: { location: { lat: 35.681, lng: 139.767 } } }] }) };
+      }
+      return { ok: true, json: async () => ({ journeys: [{ arrivalSecs: 1_029, durationSecs: 1_029, accessWalkSecs: 61, transferCount: 1, legs: [{ mode: "rail", routeName: "中央線快速" }] }] }) };
+    },
+  });
+  const first = await computeMobileRoute({ uid: "user-a" }, event, "Shibuya", providers);
+  const second = await computeMobileRoute({ uid: "user-a" }, event, "Shibuya", providers);
+  assert.equal(first.status, "route_ready");
+  assert.equal(first.provider, "transit");
+  assert.equal(first.timezone, event.timezone);
+  assert.equal(first.arriveAt, new Date(event.startIso).toISOString());
+  assert.equal(second.provider, "transit");
+  assert.equal(calls.filter((url) => url.includes("transit.ls8h.com")).length, 1);
+  assert.equal(calls.some((url) => url.includes("directions")), false);
 });
 
 test("route projection preserves access, egress, freshness, and explicit nullable attribution", () => {
@@ -97,4 +125,11 @@ test("route projection leaves absent provider facts null instead of manufacturin
   assert.equal(value.durationSeconds, null);
   assert.equal(value.bufferSeconds, null);
   assert.equal(value.transferCount, null);
+});
+
+test("route chat projection refuses an unknown Calendar timezone instead of formatting in UTC", () => {
+  assert.throws(() => projectSemanticMessage({
+    id: "message:v1:unknown-zone", cursor: "cursor:v1:unknown-zone", createdAt: "2026-08-08T00:00:00.000Z",
+    key: "chat.route_ready", route: { status: "route_ready", provider: "transit", leaveAt: "2026-08-08T01:00:00.000Z", bufferSeconds: 180 },
+  }, "en"), (error) => error.code === "route_timezone_required");
 });
