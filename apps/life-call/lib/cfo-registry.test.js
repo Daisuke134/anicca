@@ -30,6 +30,10 @@ function validFixture() {
       classification: "controller", cost_treatment: "shared_overhead",
       evidence_refs: ["docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md"],
     }],
+    ledger_sources: [{
+      ledger_source_id: "writer_receipts", probe_kind: "sqlite", locator: "writer-receipts",
+      default_status: "available",
+    }],
   };
 }
 
@@ -219,7 +223,7 @@ test("canonical registry exposes exactly nine ordered financial units", () => {
     ["capafy_sales"], ["proprietary_investing"],
   ]);
   assert.deepEqual(registry.financial_units.map((unit) => unit.ledger_source_ids), [
-    ["lm_financial_ledger"], ["revenuecat_anicca_ios"], ["writer_receipts"],
+    ["lm_agent_earnings"], ["revenuecat_subscription_events"], ["writer_receipts"],
     ["affiliate_commission_receipts"], ["gig_payment_receipts"],
     ["x402_settlement_receipts"], ["payroll_bank_receipts"],
     ["capafy_sales_receipts"], ["proprietary_investing_receipts"],
@@ -374,6 +378,43 @@ test("final census exclusions classify shared runtimes exactly once", () => {
     assert.deepEqual(classifyLabel(registry, label), {
       kind: "exclusion", targetIds: [targetId],
     }, label);
+  }
+});
+
+test("ledger catalogue resolves every declared source with closed probe and status values", () => {
+  const raw = JSON.parse(fs.readFileSync(path.join(__dirname, "../config/cfo-financial-units.json"), "utf8"));
+  const registry = validateRegistry(raw);
+  assert.deepEqual(registry.ledger_sources.map((source) => source.ledger_source_id), [
+    "lm_agent_earnings", "revenuecat_subscription_events", "writer_receipts",
+    "affiliate_commission_receipts", "gig_payment_receipts", "x402_settlement_receipts",
+    "payroll_bank_receipts", "capafy_sales_receipts", "proprietary_investing_receipts",
+  ]);
+  assert.ok(registry.ledger_sources.every((source) => [
+    "available", "present_empty", "stale_alias", "planned", "unavailable",
+  ].includes(source.default_status)));
+  assert.deepEqual(registry.ledger_sources.map((source) => source.probe_kind), [
+    "external", "external", "sqlite", "planned", "jsonl", "directory", "planned", "directory", "planned",
+  ]);
+  assert.ok(registry.ledger_sources.every((source) => !Object.keys(source).some((key) => /amount|balance|secret|token|account|payload|path/i.test(key))));
+});
+
+test("ledger catalogue rejects duplicate, missing, orphaned, unsafe, and secret-bearing sources", () => {
+  const mutations = [
+    (raw) => raw.ledger_sources.push(structuredClone(raw.ledger_sources[0])),
+    (raw) => { raw.financial_units[0].ledger_source_ids = ["missing_source"]; },
+    (raw) => raw.ledger_sources.push({
+      ledger_source_id: "orphan_source", probe_kind: "external", locator: "orphan", default_status: "unavailable",
+    }),
+    (raw) => { raw.ledger_sources[0].locator = "/Users/dais/ledger.jsonl"; },
+    (raw) => { raw.ledger_sources[0].locator = "api_key=secret-value"; },
+    (raw) => { raw.ledger_sources[0].locator = "token-value"; },
+    (raw) => { raw.ledger_sources[0].probe_kind = "money_reader"; },
+    (raw) => { raw.ledger_sources[0].default_status = "healthy"; },
+  ];
+  for (const mutate of mutations) {
+    const raw = structuredClone(JSON.parse(fs.readFileSync(path.join(__dirname, "../config/cfo-financial-units.json"), "utf8")));
+    mutate(raw);
+    assert.throws(() => validateRegistry(raw), /^Error: cfo_registry_invalid:/);
   }
 });
 

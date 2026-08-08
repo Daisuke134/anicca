@@ -3,6 +3,7 @@
 const { sha256Canonical, classifyLabel } = require("./cfo-registry.js");
 
 const URI_SCHEME = /^[a-z][a-z0-9+.-]*:/i;
+const LEDGER_STATUSES = new Set(["available", "present_empty", "stale_alias", "planned", "unavailable"]);
 
 function compareText(left, right) {
   return left.localeCompare(right);
@@ -33,7 +34,43 @@ function collectSourceObservations(registry, exists) {
   }));
 }
 
-function buildInventory({ registry, runtimeObservations = [], sourceObservations = [], generatedAt, inventoryId }) {
+function collectLedgerObservations(registry, probe) {
+  return registry.ledger_sources.map((source) => {
+    const candidate = typeof probe === "function" ? probe(source) : null;
+    const item = {
+      ledger_source_id: source.ledger_source_id,
+      availability: candidate && LEDGER_STATUSES.has(candidate.availability)
+        ? candidate.availability : source.default_status,
+    };
+    if (candidate && Number.isInteger(candidate.evidence_count) && candidate.evidence_count >= 0) {
+      item.evidence_count = candidate.evidence_count;
+    }
+    return item;
+  }).sort((left, right) => compareText(left.ledger_source_id, right.ledger_source_id));
+}
+
+function normalizeLedgerObservations(registry, observations) {
+  const byId = new Map();
+  for (const observation of Array.isArray(observations) ? observations : []) {
+    if (observation && typeof observation.ledger_source_id === "string" && !byId.has(observation.ledger_source_id)) {
+      byId.set(observation.ledger_source_id, observation);
+    }
+  }
+  return registry.ledger_sources.map((source) => {
+    const candidate = byId.get(source.ledger_source_id);
+    const item = {
+      ledger_source_id: source.ledger_source_id,
+      availability: candidate && LEDGER_STATUSES.has(candidate.availability)
+        ? candidate.availability : source.default_status,
+    };
+    if (candidate && Number.isInteger(candidate.evidence_count) && candidate.evidence_count >= 0) {
+      item.evidence_count = candidate.evidence_count;
+    }
+    return item;
+  }).sort((left, right) => compareText(left.ledger_source_id, right.ledger_source_id));
+}
+
+function buildInventory({ registry, runtimeObservations = [], sourceObservations = [], ledgerObservations, generatedAt, inventoryId }) {
   const relevant = (label) => typeof label === "string"
     && registry.relevant_runtime_prefixes.some((prefix) => label.startsWith(prefix));
   const runtime_observations = runtimeObservations.filter((item) => relevant(item.label)).map((item) => {
@@ -80,7 +117,10 @@ function buildInventory({ registry, runtimeObservations = [], sourceObservations
   }])).values()].sort((left, right) => compareText(left.label, right.label));
   const result = unmapped_relevant_labels.length || ambiguous_labels.length ? "fail" : "pass";
   const registry_sha256 = sha256Canonical(registry);
-  const core = { registry_sha256, financial_units, runtime_observations, source_observations, unmapped_relevant_labels, ambiguous_labels, result };
+  const ledger_observations = ledgerObservations === undefined
+    ? collectLedgerObservations(registry)
+    : normalizeLedgerObservations(registry, ledgerObservations);
+  const core = { registry_sha256, financial_units, runtime_observations, source_observations, ledger_observations, unmapped_relevant_labels, ambiguous_labels, result };
   return {
     receipt_version: 1,
     inventory_id: inventoryId,
@@ -94,4 +134,10 @@ function observationHash(receiptCore) {
   return sha256Canonical(receiptCore);
 }
 
-module.exports = { normalizeLaunchctlList, collectSourceObservations, buildInventory, observationHash };
+module.exports = {
+  normalizeLaunchctlList,
+  collectSourceObservations,
+  collectLedgerObservations,
+  buildInventory,
+  observationHash,
+};

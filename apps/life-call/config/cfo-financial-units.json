@@ -13,7 +13,7 @@
       "lifecycle": "active",
       "runtime_matchers": ["ai.anicca.life-manager-*", "ai.anicca.agent-economy-loop", "ai.anicca.hf-reddit-loop-*", "ai.anicca.reddit-loop-*", "ai.anicca.lateness-heartbeat", "ai.anicca.lm-recording-store", "ai.anicca.outbound-runtime-healthcheck", "ai.anicca.phone-conversation", "ai.anicca.pipecat-phone", "ai.anicca.realtime-guide", "ai.anicca.telegram-bot", "ai.anicca.phone-tunnel*"],
       "revenue_channel_ids": ["stripe_life_manager", "taskmarket_life_manager", "ugig_life_manager"],
-      "ledger_source_ids": ["lm_financial_ledger"],
+      "ledger_source_ids": ["lm_agent_earnings"],
       "evidence_refs": ["docs/superpowers/specs/2026-06-21-life-manager-LAUNCH-ORDER.md"]
     },
     {
@@ -26,7 +26,7 @@
       "lifecycle": "active",
       "runtime_matchers": [],
       "revenue_channel_ids": ["apple_app_store_anicca"],
-      "ledger_source_ids": ["revenuecat_anicca_ios"],
+      "ledger_source_ids": ["revenuecat_subscription_events"],
       "evidence_refs": ["AGENTS.md"]
     },
     {
@@ -119,6 +119,62 @@
       "revenue_channel_ids": ["proprietary_investing"],
       "ledger_source_ids": ["proprietary_investing_receipts"],
       "evidence_refs": ["docs/superpowers/specs/2026-06-10-ai-entity-content-engine-design.md"]
+    }
+  ],
+  "ledger_sources": [
+    {
+      "ledger_source_id": "lm_agent_earnings",
+      "probe_kind": "external",
+      "locator": "life-manager-agent-earnings",
+      "default_status": "unavailable"
+    },
+    {
+      "ledger_source_id": "revenuecat_subscription_events",
+      "probe_kind": "external",
+      "locator": "revenuecat-subscription-events",
+      "default_status": "unavailable"
+    },
+    {
+      "ledger_source_id": "writer_receipts",
+      "probe_kind": "sqlite",
+      "locator": "writer-receipts",
+      "default_status": "unavailable"
+    },
+    {
+      "ledger_source_id": "affiliate_commission_receipts",
+      "probe_kind": "planned",
+      "locator": "affiliate-commission-receipts",
+      "default_status": "planned"
+    },
+    {
+      "ledger_source_id": "gig_payment_receipts",
+      "probe_kind": "jsonl",
+      "locator": "gig-payment-receipts",
+      "default_status": "unavailable"
+    },
+    {
+      "ledger_source_id": "x402_settlement_receipts",
+      "probe_kind": "directory",
+      "locator": "x402-settlement-receipts",
+      "default_status": "unavailable"
+    },
+    {
+      "ledger_source_id": "payroll_bank_receipts",
+      "probe_kind": "planned",
+      "locator": "payroll-bank-receipts",
+      "default_status": "planned"
+    },
+    {
+      "ledger_source_id": "capafy_sales_receipts",
+      "probe_kind": "directory",
+      "locator": "capafy-sales-receipts",
+      "default_status": "unavailable"
+    },
+    {
+      "ledger_source_id": "proprietary_investing_receipts",
+      "probe_kind": "planned",
+      "locator": "proprietary-investing-receipts",
+      "default_status": "planned"
     }
   ],
   "runtime_exclusions": [

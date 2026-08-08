@@ -9,6 +9,7 @@ const { validateRegistry, sha256Canonical } = require("./cfo-registry.js");
 const {
   normalizeLaunchctlList,
   collectSourceObservations,
+  collectLedgerObservations,
   buildInventory,
   observationHash,
 } = require("./cfo-inventory.js");
@@ -88,6 +89,35 @@ test("unknown ai.anicca money runtime fails closed under the complete census roo
   assert.equal(inventory.result, "fail");
 });
 
+test("ledger observations cover every catalogue entry and redact probe payloads", () => {
+  const inventory = buildInventory(makeInput([]));
+  assert.deepEqual(inventory.ledger_observations.map((item) => item.ledger_source_id), [
+    "affiliate_commission_receipts", "capafy_sales_receipts", "gig_payment_receipts",
+    "lm_agent_earnings", "payroll_bank_receipts", "proprietary_investing_receipts",
+    "revenuecat_subscription_events", "writer_receipts", "x402_settlement_receipts",
+  ]);
+  assert.equal(inventory.ledger_observations.length, 9);
+  assert.ok(inventory.ledger_observations.every((item) => {
+    const keys = Object.keys(item).sort();
+    return keys.every((key) => ["availability", "evidence_count", "ledger_source_id"].includes(key))
+      && Number.isInteger(item.evidence_count) || keys.join(",") === "availability,ledger_source_id";
+  }));
+  assert.doesNotMatch(JSON.stringify(inventory), /locator|probe_kind|path|row|amount|currency|buyer|tx|account|balance|payload/i);
+});
+
+test("injected ledger probes accept only redacted availability and count", () => {
+  const observations = collectLedgerObservations(canonicalRegistry, (source) => ({
+    availability: source.ledger_source_id === "writer_receipts" ? "present_empty" : source.default_status,
+    evidence_count: source.ledger_source_id === "writer_receipts" ? 0 : undefined,
+    payload: "must-not-escape",
+  }));
+  const writer = observations.find((item) => item.ledger_source_id === "writer_receipts");
+  assert.deepEqual(writer, {
+    ledger_source_id: "writer_receipts", availability: "present_empty", evidence_count: 0,
+  });
+  assert.ok(observations.every((item) => !Object.hasOwn(item, "payload")));
+});
+
 test("irrelevant labels are ignored and missing-runtime units stay unverified", () => {
   const inventory = buildInventory(makeInput(["completely.irrelevant", "com.example.unregistered"]));
   assert.deepEqual(inventory.runtime_observations, []);
@@ -107,7 +137,7 @@ test("exit codes are observations and do not become financial health", () => {
   assert.equal(inventory.result, "pass");
   assert.deepEqual(inventory.runtime_observations.map((item) => item.last_exit_code), [7, -9]);
   const output = JSON.stringify(inventory);
-  assert.doesNotMatch(output, /healthy|revenue|profit|balance|amount|currency/i);
+  assert.doesNotMatch(Object.keys(inventory).join(","), /healthy|revenue|profit|balance|amount|currency/i);
   assert.ok(!Object.hasOwn(inventory, "health"));
 });
 

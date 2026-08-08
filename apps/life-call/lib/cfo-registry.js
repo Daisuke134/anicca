@@ -2,11 +2,14 @@
 
 const crypto = require("node:crypto");
 
-const ROOT_KEYS = new Set(["schema_version", "registry_id", "relevant_runtime_prefixes", "financial_units", "runtime_exclusions"]);
+const ROOT_KEYS = new Set(["schema_version", "registry_id", "relevant_runtime_prefixes", "financial_units", "runtime_exclusions", "ledger_sources"]);
 const UNIT_KEYS = new Set(["financial_unit_id", "unit_kind", "display_order", "display_name", "owner_ref", "cost_center_refs", "lifecycle", "runtime_matchers", "revenue_channel_ids", "ledger_source_ids", "evidence_refs"]);
 const EXCLUSION_KEYS = new Set(["exclusion_id", "runtime_matchers", "classification", "cost_treatment", "evidence_refs"]);
+const LEDGER_SOURCE_KEYS = new Set(["ledger_source_id", "probe_kind", "locator", "default_status"]);
 const UNIT_KINDS = new Set(["business", "personal_income"]);
 const LIFECYCLES = new Set(["active", "building", "planned", "retired"]);
+const PROBE_KINDS = new Set(["external", "sqlite", "jsonl", "directory", "planned"]);
+const LEDGER_STATUSES = new Set(["available", "present_empty", "stale_alias", "planned", "unavailable"]);
 const ID = /^[a-z][a-z0-9_]*$/;
 const OWNER_REF = /^human:[a-z][a-z0-9_]*$/;
 const COST_CENTER_REF = /^agent:[a-z][a-z0-9_]*$/;
@@ -34,6 +37,10 @@ function id(value) {
 }
 function typedRef(value, pattern) {
   if (typeof value !== "string" || !pattern.test(value)) fail("invalid_typed_ref");
+}
+function safeLocator(value) {
+  text(value);
+  if (/^(?:~|\/)/.test(value) || /(?:api[_-]?key|secret|token|private[_-]?key)/i.test(value)) fail("unsafe_locator");
 }
 function unique(values, reason = "duplicate_id") {
   if (new Set(values).size !== values.length) fail(reason);
@@ -113,6 +120,7 @@ function validateRegistry(input) {
     unique(registry.relevant_runtime_prefixes, "duplicate_runtime_prefix");
     if (!Array.isArray(registry.financial_units) || registry.financial_units.length === 0) fail("invalid_financial_units");
     if (!Array.isArray(registry.runtime_exclusions)) fail("invalid_runtime_exclusions");
+    if (!Array.isArray(registry.ledger_sources) || registry.ledger_sources.length === 0) fail("invalid_ledger_sources");
 
     const targets = new Set(), orders = new Set(), channels = new Set(), ledgers = new Set();
     for (const unit of registry.financial_units) {
@@ -134,6 +142,19 @@ function validateRegistry(input) {
       idList(unit.ledger_source_ids).forEach((source) => { if (ledgers.has(source)) fail("duplicate_ledger_source_id"); ledgers.add(source); });
       textList(unit.evidence_refs, true);
     }
+    const catalogue = new Set();
+    for (const source of registry.ledger_sources) {
+      if (!plain(source)) fail("invalid_ledger_source");
+      keys(source, LEDGER_SOURCE_KEYS);
+      id(source.ledger_source_id);
+      if (catalogue.has(source.ledger_source_id)) fail("duplicate_ledger_source_id");
+      catalogue.add(source.ledger_source_id);
+      enumValue(source.probe_kind, PROBE_KINDS);
+      safeLocator(source.locator);
+      enumValue(source.default_status, LEDGER_STATUSES);
+    }
+    for (const sourceId of ledgers) if (!catalogue.has(sourceId)) fail("missing_ledger_source");
+    if (catalogue.size !== ledgers.size) fail("orphan_ledger_source");
     for (const exclusion of registry.runtime_exclusions) {
       if (!plain(exclusion)) fail("invalid_exclusion");
       keys(exclusion, EXCLUSION_KEYS);

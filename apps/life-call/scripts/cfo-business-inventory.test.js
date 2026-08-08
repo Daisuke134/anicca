@@ -63,7 +63,7 @@ test("writes one redacted pass receipt from launchctl observations", () => {
       "unit_count", "unmapped_count", "ambiguous_count",
     ]);
     assert.equal(summary.result, "pass");
-    assert.equal(summary.unit_count, 7);
+    assert.equal(summary.unit_count, 9);
     assert.equal(summary.unmapped_count, 0);
     assert.equal(summary.ambiguous_count, 0);
     assert.doesNotMatch(output[0], /secret|token|payload|amount|balance|revenue|profit/i);
@@ -83,6 +83,7 @@ test("writes one redacted pass receipt from launchctl observations", () => {
       financial_units: receipt.financial_units,
       runtime_observations: receipt.runtime_observations,
       source_observations: receipt.source_observations,
+      ledger_observations: receipt.ledger_observations,
       unmapped_relevant_labels: receipt.unmapped_relevant_labels,
       ambiguous_labels: receipt.ambiguous_labels,
       result: receipt.result,
@@ -106,6 +107,28 @@ test("writes an immutable failure receipt for unmapped relevant labels", () => {
     assert.equal(receipt.result, "fail");
     assert.deepEqual(receipt.unmapped_relevant_labels, ["ai.anicca.franklin3-loop"]);
     assert.equal(fs.statSync(receiptPath).mode & 0o777, 0o600);
+  } finally {
+    fs.rmSync(stateRoot, { recursive: true, force: true });
+  }
+});
+
+test("receipt contains exactly one redacted ledger observation per catalogue entry", () => {
+  const stateRoot = tempStateRoot();
+  try {
+    const { result, summary } = run(stateRoot);
+    assert.equal(result.exitCode, 0);
+    const receipt = JSON.parse(fs.readFileSync(onlyReceipt(stateRoot), "utf8"));
+    assert.equal(receipt.ledger_observations.length, 9);
+    assert.deepEqual(receipt.ledger_observations.map((item) => item.ledger_source_id), [
+      "affiliate_commission_receipts", "capafy_sales_receipts", "gig_payment_receipts",
+      "lm_agent_earnings", "payroll_bank_receipts", "proprietary_investing_receipts",
+      "revenuecat_subscription_events", "writer_receipts", "x402_settlement_receipts",
+    ]);
+    assert.ok(receipt.ledger_observations.every((item) => Object.keys(item).every((key) => [
+      "ledger_source_id", "availability", "evidence_count",
+    ].includes(key))));
+    assert.doesNotMatch(JSON.stringify(receipt.ledger_observations), /locator|probe_kind|path|row|amount|currency|buyer|tx|account|balance|payload/i);
+    assert.equal(summary.unit_count, 9);
   } finally {
     fs.rmSync(stateRoot, { recursive: true, force: true });
   }

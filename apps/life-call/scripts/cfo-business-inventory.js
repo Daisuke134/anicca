@@ -10,6 +10,7 @@ const { validateRegistry } = require("../lib/cfo-registry.js");
 const {
   normalizeLaunchctlList,
   collectSourceObservations,
+  collectLedgerObservations,
   buildInventory,
 } = require("../lib/cfo-inventory.js");
 
@@ -72,6 +73,7 @@ function main({
   now = () => new Date(),
   randomUUID = generateUUID,
   launchctlList,
+  ledgerProbe,
   stdout = (line) => process.stdout.write(`${line}\n`),
 } = {}) {
   let inventory;
@@ -85,10 +87,12 @@ function main({
     const sourceObservations = collectSourceObservations(registry, (evidenceRef) => (
       fs.existsSync(path.resolve(REPO_ROOT, evidenceRef))
     ));
+    const ledgerObservations = collectLedgerObservations(registry, ledgerProbe);
     inventory = buildInventory({
       registry,
       runtimeObservations,
       sourceObservations,
+      ledgerObservations,
       generatedAt,
       inventoryId,
     });
