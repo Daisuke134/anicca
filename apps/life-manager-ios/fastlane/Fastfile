@@ -1,13 +1,19 @@
 default_platform(:ios)
+ENV["ASC_BYPASS_KEYCHAIN"] = "1"
 
 platform :ios do
   def app_store_connect_api_key_from_env
     key_path = ENV.fetch("ASC_API_KEY_PATH")
+    key_id = ENV.fetch("ASC_KEY_ID")
+    issuer_id = ENV.fetch("ASC_ISSUER_ID")
+    UI.user_error!("ASC_API_KEY_PATH must not be empty") if key_path.strip.empty?
+    UI.user_error!("ASC_KEY_ID must not be empty") if key_id.strip.empty?
+    UI.user_error!("ASC_ISSUER_ID must not be empty") if issuer_id.strip.empty?
     UI.user_error!("ASC_API_KEY_PATH does not point to a file") unless File.file?(key_path)
 
     app_store_connect_api_key(
-      key_id: ENV.fetch("ASC_KEY_ID"),
-      issuer_id: ENV.fetch("ASC_ISSUER_ID"),
+      key_id: key_id,
+      issuer_id: issuer_id,
       key_filepath: key_path,
       in_house: false
     )
@@ -56,6 +62,7 @@ platform :ios do
   desc "Archive and export the signed App Store/TestFlight build"
   lane :build_for_testflight do
     build_number = ENV.fetch("LIFEMANAGER_BUILD_NUMBER")
+    UI.user_error!("LIFEMANAGER_BUILD_NUMBER must be a positive integer") unless build_number.match?(/\A\d+\z/) && build_number.to_i.positive?
     increment_build_number(
       xcodeproj: "LifeManager.xcodeproj",
       build_number: build_number
@@ -75,9 +82,11 @@ platform :ios do
 
   desc "Upload an already-built IPA to TestFlight"
   lane :upload_testflight do
+    ipa_path = ENV.fetch("LIFEMANAGER_IPA_PATH", "build/TestFlight/LifeManager.ipa")
+    UI.user_error!("LIFEMANAGER_IPA_PATH does not point to a file") unless File.file?(ipa_path)
     upload_to_testflight(
       api_key: app_store_connect_api_key_from_env,
-      ipa: ENV.fetch("LIFEMANAGER_IPA_PATH", "build/TestFlight/LifeManager.ipa"),
+      ipa: ipa_path,
       skip_waiting_for_build_processing: false,
       distribute_external: false
     )

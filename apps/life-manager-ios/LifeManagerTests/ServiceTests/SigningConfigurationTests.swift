@@ -52,6 +52,33 @@ final class SigningConfigurationTests: XCTestCase {
         XCTAssertTrue(debug.contains("CODE_SIGNING_REQUIRED[sdk=iphonesimulator*] = NO"))
     }
 
+    func testReleaseUsesAutomaticDistributionSigningTeamAndPreservesSimulatorDebugOverrides() throws {
+        let release = try Self.resourceText(named: "Release.xcconfig", in: "LifeManager/Config")
+        let debug = try Self.resourceText(named: "Debug.xcconfig", in: "LifeManager/Config")
+
+        XCTAssertTrue(release.contains("CODE_SIGN_STYLE = Automatic"))
+        XCTAssertTrue(release.contains("DEVELOPMENT_TEAM = S5U8UH3JLJ"))
+        XCTAssertTrue(release.contains("CODE_SIGN_IDENTITY = Apple Distribution"))
+        XCTAssertTrue(release.contains("CODE_SIGN_IDENTITY[sdk=iphoneos*] = Apple Distribution"))
+        XCTAssertTrue(release.contains("CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*] = LifeManager/Config/Release.entitlements"))
+        XCTAssertTrue(release.contains("CODE_SIGNING_ALLOWED[sdk=iphonesimulator*] = NO"))
+        XCTAssertTrue(release.contains("CODE_SIGNING_REQUIRED[sdk=iphonesimulator*] = NO"))
+        XCTAssertTrue(debug.contains("CODE_SIGNING_ALLOWED[sdk=iphoneos*] = YES"))
+        XCTAssertTrue(debug.contains("CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*] = LifeManager/Config/Debug.entitlements"))
+    }
+
+    func testAppIconAssetIsRealAndSelectedByTheApplicationTarget() throws {
+        let contents = try Self.resourceText(named: "Contents.json", in: "LifeManager/Resources/Assets.xcassets/AppIcon.appiconset")
+        let project = try Self.resourceText(named: "project.yml")
+        let iconData = try Self.resourceData(named: "AppIcon-1024.png", in: "LifeManager/Resources/Assets.xcassets/AppIcon.appiconset")
+
+        XCTAssertTrue(contents.contains("AppIcon-1024.png"))
+        XCTAssertTrue(contents.contains("1024x1024"))
+        XCTAssertEqual(Array(iconData.prefix(8)), [137, 80, 78, 71, 13, 10, 26, 10])
+        XCTAssertGreaterThan(iconData.count, 20_000)
+        XCTAssertTrue(project.contains("ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon"))
+    }
+
     func testFastlaneTestFlightLanesRequireExternalCredentialsAndBuildNumber() throws {
         let fastfile = try Self.resourceText(named: "Fastfile", in: "fastlane")
 
@@ -62,6 +89,16 @@ final class SigningConfigurationTests: XCTestCase {
         XCTAssertTrue(fastfile.contains("ENV.fetch(\"ASC_ISSUER_ID\")"))
         XCTAssertTrue(fastfile.contains("ENV.fetch(\"ASC_API_KEY_PATH\")"))
         XCTAssertFalse(fastfile.contains("-----BEGIN PRIVATE KEY-----"))
+    }
+
+    func testFastlaneUsesASCBypassAndFailsClosedOnRequiredInputs() throws {
+        let fastfile = try Self.resourceText(named: "Fastfile", in: "fastlane")
+
+        XCTAssertTrue(fastfile.contains("ENV[\"ASC_BYPASS_KEYCHAIN\"] = \"1\""))
+        XCTAssertTrue(fastfile.contains("ENV.fetch(\"LIFEMANAGER_BUILD_NUMBER\")"))
+        XCTAssertTrue(fastfile.contains("build_number.to_i.positive?"))
+        XCTAssertTrue(fastfile.contains("ASC_API_KEY_PATH does not point to a file"))
+        XCTAssertTrue(fastfile.contains("must not be empty"))
     }
 
     private static func resourceURL(named name: String, in directory: String? = nil) -> URL {

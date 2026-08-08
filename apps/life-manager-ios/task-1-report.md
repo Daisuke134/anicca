@@ -467,3 +467,52 @@ Unit tests: 88/88 passed
 Total:      90/90 passed, 0 failures
 Test Succeeded
 ```
+
+## TestFlight readiness follow-up — real AppIcon, Release signing, and ASC fail-closed lane
+
+### RED
+
+The fresh readiness tests were run before the signing and asset configuration:
+
+```text
+xcodebuild ... test \
+  -only-testing:LifeManagerUnitTests/SigningConfigurationTests/testReleaseUsesAutomaticDistributionSigningTeamAndPreservesSimulatorDebugOverrides \
+  -only-testing:LifeManagerUnitTests/SigningConfigurationTests/testAppIconAssetIsRealAndSelectedByTheApplicationTarget \
+  -only-testing:LifeManagerUnitTests/SigningConfigurationTests/testFastlaneUsesASCBypassAndFailsClosedOnRequiredInputs
+
+Executed 3 tests, with 7 failures (1 unexpected)
+```
+
+The failures were the absent AppIcon catalog, missing Release automatic team /
+distribution identity settings, and missing ASC bypass / non-empty build-input
+guards.
+
+### GREEN
+
+Release now uses automatic signing with team `S5U8UH3JLJ`, Apple Distribution
+identity for iphoneos, and the existing production APNs entitlement; simulator
+signing remains disabled and Debug remains development-APNs signed for devices.
+The app target selects `AppIcon` from a real asset catalog. The 1024px source is
+the tracked production Anicca umbrella-brand asset
+`/Users/anicca/anicca-project/aniccaios/aniccaios/Assets.xcassets/AppIcon.appiconset/icon-1024.png`
+(RGB 1024×1024), copied and resized into the iOS catalog without a placeholder.
+Fastlane forces `ASC_BYPASS_KEYCHAIN=1`, rejects empty or missing ASC key
+inputs, rejects non-positive `LIFEMANAGER_BUILD_NUMBER`, and verifies the IPA
+exists before upload.
+
+```text
+SigningConfigurationTests: 8/8 passed, 0 failures
+```
+
+No Apple app record was created, and no archive, ASC mutation, or upload was
+run.
+
+Full serial verification after this readiness slice:
+
+```text
+xcodegen generate: exit 0
+xcodebuild ... -parallel-testing-enabled NO test: exit 0
+UI tests:   2/2 passed
+Unit tests: 91/91 passed
+Total:      93/93 passed, 0 failures
+```
