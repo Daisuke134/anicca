@@ -195,3 +195,8 @@ winner, one active delivery claimant, recovery after interruption, permanent no-
 evidence/body snapshots, and provider receipt persistence. The only intentionally remaining safety
 gap is the old tick-time direct send in `late-notice.js`; Task 3 owns its removal and this task did
 not touch that file.
+
+## Post-commit receipt
+
+- The report body was committed and pushed as `5c46a565c`; this append-only receipt is the final
+  report amendment for the task.
