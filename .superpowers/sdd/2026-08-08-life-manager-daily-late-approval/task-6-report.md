@@ -100,5 +100,7 @@ provider receipt plus one Telegram receipt despite callback replay. Remaining ga
 are the restricted Resend read permission and the unrelated legacy-path baseline
 failure described above. No Task6 implementation defect is observed.
 
-Expected handoff after commit: commit/push the SSOT row and this report only; leave
-the two pre-existing untracked geocode test files untouched.
+Commit/push completed: `ac713cd8b` (`docs(life-manager): record daily late approval
+receipt`) pushed to `canonical/feat/lm-daily-late-approval`.
+
+The two pre-existing untracked geocode test files remain untouched.
