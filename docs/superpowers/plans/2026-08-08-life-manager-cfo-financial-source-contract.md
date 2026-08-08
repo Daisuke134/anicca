@@ -83,7 +83,7 @@ Errors use `Error("cfo_financial_source_invalid:<reason>")` and never interpolat
 - Create: `apps/life-call/lib/cfo-financial-source.test.js`
 - Create: `apps/life-call/lib/cfo-financial-source.js`
 
-- [ ] **Step 1: Write the first failing contract tests**
+- [x] **Step 1: Write the first failing contract tests**
 
 Create a literal `validResult()` factory with the exact synthetic result above. Tests exercise real production code and assert:
 
@@ -134,7 +134,7 @@ Add table-driven literal mutations for:
 - full account-like digit sequence, absolute or embedded private path, embedded credential-bearing or ordinary URL, secret-shaped label,
 - `actionRef` that is a URL or is not `action:<opaque_id>`.
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
 ```bash
 cd apps/life-call
@@ -143,7 +143,7 @@ node --test lib/cfo-financial-source.test.js
 
 Expected: FAIL because `./cfo-financial-source.js` does not exist.
 
-- [ ] **Step 3: Implement the minimum closed validator**
+- [x] **Step 3: Implement the minimum closed validator**
 
 Use exact key sets and small enum sets:
 
@@ -180,7 +180,7 @@ Validation rules:
 
 Use a strict date round-trip helper. Accept the RFC 3339 offset as evidence, normalize to `Date`, and verify each parsed UTC date component corresponds to the timestamp rather than relying only on `Date.parse`.
 
-- [ ] **Step 4: Run GREEN and size check**
+- [x] **Step 4: Run GREEN and size check**
 
 ```bash
 cd apps/life-call
@@ -192,7 +192,7 @@ git diff --check
 
 Expected: all Task 1 tests pass; production is at or below 144 LOC; diff check exits zero.
 
-- [ ] **Step 5: Commit and push Task 1**
+- [x] **Step 5: Commit and push Task 1**
 
 ```bash
 git add apps/life-call/lib/cfo-financial-source.js apps/life-call/lib/cfo-financial-source.test.js
@@ -209,7 +209,7 @@ git push
 - Modify: `apps/life-call/lib/cfo-financial-source.test.js`
 - Modify: `apps/life-call/package.json`
 
-- [ ] **Step 1: Add RED fixture tests**
+- [x] **Step 1: Add RED fixture tests**
 
 The JSON root is `{ "schemaVersion": 1, "cases": [...] }`. Add exactly four named cases:
 
@@ -243,18 +243,18 @@ test("fixture is synthetic and contains no private transport material", () => {
 
 RED must be `ENOENT` for the missing fixture, not an assertion typo.
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
 ```bash
 cd apps/life-call
 node --test lib/cfo-financial-source.test.js
 ```
 
-- [ ] **Step 3: Create the exact synthetic fixture and wire normal CFO tests**
+- [x] **Step 3: Create the exact synthetic fixture and wire normal CFO tests**
 
 Create only the four cases above. Add `lib/cfo-financial-source.test.js` once to `test:cfo`; `pretest` already calls that script, so add no hook.
 
-- [ ] **Step 4: Verify focused and regression paths**
+- [x] **Step 4: Verify focused and regression paths**
 
 ```bash
 cd apps/life-call
@@ -267,7 +267,7 @@ git diff --check
 
 Expected: fixture tests, CFO suite, and full package suite pass. No provider or Telegram effect occurs.
 
-- [ ] **Step 5: Fresh review and fix loop**
+- [x] **Step 5: Fresh review and fix loop**
 
 A fresh read-only reviewer checks:
 
@@ -290,7 +290,7 @@ Critical/Important findings enter the bounded Superpowers fix loop. Minor findin
 
 **Soft target:** production stays at or below 144 LOC; prefer replacing the current broad path expression over adding an abstraction.
 
-- [ ] **Step 1: RED — prove the two attached private-path bypasses and harmless label**
+- [x] **Step 1: RED — prove the two attached private-path bypasses and harmless label**
 
 Add behavior tests showing that `Bank/Users/dais/private` and `Bank/home/name/private` throw the stable private-text validation error, while `Bank / Savings` validates. The expected values are literals and the tests exercise the real validator.
 
@@ -301,11 +301,11 @@ node --test --test-name-pattern='attached private paths|harmless spaced slash' l
 
 Expected RED: the two private-path cases are accepted and the harmless label is rejected.
 
-- [ ] **Step 2: GREEN — use direct position-independent private-path detection**
+- [x] **Step 2: GREEN — use direct position-independent private-path detection**
 
 Reject literal `/Users/` and `/home/` wherever they occur in a label. Keep the existing URL and credential checks. Do not reject a generic slash or add provider-specific behavior.
 
-- [ ] **Step 3: Verify, commit, push, and review**
+- [x] **Step 3: Verify, commit, push, and review**
 
 ```bash
 cd apps/life-call
@@ -319,7 +319,7 @@ git diff --check
 
 Commit `fix(cfo): reject attached private paths`, push, then run one fresh task review and a fresh whole-plan review.
 
-- [ ] **Step 4: Close CFO-1a after clean final review**
+- [x] **Step 4: Close CFO-1a after clean final review**
 
 After the whole-plan review is clean:
 
@@ -330,3 +330,14 @@ After the whole-plan review is clean:
 - keep every M1 real-source/report acceptance checkbox unchecked.
 
 Commit and push state-only docs separately. Completion is a tested normalized contract and synthetic fixtures only, not a Moneytree read or Telegram delivery.
+
+### CFO-1a final evidence
+
+- Task 1 implementation and bounded privacy fixes: `a8f428984`, `ba5e8fe8f`, `35adb371f`.
+- Task 2 synthetic fixture/test wiring and verification: `b65ced1b4`, `c4bd18eb6`, `0a7e0afa3`.
+- Task 3 source-container/privacy closure and attached-path correction: `5edaa2637`, `aeae05398`, `7baae72cf`.
+- Final focused normalized-source contract: `node --test lib/cfo-financial-source.test.js` — 25/25 passed.
+- Final CFO suite: `npm run test:cfo` — 75/75 passed.
+- Fresh full package verification after `npm ci --no-audit --no-fund`: `npm test` — exit 0.
+- Production validator remains 136 LOC (maximum 144); `git diff --check` passed. Fresh task and whole-plan reviews are clean.
+- This closes the tested provider-neutral normalized contract and synthetic fixtures only. No real Moneytree sync, live balance read, or real CFO Telegram report has occurred; every M1 real-source/report acceptance remains unchecked.

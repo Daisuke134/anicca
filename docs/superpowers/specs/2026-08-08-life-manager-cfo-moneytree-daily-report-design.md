@@ -2,9 +2,9 @@
 
 | Field | Value |
 |---|---|
-| Status | IMPLEMENTED — CFO-0d UI CONTRACT COMPLETE |
+| Status | IMPLEMENTED — CFO-1a NORMALIZED CONTRACT COMPLETE |
 | Parent SSOT | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
-| Active item | CFO-1a — Provider-neutral adapter contract and redacted fixtures |
+| Active item | CFO-1b — Moneytree source adapter |
 | First real source | Moneytree-connected MUFG accounts |
 | Deferred | Binance and every write-capable financial action |
 
@@ -263,7 +263,20 @@ The user sees success and truth. Internal stack traces, repeated health noise, g
 
 ### CFO-0d closure evidence
 
-The pure renderer contract is implemented in `a42839db7` and extended in `d85aaca6d`; review-round 1's Important exclusion-display finding was fixed in `38d34993d`, and the final estimate/punctuation fix is `61e41c2b3`. Final focused renderer tests pass 15/15, CFO tests pass 50/50, and a fresh HEAD full `npm test` exits 0 after `npm ci`. The final scoped re-review is Approved with Important+Minors ADDRESSED. This is a tested UI contract only: no Moneytree sync and no real finance Telegram message has been delivered. The next CFO item is CFO-1a (Yes); all M1 real Moneytree acceptance items above remain unchecked.
+The pure renderer contract is implemented in `a42839db7` and extended in `d85aaca6d`; review-round 1's Important exclusion-display finding was fixed in `38d34993d`, and the final estimate/punctuation fix is `61e41c2b3`. Final focused renderer tests pass 15/15, CFO tests pass 50/50, and a fresh HEAD full `npm test` exits 0 after `npm ci`. The final scoped re-review is Approved with Important+Minors ADDRESSED. This is a tested UI contract only: no Moneytree sync and no real finance Telegram message has been delivered. At that closure, the next CFO item was CFO-1a (Yes); all M1 real Moneytree acceptance items above remain unchecked.
+
+### CFO-1a completion evidence
+
+CFO-1a is complete as a provider-neutral normalized financial-source contract and synthetic fixtures only. The
+Task 3 corrective state and implementation are recorded by `aeae05398` and
+`7baae72cff18d3caee08faac1479b880a0e21c2e` (`fix(cfo): reject attached private paths`). Final verification is
+`node --test lib/cfo-financial-source.test.js` at 25/25, `npm run test:cfo` at 75/75, and a fresh full `npm test`
+exit 0 after `npm ci --no-audit --no-fund`. The fresh Task 3 and whole-plan reviews are clean, and the validator
+remains 136 LOC with `git diff --check` passing.
+
+This completion does not include a real Moneytree sync, live balance read, provider credential, normalized live
+source, or real CFO Telegram report. Every M1 real-source/report acceptance checkbox above remains unchecked. The
+active next item is CFO-1b — Moneytree source adapter.
 
 ## 11. Ordered Implementation
 

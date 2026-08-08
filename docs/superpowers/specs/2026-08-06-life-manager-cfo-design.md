@@ -2,12 +2,12 @@
 
 | Field | Value |
 |---|---|
-| Status | CFO-0d COMPLETE — MONEYTREE-FIRST M1 DESIGN APPROVED |
+| Status | CFO-1a COMPLETE — CFO-1b NEXT |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
 | Existing foundations | `apps/life-call`, interactive Moneytree App access, Fleet telemetry, `lm_api_cost`, and the canonical `lm_agent_earnings` source (the panel's `lm_financial_ledger` name is a stale alias) |
-| First unfinished item | **CFO-1a: specify provider-neutral adapter contracts and redacted fixtures** |
+| First unfinished item | **CFO-1b: implement the Moneytree MUFG source adapter** |
 
 ## 1. Overview — What and Why
 
@@ -691,12 +691,24 @@ The Moneytree-first Telegram UI contract is complete: Task 1 commit `a42839db7`,
 round 1 fix `38d34993d`, and final estimate/punctuation fix `61e41c2b3`. Final focused renderer tests pass 15/15, CFO
 tests pass 50/50, and a fresh HEAD full `npm test` exits 0 after `npm ci`; Task 1 review was Approved and the final
 scoped re-review is Approved with Important+Minors ADDRESSED. This closes only the pure, privacy-safe renderer
-contract. No Moneytree sync and no real finance Telegram message has been delivered yet. The first unfinished item is
-now CFO-1a (Yes); every M1 live acceptance checkbox remains unchecked.
+contract. No Moneytree sync and no real finance Telegram message has been delivered yet. At that closure, the first
+unfinished item was CFO-1a (Yes); every M1 live acceptance checkbox remains unchecked.
+
+### CFO-1a completion evidence
+
+CFO-1a is complete as a provider-neutral normalized financial-source contract and synthetic fixtures only. Task 3
+state and implementation are recorded by `aeae05398` and
+`7baae72cff18d3caee08faac1479b880a0e21c2e` (`fix(cfo): reject attached private paths`). Final verification is
+`node --test lib/cfo-financial-source.test.js` at 25/25, `npm run test:cfo` at 75/75, and a fresh full `npm test`
+exit 0 after `npm ci --no-audit --no-fund`; the fresh Task 3 and whole-plan reviews are clean. The validator remains
+136 LOC and `git diff --check` passes.
+
+No real Moneytree sync, live balance read, provider credential, normalized live source, or real CFO Telegram report
+has occurred. Only CFO-1a is checked below; CFO-1b onward and every live M1 acceptance remain unchecked.
 
 ### M1 — One truthful Moneytree-first read-only snapshot
 
-- [ ] **CFO-1a** Specify provider-neutral adapter contracts and redacted fixtures.
+- [x] **CFO-1a** Specify provider-neutral adapter contracts and redacted fixtures.
 - [ ] **CFO-1b** Implement Moneytree MUFG balance/transaction adapter; verify against the live connected account.
 - [ ] **CFO-1b2** Ingest Moneytree-connected liabilities and record consent, aggregation freshness, partial-source,
       expiry, and re-consent states.
