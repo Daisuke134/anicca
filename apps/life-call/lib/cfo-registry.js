@@ -8,6 +8,8 @@ const EXCLUSION_KEYS = new Set(["exclusion_id", "runtime_matchers", "classificat
 const UNIT_KINDS = new Set(["business", "personal_income"]);
 const LIFECYCLES = new Set(["active", "building", "planned", "retired"]);
 const ID = /^[a-z][a-z0-9_]*$/;
+const OWNER_REF = /^human:[a-z][a-z0-9_]*$/;
+const COST_CENTER_REF = /^agent:[a-z][a-z0-9_]*$/;
 const BAD_KEY = /(?:amount|balance|revenue|profit|secret|token|api.?key|account.?number|private.?key|seed)/i;
 const HOME_PATH = /^(?:\/Users\/|\/home\/)/;
 const ERROR_PREFIX = "cfo_registry_invalid:";
@@ -30,6 +32,9 @@ function text(value) {
 function id(value) {
   if (typeof value !== "string" || !ID.test(value)) fail("invalid_id");
 }
+function typedRef(value, pattern) {
+  if (typeof value !== "string" || !pattern.test(value)) fail("invalid_typed_ref");
+}
 function unique(values, reason = "duplicate_id") {
   if (new Set(values).size !== values.length) fail(reason);
 }
@@ -42,6 +47,12 @@ function textList(value, required = false) {
 function idList(value) {
   if (!Array.isArray(value)) fail("invalid_array");
   value.forEach(id);
+  unique(value);
+  return value;
+}
+function typedRefList(value, pattern) {
+  if (!Array.isArray(value)) fail("invalid_array");
+  value.forEach((ref) => typedRef(ref, pattern));
   unique(value);
   return value;
 }
@@ -115,8 +126,8 @@ function validateRegistry(input) {
       orders.add(unit.display_order);
       if (!plain(unit.display_name) || Object.keys(unit.display_name).length === 0 || Object.keys(unit.display_name).some((locale) => !/^[a-z]{2}$/.test(locale))) fail("invalid_display_name");
       Object.values(unit.display_name).forEach(text);
-      text(unit.owner_ref);
-      idList(unit.cost_center_refs);
+      typedRef(unit.owner_ref, OWNER_REF);
+      typedRefList(unit.cost_center_refs, COST_CENTER_REF);
       enumValue(unit.lifecycle, LIFECYCLES);
       matcherList(unit.runtime_matchers);
       idList(unit.revenue_channel_ids).forEach((channel) => { if (channels.has(channel)) fail("duplicate_channel_id"); channels.add(channel); });

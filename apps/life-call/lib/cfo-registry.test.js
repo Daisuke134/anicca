@@ -142,6 +142,28 @@ test("class instances and custom prototypes are rejected before cloning", () => 
   assert.throws(() => validateRegistry(displayNameFixture), /^Error: cfo_registry_invalid:/);
 });
 
+test("typed owner and cost-center references preserve their namespaces", () => {
+  const fixture = validFixture();
+  fixture.financial_units[0].cost_center_refs = ["agent:franklin1", "agent:franklin2"];
+  const registry = validateRegistry(fixture);
+  assert.equal(registry.financial_units[0].owner_ref, "human:dais");
+  assert.deepEqual(registry.financial_units[0].cost_center_refs, ["agent:franklin1", "agent:franklin2"]);
+});
+
+test("typed owner and cost-center references reject untyped or wrong namespaces", () => {
+  const mutations = [
+    (fixture) => { fixture.financial_units[0].owner_ref = "dais"; },
+    (fixture) => { fixture.financial_units[0].owner_ref = "agent:dais"; },
+    (fixture) => { fixture.financial_units[0].cost_center_refs = ["franklin1"]; },
+    (fixture) => { fixture.financial_units[0].cost_center_refs = ["human:franklin1"]; },
+  ];
+  for (const mutate of mutations) {
+    const fixture = validFixture();
+    mutate(fixture);
+    assert.throws(() => validateRegistry(fixture), /^Error: cfo_registry_invalid:/);
+  }
+});
+
 test("duplicates, unknown keys, money, secret-like keys, unsafe paths, and overlap fail", () => {
   for (const mutate of invalidMutations()) {
     assert.throws(() => validateRegistry(mutate(validFixture())), /^Error: cfo_registry_invalid:/);
