@@ -93,6 +93,7 @@ private struct RouteSurface: View {
                 await viewModel.restoreSession()
             }
         }
+        .environment(\.locale, viewModel.productLocale.swiftUILocale)
     }
 
     private var welcomeView: some View {

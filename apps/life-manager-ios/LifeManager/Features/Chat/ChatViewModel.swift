@@ -63,6 +63,23 @@ final class ChatViewModel {
         await sync(reason: .foreground)
     }
 
+    func resetForLocaleChange() async {
+        fetchGeneration &+= 1
+        pendingPushTargetMessageID = nil
+        answeredQuestionIDs.removeAll()
+        messages = []
+        nextCursor = nil
+        hasMore = false
+        failure = nil
+        staleReply = false
+        scrollAnchorID = nil
+        composerText = ""
+        isLoading = false
+        isLoadingMore = false
+        await coordinator.reset()
+        await sync(reason: .launch)
+    }
+
     func syncFromPush(targetMessageID: String) async {
         guard !isLoading else {
             pendingPushTargetMessageID = targetMessageID
@@ -157,8 +174,6 @@ final class ChatViewModel {
         do {
             let result = try await coordinator.sync(reason: reason, targetMessageID: targetMessageID)
             guard generation == fetchGeneration else {
-                isLoading = false
-                await drainPendingPushIfNeeded()
                 return
             }
             merge(result.page.messages, replacing: result.requestedCursor == nil)
@@ -173,6 +188,7 @@ final class ChatViewModel {
             }
         }
 
+        guard generation == fetchGeneration else { return }
         isLoading = false
         await drainPendingPushIfNeeded()
     }

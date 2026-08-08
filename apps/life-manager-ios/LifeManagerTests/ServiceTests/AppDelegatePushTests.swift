@@ -82,6 +82,26 @@ final class AppDelegatePushTests: XCTestCase {
         XCTAssertEqual(registration?.timezone, "Asia/Tokyo")
     }
 
+    func testLocaleChangeReregistersExistingTokenWithUpdatedLocale() async throws {
+        let permission = PushPermissionStub(status: .authorized, requestResult: false)
+        let recorder = PushDeviceServiceStub()
+        let appDelegate = LifeManagerAppDelegate(
+            permissionService: permission,
+            registrar: RemoteNotificationRegistrarStub(),
+            pushRouter: PushNotificationRouter(),
+            environment: .production
+        )
+        appDelegate.configure(deviceService: recorder, locale: .en, timezone: "America/Los_Angeles")
+        _ = try await appDelegate.requestAuthorizationAndRegisterIfNeeded()
+        await appDelegate.registerDeviceToken(Data(repeating: 0xAB, count: 32))
+
+        await appDelegate.updateDeviceLocale(.ja, timezone: "Asia/Tokyo")
+
+        XCTAssertEqual(recorder.registrationCount, 2)
+        XCTAssertEqual(recorder.registration?.locale, .ja)
+        XCTAssertEqual(recorder.registration?.timezone, "Asia/Tokyo")
+    }
+
     func testNotificationTapForwardsOnlyStableDestinationToRouter() throws {
         let router = PushNotificationRouter()
         var received: NotificationDestination?
@@ -165,6 +185,7 @@ private final class PushDeviceServiceStub: DeviceServicing {
     }
 
     private(set) var registration: Registration?
+    private(set) var registrationCount = 0
 
     func register(
         token: Data,
@@ -173,6 +194,7 @@ private final class PushDeviceServiceStub: DeviceServicing {
         timezone: String,
         idempotencyKey: UUID
     ) async throws {
+        registrationCount += 1
         registration = Registration(token: token, environment: environment, locale: locale, timezone: timezone)
     }
 

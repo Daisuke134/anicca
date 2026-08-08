@@ -127,6 +127,27 @@ final class ChatViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.messages.map(\.id), [first.id, pushed.id])
     }
 
+    func testLocaleChangeResetsProjectionAndFetchesFromBeginning() async {
+        let english = ChatFixtures.message(id: "english-message", type: .system, createdAt: "2026-08-10T08:00:00.000Z")
+        let japanese = ChatFixtures.message(id: "japanese-message", type: .system, createdAt: "2026-08-10T08:10:00.000Z")
+        let service = ChatTestService(pages: [
+            nil: [
+                ChatPage(messages: [english], nextCursor: "cursor-en", hasMore: true),
+                ChatPage(messages: [japanese], nextCursor: nil, hasMore: false)
+            ],
+            "cursor-en": [ChatPage(messages: [], nextCursor: nil, hasMore: false)]
+        ])
+        let viewModel = ChatViewModel(service: service)
+
+        await viewModel.loadInitial()
+        await viewModel.resetForLocaleChange()
+
+        XCTAssertEqual(viewModel.messages.map(\.id), [japanese.id])
+        XCTAssertFalse(viewModel.hasMore)
+        let cursors = await service.fetchCursors()
+        XCTAssertEqual(cursors, [nil, nil])
+    }
+
     func testComposerIsAvailableOnlyForAnOpenQuestion() async {
         let question = ChatFixtures.message(
             id: "question-message",

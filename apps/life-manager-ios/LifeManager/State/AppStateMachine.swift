@@ -73,6 +73,7 @@ final class AppViewModel {
     private(set) var lastAnalysisStatus: AnalysisStatus?
     private(set) var phoneSkipped = false
     private(set) var phoneValidationError: String?
+    private var profileChangedHandler: (@MainActor (UserProfile) async -> Void)?
 
     init(
         auth: AuthServicing,
@@ -92,6 +93,29 @@ final class AppViewModel {
         }
         settingsViewModel = settings
         paywallViewModel = paywall
+    }
+
+    var productLocale: ProductLocale {
+        profile?.productLocale ?? .en
+    }
+
+    func setProfileChangedHandler(_ handler: (@MainActor (UserProfile) async -> Void)?) {
+        profileChangedHandler = handler
+    }
+
+    func bindSettingsProfileHandler() {
+        settingsViewModel?.setProfileChangedHandler { [weak self] profile in
+            await self?.acceptProfile(profile)
+        }
+    }
+
+    func acceptProfile(_ value: UserProfile) async {
+        let localeChanged = profile?.productLocale != value.productLocale
+        profile = value
+        if localeChanged {
+            await chatViewModel?.resetForLocaleChange()
+        }
+        await profileChangedHandler?(value)
     }
 
     func restoreSession() async {
@@ -121,7 +145,8 @@ final class AppViewModel {
         route = .profile
         phoneValidationError = nil
         do {
-            profile = try await profileService.update(draft, idempotencyKey: UUID())
+            let updatedProfile = try await profileService.update(draft, idempotencyKey: UUID())
+            await acceptProfile(updatedProfile)
             route = .phone
         } catch {
             present(error)
@@ -185,7 +210,7 @@ final class AppViewModel {
         }
 
         do {
-            self.profile = try await profileService.update(
+            let updatedProfile = try await profileService.update(
                 ProfileDraft(
                     name: profile.name,
                     home: profile.home.display,
@@ -196,6 +221,7 @@ final class AppViewModel {
                 ),
                 idempotencyKey: UUID()
             )
+            await acceptProfile(updatedProfile)
             await runAnalysis()
         } catch {
             present(error)

@@ -174,6 +174,18 @@ final class LifeManagerAppDelegate: NSObject, UIApplicationDelegate, @preconcurr
         Task { await registerPendingDeviceTokenIfReady() }
     }
 
+    func updateDeviceLocale(_ locale: ProductLocale, timezone: String) async {
+        let changed = deviceLocale != locale || deviceTimezone != timezone
+        deviceLocale = locale
+        deviceTimezone = timezone
+        guard changed else { return }
+        if pendingDeviceToken == nil {
+            pendingDeviceToken = lastRegisteredDeviceToken
+        }
+        lastRegisteredDeviceToken = nil
+        await registerPendingDeviceTokenIfReady()
+    }
+
     func unregisterDevice() async throws {
         guard let deviceService else { return }
         do {

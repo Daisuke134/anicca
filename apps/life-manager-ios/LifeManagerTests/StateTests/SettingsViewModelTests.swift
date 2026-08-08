@@ -28,6 +28,26 @@ final class SettingsViewModelTests: XCTestCase {
         XCTAssertTrue(viewModel.callLanguageVisible)
     }
 
+    func testSavedProductLocaleNotifiesTheAppAfterServerConfirmation() async {
+        let profileService = SettingsProfileTestService(profile: SettingsFixtures.profile(callsEnabled: false, phone: .missing, callLanguage: nil))
+        let viewModel = makeViewModel(profileService: profileService)
+        var changedProfiles: [UserProfile] = []
+        viewModel.setProfileChangedHandler { profile in
+            changedProfiles.append(profile)
+        }
+
+        await viewModel.load()
+        viewModel.productLocale = .ja
+        await viewModel.saveProfile()
+
+        XCTAssertEqual(changedProfiles.map(\.productLocale), [.en, .ja])
+    }
+
+    func testProductLocaleMapsToSwiftUILocaleIdentifier() {
+        XCTAssertEqual(ProductLocale.en.swiftUILocale.identifier, "en")
+        XCTAssertEqual(ProductLocale.ja.swiftUILocale.identifier, "ja")
+    }
+
     func testSavingPhoneDoesNotEnableCallsAndInvalidPhoneNeverSendsMutation() async {
         let profile = SettingsFixtures.profile(callsEnabled: false, phone: .missing, callLanguage: nil)
         let profileService = SettingsProfileTestService(profile: profile)

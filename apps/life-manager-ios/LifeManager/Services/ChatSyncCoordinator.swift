@@ -17,6 +17,7 @@ actor ChatSyncCoordinator {
     private let service: ChatServicing
     private var cursor: String?
     private var inFlight: Task<ChatPage, Error>?
+    private var generation = 0
 #if DEBUG
     private var activeSyncWaiters = 0
 #endif
@@ -26,6 +27,13 @@ actor ChatSyncCoordinator {
         cursor = initialCursor
     }
 
+    func reset() {
+        generation &+= 1
+        inFlight?.cancel()
+        inFlight = nil
+        cursor = nil
+    }
+
     func sync(reason: SyncReason, targetMessageID: String? = nil) async throws -> ChatSyncResult {
 #if DEBUG
         activeSyncWaiters += 1
@@ -33,6 +41,7 @@ actor ChatSyncCoordinator {
 #endif
         _ = reason
         let requestedCursor = cursor
+        let requestedGeneration = generation
         let task: Task<ChatPage, Error>
 
         if let inFlight {
@@ -47,6 +56,9 @@ actor ChatSyncCoordinator {
 
         do {
             let page = try await task.value
+            guard requestedGeneration == generation else {
+                throw CancellationError()
+            }
             inFlight = nil
             if let nextCursor = page.nextCursor {
                 cursor = nextCursor

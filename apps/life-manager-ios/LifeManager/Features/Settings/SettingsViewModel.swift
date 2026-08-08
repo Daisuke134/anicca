@@ -19,6 +19,7 @@ final class SettingsViewModel {
     private let callService: CallServicing
     private let accountService: AccountServicing
     private let deviceService: DeviceServicing?
+    private var profileChangedHandler: (@MainActor (UserProfile) async -> Void)?
 
     private(set) var profile: UserProfile?
     private(set) var calendarStatus: CalendarConnectionStatus = .disconnected
@@ -49,6 +50,10 @@ final class SettingsViewModel {
         deviceService = device
     }
 
+    func setProfileChangedHandler(_ handler: (@MainActor (UserProfile) async -> Void)?) {
+        profileChangedHandler = handler
+    }
+
     var phoneConfigured: Bool {
         profile?.phone.status == .configured || E164PhoneValidator.isValid(phone)
     }
@@ -62,7 +67,7 @@ final class SettingsViewModel {
         isLoading = true
         failure = nil
         do {
-            apply(try await profileService.fetch())
+            await apply(try await profileService.fetch())
         } catch {
             failure = AppErrorState(error: error)
         }
@@ -157,13 +162,13 @@ final class SettingsViewModel {
     private func save(_ draft: ProfileDraft) async {
         failure = nil
         do {
-            apply(try await profileService.update(draft, idempotencyKey: UUID()))
+            await apply(try await profileService.update(draft, idempotencyKey: UUID()))
         } catch {
             failure = AppErrorState(error: error)
         }
     }
 
-    private func apply(_ value: UserProfile) {
+    private func apply(_ value: UserProfile) async {
         profile = value
         name = value.name ?? ""
         home = value.home.display ?? ""
@@ -172,5 +177,6 @@ final class SettingsViewModel {
         callsEnabled = value.callsEnabled && value.phone.status == .configured
         callLanguage = value.callLanguage ?? .en
         calendarStatus = value.calendarStatus
+        await profileChangedHandler?(value)
     }
 }

@@ -75,6 +75,10 @@ indirect enum JSONValue: Codable, Equatable, Sendable {
 enum ProductLocale: String, Codable, Equatable, Sendable, CaseIterable {
     case en
     case ja
+
+    var swiftUILocale: Locale {
+        Locale(identifier: rawValue)
+    }
 }
 
 struct APNsDeviceReceipt: Codable, Equatable, Sendable {

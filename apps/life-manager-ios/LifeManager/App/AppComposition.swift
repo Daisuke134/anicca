@@ -27,7 +27,7 @@ final class AppComposition {
         let accountService = AccountService(api: authenticatedAPI)
         deviceService = DeviceService(api: authenticatedAPI)
         let paywallViewModel = SoftPaywallViewModel(purchasing: nil)
-        viewModel = AppViewModel(
+        let appViewModel = AppViewModel(
             auth: auth,
             profile: profileService,
             analysis: AnalysisService(api: authenticatedAPI),
@@ -41,5 +41,7 @@ final class AppComposition {
             ),
             paywall: paywallViewModel
         )
+        appViewModel.bindSettingsProfileHandler()
+        viewModel = appViewModel
     }
 }

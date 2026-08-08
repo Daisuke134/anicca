@@ -24,6 +24,12 @@ struct LifeManagerApp: App {
             )
                 .task {
                     guard let composition else { return }
+                    viewModel?.setProfileChangedHandler { profile in
+                        await appDelegate.updateDeviceLocale(
+                            profile.productLocale,
+                            timezone: profile.timezone
+                        )
+                    }
                     appDelegate.configure(
                         deviceService: composition.deviceService,
                         locale: preferredProductLocale,

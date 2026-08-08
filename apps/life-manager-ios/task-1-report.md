@@ -255,3 +255,36 @@ ServiceProtocolTests:         5/5 passed
 ContractFixtureDecodingTests: 7/7 passed
 Combined targeted tests:     16/16 passed, 0 failures
 ```
+
+## Fresh review round 1 — confirmed product locale propagation
+
+### RED
+
+The locale regression tests were added before the app wiring existed:
+
+```text
+xcodebuild ... test \
+  -only-testing:LifeManagerUnitTests/ChatViewModelTests/testLocaleChangeResetsProjectionAndFetchesFromBeginning \
+  -only-testing:LifeManagerUnitTests/AppDelegatePushTests/testLocaleChangeReregistersExistingTokenWithUpdatedLocale \
+  -only-testing:LifeManagerUnitTests/SettingsViewModelTests/testSavedProductLocaleNotifiesTheAppAfterServerConfirmation \
+  -only-testing:LifeManagerUnitTests/SettingsViewModelTests/testProductLocaleMapsToSwiftUILocaleIdentifier
+```
+
+The first run failed at compile time because `ChatViewModel` had no projection
+reset, `LifeManagerAppDelegate` could not re-register a token with a new
+locale, Settings had no server-confirmed profile callback, and the model had
+no SwiftUI locale mapping.
+
+### GREEN
+
+The confirmed server `productLocale` now drives `.environment(\.locale, ...)`.
+Settings notifies `AppViewModel` only after the profile mutation returns, the
+chat coordinator clears its cursor and projection before refetching, and APNs
+re-registers the existing token with the updated locale/timezone.
+
+```text
+AppDelegate locale test:   1/1 passed
+Chat locale reset test:    1/1 passed
+Settings callback + map:   2/2 passed
+Combined targeted tests:   4/4 passed, 0 failures
+```
