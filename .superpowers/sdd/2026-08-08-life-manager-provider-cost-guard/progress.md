@@ -24,6 +24,12 @@
 | 5. Provider instrumentation | GREEN | adapter module/import module missing | 77/77 provider + focused regression | `0c6616b86` |
 | 6. Budget policy | GREEN | missing-module | 12/12 budget/gate + 90/90 full focused | `a7604f2a6` |
 | 7. Owner report/deploy/measure | code-only pending | — | — | — |
+| Review fix 1. Durable route writer | GREEN | 2 route contract failures | 37/37 route/transit | `d3406be56` |
+| Review fix 2. Status/classification | GREEN | 9 ledger/adapter/import failures | 25/25 provider cost | `a14e05c84` |
+| Review fix 3. Google attempts | GREEN | failure-path/request-id contracts | 17/17 geocode/adapters | `f95183d04` |
+| Review fix 4. Atomic budget/voice | GREEN | 2 migration/RPC contracts | 106/106 complete focused | `e6967878d` |
+| Review follow-up. Voice-only read | GREEN | default reader scope gap | 14/14 budget | `290cf460c` |
+| Review follow-up. Persisted estimate | GREEN | persisted-threshold E2E gap | 7/7 geocode | `5abcb6cdb` |
 
 ## Known baseline
 
