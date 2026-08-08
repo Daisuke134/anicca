@@ -720,11 +720,11 @@ CFO-1b leaves the source partial until CFO-1b2. Liabilities, durable ingestion, 
 
 - [x] **CFO-1a** Specify provider-neutral adapter contracts and redacted fixtures.
 - [x] **CFO-1b** Implement Moneytree MUFG balance/transaction adapter; verify against the live connected account.
-- [ ] **CFO-1b2** Ingest Moneytree-connected liabilities and record consent, aggregation freshness, partial-source,
-      expiry, and re-consent states.
+- [ ] **CFO-1b2** Freeze the Moneytree coverage-state contract: compose balances with connected-liability coverage,
+      retrieval/aggregation freshness, partial-source, expiry, and re-consent states. Unknown live coverage stays null.
 - [ ] **CFO-1e** Normalize Fleet wallet positions, verified earnings, and burn from existing telemetry.
 - [ ] **CFO-1f** Add timestamped JPY valuation and staleness rules.
-- [ ] **CFO-1g** Persist one immutable, idempotent snapshot and reconciliation exceptions.
+- [ ] **CFO-1g** Persist one immutable, idempotent snapshot, its Moneytree coverage-state bundle, and reconciliation exceptions.
 - [ ] **CFO-1g2** Enforce owner-timezone `reporting_date`, stable retry `run_id`, Telegram dedupe, and append-only
       superseding corrections.
 - [ ] **CFO-1g3** Implement bounded adapter self-repair and prove repair only after a fresh source read and

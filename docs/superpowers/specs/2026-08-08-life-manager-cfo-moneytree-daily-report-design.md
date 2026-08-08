@@ -4,7 +4,7 @@
 |---|---|
 | Status | IMPLEMENTED — CFO-1b LIVE ADAPTER COMPLETE — CFO-1b2 NEXT |
 | Parent SSOT | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
-| Active item | CFO-1b2 — Moneytree consent, liabilities, and freshness state |
+| Active item | CFO-1b2 — Moneytree composed coverage-state contract |
 | First real source | Moneytree-connected MUFG accounts |
 | Deferred | Binance and every write-capable financial action |
 
