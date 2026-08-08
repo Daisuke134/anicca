@@ -161,6 +161,10 @@ async function recordProviderCost(input = {}, opts = {}) {
       body: JSON.stringify(body),
     });
     if (!response || !response.ok) {
+      // PostgREST reports a replay against the provider/request unique index
+      // as 409. The first writer already persisted the same receipt, so this
+      // retry is a successful no-op and must not enter the failure outbox.
+      if (response && Number(response.status) === 409) return true;
       const error = new Error(`Supabase provider cost insert failed (${response && response.status})`);
       error.status = response && response.status;
       throw error;
@@ -208,7 +212,10 @@ async function recordCost({ uid, kind, quantity, unit, estUsd, meta } = {}, opts
         meta: meta == null ? {} : meta,
       }),
     });
-    if (!response.ok) throw new Error(`Supabase insert failed (${response.status})`);
+    if (!response.ok) {
+      if (Number(response.status) === 409) return true;
+      throw new Error(`Supabase insert failed (${response.status})`);
+    }
     return true;
   } catch (error) {
     log("[ledger] recordCost failed", error && error.message ? error.message : error);

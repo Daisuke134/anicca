@@ -165,6 +165,7 @@ async function authorizeProviderOperation(input = {}, deps = {}) {
       enforceDailyCap: input.enforceDailyCap !== false,
     }, deps);
     if (!claim.allowed) return { allowed: false, reason: claim.reason || "budget_claim_failed", ...budget, requestId, projectedUsd };
+    if (claim.duplicate) return { allowed: true, reason: claim.reason || "budget_claim_duplicate", duplicate: true, ...budget, requestId, projectedUsd };
   }
   return { allowed: true, reason: budget.state === "warning" ? "budget_warning" : "allowed", ...budget, requestId, projectedUsd };
 }
@@ -194,7 +195,15 @@ async function claimProviderBudget(input = {}, deps = {}) {
   } catch (error) {
     return { allowed: false, reason: "budget_claim_unavailable", error: String(error && error.message ? error.message : error) };
   }
-  if (!response || !response.ok) return { allowed: false, reason: "budget_claim_failed", status: response && response.status };
+  // A uniqueness conflict is the replay receipt from another concurrent
+  // worker. The SQL RPC itself returns the original claim as `duplicate=true`,
+  // but Supabase/PostgREST can surface the same race as HTTP 409.
+  if (!response || !response.ok) {
+    if (response && Number(response.status) === 409) {
+      return { allowed: true, reason: "budget_claim_duplicate", duplicate: true, requestId: input.requestId };
+    }
+    return { allowed: false, reason: "budget_claim_failed", status: response && response.status };
+  }
   const raw = await response.json().catch(() => null);
   const result = Array.isArray(raw) ? raw[0] : raw;
   if (!result || result.allowed !== true) return { allowed: false, reason: result && result.reason ? String(result.reason) : "budget_claim_failed" };

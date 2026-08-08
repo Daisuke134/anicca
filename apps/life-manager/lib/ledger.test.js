@@ -55,6 +55,52 @@ test("recordCost logs and resolves false when Supabase fails", async () => {
   assert.match(errors[0], /offline/);
 });
 
+test("provider ledger duplicate conflicts are idempotent success without an owner failure", async () => {
+  const failures = [];
+  const result = await ledger().recordProviderCost({
+    uid: "u1", provider: "google", sku: "routes", operation: "routes", requestId: "route-replay",
+    quantity: 1, unit: "request", pricingVersion: "google-test-1", estimatedUsd: 0.01,
+    actualStatus: "unknown", actualBilledUsd: null,
+  }, {
+    supaUrl: "https://db.example", supaKey: "service",
+    fetchImpl: async () => ({ ok: false, status: 409, json: async () => ({ code: "23505" }) }),
+    ownerAlert: (failure) => failures.push(failure),
+  });
+  assert.equal(result, true);
+  assert.equal(failures.length, 0);
+});
+
+test("legacy ledger duplicate conflicts are idempotent success", async () => {
+  const result = await ledger().recordCost({ uid: "u1", kind: "telnyx_call", quantity: 60, estUsd: 0.01 }, {
+    supaUrl: "https://db.example", supaKey: "service",
+    fetchImpl: async () => ({ ok: false, status: 409 }),
+  });
+  assert.equal(result, true);
+});
+
+test("concurrent provider ledger retries resolve as one write plus one successful no-op", async () => {
+  let requests = 0;
+  const failures = [];
+  const input = {
+    uid: "u1", provider: "telnyx", sku: "voice", operation: "call_cdr", requestId: "cdr-concurrent",
+    quantity: 60, unit: "seconds", pricingVersion: "telnyx-test-1", actualBilledUsd: 0.02,
+    actualStatus: "known", costClassification: "measured",
+  };
+  const opts = {
+    supaUrl: "https://db.example", supaKey: "service",
+    fetchImpl: async (url) => {
+      if (!String(url).includes("/rest/v1/lm_api_cost")) return { ok: true, status: 200, json: async () => ({ settled: true }) };
+      requests += 1;
+      return requests === 1 ? { ok: true, status: 201 } : { ok: false, status: 409 };
+    },
+    ownerAlert: (failure) => failures.push(failure),
+  };
+  const results = await Promise.all([ledger().recordProviderCost(input, opts), ledger().recordProviderCost(input, opts)]);
+  assert.deepEqual(results, [true, true]);
+  assert.equal(requests, 2);
+  assert.equal(failures.length, 0);
+});
+
 test("recordDailyComposioPoll uses a DB day query and inserts at most one row", async () => {
   const requests = [];
   const responses = [

@@ -193,6 +193,8 @@ DECLARE
   v_daily_spend numeric := 0;
   v_outstanding_reserved numeric := 0;
   v_projected numeric := coalesce(p_projected_usd, 0);
+  v_existing_projected numeric := NULL;
+  v_claimed_request_id text := NULL;
 BEGIN
   IF v_uid IS NULL OR nullif(trim(p_request_id), '') IS NULL OR v_projected < 0 THEN
     RETURN jsonb_build_object('allowed', false, 'reason', 'invalid_claim');
@@ -218,11 +220,13 @@ BEGIN
       FOR UPDATE;
   END IF;
 
-  IF EXISTS (
-    SELECT 1 FROM lm_provider_budget_claims
+  SELECT projected_usd INTO v_existing_projected
+    FROM lm_provider_budget_claims
     WHERE uid = v_uid AND budget_day = v_day AND request_id = p_request_id
-  ) THEN
-    RETURN jsonb_build_object('allowed', true, 'duplicate', true, 'request_id', p_request_id);
+    FOR SHARE;
+  IF FOUND THEN
+    RETURN jsonb_build_object('allowed', true, 'duplicate', true, 'request_id', p_request_id,
+      'projected_usd', v_existing_projected);
   END IF;
 
   -- Settled spend is read from the ledger inside this transaction. Unknown
@@ -283,7 +287,16 @@ BEGIN
   END IF;
 
   INSERT INTO lm_provider_budget_claims(uid, budget_day, provider, operation, request_id, projected_usd, is_voice)
-    VALUES (v_uid, v_day, coalesce(nullif(trim(p_provider), ''), 'unknown'), coalesce(nullif(trim(p_operation), ''), 'unknown'), p_request_id, v_projected, coalesce(p_is_voice, false));
+    VALUES (v_uid, v_day, coalesce(nullif(trim(p_provider), ''), 'unknown'), coalesce(nullif(trim(p_operation), ''), 'unknown'), p_request_id, v_projected, coalesce(p_is_voice, false))
+    ON CONFLICT (uid, budget_day, request_id) DO NOTHING
+    RETURNING request_id INTO v_claimed_request_id;
+  IF NOT FOUND THEN
+    SELECT projected_usd INTO v_existing_projected
+      FROM lm_provider_budget_claims
+      WHERE uid = v_uid AND budget_day = v_day AND request_id = p_request_id;
+    RETURN jsonb_build_object('allowed', true, 'duplicate', true, 'request_id', p_request_id,
+      'projected_usd', coalesce(v_existing_projected, v_projected));
+  END IF;
   IF coalesce(p_is_voice, false) THEN
     UPDATE lm_provider_voice_buckets
       SET reserved_usd = reserved_usd + v_projected, updated_at = now()

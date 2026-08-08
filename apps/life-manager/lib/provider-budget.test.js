@@ -36,6 +36,13 @@ test("the transactional claim contract includes the daily cap and settled ledger
   assert.match(sql, /for update/);
 });
 
+test("provider claims use conflict replay semantics for the original receipt", () => {
+  const sql = fs.readFileSync(path.join(__dirname, "../migrations/2026-08-08-lm-provider-cost.sql"), "utf8").toLowerCase();
+  assert.match(sql, /insert into lm_provider_budget_claims[\s\S]*on conflict \(uid, budget_day, request_id\) do nothing/);
+  assert.match(sql, /returning request_id/);
+  assert.match(sql, /duplicate/);
+});
+
 test("daily provider budget boundaries are normal, warning, degraded, then stopped", () => {
   assert.equal(evaluateProviderBudget({ measuredUsd: 0.49, estimatedUsd: 0 }).state, "normal");
   assert.equal(evaluateProviderBudget({ measuredUsd: 0.50, estimatedUsd: 0 }).state, "warning");
@@ -187,4 +194,19 @@ test("known Telnyx CDR settlement uses the transactional voice settlement RPC", 
   assert.equal(body.p_request_id, "cdr-1");
   assert.equal(body.p_actual_usd, 0.037);
   assert.equal(body.p_reservation_request_id, "call-1");
+});
+
+test("a provider claim replay after a conflict is an allowed duplicate receipt", async () => {
+  const result = await authorizeProviderOperation({
+    uid: "u1", provider: "google", operation: "routes", essential: false,
+    requestId: "route-replay", projectedUsd: 0.01,
+  }, {
+    supaUrl: "https://db.example", supaKey: "service",
+    readDailySpend: async () => ({ measuredUsd: 0, estimatedUsd: 0, unknownCount: 0 }),
+    fetchImpl: async (url) => String(url).includes("lm_claim_provider_budget")
+      ? { ok: false, status: 409, json: async () => ({ code: "23505", message: "duplicate key" }) }
+      : { ok: true, status: 200, json: async () => [] },
+  });
+  assert.equal(result.allowed, true);
+  assert.equal(result.reason, "budget_claim_duplicate");
 });

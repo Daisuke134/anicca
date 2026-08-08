@@ -9,6 +9,7 @@ const {
   importScheduledMeasurements,
   runScheduledProviderCostImports,
 } = require("./provider-cost-imports.js");
+const { recordProviderCost } = require("./ledger.js");
 
 function recorder() {
   const events = [];
@@ -51,6 +52,17 @@ test("a failed scheduled measurement import returns failure and emits no synthet
   assert.equal(result.failed, 1);
   assert.equal(r.events.length, 0);
   assert.match(result.error, /usage API down/);
+});
+
+test("a replayed Telnyx import with a provider uniqueness conflict is recorded, not failed", async () => {
+  const result = await importTelnyxCdrs([
+    { id: "cdr-replay", call_control_id: "cc-replay", billed_duration: 60, cost: { amount: "0.02", currency: "USD" } },
+  ], {
+    uid: "u1", recordProviderCost,
+    supaUrl: "https://db.example", supaKey: "service",
+    fetchImpl: async () => ({ ok: false, status: 409, json: async () => ({ code: "23505" }) }),
+  });
+  assert.deepEqual(result, { attempted: 1, recorded: 1, failed: 0 });
 });
 
 test("production import runner invokes Telnyx, Railway, and Supabase loaders and reports each result", async () => {
