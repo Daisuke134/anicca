@@ -34,10 +34,22 @@ require_token() {
 }
 
 require_db_cleanup_inputs() {
+  [[ -n "${LM_STAGING_BEARER_TOKEN:-}" ]] \
+    || fail "LM_STAGING_BEARER_TOKEN is required for the exact receipt readback"
   [[ -n "${LM_STAGING_DB_SERVICE_ROLE_KEY:-}" ]] \
     || fail "LM_STAGING_DB_SERVICE_ROLE_KEY is required only in the cleanup shell; it is never written to the flow"
   [[ -n "${LM_STAGING_UID:-}" ]] \
     || fail "LM_STAGING_UID is required to scope database-only cleanup"
+  [[ -n "${LM_TRAVEL_RECEIPT_MESSAGE_ID:-}" ]] \
+    || fail "LM_TRAVEL_RECEIPT_MESSAGE_ID is required to bind cleanup to one confirmed receipt"
+  [[ -n "${LM_TRAVEL_PROVIDER_EVENT_ID:-}" ]] \
+    || fail "LM_TRAVEL_PROVIDER_EVENT_ID is required from the confirmed receipt readback"
+  [[ "${LM_TRAVEL_PROVIDER_EVENT_ID}" =~ ^[a-v0-9]{5,1024}$ ]] \
+    || fail "LM_TRAVEL_PROVIDER_EVENT_ID is not a valid opaque Google event ID"
+  [[ -n "${LM_STAGING_COMPOSIO_API_KEY:-}" ]] \
+    || fail "LM_STAGING_COMPOSIO_API_KEY is required only in the cleanup shell"
+  [[ -n "${LM_STAGING_CONNECTED_ACCOUNT_ID:-}" ]] \
+    || fail "LM_STAGING_CONNECTED_ACCOUNT_ID is required to target the exact connected account"
   [[ "${LM_STAGING_SUPABASE_URL:-}" == "$STAGING_SUPABASE_URL" ]] \
     || fail "database cleanup must target the isolated staging Supabase URL"
   [[ "${LM_STAGING_UID}" =~ ^[A-Za-z0-9_-]+$ ]] \
@@ -103,13 +115,79 @@ verify_seed() {
   echo "PASS: pre-authorized isolated staging seed verified (mode=${mode}, locale=${locale})"
 }
 
+provider_proxy_request() {
+  local method="$1"
+  local endpoint="$2"
+  local output_file="$3"
+  local payload
+  payload="$(jq -cn \
+    --arg account "$LM_STAGING_CONNECTED_ACCOUNT_ID" \
+    --arg endpoint "$endpoint" \
+    --arg method "$method" \
+    '{connected_account_id: $account, endpoint: $endpoint, method: $method}')"
+  curl --silent --show-error --retry 1 \
+    --output "$output_file" \
+    --write-out '%{http_code}' \
+    -X POST \
+    -H "Accept: application/json" \
+    -H "Content-Type: application/json" \
+    -H "x-api-key: ${LM_STAGING_COMPOSIO_API_KEY}" \
+    --data "$payload" \
+    "https://backend.composio.dev/api/v3.1/tools/execute/proxy"
+}
+
+verify_receipt_for_cleanup() {
+  local messages
+  messages="$(api_get /chat)" || fail "staging chat read failed before provider cleanup"
+  jq -e \
+    --arg receipt_id "$LM_TRAVEL_RECEIPT_MESSAGE_ID" \
+    --arg provider_event_id "$LM_TRAVEL_PROVIDER_EVENT_ID" \
+    '.messages | any(.[];
+      .id == $receipt_id
+      and .semanticKey == "chat.travel_block_confirmed"
+      and ((.args.providerEventId // .args.provider_event_id) == $provider_event_id)
+    )' \
+    <<<"$messages" >/dev/null \
+    || fail "cleanup receipt does not prove the exact requested provider event ID"
+}
+
+delete_exact_provider_event() {
+  local endpoint="/calendar/v3/calendars/primary/events/${LM_TRAVEL_PROVIDER_EVENT_ID}"
+  local delete_response readback_response delete_http readback_http
+  delete_response="$(mktemp -t life-manager-travel-delete.XXXXXX)"
+  readback_response="$(mktemp -t life-manager-travel-readback.XXXXXX)"
+  trap 'rm -f "$delete_response" "$readback_response"' RETURN
+
+  delete_http="$(provider_proxy_request DELETE "$endpoint" "$delete_response")" \
+    || fail "provider event cleanup request failed"
+  [[ "$delete_http" == "200" ]] \
+    || fail "provider event cleanup proxy returned HTTP ${delete_http}"
+  jq -e '.status == 204' "$delete_response" >/dev/null \
+    || fail "provider cleanup did not confirm a 204 deletion for the exact event ID"
+
+  readback_http="$(provider_proxy_request GET "$endpoint" "$readback_response")" \
+    || fail "provider event readback failed after cleanup"
+  [[ "$readback_http" == "200" ]] \
+    || fail "provider event readback proxy returned HTTP ${readback_http}"
+  jq -e '.status == 404 and (.data == null or .data == {})' "$readback_response" >/dev/null \
+    || fail "provider event cleanup readback did not prove the exact event is absent"
+  rm -f "$delete_response" "$readback_response"
+  trap - RETURN
+}
+
 cleanup_seed() {
   require_staging
   require_db_cleanup_inputs
+  command -v jq >/dev/null 2>&1 || fail "jq is required for exact provider cleanup"
   [[ "${LM_STAGING_CLEANUP_CONFIRM:-}" == "DELETE_STAGING_ONLY" ]] \
     || fail "cleanup requires LM_STAGING_CLEANUP_CONFIRM=DELETE_STAGING_ONLY"
 
-  # DB-only cleanup is deliberately explicit. It removes mobile rows for the
+  # Bind cleanup to the exact provider event named by the confirmed receipt,
+  # delete only that event, and prove a narrow 404 readback before touching DB rows.
+  verify_receipt_for_cleanup
+  delete_exact_provider_event
+
+  # DB cleanup is deliberately explicit. It removes mobile rows for the
   # supplied staging UID and never calls the mobile account-deletion route or a
   # provider disconnect/revoke operation on the shared pre-authorized account.
   local table status
@@ -138,7 +216,7 @@ cleanup_seed() {
     [[ "$status" == "200" || "$status" == "204" ]] \
       || fail "staging database cleanup returned HTTP ${status} for ${table}"
   done
-  echo "PASS: mobile rows for the isolated staging UID were deleted; provider connection and events were untouched"
+  echo "PASS: exact travel provider event was deleted and mobile rows for the isolated staging UID were deleted; provider connection was untouched"
 }
 
 case "${1:-}" in

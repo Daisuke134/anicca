@@ -30,8 +30,16 @@ platform :ios do
     "platform=iOS Simulator,id=#{simulator_udid}"
   end
 
+  def regenerate_xcode_project
+    app_dir = File.expand_path("..", __dir__)
+    Dir.chdir(app_dir) do
+      sh("xcodegen generate --spec project.yml")
+    end
+  end
+
   desc "Run the Life Manager smoke tests"
   lane :test do
+    regenerate_xcode_project
     run_tests(
       project: "LifeManager.xcodeproj",
       scheme: "LifeManager",
@@ -47,6 +55,7 @@ platform :ios do
 
   desc "Build the Life Manager app for the iOS Simulator"
   lane :build_for_simulator do
+    regenerate_xcode_project
     build_app(
       project: "LifeManager.xcodeproj",
       scheme: "LifeManager",
@@ -61,6 +70,7 @@ platform :ios do
 
   desc "Archive and export the signed App Store/TestFlight build"
   lane :build_for_testflight do
+    regenerate_xcode_project
     asc_api_key = app_store_connect_api_key_from_env
     UI.message("Validated App Store Connect credentials for key #{asc_api_key[:key_id]}")
 

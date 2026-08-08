@@ -8,6 +8,7 @@ final class MaestroFlowContractTests: XCTestCase {
         let preauthorized = try Self.flow(named: "preauthorized-bootstrap-chat.yaml")
         let failure = try Self.flow(named: "preauthorized-travel-failure.yaml")
         let push = try Self.flow(named: "push-deep-link.yaml")
+        let cleanup = try Self.resource(named: "staging-seed-and-cleanup.sh", in: "maestro")
 
         XCTAssertTrue(english.contains("STAGING_CALLBACK_URL"))
         XCTAssertTrue(japanese.contains("STAGING_CALLBACK_URL"))
@@ -23,6 +24,10 @@ final class MaestroFlowContractTests: XCTestCase {
             XCTAssertFalse(flow.localizedCaseInsensitiveContains("refreshToken"), name)
             XCTAssertFalse(flow.localizedCaseInsensitiveContains("authorization: bearer"), name)
         }
+        XCTAssertTrue(cleanup.contains("LM_TRAVEL_PROVIDER_EVENT_ID"))
+        XCTAssertTrue(cleanup.contains("provider_proxy_request DELETE"))
+        XCTAssertTrue(cleanup.contains(".status == 404"))
+        XCTAssertFalse(cleanup.contains("/account"))
     }
 
     func testOnboardingFlowsCoverRealJourneyLeafIDsAndCleanState() throws {
@@ -57,6 +62,7 @@ final class MaestroFlowContractTests: XCTestCase {
         let fastfile = try Self.resource(named: "Fastfile", in: "fastlane")
         let project = try Self.resource(named: "project.yml")
         let loader = try Self.resource(named: "ContractFixtureLoader.swift", in: "LifeManagerTests/Support")
+        let receiptTests = try Self.resource(named: "ChatReceiptPresentationTests.swift", in: "LifeManagerTests/StateTests")
         let testLane = try XCTUnwrap(fastfile.range(of: "lane :test"))
         let buildLane = try XCTUnwrap(fastfile.range(of: "lane :build_for_simulator"))
         let laneBody = String(fastfile[testLane.upperBound..<buildLane.lowerBound])
@@ -64,7 +70,25 @@ final class MaestroFlowContractTests: XCTestCase {
         XCTAssertTrue(laneBody.contains("clean: true"))
         XCTAssertTrue(laneBody.contains("skip_build: false"))
         XCTAssertTrue(project.contains("- LifeManagerTests/TestFixtures/mobile-v1"))
+        XCTAssertTrue(project.contains("- LifeManagerTests/StateTests"))
         XCTAssertTrue(loader.contains("checkoutFixtures"))
+        XCTAssertTrue(receiptTests.contains("testTravelReceiptAccessibilityIDsUseSemanticKeyAndStableMessageID"))
+        XCTAssertTrue(fastfile.contains("def regenerate_xcode_project"))
+        XCTAssertTrue(fastfile.contains("xcodegen generate --spec project.yml"))
+
+        let lanes = [
+            ("lane :test", "run_tests("),
+            ("lane :build_for_simulator", "build_app("),
+            ("lane :build_for_testflight", "build_app(")
+        ]
+
+        for (laneName, buildInvocation) in lanes {
+            let laneStart = try XCTUnwrap(fastfile.range(of: laneName))
+            let lane = String(fastfile[laneStart.lowerBound...])
+            let regenerate = try XCTUnwrap(lane.range(of: "regenerate_xcode_project"), laneName)
+            let build = try XCTUnwrap(lane.range(of: buildInvocation), laneName)
+            XCTAssertLessThan(regenerate.lowerBound, build.lowerBound, laneName)
+        }
     }
 
     private static func flow(named name: String) throws -> String {

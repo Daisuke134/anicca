@@ -23,26 +23,30 @@ require_text() {
 }
 
 # Maestro IDs are nested under executable commands, but the contract must not
-# be satisfiable by a comment that merely mentions an ID. Parse every
-# non-comment YAML line and require the command text there.
+# be satisfiable by a comment that merely mentions an ID. Strip YAML inline
+# comments before requiring command text; values used by this harness contain
+# no literal hash, so a whitespace-delimited comment marker is unambiguous.
+active_lines_from_path() {
+  sed -E 's/[[:space:]]+#.*$//' "$1" | awk '
+    !/^[[:space:]]*#/ && NF
+  '
+}
+
+active_lines() {
+  active_lines_from_path "$ROOT_DIR/$1"
+}
+
 require_active_text() {
   local file="$1"
   local needle="$2"
-  awk -v needle="$needle" '
-    /^[[:space:]]*#/ { next }
-    index($0, needle) { found = 1 }
-    END { exit(found ? 0 : 1) }
-  ' "$ROOT_DIR/$file" || fail "$file: missing executable command text: $needle"
+  active_lines "$file" | grep -F -- "$needle" >/dev/null \
+    || fail "$file: missing executable command text: $needle"
 }
 
 require_absent_active_text() {
   local file="$1"
   local needle="$2"
-  if awk -v needle="$needle" '
-    /^[[:space:]]*#/ { next }
-    index($0, needle) { found = 1 }
-    END { exit(found ? 0 : 1) }
-  ' "$ROOT_DIR/$file"; then
+  if active_lines "$file" | grep -F -- "$needle" >/dev/null; then
     fail "$file: forbidden executable command text: $needle"
   fi
 }
@@ -60,7 +64,8 @@ for flow in \
   english-onboarding-route.yaml \
   japanese-onboarding-route.yaml \
   push-deep-link.yaml \
-  staging-seed-and-cleanup.sh; do
+  staging-seed-and-cleanup.sh \
+  harness-inline-comment-bypass.txt; do
   require_file "$flow"
 done
 
@@ -112,12 +117,18 @@ require_text staging-seed-and-cleanup.sh 'ulhsqqkyejzvqgoyjwte'
 require_text staging-seed-and-cleanup.sh 'production configuration is forbidden'
 require_text staging-seed-and-cleanup.sh 'LM_STAGING_DB_SERVICE_ROLE_KEY'
 require_text staging-seed-and-cleanup.sh 'LM_STAGING_SUPABASE_URL'
+require_text staging-seed-and-cleanup.sh 'LM_STAGING_COMPOSIO_API_KEY'
+require_text staging-seed-and-cleanup.sh 'LM_STAGING_CONNECTED_ACCOUNT_ID'
 require_text staging-seed-and-cleanup.sh 'LM_TRAVEL_RECEIPT_MESSAGE_ID'
+require_text staging-seed-and-cleanup.sh 'LM_TRAVEL_PROVIDER_EVENT_ID'
 require_text staging-seed-and-cleanup.sh 'chat.travel_block_confirmed'
 require_text staging-seed-and-cleanup.sh 'LM_TRAVEL_FAILURE_MESSAGE_ID'
 require_text staging-seed-and-cleanup.sh 'chat.travel_block_not_added'
+require_text staging-seed-and-cleanup.sh 'provider_proxy_request DELETE'
+require_text staging-seed-and-cleanup.sh '.status == 404'
 require_absent_active_text staging-seed-and-cleanup.sh '/account'
 require_text staging-seed-and-cleanup.sh 'LM_STAGING_CLEANUP_CONFIRM'
+require_absent_active_text harness-inline-comment-bypass.txt 'BYPASS_ONLY_MARKER'
 
 if command -v maestro >/dev/null 2>&1; then
   for flow in \

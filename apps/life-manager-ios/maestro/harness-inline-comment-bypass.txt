@@ -1,0 +1,3 @@
+# BYPASS_ONLY_MARKER
+- assertVisible:
+    id: "chat.list" # BYPASS_ONLY_MARKER

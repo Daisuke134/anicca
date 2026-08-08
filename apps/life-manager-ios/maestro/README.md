@@ -10,6 +10,7 @@
 4. profileにname、home、product localeを保存する。`phone`はnull、callsはdisabled、analysisはidleにする。`staging-seed-and-cleanup.sh seed`がこの状態をHTTP readbackで確認します。
 5. `ROUTE_MESSAGE_ID`は、実analysis後に `/api/mobile/v1/chat` から読み取ったroute messageのopaque IDだけを指定する。推測したIDやfixture IDは使用しません。
 6. `TRAVEL_RECEIPT_MESSAGE_ID`は、同じ実chat readbackで `semanticKey=chat.travel_block_confirmed` のmessageに付いた正確なopaque IDを指定する。failure flowだけを実行する場合は、`TRAVEL_FAILURE_MESSAGE_ID`に `semanticKey=chat.travel_block_not_added` の正確なIDを指定する。IDを生成・推測・fixtureからコピーしてはいけません。
+7. cleanupでは、confirmed receiptの`args.providerEventId`と一致する`LM_TRAVEL_PROVIDER_EVENT_ID`、そのreceiptのID、実接続先の`LM_STAGING_CONNECTED_ACCOUNT_ID`を指定する。cleanupはそのprovider event IDだけをDELETEし、同じIDのGET 404を確認してからDB行を削除します。
 
 `STAGING_SESSION_ID`、`TRAVEL_RECEIPT_MESSAGE_ID`、`TRAVEL_FAILURE_MESSAGE_ID`、`ROUTE_MESSAGE_ID`はMaestro実行時のプロセス環境から渡します。`LM_STAGING_BEARER_TOKEN`もseed/readbackプロセスの環境変数だけに置き、YAML、ログ、commitへ書きません。共有pre-authorizedアカウントのGoogle外部chooser/consentはMaestroの外側で一度だけ人間が完了し、MaestroはKeychainに保存済みの実sessionを使います。
 
@@ -39,19 +40,24 @@ export LM_TRAVEL_RECEIPT_MESSAGE_ID='(実chat readbackのconfirmed receipt messa
 
 failure receiptだけをreadbackするときは、`LM_STAGING_VERIFY_MODE=failure` と `LM_TRAVEL_FAILURE_MESSAGE_ID`（`semanticKey=chat.travel_block_not_added` の実ID）を指定します。
 
-cleanupは共有pre-authorized Composioアカウントへ触れず、隔離staging DBの対象uidに属するmobile session/outbox/analysis/cache行だけを削除します。mobile `/account`、Composio disconnect、revoke、disable、provider event削除はこのscriptから実行しません。production host/refを厳密に拒否し、DB cleanupには実行時の明示的な確認値が必要です。
+cleanupは共有pre-authorized Composioアカウントをdisconnect/revoke/disableせず、confirmed receiptに記録されたprovider event IDだけを削除します。GET 404の狭いreadbackが取れなければ、DB行を削除せずfail closedします。mobile `/account`は呼ばず、production host/ref、別provider event ID、未指定の認証値を厳密に拒否します。
 
 ```bash
 export LM_STAGING_CLEANUP_CONFIRM=DELETE_STAGING_ONLY
 export LM_STAGING_API_BASE_URL='https://life-call-staging-staging.up.railway.app/api/mobile/v1'
 export LM_STAGING_SUPABASE_REF='ulhsqqkyejzvqgoyjwte'
+export LM_STAGING_BEARER_TOKEN='(temporary staging bearer; process environment only)'
 export LM_STAGING_SUPABASE_URL='https://ulhsqqkyejzvqgoyjwte.supabase.co'
 export LM_STAGING_DB_SERVICE_ROLE_KEY='(staging service-role key; process environment only)'
 export LM_STAGING_UID='(exact isolated staging uid)'
+export LM_TRAVEL_RECEIPT_MESSAGE_ID='(exact confirmed receipt message ID)'
+export LM_TRAVEL_PROVIDER_EVENT_ID='(exact providerEventId from that receipt args)'
+export LM_STAGING_COMPOSIO_API_KEY='(staging Composio key; process environment only)'
+export LM_STAGING_CONNECTED_ACCOUNT_ID='(exact connected account ID; process environment only)'
 ./staging-seed-and-cleanup.sh cleanup
 ```
 
-tokenとservice-role keyは標準出力・YAML・commitに出しません。productionのhost/ref、未指定のhost/ref、誤ったproject refはいずれもfail closedです。
+token、service-role key、Composio key、connected account IDは標準出力・YAML・commitに出しません。provider DELETEが失敗またはGET 404でない場合、DB cleanupは実行されません。
 
 ## Maestro flows
 
