@@ -8,6 +8,7 @@ const {
   safeTimeZone,
   sha256,
   tenantRouteCacheKey,
+  randomOpaque,
 } = require("./mobile-utils.js");
 
 function requireScope(scope) {
@@ -41,6 +42,52 @@ function normalizeOAuthStateRow(row) {
     connectedAccountId: row.connectedAccountId || row.connected_account_id,
     authConfigId: row.authConfigId || row.auth_config_id,
   };
+}
+
+function normalizeTravelRow(row) {
+  if (!row || typeof row !== "object") return row;
+  return {
+    ...row,
+    eventKey: row.eventKey || row.event_key,
+    calendarId: row.calendarId || row.calendar_id,
+    analysisKey: row.analysisKey || row.analysis_key,
+    payloadHash: row.payloadHash || row.payload_hash,
+    providerEventId: row.providerEventId || row.provider_event_id,
+    providerEtag: row.providerEtag || row.provider_etag,
+    claimToken: row.claimToken || row.claim_token,
+    claimWorkerId: row.claimWorkerId || row.claim_worker_id,
+    claimAcquiredAt: row.claimAcquiredAt || row.claim_acquired_at,
+    leaseExpiresAt: row.leaseExpiresAt || row.lease_expires_at,
+    createStartedAt: row.createStartedAt || row.create_started_at,
+    providerObservedAt: row.providerObservedAt || row.provider_observed_at,
+    confirmedAt: row.confirmedAt || row.confirmed_at,
+    attemptCount: row.attemptCount == null ? row.attempt_count : row.attemptCount,
+    lastErrorCode: row.lastErrorCode || row.last_error_code,
+    updatedAt: row.updatedAt || row.updated_at,
+  };
+}
+
+function normalizeTravelResult(value) {
+  const root = asRow(value) || {};
+  const row = normalizeTravelRow(asRow(root.row) || (root.status ? root : null));
+  return { ...root, ...(row || {}), row: row || null };
+}
+
+function travelInputBody(input = {}) {
+  const body = {
+    p_uid: input.uid,
+    p_event_key: input.eventKey || input.event_key,
+    p_leg: input.leg,
+    p_calendar_id: input.calendarId || input.calendar_id || "primary",
+    p_analysis_key: input.analysisKey || input.analysis_key,
+    p_payload_hash: input.payloadHash || input.payload_hash,
+    p_marker: input.marker,
+    p_provider_event_id: input.providerEventId || input.provider_event_id,
+    p_claim_worker_id: input.claimWorkerId || input.claim_worker_id || "mobile",
+    p_lease_seconds: input.leaseSeconds == null ? 120 : input.leaseSeconds,
+  };
+  if (input.now || input.nowIso) body.p_now = input.now || input.nowIso;
+  return body;
 }
 
 function routeCacheEntry(row, now = Date.now) {
@@ -164,6 +211,60 @@ function createSupabaseMobileStore(options = {}) {
         }),
       }, "analysis_state_write_failed");
       return asRow(result.body) || state;
+    },
+    async claimTravelBlock(input = {}) {
+      const value = await rpc("claim_lm_travel_block", travelInputBody(input), "travel_block_claim_failed");
+      return normalizeTravelResult(value);
+    },
+    async markTravelCreateStarted(input = {}) {
+      const body = {
+        p_uid: input.uid, p_event_key: input.eventKey || input.event_key, p_leg: input.leg,
+        p_claim_token: input.claimToken || input.claim_token,
+      };
+      if (input.now || input.nowIso) body.p_now = input.now || input.nowIso;
+      const value = await rpc("mark_lm_travel_create_started", body, "travel_block_claim_failed");
+      return normalizeTravelResult(value);
+    },
+    async confirmTravelBlock(input = {}) {
+      const body = {
+        p_uid: input.uid, p_event_key: input.eventKey || input.event_key, p_leg: input.leg,
+        p_claim_token: input.claimToken || input.claim_token, p_provider_etag: input.providerEtag || input.provider_etag || null,
+        p_provider_observed_at: input.providerObservedAt || input.provider_observed_at || undefined,
+      };
+      if (input.now || input.nowIso) body.p_now = input.now || input.nowIso;
+      if (!body.p_provider_observed_at) delete body.p_provider_observed_at;
+      const value = await rpc("confirm_lm_travel_block", body, "travel_block_confirm_failed");
+      return normalizeTravelResult(value);
+    },
+    async releaseTravelClaim(input = {}) {
+      const body = {
+        p_uid: input.uid, p_event_key: input.eventKey || input.event_key, p_leg: input.leg,
+        p_claim_token: input.claimToken || input.claim_token,
+        p_error_code: input.errorCode || input.error_code || "provider_readback_failed",
+      };
+      if (input.now || input.nowIso) body.p_now = input.now || input.nowIso;
+      const value = await rpc("release_lm_travel_claim", body, "travel_block_claim_failed");
+      return normalizeTravelResult(value);
+    },
+    async blockTravelCollision(input = {}) {
+      const body = {
+        p_uid: input.uid, p_event_key: input.eventKey || input.event_key, p_leg: input.leg,
+        p_claim_token: input.claimToken || input.claim_token,
+        p_error_code: input.errorCode || input.error_code || "provider_collision",
+      };
+      if (input.now || input.nowIso) body.p_now = input.now || input.nowIso;
+      const value = await rpc("block_lm_travel_collision", body, "travel_block_collision_failed");
+      return normalizeTravelResult(value);
+    },
+    async readTravelBlock(input = {}) {
+      const uid = String(input.uid || "");
+      const eventKey = String(input.eventKey || input.event_key || "");
+      const leg = String(input.leg || "");
+      const found = await rows("lm_travel_log", {
+        uid: `eq.${encodeFilter(uid)}`, event_key: `eq.${encodeFilter(eventKey)}`, leg: `eq.${encodeFilter(leg)}`,
+        select: "*", limit: "1",
+      });
+      return normalizeTravelRow(found[0] || null);
     },
     async readRouteCache(scope, routeRequest) {
       const scoped = requireScope(scope);
@@ -478,6 +579,7 @@ function createMemoryMobileStore(options = {}) {
   const calls = new Map();
   const deletionReceipts = new Map();
   const calendarConnections = new Map();
+  const travelBlocks = new Map();
   const routeCache = options.routeCacheStore || new Map();
   const callDayGuards = new Map();
   const callDailyUserLimit = Number.isSafeInteger(options.callDailyUserLimit) && options.callDailyUserLimit > 0 ? options.callDailyUserLimit : 5;
@@ -486,6 +588,18 @@ function createMemoryMobileStore(options = {}) {
   const callAttemptIdFactory = typeof options.callAttemptIdFactory === "function" ? options.callAttemptIdFactory : null;
   const deviceIdFactory = typeof options.deviceIdFactory === "function" ? options.deviceIdFactory : null;
   const memoryNow = typeof options.now === "function" ? options.now : Date.now;
+  const travelRows = Array.isArray(options.travelBlocks || options.travelRows) ? (options.travelBlocks || options.travelRows) : [];
+  for (const source of travelRows) {
+    if (!source || source.uid == null || source.event_key == null || source.leg == null) continue;
+    const row = normalizeTravelRow({
+      ...source,
+      status: source.status || "legacy_terminal",
+      calendar_id: source.calendar_id || "primary",
+      attempt_count: source.attempt_count || 0,
+      updated_at: source.updated_at || new Date(memoryNow()).toISOString(),
+    });
+    travelBlocks.set(`${row.uid}\u0000${row.eventKey}\u0000${row.leg}`, row);
+  }
   let sequence = 0;
   function scoped(scope, expectedUid) {
     requireScope(scope);
@@ -497,11 +611,97 @@ function createMemoryMobileStore(options = {}) {
     return users.get(uid) || null;
   }
   return {
-    _users: users, _sessions: sessions, _states: states, _idempotency: idempotency, _outbox: outbox, _questions: questions, _devices: devices, _calls: calls, _callDayGuards: callDayGuards, _deletionReceipts: deletionReceipts, _routeCache: routeCache, _calendarConnections: calendarConnections,
+    _users: users, _sessions: sessions, _states: states, _idempotency: idempotency, _outbox: outbox, _questions: questions, _devices: devices, _calls: calls, _callDayGuards: callDayGuards, _deletionReceipts: deletionReceipts, _routeCache: routeCache, _calendarConnections: calendarConnections, _travelBlocks: travelBlocks,
     async readUser(scope) { const row = user(scope); return row ? { ...row } : null; },
     async patchUser(scope, patch, options2 = {}) { const row = user(scope, options2.expectedUid); if (!row) throw new MobileError("account_not_found", "Account not found.", 404); Object.assign(row, patch); return { ...row }; },
     async readAnalysisState(scope) { const row = user(scope); return row && row.analysisState ? { ...row.analysisState } : { status: "idle" }; },
     async writeAnalysisState(scope, state) { const row = user(scope); if (!row) throw new MobileError("account_not_found", "Account not found.", 404); row.analysisState = { ...state, updatedAt: state.updatedAt || nowIso() }; return { ...row.analysisState }; },
+    async claimTravelBlock(input = {}) {
+      const now = input.now ? Date.parse(input.now) : memoryNow();
+      const nowDate = Number.isFinite(now) ? new Date(now).toISOString() : new Date(memoryNow()).toISOString();
+      const eventKey = String(input.eventKey || input.event_key || "");
+      const uid = String(input.uid || "");
+      const leg = String(input.leg || "");
+      const key = `${uid}\u0000${eventKey}\u0000${leg}`;
+      const payloadHash = input.payloadHash || input.payload_hash;
+      const calendarId = input.calendarId || input.calendar_id || "primary";
+      const providerEventId = input.providerEventId || input.provider_event_id;
+      const marker = input.marker;
+      const requestedLeaseSeconds = input.leaseSeconds == null
+        ? (input.leaseMs == null ? 120 : Number(input.leaseMs) / 1000)
+        : Number(input.leaseSeconds);
+      const leaseMs = Math.max(1, Math.min(3600, requestedLeaseSeconds)) * 1000;
+      let row = travelBlocks.get(key);
+      if (!row) {
+        row = normalizeTravelRow({
+          uid, event_key: eventKey, leg, status: "claimed", calendar_id: calendarId,
+          analysis_key: input.analysisKey || input.analysis_key, payload_hash: payloadHash,
+          marker, provider_event_id: providerEventId,
+          claim_token: randomOpaque("travel_claim:", {}, 18),
+          claim_worker_id: input.claimWorkerId || input.claim_worker_id || "mobile",
+          claim_acquired_at: nowDate, lease_expires_at: new Date(now + leaseMs).toISOString(),
+          attempt_count: 0, updated_at: nowDate,
+        });
+        travelBlocks.set(key, row);
+        return { decision: "claimed", row, ...row };
+      }
+      if (row.status === "legacy_terminal") return { decision: "legacy_terminal", row, ...row };
+      if (row.calendarId !== calendarId || row.payloadHash !== payloadHash || row.marker !== marker || row.providerEventId !== providerEventId) {
+        return { decision: "analysis_conflict", row, ...row };
+      }
+      const lease = Date.parse(row.leaseExpiresAt || "");
+      if ((row.status === "claimed" || row.status === "creating") && Number.isFinite(lease) && lease > now) {
+        return { decision: "busy", row, ...row };
+      }
+      if (row.status === "claimed" || row.status === "creating") {
+        row = normalizeTravelRow({ ...row, status: "claimed", claimToken: randomOpaque("travel_claim:", {}, 18), claimWorkerId: input.claimWorkerId || input.claim_worker_id || "mobile", claimAcquiredAt: nowDate, leaseExpiresAt: new Date(now + leaseMs).toISOString(), lastErrorCode: null, updatedAt: nowDate });
+        travelBlocks.set(key, row);
+        return { decision: "claimed", row, ...row };
+      }
+      return { decision: "reused", row, ...row };
+    },
+    async markTravelCreateStarted(input = {}) {
+      const key = `${String(input.uid || "")}\u0000${String(input.eventKey || input.event_key || "")}\u0000${String(input.leg || "")}`;
+      const row = travelBlocks.get(key);
+      const now = input.now ? Date.parse(input.now) : memoryNow();
+      const lease = row && Date.parse(row.leaseExpiresAt || "");
+      if (!row || row.status !== "claimed" || row.claimToken !== (input.claimToken || input.claim_token) || !Number.isFinite(lease) || lease <= now) return { started: false, reason: "stale_token", row: row || null };
+      const next = normalizeTravelRow({ ...row, status: "creating", createStartedAt: row.createStartedAt || new Date(now).toISOString(), attemptCount: Number(row.attemptCount || 0) + 1, updatedAt: new Date(now).toISOString() });
+      travelBlocks.set(key, next);
+      return { started: true, row: next, ...next };
+    },
+    async confirmTravelBlock(input = {}) {
+      const key = `${String(input.uid || "")}\u0000${String(input.eventKey || input.event_key || "")}\u0000${String(input.leg || "")}`;
+      const row = travelBlocks.get(key);
+      const now = input.now ? Date.parse(input.now) : memoryNow();
+      if (!row || row.claimToken !== (input.claimToken || input.claim_token) || !["claimed", "creating"].includes(row.status)) return { confirmed: false, reason: "stale_token", row: row || null };
+      const next = normalizeTravelRow({ ...row, status: "confirmed", providerEtag: input.providerEtag || input.provider_etag || null, providerObservedAt: input.providerObservedAt || input.provider_observed_at || new Date(now).toISOString(), confirmedAt: row.confirmedAt || new Date(now).toISOString(), leaseExpiresAt: null, lastErrorCode: null, updatedAt: new Date(now).toISOString() });
+      travelBlocks.set(key, next);
+      return { confirmed: true, row: next, ...next };
+    },
+    async releaseTravelClaim(input = {}) {
+      const key = `${String(input.uid || "")}\u0000${String(input.eventKey || input.event_key || "")}\u0000${String(input.leg || "")}`;
+      const row = travelBlocks.get(key);
+      const now = input.now ? Date.parse(input.now) : memoryNow();
+      if (!row || row.claimToken !== (input.claimToken || input.claim_token) || !["claimed", "creating"].includes(row.status)) return { released: false, reason: "stale_token", row: row || null };
+      const next = normalizeTravelRow({ ...row, leaseExpiresAt: new Date(now).toISOString(), lastErrorCode: input.errorCode || input.error_code || "provider_readback_failed", updatedAt: new Date(now).toISOString() });
+      travelBlocks.set(key, next);
+      return { released: true, row: next, ...next };
+    },
+    async blockTravelCollision(input = {}) {
+      const key = `${String(input.uid || "")}\u0000${String(input.eventKey || input.event_key || "")}\u0000${String(input.leg || "")}`;
+      const row = travelBlocks.get(key);
+      const now = input.now ? Date.parse(input.now) : memoryNow();
+      if (!row || row.claimToken !== (input.claimToken || input.claim_token) || !["claimed", "creating"].includes(row.status)) return { blocked: false, reason: "stale_token", row: row || null };
+      const next = normalizeTravelRow({ ...row, status: "blocked_collision", leaseExpiresAt: null, lastErrorCode: input.errorCode || input.error_code || "provider_collision", updatedAt: new Date(now).toISOString() });
+      travelBlocks.set(key, next);
+      return { blocked: true, row: next, ...next };
+    },
+    async readTravelBlock(input = {}) {
+      const key = `${String(input.uid || "")}\u0000${String(input.eventKey || input.event_key || "")}\u0000${String(input.leg || "")}`;
+      const row = travelBlocks.get(key);
+      return row ? normalizeTravelRow(row) : null;
+    },
     async readRouteCache(scope, routeRequest) {
       const uid = scoped(scope);
       const key = scopedMemoryRouteKey(uid, mobileRouteCacheKey({ uid }, routeRequest));

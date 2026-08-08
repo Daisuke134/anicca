@@ -8,14 +8,20 @@ const { recordComposioOperation } = require("../provider-cost-adapters.js");
 const { authorizeProviderOperation: authorizeBudget } = require("../provider-budget.js");
 
 const COMPOSIO_EXEC = "https://backend.composio.dev/api/v3/tools/execute";
+const COMPOSIO_EXEC_V31 = "https://backend.composio.dev/api/v3.1/tools/execute";
+// Proxy Execute is the only Composio route that can send a caller-generated
+// Google event id.  Keep this separate from the managed-tool endpoint above:
+// the proxy contract uses v3.1 and returns the upstream HTTP status in the
+// response body (Composio itself may still answer HTTP 200).
+const COMPOSIO_PROXY_EXEC = "https://backend.composio.dev/api/v3.1/tools/execute/proxy";
 
-async function exec(tool, uid, args, apiKey, fetchImpl = globalThis.fetch, connectedAccountId = null) {
+async function exec(tool, uid, args, apiKey, fetchImpl = globalThis.fetch, connectedAccountId = null, endpoint = COMPOSIO_EXEC) {
   const payload = { user_id: uid, arguments: args };
   // A mobile Calendar connection is routed by the exact provider account returned by
   // Composio's callback.  Keep the legacy user_id-only payload for web callers, but never
   // silently substitute a different connected account when the mobile path supplies one.
   if (connectedAccountId) payload.connected_account_id = connectedAccountId;
-  const r = await fetchImpl(`${COMPOSIO_EXEC}/${tool}`, {
+  const r = await fetchImpl(`${endpoint}/${tool}`, {
     method: "POST",
     headers: { "x-api-key": apiKey, "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -44,11 +50,59 @@ function makeComposioCalendar({ apiKey, recordCall, recordProviderCost, fetchImp
     let result;
     let failure;
     try {
-      result = await exec(tool, uid, args, key, fetchImpl || globalThis.fetch, operationOptions.connectedAccountId || null);
+      const endpoint = operationOptions.endpointVersion === "v3.1" ? COMPOSIO_EXEC_V31 : COMPOSIO_EXEC;
+      result = await exec(tool, uid, args, key, fetchImpl || globalThis.fetch, operationOptions.connectedAccountId || null, endpoint);
     } catch (error) {
       failure = error;
     } finally {
       await Promise.resolve(ledger(uid, tool, requestId)).catch(() => false);
+    }
+    if (failure) throw failure;
+    return result;
+  };
+  const executeProxy = async (uid, request, operationOptions = {}) => {
+    if (!key) return { status: 503, data: null, headers: {} };
+    const requestId = `composio-proxy:${uid || "anonymous"}:${operationOptions.operation || "request"}:${Date.now()}:${crypto.randomUUID()}`;
+    if (typeof budgetGate === "function") {
+      const decision = await budgetGate({
+        uid, provider: "composio", operation: operationOptions.operation || "proxy_execute",
+        essential: operationOptions.essential === true, cacheHit: operationOptions.cacheHit === true, requestId,
+      });
+      if (decision && decision.allowed === false) {
+        const error = new Error(`provider budget denied: ${decision.reason || "stopped"}`);
+        error.code = "budget_denied";
+        throw error;
+      }
+    }
+    let response;
+    let result;
+    let failure;
+    try {
+      response = await (fetchImpl || globalThis.fetch)(COMPOSIO_PROXY_EXEC, {
+        method: "POST",
+        headers: { "x-api-key": key, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          connected_account_id: request.connectedAccountId,
+          endpoint: request.endpoint,
+          method: request.method,
+          ...(request.body === undefined ? {} : { body: request.body }),
+          ...(request.parameters === undefined ? {} : { parameters: request.parameters }),
+        }),
+      });
+      const raw = await response.json().catch(() => ({}));
+      // v3.1 normally returns `{status,data,headers}` with HTTP 200.  On a
+      // Composio-side failure there may be only an HTTP status; preserving it
+      // as the normalized status keeps provider-read failures fail-closed.
+      result = {
+        status: Number.isFinite(Number(raw && raw.status)) ? Number(raw.status) : Number(response.status || 500),
+        data: raw && Object.hasOwn(raw, "data") ? raw.data : null,
+        headers: raw && raw.headers && typeof raw.headers === "object" ? raw.headers : {},
+      };
+      if (!response.ok && !Number.isFinite(Number(raw && raw.status))) result.status = Number(response.status || 500);
+    } catch (error) {
+      failure = error;
+    } finally {
+      await Promise.resolve(ledger(uid, "PROXY_EXECUTE", requestId)).catch(() => false);
     }
     if (failure) throw failure;
     return result;
@@ -106,11 +160,33 @@ function makeComposioCalendar({ apiKey, recordCall, recordProviderCost, fetchImp
       const response = await execute("GOOGLECALENDAR_CALENDAR_LIST_GET", uid, { calendarId: "primary" }, {
         essential: true,
         connectedAccountId,
+        endpointVersion: "v3.1",
       });
       if (!response || !response.successful) throw new Error("calendar primary read failed");
       const data = response.data?.response_data || response.response_data || response.data || {};
       const items = Array.isArray(data.items) ? data.items : Array.isArray(data.calendars) ? data.calendars : [];
       return items.find((item) => item && (item.id === "primary" || item.primary === true)) || items[0] || data;
+    },
+    // Exact provider read/write seam for the mobile travel-block state
+    // machine.  The stable Life Manager uid is used only for budget/cost
+    // attribution; provider ownership is selected exclusively by the exact
+    // stored connected_account_id.
+    async getExactEvent(uid, { calendarId = "primary", providerEventId, connectedAccountId } = {}) {
+      if (!connectedAccountId || !providerEventId) return { status: 400, data: null, headers: {} };
+      return executeProxy(uid, {
+        connectedAccountId,
+        endpoint: `/calendar/v3/calendars/${encodeURIComponent(String(calendarId))}/events/${encodeURIComponent(String(providerEventId))}`,
+        method: "GET",
+      }, { operation: "travel_block_read", essential: true });
+    },
+    async createExactEvent(uid, { calendarId = "primary", providerEventId, connectedAccountId, body } = {}) {
+      if (!connectedAccountId || !providerEventId || !body || typeof body !== "object") return { status: 400, data: null, headers: {} };
+      return executeProxy(uid, {
+        connectedAccountId,
+        endpoint: `/calendar/v3/calendars/${encodeURIComponent(String(calendarId))}/events`,
+        method: "POST",
+        body: { ...body, id: providerEventId },
+      }, { operation: "travel_block_create", essential: true });
     },
     async createEvent(uid, args, { connectedAccountId } = {}) {
       if (!key) return { successful: false };
