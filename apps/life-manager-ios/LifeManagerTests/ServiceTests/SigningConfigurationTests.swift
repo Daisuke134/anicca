@@ -1,0 +1,146 @@
+import Foundation
+import XCTest
+
+final class SigningConfigurationTests: XCTestCase {
+    func testDebugAndReleaseUseTheRealMobileEnvironmentURLs() throws {
+        let debug = try Self.resourceText(named: "Debug.xcconfig", in: "LifeManager/Config")
+        let release = try Self.resourceText(named: "Release.xcconfig", in: "LifeManager/Config")
+
+        XCTAssertTrue(
+            debug.contains("LIFEMANAGER_API_BASE_URL = https:/$()/life-call-staging-staging.up.railway.app/api/mobile/v1"),
+            "Debug must point at the real staging mobile API with an xcconfig-safe URL value"
+        )
+        XCTAssertTrue(
+            release.contains("LIFEMANAGER_API_BASE_URL = https:/$()/life-call-production.up.railway.app/api/mobile/v1"),
+            "Release must point at the real production mobile API with an xcconfig-safe URL value"
+        )
+    }
+
+    func testBuiltDebugInfoPlistResolvesMobileAPIAndCallbackConfiguration() throws {
+        let appBundle = try XCTUnwrap(Bundle(identifier: "ai.anicca.life-manager"))
+        let info = try XCTUnwrap(appBundle.infoDictionary)
+
+        XCTAssertEqual(
+            info["LIFEMANAGER_API_BASE_URL"] as? String,
+            "https://life-call-staging-staging.up.railway.app/api/mobile/v1"
+        )
+        XCTAssertEqual(info["LIFEMANAGER_CALLBACK_SCHEME"] as? String, "lifemanager")
+        let callbackSchemes = try XCTUnwrap(
+            (info["CFBundleURLTypes"] as? [[String: Any]])?.first?["CFBundleURLSchemes"] as? [String]
+        )
+        XCTAssertEqual(callbackSchemes, ["lifemanager"])
+    }
+
+    func testAPNsEntitlementsAreDevelopmentOnlyForDebugAndProductionForRelease() throws {
+        let debug = try Self.resourceData(named: "Debug.entitlements", in: "LifeManager/Config")
+        let release = try Self.resourceData(named: "Release.entitlements", in: "LifeManager/Config")
+        let debugObject = try XCTUnwrap(try PropertyListSerialization.propertyList(from: debug, options: [], format: nil) as? [String: Any])
+        let releaseObject = try XCTUnwrap(try PropertyListSerialization.propertyList(from: release, options: [], format: nil) as? [String: Any])
+
+        XCTAssertEqual(debugObject["aps-environment"] as? String, "development")
+        XCTAssertEqual(releaseObject["aps-environment"] as? String, "production")
+        XCTAssertTrue(try Self.resourceText(named: "Debug.xcconfig", in: "LifeManager/Config").contains("CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*]"))
+        XCTAssertTrue(try Self.resourceText(named: "Release.xcconfig", in: "LifeManager/Config").contains("CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*]"))
+    }
+
+    func testDebugSignsDeviceBuildsButKeepsSimulatorUnsigned() throws {
+        let debug = try Self.resourceText(named: "Debug.xcconfig", in: "LifeManager/Config")
+
+        XCTAssertTrue(debug.contains("CODE_SIGNING_ALLOWED[sdk=iphoneos*] = YES"))
+        XCTAssertTrue(debug.contains("CODE_SIGNING_REQUIRED[sdk=iphoneos*] = YES"))
+        XCTAssertTrue(debug.contains("CODE_SIGNING_ALLOWED[sdk=iphonesimulator*] = NO"))
+        XCTAssertTrue(debug.contains("CODE_SIGNING_REQUIRED[sdk=iphonesimulator*] = NO"))
+    }
+
+    func testDebugUsesAutomaticDevelopmentSigningTeamForDeviceBuilds() throws {
+        let debug = try Self.resourceText(named: "Debug.xcconfig", in: "LifeManager/Config")
+
+        XCTAssertTrue(debug.contains("CODE_SIGN_STYLE = Automatic"))
+        XCTAssertTrue(debug.contains("DEVELOPMENT_TEAM = S5U8UH3JLJ"))
+        XCTAssertTrue(debug.contains("CODE_SIGN_IDENTITY = Apple Development"))
+        XCTAssertTrue(debug.contains("CODE_SIGN_IDENTITY[sdk=iphoneos*] = Apple Development"))
+    }
+
+    func testReleaseUsesManualAppStoreProfileAndPreservesSimulatorDebugOverrides() throws {
+        let release = try Self.resourceText(named: "Release.xcconfig", in: "LifeManager/Config")
+        let debug = try Self.resourceText(named: "Debug.xcconfig", in: "LifeManager/Config")
+
+        XCTAssertTrue(release.contains("CODE_SIGN_STYLE = Manual"))
+        XCTAssertTrue(release.contains("DEVELOPMENT_TEAM = S5U8UH3JLJ"))
+        XCTAssertTrue(release.contains("CODE_SIGN_IDENTITY = Apple Distribution"))
+        XCTAssertTrue(release.contains("CODE_SIGN_IDENTITY[sdk=iphoneos*] = Apple Distribution"))
+        XCTAssertTrue(release.contains("PROVISIONING_PROFILE_SPECIFIER = Life Manager App Store 2026"))
+        XCTAssertTrue(release.contains("CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*] = LifeManager/Config/Release.entitlements"))
+        XCTAssertTrue(release.contains("CODE_SIGNING_ALLOWED[sdk=iphonesimulator*] = NO"))
+        XCTAssertTrue(release.contains("CODE_SIGNING_REQUIRED[sdk=iphonesimulator*] = NO"))
+        XCTAssertTrue(debug.contains("CODE_SIGNING_ALLOWED[sdk=iphoneos*] = YES"))
+        XCTAssertTrue(debug.contains("CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*] = LifeManager/Config/Debug.entitlements"))
+    }
+
+    func testAppIconAssetIsRealAndSelectedByTheApplicationTarget() throws {
+        let contents = try Self.resourceText(named: "Contents.json", in: "LifeManager/Resources/Assets.xcassets/AppIcon.appiconset")
+        let project = try Self.resourceText(named: "project.yml")
+        let iconData = try Self.resourceData(named: "AppIcon-1024.png", in: "LifeManager/Resources/Assets.xcassets/AppIcon.appiconset")
+
+        XCTAssertTrue(contents.contains("AppIcon-1024.png"))
+        XCTAssertTrue(contents.contains("1024x1024"))
+        XCTAssertEqual(Array(iconData.prefix(8)), [137, 80, 78, 71, 13, 10, 26, 10])
+        XCTAssertGreaterThan(iconData.count, 20_000)
+        XCTAssertTrue(project.contains("ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon"))
+    }
+
+    func testFastlaneTestFlightLanesRequireExternalCredentialsAndBuildNumber() throws {
+        let fastfile = try Self.resourceText(named: "Fastfile", in: "fastlane")
+
+        XCTAssertTrue(fastfile.contains("lane :build_for_testflight"))
+        XCTAssertTrue(fastfile.contains("lane :upload_testflight"))
+        XCTAssertTrue(fastfile.contains("ENV.fetch(\"LIFEMANAGER_BUILD_NUMBER\")"))
+        XCTAssertTrue(fastfile.contains("ENV.fetch(\"ASC_KEY_ID\")"))
+        XCTAssertTrue(fastfile.contains("ENV.fetch(\"ASC_ISSUER_ID\")"))
+        XCTAssertTrue(fastfile.contains("ENV.fetch(\"ASC_API_KEY_PATH\")"))
+        XCTAssertFalse(fastfile.contains("-----BEGIN PRIVATE KEY-----"))
+    }
+
+    func testFastlaneUsesASCBypassAndFailsClosedOnRequiredInputs() throws {
+        let fastfile = try Self.resourceText(named: "Fastfile", in: "fastlane")
+
+        XCTAssertTrue(fastfile.contains("ENV[\"ASC_BYPASS_KEYCHAIN\"] = \"1\""))
+        XCTAssertTrue(fastfile.contains("ENV.fetch(\"LIFEMANAGER_BUILD_NUMBER\")"))
+        XCTAssertTrue(fastfile.contains("build_number.to_i.positive?"))
+        XCTAssertTrue(fastfile.contains("ASC_API_KEY_PATH does not point to a file"))
+        XCTAssertTrue(fastfile.contains("must not be empty"))
+    }
+
+    func testBuildForTestflightValidatesASCAndConfirmsIPABeforeReturning() throws {
+        let fastfile = try Self.resourceText(named: "Fastfile", in: "fastlane")
+        let laneStart = try XCTUnwrap(fastfile.range(of: "lane :build_for_testflight"))
+        let uploadStart = try XCTUnwrap(fastfile.range(of: "lane :upload_testflight"))
+        let lane = String(fastfile[laneStart.lowerBound..<uploadStart.lowerBound])
+
+        XCTAssertTrue(lane.contains("app_store_connect_api_key_from_env"))
+        XCTAssertTrue(lane.contains("lane_context[SharedValues::IPA_OUTPUT_PATH]"))
+        XCTAssertTrue(lane.contains("File.file?(ipa_path)"))
+        XCTAssertTrue(lane.contains("File.size(ipa_path).positive?"))
+        XCTAssertTrue(lane.contains("system(\"unzip\", \"-tqq\", ipa_path)"))
+    }
+
+    private static func resourceURL(named name: String, in directory: String? = nil) -> URL {
+        let current = URL(fileURLWithPath: #filePath)
+        var root = current
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        if let directory {
+            root.appendPathComponent(directory)
+        }
+        return root.appendingPathComponent(name)
+    }
+
+    private static func resourceData(named name: String, in directory: String? = nil) throws -> Data {
+        try Data(contentsOf: resourceURL(named: name, in: directory))
+    }
+
+    private static func resourceText(named name: String, in directory: String? = nil) throws -> String {
+        try String(contentsOf: resourceURL(named: name, in: directory), encoding: .utf8)
+    }
+}

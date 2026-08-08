@@ -1,0 +1,6 @@
+{
+  "status": "placed",
+  "attemptId": "call:v1:opaque-8f3a",
+  "callLanguage": "en",
+  "providerReceipt": { "ccid": "call-provider-receipt-8f3a" }
+}

@@ -1,0 +1,98 @@
+name: LifeManager
+
+options:
+  deploymentTarget:
+    iOS: "17.0"
+  knownRegions:
+    - en
+    - ja
+  defaultLocalization: en
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+    SUPPORTED_PLATFORMS: "iphoneos iphonesimulator"
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+
+targets:
+  LifeManager:
+    type: application
+    platform: iOS
+    sources:
+      - path: LifeManager
+        excludes:
+          - Info.plist
+          - Config/**
+      - path: LifeManager/Features/Chat
+      - path: LifeManager/Features/Paywall
+      - path: LifeManager/Features/Settings
+    resources:
+      - LifeManager/Resources
+    configFiles:
+      Debug: LifeManager/Config/Debug.xcconfig
+      Release: LifeManager/Config/Release.xcconfig
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: ai.anicca.life-manager
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        INFOPLIST_FILE: LifeManager/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        TARGETED_DEVICE_FAMILY: "1"
+        SUPPORTS_MACCATALYST: NO
+        SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: NO
+
+  LifeManagerTests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - LifeManagerTests/SmokeTests.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: ai.anicca.life-manager.tests
+        GENERATE_INFOPLIST_FILE: YES
+        TARGETED_DEVICE_FAMILY: "1"
+        SUPPORTS_MACCATALYST: NO
+        SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: NO
+    dependencies:
+      - target: LifeManager
+
+  LifeManagerUnitTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - LifeManagerTests/ModelTests
+      - LifeManagerTests/NetworkingTests
+      - LifeManagerTests/SecurityTests
+      - LifeManagerTests/ServiceTests
+      - LifeManagerTests/StateTests
+      - LifeManagerTests/Support
+    resources:
+      - LifeManagerTests/TestFixtures/mobile-v1
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: ai.anicca.life-manager.unit-tests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/LifeManager.app/LifeManager"
+        TARGETED_DEVICE_FAMILY: "1"
+        SUPPORTS_MACCATALYST: NO
+        SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: NO
+    dependencies:
+      - target: LifeManager
+
+schemes:
+  LifeManager:
+    build:
+      targets:
+        LifeManager: all
+        LifeManagerTests: [test]
+        LifeManagerUnitTests: [test]
+    test:
+      config: Debug
+      targets:
+        - LifeManagerTests
+        - LifeManagerUnitTests
+    run:
+      config: Debug

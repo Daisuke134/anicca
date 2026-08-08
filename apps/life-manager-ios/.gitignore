@@ -1,0 +1,9 @@
+LifeManager.xcodeproj/
+build/
+DerivedData/
+*.xcworkspace
+*.xcworkspace/
+*.local.xcconfig
+fastlane/report.xml
+fastlane/README.md
+test_output/

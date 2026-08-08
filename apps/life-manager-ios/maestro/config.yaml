@@ -1,0 +1,6 @@
+flows:
+  - "english-onboarding-route.yaml"
+  - "japanese-onboarding-route.yaml"
+  - "push-deep-link.yaml"
+excludeTags:
+  - util

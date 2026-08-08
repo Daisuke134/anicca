@@ -1,0 +1,32 @@
+# Preconditions: a real staging session is already authenticated and the
+# operator has delivered a local/sandbox APNs payload whose stable messageId is
+# PUSH_MESSAGE_ID. This flow only observes the durable outbox; it never inserts
+# a message or pretends that a push was delivered.
+appId: ai.anicca.life-manager
+name: Push opens one stable chat message and refresh keeps one copy
+tags:
+  - regression
+  - push
+env:
+  PUSH_MESSAGE_ID: ${PUSH_MESSAGE_ID}
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: "chat.list"
+    timeout: 30000
+- extendedWaitUntil:
+    visible:
+      id: "chat.message.${PUSH_MESSAGE_ID}"
+    timeout: 60000
+- assertVisible:
+    id: "chat.message.${PUSH_MESSAGE_ID}"
+- tapOn:
+    id: "chat.refresh"
+- extendedWaitUntil:
+    visible:
+      id: "chat.message.${PUSH_MESSAGE_ID}"
+    timeout: 30000
+- assertVisible:
+    id: "chat.message.${PUSH_MESSAGE_ID}"
+- takeScreenshot: "push-stable-message"

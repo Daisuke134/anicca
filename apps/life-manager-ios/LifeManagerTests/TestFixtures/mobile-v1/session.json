@@ -1,0 +1,7 @@
+{
+  "accessToken": "access-token:v1:fixture-8f3a",
+  "refreshToken": "refresh-token:v1:fixture-8f3a",
+  "tokenType": "Bearer",
+  "expiresAt": "2026-08-10T08:20:00.000Z",
+  "refreshExpiresAt": "2026-09-09T08:05:00.000Z"
+}

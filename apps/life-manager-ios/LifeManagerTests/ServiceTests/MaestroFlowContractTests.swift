@@ -1,0 +1,78 @@
+import Foundation
+import XCTest
+
+final class MaestroFlowContractTests: XCTestCase {
+    func testRealStagingFlowsUseStableIDsAndNoStaticWaitOrBearerSecrets() throws {
+        let english = try Self.flow(named: "english-onboarding-route.yaml")
+        let japanese = try Self.flow(named: "japanese-onboarding-route.yaml")
+        let push = try Self.flow(named: "push-deep-link.yaml")
+
+        XCTAssertTrue(english.contains("STAGING_CALLBACK_URL"))
+        XCTAssertTrue(japanese.contains("STAGING_CALLBACK_URL"))
+        XCTAssertTrue(push.contains("PUSH_MESSAGE_ID"))
+        for (name, flow) in [("english", english), ("japanese", japanese), ("push", push)] {
+            XCTAssertTrue(flow.contains("appId: ai.anicca.life-manager"), name)
+            XCTAssertFalse(flow.range(of: "\\n- wait:", options: .regularExpression) != nil, name)
+            XCTAssertFalse(flow.localizedCaseInsensitiveContains("accessToken"), name)
+            XCTAssertFalse(flow.localizedCaseInsensitiveContains("refreshToken"), name)
+            XCTAssertFalse(flow.localizedCaseInsensitiveContains("authorization: bearer"), name)
+        }
+    }
+
+    func testOnboardingFlowsCoverRealJourneyLeafIDsAndCleanState() throws {
+        let english = try Self.flow(named: "english-onboarding-route.yaml")
+        let japanese = try Self.flow(named: "japanese-onboarding-route.yaml")
+        let requiredOnboardingIDs = [
+            "welcome.connectCalendar", "profile.name", "profile.home", "profile.continue",
+            "phone.skip", "analysis.phase", "route.showDetails", "route.detail.close",
+            "chat.upgrade", "paywall.continueFree", "chat.settings"
+        ]
+
+        for (name, flow) in [("english", english), ("japanese", japanese)] {
+            XCTAssertTrue(flow.contains("clearState: true"), name)
+            XCTAssertTrue(flow.contains("clearKeychain: true"), name)
+            for identifier in requiredOnboardingIDs {
+                XCTAssertTrue(flow.contains("id: \"\(identifier)\""), "\(name): \(identifier)")
+            }
+        }
+        XCTAssertTrue(english.contains("profile.locale.en"))
+        XCTAssertTrue(japanese.contains("profile.locale.ja"))
+    }
+
+    func testJapaneseFlowOpensProductLocalePickerBeforeChoosingJapanese() throws {
+        let japanese = try Self.flow(named: "japanese-onboarding-route.yaml")
+
+        let picker = try XCTUnwrap(japanese.range(of: "profile.productLocale"))
+        let japaneseChoice = try XCTUnwrap(japanese.range(of: "profile.locale.ja"))
+        XCTAssertLessThan(picker.lowerBound, japaneseChoice.lowerBound)
+    }
+
+    func testCleanFastlaneLaneBuildsAndPackagesCheckoutFixtures() throws {
+        let fastfile = try Self.resource(named: "Fastfile", in: "fastlane")
+        let project = try Self.resource(named: "project.yml")
+        let loader = try Self.resource(named: "ContractFixtureLoader.swift", in: "LifeManagerTests/Support")
+        let testLane = try XCTUnwrap(fastfile.range(of: "lane :test"))
+        let buildLane = try XCTUnwrap(fastfile.range(of: "lane :build_for_simulator"))
+        let laneBody = String(fastfile[testLane.upperBound..<buildLane.lowerBound])
+
+        XCTAssertTrue(laneBody.contains("clean: true"))
+        XCTAssertTrue(laneBody.contains("skip_build: false"))
+        XCTAssertTrue(project.contains("- LifeManagerTests/TestFixtures/mobile-v1"))
+        XCTAssertTrue(loader.contains("checkoutFixtures"))
+    }
+
+    private static func flow(named name: String) throws -> String {
+        try resource(named: name, in: "maestro")
+    }
+
+    private static func resource(named name: String, in directory: String? = nil) throws -> String {
+        let current = URL(fileURLWithPath: #filePath)
+        let root = current
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let path = directory.map { root.appendingPathComponent($0) }?.appendingPathComponent(name)
+            ?? root.appendingPathComponent(name)
+        return try String(contentsOf: path, encoding: .utf8)
+    }
+}
