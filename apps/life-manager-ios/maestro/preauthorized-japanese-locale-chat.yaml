@@ -1,0 +1,93 @@
+# Real staging only. The existing Keychain session supplies the connected
+# Calendar and chat projection; this flow never clears state or creates data.
+appId: ai.anicca.life-manager
+name: Pre-authorized staging Japanese product locale and chat refresh
+tags:
+  - regression
+  - staging
+  - preauthorized
+  - japanese
+env:
+  ROUTE_MESSAGE_ID: ${ROUTE_MESSAGE_ID}
+  TRAVEL_RECEIPT_MESSAGE_ID: ${TRAVEL_RECEIPT_MESSAGE_ID}
+---
+- startRecording: "japanese-locale-chat"
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: "chat.list"
+    timeout: 30000
+- extendedWaitUntil:
+    visible:
+      id: "route.card.${ROUTE_MESSAGE_ID}"
+    timeout: 60000
+- assertVisible:
+    id: "calendar.travelBlock.confirmed.${TRAVEL_RECEIPT_MESSAGE_ID}"
+- assertVisible: "Life Manager Demo: Tokyo Tower"
+- assertVisible: "Roppongi Station, Minato City, Tokyo → Tokyo Tower, 4 Chome-2-8 Shibakoen, Minato City, Tokyo 105-0011"
+- takeScreenshot: "01-english-baseline"
+
+# Settings is a sheet. Selecting Japanese is only local until Save profile.
+- tapOn:
+    id: "chat.settings"
+- extendedWaitUntil:
+    visible: "Settings"
+    timeout: 10000
+- tapOn:
+    id: "settings.productLocale"
+- tapOn: "Japanese"
+- tapOn:
+    id: "settings.saveProfile"
+- extendedWaitUntil:
+    visible: "設定"
+    timeout: 30000
+- assertVisible: "カレンダー"
+- assertVisible: "接続済み"
+- assertVisible: "プロフィール"
+- assertVisible: "アプリの言語"
+- assertVisible: "日本語"
+- assertVisible:
+    id: "settings.saveProfile"
+- assertNotVisible: "Settings"
+- assertNotVisible: "Product language"
+- assertNotVisible: "Save profile"
+- takeScreenshot: "02-japanese-settings"
+
+# Dismiss the settings sheet without changing the pre-authorized session.
+- swipe:
+    direction: DOWN
+- extendedWaitUntil:
+    visible:
+      id: "chat.list"
+    timeout: 10000
+- assertVisible: "更新"
+- assertVisible: "設定"
+- assertVisible: "アップグレード"
+- tapOn:
+    id: "chat.refresh"
+- extendedWaitUntil:
+    visible:
+      id: "route.card.${ROUTE_MESSAGE_ID}"
+    timeout: 60000
+- assertVisible:
+    id: "calendar.travelBlock.confirmed.${TRAVEL_RECEIPT_MESSAGE_ID}"
+- assertVisible: "Life Manager Demo: Tokyo Tower"
+- assertVisible: "Roppongi Station, Minato City, Tokyo → Tokyo Tower, 4 Chome-2-8 Shibakoen, Minato City, Tokyo 105-0011"
+- assertVisible: "出発"
+- assertVisible: "到着"
+- assertVisible: "分"
+- assertVisible: "ルート全体を表示"
+- assertVisible: "情報源"
+- assertVisible: "更新"
+- assertVisible: "非公式の交通情報です。運休などが重要な場合は運行情報を確認してください。"
+- assertNotVisible: "Refresh"
+- assertNotVisible: "Settings"
+- assertNotVisible: "Upgrade"
+- assertNotVisible: "Leave by"
+- assertNotVisible: "Arrive"
+- assertNotVisible: "Show full route"
+- assertNotVisible: "Source"
+- assertNotVisible: "Updated"
+- assertNotVisible: "Unofficial transit information"
+- takeScreenshot: "03-japanese-chat-refresh"
+- stopRecording
