@@ -7,7 +7,7 @@
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
 | Existing foundations | `apps/life-call`, Moneytree connector, Fleet telemetry, `lm_api_cost`, `lm_financial_ledger` |
-| First unfinished item | **CFO-0c: inventory every live earning loop; then CFO-1 builds one read-only snapshot** |
+| First unfinished item | **CFO-0c: implement the financial-unit registry child spec; then CFO-0d freezes Telegram UX** |
 
 ## 1. Overview — What and Why
 
@@ -650,6 +650,9 @@ and mental Life Manager work may proceed independently, but it cannot create or 
 order.
 
 ### M0 — Freeze vocabulary and ownership
+
+M0 implementation SSOT: `docs/superpowers/specs/2026-08-08-life-manager-cfo-m0-business-registry-design.md`.
+The child spec narrows M0 without replacing this document's financial truth, safety, or milestone order.
 
 - [x] **CFO-0** Create this canonical design and name the first slice.
 - [x] **CFO-0b** Add this document to the Life Manager SSOT index and mark older CFO fragments as inputs, not
