@@ -22,7 +22,7 @@
 | 3. Transit facts/fallback | GREEN | structured projection + anchor tests | 31/31 transit/route tests; 59/59 combined focused | `19f411f39` |
 | 4. Truthful cost event | GREEN | 5 contract failures (missing API) | 12/12 ledger contract | `062663d73` |
 | 5. Provider instrumentation | GREEN | adapter module/import module missing | 77/77 provider + focused regression | `0c6616b86` |
-| 6. Budget policy | GREEN | missing-module | 12/12 budget/gate + 90/90 full focused | pending |
+| 6. Budget policy | GREEN | missing-module | 12/12 budget/gate + 90/90 full focused | `a7604f2a6` |
 | 7. Owner report/deploy/measure | code-only pending | — | — | — |
 
 ## Known baseline
