@@ -27,6 +27,7 @@ targets:
           - Info.plist
           - Config/**
           - Resources/**
+      - path: LifeManager/Features/Chat
     resources:
       - path: LifeManager/Resources
     configFiles:
