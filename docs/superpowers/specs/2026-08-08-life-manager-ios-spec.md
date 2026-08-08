@@ -13,7 +13,7 @@ This specification defines the iOS client. It does not replace the existing Life
 
 ## 1. Overview — What and why
 
-Life Manager is a life manager, not a chat assistant or a calendar viewer.
+Life Manager is a life manager delivered through a simple chat interface. It is not a calendar viewer, route-planning dashboard, or general-purpose chat assistant.
 
 People currently have to repeatedly:
 
@@ -23,59 +23,52 @@ People currently have to repeatedly:
 4. work out the exact route, station, gate, train, transfer, and arrival time;
 5. remember to leave and react when the schedule changes.
 
-This creates avoidable mental load and causes late arrivals. The iOS app makes the existing Life Manager experience available on the phone: connect Google Calendar once, then let Life Manager continuously manage the user’s schedule and travel obligations.
+This creates avoidable mental load and causes late arrivals. The iOS app makes the existing Life Manager experience available on the phone: connect Google Calendar once, then receive only the information and actions needed at the right time.
 
 The iOS app MUST use the existing Life Manager backend as the decision and execution authority. The app MUST NOT become a second calendar-management engine.
 
 ### Product promise
 
-> Life Manager turns your calendar into an operated day. It tells you what matters, when to leave, exactly how to get there, and takes the next action when information is missing or you are late.
+> Life Manager turns your calendar into a managed day. It tells you what matters, when to leave, exactly how to get there, and takes the next action when information is missing or you are late.
 
 ### Primary user journey
 
 ```mermaid
 flowchart LR
     A[Connect Google Calendar] --> B[Life Manager reads upcoming events]
-    B --> C{Does the event require travel?}
-    C -->|No| D[No travel interruption]
-    C -->|Yes| E[Resolve destination and route]
-    E --> F[Write travel block to calendar]
-    F --> G[Show exact route in iOS]
-    G --> H[T-15 / T-10 / T-5 wake sequence]
-    H --> I[Phone call and in-app action]
-    I --> J{User is late?}
-    J -->|No| K[Arrive on time]
-    J -->|Yes| L[Request approval]
-    L --> M[Send late notice to attendees]
+    B --> C[Backend resolves travel and next action]
+    C --> D[Life Manager sends a chat message]
+    D --> E[User follows the exact instructions]
+    E --> F[Optional phone call at the configured time]
+    F --> G{User is late?}
+    G -->|No| H[Arrive on time]
+    G -->|Yes| I[Chat shows late notice]
+    I --> J[User approves]
+    J --> K[Backend sends notice]
 ```
 
 ## 2. Acceptance criteria
 
-### A. Onboarding and account connection
+### A. Minimal onboarding
 
-1. The user MUST be able to sign in with Google from the iOS app.
-2. The user MUST be able to connect the Google Calendar used by the existing Life Manager account.
-3. The app MUST display the connection state as `Connected`, `Action required`, `Error`, or `Disconnected`.
-4. The app MUST NOT show the manager dashboard as operational until the calendar connection is confirmed active by the backend.
-5. The user MUST be able to add and update the phone number used for Life Manager wake calls.
-6. The user MUST see the current subscription state and MUST be directed to the existing Stripe billing flow when payment is required.
+1. The app MUST open with a simple Life Manager welcome screen and MUST NOT show a separate Google login screen.
+2. The app MUST provide one primary action: `Connect Google Calendar`.
+3. The Google Calendar OAuth flow MAY use Google authentication internally, but the product experience MUST be described as connecting a calendar, not creating a separate Life Manager login.
+4. The app MUST display the connection state as `Connected`, `Action required`, `Error`, or `Disconnected`.
+5. The phone number MUST be optional. The user MUST be able to continue without configuring a phone number.
+6. The app MUST show a simple subscription offer after the first useful calendar analysis. Free use MUST remain possible in this version; the exact feature split between free and paid MUST NOT be defined in this spec.
 
-### B. Manager home
+### B. Chat-first experience
 
-7. The home screen MUST show the next actionable commitment, not merely a chronological list of every calendar event.
-8. Each commitment MUST show event title, local start time, destination, leave time, route status, and the next Life Manager action.
-9. Events that do not require travel MUST NOT generate a travel card or wake call.
-10. The user MUST be able to open a day timeline showing calendar events and Life Manager-created travel blocks together.
-11. The home screen MUST visibly distinguish:
-    - `Ready` — route and leave time are known;
-    - `Needs information` — Life Manager needs the user to answer a location or duration question;
-    - `Leave now` — the departure threshold has been reached;
-    - `At risk` — the user may be late;
-    - `Completed` — the commitment is no longer actionable.
+7. After onboarding, the primary screen MUST be a single Life Manager chat thread.
+8. The app MUST NOT require the user to inspect a calendar, timeline, map, route detail screen, or tab navigation to understand the next action.
+9. The backend MUST send the next relevant information as a chat message containing the event, leave time, route, and required action.
+10. The app MUST display only the information needed for the current action and MUST keep the interface visually close to Telegram.
+11. The app MUST support text replies and compact action buttons only when an action is required, such as `Reply`, `Approve`, or `Cancel`.
 
-### C. Exact travel route
+### C. Exact travel instructions in chat
 
-12. For a travel event, the app MUST show the actual route returned by the Life Manager route engine, including, where applicable:
+12. For a travel event, the chat message MUST show the actual route returned by the Life Manager route engine, including, where applicable:
     - origin and destination;
     - departure time;
     - walking instructions;
@@ -86,89 +79,91 @@ flowchart LR
     - the reason for the calculated leave time.
 13. The UI MUST use language such as “Take the 10:12 train from Shibuya Station, Gate B5” when that information is available. It MUST NOT reduce the result to “Recommended train” when the backend has an exact itinerary.
 14. If the route engine cannot produce an exact route, the app MUST clearly show `Route unavailable` and the missing reason. It MUST NOT invent a train, gate, platform, or duration.
-15. The app MUST show when the route was last refreshed and MUST expose a refresh action.
-16. When the destination is missing or ambiguous, the app MUST show the question generated by Life Manager and provide a reply field. The reply MUST be sent to the backend; the iOS client MUST NOT parse the user’s answer into calendar fields locally.
+15. If the route engine cannot produce an exact route, the chat MUST clearly show `Route unavailable` and the missing reason. It MUST NOT invent a train, gate, platform, or duration.
+16. When the destination is missing or ambiguous, the chat MUST show the question generated by Life Manager and provide a reply field. The reply MUST be sent to the backend; the iOS client MUST NOT parse the user’s answer into calendar fields locally.
 
-### D. Proactive management
+### D. Backend-managed actions
 
-17. The backend MUST remain responsible for the T-15, T-10, and T-5 wake schedule and urgency levels.
-18. The iOS app MUST receive a push notification for a Life Manager action and MUST deep-link to the relevant commitment.
-19. When the user has a configured phone number, the existing Life Manager phone-call flow MUST remain available. The iOS app MUST NOT replace the phone-call scheduler with local timers.
-20. When the user indicates that they are late, the app MUST show the detected event and the proposed attendee message before sending.
+17. The backend MUST remain responsible for calendar reading, travel calculation, calendar mutation, message timing, and all business decisions.
+18. The iOS app MUST receive push notifications that open the Life Manager chat, not a separate calendar or route flow.
+19. When a phone number is configured, the existing Life Manager phone-call flow MUST remain available. The call is an optional delivery channel, not a local iOS wake timer.
+20. When the user is late, the chat MUST show the detected event and proposed attendee message before sending.
 21. The attendee message MUST NOT be sent without explicit user approval.
-22. After approval, the backend MUST send the message through the existing mail provider and the iOS app MUST display the resulting status.
+22. After approval, the backend MUST send the message through the existing mail provider and the chat MUST display the resulting status.
 
 ### E. Reliability, privacy, and tenant isolation
 
 23. Every request MUST be scoped to the authenticated Life Manager user.
 24. The app MUST never expose another user’s calendar event, route, phone number, email address, or billing state.
-25. A stale or failed backend response MUST be shown as a visible state; the app MUST NOT present stale data as current.
-26. Destructive account actions MUST require a confirmation step.
-27. The app MUST work read-only when the network is unavailable by showing the last known data and its timestamp. It MUST NOT claim that a route, wake, or message was executed while offline.
+25. A stale or failed backend response MUST be shown as a visible chat state; the app MUST NOT present stale data as current.
+26. The app MUST work read-only when the network is unavailable by showing the last known messages and timestamp. It MUST NOT claim that a route, call, or message was executed while offline.
 
 ## 3. As-is / To-be
 
 | Area | As-is | To-be |
 |---|---|---|
-| Entry point | Web onboarding and Telegram bot | Native iOS onboarding plus existing web/Telegram parity |
-| Calendar | Google Calendar connected through the existing web/backend flow | Same account and backend connection displayed and controlled from iOS |
+| Entry point | Web onboarding and Telegram bot | Native iOS onboarding with one `Connect Google Calendar` action |
+| Identity | Existing web and Telegram identity flows | Calendar connection identifies the user; no separate Google login screen |
 | Decision engine | `apps/life-call` scheduler, travel, ask, notify, and call loops | Same backend loops; iOS is a client and control surface |
-| Schedule view | Calendar data and travel blocks are mainly consumed through Telegram, calls, or web panel | Action-oriented manager home and day timeline |
-| Travel | Backend creates `[Travel]` blocks and computes traffic-aware routes | iOS renders the exact backend itinerary: walk, gate, train, transfer, and arrival |
-| Missing information | Life Manager asks through Telegram or email and writes the answer back | iOS displays the same question and sends the reply to the backend |
-| Wake-up | Backend schedules escalating T-15/T-10/T-5 calls | Existing call schedule remains authoritative; iOS receives deep-linked notifications |
-| Late notice | Backend drafts and sends after approval | iOS displays the proposed message, requires approval, and shows delivery status |
-| Billing | Existing Stripe flow | iOS opens the existing billing flow and reads server-side entitlement state |
+| Schedule view | Calendar data and travel blocks are mainly consumed through Telegram, calls, or web panel | One chronological Life Manager chat thread |
+| Travel | Backend creates `[Travel]` blocks and computes traffic-aware routes | Backend sends the exact itinerary as a chat message |
+| Missing information | Life Manager asks through Telegram or email and writes the answer back | iOS displays the same question in chat and sends the reply to the backend |
+| Calls | Backend schedules calls | Existing call schedule remains authoritative; phone number is optional |
+| Late notice | Backend drafts and sends after approval | Chat displays the proposed message and approval action |
+| Billing | Existing Stripe flow | Simple soft paywall; free use remains possible and entitlements are intentionally undefined |
 | Local computation | Some historical local logic exists | iOS MUST NOT duplicate travel, ask, notify, wake, or calendar mutation logic |
 
-### Required screen map
+### Required experience map
 
 ```mermaid
 flowchart TD
-    S[Launch] --> A{Authenticated?}
-    A -->|No| O[Sign in / Connect account]
-    A -->|Yes| H[Manager Home]
+    S[Launch] --> O[Life Manager welcome]
     O --> C[Connect Google Calendar]
-    C --> P[Phone and billing setup]
-    P --> H
-    H --> T[Day Timeline]
-    H --> E[Commitment Detail]
-    E --> R[Exact Route]
-    E --> Q[Answer Life Manager question]
-    E --> L[Late Notice Approval]
-    H --> N[Notifications / action history]
-    H --> G[Settings and connections]
+    C --> P[Optional phone number]
+    P --> W[First useful calendar analysis]
+    W --> Pay[Simple soft paywall]
+    Pay --> Chat[Life Manager chat]
+    Chat --> R[Exact route message]
+    Chat --> Q[Answer question in chat]
+    Chat --> L[Approve late notice in chat]
+    Chat --> Call[Optional phone call]
+    Chat --> Settings[Minimal settings]
 ```
 
 ### Screen requirements
 
-#### 1. Sign-in and connection
+#### 1. Welcome and calendar connection
 
-- Google sign-in.
-- Google Calendar connection status.
-- Phone number setup.
-- Subscription/entitlement status.
-- Clear blocking state for each incomplete connection.
+- One product explanation.
+- One primary action: `Connect Google Calendar`.
+- No separate Google login page in Life Manager UI.
+- Connection failure and reconnect state.
 
-#### 2. Manager Home
+#### 2. Optional phone setup
 
-- “Next action” card at the top.
-- Today’s actionable commitments below it.
-- Leave time and route status on every travel commitment.
-- No generic AI chat screen as the primary surface.
+- Phone number field with `Skip for now`.
+- Explanation: phone calls make Life Manager more forceful, but the chat experience works without them.
 
-#### 3. Commitment Detail
+#### 3. Soft paywall
 
-- Event facts from Google Calendar.
-- Life Manager state and next action.
-- Exact route card.
-- Refresh route action.
-- Answer-question action when state is `Needs information`.
-- Late-notice action when state is `At risk`.
+- Shown after the first useful analysis, not before the user sees value.
+- `Continue with free` MUST remain available.
+- `Upgrade` MUST open the existing billing flow.
+- This spec MUST NOT decide which individual features are free or paid.
 
-#### 4. Exact Route
+#### 4. Life Manager chat
 
-- A vertical step list, not a vague map recommendation.
+- One full-screen conversation.
+- No bottom tab navigation.
+- No calendar grid.
+- No separate route screen.
+- No map screen as a required path.
+- Messages arrive from the backend and remain in chronological order.
+- Action buttons appear inside the relevant message only.
+
+#### 5. Exact route message
+
+- The route is a rich chat message, not a separate page.
 - Every step has a time and place when known.
 - Example:
 
@@ -184,21 +179,20 @@ Arrive at the event: 09:27
 
 - The example above is a UI shape only. The app MUST render actual backend route data and MUST NOT hard-code these values.
 
-#### 5. Late Notice Approval
+#### 6. Late notice message
 
 - Detected commitment.
 - Estimated lateness.
 - Recipient list.
 - Draft message.
-- `Approve and send` and `Cancel` actions.
+- `Approve and send` and `Cancel` actions inside the chat.
 - Sent, failed, and pending states.
 
-#### 6. Settings
+#### 7. Minimal settings
 
-- Google Calendar connection.
-- Phone number.
+- Calendar connection status.
+- Optional phone number.
 - Subscription status.
-- Notification and phone-call status.
 - Account deletion.
 
 ## Data and API contract
@@ -215,13 +209,28 @@ The iOS client MUST consume a versioned authenticated mobile API. The implementa
     "phone": { "status": "connected|missing", "masked": "string" },
     "billing": { "status": "active|payment_required|past_due" }
   },
-  "nextAction": {
-    "commitmentId": "string",
-    "kind": "leave|answer_question|approve_late_notice|none"
-  },
-  "commitments": []
+  "subscriptionOffer": { "status": "available|not_available|unknown" }
 }
 ```
+
+### Chat message shape
+
+```json
+{
+  "id": "string",
+  "createdAt": "ISO-8601",
+  "kind": "welcome|status|route|question|call|late_notice|error|system",
+  "text": "string",
+  "commitmentId": "string|null",
+  "route": {},
+  "actions": [
+    { "id": "approve|cancel|reply|refresh|upgrade", "label": "string" }
+  ],
+  "status": "sent|pending|failed|completed"
+}
+```
+
+The backend MUST provide the chronological chat stream. The iOS client MUST render it and send user actions back to the backend. The client MUST NOT decide which event is next.
 
 ### Commitment shape
 
@@ -262,11 +271,12 @@ The backend MUST be the source of truth for `state`, `leaveAt`, `route`, `pendin
 
 | Action | Client behavior | Server behavior |
 |---|---|---|
-| Refresh route | Show loading and retain last known route | Recompute through the existing route engine and return a new timestamp |
-| Answer question | Send free-text answer | Resolve location/duration and patch the real calendar event |
-| Approve late notice | Require confirmation | Send the approved message to attendees |
-| Cancel late notice | Remove pending approval UI | Keep the draft unsent and record cancellation |
-| Disconnect calendar | Require confirmation | Disconnect only the authenticated user’s provider connection |
+| Reply to chat question | Send free-text answer | Resolve location/duration and patch the real calendar event |
+| Refresh route | Send `refresh` action from the route message | Recompute through the existing route engine and append an updated route message |
+| Approve late notice | Send `approve` action from the chat message | Send the approved message to attendees |
+| Cancel late notice | Send `cancel` action from the chat message | Keep the draft unsent and record cancellation |
+| Upgrade | Open existing billing flow | Update server-side entitlement after billing result |
+| Disconnect calendar | Require confirmation in settings | Disconnect only the authenticated user’s provider connection |
 
 ## 4. Test matrix
 
@@ -274,21 +284,21 @@ Every To-be item has an OK path.
 
 | # | To-be behavior | Test name | OK coverage |
 |---:|---|---|---|
-| 1 | Google sign-in and calendar connection | `test_onboarding_connects_google_calendar` | Connected state appears only after active backend confirmation |
+| 1 | Calendar connection without a separate login screen | `test_onboarding_connects_google_calendar` | Calendar consent completes and active state appears |
 | 2 | Connection failure is visible | `test_calendar_error_is_actionable` | Error state contains reconnect action |
-| 3 | Phone and billing state | `test_setup_blocks_operational_dashboard_until_ready` | Missing required setup is shown before manager is active |
-| 4 | Action-oriented home | `test_home_shows_next_actionable_commitment` | Next action is first and actionable |
-| 5 | Travel filtering | `test_non_travel_event_has_no_travel_card_or_wake` | At-home/routine event produces no travel action |
-| 6 | Day timeline | `test_timeline_merges_calendar_and_travel_blocks` | Real event and Life Manager travel block are ordered correctly |
-| 7 | Exact route rendering | `test_route_renders_walk_gate_train_transfer_and_arrival` | Every returned route step is rendered with its fields |
-| 8 | Route honesty | `test_unavailable_route_is_not_invented` | Missing route data produces unavailable state, not fabricated instructions |
-| 9 | Route refresh | `test_route_refresh_updates_timestamp` | Refresh returns and displays new backend timestamp |
+| 3 | Optional phone setup | `test_phone_setup_can_be_skipped` | User reaches chat without a phone number |
+| 4 | Simple soft paywall | `test_paywall_keeps_free_path_available` | User can continue free or open upgrade |
+| 5 | Chat is the primary surface | `test_chat_is_the_only_primary_navigation` | No calendar grid, tabs, or required route screen appears |
+| 6 | Backend message stream | `test_chat_renders_backend_messages_in_order` | Messages appear chronologically with server IDs |
+| 7 | Exact route rendering | `test_route_message_renders_walk_gate_train_transfer_and_arrival` | Every returned route step appears in chat |
+| 8 | Route honesty | `test_unavailable_route_is_not_invented` | Missing route data produces an error message, not fabricated instructions |
+| 9 | Route refresh in chat | `test_route_refresh_appends_updated_message` | Refresh action produces a new backend message |
 | 10 | Missing information | `test_question_reply_is_sent_to_backend` | Client sends answer; backend owns calendar mutation |
-| 11 | Wake notification deep link | `test_wake_notification_opens_commitment` | Notification opens the matching detail screen |
+| 11 | Call is optional | `test_chat_works_without_phone_number` | User receives chat actions without a phone call |
 | 12 | Late approval | `test_late_notice_requires_explicit_approval` | No send occurs before approval |
-| 13 | Late delivery result | `test_late_notice_status_is_displayed` | Sent/failed status is visible after backend result |
-| 14 | Tenant isolation | `test_user_cannot_read_other_user_commitment` | Cross-user request is rejected |
-| 15 | Offline behavior | `test_offline_state_is_timestamped_and_read_only` | Cached data is labeled; mutation is not falsely reported successful |
+| 13 | Late delivery result | `test_late_notice_status_is_displayed_in_chat` | Sent/failed status is visible in the thread |
+| 14 | Tenant isolation | `test_user_cannot_read_other_user_messages` | Cross-user request is rejected |
+| 15 | Offline behavior | `test_offline_chat_is_timestamped_and_read_only` | Cached messages are labeled; mutation is not falsely reported successful |
 | 16 | Account deletion | `test_account_deletion_requires_confirmation` | No deletion on a single accidental tap |
 
 ### iOS UI / E2E judgment
@@ -297,7 +307,7 @@ Every To-be item has an OK path.
 |---|---|
 | UI変更 | あり |
 | 結論 | Maestro: 必要。オンボーディング、deep link、route detail、late approvalは実機に近いUI遷移とバックエンド状態を確認する必要がある。 |
-| Required E2E | `onboarding → calendar connected → home → commitment detail → exact route → late approval` |
+| Required E2E | `onboarding → calendar connected → optional phone → soft paywall → chat route message → late approval` |
 | Native test | XCTest/Swift Testing for view models, decoding, state transitions, and offline behavior |
 
 ## 5. Boundaries
@@ -305,11 +315,14 @@ Every To-be item has an OK path.
 ### In scope
 
 - Native iOS client for the existing Life Manager product.
-- Google sign-in and Google Calendar connection state.
-- Manager Home, Day Timeline, Commitment Detail, Exact Route, Late Notice Approval, and Settings.
-- Push notification deep links.
+- Google Calendar connection state without a separate Google login experience.
+- One Telegram-like Life Manager chat thread.
+- Exact route, missing-information, call, and late-notice messages.
+- Optional phone number setup.
+- Simple soft paywall with a free path and existing upgrade path.
+- Push notification opening the Life Manager chat.
 - Existing backend scheduler, travel, ask, notify, call, billing, and tenant isolation.
-- Exact route rendering from real backend route data.
+- Exact route rendering inside the chat from real backend route data.
 
 ### Out of scope
 
@@ -317,7 +330,8 @@ Every To-be item has an OK path.
 - Implementing a new route planner inside Swift.
 - Implementing a second wake scheduler on the device.
 - Replacing Telnyx/Gemini phone calls with local iOS timers.
-- A general-purpose conversational assistant screen.
+- A general-purpose AI assistant.
+- Calendar grid, day timeline, bottom tabs, or a route detail screen.
 - Job Hunter.
 - Telegram bot redesign.
 - New billing provider.
@@ -328,15 +342,15 @@ Every To-be item has an OK path.
 
 The implementation session MUST follow this order:
 
-1. Inspect the current `apps/life-call` routes, panel API, auth, and existing iOS project conventions.
-2. Create the mobile API contract and server-side tenant/auth tests before building screens.
-3. Build the iOS onboarding and connection-state flow.
-4. Build the Manager Home and Day Timeline from the server read model.
-5. Build Commitment Detail and Exact Route rendering.
-6. Add question replies and late-notice approval actions.
-7. Add push notification registration and commitment deep links.
-8. Add XCTest/Swift Testing coverage for decoding and state transitions.
-9. Add Maestro coverage for the complete user journey.
+1. Inspect the current `apps/life-call` routes, Telegram message contracts, auth, and existing iOS project conventions.
+2. Create the versioned chat API contract and server-side tenant/auth tests before building screens.
+3. Build the minimal onboarding: welcome, calendar connection, optional phone, and soft paywall.
+4. Build one Telegram-like chat thread from the server message stream.
+5. Render exact route messages, question messages, call messages, and late-notice messages.
+6. Add action buttons only inside the relevant chat message.
+7. Add push notification registration that opens the chat thread.
+8. Add XCTest/Swift Testing coverage for message decoding, action dispatch, and offline states.
+9. Add Maestro coverage for the complete chat-first user journey.
 10. Run real backend E2E with a controlled Google Calendar event and a real route response.
 11. Verify that no fake, mock, or simulated success appears in production paths.
 12. Update the canonical Life Manager specification and commit/push the implementation.
@@ -355,6 +369,6 @@ If the existing iOS project uses a different scheme or test path, the implementa
 
 ## Definition of done
 
-The iOS version is complete only when a real user can connect Google Calendar, see an actionable upcoming commitment, open an exact route containing the actual transit steps, receive a deep-linked Life Manager action, answer a missing-information question, and approve a late notice without opening Telegram or Google Maps.
+The iOS version is complete only when a real user can connect Google Calendar, continue through the free path, receive an actionable chat message containing the exact transit steps, answer a missing-information question, receive an optional phone call when configured, and approve a late notice without opening Google Calendar, Telegram, or Google Maps.
 
-The backend remains the manager. The iPhone is the manager’s native operating surface.
+The backend remains the manager. The iPhone is a minimal, Telegram-like operating surface.
