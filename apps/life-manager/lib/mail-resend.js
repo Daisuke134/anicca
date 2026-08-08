@@ -74,7 +74,7 @@ async function sendAsk({ to, replyToken, event, resendKey, fetchImpl, uid, recor
 
 // Tell the ATTENDEES the user is running late. Sent from our domain "on behalf of <userName>"; Reply-To is
 // the user's REAL email so attendee replies reach the human directly.
-async function sendLateNotice({ toAttendees, userName, event, etaMinutes, userEmail, resendKey, fetchImpl, bodySnapshot, idempotencyKey, uid, recordProviderCost, authorizeProviderOperation }) {
+async function sendLateNotice({ toAttendees, userName, event, etaMinutes, userEmail, resendKey, fetchImpl, bodySnapshot, idempotencyKey, costRequestId, uid, recordProviderCost, authorizeProviderOperation }) {
   const name = (event && event.summary) || "the meeting";
   const who = userName || "Your contact";
   const subject = `Running late: ${name}`;
@@ -82,7 +82,7 @@ async function sendLateNotice({ toAttendees, userName, event, etaMinutes, userEm
   const text = bodySnapshot ||
     `Hi — ${who} is running ${eta} late to “${name}” and wanted you to know.\n\n` +
     `(Sent automatically by Life Manager on ${who}'s behalf — reply to reach ${who} directly.)`;
-  return resendSend({ to: toAttendees, subject, text, replyTo: userEmail, resendKey, fetchImpl, idempotencyKey, uid, recordProviderCost, authorizeProviderOperation });
+  return resendSend({ to: toAttendees, subject, text, replyTo: userEmail, resendKey, fetchImpl, idempotencyKey, costRequestId, uid, recordProviderCost, authorizeProviderOperation });
 }
 
 module.exports = { sendAsk, sendLateNotice, resendSend, replyToFor, FROM, REPLY_DOMAIN };

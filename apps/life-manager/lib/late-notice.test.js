@@ -331,6 +331,8 @@ test("late tick renders the complete approval card but never sends the Resend no
 
 test("structured notice reuses the Resend mail path and excludes self/organizer attendees", async () => {
   const calls = [];
+  const budgetCalls = [];
+  const costCalls = [];
   const result = await sendLateNotice("u1", {
     ...EVENT,
     attendees: [
@@ -340,6 +342,15 @@ test("structured notice reuses the Resend mail path and excludes self/organizer 
     ],
   }, {
     userName: "Dais", userEmail: "dais@example.com", etaMinutes: 15, resendKey: "r",
+    idempotencyKey: "late-idempotency", costRequestId: "late-cost-request",
+    authorizeProviderOperation: async (input) => {
+      budgetCalls.push(input);
+      return { allowed: true };
+    },
+    recordProviderCost: async (event) => {
+      costCalls.push(event);
+      return true;
+    },
     fetchImpl: async (url, init) => {
       calls.push({ url, body: JSON.parse(init.body) });
       return { ok: true, status: 200, json: async () => ({ id: "mail-1" }) };
@@ -349,6 +360,12 @@ test("structured notice reuses the Resend mail path and excludes self/organizer 
   assert.equal(calls.length, 1);
   assert.deepEqual(calls[0].body.to, ["guest@example.com"]);
   assert.match(calls[0].body.text, /Sent automatically by Life Manager on Dais's behalf/);
+  assert.equal(budgetCalls.length, 1);
+  assert.equal(budgetCalls[0].uid, "u1");
+  assert.equal(budgetCalls[0].requestId, "late-cost-request");
+  assert.equal(costCalls.length, 1);
+  assert.equal(costCalls[0].uid, "u1");
+  assert.equal(costCalls[0].requestId, "late-cost-request");
 });
 
 test("migration creates additive location and event-dedup tables", () => {

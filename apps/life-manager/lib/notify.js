@@ -22,6 +22,9 @@ async function sendLateNotice(_uid, event, opts = {}) {
     fetchImpl: opts.fetchImpl,
     bodySnapshot: opts.bodySnapshot,
     idempotencyKey: opts.idempotencyKey || opts.providerIdempotencyKey,
+    costRequestId: opts.costRequestId,
+    recordProviderCost: opts.recordProviderCost,
+    authorizeProviderOperation: opts.authorizeProviderOperation,
   });
   return { ...result, to: toAttendees, event: event.summary, etaMinutes: opts.etaMinutes };
 }

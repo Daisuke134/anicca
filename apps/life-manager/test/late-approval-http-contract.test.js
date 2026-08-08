@@ -100,7 +100,13 @@ test("signed and owned Send decides, claims, mails, records the provider receipt
   assert.match(card.text, /Hi — Dais is running/);
   assert.equal(card.extra.reply_markup.inline_keyboard[0].length, 2);
   assert.ok(card.extra.reply_markup.inline_keyboard[0].every((button) => button.callback_data.startsWith("late:")));
-  const opts = baseOptions(store);
+  const authorizeProviderOperation = async () => ({ allowed: true });
+  const recordProviderCost = async () => true;
+  const opts = baseOptions(store, {
+    authorizeProviderOperation,
+    recordProviderCost,
+    costRequestId: "late-cost-request",
+  });
   const result = await handleLateApprovalCallback(callback("send", draft.draftId), opts);
 
   assert.equal(result.handled, true);
@@ -110,6 +116,9 @@ test("signed and owned Send decides, claims, mails, records the provider receipt
   assert.deepEqual(opts.calls.map((entry) => entry[0]), ["mail", "reflect", "edit"]);
   assert.equal(opts.calls[0][1].providerIdempotencyKey, draft.providerIdempotencyKey);
   assert.equal(opts.calls[0][1].bodySnapshot, draft.bodySnapshot);
+  assert.equal(opts.calls[0][1].authorizeProviderOperation, authorizeProviderOperation);
+  assert.equal(opts.calls[0][1].recordProviderCost, recordProviderCost);
+  assert.equal(opts.calls[0][1].costRequestId, "late-cost-request");
   assert.match(opts.calls[2][1], /resend-message-1/);
   assert.match(opts.calls[2][1], /&lt;partner@example\.invalid&gt;/);
 
@@ -436,10 +445,18 @@ test("POST /telegram routes the signed late callback through the production serv
         ? { uid: "uid-other", telegram_chat_id: "200" }
         : { uid: "uid-1", telegram_chat_id: "100", name: "Dais", email: "dais@example.invalid" }]);
     }
+    if (url.pathname === "/rest/v1/lm_api_cost") {
+      const body = method === "GET" ? [] : {};
+      calls.push([`ledger:${method.toLowerCase()}`, method === "GET" ? null : JSON.parse(init.body || "{}")]);
+      return response(method === "POST" ? 201 : 200, body);
+    }
     if (url.pathname.startsWith("/rest/v1/rpc/") && method === "POST") {
       const rpc = url.pathname.split("/").pop();
       const body = JSON.parse(init.body || "{}");
       calls.push([`rpc:${rpc}`, body]);
+      if (rpc === "lm_claim_provider_budget") {
+        return response(200, { allowed: true, duplicate: false, request_id: body.p_request_id });
+      }
       if (rpc === "lm_get_late_draft") {
         return response(200, body.p_uid === row.uid && body.p_draft_id === row.draft_id ? jsonClone(row) : []);
       }
@@ -527,6 +544,9 @@ test("POST /telegram routes the signed late callback through the production serv
     const sendData = callback("send", row.draft_id, { nowMs: Date.now(), expiresAtMs: Date.now() + 600_000 });
     assert.equal(await post("100", "100", sendData, "cb-http-send"), 200);
     assert.equal(await post("100", "100", sendData, "cb-http-replay"), 200);
+    assert.equal(calls.filter((entry) => entry[0] === "ledger:get").length, 1);
+    assert.equal(calls.filter((entry) => entry[0] === "rpc:lm_claim_provider_budget").length, 1);
+    assert.equal(calls.filter((entry) => entry[0] === "ledger:post").length, 1);
     assert.equal(calls.filter((entry) => entry[0] === "resend").length, 1);
     assert.equal(calls.filter((entry) => entry[0] === "rpc:lm_record_late_delivery").length, 1);
     assert.equal(calls.filter((entry) => entry[0] === "telegram:editMessageText").length, 2,

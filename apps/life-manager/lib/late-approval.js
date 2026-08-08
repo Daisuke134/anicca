@@ -1202,6 +1202,9 @@ async function handleLateApprovalCallback(data, options = {}) {
           bodySnapshot: draft.bodySnapshot,
           providerIdempotencyKey: draft.providerIdempotencyKey,
           idempotencyKey: draft.providerIdempotencyKey,
+          costRequestId: options.costRequestId,
+          recordProviderCost: options.recordProviderCost,
+          authorizeProviderOperation: options.authorizeProviderOperation,
           resendKey: options.resendKey || process.env.RESEND_API_KEY,
           fetchImpl: options.providerFetchImpl || options.fetchImpl,
         });
