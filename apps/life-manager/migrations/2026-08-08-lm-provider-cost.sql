@@ -283,3 +283,15 @@ BEGIN
   RETURN jsonb_build_object('settled', true, 'duplicate', false);
 END;
 $$;
+
+-- These functions mutate reservations and billing buckets.  SECURITY DEFINER
+-- must never make them callable by browser roles; only the server-side
+-- service-role key may invoke them.
+REVOKE ALL ON FUNCTION public.lm_claim_provider_budget(text, date, text, text, text, numeric, boolean, numeric, numeric)
+  FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.lm_claim_provider_budget(text, date, text, text, text, numeric, boolean, numeric, numeric)
+  TO service_role;
+REVOKE ALL ON FUNCTION public.lm_settle_provider_voice(text, date, text, numeric, text)
+  FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.lm_settle_provider_voice(text, date, text, numeric, text)
+  TO service_role;

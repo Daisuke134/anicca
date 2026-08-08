@@ -18,6 +18,14 @@ test("migration provides a unique atomic daily claim identity", () => {
   assert.match(sql, /lm_settle_provider_voice/);
 });
 
+test("security-definer budget RPCs are callable only by service_role", () => {
+  const sql = fs.readFileSync(path.join(__dirname, "../migrations/2026-08-08-lm-provider-cost.sql"), "utf8").toLowerCase();
+  assert.match(sql, /revoke all on function public\.lm_claim_provider_budget\([^)]*\)\s+from public, anon, authenticated/);
+  assert.match(sql, /grant execute on function public\.lm_claim_provider_budget\([^)]*\)\s+to service_role/);
+  assert.match(sql, /revoke all on function public\.lm_settle_provider_voice\([^)]*\)\s+from public, anon, authenticated/);
+  assert.match(sql, /grant execute on function public\.lm_settle_provider_voice\([^)]*\)\s+to service_role/);
+});
+
 test("daily provider budget boundaries are normal, warning, degraded, then stopped", () => {
   assert.equal(evaluateProviderBudget({ measuredUsd: 0.49, estimatedUsd: 0 }).state, "normal");
   assert.equal(evaluateProviderBudget({ measuredUsd: 0.50, estimatedUsd: 0 }).state, "warning");
