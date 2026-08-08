@@ -104,9 +104,13 @@ CODE_SIGNING_ALLOWED = NO
 CODE_SIGNING_REQUIRED = NO
 
 Debug + iphoneos:
+CODE_SIGNING_ALLOWED = YES
+CODE_SIGNING_REQUIRED = YES
+CODE_SIGN_ENTITLEMENTS = LifeManager/Config/Debug.entitlements
+
+Debug + iphonesimulator:
 CODE_SIGNING_ALLOWED = NO
 CODE_SIGNING_REQUIRED = NO
-CODE_SIGN_ENTITLEMENTS = LifeManager/Config/Debug.entitlements
 ```
 
 The TestFlight lanes require `LIFEMANAGER_BUILD_NUMBER` and external
@@ -160,3 +164,56 @@ The coalescing test harness now waits until both actor callers have entered
 the coordinator before releasing its blocked fetch. This removes the
 scheduler-dependent Fastlane stop while preserving the one-fetch assertion.
 The final Fastlane verification also exited 0 with 63 tests and 0 failures.
+
+## Fresh review round 1 — API environment and signed Debug configuration
+
+### RED
+
+The built-project inspection reproduced the review finding before the fix:
+
+```text
+xcodebuild -project LifeManager.xcodeproj -scheme LifeManager \
+  -configuration Debug -sdk iphonesimulator -showBuildSettings
+LIFEMANAGER_API_BASE_URL = https:
+```
+
+The first regression run was executed after adding the contract tests but before
+changing production configuration:
+
+```text
+xcodebuild ... test -only-testing:LifeManagerUnitTests/SigningConfigurationTests
+Executed 5 tests, with 7 failures (0 unexpected)
+```
+
+The failures covered the truncated built URL, missing real staging/production
+URLs, missing Debug iphoneos signing, and missing simulator signing overrides.
+
+### GREEN
+
+The app now uses the Railway domains discovered from the read-only project
+status, with the mobile v1 prefix required by the frozen API contract:
+
+```text
+Debug:   https://life-call-staging-staging.up.railway.app/api/mobile/v1
+Release: https://life-call-production.up.railway.app/api/mobile/v1
+```
+
+The xcconfig values use `https:/$()/...` so Xcode does not treat `//` as a
+comment; the built Info.plist resolves the complete URL. Debug device builds
+require the development APNs entitlement and signing, while simulator builds
+remain unsigned. The callback scheme is also resolved from the same build
+setting in the built Info.plist.
+
+```text
+xcodebuild -configuration Debug -sdk iphoneos -showBuildSettings
+CODE_SIGNING_ALLOWED = YES
+CODE_SIGNING_REQUIRED = YES
+CODE_SIGN_ENTITLEMENTS = LifeManager/Config/Debug.entitlements
+
+xcodebuild -configuration Debug -sdk iphonesimulator -showBuildSettings
+CODE_SIGNING_ALLOWED = NO
+CODE_SIGNING_REQUIRED = NO
+
+xcodebuild ... test -only-testing:LifeManagerUnitTests/SigningConfigurationTests
+Executed 5 tests, with 0 failures (0 unexpected)
+```

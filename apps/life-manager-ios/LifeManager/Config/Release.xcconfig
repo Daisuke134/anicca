@@ -1,5 +1,5 @@
 // Non-secret release configuration. Local overrides are optional and ignored by git.
-LIFEMANAGER_API_BASE_URL = https://api.anicca.ai
+LIFEMANAGER_API_BASE_URL = https:/$()/life-call-production.up.railway.app/api/mobile/v1
 LIFEMANAGER_CALLBACK_SCHEME = lifemanager
 CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*] = LifeManager/Config/Release.entitlements
 CODE_SIGNING_ALLOWED[sdk=iphoneos*] = YES

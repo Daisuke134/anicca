@@ -41,7 +41,7 @@
 			<string>ai.anicca.life-manager.callback</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>lifemanager</string>
+				<string>$(LIFEMANAGER_CALLBACK_SCHEME)</string>
 			</array>
 		</dict>
 	</array>
