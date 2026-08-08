@@ -37,11 +37,21 @@ enum ContractFixtureLoader {
             let url = URL(fileURLWithPath: candidate, isDirectory: true)
                 .appendingPathComponent(name)
             if fileManager.fileExists(atPath: url.path) {
-                return try Data(contentsOf: url)
+                let data = try Data(contentsOf: url)
+                guard isCompatible(data: data, name: name) else { continue }
+                return data
             }
         }
 
         throw FixtureError.missing(name, candidates: candidates.compactMap({ $0 }))
+    }
+
+    private static func isCompatible(data: Data, name: String) -> Bool {
+        guard name == "bootstrap.json" else { return true }
+        guard let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return false
+        }
+        return object["product"] != nil
     }
 
     enum FixtureError: Error, CustomStringConvertible {

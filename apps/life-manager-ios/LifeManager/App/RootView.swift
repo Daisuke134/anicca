@@ -13,11 +13,14 @@ struct RootView: View {
         if let viewModel {
             RouteSurface(viewModel: viewModel)
         } else {
-            VStack {
+            VStack(spacing: 12) {
                 Text("app.name")
                     .font(.largeTitle)
                     .fontWeight(.semibold)
+                Text("welcome.promise")
+                    .multilineTextAlignment(.center)
             }
+            .padding()
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
