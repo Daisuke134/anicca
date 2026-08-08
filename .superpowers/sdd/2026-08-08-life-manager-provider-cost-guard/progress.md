@@ -30,6 +30,11 @@
 | Review fix 4. Atomic budget/voice | GREEN | 2 migration/RPC contracts | 106/106 complete focused | `e6967878d` |
 | Review follow-up. Voice-only read | GREEN | default reader scope gap | 14/14 budget | `290cf460c` |
 | Review follow-up. Persisted estimate | GREEN | persisted-threshold E2E gap | 7/7 geocode | `5abcb6cdb` |
+| Final fix 1. RPC privileges | GREEN | missing SECURITY DEFINER revoke/grant contract | 15/15 budget | `8baf3c602` |
+| Final fix 2. Atomic daily cap + Google fallback claims | GREEN | missing SQL daily-cap params and per-attempt gate | 60/60 baseline + 37/37 guard | `5a5dd201c` |
+| Final fix 3. Conflict replay/idempotent retries | GREEN | duplicate 409/replay returned failure | 33/33 budget/ledger/import | `a30e1d3ea` |
+| Final fix 4. Telnyx reservation propagation/settlement | GREEN | reservation ID stopped at dial boundary | 24/24 reservation contracts + syntax checks | `85e6a1de6` |
+| Final fix 5. Telnyx legacy summary dual-write | GREEN | new dimensions were invisible to businessSummary | 20/20 adapter/summary contracts | `e4b9b1cdd` |
 
 ## Known baseline
 
@@ -120,3 +125,14 @@ Result: 43/43 passed, 0 failed, 0 skipped (2026-08-08).
 - Production authorization now claims every billable provider operation with a unique request ID and non-zero projection (Telnyx default `$0.05`, Gemini `$0.023`, Google SKU defaults, Composio/Resend defaults); cache-hit exits before reads/claims. Telnyx dial, Gemini Live, Composio, Resend, CDR webhook/imports, Railway/Supabase scheduled measurement loaders are wired.
 - Follow-up regression: the default voice reader now passes `voiceOnly=true` to the ledger query (not just the in-memory aggregation), and its URL filter is covered by `node --test lib/provider-budget.test.js` → 14/14.
 - Follow-up persisted-threshold regression: an empty Google response through the real ledger writer stores `estimated_usd > 0`, `actual_billed_usd = null`, and `actual_status = unknown`; `node --test lib/geocode-cache.test.js` → 7/7.
+
+## Final review fix round receipt
+
+- Security: both SECURITY DEFINER RPCs now explicitly revoke `PUBLIC`, `anon`, and `authenticated`, then grant only `service_role`. The migration contract checks exact function signatures and grants.
+- Atomic cap: the claim RPC always locks the user/day bucket, reads settled `lm_api_cost` amounts and outstanding reservations in the same transaction, and rejects a projected request at the daily cap. Voice reservations still lock global after user; unknown/null billing is not coerced to zero.
+- Google fallback: Routes and Directions are sequential. Each concrete provider attempt gets a distinct request ID and claim immediately before its request; a denied Directions claim emits no Directions request. Existing in-flight URLs remain valid through the legacy eight-field HMAC fallback when no reservation field is present.
+- Replay: claims use `ON CONFLICT ... DO NOTHING RETURNING`; ledger/provider/import 409 conflicts are successful no-ops. Concurrent ledger retries are covered by a two-writer test.
+- Telnyx reservation: generated dial reservation IDs travel through signed stream context, client state, webhook CDR, scheduled imports, and exact voice settlement. Settlement has a unique `(uid,budget_day,reservation_request_id)` index and releases the matching `reserved_usd` exactly once.
+- Legacy summary: Telnyx CDR and call-session rows dual-write provider dimensions plus `kind=telnyx_call`, `meta`, and `est_usd` compatibility fields; a 60-second fixture produces one call and one minute in `businessSummary`.
+- Focused verification: plan baseline command → 60/60 passed; cost guard command → 37/37 passed; combined reservation/contract/adapters/imports → 24/24 passed (plus syntax checks). No production env/deploy was performed.
+- Full-suite verification after `npm ci`: `npm test` reached the existing legacy-path scanner and reported exactly one pre-existing failure in `scripts/scan-legacy-paths.test.js` for the two connector runtime `${HOME}/.openclaw/.env` lines; no changed provider-cost test failed. Before the clean install, direct HTTP tests were temporarily blocked by absent declared modules (`canonicalize`, `ws`); `npm ci` restored them.
