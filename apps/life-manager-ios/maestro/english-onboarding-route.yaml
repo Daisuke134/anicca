@@ -35,6 +35,8 @@ env:
 - inputText: ${PROFILE_HOME}
 - hideKeyboard
 - tapOn:
+    id: "profile.productLocale"
+- tapOn:
     id: "profile.locale.en"
 - tapOn:
     id: "profile.continue"

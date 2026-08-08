@@ -429,3 +429,41 @@ RoutePresentationTests:       4/4 passed
 LocalizationConsistencyTests: 2/2 passed
 Combined targeted tests:      6/6 passed, 0 failures
 ```
+
+## Fresh review round 1 — clean test lane, fixture packaging, and Maestro locale picker
+
+### RED
+
+The test-lane and flow contract tests reproduced all three test-harness
+findings before the fix:
+
+```text
+xcodebuild ... test -only-testing:LifeManagerUnitTests/MaestroFlowContractTests
+
+Clean Fastlane lane: 2 failures (`clean: false`, `skip_build: true`)
+Japanese locale flow: picker identifier missing (`profile.productLocale`)
+Executed 4 tests, with 3 failures (0 unexpected)
+```
+
+### GREEN
+
+The Fastlane test lane now cleans and builds the generated checkout project
+before running the serial simulator suite. `project.yml` packages
+`LifeManagerTests/TestFixtures/mobile-v1` into the unit-test bundle, and the
+fixture loader checks that same-checkout directory first. Both English and
+Japanese Maestro flows now tap `profile.productLocale` to open the Picker
+before selecting their language.
+
+```text
+MaestroFlowContractTests: 4/4 passed, 0 failures
+```
+
+Clean Fastlane verification from `apps/life-manager-ios/`:
+
+```text
+PATH="/opt/homebrew/opt/ruby/bin:$PATH" bundle exec fastlane test
+UI tests:   2/2 passed
+Unit tests: 88/88 passed
+Total:      90/90 passed, 0 failures
+Test Succeeded
+```

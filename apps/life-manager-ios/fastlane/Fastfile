@@ -32,8 +32,8 @@ platform :ios do
       destination: simulator_destination,
       skip_detect_devices: true,
       derived_data_path: "build/DerivedData",
-      clean: false,
-      skip_build: true,
+      clean: true,
+      skip_build: false,
       disable_concurrent_testing: true,
       xcargs: "-parallel-testing-enabled NO"
     )

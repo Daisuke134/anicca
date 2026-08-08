@@ -39,13 +39,40 @@ final class MaestroFlowContractTests: XCTestCase {
         XCTAssertTrue(japanese.contains("profile.locale.ja"))
     }
 
+    func testJapaneseFlowOpensProductLocalePickerBeforeChoosingJapanese() throws {
+        let japanese = try Self.flow(named: "japanese-onboarding-route.yaml")
+
+        let picker = try XCTUnwrap(japanese.range(of: "profile.productLocale"))
+        let japaneseChoice = try XCTUnwrap(japanese.range(of: "profile.locale.ja"))
+        XCTAssertLessThan(picker.lowerBound, japaneseChoice.lowerBound)
+    }
+
+    func testCleanFastlaneLaneBuildsAndPackagesCheckoutFixtures() throws {
+        let fastfile = try Self.resource(named: "Fastfile", in: "fastlane")
+        let project = try Self.resource(named: "project.yml")
+        let loader = try Self.resource(named: "ContractFixtureLoader.swift", in: "LifeManagerTests/Support")
+        let testLane = try XCTUnwrap(fastfile.range(of: "lane :test"))
+        let buildLane = try XCTUnwrap(fastfile.range(of: "lane :build_for_simulator"))
+        let laneBody = String(fastfile[testLane.upperBound..<buildLane.lowerBound])
+
+        XCTAssertTrue(laneBody.contains("clean: true"))
+        XCTAssertTrue(laneBody.contains("skip_build: false"))
+        XCTAssertTrue(project.contains("- LifeManagerTests/TestFixtures/mobile-v1"))
+        XCTAssertTrue(loader.contains("checkoutFixtures"))
+    }
+
     private static func flow(named name: String) throws -> String {
+        try resource(named: name, in: "maestro")
+    }
+
+    private static func resource(named name: String, in directory: String? = nil) throws -> String {
         let current = URL(fileURLWithPath: #filePath)
         let root = current
             .deletingLastPathComponent()
             .deletingLastPathComponent()
             .deletingLastPathComponent()
-        let path = root.appendingPathComponent("maestro").appendingPathComponent(name)
+        let path = directory.map { root.appendingPathComponent($0) }?.appendingPathComponent(name)
+            ?? root.appendingPathComponent(name)
         return try String(contentsOf: path, encoding: .utf8)
     }
 }
