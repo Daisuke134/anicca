@@ -15,16 +15,15 @@ const ERROR_PREFIX = "cfo_financial_source_invalid:";
 
 function fail(reason) { throw new Error(`${ERROR_PREFIX}${reason}`); }
 function plain(value) { return value !== null && typeof value === "object" && !Array.isArray(value) && Object.getPrototypeOf(value) === Object.prototype; }
-function dataOnly(value, seen = new WeakSet()) {
-  if (value === null || typeof value !== "object" || seen.has(value)) return;
-  seen.add(value);
+function dataProperties(value) {
+  if (value === null || typeof value !== "object") return;
   for (const key of Reflect.ownKeys(value)) {
     const descriptor = Object.getOwnPropertyDescriptor(value, key);
     if (!descriptor || !Object.prototype.hasOwnProperty.call(descriptor, "value")) fail("accessor_property");
-    dataOnly(descriptor.value, seen);
   }
 }
 function keys(value, allowed) {
+  dataProperties(value);
   if (!plain(value)) fail("invalid_object");
   const own = Reflect.ownKeys(value);
   if (own.length !== allowed.size || own.some((key) => typeof key !== "string" || !allowed.has(key))) fail("invalid_keys");
@@ -96,7 +95,6 @@ function freeze(value, seen = new WeakSet()) {
 }
 
 function validateFinancialSourceResult(input) {
-  dataOnly(input);
   keys(input, ROOT_KEYS);
   if (input.schemaVersion !== 1) fail("invalid_schema_version");
   typedRef(input.sourceId, ID, "invalid_source_id");
@@ -104,6 +102,8 @@ function validateFinancialSourceResult(input) {
   enumValue(input.freshness, FRESHNESS, "invalid_freshness");
   timestamp(input.asOf);
   if (!Array.isArray(input.accounts) || !Array.isArray(input.liabilities) || typeof input.partial !== "boolean") fail("invalid_shape");
+  dataProperties(input.accounts);
+  dataProperties(input.liabilities);
   const references = new Set();
   for (const value of input.accounts) entry(value, false, references, input.freshness);
   for (const value of input.liabilities) entry(value, true, references, input.freshness);

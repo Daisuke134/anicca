@@ -125,6 +125,22 @@ test("accessor properties are rejected before a changing getter can be cloned", 
   assert.equal(reads, 0);
 });
 
+test("deep unknown raw payloads fail with a stable contract error, not RangeError", () => {
+  const input = validResult();
+  const rawPayload = {};
+  let cursor = rawPayload;
+  for (let index = 0; index < 20000; index += 1) {
+    cursor.next = {};
+    cursor = cursor.next;
+  }
+  input.rawPayload = rawPayload;
+  assert.throws(() => validateFinancialSourceResult(input), (error) => {
+    assert.equal(error.name, "Error");
+    assert.match(error.message, /^cfo_financial_source_invalid:/);
+    return true;
+  });
+});
+
 test("unknown liability keys fail at the liability schema boundary", () => {
   const input = validResult();
   input.partial = true;
