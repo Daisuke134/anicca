@@ -1,6 +1,6 @@
 # Life Manager iOS — Product and UX Specification
 
-Status: **Approved by Dais. Superpowers implementation is in progress; no TestFlight completion receipt exists yet.**
+Status: **Approved by Dais. The active delivery target is an English-only native Simulator demo with real backend data and a Maestro video.**
 
 ## Source of truth
 
@@ -31,6 +31,12 @@ The behavioral promise is the same as the web and Telegram product:
 > Connect the calendar once. Life Manager understands the next commitment, determines when the user must leave, and presents the next physical action in one conversation.
 
 The iOS difference is onboarding. Telegram must collect setup data inside chat and open a browser for OAuth. iOS MUST use native screens for setup, then move the user into the same chat-first managed-day experience.
+
+### 1.0 Active demo cutoff
+
+The current deliverable is one native, English-only, end-to-end Simulator demo. It MUST use the real staging backend and MUST demonstrate Calendar connection/session restoration, name and home onboarding, direct next-event analysis, an event-anchored route card and detail, durable chat refresh, the non-blocking soft paywall, and a recorded Maestro journey.
+
+Japanese localization, phone collection and calling, APNs, late notices, live location, account deletion, TestFlight distribution, and App Store submission are outside the active demo cutoff. They MUST NOT block or expand the current implementation path. HTML or web prototypes are not acceptance evidence.
 
 ### 1.1 Product decisions
 
@@ -511,7 +517,7 @@ Google consent/account chooser is not asserted by Maestro because it is an exter
 
 - Gate 0 Task 1 is complete on `feat/lm-daily-late-approval`: resolver focused tests and fresh review are green and the commits are pushed.
 - Gate 0 Task 2 is complete on the same branch: durable decision/claim/receipt tests are green, isolated staging PostgreSQL role/RPC read-back is complete, fresh re-review is green, and production Supabase was not touched.
-- Gate 0 Task 3 implementation is pushed. Its fresh review found two Important defects: a later tick can collide with the immutable draft snapshot instead of reusing it, and the scheduler still owns the pre-approval mail capability. The original Luna executor is fixing both under RED-first tests. Gate 0 remains incomplete until the Task 3 re-review and Tasks 4–6 are green, deployed, verified with the production-safe receipt, and recorded in the DAILY SSOT.
+- Gate 0 Task 3 review fixes are GREEN and pushed at `3e89a4133`: later ticks reuse the immutable draft and the scheduler no longer owns the pre-approval mail capability. The remaining DAILY tasks are outside the active Simulator-demo cutoff.
 - Native iOS product Task 1 is running in isolated worktree `feat/lm-ios-product` under Dais's explicit non-colliding parallelization approval. This is app-skeleton preparation only; it does not satisfy Gate 4 before Gate 2 fixtures exist.
 - Local delivery tooling is ready: Xcode `26.6 (17F113)`, iOS `26.3` Simulator devices, and Maestro `2.8.0` are verified.
 - HTML and web prototypes are not delivery artifacts and MUST NOT be used for the demo or any acceptance receipt. The first showable product MUST be the native iOS app running in an iOS Simulator or on an iPhone; the distributable demo MUST be a real TestFlight build.
@@ -525,6 +531,17 @@ The following order is the only execution order. A later gate does not begin bef
 - Native iOS product: `docs/superpowers/plans/2026-08-08-life-manager-ios-product.md`
 - Sync, APNs, Maestro, and TestFlight: `docs/superpowers/plans/2026-08-08-life-manager-ios-integration.md`
 - App Store release: `docs/superpowers/plans/2026-08-08-life-manager-ios-app-store.md`
+
+For the active demo cutoff, only these four deliverables remain:
+
+| Order | Remaining demo deliverable | Completion receipt |
+|---:|---|---|
+| 1 | Native Xcode project launches and tests in iOS Simulator | Simulator build and Swift smoke tests green |
+| 2 | English mobile contract/backend supports session, name/home, next-event analysis, route, durable chat, and manual refresh | Real staging API contract suite green |
+| 3 | English native onboarding, route card/detail, chat, soft paywall, and refresh are connected to that API | Swift unit/UI tests green with real contract fixtures |
+| 4 | One real staging journey runs end-to-end and is recorded | Maestro flow green plus video artifact |
+
+The broader gates below remain the post-demo product roadmap and do not block the active demo cutoff.
 
 | Gate | Remaining deliverable | Dependency | Primary ownership | Completion receipt |
 |---:|---|---|---|---|
