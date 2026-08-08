@@ -176,6 +176,53 @@ test("default Composio read-back and primary identity paths use v3.1 plus the ex
   assert.equal(execute.body.user_id, "lm_provisional");
 });
 
+test("root v3.1 connected-account facts win over credential-bearing data and exchange succeeds without exposing credentials", async () => {
+  let runtime;
+  const fetchImpl = async (url, init = {}) => {
+    if (String(url).includes("/connected_accounts/ca_root_facts")) {
+      const owner = [...runtime.store._states.values()][0].composioUserId;
+      return {
+        ok: true,
+        async json() {
+          return {
+            id: "ca_root_facts",
+            user_id: owner,
+            status: "ACTIVE",
+            toolkit: { slug: "googlecalendar" },
+            auth_config: { id: "ac_gcal_test" },
+            is_disabled: false,
+            data: { access_token: "credential-must-not-leak", refresh_token: "refresh-must-not-leak" },
+            state: { val: { oauth_token: "state-credential-must-not-leak" } },
+          };
+        },
+      };
+    }
+    return {
+      ok: true,
+      async json() {
+        return { successful: true, data: { response_data: { items: [{ id: "person@example.test" }] } } };
+      },
+    };
+  };
+  runtime = await start({ fetchImpl, buildAuthorizationLink: async (input) => ({ authorizationUrl: "https://connect.example.test", connectedAccountId: "ca_root_facts" }) }).then(({ runtime: value }) => value);
+  delete runtime.readConnectedAccount;
+  delete runtime.readPrimaryCalendar;
+  runtime.recordCall = async () => false;
+  runtime.authorizeProviderOperation = async () => ({ allowed: true });
+
+  const account = await readComposioConnectedAccount("ca_root_facts", runtime);
+  assert.equal(account.id, "ca_root_facts");
+  assert.equal(account.user_id, [...runtime.store._states.values()][0].composioUserId);
+  assert.equal(account.data, undefined);
+  assert.equal(account.state, undefined);
+  assert.doesNotMatch(JSON.stringify(account), /credential-must-not-leak|refresh-must-not-leak|state-credential-must-not-leak/u);
+
+  const state = [...runtime.store._states.values()][0];
+  const exchanged = await exchangeMobileSession({ state: state.state, status: "success", connectedAccountId: "ca_root_facts" }, runtime);
+  assert.equal(exchanged.tokenType, "Bearer");
+  assert.equal(runtime.store._sessions.size, 1);
+});
+
 test("Supabase mobile store sends server-owned OAuth facts through the v2 claim and atomic identity RPC", async () => {
   const calls = [];
   const store = createSupabaseMobileStore({

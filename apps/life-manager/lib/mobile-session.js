@@ -237,8 +237,12 @@ async function readComposioConnectedAccount(connectedAccountId, deps = {}) {
   }
   const body = await response.json().catch(() => ({}));
   if (!response.ok) throw new MobileError("oauth_provider_invalid", "The Calendar connection could not be verified.", 400);
-  return body && (body.connected_account || body.connectedAccount || body.data?.connected_account
-    || body.data?.connectedAccount || body.data || body);
+  const rootAccount = body && typeof body.id === "string" && (body.user_id || body.status || body.toolkit || body.auth_config) ? body : null;
+  const account = body && (body.connected_account || body.connectedAccount || body.data?.connected_account
+    || body.data?.connectedAccount || rootAccount || body.data || body);
+  if (!account || typeof account !== "object") return account;
+  const { data: _credentialData, state: _credentialState, params: _credentialParams, ...safeAccount } = account;
+  return safeAccount;
 }
 
 function accountToolkit(account) {
