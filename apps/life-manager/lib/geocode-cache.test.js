@@ -8,6 +8,7 @@ const {
   createSupabaseGeocodeStore,
   geocodeAddress,
 } = require("./geocode-cache.js");
+const { recordProviderCost } = require("./ledger.js");
 
 const SUPA = { supaUrl: "https://supa.invalid", supaKey: "service-role-key" };
 
@@ -127,6 +128,32 @@ test("every attempted Google geocode is recorded once, including empty, HTTP fai
   assert.equal(new Set(events.map((event) => event.requestId)).size, 3);
   assert.ok(events.every((event) => event.actualStatus === "unknown" && event.actualBilledUsd === null));
   assert.ok(events.every((event) => event.estimatedUsd > 0 && event.costClassification === "estimated"));
+});
+
+test("an empty Google response persists a nonzero SKU estimate with nullable unknown actual billing", async () => {
+  const ledgerWrites = [];
+  const result = await geocodeAddress("persisted-empty-geocode-guard", "maps-key", {
+    store: new Map(),
+    fetchImpl: async (url, init = {}) => {
+      if (init.method === "POST") {
+        ledgerWrites.push(JSON.parse(init.body));
+        return response([], 201);
+      }
+      return response({ results: [] });
+    },
+    recordProviderCost: (event) => recordProviderCost(event, {
+      supaUrl: "https://db.example", supaKey: "service",
+      fetchImpl: async (url, init = {}) => {
+        ledgerWrites.push(JSON.parse(init.body));
+        return response([], 201);
+      },
+    }),
+  });
+  assert.equal(result, null);
+  assert.equal(ledgerWrites.length, 1);
+  assert.ok(ledgerWrites[0].estimated_usd > 0);
+  assert.equal(ledgerWrites[0].actual_billed_usd, null);
+  assert.equal(ledgerWrites[0].actual_status, "unknown");
 });
 
 test("cache keys carry no tenant identity or caller-controlled query fragments", async () => {
