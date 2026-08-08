@@ -101,6 +101,36 @@ test("concurrent provider ledger retries resolve as one write plus one successfu
   assert.equal(failures.length, 0);
 });
 
+test("a replayed Telnyx CDR retries settlement after its first ledger write settled nothing", async () => {
+  let ledgerWrites = 0;
+  let settlementAttempts = 0;
+  const input = {
+    uid: "u1", provider: "telnyx", sku: "voice", operation: "call_cdr", requestId: "cdr-replay-settlement",
+    quantity: 60, unit: "seconds", pricingVersion: "telnyx-test-1", actualBilledUsd: 0.02,
+    actualStatus: "known", costClassification: "measured", metadata: { reservationRequestId: "call-reservation-1" },
+  };
+  const opts = {
+    supaUrl: "https://db.example", supaKey: "service", log: () => {},
+    fetchImpl: async (url) => {
+      if (String(url).includes("/rest/v1/lm_api_cost")) {
+        ledgerWrites += 1;
+        return ledgerWrites === 1 ? { ok: true, status: 201 } : { ok: false, status: 409 };
+      }
+      if (String(url).includes("lm_settle_provider_voice")) {
+        settlementAttempts += 1;
+        return settlementAttempts === 1
+          ? { ok: false, status: 503 }
+          : { ok: true, status: 200, json: async () => ({ settled: true, duplicate: false }) };
+      }
+      throw new Error(`unexpected provider-cost request ${url}`);
+    },
+  };
+  assert.equal(await ledger().recordProviderCost(input, opts), true);
+  assert.equal(await ledger().recordProviderCost(input, opts), true);
+  assert.equal(ledgerWrites, 2);
+  assert.equal(settlementAttempts, 2, "the ledger replay must retry the missing settlement exactly once");
+});
+
 test("recordDailyComposioPoll uses a DB day query and inserts at most one row", async () => {
   const requests = [];
   const responses = [

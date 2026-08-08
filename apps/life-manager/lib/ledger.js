@@ -163,11 +163,17 @@ async function recordProviderCost(input = {}, opts = {}) {
     if (!response || !response.ok) {
       // PostgREST reports a replay against the provider/request unique index
       // as 409. The first writer already persisted the same receipt, so this
-      // retry is a successful no-op and must not enter the failure outbox.
-      if (response && Number(response.status) === 409) return true;
-      const error = new Error(`Supabase provider cost insert failed (${response && response.status})`);
-      error.status = response && response.status;
-      throw error;
+      // retry is a successful ledger no-op and must not enter the failure
+      // outbox. Do not return yet: a CDR replay is also the recovery trigger
+      // for a settlement that may have failed after the original ledger row
+      // was written.
+      if (response && Number(response.status) === 409) {
+        // Continue to the common Telnyx settlement path below.
+      } else {
+        const error = new Error(`Supabase provider cost insert failed (${response && response.status})`);
+        error.status = response && response.status;
+        throw error;
+      }
     }
     if (event.provider === "telnyx" && event.actualStatus === "known" && event.actualBilledUsd != null && event.operation === "call_cdr") {
       try {
