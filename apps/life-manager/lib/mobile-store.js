@@ -75,6 +75,20 @@ function createSupabaseMobileStore(options = {}) {
       const found = await rows("lm_mobile_analysis_states", scopedParams(scope, { select: "status,analysis_id,updated_at", limit: "1" }));
       return found[0] || { status: "idle" };
     },
+    async writeAnalysisState(scope, state) {
+      requireScope(scope);
+      const result = await request("/rest/v1/lm_mobile_analysis_states", {
+        method: "POST",
+        headers: { "content-type": "application/json", Prefer: "resolution=merge-duplicates,return=representation" },
+        body: JSON.stringify({
+          uid: scope.uid,
+          status: state.status,
+          analysis_id: state.analysisId || state.analysis_id || null,
+          updated_at: state.updatedAt || new Date().toISOString(),
+        }),
+      }, "analysis_state_write_failed");
+      return asRow(result.body) || state;
+    },
     async createOAuthState(row) {
       const body = {
         state_hash: row.stateHash,
@@ -180,6 +194,13 @@ function createSupabaseMobileStore(options = {}) {
           created_at: row.createdAt || new Date().toISOString(), mutation_key: row.mutationKey || null,
         }),
       }, "outbox_write_failed");
+      if (result.conflict) {
+        const existing = await rows("lm_mobile_outbox", scopedParams(scope, {
+          id: `eq.${encodeFilter(row.id)}`,
+          limit: "1",
+        }));
+        return existing[0] || row;
+      }
       return asRow(result.body) || row;
     },
     async listOutbox(scope, afterSequence = 0, limit = 50) {
@@ -191,7 +212,14 @@ function createSupabaseMobileStore(options = {}) {
     async createQuestion(scope, question) {
       requireScope(scope);
       const result = await request("/rest/v1/lm_mobile_questions", {
-        method: "POST", headers: { "content-type": "application/json", Prefer: "return=representation" }, body: JSON.stringify({ uid: scope.uid, ...question }),
+        method: "POST", headers: { "content-type": "application/json", Prefer: "return=representation" }, body: JSON.stringify({
+          uid: scope.uid,
+          id: question.id,
+          type: question.type,
+          prompt: question.prompt || null,
+          event_id: question.eventId || question.event_id || null,
+          status: question.status || "open",
+        }),
       }, "question_write_failed");
       return asRow(result.body) || question;
     },
@@ -226,6 +254,14 @@ function createSupabaseMobileStore(options = {}) {
       }, "deletion_receipt_failed");
       return asRow(result.body) || receipt;
     },
+    async readDeletionReceipt(scope, operationId) {
+      const found = await rows("lm_mobile_deletion_receipts", scopedParams(scope, {
+        operation_id: `eq.${encodeFilter(operationId)}`,
+        select: "operation_id,status,completed_at,provider_cleanup",
+        limit: "1",
+      }));
+      return found[0] || null;
+    },
     async deleteAccount(scope) {
       return rpc("delete_lm_mobile_account", { p_uid: requireScope(scope).uid }, "account_delete_failed");
     },
@@ -241,6 +277,7 @@ function createMemoryMobileStore(options = {}) {
   const questions = new Map();
   const devices = new Map();
   const calls = new Map();
+  const deletionReceipts = new Map();
   let sequence = 0;
   function scoped(scope, expectedUid) {
     requireScope(scope);
@@ -252,10 +289,11 @@ function createMemoryMobileStore(options = {}) {
     return users.get(uid) || null;
   }
   return {
-    _users: users, _sessions: sessions, _states: states, _idempotency: idempotency, _outbox: outbox, _questions: questions, _devices: devices, _calls: calls,
+    _users: users, _sessions: sessions, _states: states, _idempotency: idempotency, _outbox: outbox, _questions: questions, _devices: devices, _calls: calls, _deletionReceipts: deletionReceipts,
     async readUser(scope) { const row = user(scope); return row ? { ...row } : null; },
     async patchUser(scope, patch, options2 = {}) { const row = user(scope, options2.expectedUid); if (!row) throw new MobileError("account_not_found", "Account not found.", 404); Object.assign(row, patch); return { ...row }; },
-    async readAnalysisState(scope) { scoped(scope); return user(scope).analysisState || { status: "idle" }; },
+    async readAnalysisState(scope) { const row = user(scope); return row && row.analysisState ? { ...row.analysisState } : { status: "idle" }; },
+    async writeAnalysisState(scope, state) { const row = user(scope); if (!row) throw new MobileError("account_not_found", "Account not found.", 404); row.analysisState = { ...state, updatedAt: state.updatedAt || nowIso() }; return { ...row.analysisState }; },
     async createOAuthState(row) { states.set(row.stateHash, { ...row }); },
     async claimOAuthState(hash, expected = {}) { const row = states.get(hash); if (!row || row.usedAt || (row.uid && expected.uid && row.uid !== expected.uid)) return null; row.usedAt = nowIso(); return { ...row }; },
     async createMobileSession(row) { sessions.set(row.sessionId, { ...row }); },
@@ -267,16 +305,34 @@ function createMemoryMobileStore(options = {}) {
     async readIdempotency(scope, key) { return idempotency.get(`${scoped(scope)}:${key}`) || null; },
     async claimIdempotency(scope, key, value) { const id = `${scoped(scope)}:${key}`; if (idempotency.has(id)) return false; idempotency.set(id, { ...value }); return true; },
     async completeIdempotency(scope, key, value) { const id = `${scoped(scope)}:${key}`; idempotency.set(id, { ...idempotency.get(id), ...value }); },
-    async appendOutbox(scope, row) { const uid = scoped(scope); const item = { ...row, uid, sequence: ++sequence, createdAt: row.createdAt || nowIso() }; if (!outbox.has(uid)) outbox.set(uid, []); outbox.get(uid).push(item); return { ...item }; },
+    async appendOutbox(scope, row) {
+      const uid = scoped(scope);
+      const existing = (outbox.get(uid) || []).find((item) => item.id === row.id);
+      if (existing) return { ...existing };
+      const item = { ...row, uid, sequence: ++sequence, createdAt: row.createdAt || nowIso() };
+      if (!outbox.has(uid)) outbox.set(uid, []);
+      outbox.get(uid).push(item);
+      return { ...item };
+    },
     async listOutbox(scope, after = 0, limit = 50) { return (outbox.get(scoped(scope)) || []).filter((row) => row.sequence > after).slice(0, limit).map((row) => ({ ...row })); },
     async createQuestion(scope, question) { const uid = scoped(scope); const row = { ...question, uid, status: "open" }; questions.set(`${uid}:${row.id}`, row); return { ...row }; },
     async consumeOpenQuestion(scope, id, answer) { const uid = scoped(scope); const row = questions.get(`${uid}:${id}`); if (!row || row.status !== "open") return null; row.status = "answered"; row.answer = answer; return { ...row }; },
-    async claimCallAttempt(scope, value) { const uid = scoped(scope); const day = String(value.now || "").slice(0, 10); const existing = [...calls.values()].filter((row) => row.uid === uid && row.day === day); if (existing.length >= 5) return { rateLimited: true, reason: "daily_user_limit" }; if (existing.some((row) => row.status === "claimed" && row.createdAt && Date.parse(value.now) - Date.parse(row.createdAt) < 10 * 60 * 1000)) return { rateLimited: true, reason: "cooldown" }; const attemptId = `call:v1:${uid}:${calls.size + 1}`; const row = { attemptId, uid, day, status: "claimed", createdAt: value.now || nowIso() }; calls.set(attemptId, row); return { ...row }; },
+    async claimCallAttempt(scope, value) { const uid = scoped(scope); const day = String(value.now || "").slice(0, 10); const existing = [...calls.values()].filter((row) => row.uid === uid && row.day === day); if (existing.length >= 5) return { rateLimited: true, reason: "daily_user_limit" }; if (existing.some((row) => row.createdAt && Date.parse(value.now) - Date.parse(row.createdAt) < 10 * 60 * 1000)) return { rateLimited: true, reason: "cooldown" }; const attemptId = `call:v1:${uid}:${calls.size + 1}`; const row = { attemptId, uid, day, status: "claimed", idempotencyKey: value.idempotencyKey, createdAt: value.now || nowIso() }; calls.set(attemptId, row); return { ...row }; },
     async finishCallAttempt(scope, value) { const row = calls.get(value.attemptId); if (row && row.uid === scoped(scope)) Object.assign(row, value); },
     async upsertDevice(scope, value) { const uid = scoped(scope); const row = { ...value, uid, deviceId: value.deviceId || `device:v1:${uid}:${value.token.slice(-8)}` }; devices.set(`${uid}:${value.token}`, row); return { ...row }; },
     async deleteDevice(scope, token) { devices.delete(`${scoped(scope)}:${token}`); return { deleted: true }; },
-    async writeDeletionReceipt(scope, receipt) { const uid = scoped(scope); users.set(uid, { ...(users.get(uid) || {}), deletionReceipt: receipt }); return receipt; },
-    async deleteAccount(scope) { const uid = scoped(scope); users.delete(uid); for (const key of sessions.keys()) if (sessions.get(key).uid === uid) sessions.delete(key); return { deleted: true }; },
+    async readDeletionReceipt(scope, operationId) { const uid = scoped(scope); return deletionReceipts.get(`${uid}:${operationId}`) || null; },
+    async writeDeletionReceipt(scope, receipt) { const uid = scoped(scope); deletionReceipts.set(`${uid}:${receipt.operationId}`, { ...receipt }); return receipt; },
+    async deleteAccount(scope) {
+      const uid = scoped(scope);
+      users.delete(uid);
+      for (const key of sessions.keys()) if (sessions.get(key).uid === uid) sessions.delete(key);
+      outbox.delete(uid);
+      for (const key of questions.keys()) if (key.startsWith(`${uid}:`)) questions.delete(key);
+      for (const key of devices.keys()) if (key.startsWith(`${uid}:`)) devices.delete(key);
+      for (const key of calls.keys()) if (calls.get(key).uid === uid) calls.delete(key);
+      return { deleted: true };
+    },
   };
 }
 
