@@ -417,7 +417,7 @@ Completion evidence: commits `d0f27282e` and `29a9062dc`; focused tests 17/17 PA
 - Produces `main({ env, now, randomUUID, launchctlList, stdout }): { exitCode: number, summary: object }`; the
   executable entry supplies real defaults, while tests inject deterministic values.
 
-- [ ] **Step 1: Write failing CLI tests**
+- [x] **Step 1: Write failing CLI tests**
 
 Call exported `main` in a temporary state root with injected `now`, `randomUUID`, and launchctl fixture containing
 representative unit and exclusion labels. Assert exit zero, one receipt, mode `0600`, JSON re-read, hash match, and
@@ -438,7 +438,7 @@ assert.equal(fs.readdirSync(receiptDir).length, 1);
 assert.equal(fs.statSync(receiptPath).mode & 0o777, 0o600);
 ```
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
 ```bash
 cd apps/life-call
@@ -447,7 +447,7 @@ node --test scripts/cfo-business-inventory.test.js
 
 Expected: FAIL because the CLI does not exist.
 
-- [ ] **Step 3: Implement the minimal boundary**
+- [x] **Step 3: Implement the minimal boundary**
 
 Use `execFileSync("launchctl", ["list"], { encoding: "utf8", timeout: 10000 })` only in the executable default.
 Do not call `launchctl print`, kickstart, stop, unload, network, database, or Telegram commands. Read the registry,
@@ -462,7 +462,7 @@ Add package script:
 "cfo:inventory": "node scripts/cfo-business-inventory.js"
 ```
 
-- [ ] **Step 4: Run GREEN, full targeted suite, and purity scan**
+- [x] **Step 4: Run GREEN, full targeted suite, and purity scan**
 
 ```bash
 cd apps/life-call
@@ -472,13 +472,15 @@ cd ../..
 git diff --check
 ```
 
-- [ ] **Step 5: Commit and push Task 4**
+- [x] **Step 5: Commit and push Task 4**
 
 ```bash
 git add apps/life-call/scripts/cfo-business-inventory.js apps/life-call/scripts/cfo-business-inventory.test.js apps/life-call/package.json
 git commit -m "feat(cfo): write immutable live inventory receipts"
 git push
 ```
+
+Completion evidence: commit `19ad38c86`; targeted tests 21/21 PASS; purity/diff checks PASS; task review approved.
 
 ---
 
