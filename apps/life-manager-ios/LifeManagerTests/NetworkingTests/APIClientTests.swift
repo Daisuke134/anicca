@@ -53,6 +53,30 @@ final class APIClientTests: XCTestCase {
         XCTAssertEqual(requests[0].url?.path, "/profile")
     }
 
+    func testMutationWithoutIdempotencyKeyFailsClosedBeforeTransport() async throws {
+        let store = InMemorySessionStore(session: TestSessionFactory.make())
+        let transport = ScriptedTransport(statuses: [200], payload: Data(#"{"value":"ok"}"#.utf8))
+        let client = APIClient(
+            baseURL: URL(string: "https://life-manager.example")!,
+            transport: transport,
+            sessionStore: store,
+            refresh: { _ in throw APIError.refreshRejected }
+        )
+
+        do {
+            let _: ValueResponse = try await client.send(
+                .mutation(path: "/analysis", method: .post),
+                as: ValueResponse.self
+            )
+            XCTFail("expected a caller-provided idempotency key")
+        } catch let error as APIError {
+            XCTAssertEqual(error, .missingIdempotencyKey)
+        }
+
+        let requests = await transport.requestsSnapshot()
+        XCTAssertEqual(requests.count, 0)
+    }
+
     func testExplicitSessionPropagationUpdatesCachedSessionForLogout() async throws {
         let store = InMemorySessionStore(session: nil)
         let transport = ScriptedTransport(statuses: [204], payload: Data())

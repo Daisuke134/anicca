@@ -71,9 +71,15 @@ actor APIClient: APIRequesting, SessionPropagating {
         } else {
             session = try await currentSession(required: endpoint.requiresAuthentication)
         }
-        let resolvedIdempotencyKey = endpoint.requiresIdempotencyKey
-            ? (idempotencyKey ?? UUID())
-            : idempotencyKey
+        let resolvedIdempotencyKey: UUID?
+        if endpoint.requiresIdempotencyKey {
+            guard let idempotencyKey else {
+                throw APIError.missingIdempotencyKey
+            }
+            resolvedIdempotencyKey = idempotencyKey
+        } else {
+            resolvedIdempotencyKey = idempotencyKey
+        }
         let urlRequest = try makeRequest(
             endpoint,
             session: session,
@@ -142,8 +148,11 @@ actor APIClient: APIRequesting, SessionPropagating {
             )
         }
         if endpoint.requiresIdempotencyKey {
+            guard let idempotencyKey else {
+                throw APIError.missingIdempotencyKey
+            }
             request.setValue(
-                (idempotencyKey ?? UUID()).uuidString,
+                idempotencyKey.uuidString,
                 forHTTPHeaderField: "Idempotency-Key"
             )
         }

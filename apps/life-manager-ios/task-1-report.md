@@ -571,3 +571,25 @@ releases the response and verifies the root transitions to `.welcome`.
 ```text
 OAuth exchange + refresh + AppComposition logout: 3/3 passed, 0 failures
 ```
+
+## Fresh final review — APIClient idempotency fail-closed guard
+
+### RED
+
+The regression test showed that a mutation called without a key silently
+generated a UUID and reached the transport:
+
+```text
+testMutationWithoutIdempotencyKeyFailsClosedBeforeTransport: failed
+expected caller-provided key; transport request count was 1
+```
+
+### GREEN
+
+`APIClient` now throws `APIError.missingIdempotencyKey` before loading or
+sending a required mutation, and request construction no longer has an
+implicit UUID fallback. Callers must persist and pass their operation key.
+
+```text
+APIClient fail-closed + explicit-key regression: 2/2 passed, 0 failures
+```

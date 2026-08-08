@@ -10,4 +10,5 @@ enum APIError: Error, Equatable, Sendable {
     case decodingFailed
     case transport(String)
     case invalidAPNsToken
+    case missingIdempotencyKey
 }
