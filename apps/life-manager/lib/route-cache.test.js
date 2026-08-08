@@ -141,6 +141,58 @@ test("Supabase route store persists structured route result across cache instanc
   assert.equal(calls.filter((call) => call.init.method === "POST").length, 1);
 });
 
+test("Supabase route store writes every legacy NOT NULL route column and explicit cache conflict target", async () => {
+  const requests = [];
+  const fetchImpl = async (input, init = {}) => {
+    requests.push({ url: new URL(String(input)), init });
+    return { ok: true, status: 201, json: async () => [] };
+  };
+  const store = createSupabaseRouteStore({ supaUrl: "https://supa.invalid", supaKey: "service", fetchImpl });
+  const cache = makeRouteCache({ store, ttlMs: 600000, now: () => 1000 });
+  await cache.getOrCompute("u1", G(35.68, 139.76), G(35.69, 139.70), 42,
+    async () => ({ durationSecs: 900, steps: [{ mode: "rail" }] }),
+    { eventAnchor: "2026-08-09T09:00:00+09:00", timezone: "Asia/Tokyo", direction: "outbound", provider: "transit", routeMode: "rail" });
+  const post = requests.find((request) => request.init.method === "POST");
+  assert.ok(post, "durable cache write was attempted");
+  const body = JSON.parse(post.init.body);
+  assert.equal(body.uid, "u1");
+  assert.equal(body.from_geo, "35.68,139.76");
+  assert.equal(body.to_geo, "35.69,139.7");
+  assert.equal(body.time_bucket, 42);
+  assert.equal(body.duration_secs, 900);
+  assert.match(post.url.search, /on_conflict=cache_key/);
+});
+
+test("route cache surfaces a failed durable write instead of silently claiming persistence", async () => {
+  const store = { get: async () => null, set: async () => false };
+  const cache = makeRouteCache({ store, ttlMs: 600000, now: () => 1000 });
+  await assert.rejects(
+    cache.getOrCompute("u1", G(35.68, 139.76), G(35.69, 139.70), 42, async () => ({ durationSecs: 900 })),
+    /durable route cache write failed/
+  );
+});
+
+test("two cache instances contend through the durable store and only one provider result wins", async () => {
+  const rows = new Map();
+  let writes = 0;
+  const storeFactory = () => ({
+    get: async (key) => rows.get(key) || null,
+    set: async (key, record) => {
+      writes += 1;
+      if (!rows.has(key)) rows.set(key, record);
+      return true;
+    },
+  });
+  const cacheA = makeRouteCache({ store: storeFactory(), ttlMs: 600000, now: () => 1000 });
+  const cacheB = makeRouteCache({ store: storeFactory(), ttlMs: 600000, now: () => 1000 });
+  let providerCalls = 0;
+  const provider = async () => { providerCalls += 1; await new Promise((r) => setTimeout(r, 5)); return { durationSecs: 900 }; };
+  const args = ["u1", G(35.68, 139.76), G(35.69, 139.70), 42, provider];
+  await Promise.all([cacheA.getOrCompute(...args), cacheB.getOrCompute(...args)]);
+  assert.equal(writes, 2, "both writers may race but each must report durable success");
+  assert.equal(rows.size, 1);
+});
+
 test("cache hits remain available when the caller marks provider work degraded", async () => {
   const store = new Map();
   const cache = makeRouteCache({ store, ttlMs: 600000, now: () => 1000 });

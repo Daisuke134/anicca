@@ -20,6 +20,14 @@ function coordinateLongitude(geo) {
   return geo && (geo.lon == null ? geo.lng : geo.lon);
 }
 
+function canonicalGeo(geo) {
+  if (!geo) return null;
+  const lat = q(geo.lat);
+  const lon = q(coordinateLongitude(geo));
+  if (lat == null || lon == null) return null;
+  return `${lat},${lon}`;
+}
+
 function contextValue(context, keys, fallback = "") {
   for (const key of keys) {
     if (context && context[key] != null && context[key] !== "") return String(context[key]);
@@ -75,11 +83,15 @@ function recordComputedAt(record) {
   return Number.isFinite(n) ? n : null;
 }
 
-function routeRecord(value, computedAt, context, ttlMs) {
+function routeRecord(value, computedAt, context, ttlMs, { uid, fromGeo, toGeo, timeBucket: bucket } = {}) {
   return {
     value,
     computedAt,
     ttlMs,
+    uid: uid == null ? null : String(uid),
+    fromGeo: fromGeo == null ? null : { lat: q(fromGeo.lat), lon: q(coordinateLongitude(fromGeo)) },
+    toGeo: toGeo == null ? null : { lat: q(toGeo.lat), lon: q(coordinateLongitude(toGeo)) },
+    timeBucket: bucket == null ? null : Number(bucket),
     provider: context.provider || null,
     eventAnchor: context.eventAnchor || null,
     timezone: context.timezone || null,
@@ -96,6 +108,10 @@ function routeValueFromRow(row) {
     value,
     computedAt: row.computed_at || row.computedAt,
     ttlMs: row.ttl_secs == null ? undefined : Number(row.ttl_secs) * 1000,
+    uid: row.uid == null ? null : String(row.uid),
+    fromGeo: row.from_geo || null,
+    toGeo: row.to_geo || null,
+    timeBucket: row.time_bucket == null ? null : Number(row.time_bucket),
     provider: row.provider || null,
     eventAnchor: row.event_anchor || row.eventAnchor || null,
     timezone: row.timezone || null,
@@ -136,8 +152,8 @@ function createSupabaseRouteStore({ supaUrl, supaKey, fetchImpl = globalThis.fet
     const body = {
       cache_key: key,
       uid: record.uid == null ? null : String(record.uid),
-      from_geo: record.fromGeo || null,
-      to_geo: record.toGeo || null,
+      from_geo: canonicalGeo(record.fromGeo),
+      to_geo: canonicalGeo(record.toGeo),
       time_bucket: record.timeBucket == null ? null : Number(record.timeBucket),
       provider: record.provider || "unknown",
       duration_secs: duration == null ? null : Number(duration),
@@ -150,8 +166,11 @@ function createSupabaseRouteStore({ supaUrl, supaKey, fetchImpl = globalThis.fet
       direction: record.direction || null,
       route_mode: record.routeMode || null,
     };
+    if (!body.uid || !body.from_geo || !body.to_geo || !Number.isFinite(body.time_bucket) || !Number.isFinite(body.duration_secs)) {
+      return false;
+    }
     try {
-      const response = await fetchImpl(path, {
+      const response = await fetchImpl(`${path}?on_conflict=cache_key`, {
         method: "POST",
         headers: authHeaders(supaKey, {
           "Content-Type": "application/json",
@@ -220,9 +239,18 @@ function makeRouteCache({ store = new Map(), ttlMs = BUCKET_MS, now = Date.now }
       }
       const value = await compute();
       if (value == null) return value;
-      const record = routeRecord(value, Number(now()), resolved.context, ttlMs);
+      const record = routeRecord(value, Number(now()), resolved.context, ttlMs, {
+        uid,
+        fromGeo,
+        toGeo,
+        timeBucket: resolved.bucket,
+      });
       readThrough.set(key, record);
-      await writeStore(store, key, record);
+      const persisted = await writeStore(store, key, record);
+      if (!persisted) {
+        readThrough.delete(key);
+        throw new Error("durable route cache write failed");
+      }
       return value;
     })();
     inFlight.set(key, pending);

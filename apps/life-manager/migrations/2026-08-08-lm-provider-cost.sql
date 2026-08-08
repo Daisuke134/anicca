@@ -29,9 +29,11 @@ ALTER TABLE public.lm_route_cache
 ALTER TABLE public.lm_route_cache
   DROP CONSTRAINT IF EXISTS lm_route_cache_uid_from_geo_to_geo_time_bucket_key;
 
-CREATE UNIQUE INDEX IF NOT EXISTS lm_route_cache_cache_key_idx
-  ON public.lm_route_cache (cache_key)
-  WHERE cache_key IS NOT NULL;
+-- Supabase's `on_conflict=cache_key` requires a non-partial unique index. A
+-- regular unique index still permits multiple legacy NULL keys in PostgreSQL.
+DROP INDEX IF EXISTS public.lm_route_cache_cache_key_idx;
+CREATE UNIQUE INDEX lm_route_cache_cache_key_idx
+  ON public.lm_route_cache (cache_key);
 CREATE INDEX IF NOT EXISTS lm_route_cache_context_idx
   ON public.lm_route_cache (uid, event_anchor, timezone, direction, route_mode);
 

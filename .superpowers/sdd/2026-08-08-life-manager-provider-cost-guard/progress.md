@@ -85,3 +85,10 @@ Result: 43/43 passed, 0 failed, 0 skipped (2026-08-08).
 - GREEN: cached route/calendar/geocode reads bypass budget reads; denied Google geocoding/fallback, nonessential Composio refresh, and Telnyx calls make zero paid-provider requests. Gemini Live checks the gate before opening a session.
 - GREEN: migration adds unique `(uid,budget_day,request_id)` atomic claim identity; `claimProviderBudget` provides the service-role insert seam.
 - Verification: `node --test lib/provider-budget.test.js test/provider-budget-gate.test.js` → 12/12 passed; the complete plan verification command (baseline + geocode + cost adapters/imports + budget + all contract tests) → 90/90 passed. The original pre-change baseline remains the recorded 43/43; the 54/54 route/ledger/Composio run includes the Task 5 Composio assertion added afterward.
+
+## Fresh review fix 1 receipt — durable route writer
+
+- RED: added route-store contract tests failed because `uid/from_geo/to_geo/time_bucket/duration_secs` were sent as NULL and the cache ignored a `set()` false result (2 failures).
+- GREEN: `node --test lib/route-cache.test.js lib/travel-transit-wire.test.js lib/travel-routes.test.js` → 37/37 passed.
+- Route records now carry canonical uid/geos/time bucket through the cache boundary; the REST writer serializes legacy `text` geos, rejects incomplete NOT NULL rows, uses `on_conflict=cache_key`, and propagates failed durable writes instead of returning an unpersisted result.
+- Migration replaces the prior partial cache-key index with a non-partial unique index usable by Supabase conflict resolution. Cross-instance contention and failed writes are covered by tests.
