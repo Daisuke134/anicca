@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | PRODUCT STAGE 7 ACTIVE — real-data local preview passed; real Telegram send next |
+| Status | PRODUCT STAGE 7 ACTIVE — real-data local preview passed; CFO-1h real Telegram delivery implementation active |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
@@ -856,7 +856,8 @@ top-level seven-step sequence.
 - [x] **CFO-1h2** CFO-1 report is assets/liabilities only. Until tests 16–18 and 22–28 pass, the renderer MUST NOT
       show token totals, complete API spend, business profit, measured/confirmed cost, or cost-based advice.
 - [ ] **CFO-1h** Send the first real assets/liabilities-only Telegram report and confirm its provider message
-      receipt after CFO-1h2's renderer gate is verified.
+      receipt after CFO-1h2's renderer gate is verified. Active implementation plan:
+      `docs/superpowers/plans/2026-08-10-life-manager-cfo-real-telegram.md`.
 - [ ] **CFO-1i** Enable hourly autonomous refresh, daily full reporting, and meaningful-change/action reporting. Two
       consecutive scheduled real-data runs without manual repair close M1 and owner-facing Product Stage 7.
 
