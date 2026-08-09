@@ -5908,6 +5908,14 @@ Item 10B/14は未完。実registration evidenceは0、Submit 0、Calendar write 
 `readEventDetail`内に属性ヘルパーを追加し、`starts_at: event.startDate || attr(".dtstart .value-title", "title")` とした。属性値はtrimし、要素または属性が空/欠落ならnullを返す。既存JSON-LD `event.startDate`優先、`normalizeConnpassEventDetail`のfail-closed検証、`dtend`およびその他のworkflowは変更していない。
 GREENは `node --test apps/life-manager/lib/connpass-browser-discovery.test.js apps/life-manager/lib/connector-connpass-workflow.test.js apps/life-manager/lib/connector-minimal-runner.test.js apps/life-manager/lib/connector-minimal-production.test.js` で30/30 pass・0 fail。live E2Eはprimaryによる検証待ちで、実registration evidenceは未取得のまま。
 
+### O1B-25進捗220（Connpass detail hCalendar end fallback修復）
+
+進捗219のstart fallback後に実行されたproduction wake `wake-4b2120875dc0761f8be5e813` は、正確なsafe reason `connpass_detail_end_invalid_failed` で終了した。これはJSON-LD `endDate` 欠落時に親のend validation境界へ到達したことを示す。
+回帰テストを先に追加し、`node --test apps/life-manager/lib/connpass-browser-discovery.test.js` のREDで8件中7件pass・1件fail（hCalendar dtend fallbackの期待値が実際null）を確認した。dtend要素欠落のstarts/ends fixtureと既存テストは通過した。
+
+`readEventDetail`の既存属性ヘルパーを再利用し、`ends_at: event.endDate || attr(".dtend .value-title", "title")` とした。属性値はtrimし、要素または属性が空/欠落ならnullを返す。JSON-LD `event.endDate`優先、`normalizeConnpassEventDetail`とerror code、workflow/runner/action harnessは変更していない。
+GREENは `node --test apps/life-manager/lib/connpass-browser-discovery.test.js apps/life-manager/lib/connector-connpass-workflow.test.js apps/life-manager/lib/connector-minimal-runner.test.js apps/life-manager/lib/connector-minimal-production.test.js` で32/32 pass・0 fail。live end E2Eはprimaryによる検証待ちで、実registration evidenceは未取得のまま。
+
 ### Active remaining TODO SSOT（進捗216。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。

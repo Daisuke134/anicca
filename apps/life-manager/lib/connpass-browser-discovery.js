@@ -147,7 +147,7 @@ async function readEventDetail(page) {
       summary: event.headline || null,
       description: event.description || text('[class*="description"]'),
       starts_at: event.startDate || attr(".dtstart .value-title", "title"),
-      ends_at: event.endDate || null,
+      ends_at: event.endDate || attr(".dtend .value-title", "title"),
       venue_name: locationValue.name || text('[class*="event-place"]'),
       address: typeof addressValue === "string" ? addressValue
         : [addressValue.streetAddress, addressValue.addressLocality, addressValue.addressRegion]
