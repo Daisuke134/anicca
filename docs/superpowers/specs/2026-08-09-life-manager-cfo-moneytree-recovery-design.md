@@ -43,7 +43,7 @@ Rejected alternatives:
 
 ## 3. Bounded Recovery Contract
 
-`recoverMoneytreeRead({ reportingDate }, { read, repair, wait })` returns one closed, deeply frozen outcome:
+`recoverMoneytreeRead({ reportingDate, observedAt }, { read, repair, wait })` returns one closed, deeply frozen outcome:
 
 - `fresh`: the first read returned a valid composed Moneytree bundle;
 - `recovered`: a permitted transient failure was followed by repair, a new provider read, successful
@@ -52,7 +52,7 @@ Rejected alternatives:
 
 `read()` resolves an exact `{ok:true,moneytreeRead}` or `{ok:false,kind}` object. `repair({kind,attempt})` resolves a
 boolean, and `wait(milliseconds)` resolves with no value. Success outcomes contain exactly
-`status,reportingDate,moneytreeRead,attempts,repair,action`; action-required outcomes use the same keys with
+`status,reportingDate,observedAt,moneytreeRead,attempts,repair,action`; action-required outcomes use the same keys with
 `moneytreeRead:null`, `repair:null`, and `action={kind,sourceLabel,retryLabel}`. `repair` is either null or
 `{sourceLabel:"Moneytree",freshReread:true,reconciled:true}`.
 
@@ -78,8 +78,10 @@ The report builder consumes the closed recovery outcome:
 - `fresh` uses the existing partial native-JPY report contract;
 - `recovered` uses the fresh reread only, sets `repair={sourceLabel:"Moneytree",freshReread:true,reconciled:true}`,
   and never restores an old amount;
-- `action_required` sets the Moneytree source to `unavailable`, all unavailable totals to `null`, excludes Moneytree
-  from confirmed totals, and carries `action.kind` as `reconsent` or `provider_outage`;
+- `action_required` uses the required input `observedAt`, the non-financial
+  `evidenceRef="evidence:moneytree_unavailable"`, an empty account list, and an unavailable Moneytree source; all
+  unavailable totals are `null`, Moneytree is excluded from confirmed totals, and `action.kind` is `reconsent` or
+  `provider_outage`;
 - no state may claim complete net worth while liabilities remain unknown.
 
 Telegram copy distinguishes the two actions. Re-consent asks for one connection update. Provider outage says the CFO

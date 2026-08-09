@@ -4,7 +4,7 @@
 |---|---|
 | Status | CFO-1b2 COVERAGE STATE COMPLETE — CFO-1e NEXT |
 | Parent SSOT | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
-| Active item | CFO-1e — Fleet read |
+| Active item | CFO-1g3 — bounded repair and append-only corrections |
 | First real source | Moneytree-connected MUFG accounts |
 | Deferred | Binance and every write-capable financial action |
 
@@ -22,6 +22,10 @@ The report answers, in this order:
 4. Does the owner need to do one concrete thing?
 
 It does not promise returns, guess missing balances, or mix later business, token-cost, tax, and trading work into the first report.
+
+CFO-1g3 implementation details are owned by
+`docs/superpowers/specs/2026-08-10-life-manager-cfo-repair-corrections-design.md`; this document remains the parent
+Moneytree-first product contract.
 
 ## 2. Observed Reality
 
