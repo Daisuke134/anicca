@@ -24500,3 +24500,11 @@
 {"ts":1786296682,"wake_id":"00MSM2X98YD2652FD99E7F4F44","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786296809,"wake_id":"00MSM2ZZKC5A9810A93BAE42AD","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786296940,"wake_id":"00MSM32SVMC20999C12F22419A","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786297073,"wake_id":"00MSM35N5R937E0DDBAF2048DE","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana DeFi lending protocols low minimum deposit USDC earn interest [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake "}
+{"ts":1786297201,"wake_id":"00MSM38DLP6FEA9A61E08D440D","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786297329,"wake_id":"00MSM3B4EX4664EBF4ABB149C9","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786297456,"wake_id":"00MSM3DUQW2188CB769FB5403E","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786297583,"wake_id":"00MSM3GKQU9BAF81D272A14D2B","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786297710,"wake_id":"00MSM3JAPSB9402B7E779C4AF2","kind":"wake","sleep_s":120,"model":"auto","slot":"self/issue-dev","profitable":false,"exit_code":0,"result":"[issue-dev] no actionable problem in recent behaviour — healthy, nothing to file. "}
+{"ts":1786297838,"wake_id":"00MSM3M15Q4E0D40ABBBD1448C","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786297966,"wake_id":"00MSM3OSII3C74C3A207E84827","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
