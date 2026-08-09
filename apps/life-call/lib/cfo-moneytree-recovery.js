@@ -48,14 +48,14 @@ async function recoverMoneytreeRead(input, options) {
     exact(input, INPUT_KEYS); exact(options, OPTION_KEYS); calendarDate(input.reportingDate); const parsed = timestamp(input.observedAt); for (const key of OPTION_KEYS) if (typeof options[key] !== "function") fail("invalid_callback");
     const base = { reportingDate: input.reportingDate, observedAt: input.observedAt }; let result = await read(options), attempts = 1;
     if (result.ok) { const composedRead = composed(base.reportingDate, result.moneytreeRead); return composedRead ? outcome(base, "fresh", composedRead, attempts, null, null, null) : action(base, parsed, "provider_outage", attempts, "provider_outage"); }
-    let currentKind = result.kind; const originalKind = result.kind; if (RECONSENT.has(currentKind) || currentKind === "provider_outage") return action(base, parsed, currentKind, attempts, originalKind);
+    let currentKind = result.kind; if (RECONSENT.has(currentKind) || currentKind === "provider_outage") return action(base, parsed, currentKind, attempts, currentKind);
     for (let index = 0; index < WAITS.length; index += 1) {
       if (!await repair(options, currentKind, index + 1)) continue; await wait(options, WAITS[index]); result = await read(options); attempts += 1;
-      if (!result.ok) { currentKind = result.kind; if (RECONSENT.has(currentKind) || currentKind === "provider_outage") return action(base, parsed, currentKind, attempts, originalKind); if (!TRANSIENT.has(currentKind)) return action(base, parsed, "provider_outage", attempts, originalKind); continue; }
-      const composedRead = composed(base.reportingDate, result.moneytreeRead); if (!composedRead) return action(base, parsed, "provider_outage", attempts, originalKind);
+      if (!result.ok) { currentKind = result.kind; if (RECONSENT.has(currentKind) || currentKind === "provider_outage") return action(base, parsed, currentKind, attempts, currentKind); if (!TRANSIENT.has(currentKind)) return action(base, parsed, "provider_outage", attempts, "provider_outage"); continue; }
+      const composedRead = composed(base.reportingDate, result.moneytreeRead); if (!composedRead) return action(base, parsed, "provider_outage", attempts, "provider_outage");
       return outcome(base, "recovered", composedRead, attempts, { sourceLabel: "Moneytree", freshReread: true, reconciled: true }, null, null);
     }
-    return action(base, parsed, "provider_outage", attempts, originalKind);
+    return action(base, parsed, "provider_outage", attempts, currentKind);
   } catch (error) { if (error && typeof error.message === "string" && error.message.startsWith(PREFIX)) throw error; fail("internal"); }
 }
 

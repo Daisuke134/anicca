@@ -74,6 +74,36 @@ test("exhausted recovery is bounded and preserves the original failure kind", as
   assert.equal(calls.reads, 3); assert.deepEqual(calls.repairs, [{ kind: "timeout", attempt: 1 }, { kind: "timeout", attempt: 2 }]); assert.deepEqual(calls.waits, [1000, 5000]);
 });
 
+for (const terminal of RECONSENT_KINDS) test(`transient reread ${terminal} is terminal reconsent with no extra repair`, async () => {
+  const calls = { reads: 0, repairs: 0, waits: [] };
+  const result = await recoverMoneytreeRead(INPUT, effects({
+    read: async () => { calls.reads += 1; return calls.reads === 1 ? { ok: false, kind: "timeout" } : { ok: false, kind: terminal }; },
+    repair: async () => { calls.repairs += 1; return true; }, wait: async (milliseconds) => { calls.waits.push(milliseconds); },
+  }));
+  assert.equal(result.status, "action_required"); assert.equal(result.action.kind, "reconsent"); assert.equal(result.failureKind, terminal);
+  assert.equal(result.attempts, 2); assert.equal(calls.reads, 2); assert.equal(calls.repairs, 1); assert.deepEqual(calls.waits, [1000]);
+});
+
+test("transient reread schema failure is provider outage with terminal failure kind", async () => {
+  const calls = { reads: 0, repairs: 0, waits: [] };
+  const result = await recoverMoneytreeRead(INPUT, effects({
+    read: async () => { calls.reads += 1; return calls.reads === 1 ? { ok: false, kind: "timeout" } : { ok: true, moneytreeRead: { schemaVersion: 1 } }; },
+    repair: async () => { calls.repairs += 1; return true; }, wait: async (milliseconds) => { calls.waits.push(milliseconds); },
+  }));
+  assert.equal(result.status, "action_required"); assert.equal(result.action.kind, "provider_outage"); assert.equal(result.failureKind, "provider_outage");
+  assert.equal(result.attempts, 2); assert.equal(calls.reads, 2); assert.equal(calls.repairs, 1); assert.deepEqual(calls.waits, [1000]);
+});
+
+test("exhausted transient recovery preserves the last observed closed kind", async () => {
+  const failures = ["timeout", "network", "provider_5xx"], calls = { reads: 0, repairs: 0, waits: [] };
+  const result = await recoverMoneytreeRead(INPUT, effects({
+    read: async () => ({ ok: false, kind: failures[calls.reads++] }), repair: async () => { calls.repairs += 1; return true; },
+    wait: async (milliseconds) => { calls.waits.push(milliseconds); },
+  }));
+  assert.equal(result.status, "action_required"); assert.equal(result.failureKind, "provider_5xx"); assert.equal(result.action.kind, "provider_outage");
+  assert.equal(result.attempts, 3); assert.equal(calls.reads, 3); assert.equal(calls.repairs, 2); assert.deepEqual(calls.waits, [1000, 5000]);
+});
+
 for (const kind of RECONSENT_KINDS) test(`${kind} requires reconsent without repair or wait`, async () => {
   let reads = 0; let repairs = 0; let waits = 0;
   const result = await recoverMoneytreeRead(INPUT, effects({
