@@ -83,6 +83,53 @@ test("official production factory installs the Connpass workflow into the defaul
   }
 });
 
+test("official production factory persists the Connpass discovery audit from its default workflow", async () => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-production-connpass-audit-"));
+  const audits = [];
+  const emptyWorkflow = {
+    async discoverCandidates() { return []; },
+    async runDirectAction() {},
+    async readProviderState() { return { status: "absent" }; },
+  };
+  const operations = {
+    async recordConnpassDiscoveryAudit(value) { audits.push(value); },
+    async reportWake() {},
+    async recordAction() {},
+  };
+  try {
+    const dependencies = createMinimalProductionDependencies({
+      repoRoot: "/private/repo", stateDir, wakeId: "wake-production-connpass-audit-1",
+      calendarAccount: "private-account", gogKeyring: "private-keyring", telegramTarget: "private-target",
+      lumaFormProfilePath: "/private/form-profile.json", lunaEvidenceDir: "/private/luna-evidence",
+      browserRail: { open() {}, navigate() {}, close() {} },
+      calendar: { ready() { return true; } },
+      calendarReader: { async readCalendarGaps() { return []; } },
+      lumaWorkflow: emptyWorkflow,
+      actionCache: { async replay() {}, saveVerifiedRepair() {} },
+      browserHarness: { async runFallback() {}, async performAction() {} },
+      evidenceChain: { async completeEvidence() {} },
+      operations,
+      now: () => new Date("2026-08-10T08:30:00.000Z"),
+    });
+    const page = {
+      current: "",
+      async goto(url) { this.current = url; },
+      async evaluate() { return []; },
+    };
+
+    assert.deepEqual(await dependencies.discoverCandidates("connpass", [], page), []);
+    assert.deepEqual(audits, [{
+      observed_count: 0,
+      normalized_count: 0,
+      window_count: 0,
+      free_open_count: 0,
+      calendar_free_count: 0,
+    }]);
+  } finally {
+    fs.rmSync(stateDir, { recursive: true, force: true });
+  }
+});
+
 test("production provider router keeps Luma cache direct fallback and readback on one page", async () => {
   const calls = [];
   const page = Object.freeze({ page_id: "owned-page-1" });

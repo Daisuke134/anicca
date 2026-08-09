@@ -150,3 +150,35 @@ test("operations persist only safe Luma discovery aggregate counts", async () =>
     fs.rmSync(stateDir, { recursive: true, force: true });
   }
 });
+
+test("operations persist only safe Connpass discovery aggregate counts", async () => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-minimal-connpass-discovery-"));
+  try {
+    const operations = createMinimalProductionOperations({
+      stateDir,
+      wakeId: "wake-20260810-connpass-discovery",
+      telegramTarget: "private-target",
+      now: () => new Date("2026-08-10T08:30:00.000Z"),
+      async sendMessage() { return { messageId: 7001 }; },
+    });
+    await operations.recordConnpassDiscoveryAudit({
+      observed_count: 41,
+      normalized_count: 40,
+      window_count: 11,
+      free_open_count: 3,
+      calendar_free_count: 1,
+    });
+
+    const file = path.join(stateDir, "connpass-discovery-audits.jsonl");
+    const row = JSON.parse(fs.readFileSync(file, "utf8").trim());
+    assert.deepEqual(Object.keys(row).sort(), [
+      "calendar_free_count", "free_open_count", "normalized_count", "observed_count",
+      "recorded_at", "schema_version", "wake_id", "window_count",
+    ]);
+    assert.equal(row.wake_id, "wake-20260810-connpass-discovery");
+    assert.equal(fs.statSync(file).mode & 0o777, 0o600);
+    assert.equal(JSON.stringify(row).includes("https://"), false);
+  } finally {
+    fs.rmSync(stateDir, { recursive: true, force: true });
+  }
+});

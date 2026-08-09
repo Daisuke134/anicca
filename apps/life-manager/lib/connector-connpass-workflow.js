@@ -154,7 +154,9 @@ function createConnpassScriptFirstWorkflow(options = {}) {
   const isCalendarFree = options.isCalendarFree || defaultCalendarFree;
   const submitOnPage = options.submitOnPage || submitConnpassOnPage;
   const readStateOnPage = options.readStateOnPage || readConnpassRegistrationStateOnPage;
-  if ([now, readBindings, readDetail, discoverOnPage, isCalendarFree, submitOnPage, readStateOnPage]
+  const onDiscoveryAudit = options.onDiscoveryAudit || (() => {});
+  if ([now, readBindings, readDetail, discoverOnPage, isCalendarFree, submitOnPage, readStateOnPage,
+    onDiscoveryAudit]
     .some((value) => typeof value !== "function")) invalid();
 
   return Object.freeze({
@@ -165,20 +167,33 @@ function createConnpassScriptFirstWorkflow(options = {}) {
       }
       const window = candidateWindow(now);
       const result = [];
+      let normalizedCount = 0;
+      let windowCount = 0;
+      let freeOpenCount = 0;
       for (const raw of observed) {
         let candidate;
         try { candidate = exactCandidate(raw); }
         catch { throw stageError("CONNPASS_CANDIDATE_VALIDATION_FAILED"); }
+        normalizedCount += 1;
         const startsAt = Date.parse(candidate.starts_at);
         if (startsAt < window.start || startsAt >= window.end) continue;
+        windowCount += 1;
         if (candidate.registration_status !== "available") continue;
         if (candidate.ticket_price_status !== "free" || candidate.ticket_price_minor !== 0) continue;
+        freeOpenCount += 1;
         let calendarFree;
         try { calendarFree = await isCalendarFree(candidate, calendar); }
         catch { throw stageError("CONNPASS_CALENDAR_CONFLICT_CHECK_FAILED"); }
         if (!calendarFree) continue;
         result.push(Object.freeze({ ...candidate }));
       }
+      await onDiscoveryAudit(Object.freeze({
+        observed_count: observed.length,
+        normalized_count: normalizedCount,
+        window_count: windowCount,
+        free_open_count: freeOpenCount,
+        calendar_free_count: result.length,
+      }));
       return Object.freeze(result);
     },
     async runDirectAction({ page, candidate }) {
