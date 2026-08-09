@@ -47,3 +47,17 @@ GREEN: Task 2 now consumes the actual four-key Task 1 action, requires null succ
 - Commit/push: `7a6d3f816` (`fix(cfo): close recovery snapshot canonical form`) pushed to canonical `feature/cfo-1g3-sol-luna`.
 
 Concerns: all requested tests pass; both production/test LOC pairs remain above the plan soft targets because the closed-shape and canonical-rebuild invariants are load-bearing.
+
+## Fix Round 3
+
+RED: `node --test lib/cfo-recovery-snapshot.test.js` observed 3 failures out of 19: a valid zero balance was rejected by the duplicate `sum || null` check, a wrong but valid RFC3339 2099 retry instant was accepted, and unreachable attempts states (repair/wait mismatches) were accepted.
+
+GREEN: removed the duplicate amount precheck so canonical `buildCfoDailyReport` equality preserves integer zero; retry instants are compared by epoch time to `observedAt + 30 minutes`; and one fixed-budget attempts validator enforces reads 1–3, repairs `reads-1`, and the exact `[1000,5000]` wait prefix. Redundant action-key sets were collapsed.
+
+- Changed files: `apps/life-call/lib/cfo-recovery-snapshot.js`, `apps/life-call/lib/cfo-recovery-snapshot.test.js`.
+- Verification: Task 1+2 focused 38/38; `npm run test:cfo` 279/279; `git diff --check` pass.
+- LOC: production 146; tests 192.
+- Commit/push: `fcbcaa1c3` (`fix(cfo): validate reachable recovery snapshots`) pushed to canonical `feature/cfo-1g3-sol-luna`.
+- Report is committed and pushed separately after the code commit.
+
+Concerns: all requested tests pass; Task 2 production LOC remains above the plan soft target because canonical comparisons, closed descriptors, privacy checks, and reachable-attempt invariants are retained.
