@@ -6078,6 +6078,20 @@ LumaではCalendar conflict、Connpassではfree/open 0という外部候補条�
 10B unblockerとして先行する。Peatixでeligible candidateを得たら同じofficial runnerのSubmit→parent readback→evidence chainへ接続し、
 10B/14のlive acceptanceへ戻る。Meetup以降、schedule、restart、mergeはPeatix slice完了前に開始しない。
 
+### O1B-25進捗227（Peatix public discovery measured contract / TDD plan）
+
+Connector-owned一時targetでPeatixをread-only実測した。東京検索は`a.event-card`からcanonical `/event/<id>`を返し、detail page内の
+`/event/<id>/get_view_data`は`status`、`isOpen`、`isFinished`、Tokyo wall-clock `datetime/datetimeEnd`、`tickets[]`を公開JSONで返す。
+無料券の実測差分は、利用可能例が`price 0 / status 10 / seatsAvailable > 0`、締切済み例が
+`price 0 / status 100 / seatsAvailable 0 / salesEnds経過`だった。従ってキーワード「無料」や`price 0`だけを申込可能性として扱わず、
+event open、ticket status、在庫、sales deadlineを同時gateにする。
+
+Ponytail `full`で範囲を二ファイルのdiscovery-only sliceへ削った。plan
+`docs/superpowers/plans/2026-08-10-connector-peatix-discovery.md`は一つのowned pageでsearch→same-origin public JSONを読み、
+exact identity、14日window、free/open、Calendar conflict、privacy-safe 5-count auditをTDD固定する。Submit、OTP、readback、evidence、
+production router、registry promotion、scheduleは含めない。live read-only auditとfresh reviewが通るまで`DEFAULT_PROVIDERS`は
+`["luma", "connpass"]`を維持し、Peatixをproduction supportedと表示しない。
+
 ### Active remaining TODO SSOT（進捗226。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
