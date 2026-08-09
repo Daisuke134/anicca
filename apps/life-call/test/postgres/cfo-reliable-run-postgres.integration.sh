@@ -448,6 +448,13 @@ OTHER_DECISION="$DECISION_A"
 CLAIM_A_REF="$(${PSQL[@]} -Atqc "SELECT public_ref FROM public.lm_cfo_telegram_delivery_claims WHERE uid = 'tenant-a' AND report_kind = '$DELIVERY_KIND' AND reporting_date = DATE '$DATE_A' AND revision = $DELIVERY_REVISION;")"
 [[ "$CLAIM_A_REF" =~ ^[0-9a-f-]{36}$ ]] || fail 'delivery claim row has no public_ref'
 
+# Once the delivery identity exists, a retry carrying a different snapshot
+# reference must fail closed. The INSERT conflict path cannot rely on the
+# composite FK, so the existing claim's snapshot reference must be checked
+# explicitly before returning reconcile/sent.
+expect_sql_error existing_claim_snapshot_mismatch 'cfo_telegram_delivery_claim_snapshot_mismatch' \
+  "SET ROLE service_role; SELECT public.lm_claim_cfo_telegram_delivery('tenant-a', '$SNAPSHOT_B_REF'::uuid, '$DELIVERY_KIND', DATE '$DATE_A', $DELIVERY_REVISION);"
+
 # Unreceipted retry stays reconcile until a provider receipt exists.
 RETRY_DECISION="$(${PSQL[@]} -Atqc "SET ROLE service_role; SELECT public.lm_claim_cfo_telegram_delivery('tenant-a', '$SNAPSHOT_A_REF'::uuid, '$DELIVERY_KIND', DATE '$DATE_A', $DELIVERY_REVISION)->>'decision';")"
 [[ "$RETRY_DECISION" == 'reconcile' ]] || fail 'unreceipted retry did not return reconcile'
