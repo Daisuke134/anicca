@@ -25,7 +25,7 @@ function detail(id, overrides = {}) {
       ...jsonDataOverrides,
       event: {
         id,
-        title: `Event ${id}`,
+        name: `Event ${id}`,
         status: "OPEN",
         isOpen: true,
         isFinished: false,
@@ -73,7 +73,7 @@ function eligibilityFixture() {
     })],
     [binding(105), detail(105)],
     [binding(106), detail(106, {
-      event: { title: "Eligible Event 106" },
+      event: { name: "Eligible Event 106" },
     })],
   ];
 }
@@ -170,7 +170,7 @@ test("Peatix default readers use one page, canonical event identities, and same-
         ];
       }
       const id = argument.endsWith("/201") ? 201 : 202;
-      return detail(id, { event: { title: `Default ${id}` } });
+      return detail(id, { event: { name: `Default ${id}` } });
     },
   };
   const workflow = createPeatixDiscoveryWorkflow({
@@ -186,7 +186,7 @@ test("Peatix default readers use one page, canonical event identities, and same-
     "https://peatix.com/event/202",
   ]);
   assert.deepEqual(waits, [{
-    selector: "a.event-card",
+    selector: "a.event-card, .search-results .no-results",
     options: { state: "attached", timeout: 10_000 },
   }]);
   assert.deepEqual(evaluations.map(({ argument }) => argument), [
@@ -260,6 +260,13 @@ test("Peatix maps navigation, reader, identity, candidate, and Calendar failures
       async readSearchBindings() { return [oneBinding]; },
       async readEventViewData() { return { event: validDetail.json_data.event }; },
     }, "PEATIX_CANDIDATE_VALIDATION_FAILED"],
+    ["title-only payload", {
+      async readSearchBindings() { return [oneBinding]; },
+      async readEventViewData() {
+        const { name: _name, ...titleOnlyEvent } = validDetail.json_data.event;
+        return { json_data: { event: { ...titleOnlyEvent, title: "Unmeasured title" } } };
+      },
+    }, "PEATIX_CANDIDATE_VALIDATION_FAILED"],
     ["Calendar check", {
       async readSearchBindings() { return [oneBinding]; },
       async readEventViewData() { return validDetail; },
@@ -320,6 +327,36 @@ test("Peatix default reader maps search navigation and read failures without lea
     (error) => error.code === "PEATIX_SEARCH_READ_FAILED"
       && error.message === "Peatix discovery stage failed",
   );
+
+  const emptyAudits = [];
+  const emptyWaits = [];
+  const emptyWorkflow = createPeatixDiscoveryWorkflow({
+    onDiscoveryAudit(audit) { emptyAudits.push(audit); },
+  });
+  const emptyResult = await emptyWorkflow.discoverCandidates({
+    page: {
+      async goto() {},
+      async waitForSelector(selector, options) {
+        emptyWaits.push({ selector, options });
+      },
+      async evaluate() { return []; },
+    },
+    calendar: [],
+  });
+  assert.deepEqual(emptyWaits, [{
+    selector: "a.event-card, .search-results .no-results",
+    options: { state: "attached", timeout: 10_000 },
+  }]);
+  assert.deepEqual(emptyResult, []);
+  assert.equal(Object.isFrozen(emptyResult), true);
+  assert.deepEqual(emptyAudits, [{
+    observed_count: 0,
+    normalized_count: 0,
+    window_count: 0,
+    free_open_count: 0,
+    calendar_free_count: 0,
+  }]);
+  assert.equal(emptyAudits.length, 1);
 
   const detailNavigationWorkflow = createPeatixDiscoveryWorkflow({ now: () => NOW });
   let navigationCount = 0;

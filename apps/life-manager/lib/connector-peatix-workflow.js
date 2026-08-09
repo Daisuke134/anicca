@@ -4,6 +4,7 @@ const { zonedSlotInstant } = require("./honne-ja-shadow-schedule.js");
 
 const SEARCH_URL = "https://peatix.com/search?q=%E7%84%A1%E6%96%99&country=JP&l.text=Tokyo";
 const SEARCH_RENDER_TIMEOUT_MS = 10_000;
+const SEARCH_RENDER_SELECTOR = "a.event-card, .search-results .no-results";
 const TIME_ZONE = "Asia/Tokyo";
 const EVENT_ID = /^[1-9][0-9]*$/;
 const EVENT_PATH = /^\/event\/([1-9][0-9]*)\/?$/;
@@ -56,11 +57,9 @@ function canonicalBinding(value) {
   if (!id) return null;
   const expectedRef = `peatix-event://event/${id}`;
   if (row.event_ref != null && String(row.event_ref) !== expectedRef) return null;
-  const title = String(row.title || "").trim();
   return Object.freeze({
     event_ref: expectedRef,
     canonical_url: `https://peatix.com/event/${id}`,
-    ...(title ? { title } : {}),
   });
 }
 
@@ -129,14 +128,6 @@ function exactCandidate(value) {
   return value;
 }
 
-function firstText(...values) {
-  for (const value of values) {
-    const text = String(value == null ? "" : value).trim();
-    if (text) return text;
-  }
-  return "";
-}
-
 function numericMinor(tickets) {
   const prices = tickets
     .map((ticket) => ticket && ticket.price)
@@ -168,7 +159,7 @@ function normalizeDetail(binding, raw, nowMs) {
   if (!startsAt || !endsAt || Date.parse(startsAt) >= Date.parse(endsAt)) invalid();
   const tickets = event.tickets;
   if (!Array.isArray(tickets)) invalid();
-  const title = firstText(event.title);
+  const title = String(event.name || "").trim();
   if (!title) invalid();
   const freeObserved = tickets.some((ticket) => ticket && ticket.price === 0);
   const freeOpen = event.status === "OPEN"
@@ -212,11 +203,11 @@ async function defaultReadSearchBindings(page) {
     throw stageError("PEATIX_SEARCH_NAVIGATION_FAILED");
   }
   try {
-    await page.waitForSelector("a.event-card", {
+    await page.waitForSelector(SEARCH_RENDER_SELECTOR, {
       state: "attached", timeout: SEARCH_RENDER_TIMEOUT_MS,
     });
     return await page.evaluate(() => Array.from(document.querySelectorAll("a.event-card"))
-      .map((anchor) => ({ href: anchor.href, title: anchor.textContent.trim() })));
+      .map((anchor) => ({ href: anchor.href })));
   } catch {
     throw stageError("PEATIX_SEARCH_READ_FAILED");
   }
