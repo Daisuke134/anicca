@@ -43,6 +43,22 @@ test("claims one exact RPC and returns an isolated frozen five-key receipt", asy
   provider.decision = "reconcile"; assert.equal(receipt.decision, "send");
 });
 
+test("accepts each exact claim decision without broadening the closed enum", async () => {
+  for (const decision of ["send", "sent", "reconcile"]) {
+    const calls = [];
+    const provider = { ...CLAIM_RECEIPT, decision };
+    const receipt = await claimCfoTelegramDelivery(claimInput(), {
+      supaUrl: URL,
+      supaKey: KEY,
+      fetchImpl: async (url, init) => { calls.push({ url, init }); return response(provider); },
+    });
+    assert.equal(calls.length, 1, `${decision} makes one RPC call`);
+    assert.equal(receipt.decision, decision);
+    assert.equal(receipt.reporting_date, DATE);
+    assert.equal(receipt.revision, 1);
+  }
+});
+
 test("records one exact RPC and returns an isolated frozen four-key receipt", async () => {
   const calls = []; const provider = { ...RECORD_RECEIPT };
   const receipt = await recordCfoTelegramDelivery(recordInput(), { supaUrl: URL, supaKey: KEY, fetchImpl: async (url, init) => { calls.push({ url, init }); return response(provider); } });
@@ -61,6 +77,31 @@ test("rejects closed, typed inputs before network and gates report kind/IDs", as
   await rejected(() => claimCfoTelegramDelivery(new Proxy(claimInput(), {}), opts));
   const accessor = claimInput(); Object.defineProperty(accessor, "uid", { enumerable: true, get: () => "UID_SENTINEL" }); await rejected(() => claimCfoTelegramDelivery(accessor, opts));
   assert.equal(calls.length, 0);
+});
+
+test("rejects lowercase non-allowed decisions and negative revision/message IDs", async () => {
+  const decisionCalls = { value: 0 };
+  await rejected(() => claimCfoTelegramDelivery(claimInput(), {
+    supaUrl: URL,
+    supaKey: KEY,
+    fetchImpl: async () => { decisionCalls.value += 1; return response({ ...CLAIM_RECEIPT, decision: "cash" }); },
+  }), "invalid_receipt", decisionCalls);
+
+  const revisionCalls = { value: 0 };
+  await rejected(() => claimCfoTelegramDelivery(claimInput({ revision: -1 }), {
+    supaUrl: URL,
+    supaKey: KEY,
+    fetchImpl: async () => { revisionCalls.value += 1; return response(CLAIM_RECEIPT); },
+  }), "invalid_revision");
+  assert.equal(revisionCalls.value, 0, "negative revision is rejected before network");
+
+  const messageCalls = { value: 0 };
+  await rejected(() => recordCfoTelegramDelivery(recordInput({ messageId: -1 }), {
+    supaUrl: URL,
+    supaKey: KEY,
+    fetchImpl: async () => { messageCalls.value += 1; return response(RECORD_RECEIPT); },
+  }), "invalid_message_id");
+  assert.equal(messageCalls.value, 0, "negative message ID is rejected before network");
 });
 
 test("fails closed on exact echo/receipt validation, hostile provider paths, and never retries or logs", async () => {
@@ -83,4 +124,17 @@ test("fails closed on exact echo/receipt validation, hostile provider paths, and
     const counter = { value: 0 }; await rejected(() => claimCfoTelegramDelivery(claimInput(), { supaUrl: URL, supaKey: KEY, fetchImpl: async () => { counter.value += 1; return { ok: false, status: 409, json: () => { throw new Error("RAW_BODY_SENTINEL"); } }; } }), "provider_409", counter);
   } finally { [console.log, console.error, console.warn] = sinks; }
   assert.equal(sinkCalls, 0);
+});
+
+test("rejects a record receipt that echoes a different valid claim UUID", async () => {
+  const counter = { value: 0 };
+  const differentClaim = "60000000-0000-4000-8000-000000000001";
+  await rejected(() => recordCfoTelegramDelivery(recordInput(), {
+    supaUrl: URL,
+    supaKey: KEY,
+    fetchImpl: async () => {
+      counter.value += 1;
+      return response({ ...RECORD_RECEIPT, claim_public_ref: differentClaim });
+    },
+  }), "receipt_mismatch", counter);
 });
