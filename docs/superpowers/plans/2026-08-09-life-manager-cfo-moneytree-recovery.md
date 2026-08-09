@@ -14,7 +14,7 @@ PostgreSQL appends contiguous correction revisions; existing delivery dedupe sup
 
 **Design:** `docs/superpowers/specs/2026-08-09-life-manager-cfo-moneytree-recovery-design.md`.
 
-**Status:** ACTIVE — Tasks 1–5 complete; Task 6 next.
+**Status:** ACTIVE — Tasks 1–6 complete; Task 7 next.
 
 ## Global Constraints
 
@@ -256,21 +256,21 @@ Final stdout exactly `cfo-snapshot-corrections-postgres: PASS`; stderr empty. Ru
 - Consumes: `validateCfoRecoverySnapshotBundle`, shared `createCfoSupabaseRpc`.
 - Produces: `appendCfoDailySnapshotRevision(input, opts)` from the design.
 
-- [ ] **Step 1: Write RED**
+- [x] **Step 1: Write RED**
 
 Assert exact input/options, revision >=2, predecessor=revision-1, complete bundle validation before network, one RPC,
 exact body, closed frozen six-key receipt, exact echo, hostile response/error redaction, and no retry/direct table/log.
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
 Run: `node --test lib/cfo-daily-snapshot-revision-store.test.js`; expect missing module failure.
 
-- [ ] **Step 3: Implement minimum GREEN**
+- [x] **Step 3: Implement minimum GREEN**
 
 Validate with the Task 2 shared validator, call only `lm_append_cfo_daily_snapshot_revision`, and validate the receipt.
 Do not rebuild reports, allocate revisions, read tables, or retry.
 
-- [ ] **Step 4: Verify and close**
+- [x] **Step 4: Verify and close**
 
 Run focused Task 2+6 tests, `npm run test:cfo`, LOC, diff-check. Commit/push
 `feat(cfo): persist snapshot correction revisions`; report; fresh Sol review.
