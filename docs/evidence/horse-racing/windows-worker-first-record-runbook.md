@@ -36,25 +36,30 @@ git checkout 61c202c27c12269668991712334adb0a4662dd83
 git rev-parse HEAD
 git status --short
 git diff --check
-py -3.12-32 -m venv .venv32
-.\.venv32\Scripts\python.exe -m pip install -e .
+py -3.12-32 -m venv venv32
+.\venv32\Scripts\python.exe -m pip install -e ".[dev]"
 ```
 
 `irm .../master/install.ps1 | iex`、master checkout、未固定cloneは実行しない。
 
 ### 4. Local mechanics check
 
-providerを呼ばないmechanics evidenceとして、pinned READMEどおり `pytest tests/ -q --ignore=tests/integration/ --ignore=tests/e2e/` を実行する。失敗時は `BLOCKED`。このtest結果でsession/recordを増やさない。
+providerを呼ばないmechanics evidenceとして、pinned READMEどおり `pytest tests/ -q --ignore=tests/integration/ --ignore=tests/e2e/` を `venv32` から実行する。失敗時は `BLOCKED`。このtest結果でsession/recordを増やさない。
+
+```powershell
+.\venv32\Scripts\python.exe -m pytest tests/ -q --ignore=tests/integration/ --ignore=tests/e2e/
+```
 
 ### 5. Bounded real probe
 
 全precondition成立時刻を記録し、`$env:JLTSQL_SKIP_SCHEDULER_PROMPT="1"` を設定する。Windows-localで `TO_DATE=today`、`FROM_DATE=today-7 days` をISO日付へ計算し、次だけを実行する。
 
 ```powershell
+$env:PYTHON = (Resolve-Path .\venv32\Scripts\python.exe).Path
 $env:JLTSQL_SKIP_SCHEDULER_PROMPT="1"
 $TO_DATE = (Get-Date).ToString('yyyyMMdd')
 $FROM_DATE = (Get-Date).AddDays(-7).ToString('yyyyMMdd')
-quickstart_timeseries.bat --db sqlite --from $FROM_DATE --to $TO_DATE
+.\quickstart_timeseries.bat --db sqlite --from $FROM_DATE --to $TO_DATE
 $exitCode = $LASTEXITCODE
 ```
 
@@ -65,8 +70,8 @@ $exitCode = $LASTEXITCODE
 exit 0の時だけ、SQLite内で `NL_RA` の件数、`PRAGMA table_info(NL_RA)` のfield名/type、SQLiteファイルのlocal SHA-256だけを取得する。row値を表示・exportしない。`NL_RA=0`、nonzero exit、schema欠落、provider timestamp欠落、entitlement失敗のどれか一つで、欠落フィールドを明記して `BLOCKED`。file mtimeをprovider timestampへ代用しない。
 
 ```powershell
-sqlite3 data\keiba.db "SELECT COUNT(*) FROM NL_RA;"
-sqlite3 data\keiba.db "PRAGMA table_info(NL_RA);"
+.\venv32\Scripts\python.exe -c "import sqlite3; db=sqlite3.connect(r'data\keiba.db'); print(db.execute('SELECT COUNT(*) FROM NL_RA').fetchone()[0]); db.close()"
+.\venv32\Scripts\python.exe -c "import json,sqlite3; db=sqlite3.connect(r'data\keiba.db'); print(json.dumps([(r[1], r[2]) for r in db.execute('PRAGMA table_info(NL_RA)')], ensure_ascii=False)); db.close()"
 Get-FileHash data\keiba.db -Algorithm SHA256
 ```
 
