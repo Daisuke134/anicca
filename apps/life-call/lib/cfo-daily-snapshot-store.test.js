@@ -62,6 +62,25 @@ test("appends one RPC request with exact credentials and normalized bodies", asy
   assert.doesNotMatch(calls[0].url, /lm_cfo_daily_snapshots/);
 });
 
+test("accepts corrected revision-1 receipts and rejects predecessor revisions", async () => {
+  const corrected = { ...RECEIPT, supersedes_revision: null };
+  const receipt = await appendCfoDailySnapshot(input(), {
+    supaUrl: URL, supaKey: KEY, fetchImpl: async () => response(corrected),
+  });
+  assert.deepEqual(receipt, RECEIPT);
+  assert.deepEqual(Object.keys(receipt).sort(), Object.keys(RECEIPT).sort());
+  assert.equal(Object.isFrozen(receipt), true);
+
+  const predecessor = { ...corrected, supersedes_revision: 0 }; let calls = 0;
+  await assert.rejects(() => appendCfoDailySnapshot(input(), {
+    supaUrl: URL, supaKey: KEY,
+    fetchImpl: async () => { calls += 1; return response(predecessor); },
+  }), error => {
+    assert.equal(error.message, "cfo_snapshot_store_failed:invalid_receipt");
+    assert.doesNotMatch(error.message, SENSITIVE); assert.equal(calls, 1); return true;
+  });
+});
+
 test("requires exact run echo and keeps hostile failures closed, single-call, and silent", async () => {
   const sinks = [console.log, console.error, console.warn]; let sinkCalls = 0;
   console.log = console.error = console.warn = () => { sinkCalls += 1; };

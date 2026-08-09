@@ -7,6 +7,7 @@ const { createCfoSupabaseRpc } = require("./cfo-supabase-rpc.js");
 const ERROR_PREFIX = "cfo_snapshot_store_failed:";
 const INPUT_KEYS = new Set(["uid", "reportingDate", "runId", "moneytreeRead"]);
 const RECEIPT_KEYS = new Set(["public_ref", "reporting_date", "run_id", "revision", "created_at"]);
+const CORRECTED_RECEIPT_KEYS = new Set([...RECEIPT_KEYS, "supersedes_revision"]);
 const SNAPSHOT_OPTION_KEYS = new Set(["supaUrl", "supaKey", "fetchImpl", "log"]);
 
 const { fail, internal, exact, validDate, uuid, timestamp, validateOptions, freeze, postRpc } = createCfoSupabaseRpc(ERROR_PREFIX);
@@ -18,12 +19,15 @@ function validateInput(input) {
   return { uid: input.uid, reportingDate: input.reportingDate, runId: uuid(input.runId, "invalid_run_id") };
 }
 function validateReceipt(value, expected) {
-  exact(value, RECEIPT_KEYS, "invalid_receipt");
+  const corrected = Object.prototype.hasOwnProperty.call(value, "supersedes_revision");
+  exact(value, corrected ? CORRECTED_RECEIPT_KEYS : RECEIPT_KEYS, "invalid_receipt");
   uuid(value.public_ref, "invalid_receipt");
   if (value.reporting_date !== expected.reportingDate || typeof value.reporting_date !== "string") fail("receipt_mismatch");
   if (typeof value.run_id !== "string" || value.run_id !== expected.runId) fail("receipt_mismatch");
   if (value.revision !== 1 || !timestamp(value.created_at)) fail("invalid_receipt");
-  try { return freeze(structuredClone(value)); } catch { fail("invalid_receipt"); }
+  if (corrected && value.supersedes_revision !== null) fail("invalid_receipt");
+  const projected = { public_ref: value.public_ref, reporting_date: value.reporting_date, run_id: value.run_id, revision: value.revision, created_at: value.created_at };
+  try { return freeze(structuredClone(projected)); } catch { fail("invalid_receipt"); }
 }
 
 async function appendCfoDailySnapshot(input, opts = {}) {
