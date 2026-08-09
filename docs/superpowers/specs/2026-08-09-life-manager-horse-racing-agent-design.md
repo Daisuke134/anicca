@@ -103,6 +103,14 @@ flowchart LR
 
 `HRA-2a`はboundary onlyでありconnectorではない。provider accessはHRA-2Rのowned Windows probeだけが行う。raw DBはWindows内に留まり、外部へ送るのはhashとredacted manifestだけである。
 
+### HRA-2R1 provider-worker route（Mac測定値に基づく固定判断）
+
+現在のcontrol planeはmacOS 15.6 / Apple M4 / 16 GiB / 内蔵disk空き32 GiB（35.2 GB）で、VM runtimeは未導入である。JRA-VAN公式FAQ 436はData LabをWindows専用・Mac非対応、FAQ 210はmacOS版JV-Link非対応と明記し、developer topic 49はJV-LinkをActiveX COMとして提供する。したがってMac上のJV-Link直実行、Wine、Rosetta、x64エミュレーションをsupported pathと扱わない。
+
+Macの内蔵diskへWindows ARM VMを新設しない。MicrosoftのWindows 11最低要件はstorage 64 GB、ParallelsのApple silicon向け公式構成はArm guestであり、x64 preview/emulationはJV-Linkの互換性証拠ではない。唯一の必須routeは、Macをcontrol planeに残し、owned remote/native Windows 11 x64 endpointをprovider workerにすること。raw licensed rowsはworker内だけに保持し、戻すのはredacted manifestのみとする。
+
+既存GCP設定は存在するが、観測されたinstance countは0であり、Windows workerの存在証明ではない。Windows 365/Parallelsは候補実験に留め、JRAの実probeがPASSするまでsupportedとは表示しない。
+
 ## 3. Committed proofとReality Gate
 
 ### Committed proof
@@ -119,11 +127,11 @@ HRA-2bのsynthetic-only `store.py`、fixture、testはuncommitted quarantineで�
 
 #### JRA lane
 
-1. owned Windowsを用意し、JRA-VAN Data Lab/JV-Linkがinstalledであることをinventoryする。
-2. valid service keyとJRA-VAN利用条件を確認する。credential値はmanifest、Git、Telegramへ書かない。
-3. pinned [`miyamamoto/jrvltsql`](https://github.com/miyamamoto/jrvltsql)のcommitを確認する。NAR codeをJRA laneへ混ぜない。
-4. official/upstream documentationに記載されたprobe commandをowned Windowsで実行する。command、exit code、provider/adaptor version、timestampをmanifestへ記録する。
-5. local Windows内で`>=1` real JRA recordを観測する。raw rowは保存範囲をWindows内に限定し、Telegram/cloudへ出さない。
+1. owned remote/native Windows 11 x64 workerを用意し、JRA-VAN Data Lab/JV-Linkをinstalledにする。Mac内蔵VM、Wine、x64 emulationは代替にしない。
+2. valid service keyとJRA-VAN利用条件をworker上で確認する。credential値はmanifest、Git、Telegramへ書かない。
+3. pinned [`miyamamoto/jrvltsql`](https://github.com/miyamamoto/jrvltsql)のcommitと公式probeをworker上で確認する。NAR codeを混ぜない。
+4. probe command、exit code、provider/adaptor version、timestamp、row countをredacted manifestへ記録する。
+5. worker内で`>=1` real JRA recordを観測する。raw rowはworker外へ出さず、Macへはhashとmanifestだけ返す。
 
 #### NAR lane
 
@@ -370,7 +378,7 @@ HRA-6の全receipt、written permission/official API evidence、tax review、cre
 
 | 契約 | 検証 | 合格条件 |
 |---|---|---|
-| Reality evidence | sourceごとのWindows probe | provider timestamp、source、adapter/upstream version、row count>=1、schema names/types、content hash、manifest、exit evidenceが全て揃う |
+| Reality evidence | sourceごとのowned remote/native Windows 11 x64 probe | provider timestamp、source、adapter/upstream version、row count>=1、schema names/types、content hash、manifest、exit evidenceが全て揃う |
 | evidence truth | Telegram/CFO payload scan | 4 evidence classesのいずれかを表示し、synthetic/shadowをreal revenueへ合算しない |
 | raw boundary | Windows-local path、manifest、Git/Telegram/cloud scan | raw licensed row、secret、credential、実馬名がWindows外へ0件 |
 | schema derivation | observed manifestとschema diff | HRA-2R PASS前のsynthetic storeをcompletionにしない |
@@ -404,3 +412,9 @@ HRA-6の全receipt、written permission/official API evidence、tax review、cre
 10. [Guo et al., On Calibration of Modern Neural Networks](https://proceedings.mlr.press/v70/guo17a.html) — calibration評価・temperature scalingの研究一次資料。
 11. [scikit-learn TimeSeriesSplit](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.TimeSeriesSplit.html) — 時系列順を保ったsplitの公式API仕様。random splitを使わない根拠。
 12. [miyamamoto/jrvltsql](https://github.com/miyamamoto/jrvltsql)、[miyamamoto/nvlink-bridge](https://github.com/miyamamoto/nvlink-bridge)、[takumiito271/jra-horse-racing-prediction](https://github.com/takumiito271/jra-horse-racing-prediction)、[takepan/jrvltsql](https://github.com/takepan/jrvltsql) — reuse matrixのlicenseと実装境界を確認する対象。
+13. [JRA-VAN FAQ 436](https://support.jra-van.jp/jravan/detail?site=SVKNEGBV&category=24&id=436) — 「JRA-VAN Data Lab.はWindows専用サービスであり、Macでは利用できません。」
+14. [JRA-VAN FAQ 210](https://support.jra-van.jp/jravan/detail?site=SVKNEGBV&category=24&id=210) — 「macOS版JV-Linkはサポートを終了しており、macOSでは動作いたしません。」
+15. [JRA-VAN developer topic 49](https://developer.jra-van.jp/t/topic/49) — 「JV-LinkはActiveX COMコントロールとしてJRA-VANより提供されます。」
+16. [Microsoft Windows 11 requirements](https://www.microsoft.com/en-us/windows/windows-11-specifications) — 「Storage | 64 GB or larger storage device.」
+17. [Microsoft: Windows 11 with Mac](https://support.microsoft.com/en-us/windows/experience/platform-variants/options-for-using-windows-11-with-mac-computers-with-apple-m1-m2-and-m3-chips) — 「Windows 365 Cloud PC」または「Parallels Desktop」をMacの選択肢として記載するが、ParallelsはArm版Windows 11である。
+18. [Parallels KB 125343](https://kb.parallels.com/en/125343) — 「allows to run Arm-based virtual machines」およびWindows 11はArm-based imageを必要とする。x64 preview/emulationをJV-Link対応の証拠にしない。

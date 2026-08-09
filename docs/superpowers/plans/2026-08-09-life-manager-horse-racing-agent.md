@@ -86,6 +86,10 @@ flowchart LR
 - Telegramは `Life Manager::: 競馬AI` とtruth labelを先頭に置き、`real P&L`と`shadow P&L`を分ける。CFOはofficial settled receiptだけをrevenueとreal P&Lにする。
 - `PurchaseExecutor`は任意の入力でdisabled/blockedを返す。browser、Selenium、DOM、非公式注文API、credential reader、network transport、wallet/bank mutationを作らない。
 
+### HRA-2R1 route decision
+
+実測control planeはmacOS 15.6 / Apple M4 / 16 GiB / 内蔵disk空き32 GiB（35.2 GB）、VM runtimeなし。JRA公式FAQ 436/210とdeveloper topic 49により、Data Lab/JV-LinkはMac直実行せず、ActiveX COMを持つowned remote/native Windows 11 x64 workerへ限定する。MicrosoftのWindows 11要件は64 GB storage、ParallelsのApple silicon guestはArmであるため、Mac内蔵VM、Wine、x64 emulationは採用しない。既存GCP設定はinstance count=0で、Windows workerの証明ではない。Windows 365/ParallelsはJRA実probe PASSまで候補実験扱いとする。
+
 ## Scope and roles
 
 | 範囲 | 扱い |
@@ -108,7 +112,7 @@ flowchart LR
 | HRA-1a | registry v2 dependency contract | `apps/horse-racing-agent/pyproject.toml`; `apps/horse-racing-agent/src/horse_racing_agent/contracts.py`; `apps/horse-racing-agent/tests/test_contracts.py` | 85 | **complete**, `d743b153` |
 | HRA-1b | purchase-disabled boundary | `apps/horse-racing-agent/src/horse_racing_agent/purchase.py`; `apps/horse-racing-agent/tests/test_purchase_disabled.py` | 70 | **complete**, `89d48910` |
 | HRA-2a | licensed source/local boundary | `apps/horse-racing-agent/src/horse_racing_agent/ingest.py`; `apps/horse-racing-agent/tests/test_ingest_boundary.py` | 80 | **complete**, `0fe627cd`。boundary only |
-| HRA-2R1 | JRA environment + one-real-record probe | `docs/evidence/horse-racing/jra-probe.md` | 35 | **ACTIVE** |
+| HRA-2R1 | JRA environment + one-real-record probe | `docs/evidence/horse-racing/jra-probe.md` | 35 | **ACTIVE — remote/native Windows 11 x64 worker required** |
 | HRA-2R2 | JRA redacted reality manifest | `docs/evidence/horse-racing/jra-reality-gate.md` | 35 | pending HRA-2R1 |
 | HRA-2R3 | NAR environment + one-real-record probe | `docs/evidence/horse-racing/nar-probe.md` | 35 | pending HRA-2R1、JRAと独立 |
 | HRA-2R4 | NAR redacted reality manifest | `docs/evidence/horse-racing/nar-reality-gate.md` | 35 | pending HRA-2R3 |
@@ -187,7 +191,7 @@ rtk python3.12 -m pytest -q
 
 ### HRA-2R1 — JRA environment + one-real-record probe `[ ] ACTIVE`
 
-**Owner: Luna。** owned Windows上で、JRA-VAN Data Lab/JV-Link installed、valid service key、利用条件確認、pinned `miyamamoto/jrvltsql` checkoutを揃え、official/upstream probeで少なくとも1件のreal JRA recordをlocal観測する。Solは環境準備やprobeを代行せず、結果のgateだけを検証する。
+**Owner: Luna。** Macをcontrol planeとして維持し、owned remote/native Windows 11 x64 worker上でJRA-VAN Data Lab/JV-Link installed、valid service key、利用条件確認、pinned `miyamamoto/jrvltsql` checkoutを揃え、official/upstream probeで少なくとも1件のreal JRA recordをlocal観測する。Mac内蔵VM、Wine、x64 emulationはprovider supportと見なさない。Solは環境準備やprobeを代行せず、結果のgateだけを検証する。
 
 File: `docs/evidence/horse-racing/jra-probe.md`。このfileにraw row、実馬名、credential、subscription idを記録しない。
 
@@ -201,7 +205,7 @@ rtk git -C "$JRA_CHECKOUT" diff --check
 
 probe commandはJRA-VAN/JV-Linkまたはpinned upstreamの公式documentationに記載されたものをそのまま実行し、作業者が新しい未許可commandを発明しない。公式probeの根拠、実行時刻、adapter/upstream version、exit code、row countを`jra-probe.md`へredactして記録する。
 
-期待結果: installed、valid entitlement、pinned commit、公式probe exit `0`、provider timestamp、row count `>=1`、content hashが全て揃えばHRA-2R1 evidenceは`REAL_PROVIDER_RECORD`候補となる。Windows/provider/entitlement/probeのいずれかが欠ける、実recordが0件、exit evidenceが取れない場合は`BLOCKED`を記録して停止する。synthetic fixtureや推定recordによるGREENは禁止する。
+期待結果: remote/native Windows 11 x64、installed、valid entitlement、pinned commit、公式probe exit `0`、provider timestamp、row count `>=1`、content hashが全て揃えばHRA-2R1 evidenceは`REAL_PROVIDER_RECORD`候補となる。worker/provider/entitlement/probeのいずれかが欠ける、実recordが0件、exit evidenceが取れない場合は`BLOCKED`を記録して停止する。synthetic fixtureや推定recordによるGREENは禁止する。
 
 ### HRA-2R2 — JRA redacted reality manifest `[ ]`
 
