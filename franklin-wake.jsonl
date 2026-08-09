@@ -24642,3 +24642,10 @@
 {"ts":1786314951,"wake_id":"00MSMDSU9B372487E052874405","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786315081,"wake_id":"00MSMDVMJ7A9D38453DCC84942","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
 {"ts":1786315209,"wake_id":"00MSMDYCLP938A700CD5944B25","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786315338,"wake_id":"00MSME14Q2FC79486CFCFD40EB","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786315526,"wake_id":"00MSME55ONB36C9DD79B3B4B2B","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786315699,"wake_id":"00MSME8UOU052E777CAA5249F9","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786315826,"wake_id":"00MSMEBLAZC895C6D638644AF8","kind":"skill_missing","sleep_s":120,"model":"auto","slot":"earn/yield","result":"earn/yield skill not found"}
+{"ts":1786315955,"wake_id":"00MSMEECSU9B061A39E6AD4C2D","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786316083,"wake_id":"00MSMEH2Z2D5973691141346FC","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786316209,"wake_id":"00MSMEJSGS97130F215151424B","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
