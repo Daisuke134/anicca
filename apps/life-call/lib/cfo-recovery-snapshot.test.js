@@ -86,6 +86,19 @@ test("action-required validator rejects net worth, stale source, and mismatched 
   invalid(() => validateCfoRecoverySnapshotBundle({ report: wrongAction, sourceBundle: bundle.sourceBundle }));
 });
 
+test("shared validator binds current Task1 labels, Gregorian date, and schema", () => {
+  const action = buildCfoDailyReportFromRecovery({ revision: 1, recovery: actionRecovery("forbidden", "reconsent") });
+  const cases = [
+    ["date", () => { const report = structuredClone(action.report); report.reportingDate = "2026-02-30"; return { report, sourceBundle: action.sourceBundle }; }],
+    ["sourceLabel", () => { const report = structuredClone(action.report); report.action.sourceLabel = "Other"; return { report, sourceBundle: action.sourceBundle }; }],
+    ["retryLabel", () => { const report = structuredClone(action.report); report.action.retryLabel = "retry"; return { report, sourceBundle: action.sourceBundle }; }],
+    ["schema", () => { const sourceBundle = structuredClone(action.sourceBundle); sourceBundle.schemaVersion = 2; return { report: action.report, sourceBundle }; }],
+  ];
+  for (const [, make] of cases) invalid(() => validateCfoRecoverySnapshotBundle(make()));
+  const terminal = buildCfoDailyReportFromRecovery({ revision: 2, recovery: actionRecovery("forbidden", "reconsent", { attempts: 2 }) });
+  assert.equal(terminal.report.action.kind, "reconsent"); assert.equal(terminal.sourceBundle.source.consent, "revoked");
+});
+
 test("hostile envelopes and caller mutation fail closed", () => {
   const bundle = buildCfoDailyReportFromRecovery({ revision: 1, recovery: fresh() });
   const proxy = new Proxy(bundle.report, {});
