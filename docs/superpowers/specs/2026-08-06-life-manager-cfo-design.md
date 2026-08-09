@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | PRODUCT STAGE 7 ACTIVE — recovery subtask 2 implemented, review pending |
+| Status | PRODUCT STAGE 7 ACTIVE — recovery core complete; real-data local preview next |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
@@ -841,7 +841,7 @@ top-level seven-step sequence.
 - [x] **CFO-1g** Persist one immutable, idempotent snapshot, its Moneytree coverage-state bundle, and reconciliation exceptions.
 - [x] **CFO-1g2** Enforce owner-timezone `reporting_date`, stable retry `run_id`, and append-only Telegram delivery
       claim/receipt dedupe. Child SSOT: `2026-08-09-life-manager-cfo-reliable-run-design.md`.
-- [ ] **CFO-1g3** Implement bounded adapter self-repair. Prove repair only after a fresh source read and
+- [x] **CFO-1g3** Implement bounded adapter self-repair. Prove repair only after a fresh source read and
       reconciliation. Exhausted repairs create one actionable state, not repeated messages. Same-day superseding
       correction storage is deferred by the Ponytail/YAGNI gate and does not block the first report. Child SSOT:
       `docs/superpowers/specs/2026-08-09-life-manager-cfo-moneytree-recovery-design.md`.

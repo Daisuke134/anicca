@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | RECOVERY CORE ACTIVE — correction persistence deferred by Ponytail/YAGNI |
+| Status | RECOVERY CORE COMPLETE — Product Stage 7 real-data preview next |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Goal | Repair allowed transient Moneytree failures before the first truthful report |
 | Next | CFO-1h2 Telegram integration, then CFO-1h real send |
@@ -194,3 +194,7 @@ CFO-1g3 closes when the bounded recovery contract, recovery/action report contra
 and client, isolated real-PostgreSQL installed-definition proof, full tests, and fresh Sol review all pass. It is an
 internal slice of Product Stage 7; execution continues directly into local real-data preview, first real Telegram
 finance send, hourly scheduling, and two consecutive autonomous successes.
+
+Completion evidence: Task 1 and Task 2 production remain 62 and 78 LOC. Focused tests pass 19/19 and 11/11,
+combined tests pass 30/30, CFO tests pass 241/241, and fresh Ponytail-scoped Sol review returned `ship — Spec ✅`
+with Critical 0 and Important 0. No Moneytree, database, or Telegram external effect occurred in this recovery slice.

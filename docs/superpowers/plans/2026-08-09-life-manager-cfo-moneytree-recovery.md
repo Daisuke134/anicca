@@ -14,8 +14,8 @@ PostgreSQL appends contiguous correction revisions; existing delivery dedupe sup
 
 **Design:** `docs/superpowers/specs/2026-08-09-life-manager-cfo-moneytree-recovery-design.md`.
 
-**Status:** PONYTAIL CUT — internal recovery Tasks 1–2 only; Task 2 fix review pending. Tasks 3–7 below are deferred
-design history and are not on the Product Stage 7 critical path.
+**Status:** RECOVERY CORE COMPLETE — Product Stage 7 real-data local preview next. Tasks 3–7 below are deferred design
+history and are not on the Product Stage 7 critical path.
 
 **Numbering rule:** `Task 1–7` in this file are internal recovery subtasks only. User-visible progress remains
 **Product Stage 7** until a real Moneytree finance report is delivered, hourly refresh is active, and two consecutive
@@ -112,7 +112,7 @@ Run focused test, `npm run test:cfo`, `wc -l` for both files, and `git diff --ch
 - Produces: `buildCfoDailyReportFromRecovery({ revision, recovery })` and
   `validateCfoRecoverySnapshotBundle({ report, sourceBundle })`.
 
-- [ ] **Step 1: Write RED for fresh/recovered/action-required bundles**
+- [x] **Step 1: Write RED for fresh/recovered/action-required bundles**
 
 Assert an exact frozen `{report,sourceBundle}`. `fresh` equals the existing report facts with requested revision.
 `recovered` uses only the fresh reread and exact repair proof. `action_required` uses empty accounts, unavailable
@@ -120,17 +120,17 @@ amounts, `evidence:moneytree_unavailable`, exact observed time, and `reconsent|p
 Map source consent from `failureKind` exactly: `unauthorized|expired` to `expired`, `forbidden|revoked` to `revoked`,
 and provider-outage actions to `unknown`; the rendered action does not expose `failureKind`.
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
 Run: `node --test lib/cfo-recovery-snapshot.test.js`; expect missing module failure.
 
-- [ ] **Step 3: Add fail-closed truth tests**
+- [x] **Step 3: Add fail-closed truth tests**
 
 Reject stale amount injection, mismatched source/state time, action with net worth, recovered without fresh reread or
 reconciliation, revision 0/non-integer, invalid `reportingDate`, non-`1` source-bundle schema version, noncanonical
 `sourceLabel`/`retryLabel`, hostile envelopes, unknown keys, and a caller-mutated output.
 
-- [ ] **Step 4: Implement minimum GREEN**
+- [x] **Step 4: Implement minimum GREEN**
 
 Build all facts once, then call the shared validator before returning. The action-required bundle uses:
 
@@ -143,7 +143,7 @@ Build all facts once, then call the shared validator before returning. The actio
 
 No old balance or prior report is an input.
 
-- [ ] **Step 5: Verify and close**
+- [x] **Step 5: Verify and close**
 
 Run focused test, Task 1+2 tests, `npm run test:cfo`, LOC, and diff-check. Commit/push
 `feat(cfo): build recovery snapshot facts`; report; fresh Sol review.
