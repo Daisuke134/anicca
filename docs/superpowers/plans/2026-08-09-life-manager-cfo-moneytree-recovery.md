@@ -14,7 +14,7 @@ PostgreSQL appends contiguous correction revisions; existing delivery dedupe sup
 
 **Design:** `docs/superpowers/specs/2026-08-09-life-manager-cfo-moneytree-recovery-design.md`.
 
-**Status:** ACTIVE — Task 7b exposed live service-role overgrant; Task 7c hardening next.
+**Status:** ACTIVE — Task 7d privilege hardening applied once; read-only provenance proof next.
 
 ## Global Constraints
 
@@ -567,11 +567,15 @@ fresh Sol review remain the Task 7c handoff actions.
 
 ### Task 7d: Apply privilege hardening once and re-prove live state
 
-- [ ] Apply only the new forward ACL migration once through the secret-safe Management API path. Do not rerun prior
+- [x] Apply only the new forward ACL migration once through the secret-safe Management API path. Do not rerun prior
       migrations, write rows, reload schema, read payloads, or send Telegram.
-- [ ] Re-run the semantic catalog checker. Require exact isolated-catalog constraints, exact service table ACL
-      `SELECT, INSERT`, required function/sequence grants, complete app-role denial, zero row deltas, and zero
-      Telegram calls. Bind execution to transcript/source/output digests as in Task 7b.
+- [ ] Re-run the semantic catalog checker read-only. Across PostgreSQL major versions, compare every ordinary tracked
+      constraint by name and full semantic digest while comparing required `NOT NULL` columns through
+      `pg_attribute.attnotnull`; do not mistake PostgreSQL 18's synthetic `contype = 'n'` rows for production drift.
+      Also require exact service table ACL `SELECT, INSERT`, required function/sequence grants, complete app-role
+      denial, stable installed-definition digest, and zero snapshot/delivery row deltas.
+- [ ] Bind the single successful apply to immutable transcript/source/output digests. Prove the later pre-mutation
+      abort made zero mutation calls, and prove zero additional apply, schema reload, Telegram, or finance-send calls.
 - [ ] Obtain fresh Sol final review before closure.
 
 ## Completion Boundary

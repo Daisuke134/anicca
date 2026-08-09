@@ -193,6 +193,12 @@ FK columns, ordered valid unique indexes, trigger timing/events/enabled state, c
 definitions. Historical exact-once apply/reload evidence is bound to the immutable executor transcript and original
 artifact hashes; a success boolean alone is not sufficient.
 
+Catalog proof is PostgreSQL-major-version neutral. Ordinary constraints are compared by name plus a full digest of
+their normalized `pg_constraint` semantics. Required `NOT NULL` columns are compared separately through
+`pg_attribute.attnotnull`, because PostgreSQL 18 can expose synthetic `contype = 'n'` constraint rows that older
+production majors do not expose. This normalization changes representation only: every tracked ordinary constraint
+and every required non-null column must still be present and semantically equal.
+
 The snapshot table grant is closed: `service_role` has only `SELECT, INSERT`; PUBLIC, `anon`, and `authenticated`
 have no table privilege. Supabase default privileges such as `TRUNCATE`, `REFERENCES`, `TRIGGER`, or `MAINTAIN` are
 explicitly removed by a forward idempotent migration. Required sequence and RPC execution grants remain unchanged.
@@ -210,7 +216,8 @@ explicitly removed by a forward idempotent migration. Required sequence and RPC 
 9. Revision 2 supersedes revision 1; cross-owner/date/run gaps and revision gaps fail closed.
 10. Identical/concurrent correction retry yields one immutable row and one public receipt.
 11. Existing revision-1 behavior and delivery FKs remain valid.
-12. Live installed-definition proof passes with zero personal snapshot/delivery/Telegram writes.
+12. Live installed-definition proof passes with exact closed privileges, stable cross-version semantic catalog
+    evidence, one transcript-bound ACL apply, and zero personal snapshot/delivery/Telegram writes.
 13. Exact input/options/receipt schemas reject hostile JS shapes before effects and redact hostile callback/provider
     failures.
 
