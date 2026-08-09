@@ -13,6 +13,7 @@
     "test:panel-score": "node --test lib/panel-score-semantics.test.js lib/panel-api-score-semantics.test.js lib/panel-score-migration.test.js scripts/independent-panel-score-readback.test.js",
     "test:panel-score:postgres": "test/postgres/panel-score-postgres.integration.sh",
     "test:cfo-snapshot:postgres": "test/postgres/cfo-daily-snapshot-postgres.integration.sh",
+    "test:cfo-snapshot-corrections:postgres": "test/postgres/cfo-snapshot-corrections-postgres.integration.sh",
     "test:cfo-daily-run:postgres": "test/postgres/cfo-daily-run-postgres.integration.sh",
     "test:cfo-reliable-run:postgres": "test/postgres/cfo-reliable-run-postgres.integration.sh",
     "pretest": "npm run test:cfo && node --test lib/composio-budget.test.js && node --test lib/calendar-interpreter.test.js && node --test lib/daily-preflight-collectors.test.js lib/daily-preflight-production-wiring.test.js lib/transport/mail-gog-receipt.test.js",
