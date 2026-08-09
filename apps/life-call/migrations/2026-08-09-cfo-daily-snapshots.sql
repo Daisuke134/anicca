@@ -14,7 +14,8 @@ CREATE TABLE IF NOT EXISTS public.lm_cfo_daily_snapshots (
   CONSTRAINT lm_cfo_daily_snapshots_report_shape CHECK ((
     jsonb_typeof(report_payload) = 'object'
     AND report_payload->>'reportingDate' = reporting_date::text
-    AND report_payload->>'revision' = revision::text
+    AND jsonb_typeof(report_payload->'revision') = 'number'
+    AND report_payload->'revision' = to_jsonb(revision)
     AND report_payload->>'currency' = 'JPY'
   ) IS TRUE),
   CONSTRAINT lm_cfo_daily_snapshots_source_shape CHECK ((
@@ -79,11 +80,16 @@ BEGIN
   IF p_report_payload IS NULL OR jsonb_typeof(p_report_payload) <> 'object' THEN
     RAISE EXCEPTION 'invalid_report_payload' USING ERRCODE = '22023';
   END IF;
+  IF (
+    jsonb_typeof(p_report_payload->'revision') = 'number'
+    AND p_report_payload->'revision' = to_jsonb(1)
+  ) IS NOT TRUE THEN
+    RAISE EXCEPTION 'invalid_report_revision' USING ERRCODE = '22023';
+  END IF;
   IF p_source_bundle IS NULL OR jsonb_typeof(p_source_bundle) <> 'object' THEN
     RAISE EXCEPTION 'invalid_source_bundle' USING ERRCODE = '22023';
   END IF;
   IF p_report_payload->>'reportingDate' IS DISTINCT FROM p_reporting_date::text
-    OR p_report_payload->>'revision' IS DISTINCT FROM '1'
     OR p_report_payload->>'currency' IS DISTINCT FROM 'JPY' THEN
     RAISE EXCEPTION 'invalid_report_contract' USING ERRCODE = '22023';
   END IF;
