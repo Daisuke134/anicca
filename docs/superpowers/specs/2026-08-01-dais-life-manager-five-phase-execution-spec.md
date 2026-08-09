@@ -5900,6 +5900,14 @@ JSON-LD無し・空h1・`.current_event_title`ありのREDを先に確認し、f
 Item 10B/14は未完。実registration evidenceは0、Submit 0、Calendar write 0、PNG/applied_bundle 0。
 次の一件は同じofficial foreground runnerを再実行し、title通過後の次のexact failure codeを取得すること。scheduleはunloadedを維持する。
 
+### O1B-25進捗219（Connpass detail hCalendar start fallback修復）
+
+現行Connpass detailはJSON-LD `startDate` が存在しない場合があり、既存の `starts_at: null` が親の `CONNPASS_DETAIL_START_INVALID_FAILED` を発生させていた。
+回帰テストを先に追加し、`node --test apps/life-manager/lib/connpass-browser-discovery.test.js` のREDで6件中5件pass・1件fail（hCalendar fallbackの期待値が実際null）を確認した。
+
+`readEventDetail`内に属性ヘルパーを追加し、`starts_at: event.startDate || attr(".dtstart .value-title", "title")` とした。属性値はtrimし、要素または属性が空/欠落ならnullを返す。既存JSON-LD `event.startDate`優先、`normalizeConnpassEventDetail`のfail-closed検証、`dtend`およびその他のworkflowは変更していない。
+GREENは `node --test apps/life-manager/lib/connpass-browser-discovery.test.js apps/life-manager/lib/connector-connpass-workflow.test.js apps/life-manager/lib/connector-minimal-runner.test.js apps/life-manager/lib/connector-minimal-production.test.js` で30/30 pass・0 fail。live E2Eはprimaryによる検証待ちで、実registration evidenceは未取得のまま。
+
 ### Active remaining TODO SSOT（進捗216。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
