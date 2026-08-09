@@ -7,7 +7,7 @@
 
 **Design:** `docs/superpowers/specs/2026-08-09-life-manager-cfo-reliable-run-design.md`.
 
-**Status:** COMPLETE — CFO-1g2 closed with stable owner-local runs, isolated delivery dedupe proof, and no-send live verification; CFO-1g3 NEXT.
+**Status:** ACTIVE — Task 6b must deploy the reviewed snapshot-reference fix before CFO-1g2 can close.
 
 ## Global constraints
 
@@ -164,12 +164,35 @@
 - [x] The live runner's exact stdout keys are `runMigrationSuccess`, `deliveryMigrationSuccess`,
   `schemaReloadSuccess`, `ownerTimezoneResolved`, `retrySameRun`, `snapshotRunMatches`, `liveDeliveryRowsCreated`,
   and `payloadPrivacy`; all booleans are true except `liveDeliveryRowsCreated`, which is the integer `0`.
-- [x] Fresh scoped final review returns no Critical/Important findings. Reviewed the final validator hardening,
-  preference-update serialization proof, no-echo live runner, and closed stdout/error contracts.
-- [x] Marked `CFO-1g2 COMPLETE — CFO-1g3 NEXT` after recording live boolean/count evidence:
+- [ ] Fresh scoped final review returns no Critical/Important findings. The first final review found a missing
+  snapshot-reference comparison; the first fix re-review confirmed the local SQL/test fix but correctly rejected
+  closure because the already-applied live migration still has the old function definition. Task 6b owns that
+  bounded deployment correction.
+- [ ] Mark `CFO-1g2 COMPLETE — CFO-1g3 NEXT` only after Task 6b records live installed-definition evidence alongside:
   `runMigrationSuccess=true`, `deliveryMigrationSuccess=true`, `schemaReloadSuccess=true`,
   `ownerTimezoneResolved=true`, `retrySameRun=true`, `snapshotRunMatches=true`,
   `liveDeliveryRowsCreated=0`, and `payloadPrivacy=true`. No Telegram call or live delivery row was created.
+
+### Task 6b: Forward-deploy the reviewed snapshot-reference fix
+
+**Files (soft target: 3 tracked files, forward SQL <=100 LOC, test additions <=60 LOC):**
+- Create `apps/life-call/migrations/2026-08-09-cfo-telegram-delivery-snapshot-ref-fix.sql`
+- Modify `apps/life-call/lib/cfo-telegram-delivery-migration.test.js`
+- Modify `apps/life-call/test/postgres/cfo-reliable-run-postgres.integration.sh`
+
+- [ ] RED: prove the forward migration replaces only `lm_claim_cfo_telegram_delivery`, retains the fixed search path
+  and grants, and rejects an existing delivery-key retry whose `p_snapshot_public_ref` differs from the stored claim.
+- [ ] GREEN: add one idempotent `CREATE OR REPLACE FUNCTION` forward migration. New installs keep the corrected base
+  migration; already-migrated live databases receive the same corrected function body. Do not add a service,
+  abstraction, table, column, trigger, delivery row, or Telegram call.
+- [ ] Verify locally: forward-migration static test, real PostgreSQL post-conflict regression with the forward
+  migration applied, `npm run test:cfo`, `npm test`, and `git diff --check`; all exit 0.
+- [ ] Commit/push the tracked fix. Luna then applies this one forward migration once through the existing no-echo
+  Supabase Management API path, reloads PostgREST, and verifies the installed `pg_get_functiondef` contains the
+  snapshot-reference fail-closed comparison. Safe stdout is one JSON object:
+  `{"forwardMigrationSuccess":true,"schemaReloadSuccess":true,"installedDefinitionMatches":true,"liveDeliveryRowsCreated":0,"telegramCalls":0,"payloadPrivacy":true}`.
+- [ ] Fresh Sol review returns no Critical/Important findings. Sol then closes Task 6/CFO-1g2 and updates the parent
+  SSOT. This development closure is not the 7/7 finance report.
 
 ## Completion boundary
 
