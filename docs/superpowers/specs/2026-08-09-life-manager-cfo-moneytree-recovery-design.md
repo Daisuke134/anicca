@@ -130,6 +130,9 @@ the correction-store client call this one validator; no second report/source val
   Caller-chosen exclusion text, retry text, source status, aggregation state, or extra facts are rejected.
   A verified account total of zero remains the integer `0`, never unknown/null. At the snapshot boundary,
   `action.nextRetryAt` must represent exactly the instant 30 minutes after `observedAt`.
+- public recovery-snapshot functions never rethrow a caught Error object, including an Error previously returned to
+  the caller and replayed through a hostile Proxy. Every failure crossing either public boundary is a newly created
+  fixed local error, so caller mutation cannot alter a later error message.
 
 Telegram copy distinguishes the two actions. Re-consent asks for one connection update. Provider outage says the CFO
 will retry automatically at the persisted `nextRetryAt` and does not blame the owner. Both suppress raw diagnostics

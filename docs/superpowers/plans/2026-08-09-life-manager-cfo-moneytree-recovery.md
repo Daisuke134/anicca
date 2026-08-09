@@ -14,7 +14,7 @@ PostgreSQL appends contiguous correction revisions; existing delivery dedupe sup
 
 **Design:** `docs/superpowers/specs/2026-08-09-life-manager-cfo-moneytree-recovery-design.md`.
 
-**Status:** ACTIVE — Task 2 fix round 3; Task 1 seam is aligned.
+**Status:** ACTIVE — Task 2 fix round 5; Task 1 seam is aligned.
 
 ## Global Constraints
 
@@ -124,6 +124,8 @@ reconciliation, revision 0/non-integer, hostile envelopes, unknown keys, caller-
 exclusions, wrong retry labels, fresh reads with unsupported aggregation state, and the real Task 1 action shape.
 Also prove a valid zero-balance report remains `0`, `nextRetryAt` is exactly `observedAt + 30 minutes`, and impossible
 read/repair/wait histories are rejected for every outcome state.
+Catch and replace every error at each public Task 2 boundary; never identify/rethrow a durable tagged Error object
+that a caller can mutate and replay through a later hostile input.
 
 - [ ] **Step 4: Implement minimum GREEN**
 
