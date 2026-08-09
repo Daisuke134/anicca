@@ -70,7 +70,8 @@
   `lm_record_cfo_telegram_delivery(uuid,bigint)`. Fresh insert=`send`; existing with receipt=`sent`; existing without
   receipt=`reconcile`. No UPDATE/DELETE.
 - [ ] Verify from `apps/life-call`: `node --test lib/cfo-telegram-delivery-migration.test.js`, `npm run test:cfo`,
-  `wc -l` for both files, and `git diff --check`; all exit 0. SQL ≤180 LOC or report the indivisible transaction.
+  `wc -l migrations/2026-08-09-cfo-telegram-deliveries.sql lib/cfo-telegram-delivery-migration.test.js`, and
+  `git diff --check`; all exit 0. SQL ≤180 LOC or report the indivisible transaction.
 - [ ] Commit/push `feat(cfo): add telegram delivery ledger`; write report and obtain fresh Sol review.
 
 ### Task 4: Real PostgreSQL concurrency and permission proof
@@ -101,7 +102,8 @@
   `send|sent|reconcile`, clone/freeze, no retry/direct table/log, hostile response/error redaction, exact echo checks.
 - [ ] GREEN: built-in fetch only; stable redacted errors; never accept `send` unless the RPC says this call inserted.
 - [ ] Verify from `apps/life-call`: `node --test lib/cfo-telegram-delivery.test.js`, `npm run test:cfo`, `wc -l` for
-  both files, and `git diff --check`; all exit 0, production ≤130/tests ≤200.
+  both files with `wc -l lib/cfo-telegram-delivery.js lib/cfo-telegram-delivery.test.js`, and `git diff --check`;
+  all exit 0, production ≤130/tests ≤200.
 - [ ] Commit/push `feat(cfo): persist telegram delivery receipts`; write report and obtain fresh Sol review.
 
 ### Task 6: Live migration, no-send E2E, and closure
@@ -115,10 +117,14 @@
 - [ ] Luna applies both additive migrations once and reloads PostgREST schema without outputting private values.
 - [ ] The formal migration path is the existing Supabase Management API database-query endpoint followed by
   `NOTIFY pgrst, 'reload schema'`. Luna creates an ignored no-echo runner at
-  `.superpowers/sdd/2026-08-09-life-manager-cfo-reliable-run/live-close.js`. It derives the project ref from private
-  `SUPABASE_URL`, POSTs each SQL file as `{query: sql}` to
-  `https://api.supabase.com/v1/projects/<ref>/database/query`, then POSTs `{query: "NOTIFY pgrst, 'reload schema';"}`.
-  Run `node .superpowers/sdd/2026-08-09-life-manager-cfo-reliable-run/live-close.js`; every HTTP response must have
+  `.superpowers/sdd/2026-08-09-life-manager-cfo-reliable-run/live-close.js` from the worktree root. Required private
+  environment names are exactly `SUPABASE_ACCESS_TOKEN`, `SUPABASE_URL`, and `SUPABASE_SERVICE_ROLE_KEY`. The
+  Management request uses `Authorization: Bearer <SUPABASE_ACCESS_TOKEN>` and `Content-Type: application/json`; live
+  PostgREST reads/RPCs use both `apikey: <SUPABASE_SERVICE_ROLE_KEY>` and
+  `Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>`. The runner derives the project ref from `SUPABASE_URL`, POSTs
+  each SQL file as `{query: sql}` to `https://api.supabase.com/v1/projects/<ref>/database/query`, then POSTs
+  `{query: "NOTIFY pgrst, 'reload schema';"}`. After the tests above, run `cd ../..` and then
+  `node .superpowers/sdd/2026-08-09-life-manager-cfo-reliable-run/live-close.js`; every HTTP response must have
   `ok === true`, and stdout is only one JSON object of named booleans/counts.
 - [ ] Luna proves against the existing live snapshot: owner timezone resolves, daily-run retry is stable, and snapshot
   `(uid, reporting_date, run_id)` equals its run claim. It creates no live delivery claim/receipt and does not call
