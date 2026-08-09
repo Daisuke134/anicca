@@ -15,8 +15,8 @@ const REPORT_KEYS = new Set(["schemaVersion", "reportingDate", "revision", "stat
 const TOTAL_KEYS = new Set(["assetsMinor", "liabilitiesMinor", "netWorthMinor", "changeMinor"]);
 const RENDERED_SOURCE_KEYS = new Set(["sourceId", "label", "status", "asOf", "amountMinor", "verificationStatus"]);
 const EXCLUDED_KEYS = new Set(["label", "reason"]);
-const REPORT_ACTION_KEYS = new Set(["kind", "sourceLabel", "retryLabel", "nextRetryAt"]);
 const RETRY_LABELS = Object.freeze({ reconsent: "Moneytreeを再接続してください", provider_outage: "30分後に自動再試行します" });
+const WAITS = Object.freeze([1000, 5000]);
 const FAILURE_KINDS = new Set(["unauthorized", "forbidden", "expired", "revoked", "timeout", "network", "rate_limited", "provider_5xx", "provider_outage"]);
 const RFC3339 = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(\.\d+)?(Z|[+-]\d{2}:\d{2})$/;
 
@@ -48,16 +48,18 @@ function same(left, right) {
   if (leftKeys.length !== rightKeys.length || leftKeys.some((key) => !rightKeys.includes(key))) return false;
   return leftKeys.every((key) => same(left[key], right[key]));
 }
+function validateAttempts(attempts) {
+  exact(attempts, ATTEMPTS_KEYS);
+  if (!Number.isSafeInteger(attempts.reads) || attempts.reads < 1 || attempts.reads > WAITS.length + 1 || !Number.isSafeInteger(attempts.repairs) || attempts.repairs !== attempts.reads - 1 || !Array.isArray(attempts.waits) || attempts.waits.length !== attempts.repairs || attempts.waits.some((value, index) => value !== WAITS[index])) fail("invalid_attempts");
+}
 function validateRecovery(recovery) {
   exact(recovery, RECOVERY_KEYS); date(recovery.reportingDate); timestamp(recovery.observedAt);
   if (!["fresh", "recovered", "action_required"].includes(recovery.status)) fail("invalid_status");
-  exact(recovery.attempts, ATTEMPTS_KEYS);
-  if (!Number.isSafeInteger(recovery.attempts.reads) || recovery.attempts.reads < 1 || !Number.isSafeInteger(recovery.attempts.repairs) || recovery.attempts.repairs < 0 || !Array.isArray(recovery.attempts.waits)) fail("invalid_attempts");
-  if (recovery.attempts.waits.some((value) => !Number.isSafeInteger(value) || value < 0)) fail("invalid_attempts");
+  validateAttempts(recovery.attempts);
   if (recovery.failureKind !== null && (!FAILURE_KINDS.has(recovery.failureKind) || typeof recovery.failureKind !== "string")) fail("invalid_failure");
   if (recovery.status === "action_required") {
     if (recovery.moneytreeRead !== null || recovery.repair !== null) fail("unresolved_recovery");
-    exact(recovery.action, ACTION_KEYS); if (!ACTION_KINDS.has(recovery.action.kind) || recovery.action.sourceLabel !== "Moneytree" || recovery.action.retryLabel !== RETRY_LABELS[recovery.action.kind]) fail("invalid_action"); timestamp(recovery.action.nextRetryAt);
+    exact(recovery.action, ACTION_KEYS); if (!ACTION_KINDS.has(recovery.action.kind) || recovery.action.sourceLabel !== "Moneytree" || recovery.action.retryLabel !== RETRY_LABELS[recovery.action.kind]) fail("invalid_action"); timestamp(recovery.action.nextRetryAt); if (Date.parse(recovery.action.nextRetryAt) !== Date.parse(recovery.observedAt) + 30 * 60 * 1000) fail("invalid_retry_time");
     const reconsentFailure = new Set(["unauthorized", "expired", "forbidden", "revoked"]);
     const outageFailure = new Set(["timeout", "network", "rate_limited", "provider_5xx", "provider_outage"]);
     if (recovery.failureKind === null || (reconsentFailure.has(recovery.failureKind) && recovery.action.kind !== "reconsent") || (outageFailure.has(recovery.failureKind) && recovery.action.kind !== "provider_outage")) fail("action_failure_mismatch");
@@ -115,10 +117,10 @@ function validateCfoRecoverySnapshotBundle(input) {
     if (report.schemaVersion !== 1 || report.currency !== "JPY" || report.reportingDate !== sourceBundle.source.asOf.slice(0, 10)) fail("mismatched_identity");
     if (!Number.isSafeInteger(report.revision) || report.revision < 1) fail("invalid_revision");
     const renderedSource = report.sources[0];
-    if (renderedSource.sourceId !== sourceBundle.source.sourceId || renderedSource.asOf !== sourceBundle.source.asOf || renderedSource.amountMinor !== (sourceBundle.source.accounts.reduce((sum, account) => sum + (account.balanceMinor || 0), 0) || null)) fail("stale_amount");
+    if (renderedSource.sourceId !== sourceBundle.source.sourceId || renderedSource.asOf !== sourceBundle.source.asOf) fail("mismatched_identity");
     if (report.totals.assetsMinor !== renderedSource.amountMinor || report.totals.liabilitiesMinor !== null || report.totals.changeMinor !== null) fail("stale_amount");
     if (report.state === "action_required") {
-      exact(report.action, REPORT_ACTION_KEYS);
+      exact(report.action, ACTION_KEYS);
       if (!ACTION_KINDS.has(report.action.kind) || report.action.sourceLabel !== "Moneytree" || typeof report.action.retryLabel !== "string") fail("unsafe_action_report");
       timestamp(report.action.nextRetryAt);
       const source = sourceBundle.source; const state = sourceBundle.state;

@@ -18,11 +18,20 @@ function recovery(overrides = {}) { return { reportingDate: DATE, observedAt: OB
 function actionRecovery(failureKind, kind) { return recovery({ status: "action_required", failureKind, moneytreeRead: null, action: { kind, sourceLabel: "Moneytree", retryLabel: kind === "reconsent" ? "Moneytreeを再接続してください" : "30分後に自動再試行します", nextRetryAt: "2026-08-09T08:30:00+09:00" } }); }
 function recoveryEffects(read) { return { read, repair: async () => true, wait: async () => undefined }; }
 
+function assertInvalid(call) { assert.throws(call, /^Error: cfo_recovery_snapshot_invalid:/); }
+
 test("builds the recovery snapshot bundle", () => {
   const result = buildCfoDailyReportFromRecovery({ revision: 3, recovery: recovery() });
   assert.deepEqual(result.report, { schemaVersion: 1, reportingDate: DATE, revision: 3, state: "partial", currency: "JPY", totals: { assetsMinor: 1234, liabilitiesMinor: null, netWorthMinor: null, changeMinor: null }, sources: [{ sourceId: "moneytree_mufg", label: "MUFG", status: "fresh", asOf: OBSERVED, amountMinor: 1234, verificationStatus: "provider_reported" }], excluded: [{ label: "負債", reason: "Moneytreeの接続範囲が不明" }], repair: null, action: null });
   assert.equal(Object.isFrozen(result.report), true);
   assert.equal(Object.isFrozen(result.sourceBundle.source), true);
+});
+
+test("preserves a valid zero account balance as integer zero", () => {
+  const result = buildCfoDailyReportFromRecovery({ revision: 1, recovery: recovery({ moneytreeRead: read(0) }) });
+  assert.equal(result.report.totals.assetsMinor, 0);
+  assert.equal(result.report.sources[0].amountMinor, 0);
+  assert.equal(result.sourceBundle.source.accounts[0].balanceMinor, 0);
 });
 
 test("recovered uses the fresh reread and exact repair proof", () => {
@@ -46,6 +55,43 @@ test("consumes actual Task 1 action-required outcomes without reshaping the acti
 
 test("requires null failureKind for fresh and recovered outcomes", () => {
   assert.throws(() => buildCfoDailyReportFromRecovery({ revision: 1, recovery: recovery({ failureKind: "timeout" }) }), /^Error: cfo_recovery_snapshot_invalid:/);
+});
+
+test("requires nextRetryAt to be exactly observedAt plus thirty minutes", async () => {
+  const actual = await recoverMoneytreeRead({ reportingDate: "2099-12-31", observedAt: "2099-12-31T23:45:00+09:00" }, recoveryEffects(async () => ({ ok: false, kind: "forbidden" })));
+  const wrong = structuredClone(actual); wrong.action.nextRetryAt = "2100-01-01T00:16:00+09:00";
+  assertInvalid(() => buildCfoDailyReportFromRecovery({ revision: 1, recovery: wrong }));
+  const wrongUtc = structuredClone(actual); wrongUtc.action.nextRetryAt = "2099-12-31T14:15:00Z";
+  assertInvalid(() => buildCfoDailyReportFromRecovery({ revision: 1, recovery: wrongUtc }));
+});
+
+test("accepts only reachable attempts states and exact wait prefixes", async () => {
+  const fresh = recovery();
+  assert.deepEqual(fresh.attempts, { reads: 1, repairs: 0, waits: [] });
+  buildCfoDailyReportFromRecovery({ revision: 1, recovery: fresh });
+  const recovered2 = recovery({ status: "recovered", attempts: { reads: 2, repairs: 1, waits: [1000] }, repair: { sourceLabel: "Moneytree", freshReread: true, reconciled: true } });
+  const recovered3 = recovery({ status: "recovered", attempts: { reads: 3, repairs: 2, waits: [1000, 5000] }, repair: { sourceLabel: "Moneytree", freshReread: true, reconciled: true } });
+  buildCfoDailyReportFromRecovery({ revision: 2, recovery: recovered2 });
+  buildCfoDailyReportFromRecovery({ revision: 3, recovery: recovered3 });
+  const directOutage = await recoverMoneytreeRead({ reportingDate: DATE, observedAt: OBSERVED }, recoveryEffects(async () => ({ ok: true, moneytreeRead: { schemaVersion: 1 } })));
+  assert.equal(directOutage.failureKind, "provider_outage");
+  assert.deepEqual(directOutage.attempts, { reads: 1, repairs: 0, waits: [] });
+  buildCfoDailyReportFromRecovery({ revision: 1, recovery: directOutage });
+  const transientOutage = await recoverMoneytreeRead({ reportingDate: DATE, observedAt: OBSERVED }, recoveryEffects(async () => ({ ok: false, kind: "timeout" })));
+  assert.deepEqual(transientOutage.attempts, { reads: 3, repairs: 2, waits: [1000, 5000] });
+  buildCfoDailyReportFromRecovery({ revision: 1, recovery: transientOutage });
+  for (const overrides of [
+    { attempts: { reads: 1, repairs: 1, waits: [] } },
+    { attempts: { reads: 1, repairs: 0, waits: [1000] } },
+    { attempts: { reads: 2, repairs: 0, waits: [1000] } },
+    { attempts: { reads: 2, repairs: 1, waits: [5000] } },
+    { attempts: { reads: 3, repairs: 2, waits: [1000, 5000, 9000] } },
+    { attempts: { reads: 4, repairs: 3, waits: [1000, 5000, 9000] } },
+  ]) assertInvalid(() => buildCfoDailyReportFromRecovery({ revision: 1, recovery: recovery(overrides) }));
+  const recoveredBase = { status: "recovered", moneytreeRead: read(), repair: { sourceLabel: "Moneytree", freshReread: true, reconciled: true } };
+  for (const attempts of [{ reads: 1, repairs: 0, waits: [] }, { reads: 4, repairs: 3, waits: [1000, 5000, 9000] }, { reads: 2, repairs: 0, waits: [1000] }]) assertInvalid(() => buildCfoDailyReportFromRecovery({ revision: 1, recovery: recovery({ ...recoveredBase, attempts }) }));
+  const actionBase = await recoverMoneytreeRead({ reportingDate: DATE, observedAt: OBSERVED }, recoveryEffects(async () => ({ ok: false, kind: "timeout" })));
+  for (const attempts of [{ reads: 3, repairs: 1, waits: [1000, 5000] }, { reads: 2, repairs: 1, waits: [5000] }]) assertInvalid(() => buildCfoDailyReportFromRecovery({ revision: 1, recovery: { ...actionBase, attempts } }));
 });
 
 test("binds fresh and recovered reads to recovery.observedAt exactly", () => {
