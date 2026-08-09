@@ -11,7 +11,7 @@ and appends the record without logging financial payloads.
 
 **Tech Stack:** Node.js 20+, CommonJS, `node:test`, PostgreSQL/Supabase, built-in `fetch`; no new dependency.
 
-**Status:** ACTIVE — Tasks 1–4 complete; Task 5 next.
+**Status:** COMPLETE — CFO-1g closed; CFO-1g2 next.
 
 ## Global Constraints
 
@@ -339,7 +339,7 @@ git push canonical HEAD
   the Task 4 client. It sends no CFO product report.
 - Produces privacy-safe live evidence and activates CFO-1g2.
 
-- [ ] **Step 1: Run dependency-clean verification**
+- [x] **Step 1: Run dependency-clean verification**
 
 ```bash
 cd apps/life-call
@@ -351,7 +351,7 @@ npm test
 git diff --check
 ```
 
-- [ ] **Step 2: Apply the migration once**
+- [x] **Step 2: Apply the migration once**
 
 Load `SUPABASE_ACCESS_TOKEN`, `SUPABASE_URL`, and service role from the existing private runtime env. Derive the
 project ref from the URL. POST the migration text as `{ "query": sql }` to
@@ -359,7 +359,7 @@ project ref from the URL. POST the migration text as `{ "query": sql }` to
 `NOTIFY pgrst, 'reload schema';`. Print only HTTP success booleans; never print credentials, URL query strings, SQL
 response bodies, or project/user identifiers.
 
-- [ ] **Step 3: Run the real no-echo idempotency E2E**
+- [x] **Step 3: Run the real no-echo idempotency E2E**
 
 In one controller process:
 
@@ -374,12 +374,12 @@ In one controller process:
 Output exactly booleans/count fields: connector success, adapter/bundle success, first append success, retry
 same public ref, database row count one, report partial, unknown liabilities preserved, payload privacy, and exit 0.
 
-- [ ] **Step 4: Fresh Sol review**
+- [x] **Step 4: Fresh Sol review**
 
 Review Tasks 1–4 diffs and the redacted E2E evidence. Every Critical/Important finding receives a Luna regression,
 minimum fix, focused/full rerun, fix commit, push, and scoped re-review.
 
-- [ ] **Step 5: Close CFO-1g**
+- [x] **Step 5: Close CFO-1g**
 
 Sol changes status to `CFO-1g COMPLETE — CFO-1g2 NEXT`, checks CFO-1g, records commit/test/LOC/live boolean evidence
 without amounts/identifiers, commits `docs(cfo): close immutable daily snapshot`, and pushes. The controller's required
@@ -390,4 +390,4 @@ daily finance report exists.
 
 CFO-1g closes only after all implementation tasks pass scoped review, the migration is live, two same-run
 appends produce one immutable row and one receipt identity, full tests pass, docs are pushed, and the Telegram
-controller milestone receipt is recorded separately from the CFO snapshot. Then CFO-1g2 is the only active item.
+controller milestone receipt is recorded separately from the CFO snapshot. CFO-1g2 is now the only active item.

@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | APPROVED — CFO-1g ACTIVE |
+| Status | COMPLETE — CFO-1g2 NEXT |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Scope | One native-JPY Moneytree snapshot; append-only storage |
 | Next | CFO-1g2 retry identity, corrections, and Telegram dedupe |
@@ -147,6 +147,11 @@ The client builds the report internally, sends exactly one authenticated POST to
    row. Output only booleans and row counts; live amounts stay in the private owner channel and no hash of a
    low-entropy financial payload is emitted.
 6. Focused CFO tests and full `apps/life-call` tests pass; a fresh Sol review returns clean.
+
+Closure evidence: focused 11/11, CFO 209/209, isolated PostgreSQL PASS, and full 842/842 passed at implementation
+head `4ab1aa8df`. The live migration and schema reload succeeded. The fresh Moneytree append and identical retry
+returned one public receipt identity and one database row while keeping the report partial and liabilities unknown.
+The no-echo privacy proof passed, and the final fresh Sol review returned `ship` with no Critical/Important findings.
 
 ## 7. File and LOC Budget
 

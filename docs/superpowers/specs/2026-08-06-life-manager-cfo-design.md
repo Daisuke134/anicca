@@ -2,12 +2,12 @@
 
 | Field | Value |
 |---|---|
-| Status | CFO-1f COMPLETE — CFO-1g NEXT |
+| Status | CFO-1g COMPLETE — CFO-1g2 NEXT |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
 | Existing foundations | `apps/life-call`, interactive Moneytree App access, Fleet telemetry, `lm_api_cost`, and the canonical `lm_agent_earnings` source (the panel's `lm_financial_ledger` name is a stale alias) |
-| First unfinished item | **CFO-1g: persist one immutable, idempotent daily snapshot** |
+| First unfinished item | **CFO-1g2: add retry identity, corrections, and Telegram dedupe** |
 
 ## 1. Overview — What and Why
 
@@ -742,9 +742,22 @@ The live Moneytree connector returned one MUFG account in native JPY. The existi
 composition passed against that provider response: the displayed total equals the account sum, retrieval and consent
 are valid, references are opaque, and the bundle is deeply frozen. The live amount is intentionally not persisted in
 this spec. Aggregation freshness and liability coverage remain unknown with count null, so the source remains partial.
-No FX code is needed for M1, and Fleet's organizational USD value is not added to personal net worth. The next item is
-CFO-1g immutable daily snapshot persistence. The private live-balance milestone was delivered to the owner with
-Telegram provider message ID `9739`.
+No FX code is needed for M1, and Fleet's organizational USD value is not added to personal net worth. The private
+live-balance milestone was delivered to the owner with Telegram provider message ID `9739`. CFO-1g persistence is
+closed by the evidence below.
+
+### CFO-1g completion evidence
+
+At fixed implementation head `4ab1aa8df`, the native-JPY partial report builder, append-only migration, isolated
+PostgreSQL proof, and one-request Supabase client passed focused 11/11, CFO 209/209, isolated PostgreSQL PASS, and
+full `apps/life-call` 842/842. Production/test sizes are 70/121 LOC for the builder, 128/63 LOC for migration
+contract coverage, 248 LOC for the PostgreSQL proof, and 98/133 LOC for the store client.
+
+The additive live migration and PostgREST schema reload both succeeded. A fresh Moneytree read then passed the
+adapter/bundle contract, the first append succeeded, an identical retry returned the same public receipt, and the
+owner/date/run query returned exactly one row. The stored report remained partial and preserved unknown liabilities;
+the no-echo check passed. No amount or private identifier is recorded here. A fresh Sol final review returned `ship`
+with no Critical or Important findings. This closure does not claim a CFO product Telegram report; CFO-1g2 is next.
 
 ### M1 — One truthful Moneytree-first read-only snapshot
 
@@ -757,7 +770,7 @@ Telegram provider message ID `9739`.
 - [x] **CFO-1f** Prove the live Moneytree MUFG bundle in native JPY. The provider-reported account sum, retrieval,
       consent, opaque references, and immutable composition pass; aggregation freshness and liability coverage remain
       explicitly unknown/partial because the interactive connector does not expose those fields. No FX is performed.
-- [ ] **CFO-1g** Persist one immutable, idempotent snapshot, its Moneytree coverage-state bundle, and reconciliation exceptions.
+- [x] **CFO-1g** Persist one immutable, idempotent snapshot, its Moneytree coverage-state bundle, and reconciliation exceptions.
 - [ ] **CFO-1g2** Enforce owner-timezone `reporting_date`, stable retry `run_id`, Telegram dedupe, and append-only
       superseding corrections.
 - [ ] **CFO-1g3** Implement bounded adapter self-repair and prove repair only after a fresh source read and
