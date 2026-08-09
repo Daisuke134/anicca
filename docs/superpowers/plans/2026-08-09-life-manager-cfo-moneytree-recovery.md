@@ -14,7 +14,7 @@ PostgreSQL appends contiguous correction revisions; existing delivery dedupe sup
 
 **Design:** `docs/superpowers/specs/2026-08-09-life-manager-cfo-moneytree-recovery-design.md`.
 
-**Status:** ACTIVE — Task 2 fix round 5; Task 1 seam is aligned.
+**Status:** ACTIVE — Tasks 1–2 complete; Task 3 next.
 
 ## Global Constraints
 
@@ -42,7 +42,7 @@ PostgreSQL appends contiguous correction revisions; existing delivery dedupe sup
 - Consumes: `composeMoneytreeRead`, `buildCfoDailyReport`.
 - Produces: `recoverMoneytreeRead({ reportingDate, observedAt }, { read, repair, wait })`.
 
-- [ ] **Step 1: Write the closed-contract RED tests**
+- [x] **Step 1: Write the closed-contract RED tests**
 
 Cover exact inputs/options, valid calendar date/RFC3339 time, Proxy/accessor/symbol/non-enumerable/custom prototype,
 hostile callback values/errors, and the exact frozen result keys. The first happy assertion is:
@@ -59,12 +59,12 @@ assert.equal(calls.wait, 0);
 assert.equal(result.failureKind, null);
 ```
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
 Run: `cd apps/life-call && node --test lib/cfo-moneytree-recovery.test.js`.
 Expected: FAIL because `cfo-moneytree-recovery.js` does not exist.
 
-- [ ] **Step 3: Add the bounded transition tests**
+- [x] **Step 3: Add the bounded transition tests**
 
 For each `timeout|network|rate_limited|provider_5xx`, prove repair→wait→fresh reread→composition/reconciliation before
 `recovered`. Prove exhausted calls are exactly `reads=3, repairs=2, waits=[1000,5000]`. Prove
@@ -73,7 +73,7 @@ For each `timeout|network|rate_limited|provider_5xx`, prove repair→wait→fres
 becomes the decisive terminal `failureKind`. `nextRetryAt` must be exactly input `observedAt + 30 minutes`. Every
 action is exactly `kind,sourceLabel,retryLabel,nextRetryAt` with the fixed labels from the design.
 
-- [ ] **Step 4: Implement minimum GREEN**
+- [x] **Step 4: Implement minimum GREEN**
 
 Use closed sets and one loop with fixed arrays:
 
@@ -85,7 +85,7 @@ const WAITS = Object.freeze([1000, 5000]);
 Every successful read is revalidated by `composeMoneytreeRead` and `buildCfoDailyReport`. Deep-freeze a structured
 clone. Every thrown error is `cfo_moneytree_recovery_failed:<fixed_code>`; do not log.
 
-- [ ] **Step 5: Verify and close**
+- [x] **Step 5: Verify and close**
 
 Run focused test, `npm run test:cfo`, `wc -l` for both files, and `git diff --check`. Commit/push
 `feat(cfo): bound Moneytree recovery`; write ignored report; obtain fresh Sol review.
@@ -105,7 +105,7 @@ Run focused test, `npm run test:cfo`, `wc -l` for both files, and `git diff --ch
 - Produces: `buildCfoDailyReportFromRecovery({ revision, recovery })` and
   `validateCfoRecoverySnapshotBundle({ report, sourceBundle })`.
 
-- [ ] **Step 1: Write RED for fresh/recovered/action-required bundles**
+- [x] **Step 1: Write RED for fresh/recovered/action-required bundles**
 
 Assert an exact frozen `{report,sourceBundle}`. `fresh` equals the existing report facts with requested revision.
 `recovered` uses only the fresh reread and exact repair proof. `action_required` uses empty accounts, unavailable
@@ -113,11 +113,11 @@ amounts, `evidence:moneytree_unavailable`, exact observed time, and `reconsent|p
 Map source consent from `failureKind` exactly: `unauthorized|expired` to `expired`, `forbidden|revoked` to `revoked`,
 and provider-outage actions to `unknown`; the rendered action does not expose `failureKind`.
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
 Run: `node --test lib/cfo-recovery-snapshot.test.js`; expect missing module failure.
 
-- [ ] **Step 3: Add fail-closed truth tests**
+- [x] **Step 3: Add fail-closed truth tests**
 
 Reject stale amount injection, mismatched source/state time, action with net worth, recovered without fresh reread or
 reconciliation, revision 0/non-integer, hostile envelopes, unknown keys, caller-mutated output, arbitrary/empty
@@ -127,7 +127,7 @@ read/repair/wait histories are rejected for every outcome state.
 Catch and replace every error at each public Task 2 boundary; never identify/rethrow a durable tagged Error object
 that a caller can mutate and replay through a later hostile input.
 
-- [ ] **Step 4: Implement minimum GREEN**
+- [x] **Step 4: Implement minimum GREEN**
 
 Build all facts once, then call the shared validator before returning. For fresh/recovered reports, rebuild the
 canonical existing daily report from `sourceBundle` and require exact deep equality after applying only the requested
@@ -143,7 +143,7 @@ action-required bundle uses:
 
 No old balance or prior report is an input.
 
-- [ ] **Step 5: Verify and close**
+- [x] **Step 5: Verify and close**
 
 Run focused test, Task 1+2 tests, `npm run test:cfo`, LOC, and diff-check. Commit/push
 `feat(cfo): build recovery snapshot facts`; report; fresh Sol review.
