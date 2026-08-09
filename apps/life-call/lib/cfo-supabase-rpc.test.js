@@ -11,6 +11,23 @@ function response(body = {}, status = 200) { return { ok: status >= 200 && statu
 function throwsWithMessage(fn, pattern) { assert.throws(fn, error => { assert.match(error.message, pattern); return true; }); }
 async function rejectsWithMessage(call, pattern) { await assert.rejects(call, error => { assert.match(error.message, pattern); return true; }); }
 
+async function replayThroughHostileJsonBoundary(rpc, parentError) {
+  const config = {
+    base: URL,
+    supaKey: KEY,
+    fetchImpl: async () => ({
+      ok: true,
+      status: 200,
+      json: async () => { throw parentError; },
+    }),
+  };
+  let replayed;
+  try { await rpc.postRpc(config, "hostile_json", {}); } catch (error) { replayed = error; }
+  assert.notEqual(replayed, parentError);
+  assert.equal(replayed.message, "operation_failed:invalid_json");
+  return replayed;
+}
+
 test("fail() tags errors with the given prefix; internal() recognizes only its own instance's tags", () => {
   const a = createCfoSupabaseRpc("prefix_a_failed:");
   const b = createCfoSupabaseRpc("prefix_b_failed:");
@@ -123,6 +140,59 @@ test("runOperation leaves no ambient provenance after success or failure settles
   assert.equal(rpc.internal(error), false);
   await rpc.runOperation(async () => {});
   assert.equal(rpc.internal(error), false);
+});
+
+test("detached descendant from a successful callback expires inherited provenance", async () => {
+  const rpc = createCfoSupabaseRpc("operation_failed:");
+  let release;
+  const gate = new Promise(resolve => { release = resolve; });
+  let parentError;
+  let descendant;
+
+  const result = await rpc.runOperation(async () => {
+    try { rpc.fail("successful_parent"); } catch (error) {
+      parentError = error;
+      descendant = (async () => {
+        await gate;
+        assert.equal(rpc.internal(parentError), false);
+        const replayed = await replayThroughHostileJsonBoundary(rpc, parentError);
+        assert.equal(rpc.internal(replayed), false);
+      })();
+      return "success";
+    }
+  });
+
+  assert.equal(result, "success");
+  release();
+  await descendant;
+});
+
+test("detached descendant from a failing callback expires inherited provenance", async () => {
+  const rpc = createCfoSupabaseRpc("operation_failed:");
+  let release;
+  const gate = new Promise(resolve => { release = resolve; });
+  let parentError;
+  let descendant;
+
+  const operation = rpc.runOperation(async () => {
+    try { rpc.fail("failing_parent"); } catch (error) {
+      parentError = error;
+      descendant = (async () => {
+        await gate;
+        assert.equal(rpc.internal(parentError), false);
+        const replayed = await replayThroughHostileJsonBoundary(rpc, parentError);
+        assert.equal(rpc.internal(replayed), false);
+      })();
+      throw error;
+    }
+  });
+
+  await assert.rejects(operation, error => {
+    assert.equal(error, parentError);
+    return true;
+  });
+  release();
+  await descendant;
 });
 
 test("exact() enforces a plain object with exactly the allowed enumerable own keys", () => {

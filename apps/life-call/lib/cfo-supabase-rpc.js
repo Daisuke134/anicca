@@ -14,16 +14,25 @@ const DEFAULT_OPTION_KEYS = new Set(["supaUrl", "supaKey", "fetchImpl"]);
 // provenance never crosses module boundaries.
 function createCfoSupabaseRpc(errorPrefix) {
   const operationErrors = new AsyncLocalStorage();
-  function runOperation(fn) { return operationErrors.run(new WeakSet(), fn); }
+  function runOperation(fn) {
+    const operation = { errors: new WeakSet(), open: true };
+    return operationErrors.run(operation, () => {
+      let result;
+      try { result = fn(); } catch (error) { operation.open = false; throw error; }
+      if (result && typeof result.then === "function") return Promise.resolve(result).finally(() => { operation.open = false; });
+      operation.open = false;
+      return result;
+    });
+  }
   function fail(reason) {
     const error = new Error(`${errorPrefix}${reason}`);
-    operationErrors.getStore()?.add(error);
+    operationErrors.getStore()?.errors.add(error);
     throw error;
   }
   function internal(error) {
     const operation = operationErrors.getStore();
-    return error !== null && (typeof error === "object" || typeof error === "function")
-      && Boolean(operation?.has(error));
+    return operation?.open === true && error !== null && (typeof error === "object" || typeof error === "function")
+      && Boolean(operation.errors.has(error));
   }
   function plain(value) {
     if (value === null || typeof value !== "object" || Array.isArray(value) || isProxy(value)) return false;
