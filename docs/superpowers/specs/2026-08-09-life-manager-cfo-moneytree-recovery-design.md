@@ -97,7 +97,9 @@ a partial report because liability coverage remains unknown.
 
 The report builder adds the exact interface
 `buildCfoDailyReportFromRecovery({ revision, recovery })`, where the input has only those two keys, `revision` is a
-positive safe integer, and `recovery` is revalidated rather than trusted. It consumes the closed recovery outcome:
+positive safe integer, and `recovery` is revalidated rather than trusted. It returns one deeply frozen exact
+`{report,sourceBundle}` object so persistence never reconstructs financial facts independently. It consumes the
+closed recovery outcome:
 
 - `fresh` uses the existing partial native-JPY report contract;
 - `recovered` uses the fresh reread only, sets `repair={sourceLabel:"Moneytree",freshReread:true,reconciled:true}`,
