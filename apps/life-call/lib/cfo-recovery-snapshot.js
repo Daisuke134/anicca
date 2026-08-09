@@ -20,8 +20,9 @@ const WAITS = Object.freeze([1000, 5000]);
 const TRANSIENT_FAILURES = new Set(["timeout", "network", "rate_limited", "provider_5xx"]);
 const FAILURE_KINDS = new Set(["unauthorized", "forbidden", "expired", "revoked", "timeout", "network", "rate_limited", "provider_5xx", "provider_outage"]);
 const RFC3339 = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(\.\d+)?(Z|[+-]\d{2}:\d{2})$/;
+const INTERNAL_ERRORS = new WeakSet();
 
-function fail(reason) { throw new Error(`${ERROR_PREFIX}${reason}`); }
+function fail(reason) { const error = new Error(`${ERROR_PREFIX}${reason}`); INTERNAL_ERRORS.add(error); throw error; }
 function plain(value) { return value !== null && typeof value === "object" && !Array.isArray(value) && !isProxy(value) && Object.getPrototypeOf(value) === Object.prototype; }
 function exact(value, allowed) {
   if (!plain(value)) fail("invalid_shape");
@@ -49,9 +50,26 @@ function same(left, right) {
   if (leftKeys.length !== rightKeys.length || leftKeys.some((key) => !rightKeys.includes(key))) return false;
   return leftKeys.every((key) => same(left[key], right[key]));
 }
+function exactDenseArray(value) {
+  if (isProxy(value) || !Array.isArray(value) || Object.getPrototypeOf(value) !== Array.prototype) fail("invalid_array");
+  const own = Reflect.ownKeys(value); const lengthDescriptor = Object.getOwnPropertyDescriptor(value, "length");
+  if (!lengthDescriptor || !Object.prototype.hasOwnProperty.call(lengthDescriptor, "value") || lengthDescriptor.enumerable || own.length !== value.length + 1) fail("invalid_array");
+  for (const key of own) {
+    if (key === "length") continue;
+    if (typeof key !== "string" || !/^(0|[1-9]\d*)$/.test(key) || Number(key) >= value.length) fail("invalid_array");
+    const descriptor = Object.getOwnPropertyDescriptor(value, key);
+    if (!descriptor || !Object.prototype.hasOwnProperty.call(descriptor, "value") || !descriptor.enumerable) fail("invalid_array");
+  }
+  for (let index = 0; index < value.length; index += 1) {
+    const descriptor = Object.getOwnPropertyDescriptor(value, String(index));
+    if (!descriptor || !Object.prototype.hasOwnProperty.call(descriptor, "value") || !descriptor.enumerable) fail("invalid_array");
+  }
+}
 function validateAttempts(attempts) {
   exact(attempts, ATTEMPTS_KEYS);
-  if (!Number.isSafeInteger(attempts.reads) || attempts.reads < 1 || attempts.reads > WAITS.length + 1 || !Number.isSafeInteger(attempts.repairs) || attempts.repairs !== attempts.reads - 1 || !Array.isArray(attempts.waits) || attempts.waits.length !== attempts.repairs || attempts.waits.some((value, index) => value !== WAITS[index])) fail("invalid_attempts");
+  if (!Number.isSafeInteger(attempts.reads) || attempts.reads < 1 || attempts.reads > WAITS.length + 1 || !Number.isSafeInteger(attempts.repairs) || attempts.repairs !== attempts.reads - 1) fail("invalid_attempts");
+  exactDenseArray(attempts.waits);
+  if (attempts.waits.length !== attempts.repairs || attempts.waits.some((value, index) => value !== WAITS[index])) fail("invalid_attempts");
 }
 function validateRecovery(recovery) {
   exact(recovery, RECOVERY_KEYS); date(recovery.reportingDate); timestamp(recovery.observedAt);
@@ -107,7 +125,7 @@ function buildCfoDailyReportFromRecovery(input) {
       if (recovery.status === "recovered") report = { ...report, state: "recovered", repair: { sourceLabel: "Moneytree", freshReread: true, reconciled: true } };
     }
     return validateCfoRecoverySnapshotBundle({ report, sourceBundle });
-  } catch (error) { if (error && error.message && error.message.startsWith(ERROR_PREFIX)) throw error; throw new Error(`${ERROR_PREFIX}invalid_input`); }
+  } catch (error) { if (INTERNAL_ERRORS.has(error)) throw error; fail("invalid_input"); }
 }
 function validateCfoRecoverySnapshotBundle(input) {
   try {
@@ -115,7 +133,8 @@ function validateCfoRecoverySnapshotBundle(input) {
     const sourceBundle = composeMoneytreeRead({ source: input.sourceBundle.source, state: input.sourceBundle.state });
     const report = input.report;
     exact(report, REPORT_KEYS); exact(report.totals, TOTAL_KEYS);
-    if (!Array.isArray(report.sources) || report.sources.length !== 1 || !Array.isArray(report.excluded)) fail("invalid_report");
+    exactDenseArray(report.sources); exactDenseArray(report.excluded);
+    if (report.sources.length !== 1) fail("invalid_report");
     exact(report.sources[0], RENDERED_SOURCE_KEYS);
     for (const excluded of report.excluded) { exact(excluded, EXCLUDED_KEYS); if (typeof excluded.label !== "string" || typeof excluded.reason !== "string") fail("invalid_report"); }
     if (report.schemaVersion !== 1 || report.currency !== "JPY" || report.reportingDate !== sourceBundle.source.asOf.slice(0, 10)) fail("mismatched_identity");
@@ -126,7 +145,7 @@ function validateCfoRecoverySnapshotBundle(input) {
     if (report.state === "action_required") {
       exact(report.action, ACTION_KEYS);
       if (!ACTION_KINDS.has(report.action.kind) || report.action.sourceLabel !== "Moneytree" || typeof report.action.retryLabel !== "string") fail("unsafe_action_report");
-      timestamp(report.action.nextRetryAt);
+      timestamp(report.action.nextRetryAt); if (Date.parse(report.action.nextRetryAt) !== Date.parse(sourceBundle.source.asOf) + 30 * 60 * 1000) fail("invalid_retry_time");
       const source = sourceBundle.source; const state = sourceBundle.state;
       if (source.freshness !== "unavailable" || source.evidenceRef !== "evidence:moneytree_unavailable" || source.accounts.length !== 0 || source.liabilities.length !== 0 || source.partial !== true || source.asOf !== state.observedAt || state.retrievalStatus !== "unavailable" || state.aggregationStatus !== "unknown" || state.liabilityCoverage !== "unknown" || state.partial !== true || !state.actionRequired || state.actionRequired.kind !== report.action.kind || source.actionRequired.kind !== report.action.kind || source.actionRequired.sourceLabel !== "Moneytree" || (report.action.kind === "provider_outage" ? source.consent !== "unknown" || state.consentStatus !== "unknown" : !["expired", "revoked"].includes(source.consent) || state.consentStatus !== source.consent) || report.repair !== null || Object.values(report.totals).some((value) => value !== null) || renderedSource.label !== "MUFG" || renderedSource.status !== "unavailable" || renderedSource.amountMinor !== null || renderedSource.verificationStatus !== "unavailable") fail("unsafe_action_report");
       const consent = report.action.kind === "provider_outage" ? "unknown" : source.consent;
@@ -144,7 +163,7 @@ function validateCfoRecoverySnapshotBundle(input) {
     } else fail("invalid_state");
     if (report.state !== "action_required" && report.sources[0].asOf !== sourceBundle.source.asOf) fail("mismatched_time");
     return cloneFreeze({ report, sourceBundle });
-  } catch (error) { if (error && error.message && error.message.startsWith(ERROR_PREFIX)) throw error; throw new Error(`${ERROR_PREFIX}invalid_bundle`); }
+  } catch (error) { if (INTERNAL_ERRORS.has(error)) throw error; fail("invalid_bundle"); }
 }
 
 module.exports = { buildCfoDailyReportFromRecovery, validateCfoRecoverySnapshotBundle };

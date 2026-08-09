@@ -108,6 +108,39 @@ test("transient provider outage must include a reread attempt", () => {
   assertInvalid(() => buildCfoDailyReportFromRecovery({ revision: 1, recovery: actionRecovery("timeout", "provider_outage", { reads: 1, repairs: 0, waits: [] }) }));
 });
 
+test("public action retry time is bound to source observation", () => {
+  const bundle = buildCfoDailyReportFromRecovery({ revision: 1, recovery: actionRecovery("provider_outage", "provider_outage") });
+  const report = structuredClone(bundle.report);
+  report.action.nextRetryAt = "2026-08-09T09:00:00+09:00";
+  assertInvalid(() => validateCfoRecoverySnapshotBundle({ report, sourceBundle: bundle.sourceBundle }));
+});
+
+test("waits rejects hostile and non-dense array boundaries without leaking errors", () => {
+  const hostileError = new Proxy({}, { get() { throw new Error("SECRET_MESSAGE_GETTER_LEAK"); } });
+  const hostile = new Proxy([1000], { get() { throw hostileError; } });
+  const symbolKey = [1000]; symbolKey[Symbol("extra")] = true;
+  const hiddenKey = [1000]; Object.defineProperty(hiddenKey, "extra", { value: true });
+  const accessorIndex = [1000]; Object.defineProperty(accessorIndex, "0", { enumerable: true, get: () => 1000 });
+  const sparse = new Array(1);
+  const customPrototype = [1000]; Object.setPrototypeOf(customPrototype, { custom: true });
+  for (const waits of [hostile, symbolKey, hiddenKey, accessorIndex, sparse, customPrototype]) {
+    assert.throws(() => buildCfoDailyReportFromRecovery({ revision: 1, recovery: recovery({ status: "recovered", attempts: { reads: 2, repairs: 1, waits }, repair: { sourceLabel: "Moneytree", freshReread: true, reconciled: true } }) }), (error) => {
+      assert.match(error.message, /^cfo_recovery_snapshot_invalid:[a-z0-9_]+$/);
+      assert.doesNotMatch(error.message, /SECRET/);
+      return true;
+    });
+  }
+});
+
+test("report sources and exclusions reject Proxy and sparse arrays", () => {
+  const bundle = buildCfoDailyReportFromRecovery({ revision: 1, recovery: recovery() });
+  const proxySources = structuredClone(bundle.report); proxySources.sources = new Proxy(proxySources.sources, { get() { throw new Error("SECRET_SOURCES"); } });
+  const proxyExcluded = structuredClone(bundle.report); proxyExcluded.excluded = new Proxy(proxyExcluded.excluded, { get() { throw new Error("SECRET_EXCLUDED"); } });
+  const sparseSources = structuredClone(bundle.report); sparseSources.sources = new Array(1);
+  const sparseExcluded = structuredClone(bundle.report); sparseExcluded.excluded = new Array(1);
+  for (const report of [proxySources, proxyExcluded, sparseSources, sparseExcluded]) assertInvalid(() => validateCfoRecoverySnapshotBundle({ report, sourceBundle: bundle.sourceBundle }));
+});
+
 test("binds fresh and recovered reads to recovery.observedAt exactly", () => {
   const stale = read();
   const freshWithStaleRead = recovery({ moneytreeRead: stale, observedAt: "2026-08-09T09:00:00+09:00" });
