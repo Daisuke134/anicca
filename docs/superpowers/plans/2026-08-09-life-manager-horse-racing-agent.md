@@ -1,480 +1,519 @@
-# Life Manager 競馬AI 実装計画
+# Life Manager Horse Racing Agent Free-Web Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-## Goal
+**Goal:** Mac-native zero-cost public-web ingestionからJRA公式primary recordとNAR二次recordをsource authority付きで観測し、redacted evidence、observed schema、SHADOW、CFO separationをReality Gate順に実装する。
 
-`business_id: horse_racing`をLife Manager financial organの第8候補として、CFO-0c exact-seven完了後のregistry v2依存を壊さずに実装する。Reality Gateを先に通し、owned Windowsでofficial/licensed JRAまたはNARの実recordを観測できたsourceだけを下流へ進める。現時点のStatusは `REALITY GATE REQUIRED — LIVE PURCHASE DISABLED` である。
+**Architecture:** crwlはrobots/termsとcourteous rate limitを守って公開ページだけを取得する。raw snapshotはMac-local private append-only boundaryに留め、Git・Telegram・cloud・CFOへ出すのはredacted manifestだけにする。JRA officialとNAR secondaryは独立gateで、NAR secondaryはschema/audit/SHADOWだけをunlockし、LIVE_CASHには進めない。
 
-目標は実購入ではない。最初にsource、時刻、schema、cutoff、decision、outcome、Telegram、CFOの証拠を分離したSHADOW foundationを作る。実注文・決済はこのplanの実装対象に含めない。
+**Tech Stack:** Python 3.12、pytest、標準ライブラリ中心のpure deterministic contracts、crwl、Mac-local filesystem、redacted YAML/Markdown evidence。新しいpaid SDK、SaaS、public API、browser automationは追加しない。
 
-## Current truth and evidence classes
+## Global Constraints
 
-### 現在のevidence table
+- 個人利用のみ。zero-cost public-web ingestionのみを許可し、raw page/rowのredistribution、public publication、SaaS化をしない。
+- JRA primaryはofficial public pages。JRA robots snapshotはUser-agent:*とempty Disallow、利用範囲はprivate use/citation境界を記録する。
+- NAR official keiba.go.jpのTodayRaceInfo/DataRoom/DataDownloadはCrawl-delay: 10とDisallowのためcrawlしない。推測DataRoom/DataDownload URLの404からZIP/CSV/APIを主張しない。
+- NAR initial sourceはnar.netkeiba.com、classificationはPUBLIC_WEB_SECONDARY、termsはunverified、SHADOW-only。JRA fallbackに使う場合もsecondary labelを保持する。
+- evidence classesはSYNTHETIC_TEST、REAL_PUBLIC_WEB_RECORD、PUBLIC_WEB_SECONDARY、LIVE_SHADOW、LIVE_CASH。HTTP/DOM successだけはrecordとしない。
+- manifest必須欄はevidence_class、source_url、source_authority official|secondary、jurisdiction、retrieved_at、page_or_effective_timestamp、fetch_exit_code、http_status、parsed_row_count>=1、observed schema field names/types、content_sha256、robots_snapshot_url/status、terms_url/status、raw_values_exported=false。
+- raw snapshotはMac-local private append-only storageだけに保持し、raw values、実馬名、credential、secret、subscription id、receiptを外へ出さない。
+- PurchaseExecutorは常時disabled。HRA-6のterms/order/tax/credential/receipt/reconciliation gate以前に注文・決済・bet・wallet/bank mutationを作らない。
+- $10K/monthはevidence-driven target only。ROI、勝率、収益、forecast、guaranteeを作らず、settled receiptとlater-window evidenceがない値をrevenueへ加算しない。
+- Solはplan、gate、verificationを所有し、Lunaはこのplanに記載されたedit、code、command、evidence作成を実行する。
+- 未完項目は先頭の一件だけをactiveにする。各sliceは最大3 files、estimated LOC 100以下、RED→GREEN→実E2E/state更新→commit→origin/canonical pushで閉じてから次へ進む。
+
+## Current truth and evidence
 
 | Evidence | 実測値 |
 |---|---:|
-| official provider sessions | 0 |
-| real JRA records | 0 |
-| real NAR records | 0 |
+| real JRA public-web records | 0 |
+| real NAR public-web records | 0 |
 | real historical backtests | 0 |
+| live SHADOW runs | 0 |
 | live Telegram runs | 0 |
 | live orders/payments | 0 |
 
-Evidence classは次の4つに固定する。
+未取得、terms未検証、manifest欠落、parsed row 0はBLOCKEDと表示する。SYNTHETIC_TESTはmechanicsだけで、public-web record、historical backtest、SHADOW、Telegram、CFO revenueのcompletion evidenceではない。
 
-- `SYNTHETIC_TEST`: pure mechanicsだけを検証する人工fixture。provider、model、backtest、live Telegram、CFO revenue、completion gateの証拠にはしない。
-- `REAL_PROVIDER_RECORD`: owned Windows上のofficial/licensed providerから観測した実recordのredacted manifest。
-- `LIVE_SHADOW`: 実provider dataから実時点decisionを作るが、注文・決済をしない記録。推定EV、payout、ROIはreal revenueにしない。
-- `LIVE_CASH`: HRA-6のcompliance gate後にofficial settled receiptで確定する記録。real P&Lはこのclassだけで計上する。
+## Architecture flow
 
-現committed codeで証明済みなのはregistry dependency、purchase-disabled safety、source/local boundaryだけである。provider connectivity、data accuracy、model accuracy、ROI、revenue、live Telegram deliveryは未証明である。HRA-2bのsynthetic store、fixture、testはuncommitted quarantineであり、実provider recordのobserved schemaへ派生するまでcompletionとして受け入れない。
-
-下流stageがPASSを名乗るためには、provider/acquisition timestamp、source、jurisdiction、adapter/upstream version、row count、schema field names/types、content hash、redacted evidence manifest、probe command exit evidenceを揃える。欠落、unknown、entitlement不足、probe不能、実record 0件は `BLOCKED` として記録し、synthetic値で補完しない。raw licensed rowsはowned Windows内だけに置き、Git、Telegram、cloud、CFOへ出さない。
-
-## Architecture
-
-### Reality Gateを先に通すstate flow
-
-```mermaid
+~~~mermaid
 flowchart TD
-  A[HRA-0 research/spec complete] --> B[HRA-1 safety contracts complete]
-  B --> C[HRA-2a boundary only]
-  C --> R{HRA-2R per-source Reality Gate}
-  R -- BLOCKED --> X[DATA_BLOCKED report only]
-  R -- JRA PASS --> J[HRA-2S JRA observed schema/local store]
-  R -- NAR PASS --> N[HRA-2S NAR observed schema/local store]
-  J --> D[HRA-3D actual dataset audit]
+  A[HRA-0/1 safety complete] --> B[HRA-2F TDD free-web ingest boundary]
+  B -- RED/BLOCKED --> X[DATA BLOCKED]
+  B -- GREEN --> G{HRA-2R per-source record gate}
+  G -- JRA official PASS --> J[HRA-2S observed schema/store]
+  G -- NAR secondary PASS --> N[HRA-2S secondary schema/store]
+  G -- missing row/manifest --> X
+  J --> D[HRA-3D audit]
   N --> D
-  D --> M[HRA-3M baseline/walk-forward/calibration]
-  M --> S[HRA-4 live-data SHADOW]
-  S --> T[HRA-5 Telegram/CFO separation]
-  T --> P[HRA-6 compliance gate]
-  P --> Q[HRA-7 one ¥100 max/day micro-live]
-  Q --> Z[HRA-8 evidence-driven scale]
-  J -. NAR remains independent .-> N
-```
+  D --> M[HRA-3Ma/3Mb model and backtest]
+  M --> S[HRA-4 SHADOW/SKIP]
+  S --> T[HRA-4b Telegram evidence split]
+  T --> C[HRA-5 CFO receipt adapter]
+  C --> R[HRA-6 research gate]
+  R --> Q[HRA-7 document-only micro-live gate]
+  Q --> Z[HRA-8 evidence-driven scale review]
+  N -. never unlocks LIVE_CASH alone .-> R
+~~~
 
-`HRA-2a`はboundary onlyでありconnectorではない。JRAがPASSしてもNARは自動PASSせず、sourceごとに下流を分離する。Reality Gate前にschema、model、backtest、prediction、CFO revenueを作ってcompletion扱いしない。
+## Ordered execution status
 
-### 通過後のデータ経路
+| Order | Stage | State | Scope |
+|---:|---|---|---|
+| 0 | Completed safety and design | complete | historical commits and approved free-web design |
+| 1 | HRA-2F ingest boundary refactor | **ACTIVE** | exactly ingest.py and test_ingest_boundary.py |
+| 2 | HRA-2R1 JRA public-web record | blocked by HRA-2F GREEN | one evidence file |
+| 3 | HRA-2R2 NAR secondary public-web record | blocked by HRA-2F GREEN | one evidence file |
+| 4 | HRA-2R3 per-source index/gate | blocked by records | one evidence file |
+| 5 | HRA-2S observed schema/store | blocked by HRA-2R3 | quarantine three files only |
+| 6 | HRA-3D audit | blocked by HRA-2S | data_audit.py and test_data_audit.py |
+| 7 | HRA-3Ma/3Mb model and backtest | blocked by HRA-3D | exact legacy filenames retained |
+| 8 | HRA-4 SHADOW decision/outcome ledger | blocked by HRA-3Mb | decision.py, ledger.py, test_shadow_ledger.py |
+| 9 | HRA-4b Japanese Telegram | blocked by HRA-4 | telegram.py and test_telegram.py |
+| 10 | HRA-5 CFO adapter | blocked by HRA-4b and CFO-0c | cfo.py and test_cfo.py |
+| 11 | HRA-6 terms/order/tax/receipt gate | blocked research gate | document only, PurchaseExecutor disabled |
+| 12 | HRA-7 ¥100 micro-live gate | blocked future gate | document only, no bet execution |
+| 13 | HRA-8 scale review | blocked future gate | evidence-driven target only |
 
-```mermaid
-flowchart LR
-  A[JRA-VAN JV-Link + UmaConn/NV-Link] --> B[owned Windows ingest worker]
-  B --> C[Windows-local raw boundary]
-  C --> D[HRA-2S observed schema/local store]
-  D --> E[HRA-3D actual data audit]
-  E --> F[HRA-3M calibrated model]
-  F --> G[decision/risk engine]
-  G --> H[LIVE_SHADOW ledger]
-  H --> I[Telegram/CFO evidence labels]
-  G --> J[signed deterministic JSON]
-  J --> K[Terra explanation only]
-  K -. decision・金額変更不可 .-> G
-  G --> L[PurchaseExecutor disabled]
-```
+## Task 0: Completed safety and design baseline
 
-## Tech Stack and boundaries
+**State:** complete. Sol verifies these commits before activating Task 1.
 
-- Python 3.12、pure deterministic contracts、isolated test harness。実装rootは `apps/horse-racing-agent/` とする。
-- JRA laneはJRA-VAN Data Lab/JV-Linkとpinned `miyamamoto/jrvltsql`。NAR laneはofficial/licensed UmaConn/NV-Linkの公式sampleまたは限定bridge。JRA/NARを同じadapterやreceiptへ混ぜない。
-- HRA-2Rのprobeはowned Windows上だけで実行する。credential値、subscription id、raw licensed row、実馬名、購入receiptをrepoや報告へ書かない。
-- HRA-2Sは観測manifestとWindows-local recordからschemaを導出する。SQLite/provider connection/normalizationをReality Gate前へ前倒ししない。
-- HRA-3Mはmarket-implied baseline、win/place初期対象、LightGBMまたはXGBoost、fixed T-5等のsnapshot、time-series walk-forward、calibration、odds slippage stress、Brier/logloss/ECE、confidence-adjusted EV lower boundを使う。cutoff後featureとrandom splitは禁止する。
-- HRA-4は全eligible raceでSHADOWまたはSKIPを生成する。負EVのcashは強制しないが、SKIPでもbest candidate、threshold gap、reasonを残す。
-- Telegramは `Life Manager::: 競馬AI` とtruth labelを先頭に置き、`real P&L`と`shadow P&L`を分ける。CFOはofficial settled receiptだけをrevenueとreal P&Lにする。
-- `PurchaseExecutor`は任意の入力でdisabled/blockedを返す。browser、Selenium、DOM、非公式注文API、credential reader、network transport、wallet/bank mutationを作らない。
+Historical rejection only: 0fe627cd proves the superseded Windows/JRA-VAN/Data Lab/JV-Link/UmaConn/NV-Link/JRDB/paid-source boundary; it is not compatible with this free-web plan and has no active dependency.
 
-### HRA-2R1 route decision
+- d743b153: registry v2 candidate and CFO-0c exact-seven dependency.
+- 89d48910: PurchaseExecutor disabled and side-effect-free.
+- 0fe627cd: superseded boundary record described above; never treat it as HRA-2F or HRA-2R evidence.
+- 9b9b78346: design switched to free public-web sources, evidence classes, Mac-local raw boundary.
+- 509955401: HRA-2F made active because the old boundary implementation is not compatible.
 
-実測control planeはmacOS 15.6 / Apple M4 / 16 GiB / 内蔵disk空き32 GiB（35.2 GB）、VM runtimeなし。JRA公式FAQ 436/210とdeveloper topic 49により、Data Lab/JV-LinkはMac直実行せず、ActiveX COMを持つowned remote/native Windows 11 x64 workerへ限定する。MicrosoftのWindows 11要件は64 GB storage、ParallelsのApple silicon guestはArmであるため、Mac内蔵VM、Wine、x64 emulationは採用しない。既存GCP設定はinstance count=0で、Windows workerの証明ではない。Windows 365/ParallelsはJRA実probe PASSまで候補実験扱いとする。
+Verification:
 
-## Scope and roles
+~~~sh
+git show --no-patch --format=%H d743b153
+git show --no-patch --format=%H 89d48910
+git show --no-patch --format=%H 0fe627cd
+git show --no-patch --format=%H 9b9b78346
+git show --no-patch --format=%H 509955401
+~~~
 
-| 範囲 | 扱い |
-|---|---|
-| HRA-0 | research/spec complete。既存CFO specは変更しない |
-| HRA-1a/1b、HRA-2a | safety contracts complete。pushed commitを下記に固定 |
-| HRA-2R | 現在唯一のactive stage。source別にreal recordとredacted manifestを得る |
-| HRA-2S〜HRA-5 | Reality Gate後のSHADOW foundation。sourceごとのPASSまでblocked |
-| HRA-6 | written permissionまたはofficial supported ordering API、tax、credential、cap、reconciliationのgate。実装taskにしない |
-| HRA-7/HRA-8 | 文書上のblocked future gate。実購入実装・stake escalationをしない |
-| Sol | manager、計画、acceptance、gate、verificationだけを担当 |
-| Luna | 全implementation/editing slice、Windows probeの実行、tests、evidence manifest作成を担当 |
+Expected: all five commits resolve, Task 1 is the sole active item, and evidence table values remain zero.
 
-## Plan size
+## Task 1: HRA-2F TDD refactor of the free-web ingest boundary (ACTIVE)
 
-1 sliceは3 files以内、estimated LOCは100以下とする。3 files超または100 LOC超が必要になった場合は、active itemを完了させてから独立sliceへ分割する。Reality Gateのmanifestはredacted evidenceだけであり、raw provider dataのfileは作らない。
+**Files:**
+- Modify: apps/horse-racing-agent/src/horse_racing_agent/ingest.py
+- Modify: apps/horse-racing-agent/tests/test_ingest_boundary.py
 
-| ID | slice | files | estimated LOC | 状態 |
-|---|---|---|---:|---|
-| HRA-1a | registry v2 dependency contract | `apps/horse-racing-agent/pyproject.toml`; `apps/horse-racing-agent/src/horse_racing_agent/contracts.py`; `apps/horse-racing-agent/tests/test_contracts.py` | 85 | **complete**, `d743b153` |
-| HRA-1b | purchase-disabled boundary | `apps/horse-racing-agent/src/horse_racing_agent/purchase.py`; `apps/horse-racing-agent/tests/test_purchase_disabled.py` | 70 | **complete**, `89d48910` |
-| HRA-2a | licensed source/local boundary | `apps/horse-racing-agent/src/horse_racing_agent/ingest.py`; `apps/horse-racing-agent/tests/test_ingest_boundary.py` | 80 | **complete**, `0fe627cd`。boundary only |
-| HRA-2R1-P | physical Windows worker procurement evidence | `docs/evidence/horse-racing/windows-worker-procurement.md` | 40 | **complete: purchase not executed; action-time confirmation required** |
-| HRA-2R1 | JRA environment + one-real-record probe | `docs/evidence/horse-racing/windows-worker-first-record-runbook.md`; `docs/evidence/horse-racing/jra-probe.md` | 95 | **ACTIVE/BLOCKED — runbook prepared, not executed; session0, record0, probe null** |
-| HRA-2R2 | JRA redacted reality manifest | `docs/evidence/horse-racing/jra-reality-gate.md` | 35 | pending HRA-2R1 |
-| HRA-2R3 | NAR environment + one-real-record probe | `docs/evidence/horse-racing/nar-probe.md` | 95 | **ACTIVE/BLOCKED — inquiry confirmed, reply pending; session0, record0, probe null**。HRA-2R1/JRAと独立 |
-| HRA-2R4 | NAR redacted reality manifest | `docs/evidence/horse-racing/nar-reality-gate.md` | 35 | pending HRA-2R3 |
-| HRA-2R5 | per-source gate index | `docs/evidence/horse-racing/reality-gate-index.md` | 30 | pending HRA-2R4 |
-| HRA-2S | observed schema/local append-only store | `apps/horse-racing-agent/tests/fixtures/normalized_races.json`; `apps/horse-racing-agent/src/horse_racing_agent/store.py`; `apps/horse-racing-agent/tests/test_store.py` | 90 | **BLOCKED** by source Reality Gate |
-| HRA-3D | actual dataset quality/coverage/cutoff audit | `apps/horse-racing-agent/src/horse_racing_agent/data_audit.py`; `apps/horse-racing-agent/tests/test_data_audit.py` | 75 | **BLOCKED** by HRA-2S |
-| HRA-3Ma | cutoff-safe features and model contract | `apps/horse-racing-agent/src/horse_racing_agent/features.py`; `apps/horse-racing-agent/src/horse_racing_agent/model.py`; `apps/horse-racing-agent/tests/test_model.py` | 95 | **BLOCKED** by HRA-3D |
-| HRA-3Mb | walk-forward/calibration/backtest | `apps/horse-racing-agent/src/horse_racing_agent/backtest.py`; `apps/horse-racing-agent/tests/test_backtest.py` | 80 | **BLOCKED** by HRA-3Ma |
-| HRA-4a | SHADOW decision and immutable outcome ledger | `apps/horse-racing-agent/src/horse_racing_agent/decision.py`; `apps/horse-racing-agent/src/horse_racing_agent/ledger.py`; `apps/horse-racing-agent/tests/test_shadow_ledger.py` | 95 | **BLOCKED** by HRA-3Mb |
-| HRA-4b | Japanese Telegram schemas and cadence | `apps/horse-racing-agent/src/horse_racing_agent/telegram.py`; `apps/horse-racing-agent/tests/test_telegram.py` | 75 | **BLOCKED** by HRA-4a |
-| HRA-5a | CFO receipt/evidence adapter | `apps/horse-racing-agent/src/horse_racing_agent/cfo.py`; `apps/horse-racing-agent/tests/test_cfo.py` | 85 | **BLOCKED** by HRA-4b and CFO-0c |
+**Plan size:** 2 files, estimated 90 LOC total. No other code, fixture, evidence, or quarantine file may change in this task.
 
-HRA-2bとして先に作られた3 filesは、現在のsynthetic-only implementationであり、uncommitted quarantineに置く。HRA-2Sのsource-specific observed manifestからschemaを再導出し、synthetic fixtureを置換して初めて受入判定を行う。現ファイルを「provider success」としてGREEN扱いしない。
+**Interface:** Replace the legacy boundary with this exact signature and return contract.
 
-## Execution rules
+~~~python
+def ingest_raw_boundary(
+    source_url: str,
+    source_authority: str,
+    jurisdiction: str,
+    host_os: str,
+    storage_scope: str,
+    raw_payload: str | bytes,
+    export_destination: str,
+    robots_snapshot_url: str,
+    robots_status: str,
+    terms_url: str,
+    terms_status: str,
+) -> dict[str, str | int | bool]:
+    ...
+~~~
 
-1. One active itemだけを実行する。現在のactive itemはHRA-2R1であり、HRA-2Rのevidenceが揃うまでHRA-2S以降へ進まない。
-2. Lunaは全実装・編集・probe実行を担当し、Solはmanager/gate/verificationだけを担当する。SolはLunaのコードを代行せず、Lunaは自分のsource Reality Gateを自己承認しない。
-3. code sliceはtest-first RED→GREENとする。REDは外部provider、credential、network、raw licensed dataを呼ばず、未実装contractの失敗だけを検出する。GREENは同じtestとpackage全testを実行する。
-4. Reality Gate sliceはcode GREENを捏造しない。環境・entitlement・probeが不足した場合は `BLOCKED` のmanifestとexit evidenceを残し、synthetic recordをPASSへ昇格しない。
-5. すべてのPASSはprovider/acquisition timestamp、source、jurisdiction、adapter/upstream version、row count、schema field names/types、content hash、manifest、probe command exit codeを参照できる状態にする。
-6. raw licensed rowsはowned Windows-localだけに置く。redacted manifestにはraw value、secret、実馬名、subscription id、購入receiptを入れない。
-7. slice commitはprimary/Solのverification後に行い、他agent所有file、既存CFO spec、raw dataを混ぜない。現在の依頼ではcommit/pushを行わない。
+Accepted source combinations are exact host equality: www.jra.go.jp + official + JRA, race.netkeiba.com + secondary + JRA, and nar.netkeiba.com + secondary + NAR. Require host_os=macos, storage_scope=mac_local_private, export_destination=local_raw_snapshot, and raw_payload as str or bytes. Reject https://www.keiba.go.jp/KeibaWeb/TodayRaceInfo/, https://www.keiba.go.jp/KeibaWeb/DataRoom/, https://www.keiba.go.jp/KeibaWeb/DataDownload/, and every hostname substring spoof such as evil-jra.go.jp or race.netkeiba.com.evil.example.
 
-## Completed safety slices
+Return only redacted metadata: source_url, source_authority, jurisdiction, host_os=macos, storage_scope=mac_local_private, export_destination=local_raw_snapshot, sha256, payload_size, robots_snapshot_url, robots_status, terms_url, terms_status, raw_payload_exported=false, and allowed_scope=private_shadow for official JRA or shadow_only for secondary. Never include raw_payload or decoded raw values.
 
-### HRA-1a — registry v2 dependency contract `[x]`
+- [ ] Step 1: Write the failing test.
 
-**Owner: Luna。** `horse_racing`を`candidate_ordinal=8`、`depends_on=CFO-0c exact-seven`として定義し、dependency未完了をfail-closedにした。HRA-6未完了時の`live_purchase=disabled`もcaller inputで解除できない。
+~~~python
+def test_free_web_authority_matrix_and_redacted_return():
+    metadata = ingest_raw_boundary(
+        "https://www.jra.go.jp/",
+        "official",
+        "JRA",
+        "macos",
+        "mac_local_private",
+        "synthetic mechanics payload",
+        "local_raw_snapshot",
+        "https://www.jra.go.jp/robots.txt",
+        "User-agent:*; Disallow:",
+        "https://www.jra.go.jp/use/",
+        "observed",
+    )
+    assert metadata["allowed_scope"] == "private_shadow"
+    assert metadata["raw_payload_exported"] is False
+    assert "raw_payload" not in metadata
 
-Files: `apps/horse-racing-agent/pyproject.toml`、`apps/horse-racing-agent/src/horse_racing_agent/contracts.py`、`apps/horse-racing-agent/tests/test_contracts.py`。
+def test_rejects_keiba_dynamic_and_hostname_spoof():
+    with pytest.raises(ValueError, match="source URL"):
+        ingest_raw_boundary(
+            "https://www.keiba.go.jp/KeibaWeb/DataRoom/DataDownload",
+            "official", "NAR", "macos", "mac_local_private",
+            "synthetic", "local_raw_snapshot", "https://www.keiba.go.jp/robots.txt",
+            "Crawl-delay: 10; Disallow", "https://www.keiba.go.jp/terms.html",
+            "blocked",
+        )
+    with pytest.raises(ValueError, match="source URL"):
+        ingest_raw_boundary(
+            "https://evil-jra.go.jp/race",
+            "official", "JRA", "macos", "mac_local_private",
+            "synthetic", "local_raw_snapshot", "https://www.jra.go.jp/robots.txt",
+            "observed", "https://www.jra.go.jp/use/", "observed",
+        )
+~~~
 
-検証:
+Add one parameterized case for each accepted combination and one secondary return assertion for allowed_scope=shadow_only. Every payload in these tests is synthetic mechanics input and must not be labeled real data.
 
-```sh
+- [ ] Step 2: Run RED and record the expected failure.
+
+~~~sh
 cd /Users/anicca/anicca-project/.worktrees/horse-racing-agent-spec/apps/horse-racing-agent
-rtk python3.12 -m pytest tests/test_contracts.py -q
-rtk python3.12 -m pytest -q
-```
+rtk python3.12 -m pytest tests/test_ingest_boundary.py -q
+~~~
 
-期待結果: registry candidate、exact-seven dependency、fail-closed、disabled purchaseの対象testがPASSし、外部network/CFO state mutationが0件。Solは`rtk git diff -- docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md docs/superpowers/specs/2026-08-08-life-manager-cfo-m0-business-registry-design.md`の空出力を確認する。pushed commit: `d743b153c573e13f7d598290b041639194f7eda6`。
+Expected: FAIL because the legacy boundary rejects the approved public-web authority matrix or exposes the old local contract; no network, credential, or source fetch is allowed.
 
-### HRA-1b — purchase-disabled boundary `[x]`
+- [ ] Step 3: Implement the minimal boundary.
 
-**Owner: Luna。** 任意のLIVE requestを常にblocked/disabledにし、credential reader、transport、DOM adapter、wallet/bank mutationを呼ばない。
+Parse source_url with urllib.parse.urlsplit and compare hostname by exact equality. Reject non-https URLs, host_os/storage_scope/export_destination mismatches, non-str/bytes payloads, disallowed keiba.go.jp paths, and source authority/jurisdiction mismatches. Convert str to UTF-8 bytes, compute hashlib.sha256, report byte payload_size, and construct the fixed redacted dictionary. Do not write, return, log, or serialize raw_payload.
 
-Files: `apps/horse-racing-agent/src/horse_racing_agent/purchase.py`、`apps/horse-racing-agent/tests/test_purchase_disabled.py`。
+- [ ] Step 4: Run GREEN and the package suite.
 
-検証:
-
-```sh
-cd /Users/anicca/anicca-project/.worktrees/horse-racing-agent-spec/apps/horse-racing-agent
-rtk python3.12 -m pytest tests/test_purchase_disabled.py -q
-rtk python3.12 -m pytest -q
-```
-
-期待結果: caller flag/config/receipt-like inputでenabledにならず、side-effect 0件。pushed commit: `89d489108e0abe0ca24c0bcd442bcaf94bd0b9fb`。
-
-### HRA-2a — licensed source/local boundary `[x]`
-
-**Owner: Luna。** `JRA-VAN JV-Link`と`UmaConn/NV-Link`のofficial/licensed markerだけをjurisdiction別に受け付け、owned Windows/local-only境界とraw export拒否をpureに検証した。これはboundary onlyでありconnectorではない。
-
-Files: `apps/horse-racing-agent/src/horse_racing_agent/ingest.py`、`apps/horse-racing-agent/tests/test_ingest_boundary.py`。
-
-検証:
-
-```sh
+~~~sh
 cd /Users/anicca/anicca-project/.worktrees/horse-racing-agent-spec/apps/horse-racing-agent
 rtk python3.12 -m pytest tests/test_ingest_boundary.py -q
 rtk python3.12 -m pytest -q
-```
+~~~
 
-期待結果: synthetic raw inputだけでallowlist、jurisdiction、Windows-local、raw non-return/hash metadataを検証し、provider/COM/network/credentialを呼ばない。pushed commit: `0fe627cd27f66d94e8bdf54624011d5b6e6c8abe`。
+Expected: boundary matrix, spoof rejection, keiba dynamic rejection, byte-size/hash, raw_payload absence, and full package suite PASS.
 
-## Active Reality Gate
+- [ ] Step 5: Verify E2E/state and close the slice.
 
-### HRA-2R1-P — Physical Windows worker selection `[x]`
-
-**Owner: Luna。** DosparaのHP Pro Mini 400 G9（商品コード357458、Windows 11 Pro、16GB、512GB）を1台だけ選定した。証拠は `docs/evidence/horse-racing/windows-worker-procurement.md` に固定し、価格上限は送料込み税込¥75,200、購入状態は `NOT_EXECUTED_AWAITING_ACTION_TIME_CONFIRMATION` とする。日本語版・正規認証・現物在庫を確認するまでWindows provision、カート、決済へ進まない。
-
-受入: exact SKU在庫と最終合計¥75,200以下、ユーザー明示後の配送/決済情報使用。購入やprovider recordをこのtaskの完了とみなさず、在庫消失時は代替せず調査を再開する。
-
-### HRA-2R1 — JRA environment + one-real-record probe `[ ] ACTIVE`
-
-**Owner: Luna。** Macをcontrol planeとして維持し、owned remote/native Windows 11 x64 worker上でJRA-VAN Data Lab/JV-Link installed、valid service key、利用条件確認、pinned `miyamamoto/jrvltsql` checkoutを揃え、official/upstream probeで少なくとも1件のreal JRA recordをlocal観測する。Mac内蔵VM、Wine、x64 emulationはprovider supportと見なさない。Solは環境準備やprobeを代行せず、結果のgateだけを検証する。
-
-Runbook: `docs/evidence/horse-racing/windows-worker-first-record-runbook.md`。Stateは `PREPARED_NOT_EXECUTED`、HRA-2R1は `ACTIVE/BLOCKED`、`session0`、`record0`、`probe null`。二時間目標は全precondition成立後に始まり、SLA・成功証拠ではない。runbookは準備済みであり、provider、credential、purchase、probeは未実行。
-
-File: `docs/evidence/horse-racing/jra-probe.md`。このfileにraw row、実馬名、credential、subscription idを記録しない。
-
-事前確認コマンド（owned Windowsのtask-specific checkout pathを`JRA_CHECKOUT`として扱う）:
-
-```sh
-rtk git -C "$JRA_CHECKOUT" rev-parse HEAD
-rtk git -C "$JRA_CHECKOUT" status --short
-rtk git -C "$JRA_CHECKOUT" diff --check
-```
-
-probe commandはJRA-VAN/JV-Linkまたはpinned upstreamの公式documentationに記載されたものをそのまま実行し、作業者が新しい未許可commandを発明しない。公式probeの根拠、実行時刻、adapter/upstream version、exit code、row countを`jra-probe.md`へredactして記録する。
-
-期待結果: remote/native Windows 11 x64、installed、valid entitlement、pinned commit、公式probe exit `0`、provider timestamp、row count `>=1`、content hashが全て揃えばHRA-2R1 evidenceは`REAL_PROVIDER_RECORD`候補となる。worker/provider/entitlement/probeのいずれかが欠ける、実recordが0件、exit evidenceが取れない場合は`BLOCKED`を記録して停止する。synthetic fixtureや推定recordによるGREENは禁止する。
-
-### HRA-2R2 — JRA redacted reality manifest `[ ]`
-
-**Owner: Luna。** HRA-2R1のlocal observationからJRA laneだけのmanifestを作り、Solがsource-specific gateを検証できる形にする。
-
-File: `docs/evidence/horse-racing/jra-reality-gate.md`。
-
-必須欄: `evidence_class=REAL_PROVIDER_RECORD`、source、jurisdiction、acquisition/provider timestamp、adapter/upstream version、row count、schema field names/types、content hash、probe commandとexit code、raw values exported=false。値が取得不能なら値を捏造せず`BLOCKED`理由を記録する。
-
-検証:
-
-```sh
+~~~sh
 cd /Users/anicca/anicca-project/.worktrees/horse-racing-agent-spec
-rtk git diff --check -- docs/evidence/horse-racing/jra-reality-gate.md
-rtk grep -n "evidence_class\|provider_timestamp\|adapter_version\|row_count\|schema_fields\|content_hash\|probe_command_exit\|raw_values_exported" docs/evidence/horse-racing/jra-reality-gate.md
-```
+git diff --check -- apps/horse-racing-agent/src/horse_racing_agent/ingest.py apps/horse-racing-agent/tests/test_ingest_boundary.py
+git status --short
+git add apps/horse-racing-agent/src/horse_racing_agent/ingest.py apps/horse-racing-agent/tests/test_ingest_boundary.py
+git commit -m "feat(horse-racing): refactor free-web ingest boundary"
+git push origin HEAD
+git push canonical HEAD
+~~~
 
-期待結果: required欄がredacted manifestに存在し、raw value/secretが0件。SolがHRA-2R1のprobe evidenceと照合して初めてJRA laneをPASSにする。manifest単独、synthetic fixture、test-only hashではPASSにしない。
+Expected: only the two owned files are staged; quarantine remains untracked; Task 1 is GREEN before Task 2 becomes active.
 
-### HRA-2R3 — NAR environment + one-real-record probe `[ ]`
+## Task 2: HRA-2R1 JRA actual public-web record
 
-**Owner: Luna。** HRA-2R1/JRA laneと独立してroute・inquiry workを進め、written provider entitlementが得られた後に、owned Windowsでofficial/licensed active provider client/APIまたはapproved bridge、valid entitlement、公式sampleまたは限定licensed bridge、少なくとも1件のreal NAR recordをlocal観測する。UmaConn/NV-Linkは、書面のNAR/provider回答が現行の公式identity・URL・entitlementを確認した場合だけ候補に戻す。JRA manifestのPASSを前提にせず、NARのevidenceだけで判定する。現在は`ACTIVE/BLOCKED`、`session0`、`record0`、`probe=null`であり、HRA-2R1を待つために問い合わせを停止しない。
+**State:** blocked until Task 1 GREEN. **File:** docs/evidence/horse-racing/jra-public-web-probe.md only. No code file or source promotion is allowed.
 
-File: `docs/evidence/horse-racing/nar-probe.md`。JRA-VAN row、非公式注文API、raw row、実馬名、credentialを混ぜない。
+- [ ] Step 1: Discover a current race-card or result link from official JRA navigation.
 
-事前確認コマンド:
+~~~sh
+crwl https://www.jra.go.jp/ -o /tmp/jra-official-navigation.md
+~~~
 
-```sh
-rtk git -C "$NAR_BRIDGE_CHECKOUT" rev-parse HEAD
-rtk git -C "$NAR_BRIDGE_CHECKOUT" status --short
-rtk git -C "$NAR_BRIDGE_CHECKOUT" diff --check
-```
+Set JRA_PAGE_URL to the exact race-card/result href printed by that official navigation output. Do not choose a search result, secondary page, or guessed endpoint.
 
-公式/upstream documentationに記載されたNAR probeだけを実行し、根拠URL、実行時刻、provider timestamp、adapter/upstream version、exit code、row countをredactして記録する。official sample/bridgeまたはentitlementが確認できない場合は、その不足を`BLOCKED`として記録する。
+- [ ] Step 2: Fetch once with robots/terms and rate-limit evidence.
 
-期待結果: NARだけのprovider timestamp、exit `0`、row count `>=1`、content hashが揃った場合に`REAL_PROVIDER_RECORD`候補となる。JRAの証拠をNAR PASSへ流用しない。
+~~~sh
+crwl "$JRA_PAGE_URL" -o /tmp/jra-public-page.md
+printf '%s\n' "$?" > /tmp/jra-crwl-exit.txt
+~~~
 
-### HRA-2R4 — NAR redacted reality manifest `[ ]`
+Record the exact URL, crwl exit code, HTTP status observed by the fetch, retrieved_at, page_or_effective_timestamp or unavailable, robots snapshot URL/status, JRA use-policy URL/status, and courteous delay. Store any raw snapshot only under /Users/anicca/Library/Application Support/Anicca/horse-racing/raw and keep that path outside Git.
 
-**Owner: Luna。** HRA-2R3からNAR laneだけのmanifestを作る。JRA laneのstateを変更せず、NARがBLOCKEDでもJRA PASSを保持できる構造にする。
+- [ ] Step 3: Parse and write the redacted evidence.
 
-File: `docs/evidence/horse-racing/nar-reality-gate.md`。
+Write jra-public-web-probe.md with evidence_class=REAL_PUBLIC_WEB_RECORD, source_authority=official, jurisdiction=JRA, parsed_row_count>=1, observed schema field names/types, content_sha256, raw_values_exported=false. HTTP 200, DOM success, a link, or an empty parse is not a record; row_count 0 is BLOCKED. Do not copy raw values, runner names, secrets, or secondary links.
 
-必須欄はHRA-2R2と同じで、`jurisdiction=NAR`、NAR provider/upstream version、NAR row count、NAR content hash、probe exit evidenceを要求する。
+- [ ] Step 4: Sol verifies and closes the evidence slice.
 
-検証:
+~~~sh
+git diff --check -- docs/evidence/horse-racing/jra-public-web-probe.md
+git add docs/evidence/horse-racing/jra-public-web-probe.md
+git commit -m "docs(horse-racing): record JRA public-web probe"
+git push origin HEAD
+git push canonical HEAD
+~~~
 
-```sh
-cd /Users/anicca/anicca-project/.worktrees/horse-racing-agent-spec
-rtk git diff --check -- docs/evidence/horse-racing/nar-reality-gate.md
-rtk grep -n "evidence_class\|jurisdiction\|provider_timestamp\|adapter_version\|row_count\|schema_fields\|content_hash\|probe_command_exit\|raw_values_exported" docs/evidence/horse-racing/nar-reality-gate.md
-```
+Expected: Sol can reproduce the URL, timestamp, fetch exit/HTTP status, parsed row count, schema names/types, hash, robots/terms status, and raw non-export. A secondary page never upgrades to official JRA evidence.
 
-期待結果: NAR manifestのrequired欄、raw non-export、probe exit evidenceが揃う。欠けた場合は`BLOCKED`であり、synthetic NAR rowで補完しない。
+## Task 3: HRA-2R2 NAR secondary actual public-web record
 
-### HRA-2R5 — per-source gate index `[ ]`
+**State:** blocked until Task 1 GREEN. **File:** docs/evidence/horse-racing/nar-secondary-web-probe.md only.
 
-**Owner: Luna。** JRA/NARを独立したsource stateとして一覧化し、manifest、probe evidence、row count、hashをSolが再現検証できるindexを作る。
+- [ ] Step 1: Discover a current public race-card/result page on nar.netkeiba.com.
 
-File: `docs/evidence/horse-racing/reality-gate-index.md`。
+~~~sh
+crwl https://nar.netkeiba.com/ -o /tmp/nar-secondary-navigation.md
+~~~
 
-検証:
+Set NAR_PAGE_URL to the exact public race-card/result href printed by that command. Keep source_authority=secondary and jurisdiction=NAR regardless of page labels.
 
-```sh
-cd /Users/anicca/anicca-project/.worktrees/horse-racing-agent-spec
-rtk git diff --check -- docs/evidence/horse-racing/reality-gate-index.md
-rtk grep -n "JRA\|NAR\|PASS\|BLOCKED\|REAL_PROVIDER_RECORD" docs/evidence/horse-racing/reality-gate-index.md
-```
+- [ ] Step 2: Fetch with courteous delay and preserve terms uncertainty.
 
-期待結果: JRA PASSはJRA manifestとprobe exit evidenceがある場合だけ、NAR PASSはNAR manifestとprobe exit evidenceがある場合だけ付く。片方のPASSで他方をunlockしない。両sourceとも実record 0件のままなら、現在のstageはHRA-2R ACTIVEのままである。
+~~~sh
+crwl "$NAR_PAGE_URL" -o /tmp/nar-secondary-page.md
+printf '%s\n' "$?" > /tmp/nar-secondary-crwl-exit.txt
+~~~
 
-## Reality Gate後のblocked implementation slices
+Never request keiba.go.jp TodayRaceInfo, DataRoom, or DataDownload paths. Record robots snapshot/status, terms_url/status=unverified, exact URL, retrieved_at, page_or_effective_timestamp or unavailable, fetch exit, HTTP status, and rate-limit observation.
 
-### HRA-2S — observed schema/local append-only store `[ ] BLOCKED`
+- [ ] Step 3: Write the secondary redacted evidence.
 
-**Owner: Luna。** HRA-2R5でsource-specific PASSしたlaneだけについて、observed field names/typesとWindows-local recordからschemaを導出する。現在のsynthetic-only 3 filesはuncommitted quarantineのまま保持し、real record由来へ置換するまでcompletionにしない。
+Write evidence_class=PUBLIC_WEB_SECONDARY, source_authority=secondary, jurisdiction=NAR, parsed_row_count>=1, observed schema names/types, content_sha256, raw_values_exported=false. Keep the lane SHADOW-only. Terms uncertainty, HTTP/DOM success, link existence, or row_count 0 is not LIVE_CASH evidence.
 
-Files: `apps/horse-racing-agent/tests/fixtures/normalized_races.json`、`apps/horse-racing-agent/src/horse_racing_agent/store.py`、`apps/horse-racing-agent/tests/test_store.py`。このtaskがactiveになるまでこれらを変更・stage・commitしない。
+- [ ] Step 4: Sol verifies and closes.
 
-RED:
+~~~sh
+git diff --check -- docs/evidence/horse-racing/nar-secondary-web-probe.md
+git add docs/evidence/horse-racing/nar-secondary-web-probe.md
+git commit -m "docs(horse-racing): record NAR secondary web probe"
+git push origin HEAD
+git push canonical HEAD
+~~~
 
-```sh
+Expected: NAR evidence remains secondary and SHADOW-only; no official NAR ZIP/CSV/API claim appears.
+
+## Task 4: HRA-2R3 per-source Reality Gate index
+
+**State:** blocked until Tasks 2 and 3 each have a manifest. **File:** docs/evidence/horse-racing/reality-gate-index.md only.
+
+Define two independent rows: JRA official and NAR secondary. Each row links its own evidence file, source URL, authority, jurisdiction, retrieved/effective time, fetch exit/HTTP status, parsed row count, schema names/types, hash, robots/terms status, and raw_values_exported=false. JRA PASS never changes NAR; NAR PASS never unlocks LIVE_CASH.
+
+- [ ] Step 1: Write the index from the two manifests.
+- [ ] Step 2: Verify the index has exactly one state per source and no cross-source promotion.
+- [ ] Step 3: Close with Sol gate and repository state.
+
+~~~sh
+git diff --check -- docs/evidence/horse-racing/reality-gate-index.md
+git add docs/evidence/horse-racing/reality-gate-index.md
+git commit -m "docs(horse-racing): index public-web reality gates"
+git push origin HEAD
+git push canonical HEAD
+~~~
+
+Expected: both records are still zero until their evidence files contain parsed_row_count>=1; missing terms/robots/hash leaves that source BLOCKED.
+
+## Task 5: HRA-2S observed schema and append-only store
+
+**State:** blocked until Task 4 PASS for the source being stored. **Files:** apps/horse-racing-agent/src/horse_racing_agent/store.py, apps/horse-racing-agent/tests/fixtures/normalized_races.json, apps/horse-racing-agent/tests/test_store.py. These three quarantine files remain untouched until manifests exist.
+
+**Interface:** Provide AppendOnlyRaceStore(records_path: str), append(record: Mapping[str, object]) -> str, and records() -> tuple[Mapping[str, object], ...]. Accept only fields observed in a source manifest; preserve source_url, source_authority, jurisdiction, evidence_class, timestamps, opaque runner identifiers, and observed odds fields. Reject duplicate race/event identity, overwrite, caller alias mutation, and stale status transitions.
+
+- [ ] Step 1: Write failing tests for duplicate, overwrite, alias, stale, and observed-schema acceptance.
+
+~~~python
+def test_store_rejects_duplicate_and_alias_mutation(tmp_path):
+    store = AppendOnlyRaceStore(str(tmp_path / "races.jsonl"))
+    record = {"race_id": "JRA-2026-01-01-01", "source_url": "https://www.jra.go.jp/", "status": "observed"}
+    store.append(record)
+    record["status"] = "mutated"
+    assert store.records()[0]["status"] == "observed"
+    with pytest.raises(ValueError, match="duplicate"):
+        store.append({"race_id": "JRA-2026-01-01-01", "source_url": "https://www.jra.go.jp/", "status": "observed"})
+
+def test_store_rejects_stale_transition():
+    store = AppendOnlyRaceStore("races.jsonl")
+    with pytest.raises(ValueError, match="stale"):
+        store.append({"race_id": "NAR-2026-01-01-01", "status": "stale", "source_authority": "secondary"})
+~~~
+
+- [ ] Step 2: Run RED.
+
+~~~sh
 cd /Users/anicca/anicca-project/.worktrees/horse-racing-agent-spec/apps/horse-racing-agent
 rtk python3.12 -m pytest tests/test_store.py -q
-```
+~~~
 
-期待結果: observed-schema contractを先にtestへ書き、synthetic-only実装をcompletion根拠にしない。既存suiteがPASSしてもclassは`SYNTHETIC_TEST`であり、HRA-2SのGREENではない。
+Expected: FAIL because the observed-schema append-only contract is not yet adopted from a Reality Gate manifest.
 
-GREEN:
+- [ ] Step 3: Implement only observed-field append/replay and redacted canonical hashing. Do not put raw values or synthetic-only fields in normalized_races.json.
+- [ ] Step 4: Run GREEN.
 
-```sh
-cd /Users/anicca/anicca-project/.worktrees/horse-racing-agent-spec/apps/horse-racing-agent
+~~~sh
 rtk python3.12 -m pytest tests/test_store.py -q
 rtk python3.12 -m pytest -q
-```
+~~~
 
-期待結果: schema_version、race/source/jurisdiction、race/snapshot/cutoff timestamp、freshness、observed runner/oddsを検証し、canonical JSON hash、append-only duplicate拒否、caller alias mutation拒否、stale保存をPASSする。provider raw row、実馬名、credential、subscription id、購入receiptをfixtureへ置かない。commit boundaryはSolがmanifestを受理した後にこの3 filesだけとする。
+Expected: duplicate/overwrite/alias/stale rejection and full package suite PASS; manifest-derived schema is the only completion evidence.
 
-### HRA-3D — actual historical dataset quality/coverage/cutoff audit `[ ] BLOCKED`
+- [ ] Step 5: Close with store replay E2E, state update, and commit.
 
-**Owner: Luna。** HRA-2Sのsource-specific storeに対して、actual chronological datasetのcoverage、欠損、timestamp order、duplicate、freshness、jurisdiction分離、cutoff leakageを監査する。実historical datasetがない場合はbacktestを作らない。
+~~~sh
+git diff --check -- apps/horse-racing-agent/src/horse_racing_agent/store.py apps/horse-racing-agent/tests/fixtures/normalized_races.json apps/horse-racing-agent/tests/test_store.py
+git add apps/horse-racing-agent/src/horse_racing_agent/store.py apps/horse-racing-agent/tests/fixtures/normalized_races.json apps/horse-racing-agent/tests/test_store.py
+git commit -m "feat(horse-racing): adopt observed public-web schema store"
+git push origin HEAD
+git push canonical HEAD
+~~~
 
-Files: `apps/horse-racing-agent/src/horse_racing_agent/data_audit.py`、`apps/horse-racing-agent/tests/test_data_audit.py`。
+## Task 6: HRA-3D historical coverage and cutoff audit
 
-RED→GREEN:
+**State:** blocked until Task 5. **Files:** apps/horse-racing-agent/src/horse_racing_agent/data_audit.py and apps/horse-racing-agent/tests/test_data_audit.py. Estimated 75 LOC.
 
-```sh
+**Interface:** audit_records(records: Sequence[Mapping[str, object]], manifests: Sequence[Mapping[str, object]]) -> AuditReport. AuditReport contains source_url, jurisdiction, row_count, duplicate_count, missing_timestamp_count, cutoff_violation_count, freshness_age, content_sha256, fetch_exit_code, and evidence_class; no report is valid without a REAL_PUBLIC_WEB_RECORD manifest.
+
+- [ ] Step 1: Test manifest-required actual coverage and future-leak rejection.
+
+~~~python
+def test_audit_blocks_synthetic_only_rows():
+    with pytest.raises(ValueError, match="REAL_PUBLIC_WEB_RECORD"):
+        audit_records(
+            [{"race_id": "synthetic-1", "timestamp": "2026-01-01T00:00:00+09:00"}],
+            [{"evidence_class": "SYNTHETIC_TEST", "parsed_row_count": 1}],
+        )
+~~~
+
+- [ ] Step 2: Run RED.
+
+~~~sh
 cd /Users/anicca/anicca-project/.worktrees/horse-racing-agent-spec/apps/horse-racing-agent
 rtk python3.12 -m pytest tests/test_data_audit.py -q
+~~~
+
+Expected: FAIL because audit_records is absent or accepts a synthetic-only manifest.
+
+- [ ] Step 3: Implement chronological ordering, source/jurisdiction separation, duplicate detection, missing/freshness counters, cutoff check, and required manifest class/hash/exit checks. Never fabricate historical rows.
+- [ ] Step 4: Run GREEN and full package suite.
+
+~~~sh
+rtk python3.12 -m pytest tests/test_data_audit.py -q
 rtk python3.12 -m pytest -q
-```
+~~~
 
-期待結果: actual evidence manifestを入力にしたauditだけがPASSし、row coverage、provider timestamp、source、adapter/upstream version、content hash、exit evidenceを出力する。synthetic fixtureだけのauditは`SYNTHETIC_TEST`としてcompletion不可。
+Expected: actual manifest-backed audit PASS; random split and future fields are rejected.
 
-### HRA-3Ma — cutoff-safe features and model contract `[ ] BLOCKED`
+- [ ] Step 5: Commit only these two files after Sol verifies audit output.
 
-**Owner: Luna。** HRA-3D PASS後に、decision cutoffより前のfeatureだけでmarket implied baselineとwin/place初期modelのcontractを作る。
+~~~sh
+git add apps/horse-racing-agent/src/horse_racing_agent/data_audit.py apps/horse-racing-agent/tests/test_data_audit.py
+git commit -m "feat(horse-racing): audit public-web coverage and cutoff"
+git push origin HEAD
+git push canonical HEAD
+~~~
 
-Files: `apps/horse-racing-agent/src/horse_racing_agent/features.py`、`apps/horse-racing-agent/src/horse_racing_agent/model.py`、`apps/horse-racing-agent/tests/test_model.py`。
+## Task 7: HRA-3Ma/3Mb baseline, model, walk-forward, calibration
 
-RED→GREEN:
+**State:** blocked until Task 6. Keep exact filenames from the prior plan.
 
-```sh
-cd /Users/anicca/anicca-project/.worktrees/horse-racing-agent-spec/apps/horse-racing-agent
-rtk python3.12 -m pytest tests/test_model.py -q
-rtk python3.12 -m pytest -q
-```
+### HRA-3Ma files and interfaces
 
-期待結果: cutoff後feature拒否、market implied p、win/place input、固定snapshot、time-series入力を実データでreplayする。model evidenceはsource manifestとactual dataset auditへリンクし、synthetic-only metricを実績と表示しない。
+Files: apps/horse-racing-agent/src/horse_racing_agent/features.py, apps/horse-racing-agent/src/horse_racing_agent/model.py, apps/horse-racing-agent/tests/test_model.py. Estimated 95 LOC.
 
-### HRA-3Mb — walk-forward/calibration/backtest `[ ] BLOCKED`
+Interfaces: build_features(record: Mapping[str, object], cutoff: datetime) -> Mapping[str, float]; fit_market_model(rows: Sequence[Mapping[str, object]]) -> ModelArtifact. ModelArtifact stores model_version, source_url, jurisdiction, evidence_class, manifest_hashes, baseline_name, and cutoff_field. Features are cutoff-safe market-implied probability, win/place fields, and fixed snapshot age; future timestamp fields raise ValueError.
 
-**Owner: Luna。** HRA-3Ma PASS後に、actual chronological dataだけでwalk-forward、calibration、odds slippage stress、Brier/logloss/ECE、confidence-adjusted EV lower boundを実装する。
+- [ ] Write test_model.py for cutoff-after-feature rejection, baseline probability, and source evidence linkage.
+- [ ] Run RED from apps/horse-racing-agent with rtk python3.12 -m pytest tests/test_model.py -q; expected FAIL with missing cutoff-safe feature/model contract.
+- [ ] Implement only deterministic features and a model artifact that stores evidence_class, source_url, jurisdiction, and manifest hash. Do not report synthetic metrics as performance.
+- [ ] Run from apps/horse-racing-agent: rtk python3.12 -m pytest tests/test_model.py -q and rtk python3.12 -m pytest -q; expected PASS with no future feature accepted.
+- [ ] Close HRA-3Ma with git add on the three listed files, commit message feat(horse-racing): add cutoff-safe model contract, then push origin HEAD and canonical HEAD.
 
-Files: `apps/horse-racing-agent/src/horse_racing_agent/backtest.py`、`apps/horse-racing-agent/tests/test_backtest.py`。
+### HRA-3Mb files and interfaces
 
-RED→GREEN:
+Files: apps/horse-racing-agent/src/horse_racing_agent/backtest.py, apps/horse-racing-agent/tests/test_backtest.py. Estimated 80 LOC.
 
-```sh
-cd /Users/anicca/anicca-project/.worktrees/horse-racing-agent-spec/apps/horse-racing-agent
-rtk python3.12 -m pytest tests/test_backtest.py -q
-rtk python3.12 -m pytest -q
-```
+Interfaces: walk_forward(rows: Sequence[Mapping[str, object]], model: ModelArtifact, snapshot_minutes: int) -> BacktestReport; BacktestReport contains Brier score, logloss, ECE, slippage stress, later-window result, source manifest hashes, and chronological window IDs.
 
-期待結果: random splitを使わず、T-5等のfixed snapshotとtime-series walk-forwardを再現し、Brier/logloss/ECE、slippage stress、EV lower boundを保存する。実historical backtest 0の間はこのtaskをPASSにしない。
+- [ ] Write test_backtest.py to reject random split/future ordering and to require Brier/logloss/ECE fields.
+- [ ] Run RED from apps/horse-racing-agent with rtk python3.12 -m pytest tests/test_backtest.py -q; expected FAIL because walk_forward and BacktestReport are absent.
+- [ ] Implement chronological walk-forward, fixed snapshot, calibration, odds slippage stress, and later-window reporting. Keep actual historical evidence as a prerequisite; zero-row history stays BLOCKED.
+- [ ] Run from apps/horse-racing-agent: rtk python3.12 -m pytest tests/test_backtest.py -q and rtk python3.12 -m pytest -q; expected PASS with no future leakage.
+- [ ] Close HRA-3Mb with the two files, commit message feat(horse-racing): add walk-forward calibration backtest, and push both remotes.
 
-### HRA-4a — SHADOW decision and immutable outcome ledger `[ ] BLOCKED`
+## Task 8: HRA-4 SHADOW decision and immutable outcome ledger
 
-**Owner: Luna。** HRA-3Mb PASS後に、全eligible raceへSHADOWまたはSKIPを生成し、official placing/payout/refundをimmutable outcomeとしてappendする。負EV cashは強制しない。
+**State:** blocked until Task 7 HRA-3Mb. **Files:** apps/horse-racing-agent/src/horse_racing_agent/decision.py, apps/horse-racing-agent/src/horse_racing_agent/ledger.py, apps/horse-racing-agent/tests/test_shadow_ledger.py. Estimated 95 LOC.
 
-Files: `apps/horse-racing-agent/src/horse_racing_agent/decision.py`、`apps/horse-racing-agent/src/horse_racing_agent/ledger.py`、`apps/horse-racing-agent/tests/test_shadow_ledger.py`。
+**Interfaces:** decide_race(model: ModelArtifact, race: Mapping[str, object]) -> Decision; OutcomeLedger.append_decision(decision: Decision) -> str; OutcomeLedger.append_outcome(decision_id: str, outcome: Mapping[str, object]) -> None. Decision carries action, source_url, source_authority, jurisdiction, evidence_class, reason, freshness, and decision_id. Secondary records cannot produce LIVE_CASH.
 
-RED→GREEN:
+- [ ] Write tests for all eligible-race SHADOW/SKIP, duplicate outcome rejection, immutable decision replay, and secondary cash rejection.
+- [ ] Run RED from apps/horse-racing-agent with rtk python3.12 -m pytest tests/test_shadow_ledger.py -q; expected FAIL because decision and ledger contracts are absent.
+- [ ] Implement append-only decision/outcome records, idempotent outcome identity, SKIP reason/threshold gap, and no-revenue shadow semantics.
+- [ ] Run the focused test and full suite; expected PASS with every synthetic mechanic labeled SYNTHETIC_TEST.
+- [ ] Close with Sol ledger replay E2E, exact three-file commit message feat(horse-racing): add shadow outcome ledger, and push both remotes.
 
-```sh
-cd /Users/anicca/anicca-project/.worktrees/horse-racing-agent-spec/apps/horse-racing-agent
-rtk python3.12 -m pytest tests/test_shadow_ledger.py -q
-rtk python3.12 -m pytest -q
-```
+## Task 9: HRA-4b Japanese Telegram pre/result messages
 
-期待結果: every eligible raceにactivityがあり、SKIPにもbest candidate、threshold gap、reason、data freshness、decision_idを持つ。official outcome再入力でdecisionを変更せず、SHADOW/estimated EVのrevenueを0、official settled receiptだけをreal P&Lにする。
+**State:** blocked until Task 8. **Files:** apps/horse-racing-agent/src/horse_racing_agent/telegram.py and apps/horse-racing-agent/tests/test_telegram.py. Estimated 75 LOC.
 
-### HRA-4b — Japanese Telegram schemas and cadence `[ ] BLOCKED`
+**Interfaces:** render_pre_message(event: Mapping[str, object]) -> str; render_result_message(event: Mapping[str, object]) -> str; dedupe_key(event: Mapping[str, object]) -> str. Every message starts with Life Manager::: 競馬AI and one truth label.
 
-**Owner: Luna。** HRA-4a PASS後に、`Life Manager::: 競馬AI`、`[DATA BLOCKED]`、`[REAL DATA · SHADOW]`、`[LIVE · ¥100]`のtruth label、exact pre/result schema、delivery dedupeを実装する。DATA_BLOCKED pathはpredictionを出さない。
+- [ ] Write tests for DATA BLOCKED, REAL DATA · SHADOW, LIVE · ¥100 labels; source URL/authority, jurisdiction, retrieved/effective time, reason, evidence class, decision_id, real P&L, and shadow P&L; and duplicate-key suppression.
+- [ ] Run RED from apps/horse-racing-agent with rtk python3.12 -m pytest tests/test_telegram.py -q; expected FAIL because render and dedupe interfaces are absent.
+- [ ] Implement deterministic Japanese pre/result schemas with no raw values or credentials. NAR secondary remains SHADOW-only; blocked paths emit no prediction.
+- [ ] Run focused and full pytest; expected PASS with truth separation and dedupe.
+- [ ] Close with Telegram schema E2E, commit message feat(horse-racing): add evidence-labeled telegram schemas, and push both remotes.
 
-Files: `apps/horse-racing-agent/src/horse_racing_agent/telegram.py`、`apps/horse-racing-agent/tests/test_telegram.py`。
+## Task 10: HRA-5 CFO receipt/evidence adapter
 
-RED→GREEN:
+**State:** blocked until Task 9 and CFO-0c. **Files:** apps/horse-racing-agent/src/horse_racing_agent/cfo.py and apps/horse-racing-agent/tests/test_cfo.py. Estimated 85 LOC.
 
-```sh
-cd /Users/anicca/anicca-project/.worktrees/horse-racing-agent-spec/apps/horse-racing-agent
-rtk python3.12 -m pytest tests/test_telegram.py -q
-rtk python3.12 -m pytest -q
-```
+**Interface:** record_receipt(event: Mapping[str, object]) -> ReceiptEntry; is_revenue(entry: ReceiptEntry) -> bool. ReceiptEntry carries receipt_id, evidence_class, settled_status, payout, stake, refund, and source_url. Revenue is true only for LIVE_CASH with official settled receipt; SYNTHETIC_TEST, PUBLIC_WEB_SECONDARY, and unsettled LIVE_SHADOW are zero revenue. Receipt identity is idempotent and bank internal settlement never double-counts payout.
 
-期待結果: source/provider timestamp、odds snapshot、evidence class、model version、decision id、action/reason、real P&L、shadow P&Lを表示する。朝digest、blocked/high-value pre-race、SKIP bundle、acted result、nightly、weekly reportのcadenceを表現し、通常flowはreply不要、buttonsはdrill-downだけにする。
+- [ ] Write tests for official settled receipt acceptance, shadow/secondary revenue zero, refund/void handling, duplicate receipt rejection, and bank settlement non-double-count.
+- [ ] Run RED from apps/horse-racing-agent with rtk python3.12 -m pytest tests/test_cfo.py -q; expected FAIL because receipt interfaces are absent or CFO-0c gate is false.
+- [ ] Implement the adapter without changing existing CFO state/spec and without adding any purchase path.
+- [ ] Run focused and full pytest; expected PASS only when CFO-0c state and evidence class are explicit.
+- [ ] Close with Sol CFO reconciliation E2E, commit message feat(horse-racing): add settled receipt evidence adapter, and push both remotes.
 
-### HRA-5a — CFO receipt/evidence adapter `[ ] BLOCKED`
+## Task 11: HRA-6 terms/order/tax/credential/receipt/reconciliation research gate
 
-**Owner: Luna。** CFO-0c exact-sevenとregistry v2受入がSol gateを通過し、HRA-4bのevidence separationがPASSした後にだけCFO adapterを作る。既存CFO spec/stateを変更しない。
+**State:** blocked research gate; no code or order implementation. **File:** docs/evidence/horse-racing/hra-6-compliance-gate.md.
 
-Files: `apps/horse-racing-agent/src/horse_racing_agent/cfo.py`、`apps/horse-racing-agent/tests/test_cfo.py`。
+- [ ] Record written terms resolution for each source, permitted use, credential separation, tax review, action-time cap, official result/payout receipt path, reconciliation rules, and failure behavior.
+- [ ] Record that NAR secondary terms remain unverified until resolution and cannot authorize LIVE_CASH.
+- [ ] Keep PurchaseExecutor disabled. Do not build DOM ordering, browser login, unofficial order transport, bet, or wallet/bank mutation before the gate.
+- [ ] Sol reviews the redacted document and marks PASS or BLOCKED; Luna commits only this evidence file after review.
 
-RED→GREEN:
+~~~sh
+git diff --check -- docs/evidence/horse-racing/hra-6-compliance-gate.md
+git add docs/evidence/horse-racing/hra-6-compliance-gate.md
+git commit -m "docs(horse-racing): record HRA-6 compliance gate"
+git push origin HEAD
+git push canonical HEAD
+~~~
 
-```sh
-cd /Users/anicca/anicca-project/.worktrees/horse-racing-agent-spec/apps/horse-racing-agent
-rtk python3.12 -m pytest tests/test_cfo.py -q
-rtk python3.12 -m pytest -q
-```
+## Task 12: HRA-7 owner-local-day micro-live gate (document only)
 
-期待結果: channels `jra_payout`/`nar_payout`、ledger `horse_racing_bet_receipts`、events `bet_intent`/`wager_placed`/`settlement`/`refund`/`data_subscription`/`compute_cost`/`tax_evidence`を保持する。shadow/estimated EVはrevenue 0、official settled receiptだけがreal P&L、bank internal settlementはpayoutと二重計上しない。税務証憑は別追跡する。
+**State:** blocked until Task 11 PASS; no live action in this plan slice. **File:** docs/evidence/horse-racing/hra-7-micro-live-gate.md.
 
-## Blocked future gate（実行taskではない）
+- [ ] Document one owner-local-day total <= ¥100, action-time financial confirmation, official purchase history, settled receipt, positive confidence-adjusted EV, stale/pre-message/reconciliation fail-closed, and no martingale/chasing.
+- [ ] Document that secondary-only evidence cannot unlock the gate and PurchaseExecutor remains disabled until Sol verifies every HRA-6 condition.
+- [ ] Sol reviews the evidence checklist; no bet, subscription, purchase, or external action is executed while this state is BLOCKED.
 
-- HRA-6: written provider permissionまたはofficial supported ordering APIの一次証拠、tax review、credential separation、¥100 cap、official vote inquiry receipt、reconciliationをSolが確認するまでblocked。現時点でPurchaseExecutor、注文credential、browser、Selenium、非公式APIを追加しない。
-- HRA-7: HRA-6後でもowner-local-day総額¥100以下、positive confidence-adjusted EV、stale/pre-message/reconciliation failureのfail-closed、martingale/chasing禁止、DOM success不可、公式投票照会receipt確認が必須。実行taskとして追加しない。
-- HRA-8: official receipts、realized net ROI、confidence interval/later-window、max drawdown、calibration、reconciliation、market capacityが揃うまでscaleしない。fixed automatic stake escalationを使わない。
+~~~sh
+git diff --check -- docs/evidence/horse-racing/hra-7-micro-live-gate.md
+git add docs/evidence/horse-racing/hra-7-micro-live-gate.md
+git commit -m "docs(horse-racing): define HRA-7 micro-live gate"
+git push origin HEAD
+git push canonical HEAD
+~~~
 
-## Verification and handoff
+## Task 13: HRA-8 evidence-driven scale review
 
-### Reality Gate evidence
+**State:** blocked future gate; no scale implementation. **File:** docs/evidence/horse-racing/hra-8-scale-gate.md.
 
-| Gate | 実施主体 | 必須証拠 |
-|---|---|---|
-| JRA HRA-2R | Luna実行、Sol gate | owned Windows、JV-Link/Data Lab、valid service key確認、pinned upstream commit、official probe、provider/acquisition timestamp、row count `>=1`、schema names/types、content hash、exit code |
-| NAR HRA-2R | Luna実行、Sol gate | owned Windows、UmaConn/NV-Link、valid entitlement確認、公式sample/限定bridge、provider/acquisition timestamp、row count `>=1`、schema names/types、content hash、exit code |
-| redaction | Luna実施、Sol検証 | raw values、secrets、実馬名、subscription id、購入receiptがmanifest/Git/Telegram/cloud/CFOに0件 |
-| source independence | Sol | JRA PASSをNARへ流用せず、NAR BLOCKEDでもJRA laneだけをunlock |
-| HRA-2S onward | Luna実装、Sol gate | per-source manifestからderived schema、actual dataset、evidence class、command exit evidence。synthetic-only outputはcompletion不可 |
-| purchase safety | Luna実装、Sol gate | PurchaseExecutor disabled、credential/network/DOM/wallet/bank side-effect 0件 |
-| CFO | Luna実装、Sol gate | official settled receipt、refund/void、bank internal settlement、double-count 0件 |
+- [ ] Require positive later-window evidence, ROI confidence interval, calibration, maximum drawdown, bankroll constraints, market capacity, official settled receipts, and reconciliation before any scale review.
+- [ ] Keep $10K/month as a target only; never guarantee it, forecast it, or convert shadow/secondary values into revenue.
+- [ ] Sol records PASS or BLOCKED with source authority and evidence class; Luna commits only the redacted gate document after verification.
 
-### Local verification commands
+~~~sh
+git diff --check -- docs/evidence/horse-racing/hra-8-scale-gate.md
+git add docs/evidence/horse-racing/hra-8-scale-gate.md
+git commit -m "docs(horse-racing): define HRA-8 scale evidence gate"
+git push origin HEAD
+git push canonical HEAD
+~~~
 
-```sh
-cd /Users/anicca/anicca-project/.worktrees/horse-racing-agent-spec
-rtk git diff --check
-rtk git diff --name-only
-rtk grep -n -E "UNFILLED|PLACEHOLDER" docs/superpowers/specs/2026-08-09-life-manager-horse-racing-agent-design.md docs/superpowers/plans/2026-08-09-life-manager-horse-racing-agent.md
-rtk grep -n "REALITY GATE REQUIRED — LIVE PURCHASE DISABLED\|official provider sessions\|real JRA records\|real NAR records\|real historical backtests\|live Telegram runs\|live orders/payments" docs/superpowers/specs/2026-08-09-life-manager-horse-racing-agent-design.md docs/superpowers/plans/2026-08-09-life-manager-horse-racing-agent.md
-rtk git status --short --untracked-files=all
-```
+## Close-before-next and handoff
 
-期待結果: diff-checkは空、tracked modified namesはこのplanとdesign specの2 filesだけ、未充足tokenは0件、現evidence tableは全て0、HRA-2bの3 untracked filesは変更・stageされずに残る。現在のdocs-only correctionではcommit/pushを実行しない。
-
-## Economic acceptance
-
-目標は約¥1.5M/月のnet operating profitであり、`official settled payouts - official settled stakes - data subscriptions - compute/provider/transaction costs`と定義する。taxは別追跡する。必要turnoverはnet ROI 3%=¥50M/月、5%=¥30M/月、10%=¥15M/月、20%=¥7.5M/月。¥100/dayを10%で回すと¥300/月、¥500/dayでも¥1,500/月である。これはaspiration/capacity testであってforecastではない。live receipt、slippage/capacity、calibration、drawdown、later-window evidenceが必要turnoverを支えない場合は `¥1.5M target not supported` と結論し、強制scalingしない。
-
-Best caseはsource gate、actual data、calibration、later-window ROI、drawdown、receipt reconciliationが継続PASSする場合であり、source laneごとにSHADOWを進めHRA-6を審査する。Base caseはentitlementまたはcoverage不足で、`DATA BLOCKED`のままsyntheticを実績に混ぜない。Worst caseはlicense、provider stability、timestamp、slippage、Telegram/CFO reconciliationが壊れ、cashを永続disabledにする。最強の棄却案は「provider permissionとofficial supported ordering APIの証拠が取れないなら、競馬AIをfinancial organとして作らず、純粋なresearch reportに限定する」である。自分が間違うとしたら、未発見の公式provider integrationまたは書面許可が実在し、現Reality Gateの取得可能性を過小評価している筋である。
-
-## HRA-2R1 state (Resend truth update)
-
-- **state**: `BLOCKED` / `session0` / `record0` / `probe null`
-- **support inquiry**: `office@jra-van.jp`; API state `API_ACCEPTED_DELIVERY_UNVERIFIED`
-- **subject**: `JRA-VAN Data Lab / JV-Link 5.0.0 の Windows 365 Cloud PC 対応について`
-- **evidence**: `docs/evidence/horse-racing/jra-probe.md`
-
-## Wait contract
-
-- **target**: official written compatibility reply
-- **external reason**: Cloud/VM/RDP compatibility is not documented
-- **durable owner**: Sol / Life Manager
-- **next check**: `2026-08-10 21:30 JST`
-- **parallel work**: physical Japanese Windows 11 x64 endpoint procurement research
-- **auth blocker**: Gmail/Computer Use authentication remains blocked
-
-## HRA-2R3 wait contract
-
-- **state**: `INQUIRY_FORM_CONFIRMED_REPLY_PENDING` / `ACTIVE/BLOCKED`; `session0`, `record0`, `probe=null`, `raw_values_exported=false`
-- **target**: written NAR/provider response naming an active official/licensed provider, application URL, supported OS, entitlement/price, machine-use terms, coverage, and official sample/probe
-- **external reason**: the inquiry form warns individual replies are not guaranteed; no active licensed provider URL is verified
-- **next check**: `2026-08-12 21:30 Asia/Tokyo`
-- **durable owner**: Sol verifies the reply; Luna performs only resulting environment/edit work
-- **parallel work**: JRA physical-worker purchase confirmation and JRA-VAN support reply monitoring; no public NAR scraping or OSS execution
-- **Telegram event**: milestone message ID `10040`; do not resend the inquiry
-- **no-reply action**: record `NO_REPLY_OBSERVED` at the checkpoint and search an official procurement/licensing contact without changing `record0`
-
-## UI/E2E boundary
-
-- **UI**: no; **Maestro**: not needed
+Every task closes only after focused tests or evidence E2E, full relevant verification, state-table update, owned-file diff check, commit, push to origin and canonical, and fetch proving local=origin=canonical. A failed check leaves the current task ACTIVE/BLOCKED and does not activate the next task. Quarantine files remain untracked until Task 5 is explicitly activated after per-source manifests.
