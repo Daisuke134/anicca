@@ -9,7 +9,7 @@
     "eval": "node eval/run-calendar-eval.js && node eval/run-late-eval.js && node eval/run-context-onboarding-discovery-eval.js && node eval/run-score-semantics-eval.js",
     "eval:panel-privacy": "node eval/run-panel-privacy-eval.js",
     "eval:score": "node eval/run-score-semantics-eval.js",
-    "test:cfo": "node --test lib/cfo-registry.test.js lib/cfo-inventory.test.js lib/cfo-telegram.test.js lib/cfo-financial-source.test.js lib/cfo-moneytree.test.js lib/cfo-moneytree-state.test.js scripts/cfo-business-inventory.test.js lib/cfo-fleet-source.test.js lib/cfo-fleet.test.js lib/cfo-daily-snapshot.test.js lib/cfo-daily-snapshot-migration.test.js lib/cfo-daily-snapshot-store.test.js lib/cfo-daily-run-migration.test.js",
+    "test:cfo": "node --test lib/cfo-registry.test.js lib/cfo-inventory.test.js lib/cfo-telegram.test.js lib/cfo-financial-source.test.js lib/cfo-moneytree.test.js lib/cfo-moneytree-state.test.js scripts/cfo-business-inventory.test.js lib/cfo-fleet-source.test.js lib/cfo-fleet.test.js lib/cfo-daily-snapshot.test.js lib/cfo-daily-snapshot-migration.test.js lib/cfo-daily-snapshot-store.test.js lib/cfo-daily-run-migration.test.js lib/cfo-daily-run.test.js",
     "test:panel-score": "node --test lib/panel-score-semantics.test.js lib/panel-api-score-semantics.test.js lib/panel-score-migration.test.js scripts/independent-panel-score-readback.test.js",
     "test:panel-score:postgres": "test/postgres/panel-score-postgres.integration.sh",
     "test:cfo-snapshot:postgres": "test/postgres/cfo-daily-snapshot-postgres.integration.sh",

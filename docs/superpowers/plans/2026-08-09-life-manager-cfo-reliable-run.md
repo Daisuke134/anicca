@@ -7,7 +7,7 @@
 
 **Design:** `docs/superpowers/specs/2026-08-09-life-manager-cfo-reliable-run-design.md`.
 
-**Status:** ACTIVE — Task 1 next.
+**Status:** ACTIVE — Task 3 next.
 
 ## Global constraints
 
@@ -48,12 +48,12 @@
 
 **Interface:** `resolveCfoDailyRun({ uid }, { supaUrl, supaKey, fetchImpl })`.
 
-- [ ] RED: exact input, one claim RPC and no preference GET, closed frozen five-key receipt, valid returned timezone
+- [x] RED: exact input, one claim RPC and no preference GET, closed frozen five-key receipt, valid returned timezone
   and date, Proxy/accessor/custom errors, no retry/log/leakage.
-- [ ] GREEN: call only `lm_claim_cfo_daily_run`; PostgreSQL owns timezone/date derivation.
-- [ ] Verify from `apps/life-call`: `node --test lib/cfo-daily-run.test.js`, `npm run test:cfo`, `wc -l
+- [x] GREEN: call only `lm_claim_cfo_daily_run`; PostgreSQL owns timezone/date derivation.
+- [x] Verify from `apps/life-call`: `node --test lib/cfo-daily-run.test.js`, `npm run test:cfo`, `wc -l
   lib/cfo-daily-run.js lib/cfo-daily-run.test.js`, and `git diff --check`; all exit 0, production ≤100/tests ≤180.
-- [ ] Commit/push `feat(cfo): resolve owner daily runs`; write report and obtain fresh Sol review.
+- [x] Commit/push `feat(cfo): resolve owner daily runs`; write report and obtain fresh Sol review.
 
 ### Task 3: Append-only Telegram delivery ledger
 
