@@ -56,7 +56,7 @@ Connectorの進行中正本はbranch `feature/connector-native-completion`のwor
 | production providers | `skills/connector/native-pass.js` の`DEFAULT_PROVIDERS = ["luma", "connpass"]`のみ。順序はLuma → Connpass | Peatix → Meetup → Doorkeeper → EventbriteはItem19、未知/次サイトはItem20 |
 | acceptance窓 | 今日を含む14日、無料・受付中・Calendar非衝突だけを申込対象にする | 旧rolling-21は履歴/長期目標で、現行runtime/gateではない |
 | agent / evidence境界 | 候補gateは決定論的。unknown UI時だけbounded Codex `gpt-5.6-terra` action proposerを最大10 step使うが、現行proposerと`applied_bundle` evidence chainはLuma専用 | Connpass discovery/direct actionは配線済みだが、bounded fallbackと`applied_bundle`のproduction接続・live acceptanceはItem14 |
-| latest official wake | `wake-88fce9dad21004d03804283c`: `completed_no_effect / providers_exhausted / consecutive_failure_count 0`。Luma free/open 4件は全てCalendar conflict、Submit/Calendar write/applied bundle増分なし | `providers_exhausted`は現行設定済み2 providerの枯渇だけを意味する |
+| latest official wake | `wake-09de6a1e9ab465b938ff29dd`: `completed_no_effect / providers_exhausted / consecutive_failure_count 0`、Telegram provider ID `10325`。Luma free/open 4件は全てCalendar conflict、Submit/Calendar write/applied bundle増分なし | `providers_exhausted`は現行設定済み2 providerの枯渇だけを意味する。Connpassのgate別0件理由は進捗225の診断sliceで可視化する |
 | lifecycle / lock | orphan target lockは修復後run終了時にabsent。Native・healthcheck・Healer labelは全てunloaded | installed Native plistのlegacy `StartInterval=300`もunloaded。Items10〜16 acceptance後、Item17で一日一回scheduleだけをload |
 | TODO境界 | Items1〜9と10Aは完了。10BとItems11〜23は未完 | 完了判定は最新Active TODOの10B〜23で行う |
 
@@ -234,8 +234,8 @@ Telegram provider message IDが無い送信を成功として表示しない。�
 それ以前のTODO、チェックリスト、実行順、図は全て履歴であり、未完項目を復活させる根拠にしない。
 この節、Order checkbox、過去の進捗文に異なる「次TODO」が残っていても実行順には使用しない。
 
-最新の実測状態（2026-08-10 JST、進捗222のofficial wake後）: `wake-88fce9dad21004d03804283c` は
-`completed_no_effect / providers_exhausted / consecutive_failure_count 0`で終了し、Telegram provider message IDは`10298`だった。
+最新の実測状態（2026-08-10 JST、進捗225のofficial wake後）: `wake-09de6a1e9ab465b938ff29dd` は
+`completed_no_effect / providers_exhausted / consecutive_failure_count 0`で終了し、Telegram provider message IDは`10325`だった。
 現行設定済みproviderはLumaとConnpassだけで、Lumaのfree/open 4件は全てCalendar conflictとなり、新規Submit、Calendar write、
 candidate attempt、applied bundleの増分は0。orphan target lockは修復後にrun終了時absentで、Native・healthcheck・Healerの3 labelは全てunloadedである。
 installed Native plistにlegacy `StartInterval=300`は残るがunloadedであり、Item17のsingle daily scheduleはItems10〜16 acceptance後までloadしない。
@@ -6048,7 +6048,20 @@ bounded action proposerの実provider/modelはCodex `gpt-5.6-terra`、現行prop
 Connpassはdiscovery/direct action配線済みだが、fallbackとbundleのproduction接続・live acceptanceはItem14の未完境界として明示した。
 runtime、schedule、provider設定、外部stateは変更していない。
 
-### Active remaining TODO SSOT（進捗224。これ以外の残TODO一覧は履歴）
+### O1B-25進捗225（Item 10B fresh foreground wake / Connpass eligibility audit plan）
+
+Ponytail `full`とSuperpowers systematic debuggingでofficial foreground entrypointをfresh実行した。wake
+`wake-09de6a1e9ab465b938ff29dd`はCalendar `success 2397ms`、Luma discovery `success 30916ms`、
+Connpass discovery `success 3615ms`で、`completed_no_effect / providers_exhausted / consecutive_failure_count 0`、
+Telegram provider ID `10325`だった。Luma aggregateはobserved 30、normalized 30、14日window 16、free/open 4、
+Calendar-free 0で、Submit/Calendar write/applied bundle増分0。lockは終了後absent、3 labelsはunloadedを維持した。
+
+コード故障ではなく現在のLuma外部候補条件がItem 10Bを成立させない一方、Connpassはgate別aggregateを保存しないため、
+成功discovery後の0件理由を証拠から特定できない。候補条件を緩めず、既存Luma auditと同型のprivacy-safe 5-count Connpass auditだけを
+追加する実装planを`docs/superpowers/plans/2026-08-10-connector-connpass-eligibility-audit.md`へ固定した。
+これはItem 10B/14のroot-cause diagnosisであり、いずれのcompletionも前倒ししない。
+
+### Active remaining TODO SSOT（進捗225。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
