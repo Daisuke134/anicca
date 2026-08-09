@@ -6,7 +6,7 @@
 |---|---|
 | Status | **REALITY GATE REQUIRED — LIVE PURCHASE DISABLED** |
 | 対象 | Life Manager financial organ の第8候補 business_id: horse_racing |
-| 現在のactive stage | HRA-2R Reality Gate。HRA-0、HRA-1、HRA-2aは設計完了、HRA-2Rは未通過 |
+| 現在のactive stage | HRA-2F TDD refactor（ACTIVE）。HRA-2RはHRA-2F GREENまでBLOCKED、JRA/NAR実recordは0 |
 | plan / gate / verification owner | Sol |
 | edit / code / execution owner | Luna |
 | 購入処理 | PurchaseExecutorは常時disabled。HRA-6の全gateなしに有効化しない |
@@ -24,6 +24,10 @@
 | live orders/payments | 0 |
 
 route observationやHTTP/DOM successはrecordではない。row、observed schema、hashを含むmanifestがない限り、provider connectivity、data accuracy、model accuracy、ROI、Telegram/CFO revenue、収益を証明しない。unknownを0へ変換せず、未取得はBLOCKEDと表示する。
+
+### Committed proof boundary
+
+0fe627cd proves only the superseded Windows boundary; it is not compatible with the approved Mac-native free-web design and is not HRA-2F/HRA-2R evidence.
 
 ### Evidence classes
 
@@ -64,7 +68,9 @@ Physical Windows、VM/Wine/COM、JRA-VAN/Data Lab/JV-Link、UmaConn/NV-Link、JR
 flowchart TD
   A[HRA-0 research/spec] --> B[HRA-1 safety contracts]
   B --> C[HRA-2a Mac-local private boundary]
-  C --> G{HRA-2R source Reality Gate}
+  C --> F[HRA-2F TDD free-web ingest boundary]
+  F -- GREEN --> G{HRA-2R source Reality Gate}
+  F -- RED/BLOCKED --> X[DATA BLOCKED: refactor required]
   G -- JRA official PASS --> J[HRA-2S JRA observed schema]
   G -- NAR secondary PASS --> N[HRA-2S NAR secondary schema]
   G -- BLOCKED --> X[DATA BLOCKED report only]
@@ -85,7 +91,7 @@ JRAとNARは独立したgateである。JRA PASSはNARをPASSにせず、NAR sec
 
 ~~~mermaid
 flowchart LR
-  S[Mac host + crwl] --> R[Mac-local private append-only raw snapshot]
+  S[Mac host + crwl] --> F[HRA-2F ingest boundary] --> R[Mac-local private append-only raw snapshot]
   R --> M[Redacted manifest only]
   M --> V{row_count >= 1 + schema + hash}
   V -- PASS --> D[Observed schema/local store]
@@ -111,6 +117,8 @@ Raw snapshotはMac-local private append-only boundaryに留める。Git、Telegr
 | NAR official dynamic | https://www.keiba.go.jp/ / official | robots.txtはCrawl-delay: 10と/KeibaWeb/TodayRaceInfo/、/KeibaWeb/DataRoom/、/KeibaWeb/DataDownload/を明示的にDisallow。これらをcrawlしない。推測URL /KeibaWeb/DataRoom/DataDownload は404で、verified ZIP/CSV claimはしない | official NAR laneはBLOCKED。robot disallowを回避しない |
 | NAR initial secondary | https://nar.netkeiba.com/ / secondary | crwlで現行race-card/result linksを観測。automation termsは未検証で、official/licensed/compliantとは呼ばない。raw valuesを公開・再配布しない | PUBLIC_WEB_SECONDARY、schema/audit/SHADOW-only。LIVE_CASH前にterms resolution + official result/payout reconciliation |
 | JRA fallback | nar.netkeiba.com / secondary | JRA公式ページにfieldがない場合だけfallbackにできる。source labelとsecondary authorityを保持し、JRA official recordへ昇格しない | PUBLIC_WEB_SECONDARY、SHADOW-only |
+
+HRA-2F is the immediate active TDD slice: refactor the ingest boundary to accept JRA official and netkeiba secondary source authority, persist Mac-local private storage, capture robots/terms evidence metadata, and keep raw values non-exported. HRA-2R record probes remain BLOCKED until HRA-2F is GREEN.
 
 crwlによる取得は、対象サイトのrobotsとtermsを毎回確認し、courteous rate limitを守る。NAR secondaryのtermsが未検証のままなら自動化範囲を増やさず、観測をroute evidenceとして扱う。NAR secondaryはHRA-6のterms/order/tax/receipt gateを単独で満たさない。
 
@@ -250,8 +258,9 @@ shadow_P&L: <shadow value or null>
 |---|---|---|
 | HRA-0 | research/spec、public-web policy、source rejection、acceptance | **complete** |
 | HRA-1 | registry dependency、PurchaseExecutor disabled、truth labels | **complete** |
-| HRA-2a | Mac-local private append-only raw boundary | **complete (設計)** |
-| HRA-2R | JRA/NAR各1 actual public-web record、robots/terms、redacted manifest | **ACTIVE/BLOCKED**。JRA 0、NAR 0 |
+| HRA-2a | Mac-local private append-only raw boundary | **superseded design only**。0fe627cdは旧Windows boundaryの証明で、approved free-web designと非互換 |
+| HRA-2F | TDD refactor ingest boundary: JRA official + netkeiba secondary, Mac-local storage, robots/terms metadata, raw non-export | **ACTIVE**。GREENまでHRA-2Rをblocked |
+| HRA-2R | JRA/NAR各1 actual public-web record、robots/terms、redacted manifest | **BLOCKED until HRA-2F GREEN**。JRA 0、NAR 0 |
 | HRA-2S | verified manifestからobserved schema/local store | **BLOCKED**。sourceごとのHRA-2R PASSまで不可 |
 | HRA-3D | actual chronological coverage/cutoff audit | **BLOCKED**。historical evidence 0 |
 | HRA-3M | market baseline、walk-forward、calibration、slippage | **BLOCKED**。real backtest 0 |
