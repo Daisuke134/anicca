@@ -6092,7 +6092,22 @@ exact identity、14日window、free/open、Calendar conflict、privacy-safe 5-co
 production router、registry promotion、scheduleは含めない。live read-only auditとfresh reviewが通るまで`DEFAULT_PROVIDERS`は
 `["luma", "connpass"]`を維持し、Peatixをproduction supportedと表示しない。
 
-### Active remaining TODO SSOT（進捗226。これ以外の残TODO一覧は履歴）
+### O1B-25進捗228（Peatix public discovery GREEN / live gate evidence）
+
+Lunaがplan `2026-08-10-connector-peatix-discovery.md`をTDD実装した。初回REDはmodule不在、初回GREENは6/6だったが、
+fresh Sol reviewとofficial one-target read-only auditがPeatix実payload wrapper、search render false-zero、unique cap順序を反証した。
+同じLunaへ戻したfix `68781d94c`はstrict `json_data.event`、render wait、canonical dedupe後100 unique capを追加した。
+次のlive auditで実名称keyが`event.name`であることと、実empty markerが`.search-results .no-results`であることを測定し、fix
+`c53ae4666`は未計測`title` aliasを除去して、`a.event-card, .search-results .no-results`のbounded waitと真の0件auditを追加した。
+
+最終focusedは7/7、Luma/Connpass/Peatix/runner regressionは33/33、fresh Sol final reviewはCritical 0・Important 0でship。
+同commitのofficial Connector railによる実Calendar付きread-only auditは、owned session/target/page各1でPeatix
+`observed 20 → normalized 20 → 14日window 3 → free/open 1 → Calendar-free 0`を観測した。external write 0、
+candidate 0、終了後lock absent。従ってdiscovery code故障は解消し、現queryの0申込理由は唯一のfree/open候補がCalendar conflictである。
+PeatixはまだSubmit/readback/evidence未実証なのでproduction provider順とregistryを変更せず、次cursorは同じpublic JSON gateを保った
+bounded search coverage拡張で別のCalendar-free候補を探し、その後だけPeatix auth→submit sliceへ進む。
+
+### Active remaining TODO SSOT（進捗228。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
