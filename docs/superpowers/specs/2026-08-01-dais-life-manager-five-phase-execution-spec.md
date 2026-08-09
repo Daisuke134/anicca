@@ -3,7 +3,7 @@
 status: ACTIVE
 owner: Dais / Life Manager
 created: 2026-08-01 JST
-updated: 2026-08-05 JST
+updated: 2026-08-10 JST
 scope: 応募基盤、イベント、資金調達、求人、個人CFO、暗号資産、法定通貨投資・NISA
 active_execution_surface: LOCAL_ONLY_UNTIL_ORDER_5_COMPLETE
 
@@ -29,7 +29,7 @@ Life Managerは「検索した」「分析した」「失敗した」と報告�
 
 | organ / loop | 内部作業ではなく要求する現実成果 |
 |---|---|
-| Connector | rolling 21日を見て、空いている各日に東京の対面eventを入れ、二重予約せず人と会う |
+| Connector | 複数の東京event site（現行: Luma → Connpass）を14日窓で探索し、無料・Calendar非衝突候補へ実申込して人と会う |
 | LT | 登壇応募、登壇、Life Manager demo、参加者との接点 |
 | Fundraising | 実提出、返信、面談、採択、資金とpeer group |
 | Job Hunter | 実応募、返信、面接、offer、給与改善 |
@@ -37,26 +37,42 @@ Life Managerは「検索した」「分析した」「失敗した」と報告�
 
 「no action」が安全上正しい場面はある。たとえばrisk条件を満たさないcrypto取引は実行しない。
 その場合も、何もせず閉じるのではなく、停止理由、次の観測、改善案、次回判断時刻という現実の
-次行動を残す。Connectorではno-eventを正常終了にせず、実参加予約までloopを継続する。
+次行動を残す。Connectorでは現行14日窓の設定済みproviderを尽くした`completed_no_effect`も未完了の
+観測結果として報告し、Items 10B〜23のacceptanceが揃うまでloopを継続する。
 
 ### 0.2 現在地と残りの一本道
 
 Connectorの進行中正本はbranch `feature/connector-native-completion`のworktree
 `/Users/anicca/Projects/life-manager-main/.worktrees/connector-native-completion`である。canonical mergeが完了するまで
-`main`を現在実装の正本とみなさない。`O1A-01〜06`と`O1B-01〜24`は実装・実測・証拠化・push済み。21日coverageの器に加え、実Luma Tokyoを終端まで読み、
-全candidateを21日へ投影し、好みで候補を捨てず、本文・主催者・参加者・場所・時間からgoalと
-serendipityを根拠付き評価するところまで完成した。2026-08-02に最後に証拠化されたcoverageは
-`open=18 / covered_existing=0 / covered_new=1 / unavailable=2`である。これは現在時刻のcoverageではなく
-履歴証拠である。8月15日の実Luma登録は確認mailとGoogle Calendarを伴う`covered_new`、8月2日・3日は
-実Calendar blocker付き`unavailable`だった。現在値はnative passが実Calendarとproviderを再読取して
-新しいsnapshotを保存するまでunknownとし、古い18日を現在値として報告しない。
+`main`を現在実装の正本とみなさない。`O1A-01〜06`と`O1B-01〜24`は実装・実測・証拠化・push済み。
+過去の21日coverage証拠（2026-08-02の`open=18 / covered_existing=0 / covered_new=1 / unavailable=2`を含む）は履歴であり、
+現行runnerの14日acceptance窓・現在値・完了条件ではない。現在値はnative passが実Calendarとproviderを再読取して保存するsnapshotだけを採用する。
 
-native local runtime、write pipeline、lock、heartbeat、healthcheck、Connector専用CloakBrowser `:9222`、Luma inventory、
-Calendar gate、provider cursor、Connpass downstream write contractはbranchへcommit/push済みである。native launchd
-`ai.anicca.life-manager-connector-native`はこのworktreeを5分間隔で起動し、stateも存在する。live run 190はLuma 27件から
-Calendar eligible 0件を判定し、同runでConnpass cursorへ進んだ。まだConnpass browser discoveryへ到達できず、実submit、
-Calendar readback、PNG、ticket/QRまたは同等receipt、Telegram IDの同一lineage proofは0件である。したがって常駐基盤は動くが、
-task deliveryは未完成である。
+現在の実装状態（2026-08-10 JST、実装前のbranchはcleanかつremote-synced）:
+
+| 観測 | 現在の事実 | target / 境界 |
+|---|---|---|
+| branch / owner | `feature/connector-native-completion` のworktreeが実装SSOT | canonical mergeはItem23まで保留 |
+| production providers | `skills/connector/native-pass.js` の`DEFAULT_PROVIDERS = ["luma", "connpass"]`のみ。順序はLuma → Connpass | Peatix → Meetup → Doorkeeper → EventbriteはItem19、未知/次サイトはItem20 |
+| acceptance窓 | 今日を含む14日、無料・受付中・Calendar非衝突だけを申込対象にする | 旧rolling-21は履歴/長期目標で、現行runtime/gateではない |
+| latest official wake | `wake-88fce9dad21004d03804283c`: `completed_no_effect / providers_exhausted / consecutive_failure_count 0`。Luma free/open 4件は全てCalendar conflict、Submit/Calendar write/applied bundle増分なし | `providers_exhausted`は現行設定済み2 providerの枯渇だけを意味する |
+| lifecycle / lock | orphan target lockは修復後run終了時にabsent。Native・healthcheck・Healer labelは全てunloaded | installed Native plistのlegacy `StartInterval=300`もunloaded。Items10〜16 acceptance後、Item17で一日一回scheduleだけをload |
+| TODO境界 | Items1〜9と10Aは完了。10BとItems11〜23は未完 | 完了判定は最新Active TODOの10B〜23で行う |
+
+```mermaid
+flowchart LR
+  subgraph CURRENT[現在: 2026-08-10 JST]
+    C1[14日・無料・Calendar非衝突] --> C2[Luma → Connpass]
+    C2 --> C3[latest wake: providers_exhausted]
+    C3 --> C4[Native / healthcheck / Healer unloaded]
+  end
+  subgraph TARGET[acceptance後のtarget]
+    T1[Items10B〜16 live acceptance] --> T2[Item17: 一日一回scheduleを一つだけload]
+    T2 --> T3[Item19: Peatix → Meetup → Doorkeeper → Eventbrite]
+    T3 --> T4[Item20: unknown / next provider discovery]
+  end
+  C4 --> T1
+```
 
 `O1C-00 Life Manager startup context正本化`は2026-08-02に実装・監査・pushまで完了した。
 現在の実装優先は、保持していたConnectorの再開位置`O1B-25`である。残作業は、途中へ別trackを混ぜず
@@ -97,15 +113,15 @@ flowchart TD
 
     subgraph LOCAL["Mac mini上で継続実行 — 通常は見えない"]
         CAL["全Calendarの空きと移動時間を確認"]
-        DISCOVER["Luma / 許可済みevent sourceを探索"]
+        DISCOVER["現行: Luma → Connpassを探索"]
         LUNA["Luna workerが興味・目標・serendipityを判断"]
         GATE{"重複・時間・移動・予算gateを通過?"}
         APPLY["参加登録"]
         RECEIPT{"provider receiptを検証できた?"}
         VERIFY["確認mail・guest binding・ticket / QRを検証"]
         SYNC["Google Calendarへ冪等登録しreadback"]
-        COVERAGE["rolling 21日coverageを再計算"]
-        NEXT{"open = 0?"}
+        COVERAGE["現行14日窓の候補・申込状態を再計算"]
+        NEXT{"設定済みprovider / 日の処理が残る?"}
 
         CAL --> DISCOVER --> LUNA --> GATE
         GATE -->|No| DISCOVER
@@ -113,12 +129,12 @@ flowchart TD
         RECEIPT -->|結果不明| RECON["reconciliationへ保存し二重申込みを防止"]
         RECON --> RECEIPT
         RECEIPT -->|Yes| VERIFY --> SYNC --> COVERAGE --> NEXT
-        NEXT -->|No| CAL
+        NEXT -->|Yes| CAL
     end
 
     subgraph TELEGRAM["Daisが見るもの"]
         BOOKED["予約完了: event・日時・場所・理由・Calendar・ticket"]
-        DAILY["短い日次brief: 新規予約・今後の予定・残open日"]
+        DAILY["短い日次brief: 新規予約・今後の予定・残りの候補/日"]
         ACTION["本人操作が不可避な時だけ1アクションを依頼"]
         CONTROL["返信で停止・興味修正・予算変更"]
     end
@@ -126,15 +142,16 @@ flowchart TD
     U --> ON
     ACK --> CAL
     COVERAGE --> BOOKED --> U
-    NEXT --> DAILY --> U
+    NEXT -->|No| DAILY --> U
     APPLY -->|OAuth等が必要| ACTION --> U
     U --> CONTROL --> PROFILE
 ```
 
 Telegramの予約完了messageは、少なくともevent名、日時、場所、選定理由、event URL、Calendar URL、
-ticket/QRまたは同等provider receipt、現在の21日coverage countsを含む。receiptが検証できない登録、Calendar readbackが無い登録、
+ticket/QRまたは同等provider receipt、現在の14日状態countsを含む。receiptが検証できない登録、Calendar readbackが無い登録、
 Telegram provider message IDが無い送信を成功として表示しない。全wakeは`applied / continuing / recovering`を必ず報告し、週次rollupも
 成功0件を含め必ず報告する。報告は内部stack traceを見せず、成立した現実結果、安全なfailure class、未処理日数、次の自動actionを伝える。
+旧rolling-21 coverageは履歴および長期目標として保持するが、現行14日runnerのuser-facing acceptanceまたはgateではない。Peatix、Meetup、Doorkeeper、Eventbriteおよび未知/次サイトは、Item19/20完了後のtargetとしてのみ表示する。
 
 #### 0.2.2 Connectorの残TODO — 実行順SSOT
 
@@ -142,23 +159,25 @@ Telegram provider message IDが無い送信を成功として表示しない。�
 それ以前のTODO、チェックリスト、実行順、図は全て履歴であり、未完項目を復活させる根拠にしない。
 この節、Order checkbox、過去の進捗文に異なる「次TODO」が残っていても実行順には使用しない。
 
-現在の物理状態（2026-08-06 22:07 JST read-only実測）: native launchd
-`ai.anicca.life-manager-connector-native`はこのworktreeを5分間隔で起動するが、run 194はlast exit 1、heartbeat
-`worker_failed`、bounded result `incomplete`で終了した。Luma inventory 27件、Calendar gate 0件、eligible 0件、write attempt 0件で、
-provider cursorはConnpass、generation 2、次対象日は2026-08-07である。append-only stateはcandidate attempts 49、delivery receipts 3、
-photo receipts 2で、今回wakeの新規申込、Calendar、screenshot、Telegram deliveryは0件である。Connector専用CloakBrowser `:9222`は応答する。
-Connpass APIは使用禁止。次の未完了項目は`:9222`によるConnpass browser-only discoveryの欠落を直し、常設loopを再wakeすることである。
+最新の実測状態（2026-08-10 JST、進捗222のofficial wake後）: `wake-88fce9dad21004d03804283c` は
+`completed_no_effect / providers_exhausted / consecutive_failure_count 0`で終了し、Telegram provider message IDは`10298`だった。
+現行設定済みproviderはLumaとConnpassだけで、Lumaのfree/open 4件は全てCalendar conflictとなり、新規Submit、Calendar write、
+candidate attempt、applied bundleの増分は0。orphan target lockは修復後にrun終了時absentで、Native・healthcheck・Healerの3 labelは全てunloadedである。
+installed Native plistにlegacy `StartInterval=300`は残るがunloadedであり、Item17のsingle daily scheduleはItems10〜16 acceptance後までloadしない。
 
-**Executor boundary:** 実event discovery、form入力、Submit、provider readback、Calendar、screenshot、Telegramを行う主体は常設Connector
-launchd loopだけである。対話中のCodex、臨時script、手動browser操作が代わりに申し込んだ結果をConnectorのlive acceptanceへ数えない。
-Codexの仕事は先頭の実故障をTDDで直し、commit/pushし、既存launchdをwakeして観測し、loop自身の外部証拠で完了判定することである。
-各fresh open dateのprovider passは必ずLumaをprimaryとして開始する。LumaにCalendar-eligible候補が無い、または各候補がknown-no-effectの場合だけ、
-同じpassで`Connpass → Peatix → Meetup → Doorkeeper → Eventbrite`へ進む。crash/restart時はLumaへ巻き戻さずdurable cursorのexact provider/candidateから再開する。
-provider順を飛ばさず、一providerの失敗でpassを終了しない。
+**Executor boundary:** 実event discovery、form入力、Submit、provider readback、Calendar、screenshot、Telegramを行う主体はofficial Connector
+launchd entrypointである。現在はConnector labelがunloadedのためbounded foreground kickstartでacceptanceを実行し、Item17完了後だけsingle daily scheduleが同entrypointを起動する。
+対話中のCodex、臨時script、手動browser操作が代わりに申し込んだ結果をConnectorのlive acceptanceへ数えない。Codexの仕事は先頭の実故障をTDDで直し、
+commit/pushし、official entrypointをboundedに呼び出して観測し、loop自身の外部証拠で完了判定することである。
+各fresh open dateの現行provider passは`Luma → Connpass`の順だけを使う。`providers_exhausted`はこの設定済み2 providerを
+尽くしたことだけを表し、東京/世界の全event siteを検索した意味ではない。Peatix → Meetup → Doorkeeper → EventbriteはItem19で一つずつ
+追加し、未知/次サイトはItem20のunknown-provider contractで扱う。crash/restart時も、現行providerのexact境界から再開し、
+未設定providerへ暗黙に進めない。
 
-Connectorのdoneは「一件予約できた」ではない。`open=0`であり、各日が`covered_existing`、
-`covered_new`、または実Calendar blocker付き`unavailable`のいずれかとして証拠化され、Daisがagentを
-手動管理せずTelegramで結果を理解できる状態である。
+Connectorの現行completion gateは、最新TODOのItem 10BおよびItems 11〜23で定義する。Item 10Bは14日窓のLuma/Connpass live E2E、
+Items 11〜16は同一lineageの証拠、recovery、idempotency、circuit/self-heal、Item17〜18はsingle daily scheduleと初回scheduled wake、
+Item19〜20はprovider拡張、Items21〜23はrestart、cleanup、canonical mergeを閉じる。旧`open=0`/rolling-21 fill-every-dayは
+履歴・長期目標であり、現行runtimeの終了条件やsafe no-effect判定ではない。
 
 各checkboxの完了条件は「codeを書いた」ではない。fresh test、実serviceでのreadbackまたは
 許可された実action、receipt/ledger、Telegramで人間が理解できる報告、commit、pushが揃った時だけ
@@ -1294,12 +1313,14 @@ Life Manager Core
 このcheckbox群はmilestone履歴であり、現在の実行順には使わない。現在の順序と完了条件は最新の`Active remaining TODO SSOT`だけを使う。
 
 **Multi-source non-negotiable invariant:** ConnectorはLuma agentではなくevent application agentである。
-Lumaは現在の最初のproviderにすぎず、検索・申込scopeをLumaへ限定してはならない。rolling 21日coverageに`open`日が残る限り、
-その日についてcapability registryで許可済みのproviderを順に探索し、登録可能な最上位候補へ実申込する。一providerの候補枯渇、
-満席、required form、selector drift、auth failure、provider障害をpass全体の終了条件にせず、同日次候補、次provider、次日へ進む。
-現在のprovider順は`Luma → Connpass → Peatix → Meetup → Doorkeeper → Eventbrite`とする。各providerは
+Lumaは現行productionで最初のproviderだが、検索・申込scopeをLumaへ限定する設計にはしない。現行runtimeのacceptance窓は14日で、
+無料・Calendar非衝突候補を対象に設定済みproviderを順に探索する。一providerの候補枯渇、満席、required form、selector drift、
+auth failure、provider障害をpass全体の終了条件にせず、同日次候補、設定済み次provider、次日へ進む。
+現在のproduction provider順は`Luma → Connpass`のみ（`DEFAULT_PROVIDERS`のexact値）。Peatix → Meetup → Doorkeeper → Eventbriteは
+Item19で順次追加するtarget、未知/次サイトはItem20のunknown-provider contractで追加するtargetである。各providerは
 `discovery / registration / effect_readback / screenshot_evidence`のlive proofが揃った能力だけを使用し、探索URLだけでは
 登録成功やcoverage達成に数えない。新providerは同じregistry contractへ追加し、特定site名をruntime coreへhardcodeしない。
+旧rolling 21日coverageと全6 providerの順序はこの節の履歴・長期目標として保持するが、現在のruntime/gateとは区別する。
 
 - [x] O1B-01 偽物の成功判定を削除
 - [x] O1B-02 event URLの2不具合を修正
@@ -3426,7 +3447,7 @@ flowchart LR
 9. Luma failure→Connpass continuationを同じsessionでlive実証する。
 10. 実故障から得たcache repairだけをself-healingとして昇格する。
 
-### Active remaining TODO SSOT（進捗169。これ以外の残TODO一覧は履歴）
+### Historical remaining TODO snapshot（進捗169、superseded。履歴のみ）
 
 1. [x] Provider-neutral downstream write、Connpass runtime write dependencies、Luma Calendar-eligible 0 handoff、Connpass state persistenceを閉じる。証拠: 進捗141、143、144、commit `65241d6a2`、`e822bfa3a`、`d0e05f5d8`、`1cfa2e56f`。
 2. [x] Privacy-safe Observer envelope/replayを実装する。完了条件: success、tool failure、timeout、process crashが同じschemaでrun/wake、stage、safe action、expected/observed effect、owner generation、screenshot SHA、provider readback、commit、cursorへ正規化され、secret/PII/raw logなし、fingerprint dedupe可能なincidentとreplay fixtureを各1件生成する。証拠: 進捗148、focused 33/33 GREEN。
@@ -3441,23 +3462,23 @@ flowchart LR
 11. Peatix、Meetup、Doorkeeper、Eventbriteを一providerずつ同じscript-first contractで追加する。各providerの完了条件は実`applied_bundle`。
 12. Restart、multi-user isolation、public claim gate、canonical mergeを順に閉じる。Gigはread-onlyを維持し、legacy runner/bridge/Healer/重複schedule 0を最終確認する。
 
-現在と完成形:
+当時の「現在と完成形」スナップショット（進捗169時点。現行状態ではない）:
 
 ```mermaid
 flowchart TD
-  subgraph NOW[現在]
+  subgraph NOW[進捗169時点の現在（履歴）]
     N1[Native・healthcheck unloaded] --> N2[Healer・bridge cleanup待ち]
     N2 --> N3[旧orchestration残存]
     N3 --> N4[新規登録 0]
   end
-  subgraph NEXT[次の厳密な順序]
+  subgraph NEXT[当時の次順（履歴）]
     S1[全Connector owner停止] --> S2[旧orchestration削除]
     S2 --> S3[Minimal script-first runner]
     S3 --> S4[Foreground Luma live submit]
     S4 --> S5[applied bundle]
     S5 --> S6[Daily launchd]
   end
-  subgraph TARGET[完成形]
+  subgraph TARGET[当時想定の完成形（履歴）]
     T1[1 session・1 page] --> T2[Cached direct actions]
     T2 --> T3[Submit→親readback]
     T3 --> T4[Calendar・PNG・Telegram]
@@ -5938,7 +5959,13 @@ TDD REDはtarget lease 9件中7 pass/2 failで、stale zero-byte lockを回収�
 
 Luma aggregateはobserved 30、normalized 30、14日window 16、free/open 4、calendar-free 0。公式と同じCalendar readerとowned pageによるread-only再測定で、4件すべてが実timed予定と重複した。対象は8月18日Japan-Taiwan Innovation Summit Day 1（conflict 3）、8月19日同Day 2（4）、8月19日偏愛ナイト（1）、8月23日ライフセーバーと海を楽しもう（1）。したがって今回の0申込はparser/browser failureではなく、非衝突候補0による正しいsafe no-effectである。Item 10Bの新規`registered`/`pending` evidenceは外部候補条件が満たされていないため未完のまま維持し、Calendar gateは緩めない。
 
-### Active remaining TODO SSOT（進捗222。これ以外の残TODO一覧は履歴）
+### O1B-25進捗223（SSOT current-state consistency reconciliation）
+
+2026-08-10 JST、現行実装SSOTを履歴と突合し、現在の14日・無料/Calendar非衝突acceptance、productionのexact 2 provider（Luma → Connpass）、
+Items19/20の将来provider拡張、最新wake `wake-88fce9dad21004d03804283c` / Telegram provider ID `10298`、lock absent、3 label unloadedを一つのcurrent-stateへ統合した。
+旧rolling-21、全6 provider、5分schedule、過去run番号は履歴として残し、現行status・completion gateと分離した。これはdocumentation-onlyのreconciliationであり、runtime/code behaviorの変更はない。
+
+### Active remaining TODO SSOT（進捗223。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
