@@ -57,6 +57,12 @@ function assertInvalid(value, reason) {
   });
 }
 
+function assertInvalidMutation(mutate, reason) {
+  const value = validResult();
+  mutate(value);
+  assertInvalid(value, reason);
+}
+
 function unknown(metric, accountRef = validResult().wallets[0].accountRef) {
   const value = validResult();
   const wallet = value.wallets[0];
@@ -161,14 +167,15 @@ test("invalid available/unknown pairs fail closed", () => {
       value.wallets[0].burnRate.verificationStatus = "unavailable";
     }],
     ["negative_amount", (value) => { value.wallets[0].externalStablecoinInflows.quantity = -1; }],
+    ["nan_amount", (value) => { value.wallets[0].externalStablecoinInflows.quantity = Number.NaN; }],
+    ["infinite_amount", (value) => { value.wallets[0].externalStablecoinInflows.quantity = Number.POSITIVE_INFINITY; }],
+    ["negative_infinite_amount", (value) => { value.wallets[0].externalStablecoinInflows.quantity = Number.NEGATIVE_INFINITY; }],
     ["wrong_window", (value) => { value.wallets[0].externalStablecoinInflows.window = "month"; }],
     ["complete_claim", (value) => { value.coverage.partial = false; }],
     ["count_mismatch", (value) => { value.coverage.presentWalletCount = 0; }],
   ];
   for (const [name, mutate] of cases) {
-    const value = structuredClone(validResult());
-    mutate(value);
-    assertInvalid(value, name === "complete_claim" ? "coverage" : undefined);
+    assertInvalidMutation(mutate, name === "complete_claim" ? "coverage" : undefined);
   }
 });
 
@@ -238,15 +245,13 @@ test("unknown keys, symbols, and non-dense arrays are rejected", () => {
     (value) => { value.extra = "unexpected"; },
     (value) => { value.coverage.extra = true; },
     (value) => { value.wallets[0].walletValuation.extra = true; },
-    (value) => { value.exceptions = [{ accountRef: value.wallets[0].accountRef, field: "wallet_valuation", reason: "missing_value", extra: true }]; value.wallets[0].walletValuation.status = "unknown"; value.wallets[0].walletValuation.valueUsd = null; value.wallets[0].walletValuation.verificationStatus = "unavailable"; },
+    (value) => { value.exceptions = [{ accountRef: value.wallets[0].accountRef, field: "wallet_valuation", reason: "missing_value", extra: true }]; value.wallets[0].walletValuation.status = "unknown"; value.wallets[0].walletValuation.valueUsd = null; value.wallets[0].walletValuation.verificationStatus = "unavailable"; value.wallets[0].walletValuation.evidenceRef = null; },
     (value) => { value[Symbol("secret")] = "secret-shaped"; },
     (value) => { delete value.wallets[0]; },
     (value) => { value.wallets.push(); value.wallets.length = 2; },
   ];
   for (const mutate of cases) {
-    const value = validResult();
-    mutate(value);
-    assertInvalid(value);
+    assertInvalidMutation(mutate);
   }
 });
 
@@ -258,7 +263,7 @@ test("RFC3339 calendar and chronology boundaries are validated", () => {
     (value) => { value.sourceUpdatedAt = "2026-08-09T12:00:05.001Z"; },
     (value) => { value.wallets[0].telemetryAsOf = "2026-08-09T12:00:04.001Z"; },
   ];
-  for (const mutate of invalid) assertInvalid(mutate(validResult()));
+  for (const mutate of invalid) assertInvalidMutation(mutate);
 
   const sourceBoundary = validResult();
   sourceBoundary.sourceUpdatedAt = "2026-08-09T12:00:05Z";
