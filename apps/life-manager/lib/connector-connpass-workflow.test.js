@@ -44,6 +44,34 @@ test("Connpass discovery keeps provider order and only returns eligible fourteen
   assert.deepEqual(result.map((candidate) => candidate.event_ref), ["connpass-event://event/105"]);
 });
 
+test("Connpass discovery reports the ordered eligibility gate counts", async () => {
+  const audits = [];
+  const workflow = createConnpassScriptFirstWorkflow({
+    now: () => new Date("2026-08-07T08:30:00.000Z"),
+    async discoverOnPage() {
+      return [
+        event(201, { starts_at: "2026-08-21T16:00:00.000Z", ends_at: "2026-08-21T17:00:00.000Z" }),
+        event(202, { ticket_price_status: "paid", ticket_price_minor: 1000 }),
+        event(203, { registration_status: "closed" }),
+        event(204),
+        event(205),
+      ];
+    },
+    isCalendarFree(candidate) { return candidate.event_ref !== "connpass-event://event/204"; },
+    onDiscoveryAudit(audit) { audits.push(audit); },
+  });
+
+  await workflow.discoverCandidates({ page: {}, calendar: [] });
+
+  assert.deepEqual(audits, [{
+    observed_count: 5,
+    normalized_count: 5,
+    window_count: 4,
+    free_open_count: 2,
+    calendar_free_count: 1,
+  }]);
+});
+
 test("Connpass direct action and parent readback use the supplied owned page", async () => {
   const page = Object.freeze({ page_id: "same-owned-page" });
   const candidate = event(105);

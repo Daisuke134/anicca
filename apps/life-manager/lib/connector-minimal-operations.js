@@ -131,6 +131,7 @@ function createMinimalProductionOperations(options = {}) {
   const reportFile = path.join(stateDir, "wake-reports.jsonl");
   const deliveryFile = path.join(stateDir, "wake-report-deliveries.jsonl");
   const discoveryAuditFile = path.join(stateDir, "luma-discovery-audits.jsonl");
+  const connpassDiscoveryAuditFile = path.join(stateDir, "connpass-discovery-audits.jsonl");
 
   async function recordAction(input) {
     const action = safeAction(input);
@@ -139,6 +140,10 @@ function createMinimalProductionOperations(options = {}) {
 
   async function recordDiscoveryAudit(input) {
     append(discoveryAuditFile, safeDiscoveryAudit(input, wakeId, exactInstant(now())));
+  }
+
+  async function recordConnpassDiscoveryAudit(input) {
+    append(connpassDiscoveryAuditFile, safeDiscoveryAudit(input, wakeId, exactInstant(now())));
   }
 
   async function reportWake(input) {
@@ -172,7 +177,7 @@ function createMinimalProductionOperations(options = {}) {
     return Object.freeze({ telegram_provider_id: current.telegram_provider_id });
   }
 
-  return Object.freeze({ recordAction, recordDiscoveryAudit, reportWake });
+  return Object.freeze({ recordAction, recordDiscoveryAudit, recordConnpassDiscoveryAudit, reportWake });
 }
 
 module.exports = { createMinimalProductionOperations };

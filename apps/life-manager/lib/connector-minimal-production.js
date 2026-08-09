@@ -247,7 +247,10 @@ function createMinimalProductionDependencies(options = {}) {
     onDiscoveryAudit: operations.recordDiscoveryAudit || (() => {}),
     readLumaFormProfile: () => readLumaFormProfile({ path: lumaFormProfilePath }),
   });
-  const connpassWorkflow = options.connpassWorkflow || createConnpassScriptFirstWorkflow({ now });
+  const connpassWorkflow = options.connpassWorkflow || createConnpassScriptFirstWorkflow({
+    now,
+    onDiscoveryAudit: operations.recordConnpassDiscoveryAudit || (() => {}),
+  });
   const actionCache = options.actionCache || createConnectorActionCache({
     path: path.join(stateDir, "action-cache.json"),
   });
