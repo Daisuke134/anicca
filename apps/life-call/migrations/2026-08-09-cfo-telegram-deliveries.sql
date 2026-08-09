@@ -83,6 +83,9 @@ BEGIN
     IF claimed.id IS NULL THEN
       RAISE EXCEPTION 'cfo_telegram_delivery_claim_unavailable' USING ERRCODE = '40001';
     END IF;
+    IF claimed.snapshot_public_ref IS DISTINCT FROM p_snapshot_public_ref THEN
+      RAISE EXCEPTION 'cfo_telegram_delivery_claim_snapshot_mismatch' USING ERRCODE = '22023';
+    END IF;
     IF EXISTS (
       SELECT 1 FROM public.lm_cfo_telegram_delivery_receipts WHERE claim_public_ref = claimed.public_ref
     ) THEN
