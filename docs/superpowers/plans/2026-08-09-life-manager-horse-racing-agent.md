@@ -360,16 +360,29 @@ git push canonical HEAD
 
 **State:** blocked until Task 5. **Files:** apps/horse-racing-agent/src/horse_racing_agent/data_audit.py and apps/horse-racing-agent/tests/test_data_audit.py. Estimated 75 LOC.
 
-**Interface:** audit_records(records: Sequence[Mapping[str, object]], manifests: Sequence[Mapping[str, object]]) -> AuditReport. AuditReport contains source_url, jurisdiction, row_count, duplicate_count, missing_timestamp_count, cutoff_violation_count, freshness_age, content_sha256, fetch_exit_code, and evidence_class; no report is valid without a REAL_PUBLIC_WEB_RECORD manifest.
+**Interface:** audit_records(records: Sequence[Mapping[str, object]], manifests: Sequence[Mapping[str, object]]) -> AuditReport. AuditReport contains source_url, jurisdiction, row_count, duplicate_count, missing_timestamp_count, cutoff_violation_count, freshness_age, content_sha256, fetch_exit_code, evidence_class, allowed_scope, and cash_authorized. A report requires evidence_class=REAL_PUBLIC_WEB_RECORD or PUBLIC_WEB_SECONDARY; PUBLIC_WEB_SECONDARY carries allowed_scope=shadow_only and cash_authorized=False, and never authorizes LIVE_CASH or revenue.
 
 - [ ] Step 1: Test manifest-required actual coverage and future-leak rejection.
 
 ~~~python
-def test_audit_blocks_synthetic_only_rows():
-    with pytest.raises(ValueError, match="REAL_PUBLIC_WEB_RECORD"):
+@pytest.mark.parametrize(
+    ("evidence_class", "allowed_scope"),
+    [("REAL_PUBLIC_WEB_RECORD", "private_shadow"), ("PUBLIC_WEB_SECONDARY", "shadow_only")],
+)
+def test_audit_accepts_public_web_classes(evidence_class, allowed_scope):
+    report = audit_records(
+        [{"race_id": "race-1", "timestamp": "2026-01-01T00:00:00+09:00"}],
+        [{"evidence_class": evidence_class, "parsed_row_count": 1, "fetch_exit_code": 0, "content_sha256": "a" * 64}],
+    )
+    assert report.allowed_scope == allowed_scope
+    assert report.cash_authorized is False
+
+@pytest.mark.parametrize("manifest", [{"evidence_class": "SYNTHETIC_TEST"}, {}])
+def test_audit_rejects_synthetic_or_missing_manifest(manifest):
+    with pytest.raises(ValueError, match="evidence_class must be REAL_PUBLIC_WEB_RECORD or PUBLIC_WEB_SECONDARY"):
         audit_records(
-            [{"race_id": "synthetic-1", "timestamp": "2026-01-01T00:00:00+09:00"}],
-            [{"evidence_class": "SYNTHETIC_TEST", "parsed_row_count": 1}],
+            [{"race_id": "race-1", "timestamp": "2026-01-01T00:00:00+09:00"}],
+            [manifest],
         )
 ~~~
 
@@ -380,7 +393,7 @@ cd /Users/anicca/anicca-project/.worktrees/horse-racing-agent-spec/apps/horse-ra
 rtk python3.12 -m pytest tests/test_data_audit.py -q
 ~~~
 
-Expected: FAIL because audit_records is absent or accepts a synthetic-only manifest.
+Expected: FAIL because audit_records is absent or rejects/omits the required REAL_PUBLIC_WEB_RECORD and PUBLIC_WEB_SECONDARY distinction; the exact invalid-class error is not yet implemented.
 
 - [ ] Step 3: Implement chronological ordering, source/jurisdiction separation, duplicate detection, missing/freshness counters, cutoff check, and required manifest class/hash/exit checks. Never fabricate historical rows.
 - [ ] Step 4: Run GREEN and full package suite.
