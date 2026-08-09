@@ -893,9 +893,15 @@ top-level seven-step sequence.
 - [x] **CFO-1h** Send the first real assets/liabilities-only Telegram report and confirm its provider message
       receipt after CFO-1h2's renderer gate is verified. Completed implementation plan:
       `docs/superpowers/plans/2026-08-10-life-manager-cfo-real-telegram.md`.
-- [ ] **CFO-1i** First repair the observed snapshot post-commit receipt mismatch, then enable hourly autonomous
-      refresh, daily full reporting, and meaningful-change/action reporting. Two consecutive scheduled real-data runs
-      without manual repair close M1 and owner-facing Product Stage 7.
+- [ ] **CFO-1i** First repair the observed snapshot post-commit receipt mismatch. Then wire the existing CFO detail
+      buttons to real callback handling and install exactly one local hourly launchd loop for the current `apps/life-call`
+      CFO path. It sends one daily full report plus meaningful-change/action reports and stays quiet when unchanged.
+      Two consecutive scheduled real-data runs without manual repair close M1 and owner-facing Product Stage 7.
+
+Current scheduler audit: `ai.anicca.cfo-daily` is a separate legacy OpenClaw job pointing to an unavailable script
+and its last exit is `127`. `ai.anicca.life-manager-financial-report` is another legacy five-minute job whose current
+enqueue path exits `1`; it does not import the new CFO sender. Neither job satisfies CFO-1i, and neither is evidence
+that the new Moneytree CFO is already autonomous.
 
 Deferred after M1 by explicit owner decision: Binance Spot, trade history, Earn/funding sources, and their tax-lot
 ingestion. They are not unchecked M1 items and cannot become the active CFO item before CFO-1i closes.
