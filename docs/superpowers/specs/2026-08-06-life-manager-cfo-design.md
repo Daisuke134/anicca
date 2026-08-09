@@ -90,7 +90,8 @@ the current real Moneytree → Telegram flow cannot work correctly without it.
 
 ```mermaid
 flowchart TD
-    CLOCK[Hourly local trigger\nCFO-1i pending] --> MT[Read real Moneytree MUFG\nnative JPY]
+    CLOCK[Hourly local trigger\nCFO-1i pending] --> CR[Local Codex reader\nLuna + read-only]
+    CR --> MT[Connected Moneytree App\nraw MCP accounts JSON]
     MT --> CHECK{Fresh and valid?}
     CHECK -->|No: transient| REPAIR[Bounded self-repair\nmax 2 repairs / 3 reads]
     REPAIR --> MT
@@ -896,10 +897,16 @@ top-level seven-step sequence.
 - [ ] **CFO-1i** Snapshot post-commit receipt compatibility is complete and live-verified by
       `docs/superpowers/plans/2026-08-10-life-manager-cfo-snapshot-receipt-compatibility.md`: the real corrected receipt now
       returns the stable frozen five-key application receipt without a duplicate snapshot or Telegram send. The first
-      unfinished slice is now a launchd-callable real Moneytree read path. After that, wire the existing CFO detail
-      buttons to real callback handling and install exactly one local hourly launchd loop for the current `apps/life-call`
-      CFO path. It sends one daily full report plus meaningful-change/action reports and stays quiet when unchanged.
-      Two consecutive scheduled real-data runs without manual repair close M1 and owner-facing Product Stage 7.
+      unfinished slice is now the launchd-callable real Moneytree read plan
+      `docs/superpowers/plans/2026-08-10-life-manager-cfo-moneytree-codex-reader.md`. Live no-send probes prove that
+      non-interactive `codex exec` can call the connected Moneytree App with both Sol and Luna and that Luna's JSONL
+      contains exactly one raw accounts object at `item.result.structured_content`. The reader therefore reuses Luna
+      plus the existing adapter; it never asks an LLM to copy a financial number. The existing local connector-host
+      bridge is deliberately unchanged because its measured contract is Calendar/routes only. After the reader, wire
+      the existing CFO detail buttons to real callback handling and install exactly one local hourly launchd loop for
+      the current `apps/life-call` CFO path. It sends one daily full report plus meaningful-change/action reports and
+      stays quiet when unchanged. Two consecutive scheduled real-data runs without manual repair close M1 and
+      owner-facing Product Stage 7.
 
 Current scheduler audit: `ai.anicca.cfo-daily` is a separate legacy OpenClaw job pointing to an unavailable script
 and its last exit is `127`. `ai.anicca.life-manager-financial-report` is another legacy five-minute job whose current
