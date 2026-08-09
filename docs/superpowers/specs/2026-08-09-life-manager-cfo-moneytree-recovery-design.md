@@ -101,6 +101,10 @@ positive safe integer, and `recovery` is revalidated rather than trusted. It ret
 `{report,sourceBundle}` object so persistence never reconstructs financial facts independently. It consumes the
 closed recovery outcome:
 
+The same module exports
+`validateCfoRecoverySnapshotBundle({ report, sourceBundle })`, returning a deeply frozen clone. Both the builder and
+the correction-store client call this one validator; no second report/source validation path is allowed.
+
 - `fresh` uses the existing partial native-JPY report contract;
 - `recovered` uses the fresh reread only, sets `repair={sourceLabel:"Moneytree",freshReread:true,reconciled:true}`,
   and never restores an old amount;
