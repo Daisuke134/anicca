@@ -1,6 +1,7 @@
 const { test } = require("node:test");
 const assert = require("node:assert");
 const { aggregate } = require("../telemetry-aggregate");
+const { OUR_INSTANCE_IDS, excludeSet } = require("../leaderboard-constants");
 
 const NOWTS = Math.floor(Date.now() / 1000);
 
@@ -90,4 +91,17 @@ test("R7: leaderboard elements carry is_ours (from OUR_INSTANCE_IDS)", () => {
   const stranger = d.leaderboard.find((x) => x.id === "0xstranger");
   assert.strictEqual(ours.is_ours, true);
   assert.strictEqual(stranger.is_ours, false);
+});
+
+test("R7: active Base poster is ours and excluded while former IDs remain", () => {
+  const active = "0xb9dd3b67921b354c656523d6851537988f31dd56";
+  const d = aggregate([{ id: active, ts: NOWTS, net_worth_usd: 1, revenue_mo_usd: 1, burn_day_usd: 0, runway_days: 1, status: "alive", model_tier: "free", earn_src: "chain", net_worth_src: "chain" }]);
+  assert.strictEqual(d.leaderboard.find((row) => row.id === active).is_ours, true);
+  const excluded = excludeSet({ id: "0xexternal" });
+  assert.ok(excluded.has(active));
+  for (const former of [
+    "0xa3cdd4ec6b94f01826aaf90a6d5538a2aa8c4c21",
+    "F5SYUC4f5QULbEgSYb1DFCBfi74AnWE3ZaXAhqXwhZ5T",
+    "0x02bb6b2af70dbf2c367c1b69aca9858bf3525502",
+  ]) assert.ok(excluded.has(former.toLowerCase()));
 });

@@ -9,6 +9,7 @@
 // purposes) — that's fine for Solana ids HERE (unlike telemetry-verify.js's signature-identity path,
 // where lowercasing a base58 id would corrupt it and must never happen there).
 const OUR_INSTANCE_IDS = [
+  "0xb9dd3b67921b354c656523d6851537988f31dd56", // active default Base poster signer (derived from the legacy-default resolver)
   "0xa3cdd4ec6b94f01826aaf90a6d5538a2aa8c4c21", // ANICCA_WALLET_ADDRESS (primary Anicca instance)
   "F5SYUC4f5QULbEgSYb1DFCBfi74AnWE3ZaXAhqXwhZ5T", // Franklin (Solana, SELF-funded, rotated 2026-07-17)
   "0x02bb6b2af70dbf2c367c1b69aca9858bf3525502", // claude-p telemetry-signing identity (human-funded)
