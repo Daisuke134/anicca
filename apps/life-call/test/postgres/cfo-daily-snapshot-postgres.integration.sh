@@ -144,36 +144,49 @@ DIFFERENT_RUN='20000000-0000-4000-8000-000000000002'
 expect_rpc_error reporting_date_conflict reporting_date_conflict tenant-a "$BASE_DATE" "$DIFFERENT_RUN" "$BASE_REPORT" "$BASE_SOURCE"
 
 direct_insert() {
-  local run_id="$1"
-  local revision="$2"
-  local report_payload="$3"
-  local source_bundle="$4"
-  "${PSQL[@]}" -c "SET ROLE service_role; INSERT INTO public.lm_cfo_daily_snapshots (uid, reporting_date, run_id, revision, report_payload, source_bundle) VALUES ('tenant-a', DATE '$BASE_DATE', '$run_id'::uuid, $revision, \$json\$${report_payload}\$json\$::jsonb, \$json\$${source_bundle}\$json\$::jsonb);"
+  local direct_uid="$1"
+  local direct_date="$2"
+  local run_id="$3"
+  local revision="$4"
+  local report_payload="$5"
+  local source_bundle="$6"
+  "${PSQL[@]}" -c "SET ROLE service_role; INSERT INTO public.lm_cfo_daily_snapshots (uid, reporting_date, run_id, revision, report_payload, source_bundle) VALUES ('$direct_uid', DATE '$direct_date', '$run_id'::uuid, $revision, \$json\$${report_payload}\$json\$::jsonb, \$json\$${source_bundle}\$json\$::jsonb);"
 }
 
 expect_direct_rejected() {
   local label="$1"
-  local run_id="$2"
-  local revision="$3"
-  local report_payload="$4"
-  local source_bundle="$5"
-  if direct_insert "$run_id" "$revision" "$report_payload" "$source_bundle" > /dev/null 2>"$TEST_TMP/direct-${label}.err"; then
+  local direct_date="$2"
+  local run_id="$3"
+  local revision="$4"
+  local report_payload="$5"
+  local source_bundle="$6"
+  local expected_error="$7"
+  [[ "$("${PSQL[@]}" -Atqc "SELECT count(*) FROM public.lm_cfo_daily_snapshots WHERE uid='tenant-a' AND reporting_date=DATE '$direct_date' AND revision=$revision;")" == '0' ]] || fail "direct invalid case $label reused owner/date/revision"
+  if direct_insert tenant-a "$direct_date" "$run_id" "$revision" "$report_payload" "$source_bundle" > /dev/null 2>"$TEST_TMP/direct-${label}.err"; then
     fail "direct service_role INSERT accepted $label"
   fi
+  grep -Fq "violates check constraint \"$expected_error\"" "$TEST_TMP/direct-${label}.err" || fail "direct service_role INSERT hit the wrong constraint for $label"
 }
 
-expect_direct_rejected revision_2 '20000000-0000-4000-8000-000000000010' 2 "$BASE_REPORT" "$BASE_SOURCE"
-expect_direct_rejected report_date_mismatch '20000000-0000-4000-8000-000000000011' 1 \
-  '{"reportingDate":"2026-08-10","revision":1,"currency":"JPY","fixture":"synthetic"}' "$BASE_SOURCE"
-expect_direct_rejected report_revision_mismatch '20000000-0000-4000-8000-000000000012' 1 \
-  '{"reportingDate":"2026-08-09","revision":2,"currency":"JPY","fixture":"synthetic"}' "$BASE_SOURCE"
-expect_direct_rejected non_jpy '20000000-0000-4000-8000-000000000013' 1 \
-  '{"reportingDate":"2026-08-09","revision":1,"currency":"USD","fixture":"synthetic"}' "$BASE_SOURCE"
-expect_direct_rejected wrong_source_identity '20000000-0000-4000-8000-000000000014' 1 "$BASE_REPORT" \
-  '{"source":{"sourceId":"wrong_source"},"state":{"sourceId":"moneytree_mufg"},"fixture":"synthetic"}'
-expect_direct_rejected wrong_state_identity '20000000-0000-4000-8000-000000000015' 1 "$BASE_REPORT" \
-  '{"source":{"sourceId":"moneytree_mufg"},"state":{"sourceId":"wrong_state"},"fixture":"synthetic"}'
-expect_direct_rejected non_object_payload '20000000-0000-4000-8000-000000000016' 1 '[]' "$BASE_SOURCE"
+expect_direct_rejected revision_2 '2026-08-11' '20000000-0000-4000-8000-000000000010' 2 \
+  '{"reportingDate":"2026-08-11","revision":2,"currency":"JPY","fixture":"synthetic"}' "$BASE_SOURCE" lm_cfo_daily_snapshots_revision_check
+expect_direct_rejected report_date_mismatch '2026-08-12' '20000000-0000-4000-8000-000000000011' 1 \
+  '{"reportingDate":"2026-08-13","revision":1,"currency":"JPY","fixture":"synthetic"}' "$BASE_SOURCE" lm_cfo_daily_snapshots_report_shape
+expect_direct_rejected report_revision_mismatch '2026-08-14' '20000000-0000-4000-8000-000000000012' 1 \
+  '{"reportingDate":"2026-08-14","revision":2,"currency":"JPY","fixture":"synthetic"}' "$BASE_SOURCE" lm_cfo_daily_snapshots_report_shape
+expect_direct_rejected non_jpy '2026-08-15' '20000000-0000-4000-8000-000000000013' 1 \
+  '{"reportingDate":"2026-08-15","revision":1,"currency":"USD","fixture":"synthetic"}' "$BASE_SOURCE" lm_cfo_daily_snapshots_report_shape
+expect_direct_rejected wrong_source_identity '2026-08-16' '20000000-0000-4000-8000-000000000014' 1 \
+  '{"reportingDate":"2026-08-16","revision":1,"currency":"JPY","fixture":"synthetic"}' \
+  '{"source":{"sourceId":"wrong_source"},"state":{"sourceId":"moneytree_mufg"},"fixture":"synthetic"}' lm_cfo_daily_snapshots_source_shape
+expect_direct_rejected wrong_state_identity '2026-08-17' '20000000-0000-4000-8000-000000000015' 1 \
+  '{"reportingDate":"2026-08-17","revision":1,"currency":"JPY","fixture":"synthetic"}' \
+  '{"source":{"sourceId":"moneytree_mufg"},"state":{"sourceId":"wrong_state"},"fixture":"synthetic"}' lm_cfo_daily_snapshots_source_shape
+expect_direct_rejected non_object_payload '2026-08-18' '20000000-0000-4000-8000-000000000016' 1 '[]' "$BASE_SOURCE" lm_cfo_daily_snapshots_report_shape
+expect_direct_rejected report_revision_string '2026-08-19' '20000000-0000-4000-8000-000000000017' 1 \
+  '{"reportingDate":"2026-08-19","revision":"1","currency":"JPY","fixture":"synthetic"}' "$BASE_SOURCE" lm_cfo_daily_snapshots_report_shape
+expect_direct_rejected non_object_source_bundle '2026-08-20' '20000000-0000-4000-8000-000000000018' 1 \
+  '{"reportingDate":"2026-08-20","revision":1,"currency":"JPY","fixture":"synthetic"}' '[]' lm_cfo_daily_snapshots_source_shape
 
 if "${PSQL[@]}" -c "UPDATE public.lm_cfo_daily_snapshots SET revision=1 WHERE uid='tenant-a' AND reporting_date=DATE '$BASE_DATE';" >/dev/null 2>&1; then
   fail 'superuser UPDATE bypassed append-only trigger'
@@ -196,20 +209,27 @@ SESSION_B="$TEST_TMP/session-b.sql"
 SESSION_A_OUT="$TEST_TMP/session-a.out"
 SESSION_B_OUT="$TEST_TMP/session-b.out"
 CONCURRENT_CALL="SELECT public.lm_append_cfo_daily_snapshot('tenant-a', DATE '$CONCURRENT_DATE', '$CONCURRENT_RUN'::uuid, \$json\$${CONCURRENT_REPORT}\$json\$::jsonb, \$json\$${BASE_SOURCE}\$json\$::jsonb)->>'public_ref';"
-printf '%s\n' 'BEGIN;' 'SET ROLE service_role;' "$CONCURRENT_CALL" 'SELECT pg_sleep(2);' 'COMMIT;' >"$SESSION_A"
+printf '%s\n' 'BEGIN;' 'SET ROLE service_role;' "$CONCURRENT_CALL" 'SELECT pg_sleep(5);' 'COMMIT;' >"$SESSION_A"
 printf '%s\n' 'BEGIN;' 'SET ROLE service_role;' "$CONCURRENT_CALL" 'COMMIT;' >"$SESSION_B"
 
 "${PSQL[@]}" -Atqf "$SESSION_A" >"$SESSION_A_OUT" 2>"$TEST_TMP/session-a.err" &
 A_PID=$!
 WAITING=0
-for _ in {1..50}; do
-  WAITING="$("${PSQL[@]}" -Atqc "SELECT count(*) FROM pg_stat_activity WHERE state='active' AND query LIKE '%pg_sleep(2)%';" | tr -d '[:space:]')"
+for _ in {1..100}; do
+  WAITING="$("${PSQL[@]}" -Atqc "SELECT count(*) FROM pg_stat_activity WHERE state='active' AND query LIKE '%pg_sleep(5)%';" | tr -d '[:space:]')"
   [[ "$WAITING" == '1' ]] && break
   sleep 0.1
 done
 [[ "$WAITING" == '1' ]] || fail 'first concurrent session did not reach its hold point'
 "${PSQL[@]}" -Atqf "$SESSION_B" >"$SESSION_B_OUT" 2>"$TEST_TMP/session-b.err" &
 B_PID=$!
+LOCK_WAITING=0
+for _ in {1..100}; do
+  LOCK_WAITING="$("${PSQL[@]}" -Atqc "SELECT count(*) FROM pg_stat_activity WHERE state='active' AND query LIKE '%lm_append_cfo_daily_snapshot%' AND wait_event_type='Lock';" | tr -d '[:space:]')"
+  [[ "$LOCK_WAITING" == '1' ]] && break
+  sleep 0.1
+done
+[[ "$LOCK_WAITING" == '1' ]] || fail 'second concurrent RPC never waited on the first transaction'
 wait "$A_PID"
 wait "$B_PID"
 
