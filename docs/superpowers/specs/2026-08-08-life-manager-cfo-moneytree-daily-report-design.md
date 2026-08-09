@@ -24,7 +24,7 @@ The report answers, in this order:
 It does not promise returns, guess missing balances, or mix later business, token-cost, tax, and trading work into the first report.
 
 CFO-1g3 implementation details are owned by
-`docs/superpowers/specs/2026-08-10-life-manager-cfo-repair-corrections-design.md`; this document remains the parent
+`docs/superpowers/specs/2026-08-09-life-manager-cfo-moneytree-recovery-design.md`; this document remains the parent
 Moneytree-first product contract.
 
 ## 2. Observed Reality

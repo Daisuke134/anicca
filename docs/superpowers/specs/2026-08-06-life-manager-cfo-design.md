@@ -784,7 +784,7 @@ static `4/4`, CFO `241/241`, aggregate `874/874`, and real PostgreSQL PASS. Fres
 - [ ] **CFO-1g3** Implement bounded adapter self-repair and append-only superseding corrections. Prove repair only
       after a fresh source read and reconciliation. Exhausted repairs create one actionable alert plus durable
       retries, not repeated messages. Child SSOT:
-      `docs/superpowers/specs/2026-08-10-life-manager-cfo-repair-corrections-design.md`.
+      `docs/superpowers/specs/2026-08-09-life-manager-cfo-moneytree-recovery-design.md`.
 - [ ] **CFO-1h2** CFO-1 report is assets/liabilities only. Until tests 16–18 and 22–28 pass, the renderer MUST NOT
       show token totals, complete API spend, business profit, measured/confirmed cost, or cost-based advice.
 - [ ] **CFO-1h** Send the first real assets/liabilities-only Telegram report and confirm its provider message
