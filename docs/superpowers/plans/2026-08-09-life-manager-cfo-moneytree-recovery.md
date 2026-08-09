@@ -14,7 +14,7 @@ PostgreSQL appends contiguous correction revisions; existing delivery dedupe sup
 
 **Design:** `docs/superpowers/specs/2026-08-09-life-manager-cfo-moneytree-recovery-design.md`.
 
-**Status:** ACTIVE — Tasks 1–6 implemented; final-review fixes Task 3b then Task 6b next.
+**Status:** ACTIVE — Tasks 1–6 and Task 3b/6b implemented; final-review fix Task 6c next.
 
 ## Global Constraints
 
@@ -323,6 +323,32 @@ rethrow an Error retained from an earlier call. Preserve all existing prefixes a
 
 Run shared RPC and all three client focused tests, `npm run test:cfo`, `git diff --check`; commit/push
 `fix(cfo): prevent shared rpc error replay`; write the ignored report; obtain fresh Sol review.
+
+---
+
+### Task 6c: Isolate nested and parallel shared-RPC error provenance
+
+**Files (soft target: production delta <=20 LOC, tests delta <=100 LOC):**
+- Modify: `apps/life-call/lib/cfo-supabase-rpc.js`
+- Modify: `apps/life-call/lib/cfo-supabase-rpc.test.js`
+- Modify: `apps/life-call/lib/cfo-daily-snapshot-revision-store.test.js`
+
+- [ ] **Step 1: Write load-bearing RED**
+
+Reproduce a nested call inside an outer `fetchImpl` and overlapping promises. Replay an Error returned by the inner
+public call through the outer response getter. Require a different fixed outer Error, independent concurrent error
+reasons, and no ambient provenance after either operation settles. Observe failure against Task 6b.
+
+- [ ] **Step 2: Implement minimum GREEN**
+
+Remove ambient operation state that survives or replaces its caller context. Error provenance must be local and
+short-lived: exact same-operation propagation works, while settled, nested, and parallel operations cannot recognize
+one another's Error identity. Preserve every public prefix and strict validator.
+
+- [ ] **Step 3: Verify and close**
+
+Run shared RPC plus all four client tests, `npm run test:cfo`, `git diff --check`; commit/push
+`fix(cfo): isolate shared rpc operation errors`; write the ignored report; obtain fresh Sol review.
 
 ---
 

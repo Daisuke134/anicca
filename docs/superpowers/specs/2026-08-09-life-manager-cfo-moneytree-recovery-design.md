@@ -167,7 +167,8 @@ requires the RPC receipt to echo the exact date, run, revision, and predecessor 
 
 Every public shared-RPC call owns error provenance only for that operation. A fixed Error returned to a caller can
 never be recognized as internal if the caller mutates and replays it through a later hostile callback; the later
-boundary creates a new fixed redacted Error.
+boundary creates a new fixed redacted Error. Provenance leaves no ambient context after settlement and cannot cross
+nested or overlapping calls, including when a second public call is invoked from an outer call's injected callback.
 
 The RPC is exactly
 `lm_append_cfo_daily_snapshot_revision(text,date,uuid,integer,integer,jsonb,jsonb)`. It locks the predecessor row,
