@@ -4,12 +4,12 @@
 
 | Field | Observed value |
 |---|---|
-| evidence_class | REAL_PUBLIC_WEB_RECORD candidate |
+| evidence_class | REAL_PUBLIC_WEB_RECORD |
 | source_authority | official |
 | jurisdiction | NAR |
-| gate_status | BLOCKED_BY_HRA_2F |
+| gate_status | PASS_PRIVATE_SHADOW |
 | raw_values_exported | false |
-| raw boundary | Mac-local /tmp only; no raw file was committed |
+| raw boundary | Mac-local ephemeral archive now absent/CANNOT_RECOMPUTE_RAW_ARCHIVE_ABSENT; no raw file was committed |
 
 This is a bounded personal probe performed under USER_ATTESTED_PERMISSION. On 2026-08-10 the user explicitly attested that personal crawling approval exists via the user/friend. The permission document was not provided or independently verified: permission_document_verified=false. The assertion authorizes this bounded personal probe only; it is not evidence that NAR generally permits bots, redistribution, public publication, or SaaS use.
 
@@ -24,7 +24,7 @@ Disallow: /KeibaWeb/DataRoom/
 Disallow: /KeibaWeb/DataDownload/
 ~~~
 
-The probe was performed on the basis of USER_ATTESTED_PERMISSION, and the disallow directives are retained here rather than hidden. No general crawler permission or redistribution permission is inferred. The current ingest implementation is stale Windows-only, so this real observation remains BLOCKED_BY_HRA_2F.
+The probe was performed on the basis of USER_ATTESTED_PERMISSION, and the disallow directives are retained here rather than hidden. No general crawler permission or redistribution permission is inferred. HRA-2F is GREEN at commits `ae56d3524` + `956d1b50d`, final focused 24/full 32; the exact-host/path/Mac-local/redacted boundary is accepted; cash remains false.
 
 ## Redacted YAML manifest
 
@@ -41,20 +41,37 @@ fetch_exit_code: 0
 http_status: 200
 parsed_row_count: 46
 runner_rows: 456
+race_rows: 46
+horse_rows: 456
 odds_rows: 327274
 payback_rows: 0
 observed_schema_type: utf8_csv_field
+observed_schema:
+  racelist: venue/date/race_number/start_time/surface/distance/weather/track_condition/runner_count/prize
+  horselist: gate/horse_number/horse_name/sex/age/pedigree/jockey/trainer/weight/result_fields
+  payback: win/place/quinella/exacta/wide/trio/trifecta_fields
+  monthly_odds: venue/date/race_number/bet_type/number1/number2/number3/odds/odds_max/popularity
 content_sha256:
   daily_race_zip: f245030f4608055c2fa24e2910d51edcd029f2292c9cfbe66d2911604e1e1c5b
   monthly_odds_zip: ad18c23b4648bef4113c8191cc78d084168a2aa37c9b49431742e64621f0397f
   official_manual_pdf: 56009a444ffb61ddc99097ffdd2d2a84a864073c00052d9f691cfda1770236dd
+artifact_source_urls:
+  daily_race_zip: https://www.keiba.go.jp/KeibaWeb/DataDownload/RaceDataDownload?type=daily
+  monthly_odds_zip: https://www.keiba.go.jp/KeibaWeb/DataDownload/OddsDataDownload?type=monthly&k_year=2026&k_month=8
+  official_manual_pdf: https://www.keiba.go.jp/pdf/manual/data_pdf_manual.pdf
 robots_snapshot_url: https://www.keiba.go.jp/robots.txt
 robots_status: "Crawl-delay: 10; TodayRaceInfo/DataRoom/DataDownload disallowed"
-terms_url: unavailable
-terms_status: USER_ATTESTED_PERMISSION_DOCUMENT_UNVERIFIED
+terms_url: https://www.keiba.go.jp/terms.html
+terms_status: "observed no-unauthorized-reproduction/redistribution; USER_ATTESTED_PERMISSION_DOCUMENT_UNVERIFIED"
 raw_values_exported: false
 allowed_scope: private_shadow
-gate_status: BLOCKED_BY_HRA_2F
+cash_authorized: false
+ingest_boundary_status: GREEN
+ingest_boundary_commits:
+  - ae56d3524
+  - 956d1b50d
+raw_archive_recompute_status: CANNOT_RECOMPUTE_RAW_ARCHIVE_ABSENT
+gate_status: PASS_PRIVATE_SHADOW
 ~~~
 
 In the manifest, fetch_exit_code=0 refers to the three public-page crwl observations; http_status=200 refers to the curl archive artifacts. The direct daily crwl download had the download-starting limitation recorded below.
@@ -144,9 +161,9 @@ Source: https://www.keiba.go.jp/pdf/manual/data_pdf_manual.pdf
 
 ## Limitations and gate judgment
 
-The observed archive rows and hashes are real public-web observations, not completed ingestion. HRA-2F is not GREEN because the current ingest implementation still has the superseded Windows-only boundary. Therefore this file does not claim completed schema adoption, historical backtest, prediction, Telegram delivery, CFO revenue, cash permission, or LIVE_CASH. The pre-settlement payback row count is 0 and must remain 0 until an official settled result is separately reconciled.
+The observed archive rows and hashes are real public-web observations accepted by the private-shadow manifest. HRA-2F is GREEN at commits `ae56d3524` + `956d1b50d` (final focused 24/full 32); the exact-host/path/Mac-local/redacted boundary is accepted and `cash_authorized` remains false. The ephemeral archive is now absent, so hashes, archive entries, line counts, UTF-8 BOM, and headers cannot be recomputed now; Task 4 performs the next bounded official acquisition instead of a synthetic refetch. This file does not claim completed schema adoption, historical backtest, prediction, Telegram delivery, CFO revenue, cash permission, or LIVE_CASH. The pre-settlement payback row count is 0 and must remain 0 until an official settled result is separately reconciled. All downstream/backtest/Telegram/CFO/revenue/cash values remain 0 or not completed.
 
-Raw files stayed in Mac-local /tmp and were not committed. Only headers, counts, timestamps, statuses, and hashes are recorded; raw_values_exported=false.
+The Mac-local ephemeral raw archive is now absent and was never committed (`raw_archive_recompute_status=CANNOT_RECOMPUTE_RAW_ARCHIVE_ABSENT`). Only headers, counts, timestamps, statuses, and hashes are recorded; raw_values_exported=false.
 
 ## Sources and core observations
 
@@ -158,3 +175,4 @@ Raw files stayed in Mac-local /tmp and were not committed. Only headers, counts,
 6. [NAR daily download](https://www.keiba.go.jp/KeibaWeb/DataDownload/RaceDataDownload?type=daily) — curl HTTP 200 application/zip; archive hash and counts recorded above.
 7. [NAR monthly odds download](https://www.keiba.go.jp/KeibaWeb/DataDownload/OddsDataDownload?type=monthly&k_year=2026&k_month=8) — curl HTTP 200 application/zip; first interval contains 327274 parsed rows.
 8. [NAR data manual](https://www.keiba.go.jp/pdf/manual/data_pdf_manual.pdf) — daily intermediate-odds behavior and historical coverage; exact quotes are recorded above.
+9. [NAR terms](https://www.keiba.go.jp/terms.html) — observed “事前の許諾なく転載、複製することを禁じます。”; no-unauthorized-reproduction/redistribution boundary; permission document remains unverified.
