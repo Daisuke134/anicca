@@ -66,6 +66,14 @@ def test_rejects_invalid_source_contract(source_url, source_authority, jurisdict
         accepted(source_url=source_url, source_authority=source_authority, jurisdiction=jurisdiction)
 
 
+def test_rejects_nar_path_traversal():
+    with pytest.raises(ValueError, match="source URL/authority mismatch"):
+        accepted(
+            source_url="https://www.keiba.go.jp/KeibaWeb/DataDownload/../../outside",
+            source_authority="official", jurisdiction="NAR",
+        )
+
+
 @pytest.mark.parametrize("field", ["host_os", "storage_scope", "export_destination"])
 def test_rejects_non_mac_local_environment(field):
     with pytest.raises(ValueError, match="Mac-local storage contract"):

@@ -30,6 +30,8 @@ def _source_scope(source_url: str, source_authority: str, jurisdiction: str) -> 
         raise ValueError("source URL/authority mismatch")
     if hostname == "www.keiba.go.jp":
         path = parsed.path
+        if any(segment in {".", ".."} for segment in path.split("/")):
+            raise ValueError("source URL/authority mismatch")
         if not any(path == prefix or path.startswith(prefix + "/") for prefix in _NAR_OFFICIAL_PATHS) and not path.lower().endswith(".pdf"):
             raise ValueError("source URL/authority mismatch")
     return scope
