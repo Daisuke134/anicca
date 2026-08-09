@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | APPROVED — CFO-1e ACTIVE |
+| Status | COMPLETE — CFO-1f NEXT |
 | Parent SSOT | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Scope | Read-only Fleet normalization only |
 | Next after closure | CFO-1f timestamped JPY valuation |
@@ -277,3 +277,12 @@ The bounded repair is:
 
 This amendment is a repair of the one existing producer discovered by the required live E2E, not a new service or
 a widening into Fleet producer redesign.
+
+## 10. Closure Evidence
+
+CFO-1e is complete. Commits `2b87d969e`, `1d5821e95`, and `2907ba3eb` are pushed. Focused Fleet tests passed
+32/32, CFO tests 198/198, the full `apps/life-call` suite 831/831, and the bounded registry repair passed 13/13 plus
+telemetry 311/311. The recoverable identity repair produced telemetry HTTP 202, a present registered live row, and
+all privacy-safe adapter acceptance booleans true. The result hash is
+`cd58c0f1b8aebd1dc9f0476f041ae5198cea6eea29cb51bcdf057127ad03d958`; no amount, wallet identity, or provider
+payload is stored here. Fresh scoped Sol review returned `ship`. CFO-1f is next.

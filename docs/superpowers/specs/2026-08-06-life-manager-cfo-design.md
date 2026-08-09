@@ -2,12 +2,12 @@
 
 | Field | Value |
 |---|---|
-| Status | CFO-1b2 COMPLETE — CFO-1e NEXT |
+| Status | CFO-1e COMPLETE — CFO-1f NEXT |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
 | Existing foundations | `apps/life-call`, interactive Moneytree App access, Fleet telemetry, `lm_api_cost`, and the canonical `lm_agent_earnings` source (the panel's `lm_financial_ledger` name is a stale alias) |
-| First unfinished item | **CFO-1e: normalize Fleet aggregate valuation, nominal token inflow, and estimated burn at their actual evidence levels** |
+| First unfinished item | **CFO-1f: add timestamped JPY valuation and staleness rules** |
 
 ## 1. Overview — What and Why
 
@@ -748,7 +748,7 @@ Fleet read.
 - [x] **CFO-1b** Implement Moneytree MUFG balance/transaction adapter; verify against the live connected account.
 - [x] **CFO-1b2** Freeze the Moneytree coverage-state contract: compose balances with connected-liability coverage,
       retrieval/aggregation freshness, partial-source, expiry, and re-consent states. Unknown live coverage stays null.
-- [ ] **CFO-1e** Normalize the Fleet dashboard's actual evidence boundary: upstream chain-enriched aggregate wallet
+- [x] **CFO-1e** Normalize the Fleet dashboard's actual evidence boundary: upstream chain-enriched aggregate wallet
       valuation, chain-observed nominal token inflow that is not recognized revenue, and signed self-reported burn.
 - [ ] **CFO-1f** Add timestamped JPY valuation and staleness rules.
 - [ ] **CFO-1g** Persist one immutable, idempotent snapshot, its Moneytree coverage-state bundle, and reconciliation exceptions.

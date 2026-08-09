@@ -8,13 +8,12 @@
 
 **Tech Stack:** Node.js 20+, CommonJS, built-in `node:crypto`, built-in `node:test`, `assert/strict`, existing npm scripts only.
 
-**Status:** ACTIVE — Tasks 1–2 complete; Task 3 live verification next. Three fresh plan reviews found and closed every
-Critical/Important issue; the final plan re-review returned `ship — Ready: yes`.
+**Status:** COMPLETE — CFO-1f NEXT. Tasks 1–3, live verification, final review, commit, and push are complete.
 
 ## Global Constraints
 
 - Source design: `docs/superpowers/specs/2026-08-09-life-manager-cfo-fleet-read-design.md`.
-- Parent SSOT: `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md`; only CFO-1e is active.
+- Parent SSOT: `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md`; CFO-1f is the first unfinished item.
 - Use the existing per-wallet `leaderboard` response from `https://aniccaai.com/.netlify/functions/dashboard-sync`; never use root totals for normalized amounts.
 - `net_worth_src="chain"` is required for an available wallet valuation, but its status is only `upstream_chain_enriched` because quote value/time are absent.
 - `earn_src="chain"` is required for an available nominal stablecoin token inflow, but its status is only `chain_observed_token_inflow`; it is not earnings or recognized revenue.
@@ -351,7 +350,7 @@ controller owns the read-only review and Step 5 spec/plan/state edits. Luna does
 - Produces: redacted live acceptance evidence containing only booleans, counts, coverage status, exit status, and a SHA-256 result hash.
 - Transition: CFO-1e becomes complete only after fresh tests, live read, and final review pass; CFO-1f becomes the first unfinished item.
 
-- [ ] **Step 1: Run a synthetic no-echo transport probe**
+- [x] **Step 1: Run a synthetic no-echo transport probe**
 
 Use a temporary script outside the repository that feeds secret-shaped synthetic JSON through stdin with terminal echo disabled. The only stdout fields are:
 
@@ -361,7 +360,7 @@ Use a temporary script outside the repository that feeds secret-shaped synthetic
 
 If `inputEchoed` is true, stop the live probe, fix the transport, and repeat the synthetic check. Do not place payloads or financial values in shell arguments, environment variables, files, logs, spec text, Telegram, or tool-visible stdout.
 
-- [ ] **Step 2: Perform one live read and privacy-safe adapter check**
+- [x] **Step 2: Perform one live read and privacy-safe adapter check**
 
 First close the live producer repair amendment from the focused design. Luna alone edits
 `apps/landing/netlify/functions/_lib/leaderboard-constants.js` and
@@ -409,7 +408,7 @@ The controller prints exactly this schema with no extra fields:
 
 No available metric count or amount is printed. `httpOk`, `resultCreated`, and `presentWalletCountPositive` must be true, and every truth/structure/privacy boolean must be true. Individual valuation, inflow, or burn metrics may honestly remain unknown; that does not fail the adapter. If no registered wallet is present, keep CFO-1e open and repair the source/registry boundary before retrying; do not manufacture success.
 
-- [ ] **Step 3: Run fresh whole-slice verification**
+- [x] **Step 3: Run fresh whole-slice verification**
 
 Run from a dependency-clean state:
 
@@ -425,11 +424,11 @@ git diff --check
 
 Expected: every command exits 0, focused/CFO/full suites pass, each file is at or below its complexity checkpoint or has been simplified, and diff check is clean.
 
-- [ ] **Step 4: Run a fresh final review and close only verified findings**
+- [x] **Step 4: Run a fresh final review and close only verified findings**
 
 The reviewer receives the design, plan, Task 1 and Task 2 diffs, fresh test output, LOC output, and the redacted live schema only. The reviewer checks all acceptance items and searches for Critical/Important findings. Every such finding gets a failing regression, minimum fix, fresh focused/full verification, and a separate fix commit before closure. A clean review or fully addressed re-review is required.
 
-- [ ] **Step 5: Persist state, commit, push, and report the milestone**
+- [x] **Step 5: Persist state, commit, push, and report the milestone**
 
 Make these exact state changes:
 
@@ -455,3 +454,13 @@ Expected: commit and push succeed; final status is empty. Send one natural-langu
 ## Completion Boundary
 
 CFO-1e is complete only when Tasks 1–3 are checked, both production contracts pass adversarial tests, the live endpoint creates a privacy-safe result, full `apps/life-call` tests pass from a clean dependency install, fresh review is clear, all state files are pushed, and the Telegram milestone has a provider receipt. The first daily personal finance Telegram report remains CFO-1h after CFO-1f, CFO-1g, CFO-1g2, CFO-1g3, and CFO-1h2; this plan must not claim that report exists.
+
+Closure evidence: contract commit `2b87d969e`, adapter commit `1d5821e95`, and live identity repair commit
+`2907ba3eb` are pushed. Focused Fleet tests passed 32/32, CFO tests 198/198, full `apps/life-call` tests 831/831,
+and the registry repair tests passed 13/13 plus telemetry 311/311. The live POST returned 202; every redacted live
+adapter acceptance boolean passed with result hash
+`cd58c0f1b8aebd1dc9f0476f041ae5198cea6eea29cb51bcdf057127ad03d958`. The final scoped Sol review returned
+`ship`. Production/test LOC are 215/349 for the closed source contract and 140/358 for the adapter; the over-target
+files were reviewed and retained because each keeps one closed validation or parsing trust boundary. Known limits
+remain explicit: partial organizational coverage, aggregate USD valuation without raw positions or quote time,
+token inflow that is not recognized revenue, and signed self-reported burn.
