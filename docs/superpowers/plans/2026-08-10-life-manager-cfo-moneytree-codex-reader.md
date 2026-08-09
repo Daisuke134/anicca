@@ -65,7 +65,8 @@ Use an injected `execFileImpl` and one synthetic Codex JSONL transcript containi
 fixture. Prove:
 
 1. the executable call is shell-free and its fixed args include `exec --ephemeral --json`, `gpt-5.6-luna`,
-   `read-only`, and the fixed CFO working directory;
+   `read-only`, and the fixed CFO working directory; the returned child stdin is ended exactly once so Codex receives
+   EOF and never waits for an unused `<stdin>` append;
 2. exactly one raw MCP accounts object becomes the existing validated/frozen composed read;
 3. `LM_UID_SECRET` and an unrelated secret sentinel are absent from the child environment;
    the child instead receives the fixed non-secret `CODEX_INTERNAL_ORIGINATOR_OVERRIDE=codex_exec` required by the
@@ -86,7 +87,8 @@ Expected: non-zero because the reader does not exist.
 
 Use only Node stdlib `child_process.execFile` with a two-minute timeout and a two-megabyte buffer. Use a fixed prompt
 that requests the installed Moneytree App's `show_accounts` tool with locale `ja` exactly once and forbids every
-other tool and private-field output. Do not use a shell. Give the child only the minimal runtime environment needed
+other tool and private-field output. Do not use a shell. Capture the returned child process and immediately call
+`child.stdin.end()` exactly once; treat a missing/unusable stdin as unavailable. Give the child only the minimal runtime environment needed
 for Codex (`HOME`, `PATH`, `USER`, `LOGNAME`, `SHELL`, `TMPDIR`, locale, and `CODEX_HOME` when present), plus the
 fixed non-secret `CODEX_INTERNAL_ORIGINATOR_OVERRIDE=codex_exec`. Never inherit the parent environment wholesale,
 and never pass the parent session's `CODEX_THREAD_ID`, `CODEX_CI`, `CODEX_SHELL`, or originator value.
@@ -123,8 +125,12 @@ JPY, liabilities remain unknown/partial, no Telegram call occurs, and no private
 The first live CLI attempt is retained as RED evidence: the child environment scrubbed the host originator as well as
 secrets, so Codex did not complete before the 120-second bound and the CLI correctly emitted only its safe failure
 envelope with exit `1`. A no-send diagnostic proved the same prompt/cwd succeeds under the normal environment, and
-then proved a minimal clean environment succeeds with only the fixed official `codex_exec` originator added. Luna
-must add this regression before changing production.
+then proved a minimal clean environment succeeds with only the fixed official `codex_exec` originator added. After
+that fix, the real CLI still timed out. A bounded diagnostic observed zero JSONL events before timeout, proving Codex
+was waiting before the turn began. `execFile` had left its stdin pipe open, and Codex treats piped stdin plus a prompt
+argument as additional input. An injected wrapper that ended child stdin made the unchanged real reader succeed with
+a positive account count, valid frozen source/state, partial coverage, no private output, and zero Telegram calls.
+Luna must add both live regressions before changing production.
 
 - [ ] **Step 6: Close**
 
