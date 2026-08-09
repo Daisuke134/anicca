@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | PRODUCT STAGE 7 ACTIVE — recovery core complete; real-data local preview next |
+| Status | PRODUCT STAGE 7 ACTIVE — real-data local preview passed; real Telegram send next |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
@@ -824,6 +824,14 @@ installed-definition/privilege checks passed, with live delivery rows and Telegr
 static `4/4`, CFO `241/241`, aggregate `874/874`, and real PostgreSQL PASS. Fresh Sol review returned
 `ship — Spec ✅` with no Critical or Important findings. This closes retry safety only; no finance report was sent.
 
+### Product Stage 7 local-preview evidence
+
+The recovery core passed focused 19/19 and 11/11 tests, combined 30/30, CFO 241/241, and fresh Ponytail-scoped Sol
+review with Critical 0 and Important 0. A fresh Moneytree App read returned one connected MUFG account in native JPY.
+The local existing adapter/state/snapshot/Telegram renderer path produced the complete no-send summary while omitting
+account number, provider ID, connection URL, and opaque references. Because liability coverage is unknown, it showed
+only confirmed assets and kept liabilities/net worth/change unknown. No database or Telegram effect occurred.
+
 ### M1 — One truthful Moneytree-first read-only snapshot
 
 This M1 checklist is the engineering breakdown of owner-facing Product Stage 7. It must not be presented as another
@@ -845,7 +853,7 @@ top-level seven-step sequence.
       reconciliation. Exhausted repairs create one actionable state, not repeated messages. Same-day superseding
       correction storage is deferred by the Ponytail/YAGNI gate and does not block the first report. Child SSOT:
       `docs/superpowers/specs/2026-08-09-life-manager-cfo-moneytree-recovery-design.md`.
-- [ ] **CFO-1h2** CFO-1 report is assets/liabilities only. Until tests 16–18 and 22–28 pass, the renderer MUST NOT
+- [x] **CFO-1h2** CFO-1 report is assets/liabilities only. Until tests 16–18 and 22–28 pass, the renderer MUST NOT
       show token totals, complete API spend, business profit, measured/confirmed cost, or cost-based advice.
 - [ ] **CFO-1h** Send the first real assets/liabilities-only Telegram report and confirm its provider message
       receipt after CFO-1h2's renderer gate is verified.
