@@ -6,6 +6,7 @@ const path = require("node:path");
 const { test } = require("node:test");
 
 const migrationPath = path.join(__dirname, "..", "migrations", "2026-08-09-cfo-telegram-deliveries.sql");
+const forwardMigrationPath = path.join(__dirname, "..", "migrations", "2026-08-09-cfo-telegram-delivery-snapshot-ref-fix.sql");
 
 function functionBody(sql, signature) {
   const start = sql.indexOf(signature);
@@ -95,4 +96,17 @@ test("record RPC requires a positive message id, is idempotent on retry, and con
 
   const keys = [...projectionKeys(record).matchAll(/'([a-z_]+)'\s*,/gi)].map((match) => match[1]);
   assert.deepEqual(keys, ["public_ref", "claim_public_ref", "message_id", "created_at"]);
+});
+
+test("snapshot-reference forward migration only replaces the reviewed claim RPC", () => {
+  const sql = fs.readFileSync(forwardMigrationPath, "utf8");
+  const base = fs.readFileSync(migrationPath, "utf8");
+  assert.equal((sql.match(/CREATE OR REPLACE FUNCTION/gi) || []).length, 1);
+  assert.match(sql, /CREATE OR REPLACE FUNCTION public\.lm_claim_cfo_telegram_delivery/i);
+  assert.match(sql, /SECURITY INVOKER\s+SET search_path\s*=\s*public,\s*pg_temp/i);
+  assert.match(sql, /claimed\.snapshot_public_ref IS DISTINCT FROM p_snapshot_public_ref/i);
+  assert.match(sql, /REVOKE ALL ON FUNCTION public\.lm_claim_cfo_telegram_delivery\(text, uuid, text, date, integer\)/i);
+  assert.match(sql, /GRANT EXECUTE ON FUNCTION public\.lm_claim_cfo_telegram_delivery\(text, uuid, text, date, integer\) TO service_role/i);
+  assert.doesNotMatch(sql, /\b(?:CREATE|ALTER|DROP)\s+(?:TABLE|TRIGGER|POLICY|SEQUENCE|COLUMN)\b/i);
+  assert.equal(functionBody(sql, "CREATE OR REPLACE FUNCTION public.lm_claim_cfo_telegram_delivery"), functionBody(base, "CREATE OR REPLACE FUNCTION public.lm_claim_cfo_telegram_delivery"));
 });

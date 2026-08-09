@@ -5,6 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 MIGRATION_SNAPSHOT="$ROOT_DIR/migrations/2026-08-09-cfo-daily-snapshots.sql"
 MIGRATION_RUN="$ROOT_DIR/migrations/2026-08-09-cfo-daily-runs.sql"
 MIGRATION_DELIVERY="$ROOT_DIR/migrations/2026-08-09-cfo-telegram-deliveries.sql"
+MIGRATION_DELIVERY_SNAPSHOT_FIX="$ROOT_DIR/migrations/2026-08-09-cfo-telegram-delivery-snapshot-ref-fix.sql"
 TEST_TMP="$(mktemp -d "${TMPDIR:-/tmp}/cfo-reliable-run-pg.XXXXXX")"
 PGDATA_DIR="$TEST_TMP/data"
 PGSOCKET_DIR="$TEST_TMP/socket"
@@ -447,6 +448,9 @@ OTHER_DECISION="$DECISION_A"
 
 CLAIM_A_REF="$(${PSQL[@]} -Atqc "SELECT public_ref FROM public.lm_cfo_telegram_delivery_claims WHERE uid = 'tenant-a' AND report_kind = '$DELIVERY_KIND' AND reporting_date = DATE '$DATE_A' AND revision = $DELIVERY_REVISION;")"
 [[ "$CLAIM_A_REF" =~ ^[0-9a-f-]{36}$ ]] || fail 'delivery claim row has no public_ref'
+
+# Apply the forward-only function replacement while the existing delivery key is present.
+"${PSQL[@]}" -f "$MIGRATION_DELIVERY_SNAPSHOT_FIX" >/dev/null 2>&1
 
 # Once the delivery identity exists, a retry carrying a different snapshot
 # reference must fail closed. The INSERT conflict path cannot rely on the
