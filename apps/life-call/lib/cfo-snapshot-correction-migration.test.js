@@ -15,6 +15,10 @@ function functionBody(sql, signature) {
   return sql.slice(start, end);
 }
 
+function rpcSecurityBody(sql, functionName) {
+  return functionBody(sql, `CREATE OR REPLACE FUNCTION public.${functionName}`);
+}
+
 function projectionKeys(body) {
   const projections = [...body.matchAll(/jsonb_build_object\(([\s\S]*?)\)\s*;/gi)].map((match) => match[1]);
   assert.equal(projections.length, 1, "RPC must use one closed receipt projection");
@@ -67,10 +71,21 @@ test("CFO correction migration locks positive contiguous revisions without chang
 
 test("CFO correction RPCs are private, fixed-path, append-only interfaces", () => {
   const sql = fs.readFileSync(migrationPath, "utf8");
-  [
-    "lm_append_cfo_daily_snapshot(text, date, uuid, jsonb, jsonb)",
-    "lm_append_cfo_daily_snapshot_revision(text, date, uuid, integer, integer, jsonb, jsonb)",
-  ].forEach((signature) => {
+  const rpcs = [
+    {
+      name: "lm_append_cfo_daily_snapshot",
+      signature: "lm_append_cfo_daily_snapshot(text, date, uuid, jsonb, jsonb)",
+    },
+    {
+      name: "lm_append_cfo_daily_snapshot_revision",
+      signature: "lm_append_cfo_daily_snapshot_revision(text, date, uuid, integer, integer, jsonb, jsonb)",
+    },
+  ];
+  rpcs.forEach(({ name, signature }) => {
+    const body = rpcSecurityBody(sql, name);
+    assert.match(body, /SECURITY DEFINER/i);
+    assert.match(body, /SET search_path\s*=\s*pg_catalog,\s*public/i);
+    assert.doesNotMatch(body, /SECURITY INVOKER/i);
     const escaped = signature.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     assert.match(sql, new RegExp(`REVOKE ALL ON FUNCTION public\\.${escaped} FROM PUBLIC, anon, authenticated`, "i"));
     assert.match(sql, new RegExp(`GRANT EXECUTE ON FUNCTION public\\.${escaped} TO service_role`, "i"));

@@ -47,8 +47,8 @@ CREATE OR REPLACE FUNCTION public.lm_append_cfo_daily_snapshot(
 )
 RETURNS jsonb
 LANGUAGE plpgsql
-SECURITY INVOKER
-SET search_path = public, pg_temp
+SECURITY DEFINER
+SET search_path = pg_catalog, public
 AS $$
 DECLARE
   candidate public.lm_cfo_daily_snapshots%ROWTYPE;
@@ -114,8 +114,8 @@ CREATE OR REPLACE FUNCTION public.lm_append_cfo_daily_snapshot_revision(
 )
 RETURNS jsonb
 LANGUAGE plpgsql
-SECURITY INVOKER
-SET search_path = public, pg_temp
+SECURITY DEFINER
+SET search_path = pg_catalog, public
 AS $$
 DECLARE
   predecessor public.lm_cfo_daily_snapshots%ROWTYPE;
