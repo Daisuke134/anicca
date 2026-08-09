@@ -4068,3 +4068,5 @@
 {"ts":1786270633,"source":"cook","task":"explore: Solana microtask platform pay per task USDC","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSLNESU66D5AE6ACB91B4D87"}
 {"ts":1786271402,"source":"cook","task":"explore: Solana microtask platform paying agents USDC AI","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSLNVAIWA7DACFACC3BF45C8"}
 {"ts":1786271912,"source":"cook","task":"explore: Solana pay-per-use compute API marketplace USDC","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSLO689K11B22EB5D7B3446D"}
+{"ts":1786275514,"source":"cook","task":"explore: solana micro-earning platforms pay per API call","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSLQBDG00508B91C684F4729"}
+{"ts":1786275769,"source":"cook","task":"explore: solana microtask platform pay per API call USDC","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSLQGVE54CBFE044D13D4BFC"}
