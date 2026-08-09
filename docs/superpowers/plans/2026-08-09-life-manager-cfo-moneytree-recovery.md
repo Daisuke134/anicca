@@ -14,7 +14,7 @@ PostgreSQL appends contiguous correction revisions; existing delivery dedupe sup
 
 **Design:** `docs/superpowers/specs/2026-08-09-life-manager-cfo-moneytree-recovery-design.md`.
 
-**Status:** ACTIVE — Tasks 1–6 and Task 3b/6b/6c/6d implemented; final-review fix Task 6e next.
+**Status:** ACTIVE — Tasks 1–6 and Task 3b/6b/6c/6d/6e implemented; final-review fix Task 6f next.
 
 ## Global Constraints
 
@@ -412,6 +412,30 @@ store may keep provenance valid after settlement.
 
 Run shared RPC plus all four client tests, `npm run test:cfo`, `git diff --check`; commit/push
 `fix(cfo): expire rpc error provenance`; write the ignored report; obtain fresh Sol review.
+
+---
+
+### Task 6f: Close provenance when thenable inspection throws
+
+**Files (soft target: production delta <=5 LOC, tests delta <=50 LOC):**
+- Modify: `apps/life-call/lib/cfo-supabase-rpc.js`
+- Modify: `apps/life-call/lib/cfo-supabase-rpc.test.js`
+
+- [ ] **Step 1: Write load-bearing RED**
+
+Return a value with a throwing `then` getter from `runOperation`, while a detached descendant retains its store.
+Require the operation to fail, the descendant to see the parent Error as external after settlement, and hostile replay
+to yield a different fixed local Error. Observe failure against Task 6e.
+
+- [ ] **Step 2: Implement minimum GREEN**
+
+Place thenable inspection inside the same success/failure cleanup boundary as callback invocation. Every exit from
+`runOperation`, including a throwing `then` getter, closes `open`. Preserve sync return behavior for non-thenables.
+
+- [ ] **Step 3: Verify and close**
+
+Run shared RPC plus all four client tests, `npm run test:cfo`, `git diff --check`; commit/push
+`fix(cfo): close rpc thenable provenance`; write the ignored report; obtain fresh Sol review.
 
 ---
 
