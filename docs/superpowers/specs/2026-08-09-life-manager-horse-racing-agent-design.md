@@ -6,12 +6,12 @@
 |---|---|
 | Status | **REALITY GATE REQUIRED — LIVE PURCHASE DISABLED** |
 | 対象 | Life Manager financial organ の第8候補 business_id: horse_racing |
-| 現在のactive stage | HRA-2F TDD refactor（ACTIVE）。NAR officialはzero-cost primary sourceの実観測candidate、HRA-2R manifest gateはHRA-2F GREENまでBLOCKED、JRA recordsは0 |
+| 現在のactive stage | HRA-2R-NAR Reality Gate validation（ACTIVE）。HRA-2FはGREEN、NAR officialはzero-cost primary sourceの実観測candidate、JRA recordsは0 |
 | plan / gate / verification owner | Sol |
 | edit / code / execution owner | Luna |
 | 購入処理 | PurchaseExecutorは常時disabled。HRA-6の全gateなしに有効化しない |
 
-この文書はzero-cost public-web ingestion、source authority、Reality Gate、truth label、受入条件の正本である。NAR official public dataは証拠documentによりzero-cost primary sourceとして確定したが、HRA-2FがGREENでmanifestを受理するまでは下流をunlockしない。Sol owns plan/gate/verification; Luna owns edits/code/execution.
+この文書はzero-cost public-web ingestion、source authority、Reality Gate、truth label、受入条件の正本である。HRA-2Fはcommits `ae56d3524` + `956d1b50d`でGREENになった。NAR official public dataはzero-cost primary sourceのcandidateだが、HRA-2R-NARがmanifestを受理するまでは下流をunlockしない。Sol owns plan/gate/verification; Luna owns edits/code/execution.
 
 ### 現在のevidence table
 
@@ -137,7 +137,7 @@ HRA-2FはMac-only source/permission boundaryとして、次のexact combination�
 - race.netkeiba.com + secondary + JRA
 - nar.netkeiba.com + secondary + NAR
 
-すべてhost_os=macos、storage_scope=mac_local_private、raw_values_exported=false、permission_basis、permission_document_verifiedをmanifestへ保存する。keiba.go.jp dynamic URLのrobots statusを消さず、secondary authorityをofficialへ昇格しない。HRA-2R NARは46/456/327274行のreal observation candidateだが、HRA-2F GREENとmanifest gate受理までBLOCKEDである。
+すべてhost_os=macos、storage_scope=mac_local_private、raw_values_exported=false、permission_basis、permission_document_verifiedをmanifestへ保存する。keiba.go.jp dynamic URLのrobots statusを消さず、secondary authorityをofficialへ昇格しない。HRA-2FはGREEN。HRA-2R NARは46/456/327274行のreal observation candidateで、manifest gate受理までBLOCKEDである。
 
 ### Reality Gate（sourceごと）
 
@@ -268,9 +268,9 @@ sequenceDiagram
 | HRA-0 | research/spec、public-web policy、source authority、acceptance | **complete** |
 | HRA-1 | registry dependency、PurchaseExecutor disabled、truth labels | **complete** |
 | HRA-2a | Mac-local private append-only raw boundary | **superseded design only**。0fe627cdは現行証拠ではない |
-| HRA-2F | JRA/NAR official + secondary fallback authority、permission metadata、Mac-local raw non-export、crwl/curl boundary | **ACTIVE** |
-| HRA-2R-JRA | JRA official actual record + manifest | **BLOCKED**。JRA records 0 |
-| HRA-2R-NAR | NAR official candidate: 46 races / 456 horses / 327274 monthly odds / payback 0 pre-settlement | **BLOCKED until HRA-2F GREEN and manifest gate** |
+| HRA-2F | JRA/NAR official + secondary fallback authority、permission metadata、Mac-local raw non-export、crwl/curl boundary | **complete**。focused 24/full 32 PASS、cash authorization false |
+| HRA-2R-JRA | JRA official actual record + manifest | **BLOCKED until HRA-2R-NAR closes**。JRA records 0 |
+| HRA-2R-NAR | NAR official candidate: 46 races / 456 horses / 327274 monthly odds / payback 0 pre-settlement | **ACTIVE**。manifest gate validation中 |
 | HRA-2S | observed schema/local store | **BLOCKED**。HRA-2F + source manifest acceptanceまで不可 |
 | HRA-3D | actual chronological coverage/cutoff audit | **BLOCKED**。historical backtest evidence 0 |
 | HRA-3M | market baseline、walk-forward、calibration、slippage | **BLOCKED** |
@@ -305,14 +305,14 @@ permission_document_verified=false、terms/order/tax/credential/receipt/reconcil
 | Item | Value |
 |---|---|
 | UI変更 | Telegram message UX contractのみ。iOS UI変更なし |
-| E2E | Maestro不要。HRA-2F GREEN後にJRA/NAR official manifest、curl archive hashes、Telegram/CFO separationを実測する |
+| E2E | Maestro不要。HRA-2FはGREEN。次にNAR manifest、続いてJRA official record、curl archive hashes、Telegram/CFO separationを実測する |
 
 ## 9. Best / Base / Worstと反証
 
 | ケース | 想定 | 判断 |
 |---|---|---|
-| Best | HRA-2F GREEN後、NAR official manifestが46/456/327274 rowsとhash/schemaを受理され、JRAもactual rowを取得 | official laneごとにschema/audit/SHADOWを進め、HRA-6を別審査する。secondaryはfallback |
-| Base | NAR official evidenceは存在するがpermission document未検証、HRA-2F stale、JRA 0、payback pre-settlement 0 | HRA-2Fを先にGREENし、NARをcandidateのままblocked、cash/revenue/ROIは0 |
+| Best | NAR official manifestが46/456/327274 rowsとhash/schemaを受理され、JRAもactual rowを取得 | official laneごとにschema/audit/SHADOWを進め、HRA-6を別審査する。secondaryはfallback |
+| Base | HRA-2FはGREEN。NAR official evidenceは存在するがpermission document未検証、JRA 0、payback pre-settlement 0 | NARをcandidateのままReality Gateで検証し、cash/revenue/ROIは0 |
 | Worst | robots/terms/permission境界、raw boundary、timestamp/hash、official outcome reconciliationが破綻 | fail-closedし、rawを外へ出さず、PurchaseExecutor disabled、revenue 0 |
 
 棄却案の最強の論拠は、USER_ATTESTED_PERMISSIONを一般bot許可・再配布許可・cash execution許可へ拡張解釈すると、robots/terms、raw boundary、receipt/reconciliationを静かに破壊することである。

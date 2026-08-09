@@ -76,10 +76,10 @@ The official NAR source is zero-cost primary; JRA remains official primary. Seco
 | Order | Stage | State | Scope |
 |---:|---|---|---|
 | 0 | Completed safety and design | complete | historical commits, approved official public-web design, NAR evidence commit |
-| 1 | HRA-2F ingest boundary refactor | **ACTIVE** | exactly `ingest.py` and `test_ingest_boundary.py` |
-| 2 | HRA-2R1 JRA public-web record | blocked by HRA-2F GREEN | one evidence file; current row count 0 |
-| 3 | HRA-2R2 NAR official evidence gate validation | blocked by HRA-2F GREEN | verify committed probe, no raw refetch |
-| 4 | HRA-2N NAR official free acquisition component | blocked by HRA-2F + HRA-2R2 | HTML/curl planner and Mac-local archive contract |
+| 1 | HRA-2F ingest boundary refactor | **complete** | commits `ae56d3524` + `956d1b50d`; focused 24/full 32 PASS |
+| 2 | HRA-2R2 NAR official evidence gate validation | **ACTIVE** | verify committed probe, no raw refetch |
+| 3 | HRA-2R1 JRA public-web record | blocked by Task 2 close | one evidence file; current row count 0 |
+| 4 | HRA-2N NAR official free acquisition component | blocked by HRA-2R2 | HTML/curl planner and Mac-local archive contract |
 | 5 | HRA-2R3 per-source index/gate | blocked by source records | JRA official, NAR official, optional secondary fallback rows |
 | 6 | HRA-2S observed schema/store | blocked by HRA-2R3 | quarantine three files only |
 | 7 | HRA-3D audit | blocked by HRA-2S | `data_audit.py` and `test_data_audit.py` |
@@ -113,9 +113,11 @@ git show --no-patch --format=%H 509955401
 git show --no-patch --format=%H 6a6cdd135
 ~~~
 
-Expected: all six commits resolve, Task 1 is the sole active item, NAR evidence is present but blocked by HRA-2F, and current truth values match the evidence table.
+Task 0 close verified that all six commits resolve and the NAR evidence exists. The current active item is tracked only in the ordered status table.
 
-## Task 1: HRA-2F TDD refactor of the official free-web ingest boundary (ACTIVE)
+## Task 1: HRA-2F TDD refactor of the official free-web ingest boundary (COMPLETE)
+
+**State:** complete at commits `ae56d3524` and `956d1b50d`. TDD evidence: initial RED 23 failures, GREEN focused 23/full 31; traversal review RED 1 failure/23 pass, final focused 24/full 32. Fresh Sol review found the traversal defect and scoped re-review confirmed it addressed with no new Critical/Important finding.
 
 **Files:**
 - Modify: `apps/horse-racing-agent/src/horse_racing_agent/ingest.py`
@@ -157,7 +159,7 @@ Parse with `urlsplit` and compare hostname by exact equality. Require HTTPS, `ho
 
 Return only redacted metadata: source fields, Mac-local fields, `content_sha256`, byte `payload_size`, robots/terms fields, `permission_basis`, `permission_document_verified`, `raw_payload_exported=false`, `allowed_scope`, and `cash_authorized=false`. Never include/write/log/serialize `raw_payload` or decoded values. Error contract: invalid URL/authority/path raises `ValueError("source URL/authority mismatch")`; environment raises `ValueError("Mac-local storage contract")`; invalid payload raises `ValueError("raw payload must be str or bytes")`; permission errors raise `ValueError("permission metadata")`.
 
-- [ ] Step 1: Write failing tests.
+- [x] Step 1: Write failing tests.
 
 ~~~python
 def test_accepts_nar_official_dynamic_path_and_permission_metadata():
@@ -204,7 +206,7 @@ def test_rejects_hostname_spoof(source_url):
 
 Add one case for the fourth accepted combination and invalid environment/payload/permission cases. The NAR dynamic path case must pass; it replaces the old dynamic-path rejection. All payloads are synthetic mechanics input and never real-data evidence.
 
-- [ ] Step 2: Run RED.
+- [x] Step 2: Run RED.
 
 ~~~sh
 cd /Users/anicca/anicca-project/.worktrees/horse-racing-agent-spec/apps/horse-racing-agent
@@ -213,11 +215,11 @@ rtk python3.12 -m pytest tests/test_ingest_boundary.py -q
 
 Expected: FAIL because the legacy boundary does not accept official NAR authority/permission fields or the redacted return contract; no network, credential, or source fetch is allowed.
 
-- [ ] Step 3: Implement the minimal boundary.
+- [x] Step 3: Implement the minimal boundary.
 
 Use exact host/authority allowlists, permit official keiba.go.jp dynamic paths, compute UTF-8/bytes SHA-256 and byte size, and return fixed metadata. Set `allowed_scope=private_shadow` for official and `shadow_only` for secondary; always set `cash_authorized=false`.
 
-- [ ] Step 4: Run GREEN and package suite.
+- [x] Step 4: Run GREEN and package suite.
 
 ~~~sh
 cd /Users/anicca/anicca-project/.worktrees/horse-racing-agent-spec/apps/horse-racing-agent
@@ -227,7 +229,7 @@ rtk python3.12 -m pytest -q
 
 Expected: official JRA/NAR matrix, secondary scope, spoof rejection, hash/size, raw absence, permission metadata, and full suite PASS.
 
-- [ ] Step 5: Verify E2E/state and close the slice.
+- [x] Step 5: Verify E2E/state and close the slice.
 
 ~~~sh
 cd /Users/anicca/anicca-project/.worktrees/horse-racing-agent-spec
@@ -243,7 +245,7 @@ Expected: only the two owned files are staged; quarantine remains untracked; Tas
 
 ## Task 2: HRA-2R2 NAR official Reality Gate validation
 
-**State:** blocked until Task 1 GREEN. **Owner:** Luna executes evidence checks; Sol alone decides PASS/BLOCKED.
+**State:** ACTIVE. **Owner:** Luna executes evidence checks; Sol alone decides PASS/BLOCKED.
 
 **Files:**
 - Modify only if verification exposes an error: `docs/evidence/horse-racing/nar-official-data-probe.md`
@@ -270,7 +272,7 @@ PASS requires HRA-2F GREEN plus exact source URL, official authority, timestamps
 
 ## Task 3: HRA-2R1 JRA official actual record
 
-**State:** blocked until Task 1 GREEN.
+**State:** blocked until Task 2 closes; current JRA record count remains 0.
 **File:** create `docs/evidence/horse-racing/jra-public-web-probe.md`.
 
 - [ ] Step 1: Discover a current official JRA race/result URL from `https://www.jra.go.jp/` with crwl; do not hardcode a stale race id.
