@@ -14,7 +14,7 @@ PostgreSQL appends contiguous correction revisions; existing delivery dedupe sup
 
 **Design:** `docs/superpowers/specs/2026-08-09-life-manager-cfo-moneytree-recovery-design.md`.
 
-**Status:** ACTIVE — Tasks 1–4 complete; Task 5 next.
+**Status:** ACTIVE — Tasks 1–5 complete; Task 6 next.
 
 ## Global Constraints
 
@@ -227,18 +227,18 @@ Commit/push `feat(cfo): append snapshot corrections`; report; fresh Sol review.
 - Consumes: Task 4 migration and existing daily-run/snapshot migrations.
 - Produces: `npm run test:cfo-snapshot-corrections:postgres`.
 
-- [ ] **Step 1: Write RED then GREEN on PostgreSQL 18**
+- [x] **Step 1: Write RED then GREEN on PostgreSQL 18**
 
 Copy only the lifecycle/cleanup pattern from existing CFO PostgreSQL proofs. Apply prerequisite migrations, insert
 revision 1, then apply Task 4 migration.
 
-- [ ] **Step 2: Prove correction invariants**
+- [x] **Step 2: Prove correction invariants**
 
 Prove revision 2 links revision 1, identical retry returns one row/ref, changed payload/source/predecessor conflicts,
 revision gaps and cross-owner/date/run predecessors fail, legacy revision-1 retry stays stable, UPDATE/DELETE and app
 roles fail, and two concurrent revision-2 calls create exactly one row.
 
-- [ ] **Step 3: Verify and close**
+- [x] **Step 3: Verify and close**
 
 Final stdout exactly `cfo-snapshot-corrections-postgres: PASS`; stderr empty. Run twice, then `npm run test:cfo`,
 `npm test`, and diff-check. Commit/push `test(cfo): prove snapshot corrections`; report; fresh Sol review.
