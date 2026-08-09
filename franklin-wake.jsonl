@@ -24575,3 +24575,10 @@
 {"ts":1786306316,"wake_id":"00MSM8NQY2926A3B435BB24519","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786306445,"wake_id":"00MSM8QIIHF081646EBE3F4C8A","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786306572,"wake_id":"00MSM8T8PX7CA3443D39604033","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786306702,"wake_id":"00MSM8W0ZWB1AADCBC981D4DA7","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786306830,"wake_id":"00MSM8YRIA3FAEAC3C0A264B63","kind":"wake","sleep_s":120,"model":"auto","slot":"earn/sol-trade","profitable":false,"exit_code":0}
+{"ts":1786306989,"wake_id":"00MSM926D559D7F1FAE7A44ECD","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786307117,"wake_id":"00MSM94X5C82680C983273458B","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786307311,"wake_id":"00MSM992PYF92ADAF0D6D842C4","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana DeFi protocol offering paid API calls to AI agents [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates"}
+{"ts":1786307438,"wake_id":"00MSM9BSVGBD21B960C16340AD","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786307568,"wake_id":"00MSM9EL8750F91F35C07645B3","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
