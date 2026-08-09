@@ -14,7 +14,7 @@ PostgreSQL appends contiguous correction revisions; existing delivery dedupe sup
 
 **Design:** `docs/superpowers/specs/2026-08-09-life-manager-cfo-moneytree-recovery-design.md`.
 
-**Status:** ACTIVE — Task 7d privilege hardening applied once; read-only provenance proof next.
+**Status:** ACTIVE — Task 7d exposed live snapshot-sequence overgrant; Task 7e hardening next.
 
 ## Global Constraints
 
@@ -578,8 +578,37 @@ fresh Sol review remain the Task 7c handoff actions.
       abort made zero mutation calls, and prove zero additional apply, schema reload, Telegram, or finance-send calls.
 - [ ] Obtain fresh Sol final review before closure.
 
+---
+
+### Task 7e: Forward-harden snapshot sequence privileges
+
+**Size:** three files, about 50 LOC. The migration, its static contract, and the existing PostgreSQL catalog proof are
+one indivisible privilege slice.
+
+- [ ] Add RED assertions proving the production-shaped overgrant (`UPDATE` for `service_role`, and sequence rights
+      for `anon`/`authenticated`) survives Task 7c's table-only migration. Require exact final sequence ACL:
+      `service_role = USAGE, SELECT`; PUBLIC, `anon`, and `authenticated` have none.
+- [ ] Add a new idempotent forward migration. Revoke all privileges on
+      `public.lm_cfo_daily_snapshots_id_seq` from PUBLIC, `anon`, `authenticated`, and `service_role`, then grant only
+      `USAGE, SELECT` to `service_role`. Do not modify the already-applied table hardening migration.
+- [ ] Extend the real PostgreSQL proof to apply the new migration twice, require the exact sequence ACL, and preserve
+      all table/function/catalog/row assertions. Run focused static, PostgreSQL, CFO, and diff-check; commit/push
+      `fix(cfo): harden snapshot sequence privileges`; obtain fresh Sol review before production apply.
+
+---
+
+### Task 7f: Apply sequence hardening once and close live proof
+
+- [ ] Apply only Task 7e's sequence migration once through the secret-safe Management API path. Do not rerun any
+      prior migration, reload schema, write rows, or call Telegram/finance delivery.
+- [ ] Re-run the self-verifying provenance and read-only semantic checker. Require one table-ACL apply plus one
+      sequence-ACL apply, zero additional successful applies, exact table/function/sequence ACLs, explicit
+      classification of the three superseded source-parser booleans, exact ordinary/NOT NULL semantics, stable
+      installed-definition digest, zero row deltas, and a clean tracked tree.
+- [ ] Obtain fresh Sol review with zero Critical/Important findings before CFO-1g3 closure.
+
 ## Completion Boundary
 
-CFO-1g3 is complete only after all seven tasks, live no-write installed-definition proof, full tests, and fresh Sol
+CFO-1g3 is complete only after all planned tasks, live no-write installed-definition proof, full tests, and fresh Sol
 review pass. The next visible work remains Telegram integration and the first real Moneytree finance send; 7/7 is not
 claimed here.

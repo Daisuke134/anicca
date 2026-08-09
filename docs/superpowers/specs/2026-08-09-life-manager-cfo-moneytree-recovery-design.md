@@ -201,7 +201,13 @@ and every required non-null column must still be present and semantically equal.
 
 The snapshot table grant is closed: `service_role` has only `SELECT, INSERT`; PUBLIC, `anon`, and `authenticated`
 have no table privilege. Supabase default privileges such as `TRUNCATE`, `REFERENCES`, `TRIGGER`, or `MAINTAIN` are
-explicitly removed by a forward idempotent migration. Required sequence and RPC execution grants remain unchanged.
+explicitly removed by a forward idempotent migration. Required RPC execution grants remain unchanged; the sequence
+grant is independently closed below.
+
+The snapshot identity sequence is closed independently because table revocation does not alter sequence ACLs.
+`service_role` has exactly `USAGE, SELECT` on `public.lm_cfo_daily_snapshots_id_seq`; PUBLIC, `anon`, and
+`authenticated` have no sequence privilege. A second forward idempotent migration establishes this state without
+editing or replaying the already-applied table hardening migration.
 
 ## 7. Acceptance Tests
 
@@ -217,9 +223,11 @@ explicitly removed by a forward idempotent migration. Required sequence and RPC 
 10. Identical/concurrent correction retry yields one immutable row and one public receipt.
 11. Existing revision-1 behavior and delivery FKs remain valid.
 12. Live installed-definition proof passes with exact closed privileges, stable cross-version semantic catalog
-    evidence, one transcript-bound ACL apply, and zero personal snapshot/delivery/Telegram writes.
+    evidence, one transcript-bound table-ACL apply plus one sequence-ACL apply, and zero personal
+    snapshot/delivery/Telegram writes.
 13. Exact input/options/receipt schemas reject hostile JS shapes before effects and redact hostile callback/provider
     failures.
+14. Snapshot-sequence proof rejects inherited/default overgrants and ends with only `service_role` `USAGE, SELECT`.
 
 ## 8. Completion Boundary
 
