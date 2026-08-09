@@ -12,3 +12,13 @@ Verification:
 - `git diff --check`: pass.
 
 Concerns: none known within Task 2 scope.
+
+## Fix Round 1
+
+Fixed exact recovery/read time binding, failure/action mapping, and full state-specific bundle revalidation. Action-required validation now requires unavailable freshness, empty accounts/liabilities, exact evidence, consistent source/state/action facts, and null totals. Added load-bearing hostile-shape, mismatch, and tampering coverage in `apps/life-call/lib/cfo-recovery-snapshot.test.js`.
+
+- Focused command: `node --test lib/cfo-moneytree-recovery.test.js lib/cfo-recovery-snapshot.test.js` — 30/30 passing.
+- Full command: `npm run test:cfo` — 271/271 passing.
+- `git diff --check`: pass.
+- Fix commit: `f7a579b05` (`fix(cfo): close recovery snapshot validation`), pushed to canonical `feature/cfo-1g3-sol-luna`.
+- LOC: production 128, tests 103.
