@@ -320,4 +320,70 @@ test("action reports have only the four public keys and require RFC3339 nextRetr
   assertInvalid(extra, "unknown_key");
 });
 
+test("both action kinds render every view and locale without undefined or private diagnostics", () => {
+  for (const kind of ["reconsent", "provider_outage"]) {
+    for (const locale of ["ja", "en"]) {
+      for (const view of ["summary", "accounts", "accuracy", "why"]) {
+        const text = renderCfoTelegram({ locale, view, snapshot: actionRequiredSnapshot(kind) }).text;
+        assert.doesNotMatch(text, /undefined/);
+        assert.doesNotMatch(text, /420,000|390,000|SECRET|stack|Error|https?:\/\/|provider_5xx|moneytree_mufg/i);
+        if (view === "summary") assert.match(text, kind === "reconsent"
+          ? locale === "ja" ? /接続を1回だけ更新/ : /Reconnect Moneytree once/
+          : locale === "ja" ? /自動再試行/ : /automatically retry/i);
+        if (view === "accounts") assert.match(text, kind === "reconsent"
+          ? locale === "ja" ? /最新の金額を確認できない/ : /could not confirm the latest amount/
+          : locale === "ja" ? /こちらで自動的に再試行/ : /I will automatically retry/);
+      }
+    }
+  }
+});
+
+test("action nextRetryAt uses strict RFC3339 component and calendar validation", () => {
+  for (const nextRetryAt of [
+    "2026-08-08T24:00:00Z",
+    "2026-08-08T23:60:00Z",
+    "2026-08-08T23:59:60Z",
+    "2026-08-08T23:59:59+24:00",
+    "2026-08-08T23:59:59+23:60",
+    "2026-02-29T23:59:59Z",
+  ]) {
+    const snapshot = actionRequiredSnapshot("provider_outage");
+    snapshot.action.nextRetryAt = nextRetryAt;
+    assertInvalid(snapshot, "invalid_action");
+  }
+  for (const nextRetryAt of ["2024-02-29T23:59:59+23:59", "2026-08-08T23:59:59Z"]) {
+    const snapshot = actionRequiredSnapshot("provider_outage");
+    snapshot.action.nextRetryAt = nextRetryAt;
+    assert.doesNotThrow(() => renderCfoTelegram({ locale: "ja", view: "summary", snapshot }));
+  }
+});
+
+test("action hostile boundaries fail closed without reading or leaking values", () => {
+  const cases = [
+    (action) => { action[Symbol("extra")] = "SECRET_SYMBOL"; },
+    (action) => { Object.defineProperty(action, "extra", { value: "SECRET_NON_ENUMERABLE" }); },
+    (action) => {
+      let invoked = false;
+      Object.defineProperty(action, "nextRetryAt", {
+        enumerable: true,
+        get() { invoked = true; throw new Error("SECRET_GETTER_LEAK"); },
+      });
+      return () => assert.equal(invoked, false);
+    },
+    (action) => new Proxy(action, {}),
+    (action) => Object.assign(Object.create({ secret: "SECRET_PROTO" }), action),
+  ];
+  for (const mutate of cases) {
+    const snapshot = actionRequiredSnapshot("provider_outage");
+    const result = mutate(snapshot.action);
+    if (result) snapshot.action = result;
+    assert.throws(
+      () => renderCfoTelegram({ locale: "ja", view: "summary", snapshot }),
+      (error) => /^Error: cfo_telegram_invalid:[a-z0-9_]+$/.test(String(error))
+        && !String(error).includes("SECRET"),
+    );
+    if (typeof result === "function") result();
+  }
+});
+
 module.exports = { completeSnapshot, partialSnapshot, recoveredSnapshot, actionRequiredSnapshot };

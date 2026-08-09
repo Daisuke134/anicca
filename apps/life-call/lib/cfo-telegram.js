@@ -1,5 +1,6 @@
 "use strict";
 
+const { types: { isProxy } } = require("node:util");
 const { CFO_STRINGS } = require("./i18n.js");
 
 const STATES = new Set(["complete", "partial", "recovered", "action_required"]);
@@ -17,6 +18,7 @@ const SOURCE_KEYS = new Set(["sourceId", "label", "status", "asOf", "amountMinor
 const EXCLUDED_KEYS = new Set(["label", "reason"]);
 const REPAIR_KEYS = new Set(["sourceLabel", "freshReread", "reconciled"]);
 const ACTION_KEYS = new Set(["kind", "sourceLabel", "retryLabel", "nextRetryAt"]);
+const RFC3339 = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(\.\d+)?(Z|[+-]\d{2}:\d{2})$/;
 const BUTTONS = Object.freeze({
   summary: [["accounts", "口座を見る", "View accounts"], ["accuracy", "正確さを見る", "View accuracy"]],
   accounts: [["summary", "概要に戻る", "Back to summary"], ["accuracy", "正確さを見る", "View accuracy"]],
@@ -25,7 +27,10 @@ const BUTTONS = Object.freeze({
 });
 
 function fail(reason) { throw new Error(`cfo_telegram_invalid:${reason}`); }
-function plain(value) { return value !== null && typeof value === "object" && !Array.isArray(value) && Object.getPrototypeOf(value) === Object.prototype; }
+function plain(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value) && !isProxy(value)
+    && Object.getPrototypeOf(value) === Object.prototype;
+}
 function sanitize(snapshot) {
   if (!plain(snapshot)) return snapshot;
   const strip = (value) => Object.fromEntries(Object.entries(value).filter(([key]) => !/account|raw|credential|token|secret|password|cookie|oauth/i.test(key)));
@@ -35,21 +40,39 @@ function sanitize(snapshot) {
 }
 function exact(value, allowed, required = []) {
   if (!plain(value)) fail("invalid_object");
-  if (Object.keys(value).some((key) => !allowed.has(key))) fail("unknown_key");
-  if (required.some((key) => !Object.prototype.hasOwnProperty.call(value, key))) fail("missing_key");
+  const keys = Reflect.ownKeys(value);
+  if (keys.some((key) => !allowed.has(key))) fail("unknown_key");
+  for (const key of keys) {
+    const descriptor = Object.getOwnPropertyDescriptor(value, key);
+    if (!descriptor || descriptor.enumerable !== true || !Object.prototype.hasOwnProperty.call(descriptor, "value")) fail("invalid_object");
+  }
+  if (required.some((key) => !keys.includes(key))) fail("missing_key");
 }
 function label(value) { if (typeof value !== "string" || value.length === 0) fail("invalid_label"); }
 function rfc3339(value) {
-  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(value)) fail("invalid_action");
-  date(value.slice(0, 10));
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) fail("invalid_action");
+  const match = typeof value === "string" && RFC3339.exec(value);
+  if (!match) fail("invalid_action");
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const hour = Number(match[4]);
+  const minute = Number(match[5]);
+  const second = Number(match[6]);
+  const leap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  const days = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  const zone = match[8];
+  const zoneHour = zone === "Z" ? 0 : Number(zone.slice(1, 3));
+  const zoneMinute = zone === "Z" ? 0 : Number(zone.slice(4));
+  if (month < 1 || month > 12 || day < 1 || day > days[month - 1]
+    || hour > 23 || minute > 59 || second > 59 || zoneHour > 23 || zoneMinute > 59) fail("invalid_action");
 }
 function safeAmount(value) { return value === null || Number.isSafeInteger(value); }
 function date(value) {
   if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) fail("invalid_reporting_date");
-  const parsed = new Date(`${value}T00:00:00Z`);
-  if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== value) fail("invalid_reporting_date");
+  const [year, month, day] = value.split("-").map(Number);
+  const leap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  const days = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  if (month < 1 || month > 12 || day < 1 || day > days[month - 1]) fail("invalid_reporting_date");
 }
 function escapeHtml(value) { return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
 function formatAmount(locale, value) {
@@ -125,12 +148,12 @@ function renderCfoTelegram({ locale, view, snapshot }) {
   snapshot = sanitize(snapshot);
   validateSnapshot(snapshot);
   const strings = CFO_STRINGS[locale];
+  const actionCopy = snapshot.state === "action_required"
+    ? snapshot.action.kind === "provider_outage" ? strings.actionProviderOutage : strings.actionReconsent
+    : null;
   if (snapshot.state === "action_required" && view === "summary") {
-    const copy = snapshot.action.kind === "provider_outage"
-      ? strings.actionProviderOutage
-      : strings.actionReconsent;
     const replaceRetryAt = (value) => value.replace("{nextRetryAt}", escapeHtml(snapshot.action.nextRetryAt));
-    return { text: `${copy.title}\n\n${copy.body}\n${replaceRetryAt(copy.retry)}`, extra: extra(locale, snapshot, view) };
+    return { text: `${actionCopy.title}\n\n${actionCopy.body}\n${replaceRetryAt(actionCopy.retry)}`, extra: extra(locale, snapshot, view) };
   }
   const freshness = locale === "ja" ? { fresh: "最新", stale: "古い", unavailable: "不明" } : { fresh: "Fresh", stale: "Stale", unavailable: "Unknown" };
   const marks = locale === "ja" ? { colon: "：", open: "（", close: "）", join: "、" } : { colon: ": ", open: " (", close: ")", join: ", " };
@@ -146,7 +169,7 @@ function renderCfoTelegram({ locale, view, snapshot }) {
   const evidence = snapshot.sources.map((source) => `${evidenceLabel(locale, source.verificationStatus)} ${escapeHtml(source.asOf)}`).join("\n");
   const why = `${strings.confirmedAssets} − ${strings.confirmedLiabilities} = ${strings.confirmedDifference} ${formatAmount(locale, snapshot.totals.netWorthMinor)}\n${strings.excluded}${marks.colon}${excluded}`;
   const text = view === "summary" ? `${title}\n\n${totals}${exclusions}\n\n${sourceText}${repair}\n${strings.noAction}`
-    : view === "accounts" ? `${title}\n\n${accounts}\n${snapshot.state === "action_required" ? strings.actionBody : strings.noAction}`
+    : view === "accounts" ? `${title}\n\n${accounts}\n${snapshot.state === "action_required" ? actionCopy.body : strings.noAction}`
       : view === "accuracy" ? `${title}\n\n${evidence}\n${strings.excluded}${marks.colon}${excluded}` : `${title}\n\n${why}`;
   return { text, extra: extra(locale, snapshot, view) };
 }
