@@ -86,6 +86,33 @@ the current real Moneytree → Telegram flow cannot work correctly without it.
   real delivered report produces a correction requirement that the existing snapshot/delivery identity cannot handle.
 - Steel parity, multi-tenancy, Binance, tax, business P&L, and spending advice do not block Product Stage 7.
 
+### 1.4 Product Stage 7 — complete operating flow
+
+```mermaid
+flowchart TD
+    CLOCK[Hourly local trigger\nCFO-1i pending] --> MT[Read real Moneytree MUFG\nnative JPY]
+    MT --> CHECK{Fresh and valid?}
+    CHECK -->|No: transient| REPAIR[Bounded self-repair\nmax 2 repairs / 3 reads]
+    REPAIR --> MT
+    CHECK -->|No: human action| ONE[One deduplicated action message\nno stale balance]
+    CHECK -->|Yes| RECON[Reconcile account sum\nand coverage facts]
+    RECON --> SNAP[Immutable daily snapshot\npartial stays partial]
+    SNAP --> RENDER[Render simple Japanese report\nassets real; unknown stays unknown]
+    RENDER --> CLAIM{Durable delivery claim}
+    CLAIM -->|already sent| STOP[Do not send again]
+    CLAIM -->|delivery uncertain| HOLD[Reconcile; never blind resend]
+    CLAIM -->|send| TG[Telegram Bot API]
+    TG --> MID{Positive provider message_id?}
+    MID -->|No| HOLD
+    MID -->|Yes| RECEIPT[Record durable receipt]
+    RECEIPT --> OWNER[Owner reads report and taps details]
+    OWNER --> DETAILS[Accounts / accuracy / explanation]
+```
+
+Current boundary: the Moneytree read, reconciliation, immutable snapshot, renderer, and no-send preview are proven.
+`CFO-1h` connects the existing claim, Telegram transport, and receipt path. `CFO-1i` then activates the hourly local
+trigger and closes only after two consecutive autonomous real-data successes.
+
 The CFO MUST NOT trade, transfer, hire, fund, or stop a live business during the foundation milestone. Read and
 write authority remain different capabilities permanently. No balance, transaction, revenue, or tax estimate is
 invented; unavailable data remains visibly `unknown`.
