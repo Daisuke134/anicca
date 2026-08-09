@@ -48,6 +48,20 @@ test("compose redacts a hostile prefix-matching Proxy exception", () => {
   assert.throws(() => composeMoneytreeRead(hostile), new Error("moneytree_state_invalid:invalid_composition"));
 });
 
+test("derive does not trust a reused public error constructor", () => {
+  let caught;
+  assert.throws(() => deriveMoneytreeState(input("pending")), (error) => { caught = error; return true; });
+  const hostile = new Proxy({}, { ownKeys: () => { throw new caught.constructor("moneytree_state_invalid:secret_raw_9999999"); } });
+  assert.throws(() => deriveMoneytreeState(hostile), new Error("moneytree_state_invalid:invalid_input"));
+});
+
+test("compose does not trust a reused public error constructor", () => {
+  let caught;
+  assert.throws(() => composeMoneytreeRead({ source: null }), (error) => { caught = error; return true; });
+  const hostile = new Proxy({}, { ownKeys: () => { throw new caught.constructor("moneytree_state_invalid:secret_raw_9999999"); } });
+  assert.throws(() => composeMoneytreeRead(hostile), new Error("moneytree_state_invalid:invalid_composition"));
+});
+
 test("interactive success is explicit about unknown aggregation and liabilities", () => {
   const sourceInput = input("interactive_success");
   const result = deriveMoneytreeState(sourceInput);

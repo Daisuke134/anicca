@@ -8,7 +8,7 @@ const ACTION_KEYS = new Set(["kind", "actionRef"]);
 const BUNDLE_KEYS = new Set(["source", "state"]);
 const SIGNALS = new Set(["interactive_success", "authorized", "expired", "revoked", "provider_outage"]);
 const RFC3339 = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(\.\d+)?(Z|[+-]\d{2}:\d{2})$/;
-class StateContractError extends Error {}
+const INTERNAL_ERRORS = new WeakSet();
 const BRANCHES = Object.freeze({
   interactive_success: { retrievalStatus: "succeeded", consentStatus: "valid", consentEvidence: "interactive_session", actionRequired: null },
   authorized: { retrievalStatus: "succeeded", consentStatus: "valid", consentEvidence: "provider_metadata", actionRequired: null },
@@ -17,7 +17,8 @@ const BRANCHES = Object.freeze({
   provider_outage: { retrievalStatus: "unavailable", consentStatus: "unknown", consentEvidence: "provider_error", actionRequired: { kind: "provider_outage", actionRef: "action:moneytree_outage" }, },
 });
 
-function fail(reason) { throw new StateContractError(`${ERROR_PREFIX}${reason}`); }
+function fail(reason) { const error = new Error(`${ERROR_PREFIX}${reason}`); INTERNAL_ERRORS.add(error); throw error; }
+function isInternalError(error) { return error !== null && (typeof error === "object" || typeof error === "function") && INTERNAL_ERRORS.has(error); }
 function plain(value) { return value !== null && typeof value === "object" && !Array.isArray(value) && Object.getPrototypeOf(value) === Object.prototype; }
 function dataProperties(value) {
   if (value === null || typeof value !== "object") return;
@@ -103,7 +104,7 @@ function deriveMoneytreeState(input) {
     const result = { schemaVersion: 1, sourceId: "moneytree_mufg", ...branch, observedAt: input.observedAt, aggregationStatus, aggregationAsOf: aggregationStatus === "unknown" ? null : input.aggregationAsOf, liabilityCoverage: input.liabilitiesExposed ? "complete" : "unknown", liabilityCount: input.liabilitiesExposed ? input.liabilityCount : null, partial: branch.retrievalStatus === "unavailable" || aggregationStatus !== "fresh" || !input.liabilitiesExposed, };
     return freeze(structuredClone(result));
   } catch (error) {
-    if (error instanceof StateContractError) throw error;
+    if (isInternalError(error)) throw error;
     throw new Error(`${ERROR_PREFIX}invalid_input`);
   }
 }
@@ -121,7 +122,7 @@ function composeMoneytreeRead(input) {
     if (!!expectedAction !== !!actualAction || (expectedAction && (expectedAction.kind !== actualAction.kind || expectedAction.actionRef !== actualAction.actionRef))) fail("action_mismatch");
     return freeze(structuredClone({ schemaVersion: 1, source, state }));
   } catch (error) {
-    if (error instanceof StateContractError) throw error;
+    if (isInternalError(error)) throw error;
     throw new Error(`${ERROR_PREFIX}invalid_composition`);
   }
 }
