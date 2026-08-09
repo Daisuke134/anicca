@@ -30,13 +30,13 @@ The probe was performed on the basis of USER_ATTESTED_PERMISSION, and the disall
 
 ~~~yaml
 evidence_class: REAL_PUBLIC_WEB_RECORD
-source_url: https://www.keiba.go.jp/
+source_url: https://www.keiba.go.jp/KeibaWeb/DataDownload/RaceDataDownload?type=daily
 source_authority: official
 jurisdiction: NAR
 permission_basis: USER_ATTESTED_PERMISSION
 permission_document_verified: false
-retrieved_at: 2026-08-10
-page_or_effective_timestamp: 2026-08-10
+retrieved_at: 2026-08-10T07:22:26+09:00
+page_or_effective_timestamp: 2026-08-10T07:22:26+09:00
 fetch_exit_code: 0
 http_status: 200
 parsed_row_count: 46
@@ -45,12 +45,17 @@ race_rows: 46
 horse_rows: 456
 odds_rows: 327274
 payback_rows: 0
-observed_schema_type: utf8_csv_field
+row_counts:
+  races: 46
+  horses: 456
+  monthly_odds: 327274
+  paybacks_pre_settlement: 0
 observed_schema:
+  type: utf8_csv_field
   racelist: venue/date/race_number/start_time/surface/distance/weather/track_condition/runner_count/prize
   horselist: gate/horse_number/horse_name/sex/age/pedigree/jockey/trainer/weight/result_fields
   payback: win/place/quinella/exacta/wide/trio/trifecta_fields
-  monthly_odds: venue/date/race_number/bet_type/number1/number2/number3/odds/odds_max/popularity
+  odds: venue/date/race_number/bet_type/number1/number2/number3/odds/odds_max/popularity
 content_sha256:
   daily_race_zip: f245030f4608055c2fa24e2910d51edcd029f2292c9cfbe66d2911604e1e1c5b
   monthly_odds_zip: ad18c23b4648bef4113c8191cc78d084168a2aa37c9b49431742e64621f0397f
@@ -62,7 +67,7 @@ artifact_source_urls:
 robots_snapshot_url: https://www.keiba.go.jp/robots.txt
 robots_status: "Crawl-delay: 10; TodayRaceInfo/DataRoom/DataDownload disallowed"
 terms_url: https://www.keiba.go.jp/terms.html
-terms_status: "observed no-unauthorized-reproduction/redistribution; USER_ATTESTED_PERMISSION_DOCUMENT_UNVERIFIED"
+terms_status: "observed_at: 2026-08-09 Asia/Tokyo; observed no-unauthorized-reproduction/redistribution; USER_ATTESTED_PERMISSION_DOCUMENT_UNVERIFIED"
 raw_values_exported: false
 allowed_scope: private_shadow
 cash_authorized: false
@@ -175,4 +180,4 @@ The Mac-local ephemeral raw archive is now absent and was never committed (`raw_
 6. [NAR daily download](https://www.keiba.go.jp/KeibaWeb/DataDownload/RaceDataDownload?type=daily) — curl HTTP 200 application/zip; archive hash and counts recorded above.
 7. [NAR monthly odds download](https://www.keiba.go.jp/KeibaWeb/DataDownload/OddsDataDownload?type=monthly&k_year=2026&k_month=8) — curl HTTP 200 application/zip; first interval contains 327274 parsed rows.
 8. [NAR data manual](https://www.keiba.go.jp/pdf/manual/data_pdf_manual.pdf) — daily intermediate-odds behavior and historical coverage; exact quotes are recorded above.
-9. [NAR terms](https://www.keiba.go.jp/terms.html) — observed “事前の許諾なく転載、複製することを禁じます。”; no-unauthorized-reproduction/redistribution boundary; permission document remains unverified.
+9. [NAR terms](https://www.keiba.go.jp/terms.html) — observed_at: 2026-08-09 Asia/Tokyo; observed “事前の許諾なく転載、複製することを禁じます。”; no-unauthorized-reproduction/redistribution boundary; permission document remains unverified.
