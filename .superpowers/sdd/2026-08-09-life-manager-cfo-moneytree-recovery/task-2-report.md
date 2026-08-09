@@ -89,3 +89,17 @@ GREEN: added one reusable exact dense standard-array boundary gate for waits, so
 - Report is committed and pushed separately after the code commit.
 
 Concerns: none functionally; Task 2 LOC remains above the plan soft target because the required closed hostile-boundary and canonical/privacy invariants are load-bearing.
+
+## Fix Round 5
+
+RED: `node --test lib/cfo-recovery-snapshot.test.js` observed exactly 1 failure out of 26. A caller-mutated Error returned by public validation was replayed unchanged when a hostile `sourceBundle` Proxy threw that same object; its message became `SECRET_REPLAYED_INTERNAL_ERROR` and the identity was unchanged.
+
+GREEN: removed durable `INTERNAL_ERRORS` trust. `fail()` now creates only fixed local errors, while both public catches ignore the caught value and always throw a newly created fixed `invalid_input` or `invalid_bundle` error. Added the same-object replay regression test and preserved all prior hostile-boundary, canonical, retry, zero, attempts, action, integration, and freeze behavior.
+
+- Changed files: `apps/life-call/lib/cfo-recovery-snapshot.js`, `apps/life-call/lib/cfo-recovery-snapshot.test.js`.
+- Verification: Task 1+2 focused 45/45; `npm run test:cfo` 286/286; `git diff --check` pass.
+- LOC: production 168; tests 262.
+- Code commit/push: `75b27a9e0` (`fix(cfo): prevent recovery error replay`) pushed to canonical `feature/cfo-1g3-sol-luna`.
+- Report is committed and pushed separately after the code commit.
+
+Concerns: none functionally; test LOC increased for the required same-object replay proof, while production LOC decreased after removing durable Error tracking.
