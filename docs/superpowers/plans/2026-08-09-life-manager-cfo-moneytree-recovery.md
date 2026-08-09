@@ -14,7 +14,7 @@ PostgreSQL appends contiguous correction revisions; existing delivery dedupe sup
 
 **Design:** `docs/superpowers/specs/2026-08-09-life-manager-cfo-moneytree-recovery-design.md`.
 
-**Status:** ACTIVE — Task 1 next.
+**Status:** ACTIVE — Task 1 complete; Task 2 next.
 
 ## Global Constraints
 
@@ -41,7 +41,7 @@ PostgreSQL appends contiguous correction revisions; existing delivery dedupe sup
 - Consumes: `composeMoneytreeRead`, `buildCfoDailyReport`.
 - Produces: `recoverMoneytreeRead({ reportingDate, observedAt }, { read, repair, wait })`.
 
-- [ ] **Step 1: Write the closed-contract RED tests**
+- [x] **Step 1: Write the closed-contract RED tests**
 
 Cover exact inputs/options, valid calendar date/RFC3339 time, Proxy/accessor/symbol/non-enumerable/custom prototype,
 hostile callback values/errors, and the exact frozen result keys. The first happy assertion is:
@@ -58,12 +58,12 @@ assert.equal(calls.wait, 0);
 assert.equal(result.failureKind, null);
 ```
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
 Run: `cd apps/life-call && node --test lib/cfo-moneytree-recovery.test.js`.
 Expected: FAIL because `cfo-moneytree-recovery.js` does not exist.
 
-- [ ] **Step 3: Add the bounded transition tests**
+- [x] **Step 3: Add the bounded transition tests**
 
 For each `timeout|network|rate_limited|provider_5xx`, prove repair→wait→fresh reread→composition/reconciliation before
 `recovered`. Prove exhausted calls are exactly `reads=3, repairs=2, waits=[1000,5000]`. Prove
@@ -71,7 +71,7 @@ For each `timeout|network|rate_limited|provider_5xx`, prove repair→wait→fres
 `provider_outage`. Preserve the original closed `failureKind`; `nextRetryAt` must be exactly input
 `observedAt + 30 minutes`.
 
-- [ ] **Step 4: Implement minimum GREEN**
+- [x] **Step 4: Implement minimum GREEN**
 
 Use closed sets and one loop with fixed arrays:
 
@@ -83,7 +83,7 @@ const WAITS = Object.freeze([1000, 5000]);
 Every successful read is revalidated by `composeMoneytreeRead` and `buildCfoDailyReport`. Deep-freeze a structured
 clone. Every thrown error is `cfo_moneytree_recovery_failed:<fixed_code>`; do not log.
 
-- [ ] **Step 5: Verify and close**
+- [x] **Step 5: Verify and close**
 
 Run focused test, `npm run test:cfo`, `wc -l` for both files, and `git diff --check`. Commit/push
 `feat(cfo): bound Moneytree recovery`; write ignored report; obtain fresh Sol review.
