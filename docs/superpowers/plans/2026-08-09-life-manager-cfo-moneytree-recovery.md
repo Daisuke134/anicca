@@ -14,7 +14,7 @@ PostgreSQL appends contiguous correction revisions; existing delivery dedupe sup
 
 **Design:** `docs/superpowers/specs/2026-08-09-life-manager-cfo-moneytree-recovery-design.md`.
 
-**Status:** ACTIVE — Tasks 1–6 and Task 3b/6b implemented; final-review fix Task 6c next.
+**Status:** ACTIVE — Tasks 1–6 and Task 3b/6b/6c implemented; final-review fix Task 6d next.
 
 ## Global Constraints
 
@@ -349,6 +349,39 @@ one another's Error identity. Preserve every public prefix and strict validator.
 
 Run shared RPC plus all four client tests, `npm run test:cfo`, `git diff --check`; commit/push
 `fix(cfo): isolate shared rpc operation errors`; write the ignored report; obtain fresh Sol review.
+
+---
+
+### Task 6d: Add an explicit shared-RPC public-operation lifecycle
+
+**Files (indivisible boundary change: five production clients/helper, focused tests):**
+- Modify: `apps/life-call/lib/cfo-supabase-rpc.js`
+- Modify: `apps/life-call/lib/cfo-daily-run.js`
+- Modify: `apps/life-call/lib/cfo-daily-snapshot-store.js`
+- Modify: `apps/life-call/lib/cfo-daily-snapshot-revision-store.js`
+- Modify: `apps/life-call/lib/cfo-telegram-delivery.js`
+- Modify focused shared/client tests as required.
+
+This exceeds the normal three-file soft target because one helper instance cannot infer the lifetime of its four
+public async clients. Every consumer must enter and leave the same explicit lifecycle; a partial rollout would leave
+an unclosed public boundary.
+
+- [ ] **Step 1: Write load-bearing RED**
+
+Add successful nested invocation, failing nested invocation, overlapping success/failure, and post-settlement
+cleanup tests. Prove an inner call restores the exact outer same-operation provenance and neither successful nor
+failing calls leave an ambient store. Observe failure against Task 6c.
+
+- [ ] **Step 2: Implement minimum GREEN**
+
+Expose one `runOperation` helper backed by `AsyncLocalStorage.run`, not `enterWith`. Wrap every exported public RPC
+operation for daily-run, snapshot-store, correction-store, and Telegram delivery. The lifecycle must restore its
+caller across success and failure, sync and async callbacks, nesting and overlap. Remove timer/microtask expiry.
+
+- [ ] **Step 3: Verify and close**
+
+Run shared RPC plus all four client tests, `npm run test:cfo`, `git diff --check`; commit/push
+`fix(cfo): scope shared rpc public operations`; write the ignored report; obtain fresh Sol review.
 
 ---
 

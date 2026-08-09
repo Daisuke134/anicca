@@ -169,6 +169,9 @@ Every public shared-RPC call owns error provenance only for that operation. A fi
 never be recognized as internal if the caller mutates and replays it through a later hostile callback; the later
 boundary creates a new fixed redacted Error. Provenance leaves no ambient context after settlement and cannot cross
 nested or overlapping calls, including when a second public call is invoked from an outer call's injected callback.
+The shared helper exposes an explicit public-operation wrapper implemented with `AsyncLocalStorage.run`; all four
+RPC clients enter it at their exported boundary. `enterWith`, timer expiry, and partial consumer adoption are
+forbidden because they cannot restore the caller after successful nested operations.
 
 The RPC is exactly
 `lm_append_cfo_daily_snapshot_revision(text,date,uuid,integer,integer,jsonb,jsonb)`. It locks the predecessor row,
