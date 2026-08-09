@@ -149,6 +149,20 @@ test("a repaired read is not recovered unless the fresh reread composes and reco
   assert.equal(result.repair, null);
 });
 
+test("preserves the initial transient failure kind when a reread requires reconsent", async () => {
+  let reads = 0;
+  const result = await recoverMoneytreeRead(INPUT, effects({
+    read: async () => {
+      reads += 1;
+      return reads === 1 ? { ok: false, kind: "timeout" } : { ok: false, kind: "forbidden" };
+    },
+  }));
+  assert.equal(result.status, "action_required");
+  assert.equal(result.failureKind, "timeout");
+  assert.equal(result.action.kind, "reconsent");
+  assert.equal(result.attempts.reads, 2);
+});
+
 test("preserves the original failure kind and computes retry time from the RFC3339 instant", async () => {
   const input = { reportingDate: "2024-02-29", observedAt: "2024-02-29T23:45:00.123Z" };
   const kinds = ["timeout", "network", "provider_5xx"];
@@ -199,4 +213,14 @@ test("hostile callback values and errors are fixed and redacted", async () => {
   await rejected(() => recoverMoneytreeRead(INPUT, effects({ read: async () => ({ ok: false, kind: "timeout" }), repair: async () => { throw hostileError; } })));
   await rejected(() => recoverMoneytreeRead(INPUT, effects({ read: async () => ({ ok: false, kind: "timeout" }), wait: async () => hostile })));
   await rejected(() => recoverMoneytreeRead(INPUT, effects({ read: async () => ({ ok: false, kind: "timeout" }), wait: async () => { throw hostileError; } })));
+});
+
+test("rejects nested custom prototypes and non-enumerable callback read properties", async () => {
+  const customPrototype = structuredClone(validRead());
+  Object.setPrototypeOf(customPrototype.source, { inherited: true });
+  await rejected(() => recoverMoneytreeRead(INPUT, effects({ read: async () => ({ ok: true, moneytreeRead: customPrototype }) })));
+
+  const nonEnumerable = structuredClone(validRead());
+  Object.defineProperty(nonEnumerable.source, "hidden", { value: true });
+  await rejected(() => recoverMoneytreeRead(INPUT, effects({ read: async () => ({ ok: true, moneytreeRead: nonEnumerable }) })));
 });

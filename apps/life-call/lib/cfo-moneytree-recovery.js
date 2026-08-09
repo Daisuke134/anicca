@@ -62,12 +62,36 @@ function validateInput(input, options) {
   if (typeof options.read !== "function" || typeof options.repair !== "function" || typeof options.wait !== "function") fail("invalid_input");
 }
 
+function validateClosedTree(value, seen = new WeakSet()) {
+  if (value === null || typeof value !== "object") {
+    if (typeof value === "function" || typeof value === "symbol") fail("invalid_read_result");
+    return;
+  }
+  if (isProxy(value) || seen.has(value)) fail("invalid_read_result");
+  seen.add(value);
+  let keys;
+  try {
+    const array = Array.isArray(value);
+    if (Object.getPrototypeOf(value) !== (array ? Array.prototype : Object.prototype)) fail("invalid_read_result");
+    keys = Reflect.ownKeys(value);
+    for (const key of keys) {
+      if (array && key === "length") continue;
+      const descriptor = Object.getOwnPropertyDescriptor(value, key);
+      if (typeof key !== "string" || !descriptor || !Object.prototype.hasOwnProperty.call(descriptor, "value") || !descriptor.enumerable) fail("invalid_read_result");
+    }
+    for (const key of keys) if (!(array && key === "length")) validateClosedTree(value[key], seen);
+  } catch (error) {
+    if (error.message === `${ERROR_PREFIX}invalid_read_result`) throw error;
+    fail("invalid_read_result");
+  }
+}
+
 function validReadResult(value) {
   if (value === null || typeof value !== "object" || Array.isArray(value) || isProxy(value)) fail("invalid_read_result");
   if (value.ok === true) {
     exactObject(value, new Set(["ok", "moneytreeRead"]));
     if (typeof value.moneytreeRead !== "object" || value.moneytreeRead === null) fail("invalid_read_result");
-    if (isProxy(value.moneytreeRead)) fail("invalid_read_result");
+    validateClosedTree(value.moneytreeRead);
     try {
       for (const key of Reflect.ownKeys(value.moneytreeRead)) {
         const descriptor = Object.getOwnPropertyDescriptor(value.moneytreeRead, key);
@@ -126,7 +150,7 @@ async function recoverMoneytreeRead(input, options) {
       } catch { return result(input, attempts, "action_required", originalFailure || "provider_outage", null, null, { kind: "provider_outage", nextRetryAt: nextRetryAt(input.observedAt) }); }
     }
     if (!originalFailure) originalFailure = readResult.kind;
-    if (RECONSENT.has(readResult.kind)) return result(input, attempts, "action_required", readResult.kind, null, null, { kind: "reconsent", nextRetryAt: nextRetryAt(input.observedAt) });
+    if (RECONSENT.has(readResult.kind)) return result(input, attempts, "action_required", originalFailure, null, null, { kind: "reconsent", nextRetryAt: nextRetryAt(input.observedAt) });
     if (!TRANSIENT.has(readResult.kind) || index >= 2) break;
     try { if (await options.repair({ kind: readResult.kind, attempt: index + 1 }) !== true) fail("callback"); attempts.repairs += 1; if (await options.wait(WAITS[index]) !== undefined) fail("callback"); attempts.waits.push(WAITS[index]); } catch { fail("callback"); }
   }
