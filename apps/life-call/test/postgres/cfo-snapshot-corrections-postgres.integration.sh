@@ -183,7 +183,7 @@ for privilege in TRUNCATE REFERENCES TRIGGER MAINTAIN; do
     || fail "correction chain unexpectedly removed $privilege"
 done
 
-LIVE_CONSTRAINT_CATALOG_BEFORE="$(constraint_catalog "${PSQL[@]}")"
+PRIMARY_TEST_CONSTRAINT_CATALOG_BEFORE="$(constraint_catalog "${PSQL[@]}")"
 
 PGOPTIONS='-c client_min_messages=warning' "${PSQL_ISOLATED[@]}" -f "$MIGRATION_SNAPSHOT" >/dev/null 2>"$MIGRATION_ERR" || fail 'isolated snapshot migration failed'
 [[ ! -s "$MIGRATION_ERR" ]] || fail "isolated snapshot migration wrote stderr: $(<"$MIGRATION_ERR")"
@@ -198,32 +198,32 @@ PGOPTIONS='-c client_min_messages=warning' "${PSQL[@]}" -f "$MIGRATION_HARDENING
 PGOPTIONS='-c client_min_messages=warning' "${PSQL_ISOLATED[@]}" -f "$MIGRATION_HARDENING" >/dev/null 2>"$MIGRATION_ERR" || fail 'isolated privilege hardening migration failed'
 [[ ! -s "$MIGRATION_ERR" ]] || fail "isolated hardening migration wrote stderr: $(<"$MIGRATION_ERR")"
 
-LIVE_CONSTRAINT_CATALOG_AFTER="$(constraint_catalog "${PSQL[@]}")"
-LIVE_NAMES="$(jq -er '.names' <<<"$LIVE_CONSTRAINT_CATALOG_AFTER")"
+PRIMARY_TEST_CONSTRAINT_CATALOG_AFTER="$(constraint_catalog "${PSQL[@]}")"
+PRIMARY_TEST_NAMES="$(jq -er '.names' <<<"$PRIMARY_TEST_CONSTRAINT_CATALOG_AFTER")"
 ISOLATED_NAMES="$(jq -er '.names' <<<"$ISOLATED_CONSTRAINT_CATALOG")"
-LIVE_BEFORE_NAMES="$(jq -er '.names' <<<"$LIVE_CONSTRAINT_CATALOG_BEFORE")"
-LIVE_DIGEST="$(jq -er '.digest_prefix' <<<"$LIVE_CONSTRAINT_CATALOG_AFTER")"
+PRIMARY_TEST_BEFORE_NAMES="$(jq -er '.names' <<<"$PRIMARY_TEST_CONSTRAINT_CATALOG_BEFORE")"
+PRIMARY_TEST_DIGEST="$(jq -er '.digest_prefix' <<<"$PRIMARY_TEST_CONSTRAINT_CATALOG_AFTER")"
 ISOLATED_DIGEST="$(jq -er '.digest_prefix' <<<"$ISOLATED_CONSTRAINT_CATALOG")"
-LIVE_BEFORE_DIGEST="$(jq -er '.digest_prefix' <<<"$LIVE_CONSTRAINT_CATALOG_BEFORE")"
+PRIMARY_TEST_BEFORE_DIGEST="$(jq -er '.digest_prefix' <<<"$PRIMARY_TEST_CONSTRAINT_CATALOG_BEFORE")"
 CONSTRAINT_NAMES_MATCH='false'
 CONSTRAINT_SEMANTICS_MATCH='false'
 CONSTRAINT_BEFORE_AFTER_MATCH='false'
-[[ "$LIVE_NAMES" == "$ISOLATED_NAMES" ]] && CONSTRAINT_NAMES_MATCH='true'
-[[ "$LIVE_BEFORE_NAMES" == "$LIVE_NAMES" && "$LIVE_BEFORE_DIGEST" == "$LIVE_DIGEST" ]] && CONSTRAINT_BEFORE_AFTER_MATCH='true'
-[[ "$LIVE_DIGEST" == "$ISOLATED_DIGEST" && "$CONSTRAINT_BEFORE_AFTER_MATCH" == 'true' ]] && CONSTRAINT_SEMANTICS_MATCH='true'
+[[ "$PRIMARY_TEST_NAMES" == "$ISOLATED_NAMES" ]] && CONSTRAINT_NAMES_MATCH='true'
+[[ "$PRIMARY_TEST_BEFORE_NAMES" == "$PRIMARY_TEST_NAMES" && "$PRIMARY_TEST_BEFORE_DIGEST" == "$PRIMARY_TEST_DIGEST" ]] && CONSTRAINT_BEFORE_AFTER_MATCH='true'
+[[ "$PRIMARY_TEST_DIGEST" == "$ISOLATED_DIGEST" && "$CONSTRAINT_BEFORE_AFTER_MATCH" == 'true' ]] && CONSTRAINT_SEMANTICS_MATCH='true'
 EVIDENCE_DIR="$ROOT_DIR/../../.superpowers/sdd/2026-08-09-life-manager-cfo-moneytree-recovery"
 EVIDENCE_PATH="$EVIDENCE_DIR/task-7c-catalog-evidence.json"
 mkdir -p "$EVIDENCE_DIR"
 jq -cn \
-  --arg names "$LIVE_NAMES" \
+  --arg primaryTestNames "$PRIMARY_TEST_NAMES" \
   --arg isolatedNames "$ISOLATED_NAMES" \
-  --arg liveBeforeDigest "$LIVE_BEFORE_DIGEST" \
-  --arg liveDigest "$LIVE_DIGEST" \
+  --arg primaryTestBeforeDigest "$PRIMARY_TEST_BEFORE_DIGEST" \
+  --arg primaryTestDigest "$PRIMARY_TEST_DIGEST" \
   --arg isolatedDigest "$ISOLATED_DIGEST" \
   --argjson namesMatch "$CONSTRAINT_NAMES_MATCH" \
   --argjson beforeAfterMatch "$CONSTRAINT_BEFORE_AFTER_MATCH" \
   --argjson semanticsMatch "$CONSTRAINT_SEMANTICS_MATCH" \
-  '{liveConstraintNames:$names, isolatedConstraintNames:$isolatedNames, constraintNamesMatch:$namesMatch, liveBeforeDigestPrefix:$liveBeforeDigest, liveDigestPrefix:$liveDigest, isolatedDigestPrefix:$isolatedDigest, constraintBeforeAfterMatch:$beforeAfterMatch, constraintSemanticsMatch:$semanticsMatch}' >"$EVIDENCE_PATH"
+  '{primaryTestConstraintNames:$primaryTestNames, isolatedTestConstraintNames:$isolatedNames, constraintNamesMatch:$namesMatch, primaryTestBeforeDigestPrefix:$primaryTestBeforeDigest, primaryTestDigestPrefix:$primaryTestDigest, isolatedTestDigestPrefix:$isolatedDigest, constraintBeforeAfterMatch:$beforeAfterMatch, constraintSemanticsMatch:$semanticsMatch}' >"$EVIDENCE_PATH"
 [[ "$CONSTRAINT_SEMANTICS_MATCH" == 'true' ]] || fail 'isolated catalog constraint semantics mismatch'
 
 for privilege in SELECT INSERT; do
