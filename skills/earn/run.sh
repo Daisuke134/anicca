@@ -94,6 +94,9 @@ distribute_ubi() {
 # stays fail-closed — the SIGNKEY gate above already HALTed if this instance has no resolvable key.
 if [ "${EARN_STRATEGY:-}" = "x402" ] && [ -n "$WLOW" ]; then
   echo "[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open."
+elif [ -z "$WLOW" ]; then
+  echo "[earn] P1 GUARD: missing wallet identity (wallet='$WLOW') — HALT (fail-closed), skipping wake."
+  exit 0
 elif ! node "$HERE/../_shared/lib/earn-guard.mjs" check "$WLOW" "" "$LEDGER"; then
   echo "[earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='$WLOW') — HALT (fail-closed), skipping wake."
   exit 0
