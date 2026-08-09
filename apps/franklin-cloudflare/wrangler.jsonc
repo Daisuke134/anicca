@@ -1,0 +1,58 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "franklin-cloudflare",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-08-08",
+  "compatibility_flags": ["nodejs_compat"],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "FRANKLIN_AGENT",
+        "class_name": "FranklinAgent"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["FranklinAgent"]
+    }
+  ],
+  "env": {
+    "local": {
+      "vars": {
+        "INTERNAL_API_TOKEN": "local-test-token"
+      },
+      "durable_objects": {
+        "bindings": [
+          {
+            "name": "FRANKLIN_AGENT",
+            "class_name": "FranklinAgent"
+          }
+        ]
+      },
+      "migrations": [
+        {
+          "tag": "v1",
+          "new_sqlite_classes": ["FranklinAgent"]
+        }
+      ]
+    },
+    "production": {
+      "durable_objects": {
+        "bindings": [
+          {
+            "name": "FRANKLIN_AGENT",
+            "class_name": "FranklinAgent"
+          }
+        ]
+      },
+      "migrations": [
+        {
+          "tag": "v1",
+          "new_sqlite_classes": ["FranklinAgent"]
+        }
+      ]
+    }
+  }
+}
