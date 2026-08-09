@@ -20,9 +20,8 @@ const WAITS = Object.freeze([1000, 5000]);
 const TRANSIENT_FAILURES = new Set(["timeout", "network", "rate_limited", "provider_5xx"]);
 const FAILURE_KINDS = new Set(["unauthorized", "forbidden", "expired", "revoked", "timeout", "network", "rate_limited", "provider_5xx", "provider_outage"]);
 const RFC3339 = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(\.\d+)?(Z|[+-]\d{2}:\d{2})$/;
-const INTERNAL_ERRORS = new WeakSet();
 
-function fail(reason) { const error = new Error(`${ERROR_PREFIX}${reason}`); INTERNAL_ERRORS.add(error); throw error; }
+function fail(reason) { throw new Error(`${ERROR_PREFIX}${reason}`); }
 function plain(value) { return value !== null && typeof value === "object" && !Array.isArray(value) && !isProxy(value) && Object.getPrototypeOf(value) === Object.prototype; }
 function exact(value, allowed) {
   if (!plain(value)) fail("invalid_shape");
@@ -125,7 +124,7 @@ function buildCfoDailyReportFromRecovery(input) {
       if (recovery.status === "recovered") report = { ...report, state: "recovered", repair: { sourceLabel: "Moneytree", freshReread: true, reconciled: true } };
     }
     return validateCfoRecoverySnapshotBundle({ report, sourceBundle });
-  } catch (error) { if (INTERNAL_ERRORS.has(error)) throw error; fail("invalid_input"); }
+  } catch { throw new Error(`${ERROR_PREFIX}invalid_input`); }
 }
 function validateCfoRecoverySnapshotBundle(input) {
   try {
@@ -163,7 +162,7 @@ function validateCfoRecoverySnapshotBundle(input) {
     } else fail("invalid_state");
     if (report.state !== "action_required" && report.sources[0].asOf !== sourceBundle.source.asOf) fail("mismatched_time");
     return cloneFreeze({ report, sourceBundle });
-  } catch (error) { if (INTERNAL_ERRORS.has(error)) throw error; fail("invalid_bundle"); }
+  } catch { throw new Error(`${ERROR_PREFIX}invalid_bundle`); }
 }
 
 module.exports = { buildCfoDailyReportFromRecovery, validateCfoRecoverySnapshotBundle };

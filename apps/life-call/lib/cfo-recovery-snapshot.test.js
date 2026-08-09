@@ -141,6 +141,29 @@ test("report sources and exclusions reject Proxy and sparse arrays", () => {
   for (const report of [proxySources, proxyExcluded, sparseSources, sparseExcluded]) assertInvalid(() => validateCfoRecoverySnapshotBundle({ report, sourceBundle: bundle.sourceBundle }));
 });
 
+test("public validator never replays a caller-mutated internal Error", () => {
+  const bundle = buildCfoDailyReportFromRecovery({ revision: 1, recovery: recovery() });
+  let capturedError;
+  try {
+    validateCfoRecoverySnapshotBundle({ report: bundle.report, sourceBundle: { source: null, state: null } });
+  } catch (error) {
+    capturedError = error;
+  }
+  assert.ok(capturedError instanceof Error);
+  capturedError.message = "SECRET_REPLAYED_INTERNAL_ERROR";
+  const hostileSourceBundle = new Proxy({}, { get(_target, key) { if (key === "source") throw capturedError; return undefined; } });
+  let replayedError;
+  try {
+    validateCfoRecoverySnapshotBundle({ report: bundle.report, sourceBundle: hostileSourceBundle });
+  } catch (error) {
+    replayedError = error;
+  }
+  assert.ok(replayedError instanceof Error);
+  assert.notStrictEqual(replayedError, capturedError);
+  assert.match(replayedError.message, /^cfo_recovery_snapshot_invalid:[a-z0-9_]+$/);
+  assert.doesNotMatch(replayedError.message, /SECRET/);
+});
+
 test("binds fresh and recovered reads to recovery.observedAt exactly", () => {
   const stale = read();
   const freshWithStaleRead = recovery({ moneytreeRead: stale, observedAt: "2026-08-09T09:00:00+09:00" });
