@@ -24626,3 +24626,11 @@
 {"ts":1786312959,"wake_id":"00MSMCM4PMA3444E1FD14B456F","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana microtask platforms paying USDC for AI tasks or data labeling [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake "}
 {"ts":1786313086,"wake_id":"00MSMCOV5F50FBC5FF1929452D","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786313216,"wake_id":"00MSMCRMZI8960D3D972944AFB","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786313346,"wake_id":"00MSMCUF4238E62C6773314DB1","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786313473,"wake_id":"00MSMCX5A55C4B183FA6954C9A","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786313634,"wake_id":"00MSMD0LGZB1FDC34C3B8B4C40","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786313785,"wake_id":"00MSMD3UDZ5E4983041DA14542","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1786313853,"wake_id":"00MSMD5AY43B8A6EBACB9F4979","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana microtask platforms paying USDC for AI data labeling without upfront capital [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorde"}
+{"ts":1786313980,"wake_id":"00MSMD80QU42F86391C772482C","kind":"wake","sleep_s":120,"model":"auto","slot":"earn/sol-trade","profitable":false,"exit_code":0}
+{"ts":1786314109,"wake_id":"00MSMDAS682E5080386F944F68","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786314240,"wake_id":"00MSMDDL1X2A7A6D683C5D4A9C","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana on-chain bounty platforms paying USDC for AI model validation or data annotation without upfront capital [cook] candidates: - (no fresh candidates this wake; try a different q"}
