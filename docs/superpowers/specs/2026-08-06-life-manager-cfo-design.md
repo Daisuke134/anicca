@@ -7,7 +7,7 @@
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
 | Existing foundations | `apps/life-call`, interactive Moneytree App access, Fleet telemetry, `lm_api_cost`, and the canonical `lm_agent_earnings` source (the panel's `lm_financial_ledger` name is a stale alias) |
-| First unfinished item | **CFO-1e: normalize Fleet wallet positions, verified earnings, and burn from existing telemetry** |
+| First unfinished item | **CFO-1e: normalize Fleet aggregate valuation, nominal token inflow, and estimated burn at their actual evidence levels** |
 
 ## 1. Overview — What and Why
 
@@ -88,8 +88,10 @@ remain visible.
 - [ ] A single scheduled run creates exactly one immutable snapshot per owner-local `reporting_date`; retries use
       the same `run_id`, report sends use one dedupe key, and a correction supersedes rather than overwrites it.
 - [ ] The M1 snapshot reads MUFG balances through Moneytree. Binance is explicitly deferred and cannot block M1.
-- [ ] The snapshot imports existing Fleet wallet net worth, verified earnings, and compute/API burn without
-      duplicating their ledgers.
+- [ ] The snapshot imports the current Fleet evidence without duplicating its ledgers: upstream chain-enriched
+      aggregate wallet valuation, chain-observed nominal stablecoin inflow that is not recognized revenue, and
+      signed self-reported burn. Raw positions, recognized earnings, and provider/ledger-confirmed burn remain
+      unknown until CFO-2c reconciles stronger evidence.
 - [ ] Every amount carries `owner_id`, `source`, `account_ref`, `asset`, `quantity`, `currency`, `as_of`,
       `evidence_ref`, `verification_status`, and freshness.
 - [ ] JPY is the owner's base currency. Source quantities are preserved; valuation records the price source and
@@ -577,7 +579,7 @@ Local and cloud use the same contract. Only infrastructure changes:
 |---|---|---|---|
 | 1 | Moneytree MUFG adapter | Connected account read; identifiers redacted | PASS |
 | 2 | Deferred crypto adapter | Outside M1; no completion credit | Deferred |
-| 3 | Fleet adapter | Known signed telemetry fixture equals normalized positions/P&L | Planned |
+| 3 | Fleet adapter | Post-signature/post-enrichment registered row equals normalized aggregate valuation, nominal token inflow, and estimated burn; no complete-position or P&L claim | Planned |
 | 4 | Immutable idempotent snapshot | Same `owner_id + reporting_date + run_id` retries one revision; correction appends and supersedes | Planned |
 | 5 | Reconciliation | Assets = liabilities + owner equity within explicit tolerance; missing liabilities incomplete | Planned |
 | 6 | Unknown handling | Provider/price failure produces `unknown`, not zero | Planned |
@@ -746,7 +748,8 @@ Fleet read.
 - [x] **CFO-1b** Implement Moneytree MUFG balance/transaction adapter; verify against the live connected account.
 - [x] **CFO-1b2** Freeze the Moneytree coverage-state contract: compose balances with connected-liability coverage,
       retrieval/aggregation freshness, partial-source, expiry, and re-consent states. Unknown live coverage stays null.
-- [ ] **CFO-1e** Normalize Fleet wallet positions, verified earnings, and burn from existing telemetry.
+- [ ] **CFO-1e** Normalize the Fleet dashboard's actual evidence boundary: upstream chain-enriched aggregate wallet
+      valuation, chain-observed nominal token inflow that is not recognized revenue, and signed self-reported burn.
 - [ ] **CFO-1f** Add timestamped JPY valuation and staleness rules.
 - [ ] **CFO-1g** Persist one immutable, idempotent snapshot, its Moneytree coverage-state bundle, and reconciliation exceptions.
 - [ ] **CFO-1g2** Enforce owner-timezone `reporting_date`, stable retry `run_id`, Telegram dedupe, and append-only
@@ -779,7 +782,8 @@ ingestion. They are not unchecked M1 items and cannot become the active CFO item
       `api_equivalent_forecast`; after API migration reconcile actual provider billing exports.
 - [ ] **CFO-2b** Instrument each existing earning loop in registry order: revenue receipt, landed cash, direct
       cost, tokens, API USD, human USD, capital employed, and evidence.
-- [ ] **CFO-2c** Reconcile per-business totals to provider statements and Fleet totals.
+- [ ] **CFO-2c** Reconcile per-business totals to provider statements and Fleet totals; upgrade Fleet observations to
+      raw positions, recognized earnings, and provider/ledger-confirmed burn only when matching evidence exists.
 - [ ] **CFO-2d** Report contribution profit, runway, ROI, and evidence completeness; unknown is distinct from zero.
 - [ ] **CFO-2d2** Deliver the real Telegram summary, account/business/accuracy/why drill-downs, deduped message
       receipt, stale-source alert, and non-technical readability E2E. Business profit, total-cost, and cost-based
