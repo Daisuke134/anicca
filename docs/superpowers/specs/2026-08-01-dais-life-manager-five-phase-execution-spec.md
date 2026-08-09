@@ -5916,6 +5916,16 @@ GREENは `node --test apps/life-manager/lib/connpass-browser-discovery.test.js a
 `readEventDetail`の既存属性ヘルパーを再利用し、`ends_at: event.endDate || attr(".dtend .value-title", "title")` とした。属性値はtrimし、要素または属性が空/欠落ならnullを返す。JSON-LD `event.endDate`優先、`normalizeConnpassEventDetail`とerror code、workflow/runner/action harnessは変更していない。
 GREENは `node --test apps/life-manager/lib/connpass-browser-discovery.test.js apps/life-manager/lib/connector-connpass-workflow.test.js apps/life-manager/lib/connector-minimal-runner.test.js apps/life-manager/lib/connector-minimal-production.test.js` で32/32 pass・0 fail。live end E2Eはprimaryによる検証待ちで、実registration evidenceは未取得のまま。
 
+### O1B-25進捗221（Connpass detail hCalendar start/end production E2E）
+
+parser repairのcode commitはstart `7ae7ea12a`、end `712a90a01`。official launchd run 61（wake `wake-532e937b61455bbd420e4380`）を実行し、Connpass detailのstart/end fallbackを含むproduction discoveryが完走した。
+action historyは`calendar_busy success 3215ms`、Luma `provider_discovery success 37775ms`、Connpass `provider_discovery success 3846ms`。最終reportは`completed_no_effect / providers_exhausted / consecutive_failure_count 0`（`2026-08-09T13:24:25.801Z`）、Telegram deliveryはprovider message ID `10035`（`2026-08-09T13:24:49.576Z`）。
+
+Luma auditはobserved 29、normalized 29、window 14、free_open 2、calendar_free 0で、Calendar競合によりeligible applicationが無かったことを支持する。Connpass candidate countは直接記録されていないため主張しない。`connpass_detail_start_invalid_failed` と `connpass_detail_end_invalid_failed` はこのwakeにいずれも出現せず、両provider discovery actionはsuccessだった。providersがeligible candidateを返さなかったため、submit/navigation/readbackは発生していない。
+
+`native-pass.js`は`applied_bundle`の場合だけ意図的にexit 0するため、`completed_no_effect`でlaunchdのlast exitが1になるのは現在の明示contractであり、新しいexceptionの証拠ではない。current stderrのmtimeはこのrunより前で、このrunによる新規stderr書き込みはない。
+このproduction E2EによりConnpass detail parser bug（start/end fallback）は閉じたが、Item 10B/14と実registration evidence（Submit、Calendar write、PNG、applied_bundle）は未完のまま。より大きいapplication objectiveは完了扱いにしない。
+
 ### Active remaining TODO SSOT（進捗216。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
