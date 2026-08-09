@@ -58,7 +58,7 @@ Binance, dependency additions, generalized subprocess frameworks, and hostile-ob
 - Required stable reference secret: existing `LM_UID_SECRET` (already present and >=32 bytes). It is used only by the
   existing HMAC adapter and is removed from the child Codex environment.
 
-- [ ] **Step 1: Write the focused failing test**
+- [x] **Step 1: Write the focused failing test**
 
 Use an injected `execFileImpl` and one synthetic Codex JSONL transcript containing an `item.completed` event whose
 `item.type` is `mcp_tool_call` and whose `item.result.structured_content` is the existing synthetic Moneytree accounts
@@ -74,7 +74,7 @@ fixture. Prove:
 4. model prose, stderr, balances, and raw provider fields are never logged or embedded in an error;
 5. missing or duplicate accounts MCP results fail with one fixed redacted error.
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
 ```bash
 cd apps/life-call
@@ -83,7 +83,7 @@ node --test scripts/cfo-moneytree-codex-read.test.js
 
 Expected: non-zero because the reader does not exist.
 
-- [ ] **Step 3: Implement minimum GREEN**
+- [x] **Step 3: Implement minimum GREEN**
 
 Use only Node stdlib `child_process.execFile` with a two-minute timeout and a two-megabyte buffer. Use a fixed prompt
 that requests the installed Moneytree App's `show_accounts` tool with locale `ja` exactly once and forbids every
@@ -101,7 +101,7 @@ the error or logs.
 Serialize only that provider object for `adaptMoneytreeAccounts`, derive `interactive_success` with liabilities and
 aggregation unknown, and return `composeMoneytreeRead(...)`. Do not calculate or copy balances in the reader.
 
-- [ ] **Step 4: Verify GREEN**
+- [x] **Step 4: Verify GREEN**
 
 ```bash
 cd apps/life-call
@@ -114,7 +114,7 @@ git diff --check
 
 Expected: all exit `0`; production is <=100 LOC; exactly three files changed.
 
-- [ ] **Step 5: Fresh review and real no-send E2E**
+- [x] **Step 5: Fresh review and real no-send E2E**
 
 Fresh Sol review checks only Critical/Important correctness: one MCP call, raw-event extraction rather than model
 prose, child secret scrubbing, fixed errors, no private logging, no connector bridge or scheduler expansion, and LOC.
@@ -132,7 +132,7 @@ argument as additional input. An injected wrapper that ended child stdin made th
 a positive account count, valid frozen source/state, partial coverage, no private output, and zero Telegram calls.
 Luna must add both live regressions before changing production.
 
-- [ ] **Step 6: Close**
+- [x] **Step 6: Close**
 
 Update this plan and the parent CFO spec with RED/GREEN/review/live evidence, commit, and push. Then make Telegram CFO
 detail callback wiring the only active item. Do not install the hourly launchd job in this task.
@@ -142,3 +142,13 @@ detail callback wiring the only active item. Do not install the hourly launchd j
 A real non-interactive Luna/Codex invocation reads the connected Moneytree account data and returns the existing
 validated CFO Moneytree contract without any LLM-transcribed amount, raw provider output, secret inheritance,
 Telegram send, new service, or scheduler change.
+
+## Completion evidence
+
+Luna closed the two real-runtime blockers with focused regressions: the child receives the fixed non-secret
+`codex_exec` originator, and its stdin is ended exactly once. Final verification passed focused `7/7`, CFO `249/249`,
+the complete repository test command, syntax checking, and `git diff --check`; production is 86 LOC and the change
+remains exactly three files. The real local CLI then completed against the connected Moneytree App with exit `0`,
+`sourceId=moneytree_mufg`, one connected account, and partial coverage while printing no amount or private provider
+field and making no Telegram call. Fresh Sol review returned `ship — Spec ✅` with no Critical or Important finding.
+This reader slice is **COMPLETE**. Telegram detail callback wiring is the first unfinished CFO-1i slice.

@@ -896,14 +896,15 @@ top-level seven-step sequence.
       `docs/superpowers/plans/2026-08-10-life-manager-cfo-real-telegram.md`.
 - [ ] **CFO-1i** Snapshot post-commit receipt compatibility is complete and live-verified by
       `docs/superpowers/plans/2026-08-10-life-manager-cfo-snapshot-receipt-compatibility.md`: the real corrected receipt now
-      returns the stable frozen five-key application receipt without a duplicate snapshot or Telegram send. The first
-      unfinished slice is now the launchd-callable real Moneytree read plan
-      `docs/superpowers/plans/2026-08-10-life-manager-cfo-moneytree-codex-reader.md`. Live no-send probes prove that
-      non-interactive `codex exec` can call the connected Moneytree App with both Sol and Luna and that Luna's JSONL
-      contains exactly one raw accounts object at `item.result.structured_content`. The reader therefore reuses Luna
-      plus the existing adapter; it never asks an LLM to copy a financial number. The existing local connector-host
-      bridge is deliberately unchanged because its measured contract is Calendar/routes only. After the reader, wire
-      the existing CFO detail buttons to real callback handling and install exactly one local hourly launchd loop for
+      returns the stable frozen five-key application receipt without a duplicate snapshot or Telegram send. The
+      launchd-callable real Moneytree reader is also complete and live-verified by
+      `docs/superpowers/plans/2026-08-10-life-manager-cfo-moneytree-codex-reader.md`: non-interactive `codex exec` calls
+      the connected Moneytree App through Luna, extracts exactly one raw accounts object from
+      `item.result.structured_content`, and passes it to the existing adapter without asking an LLM to copy a financial
+      number. Its final real run returned one connected account with exit `0`; focused `7/7`, CFO `249/249`, the full
+      test command, and fresh `ship — Spec ✅` review passed. The existing local connector-host bridge remains
+      unchanged because its measured contract is Calendar/routes only. The first unfinished slice is now wiring the
+      existing CFO detail buttons to real callback handling. Then install exactly one local hourly launchd loop for
       the current `apps/life-call` CFO path. It sends one daily full report plus meaningful-change/action reports and
       stays quiet when unchanged. Two consecutive scheduled real-data runs without manual repair close M1 and
       owner-facing Product Stage 7.
