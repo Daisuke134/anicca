@@ -240,6 +240,8 @@ SESSION_A="$TEST_TMP/session-a.sql"
 SESSION_B="$TEST_TMP/session-b.sql"
 SESSION_A_OUT="$TEST_TMP/session-a.out"
 SESSION_B_OUT="$TEST_TMP/session-b.out"
+A_APP_NAME='cfo-daily-run-concurrency-a'
+B_APP_NAME='cfo-daily-run-concurrency-b'
 printf '%s\n' \
   'BEGIN;' \
   'SET ROLE service_role;' \
@@ -252,21 +254,23 @@ printf '%s\n' \
   "SELECT public.lm_claim_cfo_daily_run('tenant-concurrent')->>'run_id';" \
   'COMMIT;' >"$SESSION_B"
 
-"${PSQL[@]}" -Atqf "$SESSION_A" >"$SESSION_A_OUT" 2>"$TEST_TMP/session-a.err" &
+PGAPPNAME="$A_APP_NAME" "${PSQL[@]}" -Atqf "$SESSION_A" >"$SESSION_A_OUT" 2>"$TEST_TMP/session-a.err" &
 A_PID=$!
 HOLDING='0'
+A_READY_SQL="SELECT count(*) FROM pg_stat_activity AS activity WHERE activity.pid <> pg_backend_pid() AND activity.application_name = '$A_APP_NAME' AND activity.state = 'active' AND activity.query = 'SELECT pg_sleep(4);' AND activity.wait_event_type = 'Timeout' AND activity.wait_event = 'PgSleep' AND activity.xact_start IS NOT NULL AND EXISTS (SELECT 1 FROM pg_locks AS lock WHERE lock.pid = activity.pid AND lock.granted AND lock.relation = 'public.lm_panel_preferences'::regclass AND lock.mode = 'RowShareLock');"
 for _ in {1..100}; do
-  HOLDING="$(${PSQL[@]} -Atqc "SELECT count(*) FROM pg_stat_activity WHERE state = 'active' AND query LIKE '%pg_sleep(4)%';" | tr -d '[:space:]')"
+  HOLDING="$(${PSQL[@]} -Atqc "$A_READY_SQL" | tr -d '[:space:]')"
   [[ "$HOLDING" == '1' ]] && break
   sleep 0.1
 done
 [[ "$HOLDING" == '1' ]] || fail 'first concurrent claim did not reach its hold point'
 
-"${PSQL[@]}" -Atqf "$SESSION_B" >"$SESSION_B_OUT" 2>"$TEST_TMP/session-b.err" &
+PGAPPNAME="$B_APP_NAME" "${PSQL[@]}" -Atqf "$SESSION_B" >"$SESSION_B_OUT" 2>"$TEST_TMP/session-b.err" &
 B_PID=$!
 LOCK_WAITING='0'
+B_WAIT_SQL="SELECT count(*) FROM pg_stat_activity AS waiting WHERE waiting.pid <> pg_backend_pid() AND waiting.application_name = '$B_APP_NAME' AND waiting.state = 'active' AND waiting.wait_event_type = 'Lock' AND waiting.wait_event IS NOT NULL AND waiting.query LIKE '%lm_claim_cfo_daily_run%';"
 for _ in {1..100}; do
-  LOCK_WAITING="$(${PSQL[@]} -Atqc "SELECT count(*) FROM pg_stat_activity WHERE state = 'active' AND wait_event_type = 'Lock' AND query LIKE '%lm_claim_cfo_daily_run%';" | tr -d '[:space:]')"
+  LOCK_WAITING="$(${PSQL[@]} -Atqc "$B_WAIT_SQL" | tr -d '[:space:]')"
   [[ "$LOCK_WAITING" != '0' ]] && break
   sleep 0.1
 done
