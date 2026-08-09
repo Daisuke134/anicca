@@ -69,7 +69,7 @@ function validateReceipt(value, expected) {
   exact(value, RECEIPT_KEYS, "invalid_receipt");
   uuid(value.public_ref, "invalid_receipt");
   if (value.reporting_date !== expected.reportingDate || typeof value.reporting_date !== "string") fail("receipt_mismatch");
-  if (typeof value.run_id !== "string" || value.run_id.toLowerCase() !== expected.runId) fail("receipt_mismatch");
+  if (typeof value.run_id !== "string" || value.run_id !== expected.runId) fail("receipt_mismatch");
   if (value.revision !== 1 || !timestamp(value.created_at)) fail("invalid_receipt");
   try { return freeze(structuredClone(value)); } catch { fail("invalid_receipt"); }
 }
