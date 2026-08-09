@@ -38,10 +38,15 @@ flowchart LR
 - PostgreSQL derives `YYYY-MM-DD` from its current transaction time in that timezone. There is no client GET→claim
   race and no manual UTC offset arithmetic.
 - `lm_cfo_daily_runs` has one immutable row per `(uid, reporting_date)` and a database-generated non-zero UUID.
+- A private SQL date helper accepts `(time_zone, instant)` for deterministic DST tests; EXECUTE is revoked from all
+  application roles. The public claim RPC always supplies `statement_timestamp()` and exposes no clock override.
 - `lm_claim_cfo_daily_run(uid)` returns the current owner-local date's existing row on retry. If the preference
   changes after a claim, the next invocation derives the date from the new preference.
-- The migration first backfills every existing snapshot's exact `(uid, reporting_date, run_id)` into the run table,
-  then adds a composite foreign key from snapshots to runs. A snapshot can never invent a second run identity.
+- The migration first requires every existing snapshot owner to have a valid current timezone preference. It
+  backfills the exact `(uid, reporting_date, run_id)` and records `time_zone_source="migration_preference"`; this is
+  explicitly migration-time provenance, not a claim about the timezone used when the old snapshot was created. New
+  claims use `time_zone_source="owner_preference"`. Missing/invalid preferences abort the whole migration. The
+  migration then adds a composite foreign key from snapshots to runs, so a snapshot cannot invent another run ID.
 - The receipt contains exactly `public_ref, reporting_date, run_id, time_zone, created_at`; never UID.
 - The client makes exactly one claim RPC. It has no internal retry, preference read, or scheduler.
 
@@ -84,8 +89,9 @@ balance, source payload, token, or a brute-forceable hash of the financial paylo
 
 ## 6. Acceptance
 
-1. DST and date-boundary PostgreSQL fixtures derive the correct owner-local date; invalid/missing zones and a
-   concurrent preference change fail closed or use one transactionally observed zone.
+1. DST/date-boundary fixtures call only the revoked SQL helper with fixed instants. The production RPC uses database
+   time; invalid/missing zones and a concurrent preference change fail closed or use one transactionally observed
+   zone.
 2. Existing snapshot run IDs are preserved by backfill/FK; concurrent daily-run claims return one run and one row.
 3. Concurrent delivery claims yield exactly one `send`; all others are `reconcile` until a receipt exists.
 4. Receipt retry is idempotent; a different provider ID conflicts.

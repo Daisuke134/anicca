@@ -26,13 +26,17 @@
 
 - [ ] RED: assert immutable table, unique owner/date and owner/date/run, non-zero UUID, `pg_timezone_names` validation,
   preference read inside the RPC, existing-snapshot backfill, composite snapshot FK, RLS/service-role grants,
-  UPDATE/DELETE trigger, exact five-key receipt, same-date retry, fixed search path, and no UID in receipt.
+  UPDATE/DELETE trigger, exact five-key receipt, same-date retry, fixed search path, no UID in receipt, and private
+  date-helper EXECUTE revoked from all app roles. Backfill must abort when an existing owner preference is absent or
+  invalid and record `time_zone_source="migration_preference"`; new claims record `owner_preference`.
 - [ ] GREEN: implement `lm_cfo_daily_runs` and
   `lm_claim_cfo_daily_run(text) => jsonb`. Backfill existing snapshot run IDs before adding the FK. The RPC reads and
   validates the current preference and derives the date transactionally; `ON CONFLICT DO NOTHING`, then returns the
   existing row. No UPDATE branch.
 - [ ] Verify from `apps/life-call`: `node --test lib/cfo-daily-run-migration.test.js` (RED then PASS),
-  `npm run test:cfo` (PASS), `wc -l` (targets), `git diff --check` (exit 0), and a key-name privacy scan (no match).
+  `npm run test:cfo` (PASS),
+  `wc -l migrations/2026-08-09-cfo-daily-runs.sql lib/cfo-daily-run-migration.test.js` (targets), and
+  `git diff --check` (exit 0). The tests, not a regex scan, prove the closed receipt has no UID/private keys.
 - [ ] Commit/push `feat(cfo): claim stable daily runs`; write the ignored Task 1 report.
 
 ### Task 2: Owner timezone and run-context client
@@ -76,7 +80,8 @@
 - Modify `apps/life-call/package.json`
 
 - [ ] RED then GREEN with `npm run test:cfo-reliable-run:postgres` in isolated local PostgreSQL 18 or ephemeral
-  `postgres:18-alpine` only.
+  `postgres:18-alpine` only. Call the private date helper as superuser with fixed DST/date-boundary instants; prove
+  application roles cannot execute it. The public RPC has no clock parameter and uses database time.
 - [ ] Prove: concurrent run claims one row/run; concurrent delivery claims one `send`; unreceipted retry=`reconcile`;
   receipt makes retry=`sent`; exact receipt retry; changed ID conflict; composite cross-tenant/date/revision rejection;
   direct invalid rows; role denials; UPDATE/DELETE trigger rejection; tenant separation.
@@ -104,14 +109,23 @@
 **Files:**
 - Modify parent/design/plan docs only after evidence is complete.
 
-- [ ] Luna runs from `apps/life-call`: `npm ci --no-audit --no-fund`; both focused Node test commands;
+- [ ] Luna runs from `apps/life-call`: `npm ci --no-audit --no-fund`;
+  `node --test lib/cfo-daily-run-migration.test.js lib/cfo-daily-run.test.js lib/cfo-telegram-delivery-migration.test.js lib/cfo-telegram-delivery.test.js`;
   `npm run test:cfo`; `npm run test:cfo-reliable-run:postgres`; `npm test`; and `git diff --check`. All exit 0.
 - [ ] Luna applies both additive migrations once and reloads PostgREST schema without outputting private values.
 - [ ] The formal migration path is the existing Supabase Management API database-query endpoint followed by
-  `NOTIFY pgrst, 'reload schema'`; Luna outputs HTTP success booleans only.
+  `NOTIFY pgrst, 'reload schema'`. Luna creates an ignored no-echo runner at
+  `.superpowers/sdd/2026-08-09-life-manager-cfo-reliable-run/live-close.js`. It derives the project ref from private
+  `SUPABASE_URL`, POSTs each SQL file as `{query: sql}` to
+  `https://api.supabase.com/v1/projects/<ref>/database/query`, then POSTs `{query: "NOTIFY pgrst, 'reload schema';"}`.
+  Run `node .superpowers/sdd/2026-08-09-life-manager-cfo-reliable-run/live-close.js`; every HTTP response must have
+  `ok === true`, and stdout is only one JSON object of named booleans/counts.
 - [ ] Luna proves against the existing live snapshot: owner timezone resolves, daily-run retry is stable, and snapshot
   `(uid, reporting_date, run_id)` equals its run claim. It creates no live delivery claim/receipt and does not call
   Telegram. Delivery claim/receipt behavior is proven only in isolated PostgreSQL until CFO-1h sends for real.
+- [ ] The live runner's exact stdout keys are `runMigrationSuccess`, `deliveryMigrationSuccess`,
+  `schemaReloadSuccess`, `ownerTimezoneResolved`, `retrySameRun`, `snapshotRunMatches`, `liveDeliveryRowsCreated`,
+  and `payloadPrivacy`; all booleans are true except `liveDeliveryRowsCreated`, which is the integer `0`.
 - [ ] Fresh Sol final review returns no Critical/Important findings.
 - [ ] Sol marks `CFO-1g2 COMPLETE — CFO-1g3 NEXT`, records boolean/count evidence, commits/pushes
   `docs(cfo): close reliable daily run`, and sends a separate development milestone notification.
