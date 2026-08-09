@@ -7,7 +7,7 @@
 
 **Design:** `docs/superpowers/specs/2026-08-09-life-manager-cfo-reliable-run-design.md`.
 
-**Status:** ACTIVE — Tasks 1/1b/2/3/4 complete; Task 4 PostgreSQL concurrency/permission proof awaits fresh Sol review before Task 5.
+**Status:** ACTIVE — Tasks 1/1b/2/3/4/5 and Task 6 live evidence complete; final-review fixes are pushed and await scoped Sol re-review.
 
 ## Global constraints
 
@@ -114,24 +114,24 @@
 
 **Interfaces:** `claimCfoTelegramDelivery(input, opts)` and `recordCfoTelegramDelivery(input, opts)`.
 
-- [ ] RED: one RPC per operation, closed exact input/receipt, only `assets_liabilities`, positive revision/message ID,
+- [x] RED: one RPC per operation, closed exact input/receipt, only `assets_liabilities`, positive revision/message ID,
   `send|sent|reconcile`, clone/freeze, no retry/direct table/log, hostile response/error redaction, exact echo checks.
-- [ ] GREEN: built-in fetch only; stable redacted errors; never accept `send` unless the RPC says this call inserted.
-- [ ] Verify from `apps/life-call`: `node --test lib/cfo-telegram-delivery.test.js`, `npm run test:cfo`, `wc -l` for
+- [x] GREEN: built-in fetch only; stable redacted errors; never accept `send` unless the RPC says this call inserted.
+- [x] Verify from `apps/life-call`: `node --test lib/cfo-telegram-delivery.test.js`, `npm run test:cfo`, `wc -l` for
   both files with `wc -l lib/cfo-telegram-delivery.js lib/cfo-telegram-delivery.test.js`, and `git diff --check`;
   all exit 0, production ≤130/tests ≤200.
-- [ ] Commit/push `feat(cfo): persist telegram delivery receipts`; write report and obtain fresh Sol review.
+- [x] Commit/push `feat(cfo): persist telegram delivery receipts`; write report and obtain fresh Sol review.
 
 ### Task 6: Live migration, no-send E2E, and closure
 
 **Files:**
 - Modify parent/design/plan docs only after evidence is complete.
 
-- [ ] Luna runs from `apps/life-call`: `npm ci --no-audit --no-fund`;
+- [x] Luna runs from `apps/life-call`: `npm ci --no-audit --no-fund`;
   `node --test lib/cfo-daily-run-migration.test.js lib/cfo-daily-run.test.js lib/cfo-telegram-delivery-migration.test.js lib/cfo-telegram-delivery.test.js`;
   `npm run test:cfo`; `npm run test:cfo-reliable-run:postgres`; `npm test`; and `git diff --check`. All exit 0.
-- [ ] Luna applies both additive migrations once and reloads PostgREST schema without outputting private values.
-- [ ] The formal migration path is the existing Supabase Management API database-query endpoint followed by
+- [x] Luna applies both additive migrations once and reloads PostgREST schema without outputting private values.
+- [x] The formal migration path is the existing Supabase Management API database-query endpoint followed by
   `NOTIFY pgrst, 'reload schema'`. Luna creates an ignored no-echo runner at
   `.superpowers/sdd/2026-08-09-life-manager-cfo-reliable-run/live-close.js` from the worktree root. Required private
   environment names are exactly `SUPABASE_ACCESS_TOKEN`, `SUPABASE_URL`, and `SUPABASE_SERVICE_ROLE_KEY`. The
@@ -142,7 +142,7 @@
   `{query: "NOTIFY pgrst, 'reload schema';"}`. After the tests above, run `cd ../..` and then
   `node .superpowers/sdd/2026-08-09-life-manager-cfo-reliable-run/live-close.js`; every HTTP response must have
   `ok === true`, and stdout is only one JSON object of named booleans/counts.
-- [ ] The no-echo runner makes these exact PostgREST calls with the service-role headers above and never prints a URL,
+- [x] The no-echo runner makes these exact PostgREST calls with the service-role headers above and never prints a URL,
   query value, body, or response:
   1. `GET /rest/v1/lm_users?telegram_chat_id=not.is.null&select=uid&limit=3`, no body, expect HTTP 200 and one or more
      closed one-key owner rows; keep every UID private. For those owners only, read
@@ -158,10 +158,10 @@
      do not perform a second snapshot read. Keep all refs private.
   5. `GET /rest/v1/lm_cfo_telegram_delivery_claims?snapshot_public_ref=eq.<encoded-private-snapshot-ref>&select=public_ref`,
      no body, expect HTTP 200 and `[]`. The receipt table cannot contain a row without its claim FK.
-- [ ] Luna proves against the existing live snapshot: owner timezone resolves, daily-run retry is stable, and snapshot
+- [x] Luna proves against the existing live snapshot: owner timezone resolves, daily-run retry is stable, and snapshot
   `(uid, reporting_date, run_id)` equals its run claim. It creates no live delivery claim/receipt and does not call
   Telegram. Delivery claim/receipt behavior is proven only in isolated PostgreSQL until CFO-1h sends for real.
-- [ ] The live runner's exact stdout keys are `runMigrationSuccess`, `deliveryMigrationSuccess`,
+- [x] The live runner's exact stdout keys are `runMigrationSuccess`, `deliveryMigrationSuccess`,
   `schemaReloadSuccess`, `ownerTimezoneResolved`, `retrySameRun`, `snapshotRunMatches`, `liveDeliveryRowsCreated`,
   and `payloadPrivacy`; all booleans are true except `liveDeliveryRowsCreated`, which is the integer `0`.
 - [ ] Fresh Sol final review returns no Critical/Important findings.
