@@ -50,8 +50,14 @@ function validateRecovery(recovery) {
   if (recovery.status === "action_required") {
     if (recovery.moneytreeRead !== null || recovery.repair !== null) fail("unresolved_recovery");
     exact(recovery.action, ACTION_KEYS); if (!ACTION_KINDS.has(recovery.action.kind) || recovery.action.sourceLabel !== "Moneytree") fail("invalid_action"); timestamp(recovery.action.nextRetryAt);
+    const reconsentFailure = new Set(["unauthorized", "expired", "forbidden", "revoked"]);
+    const outageFailure = new Set(["timeout", "network", "rate_limited", "provider_5xx", "provider_outage"]);
+    if (recovery.failureKind === null || (reconsentFailure.has(recovery.failureKind) && recovery.action.kind !== "reconsent") || (outageFailure.has(recovery.failureKind) && recovery.action.kind !== "provider_outage")) fail("action_failure_mismatch");
   } else {
     if (!plain(recovery.moneytreeRead) || recovery.action !== null) fail("missing_read");
+    let read;
+    try { read = composeMoneytreeRead({ source: recovery.moneytreeRead.source, state: recovery.moneytreeRead.state }); } catch { fail("invalid_read"); }
+    if (read.source.asOf !== recovery.observedAt || read.state.observedAt !== recovery.observedAt) fail("observed_at_mismatch");
     if (recovery.status === "fresh" && recovery.repair !== null) fail("unexpected_repair");
     if (recovery.status === "recovered") {
       exact(recovery.repair, REPAIR_KEYS); if (recovery.repair.sourceLabel !== "Moneytree" || recovery.repair.freshReread !== true || recovery.repair.reconciled !== true) fail("unproven_recovery");
@@ -91,7 +97,8 @@ function buildCfoDailyReportFromRecovery(input) {
 function validateCfoRecoverySnapshotBundle(input) {
   try {
     exact(input, new Set(["report", "sourceBundle"]));
-    const report = cloneFreeze(input.report); const sourceBundle = composeMoneytreeRead({ source: input.sourceBundle.source, state: input.sourceBundle.state });
+    const sourceBundle = composeMoneytreeRead({ source: input.sourceBundle.source, state: input.sourceBundle.state });
+    const report = input.report;
     exact(report, REPORT_KEYS); exact(report.totals, TOTAL_KEYS);
     if (!Array.isArray(report.sources) || report.sources.length !== 1 || !Array.isArray(report.excluded)) fail("invalid_report");
     exact(report.sources[0], RENDERED_SOURCE_KEYS);
@@ -105,9 +112,14 @@ function validateCfoRecoverySnapshotBundle(input) {
       exact(report.action, REPORT_ACTION_KEYS);
       if (!ACTION_KINDS.has(report.action.kind) || report.action.sourceLabel !== "Moneytree" || typeof report.action.retryLabel !== "string") fail("unsafe_action_report");
       timestamp(report.action.nextRetryAt);
-      if (report.totals.netWorthMinor !== null || renderedSource.amountMinor !== null || sourceBundle.source.accounts.length !== 0 || renderedSource.status !== "unavailable") fail("unsafe_action_report");
-    } else if (report.state === "recovered" && (!report.repair || report.repair.freshReread !== true || report.repair.reconciled !== true)) fail("unproven_recovery");
-    if (report.state !== "action_required" && report.state !== "partial" && report.state !== "recovered") fail("invalid_state");
+      const source = sourceBundle.source; const state = sourceBundle.state;
+      if (source.freshness !== "unavailable" || source.evidenceRef !== "evidence:moneytree_unavailable" || source.accounts.length !== 0 || source.liabilities.length !== 0 || source.partial !== true || source.asOf !== state.observedAt || state.retrievalStatus !== "unavailable" || state.aggregationStatus !== "unknown" || state.liabilityCoverage !== "unknown" || state.partial !== true || !state.actionRequired || state.actionRequired.kind !== report.action.kind || source.actionRequired.kind !== report.action.kind || source.actionRequired.sourceLabel !== "Moneytree" || (report.action.kind === "provider_outage" ? source.consent !== "unknown" || state.consentStatus !== "unknown" : !["expired", "revoked"].includes(source.consent) || state.consentStatus !== source.consent) || report.repair !== null || Object.values(report.totals).some((value) => value !== null) || renderedSource.label !== "MUFG" || renderedSource.status !== "unavailable" || renderedSource.amountMinor !== null || renderedSource.verificationStatus !== "unavailable") fail("unsafe_action_report");
+    } else if (report.state === "partial" || report.state === "recovered") {
+      const source = sourceBundle.source; const state = sourceBundle.state;
+      if (source.freshness !== "fresh" || source.consent !== "valid" || source.partial !== true || source.liabilities.length !== 0 || state.observedAt !== source.asOf || state.retrievalStatus !== "succeeded" || state.consentStatus !== "valid" || state.actionRequired !== null || report.action !== null || report.totals.liabilitiesMinor !== null || report.totals.netWorthMinor !== null || report.totals.changeMinor !== null || renderedSource.label !== "MUFG" || renderedSource.status !== "fresh" || renderedSource.verificationStatus !== "provider_reported") fail("unsafe_report_state");
+      if (report.state === "partial" && report.repair !== null) fail("partial_repair_forbidden");
+      if (report.state === "recovered") { exact(report.repair, REPAIR_KEYS); if (report.repair.sourceLabel !== "Moneytree" || report.repair.freshReread !== true || report.repair.reconciled !== true) fail("unproven_recovery"); }
+    } else fail("invalid_state");
     if (report.state !== "action_required" && report.sources[0].asOf !== sourceBundle.source.asOf) fail("mismatched_time");
     return cloneFreeze({ report, sourceBundle });
   } catch (error) { if (error && error.message && error.message.startsWith(ERROR_PREFIX)) throw error; throw new Error(`${ERROR_PREFIX}invalid_bundle`); }

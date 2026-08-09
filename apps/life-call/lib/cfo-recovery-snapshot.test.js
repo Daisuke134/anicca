@@ -14,6 +14,7 @@ function read(amount = 1234) {
   return composeMoneytreeRead({ source, state });
 }
 function recovery(overrides = {}) { return { reportingDate: DATE, observedAt: OBSERVED, status: "fresh", attempts: { reads: 1, repairs: 0, waits: [] }, failureKind: null, moneytreeRead: read(), repair: null, action: null, ...overrides }; }
+function actionRecovery(failureKind, kind) { return recovery({ status: "action_required", failureKind, moneytreeRead: null, action: { kind, sourceLabel: "Moneytree", nextRetryAt: "2026-08-09T08:30:00+09:00" } }); }
 
 test("builds the recovery snapshot bundle", () => {
   const result = buildCfoDailyReportFromRecovery({ revision: 3, recovery: recovery() });
@@ -29,6 +30,14 @@ test("recovered uses the fresh reread and exact repair proof", () => {
   assert.deepEqual(result.report.repair, { sourceLabel: "Moneytree", freshReread: true, reconciled: true });
 });
 
+test("binds fresh and recovered reads to recovery.observedAt exactly", () => {
+  const stale = read();
+  const freshWithStaleRead = recovery({ moneytreeRead: stale, observedAt: "2026-08-09T09:00:00+09:00" });
+  assert.throws(() => buildCfoDailyReportFromRecovery({ revision: 1, recovery: freshWithStaleRead }), /^Error: cfo_recovery_snapshot_invalid:/);
+  const recoveredWithStaleRead = recovery({ status: "recovered", attempts: { reads: 2, repairs: 1, waits: [1000] }, moneytreeRead: stale, repair: { sourceLabel: "Moneytree", freshReread: true, reconciled: true }, observedAt: "2026-08-09T09:00:00+09:00" });
+  assert.throws(() => buildCfoDailyReportFromRecovery({ revision: 2, recovery: recoveredWithStaleRead }), /^Error: cfo_recovery_snapshot_invalid:/);
+});
+
 for (const [failureKind, consent] of [["unauthorized", "expired"], ["expired", "expired"], ["forbidden", "revoked"], ["revoked", "revoked"], ["provider_outage", "unknown"]]) {
   test(`action-required maps ${failureKind} to ${consent} without amounts`, () => {
     const kind = failureKind === "provider_outage" ? "provider_outage" : "reconsent";
@@ -42,6 +51,44 @@ for (const [failureKind, consent] of [["unauthorized", "expired"], ["expired", "
     assert.equal("failureKind" in result.report, false);
   });
 }
+
+test("rejects both directions of failure/action mapping mismatch", () => {
+  for (const [failureKind, wrongKind] of [["unauthorized", "provider_outage"], ["expired", "provider_outage"], ["forbidden", "provider_outage"], ["revoked", "provider_outage"], ["timeout", "reconsent"], ["network", "reconsent"], ["rate_limited", "reconsent"], ["provider_5xx", "reconsent"], ["provider_outage", "reconsent"]]) {
+    assert.throws(() => buildCfoDailyReportFromRecovery({ revision: 1, recovery: actionRecovery(failureKind, wrongKind) }), /^Error: cfo_recovery_snapshot_invalid:/);
+  }
+});
+
+test("revalidates state-specific report and source invariants", () => {
+  const partial = buildCfoDailyReportFromRecovery({ revision: 1, recovery: recovery() });
+  for (const mutate of [
+    (report) => { report.repair = { sourceLabel: "Moneytree", freshReread: true, reconciled: true }; },
+    (report) => { report.action = { kind: "reconsent", sourceLabel: "Moneytree", retryLabel: "再接続", nextRetryAt: "2026-08-09T08:30:00+09:00" }; },
+    (report) => { report.sources[0].status = "unavailable"; },
+  ]) {
+    const report = structuredClone(partial.report); mutate(report);
+    assert.throws(() => validateCfoRecoverySnapshotBundle({ report, sourceBundle: partial.sourceBundle }), /^Error: cfo_recovery_snapshot_invalid:/);
+  }
+  const recovered = buildCfoDailyReportFromRecovery({ revision: 2, recovery: recovery({ status: "recovered", attempts: { reads: 2, repairs: 1, waits: [1000] }, repair: { sourceLabel: "Moneytree", freshReread: true, reconciled: true } }) });
+  for (const mutate of [
+    (report) => { report.repair.extra = "hostile"; },
+    (report) => { report.action = { kind: "provider_outage", sourceLabel: "Moneytree", retryLabel: "retry", nextRetryAt: "2026-08-09T08:30:00+09:00" }; },
+  ]) {
+    const report = structuredClone(recovered.report); mutate(report);
+    assert.throws(() => validateCfoRecoverySnapshotBundle({ report, sourceBundle: recovered.sourceBundle }), /^Error: cfo_recovery_snapshot_invalid:/);
+  }
+});
+
+test("revalidates action-required evidence, freshness, liabilities, and state consistency", () => {
+  const bundle = buildCfoDailyReportFromRecovery({ revision: 1, recovery: actionRecovery("timeout", "provider_outage") });
+  const cases = [
+    () => validateCfoRecoverySnapshotBundle({ report: bundle.report, sourceBundle: { source: { ...bundle.sourceBundle.source, evidenceRef: "evidence:wrong" }, state: bundle.sourceBundle.state } }),
+    () => validateCfoRecoverySnapshotBundle({ report: bundle.report, sourceBundle: { source: { ...bundle.sourceBundle.source, freshness: "stale" }, state: bundle.sourceBundle.state } }),
+    () => validateCfoRecoverySnapshotBundle({ report: bundle.report, sourceBundle: { source: { ...bundle.sourceBundle.source, liabilities: [{ accountRef: "source_account:liability", label: "Loan", currency: "JPY", balanceMinor: null, verificationStatus: "unavailable" }] }, state: bundle.sourceBundle.state } }),
+    () => validateCfoRecoverySnapshotBundle({ report: { ...bundle.report, action: { ...bundle.report.action, kind: "reconsent" } }, sourceBundle: bundle.sourceBundle }),
+    () => validateCfoRecoverySnapshotBundle({ report: { ...bundle.report, totals: { assetsMinor: 1, liabilitiesMinor: null, netWorthMinor: null, changeMinor: null } }, sourceBundle: bundle.sourceBundle }),
+  ];
+  for (const call of cases) assert.throws(call, /^Error: cfo_recovery_snapshot_invalid:/);
+});
 
 test("rejects stale injection, mismatched times, unproven recovery, revisions, and hostile shapes", () => {
   const cases = [
