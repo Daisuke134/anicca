@@ -123,7 +123,7 @@ raw snapshotはMac-local private append-only boundaryに留める。Git、Telegr
 | NAR official daily archive | https://www.keiba.go.jp/KeibaWeb/DataDownload/RaceDataDownload?type=daily / official | crwlはPage.goto: Download is starting。curl fallback HTTP 200 application/zip、UTF-8 BOM CSV、race 46 / horse 456 / payback 0 pre-settlement | REAL_PUBLIC_WEB_RECORD candidate、raw non-export |
 | NAR official monthly navigation | https://www.keiba.go.jp/KeibaWeb/MonthlyConveneInfo/MonthlyConveneInfoTop / official | crwl exit 0。monthly race/odds endpointsを観測 | official NAR lane |
 | NAR official monthly odds | https://www.keiba.go.jp/KeibaWeb/DataDownload/OddsDataDownload?type=monthly&k_year=2026&k_month=8 / official | runtimeは公式pageからyear/monthを導出する。curl HTTP 200 application/zip、first interval 327274 rows | REAL_PUBLIC_WEB_RECORD candidate |
-| NAR official manual | https://www.keiba.go.jp/pdf/manual/data_pdf_manual.pdf / official | 8 pages、daily 約2分更新、monthly 毎月2日午前2時頃、daily intermediate odds、race history 1998-01、odds history 2026-03を観測 | source cadence/coverage evidence |
+| NAR official manual | https://www.keiba.go.jp/pdf/manual/data_pdf_manual.pdf / official | 8 pages、daily 約2分更新、monthly dataは1日1回・毎日午前2時頃更新、daily intermediate odds、race history 1998-01、odds history 2026-03を観測 | source cadence/coverage evidence |
 | Secondary fallback | https://race.netkeiba.com/ または https://nar.netkeiba.com/ / secondary | official fieldが欠ける場合だけcrwl。terms statusを明記し、raw valuesを出さない | PUBLIC_WEB_SECONDARY、SHADOW-only、cash不可 |
 
 NAR robotsはDisallowを隠さない。permission basisはUSER_ATTESTED_PERMISSION（2026-08-10）、permission_document_verified=falseであり、一般的なbot/redistribution許可ではない。NAR official outcome/payoutはpre-settlement payback rows=0で、settled receipt reconciliationまで未確定である。
