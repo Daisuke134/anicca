@@ -101,7 +101,7 @@ function adaptFleetDashboard(input) {
     const leaderboard = dashboard.leaderboard, registry = value.registeredWallets;
     if (!Array.isArray(leaderboard)) fail("invalid_leaderboard");
     if (!Array.isArray(registry)) fail("invalid_array");
-    const byIdentity = new Map(), byId = new Map(), records = [];
+    const byIdentity = new Map(), byEvmId = new Map(), bySolanaId = new Map(), records = [];
     for (const entry of registry) {
       exactKeys(entry, REGISTRY_KEYS, "invalid_registry");
       const walletId = entry.walletId, chain = entry.chain;
@@ -110,22 +110,22 @@ function adaptFleetDashboard(input) {
       const id = normalizeIdentity(walletId, chain), identity = `${id}\0${chain}`;
       if (byIdentity.has(identity)) fail("duplicate_registered_wallet");
       const record = { id, chain, accountRef: ref(value.referenceKey, SCOPE, "account", identity), present: false, mismatch: false };
-      records.push(record); byIdentity.set(identity, record); if (!byId.has(id)) byId.set(id, []); byId.get(id).push(record);
+      records.push(record); byIdentity.set(identity, record); const index = chain === "solana" ? bySolanaId : byEvmId;
+      if (!index.has(id)) index.set(id, []); index.get(id).push(record);
     }
     const wallets = [], exceptions = [];
     for (const row of leaderboard) {
       if (row === null || typeof row !== "object" || Array.isArray(row)) fail("invalid_row");
       if (typeof row.id !== "string") continue;
-      const chain = typeof row.chain === "string" ? row.chain : "", id = normalizeIdentity(row.id, chain);
-      const registered = byIdentity.get(`${id}\0${chain}`), known = byId.get(id);
-      if (!registered) { if (known) for (const record of known) record.mismatch = true; continue; }
+      const chain = typeof row.chain === "string" ? row.chain : "";
+      const candidates = [...(byEvmId.get(row.id.toLowerCase()) || []), ...(bySolanaId.get(row.id) || [])], registered = candidates.find((record) => record.chain === chain);
+      if (!registered) { for (const record of candidates) record.mismatch = true; continue; }
       if (registered.present) fail("duplicate_dashboard_wallet");
       registered.present = true;
       if (!Number.isSafeInteger(row.ts) || row.ts < 0 || row.ts > 8640000000000) fail("invalid_timestamp");
-      const telemetryMs = row.ts * 1000, telemetryAsOf = new Date(telemetryMs).toISOString();
-      if (telemetryMs > sourceMs + 5000) fail("telemetry_chronology");
+      const telemetryMs = row.ts * 1000, telemetryAsOf = new Date(telemetryMs).toISOString(); if (telemetryMs > sourceMs + 5000) fail("telemetry_chronology");
       const walletExceptions = [], account = registered.accountRef;
-      wallets.push({ accountRef: account, chain: registered.chain, telemetryAsOf, telemetryFreshness: sourceMs - telemetryMs <= 300000 ? "fresh" : "stale", walletValuation: metric("wallet_valuation", row, id, registered.chain, telemetryAsOf, value.referenceKey, SCOPE, walletExceptions, account), externalStablecoinInflows: metric("external_inflows", row, id, registered.chain, telemetryAsOf, value.referenceKey, SCOPE, walletExceptions, account), burnRate: metric("burn_rate", row, id, registered.chain, telemetryAsOf, value.referenceKey, SCOPE, walletExceptions, account) });
+      wallets.push({ accountRef: account, chain: registered.chain, telemetryAsOf, telemetryFreshness: sourceMs - telemetryMs <= 300000 ? "fresh" : "stale", walletValuation: metric("wallet_valuation", row, registered.id, registered.chain, telemetryAsOf, value.referenceKey, SCOPE, walletExceptions, account), externalStablecoinInflows: metric("external_inflows", row, registered.id, registered.chain, telemetryAsOf, value.referenceKey, SCOPE, walletExceptions, account), burnRate: metric("burn_rate", row, registered.id, registered.chain, telemetryAsOf, value.referenceKey, SCOPE, walletExceptions, account) });
       exceptions.push(...walletExceptions);
     }
     for (const record of records) if (!record.present) exceptions.push({ accountRef: record.accountRef, field: "wallet", reason: record.mismatch ? "chain_mismatch" : "missing_registered_wallet" });
