@@ -154,6 +154,61 @@ test("Connpass browser detail leaves starts_at null when hCalendar dtstart is ab
   }
 });
 
+test("Connpass browser detail reads hCalendar dtend when JSON-LD endDate is absent", async () => {
+  const previousDocument = global.document;
+  const previousLocation = global.location;
+  global.location = { href: "https://openforce.connpass.com/event/399614/" };
+  global.document = {
+    querySelector(selector) {
+      if (selector === 'link[rel="canonical"]') return { href: global.location.href };
+      if (selector === ".current_event_title") return { textContent: " Public event " };
+      if (selector === ".dtstart .value-title") {
+        return { getAttribute(name) { return name === "title" ? "2026-07-31T21:00:00Z" : null; } };
+      }
+      if (selector === ".dtend .value-title") {
+        return { getAttribute(name) { return name === "title" ? "2026-07-31T23:30:00Z" : null; } };
+      }
+      if (selector === "h1") return { textContent: "" };
+      return null;
+    },
+    querySelectorAll() { return []; },
+  };
+  const page = { async evaluate(callback) { return callback(); } };
+  try {
+    const result = await readEventDetail(page);
+    assert.equal(result.ends_at, "2026-07-31T23:30:00Z");
+  } finally {
+    global.document = previousDocument;
+    global.location = previousLocation;
+  }
+});
+
+test("Connpass browser detail leaves ends_at null when hCalendar dtend is absent", async () => {
+  const previousDocument = global.document;
+  const previousLocation = global.location;
+  global.location = { href: "https://openforce.connpass.com/event/399614/" };
+  global.document = {
+    querySelector(selector) {
+      if (selector === 'link[rel="canonical"]') return { href: global.location.href };
+      if (selector === ".current_event_title") return { textContent: " Public event " };
+      if (selector === ".dtstart .value-title") {
+        return { getAttribute(name) { return name === "title" ? "2026-07-31T21:00:00Z" : null; } };
+      }
+      if (selector === "h1") return { textContent: "" };
+      return null;
+    },
+    querySelectorAll() { return []; },
+  };
+  const page = { async evaluate(callback) { return callback(); } };
+  try {
+    const result = await readEventDetail(page);
+    assert.equal(result.ends_at, null);
+  } finally {
+    global.document = previousDocument;
+    global.location = previousLocation;
+  }
+});
+
 test("Connpass detail normalization exposes only the missing public contract field", () => {
   const cases = [
     [raw({ title: "" }), "CONNPASS_DETAIL_TITLE_INVALID_FAILED"],
