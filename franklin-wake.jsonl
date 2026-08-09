@@ -24356,3 +24356,10 @@
 {"ts":1786277693,"wake_id":"00MSLRM9FU04CC3538E7F34BB2","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
 {"ts":1786277827,"wake_id":"00MSLRP53YAC626236B33745A3","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786277958,"wake_id":"00MSLRRY521A53A6635CB844CA","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786278094,"wake_id":"00MSLRUV34DD81412FB91B4FF0","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786278236,"wake_id":"00MSLRXW5VB9DF3BAF542B4502","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786278368,"wake_id":"00MSLS0PYSC5453FE3A07D4F8B","kind":"wake","sleep_s":120,"model":"auto","slot":"report","profitable":false,"exit_code":0}
+{"ts":1786278503,"wake_id":"00MSLS3MBR907D8B87BADC46C1","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: solana microtask platform pay USDC for simple tasks API [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates s"}
+{"ts":1786278632,"wake_id":"00MSLS6E3HE40FE5C660014E3B","kind":"wake","sleep_s":120,"model":"auto","slot":"report","profitable":false,"exit_code":0}
+{"ts":1786278764,"wake_id":"00MSLS97QVEF01B7C2800F4045","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786278893,"wake_id":"00MSLSBZ24FC4016B89E92457C","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
