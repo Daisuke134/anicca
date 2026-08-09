@@ -1,4 +1,4 @@
-# Life Manager 競馬AI financial organ 設計仕様（Mac-native public web）
+# Life Manager 競馬AI financial organ 設計仕様（Mac-native official public web）
 
 ## Status、truth、責務
 
@@ -6,156 +6,185 @@
 |---|---|
 | Status | **REALITY GATE REQUIRED — LIVE PURCHASE DISABLED** |
 | 対象 | Life Manager financial organ の第8候補 business_id: horse_racing |
-| 現在のactive stage | HRA-2F TDD refactor（ACTIVE）。HRA-2RはHRA-2F GREENまでBLOCKED、JRA/NAR実recordは0 |
+| 現在のactive stage | HRA-2F TDD refactor（ACTIVE）。NAR officialはzero-cost primary sourceの実観測candidate、HRA-2R manifest gateはHRA-2F GREENまでBLOCKED、JRA recordsは0 |
 | plan / gate / verification owner | Sol |
 | edit / code / execution owner | Luna |
 | 購入処理 | PurchaseExecutorは常時disabled。HRA-6の全gateなしに有効化しない |
 
-この文書は無料の公開Web ingestion、source別Reality Gate、実測値のtruth label、受入条件の正本である。horse_racingはCFO-0c exact-seven完了後にregistry v2で候補として扱うだけで、revenue businessとして承認されたことを意味しない。Sol owns plan/gate/verification; Luna owns edits/code/execution.
+この文書はzero-cost public-web ingestion、source authority、Reality Gate、truth label、受入条件の正本である。NAR official public dataは証拠documentによりzero-cost primary sourceとして確定したが、HRA-2FがGREENでmanifestを受理するまでは下流をunlockしない。Sol owns plan/gate/verification; Luna owns edits/code/execution.
 
 ### 現在のevidence table
 
 | Evidence | 実測値 |
 |---|---:|
-| real JRA public-web records | 0 |
-| real NAR public-web records | 0 |
-| NAR secondary route observations (links only) | 1 |
-| live shadow runs | 0 |
+| real JRA official public-web records | 0 |
+| real NAR official race rows | 46 |
+| real NAR official horse rows | 456 |
+| real NAR official monthly odds rows | 327274 |
+| real NAR official payback rows | 0 (pre-settlement) |
+| real historical backtests | 0 |
+| live SHADOW runs | 0 |
+| live Telegram runs | 0 |
 | live orders/payments | 0 |
+| revenue / real P&L | 0 |
 
-route observationやHTTP/DOM successはrecordではない。row、observed schema、hashを含むmanifestがない限り、provider connectivity、data accuracy、model accuracy、ROI、Telegram/CFO revenue、収益を証明しない。unknownを0へ変換せず、未取得はBLOCKEDと表示する。
+NARの46/456/327274行はdocs/evidence/horse-racing/nar-official-data-probe.mdのredacted observationである。HTTP/DOM successだけ、download開始だけ、schema存在だけではcompletionではない。JRA、backtest、SHADOW、Telegram、orders、revenueは未実施であり、unknownを0へ変換しない。
 
 ### Committed proof boundary
 
-0fe627cd proves only the superseded Windows boundary; it is not compatible with the approved Mac-native free-web design and is not HRA-2F/HRA-2R evidence.
+0fe627cdはsuperseded boundaryの歴史的記録であり、approved Mac-native official public-web designの実装証拠ではない。現行のNAR観測は6a6cdd135のredacted evidenceだけを根拠にする。
 
 ### Evidence classes
 
-すべてのreceipt、Telegram、CFO projection、model reportに次のtruth labelを明記する。
+- SYNTHETIC_TEST: 人工fixtureでpure mechanicsだけを検証する証拠。
+- REAL_PUBLIC_WEB_RECORD: 公式JRAまたは公式NAR公開ページ・公式downloadから、permission basis、robots/terms、rate limit、manifestを記録した非合成record。
+- PUBLIC_WEB_SECONDARY: race.netkeiba.comまたはnar.netkeiba.comをofficial fieldのfallbackとして取得した二次record。schema/audit/SHADOWだけに使い、official/licensed/compliantとは呼ばない。
+- LIVE_SHADOW: REAL_PUBLIC_WEB_RECORDまたはPUBLIC_WEB_SECONDARYからdecisionしたが注文・決済をしていない証拠。
+- LIVE_CASH: HRA-6後のofficial settled result/payout、receipt、reconciliationを通過した証拠。現在は常にdisabled。
 
-- SYNTHETIC_TEST: 人工fixtureでpure mechanicsだけを検証した証拠。
-- REAL_PUBLIC_WEB_RECORD: JRA公式公開ページから、robots/termsとrate limitを守って取得した非合成record。
-- PUBLIC_WEB_SECONDARY: nar.netkeiba.com等の二次公開ページから得たrecord。NAR laneはSHADOW-onlyであり、official/licensed/compliantとは呼ばない。
-- LIVE_SHADOW: REAL_PUBLIC_WEB_RECORDまたはPUBLIC_WEB_SECONDARYでdecisionしたが注文・決済をしていない証拠。
-- LIVE_CASH: HRA-6後にofficial settled result/payoutとreceipt reconciliationを通過した証拠。現在は常にdisabled。
-
-SYNTHETIC_TEST、PUBLIC_WEB_SECONDARY、未settled LIVE_SHADOWはreal revenueへ合算しない。HTTP/DOM successだけ、ページの存在だけ、リンクだけではrecordにならない。
-
-### 永久 rejection（歴史的メモ、activeではない）
-
-Physical Windows、VM/Wine/COM、JRA-VAN/Data Lab/JV-Link、UmaConn/NV-Link、JRDB、every paid data sourceは永久にrejectする。これらはarchitecture、source、requirement、manifest、acceptance、reuse candidateのいずれにも登場しない。
+SYNTHETIC_TEST、PUBLIC_WEB_SECONDARY、未settled LIVE_SHADOWはreal revenueへ合算しない。NAR officialのpre-settlement payback rows=0はsettled payoutではない。
 
 ## 1. 目的とHard non-goals
 
 ### 目的
 
-個人利用だけを対象に、Mac-nativeなzero-cost public-web ingestionでJRAの公式公開ページをprimary sourceとして観測する。NARは当初nar.netkeiba.comを二次公開ページとして観測し、schema/audit/SHADOWに限定する。sourceごとにactual non-synthetic race recordを1件以上得てから、observed schema、append-only store、chronological audit、market baseline、walk-forward model、official outcome reconciliationへ進む。
+個人利用だけを対象に、Mac-native zero-cost public-web ingestionでJRAとNARの公式公開情報をprimary sourcesとして観測する。JRA official laneはrecord 0から開始し、NAR official laneはdaily race archive、monthly odds archive、公式manualのredacted evidenceを持つ。二次公開ページはofficial fieldが欠けた場合のfallback/shadow-onlyに限定する。
 
 ### Hard non-goals
 
-- paid source、subscription、credential、provider login、SaaS、public APIを導入しない。
-- raw page、raw row、実馬名、secret、credentialをGit、Telegram、cloud、CFO、公開ページへ再配布しない。
+- paid source、subscription、credential、provider login、SaaS、public API、raw redistributionを導入しない。
 - browser login、DOM click、注文API、wallet/bank mutation、bet、実購入を実装・実行・有効化しない。
-- crwlはサイトごとのrobots/termsの範囲とcourteous rate limit内だけで使う。許可が確認できない自動化は継続しない。
+- crwlはnavigation/HTMLに使い、curlはcrwlのPage.goto: Download is starting制限を補う公式binary downloadにだけ使う。robots/termsとcourteous rate limitを守る。
+- USER_ATTESTED_PERMISSIONはこのbounded personal probeのbasisに限り、一般的なbot許可、再配布許可、cash execution許可とは解釈しない。permission_document_verified=falseを保持する。
 - 収益、勝率、ROI、$10K/monthを保証または推定しない。$10Kはevidence-driven target only。
-- 説明層にdecision、probability、odds、EV、stake、action、capを決めさせない。
 
-## 2. Mac-native public-web architecture
+## 2. Mac-native official-web architecture
 
 ### Gateで下流を止めるflow
 
 ~~~mermaid
 flowchart TD
   A[HRA-0 research/spec] --> B[HRA-1 safety contracts]
-  B --> C[HRA-2a Mac-local private boundary]
-  C --> F[HRA-2F TDD free-web ingest boundary]
-  F -- GREEN --> G{HRA-2R source Reality Gate}
-  F -- RED/BLOCKED --> X[DATA BLOCKED: refactor required]
-  G -- JRA official PASS --> J[HRA-2S JRA observed schema]
-  G -- NAR secondary PASS --> N[HRA-2S NAR secondary schema]
-  G -- BLOCKED --> X[DATA BLOCKED report only]
-  J --> D[HRA-3D actual data audit]
+  B --> F[HRA-2F Mac ingest boundary]
+  P[USER_ATTESTED_PERMISSION / document unverified] -. bounded personal probe only .-> F
+  F -- GREEN --> G{HRA-2R per-source manifest gate}
+  F -- RED/BLOCKED --> X[DATA BLOCKED]
+  G -- JRA official --> J[HRA-2S JRA observed schema]
+  G -- NAR official candidate --> N[HRA-2S NAR observed schema]
+  G -- secondary fallback --> S[SHADOW-only secondary schema]
+  J --> D[HRA-3D actual audit]
   N --> D
+  S --> D
   D --> M[HRA-3M baseline/walk-forward/calibration]
-  M --> S[HRA-4 live-data SHADOW + official outcome]
-  S --> T[HRA-5 Telegram/CFO evidence separation]
-  T --> P[HRA-6 terms/order/tax/receipt gate]
-  P --> Q[HRA-7 micro-live review, still disabled]
-  Q --> R[HRA-8 evidence-driven target review]
-  N -. secondary never unlocks LIVE_CASH alone .-> P
+  M --> H[HRA-4 SHADOW + official outcome]
+  H --> T[HRA-4b Telegram evidence split]
+  T --> C[HRA-5 CFO receipt split]
+  C --> Q[HRA-6 terms/tax/receipt gate]
+  Q --> Z[HRA-7/8 blocked cash/scale review]
+  S -. never unlocks LIVE_CASH .-> Q
 ~~~
 
-JRAとNARは独立したgateである。JRA PASSはNARをPASSにせず、NAR secondary PASSはschema/audit/SHADOWだけをunlockする。NARがBLOCKEDでもJRA laneは独立して進める。
+JRAとNAR officialは独立laneである。NARのUSER_ATTESTED_PERMISSIONはprobeの根拠を記録するだけで、HRA-6をskipしない。secondary fallbackはschema/audit/SHADOWだけをunlockする。
 
 ### Data pipeline
 
 ~~~mermaid
 flowchart LR
-  S[Mac host + crwl] --> F[HRA-2F ingest boundary] --> R[Mac-local private append-only raw snapshot]
+  A[Mac + crwl navigation/HTML] --> J[JRA official HTML]
+  A --> N[NAR Today/DataRoom/Monthly HTML]
+  N --> C[curl daily race ZIP + monthly odds ZIP]
+  J --> F[HRA-2F source/permission boundary]
+  C --> F
+  F --> R[Mac-local private raw snapshot]
   R --> M[Redacted manifest only]
-  M --> V{row_count >= 1 + schema + hash}
-  V -- PASS --> D[Observed schema/local store]
+  M --> V{row_count + schema + sha256}
+  V -- PASS --> D[Observed schema/store]
   V -- FAIL --> B[DATA BLOCKED]
-  D --> A[Chronological audit]
-  A --> F[Walk-forward calibrated model]
-  F --> H[SHADOW ledger]
-  H --> O[Official result reconciliation]
+  D --> A2[Chronological audit]
+  A2 --> W[Model/walk-forward]
+  W --> S[SHADOW ledger]
+  S --> O[Official outcome reconciliation]
   O --> T[Telegram/CFO split]
-  F --> P[PurchaseExecutor: disabled]
-  N[keiba.go.jp dynamic paths] -. robots disallow .-> B
+  X[nar.netkeiba.com fallback] -. PUBLIC_WEB_SECONDARY / SHADOW-only .-> D
+  E[Page.goto: Download is starting] -. curl required for binary .-> C
+  P[PurchaseExecutor disabled] -. no side effect .-> S
 ~~~
 
-Raw snapshotはMac-local private append-only boundaryに留める。Git、Telegram、cloud、CFOにはraw snapshotを送らず、redacted manifestだけをcommit可能にする。
+raw snapshotはMac-local private append-only boundaryに留める。Git、Telegram、cloud、CFOへ出すのはmanifest、hash、row count、schema names/types、statusだけであり、raw valuesは常にexportしない。
 
 ## 3. Source policyとobserved evidence
 
 ### Source matrix
 
-| lane | URL / authority | 現在の観測・許可 | gateとtruth |
+| lane | URL / authority | 観測・許可 | gateとtruth |
 |---|---|---|---|
-| JRA primary | https://www.jra.go.jp/ / official | 公式公開ページ。https://www.jra.go.jp/robots.txt は User-agent:* と空のDisallowを観測。https://www.jra.go.jp/use/ はprivate use/citationを超える利用にpermissionが必要と説明する。個人・private useの範囲だけで取得する | 1件以上のactual record + manifestでREAL_PUBLIC_WEB_RECORD |
-| NAR official dynamic | https://www.keiba.go.jp/ / official | robots.txtはCrawl-delay: 10と/KeibaWeb/TodayRaceInfo/、/KeibaWeb/DataRoom/、/KeibaWeb/DataDownload/を明示的にDisallow。これらをcrawlしない。推測URL /KeibaWeb/DataRoom/DataDownload は404で、verified ZIP/CSV claimはしない | official NAR laneはBLOCKED。robot disallowを回避しない |
-| NAR initial secondary | https://nar.netkeiba.com/ / secondary | crwlで現行race-card/result linksを観測。automation termsは未検証で、official/licensed/compliantとは呼ばない。raw valuesを公開・再配布しない | PUBLIC_WEB_SECONDARY、schema/audit/SHADOW-only。LIVE_CASH前にterms resolution + official result/payout reconciliation |
-| JRA fallback | nar.netkeiba.com / secondary | JRA公式ページにfieldがない場合だけfallbackにできる。source labelとsecondary authorityを保持し、JRA official recordへ昇格しない | PUBLIC_WEB_SECONDARY、SHADOW-only |
+| JRA primary | https://www.jra.go.jp/ / official | robotsはUser-agent:*とempty Disallow。use pageのprivate use/citation境界内でcrwl navigation/HTMLを取得する | record 0。1件以上のactual row + manifestでREAL_PUBLIC_WEB_RECORD |
+| NAR official Today | https://www.keiba.go.jp/KeibaWeb/TodayRaceInfo/TodayRaceInfoTop / official | crwl exit 0。2026-08-10 daily venuesとofficial daily-data linkを観測。robotsはCrawl-delay: 10とdynamic path Disallowを保持し、probeはUSER_ATTESTED_PERMISSION basis | REAL_PUBLIC_WEB_RECORD candidate、NAR 46 race rows |
+| NAR official daily archive | https://www.keiba.go.jp/KeibaWeb/DataDownload/RaceDataDownload?type=daily / official | crwlはPage.goto: Download is starting。curl fallback HTTP 200 application/zip、UTF-8 BOM CSV、race 46 / horse 456 / payback 0 pre-settlement | REAL_PUBLIC_WEB_RECORD candidate、raw non-export |
+| NAR official monthly navigation | https://www.keiba.go.jp/KeibaWeb/MonthlyConveneInfo/MonthlyConveneInfoTop / official | crwl exit 0。monthly race/odds endpointsを観測 | official NAR lane |
+| NAR official monthly odds | https://www.keiba.go.jp/KeibaWeb/DataDownload/OddsDataDownload?type=monthly&k_year=2026&k_month=8 / official | runtimeは公式pageからyear/monthを導出する。curl HTTP 200 application/zip、first interval 327274 rows | REAL_PUBLIC_WEB_RECORD candidate |
+| NAR official manual | https://www.keiba.go.jp/pdf/manual/data_pdf_manual.pdf / official | 8 pages、daily 約2分更新、monthly 毎月2日午前2時頃、daily intermediate odds、race history 1998-01、odds history 2026-03を観測 | source cadence/coverage evidence |
+| Secondary fallback | https://race.netkeiba.com/ または https://nar.netkeiba.com/ / secondary | official fieldが欠ける場合だけcrwl。terms statusを明記し、raw valuesを出さない | PUBLIC_WEB_SECONDARY、SHADOW-only、cash不可 |
 
-HRA-2F is the immediate active TDD slice: refactor the ingest boundary to accept JRA official and netkeiba secondary source authority, persist Mac-local private storage, capture robots/terms evidence metadata, and keep raw values non-exported. HRA-2R record probes remain BLOCKED until HRA-2F is GREEN.
+NAR robotsはDisallowを隠さない。permission basisはUSER_ATTESTED_PERMISSION（2026-08-10）、permission_document_verified=falseであり、一般的なbot/redistribution許可ではない。NAR official outcome/payoutはpre-settlement payback rows=0で、settled receipt reconciliationまで未確定である。
 
-crwlによる取得は、対象サイトのrobotsとtermsを毎回確認し、courteous rate limitを守る。NAR secondaryのtermsが未検証のままなら自動化範囲を増やさず、観測をroute evidenceとして扱う。NAR secondaryはHRA-6のterms/order/tax/receipt gateを単独で満たさない。
+### HRA-2F accepted source contract
+
+HRA-2FはMac-only source/permission boundaryとして、次のexact combinationを受け付ける。
+
+- www.jra.go.jp + official + JRA
+- www.keiba.go.jp + official + NAR
+- race.netkeiba.com + secondary + JRA
+- nar.netkeiba.com + secondary + NAR
+
+すべてhost_os=macos、storage_scope=mac_local_private、raw_values_exported=false、permission_basis、permission_document_verifiedをmanifestへ保存する。keiba.go.jp dynamic URLのrobots statusを消さず、secondary authorityをofficialへ昇格しない。HRA-2R NARは46/456/327274行のreal observation candidateだが、HRA-2F GREENとmanifest gate受理までBLOCKEDである。
 
 ### Reality Gate（sourceごと）
 
-1. JRA laneは公式公開pageをcrwlで取得し、robots snapshot、terms status、retrieved_at、page/effective timestampを記録する。
-2. NAR official dynamic pathはrobots disallowのため取得せず、404 observationからZIP/CSVやAPIの存在を推測しない。
-3. NAR secondary laneは公開race-cardまたはresult pageをrate-limitedに取得し、PUBLIC_WEB_SECONDARYと明記する。termsが未検証なのでSHADOW以外の作用を許可しない。
-4. JRAとNARはそれぞれ独立に、row_count>=1のactual non-synthetic public-web race recordを1件以上観測する。links、DOM、HTTP 200、synthetic fixtureだけではPASSしない。
-5. manifestの必須値欠落、HTTP/parse failure、terms/robots違反、content hash欠落、raw export発生は即BLOCKED。syntheticで補完しない。
+1. JRA laneは公式navigationからcurrent pageをcrwlし、robots/terms、retrieved_at、page/effective timestamp、row count、schema、hashを記録する。現recordは0。
+2. NAR official laneはToday/DataRoom/Monthly HTMLをcrwlし、binary race/odds archivesをcurlで取得する。daily ZIPはrace 46、horse 456、payback 0 pre-settlement、monthly oddsは327274 rowsをmanifestへ記録する。
+3. crwl binary failure Page.goto: Download is startingはtool limitationとして扱い、curl HTTP 200 archive evidenceを使う。これはsource failureやsettled payoutではない。
+4. NAR secondary fallbackはPUBLIC_WEB_SECONDARY、SHADOW-only。official NAR laneの代替primaryにも、LIVE_CASH根拠にもならない。
+5. parsed_row_count>=1、observed schema names/types、content_sha256、robots/terms status、permission fields、raw_values_exported=falseが欠ければそのsourceはBLOCKED。syntheticで補完しない。
 
 ### Redacted evidence manifest
 
-sourceごとに次のmanifestだけをcommit可能にする。
-
 ~~~yaml
 evidence_class: REAL_PUBLIC_WEB_RECORD
-source_url: https://www.jra.go.jp/<public-page>
-source_authority: official # official|secondary
-jurisdiction: JRA # JRA|NAR
-retrieved_at: <ISO-8601>
-page_or_effective_timestamp: <timestamp or unavailable>
+source_url: https://www.keiba.go.jp/KeibaWeb/DataDownload/RaceDataDownload?type=daily
+source_authority: official
+jurisdiction: NAR
+permission_basis: USER_ATTESTED_PERMISSION
+permission_document_verified: false
+retrieved_at: 2026-08-10T07:22:26+09:00
+page_or_effective_timestamp: 2026-08-10T07:22:26+09:00
 fetch_exit_code: 0
 http_status: 200
-parsed_row_count: <integer >= 1>
+parsed_row_count: 46
+row_counts:
+  races: 46
+  horses: 456
+  monthly_odds: 327274
+  paybacks_pre_settlement: 0
 observed_schema:
-  - name: <field name only>
-    type: <normalized type only>
-content_sha256: <sha256 of Mac-local raw snapshot>
-robots_snapshot_url: <robots URL>
-robots_status: <observed status/directive summary>
-terms_url: <terms URL or unavailable>
-terms_status: <observed|unverified|blocked>
+  type: utf8_csv_field
+  racelist: venue/date/race_number/start_time/surface/distance/weather/track_condition/runner_count/prize
+  horselist: gate/horse_number/horse_name/sex/age/pedigree/jockey/trainer/weight/result_fields
+  payback: win/place/quinella/exacta/wide/trio/trifecta_fields
+  odds: venue/date/race_number/bet_type/number1/number2/number3/odds/odds_max/popularity
+content_sha256:
+  daily_race_zip: f245030f4608055c2fa24e2910d51edcd029f2292c9cfbe66d2911604e1e1c5b
+  monthly_odds_zip: ad18c23b4648bef4113c8191cc78d084168a2aa37c9b49431742e64621f0397f
+  official_manual_pdf: 56009a444ffb61ddc99097ffdd2d2a84a864073c00052d9f691cfda1770236dd
+robots_snapshot_url: https://www.keiba.go.jp/robots.txt
+robots_status: "Crawl-delay: 10; TodayRaceInfo/DataRoom/DataDownload disallowed"
+terms_url: unavailable
+terms_status: USER_ATTESTED_PERMISSION_DOCUMENT_UNVERIFIED
 raw_values_exported: false
+allowed_scope: private_shadow
 ~~~
 
-NAR secondary manifestはevidence_class: PUBLIC_WEB_SECONDARY、source_authority: secondary、jurisdiction: NARにする。parsed_row_count>=1、observed schema field names/types、content_sha256、robots_snapshot_url/status、terms_url/status、raw_values_exported=falseが全て必須である。page/effective timestampが取れなければunavailableと明記する。HTTP/DOM successのみはrecordではない。
+NAR secondary manifestはevidence_class=PUBLIC_WEB_SECONDARY、source_authority=secondary、allowed_scope=shadow_only、permission fields付きで、LIVE_CASH/revenueをauthorizeしない。HTTP/DOM successのみではrecordにならない。
 
 ## 4. Boundary、schema、model、risk
 
@@ -165,11 +194,11 @@ raw snapshotはMac-local private append-only storeだけに書き込む。保存
 
 ### HRA-2S observed schema
 
-HRA-2SはReality Gateで観測したmanifestとrecordからのみschemaを定義する。schema_version、race_id、source、jurisdiction、page/effective timestamp、runner opaque id、odds、track condition等は実recordに存在したfieldだけを採用する。synthetic-only field、実馬名、raw row、credential、subscription id、receiptはschema根拠にしない。
+HRA-2SはHRA-2R manifestと実recordからschemaを定義する。REAL_PUBLIC_WEB_RECORDはJRA/NAR official laneを許可し、PUBLIC_WEB_SECONDARYはfallbackのschema/audit/SHADOWだけを許可する。schema_version、race_id、source、jurisdiction、page/effective timestamp、opaque runner id、odds、track condition等はobserved fieldだけを採用し、実馬名やraw rowをschema根拠にしない。
 
 ### HRA-3D / HRA-3M
 
-- actual chronological datasetがない状態ではbacktest、ROI、accuracy、calibrationを実行・主張しない。
+- NAR daily/monthly evidenceはactual public-web coverageだが、historical outcome/backtest datasetではない。actual chronological datasetがない状態ではbacktest、ROI、accuracy、calibrationを実行・主張しない。
 - source、jurisdiction、timestamp order、coverage、欠損、duplicate、cutoff leakage、snapshot freshnessを監査する。
 - market implied probabilityをbaselineにし、time-series walk-forwardだけを使う。random split、後刻odds、synthetic historical dataを禁止する。
 - Brier、logloss、ECE、slippage、later-window evidenceを記録する。accuracyだけで昇格させない。
@@ -177,7 +206,7 @@ HRA-2SはReality Gateで観測したmanifestとrecordからのみschemaを定義
 
 ### No-betとSHADOW
 
-実public-web dataがあるeligible raceはSHADOWまたはSKIP decisionを生成する。SKIPでもbest candidate、threshold gap、reason、evidence class、freshness、decision_idをappendする。NAR secondaryはSHADOW-onlyで、NAR official outcome/payoutがreconcileされるまでLIVE_CASHを生成しない。
+実public-web dataがあるeligible raceはSHADOWまたはSKIP decisionを生成する。NAR officialでもsettled outcomeがないraceはSHADOWであり、secondary fallbackは常にSHADOW-onlyである。SKIPにもbest candidate、threshold gap、reason、evidence class、freshness、decision_idをappendする。
 
 ## 5. Telegram / CFO truth contract
 
@@ -186,133 +215,119 @@ HRA-2SはReality Gateで観測したmanifestとrecordからのみschemaを定義
 ~~~mermaid
 sequenceDiagram
   participant S as schedule
-  participant W as public web
+  participant W as JRA/NAR official web
+  participant F as HRA-2F
   participant R as Reality Gate
   participant D as decision engine
-  participant L as shadow ledger
+  participant L as SHADOW ledger
   participant T as Telegram
   participant O as official outcome
   participant C as CFO
-  S->>W: source + robots/terms + rate limit
-  W->>R: page + redacted manifest
+  S->>W: crwl HTML + curl binary archive
+  W->>F: page/archive + permission/robots manifest
+  F->>R: redacted evidence
   R-->>D: PASS + evidence class
-  R-->>L: immutable blocked/observed evidence
+  R-->>L: blocked/observed evidence
   D->>L: immutable SHADOW/SKIP decision
   L->>T: dedupe outbox + truth label
-  O-->>L: placing/payout/refund or unavailable
-  L->>T: result with real/shadow split
+  O-->>L: settled placing/payout/refund or unavailable
+  L->>T: real/shadow P&L split
   L->>C: receipt summary only
-  C->>T: nightly evidence-separated report
 ~~~
 
-メッセージ先頭は正確にLife Manager::: 競馬AIとし、その直後にlabelを置く。
+メッセージ先頭はLife Manager::: 競馬AIとし、REAL_PUBLIC_WEB_RECORD official laneまたはPUBLIC_WEB_SECONDARY fallbackを表示する。
 
-- [DATA BLOCKED]: source、robots/terms、manifest、quality gateが欠けておりpredictionを出さない。
-- [REAL DATA · SHADOW]: JRA REAL_PUBLIC_WEB_RECORDまたはNAR PUBLIC_WEB_SECONDARYでdecisionしたが注文していない。
-- [LIVE · ¥100]: HRA-6以降にofficial settled receiptがreconcileされた場合だけ許可する（現在disabled）。
+- [DATA BLOCKED]: HRA-2F、permission metadata、robots/terms、manifest、quality gateが欠けておりpredictionを出さない。
+- [REAL DATA · SHADOW]: official public-web recordでdecisionしたが注文していない。
+- [LIVE · ¥100]: HRA-6後にofficial settled receiptがreconcileされた場合だけ許可する。permission_document_verified=falseのままでは不可。
 
-全messageはsource_url、source_authority、jurisdiction、retrieved_at、page/effective timestamp、evidence class、odds snapshot、model version、decision_id、action/reason、real P&L、shadow P&Lを表示する。raw values、credential、実馬名は表示しない。TelegramとCFOはsynthetic、secondary、shadow、cashを混ぜない。
-
-### Message schema
-
-~~~text
-Life Manager::: 競馬AI
-[DATA BLOCKED|REAL DATA · SHADOW|LIVE · ¥100]
-日時: <ISO-8601 JST>
-source_url: <public page>
-source_authority: <official|secondary>
-jurisdiction: <JRA|NAR>
-retrieved_at: <timestamp>
-page_or_effective_timestamp: <timestamp or unavailable>
-evidence_class: <SYNTHETIC_TEST|REAL_PUBLIC_WEB_RECORD|PUBLIC_WEB_SECONDARY|LIVE_SHADOW|LIVE_CASH>
-action: <SHADOW|SKIP|LIVE|NONE>
-reason: <reason>
-decision_id: <immutable id>
-model: <version or null>
-data_freshness: <status and age or null>
-real_P&L: <settled value or null>
-shadow_P&L: <shadow value or null>
-~~~
+全messageはsource_url、source_authority、jurisdiction、retrieved_at、page/effective timestamp、evidence class、model version、decision_id、action/reason、real P&L、shadow P&Lを表示し、raw values、credential、実馬名は表示しない。
 
 ### CFO contractと$10K target
 
 - business_idはhorse_racing、ledgerはhorse_racing_bet_receipts。raw page/rowをledgerへ入れず、receipt summary、hash、evidence classだけを保持する。
-- SYNTHETIC_TEST、PUBLIC_WEB_SECONDARY、未settled LIVE_SHADOWはrevenue 0。unknownは0に変換しない。
-- real P&LはHRA-6後のLIVE_CASH official settled receiptだけで確定する。bank/internal settlementとの二重計上を拒否する。
+- SYNTHETIC_TEST、PUBLIC_WEB_SECONDARY、未settled LIVE_SHADOW、pre-settlement paybackはrevenue 0。unknownは0に変換しない。
+- real P&LはHRA-6後のLIVE_CASH official settled receiptだけで確定する。USER_ATTESTED_PERMISSIONはcash executionや再配布を許可しない。
 - $10K/monthはevidence-driven target only。settled receipt、capacity、slippage、calibration、drawdown、tax evidenceが揃うまでROI/$10K claim、forecast、scalingをしない。
 
-## 6. Reuse matrixとreject boundary
+## 6. Reuse matrixとsource boundary
 
-| Repository / source family | authority / status | 扱い |
+| Source / utility | authority / status | 扱い |
 |---|---|---|
-| jra.go.jp public pages | official, private-use lane | robots/terms/rate limitを満たすREAL_PUBLIC_WEB_RECORDのprimary source |
-| nar.netkeiba.com public pages | secondary, terms unverified | PUBLIC_WEB_SECONDARYのschema/audit/SHADOWだけ。official/licensed/compliantと呼ばない |
-| keiba.go.jp dynamic TodayRaceInfo/DataRoom/DataDownload | official, robots disallow | crawl、ZIP/CSV推測、API claimをreject |
-| crwl | fetch utility | siteごとのrobots/termsとcourteous rate limit内だけ。raw publication・redistribution・SaaS化はreject |
-
-このmatrixはsource authorityとevidence classを混同しないための再利用SSOTである。二次ページのschemaは公式sourceの証明にならず、NAR secondaryはLIVE_CASHをunlockしない。
+| jra.go.jp public pages | official, private-use lane | JRA primaryのREAL_PUBLIC_WEB_RECORD candidate |
+| keiba.go.jp Today/DataRoom/Monthly pages | official, USER_ATTESTED bounded probe | crwl navigation/HTML。robots statusを保持し、general bot/redistribution permissionとは呼ばない |
+| keiba.go.jp RaceDataDownload / OddsDataDownload | official binary artifacts | crwl download limitation後のcurl取得。headers/counts/hashだけをmanifestへ書く |
+| keiba.go.jp data manual | official cadence/coverage documentation | daily approx 2 min、monthly approx 02:00、race 1998-01、odds 2026-03、daily intermediate odds |
+| race.netkeiba.com / nar.netkeiba.com | secondary fallback | PUBLIC_WEB_SECONDARY、SHADOW-only。official NAR/JRA recordへ昇格しない |
+| crwl + curl | fetch utilities | robots/terms/rate limit、Mac-local raw boundary、raw non-exportを守る |
 
 ## 7. Stage gates
 
 | Stage | 内容 | 状態 |
 |---|---|---|
-| HRA-0 | research/spec、public-web policy、source rejection、acceptance | **complete** |
+| HRA-0 | research/spec、public-web policy、source authority、acceptance | **complete** |
 | HRA-1 | registry dependency、PurchaseExecutor disabled、truth labels | **complete** |
-| HRA-2a | Mac-local private append-only raw boundary | **superseded design only**。0fe627cdは旧Windows boundaryの証明で、approved free-web designと非互換 |
-| HRA-2F | TDD refactor ingest boundary: JRA official + netkeiba secondary, Mac-local storage, robots/terms metadata, raw non-export | **ACTIVE**。GREENまでHRA-2Rをblocked |
-| HRA-2R | JRA/NAR各1 actual public-web record、robots/terms、redacted manifest | **BLOCKED until HRA-2F GREEN**。JRA 0、NAR 0 |
-| HRA-2S | verified manifestからobserved schema/local store | **BLOCKED**。sourceごとのHRA-2R PASSまで不可 |
-| HRA-3D | actual chronological coverage/cutoff audit | **BLOCKED**。historical evidence 0 |
-| HRA-3M | market baseline、walk-forward、calibration、slippage | **BLOCKED**。real backtest 0 |
-| HRA-4 | live-data SHADOW、official outcome reconciliation | **BLOCKED**。shadow run 0 |
-| HRA-5 | Telegram + CFO real/secondary/shadow separation | **BLOCKED**。live run 0 |
-| HRA-6 | terms/order/tax/credential/cap/receipt gate | **BLOCKED** |
-| HRA-7 | HRA-6後のone ¥100 max/day review | **BLOCKED。PurchaseExecutorはdisabled** |
+| HRA-2a | Mac-local private append-only raw boundary | **superseded design only**。0fe627cdは現行証拠ではない |
+| HRA-2F | JRA/NAR official + secondary fallback authority、permission metadata、Mac-local raw non-export、crwl/curl boundary | **ACTIVE** |
+| HRA-2R-JRA | JRA official actual record + manifest | **BLOCKED**。JRA records 0 |
+| HRA-2R-NAR | NAR official candidate: 46 races / 456 horses / 327274 monthly odds / payback 0 pre-settlement | **BLOCKED until HRA-2F GREEN and manifest gate** |
+| HRA-2S | observed schema/local store | **BLOCKED**。HRA-2F + source manifest acceptanceまで不可 |
+| HRA-3D | actual chronological coverage/cutoff audit | **BLOCKED**。historical backtest evidence 0 |
+| HRA-3M | market baseline、walk-forward、calibration、slippage | **BLOCKED** |
+| HRA-4 | live-data SHADOW、official outcome reconciliation | **BLOCKED**。shadow runs 0 |
+| HRA-5 | Telegram + CFO real/shadow separation | **BLOCKED**。Telegram runs 0 |
+| HRA-6 | terms/order/tax/credential/cap/receipt/reconciliation | **BLOCKED**。permission document未検証 |
+| HRA-7 | HRA-6後のone ¥100 max/day review | **BLOCKED。PurchaseExecutor disabled** |
 | HRA-8 | evidence-driven target review | **BLOCKED** |
 
 ### HRA-6 / HRA-7 policy
 
-HRA-6のterms resolution、official result/payout receipt、tax review、credential separation、cap、reconciliationが揃うまで実装・有効化しない。通過後もfail-closed、stale/manifest/Telegram/reconciliation failureのSKIP、martingale/chasing禁止、公式receipt確認を必須にする。NAR secondaryだけではHRA-6を通過できない。
+permission_document_verified=false、terms/order/tax/credential/receipt/reconciliation未完了の間はLIVE_CASHをfail-closedする。通過後もstale/manifest/Telegram/reconciliation failureのSKIP、martingale/chasing禁止、公式settled receipt確認を必須にし、USER_ATTESTED_PERMISSIONを再配布・cash実行の根拠にしない。
 
 ## 8. Acceptance criteriaとE2E judgment
 
 | 契約 | 検証 | 合格条件 |
 |---|---|---|
-| JRA Reality evidence | crwlの実public page + manifest | official URL、robots/terms、retrieved_at、page/effective timestamp、fetch exit/HTTP status、parsed row_count>=1、observed schema names/types、content_sha256 |
-| NAR secondary Reality evidence | nar.netkeiba.comの実public race-card/result page + manifest | PUBLIC_WEB_SECONDARY、source_authority=secondary、row_count>=1、terms status、SHADOW-only |
-| official NAR crawl safety | robots snapshot + 404 observation | disallowed pathsをcrawlせず、verified ZIP/CSV/API claimをしない |
-| evidence truth | Telegram/CFO payload scan | REAL_PUBLIC_WEB_RECORD等のlabelを表示し、secondary/shadow/syntheticをreal revenueへ合算しない |
-| raw boundary | Mac-local path、manifest、Git/Telegram/cloud/CFO scan | raw page/row、secret、credential、実馬名のMac外出力0件 |
-| schema derivation | manifestとschema diff | HRA-2R PASS前のsynthetic fieldをcompletionへ持ち込まない |
-| append-only/replay | duplicate/overwrite/alias/stale tests | duplicate reject、caller mutation無効、同一semantic recordのhash一致 |
-| actual audit/model | HRA-3D/3M public-web evidence | chronological coverage、cutoff audit、Brier/logloss/ECE、slippage、later-window evidenceが全て存在 |
-| all-race SHADOW | HRA-4 source lane | eligible raceにSHADOW/SKIP、BLOCKED laneはpredictionなし |
-| official reconciliation | outcome receipt | placing/payout/refund/voidをdecisionと分離し、official settled receiptだけreal P&L |
+| JRA evidence | official navigation + crwl | JRA URL、robots/terms、retrieved/effective timestamp、row_count>=1、schema names/types、content_sha256。現状0なのでBLOCKED |
+| NAR official evidence | probe evidence + manifest | official URL、USER_ATTESTED_PERMISSION、permission_document_verified=false、robots status、daily races=46、horses=456、monthly odds=327274、paybacks=0 pre-settlement、schema names/types、three hashes、raw_values_exported=false |
+| NAR binary acquisition | crwl/curl trace | Page.goto: Download is startingをtool limitationとして記録し、curl HTTP 200 application/zip、filename、bytes、hashをredacted manifestへ入れる |
+| source authority | manifest scan | REAL_PUBLIC_WEB_RECORDはofficial JRA/NARのみ。fallbackはPUBLIC_WEB_SECONDARY、allowed_scope=shadow_only、LIVE_CASH/revenue不可 |
+| permission honesty | permission fields scan | permission_basis=USER_ATTESTED_PERMISSION、permission_document_verified=false、general bot/redistribution/cash permissionのclaimなし |
+| robots boundary | robots snapshot | Crawl-delay: 10とTodayRaceInfo/DataRoom/DataDownload disallowを保持し、permission assertionを隠さない |
+| raw boundary | Mac-local path、Git/Telegram/cloud/CFO scan | raw archive/CSV/PDF、secret、credential、実馬名のMac外出力0件 |
+| schema derivation | manifestとschema diff | HRA-2F GREEN + source manifest gate前のsynthetic fieldをcompletionへ持ち込まない |
+| actual audit/model | HRA-3D/3M evidence | chronological coverage、cutoff audit、Brier/logloss/ECE、slippage、later-window evidence。現backtest 0 |
+| all-race SHADOW | HRA-4 source lanes | official recordはSHADOW/SKIP、secondary fallbackはSHADOW-only、blocked laneはpredictionなし |
+| official reconciliation | outcome receipt | pre-settlement payback 0をsettled payoutとせず、official settled receiptだけreal P&L |
 | purchase safety | disabled executor inspection | credential/network/DOM/wallet/bank side effect 0 |
 | target honesty | CFO/report scan | ROI/$10K claimなし、$10Kはevidence-driven target only |
 
 | Item | Value |
 |---|---|
 | UI変更 | Telegram message UX contractのみ。iOS UI変更なし |
-| E2E | Maestro不要。Reality Gate後に実crwl public-web evidence、manifest、Telegram/CFO分離を実測する |
+| E2E | Maestro不要。HRA-2F GREEN後にJRA/NAR official manifest、curl archive hashes、Telegram/CFO separationを実測する |
 
 ## 9. Best / Base / Worstと反証
 
 | ケース | 想定 | 判断 |
 |---|---|---|
-| Best | JRA officialとNAR secondaryが各1件以上のrecordを得てmanifestを満たし、JRAはprimary、NARはsecondaryとしてSHADOWが継続 | source authorityを混ぜず、later-window evidenceを積み、HRA-6を審査する |
-| Base | JRA public pageは観測できるがNAR termsまたはofficial outcome/payoutが未解決 | JRA laneだけ進め、NARはDATA BLOCKEDまたはSHADOW-only、cashはdisabled |
-| Worst | robots/terms違反、record不足、timestamp/hash欠落、outcome reconciliation破綻 | fail-closedし、rawを外へ出さず、revenue 0、PurchaseExecutor disabled |
+| Best | HRA-2F GREEN後、NAR official manifestが46/456/327274 rowsとhash/schemaを受理され、JRAもactual rowを取得 | official laneごとにschema/audit/SHADOWを進め、HRA-6を別審査する。secondaryはfallback |
+| Base | NAR official evidenceは存在するがpermission document未検証、HRA-2F stale、JRA 0、payback pre-settlement 0 | HRA-2Fを先にGREENし、NARをcandidateのままblocked、cash/revenue/ROIは0 |
+| Worst | robots/terms/permission境界、raw boundary、timestamp/hash、official outcome reconciliationが破綻 | fail-closedし、rawを外へ出さず、PurchaseExecutor disabled、revenue 0 |
 
-棄却案の最強の論拠は、paid source、OS依存route、未許可scraping、DOM注文がpersonal-use、robots/terms、receipt/reconciliation、raw-data boundaryを同時に満たせず、静かなデータ漏洩または誤決済を招くことである。
+棄却案の最強の論拠は、USER_ATTESTED_PERMISSIONを一般bot許可・再配布許可・cash execution許可へ拡張解釈すると、robots/terms、raw boundary、receipt/reconciliationを静かに破壊することである。
 
-自分が間違うとしたら、公式公開ページに未発見のmachine-readable fieldまたは書面許可済みtermsがあり、現在の一次/二次分類を更新できる場合である。その場合もrobots/terms snapshot、actual record、manifest、HRA-6 receipt evidenceを先に確認し、labelを遡及変更しない。
+自分が間違うとしたら、permission documentが後から検証され、official NAR termsとsettled receipt契約が明示される場合である。その場合もmanifest、HRA-6、tax、credential、reconciliation evidenceを先に確認し、既存truth labelを遡及変更しない。
 
 ## 10. Sources（観測根拠）
 
-1. [JRA robots.txt](https://www.jra.go.jp/robots.txt) — User-agent:*と空のDisallowを観測。空でもrate limitとtermsを守る。
-2. [JRA use policy](https://www.jra.go.jp/use/) — private use/citationを超える利用にはpermissionが必要と説明。個人・private useの範囲に限定する。
-3. [NAR robots.txt](https://www.keiba.go.jp/robots.txt) — Crawl-delay: 10とTodayRaceInfo/DataRoom/DataDownloadのDisallowを観測。該当dynamic pathsをcrawlしない。
-4. [NAR official terms](https://www.keiba.go.jp/terms.html) — 公開情報の転載・複製を事前許諾なく行わない境界。
-5. [NAR public site](https://www.keiba.go.jp/) — guessed /KeibaWeb/DataRoom/DataDownloadは404。verified ZIP/CSVを主張しない。
-6. [NAR secondary pages](https://nar.netkeiba.com/) — crwlで現行race-card/result linksを観測したroute evidence。automation termsは未検証で、official/licensed/compliantとは呼ばない。
+1. [NAR official probe evidence](../evidence/horse-racing/nar-official-data-probe.md) — USER_ATTESTED_PERMISSION、permission_document_verified=false、NAR official 46/456/327274 rows、payback 0 pre-settlement、hashes、raw_values_exported=false。
+2. [JRA robots.txt](https://www.jra.go.jp/robots.txt) — User-agent:*とempty Disallowを観測。
+3. [JRA use policy](https://www.jra.go.jp/use/) — private use/citationを超える利用にはpermissionが必要と説明。
+4. [NAR robots.txt](https://www.keiba.go.jp/robots.txt) — 「Crawl-delay: 10」とTodayRaceInfo/DataRoom/DataDownloadのDisallow。
+5. [NAR TodayRaceInfoTop](https://www.keiba.go.jp/KeibaWeb/TodayRaceInfo/TodayRaceInfoTop) — crwl exit 0、daily venuesとofficial daily-data linkを観測。
+6. [NAR DataRoomTop](https://www.keiba.go.jp/KeibaWeb/DataRoom/DataRoomTop) — crwl exit 0、historical years through 1998を観測。
+7. [NAR MonthlyConveneInfoTop](https://www.keiba.go.jp/KeibaWeb/MonthlyConveneInfo/MonthlyConveneInfoTop) — crwl exit 0、monthly endpointsを観測。
+8. [NAR daily race archive](https://www.keiba.go.jp/KeibaWeb/DataDownload/RaceDataDownload?type=daily) — curl HTTP 200 application/zip、daily hash/countを観測。
+9. [NAR monthly odds archive](https://www.keiba.go.jp/KeibaWeb/DataDownload/OddsDataDownload?type=monthly&k_year=2026&k_month=8) — curl HTTP 200 application/zip、first interval 327274 rows。
+10. [NAR data manual](https://www.keiba.go.jp/pdf/manual/data_pdf_manual.pdf) — 「更新頻度: 約2分ごとに更新されます。」、「1日1回、毎日夜間（午前2時頃）に更新されます。」、「レース情報は1998年1月以降、オッズ情報は2026年3月以降」。
