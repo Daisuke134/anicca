@@ -893,7 +893,8 @@ top-level seven-step sequence.
 - [x] **CFO-1h** Send the first real assets/liabilities-only Telegram report and confirm its provider message
       receipt after CFO-1h2's renderer gate is verified. Completed implementation plan:
       `docs/superpowers/plans/2026-08-10-life-manager-cfo-real-telegram.md`.
-- [ ] **CFO-1i** First repair the observed snapshot post-commit receipt mismatch. Then wire the existing CFO detail
+- [ ] **CFO-1i** First repair the observed snapshot post-commit receipt mismatch using
+      `docs/superpowers/plans/2026-08-10-life-manager-cfo-snapshot-receipt-compatibility.md`. Then wire the existing CFO detail
       buttons to real callback handling and install exactly one local hourly launchd loop for the current `apps/life-call`
       CFO path. It sends one daily full report plus meaningful-change/action reports and stays quiet when unchanged.
       Two consecutive scheduled real-data runs without manual repair close M1 and owner-facing Product Stage 7.
