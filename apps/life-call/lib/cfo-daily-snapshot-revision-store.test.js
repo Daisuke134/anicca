@@ -48,7 +48,8 @@ async function rejected(call, pattern = /^cfo_snapshot_revision_store_failed:[a-
 
 test("appends one exact correction RPC and returns a closed frozen receipt", async () => {
   const calls = []; const value = input();
-  const fetchImpl = async (url, init) => { calls.push({ url, init }); return response(); };
+  const providerReceipt = { ...RECEIPT };
+  const fetchImpl = async (url, init) => { calls.push({ url, init }); return response(providerReceipt); };
   const receipt = await appendCfoDailySnapshotRevision(value, { supaUrl: URL, supaKey: KEY, fetchImpl });
   assert.equal(calls.length, 1);
   assert.equal(calls[0].url, `${URL}/rest/v1/rpc/lm_append_cfo_daily_snapshot_revision`);
@@ -61,7 +62,7 @@ test("appends one exact correction RPC and returns a closed frozen receipt", asy
   assert.deepEqual(receipt, RECEIPT);
   assert.deepEqual(Object.keys(receipt).sort(), ["created_at", "public_ref", "reporting_date", "revision", "run_id", "supersedes_revision"]);
   assert.equal(Object.isFrozen(receipt), true);
-  const providerReceipt = { ...RECEIPT }; providerReceipt.revision = 99; providerReceipt.public_ref = "40000000-0000-4000-8000-000000000001";
+  providerReceipt.revision = 99; providerReceipt.public_ref = "40000000-0000-4000-8000-000000000001";
   assert.deepEqual(receipt, RECEIPT);
 });
 
@@ -82,6 +83,44 @@ test("validates exact identity, revision predecessor, and bundle before network"
   assert.equal(calls.length, 0);
 });
 
+test("rejects malformed options before fetch, including hidden, accessor, Proxy, and custom-prototype shapes", async () => {
+  const calls = { value: 0 }; const fetchImpl = async () => { calls.value += 1; return response(); };
+  const options = () => ({ supaUrl: URL, supaKey: KEY, fetchImpl });
+  const extra = options(); extra.log = () => {};
+  const symbol = options(); symbol[Symbol("extra")] = true;
+  const hidden = options(); Object.defineProperty(hidden, "hidden", { value: true });
+  let getterCalls = 0; const accessor = options(); Object.defineProperty(accessor, "log", { enumerable: true, get: () => { getterCalls += 1; return () => {}; } });
+  const custom = Object.assign(Object.create({ hostile: true }), options());
+  const invalidFetch = options(); invalidFetch.fetchImpl = 42;
+  for (const opts of [extra, symbol, hidden, accessor, new Proxy(options(), {}), custom, invalidFetch]) {
+    await rejected(() => appendCfoDailySnapshotRevision(input(), opts), /^cfo_snapshot_revision_store_failed:(?:invalid_options|invalid_input|invalid_fetch)$/);
+  }
+  assert.equal(getterCalls, 0);
+  assert.equal(calls.value, 0);
+});
+
+test("rejects canonical Task 2 bundle tampering before fetch while identity remains valid", async () => {
+  const calls = { value: 0 }; const fetchImpl = async () => { calls.value += 1; return response(); };
+  const tamper = [];
+  const excluded = structuredClone(input()); excluded.report.excluded[0].reason = "tampered"; tamper.push(excluded);
+  const evidence = structuredClone(input()); evidence.sourceBundle.source.consent = "expired"; tamper.push(evidence);
+  const state = structuredClone(input()); state.sourceBundle.state.consentStatus = "expired"; tamper.push(state);
+  const actionBundle = buildCfoDailyReportFromRecovery({ revision: 2, recovery: {
+    reportingDate: DATE, observedAt: AS_OF, status: "action_required", attempts: { reads: 2, repairs: 1, waits: [1000] },
+    failureKind: "timeout", moneytreeRead: null, repair: null,
+    action: { kind: "provider_outage", sourceLabel: "Moneytree", retryLabel: "30分後に自動再試行します", nextRetryAt: "2026-08-09T06:30:00+09:00" },
+  }});
+  const action = { ...input(), ...structuredClone(actionBundle) }; action.report.action.retryLabel = "tampered"; tamper.push(action);
+  for (const [index, value] of tamper.entries()) {
+    await assert.rejects(() => appendCfoDailySnapshotRevision(value, { supaUrl: URL, supaKey: KEY, fetchImpl }), error => {
+      assert.match(error.message, /^cfo_snapshot_revision_store_failed:[a-z0-9_]+$/);
+      assert.doesNotMatch(error.message, SENSITIVE);
+      return true;
+    }, `tamper case ${index}`);
+  }
+  assert.equal(calls.value, 0);
+});
+
 test("rejects hostile provider failures without retrying, logging, or reading non-2xx bodies", async () => {
   const sinks = [console.log, console.error, console.warn]; let sinkCalls = 0;
   console.log = console.error = console.warn = () => { sinkCalls += 1; };
@@ -100,11 +139,38 @@ test("rejects hostile provider failures without retrying, logging, or reading no
 });
 
 test("requires exact receipt echo and strict receipt fields", async () => {
-  for (const mutate of [value => { value.reporting_date = "2026-08-08"; }, value => { value.run_id = RUN.toUpperCase(); }, value => { value.revision = 3; }, value => { value.supersedes_revision = 2; }, value => { value.public_ref = "00000000-0000-0000-0000-000000000000"; }, value => { value.extra = "raw"; }, value => { value.created_at = "not-a-timestamp"; }]) {
+  for (const mutate of [value => { value.reporting_date = "2026-08-08"; }, value => { value.run_id = RUN.toUpperCase(); }, value => { value.run_id = "2a000000-0000-4000-8000-000000000002"; }, value => { value.revision = 3; }, value => { value.supersedes_revision = 2; }, value => { value.public_ref = "00000000-0000-0000-0000-000000000000"; }, value => { value.extra = "raw"; }, value => { value.created_at = "not-a-timestamp"; }]) {
     const value = { ...RECEIPT }; mutate(value); const calls = { value: 0 };
     await rejected(() => appendCfoDailySnapshotRevision(input(), { supaUrl: URL, supaKey: KEY, fetchImpl: async () => { calls.value += 1; return response(value); } }), /^cfo_snapshot_revision_store_failed:(?:receipt_mismatch|invalid_receipt)$/);
     assert.equal(calls.value, 1);
   }
+});
+
+test("rejects hostile response envelopes and parsed receipts with fixed redacted errors", async () => {
+  const responseShapes = [
+    new Proxy({}, { get: (_target, key) => key === "then" ? undefined : (() => { throw new Error("RAW_BODY_SENTINEL"); })() }),
+    Object.defineProperty({ status: 200, json: async () => RECEIPT }, "ok", { enumerable: true, get: () => { throw new Error("CREDENTIAL_SENTINEL"); } }),
+  ];
+  for (const shape of responseShapes) await rejected(() => appendCfoDailySnapshotRevision(input(), { supaUrl: URL, supaKey: KEY, fetchImpl: async () => shape }), /^cfo_snapshot_revision_store_failed:invalid_response$/);
+  const parsedShapes = [
+    new Proxy({}, { get: (_target, key) => key === "then" ? undefined : undefined, ownKeys: () => { throw new Error("RAW_BODY_SENTINEL"); } }),
+    Object.defineProperty({ ...RECEIPT }, "public_ref", { enumerable: true, get: () => { throw new Error("ACCOUNT_REF_SENTINEL"); } }),
+    Object.defineProperty({ ...RECEIPT }, "hidden", { value: true }),
+    Object.assign({ ...RECEIPT }, { [Symbol("extra")]: true }),
+  ];
+  for (const parsed of parsedShapes) await rejected(() => appendCfoDailySnapshotRevision(input(), { supaUrl: URL, supaKey: KEY, fetchImpl: async () => response(parsed) }), /^cfo_snapshot_revision_store_failed:invalid_receipt$/);
+});
+
+test("never logs on success or representative validation, network, and provider failures", async () => {
+  const names = ["log", "info", "debug", "warn", "error"]; const originals = Object.fromEntries(names.map(name => [name, console[name]])); let calls = 0;
+  try {
+    for (const name of names) console[name] = () => { calls += 1; };
+    await appendCfoDailySnapshotRevision(input(), { supaUrl: URL, supaKey: KEY, fetchImpl: async () => response() });
+    await rejected(() => appendCfoDailySnapshotRevision({ ...input(), revision: 1 }, { supaUrl: URL, supaKey: KEY, fetchImpl: async () => response() }));
+    await rejected(() => appendCfoDailySnapshotRevision(input(), { supaUrl: URL, supaKey: KEY, fetchImpl: async () => { throw new Error("RAW_BODY_SENTINEL"); } }), /^cfo_snapshot_revision_store_failed:network$/);
+    await rejected(() => appendCfoDailySnapshotRevision(input(), { supaUrl: URL, supaKey: KEY, fetchImpl: async () => response({}, 503) }), /^cfo_snapshot_revision_store_failed:provider_503$/);
+    assert.equal(calls, 0);
+  } finally { for (const name of names) console[name] = originals[name]; }
 });
 
 test("persists actual recovered and action-required Task 2 bundles without reshaping them", async () => {
