@@ -104,11 +104,116 @@ for migration in "$MIGRATION_SNAPSHOT" "$MIGRATION_RUN" "$MIGRATION_DELIVERY"; d
 done
 
 "${PSQL[@]}" >/dev/null <<'SQL'
-INSERT INTO public.lm_users(uid) VALUES ('tenant-a'), ('tenant-b'), ('tenant-cross'), ('tenant-run-concurrent');
+INSERT INTO public.lm_users(uid) VALUES ('tenant-a'), ('tenant-b'), ('tenant-cross'), ('tenant-run-concurrent'), ('tenant-preference-update');
 INSERT INTO public.lm_panel_preferences(uid, call_time_zone) VALUES
   ('tenant-a', 'Asia/Tokyo'), ('tenant-b', 'Asia/Tokyo'),
-  ('tenant-cross', 'Asia/Tokyo'), ('tenant-run-concurrent', 'Asia/Tokyo');
+  ('tenant-cross', 'Asia/Tokyo'), ('tenant-run-concurrent', 'Asia/Tokyo'),
+  ('tenant-preference-update', 'Asia/Tokyo');
 SQL
+
+# A daily-run claim must serialize against a concurrent preference update. The
+# claim receipt and its expected local date are captured in one statement so
+# both are derived from the same transactionally observed initial preference.
+PREFERENCE_SERIALIZATION_UID='tenant-preference-update'
+PREFERENCE_INITIAL_ZONE='Asia/Tokyo'
+PREFERENCE_UPDATED_ZONE='America/New_York'
+PREFERENCE_SESSION_A="$TEST_TMP/preference-session-a.sql"
+PREFERENCE_SESSION_B="$TEST_TMP/preference-session-b.sql"
+PREFERENCE_SESSION_A_OUT="$TEST_TMP/preference-session-a.out"
+PREFERENCE_SESSION_B_OUT="$TEST_TMP/preference-session-b.out"
+PREFERENCE_SESSION_A_ERR="$TEST_TMP/preference-session-a.err"
+PREFERENCE_SESSION_B_ERR="$TEST_TMP/preference-session-b.err"
+PREFERENCE_SESSION_A_APP='cfo-reliable-preference-serialization-a'
+PREFERENCE_SESSION_B_APP='cfo-reliable-preference-serialization-b'
+[[ "$(${PSQL[@]} -Atqc "SELECT count(*) FROM pg_timezone_names WHERE name IN ('$PREFERENCE_INITIAL_ZONE', '$PREFERENCE_UPDATED_ZONE');")" == '2' ]] \
+  || fail 'preference serialization fixtures are not two distinct valid IANA timezones'
+[[ "$(${PSQL[@]} -Atqc "SELECT count(*) FROM public.lm_cfo_daily_runs WHERE uid = '$PREFERENCE_SERIALIZATION_UID';")" == '0' ]] \
+  || fail 'preference serialization tenant unexpectedly had an existing daily run'
+PREFERENCE_CLAIM_QUERY="WITH initial AS MATERIALIZED (SELECT preference.call_time_zone AS initial_time_zone, (statement_timestamp() AT TIME ZONE preference.call_time_zone)::date AS observed_reporting_date FROM public.lm_panel_preferences AS preference WHERE preference.uid = '$PREFERENCE_SERIALIZATION_UID') SELECT jsonb_build_object('receipt', public.lm_claim_cfo_daily_run('$PREFERENCE_SERIALIZATION_UID'), 'initial_time_zone', initial.initial_time_zone, 'observed_reporting_date', initial.observed_reporting_date) FROM initial;"
+PREFERENCE_UPDATE_QUERY="UPDATE public.lm_panel_preferences SET call_time_zone = '$PREFERENCE_UPDATED_ZONE' WHERE uid = '$PREFERENCE_SERIALIZATION_UID';"
+PREFERENCE_UPDATE_QUERY_SQL="$(printf '%s' "$PREFERENCE_UPDATE_QUERY" | sed "s/'/''/g")"
+printf '%s\n' \
+  'BEGIN;' \
+  'SET ROLE service_role;' \
+  "$PREFERENCE_CLAIM_QUERY" \
+  'SELECT pg_sleep(4);' \
+  'COMMIT;' >"$PREFERENCE_SESSION_A"
+printf '%s\n' \
+  'BEGIN;' \
+  'SET ROLE service_role;' \
+  "$PREFERENCE_UPDATE_QUERY" \
+  'COMMIT;' >"$PREFERENCE_SESSION_B"
+
+PGAPPNAME="$PREFERENCE_SESSION_A_APP" "${PSQL[@]}" -Atqf "$PREFERENCE_SESSION_A" >"$PREFERENCE_SESSION_A_OUT" 2>"$PREFERENCE_SESSION_A_ERR" &
+A_PID=$!
+PREFERENCE_A_READY='0'
+PREFERENCE_A_READY_SQL="SELECT count(*) FROM pg_stat_activity AS activity WHERE activity.pid <> pg_backend_pid() AND activity.application_name = '$PREFERENCE_SESSION_A_APP' AND activity.query = 'SELECT pg_sleep(4);' AND activity.state = 'active' AND activity.wait_event_type = 'Timeout' AND activity.wait_event = 'PgSleep' AND activity.xact_start IS NOT NULL AND EXISTS (SELECT 1 FROM pg_locks AS lock WHERE lock.pid = activity.pid AND lock.granted AND lock.relation = 'public.lm_panel_preferences'::regclass AND lock.mode = 'RowShareLock');"
+for _ in {1..100}; do
+  PREFERENCE_A_READY="$(${PSQL[@]} -Atqc "$PREFERENCE_A_READY_SQL" | tr -d '[:space:]')"
+  [[ "$PREFERENCE_A_READY" == '1' ]] && break
+  sleep 0.1
+done
+[[ "$PREFERENCE_A_READY" == '1' ]] || fail 'preference claim did not reach its exact sleep barrier with a granted preference lock'
+
+# Start the preference updater only after the claim holder is observed. Its
+# exact application/query pair must be visible as an active lock waiter while
+# the holder remains at the same sleep barrier, before A can commit.
+PGAPPNAME="$PREFERENCE_SESSION_B_APP" "${PSQL[@]}" -Atqf "$PREFERENCE_SESSION_B" >"$PREFERENCE_SESSION_B_OUT" 2>"$PREFERENCE_SESSION_B_ERR" &
+B_PID=$!
+PREFERENCE_B_WAITING='0'
+PREFERENCE_B_WAIT_SQL="SELECT count(*) FROM pg_stat_activity AS waiting WHERE waiting.pid <> pg_backend_pid() AND waiting.application_name = '$PREFERENCE_SESSION_B_APP' AND waiting.query = '$PREFERENCE_UPDATE_QUERY_SQL' AND waiting.state = 'active' AND waiting.wait_event_type = 'Lock' AND waiting.wait_event IS NOT NULL AND EXISTS (SELECT 1 FROM pg_stat_activity AS holder WHERE holder.pid <> pg_backend_pid() AND holder.application_name = '$PREFERENCE_SESSION_A_APP' AND holder.query = 'SELECT pg_sleep(4);' AND holder.state = 'active' AND holder.wait_event_type = 'Timeout' AND holder.wait_event = 'PgSleep' AND holder.xact_start IS NOT NULL AND EXISTS (SELECT 1 FROM pg_locks AS lock WHERE lock.pid = holder.pid AND lock.granted AND lock.relation = 'public.lm_panel_preferences'::regclass AND lock.mode = 'RowShareLock'));"
+for _ in {1..100}; do
+  PREFERENCE_B_WAITING="$(${PSQL[@]} -Atqc "$PREFERENCE_B_WAIT_SQL" | tr -d '[:space:]')"
+  [[ "$PREFERENCE_B_WAITING" == '1' ]] && break
+  sleep 0.1
+done
+[[ "$PREFERENCE_B_WAITING" == '1' ]] || fail 'preference update never waited on the exact claim-held lock before commit'
+
+A_STATUS=0
+B_STATUS=0
+wait "$A_PID" || A_STATUS=$?
+wait "$B_PID" || B_STATUS=$?
+A_PID=''
+B_PID=''
+[[ "$A_STATUS" == '0' && "$B_STATUS" == '0' ]] || fail 'preference serialization session failed'
+[[ ! -s "$PREFERENCE_SESSION_A_ERR" ]] || fail "preference claim session wrote stderr: $(cat "$PREFERENCE_SESSION_A_ERR")"
+[[ ! -s "$PREFERENCE_SESSION_B_ERR" ]] || fail "preference update session wrote stderr: $(cat "$PREFERENCE_SESSION_B_ERR")"
+
+PREFERENCE_SESSION_A_JSON="$(awk '/^\{.*\}$/ { print; found = 1 } END { exit found ? 0 : 1 }' "$PREFERENCE_SESSION_A_OUT")" \
+  || fail 'preference claim session returned no receipt envelope'
+PREFERENCE_RECEIPT_KEYS="$(jq -er '.receipt | keys | join(",")' <<<"$PREFERENCE_SESSION_A_JSON")" \
+  || fail 'preference claim session receipt was not valid JSON'
+[[ "$PREFERENCE_RECEIPT_KEYS" == 'created_at,public_ref,reporting_date,run_id,time_zone' ]] \
+  || fail 'preference claim receipt keys are not exactly the closed five-key projection'
+PREFERENCE_RECEIPT_KEY_COUNT="$(jq -er '.receipt | length' <<<"$PREFERENCE_SESSION_A_JSON")" \
+  || fail 'preference claim receipt key count could not be read'
+[[ "$PREFERENCE_RECEIPT_KEY_COUNT" == '5' ]] || fail 'preference claim receipt key count is not five'
+PREFERENCE_RECEIPT_UID_KEYS="$(jq -er '.receipt | keys | map(select(. == "uid" or . == "id" or . == "time_zone_source" or . == "report_payload" or . == "source_bundle")) | length' <<<"$PREFERENCE_SESSION_A_JSON")" \
+  || fail 'preference claim receipt private-key check could not be read'
+[[ "$PREFERENCE_RECEIPT_UID_KEYS" == '0' ]] || fail 'preference claim receipt contains a UID or private column'
+PREFERENCE_RECEIPT_PUBLIC_REF="$(jq -er '.receipt.public_ref' <<<"$PREFERENCE_SESSION_A_JSON")" \
+  || fail 'preference claim receipt omitted public_ref'
+PREFERENCE_RECEIPT_REPORTING_DATE="$(jq -er '.receipt.reporting_date' <<<"$PREFERENCE_SESSION_A_JSON")" \
+  || fail 'preference claim receipt omitted reporting_date'
+PREFERENCE_RECEIPT_RUN_ID="$(jq -er '.receipt.run_id' <<<"$PREFERENCE_SESSION_A_JSON")" \
+  || fail 'preference claim receipt omitted run_id'
+PREFERENCE_RECEIPT_ZONE="$(jq -er '.receipt.time_zone' <<<"$PREFERENCE_SESSION_A_JSON")" \
+  || fail 'preference claim receipt omitted time_zone'
+PREFERENCE_OBSERVED_ZONE="$(jq -er '.initial_time_zone' <<<"$PREFERENCE_SESSION_A_JSON")" \
+  || fail 'preference claim session omitted the transactionally observed initial timezone'
+PREFERENCE_OBSERVED_DATE="$(jq -er '.observed_reporting_date' <<<"$PREFERENCE_SESSION_A_JSON")" \
+  || fail 'preference claim session omitted the transactionally observed local date'
+[[ "$PREFERENCE_OBSERVED_ZONE" == "$PREFERENCE_INITIAL_ZONE" ]] || fail 'preference claim did not observe the initial timezone'
+[[ "$PREFERENCE_RECEIPT_ZONE" == "$PREFERENCE_INITIAL_ZONE" ]] || fail 'preference claim receipt used the updated timezone before commit'
+[[ "$PREFERENCE_RECEIPT_REPORTING_DATE" == "$PREFERENCE_OBSERVED_DATE" ]] \
+  || fail 'preference claim reporting_date was not derived from the transactionally observed initial timezone'
+[[ "$PREFERENCE_RECEIPT_PUBLIC_REF" =~ ^[0-9a-f-]{36}$ ]] || fail 'preference claim receipt returned an invalid public_ref'
+[[ "$PREFERENCE_RECEIPT_RUN_ID" =~ ^[0-9a-f-]{36}$ ]] || fail 'preference claim receipt returned an invalid run_id'
+PREFERENCE_PERSISTED_RUN="$(${PSQL[@]} -Atqc "SELECT public_ref::text || '|' || reporting_date::text || '|' || run_id::text || '|' || time_zone FROM public.lm_cfo_daily_runs WHERE uid = '$PREFERENCE_SERIALIZATION_UID';")"
+[[ "$PREFERENCE_PERSISTED_RUN" == "$PREFERENCE_RECEIPT_PUBLIC_REF|$PREFERENCE_RECEIPT_REPORTING_DATE|$PREFERENCE_RECEIPT_RUN_ID|$PREFERENCE_INITIAL_ZONE" ]] \
+  || fail 'persisted daily-run row did not match the claim receipt identity, date, and initial timezone'
+PREFERENCE_PERSISTED_ZONE="$(${PSQL[@]} -Atqc "SELECT call_time_zone FROM public.lm_panel_preferences WHERE uid = '$PREFERENCE_SERIALIZATION_UID';")"
+[[ "$PREFERENCE_PERSISTED_ZONE" == "$PREFERENCE_UPDATED_ZONE" ]] || fail 'preference update did not persist the different valid IANA timezone'
 
 # The public claim RPC must take no clock argument; the database's own time
 # is the only source of "now".
