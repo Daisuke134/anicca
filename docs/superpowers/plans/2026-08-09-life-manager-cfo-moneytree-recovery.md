@@ -14,7 +14,7 @@ PostgreSQL appends contiguous correction revisions; existing delivery dedupe sup
 
 **Design:** `docs/superpowers/specs/2026-08-09-life-manager-cfo-moneytree-recovery-design.md`.
 
-**Status:** ACTIVE — Tasks 1–6 and Task 3b/6b/6c/6d/6e implemented; final-review fix Task 6f next.
+**Status:** ACTIVE — implementation and current test matrix pass; Task 7b evidence hardening next.
 
 ## Global Constraints
 
@@ -478,6 +478,35 @@ Fresh Sol final review must return no Critical/Important findings. Sol marks `CF
 records boolean/count evidence, updates all SSOTs, commits/pushes `docs(cfo): close bounded Moneytree recovery`, and
 sends one separate `Codex:::` development milestone with real provider message ID. It must say no finance report was
 sent.
+
+---
+
+### Task 7b: Make live proof and exact-once provenance load-bearing
+
+**Files:**
+- Modify ignored no-echo runner/evidence/report in this plan's SDD workspace only.
+- Modify tracked plan/design status only after review evidence is defined; no production code or SQL changes.
+
+- [ ] **Step 1: Strengthen read-only catalog RED/GREEN**
+
+Without applying SQL or reloading schema, require exact constraint expressions and FK column arrays; unique/index
+flags and ordered columns; trigger function, events, timing, and enabled state; complete table/function denial for
+all app roles; service grants; and semantic clauses of both revision-1 and correction RPC definitions. Assert a
+deliberately weakened fixture fails before running the live read-only check.
+
+- [ ] **Step 2: Bind original exact-once evidence to immutable execution history**
+
+Use the original Luna rollout JSONL as the immutable local transcript. Recover the exact original runner source and
+execution call without printing it, record only SHA-256 digests, event identifiers/timestamps, one runner invocation,
+one migration-query call, one schema-reload call, and hashes of original stdout/evidence. The final evidence must let
+a reviewer locate and independently verify those transcript events locally. Never copy secrets, URLs, SQL, response
+bodies, UIDs, or amounts into the evidence.
+
+- [ ] **Step 3: Recheck without effects and review**
+
+Run the strengthened live catalog check read-only. Require zero migration/reload/Telegram calls, zero snapshot and
+delivery deltas, payload privacy, and no finance report. Preserve the current 315/315 CFO and 948/948 full matrix.
+Obtain fresh Sol review before closure; do not send another milestone.
 
 ## Completion Boundary
 

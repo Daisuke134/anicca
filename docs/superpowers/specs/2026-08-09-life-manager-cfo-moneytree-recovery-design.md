@@ -188,6 +188,11 @@ Moneytree failure, write a synthetic personal snapshot, create a live delivery c
 Recovery behavior and concurrent correction insertion are proven in isolated PostgreSQL with redacted fixtures. The
 first real recovery, correction, and provider message receipt belong to CFO-1h/CFO-1i.
 
+Live definition proof inspects semantic catalog fields, not names or substring counts: constraint expressions and
+FK columns, ordered valid unique indexes, trigger timing/events/enabled state, complete role ACLs, and both RPC
+definitions. Historical exact-once apply/reload evidence is bound to the immutable executor transcript and original
+artifact hashes; a success boolean alone is not sufficient.
+
 ## 7. Acceptance Tests
 
 1. First read success performs one read, zero repair/wait calls, and returns `fresh`.
