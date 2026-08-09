@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | PRODUCT STAGE 7 ACTIVE — real-data local preview passed; CFO-1h real Telegram delivery implementation active |
+| Status | PRODUCT STAGE 7 ACTIVE — first real Telegram report delivered and receipted; CFO-1i hourly autonomy next |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
@@ -109,9 +109,9 @@ flowchart TD
     OWNER --> DETAILS[Accounts / accuracy / explanation]
 ```
 
-Current boundary: the Moneytree read, reconciliation, immutable snapshot, renderer, and no-send preview are proven.
-`CFO-1h` connects the existing claim, Telegram transport, and receipt path. `CFO-1i` then activates the hourly local
-trigger and closes only after two consecutive autonomous real-data successes.
+Current boundary: the Moneytree read, reconciliation, immutable snapshot, renderer, no-send preview, real Telegram
+delivery, and durable provider receipt are proven. `CFO-1i` now activates the hourly local trigger and closes only
+after two consecutive autonomous real-data successes.
 
 The CFO MUST NOT trade, transfer, hire, fund, or stop a live business during the foundation milestone. Read and
 write authority remain different capabilities permanently. No balance, transaction, revenue, or tax estimate is
@@ -859,6 +859,14 @@ The local existing adapter/state/snapshot/Telegram renderer path produced the co
 account number, provider ID, connection URL, and opaque references. Because liability coverage is unknown, it showed
 only confirmed assets and kept liabilities/net worth/change unknown. No database or Telegram effect occurred.
 
+### Product Stage 7 first real Telegram evidence
+
+A fresh Moneytree read, the current immutable partial snapshot, and the rendered report reconciled in native JPY.
+The first snapshot-store call persisted the row but rejected its returned receipt; the controller re-read the durable
+row, confirmed zero delivery claims and no Telegram effect, and resumed from that safe boundary. Telegram then
+accepted exactly one real assets/liabilities report with positive provider message ID `564`; the durable delivery
+receipt contains the same ID. No private identifier, account number, credential, or raw provider payload was printed.
+
 ### M1 — One truthful Moneytree-first read-only snapshot
 
 This M1 checklist is the engineering breakdown of owner-facing Product Stage 7. It must not be presented as another
@@ -882,11 +890,12 @@ top-level seven-step sequence.
       `docs/superpowers/specs/2026-08-09-life-manager-cfo-moneytree-recovery-design.md`.
 - [x] **CFO-1h2** CFO-1 report is assets/liabilities only. Until tests 16–18 and 22–28 pass, the renderer MUST NOT
       show token totals, complete API spend, business profit, measured/confirmed cost, or cost-based advice.
-- [ ] **CFO-1h** Send the first real assets/liabilities-only Telegram report and confirm its provider message
-      receipt after CFO-1h2's renderer gate is verified. Active implementation plan:
+- [x] **CFO-1h** Send the first real assets/liabilities-only Telegram report and confirm its provider message
+      receipt after CFO-1h2's renderer gate is verified. Completed implementation plan:
       `docs/superpowers/plans/2026-08-10-life-manager-cfo-real-telegram.md`.
-- [ ] **CFO-1i** Enable hourly autonomous refresh, daily full reporting, and meaningful-change/action reporting. Two
-      consecutive scheduled real-data runs without manual repair close M1 and owner-facing Product Stage 7.
+- [ ] **CFO-1i** First repair the observed snapshot post-commit receipt mismatch, then enable hourly autonomous
+      refresh, daily full reporting, and meaningful-change/action reporting. Two consecutive scheduled real-data runs
+      without manual repair close M1 and owner-facing Product Stage 7.
 
 Deferred after M1 by explicit owner decision: Binance Spot, trade history, Earn/funding sources, and their tax-lot
 ingestion. They are not unchecked M1 items and cannot become the active CFO item before CFO-1i closes.
