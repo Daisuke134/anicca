@@ -115,7 +115,7 @@ flowchart LR
 | HRA-2R1-P | physical Windows worker procurement evidence | `docs/evidence/horse-racing/windows-worker-procurement.md` | 40 | **complete: purchase not executed; action-time confirmation required** |
 | HRA-2R1 | JRA environment + one-real-record probe | `docs/evidence/horse-racing/windows-worker-first-record-runbook.md`; `docs/evidence/horse-racing/jra-probe.md` | 95 | **ACTIVE/BLOCKED — runbook prepared, not executed; session0, record0, probe null** |
 | HRA-2R2 | JRA redacted reality manifest | `docs/evidence/horse-racing/jra-reality-gate.md` | 35 | pending HRA-2R1 |
-| HRA-2R3 | NAR environment + one-real-record probe | `docs/evidence/horse-racing/nar-probe.md` | 35 | pending HRA-2R1、JRAと独立 |
+| HRA-2R3 | NAR environment + one-real-record probe | `docs/evidence/horse-racing/nar-probe.md` | 95 | **ACTIVE/BLOCKED — inquiry confirmed, reply pending; session0, record0, probe null**。HRA-2R1/JRAと独立 |
 | HRA-2R4 | NAR redacted reality manifest | `docs/evidence/horse-racing/nar-reality-gate.md` | 35 | pending HRA-2R3 |
 | HRA-2R5 | per-source gate index | `docs/evidence/horse-racing/reality-gate-index.md` | 30 | pending HRA-2R4 |
 | HRA-2S | observed schema/local append-only store | `apps/horse-racing-agent/tests/fixtures/normalized_races.json`; `apps/horse-racing-agent/src/horse_racing_agent/store.py`; `apps/horse-racing-agent/tests/test_store.py` | 90 | **BLOCKED** by source Reality Gate |
@@ -236,7 +236,7 @@ rtk grep -n "evidence_class\|provider_timestamp\|adapter_version\|row_count\|sch
 
 ### HRA-2R3 — NAR environment + one-real-record probe `[ ]`
 
-**Owner: Luna。** HRA-2R1後にJRA laneと分離したowned Windowsで、official/licensed UmaConn/NV-Link installed、valid entitlement、公式sampleまたは限定licensed bridge、少なくとも1件のreal NAR recordをlocal観測する。JRA manifestのPASSを前提にせず、NARのevidenceだけで判定する。
+**Owner: Luna。** HRA-2R1/JRA laneと独立してroute・inquiry workを進め、written provider entitlementが得られた後に、owned Windowsでofficial/licensed active provider client/APIまたはapproved bridge、valid entitlement、公式sampleまたは限定licensed bridge、少なくとも1件のreal NAR recordをlocal観測する。UmaConn/NV-Linkは、書面のNAR/provider回答が現行の公式identity・URL・entitlementを確認した場合だけ候補に戻す。JRA manifestのPASSを前提にせず、NARのevidenceだけで判定する。現在は`ACTIVE/BLOCKED`、`session0`、`record0`、`probe=null`であり、HRA-2R1を待つために問い合わせを停止しない。
 
 File: `docs/evidence/horse-racing/nar-probe.md`。JRA-VAN row、非公式注文API、raw row、実馬名、credentialを混ぜない。
 
@@ -463,6 +463,17 @@ Best caseはsource gate、actual data、calibration、later-window ROI、drawdow
 - **next check**: `2026-08-10 21:30 JST`
 - **parallel work**: physical Japanese Windows 11 x64 endpoint procurement research
 - **auth blocker**: Gmail/Computer Use authentication remains blocked
+
+## HRA-2R3 wait contract
+
+- **state**: `INQUIRY_FORM_CONFIRMED_REPLY_PENDING` / `ACTIVE/BLOCKED`; `session0`, `record0`, `probe=null`, `raw_values_exported=false`
+- **target**: written NAR/provider response naming an active official/licensed provider, application URL, supported OS, entitlement/price, machine-use terms, coverage, and official sample/probe
+- **external reason**: the inquiry form warns individual replies are not guaranteed; no active licensed provider URL is verified
+- **next check**: `2026-08-12 21:30 Asia/Tokyo`
+- **durable owner**: Sol verifies the reply; Luna performs only resulting environment/edit work
+- **parallel work**: JRA physical-worker purchase confirmation and JRA-VAN support reply monitoring; no public NAR scraping or OSS execution
+- **Telegram event**: milestone message ID `10040`; do not resend the inquiry
+- **no-reply action**: record `NO_REPLY_OBSERVED` at the checkpoint and search an official procurement/licensing contact without changing `record0`
 
 ## UI/E2E boundary
 
