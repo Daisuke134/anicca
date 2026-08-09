@@ -71,6 +71,21 @@ does not mean Product Stage 7 is complete.
 - Existing additive CFO schema has already been applied to Supabase. No further production migration or finance send
   occurs until the local real-data no-send preview passes.
 
+### 1.3 Ponytail / YAGNI execution gate
+
+Product Stage 7 takes the shortest existing path to a real report. A change is allowed on the critical path only when
+the current real Moneytree → Telegram flow cannot work correctly without it.
+
+- Reuse the existing Moneytree adapter, report builder, Telegram renderer/transport, snapshot store, and delivery
+  dedupe. Do not add another agent, service, queue, framework, dependency, or repository.
+- Each change targets at most three files and 100 production LOC. Exceeding either means cut scope before coding.
+- Tests cover one normal path and the smallest regression that prevents incorrect money, data loss, duplicate sends,
+  credential exposure, or a wrong user action. Do not build combinatorial Proxy/accessor/symbol/custom-prototype
+  matrices for internal objects.
+- Same-day append-only correction revisions are not required for the first accurate report. Build them only after a
+  real delivered report produces a correction requirement that the existing snapshot/delivery identity cannot handle.
+- Steel parity, multi-tenancy, Binance, tax, business P&L, and spending advice do not block Product Stage 7.
+
 The CFO MUST NOT trade, transfer, hire, fund, or stop a live business during the foundation milestone. Read and
 write authority remain different capabilities permanently. No balance, transaction, revenue, or tax estimate is
 invented; unavailable data remains visibly `unknown`.
@@ -826,9 +841,9 @@ top-level seven-step sequence.
 - [x] **CFO-1g** Persist one immutable, idempotent snapshot, its Moneytree coverage-state bundle, and reconciliation exceptions.
 - [x] **CFO-1g2** Enforce owner-timezone `reporting_date`, stable retry `run_id`, and append-only Telegram delivery
       claim/receipt dedupe. Child SSOT: `2026-08-09-life-manager-cfo-reliable-run-design.md`.
-- [ ] **CFO-1g3** Implement bounded adapter self-repair and append-only superseding corrections. Prove repair only
-      after a fresh source read and reconciliation. Exhausted repairs create one actionable alert plus durable
-      retries, not repeated messages. Child SSOT:
+- [ ] **CFO-1g3** Implement bounded adapter self-repair. Prove repair only after a fresh source read and
+      reconciliation. Exhausted repairs create one actionable state, not repeated messages. Same-day superseding
+      correction storage is deferred by the Ponytail/YAGNI gate and does not block the first report. Child SSOT:
       `docs/superpowers/specs/2026-08-09-life-manager-cfo-moneytree-recovery-design.md`.
 - [ ] **CFO-1h2** CFO-1 report is assets/liabilities only. Until tests 16–18 and 22–28 pass, the renderer MUST NOT
       show token totals, complete API spend, business profit, measured/confirmed cost, or cost-based advice.

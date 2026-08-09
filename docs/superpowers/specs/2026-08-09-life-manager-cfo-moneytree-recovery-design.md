@@ -2,9 +2,9 @@
 
 | Field | Value |
 |---|---|
-| Status | APPROVED — CFO-1g3 ACTIVE |
+| Status | RECOVERY CORE ACTIVE — correction persistence deferred by Ponytail/YAGNI |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
-| Goal | Repair allowed transient Moneytree failures before reporting, and append a truthful correction after later recovery |
+| Goal | Repair allowed transient Moneytree failures before the first truthful report |
 | Next | CFO-1h2 Telegram integration, then CFO-1h real send |
 
 ## 1. Scope
@@ -12,6 +12,10 @@
 CFO-1g3 adds the smallest recovery layer required before the first real finance Telegram report. It reuses the
 existing owner-local daily run, immutable snapshot revisions, and Telegram delivery dedupe. It does not create a
 generic incident service, queue framework, scheduler abstraction, browser agent, or new financial source.
+
+The first report needs bounded recovery and a truthful fresh/action-required report only. The append-only correction
+contract below is retained as deferred design history and is not an implementation or release prerequisite until a
+real delivered report demonstrates that the existing snapshot/delivery identity cannot represent a required update.
 
 ```mermaid
 flowchart LR

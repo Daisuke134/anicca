@@ -14,11 +14,16 @@ PostgreSQL appends contiguous correction revisions; existing delivery dedupe sup
 
 **Design:** `docs/superpowers/specs/2026-08-09-life-manager-cfo-moneytree-recovery-design.md`.
 
-**Status:** PRODUCT STAGE 7 ACTIVE — internal recovery Task 1 complete; Task 2 implemented and review pending.
+**Status:** PONYTAIL CUT — internal recovery Tasks 1–2 only; Task 2 fix review pending. Tasks 3–7 below are deferred
+design history and are not on the Product Stage 7 critical path.
 
 **Numbering rule:** `Task 1–7` in this file are internal recovery subtasks only. User-visible progress remains
 **Product Stage 7** until a real Moneytree finance report is delivered, hourly refresh is active, and two consecutive
 scheduled real-data runs succeed. Closing internal Task 7 never means the product feature is finished.
+
+**Ponytail cut:** Stop this sub-plan after Task 2 passes review. The existing Telegram renderer, transport, snapshot,
+and delivery-dedupe path are reused for the real local preview/send. Do not implement Tasks 3–7 before the first
+finance report. Append-only corrections return only after a real correction cannot be represented by existing state.
 
 ## Global Constraints
 
@@ -144,6 +149,8 @@ Run focused test, Task 1+2 tests, `npm run test:cfo`, LOC, and diff-check. Commi
 `feat(cfo): build recovery snapshot facts`; report; fresh Sol review.
 
 ---
+
+## Deferred design history — do not execute before the first finance report
 
 ### Task 3: Human-readable provider-outage Telegram state
 
@@ -305,13 +312,12 @@ Fresh Sol final review must return no Critical/Important findings. Sol marks the
 commits/pushes `docs(cfo): close bounded Moneytree recovery`. Execution continues directly into the real-data local
 preview and Telegram integration; it does not stop or claim the product feature is complete.
 
-## Completion Boundary
+## Active Completion Boundary
 
-CFO-1g3 is complete only after all seven internal recovery tasks, local installed-definition proof, full tests, and
-fresh Sol review pass. Owner-facing Product Stage 7 remains active through this uninterrupted sequence:
+The recovery core closes after Tasks 1–2 pass fresh Sol review. Tasks 3–7 above remain deferred design history and do
+not block Product Stage 7. The active sequence is only:
 
 1. verify the exact real Moneytree finance-message preview locally without sending;
-2. apply the already-proven production migration only if the real local path requires it;
-3. send the first real finance report and store the positive Telegram provider `message_id`;
-4. enable hourly refresh, a daily full report, and meaningful-change/action reporting;
-5. prove two consecutive autonomous scheduled real-data successes, then mark Product Stage 7 complete.
+2. send the first real finance report through the existing Telegram path and store its positive provider `message_id`;
+3. enable hourly refresh, a daily full report, and meaningful-change/action reporting using the existing scheduler;
+4. prove two consecutive autonomous scheduled real-data successes, then mark Product Stage 7 complete.
