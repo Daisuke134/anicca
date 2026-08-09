@@ -123,6 +123,8 @@ async function readEventDetail(page) {
     const addressValue = locationValue.address || {};
     const text = (selector) => String(document.querySelector(selector)?.textContent || "")
       .replace(/\s+/g, " ").trim() || null;
+    const attr = (selector, name) => String(document.querySelector(selector)?.getAttribute(name) || "")
+      .trim() || null;
     const canonical = document.querySelector('link[rel="canonical"]')?.href || location.href;
     const match = /\/event\/([1-9][0-9]*)\/?/.exec(new URL(canonical, location.href).pathname);
     const offers = (Array.isArray(event.offers) ? event.offers : [event.offers])
@@ -144,7 +146,7 @@ async function readEventDetail(page) {
       title: event.name || text(".current_event_title") || text("h1"),
       summary: event.headline || null,
       description: event.description || text('[class*="description"]'),
-      starts_at: event.startDate || null,
+      starts_at: event.startDate || attr(".dtstart .value-title", "title"),
       ends_at: event.endDate || null,
       venue_name: locationValue.name || text('[class*="event-place"]'),
       address: typeof addressValue === "string" ? addressValue
