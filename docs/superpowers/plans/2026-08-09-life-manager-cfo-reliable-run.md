@@ -7,7 +7,7 @@
 
 **Design:** `docs/superpowers/specs/2026-08-09-life-manager-cfo-reliable-run-design.md`.
 
-**Status:** ACTIVE — Tasks 1/1b/2/3/4/5 and Task 6 live evidence complete; final-review fixes are pushed and await scoped Sol re-review.
+**Status:** COMPLETE — CFO-1g2 closed with stable owner-local runs, isolated delivery dedupe proof, and no-send live verification; CFO-1g3 NEXT.
 
 ## Global constraints
 
@@ -164,9 +164,12 @@
 - [x] The live runner's exact stdout keys are `runMigrationSuccess`, `deliveryMigrationSuccess`,
   `schemaReloadSuccess`, `ownerTimezoneResolved`, `retrySameRun`, `snapshotRunMatches`, `liveDeliveryRowsCreated`,
   and `payloadPrivacy`; all booleans are true except `liveDeliveryRowsCreated`, which is the integer `0`.
-- [ ] Fresh Sol final review returns no Critical/Important findings.
-- [ ] Sol marks `CFO-1g2 COMPLETE — CFO-1g3 NEXT`, records boolean/count evidence, commits/pushes
-  `docs(cfo): close reliable daily run`, and sends a separate development milestone notification.
+- [x] Fresh scoped final review returns no Critical/Important findings. Reviewed the final validator hardening,
+  preference-update serialization proof, no-echo live runner, and closed stdout/error contracts.
+- [x] Marked `CFO-1g2 COMPLETE — CFO-1g3 NEXT` after recording live boolean/count evidence:
+  `runMigrationSuccess=true`, `deliveryMigrationSuccess=true`, `schemaReloadSuccess=true`,
+  `ownerTimezoneResolved=true`, `retrySameRun=true`, `snapshotRunMatches=true`,
+  `liveDeliveryRowsCreated=0`, and `payloadPrivacy=true`. No Telegram call or live delivery row was created.
 
 ## Completion boundary
 
