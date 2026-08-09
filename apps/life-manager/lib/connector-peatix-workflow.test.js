@@ -18,20 +18,23 @@ function ticket(overrides = {}) {
 }
 
 function detail(id, overrides = {}) {
-  const { event: eventOverrides = {}, ...rest } = overrides;
+  const { event: eventOverrides = {}, json_data: jsonDataOverrides = {}, ...rest } = overrides;
   return {
-    event: {
-      id,
-      title: `Event ${id}`,
-      status: "OPEN",
-      isOpen: true,
-      isFinished: false,
-      datetime: "2026-08-10 10:00",
-      datetimeEnd: "2026-08-10 11:00",
-      tickets: [ticket()],
-      ...eventOverrides,
-    },
     ...rest,
+    json_data: {
+      ...jsonDataOverrides,
+      event: {
+        id,
+        title: `Event ${id}`,
+        status: "OPEN",
+        isOpen: true,
+        isFinished: false,
+        datetime: "2026-08-10 10:00",
+        datetimeEnd: "2026-08-10 11:00",
+        tickets: [ticket()],
+        ...eventOverrides,
+      },
+    },
   };
 }
 
@@ -148,9 +151,13 @@ test("Peatix reports the ordered five-count discovery audit", async () => {
 test("Peatix default readers use one page, canonical event identities, and same-origin JSON", async () => {
   const navigations = [];
   const evaluations = [];
+  const waits = [];
   const page = {
     async goto(url) {
       navigations.push(url);
+    },
+    async waitForSelector(selector, options) {
+      waits.push({ selector, options });
     },
     async evaluate(fn, argument) {
       evaluations.push({ fn, argument });
@@ -178,6 +185,10 @@ test("Peatix default readers use one page, canonical event identities, and same-
     "https://peatix.com/event/201",
     "https://peatix.com/event/202",
   ]);
+  assert.deepEqual(waits, [{
+    selector: "a.event-card",
+    options: { state: "attached", timeout: 10_000 },
+  }]);
   assert.deepEqual(evaluations.map(({ argument }) => argument), [
     undefined,
     "https://peatix.com/event/201",
@@ -189,7 +200,7 @@ test("Peatix default readers use one page, canonical event identities, and same-
   ]);
 });
 
-test("Peatix rejects a search binding list over the bounded contract", async () => {
+test("Peatix rejects more than 100 unique canonical search identities", async () => {
   const workflow = createPeatixDiscoveryWorkflow({
     async readSearchBindings() {
       return Array.from({ length: 101 }, (_, index) => binding(index + 1));
@@ -201,6 +212,26 @@ test("Peatix rejects a search binding list over the bounded contract", async () 
     (error) => error.code === "PEATIX_SEARCH_ROWS_CONTRACT_FAILED"
       && error.message === "Peatix discovery stage failed",
   );
+});
+
+test("Peatix applies the search cap after canonical deduplication", async () => {
+  const duplicate = binding(350);
+  const workflow = createPeatixDiscoveryWorkflow({
+    async readSearchBindings() {
+      return Array.from({ length: 101 }, () => duplicate);
+    },
+    async readEventViewData(_page, canonicalUrl) {
+      assert.equal(canonicalUrl, duplicate.canonical_url);
+      return detail(350);
+    },
+    isCalendarFree() { return true; },
+  });
+
+  const result = await workflow.discoverCandidates({ page: {}, calendar: [] });
+
+  assert.deepEqual(result.map((candidate) => candidate.event_ref), [
+    "peatix-event://event/350",
+  ]);
 });
 
 test("Peatix maps navigation, reader, identity, candidate, and Calendar failures to safe stage codes", async () => {
@@ -224,6 +255,10 @@ test("Peatix maps navigation, reader, identity, candidate, and Calendar failures
       async readEventViewData() {
         return detail(301, { event: { datetime: "not-a-date" } });
       },
+    }, "PEATIX_CANDIDATE_VALIDATION_FAILED"],
+    ["legacy root payload", {
+      async readSearchBindings() { return [oneBinding]; },
+      async readEventViewData() { return { event: validDetail.json_data.event }; },
     }, "PEATIX_CANDIDATE_VALIDATION_FAILED"],
     ["Calendar check", {
       async readSearchBindings() { return [oneBinding]; },
@@ -249,6 +284,7 @@ test("Peatix default reader maps search navigation and read failures without lea
     navigationWorkflow.discoverCandidates({
       page: {
         async goto() { throw new Error("private navigation error"); },
+        async waitForSelector() {},
         async evaluate() { return []; },
       },
       calendar: [],
@@ -262,7 +298,22 @@ test("Peatix default reader maps search navigation and read failures without lea
     readWorkflow.discoverCandidates({
       page: {
         async goto() {},
+        async waitForSelector() {},
         async evaluate() { throw new Error("private evaluate error"); },
+      },
+      calendar: [],
+    }),
+    (error) => error.code === "PEATIX_SEARCH_READ_FAILED"
+      && error.message === "Peatix discovery stage failed",
+  );
+
+  const renderWaitWorkflow = createPeatixDiscoveryWorkflow();
+  await assert.rejects(
+    renderWaitWorkflow.discoverCandidates({
+      page: {
+        async goto() {},
+        async waitForSelector() { throw new Error("private render wait error"); },
+        async evaluate() { return []; },
       },
       calendar: [],
     }),
@@ -279,6 +330,7 @@ test("Peatix default reader maps search navigation and read failures without lea
           navigationCount += 1;
           if (navigationCount === 2) throw new Error("private detail navigation error");
         },
+        async waitForSelector() {},
         async evaluate(_fn, argument) {
           return argument === undefined ? [{ href: "https://peatix.com/event/401" }] : detail(401);
         },
@@ -295,6 +347,7 @@ test("Peatix default reader maps search navigation and read failures without lea
     detailReadWorkflow.discoverCandidates({
       page: {
         async goto() {},
+        async waitForSelector() {},
         async evaluate(_fn, argument) {
           evaluateCount += 1;
           if (evaluateCount === 2) throw new Error("private detail JSON error");
