@@ -113,6 +113,31 @@ async def _calls(pairs, timeout=20.0):
     return out
 
 
+def _pid_alive(pid):
+    """Is the process that last proved it holds this lease still running?
+
+    Every acquire()/heartbeat() call is a subprocess of its actual holder (gig_pass.sh's
+    bash pid for one-shot leases, application_parent.py's pid for LeaseHandle's background
+    heartbeat thread), so os.getppid() at call time is a legitimate, stable holder id --
+    the same holder keeps calling heartbeat with the same ppid until it exits or crashes.
+    A -9'd holder never updates `ts` again either, so gc's existing idle_min window already
+    catches it eventually; this lets gc catch it on its very next run instead of waiting up
+    to idle_min. Unknown/missing pid (legacy rows, or a race writing it) means "cannot tell"
+    -- never treated as dead, so it falls back to the idle_min-only path untouched.
+    """
+    if not isinstance(pid, int) or pid <= 0:
+        return None
+    try:
+        os.kill(pid, 0)
+        return True
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True  # exists, just not ours -- never claimed here, so leave it alone
+    except OSError:
+        return None  # inconclusive: do not reap on an ambiguous signal
+
+
 def _leases():
     leases_path = _leases_path()
     if os.path.exists(leases_path):
@@ -202,6 +227,10 @@ def acquire(task, url="about:blank", no_seed=False):
                 held["generation"] = 1
                 changed = True
             held["ts"] = int(time.time())
+            # Whoever is calling acquire() right now is the current holder, even if a
+            # different (now-dead) process originally created this row -- record its ppid so
+            # gc's fast pid-liveness path tracks the real owner, not a crashed predecessor.
+            held["pid"] = os.getppid()
             changed = True
             if changed:
                 leases[task] = held
@@ -232,6 +261,7 @@ def acquire(task, url="about:blank", no_seed=False):
             "cookies_seeded": len(cookies),
             "token": secrets.token_hex(16),
             "generation": 1,
+            "pid": os.getppid(),
         }
         leases[task] = lease
         _save(leases)
@@ -264,6 +294,7 @@ def heartbeat(task, token=None, generation=None):
         if not _fence_matches(held, token, generation):
             return {"ok": False, "reason": "lease_fence_mismatch"}
         held["ts"] = int(time.time())
+        held["pid"] = os.getppid()  # same holder proving liveness again; keep pid current
         leases[task] = held
         _save(leases)
         return {
@@ -326,6 +357,14 @@ def gc(idle_min=45):
     Accepted edge: a 45-min-stale row re-acquired via acquire's reuse path during the
     dispose window survives with a dead context; the next acquire's target_responds
     check detects the corpse and rebuilds it (self-healing, reviewer-accepted).
+
+    Pid-liveness fast path: idle_min alone means a holder killed with -9 can sit in the
+    ledger for up to idle_min before this reaps it, even though acquire()/heartbeat()
+    already stamp `pid` = the calling process's ppid on every successful call (D4). A row
+    whose recorded pid is confirmed dead right now is reaped on this call regardless of
+    idle_min -- missing/inconclusive pid (legacy rows, or _pid_alive's ambiguous-signal
+    case) never triggers this path, so it only ever narrows the reap window, never widens
+    who gets reaped.
     """
     now = time.time()
     with _ledger_lock():
@@ -334,6 +373,7 @@ def gc(idle_min=45):
             task: dict(held)
             for task, held in leases.items()
             if now - held.get("ts", 0) > idle_min * 60
+            or _pid_alive(held.get("pid")) is False
         }
 
     reaped = []
@@ -350,7 +390,10 @@ def gc(idle_min=45):
                 and current.get("context_id") == held.get("context_id")
                 and current.get("target_id") == held.get("target_id")
             )
-            still_stale = same_lease and now - current.get("ts", 0) > idle_min * 60
+            still_stale = same_lease and (
+                now - current.get("ts", 0) > idle_min * 60
+                or _pid_alive(current.get("pid")) is False
+            )
             if still_stale:
                 leases.pop(task, None)
                 _save(leases)
