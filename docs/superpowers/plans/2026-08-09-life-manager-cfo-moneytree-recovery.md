@@ -14,7 +14,7 @@ PostgreSQL appends contiguous correction revisions; existing delivery dedupe sup
 
 **Design:** `docs/superpowers/specs/2026-08-09-life-manager-cfo-moneytree-recovery-design.md`.
 
-**Status:** ACTIVE — Task 2 fix round 2; Task 1 complete but its action-shape seam is included in this fix.
+**Status:** ACTIVE — Task 2 fix round 3; Task 1 seam is aligned.
 
 ## Global Constraints
 
@@ -122,6 +122,8 @@ Run: `node --test lib/cfo-recovery-snapshot.test.js`; expect missing module fail
 Reject stale amount injection, mismatched source/state time, action with net worth, recovered without fresh reread or
 reconciliation, revision 0/non-integer, hostile envelopes, unknown keys, caller-mutated output, arbitrary/empty
 exclusions, wrong retry labels, fresh reads with unsupported aggregation state, and the real Task 1 action shape.
+Also prove a valid zero-balance report remains `0`, `nextRetryAt` is exactly `observedAt + 30 minutes`, and impossible
+read/repair/wait histories are rejected for every outcome state.
 
 - [ ] **Step 4: Implement minimum GREEN**
 

@@ -84,6 +84,10 @@ Rules:
 
 - at most three provider reads total: the initial read plus two retries;
 - at most two repair calls and fixed injected waits of `1000` then `5000` milliseconds;
+- the snapshot boundary revalidates the executor history: `fresh` is exactly `reads=1,repairs=0,waits=[]`;
+  every other reachable outcome has `repairs=reads-1` and the matching prefix of `[1000,5000]`; `recovered` has at
+  least two reads; a `provider_outage` caused directly by composition/contract failure has
+  `failureKind="provider_outage",reads=1`; transient outage outcomes have at least two reads;
 - only `timeout`, `network`, `rate_limited`, and `provider_5xx` enter automatic repair;
 - `unauthorized`, `forbidden`, `expired`, and `revoked` become `reconsent` immediately;
 - unavailable source consent maps exactly: `unauthorized|expired` to `expired`, `forbidden|revoked` to `revoked`, and
@@ -124,6 +128,8 @@ the correction-store client call this one validator; no second report/source val
   equality after applying only `revision` and the reviewed recovered metadata; action-required reports likewise
   require the exact unavailable source, Moneytree exclusion, null totals, and action label for their action kind.
   Caller-chosen exclusion text, retry text, source status, aggregation state, or extra facts are rejected.
+  A verified account total of zero remains the integer `0`, never unknown/null. At the snapshot boundary,
+  `action.nextRetryAt` must represent exactly the instant 30 minutes after `observedAt`.
 
 Telegram copy distinguishes the two actions. Re-consent asks for one connection update. Provider outage says the CFO
 will retry automatically at the persisted `nextRetryAt` and does not blame the owner. Both suppress raw diagnostics
