@@ -112,6 +112,7 @@ flowchart LR
 | HRA-1a | registry v2 dependency contract | `apps/horse-racing-agent/pyproject.toml`; `apps/horse-racing-agent/src/horse_racing_agent/contracts.py`; `apps/horse-racing-agent/tests/test_contracts.py` | 85 | **complete**, `d743b153` |
 | HRA-1b | purchase-disabled boundary | `apps/horse-racing-agent/src/horse_racing_agent/purchase.py`; `apps/horse-racing-agent/tests/test_purchase_disabled.py` | 70 | **complete**, `89d48910` |
 | HRA-2a | licensed source/local boundary | `apps/horse-racing-agent/src/horse_racing_agent/ingest.py`; `apps/horse-racing-agent/tests/test_ingest_boundary.py` | 80 | **complete**, `0fe627cd`。boundary only |
+| HRA-2R1-P | physical Windows worker procurement evidence | `docs/evidence/horse-racing/windows-worker-procurement.md` | 40 | **complete: purchase not executed; action-time confirmation required** |
 | HRA-2R1 | JRA environment + one-real-record probe | `docs/evidence/horse-racing/jra-probe.md` | 35 | **ACTIVE — remote/native Windows 11 x64 worker required** |
 | HRA-2R2 | JRA redacted reality manifest | `docs/evidence/horse-racing/jra-reality-gate.md` | 35 | pending HRA-2R1 |
 | HRA-2R3 | NAR environment + one-real-record probe | `docs/evidence/horse-racing/nar-probe.md` | 35 | pending HRA-2R1、JRAと独立 |
@@ -188,6 +189,12 @@ rtk python3.12 -m pytest -q
 期待結果: synthetic raw inputだけでallowlist、jurisdiction、Windows-local、raw non-return/hash metadataを検証し、provider/COM/network/credentialを呼ばない。pushed commit: `0fe627cd27f66d94e8bdf54624011d5b6e6c8abe`。
 
 ## Active Reality Gate
+
+### HRA-2R1-P — Physical Windows worker selection `[x]`
+
+**Owner: Luna。** DosparaのHP Pro Mini 400 G9（商品コード357458、Windows 11 Pro、16GB、512GB）を1台だけ選定した。証拠は `docs/evidence/horse-racing/windows-worker-procurement.md` に固定し、価格上限は送料込み税込¥75,200、購入状態は `NOT_EXECUTED_AWAITING_ACTION_TIME_CONFIRMATION` とする。日本語版・正規認証・現物在庫を確認するまでWindows provision、カート、決済へ進まない。
+
+受入: exact SKU在庫と最終合計¥75,200以下、ユーザー明示後の配送/決済情報使用。購入やprovider recordをこのtaskの完了とみなさず、在庫消失時は代替せず調査を再開する。
 
 ### HRA-2R1 — JRA environment + one-real-record probe `[ ] ACTIVE`
 
