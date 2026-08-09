@@ -714,7 +714,7 @@ CFO-1b closes only live Moneytree/MUFG read parity and privacy-safe normalizatio
 
 A fresh interactive Moneytree/MUFG read was verified in memory and became a redacted normalized source result; no raw provider payload was persisted. The fixed receipt booleans are `source_contract_valid=true`, `connected_mufg_accounts_positive=true`, `balance_parity=true`, `transaction_page_parity=true`, `transaction_page_partial=true`, `raw_field_leak=false`, and `source_partial_until_cfo_1b2=true`.
 
-CFO-1b leaves the source partial until CFO-1b2. Liabilities, durable ingestion, scheduled/cloud read, snapshot, reconciliation, and every later M1 acceptance remain unchecked. No real finance Telegram delivery has occurred.
+At CFO-1b closure, the source remained partial pending CFO-1b2. Liabilities, durable ingestion, scheduled/cloud read, snapshot, reconciliation, and every later M1 acceptance remained unchecked. No real finance Telegram delivery had occurred.
 
 ### CFO-1b2 completion evidence
 
