@@ -161,6 +161,33 @@ test("rejects hostile response envelopes and parsed receipts with fixed redacted
   for (const parsed of parsedShapes) await rejected(() => appendCfoDailySnapshotRevision(input(), { supaUrl: URL, supaKey: KEY, fetchImpl: async () => response(parsed) }), /^cfo_snapshot_revision_store_failed:invalid_receipt$/);
 });
 
+test("does not replay a mutated public Error through a later hostile response getter", async () => {
+  let publicError;
+  await assert.rejects(() => appendCfoDailySnapshotRevision(input(), {
+    supaUrl: URL, supaKey: KEY, fetchImpl: async () => null,
+  }), error => {
+    publicError = error;
+    assert.equal(error.message, "cfo_snapshot_revision_store_failed:invalid_response");
+    return true;
+  });
+  publicError.message = "RAW_BODY_SENTINEL";
+
+  const hostileResponse = {};
+  Object.defineProperty(hostileResponse, "ok", {
+    enumerable: true,
+    get: () => { throw publicError; },
+  });
+  Object.defineProperty(hostileResponse, "status", { enumerable: true, value: 200 });
+  await assert.rejects(() => appendCfoDailySnapshotRevision(input(), {
+    supaUrl: URL, supaKey: KEY, fetchImpl: async () => hostileResponse,
+  }), error => {
+    assert.notEqual(error, publicError);
+    assert.equal(error.message, "cfo_snapshot_revision_store_failed:invalid_response");
+    assert.doesNotMatch(error.message, /RAW_BODY_SENTINEL/);
+    return true;
+  });
+});
+
 test("never logs on success or representative validation, network, and provider failures", async () => {
   const names = ["log", "info", "debug", "warn", "error"]; const originals = Object.fromEntries(names.map(name => [name, console[name]])); let calls = 0;
   try {

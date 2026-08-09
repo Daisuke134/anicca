@@ -308,18 +308,18 @@ Run focused Task 2+6 tests, `npm run test:cfo`, LOC, diff-check. Commit/push
 - Modify: `apps/life-call/lib/cfo-supabase-rpc.test.js`
 - Modify: `apps/life-call/lib/cfo-daily-snapshot-revision-store.test.js`
 
-- [ ] **Step 1: Write load-bearing RED**
+- [x] **Step 1: Write load-bearing RED**
 
 Capture a fixed public Error, mutate it, replay that same object through a hostile response getter on a later call,
 and prove the later failure is a newly created fixed redacted Error with the module prefix. Observe failure against
 the reviewed implementation.
 
-- [ ] **Step 2: Implement minimum GREEN**
+- [x] **Step 2: Implement minimum GREEN**
 
 Internal provenance may distinguish only Errors created during the current public operation. Never recognize or
 rethrow an Error retained from an earlier call. Preserve all existing prefixes and validation strictness.
 
-- [ ] **Step 3: Verify and close**
+- [x] **Step 3: Verify and close**
 
 Run shared RPC and all three client focused tests, `npm run test:cfo`, `git diff --check`; commit/push
 `fix(cfo): prevent shared rpc error replay`; write the ignored report; obtain fresh Sol review.

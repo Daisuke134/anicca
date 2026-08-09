@@ -1,5 +1,6 @@
 "use strict";
 
+const { AsyncLocalStorage } = require("node:async_hooks");
 const { types: { isProxy } } = require("node:util");
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -12,14 +13,17 @@ const DEFAULT_OPTION_KEYS = new Set(["supaUrl", "supaKey", "fetchImpl"]);
 // INTERNAL_ERRORS tag set keyed to its own error prefix, so error
 // provenance never crosses module boundaries.
 function createCfoSupabaseRpc(errorPrefix) {
-  const INTERNAL_ERRORS = new WeakSet();
-  function fail(reason) { const error = new Error(`${errorPrefix}${reason}`); INTERNAL_ERRORS.add(error); throw error; }
-  function internal(error) { return error !== null && (typeof error === "object" || typeof error === "function") && INTERNAL_ERRORS.has(error); }
+  const operationErrors = new AsyncLocalStorage();
+  function beginOperation() { operationErrors.enterWith(new WeakSet()); }
+  function ensureOperation() { if (!operationErrors.getStore()) beginOperation(); return operationErrors.getStore(); }
+  function fail(reason) { const error = new Error(`${errorPrefix}${reason}`); ensureOperation().add(error); throw error; }
+  function internal(error) { const errors = operationErrors.getStore(); return error !== null && (typeof error === "object" || typeof error === "function") && Boolean(errors?.has(error)); }
   function plain(value) {
     if (value === null || typeof value !== "object" || Array.isArray(value) || isProxy(value)) return false;
     try { return Object.getPrototypeOf(value) === Object.prototype; } catch { return false; }
   }
   function exact(value, allowed, reason = "invalid_input") {
+    beginOperation();
     if (!plain(value)) fail(reason);
     let own;
     try { own = Reflect.ownKeys(value); } catch { fail(reason); }
@@ -48,6 +52,7 @@ function createCfoSupabaseRpc(errorPrefix) {
     return Number.isFinite(Date.parse(value));
   }
   function validateOptions(opts, allowedKeys = DEFAULT_OPTION_KEYS) {
+    ensureOperation();
     if (!plain(opts)) fail("invalid_options");
     for (const key of Reflect.ownKeys(opts)) {
       const descriptor = Object.getOwnPropertyDescriptor(opts, key);
@@ -62,6 +67,7 @@ function createCfoSupabaseRpc(errorPrefix) {
   }
   function freeze(value, seen = new WeakSet()) { if (value === null || typeof value !== "object" || seen.has(value)) return value; seen.add(value); Object.values(value).forEach(child => freeze(child, seen)); return Object.freeze(value); }
   async function postRpc(config, path, payload) {
+    ensureOperation();
     let body;
     try { body = JSON.stringify(payload); } catch { fail("invalid_payload"); }
     const url = `${config.base}/rest/v1/rpc/${path}`;

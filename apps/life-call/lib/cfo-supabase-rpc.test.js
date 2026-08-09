@@ -24,6 +24,23 @@ test("fail() tags errors with the given prefix; internal() recognizes only its o
   assert.equal(a.internal("not-an-object"), false);
 });
 
+test("internal provenance survives same-operation propagation but not a later operation", () => {
+  const rpc = createCfoSupabaseRpc("operation_failed:");
+  const allowed = new Set(["value"]);
+  let propagated;
+  try {
+    try { rpc.exact({ value: 1 }, allowed); rpc.fail("same_operation"); } catch (error) {
+      assert.equal(rpc.internal(error), true);
+      throw error;
+    }
+  } catch (error) {
+    propagated = error;
+    assert.equal(rpc.internal(error), true);
+  }
+  rpc.exact({ value: 1 }, allowed);
+  assert.equal(rpc.internal(propagated), false);
+});
+
 test("exact() enforces a plain object with exactly the allowed enumerable own keys", () => {
   const { exact } = createCfoSupabaseRpc("t_failed:");
   const allowed = new Set(["a", "b"]);
