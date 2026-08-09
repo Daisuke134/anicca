@@ -11,7 +11,7 @@ and appends the record without logging financial payloads.
 
 **Tech Stack:** Node.js 20+, CommonJS, `node:test`, PostgreSQL/Supabase, built-in `fetch`; no new dependency.
 
-**Status:** ACTIVE — Task 1 complete; Task 2 next.
+**Status:** ACTIVE — Tasks 1–2 complete; Task 3 next.
 
 ## Global Constraints
 
@@ -127,7 +127,7 @@ Write the RED/GREEN commands, counts, LOC, commit, and privacy scan to the task 
 - Produces table `public.lm_cfo_daily_snapshots`.
 - Produces RPC `public.lm_append_cfo_daily_snapshot(text,date,uuid,jsonb,jsonb) => jsonb`.
 
-- [ ] **Step 1: Write the RED migration test**
+- [x] **Step 1: Write the RED migration test**
 
 Read the SQL fixture and assert it contains:
 
@@ -145,7 +145,7 @@ Also assert RLS, service-role-only SELECT/INSERT/function execute, SECURITY INVO
 and table-level checks for JSON objects, `revision=1`, report date/revision/JPY consistency, and both
 `moneytree_mufg` source identities. Assert the RPC has no UPDATE branch.
 
-- [ ] **Step 2: Run focused RED**
+- [x] **Step 2: Run focused RED**
 
 ```bash
 cd apps/life-call
@@ -154,7 +154,7 @@ node --test lib/cfo-daily-snapshot-migration.test.js
 
 Expected: FAIL because the migration does not exist.
 
-- [ ] **Step 3: Implement the exact additive migration**
+- [x] **Step 3: Implement the exact additive migration**
 
 Use the proven `lm_score_outcomes` pattern. The RPC algorithm is exact:
 
@@ -188,7 +188,7 @@ Before INSERT, reject null/non-object JSON, zero UUID, report `reportingDate` mi
 currency other than JPY, and source bundle whose source/state IDs are not `moneytree_mufg`. Return no amount or UID.
 Repeat those invariants as table CHECK constraints so a direct `service_role` INSERT cannot bypass the RPC.
 
-- [ ] **Step 4: Register and prove GREEN**
+- [x] **Step 4: Register and prove GREEN**
 
 Append the migration test exactly once to `test:cfo`, then run:
 
@@ -202,7 +202,7 @@ git diff --check
 
 Expected: all pass; SQL ≤160 LOC, test ≤100 LOC, diff clean.
 
-- [ ] **Step 5: Commit and push**
+- [x] **Step 5: Commit and push**
 
 ```bash
 git add apps/life-call/migrations/2026-08-09-cfo-daily-snapshots.sql apps/life-call/lib/cfo-daily-snapshot-migration.test.js apps/life-call/package.json
