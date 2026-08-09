@@ -104,15 +104,19 @@ revision_call() {
 }
 
 R1_OLD_SCHEMA_RECEIPT="$(legacy_call owner-a 2026-08-09 "$RUN_1" "$REPORT_1" "$SOURCE_1")"
-[[ -n "$R1_OLD_SCHEMA_RECEIPT" ]] || fail 'legacy RPC did not create revision 1 under the old schema'
 R1_PRE_COUNT="$(${PSQL[@]} -Atqc "SELECT count(*) FROM public.lm_cfo_daily_snapshots")"
-R1_PRE_ROW="$(${PSQL[@]} -Atqc "SELECT jsonb_build_object('public_ref', public_ref::text, 'uid', uid, 'reporting_date', reporting_date::text, 'run_id', run_id::text, 'revision', revision, 'report_payload', report_payload, 'source_bundle', source_bundle, 'created_at', created_at::text) FROM public.lm_cfo_daily_snapshots WHERE uid='owner-a' AND reporting_date=DATE '2026-08-09' AND run_id='$RUN_1'::uuid AND revision=1")"
+R1_PRE_ROW="$(${PSQL[@]} -Atqc "SELECT jsonb_build_object('public_ref', public_ref::text, 'uid', uid, 'reporting_date', reporting_date::text, 'run_id', run_id::text, 'revision', revision, 'report_payload', report_payload, 'source_bundle', source_bundle, 'created_at', created_at) FROM public.lm_cfo_daily_snapshots WHERE uid='owner-a' AND reporting_date=DATE '2026-08-09' AND run_id='$RUN_1'::uuid AND revision=1")"
 [[ "$R1_PRE_COUNT" == 1 && -n "$R1_PRE_ROW" ]] || fail 'old-schema revision 1 capture failed'
+R1_OLD_SCHEMA_CANON="$(jq -cS . <<<"$R1_OLD_SCHEMA_RECEIPT")"
+[[ "$(jq -er 'keys | sort | join(",")' <<<"$R1_OLD_SCHEMA_CANON")" == 'created_at,public_ref,reporting_date,revision,run_id' ]] || fail 'old-schema receipt keys are not exactly five'
+[[ "$(jq -er 'has("uid") or has("id") or has("report_payload") or has("source_bundle") or has("supersedes_revision")' <<<"$R1_OLD_SCHEMA_CANON")" == false ]] || fail 'old-schema receipt contains forward/private keys'
+[[ "$(jq -er '(.public_ref | type) == "string" and (.reporting_date | type) == "string" and (.run_id | type) == "string" and (.revision | type) == "number" and (.created_at | type) == "string"' <<<"$R1_OLD_SCHEMA_CANON")" == true ]] || fail 'old-schema receipt value types are wrong'
+[[ "$(jq -er '.public_ref == $ref and .reporting_date == "2026-08-09" and .run_id == $run and .revision == 1 and .created_at == $created' --arg ref "$(jq -er '.public_ref' <<<"$R1_PRE_ROW")" --arg run "$RUN_1" --arg created "$(jq -er '.created_at' <<<"$R1_PRE_ROW")" <<<"$R1_OLD_SCHEMA_CANON")" == true ]] || fail 'old-schema receipt values do not equal captured revision 1 row'
 
 PGOPTIONS='-c client_min_messages=warning' "${PSQL[@]}" -f "$MIGRATION_CORRECTIONS" >/dev/null 2>"$MIGRATION_ERR" || fail 'correction migration failed'
 [[ ! -s "$MIGRATION_ERR" ]] || fail "correction migration wrote stderr: $(<"$MIGRATION_ERR")"
 R1_POST_COUNT="$(${PSQL[@]} -Atqc "SELECT count(*) FROM public.lm_cfo_daily_snapshots")"
-R1_POST_ROW="$(${PSQL[@]} -Atqc "SELECT jsonb_build_object('public_ref', public_ref::text, 'uid', uid, 'reporting_date', reporting_date::text, 'run_id', run_id::text, 'revision', revision, 'report_payload', report_payload, 'source_bundle', source_bundle, 'created_at', created_at::text, 'supersedes_revision', supersedes_revision) FROM public.lm_cfo_daily_snapshots WHERE uid='owner-a' AND reporting_date=DATE '2026-08-09' AND run_id='$RUN_1'::uuid AND revision=1")"
+R1_POST_ROW="$(${PSQL[@]} -Atqc "SELECT jsonb_build_object('public_ref', public_ref::text, 'uid', uid, 'reporting_date', reporting_date::text, 'run_id', run_id::text, 'revision', revision, 'report_payload', report_payload, 'source_bundle', source_bundle, 'created_at', created_at, 'supersedes_revision', supersedes_revision) FROM public.lm_cfo_daily_snapshots WHERE uid='owner-a' AND reporting_date=DATE '2026-08-09' AND run_id='$RUN_1'::uuid AND revision=1")"
 [[ "$R1_POST_COUNT" == "$R1_PRE_COUNT" ]] || fail 'correction migration changed row count'
 [[ "$(jq -cS 'del(.supersedes_revision)' <<<"$R1_POST_ROW")" == "$(jq -cS . <<<"$R1_PRE_ROW")" ]] || fail 'correction migration changed captured revision 1 facts'
 [[ "$(jq -er '.supersedes_revision == null' <<<"$R1_POST_ROW")" == true ]] || fail 'revision 1 supersedes_revision is not null'
