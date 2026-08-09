@@ -464,3 +464,4 @@ adapter acceptance boolean passed with result hash
 files were reviewed and retained because each keeps one closed validation or parsing trust boundary. Known limits
 remain explicit: partial organizational coverage, aggregate USD valuation without raw positions or quote time,
 token inflow that is not recognized revenue, and signed self-reported burn.
+Telegram milestone delivery is confirmed by provider message ID `9733`.
