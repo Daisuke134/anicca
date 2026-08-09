@@ -421,21 +421,26 @@ Run shared RPC plus all four client tests, `npm run test:cfo`, `git diff --check
 - Modify: `apps/life-call/lib/cfo-supabase-rpc.js`
 - Modify: `apps/life-call/lib/cfo-supabase-rpc.test.js`
 
-- [ ] **Step 1: Write load-bearing RED**
+- [x] **Step 1: Write load-bearing RED**
 
 Return a value with a throwing `then` getter from `runOperation`, while a detached descendant retains its store.
 Require the operation to fail, the descendant to see the parent Error as external after settlement, and hostile replay
-to yield a different fixed local Error. Observe failure against Task 6e.
+to yield a different fixed local Error. Observe failure against Task 6e. **Evidence:** the focused run was 4 passed / 1
+failed; the failing state was `internal: true`, `replayedIsParent: true`, and the parent error message.
 
-- [ ] **Step 2: Implement minimum GREEN**
+- [x] **Step 2: Implement minimum GREEN**
 
 Place thenable inspection inside the same success/failure cleanup boundary as callback invocation. Every exit from
 `runOperation`, including a throwing `then` getter, closes `open`. Preserve sync return behavior for non-thenables.
+**Evidence:** the thenable-focused test passed; the minimal change places callback invocation and thenable inspection in
+one `try/catch`, retaining the existing async `finally` and synchronous return path.
 
-- [ ] **Step 3: Verify and close**
+- [x] **Step 3: Verify and close**
 
 Run shared RPC plus all four client tests, `npm run test:cfo`, `git diff --check`; commit/push
-`fix(cfo): close rpc thenable provenance`; write the ignored report; obtain fresh Sol review.
+`fix(cfo): close rpc thenable provenance`; write the ignored report; obtain fresh Sol review. **Evidence:** focused
+helper plus four client suites passed 50/50, `npm run test:cfo` passed 315/315, `git diff --check` passed, and the
+specified commit was pushed to canonical.
 
 ---
 

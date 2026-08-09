@@ -195,6 +195,52 @@ test("detached descendant from a failing callback expires inherited provenance",
   await descendant;
 });
 
+test("runOperation closes provenance when thenable inspection throws", async () => {
+  const rpc = createCfoSupabaseRpc("operation_failed:");
+  const thenError = new Error("hostile then getter");
+  let parentError;
+  let descendant;
+  let descendantState;
+  const thenable = {};
+  Object.defineProperty(thenable, "then", { get: () => { throw thenError; } });
+
+  assert.throws(() => rpc.runOperation(() => {
+    try { rpc.fail("thenable_parent"); } catch (error) {
+      parentError = error;
+      descendant = (async () => {
+        await Promise.resolve();
+        let replayed;
+        try {
+          await rpc.postRpc({
+            base: URL,
+            supaKey: KEY,
+            fetchImpl: async () => ({
+              ok: true,
+              status: 200,
+              json: async () => { throw parentError; },
+            }),
+          }, "hostile_json", {});
+        } catch (error) { replayed = error; }
+        descendantState = {
+          internal: rpc.internal(parentError),
+          replayedIsParent: replayed === parentError,
+          replayedMessage: replayed?.message,
+        };
+      })();
+    }
+    return thenable;
+  }), error => {
+    assert.equal(error, thenError);
+    return true;
+  });
+  await descendant;
+  assert.deepEqual(descendantState, {
+    internal: false,
+    replayedIsParent: false,
+    replayedMessage: "operation_failed:invalid_json",
+  });
+});
+
 test("exact() enforces a plain object with exactly the allowed enumerable own keys", () => {
   const { exact } = createCfoSupabaseRpc("t_failed:");
   const allowed = new Set(["a", "b"]);

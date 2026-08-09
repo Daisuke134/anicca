@@ -18,10 +18,12 @@ function createCfoSupabaseRpc(errorPrefix) {
     const operation = { errors: new WeakSet(), open: true };
     return operationErrors.run(operation, () => {
       let result;
-      try { result = fn(); } catch (error) { operation.open = false; throw error; }
-      if (result && typeof result.then === "function") return Promise.resolve(result).finally(() => { operation.open = false; });
-      operation.open = false;
-      return result;
+      try {
+        result = fn();
+        if (result && typeof result.then === "function") return Promise.resolve(result).finally(() => { operation.open = false; });
+        operation.open = false;
+        return result;
+      } catch (error) { operation.open = false; throw error; }
     });
   }
   function fail(reason) {
