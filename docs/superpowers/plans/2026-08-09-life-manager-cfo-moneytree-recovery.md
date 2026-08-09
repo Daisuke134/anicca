@@ -14,7 +14,7 @@ PostgreSQL appends contiguous correction revisions; existing delivery dedupe sup
 
 **Design:** `docs/superpowers/specs/2026-08-09-life-manager-cfo-moneytree-recovery-design.md`.
 
-**Status:** ACTIVE — Tasks 1–2 complete; Task 3 next.
+**Status:** ACTIVE — Tasks 1–3 complete; Task 4 next.
 
 ## Global Constraints
 
@@ -161,21 +161,21 @@ Run focused test, Task 1+2 tests, `npm run test:cfo`, LOC, and diff-check. Commi
 - Consumes: Task 2 action report with exact action keys `kind,sourceLabel,retryLabel,nextRetryAt`.
 - Produces: distinct `reconsent` and `provider_outage` summary copy; existing callback layout unchanged.
 
-- [ ] **Step 1: Write RED**
+- [x] **Step 1: Write RED**
 
 Add provider-outage and reconsent fixtures. Assert outage copy says automatic retry and does not ask reconnection;
 reconsent asks one connection update. Both omit net worth, stale amount, raw error, stack, URL, and technical names.
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
 Run: `node --test lib/cfo-telegram.test.js`; expect action schema/copy failure.
 
-- [ ] **Step 3: Implement minimum GREEN**
+- [x] **Step 3: Implement minimum GREEN**
 
 Allow only the two action kinds, require RFC3339 `nextRetryAt`, add separate Japanese/English string keys, and select
 copy by action kind. Do not add a new view, callback type, or transport.
 
-- [ ] **Step 4: Verify and close**
+- [x] **Step 4: Verify and close**
 
 Run renderer test, recovery snapshot test, `npm run test:cfo`, LOC delta, diff-check. Commit/push
 `feat(cfo): explain bounded recovery state`; report; fresh Sol review.
