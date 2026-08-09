@@ -1,6 +1,7 @@
 # Life Manager CFO Immutable Daily Snapshot Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For the Sol controller:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development and dispatch only a
+> Luna implementer for production code, tests, SQL, and live execution. Steps use checkbox (`- [ ]`) syntax.
 
 **Goal:** Build and persist one truthful, immutable, idempotent native-JPY Moneytree daily snapshot.
 
@@ -140,9 +141,9 @@ assert.match(sql, /reporting_date_conflict/i);
 assert.match(sql, /REVOKE UPDATE, DELETE ON TABLE public\.lm_cfo_daily_snapshots FROM service_role/i);
 ```
 
-Also assert RLS, service-role-only SELECT/INSERT/function execute, SECURITY INVOKER, fixed search path, JSON object
-checks, non-zero UUID check, revision 1 enforcement in the RPC, report date/revision/currency consistency checks, and
-no UPDATE branch.
+Also assert RLS, service-role-only SELECT/INSERT/function execute, SECURITY INVOKER, fixed search path, non-zero UUID,
+and table-level checks for JSON objects, `revision=1`, report date/revision/JPY consistency, and both
+`moneytree_mufg` source identities. Assert the RPC has no UPDATE branch.
 
 - [ ] **Step 2: Run focused RED**
 
@@ -185,6 +186,7 @@ RAISE EXCEPTION 'reporting_date_conflict' USING ERRCODE = '23505';
 
 Before INSERT, reject null/non-object JSON, zero UUID, report `reportingDate` mismatch, report revision other than 1,
 currency other than JPY, and source bundle whose source/state IDs are not `moneytree_mufg`. Return no amount or UID.
+Repeat those invariants as table CHECK constraints so a direct `service_role` INSERT cannot bypass the RPC.
 
 - [ ] **Step 4: Register and prove GREEN**
 
@@ -210,7 +212,52 @@ git push canonical HEAD
 
 ---
 
-### Task 3: Supabase Append Client
+### Task 3: Real PostgreSQL Concurrency and Permission Proof
+
+**Files:**
+- Create: `apps/life-call/test/postgres/cfo-daily-snapshot-postgres.integration.sh`
+- Modify: `apps/life-call/package.json`
+
+**Interfaces:**
+- Consumes the Task 2 migration in an isolated PostgreSQL 18 instance.
+- Produces script `test:cfo-snapshot:postgres` and one privacy-safe PASS line.
+
+- [ ] **Step 1: Write the failing integration script**
+
+Copy the lifecycle pattern from `panel-score-postgres.integration.sh`: use local PostgreSQL when installed, otherwise
+an ephemeral `postgres:18-alpine` container, explicit roles, synthetic tenants, trap cleanup, and no external DB.
+Run the script before adding the assertions and capture RED because the required contract is not yet proven.
+
+- [ ] **Step 2: Add the complete PostgreSQL assertions**
+
+Using synthetic reports/bundles only, prove:
+
+1. anon/authenticated cannot read the table or execute the RPC;
+2. service_role can execute the RPC and select receipts;
+3. two concurrent sessions append the identical owner/date/run/payload and return one shared `public_ref`, count 1;
+4. same run with different report or source bundle fails `run_id_conflict`;
+5. different run on the same date fails `reporting_date_conflict`;
+6. UPDATE and DELETE fail;
+7. direct service-role INSERT rejects revision 2, mismatched report date, mismatched report revision, non-JPY report,
+   wrong source/state identity, and non-object payload;
+8. another tenant can create its own same-date revision without colliding.
+
+The final stdout is exactly `cfo-daily-snapshot-postgres: PASS`.
+
+- [ ] **Step 3: Register, run, commit, and push**
+
+```bash
+cd apps/life-call
+npm run test:cfo-snapshot:postgres
+git diff --check
+git add test/postgres/cfo-daily-snapshot-postgres.integration.sh package.json
+git commit -m "test(cfo): prove snapshot concurrency"
+git push canonical HEAD
+```
+
+---
+
+### Task 4: Supabase Append Client
 
 **Files:**
 - Create: `apps/life-call/lib/cfo-daily-snapshot-store.js`
@@ -280,7 +327,7 @@ git push canonical HEAD
 
 ---
 
-### Task 4: Real Migration, Idempotency E2E, and Closure
+### Task 5: Real Migration, Idempotency E2E, and Closure
 
 **Files:**
 - Modify: `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md`
@@ -288,7 +335,8 @@ git push canonical HEAD
 - Modify: `docs/superpowers/plans/2026-08-09-life-manager-cfo-daily-snapshot.md`
 
 **Interfaces:**
-- Consumes the live Moneytree App response, Supabase management credentials, owner Telegram binding, and Task 3 client.
+- Consumes the live Moneytree App response, Supabase management credentials, the existing private owner binding, and
+  the Task 4 client. It sends no CFO product report.
 - Produces privacy-safe live evidence and activates CFO-1g2.
 
 - [ ] **Step 1: Run dependency-clean verification**
@@ -298,6 +346,7 @@ cd apps/life-call
 npm ci --no-audit --no-fund
 node --test lib/cfo-daily-snapshot.test.js lib/cfo-daily-snapshot-migration.test.js lib/cfo-daily-snapshot-store.test.js
 npm run test:cfo
+npm run test:cfo-snapshot:postgres
 npm test
 git diff --check
 ```
@@ -316,28 +365,29 @@ In one controller process:
 
 1. read Moneytree accounts through the installed App;
 2. adapt and compose the normalized bundle with an ephemeral reference key;
-3. privately resolve exactly one `lm_users.uid` matching the configured owner Telegram chat ID;
+3. privately resolve the existing owner UID through its current Life Manager binding without printing either value;
 4. use Tokyo's current `YYYY-MM-DD` and one random non-zero UUID;
 5. call `appendCfoDailySnapshot` twice with identical input;
 6. query the table by the same owner/date/run and prove count 1;
 7. attempt no UPDATE/DELETE and print no live amount.
 
-Output exactly booleans/count/hash fields: connector success, adapter/bundle success, first append success, retry
+Output exactly booleans/count fields: connector success, adapter/bundle success, first append success, retry
 same public ref, database row count one, report partial, unknown liabilities preserved, payload privacy, and exit 0.
 
 - [ ] **Step 4: Fresh Sol review**
 
-Review Tasks 1–3 diffs and the redacted E2E evidence. Every Critical/Important finding receives a Luna regression,
+Review Tasks 1–4 diffs and the redacted E2E evidence. Every Critical/Important finding receives a Luna regression,
 minimum fix, focused/full rerun, fix commit, push, and scoped re-review.
 
 - [ ] **Step 5: Close CFO-1g**
 
 Sol changes status to `CFO-1g COMPLETE — CFO-1g2 NEXT`, checks CFO-1g, records commit/test/LOC/live boolean evidence
-without amounts/identifiers, commits `docs(cfo): close immutable daily snapshot`, pushes, and sends one `Codex:::`
-Telegram milestone with provider message ID. The daily finance report remains 7/7; this milestone must not claim it.
+without amounts/identifiers, commits `docs(cfo): close immutable daily snapshot`, and pushes. The controller's required
+development milestone notification is operational reporting outside the CFO product; it must not claim that the 7/7
+daily finance report exists.
 
 ## Completion Boundary
 
-CFO-1g closes only after all three implementation tasks pass scoped review, the migration is live, two same-run
+CFO-1g closes only after all implementation tasks pass scoped review, the migration is live, two same-run
 appends produce one immutable row and one receipt identity, full tests pass, docs are pushed, and the Telegram
-milestone receipt is recorded. Then CFO-1g2 is the only active item.
+controller milestone receipt is recorded separately from the CFO snapshot. Then CFO-1g2 is the only active item.

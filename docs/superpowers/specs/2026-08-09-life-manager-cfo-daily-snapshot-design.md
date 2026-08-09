@@ -106,6 +106,8 @@ Constraints:
 - UPDATE and DELETE are revoked and rejected by a `BEFORE UPDATE OR DELETE` trigger;
 - RLS is enabled; only `service_role` can select/insert or execute the append RPC;
 - anon/authenticated/public receive no table or function access;
+- table-level checks enforce `revision=1`, report date/revision/JPY consistency, JSON-object payloads, and both
+  normalized source identities even when `service_role` inserts directly instead of using the RPC;
 - no advisory lock, read-then-write client dedupe, upsert update, or mutable latest-row table.
 
 `lm_append_cfo_daily_snapshot(text,date,uuid,jsonb,jsonb)` uses one INSERT with `ON CONFLICT DO NOTHING` and then:
@@ -135,14 +137,15 @@ The client builds the report internally, sends exactly one authenticated POST to
 
 1. Synthetic builder tests prove exact JPY totals, null unknowns, partial state, privacy, deep freeze, overflow
    rejection, and hostile-input rejection.
-2. Migration tests prove both unique constraints, append-only trigger, RLS, grants, JSON/date/run checks, same-run
-   idempotency, and conflict categories.
+2. Migration tests plus an isolated real-PostgreSQL integration prove both unique constraints, append-only trigger,
+   RLS, role grants, direct-INSERT checks, parallel same-run idempotency, and both conflict categories.
 3. Store-client tests prove one RPC call, no direct table mutation, exact request keys, safe errors, response closure,
    and no payload logging.
 4. Apply the migration through the existing Supabase Management API and reload PostgREST schema.
 5. In a no-echo controller, resolve the owner UID from the existing Telegram chat binding, perform a fresh Moneytree
    read, append revision 1 twice with the same run ID, and prove both receipts share one `public_ref` and one database
-   row. Output only booleans/counts and a content hash; live amounts stay in the private owner channel.
+   row. Output only booleans and row counts; live amounts stay in the private owner channel and no hash of a
+   low-entropy financial payload is emitted.
 6. Focused CFO tests and full `apps/life-call` tests pass; a fresh Sol review returns clean.
 
 ## 7. File and LOC Budget
@@ -151,6 +154,7 @@ The client builds the report internally, sends exactly one authenticated POST to
 |---|---:|---:|---:|
 | Report builder | 2 code + package registration | 80 LOC | 170 LOC |
 | SQL contract | migration + test + package registration | 130 SQL LOC | 70 LOC |
+| PostgreSQL proof | one isolated shell test + package script | 0 LOC | 180 LOC |
 | Store client | 2 code + package registration | 100 LOC | 180 LOC |
 
 Each implementation task changes at most three files and closes RED → GREEN → review → commit → push before the
