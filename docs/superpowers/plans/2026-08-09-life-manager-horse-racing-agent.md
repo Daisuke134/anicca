@@ -37,7 +37,7 @@
 | live orders/payments | 0 |
 | revenue / real P&L | 0 |
 
-NARの46/456/327274行、payback 0 pre-settlementはcommit `6a6cdd1356ea9f1d5064cdd24bb05d4342fe6730`の`docs/evidence/horse-racing/nar-official-data-probe.md`にあるredacted observationである。NAR evidenceの`gate_status`は`BLOCKED_BY_HRA_2F`で、HRA-2F GREENとmanifest受理までは下流へ進めない。未取得のJRA、backtest、SHADOW、Telegram、orders、revenueはunknownを0へ変換せず、現在値0としてblocked表示する。
+NARの46/456/327274行、payback 0 pre-settlementはcommit `6a6cdd1356ea9f1d5064cdd24bb05d4342fe6730`から始まる`docs/evidence/horse-racing/nar-official-data-probe.md`のredacted observationである。HRA-2FはGREEN、NAR evidenceはcommits `33ef30c1d` + `a289babba`で`PASS_PRIVATE_SHADOW`。ephemeral raw archiveは不在で`CANNOT_RECOMPUTE_RAW_ARCHIVE_ABSENT`、`cash_authorized=false`である。未取得のJRA、backtest、SHADOW、Telegram、orders、revenueはunknownを0へ変換せず、現在値0としてblocked表示する。
 
 ## Architecture flow
 
@@ -77,9 +77,9 @@ The official NAR source is zero-cost primary; JRA remains official primary. Seco
 |---:|---|---|---|
 | 0 | Completed safety and design | complete | historical commits, approved official public-web design, NAR evidence commit |
 | 1 | HRA-2F ingest boundary refactor | **complete** | commits `ae56d3524` + `956d1b50d`; focused 24/full 32 PASS |
-| 2 | HRA-2R2 NAR official evidence gate validation | **ACTIVE** | verify committed probe, no raw refetch |
-| 3 | HRA-2R1 JRA public-web record | blocked by Task 2 close | one evidence file; current row count 0 |
-| 4 | HRA-2N NAR official free acquisition component | blocked by HRA-2R2 | HTML/curl planner and Mac-local archive contract |
+| 2 | HRA-2R2 NAR official evidence gate validation | **complete** | `PASS_PRIVATE_SHADOW`; commits `33ef30c1d` + `a289babba` |
+| 3 | HRA-2R1 JRA public-web record | **ACTIVE** | one evidence file; current row count 0 |
+| 4 | HRA-2N NAR official free acquisition component | blocked by Task 3 close | HTML/curl planner and Mac-local archive contract |
 | 5 | HRA-2R3 per-source index/gate | blocked by source records | JRA official, NAR official, optional secondary fallback rows |
 | 6 | HRA-2S observed schema/store | blocked by HRA-2R3 | quarantine three files only |
 | 7 | HRA-3D audit | blocked by HRA-2S | `data_audit.py` and `test_data_audit.py` |
@@ -243,9 +243,9 @@ git push canonical HEAD
 
 Expected: only the two owned files are staged; quarantine remains untracked; Task 1 is GREEN before Task 2 or Task 3 becomes active.
 
-## Task 2: HRA-2R2 NAR official Reality Gate validation
+## Task 2: HRA-2R2 NAR official Reality Gate validation (COMPLETE)
 
-**State:** ACTIVE. **Owner:** Luna executes evidence checks; Sol alone decides PASS/BLOCKED.
+**State:** complete at commits `33ef30c1d` + `a289babba`. Sol decision: `PASS_PRIVATE_SHADOW`; `cash_authorized=false`; raw archive absent/CANNOT_RECOMPUTE. Fresh review fix round aligned exact URL/timestamps and canonical schema keys, then scoped re-review returned ship.
 
 **Files:**
 - Modify only if verification exposes an error: `docs/evidence/horse-racing/nar-official-data-probe.md`
@@ -253,26 +253,26 @@ Expected: only the two owned files are staged; quarantine remains untracked; Tas
 **Consumes:** committed probe `6a6cdd135`, HRA-2F metadata contract.
 **Produces:** a gate judgment for NAR official data; it does not refetch raw archives merely to manufacture freshness.
 
-- [ ] Step 1: Verify the committed manifest fields.
+- [x] Step 1: Verify the committed manifest fields.
 
 ~~~sh
 cd /Users/anicca/anicca-project/.worktrees/horse-racing-agent-spec
-rg -n 'REAL_PUBLIC_WEB_RECORD|source_authority: official|jurisdiction: NAR|race_rows: 46|horse_rows: 456|odds_rows: 327274|payback_rows: 0|USER_ATTESTED_PERMISSION|permission_document_verified: false|raw_values_exported: false|BLOCKED_BY_HRA_2F' docs/evidence/horse-racing/nar-official-data-probe.md
+rg -n 'REAL_PUBLIC_WEB_RECORD|source_authority: official|jurisdiction: NAR|race_rows: 46|horse_rows: 456|odds_rows: 327274|payback_rows: 0|USER_ATTESTED_PERMISSION|permission_document_verified: false|raw_values_exported: false|cash_authorized: false|PASS_PRIVATE_SHADOW|CANNOT_RECOMPUTE_RAW_ARCHIVE_ABSENT' docs/evidence/horse-racing/nar-official-data-probe.md
 ~~~
 
 Expected: every required field is present. Missing data remains visible; `payback_rows=0` means pre-settlement, not a zero payout.
 
-- [ ] Step 2: Recompute only redacted structural checks from the Mac-local archive when it still exists.
+- [x] Step 2: Recompute only redacted structural checks from the Mac-local archive when it still exists.
 
 Check content hashes, archive entry names, line counts, UTF-8 BOM, and header names. Do not print runner/person/raw odds values. If the ephemeral archive is gone, keep the committed hash/count evidence and schedule the next official bounded acquisition; never synthesize a replacement.
 
-- [ ] Step 3: Sol records the judgment.
+- [x] Step 3: Sol records the judgment.
 
 PASS requires HRA-2F GREEN plus exact source URL, official authority, timestamps, HTTP/fetch evidence, parsed rows, observed raw schema types, hashes, permission metadata, and raw non-export. `USER_ATTESTED_PERMISSION` keeps `cash_authorized=false`. Commit a correction only when the evidence file actually changes.
 
 ## Task 3: HRA-2R1 JRA official actual record
 
-**State:** blocked until Task 2 closes; current JRA record count remains 0.
+**State:** ACTIVE; current JRA record count remains 0 until this task produces `parsed_row_count>=1`.
 **File:** create `docs/evidence/horse-racing/jra-public-web-probe.md`.
 
 - [ ] Step 1: Discover a current official JRA race/result URL from `https://www.jra.go.jp/` with crwl; do not hardcode a stale race id.
