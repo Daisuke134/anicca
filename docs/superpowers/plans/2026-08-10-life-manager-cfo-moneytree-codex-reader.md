@@ -68,6 +68,8 @@ fixture. Prove:
    `read-only`, and the fixed CFO working directory;
 2. exactly one raw MCP accounts object becomes the existing validated/frozen composed read;
 3. `LM_UID_SECRET` and an unrelated secret sentinel are absent from the child environment;
+   the child instead receives the fixed non-secret `CODEX_INTERNAL_ORIGINATOR_OVERRIDE=codex_exec` required by the
+   measured non-interactive Apps path;
 4. model prose, stderr, balances, and raw provider fields are never logged or embedded in an error;
 5. missing or duplicate accounts MCP results fail with one fixed redacted error.
 
@@ -85,8 +87,9 @@ Expected: non-zero because the reader does not exist.
 Use only Node stdlib `child_process.execFile` with a two-minute timeout and a two-megabyte buffer. Use a fixed prompt
 that requests the installed Moneytree App's `show_accounts` tool with locale `ja` exactly once and forbids every
 other tool and private-field output. Do not use a shell. Give the child only the minimal runtime environment needed
-for Codex (`HOME`, `PATH`, `USER`, `LOGNAME`, `SHELL`, `TMPDIR`, locale, and `CODEX_HOME` when present); never inherit
-the parent environment wholesale.
+for Codex (`HOME`, `PATH`, `USER`, `LOGNAME`, `SHELL`, `TMPDIR`, locale, and `CODEX_HOME` when present), plus the
+fixed non-secret `CODEX_INTERNAL_ORIGINATOR_OVERRIDE=codex_exec`. Never inherit the parent environment wholesale,
+and never pass the parent session's `CODEX_THREAD_ID`, `CODEX_CI`, `CODEX_SHELL`, or originator value.
 
 Parse stdout as JSONL. Require exactly one completed MCP item and exactly one `structured_content` object with
 `type === "accounts"` and an object `data.accountGroups`. Reject missing, duplicate, malformed, oversized, timed-out,
@@ -116,6 +119,12 @@ prose, child secret scrubbing, fixed errors, no private logging, no connector br
 Sol then runs the real CLI with the existing local environment and prints only booleans/counts. Required live evidence:
 real App call succeeds, connected account count is positive, source/state validate and are frozen, native currency is
 JPY, liabilities remain unknown/partial, no Telegram call occurs, and no private field is printed.
+
+The first live CLI attempt is retained as RED evidence: the child environment scrubbed the host originator as well as
+secrets, so Codex did not complete before the 120-second bound and the CLI correctly emitted only its safe failure
+envelope with exit `1`. A no-send diagnostic proved the same prompt/cwd succeeds under the normal environment, and
+then proved a minimal clean environment succeeds with only the fixed official `codex_exec` originator added. Luna
+must add this regression before changing production.
 
 - [ ] **Step 6: Close**
 
