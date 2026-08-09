@@ -117,8 +117,8 @@ function prepareWorktreeDependencies(repoRoot, worktree) {
   const target = path.join(repoRoot, "apps/life-manager/node_modules");
   const link = path.join(worktree, "apps/life-manager/node_modules");
   let targetStat;
-  try { targetStat = fs.lstatSync(target); } catch { invalid(); }
-  if (!targetStat.isDirectory() || targetStat.isSymbolicLink()) invalid();
+  try { targetStat = fs.statSync(target); } catch { invalid(); }
+  if (!targetStat.isDirectory()) invalid();
   fs.mkdirSync(path.dirname(link), { recursive: true, mode: 0o700 });
   try {
     const linkStat = fs.lstatSync(link);
