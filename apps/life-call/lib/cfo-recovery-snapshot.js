@@ -17,6 +17,7 @@ const RENDERED_SOURCE_KEYS = new Set(["sourceId", "label", "status", "asOf", "am
 const EXCLUDED_KEYS = new Set(["label", "reason"]);
 const RETRY_LABELS = Object.freeze({ reconsent: "Moneytreeを再接続してください", provider_outage: "30分後に自動再試行します" });
 const WAITS = Object.freeze([1000, 5000]);
+const TRANSIENT_FAILURES = new Set(["timeout", "network", "rate_limited", "provider_5xx"]);
 const FAILURE_KINDS = new Set(["unauthorized", "forbidden", "expired", "revoked", "timeout", "network", "rate_limited", "provider_5xx", "provider_outage"]);
 const RFC3339 = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(\.\d+)?(Z|[+-]\d{2}:\d{2})$/;
 
@@ -63,12 +64,15 @@ function validateRecovery(recovery) {
     const reconsentFailure = new Set(["unauthorized", "expired", "forbidden", "revoked"]);
     const outageFailure = new Set(["timeout", "network", "rate_limited", "provider_5xx", "provider_outage"]);
     if (recovery.failureKind === null || (reconsentFailure.has(recovery.failureKind) && recovery.action.kind !== "reconsent") || (outageFailure.has(recovery.failureKind) && recovery.action.kind !== "provider_outage")) fail("action_failure_mismatch");
+    if (recovery.action.kind === "provider_outage" && recovery.failureKind === "provider_outage" && (recovery.attempts.reads !== 1 || recovery.attempts.repairs !== 0 || recovery.attempts.waits.length !== 0)) fail("unreachable_history");
+    if (recovery.action.kind === "provider_outage" && TRANSIENT_FAILURES.has(recovery.failureKind) && recovery.attempts.reads < 2) fail("unreachable_history");
   } else {
     if (!plain(recovery.moneytreeRead) || recovery.action !== null) fail("missing_read");
     if (recovery.failureKind !== null) fail("success_failure_kind");
     let read;
     try { read = composeMoneytreeRead({ source: recovery.moneytreeRead.source, state: recovery.moneytreeRead.state }); } catch { fail("invalid_read"); }
     if (read.source.asOf !== recovery.observedAt || read.state.observedAt !== recovery.observedAt) fail("observed_at_mismatch");
+    if (recovery.status === "fresh" && (recovery.attempts.reads !== 1 || recovery.attempts.repairs !== 0 || recovery.attempts.waits.length !== 0)) fail("unreachable_history");
     if (recovery.status === "fresh" && recovery.repair !== null) fail("unexpected_repair");
     if (recovery.status === "recovered") {
       exact(recovery.repair, REPAIR_KEYS); if (recovery.repair.sourceLabel !== "Moneytree" || recovery.repair.freshReread !== true || recovery.repair.reconciled !== true) fail("unproven_recovery");

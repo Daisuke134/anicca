@@ -15,7 +15,7 @@ function read(amount = 1234) {
   return composeMoneytreeRead({ source, state });
 }
 function recovery(overrides = {}) { return { reportingDate: DATE, observedAt: OBSERVED, status: "fresh", attempts: { reads: 1, repairs: 0, waits: [] }, failureKind: null, moneytreeRead: read(), repair: null, action: null, ...overrides }; }
-function actionRecovery(failureKind, kind) { return recovery({ status: "action_required", failureKind, moneytreeRead: null, action: { kind, sourceLabel: "Moneytree", retryLabel: kind === "reconsent" ? "Moneytreeを再接続してください" : "30分後に自動再試行します", nextRetryAt: "2026-08-09T08:30:00+09:00" } }); }
+function actionRecovery(failureKind, kind, attempts = { reads: 1, repairs: 0, waits: [] }) { return recovery({ status: "action_required", failureKind, attempts, moneytreeRead: null, action: { kind, sourceLabel: "Moneytree", retryLabel: kind === "reconsent" ? "Moneytreeを再接続してください" : "30分後に自動再試行します", nextRetryAt: "2026-08-09T08:30:00+09:00" } }); }
 function recoveryEffects(read) { return { read, repair: async () => true, wait: async () => undefined }; }
 
 function assertInvalid(call) { assert.throws(call, /^Error: cfo_recovery_snapshot_invalid:/); }
@@ -94,6 +94,20 @@ test("accepts only reachable attempts states and exact wait prefixes", async () 
   for (const attempts of [{ reads: 3, repairs: 1, waits: [1000, 5000] }, { reads: 2, repairs: 1, waits: [5000] }]) assertInvalid(() => buildCfoDailyReportFromRecovery({ revision: 1, recovery: { ...actionBase, attempts } }));
 });
 
+test("fresh recovery cannot carry retry attempts", () => {
+  for (const attempts of [{ reads: 2, repairs: 1, waits: [1000] }, { reads: 3, repairs: 2, waits: [1000, 5000] }]) {
+    assertInvalid(() => buildCfoDailyReportFromRecovery({ revision: 1, recovery: recovery({ attempts }) }));
+  }
+});
+
+test("direct provider outage cannot carry retry attempts", () => {
+  assertInvalid(() => buildCfoDailyReportFromRecovery({ revision: 1, recovery: actionRecovery("provider_outage", "provider_outage", { reads: 2, repairs: 1, waits: [1000] }) }));
+});
+
+test("transient provider outage must include a reread attempt", () => {
+  assertInvalid(() => buildCfoDailyReportFromRecovery({ revision: 1, recovery: actionRecovery("timeout", "provider_outage", { reads: 1, repairs: 0, waits: [] }) }));
+});
+
 test("binds fresh and recovered reads to recovery.observedAt exactly", () => {
   const stale = read();
   const freshWithStaleRead = recovery({ moneytreeRead: stale, observedAt: "2026-08-09T09:00:00+09:00" });
@@ -143,7 +157,7 @@ test("revalidates state-specific report and source invariants", () => {
 });
 
 test("revalidates action-required evidence, freshness, liabilities, and state consistency", () => {
-  const bundle = buildCfoDailyReportFromRecovery({ revision: 1, recovery: actionRecovery("timeout", "provider_outage") });
+  const bundle = buildCfoDailyReportFromRecovery({ revision: 1, recovery: actionRecovery("timeout", "provider_outage", { reads: 2, repairs: 1, waits: [1000] }) });
   const cases = [
     () => validateCfoRecoverySnapshotBundle({ report: bundle.report, sourceBundle: { source: { ...bundle.sourceBundle.source, evidenceRef: "evidence:wrong" }, state: bundle.sourceBundle.state } }),
     () => validateCfoRecoverySnapshotBundle({ report: bundle.report, sourceBundle: { source: { ...bundle.sourceBundle.source, freshness: "stale" }, state: bundle.sourceBundle.state } }),
