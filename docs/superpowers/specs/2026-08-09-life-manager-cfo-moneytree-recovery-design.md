@@ -152,12 +152,13 @@ The RPC is exactly
 inserts with `ON CONFLICT DO NOTHING`, returns an identical existing revision, and raises a fixed conflict when the
 existing report/source/supersedes values differ. No revision allocator or mutable counter is added.
 
-## 6. Live Boundary
+## 6. Local-First Boundary
 
-CFO-1g3 may apply its additive/forward migration and verify installed definitions/privileges. It must not induce a
-Moneytree failure, write a synthetic personal snapshot, create a live delivery claim/receipt, or send Telegram.
-Recovery behavior and concurrent correction insertion are proven in isolated PostgreSQL with redacted fixtures. The
-first real recovery, correction, and provider message receipt belong to CFO-1h/CFO-1i.
+CFO-1g3 builds the additive/forward migration and proves its definitions, privileges, and correction behavior in
+isolated local PostgreSQL. It does not apply another production migration, induce a Moneytree failure, write a
+synthetic personal snapshot, create a live delivery claim/receipt, or send Telegram. Product Stage 7 first proves a
+real Moneytree read and the exact finance-message preview locally without sending. Only that later integration slice
+may apply the already-proven forward migration immediately before the first real correction/report path.
 
 ## 7. Acceptance Tests
 
@@ -172,12 +173,14 @@ first real recovery, correction, and provider message receipt belong to CFO-1h/C
 9. Revision 2 supersedes revision 1; cross-owner/date/run gaps and revision gaps fail closed.
 10. Identical/concurrent correction retry yields one immutable row and one public receipt.
 11. Existing revision-1 behavior and delivery FKs remain valid.
-12. Live installed-definition proof passes with zero personal snapshot/delivery/Telegram writes.
+12. Local installed-definition proof passes and records zero production migration, personal snapshot, delivery, and
+    Telegram calls.
 13. Exact input/options/receipt schemas reject hostile JS shapes before effects and redact hostile callback/provider
     failures.
 
 ## 8. Completion Boundary
 
 CFO-1g3 closes when the bounded recovery contract, recovery/action report contract, append-only correction migration
-and client, isolated real-PostgreSQL proof, live no-write installed-definition proof, full tests, and fresh Sol review
-all pass. It does not claim 7/7 or a delivered finance report.
+and client, isolated real-PostgreSQL installed-definition proof, full tests, and fresh Sol review all pass. It is an
+internal slice of Product Stage 7; execution continues directly into local real-data preview, first real Telegram
+finance send, hourly scheduling, and two consecutive autonomous successes.

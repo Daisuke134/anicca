@@ -14,7 +14,11 @@ PostgreSQL appends contiguous correction revisions; existing delivery dedupe sup
 
 **Design:** `docs/superpowers/specs/2026-08-09-life-manager-cfo-moneytree-recovery-design.md`.
 
-**Status:** ACTIVE — Task 1 complete; Task 2 next.
+**Status:** PRODUCT STAGE 7 ACTIVE — internal recovery Task 1 complete; Task 2 implemented and review pending.
+
+**Numbering rule:** `Task 1–7` in this file are internal recovery subtasks only. User-visible progress remains
+**Product Stage 7** until a real Moneytree finance report is delivered, hourly refresh is active, and two consecutive
+scheduled real-data runs succeed. Closing internal Task 7 never means the product feature is finished.
 
 ## Global Constraints
 
@@ -264,7 +268,7 @@ Run focused Task 2+6 tests, `npm run test:cfo`, LOC, diff-check. Commit/push
 
 ---
 
-### Task 7: Live no-write migration proof and CFO-1g3 closure
+### Task 7: Local no-write migration proof and CFO-1g3 engineering closure
 
 **Files:**
 - Modify tracked parent/design/plan docs only after all evidence passes.
@@ -275,32 +279,37 @@ Run focused Task 2+6 tests, `npm run test:cfo`, LOC, diff-check. Commit/push
 From `apps/life-call`: `npm ci --no-audit --no-fund`; all new focused tests; `npm run test:cfo`;
 `npm run test:cfo-snapshot-corrections:postgres`; `npm test`; `git diff --check`. Record exact counts.
 
-- [ ] **Step 2: Apply the forward migration once**
+- [ ] **Step 2: Prove the forward migration locally**
 
-Use the existing secret-safe Supabase Management API database-query path and one PostgREST schema reload. Print no
-URL, token, UID, amount, SQL body, or response body.
+Apply the migration only to isolated PostgreSQL and verify it from a clean prerequisite schema. Do not call Supabase,
+PostgREST, Moneytree, or Telegram in this internal recovery slice.
 
-- [ ] **Step 3: Verify installed definitions without personal writes**
+- [ ] **Step 3: Verify local installed definitions without external writes**
 
-Read only catalog/privilege metadata. Require corrected revision constraints, self-FK, legacy RPC revision-1 filter,
-new correction RPC, service grants, app-role denial, and append-only trigger. Query live snapshot/delivery counts
-before/after and require no change. Do not read or print payload values.
+Read only local catalog/privilege metadata. Require corrected revision constraints, self-FK, legacy RPC revision-1
+filter, new correction RPC, service grants, app-role denial, and append-only trigger. Do not read or print payload
+values. Require zero production migration, personal snapshot, delivery, Moneytree, and Telegram calls.
 
 Safe stdout is exactly:
 
 ```json
-{"migrationSuccess":true,"schemaReloadSuccess":true,"installedDefinitionMatches":true,"snapshotRowsCreated":0,"deliveryRowsCreated":0,"telegramCalls":0,"payloadPrivacy":true}
+{"localMigrationSuccess":true,"installedDefinitionMatches":true,"productionMigrationCalls":0,"snapshotRowsCreated":0,"deliveryRowsCreated":0,"moneytreeCalls":0,"telegramCalls":0,"payloadPrivacy":true}
 ```
 
 - [ ] **Step 4: Final review and closure**
 
-Fresh Sol final review must return no Critical/Important findings. Sol marks `CFO-1g3 COMPLETE — CFO-1h2 NEXT`,
-records boolean/count evidence, updates all SSOTs, commits/pushes `docs(cfo): close bounded Moneytree recovery`, and
-sends one separate `Codex:::` development milestone with real provider message ID. It must say no finance report was
-sent.
+Fresh Sol final review must return no Critical/Important findings. Sol marks the internal slice
+`CFO-1g3 COMPLETE — PRODUCT STAGE 7 STILL ACTIVE`, records boolean/count evidence, updates all SSOTs, and
+commits/pushes `docs(cfo): close bounded Moneytree recovery`. Execution continues directly into the real-data local
+preview and Telegram integration; it does not stop or claim the product feature is complete.
 
 ## Completion Boundary
 
-CFO-1g3 is complete only after all seven tasks, live no-write installed-definition proof, full tests, and fresh Sol
-review pass. The next visible work remains Telegram integration and the first real Moneytree finance send; 7/7 is not
-claimed here.
+CFO-1g3 is complete only after all seven internal recovery tasks, local installed-definition proof, full tests, and
+fresh Sol review pass. Owner-facing Product Stage 7 remains active through this uninterrupted sequence:
+
+1. verify the exact real Moneytree finance-message preview locally without sending;
+2. apply the already-proven production migration only if the real local path requires it;
+3. send the first real finance report and store the positive Telegram provider `message_id`;
+4. enable hourly refresh, a daily full report, and meaningful-change/action reporting;
+5. prove two consecutive autonomous scheduled real-data successes, then mark Product Stage 7 complete.

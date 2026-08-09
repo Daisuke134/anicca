@@ -2,12 +2,12 @@
 
 | Field | Value |
 |---|---|
-| Status | CFO-1g3 DESIGN APPROVED — IMPLEMENTATION NEXT |
+| Status | PRODUCT STAGE 7 ACTIVE — recovery subtask 2 implemented, review pending |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
 | Existing foundations | `apps/life-call`, interactive Moneytree App access, Fleet telemetry, `lm_api_cost`, and the canonical `lm_agent_earnings` source (the panel's `lm_financial_ledger` name is a stale alias) |
-| First unfinished item | **CFO-1g3: bounded Moneytree repair and append-only corrections** |
+| First unfinished item | **Product Stage 7: real Moneytree → Telegram autonomous reporting** |
 
 ## 1. Overview — What and Why
 
@@ -28,6 +28,48 @@ before another earning agent is created. The approved Moneytree-first child desi
 The enduring rule is **one closed slice at a time**:
 
 > Observe → reconcile → report → verify → only then decide or act.
+
+### 1.1 Owner-facing seven-stage numbering — single source of truth
+
+The owner-facing number and an engineering subtask number are different namespaces. We never report an internal
+`Task 1–7` as overall progress. Product Stages 1–6 are complete foundations. **Product Stage 7 is active**, and it is
+the complete local-first Moneytree-to-Telegram feature, not merely a migration or recovery sub-plan.
+
+```mermaid
+flowchart LR
+    S1[Product Stages 1–6\nfoundation complete] --> S7[Product Stage 7\nactive]
+    S7 --> R[Bounded recovery + corrections]
+    R --> P[Local real-data no-send preview]
+    P --> T[Real Telegram report + message ID]
+    T --> H[Hourly refresh + daily full report]
+    H --> V[Two consecutive autonomous successes]
+    V --> DONE[Product Stage 7 complete]
+```
+
+Product Stage 7 is complete only when all of the following are true:
+
+1. the local runtime reads the connected Moneytree MUFG source with real native-JPY data and reconciles it;
+2. the exact finance message is verified locally without sending before any further production-schema mutation;
+3. Telegram receives a real finance report and its positive provider `message_id` is durably recorded;
+4. an hourly autonomous refresh is active, with a daily full report and immediate meaningful-change/action reports;
+5. two consecutive scheduled real-data runs succeed without manual repair.
+
+`CFO-1g3`, `CFO-1h2`, `CFO-1h`, and `CFO-1i` are engineering slices inside Product Stage 7. Closing any one of them
+does not mean Product Stage 7 is complete.
+
+### 1.2 Local-first runtime and repository boundary
+
+- The current implementation is built in the local worktree
+  `/Users/anicca/anicca-project/.worktrees/cfo-m0-business-registry` on
+  `feature/cfo-moneytree-daily-report` in the existing `anicca-project` repository.
+- `apps/life-call` means the **Life Manager call/service package**. It is not a directory named “live code” and it is
+  not a separate web-app repository. It is reused because the existing Telegram transport, scheduler conventions,
+  ledger access, and Life Manager runtime already live there.
+- “Local first” means the real Moneytree read, reconciliation, rendered-message preview, and scheduling behavior are
+  proven from the local runtime before Steel/cloud parity. It does not mean durable history is forbidden: snapshots,
+  correction lineage, and Telegram dedupe need persistent storage.
+- Existing additive CFO schema has already been applied to Supabase. No further production migration or finance send
+  occurs until the local real-data no-send preview passes.
 
 The CFO MUST NOT trade, transfer, hire, fund, or stop a live business during the foundation milestone. Read and
 write authority remain different capabilities permanently. No balance, transaction, revenue, or tax estimate is
@@ -769,6 +811,9 @@ static `4/4`, CFO `241/241`, aggregate `874/874`, and real PostgreSQL PASS. Fres
 
 ### M1 — One truthful Moneytree-first read-only snapshot
 
+This M1 checklist is the engineering breakdown of owner-facing Product Stage 7. It must not be presented as another
+top-level seven-step sequence.
+
 - [x] **CFO-1a** Specify provider-neutral adapter contracts and redacted fixtures.
 - [x] **CFO-1b** Implement Moneytree MUFG balance/transaction adapter; verify against the live connected account.
 - [x] **CFO-1b2** Freeze the Moneytree coverage-state contract: compose balances with connected-liability coverage,
@@ -789,7 +834,8 @@ static `4/4`, CFO `241/241`, aggregate `874/874`, and real PostgreSQL PASS. Fres
       show token totals, complete API spend, business profit, measured/confirmed cost, or cost-based advice.
 - [ ] **CFO-1h** Send the first real assets/liabilities-only Telegram report and confirm its provider message
       receipt after CFO-1h2's renderer gate is verified.
-- [ ] **CFO-1i** Run the same snapshot on the next day without manual repair; two consecutive correct runs close M1.
+- [ ] **CFO-1i** Enable hourly autonomous refresh, daily full reporting, and meaningful-change/action reporting. Two
+      consecutive scheduled real-data runs without manual repair close M1 and owner-facing Product Stage 7.
 
 Deferred after M1 by explicit owner decision: Binance Spot, trade history, Earn/funding sources, and their tax-lot
 ingestion. They are not unchecked M1 items and cannot become the active CFO item before CFO-1i closes.
