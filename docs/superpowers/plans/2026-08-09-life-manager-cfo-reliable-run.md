@@ -24,20 +24,20 @@
 - Create `apps/life-call/lib/cfo-daily-run-migration.test.js`
 - Modify `apps/life-call/package.json`
 
-- [ ] RED: assert immutable table, unique owner/date and owner/date/run, non-zero UUID, `pg_timezone_names` validation,
+- [x] RED: assert immutable table, unique owner/date and owner/date/run, non-zero UUID, `pg_timezone_names` validation,
   preference read inside the RPC, existing-snapshot backfill, composite snapshot FK, RLS/service-role grants,
   UPDATE/DELETE trigger, exact five-key receipt, same-date retry, fixed search path, no UID in receipt, and private
   date-helper EXECUTE revoked from all app roles. Backfill must abort when an existing owner preference is absent or
   invalid and record `time_zone_source="migration_preference"`; new claims record `owner_preference`.
-- [ ] GREEN: implement `lm_cfo_daily_runs` and
+- [x] GREEN: implement `lm_cfo_daily_runs` and
   `lm_claim_cfo_daily_run(text) => jsonb`. Backfill existing snapshot run IDs before adding the FK. The RPC reads and
   validates the current preference and derives the date transactionally; `ON CONFLICT DO NOTHING`, then returns the
   existing row. No UPDATE branch.
-- [ ] Verify from `apps/life-call`: `node --test lib/cfo-daily-run-migration.test.js` (RED then PASS),
+- [x] Verify from `apps/life-call`: `node --test lib/cfo-daily-run-migration.test.js` (RED then PASS),
   `npm run test:cfo` (PASS),
   `wc -l migrations/2026-08-09-cfo-daily-runs.sql lib/cfo-daily-run-migration.test.js` (targets), and
   `git diff --check` (exit 0). The tests, not a regex scan, prove the closed receipt has no UID/private keys.
-- [ ] Commit/push `feat(cfo): claim stable daily runs`; write the ignored Task 1 report.
+- [x] Commit/push `feat(cfo): claim stable daily runs`; write the ignored Task 1 report.
 
 ### Task 2: Owner timezone and run-context client
 
