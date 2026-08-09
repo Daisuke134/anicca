@@ -61,3 +61,17 @@ GREEN: removed the duplicate amount precheck so canonical `buildCfoDailyReport` 
 - Report is committed and pushed separately after the code commit.
 
 Concerns: all requested tests pass; Task 2 production LOC remains above the plan soft target because canonical comparisons, closed descriptors, privacy checks, and reachable-attempt invariants are retained.
+
+## Fix Round 3 correction
+
+RED: `node --test lib/cfo-recovery-snapshot.test.js` observed exactly 3 failures out of 22. The validator accepted fresh reads with retry attempts, direct `provider_outage` with retry attempts, and transient `provider_outage` without a reread.
+
+GREEN: added state/cause checks after the shared attempts prefix validator. Fresh and direct composition outages are now exactly reads=1/repairs=0/waits=[], while transient outage causes require reads 2 or 3 with the fixed wait prefix. Existing actual Task 1 paths remain accepted.
+
+- Changed files: `apps/life-call/lib/cfo-recovery-snapshot.js`, `apps/life-call/lib/cfo-recovery-snapshot.test.js`.
+- Verification: Task 1+2 focused 41/41; `npm run test:cfo` 282/282; `git diff --check` pass.
+- LOC: production 150; tests 206.
+- Code commit/push: `9042bc760` (`fix(cfo): reject unreachable recovery histories`) pushed to canonical `feature/cfo-1g3-sol-luna`.
+- Report is committed and pushed separately after the code commit.
+
+Concerns: none functionally; Task 2 LOC remains above the plan soft target due to retained closed-shape and canonical/privacy invariants.
