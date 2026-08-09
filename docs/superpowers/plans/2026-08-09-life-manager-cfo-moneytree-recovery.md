@@ -555,6 +555,16 @@ fresh Sol review remain the Task 7c handoff actions.
 
 ---
 
+### Task 7c2: Label PostgreSQL catalog artifacts as test-only
+
+- [ ] Add a static RED proving the PostgreSQL integration script and generated catalog artifact contain no `live*`
+      field or prose for either local database.
+- [ ] Rename all generated keys and report labels to `primaryTest*` and `isolatedTest*`; do not change assertions.
+- [ ] Re-run focused/PostgreSQL/CFO proof, regenerate ignored evidence, commit/push
+      `test(cfo): label primary postgres catalog`, and obtain fresh Sol review.
+
+---
+
 ### Task 7d: Apply privilege hardening once and re-prove live state
 
 - [ ] Apply only the new forward ACL migration once through the secret-safe Management API path. Do not rerun prior
