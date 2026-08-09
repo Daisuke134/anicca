@@ -55,24 +55,97 @@ Connectorの進行中正本はbranch `feature/connector-native-completion`のwor
 | branch / owner | `feature/connector-native-completion` のworktreeが実装SSOT | canonical mergeはItem23まで保留 |
 | production providers | `skills/connector/native-pass.js` の`DEFAULT_PROVIDERS = ["luma", "connpass"]`のみ。順序はLuma → Connpass | Peatix → Meetup → Doorkeeper → EventbriteはItem19、未知/次サイトはItem20 |
 | acceptance窓 | 今日を含む14日、無料・受付中・Calendar非衝突だけを申込対象にする | 旧rolling-21は履歴/長期目標で、現行runtime/gateではない |
+| agent / evidence境界 | 候補gateは決定論的。unknown UI時だけbounded Codex `gpt-5.6-terra` action proposerを最大10 step使うが、現行proposerと`applied_bundle` evidence chainはLuma専用 | Connpass discovery/direct actionは配線済みだが、bounded fallbackと`applied_bundle`のproduction接続・live acceptanceはItem14 |
 | latest official wake | `wake-88fce9dad21004d03804283c`: `completed_no_effect / providers_exhausted / consecutive_failure_count 0`。Luma free/open 4件は全てCalendar conflict、Submit/Calendar write/applied bundle増分なし | `providers_exhausted`は現行設定済み2 providerの枯渇だけを意味する |
 | lifecycle / lock | orphan target lockは修復後run終了時にabsent。Native・healthcheck・Healer labelは全てunloaded | installed Native plistのlegacy `StartInterval=300`もunloaded。Items10〜16 acceptance後、Item17で一日一回scheduleだけをload |
 | TODO境界 | Items1〜9と10Aは完了。10BとItems11〜23は未完 | 完了判定は最新Active TODOの10B〜23で行う |
 
+#### Connector architecture — 現行productionと未完境界
+
+実線は現在official entrypointから到達する経路、灰色はacceptance後にだけ有効化する経路である。
+ConnectorはLuma専用agentではなく、同じowned browser pageでproviderを順番に尽くすevent application agentである。
+ただし「providerを探索できる」と「実申込の証拠bundleを完成できる」は別contractであり、後者をlive実証するまで
+production supportedと表示しない。
+
 ```mermaid
-flowchart LR
-  subgraph CURRENT[現在: 2026-08-10 JST]
-    C1[14日・無料・Calendar非衝突] --> C2[Luma → Connpass]
-    C2 --> C3[latest wake: providers_exhausted]
-    C3 --> C4[Native / healthcheck / Healer unloaded]
-  end
-  subgraph TARGET[acceptance後のtarget]
-    T1[Items10B〜16 live acceptance] --> T2[Item17: 一日一回scheduleを一つだけload]
-    T2 --> T3[Item19: Peatix → Meetup → Doorkeeper → Eventbrite]
-    T3 --> T4[Item20: unknown / next provider discovery]
-  end
-  C4 --> T1
+flowchart TB
+    USER["Dais<br/>通常surfaceはTelegramだけ"]
+
+    subgraph TRIGGER["1. 起動とsingle owner"]
+        FG["現在: bounded foreground wake<br/>scheduleはunloaded"]
+        DAILY["Item17後: launchdで一日一回<br/>未load"]:::future
+        ENTRY["official entrypoint<br/>skills/connector/run.sh"]
+        LOCK{"single-instance lockを取得?"}
+        HEART["owner token + heartbeat"]
+        FG --> ENTRY
+        DAILY --> ENTRY
+        ENTRY --> LOCK
+        LOCK -->|Yes| HEART
+        LOCK -->|busy| BUSY["exit 75<br/>二重runを作らない"]
+    end
+
+    subgraph OBSERVE["2. 現実を読む"]
+        CAL["全Google Calendar<br/>今日を含む14日busy inventory"]
+        TARGET["CloakBrowser :9222<br/>session 1 / owned target 1 / page 1"]
+        PROVIDERS["ordered provider loop<br/>Luma → Connpass"]
+        DISCOVER["同じpageで候補をdiscover"]
+        GATE{"無料・受付中・14日内<br/>Calendar非衝突?"}
+        HEART --> CAL --> TARGET --> PROVIDERS --> DISCOVER --> GATE
+        GATE -->|No| NEXT["次候補 / 次provider"]
+        NEXT --> PROVIDERS
+    end
+
+    subgraph APPLY["3. 申込はscript-first"]
+        NAV["candidate URLへsame-page navigate"]
+        PRE["parent pre-submit readback"]
+        LADDER["action ladder<br/>verified cache → direct workflow → bounded model fallback"]
+        MODEL["fallbackはunknown UI時だけ<br/>最大10 step・現在Luma専用<br/>Codex gpt-5.6-terra"]
+        POST{"parent readbackが<br/>registered / pending?"}
+        GATE -->|Yes| NAV --> PRE --> LADDER
+        LADDER -.必要時.-> MODEL --> POST
+        LADDER --> POST
+        POST -->|No| FAIL["failure count +1<br/>次候補へ継続"]
+        FAIL --> NEXT
+    end
+
+    subgraph PROVE["4. agentの自己申告ではなく外部証拠で確定"]
+        SUPPORT{"minimal evidence chainが<br/>providerを受理?"}
+        LUMA["現在: Lumaのみ"]
+        CONNPASS["現在: Connpassはfail-closed<br/>Item14でfallback + bundle接続"]:::pending
+        PNG["provider page full-page PNG<br/>SHA-256 + provider receipt"]
+        GCAL["Google Calendar冪等write<br/>独立readbackで1件を確認"]
+        TG["Telegram message + photo<br/>positive provider IDs"]
+        BUNDLE["durable applied_bundle<br/>同一lineage"]
+        POST -->|Yes| SUPPORT
+        SUPPORT -->|Luma| LUMA --> PNG --> GCAL --> TG --> BUNDLE
+        SUPPORT -->|Connpass| CONNPASS
+    end
+
+    subgraph FINISH["5. 必ず片付けて報告"]
+        EXHAUST["全候補終了<br/>completed_no_effect / providers_exhausted"]
+        CIRCUIT["3連続failure または10分<br/>circuit_open"]
+        REPORT["wake reportをdurable保存<br/>Telegram provider IDを確認"]
+        CLOSE["owned targetをrelease / close<br/>lockをexact ownerだけrelease"]
+        NEXT -->|残りなし| EXHAUST --> REPORT
+        FAIL -->|閾値到達| CIRCUIT --> REPORT
+        BUNDLE --> REPORT
+        REPORT --> CLOSE --> USER
+        CONNPASS --> CLOSE
+    end
+
+    subgraph EXPAND["6. live acceptance後だけ拡張"]
+        MORE["Item19<br/>Peatix → Meetup → Doorkeeper → Eventbrite"]:::future
+        UNKNOWN["Item20<br/>unknown / next provider contract"]:::future
+        MORE --> UNKNOWN
+    end
+    DAILY -.Items19/20.-> MORE
+
+    classDef future fill:#f3f4f6,stroke:#9ca3af,color:#4b5563,stroke-dasharray:5 5;
+    classDef pending fill:#fff7ed,stroke:#ea580c,color:#9a3412;
 ```
+
+現行の`providers_exhausted`は、上図のLumaとConnpassをそのwakeで尽くしたという意味だけであり、
+東京または世界中のevent siteを検索し終えたという意味ではない。provider追加はItem19、未知siteの自動取り込みはItem20で閉じる。
 
 `O1C-00 Life Manager startup context正本化`は2026-08-02に実装・監査・pushまで完了した。
 現在の実装優先は、保持していたConnectorの再開位置`O1B-25`である。残作業は、途中へ別trackを混ぜず
@@ -81,7 +154,7 @@ flowchart LR
 ```text
 完了: O1B-20〜24 source handoff、候補継続、Calendar・移動時間・支出gate
 完了: O1C-00 Life Manager startup context正本化（旧Anicca product提出防止）
-いま: O1B-25/26 native read→Luna判断→実登録→receipt→Calendar→Telegramを一つのloopとして完成
+いま: O1B-25/26 native read→決定論的gate→script-first実登録→unknown UIだけbounded model fallback→parent readback→receipt→Calendar→Telegramを一つのloopとして完成
   → O1C-01〜27 Fundraising / acceleratorの探索・提出・返信・面談追跡
   → O2-01〜12 Job Hunterの統合・実応募・返信・面接追跡
   → O3A-01〜07 壊れたCFO runtime loopを復旧
@@ -114,18 +187,20 @@ flowchart TD
     subgraph LOCAL["Mac mini上で継続実行 — 通常は見えない"]
         CAL["全Calendarの空きと移動時間を確認"]
         DISCOVER["現行: Luma → Connpassを探索"]
-        LUNA["Luna workerが興味・目標・serendipityを判断"]
         GATE{"重複・時間・移動・予算gateを通過?"}
-        APPLY["参加登録"]
+        APPLY["cache / provider workflowで参加登録"]
+        MODEL["unknown UI時だけbounded model action<br/>現行はLuma・最大10 step"]
         RECEIPT{"provider receiptを検証できた?"}
         VERIFY["確認mail・guest binding・ticket / QRを検証"]
         SYNC["Google Calendarへ冪等登録しreadback"]
         COVERAGE["現行14日窓の候補・申込状態を再計算"]
         NEXT{"設定済みprovider / 日の処理が残る?"}
 
-        CAL --> DISCOVER --> LUNA --> GATE
+        CAL --> DISCOVER --> GATE
         GATE -->|No| DISCOVER
-        GATE -->|Yes| APPLY --> RECEIPT
+        GATE -->|Yes| APPLY
+        APPLY -->|通常| RECEIPT
+        APPLY -->|unknown UI| MODEL --> RECEIPT
         RECEIPT -->|結果不明| RECON["reconciliationへ保存し二重申込みを防止"]
         RECON --> RECEIPT
         RECEIPT -->|Yes| VERIFY --> SYNC --> COVERAGE --> NEXT
@@ -5965,7 +6040,15 @@ Luma aggregateはobserved 30、normalized 30、14日window 16、free/open 4、ca
 Items19/20の将来provider拡張、最新wake `wake-88fce9dad21004d03804283c` / Telegram provider ID `10298`、lock absent、3 label unloadedを一つのcurrent-stateへ統合した。
 旧rolling-21、全6 provider、5分schedule、過去run番号は履歴として残し、現行status・completion gateと分離した。これはdocumentation-onlyのreconciliationであり、runtime/code behaviorの変更はない。
 
-### Active remaining TODO SSOT（進捗223。これ以外の残TODO一覧は履歴）
+### O1B-25進捗224（Ponytail full / Connector architecture実装照合）
+
+Ponytail `full`でproduction entrypointから`run.sh`、minimal runner、provider router、Browser Harness、evidence chain、wake reportまでを再トレースした。
+別architecture文書は作らず、GitHub上の既存SSOT冒頭へ現行full flowを一枚で統合した。候補gateはagent判断ではなく決定論的であり、
+bounded action proposerの実provider/modelはCodex `gpt-5.6-terra`、現行proposerとminimal `applied_bundle` chainはLuma専用である。
+Connpassはdiscovery/direct action配線済みだが、fallbackとbundleのproduction接続・live acceptanceはItem14の未完境界として明示した。
+runtime、schedule、provider設定、外部stateは変更していない。
+
+### Active remaining TODO SSOT（進捗224。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
