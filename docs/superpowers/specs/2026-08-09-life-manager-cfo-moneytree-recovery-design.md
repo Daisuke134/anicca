@@ -71,8 +71,9 @@ fail closed before any callback:
 `read()` resolves an exact `{ok:true,moneytreeRead}` or `{ok:false,kind}` object. `repair({kind,attempt})` resolves a
 boolean, and `wait(milliseconds)` resolves with no value. Every callback is invoked by the executor; precomputed or
 cached callback results are not accepted. Success outcomes contain exactly
-`status,reportingDate,observedAt,moneytreeRead,attempts,repair,action`; action-required outcomes use the same keys with
-`moneytreeRead:null`, `repair:null`, and `action={kind,sourceLabel,retryLabel,nextRetryAt}`. `repair` is either null or
+`status,reportingDate,observedAt,moneytreeRead,attempts,repair,action,failureKind`; success sets `failureKind:null`.
+Action-required outcomes use the same keys with `moneytreeRead:null`, `repair:null`, the original closed
+`failureKind`, and `action={kind,sourceLabel,retryLabel,nextRetryAt}`. `repair` is either null or
 `{sourceLabel:"Moneytree",freshReread:true,reconciled:true}`.
 
 Rules:
@@ -81,6 +82,8 @@ Rules:
 - at most two repair calls and fixed injected waits of `1000` then `5000` milliseconds;
 - only `timeout`, `network`, `rate_limited`, and `provider_5xx` enter automatic repair;
 - `unauthorized`, `forbidden`, `expired`, and `revoked` become `reconsent` immediately;
+- unavailable source consent maps exactly: `unauthorized|expired` to `expired`, `forbidden|revoked` to `revoked`, and
+  every `provider_outage` action to `unknown`;
 - schema/contract failure becomes `provider_outage`; it is never described as repaired;
 - `nextRetryAt` is exactly 30 minutes after the input `observedAt`, is RFC3339, and is persisted inside the
   action-required snapshot. This slice records the durable due time but does not install or change a scheduler;
