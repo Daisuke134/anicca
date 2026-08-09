@@ -38,6 +38,16 @@ function assertInvalid(call) {
   });
 }
 
+test("derive redacts a hostile prefix-matching Proxy exception", () => {
+  const hostile = new Proxy({}, { ownKeys: () => { throw new Error("moneytree_state_invalid:secret_raw_9999999"); } });
+  assert.throws(() => deriveMoneytreeState(hostile), new Error("moneytree_state_invalid:invalid_input"));
+});
+
+test("compose redacts a hostile prefix-matching Proxy exception", () => {
+  const hostile = new Proxy({}, { ownKeys: () => { throw new Error("moneytree_state_invalid:secret_raw_9999999"); } });
+  assert.throws(() => composeMoneytreeRead(hostile), new Error("moneytree_state_invalid:invalid_composition"));
+});
+
 test("interactive success is explicit about unknown aggregation and liabilities", () => {
   const sourceInput = input("interactive_success");
   const result = deriveMoneytreeState(sourceInput);
