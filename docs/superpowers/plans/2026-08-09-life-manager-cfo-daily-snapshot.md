@@ -11,7 +11,7 @@ and appends the record without logging financial payloads.
 
 **Tech Stack:** Node.js 20+, CommonJS, `node:test`, PostgreSQL/Supabase, built-in `fetch`; no new dependency.
 
-**Status:** ACTIVE — Tasks 1–2 complete; Task 3 next.
+**Status:** ACTIVE — Tasks 1–3 complete; Task 4 next.
 
 ## Global Constraints
 
@@ -222,13 +222,13 @@ git push canonical HEAD
 - Consumes the Task 2 migration in an isolated PostgreSQL 18 instance.
 - Produces script `test:cfo-snapshot:postgres` and one privacy-safe PASS line.
 
-- [ ] **Step 1: Write the failing integration script**
+- [x] **Step 1: Write the failing integration script**
 
 Copy the lifecycle pattern from `panel-score-postgres.integration.sh`: use local PostgreSQL when installed, otherwise
 an ephemeral `postgres:18-alpine` container, explicit roles, synthetic tenants, trap cleanup, and no external DB.
 Run the script before adding the assertions and capture RED because the required contract is not yet proven.
 
-- [ ] **Step 2: Add the complete PostgreSQL assertions**
+- [x] **Step 2: Add the complete PostgreSQL assertions**
 
 Using synthetic reports/bundles only, prove:
 
@@ -244,7 +244,7 @@ Using synthetic reports/bundles only, prove:
 
 The final stdout is exactly `cfo-daily-snapshot-postgres: PASS`.
 
-- [ ] **Step 3: Register, run, commit, and push**
+- [x] **Step 3: Register, run, commit, and push**
 
 ```bash
 cd apps/life-call
