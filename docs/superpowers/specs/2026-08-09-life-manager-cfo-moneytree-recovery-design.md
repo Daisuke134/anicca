@@ -193,6 +193,10 @@ FK columns, ordered valid unique indexes, trigger timing/events/enabled state, c
 definitions. Historical exact-once apply/reload evidence is bound to the immutable executor transcript and original
 artifact hashes; a success boolean alone is not sufficient.
 
+The snapshot table grant is closed: `service_role` has only `SELECT, INSERT`; PUBLIC, `anon`, and `authenticated`
+have no table privilege. Supabase default privileges such as `TRUNCATE`, `REFERENCES`, `TRIGGER`, or `MAINTAIN` are
+explicitly removed by a forward idempotent migration. Required sequence and RPC execution grants remain unchanged.
+
 ## 7. Acceptance Tests
 
 1. First read success performs one read, zero repair/wait calls, and returns `fresh`.

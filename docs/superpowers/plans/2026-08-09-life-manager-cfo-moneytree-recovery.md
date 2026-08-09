@@ -14,7 +14,7 @@ PostgreSQL appends contiguous correction revisions; existing delivery dedupe sup
 
 **Design:** `docs/superpowers/specs/2026-08-09-life-manager-cfo-moneytree-recovery-design.md`.
 
-**Status:** ACTIVE — implementation and current test matrix pass; Task 7b evidence hardening next.
+**Status:** ACTIVE — Task 7b exposed live service-role overgrant; Task 7c hardening next.
 
 ## Global Constraints
 
@@ -507,6 +507,48 @@ bodies, UIDs, or amounts into the evidence.
 Run the strengthened live catalog check read-only. Require zero migration/reload/Telegram calls, zero snapshot and
 delivery deltas, payload privacy, and no finance report. Preserve the current 315/315 CFO and 948/948 full matrix.
 Obtain fresh Sol review before closure; do not send another milestone.
+
+---
+
+### Task 7c: Forward-harden snapshot service privileges
+
+**Files (one indivisible migration proof slice):**
+- Create: `apps/life-call/migrations/2026-08-09-cfo-snapshot-privilege-hardening.sql`
+- Create: `apps/life-call/lib/cfo-snapshot-privilege-hardening-migration.test.js`
+- Modify: `apps/life-call/test/postgres/cfo-snapshot-corrections-postgres.integration.sh`
+- Modify: `apps/life-call/package.json` (`test:cfo` wiring only)
+
+This exceeds the three-file soft target because the forward migration, static contract, real-PostgreSQL proof, and
+suite wiring are one security boundary. Splitting them would leave an unproved production privilege mutation.
+
+- [ ] **Step 1: Write static and PostgreSQL RED**
+
+Prove the installed Supabase default grants can leave `TRUNCATE`, `REFERENCES`, `TRIGGER`, and `MAINTAIN` on
+`service_role`. Require the forward migration to revoke all table privileges from `service_role`, then grant only
+`SELECT, INSERT`; app roles and PUBLIC retain none; required RPC EXECUTE and sequence rights remain. Observe RED.
+
+- [ ] **Step 2: Implement idempotent minimum GREEN**
+
+Add one metadata-only forward migration. Do not touch rows, functions, constraints, indexes, triggers, policies, or
+sequences. Re-running the SQL must converge to the same ACL. No dynamic SQL or new role.
+
+- [ ] **Step 3: Prove constraints against isolated catalog and close**
+
+Apply the full tracked migration chain plus hardening in PostgreSQL 18. Compare live constraint definitions to that
+isolated catalog representation rather than a source-text parser; do not mutate live constraints unless the isolated
+catalog comparison proves a semantic mismatch. Run static/focused/PostgreSQL/CFO/full tests and diff-check. Commit
+and push `fix(cfo): harden snapshot service privileges`; obtain fresh Sol review.
+
+---
+
+### Task 7d: Apply privilege hardening once and re-prove live state
+
+- [ ] Apply only the new forward ACL migration once through the secret-safe Management API path. Do not rerun prior
+      migrations, write rows, reload schema, read payloads, or send Telegram.
+- [ ] Re-run the semantic catalog checker. Require exact isolated-catalog constraints, exact service table ACL
+      `SELECT, INSERT`, required function/sequence grants, complete app-role denial, zero row deltas, and zero
+      Telegram calls. Bind execution to transcript/source/output digests as in Task 7b.
+- [ ] Obtain fresh Sol final review before closure.
 
 ## Completion Boundary
 
