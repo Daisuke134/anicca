@@ -37,6 +37,14 @@ function claimInput(targetId = "TARGET_A") {
   };
 }
 
+function writeLegacyLock(ledgerPath, ageMs) {
+  const lockPath = `${ledgerPath}.lock`;
+  fs.writeFileSync(lockPath, "", { mode: 0o600 });
+  const mtimeMs = Date.now() - ageMs;
+  fs.utimesSync(lockPath, mtimeMs / 1000, mtimeMs / 1000);
+  return lockPath;
+}
+
 test("durably fences one Connector target and writes only private safe ownership fields", async (t) => {
   const fx = fixture(t);
   const fence = await fx.lease.claim(claimInput());
@@ -109,6 +117,72 @@ test("refuses non-Connector websocket endpoints and credential-bearing event URL
     canonicalUrl: "https://user:secret@luma.com/tokyo-ai",
   }), /canonical url/i);
   assert.equal(fs.existsSync(fx.ledgerPath), false);
+});
+
+test("recovers a stale zero-byte legacy lock", async (t) => {
+  const fx = fixture(t);
+  writeLegacyLock(fx.ledgerPath, 11 * 60 * 1000);
+
+  const fence = await fx.lease.claim(claimInput());
+
+  assert.equal(fence.target_id, "TARGET_A");
+  assert.equal(fs.existsSync(`${fx.ledgerPath}.lock`), false);
+});
+
+test("keeps a fresh zero-byte legacy lock busy", async (t) => {
+  const fx = fixture(t);
+  writeLegacyLock(fx.ledgerPath, 0);
+
+  await assert.rejects(fx.lease.claim(claimInput()), /ledger busy/i);
+  assert.equal(fs.existsSync(`${fx.ledgerPath}.lock`), true);
+});
+
+test("keeps a stale lock busy when its recorded owner PID is alive", async (t) => {
+  const fx = fixture(t);
+  const lockPath = `${fx.ledgerPath}.lock`;
+  fs.writeFileSync(lockPath, JSON.stringify({
+    schema_version: 1,
+    pid: process.pid,
+    owner_token: "live-owner-token",
+    acquired_at_ms: Date.now() - 11 * 60 * 1000,
+  }), { mode: 0o600 });
+
+  await assert.rejects(fx.lease.claim(claimInput()), /ledger busy/i);
+  assert.equal(fs.existsSync(lockPath), true);
+});
+
+test("does not unlink a replacement lock from the prior owner's release path", async (t) => {
+  let lockPath;
+  let acquiredMetadata;
+  const fx = fixture(t, {
+    probeTarget: async () => {
+      acquiredMetadata = JSON.parse(fs.readFileSync(lockPath, "utf8"));
+      assert.deepEqual(Object.keys(acquiredMetadata).sort(), [
+        "acquired_at_ms",
+        "owner_token",
+        "pid",
+        "schema_version",
+      ]);
+      assert.equal(acquiredMetadata.schema_version, 1);
+      assert.equal(acquiredMetadata.pid, process.pid);
+      assert.match(acquiredMetadata.owner_token, /^[0-9a-f-]{36}$/);
+      assert.equal(fs.statSync(lockPath).mode & 0o777, 0o600);
+      fs.writeFileSync(lockPath, JSON.stringify({
+        schema_version: 1,
+        pid: process.pid,
+        owner_token: "replacement-owner-token",
+        acquired_at_ms: Date.now(),
+      }), { mode: 0o600 });
+      return true;
+    },
+  });
+  lockPath = `${fx.ledgerPath}.lock`;
+  const fence = await fx.lease.claim(claimInput());
+
+  assert.equal(await fx.lease.probe(fence), true);
+  assert.ok(acquiredMetadata.acquired_at_ms > 0);
+  assert.equal(fs.existsSync(lockPath), true);
+  assert.equal(JSON.parse(fs.readFileSync(lockPath, "utf8")).owner_token, "replacement-owner-token");
 });
 
 test("reaps only heartbeat-expired Connector targets while preserving a fresh owner", async (t) => {
