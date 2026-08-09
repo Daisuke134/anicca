@@ -64,6 +64,14 @@ else
   PSQL=(psql -X -v ON_ERROR_STOP=1 -h 127.0.0.1 -p "$PGPORT" -U postgres -d "$DB_NAME")
 fi
 
+# The proof is intentionally pinned to PostgreSQL 18.  Check the connected
+# server (rather than trusting the local binary/image label) on both paths.
+SERVER_VERSION_NUM="$(${PSQL[@]} -Atqc 'SHOW server_version_num;')"
+if ! [[ "$SERVER_VERSION_NUM" =~ ^[0-9]+$ ]] \
+  || (( SERVER_VERSION_NUM < 180000 || SERVER_VERSION_NUM >= 190000 )); then
+  fail "${DB_MODE} PostgreSQL server_version_num is outside 18.x"
+fi
+
 expect_sql_error() {
   local label="$1" expected="$2" sql="$3"
   local err="$TEST_TMP/${label}.err"
@@ -119,6 +127,22 @@ assert_helper_date dst_spring_forward_before 'America/New_York' '2026-03-08 06:5
 assert_helper_date dst_spring_forward_after  'America/New_York' '2026-03-08 07:00:01+00' '2026-03-08'
 assert_helper_date dst_fall_back_before      'America/New_York' '2026-11-01 05:59:59+00' '2026-11-01'
 assert_helper_date dst_fall_back_after       'America/New_York' '2026-11-01 06:00:01+00' '2026-11-01'
+# Load-bearing local-midnight boundaries: the pre-midnight instants have a
+# different UTC date, so a UTC-date regression cannot satisfy these fixtures.
+assert_helper_date ny_spring_local_midnight_before 'America/New_York' '2026-03-08 04:59:59Z' '2026-03-07'
+assert_helper_date ny_spring_local_midnight_after  'America/New_York' '2026-03-08 05:00:01Z' '2026-03-08'
+assert_helper_date ny_fall_local_midnight_before   'America/New_York' '2026-11-01 03:59:59Z' '2026-10-31'
+assert_helper_date ny_fall_local_midnight_after    'America/New_York' '2026-11-01 04:00:01Z' '2026-11-01'
+# Explicitly prove the old weak fixture would accept a UTC-date bug: these
+# two pre-midnight UTC dates disagree with the required local dates.
+assert_utc_regression() {
+  local label="$1" instant="$2" expected="$3"
+  local utc_date
+  utc_date="$(${PSQL[@]} -Atqc "SELECT ('$instant'::timestamptz AT TIME ZONE 'UTC')::date;")"
+  [[ "$utc_date" != "$expected" ]] || fail "$label would not catch a UTC-date regression"
+}
+assert_utc_regression ny_spring_local_midnight_before '2026-03-08 04:59:59Z' '2026-03-07'
+assert_utc_regression ny_fall_local_midnight_before '2026-11-01 03:59:59Z' '2026-10-31'
 assert_helper_date date_boundary_before_midnight 'Asia/Tokyo' '2026-08-09 14:59:59+00' '2026-08-09'
 assert_helper_date date_boundary_after_midnight  'Asia/Tokyo' '2026-08-09 15:00:01+00' '2026-08-10'
 
@@ -187,33 +211,41 @@ SESSION_A="$TEST_TMP/run-session-a.sql"
 SESSION_B="$TEST_TMP/run-session-b.sql"
 SESSION_A_OUT="$TEST_TMP/run-session-a.out"
 SESSION_B_OUT="$TEST_TMP/run-session-b.out"
+RUN_SESSION_A_APP='cfo-reliable-run-concurrency-a'
+RUN_SESSION_B_APP='cfo-reliable-run-concurrency-b'
+RUN_CLAIM_QUERY="SELECT public.lm_claim_cfo_daily_run('tenant-run-concurrent')->>'run_id';"
+RUN_CLAIM_QUERY_SQL="$(printf '%s' "$RUN_CLAIM_QUERY" | sed "s/'/''/g")"
 printf '%s\n' \
   'BEGIN;' \
   'SET ROLE service_role;' \
-  "SELECT public.lm_claim_cfo_daily_run('tenant-run-concurrent')->>'run_id';" \
+  "$RUN_CLAIM_QUERY" \
   'SELECT pg_sleep(4);' \
   'COMMIT;' >"$SESSION_A"
 printf '%s\n' \
   'BEGIN;' \
   'SET ROLE service_role;' \
-  "SELECT public.lm_claim_cfo_daily_run('tenant-run-concurrent')->>'run_id';" \
+  "$RUN_CLAIM_QUERY" \
   'COMMIT;' >"$SESSION_B"
 
-"${PSQL[@]}" -Atqf "$SESSION_A" >"$SESSION_A_OUT" 2>"$TEST_TMP/run-session-a.err" &
+PGAPPNAME="$RUN_SESSION_A_APP" "${PSQL[@]}" -Atqf "$SESSION_A" >"$SESSION_A_OUT" 2>"$TEST_TMP/run-session-a.err" &
 A_PID=$!
 HOLDING='0'
+RUN_A_READY_SQL="SELECT count(*) FROM pg_stat_activity AS activity WHERE activity.pid <> pg_backend_pid() AND activity.application_name = '$RUN_SESSION_A_APP' AND activity.query = 'SELECT pg_sleep(4);' AND activity.state = 'active' AND activity.wait_event_type = 'Timeout' AND activity.wait_event = 'PgSleep' AND activity.xact_start IS NOT NULL AND EXISTS (SELECT 1 FROM pg_locks AS lock WHERE lock.pid = activity.pid AND lock.granted AND lock.relation = 'public.lm_panel_preferences'::regclass AND lock.mode = 'RowShareLock');"
 for _ in {1..100}; do
-  HOLDING="$(${PSQL[@]} -Atqc "SELECT count(*) FROM pg_stat_activity WHERE state = 'active' AND query LIKE '%pg_sleep(4)%';" | tr -d '[:space:]')"
+  HOLDING="$(${PSQL[@]} -Atqc "$RUN_A_READY_SQL" | tr -d '[:space:]')"
   [[ "$HOLDING" == '1' ]] && break
   sleep 0.1
 done
 [[ "$HOLDING" == '1' ]] || fail 'first concurrent run claim did not reach its hold point'
 
-"${PSQL[@]}" -Atqf "$SESSION_B" >"$SESSION_B_OUT" 2>"$TEST_TMP/run-session-b.err" &
+# Only after the holder is observed at the exact PgSleep barrier may the
+# contender start; its own PGAPPNAME makes the real lock wait attributable.
+PGAPPNAME="$RUN_SESSION_B_APP" "${PSQL[@]}" -Atqf "$SESSION_B" >"$SESSION_B_OUT" 2>"$TEST_TMP/run-session-b.err" &
 B_PID=$!
 LOCK_WAITING='0'
+RUN_B_WAIT_SQL="SELECT count(*) FROM pg_stat_activity AS waiting WHERE waiting.pid <> pg_backend_pid() AND waiting.application_name = '$RUN_SESSION_B_APP' AND waiting.query = '$RUN_CLAIM_QUERY_SQL' AND waiting.state = 'active' AND waiting.wait_event_type = 'Lock' AND waiting.wait_event IS NOT NULL;"
 for _ in {1..100}; do
-  LOCK_WAITING="$(${PSQL[@]} -Atqc "SELECT count(*) FROM pg_stat_activity WHERE state = 'active' AND wait_event_type = 'Lock' AND query LIKE '%lm_claim_cfo_daily_run%';" | tr -d '[:space:]')"
+  LOCK_WAITING="$(${PSQL[@]} -Atqc "$RUN_B_WAIT_SQL" | tr -d '[:space:]')"
   [[ "$LOCK_WAITING" != '0' ]] && break
   sleep 0.1
 done
@@ -258,25 +290,32 @@ DELIVERY_SESSION_A="$TEST_TMP/delivery-session-a.sql"
 DELIVERY_SESSION_B="$TEST_TMP/delivery-session-b.sql"
 DELIVERY_SESSION_A_OUT="$TEST_TMP/delivery-session-a.out"
 DELIVERY_SESSION_B_OUT="$TEST_TMP/delivery-session-b.out"
+DELIVERY_SESSION_A_APP='cfo-reliable-delivery-concurrency-a'
+DELIVERY_SESSION_B_APP='cfo-reliable-delivery-concurrency-b'
 DELIVERY_CLAIM_CALL="SELECT public.lm_claim_cfo_telegram_delivery('tenant-a', '$SNAPSHOT_A_REF'::uuid, '$DELIVERY_KIND', DATE '$DATE_A', $DELIVERY_REVISION)->>'decision';"
+DELIVERY_CLAIM_QUERY_SQL="$(printf '%s' "$DELIVERY_CLAIM_CALL" | sed "s/'/''/g")"
 printf '%s\n' 'BEGIN;' 'SET ROLE service_role;' "$DELIVERY_CLAIM_CALL" 'SELECT pg_sleep(4);' 'COMMIT;' >"$DELIVERY_SESSION_A"
 printf '%s\n' 'BEGIN;' 'SET ROLE service_role;' "$DELIVERY_CLAIM_CALL" 'COMMIT;' >"$DELIVERY_SESSION_B"
 
-"${PSQL[@]}" -Atqf "$DELIVERY_SESSION_A" >"$DELIVERY_SESSION_A_OUT" 2>"$TEST_TMP/delivery-session-a.err" &
+PGAPPNAME="$DELIVERY_SESSION_A_APP" "${PSQL[@]}" -Atqf "$DELIVERY_SESSION_A" >"$DELIVERY_SESSION_A_OUT" 2>"$TEST_TMP/delivery-session-a.err" &
 A_PID=$!
 HOLDING='0'
+DELIVERY_A_READY_SQL="SELECT count(*) FROM pg_stat_activity AS activity WHERE activity.pid <> pg_backend_pid() AND activity.application_name = '$DELIVERY_SESSION_A_APP' AND activity.query = 'SELECT pg_sleep(4);' AND activity.state = 'active' AND activity.wait_event_type = 'Timeout' AND activity.wait_event = 'PgSleep' AND activity.xact_start IS NOT NULL AND EXISTS (SELECT 1 FROM pg_locks AS lock WHERE lock.pid = activity.pid AND lock.granted AND lock.relation = 'public.lm_cfo_telegram_delivery_claims'::regclass AND lock.mode = 'RowExclusiveLock');"
 for _ in {1..100}; do
-  HOLDING="$(${PSQL[@]} -Atqc "SELECT count(*) FROM pg_stat_activity WHERE state = 'active' AND query LIKE '%pg_sleep(4)%';" | tr -d '[:space:]')"
+  HOLDING="$(${PSQL[@]} -Atqc "$DELIVERY_A_READY_SQL" | tr -d '[:space:]')"
   [[ "$HOLDING" == '1' ]] && break
   sleep 0.1
 done
 [[ "$HOLDING" == '1' ]] || fail 'first concurrent delivery claim did not reach its hold point'
 
-"${PSQL[@]}" -Atqf "$DELIVERY_SESSION_B" >"$DELIVERY_SESSION_B_OUT" 2>"$TEST_TMP/delivery-session-b.err" &
+# Start the contender only after the exact holder barrier is observed.  The
+# unique application name and exact claim query prove that this is its lock.
+PGAPPNAME="$DELIVERY_SESSION_B_APP" "${PSQL[@]}" -Atqf "$DELIVERY_SESSION_B" >"$DELIVERY_SESSION_B_OUT" 2>"$TEST_TMP/delivery-session-b.err" &
 B_PID=$!
 LOCK_WAITING='0'
+DELIVERY_B_WAIT_SQL="SELECT count(*) FROM pg_stat_activity AS waiting WHERE waiting.pid <> pg_backend_pid() AND waiting.application_name = '$DELIVERY_SESSION_B_APP' AND waiting.query = '$DELIVERY_CLAIM_QUERY_SQL' AND waiting.state = 'active' AND waiting.wait_event_type = 'Lock' AND waiting.wait_event IS NOT NULL;"
 for _ in {1..100}; do
-  LOCK_WAITING="$(${PSQL[@]} -Atqc "SELECT count(*) FROM pg_stat_activity WHERE state = 'active' AND wait_event_type = 'Lock' AND query LIKE '%lm_claim_cfo_telegram_delivery%';" | tr -d '[:space:]')"
+  LOCK_WAITING="$(${PSQL[@]} -Atqc "$DELIVERY_B_WAIT_SQL" | tr -d '[:space:]')"
   [[ "$LOCK_WAITING" != '0' ]] && break
   sleep 0.1
 done
