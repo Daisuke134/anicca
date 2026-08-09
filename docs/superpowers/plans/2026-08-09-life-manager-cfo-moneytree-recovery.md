@@ -14,7 +14,7 @@ PostgreSQL appends contiguous correction revisions; existing delivery dedupe sup
 
 **Design:** `docs/superpowers/specs/2026-08-09-life-manager-cfo-moneytree-recovery-design.md`.
 
-**Status:** ACTIVE — Tasks 1–6 and Task 3b/6b/6c implemented; final-review fix Task 6d next.
+**Status:** ACTIVE — Tasks 1–6 and Task 3b/6b/6c/6d implemented; final-review fix Task 6e next.
 
 ## Global Constraints
 
@@ -387,6 +387,31 @@ Run shared RPC plus all four client tests, `npm run test:cfo`, `git diff --check
 `fix(cfo): scope shared rpc public operations`; write the ignored report; obtain fresh Sol review. Evidence before
 close: `npm run test:cfo` passed 312/312 and `git diff --check` passed. Commit and push are recorded in the
 Task 6d ignored report.
+
+---
+
+### Task 6e: Expire provenance in detached async descendants
+
+**Files (soft target: production delta <=10 LOC, tests delta <=80 LOC):**
+- Modify: `apps/life-call/lib/cfo-supabase-rpc.js`
+- Modify: `apps/life-call/lib/cfo-supabase-rpc.test.js`
+
+- [ ] **Step 1: Write load-bearing RED**
+
+From both successful and failing `runOperation` callbacks, create detached async descendants that retain the inherited
+store. After the parent result settles, prove those descendants cannot recognize the parent's fixed Error. Also
+prove a descendant replay through a hostile boundary yields a new fixed local Error. Observe failure against Task 6d.
+
+- [ ] **Step 2: Implement minimum GREEN**
+
+Store `{ errors, open }` per `AsyncLocalStorage.run` scope and close `open` in a `finally` tied to callback settlement.
+`internal` requires `open === true`. Context restoration alone is insufficient; no timer or unbounded WeakSet-only
+store may keep provenance valid after settlement.
+
+- [ ] **Step 3: Verify and close**
+
+Run shared RPC plus all four client tests, `npm run test:cfo`, `git diff --check`; commit/push
+`fix(cfo): expire rpc error provenance`; write the ignored report; obtain fresh Sol review.
 
 ---
 

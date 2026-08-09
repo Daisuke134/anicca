@@ -171,7 +171,9 @@ boundary creates a new fixed redacted Error. Provenance leaves no ambient contex
 nested or overlapping calls, including when a second public call is invoked from an outer call's injected callback.
 The shared helper exposes an explicit public-operation wrapper implemented with `AsyncLocalStorage.run`; all four
 RPC clients enter it at their exported boundary. `enterWith`, timer expiry, and partial consumer adoption are
-forbidden because they cannot restore the caller after successful nested operations.
+forbidden because they cannot restore the caller after successful nested operations. Each operation store also has
+an `open` lifetime flag closed in `finally` when its callback settles, so detached async descendants may retain a
+context object but can never retain valid Error provenance.
 
 The RPC is exactly
 `lm_append_cfo_daily_snapshot_revision(text,date,uuid,integer,integer,jsonb,jsonb)`. It locks the predecessor row,
