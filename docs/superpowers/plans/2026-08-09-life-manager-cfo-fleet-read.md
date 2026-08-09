@@ -8,7 +8,7 @@
 
 **Tech Stack:** Node.js 20+, CommonJS, built-in `node:crypto`, built-in `node:test`, `assert/strict`, existing npm scripts only.
 
-**Status:** ACTIVE — Task 1 complete; Task 2 next. Three fresh plan reviews found and closed every
+**Status:** ACTIVE — Tasks 1–2 complete; Task 3 live verification next. Three fresh plan reviews found and closed every
 Critical/Important issue; the final plan re-review returned `ship — Ready: yes`.
 
 ## Global Constraints
@@ -203,7 +203,7 @@ Critical/Important findings.
 - Produces: one validated, frozen `FleetSourceResult` containing only registered wallet rows and exceptions.
 - Errors: only `fleet_adapter_invalid:<fixed_reason>` for adapter boundary failures; authenticated internal source-contract errors may be translated to `fleet_adapter_invalid:result_invalid`.
 
-- [ ] **Step 1: Write the RED mapping tests**
+- [x] **Step 1: Write the RED mapping tests**
 
 Use a synthetic dashboard JSON string containing:
 
@@ -259,7 +259,7 @@ Add table-driven tests for:
 
 Also test source-gated zeros; Solana case sensitivity; `polygon-proxy` registration with unavailable financial lanes; duplicate normalized registrations; malformed JSON; invalid observed/source/telemetry timestamps; telemetry more than five seconds after source; source more than five seconds after read; both five-second boundaries; freshness at exactly 300 seconds and just above it; wrong leaderboard type; sparse leaderboard/registry arrays; unknown dashboard keys ignored; input mutation; changing Proxies/accessors rejected or safely snapshotted; key shorter than 32 UTF-8 bytes; and stable redacted errors with secret-shaped hostile values.
 
-- [ ] **Step 2: Run the focused test and prove RED**
+- [x] **Step 2: Run the focused test and prove RED**
 
 Run:
 
@@ -270,7 +270,7 @@ node --test lib/cfo-fleet.test.js
 
 Expected: non-zero exit because `./cfo-fleet` does not exist. Record only failing count and missing-module reason.
 
-- [ ] **Step 3: Implement the minimum adapter**
+- [x] **Step 3: Implement the minimum adapter**
 
 Implement only this module surface:
 
@@ -300,7 +300,7 @@ module.exports = { adaptFleetDashboard };
 
 Read `dashboardJson` exactly once as a primitive string, parse it exactly once, and create a descriptor-safe snapshot before inspecting the parsed value or registry. Require `sourceUpdatedAt <= readAsOf + 5 seconds`. Calculate `telemetryFreshness` from `sourceUpdatedAt - telemetryAsOf`: fresh through exactly 300 seconds, stale above it, and fail if telemetry is over five seconds after source. Account evidence binds `account`, normalized ID, and registered chain. Metric evidence uses the exact `claimPreimage` fields above; the HMAC is an integrity locator, not proof. Sort emitted wallets by `accountRef`; sort exceptions by `accountRef`, then field, then reason. For a present chain-matched row, emit all three metric objects: available only behind their source/value gates, otherwise unknown plus the exact exception. A missing registration emits no wallet row and one `missing_registered_wallet` exception with its derived `accountRef`. A chain mismatch emits no wallet row and one `chain_mismatch` exception. Ignore every unregistered dashboard row.
 
-- [ ] **Step 4: Register and prove GREEN**
+- [x] **Step 4: Register and prove GREEN**
 
 Append `lib/cfo-fleet.test.js` exactly once to `test:cfo`, then run:
 
@@ -313,7 +313,7 @@ wc -l lib/cfo-fleet.js lib/cfo-fleet.test.js
 
 Expected: all focused and CFO tests pass. Compare LOC with the 100/240 soft targets; above 140/320 requires simplification review before acceptance. The adapter remains atomic because parsing, registered-scope filtering, and claim construction share one source trust boundary; splitting them would expose an unvalidated intermediate.
 
-- [ ] **Step 5: Fresh review, fix, verify, commit, and push**
+- [x] **Step 5: Fresh review, fix, verify, commit, and push**
 
 The reviewer checks ownership filtering, EVM/Solana casing, source gates, unknown-not-zero, approximate-window naming, burn truth level, deterministic HMAC domains, privacy, snapshot-once behavior, output sorting, and LOC. Fix every Critical/Important finding with a new failing regression first. Then run the Step 4 commands and:
 
@@ -326,7 +326,16 @@ git push canonical HEAD
 
 Expected: clean diff check, commit created, push succeeds.
 
+Task 2 evidence: Luna committed and pushed `8d3f4e07c` and hardening fix `1d5821e95`. RED was missing-module as
+planned. Final focused tests passed 21/21 and CFO tests passed 198/198. Production is 140 LOC and tests are 358 LOC;
+the mandatory simplification review accepted the explicit HMAC and hostile-boundary regression matrix. The first
+review found cross-family chain mismatch and four false-positive security tests; Luna fixed them, and re-review
+returned `Approved` with no new Critical/Important findings.
+
 ## Task 3: Live Read, Whole-Slice Verification, and CFO-1e Closure
+
+Execution split: Luna owns Steps 1–3 and writes only the ignored `.superpowers/sdd/task-3-report.md`; the Sol
+controller owns the read-only review and Step 5 spec/plan/state edits. Luna does not edit documentation.
 
 **Files:**
 - Modify: `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md`
