@@ -542,13 +542,13 @@ denied, and RPC/sequence rights preserved.
 
 - [x] **Step 3: Prove constraints against isolated catalog and close**
 
-Apply the full tracked migration chain plus hardening in PostgreSQL 18. Compare live constraint definitions to that
-isolated catalog representation rather than a source-text parser; do not mutate live constraints unless the isolated
-catalog comparison proves a semantic mismatch. Run static/focused/PostgreSQL/CFO/full tests and diff-check. Commit
+Apply the full tracked migration chain plus hardening in two PostgreSQL 18 test databases. Compare the primary test
+database constraint definitions to the isolated test catalog rather than a source-text parser. Production comparison
+belongs only to Task 7d and must not be claimed here. Run static/focused/PostgreSQL/CFO/full tests and diff-check. Commit
 and push `fix(cfo): harden snapshot service privileges`; obtain fresh Sol review.
 
-Evidence: live-vs-isolated normalized `pg_catalog` constraint names and semantic digest prefixes matched; live
-before-vs-after hardening names/digests also matched (`constraintNamesMatch=true`, `constraintBeforeAfterMatch=true`,
+Evidence: primary-test-vs-isolated-test normalized `pg_catalog` constraint names and semantic digest prefixes matched;
+primary-test before-vs-after hardening names/digests also matched (`constraintNamesMatch=true`, `constraintBeforeAfterMatch=true`,
 `constraintSemanticsMatch=true`). Static focused was `1/1`, PostgreSQL correction proof was PASS/stderr `0`,
 `npm run test:cfo` was `316/316`, full `npm test` was `949/949`, and `git diff --check` passed. Commit/push and
 fresh Sol review remain the Task 7c handoff actions.
