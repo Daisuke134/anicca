@@ -14,7 +14,7 @@ PostgreSQL appends contiguous correction revisions; existing delivery dedupe sup
 
 **Design:** `docs/superpowers/specs/2026-08-09-life-manager-cfo-moneytree-recovery-design.md`.
 
-**Status:** ACTIVE — Task 1 next.
+**Status:** ACTIVE — Task 2 fix round 2; Task 1 complete but its action-shape seam is included in this fix.
 
 ## Global Constraints
 
@@ -69,8 +69,9 @@ Expected: FAIL because `cfo-moneytree-recovery.js` does not exist.
 For each `timeout|network|rate_limited|provider_5xx`, prove repair→wait→fresh reread→composition/reconciliation before
 `recovered`. Prove exhausted calls are exactly `reads=3, repairs=2, waits=[1000,5000]`. Prove
 `unauthorized|forbidden|expired|revoked` uses one read and no repair/wait, and schema/contract failures become
-`provider_outage`. Preserve the original closed `failureKind`; `nextRetryAt` must be exactly input
-`observedAt + 30 minutes`.
+`provider_outage`. Preserve the first transient kind only when automatic recovery exhausts; a later consent failure
+becomes the decisive terminal `failureKind`. `nextRetryAt` must be exactly input `observedAt + 30 minutes`. Every
+action is exactly `kind,sourceLabel,retryLabel,nextRetryAt` with the fixed labels from the design.
 
 - [ ] **Step 4: Implement minimum GREEN**
 
@@ -119,11 +120,15 @@ Run: `node --test lib/cfo-recovery-snapshot.test.js`; expect missing module fail
 - [ ] **Step 3: Add fail-closed truth tests**
 
 Reject stale amount injection, mismatched source/state time, action with net worth, recovered without fresh reread or
-reconciliation, revision 0/non-integer, hostile envelopes, unknown keys, and a caller-mutated output.
+reconciliation, revision 0/non-integer, hostile envelopes, unknown keys, caller-mutated output, arbitrary/empty
+exclusions, wrong retry labels, fresh reads with unsupported aggregation state, and the real Task 1 action shape.
 
 - [ ] **Step 4: Implement minimum GREEN**
 
-Build all facts once, then call the shared validator before returning. The action-required bundle uses:
+Build all facts once, then call the shared validator before returning. For fresh/recovered reports, rebuild the
+canonical existing daily report from `sourceBundle` and require exact deep equality after applying only the requested
+revision and reviewed recovered metadata. Require the exact action report and fixed retry label by kind. The
+action-required bundle uses:
 
 ```js
 {

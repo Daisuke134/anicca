@@ -72,8 +72,12 @@ fail closed before any callback:
 boolean, and `wait(milliseconds)` resolves with no value. Every callback is invoked by the executor; precomputed or
 cached callback results are not accepted. Success outcomes contain exactly
 `status,reportingDate,observedAt,moneytreeRead,attempts,repair,action,failureKind`; success sets `failureKind:null`.
-Action-required outcomes use the same keys with `moneytreeRead:null`, `repair:null`, the original closed
-`failureKind`, and `action={kind,sourceLabel,retryLabel,nextRetryAt}`. `repair` is either null or
+Action-required outcomes use the same keys with `moneytreeRead:null`, `repair:null`, a closed terminal
+`failureKind`, and `action={kind,sourceLabel,retryLabel,nextRetryAt}`. Direct or later consent failure keeps the
+decisive `unauthorized|forbidden|expired|revoked` kind; exhausted automatic recovery keeps its first transient kind;
+composition/contract failure without an earlier transient uses `provider_outage`. The action values are exact:
+`sourceLabel="Moneytree"`, re-consent uses `retryLabel="Moneytreeを再接続してください"`, and provider outage uses
+`retryLabel="30分後に自動再試行します"`. `repair` is either null or
 `{sourceLabel:"Moneytree",freshReread:true,reconciled:true}`.
 
 Rules:
@@ -116,6 +120,10 @@ the correction-store client call this one validator; no second report/source val
   unavailable totals are `null`, Moneytree is excluded from confirmed totals, and `action.kind` is `reconsent` or
   `provider_outage`;
 - no state may claim complete net worth while liabilities remain unknown.
+- the exported bundle validator rebuilds the canonical partial report from `sourceBundle` and requires exact deep
+  equality after applying only `revision` and the reviewed recovered metadata; action-required reports likewise
+  require the exact unavailable source, Moneytree exclusion, null totals, and action label for their action kind.
+  Caller-chosen exclusion text, retry text, source status, aggregation state, or extra facts are rejected.
 
 Telegram copy distinguishes the two actions. Re-consent asks for one connection update. Provider outage says the CFO
 will retry automatically at the persisted `nextRetryAt` and does not blame the owner. Both suppress raw diagnostics
