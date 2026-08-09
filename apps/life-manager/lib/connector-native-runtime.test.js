@@ -484,7 +484,7 @@ test("zero Calendar-eligible events is a valid incomplete pass instead of a runt
   assert.equal(result.write, null);
   assert.equal(result.candidate_attempts.length, 0);
   assert.equal(result.continuation.status, "continue");
-  assert.equal(result.provider_cursor.provider, "connpass");
+  assert.equal(result.provider_cursor.provider, "peatix");
   assert.equal(result.provider_discovery.status, "authorized_source_empty");
   assert.deepEqual(result.selection, {
     inventory_event_count: 2,
@@ -992,7 +992,7 @@ test("candidate budget cannot stop the pass before the next actionable candidate
   ]);
 });
 
-test("Luma known-no-effect exhaustion advances the verified provider cursor to Connpass", async () => {
+test("Luma known-no-effect exhaustion advances the verified provider cursor through an empty Connpass handoff", async () => {
   const input = await fixture();
   const registry = createEventProviderRegistry();
   const providerCursor = createEventProviderCursor({
@@ -1053,9 +1053,9 @@ test("Luma known-no-effect exhaustion advances the verified provider cursor to C
     },
   });
 
-  assert.equal(result.provider_cursor.provider, "connpass");
+  assert.equal(result.provider_cursor.provider, "peatix");
   assert.equal(result.provider_cursor.candidate_index, 0);
-  assert.equal(result.provider_cursor.generation, 3);
+  assert.equal(result.provider_cursor.generation, 4);
   assert.equal(JSON.stringify(result.provider_cursor).includes("founder-night"), false);
 });
 
