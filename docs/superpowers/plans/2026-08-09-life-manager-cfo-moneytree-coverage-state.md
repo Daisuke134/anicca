@@ -141,7 +141,7 @@ Evidence: commits `5325dab07`, `d4d77ae63`, `563c7fde0`, and `eed2be718`; final 
 - Modify: `docs/superpowers/specs/2026-08-08-life-manager-cfo-moneytree-daily-report-design.md`
 - Modify: `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md`
 
-- [ ] **Step 1: Verify the live App state without values**
+- [x] **Step 1: Verify the live App state without values**
 
 Call `show_accounts(locale="ja")` once. A successful connected MUFG read feeds only:
 
@@ -158,6 +158,10 @@ deriveMoneytreeState({
 
 Compose this state with the live `adaptMoneytreeAccounts` result. Verify exact bundle: succeeded retrieval, valid interactive consent evidence, aggregation unknown/null, liability coverage unknown/count null, partial true, no action, matching source/state IDs/timestamps/partiality. Emit/store only booleans; do not print or persist provider response or balances.
 
-- [ ] **Step 2: Final review and truthful state closure**
+Evidence: One corrected privacy-safe live Moneytree/MUFG read followed a synthetic no-echo probe. All 11/11 boolean composition checks were true: bundle creation; matching source/state IDs, timestamps, and partial flags; successful retrieval; valid `interactive_session` consent; unknown/null aggregation; unknown/null liability coverage/count; `partial=true`; no action; and deep freeze. The check exited 0 with `providerPayloadEchoed=false`; no raw payload was persisted or committed. An initial TTY validation exposed the provider response in transient tool output; it persisted and committed nothing, and was corrected with a synthetic-tested no-echo transport plus the durable rule pointer `.claude/rules/private-payload-transport.md`.
+
+- [x] **Step 2: Final review and truthful state closure**
 
 After controller tests and a clean fresh whole-plan review, check only parent CFO-1b2 and make CFO-1e active. Do not check the child persistence acceptance because CFO-1g explicitly persists this bundle. Record that live liability coverage and aggregation freshness remain unknown; keep snapshot/Telegram/cloud boxes unchecked. Commit `docs(cfo): close Moneytree coverage state` and push.
+
+Evidence: Controller fresh final verification at fixed code head `57dab5ecb` passed focused state tests 38/38 and CFO tests 166/166; `npm ci --no-audit --no-fund` completed and full `npm test` exited 0. Production size is 137 LOC and tests are 195 LOC. The final whole-plan review found one changing-get Proxy Important, fixed by `57dab5ecb`; the final scoped re-review marked it ADDRESSED with no new Critical/Important findings and Ready status.

@@ -2,9 +2,9 @@
 
 | Field | Value |
 |---|---|
-| Status | IMPLEMENTED — CFO-1b LIVE ADAPTER COMPLETE — CFO-1b2 NEXT |
+| Status | CFO-1b2 COVERAGE STATE COMPLETE — CFO-1e NEXT |
 | Parent SSOT | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
-| Active item | CFO-1b2 — Moneytree composed coverage-state contract |
+| Active item | CFO-1e — Fleet read |
 | First real source | Moneytree-connected MUFG accounts |
 | Deferred | Binance and every write-capable financial action |
 
@@ -288,6 +288,30 @@ A fresh interactive Moneytree/MUFG read was verified in memory and became a reda
 CFO-1b leaves the source partial until CFO-1b2. Liabilities, durable ingestion, scheduled/cloud read, snapshot, reconciliation, and every later M1 acceptance remain unchecked. The manual pilot below does not satisfy the M1 real Telegram acceptance.
 
 The controller sent a manual Moneytree finance pilot to Telegram with provider `message_id` `9369`. It showed only the refreshed confirmed MUFG/Moneytree balance, explicitly stated that net worth was unknown because liabilities were not connected, contained no raw IDs or descriptions, required no action, and was labeled a manual pilot. It did not use a durable snapshot, outbox, or buttons. The M1 real Telegram checkbox remains unchecked.
+
+### CFO-1b2 completion evidence
+
+CFO-1b2 closes the composed Moneytree coverage-state contract and does not claim durable ingestion. One corrected
+privacy-safe live Moneytree/MUFG read followed a synthetic no-echo probe. The controller's 11/11 boolean checks were
+true: the bundle was created; source/state IDs, timestamps, and partial flags matched; retrieval succeeded; consent
+was valid with `interactive_session`; aggregation was unknown/null; liability coverage and count were unknown/null;
+`partial` was true; no action was required; and the bundle was deeply frozen. The check exited 0 with
+`providerPayloadEchoed=false`; no raw payload was persisted or committed.
+
+An initial TTY validation exposed the provider response in transient tool output. It persisted and committed nothing.
+The transport was corrected with a synthetic-tested no-echo path, and the durable rule pointer
+`.claude/rules/private-payload-transport.md` was created. This closure does not claim that the entire session emitted
+only booleans.
+
+Controller fresh final code verification at fixed head `57dab5ecb` passed focused state tests 38/38 and CFO tests
+166/166; `npm ci --no-audit --no-fund` completed and full `npm test` exited 0. Production size is 137 LOC and tests
+are 195 LOC. The final whole-plan review's changing-get Proxy Important was fixed by `57dab5ecb`; final scoped
+re-review marked it ADDRESSED with no new Critical/Important findings and Ready status.
+
+Live aggregation freshness remains unknown, live liability coverage remains unknown with count null, and the source
+remains partial. CFO-1g owns persistence of this bundle. The immutable snapshot, durable Telegram delivery, cloud
+scheduled read, and later M1 acceptance boxes remain unchecked. The existing manual Telegram pilot remains outside
+M1 acceptance. The next item is CFO-1e Fleet read.
 
 ## 11. Ordered Implementation
 

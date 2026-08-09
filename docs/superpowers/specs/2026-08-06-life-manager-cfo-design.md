@@ -2,12 +2,12 @@
 
 | Field | Value |
 |---|---|
-| Status | CFO-1b COMPLETE — CFO-1b2 NEXT |
+| Status | CFO-1b2 COMPLETE — CFO-1e NEXT |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
 | Existing foundations | `apps/life-call`, interactive Moneytree App access, Fleet telemetry, `lm_api_cost`, and the canonical `lm_agent_earnings` source (the panel's `lm_financial_ledger` name is a stale alias) |
-| First unfinished item | **CFO-1b2: freeze the composed Moneytree coverage-state contract** |
+| First unfinished item | **CFO-1e: normalize Fleet wallet positions, verified earnings, and burn from existing telemetry** |
 
 ## 1. Overview — What and Why
 
@@ -716,11 +716,35 @@ A fresh interactive Moneytree/MUFG read was verified in memory and became a reda
 
 CFO-1b leaves the source partial until CFO-1b2. Liabilities, durable ingestion, scheduled/cloud read, snapshot, reconciliation, and every later M1 acceptance remain unchecked. No real finance Telegram delivery has occurred.
 
+### CFO-1b2 completion evidence
+
+CFO-1b2 closes the composed Moneytree coverage-state contract and leaves persistence to CFO-1g. One corrected
+privacy-safe live Moneytree/MUFG read followed a synthetic no-echo probe. The controller's 11/11 boolean checks were
+true: the bundle was created; source/state IDs, timestamps, and partial flags matched; retrieval succeeded; consent
+was valid with `interactive_session`; aggregation was unknown/null; liability coverage and count were unknown/null;
+`partial` was true; no action was required; and the bundle was deeply frozen. The check exited 0 with
+`providerPayloadEchoed=false`; no raw payload was persisted or committed.
+
+An initial TTY validation exposed the provider response in transient tool output. It persisted and committed nothing.
+The transport was corrected with a synthetic-tested no-echo path, and the durable rule pointer
+`.claude/rules/private-payload-transport.md` was created. This closure does not claim that the entire session emitted
+only booleans.
+
+Controller fresh final code verification at fixed head `57dab5ecb` passed focused state tests 38/38 and CFO tests
+166/166; `npm ci --no-audit --no-fund` completed and full `npm test` exited 0. Production size is 137 LOC and tests
+are 195 LOC. The final whole-plan review's changing-get Proxy Important was fixed by `57dab5ecb`; final scoped
+re-review marked it ADDRESSED with no new Critical/Important findings and Ready status.
+
+Live aggregation freshness remains unknown, live liability coverage remains unknown with count null, and the source
+remains partial. The immutable snapshot, durable Telegram delivery, cloud scheduled read, and later M1 acceptance
+boxes remain unchecked. The existing manual Telegram pilot remains outside M1 acceptance. The next item is CFO-1e
+Fleet read.
+
 ### M1 — One truthful Moneytree-first read-only snapshot
 
 - [x] **CFO-1a** Specify provider-neutral adapter contracts and redacted fixtures.
 - [x] **CFO-1b** Implement Moneytree MUFG balance/transaction adapter; verify against the live connected account.
-- [ ] **CFO-1b2** Freeze the Moneytree coverage-state contract: compose balances with connected-liability coverage,
+- [x] **CFO-1b2** Freeze the Moneytree coverage-state contract: compose balances with connected-liability coverage,
       retrieval/aggregation freshness, partial-source, expiry, and re-consent states. Unknown live coverage stays null.
 - [ ] **CFO-1e** Normalize Fleet wallet positions, verified earnings, and burn from existing telemetry.
 - [ ] **CFO-1f** Add timestamped JPY valuation and staleness rules.
