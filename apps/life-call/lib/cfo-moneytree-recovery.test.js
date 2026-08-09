@@ -52,6 +52,11 @@ for (const kind of FAILURE_KINDS) test(`${kind} repairs, waits, rereads, compose
   assert.equal(result.status, "recovered"); assert.equal(result.attempts, 2); assert.equal(result.failureKind, null);
   assert.equal(calls.reads, 2); assert.deepEqual(calls.repairs, [{ kind, attempt: 1 }]); assert.deepEqual(calls.waits, [1000]);
   assert.deepEqual(result.repair, { sourceLabel: "Moneytree", freshReread: true, reconciled: true });
+  assert.deepEqual(Object.keys(result).sort(), ["action", "attempts", "failureKind", "moneytreeRead", "observedAt", "repair", "reportingDate", "status"]);
+  assert.deepEqual(Object.keys(result.repair).sort(), ["freshReread", "reconciled", "sourceLabel"]);
+  assert.equal(Object.isFrozen(result), true); assert.equal(Object.isFrozen(result.repair), true);
+  assert.equal(Object.isFrozen(result.moneytreeRead), true); assert.equal(Object.isFrozen(result.moneytreeRead.source), true);
+  assert.equal(Object.isFrozen(result.moneytreeRead.source.accounts), true); assert.equal(Object.isFrozen(result.moneytreeRead.state), true);
 });
 
 test("exhausted recovery is bounded and preserves the original failure kind", async () => {
@@ -63,6 +68,9 @@ test("exhausted recovery is bounded and preserves the original failure kind", as
   assert.equal(result.status, "action_required"); assert.equal(result.attempts, 3); assert.equal(result.failureKind, "timeout");
   assert.equal(result.action.kind, "provider_outage"); assert.equal(result.action.nextRetryAt, NEXT_RETRY_AT);
   assert.equal(result.moneytreeRead, null); assert.equal(result.repair, null);
+  assert.deepEqual(Object.keys(result).sort(), ["action", "attempts", "failureKind", "moneytreeRead", "observedAt", "repair", "reportingDate", "status"]);
+  assert.deepEqual(Object.keys(result.action).sort(), ["kind", "nextRetryAt", "retryLabel", "sourceLabel"]);
+  assert.equal(Object.isFrozen(result), true); assert.equal(Object.isFrozen(result.action), true);
   assert.equal(calls.reads, 3); assert.deepEqual(calls.repairs, [{ kind: "timeout", attempt: 1 }, { kind: "timeout", attempt: 2 }]); assert.deepEqual(calls.waits, [1000, 5000]);
 });
 
@@ -90,9 +98,16 @@ test("input and option shapes fail before callback effects", async () => {
   for (const input of inputs) await rejected(() => recoverMoneytreeRead(input, options));
   const accessor = {}; Object.defineProperty(accessor, "reportingDate", { enumerable: true, get: () => "2026-08-09" }); Object.defineProperty(accessor, "observedAt", { enumerable: true, value: INPUT.observedAt });
   await rejected(() => recoverMoneytreeRead(accessor, options));
+  const nonEnumerable = { reportingDate: INPUT.reportingDate }; Object.defineProperty(nonEnumerable, "observedAt", { enumerable: false, value: INPUT.observedAt });
+  await rejected(() => recoverMoneytreeRead(nonEnumerable, options));
   const custom = Object.assign(Object.create({ inherited: true }), INPUT); await rejected(() => recoverMoneytreeRead(custom, options));
   const proxied = new Proxy({ ...INPUT }, {}); await rejected(() => recoverMoneytreeRead(proxied, options));
-  await rejected(() => recoverMoneytreeRead(INPUT, { ...options, extra: true })); assert.equal(calls, 0);
+  await rejected(() => recoverMoneytreeRead(INPUT, { ...options, extra: true }));
+  await rejected(() => recoverMoneytreeRead(INPUT, new Proxy(options, {})));
+  const optionAccessor = {}; for (const key of ["repair", "wait"]) optionAccessor[key] = options[key]; Object.defineProperty(optionAccessor, "read", { enumerable: true, get: () => options.read });
+  await rejected(() => recoverMoneytreeRead(INPUT, optionAccessor));
+  await rejected(() => recoverMoneytreeRead(INPUT, { ...options, [Symbol("secret")]: true }));
+  await rejected(() => recoverMoneytreeRead(INPUT, Object.assign(Object.create({ inherited: true }), options))); assert.equal(calls, 0);
 });
 
 test("hostile callback values and errors are fixed and redacted", async () => {
