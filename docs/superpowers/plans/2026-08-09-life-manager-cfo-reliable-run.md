@@ -144,13 +144,18 @@
   `ok === true`, and stdout is only one JSON object of named booleans/counts.
 - [ ] The no-echo runner makes these exact PostgREST calls with the service-role headers above and never prints a URL,
   query value, body, or response:
-  1. `GET /rest/v1/lm_users?telegram_chat_id=not.is.null&select=uid&limit=2`, no body, expect HTTP 200 and exactly one
-     row for the current Dais-first live scope; keep its UID private or fail closed.
-  2. `POST /rest/v1/rpc/lm_claim_cfo_daily_run`, JSON body `{p_uid:<private uid>}`, expect HTTP 200 and an exact
+  1. `GET /rest/v1/lm_users?telegram_chat_id=not.is.null&select=uid&limit=3`, no body, expect HTTP 200 and one or more
+     closed one-key owner rows; keep every UID private. For those owners only, read
+     `/rest/v1/lm_cfo_daily_snapshots?uid=in.(<encoded-private-uids>)&select=uid,public_ref,reporting_date,run_id&limit=3`
+     with no body and HTTP 200. Exactly one distinct owner and exactly one snapshot row must remain; otherwise fail
+     closed. This snapshot-bearing owner is the Dais-first live scope. The previous exactly-one Telegram-owner
+     assumption was disproved live by `ownerCount=2`, while `snapshotOwnerCount=1` and the other owner had zero
+     snapshot/run rows.
+  2. `POST /rest/v1/rpc/lm_claim_cfo_daily_run`, JSON body `{p_uid:<private snapshot-bearing uid>}`, expect HTTP 200 and an exact
      five-key object `public_ref,reporting_date,run_id,time_zone,created_at`.
   3. Repeat call 2 with the identical private body; expect HTTP 200 and the exact same five values.
-  4. `GET /rest/v1/lm_cfo_daily_snapshots?uid=eq.<encoded-private-uid>&reporting_date=eq.<encoded-date>&select=public_ref,run_id&limit=1`,
-     no body, expect HTTP 200 and one row whose `run_id` equals the claim. Keep both refs private.
+  4. Reuse the exact selected snapshot from call 1 and require its `reporting_date` and `run_id` to equal the claim;
+     do not perform a second snapshot read. Keep all refs private.
   5. `GET /rest/v1/lm_cfo_telegram_delivery_claims?snapshot_public_ref=eq.<encoded-private-snapshot-ref>&select=public_ref`,
      no body, expect HTTP 200 and `[]`. The receipt table cannot contain a row without its claim FK.
 - [ ] Luna proves against the existing live snapshot: owner timezone resolves, daily-run retry is stable, and snapshot
