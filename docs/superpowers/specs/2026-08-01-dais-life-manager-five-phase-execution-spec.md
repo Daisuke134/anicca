@@ -56,7 +56,7 @@ Connectorの進行中正本はbranch `feature/connector-native-completion`のwor
 | production providers | `skills/connector/native-pass.js` の`DEFAULT_PROVIDERS = ["luma", "connpass"]`のみ。順序はLuma → Connpass | Peatix → Meetup → Doorkeeper → EventbriteはItem19、未知/次サイトはItem20 |
 | acceptance窓 | 今日を含む14日、無料・受付中・Calendar非衝突だけを申込対象にする | 旧rolling-21は履歴/長期目標で、現行runtime/gateではない |
 | agent / evidence境界 | 候補gateは決定論的。unknown UI時だけbounded Codex `gpt-5.6-terra` action proposerを最大10 step使うが、現行proposerと`applied_bundle` evidence chainはLuma専用 | Connpass discovery/direct actionは配線済みだが、bounded fallbackと`applied_bundle`のproduction接続・live acceptanceはItem14 |
-| latest official wake | `wake-09de6a1e9ab465b938ff29dd`: `completed_no_effect / providers_exhausted / consecutive_failure_count 0`、Telegram provider ID `10325`。Luma free/open 4件は全てCalendar conflict、Submit/Calendar write/applied bundle増分なし | `providers_exhausted`は現行設定済み2 providerの枯渇だけを意味する。Connpassのgate別0件理由は進捗225の診断sliceで可視化する |
+| latest official wake | `wake-44d1f986c595554429c6ea29`: `completed_no_effect / providers_exhausted / consecutive_failure_count 0`、Telegram provider ID `10332`。Luma `30→30→16→4→0`、Connpass `6→6→6→0→0`、Submit/Calendar write/applied bundle増分なし | Lumaはfree/open 4件が全Calendar conflict、Connpassは14日内6件がfree/open 0。次はItem19 Peatixを10B unblockerとして先行 |
 | lifecycle / lock | orphan target lockは修復後run終了時にabsent。Native・healthcheck・Healer labelは全てunloaded | installed Native plistのlegacy `StartInterval=300`もunloaded。Items10〜16 acceptance後、Item17で一日一回scheduleだけをload |
 | TODO境界 | Items1〜9と10Aは完了。10BとItems11〜23は未完 | 完了判定は最新Active TODOの10B〜23で行う |
 
@@ -234,10 +234,11 @@ Telegram provider message IDが無い送信を成功として表示しない。�
 それ以前のTODO、チェックリスト、実行順、図は全て履歴であり、未完項目を復活させる根拠にしない。
 この節、Order checkbox、過去の進捗文に異なる「次TODO」が残っていても実行順には使用しない。
 
-最新の実測状態（2026-08-10 JST、進捗225のofficial wake後）: `wake-09de6a1e9ab465b938ff29dd` は
-`completed_no_effect / providers_exhausted / consecutive_failure_count 0`で終了し、Telegram provider message IDは`10325`だった。
-現行設定済みproviderはLumaとConnpassだけで、Lumaのfree/open 4件は全てCalendar conflictとなり、新規Submit、Calendar write、
-candidate attempt、applied bundleの増分は0。orphan target lockは修復後にrun終了時absentで、Native・healthcheck・Healerの3 labelは全てunloadedである。
+最新の実測状態（2026-08-10 JST、進捗226のofficial wake後）: `wake-44d1f986c595554429c6ea29` は
+`completed_no_effect / providers_exhausted / consecutive_failure_count 0`で終了し、Telegram provider message IDは`10332`だった。
+現行設定済みproviderはLumaとConnpassだけで、Lumaは`observed 30 / normalized 30 / window 16 / free_open 4 / calendar_free 0`、
+Connpassは`observed 6 / normalized 6 / window 6 / free_open 0 / calendar_free 0`。新規Submit、Calendar write、candidate attempt、
+applied bundleの増分は0。audit fileはmode `0600`、run終了時lock absent、Native・healthcheck・Healerの3 labelは全てunloadedである。
 installed Native plistにlegacy `StartInterval=300`は残るがunloadedであり、Item17のsingle daily scheduleはItems10〜16 acceptance後までloadしない。
 
 **Executor boundary:** 実event discovery、form入力、Submit、provider readback、Calendar、screenshot、Telegramを行う主体はofficial Connector
@@ -6061,7 +6062,23 @@ Calendar-free 0で、Submit/Calendar write/applied bundle増分0。lockは終了
 追加する実装planを`docs/superpowers/plans/2026-08-10-connector-connpass-eligibility-audit.md`へ固定した。
 これはItem 10B/14のroot-cause diagnosisであり、いずれのcompletionも前倒ししない。
 
-### Active remaining TODO SSOT（進捗225。これ以外の残TODO一覧は履歴）
+### O1B-25進捗226（Connpass eligibility audit GREEN / production root cause確定）
+
+Lunaがplan `2026-08-10-connector-connpass-eligibility-audit.md`をTDD実装した。REDはworkflow 9 pass / 1 fail、
+operations 3 / 1、production 6 / 1で、callback・persistence・factory wiringの欠落をそれぞれ再現した。commit `6c99f9abc`は
+Connpass workflowへ既存gate順の5-count callback、operationsへmode `0600` append-only `connpass-discovery-audits.jsonl`、
+production factoryへ内部callback wiringを追加した。Sol fresh regressionは30/30 pass、task review/final reviewはCritical 0・Important 0。
+
+同commitのofficial wake `wake-44d1f986c595554429c6ea29`はLuma `30→30→16→4→0`、Connpass `6→6→6→0→0`を
+同一lineageへ保存し、`completed_no_effect / providers_exhausted / failures 0`、Telegram ID `10332`で完了した。
+Submit/Calendar write/bundle増分0、audit mode `0600`、locks absent、3 labels unloaded。これにより現時点の0申込は、
+LumaではCalendar conflict、Connpassではfree/open 0という外部候補条件であり、discovery code故障ではないと確定した。
+
+**Current execution cursor override:** Calendar gateや無料条件を緩めず、Item 10B/14を未完のまま、Item19先頭のPeatix provider sliceだけを
+10B unblockerとして先行する。Peatixでeligible candidateを得たら同じofficial runnerのSubmit→parent readback→evidence chainへ接続し、
+10B/14のlive acceptanceへ戻る。Meetup以降、schedule、restart、mergeはPeatix slice完了前に開始しない。
+
+### Active remaining TODO SSOT（進捗226。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
