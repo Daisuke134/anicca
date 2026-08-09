@@ -7,7 +7,7 @@
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
 | Existing foundations | `apps/life-call`, interactive Moneytree App access, Fleet telemetry, `lm_api_cost`, and the canonical `lm_agent_earnings` source (the panel's `lm_financial_ledger` name is a stale alias) |
-| First unfinished item | **CFO-1g2: add retry identity, corrections, and Telegram dedupe** |
+| First unfinished item | **CFO-1g2: add owner-local retry identity and Telegram dedupe** |
 
 ## 1. Overview — What and Why
 
@@ -771,10 +771,11 @@ with no Critical or Important findings. This closure does not claim a CFO produc
       consent, opaque references, and immutable composition pass; aggregation freshness and liability coverage remain
       explicitly unknown/partial because the interactive connector does not expose those fields. No FX is performed.
 - [x] **CFO-1g** Persist one immutable, idempotent snapshot, its Moneytree coverage-state bundle, and reconciliation exceptions.
-- [ ] **CFO-1g2** Enforce owner-timezone `reporting_date`, stable retry `run_id`, Telegram dedupe, and append-only
-      superseding corrections.
-- [ ] **CFO-1g3** Implement bounded adapter self-repair and prove repair only after a fresh source read and
-      reconciliation. Exhausted repairs create one actionable alert plus durable retries, not repeated messages.
+- [ ] **CFO-1g2** Enforce owner-timezone `reporting_date`, stable retry `run_id`, and append-only Telegram delivery
+      claim/receipt dedupe. Child SSOT: `2026-08-09-life-manager-cfo-reliable-run-design.md`.
+- [ ] **CFO-1g3** Implement bounded adapter self-repair and append-only superseding corrections. Prove repair only
+      after a fresh source read and reconciliation. Exhausted repairs create one actionable alert plus durable
+      retries, not repeated messages.
 - [ ] **CFO-1h2** CFO-1 report is assets/liabilities only. Until tests 16–18 and 22–28 pass, the renderer MUST NOT
       show token totals, complete API spend, business profit, measured/confirmed cost, or cost-based advice.
 - [ ] **CFO-1h** Send the first real assets/liabilities-only Telegram report and confirm its provider message
