@@ -24397,3 +24397,10 @@
 {"ts":1786283031,"wake_id":"00MSLUSO9E3548ABFE915B4BBA","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786283200,"wake_id":"00MSLUWADT37B3CE5EE5A542B2","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786283375,"wake_id":"00MSLV01VYE61A6AB4766F4546","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786283682,"wake_id":"00MSLV6MO899642787AB78452B","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786283858,"wake_id":"00MSLVADYA9527FBDA16B64DF9","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786283996,"wake_id":"00MSLVDCOK94A6CB9A4E3B46B4","kind":"wake","sleep_s":120,"model":"auto","slot":"earn/sol-trade","profitable":false,"exit_code":0}
+{"ts":1786284123,"wake_id":"00MSLVG2WGC73F87E1F96249F2","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786284256,"wake_id":"00MSLVIXDJ4B2FE54A9D88464F","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786284388,"wake_id":"00MSLVLRPG7843410368274496","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana microtask platform paid gigs USDC [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surfaced for the"}
+{"ts":1786284519,"wake_id":"00MSLVOKL3333C1D64FF1C47C5","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana decentralized freelance platform paid gigs USDC bots [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidat"}
