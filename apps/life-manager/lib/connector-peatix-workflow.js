@@ -3,6 +3,7 @@
 const { zonedSlotInstant } = require("./honne-ja-shadow-schedule.js");
 
 const SEARCH_URL = "https://peatix.com/search?q=%E7%84%A1%E6%96%99&country=JP&l.text=Tokyo";
+const SEARCH_RENDER_TIMEOUT_MS = 10_000;
 const TIME_ZONE = "Asia/Tokyo";
 const EVENT_ID = /^[1-9][0-9]*$/;
 const EVENT_PATH = /^\/event\/([1-9][0-9]*)\/?$/;
@@ -155,23 +156,24 @@ function usableFreeTicket(ticket, nowMs) {
 
 function normalizeDetail(binding, raw, nowMs) {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) invalid();
-  const event = raw.event;
+  const jsonData = raw.json_data;
+  const event = jsonData && jsonData.event;
   if (!event || typeof event !== "object" || Array.isArray(event)) invalid();
   const detailId = eventId(event.id);
   if (!detailId) invalid();
   const bindingId = binding.event_ref.split("/").pop();
   if (detailId !== bindingId) throw stageError("PEATIX_DETAIL_IDENTITY_MISMATCH_FAILED");
-  const startsAt = parseTokyoDate(event.datetime ?? raw.datetime);
-  const endsAt = parseTokyoDate(event.datetimeEnd ?? raw.datetimeEnd);
+  const startsAt = parseTokyoDate(event.datetime);
+  const endsAt = parseTokyoDate(event.datetimeEnd);
   if (!startsAt || !endsAt || Date.parse(startsAt) >= Date.parse(endsAt)) invalid();
-  const tickets = event.tickets ?? raw.tickets;
+  const tickets = event.tickets;
   if (!Array.isArray(tickets)) invalid();
-  const title = firstText(event.title, event.name, raw.title, raw.name, binding.title);
+  const title = firstText(event.title);
   if (!title) invalid();
   const freeObserved = tickets.some((ticket) => ticket && ticket.price === 0);
-  const freeOpen = (event.status ?? raw.status) === "OPEN"
-    && (event.isOpen ?? raw.isOpen) === true
-    && (event.isFinished ?? raw.isFinished) !== true
+  const freeOpen = event.status === "OPEN"
+    && event.isOpen === true
+    && event.isFinished !== true
     && tickets.some((ticket) => usableFreeTicket(ticket, nowMs));
   const candidate = Object.freeze({
     provider: "peatix",
@@ -202,13 +204,17 @@ function defaultCalendarFree(candidate, calendar) {
 }
 
 async function defaultReadSearchBindings(page) {
-  if (!page || typeof page.goto !== "function" || typeof page.evaluate !== "function") invalid();
+  if (!page || typeof page.goto !== "function" || typeof page.waitForSelector !== "function"
+    || typeof page.evaluate !== "function") invalid();
   try {
     await page.goto(SEARCH_URL, { waitUntil: "domcontentloaded", timeout: 30_000 });
   } catch {
     throw stageError("PEATIX_SEARCH_NAVIGATION_FAILED");
   }
   try {
+    await page.waitForSelector("a.event-card", {
+      state: "attached", timeout: SEARCH_RENDER_TIMEOUT_MS,
+    });
     return await page.evaluate(() => Array.from(document.querySelectorAll("a.event-card"))
       .map((anchor) => ({ href: anchor.href, title: anchor.textContent.trim() })));
   } catch {
@@ -254,7 +260,7 @@ function createPeatixDiscoveryWorkflow(options = {}) {
       } catch (error) {
         throw preserveSafe(error, "PEATIX_SEARCH_READ_FAILED");
       }
-      if (!Array.isArray(rows) || rows.length > 100) {
+      if (!Array.isArray(rows)) {
         throw stageError("PEATIX_SEARCH_ROWS_CONTRACT_FAILED");
       }
       const bindings = [];
@@ -264,6 +270,9 @@ function createPeatixDiscoveryWorkflow(options = {}) {
         if (!binding || seen.has(binding.event_ref)) continue;
         seen.add(binding.event_ref);
         bindings.push(binding);
+      }
+      if (bindings.length > 100) {
+        throw stageError("PEATIX_SEARCH_ROWS_CONTRACT_FAILED");
       }
 
       const observed = now();
