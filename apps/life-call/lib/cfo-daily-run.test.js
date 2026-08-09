@@ -96,12 +96,19 @@ test("fails closed on hostile network/response paths, never retries, and never l
       () => ({ get ok() { throw new Error("CREDENTIAL_SENTINEL"); }, status: 500 }),
       () => ({ ok: true, status: 200, json: "not-a-function" }),
       () => ({ ok: true, status: 200, json: async () => { throw new Error("secret raw body"); } }),
-      () => ({ ok: false, status: 409, json: () => { throw new Error("must not read"); } }),
       () => response(new Proxy({}, { ownKeys: () => { throw new Error("RAW_BODY_SENTINEL"); } })),
     ];
     for (const makeFailure of failures) {
       const counter = { value: 0 };
       await rejected(() => resolveCfoDailyRun(input(), { supaUrl: URL, supaKey: KEY, fetchImpl: async () => { counter.value += 1; return makeFailure(); } }));
+    }
+    {
+      const counter = { value: 0 };
+      await rejected(
+        () => resolveCfoDailyRun(input(), { supaUrl: URL, supaKey: KEY, fetchImpl: async () => { counter.value += 1; return { ok: false, status: 409, json: () => { throw new Error("must not read"); } }; } }),
+        /^cfo_daily_run_failed:provider_409$/,
+        counter,
+      );
     }
   } finally { [console.log, console.error, console.warn] = sinks; }
   assert.equal(sinkCalls, 0);
