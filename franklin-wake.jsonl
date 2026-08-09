@@ -24478,3 +24478,10 @@
 {"ts":1786293860,"wake_id":"00MSM18RWW52CD5096469D4DDD","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786293989,"wake_id":"00MSM1BJI47FE9CF9C817B4F7B","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786294118,"wake_id":"00MSM1EAWCEFEF6D87C6C24D70","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786294247,"wake_id":"00MSM1H2X2DE9A0491927A4FC2","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786294375,"wake_id":"00MSM1JT08292982DC3F484F0C","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786294504,"wake_id":"00MSM1MKIU3AD1464A9E6B4BE0","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786294633,"wake_id":"00MSM1PCEYC9C1A69428804FAC","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786294762,"wake_id":"00MSM1S3QP4147B848BAE54273","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786294891,"wake_id":"00MSM1UVI4A317236DC6EA4505","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: solana micro liquidity mining low deposit opportunities [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates s"}
+{"ts":1786295019,"wake_id":"00MSM1XMK7789573E576394F80","kind":"narrate","sleep_s":120,"model":"auto"}
