@@ -137,7 +137,8 @@ the correction-store client call this one validator; no second report/source val
 Telegram copy distinguishes the two actions. Re-consent asks for one connection update. Provider outage says the CFO
 will retry automatically at the persisted `nextRetryAt` and does not blame the owner. Both suppress raw diagnostics
 and stale totals. The renderer action schema is exactly `kind,sourceLabel,retryLabel,nextRetryAt`; both action kinds
-are closed, and `nextRetryAt` must be RFC3339.
+are closed, and `nextRetryAt` must be RFC3339. Every `action_required` total and source amount is `null`; this is an
+input invariant enforced before any view renders, not merely a summary-view presentation rule.
 
 ## 5. Append-Only Correction Contract
 
@@ -163,6 +164,10 @@ accepts no direct table path, retries, or logs, and returns a closed frozen six-
 `appendCfoDailySnapshotRevision` receives an already-built report and source bundle so the recovery/report contract
 can be tested independently from persistence. It validates the complete report/source envelopes before network and
 requires the RPC receipt to echo the exact date, run, revision, and predecessor revision.
+
+Every public shared-RPC call owns error provenance only for that operation. A fixed Error returned to a caller can
+never be recognized as internal if the caller mutates and replays it through a later hostile callback; the later
+boundary creates a new fixed redacted Error.
 
 The RPC is exactly
 `lm_append_cfo_daily_snapshot_revision(text,date,uuid,integer,integer,jsonb,jsonb)`. It locks the predecessor row,

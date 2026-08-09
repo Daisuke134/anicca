@@ -14,7 +14,7 @@ PostgreSQL appends contiguous correction revisions; existing delivery dedupe sup
 
 **Design:** `docs/superpowers/specs/2026-08-09-life-manager-cfo-moneytree-recovery-design.md`.
 
-**Status:** ACTIVE — Tasks 1–6 complete; Task 7 next.
+**Status:** ACTIVE — Tasks 1–6 implemented; final-review fixes Task 3b then Task 6b next.
 
 ## Global Constraints
 
@@ -182,6 +182,30 @@ Run renderer test, recovery snapshot test, `npm run test:cfo`, LOC delta, diff-c
 
 ---
 
+### Task 3b: Suppress action-required financial facts in every Telegram view
+
+**Files (soft target: production additions <=15 LOC, tests additions <=80 LOC):**
+- Modify: `apps/life-call/lib/cfo-telegram.js`
+- Modify: `apps/life-call/lib/cfo-telegram.test.js`
+
+- [ ] **Step 1: Write load-bearing RED**
+
+Build an otherwise valid `action_required` snapshot containing non-null assets, liabilities, change, or source
+amounts. Exercise every existing view and prove the renderer rejects the snapshot before rendering any stale amount.
+The test must fail against the reviewed implementation and must not pass by checking only the summary shortcut.
+
+- [ ] **Step 2: Implement minimum GREEN**
+
+Require every `action_required` total and every source amount to be `null`; keep the exact unavailable source/action
+contract. Do not add a view, transport, or replacement financial copy.
+
+- [ ] **Step 3: Verify and close**
+
+Run renderer and recovery-snapshot focused tests, `npm run test:cfo`, `git diff --check`; commit/push
+`fix(cfo): suppress stale action-required facts`; write the ignored report; obtain fresh Sol review.
+
+---
+
 ### Task 4: Append-only correction migration contract
 
 **Files (soft target: one indivisible SQL <=220 LOC, tests <=180 LOC):**
@@ -274,6 +298,31 @@ Do not rebuild reports, allocate revisions, read tables, or retry.
 
 Run focused Task 2+6 tests, `npm run test:cfo`, LOC, diff-check. Commit/push
 `feat(cfo): persist snapshot correction revisions`; report; fresh Sol review.
+
+---
+
+### Task 6b: Prevent shared RPC Error replay across public calls
+
+**Files (soft target: production additions <=20 LOC, tests additions <=80 LOC):**
+- Modify: `apps/life-call/lib/cfo-supabase-rpc.js`
+- Modify: `apps/life-call/lib/cfo-supabase-rpc.test.js`
+- Modify: `apps/life-call/lib/cfo-daily-snapshot-revision-store.test.js`
+
+- [ ] **Step 1: Write load-bearing RED**
+
+Capture a fixed public Error, mutate it, replay that same object through a hostile response getter on a later call,
+and prove the later failure is a newly created fixed redacted Error with the module prefix. Observe failure against
+the reviewed implementation.
+
+- [ ] **Step 2: Implement minimum GREEN**
+
+Internal provenance may distinguish only Errors created during the current public operation. Never recognize or
+rethrow an Error retained from an earlier call. Preserve all existing prefixes and validation strictness.
+
+- [ ] **Step 3: Verify and close**
+
+Run shared RPC and all three client focused tests, `npm run test:cfo`, `git diff --check`; commit/push
+`fix(cfo): prevent shared rpc error replay`; write the ignored report; obtain fresh Sol review.
 
 ---
 
