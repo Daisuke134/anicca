@@ -75,3 +75,17 @@ GREEN: added state/cause checks after the shared attempts prefix validator. Fres
 - Report is committed and pushed separately after the code commit.
 
 Concerns: none functionally; Task 2 LOC remains above the plan soft target due to retained closed-shape and canonical/privacy invariants.
+
+## Fix Round 4
+
+RED: `node --test lib/cfo-recovery-snapshot.test.js` observed exactly 2 failures out of 25. Direct public validation accepted an action retry instant unrelated to `source.asOf + 30 minutes`, and hostile `waits` input leaked `SECRET_MESSAGE_GETTER_LEAK` through arbitrary error-message inspection.
+
+GREEN: added one reusable exact dense standard-array boundary gate for waits, sources, and exclusions; it rejects proxies, custom prototypes, holes, symbols, extras, accessors, and wrong enumerability without invoking caller getters. Internal tagged errors now use `INTERNAL_ERRORS` and all other caught failures become one fixed redacted error. Public action validation now requires the retry instant to equal `source.asOf + 30 minutes`.
+
+- Changed files: `apps/life-call/lib/cfo-recovery-snapshot.js`, `apps/life-call/lib/cfo-recovery-snapshot.test.js`.
+- Verification: Task 1+2 focused 44/44; `npm run test:cfo` 285/285; `git diff --check` pass.
+- LOC: production 169; tests 239.
+- Code commit/push: `1a12ce3ed` (`fix(cfo): close hostile recovery boundaries`) pushed to canonical `feature/cfo-1g3-sol-luna`.
+- Report is committed and pushed separately after the code commit.
+
+Concerns: none functionally; Task 2 LOC remains above the plan soft target because the required closed hostile-boundary and canonical/privacy invariants are load-bearing.
