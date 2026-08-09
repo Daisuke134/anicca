@@ -73,8 +73,6 @@ SQL
 MIGRATION_ERR="$TEST_TMP/migration.err"
 PGOPTIONS='-c client_min_messages=warning' "${PSQL[@]}" -f "$MIGRATION_SNAPSHOT" >/dev/null 2>"$MIGRATION_ERR" || fail 'snapshot migration failed'
 [[ ! -s "$MIGRATION_ERR" ]] || fail "snapshot migration wrote stderr: $(<"$MIGRATION_ERR")"
-PGOPTIONS='-c client_min_messages=warning' "${PSQL[@]}" -f "$MIGRATION_CORRECTIONS" >/dev/null 2>"$MIGRATION_ERR" || fail 'correction migration failed'
-[[ ! -s "$MIGRATION_ERR" ]] || fail "correction migration wrote stderr: $(<"$MIGRATION_ERR")"
 
 expect_error() {
   local label="$1" expected="$2" sql="$3" err="$TEST_TMP/$1.err"
@@ -105,11 +103,30 @@ revision_call() {
   "${PSQL[@]}" -Atqc "SET ROLE service_role; SELECT public.lm_append_cfo_daily_snapshot_revision('$uid', DATE '$date', '$run'::uuid, $revision, $predecessor, \$json\$${report}\$json\$::jsonb, \$json\$${source}\$json\$::jsonb);"
 }
 
+R1_OLD_SCHEMA_RECEIPT="$(legacy_call owner-a 2026-08-09 "$RUN_1" "$REPORT_1" "$SOURCE_1")"
+[[ -n "$R1_OLD_SCHEMA_RECEIPT" ]] || fail 'legacy RPC did not create revision 1 under the old schema'
+R1_PRE_COUNT="$(${PSQL[@]} -Atqc "SELECT count(*) FROM public.lm_cfo_daily_snapshots")"
+R1_PRE_ROW="$(${PSQL[@]} -Atqc "SELECT jsonb_build_object('public_ref', public_ref::text, 'uid', uid, 'reporting_date', reporting_date::text, 'run_id', run_id::text, 'revision', revision, 'report_payload', report_payload, 'source_bundle', source_bundle, 'created_at', created_at::text) FROM public.lm_cfo_daily_snapshots WHERE uid='owner-a' AND reporting_date=DATE '2026-08-09' AND run_id='$RUN_1'::uuid AND revision=1")"
+[[ "$R1_PRE_COUNT" == 1 && -n "$R1_PRE_ROW" ]] || fail 'old-schema revision 1 capture failed'
+
+PGOPTIONS='-c client_min_messages=warning' "${PSQL[@]}" -f "$MIGRATION_CORRECTIONS" >/dev/null 2>"$MIGRATION_ERR" || fail 'correction migration failed'
+[[ ! -s "$MIGRATION_ERR" ]] || fail "correction migration wrote stderr: $(<"$MIGRATION_ERR")"
+R1_POST_COUNT="$(${PSQL[@]} -Atqc "SELECT count(*) FROM public.lm_cfo_daily_snapshots")"
+R1_POST_ROW="$(${PSQL[@]} -Atqc "SELECT jsonb_build_object('public_ref', public_ref::text, 'uid', uid, 'reporting_date', reporting_date::text, 'run_id', run_id::text, 'revision', revision, 'report_payload', report_payload, 'source_bundle', source_bundle, 'created_at', created_at::text, 'supersedes_revision', supersedes_revision) FROM public.lm_cfo_daily_snapshots WHERE uid='owner-a' AND reporting_date=DATE '2026-08-09' AND run_id='$RUN_1'::uuid AND revision=1")"
+[[ "$R1_POST_COUNT" == "$R1_PRE_COUNT" ]] || fail 'correction migration changed row count'
+[[ "$(jq -cS 'del(.supersedes_revision)' <<<"$R1_POST_ROW")" == "$(jq -cS . <<<"$R1_PRE_ROW")" ]] || fail 'correction migration changed captured revision 1 facts'
+[[ "$(jq -er '.supersedes_revision == null' <<<"$R1_POST_ROW")" == true ]] || fail 'revision 1 supersedes_revision is not null'
+
 R1_RECEIPT="$(legacy_call owner-a 2026-08-09 "$RUN_1" "$REPORT_1" "$SOURCE_1")"
-[[ "$(jq -er 'keys | sort | join(",")' <<<"$R1_RECEIPT")" == 'created_at,public_ref,reporting_date,revision,run_id,supersedes_revision' ]] || fail 'revision 1 receipt keys are not exactly six'
-[[ "$(jq -er 'has("uid") or has("id") or has("report_payload") or has("source_bundle")' <<<"$R1_RECEIPT")" == false ]] || fail 'revision 1 receipt contains private keys'
 R1_RETRY="$(legacy_call owner-a 2026-08-09 "$RUN_1" "$REPORT_1" "$SOURCE_1")"
-[[ "$(jq -er '.public_ref' <<<"$R1_RECEIPT")" == "$(jq -er '.public_ref' <<<"$R1_RETRY")" ]] || fail 'legacy revision 1 retry changed receipt'
+R1_RECEIPT_CANON="$(jq -cS . <<<"$R1_RECEIPT")"
+R1_RETRY_CANON="$(jq -cS . <<<"$R1_RETRY")"
+[[ "$R1_RECEIPT_CANON" == "$R1_RETRY_CANON" ]] || fail 'legacy revision 1 retry changed the receipt'
+R1_ROW_RECEIPT="$(${PSQL[@]} -Atqc "SELECT jsonb_build_object('public_ref', public_ref::text, 'reporting_date', reporting_date::text, 'run_id', run_id::text, 'revision', revision, 'supersedes_revision', supersedes_revision, 'created_at', created_at) FROM public.lm_cfo_daily_snapshots WHERE uid='owner-a' AND reporting_date=DATE '2026-08-09' AND run_id='$RUN_1'::uuid AND revision=1")"
+[[ "$R1_RECEIPT_CANON" == "$(jq -cS . <<<"$R1_ROW_RECEIPT")" ]] || fail 'legacy receipt does not equal the complete persisted row receipt'
+[[ "$(jq -er 'keys | sort | join(",")' <<<"$R1_RECEIPT_CANON")" == 'created_at,public_ref,reporting_date,revision,run_id,supersedes_revision' ]] || fail 'legacy receipt keys are not exactly six'
+[[ "$(jq -er '.public_ref == $ref and .reporting_date == "2026-08-09" and .run_id == $run and .revision == 1 and .supersedes_revision == null and (.created_at | type) == "string"' --arg ref "$(jq -er '.public_ref' <<<"$R1_PRE_ROW")" --arg run "$RUN_1" <<<"$R1_RECEIPT_CANON")" == true ]] || fail 'legacy receipt facts or types are wrong'
+[[ "$(jq -er 'has("uid") or has("id") or has("report_payload") or has("source_bundle")' <<<"$R1_RECEIPT_CANON")" == false ]] || fail 'legacy receipt contains private keys'
 
 "${PSQL[@]}" >/dev/null <<'SQL'
 DO $$
@@ -124,6 +141,28 @@ BEGIN
 END $$;
 SQL
 
+# Catalog assertions below verify definitions and ordered columns, not only object names.
+"${PSQL[@]}" >/dev/null <<'SQL'
+DO $$
+DECLARE
+  snapshot_oid oid := 'public.lm_cfo_daily_snapshots'::regclass;
+  uid_att smallint := (SELECT attnum FROM pg_attribute WHERE attrelid = snapshot_oid AND attname = 'uid');
+  date_att smallint := (SELECT attnum FROM pg_attribute WHERE attrelid = snapshot_oid AND attname = 'reporting_date');
+  run_att smallint := (SELECT attnum FROM pg_attribute WHERE attrelid = snapshot_oid AND attname = 'run_id');
+  revision_att smallint := (SELECT attnum FROM pg_attribute WHERE attrelid = snapshot_oid AND attname = 'revision');
+  predecessor_att smallint := (SELECT attnum FROM pg_attribute WHERE attrelid = snapshot_oid AND attname = 'supersedes_revision');
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = snapshot_oid AND contype = 'c' AND convalidated AND pg_get_expr(conbin, conrelid) ~ 'revision > 0') THEN
+    RAISE EXCEPTION 'revision positive check definition is missing';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = snapshot_oid AND contype = 'c' AND convalidated AND pg_get_expr(conbin, conrelid) ~ 'revision = 1' AND pg_get_expr(conbin, conrelid) ~ 'supersedes_revision IS NULL' AND pg_get_expr(conbin, conrelid) ~ 'revision > 1' AND pg_get_expr(conbin, conrelid) ~ 'supersedes_revision = .*revision - 1') THEN
+    RAISE EXCEPTION 'predecessor check definition is missing';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = snapshot_oid AND confrelid = snapshot_oid AND contype = 'f' AND convalidated AND conkey = ARRAY[uid_att, date_att, run_att, predecessor_att]::smallint[] AND confkey = ARRAY[uid_att, date_att, run_att, revision_att]::smallint[]) THEN
+    RAISE EXCEPTION 'predecessor self-FK definition is missing';
+  END IF;
+END $$;
+SQL
 CATALOG="$(${PSQL[@]} -Atqc "
 SELECT count(*) FROM pg_constraint WHERE conrelid='public.lm_cfo_daily_snapshots'::regclass
   AND conname IN ('lm_cfo_daily_snapshots_revision_positive','lm_cfo_daily_snapshots_predecessor_contract','lm_cfo_daily_snapshots_owner_date_run_revision_unique','lm_cfo_daily_snapshots_predecessor_fk');")"
@@ -133,6 +172,26 @@ SELECT count(*) FROM pg_constraint WHERE conrelid='public.lm_cfo_daily_snapshots
 [[ "$(${PSQL[@]} -Atqc "SELECT count(*) FROM pg_indexes WHERE schemaname='public' AND tablename='lm_cfo_daily_snapshots' AND indexname='lm_cfo_daily_snapshots_owner_date_run_unique'")" == 0 ]] || fail 'legacy owner/date/run unique index remains'
 [[ "$(${PSQL[@]} -Atqc "SELECT count(*) FROM pg_trigger WHERE tgrelid='public.lm_cfo_daily_snapshots'::regclass AND tgname='lm_cfo_daily_snapshots_append_only' AND NOT tgisinternal")" == 1 ]] || fail 'append-only trigger is missing'
 
+"${PSQL[@]}" >/dev/null <<'SQL'
+DO $$
+DECLARE
+  snapshot_oid oid := 'public.lm_cfo_daily_snapshots'::regclass;
+BEGIN
+  IF (SELECT count(*) FROM pg_index AS i WHERE i.indrelid = snapshot_oid AND i.indisunique AND i.indisvalid AND i.indisready AND (SELECT array_agg(a.attname::text ORDER BY k.ord) FROM unnest(i.indkey) WITH ORDINALITY AS k(attnum, ord) JOIN pg_attribute AS a ON a.attrelid = snapshot_oid AND a.attnum = k.attnum) = ARRAY['uid','reporting_date','revision']) <> 1 THEN
+    RAISE EXCEPTION 'retained owner/date/revision unique definition is missing';
+  END IF;
+  IF (SELECT count(*) FROM pg_index AS i WHERE i.indrelid = snapshot_oid AND i.indisunique AND i.indisvalid AND i.indisready AND (SELECT array_agg(a.attname::text ORDER BY k.ord) FROM unnest(i.indkey) WITH ORDINALITY AS k(attnum, ord) JOIN pg_attribute AS a ON a.attrelid = snapshot_oid AND a.attnum = k.attnum) = ARRAY['uid','reporting_date','run_id','revision']) <> 1 THEN
+    RAISE EXCEPTION 'correction owner/date/run/revision unique definition is missing';
+  END IF;
+  IF EXISTS (SELECT 1 FROM pg_index AS i WHERE i.indrelid = snapshot_oid AND i.indisunique AND i.indisvalid AND i.indisready AND (SELECT array_agg(a.attname::text ORDER BY k.ord) FROM unnest(i.indkey) WITH ORDINALITY AS k(attnum, ord) JOIN pg_attribute AS a ON a.attrelid = snapshot_oid AND a.attnum = k.attnum) = ARRAY['uid','reporting_date','run_id']) THEN
+    RAISE EXCEPTION 'legacy owner/date/run unique definition remains';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgrelid = snapshot_oid AND NOT tgisinternal AND tgenabled = 'O' AND tgtype = 27 AND tgfoid = 'public.reject_lm_cfo_daily_snapshot_mutation()'::regprocedure AND position('BEFORE DELETE OR UPDATE' IN upper(pg_get_triggerdef(oid))) > 0 AND position('EXECUTE FUNCTION reject_lm_cfo_daily_snapshot_mutation()' IN pg_get_triggerdef(oid)) > 0) THEN
+    RAISE EXCEPTION 'append-only trigger definition is missing';
+  END IF;
+END $$;
+SQL
+
 for fn in 'public.lm_append_cfo_daily_snapshot(text,date,uuid,jsonb,jsonb)' 'public.lm_append_cfo_daily_snapshot_revision(text,date,uuid,integer,integer,jsonb,jsonb)'; do
   [[ "$(${PSQL[@]} -Atqc "SELECT prosecdef AND proconfig=ARRAY['search_path=pg_catalog, public'] AND proacl IS NOT NULL AND NOT EXISTS (SELECT 1 FROM unnest(proacl) AS acl WHERE acl::text LIKE 'anon=%' OR acl::text LIKE 'authenticated=%' OR acl::text LIKE 'PUBLIC=%') AND has_function_privilege('service_role', '$fn', 'EXECUTE') AND NOT has_function_privilege('anon', '$fn', 'EXECUTE') AND NOT has_function_privilege('authenticated', '$fn', 'EXECUTE') FROM pg_proc WHERE oid='$fn'::regprocedure")" == t ]] || fail "RPC security/ACL contract failed for $fn"
 done
@@ -141,7 +200,13 @@ R2_RECEIPT="$(revision_call owner-a 2026-08-09 "$RUN_1" 2 1 "$REPORT_2" "$SOURCE
 [[ "$(jq -er 'keys | sort | join(",")' <<<"$R2_RECEIPT")" == 'created_at,public_ref,reporting_date,revision,run_id,supersedes_revision' ]] || fail 'revision 2 receipt keys are not exactly six'
 [[ "$(jq -er '.revision == 2 and .supersedes_revision == 1' <<<"$R2_RECEIPT")" == true ]] || fail 'revision 2 does not link revision 1'
 R2_RETRY="$(revision_call owner-a 2026-08-09 "$RUN_1" 2 1 "$REPORT_2" "$SOURCE_2")"
-[[ "$(jq -er '.public_ref' <<<"$R2_RECEIPT")" == "$(jq -er '.public_ref' <<<"$R2_RETRY")" ]] || fail 'identical revision 2 retry changed receipt'
+R2_RECEIPT_CANON="$(jq -cS . <<<"$R2_RECEIPT")"
+R2_RETRY_CANON="$(jq -cS . <<<"$R2_RETRY")"
+[[ "$R2_RECEIPT_CANON" == "$R2_RETRY_CANON" ]] || fail 'identical revision 2 retry changed the complete receipt'
+R2_ROW_RECEIPT="$(${PSQL[@]} -Atqc "SELECT jsonb_build_object('public_ref', public_ref::text, 'reporting_date', reporting_date::text, 'run_id', run_id::text, 'revision', revision, 'supersedes_revision', supersedes_revision, 'created_at', created_at) FROM public.lm_cfo_daily_snapshots WHERE uid='owner-a' AND reporting_date=DATE '2026-08-09' AND run_id='$RUN_1'::uuid AND revision=2")"
+[[ "$R2_RECEIPT_CANON" == "$(jq -cS . <<<"$R2_ROW_RECEIPT")" ]] || fail 'revision 2 receipt does not equal the complete persisted row receipt'
+[[ "$(jq -er 'keys | sort | join(",")' <<<"$R2_RECEIPT_CANON")" == 'created_at,public_ref,reporting_date,revision,run_id,supersedes_revision' ]] || fail 'revision 2 receipt keys are not exactly six'
+[[ "$(jq -er '(.public_ref | type) == "string" and (.reporting_date == "2026-08-09") and (.run_id == $run) and (.revision == 2) and (.supersedes_revision == 1) and (.created_at | type) == "string" and (has("uid") | not)' --arg run "$RUN_1" <<<"$R2_RECEIPT_CANON")" == true ]] || fail 'revision 2 receipt facts or types are wrong'
 [[ "$(${PSQL[@]} -Atqc "SELECT count(*) FROM public.lm_cfo_daily_snapshots WHERE uid='owner-a' AND reporting_date=DATE '2026-08-09' AND run_id='$RUN_1'::uuid")" == 2 ]] || fail 'identical revision 2 retry inserted another row'
 
 CHANGED_REPORT='{"reportingDate":"2026-08-09","revision":2,"currency":"JPY","fixture":"changed"}'
@@ -203,9 +268,13 @@ wait "$PID_A" || STATUS_A=$?
 wait "$PID_B" || STATUS_B=$?
 [[ "$STATUS_A" == 0 && "$STATUS_B" == 0 ]] || fail 'concurrent correction session failed'
 [[ ! -s "$ERR_A" && ! -s "$ERR_B" ]] || fail 'concurrent correction wrote stderr'
-CONCURRENT_REF_A="$(awk '/^\{.*\}$/ {print}' "$OUT_A" | jq -er '.public_ref')" || fail 'first concurrent receipt missing'
-CONCURRENT_REF_B="$(awk '/^\{.*\}$/ {print}' "$OUT_B" | jq -er '.public_ref')" || fail 'second concurrent receipt missing'
-[[ "$CONCURRENT_REF_A" == "$CONCURRENT_REF_B" ]] || fail 'concurrent receipts differ'
+CONCURRENT_RECEIPT_A="$(awk '/^\{.*\}$/ {print}' "$OUT_A" | jq -cS .)" || fail 'first concurrent complete receipt missing'
+CONCURRENT_RECEIPT_B="$(awk '/^\{.*\}$/ {print}' "$OUT_B" | jq -cS .)" || fail 'second concurrent complete receipt missing'
+[[ "$CONCURRENT_RECEIPT_A" == "$CONCURRENT_RECEIPT_B" ]] || fail 'concurrent complete receipts differ'
+[[ "$(jq -er 'keys | sort | join(",")' <<<"$CONCURRENT_RECEIPT_A")" == 'created_at,public_ref,reporting_date,revision,run_id,supersedes_revision' ]] || fail 'concurrent receipt keys are not exactly six'
+[[ "$(jq -er '(.public_ref | type) == "string" and (.reporting_date == "2026-08-12") and (.run_id == $run) and (.revision == 2) and (.supersedes_revision == 1) and (.created_at | type) == "string" and (has("uid") | not)' --arg run "$CONCURRENT_RUN" <<<"$CONCURRENT_RECEIPT_A")" == true ]] || fail 'concurrent receipt facts or types are wrong'
+CONCURRENT_ROW_RECEIPT="$(${PSQL[@]} -Atqc "SELECT jsonb_build_object('public_ref', public_ref::text, 'reporting_date', reporting_date::text, 'run_id', run_id::text, 'revision', revision, 'supersedes_revision', supersedes_revision, 'created_at', created_at) FROM public.lm_cfo_daily_snapshots WHERE uid='owner-a' AND reporting_date=DATE '$CONCURRENT_DATE' AND run_id='$CONCURRENT_RUN'::uuid AND revision=2")"
+[[ "$CONCURRENT_RECEIPT_A" == "$(jq -cS . <<<"$CONCURRENT_ROW_RECEIPT")" ]] || fail 'concurrent receipt does not equal the complete persisted row receipt'
 [[ "$(${PSQL[@]} -Atqc "SELECT count(*) FROM public.lm_cfo_daily_snapshots WHERE uid='owner-a' AND reporting_date=DATE '$CONCURRENT_DATE' AND run_id='$CONCURRENT_RUN'::uuid AND revision=2")" == 1 ]] || fail 'concurrent calls created more than one revision 2 row'
 
 [[ "$(${PSQL[@]} -Atqc "SELECT count(*) FROM public.lm_cfo_daily_snapshots WHERE uid='owner-a' AND reporting_date=DATE '2026-08-09' AND revision IN (1,2)")" == 2 ]] || fail 'final owner/date row count is not two'
