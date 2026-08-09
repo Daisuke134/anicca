@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | APPROVED — CFO-1g2 ACTIVE |
+| Status | COMPLETE — CFO-1g3 NEXT |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Goal | One owner-local daily run and one durable Telegram delivery identity |
 | Next | CFO-1g3 bounded Moneytree repair and append-only corrections |
@@ -118,6 +118,12 @@ client idempotency key for `sendMessage`; blind resend remains forbidden.
 No generic job framework, queue service, scheduler abstraction, mutable snapshot, Telegram SDK, or new dependency.
 
 ## 8. Evidence
+
+CFO-1g2 closed after the stable owner-local run, immutable snapshot linkage, append-only delivery dedupe, and the
+deployed snapshot-reference fail-closed correction passed local and live verification. The final forward migration
+ran once, schema reload ran once, the installed definition and privileges matched, and live delivery rows/Telegram
+calls remained `0/0`. Local evidence was static `4/4`, CFO `241/241`, aggregate `874/874`, and real PostgreSQL PASS.
+A fresh Sol review returned `ship — Spec ✅` with no Critical or Important findings. No finance report was sent.
 
 - Telegram Bot API, `sendMessage`: https://core.telegram.org/bots/api#sendmessage — on success Telegram returns the
   sent `Message`; the durable receipt therefore records its real `message_id`.

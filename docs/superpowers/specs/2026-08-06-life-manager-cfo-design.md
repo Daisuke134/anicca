@@ -2,12 +2,12 @@
 
 | Field | Value |
 |---|---|
-| Status | CFO-1g COMPLETE — CFO-1g2 NEXT |
+| Status | CFO-1g2 COMPLETE — CFO-1g3 NEXT |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
 | Existing foundations | `apps/life-call`, interactive Moneytree App access, Fleet telemetry, `lm_api_cost`, and the canonical `lm_agent_earnings` source (the panel's `lm_financial_ledger` name is a stale alias) |
-| First unfinished item | **CFO-1g2: add owner-local retry identity and Telegram dedupe** |
+| First unfinished item | **CFO-1g3: bounded Moneytree repair and append-only corrections** |
 
 ## 1. Overview — What and Why
 
@@ -759,6 +759,14 @@ owner/date/run query returned exactly one row. The stored report remained partia
 the no-echo check passed. No amount or private identifier is recorded here. A fresh Sol final review returned `ship`
 with no Critical or Important findings. This closure does not claim a CFO product Telegram report; CFO-1g2 is next.
 
+### CFO-1g2 completion evidence
+
+Owner-local run identity, immutable snapshot linkage, and append-only Telegram claim/receipt dedupe are implemented.
+The reviewed snapshot-reference fail-closed correction was forward-deployed exactly once; schema reload and read-only
+installed-definition/privilege checks passed, with live delivery rows and Telegram calls both zero. Local evidence was
+static `4/4`, CFO `241/241`, aggregate `874/874`, and real PostgreSQL PASS. Fresh Sol review returned
+`ship — Spec ✅` with no Critical or Important findings. This closes retry safety only; no finance report was sent.
+
 ### M1 — One truthful Moneytree-first read-only snapshot
 
 - [x] **CFO-1a** Specify provider-neutral adapter contracts and redacted fixtures.
@@ -771,7 +779,7 @@ with no Critical or Important findings. This closure does not claim a CFO produc
       consent, opaque references, and immutable composition pass; aggregation freshness and liability coverage remain
       explicitly unknown/partial because the interactive connector does not expose those fields. No FX is performed.
 - [x] **CFO-1g** Persist one immutable, idempotent snapshot, its Moneytree coverage-state bundle, and reconciliation exceptions.
-- [ ] **CFO-1g2** Enforce owner-timezone `reporting_date`, stable retry `run_id`, and append-only Telegram delivery
+- [x] **CFO-1g2** Enforce owner-timezone `reporting_date`, stable retry `run_id`, and append-only Telegram delivery
       claim/receipt dedupe. Child SSOT: `2026-08-09-life-manager-cfo-reliable-run-design.md`.
 - [ ] **CFO-1g3** Implement bounded adapter self-repair and append-only superseding corrections. Prove repair only
       after a fresh source read and reconciliation. Exhausted repairs create one actionable alert plus durable
