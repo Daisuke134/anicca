@@ -22,6 +22,10 @@ function consumeInternalError(error) {
   if (error === null || (typeof error !== "object" && typeof error !== "function") || !INTERNAL_ERRORS.has(error)) return false;
   INTERNAL_ERRORS.delete(error); return true;
 }
+function snapshotInput(value) {
+  keys(value, INPUT_KEYS);
+  try { return structuredClone(value); } catch { fail("invalid_input"); }
+}
 function plain(value) { return value !== null && typeof value === "object" && !Array.isArray(value) && Object.getPrototypeOf(value) === Object.prototype; }
 function dataProperties(value) {
   if (value === null || typeof value !== "object") return;
@@ -102,9 +106,9 @@ function validateState(value) {
 }
 function deriveMoneytreeState(input) {
   try {
-    const hasAggregation = validateInput(input), branch = BRANCHES[input.signal];
-    const aggregationStatus = input.signal === "authorized" && hasAggregation ? (timestamp(input.aggregationAsOf) >= timestamp(input.aggregationFreshnessCutoff) ? "fresh" : "stale") : "unknown";
-    const result = { schemaVersion: 1, sourceId: "moneytree_mufg", ...branch, observedAt: input.observedAt, aggregationStatus, aggregationAsOf: aggregationStatus === "unknown" ? null : input.aggregationAsOf, liabilityCoverage: input.liabilitiesExposed ? "complete" : "unknown", liabilityCount: input.liabilitiesExposed ? input.liabilityCount : null, partial: branch.retrievalStatus === "unavailable" || aggregationStatus !== "fresh" || !input.liabilitiesExposed, };
+    const snapshot = snapshotInput(input), hasAggregation = validateInput(snapshot), branch = BRANCHES[snapshot.signal];
+    const aggregationStatus = snapshot.signal === "authorized" && hasAggregation ? (timestamp(snapshot.aggregationAsOf) >= timestamp(snapshot.aggregationFreshnessCutoff) ? "fresh" : "stale") : "unknown";
+    const result = { schemaVersion: 1, sourceId: "moneytree_mufg", ...branch, observedAt: snapshot.observedAt, aggregationStatus, aggregationAsOf: aggregationStatus === "unknown" ? null : snapshot.aggregationAsOf, liabilityCoverage: snapshot.liabilitiesExposed ? "complete" : "unknown", liabilityCount: snapshot.liabilitiesExposed ? snapshot.liabilityCount : null, partial: branch.retrievalStatus === "unavailable" || aggregationStatus !== "fresh" || !snapshot.liabilitiesExposed, };
     return freeze(structuredClone(result));
   } catch (error) {
     if (consumeInternalError(error)) throw error;

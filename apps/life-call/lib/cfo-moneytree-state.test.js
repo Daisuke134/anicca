@@ -76,6 +76,16 @@ test("compose consumes a mutated public error before same-object replay", () => 
   assert.throws(() => composeMoneytreeRead(hostile), new Error("moneytree_state_invalid:invalid_composition"));
 });
 
+test("derive rejects a changing-get Proxy before any secret reaches state", () => {
+  const original = input("interactive_success");
+  let reads = 0;
+  const changing = new Proxy(original, { get(target, property, receiver) {
+    if (property === "observedAt") return reads++ === 0 ? OBSERVED_AT : "secret_raw_9999999";
+    return Reflect.get(target, property, receiver);
+  } });
+  assert.throws(() => deriveMoneytreeState(changing), new Error("moneytree_state_invalid:invalid_input"));
+});
+
 test("interactive success is explicit about unknown aggregation and liabilities", () => {
   const sourceInput = input("interactive_success");
   const result = deriveMoneytreeState(sourceInput);
