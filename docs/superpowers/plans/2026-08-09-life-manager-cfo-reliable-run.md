@@ -78,17 +78,17 @@
 - Create `apps/life-call/lib/cfo-telegram-delivery-migration.test.js`
 - Modify `apps/life-call/package.json`
 
-- [ ] RED: assert composite snapshot linkage, immutable claim/receipt tables, one delivery key, positive provider
+- [x] RED: assert composite snapshot linkage, immutable claim/receipt tables, one delivery key, positive provider
   message ID, service-only RLS/grants, exact claim decisions, exact retry/conflict, fixed search path, and no sensitive
   columns.
-- [ ] GREEN: implement claims/receipts plus RPCs
+- [x] GREEN: implement claims/receipts plus RPCs
   `lm_claim_cfo_telegram_delivery(text,uuid,text,date,integer)` and
   `lm_record_cfo_telegram_delivery(uuid,bigint)`. Fresh insert=`send`; existing with receipt=`sent`; existing without
   receipt=`reconcile`. No UPDATE/DELETE.
-- [ ] Verify from `apps/life-call`: `node --test lib/cfo-telegram-delivery-migration.test.js`, `npm run test:cfo`,
+- [x] Verify from `apps/life-call`: `node --test lib/cfo-telegram-delivery-migration.test.js`, `npm run test:cfo`,
   `wc -l migrations/2026-08-09-cfo-telegram-deliveries.sql lib/cfo-telegram-delivery-migration.test.js`, and
   `git diff --check`; all exit 0. SQL ≤180 LOC or report the indivisible transaction.
-- [ ] Commit/push `feat(cfo): add telegram delivery ledger`; write report and obtain fresh Sol review.
+- [x] Commit/push `feat(cfo): add telegram delivery ledger`; write report and obtain fresh Sol review.
 
 ### Task 4: Real PostgreSQL concurrency and permission proof
 
