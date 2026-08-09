@@ -7,7 +7,7 @@
 
 **Design:** `docs/superpowers/specs/2026-08-09-life-manager-cfo-reliable-run-design.md`.
 
-**Status:** ACTIVE — Task 3 next.
+**Status:** ACTIVE — Task 1b PostgreSQL proof next; Task 2 implementation awaits Sol review.
 
 ## Global constraints
 
@@ -38,6 +38,22 @@
   `wc -l migrations/2026-08-09-cfo-daily-runs.sql lib/cfo-daily-run-migration.test.js` (targets), and
   `git diff --check` (exit 0). The tests, not a regex scan, prove the closed receipt has no UID/private keys.
 - [x] Commit/push `feat(cfo): claim stable daily runs`; write the ignored Task 1 report.
+
+### Task 1b: Reproducible PostgreSQL proof for the daily-run claim
+
+**Files:**
+- Create `apps/life-call/test/postgres/cfo-daily-run-postgres.integration.sh`
+- Modify `apps/life-call/package.json`
+
+- [ ] RED then GREEN with `npm run test:cfo-daily-run:postgres` in isolated local PostgreSQL 18 or ephemeral
+  `postgres:18-alpine`. Copy only the lifecycle/cleanup pattern from the existing CFO snapshot PostgreSQL test.
+- [ ] Prove migration-wide rollback for an existing snapshot owner with missing and invalid timezone; exact original
+  `run_id` plus `migration_preference` backfill; composite FK rejection; service-role claim/retry and two concurrent
+  claims returning one row/run; PUBLIC/anon/authenticated/service_role rejection for the private date helper;
+  UPDATE/DELETE trigger rejection; and exact five-key no-UID JSON receipt.
+- [ ] Final stdout is exactly `cfo-daily-run-postgres: PASS`; then run `npm run test:cfo` and `git diff --check`.
+- [ ] Commit/push `test(cfo): prove stable daily runs`; append RED/GREEN evidence to the Task 1 report and obtain a
+  fresh scoped Sol re-review before Task 3.
 
 ### Task 2: Owner timezone and run-context client
 
