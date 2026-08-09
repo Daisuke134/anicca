@@ -14,26 +14,22 @@ const DEFAULT_OPTION_KEYS = new Set(["supaUrl", "supaKey", "fetchImpl"]);
 // provenance never crosses module boundaries.
 function createCfoSupabaseRpc(errorPrefix) {
   const operationErrors = new AsyncLocalStorage();
-  function beginOperation() { operationErrors.enterWith({ errors: new WeakSet(), open: true }); }
-  function ensureOperation() { if (!operationErrors.getStore()) beginOperation(); return operationErrors.getStore(); }
+  function runOperation(fn) { return operationErrors.run(new WeakSet(), fn); }
   function fail(reason) {
-    const operation = ensureOperation();
     const error = new Error(`${errorPrefix}${reason}`);
-    operation.errors.add(error);
-    queueMicrotask(() => { operation.open = false; });
+    operationErrors.getStore()?.add(error);
     throw error;
   }
   function internal(error) {
     const operation = operationErrors.getStore();
     return error !== null && (typeof error === "object" || typeof error === "function")
-      && Boolean(operation?.open && operation.errors.has(error));
+      && Boolean(operation?.has(error));
   }
   function plain(value) {
     if (value === null || typeof value !== "object" || Array.isArray(value) || isProxy(value)) return false;
     try { return Object.getPrototypeOf(value) === Object.prototype; } catch { return false; }
   }
   function exact(value, allowed, reason = "invalid_input") {
-    beginOperation();
     if (!plain(value)) fail(reason);
     let own;
     try { own = Reflect.ownKeys(value); } catch { fail(reason); }
@@ -62,7 +58,6 @@ function createCfoSupabaseRpc(errorPrefix) {
     return Number.isFinite(Date.parse(value));
   }
   function validateOptions(opts, allowedKeys = DEFAULT_OPTION_KEYS) {
-    ensureOperation();
     if (!plain(opts)) fail("invalid_options");
     for (const key of Reflect.ownKeys(opts)) {
       const descriptor = Object.getOwnPropertyDescriptor(opts, key);
@@ -77,7 +72,6 @@ function createCfoSupabaseRpc(errorPrefix) {
   }
   function freeze(value, seen = new WeakSet()) { if (value === null || typeof value !== "object" || seen.has(value)) return value; seen.add(value); Object.values(value).forEach(child => freeze(child, seen)); return Object.freeze(value); }
   async function postRpc(config, path, payload) {
-    ensureOperation();
     let body;
     try { body = JSON.stringify(payload); } catch { fail("invalid_payload"); }
     const url = `${config.base}/rest/v1/rpc/${path}`;
@@ -97,7 +91,7 @@ function createCfoSupabaseRpc(errorPrefix) {
     try { const json = response.json; if (typeof json !== "function") fail("invalid_json"); parsed = await json.call(response); } catch (error) { if (internal(error)) throw error; fail("invalid_json"); }
     return parsed;
   }
-  return { fail, internal, plain, exact, validDate, uuid, timestamp, validateOptions, freeze, postRpc };
+  return { runOperation, fail, internal, plain, exact, validDate, uuid, timestamp, validateOptions, freeze, postRpc };
 }
 
 module.exports = { createCfoSupabaseRpc };

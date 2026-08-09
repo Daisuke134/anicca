@@ -15,10 +15,12 @@ test("fail() tags errors with the given prefix; internal() recognizes only its o
   const a = createCfoSupabaseRpc("prefix_a_failed:");
   const b = createCfoSupabaseRpc("prefix_b_failed:");
   let errorA;
-  try { a.fail("reason"); } catch (error) { errorA = error; }
+  a.runOperation(() => {
+    try { a.fail("reason"); } catch (error) { errorA = error; }
+    assert.equal(a.internal(errorA), true, "an instance recognizes its own tagged error");
+    assert.equal(b.internal(errorA), false, "a different instance must not recognize another instance's tagged error");
+  });
   assert.equal(errorA.message, "prefix_a_failed:reason");
-  assert.equal(a.internal(errorA), true, "an instance recognizes its own tagged error");
-  assert.equal(b.internal(errorA), false, "a different instance must not recognize another instance's tagged error");
   assert.equal(a.internal(new Error("plain")), false);
   assert.equal(a.internal(null), false);
   assert.equal(a.internal("not-an-object"), false);
@@ -28,15 +30,17 @@ test("internal provenance survives same-operation propagation but not a later op
   const rpc = createCfoSupabaseRpc("operation_failed:");
   const allowed = new Set(["value"]);
   let propagated;
-  try {
-    try { rpc.exact({ value: 1 }, allowed); rpc.fail("same_operation"); } catch (error) {
+  rpc.runOperation(() => {
+    try {
+      try { rpc.exact({ value: 1 }, allowed); rpc.fail("same_operation"); } catch (error) {
+        assert.equal(rpc.internal(error), true);
+        throw error;
+      }
+    } catch (error) {
+      propagated = error;
       assert.equal(rpc.internal(error), true);
-      throw error;
     }
-  } catch (error) {
-    propagated = error;
-    assert.equal(rpc.internal(error), true);
-  }
+  });
   rpc.exact({ value: 1 }, allowed);
   assert.equal(rpc.internal(propagated), false);
 });
@@ -61,6 +65,64 @@ test("internal provenance stays independent for overlapping operations and clear
   assert.notEqual(first, second);
   assert.equal(rpc.internal(first), false);
   assert.equal(rpc.internal(second), false);
+});
+
+test("runOperation restores outer provenance after a successful nested operation", async () => {
+  const rpc = createCfoSupabaseRpc("operation_failed:");
+  const outerError = await rpc.runOperation(async () => {
+    let error;
+    try { rpc.fail("outer"); } catch (caught) { error = caught; }
+    await rpc.runOperation(async () => {
+      assert.equal(rpc.internal(error), false);
+    });
+    assert.equal(rpc.internal(error), true);
+    return error;
+  });
+  assert.equal(rpc.internal(outerError), false);
+});
+
+test("runOperation restores outer provenance after a failing nested operation", async () => {
+  const rpc = createCfoSupabaseRpc("operation_failed:");
+  await rpc.runOperation(async () => {
+    let outerError;
+    try { rpc.fail("outer"); } catch (caught) { outerError = caught; }
+    await assert.rejects(() => rpc.runOperation(async () => { rpc.fail("inner"); }), error => {
+      assert.equal(error.message, "operation_failed:inner");
+      return true;
+    });
+    assert.equal(rpc.internal(outerError), true);
+  });
+});
+
+test("runOperation keeps truly overlapping success and failure provenance independent", async () => {
+  const rpc = createCfoSupabaseRpc("operation_failed:");
+  let release;
+  const gate = new Promise(resolve => { release = resolve; });
+  const failing = rpc.runOperation(async () => {
+    await gate;
+    try { rpc.fail("overlap"); } catch (error) { return error; }
+  });
+  const succeeding = rpc.runOperation(async () => {
+    await gate;
+    return "success";
+  });
+  release();
+  const [error, result] = await Promise.all([failing, succeeding]);
+  assert.equal(error.message, "operation_failed:overlap");
+  assert.equal(result, "success");
+  assert.equal(rpc.internal(error), false);
+});
+
+test("runOperation leaves no ambient provenance after success or failure settles", async () => {
+  const rpc = createCfoSupabaseRpc("operation_failed:");
+  const error = await rpc.runOperation(async () => {
+    try { rpc.fail("settled"); } catch (caught) { return caught; }
+  });
+  assert.equal(rpc.internal(error), false);
+  await Promise.resolve();
+  assert.equal(rpc.internal(error), false);
+  await rpc.runOperation(async () => {});
+  assert.equal(rpc.internal(error), false);
 });
 
 test("exact() enforces a plain object with exactly the allowed enumerable own keys", () => {

@@ -7,7 +7,7 @@ const ERROR_PREFIX = "cfo_snapshot_revision_store_failed:";
 const INPUT_KEYS = new Set(["uid", "reportingDate", "runId", "revision", "supersedesRevision", "report", "sourceBundle"]);
 const RECEIPT_KEYS = new Set(["public_ref", "reporting_date", "run_id", "revision", "supersedes_revision", "created_at"]);
 
-const { fail, internal, exact, validDate, uuid, timestamp, validateOptions, freeze, postRpc } = createCfoSupabaseRpc(ERROR_PREFIX);
+const { runOperation, fail, internal, exact, validDate, uuid, timestamp, validateOptions, freeze, postRpc } = createCfoSupabaseRpc(ERROR_PREFIX);
 
 function validateInput(input) {
   exact(input, INPUT_KEYS);
@@ -31,25 +31,27 @@ function validateReceipt(value, expected) {
 }
 
 async function appendCfoDailySnapshotRevision(input, opts = {}) {
-  let identity, config, bundle;
-  try {
-    identity = validateInput(input);
-    config = validateOptions(opts);
-    bundle = validateCfoRecoverySnapshotBundle({ report: input.report, sourceBundle: input.sourceBundle });
-    if (bundle.report.revision !== identity.revision || bundle.report.reportingDate !== identity.reportingDate) fail("bundle_identity_mismatch");
-  } catch (error) {
-    if (internal(error)) throw error;
-    fail("invalid_input");
-  }
-  const parsed = await postRpc(config, "lm_append_cfo_daily_snapshot_revision", {
-    p_uid: identity.uid, p_reporting_date: identity.reportingDate, p_run_id: identity.runId,
-    p_revision: identity.revision, p_supersedes_revision: identity.supersedesRevision,
-    p_report_payload: bundle.report, p_source_bundle: bundle.sourceBundle,
+  return runOperation(async () => {
+    let identity, config, bundle;
+    try {
+      identity = validateInput(input);
+      config = validateOptions(opts);
+      bundle = validateCfoRecoverySnapshotBundle({ report: input.report, sourceBundle: input.sourceBundle });
+      if (bundle.report.revision !== identity.revision || bundle.report.reportingDate !== identity.reportingDate) fail("bundle_identity_mismatch");
+    } catch (error) {
+      if (internal(error)) throw error;
+      fail("invalid_input");
+    }
+    const parsed = await postRpc(config, "lm_append_cfo_daily_snapshot_revision", {
+      p_uid: identity.uid, p_reporting_date: identity.reportingDate, p_run_id: identity.runId,
+      p_revision: identity.revision, p_supersedes_revision: identity.supersedesRevision,
+      p_report_payload: bundle.report, p_source_bundle: bundle.sourceBundle,
+    });
+    try { return validateReceipt(parsed, identity); } catch (error) {
+      if (internal(error)) throw error;
+      fail("invalid_receipt");
+    }
   });
-  try { return validateReceipt(parsed, identity); } catch (error) {
-    if (internal(error)) throw error;
-    fail("invalid_receipt");
-  }
 }
 
 module.exports = { appendCfoDailySnapshotRevision };

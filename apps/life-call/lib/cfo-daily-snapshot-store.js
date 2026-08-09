@@ -9,7 +9,7 @@ const INPUT_KEYS = new Set(["uid", "reportingDate", "runId", "moneytreeRead"]);
 const RECEIPT_KEYS = new Set(["public_ref", "reporting_date", "run_id", "revision", "created_at"]);
 const SNAPSHOT_OPTION_KEYS = new Set(["supaUrl", "supaKey", "fetchImpl", "log"]);
 
-const { fail, internal, exact, validDate, uuid, timestamp, validateOptions, freeze, postRpc } = createCfoSupabaseRpc(ERROR_PREFIX);
+const { runOperation, fail, internal, exact, validDate, uuid, timestamp, validateOptions, freeze, postRpc } = createCfoSupabaseRpc(ERROR_PREFIX);
 
 function validateInput(input) {
   exact(input, INPUT_KEYS);
@@ -27,15 +27,17 @@ function validateReceipt(value, expected) {
 }
 
 async function appendCfoDailySnapshot(input, opts = {}) {
-  let identity, config;
-  try { identity = validateInput(input); config = validateOptions(opts, SNAPSHOT_OPTION_KEYS); } catch (error) { if (internal(error)) throw error; fail("invalid_input"); }
-  let report, sourceBundle;
-  try {
-    report = buildCfoDailyReport({ reportingDate: identity.reportingDate, moneytreeRead: input.moneytreeRead });
-    sourceBundle = composeMoneytreeRead({ source: input.moneytreeRead.source, state: input.moneytreeRead.state });
-  } catch { fail("invalid_input"); }
-  const parsed = await postRpc(config, "lm_append_cfo_daily_snapshot", { p_uid: identity.uid, p_reporting_date: identity.reportingDate, p_run_id: identity.runId, p_report_payload: report, p_source_bundle: sourceBundle });
-  try { return validateReceipt(parsed, identity); } catch (error) { if (internal(error)) throw error; fail("invalid_receipt"); }
+  return runOperation(async () => {
+    let identity, config;
+    try { identity = validateInput(input); config = validateOptions(opts, SNAPSHOT_OPTION_KEYS); } catch (error) { if (internal(error)) throw error; fail("invalid_input"); }
+    let report, sourceBundle;
+    try {
+      report = buildCfoDailyReport({ reportingDate: identity.reportingDate, moneytreeRead: input.moneytreeRead });
+      sourceBundle = composeMoneytreeRead({ source: input.moneytreeRead.source, state: input.moneytreeRead.state });
+    } catch { fail("invalid_input"); }
+    const parsed = await postRpc(config, "lm_append_cfo_daily_snapshot", { p_uid: identity.uid, p_reporting_date: identity.reportingDate, p_run_id: identity.runId, p_report_payload: report, p_source_bundle: sourceBundle });
+    try { return validateReceipt(parsed, identity); } catch (error) { if (internal(error)) throw error; fail("invalid_receipt"); }
+  });
 }
 
 module.exports = { appendCfoDailySnapshot };

@@ -9,7 +9,7 @@ const CLAIM_RECEIPT_KEYS = new Set(["public_ref", "decision", "reporting_date", 
 const RECORD_RECEIPT_KEYS = new Set(["public_ref", "claim_public_ref", "message_id", "created_at"]);
 const DECISIONS = new Set(["send", "sent", "reconcile"]);
 
-const { fail, internal, exact, validDate, uuid, timestamp, validateOptions, freeze, postRpc } = createCfoSupabaseRpc(ERROR_PREFIX);
+const { runOperation, fail, internal, exact, validDate, uuid, timestamp, validateOptions, freeze, postRpc } = createCfoSupabaseRpc(ERROR_PREFIX);
 
 function positiveSafeInteger(value) { return Number.isSafeInteger(value) && value > 0; }
 function validUid(value) { return typeof value === "string" && value.length > 0 && value.length <= 255 && value.trim() === value && !/[\u0000-\u001f\u007f]/.test(value); }
@@ -50,10 +50,10 @@ async function callDeliveryRpc(input, opts, path, payload, record) {
   try { return validateReceipt(parsed, identity, record); } catch (error) { if (internal(error)) throw error; fail("invalid_receipt"); }
 }
 function claimCfoTelegramDelivery(input, opts = {}) {
-  return callDeliveryRpc(input, opts, "lm_claim_cfo_telegram_delivery", identity => ({ p_uid: identity.uid, p_snapshot_public_ref: identity.snapshotPublicRef, p_report_kind: identity.reportKind, p_reporting_date: identity.reportingDate, p_revision: identity.revision }), false);
+  return runOperation(() => callDeliveryRpc(input, opts, "lm_claim_cfo_telegram_delivery", identity => ({ p_uid: identity.uid, p_snapshot_public_ref: identity.snapshotPublicRef, p_report_kind: identity.reportKind, p_reporting_date: identity.reportingDate, p_revision: identity.revision }), false));
 }
 function recordCfoTelegramDelivery(input, opts = {}) {
-  return callDeliveryRpc(input, opts, "lm_record_cfo_telegram_delivery", identity => ({ p_claim_public_ref: identity.claimPublicRef, p_message_id: identity.messageId }), true);
+  return runOperation(() => callDeliveryRpc(input, opts, "lm_record_cfo_telegram_delivery", identity => ({ p_claim_public_ref: identity.claimPublicRef, p_message_id: identity.messageId }), true));
 }
 
 module.exports = { claimCfoTelegramDelivery, recordCfoTelegramDelivery };

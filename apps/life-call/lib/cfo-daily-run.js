@@ -6,7 +6,7 @@ const ERROR_PREFIX = "cfo_daily_run_failed:";
 const INPUT_KEYS = new Set(["uid"]);
 const RECEIPT_KEYS = new Set(["public_ref", "reporting_date", "run_id", "time_zone", "created_at"]);
 
-const { fail, internal, exact, validDate, uuid, timestamp, validateOptions, freeze, postRpc } = createCfoSupabaseRpc(ERROR_PREFIX);
+const { runOperation, fail, internal, exact, validDate, uuid, timestamp, validateOptions, freeze, postRpc } = createCfoSupabaseRpc(ERROR_PREFIX);
 
 function validTimeZone(value) {
   if (typeof value !== "string" || value.length === 0) return false;
@@ -28,10 +28,12 @@ function validateReceipt(value) {
 }
 
 async function resolveCfoDailyRun(input, opts = {}) {
-  let identity, config;
-  try { identity = validateInput(input); config = validateOptions(opts); } catch (error) { if (internal(error)) throw error; fail("invalid_input"); }
-  const parsed = await postRpc(config, "lm_claim_cfo_daily_run", { p_uid: identity.uid });
-  try { return validateReceipt(parsed); } catch (error) { if (internal(error)) throw error; fail("invalid_receipt"); }
+  return runOperation(async () => {
+    let identity, config;
+    try { identity = validateInput(input); config = validateOptions(opts); } catch (error) { if (internal(error)) throw error; fail("invalid_input"); }
+    const parsed = await postRpc(config, "lm_claim_cfo_daily_run", { p_uid: identity.uid });
+    try { return validateReceipt(parsed); } catch (error) { if (internal(error)) throw error; fail("invalid_receipt"); }
+  });
 }
 
 module.exports = { resolveCfoDailyRun };

@@ -366,22 +366,27 @@ This exceeds the normal three-file soft target because one helper instance canno
 public async clients. Every consumer must enter and leave the same explicit lifecycle; a partial rollout would leave
 an unclosed public boundary.
 
-- [ ] **Step 1: Write load-bearing RED**
+- [x] **Step 1: Write load-bearing RED**
 
 Add successful nested invocation, failing nested invocation, overlapping success/failure, and post-settlement
 cleanup tests. Prove an inner call restores the exact outer same-operation provenance and neither successful nor
-failing calls leave an ambient store. Observe failure against Task 6c.
+failing calls leave an ambient store. Observe failure against Task 6c. Evidence: shared RPC suite RED was 16
+passed / 4 failed out of 20; all four failures were the missing `runOperation` lifecycle cases.
 
-- [ ] **Step 2: Implement minimum GREEN**
+- [x] **Step 2: Implement minimum GREEN**
 
 Expose one `runOperation` helper backed by `AsyncLocalStorage.run`, not `enterWith`. Wrap every exported public RPC
 operation for daily-run, snapshot-store, correction-store, and Telegram delivery. The lifecycle must restore its
 caller across success and failure, sync and async callbacks, nesting and overlap. Remove timer/microtask expiry.
+Evidence: focused shared/client suites passed 47/47; no `enterWith`, `queueMicrotask`, `beginOperation`, or
+`ensureOperation` remains in the five production files.
 
-- [ ] **Step 3: Verify and close**
+- [x] **Step 3: Verify and close**
 
 Run shared RPC plus all four client tests, `npm run test:cfo`, `git diff --check`; commit/push
-`fix(cfo): scope shared rpc public operations`; write the ignored report; obtain fresh Sol review.
+`fix(cfo): scope shared rpc public operations`; write the ignored report; obtain fresh Sol review. Evidence before
+close: `npm run test:cfo` passed 312/312 and `git diff --check` passed. Commit and push are recorded in the
+Task 6d ignored report.
 
 ---
 
