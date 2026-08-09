@@ -7,7 +7,7 @@
 
 **Design:** `docs/superpowers/specs/2026-08-09-life-manager-cfo-reliable-run-design.md`.
 
-**Status:** ACTIVE — Tasks 1/1b complete; Task 2 implementation awaits Sol review.
+**Status:** ACTIVE — Tasks 1/1b/2/3/4 complete; Task 4 PostgreSQL concurrency/permission proof awaits fresh Sol review before Task 5.
 
 ## Global constraints
 
@@ -96,14 +96,14 @@
 - Create `apps/life-call/test/postgres/cfo-reliable-run-postgres.integration.sh`
 - Modify `apps/life-call/package.json`
 
-- [ ] RED then GREEN with `npm run test:cfo-reliable-run:postgres` in isolated local PostgreSQL 18 or ephemeral
+- [x] RED then GREEN with `npm run test:cfo-reliable-run:postgres` in isolated local PostgreSQL 18 or ephemeral
   `postgres:18-alpine` only. Call the private date helper as superuser with fixed DST/date-boundary instants; prove
   application roles cannot execute it. The public RPC has no clock parameter and uses database time.
-- [ ] Prove: concurrent run claims one row/run; concurrent delivery claims one `send`; unreceipted retry=`reconcile`;
+- [x] Prove: concurrent run claims one row/run; concurrent delivery claims one `send`; unreceipted retry=`reconcile`;
   receipt makes retry=`sent`; exact receipt retry; changed ID conflict; composite cross-tenant/date/revision rejection;
   direct invalid rows; role denials; UPDATE/DELETE trigger rejection; tenant separation.
-- [ ] Final stdout exactly `cfo-reliable-run-postgres: PASS`; also run `npm run test:cfo` and `git diff --check`.
-- [ ] Commit/push `test(cfo): prove reliable run concurrency`; write report and obtain fresh Sol review.
+- [x] Final stdout exactly `cfo-reliable-run-postgres: PASS`; also run `npm run test:cfo` and `git diff --check`.
+- [x] Commit/push `test(cfo): prove reliable run concurrency`; write report and obtain fresh Sol review.
 
 ### Task 5: Telegram delivery client
 
