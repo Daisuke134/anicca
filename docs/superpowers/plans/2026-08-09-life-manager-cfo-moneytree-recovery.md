@@ -36,6 +36,7 @@ PostgreSQL appends contiguous correction revisions; existing delivery dedupe sup
 **Files (soft target: production <=100 LOC, tests <=240 LOC):**
 - Create: `apps/life-call/lib/cfo-moneytree-recovery.js`
 - Create: `apps/life-call/lib/cfo-moneytree-recovery.test.js`
+- Modify: `apps/life-call/package.json` (`test:cfo` wiring only)
 
 **Interfaces:**
 - Consumes: `composeMoneytreeRead`, `buildCfoDailyReport`.
@@ -95,6 +96,7 @@ Run focused test, `npm run test:cfo`, `wc -l` for both files, and `git diff --ch
 **Files (soft target: production <=120 LOC, tests <=220 LOC):**
 - Create: `apps/life-call/lib/cfo-recovery-snapshot.js`
 - Create: `apps/life-call/lib/cfo-recovery-snapshot.test.js`
+- Modify: `apps/life-call/package.json` (`test:cfo` wiring only)
 
 **Interfaces:**
 - Consumes: Task 1 recovery outcome, `buildCfoDailyReport`, `composeMoneytreeRead`,
@@ -187,6 +189,7 @@ Run renderer test, recovery snapshot test, `npm run test:cfo`, LOC delta, diff-c
 Assert positive revisions, null predecessor for revision 1, contiguous predecessor for revision N, composite
 self-FK, unique owner/date/run/revision, old unique removal, append-only permissions/triggers, fixed search paths,
 exact six-key no-UID receipt, and service-role-only RPC grants.
+Update `test:cfo` to include `cfo-snapshot-correction-migration.test.js`.
 
 - [ ] **Step 2: Run RED**
 
@@ -238,6 +241,7 @@ Final stdout exactly `cfo-snapshot-corrections-postgres: PASS`; stderr empty. Ru
 **Files (soft target: production <=110 LOC, tests <=220 LOC):**
 - Create: `apps/life-call/lib/cfo-daily-snapshot-revision-store.js`
 - Create: `apps/life-call/lib/cfo-daily-snapshot-revision-store.test.js`
+- Modify: `apps/life-call/package.json` (`test:cfo` wiring only)
 
 **Interfaces:**
 - Consumes: `validateCfoRecoverySnapshotBundle`, shared `createCfoSupabaseRpc`.
