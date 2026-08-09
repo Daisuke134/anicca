@@ -743,7 +743,8 @@ composition passed against that provider response: the displayed total equals th
 are valid, references are opaque, and the bundle is deeply frozen. The live amount is intentionally not persisted in
 this spec. Aggregation freshness and liability coverage remain unknown with count null, so the source remains partial.
 No FX code is needed for M1, and Fleet's organizational USD value is not added to personal net worth. The next item is
-CFO-1g immutable daily snapshot persistence.
+CFO-1g immutable daily snapshot persistence. The private live-balance milestone was delivered to the owner with
+Telegram provider message ID `9739`.
 
 ### M1 — One truthful Moneytree-first read-only snapshot
 
