@@ -7,6 +7,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 MIGRATION_SNAPSHOT="$ROOT_DIR/migrations/2026-08-09-cfo-daily-snapshots.sql"
 MIGRATION_CORRECTIONS="$ROOT_DIR/migrations/2026-08-09-cfo-snapshot-corrections.sql"
 MIGRATION_HARDENING="$ROOT_DIR/migrations/2026-08-09-cfo-snapshot-privilege-hardening.sql"
+MIGRATION_SEQUENCE_HARDENING="$ROOT_DIR/migrations/2026-08-09-cfo-snapshot-sequence-privilege-hardening.sql"
 TEST_TMP="$(mktemp -d "${TMPDIR:-/tmp}/cfo-snapshot-corrections-pg.XXXXXX")"
 PGDATA_DIR="$TEST_TMP/data"
 PGSOCKET_DIR="$TEST_TMP/socket"
@@ -103,6 +104,12 @@ for privilege in TRUNCATE REFERENCES TRIGGER MAINTAIN; do
     || fail "default service_role overgrant did not include $privilege"
 done
 
+# Reproduce the production-shaped sequence overgrant that Task 7d observed.
+"${PSQL[@]}" >/dev/null <<'SQL'
+GRANT ALL PRIVILEGES ON SEQUENCE public.lm_cfo_daily_snapshots_id_seq TO PUBLIC;
+GRANT ALL PRIVILEGES ON SEQUENCE public.lm_cfo_daily_snapshots_id_seq TO anon, authenticated, service_role;
+SQL
+
 expect_error() {
   local label="$1" expected="$2" sql="$3" err="$TEST_TMP/$1.err"
   if "${PSQL[@]}" -c "$sql" >/dev/null 2>"$err"; then
@@ -197,6 +204,24 @@ PGOPTIONS='-c client_min_messages=warning' "${PSQL[@]}" -f "$MIGRATION_HARDENING
 [[ ! -s "$MIGRATION_ERR" ]] || fail "idempotent hardening migration wrote stderr: $(<"$MIGRATION_ERR")"
 PGOPTIONS='-c client_min_messages=warning' "${PSQL_ISOLATED[@]}" -f "$MIGRATION_HARDENING" >/dev/null 2>"$MIGRATION_ERR" || fail 'isolated privilege hardening migration failed'
 [[ ! -s "$MIGRATION_ERR" ]] || fail "isolated hardening migration wrote stderr: $(<"$MIGRATION_ERR")"
+
+PGOPTIONS='-c client_min_messages=warning' "${PSQL[@]}" -f "$MIGRATION_SEQUENCE_HARDENING" >/dev/null 2>"$MIGRATION_ERR" || fail 'sequence privilege hardening migration failed'
+[[ ! -s "$MIGRATION_ERR" ]] || fail "sequence hardening migration wrote stderr: $(<"$MIGRATION_ERR")"
+PGOPTIONS='-c client_min_messages=warning' "${PSQL[@]}" -f "$MIGRATION_SEQUENCE_HARDENING" >/dev/null 2>"$MIGRATION_ERR" || fail 'sequence privilege hardening migration is not idempotent'
+[[ ! -s "$MIGRATION_ERR" ]] || fail "idempotent sequence hardening migration wrote stderr: $(<"$MIGRATION_ERR")"
+
+for privilege in USAGE SELECT; do
+  [[ "$(${PSQL[@]} -Atqc "SELECT has_sequence_privilege('service_role', 'public.lm_cfo_daily_snapshots_id_seq', '$privilege');")" == 't' ]] \
+    || fail "service_role lost sequence $privilege privilege after sequence hardening"
+done
+[[ "$(${PSQL[@]} -Atqc "SELECT has_sequence_privilege('service_role', 'public.lm_cfo_daily_snapshots_id_seq', 'UPDATE');")" == 'f' ]] \
+  || fail 'service_role retained sequence UPDATE privilege after sequence hardening'
+for role in public anon authenticated; do
+  for privilege in USAGE SELECT UPDATE; do
+    [[ "$(${PSQL[@]} -Atqc "SELECT has_sequence_privilege('$role', 'public.lm_cfo_daily_snapshots_id_seq', '$privilege');")" == 'f' ]] \
+      || fail "$role retained sequence privilege $privilege after sequence hardening"
+  done
+done
 
 PRIMARY_TEST_CONSTRAINT_CATALOG_AFTER="$(constraint_catalog "${PSQL[@]}")"
 PRIMARY_TEST_NAMES="$(jq -er '.names' <<<"$PRIMARY_TEST_CONSTRAINT_CATALOG_AFTER")"

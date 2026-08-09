@@ -11,6 +11,12 @@ const migrationPath = path.join(
   "migrations",
   "2026-08-09-cfo-snapshot-privilege-hardening.sql",
 );
+const sequenceMigrationPath = path.join(
+  __dirname,
+  "..",
+  "migrations",
+  "2026-08-09-cfo-snapshot-sequence-privilege-hardening.sql",
+);
 const postgresIntegrationPath = path.join(
   __dirname,
   "..",
@@ -37,6 +43,23 @@ test("CFO snapshot hardening converges the service table to the exact write cont
 
   assert.doesNotMatch(sql, /\b(?:CREATE|ALTER|DROP|INSERT\s+INTO|UPDATE\s+\S+\s+SET|DELETE\s+FROM|TRUNCATE)\b/i);
   assert.doesNotMatch(sql, /\b(?:FUNCTION|CONSTRAINT|INDEX|TRIGGER|POLICY|SEQUENCE)\b/i);
+  assert.doesNotMatch(sql, /EXECUTE|GRANT ALL|DO\s*\$\$/i);
+});
+
+test("CFO snapshot sequence hardening closes the exact sequence ACL", () => {
+  assert.equal(fs.existsSync(sequenceMigrationPath), true);
+  const sql = fs.readFileSync(sequenceMigrationPath, "utf8");
+
+  assert.match(
+    sql,
+    /REVOKE ALL ON SEQUENCE public\.lm_cfo_daily_snapshots_id_seq FROM PUBLIC, anon, authenticated, service_role\s*;/i,
+  );
+  assert.match(
+    sql,
+    /GRANT USAGE, SELECT ON SEQUENCE public\.lm_cfo_daily_snapshots_id_seq TO service_role\s*;/i,
+  );
+
+  assert.doesNotMatch(sql, /\b(?:CREATE|ALTER|DROP|INSERT\s+INTO|UPDATE\s+\S+\s+SET|DELETE\s+FROM|TRUNCATE)\b/i);
   assert.doesNotMatch(sql, /EXECUTE|GRANT ALL|DO\s*\$\$/i);
 });
 
