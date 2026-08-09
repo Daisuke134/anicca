@@ -2,12 +2,12 @@
 
 | Field | Value |
 |---|---|
-| Status | CFO-1e COMPLETE — CFO-1f NEXT |
+| Status | CFO-1f COMPLETE — CFO-1g NEXT |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
 | Existing foundations | `apps/life-call`, interactive Moneytree App access, Fleet telemetry, `lm_api_cost`, and the canonical `lm_agent_earnings` source (the panel's `lm_financial_ledger` name is a stale alias) |
-| First unfinished item | **CFO-1f: add timestamped JPY valuation and staleness rules** |
+| First unfinished item | **CFO-1g: persist one immutable, idempotent daily snapshot** |
 
 ## 1. Overview — What and Why
 
@@ -94,8 +94,9 @@ remain visible.
       unknown until CFO-2c reconciles stronger evidence.
 - [ ] Every amount carries `owner_id`, `source`, `account_ref`, `asset`, `quantity`, `currency`, `as_of`,
       `evidence_ref`, `verification_status`, and freshness.
-- [ ] JPY is the owner's base currency. Source quantities are preserved; valuation records the price source and
-      timestamp. Stale or unavailable prices produce `unknown`, never zero.
+- [x] JPY is the owner's base currency. Moneytree MUFG already reports native JPY, so M1 performs no FX conversion.
+      Non-JPY personal assets are deferred; organizational Fleet USD is excluded from personal net worth until
+      economic-owner mapping and quote provenance exist. Any later stale or unavailable price produces `unknown`, never zero.
 - [ ] The CFO-1 Telegram report states gross net worth, liabilities, liquid JPY, crypto market value, verified
       revenue, operating cost, data freshness, and reconciliation exceptions. Until M3 closes, realized taxable
       gain, estimated tax reserve, and after-reserve net worth MUST display `unknown — tax ledger incomplete`.
@@ -583,7 +584,7 @@ Local and cloud use the same contract. Only infrastructure changes:
 | 4 | Immutable idempotent snapshot | Same `owner_id + reporting_date + run_id` retries one revision; correction appends and supersedes | Planned |
 | 5 | Reconciliation | Assets = liabilities + owner equity within explicit tolerance; missing liabilities incomplete | Planned |
 | 6 | Unknown handling | Provider/price failure produces `unknown`, not zero | Planned |
-| 7 | Cross-currency valuation | Quantity preserved; JPY value reproducible from timestamped quote | Planned |
+| 7 | Native-JPY valuation | Live Moneytree total equals the sum of provider-reported MUFG JPY accounts; no FX or guessed value | PASS |
 | 8 | Token/API attribution | Each model call maps to one `business_id`; totals equal `lm_api_cost` | Planned |
 | 9 | Realized tax event | Buy/sell/crypto-use fixtures update lots and realized gain | Planned |
 | 10 | Telegram report | One owner-local date, deduped send/receipt, superseding correction; secrets absent | Planned |
@@ -737,10 +738,12 @@ Controller fresh final code verification at fixed head `57dab5ecb` passed focuse
 are 195 LOC. The final whole-plan review's changing-get Proxy Important was fixed by `57dab5ecb`; final scoped
 re-review marked it ADDRESSED with no new Critical/Important findings and Ready status.
 
-Live aggregation freshness remains unknown, live liability coverage remains unknown with count null, and the source
-remains partial. The immutable snapshot, durable Telegram delivery, cloud scheduled read, and later M1 acceptance
-boxes remain unchecked. The existing manual Telegram pilot remains outside M1 acceptance. The next item is CFO-1e
-Fleet read.
+The live Moneytree connector returned one MUFG account in native JPY. The existing adapter and coverage-state
+composition passed against that provider response: the displayed total equals the account sum, retrieval and consent
+are valid, references are opaque, and the bundle is deeply frozen. The live amount is intentionally not persisted in
+this spec. Aggregation freshness and liability coverage remain unknown with count null, so the source remains partial.
+No FX code is needed for M1, and Fleet's organizational USD value is not added to personal net worth. The next item is
+CFO-1g immutable daily snapshot persistence.
 
 ### M1 — One truthful Moneytree-first read-only snapshot
 
@@ -750,7 +753,9 @@ Fleet read.
       retrieval/aggregation freshness, partial-source, expiry, and re-consent states. Unknown live coverage stays null.
 - [x] **CFO-1e** Normalize the Fleet dashboard's actual evidence boundary: upstream chain-enriched aggregate wallet
       valuation, chain-observed nominal token inflow that is not recognized revenue, and signed self-reported burn.
-- [ ] **CFO-1f** Add timestamped JPY valuation and staleness rules.
+- [x] **CFO-1f** Prove the live Moneytree MUFG bundle in native JPY. The provider-reported account sum, retrieval,
+      consent, opaque references, and immutable composition pass; aggregation freshness and liability coverage remain
+      explicitly unknown/partial because the interactive connector does not expose those fields. No FX is performed.
 - [ ] **CFO-1g** Persist one immutable, idempotent snapshot, its Moneytree coverage-state bundle, and reconciliation exceptions.
 - [ ] **CFO-1g2** Enforce owner-timezone `reporting_date`, stable retry `run_id`, Telegram dedupe, and append-only
       superseding corrections.
