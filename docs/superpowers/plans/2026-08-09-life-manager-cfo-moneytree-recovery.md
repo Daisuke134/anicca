@@ -14,7 +14,7 @@ PostgreSQL appends contiguous correction revisions; existing delivery dedupe sup
 
 **Design:** `docs/superpowers/specs/2026-08-09-life-manager-cfo-moneytree-recovery-design.md`.
 
-**Status:** ACTIVE — Tasks 1–3 complete; Task 4 next.
+**Status:** ACTIVE — Tasks 1–4 complete; Task 5 next.
 
 ## Global Constraints
 
@@ -193,24 +193,24 @@ Run renderer test, recovery snapshot test, `npm run test:cfo`, LOC delta, diff-c
 - Produces: `lm_append_cfo_daily_snapshot_revision(text,date,uuid,integer,integer,jsonb,jsonb)` and a forward-compatible
   revision-1 `lm_append_cfo_daily_snapshot`.
 
-- [ ] **Step 1: Write static RED**
+- [x] **Step 1: Write static RED**
 
 Assert positive revisions, null predecessor for revision 1, contiguous predecessor for revision N, composite
 self-FK, unique owner/date/run/revision, old unique removal, append-only permissions/triggers, fixed search paths,
 exact six-key no-UID receipt, and service-role-only RPC grants.
 Update `test:cfo` to include `cfo-snapshot-correction-migration.test.js`.
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
 Run: `node --test lib/cfo-snapshot-correction-migration.test.js`; expect missing SQL failure.
 
-- [ ] **Step 3: Implement one forward migration**
+- [x] **Step 3: Implement one forward migration**
 
 Alter only `lm_cfo_daily_snapshots`; preserve all old rows. Replace the legacy RPC selection with `revision=1` so a
 later correction cannot make revision-1 retry ambiguous. The new RPC locks revision N-1, checks the same run, inserts
 N with `ON CONFLICT DO NOTHING`, accepts an identical retry, and rejects changed facts.
 
-- [ ] **Step 4: Verify and close**
+- [x] **Step 4: Verify and close**
 
 Run static test, existing snapshot/daily-run/delivery migration tests, `npm run test:cfo`, SQL/test LOC, diff-check.
 Commit/push `feat(cfo): append snapshot corrections`; report; fresh Sol review.
