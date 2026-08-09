@@ -11,7 +11,7 @@ and appends the record without logging financial payloads.
 
 **Tech Stack:** Node.js 20+, CommonJS, `node:test`, PostgreSQL/Supabase, built-in `fetch`; no new dependency.
 
-**Status:** ACTIVE — Tasks 1–3 complete; Task 4 next.
+**Status:** ACTIVE — Tasks 1–4 complete; Task 5 next.
 
 ## Global Constraints
 
@@ -268,7 +268,7 @@ git push canonical HEAD
 - Consumes `buildCfoDailyReport({ reportingDate, moneytreeRead })`.
 - Produces `appendCfoDailySnapshot({ uid, reportingDate, runId, moneytreeRead }, opts)`.
 
-- [ ] **Step 1: Write RED store tests**
+- [x] **Step 1: Write RED store tests**
 
 With injected `fetchImpl`, prove:
 
@@ -286,7 +286,7 @@ Also prove exact UUID/date/uid validation, closed five-key receipt, date/run/rev
 category, invalid JSON/shape fail closed, no retry inside the client, no direct table URL, no log call, and no secret,
 UID, raw response, account ref, or amount in thrown errors.
 
-- [ ] **Step 2: Run focused RED**
+- [x] **Step 2: Run focused RED**
 
 ```bash
 cd apps/life-call
@@ -295,7 +295,7 @@ node --test lib/cfo-daily-snapshot-store.test.js
 
 Expected: FAIL only because module/function is absent.
 
-- [ ] **Step 3: Implement the minimum store client**
+- [x] **Step 3: Implement the minimum store client**
 
 Implementation shape:
 
@@ -312,12 +312,12 @@ async function appendCfoDailySnapshot(input, opts = {}) {
 module.exports = { appendCfoDailySnapshot };
 ```
 
-- [ ] **Step 4: Register and prove GREEN**
+- [x] **Step 4: Register and prove GREEN**
 
 Append the test exactly once to `test:cfo`, then run focused and CFO tests, LOC, and diff check. Expected production
 ≤100 LOC and tests ≤200 LOC.
 
-- [ ] **Step 5: Commit and push**
+- [x] **Step 5: Commit and push**
 
 ```bash
 git add apps/life-call/lib/cfo-daily-snapshot-store.js apps/life-call/lib/cfo-daily-snapshot-store.test.js apps/life-call/package.json
