@@ -51,6 +51,64 @@ sf_write_incident_association(){
     "$incident_id" "$LOOP" "$RESULT" > "$tmp"
   mv "$tmp" "$INCIDENT_SIDECAR"
 }
+# D3 (gig-loop spec §CC'/§EW', 2026-08-09): the fixer this script spawns used to be told to
+# "cd into" whichever mother repo a file lives in and commit+push directly there — the SAME
+# checkout a running loop (e.g. gig-pass reads ~/profitable-claude/skills/gig-work live every
+# 30min) is executing from right now. A fixer editing/checking-out-branches in that live tree
+# can corrupt an in-flight pass. Isolate every repo the fixer may touch in a throwaway worktree
+# on its own branch BEFORE the agent starts; ~/.openclaw is the one exception (HARD RULE 0.40 —
+# the gateway reads a single checkout path, `git worktree` is forbidden there), so it stays
+# direct-edit exactly as before. Test seam: SELF_FIX_ANICCA_REPO / SELF_FIX_GIG_REPO point this
+# at throwaway repos in tests instead of the real mother repos.
+ANICCA_REPO="${SELF_FIX_ANICCA_REPO:-$HOME/anicca}"
+GIG_REPO="${SELF_FIX_GIG_REPO:-$HOME/profitable-claude}"
+WT_MARKER="$STATE/.self-fix-$LOOP.worktrees.env"
+sf_wt_dir(){ printf '%s/.worktrees/selffix-%s-%s' "$1" "$2" "$3"; }      # repo loop ts
+sf_wt_branch(){ printf 'selffix/%s-%s' "$1" "$2"; }                        # loop ts
+# Create the worktree+branch off the repo's CURRENT branch; never touches the live checkout
+# itself (worktree add does not move HEAD in the source repo). Prints the base branch name on
+# stdout so the caller can merge back into the same branch later; rc!=0 = fail closed.
+sf_wt_setup(){ # repo dir branch
+  local repo="$1" dir="$2" branch="$3" base
+  base="$(git -C "$repo" rev-parse --abbrev-ref HEAD 2>/dev/null)" || return 1
+  [ -n "$base" ] && [ "$base" != "HEAD" ] || return 1
+  git -C "$repo" worktree add -b "$branch" "$dir" "$base" >/dev/null 2>&1 || return 1
+  git -C "$dir" push -u origin "$branch" >/dev/null 2>&1 || true  # best-effort upstream so the fixer's own `git push` works
+  printf '%s' "$base"
+}
+# Merge the isolated branch back into the live tree via the SAME manual path (checkout base,
+# merge --no-ff, push) used all day, THEN remove the worktree — success only. Any other outcome
+# (FAIL, still-RUNNING/abandoned, or a merge/push failure) removes the worktree but keeps the
+# branch for autopsy, and never touches the live tree's checked-out branch.
+sf_wt_finalize(){ # repo dir branch base outcome log
+  local repo="$1" dir="$2" branch="$3" base="$4" outcome="$5" log="$6"
+  git -C "$repo" worktree remove --force "$dir" >/dev/null 2>&1 || git -C "$repo" worktree prune >/dev/null 2>&1
+  if [ "$outcome" = "SUCCESS" ]; then
+    if git -C "$repo" checkout "$base" >/dev/null 2>&1 \
+      && git -C "$repo" merge --no-ff "$branch" -m "merge: self-fix/$branch" >/dev/null 2>&1 \
+      && git -C "$repo" push origin "$base" >/dev/null 2>&1; then
+      git -C "$repo" branch -d "$branch" >/dev/null 2>&1 || true
+      echo "$(date '+%F %T') self-fix worktree finalize: merged $branch -> $base in $repo" >> "$log"
+    else
+      echo "$(date '+%F %T') self-fix worktree finalize: SUCCESS but merge/push of $branch -> $base FAILED in $repo — branch kept for autopsy" >> "$log"
+    fi
+  else
+    echo "$(date '+%F %T') self-fix worktree finalize: outcome=$outcome — $branch kept for autopsy in $repo, not merged" >> "$log"
+  fi
+}
+# Read a previously written WT_MARKER (key=%q-quoted values, sourced) and finalize both repos'
+# worktrees against the current $RESULT content, then remove the marker so this runs exactly
+# once per spawn. No-op if no marker exists (nothing to finalize).
+sf_wt_finalize_marker(){ # marker_path result_path log
+  local marker="$1" result="$2" log="$3" outcome=FAIL
+  [ -f "$marker" ] || return 0
+  # shellcheck disable=SC1090
+  . "$marker"
+  head -c 7 "$result" 2>/dev/null | grep -q '^SUCCESS' && outcome=SUCCESS
+  [ -n "${ANICCA_DIR:-}" ] && sf_wt_finalize "$ANICCA_REPO" "$ANICCA_DIR" "$ANICCA_BRANCH" "$ANICCA_BASE" "$outcome" "$log"
+  [ -n "${GIG_DIR:-}" ] && sf_wt_finalize "$GIG_REPO" "$GIG_DIR" "$GIG_BRANCH" "$GIG_BASE" "$outcome" "$log"
+  rm -f "$marker"
+}
 # A18 PREFLIGHT (2026-08-01, gig 4-day silent outage 07-28→08-01): agent_runner is fail-closed on
 # token budgets — if the caller's env carries ANICCA_BUDGET_REQUIRED=1 without the FULL
 # scope/pass/daily trio, the spawned runner aborts at startup, AFTER this script already logged
@@ -100,6 +158,15 @@ if tmux -S "$SOCK" has-session -t "$SESSION" 2>/dev/null; then
   tmux -S "$SOCK" kill-session -t "$SESSION" 2>/dev/null||true; sleep 1
 fi
 
+# D3: the moment no fixer session is running (it exited on its own, or was just killed above as
+# hung), finalize whatever worktree(s) the LAST spawn set up: merge on SUCCESS, else remove the
+# worktree and keep the branch for autopsy. Runs before the backoff check below so a fresh
+# worktree pair (further down) is only ever created after the previous pair is fully retired —
+# never two live worktree sets for the same loop at once.
+if ! tmux -S "$SOCK" has-session -t "$SESSION" 2>/dev/null; then
+  sf_wt_finalize_marker "$WT_MARKER" "$RESULT" "$LOG"
+fi
+
 # FIND-035 (A6, 2026-07-18): RESULT-MARKER BACKOFF. The has-session guard above only prevents a
 # CONCURRENT second fixer — it does NOT stop the every-6h auditor from re-spawning a FRESH high-value
 # agent each cycle when the underlying condition PERSISTS but is NOT a code bug: e.g. published.jsonl
@@ -126,6 +193,36 @@ fi
 # shellcheck source=healthcheck-lib.sh
 . "$HOME/anicca/skills/self/healthcheck-lib.sh" 2>/dev/null && hc_reclaim_disk_if_low
 
+# D3: isolate every repo the fixer may touch (except ~/.openclaw, worktree-forbidden by HARD
+# RULE 0.40) in a fresh worktree BEFORE the agent starts. Fail closed: if either worktree cannot
+# be created, decline to spawn — never fall back to letting the fixer edit the live checkout.
+WT_TS="$(date +%s)-$$"  # pid-suffixed: two setups in the same wall-clock second must not collide on dir/branch name
+ANICCA_WT_DIR="$(sf_wt_dir "$ANICCA_REPO" "$LOOP" "$WT_TS")"
+GIG_WT_DIR="$(sf_wt_dir "$GIG_REPO" "$LOOP" "$WT_TS")"
+ANICCA_WT_BRANCH="$(sf_wt_branch "$LOOP" "$WT_TS")"
+GIG_WT_BRANCH="$(sf_wt_branch "gig-$LOOP" "$WT_TS")"
+if ! ANICCA_BASE="$(sf_wt_setup "$ANICCA_REPO" "$ANICCA_WT_DIR" "$ANICCA_WT_BRANCH")"; then
+  WT_MSG="self-fix[$LOOP] DECLINED: could not create isolated worktree for $ANICCA_REPO ($ANICCA_WT_DIR) — refusing to fall back to editing the live tree"
+  echo "$(date '+%F %T') $WT_MSG" >> "$LOG"; echo "$WT_MSG" >&2; printf 'FAIL %s worktree setup failed: %s\n' "$(date -u +%FT%TZ)" "$ANICCA_REPO" > "$RESULT"; exit 2
+fi
+if ! GIG_BASE="$(sf_wt_setup "$GIG_REPO" "$GIG_WT_DIR" "$GIG_WT_BRANCH")"; then
+  git -C "$ANICCA_REPO" worktree remove --force "$ANICCA_WT_DIR" >/dev/null 2>&1 || true
+  git -C "$ANICCA_REPO" branch -D "$ANICCA_WT_BRANCH" >/dev/null 2>&1 || true
+  WT_MSG="self-fix[$LOOP] DECLINED: could not create isolated worktree for $GIG_REPO ($GIG_WT_DIR) — refusing to fall back to editing the live tree"
+  echo "$(date '+%F %T') $WT_MSG" >> "$LOG"; echo "$WT_MSG" >&2; printf 'FAIL %s worktree setup failed: %s\n' "$(date -u +%FT%TZ)" "$GIG_REPO" > "$RESULT"; exit 2
+fi
+{
+  printf 'ANICCA_REPO=%q\n' "$ANICCA_REPO"
+  printf 'ANICCA_DIR=%q\n' "$ANICCA_WT_DIR"
+  printf 'ANICCA_BRANCH=%q\n' "$ANICCA_WT_BRANCH"
+  printf 'ANICCA_BASE=%q\n' "$ANICCA_BASE"
+  printf 'GIG_REPO=%q\n' "$GIG_REPO"
+  printf 'GIG_DIR=%q\n' "$GIG_WT_DIR"
+  printf 'GIG_BRANCH=%q\n' "$GIG_WT_BRANCH"
+  printf 'GIG_BASE=%q\n' "$GIG_BASE"
+} > "$WT_MARKER"
+echo "$(date '+%F %T') self-fix[$LOOP] worktrees ready: anicca=$ANICCA_WT_DIR($ANICCA_WT_BRANCH off $ANICCA_BASE) gig=$GIG_WT_DIR($GIG_WT_BRANCH off $GIG_BASE)" >> "$LOG"
+
 # FIND-003/004: the fixer MUST verify a real side-effect, commit in the CORRECT repo (the one the edited file lives
 # in — discovered via git rev-parse, NOT guessed), and write a result marker the caller/healthcheck can check.
 printf 'RUNNING %s\n' "$(date -u +%FT%TZ)" > "$RESULT"
@@ -136,7 +233,7 @@ DO, in order:
 (1) Reproduce the failure yourself and find the ROOT cause (read the actual code + run it + watch where it breaks).
 (2) Fix the code. If the root cause is a brittle DOM-coordinate/selector script that broke on a UI change, do NOT just re-tune coordinates: rebuild the failing step as two-layer agentic (a thin script opens the page, then YOU look at real screenshots and decide each click/type, looping until the real success signal appears).
 (3) VERIFY with a REAL side-effect — an actually-published skill URL you then curl and see live / a real posted comment URL / the tool actually succeeding once end-to-end. A patch that only compiles is NOT done. No dry runs, no fake success, no 'should work'.
-(4) COMMIT IN THE CORRECT REPO: for EACH file you changed, cd into its directory, run 'git rev-parse --show-toplevel' and 'git remote -v' to confirm which repo it is, then commit+push THERE. Ground truth: the Capafy publish pipeline lives under ~/.openclaw (remote = anicca-dais, PRIVATE) — commit those there, NOT to anicca-products. The loop harness lives under ~/anicca (remote = anicca, public). Never commit ~/.openclaw runtime state or secrets.
+(4) COMMIT IN THE CORRECT REPO, INSIDE YOUR ISOLATED WORKTREE (never the live checkout): the running loops read the LIVE ~/anicca and ~/profitable-claude directories directly (e.g. gig-pass executes ~/profitable-claude/skills/gig-work/gig_pass.sh every 30min) — editing or branch-switching those live paths WILL corrupt an in-flight pass. Your isolated workspace for ~/anicca is ${ANICCA_WT_DIR} (branch ${ANICCA_WT_BRANCH}, off ${ANICCA_BASE}); for ~/profitable-claude it is ${GIG_WT_DIR} (branch ${GIG_WT_BRANCH}, off ${GIG_BASE}). For EACH file you changed, run 'git rev-parse --show-toplevel' to confirm which of the two roots it belongs to, cd into the MATCHING isolated worktree above (never ~/anicca or ~/profitable-claude directly), then commit+push from there (upstream is already set — plain 'git push' works). The ONLY exception is ~/.openclaw (remote = anicca-dais, PRIVATE): git worktree is forbidden there (HARD RULE 0.40, the gateway reads a single checkout path) — edit, commit, and push ~/.openclaw directly as before. Never commit ~/.openclaw runtime state or secrets.
 (5) Write the outcome to ${RESULT} as a single line: 'SUCCESS <utc> <one-line real evidence, e.g. published URL>' or 'FAIL <utc> <why + what is still blocked>'. If the fix resolved a selfheal-request json, rm it.
 If after honest effort the fix is genuinely impossible (e.g. an external service is down), write FAIL with a precise diagnosis to ${RESULT} and invoke self/issue-dev — still never ask a human. Report what you fixed + the real evidence at the end."
 if [ -n "${CAPAFY_INCIDENT_ID:-}" ]; then
@@ -146,6 +243,15 @@ TASK="${TASK} 重要な結果（数字・IDを含む成果、realized P&L、致�
 PROMPT_FILE="$STATE/.self-fix-$LOOP.prompt"
 EVIDENCE_DIR="$STATE/agent-runner-evidence/self-fix-$LOOP/$(date +%s)-$$"
 printf '%s\n' "$TASK" > "$PROMPT_FILE"
+
+# D3 test seam: worktrees are already created and the prompt already written above (the real
+# side-effects under test) — stop here, before the tmux/agent spawn, so characterization tests
+# never pay for a real agent turn.
+if [ "${SELF_FIX_SKIP_SPAWN:-0}" = "1" ]; then
+  printf 'ANICCA_DIR=%s ANICCA_BRANCH=%s GIG_DIR=%s GIG_BRANCH=%s PROMPT_FILE=%s WT_MARKER=%s\n' \
+    "$ANICCA_WT_DIR" "$ANICCA_WT_BRANCH" "$GIG_WT_DIR" "$GIG_WT_BRANCH" "$PROMPT_FILE" "$WT_MARKER"
+  exit 0
+fi
 
 # Keep the historical detached tmux lifecycle, but delegate provider/model selection to the
 # shared task-class runner. Shell-escape every interpolated value before tmux evaluates the command.
