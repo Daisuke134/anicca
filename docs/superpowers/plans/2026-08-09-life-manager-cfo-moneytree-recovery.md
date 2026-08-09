@@ -521,23 +521,37 @@ Obtain fresh Sol review before closure; do not send another milestone.
 This exceeds the three-file soft target because the forward migration, static contract, real-PostgreSQL proof, and
 suite wiring are one security boundary. Splitting them would leave an unproved production privilege mutation.
 
-- [ ] **Step 1: Write static and PostgreSQL RED**
+- [x] **Step 1: Write static and PostgreSQL RED**
 
 Prove the installed Supabase default grants can leave `TRUNCATE`, `REFERENCES`, `TRIGGER`, and `MAINTAIN` on
 `service_role`. Require the forward migration to revoke all table privileges from `service_role`, then grant only
 `SELECT, INSERT`; app roles and PUBLIC retain none; required RPC EXECUTE and sequence rights remain. Observe RED.
 
-- [ ] **Step 2: Implement idempotent minimum GREEN**
+Evidence: static focused RED was `0/1` before the migration existed; PostgreSQL 18 RED was `0/1` after the
+test database recreated the default `GRANT ALL` overgrant and the existing correction chain retained all four
+additional privileges.
+
+- [x] **Step 2: Implement idempotent minimum GREEN**
 
 Add one metadata-only forward migration. Do not touch rows, functions, constraints, indexes, triggers, policies, or
 sequences. Re-running the SQL must converge to the same ACL. No dynamic SQL or new role.
 
-- [ ] **Step 3: Prove constraints against isolated catalog and close**
+Evidence: `2026-08-09-cfo-snapshot-privilege-hardening.sql` contains only the three table ACL statements; PostgreSQL
+18 applied it twice with stderr `0` and proved exact service `SELECT, INSERT` only, all app/Public table privileges
+denied, and RPC/sequence rights preserved.
+
+- [x] **Step 3: Prove constraints against isolated catalog and close**
 
 Apply the full tracked migration chain plus hardening in PostgreSQL 18. Compare live constraint definitions to that
 isolated catalog representation rather than a source-text parser; do not mutate live constraints unless the isolated
 catalog comparison proves a semantic mismatch. Run static/focused/PostgreSQL/CFO/full tests and diff-check. Commit
 and push `fix(cfo): harden snapshot service privileges`; obtain fresh Sol review.
+
+Evidence: live-vs-isolated normalized `pg_catalog` constraint names and semantic digest prefixes matched; live
+before-vs-after hardening names/digests also matched (`constraintNamesMatch=true`, `constraintBeforeAfterMatch=true`,
+`constraintSemanticsMatch=true`). Static focused was `1/1`, PostgreSQL correction proof was PASS/stderr `0`,
+`npm run test:cfo` was `316/316`, full `npm test` was `949/949`, and `git diff --check` passed. Commit/push and
+fresh Sol review remain the Task 7c handoff actions.
 
 ---
 

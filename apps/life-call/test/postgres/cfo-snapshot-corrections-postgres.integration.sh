@@ -6,13 +6,17 @@ export PATH="/opt/homebrew/bin:$PATH"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 MIGRATION_SNAPSHOT="$ROOT_DIR/migrations/2026-08-09-cfo-daily-snapshots.sql"
 MIGRATION_CORRECTIONS="$ROOT_DIR/migrations/2026-08-09-cfo-snapshot-corrections.sql"
+MIGRATION_HARDENING="$ROOT_DIR/migrations/2026-08-09-cfo-snapshot-privilege-hardening.sql"
 TEST_TMP="$(mktemp -d "${TMPDIR:-/tmp}/cfo-snapshot-corrections-pg.XXXXXX")"
 PGDATA_DIR="$TEST_TMP/data"
 PGSOCKET_DIR="$TEST_TMP/socket"
 PGLOG="$TEST_TMP/postgres.log"
 DB_NAME="cfo_snapshot_corrections_test"
+ISOLATED_DB_NAME="cfo_snapshot_corrections_isolated_$$"
 DB_MODE="local"
 DOCKER_NAME="cfo-snapshot-corrections-pg-$$"
+ISOLATED_DB_READY='0'
+DROPDB_ARGS=()
 
 fail() {
   printf 'FAIL %s\n' "$*" >&2
@@ -20,6 +24,9 @@ fail() {
 }
 
 cleanup() {
+  if [[ "$ISOLATED_DB_READY" == '1' ]]; then
+    dropdb "${DROPDB_ARGS[@]}" --if-exists "$ISOLATED_DB_NAME" >/dev/null 2>&1 || true
+  fi
   if [[ "$DB_MODE" == "docker" ]]; then
     docker stop "$DOCKER_NAME" >/dev/null 2>&1 || true
   elif [[ -f "$PGDATA_DIR/postmaster.pid" ]]; then
@@ -35,6 +42,10 @@ if command -v postgres >/dev/null 2>&1 && command -v initdb >/dev/null 2>&1 && c
   pg_ctl -D "$PGDATA_DIR" -l "$PGLOG" -o "-F -h '' -k $PGSOCKET_DIR" start >/dev/null
   PSQL=(psql -X -v ON_ERROR_STOP=1 -h "$PGSOCKET_DIR" -d "$DB_NAME")
   createdb -h "$PGSOCKET_DIR" "$DB_NAME"
+  DROPDB_ARGS=(-h "$PGSOCKET_DIR")
+  createdb -h "$PGSOCKET_DIR" "$ISOLATED_DB_NAME"
+  PSQL_ISOLATED=(psql -X -v ON_ERROR_STOP=1 -h "$PGSOCKET_DIR" -d "$ISOLATED_DB_NAME")
+  ISOLATED_DB_READY='1'
   for _ in {1..100}; do
     pg_isready -h "$PGSOCKET_DIR" -d "$DB_NAME" >/dev/null 2>&1 && break
     sleep 0.1
@@ -55,6 +66,10 @@ else
   done
   pg_isready -h 127.0.0.1 -p "$PGPORT" -U postgres -d "$DB_NAME" >/dev/null
   PSQL=(psql -X -v ON_ERROR_STOP=1 -h 127.0.0.1 -p "$PGPORT" -U postgres -d "$DB_NAME")
+  DROPDB_ARGS=(-h 127.0.0.1 -p "$PGPORT" -U postgres)
+  createdb -h 127.0.0.1 -p "$PGPORT" -U postgres "$ISOLATED_DB_NAME"
+  PSQL_ISOLATED=(psql -X -v ON_ERROR_STOP=1 -h 127.0.0.1 -p "$PGPORT" -U postgres -d "$ISOLATED_DB_NAME")
+  ISOLATED_DB_READY='1'
 fi
 
 SERVER_VERSION_NUM="$("${PSQL[@]}" -Atqc 'SHOW server_version_num;')"
@@ -70,9 +85,23 @@ CREATE TABLE public.lm_users(uid text PRIMARY KEY);
 INSERT INTO public.lm_users(uid) VALUES ('owner-a'), ('owner-b');
 SQL
 
+"${PSQL_ISOLATED[@]}" >/dev/null <<'SQL'
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+CREATE TABLE public.lm_users(uid text PRIMARY KEY);
+SQL
+
 MIGRATION_ERR="$TEST_TMP/migration.err"
 PGOPTIONS='-c client_min_messages=warning' "${PSQL[@]}" -f "$MIGRATION_SNAPSHOT" >/dev/null 2>"$MIGRATION_ERR" || fail 'snapshot migration failed'
 [[ ! -s "$MIGRATION_ERR" ]] || fail "snapshot migration wrote stderr: $(<"$MIGRATION_ERR")"
+
+# Reproduce the Supabase default table overgrant that Task 7b observed.
+"${PSQL[@]}" >/dev/null <<'SQL'
+GRANT ALL PRIVILEGES ON TABLE public.lm_cfo_daily_snapshots TO service_role;
+SQL
+for privilege in TRUNCATE REFERENCES TRIGGER MAINTAIN; do
+  [[ "$(${PSQL[@]} -Atqc "SELECT has_table_privilege('service_role', 'public.lm_cfo_daily_snapshots', '$privilege');")" == 't' ]] \
+    || fail "default service_role overgrant did not include $privilege"
+done
 
 expect_error() {
   local label="$1" expected="$2" sql="$3" err="$TEST_TMP/$1.err"
@@ -80,6 +109,39 @@ expect_error() {
     fail "$label unexpectedly succeeded"
   fi
   grep -Fq "ERROR:  $expected" "$err" || fail "$label returned an unexpected error"
+}
+
+constraint_catalog() {
+  local -a psql_command=("$@")
+  "${psql_command[@]}" -Atqc "
+WITH normalized AS (
+  SELECT
+    c.conname,
+    jsonb_build_object(
+      'name', c.conname,
+      'type', c.contype,
+      'validated', c.convalidated,
+      'deferrable', c.condeferrable,
+      'deferred', c.condeferred,
+      'definition', pg_get_constraintdef(c.oid, true),
+      'source_columns', c.conkey,
+      'target_table', CASE WHEN c.confrelid = 0 THEN NULL ELSE c.confrelid::regclass::text END,
+      'target_columns', c.confkey,
+      'update_action', c.confupdtype,
+      'delete_action', c.confdeltype,
+      'match_action', c.confmatchtype
+    )::text AS semantics
+  FROM pg_constraint AS c
+  WHERE c.conrelid = 'public.lm_cfo_daily_snapshots'::regclass
+), rows_with_digest AS (
+  SELECT conname, encode(digest(semantics, 'sha256'), 'hex') AS digest
+  FROM normalized
+)
+SELECT jsonb_build_object(
+  'names', COALESCE((SELECT string_agg(conname, ',' ORDER BY conname) FROM rows_with_digest), ''),
+  'digest_prefix', left(encode(digest(COALESCE((SELECT string_agg(conname || ':' || digest, '|' ORDER BY conname) FROM rows_with_digest), ''), 'sha256'), 'hex'), 16)
+)::text;
+"
 }
 
 REPORT_1='{"reportingDate":"2026-08-09","revision":1,"currency":"JPY","fixture":"r1"}'
@@ -115,6 +177,77 @@ R1_OLD_SCHEMA_CANON="$(jq -cS . <<<"$R1_OLD_SCHEMA_RECEIPT")"
 
 PGOPTIONS='-c client_min_messages=warning' "${PSQL[@]}" -f "$MIGRATION_CORRECTIONS" >/dev/null 2>"$MIGRATION_ERR" || fail 'correction migration failed'
 [[ ! -s "$MIGRATION_ERR" ]] || fail "correction migration wrote stderr: $(<"$MIGRATION_ERR")"
+
+for privilege in TRUNCATE REFERENCES TRIGGER MAINTAIN; do
+  [[ "$(${PSQL[@]} -Atqc "SELECT has_table_privilege('service_role', 'public.lm_cfo_daily_snapshots', '$privilege');")" == 't' ]] \
+    || fail "correction chain unexpectedly removed $privilege"
+done
+
+LIVE_CONSTRAINT_CATALOG_BEFORE="$(constraint_catalog "${PSQL[@]}")"
+
+PGOPTIONS='-c client_min_messages=warning' "${PSQL_ISOLATED[@]}" -f "$MIGRATION_SNAPSHOT" >/dev/null 2>"$MIGRATION_ERR" || fail 'isolated snapshot migration failed'
+[[ ! -s "$MIGRATION_ERR" ]] || fail "isolated snapshot migration wrote stderr: $(<"$MIGRATION_ERR")"
+PGOPTIONS='-c client_min_messages=warning' "${PSQL_ISOLATED[@]}" -f "$MIGRATION_CORRECTIONS" >/dev/null 2>"$MIGRATION_ERR" || fail 'isolated correction migration failed'
+[[ ! -s "$MIGRATION_ERR" ]] || fail "isolated correction migration wrote stderr: $(<"$MIGRATION_ERR")"
+ISOLATED_CONSTRAINT_CATALOG="$(constraint_catalog "${PSQL_ISOLATED[@]}")"
+
+PGOPTIONS='-c client_min_messages=warning' "${PSQL[@]}" -f "$MIGRATION_HARDENING" >/dev/null 2>"$MIGRATION_ERR" || fail 'privilege hardening migration failed'
+[[ ! -s "$MIGRATION_ERR" ]] || fail "privilege hardening migration wrote stderr: $(<"$MIGRATION_ERR")"
+PGOPTIONS='-c client_min_messages=warning' "${PSQL[@]}" -f "$MIGRATION_HARDENING" >/dev/null 2>"$MIGRATION_ERR" || fail 'privilege hardening migration is not idempotent'
+[[ ! -s "$MIGRATION_ERR" ]] || fail "idempotent hardening migration wrote stderr: $(<"$MIGRATION_ERR")"
+PGOPTIONS='-c client_min_messages=warning' "${PSQL_ISOLATED[@]}" -f "$MIGRATION_HARDENING" >/dev/null 2>"$MIGRATION_ERR" || fail 'isolated privilege hardening migration failed'
+[[ ! -s "$MIGRATION_ERR" ]] || fail "isolated hardening migration wrote stderr: $(<"$MIGRATION_ERR")"
+
+LIVE_CONSTRAINT_CATALOG_AFTER="$(constraint_catalog "${PSQL[@]}")"
+LIVE_NAMES="$(jq -er '.names' <<<"$LIVE_CONSTRAINT_CATALOG_AFTER")"
+ISOLATED_NAMES="$(jq -er '.names' <<<"$ISOLATED_CONSTRAINT_CATALOG")"
+LIVE_BEFORE_NAMES="$(jq -er '.names' <<<"$LIVE_CONSTRAINT_CATALOG_BEFORE")"
+LIVE_DIGEST="$(jq -er '.digest_prefix' <<<"$LIVE_CONSTRAINT_CATALOG_AFTER")"
+ISOLATED_DIGEST="$(jq -er '.digest_prefix' <<<"$ISOLATED_CONSTRAINT_CATALOG")"
+LIVE_BEFORE_DIGEST="$(jq -er '.digest_prefix' <<<"$LIVE_CONSTRAINT_CATALOG_BEFORE")"
+CONSTRAINT_NAMES_MATCH='false'
+CONSTRAINT_SEMANTICS_MATCH='false'
+CONSTRAINT_BEFORE_AFTER_MATCH='false'
+[[ "$LIVE_NAMES" == "$ISOLATED_NAMES" ]] && CONSTRAINT_NAMES_MATCH='true'
+[[ "$LIVE_BEFORE_NAMES" == "$LIVE_NAMES" && "$LIVE_BEFORE_DIGEST" == "$LIVE_DIGEST" ]] && CONSTRAINT_BEFORE_AFTER_MATCH='true'
+[[ "$LIVE_DIGEST" == "$ISOLATED_DIGEST" && "$CONSTRAINT_BEFORE_AFTER_MATCH" == 'true' ]] && CONSTRAINT_SEMANTICS_MATCH='true'
+EVIDENCE_DIR="$ROOT_DIR/../../.superpowers/sdd/2026-08-09-life-manager-cfo-moneytree-recovery"
+EVIDENCE_PATH="$EVIDENCE_DIR/task-7c-catalog-evidence.json"
+mkdir -p "$EVIDENCE_DIR"
+jq -cn \
+  --arg names "$LIVE_NAMES" \
+  --arg isolatedNames "$ISOLATED_NAMES" \
+  --arg liveBeforeDigest "$LIVE_BEFORE_DIGEST" \
+  --arg liveDigest "$LIVE_DIGEST" \
+  --arg isolatedDigest "$ISOLATED_DIGEST" \
+  --argjson namesMatch "$CONSTRAINT_NAMES_MATCH" \
+  --argjson beforeAfterMatch "$CONSTRAINT_BEFORE_AFTER_MATCH" \
+  --argjson semanticsMatch "$CONSTRAINT_SEMANTICS_MATCH" \
+  '{liveConstraintNames:$names, isolatedConstraintNames:$isolatedNames, constraintNamesMatch:$namesMatch, liveBeforeDigestPrefix:$liveBeforeDigest, liveDigestPrefix:$liveDigest, isolatedDigestPrefix:$isolatedDigest, constraintBeforeAfterMatch:$beforeAfterMatch, constraintSemanticsMatch:$semanticsMatch}' >"$EVIDENCE_PATH"
+[[ "$CONSTRAINT_SEMANTICS_MATCH" == 'true' ]] || fail 'isolated catalog constraint semantics mismatch'
+
+for privilege in SELECT INSERT; do
+  [[ "$(${PSQL[@]} -Atqc "SELECT has_table_privilege('service_role', 'public.lm_cfo_daily_snapshots', '$privilege');")" == 't' ]] \
+    || fail "service_role lost required $privilege privilege"
+done
+for privilege in UPDATE DELETE TRUNCATE REFERENCES TRIGGER MAINTAIN; do
+  [[ "$(${PSQL[@]} -Atqc "SELECT has_table_privilege('service_role', 'public.lm_cfo_daily_snapshots', '$privilege');")" == 'f' ]] \
+    || fail "service_role retained forbidden $privilege privilege"
+done
+for role in public anon authenticated app_owner; do
+  for privilege in SELECT INSERT UPDATE DELETE TRUNCATE REFERENCES TRIGGER MAINTAIN; do
+    [[ "$(${PSQL[@]} -Atqc "SELECT has_table_privilege('$role', 'public.lm_cfo_daily_snapshots', '$privilege');")" == 'f' ]] \
+      || fail "$role retained table privilege $privilege"
+  done
+done
+for fn in 'public.reject_lm_cfo_daily_snapshot_mutation()' 'public.lm_append_cfo_daily_snapshot(text,date,uuid,jsonb,jsonb)' 'public.lm_append_cfo_daily_snapshot_revision(text,date,uuid,integer,integer,jsonb,jsonb)'; do
+  [[ "$(${PSQL[@]} -Atqc "SELECT has_function_privilege('service_role', '$fn', 'EXECUTE') AND NOT has_function_privilege('public', '$fn', 'EXECUTE') AND NOT has_function_privilege('anon', '$fn', 'EXECUTE') AND NOT has_function_privilege('authenticated', '$fn', 'EXECUTE');")" == 't' ]] \
+    || fail "RPC EXECUTE ACL changed for $fn"
+done
+for privilege in USAGE SELECT; do
+  [[ "$(${PSQL[@]} -Atqc "SELECT has_sequence_privilege('service_role', 'public.lm_cfo_daily_snapshots_id_seq', '$privilege');")" == 't' ]] \
+    || fail "sequence $privilege privilege changed"
+done
 R1_POST_COUNT="$(${PSQL[@]} -Atqc "SELECT count(*) FROM public.lm_cfo_daily_snapshots")"
 R1_POST_ROW="$(${PSQL[@]} -Atqc "SELECT jsonb_build_object('public_ref', public_ref::text, 'uid', uid, 'reporting_date', reporting_date::text, 'run_id', run_id::text, 'revision', revision, 'report_payload', report_payload, 'source_bundle', source_bundle, 'created_at', created_at, 'supersedes_revision', supersedes_revision) FROM public.lm_cfo_daily_snapshots WHERE uid='owner-a' AND reporting_date=DATE '2026-08-09' AND run_id='$RUN_1'::uuid AND revision=1")"
 [[ "$R1_POST_COUNT" == "$R1_PRE_COUNT" ]] || fail 'correction migration changed row count'
