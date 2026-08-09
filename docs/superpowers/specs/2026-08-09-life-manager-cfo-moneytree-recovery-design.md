@@ -72,8 +72,10 @@ fail closed before any callback:
 boolean, and `wait(milliseconds)` resolves with no value. Every callback is invoked by the executor; precomputed or
 cached callback results are not accepted. Success outcomes contain exactly
 `status,reportingDate,observedAt,moneytreeRead,attempts,repair,action,failureKind`; success sets `failureKind:null`.
-Action-required outcomes use the same keys with `moneytreeRead:null`, `repair:null`, the original closed
-`failureKind`, and `action={kind,sourceLabel,retryLabel,nextRetryAt}`. `repair` is either null or
+Action-required outcomes use the same keys with `moneytreeRead:null`, `repair:null`, the decisive terminal closed
+`failureKind`, and `action={kind,sourceLabel,retryLabel,nextRetryAt}`. When a transient failure is followed by
+`unauthorized|forbidden|expired|revoked`, `failureKind` is that terminal consent failure, not the initial transient
+failure. `repair` is either null or
 `{sourceLabel:"Moneytree",freshReread:true,reconciled:true}`.
 
 Rules:
@@ -84,6 +86,10 @@ Rules:
 - `unauthorized`, `forbidden`, `expired`, and `revoked` become `reconsent` immediately;
 - unavailable source consent maps exactly: `unauthorized|expired` to `expired`, `forbidden|revoked` to `revoked`, and
   every `provider_outage` action to `unknown`;
+- action labels are exact: `sourceLabel="Moneytree"`; `reconsent` uses
+  `retryLabel="接続後に自動再確認"`; `provider_outage` uses `retryLabel="30分後に自動再確認"`;
+- every recovery report has a valid Gregorian `YYYY-MM-DD` `reportingDate`, and every recovery source bundle has
+  `schemaVersion === 1`; validators reject alternate labels, dates, and schema versions rather than normalizing them;
 - schema/contract failure becomes `provider_outage`; it is never described as repaired;
 - `nextRetryAt` is exactly 30 minutes after the input `observedAt`, is RFC3339, and is persisted inside the
   action-required snapshot. This slice records the durable due time but does not install or change a scheduler;

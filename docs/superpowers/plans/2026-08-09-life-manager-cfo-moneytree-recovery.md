@@ -72,8 +72,9 @@ Expected: FAIL because `cfo-moneytree-recovery.js` does not exist.
 For each `timeout|network|rate_limited|provider_5xx`, prove repair→wait→fresh reread→composition/reconciliation before
 `recovered`. Prove exhausted calls are exactly `reads=3, repairs=2, waits=[1000,5000]`. Prove
 `unauthorized|forbidden|expired|revoked` uses one read and no repair/wait, and schema/contract failures become
-`provider_outage`. Preserve the original closed `failureKind`; `nextRetryAt` must be exactly input
-`observedAt + 30 minutes`.
+`provider_outage`. Preserve the decisive terminal closed `failureKind`; when a reread changes a transient failure to
+`unauthorized|forbidden|expired|revoked`, preserve that consent failure rather than the initial transient.
+`nextRetryAt` must be exactly input `observedAt + 30 minutes`.
 
 - [x] **Step 4: Implement minimum GREEN**
 
@@ -121,7 +122,8 @@ Run: `node --test lib/cfo-recovery-snapshot.test.js`; expect missing module fail
 - [ ] **Step 3: Add fail-closed truth tests**
 
 Reject stale amount injection, mismatched source/state time, action with net worth, recovered without fresh reread or
-reconciliation, revision 0/non-integer, hostile envelopes, unknown keys, and a caller-mutated output.
+reconciliation, revision 0/non-integer, invalid `reportingDate`, non-`1` source-bundle schema version, noncanonical
+`sourceLabel`/`retryLabel`, hostile envelopes, unknown keys, and a caller-mutated output.
 
 - [ ] **Step 4: Implement minimum GREEN**
 
