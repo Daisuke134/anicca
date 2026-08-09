@@ -8,8 +8,8 @@
 
 **Tech Stack:** Node.js 20+, CommonJS, built-in `node:crypto`, built-in `node:test`, `assert/strict`, existing npm scripts only.
 
-**Status:** READY — Task 1 next. Three fresh plan reviews found and closed every Critical/Important issue; the final
-re-review returned `ship — Ready: yes`.
+**Status:** ACTIVE — Task 1 complete; Task 2 next. Three fresh plan reviews found and closed every
+Critical/Important issue; the final plan re-review returned `ship — Ready: yes`.
 
 ## Global Constraints
 
@@ -30,6 +30,8 @@ re-review returned `ship — Ready: yes`.
 - No new dependency, service, database table, scheduler, retry loop, agent, network write, JPY conversion, Telegram send, business P&L, tax, trade, funding action, or Binance work.
 - Task 1 soft target is 130 production/230 test LOC with mandatory simplification review above 160/300. Task 2 soft target is 100 production/240 test LOC with mandatory simplification review above 140/320. Both are atomic trust boundaries; splitting either would expose a coupled, unvalidated intermediate without an independent deliverable.
 - Each implementation task changes at most three tracked files and closes with RED, GREEN, fresh review, commit, and push.
+- Role split is fixed: the Sol controller writes specs, plans, task briefs, and state; Luna alone edits production
+  code and tests; Sol reviewers are read-only. Code fixes return to Luna.
 
 ---
 
@@ -58,7 +60,7 @@ re-review returned `ship — Ready: yes`.
 - Produces: `validateFleetSourceResult(input) => deeplyFrozenClone` from `apps/life-call/lib/cfo-fleet-source.js`.
 - Errors: only `fleet_source_invalid:<fixed_reason>`; no input string appears in an error.
 
-- [ ] **Step 1: Write the RED contract tests**
+- [x] **Step 1: Write the RED contract tests**
 
 Create a canonical valid object with exactly these values and keys:
 
@@ -126,7 +128,7 @@ Test exact root/nested key sets; `economicScopeRef` exactly `organization:anicca
 
 For each unknown mutation, leave the old evidence reference intact so the validator must reject the inconsistent state.
 
-- [ ] **Step 2: Run the focused test and prove RED**
+- [x] **Step 2: Run the focused test and prove RED**
 
 Run:
 
@@ -137,7 +139,7 @@ node --test lib/cfo-fleet-source.test.js
 
 Expected: non-zero exit because `./cfo-fleet-source` does not exist. Record only the failing test count and missing-module reason in the plan state.
 
-- [ ] **Step 3: Implement the minimum closed validator**
+- [x] **Step 3: Implement the minimum closed validator**
 
 Implement only these helpers inside `cfo-fleet-source.js`:
 
@@ -156,7 +158,7 @@ module.exports = { validateFleetSourceResult };
 
 The snapshot must read each property descriptor value once and later validation must use only that snapshot. The root requires schema version `1`, source ID `fleet_dashboard`, `economicScopeRef === "organization:anicca_fleet"`, `coverage.partial === true`, exact ordered limitations, and no duplicate `accountRef`. It independently enforces `sourceUpdatedAt <= readAsOf + 5 seconds`, each `telemetryAsOf <= sourceUpdatedAt + 5 seconds`, and the exact 300-second `telemetryFreshness` classification. It also requires `presentWalletCount === wallets.length` and `registeredWalletCount === wallets.length + count(field="wallet" and reason in {missing_registered_wallet, chain_mismatch})`; those absent-wallet exception references are unique and disjoint from emitted wallets. Every unknown wallet metric has exactly one exception with the same `accountRef` and matching field, while every available metric has none. Unknown metrics require amount `null`, `verificationStatus="unavailable"`, and `evidenceRef=null`; available metrics require a non-null amount, the exact positive verification status, and a typed evidence reference.
 
-- [ ] **Step 4: Register and prove GREEN**
+- [x] **Step 4: Register and prove GREEN**
 
 Append `lib/cfo-fleet-source.test.js` exactly once to the existing `test:cfo` command in `apps/life-call/package.json`, then run:
 
@@ -169,7 +171,7 @@ wc -l lib/cfo-fleet-source.js lib/cfo-fleet-source.test.js
 
 Expected: all focused and CFO tests pass. Compare LOC with the 130/230 soft targets; above 160/300 requires simplification review before acceptance. The validator remains one atomic trust boundary because splitting snapshot and cross-object invariants would create another coupled surface without an independently usable deliverable.
 
-- [ ] **Step 5: Fresh review, fix, verify, commit, and push**
+- [x] **Step 5: Fresh review, fix, verify, commit, and push**
 
 The reviewer checks exact schema closure, unknown-not-zero, burn status, snapshot-once behavior, privacy-safe errors, immutability, test quality, and LOC. Fix every Critical/Important finding with a new failing regression first. Then run the Step 4 commands and:
 
@@ -181,6 +183,12 @@ git push canonical HEAD
 ```
 
 Expected: clean diff check, commit created, push succeeds.
+
+Task 1 evidence: Luna committed and pushed `5581468a3` and test-fix `2b87d969e`. RED was missing-module as
+planned. Final focused tests passed 11/11 and CFO tests passed 177/177. Production is 215 LOC and tests are 349 LOC;
+the mandatory simplification review accepted the atomic validator and explicit hostile-input matrix. The first
+review found three test-path gaps; Luna fixed all three, and the re-review returned `Approved — ship` with no new
+Critical/Important findings.
 
 ## Task 2: Fleet Dashboard Adapter
 
