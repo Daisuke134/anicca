@@ -87,7 +87,7 @@ Evidence: commit `28be202ef`; RED 25/27, GREEN contract 27/27 and CFO 128/128; p
 - Create: `apps/life-call/lib/cfo-moneytree-state.test.js`
 - Modify: `apps/life-call/package.json`
 
-- [ ] **Step 1: Write RED state matrix tests**
+- [x] **Step 1: Write RED state matrix tests**
 
 Assert exact objects for:
 
@@ -101,7 +101,7 @@ Assert exact input/root/action key sets and deep freeze. Add invalid mutations f
 
 Add successful composition tests for all five signals using validated literal source results, including the corrected unknown-consent provider-outage source. The interactive case also uses real `adaptMoneytreeAccounts` output. Require matching `sourceId`, `source.asOf === state.observedAt`, consent agreement, retrieval succeeded↔source available and unavailable↔source unavailable, identical partial flag, complete-liability count agreement, and matching action kind/ref. Availability/action/consent/partial/liability mismatches fail with stable redacted errors. Assert exact bundle keys and deep freeze.
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
 ```bash
 cd apps/life-call
@@ -110,11 +110,11 @@ node --test lib/cfo-moneytree-state.test.js
 
 Expected: module missing.
 
-- [ ] **Step 3: Implement minimal pure normalizer**
+- [x] **Step 3: Implement minimal pure normalizer**
 
 Use exact key sets and one literal branch table. Validate RFC3339 timestamps with explicit calendar/clock/offset bounds; compare `aggregationAsOf` to the required cutoff for fresh/stale. Construct output from constants only, `structuredClone`, recursively freeze, and emit only `moneytree_state_invalid:<reason>`. `composeMoneytreeRead` first revalidates the financial source and coverage state, then enforces the cross-contract invariants above.
 
-- [ ] **Step 4: GREEN, regression, sizes, commit, push, review**
+- [x] **Step 4: GREEN, regression, sizes, commit, push, review**
 
 ```bash
 cd apps/life-call
@@ -129,6 +129,8 @@ git diff --check
 ```
 
 Commit `feat(cfo): model Moneytree coverage state`, push, and pass a fresh task review.
+
+Evidence: commits `5325dab07`, `d4d77ae63`, `563c7fde0`, and `eed2be718`; final focused 37/37, CFO 165/165, full suite 798/798; production 133 LOC and tests 185 LOC. Three adversarial error-authenticity rounds close prefix spoofing, constructor reuse, and mutated same-object replay; scoped re-review says ADDRESSED with no new Critical/Important findings.
 
 ---
 
