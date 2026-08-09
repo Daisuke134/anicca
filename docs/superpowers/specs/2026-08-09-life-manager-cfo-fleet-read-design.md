@@ -202,8 +202,9 @@ flowchart TB
     C --> N[CFO-1f JPY valuation next]
 ```
 
-CFO-1e performs no network write, database write, ledger copy, price lookup, JPY conversion, persistence, retry,
-self-heal, Telegram send, business P&L, ROI, tax, trading, funding, or Binance work.
+CFO-1e performs no database write, ledger copy, price lookup, JPY conversion, persistence, Telegram send, business
+P&L, ROI, tax, trading, funding, or Binance work. Live acceptance may recover the existing canonical telemetry
+producer and its public identity registry; it cannot create a new producer or change financial payload semantics.
 
 ## 6. Test and Live Acceptance
 
@@ -256,3 +257,23 @@ would turn one read adapter into a multi-service Fleet migration and delay the t
 If this design is wrong, the most likely reason is that a hidden authoritative Fleet wallet registry or raw-position
 endpoint exists outside the inspected repository. A live read must search for that evidence before closure; it must
 not guess.
+
+## 9. Live Producer Repair Amendment
+
+Live acceptance found an empty but current dashboard. The existing `com.anicca.daemon` was restored from its
+canonical template, after which the Base telemetry POST failed `host_wallet_mismatch`. Redacted diagnosis proved the
+active poster resolves the legitimate default-instance legacy signer, that signer is absent from
+`OUR_INSTANCE_IDS`, and the persisted display name does not match the signer's deterministic address-derived host.
+
+The bounded repair is:
+
+1. Luna adds the active signer's public address to `OUR_INSTANCE_IDS` while retaining former instance IDs for
+   internal-transfer exclusion. No private key or raw financial payload enters the repository or report.
+2. A regression proves the first canonical Base registry entry is classified `is_ours`; existing exclusions remain.
+3. The old persisted name is moved to a recoverable same-directory backup, never deleted. The existing identity
+   function regenerates the deterministic host from the active signer.
+4. Only `com.anicca.daemon` is kickstarted. A telemetry `202` and a redacted adapter result with at least one present
+   registered row are required. The backup path is the rollback.
+
+This amendment is a repair of the one existing producer discovered by the required live E2E, not a new service or
+a widening into Fleet producer redesign.

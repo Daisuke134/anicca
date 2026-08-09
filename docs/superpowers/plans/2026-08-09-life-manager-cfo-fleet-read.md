@@ -27,7 +27,11 @@ Critical/Important issue; the final plan re-review returned `ship — Ready: yes
 - Never emit or persist raw wallet IDs, signatures, host, geo, model, status, provider payload, root totals, secret-shaped values, or financial amounts as live closure evidence.
 - References use HMAC-SHA256, economic-scope binding, separate account/evidence domains, and 24 lowercase hex characters. `referenceKey` is at least 32 UTF-8 bytes. Evidence preimages bind metric, normalized wallet, chain, telemetry timestamp, upstream status, normalized value, and window where applicable.
 - Exact result objects, dense arrays, safe timestamps, cloned output, recursive freeze, stable redacted errors, hostile accessors, custom prototypes, sparse arrays, and changing Proxies are required.
-- No new dependency, service, database table, scheduler, retry loop, agent, network write, JPY conversion, Telegram send, business P&L, tax, trade, funding action, or Binance work.
+- No new dependency, service, database table, scheduler, retry loop, agent, CFO-originated network write, JPY
+  conversion, Telegram send, business P&L, tax, trade, funding action, or Binance work. The repaired existing poster
+  keeps its already-designed telemetry POST.
+- The live-E2E repair may update the existing public `OUR_INSTANCE_IDS` registry and recoverably regenerate the
+  canonical Base poster host; it may not create another producer or expose its signer/key/payload.
 - Task 1 soft target is 130 production/230 test LOC with mandatory simplification review above 160/300. Task 2 soft target is 100 production/240 test LOC with mandatory simplification review above 140/320. Both are atomic trust boundaries; splitting either would expose a coupled, unvalidated intermediate without an independent deliverable.
 - Each implementation task changes at most three tracked files and closes with RED, GREEN, fresh review, commit, and push.
 - Role split is fixed: the Sol controller writes specs, plans, task briefs, and state; Luna alone edits production
@@ -359,7 +363,22 @@ If `inputEchoed` is true, stop the live probe, fix the transport, and repeat the
 
 - [ ] **Step 2: Perform one live read and privacy-safe adapter check**
 
-Fetch exactly `https://aniccaai.com/.netlify/functions/dashboard-sync` in the no-echo controller. Build an independent registered-wallet list from the two repository modules named in this task without consulting live row chains: `OUR_INSTANCE_IDS[0]` is `base`; the `FIXED_IDENTITIES` entry whose host is `claude-p` is `polygon-proxy`; the entries whose hosts are `Franklin` and `Franklin2` are `solana`. Deduplicate by the adapter's chain-aware identity rule. This is the exact current owner/chain SSOT for the probe; a live row cannot self-assign its expected chain. Use an ephemeral 32-byte reference key and pass the response directly to `adaptFleetDashboard` without printing it.
+First close the live producer repair amendment from the focused design. Luna alone edits
+`apps/landing/netlify/functions/_lib/leaderboard-constants.js` and
+`apps/landing/netlify/functions/_lib/__tests__/aggregate.test.js`: add the active poster's derived public signer as
+the first Base instance without removing former IDs, then prove it is classified `is_ours` and the exclusion set
+still contains every canonical instance. Production change target is one registry line; test change target is at
+most 30 LOC. Run the focused aggregate test and `npm run test:telemetry`, commit `fix(fleet): align Base telemetry
+identity`, and push before runtime repair.
+
+Then move the mismatched persisted identity name to a recoverable same-directory backup, kickstart only the existing
+`com.anicca.daemon`, and require its telemetry POST to return `202`. Fetch exactly
+`https://aniccaai.com/.netlify/functions/dashboard-sync` in the no-echo controller. Build an independent
+registered-wallet list from the two repository modules without consulting live row chains: every non-fixed EVM
+entry in `OUR_INSTANCE_IDS` is `base`; the fixed host `claude-p` is `polygon-proxy`; fixed hosts `Franklin` and
+`Franklin2` are `solana`. Deduplicate by the adapter's chain-aware identity rule. A live row cannot self-assign its
+expected chain. Use an ephemeral 32-byte reference key and pass the response directly to `adaptFleetDashboard`
+without printing it.
 
 The controller prints exactly this schema with no extra fields:
 
