@@ -5926,6 +5926,18 @@ Luma auditはobserved 29、normalized 29、window 14、free_open 2、calendar_fr
 `native-pass.js`は`applied_bundle`の場合だけ意図的にexit 0するため、`completed_no_effect`でlaunchdのlast exitが1になるのは現在の明示contractであり、新しいexceptionの証拠ではない。current stderrのmtimeはこのrunより前で、このrunによる新規stderr書き込みはない。
 このproduction E2EによりConnpass detail parser bug（start/end fallback）は閉じたが、Item 10B/14と実registration evidence（Submit、Calendar write、PNG、applied_bundle）は未完のまま。より大きいapplication objectiveは完了扱いにしない。
 
+### O1B-25進捗222（orphaned target lease lockの自動回復とproduction再検証）
+
+2026-08-10のpreflightで、3つのConnector launchd plistが削除済みworktreeを参照し、Nativeが`EX_CONFIG`を反復していた。branch `feature/connector-native-completion` のexact HEAD `6456a0f3f6c55eeb8ef33c4bda7ac7810ae26536`へ同じlinked worktree pathを復元し、依存を再構築した。parser focused baselineは32/32 GREEN、Native/healthcheck/Healerはunloaded、CloakBrowser `:9222`はhealthyだった。
+
+最初のofficial wake `wake-55fb5b982b1453dead2c7287` はCalendar read success後、provider discovery actionを作る前にexit 2となった。production evidenceには2026-08-09 22:45:07 JSTから残る0-byte `target-leases.json.lock` があり、対応するConnector processは0だった。`withLedgerLock()`が`wx`の`EEXIST`を永久busyとして扱うため、orphaned legacy lockが全browser rail openを停止していた。
+
+TDD REDはtarget lease 9件中7 pass/2 failで、stale zero-byte lockを回収できず、finallyが置換済みlockを消すことを固定した。修復commit `a435c14ce` はO_EXCL/mode 0600を維持し、schema version、PID、unguessable owner token、acquired timestampをlockへ書く。10分超かつowner PID deadの場合だけ一回回収し、legacy empty/unparseable lockはmtimeでageを判断する。fresh lockとlive PIDは奪わず、releaseはexact owner token一致時だけunlinkする。GREENはtarget lease 9/9、Connpass parser/workflow/minimal runner/productionを含むfocused suite 41/41、diff check 0件。
+
+修復後のofficial launchd run 1、wake `wake-88fce9dad21004d03804283c` はstale lockを自動回収し、Calendar `success 2929ms`、Luma discovery `success 32517ms`、Connpass discovery `success 3849ms`まで完走した。最終reportは`completed_no_effect / providers_exhausted / consecutive_failure_count 0`、Telegram provider message IDは`10298`。lockはrun後absentで、3つのConnector labelは再びunloaded。Submit、Calendar write、candidate attempt、applied bundleの増分は0。
+
+Luma aggregateはobserved 30、normalized 30、14日window 16、free/open 4、calendar-free 0。公式と同じCalendar readerとowned pageによるread-only再測定で、4件すべてが実timed予定と重複した。対象は8月18日Japan-Taiwan Innovation Summit Day 1（conflict 3）、8月19日同Day 2（4）、8月19日偏愛ナイト（1）、8月23日ライフセーバーと海を楽しもう（1）。したがって今回の0申込はparser/browser failureではなく、非衝突候補0による正しいsafe no-effectである。Item 10Bの新規`registered`/`pending` evidenceは外部候補条件が満たされていないため未完のまま維持し、Calendar gateは緩めない。
+
 ### Active remaining TODO SSOT（進捗216。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
