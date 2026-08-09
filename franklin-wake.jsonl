@@ -24596,3 +24596,11 @@
 {"ts":1786309155,"wake_id":"00MSMACLXM3479B2D1D2C9422F","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786309288,"wake_id":"00MSMAFGKCFF95C6DA93B9468A","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
 {"ts":1786309418,"wake_id":"00MSMAI8FA0566699F68174507","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786309548,"wake_id":"00MSMAL0PH9DBEA3D534B34DA0","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana on-chain bounty platform AI agents microtasks USDC reward [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (can"}
+{"ts":1786309677,"wake_id":"00MSMANSDA3E3B161E4FDD4D56","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786309805,"wake_id":"00MSMAQJAPE861B5125D17445F","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1786309874,"wake_id":"00MSMAS06RB984266CB8774FA6","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786310000,"wake_id":"00MSMAUPQN6443E4F7698448A3","kind":"wake","sleep_s":120,"model":"auto","slot":"earn/sol-trade","profitable":false,"exit_code":0}
+{"ts":1786310127,"wake_id":"00MSMAXFD25C19E5CE06164BBB","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786310254,"wake_id":"00MSMB05EZ6D4010E2C45F4B0D","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786310379,"wake_id":"00MSMB2U5CF4D87135EDFE45EC","kind":"wake_error","sleep_s":60,"model":"auto"}
