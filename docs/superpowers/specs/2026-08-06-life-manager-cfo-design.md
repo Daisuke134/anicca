@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | PRODUCT STAGE 7 ACTIVE — first real Telegram report delivered and receipted; CFO-1i hourly autonomy next |
+| Status | PRODUCT STAGE 7 ACTIVE — real Moneytree reader complete; Telegram detail callbacks next |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
@@ -41,7 +41,8 @@ flowchart LR
     S7 --> R[Bounded recovery + corrections]
     R --> P[Local real-data no-send preview]
     P --> T[Real Telegram report + message ID]
-    T --> H[Hourly refresh + daily full report]
+    T --> D[Telegram detail buttons]
+    D --> H[Hourly refresh + daily full report]
     H --> V[Two consecutive autonomous successes]
     V --> DONE[Product Stage 7 complete]
 ```
@@ -111,8 +112,12 @@ flowchart TD
 ```
 
 Current boundary: the Moneytree read, reconciliation, immutable snapshot, renderer, no-send preview, real Telegram
-delivery, and durable provider receipt are proven. `CFO-1i` now activates the hourly local trigger and closes only
-after two consecutive autonomous real-data successes.
+delivery, durable provider receipt, and launchd-callable local reader are proven. The first unfinished `CFO-1i` slice
+is the existing Telegram detail-button callback plan at
+`docs/superpowers/plans/2026-08-10-life-manager-cfo-telegram-drilldown-callback.md`. The callback alone reuses the
+existing public bot webhook because Telegram sends button taps there; report production and hourly scheduling remain
+local. After the callback works, `CFO-1i` installs one hourly local trigger and closes only after two consecutive
+autonomous real-data successes.
 
 The CFO MUST NOT trade, transfer, hire, fund, or stop a live business during the foundation milestone. Read and
 write authority remain different capabilities permanently. No balance, transaction, revenue, or tax estimate is
