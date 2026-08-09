@@ -7,6 +7,7 @@ const { createCfoSupabaseRpc } = require("./cfo-supabase-rpc.js");
 const ERROR_PREFIX = "cfo_snapshot_store_failed:";
 const INPUT_KEYS = new Set(["uid", "reportingDate", "runId", "moneytreeRead"]);
 const RECEIPT_KEYS = new Set(["public_ref", "reporting_date", "run_id", "revision", "created_at"]);
+const SNAPSHOT_OPTION_KEYS = new Set(["supaUrl", "supaKey", "fetchImpl", "log"]);
 
 const { fail, internal, exact, validDate, uuid, timestamp, validateOptions, freeze, postRpc } = createCfoSupabaseRpc(ERROR_PREFIX);
 
@@ -27,7 +28,7 @@ function validateReceipt(value, expected) {
 
 async function appendCfoDailySnapshot(input, opts = {}) {
   let identity, config;
-  try { identity = validateInput(input); config = validateOptions(opts); } catch (error) { if (internal(error)) throw error; fail("invalid_input"); }
+  try { identity = validateInput(input); config = validateOptions(opts, SNAPSHOT_OPTION_KEYS); } catch (error) { if (internal(error)) throw error; fail("invalid_input"); }
   let report, sourceBundle;
   try {
     report = buildCfoDailyReport({ reportingDate: identity.reportingDate, moneytreeRead: input.moneytreeRead });

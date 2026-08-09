@@ -4,6 +4,7 @@ const { types: { isProxy } } = require("node:util");
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const RFC3339 = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(\.\d+)?(Z|[+-]\d{2}:\d{2})$/;
+const DEFAULT_OPTION_KEYS = new Set(["supaUrl", "supaKey", "fetchImpl"]);
 
 // Shared trust-boundary validator + Supabase RPC request skeleton for the
 // CFO client modules (cfo-daily-run.js, cfo-daily-snapshot-store.js, and
@@ -46,11 +47,11 @@ function createCfoSupabaseRpc(errorPrefix) {
     if (zone !== "Z" && (Number(zone.slice(1, 3)) > 23 || Number(zone.slice(4)) > 59)) return false;
     return Number.isFinite(Date.parse(value));
   }
-  function validateOptions(opts) {
+  function validateOptions(opts, allowedKeys = DEFAULT_OPTION_KEYS) {
     if (!plain(opts)) fail("invalid_options");
     for (const key of Reflect.ownKeys(opts)) {
       const descriptor = Object.getOwnPropertyDescriptor(opts, key);
-      if (typeof key !== "string" || !descriptor || !Object.prototype.hasOwnProperty.call(descriptor, "value")) fail("invalid_options");
+      if (typeof key !== "string" || !allowedKeys.has(key) || !descriptor || !Object.prototype.hasOwnProperty.call(descriptor, "value") || !descriptor.enumerable) fail("invalid_options");
     }
     const { supaUrl, supaKey } = opts;
     if (typeof supaUrl !== "string" || supaUrl.length === 0 || supaUrl.trim() !== supaUrl || typeof supaKey !== "string" || supaKey.length === 0 || supaKey.trim() !== supaKey) fail("missing_credentials");

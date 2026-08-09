@@ -82,6 +82,26 @@ test("validateOptions() requires trimmed http(s) credentials and defaults fetchI
   ]) throwsWithMessage(() => validateOptions(bad), /^t_failed:[a-z0-9_]+$/);
 });
 
+test("validateOptions() rejects unknown enumerable keys (catches missing allowed-key membership)", () => {
+  const { validateOptions } = createCfoSupabaseRpc("t_failed:");
+  const opts = { supaUrl: URL, supaKey: KEY, fetchImpl: async () => {}, unexpected: true };
+  throwsWithMessage(() => validateOptions(opts), /^t_failed:invalid_options$/);
+});
+
+test("validateOptions() rejects symbol keys (catches string-only own-key filtering)", () => {
+  const { validateOptions } = createCfoSupabaseRpc("t_failed:");
+  const opts = { supaUrl: URL, supaKey: KEY, fetchImpl: async () => {} };
+  opts[Symbol("unexpected")] = true;
+  throwsWithMessage(() => validateOptions(opts), /^t_failed:invalid_options$/);
+});
+
+test("validateOptions() rejects non-enumerable own keys (catches descriptor enumerability omission)", () => {
+  const { validateOptions } = createCfoSupabaseRpc("t_failed:");
+  const opts = { supaUrl: URL, supaKey: KEY, fetchImpl: async () => {} };
+  Object.defineProperty(opts, "unexpected", { enumerable: false, value: true });
+  throwsWithMessage(() => validateOptions(opts), /^t_failed:invalid_options$/);
+});
+
 test("freeze() deep-freezes without cycling infinitely on shared or circular references", () => {
   const { freeze } = createCfoSupabaseRpc("t_failed:");
   const shared = { x: 1 };
