@@ -11,7 +11,8 @@
 
 CFO-1g2 makes retries safe before the first real scheduled Telegram report. It does only two things:
 
-1. resolves the owner's IANA timezone, derives the owner-local `reporting_date`, and durably claims one `run_id`;
+1. atomically resolves the owner's IANA timezone, derives the owner-local `reporting_date`, and durably claims one
+   `run_id` inside PostgreSQL;
 2. claims one Telegram delivery per snapshot revision and records the real provider `message_id` without resending an
    uncertain delivery.
 
@@ -32,13 +33,17 @@ flowchart LR
 
 ## 2. Owner-local run contract
 
-- Timezone SSOT is `lm_panel_preferences.call_time_zone`; missing or invalid IANA zones fail closed.
-- `Intl.DateTimeFormat(...).formatToParts()` derives `YYYY-MM-DD`; no manual UTC offset arithmetic.
+- Timezone SSOT is `lm_panel_preferences.call_time_zone`; the claim RPC locks/reads it and verifies membership in
+  `pg_timezone_names`. Missing or invalid zones fail closed without inserting a row.
+- PostgreSQL derives `YYYY-MM-DD` from its current transaction time in that timezone. There is no client GET→claim
+  race and no manual UTC offset arithmetic.
 - `lm_cfo_daily_runs` has one immutable row per `(uid, reporting_date)` and a database-generated non-zero UUID.
-- `lm_claim_cfo_daily_run(uid,date,time_zone)` returns the existing row on retry. If the preference changes after a
-  claim, the stored timezone wins for that date; the next owner-local date uses the new preference.
+- `lm_claim_cfo_daily_run(uid)` returns the current owner-local date's existing row on retry. If the preference
+  changes after a claim, the next invocation derives the date from the new preference.
+- The migration first backfills every existing snapshot's exact `(uid, reporting_date, run_id)` into the run table,
+  then adds a composite foreign key from snapshots to runs. A snapshot can never invent a second run identity.
 - The receipt contains exactly `public_ref, reporting_date, run_id, time_zone, created_at`; never UID.
-- The client makes one preference GET and one claim RPC. It has no internal retry or scheduler.
+- The client makes exactly one claim RPC. It has no internal retry, preference read, or scheduler.
 
 ## 3. Telegram delivery contract
 
@@ -72,21 +77,27 @@ balance, source payload, token, or a brute-forceable hash of the financial paylo
 |---|---|
 | Preference read or timezone invalid | No run claim; stable redacted error |
 | Same daily-run retry | Same run receipt |
-| Delivery claimed, send not started | Later call returns `reconcile` |
+| Delivery claimed, send not started | Later call returns `reconcile`, a durable delivery-unknown blocker |
 | Telegram accepted, receipt append succeeds | Later call returns `sent`; no resend |
-| Telegram accepted, receipt outcome unknown | `reconcile`; never claim success or resend |
+| Telegram accepted, receipt outcome unknown | `reconcile`; never claim success or resend blindly |
 | Different message ID for same claim | Conflict; existing receipt remains authoritative |
 
 ## 6. Acceptance
 
-1. DST and date-boundary fixtures derive the correct owner-local date; invalid/missing zones fail closed.
-2. Concurrent daily-run claims return one stable run and one row.
+1. DST and date-boundary PostgreSQL fixtures derive the correct owner-local date; invalid/missing zones and a
+   concurrent preference change fail closed or use one transactionally observed zone.
+2. Existing snapshot run IDs are preserved by backfill/FK; concurrent daily-run claims return one run and one row.
 3. Concurrent delivery claims yield exactly one `send`; all others are `reconcile` until a receipt exists.
 4. Receipt retry is idempotent; a different provider ID conflicts.
 5. Cross-owner/date/revision snapshot linkage and direct invalid inserts fail.
 6. UPDATE/DELETE, anon/authenticated access, unknown keys, Proxy/accessor input, and secret/error leakage fail closed.
-7. Migration is applied live and one synthetic snapshot-linked claim/receipt round trip passes without Telegram send.
+7. Migrations are applied live; the existing live snapshot and claimed run have the same run ID. No live delivery
+   claim or receipt is created before the first real Telegram send.
 8. Focused, CFO, isolated PostgreSQL, and full Life Manager tests pass; fresh Sol review returns clean.
+
+Before CFO-1h may send, its plan must include a redacted delivery-unknown detector and an operator reconciliation
+path that verifies provider/chat state before recording a receipt or authorizing a replacement. Telegram has no
+client idempotency key for `sendMessage`; blind resend remains forbidden.
 
 ## 7. Size boundary
 

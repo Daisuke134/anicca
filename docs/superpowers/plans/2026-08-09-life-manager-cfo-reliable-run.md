@@ -24,12 +24,15 @@
 - Create `apps/life-call/lib/cfo-daily-run-migration.test.js`
 - Modify `apps/life-call/package.json`
 
-- [ ] RED: assert immutable table, unique owner/date, non-zero UUID, IANA-zone text bounds, RLS/service-role grants,
+- [ ] RED: assert immutable table, unique owner/date and owner/date/run, non-zero UUID, `pg_timezone_names` validation,
+  preference read inside the RPC, existing-snapshot backfill, composite snapshot FK, RLS/service-role grants,
   UPDATE/DELETE trigger, exact five-key receipt, same-date retry, fixed search path, and no UID in receipt.
 - [ ] GREEN: implement `lm_cfo_daily_runs` and
-  `lm_claim_cfo_daily_run(text,date,text) => jsonb`. `ON CONFLICT DO NOTHING`, then return the existing row. Stored
-  timezone wins on retry; no UPDATE branch.
-- [ ] Verify focused test, `npm run test:cfo`, LOC, privacy scan, `git diff --check`.
+  `lm_claim_cfo_daily_run(text) => jsonb`. Backfill existing snapshot run IDs before adding the FK. The RPC reads and
+  validates the current preference and derives the date transactionally; `ON CONFLICT DO NOTHING`, then returns the
+  existing row. No UPDATE branch.
+- [ ] Verify from `apps/life-call`: `node --test lib/cfo-daily-run-migration.test.js` (RED then PASS),
+  `npm run test:cfo` (PASS), `wc -l` (targets), `git diff --check` (exit 0), and a key-name privacy scan (no match).
 - [ ] Commit/push `feat(cfo): claim stable daily runs`; write the ignored Task 1 report.
 
 ### Task 2: Owner timezone and run-context client
@@ -39,13 +42,13 @@
 - Create `apps/life-call/lib/cfo-daily-run.test.js`
 - Modify `apps/life-call/package.json`
 
-**Interface:** `resolveCfoDailyRun({ uid, nowMs }, { supaUrl, supaKey, fetchImpl })`.
+**Interface:** `resolveCfoDailyRun({ uid }, { supaUrl, supaKey, fetchImpl })`.
 
-- [ ] RED: exact input, one scoped preference GET, valid IANA zone, Tokyo/DST/date-boundary fixtures, one claim RPC,
-  closed frozen five-key receipt, response echoes, Proxy/accessor/custom errors, no retry/log/leakage.
-- [ ] GREEN: copy and narrow the proven `Intl.DateTimeFormat(...).formatToParts()` date logic; fail closed on missing
-  or invalid preference; call only `lm_claim_cfo_daily_run`.
-- [ ] Verify focused/CFO tests, production ≤100 LOC, tests ≤180 LOC, diff check.
+- [ ] RED: exact input, one claim RPC and no preference GET, closed frozen five-key receipt, valid returned timezone
+  and date, Proxy/accessor/custom errors, no retry/log/leakage.
+- [ ] GREEN: call only `lm_claim_cfo_daily_run`; PostgreSQL owns timezone/date derivation.
+- [ ] Verify from `apps/life-call`: `node --test lib/cfo-daily-run.test.js`, `npm run test:cfo`, `wc -l
+  lib/cfo-daily-run.js lib/cfo-daily-run.test.js`, and `git diff --check`; all exit 0, production ≤100/tests ≤180.
 - [ ] Commit/push `feat(cfo): resolve owner daily runs`; write report and obtain fresh Sol review.
 
 ### Task 3: Append-only Telegram delivery ledger
@@ -62,7 +65,8 @@
   `lm_claim_cfo_telegram_delivery(text,uuid,text,date,integer)` and
   `lm_record_cfo_telegram_delivery(uuid,bigint)`. Fresh insert=`send`; existing with receipt=`sent`; existing without
   receipt=`reconcile`. No UPDATE/DELETE.
-- [ ] Verify focused/CFO tests, SQL ≤180 LOC or document the indivisible transaction reason, diff check.
+- [ ] Verify from `apps/life-call`: `node --test lib/cfo-telegram-delivery-migration.test.js`, `npm run test:cfo`,
+  `wc -l` for both files, and `git diff --check`; all exit 0. SQL ≤180 LOC or report the indivisible transaction.
 - [ ] Commit/push `feat(cfo): add telegram delivery ledger`; write report and obtain fresh Sol review.
 
 ### Task 4: Real PostgreSQL concurrency and permission proof
@@ -71,11 +75,12 @@
 - Create `apps/life-call/test/postgres/cfo-reliable-run-postgres.integration.sh`
 - Modify `apps/life-call/package.json`
 
-- [ ] RED then GREEN in isolated local PostgreSQL 18 or ephemeral `postgres:18-alpine` only.
+- [ ] RED then GREEN with `npm run test:cfo-reliable-run:postgres` in isolated local PostgreSQL 18 or ephemeral
+  `postgres:18-alpine` only.
 - [ ] Prove: concurrent run claims one row/run; concurrent delivery claims one `send`; unreceipted retry=`reconcile`;
   receipt makes retry=`sent`; exact receipt retry; changed ID conflict; composite cross-tenant/date/revision rejection;
   direct invalid rows; role denials; UPDATE/DELETE trigger rejection; tenant separation.
-- [ ] Final stdout exactly `cfo-reliable-run-postgres: PASS`; run CFO tests and diff check.
+- [ ] Final stdout exactly `cfo-reliable-run-postgres: PASS`; also run `npm run test:cfo` and `git diff --check`.
 - [ ] Commit/push `test(cfo): prove reliable run concurrency`; write report and obtain fresh Sol review.
 
 ### Task 5: Telegram delivery client
@@ -90,7 +95,8 @@
 - [ ] RED: one RPC per operation, closed exact input/receipt, only `assets_liabilities`, positive revision/message ID,
   `send|sent|reconcile`, clone/freeze, no retry/direct table/log, hostile response/error redaction, exact echo checks.
 - [ ] GREEN: built-in fetch only; stable redacted errors; never accept `send` unless the RPC says this call inserted.
-- [ ] Verify focused/CFO tests, production ≤130 LOC, tests ≤200 LOC, diff check.
+- [ ] Verify from `apps/life-call`: `node --test lib/cfo-telegram-delivery.test.js`, `npm run test:cfo`, `wc -l` for
+  both files, and `git diff --check`; all exit 0, production ≤130/tests ≤200.
 - [ ] Commit/push `feat(cfo): persist telegram delivery receipts`; write report and obtain fresh Sol review.
 
 ### Task 6: Live migration, no-send E2E, and closure
@@ -98,16 +104,20 @@
 **Files:**
 - Modify parent/design/plan docs only after evidence is complete.
 
-- [ ] Luna runs dependency-clean focused/CFO/PostgreSQL/full tests.
+- [ ] Luna runs from `apps/life-call`: `npm ci --no-audit --no-fund`; both focused Node test commands;
+  `npm run test:cfo`; `npm run test:cfo-reliable-run:postgres`; `npm test`; and `git diff --check`. All exit 0.
 - [ ] Luna applies both additive migrations once and reloads PostgREST schema without outputting private values.
-- [ ] Luna uses the existing live CFO snapshot to prove: owner timezone resolved, daily run stable across retry, one
-  synthetic delivery claim returns `send`, second returns `reconcile`, synthetic provider receipt records once, third
-  returns `sent`, and database claim/receipt counts are one. It does not call Telegram.
+- [ ] The formal migration path is the existing Supabase Management API database-query endpoint followed by
+  `NOTIFY pgrst, 'reload schema'`; Luna outputs HTTP success booleans only.
+- [ ] Luna proves against the existing live snapshot: owner timezone resolves, daily-run retry is stable, and snapshot
+  `(uid, reporting_date, run_id)` equals its run claim. It creates no live delivery claim/receipt and does not call
+  Telegram. Delivery claim/receipt behavior is proven only in isolated PostgreSQL until CFO-1h sends for real.
 - [ ] Fresh Sol final review returns no Critical/Important findings.
 - [ ] Sol marks `CFO-1g2 COMPLETE — CFO-1g3 NEXT`, records boolean/count evidence, commits/pushes
   `docs(cfo): close reliable daily run`, and sends a separate development milestone notification.
 
 ## Completion boundary
 
-CFO-1g2 closes only after live stable-run and no-send delivery-dedupe proof. The first real Telegram financial report
-remains 7/7; no development milestone may be described as that report.
+CFO-1g2 closes after live stable-run/FK proof plus isolated delivery-dedupe proof. The first real Telegram financial
+report remains 7/7. CFO-1h must detect `reconcile` as a durable delivery-unknown blocker and provide redacted operator
+reconciliation before any resend; no development milestone may be described as the finance report.
