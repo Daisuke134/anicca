@@ -44,6 +44,13 @@ function assertFrozen(value, seen = new WeakSet()) {
   assert.equal(Object.isFrozen(value), true);
   Reflect.ownKeys(value).forEach((key) => assertFrozen(value[key], seen));
 }
+function assertAction(result, kind) {
+  assert.deepEqual(Object.keys(result.action).sort(), ["kind", "nextRetryAt", "retryLabel", "sourceLabel"]);
+  assert.equal(result.action.kind, kind);
+  assert.equal(result.action.sourceLabel, "Moneytree");
+  assert.equal(result.action.retryLabel, kind === "reconsent" ? "Moneytreeを再接続してください" : "30分後に自動再試行します");
+  assert.equal(result.action.nextRetryAt, NEXT_RETRY_AT);
+}
 
 test("recovers a valid first read with the exact frozen result contract", async () => {
   const calls = { read: 0, repair: 0, wait: 0 };
@@ -97,7 +104,7 @@ test("exhausted recovery is bounded and preserves the original failure kind", as
   assert.equal(result.attempts.reads, 3);
   assert.equal(result.failureKind, "timeout");
   assert.equal(result.action.kind, "provider_outage");
-  assert.equal(result.action.nextRetryAt, NEXT_RETRY_AT);
+  assertAction(result, "provider_outage");
   assert.equal(result.moneytreeRead, null);
   assert.equal(result.repair, null);
   assert.deepEqual(calls.repairs, [{ kind: "timeout", attempt: 1 }, { kind: "timeout", attempt: 2 }]);
@@ -115,7 +122,7 @@ for (const kind of RECONSENT) test(`${kind} requires reconsent without repair or
   assert.equal(result.status, "action_required");
   assert.equal(result.failureKind, kind);
   assert.equal(result.action.kind, "reconsent");
-  assert.equal(result.action.nextRetryAt, NEXT_RETRY_AT);
+  assertAction(result, "reconsent");
   assert.equal(reads, 1); assert.equal(repairs, 0); assert.equal(waits, 0);
 });
 
@@ -128,8 +135,7 @@ test("schema and composition failures become provider outage", async () => {
   }));
   assert.equal(result.status, "action_required");
   assert.equal(result.failureKind, "provider_outage");
-  assert.equal(result.action.kind, "provider_outage");
-  assert.equal(result.action.nextRetryAt, NEXT_RETRY_AT);
+  assertAction(result, "provider_outage");
   assert.equal(result.moneytreeRead, null); assert.equal(result.repair, null);
   assert.equal(repairs, 0); assert.equal(waits, 0);
 });
@@ -149,7 +155,7 @@ test("a repaired read is not recovered unless the fresh reread composes and reco
   assert.equal(result.repair, null);
 });
 
-test("preserves the initial transient failure kind when a reread requires reconsent", async () => {
+test("a later consent failure is the decisive terminal failure", async () => {
   let reads = 0;
   const result = await recoverMoneytreeRead(INPUT, effects({
     read: async () => {
@@ -158,9 +164,21 @@ test("preserves the initial transient failure kind when a reread requires recons
     },
   }));
   assert.equal(result.status, "action_required");
-  assert.equal(result.failureKind, "timeout");
-  assert.equal(result.action.kind, "reconsent");
+  assert.equal(result.failureKind, "forbidden");
+  assertAction(result, "reconsent");
   assert.equal(result.attempts.reads, 2);
+});
+
+test("every action-required transition uses the exact four-key labeled action", async () => {
+  const consent = await recoverMoneytreeRead(INPUT, effects({ read: async () => ({ ok: false, kind: "forbidden" }) }));
+  assertAction(consent, "reconsent");
+  const outage = await recoverMoneytreeRead(INPUT, effects({ read: async () => ({ ok: false, kind: "timeout" }) }));
+  assertAction(outage, "provider_outage");
+  const mixed = await recoverMoneytreeRead(INPUT, effects({
+    read: async ({ attempt }) => attempt === 1 ? { ok: false, kind: "timeout" } : { ok: false, kind: "forbidden" },
+  }));
+  assert.equal(mixed.failureKind, "forbidden");
+  assertAction(mixed, "reconsent");
 });
 
 test("preserves the original failure kind and computes retry time from the RFC3339 instant", async () => {

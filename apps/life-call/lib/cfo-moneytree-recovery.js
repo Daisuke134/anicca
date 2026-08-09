@@ -11,6 +11,7 @@ const MONEYTREE_READ_KEYS = new Set(["schemaVersion", "source", "state"]);
 const TRANSIENT = new Set(["timeout", "network", "rate_limited", "provider_5xx"]);
 const RECONSENT = new Set(["unauthorized", "forbidden", "expired", "revoked"]);
 const WAITS = Object.freeze([1000, 5000]);
+const RETRY_LABELS = Object.freeze({ reconsent: "Moneytreeを再接続してください", provider_outage: "30分後に自動再試行します" });
 const RFC3339 = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(\.\d+)?(Z|[+-]\d{2}:\d{2})$/;
 
 function fail(code) { throw new Error(`${ERROR_PREFIX}${code}`); }
@@ -133,6 +134,7 @@ function frozenResult(value) {
 function result(input, attempts, status, failureKind, moneytreeRead, repair, action) {
   return frozenResult({ reportingDate: input.reportingDate, observedAt: input.observedAt, status, attempts, failureKind, moneytreeRead, repair, action });
 }
+function action(kind, nextRetryAt) { return { kind, sourceLabel: "Moneytree", retryLabel: RETRY_LABELS[kind], nextRetryAt }; }
 
 async function recoverMoneytreeRead(input, options) {
   try { validateInput(input, options); } catch (error) { if (error.message.startsWith(ERROR_PREFIX)) throw error; fail("invalid_input"); }
@@ -147,14 +149,14 @@ async function recoverMoneytreeRead(input, options) {
         const composed = composeMoneytreeRead({ source: readResult.moneytreeRead.source, state: readResult.moneytreeRead.state });
         buildCfoDailyReport({ reportingDate: input.reportingDate, moneytreeRead: composed });
         return result(input, attempts, originalFailure ? "recovered" : "fresh", null, composed, originalFailure ? { sourceLabel: "Moneytree", freshReread: true, reconciled: true } : null, null);
-      } catch { return result(input, attempts, "action_required", originalFailure || "provider_outage", null, null, { kind: "provider_outage", nextRetryAt: nextRetryAt(input.observedAt) }); }
+      } catch { return result(input, attempts, "action_required", originalFailure || "provider_outage", null, null, action("provider_outage", nextRetryAt(input.observedAt))); }
     }
     if (!originalFailure) originalFailure = readResult.kind;
-    if (RECONSENT.has(readResult.kind)) return result(input, attempts, "action_required", originalFailure, null, null, { kind: "reconsent", nextRetryAt: nextRetryAt(input.observedAt) });
+    if (RECONSENT.has(readResult.kind)) return result(input, attempts, "action_required", readResult.kind, null, null, action("reconsent", nextRetryAt(input.observedAt)));
     if (!TRANSIENT.has(readResult.kind) || index >= 2) break;
     try { if (await options.repair({ kind: readResult.kind, attempt: index + 1 }) !== true) fail("callback"); attempts.repairs += 1; if (await options.wait(WAITS[index]) !== undefined) fail("callback"); attempts.waits.push(WAITS[index]); } catch { fail("callback"); }
   }
-  return result(input, attempts, "action_required", originalFailure, null, null, { kind: "provider_outage", nextRetryAt: nextRetryAt(input.observedAt) });
+  return result(input, attempts, "action_required", originalFailure, null, null, action("provider_outage", nextRetryAt(input.observedAt)));
 }
 
 module.exports = { recoverMoneytreeRead };
