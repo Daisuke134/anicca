@@ -16,7 +16,7 @@ const TOTAL_KEYS = new Set(["assetsMinor", "liabilitiesMinor", "netWorthMinor", 
 const SOURCE_KEYS = new Set(["sourceId", "label", "status", "asOf", "amountMinor", "verificationStatus"]);
 const EXCLUDED_KEYS = new Set(["label", "reason"]);
 const REPAIR_KEYS = new Set(["sourceLabel", "freshReread", "reconciled"]);
-const ACTION_KEYS = new Set(["kind", "sourceLabel", "retryLabel"]);
+const ACTION_KEYS = new Set(["kind", "sourceLabel", "retryLabel", "nextRetryAt"]);
 const BUTTONS = Object.freeze({
   summary: [["accounts", "口座を見る", "View accounts"], ["accuracy", "正確さを見る", "View accuracy"]],
   accounts: [["summary", "概要に戻る", "Back to summary"], ["accuracy", "正確さを見る", "View accuracy"]],
@@ -39,6 +39,12 @@ function exact(value, allowed, required = []) {
   if (required.some((key) => !Object.prototype.hasOwnProperty.call(value, key))) fail("missing_key");
 }
 function label(value) { if (typeof value !== "string" || value.length === 0) fail("invalid_label"); }
+function rfc3339(value) {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(value)) fail("invalid_action");
+  date(value.slice(0, 10));
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) fail("invalid_action");
+}
 function safeAmount(value) { return value === null || Number.isSafeInteger(value); }
 function date(value) {
   if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) fail("invalid_reporting_date");
@@ -83,8 +89,9 @@ function validateSnapshot(snapshot) {
   }
   if (snapshot.action !== null) {
     exact(snapshot.action, ACTION_KEYS, [...ACTION_KEYS]);
-    if (snapshot.action.kind !== "reconsent") fail("invalid_action");
-    [snapshot.action.sourceLabel, snapshot.action.retryLabel].forEach(label);
+    if (!["reconsent", "provider_outage"].includes(snapshot.action.kind)) fail("invalid_action");
+    [snapshot.action.sourceLabel, snapshot.action.retryLabel, snapshot.action.nextRetryAt].forEach(label);
+    rfc3339(snapshot.action.nextRetryAt);
   }
   const { state, totals, sources, excluded, repair, action } = snapshot;
   if (["complete", "partial", "recovered"].includes(state) && sources.some((source) => source.status !== "fresh")) fail("source_not_fresh");
@@ -118,7 +125,13 @@ function renderCfoTelegram({ locale, view, snapshot }) {
   snapshot = sanitize(snapshot);
   validateSnapshot(snapshot);
   const strings = CFO_STRINGS[locale];
-  if (snapshot.state === "action_required" && view === "summary") return { text: `${strings.actionTitle}\n\n${strings.actionBody}\n${strings.actionRetry}`, extra: extra(locale, snapshot, view) };
+  if (snapshot.state === "action_required" && view === "summary") {
+    const copy = snapshot.action.kind === "provider_outage"
+      ? strings.actionProviderOutage
+      : strings.actionReconsent;
+    const replaceRetryAt = (value) => value.replace("{nextRetryAt}", escapeHtml(snapshot.action.nextRetryAt));
+    return { text: `${copy.title}\n\n${copy.body}\n${replaceRetryAt(copy.retry)}`, extra: extra(locale, snapshot, view) };
+  }
   const freshness = locale === "ja" ? { fresh: "最新", stale: "古い", unavailable: "不明" } : { fresh: "Fresh", stale: "Stale", unavailable: "Unknown" };
   const marks = locale === "ja" ? { colon: "：", open: "（", close: "）", join: "、" } : { colon: ": ", open: " (", close: ")", join: ", " };
   const safeLabel = (value) => escapeHtml(String(value).replace(/\d[\d -]{2,}\d/g, "••••"));

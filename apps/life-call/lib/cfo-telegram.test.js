@@ -47,7 +47,7 @@ function recoveredSnapshot() {
   return snapshot;
 }
 
-function actionRequiredSnapshot() {
+function actionRequiredSnapshot(kind = "reconsent") {
   const snapshot = completeSnapshot();
   snapshot.state = "action_required";
   snapshot.totals = {
@@ -60,9 +60,10 @@ function actionRequiredSnapshot() {
   snapshot.sources[0].amountMinor = null;
   snapshot.sources[0].verificationStatus = "unavailable";
   snapshot.action = {
-    kind: "reconsent",
+    kind,
     sourceLabel: "Moneytree",
-    retryLabel: "接続後に自動再確認",
+    retryLabel: kind === "reconsent" ? "Moneytreeを再接続してください" : "30分後に自動再試行します",
+    nextRetryAt: "2026-08-08T06:32:00+09:00",
   };
   return snapshot;
 }
@@ -285,6 +286,38 @@ test("English drill-down punctuation is localized while Japanese punctuation sta
   assert.match(outputs.accuracy.en, /Not included in the total: カードA \(未接続\), カードB \(確認待ち\)/);
   assert.match(outputs.why.ja, /合計に入れていません：カードA（未接続）、カードB（確認待ち）/);
   assert.match(outputs.why.en, /Not included in the total: カードA \(未接続\), カードB \(確認待ち\)/);
+});
+
+test("provider outage explains automatic retry at the persisted time without asking reconnection", () => {
+  for (const locale of ["ja", "en"]) {
+    const text = renderCfoTelegram({ locale, view: "summary", snapshot: actionRequiredSnapshot("provider_outage") }).text;
+    assert.match(text, locale === "ja" ? /自動再試行/ : /automatically retry/i);
+    assert.match(text, /2026-08-08T06:32:00\+09:00/);
+    assert.doesNotMatch(text, /再接続|接続を.*更新|reconnect|connection update/i);
+    assert.doesNotMatch(text, /420,000|390,000|stack|Error|https?:\/\/|provider_5xx|moneytree_mufg/i);
+  }
+});
+
+test("reconsent asks for one Moneytree connection update and keeps copy distinct", () => {
+  for (const locale of ["ja", "en"]) {
+    const text = renderCfoTelegram({ locale, view: "summary", snapshot: actionRequiredSnapshot("reconsent") }).text;
+    assert.match(text, locale === "ja" ? /接続を1回だけ更新/ : /Reconnect Moneytree once/);
+    assert.doesNotMatch(text, locale === "ja" ? /自動再試行/ : /automatically retry/i);
+    assert.doesNotMatch(text, /420,000|390,000|stack|Error|https?:\/\/|provider_5xx|moneytree_mufg/i);
+  }
+});
+
+test("action reports have only the four public keys and require RFC3339 nextRetryAt", () => {
+  const valid = actionRequiredSnapshot("provider_outage");
+  assert.deepEqual(Object.keys(valid.action).sort(), ["kind", "sourceLabel", "retryLabel", "nextRetryAt"].sort());
+  for (const nextRetryAt of ["2026-08-08", "not-a-time", "2026-08-08T06:32:00"]) {
+    const snapshot = actionRequiredSnapshot("provider_outage");
+    snapshot.action.nextRetryAt = nextRetryAt;
+    assertInvalid(snapshot, "invalid_action");
+  }
+  const extra = actionRequiredSnapshot("reconsent");
+  extra.action.rawError = "provider body";
+  assertInvalid(extra, "unknown_key");
 });
 
 module.exports = { completeSnapshot, partialSnapshot, recoveredSnapshot, actionRequiredSnapshot };
