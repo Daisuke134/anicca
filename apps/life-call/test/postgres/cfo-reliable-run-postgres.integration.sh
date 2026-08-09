@@ -92,7 +92,7 @@ GRANT SELECT, UPDATE ON TABLE public.lm_panel_preferences TO service_role;
 SQL
 
 for migration in "$MIGRATION_SNAPSHOT" "$MIGRATION_RUN" "$MIGRATION_DELIVERY"; do
-  "${PSQL[@]}" -f "$migration" >/dev/null
+  "${PSQL[@]}" -f "$migration" >/dev/null 2>&1
 done
 
 "${PSQL[@]}" >/dev/null <<'SQL'
