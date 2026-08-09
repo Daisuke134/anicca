@@ -88,22 +88,115 @@ function writeLedger(filePath, value) {
   }
 }
 
+const DEFAULT_LOCK_STALE_MS = 10 * 60 * 1000;
+
+function isPidAlive(pid) {
+  if (!Number.isInteger(pid) || pid <= 0) return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return error && error.code === "EPERM";
+  }
+}
+
+function readLockSnapshot(lockPath) {
+  let stat;
+  try {
+    stat = fs.statSync(lockPath);
+  } catch (error) {
+    if (error && error.code === "ENOENT") return null;
+    throw error;
+  }
+
+  let metadata = null;
+  try {
+    metadata = JSON.parse(fs.readFileSync(lockPath, "utf8"));
+  } catch {
+    // Empty and legacy/unparseable locks use their mtime as the age signal.
+  }
+  return { metadata, mtimeMs: stat.mtimeMs };
+}
+
+function canRecoverLock(snapshot, nowMs, staleMs, pidAlive) {
+  const metadata = snapshot && snapshot.metadata;
+  const acquiredAtMs = metadata ? Number(metadata.acquired_at_ms) : Number.NaN;
+  const referenceMs = Number.isFinite(acquiredAtMs) ? acquiredAtMs : snapshot.mtimeMs;
+  const ageMs = nowMs - referenceMs;
+  if (!(ageMs > staleMs)) return false;
+  return !pidAlive(Number(metadata && metadata.pid));
+}
+
+function writeLockMetadata(handle, metadata) {
+  fs.writeFileSync(handle, JSON.stringify(metadata), { encoding: "utf8" });
+  fs.fsyncSync(handle);
+  fs.fchmodSync(handle, 0o600);
+}
+
+function releaseLedgerLock(lockPath, lockOwnerToken) {
+  try {
+    const owner = JSON.parse(fs.readFileSync(lockPath, "utf8"));
+    if (owner && owner.owner_token === lockOwnerToken) fs.unlinkSync(lockPath);
+  } catch {
+    // A missing, replaced, or legacy lock is not ours to remove.
+  }
+}
+
 async function withLedgerLock(filePath, task) {
   privateParent(filePath);
   const lockPath = `${filePath}.lock`;
-  let handle;
-  try {
-    handle = fs.openSync(lockPath, "wx", 0o600);
-  } catch (error) {
-    if (error && error.code === "EEXIST") unavailable("Connector target lease ledger busy");
-    throw error;
+  let recoveredStale = false;
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    let handle;
+    let lockOwnerToken;
+    try {
+      handle = fs.openSync(lockPath, "wx", 0o600);
+      lockOwnerToken = crypto.randomUUID();
+      writeLockMetadata(handle, {
+        schema_version: 1,
+        pid: process.pid,
+        owner_token: lockOwnerToken,
+        acquired_at_ms: Date.now(),
+      });
+      fs.closeSync(handle);
+      handle = undefined;
+    } catch (error) {
+      if (handle !== undefined) {
+        try { fs.closeSync(handle); } catch {}
+      }
+      if (error && error.code !== "EEXIST") {
+        if (lockOwnerToken) releaseLedgerLock(lockPath, lockOwnerToken);
+        throw error;
+      }
+
+      const snapshot = readLockSnapshot(lockPath);
+      if (
+        attempt === 0
+        && snapshot
+        && canRecoverLock(snapshot, Date.now(), DEFAULT_LOCK_STALE_MS, isPidAlive)
+      ) {
+        try {
+          fs.unlinkSync(lockPath);
+        } catch (unlinkError) {
+          if (unlinkError && unlinkError.code !== "ENOENT") throw unlinkError;
+        }
+        recoveredStale = true;
+        continue;
+      }
+      if (!snapshot && attempt === 0) continue;
+      unavailable("Connector target lease ledger busy");
+    }
+
+    try {
+      return await task(readLedger(filePath));
+    } finally {
+      releaseLedgerLock(lockPath, lockOwnerToken);
+    }
   }
-  try {
-    return await task(readLedger(filePath));
-  } finally {
-    fs.closeSync(handle);
-    fs.unlinkSync(lockPath);
-  }
+
+  if (recoveredStale) unavailable("Connector target lease ledger busy");
+  unavailable("Connector target lease ledger busy");
 }
 
 function assertFence(record, fence) {
