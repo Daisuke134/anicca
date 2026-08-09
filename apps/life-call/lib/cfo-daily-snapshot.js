@@ -1,12 +1,14 @@
 "use strict";
 
+const { types: { isProxy } } = require("node:util");
 const { composeMoneytreeRead } = require("./cfo-moneytree-state.js");
 
 const ERROR_PREFIX = "cfo_daily_snapshot_invalid:";
 const INPUT_KEYS = new Set(["reportingDate", "moneytreeRead"]);
 const READ_KEYS = new Set(["schemaVersion", "source", "state"]);
+const INTERNAL_ERRORS = new WeakSet();
 
-function fail(reason) { throw new Error(`${ERROR_PREFIX}${reason}`); }
+function fail(reason) { const error = new Error(`${ERROR_PREFIX}${reason}`); INTERNAL_ERRORS.add(error); throw error; }
 function plain(value) { return value !== null && typeof value === "object" && !Array.isArray(value) && Object.getPrototypeOf(value) === Object.prototype; }
 function dataProperties(value) {
   if (value === null || typeof value !== "object") return;
@@ -16,6 +18,7 @@ function dataProperties(value) {
   }
 }
 function exact(value, allowed) {
+  if (isProxy(value)) fail("proxy");
   dataProperties(value);
   if (!plain(value)) fail("invalid_object");
   const own = Reflect.ownKeys(value);
@@ -59,7 +62,7 @@ function buildCfoDailyReport(input) {
     };
     return deepFreeze(structuredClone(report));
   } catch (error) {
-    if (error && typeof error.message === "string" && error.message.startsWith(ERROR_PREFIX)) throw error;
+    if (INTERNAL_ERRORS.has(error)) throw error;
     throw new Error(`${ERROR_PREFIX}invalid_input`);
   }
 }

@@ -84,6 +84,8 @@ test("rejects unsafe dates, sums that leave the safe integer range, stale or una
 test("revalidation rejects unknown keys, accessors, custom prototypes, proxies, cycles, and non-JPY evidence", () => {
   const cases = [];
   cases.push(() => buildCfoDailyReport({ reportingDate: "2026-08-09", moneytreeRead: { ...read(), rawPayload: "secret" } }));
+  const transparentProxy = new Proxy(rawRead(), {});
+  cases.push(() => buildCfoDailyReport({ reportingDate: "2026-08-09", moneytreeRead: transparentProxy }));
   const accessor = rawRead(); Object.defineProperty(accessor.source, "sourceId", { enumerable: true, get: () => "secret" });
   cases.push(() => buildCfoDailyReport({ reportingDate: "2026-08-09", moneytreeRead: accessor }));
   const prototype = rawRead(); Object.setPrototypeOf(prototype.source, { hostile: true });
@@ -95,4 +97,25 @@ test("revalidation rejects unknown keys, accessors, custom prototypes, proxies, 
   const nonJpy = rawRead(); nonJpy.source.accounts[0].currency = "USD";
   cases.push(() => buildCfoDailyReport({ reportingDate: "2026-08-09", moneytreeRead: nonJpy }));
   cases.forEach(invalid);
+});
+
+test("redacts thrown errors without reading a hostile message getter", () => {
+  const thrown = new Proxy({}, { get: () => { throw new Error("message getter accessed"); } });
+  const statePath = require.resolve("./cfo-moneytree-state.js");
+  const builderPath = require.resolve("./cfo-daily-snapshot.js");
+  const stateModule = require(statePath);
+  const originalCompose = stateModule.composeMoneytreeRead;
+  stateModule.composeMoneytreeRead = () => { throw thrown; };
+  delete require.cache[builderPath];
+  try {
+    const { buildCfoDailyReport: injectedBuilder } = require(builderPath);
+    assert.throws(
+      () => injectedBuilder({ reportingDate: "2026-08-09", moneytreeRead: rawRead() }),
+      new Error("cfo_daily_snapshot_invalid:invalid_input"),
+    );
+  } finally {
+    stateModule.composeMoneytreeRead = originalCompose;
+    delete require.cache[builderPath];
+    require(builderPath);
+  }
 });
