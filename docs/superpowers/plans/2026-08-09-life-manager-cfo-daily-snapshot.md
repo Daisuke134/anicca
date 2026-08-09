@@ -11,7 +11,7 @@ and appends the record without logging financial payloads.
 
 **Tech Stack:** Node.js 20+, CommonJS, `node:test`, PostgreSQL/Supabase, built-in `fetch`; no new dependency.
 
-**Status:** ACTIVE — Task 1 next.
+**Status:** ACTIVE — Task 1 complete; Task 2 next.
 
 ## Global Constraints
 
@@ -38,7 +38,7 @@ and appends the record without logging financial payloads.
 - Consumes: `composeMoneytreeRead({ source, state })` from `cfo-moneytree-state.js`.
 - Produces: `buildCfoDailyReport({ reportingDate, moneytreeRead }) => deeplyFrozenReport`.
 
-- [ ] **Step 1: Write RED contract tests**
+- [x] **Step 1: Write RED contract tests**
 
 Build only synthetic Moneytree bundles through the existing validators. Test:
 
@@ -60,7 +60,7 @@ overflow rejection, invalid date rejection, unavailable/stale/complete-liability
 input mutation isolation, Proxy/accessor/custom-prototype/cycle/unknown-key rejection inherited through revalidation,
 and no account number/raw/secret-shaped key in serialized output.
 
-- [ ] **Step 2: Run focused RED**
+- [x] **Step 2: Run focused RED**
 
 ```bash
 cd apps/life-call
@@ -69,7 +69,7 @@ node --test lib/cfo-daily-snapshot.test.js
 
 Expected: FAIL only because `cfo-daily-snapshot.js` or `buildCfoDailyReport` does not exist.
 
-- [ ] **Step 3: Implement the minimum builder**
+- [x] **Step 3: Implement the minimum builder**
 
 Implementation shape:
 
@@ -90,7 +90,7 @@ module.exports = { buildCfoDailyReport };
 
 Do not create a generic currency engine, snapshot class, schema library, or shared validator refactor.
 
-- [ ] **Step 4: Register and prove GREEN**
+- [x] **Step 4: Register and prove GREEN**
 
 Append `lib/cfo-daily-snapshot.test.js` exactly once to `test:cfo`, then run:
 
@@ -104,7 +104,7 @@ git diff --check
 
 Expected: all pass; production ≤100 LOC, tests ≤200 LOC, diff clean.
 
-- [ ] **Step 5: Commit and push**
+- [x] **Step 5: Commit and push**
 
 ```bash
 git add apps/life-call/lib/cfo-daily-snapshot.js apps/life-call/lib/cfo-daily-snapshot.test.js apps/life-call/package.json
