@@ -18,7 +18,10 @@ const BRANCHES = Object.freeze({
 });
 
 function fail(reason) { const error = new Error(`${ERROR_PREFIX}${reason}`); INTERNAL_ERRORS.add(error); throw error; }
-function isInternalError(error) { return error !== null && (typeof error === "object" || typeof error === "function") && INTERNAL_ERRORS.has(error); }
+function consumeInternalError(error) {
+  if (error === null || (typeof error !== "object" && typeof error !== "function") || !INTERNAL_ERRORS.has(error)) return false;
+  INTERNAL_ERRORS.delete(error); return true;
+}
 function plain(value) { return value !== null && typeof value === "object" && !Array.isArray(value) && Object.getPrototypeOf(value) === Object.prototype; }
 function dataProperties(value) {
   if (value === null || typeof value !== "object") return;
@@ -104,7 +107,7 @@ function deriveMoneytreeState(input) {
     const result = { schemaVersion: 1, sourceId: "moneytree_mufg", ...branch, observedAt: input.observedAt, aggregationStatus, aggregationAsOf: aggregationStatus === "unknown" ? null : input.aggregationAsOf, liabilityCoverage: input.liabilitiesExposed ? "complete" : "unknown", liabilityCount: input.liabilitiesExposed ? input.liabilityCount : null, partial: branch.retrievalStatus === "unavailable" || aggregationStatus !== "fresh" || !input.liabilitiesExposed, };
     return freeze(structuredClone(result));
   } catch (error) {
-    if (isInternalError(error)) throw error;
+    if (consumeInternalError(error)) throw error;
     throw new Error(`${ERROR_PREFIX}invalid_input`);
   }
 }
@@ -122,7 +125,7 @@ function composeMoneytreeRead(input) {
     if (!!expectedAction !== !!actualAction || (expectedAction && (expectedAction.kind !== actualAction.kind || expectedAction.actionRef !== actualAction.actionRef))) fail("action_mismatch");
     return freeze(structuredClone({ schemaVersion: 1, source, state }));
   } catch (error) {
-    if (isInternalError(error)) throw error;
+    if (consumeInternalError(error)) throw error;
     throw new Error(`${ERROR_PREFIX}invalid_composition`);
   }
 }
