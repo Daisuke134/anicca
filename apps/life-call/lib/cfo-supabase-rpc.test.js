@@ -41,6 +41,28 @@ test("internal provenance survives same-operation propagation but not a later op
   assert.equal(rpc.internal(propagated), false);
 });
 
+test("internal provenance stays independent for overlapping operations and clears after settlement", async () => {
+  const rpc = createCfoSupabaseRpc("operation_failed:");
+  const allowed = new Set(["value"]);
+  let release;
+  const gate = new Promise(resolve => { release = resolve; });
+  async function operation(reason) {
+    rpc.exact({ value: 1 }, allowed);
+    await gate;
+    try { rpc.fail(reason); } catch (error) { return error; }
+  }
+
+  const firstPromise = operation("first");
+  const secondPromise = operation("second");
+  release();
+  const [first, second] = await Promise.all([firstPromise, secondPromise]);
+  assert.equal(first.message, "operation_failed:first");
+  assert.equal(second.message, "operation_failed:second");
+  assert.notEqual(first, second);
+  assert.equal(rpc.internal(first), false);
+  assert.equal(rpc.internal(second), false);
+});
+
 test("exact() enforces a plain object with exactly the allowed enumerable own keys", () => {
   const { exact } = createCfoSupabaseRpc("t_failed:");
   const allowed = new Set(["a", "b"]);

@@ -14,10 +14,20 @@ const DEFAULT_OPTION_KEYS = new Set(["supaUrl", "supaKey", "fetchImpl"]);
 // provenance never crosses module boundaries.
 function createCfoSupabaseRpc(errorPrefix) {
   const operationErrors = new AsyncLocalStorage();
-  function beginOperation() { operationErrors.enterWith(new WeakSet()); }
+  function beginOperation() { operationErrors.enterWith({ errors: new WeakSet(), open: true }); }
   function ensureOperation() { if (!operationErrors.getStore()) beginOperation(); return operationErrors.getStore(); }
-  function fail(reason) { const error = new Error(`${errorPrefix}${reason}`); ensureOperation().add(error); throw error; }
-  function internal(error) { const errors = operationErrors.getStore(); return error !== null && (typeof error === "object" || typeof error === "function") && Boolean(errors?.has(error)); }
+  function fail(reason) {
+    const operation = ensureOperation();
+    const error = new Error(`${errorPrefix}${reason}`);
+    operation.errors.add(error);
+    queueMicrotask(() => { operation.open = false; });
+    throw error;
+  }
+  function internal(error) {
+    const operation = operationErrors.getStore();
+    return error !== null && (typeof error === "object" || typeof error === "function")
+      && Boolean(operation?.open && operation.errors.has(error));
+  }
   function plain(value) {
     if (value === null || typeof value !== "object" || Array.isArray(value) || isProxy(value)) return false;
     try { return Object.getPrototypeOf(value) === Object.prototype; } catch { return false; }
@@ -73,12 +83,15 @@ function createCfoSupabaseRpc(errorPrefix) {
     const url = `${config.base}/rest/v1/rpc/${path}`;
     let response;
     try { response = await config.fetchImpl(url, { method: "POST", headers: { apikey: config.supaKey, Authorization: `Bearer ${config.supaKey}`, "Content-Type": "application/json" }, body }); } catch { fail("network"); }
-    let ok, status;
+    let ok, status, validResponse = true;
     try {
-      if (response === null || typeof response !== "object" || isProxy(response)) fail("invalid_response");
-      ok = response.ok; status = response.status;
-      if (typeof ok !== "boolean" || !Number.isInteger(status) || status < 100 || status > 599) fail("invalid_response");
-    } catch (error) { if (internal(error)) throw error; fail("invalid_response"); }
+      if (response === null || typeof response !== "object" || isProxy(response)) validResponse = false;
+      else {
+        ok = response.ok; status = response.status;
+        if (typeof ok !== "boolean" || !Number.isInteger(status) || status < 100 || status > 599) validResponse = false;
+      }
+    } catch { validResponse = false; }
+    if (!validResponse) fail("invalid_response");
     if (!ok || status < 200 || status >= 300) fail(`provider_${status}`);
     let parsed;
     try { const json = response.json; if (typeof json !== "function") fail("invalid_json"); parsed = await json.call(response); } catch (error) { if (internal(error)) throw error; fail("invalid_json"); }

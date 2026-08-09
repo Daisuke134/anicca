@@ -188,6 +188,36 @@ test("does not replay a mutated public Error through a later hostile response ge
   });
 });
 
+test("does not replay a nested public Error through the outer response getter", async () => {
+  let innerError;
+  const outerFetch = async () => {
+    await assert.rejects(() => appendCfoDailySnapshotRevision(input(), {
+      supaUrl: URL, supaKey: KEY, fetchImpl: async () => null,
+    }), error => {
+      innerError = error;
+      error.message = "INNER_BODY_SENTINEL";
+      return true;
+    });
+
+    const hostileResponse = {};
+    Object.defineProperty(hostileResponse, "ok", {
+      enumerable: true,
+      get: () => { throw innerError; },
+    });
+    Object.defineProperty(hostileResponse, "status", { enumerable: true, value: 200 });
+    return hostileResponse;
+  };
+
+  await assert.rejects(() => appendCfoDailySnapshotRevision(input(), {
+    supaUrl: URL, supaKey: KEY, fetchImpl: outerFetch,
+  }), error => {
+    assert.notEqual(error, innerError);
+    assert.equal(error.message, "cfo_snapshot_revision_store_failed:invalid_response");
+    assert.doesNotMatch(error.message, /INNER_BODY_SENTINEL/);
+    return true;
+  });
+});
+
 test("never logs on success or representative validation, network, and provider failures", async () => {
   const names = ["log", "info", "debug", "warn", "error"]; const originals = Object.fromEntries(names.map(name => [name, console[name]])); let calls = 0;
   try {

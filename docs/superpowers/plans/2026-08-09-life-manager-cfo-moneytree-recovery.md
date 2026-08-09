@@ -333,19 +333,19 @@ Run shared RPC and all three client focused tests, `npm run test:cfo`, `git diff
 - Modify: `apps/life-call/lib/cfo-supabase-rpc.test.js`
 - Modify: `apps/life-call/lib/cfo-daily-snapshot-revision-store.test.js`
 
-- [ ] **Step 1: Write load-bearing RED**
+- [x] **Step 1: Write load-bearing RED**
 
 Reproduce a nested call inside an outer `fetchImpl` and overlapping promises. Replay an Error returned by the inner
 public call through the outer response getter. Require a different fixed outer Error, independent concurrent error
 reasons, and no ambient provenance after either operation settles. Observe failure against Task 6b.
 
-- [ ] **Step 2: Implement minimum GREEN**
+- [x] **Step 2: Implement minimum GREEN**
 
 Remove ambient operation state that survives or replaces its caller context. Error provenance must be local and
 short-lived: exact same-operation propagation works, while settled, nested, and parallel operations cannot recognize
 one another's Error identity. Preserve every public prefix and strict validator.
 
-- [ ] **Step 3: Verify and close**
+- [x] **Step 3: Verify and close**
 
 Run shared RPC plus all four client tests, `npm run test:cfo`, `git diff --check`; commit/push
 `fix(cfo): isolate shared rpc operation errors`; write the ignored report; obtain fresh Sol review.
