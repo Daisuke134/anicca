@@ -438,3 +438,23 @@ rtk git status --short --untracked-files=all
 目標は約¥1.5M/月のnet operating profitであり、`official settled payouts - official settled stakes - data subscriptions - compute/provider/transaction costs`と定義する。taxは別追跡する。必要turnoverはnet ROI 3%=¥50M/月、5%=¥30M/月、10%=¥15M/月、20%=¥7.5M/月。¥100/dayを10%で回すと¥300/月、¥500/dayでも¥1,500/月である。これはaspiration/capacity testであってforecastではない。live receipt、slippage/capacity、calibration、drawdown、later-window evidenceが必要turnoverを支えない場合は `¥1.5M target not supported` と結論し、強制scalingしない。
 
 Best caseはsource gate、actual data、calibration、later-window ROI、drawdown、receipt reconciliationが継続PASSする場合であり、source laneごとにSHADOWを進めHRA-6を審査する。Base caseはentitlementまたはcoverage不足で、`DATA BLOCKED`のままsyntheticを実績に混ぜない。Worst caseはlicense、provider stability、timestamp、slippage、Telegram/CFO reconciliationが壊れ、cashを永続disabledにする。最強の棄却案は「provider permissionとofficial supported ordering APIの証拠が取れないなら、競馬AIをfinancial organとして作らず、純粋なresearch reportに限定する」である。自分が間違うとしたら、未発見の公式provider integrationまたは書面許可が実在し、現Reality Gateの取得可能性を過小評価している筋である。
+
+## HRA-2R1 state (Resend truth update)
+
+- **state**: `BLOCKED` / `session0` / `record0` / `probe null`
+- **support inquiry**: `office@jra-van.jp`; API state `API_ACCEPTED_DELIVERY_UNVERIFIED`
+- **subject**: `JRA-VAN Data Lab / JV-Link 5.0.0 の Windows 365 Cloud PC 対応について`
+- **evidence**: `docs/evidence/horse-racing/jra-probe.md`
+
+## Wait contract
+
+- **target**: official written compatibility reply
+- **external reason**: Cloud/VM/RDP compatibility is not documented
+- **durable owner**: Sol / Life Manager
+- **next check**: `2026-08-10 21:30 JST`
+- **parallel work**: physical Japanese Windows 11 x64 endpoint procurement research
+- **auth blocker**: Gmail/Computer Use authentication remains blocked
+
+## UI/E2E boundary
+
+- **UI**: no; **Maestro**: not needed

@@ -47,3 +47,21 @@ HRA-2R1は`BLOCKED`。現在のhostはWindowsではなく、JV-Link/Data Labとv
 次に必要なのは、owned Windows上のJRA-VAN Data Lab/JV-Link installation、valid service key/entitlement、pinned `miyamamoto/jrvltsql` checkout、公式/upstream documentationに記載されたprobe commandである。これらが揃うまでprovider sessionを開始せず、JRA laneをHRA-2Sへ進めない。
 
 Primary sources: [FAQ 436](https://support.jra-van.jp/jravan/detail?site=SVKNEGBV&category=24&id=436), [FAQ 210](https://support.jra-van.jp/jravan/detail?site=SVKNEGBV&category=24&id=210), [developer topic 49](https://developer.jra-van.jp/t/topic/49), [Windows 11 requirements](https://www.microsoft.com/en-us/windows/windows-11-specifications), [Microsoft Mac options](https://support.microsoft.com/en-us/windows/experience/platform-variants/options-for-using-windows-11-with-mac-computers-with-apple-m1-m2-and-m3-chips), [Parallels KB 125343](https://kb.parallels.com/en/125343).
+
+## Resend inquiry truth update
+
+- **status**: `API_ACCEPTED_DELIVERY_UNVERIFIED`
+- **recipient**: `office@jra-van.jp`
+- **subject**: `JRA-VAN Data Lab / JV-Link 5.0.0 の Windows 365 Cloud PC 対応について`
+- **submitted_via**: Official Resend API
+- **resend_post_http**: `200`
+- **provider_message_id**: `39b44ea4-57f9-4429-84b2-917320d81b40`
+- **submission_timestamp**: `unavailable_at_post`
+- **verification_get_http**: `401`
+- **verification_error**: `restricted_api_key` — `This API key is restricted to only send emails`
+- **duplicate_send_count**: `0`
+- **reply_received**: `false`
+
+**Truth boundary.** Resend accepted the send request, but delivery/readback is unverified because the configured key cannot call `GET /emails/{id}`.
+
+**Next evidence.** An official written compatibility reply is required.
