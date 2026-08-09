@@ -113,7 +113,7 @@ flowchart LR
 | HRA-1b | purchase-disabled boundary | `apps/horse-racing-agent/src/horse_racing_agent/purchase.py`; `apps/horse-racing-agent/tests/test_purchase_disabled.py` | 70 | **complete**, `89d48910` |
 | HRA-2a | licensed source/local boundary | `apps/horse-racing-agent/src/horse_racing_agent/ingest.py`; `apps/horse-racing-agent/tests/test_ingest_boundary.py` | 80 | **complete**, `0fe627cd`。boundary only |
 | HRA-2R1-P | physical Windows worker procurement evidence | `docs/evidence/horse-racing/windows-worker-procurement.md` | 40 | **complete: purchase not executed; action-time confirmation required** |
-| HRA-2R1 | JRA environment + one-real-record probe | `docs/evidence/horse-racing/jra-probe.md` | 35 | **ACTIVE — remote/native Windows 11 x64 worker required** |
+| HRA-2R1 | JRA environment + one-real-record probe | `docs/evidence/horse-racing/windows-worker-first-record-runbook.md`; `docs/evidence/horse-racing/jra-probe.md` | 95 | **ACTIVE/BLOCKED — runbook prepared, not executed; session0, record0, probe null** |
 | HRA-2R2 | JRA redacted reality manifest | `docs/evidence/horse-racing/jra-reality-gate.md` | 35 | pending HRA-2R1 |
 | HRA-2R3 | NAR environment + one-real-record probe | `docs/evidence/horse-racing/nar-probe.md` | 35 | pending HRA-2R1、JRAと独立 |
 | HRA-2R4 | NAR redacted reality manifest | `docs/evidence/horse-racing/nar-reality-gate.md` | 35 | pending HRA-2R3 |
@@ -199,6 +199,8 @@ rtk python3.12 -m pytest -q
 ### HRA-2R1 — JRA environment + one-real-record probe `[ ] ACTIVE`
 
 **Owner: Luna。** Macをcontrol planeとして維持し、owned remote/native Windows 11 x64 worker上でJRA-VAN Data Lab/JV-Link installed、valid service key、利用条件確認、pinned `miyamamoto/jrvltsql` checkoutを揃え、official/upstream probeで少なくとも1件のreal JRA recordをlocal観測する。Mac内蔵VM、Wine、x64 emulationはprovider supportと見なさない。Solは環境準備やprobeを代行せず、結果のgateだけを検証する。
+
+Runbook: `docs/evidence/horse-racing/windows-worker-first-record-runbook.md`。Stateは `PREPARED_NOT_EXECUTED`、HRA-2R1は `ACTIVE/BLOCKED`、`session0`、`record0`、`probe null`。二時間目標は全precondition成立後に始まり、SLA・成功証拠ではない。runbookは準備済みであり、provider、credential、purchase、probeは未実行。
 
 File: `docs/evidence/horse-racing/jra-probe.md`。このfileにraw row、実馬名、credential、subscription idを記録しない。
 
