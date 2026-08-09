@@ -94,6 +94,39 @@ test("partial and action-required never claim a complete net worth", () => {
   }
 });
 
+test("action-required rejects every financial fact in every Telegram view before rendering", () => {
+  const prohibitedFacts = [
+    ["totals.assetsMinor", (snapshot) => { snapshot.totals.assetsMinor = 1; }],
+    ["totals.liabilitiesMinor", (snapshot) => { snapshot.totals.liabilitiesMinor = 1; }],
+    ["totals.netWorthMinor", (snapshot) => { snapshot.totals.netWorthMinor = 1; }],
+    ["totals.changeMinor", (snapshot) => { snapshot.totals.changeMinor = 1; }],
+    ["sources[0].amountMinor", (snapshot) => {
+      snapshot.sources[0].status = "fresh";
+      snapshot.sources[0].verificationStatus = "provider_reported";
+      snapshot.sources[0].amountMinor = 1;
+    }],
+  ];
+  const failures = [];
+  for (const [field, mutate] of prohibitedFacts) {
+    for (const view of ["summary", "accounts", "accuracy", "why"]) {
+      const snapshot = actionRequiredSnapshot();
+      mutate(snapshot);
+      try {
+        renderCfoTelegram({ locale: "ja", view, snapshot });
+        failures.push(`${field}:${view}:rendered`);
+      } catch (error) {
+        const expected = field === "totals.netWorthMinor"
+          ? "Error: cfo_telegram_invalid:action_required_net_worth_forbidden"
+          : "Error: cfo_telegram_invalid:action_required_amount_forbidden";
+        if (String(error) !== expected) {
+          failures.push(`${field}:${view}:wrong_error`);
+        }
+      }
+    }
+  }
+  assert.deepEqual(failures, []);
+});
+
 test("recovered is impossible without fresh reread and reconciliation", () => {
   const snapshot = recoveredSnapshot();
   snapshot.repair.freshReread = false;

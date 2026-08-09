@@ -123,6 +123,7 @@ function validateSnapshot(snapshot) {
   if ((state === "complete" || state === "recovered") && excluded.length) fail("inconsistent_state");
   if (state === "partial" && (totals.netWorthMinor !== null || excluded.length === 0)) fail(totals.netWorthMinor === null ? "partial_excluded_required" : "partial_net_worth_forbidden");
   if (state === "action_required" && (totals.netWorthMinor !== null || action === null)) fail(totals.netWorthMinor === null ? "action_required_missing_action" : "action_required_net_worth_forbidden");
+  if (state === "action_required" && (Object.values(totals).some((value) => value !== null) || sources.some((source) => source.amountMinor !== null))) fail("action_required_amount_forbidden");
   if (state !== "recovered" && repair !== null) fail("inconsistent_repair");
   if (state !== "action_required" && action !== null) fail("inconsistent_action");
   if (state === "recovered" && (!repair || repair.freshReread !== true || repair.reconciled !== true)) fail("recovery_unproven");

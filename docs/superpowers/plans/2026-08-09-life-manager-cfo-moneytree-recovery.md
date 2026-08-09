@@ -188,18 +188,18 @@ Run renderer test, recovery snapshot test, `npm run test:cfo`, LOC delta, diff-c
 - Modify: `apps/life-call/lib/cfo-telegram.js`
 - Modify: `apps/life-call/lib/cfo-telegram.test.js`
 
-- [ ] **Step 1: Write load-bearing RED**
+- [x] **Step 1: Write load-bearing RED**
 
 Build an otherwise valid `action_required` snapshot containing non-null assets, liabilities, change, or source
 amounts. Exercise every existing view and prove the renderer rejects the snapshot before rendering any stale amount.
 The test must fail against the reviewed implementation and must not pass by checking only the summary shortcut.
 
-- [ ] **Step 2: Implement minimum GREEN**
+- [x] **Step 2: Implement minimum GREEN**
 
 Require every `action_required` total and every source amount to be `null`; keep the exact unavailable source/action
 contract. Do not add a view, transport, or replacement financial copy.
 
-- [ ] **Step 3: Verify and close**
+- [x] **Step 3: Verify and close**
 
 Run renderer and recovery-snapshot focused tests, `npm run test:cfo`, `git diff --check`; commit/push
 `fix(cfo): suppress stale action-required facts`; write the ignored report; obtain fresh Sol review.
