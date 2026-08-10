@@ -2,12 +2,12 @@
 
 | Field | Value |
 |---|---|
-| Status | M2 ACTIVE — CFO-2a2b complete; CFO-2a3 billing-export/invoice reconciliation is next |
+| Status | M2 ACTIVE — CFO-2a3.1 provider billing reconciliation contract is active |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
 | Existing foundations | `apps/life-call`, interactive Moneytree App access, Fleet telemetry, `lm_api_cost`, and the canonical `lm_agent_earnings` source (the panel's `lm_financial_ledger` name is a stale alias) |
-| First unfinished item | **CFO-2a3: reconcile confirmed billing exports/invoices with provisional usage cost** |
+| First unfinished item | **CFO-2a3.1: pure confirmed-invoice/provisional-cost reconciliation contract** |
 
 ## 1. Overview — What and Why
 
@@ -966,7 +966,10 @@ ingestion. They are not unchecked M1 items and cannot become the active CFO item
       hourly publication, then real E2E/close. Child SSOT:
       `docs/superpowers/specs/2026-08-11-life-manager-cfo-agent-usage-capture-design.md`.
 - [ ] **CFO-2a3** Add billing-export/invoice reconciliation; confirmed cost supersedes provisional cost without
-      deleting either record, and unexplained differences remain visible.
+      deleting either record, and unexplained differences remain visible. Deliver it local-first as a pure contract,
+      existing-`gog` Gmail/PDF source, then real read-only E2E/hourly publication. No BigQuery export, new DB, or
+      scheduler is required. Child SSOT:
+      `docs/superpowers/specs/2026-08-11-life-manager-cfo-provider-billing-reconciliation-design.md`.
 - [ ] **CFO-2a3b** Confirm only provider-supported billing dimensions. Shared-project business costs use a versioned
       allocation rule, `provider_billed_allocated`, and a visible unallocated remainder.
 - [ ] **CFO-2a3c** Reconcile actual Codex/Claude subscription receipts separately from the versioned
