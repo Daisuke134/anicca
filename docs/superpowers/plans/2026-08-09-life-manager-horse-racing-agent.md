@@ -80,8 +80,8 @@ The official NAR source is zero-cost primary; JRA remains official primary. Seco
 | 2 | HRA-2R2 NAR official evidence gate validation | **complete** | `PASS_PRIVATE_SHADOW`; commits `33ef30c1d` + `a289babba` |
 | 3 | HRA-2R1 JRA public-web record | **complete** | 12 actual rows; commits `526381236` + `e79ed1d11` |
 | 4 | HRA-2N NAR official free acquisition component | **complete** | commits `d22fff7ae..b67198e6`; focused 17/full 49 PASS |
-| 5 | HRA-2R3 per-source index/gate | **ACTIVE** | JRA official, NAR official, optional secondary fallback rows |
-| 6 | HRA-2S observed schema/store | blocked by HRA-2R3 | quarantine three files only |
+| 5 | HRA-2R3 per-source index/gate | **complete** | commit `ab39e8546`; four independent lanes, no secondary promotion |
+| 6 | HRA-2S observed schema/store | **ACTIVE** | quarantine three files only |
 | 7 | HRA-3D audit | blocked by HRA-2S | `data_audit.py` and `test_data_audit.py` |
 | 8 | HRA-3Ma/3Mb model and backtest | blocked by HRA-3D | cutoff-safe odds and settled-payback contract |
 | 9 | HRA-4 SHADOW decision/outcome ledger | blocked by HRA-3Mb | `decision.py`, `ledger.py`, `test_shadow_ledger.py` |
@@ -329,7 +329,7 @@ Completion evidence: commits `d22fff7ae..b67198e6`; final focused 17/full 49 tes
 
 ## Task 5: HRA-2R3 per-source Reality Gate index
 
-**State:** ACTIVE. This task indexes accepted evidence without fetching new records or upgrading unobserved secondary candidates.
+**State:** COMPLETE. This task indexes accepted evidence without fetching new records or upgrading unobserved secondary candidates.
 
 **File:** create `docs/evidence/horse-racing/reality-gate-index.md`.
 
@@ -337,7 +337,11 @@ Create independent rows for JRA official, NAR official, JRA secondary fallback, 
 
 Verify with `git diff --check`, commit `docs(horse-racing): index public data reality gates`, and push both remotes.
 
+Completion evidence: commit `ab39e8546`; exactly one index file, four independent lanes, official JRA/NAR `PASS_PRIVATE_SHADOW`, secondary candidates `NOT_OBSERVED`, `cash_authorized=false`, diff-check and local/origin/canonical parity PASS.
+
 ## Task 6: HRA-2S observed schema and append-only store
+
+**State:** ACTIVE. Adopt the quarantined files only after Sol verifies their content against the accepted source manifests and Reality Gate index.
 
 **Files:**
 - Modify/adopt: `apps/horse-racing-agent/src/horse_racing_agent/store.py`
