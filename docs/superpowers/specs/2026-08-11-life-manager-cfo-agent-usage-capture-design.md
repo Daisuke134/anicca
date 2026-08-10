@@ -97,6 +97,8 @@ total-cost label is allowed. Plan: `2026-08-11-life-manager-cfo-agent-usage-capt
 - [x] **CFO-2a2b.3a — hourly gap gate:** fixed capture exception names now flow through the existing receipt/span;
       forced missing completion stays `missing_completion`. Commit `75d699597`; 3 files, +45 LOC; CFO 301/301; ship.
 - [ ] **CFO-2a2b.3b — hourly exact counts:** add exact capture envelopes and aggregate counts after the gap gate works.
+      If either capture source is unavailable, every aggregate is null; never publish a partial subtotal or fake zero.
+      Plan: `2026-08-11-life-manager-cfo-agent-usage-capture-hourly-counts.md`.
 - [ ] **CFO-2a2b.4 — real E2E and close:** verify real ledgers remain append-only, run one isolated provider-boundary
       probe without a paid provider, review, update state, push, and send one counts-only Telegram milestone.
 
