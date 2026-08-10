@@ -109,3 +109,4 @@ self.assertEqual(attempt_ids, completion_ids)
 - Fresh Sol review returned `ship`. Cumulative slice scope is exactly two files, `+80/-6`, below the 100-addition gate.
 - Producer commits `ef233a90` and `a0fe0c35` are pushed to `origin/feature/cfo-agent-usage-capture`; no paid provider,
   live ledger, launchd, Telegram, DB, or cloud state was touched.
+- Telegram milestone delivered with `dryRun=false`, `ok=true`, and provider `messageId=11155`.
