@@ -3,7 +3,7 @@
 > **For Luna:** use Superpowers test-driven-development and verification-before-completion. Sol owns this plan,
 > worktree setup, final review, state, commit, and push. Luna owns only the two listed implementation files.
 
-**Status:** READY FOR SOL REVIEW
+**Status:** COMPLETE — portable commit `61e1727ac`; fresh Sol review: ship
 
 **Goal:** Port the already-reviewed numeric/null behavior from profitable-claude commit `5ca6c00` onto the portable
 Life Manager runner before that runner starts write-ahead capture. Present invalid optional token/cost values become
@@ -58,3 +58,13 @@ pricing, Moneytree, Telegram, DB, cloud, or real provider call. Write-ahead capt
    behavior, and scope. Required fixes return to the same Luna.
 6. Sol reruns gates, commits/pushes only the two files, updates parent/child state, sends one real `Codex:::` Telegram
    milestone, and advances only to 5c2.
+
+## Completion evidence
+
+- Luna observed 11 focused failures and one error before production, then focused `1/1` and the portable discovery
+  suite `13/13` passed. Compile and diff checks passed.
+- Scope is exactly two files: runner `+9/-3`, new compact test 29 lines, 38 gross additions. No provider, live ledger,
+  launchd, scheduler, Telegram, DB, or cloud state changed.
+- Fresh Sol review returned `ship`. Commit `61e1727ac` is pushed on
+  `feature/cfo-life-manager-agent-usage-cutover`. This is not yet a live-main rollout; 5c2a continues on the same
+  isolated branch before any safe launchd proof.
