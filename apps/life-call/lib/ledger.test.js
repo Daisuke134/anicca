@@ -257,28 +257,37 @@ const localAgentInput = (overrides = {}, tokenOverrides = {}) => ({
   loop: "morning-loop", task_label: "daily-brief", provider: "codex", provider_name: "openai", model: "gpt-5.6", upstream_model: null,
   attempt: 1, status: "success", measurement: "provider_reported", tokens: { input: 120, cached_input: 10, cache_creation_input: 4, output: 80, reasoning_output: 30, total: 234, ...tokenOverrides }, ...overrides,
 });
+const SOURCE_ROW_REF = "1".repeat(64), OTHER_SOURCE_ROW_REF = "2".repeat(64);
+const localAgentContext = (source_row_ref = SOURCE_ROW_REF, financial_unit_id = null) => ({ source_row_ref, financial_unit_id });
 
 test("normalizeLocalAgentUsageEvent preserves runner values, provenance, attribution, and freeze", () => {
   const input = localAgentInput({ raw_session_ref: "ignored" });
-  const event = ledger().normalizeLocalAgentUsageEvent(input, { financial_unit_id: "life_manager_saas" });
-  assert.deepEqual(event, { schema_version: 1, source_ledger: "local_agent_usage", source_event_id: "agent_usage:0123456789abcdef01234567", occurred_at: "2026-08-09T16:02:03.000Z", provider: "codex", provider_name: "openai", request_model: "gpt-5.6", upstream_model: null, run: { loop: "morning-loop", task_label: "daily-brief", attempt: 1, status: "success" }, financial_unit_id: "life_manager_saas", attribution_status: "attributed", measurement: "provider_reported", token_value_basis: "runner_normalized_provider_usage", tokens: { input: 120, cached_input: 10, cache_creation_input: 4, output: 80, reasoning_output: 30, total: 234 }, coverage_status: "covered" });
+  const event = ledger().normalizeLocalAgentUsageEvent(input, localAgentContext(SOURCE_ROW_REF, "life_manager_saas"));
+  assert.deepEqual(event, { schema_version: 1, source_ledger: "local_agent_usage", source_event_id: `local_agent_usage:${SOURCE_ROW_REF}`, runner_event_id: "0123456789abcdef01234567", occurred_at: "2026-08-09T16:02:03.000Z", provider: "codex", provider_name: "openai", request_model: "gpt-5.6", upstream_model: null, run: { loop: "morning-loop", task_label: "daily-brief", attempt: 1, status: "success" }, financial_unit_id: "life_manager_saas", attribution_status: "attributed", measurement: "provider_reported", token_value_basis: "runner_normalized_provider_usage", tokens: { input: 120, cached_input: 10, cache_creation_input: 4, output: 80, reasoning_output: 30, total: 234 }, coverage_status: "covered" });
   assert.deepEqual(input, localAgentInput({ raw_session_ref: "ignored" }));
   assert.equal("raw_session_ref" in event, false);
   assert.ok(Object.isFrozen(event) && Object.isFrozen(event.tokens) && Object.isFrozen(event.run));
 });
 
 test("normalizeLocalAgentUsageEvent preserves provider variants and missing usage truth", () => {
-  const claude = ledger().normalizeLocalAgentUsageEvent(localAgentInput({ event_id: "fedcba9876543210fedcba98", provider: "claude", provider_name: "anthropic", model: "claude-sonnet", upstream_model: "claude-sonnet-4-20250514" }, { cached_input: 60, cache_creation_input: 20 }), {});
+  const claude = ledger().normalizeLocalAgentUsageEvent(localAgentInput({ event_id: "fedcba9876543210fedcba98", provider: "claude", provider_name: "anthropic", model: "claude-sonnet", upstream_model: "claude-sonnet-4-20250514" }, { cached_input: 60, cache_creation_input: 20 }), localAgentContext());
   assert.deepEqual({ provider: claude.provider, provider_name: claude.provider_name, request_model: claude.request_model, upstream_model: claude.upstream_model, cache: [claude.tokens.cached_input, claude.tokens.cache_creation_input], financial_unit_id: claude.financial_unit_id, attribution_status: claude.attribution_status }, { provider: "claude", provider_name: "anthropic", request_model: "claude-sonnet", upstream_model: "claude-sonnet-4-20250514", cache: [60, 20], financial_unit_id: null, attribution_status: "unattributed" });
-  const api = ledger().normalizeLocalAgentUsageEvent(localAgentInput({ event_id: "aaaaaaaaaaaaaaaaaaaaaaaa", provider: "openai-api" }), {});
+  const api = ledger().normalizeLocalAgentUsageEvent(localAgentInput({ event_id: "aaaaaaaaaaaaaaaaaaaaaaaa", provider: "openai-api" }), localAgentContext());
   assert.equal(api.provider, "openai-api");
-  const unavailable = ledger().normalizeLocalAgentUsageEvent(localAgentInput({ event_id: "bbbbbbbbbbbbbbbbbbbbbbbb", status: "failed", measurement: "unavailable" }, { input: null, cached_input: null, cache_creation_input: null, output: null, reasoning_output: null, total: null }), { financial_unit_id: "life_manager_saas" });
+  const unavailable = ledger().normalizeLocalAgentUsageEvent(localAgentInput({ event_id: "bbbbbbbbbbbbbbbbbbbbbbbb", status: "failed", measurement: "unavailable" }, { input: null, cached_input: null, cache_creation_input: null, output: null, reasoning_output: null, total: null }), localAgentContext(SOURCE_ROW_REF, "life_manager_saas"));
   assert.deepEqual(unavailable.tokens, { input: null, cached_input: null, cache_creation_input: null, output: null, reasoning_output: null, total: null });
   assert.equal(unavailable.token_value_basis, "unavailable"); assert.equal(unavailable.coverage_status, "missing_usage");
 });
 
+test("normalizeLocalAgentUsageEvent keeps colliding runner IDs distinct by source row", () => {
+  const input = localAgentInput();
+  const first = ledger().normalizeLocalAgentUsageEvent(input, localAgentContext(SOURCE_ROW_REF));
+  const second = ledger().normalizeLocalAgentUsageEvent(input, localAgentContext(OTHER_SOURCE_ROW_REF));
+  assert.notEqual(first.source_event_id, second.source_event_id); assert.equal(first.runner_event_id, second.runner_event_id);
+});
+
 test("normalizeLocalAgentUsageEvent rejects invalid or hostile input with fixed redacted errors", () => {
   const valid = localAgentInput();
-  const cases = [[[], {}], [valid, []], [localAgentInput({ event_id: "HOSTILE_EVENT_SENTINEL" }), {}], [localAgentInput({}, { input: null }), {}], [localAgentInput({ status: "running" }), {}], [localAgentInput({ measurement: "estimated" }), {}], [localAgentInput({ measurement: "unavailable" }, { input: 0 }), {}]];
+  const cases = [[[], localAgentContext()], [valid, []], [localAgentInput({ event_id: "HOSTILE_EVENT_SENTINEL" }), localAgentContext()], [localAgentInput({}, { input: null }), localAgentContext()], [localAgentInput({ status: "running" }), localAgentContext()], [localAgentInput({ measurement: "estimated" }), localAgentContext()], [localAgentInput({ measurement: "unavailable" }, { input: 0 }), localAgentContext()], [valid, { financial_unit_id: null }], [valid, localAgentContext("0".repeat(64))], [valid, localAgentContext("A".repeat(64))]];
   for (const [input, mapping] of cases) assert.throws(() => ledger().normalizeLocalAgentUsageEvent(input, mapping), (error) => /^cfo_local_agent_usage_invalid:[a-z_]+$/.test(error.message) && !/HOSTILE_EVENT_SENTINEL|valid-loop|gpt-5\.6/.test(error.message));
 });

@@ -1,6 +1,6 @@
 # CFO-2a2a.1 — Local Agent Usage Normalizer Plan
 
-Status: IN PROGRESS — correctness repair
+Status: COMPLETE
 
 ## Goal
 
@@ -65,14 +65,18 @@ focused/CFO/full tests, updates the child spec checkbox/status, commits, and pus
 
 - Fresh review found the flat-token fixture could not read real ledger rows; the same Luna corrected it to nested
   `input.tokens` and shared freeze reuse.
-- Real read-only E2E normalized all 4,927 currently observed local rows: 4,654 covered and 273 missing-usage rows,
-  across four provider variants, with exact token equality and no content output.
+- The earlier real read-only E2E count is superseded by the identity-aware run below.
 - Focused 17/17, CFO 270/270, and full 923/923 tests passed for token preservation but did not test real identity
   collisions; they are insufficient for completion.
 - Implementation scope is exactly two files and +80/-1 LOC.
 
-## Completion gate
+## Completion evidence
 
-Fresh review and Sol verification must prove exact token preservation, distinct output IDs for same-runner-ID rows,
-fixed redacted failures, focused/CFO/full tests, syntax, diff, and the <=100 cumulative-addition gate before this plan returns
-to COMPLETE.
+- Luna recorded the collision-contract RED, then implemented the repair in the same two files with +12 net repair LOC.
+- Fresh Sol review returned `ship` with Critical 0 and Important 0.
+- Focused 4/4, CFO 270/270, full suite exit 0, syntax, and `git diff --check` pass.
+- Real read-only E2E normalized all 4,931 complete source rows with exact token equality: Life Manager 1,095 rows
+  (1,083 covered, 12 missing usage, 6 runner-ID collision groups) and Anicca 3,836 rows (3,575 covered,
+  261 missing usage, 428 collision groups). Distinct rows remain distinct.
+- Production plus test scope remains exactly two files and +92/-1 cumulative LOC from the pre-slice base, inside the
+  +100 gate.

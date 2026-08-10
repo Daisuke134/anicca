@@ -715,7 +715,7 @@ Local and cloud use the same contract. Only infrastructure changes:
 | 23 | Shared-project allocation | Provider total confirmed; business shares labeled allocated with remainder | Planned |
 | 24 | Fail-closed health UI | Missing material source forbids green/net-worth total/confidence percentage | Planned |
 | 25 | Managed-loop local usage dedupe | Re-reading one source-row ref produces one row; reused runner IDs lower coverage without deleting distinct observations | Planned |
-| 26 | Codex/Claude local usage truth | Runner-normalized token fields survive one opaque source-row identity with provider/model provenance and an honest basis | Planned |
+| 26 | Codex/Claude local usage truth | Runner-normalized token fields survive one opaque source-row identity with provider/model provenance and an honest basis | PASS |
 | 27 | Subscription/API separation | Receipt is actual cash; token-based API equivalent is visibly forecast | Planned |
 | 28 | Log coverage | Truncated/deleted/unmapped sessions reduce coverage and remain unattributed | Planned |
 | 29 | Self-heal success | Failure → repair → fresh provider read → reconciliation sends one recovered report | Planned |

@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — slice 2a2a.1 identity repair is next |
+| Status | ACTIVE — slice 2a2a.1 complete; 2a2a.2 is next |
 | Parent | `2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Local Mac first |
 | Source | `~/.local/state/{life-manager,anicca}/telemetry/agent-usage.jsonl` |
@@ -152,8 +152,8 @@ remove distinct source-row observations.
 
 | Slice | User-visible closure | Soft target |
 |---|---|---|
-| 2a2a.1 | Pure event normalizer uses opaque source-row identity and preserves runner values/provenance | same 2 files, <=100 cumulative added LOC from pre-slice base |
-| 2a2a.2 | Pure batch reducer dedupes source-row refs and reports runner-ID collisions without dropping rows | same 2 files, <=70 added LOC |
+| 2a2a.1 ✅ | Pure event normalizer uses opaque source-row identity and preserves runner values/provenance | 2 files, +92/-1 cumulative LOC from pre-slice base |
+| 2a2a.2 NEXT | Pure batch reducer dedupes source-row refs and reports runner-ID collisions without dropping rows | same 2 files, <=70 added LOC |
 | 2a2a.3 | Append-only file cursor proves hash/watermark/truncation coverage | <=3 files, <=100 added LOC |
 | 2a2a.4 | Versioned loop/task mapping yields attributed or visibly unattributed rows | <=3 files, <=100 added LOC |
 | 2a2a.5 | Local append/storage + OTel links accepted rows without exposing content | <=3 files per sub-slice |
@@ -161,7 +161,7 @@ remove distinct source-row observations.
 
 ## Acceptance
 
-- [ ] Exact runner-normalized token fields and provider/model provenance survive one source-row identity without being
+- [x] Exact runner-normalized token fields and provider/model provenance survive one source-row identity without being
       mislabeled as field-for-field provider receipts.
 - [x] Missing usage remains null and lowers coverage; it never becomes zero.
 - [ ] Identical source-row refs are idempotent; conflicting refs fail closed; reused runner IDs lower coverage without

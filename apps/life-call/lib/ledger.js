@@ -212,6 +212,8 @@ function normalizeGeminiLiveUsageEvidence(message, context) {
 function normalizeLocalAgentUsageEvent(input, mapping) {
   try {
     if (!plainLocalAgentUsageInput(input) || !plainLocalAgentUsageInput(mapping) || !plainLocalAgentUsageInput(input.tokens)) localAgentUsageFail("invalid_input");
+    const sourceRowRef = mapping.source_row_ref;
+    if (!Object.prototype.hasOwnProperty.call(mapping, "source_row_ref") || typeof sourceRowRef !== "string" || !/^(?!0{64})[0-9a-f]{64}$/.test(sourceRowRef)) localAgentUsageFail("invalid_source_row_ref");
     if (input.version !== 1) localAgentUsageFail("invalid_version");
     if (typeof input.event_id !== "string" || !/^[0-9a-f]{24}$/.test(input.event_id)) localAgentUsageFail("invalid_event_id");
     if (!validLocalAgentUsageTimestamp(input.timestamp)) localAgentUsageFail("invalid_timestamp");
@@ -235,7 +237,8 @@ function normalizeLocalAgentUsageEvent(input, mapping) {
     const normalized = {
       schema_version: 1,
       source_ledger: "local_agent_usage",
-      source_event_id: `agent_usage:${input.event_id}`,
+      source_event_id: `local_agent_usage:${sourceRowRef}`,
+      runner_event_id: input.event_id,
       occurred_at: new Date(input.timestamp).toISOString(),
       provider: input.provider,
       provider_name: input.provider_name,
