@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — CFO-2a2.1 verified; CFO-2a2.2 append-only storage is next |
+| Status | ACTIVE — CFO-2a2.1 verified; CFO-2a2.2a local-tested storage schema is next |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Existing `apps/life-call` package |
 | First provider | Gemini `generateContent` response |
@@ -165,3 +165,61 @@ Write-attempt coverage and durable failure accounting remain CFO-2a2b. Billing/p
 - Fresh final re-review: Critical 0, Important 0, ship.
 - No I/O, dependency, OpenTelemetry SDK, collector, exporter, database, pricing, Gemini call-site, or Live behavior
   was added. Those remain explicit later slices, so CFO-2a2 itself remains active.
+
+## 11. CFO-2a2.2 — append-only usage storage
+
+CFO-2a2.2 is split so a database, RPC client, and provider call-site are never introduced in one batch:
+
+```mermaid
+flowchart LR
+    A[2a2.2a\nTable + privacy boundary] --> B[2a2.2b\nIdempotent append RPC]
+    B --> C[2a2.2c\nNode RPC client]
+    C --> D[2a2.3\nReal Gemini call wiring]
+
+    A -. disposable local PostgreSQL .-> V[Schema E2E]
+    D --> DONE[Stored evidence + correlated span]
+```
+
+### CFO-2a2.2a — only active slice
+
+Add `public.lm_cfo_model_usage_evidence` as a structured table. Do not store a raw response or duplicated
+`otel_attributes` JSON. Required columns are:
+
+- opaque `public_ref`, owner `uid`, `financial_unit_id`, and `attribution_status`;
+- `provider`, `provider_request_id`, `usage_sequence`, `occurred_at`, and 32-hex `trace_id`;
+- requested/response model;
+- required input/output/total token counts and nullable cached/reasoning/tool counts;
+- `evidence_status` and `created_at`.
+
+The dedupe identity is `(provider, provider_request_id, usage_sequence)`. All counts are non-negative `bigint`;
+optional absence is SQL `NULL`, not zero. Provider totals are stored as given and are not constrained to equal a
+locally recomputed component sum. Attribution is closed: `attributed` requires a non-null financial unit;
+`unattributed` requires null.
+
+The table is append-only. `service_role` receives only SELECT/INSERT; anon/authenticated/public receive nothing;
+RLS has service-role SELECT/INSERT policies; an UPDATE/DELETE trigger rejects mutation even by a privileged writer.
+CFO-2a2.2a creates no RPC, client, scheduler, exporter, or call-site and is not applied to production. It is verified
+against a disposable local PostgreSQL instance. The later append RPC owns identical-retry and conflicting-retry
+behavior; the schema's unique constraint owns concurrent dedupe.
+
+Soft target: one migration, one dedicated static test, and one `test:cfo` script entry; at most three files and
+100 added LOC total. If the privacy/append-only boundary cannot fit, reduce formatting before adding abstraction.
+
+### CFO-2a2.2a acceptance
+
+- [ ] The table has one non-null composite unique dedupe key and never stores raw content or generic metadata JSON.
+- [ ] Required counts reject null/negative values; optional counts preserve null and explicit zero.
+- [ ] Attribution state and financial-unit nullability cannot contradict each other.
+- [ ] RLS, grants, and the trigger permit service SELECT/INSERT only and reject UPDATE/DELETE.
+- [ ] A disposable local PostgreSQL E2E proves valid insert, duplicate rejection, invalid-count rejection, and
+      append-only rejection without touching production.
+- [ ] The focused migration test, CFO suite, and full suite pass.
+
+### PostgreSQL evidence
+
+- [Unique constraints](https://www.postgresql.org/docs/current/ddl-constraints.html#DDL-CONSTRAINTS-UNIQUE-CONSTRAINTS)
+  — a multi-column unique constraint enforces uniqueness across the listed combination and creates a unique index.
+- [Row security policies](https://www.postgresql.org/docs/current/ddl-rowsecurity.html) — after RLS is enabled,
+  normal access requires an applicable policy; command- and role-specific policies separate SELECT from INSERT.
+- [INSERT / ON CONFLICT](https://www.postgresql.org/docs/current/sql-insert.html) — later CFO-2a2.2b uses the unique
+  key as its conflict arbiter; CFO-2a2.2a defines the invariant but adds no retry RPC.
