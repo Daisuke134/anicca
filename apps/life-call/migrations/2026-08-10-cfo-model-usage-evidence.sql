@@ -26,9 +26,10 @@ CREATE TABLE IF NOT EXISTS public.lm_cfo_model_usage_evidence (
 ALTER TABLE public.lm_cfo_model_usage_evidence ENABLE ROW LEVEL SECURITY;
 CREATE POLICY lm_cfo_model_usage_evidence_service_select ON public.lm_cfo_model_usage_evidence FOR SELECT TO service_role USING (true);
 CREATE POLICY lm_cfo_model_usage_evidence_service_insert ON public.lm_cfo_model_usage_evidence FOR INSERT TO service_role WITH CHECK (true);
-REVOKE ALL ON TABLE public.lm_cfo_model_usage_evidence FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON TABLE public.lm_cfo_model_usage_evidence FROM PUBLIC, anon, authenticated, service_role;
 GRANT SELECT, INSERT ON TABLE public.lm_cfo_model_usage_evidence TO service_role;
 REVOKE UPDATE, DELETE ON TABLE public.lm_cfo_model_usage_evidence FROM service_role;
+REVOKE ALL ON SEQUENCE public.lm_cfo_model_usage_evidence_id_seq FROM PUBLIC, anon, authenticated, service_role;
 GRANT USAGE, SELECT ON SEQUENCE public.lm_cfo_model_usage_evidence_id_seq TO service_role;
 
 CREATE OR REPLACE FUNCTION public.reject_lm_cfo_model_usage_evidence_mutation()
