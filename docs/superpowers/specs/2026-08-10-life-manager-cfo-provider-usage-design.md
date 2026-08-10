@@ -633,7 +633,31 @@ changed.
 
 #### Later slices
 
-- **CFO-2a2.4c2:** pass one normalized Live observation through the existing Node store and return the closed receipt.
+#### CFO-2a2.4c2 — existing Node store accepts one Live observation (next)
+
+Reuse `cfo-provider-usage-store.js`, `createCfoSupabaseRpc`, the 4b normalizer, and the 4c1 RPC. Add one exported
+`appendGeminiLiveUsageEvidence(message, context, options)` function. It normalizes first, then makes one RPC call with
+the same typed count fields plus `p_local_correlation_id`; `p_provider_request_id` and `p_response_model` remain null.
+The Live request contains the full 18-parameter RPC contract exactly once. The existing GenerateContent function stays
+on its exact 17-key body and does not send `p_local_correlation_id`.
+
+Receipt validation has exactly two closed six-key shapes. Provider evidence contains `provider_request_id`; Live
+evidence contains `local_correlation_id`. Both shapes contain `public_ref`, `provider`, `usage_sequence`, `trace_id`,
+and `created_at`; neither may contain the other identity, content, raw metadata, OTel attributes, prices, or secrets.
+Every invalid input, transport failure, or receipt mismatch stays fixed-prefix, redacted, one-call/no-retry, and silent.
+
+Acceptance:
+
+- [ ] one Live message produces one exact typed RPC body and one isolated, frozen local receipt;
+- [ ] the message's content sentinel never appears in the request, receipt, or error;
+- [ ] a representative invalid Live input is rejected before network access;
+- [ ] wrong common trace, wrong/mixed identity, or an extra receipt key fails closed without retry or logging;
+- [ ] all existing provider-store behavior and exact provider request body remain unchanged;
+- [ ] focused store, CFO, and full suites pass within exactly two files and at most 65 additions.
+
+This slice performs no migration, database deployment, span lifecycle, WebSocket/bridge wiring, aggregation, duration
+estimate removal, scheduler, launchd, or Telegram change. It makes no real provider call.
+
 - **CFO-2a2.4c3:** emit one content-free OTel span for the successfully stored observation without summing observations.
 - **CFO-2a2.4d:** wire the existing Live bridge, prove real message → row → span, and stop using the duration estimate
   only after provider evidence succeeds.
