@@ -33,15 +33,15 @@
 - Modify: `apps/life-manager/lib/peatix-browser-provider.test.js`
 - Modify: `apps/life-manager/lib/peatix-browser-provider.js`
 
-- [ ] **Step 1: Add focused failing measured-flow coverage**
+- [x] **Step 1: Add focused failing measured-flow coverage**
 
 Extend the synthetic attendee profile with invented Katakana family/given values. Make the fixture expose the two controls only under the exact scoped `name` selectors and record their fills. Assert the measured successful flow fills ticket/name/email/privacy, then family/given, obtains provider validation true, clicks final exactly once, and returns exact registered readback. Assert neither values nor keys appear in the outcome.
 
-- [ ] **Step 2: Add destructive-boundary regressions**
+- [x] **Step 2: Add destructive-boundary regressions**
 
 Cover missing/invalid Kana profile, missing/duplicate/hidden confirm control, selector drift to guessed ids, validation false, missing validator/form, and evaluation failure. Assert final click 0 and privacy-safe non-success for every case. Preserve the existing ambiguous post-click case as one final click and non-success.
 
-- [ ] **Step 3: Run focused RED**
+- [x] **Step 3: Run focused RED**
 
 ```bash
 node --test apps/life-manager/lib/peatix-browser-provider.test.js
@@ -49,11 +49,11 @@ node --test apps/life-manager/lib/peatix-browser-provider.test.js
 
 Expected: the new exact fill/validation assertions fail because production ignores Kana profile fields and clicks before filling them.
 
-- [ ] **Step 4: Implement the minimum profile and confirm fill**
+- [x] **Step 4: Implement the minimum profile and confirm fill**
 
 Extend the private profile validator, fill the two exact scoped controls once, and add one privacy-safe page evaluation returning only `{ valid: Boolean }`. Keep the existing final click and readback logic unchanged except that they execute only after `valid=true`.
 
-- [ ] **Step 5: Run focused and required integration GREEN**
+- [x] **Step 5: Run focused and required integration GREEN**
 
 ```bash
 node --test apps/life-manager/lib/peatix-browser-provider.test.js \
@@ -67,6 +67,6 @@ git diff --check
 
 Expected: all pass, no network or external write, no private identity in outputs or diff.
 
-- [ ] **Step 6: Report exact RED/GREEN evidence to Sol**
+- [x] **Step 6: Report exact RED/GREEN evidence to Sol**
 
 Do not commit or push. Sol performs fresh review, commits/pushes the approved two-file implementation, updates the SSOT, then runs one official foreground wake with scheduling still unloaded.

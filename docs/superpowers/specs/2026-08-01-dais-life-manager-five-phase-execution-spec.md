@@ -6425,7 +6425,22 @@ attending count 0、page closeを確認した。次plan
 実測name selectorへのfillとprovider validator trueをfinal clickのpreconditionにする。direct form submit、synthetic click、retry、
 推測selectorは作らず、registered判定は既存parent readbackだけを維持する。
 
-### Active remaining TODO SSOT（進捗250。これ以外の残TODO一覧は履歴）
+### O1B-25進捗251（Peatix confirm Kana fill GREEN / fresh review ship）
+
+Lunaがplan `2026-08-10-connector-peatix-confirm-kana-fill.md`をTDD実装した。REDはfocused 10件中8 pass・2 failで、
+exact confirm name fieldの未fillとinvalid Kana profileの非fail-closedを再現した。production差分は16行追加・2行変更、test差分は
+16行追加・5行変更のprovider/test 2 filesだけ。private profile境界で姓/名カナを各1〜100文字の全角Katakana+長音へ限定し、
+exact `#confirm-form [name="lastname_edit"]` / `[name="firstname_edit"]`を各1回fillする。missing、duplicate、hidden、推測id drift、
+validator missing/false/throwはfinal click 0でprivacy-safe failure。Peatix自身のjQuery validationがtrueのときだけ既存final clickへ進む。
+
+成功判定はclick/validationから推定せず、同event/ticketのparent readbackだけを維持する。post-click ambiguousはclick 1でもnon-success、
+retry 0。focused 10/10、provider/workflow/minimal-production/native/renderer integration 40/40、syntax、diff checkはPASS。
+差分はsynthetic test値だけで実identityは0。fresh Sol reviewはCritical 0・Important 0で`ship`。
+
+次の一件はschedule unloaded、dashboard count 0をpreconditionにofficial foreground runnerを一度実行する。post-click ambiguityなら
+再Submitせずdashboard/provider readbackを先に行い、登録済みなら不足evidence recoveryだけ、未登録なら次のexact safe boundaryだけを修復する。
+
+### Active remaining TODO SSOT（進捗251。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 

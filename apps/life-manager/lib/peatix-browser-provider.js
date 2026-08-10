@@ -3,6 +3,7 @@
 const REF = /^peatix-event:\/\/event\/([1-9][0-9]*)$/;
 const ID = /^[1-9][0-9]*$/;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const KANA = /^[\u30A1-\u30FA\u30FC]+$/u;
 const STEP = /^\/sales\/event\/([1-9][0-9]*)\/(tickets|form|confirm)\/?$/;
 const TEXT = "チケットを申し込む";
 const VERIFIED = Symbol("peatixVerifiedCandidate");
@@ -23,8 +24,11 @@ function candidate(v) {
 function profile(v) {
   if (!v || typeof v !== "object" || Array.isArray(v)) return null;
   const name = String(v.name || "").trim(); const email = String(v.email || "").trim();
+  const kana = (value) => typeof value === "string" && value.length >= 1 && value.length <= 100
+    && value === value.trim() && KANA.test(value);
   return name && name.length <= 200 && email.length <= 320 && EMAIL.test(email)
-    && v.accept_organizer_privacy === true ? { name, email } : null;
+    && kana(v.family_name_kana) && kana(v.given_name_kana) && v.accept_organizer_privacy === true
+    ? { name, email, family_name_kana: v.family_name_kana, given_name_kana: v.given_name_kana } : null;
 }
 function pageHref(page) { try { return String(page.url()); } catch { return ""; } }
 function stepUrl(href, id, step) {
@@ -98,7 +102,17 @@ async function submitPeatixOnPage(page, rawCandidate, rawProfile) {
     const formSubmit = await control(page, "#form-submit-button"); if (!formSubmit || typeof formSubmit.click !== "function") return out("unavailable", "form_submit_unavailable"); await formSubmit.click();
     const confirmUrl = pageHref(page); const u = (() => { try { return new URL(confirmUrl); } catch { return null; } })(); const match = u && STEP.exec(u.pathname); if (!stepUrl(confirmUrl, c.id, "confirm")) return out("unavailable", match && match[2] === "confirm" && match[1] !== c.id ? "confirm_event_mismatch" : "confirm_navigation_failed");
     const confirm = await evaluate(page, () => { const b = document.querySelector("#confirm-button"); return { text: b && String(b.innerText || b.value || "").replace(/\s+/g, " ").trim(), visible: !!(b && !b.hidden) }; }, { mode: "confirm", event_id: c.id });
-    if (!confirm || confirm.text !== TEXT || confirm.visible !== true) return out("unavailable", "confirm_control_unavailable"); const final = await control(page, "#confirm-button"); if (!final || typeof final.click !== "function") return out("unavailable", "confirm_control_unavailable"); clicked = true; await final.click();
+    if (!confirm || confirm.text !== TEXT || confirm.visible !== true) return out("unavailable", "confirm_control_unavailable");
+    const family = await control(page, '#confirm-form [name="lastname_edit"]'); const given = await control(page, '#confirm-form [name="firstname_edit"]');
+    if (!family || !given || typeof family.fill !== "function" || typeof given.fill !== "function") return out("unavailable", "kana_control_unavailable");
+    await family.fill(p.family_name_kana); await given.fill(p.given_name_kana);
+    const validation = await evaluate(page, () => {
+      const form = document.querySelector("#confirm-form"); const $ = window.jQuery;
+      if (!$ || !form || typeof $(form).valid !== "function") return { valid: false };
+      try { return { valid: Boolean($(form).valid()) }; } catch { return { valid: false }; }
+    }, { mode: "confirm_validation" });
+    if (!validation || validation.valid !== true) return out("unavailable", "confirm_validation_failed");
+    const final = await control(page, "#confirm-button"); if (!final || typeof final.click !== "function") return out("unavailable", "confirm_control_unavailable"); clicked = true; await final.click();
     const after = await readPeatixRegistrationStateOnPage(page, c); return after.status === "registered" || after.status === "absent" ? after : out("unavailable", "readback_unavailable");
   } catch { return out("unavailable", clicked ? "readback_unavailable" : "browser_action_failed"); }
 }
