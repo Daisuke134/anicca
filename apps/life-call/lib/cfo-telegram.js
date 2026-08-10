@@ -93,14 +93,13 @@ function validateSnapshot(snapshot) {
   }
   const { state, totals, sources, excluded, repair, action } = snapshot;
   if (["complete", "partial", "recovered"].includes(state) && sources.some((source) => source.status !== "fresh")) fail("source_not_fresh");
-  if ((state === "complete" || state === "recovered") && [totals.assetsMinor, totals.liabilitiesMinor, totals.netWorthMinor, totals.changeMinor].some((value) => value === null)) fail("inconsistent_totals");
-  if ((state === "complete" || state === "recovered") && totals.assetsMinor - totals.liabilitiesMinor !== totals.netWorthMinor) fail("inconsistent_totals");
-  if ((state === "complete" || state === "recovered") && excluded.length) fail("inconsistent_state");
-  if (state === "partial" && (totals.netWorthMinor !== null || excluded.length === 0)) fail(totals.netWorthMinor === null ? "partial_excluded_required" : "partial_net_worth_forbidden");
+  if (state === "recovered" && (!repair || repair.freshReread !== true || repair.reconciled !== true)) fail("recovery_unproven"); if (state === "complete" && [totals.assetsMinor, totals.liabilitiesMinor, totals.netWorthMinor, totals.changeMinor].some((value) => value === null)) fail("inconsistent_totals");
+  if (state === "complete" && totals.assetsMinor - totals.liabilitiesMinor !== totals.netWorthMinor) fail("inconsistent_totals");
+  if (state === "complete" && excluded.length) fail("inconsistent_state");
+  if (["partial", "recovered"].includes(state) && (totals.netWorthMinor !== null || excluded.length === 0)) fail(totals.netWorthMinor === null ? "partial_excluded_required" : "partial_net_worth_forbidden");
   if (state === "action_required" && (totals.netWorthMinor !== null || action === null)) fail(totals.netWorthMinor === null ? "action_required_missing_action" : "action_required_net_worth_forbidden");
   if (state !== "recovered" && repair !== null) fail("inconsistent_repair");
   if (state !== "action_required" && action !== null) fail("inconsistent_action");
-  if (state === "recovered" && (!repair || repair.freshReread !== true || repair.reconciled !== true)) fail("recovery_unproven");
   return snapshot;
 }
 function evidenceLabel(locale, verificationStatus) {
@@ -186,10 +185,10 @@ function renderCfoTelegram({ locale, view, snapshot }) {
   const safeLabel = (value) => escapeHtml(String(value).replace(/\d[\d -]{2,}\d/g, "••••"));
   const sourceText = snapshot.sources.map((source) => `✅ Moneytree${locale === "ja" ? "（" : " ("}${safeLabel(source.label)}${locale === "ja" ? "）" : ")"} ${escapeHtml(source.asOf)}${strings.updated}`).join("\n");
   const totals = `${strings.confirmedAssets}\t${formatAmount(locale, snapshot.totals.assetsMinor)}\n${strings.confirmedLiabilities}\t${formatAmount(locale, snapshot.totals.liabilitiesMinor)}\n${strings.confirmedDifference}\t${formatAmount(locale, snapshot.totals.netWorthMinor)}\n${strings.change}\t${formatChange(locale, snapshot.totals.changeMinor)}`;
-  const title = snapshot.state === "partial" ? strings.partialTitle : strings.title;
+  const title = ["partial", "recovered"].includes(snapshot.state) ? strings.partialTitle : strings.title;
   const excludedItems = [...snapshot.excluded, ...snapshot.sources.filter((source) => source.status !== "fresh").map((source) => ({ label: source.label }))];
   const excluded = [...new Map(excludedItems.map((item) => [item.label, item])).values()].map((item) => `${safeLabel(item.label)}${item.reason ? `${marks.open}${escapeHtml(item.reason)}${marks.close}` : ""}`).join(marks.join) || (locale === "ja" ? "なし" : "None");
-  const exclusions = snapshot.state === "partial" ? `\n${strings.excluded}${marks.colon}${excluded}` : "";
+  const exclusions = ["partial", "recovered"].includes(snapshot.state) ? `\n${strings.excluded}${marks.colon}${excluded}` : "";
   const repair = snapshot.state === "recovered" ? `\n${strings.recovered}` : "";
   const accounts = snapshot.sources.map((source) => `${safeLabel(source.label)}\t${formatAmount(locale, source.amountMinor)}${marks.open}${freshness[source.status]}${marks.close}`).join("\n");
   const evidence = snapshot.sources.map((source) => `${evidenceLabel(locale, source.verificationStatus)} ${escapeHtml(source.asOf)}`).join("\n");

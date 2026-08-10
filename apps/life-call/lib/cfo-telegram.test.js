@@ -44,6 +44,10 @@ function partialSnapshot() {
 function recoveredSnapshot() {
   const snapshot = completeSnapshot();
   snapshot.state = "recovered";
+  snapshot.totals.liabilitiesMinor = null;
+  snapshot.totals.netWorthMinor = null;
+  snapshot.totals.changeMinor = null;
+  snapshot.excluded = [{ label: "負債", reason: "Moneytreeの接続範囲が不明" }];
   snapshot.repair = { sourceLabel: "Moneytree", freshReread: true, reconciled: true };
   return snapshot;
 }
@@ -132,6 +136,10 @@ test("recovered is impossible without fresh reread and reconciliation", () => {
 
 test("recovered summary states its repair without leaking diagnostics", () => {
   const text = renderCfoTelegram({ locale: "ja", view: "summary", snapshot: recoveredSnapshot() }).text;
+  assert.match(text, /確認できた範囲のお金/);
+  assert.match(text, /確認できた資産\s+¥420,000/);
+  assert.match(text, /確認できた負債\s+不明/);
+  assert.match(text, /合計に入れていません：負債/);
   assert.match(text, /自動修復|再確認/);
   assert.doesNotMatch(text, /stack|error|debug|exception|Error|at /i);
 });
@@ -195,6 +203,13 @@ test("freshness and state invariants fail closed", () => {
   const recovered = recoveredSnapshot();
   recovered.sources[0].status = "stale";
   assertInvalid(recovered, "source_not_fresh");
+
+  const recoveredWithNetWorth = recoveredSnapshot();
+  recoveredWithNetWorth.totals.netWorthMinor = 1;
+  assertInvalid(recoveredWithNetWorth, "partial_net_worth_forbidden");
+  const recoveredWithoutExcluded = recoveredSnapshot();
+  recoveredWithoutExcluded.excluded = [];
+  assertInvalid(recoveredWithoutExcluded, "partial_excluded_required");
 
   const partialWithoutLabel = partialSnapshot();
   partialWithoutLabel.excluded = [];
