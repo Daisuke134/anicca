@@ -6,7 +6,7 @@ const path = require("node:path");
 
 const { createLumaEvidenceStore } = require("./luma-evidence-store.js");
 const { createPeatixEvidenceStore } = require("./peatix-evidence-store.js");
-const { createConnpassEvidenceStore } = require("./connpass-evidence-store.js");
+const { createConnpassEvidenceStore, createMeetupEvidenceStore } = require("./connpass-evidence-store.js");
 const {
   notifyOpenClawGateway,
   notifyOpenClawPhoto,
@@ -19,6 +19,8 @@ const PEATIX_EVENT_REF = /^peatix-event:\/\/event\/([1-9][0-9]*)$/;
 const PEATIX_RECEIPT_REF = /^provider-receipt:\/\/peatix\/([0-9a-f]{64})$/;
 const CONNPASS_EVENT_REF = /^connpass-event:\/\/event\/([1-9][0-9]*)$/;
 const CONNPASS_RECEIPT_REF = /^provider-receipt:\/\/connpass\/([0-9a-f]{64})$/;
+const MEETUP_EVENT_REF = /^meetup-event:\/\/event\/([1-9][0-9]*)$/;
+const MEETUP_RECEIPT_REF = /^provider-receipt:\/\/meetup\/([0-9a-f]{64})$/;
 const ARTIFACT_REF = /^object:\/\/sha256\/([0-9a-f]{64})$/;
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 const RECEIPT_ESCAPE = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
@@ -91,6 +93,19 @@ function connpassUrl(value, eventRef) {
   if (!match || url.protocol !== "https:" || url.username || url.password || url.port
     || !/^(?:[a-z0-9-]+\.)?connpass\.com$/.test(hostname)
     || url.pathname !== `/event/${match[1]}/` || value !== expected) invalid();
+  return expected;
+}
+
+function meetupUrl(value, eventRef) {
+  if (typeof eventRef !== "string" || typeof value !== "string") invalid();
+  const eventMatch = MEETUP_EVENT_REF.exec(eventRef);
+  let url;
+  try { url = new URL(value); } catch { invalid(); }
+  const slugMatch = /^\/([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)\/events\/([1-9][0-9]*)\/$/.exec(url.pathname);
+  const expected = eventMatch && slugMatch && slugMatch[2] === eventMatch[1]
+    ? `https://www.meetup.com/${slugMatch[1]}/events/${eventMatch[1]}/` : "";
+  if (!expected || url.protocol !== "https:" || url.hostname !== "www.meetup.com"
+    || url.username || url.password || url.port || value !== expected) invalid();
   return expected;
 }
 
@@ -168,7 +183,7 @@ async function validateCheckpointEvidence(provider, checkpoint, tenantId) {
   let receipt;
   try { receipt = await store.readExternalReceipt(tenantId, checkpoint.receiptRef); } catch { invalid(); }
   if (!receipt || typeof receipt !== "object" || Array.isArray(receipt) || receipt.kind !== "provider_response") invalid();
-  if (provider.name === "connpass" && (
+  if (["connpass", "meetup"].includes(provider.name) && (
     Object.keys(receipt).sort().join(",") !== "artifact_sha256,event_ref,kind,observed_at,provider_id"
     || typeof receipt.observed_at !== "string" || typeof receipt.event_ref !== "string" || typeof receipt.artifact_sha256 !== "string"
   )) invalid();
@@ -364,10 +379,10 @@ async function captureProviderEvidence({ provider, providerName, page, candidate
   const observedAt = exactInstant(now());
   if (providerName === "peatix"
     ? typeof page.goto !== "function" || typeof page.url !== "function" || typeof page.evaluate !== "function"
-    : providerName === "connpass" ? typeof page.screenshot !== "function"
+    : providerName === "connpass" || providerName === "meetup" ? typeof page.screenshot !== "function"
     : typeof page.setContent !== "function") invalid();
   if (typeof page.screenshot !== "function") invalid();
-  const receipt = receiptHtml(providerName, providerStatus, candidate.event_ref);
+  const receipt = providerName === "meetup" ? null : receiptHtml(providerName, providerStatus, candidate.event_ref);
   if (providerName === "peatix") {
     try {
       await page.goto("about:blank", { waitUntil: "domcontentloaded", timeout: 30_000 });
@@ -375,7 +390,7 @@ async function captureProviderEvidence({ provider, providerName, page, candidate
       const rendered = await page.evaluate((html) => { document.open(); document.write(html); document.close(); const root = document.querySelector("body > dl"); return root !== null && document.querySelectorAll("body > dl > dt").length === 3 && document.querySelectorAll("body > dl > dd").length === 3; }, receipt);
       if (rendered !== true) invalid();
     } catch { invalid(); }
-  } else if (providerName !== "connpass") {
+  } else if (providerName !== "connpass" && providerName !== "meetup") {
     try { await page.setContent(receipt); } catch { invalid(); }
   }
   const screenshot = await page.screenshot({ type: "png", fullPage: true });
@@ -403,10 +418,14 @@ function createMinimalEvidenceChain(options = {}) {
   const connpassEvidenceStore = options.connpassEvidenceStore || createConnpassEvidenceStore({
     dataDir: path.join(stateDir, "evidence"),
   });
+  const meetupEvidenceStore = options.meetupEvidenceStore || createMeetupEvidenceStore({
+    dataDir: path.join(stateDir, "evidence"),
+  });
   const providers = {
     luma: { name: "luma", eventRef: EVENT_REF, receiptRef: RECEIPT_REF, url: lumaUrl, states: ["registered", "pending"], store: lumaEvidenceStore },
     peatix: { name: "peatix", eventRef: PEATIX_EVENT_REF, receiptRef: PEATIX_RECEIPT_REF, url: peatixUrl, states: ["registered"], store: peatixEvidenceStore },
     connpass: { name: "connpass", eventRef: CONNPASS_EVENT_REF, receiptRef: CONNPASS_RECEIPT_REF, url: connpassUrl, states: ["registered", "pending"], store: connpassEvidenceStore },
+    meetup: { name: "meetup", eventRef: MEETUP_EVENT_REF, receiptRef: MEETUP_RECEIPT_REF, url: meetupUrl, states: ["registered"], store: meetupEvidenceStore },
   };
   const now = options.now || (() => new Date());
   const sendMessage = options.sendMessage || notifyOpenClawGateway;
@@ -417,6 +436,7 @@ function createMinimalEvidenceChain(options = {}) {
     || !lumaEvidenceStore || typeof lumaEvidenceStore.record !== "function"
     || !peatixEvidenceStore || typeof peatixEvidenceStore.record !== "function"
     || !connpassEvidenceStore || typeof connpassEvidenceStore.record !== "function"
+    || !meetupEvidenceStore || typeof meetupEvidenceStore.record !== "function"
     || typeof now !== "function" || typeof sendMessage !== "function" || typeof sendPhoto !== "function"
   ) invalid();
 
@@ -436,7 +456,7 @@ function createMinimalEvidenceChain(options = {}) {
       if (Date.parse(endsAt) <= Date.parse(startsAt)) invalid();
       const venue = text(candidate.venue_address || candidate.venue_name || "See event page", 2_000);
       const identity = checkpointPath(stateDir, input.provider, candidate.event_ref, eventUrl);
-      if (input.provider === "connpass") {
+      if (input.provider === "connpass" || input.provider === "meetup") {
         if (typeof input.page.url !== "function") invalid();
         let currentUrl;
         try { currentUrl = String(input.page.url()); } catch { invalid(); }
@@ -467,6 +487,7 @@ function createMinimalEvidenceChain(options = {}) {
         immutableJson(identity.file, captured.checkpointValue);
         checkpoint = readCheckpoint(stateDir, identity.file, provider, candidate, identity.canonicalUrlSha256);
         screenshot = captured.screenshot;
+        if (input.provider === "meetup") screenshot = await validateCheckpointEvidence(provider, checkpoint, tenantId);
       }
 
       const deliveries = deliveryPaths(stateDir, provider, candidate, identity, checkpoint);

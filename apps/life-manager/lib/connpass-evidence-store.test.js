@@ -6,7 +6,7 @@ const os = require("node:os");
 const path = require("node:path");
 const test = require("node:test");
 
-const { createConnpassEvidenceStore } = require("./connpass-evidence-store.js");
+const { createConnpassEvidenceStore, createMeetupEvidenceStore } = require("./connpass-evidence-store.js");
 
 test("atomically stores and reads one Connpass PNG receipt without identity data", async (t) => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "connpass-evidence-"));
@@ -61,4 +61,53 @@ test("receipt tuple and artifact marker mutations fail closed before reuse", asy
   }
   fs.writeFileSync(markerFile, `${JSON.stringify(marker)}\n`); fs.writeFileSync(objectFile, Buffer.concat([png, Buffer.from("tamper")]));
   await assert.rejects(store.readArtifact("dais-local", refs.artifact_ref));
+});
+
+test("Meetup wrapper stores exact event receipt and private immutable artifacts", async (t) => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "meetup-evidence-"));
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
+  const png = Buffer.alloc(5_000, 0x63);
+  Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(png);
+  const store = createMeetupEvidenceStore({ dataDir: directory });
+  const refs = await store.record({
+    tenantId: "meetup-test", eventRef: "meetup-event://event/101",
+    observedAt: "2026-08-11T01:02:03.000Z", screenshot: png,
+  });
+  assert.match(refs.external_receipt_ref, /^provider-receipt:\/\/meetup\/[0-9a-f]{64}$/);
+  const receipt = await store.readExternalReceipt("meetup-test", refs.external_receipt_ref);
+  assert.deepEqual(receipt, {
+    kind: "provider_response", provider_id: refs.external_receipt_ref.split("/").at(-1),
+    observed_at: "2026-08-11T01:02:03.000Z", event_ref: "meetup-event://event/101",
+    artifact_sha256: refs.artifact_ref.split("/").at(-1),
+  });
+  const root = path.join(directory, "tenants", "meetup-test", "outbound", "meetup");
+  const receiptFile = path.join(root, "provider-receipts", `${refs.external_receipt_ref.split("/").at(-1)}.json`);
+  const artifactSha = refs.artifact_ref.split("/").at(-1);
+  const artifactFile = path.join(root, "artifacts", `${artifactSha}.json`);
+  const objectFile = path.join(directory, "objects", "sha256", artifactSha);
+  for (const file of [receiptFile, artifactFile, objectFile]) assert.equal(fs.statSync(file).mode & 0o777, 0o600, file);
+  assert.deepEqual(await store.readArtifact("meetup-test", refs.artifact_ref), png);
+  assert.equal(JSON.stringify(refs).includes("meetup-test"), false);
+});
+
+test("Meetup receipt tuple and artifact tampering fail closed", async (t) => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "meetup-evidence-hardening-"));
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
+  const png = Buffer.alloc(5_000, 0x64); Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(png);
+  const store = createMeetupEvidenceStore({ dataDir: directory });
+  const refs = await store.record({ tenantId: "meetup-test", eventRef: "meetup-event://event/101", observedAt: "2026-08-11T01:02:03.000Z", screenshot: png });
+  const artifactSha = refs.artifact_ref.split("/").at(-1); const providerId = refs.external_receipt_ref.split("/").at(-1);
+  const root = path.join(directory, "tenants", "meetup-test", "outbound", "meetup");
+  const receiptFile = path.join(root, "provider-receipts", `${providerId}.json`);
+  const markerFile = path.join(root, "artifacts", `${artifactSha}.json`);
+  const objectFile = path.join(directory, "objects", "sha256", artifactSha);
+  const receipt = JSON.parse(fs.readFileSync(receiptFile, "utf8"));
+  fs.writeFileSync(receiptFile, `${JSON.stringify({ ...receipt, event_ref: "meetup-event://event/102" })}\n`);
+  await assert.rejects(store.readExternalReceipt("meetup-test", refs.external_receipt_ref));
+  fs.writeFileSync(receiptFile, `${JSON.stringify(receipt)}\n`);
+  fs.writeFileSync(markerFile, `${JSON.stringify({ sha256: "a".repeat(64) })}\n`);
+  await assert.rejects(store.readArtifact("meetup-test", refs.artifact_ref));
+  fs.writeFileSync(markerFile, `${JSON.stringify({ sha256: artifactSha })}\n`);
+  fs.writeFileSync(objectFile, Buffer.concat([png, Buffer.from("tamper")]));
+  await assert.rejects(store.readArtifact("meetup-test", refs.artifact_ref));
 });

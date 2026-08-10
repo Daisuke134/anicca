@@ -26,10 +26,10 @@ function instant(value) {
 function providerId(tenantId, eventRef, observedAt, artifactHash) {
   return createHash("sha256").update(`${tenantId}\n${eventRef}\n${observedAt}\n${artifactHash}`, "utf8").digest("hex");
 }
-function atomicWrite(file, bytes) {
+function atomicWrite(file, bytes, collisionMessage = "Connpass evidence collision") {
   fs.mkdirSync(path.dirname(file), { recursive: true, mode: 0o700 });
   if (fs.existsSync(file)) {
-    if (!fs.readFileSync(file).equals(bytes)) invalid("Connpass evidence collision");
+    if (!fs.readFileSync(file).equals(bytes)) invalid(collisionMessage);
     return;
   }
   const temporary = `${file}.tmp-${process.pid}-${randomUUID()}`;
@@ -41,10 +41,14 @@ function atomicWrite(file, bytes) {
   }
 }
 
-function createConnpassEvidenceStore(options = {}) {
+function createBrowserProviderEvidenceStore(options = {}) {
   const dataDir = path.resolve(String(options.dataDir || ""));
   if (!path.isAbsolute(dataDir) || dataDir === path.parse(dataDir).root) invalid();
-  const root = (tenantId) => path.join(dataDir, "tenants", tenant(tenantId), "outbound", "connpass");
+  const provider = String(options.provider || "connpass");
+  const eventPattern = options.eventRef || EVENT_REF;
+  const receiptPattern = options.receiptRef || RECEIPT_REF;
+  const collisionMessage = options.collisionMessage || "Connpass evidence collision";
+  const root = (tenantId) => path.join(dataDir, "tenants", tenant(tenantId), "outbound", provider);
   return Object.freeze({
     async record(input = {}) {
       const tenantIdValue = tenant(input.tenantId);
@@ -52,25 +56,25 @@ function createConnpassEvidenceStore(options = {}) {
       const observedAt = instant(input.observedAt);
       const screenshot = input.screenshot;
       if (
-        !EVENT_REF.test(eventRef) || !Buffer.isBuffer(screenshot) || screenshot.length < 5_000
+        !eventPattern.test(eventRef) || !Buffer.isBuffer(screenshot) || screenshot.length < 5_000
         || !screenshot.subarray(0, PNG.length).equals(PNG)
       ) invalid();
       const artifactHash = createHash("sha256").update(screenshot).digest("hex");
       const receiptId = providerId(tenantIdValue, eventRef, observedAt, artifactHash);
-      atomicWrite(path.join(dataDir, "objects", "sha256", artifactHash), screenshot);
+      atomicWrite(path.join(dataDir, "objects", "sha256", artifactHash), screenshot, collisionMessage);
       atomicWrite(path.join(root(tenantIdValue), "provider-receipts", `${receiptId}.json`), Buffer.from(`${JSON.stringify({
         kind: "provider_response", provider_id: receiptId, observed_at: observedAt,
         event_ref: eventRef, artifact_sha256: artifactHash,
-      })}\n`));
-      atomicWrite(path.join(root(tenantIdValue), "artifacts", `${artifactHash}.json`), Buffer.from(`${JSON.stringify({ sha256: artifactHash })}\n`));
+      })}\n`), collisionMessage);
+      atomicWrite(path.join(root(tenantIdValue), "artifacts", `${artifactHash}.json`), Buffer.from(`${JSON.stringify({ sha256: artifactHash })}\n`), collisionMessage);
       return Object.freeze({
-        external_receipt_ref: `provider-receipt://connpass/${receiptId}`,
+        external_receipt_ref: `provider-receipt://${provider}/${receiptId}`,
         artifact_ref: `object://sha256/${artifactHash}`,
       });
     },
     async readExternalReceipt(tenantId, ref) {
       const tenantIdValue = tenant(tenantId);
-      const match = RECEIPT_REF.exec(String(ref || ""));
+      const match = receiptPattern.exec(String(ref || ""));
       if (!match) invalid();
       let value;
       try { value = JSON.parse(fs.readFileSync(path.join(root(tenantIdValue), "provider-receipts", `${match[1]}.json`))); }
@@ -79,7 +83,7 @@ function createConnpassEvidenceStore(options = {}) {
         !value || typeof value !== "object" || Array.isArray(value)
         || Object.keys(value).sort().join(",") !== RECEIPT_KEYS
         || value.kind !== "provider_response" || typeof value.provider_id !== "string" || value.provider_id !== match[1]
-        || typeof value.event_ref !== "string" || !EVENT_REF.test(value.event_ref)
+        || typeof value.event_ref !== "string" || !eventPattern.test(value.event_ref)
         || typeof value.artifact_sha256 !== "string" || !/^[0-9a-f]{64}$/.test(value.artifact_sha256)
       ) invalid();
       if (typeof value.observed_at !== "string") invalid();
@@ -103,4 +107,20 @@ function createConnpassEvidenceStore(options = {}) {
   });
 }
 
-module.exports = { createConnpassEvidenceStore };
+function createConnpassEvidenceStore(options = {}) {
+  return createBrowserProviderEvidenceStore({
+    ...options, provider: "connpass", eventRef: EVENT_REF, receiptRef: RECEIPT_REF,
+    collisionMessage: "Connpass evidence collision",
+  });
+}
+
+function createMeetupEvidenceStore(options = {}) {
+  return createBrowserProviderEvidenceStore({
+    ...options, provider: "meetup",
+    eventRef: /^meetup-event:\/\/event\/[1-9][0-9]*$/,
+    receiptRef: /^provider-receipt:\/\/meetup\/([0-9a-f]{64})$/,
+    collisionMessage: "Meetup evidence collision",
+  });
+}
+
+module.exports = { createConnpassEvidenceStore, createMeetupEvidenceStore };
