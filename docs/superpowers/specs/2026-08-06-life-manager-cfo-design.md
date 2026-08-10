@@ -2,12 +2,12 @@
 
 | Field | Value |
 |---|---|
-| Status | M2 ACTIVE — Product Stage 7, CFO-2a, and CFO-2a2.1 through CFO-2a2.4c3 complete; CFO-2a2.4d is next |
+| Status | M2 ACTIVE — Product Stage 7, CFO-2a, and CFO-2a2.1 through CFO-2a2.4c3 complete; CFO-2a2.4d1 is next |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
 | Existing foundations | `apps/life-call`, interactive Moneytree App access, Fleet telemetry, `lm_api_cost`, and the canonical `lm_agent_earnings` source (the panel's `lm_financial_ledger` name is a stale alias) |
-| First unfinished item | **CFO-2a2.4d: wire the existing Live bridge and prove real message → row → span** |
+| First unfinished item | **CFO-2a2.4d1: wire ordered provider usage into the existing Live bridge** |
 
 ## 1. Overview — What and Why
 

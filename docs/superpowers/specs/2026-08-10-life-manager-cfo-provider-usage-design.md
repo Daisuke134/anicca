@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — CFO-2a2.1 through CFO-2a2.4c3 verified; CFO-2a2.4d Live bridge E2E is next |
+| Status | ACTIVE — CFO-2a2.1 through CFO-2a2.4c3 verified; CFO-2a2.4d1 Live bridge wiring is next |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Existing `apps/life-call` package |
 | First provider | Gemini `generateContent` response |
@@ -702,8 +702,45 @@ case. Final GREEN passed focused 6/6, CFO 269/269, and full 911/911. Re-review r
 repeated focused, CFO, full, syntax, and diff gates. The implementation is exactly two files and 38 additions. No
 provider call, database deployment, bridge, runtime, or Telegram state changed.
 
-- **CFO-2a2.4d:** wire the existing Live bridge, prove real message → row → span, and stop using the duration estimate
-  only after provider evidence succeeds.
+#### CFO-2a2.4d1 — ordered Live bridge wiring (next)
+
+Add one small recorder closure to the existing `call-bridge.cjs` and wire it in `server.js`. Each Gemini WebSocket gets
+one random 32-hex local session ID and a sequence starting at zero. A message without `usageMetadata` is ignored. Each
+usage message is queued in arrival order and passed once to `captureGeminiLiveUsageObservation`; a failed write is
+counted, never retried, never logged with provider data, and never interrupts audio routing.
+
+On socket close, run the existing Gemini end handler synchronously so a pending database write can never delay reconnect
+or carrier teardown. Then settle only the already-started usage queue asynchronously. The old duration estimate remains
+the fallback when no usage message was stored or any observed write failed. It is skipped only when at least one usage
+message was observed and every observed message stored successfully.
+
+The exact fallback matrix is `0/0/0 -> fallback`, `2/2/0 -> no fallback`, and `2/1/1 -> fallback`, where the tuple is
+`seen/stored/failed`. In the partial-failure case the one stored provider row and the duration fallback coexist; this
+slice does not claim that aggregation already prevents double counting. Aggregation policy remains a later CFO item.
+
+Acceptance:
+
+- [ ] non-usage messages cause zero capture calls; usage messages receive exact ordered sequences `0..n-1` once;
+- [ ] settle reports exact seen/stored/failed counts and complete only for nonzero all-success observations;
+- [ ] one failure does not retry, log provider data, or stop later observations;
+- [ ] `server.js` attaches the tested production usage seam once per Gemini socket with random session ID and exact
+      CFO/store context;
+- [ ] close invokes the existing end handler synchronously, then asynchronously records duration fallback unless the
+      recorder settles complete;
+- [ ] a deferred capture cannot delay reconnect/carrier teardown, and the exact fallback matrix is behaviorally tested;
+- [ ] a fake Gemini socket drives the same production seam and proves parsed usage observation plus isolated
+      session/sequence state after reconnect;
+- [ ] existing audio, reconnect, barge-in, and provider behavior remains unchanged;
+- [ ] focused bridge, CFO, and full suites pass within exactly three files and at most 90 additions.
+
+This slice makes no real provider call, migration/database deployment, aggregation decision, scheduler, launchd, or
+Telegram change.
+
+#### CFO-2a2.4d2 — real Live message → row → span proof
+
+Extend only the existing disposable provider E2E to open a real Gemini Live WebSocket, obtain a real provider
+`usageMetadata` message, pass that unchanged message through the verified Live capture path, and prove its exact counts,
+session/sequence, trace ID, private row, and content-free span. Only after this gate passes may CFO-2a2.4 be complete.
 
 Primary evidence: [Gemini Live server messages](https://ai.google.dev/api/live#BidiGenerateContentServerMessage) place
 `usageMetadata` at the top level and define no response ID/model field; [Gemini Live UsageMetadata](https://ai.google.dev/api/live#UsageMetadata)
