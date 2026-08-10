@@ -19,6 +19,7 @@ _FIELDS = {
     "source_url",
     "source_authority",
     "jurisdiction",
+    "market",
     "evidence_class",
     "allowed_scope",
     "permission_document_verified",
@@ -37,6 +38,7 @@ _EVIDENCE_CLASSES = {
     "REAL_PUBLIC_WEB_RECORD",
     "PUBLIC_WEB_SECONDARY",
 }
+_MARKETS = {"win", "place"}
 
 
 class StoreRecordRejected(ValueError):
@@ -55,6 +57,7 @@ class StoredRecord:
     event_id: str
     source_url: str
     content_sha256: str
+    market: str
     jurisdiction: str | None = None
     race_id: str | None = None
 
@@ -143,6 +146,7 @@ def validate_normalized_race(record: dict[str, object]) -> dict[str, object]:
         "source_url",
         "source_authority",
         "jurisdiction",
+        "market",
         "evidence_class",
         "allowed_scope",
     ):
@@ -150,6 +154,7 @@ def validate_normalized_race(record: dict[str, object]) -> dict[str, object]:
             isinstance(record[field], str) and bool(record[field].strip()),
             "normalized source fields are invalid",
         )
+    _require(record["market"] in _MARKETS, "market is invalid")
     _require(record["evidence_class"] in _EVIDENCE_CLASSES, "evidence class is invalid")
     _validate_source_scope(record)
 
@@ -233,14 +238,18 @@ class AppendOnlyStore:
         self._records: dict[str, dict[str, Any]] = {}
         self._events: set[str] = set()
         self._source_hashes: set[tuple[str, str]] = set()
-        self._latest_snapshots: dict[tuple[str, str], datetime] = {}
+        self._latest_snapshots: dict[tuple[str, str, str], datetime] = {}
 
     def append(self, record: dict[str, object]) -> StoredRecord:
         normalized = validate_normalized_race(record)
         record_id = normalized["record_id"]
         event_id = normalized["event_id"]
         source_url = normalized["source_url"]
-        race_key = (normalized["jurisdiction"], normalized["race_id"])
+        race_key = (
+            normalized["jurisdiction"],
+            normalized["race_id"],
+            normalized["market"],
+        )
         content_sha256 = canonical_content_hash(normalized)
         source_hash_key = (source_url, content_sha256)
 
@@ -260,6 +269,7 @@ class AppendOnlyStore:
             event_id=event_id,
             source_url=source_url,
             content_sha256=content_sha256,
+            market=normalized["market"],
             jurisdiction=normalized["jurisdiction"],
             race_id=normalized["race_id"],
         )
