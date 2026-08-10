@@ -25232,3 +25232,11 @@
 {"ts":1786394182,"wake_id":"00MSNOZ1626DDDC15651824A54","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786394357,"wake_id":"00MSNP2S6A66DAAFE494374D3F","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana microservice platform paying USDC for API calls [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates su"}
 {"ts":1786394490,"wake_id":"00MSNP5MLY9318E940743045E1","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786394623,"wake_id":"00MSNP8H0N4B06F99568DE4518","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786394753,"wake_id":"00MSNPB9PB3D7D84394B764433","kind":"wake","sleep_s":120,"model":"auto","slot":"yield","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786394881,"wake_id":"00MSNPE09LACDDDC2B3BD44651","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1786394949,"wake_id":"00MSNPFGS7C672DE5423E9484D","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786395109,"wake_id":"00MSNPIW049A60020510B14937","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1786395177,"wake_id":"00MSNPKCGFD8C1DDF99F0C49E3","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana microtask marketplace paying USDC for data labeling or AI training tasks [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded ex"}
+{"ts":1786395303,"wake_id":"00MSNPN2843BE52674416F4C28","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786395432,"wake_id":"00MSNPPT70BCAD4F00D0A14BC4","kind":"narrate","sleep_s":120,"model":"auto"}
