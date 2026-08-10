@@ -37,6 +37,13 @@ function stepUrl(href, id, step) {
   return u.protocol === "https:" && u.hostname === "peatix.com" && !u.port && !u.username && !u.password
     && !u.search && !u.hash && !!m && m[1] === id && m[2] === step;
 }
+async function waitForStep(page, id, step) {
+  if (!page || typeof page.waitForURL !== "function") return false;
+  try {
+    await page.waitForURL((url) => stepUrl(String(url), id, step), { waitUntil: "domcontentloaded", timeout: 30_000 });
+    return stepUrl(pageHref(page), id, step);
+  } catch { return false; }
+}
 function eventPageUrl(href, id) { let u; try { u = new URL(href); } catch { return false; } const m = /^\/event\/([1-9][0-9]*)\/?$/.exec(u.pathname); return u.protocol === "https:" && u.hostname === "peatix.com" && !u.port && !u.username && !u.password && !u.search && !u.hash && !!m && m[1] === id; }
 async function canonicalStart(page, id) { if (!eventPageUrl(pageHref(page), id)) return false; const x = await evaluate(page, () => ({ auth: /\/(?:login|signin|signup)(?:\/|$)/i.test(location.pathname), markers: document.querySelectorAll('[data-registration-status="registered"],[data-registration-complete="true"],#registration-complete,[data-peatix-registration="registered"]').length }), { mode: "canonical", event_id: id }); return !!x && x.auth !== true && (x.markers === 0 || (Array.isArray(x.markers) && x.markers.length === 0)); }
 async function control(page, selector) {
@@ -77,8 +84,8 @@ async function submitPeatixOnPage(page, rawCandidate, rawProfile) {
     const base = `https://peatix.com/sales/event/${c.id}`;
     if (typeof page.goto !== "function" || !await page.goto(`${base}/tickets`, { waitUntil: "domcontentloaded", timeout: 30000 }).then(() => true, () => false) || !stepUrl(pageHref(page), c.id, "tickets")) return out("unavailable", "tickets_navigation_failed");
     const ticket = await control(page, `input[name=number_of_tickets_${c.ticket}]`); if (!ticket || typeof ticket.fill !== "function") return out("unavailable", "ticket_control_unavailable"); await ticket.fill("1");
-    const next = await control(page, "#next-button"); if (!next || typeof next.click !== "function") return out("unavailable", "next_control_unavailable"); await next.click();
-    if (!stepUrl(pageHref(page), c.id, "form")) return out("unavailable", "form_navigation_failed");
+    const next = await control(page, "#next-button"); if (!next || typeof next.click !== "function") return out("unavailable", "next_control_unavailable"); if (typeof page.waitForURL !== "function") return out("unavailable", "form_navigation_failed"); const formNavigation = waitForStep(page, c.id, "form"); await next.click();
+    if (!await formNavigation) return out("unavailable", "form_navigation_failed");
     const form = await evaluate(page, () => {
       const norm = (x) => String(x || "").normalize("NFKC").replace(/\s+/g, " ").trim().toLowerCase();
       const label = (n) => norm(n.getAttribute("aria-label") || (n.labels && n.labels[0] && n.labels[0].textContent) || n.getAttribute("data-label"));
@@ -99,8 +106,8 @@ async function submitPeatixOnPage(page, rawCandidate, rawProfile) {
     if (names.length !== 1 || emails.length !== 1) return out("unavailable", "required_field_unavailable"); if (privacy.length > 1) return out("unavailable", "privacy_control_unavailable");
     for (const [f, value] of [[names[0], p.name], [emails[0], p.email]]) { const x = await control(page, f.selector); if (!x || typeof x.fill !== "function") return out("unavailable", "required_field_unavailable"); await x.fill(value); }
     if (privacy.length === 1) { const consent = await control(page, privacy[0].selector); if (!consent || typeof consent.check !== "function") return out("unavailable", "privacy_control_unavailable"); if (typeof consent.isChecked !== "function" || !await consent.isChecked()) await consent.check(); }
-    const formSubmit = await control(page, "#form-submit-button"); if (!formSubmit || typeof formSubmit.click !== "function") return out("unavailable", "form_submit_unavailable"); await formSubmit.click();
-    const confirmUrl = pageHref(page); const u = (() => { try { return new URL(confirmUrl); } catch { return null; } })(); const match = u && STEP.exec(u.pathname); if (!stepUrl(confirmUrl, c.id, "confirm")) return out("unavailable", match && match[2] === "confirm" && match[1] !== c.id ? "confirm_event_mismatch" : "confirm_navigation_failed");
+    const formSubmit = await control(page, "#form-submit-button"); if (!formSubmit || typeof formSubmit.click !== "function") return out("unavailable", "form_submit_unavailable"); if (typeof page.waitForURL !== "function") return out("unavailable", "confirm_navigation_failed"); const confirmNavigation = waitForStep(page, c.id, "confirm"); await formSubmit.click();
+    if (!await confirmNavigation) { const confirmUrl = pageHref(page); const u = (() => { try { return new URL(confirmUrl); } catch { return null; } })(); const match = u && STEP.exec(u.pathname); return out("unavailable", match && match[2] === "confirm" && match[1] !== c.id ? "confirm_event_mismatch" : "confirm_navigation_failed"); }
     const confirm = await evaluate(page, () => { const b = document.querySelector("#confirm-button"); return { text: b && String(b.innerText || b.value || "").replace(/\s+/g, " ").trim(), visible: !!(b && !b.hidden) }; }, { mode: "confirm", event_id: c.id });
     if (!confirm || confirm.text !== TEXT || confirm.visible !== true) return out("unavailable", "confirm_control_unavailable");
     const family = await control(page, '#confirm-form [name="lastname_edit"]'); const given = await control(page, '#confirm-form [name="firstname_edit"]');

@@ -17,12 +17,18 @@ function fixture(options = {}) {
   const familySelector = '#confirm-form [name="lastname_edit"]'; const givenSelector = '#confirm-form [name="firstname_edit"]';
   const confirmControls = options.confirmControls || { [familySelector]: { count: 1, visible: true }, [givenSelector]: { count: 1, visible: true } };
   const formSelectors = new Set(["#name", "#email", "#privacy", "#form-submit-button", ...(options.formSelectors || [])]);
-  const href = () => state === "tickets" ? "https://peatix.com/sales/event/5075819/tickets" : state === "form" ? "https://peatix.com/sales/event/5075819/form" : state === "confirm" ? (options.confirmUrl || `https://peatix.com/sales/event/${options.confirmEvent || "5075819"}/confirm`) : state === "complete" ? "https://peatix.com/sales/event/5075819/complete" : state === "ambiguous" ? "https://peatix.com/sales/event/5075819/unknown" : state === "auth" ? "https://peatix.com/login" : state === "canonical" ? (options.canonicalUrl || "https://peatix.com/event/5075819") : "https://peatix.com/event/9999999";
+  const href = () => state === "tickets" ? "https://peatix.com/sales/event/5075819/tickets" : state === "form" ? `https://peatix.com/sales/event/${options.formEvent || "5075819"}/form` : state === "confirm" ? (options.confirmUrl || `https://peatix.com/sales/event/${options.confirmEvent || "5075819"}/confirm`) : state === "complete" ? "https://peatix.com/sales/event/5075819/complete" : state === "ambiguous" ? "https://peatix.com/sales/event/5075819/unknown" : state === "auth" ? "https://peatix.com/login" : state === "canonical" ? (options.canonicalUrl || "https://peatix.com/event/5075819") : "https://peatix.com/event/9999999";
   const count = (s) => { if (state === "form" && /#[^\\[]*[\[\]]/.test(s)) throw new Error("invalid selector"); if (state === "confirm" && Object.hasOwn(confirmControls, s)) return confirmControls[s].count; return state === "tickets" && s === "input[name=number_of_tickets_6536845]" ? 1 : state === "tickets" && s === "#next-button" ? 1 : state === "form" && formSelectors.has(s) ? 1 : state === "confirm" && s === "#confirm-button" ? 1 : 0; };
-  const locator = (selector) => ({ count: async () => count(selector), isVisible: async () => state === "confirm" && Object.hasOwn(confirmControls, selector) ? count(selector) === 1 && confirmControls[selector].visible === true : count(selector) === 1, fill: async (value) => calls.push(["fill", selector, value]), check: async () => { calls.push(["check", selector]); checked.add(selector); }, isChecked: async () => checked.has(selector), click: async () => { calls.push(["click", selector]); if (selector === "#next-button") state = "form"; else if (selector === "#form-submit-button") state = "confirm"; else if (selector === "#confirm-button") { finals += 1; state = options.complete === false ? "ambiguous" : "complete"; } } });
+  const navigate = (next) => options.asyncNavigation ? setTimeout(() => { state = next; }, 0) : (state = next);
+  const locator = (selector) => ({ count: async () => count(selector), isVisible: async () => state === "confirm" && Object.hasOwn(confirmControls, selector) ? count(selector) === 1 && confirmControls[selector].visible === true : count(selector) === 1, fill: async (value) => calls.push(["fill", selector, value]), check: async () => { calls.push(["check", selector]); checked.add(selector); }, isChecked: async () => checked.has(selector), click: async () => { calls.push(["click", selector]); if (selector === "#next-button") navigate("form"); else if (selector === "#form-submit-button") navigate("confirm"); else if (selector === "#confirm-button") { finals += 1; state = options.complete === false ? "ambiguous" : "complete"; } } });
   const page = {
     url: href,
     async goto(url) { calls.push(["goto", url]); state = /\/tickets$/.test(url) ? "tickets" : /\/form$/.test(url) ? "form" : "confirm"; },
+    async waitForURL(predicate, waitOptions = {}) {
+      calls.push(["wait-for-url", waitOptions]); const deadline = Date.now() + Math.min(Number(waitOptions.timeout) || 30_000, 50);
+      while (Date.now() < deadline) { if (predicate(new URL(href()))) return; await new Promise((resolve) => setTimeout(resolve, 1)); }
+      throw new Error("navigation timeout");
+    },
     locator,
     async evaluate(_fn, payload) {
       assert.ok(payload && payload.mode);
@@ -79,6 +85,27 @@ test("measured ticket/form/confirm flow fills exact fields and clicks final boun
   assert.deepEqual(f.calls.filter((x) => ["fill", "check", "click"].includes(x[0])), [["fill", "input[name=number_of_tickets_6536845]", "1"], ["click", "#next-button"], ["fill", "#name", p.name], ["fill", "#email", p.email], ["check", "#privacy"], ["click", "#form-submit-button"], ["fill", '#confirm-form [name="lastname_edit"]', p.family_name_kana], ["fill", '#confirm-form [name="firstname_edit"]', p.given_name_kana], ["click", "#confirm-button"]]);
   assert.equal(JSON.stringify(result).includes(p.email), false);
   assert.equal(JSON.stringify(result).includes(p.family_name_kana), false); assert.equal(JSON.stringify(result).includes("family_name_kana"), false);
+});
+
+test("asynchronous ticket and form navigation waits for exact same-event URLs", async () => {
+  const f = fixture({ asyncNavigation: true });
+  assert.deepEqual(await submitPeatixOnPage(f.page, candidate(), profile()), { status: "registered" });
+  assert.deepEqual(f.calls.filter(([name]) => name === "wait-for-url").map(([, options]) => options), [
+    { waitUntil: "domcontentloaded", timeout: 30_000 }, { waitUntil: "domcontentloaded", timeout: 30_000 },
+  ]);
+});
+
+test("asynchronous wrong-event navigation stops before form inspection and final click", async () => {
+  const f = fixture({ asyncNavigation: true, formEvent: "9999999" });
+  assert.deepEqual(await submitPeatixOnPage(f.page, candidate(), profile()), { status: "unavailable", reason: "form_navigation_failed" });
+  assert.equal(f.calls.filter(([name, selector]) => name === "click" && selector === "#form-submit-button").length, 0);
+  assert.equal(f.finalCount(), 0);
+});
+
+test("missing navigation wait fails before the next click", async () => {
+  const f = fixture(); delete f.page.waitForURL;
+  assert.deepEqual(await submitPeatixOnPage(f.page, candidate(), profile()), { status: "unavailable", reason: "form_navigation_failed" });
+  assert.equal(f.calls.filter(([name, selector]) => name === "click" && selector === "#next-button").length, 0);
 });
 
 test("Kana profile and measured confirm controls fail closed before final click", async () => {

@@ -6753,7 +6753,13 @@ wake `wake-d6050c563e395e783ba6b2c7`はCalendar `success 2881ms`、Luma discover
 
 コード照合で、direct providerは`#next-button`をclick後にnavigationを待たず即時`page.url()`を検査していた。fallback step 1はticket pageの3 controlから`control_12`を選び、step 2はformの11 controlへ増加したため、click自体は遅延完了し、directのURL検査だけが早すぎたことが確定した。次plan `docs/superpowers/plans/2026-08-10-connector-peatix-navigation-wait.md`はPeatix provider/testの2 filesだけで、既存のstrict same-event `stepUrl`とPlaywright `waitForURL`を使い、ticket→formとform→confirmのみを有界待機する。Item 10B/14/19は未完、scheduleはunloadedを維持する。
 
-### Active remaining TODO SSOT（進捗269。これ以外の残TODO一覧は履歴）
+### O1B-25進捗270（Peatix exact navigation wait GREEN）
+
+Lunaがplan `docs/superpowers/plans/2026-08-10-connector-peatix-navigation-wait.md`をTDD実装した。REDはclick promise開始後にURLが変わる非同期fixtureで旧実装が`form_navigation_failed`になることを再現した。GREENは`#next-button`と`#form-submit-button`の各click前にPlaywright `waitForURL`を開始し、`domcontentloaded`・30秒以内・既存strict `stepUrl`の同一Peatix host/event/expected stepのみを受け入れる。missing wait、wrong event/host/step/query/fragment、timeoutは従来safe reasonでfail-closedし、final click/readback条件は緩めていない。
+
+差分はprovider/testの2 files、production +11/-4、tests +29/-2。Lunaはprovider 13/13、計画adjacent 72/72、Sol独立再実行はexpanded adjacent 75/75、2 file syntax、diff checkが全てPASS。Sol差分監査でwrong-event testのvacuous selector assertionを1件発見し、同じLunaがselector比較へ修正後に全testを再PASSした。fresh Sol reviewはCritical 0・Important 0で`ship`。implementation/test中のbrowser、model、Submit、Calendar、PNG/evidence、Telegram、state/private profile、schedule/launchd変更は0。Item 10B/14/19は未完。次の一件はcommit/push後、schedule unloadedのofficial foreground wakeを1回実行し、directがformへ入りHarnessの日本語氏名処理へ進むか、confirm/readback/applied bundleまたは次exact safe boundaryを実測する。
+
+### Active remaining TODO SSOT（進捗270。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
