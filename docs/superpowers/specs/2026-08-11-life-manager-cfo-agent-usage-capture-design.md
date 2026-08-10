@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — CFO-2a2b.1a–2 complete; CFO-2a2b.3 hourly publication is next |
+| Status | ACTIVE — CFO-2a2b.1a–2 complete; CFO-2a2b.3 plan reviewed, Luna implementation next |
 | Method | Ponytail `full` → Superpowers Goal/Loop/Verify/State |
 | Roles | Sol plans/specifies/verifies; Luna writes production code/tests |
 | Runtime | Local JSONL first; no DB, service, browser, or cloud dependency |
@@ -103,7 +103,8 @@ normalizer. Until every required source is fresh and all exceptions are zero, no
 - [x] **CFO-2a2b.1b — producer boundary:** Luna adds the write-ahead attempt row and focused real-runner tests.
 - [x] **CFO-2a2b.2 — pure reconciliation:** Luna adds the strict local attempt/usage join and immutable counts receipt.
 - [ ] **CFO-2a2b.3 — hourly publication:** Luna wires the receipt into the existing one-hour loop and proves a forced
-      usage persistence failure appears as missing coverage, never zero cost or a green/complete total.
+      usage persistence failure appears as missing coverage, never zero cost or a green/complete total. Execution
+      plan: `docs/superpowers/plans/2026-08-11-life-manager-cfo-agent-usage-capture-hourly-publication.md`.
 - [ ] **CFO-2a2b.4 — real E2E and close:** Sol verifies the two real ledgers are unchanged, runs one isolated real
       provider-boundary probe without a paid provider, obtains fresh review, updates the parent SSOT, commits, pushes,
       and sends one counts-only Telegram milestone.
@@ -119,3 +120,19 @@ normalizer. Until every required source is fresh and all exceptions are zero, no
 6. Source ledgers remain append-only `0600`, and tests emit no prompt, output, token value, path, credential, or owner.
 7. Each implementation slice stays at no more than three files and targets under 100 added LOC. Scope is reduced before
    exceeding either target.
+
+### CFO-2a2b.3 hourly flow
+
+```mermaid
+flowchart LR
+    H[Existing launchd\nevery 3600s] --> R[Existing local usage runner]
+    R --> B[Append normalized usage batch]
+    B --> C[Re-read immutable usage chain]
+    A[Adjacent attempt JSONL] --> J[Pure reconciliation]
+    C --> J
+    J --> P[Frozen capture receipt]
+    P --> O[Same OTel span\ncounts only]
+    P --> X{Coverage complete?}
+    X -->|Yes| G[Complete]
+    X -->|No| M[Partial + named gap\nno total cost]
+```

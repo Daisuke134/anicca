@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | M2 ACTIVE — CFO-2a2b.1a–2 complete; CFO-2a2b.3 hourly publication is next |
+| Status | M2 ACTIVE — CFO-2a2b.1a–2 complete; CFO-2a2b.3 plan reviewed, Luna implementation next |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
