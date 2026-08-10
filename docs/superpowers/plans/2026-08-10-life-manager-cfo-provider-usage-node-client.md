@@ -1,6 +1,6 @@
 # Life Manager CFO-2a2.2c Provider Usage Node Client Plan
 
-**Status:** READY — one Luna task; client boundary only.
+**Status:** COMPLETE — client boundary verified; no provider or production call.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan.
 > Luna owns production code/tests/implementation commands. Sol owns plan, final verification, closure, and push.
@@ -29,7 +29,7 @@ credentials, one POST, fixed transport errors, and JSON parsing. Add only the ma
 - Create: `apps/life-call/lib/cfo-provider-usage-store.test.js`
 - Modify: `apps/life-call/package.json`
 
-- [ ] **Step 1 — Write three focused tests and run RED**
+- [x] **Step 1 — Write three focused tests and run RED**
 
 Test 1 supplies one literal Gemini response/context with content-shaped extra fields, one absent optional count, and
 one explicit optional zero. Assert exactly one request to
@@ -124,7 +124,7 @@ node --test lib/cfo-provider-usage-store.test.js
 
 Expected RED: all three fail only because the new module does not exist.
 
-- [ ] **Step 2 — Implement the minimal client**
+- [x] **Step 2 — Implement the minimal client**
 
 Export only `appendGeminiUsageEvidence(response, context, options = {})`.
 
@@ -183,7 +183,7 @@ async function appendGeminiUsageEvidence(response, context, options = {}) {
 }
 ```
 
-- [ ] **Step 3 — Run focused and repository GREEN**
+- [x] **Step 3 — Run focused and repository GREEN**
 
 ```bash
 node --test lib/cfo-provider-usage-store.test.js
@@ -194,7 +194,7 @@ git diff --check
 
 Expected: focused 3/3; CFO 259/259; full aggregate 897/897; failures zero.
 
-- [ ] **Step 4 — Enforce scope and commit**
+- [x] **Step 4 — Enforce scope and commit**
 
 Verify exact three files and at most 100 additions. Commit only them as
 `feat(cfo): add provider usage rpc client`; do not push. Record RED/GREEN/request/receipt/privacy/LOC evidence in

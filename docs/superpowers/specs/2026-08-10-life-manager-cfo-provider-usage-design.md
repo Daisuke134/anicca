@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — CFO-2a2.1 through CFO-2a2.2b verified; CFO-2a2.2c Node RPC client is next |
+| Status | ACTIVE — CFO-2a2.1 through CFO-2a2.2c verified; CFO-2a2.3 real Gemini wiring is next |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Existing `apps/life-call` package |
 | First provider | Gemini `generateContent` response |
@@ -45,7 +45,7 @@ flowchart LR
     E --> DONE[CFO-2a2 complete]
 ```
 
-CFO-2a2.1 through CFO-2a2.2b are complete. CFO-2a2.2c is the only active slice; later slices cannot be pulled into it.
+CFO-2a2.1 through CFO-2a2.2c are complete. CFO-2a2.3 is the only active slice; later slices cannot be pulled into it.
 
 ## 4. CFO-2a2.1 input
 
@@ -282,7 +282,7 @@ receipt keys, and anon/authenticated denial.
   exporter, scheduler, pricing, billing, write-attempt ledger, production apply, or remote DB mutation.
 - Task review and fresh final whole-plan review: Critical 0, Important 0, ship.
 
-### CFO-2a2.2c — only active slice
+### CFO-2a2.2c — verified
 
 Add one thin Node client, `appendGeminiUsageEvidence(response, context, options)`. It reuses the verified
 `normalizeGeminiUsageEvidence` contract and shared `createCfoSupabaseRpc` transport; it adds no provider call,
@@ -311,12 +311,24 @@ does not call Gemini, emit a span, apply migrations, or touch production/remote 
 
 ### CFO-2a2.2c acceptance
 
-- [ ] One literal Gemini response/context creates one exact 17-key scalar RPC body and one request.
-- [ ] Missing optional counts remain null, explicit zero remains zero, and provider total is not recomputed.
-- [ ] Content-shaped response fields and OpenTelemetry attributes never enter the request, receipt, or error.
-- [ ] Receipt identity is exact, cloned, deeply frozen, and limited to six keys.
-- [ ] Invalid input, hostile network/response, invalid receipt, and non-2xx paths are fixed, silent, and single-call.
-- [ ] Focused, CFO, and full suites pass without a real provider call or production mutation.
+- [x] One literal Gemini response/context creates one exact 17-key scalar RPC body and one request.
+- [x] Missing optional counts remain null, explicit zero remains zero, and provider total is not recomputed.
+- [x] Content-shaped response fields and OpenTelemetry attributes never enter the request, receipt, or error.
+- [x] Receipt identity is exact, cloned, deeply frozen, and limited to six keys.
+- [x] Invalid input, hostile network/response, invalid receipt, and non-2xx paths are fixed, silent, and single-call.
+- [x] Focused, CFO, and full suites pass without a real provider call or production mutation.
+
+### CFO-2a2.2c completion evidence
+
+- Luna implementation commit: `e73427079`; RED stopped only at the planned missing module before test registration.
+- Fresh Sol verification: focused 3/3 and full aggregate 897/897 with zero failures; diff and syntax checks passed.
+- One literal request proved exact headers and 17 scalar arguments, provider total `99` distinct from input+output,
+  optional null/zero preservation, and exclusion of content, schema, and OTel fields.
+- Receipt and failure tests proved exact cloned/frozen six-key output, identity mismatch, hostile extra-key response,
+  network failure, non-2xx body non-read, one call, fixed errors, and zero console output.
+- Ponytail gate: exactly three files and 57 additions; no provider call, database apply, SDK/exporter, scheduler,
+  retry loop, pricing, billing, or production/remote request.
+- Task review and fresh final whole-plan review: Critical 0, Important 0, ship.
 
 ### PostgreSQL evidence
 
