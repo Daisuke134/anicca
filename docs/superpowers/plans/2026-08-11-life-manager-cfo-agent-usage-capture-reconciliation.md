@@ -4,7 +4,7 @@
 > verification-before-completion. Luna owns production/test edits; Sol owns this plan, review, final verification,
 > state, commit, and push.
 
-**Status:** READY FOR LUNA
+**Status:** COMPLETE — implementation `88f5c50f8`; fresh review `ship — Spec ✅`
 
 **Goal:** Join validated write-ahead attempts to existing normalized usage completions by the shared 24-hex ID and
 return one exact frozen counts receipt. Missing persistence becomes an integer coverage gap, never zero usage/cost.
@@ -52,13 +52,24 @@ pricing, percentage, or report UI in this slice.
 
 ## RED / GREEN / VERIFY / STATE
 
-- [ ] RED: one compact table/subtest proves normal success+failure+missing, historical completion exclusion,
+- [x] RED: one compact table/subtest proves normal success+failure+missing, historical completion exclusion,
   post-cutover unmatched completion, exact duplicate/conflict/ambiguity counts, empty cutover, exact frozen keys, and
   fixed redacted rejection of malformed/proxy/sparse/extra-key inputs. Record the genuine current-module-missing RED.
-- [ ] GREEN: implement only the pure function and export it. Normalize attempt signatures in fixed field order; do not
+- [x] GREEN: implement only the pure function and export it. Normalize attempt signatures in fixed field order; do not
   trust object insertion order. Derive the exact receipt and algebra once, then deep-freeze it.
-- [ ] Luna runs focused tests, existing usage ledger/collector/chain tests, CFO suite, full npm test, syntax, diff check,
+- [x] Luna runs focused tests, existing usage ledger/collector/chain tests, CFO suite, full npm test, syntax, diff check,
   and reports exact counts/diffstat. No docs, commit, push, or live state.
-- [ ] Fresh Sol review checks truth, historical cutover, algebra, redaction, and Ponytail scope. Luna fixes only required
+- [x] Fresh Sol review checks truth, historical cutover, algebra, redaction, and Ponytail scope. Luna fixes only required
   issues in the same two files. Sol independently reruns gates, updates specs, commits/pushes, and advances only to
   CFO-2a2b.3.
+
+## Completion evidence
+
+- Genuine RED: the focused test failed because the reconciliation module did not exist.
+- Final scope: exactly two new files, 86 added LOC total (47 production + 39 test), with no dependency or runtime
+  mutation.
+- Sol verification: focused 5/5, relevant usage/CFO tests 38/38, CFO 292/292, full `npm test` exit 0, syntax and
+  `git diff --check` pass.
+- Fresh review fix round 1 closed derived-chain validation and accessor evaluation; both findings are ADDRESSED, no new
+  breakage, final verdict `ship — Spec ✅`.
+- This slice reads and writes no ledger, publishes no OTel span, computes no price, and sends no Telegram message.

@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — CFO-2a2b.1a/1b complete; CFO-2a2b.2 pure reconciliation is next |
+| Status | ACTIVE — CFO-2a2b.1a–2 complete; CFO-2a2b.3 hourly publication is next |
 | Method | Ponytail `full` → Superpowers Goal/Loop/Verify/State |
 | Roles | Sol plans/specifies/verifies; Luna writes production code/tests |
 | Runtime | Local JSONL first; no DB, service, browser, or cloud dependency |
@@ -101,7 +101,7 @@ normalizer. Until every required source is fresh and all exceptions are zero, no
 - [x] **CFO-2a2b.1a — numeric truth:** Luna distinguishes absent optional values from present invalid values for all
       supported provider payloads.
 - [x] **CFO-2a2b.1b — producer boundary:** Luna adds the write-ahead attempt row and focused real-runner tests.
-- [ ] **CFO-2a2b.2 — pure reconciliation:** Luna adds the strict local attempt/usage join and immutable counts receipt.
+- [x] **CFO-2a2b.2 — pure reconciliation:** Luna adds the strict local attempt/usage join and immutable counts receipt.
 - [ ] **CFO-2a2b.3 — hourly publication:** Luna wires the receipt into the existing one-hour loop and proves a forced
       usage persistence failure appears as missing coverage, never zero cost or a green/complete total.
 - [ ] **CFO-2a2b.4 — real E2E and close:** Sol verifies the two real ledgers are unchanged, runs one isolated real
