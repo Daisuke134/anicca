@@ -6459,7 +6459,20 @@ page1 navigation/readのtransientと確定した。次plan
 `docs/superpowers/plans/2026-08-10-connector-peatix-page1-discovery-retry.md`は同じowned pageでpage1 transactionだけを一回即時retryする。
 5分retry、新page/target、timeout拡張、detail retry、Submit変更は0。report backlog transportはこのdiscovery slice後に別修復する。
 
-### Active remaining TODO SSOT（進捗252。これ以外の残TODO一覧は履歴）
+### O1B-25進捗253（Peatix page-1 same-page retry GREEN / fresh review ship）
+
+Lunaがplan `2026-08-10-connector-peatix-page1-discovery-retry.md`をTDD実装した。REDはworkflow 17件中14 pass・3 failで、
+page1 read/navigation transient回復とbounded final failureの未実装を再現。test helper統合後のproduction差分は20行追加・10行変更、testは
+43行追加の2 filesだけ。既存waiter→goto→response→JSON transactionをprivate helperへ抽出し、page1の
+`PEATIX_SEARCH_NAVIGATION_FAILED` / `PEATIX_SEARCH_READ_FAILED`だけ同じpageで最大2 attemptにした。attemptごとにwaiterを新規作成し、
+row accumulationは成功後だけ。row contract、page2〜5、detail、candidate、Calendarはzero retry、safe code/order/dedup/100 capは不変。
+
+focused 16/16、workflow/minimal-production/minimal-runner/native/renderer integration 41/41、syntax、diff checkはPASS。network、Submit、
+browser/session/target作成、timeout/backoff、schedule変更は0。fresh Sol reviewはCritical 0・Important 0で`ship`。
+次の一件はschedule unloaded、dashboard count 0、owned page/lock absentでofficial foreground wakeを一度実行し、Peatix audit→candidate→
+direct action→parent readbackを観測する。登録済みなら再Submitせずevidence recovery、未登録なら次のexact safe boundaryだけを修復する。
+
+### Active remaining TODO SSOT（進捗253。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 

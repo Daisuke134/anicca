@@ -286,9 +286,7 @@ async function defaultReadSearchBindings(page, observed) {
   if (!page || typeof page.goto !== "function" || typeof page.waitForResponse !== "function") {
     invalid();
   }
-  const bindings = [];
-  const seen = new Set();
-  for (let pageNumber = 1; pageNumber <= SEARCH_PAGE_LIMIT; pageNumber += 1) {
+  async function readPage(pageNumber) {
     let responsePromise;
     try {
       responsePromise = page.waitForResponse(
@@ -298,9 +296,7 @@ async function defaultReadSearchBindings(page, observed) {
     } catch {
       throw stageError("PEATIX_SEARCH_READ_FAILED");
     }
-    if (responsePromise && typeof responsePromise.catch === "function") {
-      responsePromise.catch(() => {});
-    }
+    if (responsePromise && typeof responsePromise.catch === "function") responsePromise.catch(() => {});
     try {
       await page.goto(searchUrl(observed, pageNumber), {
         waitUntil: "domcontentloaded", timeout: 30_000,
@@ -314,13 +310,27 @@ async function defaultReadSearchBindings(page, observed) {
     } catch {
       throw stageError("PEATIX_SEARCH_READ_FAILED");
     }
-    let rows;
     try {
-      rows = await readSearchResponseRows(response, pageNumber);
+      return await readSearchResponseRows(response, pageNumber);
     } catch (error) {
-      const code = String(error && error.code || "");
-      if (code === "PEATIX_SEARCH_ROWS_CONTRACT_FAILED") throw error;
+      if (String(error && error.code || "") === "PEATIX_SEARCH_ROWS_CONTRACT_FAILED") throw error;
       throw stageError("PEATIX_SEARCH_READ_FAILED");
+    }
+  }
+  const bindings = [];
+  const seen = new Set();
+  for (let pageNumber = 1; pageNumber <= SEARCH_PAGE_LIMIT; pageNumber += 1) {
+    let rows;
+    for (let attempt = 0; attempt < (pageNumber === 1 ? 2 : 1); attempt += 1) {
+      try {
+        rows = await readPage(pageNumber);
+        break;
+      } catch (error) {
+        const code = String(error && error.code || "");
+        const retryable = pageNumber === 1 && attempt === 0
+          && ["PEATIX_SEARCH_NAVIGATION_FAILED", "PEATIX_SEARCH_READ_FAILED"].includes(code);
+        if (!retryable) throw error;
+      }
     }
     for (const row of rows) {
       if (seen.has(row.event_ref)) continue;
