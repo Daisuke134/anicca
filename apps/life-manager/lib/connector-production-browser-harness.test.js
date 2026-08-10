@@ -52,12 +52,12 @@ test("bounded proposer requests one structured action from Terra with sanitized 
 
 test("Connpass known form completes natively before the agent when the runner is unavailable", async () => {
   const radio = (control, label, question, group) => ({ control, kind: "radio", label, question, required: true, group });
-  const groups = [radio("online_radio", "オンライン参加（無料）", "参加方法", "online"), radio("online_speaker", "登壇者", "参加方法", "online"),
-    radio("referral_radio", "Connpass", "このイベントを何で知りましたか？", "referral"), radio("referral_sns", "SNS", "このイベントを何で知りましたか？", "referral"),
-    radio("ack_one", "はい、わかりました", "注意事項", "ack_one"), radio("ack_one_no", "いいえ", "注意事項", "ack_one"),
-    radio("ack_two", "はい、わかりました", "個人情報", "ack_two"), radio("ack_two_no", "いいえ", "個人情報", "ack_two"),
+  const groups = [radio("online_radio", "オンライン視聴枠（YouTube） 無料 参加者数 30人", "参加枠", "online"), radio("online_speaker", "オンライン登壇枠（Zoom） 無料 先着順 3/3人", "参加枠", "online"),
+    radio("referral_radio", "Connpass", "このイベントは何を見て知りましたか？", "referral"), radio("referral_sns", "SNS", "このイベントは何を見て知りましたか？", "referral"),
+    { control: "ack_one", kind: "radio", label: "はい、わかりました。", question: "speaker acknowledgement", required: false },
+    { control: "ack_two", kind: "radio", label: "はい、わかりました。", question: "second speaker acknowledgement", required: false },
     { control: "confirm_button", kind: "button", label: "申し込みを確定する", required: false, submittable: true }];
-  const groupOrder = { online: 0, referral: 1, ack_one: 2, ack_two: 3 };
+  const groupOrder = { online: 0, referral: 1 };
   let step = 0;
   let agentCalls = 0;
   const operated = [];
@@ -65,7 +65,7 @@ test("Connpass known form completes natively before the agent when the runner is
   const proposer = createBoundedActionProposer({ repoRoot: "/private/repo", evidenceDir: "/private/evidence", async runAgentRunner() { agentCalls += 1; throw new Error("agent unavailable"); } });
   const harness = createProductionBrowserHarness({
     lumaWorkflow: { async readProviderState() { throw new Error("wrong provider"); } },
-    connpassWorkflow: { async readProviderState() { return step === 5 ? { status: "registered" } : { status: "absent" }; } },
+    connpassWorkflow: { async readProviderState() { return step === 3 ? { status: "registered" } : { status: "absent" }; } },
     async inspectControls() { return groups.map((control) => ({ ...control, completed: control.group ? step > groupOrder[control.group] : false })); },
     proposeAction: proposer,
     async operateControl(input) { operated.push(input.action.control); step += 1; return { status: "success" }; },
@@ -75,31 +75,17 @@ test("Connpass known form completes natively before the agent when the runner is
   const result = await harness.runFallback({ provider: "connpass", candidate: { event_ref: "connpass-event://event/400028" }, page, pageWebsocket: "ws://127.0.0.1:9222/devtools/page/KNOWNCONNPASS1", maxSteps: 10, expectedState: "registered_or_pending" });
   assert.equal(result.status, "completed");
   assert.equal(agentCalls, 0);
-  assert.deepEqual(operated, ["online_radio", "referral_radio", "ack_one", "ack_two", "confirm_button"]);
+  assert.deepEqual(operated, ["online_radio", "referral_radio", "confirm_button"]);
 });
 
 test("Connpass resolver approves only the exact safe radio predicates", async () => {
   let privateReads = 0;
   const resolver = createPrivateValueResolver({ async readPeatixProfile() { privateReads += 1; return {}; }, async readFormProfile() { privateReads += 1; return { form_answers: {} }; } });
-  const cases = [["オンライン参加（無料）", "参加方法", true], ["Connpass", "このイベントを何で知りましたか？", true], ["はい、わかりました", "注意事項", true], ["オンライン参加", "参加方法", null], ["オンライン参加（無料）", "", null], ["Connpass", "", null], ["はい、わかりました", "未登録質問", null], ["登壇者", "speaker", null], ["オンライン参加（有料）", "paid", null], ["いいえ", "negative", null], ["X", "other referral", null], ["Connpass / SNS", "ambiguous", null], ["unknown", "unknown", null]];
+  const cases = [["オンライン視聴枠（YouTube） 無料 参加者数 30人", "参加枠", true], ["Connpass", "このイベントは何を見て知りましたか？", true], ["オンライン視聴枠（YouTube） 無料", "参加枠", true], ["オンライン視聴枠（YouTube） 無料 参加者数 30人", "", null], ["Connpass", "", null], ["オンライン登壇枠（Zoom） 無料 先着順 3/3人", "参加枠", null], ["オンライン視聴枠（YouTube） 有料 参加者数 30人", "参加枠", null], ["いいえ", "negative", null], ["X", "other referral", null], ["Connpass / SNS", "ambiguous", null], ["unknown", "unknown", null]];
   for (const [label, question, expected] of cases) {
     assert.equal(await resolver({ provider: "connpass", control: { control: "safe_radio", kind: "radio", label, question, required: true } }), expected, label);
   }
   assert.equal(privateReads, 0);
-});
-
-test("Connpass native ack selection falls through for duplicate or empty-question matches", async () => {
-  const radio = (control, question) => ({ control, kind: "radio", label: "はい、わかりました", question, required: true });
-  const cases = [[radio("ack_a", "注意事項"), radio("ack_b", "注意事項")], [radio("ack_empty", "")]];
-  for (const controls of cases) {
-    let agentCalls = 0;
-    const proposer = createBoundedActionProposer({ repoRoot: "/private/repo", evidenceDir: "/private/evidence", async runAgentRunner(input) {
-      agentCalls += 1;
-      return { summary: { status: "success", selected_provider: "codex", selected_model: "gpt-5.6-terra" }, value: { control: input.schema.properties.control.enum[0] } };
-    } });
-    assert.deepEqual(await proposer({ provider: "connpass", target_id: "TARGET1", expected_state: "registered_or_pending", step: 1, observation: { controls } }), { control: controls[0].control });
-    assert.equal(agentCalls, 1);
-  }
 });
 
 test("Connpass native rejects an unqualified online label", async () => {
@@ -113,11 +99,25 @@ test("Connpass native rejects an unqualified online label", async () => {
   assert.equal(agentCalls, 1);
 });
 
+test("Connpass native fails closed for duplicate safe viewing options", async () => {
+  let agentCalls = 0;
+  const controls = [
+    { control: "online_one", kind: "radio", label: "オンライン視聴枠（YouTube） 無料 参加者数 30人", question: "参加枠", required: true },
+    { control: "online_two", kind: "radio", label: "オンライン視聴枠（YouTube） 無料 参加者数 30人", question: "参加枠", required: true },
+  ];
+  const proposer = createBoundedActionProposer({ repoRoot: "/private/repo", evidenceDir: "/private/evidence", async runAgentRunner(input) {
+    agentCalls += 1;
+    return { summary: { status: "success", selected_provider: "codex", selected_model: "gpt-5.6-terra" }, value: { control: input.schema.properties.control.enum[0] } };
+  } });
+  assert.deepEqual(await proposer({ provider: "connpass", target_id: "TARGET1", expected_state: "registered_or_pending", step: 1, observation: { controls } }), { control: "online_one" });
+  assert.equal(agentCalls, 1);
+});
+
 test("Connpass native requires known question context", async () => {
   const cases = [
-    { control: "online_empty_question", kind: "radio", label: "オンライン参加（無料）", question: "", required: true },
+    { control: "online_empty_question", kind: "radio", label: "オンライン視聴枠（YouTube） 無料 参加者数 30人", question: "", required: true },
     { control: "referral_empty_question", kind: "radio", label: "Connpass", question: "", required: true },
-    { control: "ack_unknown_question", kind: "radio", label: "はい、わかりました", question: "未登録質問", required: true },
+    { control: "ack_unknown_question", kind: "radio", label: "はい、わかりました。", question: "未登録質問", required: true },
   ];
   for (const control of cases) {
     let agentCalls = 0;
@@ -582,6 +582,76 @@ test("inspector keeps input-submit value as a public label and marks only form s
   assert.equal(controls.some((control) => control.label === "private-answer"), false);
   assert.equal(controls.find((control) => control.label === "Apply").submittable, false);
   assert.equal(controls.find((control) => control.label === "Help").submittable, false);
+});
+
+test("Connpass join inspector normalizes the measured ticket and question DOM", async () => {
+  const form = {};
+  const referralTitle = { textContent: "必須 このイベントは何を見て知りましたか？" };
+  const referralGroup = {
+    querySelector(selector) { return selector === ":scope > .question" ? referralTitle : null; },
+  };
+  const acknowledgementGroup = (textContent) => ({ querySelector(selector) { return selector === ":scope > .question" ? { textContent } : null; } });
+  const make = (element) => ({
+    dataset: {}, labels: [], innerText: "", options: [], value: "", checked: false,
+    required: false, disabled: false, form, getAttribute() { return ""; }, closest() { return null; },
+    ...element,
+  });
+  const participation = make({
+    tagName: "INPUT", type: "radio", name: "participation_type",
+    labels: [{ innerText: "オンライン視聴枠（YouTube） 無料 参加者数 30人" }],
+  });
+  const speaker = make({
+    tagName: "INPUT", type: "radio", name: "participation_type",
+    labels: [{ innerText: "オンライン登壇枠（Zoom） 無料 先着順 3/3人" }],
+  });
+  const referral = make({
+    tagName: "INPUT", type: "radio", name: "q_434349", required: true, labels: [{ innerText: "Connpass" }],
+    closest(selector) { return selector === ".question_list" ? referralGroup : null; },
+  });
+  const acknowledgementOne = make({
+    tagName: "INPUT", type: "radio", name: "q_434350", labels: [{ innerText: "はい、わかりました。" }],
+    closest(selector) { return selector === ".question_list" ? acknowledgementGroup("任意 speaker acknowledgement") : null; },
+  });
+  const acknowledgementTwo = make({
+    tagName: "INPUT", type: "radio", name: "q_434351", labels: [{ innerText: "はい、わかりました。" }],
+    closest(selector) { return selector === ".question_list" ? acknowledgementGroup("任意 second speaker acknowledgement") : null; },
+  });
+  const submit = make({ tagName: "BUTTON", type: "submit", innerText: "申し込みを確定する" });
+  const elements = [participation, speaker, referral, acknowledgementOne, acknowledgementTwo, submit];
+  const page = {
+    url() { return "https://osaka-driven-dev.connpass.com/event/400028/join/"; },
+    locator() { return { async evaluateAll(callback, context) { return callback(elements, context); } }; },
+  };
+  const pending = await inspectPageControls({ page, provider: "connpass" });
+  assert.deepEqual(pending.map(({ label, question, required }) => ({ label, question, required })), [
+    { label: "オンライン視聴枠（YouTube） 無料 参加者数 30人", question: "参加枠", required: true },
+    { label: "オンライン登壇枠（Zoom） 無料 先着順 3/3人", question: "参加枠", required: true },
+    { label: "Connpass", question: "このイベントは何を見て知りましたか？", required: true },
+    { label: "はい、わかりました。", question: "speaker acknowledgement", required: false },
+    { label: "はい、わかりました。", question: "second speaker acknowledgement", required: false },
+    { label: "申し込みを確定する", question: undefined, required: false },
+  ]);
+  participation.checked = true;
+  referral.checked = true;
+  const complete = await inspectPageControls({ page, provider: "connpass" });
+  assert.equal(complete.find((control) => control.label === "申し込みを確定する").submittable, true);
+
+  for (const [provider, href] of [
+    ["connpass", "https://connpass.com/event/400028/join/"],
+    ["connpass", "https://osaka-driven-dev.connpass.com/event/400028/join"],
+    ["connpass", "https://osaka-driven-dev.connpass.com/event/400028/join/?from=test"],
+    ["luma", "https://osaka-driven-dev.connpass.com/event/400028/join/"],
+  ]) {
+    const controls = await inspectPageControls({ provider, page: { url() { return href; }, locator() { return { async evaluateAll(callback, context) { return callback(elements, context); } }; } } });
+    const viewing = controls.find((control) => control.label.startsWith("オンライン視聴枠"));
+    assert.equal(viewing.required, provider === "connpass" && href === "https://connpass.com/event/400028/join/", `${provider} ${href}`);
+    assert.equal(viewing.question, provider === "connpass" && href === "https://connpass.com/event/400028/join/" ? "参加枠" : undefined, `${provider} ${href}`);
+  }
+
+  const wrongName = { ...participation, name: "other_radio" };
+  const wrongNameControls = await inspectPageControls({ provider: "connpass", page: { url() { return "https://osaka-driven-dev.connpass.com/event/400028/join/"; }, locator() { return { async evaluateAll(callback, context) { return callback([wrongName, submit], context); } }; } } });
+  assert.equal(wrongNameControls[0].required, false);
+  assert.equal(wrongNameControls[0].question, undefined);
 });
 
 test("bounded proposer exposes pending answers first and only submittable buttons after completion", async () => {
