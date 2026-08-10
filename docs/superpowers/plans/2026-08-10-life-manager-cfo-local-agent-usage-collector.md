@@ -1,6 +1,6 @@
 # CFO-2a2a.5a — Local Usage Collector Plan
 
-Status: READY
+Status: COMPLETE
 
 ## Goal
 
@@ -46,8 +46,16 @@ before state exposure. Also prove scanner truncate/rewrite/partial receipts pass
 row throws without any receipt/state. Record missing-module RED; implement only the composer; run focused, CFO, full,
 syntax, diff, and 3-file/95-added-LOC gates.
 
+Evidence: missing-module RED; focused 2/2, CFO 277/277, full suite, syntax, and diff checks PASS. The normal suites
+execute both collector tests. Implementation is exactly three files and +62/-1; the lockfile is unchanged. Fresh Sol
+review returned `ship — Spec ✅`.
+
 ## Task 2 — Real evidence and close
 
 Read both actual ledgers once each, collect from null state, resume each fixed snapshot, and print counts only. Assert
 all snapshot rows reconcile across accepted/attributed/unattributed and the second pass emits zero events. Fresh Sol
 review then closes 2a2a.5a before planning checkpoint persistence 2a2a.5b.
+
+Evidence snapshot: 4,950 discovered and accepted rows = 3,905 attributed + 1,045 unattributed; unchanged resume emitted
+zero events. Missing usage 273, runner collision groups 436, and unattributed usage remained visible as coverage
+exceptions. Stdout contained counts only.
