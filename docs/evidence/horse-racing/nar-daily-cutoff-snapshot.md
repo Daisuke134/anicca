@@ -9,8 +9,10 @@
 | jurisdiction | `NAR` |
 | snapshot date | `2026-08-10` |
 | gate_status | `PASS_DAILY_CUTOFF_SNAPSHOT` |
-| safely materializable races | `12` |
-| safely materializable runners | `126` |
+| safely materializable races (fixed win market v1) | `7` |
+| safely materializable runners (fixed win market v1) | `76` |
+| cross-bet-type positive single-runner candidate races | `12` |
+| cross-bet-type positive single-runner candidate runners | `126` |
 | cash_authorized | `false` |
 | model_ready | `false` |
 | revenue | `0` (no cash activity) |
@@ -102,21 +104,47 @@ positive single-runner odds row joins its observed runner key.
 | late/after-cutoff races excluded | 0 |
 | distinct race keys represented in odds | 22 |
 | single-runner odds rows | 432 |
-| positive single-runner rows joined to runner keys | 238 |
-| distinct positive single-runner race keys | 12 |
-| distinct positive single-runner runner keys | 126 |
-| future races without a positive single-runner candidate | 34 |
+| positive cross-bet-type single-runner rows joined to runner keys | 238 |
+| distinct cross-bet-type positive single-runner race keys | 12 |
+| distinct cross-bet-type positive single-runner runner keys | 126 |
+| future races without a positive cross-bet-type single-runner candidate | 34 |
 | multi-runner or empty-component odds rows | 24576 |
 | blank odds rows | 0 |
 | non-positive odds rows excluded | 194 |
-| safely materializable races | 12 |
-| safely materializable runners | 126 |
+| safely materializable races (fixed win market v1) | 7 |
+| safely materializable runners (fixed win market v1) | 76 |
+
+### Fixed win market v1 (`賭式=単勝`)
+
+The v1 market is fixed to exact `単勝`. It requires one positive odds row for every
+official horselist runner in a race, with a unique race+runner key. The aggregate is:
+
+| Win aggregate | Count |
+|---|---:|
+| all `単勝` rows | 216 |
+| positive unique `単勝` rows | 125 |
+| positive `単勝` race keys | 12 |
+| positive `単勝` runner keys | 125 |
+| duplicate positive `単勝` runner keys | 0 |
+| complete races (every horselist runner covered) | 7 |
+| runners in complete races | 76 |
+| incomplete races excluded | 5 |
+| missing positive win-runner rows | 6 |
+| extra odds keys | 0 |
+
+Coverage ratio (`positive unique 単勝 runners / official horselist runners`) is
+distributed as `1.0: 7 races`, `0.916667: 1`, `0.909091: 2`, `0.888889: 1`, and
+`0.833333: 1`. The count-gap distribution (official runners minus positive unique
+win runners) is `0: 7 races`, `1: 4`, and `2: 1`. Incomplete races are excluded from
+the materialized v1 set; cross-bet-type 12-race/126-runner counts remain candidates
+only and are not materialized records.
 
 “Single-runner odds” is a schema-only classification: exactly one of `番号1`,
 `番号2`, and `番号3` is nonblank. No bet-type label or odds/payout value is used as
-evidence in this document. The 12 qualifying races and 126 runners are the exact
-cutoff-safe materialization count for this snapshot; the remaining 34 future races are
-not converted into candidates because they lack a positive, joined single-runner row.
+evidence in the cross-bet-type candidate count. The fixed win market v1 requires a
+unique positive `単勝` row for every official horselist runner, so only the 7 complete
+races and 76 runners are safely materializable. The remaining 5 win races are
+incomplete and excluded; no odds value, name, ID, or raw row is reproduced.
 
 ## Gate and safety state
 
