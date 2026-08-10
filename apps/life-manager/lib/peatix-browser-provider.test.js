@@ -14,8 +14,9 @@ function fixture(options = {}) {
     { selector: "#email", kind: "email", visible: true, checked: false },
     { selector: "#privacy", kind: "privacy", visible: true, checked: false },
   ];
+  const formSelectors = new Set(["#name", "#email", "#privacy", "#form-submit-button", ...(options.formSelectors || [])]);
   const href = () => state === "tickets" ? "https://peatix.com/sales/event/5075819/tickets" : state === "form" ? "https://peatix.com/sales/event/5075819/form" : state === "confirm" ? (options.confirmUrl || `https://peatix.com/sales/event/${options.confirmEvent || "5075819"}/confirm`) : state === "complete" ? "https://peatix.com/sales/event/5075819/complete" : state === "ambiguous" ? "https://peatix.com/sales/event/5075819/unknown" : state === "auth" ? "https://peatix.com/login" : state === "canonical" ? (options.canonicalUrl || "https://peatix.com/event/5075819") : "https://peatix.com/event/9999999";
-  const count = (s) => state === "tickets" && s === "input[name=number_of_tickets_6536845]" ? 1 : state === "tickets" && s === "#next-button" ? 1 : state === "form" && ["#name", "#email", "#privacy", "#form-submit-button"].includes(s) ? 1 : state === "confirm" && s === "#confirm-button" ? 1 : 0;
+  const count = (s) => { if (state === "form" && /#[^\\[]*[\[\]]/.test(s)) throw new Error("invalid selector"); return state === "tickets" && s === "input[name=number_of_tickets_6536845]" ? 1 : state === "tickets" && s === "#next-button" ? 1 : state === "form" && formSelectors.has(s) ? 1 : state === "confirm" && s === "#confirm-button" ? 1 : 0; };
   const locator = (selector) => ({ count: async () => count(selector), isVisible: async () => count(selector) === 1, fill: async (value) => calls.push(["fill", selector, value]), check: async () => { calls.push(["check", selector]); checked.add(selector); }, isChecked: async () => checked.has(selector), click: async () => { calls.push(["click", selector]); if (selector === "#next-button") state = "form"; else if (selector === "#form-submit-button") state = "confirm"; else if (selector === "#confirm-button") { finals += 1; state = options.complete === false ? "ambiguous" : "complete"; } } });
   const page = {
     url: href,
@@ -23,6 +24,12 @@ function fixture(options = {}) {
     locator,
     async evaluate(_fn, payload) {
       assert.ok(payload && payload.mode);
+      if (payload.mode === "form" && options.domFields) {
+        const previousDocument = global.document; const previousCSS = global.CSS;
+        const nodes = options.domFields.map((field) => ({ id: field.id || "", name: field.name || "", type: field.type || "text", hidden: false, checked: false, labels: field.label ? [{ textContent: field.label }] : [], getAttribute: (name) => name === "aria-label" ? field.ariaLabel || null : name === "data-label" ? field.dataLabel || null : name === "name" ? field.name || null : null }));
+        global.document = { querySelectorAll: () => nodes, querySelector: () => options.formSubmit === false ? null : {} }; global.CSS = { escape: (value) => String(value).replace(/[^A-Za-z0-9_-]/g, "\\$&") };
+        try { return _fn(); } finally { global.document = previousDocument; global.CSS = previousCSS; }
+      }
       if (payload.mode === "form") return { fields };
       if (payload.mode === "confirm") return { text: options.confirmText || "チケットを申し込む", visible: true };
       if (state === "complete") return { href: href(), markers: options.marker === false ? [] : [{ event_id: "5075819", ticket_id: "6536845" }], checkout: false };
@@ -51,6 +58,11 @@ test("measured ticket/form/confirm flow fills exact fields and clicks final boun
   assert.deepEqual(result, { status: "registered" }); assert.equal(f.finalCount(), 1);
   assert.deepEqual(f.calls.filter((x) => ["fill", "check", "click"].includes(x[0])), [["fill", "input[name=number_of_tickets_6536845]", "1"], ["click", "#next-button"], ["fill", "#name", p.name], ["fill", "#email", p.email], ["check", "#privacy"], ["click", "#form-submit-button"], ["click", "#confirm-button"]]);
   assert.equal(JSON.stringify(result).includes(p.email), false);
+});
+
+test("special-character DOM ids use escaped selectors before final confirmation", async () => {
+  const f = fixture({ domFields: [{ id: "name[0]", name: "attendee_name", label: "name", type: "text" }, { id: "email[0]", name: "attendee_email", label: "email", type: "email" }], formSelectors: ["#name\\[0\\]", "#email\\[0\\]"] });
+  assert.deepEqual(await submitPeatixOnPage(f.page, candidate(), profile()), { status: "registered" }); assert.equal(f.finalCount(), 1);
 });
 
 test("optional privacy control still reaches final confirmation and duplicates fail closed", async () => {
