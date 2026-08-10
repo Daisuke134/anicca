@@ -36,12 +36,16 @@ Soft target: 2 files; production +65–110 LOC; tests +65–95 LOC. Broad flow r
 4. The provider pointer is mode 0600, atomic, exact-schema, and contains no title, venue, attendee, target, ticket ID, URL, screenshot bytes, Calendar receipt, or private value.
 5. Corrupt JSON, extra keys, wrong provider/event/hash, invalid receipt/artifact ref, artifact SHA mismatch, missing provider receipt, or invalid PNG fails before page render, Calendar, Telegram, or bundle.
 6. Existing first-pass Luma and Peatix flows remain unchanged and all existing partial failures still write no bundle.
+7. A checkpoint file symlink or any symlinked checkpoint path component fails before reading outside the state root or performing any page/Calendar/Telegram/bundle effect.
+8. The initial provider `record` result must satisfy the same deterministic provider ID identity as recovery: SHA-256 of tenant, event reference, observed timestamp, and artifact SHA. A syntactically valid forged receipt fails before pointer/Calendar/Telegram/bundle.
 
 ### GREEN
 
 - Derive a checkpoint identity from provider, exact event reference, and validated canonical event URL; store the URL only as its SHA-256 idempotency value.
 - After provider evidence succeeds, atomically persist one exact provider pointer with stable first-observed timestamp and validated refs/SHA.
+- Before the first pointer write, recompute and require the provider receipt ID from tenant, exact event ref, observed timestamp, and raw-byte artifact SHA; use the same validator on first-pass and recovery paths.
 - On restart, validate the pointer, provider receipt, artifact bytes/signature/SHA, and identity before skipping page receipt render/screenshot/store.
+- Resolve the checkpoint root and file with `lstat`-based component checks; reject symlinks at the checkpoint directory or file before any read/write or downstream effect.
 - Always run the existing Calendar find/create/independent-readback sequence. If Calendar already exists after a crash, reuse the one provider event; create remains zero on recovery. No Calendar data is persisted in the pointer.
 - Keep Telegram and final bundle behavior otherwise unchanged in this slice.
 
@@ -49,4 +53,5 @@ Soft target: 2 files; production +65–110 LOC; tests +65–95 LOC. Broad flow r
 
 - Focused evidence suite, minimal runner pre-registered no-submit regression, minimal production, Peatix workflow/provider/Harness, native entrypoint, changed-file syntax, `git diff --check`.
 - Fresh Sol review for checkpoint corruption, privacy, identity binding, artifact validation, Calendar duplication, crash ordering, Luma non-regression, and absence of provider Submit paths.
+- The corruption matrix must cover invalid JSON/extra keys, file and parent symlinks, wrong provider/event/URL hash, forged receipt identity, missing receipt, artifact ref/SHA/bytes mismatch, and invalid PNG, all with zero downstream effects.
 - Update SSOT, commit, and push. Item 12 remains open until 12B adds Telegram/photo/final-bundle recovery and the full four-boundary fixture matrix passes.
