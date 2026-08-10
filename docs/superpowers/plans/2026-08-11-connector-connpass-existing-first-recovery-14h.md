@@ -42,3 +42,10 @@ Soft target: 2 files; production net `+4–15 LOC`; tests `+25–50 LOC`.
 - Fresh Sol review verifies no new Submit path, stable order, window binding, Calendar bypass only for already registered, audit semantics, and test non-vacuity.
 - Commit/push before one official recovery wake. Acceptance: same wake Luma no-effect, Connpass registered pre-readback, cache/direct/Harness Submit all 0, one Connpass receipt/artifact, one Calendar event/readback, positive Telegram message/photo/report IDs, one applied bundle, cleanup.
 
+## Result
+
+- RED reproduced registered omission, Calendar-bypass absence, and aggregate mismatch at 11/14. GREEN stable-partitions in-window registered rows immediately after the window gate.
+- Registered recovery bypasses only available-only price/open/Calendar checks; available order and gates remain unchanged. Diff: production 7/2, tests 50/0 plus one test-only real-interval fixture refinement.
+- Luna and Sol independently passed 144/144, syntax, and diff check. Pushed commits `2a4809974` and `39775a5f6`.
+- Actual production Calendar reader + workflow read-only proof returned audit `6/6/6/4/1` and exact registered event `400028` as the sole candidate, with writes 0.
+- Fresh Sol review: `ship`, Critical 0, Important 0. Schedule remains unloaded; the official bundle recovery is next.
