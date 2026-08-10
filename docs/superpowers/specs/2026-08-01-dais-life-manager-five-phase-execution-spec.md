@@ -6321,7 +6321,21 @@ read-only再診断中に共有CDP `:9222` ownerが起動直後SIGTRAPするprofi
 quarantineに保全している。次の一件はKeychainからPeatix authだけを復旧し、dashboard登録0確認後、official条件の先頭3候補を
 final confirmなしで測定してdirect non-completedの次のexact actionを特定する。
 
-### Active remaining TODO SSOT（進捗243。これ以外の残TODO一覧は履歴）
+### O1B-25進捗244（Peatix first-three form diagnosis / CSS selector root cause）
+
+clean `:9222` profileでPeatix authをKeychainから復旧し、dashboard ticket count 0、Calendar 89 timed / 0 all-dayをread-only確認した。
+official discovery再測定は`100 → 100 → 87 → 60 → 21`。先頭3候補をfinal confirmなしで診断した。
+
+- `5075819 / 6536845`: name 1、email 1、privacy 0、unknown 0。両fieldはid/nameあり・visibleだが、providerが特殊文字を含む
+  DOM idをraw `#${id}`へ直結し、Playwright selector construction error→`control()` null→`required_field_unavailable`。
+- `5099281 / 6515320`: name 1、unknown required 1、privacy 0→`unknown_required_field`。
+- `5104728 / 6525407`: email 1、unknown required 3、privacy 0→`unknown_required_field`。
+
+3件ともauth redirect、confirm到達、final click、registration、Calendar/Telegram/state writeは0。診断pageはcloseし、CDPはsingle
+about:blankを維持。次plan `docs/superpowers/plans/2026-08-10-connector-peatix-css-id-selector.md`は先頭candidateを阻害する
+raw DOM id selectorだけをbrowser-native `CSS.escape`相当へ最小TDD修正する。後続2件のunknown question/Harnessはdeferする。
+
+### Active remaining TODO SSOT（進捗244。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
