@@ -2,12 +2,12 @@
 
 | Field | Value |
 |---|---|
-| Status | M2 ACTIVE — CFO-2a2b.1a/1b/2 complete; CFO-2a2b.3a hourly named-gap gate is next |
+| Status | M2 ACTIVE — CFO-2a2b.1a/1b/2/3a complete; CFO-2a2b.3b exact hourly counts are next |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
 | Existing foundations | `apps/life-call`, interactive Moneytree App access, Fleet telemetry, `lm_api_cost`, and the canonical `lm_agent_earnings` source (the panel's `lm_financial_ledger` name is a stale alias) |
-| First unfinished item | **CFO-2a2b.3a: make missing completion a named hourly receipt/span exception** |
+| First unfinished item | **CFO-2a2b.3b: publish exact capture counts without widening the hourly loop** |
 
 ## 1. Overview — What and Why
 

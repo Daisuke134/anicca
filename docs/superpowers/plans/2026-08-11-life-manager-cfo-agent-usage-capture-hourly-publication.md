@@ -3,7 +3,7 @@
 > **For Luna:** use Superpowers test-driven-development and verification-before-completion. Luna owns the three
 > implementation files; Sol owns plan, review, verification, state, commit, and push.
 
-**Status:** READY FOR LUNA — fresh Sol plan review: ship
+**Status:** COMPLETE — implementation `75d699597`; fresh Sol implementation review: ship
 
 **Goal:** Make the existing hourly local usage run name attempt/completion gaps in its existing immutable receipt and
 existing OTel span. A forced completion-persistence failure must become `missing_completion`, never a complete run or
@@ -76,11 +76,12 @@ token/cost attribute, or cloud path.
 
 ## Verify / state
 
-- [ ] Before Luna starts, Sol records `git status --porcelain` as the baseline containing only this plan/spec work.
+- [x] Before Luna starts, Sol records `git status --porcelain` as the baseline containing only this plan/spec work.
   Luna runs runner focused test, reconciler+chain+runner tests, `npm run test:cfo`, full `npm test`, syntax for all three
   implementation files, and `git diff --check`. Scope is measured only from the three named implementation paths with
   `git diff --numstat -- <three paths>` and status delta from that baseline: exactly those three paths, <=100 gross
   additions. No docs, commit, push, launchd, live ledger, OTel configuration, or Telegram.
-- [ ] Fresh Sol review checks post-write ordering, forced gap truth, ENOENT distinction, fixed redaction, span acceptance,
+- [x] Fresh Sol review checks post-write ordering, forced gap truth, ENOENT distinction, fixed redaction, span acceptance,
   finance isolation, and Ponytail scope. Luna fixes only required issues in the same files.
-- [ ] Sol reruns gates, updates plan/specs, commits/pushes, and advances only to CFO-2a2b.3b exact count envelopes.
+- [x] Sol reruns gates: focused 8/8, reconciliation+chain+runner 19/19, CFO 301/301, full `npm test` exit 0,
+  syntax/diff/scope pass. Implementation is exactly three files and 45 gross added LOC. Advance only to CFO-2a2b.3b.

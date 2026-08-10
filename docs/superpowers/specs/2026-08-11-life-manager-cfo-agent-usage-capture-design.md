@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — CFO-2a2b.1a/1b/2 complete; CFO-2a2b.3a named hourly capture gaps are next |
+| Status | ACTIVE — CFO-2a2b.1a/1b/2/3a complete; CFO-2a2b.3b exact hourly counts are next |
 | Method | Ponytail `full` → Superpowers Goal/Loop/Verify/State |
 | Roles | Sol plans/specifies/verifies; Luna writes production code/tests |
 | Runtime | Local JSONL first; no DB, service, browser, or cloud dependency |
@@ -94,8 +94,8 @@ total-cost label is allowed. Plan: `2026-08-11-life-manager-cfo-agent-usage-capt
       `ef233a90` + `a0fe0c35`; 2 files, `+80/-6`; fresh Sol review: ship.
 - [x] **CFO-2a2b.2 — pure reconciliation:** strict local attempt/usage join and immutable counts receipt. Commit
       `ea3f87408`; 3 files, `+92/-1`; focused 7/7; CFO 297/297; fresh Sol review: ship.
-- [ ] **CFO-2a2b.3a — hourly gap gate:** publish fixed capture exception names through the existing receipt/span and
-      prove forced completion persistence failure is `missing_completion`, never complete or zero.
+- [x] **CFO-2a2b.3a — hourly gap gate:** fixed capture exception names now flow through the existing receipt/span;
+      forced missing completion stays `missing_completion`. Commit `75d699597`; 3 files, +45 LOC; CFO 301/301; ship.
 - [ ] **CFO-2a2b.3b — hourly exact counts:** add exact capture envelopes and aggregate counts after the gap gate works.
 - [ ] **CFO-2a2b.4 — real E2E and close:** verify real ledgers remain append-only, run one isolated provider-boundary
       probe without a paid provider, review, update state, push, and send one counts-only Telegram milestone.
