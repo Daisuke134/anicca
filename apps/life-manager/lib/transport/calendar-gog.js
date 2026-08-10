@@ -59,6 +59,13 @@ function connectorCanonicalUrl(value) {
     if (raw !== expected || url !== expected) connectorInvalid();
     return Object.freeze({ url: expected, sourceTitle: "Connpass" });
   }
+  const meetupMatch = host === "www.meetup.com"
+    && /^\/([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)\/events\/([1-9][0-9]*)\/$/.exec(parsed.pathname);
+  if (meetupMatch) {
+    const expected = `https://www.meetup.com/${meetupMatch[1]}/events/${meetupMatch[2]}/`;
+    if (raw !== expected || url !== expected) connectorInvalid();
+    return Object.freeze({ url: expected, sourceTitle: "Meetup" });
+  }
   const match = host === "peatix.com" && /^\/event\/([1-9][0-9]*)$/.exec(parsed.pathname);
   const expected = match ? `https://peatix.com/event/${match[1]}` : "";
   if (!expected || raw !== expected || url !== expected) connectorInvalid();

@@ -631,3 +631,134 @@ test("composed provider, Calendar, Telegram, and bundle interruptions keep total
     const bundle = await chain("2026-08-07T08:33:00.000Z", async () => ({ messageId: 9301 }), async () => ({ messageId: 9302 })).completeEvidence({ ...input, page: recoveryPage(png, calls) }); assert.deepEqual([records, calls.filter(([n]) => n === "calendar-create").length, calls.filter(([n]) => n === "telegram-message").length, calls.filter(([n]) => n === "telegram-photo").length, bundleFiles(stateDir).length, calls.filter(([n]) => n === "provider-submit").length], [1, 1, 1, 2, 1, 0]);
   } finally { fs.rmSync(stateDir, { recursive: true, force: true }); }
 });
+
+function meetupCandidate(extra = {}) {
+  return {
+    provider: "meetup", event_ref: "meetup-event://event/101",
+    canonical_url: "https://www.meetup.com/tokyo-builders/events/101/",
+    title: "Community Event", starts_at: "2026-08-12T10:00:00.000Z", ends_at: "2026-08-12T11:00:00.000Z",
+    venue_name: "Tokyo", ...extra,
+  };
+}
+
+function meetupFixture(options = {}) {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-minimal-meetup-evidence-"));
+  const png = options.png || Buffer.concat([PNG_SIGNATURE, Buffer.alloc(6_000, 18)]);
+  const pngSha = createHash("sha256").update(png).digest("hex");
+  const calls = [];
+  const calendarReceipt = { id: "google-meetup-1", htmlLink: "https://www.google.com/calendar/event?eid=meetup-one" };
+  let reads = 0;
+  const calendar = options.calendar || {
+    async findConnectorEvents(input) { calls.push(["calendar-read", input]); return reads++ === 0 ? [] : [calendarReceipt]; },
+    async createConnectorEvent(input) { calls.push(["calendar-create", input]); return calendarReceipt; },
+  };
+  const evidenceStore = options.evidenceStore || {
+    async record(input) {
+      calls.push(["evidence-record", input]);
+      const receiptId = createHash("sha256").update(`${input.tenantId}\n${input.eventRef}\n${input.observedAt}\n${pngSha}`).digest("hex");
+      return { external_receipt_ref: `provider-receipt://meetup/${receiptId}`, artifact_ref: `object://sha256/${pngSha}` };
+    },
+    async readExternalReceipt(tenant, ref) {
+      calls.push(["evidence-read-receipt", tenant, ref]);
+      return { kind: "provider_response", provider_id: ref.split("/").at(-1), observed_at: "2026-08-11T08:30:00.000Z", event_ref: "meetup-event://event/101", artifact_sha256: pngSha };
+    },
+    async readArtifact(tenant, ref) { calls.push(["evidence-read-artifact", tenant, ref]); return png; },
+  };
+  const chain = createMinimalEvidenceChain({
+    stateDir, tenantId: "meetup-test", calendar, calendarId: "primary", telegramTarget: "test-target",
+    meetupEvidenceStore: evidenceStore, now: () => new Date("2026-08-11T08:30:00.000Z"),
+    sendMessage: options.sendMessage || (async (message, telegram) => { calls.push(["telegram-message", message, telegram]); return { messageId: 9501 }; }),
+    sendPhoto: options.sendPhoto || (async (bytes, telegram) => { calls.push(["telegram-photo", bytes, telegram]); return { messageId: 9502 }; }),
+  });
+  const pageUrl = { value: options.pageUrl || "https://www.meetup.com/tokyo-builders/events/101/" };
+  const page = {
+    async setContent(value) { calls.push(["set-content", value]); throw new Error("Meetup must not replace the registered page"); },
+    async goto(url, input) { calls.push(["goto", url, input]); throw new Error("Meetup must not navigate away from the registered page"); },
+    async evaluate() { calls.push(["evaluate"]); throw new Error("Meetup must not render a receipt"); },
+    url() { calls.push(["url"]); return pageUrl.value; },
+    async screenshot(input) { calls.push(["screenshot", input]); return png; },
+  };
+  return { stateDir, png, pngSha, calls, evidenceStore, chain, candidate: meetupCandidate(options.candidate), page, pageUrl, cleanup: () => fs.rmSync(stateDir, { recursive: true, force: true }) };
+}
+
+function assertMeetupNoDownstream(fixture, label) {
+  for (const name of ["screenshot", "evidence-record", "calendar-read", "calendar-create", "telegram-message", "telegram-photo"]) {
+    assert.equal(fixture.calls.filter(([callName]) => callName === name).length, 0, `${label}:${name}`);
+  }
+}
+
+test("Meetup captures the registered page and reuses immutable evidence without navigation or replacement", async () => {
+  const fixture = meetupFixture();
+  try {
+    const first = await fixture.chain.completeEvidence({ provider: "meetup", candidate: fixture.candidate, page: fixture.page, providerState: { status: "registered" } });
+    assert.equal(first.provider, "meetup");
+    assert.equal(first.completion_disposition, "created");
+    assert.match(first.provider_receipt_ref, /^provider-receipt:\/\/meetup\/[0-9a-f]{64}$/);
+    assert.equal(first.telegram_message_provider_id, "9501");
+    assert.equal(first.telegram_photo_provider_id, "9502");
+    assert.deepEqual(fixture.calls.find(([name]) => name === "screenshot")[1], { type: "png", fullPage: true });
+    assert.equal(fixture.calls.filter(([name]) => ["set-content", "goto", "evaluate"].includes(name)).length, 0);
+    assert.deepEqual(["calendar-create", "telegram-message", "telegram-photo"].map((name) => fixture.calls.filter(([entry]) => entry === name).length), [1, 1, 1]);
+    const counts = new Map(["screenshot", "evidence-record", "calendar-create", "telegram-message", "telegram-photo"].map((name) => [name, fixture.calls.filter(([entry]) => entry === name).length]));
+    const second = await fixture.chain.completeEvidence({ provider: "meetup", candidate: fixture.candidate, page: fixture.page, providerState: { status: "registered" } });
+    assert.equal(second.completion_disposition, "reused");
+    assert.equal(second.bundle_id, first.bundle_id);
+    for (const [name, count] of counts) assert.equal(fixture.calls.filter(([entry]) => entry === name).length, count, name);
+  } finally { fixture.cleanup(); }
+});
+
+test("Meetup canonical identity, exact registered state, and current page URL fail closed before downstream effects", async () => {
+  const invalidUrls = [
+    "https://meetup.com/tokyo-builders/events/101/", "http://www.meetup.com/tokyo-builders/events/101/",
+    "https://www.meetup.com/Tokyo-builders/events/101/", "https://www.meetup.com/tokyo_builders/events/101/",
+    "https://www.meetup.com/tokyo-builders/events/101", "https://www.meetup.com/tokyo-builders/events/101/?source=test",
+    "https://www.meetup.com/tokyo-builders/events/101/#details", "https://user:pass@www.meetup.com/tokyo-builders/events/101/",
+    "https://www.meetup.com:443/tokyo-builders/events/101/", "https://www.meetup.com/ja-JP/tokyo-builders/events/101/",
+    "https://www.meetup.com/tokyo-builders/events/102/", "https://www.meetup.example/tokyo-builders/events/101/",
+  ];
+  const cases = invalidUrls.map((canonical_url) => ({ candidate: { canonical_url } }));
+  cases.push({ candidate: { event_ref: "meetup-event://event/0" } }, { candidate: { event_ref: "meetup-event://event/102" } }, { status: "pending" }, { status: "absent" });
+  for (const pageUrl of ["https://www.meetup.com/tokyo-builders/events/102/", "https://www.meetup.com/tokyo-builders/events/101/?next=other", "about:blank"]) cases.push({ pageUrl });
+  for (const input of cases) {
+    const fixture = meetupFixture(input);
+    try {
+      await assert.rejects(fixture.chain.completeEvidence({ provider: "meetup", candidate: fixture.candidate, page: fixture.page, providerState: { status: input.status || "registered" } }));
+      assertMeetupNoDownstream(fixture, input.pageUrl || input.candidate?.canonical_url || input.status || input.candidate?.event_ref);
+    } finally { fixture.cleanup(); }
+  }
+});
+
+test("Meetup valid checkpoints require receipt and artifact readback before reuse", async () => {
+  for (const corruption of ["receipt", "artifact"]) {
+    const fixture = meetupFixture();
+    try {
+      const first = await fixture.chain.completeEvidence({ provider: "meetup", candidate: fixture.candidate, page: fixture.page, providerState: { status: "registered" } });
+      const before = fixture.calls.length;
+      if (corruption === "receipt") fixture.evidenceStore.readExternalReceipt = async () => ({ kind: "provider_response", provider_id: first.provider_receipt_ref.split("/").at(-1), observed_at: "2026-08-11T08:30:00.000Z", event_ref: "meetup-event://event/102", artifact_sha256: fixture.pngSha });
+      if (corruption === "artifact") fixture.evidenceStore.readArtifact = async () => Buffer.concat([fixture.png, Buffer.from("tamper")]);
+      await assert.rejects(fixture.chain.completeEvidence({ provider: "meetup", candidate: fixture.candidate, page: fixture.page, providerState: { status: "registered" } }));
+      assertMeetupNoDownstream({ calls: fixture.calls.slice(before) }, corruption);
+    } finally { fixture.cleanup(); }
+  }
+});
+
+test("Meetup initial record requires receipt and artifact readback before downstream effects", async () => {
+  for (const corruption of ["receipt", "receipt-missing", "artifact"]) {
+    const fixture = meetupFixture();
+    try {
+      if (corruption === "receipt") {
+        fixture.evidenceStore.readExternalReceipt = async () => ({
+          kind: "provider_response", provider_id: "f".repeat(64), observed_at: "2026-08-11T08:30:00.000Z",
+          event_ref: "meetup-event://event/102", artifact_sha256: fixture.pngSha,
+        });
+      } else if (corruption === "receipt-missing") {
+        fixture.evidenceStore.readExternalReceipt = async () => ({ kind: "provider_response", provider_id: "f".repeat(64) });
+      } else {
+        fixture.evidenceStore.readArtifact = async () => Buffer.concat([fixture.png, Buffer.from("tamper")]);
+      }
+      await assert.rejects(fixture.chain.completeEvidence({ provider: "meetup", candidate: fixture.candidate, page: fixture.page, providerState: { status: "registered" } }));
+      assert.equal(fixture.calls.filter(([name]) => ["calendar-read", "calendar-create", "telegram-message", "telegram-photo"].includes(name)).length, 0, corruption);
+      assert.equal(bundleFiles(fixture.stateDir).length, 0, corruption);
+    } finally { fixture.cleanup(); }
+  }
+});

@@ -183,6 +183,41 @@ test("connector calendar rejects every non-canonical Connpass identity before go
   assert.equal(calls, 0);
 });
 
+test("connector calendar accepts exact Meetup identity with fixed Meetup source title", async () => {
+  const { run, calls } = recorder(JSON.stringify({ id: "meetup-created", htmlLink: "https://calendar.google.com/calendar/event?eid=meetup-created" }));
+  const result = await makeGogCalendar({ account: ACCT, run }).createConnectorEvent({
+    calendarId: "primary", idempotencyValue: "a".repeat(64), title: "Injected title",
+    startAt: "2026-08-12T10:00:00+09:00", endAt: "2026-08-12T11:00:00+09:00",
+    location: "Tokyo", canonicalUrl: "https://www.meetup.com/tokyo-builders/events/101/",
+  });
+  assert.deepEqual(result, { id: "meetup-created", htmlLink: "https://calendar.google.com/calendar/event?eid=meetup-created" });
+  assert.ok(calls[0].includes("--source-url=https://www.meetup.com/tokyo-builders/events/101/"));
+  assert.deepEqual(calls[0].filter((arg) => String(arg).startsWith("--source-title=")), ["--source-title=Meetup"]);
+});
+
+test("connector calendar rejects every non-canonical Meetup identity before gog run", async () => {
+  const variants = [
+    "https://meetup.com/tokyo-builders/events/101/", "http://www.meetup.com/tokyo-builders/events/101/",
+    "https://www.meetup.com/Tokyo-builders/events/101/", "https://www.meetup.com/tokyo_builders/events/101/",
+    "https://www.meetup.com/tokyo-builders/events/101", "https://www.meetup.com/tokyo-builders/events/101/?source=test",
+    "https://www.meetup.com/tokyo-builders/events/101/#details", "https://user:pass@www.meetup.com/tokyo-builders/events/101/",
+    "https://www.meetup.com:443/tokyo-builders/events/101/", "https://www.meetup.com/ja-JP/tokyo-builders/events/101/",
+    "https://www.meetup.example/tokyo-builders/events/101/",
+    "https://www.meetup.com/tokyo-builders/events/0/", "https://www.meetup.com/tokyo-builders/events/not-a-number/",
+    "https://www.meetup.com/tokyo-builders/events/101/details/",
+  ];
+  let calls = 0;
+  const cal = makeGogCalendar({ account: ACCT, run: () => { calls += 1; return "{}"; } });
+  for (const canonicalUrl of variants) {
+    await assert.rejects(cal.createConnectorEvent({
+      calendarId: "primary", idempotencyValue: "b".repeat(64), title: "x",
+      startAt: "2026-08-12T10:00:00+09:00", endAt: "2026-08-12T11:00:00+09:00",
+      location: "Tokyo", canonicalUrl,
+    }), /connector calendar invalid/i, canonicalUrl);
+  }
+  assert.equal(calls, 0);
+});
+
 test("connector calendar methods reject malformed IDs, URLs, times, and ambiguous provider receipts", async () => {
   let calls = 0;
   const cal = makeGogCalendar({ account: ACCT, run: () => { calls += 1; return "{}"; } });
