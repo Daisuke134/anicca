@@ -213,3 +213,5 @@ not commit or push.
 - Both pre-run source byte ranges retained their exact SHA-256. Immutable chains advanced `2→3` and `6→7`; stdout
   advanced exactly `18→19`, stderr stayed `26→26`, and the existing financial lane delivered real Telegram revision
   4 with `status=sent`, `delivered=true`, and `recovered=true`.
+- The owner-facing completion milestone delivered with `dryRun=false`, provider `ok=true`, and Telegram
+  `messageId=11104`.
