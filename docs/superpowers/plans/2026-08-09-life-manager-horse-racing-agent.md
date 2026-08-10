@@ -88,8 +88,8 @@ The official NAR source is zero-cost primary; JRA remains official primary. Seco
 | 7C1 | HRA-3C normalized market dimension | **complete** | commit `204d26e9e`; focused 37/full 119 PASS |
 | 7C2 | HRA-3C win-market materializer | **complete** | commits `fb0038409` + `e8abb094c` + `72d152356`; actual 7/76 |
 | 7D1 | HRA-3C official win outcome parser | **complete** | commit `0b5177452`; actual 321 outcomes/322 payouts |
-| 7D2a | HRA-3D reject caller-declared settlement | **ACTIVE** | one fail-closed guard; no unparsed IDs can unlock model |
-| 7D2b | HRA-3C current-day settlement capture | waiting for 2026-08-10 races to settle | target 7 race IDs, one fetch after final finish |
+| 7D2a | HRA-3D reject caller-declared settlement | **complete** | commit `8d344a97f`; production guard 2 LOC, full 148 PASS |
+| 7D2b | HRA-3C current-day settlement capture | **ACTIVE-WAITING** for 2026-08-10 races to settle | target 7 race IDs, one fetch after final finish |
 | 8 | HRA-3Ma/3Mb model and backtest | blocked by HRA-3C/3D actual gate | cutoff-safe odds and settled-payback contract |
 | 9 | HRA-4 SHADOW decision/outcome ledger | blocked by HRA-3Mb | `decision.py`, `ledger.py`, `test_shadow_ledger.py` |
 | 10 | HRA-4b Japanese Telegram | blocked by HRA-4 | `telegram.py` and `test_telegram.py` |
@@ -465,7 +465,7 @@ Completion evidence: commit `0b5177452`; TDD RED was the expected missing-helper
 
 ## Task 7D2: HRA-3C current-day settlement capture
 
-**State:** ACTIVE. First close the unverified-manifest path now; actual capture remains waiting on race completion.
+**State:** ACTIVE-WAITING. The unverified-manifest path is closed; actual capture waits on race completion.
 
 ### Task 7D2a: reject caller-declared settlement
 
@@ -473,9 +473,11 @@ Completion evidence: commit `0b5177452`; TDD RED was the expected missing-helper
 
 **Files:** modify only `src/horse_racing_agent/data_audit.py` and `tests/test_data_audit.py`; estimated production change under 10 LOC and only the tests whose expected behavior changes. TDD RED proves the current implementation accepts a nonzero caller-declared settlement. GREEN adds one validation guard: every manifest must have `settled_payback_rows == 0` and empty `settled_race_ids`, otherwise raise `AuditRejected("settlement evidence is unverified")`. Rewrite the old synthetic test that claimed `model_ready=true` from manifest values into a rejection regression. Adjust only dependent tests so chronology/staleness/odds/row gates remain covered with zero settlement. Full suite, compileall, diff-check, fresh task review, commit `fix(horse-racing): reject unverified settlement`, push both/parity. This slice intentionally keeps `model_ready=false`; it adds no positive settlement API.
 
+Completion evidence: commit `8d344a97f`; RED failed with expected `DID NOT RAISE`, GREEN focused 36/full 148/compileall/diff-check PASS, production diff 2 LOC, local/origin/canonical parity PASS, task review Spec ✅ / Quality ✅ / ship with no Critical or Important findings. One non-anchored test regex observation is deferred Minor and does not alter the exact production exception or gate behavior.
+
 ### Task 7D2b: actual current-day capture and verified positive path
 
-**State:** WAITING on external race completion. The seven 2026-08-10 cutoff-safe target races span 11:40–18:10 JST. Do not claim settlement or fetch before completion. At or after 18:20 JST, perform one official daily race-archive fetch with the existing fixed `curl` route. Write a unique private `.part`, require HTTPS success/HTTP 200/ZIP content type/nonempty archive/ZIP validation, record HTTP completion time and SHA-256, chmod 600, then atomically rename; never overwrite the morning archive. If all seven targets are not settled, record `NOT_ALL_TARGETS_SETTLED` and remain waiting without zero-fill or repeated polling.
+**State:** ACTIVE-WAITING on external race completion. The seven 2026-08-10 cutoff-safe target races span 11:40–18:10 JST. Do not claim settlement or fetch before completion. At or after 18:20 JST, perform one official daily race-archive fetch with the existing fixed `curl` route. Write a unique private `.part`, require HTTPS success/HTTP 200/ZIP content type/nonempty archive/ZIP validation, record HTTP completion time and SHA-256, chmod 600, then atomically rename; never overwrite the morning archive. If all seven targets are not settled, record `NOT_ALL_TARGETS_SETTLED` and remain waiting without zero-fill or repeated polling.
 
 Only after Sol observes the exact daily URL/SHA/captured-at tuple may Luna add that tuple to `nar_outcome`'s REAL allowlist. The RED is the actual daily parser call rejecting the previously unaccepted provenance; GREEN is the same call producing parser-backed outcomes. Add the smallest typed outcome input to `audit_records` so readiness is derived from accepted `WinOutcome` objects, never caller-declared manifest IDs. Require exact 7/7 target race-ID coverage, no extra target substitution, official/private-shadow provenance, and include the outcome source hash in the redacted audit evidence. Rerun the existing daily materializer from the immutable morning ZIPs, bind the accepted outcome objects, then require `record_count=7`, `race_count=7`, `settled_payback_rows >= 7`, no matching-settlement blocker, and cash false. This unlocks only Task 8 data work; it does not authorize Telegram advice or purchase.
 

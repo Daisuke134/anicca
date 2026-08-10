@@ -6,7 +6,7 @@
 |---|---|
 | Status | **REALITY GATE REQUIRED — LIVE PURCHASE DISABLED** |
 | 対象 | Life Manager financial organ の第8候補 business_id: horse_racing |
-| 現在のactive stage | HRA-3D unverified-settlement rejection（ACTIVE）。caller manifest cannot unlock model、cashはfalse |
+| 現在のactive stage | HRA-3C current-day settlement capture（ACTIVE-WAITING）。18:20 JST以降のone fetch、cashはfalse |
 | plan / gate / verification owner | Sol |
 | edit / code / execution owner | Luna |
 | 購入処理 | PurchaseExecutorは常時disabled。HRA-6の全gateなしに有効化しない |
@@ -280,8 +280,8 @@ sequenceDiagram
 | HRA-3C-market | normalized win/place market identity | **complete**。market混同をstore hash/snapshot keyで防ぐ |
 | HRA-3C-materialize | actual daily win parser | **complete**。actual 7 records/76 runners、accepted provenance、names/raw exportなし |
 | HRA-3C-outcome | official win result/payback parser | **complete**。actual monthly 321 outcomes/322 payouts、dead heat完全照合 |
-| HRA-3D-settlement-guard | caller-declared settlement rejection | **ACTIVE**。parser evidenceなしのnonzero settlementをAuditRejected |
-| HRA-3C-settlement | current-day target settlement capture | **WAITING**。18:20 JST以降にone fetch、target 7/7を要求 |
+| HRA-3D-settlement-guard | caller-declared settlement rejection | **complete**。commit `8d344a97f`、parser evidenceなしのnonzero settlementをAuditRejected |
+| HRA-3C-settlement | current-day target settlement capture | **ACTIVE-WAITING**。18:20 JST以降にone fetch、target 7/7を要求 |
 | HRA-3M | market baseline、walk-forward、calibration、slippage | **BLOCKED** |
 | HRA-4 | live-data SHADOW、official outcome reconciliation | **BLOCKED**。shadow runs 0 |
 | HRA-5 | Telegram + CFO real/shadow separation | **BLOCKED**。Telegram runs 0 |
