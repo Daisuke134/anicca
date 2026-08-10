@@ -4,7 +4,7 @@
 failures, stores the first daily snapshot or a meaningful same-day correction, and sends at most one Telegram report
 per snapshot revision.
 
-**Status:** ACTIVE — fresh review fix round; this is the only unfinished CFO-1i implementation slice.
+**Status:** LIVE — one hourly launchd job installed; autonomous real-data successes 1/2.
 
 **Ponytail decision:** Reuse the existing reader, recovery, report builder, revision RPC, delivery dedupe, renderer,
 and Telegram transport. Add no agent, service, queue, database, framework, dependency, or cloud runner. The committed
@@ -182,3 +182,17 @@ reports RED evidence, GREEN counts, LOC, and diff only; Luna does not commit, pu
 Exactly one local hourly scheduler is loaded. Two consecutive autonomous scheduled real-data runs exit successfully,
 the first due revision is durably sent or already receipted, unchanged data creates no Telegram spam, changed data is
 append-only and delivered once, and logs contain no private finance data or credentials.
+
+## Live evidence
+
+- Renderer prerequisites shipped separately as `a89f4c41c` and `9c72dc102`: canonical recovery actions render, and
+  recovered Moneytree data stays partial rather than inventing liabilities/net worth. Both passed fresh review.
+- Luna runner shipped as `65f4e9c12`: focused `8/8`, CFO `254/254`, full test exit `0`, node/diff checks, runner 87
+  LOC, tests 164 LOC, and final fresh review `ship — Spec ✅`.
+- A real Moneytree no-write/no-send run proved the latest verified report can be rendered and passed through durable
+  delivery dedupe with append `0`, provider send `0`, and no private amount output. An earlier recovered-state probe
+  reached the blocked append boundary; it was not evidence of a balance change and is not recorded as one.
+- Broken `ai.anicca.cfo-daily` (exit 127) and `ai.anicca.life-manager-financial-report` (exit 1) were booted out without
+  deleting their plist files. Exactly one `ai.anicca.life-manager-cfo-hourly` job is loaded with interval 3600.
+- Autonomous launchd run 1/2: `runs=1`, last exit `0`, safe result `quiet`, revision 1, append false, delivery false,
+  stderr 0 bytes. No manual kickstart was used. Product Stage 7 remains active until run 2/2 passes.

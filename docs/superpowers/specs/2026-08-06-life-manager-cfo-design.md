@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | PRODUCT STAGE 7 ACTIVE — Telegram detail callbacks live; one hourly local loop next |
+| Status | PRODUCT STAGE 7 ACTIVE — hourly local loop live; scheduled real-data proof 1/2 |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
@@ -117,10 +117,12 @@ current production `apps/life-manager` package through PR #1587 / merge commit `
 exact commit. A real delivery receipt and immutable snapshot changed the same Telegram provider message to accounts
 through the production webhook and restored summary, with zero new messages and zero application error logs. Telegram
 Web was not logged in, so this evidence is a real provider callback-path E2E rather than a fabricated human tap.
-Report production remains local. The first unfinished `CFO-1i` slice is now exactly one hourly local launchd trigger,
-specified by `docs/superpowers/plans/2026-08-10-life-manager-cfo-hourly-local-loop.md`, followed by two consecutive
-autonomous real-data successes. The committed implementation is limited to one <=100-LOC runner plus one focused
-test; the local plist is runtime configuration, not a new service or repository subsystem.
+Report production remains local. Exactly one hourly local launchd trigger is now live, specified by
+`docs/superpowers/plans/2026-08-10-life-manager-cfo-hourly-local-loop.md`. Its first autonomous real-data run exited
+`0`, stayed quiet on an already-receipted unchanged revision, and wrote no stderr; no manual kickstart was used. The
+only unfinished `CFO-1i` evidence is the second consecutive autonomous real-data success. The committed implementation
+is one 87-LOC runner plus one focused test; the local plist is runtime configuration, not a new service or repository
+subsystem.
 
 The CFO MUST NOT trade, transfer, hire, fund, or stop a live business during the foundation milestone. Read and
 write authority remain different capabilities permanently. No balance, transaction, revenue, or tax estimate is
