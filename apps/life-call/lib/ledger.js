@@ -183,6 +183,31 @@ function normalizeGeminiUsageEvidence(response, context) {
   }
 }
 
+function normalizeGeminiLiveUsageEvidence(message, context) {
+  try {
+    if (!plainUsageInput(message) || !plainUsageInput(context) || !plainUsageInput(message.usageMetadata)) usageFail("invalid_input");
+    const metadata = message.usageMetadata;
+    const input = providerCount(metadata, "promptTokenCount", false); const output = providerCount(metadata, "responseTokenCount", false); const total = providerCount(metadata, "totalTokenCount", false);
+    const cached = providerCount(metadata, "cachedContentTokenCount", true); const reasoning = providerCount(metadata, "thoughtsTokenCount", true); const tool = providerCount(metadata, "toolUsePromptTokenCount", true);
+    const owner = usageString(context.owner_id, "invalid_owner"); const requestModel = usageString(context.request_model, "invalid_request_model");
+    if (requestModel !== "models/gemini-2.5-flash-native-audio-preview-09-2025") usageFail("invalid_request_model");
+    if (context.financial_unit_id !== "life_manager_saas") usageFail("invalid_financial_unit");
+    if (!validUsageTimestamp(context.occurred_at)) usageFail("invalid_timestamp");
+    if (typeof context.trace_id !== "string" || !/^(?!0{32})[0-9a-f]{32}$/.test(context.trace_id)) usageFail("invalid_trace_id");
+    const session = usageString(context.live_session_id, "invalid_live_session_id");
+    if (!/^(?!0{32})[0-9a-f]{32}$/.test(session)) usageFail("invalid_live_session_id");
+    if (!Number.isSafeInteger(context.usage_sequence) || context.usage_sequence < 0) usageFail("invalid_usage_sequence");
+    const otelOutput = output + (reasoning === null ? 0 : reasoning); if (!Number.isSafeInteger(otelOutput)) usageFail("invalid_count");
+    const otelAttributes = { "gen_ai.operation.name": "generate_content", "gen_ai.provider.name": "gcp.gemini", "gen_ai.request.model": requestModel, "gen_ai.request.stream": true, "gen_ai.output.type": "speech", "gen_ai.usage.input_tokens": input, "gen_ai.usage.output_tokens": otelOutput, "server.address": "generativelanguage.googleapis.com", "server.port": 443 };
+    if (cached !== null) otelAttributes["gen_ai.usage.cache_read.input_tokens"] = cached;
+    if (reasoning !== null) otelAttributes["gen_ai.usage.reasoning.output_tokens"] = reasoning;
+    return { schema_version: 1, provider: "gcp.gemini", provider_request_id: null, local_correlation_id: `live-session:${session}`, usage_sequence: context.usage_sequence, occurred_at: new Date(context.occurred_at).toISOString(), owner_id: owner, financial_unit_id: "life_manager_saas", trace_id: context.trace_id, request_model: requestModel, response_model: null, tokens: { input, output, cached_input: cached, reasoning_output: reasoning, tool_input: tool, total }, evidence_status: "provider_reported", otel_attributes: otelAttributes };
+  } catch (error) {
+    if (usageInternal(error)) throw error;
+    usageFail("invalid_input");
+  }
+}
+
 function finite(value) {
   const n = Number(value);
   return Number.isFinite(n) ? n : 0;
@@ -222,4 +247,4 @@ function businessSummary(daysBack, rows, nowMs) {
   return summary;
 }
 
-module.exports = { recordCost, recordDailyComposioPoll, monthlyComposioCallCount, normalizeApiCostEvent, normalizeGeminiUsageEvidence, businessSummary };
+module.exports = { recordCost, recordDailyComposioPoll, monthlyComposioCallCount, normalizeApiCostEvent, normalizeGeminiUsageEvidence, normalizeGeminiLiveUsageEvidence, businessSummary };

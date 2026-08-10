@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — CFO-2a2.1 through CFO-2a2.4a verified; CFO-2a2.4b pure Live usage contract is next |
+| Status | ACTIVE — CFO-2a2.1 through CFO-2a2.4b verified; CFO-2a2.4c recorder + append + span is next |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Existing `apps/life-call` package |
 | First provider | Gemini `generateContent` response |
@@ -556,26 +556,35 @@ delta and must not be summed. Gemini's primary schema does not state whether rep
 per-turn deltas or session-cumulative. CFO-2a2.4c may preserve observations, but no Live subtotal becomes available
 until CFO-2a2.4d proves the rollup rule from real traffic or an explicit provider contract.
 
-Only this pure two-file contract is active. Soft target: `ledger.js` and `ledger.test.js`, at most 90 additions. It
-performs no I/O and changes no migration, RPC/store, span lifecycle, WebSocket, duration estimate, scheduler, launchd,
-or Telegram behavior.
+This pure two-file contract is verified. It performs no I/O and changes no migration, RPC/store, span lifecycle,
+WebSocket, duration estimate, scheduler, launchd, or Telegram behavior.
 
 Acceptance:
 
-- [ ] one literal Live message maps to the exact closed result without input mutation or content leakage;
-- [ ] explicit zero and missing optional provider counts remain distinguishable;
-- [ ] unsafe/missing counts, overflow, invalid local identity/sequence/model/owner/unit/time/trace fail redacted;
-- [ ] the output and plan label sequence as observation order only and never define additive rollup semantics;
-- [ ] focused ledger, CFO, and full suites pass within two files and 90 additions.
+- [x] one literal Live message maps to the exact closed result without input mutation or content leakage;
+- [x] explicit zero and missing optional provider counts remain distinguishable;
+- [x] missing/invalid required counts, overflow, invalid local identity/sequence/model, and invalid shared context fail
+  with fixed redacted errors; existing helper edge-case matrices are not duplicated;
+- [x] the output and plan label sequence as observation order only and never define additive rollup semantics;
+- [x] focused ledger, CFO, and full suites pass within two files and 70 additions.
+
+Completion evidence: Luna recorded RED at 12/14 with only the missing export failing, then GREEN at 14/14, CFO
+264/264, and full 906/906. Fresh Sol review found one Important missing regression for explicit optional zero; the
+same Luna added three focused assertions without changing production. Re-review returned `ship`. Sol independently
+reran focused 14/14, CFO 264/264, full `npm test` exit `0`, syntax, and diff gates. The implementation changes exactly
+`ledger.js` and `ledger.test.js` with 54 additions. No I/O, migration, RPC/store, span lifecycle, WebSocket, runtime,
+scheduler, launchd, or Telegram behavior changed.
 
 ### 13.4 Remaining Live slices
 
-- **CFO-2a2.4c:** append the normalized evidence idempotently and emit one content-free span.
+- **CFO-2a2.4c (next):** append normalized observations idempotently and emit one content-free span without treating
+  repeated observations as additive usage.
 - **CFO-2a2.4d:** wire the existing Live bridge, prove real message → row → span, and stop using the duration estimate
   only after provider evidence succeeds.
 
 Primary evidence: [Gemini Live server messages](https://ai.google.dev/api/live#BidiGenerateContentServerMessage) place
 `usageMetadata` at the top level and define no response ID/model field; [Gemini Live UsageMetadata](https://ai.google.dev/api/live#UsageMetadata)
 defines `responseTokenCount`; the official [`googleapis/js-genai` recording](https://github.com/googleapis/js-genai/blob/main/test/system/recordings/live_ML_Dev_should_send_text_in_async_session.websocket.log)
-shows `usageMetadata` on a `turnComplete` message. The storage decision is an inference from those provider facts and
-the verified existing table contract.
+shows `usageMetadata` on a `turnComplete` message. The pinned [OpenTelemetry GenAI span convention](https://github.com/open-telemetry/semantic-conventions-genai/blob/46d43c8949afb53765a202e89f4534eeb75ca3fa/docs/gen-ai/gen-ai-spans.md)
+defines `generate_content`, requires the stream flag for streaming, and lists `speech` as the requested output type.
+The storage decision is an inference from those provider facts and the verified existing table contract.

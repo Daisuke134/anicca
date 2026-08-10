@@ -223,3 +223,31 @@ test("normalizeGeminiUsageEvidence preserves zero, omits missing optionals, and 
     assert.throws(() => ledger().normalizeGeminiUsageEvidence(value, metadata), (error) => /^cfo_provider_usage_invalid:[a-z_]+$/.test(error.message) && !/SENTINEL/.test(error.message), label);
   }
 });
+
+test("normalizeGeminiLiveUsageEvidence maps one Live message without content", () => {
+  const message = { usageMetadata: { promptTokenCount: 515, responseTokenCount: 38, totalTokenCount: 560, cachedContentTokenCount: 2, thoughtsTokenCount: 5, toolUsePromptTokenCount: 1 }, serverContent: { outputTranscription: { text: "LIVE_OUTPUT_SENTINEL" } } };
+  const context = { owner_id: "u1", financial_unit_id: "life_manager_saas", occurred_at: "2026-08-10T01:02:03.000Z", trace_id: "1".repeat(32), request_model: "models/gemini-2.5-flash-native-audio-preview-09-2025", live_session_id: "2".repeat(32), usage_sequence: 7 };
+  const before = { message: structuredClone(message), context: structuredClone(context) };
+  const expected = { schema_version: 1, provider: "gcp.gemini", provider_request_id: null, local_correlation_id: `live-session:${context.live_session_id}`, usage_sequence: 7, occurred_at: "2026-08-10T01:02:03.000Z", owner_id: "u1", financial_unit_id: "life_manager_saas", trace_id: "1".repeat(32), request_model: context.request_model, response_model: null, tokens: { input: 515, output: 38, cached_input: 2, reasoning_output: 5, tool_input: 1, total: 560 }, evidence_status: "provider_reported", otel_attributes: { "gen_ai.operation.name": "generate_content", "gen_ai.provider.name": "gcp.gemini", "gen_ai.request.model": context.request_model, "gen_ai.request.stream": true, "gen_ai.output.type": "speech", "gen_ai.usage.input_tokens": 515, "gen_ai.usage.output_tokens": 43, "gen_ai.usage.cache_read.input_tokens": 2, "gen_ai.usage.reasoning.output_tokens": 5, "server.address": "generativelanguage.googleapis.com", "server.port": 443 } };
+  const actual = ledger().normalizeGeminiLiveUsageEvidence(message, context);
+  assert.deepEqual(actual, expected);
+  assert.doesNotMatch(JSON.stringify(actual), /LIVE_OUTPUT_SENTINEL|gen_ai\.response\./);
+  assert.deepEqual({ message, context }, before);
+  assert.deepEqual(ledger().normalizeGeminiLiveUsageEvidence(message, context), actual);
+});
+
+test("normalizeGeminiLiveUsageEvidence preserves optional absence and redacts invalid input", () => {
+  const base = { message: { usageMetadata: { promptTokenCount: 0, responseTokenCount: 0, totalTokenCount: 0 } }, context: { owner_id: "u1", financial_unit_id: "life_manager_saas", occurred_at: "2026-08-10T01:02:03Z", trace_id: "1".repeat(32), request_model: "models/gemini-2.5-flash-native-audio-preview-09-2025", live_session_id: "2".repeat(32), usage_sequence: 0 } };
+  const zero = ledger().normalizeGeminiLiveUsageEvidence(base.message, base.context);
+  assert.deepEqual(zero.tokens, { input: 0, output: 0, cached_input: null, reasoning_output: null, tool_input: null, total: 0 });
+  assert.equal(zero.otel_attributes["gen_ai.usage.output_tokens"], 0);
+  assert.ok(!("gen_ai.usage.cache_read.input_tokens" in zero.otel_attributes) && !("gen_ai.usage.reasoning.output_tokens" in zero.otel_attributes));
+  const optionalZero = ledger().normalizeGeminiLiveUsageEvidence({ ...base.message, usageMetadata: { ...base.message.usageMetadata, cachedContentTokenCount: 0, thoughtsTokenCount: 0, toolUsePromptTokenCount: 0 } }, base.context);
+  assert.deepEqual(optionalZero.tokens, { input: 0, output: 0, cached_input: 0, reasoning_output: 0, tool_input: 0, total: 0 });
+  assert.equal(optionalZero.otel_attributes["gen_ai.usage.cache_read.input_tokens"], 0); assert.equal(optionalZero.otel_attributes["gen_ai.usage.reasoning.output_tokens"], 0);
+  const cases = [
+    ["missing_count", (m) => delete m.usageMetadata.responseTokenCount], ["negative", (m) => { m.usageMetadata.responseTokenCount = -1; }], ["string", (m) => { m.usageMetadata.totalTokenCount = "SENTINEL"; }], ["unsafe", (m) => { m.usageMetadata.promptTokenCount = Number.MAX_SAFE_INTEGER + 1; }], ["overflow", (m) => { m.usageMetadata.responseTokenCount = Number.MAX_SAFE_INTEGER; m.usageMetadata.thoughtsTokenCount = 1; }],
+    ["session", (_, c) => { c.live_session_id = "0".repeat(32); }], ["sequence", (_, c) => { c.usage_sequence = 1.5; }], ["model", (_, c) => { c.request_model = "gemini-2.5-flash"; }], ["trace", (_, c) => { c.trace_id = "0".repeat(32); }],
+  ];
+  for (const [label, mutate] of cases) { const value = structuredClone(base); mutate(value.message, value.context); assert.throws(() => ledger().normalizeGeminiLiveUsageEvidence(value.message, value.context), (error) => /^cfo_provider_usage_invalid:[a-z_]+$/.test(error.message) && !/SENTINEL|not-hex/.test(error.message), label); }
+});
