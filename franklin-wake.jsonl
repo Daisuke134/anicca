@@ -25097,3 +25097,10 @@
 {"ts":1786375843,"wake_id":"00MSNE1YE165429C8B9E3D4F48","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786375971,"wake_id":"00MSNE4OWN81CEE0AFD3664F86","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana paid bug bounty platform USDC [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surfaced for the mod"}
 {"ts":1786376099,"wake_id":"00MSNE7G6U4BAB65543D404770","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786376236,"wake_id":"00MSNEADCQ5A0F9B0DA7934C52","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786376365,"wake_id":"00MSNED54UBF4448503C1F4C81","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786376496,"wake_id":"00MSNEFYLF9D817CAF7AE54D4E","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786376625,"wake_id":"00MSNEIPWYCFD6FE1D9A564E8E","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786376753,"wake_id":"00MSNELGEHAB9A7529632E4849","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786376888,"wake_id":"00MSNEOCG5FA1F49F8A5AE4D7D","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786377015,"wake_id":"00MSNER342C90B83A9DC394D8A","kind":"narrate","sleep_s":120,"model":"auto"}
