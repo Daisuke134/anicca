@@ -130,6 +130,49 @@ test("official production factory persists the Connpass discovery audit from its
   }
 });
 
+test("official production factory installs Peatix audit and keeps attendee profile lazy", async () => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-production-peatix-audit-"));
+  const audits = [], profile = { name: "Private Name", email: "private@example.test", accept_organizer_privacy: true };
+  let profileReads = 0;
+  const emptyWorkflow = { async discoverCandidates() { return []; }, async runDirectAction() {}, async readProviderState() { return { status: "absent" }; } };
+  try {
+    const dependencies = createMinimalProductionDependencies({
+      repoRoot: "/private/repo", stateDir, wakeId: "wake-production-peatix-1",
+      calendarAccount: "private-account", gogKeyring: "private-keyring", telegramTarget: "private-target",
+      lumaFormProfilePath: "/private/form-profile.json", lunaEvidenceDir: "/private/luna-evidence",
+      browserRail: { open() {}, navigate() {}, close() {} }, calendar: { ready() { return true; } },
+      calendarReader: { async readCalendarGaps() { return []; } }, lumaWorkflow: emptyWorkflow,
+      connpassWorkflow: emptyWorkflow, browserHarness: { async runFallback() {}, async performAction() {} },
+      actionCache: { async replay() {}, saveVerifiedRepair() {} }, evidenceChain: { async completeEvidence() {} },
+      operations: { async recordPeatixDiscoveryAudit(value) { audits.push(value); }, async reportWake() {}, async recordAction() {} },
+      get peatixAttendeeProfile() { profileReads += 1; return profile; },
+      now: () => new Date("2026-08-10T08:30:00.000Z"),
+    });
+    const page = {
+      waitForResponse() {
+        return Promise.resolve({
+          url() { return "https://peatix.com/search/events?p=1&size=20"; },
+          ok() { return true; }, async json() { return { json_data: { page: 1, events: [] } }; },
+        });
+      },
+      async goto() {},
+    };
+    assert.deepEqual(await dependencies.discoverCandidates("peatix", [], page), []);
+    assert.deepEqual(audits, [{ observed_count: 0, normalized_count: 0, window_count: 0, free_open_count: 0, calendar_free_count: 0 }]);
+    const candidate = {
+      provider: "peatix", event_ref: "peatix-event://event/1", canonical_url: "https://peatix.com/event/1",
+      title: "Public Event", starts_at: "2026-08-10T01:00:00.000Z", ends_at: "2026-08-10T02:00:00.000Z",
+      registration_status: "available", ticket_price_status: "free", ticket_price_minor: 0, ticket_id: "9",
+    };
+    const direct = await dependencies.runDirectAction({ provider: "peatix", candidate, page: {} });
+    assert.equal(direct.status, "failed");
+    assert.equal(profileReads, 1);
+    assert.doesNotMatch(JSON.stringify({ audits, direct }), /Private Name|private@example\.test/);
+  } finally {
+    fs.rmSync(stateDir, { recursive: true, force: true });
+  }
+});
+
 test("production provider router keeps Luma cache direct fallback and readback on one page", async () => {
   const calls = [];
   const page = Object.freeze({ page_id: "owned-page-1" });
@@ -246,6 +289,41 @@ test("production provider router continues from Luma to Connpass on the same pag
   assert.equal(cached.pageState, "registration_page_v1");
   assert.equal(cached.page, page);
   assert.equal(calls.filter(([name]) => name === "discover")[0][1].page, page);
+});
+
+test("production provider router routes Peatix cache direct and readback on one page", async () => {
+  const calls = [];
+  const page = Object.freeze({ page_id: "owned-page-peatix" });
+  const candidate = Object.freeze({ provider: "peatix", event_ref: "peatix-event://event/1", canonical_url: "https://peatix.com/event/1" });
+  const workflow = {
+    async discoverCandidates(input) { calls.push(["discover", input]); return [candidate]; },
+    async runDirectAction(input) { calls.push(["direct", input]); return { status: "completed" }; },
+    async readProviderState(input) { calls.push(["readback", input]); return { status: "registered" }; },
+  };
+  const actionCache = {
+    async replay(input) { calls.push(["cache", input]); return { status: "cache_miss" }; },
+    saveVerifiedRepair(input) { calls.push(["save", input]); return { status: "saved" }; },
+  };
+  const router = createProductionProviderRouter({
+    lumaWorkflow: workflow, connpassWorkflow: workflow, peatixWorkflow: workflow, actionCache,
+    browserHarness: { async runFallback() { return { status: "failed" }; } },
+    async performAction() { return { status: "success" }; }, now: () => new Date("2026-08-10T08:30:00.000Z"),
+  });
+
+  assert.deepEqual(await router.discoverCandidates("peatix", [], page), [candidate]);
+  await router.runCachedAction({ provider: "peatix", candidate, page });
+  await router.runDirectAction({ provider: "peatix", candidate, page });
+  await router.readProviderState({ provider: "peatix", candidate, page });
+  assert.throws(() => router.discoverCandidates("meetup", [], page));
+
+  const cached = calls.find(([name]) => name === "cache")[1];
+  assert.equal(cached.provider, "peatix");
+  assert.equal(cached.workflowVersion, "peatix_registration_v1");
+  assert.equal(cached.pageState, "registration_page_v1");
+  assert.equal(cached.page, page);
+  assert.equal(calls.find(([name]) => name === "direct")[1].page, page);
+  assert.equal(calls.find(([name]) => name === "readback")[1].page, page);
+  assert.doesNotMatch(JSON.stringify(cached), /Private Name|private@example\.test/);
 });
 
 test("production calendar reader uses gog for exactly fourteen Tokyo calendar days", async () => {
