@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — through CFO-2a2b.5c2c2 real E2E complete; CFO-2a2b.5c2c3 coverage repair is next |
+| Status | COMPLETE — truthful partial coverage published; total-cost label remains disabled pending billing evidence |
 | Method | Ponytail `full` → Superpowers Goal/Loop/Verify/State |
 | Roles | Sol plans/specifies/verifies; Luna writes production code/tests |
 | Runtime | Local JSONL first; no DB, service, browser, or cloud dependency |
@@ -111,7 +111,7 @@ total-cost label is allowed. Plan: `2026-08-11-life-manager-cfo-agent-usage-capt
       a newly triggered real managed loop to write a new attempt and same-ID completion before CFO calls capture ready.
       Do not infer rollout from a feature branch. Plan:
       `2026-08-11-life-manager-cfo-active-runner-attempt-cutover.md`.
-- [ ] **CFO-2a2b.5c — truthful two-source cutover:** make one existing Life Manager-owned safe managed loop write to
+- [x] **CFO-2a2b.5c — truthful two-source cutover:** make one existing Life Manager-owned safe managed loop write to
       the Life Manager usage/attempt pair, update the real E2E from its obsolete both-ledgers-absent premise, and prove
       both source prefixes remain append-only. Do not write a bounty canary into the Life Manager source and do not
       call capture ready while either source has a named exception.
@@ -124,7 +124,8 @@ total-cost label is allowed. Plan: `2026-08-11-life-manager-cfo-agent-usage-capt
       - [x] **5c2b:** add the Life Manager-owned read-only safe-probe seam. Commit `8554a6616`; 3 files,
             `+95/-1`; focused `1/1`, daily `9/9`, wiring `6/6`, portable `18/18`; fresh Sol: ship. Plan:
             `2026-08-11-life-manager-cfo-safe-provider-probe.md`.
-      - [ ] **5c2c:** close readiness only when both sources prove append-only truth.
+      - [x] **5c2c:** close the cutover with both sources append-only and preserve partial readiness while named
+            exceptions remain.
             - [x] **5c2c1:** the existing Life Manager launchd label ran the reviewed read-only safe probe against
               canonical telemetry. New run `0→1`, exit `1`; one exact attempt and one same-ID failed completion,
               production cursor exceptions `[]`, both `0600`, prefix immutable, original plist restored. Plan:
@@ -132,9 +133,10 @@ total-cost label is allowed. Plan: `2026-08-11-life-manager-cfo-agent-usage-capt
             - [x] **5c2c2:** update and run the obsolete real two-source E2E against both actual attempt ledgers.
               Commit `eb4a90a53`; one file, `+11/-9`; focused real E2E, CFO `302/302`, full suite, syntax, and
               diff checks pass; fresh Sol: ship. Measured truth was `attempted=23`, `success=3`, `failed=20`,
-              `missing_completion=0`, but capture correctly remained `partial` with six coverage exceptions.
-            - [ ] **5c2c3:** diagnose the six named real coverage exceptions without reading prompt/response content,
-              then remove only the smallest false-positive or producer defect required for truthful readiness.
+              `missing_completion=0`, but capture correctly remained `partial`. The six source-scoped chain-exception
+              occurrences are `missing_usage`, `runner_identity_collision`, and `unattributed_usage` on each source;
+              Anicca capture also reports two unmatched completions. These are not coerced to zero or repaired by
+              inference. CFO-2a3 billing evidence is the next truthful path; total-cost remains disabled meanwhile.
 
 ## Acceptance gates
 

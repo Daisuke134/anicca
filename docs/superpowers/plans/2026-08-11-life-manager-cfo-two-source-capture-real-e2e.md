@@ -164,7 +164,7 @@ coverage repair; it must not mark capture ready while exceptions remain.
 
 - RED: obsolete both-attempt-ledgers-absent assertion exited `1` with the fixed FAIL line.
 - GREEN: real E2E observed two sources and reported `attempted=23`, `success=3`, `failed=20`,
-  `missing_completion=0`; capture stayed `partial` with six named coverage exceptions.
+  `missing_completion=0`; capture stayed `partial` with six source-scoped chain-exception occurrences.
 - Scope: one existing test file, `+11/-9`, no production/runtime/provider/Telegram change.
 - Verification: focused real E2E, CFO `302/302`, full suite, syntax, and diff checks all exited `0`.
 - Review: fresh Sol found no Critical or Important issue and returned `ship`.

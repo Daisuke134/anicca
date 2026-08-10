@@ -2,12 +2,12 @@
 
 | Field | Value |
 |---|---|
-| Status | M2 ACTIVE — CFO-2a2b through 5c2c2 complete; CFO-2a2b.5c2c3 coverage repair is next |
+| Status | M2 ACTIVE — CFO-2a2b complete with truthful partial coverage; CFO-2a3 billing reconciliation is next |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
 | Existing foundations | `apps/life-call`, interactive Moneytree App access, Fleet telemetry, `lm_api_cost`, and the canonical `lm_agent_earnings` source (the panel's `lm_financial_ledger` name is a stale alias) |
-| First unfinished item | **CFO-2a2b.5c2c3: diagnose and repair the six real capture coverage exceptions** |
+| First unfinished item | **CFO-2a3: reconcile provider billing/export evidence without erasing provisional usage** |
 
 ## 1. Overview — What and Why
 
@@ -960,10 +960,12 @@ ingestion. They are not unchecked M1 items and cannot become the active CFO item
       hashes/watermarks, terminal-attempt coverage, stable runtime-to-business mapping, and unattributed rows. Do not
       rescan raw Codex/Claude session logs for managed loops. Child SSOT:
       `docs/superpowers/specs/2026-08-10-life-manager-cfo-local-agent-usage-design.md`.
-- [ ] **CFO-2a2b** Make usage-ledger attempts observable and durable; measure producer attempt/success/failure,
+- [x] **CFO-2a2b** Make usage-ledger attempts observable and durable; measure producer attempt/success/failure,
       reject invalid numeric values, and expose capture coverage before any total-cost label is enabled. Deliver it as
       strict numerics, producer write-ahead attempt, pure reconciliation, hourly publication, then real E2E. Child SSOT:
-      `docs/superpowers/specs/2026-08-11-life-manager-cfo-agent-usage-capture-design.md`.
+      `docs/superpowers/specs/2026-08-11-life-manager-cfo-agent-usage-capture-design.md`. The real two-source E2E
+      closes this item with append-only `0600` evidence and exact attempt/completion counts. Coverage is intentionally
+      `partial`; unknown historical/provider usage stays visible and the total-cost label remains disabled.
 - [ ] **CFO-2a3** Add billing-export/invoice reconciliation; confirmed cost supersedes provisional cost without
       deleting either record, and unexplained differences remain visible.
 - [ ] **CFO-2a3b** Confirm only provider-supported billing dimensions. Shared-project business costs use a versioned
