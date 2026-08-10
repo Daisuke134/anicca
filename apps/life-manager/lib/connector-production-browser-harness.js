@@ -16,11 +16,9 @@ const PEATIX_FORM_SUBMIT_LABEL = "確認画面へ進む";
 const PEATIX_CONFIRM_LABEL = "チケットを申し込む";
 const PEATIX_FORM_URL = /^https:\/\/peatix\.com\/sales\/event\/([1-9][0-9]*)\/form$/;
 const PEATIX_CONFIRM_URL = /^https:\/\/peatix\.com\/sales\/event\/([1-9][0-9]*)\/confirm$/;
-const CONNPASS_FINAL_LABEL = "申し込みを確定する"; const CONNPASS_ACK_LABEL = "はい、わかりました";
-const CONNPASS_ONLINE_LABELS = new Set(["オンライン参加（無料）"]);
-const CONNPASS_ONLINE_QUESTIONS = new Set(["参加方法"]);
-const CONNPASS_REFERRAL_QUESTIONS = new Set(["このイベントを何で知りましたか？"]);
-const CONNPASS_ACK_QUESTIONS = new Set(["注意事項", "個人情報"]);
+const CONNPASS_FINAL_LABEL = "申し込みを確定する";
+const CONNPASS_REFERRAL_QUESTION = "このイベントは何を見て知りましたか？";
+const CONNPASS_ONLINE_LABEL = /^オンライン視聴枠（YouTube） 無料(?: 参加者数 \d+人)?$/i;
 const FINAL_EFFECT_TIMEOUT_MS = 30_000;
 const FINAL_EFFECT_POLL_MS = 25;
 
@@ -155,6 +153,7 @@ async function inspectPageControls(input = {}) {
   const eventId = String(input.event_id || "");
   const observed = await locator.evaluateAll((elements, context) => {
     const visibleElements = elements.slice(0, 100);
+    const connpassJoin = Boolean(context && context.provider === "connpass" && /^https:\/\/(?:[a-z0-9-]+\.)?connpass\.com\/event\/[1-9][0-9]*\/join\/$/.test(String(context.href || "")));
     const kindOf = (element) => {
       const tag = String(element.tagName || "").toLowerCase();
       const type = String(element.type || "").toLowerCase();
@@ -165,10 +164,17 @@ async function inspectPageControls(input = {}) {
       const tag = String(element.tagName || "").toLowerCase(); const type = String(element.type || "").toLowerCase();
       return tag === "button" ? !type || type === "submit" : ["submit", "image"].includes(type);
     };
-    const groupOf = (element) => typeof element.closest === "function" ? element.closest("fieldset, dl.field, [role='group'], .field") : null;
+    const groupOf = (element) => {
+      if (typeof element.closest !== "function") return null;
+      if (connpassJoin) return element.closest(".question_list") || element.closest("fieldset, dl.field, [role='group'], .field");
+      return element.closest("fieldset, dl.field, [role='group'], .field");
+    };
+    const radioNameOf = (element) => String((element.getAttribute && element.getAttribute("name")) || element.name || "");
     const requiredOf = (element) => {
       const group = groupOf(element);
-      return element.required === true || String((element.getAttribute && element.getAttribute("aria-required")) || "").toLowerCase() === "true" || Boolean(group && (((group.classList && typeof group.classList.contains === "function") && group.classList.contains("required")) || /(?:^|\s)required(?:\s|$)/.test(String(group.className || "")) || String((group.getAttribute && group.getAttribute("aria-required")) || "").toLowerCase() === "true"));
+      const radioName = radioNameOf(element);
+      return connpassJoin && String(element.type || "").toLowerCase() === "radio" && radioName === "participation_type"
+        || element.required === true || String((element.getAttribute && element.getAttribute("aria-required")) || "").toLowerCase() === "true" || Boolean(group && (((group.classList && typeof group.classList.contains === "function") && group.classList.contains("required")) || /(?:^|\s)required(?:\s|$)/.test(String(group.className || "")) || String((group.getAttribute && group.getAttribute("aria-required")) || "").toLowerCase() === "true"));
     };
     const labelOf = (element, allowKnownValue = false) => {
       const tag = String(element.tagName || "").toLowerCase(); const type = String(element.type || "").toLowerCase();
@@ -208,7 +214,7 @@ async function inspectPageControls(input = {}) {
     const requiredAnswersRepresentable = requiredAnswers.every((element) => !!labelOf(element));
     const completedOf = (element) => {
       const kind = kindOf(element);
-      const radioName = String((element.getAttribute && element.getAttribute("name")) || element.name || "");
+      const radioName = radioNameOf(element);
       return ["input", "textarea", "select"].includes(kind) ? Boolean(String(element.value || "").trim()) : kind === "checkbox" ? element.checked === true : kind === "radio" ? radioName.trim() ? elements.some((candidate) => String(candidate.type || "").toLowerCase() === "radio" && String((candidate.getAttribute && candidate.getAttribute("name")) || candidate.name || "") === radioName && candidate.checked === true) : element.checked === true : false;
     };
     const requiredAnswersComplete = requiredAnswers.every(completedOf);
@@ -241,7 +247,15 @@ async function inspectPageControls(input = {}) {
       const control = `control_${index + 1}`;
       element.dataset.lmConnectorControl = control;
       const group = groupOf(element);
-      const question = ["checkbox", "radio"].includes(kind) && group && typeof group.querySelector === "function" ? String(group.querySelector("legend,dt,[data-question]")?.textContent || "").replace(/\s+/g, " ").trim() : "";
+      const radioName = radioNameOf(element);
+      const questionElement = connpassJoin && group && typeof group.querySelector === "function" ? group.querySelector(":scope > .question") : null;
+      const question = ["checkbox", "radio"].includes(kind) && connpassJoin
+        ? kind === "radio" && radioName === "participation_type"
+          ? "参加枠"
+          : String(questionElement?.textContent || questionElement?.innerText || "").replace(/\s+/g, " ").trim().replace(/^(?:必須|任意)\s*/, "").trim()
+        : ["checkbox", "radio"].includes(kind) && group && typeof group.querySelector === "function"
+          ? String(group.querySelector("legend,dt,[data-question]")?.textContent || "").replace(/\s+/g, " ").trim()
+          : "";
       const completed = completedOf(element);
       const required = requiredOf(element);
       const submittable = requiredAnswersRepresentable && (knownPeatixSubmit || knownPeatixConfirm || kind === "button" && !!element.form && element.form === registrationForm && submitTypeOf(element) && submitCounts.get(element.form) === 1);
@@ -300,13 +314,8 @@ function connpassSafeRadioCategory(control) {
   if (!control || control.kind !== "radio") return null;
   const label = normalizedLabel(control.label);
   const question = normalizedLabel(control.question);
-  if (CONNPASS_ONLINE_LABELS.has(label)) {
-    return CONNPASS_ONLINE_QUESTIONS.has(question) ? "online" : null;
-  }
-  if (label === "connpass") {
-    return CONNPASS_REFERRAL_QUESTIONS.has(question) ? "referral" : null;
-  }
-  return label === normalizedLabel(CONNPASS_ACK_LABEL) && CONNPASS_ACK_QUESTIONS.has(question) ? "ack" : null;
+  if (CONNPASS_ONLINE_LABEL.test(label)) return question === normalizedLabel("参加枠") ? "online" : null;
+  return label === "connpass" && question === normalizedLabel(CONNPASS_REFERRAL_QUESTION) ? "referral" : null;
 }
 
 function nativeConnpassControl(provider, controls) {
@@ -316,19 +325,6 @@ function nativeConnpassControl(provider, controls) {
     for (const category of ["online", "referral"]) {
       const matches = pending.filter((control) => connpassSafeRadioCategory(control) === category);
       if (matches.length > 0) return matches.length === 1 ? matches[0].control : null;
-    }
-    const acknowledgements = pending.filter((control) => connpassSafeRadioCategory(control) === "ack");
-    if (acknowledgements.length > 0) {
-      const byQuestion = new Map();
-      for (const control of acknowledgements) {
-        const question = normalizedLabel(control.question);
-        if (!question) return null;
-        const group = byQuestion.get(question) || [];
-        group.push(control);
-        byQuestion.set(question, group);
-      }
-      if ([...byQuestion.values()].some((group) => group.length !== 1)) return null;
-      return byQuestion.values().next().value[0].control;
     }
     return null;
   }
