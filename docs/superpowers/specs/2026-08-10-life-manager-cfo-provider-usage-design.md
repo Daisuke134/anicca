@@ -282,6 +282,42 @@ receipt keys, and anon/authenticated denial.
   exporter, scheduler, pricing, billing, write-attempt ledger, production apply, or remote DB mutation.
 - Task review and fresh final whole-plan review: Critical 0, Important 0, ship.
 
+### CFO-2a2.2c — only active slice
+
+Add one thin Node client, `appendGeminiUsageEvidence(response, context, options)`. It reuses the verified
+`normalizeGeminiUsageEvidence` contract and shared `createCfoSupabaseRpc` transport; it adds no provider call,
+tokenizer, retry loop, SDK, exporter, scheduler, or new validation framework.
+
+```mermaid
+flowchart LR
+    A[Gemini response + context] --> B[Verified normalizer]
+    B --> C[17 scalar RPC arguments]
+    C --> D[Existing PostgREST helper]
+    D --> E[Exact six-key frozen receipt]
+```
+
+The client maps `owner_id` to `p_uid`, the fixed non-null financial unit to `attributed`, and every provider count
+without recomputing totals. Missing optional counts remain `null`; explicit zero remains zero. `schema_version` and
+`otel_attributes` are not sent. The client makes exactly one POST to
+`/rest/v1/rpc/lm_append_cfo_model_usage_evidence`, then accepts only the six-key receipt whose provider identity,
+sequence, and trace ID exactly echo the normalized evidence. It clones and freezes the receipt.
+
+All local failures use `cfo_provider_usage_store_failed:<fixed_reason>` and never contain response/context values,
+provider bodies, credentials, content, IDs, model names, or token counts. A non-2xx response body is not read and
+there is no client retry; the database RPC owns idempotency.
+
+Soft target: one client, one focused test, and one `test:cfo` entry; three files and 100 additions. CFO-2a2.2c
+does not call Gemini, emit a span, apply migrations, or touch production/remote services.
+
+### CFO-2a2.2c acceptance
+
+- [ ] One literal Gemini response/context creates one exact 17-key scalar RPC body and one request.
+- [ ] Missing optional counts remain null, explicit zero remains zero, and provider total is not recomputed.
+- [ ] Content-shaped response fields and OpenTelemetry attributes never enter the request, receipt, or error.
+- [ ] Receipt identity is exact, cloned, deeply frozen, and limited to six keys.
+- [ ] Invalid input, hostile network/response, invalid receipt, and non-2xx paths are fixed, silent, and single-call.
+- [ ] Focused, CFO, and full suites pass without a real provider call or production mutation.
+
 ### PostgreSQL evidence
 
 - [Unique constraints](https://www.postgresql.org/docs/current/ddl-constraints.html#DDL-CONSTRAINTS-UNIQUE-CONSTRAINTS)
@@ -292,3 +328,5 @@ receipt keys, and anon/authenticated denial.
   key as its conflict arbiter; CFO-2a2.2a defines the invariant but adds no retry RPC.
 - [CREATE FUNCTION](https://www.postgresql.org/docs/current/sql-createfunction.html) — invoker security uses the
   caller's privileges; PostgreSQL also documents fixed search paths and revoking default PUBLIC execute access.
+- [PostgREST functions as RPC](https://docs.postgrest.org/en/stable/references/api/functions.html#calling-with-post)
+  — a JSON object's keys become named PostgreSQL function arguments under the `/rpc` route.
