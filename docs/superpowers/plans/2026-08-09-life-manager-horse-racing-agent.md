@@ -18,7 +18,7 @@
 - Manifest必須欄は`evidence_class`、`source_url`、`source_authority`、`jurisdiction`、`retrieved_at`、`page_or_effective_timestamp`、`fetch_exit_code`、`http_status`、`parsed_row_count`、observed schema names/types、`content_sha256`、`robots_snapshot_url/status`、`terms_url/status`、`permission_basis`、`permission_document_verified`、`raw_values_exported=false`、`allowed_scope`、`cash_authorized=false`。official JRA/NARの`allowed_scope`は`private_shadow`、secondaryは`shadow_only`。
 - raw snapshotはMac-local private append-only storageだけに保持する。ETag、content hash、source URLでidempotencyを判定し、同一archiveを二重appendしない。raw values、実馬名、credential、secret、subscription id、receiptは外へ出さない。
 - `PurchaseExecutor`は常時disabled。HRA-6のterms/order/tax/credential/receipt/reconciliation gate以前に注文・決済・bet・wallet/bank mutationを作らない。`USER_ATTESTED_PERMISSION`だけではcashをauthorizeしない。
-- NAR公式が案内する4購入経路（JRAネット投票、SPAT4、楽天競馬、オッズパーク）の公開規約は、本人または会員による申込み・認証情報の本人利用を要求し、owner-operated AI/browser automationの最終送信を明示許可していない。楽天競馬には2026-08-10T12:39:23+09:00に具体的な自律操作条件を公式フォームから1件照会し、`ask_confirm`の「お問い合わせを受け付けました」を実測した。書面回答の未取得中は完全自律注文を`BLOCKED_AUTONOMOUS_ORDER_PERMISSION`とし、crawl許可、個人利用、口座保有、credential保有を代替根拠にしない。
+- NAR公式が案内する4購入経路（JRAネット投票、SPAT4、楽天競馬、オッズパーク）の公開規約は、本人または会員による申込み・認証情報の本人利用を要求し、owner-operated AI/browser automationの最終送信を明示許可していない。楽天競馬には2026-08-10T12:39:23+09:00に具体的な自律操作条件を公式フォームから1件照会し、`ask_confirm`の受付完了文と、同日12:38:53+09:00の楽天公式ドメインからの自動受付メールを実測した。メールには追跡可能なお問い合わせ番号があるが、値はprivate evidenceとしてGit/Telegramへ出さない。書面回答の未取得中は完全自律注文を`BLOCKED_AUTONOMOUS_ORDER_PERMISSION`とし、crawl許可、個人利用、口座保有、credential保有を代替根拠にしない。
 - `$10K/month`はevidence-driven target only。ROI、勝率、収益、forecast、guaranteeを作らず、official settled receiptとlater-window evidenceがない値をrevenueへ加算しない。
 - Solはplan、gate、verificationを所有し、Lunaはこのplanに記載されたedit、code、command、evidence作成を実行する。
 - 未完項目は先頭の一件だけをactiveにする。各sliceは最大3 files、estimated LOC 100以下、RED→GREEN→実E2E/state更新→commit→origin/canonical pushで閉じてから次へ進む。
@@ -540,7 +540,7 @@ Observed official terms evidence:
 - JRA「即PAT禁止事項・注意事項」: https://www.jra.go.jp/dento/soku/instructions/kinshi.html — 本人以外への申込み委任を禁止し、他サイト・アプリ連携による投票の成否・内容を保証しない。
 - JRA「購入履歴確認FAQ」: https://www.jra.go.jp/faq/pop04/1_29.html — 投票照会サービスで過去60日分を確認でき、原則21時更新と案内する。
 - 楽天競馬「楽天競馬投票約定」: https://keiba.rakuten.co.jp/guide/term — 勝馬投票券は100円の整数倍とし、パスワード等は会員のみが使用し、第三者に利用させないとする。他社アプリ/ウェブ経由の利用は動作・投票成否を保証しない。
-- 楽天競馬「メールでのお問い合わせ」: https://keiba.faq.rakuten.net/form/ask — 2026-08-10T12:39:23+09:00に、本人所有Mac上のlocal AI、credential非共有、日100円cap、選択・ブラウザ入力・最終送信・履歴照会を含む自律操作の可否と、許可範囲/API/禁止条項/正本receiptを1件照会。https://keiba.faq.rakuten.net/form/ask_confirm の受付完了文を実測。受付番号の表示はない。
+- 楽天競馬「メールでのお問い合わせ」: https://keiba.faq.rakuten.net/form/ask — 2026-08-10T12:39:23+09:00に、本人所有Mac上のlocal AI、credential非共有、日100円cap、選択・ブラウザ入力・最終送信・履歴照会を含む自律操作の可否と、許可範囲/API/禁止条項/正本receiptを1件照会。https://keiba.faq.rakuten.net/form/ask_confirm の受付完了文を実測。Web完了画面に受付番号の表示はないが、同日12:38:53+09:00の自動受付メールにお問い合わせ番号を確認済み。値はprivate evidenceのまま保持する。
 - オッズパーク「各種会員規約」: https://www.oddspark.com/member/kiyaku/ および https://www.oddspark.com/pdf/kiyaku_dir.pdf — 投票申込金額は100円の整数倍、投票は加入者自ら申込み第三者に行わせられず、認証情報も会員本人のみが使用する。
 - 国税庁「No.1490 一時所得」: https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1490.htm — 一般の競馬払戻金は一時所得の例で、総収入から直接支出と最高50万円の特別控除を引く計算を示す。
 - 国税庁「競馬の馬券の払戻金に係る課税について」: https://www.nta.go.jp/information/other/data/h30/keiba/index.htm — 所得区分は購入期間・回数・頻度・利益規模等を総合判断し、一定の継続的な自動購入態様は雑所得になり得る一方、一般的な一時所得では外れ馬券費用を控除できないと説明する。
