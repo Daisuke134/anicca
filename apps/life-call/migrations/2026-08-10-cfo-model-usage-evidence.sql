@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS public.lm_cfo_model_usage_evidence (
   id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   public_ref uuid NOT NULL DEFAULT gen_random_uuid() UNIQUE CHECK (public_ref <> '00000000-0000-0000-0000-000000000000'::uuid),
   uid text NOT NULL REFERENCES public.lm_users(uid) CHECK (btrim(uid) <> ''),
-  financial_unit_id text CONSTRAINT lm_cfo_model_usage_evidence_financial_unit_snake_case CHECK (financial_unit_id IS NULL OR financial_unit_id ~ '^[a-z0-9]+(?:_[a-z0-9]+)*$'),
+  financial_unit_id text CONSTRAINT lm_cfo_model_usage_evidence_financial_unit_snake_case CHECK (financial_unit_id IS NULL OR financial_unit_id ~ '^[a-z][a-z0-9_]*$'),
   attribution_status text NOT NULL CHECK ((attribution_status = 'attributed' AND financial_unit_id IS NOT NULL) OR (attribution_status = 'unattributed' AND financial_unit_id IS NULL)),
   provider text NOT NULL CHECK (provider ~ '^[a-z0-9]+(?:\.[a-z0-9-]+)+$'),
   provider_request_id text NOT NULL CHECK (btrim(provider_request_id) <> '' AND provider_request_id = btrim(provider_request_id)),
