@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — CFO-2a3.1 complete; CFO-2a3.2a Gmail invoice locator is active |
+| Status | ACTIVE — CFO-2a3.2a complete; CFO-2a3.2b local download/parse/append is next |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Local first; existing hourly launchd remains unchanged until real E2E passes |
 | First provider | Google Cloud monthly invoice delivered to the already-authenticated local Gmail account |
@@ -119,7 +119,7 @@ allocation so narrower business totals can be derived honestly.
 - [ ] **CFO-2a3.2 — Local source.** Extend the existing `gog` transport with one read-only exact-invoice operation;
       download one PDF to a private temporary directory, verify sender/attachment/hash, extract with existing
       `pdftotext`, normalize, append one immutable local receipt, and remove temporary content after parsing.
-  - [ ] **CFO-2a3.2a — Locator.** Find the latest exact Google invoice and return only safe attachment locator
+  - [x] **CFO-2a3.2a — Locator.** Find the latest exact Google invoice and return only safe attachment locator
         metadata. No download or parsing. Plan:
         `docs/superpowers/plans/2026-08-11-life-manager-cfo-google-invoice-gmail-locator.md`.
   - [ ] **CFO-2a3.2b — Download, parse, append.** Use the locator once, private temporary PDF, existing
@@ -162,3 +162,15 @@ adding code.
 - Fresh Sol review found invalid-month and non-canonical-decimal acceptance. The same Luna fixed only those two
   contracts; re-review returned `ship — Spec ✅`.
 - No Gmail/PDF I/O, storage, DB, OpenTelemetry, scheduler, allocation, or Telegram behavior was added.
+
+## 9. CFO-2a3.2a completion evidence
+
+- Luna added 25 production LOC to the existing `gog` transport, one 36-line two-case test, and one package token.
+- RED was exact missing-method failure `0/2`. GREEN passed focused `2/2`, CFO `305/305`, and full `npm test` after
+  restoring lockfile dependencies with `npm ci --ignore-scripts`.
+- Sol independently repeated focused `2/2`, CFO `305/305`, full `npm test`, syntax, diff, and registration checks.
+- A real read-only local run used the authenticated `gog` account and returned one frozen exact six-key locator for
+  a real PDF; only booleans/key names were printed, never message ID, attachment ID, filename, account, or content.
+- A fresh reviewer could not be allocated because the collaboration service rejected both spawn and follow-up with
+  `agent thread limit reached`. No review result is claimed; Sol inspected the exact diff and the next slice keeps
+  the locator behind another fail-closed parser boundary.

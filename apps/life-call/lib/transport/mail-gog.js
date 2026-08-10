@@ -79,6 +79,31 @@ function makeGogMail({ bin, account, keyring, run, execFileSyncImpl = execFileSy
       }
       return out;
     },
+    async findLatestGoogleCloudInvoice() {
+      if (!acct) return null;
+      try {
+        const query = 'from:payments-noreply@google.com subject:"Google Cloud Platform & APIs:" has:attachment filename:pdf newer_than:400d';
+        const d = JSON.parse(await exec(["gmail", "messages", "search", query, "-j", "--max=10", "--gmail-no-send"]));
+        const hits = Array.isArray(d.messages) ? d.messages : Array.isArray(d.threads) ? d.threads : Array.isArray(d) ? d : [];
+        const valid = hits.filter((h) => {
+          const id = String(h.id || ""), from = String(h.from || ""), date = String(h.date || "");
+          const address = (from.match(/^.*<([^>]+)>$/) || [])[1] || from;
+          return /^[a-f0-9]+$/i.test(id) && address === "payments-noreply@google.com" &&
+            String(h.subject || "").startsWith("Google Cloud Platform & APIs:") &&
+            /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(date) && parseReceiptInterval(date);
+        }).sort((a, b) => String(b.date).localeCompare(String(a.date)));
+        const hit = valid[0];
+        if (!hit) return null;
+        const m = JSON.parse(await exec(["gmail", "get", hit.id, "-j", "--format=full", "--gmail-no-send"]));
+        const attachments = Array.isArray(m.attachments) ? m.attachments : [];
+        if (attachments.length !== 1) return null;
+        const a = attachments[0], filename = String(a.filename || ""), attachmentId = String(a.attachmentId || "");
+        if (a.mimeType !== "application/pdf" || !/^[A-Za-z0-9][A-Za-z0-9._ -]*\.pdf$/i.test(filename) ||
+            !/^[A-Za-z0-9_-]+$/.test(attachmentId) || !Number.isSafeInteger(a.size) || a.size <= 0) return null;
+        return Object.freeze({ messageId: hit.id, attachmentId, filename, size: a.size,
+          receivedAtLocal: hit.date, source: "google_cloud_invoice_gmail" });
+      } catch { return null; }
+    },
     async findReceipt({ nonce, afterMs }) {
       if (!acct || !/^[a-f0-9]{16,64}$/i.test(String(nonce || ""))) return null;
       try {
