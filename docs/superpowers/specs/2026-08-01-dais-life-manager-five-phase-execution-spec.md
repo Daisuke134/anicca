@@ -6526,7 +6526,21 @@ runner focused 10/10、production/operations/native/renderer integrationを含�
 fresh Sol reviewはCritical 0・Important 0で`ship`。次の一件はschedule unloaded、dashboard 0、owned page/lock absentを再確認し、
 official foreground wakeを一度だけ実行してLuma→reset→Connpass→reset→Peatix discovery/direct/readbackとexact cleanupを実測する。
 
-### Active remaining TODO SSOT（進捗257。これ以外の残TODO一覧は履歴）
+### O1B-25進捗258（provider reset live proof / shared discovery + report transport blockers）
+
+schedule unloaded、clean HEAD `4cc2fd6ee5`でofficial `wake-d94d51d12b091af392ae0337`を実行。開始前に再loadedされていた
+legacy Connector host bridge PID 910 / `127.0.0.1:18793`をexact labelだけbootoutし、plist/state/browser/Gig変更0を確認した。
+同じsession/target/page `A2029C90...`でLuma失敗129,578ms→`about:blank` reset成功32,280ms→Connpass失敗101,787ms→
+同reset成功9,109ms→Peatix page1失敗23,431ms。reset 2回、new target/session 0、Submit/Calendar write/bundle 0。
+同一page resetのlive contractは成立したが、3 providerすべてaudit前に失敗したため、page蓄積だけではなくofficial shared discoveryの共通故障が残る。
+
+report rowは`circuit_open/consecutive_failure_limit/3`としてappendされたが、delivery rowは0。子`openclaw`がgateway timeout後もplugin stopで
+5分超hangし、wake全体は約8分29秒後に`worker_failed`。その後exact owned tab、Connector lock、processは自動cleanup済み。
+local installed OpenClaw message CLIにはtimeout optionがなく内部default 10秒だけ。次plan
+`docs/superpowers/plans/2026-08-10-connector-bounded-telegram-delivery.md`は、既存private bot tokenをconstructor injectionするConnector-local
+Bot API adapterを2 filesでTDDする。text/photo各一回、bounded AbortSignal、positive ID、retry 0、secret-free error。loader/factory配線は次slice。
+
+### Active remaining TODO SSOT（進捗258。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
