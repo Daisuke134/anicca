@@ -6,12 +6,12 @@
 |---|---|
 | Status | **REALITY GATE REQUIRED — LIVE PURCHASE DISABLED** |
 | 対象 | Life Manager financial organ の第8候補 business_id: horse_racing |
-| 現在のactive stage | HRA-3C official win outcome parser（ACTIVE）。pre-race records 7、settled target 0、cashはfalse |
+| 現在のactive stage | HRA-3C current-day settlement capture（ACTIVE-WAITING）。pre-race records 7、settled target 0、cashはfalse |
 | plan / gate / verification owner | Sol |
 | edit / code / execution owner | Luna |
 | 購入処理 | PurchaseExecutorは常時disabled。HRA-6の全gateなしに有効化しない |
 
-この文書はzero-cost public-web ingestion、source authority、Reality Gate、truth label、受入条件の正本である。HRA-2F、NAR official 46/456/327274 rows、JRA official 12 result rows、HRA-2N acquisition contract、four-lane Reality Gate index、truth-safe append-only store、HRA-3D audit codeはprivate-shadow前提のgateを通過した。actual normalized recordsは0のためHRA-3C materialization probeだけをunlockし、modelはunlockしない。Sol owns plan/gate/verification; Luna owns edits/code/execution.
+この文書はzero-cost public-web ingestion、source authority、Reality Gate、truth label、受入条件の正本である。HRA-2F、NAR official 46/456/327274 rows、JRA official 12 result rows、HRA-2N acquisition contract、four-lane Reality Gate index、truth-safe append-only store、HRA-3D audit codeはprivate-shadow前提のgateを通過した。actual cutoff-safe normalized recordsは7あるが、対応するcurrent-day settled outcomesは0のためmodelはunlockしない。Sol owns plan/gate/verification; Luna owns edits/code/execution.
 
 ### 現在のevidence table
 
@@ -279,7 +279,8 @@ sequenceDiagram
 | HRA-3C-daily | one actual NAR daily cutoff snapshot | **complete**。snapshot PASS、exact win complete coverage 7 races/76 runners |
 | HRA-3C-market | normalized win/place market identity | **complete**。market混同をstore hash/snapshot keyで防ぐ |
 | HRA-3C-materialize | actual daily win parser | **complete**。actual 7 records/76 runners、accepted provenance、names/raw exportなし |
-| HRA-3C-outcome | official win result/payback parser | **ACTIVE**。dead heat winner setをhorselistと完全照合 |
+| HRA-3C-outcome | official win result/payback parser | **complete**。actual monthly 321 outcomes/322 payouts、dead heat完全照合 |
+| HRA-3C-settlement | current-day target settlement capture | **ACTIVE-WAITING**。final race後にone fetch、target 7/7を要求 |
 | HRA-3M | market baseline、walk-forward、calibration、slippage | **BLOCKED** |
 | HRA-4 | live-data SHADOW、official outcome reconciliation | **BLOCKED**。shadow runs 0 |
 | HRA-5 | Telegram + CFO real/shadow separation | **BLOCKED**。Telegram runs 0 |
