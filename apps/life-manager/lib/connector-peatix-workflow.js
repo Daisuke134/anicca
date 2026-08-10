@@ -276,18 +276,25 @@ function normalizeDetail(binding, raw, nowMs) {
   return Object.freeze({ candidate, free_open: freeOpen });
 }
 
-function defaultCalendarFree(candidate, calendar) {
-  const intervals = Array.isArray(calendar)
-    ? calendar
-    : (calendar && Array.isArray(calendar.busy_intervals) ? calendar.busy_intervals : []);
-  const start = Date.parse(candidate.starts_at);
-  const end = Date.parse(candidate.ends_at);
+function calendarIntervals(calendar) { return Array.isArray(calendar) ? calendar : (calendar && Array.isArray(calendar.busy_intervals) ? calendar.busy_intervals : []); }
+
+function overlapsTimedCalendarInterval(candidate, busy) {
+  if (!busy || busy.kind !== "timed") return false;
+  const start = Date.parse(candidate.starts_at); const end = Date.parse(candidate.ends_at);
+  const busyStart = Date.parse(busy.start_at); const busyEnd = Date.parse(busy.end_at);
+  return [start, end, busyStart, busyEnd].every(Number.isFinite)
+    && start < busyEnd && end > busyStart;
+}
+
+function exactCalendarCoverage(candidate, busy) {
+  if (!overlapsTimedCalendarInterval(candidate, busy)) return false;
   const connectorIdempotency = createHash("sha256").update(String(candidate.canonical_url), "utf8").digest("hex");
-  return !intervals.some((busy) => (
-    busy && busy.kind === "timed"
-    && start < Date.parse(busy.end_at)
-    && end > Date.parse(busy.start_at)
-    && busy.connector_idempotency !== connectorIdempotency
+  return busy.connector_idempotency === connectorIdempotency;
+}
+
+function defaultCalendarFree(candidate, calendar) {
+  return !calendarIntervals(calendar).some((busy) => (
+    overlapsTimedCalendarInterval(candidate, busy) && !exactCalendarCoverage(candidate, busy)
   ));
 }
 
@@ -437,7 +444,8 @@ function createPeatixDiscoveryWorkflow(options = {}) {
 
       const window = candidateWindow(observed);
       const nowMs = observed.getTime();
-      const result = [];
+      const exactCovered = [];
+      const unprocessed = [];
       let normalizedCount = 0;
       let windowCount = 0;
       let freeOpenCount = 0;
@@ -470,8 +478,12 @@ function createPeatixDiscoveryWorkflow(options = {}) {
           throw stageError("PEATIX_CALENDAR_CONFLICT_CHECK_FAILED");
         }
         if (!calendarFree) continue;
-        result.push(Object.freeze({ ...normalized.candidate }));
+        const candidate = Object.freeze({ ...normalized.candidate });
+        const isExactCovered = calendarIntervals(calendar)
+          .some((busy) => exactCalendarCoverage(candidate, busy));
+        (isExactCovered ? exactCovered : unprocessed).push(candidate);
       }
+      const result = [...exactCovered, ...unprocessed];
       const audit = Object.freeze({
         observed_count: bindings.length,
         normalized_count: normalizedCount,

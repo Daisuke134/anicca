@@ -27,6 +27,8 @@ Luna owns only:
 
 Soft target: 2 files; production +10–25 LOC; tests +35–70 LOC.
 
+Final size: production +25/-13 LOC and tests +69 LOC, both inside the soft target.
+
 ### RED
 
 1. Search order `[unprocessed A, exact-covered B, unprocessed C]` returns `[B, A, C]` with count and candidate bytes otherwise unchanged.
@@ -47,3 +49,11 @@ Soft target: 2 files; production +10–25 LOC; tests +35–70 LOC.
 - Focused Peatix workflow; busy inventory; evidence, minimal runner/production, provider/Harness, native entrypoint; changed-file syntax; `git diff --check`.
 - Fresh Sol review for stable ordering, no filtering/ranking drift, overlap/hash exactness, malformed-marker assumptions, audit counts, provider non-regression, and absence of external effects.
 - Update SSOT, commit, push, then run the official foreground wake exactly once more while schedules stay unloaded. Do not mark Item 13 complete until live reuse/Submit-zero/later-candidate/positive-report/cleanup acceptance passes.
+
+## Result
+
+- Luna reproduced the ordering failure: exact-covered candidates remained behind unprocessed search-order candidates. The non-priority controls already preserved order.
+- Production now reuses one predicate requiring timed overlap and exact canonical URL SHA equality for both same-event conflict exemption and a two-array stable partition.
+- Single and multiple exact-covered candidates move first while mutual order, remaining order, candidate bytes, counts, and audit remain unchanged. Wrong, absent, other-event, non-overlapping, and malformed markers gain no priority.
+- Luna focused and adjacent suites passed except the three unchanged baselines. Sol independently reran the relevant suite with all new tests passing; syntax and `git diff --check` passed. Fresh Sol review returned `ship`.
+- Code capability is complete. Item 13 remains open until the second official 13C foreground wake passes live acceptance. Schedule remains unloaded.
