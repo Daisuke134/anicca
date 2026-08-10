@@ -39,7 +39,7 @@ Binance, advice, and changes to existing ask/Gmail/discovery/payout/diet callbac
 - Modify: `apps/life-manager/server.js`
 - Modify: `apps/life-manager/test/telegram-callback-http-contract.test.js`
 
-- [ ] **Step 1 — RED**
+- [x] **Step 1 — RED**
 
 Extend the existing production HTTP callback contract with a current partial native-JPY CFO snapshot. Post an
 authenticated private-chat callback `cfo:accounts:YYYYMMDD:1`. Prove one exact owner/date/revision GET, one
@@ -48,7 +48,7 @@ Also prove actor/chat mismatch, lookup rejection, wrong snapshot identity, or un
 zero edit/send, HTTP 200, and no raw provider/amount/credential logging. Run the test and retain the handler-missing
 failure.
 
-- [ ] **Step 2 — Minimum GREEN**
+- [x] **Step 2 — Minimum GREEN**
 
 Create a dependency-injected Japanese bridge only for the existing views `summary`, `accounts`, `accuracy`, and
 `why`. Parse only the fixed callback format and positive safe revision. Require private chat actor equality, positive
@@ -65,11 +65,20 @@ raw error.
 Wire only the `cfo:` prefix in `server.js` before the current generic acknowledgement. Contain `rowByChatId` failure,
 pass `uid:null` to the bridge, and return HTTP 200. Do not alter any existing handler body.
 
-- [ ] **Step 3 — Verify and review**
+- [x] **Step 3 — Verify and review**
 
 Run the focused HTTP contract, the package's normal test command, syntax checks, `git diff --check`, file count, and
 production LOC. Fresh Sol review reports only Critical/Important wrong-owner, wrong-money, privacy, callback-ack, or
 existing-handler regressions.
+
+Evidence: after installing the package lockfile with no tracked change, the existing callback test passed and the
+new CFO callback failed specifically because `cfo:` was unknown. Luna's 99-production-LOC bridge then passed the
+focused HTTP contract `2/2`, syntax checks, and `git diff --check`. Real owner mapping plus the real immutable snapshot
+passed no-send E2E with exact identity, one intercepted edit, one intercepted answer, zero sends, and no private
+output. The package's normal test command reaches only the pre-existing `scan-legacy-paths` openclaw-path failure in
+unchanged files; those files have zero diff from `canonical/main`. Fresh review found one Important inconsistent
+source-evidence case; Luna added RED regressions and one validation guard. Re-review returned `ship — Spec ✅` with
+no Critical or Important finding.
 
 - [ ] **Step 4 — Deploy and real Telegram E2E**
 

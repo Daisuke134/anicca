@@ -65,6 +65,7 @@ const {
   markAnswered, applyAmdDetection, applyTestCallDetection, upsertLiveLocation,
 } = require("./lib/late-notice.js");
 const { handleDiscoveryCallback } = require("./lib/feature-discovery.js");
+const { handleCfoTelegramCallback } = require("./lib/cfo-telegram-callback.js");
 const { handlePayoutCallback } = require("./lib/payout-question.js");
 const { handleDietCallback } = require("./lib/diet-runtime.js");
 const { handlePreceptsCallback } = require("./lib/precepts-runtime.js");
@@ -487,6 +488,19 @@ const server = http.createServer((req, res) => {
         const u = parseUpdate(update);
         if (u && LM_TG_TOKEN) {
           if (u.kind === "callback") {
+            if (String(u.data || "").startsWith("cfo:")) {
+              let uid = null;
+              try {
+                const row = await rowByChatId(u.chatId, SUPA_URL, SUPA_KEY);
+                uid = row && typeof row.uid === "string" ? row.uid : null;
+              } catch {}
+              await handleCfoTelegramCallback({
+                data: u.data, uid, chatId: u.chatId, actorId: u.userId,
+                messageId: u.messageId, callbackQueryId: u.callbackQueryId, telegramToken: LM_TG_TOKEN,
+              }, { supaUrl: SUPA_URL, supaKey: SUPA_KEY });
+              res.writeHead(200); res.end("ok");
+              return;
+            }
             await answerCallbackQuery(LM_TG_TOKEN, u.callbackQueryId, "Received");
             await routeCallbackData(u.data, { ask: async (data) => {
                 const row = await rowByChatId(u.chatId, SUPA_URL, SUPA_KEY);
