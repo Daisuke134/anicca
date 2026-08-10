@@ -1,48 +1,48 @@
 {
   "nar_official": {
     "schema_version": 1,
-    "record_id": "record-nar-official-001",
-    "event_id": "event-nar-official-001",
+    "record_id": "record-nar-test-001",
+    "event_id": "event-nar-test-001",
     "race_id": "race-nar-opaque-001",
     "source_url": "https://www.keiba.go.jp/KeibaWeb/DataDownload/RaceDataDownload?type=daily",
     "source_authority": "official",
     "jurisdiction": "NAR",
-    "evidence_class": "REAL_PUBLIC_WEB_RECORD",
-    "allowed_scope": "private_shadow",
+    "evidence_class": "SYNTHETIC_TEST",
+    "allowed_scope": "test_only",
     "permission_document_verified": false,
     "raw_values_exported": false,
     "race_at": "2026-08-09T11:00:00+09:00",
     "snapshot_at": "2026-08-09T10:54:00+09:00",
     "cutoff_at": "2026-08-09T10:55:00+09:00",
     "freshness": {"status": "fresh", "age_seconds": 60},
-    "surface": "dirt",
-    "track_condition": "good",
+    "surface": null,
+    "track_condition": null,
     "runners": [
-      {"runner_id": "runner-opaque-01", "horse_number": 1, "odds": 2.5, "body_weight_kg": 480.0},
-      {"runner_id": "runner-opaque-02", "horse_number": 2, "odds": 4.0, "body_weight_kg": 470.0}
+      {"runner_id": "runner-opaque-01", "horse_number": 1, "odds": null, "body_weight_kg": null},
+      {"runner_id": "runner-opaque-02", "horse_number": 2, "odds": null, "body_weight_kg": null}
     ]
   },
   "jra_official": {
     "schema_version": 1,
-    "record_id": "record-jra-official-001",
-    "event_id": "event-jra-official-001",
+    "record_id": "record-jra-test-001",
+    "event_id": "event-jra-test-001",
     "race_id": "race-jra-opaque-001",
-    "source_url": "https://www.jra.go.jp/JRADB/accessD.html?CNAME=opaque-jra-record",
+    "source_url": "https://www.jra.go.jp/JRADB/accessS.html?CNAME=pw01sde1004202602060720260809/DD",
     "source_authority": "official",
     "jurisdiction": "JRA",
-    "evidence_class": "REAL_PUBLIC_WEB_RECORD",
-    "allowed_scope": "private_shadow",
+    "evidence_class": "SYNTHETIC_TEST",
+    "allowed_scope": "test_only",
     "permission_document_verified": false,
     "raw_values_exported": false,
     "race_at": "2026-08-09T12:00:00+09:00",
     "snapshot_at": "2026-08-09T11:54:00+09:00",
     "cutoff_at": "2026-08-09T11:55:00+09:00",
     "freshness": {"status": "fresh", "age_seconds": 60},
-    "surface": "turf",
-    "track_condition": "good",
+    "surface": null,
+    "track_condition": null,
     "runners": [
-      {"runner_id": "runner-opaque-11", "horse_number": 1, "odds": 3.2, "body_weight_kg": 482.0},
-      {"runner_id": "runner-opaque-12", "horse_number": 2, "odds": 5.1, "body_weight_kg": 468.0}
+      {"runner_id": "runner-opaque-11", "horse_number": 1, "odds": null, "body_weight_kg": null},
+      {"runner_id": "runner-opaque-12", "horse_number": 2, "odds": null, "body_weight_kg": null}
     ]
   }
 }

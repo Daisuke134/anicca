@@ -80,6 +80,10 @@ def _finite_number(value: object) -> bool:
     )
 
 
+def _nullable_positive_number(value: object) -> bool:
+    return value is None or (_finite_number(value) and value > 0)
+
+
 def _parse_timestamp(value: object) -> datetime:
     _require(isinstance(value, str), "normalized timestamps are invalid")
     try:
@@ -172,10 +176,13 @@ def validate_normalized_race(record: dict[str, object]) -> dict[str, object]:
     )
 
     _require(
-        isinstance(record["surface"], str)
-        and bool(record["surface"].strip())
-        and isinstance(record["track_condition"], str)
-        and bool(record["track_condition"].strip()),
+        (record["surface"] is None or (
+            isinstance(record["surface"], str) and bool(record["surface"].strip())
+        ))
+        and (record["track_condition"] is None or (
+            isinstance(record["track_condition"], str)
+            and bool(record["track_condition"].strip())
+        )),
         "track fields are invalid",
     )
 
@@ -192,11 +199,11 @@ def validate_normalized_race(record: dict[str, object]) -> dict[str, object]:
             "runner number is invalid",
         )
         _require(
-            _finite_number(runner["odds"]) and runner["odds"] > 0,
+            _nullable_positive_number(runner["odds"]),
             "runner odds are invalid",
         )
         _require(
-            _finite_number(runner["body_weight_kg"]) and runner["body_weight_kg"] > 0,
+            _nullable_positive_number(runner["body_weight_kg"]),
             "runner weight is invalid",
         )
 

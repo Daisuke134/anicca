@@ -1,5 +1,6 @@
 import copy
 import json
+import math
 from pathlib import Path
 
 import pytest
@@ -20,6 +21,8 @@ FIXTURES = json.loads(
 )
 NAR = FIXTURES["nar_official"]
 JRA = FIXTURES["jra_official"]
+JRA_OFFICIAL_URL = "https://www.jra.go.jp/JRADB/accessS.html?CNAME=pw01sde1004202602060720260809/DD"
+NAR_OFFICIAL_URL = "https://www.keiba.go.jp/KeibaWeb/DataDownload/RaceDataDownload?type=daily"
 
 
 def _secondary_record() -> dict[str, object]:
@@ -38,22 +41,49 @@ def _secondary_record() -> dict[str, object]:
     return record
 
 
+def _official_scope_contract_record(record: dict[str, object]) -> dict[str, object]:
+    """Make an ephemeral source-scope case; this is not observed evidence."""
+    official = copy.deepcopy(record)
+    official.update(
+        {
+            "evidence_class": "REAL_PUBLIC_WEB_RECORD",
+            "allowed_scope": "private_shadow",
+        }
+    )
+    return official
+
+
 def _copy_with(record: dict[str, object], **changes: object) -> dict[str, object]:
     updated = copy.deepcopy(record)
     updated.update(changes)
     return updated
 
 
-def test_accepts_nar_and_jra_official_opaque_examples():
-    nar = validate_normalized_race(NAR)
-    jra = validate_normalized_race(JRA)
-    assert nar["jurisdiction"] == "NAR"
-    assert jra["jurisdiction"] == "JRA"
+def test_committed_fixture_is_synthetic_test_only_with_exact_official_urls():
+    assert set(FIXTURES) == {"nar_official", "jra_official"}
+    assert NAR["evidence_class"] == JRA["evidence_class"] == "SYNTHETIC_TEST"
+    assert NAR["allowed_scope"] == JRA["allowed_scope"] == "test_only"
+    assert NAR["source_url"] == NAR_OFFICIAL_URL
+    assert JRA["source_url"] == JRA_OFFICIAL_URL
+    assert NAR["surface"] is None and NAR["track_condition"] is None
+    assert JRA["surface"] is None and JRA["track_condition"] is None
+    for example in FIXTURES.values():
+        for runner in example["runners"]:
+            assert runner["odds"] is None
+            assert runner["body_weight_kg"] is None
+            assert "horse_name" not in runner
+
+
+def test_official_source_scope_contract_accepts_ephemeral_cases_not_evidence():
+    nar = _official_scope_contract_record(NAR)
+    jra = _official_scope_contract_record(JRA)
+    assert validate_normalized_race(nar)["jurisdiction"] == "NAR"
+    assert validate_normalized_race(jra)["jurisdiction"] == "JRA"
     assert nar["allowed_scope"] == jra["allowed_scope"] == "private_shadow"
-    assert all("horse_name" not in runner for runner in nar["runners"])
 
 
-def test_accepts_correctly_labeled_secondary_shadow_record():
+def test_secondary_source_scope_contract_accepts_ephemeral_case_not_evidence():
+    # Ephemeral scope-contract case only; this fixture is not secondary evidence.
     record = validate_normalized_race(_secondary_record())
     assert record["source_authority"] == "secondary"
     assert record["evidence_class"] == "PUBLIC_WEB_SECONDARY"
@@ -76,6 +106,22 @@ def test_rejects_source_jurisdiction_or_scope_mismatch(field, value):
 def test_rejects_raw_value_export():
     with pytest.raises(StoreRecordRejected, match="raw values"):
         validate_normalized_race(_copy_with(NAR, raw_values_exported=True))
+
+
+@pytest.mark.parametrize("field", ["odds", "body_weight_kg"])
+@pytest.mark.parametrize("invalid", [0, math.nan, math.inf, -math.inf])
+def test_rejects_zero_or_nonfinite_unobserved_numeric_values(field, invalid):
+    record = _copy_with(NAR)
+    record["runners"][0][field] = invalid
+    with pytest.raises(StoreRecordRejected):
+        validate_normalized_race(record)
+
+
+@pytest.mark.parametrize("field", ["surface", "track_condition"])
+@pytest.mark.parametrize("invalid", [0, ""])
+def test_rejects_zero_or_empty_unobserved_track_values(field, invalid):
+    with pytest.raises(StoreRecordRejected):
+        validate_normalized_race(_copy_with(NAR, **{field: invalid}))
 
 
 @pytest.mark.parametrize(
@@ -133,7 +179,7 @@ def test_append_and_get_isolate_caller_and_return_aliases():
     caller_record = copy.deepcopy(NAR)
     store.append(caller_record)
     caller_record["runners"][0]["odds"] = 999.0
-    assert store._records[NAR["record_id"]]["record"]["runners"][0]["odds"] == 2.5
+    assert store._records[NAR["record_id"]]["record"]["runners"][0]["odds"] is None
 
     returned = store.get(NAR["record_id"])
     assert returned == store.get(NAR["record_id"])
