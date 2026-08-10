@@ -41,3 +41,10 @@ Soft target: 2 files; production net `-3–+10 LOC`; tests `+25–45 LOC`.
 - Fresh Sol review must verify no false success, no loss of exact registered detection, no browser side effect, and no scope growth.
 - After commit/push, run the official foreground wake exactly once with all four labels unloaded. Acceptance is canonical `registered|pending`, Connpass receipt/artifact, Calendar, positive Telegram IDs, one new applied bundle, and cleanup. If the one-submit latch returns a real bounded unknown effect, plan the settlement wait separately rather than weakening readback.
 
+## Result
+
+- RED reproduced the join-page and substring-only false pending at 4/6; GREEN passed the provider suite 6/6 and Sol's relevant combined run 91/91.
+- Production is limited to canonical-path gating and exact normalized `innerText` lines; tests add actual callback-executing DOM fixtures. Diff: production 6/3, tests 45/0.
+- A read-only actual-page check changed join state from the prior false `pending` to `unknown` while the canonical event remained truthfully `absent`; writes were 0 and the diagnostic tab was closed.
+- Commit `3feb31310` is pushed. Fresh Sol review: `ship`, Critical 0, Important 0; reviewer independent regression 107/107.
+- The schedule remains unloaded. Item 14 still requires the official live applied bundle.
