@@ -19,7 +19,7 @@ const PEATIX_CONFIRM_URL = /^https:\/\/peatix\.com\/sales\/event\/([1-9][0-9]*)\
 const CONNPASS_FINAL_LABEL = "申し込みを確定する";
 const CONNPASS_REFERRAL_QUESTION = "このイベントは何を見て知りましたか？";
 const CONNPASS_ONLINE_LABEL = /^オンライン視聴枠（YouTube） 無料(?: 参加者数 \d+人)?$/i;
-const CONNPASS_JOIN_URL = /^https:\/\/(?:[a-z0-9-]+\.)?connpass\.com\/event\/[1-9][0-9]*\/join\/$/;
+const CONNPASS_JOIN_URL = /^https:\/\/(?:[a-z0-9-]+\.)?connpass\.com\/event\/([1-9][0-9]*)\/join\/$/;
 const FINAL_EFFECT_TIMEOUT_MS = 30_000;
 const FINAL_EFFECT_POLL_MS = 25;
 
@@ -31,6 +31,7 @@ function candidatePeatixEventId(candidate) {
   const match = /^peatix-event:\/\/event\/([1-9][0-9]*)$/.exec(String(candidate && candidate.event_ref || ""));
   return match ? match[1] : "";
 }
+function candidateConnpassEventId(candidate) { const match = /^connpass-event:\/\/event\/([1-9][0-9]*)$/.exec(String(candidate && candidate.event_ref || "")); return match ? match[1] : ""; }
 function isConnpassJoin(provider, href) {
   return provider === "connpass" && CONNPASS_JOIN_URL.test(String(href || ""));
 }
@@ -67,7 +68,7 @@ function startPeatixConfirmWait(page, provider, control) {
   };
 }
 
-function readPeatixStateWithinDeadline(page, candidate, readProviderState, deadline) {
+function readStateWithinDeadline(page, candidate, readProviderState, deadline) {
   const remaining = deadline - Date.now();
   if (remaining <= 0) return Promise.resolve({ expired: true });
   return new Promise((resolve) => {
@@ -87,13 +88,23 @@ function readPeatixStateWithinDeadline(page, candidate, readProviderState, deadl
   });
 }
 
-function startPeatixFinalEffectWait(page, provider, control, candidate, readProviderState) {
-  if (provider !== "peatix" || !control || control.kind !== "button" || control.submittable !== true || control.label !== PEATIX_CONFIRM_LABEL) return null;
-  const eventId = candidatePeatixEventId(candidate);
+function startFinalEffectWait(page, provider, control, candidate, readProviderState, controls = []) {
+  if (!control || control.kind !== "button" || control.submittable !== true) return null;
+  const peatixFinal = provider === "peatix" && control.label === PEATIX_CONFIRM_LABEL;
+  const connpassFinal = provider === "connpass" && control.label === CONNPASS_FINAL_LABEL;
+  if (!peatixFinal && !connpassFinal) return null;
   let href = "";
   try { href = String(typeof page.url === "function" ? page.url() : ""); } catch { href = ""; }
-  const confirmMatch = PEATIX_CONFIRM_URL.exec(href);
-  if (!eventId || !confirmMatch || confirmMatch[1] !== eventId || typeof readProviderState !== "function") return { unavailable: true, promise: Promise.resolve({ status: "unknown" }) };
+  if (peatixFinal) {
+    const eventId = candidatePeatixEventId(candidate);
+    const confirmMatch = PEATIX_CONFIRM_URL.exec(href);
+    if (!eventId || !confirmMatch || confirmMatch[1] !== eventId || typeof readProviderState !== "function") return { unavailable: true, promise: Promise.resolve({ status: "unknown" }) };
+  } else {
+    const eventId = candidateConnpassEventId(candidate);
+    const joinMatch = CONNPASS_JOIN_URL.exec(href);
+    const matchingControls = Array.isArray(controls) ? controls.filter((item) => item && item.kind === "button" && item.submittable === true && item.label === CONNPASS_FINAL_LABEL) : [];
+    if (!eventId || !joinMatch || joinMatch[1] !== eventId || matchingControls.length !== 1 || matchingControls[0].control !== control.control || typeof readProviderState !== "function") return { unavailable: true, promise: Promise.resolve({ status: "unknown" }) };
+  }
   let releaseClick;
   let cancelled = false;
   const clickStarted = new Promise((resolve) => { releaseClick = resolve; });
@@ -101,7 +112,7 @@ function startPeatixFinalEffectWait(page, provider, control, candidate, readProv
     await clickStarted;
     const deadline = Date.now() + FINAL_EFFECT_TIMEOUT_MS;
     while (!cancelled) {
-      const readback = await readPeatixStateWithinDeadline(page, candidate, readProviderState, deadline);
+      const readback = await readStateWithinDeadline(page, candidate, readProviderState, deadline);
       if (readback.expired) return { status: "unknown" };
       if (readback.state && ["registered", "pending"].includes(readback.state.status)) {
         return { status: readback.state.status, providerState: readback.state };
@@ -115,7 +126,7 @@ function startPeatixFinalEffectWait(page, provider, control, candidate, readProv
   return { markClicked: releaseClick, cancel() { cancelled = true; releaseClick(); }, promise };
 }
 
-async function settlePeatixFinalEffect(wait) {
+async function settleFinalEffect(wait) {
   let settled = null;
   try { settled = await wait.promise; } catch { settled = null; }
   if (!settled || !["registered", "pending"].includes(settled.status)) {
@@ -491,6 +502,7 @@ function createProductionBrowserHarness(options = {}) {
     if (control.kind === "button" && pendingRequiredAnswer) return Object.freeze({ status: "failed" });
     if (ACTIONABLE_KINDS.has(control.kind) && (!control.required || control.completed)) return Object.freeze({ status: "failed" });
     if (control.kind === "link" || (control.kind === "button" && control.submittable !== true)) return Object.freeze({ status: "failed" });
+    if (provider === "connpass" && state === "connpass_join" && control.kind === "button" && control.label !== CONNPASS_FINAL_LABEL) return Object.freeze({ status: "failed" });
     const action = actionForControl(control); if (!action) return Object.freeze({ status: "failed" });
     let value = null;
     if (FILL.has(action.method)) {
@@ -503,12 +515,14 @@ function createProductionBrowserHarness(options = {}) {
     }
     const navigationWait = startPeatixConfirmWait(input.page, provider, control);
     if (navigationWait && navigationWait.unavailable) return Object.freeze({ status: "failed" });
-    const finalEffectWait = startPeatixFinalEffectWait(
+    const finalEffectWait = startFinalEffectWait(
       input.page,
       provider,
       control,
       input.candidate,
-      provider === "peatix" && peatixWorkflow ? peatixWorkflow.readProviderState : null,
+      provider === "connpass" && connpassWorkflow ? connpassWorkflow.readProviderState
+        : provider === "peatix" && peatixWorkflow ? peatixWorkflow.readProviderState : null,
+      observation.controls,
     );
     if (finalEffectWait && finalEffectWait.unavailable) return Object.freeze({ status: "failed" });
     if (finalEffectWait) finalEffectWait.markClicked();
@@ -521,15 +535,15 @@ function createProductionBrowserHarness(options = {}) {
         value,
       });
     } catch {
-      if (finalEffectWait) return settlePeatixFinalEffect(finalEffectWait);
+      if (finalEffectWait) return settleFinalEffect(finalEffectWait);
       return Object.freeze({ status: "failed" });
     }
     if (!result || result.status !== "success") {
-      if (finalEffectWait) return settlePeatixFinalEffect(finalEffectWait);
+      if (finalEffectWait) return settleFinalEffect(finalEffectWait);
       return Object.freeze({ status: "failed" });
     }
     if (navigationWait && !(await navigationWait.promise)) return Object.freeze({ status: "failed" });
-    if (finalEffectWait) return settlePeatixFinalEffect(finalEffectWait);
+    if (finalEffectWait) return settleFinalEffect(finalEffectWait);
     return Object.freeze({ status: "success" });
   }
 
