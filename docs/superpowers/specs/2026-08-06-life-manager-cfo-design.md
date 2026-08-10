@@ -2,12 +2,12 @@
 
 | Field | Value |
 |---|---|
-| Status | M2 ACTIVE — Product Stage 7 and CFO-2a complete; CFO-2a2 is the only active slice |
+| Status | M2 ACTIVE — Product Stage 7 and CFO-2a complete; CFO-2a2.1 is the only active slice |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
 | Existing foundations | `apps/life-call`, interactive Moneytree App access, Fleet telemetry, `lm_api_cost`, and the canonical `lm_agent_earnings` source (the panel's `lm_financial_ledger` name is a stale alias) |
-| First unfinished item | **CFO-2a2: provider usage evidence and OpenTelemetry GenAI attributes** |
+| First unfinished item | **CFO-2a2.1: pure provider-reported usage and OpenTelemetry attribute contract** |
 
 ## 1. Overview — What and Why
 
@@ -947,6 +947,8 @@ ingestion. They are not unchecked M1 items and cannot become the active CFO item
       `docs/superpowers/specs/2026-08-10-life-manager-cfo-business-ledger-contract-design.md`.
 - [ ] **CFO-2a2** Implement provider usage evidence ingestion and OpenTelemetry GenAI attributes. Existing
       duration/tokenizer values migrate as `locally_estimated`; they are never backfilled as provider-measured.
+      Child SSOT:
+      `docs/superpowers/specs/2026-08-10-life-manager-cfo-provider-usage-design.md`.
 - [ ] **CFO-2a2a** Ingest local Codex cumulative session usage and Claude per-response usage with source-specific
       dedupe, hashes/watermarks, terminal-state coverage, stable runtime-to-business mapping, and unattributed rows.
 - [ ] **CFO-2a2b** Make usage-ledger attempts observable and durable; measure producer attempt/success/failure,
