@@ -1,6 +1,6 @@
 # CFO-2a2.4c3 Gemini Live Span Implementation Plan
 
-**Status:** READY — fresh Sol review returned `ship`; ready for Luna implementation.
+**Status:** COMPLETE — Luna TDD, review fixes, re-review, independent verification, and scope gates passed.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development task by task.
 
@@ -24,7 +24,7 @@ span. Add no module, dependency, migration, service, or bridge wiring.
 
 ## Task 1: Capture one stored Live observation
 
-- [ ] **Step 1 — write the smallest RED tests**
+- [x] **Step 1 — write the smallest RED tests**
 
 Add one success test with an in-memory exporter, injected clock, injected append, and a Live content sentinel. Require:
 
@@ -131,7 +131,7 @@ assert.equal(value.trace_id, seen.context.trace_id);
 assert.equal(value.trace_id, span.spanContext().traceId);
 ```
 
-- [ ] **Step 2 — run RED**
+- [x] **Step 2 — run RED**
 
 ```bash
 node --test lib/cfo-provider-usage-span.test.js
@@ -140,7 +140,7 @@ node --test lib/cfo-provider-usage-span.test.js
 Expected: the four historical GenerateContent tests pass and only the two new Live tests fail because the export is
 absent.
 
-- [ ] **Step 3 — add the minimum span extension**
+- [x] **Step 3 — add the minimum span extension**
 
 Import the Live normalizer/store and define the exact Live model/name constants. Reuse or minimally generalize the
 existing option validator so the default append is path-specific. The Live function accepts an already-received
@@ -174,7 +174,7 @@ validate exact context/options -> start recording span -> validate trace -> inje
 -> normalize -> append once -> set normalized attributes -> end once -> return receipt
 ```
 
-- [ ] **Step 4 — run GREEN and scope gates**
+- [x] **Step 4 — run GREEN and scope gates**
 
 ```bash
 node --test lib/cfo-provider-usage-span.test.js

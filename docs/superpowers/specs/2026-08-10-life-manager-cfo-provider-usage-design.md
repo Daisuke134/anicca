@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — CFO-2a2.1 through CFO-2a2.4c2 verified; CFO-2a2.4c3 Live span is next |
+| Status | ACTIVE — CFO-2a2.1 through CFO-2a2.4c3 verified; CFO-2a2.4d Live bridge E2E is next |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Existing `apps/life-call` package |
 | First provider | Gemini `generateContent` response |
@@ -663,7 +663,7 @@ passed focused 5/5, CFO 267/267, and full 909/909. Fresh review returned `ship`;
 CFO, full, syntax, and diff gates. The implementation is exactly two files and 47 additions. No provider call,
 database deployment, runtime, or Telegram state changed.
 
-#### CFO-2a2.4c3 — content-free span for one stored Live observation (next)
+#### CFO-2a2.4c3 — content-free span for one stored Live observation (verified)
 
 Extend the existing `cfo-provider-usage-span.js` with one exported
 `captureGeminiLiveUsageObservation(message, context, options)` function. It starts one recording CLIENT span with the
@@ -684,17 +684,23 @@ typed store succeeds.
 
 Acceptance:
 
-- [ ] one valid Live message stores once with the span trace/time and returns the exact closed local receipt;
-- [ ] receipt, append context, and span contain the same generated trace ID;
-- [ ] the finished span is CLIENT, uses the exact Live name/attributes/counts, and contains no content/raw metadata;
-- [ ] the successful span ends only after storage succeeds;
-- [ ] invalid caller context creates no span and no append; invalid message, tracing failure, or store failure ends at
+- [x] one valid Live message stores once with the span trace/time and returns the exact closed local receipt;
+- [x] receipt, append context, and span contain the same generated trace ID;
+- [x] the finished span is CLIENT, uses the exact Live name/attributes/counts, and contains no content/raw metadata;
+- [x] the successful span ends only after storage succeeds;
+- [x] invalid caller context creates no span and no append; invalid message, tracing failure, or store failure ends at
   most one exact base-only error span and never retries/logs;
-- [ ] existing GenerateContent capture behavior remains unchanged;
-- [ ] focused span, CFO, and full suites pass within exactly two files and at most 70 additions.
+- [x] existing GenerateContent capture behavior remains unchanged;
+- [x] focused span, CFO, and full suites pass within exactly two files and at most 70 additions.
 
 This slice performs no migration/database deployment, WebSocket/bridge wiring, aggregation, duration-estimate removal,
 scheduler, launchd, Telegram change, or real provider call.
+
+Verification evidence: initial RED passed four historical tests and failed only two absent Live-export tests. Review
+then found missing exact context and Live base attributes; the focused fix RED was 5/6 and failed only the extra-key
+case. Final GREEN passed focused 6/6, CFO 269/269, and full 911/911. Re-review returned `ship`; Sol independently
+repeated focused, CFO, full, syntax, and diff gates. The implementation is exactly two files and 38 additions. No
+provider call, database deployment, bridge, runtime, or Telegram state changed.
 
 - **CFO-2a2.4d:** wire the existing Live bridge, prove real message → row → span, and stop using the duration estimate
   only after provider evidence succeeds.
