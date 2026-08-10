@@ -7087,7 +7087,13 @@ Luna REDはregistered omission、registeredへのCalendar gate誤適用、audit 
 
 Luna/Sol関連144/144、syntax、diff checkがPASS。pushed commits `2a4809974`、`39775a5f6`。actual production Calendar reader＋workflowのread-only再測定はaudit `6/6/6/4/1`、candidate exact 1、event `400028`、status registered、write 0で一時target cleanup。fresh Sol reviewはCritical 0・Important 0で`ship`。実装/test中Submit/browser write/Calendar write/evidence/Telegram/state/schedule作用0。Item14未完、schedule unloaded。次のofficial recovery wake exact 1回はsame-run Luma no-effect→Connpass registered pre-readback→Submit 0→receipt/artifact→Calendar→Telegram→applied bundleをacceptanceとする。
 
-### Active remaining TODO SSOT（進捗328。これ以外の残TODO一覧は履歴）
+### O1B-25進捗329（Item 14 live wake / Connpass Calendar transport plan）
+
+pushed HEAD `577aa534c`、4 labels unloaded、clean/upstream、process/lock 0、`:9222` healthy、baseline bundle/report/delivery/action/Connpass receipt `4/108/120/732/0`でofficial recovery wakeをexact 1回起動した。wake `wake-78fa52609051935647435ecd`はLuma no-effect後、Connpass existing-first candidateをparent `registered`として回収し、provider cache/direct/Harness Submit actionは全0。immutable provider receipt 1、PNG artifact 1、evidence checkpoint 1を保存したが、Calendar、Telegram event delivery、applied bundleは増分0で`circuit_open/evidence_completion_failed`、failure count 1、every-wake Telegram positive ID `11293`。成功扱いにしない。
+
+checkpointはprovider `connpass`、event ref `connpass-event://event/400028`、status `registered`、provider receipt refとartifact ref/SHA-256を同一lineageで保持する。実コードでは`transport/calendar-gog.js`のConnector canonical URL gateがLumaとPeatixだけを許可し、正規Connpass URLをGoogle Calendar create前に拒否する。次plan `docs/superpowers/plans/2026-08-11-connector-connpass-calendar-transport-14i.md`はCalendar gog production/testの2 filesだけ。rootまたは一段subdomainのexact `https://<host>.connpass.com/event/<positive integer>/`と固定`Connpass` source titleを追加し、Luma/Peatixと全malformed rejectionを維持する。Item14未完、schedule unloaded。
+
+### Active remaining TODO SSOT（進捗329。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
