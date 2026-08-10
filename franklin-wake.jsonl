@@ -25075,3 +25075,10 @@
 {"ts":1786372949,"wake_id":"00MSNCBXPOC3E0C9C1392F4469","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786373079,"wake_id":"00MSNCEPJX6C5805BDC7F34C44","kind":"wake","sleep_s":120,"model":"auto","slot":"earn/sol-trade","profitable":false,"exit_code":0}
 {"ts":1786373209,"wake_id":"00MSNCHHQR56B093604DFC4130","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786373376,"wake_id":"00MSNCL2Z005B252E329F341FD","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786373504,"wake_id":"00MSNCNTP991E88A5641894E49","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786373664,"wake_id":"00MSNCR9H7838649BB6CAC4C60","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana microtask platform paying USDC for AI data labeling [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidate"}
+{"ts":1786373792,"wake_id":"00MSNCU01YEC427F79FE41403D","kind":"wake","sleep_s":120,"model":"auto","slot":"report","profitable":false,"exit_code":0}
+{"ts":1786373927,"wake_id":"00MSNCWVP8C635FFD73D644348","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786374087,"wake_id":"00MSND0BEFB71C9EB213E04707","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786374213,"wake_id":"00MSND312798B03C2C7F434E37","kind":"narrate","sleep_s":120,"model":"auto"}
