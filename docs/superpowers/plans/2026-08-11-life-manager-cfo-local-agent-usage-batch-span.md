@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development and test-driven-development. Execute checkbox steps in order.
 
-**Status:** READY FOR LUNA — fresh Sol plan review: ship
+**Status:** COMPLETE — implementation, fresh review, isolated real-ledger E2E, and push evidence recorded
 
 **Goal:** When a TracerProvider is configured, emit one content-free INTERNAL OpenTelemetry span after each completed
 local agent-usage collection so an operator can correlate the two durable checkpoints and event counts without
@@ -77,7 +77,7 @@ repairs, estimates, or promotes missing token values.
 
 ## Task 1 — Luna TDD implementation
 
-- [ ] **RED:** Extend `apps/life-call/lib/cfo-local-agent-usage-runner.test.js` using the existing in-memory OTel
+- [x] **RED:** Extend `apps/life-call/lib/cfo-local-agent-usage-runner.test.js` using the existing in-memory OTel
   provider. In the complete case, register it globally, do not inject a tracer, and assert exactly one ended INTERNAL
   span with instrumentation scope `anicca-life-call-cfo`, exact name/closed attributes, zero events, identical returned
   receipt, and no content/path/secret sentinel; disable the test global provider afterward. Extend the existing partial
@@ -86,24 +86,40 @@ repairs, estimates, or promotes missing token values.
   writer boundary, a synchronous hostile `startSpan` throw cannot change the durable receipt or log, and the default
   no-provider path emits nothing while returning the identical receipt. Run focused tests and record the RED reason.
 
-- [ ] **GREEN:** Modify only `apps/life-call/lib/cfo-local-agent-usage-runner.js`. Reuse `trace` and `SpanKind` from
+- [x] **GREEN:** Modify only `apps/life-call/lib/cfo-local-agent-usage-runner.js`. Reuse `trace` and `SpanKind` from
   `@opentelemetry/api`; accept an optional exact `tracer` test seam; otherwise call
   `trace.getTracer("anicca-life-call-cfo")` at run time. Enforce `event_count <= bytes.length`, derive the exact
   attributes only from the closed receipt, require a safe aggregate, start/end once after durable source attempts,
   swallow telemetry failure, and return the identical frozen receipt. Do not change source reading/writing or exports.
 
-- [ ] **Gates:** run focused runner, hourly+runner, CFO, full npm, syntax, `git diff --check`, and exact two-file/LOC
+- [x] **Gates:** run focused runner, hourly+runner, CFO, full npm, syntax, `git diff --check`, and exact two-file/LOC
   scope. Luna reports RED/GREEN and does not commit or push.
 
 ## Task 2 — Sol review, real proof, and close
 
-- [ ] Fresh Sol implementation review returns `ship` against this exact contract.
-- [ ] Sol independently reruns all gates and injects an in-memory tracer through the production runner against the
+- [x] Fresh Sol implementation review returns `ship` against this exact contract.
+- [x] Sol independently reruns all gates and injects an in-memory tracer through the production runner against the
   real local ledgers/state in an isolated temporary state root. Prove one ended content-free span, valid checkpoint
   hashes/counts, unchanged source bytes, and no stdout/stderr/Telegram delivery. Separately prove the actual current
   launchd process has no registered provider, so its default OTel path is no-op while ledger collection remains live.
-- [ ] Update this plan and both CFO specs with observed evidence; fetch, commit, push, and send one content-free
+- [x] Update this plan and both CFO specs with observed evidence; fetch, commit, push, and send one content-free
   Telegram milestone. Then 2a2a.6 becomes the only active item.
+
+## Completion evidence
+
+- Genuine RED was 2 pass/2 fail: the complete case finished zero spans and the partial case rejected the absent
+  `tracer` option. Luna GREEN is exactly two files and +28/-13 lines; no module, sink, exporter, DB, scheduler,
+  Telegram field, or public receipt field was added.
+- Focused runner 6/6, runner+hourly 15/15, CFO 292/292, full npm chain exit 0, both syntax checks, and
+  `git diff --check` pass. Fresh Sol implementation review returned `ship — Spec ✅`.
+- Sol's isolated production-runner E2E read both real ledgers, wrote only to a temporary state root, finished exactly
+  one INTERNAL span, linked both content-addressed checkpoints, and reconciled 5,004 accepted event rows. Both source
+  SHA-256 values remained identical; console/stdout, stderr, and Telegram delivery were zero.
+- The actual single hourly launchd job remains at 3,600 seconds with last exit 0 and has no registered OTel provider.
+  Therefore its immutable ledger collection remains live while this span path is a silent no-op. A configured cloud
+  provider records the same closed attributes; OTel never becomes token or cash truth.
+- A competing three-file local JSONL sink plan was rejected by the Ponytail gate because it duplicated durable state,
+  added a local-only exporter path, and was unnecessary for either current Telegram truth or later cloud OTLP export.
 
 ## Primary evidence
 
