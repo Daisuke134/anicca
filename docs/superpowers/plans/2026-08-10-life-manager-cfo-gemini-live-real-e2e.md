@@ -31,6 +31,7 @@ pass that exact object once to `captureGeminiLiveUsageObservation`.
 Add empty `providerLiveMessages` and `postTurnLiveMessages` collections and final assertions requiring one captured
 Live usage message, one matching Live row, exactly three rows, and exactly three matching spans. Require the exact
 success line `rows=3 spans=3 live=1`. Keep the existing real provider and disposable database assertions unchanged.
+The first new assertion executed must be `providerLiveMessages.length === 1`; row/span/output assertions come after it.
 
 - [ ] **Step 2 — run RED against the real disposable boundary**
 
@@ -42,8 +43,8 @@ env -i PATH="$PATH" HOME="$HOME" TMPDIR="${TMPDIR:-/tmp}" \
   test/postgres/cfo-provider-usage-real-e2e.sh
 ```
 
-Expected: Docker, PostgREST, and the existing two genuine `generateContent` calls succeed; the new assertion fails
-only because Live observations are zero. Secrets and private content must not appear.
+Expected: Docker, PostgREST, and the existing two genuine `generateContent` calls succeed; the first new assertion fails
+as exact `0 !== 1` because Live observations are zero. Secrets and private content must not appear.
 
 - [ ] **Step 3 — add the minimum real WebSocket path**
 
@@ -53,17 +54,20 @@ Inside the existing Node heredoc:
    `captureGeminiLiveUsageObservation`;
 2. build the setup exactly once, open one WebSocket, send that minimal AUDIO/Charon setup, wait for `setupComplete`,
    then send one text turn containing the existing private sentinel;
-3. resolve on the first later parsed message with top-level `usageMetadata`; use fixed timeout/error/early-close reasons,
-   one 30-second timer, no retry, and no raw logging; retain all post-turn parsed messages in memory and close the
-   socket after capture;
+3. maintain `turnSent` and one idempotent `settled` gate. One `settle(error, value)` clears the 30-second timer, removes
+   message/error/close listeners, and resolves or rejects once. Resolve only on the first parsed message after
+   `turnSent` with top-level `usageMetadata`; error, timeout, and close-before-success reject with exact fixed reasons.
+   Set `settled` before intentionally closing after capture so that close is never relabeled early-close. Use no retry
+   and no raw logging; retain all post-turn parsed messages in memory until settlement;
 4. create one random nonzero 32-hex session and call the capture once with the unchanged message and exact context:
    owner `cfo-e2e-owner`, unit `life_manager_saas`, `request_model: setup.setup.model`, session ID, sequence zero, and
    existing local PostgREST store options;
 5. project the Live message into the expected row and prove exact provider counts, null provider/response IDs,
-   `live-session:<id>`, and a distinct trace ID. Extract every exported span trace ID and require its exact multiset to
-   equal the three distinct row trace IDs. Reuse `collectStrings` over all post-turn messages to reject every observed
-   text/transcript/audio string of at least 12 characters from exporter output; also reject the sentinel, API key, and
-   content attribute names. Keep provider payloads in memory only.
+   `live-session:<id>`, and a distinct trace ID. In `writeExport`, retain each plain exported span object carrying a
+   nonzero 32-hex `traceId`; require exactly three objects and require their sorted trace-ID multiset to equal the three
+   distinct sorted row trace IDs. Reuse `collectStrings` over all post-turn messages to reject every observed
+   text/transcript/audio string of at least 12 characters from exporter output; also reject the sentinel, API key,
+   `gen_ai.input.messages`, and `gen_ai.output.messages`. Keep provider payloads in memory only.
 
 - [ ] **Step 4 — run GREEN and scope gates**
 
@@ -74,6 +78,7 @@ one-file/75-addition gate. Expected success line: `cfo-provider-usage-real-e2e: 
 
 - Truth: the provider message, stored row, and span are compared in one real execution; no mock token count exists.
 - Privacy: raw Live messages remain in memory and every failure reason is fixed before output.
-- Reliability: one bounded WebSocket attempt cannot hang and cleanup remains under the existing trap.
+- Reliability: one idempotent settlement gate owns timer/listener cleanup, so close/error/timeout races cannot hang or
+  overwrite a successful capture; process cleanup remains under the existing trap.
 - YAGNI: one existing E2E file, no production change, no abstraction, no deployment.
 - Placeholders: none; provider boundary, timeout, row/span assertions, output, and scope gate are fixed.

@@ -764,13 +764,15 @@ Acceptance:
 - [ ] exactly the existing `cfo-provider-usage-real-e2e.sh` changes, with at most 75 additions;
 - [ ] the existing two real `generateContent` observations remain and one real Live WebSocket observation is added;
 - [ ] the WebSocket uses existing `ws` and `call-logic.js` builders, one text turn, one 30-second timeout, and no retry;
+- [ ] one idempotent settlement gate clears its timer/listeners exactly once and prevents intentional close from becoming
+      an early-close failure;
 - [ ] error/timeout/early-close paths expose only fixed reasons and never log the API key, provider payload, audio, or text;
 - [ ] the first real post-turn message carrying `usageMetadata` is passed unchanged to
       `captureGeminiLiveUsageObservation` with one random nonzero 32-hex session and sequence zero;
 - [ ] the disposable Postgres/PostgREST readback proves three private rows, three distinct nonzero trace IDs, exact Live
       provider counts, null provider/response IDs, and exact `live-session:<id>` correlation;
-- [ ] captured OpenTelemetry output proves exactly three spans and contains no prompt, transcript, audio, API key, or
-      private sentinel;
+- [ ] captured OpenTelemetry objects prove exactly three spans whose trace-ID multiset equals the three rows and whose
+      serialized output contains no prompt, transcript, audio, API key, content attributes, or private sentinel;
 - [ ] the only success line is `cfo-provider-usage-real-e2e: PASS rows=3 spans=3 live=1`;
 - [ ] no production database, runtime, scheduler, launchd, Telegram, or deployment state changes.
 
