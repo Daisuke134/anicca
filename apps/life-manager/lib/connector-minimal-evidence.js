@@ -128,6 +128,8 @@ function checkpointPath(stateDir, provider, eventRef, eventUrl) {
 }
 
 const CHECKPOINT_KEYS = "artifact_ref,artifact_sha256,canonical_url_sha256,event_ref,observed_at,provider,provider_receipt_ref,provider_status,schema_version,stage";
+const MESSAGE_DELIVERY_KEYS = "artifact_ref,artifact_sha256,calendar_event_id,calendar_event_url,calendar_readback_at,canonical_url_sha256,event_ref,provider,provider_receipt_ref,schema_version,stage,telegram_message_provider_id";
+const PHOTO_DELIVERY_KEYS = "artifact_ref,artifact_sha256,calendar_event_id,calendar_event_url,calendar_readback_at,canonical_url_sha256,event_ref,message_checkpoint_sha256,provider,provider_receipt_ref,schema_version,stage,telegram_message_provider_id,telegram_photo_provider_id";
 
 function readCheckpoint(stateDir, file, provider, candidate, canonicalUrlSha256) {
   assertNoSymlinkPath(stateDir, file);
@@ -157,6 +159,78 @@ async function validateCheckpointEvidence(provider, checkpoint, tenantId) {
   try { bytes = await store.readArtifact(tenantId, checkpoint.artifactRef); } catch { invalid(); }
   if (!Buffer.isBuffer(bytes) || bytes.length < 5_000 || !bytes.subarray(0, PNG_SIGNATURE.length).equals(PNG_SIGNATURE) || sha256(bytes) !== checkpoint.artifactSha256) invalid();
   return bytes;
+}
+
+function deliveryPaths(stateDir, provider, candidate, identity, checkpoint) {
+  const deliveryIdentity = sha256(`${provider.name}\n${candidate.event_ref}\n${identity.canonicalUrlSha256}\n${checkpoint.receiptRef}\n${checkpoint.artifactSha256}`);
+  const root = path.join(stateDir, "evidence", "checkpoints");
+  const message = path.join(root, `${deliveryIdentity}.message.json`);
+  const photo = path.join(root, `${deliveryIdentity}.photo.json`);
+  assertNoSymlinkPath(stateDir, message); assertNoSymlinkPath(stateDir, photo);
+  return { message, photo };
+}
+
+function deliveryKeys(stage) { return stage === "telegram_message" ? MESSAGE_DELIVERY_KEYS : PHOTO_DELIVERY_KEYS; }
+
+function deliveryId(value, field) {
+  if (typeof value !== "string" || !/^[1-9][0-9]*$/.test(value)) invalid();
+  let parsed;
+  try { parsed = parseOpenClawMessageId({ messageId: value }); } catch { invalid(); }
+  if (parsed !== value) invalid();
+  return value;
+}
+
+function readDeliveryCheckpoint(stateDir, file, stage, provider, candidate, identity, checkpoint) {
+  assertNoSymlinkPath(stateDir, file);
+  if (!fs.existsSync(file)) return null;
+  let value;
+  try {
+    const stat = fs.lstatSync(file);
+    if (!stat.isFile() || stat.isSymbolicLink() || (stat.mode & 0o777) !== 0o600 || stat.size > 16_384) invalid();
+    value = JSON.parse(fs.readFileSync(file, "utf8"));
+  } catch { invalid(); }
+  if (!value || typeof value !== "object" || Array.isArray(value) || Object.keys(value).sort().join(",") !== deliveryKeys(stage)) invalid();
+  if (value.schema_version !== 1 || value.stage !== stage || value.provider !== provider.name || value.event_ref !== candidate.event_ref
+    || value.canonical_url_sha256 !== identity.canonicalUrlSha256 || value.provider_receipt_ref !== checkpoint.receiptRef
+    || value.artifact_ref !== checkpoint.artifactRef || value.artifact_sha256 !== checkpoint.artifactSha256) invalid();
+  const calendar = calendarReceipt({ id: value.calendar_event_id, htmlLink: value.calendar_event_url });
+  const readbackAt = exactInstant(value.calendar_readback_at);
+  const messageId = deliveryId(value.telegram_message_provider_id, "telegram_message_provider_id");
+  const photoId = stage === "telegram_photo" ? deliveryId(value.telegram_photo_provider_id, "telegram_photo_provider_id") : null;
+  const messageCheckpointSha256 = stage === "telegram_photo" ? String(value.message_checkpoint_sha256 || "") : null;
+  if (stage === "telegram_photo" && !/^[0-9a-f]{64}$/.test(messageCheckpointSha256)) invalid();
+  return Object.freeze({
+    ...value,
+    calendarEventId: calendar.id,
+    calendarEventUrl: calendar.htmlLink,
+    calendarReadbackAt: readbackAt,
+    telegramMessageProviderId: messageId,
+    telegramPhotoProviderId: photoId,
+    messageCheckpointSha256,
+    checkpointSha256: sha256(stableJson(value)),
+  });
+}
+
+function deliveryValue({ stage, provider, candidate, identity, checkpoint, calendar, calendarReadbackAt, messageId, photoId, messageCheckpointSha256 }) {
+  const value = {
+    schema_version: 1,
+    stage,
+    provider: provider.name,
+    event_ref: candidate.event_ref,
+    canonical_url_sha256: identity.canonicalUrlSha256,
+    provider_receipt_ref: checkpoint.receiptRef,
+    artifact_ref: checkpoint.artifactRef,
+    artifact_sha256: checkpoint.artifactSha256,
+    calendar_event_id: calendar.id,
+    calendar_event_url: calendar.htmlLink,
+    calendar_readback_at: calendarReadbackAt,
+    telegram_message_provider_id: messageId,
+  };
+  if (stage === "telegram_photo") {
+    value.message_checkpoint_sha256 = messageCheckpointSha256;
+    value.telegram_photo_provider_id = photoId;
+  }
+  return Object.freeze(value);
 }
 
 async function captureProviderEvidence({ provider, providerName, page, candidate, providerStatus, tenantId, now, canonicalUrlSha256 }) {
@@ -242,6 +316,16 @@ function createMinimalEvidenceChain(options = {}) {
         screenshot = captured.screenshot;
       }
 
+      const deliveries = deliveryPaths(stateDir, provider, candidate, identity, checkpoint);
+      let messageCheckpoint = readDeliveryCheckpoint(stateDir, deliveries.message, "telegram_message", provider, candidate, identity, checkpoint);
+      let photoCheckpoint = readDeliveryCheckpoint(stateDir, deliveries.photo, "telegram_photo", provider, candidate, identity, checkpoint);
+      if (photoCheckpoint && !messageCheckpoint) invalid();
+      if (photoCheckpoint && (
+        photoCheckpoint.messageCheckpointSha256 !== messageCheckpoint.checkpointSha256
+        || photoCheckpoint.telegramMessageProviderId !== messageCheckpoint.telegramMessageProviderId
+        || photoCheckpoint.calendarReadbackAt !== messageCheckpoint.calendarReadbackAt
+      )) invalid();
+
       const idempotencyValue = identity.canonicalUrlSha256;
       const timeMin = new Date(Date.parse(startsAt) - 60_000).toISOString();
       const timeMax = new Date(Date.parse(endsAt) + 60_000).toISOString();
@@ -255,6 +339,9 @@ function createMinimalEvidenceChain(options = {}) {
       const verifiedCalendar = calendarReceipt(after[0]);
       if (verifiedCalendar.id !== expectedCalendar.id || verifiedCalendar.htmlLink !== expectedCalendar.htmlLink) invalid();
       const calendarReadbackAt = exactInstant(now());
+      for (const stored of [messageCheckpoint, photoCheckpoint]) {
+        if (stored && (stored.calendarEventId !== verifiedCalendar.id || stored.calendarEventUrl !== verifiedCalendar.htmlLink)) invalid();
+      }
 
       const status = input.providerState.status;
       const message = [
@@ -265,14 +352,34 @@ function createMinimalEvidenceChain(options = {}) {
         `starts at: ${startsAt}`,
         `calendar event ID: ${verifiedCalendar.id}`,
       ].join("\n");
-      const messageId = parseOpenClawMessageId(await sendMessage(message, {
-        telegramTarget,
-        idempotencyKey: `connector-evidence:${idempotencyValue}`,
-      }));
-      const photoId = parseOpenClawMessageId(await sendPhoto(screenshot, {
-        telegramTarget,
-        caption: input.provider === "luma" ? `Connector::: ${title} / ${status}` : `Connector::: ${input.provider} / ${title} / ${status}`,
-      }));
+      let messageId = messageCheckpoint && messageCheckpoint.telegramMessageProviderId;
+      if (!messageCheckpoint) {
+        messageId = parseOpenClawMessageId(await sendMessage(message, {
+          telegramTarget,
+          idempotencyKey: `connector-evidence:${idempotencyValue}`,
+        }));
+        const value = deliveryValue({ stage: "telegram_message", provider, candidate, identity, checkpoint, calendar: verifiedCalendar, calendarReadbackAt, messageId });
+        assertNoSymlinkPath(stateDir, deliveries.message);
+        immutableJson(deliveries.message, value);
+        messageCheckpoint = readDeliveryCheckpoint(stateDir, deliveries.message, "telegram_message", provider, candidate, identity, checkpoint);
+        if (!messageCheckpoint) invalid();
+      }
+      let photoId = photoCheckpoint && photoCheckpoint.telegramPhotoProviderId;
+      if (!photoCheckpoint) {
+        photoId = parseOpenClawMessageId(await sendPhoto(screenshot, {
+          telegramTarget,
+          caption: input.provider === "luma" ? `Connector::: ${title} / ${status}` : `Connector::: ${input.provider} / ${title} / ${status}`,
+        }));
+        const value = deliveryValue({
+          stage: "telegram_photo", provider, candidate, identity, checkpoint, calendar: verifiedCalendar,
+          calendarReadbackAt: messageCheckpoint.calendarReadbackAt,
+          messageId, photoId, messageCheckpointSha256: messageCheckpoint.checkpointSha256,
+        });
+        assertNoSymlinkPath(stateDir, deliveries.photo);
+        immutableJson(deliveries.photo, value);
+        photoCheckpoint = readDeliveryCheckpoint(stateDir, deliveries.photo, "telegram_photo", provider, candidate, identity, checkpoint);
+        if (!photoCheckpoint || photoCheckpoint.messageCheckpointSha256 !== messageCheckpoint.checkpointSha256) invalid();
+      }
 
       const core = Object.freeze({
         schema_version: 1,
@@ -285,14 +392,16 @@ function createMinimalEvidenceChain(options = {}) {
         artifact_sha256: checkpoint.artifactSha256,
         calendar_event_id: verifiedCalendar.id,
         calendar_event_url: verifiedCalendar.htmlLink,
-        calendar_readback_at: calendarReadbackAt,
+        calendar_readback_at: messageCheckpoint.calendarReadbackAt,
         telegram_message_provider_id: messageId,
         telegram_photo_provider_id: photoId,
         created_at: checkpoint.observedAt,
       });
       const digest = createHash("sha256").update(stableJson(core)).digest("hex");
       const bundle = Object.freeze({ bundle_id: `applied-bundle:${digest}`, ...core });
-      immutableJson(path.join(stateDir, "applied-bundles", `${digest}.json`), bundle);
+      const bundleFile = path.join(stateDir, "applied-bundles", `${digest}.json`);
+      assertNoSymlinkPath(stateDir, bundleFile);
+      immutableJson(bundleFile, bundle);
       return bundle;
     },
   });

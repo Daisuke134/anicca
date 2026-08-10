@@ -1,9 +1,14 @@
 "use strict";
 
 const assert = require("node:assert/strict");
+const { createHash } = require("node:crypto");
+const fs = require("node:fs");
+const os = require("node:os");
+const path = require("node:path");
 const test = require("node:test");
 
 const { runMinimalConnectorWake } = require("./connector-minimal-runner.js");
+const { createMinimalEvidenceChain } = require("./connector-minimal-evidence.js");
 
 function candidate(provider, slug) {
   return Object.freeze({
@@ -470,4 +475,27 @@ test("every recorded action contains only the safe audit fields", async () => {
     assert.equal(JSON.stringify(row).includes("owner-token"), false);
     assert.equal(JSON.stringify(row).includes("example.test"), false);
   }
+});
+
+test("registered parent pre-readback composes real evidence recovery with zero submit paths", async () => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-runner-evidence-"));
+  const png = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(6_000, 4)]);
+  const candidate = { provider: "peatix", event_ref: "peatix-event://event/5075819", canonical_url: "https://peatix.com/event/5075819", title: "Runner Public Event", starts_at: "2026-08-10T10:00:00.000Z", ends_at: "2026-08-10T11:00:00.000Z", venue_name: "Tokyo", ticket_id: "public-ticket" };
+  const receipt = { id: "google-runner-evidence", htmlLink: "https://www.google.com/calendar/event?eid=runner-evidence" }; let event = null; let calendarCreates = 0; let crashReadback = true; let evidenceRecords = 0; let messageCalls = 0; let photoCalls = 0; let cacheCalls = 0; let directCalls = 0; let harnessCalls = 0; let lastBundle = null; const registered = new Set();
+  const calendar = { async findConnectorEvents() { if (!event) return []; if (crashReadback) { crashReadback = false; throw new Error("Calendar readback crash"); } return [event]; }, async createConnectorEvent() { calendarCreates += 1; event = receipt; return receipt; } };
+  const artifactSha = createHash("sha256").update(png).digest("hex"); const evidenceStore = { async record(input) { evidenceRecords += 1; const id = createHash("sha256").update(`${input.tenantId}\n${input.eventRef}\n${input.observedAt}\n${artifactSha}`).digest("hex"); return { external_receipt_ref: `provider-receipt://peatix/${id}`, artifact_ref: `object://sha256/${artifactSha}` }; }, async readExternalReceipt(tenant, ref) { return { kind: "provider_response", provider_id: String(ref).split("/").at(-1) }; }, async readArtifact() { return png; } };
+  const page = { async goto() {}, url() { return "about:blank"; }, async evaluate() { return true; }, async screenshot() { return png; } };
+  const wake = (times, sendMessage, sendPhoto) => runMinimalConnectorWake({ ownerToken: "owner-token-runner-evidence", providers: ["peatix"] }, {
+    now: () => "2026-08-07T02:00:00.000Z", browserRail: { async open() { return { session_id: "session-runner-evidence", target_id: "TARGETRUNNEREVIDENCE", page_websocket: "ws://127.0.0.1:9222/devtools/page/TARGETRUNNEREVIDENCE", page }; }, async navigate() {}, async close() {} },
+    async readCalendarGaps() { return []; }, async discoverCandidates() { return [candidate]; }, async readProviderState() { registered.add(candidate.event_ref); return { status: "registered" }; },
+    async runCachedAction() { cacheCalls += 1; throw new Error("cache must not run"); }, async runDirectAction() { directCalls += 1; throw new Error("direct must not run"); }, async runAgentFallback() { harnessCalls += 1; throw new Error("Harness must not run"); },
+    async completeEvidence(input) { let index = 0; const chain = createMinimalEvidenceChain({ stateDir, tenantId: "dais-local", calendar, calendarId: "primary", telegramTarget: "private-target", peatixEvidenceStore: evidenceStore, now: () => new Date(times[Math.min(index++, times.length - 1)]), sendMessage, sendPhoto }); lastBundle = await chain.completeEvidence(input); return lastBundle; },
+    async saveRepairedActions() { return { status: "saved" }; }, async reportWake() { return { telegram_provider_id: "9001" }; }, async recordAction() {},
+  });
+  try {
+    await assert.rejects(wake(["2026-08-07T08:30:00.000Z", "2026-08-07T08:31:00.000Z"], async () => ({ messageId: 9401 }), async () => ({ messageId: 9402 })));
+    await assert.rejects(wake(["2026-08-07T08:31:00.000Z"], async () => { messageCalls += 1; return { messageId: 9401 }; }, async () => { photoCalls += 1; throw new Error("photo interruption"); }));
+    const result = await wake(["2026-08-07T08:32:00.000Z"], async () => { messageCalls += 1; return { messageId: 9401 }; }, async () => { photoCalls += 1; return { messageId: 9402 }; });
+    assert.equal(result.status, "applied_bundle"); assert.equal(lastBundle.created_at, "2026-08-07T08:30:00.000Z"); assert.deepEqual([registered.size, evidenceRecords, calendarCreates, messageCalls, photoCalls, cacheCalls, directCalls, harnessCalls, fs.readdirSync(path.join(stateDir, "applied-bundles")).length], [1, 1, 1, 1, 2, 0, 0, 0, 1]);
+  } finally { fs.rmSync(stateDir, { recursive: true, force: true }); }
 });

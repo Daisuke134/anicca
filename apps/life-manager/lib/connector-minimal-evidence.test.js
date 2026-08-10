@@ -170,6 +170,54 @@ function checkpointFiles(stateDir) {
   try { return fs.readdirSync(path.join(stateDir, "evidence", "checkpoints")); } catch { return []; }
 }
 
+function deliveryCheckpointEntries(stateDir) {
+  return checkpointFiles(stateDir).flatMap((file) => {
+    const target = path.join(stateDir, "evidence", "checkpoints", file);
+    try {
+      const value = JSON.parse(fs.readFileSync(target, "utf8"));
+      return value && (value.stage === "telegram_message" || value.stage === "telegram_photo")
+        ? [{ file: target, value }]
+        : [];
+    } catch { return []; }
+  });
+}
+
+function deliveryCheckpointFor(stateDir, stage) {
+  const entry = deliveryCheckpointEntries(stateDir).find(({ value }) => value.stage === stage);
+  assert.ok(entry, `missing ${stage} checkpoint`);
+  return entry;
+}
+
+function recoveryPage(png, calls) {
+  return {
+    async goto(url, input) { calls.push(["goto", url, input]); },
+    url() { calls.push(["url"]); return "about:blank"; },
+    async evaluate() { calls.push(["evaluate"]); return true; },
+    async screenshot(input) { calls.push(["screenshot", input]); return png; },
+  };
+}
+
+function makeRecoveryChain({ stateDir, png, calls, calendar, sendMessage, sendPhoto, now = "2026-08-07T08:30:00.000Z" }) {
+  return createMinimalEvidenceChain({
+    stateDir,
+    tenantId: "dais-local",
+    calendar,
+    calendarId: "primary",
+    telegramTarget: "private-target",
+    peatixEvidenceStore: recoveryStore(png, calls),
+    now: () => new Date(now),
+    sendMessage,
+    sendPhoto,
+  });
+}
+
+function durableCalendar(calls, receipt = { id: "google-peatix-1", htmlLink: "https://www.google.com/calendar/event?eid=peatix-one" }) {
+  return {
+    async findConnectorEvents(input) { calls.push(["calendar-read", input]); return [receipt]; },
+    async createConnectorEvent(input) { calls.push(["calendar-create", input]); return receipt; },
+  };
+}
+
 function recoveryStore(png, calls, options = {}) {
   const artifactSha = createHash("sha256").update(png).digest("hex");
   return { async record(input) { calls.push(["evidence-record", input]); const receiptHash = createHash("sha256").update(`${input.tenantId}\n${input.eventRef}\n${input.observedAt}\n${artifactSha}`).digest("hex"); return { external_receipt_ref: `provider-receipt://peatix/${receiptHash}`, artifact_ref: `object://sha256/${artifactSha}` }; },
@@ -396,7 +444,7 @@ test("Peatix identity, state, receipt, Calendar, and Telegram partial failures n
   }
   for (const channel of ["message", "photo"]) {
     const fixture = peatixFixture(channel === "message" ? { sendMessage: async () => ({ messageId: 0 }) } : { sendPhoto: async () => ({ messageId: 0 }) });
-    try { await assert.rejects(fixture.chain.completeEvidence({ provider: "peatix", candidate: fixture.candidate, page: fixture.page, providerState: { status: "registered" } })); assert.equal(bundleFiles(fixture.stateDir).length, 0); } finally { fixture.cleanup(); }
+    try { await assert.rejects(fixture.chain.completeEvidence({ provider: "peatix", candidate: fixture.candidate, page: fixture.page, providerState: { status: "registered" } })); assert.equal(deliveryCheckpointEntries(fixture.stateDir).length, channel === "message" ? 0 : 1); assert.equal(bundleFiles(fixture.stateDir).length, 0); } finally { fixture.cleanup(); }
   }
 });
 
@@ -428,4 +476,61 @@ test("Peatix canonical URL rejects parser-normalized variants before every side 
       assert.equal(bundleFiles(fixture.stateDir).length, 0, canonical_url);
     } finally { fixture.cleanup(); }
   }
+});
+
+test("Telegram message checkpoint retries only a missing photo", async () => {
+  const png = Buffer.concat([PNG_SIGNATURE, Buffer.alloc(6_000, 12)]); let photoAttempts = 0;
+  const fixture = peatixFixture({ png, sendMessage: async (m, o) => { fixture.calls.push(["telegram-message", m, o]); return { messageId: 9201 }; }, sendPhoto: async (b, o) => { fixture.calls.push(["telegram-photo", b, o]); if (++photoAttempts === 1) throw new Error("photo interrupted"); return { messageId: 9202 }; } });
+  try {
+    await assert.rejects(fixture.chain.completeEvidence({ provider: "peatix", candidate: fixture.candidate, page: fixture.page, providerState: { status: "registered" } }));
+    assert.deepEqual([fixture.calls.filter(([n]) => n === "telegram-message").length, fixture.calls.filter(([n]) => n === "telegram-photo").length, deliveryCheckpointEntries(fixture.stateDir).length, bundleFiles(fixture.stateDir).length], [1, 1, 1, 0]);
+    const calls = []; const chain = makeRecoveryChain({ stateDir: fixture.stateDir, png, calls, calendar: durableCalendar(calls), sendMessage: async () => { throw new Error("message resend"); }, sendPhoto: async (b, o) => { calls.push(["telegram-photo", b, o]); return { messageId: 9202 }; }, now: "2026-08-07T08:31:00.000Z" });
+    const bundle = await chain.completeEvidence({ provider: "peatix", candidate: fixture.candidate, page: recoveryPage(png, calls), providerState: { status: "registered" } });
+    assert.deepEqual([bundle.telegram_message_provider_id, bundle.telegram_photo_provider_id, calls.filter(([n]) => n === "telegram-message").length, calls.filter(([n]) => n === "telegram-photo").length, bundleFiles(fixture.stateDir).length], ["9201", "9202", 0, 1, 1]);
+  } finally { fixture.cleanup(); }
+});
+
+test("Telegram checkpoints survive bundle failure and completed rerun is idempotent", async () => {
+  const png = Buffer.concat([PNG_SIGNATURE, Buffer.alloc(6_000, 13)]); const fixture = peatixFixture({ png }); const blocker = path.join(fixture.stateDir, "applied-bundles");
+  try {
+    fs.writeFileSync(blocker, "blocked", { mode: 0o600 });
+    await assert.rejects(fixture.chain.completeEvidence({ provider: "peatix", candidate: fixture.candidate, page: fixture.page, providerState: { status: "registered" } }));
+    assert.deepEqual([deliveryCheckpointEntries(fixture.stateDir).length, bundleFiles(fixture.stateDir).length], [2, 0]); fs.unlinkSync(blocker);
+    const calls = []; const chain = makeRecoveryChain({ stateDir: fixture.stateDir, png, calls, calendar: durableCalendar(calls), sendMessage: async () => { throw new Error("message resend"); }, sendPhoto: async () => { throw new Error("photo resend"); }, now: "2026-08-07T08:32:00.000Z" });
+    const bundle = await chain.completeEvidence({ provider: "peatix", candidate: fixture.candidate, page: recoveryPage(png, calls), providerState: { status: "registered" } });
+    assert.deepEqual([bundle.telegram_message_provider_id, bundle.telegram_photo_provider_id, calls.filter(([n]) => n.startsWith("telegram-")).length, bundleFiles(fixture.stateDir).length], ["9101", "9102", 0, 1]);
+    const rerunCalls = []; const rerun = makeRecoveryChain({ stateDir: fixture.stateDir, png, calls: rerunCalls, calendar: durableCalendar(rerunCalls), sendMessage: async () => { throw new Error("completed message"); }, sendPhoto: async () => { throw new Error("completed photo"); }, now: "2026-08-07T08:33:00.000Z" });
+    const second = await rerun.completeEvidence({ provider: "peatix", candidate: fixture.candidate, page: recoveryPage(png, rerunCalls), providerState: { status: "registered" } }); assert.equal(second.bundle_id, bundle.bundle_id); assert.equal(rerunCalls.filter(([n]) => n.startsWith("telegram-")).length, 0); assert.equal(bundleFiles(fixture.stateDir).length, 1);
+  } finally { if (fs.existsSync(blocker) && fs.statSync(blocker).isFile()) fs.unlinkSync(blocker); fixture.cleanup(); }
+});
+
+test("Telegram checkpoints are exact/private and corrupt or symlinked receipts fail before delivery", async () => {
+  const messageKeys = "artifact_ref,artifact_sha256,calendar_event_id,calendar_event_url,calendar_readback_at,canonical_url_sha256,event_ref,provider,provider_receipt_ref,schema_version,stage,telegram_message_provider_id";
+  const photoKeys = "artifact_ref,artifact_sha256,calendar_event_id,calendar_event_url,calendar_readback_at,canonical_url_sha256,event_ref,message_checkpoint_sha256,provider,provider_receipt_ref,schema_version,stage,telegram_message_provider_id,telegram_photo_provider_id";
+  const png = Buffer.concat([PNG_SIGNATURE, Buffer.alloc(6_000, 14)]); const fixture = peatixFixture({ png });
+  try {
+    await fixture.chain.completeEvidence({ provider: "peatix", candidate: fixture.candidate, page: fixture.page, providerState: { status: "registered" } }); const entries = deliveryCheckpointEntries(fixture.stateDir); assert.equal(entries.length, 2);
+    for (const { file, value } of entries) { assert.equal(fs.statSync(file).mode & 0o777, 0o600); assert.equal(Object.keys(value).sort().join(","), value.stage === "telegram_message" ? messageKeys : photoKeys); assert.doesNotMatch(JSON.stringify(value), /private-target|private-ticket|peatix\.com|6536845|data:image|PNG/i); }
+    const original = entries.find(({ value }) => value.stage === "telegram_message").value;
+    const corruptions = [["invalid", () => fs.writeFileSync(deliveryCheckpointFor(fixture.stateDir, "telegram_message").file, "{\n")], ["extra", (f) => { f.extra = 1; }], ["provider", (f) => { f.provider = "luma"; }], ["event", (f) => { f.event_ref = "peatix-event://event/999"; }], ["url", (f) => { f.canonical_url_sha256 = "e".repeat(64); }], ["id", (f) => { f.telegram_message_provider_id = "0"; }], ["calendar", (f) => { f.calendar_event_id = "wrong"; }], ["stage", (f) => { f.stage = "telegram_photo"; }]];
+    for (const [name, mutate] of corruptions) { const entry = deliveryCheckpointFor(fixture.stateDir, "telegram_message"); let value = original; if (name === "invalid") mutate(); else { value = { ...original }; mutate(value); fs.writeFileSync(entry.file, `${JSON.stringify(value)}\n`, { mode: 0o600 }); } const calls = []; const chain = makeRecoveryChain({ stateDir: fixture.stateDir, png, calls, calendar: durableCalendar(calls), sendMessage: async () => { throw new Error(`${name} message`); }, sendPhoto: async () => { throw new Error(`${name} photo`); } }); await assert.rejects(chain.completeEvidence({ provider: "peatix", candidate: fixture.candidate, page: recoveryPage(png, calls), providerState: { status: "registered" } })); assert.equal(calls.filter(([n]) => n === "calendar-read").length, 0, name); fs.writeFileSync(entry.file, `${JSON.stringify(original)}\n`, { mode: 0o600 }); }
+    const photoOriginal = deliveryCheckpointFor(fixture.stateDir, "telegram_photo").value;
+    for (const [name, mutate] of [["photo-id", (v) => { v.telegram_message_provider_id = "9999"; }], ["photo-time", (v) => { v.calendar_readback_at = "2026-08-07T08:31:00.000Z"; }], ["photo-sha", (v) => { v.message_checkpoint_sha256 = "f".repeat(64); }], ["photo-receipt", (v) => { v.provider_receipt_ref = `provider-receipt://peatix/${"a".repeat(64)}`; }], ["photo-artifact", (v) => { v.artifact_ref = `object://sha256/${"a".repeat(64)}`; }], ["photo-unsafe", (v) => { v.telegram_photo_provider_id = "9007199254740992"; }]]) { const photo = deliveryCheckpointFor(fixture.stateDir, "telegram_photo"); const value = { ...photoOriginal }; mutate(value); fs.writeFileSync(photo.file, `${JSON.stringify(value)}\n`, { mode: 0o600 }); const calls = []; const chain = makeRecoveryChain({ stateDir: fixture.stateDir, png, calls, calendar: durableCalendar(calls), sendMessage: async () => { throw new Error(`${name}:message`); }, sendPhoto: async () => { throw new Error(`${name}:photo`); } }); await assert.rejects(chain.completeEvidence({ provider: "peatix", candidate: fixture.candidate, page: recoveryPage(png, calls), providerState: { status: "registered" } })); assert.equal(calls.filter(([n]) => n === "calendar-read").length, 0, name); fs.writeFileSync(photo.file, `${JSON.stringify(photoOriginal)}\n`, { mode: 0o600 }); }
+    const removedMessage = deliveryCheckpointFor(fixture.stateDir, "telegram_message"); fs.unlinkSync(removedMessage.file); const orphanCalls = []; const orphanChain = makeRecoveryChain({ stateDir: fixture.stateDir, png, calls: orphanCalls, calendar: durableCalendar(orphanCalls), sendMessage: async () => { throw new Error("orphan message"); }, sendPhoto: async () => { throw new Error("orphan photo"); } }); await assert.rejects(orphanChain.completeEvidence({ provider: "peatix", candidate: fixture.candidate, page: recoveryPage(png, orphanCalls), providerState: { status: "registered" } })); assert.equal(orphanCalls.filter(([n]) => n === "calendar-read").length, 0); fs.writeFileSync(removedMessage.file, `${JSON.stringify(original)}\n`, { mode: 0o600 });
+    const outside = fs.mkdtempSync(path.join(os.tmpdir(), "connector-delivery-outside-")); const entry = deliveryCheckpointFor(fixture.stateDir, "telegram_message"); const target = path.join(outside, "message.json"); fs.copyFileSync(entry.file, target); fs.unlinkSync(entry.file); fs.symlinkSync(target, entry.file); const calls = []; const chain = makeRecoveryChain({ stateDir: fixture.stateDir, png, calls, calendar: durableCalendar(calls), sendMessage: async () => { throw new Error("symlink message"); }, sendPhoto: async () => { throw new Error("symlink photo"); } }); await assert.rejects(chain.completeEvidence({ provider: "peatix", candidate: fixture.candidate, page: recoveryPage(png, calls), providerState: { status: "registered" } })); assert.equal(calls.filter(([n]) => n === "calendar-read").length, 0); fs.unlinkSync(entry.file); fs.rmSync(outside, { recursive: true, force: true });
+    const parentOutside = fs.mkdtempSync(path.join(os.tmpdir(), "connector-delivery-parent-outside-")); const checkpointDir = path.join(fixture.stateDir, "evidence", "checkpoints"); const saved = fs.mkdtempSync(path.join(os.tmpdir(), "connector-delivery-saved-")); for (const file of fs.readdirSync(checkpointDir)) fs.renameSync(path.join(checkpointDir, file), path.join(saved, file)); fs.rmSync(checkpointDir, { recursive: true, force: true }); fs.symlinkSync(parentOutside, checkpointDir, "dir"); const parentCalls = []; const parentChain = makeRecoveryChain({ stateDir: fixture.stateDir, png, calls: parentCalls, calendar: durableCalendar(parentCalls), sendMessage: async () => { throw new Error("parent message"); }, sendPhoto: async () => { throw new Error("parent photo"); } }); await assert.rejects(parentChain.completeEvidence({ provider: "peatix", candidate: fixture.candidate, page: recoveryPage(png, parentCalls), providerState: { status: "registered" } })); assert.equal(parentCalls.filter(([n]) => n === "calendar-read").length, 0); fs.unlinkSync(checkpointDir); fs.renameSync(saved, checkpointDir); fs.rmSync(parentOutside, { recursive: true, force: true });
+    const bundleDir = path.join(fixture.stateDir, "applied-bundles"); const bundleFile = path.join(bundleDir, fs.readdirSync(bundleDir)[0]); const bundleOutside = fs.mkdtempSync(path.join(os.tmpdir(), "connector-bundle-outside-")); fs.rmSync(bundleDir, { recursive: true, force: true }); fs.symlinkSync(bundleOutside, bundleDir, "dir"); const bundleCalls = []; const bundleChain = makeRecoveryChain({ stateDir: fixture.stateDir, png, calls: bundleCalls, calendar: durableCalendar(bundleCalls), sendMessage: async () => { throw new Error("bundle message"); }, sendPhoto: async () => { throw new Error("bundle photo"); } }); await assert.rejects(bundleChain.completeEvidence({ provider: "peatix", candidate: fixture.candidate, page: recoveryPage(png, bundleCalls), providerState: { status: "registered" } })); assert.equal(bundleCalls.filter(([n]) => n.startsWith("telegram-")).length, 0); fs.unlinkSync(bundleDir); fs.mkdirSync(bundleDir, { mode: 0o700 }); fs.writeFileSync(path.join(bundleDir, path.basename(bundleFile)), "{\"forged\":true}\n", { mode: 0o600 }); const collisionCalls = []; const collisionChain = makeRecoveryChain({ stateDir: fixture.stateDir, png, calls: collisionCalls, calendar: durableCalendar(collisionCalls), sendMessage: async () => { throw new Error("collision message"); }, sendPhoto: async () => { throw new Error("collision photo"); } }); await assert.rejects(collisionChain.completeEvidence({ provider: "peatix", candidate: fixture.candidate, page: recoveryPage(png, collisionCalls), providerState: { status: "registered" } })); assert.equal(collisionCalls.filter(([n]) => n.startsWith("telegram-")).length, 0); fs.rmSync(bundleOutside, { recursive: true, force: true });
+  } finally { fixture.cleanup(); }
+});
+
+test("composed provider, Calendar, Telegram, and bundle interruptions keep totals bounded", async () => {
+  const png = Buffer.concat([PNG_SIGNATURE, Buffer.alloc(6_000, 15)]); const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-composed-recovery-")); const candidate = peatixCandidate(); const receipt = { id: "google-composed", htmlLink: "https://www.google.com/calendar/event?eid=composed" }; const calls = []; let created = false; let phase = "crash"; let records = 0; const store = { async record(input) { records += 1; const sha = createHash("sha256").update(png).digest("hex"); const id = createHash("sha256").update(`${input.tenantId}\n${input.eventRef}\n${input.observedAt}\n${sha}`).digest("hex"); return { external_receipt_ref: `provider-receipt://peatix/${id}`, artifact_ref: `object://sha256/${sha}` }; }, async readExternalReceipt(t, r) { calls.push(["evidence-read", t, r]); return { kind: "provider_response", provider_id: String(r).split("/").at(-1) }; }, async readArtifact() { return png; } };
+  const calendar = { async findConnectorEvents(input) { calls.push(["calendar-read", input]); if (!created) return []; if (phase === "crash") throw new Error("readback crash"); return [receipt]; }, async createConnectorEvent(input) { calls.push(["calendar-create", input]); created = true; return receipt; } };
+  const chain = (now, sendMessage, sendPhoto) => createMinimalEvidenceChain({ stateDir, tenantId: "dais-local", calendar, calendarId: "primary", telegramTarget: "private-target", peatixEvidenceStore: store, now: () => new Date(now), sendMessage, sendPhoto }); const input = { provider: "peatix", candidate, providerState: { status: "registered" } };
+  try {
+    await assert.rejects(chain("2026-08-07T08:30:00.000Z", async () => ({ messageId: 9301 }), async () => ({ messageId: 9302 })).completeEvidence({ ...input, page: recoveryPage(png, calls) })); phase = "telegram";
+    await assert.rejects(chain("2026-08-07T08:31:00.000Z", async () => { calls.push(["telegram-message"]); return { messageId: 9301 }; }, async () => { calls.push(["telegram-photo"]); throw new Error("photo crash"); }).completeEvidence({ ...input, page: recoveryPage(png, calls) })); const blocker = path.join(stateDir, "applied-bundles"); fs.writeFileSync(blocker, "blocked", { mode: 0o600 });
+    await assert.rejects(chain("2026-08-07T08:32:00.000Z", async () => { calls.push(["telegram-message"]); return { messageId: 9301 }; }, async () => { calls.push(["telegram-photo"]); return { messageId: 9302 }; }).completeEvidence({ ...input, page: recoveryPage(png, calls) })); fs.unlinkSync(blocker);
+    const bundle = await chain("2026-08-07T08:33:00.000Z", async () => ({ messageId: 9301 }), async () => ({ messageId: 9302 })).completeEvidence({ ...input, page: recoveryPage(png, calls) }); assert.deepEqual([records, calls.filter(([n]) => n === "calendar-create").length, calls.filter(([n]) => n === "telegram-message").length, calls.filter(([n]) => n === "telegram-photo").length, bundleFiles(stateDir).length, calls.filter(([n]) => n === "provider-submit").length], [1, 1, 1, 2, 1, 0]);
+  } finally { fs.rmSync(stateDir, { recursive: true, force: true }); }
 });
