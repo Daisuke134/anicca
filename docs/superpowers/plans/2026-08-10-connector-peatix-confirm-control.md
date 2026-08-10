@@ -62,6 +62,10 @@ Required fix: start a bounded final-effect wait before the exact final click and
 
 The three-file Harness slice can preserve a bounded timeout/click exception as `failed / effect_unknown`, but the existing minimal runner treats every non-completed fallback alike and advances to the next candidate. Expand ownership only to `connector-minimal-runner.js` and its test. After the fallback returns the exact safe reason `effect_unknown`, increment the failure count once, report `circuit_open / effect_unknown`, and return before any next-candidate navigation, direct action, Harness action, or registration effect. Do not change handling for any other fallback failure and do not synthesize `pending`, `registered`, or success.
 
+### Fresh re-review bounded-readback amendment
+
+The first settlement GREEN checked the 30-second deadline only between polling iterations. A single unresolved `readProviderState()` promise could therefore block forever and violate the bounded wake contract. Race every parent readback attempt against the remaining overall settlement budget; clear the losing timer when readback settles; and return `failed / effect_unknown` when the remaining budget expires even if the provider promise never resolves. Add a deterministic RED with a never-resolving readback and controlled time proving one click, bounded completion, exact `effect_unknown`, and runner no-next-candidate behavior. Do not add an unbounded retry, production-configurable weaker timeout, fake success, or a second final click.
+
 ## Verify
 
 - Focused Harness tests and adjacent minimal runner/factory/Luna judgment/Peatix provider-workflow/evidence/native suites.

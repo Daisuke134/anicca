@@ -6815,7 +6815,13 @@ fresh Sol reviewはImportant 2件を実証して`fix-first`。第一に、最終
 
 ただし既存minimal runnerはfallbackの`effect_unknown`も通常failedとして次候補へ進めるため、3-file ownershipだけでは重複外部作用を防げない。fake `pending|completed`やunbounded waitは採用しない。plan ownershipをrunner本体/testの2 filesだけ拡張し、exact `effect_unknown`を受けたwakeはfailure countを1回加算して即`circuit_open / effect_unknown`、次候補navigation/direct/Harness作用0とする。その他failureの3-consecutive契約は変更しない。現時点の5-file code/test差分は未commit、live作用0。Item 10B/14/19は未完。
 
-### Active remaining TODO SSOT（進捗278。これ以外の残TODO一覧は履歴）
+### O1B-25進捗279（Peatix final readback unresolved-promise boundary）
+
+5-file GREENはhidden/detached/CSS/zero-size final controlをfail closedにし、delayed parent `pending`を一度だけ観測してadapter後段でも保持し、runner `effect_unknown`をfailure count 1で即`circuit_open`にした。Luna focusedはHarness 41/41、runner 15/15、minimal production 10/10、Sol独立adjacent 107/107、全Connector 303/306 PASS。残る3件はclean HEAD同一baseline failureで新規FAIL 0。
+
+fresh Sol re-reviewは追加Important 1件を発見した。30秒deadline判定がpoll iteration間だけにあり、単一の`readProviderState()` promiseが未解決ならsettlementとrunnerが無期限停止する。planを先に改訂し、各parent readbackを残りoverall budgetとのraceにし、readback側settle時はtimerをclear、budget expiryはexact `failed / effect_unknown`としてrunner即停止へ渡す。never-resolving readbackでもbounded completion、final click 1、次候補0を決定的回帰にする。現差分は未commit、live作用0。Item 10B/14/19は未完。
+
+### Active remaining TODO SSOT（進捗279。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
