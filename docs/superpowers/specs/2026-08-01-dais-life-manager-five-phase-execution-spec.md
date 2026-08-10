@@ -56,7 +56,7 @@ Connectorの進行中正本はbranch `feature/connector-native-completion`のwor
 | production providers | `skills/connector/native-pass.js` の`DEFAULT_PROVIDERS = ["luma", "connpass", "peatix"]`。順序はLuma → Connpass → Peatix | PeatixはItem10B unblocker兼Item19先頭sliceとしてlive acceptance中。Meetup → Doorkeeper → EventbriteはItem19、未知/次サイトはItem20 |
 | acceptance窓 | 今日を含む14日、無料・受付中・Calendar非衝突だけを申込対象にする | 旧rolling-21は履歴/長期目標で、現行runtime/gateではない |
 | agent / evidence境界 | 候補gateは決定論的。unknown UI時だけbounded Codex `gpt-5.6-terra` action proposerを最大10 step使う。parent action enforcementはLuma/Connpass/Peatix共通、`applied_bundle` evidence chainはLumaとPeatixに配線済み | Connpassのbounded fallback live acceptanceとevidence接続はItem14。PeatixはItem19先頭sliceとしてlive acceptance中 |
-| latest official wake | `wake-07aceaf5f2c3aeb0f14f1fbf`: `circuit_open / peatix_unknown_required_field / 3`、Telegram provider ID `10850`。Luma `30→30→16→9→0`、Connpass `6→6→6→0→0`、Peatix `100→100→87→57→19` | Peatix候補1・3はparent-resolvable required answersを完了したが、実DOMの`input#form-submit-button[type=button]`がgeneric form-association gateで除外された。Submit/Calendar write/PNG/applied bundle増分0 |
+| latest official wake | `wake-a85aefe7a153ce0513e7d7df`: `circuit_open / peatix_unknown_required_field / 3`、Telegram provider ID `10868`。Luma `30→30→16→9→0`、Connpass `6→6→6→0→0`、Peatix `100→100→87→56→19` | Peatix候補3はrequired 3件後にexact form submitを選択。diagnosticで`/confirm`遷移成功を実証し、次境界はform submit transition waitとexact `a#confirm-button`。Provider/Calendar/PNG/applied bundle増分0 |
 | lifecycle / lock | orphan target lockは修復後run終了時にabsent。Native・healthcheck・Healer labelは全てunloaded | installed Native plistのlegacy `StartInterval=300`もunloaded。Items10〜16 acceptance後、Item17で一日一回scheduleだけをload |
 | TODO境界 | Items1〜9と10Aは完了。10BとItems11〜23は未完 | 完了判定は最新Active TODOの10B〜23で行う |
 
@@ -6795,7 +6795,15 @@ fresh Sol reviewはImportant 2件で`fix-first`。第一に、共通inspectorの
 
 最終実装はinspectorへproviderとpage URL contextを渡し、既知Peatix特例を`provider=peatix`かつstrict `https://peatix.com/sales/event/<id>/form`へ限定する。registryはpageだけでなくproviderも束縛し、provider切替時は再観測する。enabled/non-hidden required answerをsanitized label付きcontrolへ一つでも表現できなければ、既知Peatixとgeneric form submitの両方を全てnon-submittableにする。generic form-associated submit/image、required優先、parent enforcement、same-page duplicate-effect guardは維持した。最終差分はHarness production +31/-18、test +75/-1の2 filesのみ。implementation/test中のbrowser/model/provider/Calendar/evidence/Telegram/state/profile/schedule/launchd作用は0。Item 10B/14/19は未完。次の一件はcommit/push後のclean preflightを通し、schedule unloadedのofficial foreground wakeでexact submit→confirm→parent readback→applied bundleまたは次safe boundaryを実測する。
 
-### Active remaining TODO SSOT（進捗275。これ以外の残TODO一覧は履歴）
+### O1B-25進捗276（exact form submit live / confirm control boundary）
+
+commit `f8c257bd2`、Git/remote一致、4 Connector labels unloaded、lock/process absent、`:9222` owner PID `22279` healthyをpreconditionにofficial foreground wakeを実行した。wake `wake-a85aefe7a153ce0513e7d7df`はCalendar `2959ms`、Luma discovery `42012ms`、Connpass `6237ms`、Peatix `51959ms`で全てsuccess。auditはLuma `30/30/16/9/0`、Connpass `6/6/6/0/0`、Peatix `100/100/87/56/19`。候補1は氏名/privacyを処理、候補2はsubjective requiredでsafe skip、候補3は`control_4 → control_5 → control_8 → control_9`を選択した。step 4は新しいexact form submitで、Harnessはtransition/readback中にexceptionとなった。最終reportは`circuit_open / peatix_unknown_required_field / 3`、Telegram provider ID `10868`。Provider registration、Calendar write、PNG/applied bundle増分0。owned page、lock、processはcleanupされ、baseline newtab 1枚、Git cleanを確認した。
+
+no-final-submit診断をactual候補3で実行し、required 3件をparent resolverで完了後、exact form submit clickは`status=success`、errorなし、strict same-event `/sales/event/5104728/confirm`へ遷移した。confirm pageのrequired Kana family/givenと表示名は全てcompleted。最終registration controlはexactly 1つのenabled `a#confirm-button`、public label `チケットを申し込む`、form associationなしで、現行inspectorの`a[role=button]` selectorから欠落していた。最終registration clickは0。diagnostic pageはexact cleanupし、temp scriptも削除した。
+
+次plan `docs/superpowers/plans/2026-08-10-connector-peatix-confirm-control.md`はHarness/testの2 filesだけで、strict provider/host/same-event confirm path/tag/ID/exact label/enabled/uniqueの全条件を満たすanchorだけをbutton/submittableへ変換し、form submitはsame-event confirm URL wait後だけsuccessを返す。ordinary link、cookie/filter、未完・unlabeled・competing required、cross-eventはfail closed。Item 10B/14/19は未完、scheduleはunloadedを維持する。
+
+### Active remaining TODO SSOT（進捗276。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
