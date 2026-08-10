@@ -6891,7 +6891,11 @@ Item 10B/11 acceptance後の次active gateはItem12。live recoveryはSubmit 0�
 
 12A初回GREENはfocused 11/11まで到達したが、Calendar stageをcheckpointへ複製するとproduction差分がsoft targetを超え、checkpointだけでCalendar成功を信じるstale authorityも生じる。Ponytailでscopeを削り、Calendar checkpointは作らない。保存するのはprovider receipt/PNGへのmode 0600 exact pointerだけ。recreated chainはprovider store readerでpointer/receipt/artifact/SHAを検証してpage render/screenshot/storeをskipする一方、Calendarは既存private idempotency find/create/independent-readbackを毎回実行する。Calendar create後crashは次runのfindでexisting exact 1を再利用し、create total 1。prior Calendar success後にeventが削除・変化してもlocal pointerだけでTelegram/bundleへ進まない。planを先に改訂し、Lunaへbroad rewriteを戻してpointer branchだけへ圧縮する。現2-file差分は未commit、Item12は未完、scheduleはunloaded。
 
-### Active remaining TODO SSOT（進捗293。これ以外の残TODO一覧は履歴）
+### O1B-25進捗294（Item 12A / fresh review fix-first）
+
+12A最終初回差分はRED 8/11からGREEN focused 11/11、Sol独立expanded 127/127、production +102/-59、tests +81までscopeを圧縮したが、fresh Sol reviewはImportant 3件で`fix-first`。第一に初回provider `record`結果はref構文/SHAだけで、recovery側に追加したdeterministic provider ID（tenant/event_ref/observed_at/artifact SHA）検証が未適用。第二にcheckpoint `statSync`/`readFileSync`と親directoryがsymlinkを追従し、state root外read/writeを許す。第三にcorrupt testはextra-keyだけで、symlink、forged receipt identity、artifact bytes/SHA、missing receipt、wrong provider/event/URL hashを未固定。planを先に改訂し、初回/recovery共通identity validator、`lstat` path-component拒否、全matrix downstream effect 0を必須化する。現2-file差分は未commit、browser/provider/Calendar/Telegram/bundle/live作用0。Item12は未完、scheduleはunloaded。
+
+### Active remaining TODO SSOT（進捗294。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
