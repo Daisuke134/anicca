@@ -6859,7 +6859,11 @@ Peatix候補1へnavigate後、parent pre-readbackは32msで実登録を認識し
 
 Ponytailで既存owned page、固定escaped receipt、PNG/evidence/Calendar/Telegram/bundle chainを再利用し、新target・renderer・library・retry・state schemaは追加しない境界を維持した。LunaのREDはPeatix `setContent` never-settlesが250ms内に完了せず、reset API欠落がdownstream前にfail closedしないことを再現した。最終実装はminimal evidence/testの2 filesだけで、Peatixのみexact `about:blank` resetとURL readback後、親生成済み`receiptHtml`を`document.open/write/close`し、3組の`dt/dd` skeleton booleanを検証してから既存chainへ戻す。Lumaは従来`setContent`のまま。Luna focused 8/8・adjacent 83/83、Sol独立expanded Peatix/Harness/native-entrypoint 116/116、syntax、diff checkがPASS。fresh Sol reviewはCritical 0・Important 0で`ship`。実装/test中のbrowser/provider/Calendar/evidence/Telegram/profile/state/launchd/schedule作用は0。Item 10B/11/14/19 bundle acceptanceは未完で、次の一件はcommit/push後のclean preflightとschedule-unloaded official wakeによるregistered pre-readback、Peatix click 0、Calendar/PNG/Telegram/applied bundleの実証。
 
-### Active remaining TODO SSOT（進捗285。これ以外の残TODO一覧は履歴）
+### O1B-25進捗286（Peatix evidence live成功 / Calendar transport境界）
+
+pushed commit `083b7a2cb`のschedule-unloaded official wake `wake-b9c68c36c0ff24c5a9117b52`はCalendar busy 3,087ms、Luma discovery 30,214ms、Connpass 3,482ms、Peatix 57,922ms後、candidate 1を384msでnavigateし、parent pre-readback `registered`を6msで観測した。Provider submit/direct/Harness clickは0でno-resubmitを再実証した。修復済みrendererはPeatix provider receiptとSHA-256 PNG artifactを実保存したが、Calendar event、Telegram message/photo、applied bundleは増分0でexit 2。原因は`transport/calendar-gog.js`のConnector URL gateがLuma hostだけを許可し、source titleも`Luma`固定のため、strict Peatix canonical URLをGoogle Calendar create前に拒否すること。次plan `docs/superpowers/plans/2026-08-10-connector-peatix-calendar-transport.md`はcalendar gog production/testの2 filesだけで、exact `https://peatix.com/event/<positive integer>`と固定`Peatix` source titleを追加し、Lumaと全malformed rejectionを維持する。Item 10B/11/14/19 bundle acceptanceは未完、scheduleはunloaded。
+
+### Active remaining TODO SSOT（進捗286。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
