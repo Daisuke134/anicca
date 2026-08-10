@@ -2,12 +2,12 @@
 
 | Field | Value |
 |---|---|
-| Status | OPERATIONS ACTIVE — runtime restored; hourly owner-visible delivery policy is next |
+| Status | M2 ACTIVE — hourly owner-visible delivery is live; CFO-2a3 billing reconciliation is next |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
 | Existing foundations | `apps/life-call`, interactive Moneytree App access, Fleet telemetry, `lm_api_cost`, and the canonical `lm_agent_earnings` source (the panel's `lm_financial_ledger` name is a stale alias) |
-| First unfinished item | **CFO-OPS2: deliver one real finance report per owner hour without same-hour duplicates** |
+| First unfinished item | **CFO-2a3: reconcile provider billing/export evidence without erasing provisional usage** |
 
 ## 1. Overview — What and Why
 
@@ -52,7 +52,8 @@ Product Stage 7 is complete only when all of the following are true:
 1. the local runtime reads the connected Moneytree MUFG source with real native-JPY data and reconciles it;
 2. the exact finance message is verified locally without sending before any further production-schema mutation;
 3. Telegram receives a real finance report and its positive provider `message_id` is durably recorded;
-4. an hourly autonomous refresh is active, with a daily full report and immediate meaningful-change/action reports;
+4. an hourly autonomous refresh sends one full report per Asia/Tokyo owner hour, plus immediate meaningful-change/
+   action reports, while same-hour retries reuse the durable delivery receipt;
 5. two consecutive scheduled real-data runs succeed without manual repair.
 
 `CFO-1g3`, `CFO-1h2`, `CFO-1h`, and `CFO-1i` are engineering slices inside Product Stage 7. Closing any one of them
@@ -128,13 +129,11 @@ current production `apps/life-manager` package through PR #1587 / merge commit `
 exact commit. A real delivery receipt and immutable snapshot changed the same Telegram provider message to accounts
 through the production webhook and restored summary, with zero new messages and zero application error logs. Telegram
 Web was not logged in, so this evidence is a real provider callback-path E2E rather than a fabricated human tap.
-Report production remains local. Exactly one hourly local launchd trigger is now live, specified by
-`docs/superpowers/plans/2026-08-10-life-manager-cfo-hourly-local-loop.md`. Its first autonomous real-data run exited
-`0`, stayed quiet on an already-receipted unchanged revision, and wrote no stderr; no manual kickstart was used. Its
-second consecutive autonomous real-data run also exited `0`, stayed quiet on unchanged revision 1, and wrote no
-stderr. The durable state remained one snapshot, one delivery claim, and one positive provider receipt, proving no
-duplicate append or Telegram send. The committed implementation is one 87-LOC runner plus one focused test; the local
-plist is runtime configuration, not a new service or repository subsystem.
+Report production remains local. Exactly one hourly local launchd trigger is live. The initial policy stayed quiet on
+unchanged facts; CFO-OPS2 now appends one revision and sends one full report per Asia/Tokyo owner hour while reusing
+the existing claim/receipt inside the same hour. The first real OPS2 run exited `0`, appended revision `6`, delivered
+Telegram `messageId=611`, wrote no stderr, and left the plist unchanged. The local plist is runtime configuration,
+not a new service or repository subsystem.
 
 The CFO MUST NOT trade, transfer, hire, fund, or stop a live business during the foundation milestone. Read and
 write authority remain different capabilities permanently. No balance, transaction, revenue, or tax estimate is
@@ -934,14 +933,14 @@ top-level seven-step sequence.
       unchanged because its measured contract is Calendar/routes only. The detail callbacks are complete and live:
       the main-history production bridge passed focused `2/2`, real-snapshot no-send E2E, fresh `ship — Spec ✅`,
       exact-commit Railway deployment, and a real same-message provider edit/restore through production. The first
-      local hourly launchd loop is installed for the current `apps/life-call` CFO path. It sends one daily full report
-      plus meaningful-change/action reports and stays quiet when unchanged. Two consecutive scheduled real-data runs
-      without manual repair exited `0`; the unchanged second run created no duplicate snapshot or Telegram send. M1
-      and owner-facing Product Stage 7 are closed.
+      local hourly launchd loop is installed for the current `apps/life-call` CFO path. CFO-OPS2 supersedes the
+      original quiet-on-unchanged policy: it sends one full report per owner hour and preserves same-hour dedupe;
+      meaningful changes/actions still send immediately. Live revision `6` produced Telegram `messageId=611`. M1 and
+      owner-facing Product Stage 7 are closed.
 
 Current scheduler audit: the broken legacy `ai.anicca.cfo-daily` and
 `ai.anicca.life-manager-financial-report` jobs are booted out, while their plist files remain available. Exactly one
-`ai.anicca.life-manager-cfo-hourly` job is loaded and its first two autonomous runs both exited `0`.
+`ai.anicca.life-manager-cfo-hourly` is loaded at interval `3600`; the verified OPS2 run count is `4`, last exit `0`.
 
 Deferred after M1 by explicit owner decision: Binance Spot, trade history, Earn/funding sources, and their tax-lot
 ingestion. They are not unchecked M1 items and cannot become the active CFO item before CFO-1i closes.

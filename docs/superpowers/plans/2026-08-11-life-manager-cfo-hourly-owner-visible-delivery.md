@@ -3,7 +3,7 @@
 > **For agentic workers:** Sol owns this plan, review, live rollout, verification, state, commit, and push. Luna alone
 > edits production/test in the loaded CFO worktree and follows TDD.
 
-**Status:** READY FOR PLAN REVIEW
+**Status:** COMPLETE — commit `1fcd1b333`; live Telegram receipt `messageId=611`
 
 **Goal:** Send one truthful finance report per Asia/Tokyo owner hour even when balances are unchanged, while keeping
 same-hour retries idempotent and preserving immediate sends for meaningful changes.
@@ -112,3 +112,13 @@ not stage, commit, push, touch launchd, query live finance, or send Telegram.
 
 Minute-level delivery, user-configurable cadence, cloud scheduling, another notification channel, report redesign,
 billing allocation, token repair, Binance, tax, trading, or historical snapshot backfill.
+
+## Completion evidence
+
+- Plan review: one missing hand-built `created_at` fixture was corrected; re-review returned `ship`.
+- Luna TDD: two existing files, `+22/-5`; focused `12/12`, CFO `324/324`, full suite, syntax, and diff gates pass.
+- Fresh Sol implementation review: Critical 0, Important 0, `ship`.
+- Loaded implementation commit `1fcd1b333` was pushed to `feature/cfo-4d1-finalize-sol`.
+- Real existing launchd run advanced `3→4`, exited `0`, appended revision `6`, and returned `delivered=true` with zero
+  new stderr and unchanged plist SHA-256.
+- The append-only delivery receipt contains exactly one row for revision `6`: Telegram `messageId=611`.
