@@ -75,13 +75,15 @@ flowchart LR
 
 ## 5. CFO-2a3b.1 contract
 
-Add one exported pure function to the existing reconciliation module. It accepts:
+Add one exported pure `allocateProviderBilling(confirmed, rows, policy)` function to the existing reconciliation
+module. It accepts:
 
 - the exact existing confirmed Google invoice record;
 - normalized rows with exact keys: `billing_period`, nullable hashed `project_ref`, nullable hashed `service_ref`,
-  nullable hashed `sku_ref`, provider `cost_type`, signed canonical decimal `amount`, `currency`, and hashed
+  nullable hashed `sku_ref`, provider `cost_type`, signed canonical decimal-string `amount`, `currency`, and hashed
   `source_row_ref`;
-- a policy with exact `version` and exact `project_ref -> business_id` entries.
+- a policy with exact keys `{ version, mappings }`, where every mapping has exact keys
+  `{ project_ref, business_id }`.
 
 Rules:
 
@@ -93,9 +95,11 @@ Rules:
    and returns no business allocation.
 4. Policy version and project mapping are explicit and duplicate-free. A row allocates only on exact `project_ref`;
    null or unmatched project remains unallocated. Service/SKU are retained evidence dimensions, never fuzzy keys.
-5. Business results are deterministically sorted by `business_id`. Output is deeply frozen and contains exact
-   `account_total`, `allocated_total`, `unallocated_total`, row counts, policy version, billing period, currency,
-   and per-business totals. Exact conservation is mandatory:
+5. Business results are deterministically sorted by `business_id`. Output is deeply frozen and has exact keys
+   `schema_version`, `status`, `billing_period`, `currency`, `policy_version`, `account_total`, `allocated_total`,
+   `unallocated_total`, `row_count`, `allocated_row_count`, `unallocated_row_count`, `businesses`, and
+   `evidence_status`. `status` is `allocated`; `evidence_status` is `provider_billed_allocated`; each business has
+   exact keys `{ business_id, amount }`. Exact conservation is mandatory:
    `allocated_total + unallocated_total = account_total`.
 6. Output evidence is `provider_billed_allocated`; it never upgrades row evidence or changes the immutable confirmed
    invoice. Input is never mutated and errors never include an input value.

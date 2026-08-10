@@ -7,6 +7,9 @@
 already-normalized official project rows by an explicit versioned rule, refuses a dimension total that does not equal
 the confirmed invoice, and always exposes the exact unallocated remainder.
 
+**Public contract:** `allocateProviderBilling(confirmed, rows, policy)`, with policy exact keys
+`{ version, mappings }` and mapping exact keys `{ project_ref, business_id }`.
+
 **Not in this slice:** CSV/browser/BigQuery, I/O/state, DB/SQL, scheduler, retry, OTel, Telegram, UI, generic plugin
 interfaces, or guessed allocation.
 
