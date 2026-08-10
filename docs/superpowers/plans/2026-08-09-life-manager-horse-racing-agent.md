@@ -312,7 +312,7 @@ def plan_nar_fetch(now: datetime, today_html: str, monthly_html: str) -> tuple[F
 def classify_download(*, http_status: int, content_type: str, body_sha256: str, previous_sha256: str | None) -> Literal["NEW", "UNCHANGED", "NOT_PUBLISHED", "INVALID"]: ...
 ~~~
 
-- [ ] Step 1: Write RED tests proving URLs are discovered from official HTML, not permanently hardcoded to August 2026; binary endpoints use curl; HTML uses crwl; duplicate hashes return `UNCHANGED`; disabled odds links are omitted; empty/HTML/204 odds responses return `NOT_PUBLISHED`; raw and percent-encoded dot-segment traversal is rejected.
+- [ ] Step 1: Write RED tests proving URLs are discovered from official HTML, not permanently hardcoded to August 2026; binary endpoints use curl; HTML uses crwl; duplicate hashes return `UNCHANGED`; disabled odds links are omitted; empty/HTML/204 odds responses return `NOT_PUBLISHED`; raw and percent-encoded dot-segment traversal is rejected. URL validation is fail-closed at 4,096 raw path characters and 16 percent-decode rounds; input that exceeds either bound or has not stabilized within the decode bound is rejected.
 - [ ] Step 2: Run RED.
 
 ~~~sh
@@ -320,7 +320,7 @@ cd /Users/anicca/anicca-project/.worktrees/horse-racing-agent-spec/apps/horse-ra
 rtk python3.12 -m pytest tests/test_nar_source.py -q
 ~~~
 
-- [ ] Step 3: Implement the pure planner/classifier. Enforce HTTPS exact host `www.keiba.go.jp`, decoded path-segment safety, one request per canonical URL, daily polling no faster than 2 minutes, monthly acquisition after the documented approximately 02:00 update, and case-normalized SHA-256 comparison. `previous_sha256` is the caller's prior hash for that request URL.
+- [ ] Step 3: Implement the pure planner/classifier. Enforce HTTPS exact host `www.keiba.go.jp`, decoded path-segment safety with the 4,096-character/16-round fail-closed resource bound, one request per canonical URL, daily polling no faster than 2 minutes, monthly acquisition after the documented approximately 02:00 update, and case-normalized SHA-256 comparison. `previous_sha256` is the caller's prior hash for that request URL.
 - [ ] Step 4: Run focused and full GREEN; commit/push only the two files.
 
 Runtime contract: crwl navigates Today/DataRoom/Monthly HTML. When crwl reports `Page.goto: Download is starting`, curl retrieves the linked ZIP. A disabled daily-odds link creates no fetch request; an empty/HTML/204 response from an attempted odds endpoint is `NOT_PUBLISHED`. Task 4 is pure and does not persist archives: Task 6 owns append-only identity `(source_url, normalized content_sha256)` and supplies the per-URL `previous_sha256`. Race data covers 1998-01 onward; odds cover 2026-03 onward. Payback remains pending until official settlement.
