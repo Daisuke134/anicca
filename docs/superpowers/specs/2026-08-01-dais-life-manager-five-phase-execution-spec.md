@@ -6632,7 +6632,31 @@ input/select/check groupのcompleted booleanだけを観察し、completed field
 agent evidenceが`fallback-N/step-N`で上書きされないようin-process連番を付ける。次の一件はこのRED→GREEN、fresh review、push後の一回だけの
 official foreground再wakeである。
 
-### Active remaining TODO SSOT（進捗263。これ以外の残TODO一覧は履歴）
+### O1B-25進捗264（Harness completed-control observation GREEN / fresh review ship）
+
+Lunaがplan `2026-08-10-connector-harness-progress-observation.md`を2-file TDD実装した。最初のREDはcompleted未観察、
+completed controlのagent enum残留、actionable 0でagent call、completed fillのDOM到達、same-target evidence path上書きの5件を再現した。
+primary Sol diff reviewで未命名radioの誤group化と同一submit clickの最大10回再作用を見つけ、追加REDで再現。さらにform→confirmで
+DOM index tokenが再利用される正当actionをguardが止める問題をpath-change REDで閉じた。fresh Sol reviewはtrim後radio名の誤group化と
+`ax_click`→`coordinate_click` method-switch bypassのImportant 2件を反証し、同じLunaが追加REDで再現・修復。fresh re-reviewは
+Critical 0・Important 0で`ship`。
+
+default observerはtext/textarea/selectの非空、checkbox checked、non-empty exact raw radio name groupのcheckedを値非表示の
+`completed` booleanへ変換する。空/whitespace-only radio nameはself checkedだけを使う。モデルには全sanitized controlとbooleanだけを渡し、
+completed answer controlをstructured enumから除外する。value、selected value、cookie、URL、candidate identity、private profileは渡さない。
+completed actionはresolver/DOM前に拒否する。
+
+同一targetの各fallbackはin-process sequenceを持ち、agent evidenceを`target-*/fallback-N/step-N`へ分離する。同一fallbackでは
+origin+pathname、control、normalized effectで成功済みmutationをdedupeし、query/hashまたはclick method変更では再許可しない。
+form→confirmのexact path変更後は同tokenを許可し、candidate fallbackごとにguardをresetする。page stateはin-memoryだけで
+model/log/evidence/stateへ保存しない。
+
+差分はHarness/test 2 files、production +27/-8、tests +52。Sol再実行はfocused 28/28、runner adjacent 23/23、native 7/7、
+syntax/diff checkが全てPASS。browser/model/Submit/Calendar/PNG/Telegram/state/private write、session/target/page作成、schedule変更は0。
+Item 10B/14/19は未完。次の一件はcommit/push後、schedule unloadedのofficial foreground wakeを一度だけ実行し、Peatix Harnessが
+同一control repetitionを0にして次field/form/confirmまたは新しいexact safe boundaryへ進むことを実測する。
+
+### Active remaining TODO SSOT（進捗264。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 

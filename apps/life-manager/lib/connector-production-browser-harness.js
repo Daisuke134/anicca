@@ -8,11 +8,14 @@ const { runLocalAgentRunner } = require("./connector-luna-judgment.js");
 const CONTROL = /^[a-z][a-z0-9_-]{1,63}$/;
 const KINDS = new Set(["input", "textarea", "select", "checkbox", "radio", "button", "link"]);
 const FILL = new Set(["ax_fill", "dom_fill", "ax_select"]);
+const ACTIONABLE_KINDS = new Set(["input", "textarea", "select", "checkbox", "radio"]);
+const MUTATING_METHODS = new Set(["ax_fill", "dom_fill", "ax_select", "ax_check", "ax_click", "coordinate_click", "keyboard_submit"]);
 const PROVIDERS = new Set(["luma", "connpass", "peatix"]); const LABEL = { name: /^(?:name|full name|attendee name|氏名|名前|お名前)$/, email: /^(?:email|e-mail|email address|account email|メール|メールアドレス)$/, family: /^(?:family name kana|last name kana|surname kana|lastname_edit|姓（カナ）)$/, given: /^(?:given name kana|first name kana|firstname_edit|名（カナ）)$/, phone: /^(?:phone(?: number)?|telephone|mobile|電話(?:番号)?|携帯)$/, privacy: /^(?:organizer privacy(?: confirmation)?|主催者のプライバシー確認|主催者のプライバシーポリシーに同意する)$/ };
 
 function invalid() {
   throw new Error("Connector production Browser Harness invalid");
 }
+function safePageState(page) { try { const url = new URL(String(page && typeof page.url === "function" ? page.url() : "")); return url.origin !== "null" && url.pathname ? `${url.origin}${url.pathname}` : "unavailable"; } catch { return "unavailable"; } }
 
 function safeControl(input) {
   if (!input || typeof input !== "object" || Array.isArray(input)) invalid();
@@ -20,13 +23,14 @@ function safeControl(input) {
   const kind = String(input.kind || "");
   const label = String(input.label || "").replace(/\s+/g, " ").trim();
   const question = String(input.question || "").replace(/\s+/g, " ").trim();
+  const completed = input.completed == null ? false : input.completed;
   if (
     !CONTROL.test(control) || !KINDS.has(kind) || !label || label.length > 300
     || /[\x00-\x1f\x7f]/.test(label) || question.length > 300
     || /[\x00-\x1f\x7f]/.test(question) || (question && !["checkbox", "radio"].includes(kind))
-    || typeof input.required !== "boolean"
+    || typeof input.required !== "boolean" || typeof completed !== "boolean"
   ) invalid();
-  return Object.freeze({ control, kind, label, required: input.required, ...(question ? { question } : {}) });
+  return Object.freeze({ control, kind, label, required: input.required, completed, ...(question ? { question } : {}) });
 }
 
 async function inspectPageControls(input = {}) {
@@ -39,7 +43,7 @@ async function inspectPageControls(input = {}) {
     const type = String(element.type || "").toLowerCase();
     if (type === "hidden" || element.disabled === true) return [];
     const kind = tag === "input" && ["checkbox", "radio"].includes(type)
-      ? type : tag === "a" ? "link" : tag;
+      ? type : tag === "input" && ["button", "submit", "reset", "image"].includes(type) ? "button" : tag === "a" ? "link" : tag;
     if (!["input", "textarea", "select", "checkbox", "radio", "button", "link"].includes(kind)) return [];
     const labels = Array.from(element.labels || []).map((label) => label.innerText || label.textContent || "");
     const label = [
@@ -54,7 +58,9 @@ async function inspectPageControls(input = {}) {
     element.dataset.lmConnectorControl = control;
     const group = ["checkbox", "radio"].includes(kind) && typeof element.closest === "function" ? element.closest("fieldset, dl.field, [role='group'], .field") : null;
     const question = group && typeof group.querySelector === "function" ? String(group.querySelector("legend,dt,[data-question]")?.textContent || "").replace(/\s+/g, " ").trim() : "";
-    return [{ control, kind, label, required: element.required === true, ...(question ? { question } : {}) }];
+    const radioName = String((element.getAttribute && element.getAttribute("name")) || element.name || "");
+    const completed = ["input", "textarea", "select"].includes(kind) ? Boolean(String(element.value || "").trim()) : kind === "checkbox" ? element.checked === true : kind === "radio" ? radioName.trim() ? elements.some((candidate) => String(candidate.type || "").toLowerCase() === "radio" && String((candidate.getAttribute && candidate.getAttribute("name")) || candidate.name || "") === radioName && candidate.checked === true) : element.checked === true : false;
+    return [{ control, kind, label, required: element.required === true, completed, ...(question ? { question } : {}) }];
   }));
   if (!Array.isArray(observed)) invalid();
   return Object.freeze(observed.map(safeControl));
@@ -156,6 +162,7 @@ function createBoundedActionProposer(options = {}) {
   const evidenceDir = absoluteDirectory(options.evidenceDir);
   const runAgentRunner = options.runAgentRunner || runLocalAgentRunner;
   if (typeof runAgentRunner !== "function") invalid();
+  const fallbackSequences = new Map();
   return async function proposeAction(input = {}) {
     const targetId = String(input.target_id || "");
     const step = Number(input.step);
@@ -166,12 +173,16 @@ function createBoundedActionProposer(options = {}) {
       || !input.observation || !Array.isArray(input.observation.controls)
     ) invalid();
     const controls = input.observation.controls.map(safeControl);
+    const actionableControls = controls.filter((control) => !control.completed || !ACTIONABLE_KINDS.has(control.kind));
+    if (!actionableControls.length) return null;
+    const sequence = step === 1 ? (fallbackSequences.get(targetId) || 0) + 1 : (fallbackSequences.get(targetId) || 1);
+    fallbackSequences.set(targetId, sequence);
     const state = "registration_page";
     const result = await runAgentRunner({
       prompt: [
         `Choose exactly one browser action for the current ${input.provider} registration page.`,
         "Return only purpose, method, and one control token from the supplied list.",
-        "Prefer filling only parent-owned values. Never invent answers, navigate, open or close pages, run commands, or edit code.",
+        "Choose only incomplete parent-owned fields before submit. Never invent answers, navigate, open or close pages, run commands, or edit code.",
         "The parent process owns all private values, executes the action, and verifies registered or pending state.",
         `Step: ${step} of 10`,
         `Page state: ${state}`,
@@ -190,12 +201,12 @@ function createBoundedActionProposer(options = {}) {
               "ax_check", "ax_select", "ax_click", "coordinate_click", "keyboard_submit",
             ],
           },
-          control: { type: "string", enum: controls.map((control) => control.control) },
+          control: { type: "string", enum: actionableControls.map((control) => control.control) },
         },
       },
       taskClass: "browser-lane-agent",
       timeoutMs: 30_000,
-      evidenceDir: path.join(evidenceDir, `target-${targetId}`, `step-${step}`),
+      evidenceDir: path.join(evidenceDir, `target-${targetId}`, `fallback-${sequence}`, `step-${step}`),
       repoRoot,
     });
     if (
@@ -250,6 +261,7 @@ function createProductionBrowserHarness(options = {}) {
     if (!control) return Object.freeze({ status: "failed" });
     let value = null;
     const answerControl = ["checkbox", "radio"].includes(control.kind) && ["ax_check", "ax_click", "coordinate_click"].includes(input.action.method);
+    if (control.completed && (FILL.has(input.action.method) || answerControl)) return Object.freeze({ status: "failed" });
     if (FILL.has(input.action.method) || answerControl) {
       value = await resolveValue({ provider, page: input.page, control, action: input.action });
       if (
@@ -273,10 +285,17 @@ function createProductionBrowserHarness(options = {}) {
     if (!PROVIDERS.has(input.provider) || !input.candidate) invalid();
     const workflow = { luma: lumaWorkflow, connpass: connpassWorkflow, peatix: peatixWorkflow }[input.provider];
     if (!workflow || typeof workflow.readProviderState !== "function") invalid();
+    const seenMutations = new Set();
     const adapter = createBrowserHarnessAdapter({
       observePage: ({ page }) => observed(page),
       proposeAction,
-      performAction: (action) => performAction({ ...action, provider: input.provider }),
+      async performAction(action) {
+        const selected = action.action || action; const effect = ["ax_click", "coordinate_click", "keyboard_submit"].includes(selected.method) ? "activate" : ["ax_fill", "dom_fill"].includes(selected.method) ? "fill" : selected.method; const signature = MUTATING_METHODS.has(selected.method) ? `${safePageState(action.page)}:${selected.purpose}:${effect}:${selected.control}` : null;
+        if (signature && seenMutations.has(signature)) return Object.freeze({ status: "failed" });
+        const result = await performAction({ ...action, provider: input.provider });
+        if (signature && result && result.status === "success") seenMutations.add(signature);
+        return result;
+      },
       readExpectedState: ({ page }) => workflow.readProviderState({
         page,
         candidate: input.candidate,
