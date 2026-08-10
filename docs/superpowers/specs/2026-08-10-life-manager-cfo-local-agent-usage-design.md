@@ -127,14 +127,17 @@ slice records the mapping ID beside its ingestion receipt.
 
 ## Durable collector state
 
-Each source file keeps only:
+Each source journal keeps immutable batch records containing:
 
-- stable source ID, committed complete-line byte offset, committed-prefix SHA-256, and last observed file size;
-- discovered, accepted, duplicate, conflicting, invalid, attributed, and unattributed row counts;
-- last terminal attempt timestamp and current coverage state.
+- prior/current stable source ID, committed complete-line byte offset, committed-prefix SHA-256, and observed size;
+- the normalized content-free events produced before that cursor advance;
+- the exact eight per-batch collector deltas: discovered, accepted, duplicate, conflicting, missing, runner-collision,
+  attributed, and unattributed counts;
+- collection timestamp, mapping ID, and current coverage exceptions.
 
-The pure cursor returns only the first item. The later I/O owner records scan time and aggregate counts; the cursor
-does not read a clock or write state.
+The pure cursor does not read a clock or write state. The I/O owner publishes cursor state and its events together;
+the later chain reader derives cumulative counts only from unique contiguous records and recomputes event-derived
+coverage from deduplicated canonical events.
 
 If the file shrinks, the prefix changes, JSON is truncated, or one runner `event_id` identifies distinct rows,
 ingestion lowers coverage and preserves the accepted source-row observations. It never drops distinct rows merely
@@ -206,7 +209,8 @@ means covered. Downstream totals may be shown only as incomplete evidence when t
 | 2a2a.3 ✅ | Append-only file cursor proves hash/watermark/truncation coverage | 2 new files, +78 LOC |
 | 2a2a.4 ✅ | Versioned loop/task mapping yields attributed or visibly unattributed rows | 3 files, +51/-1 LOC |
 | 2a2a.5a ✅ | Pure collector composes cursor, mapping, and reducer; state exists only after reducer success | 3 files, +60/-1 LOC |
-| 2a2a.5b NEXT | Atomically persist only checkpoint/batch receipts; do not duplicate the raw usage ledger | <=3 files, <=100 added LOC |
+| 2a2a.5b1 NEXT | Atomically publish immutable batches that couple normalized events with prior/current cursor state | 3 files, <=100 added LOC |
+| 2a2a.5b2 | Validate the immutable chain, dedupe events, and resume both sources in the local hourly loop | <=3 files per sub-slice |
 | 2a2a.5c | One content-free internal OTel batch span links checkpoint and counts; it is not token truth | <=3 files, <=100 added LOC |
 | 2a2a.6 | Real local E2E reconciles source counts, normalized rows, coverage, and no-secret output | 1 script, <=100 added LOC |
 
