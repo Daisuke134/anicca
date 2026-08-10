@@ -3,6 +3,7 @@
 
 const { createHash } = require("node:crypto");
 const fs = require("node:fs");
+const os = require("node:os");
 const path = require("node:path");
 
 const { createMinimalProductionDependencies } = require(
@@ -44,6 +45,27 @@ function requiredEmail(value) {
   return email;
 }
 
+function readKanaIdentity(env) {
+  const home = absoluteDirectory(env.HOME || os.homedir());
+  const file = path.join(home, ".config", "anicca", "job-search", "profile.json");
+  let profile;
+  try {
+    const stat = fs.lstatSync(file);
+    if (!stat.isFile() || stat.size < 2 || stat.size > 1024 * 1024 || (stat.mode & 0o777) !== 0o600) unavailable();
+    profile = JSON.parse(fs.readFileSync(file, "utf8"));
+  } catch { unavailable(); }
+  const nameKana = profile && typeof profile === "object" && !Array.isArray(profile)
+    ? profile.candidate?.name_kana : null;
+  if (!nameKana || typeof nameKana !== "object" || Array.isArray(nameKana)
+    || Object.keys(nameKana).length !== 2 || !Object.hasOwn(nameKana, "family") || !Object.hasOwn(nameKana, "given")) unavailable();
+  const part = (value) => {
+    if (typeof value !== "string" || value.length < 1 || value.length > 100 || value !== value.trim()
+      || !/^[\u30A1-\u30FA\u30FC]+$/u.test(value)) unavailable();
+    return value;
+  };
+  return Object.freeze({ family: part(nameKana.family), given: part(nameKana.given) });
+}
+
 function resolvedTelegramTarget(env) {
   const configured = String(env.LM_CONNECTOR_TELEGRAM_TARGET || "").trim();
   if (configured) return requiredText(configured);
@@ -70,8 +92,9 @@ function productionConfig(options, stateDir, ownerToken) {
   const calendarAccount = requiredEmail(env.GOG_ACCOUNT || env.LM_CONNECTOR_LUMA_EMAIL);
   const attendeeEmail = requiredEmail(env.GOG_ACCOUNT);
   const attendeeName = requiredText(env.DAIS_LEGAL_NAME_ROMAJI);
+  const kanaIdentity = readKanaIdentity(env);
   if (attendeeName.length > 200) unavailable();
-  const peatixAttendeeProfile = Object.freeze({ name: attendeeName, email: attendeeEmail, accept_organizer_privacy: true });
+  const peatixAttendeeProfile = Object.freeze({ name: attendeeName, email: attendeeEmail, family_name_kana: kanaIdentity.family, given_name_kana: kanaIdentity.given, accept_organizer_privacy: true });
   return Object.freeze({
     repoRoot: absoluteDirectory(options.repoRoot),
     stateDir,
