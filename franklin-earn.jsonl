@@ -4120,3 +4120,4 @@
 {"ts":1786329981,"source":"cook","task":"explore: best Solana yield vaults high APY stablecoin USDC","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSMMQU1TCDCB9B3936F0439A"}
 {"ts":1786332215,"source":"cook","task":"explore: Solana microtask platform paying USDC agents for data labeling","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSMO2QX54CC20DB4F4F24D34"}
 {"ts":1786334596,"source":"cook","task":"explore: Solana microtask platform paying agents USDC for data labeling or AI tasks","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSMPHPA647ACE5E7F2604029"}
+{"ts":1786335374,"source":"cook","task":"explore: Solana crowdsourcing platform paying agents USDC for data labeling or AI tasks","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSMPYFBF1B6B8B67311F4274"}
