@@ -1,6 +1,6 @@
 # CFO-2a2a.5b1 — Immutable Local Usage Batch Plan
 
-Status: READY FOR LUNA
+Status: COMPLETE
 
 > **Execution:** Sol owns plan/verification. Luna owns production code and tests.
 
@@ -89,3 +89,14 @@ and prove exact current cursor/delta/event reconciliation, zero raw rows/secrets
 Fresh Sol review must return ship before commit/push. Then 2a2a.5b2 becomes the sole active item: validate the
 prior→current chain, dedupe `source_event_id`, recompute event-derived coverage, accumulate unique delta audit counts,
 and resume from the last accepted record.
+
+## Completion evidence
+
+- Missing-module RED; focused store 2/2 and combined cursor/attribution/collector/store 11/11.
+- Scope: 32 production lines + 21 test lines + one suite entry = 3 files and 54 additions; lockfile unchanged.
+- CFO suite and full `npm test` have zero failures; syntax and diff checks pass; fresh Sol review returned `ship`.
+- Real isolated E2E published two immutable records containing 4,978/4,978 accepted events: 3,910 attributed,
+  1,068 unattributed, 279 missing-usage rows, and 436 runner-collision groups. The temporary root was removed; live
+  state and launchd were untouched.
+- Root aliases are rejected, caller state-root mode is preserved, file-fsync failure publishes nothing, and
+  directory-fsync failure converges to one byte-identical content-addressed record on retry.
