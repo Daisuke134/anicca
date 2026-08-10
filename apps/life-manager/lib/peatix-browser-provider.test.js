@@ -53,6 +53,13 @@ test("measured ticket/form/confirm flow fills exact fields and clicks final boun
   assert.equal(JSON.stringify(result).includes(p.email), false);
 });
 
+test("optional privacy control still reaches final confirmation and duplicates fail closed", async () => {
+  const optional = fixture({ fields: [{ selector: "#name", kind: "name", visible: true }, { selector: "#email", kind: "email", visible: true }] });
+  assert.deepEqual(await submitPeatixOnPage(optional.page, candidate(), profile()), { status: "registered" }); assert.equal(optional.finalCount(), 1); assert.equal(optional.calls.some((x) => x[0] === "check"), false);
+  const duplicate = fixture({ fields: [{ selector: "#name", kind: "name", visible: true }, { selector: "#email", kind: "email", visible: true }, { selector: "#privacy-a", kind: "privacy", visible: true }, { selector: "#privacy-b", kind: "privacy", visible: true }] });
+  assert.deepEqual(await submitPeatixOnPage(duplicate.page, candidate(), profile()), { status: "unavailable", reason: "privacy_control_unavailable" }); assert.equal(duplicate.finalCount(), 0);
+});
+
 test("unknown required field stops before final application click", async () => {
   const f = fixture({ fields: [{ selector: "#name", kind: "name", visible: true }, { selector: "#phone", kind: "unknown", visible: true }] });
   assert.deepEqual(await submitPeatixOnPage(f.page, candidate(), profile()), { status: "needs_fallback", reason: "unknown_required_field" }); assert.equal(f.finalCount(), 0);
