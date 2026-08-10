@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — CFO-2a3.1 complete; CFO-2a3.2 local Gmail/PDF source is next |
+| Status | ACTIVE — CFO-2a3.1 complete; CFO-2a3.2a Gmail invoice locator is active |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Local first; existing hourly launchd remains unchanged until real E2E passes |
 | First provider | Google Cloud monthly invoice delivered to the already-authenticated local Gmail account |
@@ -119,6 +119,11 @@ allocation so narrower business totals can be derived honestly.
 - [ ] **CFO-2a3.2 — Local source.** Extend the existing `gog` transport with one read-only exact-invoice operation;
       download one PDF to a private temporary directory, verify sender/attachment/hash, extract with existing
       `pdftotext`, normalize, append one immutable local receipt, and remove temporary content after parsing.
+  - [ ] **CFO-2a3.2a — Locator.** Find the latest exact Google invoice and return only safe attachment locator
+        metadata. No download or parsing. Plan:
+        `docs/superpowers/plans/2026-08-11-life-manager-cfo-google-invoice-gmail-locator.md`.
+  - [ ] **CFO-2a3.2b — Download, parse, append.** Use the locator once, private temporary PDF, existing
+        `pdftotext`, CFO-2a3.1 normalizer, and one immutable local receipt; no scheduler wiring.
 - [ ] **CFO-2a3.3 — Real E2E and hourly publication.** Read the latest real invoice without sending Telegram, prove
       the normalized total matches the PDF arithmetic, prove rerun dedupe and source immutability, then publish only
       confirmed/unresolved aggregate counts through the existing hourly runner. Close CFO-2a3.
