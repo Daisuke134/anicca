@@ -44,3 +44,9 @@ Create a direct-action fixture whose page begins at the exact candidate URL, who
 - Fresh Sol review for exact URL identity, same-page handoff, no extra click, and failure reason safety.
 - Update SSOT, commit, and push before another official wake.
 - The next official wake may invoke Browser Harness once on the real join form. Acceptance requires final confirmation Submit at most one, canonical parent readback registered/pending, exact Connpass bundle and Calendar event one, positive Telegram message/photo/every-wake IDs, and cleanup. If Harness cannot prove the effect, stop safely without another final Submit.
+
+## Result
+
+- RED added the real join handoff plus an exact URL rejection matrix. Current code passed only the canonical fixture and incorrectly returned completed for join/noncanonical states.
+- GREEN reads only `page.url()` after the supplied direct action and returns completed only for `registered|pending` at the exact candidate canonical URL. Join, completion, query, hash, wrong event, `about:blank`, missing URL, and throwing URL all return the existing safe direct failure without an extra browser action.
+- Final scope is the two owned files. Sol independent workflow/provider/runner/production/operations/Harness regression passes 98/98; syntax and diff check pass. Fresh Sol review: `ship`.
