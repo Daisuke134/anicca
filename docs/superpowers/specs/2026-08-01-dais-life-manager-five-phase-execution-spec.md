@@ -7157,7 +7157,13 @@ pushed HEAD `fab51d60b`、clean/upstream、4 labels unloaded、process/lock 0か
 
 `launchctl bootstrap`後、native label loaded 1、state `not running`、runs 0、never exited、event trigger Hour 9 / Minute 0。installed lint PASS、mode 0600。native healthcheck、Healer shadow、host bridgeはloaded 0、Connector process/lock 0、Git clean/upstream。Item17をacceptする。次はItem18としてloaded native ownerを`launchctl kickstart`し、別executorを作らずfirst launchd-owned wakeのbundle/continuation、positive Telegram、session/target、cleanup、exitをwatchする。
 
-### Active remaining TODO SSOT（進捗339。これ以外の残TODO一覧は履歴）
+### O1B-25進捗340（Item 18 / first launchd-owned wake plan）
+
+Item17後のpreflightはnative loaded 1、state not running、runs 0、never exited、09:00 trigger、他3 labels unloaded、process/lock 0、target lease 0、baseline bundle/report/delivery/action `5/110/122/744`。plan `docs/superpowers/plans/2026-08-11-connector-first-scheduled-wake-18.md`はloaded ownerへ`launchctl kickstart` exact 1回だけを実行し、manual `run.sh`/Node/browser executorは起動しない。
+
+launchd runs 0→1、terminal report/delivery positive ID、new bundleまたは既存registered/bundle reuseから未処理candidateへのSubmit 0 continuation、live Connector target lease最大1、final process/lock/lease 0をacceptanceとする。session IDはsafe historyへ意図的に永続化しないため、production session-one contract testとlive target-oneを組み合わせる。他3 labels loaded 0とsingle daily trigger、Git clean/upstreamを維持する。Item18未完。
+
+### Active remaining TODO SSOT（進捗340。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
