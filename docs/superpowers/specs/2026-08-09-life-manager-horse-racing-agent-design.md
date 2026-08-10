@@ -239,7 +239,7 @@ sequenceDiagram
 
 - [DATA BLOCKED]: HRA-2F、permission metadata、robots/terms、manifest、quality gateが欠けておりpredictionを出さない。
 - [REAL DATA · SHADOW]: official public-web recordでdecisionしたが注文していない。
-- [LIVE · ¥100]: HRA-6後にofficial settled receiptがreconcileされた場合だけ許可する。permission_document_verified=falseのままでは不可。
+- [LIVE · ¥100]: HRA-6後にofficial settled receiptがreconcileされた場合だけ許可する。order permissionは`USER_ATTESTED_AUTONOMOUS_ORDER_APPROVAL`。data permission documentの未検証を注文許可と混同しない。
 
 全messageはsource_url、source_authority、jurisdiction、retrieved_at、page/effective timestamp、evidence class、model version、decision_id、action/reason、real P&L、shadow P&Lを表示し、raw values、credential、実馬名は表示しない。
 
@@ -247,7 +247,7 @@ sequenceDiagram
 
 - business_idはhorse_racing、ledgerはhorse_racing_bet_receipts。raw page/rowをledgerへ入れず、receipt summary、hash、evidence classだけを保持する。
 - SYNTHETIC_TEST、PUBLIC_WEB_SECONDARY、未settled LIVE_SHADOW、pre-settlement paybackはrevenue 0。unknownは0に変換しない。
-- real P&LはHRA-6後のLIVE_CASH official settled receiptだけで確定する。USER_ATTESTED_PERMISSIONはcash executionや再配布を許可しない。
+- real P&LはHRA-6後のLIVE_CASH official settled receiptだけで確定する。データ取得用の`USER_ATTESTED_PERMISSION`は再配布を許可せず、注文操作は別の`USER_ATTESTED_AUTONOMOUS_ORDER_APPROVAL`による。
 - $10K/monthはevidence-driven target only。settled receipt、capacity、slippage、calibration、drawdown、tax evidenceが揃うまでROI/$10K claim、forecast、scalingをしない。
 
 ## 6. Reuse matrixとsource boundary
@@ -285,17 +285,17 @@ sequenceDiagram
 | HRA-3M | market baseline、walk-forward、calibration、slippage | **BLOCKED** |
 | HRA-4 | live-data SHADOW、official outcome reconciliation | **BLOCKED**。shadow runs 0 |
 | HRA-5 | Telegram + CFO real/shadow separation | **BLOCKED**。Telegram runs 0 |
-| HRA-6 | terms/order/tax/credential/cap/receipt/reconciliation | **PARTIAL / BLOCKED_AUTONOMOUS_ORDER_PERMISSION**。NAR案内4経路の公開規約を確認、楽天競馬へ書面照会済み・回答待ち |
+| HRA-6 | terms/order/tax/credential/cap/receipt/reconciliation | **ORDER PERMISSION ATTESTED / REMAINING GATES PENDING**。全対象サイトの自律操作許可はowner確認済み、追加provider照会なし |
 | HRA-7 | HRA-6後のone ¥100 max/day review | **BLOCKED。PurchaseExecutor disabled** |
 | HRA-8 | evidence-driven target review | **BLOCKED** |
 
 ### HRA-6 / HRA-7 policy
 
-permission_document_verified=false、terms/order/tax/credential/receipt/reconciliation未完了の間はLIVE_CASHをfail-closedする。NAR公式案内のJRAネット投票、SPAT4、楽天競馬、オッズパークの公開規約は、owner-operated agent/browser automationの最終送信を明示許可していない。そのため、本人所有端末上のlocal agentによる選択、ブラウザ入力、最終送信、履歴照会までを許容するproviderの検証可能な書面を必須とする。通過後もstale/manifest/Telegram/reconciliation failureのSKIP、martingale/chasing禁止、公式settled receipt確認を必須にし、USER_ATTESTED_PERMISSIONを再配布・cash実行の根拠にしない。
+2026-08-10T12:48:52+09:00のowner明示により、全対象公式購入サイトの自律操作許可は`order_permission_basis=USER_ATTESTED_AUTONOMOUS_ORDER_APPROVAL`とする。`order_permission_document_verified=false`として証拠強度を誠実に表示しつつ、書面回答は実装・注文の依存にせず、`provider_recontact=false`とする。tax/credential/cap/idempotency/receipt/reconciliation未完了の間はLIVE_CASHをfail-closedする。通過後もstale/manifest/Telegram/reconciliation failureのSKIP、martingale/chasing禁止、公式settled receipt確認、実資金流出直前の確認を必須にする。
 
-SPAT4 is the clearest published NAR receipt-contract candidate, not an approved autonomous executor. Its 2026-05-01 official contract fixes ordinary tickets at ¥100 units, defines acceptance/formation, prohibits third-party purchase applications, and retains application records for 30 days; its 2026-06-24 conditions require inquiry after uncertain communication to avoid duplicates. Sources: https://www.nankankeiba.com/info/spat4/pdf/spat4_contract01.pdf?ver=20260501 and https://www.nankankeiba.com/info/spat4/pdf/spat4_contract03.pdf?ver=20260624.
+SPAT4 is the clearest published NAR receipt-contract candidate. Its 2026-05-01 official contract fixes ordinary tickets at ¥100 units, defines acceptance/formation, prohibits third-party purchase applications, and retains application records for 30 days; its 2026-06-24 conditions require inquiry after uncertain communication to avoid duplicates. Sources: https://www.nankankeiba.com/info/spat4/pdf/spat4_contract01.pdf?ver=20260501 and https://www.nankankeiba.com/info/spat4/pdf/spat4_contract03.pdf?ver=20260624. Autonomous-operation permission is based on the separate owner attestation, not inferred from this public contract.
 
-Rakuten Keiba likewise fixes tickets at ¥100 multiples, restricts password use to the member, and does not guarantee third-party app/web behavior; OddsPark's published rules require the subscriber's own application and member-only credential use. Sources: https://keiba.rakuten.co.jp/guide/term, https://www.oddspark.com/member/kiyaku/, and https://www.oddspark.com/pdf/kiyaku_dir.pdf. A single concrete permission inquiry was accepted through https://keiba.faq.rakuten.net/form/ask at 2026-08-10T12:39:23+09:00; the success page https://keiba.faq.rakuten.net/form/ask_confirm displayed 「お問い合わせを受け付けました」. A separate automatic acceptance email from Rakuten's official domain was observed at 2026-08-10T12:38:53+09:00 and contains a traceable inquiry number; the value remains private and is not committed or sent to Telegram. The request covers a local AI on the account holder's own Mac, no credential sharing, a ¥100/day cap, autonomous selection/browser entry/final submit/history inquiry, permitted scope/API/prohibited automation, and authoritative receipts. Until a clear written reply is received and verified, order transport and credentials remain out of the implementation scope.
+Rakuten Keiba likewise fixes tickets at ¥100 multiples, restricts password use to the member, and does not guarantee third-party app/web behavior; OddsPark's published rules require the subscriber's own application and member-only credential use. Sources: https://keiba.rakuten.co.jp/guide/term, https://www.oddspark.com/member/kiyaku/, and https://www.oddspark.com/pdf/kiyaku_dir.pdf. A single Rakuten inquiry was accepted at 2026-08-10T12:39:23+09:00 and has a private inquiry number. This remains historical evidence only: the owner subsequently attested autonomous-operation approval for every target site and instructed no further provider contact. No OddsPark message was sent.
 
 Tax state is fact-dependent, not a model output. NTA states that ordinary horse-racing payouts are generally temporary income, while sustained systematic purchase patterns can be miscellaneous income depending on duration, frequency, scale, and profit facts. CFO therefore persists gross payout, winning-ticket stake, losing-ticket stake, refund/void, and official receipt ID separately and performs no automatic expense-netting or final tax classification. Sources: https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1490.htm and https://www.nta.go.jp/information/other/data/h30/keiba/index.htm.
 
@@ -326,13 +326,13 @@ Tax state is fact-dependent, not a model output. NTA states that ordinary horse-
 
 | ケース | 想定 | 判断 |
 |---|---|---|
-| Best | NAR official manifestは受理済み。JRAもactual rowを取得 | official laneごとにschema/audit/SHADOWを進め、HRA-6を別審査する。secondaryはfallback |
-| Base | HRA-2FとJRA/NAR private-shadow gateはGREEN。permission document未検証、NAR payback pre-settlement 0 | HRA-2N取得contractへ進み、cash/revenue/ROIは0のまま維持 |
+| Best | NAR official manifestは受理済み。JRAもactual rowを取得、order permissionはowner-attested | official laneごとにschema/audit/SHADOWを進め、HRA-6の残るgateを別審査する。secondaryはfallback |
+| Base | HRA-2FとJRA/NAR private-shadow gateはGREEN。NAR payback pre-settlement 0 | HRA-2N取得contractへ進み、receipt/reconciliation完了までcash/revenue/ROIは0を維持 |
 | Worst | robots/terms/permission境界、raw boundary、timestamp/hash、official outcome reconciliationが破綻 | fail-closedし、rawを外へ出さず、PurchaseExecutor disabled、revenue 0 |
 
-棄却案の最強の論拠は、USER_ATTESTED_PERMISSIONを一般bot許可・再配布許可・cash execution許可へ拡張解釈すると、robots/terms、raw boundary、receipt/reconciliationを静かに破壊することである。
+棄却案の最強の論拠は、data permissionとorder permissionを1つのbooleanに潰すと、robots/terms、raw boundary、receipt/reconciliationのどの根拠で通過したかを追跡できなくなることである。
 
-自分が間違うとしたら、permission documentが後から検証され、official NAR termsとsettled receipt契約が明示される場合である。その場合もmanifest、HRA-6、tax、credential、reconciliation evidenceを先に確認し、既存truth labelを遡及変更しない。
+自分が間違うとしたら、ownerが取得した許可の範囲が「選択・入力」に限られ「最終送信・履歴照会」を含まない場合である。現在はownerの「全サイトで承認済み」を広義の自律操作として採用し、追加照会を行わない。
 
 ## 10. Sources（観測根拠）
 

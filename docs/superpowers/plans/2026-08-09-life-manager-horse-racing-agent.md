@@ -17,8 +17,8 @@
 - Evidence classesは`SYNTHETIC_TEST`、`REAL_PUBLIC_WEB_RECORD`、`PUBLIC_WEB_SECONDARY`、`LIVE_SHADOW`、`LIVE_CASH`。HTTP/DOM success、download開始、schema存在だけをrecord completionとしない。
 - Manifest必須欄は`evidence_class`、`source_url`、`source_authority`、`jurisdiction`、`retrieved_at`、`page_or_effective_timestamp`、`fetch_exit_code`、`http_status`、`parsed_row_count`、observed schema names/types、`content_sha256`、`robots_snapshot_url/status`、`terms_url/status`、`permission_basis`、`permission_document_verified`、`raw_values_exported=false`、`allowed_scope`、`cash_authorized=false`。official JRA/NARの`allowed_scope`は`private_shadow`、secondaryは`shadow_only`。
 - raw snapshotはMac-local private append-only storageだけに保持する。ETag、content hash、source URLでidempotencyを判定し、同一archiveを二重appendしない。raw values、実馬名、credential、secret、subscription id、receiptは外へ出さない。
-- `PurchaseExecutor`は常時disabled。HRA-6のterms/order/tax/credential/receipt/reconciliation gate以前に注文・決済・bet・wallet/bank mutationを作らない。`USER_ATTESTED_PERMISSION`だけではcashをauthorizeしない。
-- NAR公式が案内する4購入経路（JRAネット投票、SPAT4、楽天競馬、オッズパーク）の公開規約は、本人または会員による申込み・認証情報の本人利用を要求し、owner-operated AI/browser automationの最終送信を明示許可していない。楽天競馬には2026-08-10T12:39:23+09:00に具体的な自律操作条件を公式フォームから1件照会し、`ask_confirm`の受付完了文と、同日12:38:53+09:00の楽天公式ドメインからの自動受付メールを実測した。メールには追跡可能なお問い合わせ番号があるが、値はprivate evidenceとしてGit/Telegramへ出さない。書面回答の未取得中は完全自律注文を`BLOCKED_AUTONOMOUS_ORDER_PERMISSION`とし、crawl許可、個人利用、口座保有、credential保有を代替根拠にしない。
+- `PurchaseExecutor`は常時disabled。HRA-6のterms/order/tax/credential/receipt/reconciliation gate以前に注文・決済・bet・wallet/bank mutationを作らない。データ取得の`USER_ATTESTED_PERMISSION`と、自律注文の`USER_ATTESTED_AUTONOMOUS_ORDER_APPROVAL`を混同しない。
+- 2026-08-10T12:48:52+09:00にownerは、対象とするすべての公式購入サイトについて個人的に自律操作許可を得ていると明示し、追加のprovider照会を停止するよう指示した。これを`order_permission_basis=USER_ATTESTED_AUTONOMOUS_ORDER_APPROVAL`、`order_permission_document_verified=false`、`provider_recontact=false`として正本化し、書面回答を注文実装の依存関係から外す。楽天競馬への既送信照会と受付証跡は履歴として保持し、返信を待たず、オッズパークへは送信しない。このattestationは利用許可の根拠であり、fresh data、spend cap、idempotency、receipt、reconciliation、実資金流出直前の確認を省略しない。
 - `$10K/month`はevidence-driven target only。ROI、勝率、収益、forecast、guaranteeを作らず、official settled receiptとlater-window evidenceがない値をrevenueへ加算しない。
 - Solはplan、gate、verificationを所有し、Lunaはこのplanに記載されたedit、code、command、evidence作成を実行する。
 - 未完項目は先頭の一件だけをactiveにする。各sliceは最大3 files、estimated LOC 100以下、RED→GREEN→実E2E/state更新→commit→origin/canonical pushで閉じてから次へ進む。
@@ -95,7 +95,7 @@ The official NAR source is zero-cost primary; JRA remains official primary. Seco
 | 9 | HRA-4 SHADOW decision/outcome ledger | blocked by HRA-3Mb | `decision.py`, `ledger.py`, `test_shadow_ledger.py` |
 | 10 | HRA-4b Japanese Telegram | blocked by HRA-4 | `telegram.py` and `test_telegram.py` |
 | 11 | HRA-5 CFO adapter | blocked by HRA-4b and CFO-0c | `cfo.py` and `test_cfo.py` |
-| 12 | HRA-6 terms/order/tax/receipt gate | **partial evidence / blocked autonomous order** | four NAR paths checked; Rakuten written clarification submitted and awaiting reply |
+| 12 | HRA-6 terms/order/tax/receipt gate | **order permission attested / remaining gates pending** | no provider recontact; tax/credential/cap/idempotency/receipt/reconciliation remain |
 | 13 | HRA-7 owner-local-day ¥100 gate | blocked future gate | document only, no bet execution |
 | 14 | HRA-8 scale review | blocked future gate | evidence-driven target only |
 
@@ -545,13 +545,13 @@ Observed official terms evidence:
 - 国税庁「No.1490 一時所得」: https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1490.htm — 一般の競馬払戻金は一時所得の例で、総収入から直接支出と最高50万円の特別控除を引く計算を示す。
 - 国税庁「競馬の馬券の払戻金に係る課税について」: https://www.nta.go.jp/information/other/data/h30/keiba/index.htm — 所得区分は購入期間・回数・頻度・利益規模等を総合判断し、一定の継続的な自動購入態様は雑所得になり得る一方、一般的な一時所得では外れ馬券費用を控除できないと説明する。
 
-Current decision: public terms for all four NAR-listed purchase paths provide no affirmative autonomous-order permission. SPAT4 still has the clearest published receipt contract, while Rakuten is the only path for which a concrete written clarification request has now been accepted. HRA-6 remains fail-closed until a provider gives verifiable written permission that covers local agent selection, browser entry, final submission, and history inquiry. No reply, an ambiguous reply, or a prohibition leaves `PurchaseExecutor` disabled. The compliant fallback is AI-generated advice plus owner-performed final submission; it does not satisfy the requested humanless-live-order goal and must not be reported as such.
+Current decision: the public-terms findings and the already-sent Rakuten inquiry remain historical evidence, but they no longer block implementation. The owner's direct statement is the SSOT for autonomous-order permission across the target official purchase sites: `USER_ATTESTED_AUTONOMOUS_ORDER_APPROVAL`, document not independently verified, no provider recontact. HRA-6 still fails closed on tax boundary, credential isolation, owner-local-day cap, idempotent submit, official purchase/settlement receipt, timeout/duplicate handling, and reconciliation. `PurchaseExecutor` remains disabled until those non-permission gates and the data/model/Telegram/CFO dependencies pass.
 
 Tax ledger decision: CFO stores gross payout, winning-ticket stake, losing-ticket stake, refund/void, purchase timestamp, and official receipt ID as separate immutable fields. It must not infer the user's final tax classification, net all losing tickets, or treat the ¥500,000 temporary-income deduction as a blanket tax-free betting allowance. Before LIVE_CASH scaling, HRA-6 requires current fact-pattern review by a qualified Japanese tax professional or equivalent authoritative determination.
 
 ## Task 13: HRA-7 one minimum live transaction
 
-**Blocked until every HRA-6 item passes, including written autonomous-order permission.** At action time obtain the required confirmation for an irreversible debit from the user's account. Owner-local-day total stake is at most `¥100`, only with positive confidence-adjusted EV, fresh data, pre-message success, and deterministic idempotency key. Any uncertainty becomes SKIP. Martingale, chasing, auto-escalation, and repeated submit are forbidden.
+**Blocked until every remaining HRA-6 item passes; autonomous-order permission itself is owner-attested and must not be re-asked.** At action time obtain the required confirmation for an irreversible debit from the user's account. Owner-local-day total stake is at most `¥100`, only with positive confidence-adjusted EV, fresh data, pre-message success, and deterministic idempotency key. Any uncertainty becomes SKIP. Martingale, chasing, auto-escalation, and repeated submit are forbidden.
 
 Completion requires official purchase-history receipt plus settled payout/refund/void receipt and matching Telegram/CFO reconciliation. A browser success page alone is not completion.
 
