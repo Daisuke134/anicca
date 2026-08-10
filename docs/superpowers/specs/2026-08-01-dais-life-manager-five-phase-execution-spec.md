@@ -7119,7 +7119,13 @@ live正本はofficial wake `wake-a85aefe7a153ce0513e7d7df`の`circuit_open / pea
 
 planを先に改訂し、ownershipを既存minimal runner/testの2 filesだけへ限定する。Calendar後open前、open後provider action前、discovery後candidate/次provider前、および次browser/readback/actionを開始し得る長時間境界後にdeadlineを再検査する。in-flight operationのcancel/race、新timer/module/service/retry/scheduleは追加しない。既存bounded dependencyが戻った時点でone terminal `circuit_open / wake_deadline`をreportし、owned cleanup以外の後続作用0を必須にする。Item15未完、schedule unloaded。
 
-### Active remaining TODO SSOT（進捗333。これ以外の残TODO一覧は履歴）
+### O1B-25進捗334（Item 15 / reject-after-deadline fix-first）
+
+初回fixはRED runner 24/28、GREEN 28/28、minimal stack 73/73。Calendar/open/reset/discovery/navigation/readback/cache/direct/fallback/canonical/save後にdeadline guardを追加し、in-flight race/cancel 0、completeEvidence成功は`applied_bundle`維持。fresh Sol re-reviewはCritical 0 / Important 1で`fix-first`。Calendar、browser open、candidate navigation、pre/post readback、saveRepairedActionsが600,001ms経過後にthrowする独立fixtureではraw rejection、terminal report 0を再現した。owned取得後はcleanup 1だがone `circuit_open / wake_deadline`契約を満たさない。
+
+planを先に改訂し、同じrunner/test ownershipで未捕捉境界のreject-after-deadlineをtable regression化する。最小実装は外側error boundary一箇所。elapsedがdeadline以上なら既存finishでone deadline terminal、deadline未満なら元errorをそのままrethrowする。既存local catch、positive report、finally cleanup、completeEvidence成功、finish自身のerrorは変更しない。Item15未完、schedule unloaded。
+
+### Active remaining TODO SSOT（進捗334。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
