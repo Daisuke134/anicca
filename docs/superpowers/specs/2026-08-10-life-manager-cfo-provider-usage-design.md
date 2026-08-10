@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — CFO-2a2.1 through CFO-2a2.4d1 verified; CFO-2a2.4d2 real Live E2E is next |
+| Status | ACTIVE — CFO-2a2.1 through CFO-2a2.4c3 verified; CFO-2a2.4d1 review fixes are next |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Existing `apps/life-call` package |
 | First provider | Gemini `generateContent` response |
@@ -697,12 +697,13 @@ This slice performs no migration/database deployment, WebSocket/bridge wiring, a
 scheduler, launchd, Telegram change, or real provider call.
 
 Verification evidence: initial RED passed four historical tests and failed only two absent Live-export tests. Review
-then found missing exact context and Live base attributes; the focused fix RED was 5/6 and failed only the extra-key
-case. Final GREEN passed focused 6/6, CFO 269/269, and full 911/911. Re-review returned `ship`; Sol independently
-repeated focused, CFO, full, syntax, and diff gates. The implementation is exactly two files and 38 additions. No
+then found missing exact context and Live base attributes; the focused fix RED was 6/7 and failed only the revised
+failure contract. Final GREEN passed focused 7/7, CFO 270/270, and full 912/912. Re-review returned `ship`; Sol
+independently repeated focused, CFO, full, syntax, and diff gates. The final truth-contract fix is exactly two files
+and 26 additions over the first implementation. No
 provider call, database deployment, bridge, runtime, or Telegram state changed.
 
-#### CFO-2a2.4d1 — ordered Live bridge wiring (complete)
+#### CFO-2a2.4d1 — ordered Live bridge wiring (review fixes required)
 
 Add one small recorder closure to the existing `call-bridge.cjs` and wire it in `server.js`. Each Gemini WebSocket gets
 one random 32-hex local session ID and a sequence starting at zero. A message without `usageMetadata` is ignored. Each
@@ -710,9 +711,15 @@ usage message is queued in arrival order and passed once to `captureGeminiLiveUs
 counted, never retried, never logged with provider data, and never interrupts audio routing.
 
 On socket close, run the existing Gemini end handler synchronously so a pending database write can never delay reconnect
-or carrier teardown. Then settle only the already-started usage queue asynchronously. The old duration estimate remains
+or carrier teardown, snapshot the close-time duration synchronously, and reject all later socket messages. Then settle
+only the already-started usage queue asynchronously. The old duration estimate uses that fixed close-time duration; DB
+latency never increases it. It remains
 the fallback when no usage message was stored or any observed write failed. It is skipped only when at least one usage
 message was observed and every observed message stored successfully.
+
+The authenticated `/test-call` path includes `wakeUid: body.uid` in the signed stream URL so 4c3 receives a non-empty
+owner. Each fallback return value is contained even when it is a rejecting thenable. The prior socket's pending queue
+and a reconnect socket's new sequence-zero queue are independent; neither waits for or mutates the other.
 
 The exact fallback matrix is `0/0/0 -> fallback`, `2/2/0 -> no fallback`, and `2/1/1 -> fallback`, where the tuple is
 `seen/stored/failed`. In the partial-failure case the one stored provider row and the duration fallback coexist; this
@@ -720,32 +727,49 @@ slice does not claim that aggregation already prevents double counting. Aggregat
 
 Acceptance:
 
-- [x] non-usage messages cause zero capture calls; usage messages receive exact ordered sequences `0..n-1` once;
-- [x] settle reports exact seen/stored/failed counts and complete only for nonzero all-success observations;
-- [x] one failure does not retry, log provider data, or stop later observations;
-- [x] `server.js` attaches the tested production usage seam once per Gemini socket with random session ID and exact
+- [ ] non-usage messages cause zero capture calls; usage messages receive exact ordered sequences `0..n-1` once;
+- [ ] settle reports exact seen/stored/failed counts and complete only for nonzero all-success observations;
+- [ ] one failure does not retry, log provider data, or stop later observations;
+- [ ] `/test-call` carries the verified UID into the exact five-key Live context;
+- [ ] `server.js` attaches the tested production usage seam once per Gemini socket with random session ID and exact
       CFO/store context;
-- [x] close invokes the existing end handler synchronously, then asynchronously records duration fallback unless the
+- [ ] close invokes the existing end handler synchronously, then asynchronously records duration fallback unless the
       recorder settles complete;
-- [x] a deferred capture cannot delay reconnect/carrier teardown, and the exact fallback matrix is behaviorally tested;
-- [x] a fake Gemini socket drives the same production seam and proves parsed usage observation plus isolated
-      session/sequence state after reconnect;
-- [x] existing audio, reconnect, barge-in, and provider behavior remains unchanged;
-- [x] focused bridge, CFO, and full suites pass within exactly three files and at most 90 additions.
+- [ ] fallback uses close-time duration only, contains synchronous throws and rejected thenables, and post-close
+      messages are ignored;
+- [ ] a deferred capture cannot delay reconnect/carrier teardown, and the exact fallback matrix is behaviorally tested;
+- [ ] a fake Gemini socket drives the same production seam and proves parsed usage observation plus isolated
+      session/sequence state after reconnect while the old queue is still pending;
+- [ ] existing audio, reconnect, barge-in, and provider behavior remains unchanged;
+- [ ] focused bridge, CFO, and full suites pass within exactly three files and at most 90 additions.
 
 This slice makes no real provider call, migration/database deployment, aggregation decision, scheduler, launchd, or
 Telegram change.
 
-Completion evidence: TDD RED kept all historical bridge tests green and failed only the three absent-seam contracts
-(6/9 pass). GREEN passed focused 9/9, CFO 270/270, full 915/915, syntax, diff, and the exact three-file/71-addition gate.
-Fresh Sol review returned `ship — Spec ✅` with no findings, and Sol independently repeated focused, CFO, full, syntax,
-diff, and size gates. No provider, database, deployment, scheduler, launchd, or Telegram state changed.
+Pre-review evidence passed focused 9/9, CFO 270/270, full 915/915, syntax, and size gates, but fresh Sol review found
+real owner propagation, duration timing, rejected-thenable containment, post-close, and concurrent reconnect gaps not
+covered by those tests. This slice is not complete until those review fixes pass the revised gates and re-review.
 
 #### CFO-2a2.4d2 — real Live message → row → span proof
 
 Extend only the existing disposable provider E2E to open a real Gemini Live WebSocket, obtain a real provider
 `usageMetadata` message, pass that unchanged message through the verified Live capture path, and prove its exact counts,
 session/sequence, trace ID, private row, and content-free span. Only after this gate passes may CFO-2a2.4 be complete.
+
+Acceptance:
+
+- [ ] exactly the existing `cfo-provider-usage-real-e2e.sh` changes, with at most 75 additions;
+- [ ] the existing two real `generateContent` observations remain and one real Live WebSocket observation is added;
+- [ ] the WebSocket uses existing `ws` and `call-logic.js` builders, one text turn, one 30-second timeout, and no retry;
+- [ ] error/timeout/early-close paths expose only fixed reasons and never log the API key, provider payload, audio, or text;
+- [ ] the first real post-turn message carrying `usageMetadata` is passed unchanged to
+      `captureGeminiLiveUsageObservation` with one random nonzero 32-hex session and sequence zero;
+- [ ] the disposable Postgres/PostgREST readback proves three private rows, three distinct nonzero trace IDs, exact Live
+      provider counts, null provider/response IDs, and exact `live-session:<id>` correlation;
+- [ ] captured OpenTelemetry output proves exactly three spans and contains no prompt, transcript, audio, API key, or
+      private sentinel;
+- [ ] the only success line is `cfo-provider-usage-real-e2e: PASS rows=3 spans=3 live=1`;
+- [ ] no production database, runtime, scheduler, launchd, Telegram, or deployment state changes.
 
 Primary evidence: [Gemini Live server messages](https://ai.google.dev/api/live#BidiGenerateContentServerMessage) place
 `usageMetadata` at the top level and define no response ID/model field; [Gemini Live UsageMetadata](https://ai.google.dev/api/live#UsageMetadata)

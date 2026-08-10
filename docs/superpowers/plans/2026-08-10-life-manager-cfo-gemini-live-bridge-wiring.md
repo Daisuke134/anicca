@@ -1,6 +1,6 @@
 # CFO-2a2.4d1 Gemini Live Bridge Wiring Implementation Plan
 
-**Status:** COMPLETE — implemented by Luna and independently verified by fresh Sol plus the controller.
+**Status:** READY — reviewed repair plan returned `ship`; ready for Luna implementation.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development task by task.
 
@@ -26,9 +26,10 @@ scheduler, or reporting path.
 
 ## Task 1: Queue provider usage and wire the socket
 
-- [x] **Step 1 — write the smallest RED tests**
+- [ ] **Step 1 — write the smallest revised RED tests**
 
-Export the production seam `attachGeminiUsageTracking` from `call-bridge.cjs`. Add three behavioral tests:
+Export the production seam `attachGeminiUsageTracking` from `call-bridge.cjs`. Add three behavioral tests and one
+compact server source-contract test:
 
 1. non-usage input is ignored; two usage messages are captured once in arrival order with `usage_sequence` 0 and 1,
    the exact fixed base context/options, and `settle()` returns the exact frozen
@@ -39,16 +40,55 @@ Export the production seam `attachGeminiUsageTracking` from `call-bridge.cjs`. A
    must parse socket messages into observation, invoke `onEnd` synchronously on close, and decide fallback only after
    settlement. Prove `0/0/0 -> fallback`, `2/2/0 -> no fallback`, and `2/1/1 -> fallback`, exact CFO/store context, and
    that a reconnect socket with a distinct session starts again at sequence zero without sharing settlement state.
+   Start the reconnect socket while the old socket's first capture remains pending. Prove the new capture starts at
+   sequence zero without waiting, a post-close old message is ignored, and an async rejecting `onFallback` creates no
+   `unhandledRejection`. Trap `console.log`, `console.error`, and `console.warn` around content sentinels.
 
-- [x] **Step 2 — run RED**
+Prove actual serialization before resolving the first capture:
+
+```js
+emitUsage(socket, first); emitUsage(socket, second);
+await Promise.resolve();
+assert.equal(pending.length, 1);
+pending[0].resolve();
+while (pending.length < 2) await Promise.resolve();
+assert.equal(pending[1].context.usage_sequence, 1);
+```
+
+Use two simultaneous production seams for reconnect isolation:
+
+```js
+oldSocket.emit("close");
+emitUsage(oldSocket, usageMessage(99));
+emitUsage(newSocket, usageMessage(1));
+await Promise.resolve();
+assert.equal(oldPending.length, 1);
+assert.equal(newPending.length, 1);
+assert.equal(newPending[0].context.usage_sequence, 0);
+```
+
+Read `server.js` in the same test file and pin both server-only fixes so direct seam tests cannot hide them:
+
+```js
+const fs = require("node:fs"), path = require("node:path");
+const serverSource = fs.readFileSync(path.join(__dirname, "../server.js"), "utf8");
+assert.match(serverSource, /buildStreamUrl\(\{\s*\.\.\.ev,\s*wakeUid:\s*body\.uid\s*\},\s*urgency,\s*lang,\s*u\.name\)/);
+assert.match(serverSource, /onEnd:\s*\(\)\s*=>\s*\{[\s\S]*?geminiDurationSeconds\s*=\s*Math\.max\([\s\S]*?onGeminiEnd\("closed"\);?\s*\}/);
+assert.match(serverSource, /onFallback:\s*\(\)\s*=>\s*\{[^}]*const quantity\s*=\s*geminiDurationSeconds\s*===\s*null\s*\?\s*0\s*:\s*geminiDurationSeconds/s);
+const fallbackSource = serverSource.slice(serverSource.indexOf("onFallback:", serverSource.indexOf("attachGeminiUsageTracking")), serverSource.indexOf("});", serverSource.indexOf("onFallback:", serverSource.indexOf("attachGeminiUsageTracking"))));
+assert.doesNotMatch(fallbackSource, /Date\.now\(/);
+```
+
+- [ ] **Step 2 — run revised RED**
 
 ```bash
 node --test lib/call-bridge.test.js
 ```
 
-Expected: historical six tests pass and only the three new contracts fail because the production seam is absent.
+Expected: at least one revised contract fails against the current implementation for the observed owner/timing/async
+containment/post-close/reconnect defect. Record the exact failure before production edits.
 
-- [x] **Step 3 — add the minimum queue and wiring**
+- [ ] **Step 3 — add the minimum queue and wiring**
 
 `attachGeminiUsageTracking({ socket, capture, context, options, onEnd, onFallback })` creates one private recorder for
 that socket, keeps `seen/stored/failed/nextSequence/tail`, and attaches only `message` and `close`. A parsed message
@@ -57,13 +97,47 @@ without `usageMetadata` is ignored; otherwise it reserves the next sequence imme
 and invokes `onFallback` unless the exact frozen result has `complete === true`; it contains a settlement rejection and
 still invokes fallback. It never retries or logs, and may return the recorder's settlement promise only for tests.
 
+The message handler starts with `if (closed) return`. Contain both synchronous throws and rejected fallback thenables:
+
+```js
+const fallback = result => {
+  if (!onFallback) return;
+  try { Promise.resolve(onFallback(result)).catch(() => {}); } catch {}
+};
+```
+
 In `server.js`, import `LIVE_MODEL`, `captureGeminiLiveUsageObservation`, and the seam. Inside each `openGeminiLive`
 invocation, attach it once using a random session ID and the existing owner/unit/model/Supabase context. Keep the existing
 audio message handler unchanged. The seam's close callback runs existing `onGeminiEnd("closed")` synchronously, while
 the old exact duration `recordCost` runs later only as `onFallback`. Remove the replaced close listener. A recorder or
 settlement failure must never delay or stop reconnect/carrier teardown.
 
-- [x] **Step 4 — run GREEN and scope gates**
+Preserve the authenticated owner in `/test-call`:
+
+```js
+const streamUrl = buildStreamUrl({ ...ev, wakeUid: body.uid }, urgency, lang, u.name);
+```
+
+Snapshot duration synchronously at close and never include database settlement latency:
+
+```js
+let geminiDurationSeconds = null;
+onEnd: () => {
+  if (geminiDurationSeconds === null) {
+    geminiDurationSeconds = Math.max(0, (Date.now() - geminiStartedAtMs) / 1000);
+  }
+  onGeminiEnd("closed");
+},
+onFallback: () => {
+  if (geminiCostRecorded) return;
+  geminiCostRecorded = true;
+  const quantity = geminiDurationSeconds === null ? 0 : geminiDurationSeconds;
+  recordCost({ uid: wakeUid || null, kind: "gemini_live", quantity, unit: "seconds",
+    estUsd: quantity / 60 * 0.023, meta: { reconnect: geminiReconnects } });
+},
+```
+
+- [ ] **Step 4 — run GREEN and scope gates**
 
 ```bash
 node --test lib/call-bridge.test.js
@@ -71,8 +145,8 @@ npm run test:cfo
 npm test
 node --check lib/call-bridge.cjs
 node --check server.js
-git diff --check -- lib/call-bridge.cjs lib/call-bridge.test.js server.js
-git diff --numstat -- lib/call-bridge.cjs lib/call-bridge.test.js server.js \
+git diff 7ee07646b --check -- lib/call-bridge.cjs lib/call-bridge.test.js server.js
+git diff 7ee07646b --numstat -- lib/call-bridge.cjs lib/call-bridge.test.js server.js \
   | awk '{ added += $1; files += 1 } END { print "files=" files, "added=" added; exit !(files == 3 && added <= 90) }'
 ```
 
