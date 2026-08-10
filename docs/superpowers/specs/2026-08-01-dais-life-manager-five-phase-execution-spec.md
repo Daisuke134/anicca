@@ -6681,7 +6681,26 @@ required incomplete answer controlとbutton/linkだけをagent enumへ残し、a
 input/textarea→fill、select→select、checkbox/radio→check、button/link→clickへ決定する。次の一件はTDD、fresh review、push後の一回だけの
 official foreground wakeである。
 
-### Active remaining TODO SSOT（進捗265。これ以外の残TODO一覧は履歴）
+### O1B-25進捗266（required-only control / parent-owned method GREEN / fresh review ship）
+
+Lunaがplan `docs/superpowers/plans/2026-08-10-connector-harness-required-control-method.md`を2-file TDD実装した。REDは
+control-only proposerのaction欠落、element/group `required`未継承、optional answerのagent enum残留、agent-supplied methodが各control kindへ
+そのまま到達する4境界を再現した。Ponytail圧縮後、agent JSON schemaと返却値をvalidated `control` tokenだけへ縮小し、
+input/textareaは`fill/ax_fill`、selectは`fill/ax_select`、checkbox/radioは`fill/ax_check`、button/linkは`submit/ax_click`を
+親が観測済みkindから決定する。unknown/missing token、optionalまたはcompleted answer controlはDOM前にfail-closedする。
+
+default observerはelementの`required`、`aria-required=true`、またはnearest既存`fieldset, dl.field, [role=group], .field`の
+class `required` / `aria-required=true`だけをbooleanへ変換する。private value、selected value、URL、candidate identity、profileはagentへ渡さず、
+既存exact question+option approval、completed guard、normalized-effect dedupe、exact path transition、fallback evidence sequence、最大10 step、
+parent `registered|pending` readbackを維持する。
+
+差分はHarness/test 2 files、production +21/-27、tests +41/-10。Luna focused/adjacent 41/41、Sol再実行50/50、syntax、diff checkはPASS。
+native runtime/write 37/39の2失敗は`expected connpass / actual peatix`で、Lunaがclean HEAD archiveでも同一2件を再現した既存provider cursor期待値であり、
+今回の2-file差分由来ではない。fresh Sol reviewはCritical 0・Important 0で`ship`。browser/model/Submit/Calendar/PNG/Telegram/state/private write、
+session/target/page作成、schedule変更は0。Item 10B/14/19は未完。次の一件はcommit/push後、schedule unloadedのofficial foreground wakeを
+一度だけ実行し、required fieldの親method、form/confirm進行または次のexact safe boundary、dashboard増分、Gateway positive ID、cleanupを実測する。
+
+### Active remaining TODO SSOT（進捗266。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 

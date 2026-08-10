@@ -7,7 +7,8 @@ const { runLocalAgentRunner } = require("./connector-luna-judgment.js");
 
 const CONTROL = /^[a-z][a-z0-9_-]{1,63}$/;
 const KINDS = new Set(["input", "textarea", "select", "checkbox", "radio", "button", "link"]);
-const FILL = new Set(["ax_fill", "dom_fill", "ax_select"]);
+const FILL = new Set(["ax_fill", "dom_fill", "ax_select", "ax_check"]);
+const ACTIONS = { input: ["fill", "ax_fill"], textarea: ["fill", "ax_fill"], select: ["fill", "ax_select"], checkbox: ["fill", "ax_check"], radio: ["fill", "ax_check"], button: ["submit", "ax_click"], link: ["submit", "ax_click"] };
 const ACTIONABLE_KINDS = new Set(["input", "textarea", "select", "checkbox", "radio"]);
 const MUTATING_METHODS = new Set(["ax_fill", "dom_fill", "ax_select", "ax_check", "ax_click", "coordinate_click", "keyboard_submit"]);
 const PROVIDERS = new Set(["luma", "connpass", "peatix"]); const LABEL = { name: /^(?:name|full name|attendee name|氏名|名前|お名前)$/, email: /^(?:email|e-mail|email address|account email|メール|メールアドレス)$/, family: /^(?:family name kana|last name kana|surname kana|lastname_edit|姓（カナ）)$/, given: /^(?:given name kana|first name kana|firstname_edit|名（カナ）)$/, phone: /^(?:phone(?: number)?|telephone|mobile|電話(?:番号)?|携帯)$/, privacy: /^(?:organizer privacy(?: confirmation)?|主催者のプライバシー確認|主催者のプライバシーポリシーに同意する)$/ };
@@ -33,6 +34,8 @@ function safeControl(input) {
   return Object.freeze({ control, kind, label, required: input.required, completed, ...(question ? { question } : {}) });
 }
 
+function actionForControl(control) { const action = ACTIONS[control.kind]; return action ? Object.freeze({ purpose: action[0], method: action[1], control: control.control }) : null; }
+
 async function inspectPageControls(input = {}) {
   const page = input.page;
   if (!page || typeof page.locator !== "function") invalid();
@@ -56,11 +59,12 @@ async function inspectPageControls(input = {}) {
     if (!label) return [];
     const control = `control_${index + 1}`;
     element.dataset.lmConnectorControl = control;
-    const group = ["checkbox", "radio"].includes(kind) && typeof element.closest === "function" ? element.closest("fieldset, dl.field, [role='group'], .field") : null;
-    const question = group && typeof group.querySelector === "function" ? String(group.querySelector("legend,dt,[data-question]")?.textContent || "").replace(/\s+/g, " ").trim() : "";
+    const group = typeof element.closest === "function" ? element.closest("fieldset, dl.field, [role='group'], .field") : null;
+    const question = ["checkbox", "radio"].includes(kind) && group && typeof group.querySelector === "function" ? String(group.querySelector("legend,dt,[data-question]")?.textContent || "").replace(/\s+/g, " ").trim() : "";
     const radioName = String((element.getAttribute && element.getAttribute("name")) || element.name || "");
     const completed = ["input", "textarea", "select"].includes(kind) ? Boolean(String(element.value || "").trim()) : kind === "checkbox" ? element.checked === true : kind === "radio" ? radioName.trim() ? elements.some((candidate) => String(candidate.type || "").toLowerCase() === "radio" && String((candidate.getAttribute && candidate.getAttribute("name")) || candidate.name || "") === radioName && candidate.checked === true) : element.checked === true : false;
-    return [{ control, kind, label, required: element.required === true, completed, ...(question ? { question } : {}) }];
+    const required = element.required === true || String((element.getAttribute && element.getAttribute("aria-required")) || "").toLowerCase() === "true" || Boolean(group && (((group.classList && typeof group.classList.contains === "function") && group.classList.contains("required")) || /(?:^|\s)required(?:\s|$)/.test(String(group.className || "")) || String((group.getAttribute && group.getAttribute("aria-required")) || "").toLowerCase() === "true"));
+    return [{ control, kind, label, required, completed, ...(question ? { question } : {}) }];
   }));
   if (!Array.isArray(observed)) invalid();
   return Object.freeze(observed.map(safeControl));
@@ -173,7 +177,7 @@ function createBoundedActionProposer(options = {}) {
       || !input.observation || !Array.isArray(input.observation.controls)
     ) invalid();
     const controls = input.observation.controls.map(safeControl);
-    const actionableControls = controls.filter((control) => !control.completed || !ACTIONABLE_KINDS.has(control.kind));
+    const actionableControls = controls.filter((control) => !ACTIONABLE_KINDS.has(control.kind) || (control.required && !control.completed));
     if (!actionableControls.length) return null;
     const sequence = step === 1 ? (fallbackSequences.get(targetId) || 0) + 1 : (fallbackSequences.get(targetId) || 1);
     fallbackSequences.set(targetId, sequence);
@@ -181,8 +185,8 @@ function createBoundedActionProposer(options = {}) {
     const result = await runAgentRunner({
       prompt: [
         `Choose exactly one browser action for the current ${input.provider} registration page.`,
-        "Return only purpose, method, and one control token from the supplied list.",
-        "Choose only incomplete parent-owned fields before submit. Never invent answers, navigate, open or close pages, run commands, or edit code.",
+        "Return only one control token from the supplied list.",
+        "Choose only an incomplete required field or a button/link before submit. Never invent answers, navigate, open or close pages, run commands, or edit code.",
         "The parent process owns all private values, executes the action, and verifies registered or pending state.",
         `Step: ${step} of 10`,
         `Page state: ${state}`,
@@ -191,16 +195,8 @@ function createBoundedActionProposer(options = {}) {
       schema: {
         type: "object",
         additionalProperties: false,
-        required: ["purpose", "method", "control"],
+        required: ["control"],
         properties: {
-          purpose: { type: "string", enum: ["observe", "fill", "submit", "readback"] },
-          method: {
-            type: "string",
-            enum: [
-              "ax_inspect", "dom_inspect", "parent_readback", "ax_fill", "dom_fill",
-              "ax_check", "ax_select", "ax_click", "coordinate_click", "keyboard_submit",
-            ],
-          },
           control: { type: "string", enum: actionableControls.map((control) => control.control) },
         },
       },
@@ -214,11 +210,9 @@ function createBoundedActionProposer(options = {}) {
       || result.summary.selected_provider !== "codex" || result.summary.selected_model !== "gpt-5.6-terra"
       || !result.value || typeof result.value !== "object" || Array.isArray(result.value)
     ) invalid();
-    return Object.freeze({
-      purpose: String(result.value.purpose || ""),
-      method: String(result.value.method || ""),
-      control: String(result.value.control || ""),
-    });
+    const control = String(result.value.control || "");
+    if (!actionableControls.some((item) => item.control === control)) return null;
+    return Object.freeze({ control });
   };
 }
 
@@ -259,11 +253,11 @@ function createProductionBrowserHarness(options = {}) {
     const observation = registry.get(input.page) || await observed(input.page);
     const control = observation.controls.find((item) => item.control === input.action.control);
     if (!control) return Object.freeze({ status: "failed" });
+    if (ACTIONABLE_KINDS.has(control.kind) && (!control.required || control.completed)) return Object.freeze({ status: "failed" });
+    const action = actionForControl(control); if (!action) return Object.freeze({ status: "failed" });
     let value = null;
-    const answerControl = ["checkbox", "radio"].includes(control.kind) && ["ax_check", "ax_click", "coordinate_click"].includes(input.action.method);
-    if (control.completed && (FILL.has(input.action.method) || answerControl)) return Object.freeze({ status: "failed" });
-    if (FILL.has(input.action.method) || answerControl) {
-      value = await resolveValue({ provider, page: input.page, control, action: input.action });
+    if (FILL.has(action.method)) {
+      value = await resolveValue({ provider, page: input.page, control, action });
       if (
         !(typeof value === "string" || typeof value === "boolean" || Array.isArray(value))
         || (typeof value === "string" && (!value.trim() || value.length > 2_000))
@@ -273,7 +267,7 @@ function createProductionBrowserHarness(options = {}) {
     const result = await operateControl({
       page: input.page,
       control,
-      action: input.action,
+      action,
       value,
     });
     return result && result.status === "success"
@@ -288,7 +282,7 @@ function createProductionBrowserHarness(options = {}) {
     const seenMutations = new Set();
     const adapter = createBrowserHarnessAdapter({
       observePage: ({ page }) => observed(page),
-      proposeAction,
+      async proposeAction(input) { const proposal = await proposeAction(input); const token = String(proposal && typeof proposal === "object" ? proposal.control || "" : ""); const control = input.observation.controls.find((item) => item.control === token); return CONTROL.test(token) && control ? actionForControl(control) : null; },
       async performAction(action) {
         const selected = action.action || action; const effect = ["ax_click", "coordinate_click", "keyboard_submit"].includes(selected.method) ? "activate" : ["ax_fill", "dom_fill"].includes(selected.method) ? "fill" : selected.method; const signature = MUTATING_METHODS.has(selected.method) ? `${safePageState(action.page)}:${selected.purpose}:${effect}:${selected.control}` : null;
         if (signature && seenMutations.has(signature)) return Object.freeze({ status: "failed" });
