@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Status:** IN PROGRESS — boundary-hardening delta remains
+**Status:** COMPLETE
 
 **Goal:** Read one source's immutable batches, accept exactly one contiguous history, and return its last durable cursor plus deduplicated normalized events.
 
@@ -47,8 +47,18 @@ Validate canonical absolute non-root `stateRoot` and the two fixed source IDs be
 - require event count/count algebra to agree with the record. Every event must have the exact normalized top-level
   key set, exact `run` and `tokens` key sets, no accessors/extra content keys, canonical
   `local_agent_usage:<64 hex>` identity, and valid primitive values. Reconstruct only the raw fields accepted by
-  `normalizeLocalAgentUsageEvent`, normalize with the stored source-row/financial-unit identity, and require the
-  resulting canonical event to equal the stored event exactly. Do not create a second event schema implementation.
+  `normalizeLocalAgentUsageEvent`; independently call
+  `resolveLocalAgentUsageAttribution(run.loop,run.task_label)`, require its exact `mapping_id`,
+  `financial_unit_id`, and `attribution_status` to match the record, then normalize with that resolved value and the
+  stored source-row identity. Require the canonical event to equal the stored event exactly. Do not create a second
+  event schema implementation and do not trust the stored financial-unit attribution as normalizer input.
+- recompute the permanent exception subset exactly from delta/event facts:
+  `conflicting_usage|missing_usage|runner_identity_collision|unattributed_usage`. The remaining cursor-defect subset is
+  zero or one allowed value. `source_rewritten|source_truncated` requires a non-null-prior zero-delta self-loop.
+  `invalid_source_row` requires zero delta and either that same non-null-prior self-loop or, on first collection, the
+  cursor contract's fixed empty initial state. `partial_tail` requires `observed_file_size > byte_offset`. A re-hashed record with a missing/extra permanent
+  exception, multiple cursor defects, or a state-inconsistent cursor defect fails closed. A missing cursor defect on
+  an otherwise valid observation is not inferable from stored evidence and is not rejected.
 
 Before chain comparison, dedupe byte-equivalent transitions excluding only `collected_at`; retain the smallest
 `collected_at,record_id` pair deterministically. This makes an ambiguous successful retry with a new timestamp
@@ -78,7 +88,7 @@ paths, record bytes, event content, and errno never escape.
 
 **Interface:** `readLocalAgentUsageChain(stateRoot, sourceId)` returns a deeply frozen exact six-key result and performs no writes.
 
-- [ ] **Step 1: Write missing-module RED**
+- [x] **Step 1: Write missing-module RED**
 
 Create the test/import first. Run from `apps/life-call`:
 
@@ -88,7 +98,7 @@ node --test lib/cfo-local-agent-usage-chain.test.js
 
 Expected RED: `MODULE_NOT_FOUND` for the chain module. Record it before production code exists.
 
-- [ ] **Step 2: Implement only record validation and chain derivation**
+- [x] **Step 2: Implement only record validation and chain derivation**
 
 Use the Contract verbatim. One directory listing, one fd-bound read per final, no write/recovery behavior. Return exact keys in this order:
 
@@ -98,7 +108,7 @@ status, source_state, record_count, events, counts, coverage_exceptions
 
 `counts` uses the existing eight collector count keys. Clone/deep-freeze the result; never freeze caller or parsed temporary inputs.
 
-- [ ] **Step 3: Prove the three observable behaviors**
+- [x] **Step 3: Prove the three observable behaviors**
 
 Luna writes three compact tests:
 
@@ -107,11 +117,14 @@ Luna writes three compact tests:
    observation, and one real append sharing its parent's timestamp. Reader orders by linkage and returns one contiguous
    state, three unique accepted records, sorted unique events, recomputed cumulative counts/exceptions, exact event
    shapes, and never mutates stored data.
-3. A table proves exact redacted failures for bad arguments, hash/content corruption, unknown files, broken prior
-   state, fork, the same event ID repeated across distinct transitions with either identical or different content,
-   and a re-hashed event carrying an extra `prompt: "HOSTILE_SECRET"` key.
+3. A table proves exact redacted failures for bad arguments; hash/content corruption; unknown files; a symlink final;
+   a final-name directory/non-regular entry; group/other-readable final; directory/read errors (only absent source
+   directory is empty); broken prior state; fork; identical/different repeated event IDs; wrong financial-unit
+   attribution; impossible/missing/extra permanent coverage exceptions; multiple or state-inconsistent cursor
+   exceptions; and a re-hashed event carrying an extra
+   `prompt: "HOSTILE_SECRET"` key.
 
-- [ ] **Step 4: Run GREEN and Ponytail gates**
+- [x] **Step 4: Run GREEN and Ponytail gates**
 
 Run from `apps/life-call`:
 
@@ -125,23 +138,34 @@ node --check lib/cfo-local-agent-usage-chain.js
 node --check lib/cfo-local-agent-usage-chain.test.js
 ```
 
-From the worktree root run `git diff --check`, `git diff --name-only`, and `git diff --numstat`. Expected: every command exits `0`; exactly three owned files; <=100 additions. Write the detailed SDD report; do not commit or push.
+From the worktree root:
+
+```bash
+git diff --check 23e25762e -- apps/life-call/lib/cfo-local-agent-usage-chain.js apps/life-call/lib/cfo-local-agent-usage-chain.test.js apps/life-call/package.json
+git diff --numstat 23e25762e -- apps/life-call/lib/cfo-local-agent-usage-chain.js apps/life-call/lib/cfo-local-agent-usage-chain.test.js apps/life-call/package.json
+git diff --name-only efe0cd4 -- apps/life-call
+```
+
+The first two commands prove <=100 cumulative additions in the exact three owned paths from the pre-slice base. The
+last command must equal only the chain source/test (or package if changed) for this post-merge hardening delta; the
+already-committed independent batch-store test hardening in `5bdc3fed9` is not part of 5b2a ownership. Every command
+exits `0`. Write the detailed SDD report; do not commit or push.
 
 ### Task 2 — Sol real isolated evidence and close
 
-- [ ] Sol publishes one real batch per source under `mktemp`, reads both chains, and proves event/count/cursor equality with
+- [x] Sol publishes one real batch per source under `mktemp`, reads both chains, and proves event/count/cursor equality with
 the writer receipts. Fresh Sol review must return ship before commit/push. Then 2a2a.5b2b becomes the sole active item:
 read both source files once, resume from these cursors, and publish the next immutable batches in one local runner.
 
-## Preliminary evidence (must be rerun after boundary hardening)
+## Completion evidence
 
-- Missing-module RED; reader focused 4/4 and complete local-usage focused suite 15/15.
-- Scope: 53 production lines + 46 test lines + one suite entry = 3 files and exactly 100 additions; lockfile unchanged.
-- CFO suite and full `npm test` had zero failures; syntax/diff checks passed. A later remote-plan reconciliation added
-  fd-bound no-follow reading and canonical normalizer reuse, so the prior ship verdict is superseded until those gates
-  pass on the reconciled implementation.
+- Missing-module RED; reader focused 4/4 and complete local-usage focused suite 16/16.
+- Scope: 51 production lines + 48 test lines + one suite entry = 3 files and exactly 100 additions; lockfile unchanged.
+- CFO suite 286/286 and full `npm test` pass; syntax/diff checks pass. The reconciled implementation uses one
+  no-follow fd read, canonical normalizer reuse, independent attribution re-resolution, and fixed redacted failures.
 - Real isolated writer→reader E2E reconciled two chains and 4,987/4,987 accepted events: 3,917 attributed,
   1,070 unattributed, 279 missing-usage rows, and 437 runner-collision groups. Temporary state was removed; live state
   and launchd were untouched.
-- Tests prove same-timestamp causal ordering, ambiguous-retry dedupe, clean/defect self-loop determinism, exact event
-  privacy shape, fork/gap/hash failure, and same event ID rejection across distinct transitions.
+- Tests prove same-timestamp causal ordering, smallest-pair retry dedupe, clean/defect self-loop determinism, exact
+  event/attribution/coverage privacy shape, filesystem boundary failures, fork/gap/hash failure, and same event ID
+  rejection across distinct transitions. Fresh Sol implementation review returned `ship`.
