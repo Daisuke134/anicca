@@ -285,13 +285,15 @@ sequenceDiagram
 | HRA-3M | market baseline、walk-forward、calibration、slippage | **BLOCKED** |
 | HRA-4 | live-data SHADOW、official outcome reconciliation | **BLOCKED**。shadow runs 0 |
 | HRA-5 | Telegram + CFO real/shadow separation | **BLOCKED**。Telegram runs 0 |
-| HRA-6 | terms/order/tax/credential/cap/receipt/reconciliation | **ORDER PERMISSION ATTESTED / REMAINING GATES PENDING**。全対象サイトの自律操作許可はowner確認済み、追加provider照会なし |
+| HRA-6 | terms/order/tax/credential/cap/receipt/reconciliation | **ORDER PERMISSION ATTESTED / ACCOUNT CREDENTIAL NOT_OBSERVED**。追加provider照会なし、実投票前に既存公式口座の発見または公式signup/loginが必要 |
 | HRA-7 | HRA-6後のone ¥100 max/day review | **BLOCKED。PurchaseExecutor disabled** |
 | HRA-8 | evidence-driven target review | **BLOCKED** |
 
 ### HRA-6 / HRA-7 policy
 
 2026-08-10T12:48:52+09:00のowner明示により、全対象公式購入サイトの自律操作許可は`order_permission_basis=USER_ATTESTED_AUTONOMOUS_ORDER_APPROVAL`とする。`order_permission_document_verified=false`として証拠強度を誠実に表示しつつ、書面回答は実装・注文の依存にせず、`provider_recontact=false`とする。tax/credential/cap/idempotency/receipt/reconciliation未完了の間はLIVE_CASHをfail-closedする。通過後もstale/manifest/Telegram/reconciliation failureのSKIP、martingale/chasing禁止、公式settled receipt確認、実資金流出直前の確認を必須にする。
+
+2026-08-10T12:52+09:00のread-only inventoryでは、設定済みGmailの過去メール、既存Cloak cookie DBの対象host行、macOS Keychainの対象host完全一致entryのいずれにも投票口座credential証拠を観測していない。`account_credential_state=NOT_OBSERVED`とし、`ACCOUNT_ABSENT`とは断定しない。genericな決済情報は公式投票口座の代替にしない。LIVE_CASH前に、別経路で既存口座を実測するか、公式signup/loginを完了し、credential値を外へ出さず隔離する。
 
 SPAT4 is the clearest published NAR receipt-contract candidate. Its 2026-05-01 official contract fixes ordinary tickets at ¥100 units, defines acceptance/formation, prohibits third-party purchase applications, and retains application records for 30 days; its 2026-06-24 conditions require inquiry after uncertain communication to avoid duplicates. Sources: https://www.nankankeiba.com/info/spat4/pdf/spat4_contract01.pdf?ver=20260501 and https://www.nankankeiba.com/info/spat4/pdf/spat4_contract03.pdf?ver=20260624. Autonomous-operation permission is based on the separate owner attestation, not inferred from this public contract.
 

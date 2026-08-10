@@ -37,6 +37,7 @@
 | live Telegram runs | 0 |
 | live orders/payments | 0 |
 | revenue / real P&L | 0 |
+| observed purchase-account credential evidence | NOT_OBSERVED |
 
 JRA official resultはcommits `526381236` + `e79ed1d11`で12 actual rows、`PASS_PRIVATE_SHADOW`、private raw 700/600、`cash_authorized=false`。NARの46/456/327274行、payback 0 pre-settlementはcommit `6a6cdd1356ea9f1d5064cdd24bb05d4342fe6730`から始まるredacted observationで、commits `33ef30c1d` + `a289babba`により`PASS_PRIVATE_SHADOW`。NAR ephemeral raw archiveは不在で`CANNOT_RECOMPUTE_RAW_ARCHIVE_ABSENT`である。backtest、SHADOW、Telegram、orders、revenueは現在値0としてblocked表示する。
 
@@ -95,7 +96,7 @@ The official NAR source is zero-cost primary; JRA remains official primary. Seco
 | 9 | HRA-4 SHADOW decision/outcome ledger | blocked by HRA-3Mb | `decision.py`, `ledger.py`, `test_shadow_ledger.py` |
 | 10 | HRA-4b Japanese Telegram | blocked by HRA-4 | `telegram.py` and `test_telegram.py` |
 | 11 | HRA-5 CFO adapter | blocked by HRA-4b and CFO-0c | `cfo.py` and `test_cfo.py` |
-| 12 | HRA-6 terms/order/tax/receipt gate | **order permission attested / remaining gates pending** | no provider recontact; tax/credential/cap/idempotency/receipt/reconciliation remain |
+| 12 | HRA-6 terms/order/tax/receipt gate | **order permission attested / account credential NOT_OBSERVED** | no provider recontact; account/login, tax/cap/idempotency/receipt/reconciliation remain |
 | 13 | HRA-7 owner-local-day ¥100 gate | blocked future gate | document only, no bet execution |
 | 14 | HRA-8 scale review | blocked future gate | evidence-driven target only |
 
@@ -550,6 +551,8 @@ Observed official terms evidence:
 - 国税庁「競馬の馬券の払戻金に係る課税について」: https://www.nta.go.jp/information/other/data/h30/keiba/index.htm — 所得区分は購入期間・回数・頻度・利益規模等を総合判断し、一定の継続的な自動購入態様は雑所得になり得る一方、一般的な一時所得では外れ馬券費用を控除できないと説明する。
 
 Current decision: the public-terms findings and the already-sent Rakuten inquiry remain historical evidence, but they no longer block implementation. The owner's direct statement is the SSOT for autonomous-order permission across the target official purchase sites: `USER_ATTESTED_AUTONOMOUS_ORDER_APPROVAL`, document not independently verified, no provider recontact. HRA-6 still fails closed on tax boundary, credential isolation, owner-local-day cap, idempotent submit, official purchase/settlement receipt, timeout/duplicate handling, and reconciliation. `PurchaseExecutor` remains disabled until those non-permission gates and the data/model/Telegram/CFO dependencies pass.
+
+Credential inventory truth: at 2026-08-10T12:52+09:00, read-only checks found no purchase-account evidence in the configured Gmail history, no target-domain cookie rows across the existing Cloak cookie databases, and no exact target-host internet-password entry in macOS Keychain. The two JRA-related Gmail threads were JRA-VAN data inquiries, and the one Rakuten Keiba thread was the permission inquiry; these are not wagering-account receipts. Record `account_credential_state=NOT_OBSERVED`, not `ACCOUNT_ABSENT`. Do not treat generic payment information as an official wagering account. Before LIVE_CASH, reuse a separately observed existing official account or complete the provider's official signup/login flow, then isolate credentials without exporting their values.
 
 Tax ledger decision: CFO stores gross payout, winning-ticket stake, losing-ticket stake, refund/void, purchase timestamp, and official receipt ID as separate immutable fields. It must not infer the user's final tax classification, net all losing tickets, or treat the ¥500,000 temporary-income deduction as a blanket tax-free betting allowance. Before LIVE_CASH scaling, HRA-6 requires current fact-pattern review by a qualified Japanese tax professional or equivalent authoritative determination.
 
