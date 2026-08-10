@@ -33,7 +33,7 @@ test("bounded proposer requests one structured action from Terra with sanitized 
     step: 2,
     observation: {
       state: "registration_page",
-      controls: [{ control: "register_button", kind: "button", label: "Register", required: false }],
+      controls: [{ control: "register_button", kind: "button", label: "Register", required: false, submittable: true }],
     },
   });
   assert.deepEqual(action, { control: "register_button" });
@@ -148,16 +148,19 @@ test("page observation derives required from aria and supported required groups"
 
 test("parent derives the action method and purpose from the selected control kind", async () => {
   const cases = [["text_field", "input", "fill", "ax_fill"], ["notes_field", "textarea", "fill", "ax_fill"], ["ticket_field", "select", "fill", "ax_select"], ["agree_check", "checkbox", "fill", "ax_check"], ["choice_radio", "radio", "fill", "ax_check"], ["submit_button", "button", "submit", "ax_click"], ["submit_link", "link", "submit", "ax_click"]];
-  const controls = cases.map(([control, kind]) => ({ control, kind, label: control, required: kind !== "button" && kind !== "link" })); const calls = [];
+  const controls = cases.map(([control, kind]) => ({ control, kind, label: control, required: kind !== "button" && kind !== "link", submittable: kind === "button" })); const calls = [];
   const harness = createProductionBrowserHarness({
     lumaWorkflow: { async readProviderState() { return { status: "absent" }; } },
-    inspectControls: async () => controls,
+    inspectControls: async ({ page }) => [controls.find((item) => item.control === page.page_id)],
     async proposeAction() { return { purpose: "submit", method: "ax_check", control: "text_field" }; },
     async operateControl(input) { calls.push(input.action); return { status: "success" }; },
     async resolveValue() { return "parent-value"; },
   });
-  for (const [control] of cases) await harness.performAction({ page: {}, action: { purpose: "submit", method: "ax_check", control } });
-  assert.deepEqual(calls, cases.map(([control, , purpose, method]) => ({ purpose, method, control })));
+  for (const [control, kind] of cases) {
+    const result = await harness.performAction({ page: { page_id: control }, action: { purpose: "submit", method: "ax_check", control } });
+    assert.deepEqual(result, kind === "link" ? { status: "failed" } : { status: "success" });
+  }
+  assert.deepEqual(calls, cases.filter(([, kind]) => kind !== "link").map(([control, , purpose, method]) => ({ purpose, method, control })));
 });
 
 test("production harness lets the model choose controls but parent owns values actions and readback", async () => {
@@ -176,8 +179,8 @@ test("production harness lets the model choose controls but parent owns values a
       assert.equal(input.page, page);
       calls.push(["inspect"]);
       return [
-        { control: "phone_field", kind: "input", label: "Phone", required: true },
-        { control: "register_button", kind: "button", label: "Register", required: false },
+        { control: "phone_field", kind: "input", label: "Phone", required: true, completed: performed > 0 },
+        { control: "register_button", kind: "button", label: "Register", required: false, submittable: true },
       ];
     },
     async proposeAction(input) {
@@ -240,7 +243,7 @@ test("production harness uses Connpass parent readback for a Connpass fallback",
       },
     },
     async inspectControls() {
-      return [{ control: "apply_button", kind: "button", label: "Apply", required: false }];
+      return [{ control: "apply_button", kind: "button", label: "Apply", required: false, submittable: true }];
     },
     async proposeAction() { return { purpose: "submit", method: "ax_click", control: "apply_button" }; },
     async operateControl() { operated = true; return { status: "success" }; },
@@ -331,7 +334,7 @@ test("page observation exposes boolean completion without values", async () => {
 
 test("bounded proposer excludes completed and optional answer controls from the structured enum", async () => {
   let request; const proposer = createBoundedActionProposer({ repoRoot: "/private/repo", evidenceDir: "/private/evidence", async runAgentRunner(input) { request = input; return { summary: { status: "success", selected_provider: "codex", selected_model: "gpt-5.6-terra" }, value: { control: "submit_button" } }; } });
-  const action = await proposer({ provider: "peatix", target_id: "TARGET1", expected_state: "registered_or_pending", step: 1, observation: { controls: [{ control: "name_field", kind: "input", label: "Name", required: true, completed: true }, { control: "optional_notes", kind: "input", label: "Optional notes", required: false, completed: false }, { control: "submit_button", kind: "button", label: "Submit", required: false, completed: false }] } });
+  const action = await proposer({ provider: "peatix", target_id: "TARGET1", expected_state: "registered_or_pending", step: 1, observation: { controls: [{ control: "name_field", kind: "input", label: "Name", required: true, completed: true }, { control: "optional_notes", kind: "input", label: "Optional notes", required: false, completed: false }, { control: "submit_button", kind: "button", label: "Submit", required: false, completed: false, submittable: true }] } });
   assert.deepEqual(action, { control: "submit_button" }); assert.deepEqual(request.schema.properties.control.enum, ["submit_button"]); assert.match(request.prompt, /incomplete|completed/i); assert.doesNotMatch(JSON.stringify(request), /secret-value/);
 });
 
@@ -355,26 +358,166 @@ test("production harness rejects a completed fill before resolving or operating 
 
 test("bounded proposer separates fallback evidence sequences on one target", async () => {
   const evidence = []; const proposer = createBoundedActionProposer({ repoRoot: "/private/repo", evidenceDir: "/private/evidence", async runAgentRunner(input) { evidence.push(input.evidenceDir); return { summary: { status: "success", selected_provider: "codex", selected_model: "gpt-5.6-terra" }, value: { control: "submit_button" } }; } });
-  const base = { provider: "peatix", target_id: "TARGET1", expected_state: "registered_or_pending", observation: { controls: [{ control: "submit_button", kind: "button", label: "Submit", required: false }] } };
+  const base = { provider: "peatix", target_id: "TARGET1", expected_state: "registered_or_pending", observation: { controls: [{ control: "submit_button", kind: "button", label: "Submit", required: false, submittable: true }] } };
   await proposer({ ...base, step: 1 }); await proposer({ ...base, step: 2 }); await proposer({ ...base, step: 1 });
   assert.deepEqual(evidence, ["/private/evidence/target-TARGET1/fallback-1/step-1", "/private/evidence/target-TARGET1/fallback-1/step-2", "/private/evidence/target-TARGET1/fallback-2/step-1"]); assert.equal(evidence.some((value) => /candidate/i.test(value)), false);
 });
 
 test("production harness rejects an identical mutating action only after its first success and resets per fallback", async () => {
-  let operated = 0; const page = { url() { return "https://peatix.com/sales/event/1/form?token=one"; } }; const harness = createProductionBrowserHarness({ lumaWorkflow: { async readProviderState() { return { status: "absent" }; } }, inspectControls: async () => [{ control: "submit_button", kind: "button", label: "Submit", required: false }], proposeAction: async () => ({ purpose: "submit", method: "ax_click", control: "submit_button" }), async operateControl() { operated += 1; return { status: "success" }; }, async resolveValue() { return null; } });
+  let operated = 0; const page = { url() { return "https://peatix.com/sales/event/1/form?token=one"; } }; const harness = createProductionBrowserHarness({ lumaWorkflow: { async readProviderState() { return { status: "absent" }; } }, inspectControls: async () => [{ control: "submit_button", kind: "button", label: "Submit", required: false, submittable: true }], proposeAction: async () => ({ purpose: "submit", method: "ax_click", control: "submit_button" }), async operateControl() { operated += 1; return { status: "success" }; }, async resolveValue() { return null; } });
   const input = { provider: "luma", candidate: { event_ref: "luma-event://event/one" }, page, pageWebsocket: "ws://127.0.0.1:9222/devtools/page/TARGET1", expectedState: "registered_or_pending" };
   const first = await harness.runFallback({ ...input, maxSteps: 2 }); assert.equal(first.safe_reason, "agent_action_failed"); assert.equal(operated, 1);
   const second = await harness.runFallback({ ...input, maxSteps: 1 }); assert.equal(second.safe_reason, "agent_step_limit"); assert.equal(operated, 2);
 });
 
 test("production harness allows the same mutating action after an exact page path change", async () => {
-  let operated = 0; let href = "https://peatix.com/sales/event/1/form?token=one"; const page = { url() { return href; } }; const harness = createProductionBrowserHarness({ lumaWorkflow: { async readProviderState() { if (operated === 1) href = "https://peatix.com/sales/event/1/confirm#final"; return { status: "absent" }; } }, inspectControls: async () => [{ control: "submit_button", kind: "button", label: "Submit", required: false }], proposeAction: async () => ({ purpose: "submit", method: "ax_click", control: "submit_button" }), async operateControl() { operated += 1; return { status: "success" }; }, async resolveValue() { return null; } });
+  let operated = 0; let href = "https://peatix.com/sales/event/1/form?token=one"; const page = { url() { return href; } }; const harness = createProductionBrowserHarness({ lumaWorkflow: { async readProviderState() { if (operated === 1) href = "https://peatix.com/sales/event/1/confirm#final"; return { status: "absent" }; } }, inspectControls: async () => [{ control: "submit_button", kind: "button", label: "Submit", required: false, submittable: true }], proposeAction: async () => ({ purpose: "submit", method: "ax_click", control: "submit_button" }), async operateControl() { operated += 1; return { status: "success" }; }, async resolveValue() { return null; } });
   const result = await harness.runFallback({ provider: "luma", candidate: { event_ref: "luma-event://event/one" }, page, pageWebsocket: "ws://127.0.0.1:9222/devtools/page/TARGET1", maxSteps: 2, expectedState: "registered_or_pending" });
   assert.equal(result.safe_reason, "agent_step_limit"); assert.equal(operated, 2);
 });
 
 test("production harness treats equivalent activation methods as one repeated effect", async () => {
-  let operated = 0; let method = "ax_click"; const page = { url() { return "https://peatix.com/sales/event/1/form"; } }; const harness = createProductionBrowserHarness({ lumaWorkflow: { async readProviderState() { return { status: "absent" }; } }, inspectControls: async () => [{ control: "submit_button", kind: "button", label: "Submit", required: false }], proposeAction: async () => ({ purpose: "submit", method, control: "submit_button" }), async operateControl() { operated += 1; method = "coordinate_click"; return { status: "success" }; }, async resolveValue() { return null; } });
+  let operated = 0; let method = "ax_click"; const page = { url() { return "https://peatix.com/sales/event/1/form"; } }; const harness = createProductionBrowserHarness({ lumaWorkflow: { async readProviderState() { return { status: "absent" }; } }, inspectControls: async () => [{ control: "submit_button", kind: "button", label: "Submit", required: false, submittable: true }], proposeAction: async () => ({ purpose: "submit", method, control: "submit_button" }), async operateControl() { operated += 1; method = "coordinate_click"; return { status: "success" }; }, async resolveValue() { return null; } });
   const result = await harness.runFallback({ provider: "luma", candidate: { event_ref: "luma-event://event/one" }, page, pageWebsocket: "ws://127.0.0.1:9222/devtools/page/TARGET1", maxSteps: 2, expectedState: "registered_or_pending" });
   assert.equal(result.safe_reason, "agent_action_failed"); assert.equal(operated, 1);
+});
+
+test("inspector scopes submit to the registration form and fails closed for duplicate submits", async () => {
+  const registrationForm = {}; const cookieForm = {};
+  const make = (element) => ({ dataset: {}, labels: [], innerText: "", options: [], getAttribute() { return ""; }, closest() { return null; }, ...element });
+  const elements = [
+    make({ tagName: "INPUT", type: "text", required: true, value: "", form: registrationForm, labels: [{ innerText: "Name" }] }),
+    make({ tagName: "INPUT", type: "submit", required: false, value: "Register", form: registrationForm }),
+    make({ tagName: "INPUT", type: "submit", required: false, value: "Register duplicate", form: registrationForm }),
+    make({ tagName: "INPUT", type: "submit", required: false, value: "Accept cookies", form: cookieForm }),
+    make({ tagName: "BUTTON", type: "button", required: false, value: "private-button-value", form: registrationForm }),
+  ];
+  const controls = await inspectPageControls({ page: { locator() { return { async evaluateAll(callback) { return callback(elements); } }; } } });
+  assert.equal(controls.find((control) => control.label === "Register").submittable, false);
+  assert.equal(controls.find((control) => control.label === "Register duplicate").submittable, false);
+  assert.equal(controls.find((control) => control.label === "Accept cookies").submittable, false);
+  assert.equal(controls.some((control) => control.label === "private-button-value"), false);
+});
+
+test("inspector marks the lone registration submit and rejects a separate cookie submit", async () => {
+  const registrationForm = {}; const cookieForm = {};
+  const make = (element) => ({ dataset: {}, labels: [], innerText: "", options: [], getAttribute() { return ""; }, closest() { return null; }, ...element });
+  const elements = [
+    make({ tagName: "INPUT", type: "text", required: true, value: "", form: registrationForm, labels: [{ innerText: "Name" }] }),
+    make({ tagName: "INPUT", type: "submit", required: false, value: "Register", form: registrationForm }),
+    make({ tagName: "INPUT", type: "submit", required: false, value: "Accept cookies", form: cookieForm }),
+  ];
+  const controls = await inspectPageControls({ page: { locator() { return { async evaluateAll(callback) { return callback(elements); } }; } } });
+  assert.equal(controls.find((control) => control.label === "Register").submittable, true);
+  assert.equal(controls.find((control) => control.label === "Accept cookies").submittable, false);
+});
+
+test("inspector fails closed when registration and cookie forms both have required answers", async () => {
+  const registrationForm = {}; const cookieForm = {};
+  const make = (element) => ({ dataset: {}, labels: [], innerText: "", options: [], checked: false, getAttribute() { return ""; }, closest() { return null; }, ...element });
+  const elements = [
+    make({ tagName: "INPUT", type: "text", required: true, value: "", form: registrationForm, labels: [{ innerText: "Name" }] }),
+    make({ tagName: "INPUT", type: "submit", required: false, value: "Register", form: registrationForm }),
+    make({ tagName: "INPUT", type: "checkbox", required: true, value: "on", form: cookieForm, labels: [{ innerText: "Accept cookies" }] }),
+    make({ tagName: "INPUT", type: "submit", required: false, value: "Save preferences", form: cookieForm }),
+  ];
+  const controls = await inspectPageControls({ page: { locator() { return { async evaluateAll(callback) { return callback(elements); } }; } } });
+  assert.equal(controls.find((control) => control.label === "Register").submittable, false);
+  assert.equal(controls.find((control) => control.label === "Save preferences").submittable, false);
+});
+
+test("parent rejects an injected submit while a required answer remains incomplete", async () => {
+  let operated = 0;
+  const harness = createProductionBrowserHarness({
+    lumaWorkflow: { async readProviderState() { return { status: "absent" }; } },
+    inspectControls: async () => [
+      { control: "name_field", kind: "input", label: "Name", required: true, completed: false },
+      { control: "register_button", kind: "button", label: "Register", required: false, submittable: true },
+    ],
+    async proposeAction() { return { purpose: "submit", method: "ax_click", control: "register_button" }; },
+    async operateControl() { operated += 1; return { status: "success" }; },
+    async resolveValue() { return null; },
+  });
+  assert.deepEqual(await harness.performAction({ page: {}, action: { purpose: "submit", method: "ax_click", control: "register_button" } }), { status: "failed" });
+  assert.equal(operated, 0);
+});
+
+test("same-page duplicate guard rejects a reindexed submit token", async () => {
+  let operated = 0; let observations = 0;
+  const page = { url() { return "https://peatix.com/sales/event/1/form"; } };
+  const harness = createProductionBrowserHarness({
+    lumaWorkflow: { async readProviderState() { return { status: "absent" }; } },
+    inspectControls: async () => {
+      observations += 1;
+      return [
+        { control: "name_field", kind: "input", label: "Name", required: true, completed: true },
+        { control: observations === 1 ? "submit_one" : "submit_two", kind: "button", label: "Register", required: false, submittable: true },
+      ];
+    },
+    async proposeAction(input) { return { purpose: "submit", method: "ax_click", control: input.observation.controls.find((control) => control.kind === "button").control }; },
+    async operateControl() { operated += 1; return { status: "success" }; },
+    async resolveValue() { return null; },
+  });
+  const result = await harness.runFallback({ provider: "luma", candidate: { event_ref: "luma-event://event/one" }, page, pageWebsocket: "ws://127.0.0.1:9222/devtools/page/TARGET1", maxSteps: 2, expectedState: "registered_or_pending" });
+  assert.equal(result.safe_reason, "agent_action_failed");
+  assert.equal(operated, 1);
+});
+
+test("inspector keeps input-submit value as a public label and marks only form submits", async () => {
+  const form = {};
+  const make = (element) => ({ dataset: {}, labels: [], innerText: "", options: [], getAttribute() { return ""; }, closest() { return null; }, ...element });
+  const elements = [
+    make({ tagName: "INPUT", type: "text", required: true, value: "private-answer", form }),
+    make({ tagName: "INPUT", type: "submit", required: false, value: "Register now", form }),
+    make({ tagName: "BUTTON", type: "button", required: false, innerText: "Apply", form: null }),
+    make({ tagName: "A", type: "", required: false, innerText: "Help", form: null }),
+  ];
+  const controls = await inspectPageControls({ page: { locator() { return { async evaluateAll(callback) { return callback(elements); } }; } } });
+  const submit = controls.find((control) => control.label === "Register now");
+  assert.ok(submit);
+  assert.equal(submit.kind, "button");
+  assert.equal(submit.submittable, true);
+  assert.equal(controls.some((control) => control.label === "private-answer"), false);
+  assert.equal(controls.find((control) => control.label === "Apply").submittable, false);
+  assert.equal(controls.find((control) => control.label === "Help").submittable, false);
+});
+
+test("bounded proposer exposes pending answers first and only submittable buttons after completion", async () => {
+  const enums = [];
+  const proposer = createBoundedActionProposer({
+    repoRoot: "/private/repo", evidenceDir: "/private/evidence",
+    async runAgentRunner(input) {
+      enums.push(input.schema.properties.control.enum);
+      return { summary: { status: "success", selected_provider: "codex", selected_model: "gpt-5.6-terra" }, value: { control: input.schema.properties.control.enum[0] } };
+    },
+  });
+  const controls = [
+    { control: "name_field", kind: "input", label: "Name", required: true, completed: false },
+    { control: "phone_field", kind: "input", label: "Phone", required: true, completed: true },
+    { control: "cookie_button", kind: "button", label: "Accept all cookies", required: false, submittable: false },
+    { control: "apply_button", kind: "button", label: "Apply", required: false, submittable: false },
+    { control: "register_button", kind: "button", label: "Register", required: false, submittable: true },
+    { control: "help_link", kind: "link", label: "Help", required: false, submittable: false },
+  ];
+  assert.deepEqual(await proposer({ provider: "peatix", target_id: "TARGET1", expected_state: "registered_or_pending", step: 1, observation: { controls } }), { control: "name_field" });
+  assert.deepEqual(await proposer({ provider: "peatix", target_id: "TARGET1", expected_state: "registered_or_pending", step: 2, observation: { controls: controls.map((control) => control.control === "name_field" ? { ...control, completed: true } : control) } }), { control: "register_button" });
+  assert.deepEqual(enums, [["name_field"], ["register_button"]]);
+});
+
+test("parent rejects arbitrary buttons and links even when an injected action selects them", async () => {
+  let operated = 0;
+  const harness = createProductionBrowserHarness({
+    lumaWorkflow: { async readProviderState() { return { status: "absent" }; } },
+    inspectControls: async () => [
+      { control: "cookie_button", kind: "button", label: "Accept all cookies", required: false, submittable: false },
+      { control: "help_link", kind: "link", label: "Help", required: false, submittable: false },
+    ],
+    async proposeAction() { return { purpose: "submit", method: "ax_click", control: "cookie_button" }; },
+    async operateControl() { operated += 1; return { status: "success" }; },
+    async resolveValue() { return null; },
+  });
+  const page = {};
+  assert.deepEqual(await harness.performAction({ page, action: { purpose: "submit", method: "ax_click", control: "cookie_button" } }), { status: "failed" });
+  assert.deepEqual(await harness.performAction({ page, action: { purpose: "submit", method: "ax_click", control: "help_link" } }), { status: "failed" });
+  assert.equal(operated, 0);
 });

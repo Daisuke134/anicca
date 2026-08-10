@@ -25,13 +25,15 @@ function safeControl(input) {
   const label = String(input.label || "").replace(/\s+/g, " ").trim();
   const question = String(input.question || "").replace(/\s+/g, " ").trim();
   const completed = input.completed == null ? false : input.completed;
+  const submittable = input.submittable == null ? false : input.submittable;
   if (
     !CONTROL.test(control) || !KINDS.has(kind) || !label || label.length > 300
     || /[\x00-\x1f\x7f]/.test(label) || question.length > 300
     || /[\x00-\x1f\x7f]/.test(question) || (question && !["checkbox", "radio"].includes(kind))
     || typeof input.required !== "boolean" || typeof completed !== "boolean"
+    || typeof submittable !== "boolean" || (submittable && kind !== "button")
   ) invalid();
-  return Object.freeze({ control, kind, label, required: input.required, completed, ...(question ? { question } : {}) });
+  return Object.freeze({ control, kind, label, required: input.required, completed, submittable, ...(question ? { question } : {}) });
 }
 
 function actionForControl(control) { const action = ACTIONS[control.kind]; return action ? Object.freeze({ purpose: action[0], method: action[1], control: control.control }) : null; }
@@ -41,31 +43,58 @@ async function inspectPageControls(input = {}) {
   if (!page || typeof page.locator !== "function") invalid();
   const locator = page.locator("input, textarea, select, button, a[role=button]");
   if (!locator || typeof locator.evaluateAll !== "function") invalid();
-  const observed = await locator.evaluateAll((elements) => elements.slice(0, 100).flatMap((element, index) => {
-    const tag = String(element.tagName || "").toLowerCase();
-    const type = String(element.type || "").toLowerCase();
-    if (type === "hidden" || element.disabled === true) return [];
-    const kind = tag === "input" && ["checkbox", "radio"].includes(type)
-      ? type : tag === "input" && ["button", "submit", "reset", "image"].includes(type) ? "button" : tag === "a" ? "link" : tag;
-    if (!["input", "textarea", "select", "checkbox", "radio", "button", "link"].includes(kind)) return [];
-    const labels = Array.from(element.labels || []).map((label) => label.innerText || label.textContent || "");
-    const label = [
-      ...labels,
-      element.getAttribute && element.getAttribute("aria-label"),
-      element.getAttribute && element.getAttribute("placeholder"),
-      element.getAttribute && element.getAttribute("name"),
-      element.innerText,
-    ].map((value) => String(value || "").replace(/\s+/g, " ").trim()).find(Boolean);
-    if (!label) return [];
-    const control = `control_${index + 1}`;
-    element.dataset.lmConnectorControl = control;
-    const group = typeof element.closest === "function" ? element.closest("fieldset, dl.field, [role='group'], .field") : null;
-    const question = ["checkbox", "radio"].includes(kind) && group && typeof group.querySelector === "function" ? String(group.querySelector("legend,dt,[data-question]")?.textContent || "").replace(/\s+/g, " ").trim() : "";
-    const radioName = String((element.getAttribute && element.getAttribute("name")) || element.name || "");
-    const completed = ["input", "textarea", "select"].includes(kind) ? Boolean(String(element.value || "").trim()) : kind === "checkbox" ? element.checked === true : kind === "radio" ? radioName.trim() ? elements.some((candidate) => String(candidate.type || "").toLowerCase() === "radio" && String((candidate.getAttribute && candidate.getAttribute("name")) || candidate.name || "") === radioName && candidate.checked === true) : element.checked === true : false;
-    const required = element.required === true || String((element.getAttribute && element.getAttribute("aria-required")) || "").toLowerCase() === "true" || Boolean(group && (((group.classList && typeof group.classList.contains === "function") && group.classList.contains("required")) || /(?:^|\s)required(?:\s|$)/.test(String(group.className || "")) || String((group.getAttribute && group.getAttribute("aria-required")) || "").toLowerCase() === "true"));
-    return [{ control, kind, label, required, completed, ...(question ? { question } : {}) }];
-  }));
+  const observed = await locator.evaluateAll((elements) => {
+    const visibleElements = elements.slice(0, 100);
+    const kindOf = (element) => {
+      const tag = String(element.tagName || "").toLowerCase();
+      const type = String(element.type || "").toLowerCase();
+      return tag === "input" && ["checkbox", "radio"].includes(type)
+        ? type : tag === "input" && ["button", "submit", "reset", "image"].includes(type) ? "button" : tag === "a" ? "link" : tag;
+    };
+    const submitTypeOf = (element) => {
+      const tag = String(element.tagName || "").toLowerCase(); const type = String(element.type || "").toLowerCase();
+      return tag === "button" ? !type || type === "submit" : ["submit", "image"].includes(type);
+    };
+    const groupOf = (element) => typeof element.closest === "function" ? element.closest("fieldset, dl.field, [role='group'], .field") : null;
+    const requiredOf = (element) => {
+      const group = groupOf(element);
+      return element.required === true || String((element.getAttribute && element.getAttribute("aria-required")) || "").toLowerCase() === "true" || Boolean(group && (((group.classList && typeof group.classList.contains === "function") && group.classList.contains("required")) || /(?:^|\s)required(?:\s|$)/.test(String(group.className || "")) || String((group.getAttribute && group.getAttribute("aria-required")) || "").toLowerCase() === "true"));
+    };
+    const answerKinds = ["input", "textarea", "select", "checkbox", "radio"];
+    const answerForms = new Set(visibleElements.filter((element) => String(element.type || "").toLowerCase() !== "hidden" && element.disabled !== true && answerKinds.includes(kindOf(element)) && requiredOf(element)).map((element) => element.form).filter(Boolean));
+    const registrationForm = answerForms.size === 1 ? answerForms.values().next().value : null;
+    const submitCounts = new Map();
+    for (const element of visibleElements) {
+      const kind = kindOf(element);
+      if (kind === "button" && element.disabled !== true && !!element.form && element.form === registrationForm && submitTypeOf(element)) submitCounts.set(element.form, (submitCounts.get(element.form) || 0) + 1);
+    }
+    return visibleElements.flatMap((element, index) => {
+      const tag = String(element.tagName || "").toLowerCase();
+      const type = String(element.type || "").toLowerCase();
+      if (type === "hidden" || element.disabled === true) return [];
+      const kind = kindOf(element);
+      if (!["input", "textarea", "select", "checkbox", "radio", "button", "link"].includes(kind)) return [];
+      const labels = Array.from(element.labels || []).map((label) => label.innerText || label.textContent || "");
+      const label = [
+        ...labels,
+        element.getAttribute && element.getAttribute("aria-label"),
+        element.getAttribute && element.getAttribute("placeholder"),
+        element.getAttribute && element.getAttribute("name"),
+        element.innerText,
+        tag === "input" && ["submit", "image"].includes(type) ? element.value : null,
+      ].map((value) => String(value || "").replace(/\s+/g, " ").trim()).find(Boolean);
+      if (!label) return [];
+      const control = `control_${index + 1}`;
+      element.dataset.lmConnectorControl = control;
+      const group = groupOf(element);
+      const question = ["checkbox", "radio"].includes(kind) && group && typeof group.querySelector === "function" ? String(group.querySelector("legend,dt,[data-question]")?.textContent || "").replace(/\s+/g, " ").trim() : "";
+      const radioName = String((element.getAttribute && element.getAttribute("name")) || element.name || "");
+      const completed = ["input", "textarea", "select"].includes(kind) ? Boolean(String(element.value || "").trim()) : kind === "checkbox" ? element.checked === true : kind === "radio" ? radioName.trim() ? elements.some((candidate) => String(candidate.type || "").toLowerCase() === "radio" && String((candidate.getAttribute && candidate.getAttribute("name")) || candidate.name || "") === radioName && candidate.checked === true) : element.checked === true : false;
+      const required = requiredOf(element);
+      const submittable = kind === "button" && !!element.form && element.form === registrationForm && submitTypeOf(element) && submitCounts.get(element.form) === 1;
+      return [{ control, kind, label, required, completed, submittable, ...(question ? { question } : {}) }];
+    });
+  });
   if (!Array.isArray(observed)) invalid();
   return Object.freeze(observed.map(safeControl));
 }
@@ -177,7 +206,8 @@ function createBoundedActionProposer(options = {}) {
       || !input.observation || !Array.isArray(input.observation.controls)
     ) invalid();
     const controls = input.observation.controls.map(safeControl);
-    const actionableControls = controls.filter((control) => !ACTIONABLE_KINDS.has(control.kind) || (control.required && !control.completed));
+    const pendingAnswers = controls.filter((control) => ACTIONABLE_KINDS.has(control.kind) && control.required && !control.completed);
+    const actionableControls = pendingAnswers.length ? pendingAnswers : controls.filter((control) => control.kind === "button" && control.submittable === true);
     if (!actionableControls.length) return null;
     const sequence = step === 1 ? (fallbackSequences.get(targetId) || 0) + 1 : (fallbackSequences.get(targetId) || 1);
     fallbackSequences.set(targetId, sequence);
@@ -186,7 +216,7 @@ function createBoundedActionProposer(options = {}) {
       prompt: [
         `Choose exactly one browser action for the current ${input.provider} registration page.`,
         "Return only one control token from the supplied list.",
-        "Choose only an incomplete required field or a button/link before submit. Never invent answers, navigate, open or close pages, run commands, or edit code.",
+        "Choose only an incomplete required answer field, or after all required answers are complete, a submittable form button. Never invent answers, navigate, open or close pages, run commands, or edit code.",
         "The parent process owns all private values, executes the action, and verifies registered or pending state.",
         `Step: ${step} of 10`,
         `Page state: ${state}`,
@@ -253,7 +283,10 @@ function createProductionBrowserHarness(options = {}) {
     const observation = registry.get(input.page) || await observed(input.page);
     const control = observation.controls.find((item) => item.control === input.action.control);
     if (!control) return Object.freeze({ status: "failed" });
+    const pendingRequiredAnswer = observation.controls.some((item) => ACTIONABLE_KINDS.has(item.kind) && item.required && !item.completed);
+    if (control.kind === "button" && pendingRequiredAnswer) return Object.freeze({ status: "failed" });
     if (ACTIONABLE_KINDS.has(control.kind) && (!control.required || control.completed)) return Object.freeze({ status: "failed" });
+    if (control.kind === "link" || (control.kind === "button" && control.submittable !== true)) return Object.freeze({ status: "failed" });
     const action = actionForControl(control); if (!action) return Object.freeze({ status: "failed" });
     let value = null;
     if (FILL.has(action.method)) {
@@ -284,7 +317,7 @@ function createProductionBrowserHarness(options = {}) {
       observePage: ({ page }) => observed(page),
       async proposeAction(input) { const proposal = await proposeAction(input); const token = String(proposal && typeof proposal === "object" ? proposal.control || "" : ""); const control = input.observation.controls.find((item) => item.control === token); return CONTROL.test(token) && control ? actionForControl(control) : null; },
       async performAction(action) {
-        const selected = action.action || action; const effect = ["ax_click", "coordinate_click", "keyboard_submit"].includes(selected.method) ? "activate" : ["ax_fill", "dom_fill"].includes(selected.method) ? "fill" : selected.method; const signature = MUTATING_METHODS.has(selected.method) ? `${safePageState(action.page)}:${selected.purpose}:${effect}:${selected.control}` : null;
+        const selected = action.action || action; const effect = ["ax_click", "coordinate_click", "keyboard_submit"].includes(selected.method) ? "activate" : ["ax_fill", "dom_fill"].includes(selected.method) ? "fill" : selected.method; const signature = MUTATING_METHODS.has(selected.method) ? selected.purpose === "submit" ? `${safePageState(action.page)}:submit:form-submit` : `${safePageState(action.page)}:${selected.purpose}:${effect}:${selected.control}` : null;
         if (signature && seenMutations.has(signature)) return Object.freeze({ status: "failed" });
         const result = await performAction({ ...action, provider: input.provider });
         if (signature && result && result.status === "success") seenMutations.add(signature);

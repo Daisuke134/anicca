@@ -62,3 +62,12 @@ The first GREEN passed its focused tests but fresh Sol review found three Import
 5. Exactly one required-answer form must exist in the bounded observation before any submit can be marked submittable. If a registration form and a cookie/preferences form both contain required answer controls, all submit controls fail closed. Add a regression with a required cookie checkbox and its own submit alongside the registration form.
 
 Add regressions for a cookie form with its own submit, a generic button with a private-looking value, injected early submit with a pending required field, two submit tokens on one form, and a reindexed submit token on the same page. Preserve the existing ability to submit once after required completion and again only after an exact page-path transition.
+
+## Result
+
+- Initial RED: focused 21/24, reproducing input-submit label omission, arbitrary cookie-button proposal, and parent acceptance of arbitrary button/link actions.
+- First GREEN passed 24/24, but fresh Sol review found three Important gaps: cookie-form submit scope/value privacy, parent early-submit refusal, and same-page alternate-token duplicate submit.
+- Amendment RED/GREEN: 24/27 then 27/27. A second review found one remaining required-cookie-form ambiguity.
+- Final RED/GREEN: 28/29 then 29/29. Exactly one required-answer form and one submit are now required; multiple answer forms or duplicate submits fail closed.
+- Luna adjacent suite: 80/80 PASS. Sol expanded suite: 93/93 PASS. Both JavaScript syntax checks and `git diff --check` PASS. Final fresh re-review: `ship` (Critical 0, Important 0).
+- No browser, model, provider submit, Calendar, evidence, Telegram, state/profile, schedule, or launchd action occurred during implementation and test.

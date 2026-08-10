@@ -6767,7 +6767,15 @@ push済みcommit `70fd3acf1`、Git/remote一致、scheduleと4 Connector labels 
 
 最終reportは`circuit_open / peatix_unknown_required_field / 3`、Telegram provider ID `10818`。Provider registration、Calendar write、PNG/bundleは0。dashboardはHTTP/authenticated、registration marker 0。official/diagnostic targetはexact cleanup、lock/process absent、Git clean、既存Coconala pageのみ残した。次plan `docs/superpowers/plans/2026-08-10-connector-harness-form-submit-control.md`はHarness/testの2 filesだけで、未完requiredがあればそれだけ、完了後はform-associated submitだけをagentとparent DOM actionに許す。Item 10B/14/19は未完、scheduleはunloadedを維持する。
 
-### Active remaining TODO SSOT（進捗271。これ以外の残TODO一覧は履歴）
+### O1B-25進捗272（required-answer form scoped submit control GREEN）
+
+Lunaがplan `docs/superpowers/plans/2026-08-10-connector-harness-form-submit-control.md`をTDD実装した。初回REDはfocused 21/24で、input-submitのpublic `value` label欠落、cookie buttonのagent enum混入、parentの任意button/link実行を再現。初回GREEN 24/24後、fresh Sol reviewはImportant 3件を発見した：cookie/preferences別form submitとgeneric button value、parentの未完required中早期submit、同一pageの別token/reindex重複submit。planを先に改訂・pushし、同じLunaの改訂RED/GREENは24/27から27/27。re-reviewはrequired cookie formが併存するとsubmit formが2つになるImportant 1件を追加発見し、再度plan先行更新後の最終RED/GREENは28/29から29/29。
+
+最終実装は、sanitized controlにboolean `submittable`を追加し、観測内のrequired-answer formがexactly 1つ、そのformのsubmit/image controlもexactly 1つの時だけtrueにする。registrationとcookieの両formにrequiredがある、または同一formにsubmitが複数ある場合は全submit false。`element.value`は`input[type=submit|image]`のpublic labelだけに使い、answer/generic button値はモデルへ出さない。proposerは未完requiredを優先し、parent `performAction`も全observationの未完required中submitとnon-submittable button/linkを独立拒否。重複防止signatureはcontrol tokenではなくexact page pathの`submit:form-submit`作用単位とし、path変化後のみ次submitを許す。
+
+Luna最終focused 29/29、adjacent 80/80、Sol拡張再実行93/93、2 file syntax、diff checkが全てPASS。最終fresh re-reviewはCritical 0・Important 0で`ship`。implementation/test中のbrowser/model/Submit/Calendar/PNG/evidence/Telegram/state/private profile/schedule/launchd作用は0。Item 10B/14/19は未完。次の一件はcommit/push後、schedule unloadedのofficial foreground wakeを1回実行し、候補3でrequired 3 field後のexact form submit、confirm/readback/applied bundleまたは次exact safe boundaryを実測する。
+
+### Active remaining TODO SSOT（進捗272。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
