@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development and verification-before-completion. Execute checkboxes in order.
 
-**Status:** READY FOR LUNA — fresh Sol plan review: ship
+**Status:** COMPLETE — Luna implementation; fresh Sol review: ship; pushed as `134084407`
 
 **Goal:** Add one reusable content-free E2E script that snapshots both real local usage ledgers read-only and proves
 raw complete rows, immutable batches, normalized events, coverage, and the 5c local OTel span reconcile exactly.
@@ -83,20 +83,27 @@ temporary tree.
 
 ## Task 1 — Luna adapts the one verification script
 
-- [ ] Confirm the target file is absent. Use commit `a79426496` only as the starting candidate; remove its OTel SDK
+- [x] Confirm the target file is absent. Use commit `a79426496` only as the starting candidate; remove its OTel SDK
   provider/tracer imports and validate the shipped wrapper's temporary JSONL instead.
-- [ ] Implement the exact one-file script. This slice is verification-only, so do not manufacture a production RED.
+- [x] Implement the exact one-file script. This slice is verification-only, so do not manufacture a production RED.
   First execution is RED until the obsolete tracer path is replaced; the final script itself is the executable
   acceptance proof.
-- [ ] Run the script twice. Both runs must exit 0 with the same output schema, create no persistent file, and preserve
+- [x] Run the script twice. Both runs must exit 0 with the same output schema, create no persistent file, and preserve
   each initial real-source prefix. Counts may legitimately increase between runs if another real loop appends.
-- [ ] Run runner+chain+hourly focused tests, CFO, full npm, syntax, `git diff --check`, and exact one-file/LOC scope.
+- [x] Run runner+chain+hourly focused tests, CFO, full npm, syntax, `git diff --check`, and exact one-file/LOC scope.
   Luna does not edit docs, commit, push, launchd, or Telegram.
 
 ## Task 2 — Sol review and close
 
-- [ ] Fresh Sol review returns `ship` and proves the script cannot write real source/state or emit private values.
-- [ ] Sol independently runs it twice, records only the counts-only outputs, confirms no persistent/temp residue, and
+- [x] Fresh Sol review returns `ship` and proves the script cannot write real source/state or emit private values.
+- [x] Sol independently runs it twice, records only the counts-only outputs, confirms no persistent/temp residue, and
   reruns all gates.
-- [ ] Update this plan and both CFO specs with exact observed counts; fetch, commit, push, and send one `Codex:::`
+- [x] Update this plan and both CFO specs with exact observed counts; fetch, commit, push, and send one `Codex:::`
   Telegram milestone with provider `messageId`. Then CFO-2a2b becomes the only active item.
+
+## Closure evidence
+
+- Sol real E2E twice: `sources=2 discovered=5033 accepted=5033 missing=300 coverage_exceptions=6 spans=1`.
+- Focused runner/chain/hourly: 19/19; CFO: 290/290; full npm: exit 0; syntax and staged diff checks: exit 0.
+- Final scope: one new verification file, 34 added physical lines; no production, launchd, Telegram, DB, or real-source mutation.
+- Telegram milestone delivered with `dryRun=false`, `ok=true`, and provider `messageId=11132`.

@@ -2,12 +2,12 @@
 
 | Field | Value |
 |---|---|
-| Status | M2 ACTIVE — CFO-2a2a slices 1-5c complete; slice 2a2a.6 is next |
+| Status | M2 ACTIVE — CFO-2a2a complete; CFO-2a2b is next |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
 | Existing foundations | `apps/life-call`, interactive Moneytree App access, Fleet telemetry, `lm_api_cost`, and the canonical `lm_agent_earnings` source (the panel's `lm_financial_ledger` name is a stale alias) |
-| First unfinished item | **CFO-2a2a.6: reconcile real local source rows, immutable batches, coverage, and content-free output** |
+| First unfinished item | **CFO-2a2b: make usage-ledger attempts observable and durable before total-cost labels** |
 
 ## 1. Overview — What and Why
 
@@ -956,7 +956,7 @@ ingestion. They are not unchecked M1 items and cannot become the active CFO item
       duration/tokenizer values migrate as `locally_estimated`; they are never backfilled as provider-measured.
       Child SSOT:
       `docs/superpowers/specs/2026-08-10-life-manager-cfo-provider-usage-design.md`.
-- [ ] **CFO-2a2a** Ingest the existing local agent-runner usage ledger with opaque source-row dedupe,
+- [x] **CFO-2a2a** Ingest the existing local agent-runner usage ledger with opaque source-row dedupe,
       hashes/watermarks, terminal-attempt coverage, stable runtime-to-business mapping, and unattributed rows. Do not
       rescan raw Codex/Claude session logs for managed loops. Child SSOT:
       `docs/superpowers/specs/2026-08-10-life-manager-cfo-local-agent-usage-design.md`.
