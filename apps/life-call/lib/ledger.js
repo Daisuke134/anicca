@@ -3,6 +3,7 @@
 const { createCfoSupabaseRpc } = require("./cfo-supabase-rpc.js");
 const { fail: costEventFail, plain: plainCostRow, timestamp: validCostTimestamp } = createCfoSupabaseRpc("cfo_business_ledger_invalid:");
 const { fail: usageFail, internal: usageInternal, plain: plainUsageInput, timestamp: validUsageTimestamp } = createCfoSupabaseRpc("cfo_provider_usage_invalid:");
+const { fail: localAgentUsageFail, freeze: freezeLocalAgentUsage, internal: localAgentUsageInternal, plain: plainLocalAgentUsageInput, timestamp: validLocalAgentUsageTimestamp } = createCfoSupabaseRpc("cfo_local_agent_usage_invalid:");
 
 function headers(key, extra) {
   return Object.assign({ apikey: key, Authorization: `Bearer ${key}` }, extra || {});
@@ -208,6 +209,53 @@ function normalizeGeminiLiveUsageEvidence(message, context) {
   }
 }
 
+function normalizeLocalAgentUsageEvent(input, mapping) {
+  try {
+    if (!plainLocalAgentUsageInput(input) || !plainLocalAgentUsageInput(mapping) || !plainLocalAgentUsageInput(input.tokens)) localAgentUsageFail("invalid_input");
+    if (input.version !== 1) localAgentUsageFail("invalid_version");
+    if (typeof input.event_id !== "string" || !/^[0-9a-f]{24}$/.test(input.event_id)) localAgentUsageFail("invalid_event_id");
+    if (!validLocalAgentUsageTimestamp(input.timestamp)) localAgentUsageFail("invalid_timestamp");
+    for (const field of ["loop", "task_label", "provider", "provider_name", "model"]) {
+      if (typeof input[field] !== "string" || input[field].length === 0 || input[field].trim() !== input[field]) localAgentUsageFail(`invalid_${field}`);
+    }
+    if (input.upstream_model !== null && (typeof input.upstream_model !== "string" || input.upstream_model.length === 0 || input.upstream_model.trim() !== input.upstream_model)) localAgentUsageFail("invalid_upstream_model");
+    if (!Number.isSafeInteger(input.attempt) || input.attempt < 1) localAgentUsageFail("invalid_attempt");
+    if (input.status !== "success" && input.status !== "failed") localAgentUsageFail("invalid_status");
+    if (input.measurement !== "provider_reported" && input.measurement !== "unavailable") localAgentUsageFail("invalid_measurement");
+    const tokens = input.tokens;
+    const tokenFields = ["input", "cached_input", "cache_creation_input", "output", "reasoning_output", "total"];
+    for (const field of tokenFields) {
+      if (input.measurement === "provider_reported") {
+        if (!Number.isSafeInteger(tokens[field]) || tokens[field] < 0) localAgentUsageFail("invalid_count");
+      } else if (tokens[field] !== null) localAgentUsageFail("invalid_count");
+    }
+    const financialUnitId = Object.prototype.hasOwnProperty.call(mapping, "financial_unit_id") ? mapping.financial_unit_id : null;
+    if (financialUnitId !== null && (typeof financialUnitId !== "string" || financialUnitId.length === 0 || financialUnitId.trim() !== financialUnitId)) localAgentUsageFail("invalid_financial_unit");
+    const attributed = financialUnitId !== null;
+    const normalized = {
+      schema_version: 1,
+      source_ledger: "local_agent_usage",
+      source_event_id: `agent_usage:${input.event_id}`,
+      occurred_at: new Date(input.timestamp).toISOString(),
+      provider: input.provider,
+      provider_name: input.provider_name,
+      request_model: input.model,
+      upstream_model: input.upstream_model,
+      run: { loop: input.loop, task_label: input.task_label, attempt: input.attempt, status: input.status },
+      financial_unit_id: financialUnitId,
+      attribution_status: attributed ? "attributed" : "unattributed",
+      measurement: input.measurement,
+      token_value_basis: input.measurement === "provider_reported" ? "runner_normalized_provider_usage" : "unavailable",
+      tokens: Object.fromEntries(tokenFields.map((field) => [field, tokens[field]])),
+      coverage_status: input.measurement === "provider_reported" ? "covered" : "missing_usage",
+    };
+    return freezeLocalAgentUsage(normalized);
+  } catch (error) {
+    if (localAgentUsageInternal(error)) throw error;
+    localAgentUsageFail("invalid_input");
+  }
+}
+
 function finite(value) {
   const n = Number(value);
   return Number.isFinite(n) ? n : 0;
@@ -247,4 +295,4 @@ function businessSummary(daysBack, rows, nowMs) {
   return summary;
 }
 
-module.exports = { recordCost, recordDailyComposioPoll, monthlyComposioCallCount, normalizeApiCostEvent, normalizeGeminiUsageEvidence, normalizeGeminiLiveUsageEvidence, businessSummary };
+module.exports = { recordCost, recordDailyComposioPoll, monthlyComposioCallCount, normalizeApiCostEvent, normalizeGeminiUsageEvidence, normalizeGeminiLiveUsageEvidence, normalizeLocalAgentUsageEvent, businessSummary };

@@ -1,5 +1,7 @@
 # CFO-2a2a.1 — Local Agent Usage Normalizer Plan
 
+Status: COMPLETE
+
 ## Goal
 
 Normalize one existing agent-runner usage event without changing its runner-normalized token values and without
@@ -16,7 +18,8 @@ turning unavailable usage into zero.
 
 In `ledger.test.js`, add focused contracts for `normalizeLocalAgentUsageEvent`:
 
-1. a Codex `provider_reported` row preserves every runner-normalized token field, provider provenance, and explicit
+1. a real-shaped Codex `provider_reported` row with a nested `tokens` object preserves every runner-normalized token
+   field, provider provenance, and explicit
    attribution, while labeling the token basis as runner-normalized;
 2. a Claude `provider_reported` row preserves cache fields plus a concrete `upstream_model` and stays unattributed
    when mapping is null;
@@ -33,7 +36,7 @@ In `ledger.js`, implement and export the smallest pure normalizer:
 
 - accept only plain input and a plain `{financial_unit_id}` mapping context;
 - validate the closed input fields used by the canonical contract;
-- copy all six runner-normalized token fields exactly;
+- require one plain nested `tokens` object and copy all six runner-normalized fields exactly;
 - preserve `provider`, `provider_name`, `model`, and nullable `upstream_model`;
 - emit `agent_usage:<event_id>`, normalized RFC3339 time, terminal run identity, attribution, measurement,
   `token_value_basis`, and coverage;
@@ -46,3 +49,12 @@ Run the focused test, then `npm run test:cfo`, `npm test`, syntax checks, `git d
 
 A fresh Sol reviewer checks only correctness, scope, evidence truth, redaction, and YAGNI. Sol independently reruns the
 focused/CFO/full tests, updates the child spec checkbox/status, commits, and pushes before starting 2a2a.2.
+
+## Completion evidence
+
+- Fresh review found the flat-token fixture could not read real ledger rows; the same Luna corrected it to nested
+  `input.tokens` and shared freeze reuse.
+- Real read-only E2E normalized all 4,927 currently observed local rows: 4,654 covered and 273 missing-usage rows,
+  across four provider variants, with exact token equality and no content output.
+- Focused 17/17, CFO 270/270, and full 923/923 tests pass; syntax and diff checks pass.
+- Implementation scope is exactly two files and +80/-1 LOC.

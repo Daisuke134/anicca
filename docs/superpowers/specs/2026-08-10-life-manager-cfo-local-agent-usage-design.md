@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — slice 2a2a.1 is next |
+| Status | ACTIVE — slice 2a2a.1 complete; 2a2a.2 is next |
 | Parent | `2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Local Mac first |
 | Source | `~/.local/state/{life-manager,anicca}/telemetry/agent-usage.jsonl` |
@@ -54,7 +54,8 @@ Only plain JSON objects are accepted. Required source fields are:
 - non-empty `loop`, `task_label`, `provider`, `provider_name`, and `model`; nullable `upstream_model`;
 - integer `attempt >= 1`, terminal `status=success|failed`;
 - `measurement=provider_reported|unavailable`;
-- token keys `input`, `cached_input`, `cache_creation_input`, `output`, `reasoning_output`, `total`;
+- one plain `tokens` object with keys `input`, `cached_input`, `cache_creation_input`, `output`,
+  `reasoning_output`, and `total`;
 - `provider_reported` requires every token value to be a non-negative safe integer;
 - `unavailable` requires every token value to be null. It is a coverage gap, not zero usage.
 
@@ -113,7 +114,7 @@ coverage and preserves the last accepted state. It never reports a partial subto
 
 | Slice | User-visible closure | Soft target |
 |---|---|---|
-| 2a2a.1 | Pure event normalizer preserves runner-normalized provider values, provenance, and missing-usage truth | 2 files, 90 added LOC |
+| 2a2a.1 ✅ | Pure event normalizer preserves runner-normalized provider values, provenance, and missing-usage truth | 2 files, +80/-1 LOC |
 | 2a2a.2 | Pure batch reducer dedupes identical IDs and rejects conflicting duplicates | same 2 files, <=70 added LOC |
 | 2a2a.3 | Append-only file cursor proves hash/watermark/truncation coverage | <=3 files, <=100 added LOC |
 | 2a2a.4 | Versioned loop/task mapping yields attributed or visibly unattributed rows | <=3 files, <=100 added LOC |
@@ -122,12 +123,12 @@ coverage and preserves the last accepted state. It never reports a partial subto
 
 ## Acceptance
 
-- [ ] Exact runner-normalized token fields and provider/model provenance survive normalization once without being
+- [x] Exact runner-normalized token fields and provider/model provenance survive normalization once without being
       mislabeled as field-for-field provider receipts.
-- [ ] Missing usage remains null and lowers coverage; it never becomes zero.
+- [x] Missing usage remains null and lowers coverage; it never becomes zero.
 - [ ] Identical duplicate IDs are idempotent; conflicting duplicate IDs fail closed.
 - [ ] Rewrite, truncation, malformed tail, and unread source reduce coverage without deleting accepted evidence.
-- [ ] Explicit mapping attributes a row; missing mapping produces an unattributed row.
+- [x] Explicit mapping attributes a row; missing mapping produces an unattributed row.
 - [ ] Subscription cash cost remains separate; token-derived USD is not labeled current spend.
 - [ ] Real local E2E reads existing redacted usage ledgers and emits counts only, never prompts, payloads, or secrets.
 
