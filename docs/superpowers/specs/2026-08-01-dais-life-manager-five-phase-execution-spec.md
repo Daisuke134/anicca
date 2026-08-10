@@ -6472,7 +6472,19 @@ browser/session/target作成、timeout/backoff、schedule変更は0。fresh Sol 
 次の一件はschedule unloaded、dashboard count 0、owned page/lock absentでofficial foreground wakeを一度実行し、Peatix audit→candidate→
 direct action→parent readbackを観測する。登録済みなら再Submitせずevidence recovery、未登録なら次のexact safe boundaryだけを修復する。
 
-### Active remaining TODO SSOT（進捗253。これ以外の残TODO一覧は履歴）
+### O1B-25進捗254（current-wake report blocked by older pending / priority plan）
+
+Peatix page1 retryのofficial再実証前に、wake report transportをdurable stateから再監査した。`wake-d5ba...`はreport rowがあるが
+delivery rowがなくpending。`wake-5219...`の`reportWake`はreportsをoldest-firstで走査し、最初の`d5ba...`送信がOpenClaw gateway
+10秒timeoutになったため、current `5219...`を送る前にthrowした。current deliveryは0だが、report rowはappend済みで削除/破損はない。
+
+同じtransportは事前probeでpositive ID `10604`、別wake `c139...`でpositive ID `10607`を返しており、credential/channel故障ではなく
+old pendingとcurrent deliveryの順序結合がroot cause。次plan
+`docs/superpowers/plans/2026-08-10-connector-current-wake-report-priority.md`はcurrentを先に一回送ってpositive IDを確定後、oldest pending
+一件だけをbest-effort recoveryする。current失敗はhard failure、historical失敗はpending維持。JSONL削除/変更、Bot API、gateway restart、
+queue、backoff、browser/discovery/Submit/schedule変更は0。
+
+### Active remaining TODO SSOT（進捗254。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
