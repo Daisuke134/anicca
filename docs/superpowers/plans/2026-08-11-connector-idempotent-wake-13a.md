@@ -37,6 +37,9 @@ Soft target: 2 files; production +70–120 LOC; tests +70–120 LOC. No runner p
 5. Unrelated valid bundles do not match the current event. The scan is bounded and rejects non-regular, oversized, or unexpected bundle entries.
 6. The persisted bundle never gains runtime disposition and retains its exact schema/privacy contract.
 7. Existing partial checkpoint recovery and first-pass Luma/Peatix behavior remain unchanged.
+8. Semantic corruption fixtures recompute their own core digest, `bundle_id`, and filename so provider/status/receipt/artifact/ID/time guards—not the outer digest guard—perform the rejection.
+9. Multiple-match uses two distinct valid cores with correct digest filenames for the same provider/event, and the bound test creates 129 valid entries to reach the actual scan limit.
+10. Both Peatix and Luma legacy exact bundles traverse deterministic provider receipt/artifact and Calendar validation and return `reused` with render/record/Telegram/create zero.
 
 ### GREEN
 

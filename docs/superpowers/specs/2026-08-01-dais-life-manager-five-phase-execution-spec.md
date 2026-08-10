@@ -6919,7 +6919,11 @@ Luna初回REDはfocused 12/17で新規5件全FAIL、GREEN後は17/17、圧縮後
 
 Item13は13A exact existing-bundle readback、13B runner continuation、13C official foreground wakeへ分割する。production stateをread-only実測するとmode 0600 exact-schema bundleはLuma 2、Peatix 1で、accepted Peatix bundleはItem12 checkpoint導入前に作成済み。provider receiptのobserved_at/event_ref/artifact SHAはbundle `created_at`/refsと一致する。このまま次wakeを走らせるとcheckpoint不在のためevidence recapture/photo resend後までrunnerが既完了を識別できない。先頭13A plan `docs/superpowers/plans/2026-08-11-connector-idempotent-wake-13a.md`はminimal evidence production/testの2 filesだけ。applied bundle exact schema/file digest、provider/event/status、deterministic provider receipt、raw artifact bytes/signature/SHA、現在Calendar exact 1 ID/URLを全て再検証し、runtime-only `completion_disposition: reused`を返す。新規bundleは`created`。persisted bundle schemaは変更せず、legacy checkpoint migration、runner変更、browser/provider action、Telegram resend、schedule作用は0。Item13は13B/13Cまで未完、schedule unloaded。
 
-### Active remaining TODO SSOT（進捗299。これ以外の残TODO一覧は履歴）
+### O1B-25進捗300（Item 13A / fresh review fixture fix-first）
+
+Luna 13A初回RED 5/5からGREEN、full evidence 21/21、adjacent 104/107で残る3件はclean HEAD baseline。Sol独立expanded 95/95、syntax、diff checkもPASSしたがfresh Sol reviewはImportant 3件で`fix-first`。第一にsemantic corruptionはfield変更後のdigest/filenameを再構成せずouter digest mismatchで落ちるため、provider/status/receipt/artifact/ID/time個別guard未証明。第二にmultiple fixtureはwrong filename copyで複数matching分岐へ届かず、128 entry boundも実測していない。第三にLuma bundleはunrelated scanだけで、Luma deterministic receipt/artifact/Calendar reuse path未証明。planを先に改訂し、全semantic mutationを自己整合core digest・bundle ID・filenameで作成、同一provider/eventの異なるvalid matching core 2件、valid entries 129件、Luma exact legacy reuseとrender/record/Telegram/Calendar create 0を必須化する。production差分は凍結、test fixtureだけを同じLunaへ戻す。Item13未完、schedule unloaded。
+
+### Active remaining TODO SSOT（進捗300。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
