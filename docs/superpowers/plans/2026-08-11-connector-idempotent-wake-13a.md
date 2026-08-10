@@ -28,6 +28,8 @@ Luna owns only:
 
 Soft target: 2 files; production +70–120 LOC; tests +70–120 LOC. No runner production/test edit.
 
+Final size: production +122/-1 LOC and tests +37/-8 LOC. The two production lines above the soft target are the required photo/calendar readback integrity checks retained after review; no additional scope or abstraction was added.
+
 ### RED
 
 1. A mode-0600 legacy exact bundle with no Item 12 checkpoints is found by provider/event, its provider receipt and raw artifact are validated, current Calendar is independently read, and the chain returns the same bundle ID with `completion_disposition: reused`.
@@ -55,3 +57,12 @@ Soft target: 2 files; production +70–120 LOC; tests +70–120 LOC. No runner p
 - Focused evidence suite; minimal runner, minimal production, Peatix workflow/store/Harness, native entrypoint; changed-file syntax; `git diff --check`.
 - Fresh Sol review for bundle digest/schema authority, scan bounds, unrelated/corrupt file handling, provider/artifact identity, Calendar freshness, privacy, symlink/root escape, duplicate bundle ambiguity, and zero delivery/provider Submit paths.
 - Update SSOT, commit, and push. Item 13 remains open until 13B runner continuation and 13C official wake prove Submit zero continuation and a positive durable every-wake Telegram receipt. Keep schedule unloaded.
+
+## Result
+
+- Luna added a bounded exact applied-bundle reader. It validates filename, mode, size, exact schema, stable digest, provider/event/status, deterministic provider receipt, raw PNG signature/SHA, positive Telegram IDs, and current Calendar ID/URL before returning runtime-only `completion_disposition: reused`.
+- Legacy Luma and Peatix bundles reuse with page render, screenshot, provider record, Telegram, Calendar create, and bundle mutation all zero. A new bundle returns `created`; its next invocation returns `reused` with identical persisted bytes and no schema change.
+- Calendar missing/duplicate/ID-URL mismatch after a matching legacy bundle fails closed and never creates a replacement. Two matching valid bundles and a valid 129-entry directory fail closed; unrelated valid bundles do not match.
+- Fresh review initially found shallow fixtures. Luna then used self-consistent malicious digests/filenames for seven semantic guards, two distinct valid matching cores, 129 fully valid entries, and a Luma legacy reuse path. Production needed no review-fix change; final re-review returned `ship`.
+- Luna focused evidence 24/24 and adjacent suites passed apart from three unchanged baselines. Sol independently reran the frozen expanded suite at 98/98 plus syntax and `git diff --check`.
+- Item 13A is complete. Item 13 remains open for 13B runner continuation and 13C official wake. Schedule remains unloaded.
