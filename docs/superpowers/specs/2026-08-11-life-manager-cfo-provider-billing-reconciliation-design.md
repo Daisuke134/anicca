@@ -143,6 +143,7 @@ allocation so narrower business totals can be derived honestly.
           `docs/superpowers/plans/2026-08-11-life-manager-cfo-provider-billing-hourly-summary.md`.
     - [ ] **CFO-2a3.3b2 — Live local cutover.** Run isolated no-send main E2E, then update the one existing launchd
           runtime only after rollback/readback gates pass; prove one real autonomous hourly receipt and counts line.
+          Plan: `docs/superpowers/plans/2026-08-11-life-manager-cfo-provider-billing-live-cutover.md`.
 - [ ] **CFO-2a3b — Provider dimensions and allocation.** Obtain project/service/SKU dimensions from an official
       Cost Table CSV or billing export; use versioned allocation and retain an unallocated remainder.
 - [ ] **CFO-2a3c — Agent subscriptions.** Treat actual Codex/Claude receipts as cash cost and API-equivalent token
