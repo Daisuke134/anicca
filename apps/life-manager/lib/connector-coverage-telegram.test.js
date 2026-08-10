@@ -240,6 +240,7 @@ test("verified reportは一通だけ送り、targetを返さずopaque delivery r
   });
   assert.equal(sent.length, 1);
   assert.equal(sent[0][1].telegramTarget, "fixture-target");
+  assert.equal(sent[0][1].idempotencyKey, `connector-coverage:${openCoverage().coverage_snapshot_id}`);
   assert.deepEqual(receipt, {
     kind: "connector_coverage_telegram_delivery", provider_id: "321",
     observed_at: "2026-08-02T01:00:00.000Z", tenant_id: "dais-local",

@@ -6,6 +6,9 @@ const os = require("node:os");
 const { spawnSync } = require("node:child_process");
 
 const OUTBOUND_CAPABILITY = "outbound.event.apply";
+const SAFE_WAKE_ID = /^[A-Za-z0-9][A-Za-z0-9:._-]{2,159}$/;
+const REPORT_TARGET = /^-?[0-9]{5,20}$/;
+const REPORT_FAILURE = "Telegram report delivery failed";
 const DEFAULT_HEALTH_URL = "http://127.0.0.1:18790/health";
 const DEFAULT_MAX_POLL_AGE_MS = 120_000;
 // The worker can run in a Colima/Docker VM whose clock is a few seconds ahead
@@ -134,6 +137,27 @@ async function notifyOpenClaw(message, options = {}) {
     throw new Error(String(result && result.stderr || "Telegram delivery failed").trim());
   }
   return { messageId: parseOpenClawMessageId(String(result.stdout || "")) };
+}
+
+async function notifyOpenClawGateway(message, options = {}) {
+  try {
+    const target = options.telegramTarget;
+    const idempotencyKey = options.idempotencyKey;
+    if (
+      typeof message !== "string" || !message || message.length > 4_096
+      || typeof target !== "string" || !REPORT_TARGET.test(target)
+      || typeof idempotencyKey !== "string" || !SAFE_WAKE_ID.test(idempotencyKey)
+    ) throw new Error(REPORT_FAILURE);
+    const spawn = options.spawnSync || spawnSync;
+    const result = spawn("openclaw", [
+      "gateway", "call", "send", "--timeout", "60000", "--params",
+      JSON.stringify({ channel: "telegram", to: target, message, idempotencyKey }), "--json",
+    ], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+    if (!result || result.status !== 0) throw new Error(REPORT_FAILURE);
+    return { messageId: parseOpenClawMessageId(String(result.stdout || "")) };
+  } catch {
+    throw new Error(REPORT_FAILURE);
+  }
 }
 
 async function notifyOpenClawPhoto(bytes, options = {}) {
@@ -298,6 +322,7 @@ module.exports = {
   parseOpenClawMessageId,
   createFileIncidentStore,
   notifyOpenClaw,
+  notifyOpenClawGateway,
   notifyOpenClawPhoto,
   recoverDockerWorker,
   runOutboundGuardian,

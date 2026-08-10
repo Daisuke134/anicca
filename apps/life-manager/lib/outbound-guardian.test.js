@@ -11,12 +11,84 @@ const {
   classifyOutboundWorkerHealth,
   guardianExitCode,
   parseOpenClawMessageId,
+  notifyOpenClaw,
+  notifyOpenClawGateway,
   notifyOpenClawPhoto,
   recoverDockerWorker,
   runOutboundGuardian,
 } = require("./outbound-guardian.js");
 
 const NOW = Date.parse("2026-08-01T03:00:00.000Z");
+
+test("legacy OpenClaw text delivery keeps message CLI and needs no idempotency key", async () => {
+  const receipt = await notifyOpenClaw("wake report", {
+    telegramTarget: "fixture-target",
+    spawnSync(command, args) {
+      assert.equal(command, "openclaw");
+      assert.deepEqual(args, [
+        "message", "send", "--channel", "telegram", "--target", "fixture-target",
+        "--message", "wake report", "--json",
+      ]);
+      return { status: 0, stdout: JSON.stringify({ messageId: "321" }), stderr: "" };
+    },
+  });
+  assert.deepEqual(receipt, { messageId: "321" });
+});
+
+test("report text delivery uses Gateway send with the caller wake id", async () => {
+  const receipt = await notifyOpenClawGateway("wake report", {
+    telegramTarget: "123456789",
+    idempotencyKey: "wake-20260810-001",
+    spawnSync(command, args) {
+      assert.equal(command, "openclaw");
+      assert.deepEqual(args.slice(0, 5), ["gateway", "call", "send", "--timeout", "60000"]);
+      assert.equal(args[5], "--params");
+      assert.deepEqual(JSON.parse(args[6]), {
+        channel: "telegram", to: "123456789", message: "wake report", idempotencyKey: "wake-20260810-001",
+      });
+      assert.equal(args[7], "--json");
+      return { status: 0, stdout: JSON.stringify({ messageId: "322" }), stderr: "" };
+    },
+  });
+  assert.deepEqual(receipt, { messageId: "322" });
+});
+
+test("report Gateway delivery rejects malformed target or wake ID before spawn", async () => {
+  for (const telegramTarget of ["fixture-target", "1234", ""]) {
+    let spawns = 0;
+    await assert.rejects(() => notifyOpenClawGateway("wake report", {
+      telegramTarget, idempotencyKey: "wake-20260810-001", spawnSync() { spawns += 1; },
+    }), /Telegram report delivery failed/);
+    assert.equal(spawns, 0);
+  }
+  for (const idempotencyKey of ["", "x", "bad key", null, 9]) {
+    let spawns = 0;
+    await assert.rejects(() => notifyOpenClawGateway("wake report", {
+      telegramTarget: "123456789", idempotencyKey, spawnSync() { spawns += 1; },
+    }), /Telegram report delivery failed/);
+    assert.equal(spawns, 0);
+  }
+});
+
+test("report Gateway delivery hides failure stderr and still requires a positive top-level message ID", async () => {
+  const target = "123456789";
+  const message = `private report ${target}`;
+  await assert.rejects(() => notifyOpenClawGateway(message, {
+    telegramTarget: target,
+    idempotencyKey: "wake-20260810-stderr",
+    spawnSync() { return { status: 1, stdout: "", stderr: `failure ${target} ${message}` }; },
+  }), (error) => {
+    assert.equal(error.message, "Telegram report delivery failed");
+    assert.doesNotMatch(error.message, /private report|123456789|failure/);
+    return true;
+  });
+  for (const stdout of ["{}", '{"messageId":0}', '{"messageId":"no"}']) {
+    await assert.rejects(() => notifyOpenClawGateway("wake report", {
+      telegramTarget: target, idempotencyKey: "wake-20260810-receipt",
+      spawnSync() { return { status: 0, stdout, stderr: "" }; },
+    }), /Telegram report delivery failed/);
+  }
+});
 
 test("OpenClaw photo delivery uses a private temporary PNG and returns a positive message ID", async () => {
   const bytes = Buffer.alloc(5_000, 0x61);

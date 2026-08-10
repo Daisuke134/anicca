@@ -7,7 +7,7 @@ const path = require("node:path");
 const { createLumaEvidenceStore } = require("./luma-evidence-store.js");
 const { createPeatixEvidenceStore } = require("./peatix-evidence-store.js");
 const {
-  notifyOpenClaw,
+  notifyOpenClawGateway,
   notifyOpenClawPhoto,
   parseOpenClawMessageId,
 } = require("./outbound-guardian.js");
@@ -114,7 +114,7 @@ function createMinimalEvidenceChain(options = {}) {
     peatix: { eventRef: PEATIX_EVENT_REF, receiptRef: PEATIX_RECEIPT_REF, url: peatixUrl, states: ["registered"], store: peatixEvidenceStore },
   };
   const now = options.now || (() => new Date());
-  const sendMessage = options.sendMessage || notifyOpenClaw;
+  const sendMessage = options.sendMessage || notifyOpenClawGateway;
   const sendPhoto = options.sendPhoto || notifyOpenClawPhoto;
   if (
     !calendar || typeof calendar.findConnectorEvents !== "function"
@@ -192,7 +192,10 @@ function createMinimalEvidenceChain(options = {}) {
         `starts at: ${startsAt}`,
         `calendar event ID: ${verifiedCalendar.id}`,
       ].join("\n");
-      const messageId = parseOpenClawMessageId(await sendMessage(message, { telegramTarget }));
+      const messageId = parseOpenClawMessageId(await sendMessage(message, {
+        telegramTarget,
+        idempotencyKey: `connector-evidence:${idempotencyValue}`,
+      }));
       const photoId = parseOpenClawMessageId(await sendPhoto(screenshot, {
         telegramTarget,
         caption: input.provider === "luma" ? `Connector::: ${title} / ${status}` : `Connector::: ${input.provider} / ${title} / ${status}`,

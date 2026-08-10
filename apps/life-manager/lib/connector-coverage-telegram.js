@@ -7,7 +7,7 @@ const { isVerifiedEventProviderDateInventory } = require("./event-provider-date-
 const { isVerifiedConnectorCalendarSync } = require("./connector-calendar-sync.js");
 const { isVerifiedEventGoalSerendipity } = require("./event-goal-serendipity.js");
 const {
-  notifyOpenClaw,
+  notifyOpenClawGateway,
   notifyOpenClawPhoto,
   parseOpenClawMessageId,
 } = require("./outbound-guardian.js");
@@ -167,8 +167,11 @@ async function deliverConnectorCoverageTelegram(input = {}, dependencies = {}) {
   const target = String(input.telegramTarget == null ? "" : input.telegramTarget).trim();
   if (!TENANT.test(tenant) || !target || input.coverage?.tenant_id !== tenant) invalid();
   const message = buildConnectorCoverageTelegramMessage(input);
-  const send = dependencies.send || notifyOpenClaw;
-  const response = await send(message, { telegramTarget: target });
+  const send = dependencies.send || notifyOpenClawGateway;
+  const response = await send(message, {
+    telegramTarget: target,
+    idempotencyKey: `connector-coverage:${input.coverage.coverage_snapshot_id}`,
+  });
   let providerId;
   try { providerId = parseOpenClawMessageId(JSON.stringify(response || {})); }
   catch { throw new Error("Connector coverage Telegram needs a positive message ID"); }
