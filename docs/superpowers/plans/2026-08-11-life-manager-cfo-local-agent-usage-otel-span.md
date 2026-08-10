@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development. Execute checkbox steps in order.
 
-**Status:** READY FOR LUNA — fresh Sol plan review: ship
+**Status:** COMPLETE — fresh Sol implementation review: ship; real launchd E2E passed
 
 **Goal:** Emit exactly one real OpenTelemetry `INTERNAL` span for each hourly local-agent-usage collection and retain
 one content-free local record that links the span to the immutable usage batches. The span is correlation evidence,
@@ -136,17 +136,17 @@ diagnostic correlation evidence and may be rebuilt or lost without changing toke
 
 ## Task 1 — Luna RED
 
-- [ ] Extend `scripts/cfo-hourly-local.test.js` with one compact helper test using a private temporary state root and
+- [x] Extend `scripts/cfo-hourly-local.test.js` with one compact helper test using a private temporary state root and
   the production wrapper. A complete fixed receipt must call the collector once, return the same receipt object, and
   append exactly one parseable line with exact top-level keys, `INTERNAL` kind, `UNSET` status, two source
   checkpoints/counts, and no token/prompt/path/secret/sentinel text.
-- [ ] In the same test, run a partial receipt and a thrown hostile sentinel. Assert one new line per invocation;
+- [x] In the same test, run a partial receipt and a thrown hostile sentinel. Assert one new line per invocation;
   exact ERROR/error.type values; the throw is replaced by the fixed error; zero console calls; and no extra span,
   event, link, token value, source path, receipt extra key, or hostile text escapes.
-- [ ] In one compact table, make the target JSONL path an existing directory while the collector (a) throws a hostile
+- [x] In one compact table, make the target JSONL path an existing directory while the collector (a) throws a hostile
   sentinel and (b) returns an invalid hostile receipt. Both calls must end in the fixed `:export` error, proving export
   precedence; no raw error, path, getter, array extra, or hostile value may appear in output or logs.
-- [ ] Add a production wrapper seam to the existing hourly ordering test. It must receive the selected usage function
+- [x] Add a production wrapper seam to the existing hourly ordering test. It must receive the selected usage function
   and exact sanitized `{env}` input once before Moneytree. Make the shared test options use a no-op wrapper seam so
   legacy tests cannot write live state.
 
@@ -161,13 +161,13 @@ Expected RED: the module/export is missing and the hourly wrapper call count is 
 
 ## Task 2 — Luna GREEN
 
-- [ ] Implement the new wrapper with one per-call SDK provider, one `SimpleSpanProcessor`, and one
+- [x] Implement the new wrapper with one per-call SDK provider, one `SimpleSpanProcessor`, and one
   `InMemorySpanExporter`. End, `forceFlush`, require exactly one finished span, append the allowlisted record, and
   `shutdown` in `finally`. Keep all helpers private.
-- [ ] In `main()`, select injected `options.captureLocalAgentUsageCollection` only when it is a function; otherwise use
+- [x] In `main()`, select injected `options.captureLocalAgentUsageCollection` only when it is a function; otherwise use
   the production wrapper. Replace only `await usage({env})` with `await capture(usage, {env})` inside the existing
   silent usage `try/catch`. Do not restructure `runHourlyCfo()`.
-- [ ] Run the focused test until GREEN, then all gates:
+- [x] Run the focused test until GREEN, then all gates:
 
 ```bash
 cd apps/life-call
@@ -186,15 +186,30 @@ not commit or push.
 
 ## Task 3 — Sol review, real E2E, and close
 
-- [ ] Fresh Sol review proves one real SDK span/line per call, exact closed attributes, fixed errors, secret exclusion,
+- [x] Fresh Sol review proves one real SDK span/line per call, exact closed attributes, fixed errors, secret exclusion,
   no console output, and unchanged financial behavior.
-- [ ] Before touching launchd, verify the one on-disk and loaded `ai.anicca.life-manager-cfo-hourly` job both point to
+- [x] Before touching launchd, verify the one on-disk and loaded `ai.anicca.life-manager-cfo-hourly` job both point to
   this reviewed worktree and are idle. Record current source-ledger hashes/sizes, immutable batch finals, OTel span
   line count, and CFO stdout/Telegram baseline. If either path drifted, stop this trigger and repair the same job under
   the already-approved idle-only rollback procedure; never create a second scheduler.
-- [ ] Declare and trigger the reviewed existing job once. Prove source ledgers are prefix-preserved, each source gains
+- [x] Declare and trigger the reviewed existing job once. Prove source ledgers are prefix-preserved, each source gains
   one valid immutable batch, the span file gains exactly one content-free line whose record IDs match that run's two
   batch receipts, stdout remains one financial JSON line, stderr remains empty, and Telegram dedupe/delivery remains
   truthful.
-- [ ] Update parent/child specs, commit, fetch/merge without overwriting reviewed files, push, send one `Codex:::`
+- [x] Update parent/child specs, commit, fetch/merge without overwriting reviewed files, push, send one `Codex:::`
   Telegram milestone with provider `messageId`, then make 2a2a.6 the only active item.
+
+## Completion evidence
+
+- TDD and independent verification passed: focused `11/11`, runner+hourly `15/15`, CFO `290/290`, full `npm test`,
+  syntax checks, and `git diff --check`; exact scope was three files and 68 additions.
+- Fresh Sol implementation review returned `ship` with Critical/Important 0 after exact descriptor, path, receipt,
+  attribute, fixed-error, and no-live-test-write corrections.
+- The first launchd attempt exposed a missing worktree `node_modules` and exited before the script with no new stdout,
+  Telegram, batch, or span. `npm ci` restored the declared dependencies and an `env -i` probe resolved the same API.
+- The reviewed rerun finished exit 0. The content-free sink gained exactly one seven-key INTERNAL span; both span
+  record IDs name real immutable batch files. It linked 3 new Life Manager rows and 9 new Anicca rows without copying
+  token values, paths, prompts, responses, or credentials.
+- Both pre-run source byte ranges retained their exact SHA-256. Immutable chains advanced `2→3` and `6→7`; stdout
+  advanced exactly `18→19`, stderr stayed `26→26`, and the existing financial lane delivered real Telegram revision
+  4 with `status=sent`, `delivered=true`, and `recovered=true`.
