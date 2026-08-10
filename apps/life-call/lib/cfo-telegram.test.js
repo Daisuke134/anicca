@@ -2,8 +2,9 @@
 
 const assert = require("node:assert/strict");
 const test = require("node:test");
+const http = require("node:http");
 
-const { renderCfoTelegram, callbackData, evidenceLabel } = require("./cfo-telegram.js");
+const { renderCfoTelegram, callbackData, evidenceLabel, handleCfoTelegramCallback } = require("./cfo-telegram.js");
 
 function completeSnapshot() {
   return {
@@ -285,6 +286,160 @@ test("English drill-down punctuation is localized while Japanese punctuation sta
   assert.match(outputs.accuracy.en, /Not included in the total: カードA \(未接続\), カードB \(確認待ち\)/);
   assert.match(outputs.why.ja, /合計に入れていません：カードA（未接続）、カードB（確認待ち）/);
   assert.match(outputs.why.en, /Not included in the total: カードA \(未接続\), カードB \(確認待ち\)/);
+});
+
+function callbackSnapshot() {
+  const snapshot = completeSnapshot();
+  snapshot.reportingDate = "2026-08-10";
+  return snapshot;
+}
+
+function callbackInput(overrides = {}) {
+  return {
+    data: "cfo:accounts:20260810:1",
+    uid: "owner-uid",
+    actorId: "100",
+    chatId: "100",
+    messageId: "900",
+    callbackQueryId: "callback-1",
+    telegramToken: "telegram-token",
+    ...overrides,
+  };
+}
+
+function callbackOptions({ rows = [{ report_payload: callbackSnapshot() }], fetchError = null, calls = [] } = {}) {
+  return {
+    supaUrl: "https://db.example",
+    supaKey: "service-role-key",
+    fetchImpl: async (input, init) => {
+      calls.push(["fetch", new URL(String(input)), init]);
+      if (fetchError) throw fetchError;
+      return { ok: true, status: 200, json: async () => rows };
+    },
+    tgCall: async (token, method, body) => {
+      calls.push([method, token, body]);
+      if (method === "sendMessage") throw new Error("must not send");
+      return { ok: true, result: { message_id: 900 } };
+    },
+  };
+}
+
+test("exact CFO callback reads one owner/date/revision snapshot, edits once, and answers once", async () => {
+  const calls = [];
+  const result = await handleCfoTelegramCallback(callbackInput(), callbackOptions({ calls }));
+  assert.deepEqual(result, { status: "edited", view: "accounts", reportingDate: "2026-08-10", revision: 1 });
+  assert.equal(Object.isFrozen(result), true);
+  const fetchCall = calls.find(([kind]) => kind === "fetch");
+  assert.ok(fetchCall);
+  assert.equal(fetchCall[2].method, "GET");
+  assert.deepEqual(Object.fromEntries(fetchCall[1].searchParams), {
+    uid: "eq.owner-uid", reporting_date: "eq.2026-08-10", revision: "eq.1", select: "report_payload", limit: "1",
+  });
+  const edits = calls.filter(([method]) => method === "editMessageText");
+  const answers = calls.filter(([method]) => method === "answerCallbackQuery");
+  assert.equal(edits.length, 1);
+  assert.equal(answers.length, 1);
+  assert.deepEqual(edits[0][2], {
+    chat_id: "100", message_id: 900, parse_mode: "HTML",
+    text: renderCfoTelegram({ locale: "ja", view: "accounts", snapshot: callbackSnapshot() }).text,
+    reply_markup: renderCfoTelegram({ locale: "ja", view: "accounts", snapshot: callbackSnapshot() }).extra.reply_markup,
+  });
+  assert.deepEqual(answers[0][2], { callback_query_id: "callback-1" });
+  assert.equal(calls.filter(([method]) => method === "sendMessage").length, 0);
+});
+
+test("invalid, unavailable, duplicate, and mismatched CFO callbacks fail closed with one fixed toast", async () => {
+  const cases = [
+    ["actor/chat mismatch", callbackInput({ actorId: "999" }), {}],
+    ["malformed data", callbackInput({ data: "cfo:accounts:2026-08-10:1" }), {}],
+    ["missing owner", callbackInput({ uid: "" }), {}],
+    ["zero rows", callbackInput(), { rows: [] }],
+    ["duplicate rows", callbackInput(), { rows: [{ report_payload: callbackSnapshot() }, { report_payload: callbackSnapshot() }] }],
+    ["provider failure", callbackInput(), { fetchError: new Error("provider amount 420000 credential secret") }],
+    ["payload date mismatch", callbackInput(), { rows: [{ report_payload: { ...callbackSnapshot(), reportingDate: "2026-08-09" } }] }],
+    ["payload revision mismatch", callbackInput(), { rows: [{ report_payload: { ...callbackSnapshot(), revision: 2 } }] }],
+  ];
+  const toasts = [];
+  for (const [name, input, optionOverrides] of cases) {
+    const calls = [];
+    const result = await handleCfoTelegramCallback(input, callbackOptions({ ...optionOverrides, calls }));
+    assert.deepEqual(result, { status: "failed" }, name);
+    assert.equal(Object.isFrozen(result), true, name);
+    assert.deepEqual(calls.filter(([kind]) => kind === "editMessageText"), [], name);
+    assert.deepEqual(calls.filter(([kind]) => kind === "sendMessage"), [], name);
+    const answers = calls.filter(([kind]) => kind === "answerCallbackQuery");
+    assert.equal(answers.length, 1, name);
+    toasts.push(answers[0][2].text);
+    assert.doesNotMatch(JSON.stringify(result), /420000|credential|secret|provider|Error|stack/i, name);
+  }
+  assert.ok(toasts.every((toast) => toast === toasts[0] && /もう一度/.test(toast)));
+});
+
+test("CFO owner lookup failure still answers once without edit/send or raw error logging", async () => {
+  const env = {
+    LM_TELEGRAM_BOT_TOKEN: "fixture-token",
+    LM_TELEGRAM_WEBHOOK_SECRET: "fixture-webhook-secret",
+    SUPABASE_URL: "https://fixture.supabase.co",
+    SUPABASE_SERVICE_ROLE_KEY: "fixture-service-role",
+    LIFE_RUN_LOOPS: "false",
+  };
+  const previousEnv = Object.fromEntries(Object.keys(env).map((key) => [key, process.env[key]]));
+  Object.assign(process.env, env);
+  const originalCreateServer = http.createServer;
+  const originalFetch = global.fetch;
+  const originalConsoleError = console.error;
+  let productionServer;
+  let answers = 0;
+  let edits = 0;
+  let sends = 0;
+  const logs = [];
+  http.createServer = (handler) => { productionServer = originalCreateServer(handler); return productionServer; };
+  global.fetch = async (input) => {
+    const url = new URL(String(input));
+    if (url.hostname === "api.telegram.org") {
+      if (url.pathname.endsWith("/answerCallbackQuery")) answers += 1;
+      if (url.pathname.endsWith("/editMessageText")) edits += 1;
+      if (url.pathname.endsWith("/sendMessage")) sends += 1;
+      return { ok: true, status: 200, json: async () => ({ ok: true, result: true }) };
+    }
+    if (url.pathname === "/rest/v1/lm_users") throw new Error("raw owner lookup provider secret");
+    throw new Error(`unexpected provider ${url.pathname}`);
+  };
+  console.error = (...args) => { logs.push(args); };
+  const serverPath = require.resolve("../server.js");
+  delete require.cache[serverPath];
+  try {
+    require("../server.js");
+    await new Promise((resolve) => productionServer.listen(0, "127.0.0.1", resolve));
+    const body = JSON.stringify({ callback_query: {
+      id: "cfo-owner-failure", from: { id: 100 }, data: "cfo:accounts:20260810:1",
+      message: { message_id: 900, chat: { id: 100 } },
+    } });
+    const status = await new Promise((resolve, reject) => {
+      const request = http.request(`http://127.0.0.1:${productionServer.address().port}/telegram`, {
+        method: "POST", headers: {
+          "content-type": "application/json", "content-length": Buffer.byteLength(body),
+          "x-telegram-bot-api-secret-token": "fixture-webhook-secret",
+        },
+      }, (response) => { response.resume(); response.on("end", () => resolve(response.statusCode)); });
+      request.on("error", reject); request.end(body);
+    });
+    assert.equal(status, 200);
+    assert.equal(answers, 1);
+    assert.equal(edits, 0);
+    assert.equal(sends, 0);
+    assert.doesNotMatch(JSON.stringify(logs), /raw owner lookup provider secret/);
+  } finally {
+    http.createServer = originalCreateServer;
+    global.fetch = originalFetch;
+    console.error = originalConsoleError;
+    delete require.cache[serverPath];
+    if (productionServer && productionServer.listening) await new Promise((resolve) => productionServer.close(resolve));
+    for (const [key, value] of Object.entries(previousEnv)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
 });
 
 module.exports = { completeSnapshot, partialSnapshot, recoveredSnapshot, actionRequiredSnapshot };

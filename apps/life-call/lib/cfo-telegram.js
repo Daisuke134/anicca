@@ -1,6 +1,7 @@
 "use strict";
 
 const { CFO_STRINGS } = require("./i18n.js");
+const { tgCall } = require("./telegram.js");
 
 const STATES = new Set(["complete", "partial", "recovered", "action_required"]);
 const VIEWS = new Set(["summary", "accounts", "accuracy", "why"]);
@@ -23,6 +24,8 @@ const BUTTONS = Object.freeze({
   accuracy: [["summary", "概要に戻る", "Back to summary"], ["why", "なぜこの金額？", "Why this amount?"]],
   why: [["summary", "概要に戻る", "Back to summary"]],
 });
+const CALLBACK = /^cfo:(summary|accounts|accuracy|why):(\d{8}):([1-9]\d*)$/;
+const RETRY_TOAST = "読み込めませんでした。もう一度お試しください";
 
 function fail(reason) { throw new Error(`cfo_telegram_invalid:${reason}`); }
 function plain(value) { return value !== null && typeof value === "object" && !Array.isArray(value) && Object.getPrototypeOf(value) === Object.prototype; }
@@ -109,6 +112,63 @@ function callbackData({ view, reportingDate, revision }) {
   if (Buffer.byteLength(value, "utf8") > 64) fail("callback_too_long");
   return value;
 }
+function parseCfoCallback(value) {
+  const match = CALLBACK.exec(String(value || ""));
+  if (!match) return null;
+  const reportingDate = `${match[2].slice(0, 4)}-${match[2].slice(4, 6)}-${match[2].slice(6)}`;
+  const revision = Number(match[3]);
+  try { date(reportingDate); } catch { return null; }
+  if (!Number.isSafeInteger(revision) || revision < 1 || String(revision) !== match[3]) return null;
+  return { view: match[1], reportingDate, revision };
+}
+function nonEmpty(value) { return typeof value === "string" && value.length > 0 && value.trim() === value; }
+function positiveMessageId(value) {
+  const parsed = typeof value === "number" ? value : (typeof value === "string" && /^[1-9]\d*$/.test(value) ? Number(value) : NaN);
+  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : null;
+}
+function closedFailure() { return Object.freeze({ status: "failed" }); }
+async function handleCfoTelegramCallback(input, options = {}) {
+  let answerAttempted = false;
+  const call = options.tgCall || tgCall;
+  const answer = async (text) => {
+    if (answerAttempted || !nonEmpty(input && input.telegramToken) || !nonEmpty(input && input.callbackQueryId)) return;
+    answerAttempted = true;
+    try { await call(input.telegramToken, "answerCallbackQuery", { callback_query_id: input.callbackQueryId, ...(text ? { text } : {}) }); } catch {}
+  };
+  try {
+    const parsed = parseCfoCallback(input && input.data);
+    const chatId = input && input.chatId;
+    const actorId = input && input.actorId;
+    const messageId = positiveMessageId(input && input.messageId);
+    if (!parsed || !nonEmpty(input && input.uid) || !nonEmpty(input && input.telegramToken) ||
+        !nonEmpty(chatId) || !nonEmpty(actorId) || actorId !== chatId || !messageId ||
+        !nonEmpty(input && input.callbackQueryId) || !nonEmpty(options.supaUrl) || !nonEmpty(options.supaKey)) throw new Error("invalid_callback");
+    const endpoint = new URL(`${options.supaUrl.replace(/\/$/, "")}/rest/v1/lm_cfo_daily_snapshots`);
+    endpoint.searchParams.set("uid", `eq.${input.uid}`);
+    endpoint.searchParams.set("reporting_date", `eq.${parsed.reportingDate}`);
+    endpoint.searchParams.set("revision", `eq.${parsed.revision}`);
+    endpoint.searchParams.set("select", "report_payload");
+    endpoint.searchParams.set("limit", "1");
+    const response = await (options.fetchImpl || fetch)(endpoint, {
+      method: "GET", headers: { apikey: options.supaKey, Authorization: `Bearer ${options.supaKey}` },
+    });
+    if (!response || response.ok !== true) throw new Error("snapshot_unavailable");
+    const rows = await response.json();
+    if (!Array.isArray(rows) || rows.length !== 1 || !plain(rows[0]) || !plain(rows[0].report_payload)) throw new Error("snapshot_unavailable");
+    const snapshot = rows[0].report_payload;
+    if (snapshot.reportingDate !== parsed.reportingDate || snapshot.revision !== parsed.revision) throw new Error("snapshot_mismatch");
+    const rendered = renderCfoTelegram({ locale: "ja", view: parsed.view, snapshot });
+    const editResponse = await call(input.telegramToken, "editMessageText", {
+      chat_id: chatId, message_id: messageId, parse_mode: "HTML", text: rendered.text, ...(rendered.extra || {}),
+    });
+    if (!editResponse || editResponse.ok !== true) throw new Error("edit_unavailable");
+    await answer();
+    return Object.freeze({ status: "edited", view: parsed.view, reportingDate: parsed.reportingDate, revision: parsed.revision });
+  } catch {
+    await answer(RETRY_TOAST);
+    return closedFailure();
+  }
+}
 function extra(locale, snapshot, view) {
   return { reply_markup: { inline_keyboard: BUTTONS[view].map(([next, ja, en]) => [{ text: locale === "ja" ? ja : en, callback_data: callbackData({ view: next, reportingDate: snapshot.reportingDate, revision: snapshot.revision }) }]) } };
 }
@@ -138,4 +198,4 @@ function renderCfoTelegram({ locale, view, snapshot }) {
   return { text, extra: extra(locale, snapshot, view) };
 }
 
-module.exports = { renderCfoTelegram, callbackData, evidenceLabel };
+module.exports = { renderCfoTelegram, callbackData, evidenceLabel, handleCfoTelegramCallback };

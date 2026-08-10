@@ -116,8 +116,10 @@ delivery, durable provider receipt, and launchd-callable local reader are proven
 is the existing Telegram detail-button callback plan at
 `docs/superpowers/plans/2026-08-10-life-manager-cfo-telegram-drilldown-callback.md`. The callback alone reuses the
 existing public bot webhook because Telegram sends button taps there; report production and hourly scheduling remain
-local. After the callback works, `CFO-1i` installs one hourly local trigger and closes only after two consecutive
-autonomous real-data successes.
+local. Its implementation, focused `18/18`, CFO `252/252`, full tests, real-snapshot no-send E2E, and fresh
+`ship — Spec ✅` review are complete; the only callback evidence still open is deployment plus one real Telegram tap.
+After that tap works, `CFO-1i` installs one hourly local trigger and closes only after two consecutive autonomous
+real-data successes.
 
 The CFO MUST NOT trade, transfer, hire, fund, or stop a live business during the foundation milestone. Read and
 write authority remain different capabilities permanently. No balance, transaction, revenue, or tax estimate is

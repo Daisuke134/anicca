@@ -56,6 +56,7 @@ const {
   markAnswered, upsertLiveLocation,
 } = require("./lib/late-notice.js");
 const { handleDiscoveryCallback } = require("./lib/feature-discovery.js");
+const { handleCfoTelegramCallback } = require("./lib/cfo-telegram.js");
 const { claimEvent, unclaimEvent, applyBilling } = require("./lib/billing.js");
 const { recordCost } = require("./lib/ledger.js");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY || "sk_test_placeholder"); // apiKey unused by constructEvent
@@ -366,6 +367,19 @@ const server = http.createServer((req, res) => {
         const u = parseUpdate(update);
         if (u && LM_TG_TOKEN) {
           if (u.kind === "callback") {
+            if (String(u.data || "").startsWith("cfo:")) {
+              let uid = null;
+              try {
+                const row = await rowByChatId(u.chatId, SUPA_URL, SUPA_KEY);
+                uid = row && typeof row.uid === "string" ? row.uid : null;
+              } catch {}
+              await handleCfoTelegramCallback({
+                data: u.data, uid, chatId: u.chatId, actorId: u.userId,
+                messageId: u.messageId, callbackQueryId: u.callbackQueryId, telegramToken: LM_TG_TOKEN,
+              }, { supaUrl: SUPA_URL, supaKey: SUPA_KEY });
+              res.writeHead(200); res.end("ok");
+              return;
+            }
             await answerCallbackQuery(LM_TG_TOKEN, u.callbackQueryId, "Received");
             await routeCallbackData(u.data, { ask: async (data) => {
                 const row = await rowByChatId(u.chatId, SUPA_URL, SUPA_KEY);

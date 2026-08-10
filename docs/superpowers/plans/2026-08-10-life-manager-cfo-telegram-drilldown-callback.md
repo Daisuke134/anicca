@@ -58,7 +58,7 @@ callback frameworks, spending advice, Binance, and combinatorial internal-object
 - Modify: `apps/life-call/lib/cfo-telegram.js`
 - Modify: `apps/life-call/server.js`
 
-- [ ] **Step 1: Write the focused failing tests**
+- [x] **Step 1: Write the focused failing tests**
 
 Add injected-dependency tests for `handleCfoTelegramCallback(input, options)`:
 
@@ -70,7 +70,7 @@ Add injected-dependency tests for `handleCfoTelegramCallback(input, options)`:
 3. failures answer the callback with one fixed non-technical toast and never include provider bodies, amounts,
    credentials, stack traces, or raw errors.
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
 ```bash
 cd apps/life-call
@@ -79,7 +79,7 @@ node --test lib/cfo-telegram.test.js
 
 Expected: non-zero because `handleCfoTelegramCallback` does not exist.
 
-- [ ] **Step 3: Implement minimum GREEN**
+- [x] **Step 3: Implement minimum GREEN**
 
 In `cfo-telegram.js`, parse only `cfo:(summary|accounts|accuracy|why):YYYYMMDD:positive-safe-integer`. Require non-empty
 UID/token/Supabase settings, a positive Telegram message ID, and a private-chat actor (`actorId === chatId`) before
@@ -96,7 +96,7 @@ In `server.js`, detect only the `cfo:` prefix before the existing generic callba
 with the existing `rowByChatId`, and call the CFO handler. All ask/Gmail/discovery behavior remains byte-for-byte in
 the existing route.
 
-- [ ] **Step 4: Verify GREEN**
+- [x] **Step 4: Verify GREEN**
 
 ```bash
 cd apps/life-call
@@ -116,6 +116,14 @@ owner mapping and immutable Supabase snapshot while injecting Telegram edit/answ
 one exact snapshot, the expected requested view, one edit, one answer, zero sends, no private field printed, and no
 database mutation. A real provider button tap is verified when the webhook build is deployed; local launchd remains
 the report producer and is not installed in this task.
+
+Local evidence is complete: Luna's RED was the missing handler, GREEN passed focused `18/18`, CFO `252/252`, the
+full repository test command, syntax checks, and `git diff --check`. The change remains exactly three files with 75
+added production lines. The first fresh review found one Important owner-lookup failure path; Luna added a focused
+HTTP regression and contained that lookup so the callback still receives one fixed answer without edit, send, or raw
+logging. Re-review returned `ship — Spec ✅`. A real owner mapping plus real immutable Supabase snapshot no-send E2E
+returned the exact requested accounts view with one intercepted edit, one intercepted answer, zero sends, and no
+private output. Step 5 remains open only for the actual Telegram tap after deploying this reviewed webhook build.
 
 - [ ] **Step 6: Close**
 
