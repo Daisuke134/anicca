@@ -94,7 +94,7 @@ test("native Peatix profile is frozen at the factory boundary and invalid identi
     assert.deepEqual(wakeInputs[0].providers, ["luma", "connpass", "peatix"]);
     assert.equal("peatixAttendeeProfile" in wakeInputs[0], false);
     assert.doesNotMatch(JSON.stringify(wakeInputs[0]), /Dais Example|private@example\.com/);
-    for (const override of [{ DAIS_LEGAL_NAME_ROMAJI: "" }, { GOG_ACCOUNT: "not-an-email" }]) {
+    for (const override of [{ DAIS_LEGAL_NAME_ROMAJI: "" }, { DAIS_LEGAL_NAME_ROMAJI: "x".repeat(201) }, { GOG_ACCOUNT: "not-an-email" }]) {
       let called = false;
       await assert.rejects(runNativePass({ repoRoot: REPO_ROOT, stateDir: path.join(directory, "invalid-state"), ownerToken: "native-pass-invalid-owner-123456", env: { ...baseEnv, ...override }, createDependencies() { called = true; return {}; }, async runWake() { return { status: "unexpected" }; } }), /Connector minimal pass unavailable/);
       assert.equal(called, false);
