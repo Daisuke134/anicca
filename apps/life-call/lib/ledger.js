@@ -1,5 +1,8 @@
 "use strict";
 
+const { createCfoSupabaseRpc } = require("./cfo-supabase-rpc.js");
+const { fail: costEventFail, plain: plainCostRow, timestamp: validCostTimestamp } = createCfoSupabaseRpc("cfo_business_ledger_invalid:");
+
 function headers(key, extra) {
   return Object.assign({ apikey: key, Authorization: `Bearer ${key}` }, extra || {});
 }
@@ -98,6 +101,46 @@ async function monthlyComposioCallCount(opts = {}) {
   }
 }
 
+const DIRECT_COST_KINDS = new Set(["gemini_live", "telnyx_call", "composio_call", "composio_poll"]);
+const COST_KIND = /^[a-z][a-z0-9_]*$/;
+const NUMERIC_TEXT = /^(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?$/;
+
+function positiveId(value) {
+  if (typeof value === "number" && Number.isSafeInteger(value) && value > 0) return String(value);
+  if (typeof value === "string" && /^[1-9]\d*$/.test(value)) return value;
+  costEventFail("invalid_id");
+}
+
+function numericText(value, reason) {
+  if (typeof value !== "number" && typeof value !== "string") costEventFail(reason);
+  const text = String(value);
+  if (!NUMERIC_TEXT.test(text) || !Number.isFinite(Number(text)) || Number(text) < 0) costEventFail(reason);
+  return text;
+}
+
+function normalizeApiCostEvent(row) {
+  if (!plainCostRow(row)) costEventFail("invalid_row");
+  const id = positiveId(row.id);
+  if (!validCostTimestamp(row.ts)) costEventFail("invalid_timestamp");
+  const ownerId = row.uid === null ? null : row.uid;
+  if (ownerId !== null && (typeof ownerId !== "string" || ownerId.length === 0 || ownerId.trim() !== ownerId))
+    costEventFail("invalid_owner");
+  if (typeof row.kind !== "string" || !COST_KIND.test(row.kind)) costEventFail("invalid_kind");
+  if (typeof row.unit !== "string" || row.unit.length === 0 || row.unit.trim() !== row.unit)
+    costEventFail("invalid_unit");
+  const attributed = DIRECT_COST_KINDS.has(row.kind);
+  return {
+    schema_version: 1, source_ledger: "lm_api_cost", source_event_id: `lm_api_cost:${id}`,
+    occurred_at: new Date(row.ts).toISOString(), owner_id: ownerId,
+    financial_unit_id: attributed ? "life_manager_saas" : null,
+    attribution_status: attributed ? "attributed" : "unattributed",
+    event_type: "operating_cost_estimate", cost_kind: row.kind,
+    quantity: { value: numericText(row.quantity, "invalid_quantity"), unit: row.unit },
+    amount: { value: numericText(row.est_usd, "invalid_amount"), currency: "USD" },
+    evidence_status: "locally_estimated",
+  };
+}
+
 function finite(value) {
   const n = Number(value);
   return Number.isFinite(n) ? n : 0;
@@ -137,4 +180,4 @@ function businessSummary(daysBack, rows, nowMs) {
   return summary;
 }
 
-module.exports = { recordCost, recordDailyComposioPoll, monthlyComposioCallCount, businessSummary };
+module.exports = { recordCost, recordDailyComposioPoll, monthlyComposioCallCount, normalizeApiCostEvent, businessSummary };

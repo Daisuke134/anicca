@@ -118,3 +118,58 @@ test("production bridge and scheduler contain all three LM-7 recording points", 
   assert.match(server, /kind:\s*["']gemini_live["']/);
   assert.match(scheduler, /recordDailyComposioPoll/);
 });
+
+test("normalizeApiCostEvent maps one known estimate without metadata leakage", () => {
+  const row = {
+    id: 42, ts: "2026-08-10T01:02:03Z", uid: "u1", kind: "gemini_live",
+    quantity: 90, unit: "seconds", est_usd: "0.0345", meta: { secret: "META_SENTINEL" },
+  };
+  const before = structuredClone(row);
+
+  assert.deepEqual(ledger().normalizeApiCostEvent(row), {
+    schema_version: 1,
+    source_ledger: "lm_api_cost",
+    source_event_id: "lm_api_cost:42",
+    occurred_at: "2026-08-10T01:02:03.000Z",
+    owner_id: "u1",
+    financial_unit_id: "life_manager_saas",
+    attribution_status: "attributed",
+    event_type: "operating_cost_estimate",
+    cost_kind: "gemini_live",
+    quantity: { value: "90", unit: "seconds" },
+    amount: { value: "0.0345", currency: "USD" },
+    evidence_status: "locally_estimated",
+  });
+  assert.deepEqual(row, before);
+  assert.doesNotMatch(JSON.stringify(ledger().normalizeApiCostEvent(row)), /META_SENTINEL|secret|meta/i);
+});
+test("normalizeApiCostEvent leaves an unknown valid kind unattributed", () => {
+  const event = ledger().normalizeApiCostEvent({
+    id: "43", ts: "2026-08-10T01:02:04Z", uid: null, kind: "future_cost",
+    quantity: "1", unit: "call", est_usd: 0, meta: {},
+  });
+  assert.equal(event.cost_kind, "future_cost");
+  assert.equal(event.financial_unit_id, null);
+  assert.equal(event.attribution_status, "unattributed");
+  assert.equal(event.owner_id, null);
+  assert.equal(event.amount.value, "0");
+});
+test("normalizeApiCostEvent rejects invalid identity and money with redacted errors", () => {
+  const valid = {
+    id: 44, ts: "2026-08-10T01:02:05Z", uid: "u1", kind: "telnyx_call",
+    quantity: 1, unit: "seconds", est_usd: 0.001, meta: {},
+  };
+  const cases = [
+    ["id", 0], ["quantity", -1], ["quantity", Number.NaN],
+    ["est_usd", -1], ["est_usd", Number.POSITIVE_INFINITY],
+    ["est_usd", "AMOUNT_SENTINEL"], ["unit", ""],
+  ];
+  for (const [field, value] of cases) {
+    assert.throws(
+      () => ledger().normalizeApiCostEvent({ ...valid, [field]: value }),
+      (error) => /^cfo_business_ledger_invalid:[a-z_]+$/.test(error.message)
+        && !/AMOUNT_SENTINEL|u1|0\.001/.test(error.message),
+      field,
+    );
+  }
+});
