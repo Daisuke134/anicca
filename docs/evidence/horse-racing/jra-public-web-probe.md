@@ -90,7 +90,7 @@ raw_values_exported: false
 allowed_scope: private_shadow
 cash_authorized: false
 raw_local_private_non_git_status: "mode 700; bounded HTML/CRWL snapshot outside Git; no raw artifact staged"
-gate_status: PENDING_SOL_REVIEW
+gate_status: PASS_PRIVATE_SHADOW
 ```
 
 ## Verification boundary
@@ -100,3 +100,6 @@ The official use page was read for the permission boundary; it does not
 constitute a verified permission document for this probe, hence
 `permission_document_verified: false`. No login, account, purchase, betting,
 Telegram, CFO, model, or cash action occurred.
+Fresh Sol review approved spec compliance and evidence quality with no
+Critical/Important/Minor findings; acceptance is private-shadow only and does
+not change `permission_document_verified: false` or `cash_authorized: false`.
