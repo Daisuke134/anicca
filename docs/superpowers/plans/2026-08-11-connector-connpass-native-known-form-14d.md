@@ -47,3 +47,11 @@ Soft target: 2 files; production `+30–55 LOC`; tests `+45–75 LOC`.
 - Fresh Sol review for allowlist exactness, ambiguity rejection, no private prompt/value persistence, one-shot submit, and non-Connpass regression.
 - Update SSOT, commit, and push before another official wake.
 - Next live acceptance: agent calls zero for the known Connpass form, only allowlisted radio actions, final confirmation at most one, canonical registered/pending readback, exact Connpass bundle and Calendar event one, positive Telegram message/photo/every-wake IDs, cleanup.
+
+## Result
+
+Luna followed RED→GREEN in the two owned files. The measured simultaneous form fixture completes in five native actions with the agent unavailable: exact free online option, exact Connpass referral, two exact acknowledgements, then the unique final button. The parent resolver supplies only boolean `true`; private profile readers remain untouched. A second Connpass submit in one fallback returns `effect_unknown` before another DOM action.
+
+The first fresh review found two Important fail-open cases: the online allowlist included labels that did not prove free admission, and empty or unknown question context could reach native selection and resolution. Fix round 1 reduced labels and questions to the measured exact literals and added selector plus resolver regressions. Sol's fresh relevant run passed 127/127 with syntax and diff checks. Scoped re-review verdict: both findings addressed, new Critical 0, new Important 0, `ship`. Code commits: `29ca6141b`, `e047723b5`.
+
+The live acceptance remains separate. Read-only preflight keeps all four Connector-related labels unloaded, Git clean/upstream `0/0`, no Connector process or lock, and the existing `:9222` browser healthy. Current event `400028` no longer exposes its former radio form during a read-only join-page probe, so the official wake must truthfully rediscover the current eligible Connpass candidate rather than treating the old fixture as live evidence.
