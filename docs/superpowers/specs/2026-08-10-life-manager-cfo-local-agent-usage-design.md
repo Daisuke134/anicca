@@ -110,12 +110,27 @@ Each source file keeps only:
 If the file shrinks, the prefix changes, JSON is truncated, or an existing `event_id` changes content, ingestion fails
 coverage and preserves the last accepted state. It never reports a partial subtotal as complete.
 
+## Event dedupe contract
+
+The pure reducer consumes only normalized events from 2a2a.1 and keys them by `source_event_id`:
+
+- first ID + first exact canonical value: accept once;
+- same ID + same canonical value: count as an idempotent duplicate and do not add usage;
+- same ID + any different canonical value: remove that ID from accepted usage and count every row for the ID as
+  conflicting; do not choose the first, last, largest, or smallest value;
+- accepted events are sorted by `source_event_id`, so input order cannot change the result.
+
+The receipt satisfies `discovered_rows = accepted_rows + duplicate_rows + conflicting_rows`. Any conflict sets
+`coverage_status=conflicting_usage`; downstream totals may be shown only as incomplete evidence, never complete spend.
+This rule is required by current evidence: the two live local ledgers presently contain thousands of duplicate rows
+and hundreds of IDs whose historical normalized token values differ.
+
 ## One-by-one slices
 
 | Slice | User-visible closure | Soft target |
 |---|---|---|
 | 2a2a.1 ✅ | Pure event normalizer preserves runner-normalized provider values, provenance, and missing-usage truth | 2 files, +80/-1 LOC |
-| 2a2a.2 | Pure batch reducer dedupes identical IDs and rejects conflicting duplicates | same 2 files, <=70 added LOC |
+| 2a2a.2 NEXT | Pure batch reducer dedupes identical IDs and rejects conflicting duplicates | same 2 files, <=70 added LOC |
 | 2a2a.3 | Append-only file cursor proves hash/watermark/truncation coverage | <=3 files, <=100 added LOC |
 | 2a2a.4 | Versioned loop/task mapping yields attributed or visibly unattributed rows | <=3 files, <=100 added LOC |
 | 2a2a.5 | Local append/storage + OTel links accepted rows without exposing content | <=3 files per sub-slice |
