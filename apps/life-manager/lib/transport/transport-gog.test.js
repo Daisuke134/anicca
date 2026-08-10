@@ -138,6 +138,51 @@ test("connector calendar rejects every non-canonical Peatix identity before gog 
   assert.equal(calls, 0);
 });
 
+test("connector calendar accepts exact Connpass root and one-subdomain identities", async () => {
+  const canonicalUrls = ["https://connpass.com/event/400028/", "https://tokyo-builders.connpass.com/event/400028/"];
+  const { run, calls } = recorder((args) => JSON.stringify({ id: `connpass-created-${calls.length}`, htmlLink: "https://calendar.google.com/calendar/event?eid=connpass-created" }));
+  const cal = makeGogCalendar({ account: ACCT, run });
+
+  for (const canonicalUrl of canonicalUrls) {
+    await cal.createConnectorEvent({
+      calendarId: "primary", idempotencyValue: "e".repeat(64), title: "Injected title",
+      startAt: "2026-08-05T12:00:00+09:00", endAt: "2026-08-05T13:00:00+09:00",
+      location: "Shibuya", canonicalUrl,
+    });
+  }
+
+  assert.equal(calls.length, canonicalUrls.length);
+  for (const [index, canonicalUrl] of canonicalUrls.entries()) {
+    assert.ok(calls[index].includes(`--private-prop=lm_connector_event=${"e".repeat(64)}`));
+    assert.ok(calls[index].includes(`--description=${canonicalUrl}`) && calls[index].includes(`--source-url=${canonicalUrl}`));
+    assert.deepEqual(calls[index].filter((arg) => String(arg).startsWith("--source-title=")), ["--source-title=Connpass"]);
+  }
+});
+
+test("connector calendar rejects every non-canonical Connpass identity before gog run", async () => {
+  const variants = [
+    "http://connpass.com/event/400028/", "https://east.tokyo-builders.connpass.com/event/400028/",
+    "https://connpass.example.com/event/400028/", "https://connpass.com:444/event/400028/",
+    "https://-bad.connpass.com/event/1/", "https://bad-.connpass.com/event/1/", `https://${"a".repeat(64)}.connpass.com/event/1/`,
+    "https://connpass.com/event/400028", "https://connpass.com/event/400028//",
+    "https://connpass.com/event/400028/?utm_source=test", "https://connpass.com/event/400028/#details",
+    "https://user:pass@connpass.com/event/400028/", "https://connpass.com/event/EVENT/400028/",
+    "https://connpass.com/event/not-a-number/", "https://connpass.com/event/0/",
+    "https://connpass.com/event/400028/ticket/", "https://connpass.com/event/400028/join/complete",
+    "https://connpass.com/join/complete", "https://connpass.com/search?q=400028",
+  ];
+  let calls = 0;
+  const cal = makeGogCalendar({ account: ACCT, run: () => { calls += 1; return "{}"; } });
+  for (const canonicalUrl of variants) {
+    await assert.rejects(cal.createConnectorEvent({
+      calendarId: "primary", idempotencyValue: "f".repeat(64), title: "x",
+      startAt: "2026-08-05T12:00:00+09:00", endAt: "2026-08-05T13:00:00+09:00",
+      location: "x", canonicalUrl,
+    }), /connector calendar invalid/i, canonicalUrl);
+  }
+  assert.equal(calls, 0);
+});
+
 test("connector calendar methods reject malformed IDs, URLs, times, and ambiguous provider receipts", async () => {
   let calls = 0;
   const cal = makeGogCalendar({ account: ACCT, run: () => { calls += 1; return "{}"; } });

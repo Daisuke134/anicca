@@ -7095,7 +7095,13 @@ checkpointはprovider `connpass`、event ref `connpass-event://event/400028`、s
 
 初回Luna GREEN後のfresh Sol reviewはCritical 0 / Important 1で`fix-first`。`-bad.connpass.com`、`bad-.connpass.com`、64文字labelの3 variantsがgog `run`へ到達することを独立再現した。planを先に改訂し、optional subdomainを1〜63文字、ASCII英数字始終、中間hyphenだけの一段DNS labelへ限定する。3 variantsを先にRED化してから同じLunaが最小regexだけを修正する。現code/test差分は未commit、live作用0、Item14未完、schedule unloaded。
 
-### Active remaining TODO SSOT（進捗329。これ以外の残TODO一覧は履歴）
+### O1B-25進捗330（Item 14I / Connpass Calendar transport完了）
+
+fix REDはfocused 20/21、review指摘3 hostが`run` actual 3 / expected 0。最終GREENはoptional Connpass labelを1〜63文字、ASCII英数字始終、中間hyphenだけへ限定した。root/valid一段subdomain、raw canonical exact、固定`Connpass` source title、private idempotency、Luma/Peatixは維持する。差分はplanned Calendar transport/test 2 files、production +7、tests +45だけ。
+
+Luna transport 21/21、minimal evidence/production/runner 61/61、Connpass workflow/provider 20/20、Harness 58/58、native entrypoint 8/8、canonical helper 4/4、syntax/diff checkがPASS。Sol独立166/166とfocused/canonical 25/25、idempotency/evidence 33/33、adversarial 10/10もPASS。native-runtime 2 failuresはclean HEAD同一cursor baselineで新規failure 0。fresh Sol re-reviewはCritical 0 / Important 0で`ship`。実装/test中browser/provider/Calendar/evidence/Telegram/state/profile/schedule/launchd作用0。Item14未完、schedule unloaded。次はcommit/push後のofficial recovery wake exact 1回でcheckpoint reuse、Connpass Submit 0、Calendar create/readback 1、positive Telegram message/photo IDs、durable applied bundle、same-run Luma→Connpass lineage、exact cleanupを実証する。
+
+### Active remaining TODO SSOT（進捗330。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 

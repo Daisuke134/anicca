@@ -52,6 +52,13 @@ function connectorCanonicalUrl(value) {
   const parsed = new URL(url);
   const host = parsed.hostname.toLowerCase();
   if (["luma.com", "www.luma.com", "lu.ma"].includes(host)) return Object.freeze({ url, sourceTitle: "Luma" });
+  const connpassMatch = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)?connpass\.com$/i.test(host)
+    && /^\/event\/([1-9][0-9]*)\/$/.exec(parsed.pathname);
+  if (connpassMatch) {
+    const expected = `https://${host}/event/${connpassMatch[1]}/`;
+    if (raw !== expected || url !== expected) connectorInvalid();
+    return Object.freeze({ url: expected, sourceTitle: "Connpass" });
+  }
   const match = host === "peatix.com" && /^\/event\/([1-9][0-9]*)$/.exec(parsed.pathname);
   const expected = match ? `https://peatix.com/event/${match[1]}` : "";
   if (!expected || raw !== expected || url !== expected) connectorInvalid();
