@@ -6412,7 +6412,20 @@ empty、Hiragana、Kanji、Latin、digit、punctuation、control、overlengthは
 次の一件はPeatix providerがconfirm画面の測定済み`lastname_edit/firstname_edit`だけへprivate Katakana値をfillし、jQuery valid後に
 既存final boundaryを一回だけ実行する別2-file TDD slice。登録成功はclickで推定せず、parent readbackを維持する。
 
-### Active remaining TODO SSOT（進捗249。これ以外の残TODO一覧は履歴）
+### O1B-25進捗250（Peatix confirm Kana pre-submit proof / exact selector contract）
+
+private SSOT値をmemory内だけで使い、event `5075819 / 6536845`を専用owned pageでconfirmまで再現した。exact confirm POSTは
+route guard済みで、final click、handler、submitを0に固定した。validator field名は`lastname_edit/firstname_edit`だが、実DOM idは
+別の`lastname/firstname`で、推測id selectorは不存在。exact scoped name selectorでfamily/givenをfillするとintended-value equalityは
+true/true、長さ3/4、両rulesは`required,kanaAlphabet`、Peatix `#confirm-form`のjQuery `valid()`はtrue、error listは空になった。
+
+診断中のconfirm POST、registration、Calendar、PNG、Telegram application report、state/repo writeは0。dashboard HTTP 200、
+attending count 0、page closeを確認した。次plan
+`docs/superpowers/plans/2026-08-10-connector-peatix-confirm-kana-fill.md`はprovider/profileとfocused testの2 filesだけで、
+実測name selectorへのfillとprovider validator trueをfinal clickのpreconditionにする。direct form submit、synthetic click、retry、
+推測selectorは作らず、registered判定は既存parent readbackだけを維持する。
+
+### Active remaining TODO SSOT（進捗250。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
