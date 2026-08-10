@@ -6871,7 +6871,11 @@ LunaのREDはfocused transport 18/19で、exact Peatix createだけが`Connector
 
 `3f398e535`のofficial wake `wake-b6e743b9f56f32f6137b2298`はPeatix registeredをSubmit 0で再観測し、strict Calendar transportを越えてprivate idempotency付きGoogle Calendar eventをexact 1件作成した。bundleは未作成。production-equivalent不足artifact診断は同じmessage idempotency keyでTelegram message positive ID `10946`、privacy-safe receipt PNGでpositive ID `10949`を得たが、official bundle acceptanceには数えない。次official recovery wake `wake-d66a62d5c9221ead4175454b`では作成済みCalendar intervalが元eventをdiscovery conflictとして除外し、後続候補2件へ進んだ後`circuit_open / effect_unknown`で停止、bundle増分0。このlive差分から、残る原因はprovider/Calendar/Telegram能力ではなくsame-event Calendar self-conflictである。実gog readbackは`extendedProperties.private.lm_connector_event`にcanonical URL SHA-256を返す。次plan `docs/superpowers/plans/2026-08-10-connector-peatix-calendar-self-recovery.md`はbusy inventory、Peatix workflow/testの3 filesだけで、このvalid hashとcandidate canonical URL hashがexact一致するoverlapだけを無視し、別予定overlapは維持する。Item 10B/11/12/14/19 bundle acceptanceは未完、scheduleはunloaded。
 
-### Active remaining TODO SSOT（進捗288。これ以外の残TODO一覧は履歴）
+### O1B-25進捗289（Calendar self-recovery / fresh review fix-first）
+
+Luna REDはfocused workflow 16/19で、valid marker非公開、same-event overlap除外不能、malformed marker非rejectを再現した。初回GREENはfocused 19/19、busy inventory 3/3、Sol独立expanded 122/122、syntax、diff checkがPASSしたが、fresh Sol reviewはImportant 2件で`fix-first`。第一にactive eventのpresent-invalid `extendedProperties`/`private` container（primitive/null/array）がmarker absentとしてverified inventoryへ入る。第二にmarker parseがcancelled/transparent除外より先で、従来なら無視するeventのmalformed markerがinventory全体を停止する。planを先に改訂し、active eventではcontainerのgenuine absenceとpresent-invalidを分離して後者をfail closed、cancelled/transparentはmarker parse前に従来どおり除外する回帰を追加する。現3-file差分は未commit、実装/test中のbrowser/provider/Calendar/evidence/Telegram/state/profile/launchd/schedule作用0。Item 10B/11/12/14/19 bundle acceptanceは未完。
+
+### Active remaining TODO SSOT（進捗289。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
