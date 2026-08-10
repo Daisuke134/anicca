@@ -2,9 +2,10 @@
 
 const { zonedSlotInstant } = require("./honne-ja-shadow-schedule.js");
 
-const SEARCH_URL = "https://peatix.com/search?q=%E7%84%A1%E6%96%99&country=JP&l.text=Tokyo";
-const SEARCH_RENDER_TIMEOUT_MS = 10_000;
-const SEARCH_RENDER_SELECTOR = "a.event-card, .search-results .no-results";
+const SEARCH_URL_BASE = "https://peatix.com/search?q=%E7%84%A1%E6%96%99&country=JP&l.text=Tokyo";
+const SEARCH_RESPONSE_TIMEOUT_MS = 10_000;
+const SEARCH_PAGE_LIMIT = 5;
+const SEARCH_PAGE_SIZE = 20;
 const TIME_ZONE = "Asia/Tokyo";
 const EVENT_ID = /^[1-9][0-9]*$/;
 const EVENT_PATH = /^\/event\/([1-9][0-9]*)\/?$/;
@@ -74,6 +75,76 @@ function localParts(value) {
     .map((part) => [part.type, Number(part.value)]));
   if (![parts.year, parts.month, parts.day].every(Number.isInteger)) invalid();
   return parts;
+}
+
+function dateString(parts) {
+  return [parts.year, parts.month, parts.day]
+    .map((part) => String(part).padStart(2, "0")).join("-");
+}
+
+function discoveryDateRange(observed) {
+  const parts = localParts(observed);
+  const end = new Date(Date.UTC(parts.year, parts.month - 1, parts.day + 13));
+  return Object.freeze({
+    from: dateString(parts),
+    to: dateString({
+      year: end.getUTCFullYear(),
+      month: end.getUTCMonth() + 1,
+      day: end.getUTCDate(),
+    }),
+  });
+}
+
+function searchUrl(observed, pageNumber) {
+  const range = discoveryDateRange(observed);
+  return `${SEARCH_URL_BASE}&dr=${range.from}:${range.to}&p=${pageNumber}`;
+}
+
+function matchingSearchResponse(response, pageNumber) {
+  try {
+    const url = new URL(String(response && typeof response.url === "function" ? response.url() : ""));
+    const params = url.searchParams;
+    return url.protocol === "https:"
+      && url.hostname.toLowerCase() === "peatix.com"
+      && url.pathname === "/search/events"
+      && params.getAll("p").length === 1
+      && params.get("p") === String(pageNumber)
+      && params.getAll("size").length === 1
+      && params.get("size") === String(SEARCH_PAGE_SIZE);
+  } catch {
+    return false;
+  }
+}
+
+async function readSearchResponseRows(response, pageNumber) {
+  if (!response || typeof response.ok !== "function" || !response.ok()
+    || typeof response.json !== "function") {
+    throw stageError("PEATIX_SEARCH_READ_FAILED");
+  }
+  let payload;
+  try {
+    payload = await response.json();
+  } catch {
+    throw stageError("PEATIX_SEARCH_READ_FAILED");
+  }
+  const jsonData = payload && typeof payload === "object" && !Array.isArray(payload)
+    ? payload.json_data : null;
+  const events = jsonData && typeof jsonData === "object" && !Array.isArray(jsonData)
+    ? jsonData.events : null;
+  if (!Number.isInteger(jsonData && jsonData.page) || jsonData.page !== pageNumber
+    || !Array.isArray(events) || events.length > SEARCH_PAGE_SIZE) {
+    throw stageError("PEATIX_SEARCH_ROWS_CONTRACT_FAILED");
+  }
+  return events.map((event) => {
+    if (!event || typeof event !== "object" || Array.isArray(event)
+      || !Number.isSafeInteger(event.id) || event.id <= 0) {
+      throw stageError("PEATIX_SEARCH_ROWS_CONTRACT_FAILED");
+    }
+    return Object.freeze({
+      event_ref: `peatix-event://event/${event.id}`,
+      canonical_url: `https://peatix.com/event/${event.id}`,
+    });
+  });
 }
 
 function candidateWindow(observed) {
@@ -194,23 +265,57 @@ function defaultCalendarFree(candidate, calendar) {
   ));
 }
 
-async function defaultReadSearchBindings(page) {
-  if (!page || typeof page.goto !== "function" || typeof page.waitForSelector !== "function"
-    || typeof page.evaluate !== "function") invalid();
-  try {
-    await page.goto(SEARCH_URL, { waitUntil: "domcontentloaded", timeout: 30_000 });
-  } catch {
-    throw stageError("PEATIX_SEARCH_NAVIGATION_FAILED");
+async function defaultReadSearchBindings(page, observed) {
+  if (!page || typeof page.goto !== "function" || typeof page.waitForResponse !== "function") {
+    invalid();
   }
-  try {
-    await page.waitForSelector(SEARCH_RENDER_SELECTOR, {
-      state: "attached", timeout: SEARCH_RENDER_TIMEOUT_MS,
-    });
-    return await page.evaluate(() => Array.from(document.querySelectorAll("a.event-card"))
-      .map((anchor) => ({ href: anchor.href })));
-  } catch {
-    throw stageError("PEATIX_SEARCH_READ_FAILED");
+  const bindings = [];
+  const seen = new Set();
+  for (let pageNumber = 1; pageNumber <= SEARCH_PAGE_LIMIT; pageNumber += 1) {
+    let responsePromise;
+    try {
+      responsePromise = page.waitForResponse(
+        (response) => matchingSearchResponse(response, pageNumber),
+        { timeout: SEARCH_RESPONSE_TIMEOUT_MS },
+      );
+    } catch {
+      throw stageError("PEATIX_SEARCH_READ_FAILED");
+    }
+    if (responsePromise && typeof responsePromise.catch === "function") {
+      responsePromise.catch(() => {});
+    }
+    try {
+      await page.goto(searchUrl(observed, pageNumber), {
+        waitUntil: "domcontentloaded", timeout: 30_000,
+      });
+    } catch {
+      throw stageError("PEATIX_SEARCH_NAVIGATION_FAILED");
+    }
+    let response;
+    try {
+      response = await responsePromise;
+    } catch {
+      throw stageError("PEATIX_SEARCH_READ_FAILED");
+    }
+    let rows;
+    try {
+      rows = await readSearchResponseRows(response, pageNumber);
+    } catch (error) {
+      const code = String(error && error.code || "");
+      if (code === "PEATIX_SEARCH_ROWS_CONTRACT_FAILED") throw error;
+      throw stageError("PEATIX_SEARCH_READ_FAILED");
+    }
+    for (const row of rows) {
+      if (seen.has(row.event_ref)) continue;
+      seen.add(row.event_ref);
+      bindings.push(row);
+      if (bindings.length > SEARCH_PAGE_LIMIT * SEARCH_PAGE_SIZE) {
+        throw stageError("PEATIX_SEARCH_ROWS_CONTRACT_FAILED");
+      }
+    }
+    if (rows.length < SEARCH_PAGE_SIZE) break;
   }
+  return Object.freeze(bindings);
 }
 
 async function defaultReadEventViewData(page, canonicalUrl) {
@@ -245,9 +350,10 @@ function createPeatixDiscoveryWorkflow(options = {}) {
       if (!page || typeof page !== "object" || Array.isArray(page)) {
         throw stageError("PEATIX_PAGE_VALIDATION_FAILED");
       }
+      const observed = now();
       let rows;
       try {
-        rows = await readSearchBindings(page);
+        rows = await readSearchBindings(page, observed);
       } catch (error) {
         throw preserveSafe(error, "PEATIX_SEARCH_READ_FAILED");
       }
@@ -266,7 +372,6 @@ function createPeatixDiscoveryWorkflow(options = {}) {
         throw stageError("PEATIX_SEARCH_ROWS_CONTRACT_FAILED");
       }
 
-      const observed = now();
       const window = candidateWindow(observed);
       const nowMs = observed.getTime();
       const result = [];

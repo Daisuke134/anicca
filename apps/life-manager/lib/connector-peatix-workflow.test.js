@@ -148,27 +148,30 @@ test("Peatix reports the ordered five-count discovery audit", async () => {
   }]);
 });
 
-test("Peatix default readers use one page, canonical event identities, and same-origin JSON", async () => {
-  const navigations = [];
-  const evaluations = [];
-  const waits = [];
+test("Peatix default reader waits for the matching page-1 response before navigation", async () => {
+  const calls = [];
+  const responsePredicates = [];
+  const searchResponse = {
+    url() {
+      return "https://peatix.com/search/events?dr=range&dr_from=2026-08-07&dr_to=2026-08-20&p=1&size=20";
+    },
+    ok() { return true; },
+    status() { return 200; },
+    async json() {
+      return { json_data: { page: 1, events: [{ id: 201 }, { id: 202 }] } };
+    },
+  };
   const page = {
+    waitForResponse(predicate, options) {
+      calls.push("waitForResponse");
+      responsePredicates.push({ predicate, options });
+      return Promise.resolve(searchResponse);
+    },
     async goto(url) {
-      navigations.push(url);
+      calls.push(["goto", url]);
     },
-    async waitForSelector(selector, options) {
-      waits.push({ selector, options });
-    },
-    async evaluate(fn, argument) {
-      evaluations.push({ fn, argument });
-      if (argument === undefined) {
-        return [
-          { href: "https://peatix.com/event/201/", title: "First" },
-          { href: "https://peatix.com/event/201", title: "Duplicate" },
-          { href: "https://example.com/event/999", title: "Ignore" },
-          { href: "https://peatix.com/event/202", title: "Second" },
-        ];
-      }
+    async evaluate(_fn, argument) {
+      calls.push(["evaluate", argument]);
       const id = argument.endsWith("/201") ? 201 : 202;
       return detail(id, { event: { name: `Default ${id}` } });
     },
@@ -180,24 +183,169 @@ test("Peatix default readers use one page, canonical event identities, and same-
 
   const result = await workflow.discoverCandidates({ page, calendar: [] });
 
-  assert.deepEqual(navigations, [
-    "https://peatix.com/search?q=%E7%84%A1%E6%96%99&country=JP&l.text=Tokyo",
-    "https://peatix.com/event/201",
-    "https://peatix.com/event/202",
-  ]);
-  assert.deepEqual(waits, [{
-    selector: "a.event-card, .search-results .no-results",
-    options: { state: "attached", timeout: 10_000 },
-  }]);
-  assert.deepEqual(evaluations.map(({ argument }) => argument), [
-    undefined,
-    "https://peatix.com/event/201",
-    "https://peatix.com/event/202",
+  assert.equal(calls[0], "waitForResponse");
+  assert.equal(calls[1][0], "goto");
+  assert.match(calls[1][1], /dr=2026-08-07:2026-08-20/);
+  assert.match(calls[1][1], /[?&]p=1(?:&|$)/);
+  assert.equal(responsePredicates.length, 1);
+  const { predicate, options } = responsePredicates[0];
+  assert.deepEqual(options, { timeout: 10_000 });
+  assert.equal(predicate(searchResponse), true);
+  assert.equal(predicate({
+    url() { return searchResponse.url().replace("peatix.com", "example.com"); },
+    ok() { return true; },
+  }), false);
+  assert.equal(predicate({
+    url() { return searchResponse.url().replace("/search/events", "/search"); },
+    ok() { return true; },
+  }), false);
+  assert.equal(predicate({
+    url() { return searchResponse.url().replace("p=1", "p=2"); },
+    ok() { return true; },
+  }), false);
+  assert.equal(predicate({
+    url() { return searchResponse.url().replace("size=20", "size=10"); },
+    ok() { return true; },
+  }), false);
+  assert.deepEqual(calls.slice(2), [
+    ["goto", "https://peatix.com/event/201"],
+    ["evaluate", "https://peatix.com/event/201"],
+    ["goto", "https://peatix.com/event/202"],
+    ["evaluate", "https://peatix.com/event/202"],
   ]);
   assert.deepEqual(result.map((candidate) => candidate.event_ref), [
     "peatix-event://event/201",
     "peatix-event://event/202",
   ]);
+});
+
+test("Peatix default reader scans five 20-result pages and preserves global order", async () => {
+  const pageEvents = Array.from({ length: 5 }, (_, pageIndex) => (
+    Array.from({ length: 20 }, (_, eventIndex) => ({
+      id: pageIndex * 20 + eventIndex + 1,
+    }))
+  ));
+  const waitCalls = [];
+  const searchNavigations = [];
+  const detailCalls = [];
+  const page = {
+    waitForResponse(predicate) {
+      const pageNumber = waitCalls.length + 1;
+      waitCalls.push({ pageNumber, predicate });
+      return Promise.resolve({
+        url() {
+          return `https://peatix.com/search/events?dr=range&dr_from=2026-08-07&dr_to=2026-08-20&p=${pageNumber}&size=20`;
+        },
+        ok() { return true; },
+        status() { return 200; },
+        async json() {
+          return { json_data: { page: pageNumber, events: pageEvents[pageNumber - 1] } };
+        },
+      });
+    },
+    async goto(url) {
+      if (url.includes("/search?")) searchNavigations.push(url);
+    },
+  };
+  const workflow = createPeatixDiscoveryWorkflow({
+    now: () => NOW,
+    async readEventViewData(_page, canonicalUrl) {
+      detailCalls.push(canonicalUrl);
+      return detail(Number(canonicalUrl.split("/").pop()));
+    },
+    isCalendarFree() { return true; },
+  });
+
+  const result = await workflow.discoverCandidates({ page, calendar: [] });
+
+  assert.equal(waitCalls.length, 5);
+  assert.equal(searchNavigations.length, 5);
+  assert.equal(detailCalls.length, 100);
+  assert.equal(searchNavigations.some((url) => /[?&]p=6(?:&|$)/.test(url)), false);
+  assert.deepEqual(detailCalls, Array.from({ length: 100 }, (_, index) => (
+    `https://peatix.com/event/${index + 1}`
+  )));
+  assert.deepEqual(result.map((candidate) => candidate.event_ref), Array.from(
+    { length: 100 }, (_, index) => `peatix-event://event/${index + 1}`,
+  ));
+});
+
+test("Peatix default reader stops after the first short response page", async () => {
+  const payloads = [
+    Array.from({ length: 20 }, (_, index) => ({ id: index + 501 })),
+    [{ id: 601 }, { id: 602 }, { id: 603 }],
+  ];
+  const waitPages = [];
+  const searchNavigations = [];
+  const page = {
+    waitForResponse() {
+      const pageNumber = waitPages.length + 1;
+      waitPages.push(pageNumber);
+      return Promise.resolve({
+        url() {
+          return `https://peatix.com/search/events?dr=range&dr_from=2026-08-07&dr_to=2026-08-20&p=${pageNumber}&size=20`;
+        },
+        ok() { return true; },
+        async json() {
+          return { json_data: { page: pageNumber, events: payloads[pageNumber - 1] } };
+        },
+      });
+    },
+    async goto(url) {
+      if (url.includes("/search?")) searchNavigations.push(url);
+    },
+  };
+  const workflow = createPeatixDiscoveryWorkflow({
+    now: () => NOW,
+    async readEventViewData(_page, canonicalUrl) {
+      return detail(Number(canonicalUrl.split("/").pop()));
+    },
+    isCalendarFree() { return true; },
+  });
+
+  const result = await workflow.discoverCandidates({ page, calendar: [] });
+
+  assert.deepEqual(waitPages, [1, 2]);
+  assert.equal(searchNavigations.length, 2);
+  assert.equal(searchNavigations.some((url) => /[?&]p=3(?:&|$)/.test(url)), false);
+  assert.equal(result.length, 23);
+});
+
+test("Peatix default reader treats a valid empty response as one frozen zero audit", async () => {
+  const audits = [];
+  let detailCalls = 0;
+  const page = {
+    waitForResponse() {
+      return Promise.resolve({
+        url() {
+          return "https://peatix.com/search/events?dr=range&dr_from=2026-08-07&dr_to=2026-08-20&p=1&size=20";
+        },
+        ok() { return true; },
+        async json() { return { json_data: { page: 1, events: [] } }; },
+      });
+    },
+    async goto() {},
+  };
+  const workflow = createPeatixDiscoveryWorkflow({
+    now: () => NOW,
+    async readEventViewData() { detailCalls += 1; return detail(1); },
+    onDiscoveryAudit(audit) { audits.push(audit); },
+  });
+
+  const result = await workflow.discoverCandidates({ page, calendar: [] });
+
+  assert.deepEqual(result, []);
+  assert.equal(Object.isFrozen(result), true);
+  assert.equal(detailCalls, 0);
+  assert.equal(audits.length, 1);
+  assert.deepEqual(audits[0], {
+    observed_count: 0,
+    normalized_count: 0,
+    window_count: 0,
+    free_open_count: 0,
+    calendar_free_count: 0,
+  });
+  assert.equal(Object.isFrozen(audits[0]), true);
 });
 
 test("Peatix rejects more than 100 unique canonical search identities", async () => {
@@ -285,92 +433,105 @@ test("Peatix maps navigation, reader, identity, candidate, and Calendar failures
   }
 });
 
-test("Peatix default reader maps search navigation and read failures without leaking browser text", async () => {
-  const navigationWorkflow = createPeatixDiscoveryWorkflow();
-  await assert.rejects(
-    navigationWorkflow.discoverCandidates({
-      page: {
-        async goto() { throw new Error("private navigation error"); },
-        async waitForSelector() {},
-        async evaluate() { return []; },
+test("Peatix default reader maps navigation, response, JSON, and contract failures safely", async () => {
+  function response(payload, overrides = {}) {
+    return {
+      url() {
+        return overrides.url || "https://peatix.com/search/events?dr=range&dr_from=2026-08-07&dr_to=2026-08-20&p=1&size=20";
       },
-      calendar: [],
-    }),
-    (error) => error.code === "PEATIX_SEARCH_NAVIGATION_FAILED"
-      && error.message === "Peatix discovery stage failed",
-  );
+      ok() { return overrides.ok !== undefined ? overrides.ok : true; },
+      status() { return overrides.status || 200; },
+      async json() {
+        if (overrides.jsonError) throw new Error(overrides.jsonError);
+        return payload;
+      },
+    };
+  }
 
-  const readWorkflow = createPeatixDiscoveryWorkflow();
-  await assert.rejects(
-    readWorkflow.discoverCandidates({
-      page: {
-        async goto() {},
-        async waitForSelector() {},
-        async evaluate() { throw new Error("private evaluate error"); },
-      },
-      calendar: [],
-    }),
-    (error) => error.code === "PEATIX_SEARCH_READ_FAILED"
-      && error.message === "Peatix discovery stage failed",
-  );
+  async function searchFailure(searchResponse, expectedCode, options = {}) {
+    const workflow = createPeatixDiscoveryWorkflow({ now: () => NOW });
+    await assert.rejects(
+      workflow.discoverCandidates({
+        page: {
+          waitForResponse() {
+            if (options.waitError) return Promise.reject(new Error(options.waitError));
+            return Promise.resolve(searchResponse);
+          },
+          async goto() {
+            if (options.navigationError) throw new Error(options.navigationError);
+          },
+        },
+        calendar: [],
+      }),
+      (error) => error.code === expectedCode
+        && error.message === "Peatix discovery stage failed"
+        && !error.message.includes("private"),
+    );
+  }
 
-  const renderWaitWorkflow = createPeatixDiscoveryWorkflow();
-  await assert.rejects(
-    renderWaitWorkflow.discoverCandidates({
-      page: {
-        async goto() {},
-        async waitForSelector() { throw new Error("private render wait error"); },
-        async evaluate() { return []; },
-      },
-      calendar: [],
-    }),
-    (error) => error.code === "PEATIX_SEARCH_READ_FAILED"
-      && error.message === "Peatix discovery stage failed",
+  await searchFailure(
+    response({ json_data: { page: 2, events: [] } }),
+    "PEATIX_SEARCH_ROWS_CONTRACT_FAILED",
   );
+  await searchFailure(
+    response({ json_data: { page: 1, events: Array.from({ length: 21 }, (_, id) => ({ id: id + 1 })) } }),
+    "PEATIX_SEARCH_ROWS_CONTRACT_FAILED",
+  );
+  await searchFailure(
+    response({ json_data: { page: 1 } }),
+    "PEATIX_SEARCH_ROWS_CONTRACT_FAILED",
+  );
+  await searchFailure(
+    response({ json_data: { page: 1, events: [{ id: 0 }] } }),
+    "PEATIX_SEARCH_ROWS_CONTRACT_FAILED",
+  );
+  await searchFailure(
+    response({ json_data: { page: 1, events: [{ id: -1 }] } }),
+    "PEATIX_SEARCH_ROWS_CONTRACT_FAILED",
+  );
+  await searchFailure(
+    response({ json_data: { page: 1, events: [{ id: "201" }] } }),
+    "PEATIX_SEARCH_ROWS_CONTRACT_FAILED",
+  );
+  await searchFailure(
+    response({ json_data: { page: 1, events: [{ id: 201 }] }, }, { ok: false, status: 503 }),
+    "PEATIX_SEARCH_READ_FAILED",
+  );
+  await searchFailure(
+    response({ json_data: { page: 1, events: [{ id: 201 }] } }, { jsonError: "private JSON error" }),
+    "PEATIX_SEARCH_READ_FAILED",
+  );
+  await searchFailure(
+    null,
+    "PEATIX_SEARCH_READ_FAILED",
+    { waitError: "private response timeout" },
+  );
+  await searchFailure(
+    response({ json_data: { page: 1, events: [{ id: 201 }] } }),
+    "PEATIX_SEARCH_NAVIGATION_FAILED",
+    { navigationError: "private navigation error" },
+  );
+});
 
-  const emptyAudits = [];
-  const emptyWaits = [];
-  const emptyWorkflow = createPeatixDiscoveryWorkflow({
-    onDiscoveryAudit(audit) { emptyAudits.push(audit); },
-  });
-  const emptyResult = await emptyWorkflow.discoverCandidates({
-    page: {
-      async goto() {},
-      async waitForSelector(selector, options) {
-        emptyWaits.push({ selector, options });
-      },
-      async evaluate() { return []; },
+test("Peatix default detail reader keeps safe navigation and JSON errors", async () => {
+  const responseForPage = {
+    url() {
+      return "https://peatix.com/search/events?dr=range&dr_from=2026-08-07&dr_to=2026-08-20&p=1&size=20";
     },
-    calendar: [],
-  });
-  assert.deepEqual(emptyWaits, [{
-    selector: "a.event-card, .search-results .no-results",
-    options: { state: "attached", timeout: 10_000 },
-  }]);
-  assert.deepEqual(emptyResult, []);
-  assert.equal(Object.isFrozen(emptyResult), true);
-  assert.deepEqual(emptyAudits, [{
-    observed_count: 0,
-    normalized_count: 0,
-    window_count: 0,
-    free_open_count: 0,
-    calendar_free_count: 0,
-  }]);
-  assert.equal(emptyAudits.length, 1);
+    ok() { return true; },
+    async json() { return { json_data: { page: 1, events: [{ id: 401 }] } }; },
+  };
 
-  const detailNavigationWorkflow = createPeatixDiscoveryWorkflow({ now: () => NOW });
   let navigationCount = 0;
   await assert.rejects(
-    detailNavigationWorkflow.discoverCandidates({
+    createPeatixDiscoveryWorkflow({ now: () => NOW }).discoverCandidates({
       page: {
+        waitForResponse() { return Promise.resolve(responseForPage); },
         async goto() {
           navigationCount += 1;
           if (navigationCount === 2) throw new Error("private detail navigation error");
         },
-        async waitForSelector() {},
-        async evaluate(_fn, argument) {
-          return argument === undefined ? [{ href: "https://peatix.com/event/401" }] : detail(401);
-        },
+        async evaluate() { return detail(401); },
       },
       calendar: [],
     }),
@@ -378,17 +539,16 @@ test("Peatix default reader maps search navigation and read failures without lea
       && error.message === "Peatix discovery stage failed",
   );
 
-  const detailReadWorkflow = createPeatixDiscoveryWorkflow({ now: () => NOW });
   let evaluateCount = 0;
   await assert.rejects(
-    detailReadWorkflow.discoverCandidates({
+    createPeatixDiscoveryWorkflow({ now: () => NOW }).discoverCandidates({
       page: {
+        waitForResponse() { return Promise.resolve(responseForPage); },
         async goto() {},
-        async waitForSelector() {},
-        async evaluate(_fn, argument) {
+        async evaluate() {
           evaluateCount += 1;
-          if (evaluateCount === 2) throw new Error("private detail JSON error");
-          return argument === undefined ? [{ href: "https://peatix.com/event/402" }] : detail(402);
+          if (evaluateCount === 1) throw new Error("private detail JSON error");
+          return detail(401);
         },
       },
       calendar: [],
