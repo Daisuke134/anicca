@@ -7015,7 +7015,13 @@ Luna REDはConnpass direct completed後のjoin URLを現行runnerがそのまま
 
 最初のfresh reviewはpre-submit already registeredにも不要なrecoveryを実行する点を`fix-first`とした。追加REDはcanonical navigate 2回を2 pass / 1 failで再現し、GREENは`completed operation`がある場合だけに限定。pre-submit registeredはinitial navigate 1、pre-readback 1、cache/direct/Harness/Submit 0、recovery 0、evidence 1、cleanup 1。最終scopeはrunner production/test 2 files、production +13、test +50。Sol独立adjacent 82/82、syntax、diff check PASS、fresh re-reviewは`ship`。次はpushed codeでofficial recovery wake exact 1回を実行し、Submit 0とConnpass bundleを確認する。Item14未完、schedule unloaded。
 
-### Active remaining TODO SSOT（進捗316。これ以外の残TODO一覧は履歴）
+### O1B-25進捗317（Item 14 recovery wake / join-form false-positive確定）
+
+pushed commit `b471264ec`のofficial runnerを4 labels unloaded、process/lock 0、Git clean/upstream 0でexact 1回起動した。wake `wake-74fc59b0adddc2abc8603791`はLuma eligible exhaustion後、Connpass event `400028`へ継続。pre-readback nonregistered、cache、direct、post-readbackの後、Item14Bのcanonical navigateとcanonical parent readbackを実行した。action historyは11 rowsでBrowser Harness 0。canonical recovery action自体はsuccessだがterminalは`circuit_open/evidence_completion_failed`、failure count 1、every-wake Telegram positive ID `11154`。bundle 4、Connpass receipt/checkpoint/artifact/object 0、process/lock 0、Connector-owned page cleanup。preexisting CDP 3 pagesはConnectorが閉じず、外部ownerによるURL変更だけを観測した。
+
+runnerの唯一の分岐から、canonical parent stateはregistered/pendingではなかったと確定する。したがってevent pageのinitial application link click後にjoin formへ遷移した状態を既存text readbackがfalse-positive registeredとしており、final `申し込みを確定する`は2 wakesとも未実行。plan `docs/superpowers/plans/2026-08-11-connector-connpass-join-handoff-14c.md`はConnpass workflow production/test 2 filesだけ。direct completedはaction結果registered/pendingかつpage URLがcandidate canonical exactの場合だけとし、join/complete/query/hash/wrong/about:blankはsafe direct failureとして既存bounded Browser Harnessへsame-page handoffする。Item14未完、schedule unloaded。
+
+### Active remaining TODO SSOT（進捗317。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
