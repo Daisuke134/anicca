@@ -76,7 +76,7 @@ Create one table with these columns:
 | `id` | generated identity primary key |
 | `public_ref` | non-zero generated UUID, unique |
 | `uid` | non-empty owner, FK to `lm_users(uid)` |
-| `financial_unit_id` | nullable snake-case ID |
+| `financial_unit_id` | nullable canonical registry ID matching `^[a-z][a-z0-9_]*$` |
 | `attribution_status` | `attributed` or `unattributed`, consistent with financial-unit nullability |
 | `provider` | non-empty lower-case dotted ID |
 | `provider_request_id` | non-empty trimmed provider identity |
@@ -116,7 +116,8 @@ script. In a fresh `mktemp -d` PostgreSQL cluster:
 4. as `service_role`, insert one synthetic attributed row with optional NULL counts and one unique row with
    explicit optional zero; read both back;
 5. prove the exact duplicate identity, negative count, attribution contradiction, UPDATE, and DELETE are rejected;
-6. prove anon/authenticated SELECT and INSERT are denied.
+6. prove a leading-digit financial-unit ID is rejected;
+7. prove anon/authenticated SELECT and INSERT are denied.
 
 Stop the cluster and remove only its generated temp directory. Record only pass/fail facts and synthetic IDs; no
 credentials, raw provider response, or private content.
@@ -138,4 +139,3 @@ git commit -m "feat(cfo): add model usage evidence table"
 
 Write RED/GREEN/PostgreSQL/LOC/commit evidence to the ignored task report. Do not push. Sol performs focused review,
 fresh local PostgreSQL verification, spec closure, fetch, and push.
-

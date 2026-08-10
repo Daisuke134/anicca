@@ -185,7 +185,8 @@ flowchart LR
 Add `public.lm_cfo_model_usage_evidence` as a structured table. Do not store a raw response or duplicated
 `otel_attributes` JSON. Required columns are:
 
-- opaque `public_ref`, owner `uid`, `financial_unit_id`, and `attribution_status`;
+- opaque `public_ref`, owner `uid`, canonical-registry `financial_unit_id` matching `^[a-z][a-z0-9_]*$`, and
+  `attribution_status`;
 - `provider`, `provider_request_id`, `usage_sequence`, `occurred_at`, and 32-hex `trace_id`;
 - requested/response model;
 - required input/output/total token counts and nullable cached/reasoning/tool counts;
@@ -210,6 +211,7 @@ Soft target: one migration, one dedicated static test, and one `test:cfo` script
 - [ ] The table has one non-null composite unique dedupe key and never stores raw content or generic metadata JSON.
 - [ ] Required counts reject null/negative values; optional counts preserve null and explicit zero.
 - [ ] Attribution state and financial-unit nullability cannot contradict each other.
+- [ ] Financial-unit IDs use the canonical registry grammar and reject a leading digit.
 - [ ] RLS, grants, and the trigger permit service SELECT/INSERT only and reject UPDATE/DELETE.
 - [ ] A disposable local PostgreSQL E2E proves valid insert, duplicate rejection, invalid-count rejection, and
       append-only rejection without touching production.
