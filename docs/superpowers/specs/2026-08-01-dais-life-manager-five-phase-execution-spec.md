@@ -6440,7 +6440,26 @@ retry 0。focused 10/10、provider/workflow/minimal-production/native/renderer i
 次の一件はschedule unloaded、dashboard count 0をpreconditionにofficial foreground runnerを一度実行する。post-click ambiguityなら
 再Submitせずdashboard/provider readbackを先に行い、登録済みなら不足evidence recoveryだけ、未登録なら次のexact safe boundaryだけを修復する。
 
-### Active remaining TODO SSOT（進捗251。これ以外の残TODO一覧は履歴）
+### O1B-25進捗252（Peatix post-Kana official discovery failures / bounded retry plan）
+
+Kana fill ship後、schedule unloadedでofficial foreground wakeを3回観測した。全runでPeatix dashboard attending count 0、対象event/ticket
+marker 0、Peatix Submit/registration/Calendar/PNG/bundle 0。したがって重複外部作用はない。
+
+- `wake-d5ba56cd989efaaa5c0cb514`: Luma discovery成功、Connpass/Peatix discovery失敗。Peatix相当は30,827ms、reportは
+  `completed_no_effect / provider_discovery_failed`を書いたがOpenClaw gateway 10秒timeoutでdelivery 0。report exception後に残ったtargetは
+  owner ledgerとexact ID一致を確認してそのtargetだけcloseし、他browser pageは不触。
+- `wake-c139a5cef8be846e68f14261`: Luma/Connpass discovery成功、Connpass audit `6→6→6→0→0`、Peatix discoveryだけ13,201msで
+  失敗、Peatix audit 0。cleanup PASS、every-wake Telegram provider ID `10607`。
+- `wake-5219f5218de94c69ac3600ab`: Luma/Connpass/Peatix discoveryが331,991ms / 30,021ms / 13,591msで失敗。
+  actionはCalendar+discoveryだけ。最後のreportは古い未配信wake送信中のgateway timeoutでcurrent delivery前に停止、cleanup PASS。
+
+Peatix単独UI searchはHTTP200、exact `/search/events?p=1&size=20` JSON page1/20 rowsを1.7秒。専用同一pageの
+Connpass→Peatix遷移もUI HTTP200、exact JSONを4,298msで取得し、source/parser/response predicateは正常。official 3 failureは
+page1 navigation/readのtransientと確定した。次plan
+`docs/superpowers/plans/2026-08-10-connector-peatix-page1-discovery-retry.md`は同じowned pageでpage1 transactionだけを一回即時retryする。
+5分retry、新page/target、timeout拡張、detail retry、Submit変更は0。report backlog transportはこのdiscovery slice後に別修復する。
+
+### Active remaining TODO SSOT（進捗252。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
