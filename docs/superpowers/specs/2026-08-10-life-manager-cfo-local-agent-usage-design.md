@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — slices 2a2a.1-5c complete; 2a2a.6 is next |
+| Status | ACTIVE — slices 2a2a.1-5c complete; 2a2a.6 is active |
 | Parent | `2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Local Mac first |
 | Source | `~/.local/state/{life-manager,anicca}/telemetry/agent-usage.jsonl` |
@@ -214,7 +214,7 @@ means covered. Downstream totals may be shown only as incomplete evidence when t
 | 2a2a.5b2b ✅ | Read both source ledgers once, resume from durable cursors, and publish the next batches | 3 files, +92/-1 LOC |
 | 2a2a.5b2c ✅ | Invoke that runner from the existing local hourly loop without changing Telegram copy | 2 files, +17/-3 LOC |
 | 2a2a.5c ✅ | Configured OTel records one content-free INTERNAL span linking both source checkpoints and event counts; it is not token truth | 2 files, +28/-13 LOC; isolated real-ledger span reconciled 5,004 events |
-| 2a2a.6 NEXT | Real local E2E reconciles source counts, normalized rows, coverage, and no-secret output | 1 script, <=100 added LOC |
+| 2a2a.6 ACTIVE | Reusable real local E2E reconciles raw rows, immutable batches, normalized rows, coverage, span linkage, and no-secret output | 1 script, <=70 additions; plan: `2026-08-11-life-manager-cfo-local-agent-usage-real-reconciliation.md` |
 
 ## Acceptance
 
