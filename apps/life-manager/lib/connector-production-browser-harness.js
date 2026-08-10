@@ -19,7 +19,7 @@ const PEATIX_CONFIRM_URL = /^https:\/\/peatix\.com\/sales\/event\/([1-9][0-9]*)\
 const CONNPASS_FINAL_LABEL = "申し込みを確定する";
 const CONNPASS_REFERRAL_QUESTION = "このイベントは何を見て知りましたか？";
 const CONNPASS_ONLINE_LABEL = /^オンライン視聴枠（YouTube） 無料(?: 参加者数 \d+人)?$/i;
-const CONNPASS_JOIN_URL = /^https:\/\/(?:[a-z0-9-]+\.)?connpass\.com\/event\/[1-9][0-9]*\/join\/$/i;
+const CONNPASS_JOIN_URL = /^https:\/\/(?:[a-z0-9-]+\.)?connpass\.com\/event\/[1-9][0-9]*\/join\/$/;
 const FINAL_EFFECT_TIMEOUT_MS = 30_000;
 const FINAL_EFFECT_POLL_MS = 25;
 

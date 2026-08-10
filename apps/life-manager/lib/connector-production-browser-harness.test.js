@@ -653,6 +653,8 @@ test("Connpass join inspector normalizes the measured ticket and question DOM", 
     ["connpass", "https://connpass.com/event/400028/join/"],
     ["connpass", "https://osaka-driven-dev.connpass.com/event/400028/join"],
     ["connpass", "https://osaka-driven-dev.connpass.com/event/400028/join/?from=test"],
+    ["connpass", "https://connpass.com/event/400028/JOIN/"],
+    ["connpass", "https://connpass.com/EVENT/400028/JOIN/"],
     ["luma", "https://osaka-driven-dev.connpass.com/event/400028/join/"],
   ]) {
     const controls = await inspectPageControls({ provider, page: { url() { return href; }, locator() { return { async evaluateAll(callback, context) { return callback(elements, context); } }; } } });
