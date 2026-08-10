@@ -212,13 +212,15 @@ Expected: only the two planned implementation files are modified; production add
 additions at most 55 lines, total additions at most 100, and `git diff --check` is silent. If exceeded, reduce scope;
 do not widen the target.
 
-- [ ] **Step 6: Commit the reviewed implementation**
+- [ ] **Step 6: Commit the self-reviewed implementation for task review**
 
-After the controller's task review passes, commit only the two implementation files:
+After RED/GREEN, regressions, scope checks, and Luna self-review pass, commit only the two implementation files so the
+controller can generate the exact task-review package:
 
 ```bash
 git add apps/life-call/lib/ledger.js apps/life-call/lib/ledger.test.js
 git commit -m "feat(cfo): normalize estimated business costs"
 ```
 
-Do not push. The Sol controller performs final evidence capture, spec closure, fetch, and push.
+Do not push. A fresh reviewer checks this commit range; the Sol controller then performs final evidence capture, spec
+closure, fetch, and push.
