@@ -6745,7 +6745,15 @@ fresh re-reviewはCritical 0・Important 0で`ship`。browser/model/Submit/Calen
 Item 10B/14/19は未完。次の一件はcommit/push後、schedule unloadedのofficial foreground wakeを一度だけ実行し、candidate 3の
 漢字→ひらがな→電話→form/confirm→parent registered readback、privacy-safe PNG、Calendar/Telegram/applied bundleまたは次exact safe boundaryを実測する。
 
-### Active remaining TODO SSOT（進捗268。これ以外の残TODO一覧は履歴）
+### O1B-25進捗269（Peatix live navigation timing boundary）
+
+commit `96bd8e36a`をpush済み・Git clean・remote差分0でpreflightし、Native/healthcheck/Healer/host bridgeの4 labelsとscheduleをunloadedのままofficial foreground runnerを1回実行した。共有daily-driver `:9222`はPlaywright persistent ownerが既存JavaScript dialog処理の`Page.handleJavaScriptDialog: No dialog is showing`でSIGTRAPするinfra故障を実測した。同じChromium binary、同じmode-preserving profile、同じ`:9222`をraw Chromiumのtemporary launchd ownerで起動し、同一PID、LISTEN、WebSocketを60秒連続で確認してからrunnerを開始した。`:9223`/`:9226`/`:9227`、cookie、login state、Connector code以外のbrowserには触れていない。このtemporary ownerはConnectorのproduction browser ownership完了証拠にはしない。
+
+wake `wake-d6050c563e395e783ba6b2c7`はCalendar `success 2881ms`、Luma discovery `success 30309ms`、Connpass discovery `success 5178ms`、Peatix discovery `success 41032ms`。Peatix auditはobserved 100、normalized 100、14日window 87、free/open 56、Calendar-free 18で、実申込可能候補が存在した。3候補のprovider directは`987ms`/`707ms`/`367ms`で戻り、fallbackは候補1と18094msで2 step、候補2は49msでfail、候補3は13696msで2 step進んだ。最終reportは`circuit_open / peatix_form_navigation_failed / consecutive_failure_count 3`、Telegram provider ID `10776`。lock/process/owned pageは終了後absent、provider registration、Calendar write、PNG、applied bundleは0。
+
+コード照合で、direct providerは`#next-button`をclick後にnavigationを待たず即時`page.url()`を検査していた。fallback step 1はticket pageの3 controlから`control_12`を選び、step 2はformの11 controlへ増加したため、click自体は遅延完了し、directのURL検査だけが早すぎたことが確定した。次plan `docs/superpowers/plans/2026-08-10-connector-peatix-navigation-wait.md`はPeatix provider/testの2 filesだけで、既存のstrict same-event `stepUrl`とPlaywright `waitForURL`を使い、ticket→formとform→confirmのみを有界待機する。Item 10B/14/19は未完、scheduleはunloadedを維持する。
+
+### Active remaining TODO SSOT（進捗269。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
