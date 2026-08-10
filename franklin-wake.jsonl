@@ -24935,3 +24935,10 @@
 {"ts":1786354229,"wake_id":"00MSN16P1L018A1BE469034ED8","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana API marketplace paid USDC for data retrieval [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surfa"}
 {"ts":1786354374,"wake_id":"00MSN19SP6A7625268424B4762","kind":"wake","sleep_s":120,"model":"auto","slot":"earn/sol-trade","profitable":false,"exit_code":0}
 {"ts":1786354506,"wake_id":"00MSN1CMG954B3ABD717A44FA4","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786354643,"wake_id":"00MSN1FKPH355A1A37E39A45E5","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786354777,"wake_id":"00MSN1IFJUB0C51C050854493B","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786354909,"wake_id":"00MSN1L9MZEEDF4334562842A1","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786355039,"wake_id":"00MSN1O1TN20FF198E0EEE4F66","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786355170,"wake_id":"00MSN1QVFU94EDA47798FA41A0","kind":"wake","sleep_s":120,"model":"auto","slot":"earn/sol-trade","profitable":false,"exit_code":0}
+{"ts":1786355308,"wake_id":"00MSN1TTP3AB8DB615A7AA483B","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786355437,"wake_id":"00MSN1WL2730CEE1535B984458","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
