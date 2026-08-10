@@ -24809,3 +24809,11 @@
 {"ts":1786337310,"wake_id":"00MSMR41YJ4537E084C5CE4840","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786337443,"wake_id":"00MSMR6WQ6DAF8A3E3187E4F95","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1786337570,"wake_id":"00MSMR9MZI8E53F89FF39749A2","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana microtask marketplace paying USDC for AI data labeling tasks [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake ("}
+{"ts":1786337700,"wake_id":"00MSMRCF2Y5FE7ACCAA0A54C87","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1786337828,"wake_id":"00MSMRF5K51EA1CC37904447E4","kind":"wake","sleep_s":120,"model":"auto","slot":"earn/sol-trade","profitable":false,"exit_code":0}
+{"ts":1786337955,"wake_id":"00MSMRHVS5491C9CFF7F5147D0","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786338082,"wake_id":"00MSMRKM2X46FAF21463094893","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786338212,"wake_id":"00MSMRNEH77208C1842B0B4A14","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1786338340,"wake_id":"00MSMRQ52332ADFEF9FDF9471B","kind":"wake","sleep_s":120,"model":"auto","slot":"earn/sol-trade","profitable":false,"exit_code":0}
+{"ts":1786338469,"wake_id":"00MSMRSWK7B4F5F460C4654454","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana microtask platform paying USDC for AI data labeling or annotation [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore w"}
+{"ts":1786338597,"wake_id":"00MSMRVNG288AA0CD5DEA248C4","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
