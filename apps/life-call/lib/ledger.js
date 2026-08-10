@@ -4,8 +4,8 @@ const { createCfoSupabaseRpc } = require("./cfo-supabase-rpc.js");
 const { canonicalJson } = require("./cfo-registry.js");
 const { fail: costEventFail, plain: plainCostRow, timestamp: validCostTimestamp } = createCfoSupabaseRpc("cfo_business_ledger_invalid:");
 const { fail: usageFail, internal: usageInternal, plain: plainUsageInput, timestamp: validUsageTimestamp } = createCfoSupabaseRpc("cfo_provider_usage_invalid:");
-const { exact: exactLocalAgentUsage, fail: localAgentUsageFail, freeze: freezeLocalAgentUsage, internal: localAgentUsageInternal, plain: plainLocalAgentUsageInput, timestamp: validLocalAgentUsageTimestamp } = createCfoSupabaseRpc("cfo_local_agent_usage_invalid:");
-const LOCAL_AGENT_PAIR_KEYS = new Set(["input", "context"]);
+const { fail: localAgentUsageFail, exact: exactLocalAgentUsagePair, freeze: freezeLocalAgentUsage, internal: localAgentUsageInternal, plain: plainLocalAgentUsageInput, timestamp: validLocalAgentUsageTimestamp } = createCfoSupabaseRpc("cfo_local_agent_usage_invalid:");
+const LOCAL_AGENT_USAGE_PAIR_KEYS = new Set(["input", "context"]);
 
 function headers(key, extra) {
   return Object.assign({ apikey: key, Authorization: `Bearer ${key}` }, extra || {});
@@ -263,27 +263,36 @@ function normalizeLocalAgentUsageEvent(input, mapping) {
 
 function reduceLocalAgentUsageEvents(pairs) {
   try {
-    if (!Array.isArray(pairs)) localAgentUsageFail("invalid_input");
+    if (!Array.isArray(pairs) || require("node:util").types.isProxy(pairs)) localAgentUsageFail("invalid_input");
     const groups = new Map();
     for (let index = 0; index < pairs.length; index += 1) {
       if (!Object.prototype.hasOwnProperty.call(pairs, index)) localAgentUsageFail("invalid_input");
-      const pair = pairs[index]; exactLocalAgentUsage(pair, LOCAL_AGENT_PAIR_KEYS);
-      const event = normalizeLocalAgentUsageEvent(pair.input, pair.context), canonical = canonicalJson(event), id = event.source_event_id;
-      const group = groups.get(id) || { rows: [], variants: new Map() };
-      group.rows.push(event); group.variants.set(canonical, event); groups.set(id, group);
+      const pair = pairs[index];
+      exactLocalAgentUsagePair(pair, LOCAL_AGENT_USAGE_PAIR_KEYS);
+      const event = normalizeLocalAgentUsageEvent(pair.input, pair.context);
+      const value = canonicalJson(event);
+      const group = groups.get(event.source_event_id);
+      if (group) {
+        group.rows += 1;
+        group.conflicting ||= group.canonical !== value;
+      } else groups.set(event.source_event_id, { event, canonical: value, rows: 1, conflicting: false });
     }
-    const accepted = [], counts = { accepted_rows: 0, duplicate_rows: 0, conflicting_rows: 0 };
+    const events = [], runnerSources = new Map(), counts = {
+      discovered_rows: pairs.length, accepted_rows: 0, duplicate_rows: 0, conflicting_rows: 0, missing_usage_rows: 0, runner_collision_groups: 0,
+    };
     for (const group of groups.values()) {
-      if (group.variants.size > 1) counts.conflicting_rows += group.rows.length;
-      else { counts.accepted_rows += 1; counts.duplicate_rows += group.rows.length - 1; accepted.push(group.variants.values().next().value); }
+      if (group.conflicting) { counts.conflicting_rows += group.rows; continue; }
+      events.push(group.event); counts.accepted_rows += 1; counts.duplicate_rows += group.rows - 1;
+      if (group.event.coverage_status === "missing_usage") counts.missing_usage_rows += 1;
+      const sources = runnerSources.get(group.event.runner_event_id) || new Set();
+      sources.add(group.event.source_event_id);
+      runnerSources.set(group.event.runner_event_id, sources);
     }
-    accepted.sort((a, b) => a.source_event_id < b.source_event_id ? -1 : a.source_event_id > b.source_event_id ? 1 : 0);
-    const events = accepted.map((event) => JSON.parse(canonicalJson(event))), runnerSets = new Map();
-    for (const event of accepted) { const ids = runnerSets.get(event.runner_event_id) || new Set(); ids.add(event.source_event_id); runnerSets.set(event.runner_event_id, ids); }
-    const missing = accepted.filter((event) => event.measurement === "unavailable").length;
-    const collisions = [...runnerSets.values()].filter((ids) => ids.size > 1).length;
-    const coverage_exceptions = []; if (counts.conflicting_rows) coverage_exceptions.push("conflicting_usage"); if (missing) coverage_exceptions.push("missing_usage"); if (collisions) coverage_exceptions.push("runner_identity_collision");
-    return freezeLocalAgentUsage({ events, discovered_rows: pairs.length, ...counts, missing_usage_rows: missing, runner_collision_groups: collisions, coverage_exceptions });
+    events.sort((a, b) => a.source_event_id < b.source_event_id ? -1 : a.source_event_id > b.source_event_id ? 1 : 0);
+    for (const sources of runnerSources.values()) if (sources.size > 1) counts.runner_collision_groups += 1;
+    const coverage_exceptions = Object.entries({ conflicting_usage: counts.conflicting_rows, missing_usage: counts.missing_usage_rows, runner_identity_collision: counts.runner_collision_groups })
+      .filter(([, count]) => count > 0).map(([key]) => key);
+    return freezeLocalAgentUsage({ events, counts, coverage_exceptions });
   } catch (error) {
     if (localAgentUsageInternal(error)) throw error;
     localAgentUsageFail("invalid_input");

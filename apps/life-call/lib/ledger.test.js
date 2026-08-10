@@ -259,6 +259,7 @@ const localAgentInput = (overrides = {}, tokenOverrides = {}) => ({
 });
 const SOURCE_ROW_REF = "1".repeat(64), OTHER_SOURCE_ROW_REF = "2".repeat(64);
 const localAgentContext = (source_row_ref = SOURCE_ROW_REF, financial_unit_id = null) => ({ source_row_ref, financial_unit_id });
+const localAgentPair = (source, overrides = {}, tokens = {}) => ({ input: localAgentInput(overrides, tokens), context: localAgentContext(source) });
 
 test("normalizeLocalAgentUsageEvent preserves runner values, provenance, attribution, and freeze", () => {
   const input = localAgentInput({ raw_session_ref: "ignored" });
@@ -291,32 +292,29 @@ test("normalizeLocalAgentUsageEvent rejects invalid or hostile input with fixed 
   const cases = [[[], localAgentContext()], [valid, []], [localAgentInput({ event_id: "HOSTILE_EVENT_SENTINEL" }), localAgentContext()], [localAgentInput({}, { input: null }), localAgentContext()], [localAgentInput({ status: "running" }), localAgentContext()], [localAgentInput({ measurement: "estimated" }), localAgentContext()], [localAgentInput({ measurement: "unavailable" }, { input: 0 }), localAgentContext()], [valid, { financial_unit_id: null }], [valid, localAgentContext("0".repeat(64))], [valid, localAgentContext("A".repeat(64))]];
   for (const [input, mapping] of cases) assert.throws(() => ledger().normalizeLocalAgentUsageEvent(input, mapping), (error) => /^cfo_local_agent_usage_invalid:[a-z_]+$/.test(error.message) && !/HOSTILE_EVENT_SENTINEL|valid-loop|gpt-5\.6/.test(error.message));
 });
-
-const localAgentPair = (source_row_ref = SOURCE_ROW_REF, inputOverrides = {}, tokenOverrides = {}) => ({ input: localAgentInput(inputOverrides, tokenOverrides), context: localAgentContext(source_row_ref) });
-
-test("reduceLocalAgentUsageEvents deduplicates exact source rows", () => {
-  const pair = localAgentPair(), receipt = ledger().reduceLocalAgentUsageEvents([pair, structuredClone(pair)]);
-  assert.deepEqual({ events: receipt.events.map(({ source_event_id }) => source_event_id), discovered_rows: receipt.discovered_rows, accepted_rows: receipt.accepted_rows, duplicate_rows: receipt.duplicate_rows, conflicting_rows: receipt.conflicting_rows, missing_usage_rows: receipt.missing_usage_rows, runner_collision_groups: receipt.runner_collision_groups, coverage_exceptions: receipt.coverage_exceptions }, { events: [`local_agent_usage:${SOURCE_ROW_REF}`], discovered_rows: 2, accepted_rows: 1, duplicate_rows: 1, conflicting_rows: 0, missing_usage_rows: 0, runner_collision_groups: 0, coverage_exceptions: [] });
+test("reduceLocalAgentUsageEvents dedupes exact source rows and freezes the receipt", () => {
+  const pair = localAgentPair(SOURCE_ROW_REF), receipt = ledger().reduceLocalAgentUsageEvents([pair, structuredClone(pair)]);
+  assert.deepEqual(receipt.counts, { discovered_rows: 2, accepted_rows: 1, duplicate_rows: 1, conflicting_rows: 0, missing_usage_rows: 0, runner_collision_groups: 0 }); assert.equal(receipt.events[0].source_event_id, `local_agent_usage:${SOURCE_ROW_REF}`); assert.deepEqual(receipt.coverage_exceptions, []);
+  assert.ok(Object.isFrozen(receipt) && Object.isFrozen(receipt.events) && Object.isFrozen(receipt.counts) && Object.isFrozen(receipt.coverage_exceptions));
+  assert.equal(receipt.counts.discovered_rows, receipt.counts.accepted_rows + receipt.counts.duplicate_rows + receipt.counts.conflicting_rows);
 });
 
-test("reduceLocalAgentUsageEvents excludes conflicts and is order independent", () => {
-  const unique = localAgentPair(SOURCE_ROW_REF), conflict = localAgentPair(OTHER_SOURCE_ROW_REF), changed = localAgentPair(OTHER_SOURCE_ROW_REF, {}, { output: 81, total: 235 });
-  const receipt = ledger().reduceLocalAgentUsageEvents([changed, unique, conflict]), reversed = ledger().reduceLocalAgentUsageEvents([conflict, unique, changed]);
-  assert.deepEqual(receipt, reversed); assert.deepEqual(receipt.events.map(({ source_event_id }) => source_event_id), [`local_agent_usage:${SOURCE_ROW_REF}`]);
-  assert.deepEqual({ discovered_rows: receipt.discovered_rows, accepted_rows: receipt.accepted_rows, duplicate_rows: receipt.duplicate_rows, conflicting_rows: receipt.conflicting_rows, missing_usage_rows: receipt.missing_usage_rows, runner_collision_groups: receipt.runner_collision_groups, coverage_exceptions: receipt.coverage_exceptions }, { discovered_rows: 3, accepted_rows: 1, duplicate_rows: 0, conflicting_rows: 2, missing_usage_rows: 0, runner_collision_groups: 0, coverage_exceptions: ["conflicting_usage"] });
+test("reduceLocalAgentUsageEvents excludes conflicts and is input-order independent", () => {
+  const unique = localAgentPair("3".repeat(64), { event_id: "bbbbbbbbbbbbbbbbbbbbbbbb" }), conflict = localAgentPair("4".repeat(64), { event_id: "cccccccccccccccccccccccc" }), changed = localAgentPair("4".repeat(64), { event_id: "cccccccccccccccccccccccc" }, { output: 81, total: 235 }), reduce = (pairs) => ledger().reduceLocalAgentUsageEvents(pairs);
+  const receipt = reduce([changed, unique, conflict]), reversed = reduce([conflict, unique, changed]);
+  assert.deepEqual(receipt, reversed); assert.deepEqual(receipt.events.map((event) => event.source_event_id), [`local_agent_usage:${"3".repeat(64)}`]); assert.deepEqual(receipt.counts, { discovered_rows: 3, accepted_rows: 1, duplicate_rows: 0, conflicting_rows: 2, missing_usage_rows: 0, runner_collision_groups: 0 });
+  assert.deepEqual(receipt.coverage_exceptions, ["conflicting_usage"]);
 });
 
-test("reduceLocalAgentUsageEvents reports accepted missing rows and runner collisions only once", () => {
-  const missing = localAgentPair(SOURCE_ROW_REF, { status: "failed", measurement: "unavailable" }, { input: null, cached_input: null, cache_creation_input: null, output: null, reasoning_output: null, total: null });
-  const conflict = localAgentPair("3".repeat(64), { status: "failed", measurement: "unavailable" }, { input: null, cached_input: null, cache_creation_input: null, output: null, reasoning_output: null, total: null });
-  const changed = localAgentPair("3".repeat(64), { timestamp: "2026-08-10T01:02:04Z", status: "failed", measurement: "unavailable" }, { input: null, cached_input: null, cache_creation_input: null, output: null, reasoning_output: null, total: null });
-  const receipt = ledger().reduceLocalAgentUsageEvents([structuredClone(missing), changed, missing, localAgentPair(OTHER_SOURCE_ROW_REF), conflict]);
-  assert.deepEqual({ accepted_rows: receipt.accepted_rows, duplicate_rows: receipt.duplicate_rows, conflicting_rows: receipt.conflicting_rows, missing_usage_rows: receipt.missing_usage_rows, runner_collision_groups: receipt.runner_collision_groups, coverage_exceptions: receipt.coverage_exceptions }, { accepted_rows: 2, duplicate_rows: 1, conflicting_rows: 2, missing_usage_rows: 1, runner_collision_groups: 1, coverage_exceptions: ["conflicting_usage", "missing_usage", "runner_identity_collision"] });
+test("reduceLocalAgentUsageEvents preserves runner collisions and accepted missing usage", () => {
+  const a = localAgentPair("5".repeat(64), { event_id: "dddddddddddddddddddddddd" }), b = localAgentPair("6".repeat(64), { event_id: "dddddddddddddddddddddddd" }), missing = localAgentPair("7".repeat(64), { event_id: "eeeeeeeeeeeeeeeeeeeeeeee", status: "failed", measurement: "unavailable" }, { input: null, cached_input: null, cache_creation_input: null, output: null, reasoning_output: null, total: null });
+  const conflict = localAgentPair("8".repeat(64), { event_id: "ffffffffffffffffffffffff" }), changed = localAgentPair("8".repeat(64), { event_id: "ffffffffffffffffffffffff" }, { output: 81, total: 235 }), receipt = ledger().reduceLocalAgentUsageEvents([changed, missing, b, structuredClone(missing), conflict, a]);
+  assert.deepEqual(receipt.counts, { discovered_rows: 6, accepted_rows: 3, duplicate_rows: 1, conflicting_rows: 2, missing_usage_rows: 1, runner_collision_groups: 1 }); assert.deepEqual(receipt.coverage_exceptions, ["conflicting_usage", "missing_usage", "runner_identity_collision"]); assert.deepEqual(receipt.events.map((event) => event.source_event_id), ["5", "6", "7"].map((id) => `local_agent_usage:${id.repeat(64)}`));
 });
 
-test("reduceLocalAgentUsageEvents requires exact pairs and freezes a redacted receipt", () => {
-  const receipt = ledger().reduceLocalAgentUsageEvents([localAgentPair()]);
-  assert.deepEqual(Object.keys(receipt), ["events", "discovered_rows", "accepted_rows", "duplicate_rows", "conflicting_rows", "missing_usage_rows", "runner_collision_groups", "coverage_exceptions"]);
-  assert.ok(Object.isFrozen(receipt) && Object.isFrozen(receipt.events) && Object.isFrozen(receipt.events[0]));
-  for (const input of [null, [localAgentInput()], [Object.assign(localAgentPair(), { secret: "HOSTILE_PAIR" })], [,]]) assert.throws(() => ledger().reduceLocalAgentUsageEvents(input), (error) => /^cfo_local_agent_usage_invalid:[a-z_]+$/.test(error.message) && !/HOSTILE_PAIR|source_row_ref/.test(error.message));
+test("reduceLocalAgentUsageEvents rejects non-dense or non-exact hostile pairs with redacted errors", () => {
+  const valid = localAgentPair(SOURCE_ROW_REF), hostile = { ...valid, leak: "HOSTILE_SENTINEL" };
+  for (const pairs of [null, {}, [hostile], [, valid], [{ input: localAgentInput({ event_id: "HOSTILE_EVENT_SENTINEL" }), context: localAgentContext(SOURCE_ROW_REF) }]]) {
+    assert.throws(() => ledger().reduceLocalAgentUsageEvents(pairs), (error) => /^cfo_local_agent_usage_invalid:[a-z_]+$/.test(error.message) && !/HOSTILE_SENTINEL|HOSTILE_EVENT_SENTINEL|gpt-5\.6/.test(error.message));
+  }
 });

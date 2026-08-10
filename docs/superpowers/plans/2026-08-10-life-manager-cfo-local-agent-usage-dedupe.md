@@ -78,9 +78,11 @@ status, commits, pushes, and starts 2a2a.3.
 
 ## Completion evidence
 
-- Fresh Sol review: `ship — Spec ✅`; exact raw-pair input, reducer-owned normalization, mixed coverage, dense array,
-  freeze, ordering, and redaction probes pass.
-- Real read-only E2E: discovered 4,938, accepted 4,938, duplicate 0, conflicting 0, missing usage 273, runner collision
-  groups 434; reversed input produces the identical receipt.
-- Focused 22/22, CFO 270/270, and full 928/928 tests pass; syntax and diff checks pass.
-- Scope is exactly two files and +62/-2 LOC.
+- Luna recorded the missing-export RED and implemented one reducer in the existing two files, +69/-2 LOC.
+- Fresh Sol review returned `ship` with Critical 0 and Important 0.
+- Focused 4/4, ledger 22/22, CFO 270/270, full suite exit 0, syntax, and `git diff --check` pass.
+- Real read-only E2E accepted every currently complete source row with zero duplicate/conflicting source-row refs and
+  produced the identical receipt after input reversal: Life Manager 1,101 accepted, 12 missing usage, 6 runner-ID
+  collision groups; Anicca 3,841 accepted, 261 missing usage, 429 collision groups.
+- The output contains only normalized events, exact integer counts, and sorted coverage exception names; raw paths,
+  prompts, responses, provider payloads, and credentials are absent.
