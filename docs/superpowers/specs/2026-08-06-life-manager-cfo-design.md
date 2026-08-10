@@ -231,8 +231,9 @@ remain visible.
 - [ ] Daily operational totals reconcile request-level usage without duplication; monthly confirmed totals
       reconcile to provider billing exports/invoices, with an explicit unexplained difference.
 - [ ] Managed local subscription loops use the existing agent-runner attempt ledger, never prose estimates. Its
-      deterministic event ID is counted once; missing, conflicting, truncated, or unread rows reduce capture
-      coverage instead of becoming zero. Raw interactive sessions are excluded until explicitly mapped.
+      opaque source-row identity is counted once; the reused runner event ID is correlation-only. Missing,
+      conflicting, truncated, or unread rows reduce capture coverage instead of becoming zero. Raw interactive
+      sessions are excluded until explicitly mapped.
 - [ ] Subscription cash expense and API-equivalent scale cost are separate: the former reconciles the actual plan
       receipt; the latter is a labeled forecast from measured token mix and a versioned API price card.
 - [ ] Every attempted ledger write has an attempt ID and durable success/failure outcome. Reports show capture
