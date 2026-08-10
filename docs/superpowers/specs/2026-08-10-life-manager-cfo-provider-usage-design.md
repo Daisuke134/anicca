@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — CFO-2a2.1 through CFO-2a2.3 verified; CFO-2a2.4 Gemini Live usage is next |
+| Status | ACTIVE — CFO-2a2.1 through CFO-2a2.4a verified; CFO-2a2.4b pure Live usage contract is next |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Existing `apps/life-call` package |
 | First provider | Gemini `generateContent` response |
@@ -492,8 +492,8 @@ flowchart LR
     D --> DONE[CFO-2a2 complete]
 ```
 
-Only CFO-2a2.4a is active. It changes the schema contract only. No normalizer, RPC, Node client, WebSocket, span,
-duration estimate, scheduler, launchd, or Telegram behavior belongs in this slice.
+CFO-2a2.4a is verified. CFO-2a2.4b is next and receives its own child plan. The completed schema slice contains no
+normalizer, RPC, Node client, WebSocket, span, duration estimate, scheduler, launchd, or Telegram behavior.
 
 ### 13.2 CFO-2a2.4a — truthful provenance schema
 
@@ -516,14 +516,21 @@ metadata JSON, price, billing, or OpenTelemetry payload is stored.
 
 Acceptance:
 
-- [ ] the forward migration is additive and contains no row update/delete/backfill;
-- [ ] one valid local Live-shaped row accepts null provider response ID/model and a prefixed local correlation ID;
-- [ ] a mixed provider/local identity row is rejected by the named database constraint;
-- [ ] a duplicate local provider/correlation/sequence identity is rejected by the partial unique index;
-- [ ] a malformed local correlation ID is rejected by the named format check in real PostgreSQL;
-- [ ] the existing real Gemini GenerateContent flow still stores two provider IDs/models with null local correlation;
-- [ ] focused migration tests, the existing real provider E2E, CFO tests, and the full suite pass;
-- [ ] implementation changes exactly three files and adds at most 70 lines.
+- [x] the forward migration is additive and contains no row update/delete/backfill;
+- [x] one valid local Live-shaped row accepts null provider response ID/model and a prefixed local correlation ID;
+- [x] a mixed provider/local identity row is rejected by the named database constraint;
+- [x] a duplicate local provider/correlation/sequence identity is rejected by the partial unique index;
+- [x] a malformed local correlation ID is rejected by the named format check in real PostgreSQL;
+- [x] the existing real Gemini GenerateContent flow still stores two provider IDs/models with null local correlation;
+- [x] focused migration tests, the existing real provider E2E, CFO tests, and the full suite pass;
+- [x] implementation changes exactly three files and adds at most 70 lines.
+
+Completion evidence: Luna recorded RED at 2/3 with only the missing forward migration failing, then GREEN at 3/3.
+Sol independently verified the focused test at 3/3, CFO suite at 264/264, full `npm test` exit `0`, shell syntax,
+and `git diff --check`. The env-isolated real gate returned exactly
+`cfo-provider-usage-real-e2e: PASS rows=2 spans=2` against disposable PostgreSQL/PostgREST and two real Gemini
+responses. The implementation changes exactly three files and adds 65 lines. Fresh Sol review returned `ship`.
+No production database, runtime, scheduler, launchd job, or Telegram state was changed.
 
 ### 13.3 Remaining Live slices
 

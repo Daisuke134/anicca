@@ -1,6 +1,6 @@
 # CFO-2a2.4a Gemini Live Provenance Schema Implementation Plan
 
-**Status:** READY — only active task.
+**Status:** COMPLETE — verified and ready for CFO-2a2.4b.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -32,7 +32,7 @@
 - Consumes: the existing `public.lm_cfo_model_usage_evidence` table and unchanged provider append RPC.
 - Produces: nullable `local_correlation_id text`, nullable provider response ID/model, a named exclusive identity-path check, and a local-identity partial unique index.
 
-- [ ] **Step 1: Write the failing static migration contract test**
+- [x] **Step 1: Write the failing static migration contract test**
 
 Add `liveProvenanceMigrationPath`, read the new SQL in one focused test, and require these exact semantics:
 
@@ -49,7 +49,7 @@ UNIQUE (provider, local_correlation_id, usage_sequence) WHERE local_correlation_
 Assert the file has no `UPDATE`, `DELETE`, backfill, content/raw-response/metadata/JSON field, function/RPC,
 policy/grant/revoke, or base-table recreation.
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
 ```bash
 node --test lib/cfo-model-usage-evidence-migration.test.js
@@ -57,7 +57,7 @@ node --test lib/cfo-model-usage-evidence-migration.test.js
 
 Expected: exactly one new test fails with `ENOENT` for the missing forward migration; the two existing tests pass.
 
-- [ ] **Step 3: Add the minimum forward migration**
+- [x] **Step 3: Add the minimum forward migration**
 
 Create one `ALTER TABLE` plus one index:
 
@@ -81,7 +81,7 @@ CREATE UNIQUE INDEX lm_cfo_model_usage_evidence_local_identity_unique
 
 Do not modify the base migration or append RPC.
 
-- [ ] **Step 4: Extend the existing real-provider E2E**
+- [x] **Step 4: Extend the existing real-provider E2E**
 
 Apply the forward migration after the base and RPC migrations and before PostgREST starts. In a rolled-back SQL
 transaction, insert one valid Live-shaped row with provider response ID/model null and
@@ -94,7 +94,7 @@ rejected by `lm_cfo_model_usage_evidence_identity_path_check`, and prove a dupli
 Keep the existing real Gemini request and exact final output. Add `local_correlation_id` to the read projection and
 assert both real GenerateContent rows retain non-empty provider IDs/models and have `local_correlation_id === null`.
 
-- [ ] **Step 5: Run GREEN and scope gates**
+- [x] **Step 5: Run GREEN and scope gates**
 
 ```bash
 node --test lib/cfo-model-usage-evidence-migration.test.js
@@ -126,3 +126,12 @@ Do not commit or push.
 - Coverage: truthful identity paths, migration safety, local uniqueness, mixed-path rejection, and provider-path regression.
 - Scope: one forward migration and two reused tests; no new runtime surface.
 - Placeholders: none. Column, constraint, index, values, commands, limits, and expected output are fixed.
+
+## Completion evidence
+
+- RED: 2/3 passed; only the missing forward migration failed with `ENOENT`.
+- GREEN: focused 3/3, CFO 264/264, full `npm test` exit `0`.
+- Real gate: `cfo-provider-usage-real-e2e: PASS rows=2 spans=2`.
+- Scope: exactly three implementation files and 65 additions; diff and shell syntax checks passed.
+- Fresh Sol implementation review: `ship`.
+- No production database or Telegram mutation occurred.

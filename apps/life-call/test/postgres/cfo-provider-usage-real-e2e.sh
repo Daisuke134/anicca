@@ -6,6 +6,7 @@ for command in docker psql curl node; do command -v "$command" >/dev/null || { p
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 MIGRATION="$ROOT_DIR/migrations/2026-08-10-cfo-model-usage-evidence.sql"
 RPC_MIGRATION="$ROOT_DIR/migrations/2026-08-10-cfo-model-usage-evidence-append-rpc.sql"
+LIVE_MIGRATION="$ROOT_DIR/migrations/2026-08-10-cfo-model-usage-evidence-live-provenance.sql"
 TMP_ROOT="${TMPDIR:-/tmp}"
 TEST_TMP="$(mktemp -d "$TMP_ROOT/cfo-provider-usage-real-e2e-$$.XXXXXX")"
 NETWORK="cfo-provider-usage-net-$$"
@@ -48,6 +49,38 @@ INSERT INTO public.lm_users(uid) VALUES ('cfo-e2e-owner');
 SQL
 "${PSQL[@]}" -f "$MIGRATION" >/dev/null 2>&1
 "${PSQL[@]}" -f "$RPC_MIGRATION" >/dev/null 2>&1
+"${PSQL[@]}" -f "$LIVE_MIGRATION" >/dev/null 2>&1
+"${PSQL[@]}" >/dev/null <<'SQL'
+BEGIN;
+DO $$
+DECLARE constraint_name text;
+BEGIN
+  INSERT INTO public.lm_cfo_model_usage_evidence (uid, financial_unit_id, attribution_status, provider, provider_request_id, usage_sequence, occurred_at, trace_id, request_model, response_model, input_tokens, output_tokens, total_tokens, cached_input_tokens, reasoning_output_tokens, tool_input_tokens, evidence_status, local_correlation_id) VALUES ('cfo-e2e-owner', 'life_manager_saas', 'attributed', 'gcp.gemini', NULL, 0, clock_timestamp(), repeat('1', 32), 'gemini-live', NULL, 1, 1, 2, NULL, NULL, NULL, 'provider_reported', 'live-session:' || repeat('2', 32));
+  BEGIN
+    INSERT INTO public.lm_cfo_model_usage_evidence (uid, financial_unit_id, attribution_status, provider, provider_request_id, usage_sequence, occurred_at, trace_id, request_model, response_model, input_tokens, output_tokens, total_tokens, cached_input_tokens, reasoning_output_tokens, tool_input_tokens, evidence_status, local_correlation_id) VALUES ('cfo-e2e-owner', 'life_manager_saas', 'attributed', 'gcp.gemini', 'mixed-provider-id', 0, clock_timestamp(), repeat('3', 32), 'gemini-live', 'gemini-live', 1, 1, 2, NULL, NULL, NULL, 'provider_reported', 'live-session:' || repeat('2', 32));
+    RAISE EXCEPTION 'expected_identity_path_check';
+  EXCEPTION WHEN check_violation THEN
+    GET STACKED DIAGNOSTICS constraint_name = CONSTRAINT_NAME;
+    IF constraint_name <> 'lm_cfo_model_usage_evidence_identity_path_check' THEN RAISE; END IF;
+  END;
+  BEGIN
+    INSERT INTO public.lm_cfo_model_usage_evidence (uid, financial_unit_id, attribution_status, provider, provider_request_id, usage_sequence, occurred_at, trace_id, request_model, response_model, input_tokens, output_tokens, total_tokens, cached_input_tokens, reasoning_output_tokens, tool_input_tokens, evidence_status, local_correlation_id) VALUES ('cfo-e2e-owner', 'life_manager_saas', 'attributed', 'gcp.gemini', NULL, 0, clock_timestamp(), repeat('4', 32), 'gemini-live', NULL, 1, 1, 2, NULL, NULL, NULL, 'provider_reported', 'live-session:' || repeat('2', 32));
+    RAISE EXCEPTION 'expected_local_identity_unique';
+  EXCEPTION WHEN unique_violation THEN
+    GET STACKED DIAGNOSTICS constraint_name = CONSTRAINT_NAME;
+    IF constraint_name <> 'lm_cfo_model_usage_evidence_local_identity_unique' THEN RAISE; END IF;
+  END;
+  BEGIN
+    INSERT INTO public.lm_cfo_model_usage_evidence (uid, financial_unit_id, attribution_status, provider, provider_request_id, usage_sequence, occurred_at, trace_id, request_model, response_model, input_tokens, output_tokens, total_tokens, cached_input_tokens, reasoning_output_tokens, tool_input_tokens, evidence_status, local_correlation_id) VALUES ('cfo-e2e-owner', 'life_manager_saas', 'attributed', 'gcp.gemini', NULL, 1, clock_timestamp(), repeat('5', 32), 'gemini-live', NULL, 1, 1, 2, NULL, NULL, NULL, 'provider_reported', 'live-session:not-hex');
+    RAISE EXCEPTION 'expected_local_correlation_format';
+  EXCEPTION WHEN check_violation THEN
+    GET STACKED DIAGNOSTICS constraint_name = CONSTRAINT_NAME;
+    IF constraint_name <> 'lm_cfo_model_usage_evidence_local_correlation_format' THEN RAISE; END IF;
+  END;
+END;
+$$;
+ROLLBACK;
+SQL
 
 CFO_E2E_JWT="$(JWT_SECRET="$JWT_SECRET" node -e 'const c=require("node:crypto"),b=v=>Buffer.from(JSON.stringify(v)).toString("base64url"),h=`${b({alg:"HS256",typ:"JWT"})}.${b({role:"service_role"})}`;process.stdout.write(`${h}.${c.createHmac("sha256",process.env.JWT_SECRET).update(h).digest("base64url")}`)')"
 
@@ -70,16 +103,16 @@ let exporterOutput = ""; const writeExport = (...args) => { exporterOutput += ar
 const oldLog = console.log, oldDir = console.dir; console.log = writeExport; console.dir = writeExport;
 const localPostgrestFetch = async (input, init) => { const url = new URL(typeof input === "string" ? input : input.url); if (url.origin === base.origin) url.pathname = url.pathname.replace(/^\/rest\/v1(?=\/|$)/, ""); return nativeFetch(url.origin === base.origin ? url : input, init); };
 globalThis.fetch = async (...args) => { const response = await nativeFetch(...args), input = args[0], url = new URL(typeof input === "string" ? input : input.url || String(input)); if (url.origin === "https://generativelanguage.googleapis.com") providerResponses.push(await response.clone().json()); return response; };
-const projectGeminiUsage = (value) => { const u = value.usageMetadata; return { uid: "cfo-e2e-owner", financial_unit_id: "life_manager_saas", attribution_status: "attributed", provider: "gcp.gemini", provider_request_id: value.responseId, usage_sequence: 0, request_model: "gemini-2.5-flash", response_model: value.modelVersion, input_tokens: u.promptTokenCount, output_tokens: u.candidatesTokenCount, total_tokens: u.totalTokenCount, cached_input_tokens: u.cachedContentTokenCount ?? null, reasoning_output_tokens: u.thoughtsTokenCount ?? null, tool_input_tokens: u.toolUsePromptTokenCount ?? null, evidence_status: "provider_reported" }; };
-const projectRow = (row) => ({ uid: row.uid, financial_unit_id: row.financial_unit_id, attribution_status: row.attribution_status, provider: row.provider, provider_request_id: row.provider_request_id, usage_sequence: row.usage_sequence, request_model: row.request_model, response_model: row.response_model, input_tokens: row.input_tokens, output_tokens: row.output_tokens, total_tokens: row.total_tokens, cached_input_tokens: row.cached_input_tokens, reasoning_output_tokens: row.reasoning_output_tokens, tool_input_tokens: row.tool_input_tokens, evidence_status: row.evidence_status });
+const projectGeminiUsage = (value) => { const u = value.usageMetadata; return { uid: "cfo-e2e-owner", financial_unit_id: "life_manager_saas", attribution_status: "attributed", provider: "gcp.gemini", provider_request_id: value.responseId, usage_sequence: 0, request_model: "gemini-2.5-flash", response_model: value.modelVersion, input_tokens: u.promptTokenCount, output_tokens: u.candidatesTokenCount, total_tokens: u.totalTokenCount, cached_input_tokens: u.cachedContentTokenCount ?? null, reasoning_output_tokens: u.thoughtsTokenCount ?? null, tool_input_tokens: u.toolUsePromptTokenCount ?? null, evidence_status: "provider_reported", local_correlation_id: null }; };
+const projectRow = (row) => ({ uid: row.uid, financial_unit_id: row.financial_unit_id, attribution_status: row.attribution_status, provider: row.provider, provider_request_id: row.provider_request_id, usage_sequence: row.usage_sequence, request_model: row.request_model, response_model: row.response_model, input_tokens: row.input_tokens, output_tokens: row.output_tokens, total_tokens: row.total_tokens, cached_input_tokens: row.cached_input_tokens, reasoning_output_tokens: row.reasoning_output_tokens, tool_input_tokens: row.tool_input_tokens, evidence_status: row.evidence_status, local_correlation_id: row.local_correlation_id });
 const sorted = (values) => [...values].sort((a, b) => { const left = `${a.provider_request_id}\0${a.usage_sequence}`, right = `${b.provider_request_id}\0${b.usage_sequence}`; return left < right ? -1 : left > right ? 1 : 0; });
 const collectStrings = (value, out = []) => { if (typeof value === "string" && value) out.push(value); else if (Array.isArray(value)) value.forEach((item) => collectStrings(item, out)); else if (value && typeof value === "object") Object.values(value).forEach((item) => collectStrings(item, out)); return out; };
 ;(async () => {
 try {
   const { agentSearchCandidate } = require(path.join(process.env.CFO_ROOT, "lib", "ask.js"));
   await agentSearchCandidate({ summary: "Tokyo International Forum venue", description: process.env.CFO_E2E_SENTINEL }, { geminiKey: process.env.GEMINI_API_KEY, providerUsage: { owner_id: "cfo-e2e-owner", financial_unit_id: "life_manager_saas", request_model: "gemini-2.5-flash", storeOptions: { supaUrl: process.env.CFO_E2E_URL, supaKey: process.env.CFO_E2E_JWT, fetchImpl: localPostgrestFetch } }, mailAvailable: async () => false, mail: { ready: () => false, searchInbox: async () => [] } });
-  const readResponse = await localPostgrestFetch(`${process.env.CFO_E2E_URL}/rest/v1/lm_cfo_model_usage_evidence?select=uid,financial_unit_id,attribution_status,provider,provider_request_id,usage_sequence,trace_id,request_model,response_model,input_tokens,output_tokens,total_tokens,cached_input_tokens,reasoning_output_tokens,tool_input_tokens,evidence_status`, { headers: { apikey: process.env.CFO_E2E_JWT, Authorization: `Bearer ${process.env.CFO_E2E_JWT}`, Accept: "application/json" } });
-  assert.equal(readResponse.ok, true); const rows = await readResponse.json(); assert.equal(providerResponses.length, 2); assert.equal(rows.length, 2); assert.deepEqual(sorted(rows).map(projectRow), sorted(providerResponses.map(projectGeminiUsage)));
+  const readResponse = await localPostgrestFetch(`${process.env.CFO_E2E_URL}/rest/v1/lm_cfo_model_usage_evidence?select=uid,financial_unit_id,attribution_status,provider,provider_request_id,usage_sequence,trace_id,request_model,response_model,input_tokens,output_tokens,total_tokens,cached_input_tokens,reasoning_output_tokens,tool_input_tokens,evidence_status,local_correlation_id`, { headers: { apikey: process.env.CFO_E2E_JWT, Authorization: `Bearer ${process.env.CFO_E2E_JWT}`, Accept: "application/json" } });
+  assert.equal(readResponse.ok, true); const rows = await readResponse.json(); assert.equal(providerResponses.length, 2); assert.equal(rows.length, 2); assert.deepEqual(sorted(rows).map(projectRow), sorted(providerResponses.map(projectGeminiUsage))); assert.ok(rows.every((row) => row.provider_request_id && row.response_model && row.local_correlation_id === null));
   assert.ok(rows.every((row) => /^(?!0{32})[0-9a-f]{32}$/.test(row.trace_id))); assert.equal(new Set(rows.map((row) => row.trace_id)).size, 2); assert.ok(!JSON.stringify(rows).includes(process.env.CFO_E2E_SENTINEL));
   const traceIds = rows.map((row) => row.trace_id); fs.writeFileSync(process.env.CFO_E2E_TRACE_FILE, `${traceIds.join("\n")}\n`); const providerStrings = [], providerTexts = [];
   for (const response of providerResponses) for (const part of (response.candidates || []).flatMap((candidate) => candidate.content?.parts || [])) { if (typeof part.text === "string" && part.text) providerTexts.push(part.text); const call = part.functionCall; if (call) { if (typeof call.name === "string" && call.name) providerStrings.push(call.name); providerStrings.push(...collectStrings(call.args)); } }

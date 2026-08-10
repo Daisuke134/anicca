@@ -5,6 +5,7 @@ const path = require("node:path");
 const { test } = require("node:test");
 const migrationPath = path.join(__dirname, "..", "migrations", "2026-08-10-cfo-model-usage-evidence.sql");
 const appendMigrationPath = path.join(__dirname, "..", "migrations", "2026-08-10-cfo-model-usage-evidence-append-rpc.sql");
+const liveProvenanceMigrationPath = path.join(__dirname, "..", "migrations", "2026-08-10-cfo-model-usage-evidence-live-provenance.sql");
 const patterns = [
   /CREATE TABLE IF NOT EXISTS public\.lm_cfo_model_usage_evidence/i, /id\s+bigint\s+GENERATED ALWAYS AS IDENTITY\s+PRIMARY KEY/i, /public_ref\s+uuid\s+NOT NULL\s+DEFAULT\s+gen_random_uuid\(\)\s+UNIQUE.*public_ref\s*<>\s*'00000000-0000-0000-0000-000000000000'::uuid/is, /uid\s+text\s+NOT NULL\s+REFERENCES\s+public\.lm_users\(uid\).*btrim\(uid\)\s*<>\s*''/is,
   /financial_unit_id\s+text.*financial_unit_id\s+~\s*'\^\[a-z\]\[a-z0-9_\]\*\$'/is, /attribution_status\s+text.*attribution_status\s*=\s*'attributed'.*financial_unit_id\s+IS NOT NULL.*attribution_status\s*=\s*'unattributed'.*financial_unit_id\s+IS NULL/is, /provider\s+text\s+NOT NULL\s+CHECK\s*\(\s*provider\s*~\s*'\^\[a-z0-9\]\+\(\?:\\\.\[a-z0-9-\]\+\)\+\$'.*provider_request_id\s+text\s+NOT NULL.*btrim\(provider_request_id\)\s*<>\s*''.*provider_request_id\s*=\s*btrim\(provider_request_id\)/is, /usage_sequence\s+bigint\s+NOT NULL.*CHECK\s*\(\s*usage_sequence\s*>=\s*0\s*\)/is, /occurred_at\s+timestamptz\s+NOT NULL.*trace_id\s+text\s+NOT NULL.*\^\[0-9a-f\]\{32\}.*repeat\('0',\s*32\)/is,
@@ -41,4 +42,16 @@ test("CFO usage append RPC is typed, idempotent, invoker-private, and receipt-cl
   assert.match(sql, /REVOKE ALL ON FUNCTION public\.lm_append_cfo_model_usage_evidence\([^;]+\) FROM PUBLIC, anon, authenticated, service_role/i);
   assert.match(sql, /GRANT EXECUTE ON FUNCTION public\.lm_append_cfo_model_usage_evidence\([^;]+\) TO service_role/i);
   assert.doesNotMatch(sql, /GRANT EXECUTE ON FUNCTION public\.lm_append_cfo_model_usage_evidence\([^;]+\) TO (?:PUBLIC|anon|authenticated)/i);
+});
+
+test("CFO Live provenance migration keeps provider and local identities exclusive", () => {
+  const sql = fs.readFileSync(liveProvenanceMigrationPath, "utf8");
+  [
+    /ADD COLUMN\s+local_correlation_id\s+text\s+CONSTRAINT\s+lm_cfo_model_usage_evidence_local_correlation_format\s+CHECK\s*\(\s*local_correlation_id\s+IS NULL\s+OR\s+local_correlation_id\s*~\s*'\^live-session:\[0-9a-f\]\{32\}\$'\s*\)/is,
+    /ALTER COLUMN\s+provider_request_id\s+DROP NOT NULL/i,
+    /ALTER COLUMN\s+response_model\s+DROP NOT NULL/i,
+    /CONSTRAINT\s+lm_cfo_model_usage_evidence_identity_path_check\s+CHECK\s*\(\s*\(\s*provider_request_id\s+IS NOT NULL\s+AND\s+response_model\s+IS NOT NULL\s+AND\s+local_correlation_id\s+IS NULL\s*\)\s*OR\s*\(\s*provider_request_id\s+IS NULL\s+AND\s+response_model\s+IS NULL\s+AND\s+local_correlation_id\s+IS NOT NULL\s*\)\s*\)/is,
+    /CREATE UNIQUE INDEX\s+lm_cfo_model_usage_evidence_local_identity_unique\s+ON\s+public\.lm_cfo_model_usage_evidence\s*\(\s*provider\s*,\s*local_correlation_id\s*,\s*usage_sequence\s*\)\s*WHERE\s+local_correlation_id\s+IS NOT NULL/i,
+  ].forEach((pattern) => assert.match(sql, pattern));
+  assert.doesNotMatch(sql, /\b(?:UPDATE|DELETE|backfill)\b|\b(?:content|raw[_-]?response|metadata)\b|\bjsonb?\b|\b(?:CREATE|DROP|ALTER)\s+(?:OR\s+REPLACE\s+)?(?:FUNCTION|PROCEDURE)\b|\b(?:CREATE|DROP)\s+TABLE\b|\b(?:RPC|POLICY|GRANT|REVOKE)\b/i);
 });
