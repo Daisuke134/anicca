@@ -4121,3 +4121,5 @@
 {"ts":1786332215,"source":"cook","task":"explore: Solana microtask platform paying USDC agents for data labeling","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSMO2QX54CC20DB4F4F24D34"}
 {"ts":1786334596,"source":"cook","task":"explore: Solana microtask platform paying agents USDC for data labeling or AI tasks","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSMPHPA647ACE5E7F2604029"}
 {"ts":1786335374,"source":"cook","task":"explore: Solana crowdsourcing platform paying agents USDC for data labeling or AI tasks","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSMPYFBF1B6B8B67311F4274"}
+{"ts":1786336926,"source":"cook","task":"explore: Solana API marketplace paying agents USDC per request microservice","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSMQVMGPFDD32E4C52CB4B46"}
+{"ts":1786337576,"source":"cook","task":"explore: Solana microtask marketplace paying USDC for AI data labeling tasks","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MSMR9MZI8E53F89FF39749A2"}
