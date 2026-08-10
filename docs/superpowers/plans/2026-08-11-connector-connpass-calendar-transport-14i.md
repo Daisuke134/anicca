@@ -15,7 +15,7 @@ Allow the already-verified Connpass canonical event identity through the existin
 
 - Reuse `canonicalEventUrl`, the existing gog adapter, fixed provider source titles, private idempotency property, Calendar receipt validation, and evidence checkpoint recovery.
 - Add no provider registry, abstraction, service, state schema, retry, migration, or new renderer.
-- Extend only the Connector Calendar URL allowlist with the existing Connpass public identity: HTTPS, no credentials/port/query/hash, host `connpass.com` or one valid subdomain, exact path `/event/<positive integer>/`.
+- Extend only the Connector Calendar URL allowlist with the existing Connpass public identity: HTTPS, no credentials/port/query/hash, host `connpass.com` or one valid DNS-label subdomain, exact path `/event/<positive integer>/`. The optional label is 1–63 characters, starts and ends with ASCII alphanumeric, and permits hyphens only between them.
 - Preserve current Luma and Peatix acceptance and all malformed URL rejection.
 - Use fixed source title `Connpass`; never copy provider or event input into the source title.
 
@@ -31,7 +31,7 @@ Soft target: 2 files; production +8–18 LOC; tests +25–45 LOC.
 ### RED
 
 1. Exact root and one-subdomain identities such as `https://connpass.com/event/400028/` and `https://tokyo-builders.connpass.com/event/400028/` create through the existing adapter, retain the private idempotency property, and pass exact `--source-url` plus `--source-title=Connpass`.
-2. Connpass variants with multi-level/invalid host, port, missing/trailing-extra slash, query, hash, credentials, uppercase path, non-numeric/zero ID, join/complete/search path fail before `run`.
+2. Connpass variants with multi-level/invalid host, leading-hyphen label, trailing-hyphen label, 64-character label, port, missing/trailing-extra slash, query, hash, credentials, uppercase path, non-numeric/zero ID, join/complete/search path fail before `run`.
 3. Existing Luma and Peatix tests remain green with their fixed source titles.
 
 ### GREEN
@@ -48,4 +48,6 @@ Soft target: 2 files; production +8–18 LOC; tests +25–45 LOC.
 
 ## Result
 
-Pending Luna TDD implementation and live acceptance.
+- Initial Luna RED was 20/21: only exact Connpass success failed, while malformed variants stayed before `run`. Initial GREEN used the shared canonical helper plus raw equality and passed focused 21/21 and all named adjacent groups.
+- Fresh Sol review returned `fix-first`, Critical 0 / Important 1. Adversarial probes showed `-bad.connpass.com`, `bad-.connpass.com`, and a 64-character label reached `gog`, contradicting the valid-subdomain boundary. The plan now requires one RFC-style ASCII DNS label: 1–63 characters, alphanumeric at both ends, internal hyphens only. The same Luna must add those three failing cases before the minimal regex correction.
+- Live acceptance remains pending.

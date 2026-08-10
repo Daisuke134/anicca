@@ -7093,6 +7093,8 @@ pushed HEAD `577aa534c`、4 labels unloaded、clean/upstream、process/lock 0、
 
 checkpointはprovider `connpass`、event ref `connpass-event://event/400028`、status `registered`、provider receipt refとartifact ref/SHA-256を同一lineageで保持する。実コードでは`transport/calendar-gog.js`のConnector canonical URL gateがLumaとPeatixだけを許可し、正規Connpass URLをGoogle Calendar create前に拒否する。次plan `docs/superpowers/plans/2026-08-11-connector-connpass-calendar-transport-14i.md`はCalendar gog production/testの2 filesだけ。rootまたは一段subdomainのexact `https://<host>.connpass.com/event/<positive integer>/`と固定`Connpass` source titleを追加し、Luma/Peatixと全malformed rejectionを維持する。Item14未完、schedule unloaded。
 
+初回Luna GREEN後のfresh Sol reviewはCritical 0 / Important 1で`fix-first`。`-bad.connpass.com`、`bad-.connpass.com`、64文字labelの3 variantsがgog `run`へ到達することを独立再現した。planを先に改訂し、optional subdomainを1〜63文字、ASCII英数字始終、中間hyphenだけの一段DNS labelへ限定する。3 variantsを先にRED化してから同じLunaが最小regexだけを修正する。現code/test差分は未commit、live作用0、Item14未完、schedule unloaded。
+
 ### Active remaining TODO SSOT（進捗329。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
