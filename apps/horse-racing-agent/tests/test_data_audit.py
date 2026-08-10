@@ -151,7 +151,7 @@ def test_current_actual_audit_accepts_two_official_manifests_without_records():
     assert report.cash_authorized is False
 
 
-def test_two_distinct_official_races_with_odds_and_payback_are_model_ready():
+def test_caller_declared_settlement_is_rejected():
     nar = _official(
         NAR,
         runners=[
@@ -168,13 +168,8 @@ def test_two_distinct_official_races_with_odds_and_payback_are_model_ready():
     )
     manifests = _official_manifests(jra_payback=1, nar_payback=1)
 
-    report = audit_records([nar, jra], manifests)
-
-    assert report.record_count == 2
-    assert report.race_count == 2
-    assert report.model_ready is True
-    assert report.blockers == ()
-    assert report.max_odds_snapshot_age_seconds == 60
+    with pytest.raises(AuditRejected, match="settlement evidence is unverified"):
+        audit_records([nar, jra], manifests)
 
 
 def test_later_snapshot_of_same_race_is_allowed_and_missingness_is_counted():
@@ -338,7 +333,7 @@ def test_empty_manifest_mapping_is_rejected():
         audit_records([], {})
 
 
-def test_secondary_odds_and_payback_cannot_unlock_official_readiness():
+def test_secondary_odds_cannot_unlock_official_readiness():
     secondary = _secondary(
         NAR,
         runners=[
@@ -353,8 +348,6 @@ def test_secondary_odds_and_payback_cannot_unlock_official_readiness():
         jurisdiction="JRA",
         evidence_class="PUBLIC_WEB_SECONDARY",
         allowed_scope="shadow_only",
-        settled_payback_rows=1,
-        settled_race_ids=[secondary["race_id"]],
     )
     report = audit_records([_official(NAR), secondary, _official(JRA)], manifests)
 
@@ -381,14 +374,14 @@ def test_same_race_at_timestamp_cannot_satisfy_readiness_chronology():
             {"runner_id": "runner-jra-02", "horse_number": 2, "odds": 5.0, "body_weight_kg": 471.0},
         ],
     )
-    manifests = _official_manifests(jra_payback=1, nar_payback=1)
+    manifests = _official_manifests()
     report = audit_records([nar, jra], manifests)
 
     assert report.model_ready is False
     assert "INSUFFICIENT_CHRONOLOGY" in report.blockers
 
 
-def test_unused_manifest_settlement_cannot_settle_an_observed_record():
+def test_caller_declared_unmatched_settlement_is_rejected():
     nar = _official(
         NAR,
         runners=[
@@ -406,11 +399,8 @@ def test_unused_manifest_settlement_cannot_settle_an_observed_record():
     manifests = _official_manifests(jra_payback=1, nar_payback=1)
     manifests[JRA_URL]["settled_race_ids"] = ["other-jra-race"]
     manifests[NAR_URL]["settled_race_ids"] = ["other-nar-race"]
-    report = audit_records([nar, jra], manifests)
-
-    assert report.settled_payback_rows == 2
-    assert report.model_ready is False
-    assert "NO_MATCHING_SETTLED_PAYBACK" in report.blockers
+    with pytest.raises(AuditRejected, match="settlement evidence is unverified"):
+        audit_records([nar, jra], manifests)
 
 
 def test_stale_official_records_remain_blocked():
@@ -432,7 +422,7 @@ def test_stale_official_records_remain_blocked():
     )
     report = audit_records(
         [nar, jra],
-        _official_manifests(jra_payback=1, nar_payback=1),
+        _official_manifests(),
     )
 
     assert report.model_ready is False
@@ -454,7 +444,7 @@ def test_zero_row_official_manifest_remains_blocked():
             {"runner_id": "runner-jra-02", "horse_number": 2, "odds": 5.0, "body_weight_kg": 471.0},
         ],
     )
-    manifests = _official_manifests(jra_payback=1, nar_payback=1)
+    manifests = _official_manifests()
     manifests[JRA_URL]["parsed_row_count"] = 0
     report = audit_records([nar, jra], manifests)
 
@@ -479,7 +469,7 @@ def test_every_latest_official_race_requires_observed_odds():
     )
     report = audit_records(
         [nar, jra],
-        _official_manifests(jra_payback=1, nar_payback=1),
+        _official_manifests(),
     )
 
     assert report.model_ready is False
@@ -499,5 +489,5 @@ def test_every_latest_official_race_requires_observed_odds():
 def test_settled_race_ids_schema_and_count_are_rejected(changes):
     values = _manifest(NAR, settled_payback_rows=1, settled_race_ids=[NAR["race_id"]])
     values.update(changes)
-    with pytest.raises(AuditRejected, match="settled"):
+    with pytest.raises(AuditRejected, match="settled|settlement evidence is unverified"):
         audit_records([], {NAR_URL: values})

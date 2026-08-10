@@ -146,6 +146,8 @@ def _validate_manifests(
             for race_id in settled_race_ids
         ):
             _reject("manifest settled race IDs are invalid")
+        if values["settled_payback_rows"] != 0 or settled_race_ids:
+            _reject("settlement evidence is unverified")
         if len(set(settled_race_ids)) != len(settled_race_ids):
             _reject("manifest settled race IDs are duplicate")
         if len(settled_race_ids) > values["settled_payback_rows"]:
