@@ -6107,6 +6107,19 @@ candidate 0、終了後lock absent。従ってdiscovery code故障は解消し�
 PeatixはまだSubmit/readback/evidence未実証なのでproduction provider順とregistryを変更せず、次cursorは同じpublic JSON gateを保った
 bounded search coverage拡張で別のCalendar-free候補を探し、その後だけPeatix auth→submit sliceへ進む。
 
+### O1B-25進捗229（Peatix transient false-zero correction / bounded XHR coverage plan）
+
+進捗228後のbounded pagination probeで、Peatixの`.search-results .no-results`は非空検索のXHR完了前にも一時表示されるため、
+DOM union selectorだけでは再び0件を正常扱いし得ると判明した。response完了後の実測はpage 1–5のすべてでpayload 20、DOM cards 20、
+no-results 0であり、事前のpage 1/2 DOM 0は真の空結果ではなかった。従って進捗228のpage-1 live countはそのrunでは正しいが、
+現readerのreadiness contractは全timingで十分ではない。
+
+公式frontend bundleとbrowser responseをread-only実測し、page route `dr=YYYY-MM-DD:YYYY-MM-DD`が公開XHR
+`/search/events?dr=range&dr_from=...&dr_to=...&p=N&size=20`へ変換され、JSON `json_data.events[]`がpositive event IDを返すことを確認した。
+plan `docs/superpowers/plans/2026-08-10-connector-peatix-bounded-coverage.md`はDOM readinessを削除し、responseをnavigation前から待つ。
+今日からday 13、20件×最大5ページ、100 uniqueに限定し、detail/free/open/Calendar gateは変更しない。Submit、production order、registry、
+scheduleは変更せず、このcorrectionのfresh review/live audit完了後にのみPeatix auth/submitへ進む。
+
 ### Active remaining TODO SSOT（進捗228。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
