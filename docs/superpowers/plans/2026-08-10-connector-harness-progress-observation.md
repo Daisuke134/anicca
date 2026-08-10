@@ -36,3 +36,11 @@
 3. Implement the smallest GREEN.
 4. Run focused Harness, minimal-production/runner adjacent, native contracts, syntax, and diff checks.
 5. Return RED evidence, GREEN counts, exact LOC, and residual live limitation to Sol. Sol owns fresh review, SSOT, commit/push, and one official live wake.
+
+## Implementation status
+
+- [x] RED reproduced five measured completion/evidence failures before production edits.
+- [x] Primary Sol regressions close unnamed-radio grouping, repeated same-page activation, and legitimate path-transition reuse.
+- [x] Fresh Sol review regressions close raw-name exactness and activation-method bypass.
+- [x] Focused 28/28, adjacent 23/23, native 7/7, syntax, and diff checks pass; fresh re-review ships.
+- [ ] Official schedule-disabled live wake remains Sol-owned acceptance.
