@@ -289,5 +289,7 @@ carry request/token correlation; no fake billing amount is created from spans.
 - Live private state contains exactly one normalized `provider_billed` Google Cloud JPY record, mode `0600`, under
   fixed `0700` directories. No other file, PDF, text, or temp artifact remains. Values, source references, and private
   identifiers were not printed.
+- A fresh read-only Sol reviewer independently measured dependency resolution, unchanged runtime code, live launchd
+  definition/exit, offset-bounded logs, private-state contract, and spec ordering: `ship`, zero Critical/Important.
 - CFO-2a3 is closed. CFO-2a3b is the next parent item; no new DB, scheduler, service, wrapper, retry, forced Telegram
   duplicate, or unrelated npm audit upgrade was added.
