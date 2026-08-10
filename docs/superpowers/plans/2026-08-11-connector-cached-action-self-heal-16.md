@@ -35,4 +35,8 @@ Because the production capability is expected to exist, RED may be an initial mi
 
 ## Result
 
-Pending Luna composed TDD verification.
+- Luna added one composed test in the planned existing production test file; no production file changed. Initial RED iterations exposed two fixture-only expectation mismatches and no production API blocker.
+- The final test directly composes the real action cache, production provider router, bounded Harness adapter, and minimal runner. First wake executes stale cache failure, direct failure, exactly one replacement action, Harness readback, parent `registered` readback, and real cache save in order. The exact cache entry then contains the replacement only, no stale selector, and remains mode 0600.
+- After resetting only synthetic page state, the second wake replays the replacement through the cache and parent readback. Direct, fallback, proposer, and Harness action counts do not increase; cache bytes are unchanged. Both wakes complete synthetic evidence/report and owned-page cleanup on the same page.
+- Luna composed production was 11/11 and full minimal production/runner/action-cache/Harness/evidence/operations was 90/90. Sol independently ran 90/90. Syntax and diff checks passed. Native entrypoint retained only the two known cursor baseline failures. Diff is one test file, +98 LOC; external and repository-wide edit/merge/deploy effects are zero.
+- Sol review returned `ship`, Critical 0 / Important 0, with independent focused/adjacent 55/55. Item 16 is complete and the production schedule may now proceed to the separate Item 17 cutover gate.

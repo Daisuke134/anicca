@@ -6,6 +6,9 @@ const os = require("node:os");
 const path = require("node:path");
 const test = require("node:test");
 
+const { createBrowserHarnessAdapter } = require("./connector-browser-harness-adapter.js");
+const { createConnectorActionCache } = require("./connector-action-cache.js");
+const { runMinimalConnectorWake } = require("./connector-minimal-runner.js");
 const {
   createProductionBrowserRail,
   createProductionCalendarReader,
@@ -460,6 +463,101 @@ test("production browser rail owns exactly one :9222 target without closing the 
     assert.equal(calls.filter(([name]) => name === "release").length, 1);
     assert.equal(calls.filter(([name]) => name === "target-close").length, 0);
     assert.equal(calls.filter(([name]) => name === "browser-close").length, 0);
+  } finally {
+    fs.rmSync(stateDir, { recursive: true, force: true });
+  }
+});
+
+test("composed cached action self-heal repairs one stale submit and replays it on the next wake", async () => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-production-self-heal-"));
+  const cachePath = path.join(stateDir, "action-cache.json");
+  const observedAt = "2026-08-11T08:30:00.000Z";
+  const cacheKey = {
+    provider: "luma", workflowVersion: "luma_registration_v1", pageState: "registration_page_v1", expectedEffect: "registered_or_pending",
+  };
+  const staleAction = { purpose: "submit", method: "ax_click", control: "stale_register_button" };
+  const replacementAction = { purpose: "submit", method: "ax_click", control: "replacement_register_button" };
+  const seededCache = createConnectorActionCache({ path: cachePath });
+  const page = { registrationState: "absent" };
+  const candidate = Object.freeze({ provider: "luma", event_ref: "luma-event://event/self-heal", canonical_url: "https://luma.com/self-heal" });
+  const events = [], touchedPages = [], cacheAttempts = [], reports = [];
+  let directCalls = 0; let fallbackCalls = 0; let proposerCalls = 0; let harnessActionCalls = 0; let harnessReadbackCalls = 0; let saveCalls = 0; let evidenceCalls = 0; let openCalls = 0; let closeCalls = 0;
+  await seededCache.saveVerifiedRepair({ ...cacheKey, providerState: { status: "registered" }, actions: [staleAction], observedAt });
+  assert.deepEqual(seededCache.read(cacheKey).actions, [staleAction]);
+  assert.equal(fs.statSync(cachePath).mode & 0o777, 0o600);
+
+  const touch = (suppliedPage) => { touchedPages.push(suppliedPage); assert.equal(suppliedPage, page); };
+  const applyAction = async (source, input) => {
+    touch(input.page);
+    const control = input.action.control;
+    cacheAttempts.push(`${source}:${control}`);
+    events.push(`${source}:${control}`);
+    if (control === staleAction.control) return { status: "failed" };
+    if (control === replacementAction.control) { page.registrationState = "registered"; return { status: "success" }; }
+    return { status: "failed" };
+  };
+  const workflow = {
+    async discoverCandidates({ page: suppliedPage }) { touch(suppliedPage); return [candidate]; },
+    async runDirectAction({ page: suppliedPage }) { touch(suppliedPage); directCalls += 1; events.push("direct"); return { status: "failed", safe_reason: "direct_action_failed" }; },
+    async readProviderState({ page: suppliedPage }) { touch(suppliedPage); const status = page.registrationState; events.push(`parent:${status}`); return { status }; },
+  };
+  const browserHarness = createBrowserHarnessAdapter({
+    async observePage({ page: suppliedPage, target_id }) { touch(suppliedPage); assert.equal(target_id, "SELFHEALTHTARGET"); return { controls: [staleAction.control, replacementAction.control] }; },
+    async proposeAction({ step, target_id }) { proposerCalls += 1; assert.equal(step, 1); assert.equal(target_id, "SELFHEALTHTARGET"); return replacementAction; },
+    async performAction(input) { harnessActionCalls += 1; return applyAction("harness", input); },
+    async readExpectedState({ page: suppliedPage }) { touch(suppliedPage); harnessReadbackCalls += 1; events.push(`harness:${page.registrationState}`); return { status: page.registrationState }; },
+  });
+  const realCache = createConnectorActionCache({ path: cachePath });
+  const actionCache = {
+    replay: realCache.replay,
+    saveVerifiedRepair(input) { saveCalls += 1; assert.equal(page.registrationState, "registered"); assert.deepEqual(input.actions, [replacementAction]); events.push("cache-save"); return realCache.saveVerifiedRepair(input); },
+  };
+  const router = createProductionProviderRouter({
+    lumaWorkflow: workflow,
+    connpassWorkflow: { async discoverCandidates() { return []; }, async runDirectAction() { return { status: "failed" }; }, async readProviderState() { return { status: "absent" }; } },
+    actionCache,
+    browserHarness,
+    async performAction(input) { return applyAction("cache", input); },
+    now: () => new Date(observedAt),
+  });
+  const dependencies = {
+    now: () => observedAt,
+    browserRail: {
+      async open() { openCalls += 1; return { session_id: "session-self-heal", target_id: "SELFHEALTHTARGET", page_websocket: "ws://127.0.0.1:9222/devtools/page/SELFHEALTHTARGET", page }; },
+      async navigate(owned, url) { touch(owned.page); events.push(`navigate:${url}`); },
+      async close(owned) { touch(owned.page); closeCalls += 1; },
+    },
+    async readCalendarGaps() { return []; },
+    discoverCandidates: router.discoverCandidates,
+    runCachedAction: router.runCachedAction,
+    runDirectAction: router.runDirectAction,
+    runAgentFallback(input) { fallbackCalls += 1; return router.runAgentFallback(input); },
+    readProviderState: router.readProviderState,
+    saveRepairedActions: router.saveRepairedActions,
+    async completeEvidence({ page: suppliedPage, providerState }) { touch(suppliedPage); assert.equal(providerState.status, "registered"); evidenceCalls += 1; events.push("evidence"); return { status: "applied_bundle", bundle_id: `self-heal-bundle-${evidenceCalls}`, completion_disposition: "created" }; },
+    async reportWake(report) { reports.push(report); events.push(`report:${report.status}`); return { telegram_provider_id: `self-heal-${reports.length}` }; },
+    async recordAction() {},
+  };
+  const runWake = () => runMinimalConnectorWake({ ownerToken: "owner-token-connector-self-heal", providers: ["luma"] }, dependencies);
+  try {
+    const first = await runWake();
+    assert.deepEqual(first, { status: "applied_bundle", bundle_id: "self-heal-bundle-1", telegram_provider_id: "self-heal-1" });
+    assert.deepEqual(realCache.read(cacheKey).actions, [replacementAction]);
+    assert.equal(JSON.stringify(realCache.read(cacheKey)).includes(staleAction.control), false);
+    assert.ok(events.indexOf("parent:registered") < events.indexOf("cache-save"));
+    const cacheAfterRepair = fs.readFileSync(cachePath);
+    page.registrationState = "absent";
+    const directAfterFirst = directCalls; const fallbackAfterFirst = fallbackCalls; const proposerAfterFirst = proposerCalls;
+    const second = await runWake();
+    assert.deepEqual(second, { status: "applied_bundle", bundle_id: "self-heal-bundle-2", telegram_provider_id: "self-heal-2" });
+    assert.deepEqual(realCache.read(cacheKey).actions, [replacementAction]);
+    assert.deepEqual(fs.readFileSync(cachePath), cacheAfterRepair);
+    assert.equal(directCalls, directAfterFirst); assert.equal(fallbackCalls, fallbackAfterFirst); assert.equal(proposerCalls, proposerAfterFirst);
+    assert.deepEqual(cacheAttempts, ["cache:stale_register_button", "harness:replacement_register_button", "cache:replacement_register_button"]);
+    assert.deepEqual([directCalls, fallbackCalls, proposerCalls, harnessActionCalls, harnessReadbackCalls, saveCalls, evidenceCalls, reports.length, openCalls, closeCalls], [1, 1, 1, 1, 1, 1, 2, 2, 2, 2]);
+    assert.equal(new Set(touchedPages).size, 1);
+    assert.equal(fs.statSync(cachePath).mode & 0o777, 0o600);
+    assert.deepEqual(reports.map(({ status, safe_reason }) => [status, safe_reason]), [["applied_bundle", "applied_bundle"], ["applied_bundle", "applied_bundle"]]);
   } finally {
     fs.rmSync(stateDir, { recursive: true, force: true });
   }
