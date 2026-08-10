@@ -6937,7 +6937,13 @@ fresh review指摘後、semantic mutation 7件はcore digest/bundle ID/filename�
 
 Luna RED 17/21からGREEN runner 19/19、operations 8/8、evidence 24/24、Sol独立expanded 109/109、syntax、diff checkがPASS。production差分はrunner +12/-2だけでreused continuation、created terminal、all reused reason、provider discovery failure priorityを実装した。fresh Sol reviewはImportant 1件で`fix-first`。malformed `completion_disposition`は`invalid()`をthrowしてowned page cleanupは行うが`reportWake` 0のため、planのevery terminal wake positive Telegram receiptに反する。planを先に改訂し、malformed evidence resultは`circuit_open / evidence_result_invalid`、malformed dispositionは`circuit_open / evidence_disposition_invalid`として既存`finish`をexact 1回通し、positive ID、report row 1、delivery row 1、cleanup 1、Submit追加0を必須化する。現2-file差分は未commit、Item13未完、schedule unloaded。
 
-### Active remaining TODO SSOT（進捗303。これ以外の残TODO一覧は履歴）
+### O1B-25進捗304（Item 13B / runner continuation完了）
+
+同じLunaがmalformed result/dispositionのreport 0をRED 18/19で再現し、null/array/stringは`circuit_open / evidence_result_invalid`、missing/unknown/non-string/contradictory disposition/status/idは`circuit_open / evidence_disposition_invalid`として既存`finish`をexact 1回通すGREENへ修正した。real production operations fixtureはpositive Telegram ID、report row 1、delivery row 1、mode 0600、send 1、cleanup 1、cache/direct/Harness Submit 0。通常pathは13A `reused`だけfailure countを増やさず同一session/target/pageの次candidateへ継続し、`created`だけ新規`applied_bundle` terminal。all reusedは`completed_no_effect / existing_bundles_reused`、provider discovery failureは優先維持。
+
+最終差分はrunner production +16/-2、test +116/-3。Luna focused runner 20/20、operations 8/8とadjacent、Sol独立expanded 110/110、syntax、diff checkがPASS。変更外baseline3件は同一。fresh Sol re-reviewは`ship`。13Bは完了、Item13 checkboxは13C official schedule-unloaded foreground wakeのlive reused Peatix、Submit 0 continuation、later candidate handling、positive every-wake Telegram ID、cleanup実証まで未完。schedule unloaded。
+
+### Active remaining TODO SSOT（進捗304。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 

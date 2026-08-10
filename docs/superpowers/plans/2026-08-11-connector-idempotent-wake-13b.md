@@ -28,6 +28,8 @@ Luna owns only:
 
 Soft target: 2 files; production +15–35 LOC; tests +70–120 LOC.
 
+Final size: production +16/-2 LOC and tests +116/-3 LOC, both inside the soft target after fixture compression.
+
 ### RED
 
 1. Candidate one parent pre-readback is `registered`; real or contract-faithful evidence returns `reused`. Cache/direct/Harness calls for that candidate are zero, no wake report is emitted yet, and candidate two is navigated on the same session/target/page.
@@ -52,3 +54,11 @@ Soft target: 2 files; production +15–35 LOC; tests +70–120 LOC.
 - Focused runner and operations suites; evidence, minimal production, Peatix workflow/store/Harness, native entrypoint; changed-file syntax; `git diff --check`.
 - Fresh Sol review for strict disposition validation, new-vs-existing semantics, per-candidate Submit zero, same page/session continuation, failure-count behavior, report priority, durable positive every-wake receipt, cleanup, and no loop/duplicate report.
 - Update SSOT, commit, and push. Item 13 remains open until 13C official schedule-unloaded foreground wake proves the live reused Peatix bundle, Submit zero continuation, later candidate handling, positive Telegram report ID, and cleanup. Keep schedule unloaded.
+
+## Result
+
+- Luna reproduced four runner failures, then exact-validated `created|reused`. `reused` continues the current candidate loop on the same owned session/target/page without changing failure count; `created` remains terminal `applied_bundle`.
+- All-reused exhaustion reports `completed_no_effect / existing_bundles_reused`; provider discovery failure retains priority. Real production operations persist one positive mode-0600 wake delivery/report and dedupe a duplicate report.
+- Fresh review found malformed evidence results escaped without every-wake reporting. Luna changed only this contract boundary: malformed result/disposition terminates once as a safe circuit-open reason through `finish`, with report one, cleanup one, and cache/direct/Harness Submit zero.
+- Luna focused runner 20/20, operations 8/8, and all named adjacent suites passed apart from three unchanged baselines. Sol independently reran the frozen expanded suite at 110/110 plus syntax and `git diff --check`; final re-review returned `ship`.
+- Item 13B is complete. Item 13 remains open for the 13C official foreground wake. Schedule remains unloaded.

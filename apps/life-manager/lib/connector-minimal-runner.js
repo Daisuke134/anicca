@@ -107,6 +107,7 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
   let providerDiscoveryFailed = false;
   let discoveryFailureReason = "provider_discovery_failed";
   let lastSafeReason = "provider_discovery_failed";
+  let reusedBundleObserved = false;
 
   const elapsed = () => Date.parse(exactInstant(deps.now())) - startedAt;
   const deadlineReached = () => elapsed() >= settings.maxWakeMs;
@@ -278,7 +279,20 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
             providerState,
             repairedActions,
           });
-          if (!bundle || bundle.status !== "applied_bundle" || !String(bundle.bundle_id || "")) invalid();
+          if (!bundle || typeof bundle !== "object" || Array.isArray(bundle)) {
+            return finish("circuit_open", "evidence_result_invalid");
+          }
+          if (
+            bundle.status !== "applied_bundle" || !String(bundle.bundle_id || "")
+            || typeof bundle.completion_disposition !== "string"
+            || !["created", "reused"].includes(bundle.completion_disposition)
+          ) {
+            return finish("circuit_open", "evidence_disposition_invalid");
+          }
+          if (bundle.completion_disposition === "reused") {
+            reusedBundleObserved = true;
+            continue;
+          }
           return finish("applied_bundle", "applied_bundle", bundle);
         }
 
@@ -291,7 +305,7 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
       }
     }
     return finish("completed_no_effect", providerDiscoveryFailed
-      ? discoveryFailureReason : "providers_exhausted");
+      ? discoveryFailureReason : reusedBundleObserved ? "existing_bundles_reused" : "providers_exhausted");
   } finally {
     if (owned) await deps.browserRail.close(owned);
   }

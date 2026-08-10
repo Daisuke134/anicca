@@ -9,6 +9,7 @@ const test = require("node:test");
 
 const { runMinimalConnectorWake } = require("./connector-minimal-runner.js");
 const { createMinimalEvidenceChain } = require("./connector-minimal-evidence.js");
+const { createMinimalProductionOperations } = require("./connector-minimal-operations.js");
 
 function candidate(provider, slug) {
   return Object.freeze({
@@ -19,6 +20,12 @@ function candidate(provider, slug) {
     ends_at: "2026-08-10T11:00:00.000Z",
     price_minor: 0,
   });
+}
+
+function assertDurableWakeReport(stateDir, telegramProviderId) {
+  const files = ["wake-reports.jsonl", "wake-report-deliveries.jsonl"].map((name) => path.join(stateDir, name));
+  const rows = files.map((file) => { assert.equal(fs.statSync(file).mode & 0o777, 0o600); return fs.readFileSync(file, "utf8").trim().split("\n").map(JSON.parse); });
+  assert.equal(rows[0].length, 1); assert.equal(rows[1].length, 1); assert.equal(rows[1][0].telegram_provider_id, telegramProviderId);
 }
 
 function fixture(overrides = {}) {
@@ -229,7 +236,7 @@ test("a failed direct action invokes at most ten agent steps on the exact same p
     },
     async completeEvidence(input) {
       assert.equal(input.page.page_id, "page-owned-1");
-      return Object.freeze({ status: "applied_bundle", bundle_id: "applied-bundle-1" });
+      return Object.freeze({ status: "applied_bundle", bundle_id: "applied-bundle-1", completion_disposition: "created" });
     },
   });
 
@@ -262,7 +269,7 @@ test("a verified cached replay skips both direct and agent actions", async () =>
     async runAgentFallback() { throw new Error("agent must not run on cache hit"); },
     async completeEvidence(input) {
       assert.equal(input.providerState.provider_receipt_id, "receipt-cache");
-      return Object.freeze({ status: "applied_bundle", bundle_id: "applied-bundle-cache" });
+      return Object.freeze({ status: "applied_bundle", bundle_id: "applied-bundle-cache", completion_disposition: "created" });
     },
   });
 
@@ -294,7 +301,7 @@ test("a parent readback after navigation skips every submit path when already re
     async runAgentFallback() { throw new Error("agent must not run after registered readback"); },
     async completeEvidence(input) {
       assert.equal(input.providerState.provider_receipt_id, "receipt-existing");
-      return Object.freeze({ status: "applied_bundle", bundle_id: "applied-bundle-existing" });
+      return Object.freeze({ status: "applied_bundle", bundle_id: "applied-bundle-existing", completion_disposition: "created" });
     },
   });
 
@@ -309,6 +316,9 @@ test("a parent readback after navigation skips every submit path when already re
   assert.equal(state.calls.filter(([name]) => name === "cache").length, 0);
   assert.equal(state.calls.filter(([name]) => name === "direct").length, 0);
   assert.equal(state.calls.filter(([name]) => name === "agent").length, 0);
+  assert.deepEqual(state.calls.filter(([name]) => name === "navigate").map(([, , , , url]) => url), [
+    "https://luma.example.test/one",
+  ]);
 });
 
 test("three consecutive candidate failures open the circuit before a fourth navigation", async () => {
@@ -497,5 +507,108 @@ test("registered parent pre-readback composes real evidence recovery with zero s
     await assert.rejects(wake(["2026-08-07T08:31:00.000Z"], async () => { messageCalls += 1; return { messageId: 9401 }; }, async () => { photoCalls += 1; throw new Error("photo interruption"); }));
     const result = await wake(["2026-08-07T08:32:00.000Z"], async () => { messageCalls += 1; return { messageId: 9401 }; }, async () => { photoCalls += 1; return { messageId: 9402 }; });
     assert.equal(result.status, "applied_bundle"); assert.equal(lastBundle.created_at, "2026-08-07T08:30:00.000Z"); assert.deepEqual([registered.size, evidenceRecords, calendarCreates, messageCalls, photoCalls, cacheCalls, directCalls, harnessCalls, fs.readdirSync(path.join(stateDir, "applied-bundles")).length], [1, 1, 1, 1, 2, 0, 0, 0, 1]);
+  } finally { fs.rmSync(stateDir, { recursive: true, force: true }); }
+});
+
+test("reused evidence skips Submit and continues the same owned page to a later candidate", async () => {
+  let state;
+  state = fixture({
+    async discoverCandidates(provider) { state.calls.push(["discover", provider]); return [candidate("luma", "reused"), candidate("luma", "new")]; },
+    async readProviderState({ candidate: selected, page: suppliedPage }) { assert.equal(suppliedPage, state.page); state.calls.push(["readback", selected.event_ref, suppliedPage.page_id]); return Object.freeze({ status: "registered", provider_receipt_id: `receipt-${selected.event_ref}` }); },
+    async runCachedAction() { throw new Error("cache must not run for a registered candidate"); },
+    async runDirectAction() { throw new Error("direct must not run for a registered candidate"); },
+    async runAgentFallback() { throw new Error("Harness must not run for a registered candidate"); },
+    async completeEvidence({ candidate: selected }) { state.calls.push(["evidence", selected.event_ref]); const newCandidate = selected.event_ref.endsWith("/new"); return Object.freeze({ status: "applied_bundle", bundle_id: `applied-bundle-${newCandidate ? "new" : "reused"}`, completion_disposition: newCandidate ? "created" : "reused" }); },
+  });
+  const result = await runMinimalConnectorWake({ ownerToken: "owner-token-connector-13b-reuse", providers: ["luma"] }, state.dependencies);
+  assert.deepEqual(result, { status: "applied_bundle", bundle_id: "applied-bundle-new", telegram_provider_id: "9001" });
+  assert.equal(state.calls.filter(([name]) => name === "cache" || name === "direct" || name === "agent").length, 0);
+  assert.deepEqual(state.calls.filter(([name]) => name === "evidence").map(([, eventRef]) => eventRef), ["luma-event://event/reused", "luma-event://event/new"]);
+  const navigations = state.calls.filter(([name]) => name === "navigate");
+  assert.deepEqual(navigations.map((call) => call.slice(1, 4)), [["session-owned-1", "TARGETOWNED1", "page-owned-1"], ["session-owned-1", "TARGETOWNED1", "page-owned-1"]]);
+  assert.deepEqual(navigations.map(([, , , , url]) => url), ["https://luma.example.test/reused", "https://luma.example.test/new"]);
+  assert.equal(state.calls.filter(([name]) => name === "report").length, 1);
+});
+
+test("malformed evidence result or disposition reports once and cleans up without Submit", async () => {
+  const cases = [
+    ["result-null", null, "evidence_result_invalid"],
+    ["result-array", [], "evidence_result_invalid"],
+    ["result-string", "bundle", "evidence_result_invalid"],
+    ["missing", { status: "applied_bundle", bundle_id: "bundle" }, "evidence_disposition_invalid"],
+    ["unknown", { status: "applied_bundle", bundle_id: "bundle", completion_disposition: "unknown" }, "evidence_disposition_invalid"],
+    ["non-string", { status: "applied_bundle", bundle_id: "bundle", completion_disposition: new String("reused") }, "evidence_disposition_invalid"],
+    ["status", { status: "completed_no_effect", bundle_id: "bundle", completion_disposition: "reused" }, "evidence_disposition_invalid"],
+    ["bundle-id", { status: "applied_bundle", bundle_id: "", completion_disposition: "reused" }, "evidence_disposition_invalid"],
+  ];
+  for (const [name, evidenceResult, safeReason] of cases) {
+    let state = fixture({
+      async discoverCandidates() { return [candidate("luma", `invalid-${name}`)]; },
+      async readProviderState() { return Object.freeze({ status: "registered", provider_receipt_id: "existing-receipt" }); },
+      async runCachedAction() { throw new Error("cache must not run"); }, async runDirectAction() { throw new Error("direct must not run"); },
+      async runAgentFallback() { throw new Error("Harness must not run"); },
+      async completeEvidence() { return evidenceResult; },
+      async reportWake(report) {
+        state.calls.push(["report", report.status, report.safe_reason, report.consecutive_failure_count]);
+        return Object.freeze({ telegram_provider_id: "9014" });
+      },
+    });
+    const result = await runMinimalConnectorWake({ ownerToken: "owner-token-connector-13b-invalid", providers: ["luma"] }, state.dependencies);
+    assert.deepEqual(result, { status: "circuit_open", safe_reason: safeReason, telegram_provider_id: "9014" });
+    assert.deepEqual(state.calls.filter(([entry]) => entry === "report"), [["report", "circuit_open", safeReason, 0]]); assert.equal(state.calls.filter(([entry]) => ["cache", "direct", "agent"].includes(entry)).length, 0); assert.equal(state.calls.filter(([entry]) => entry === "close").length, 1);
+  }
+});
+
+test("malformed evidence uses real production operations for one durable positive report", async () => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-runner-13b-invalid-operations-"));
+  const sent = [];
+  const operations = createMinimalProductionOperations({
+    stateDir, wakeId: "wake-connector-13b-invalid-operations", telegramTarget: "private-target",
+    now: () => new Date("2026-08-11T08:30:00.000Z"),
+    async sendMessage(message, options) { sent.push({ message, options }); return { messageId: 7312 }; },
+  });
+  let state = fixture({
+    async readCalendarGaps() { return []; },
+    async discoverCandidates() { return [candidate("luma", "invalid-production")]; },
+    async readProviderState() { return Object.freeze({ status: "registered", provider_receipt_id: "existing-receipt" }); },
+    async runCachedAction() { throw new Error("cache must not run"); }, async runDirectAction() { throw new Error("direct must not run"); },
+    async runAgentFallback() { throw new Error("Harness must not run"); },
+    async completeEvidence() { return null; }, recordAction: operations.recordAction, reportWake: operations.reportWake,
+  });
+  try {
+    const result = await runMinimalConnectorWake({ ownerToken: "owner-token-connector-13b-invalid-ops", providers: ["luma"] }, state.dependencies);
+    assert.deepEqual(result, { status: "circuit_open", safe_reason: "evidence_result_invalid", telegram_provider_id: "7312" });
+    assertDurableWakeReport(stateDir, "7312"); assert.equal(sent.length, 1); assert.equal(state.calls.filter(([name]) => name === "close").length, 1); assert.equal(state.calls.filter(([name]) => ["cache", "direct", "agent"].includes(name)).length, 0);
+  } finally { fs.rmSync(stateDir, { recursive: true, force: true }); }
+});
+
+test("real runner production operations persist one positive wake delivery and dedupe duplicates", async () => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-runner-13b-operations-"));
+  const sent = [];
+  const operations = createMinimalProductionOperations({
+    stateDir,
+    wakeId: "wake-connector-13b-operations",
+    telegramTarget: "private-target",
+    now: () => new Date("2026-08-11T08:30:00.000Z"),
+    async sendMessage(message, options) { sent.push({ message, options }); return { messageId: 7311 }; },
+  });
+  let state = fixture({
+    async readCalendarGaps() { return []; },
+    async discoverCandidates() { return [candidate("luma", "reused"), candidate("luma", "reused-later")]; },
+    async readProviderState() { return Object.freeze({ status: "registered", provider_receipt_id: "existing-receipt" }); },
+    async runCachedAction() { throw new Error("cache must not run"); },
+    async runDirectAction() { throw new Error("direct must not run"); },
+    async runAgentFallback() { throw new Error("Harness must not run"); },
+    async completeEvidence() { return Object.freeze({ status: "applied_bundle", bundle_id: "reused-bundle", completion_disposition: "reused" }); },
+    recordAction: operations.recordAction,
+    reportWake: operations.reportWake,
+  });
+  try {
+    const result = await runMinimalConnectorWake({ ownerToken: "owner-token-connector-13b-ops", providers: ["luma"] }, state.dependencies);
+    assert.deepEqual(result, { status: "completed_no_effect", safe_reason: "existing_bundles_reused", telegram_provider_id: "7311" });
+    const duplicate = await operations.reportWake({ status: "completed_no_effect", safe_reason: "existing_bundles_reused", consecutive_failure_count: 0 });
+    assert.deepEqual(duplicate, { telegram_provider_id: "7311" });
+    assert.equal(sent.length, 1);
+    assertDurableWakeReport(stateDir, "7311");
   } finally { fs.rmSync(stateDir, { recursive: true, force: true }); }
 });
