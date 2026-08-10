@@ -137,7 +137,9 @@ provider zero remains zero. Because `server.address` is emitted, the pinned Open
 
 CFO-2a2 remains unchecked in the parent until later child slices prove:
 
-1. append-only deduplicated storage keyed by `(provider, provider_request_id, usage_sequence)`;
+1. append-only deduplicated storage keyed by provider identity
+   `(provider, provider_request_id, usage_sequence)`, or for providers that emit no response ID, by the separate
+   local correlation identity `(provider, local_correlation_id, usage_sequence)`;
 2. a real Gemini `generateContent` response writes one evidence record and correlates one actual span;
 3. Gemini Live terminal `usageMetadata` is captured without relabeling historic duration estimates;
 4. real readback shows no prompt/output content and exact provider token counts.
@@ -184,17 +186,18 @@ flowchart LR
 
 ### CFO-2a2.2a — verified
 
-Add `public.lm_cfo_model_usage_evidence` as a structured table. Do not store a raw response or duplicated
-`otel_attributes` JSON. Required columns are:
+At CFO-2a2.2a completion, add `public.lm_cfo_model_usage_evidence` as a structured provider-path table. Do not store
+a raw response or duplicated `otel_attributes` JSON. Its original provider-path columns are:
 
 - opaque `public_ref`, owner `uid`, canonical-registry `financial_unit_id` matching `^[a-z][a-z0-9_]*$`, and
   `attribution_status`;
-- `provider`, `provider_request_id`, `usage_sequence`, `occurred_at`, and 32-hex `trace_id`;
-- requested/response model;
+- `provider`, required provider `provider_request_id`, `usage_sequence`, `occurred_at`, and 32-hex `trace_id`;
+- required requested/response model;
 - required input/output/total token counts and nullable cached/reasoning/tool counts;
 - `evidence_status` and `created_at`.
 
-The dedupe identity is `(provider, provider_request_id, usage_sequence)`. All counts are non-negative `bigint`;
+The original provider-path dedupe identity is `(provider, provider_request_id, usage_sequence)`. Section 13 adds a
+separate local-correlation path for Gemini Live while preserving this provider path. All counts are non-negative `bigint`;
 optional absence is SQL `NULL`, not zero. Provider totals are stored as given and are not constrained to equal a
 locally recomputed component sum. Attribution is closed: `attributed` requires a non-null financial unit;
 `unattributed` requires null.
@@ -210,7 +213,8 @@ Soft target: one migration, one dedicated static test, and one `test:cfo` script
 
 ### CFO-2a2.2a acceptance
 
-- [x] The table has one non-null composite unique dedupe key and never stores raw content or generic metadata JSON.
+- [x] At CFO-2a2.2a completion, the provider path has one non-null composite unique dedupe key and never stores raw
+      content or generic metadata JSON. Section 13 evolves nullability only for the exclusive Live identity path.
 - [x] Required counts reject null/negative values; optional counts preserve null and explicit zero.
 - [x] Attribution state and financial-unit nullability cannot contradict each other.
 - [x] Financial-unit IDs use the canonical registry grammar and reject a leading digit.
@@ -491,41 +495,45 @@ flowchart LR
 Only CFO-2a2.4a is active. It changes the schema contract only. No normalizer, RPC, Node client, WebSocket, span,
 duration estimate, scheduler, launchd, or Telegram behavior belongs in this slice.
 
-### 13.2 CFO-2a2.4a closed input and output
+### 13.2 CFO-2a2.4a — truthful provenance schema
 
-`normalizeGeminiLiveUsageEvidence(message, context)` consumes one plain Live server message and a plain context:
+Add one forward migration to `public.lm_cfo_model_usage_evidence`:
 
-- exact required provider counts: `promptTokenCount`, `responseTokenCount`, `totalTokenCount`;
-- optional provider counts: `cachedContentTokenCount`, `thoughtsTokenCount`, `toolUsePromptTokenCount`;
-- exact `owner_id`, `financial_unit_id: "life_manager_saas"`, RFC3339 `occurred_at`, non-zero 32-hex `trace_id`;
-- exact current Live `request_model: "gemini-2.5-flash-native-audio-preview-09-2025"`;
-- locally generated non-zero 32-hex `live_session_id` and non-negative safe-integer `usage_sequence`.
+- add nullable `local_correlation_id text`, limited by the named format check when present to
+  `^live-session:[0-9a-f]{32}$`;
+- drop `NOT NULL` from `provider_request_id` and `response_model`; their existing non-empty checks continue to reject
+  bad non-null values because PostgreSQL `CHECK` permits `NULL`;
+- add a named identity-path check allowing exactly one of:
+  - provider path: provider request ID and response model are non-null; local correlation ID is null;
+  - local Live path: local correlation ID is non-null; provider request ID and response model are null;
+- preserve the existing provider unique constraint on `(provider, provider_request_id, usage_sequence)`;
+- add one partial unique index on `(provider, local_correlation_id, usage_sequence)` where local correlation ID is
+  non-null.
 
-The closed output reuses the existing evidence shape with these explicit provenance rules:
-
-- `provider_request_id` is `local-live-session:<live_session_id>`. The prefix makes local identity machine-visible;
-  it is never emitted as `gen_ai.response.id`.
-- `response_model` is `request-model:<request_model>`. The prefix makes the schema-required request-model fallback
-  machine-visible because Live reports no response model; it is never emitted as `gen_ai.response.model`.
-- provider counts map to `tokens.input`, `tokens.output`, optional tokens, and `tokens.total`.
-- `evidence_status` is `provider_reported` because it describes token-count provenance, not identity provenance.
-- OTel attributes contain exact operation `generate_content`, provider, request model, `gen_ai.request.stream: true`,
-  `gen_ai.output.type: "speech"`, provider token counts, address, and port only. The pinned convention defines
-  `generate_content` for multimodal content generation, requires the stream flag for streaming, and names requested
-  speech output `speech`; Gemini's setup spelling `AUDIO` is not copied into the OTel value.
-- all server content, audio, transcripts, tool arguments, unknown keys, and credentials are ignored.
+Existing rows already satisfy the provider path, so there is no backfill. The existing provider append RPC and its
+receipts remain unchanged. `request_model` remains the exact model sent in Live setup. No content, raw response,
+metadata JSON, price, billing, or OpenTelemetry payload is stored.
 
 Acceptance:
 
-- [ ] literal provider counts, zero, and missing optionals map exactly without mutating input;
-- [ ] the local identity/model fallback is visible in evidence and absent from provider-response OTel attributes;
-- [ ] unsafe/negative/missing counts, invalid session/sequence/model/owner/time/trace fail with fixed redacted errors;
-- [ ] focused ledger, CFO, and full suites pass within the two-file/85-addition target.
+- [ ] the forward migration is additive and contains no row update/delete/backfill;
+- [ ] one valid local Live-shaped row accepts null provider response ID/model and a prefixed local correlation ID;
+- [ ] a mixed provider/local identity row is rejected by the named database constraint;
+- [ ] a duplicate local provider/correlation/sequence identity is rejected by the partial unique index;
+- [ ] a malformed local correlation ID is rejected by the named format check in real PostgreSQL;
+- [ ] the existing real Gemini GenerateContent flow still stores two provider IDs/models with null local correlation;
+- [ ] focused migration tests, the existing real provider E2E, CFO tests, and the full suite pass;
+- [ ] implementation changes exactly three files and adds at most 70 lines.
+
+### 13.3 Remaining Live slices
+
+- **CFO-2a2.4b:** pure Live usage normalizer; provider counts only, local identity separate, no I/O.
+- **CFO-2a2.4c:** append the normalized evidence idempotently and emit one content-free span.
+- **CFO-2a2.4d:** wire the existing Live bridge, prove real message → row → span, and stop using the duration estimate
+  only after provider evidence succeeds.
 
 Primary evidence: [Gemini Live server messages](https://ai.google.dev/api/live#BidiGenerateContentServerMessage) place
 `usageMetadata` at the top level and define no response ID/model field; [Gemini Live UsageMetadata](https://ai.google.dev/api/live#UsageMetadata)
-defines `responseTokenCount` rather than generate-content's `candidatesTokenCount`; the official
-[`googleapis/js-genai` recorded Live response](https://github.com/googleapis/js-genai/blob/main/test/system/recordings/live_ML_Dev_should_send_text_in_async_session.websocket.log)
-shows `usageMetadata` on `turnComplete` with prompt, response, and total counts; the pinned
-[OpenTelemetry GenAI operation registry](https://github.com/open-telemetry/semantic-conventions-genai/blob/46d43c8949afb53765a202e89f4534eeb75ca3fa/docs/gen-ai/gen-ai-spans.md)
-defines `generate_content` for multimodal generation such as Gemini.
+defines `responseTokenCount`; the official [`googleapis/js-genai` recording](https://github.com/googleapis/js-genai/blob/main/test/system/recordings/live_ML_Dev_should_send_text_in_async_session.websocket.log)
+shows `usageMetadata` on a `turnComplete` message. The storage decision is an inference from those provider facts and
+the verified existing table contract.

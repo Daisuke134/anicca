@@ -648,7 +648,7 @@ not rewrite the original transaction.
 | `market_valuations` | Reproducible JPY conversions | `(asset, quote_currency, priced_at, source)` |
 | `businesses` | Stable registry of earning loops | `business_id` |
 | `business_ledger_entries` | Revenue/cost/capital with receipts | `(business_id, source_event_id)` |
-| `model_usage_evidence` | Provider usage and OTel correlation without prompt content | `(provider, provider_request_id, usage_sequence)` |
+| `model_usage_evidence` | Provider usage and OTel correlation without prompt content | Provider ID tuple, or separate local-correlation tuple when the provider emits no response ID |
 | `provider_billing_entries` | Billing export/invoice line used for confirmation | `(provider, billing_account_ref, provider_line_id)` |
 | `cost_reconciliations` | Provisional-to-billed match and unexplained difference | `(provider, billing_period, business_id, revision)` |
 | `ledger_capture_attempts` | Detects missing cost events and computes capture coverage | `(producer, attempt_id)` |
