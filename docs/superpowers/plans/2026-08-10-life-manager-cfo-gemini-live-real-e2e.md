@@ -67,7 +67,8 @@ Inside the existing Node heredoc:
    nonzero 32-hex `traceId`; require exactly three objects and require their sorted trace-ID multiset to equal the three
    distinct sorted row trace IDs. Reuse `collectStrings` over all post-turn messages to reject every observed
    text/transcript/audio string of at least 12 characters from exporter output; also reject the sentinel, API key,
-   `gen_ai.input.messages`, and `gen_ai.output.messages`. Keep provider payloads in memory only.
+   `gen_ai.input.messages`, `gen_ai.output.messages`, `gen_ai.system_instructions`,
+   `gen_ai.tool.call.arguments`, and `gen_ai.tool.call.result`. Keep provider payloads in memory only.
 
 - [x] **Step 4 — run GREEN and scope gates**
 
@@ -87,5 +88,7 @@ one-file/75-addition gate. Expected success line: `cfo-provider-usage-real-e2e: 
 
 RED failed first at exact `0 !== 1` after the two existing real provider/database observations passed. The review-fix
 source RED then identified all four missing cleanup markers. Final real GREEN and Sol's independent rerun each emitted
-only `cfo-provider-usage-real-e2e: PASS rows=3 spans=3 live=1` and exited `0`. Fresh Sol review returned
-`ship — Spec ✅`; shell syntax, diff, and the exact one-file/18-addition gate passed. No production state changed.
+only `cfo-provider-usage-real-e2e: PASS rows=3 spans=3 live=1` and exited `0`. Final fresh Sol review found three
+missing forbidden content-attribute assertions; Luna added only those names, re-review returned `ship`, and Sol's real
+rerun passed again. Shell syntax, full suite, diff, and the exact one-file/18-addition gate passed. No production state
+changed.

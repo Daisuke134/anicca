@@ -779,9 +779,11 @@ Acceptance:
 Completion evidence: the real RED completed the existing two Gemini requests and disposable database assertions, then
 failed first at exact `0 !== 1` with no secret or provider content. A focused source RED then proved the missing named
 open-listener cleanup and CONNECTING error absorber before the review fix. Final GREEN and Sol's independent rerun each
-exited `0` with the only output `cfo-provider-usage-real-e2e: PASS rows=3 spans=3 live=1`. Fresh Sol review returned
-`ship — Spec ✅` with no findings. The final scope is one existing file, 18 additions and 7 deletions; shell syntax and
-diff gates pass. No production provider, database, runtime, scheduler, launchd, Telegram, or deployment state changed.
+exited `0` with the only output `cfo-provider-usage-real-e2e: PASS rows=3 spans=3 live=1`. Final fresh Sol review found
+three missing forbidden content-attribute assertions; Luna added only those names, re-review returned `ship`, and Sol's
+real rerun passed again. The final scope is one existing file, 18 additions and 7 deletions; shell syntax, full suite,
+and diff gates pass. No production provider, database, runtime, scheduler, launchd, Telegram, or deployment state
+changed.
 
 Primary evidence: [Gemini Live server messages](https://ai.google.dev/api/live#BidiGenerateContentServerMessage) place
 `usageMetadata` at the top level and define no response ID/model field; [Gemini Live UsageMetadata](https://ai.google.dev/api/live#UsageMetadata)
