@@ -159,7 +159,9 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
   try {
     const gaps = await action("observe", "calendar_busy", () => deps.readCalendarGaps());
     if (!Array.isArray(gaps)) invalid();
+    if (deadlineReached()) return finish("circuit_open", "wake_deadline");
     owned = verifiedOwned(await deps.browserRail.open(Object.freeze({ ownerToken: settings.ownerToken })));
+    if (deadlineReached()) return finish("circuit_open", "wake_deadline");
 
     for (let providerIndex = 0; providerIndex < settings.providers.length; providerIndex += 1) {
       const provider = settings.providers[providerIndex];
@@ -167,6 +169,7 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
       try {
         if (providerIndex > 0) {
           await action("navigate", "browser_rail", () => deps.browserRail.navigate(owned, "about:blank"));
+          if (deadlineReached()) return finish("circuit_open", "wake_deadline");
         }
         const discovered = await action(
           "observe", "provider_discovery", () => deps.discoverCandidates(provider, gaps, owned.page),
@@ -177,7 +180,9 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
           error.code = "PROVIDER_CANDIDATE_CONTRACT_FAILED";
           throw error;
         }
+        if (deadlineReached()) return finish("circuit_open", "wake_deadline");
       } catch (error) {
+        if (deadlineReached()) return finish("circuit_open", "wake_deadline");
         providerDiscoveryFailed = true;
         discoveryFailureReason = safeDiscoveryReason(error);
         lastSafeReason = discoveryFailureReason;
@@ -192,6 +197,7 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
         await action("navigate", "browser_rail", () => (
           deps.browserRail.navigate(owned, selected.canonical_url)
         ));
+        if (deadlineReached()) return finish("circuit_open", "wake_deadline");
 
         let operation;
         let providerState = await action("readback", "provider_state", () => deps.readProviderState({
@@ -200,6 +206,7 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
           page: owned.page,
           phase: "pre_submit",
         }));
+        if (deadlineReached()) return finish("circuit_open", "wake_deadline");
         let usedFallback = false;
         let ambiguousAgentEffect = false;
         let directFailureReason = null;
@@ -217,6 +224,7 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
         if (operation && operation.status === "completed" && registered(operation.provider_state)) {
           providerState = operation.provider_state;
         }
+        if (deadlineReached()) return finish("circuit_open", "wake_deadline");
 
         if (!providerState) {
         try {
@@ -228,10 +236,10 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
         } catch {
           operation = Object.freeze({ status: "failed", safe_reason: "direct_action_failed" });
         }
+        if (deadlineReached()) return finish("circuit_open", "wake_deadline");
 
         if (!operation || operation.status !== "completed") {
           directFailureReason = operationSafeReason(operation, "direct_action_unverified");
-          if (deadlineReached()) return finish("circuit_open", "wake_deadline");
           try {
             operation = await action("submit", "browser_harness", () => deps.runAgentFallback({
               provider,
@@ -246,6 +254,7 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
           } catch {
             operation = Object.freeze({ status: "failed", safe_reason: "agent_action_failed" });
           }
+          if (deadlineReached()) return finish("circuit_open", "wake_deadline");
         }
 
         if (operation && operation.status === "completed") {
@@ -255,6 +264,7 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
             page: owned.page,
             phase: "post_submit",
           }));
+          if (deadlineReached()) return finish("circuit_open", "wake_deadline");
         }
         }
         }
@@ -263,12 +273,15 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
           if (provider === "connpass" && operation && operation.status === "completed") {
             try {
               await action("navigate", "browser_rail", () => deps.browserRail.navigate(owned, selected.canonical_url));
+              if (deadlineReached()) return finish("circuit_open", "wake_deadline");
               const canonicalState = await action("readback", "provider_state", () => deps.readProviderState({
                 provider, candidate: selected, page: owned.page, phase: "canonical_recovery",
               }));
+              if (deadlineReached()) return finish("circuit_open", "wake_deadline");
               if (!registered(canonicalState)) throw new Error("Connpass canonical recovery unverified");
               providerState = canonicalState;
             } catch {
+              if (deadlineReached()) return finish("circuit_open", "wake_deadline");
               consecutiveFailures += 1;
               return finish("circuit_open", "evidence_completion_failed");
             }
@@ -276,6 +289,7 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
           const repairedActions = usedFallback && operation && Array.isArray(operation.repaired_actions)
             ? operation.repaired_actions : [];
           if (repairedActions.length > 0) {
+            if (deadlineReached()) return finish("circuit_open", "wake_deadline");
             const saved = await deps.saveRepairedActions({
               provider,
               candidate: selected,
@@ -284,7 +298,9 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
               repairedActions,
             });
             if (!saved || saved.status !== "saved") invalid();
+            if (deadlineReached()) return finish("circuit_open", "wake_deadline");
           }
+          if (deadlineReached()) return finish("circuit_open", "wake_deadline");
           let bundle;
           try {
             bundle = await deps.completeEvidence({
@@ -295,6 +311,7 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
               repairedActions,
             });
           } catch {
+            if (deadlineReached()) return finish("circuit_open", "wake_deadline");
             consecutiveFailures += 1;
             return finish("circuit_open", "evidence_completion_failed");
           }
@@ -325,6 +342,9 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
     }
     return finish("completed_no_effect", providerDiscoveryFailed
       ? discoveryFailureReason : reusedBundleObserved ? "existing_bundles_reused" : "providers_exhausted");
+  } catch (error) {
+    if (deadlineReached()) return finish("circuit_open", "wake_deadline");
+    throw error;
   } finally {
     if (owned) await deps.browserRail.close(owned);
   }

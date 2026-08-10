@@ -7125,7 +7125,15 @@ planを先に改訂し、ownershipを既存minimal runner/testの2 filesだけ�
 
 planを先に改訂し、同じrunner/test ownershipで未捕捉境界のreject-after-deadlineをtable regression化する。最小実装は外側error boundary一箇所。elapsedがdeadline以上なら既存finishでone deadline terminal、deadline未満なら元errorをそのままrethrowする。既存local catch、positive report、finally cleanup、completeEvidence成功、finish自身のerrorは変更しない。Item15未完、schedule unloaded。
 
-### Active remaining TODO SSOT（進捗334。これ以外の残TODO一覧は履歴）
+### O1B-25進捗335（Item 15 / circuit breaker acceptance完了）
+
+第二REDはCalendar/open/candidate navigation/pre-readback/post-readback/saveRepairedActionsのdeadline-crossing throw 6境界をraw rejectionとして再現し、期限前raw error identityはPASS。最終GREENは既存runner外側にdeadline-aware catch一箇所を追加し、deadline以上だけexisting finishへ収束、期限前は同じerrorをrethrowする。完了済みcompleteEvidenceはdeadlineを跨いでも`applied_bundle`を維持する。差分はplanned runner/test 2 filesだけ、runner +21/-1、tests +72。
+
+Luna runner 36/36、minimal stack 81/81、Sol独立81/81、syntax/diff checkがPASS。final fresh Sol re-reviewはCritical 0 / Important 0で`ship`。独立6境界はone `circuit_open / wake_deadline`、report 1、owned cleanup 1、後続browser/evidence 0。期限前error同一object/report 0、finish Telegram rejection同一error/attempt 1、deadline-crossing completeEvidence successはapplied bundle/report 1/cleanup 1。3-failure、effect_unknown、recoveryも非退行。
+
+live正本 `wake-a85aefe7a153ce0513e7d7df`はexact safe reason、failure count 3、positive Telegram ID `10868`、application artifact 0、cleanup済み。delivery後5分report 0、4 labels unloaded、single daily templateにretry sidecar 0。実装/test中live作用0。Item15をacceptし、scheduleはItem16完了までunloadedを維持する。
+
+### Active remaining TODO SSOT（進捗335。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
@@ -7143,7 +7151,7 @@ planを先に改訂し、同じrunner/test ownershipで未捕捉境界のreject-
 12. [x] **post-registration recoveryを実証する。** Calendar、PNG、ticket、Telegram各境界の中断fixtureから、providerへ再Submitせず不足artifactだけを補完する。完了条件は外部registration 1、Calendar event 1、bundle 1、duplicate Submit 0。証拠: 進捗295、298。
 13. [x] **idempotent second foreground wakeを実証する。** 同じeventを既登録としてreadbackし、Submit 0で未処理candidateへ継続する。every-wake Telegram positive message IDを保存する。証拠: 進捗308、310。
 14. [x] **Luma no-effect→Connpass continuationをlive実証する。** Lumaがexternal effect 0（bounded known-no-effect、exact bundle reuse、またはCalendar gate後eligible exhaustion）の同一runで、session ID/target ID/pageを変えずConnpassへnavigateし、未知UIならBrowser Harnessで申込を完遂する。人工failure hookは使わない。完了条件はConnpassの実`applied_bundle`とprovider handoff historyが同一run lineageにあること。証拠: 進捗331。
-15. [ ] **circuit breakerを実証する。** 3連続safe failureまたは10分でcircuit-openし、その後のbrowser action/target creationが0、exact safe stage/action historyとTelegram recovery positive IDが保存されることを確認する。5分automatic retryは0。
+15. [x] **circuit breakerを実証する。** 3連続safe failureまたは10分でcircuit-openし、その後のbrowser action/target creationが0、exact safe stage/action historyとTelegram recovery positive IDが保存されることを確認する。5分automatic retryは0。証拠: 進捗335。
 16. [ ] **cached action self-healを実証する。** selector変更fixtureでdirect replay failure→同じpageのbounded fallback→expected state readback→cache更新→agentなしrerun成功を確認する。更新は壊れたactionだけ、repo-wide edit/merge/deployは0。
 17. [ ] **単一daily production scheduleをrender/loadする。** Items 10–16のacceptance後だけ、official minimal runnerを一日一回起動するConnector labelを一つloadする。Native旧schedule、healthcheck、Healer、bridge、5分retry、重複runnerはloaded 0にする。
 18. [ ] **最初のscheduled wakeを完走観測する。** 実`applied_bundle`または既登録readbackによるSubmit 0 continuation、Telegram every-wake positive ID、session/target各1、owned page cleanup、process exitを確認する。failure時はscheduleを増やさず同じentrypointだけを修復する。
