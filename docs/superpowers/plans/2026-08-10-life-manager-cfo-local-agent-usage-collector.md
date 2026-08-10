@@ -1,53 +1,89 @@
-# CFO-2a2a.5a — Local Usage Collector Plan
+# CFO-2a2a.5a — Local Usage Collector Implementation Plan
 
-Status: READY
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task.
 
-## Goal
+**Goal:** Compose the canonical cursor, attribution resolver, and reducer into one pure, content-free batch receipt.
 
-Compose the completed source scanner, versioned attribution resolver, and reducer into one pure batch receipt. Never
-return an advanced cursor unless every emitted row normalized and reduced successfully.
+**Architecture:** One synchronous function calls each completed module once. Cursor defects remain evidence; a cursor state is returned only after mapping and reduction finish successfully.
 
-## Ponytail gate
+**Tech Stack:** Node.js CommonJS, node:test, existing CFO helpers only.
 
-- Add only `apps/life-call/lib/cfo-local-agent-usage-collector.js` and its `.test.js`; edit only the existing
-  `apps/life-call/package.json` `test:cfo` command to register the test.
-- Reuse the three completed modules and shared freeze helper. Add no second raw ledger, filesystem I/O, state writer,
-  DB/RPC/migration, OTel, retry, scheduler, price logic, or new mapping.
-- Production target 45 LOC, tests 45 LOC, package +1/-1; total <=95 additions. Stop before 100 or a fourth file.
+**Working directory:** `apps/life-call`
 
-## Contract
+## Global constraints
 
-`collectLocalAgentUsageBatch(data, {source_id, prior_state})` returns exact deeply frozen:
+- Canonical cursor is only `scanLocalAgentUsageAppend(sourceId, bytes, previousState)`.
+- Add only the collector, its test, and one `package.json` suite entry: at most 3 files and 95 added lines.
+- Reuse `resolveLocalAgentUsageAttribution`, `reduceLocalAgentUsageEvents`, and shared `freeze`; add no I/O, state writer, DB, RPC, migration, OTel, retry, scheduler, pricing, dependency, or second mapping.
+- Preserve source exception names exactly: `source_truncated|source_rewritten|invalid_source_row|partial_tail`.
+- Never return prompts, responses, raw rows, paths, accounts, credentials, or dynamic error text.
 
-```text
-events
-source_state
-mapping_id = local_agent_usage_v1
-counts = reducer counts + attributed_rows + unattributed_rows
-coverage_exceptions
+---
+
+### Task 1: Pure batch collector
+
+**Files:**
+- Create: `apps/life-call/lib/cfo-local-agent-usage-collector.js`
+- Create: `apps/life-call/lib/cfo-local-agent-usage-collector.test.js`
+- Modify: `apps/life-call/package.json` — append the new test to `test:cfo`
+
+**Interfaces:**
+- Consumes: `scanLocalAgentUsageAppend(sourceId, bytes, previousState)`
+- Consumes: `resolveLocalAgentUsageAttribution(input.loop, input.task_label)`
+- Consumes: `reduceLocalAgentUsageEvents([{input, context:{source_row_ref, financial_unit_id}}])`
+- Produces: `collectLocalAgentUsageBatch(sourceId, bytes, previousState)`
+- Returns exact deeply frozen `{events, source_state, mapping_id, counts, coverage_exceptions}`.
+- `mapping_id` is exactly `local_agent_usage_v1`.
+- `counts` is the reducer's exact six counts plus `attributed_rows` and `unattributed_rows`; `accepted_rows = attributed_rows + unattributed_rows`.
+- `coverage_exceptions` is the unique lexicographic union of cursor and reducer exceptions plus `unattributed_usage` iff `unattributed_rows > 0`.
+- Cursor argument errors keep `cfo_local_agent_usage_cursor_invalid:<reason>`; any later unexpected failure throws only `cfo_local_agent_collector_invalid:invalid_batch`.
+
+- [ ] **Step 1: Write the failing behavior tests**
+
+Use two valid newline-terminated rows with distinct `event_id` values: one attributed/provider-reported and one unattributed/unavailable. Assert literal public behavior:
+
+```js
+const result = collectLocalAgentUsageBatch("life_manager_agent_usage", bytes, null);
+assert.deepEqual(Object.keys(result), ["events", "source_state", "mapping_id", "counts", "coverage_exceptions"]);
+assert.equal(result.mapping_id, "local_agent_usage_v1");
+assert.equal(result.counts.discovered_rows, 2);
+assert.equal(result.counts.accepted_rows, 2);
+assert.equal(result.counts.attributed_rows, 1);
+assert.equal(result.counts.unattributed_rows, 1);
+assert.deepEqual(result.coverage_exceptions, ["missing_usage", "unattributed_usage"]);
 ```
 
-The collector calls the scanner once, resolves every scanned row, adds only `financial_unit_id` to its source context,
-then calls the reducer once. `events` are the reducer's canonical sorted events and `source_state` is the scanner state.
-Counts satisfy `accepted_rows = attributed_rows + unattributed_rows`; all reducer count equations remain unchanged.
+The same test file also proves: canonical event sorting; exact eight count keys; deep freeze through event tokens and source state; no input mutation; unchanged resume returns zero events; each fixed cursor defect passes through unchanged; partial tail may return its preceding valid event; schema-invalid complete rows return `invalid_source_row` with zero events and unchanged state; invalid cursor arguments keep the cursor prefix; serialized receipts/errors contain none of the fixed hostile sentinels.
 
-`coverage_exceptions` is the unique lexicographic union of scanner and reducer exceptions plus
-`unattributed_usage` iff an accepted event is unattributed. Missing usage, runner identity collision, conflicts,
-rewrite, committed-prefix truncation, invalid source rows, and incomplete tails remain visible under their existing
-fixed names. The collector never reads event content into errors and throws only fixed
-`cfo_local_agent_collector_invalid:invalid_batch` for an unexpected composition failure. Existing scanner input errors
-keep their own fixed prefix.
+- [ ] **Step 2: Run RED**
 
-## Task 1 — RED/GREEN
+Run: `node --test lib/cfo-local-agent-usage-collector.test.js`
+Expected: FAIL because `./cfo-local-agent-usage-collector.js` does not exist.
 
-Test a mixed valid batch containing one attributed provider-reported row and one unattributed unavailable row. Assert
-exact events/state/mapping/counts/exceptions, deterministic order, deep freeze, no input mutation, and reducer success
-before state exposure. Also prove scanner truncate/rewrite/partial receipts pass through, and a schema-invalid complete
-row throws without any receipt/state. Record missing-module RED; implement only the composer; run focused, CFO, full,
-syntax, diff, and 3-file/95-added-LOC gates.
+- [ ] **Step 3: Implement the minimum composer**
 
-## Task 2 — Real evidence and close
+Call the cursor once outside the composition `try`. Map each returned pair once, adding only `financial_unit_id` to its context. Call the reducer once, derive the two attribution counts from accepted events, union/sort fixed exceptions, then freeze the exact receipt. Do not expose `source_state` until those steps complete.
 
-Read both actual ledgers once each, collect from null state, resume each fixed snapshot, and print counts only. Assert
-all snapshot rows reconcile across accepted/attributed/unattributed and the second pass emits zero events. Fresh Sol
-review then closes 2a2a.5a before planning checkpoint persistence 2a2a.5b.
+- [ ] **Step 4: Run GREEN and gates**
+
+Run:
+
+```bash
+node --test lib/cfo-local-agent-usage-collector.test.js
+node --test lib/cfo-local-agent-usage-cursor.test.js lib/cfo-local-agent-usage-attribution.test.js lib/cfo-local-agent-usage-collector.test.js
+npm run test:cfo
+npm test
+node --check lib/cfo-local-agent-usage-collector.js
+node --check lib/cfo-local-agent-usage-collector.test.js
+git diff --check
+```
+
+Expected: all exit 0; exactly 3 changed files; implementation plus test at most 95 added lines; lockfile unchanged.
+
+- [ ] **Step 5: Real read-only evidence**
+
+Read each actual ledger once, collect from null state, then resume the same fixed Buffer/state. Assert every complete row is accepted exactly once, `accepted_rows = attributed_rows + unattributed_rows`, and the second pass emits zero events. Print counts and fixed exception names only.
+
+- [ ] **Step 6: Review and close**
+
+Fresh Sol review checks canonical-module reuse, state ordering, exact counts/exceptions, privacy, and Ponytail scope. Sol reruns the gates and real E2E, updates spec/plan evidence, commits, pushes, and advances to 2a2a.5b.
