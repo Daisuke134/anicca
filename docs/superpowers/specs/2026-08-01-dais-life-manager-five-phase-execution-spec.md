@@ -7003,7 +7003,13 @@ Item14A0 push後にfrozen diffを復元し、Luna REDはConnpass 3-field receipt
 
 最初のfresh reviewはexisting bundle scanがConnpass current URL確認より先にある点を`fix-first`とした。追加REDは作成後のwrong event/query/hash/about:blank pageでもreusedになることを27 pass / 1 failで再現し、GREENはConnpass-only page URL gateをbundle scan前へ移した。最終scopeはproduction/test 2 files、101 insertions/1 deletion。Sol独立minimal evidence + three provider stores 33/33、syntax、diff check PASS、fresh re-reviewは`ship`。次は4 labels unloadedを再確認後、official runner exact 1 wakeで実event `400028`を申込み、同一lineageのConnpass bundleを検証する。Item14未完、event Submit 0、schedule unloaded。
 
-### Active remaining TODO SSOT（進捗314。これ以外の残TODO一覧は履歴）
+### O1B-25進捗315（Item 14 live wake / canonical evidence recovery plan）
+
+pushed commit `e3663062e`のofficial runnerを4 labels unloaded、process/lock 0、CDP既存page 1、Git clean/upstream 0でexact 1回起動した。wake `wake-546099b19a3ad84aef0742e3`はLuma discovery 61,188msでeligible exhaustion後、同じowned browser railでConnpassへ継続。Connpass auditはobserved/normalized/free-open/calendar-free `6/6/5/1`、event `400028`へnavigateし、pre-readback absent、cache/direct/post-readbackを実行した。Browser Harness action 0。post-readback後のevidenceがthrowし、terminal `circuit_open/evidence_completion_failed`、failure count 1、every-wake Telegram positive ID `11138`でexit。bundle 4、Connpass receipt/checkpoint/artifact/object 0のため、Calendar/evidence Telegram/bundle作用前にfail closedした。process/lock 0、owned page cleanup、CDP original newtab 1、schedule unloadedを維持。
+
+raw exceptionは設計どおり保存しない。Luna read-only診断は、direct actionがevent application link click後にjoin/completion pageからcanonicalへ戻さない一方、Item14A evidenceがstore前にcurrent URL exact一致を要求する境界を最有力原因とした。次slice plan `docs/superpowers/plans/2026-08-11-connector-connpass-canonical-recovery-14b.md`はrunner production/test 2 filesだけ。同じowned pageをcanonicalへexact 1回navigateし、canonical parent readbackを再実行してregistered/pendingならevidence、そうでなければcache/direct/Harness/Submit retry 0でsafe failする。URL gateは弱めない。Item14未完、schedule unloaded。
+
+### Active remaining TODO SSOT（進捗315。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
