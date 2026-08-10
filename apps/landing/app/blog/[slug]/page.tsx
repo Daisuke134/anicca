@@ -186,7 +186,14 @@ export async function generateStaticParams() {
 export default function ResearchPostPage({ params }: { params: { slug: string } }) {
   const post = loadPost(params.slug);
   if (!post) notFound();
-  const html = renderMarkdown(post.markdown);
+  const remoteFolder = post.slug.endsWith("-en") ? "remote-coding-en" : "remote-coding-ja";
+  const articleMarkdown = post.slug.startsWith("remote-coding-")
+    ? post.markdown.replace(
+        new RegExp(`(\\]\\(/blog/${remoteFolder}/remote-screen-1\\.jpg\\))`),
+        `$1\\n\\n![${remoteFolder === "remote-coding-en" ? "Connected host and project selection in ChatGPT Remote" : "接続先のホストとプロジェクトを選ぶRemote画面"}](/blog/${remoteFolder}/remote-screen-2.jpg)`
+      )
+    : post.markdown;
+  const html = renderMarkdown(articleMarkdown);
   const m = post.mirrors ?? {};
   const hasMirrors = Boolean(m.x || m.substack || m.newsletter);
 
