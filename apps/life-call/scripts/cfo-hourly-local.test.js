@@ -48,7 +48,7 @@ function reordered(value) { if (Array.isArray(value)) return value.map(reordered
 
 function baseOptions(overrides = {}) {
   return {
-    env: ENV, uid: UID, chatId: CHAT, now: () => CLOCK,
+    env: ENV, uid: UID, chatId: CHAT, now: () => CLOCK, runLocalAgentUsageCollection: async () => undefined,
     readMoneytreeViaCodex: async () => moneytreeRead(100),
     resolveCfoDailyRun: async () => ({ public_ref: "30000000-0000-4000-8000-000000000001", reporting_date: DATE, run_id: RUN, time_zone: "Asia/Tokyo", created_at: CLOCK.toISOString() }),
     latestSnapshot: async () => null,
@@ -151,7 +151,7 @@ test("recovery sends only the recovered report", async () => {
 test("provider/config failure has one fixed redacted result", async () => {
   const output = [];
   const result = await main({
-    env: { ...ENV, SENTINEL_AMOUNT: "999999", SENTINEL_ACCOUNT: "account-secret" }, uid: UID, chatId: CHAT, now: () => CLOCK,
+    env: { ...ENV, SENTINEL_AMOUNT: "999999", SENTINEL_ACCOUNT: "account-secret" }, uid: UID, chatId: CHAT, now: () => CLOCK, runLocalAgentUsageCollection: async () => undefined,
     readMoneytreeViaCodex: async () => moneytreeRead(100), latestSnapshot: async () => null,
     resolveCfoDailyRun: async () => ({ public_ref: "30000000-0000-4000-8000-000000000001", reporting_date: DATE, run_id: RUN, time_zone: "Asia/Tokyo", created_at: CLOCK.toISOString() }),
     stdout: (line) => output.push(line),
@@ -161,4 +161,10 @@ test("provider/config failure has one fixed redacted result", async () => {
   assert.equal(output.length, 1);
   assert.deepEqual(JSON.parse(output[0]), { status: "failed", reportingDate: DATE, revision: null, appended: false, delivered: false, recovered: false });
   assert.doesNotMatch(output[0], /999999|account-secret|service-role-fixture|SENTINEL/i);
+});
+
+test("hourly main isolates usage failures and preserves finance", async () => {
+  for (const mode of ["partial", "throw", "reject"]) { const calls = [], output = [], delivered = [], sentinel = new Error(`HOSTILE_${mode}`); let now = 0; const options = baseOptions({ env: { ...ENV, LIFE_MANAGER_STATE_HOME: "/tmp/cfo-state", HOSTILE_SECRET: "must-not-pass" }, now: () => { now += 1; return CLOCK; }, runLocalAgentUsageCollection: input => { calls.push(["usage", input]); if (mode === "partial") return { status: "partial", usage_secret: "USAGE_SECRET" }; if (mode === "throw") throw sentinel; return Promise.reject(sentinel); }, readMoneytreeViaCodex: async () => { calls.push(["moneytree"]); return moneytreeRead(100); }, deliverCfoTelegram: async input => { delivered.push(input); return { status: "sent" }; }, stdout: line => output.push(line) }); const result = await main(options);
+    assert.deepEqual(calls.map(([name]) => name), ["usage", "moneytree"]); assert.deepEqual(calls[0][1], { env: { LIFE_MANAGER_STATE_HOME: "/tmp/cfo-state" } }); assert.equal(now, 1); assert.deepEqual(result.summary, { status: "sent", reportingDate: DATE, revision: 1, appended: true, delivered: true, recovered: false }); assert.equal(result.exitCode, 0); assert.equal(output.length, 1); assert.deepEqual(JSON.parse(output[0]), result.summary); assert.deepEqual(Object.keys(delivered[0]).sort(), ["chatId", "snapshot", "snapshotPublicRef", "telegramToken", "uid"].sort()); assert.doesNotMatch(JSON.stringify({ result, output, delivered }), /HOSTILE_|USAGE_SECRET/);
+  }
 });

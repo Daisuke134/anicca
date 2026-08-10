@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development. Execute checkbox steps in order.
 
-**Status:** READY FOR LUNA — fresh Sol plan review: ship
+**Status:** GREEN — real launchd E2E next
 
 **Goal:** Invoke the completed two-source usage runner once from the existing local hourly CFO entrypoint without
 changing Moneytree decisions, Telegram copy/dedupe/buttons, stdout, exit semantics, or scheduler count.
@@ -53,7 +53,7 @@ flowchart LR
 
 ## Task 1 — Luna TDD
 
-- [ ] **Step 1: Add one compact RED regression**
+- [x] **Step 1: Add one compact RED regression**
 
 Extend the existing `main` test seam with this observable sequence:
 
@@ -81,7 +81,7 @@ node --test scripts/cfo-hourly-local.test.js
 
 Expected RED: the usage call count is zero.
 
-- [ ] **Step 2: Add the minimum guarded call**
+- [x] **Step 2: Add the minimum guarded call**
 
 Production edit shape:
 
@@ -104,7 +104,7 @@ async function main(options = {}) {
 
 Do not restructure `runHourlyCfo()` or add public fields.
 
-- [ ] **Step 3: Run GREEN and complete gates**
+- [x] **Step 3: Run GREEN and complete gates**
 
 ```bash
 cd apps/life-call
@@ -121,7 +121,7 @@ Expected: all exit 0; exactly two owned files and <=20 additions. Luna reports R
 
 ## Task 2 — Sol real loop verification and close
 
-- [ ] Fresh Sol implementation review returns `ship`.
+- [x] Fresh Sol implementation review returns `ship`.
 - [ ] Record both source file hashes/sizes and immutable batch counts; verify the single loaded launchd job still has
   `StartInterval=3600` and points to this reviewed worktree.
 - [ ] Declare the production trigger, `launchctl kickstart` the existing job once, and wait for completion. Do not
