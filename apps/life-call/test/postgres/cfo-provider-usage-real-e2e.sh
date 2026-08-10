@@ -7,6 +7,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 MIGRATION="$ROOT_DIR/migrations/2026-08-10-cfo-model-usage-evidence.sql"
 RPC_MIGRATION="$ROOT_DIR/migrations/2026-08-10-cfo-model-usage-evidence-append-rpc.sql"
 LIVE_MIGRATION="$ROOT_DIR/migrations/2026-08-10-cfo-model-usage-evidence-live-provenance.sql"
+LIVE_RPC_MIGRATION="$ROOT_DIR/migrations/2026-08-10-cfo-model-usage-evidence-live-append-rpc.sql"
 TMP_ROOT="${TMPDIR:-/tmp}"
 TEST_TMP="$(mktemp -d "$TMP_ROOT/cfo-provider-usage-real-e2e-$$.XXXXXX")"
 NETWORK="cfo-provider-usage-net-$$"
@@ -50,10 +51,11 @@ SQL
 "${PSQL[@]}" -f "$MIGRATION" >/dev/null 2>&1
 "${PSQL[@]}" -f "$RPC_MIGRATION" >/dev/null 2>&1
 "${PSQL[@]}" -f "$LIVE_MIGRATION" >/dev/null 2>&1
+"${PSQL[@]}" -f "$LIVE_RPC_MIGRATION" >/dev/null 2>&1
 "${PSQL[@]}" >/dev/null <<'SQL'
 BEGIN;
 DO $$
-DECLARE constraint_name text;
+DECLARE constraint_name text; first_receipt jsonb; retry_receipt jsonb; observed_at timestamptz := '2026-08-10T01:02:03Z';
 BEGIN
   INSERT INTO public.lm_cfo_model_usage_evidence (uid, financial_unit_id, attribution_status, provider, provider_request_id, usage_sequence, occurred_at, trace_id, request_model, response_model, input_tokens, output_tokens, total_tokens, cached_input_tokens, reasoning_output_tokens, tool_input_tokens, evidence_status, local_correlation_id) VALUES ('cfo-e2e-owner', 'life_manager_saas', 'attributed', 'gcp.gemini', NULL, 0, clock_timestamp(), repeat('1', 32), 'gemini-live', NULL, 1, 1, 2, NULL, NULL, NULL, 'provider_reported', 'live-session:' || repeat('2', 32));
   BEGIN
@@ -77,6 +79,10 @@ BEGIN
     GET STACKED DIAGNOSTICS constraint_name = CONSTRAINT_NAME;
     IF constraint_name <> 'lm_cfo_model_usage_evidence_local_correlation_format' THEN RAISE; END IF;
   END;
+  SELECT public.lm_append_cfo_model_usage_evidence('cfo-e2e-owner', 'life_manager_saas', 'attributed', 'gcp.gemini', NULL, 7, observed_at, repeat('6', 32), 'models/gemini-2.5-flash-native-audio-preview-09-2025', NULL, 515, 38, 560, 2, 5, 1, 'provider_reported', 'live-session:' || repeat('7', 32)) INTO first_receipt;
+  SELECT public.lm_append_cfo_model_usage_evidence('cfo-e2e-owner', 'life_manager_saas', 'attributed', 'gcp.gemini', NULL, 7, observed_at, repeat('6', 32), 'models/gemini-2.5-flash-native-audio-preview-09-2025', NULL, 515, 38, 560, 2, 5, 1, 'provider_reported', 'live-session:' || repeat('7', 32)) INTO retry_receipt;
+  IF first_receipt IS DISTINCT FROM retry_receipt OR first_receipt->>'local_correlation_id' <> 'live-session:' || repeat('7', 32) OR first_receipt ? 'provider_request_id' OR (SELECT count(*) FROM jsonb_object_keys(first_receipt)) <> 6 THEN RAISE EXCEPTION 'live_receipt_contract_failed'; END IF;
+  BEGIN PERFORM public.lm_append_cfo_model_usage_evidence('cfo-e2e-owner', 'life_manager_saas', 'attributed', 'gcp.gemini', NULL, 7, observed_at, repeat('8', 32), 'models/gemini-2.5-flash-native-audio-preview-09-2025', NULL, 515, 38, 560, 2, 5, 1, 'provider_reported', 'live-session:' || repeat('7', 32)); RAISE EXCEPTION 'expected_provider_usage_identity_conflict'; EXCEPTION WHEN unique_violation THEN IF SQLERRM <> 'provider_usage_identity_conflict' THEN RAISE; END IF; END;
 END;
 $$;
 ROLLBACK;

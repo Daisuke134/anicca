@@ -1,6 +1,6 @@
 # CFO-2a2.4c1 Gemini Live Append RPC Implementation Plan
 
-**Status:** READY — fresh Sol review returned `ship`; ready for Luna implementation.
+**Status:** COMPLETE — Luna TDD, fresh Sol review, real E2E, independent verification, and scope gates passed.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development task by task.
 
@@ -29,7 +29,7 @@ GenerateContent regression.
 
 ## Task 1: Replace the append RPC with a dual-identity contract
 
-- [ ] **Step 1 — write the focused static test first**
+- [x] **Step 1 — write the focused static test first**
 
 Add this path beside the existing migration paths:
 
@@ -64,7 +64,7 @@ test("CFO Live append RPC supports one truthful local identity without changing 
 });
 ```
 
-- [ ] **Step 2 — run the focused static RED**
+- [x] **Step 2 — run the focused static RED**
 
 ```bash
 node --test lib/cfo-model-usage-evidence-migration.test.js
@@ -72,7 +72,7 @@ node --test lib/cfo-model-usage-evidence-migration.test.js
 
 Expected: all historical tests pass and only the new test fails because the migration file is absent.
 
-- [ ] **Step 3 — add the smallest real PostgreSQL regression before implementation**
+- [x] **Step 3 — add the smallest real PostgreSQL regression before implementation**
 
 Add this variable:
 
@@ -129,7 +129,7 @@ Keep the final real Gemini provider path unchanged: its PostgREST client omits t
 two real provider responses, receives the old six-key provider receipt, and prints exactly
 `cfo-provider-usage-real-e2e: PASS rows=2 spans=2`. The transaction rollback keeps the final row count at two.
 
-- [ ] **Step 4 — run the real PostgreSQL RED before any provider call**
+- [x] **Step 4 — run the real PostgreSQL RED before any provider call**
 
 ```bash
 GEMINI_API_KEY=red-only bash test/postgres/cfo-provider-usage-real-e2e.sh
@@ -137,7 +137,7 @@ GEMINI_API_KEY=red-only bash test/postgres/cfo-provider-usage-real-e2e.sh
 
 Expected: non-zero exit while applying the absent migration, before PostgREST starts or Gemini is called.
 
-- [ ] **Step 5 — add the minimum forward migration**
+- [x] **Step 5 — add the minimum forward migration**
 
 Create exactly this migration; line wrapping may change but semantics may not:
 
@@ -211,7 +211,7 @@ REVOKE ALL ON FUNCTION public.lm_append_cfo_model_usage_evidence(text, text, tex
 GRANT EXECUTE ON FUNCTION public.lm_append_cfo_model_usage_evidence(text, text, text, text, text, bigint, timestamptz, text, text, text, bigint, bigint, bigint, bigint, bigint, bigint, text, text) TO service_role;
 ```
 
-- [ ] **Step 6 — run GREEN and scope gates**
+- [x] **Step 6 — run GREEN and scope gates**
 
 ```bash
 node --test lib/cfo-model-usage-evidence-migration.test.js

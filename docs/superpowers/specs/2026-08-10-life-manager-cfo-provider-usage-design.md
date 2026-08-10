@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — CFO-2a2.1 through CFO-2a2.4b verified; CFO-2a2.4c1 Live append RPC is next |
+| Status | ACTIVE — CFO-2a2.1 through CFO-2a2.4c1 verified; CFO-2a2.4c2 Node store is next |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Existing `apps/life-call` package |
 | First provider | Gemini `generateContent` response |
@@ -589,7 +589,7 @@ flowchart LR
     D --> E[4d\nBridge + real E2E]
 ```
 
-#### CFO-2a2.4c1 — atomic Live append RPC (next)
+#### CFO-2a2.4c1 — atomic Live append RPC (verified)
 
 One forward migration replaces the existing seventeen-argument
 `public.lm_append_cfo_model_usage_evidence` signature with an eighteen-argument signature whose final
@@ -613,17 +613,23 @@ The receipt uses `jsonb_strip_nulls(jsonb_build_object(...))`:
 
 Acceptance:
 
-- [ ] a disposable PostgreSQL transaction proves first local insert and byte-equivalent idempotent retry;
-- [ ] the same local identity with a changed trace ID raises the fixed conflict and SQLSTATE;
-- [ ] the existing real GenerateContent/PostgREST path omits the defaulted new argument and still returns its exact
+- [x] a disposable PostgreSQL transaction proves first local insert and byte-equivalent idempotent retry;
+- [x] the same local identity with a changed trace ID raises the fixed conflict and SQLSTATE;
+- [x] the existing real GenerateContent/PostgREST path omits the defaulted new argument and still returns its exact
   old receipt and final `PASS rows=2 spans=2`;
-- [ ] rollback leaves no local fixture row, and no production database/runtime/Telegram state changes;
-- [ ] focused migration tests, the real provider E2E, CFO tests, and full suite pass;
-- [ ] implementation changes exactly three files and adds at most 90 lines.
+- [x] rollback leaves no local fixture row, and no production database/runtime/Telegram state changes;
+- [x] focused migration tests, the real provider E2E, CFO tests, and full suite pass;
+- [x] implementation changes exactly three files and adds at most 90 lines.
 
 This slice does not add the Node store, span lifecycle, WebSocket wiring, aggregation rule, duration-estimate removal,
 scheduler, launchd, or Telegram behavior. The forward migration is not applied to production until the 4c2 client is
 ready.
+
+Verification evidence: static RED passed the three historical tests and failed only the absent migration test; the
+disposable RED stopped before PostgREST/Gemini. GREEN passed static 4/4, real `PASS rows=2 spans=2`, CFO 265/265, and
+full 907/907. Fresh Sol review returned `ship`; Sol independently repeated the focused, real, CFO, full, syntax, and
+diff gates. The implementation is exactly three files and 62 additions. No production database/runtime/Telegram state
+changed.
 
 #### Later slices
 
