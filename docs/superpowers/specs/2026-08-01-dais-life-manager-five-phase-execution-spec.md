@@ -7045,7 +7045,13 @@ pushed HEAD `4ee1510e6`、4 labels unloaded、process/lock 0でofficial runner�
 
 read-only exact candidate再探索と実DOM probeで、14D fixtureとの差を確定した。safe ticketは`input[name=participation_type]`、label `オンライン視聴枠（YouTube） 無料 ...`だがHTML requiredなし。unsafe siblingは`オンライン登壇枠（Zoom） 無料 ...`。required referralは`.question_list > .question`の`必須 このイベントは何を見て知りましたか？`、option exact `Connpass`。2件の`はい、わかりました。`はspeaker-only optionalで操作不要。現行inspectorは`.question_list`と`participation_type`意味を観測せず、native exact predicateへ届かなかったことが根因。plan `docs/superpowers/plans/2026-08-11-connector-connpass-real-dom-observation-14e.md`はHarness production/test 2 filesだけ。exact Connpass join URLでpublic group/questionを正規化し、safe viewing prefixとexact referralだけをnative化、optional ack native codeを削除する。Item14未完、schedule unloaded。
 
-### Active remaining TODO SSOT（進捗321。これ以外の残TODO一覧は履歴）
+### O1B-25進捗322（Item 14E / actual Connpass DOM normalization完了）
+
+Ponytailで既存Harnessのinspector、native selector、parent resolver/operator、submit latchだけを再利用し、新module/model/cache/page/session/retry/scheduleは0。initial REDは45/48、初回GREEN後のfresh reviewはexact join provenanceと`.question_list` scopeのImportant 1を発見した。fix round 1は非join safe-looking controlとexact join外generic questionを49/51のREDで固定し、共有exact URL predicate、`connpass_join` observation state、proposer/resolver gate、action直前URL downgrade、exact join group限定を追加。Sol独立7 suiteは85/85。actual current join pageのread-only probeはpublic controls 16、required 9、optional 7、safe viewing選択true、resolver true、agent call 0、write 0で、一時targetはcleanupした。
+
+scoped re-reviewはwhole-regex `/i`がuppercase pathを許可するImportant 1を発見。fix round 2は50/51 RED後にcase-sensitive exact pathとuppercase path負例2件を追加し、最終85/85、syntax、diff check、clean statusがPASS。final fresh reviewはCritical 0・Important 0で`ship`。production/test commits `5a757e6c3`、`1c4084ad2`、`0d1839f7f`、plan commits `21b5b9d2d`、`13e58195d`。private profile read、browser fill/click/Submit、Calendar/evidence/Telegram/state write、schedule作用0。Item14 checkboxは未完のまま、次の一件は4 labels unloaded、clean/upstream、process/lock 0をpreconditionにofficial foreground wakeをexact 1回実行し、same-run Luma no-effect→Connpass native agent 0→canonical readback→applied bundleまたは次exact safe boundaryを実測する。
+
+### Active remaining TODO SSOT（進捗322。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 

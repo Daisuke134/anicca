@@ -64,3 +64,11 @@ The first fresh review found that the exact join-page provenance stopped at the 
 - Correct the implementation report from the earlier `80/24` transcription to the measured `94/24` test diff before this fix round.
 
 The scoped re-review confirmed those provenance fixes, then found that the shared URL regex made the path case-insensitive. Keep the browser-normalized lowercase host contract and make the entire literal path case-sensitive; `/EVENT/<id>/JOIN/` and either uppercase path segment must remain non-join. Add that focused negative before the next re-review.
+
+## Result
+
+- Initial actual-DOM RED was 45/48; initial GREEN normalized the measured participation/referral controls and removed obsolete acknowledgement-native handling.
+- The first fresh review found join provenance and generic-group scope leaks. Fix round 1 added two RED failures at 49/51, passed `connpass_join` through observation/proposer/resolver/action, rechecked the current URL before resolving, and removed exact-join generic group fallback. Sol independently passed all seven relevant suites at 85/85.
+- A read-only probe of the actual current join page observed 16 public controls, selected the safe viewing ticket with resolver `true`, agent calls 0, and browser writes 0; the temporary diagnostic tab was closed.
+- The scoped re-review found the whole-regex `/i` path issue. Fix round 2 reproduced it at 50/51, removed `/i`, added uppercase-path negatives, and returned to 85/85. Final scoped review: `ship`, Critical 0, Important 0.
+- Production/test commits are `5a757e6c3`, `1c4084ad2`, and `0d1839f7f`; plan constraint commits are `21b5b9d2d` and `13e58195d`. The schedule remains unloaded. Item 14 still requires one official live wake and an actual Connpass applied bundle.
