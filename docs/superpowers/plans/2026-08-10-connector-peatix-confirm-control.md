@@ -49,9 +49,19 @@ Soft target: 3 files; production +15–30 LOC; Harness tests +35–60 LOC; adjac
 
 The first GREEN used the final label on the form-transition test, but live DOM proved the form submit label is `確認画面へ進む` and the final anchor label is `チケットを申し込む`. Keep separate exact constants and privileges: only the first can start form→confirm navigation wait; only the second can become the final submittable anchor. A final-label control on the form must remain without transition privilege. The final anchor also requires exactly one non-null required-answer form; zero form association fails closed. Do not add a production legacy-selector fallback. Update the single adjacent default-inspector fixture to the new bounded selector instead.
 
+### Fresh review fix-first amendment
+
+Fresh review reproduced two Important failures in the first final-control GREEN, so it is not shippable:
+
+1. The exact final click returned success before Peatix navigation/readback settled. Immediate parent readback observed `absent`, the fallback returned `agent_action_failed`, and the same fixture became registered 10 ms later. Because the outer runner performs post-submit readback only after a completed fallback, this can advance to another candidate after a real registration and create duplicate external effects.
+2. A CSS-hidden exact `a#confirm-button` was still mapped to `kind=button`, `submittable=true`.
+
+Required fix: start a bounded final-effect wait before the exact final click and do not return action success until either same-event registered/pending readback can be observed or an exact safe terminal boundary proves no effect. Timeout/ambiguous state must stop the candidate sequence and must never authorize the next candidate as though no effect occurred. Add RED coverage proving a delayed registration yields one click, one final outcome, and no next-candidate action. Require the exact final anchor to be browser-visible in addition to the existing provider/host/path/event/tag/ID/label/enabled/unique/no-form-association/required-answer gates; CSS-hidden, hidden-attribute, zero-size, detached, or otherwise non-visible variants remain non-submittable.
+
 ## Verify
 
 - Focused Harness tests and adjacent minimal runner/factory/Luna judgment/Peatix provider-workflow/evidence/native suites.
 - Both JavaScript syntax checks and `git diff --check`.
 - Fresh Sol correctness review focused on accidental final external effects and cross-event identity.
+- Fresh-review regressions for delayed final readback/no-next-candidate and hidden final anchors.
 - SSOT update, commit, push, clean preflight, then one official schedule-unloaded foreground wake. Acceptance is new parent `registered`/`pending` plus a durable `applied_bundle`, or an exact next safe boundary with zero duplicate final effects.
