@@ -1,6 +1,6 @@
 # CFO-2a2.4d2 Real Gemini Live Usage E2E Implementation Plan
 
-**Status:** READY — CFO-2a2.4d1 is verified; this is the first unfinished CFO item.
+**Status:** COMPLETE — Luna implementation, real E2E, fresh Sol review, and independent Sol rerun passed.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development task by task.
 
@@ -26,14 +26,14 @@ pass that exact object once to `captureGeminiLiveUsageObservation`.
 
 ## Task 1: Add the genuine Live proof
 
-- [ ] **Step 1 — write the smallest RED contract**
+- [x] **Step 1 — write the smallest RED contract**
 
 Add empty `providerLiveMessages` and `postTurnLiveMessages` collections and final assertions requiring one captured
 Live usage message, one matching Live row, exactly three rows, and exactly three matching spans. Require the exact
 success line `rows=3 spans=3 live=1`. Keep the existing real provider and disposable database assertions unchanged.
 The first new assertion executed must be `providerLiveMessages.length === 1`; row/span/output assertions come after it.
 
-- [ ] **Step 2 — run RED against the real disposable boundary**
+- [x] **Step 2 — run RED against the real disposable boundary**
 
 Run from `apps/life-call` with the already-proven isolated environment:
 
@@ -46,7 +46,7 @@ env -i PATH="$PATH" HOME="$HOME" TMPDIR="${TMPDIR:-/tmp}" \
 Expected: Docker, PostgREST, and the existing two genuine `generateContent` calls succeed; the first new assertion fails
 as exact `0 !== 1` because Live observations are zero. Secrets and private content must not appear.
 
-- [ ] **Step 3 — add the minimum real WebSocket path**
+- [x] **Step 3 — add the minimum real WebSocket path**
 
 Inside the existing Node heredoc:
 
@@ -69,7 +69,7 @@ Inside the existing Node heredoc:
    text/transcript/audio string of at least 12 characters from exporter output; also reject the sentinel, API key,
    `gen_ai.input.messages`, and `gen_ai.output.messages`. Keep provider payloads in memory only.
 
-- [ ] **Step 4 — run GREEN and scope gates**
+- [x] **Step 4 — run GREEN and scope gates**
 
 Run the real script again with the exact Step 2 `env -i` command, then `bash -n`, `git diff --check`, and the exact
 one-file/75-addition gate. Expected success line: `cfo-provider-usage-real-e2e: PASS rows=3 spans=3 live=1`.
@@ -82,3 +82,10 @@ one-file/75-addition gate. Expected success line: `cfo-provider-usage-real-e2e: 
   overwrite a successful capture; process cleanup remains under the existing trap.
 - YAGNI: one existing E2E file, no production change, no abstraction, no deployment.
 - Placeholders: none; provider boundary, timeout, row/span assertions, output, and scope gate are fixed.
+
+## Completion evidence
+
+RED failed first at exact `0 !== 1` after the two existing real provider/database observations passed. The review-fix
+source RED then identified all four missing cleanup markers. Final real GREEN and Sol's independent rerun each emitted
+only `cfo-provider-usage-real-e2e: PASS rows=3 spans=3 live=1` and exited `0`. Fresh Sol review returned
+`ship — Spec ✅`; shell syntax, diff, and the exact one-file/18-addition gate passed. No production state changed.

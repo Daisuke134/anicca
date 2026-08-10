@@ -2,12 +2,12 @@
 
 | Field | Value |
 |---|---|
-| Status | M2 ACTIVE — Product Stage 7, CFO-2a, and CFO-2a2.1 through CFO-2a2.4d1 complete; CFO-2a2.4d2 is next |
+| Status | M2 ACTIVE — Product Stage 7, CFO-2a, and CFO-2a2 complete; CFO-2a2a is next |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
 | Existing foundations | `apps/life-call`, interactive Moneytree App access, Fleet telemetry, `lm_api_cost`, and the canonical `lm_agent_earnings` source (the panel's `lm_financial_ledger` name is a stale alias) |
-| First unfinished item | **CFO-2a2.4d2: prove one real Gemini Live message becomes one row and one span** |
+| First unfinished item | **CFO-2a2a: ingest local Codex and Claude usage truthfully** |
 
 ## 1. Overview — What and Why
 
@@ -946,7 +946,7 @@ ingestion. They are not unchecked M1 items and cannot become the active CFO item
       rewriting the source table. Only the four current Life Manager kinds are attributed; unknown kinds remain
       `unattributed`. Child SSOT:
       `docs/superpowers/specs/2026-08-10-life-manager-cfo-business-ledger-contract-design.md`.
-- [ ] **CFO-2a2** Implement provider usage evidence ingestion and OpenTelemetry GenAI attributes. Existing
+- [x] **CFO-2a2** Implement provider usage evidence ingestion and OpenTelemetry GenAI attributes. Existing
       duration/tokenizer values migrate as `locally_estimated`; they are never backfilled as provider-measured.
       Child SSOT:
       `docs/superpowers/specs/2026-08-10-life-manager-cfo-provider-usage-design.md`.
