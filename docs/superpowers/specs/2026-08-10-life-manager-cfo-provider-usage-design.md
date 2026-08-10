@@ -663,7 +663,30 @@ passed focused 5/5, CFO 267/267, and full 909/909. Fresh review returned `ship`;
 CFO, full, syntax, and diff gates. The implementation is exactly two files and 47 additions. No provider call,
 database deployment, runtime, or Telegram state changed.
 
-- **CFO-2a2.4c3:** emit one content-free OTel span for the successfully stored observation without summing observations.
+#### CFO-2a2.4c3 — content-free span for one stored Live observation (next)
+
+Extend the existing `cfo-provider-usage-span.js` with one exported
+`captureGeminiLiveUsageObservation(message, context, options)` function. It starts one recording CLIENT span with the
+exact Live model, creates the observation time and trace ID, normalizes the message, stores it through the verified
+4c2 function, then ends one successful span with only the normalized OTel attributes. It returns the closed store
+receipt. A store failure ends an error span and never produces a successful one.
+
+The caller supplies only `owner_id`, `financial_unit_id`, `request_model`, `live_session_id`, and `usage_sequence`;
+`occurred_at` comes from the injected/default clock and `trace_id` comes only from the recording span. The function
+never sums observations, changes `usage_sequence`, or treats it as a token delta.
+
+Acceptance:
+
+- [ ] one valid Live message stores once with the span trace/time and returns the exact closed local receipt;
+- [ ] the finished span is CLIENT, uses the exact Live name/attributes/counts, and contains no content/raw metadata;
+- [ ] the successful span ends only after storage succeeds;
+- [ ] invalid message, tracing failure, or store failure ends at most one fixed error span and never retries/logs;
+- [ ] existing GenerateContent capture behavior remains unchanged;
+- [ ] focused span, CFO, and full suites pass within exactly two files and at most 70 additions.
+
+This slice performs no migration/database deployment, WebSocket/bridge wiring, aggregation, duration-estimate removal,
+scheduler, launchd, Telegram change, or real provider call.
+
 - **CFO-2a2.4d:** wire the existing Live bridge, prove real message → row → span, and stop using the duration estimate
   only after provider evidence succeeds.
 
