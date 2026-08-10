@@ -45,6 +45,18 @@ function binding(id) {
   };
 }
 
+function searchResponse(pageNumber, events) {
+  return { url: () => `https://peatix.com/search/events?p=${pageNumber}&size=20`, ok: () => true, status: () => 200, async json() { return { json_data: { page: pageNumber, events } }; } };
+}
+
+function retryPage(waitSequence, navigationErrors = []) {
+  const state = { waits: 0, navigations: 0, owners: [] }; const page = {
+    waitForResponse() { const next = waitSequence[state.waits++]; state.owners.push(this); return next instanceof Error ? Promise.reject(next) : Promise.resolve(next); },
+    async goto() { state.owners.push(this); const error = navigationErrors[state.navigations++]; if (error) throw error; },
+  };
+  return { page, state };
+}
+
 function eligibilityFixture() {
   return [
     [binding(101), detail(101, {
@@ -263,6 +275,37 @@ test("Peatix default reader waits for the matching page-1 response before naviga
     "peatix-event://event/201",
     "peatix-event://event/202",
   ]);
+});
+
+test("Peatix retries one page-1 read or navigation failure on the same page", async () => {
+  for (const [waits, navigationErrors, id] of [
+    [[new Error("private response timeout"), searchResponse(1, [{ id: 201 }])], [], 201],
+    [[searchResponse(1, [{ id: 202 }]), searchResponse(1, [{ id: 202 }])], [new Error("private navigation error")], 202],
+  ]) {
+    const fixture = retryPage(waits, navigationErrors);
+    const workflow = createPeatixDiscoveryWorkflow({ now: () => NOW,
+      async readEventViewData() { return detail(id); }, isCalendarFree() { return true; } });
+    const result = await workflow.discoverCandidates({ page: fixture.page, calendar: [] });
+    assert.deepEqual([fixture.state.waits, fixture.state.navigations], [2, 2]);
+    assert.equal(fixture.state.owners.every((owner) => owner === fixture.page), true);
+    assert.deepEqual(result.map((candidate) => candidate.event_ref), [`peatix-event://event/${id}`]);
+  }
+});
+
+test("Peatix page-1 retry is bounded and never covers row contract or page 2", async () => {
+  for (const [waits, code, counts] of [
+    [[new Error("private response timeout"), new Error("private response timeout")], "PEATIX_SEARCH_READ_FAILED", [2, 2]],
+    [[searchResponse(1, [{ id: 0 }])], "PEATIX_SEARCH_ROWS_CONTRACT_FAILED", [1, 1]],
+    [[searchResponse(1, Array.from({ length: 20 }, (_, id) => ({ id: id + 1 }))), new Error("private page-2 response timeout")], "PEATIX_SEARCH_READ_FAILED", [2, 2]],
+  ]) {
+    const fixture = retryPage(waits);
+    await assert.rejects(
+      createPeatixDiscoveryWorkflow({ now: () => NOW }).discoverCandidates({ page: fixture.page, calendar: [] }),
+      (error) => error.code === code,
+    );
+    assert.deepEqual([fixture.state.waits, fixture.state.navigations], counts);
+    assert.equal(fixture.state.owners.every((owner) => owner === fixture.page), true);
+  }
 });
 
 test("Peatix default reader scans five 20-result pages and preserves global order", async () => {

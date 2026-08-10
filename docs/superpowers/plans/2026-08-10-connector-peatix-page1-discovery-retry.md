@@ -33,15 +33,15 @@
 - Modify: `apps/life-manager/lib/connector-peatix-workflow.test.js`
 - Modify: `apps/life-manager/lib/connector-peatix-workflow.js`
 
-- [ ] **Step 1: Add focused failing recovery tests**
+- [x] **Step 1: Add focused failing recovery tests**
 
 Make page 1 fail once with `waitForResponse` rejection, then return one valid short JSON page on the second exact same-page attempt. Repeat for one navigation rejection. Assert two waiters/two navigations, the same page, one returned binding/audit, and no other effect.
 
-- [ ] **Step 2: Add zero-extra-retry regressions**
+- [x] **Step 2: Add zero-extra-retry regressions**
 
 Assert a second page-1 navigation/read failure surfaces the same safe code after exactly two attempts. Assert row-contract failure is attempted once. Assert page 2 failure remains attempted once and preserves all earlier ordering only internally, without returning partial candidates.
 
-- [ ] **Step 3: Run focused RED**
+- [x] **Step 3: Run focused RED**
 
 ```bash
 node --test apps/life-manager/lib/connector-peatix-workflow.test.js
@@ -49,11 +49,11 @@ node --test apps/life-manager/lib/connector-peatix-workflow.test.js
 
 Expected: recovery tests fail because production attempts page 1 only once.
 
-- [ ] **Step 4: Implement the minimum transaction helper and retry gate**
+- [x] **Step 4: Implement the minimum transaction helper and retry gate**
 
 Move only the current waiter→goto→response→rows transaction into a private helper. Wrap page 1 with a two-attempt loop for the two measured safe codes. Keep all row accumulation outside the retry transaction so a failed attempt cannot duplicate candidates.
 
-- [ ] **Step 5: Run focused and required integration GREEN**
+- [x] **Step 5: Run focused and required integration GREEN**
 
 ```bash
 node --test apps/life-manager/lib/connector-peatix-workflow.test.js \
@@ -67,6 +67,6 @@ git diff --check
 
 Expected: all pass, no network or external write.
 
-- [ ] **Step 6: Report exact RED/GREEN evidence to Sol**
+- [x] **Step 6: Report exact RED/GREEN evidence to Sol**
 
 Do not commit or push. Sol performs fresh review, commits/pushes the approved two-file implementation, updates the SSOT, then runs one official foreground wake with scheduling still unloaded.
