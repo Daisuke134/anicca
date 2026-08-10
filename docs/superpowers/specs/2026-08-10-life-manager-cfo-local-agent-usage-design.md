@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — slices 2a2a.1-5a complete; 2a2a.5b is next |
+| Status | ACTIVE — slices 2a2a.1-5b1 complete; 2a2a.5b2 is next |
 | Parent | `2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Local Mac first |
 | Source | `~/.local/state/{life-manager,anicca}/telemetry/agent-usage.jsonl` |

@@ -1,6 +1,6 @@
 # CFO-2a2a.5b1 — Immutable Local Usage Batch Plan
 
-Status: READY FOR REVIEW
+Status: READY FOR LUNA
 
 > **Execution:** Sol owns plan/verification. Luna owns production code and tests.
 
