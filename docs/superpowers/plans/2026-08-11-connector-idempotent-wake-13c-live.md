@@ -45,3 +45,11 @@ Record exact wake ID, action/provider transitions, bundle/report/delivery deltas
 - Later event `5065833` durably reached provider receipt/PNG, Calendar exact event/readback, and Telegram message ID `11079`; photo delivery then failed.
 - Item 12 checkpoints preserved the partial lineage, but the thrown evidence error bypassed terminal `reportWake`, producing report/delivery delta zero and exit 2.
 - Cleanup and unloaded schedule invariants passed. Repair plan: `docs/superpowers/plans/2026-08-11-connector-evidence-error-report-13c.md`.
+
+## Recovery run result
+
+- Pushed repair commit `25d8e423d` ran through official `skills/connector/run.sh` exactly once as wake `wake-21bc904af45627b27b6f0277`; all four schedules remained unloaded.
+- The wake reached Peatix event `5065833` by parent pre-readback `registered` and executed zero cache/direct/Harness Submit actions. It reused the immutable message checkpoint and provider ID `11079`, delivered only the missing photo as positive ID `11089`, and created exactly one final bundle.
+- Bundle count changed `3→4`, wake reports `100→101`, and wake-report deliveries `112→113`. The terminal status was `applied_bundle`, consecutive failures zero, with positive report delivery ID `11090`.
+- Independent validation found exactly one current Google Calendar event for the canonical idempotency marker and the same bundle event ID. Bundle digest/filename, provider receipt identity, PNG SHA/signature, message-to-photo lineage, regular-file/no-symlink checks, and mode 0600 all passed.
+- The saved message checkpoint SHA and mtime were unchanged, proving message resend zero. The process exited zero; lock/process/owned page were removed; CDP returned to the original single newtab; Git remained clean/upstream `0/0`; all four labels returned unloaded. Together with the second run's exact existing-bundle reuse and same-page continuation, Item 13 acceptance is complete.

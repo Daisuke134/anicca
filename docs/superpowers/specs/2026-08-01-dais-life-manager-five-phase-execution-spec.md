@@ -6971,7 +6971,13 @@ Luna REDは`completeEvidence` throwがrunner外へescapeしterminal report 0と�
 
 Luna serialized focused/adjacentは変更外の日付依存Peatix baseline 1件を除きPASS。Sol独立runner/operations/evidence/production/Harness/entrypoint/contract/outboxは63/63 PASS、syntaxとdiff check PASS。real operations fixtureはwake report 1、delivery 1、mode 0600、positive Telegram ID、send 1、failure count 1、生error非露出を実証した。fresh Sol reviewはCritical 0・Important 0で`ship`。次はcode/specをpush後、4 labels unloadedのままofficial foreground recovery wakeをexact 1回実行し、saved message ID `11079`の再送0、photo checkpoint、final bundle、positive every-wake report/delivery、cleanupを確認する。Item13未完、schedule unloaded。
 
-### Active remaining TODO SSOT（進捗309。これ以外の残TODO一覧は履歴）
+### O1B-25進捗310（Item 13C recovery wake / live acceptance完了）
+
+pushed repair commit `25d8e423d`のofficial `skills/connector/run.sh`を4 labels unloadedのままexact 1回だけ起動し、wake `wake-21bc904af45627b27b6f0277`がexit 0で完了した。Luma/Connpass/Peatix discovery後、Peatix event `5065833`はparent pre-readback `registered`、cache/direct/Harness Submit action 0。Item12のimmutable message checkpoint SHA/mtimeとpositive ID `11079`を変えず、欠損photoだけをpositive ID `11089`で配送し、final Peatix bundleをexact 1件作成した。bundle 3→4、wake report 100→101、delivery 112→113、terminal `applied_bundle`、failure count 0、positive every-wake report ID `11090`。
+
+独立read-only Calendar検証はcanonical idempotency marker exact 1件でbundle event ID `heomnknrb9a60ibva27716lvs8`と一致。bundle digest/filename、provider receipt identity、PNG SHA/signature、message→photo checkpoint lineage、regular file/no symlink、mode 0600が全PASS。process/lock 0、owned page cleanup、CDP original newtab 1、4 labels exit 113 unloaded、Git clean/upstream 0/0。進捗308の既存Peatix bundle exact reuse、同event Submit 0、same session/target/pageでlater candidate continuationと、このrecovery wakeのevery-wake positive report/final bundleを合わせてItem13 acceptanceを閉じる。scheduleはItems10–16 acceptanceまでunloaded維持。
+
+### Active remaining TODO SSOT（進捗310。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
@@ -6987,7 +6993,7 @@ Luna serialized focused/adjacentは変更外の日付依存Peatix baseline 1件�
 10. [x] **production配線後にforeground configured-provider live E2Eを実行する。** 10A [x]: 14日Google Calendar inventory、single owned browser rail、Luma、action cache、bounded Browser Harness fallback、parent readback、evidence/report dependencyをofficial entrypointへ接続済み。10B [x]: scheduling disabledのままbounded foreground runnerを起動し、Lumaを先頭に、候補0なら同一session/pageで次providerへ進み、今日を含む14日内の実際の無料・Calendar非衝突eventへSubmitする。AI/cryptoは同日競合候補のtie-breakだけに使い、一般eventをstop/filterしない。完了条件はparent readbackが新規`registered`または`pending`を観測すること。証拠: 進捗283の実registration、進捗291のsame-event no-resubmit acceptance。
 11. [x] **同じregistrationのexternal evidence chainを完成する。** Provider receipt/ticket/QRまたは同等receipt、Calendar event IDと独立readback、registered page full-page PNGとSHA-256、Telegram message positive ID、Telegram photo positive IDを同一lineageのdurable `applied_bundle`へ保存する。不足が一つでもあれば成功扱いにしない。証拠: 進捗291。
 12. [x] **post-registration recoveryを実証する。** Calendar、PNG、ticket、Telegram各境界の中断fixtureから、providerへ再Submitせず不足artifactだけを補完する。完了条件は外部registration 1、Calendar event 1、bundle 1、duplicate Submit 0。証拠: 進捗295、298。
-13. [ ] **idempotent second foreground wakeを実証する。** 同じeventを既登録としてreadbackし、Submit 0で未処理candidateへ継続する。every-wake Telegram positive message IDを保存する。
+13. [x] **idempotent second foreground wakeを実証する。** 同じeventを既登録としてreadbackし、Submit 0で未処理candidateへ継続する。every-wake Telegram positive message IDを保存する。証拠: 進捗308、310。
 14. [ ] **Luma failure→Connpass continuationをlive実証する。** Luma candidateをknown-no-effectにした同一runで、session ID/target ID/pageを変えずConnpassへnavigateし、未知UIならBrowser Harnessで申込を完遂する。完了条件はConnpassの実`applied_bundle`とprovider handoff historyが同一run lineageにあること。
 15. [ ] **circuit breakerを実証する。** 3連続safe failureまたは10分でcircuit-openし、その後のbrowser action/target creationが0、exact safe stage/action historyとTelegram recovery positive IDが保存されることを確認する。5分automatic retryは0。
 16. [ ] **cached action self-healを実証する。** selector変更fixtureでdirect replay failure→同じpageのbounded fallback→expected state readback→cache更新→agentなしrerun成功を確認する。更新は壊れたactionだけ、repo-wide edit/merge/deployは0。
