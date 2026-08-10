@@ -7139,7 +7139,13 @@ Ponytail fullで現action cache、production provider router、bounded Harness a
 
 plan `docs/superpowers/plans/2026-08-11-connector-cached-action-self-heal-16.md`は既存minimal production test 1 fileだけ、test +70〜110 LOC。mode 0600 temp cacheへsingle stale submit actionをseedし、同一owned pageでcached failure→direct failure→real bounded adapter replacement→parent registered→exact one-action replacementを通す。synthetic page stateだけresetしたsecond wakeはreplacement replay→parent registered、direct/Harness/proposer 0。単一action fixtureなので「壊れたactionだけ更新」を捏造せずexactに証明する。production/browser/provider/Calendar/Telegram/live state/launchd/schedule/repo edit/merge/deploy作用0。Item16未完、schedule unloaded。
 
-### Active remaining TODO SSOT（進捗336。これ以外の残TODO一覧は履歴）
+### O1B-25進捗337（Item 16 / cached-action self-heal acceptance完了）
+
+Lunaはplanned existing minimal production test 1 fileだけへcomposed fixture +98 LOCを追加し、production変更0。初回fixture REDはtest expectation 2件だけを修正し、production API blocker 0。最終fixtureはreal action cache、production provider router、bounded Harness adapter、minimal runnerを直接合成する。first wakeはsingle stale cache replay failure→direct failure→one-step replacement→Harness readback→parent `registered`→real cache saveの順。同一pageだけを使用し、cache exact entryはreplacement 1件、stale 0、mode 0600。
+
+synthetic page stateだけabsentへ戻したsecond wakeはreplacement cache replay→parent registeredでapplied bundleへ進み、direct/fallback/proposer/Harness action増分0、cache bytes不変。両wakeでsynthetic evidence/report/open/close各1、repo edit/merge/deployとlive external作用0。Luna composed 11/11、full 90/90、Sol独立90/90、syntax/diff checkがPASS。native entrypoint 2 failuresはknown cursor baseline。fresh Sol reviewはCritical 0 / Important 0で`ship`、独立focused/adjacent 55/55。Item16をacceptする。次はItem17 single daily production schedule cutover。
+
+### Active remaining TODO SSOT（進捗337。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
@@ -7158,7 +7164,7 @@ plan `docs/superpowers/plans/2026-08-11-connector-cached-action-self-heal-16.md`
 13. [x] **idempotent second foreground wakeを実証する。** 同じeventを既登録としてreadbackし、Submit 0で未処理candidateへ継続する。every-wake Telegram positive message IDを保存する。証拠: 進捗308、310。
 14. [x] **Luma no-effect→Connpass continuationをlive実証する。** Lumaがexternal effect 0（bounded known-no-effect、exact bundle reuse、またはCalendar gate後eligible exhaustion）の同一runで、session ID/target ID/pageを変えずConnpassへnavigateし、未知UIならBrowser Harnessで申込を完遂する。人工failure hookは使わない。完了条件はConnpassの実`applied_bundle`とprovider handoff historyが同一run lineageにあること。証拠: 進捗331。
 15. [x] **circuit breakerを実証する。** 3連続safe failureまたは10分でcircuit-openし、その後のbrowser action/target creationが0、exact safe stage/action historyとTelegram recovery positive IDが保存されることを確認する。5分automatic retryは0。証拠: 進捗335。
-16. [ ] **cached action self-healを実証する。** selector変更fixtureでdirect replay failure→同じpageのbounded fallback→expected state readback→cache更新→agentなしrerun成功を確認する。更新は壊れたactionだけ、repo-wide edit/merge/deployは0。
+16. [x] **cached action self-healを実証する。** selector変更fixtureでdirect replay failure→同じpageのbounded fallback→expected state readback→cache更新→agentなしrerun成功を確認する。更新は壊れたactionだけ、repo-wide edit/merge/deployは0。証拠: 進捗337。
 17. [ ] **単一daily production scheduleをrender/loadする。** Items 10–16のacceptance後だけ、official minimal runnerを一日一回起動するConnector labelを一つloadする。Native旧schedule、healthcheck、Healer、bridge、5分retry、重複runnerはloaded 0にする。
 18. [ ] **最初のscheduled wakeを完走観測する。** 実`applied_bundle`または既登録readbackによるSubmit 0 continuation、Telegram every-wake positive ID、session/target各1、owned page cleanup、process exitを確認する。failure時はscheduleを増やさず同じentrypointだけを修復する。
 19. [ ] **providerを一つずつ拡張する。** Peatix [x] → Meetup [ ] → Doorkeeper [ ] → Eventbrite [ ] → 発見済み次provider [ ] の順に、未知browser flow、parent readback、Calendar、PNG、Telegram、idempotencyを個別にlive実証する。各providerは実`applied_bundle`を得るまでproduction supportedと表示しない。Peatix証拠: 進捗291。
