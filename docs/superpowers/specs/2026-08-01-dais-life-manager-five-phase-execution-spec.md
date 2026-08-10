@@ -6242,7 +6242,19 @@ call各0。最終commit `513a9ff34`、focused 4/4、指定回帰26/26、fresh So
 次plan `docs/superpowers/plans/2026-08-10-connector-private-identity-loader.md`は既存private envの
 `DAIS_LEGAL_NAME_ROMAJI`一keyだけをConnector closed allowlistへ追加する。native order未接続なのでこの進捗でも外部application effectは0。
 
-### Active remaining TODO SSOT（進捗237。これ以外の残TODO一覧は履歴）
+### O1B-25進捗238（Connector private attendee loader GREEN / fresh review ship）
+
+Lunaがplan `2026-08-10-connector-private-identity-loader.md`をTDD実装し、closed allowlistへ既存private env key
+`DAIS_LEGAL_NAME_ROMAJI`を一つだけ追加した。初稿reviewはparserがNUL/CR/LF以外の埋め込みC0を受理するImportantを発見し、
+同じLunaが全allowlisted値を`[\x00-\x1f\x7f]`でfail-closedへ修正した。最終commit `47554f660`、focused/native 6/6、
+Connector全体23/23。fresh Sol re-reviewは全33 C0/DEL合成値拒否、unknown secret/token除外、実env値の読取/出力/変更0を確認し、
+Critical 0・Important 0でshipした。
+
+次plan `docs/superpowers/plans/2026-08-10-connector-peatix-native-foreground.md`はnative configで既存private
+`DAIS_LEGAL_NAME_ROMAJI + GOG_ACCOUNT`からin-memory attendee profileを構築し、official foreground provider順を
+`Luma → Connpass → Peatix`へ変更する。scheduleはunloadedを維持し、このplanの実装testでは外部application effect 0。
+
+### Active remaining TODO SSOT（進捗238。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
