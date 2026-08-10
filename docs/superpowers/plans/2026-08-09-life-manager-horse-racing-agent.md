@@ -85,8 +85,8 @@ The official NAR source is zero-cost primary; JRA remains official primary. Seco
 | 7 | HRA-3D audit implementation | **complete; actual gate blocked** | commits `1426d4e23..05c03391c`; actual records 0, model_ready false |
 | 7A | HRA-3C monthly NAR materialization probe | **complete; cutoff blocked** | commit `d4a2389ea`; 321 joined settled candidates, cutoff-safe records 0 |
 | 7B | HRA-3C daily cutoff snapshot probe | **complete** | commits `3c003293d` + `9063ebfc6`; fixed win complete 7 races/76 runners |
-| 7C1 | HRA-3C normalized market dimension | **ACTIVE** | add explicit win/place market to store identity |
-| 7C2 | HRA-3C win-market materializer | blocked by 7C1 | exact `単勝`, complete-runner races only |
+| 7C1 | HRA-3C normalized market dimension | **complete** | commit `204d26e9e`; focused 37/full 119 PASS |
+| 7C2 | HRA-3C win-market materializer | **ACTIVE** | exact `単勝`, complete-runner races only |
 | 8 | HRA-3Ma/3Mb model and backtest | blocked by HRA-3C/3D actual gate | cutoff-safe odds and settled-payback contract |
 | 9 | HRA-4 SHADOW decision/outcome ledger | blocked by HRA-3Mb | `decision.py`, `ledger.py`, `test_shadow_ledger.py` |
 | 10 | HRA-4b Japanese Telegram | blocked by HRA-4 | `telegram.py` and `test_telegram.py` |
@@ -418,7 +418,7 @@ Completion evidence: commits `3c003293d` + `9063ebfc6`; daily race/odds HTTP 200
 
 ## Task 7C1: HRA-3C normalized market dimension
 
-**State:** ACTIVE. Sol defines the schema; Luna edits/tests only.
+**State:** COMPLETE. Sol defines the schema; Luna edits/tests only.
 
 **Files:** modify only `store.py`, `tests/fixtures/normalized_races.json`, and `test_store.py`.
 
@@ -426,9 +426,21 @@ Add exact top-level field `market` with allowed normalized values `win` and `pla
 
 RED tests cover missing/unknown market rejection, StoredRecord market output, deterministic hash changing by market, same-race same-time win/place coexistence, and same-market stale/equal rejection. No parser, place-odds claim, model, or cash behavior is added. Focused/full/compileall/diff-check, commit `feat(horse-racing): add normalized odds market`, push both/parity.
 
+Completion evidence: commit `204d26e9e`; focused 37/full 119 PASS, compileall/diff-check PASS, exact three files, local/origin/canonical parity PASS. `market` is explicit in validation/hash/StoredRecord/latest-snapshot identity; no actual place record or cash behavior was created.
+
 ## Task 7C2: HRA-3C actual daily win materializer
 
-**State:** BLOCKED by Task 7C1. It will parse the private daily archives into exact complete `market=win` records only; Sol writes its detailed field mapping after 7C1 closes.
+**State:** ACTIVE. Parse the existing private daily archives into exact complete `market=win` records only.
+
+**Files:** create only `src/horse_racing_agent/nar_materialize.py`, `tests/test_nar_materialize.py`, and `docs/evidence/horse-racing/nar-daily-materialized-records.md`.
+
+**Interface:** `materialize_daily_win(race_zip_path, odds_zip_path, *, snapshot_at, expected_race_sha256, expected_odds_sha256, evidence_class) -> tuple[dict[str, object], ...]`. Paths must be explicit existing files; expected SHA-256 values are required and compared case-insensitively before parsing. Use stdlib `zipfile`, `csv`, `zoneinfo`, and `hashlib`; no pandas/database/new dependency. Reject more than 8 ZIP entries, path traversal/symlink entries, any member over 50 MB uncompressed, missing/duplicate required CSVs, non-UTF-8-BOM input, missing required headers, duplicate keys, malformed dates/HHMM/numbers, or input mutation.
+
+Required observed headers are race `競馬場/競走年月日/レース番号/発走時刻/芝ダート区分/馬場`, horse `競馬場/競走年月日/レース番号/馬番/馬体重`, and odds `競馬場/競走年月日/レース番号/賭式/番号1/番号2/番号3/オッズ`. Join on the official race tuple and runner number. Market is exact `賭式=単勝`, with `番号1` nonblank and `番号2/番号3` blank, one unique finite positive odds row per official horselist runner. A race is excluded unless every horselist runner has exactly one such row and there is no extra odds runner key. It is also excluded unless `snapshot_at <= race_at - 10 minutes`.
+
+Record mapping is deterministic and name-free: `race_id = nar-race- + sha256(venue/date/race_number)`, `runner_id = nar-runner- + sha256(race_id/horse_number)`, and record/event IDs hash race ID + `market=win` + snapshot timestamp + odds archive hash. `source_url` is the exact NAR daily odds URL; authority official, jurisdiction NAR, market win, actual run evidence `REAL_PUBLIC_WEB_RECORD/private_shadow`, permission document false, raw export false. `race_at` is official date+HHMM Asia/Tokyo, `cutoff_at=race_at-10m`, `snapshot_at` is HTTP completion, freshness is fresh/0 at acquisition. Surface/track preserve non-empty observed text or null; body weight is finite positive or null. Runners sort by horse number; records sort by race timestamp then opaque ID. Validate every output through `validate_normalized_race`; never include names/pedigree/jockey/trainer/owner/breeder/result fields.
+
+Tests construct only ephemeral synthetic ZIPs under temp directories, pass `SYNTHETIC_TEST`, and never persist them as evidence. RED covers hash mismatch, ZIP safety/header/encoding, cutoff, exact win filter, duplicate odds, incomplete field exclusion, deterministic opaque IDs/order, market label, nullable weight, and absence of name/raw fields. Actual execution uses the private daily ZIP hashes `60c8fb659d6b31369453bf6121576d1af082ddc274e3380dd19e3135403d0135` and `feaa43d6bdaa019aa748a7ce05f527235647531bc90bfcc38fb0eadb5dc8c515`, snapshot `2026-08-10T10:46:23+09:00`; expected exact output is 7 records/76 runners. Then run `audit_records` with an official daily-odds manifest (`settled_payback_rows=0`, `settled_race_ids=[]`): expected `record_count=7`, `race_count=7`, official odds observed, `model_ready=false`, `NO_SETTLED_PAYBACK`, cash false. Evidence contains only hashes/counts/times/status, no IDs/names/odds/raw rows. Commit `feat(horse-racing): materialize daily win records`, push both/parity; model and cash stay blocked.
 
 ## Task 8: HRA-3M cutoff-safe baseline, model, and backtest
 
