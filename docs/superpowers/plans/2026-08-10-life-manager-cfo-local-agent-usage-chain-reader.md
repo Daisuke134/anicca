@@ -1,6 +1,6 @@
 # CFO-2a2a.5b2a — Immutable Local Usage Chain Reader Plan
 
-Status: READY FOR REVIEW
+Status: COMPLETE
 
 > **Execution:** Sol owns plan/verification. Luna owns production code and tests.
 
@@ -81,3 +81,15 @@ usage focused tests; `npm run test:cfo`; `npm test`; syntax; `git diff --check`;
 Sol publishes one real batch per source under `mktemp`, reads both chains, and proves event/count/cursor equality with
 the writer receipts. Fresh Sol review must return ship before commit/push. Then 2a2a.5b2b becomes the sole active item:
 read both source files once, resume from these cursors, and publish the next immutable batches in one local runner.
+
+## Completion evidence
+
+- Missing-module RED; reader focused 4/4 and complete local-usage focused suite 15/15.
+- Scope: 53 production lines + 46 test lines + one suite entry = 3 files and exactly 100 additions; lockfile unchanged.
+- CFO suite and full `npm test` have zero failures; syntax/diff checks pass; fresh Sol review returned `ship` after the
+  deterministic duplicate-transition representative fix.
+- Real isolated writer→reader E2E reconciled two chains and 4,987/4,987 accepted events: 3,917 attributed,
+  1,070 unattributed, 279 missing-usage rows, and 437 runner-collision groups. Temporary state was removed; live state
+  and launchd were untouched.
+- Tests prove same-timestamp causal ordering, ambiguous-retry dedupe, clean/defect self-loop determinism, exact event
+  privacy shape, fork/gap/hash failure, and same event ID rejection across distinct transitions.
