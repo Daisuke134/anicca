@@ -391,9 +391,11 @@ flowchart LR
 The local JSONL values are provider/harness-reported usage, not numbers invented by the CFO. They are operational
 evidence, not invoices. Managed local loops already emit one normalized `agent-usage.jsonl` row per provider attempt:
 Codex values come from `turn.completed.usage`, and Claude values come from the CLI result envelope's `usage` object.
-The CFO MUST reuse this ledger and its deterministic `event_id`; it MUST NOT build a second raw-session scanner for
-managed loops. A source file SHA-256, byte watermark, terminal attempt status, discovered-row count, and conflicting
-duplicate detection expose deleted, truncated, unread, or rewritten evidence. Unmanaged interactive sessions remain
+The CFO MUST reuse this ledger, but the runner `event_id` is correlation metadata because reused evidence directories
+produce real collisions. CFO idempotency uses an opaque hash of configured source ID plus complete-line byte offset;
+it MUST NOT build a second raw-session scanner for managed loops. A source file SHA-256, byte watermark, terminal
+attempt status, discovered-row count, and runner-ID collision detection expose deleted, truncated, unread, or
+rewritten evidence. Unmanaged interactive sessions remain
 outside business P&L until a stable run-to-business sidecar exists; the CFO never guesses their owner.
 
 Managed local rows map through a versioned `loop + task_label` rule into the existing financial-unit registry;
@@ -712,8 +714,8 @@ Local and cloud use the same contract. Only infrastructure changes:
 | 22 | Ledger capture coverage | Forced persistence failure appears as missing coverage, never zero cost | Planned |
 | 23 | Shared-project allocation | Provider total confirmed; business shares labeled allocated with remainder | Planned |
 | 24 | Fail-closed health UI | Missing material source forbids green/net-worth total/confidence percentage | Planned |
-| 25 | Managed-loop local usage dedupe | Re-reading the same deterministic `event_id` produces one row; conflicting duplicates fail coverage | Planned |
-| 26 | Codex/Claude local usage truth | Runner-normalized token fields survive once with provider/model provenance and a basis that does not relabel defaulted zeros as field-measured | PASS |
+| 25 | Managed-loop local usage dedupe | Re-reading one source-row ref produces one row; reused runner IDs lower coverage without deleting distinct observations | Planned |
+| 26 | Codex/Claude local usage truth | Runner-normalized token fields survive one opaque source-row identity with provider/model provenance and an honest basis | Planned |
 | 27 | Subscription/API separation | Receipt is actual cash; token-based API equivalent is visibly forecast | Planned |
 | 28 | Log coverage | Truncated/deleted/unmapped sessions reduce coverage and remain unattributed | Planned |
 | 29 | Self-heal success | Failure → repair → fresh provider read → reconciliation sends one recovered report | Planned |
@@ -953,7 +955,7 @@ ingestion. They are not unchecked M1 items and cannot become the active CFO item
       duration/tokenizer values migrate as `locally_estimated`; they are never backfilled as provider-measured.
       Child SSOT:
       `docs/superpowers/specs/2026-08-10-life-manager-cfo-provider-usage-design.md`.
-- [ ] **CFO-2a2a** Ingest the existing local agent-runner usage ledger with deterministic-event dedupe,
+- [ ] **CFO-2a2a** Ingest the existing local agent-runner usage ledger with opaque source-row dedupe,
       hashes/watermarks, terminal-attempt coverage, stable runtime-to-business mapping, and unattributed rows. Do not
       rescan raw Codex/Claude session logs for managed loops. Child SSOT:
       `docs/superpowers/specs/2026-08-10-life-manager-cfo-local-agent-usage-design.md`.

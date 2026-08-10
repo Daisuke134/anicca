@@ -1,11 +1,11 @@
 # CFO-2a2a.2 — Local Agent Usage Dedupe Plan
 
-Status: READY
+Status: PENDING — starts only after 2a2a.1 identity repair closes
 
 ## Goal
 
-Count an identical deterministic event once and exclude every version of a conflicting ID, so a source rewrite can
-never silently change a CFO token total.
+Count one opaque source-row observation once, reject a changed value under the same source-row identity, and expose
+reused runner IDs without deleting distinct real attempts.
 
 ## Ponytail gate
 
@@ -18,10 +18,13 @@ never silently change a CFO token total.
 
 Add compact focused contracts for `reduceLocalAgentUsageEvents`:
 
-1. two identical normalized rows yield one accepted event, one duplicate, zero conflicts, and covered status;
-2. one unique ID plus multiple values for another ID keeps only the unique event and moves every row for the changed
-   ID into `conflicting_rows`, independent of input order;
-3. the receipt obeys discovered = accepted + duplicate + conflicting, is deeply frozen, and invalid/hostile input
+1. two identical normalized rows with one `source_event_id` yield one accepted event, one duplicate, zero conflicts,
+   and covered status;
+2. one unique source-row ID plus multiple values for another source-row ID keeps only the unique event and moves every
+   changed row into `conflicting_rows`, independent of input order;
+3. distinct source-row IDs sharing one `runner_event_id` remain accepted while incrementing a runner-collision
+   coverage count;
+4. the receipt obeys discovered = accepted + duplicate + conflicting, is deeply frozen, and invalid/hostile input
    fails with `cfo_local_agent_usage_invalid:<fixed_reason>` without echoed content.
 
 Run the focused test and record the expected missing-export failure.
@@ -30,11 +33,13 @@ Run the focused test and record the expected missing-export failure.
 
 Implement and export the smallest pure reducer:
 
-- accept an array of plain normalized events with valid `agent_usage:<24 hex>` IDs;
+- accept an array of plain normalized events with valid `local_agent_usage:<64 hex>` IDs and 24-hex
+  correlation-only `runner_event_id` values;
 - compare exact canonical JSON using the existing `canonicalJson` helper;
 - retain one event for an all-identical ID;
 - when an ID conflicts, remove its accepted event and reclassify every seen row for that ID as conflicting;
-- emit sorted accepted events plus frozen integer counts and `covered|conflicting_usage`;
+- emit sorted accepted events plus frozen integer counts, runner-ID collision counts, and
+  `covered|runner_identity_collision|conflicting_usage`;
 - never sum token values, select a winning conflicting value, or include source content in errors.
 
 Run focused, `npm run test:cfo`, `npm test`, syntax, `git diff --check`, and the 2-file/70-LOC gate.
@@ -45,6 +50,7 @@ Normalize and reduce both real local ledgers read-only. Print counts only and as
 
 - every source row belongs to accepted, duplicate, or conflicting;
 - no conflicting ID remains accepted;
+- distinct rows with reused runner IDs remain accepted and the collision count matches the read-only source audit;
 - input order reversal produces the identical receipt;
 - no prompt, response, path, raw payload, or secret is emitted.
 
