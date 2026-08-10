@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — CFO-2a2.1 through CFO-2a2.4b verified; CFO-2a2.4c recorder + append + span is next |
+| Status | ACTIVE — CFO-2a2.1 through CFO-2a2.4b verified; CFO-2a2.4c1 Live append RPC is next |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Existing `apps/life-call` package |
 | First provider | Gemini `generateContent` response |
@@ -487,8 +487,10 @@ Three approaches were evaluated:
 ```mermaid
 flowchart LR
     A[2a2.4a\nTruthful provenance schema] --> B[2a2.4b\nPure Live usage contract]
-    B --> C[2a2.4c\nRecorder + append]
-    C --> D[2a2.4d\nBridge wiring + real E2E]
+    B --> C1[2a2.4c1\nAtomic append RPC]
+    C1 --> C2[2a2.4c2\nNode store]
+    C2 --> C3[2a2.4c3\nContent-free span]
+    C3 --> D[2a2.4d\nBridge wiring + real E2E]
     D --> DONE[CFO-2a2 complete]
 ```
 
@@ -577,8 +579,56 @@ scheduler, launchd, or Telegram behavior changed.
 
 ### 13.4 Remaining Live slices
 
-- **CFO-2a2.4c (next):** append normalized observations idempotently and emit one content-free span without treating
-  repeated observations as additive usage.
+Ponytail splits the former recorder slice so each change closes one independently verifiable behavior:
+
+```mermaid
+flowchart LR
+    A[Live usage evidence] --> B[4c1\nAtomic append RPC]
+    B --> C[4c2\nNode store]
+    C --> D[4c3\nContent-free span]
+    D --> E[4d\nBridge + real E2E]
+```
+
+#### CFO-2a2.4c1 — atomic Live append RPC (next)
+
+One forward migration replaces the existing seventeen-argument
+`public.lm_append_cfo_model_usage_evidence` signature with an eighteen-argument signature whose final
+`p_local_correlation_id text DEFAULT NULL` parameter preserves the existing provider caller. PostgreSQL does not
+allow `CREATE OR REPLACE FUNCTION` to change argument types/signature, so the migration explicitly drops only the
+old exact signature before creating the new one.
+
+The function preserves the existing typed columns, `SECURITY INVOKER`, fixed `search_path`, private grants, and
+append-only behavior. It adds `local_correlation_id` to the insert and equality comparison. `ON CONFLICT DO NOTHING`
+has no conflict target so either the provider unique constraint or the local partial unique index can select the
+idempotent retry path. That retry fetches by provider, usage sequence, and null-safe equality for both
+`provider_request_id` and `local_correlation_id`. An identical retry returns the stored receipt; any changed field
+raises the existing fixed `provider_usage_identity_conflict` with SQLSTATE `23505`.
+
+The receipt uses `jsonb_strip_nulls(jsonb_build_object(...))`:
+
+- the existing provider path remains the exact six keys: `public_ref`, `provider`, `provider_request_id`,
+  `usage_sequence`, `trace_id`, `created_at`;
+- the local Live path contains `local_correlation_id` and omits null `provider_request_id`;
+- neither receipt contains content, raw metadata, prices, secrets, or OTel attributes.
+
+Acceptance:
+
+- [ ] a disposable PostgreSQL transaction proves first local insert and byte-equivalent idempotent retry;
+- [ ] the same local identity with a changed trace ID raises the fixed conflict and SQLSTATE;
+- [ ] the existing real GenerateContent/PostgREST path omits the defaulted new argument and still returns its exact
+  old receipt and final `PASS rows=2 spans=2`;
+- [ ] rollback leaves no local fixture row, and no production database/runtime/Telegram state changes;
+- [ ] focused migration tests, the real provider E2E, CFO tests, and full suite pass;
+- [ ] implementation changes exactly three files and adds at most 90 lines.
+
+This slice does not add the Node store, span lifecycle, WebSocket wiring, aggregation rule, duration-estimate removal,
+scheduler, launchd, or Telegram behavior. The forward migration is not applied to production until the 4c2 client is
+ready.
+
+#### Later slices
+
+- **CFO-2a2.4c2:** pass one normalized Live observation through the existing Node store and return the closed receipt.
+- **CFO-2a2.4c3:** emit one content-free OTel span for the successfully stored observation without summing observations.
 - **CFO-2a2.4d:** wire the existing Live bridge, prove real message → row → span, and stop using the duration estimate
   only after provider evidence succeeds.
 
@@ -588,3 +638,9 @@ defines `responseTokenCount`; the official [`googleapis/js-genai` recording](htt
 shows `usageMetadata` on a `turnComplete` message. The pinned [OpenTelemetry GenAI span convention](https://github.com/open-telemetry/semantic-conventions-genai/blob/46d43c8949afb53765a202e89f4534eeb75ca3fa/docs/gen-ai/gen-ai-spans.md)
 defines `generate_content`, requires the stream flag for streaming, and lists `speech` as the requested output type.
 The storage decision is an inference from those provider facts and the verified existing table contract.
+The RPC replacement follows PostgreSQL's
+[`CREATE FUNCTION`](https://www.postgresql.org/docs/18/sql-createfunction.html) rule that argument types cannot be
+changed by `CREATE OR REPLACE FUNCTION`. The conflict behavior follows PostgreSQL
+[`INSERT`](https://www.postgresql.org/docs/18/sql-insert.html): omitted `conflict_target` makes `DO NOTHING` handle
+conflicts with all usable constraints and unique indexes. Receipt omission uses PostgreSQL
+[`jsonb_strip_nulls`](https://www.postgresql.org/docs/18/functions-json.html).
