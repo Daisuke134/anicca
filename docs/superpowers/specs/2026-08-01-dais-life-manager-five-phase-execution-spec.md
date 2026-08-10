@@ -6809,7 +6809,13 @@ Lunaの初回GREENは、strict Peatix confirm URL・candidate event ID・exact `
 
 fresh Sol reviewはImportant 2件を実証して`fix-first`。第一に、最終click後の遷移/readback待機がなく、即時readbackは`absent`でfallback failedとなる一方10ms後に実登録になるfixtureを再現した。外側runnerはfallback completed時だけpost-submit readbackするため、この状態で次候補へ進むと重複申込になり得る。第二に、CSS-hiddenのexact `a#confirm-button`がsubmittableとして露出した。planを先に改訂し、最終click前からbounded effect/readback waitを開始してambiguous timeoutでは次候補を許可しないこと、delayed registrationでclick 1回・terminal outcome 1回・次候補作用0を回帰化すること、最終anchorにbrowser-visible条件を追加することを必須にした。初回diffは未commit、browser/model/provider/Calendar/evidence/Telegram/state/profile/schedule/launchd作用0。Item 10B/14/19は未完。
 
-### Active remaining TODO SSOT（進捗277。これ以外の残TODO一覧は履歴）
+### O1B-25進捗278（Peatix ambiguous final effect / runner stop ownership）
+
+同じLunaがreview指摘2件をRED化し、`hidden final anchor`と`delayed registration`は2/2 FAILで旧挙動を再現した。Harness側のGREENはCSS/ARIA hidden、display/visibility/content-visibility/opacity、zero-size、detachedを最終controlから除外し、exact final click前から30秒bounded parent readbackを開始して`registered|pending`だけsuccess、timeout/click例外を`failed / effect_unknown`として保持する。focused Harness 41/41、minimal production 10/10、syntax、diff checkはPASSした。
+
+ただし既存minimal runnerはfallbackの`effect_unknown`も通常failedとして次候補へ進めるため、3-file ownershipだけでは重複外部作用を防げない。fake `pending|completed`やunbounded waitは採用しない。plan ownershipをrunner本体/testの2 filesだけ拡張し、exact `effect_unknown`を受けたwakeはfailure countを1回加算して即`circuit_open / effect_unknown`、次候補navigation/direct/Harness作用0とする。その他failureの3-consecutive契約は変更しない。現時点の5-file code/test差分は未commit、live作用0。Item 10B/14/19は未完。
+
+### Active remaining TODO SSOT（進捗278。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 

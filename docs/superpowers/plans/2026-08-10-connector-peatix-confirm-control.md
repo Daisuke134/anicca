@@ -26,8 +26,10 @@ Luna owns only:
 1. `apps/life-manager/lib/connector-production-browser-harness.test.js`
 2. `apps/life-manager/lib/connector-production-browser-harness.js`
 3. `apps/life-manager/lib/connector-minimal-production.test.js` — update the one default-inspector selector fixture from the old selector to the new selector; no behavior change.
+4. `apps/life-manager/lib/connector-minimal-runner.test.js` — one regression proving ambiguous final effect stops before the next candidate.
+5. `apps/life-manager/lib/connector-minimal-runner.js` — recognize only the exact bounded fallback `effect_unknown` result and immediately finish the wake `circuit_open / effect_unknown`.
 
-Soft target: 3 files; production +15–30 LOC; Harness tests +35–60 LOC; adjacent fixture +1/-1 line.
+Soft target: 5 files; no new module/service/state; Harness production/tests contain the strict DOM and settlement contract; runner production is one exact early-stop branch with one regression; adjacent fixture remains +1/-1 line.
 
 ### RED
 
@@ -57,6 +59,8 @@ Fresh review reproduced two Important failures in the first final-control GREEN,
 2. A CSS-hidden exact `a#confirm-button` was still mapped to `kind=button`, `submittable=true`.
 
 Required fix: start a bounded final-effect wait before the exact final click and do not return action success until either same-event registered/pending readback can be observed or an exact safe terminal boundary proves no effect. Timeout/ambiguous state must stop the candidate sequence and must never authorize the next candidate as though no effect occurred. Add RED coverage proving a delayed registration yields one click, one final outcome, and no next-candidate action. Require the exact final anchor to be browser-visible in addition to the existing provider/host/path/event/tag/ID/label/enabled/unique/no-form-association/required-answer gates; CSS-hidden, hidden-attribute, zero-size, detached, or otherwise non-visible variants remain non-submittable.
+
+The three-file Harness slice can preserve a bounded timeout/click exception as `failed / effect_unknown`, but the existing minimal runner treats every non-completed fallback alike and advances to the next candidate. Expand ownership only to `connector-minimal-runner.js` and its test. After the fallback returns the exact safe reason `effect_unknown`, increment the failure count once, report `circuit_open / effect_unknown`, and return before any next-candidate navigation, direct action, Harness action, or registration effect. Do not change handling for any other fallback failure and do not synthesize `pending`, `registered`, or success.
 
 ## Verify
 
