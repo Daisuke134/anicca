@@ -7033,7 +7033,13 @@ pushed commit `d3b62b0ac`のofficial runnerを4 labels unloaded、process/lock 0
 
 latest sanitized agent evidenceはHarnessがlocal Codex開始前quotaで2 attemptsとも失敗したことを示す。実可用性probeはClaude direct monthly limit、local Claude proxy 403、DeepSeek credit不足、Gemini 401。OpenClaw free Qwenは応答したがwallet warningをJSON前へ付け、既存strict contractが意図どおり拒否するためvalidatorを弱めない。plan `docs/superpowers/plans/2026-08-11-connector-connpass-native-known-form-14d.md`はHarness production/test 2 filesだけ。既存sanitized observationからfree online viewing、exact Connpass referral、exact `はい、わかりました`、exact final `申し込みを確定する`だけをunique native controlとして選び、parent resolverとfallback-local final Submit one-shotを固定する。未知UIは従来agent fallbackでsafe fail。Item14未完、schedule unloaded。
 
-### Active remaining TODO SSOT（進捗319。これ以外の残TODO一覧は履歴）
+### O1B-25進捗320（Item 14D / Connpass exact native known-form実装完了）
+
+Luna REDはagent unavailableの既知フォーム、safe resolver、path変更後のsecond Submit latchを0/3で再現し、全radio group同時表示fixtureも0/1でagentへ到達した。GREENは既存Harness内だけにConnpass native selector、同一predicateのparent resolver、fallback-local Submit one-shotを追加した。最初のfresh reviewは無料を保証しないonline別表記と空・未知questionのnative許可をImportant 2件として`fix-first`。Round 1 REDはunqualified online、online/referral空question、unknown acknowledgementがselector/resolverを通ることを再現し、測定済みexact `オンライン参加（無料）`、`参加方法`、exact Connpass referral question、acknowledgement questionsだけへ縮小した。
+
+最終scopeはHarness production/testの2 files、code commits `29ca6141b`と`e047723b5`。Sol独立Harness/adapter/runner/production/workflow/provider/evidenceは127/127、syntax、diff checkがPASS。scoped fresh re-reviewは2 findings addressed、新Critical 0・Important 0で`ship`。private profile read/prompt保存、新provider/model/cache/page/target/session/retry/scheduleは0。read-only preflightは4 labels unloaded、Git clean/upstream 0/0、Connector process/lock 0、`:9222` healthy、基準値bundle/report/delivery/action `4/104/116/674`、Connpass evidence 0。旧event `400028` joinは現在radio 0のため、次official wakeはcurrent discovery結果だけをtruthとしてexact 1回実行する。Item14未完、schedule unloaded。
+
+### Active remaining TODO SSOT（進捗320。これ以外の残TODO一覧は履歴）
 
 以下を一件ずつ順番に閉じる。各itemはspec更新、実検証、commit、pushまで完了してから次へ進む。
 
