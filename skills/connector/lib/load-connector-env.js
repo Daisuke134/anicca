@@ -5,7 +5,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const ALLOWED = new Set([
-  "GOG_ACCOUNT", "GOG_BIN", "GOG_KEYRING_PASSWORD", "GOOGLE_API_KEY_DIRECTIONS",
+  "DAIS_LEGAL_NAME_ROMAJI", "GOG_ACCOUNT", "GOG_BIN", "GOG_KEYRING_PASSWORD", "GOOGLE_API_KEY_DIRECTIONS",
   "LIFE_HOME_ADDRESS", "LM_CONNECTOR_CALENDAR_COVERAGE_URL", "LM_CONNECTOR_CALENDAR_ID",
   "LM_CONNECTOR_EVIDENCE_DIR", "LM_CONNECTOR_LUNA_EVIDENCE_DIR", "LM_CONNECTOR_PROFILE_PATH",
   "LM_CONNECTOR_LUMA_EMAIL", "LM_CONNECTOR_LUMA_NAME",
@@ -31,7 +31,7 @@ function loadConnectorEnv(file) {
     if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
       value = value.slice(1, -1);
     }
-    if (!value || /[\x00\r\n]/.test(value)) invalid();
+    if (!value || /[\x00-\x1f\x7f]/.test(value)) invalid();
     values[match[1]] = value;
   }
   return Object.freeze(values);
