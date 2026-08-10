@@ -67,7 +67,7 @@ test("Connpass registered recovery bypasses Calendar conflict while available re
     async isCalendarFree(candidate) { checked.push(candidate.event_ref); return false; },
   });
 
-  const result = await workflow.discoverCandidates({ page: {}, calendar: [{ kind: "timed" }] });
+  const result = await workflow.discoverCandidates({ page: {}, calendar: [{ kind: "timed", start_at: registered.starts_at, end_at: registered.ends_at }] });
 
   assert.deepEqual(result.map((candidate) => candidate.event_ref), [registered.event_ref]);
   assert.deepEqual(checked, [available.event_ref]);
