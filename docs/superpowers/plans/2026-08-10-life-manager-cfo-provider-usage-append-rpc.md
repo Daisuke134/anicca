@@ -1,6 +1,6 @@
 # Life Manager CFO-2a2.2b Provider Usage Append RPC Plan
 
-**Status:** READY — one Luna task; RPC boundary only.
+**Status:** COMPLETE — RPC verified in disposable PostgreSQL; no production apply.
 
 > **Executor:** Luna uses Superpowers subagent-driven development with strict RED → minimal GREEN → disposable
 > PostgreSQL E2E. Sol owns this plan, final verification, closure, and push.
@@ -29,7 +29,7 @@ production apply is included.
 - Create: `apps/life-call/migrations/2026-08-10-cfo-model-usage-evidence-append-rpc.sql`
 - Modify: `apps/life-call/lib/cfo-model-usage-evidence-migration.test.js`
 
-- [ ] **Step 1 — Write the focused static contract RED**
+- [x] **Step 1 — Write the focused static contract RED**
 
 Extend the existing test to read the forward migration and prove:
 
@@ -46,7 +46,7 @@ Extend the existing test to read the forward migration and prove:
 Run `node --test lib/cfo-model-usage-evidence-migration.test.js`. Expected RED: the existing schema test passes and
 the new RPC test fails only because the forward migration does not exist.
 
-- [ ] **Step 2 — Add the minimal forward migration**
+- [x] **Step 2 — Add the minimal forward migration**
 
 Use this exact ordered interface:
 
@@ -67,7 +67,7 @@ or different row raises only `provider_usage_identity_conflict` with SQLSTATE `2
 six-key projection for first insert and retry. The fixed conflict guarantee applies only when all 17 proposed values
 independently satisfy the existing table constraints; invalid input remains a schema error. Never update.
 
-- [ ] **Step 3 — Run focused and repository GREEN**
+- [x] **Step 3 — Run focused and repository GREEN**
 
 ```bash
 node --test lib/cfo-model-usage-evidence-migration.test.js
@@ -77,7 +77,7 @@ npm test
 
 Expected: focused 2/2; CFO 256/256; full aggregate 894/894, all failures zero.
 
-- [ ] **Step 4 — Run disposable PostgreSQL E2E**
+- [x] **Step 4 — Run disposable PostgreSQL E2E**
 
 In a fresh local PostgreSQL 18 instance, create only synthetic roles/users, apply the 2a2.2a schema then this
 forward migration, and prove:
@@ -94,7 +94,7 @@ forward migration, and prove:
 
 Do not apply either migration to production or remote Supabase.
 
-- [ ] **Step 5 — Verify Ponytail scope and commit**
+- [x] **Step 5 — Verify Ponytail scope and commit**
 
 Run `git diff --check`, exact-name diff, and numstat. Expected: two tracked files, at most 95 additions. Commit only
 those files with `feat(cfo): add idempotent usage append rpc`; do not push. Update the ignored SDD report with RED,

@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — CFO-2a2.1 and CFO-2a2.2a verified; CFO-2a2.2b idempotent append RPC is next |
+| Status | ACTIVE — CFO-2a2.1 through CFO-2a2.2b verified; CFO-2a2.2c Node RPC client is next |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Existing `apps/life-call` package |
 | First provider | Gemini `generateContent` response |
@@ -45,7 +45,7 @@ flowchart LR
     E --> DONE[CFO-2a2 complete]
 ```
 
-CFO-2a2.1 and CFO-2a2.2a are complete. CFO-2a2.2b is the only active slice; later slices cannot be pulled into it.
+CFO-2a2.1 through CFO-2a2.2b are complete. CFO-2a2.2c is the only active slice; later slices cannot be pulled into it.
 
 ## 4. CFO-2a2.1 input
 
@@ -230,7 +230,7 @@ Soft target: one migration, one dedicated static test, and one `test:cfo` script
   call-site, SDK, exporter, pricing, content, generic metadata, or production apply.
 - Fresh final review: Critical 0, Important 0, ship.
 
-### CFO-2a2.2b — only active slice
+### CFO-2a2.2b — verified
 
 Add one `SECURITY INVOKER` function, `public.lm_append_cfo_model_usage_evidence`, in a new forward migration. The
 function accepts the table's 17 evidence fields as typed scalar arguments and `RETURNS jsonb`; it accepts or stores
@@ -264,12 +264,23 @@ receipt keys, and anon/authenticated denial.
 
 ### CFO-2a2.2b acceptance
 
-- [ ] One typed RPC inserts a valid row and returns the exact closed six-key receipt.
-- [ ] An identical sequential or concurrent retry returns the same `public_ref` and leaves exactly one row.
-- [ ] A changed ownership, token, optional-null, or trace fact under the same identity returns only the fixed
+- [x] One typed RPC inserts a valid row and returns the exact closed six-key receipt.
+- [x] An identical sequential or concurrent retry returns the same `public_ref` and leaves exactly one row.
+- [x] A changed ownership, token, optional-null, or trace fact under the same identity returns only the fixed
       conflict and never mutates the stored row.
-- [ ] The function is invoker-security with fixed search path; only service_role can execute it.
-- [ ] A disposable local PostgreSQL E2E and the focused/CFO/full suites pass without production apply.
+- [x] The function is invoker-security with fixed search path; only service_role can execute it.
+- [x] A disposable local PostgreSQL E2E and the focused/CFO/full suites pass without production apply.
+
+### CFO-2a2.2b completion evidence
+
+- Luna implementation commit: `6d1a86ecc`; RED was schema test 1/1 plus RPC test 0/1 only for the absent migration.
+- Fresh Sol verification: focused 2/2 and full aggregate 894/894 with zero failures; diff check passed.
+- Fresh disposable PostgreSQL 18 E2E proved exact first/retry receipt, four schema-valid fixed conflicts, receipt and
+  error privacy, anon/authenticated denial, service mutation denial, and named Session B lock-waiting behind
+  uncommitted Session A before both returned one shared receipt and one row.
+- Ponytail gate: exactly two files and 57 additions; no JSON evidence input, client, provider call-site, SDK,
+  exporter, scheduler, pricing, billing, write-attempt ledger, production apply, or remote DB mutation.
+- Task review and fresh final whole-plan review: Critical 0, Important 0, ship.
 
 ### PostgreSQL evidence
 
