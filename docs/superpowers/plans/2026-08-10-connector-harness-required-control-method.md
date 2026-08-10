@@ -1,5 +1,7 @@
 # Connector Harness Required-control Parent Method Plan
 
+**Status:** GREEN、fresh review `ship`。live acceptanceはSSOT進捗266以降で継続する。
+
 > **For Luna:** Use Superpowers test-driven-development. Own only the two Harness files below. Do not edit docs/spec, commit/push, browser/state/private profile, or external systems.
 
 **Goal:** Prevent the model from selecting optional form answers or inventing a method incompatible with the chosen control, while preserving bounded same-page progress.

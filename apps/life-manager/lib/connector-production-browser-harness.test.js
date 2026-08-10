@@ -21,7 +21,7 @@ test("bounded proposer requests one structured action from Terra with sanitized 
       request = input;
       return {
         summary: { status: "success", selected_provider: "codex", selected_model: "gpt-5.6-terra" },
-        value: { purpose: "submit", method: "ax_click", control: "register_button" },
+        value: { control: "register_button" },
       };
     },
   });
@@ -36,11 +36,14 @@ test("bounded proposer requests one structured action from Terra with sanitized 
       controls: [{ control: "register_button", kind: "button", label: "Register", required: false }],
     },
   });
-  assert.deepEqual(action, { purpose: "submit", method: "ax_click", control: "register_button" });
+  assert.deepEqual(action, { control: "register_button" });
   assert.equal(request.taskClass, "browser-lane-agent");
   assert.equal(request.timeoutMs, 30_000);
   assert.match(request.prompt, /one browser action/i);
   assert.match(request.prompt, /register_button/);
+  assert.doesNotMatch(request.prompt, /purpose|method/i);
+  assert.deepEqual(Object.keys(request.schema.properties), ["control"]);
+  assert.deepEqual(request.schema.required, ["control"]);
   assert.doesNotMatch(request.prompt, /private-phone|cookie|password/i);
   assert.equal(JSON.stringify(request).includes("page_websocket"), false);
   assert.equal(JSON.stringify(request).includes("ws://"), false);
@@ -52,13 +55,13 @@ test("bounded proposer accepts Peatix while sending only provider and sanitized 
     repoRoot: "/private/repo", evidenceDir: "/private/evidence",
     async runAgentRunner(input) {
       request = input;
-      return { summary: { status: "success", selected_provider: "codex", selected_model: "gpt-5.6-terra" }, value: { purpose: "fill", method: "ax_fill", control: "name_field" } };
+      return { summary: { status: "success", selected_provider: "codex", selected_model: "gpt-5.6-terra" }, value: { control: "name_field" } };
     },
   });
   const action = await proposer({ provider: "peatix", target_id: "OWNEDTARGET1", expected_state: "registered_or_pending", step: 1, observation: {
     state: "registration_page", controls: [{ control: "name_field", kind: "input", label: "Name", required: true }],
   } });
-  assert.deepEqual(action, { purpose: "fill", method: "ax_fill", control: "name_field" });
+  assert.deepEqual(action, { control: "name_field" });
   assert.match(request.prompt, /Peatix/i);
   assert.doesNotMatch(JSON.stringify(request), /event_ref|private-phone|private@example|cookie|password|ws:\/\//i);
 });
@@ -133,6 +136,28 @@ test("default page adapter observes labels and parent resolves private values be
     ["fill", "private-phone"],
     ["click", undefined],
   ]);
+});
+
+test("page observation derives required from aria and supported required groups", async () => {
+  const group = { className: "field required", getAttribute() { return null; }, querySelector() { return null; } };
+  const make = (aria, required, closest) => ({ tagName: "INPUT", type: "text", required, dataset: {}, labels: [{ innerText: "Field" }], innerText: "", value: "", getAttribute(name) { return name === "aria-required" ? aria : ""; }, closest });
+  const elements = [make("false", false, () => group), make("true", false, () => null), make("false", true, () => null)];
+  const controls = await inspectPageControls({ page: { locator() { return { async evaluateAll(callback) { return callback(elements); } }; } } });
+  assert.deepEqual(controls.map((control) => control.required), [true, true, true]);
+});
+
+test("parent derives the action method and purpose from the selected control kind", async () => {
+  const cases = [["text_field", "input", "fill", "ax_fill"], ["notes_field", "textarea", "fill", "ax_fill"], ["ticket_field", "select", "fill", "ax_select"], ["agree_check", "checkbox", "fill", "ax_check"], ["choice_radio", "radio", "fill", "ax_check"], ["submit_button", "button", "submit", "ax_click"], ["submit_link", "link", "submit", "ax_click"]];
+  const controls = cases.map(([control, kind]) => ({ control, kind, label: control, required: kind !== "button" && kind !== "link" })); const calls = [];
+  const harness = createProductionBrowserHarness({
+    lumaWorkflow: { async readProviderState() { return { status: "absent" }; } },
+    inspectControls: async () => controls,
+    async proposeAction() { return { purpose: "submit", method: "ax_check", control: "text_field" }; },
+    async operateControl(input) { calls.push(input.action); return { status: "success" }; },
+    async resolveValue() { return "parent-value"; },
+  });
+  for (const [control] of cases) await harness.performAction({ page: {}, action: { purpose: "submit", method: "ax_check", control } });
+  assert.deepEqual(calls, cases.map(([control, , purpose, method]) => ({ purpose, method, control })));
 });
 
 test("production harness lets the model choose controls but parent owns values actions and readback", async () => {
@@ -243,7 +268,7 @@ test("production harness uses Peatix parent readback for a Peatix fallback", asy
     async inspectControls() { return [{ control: "name_field", kind: "input", label: "Name", required: true }]; },
     async proposeAction() { return { purpose: "submit", method: "ax_click", control: "name_field" }; },
     async operateControl() { operated = true; return { status: "success" }; },
-    async resolveValue() { return null; },
+    async resolveValue() { return "parent-owned"; },
   });
   const result = await harness.runFallback({ provider: "peatix", candidate: { event_ref: "peatix-event://event/1" }, page,
     pageWebsocket: "ws://127.0.0.1:9222/devtools/page/OWNEDTARGET1", maxSteps: 10, expectedState: "registered_or_pending" });
@@ -300,16 +325,22 @@ test("page observation exposes boolean completion without values", async () => {
   assert.equal(Object.hasOwn(controls[0], "value"), false); assert.doesNotMatch(JSON.stringify(controls), /secret-value/);
 });
 
-test("bounded proposer excludes completed controls from the structured enum", async () => {
-  let request; const proposer = createBoundedActionProposer({ repoRoot: "/private/repo", evidenceDir: "/private/evidence", async runAgentRunner(input) { request = input; return { summary: { status: "success", selected_provider: "codex", selected_model: "gpt-5.6-terra" }, value: { purpose: "submit", method: "ax_click", control: "submit_button" } }; } });
-  const action = await proposer({ provider: "peatix", target_id: "TARGET1", expected_state: "registered_or_pending", step: 1, observation: { controls: [{ control: "name_field", kind: "input", label: "Name", required: true, completed: true }, { control: "submit_button", kind: "button", label: "Submit", required: false, completed: false }] } });
-  assert.deepEqual(action, { purpose: "submit", method: "ax_click", control: "submit_button" }); assert.deepEqual(request.schema.properties.control.enum, ["submit_button"]); assert.match(request.prompt, /incomplete|completed/i); assert.doesNotMatch(JSON.stringify(request), /secret-value/);
+test("bounded proposer excludes completed and optional answer controls from the structured enum", async () => {
+  let request; const proposer = createBoundedActionProposer({ repoRoot: "/private/repo", evidenceDir: "/private/evidence", async runAgentRunner(input) { request = input; return { summary: { status: "success", selected_provider: "codex", selected_model: "gpt-5.6-terra" }, value: { control: "submit_button" } }; } });
+  const action = await proposer({ provider: "peatix", target_id: "TARGET1", expected_state: "registered_or_pending", step: 1, observation: { controls: [{ control: "name_field", kind: "input", label: "Name", required: true, completed: true }, { control: "optional_notes", kind: "input", label: "Optional notes", required: false, completed: false }, { control: "submit_button", kind: "button", label: "Submit", required: false, completed: false }] } });
+  assert.deepEqual(action, { control: "submit_button" }); assert.deepEqual(request.schema.properties.control.enum, ["submit_button"]); assert.match(request.prompt, /incomplete|completed/i); assert.doesNotMatch(JSON.stringify(request), /secret-value/);
 });
 
 test("bounded proposer fails closed before the agent when no actionable control remains", async () => {
   let calls = 0; const proposer = createBoundedActionProposer({ repoRoot: "/private/repo", evidenceDir: "/private/evidence", async runAgentRunner() { calls += 1; throw new Error("agent must not run"); } });
   const result = await proposer({ provider: "peatix", target_id: "TARGET1", expected_state: "registered_or_pending", step: 1, observation: { controls: [{ control: "name_field", kind: "input", label: "Name", required: true, completed: true }] } });
   assert.equal(result, null); assert.equal(calls, 0);
+});
+
+test("bounded proposer fails closed for a missing or unknown returned control", async () => {
+  const proposer = createBoundedActionProposer({ repoRoot: "/private/repo", evidenceDir: "/private/evidence", async runAgentRunner() { return { summary: { status: "success", selected_provider: "codex", selected_model: "gpt-5.6-terra" }, value: { method: "ax_check", control: "invented_control" } }; } });
+  const result = await proposer({ provider: "peatix", target_id: "TARGET1", expected_state: "registered_or_pending", step: 1, observation: { controls: [{ control: "required_field", kind: "input", label: "Required", required: true, completed: false }] } });
+  assert.equal(result, null);
 });
 
 test("production harness rejects a completed fill before resolving or operating DOM", async () => {
@@ -319,7 +350,7 @@ test("production harness rejects a completed fill before resolving or operating 
 });
 
 test("bounded proposer separates fallback evidence sequences on one target", async () => {
-  const evidence = []; const proposer = createBoundedActionProposer({ repoRoot: "/private/repo", evidenceDir: "/private/evidence", async runAgentRunner(input) { evidence.push(input.evidenceDir); return { summary: { status: "success", selected_provider: "codex", selected_model: "gpt-5.6-terra" }, value: { purpose: "submit", method: "ax_click", control: "submit_button" } }; } });
+  const evidence = []; const proposer = createBoundedActionProposer({ repoRoot: "/private/repo", evidenceDir: "/private/evidence", async runAgentRunner(input) { evidence.push(input.evidenceDir); return { summary: { status: "success", selected_provider: "codex", selected_model: "gpt-5.6-terra" }, value: { control: "submit_button" } }; } });
   const base = { provider: "peatix", target_id: "TARGET1", expected_state: "registered_or_pending", observation: { controls: [{ control: "submit_button", kind: "button", label: "Submit", required: false }] } };
   await proposer({ ...base, step: 1 }); await proposer({ ...base, step: 2 }); await proposer({ ...base, step: 1 });
   assert.deepEqual(evidence, ["/private/evidence/target-TARGET1/fallback-1/step-1", "/private/evidence/target-TARGET1/fallback-1/step-2", "/private/evidence/target-TARGET1/fallback-2/step-1"]); assert.equal(evidence.some((value) => /candidate/i.test(value)), false);
