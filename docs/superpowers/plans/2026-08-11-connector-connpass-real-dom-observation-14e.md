@@ -52,3 +52,13 @@ Soft target: 2 files; production net `-10–+30 LOC`; tests `+35–70 LOC`.
 - Fresh Sol review for DOM scope, exact URL/name/question/label constraints, speaker/optional rejection, no private data, and non-Connpass regression.
 - SSOT update, commit, and push before one more official wake.
 - Live acceptance remains Item 14: same run Luma effect 0 → Connpass, agent call 0 for the known form, safe viewing ticket + referral only, final confirmation at most one, canonical registered/pending readback, exact bundle/Calendar/Telegram lineage, cleanup.
+
+## Fresh review amendment
+
+The first fresh review found that the exact join-page provenance stopped at the browser inspector. A non-join Connpass page could therefore expose a generic `参加枠` legend and reach the native selector, and an exact join page could still borrow generic `.question` text from outside `.question_list`.
+
+- Reuse the existing observation state; set it to `connpass_join` only when the provider and current URL satisfy the same exact join predicate.
+- Require that state in both the native selector and the private resolver. The proposer and action operator pass the state through; no new durable field or cache schema is added.
+- Pass the same exact-join boolean into the browser-context inspector. On an exact join page, a custom question group has no generic ancestor fallback: only its nearest `.question_list` and direct `.question` child are valid. The special `participation_type` normalization remains unchanged.
+- Add RED regressions proving that a safe-looking control on a non-join Connpass page calls the agent once and resolves no private value, and that `.question` outside `.question_list` is not adopted on an exact join page.
+- Correct the implementation report from the earlier `80/24` transcription to the measured `94/24` test diff before this fix round.
