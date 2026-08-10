@@ -20,6 +20,7 @@ const rpc = createCfoSupabaseRpc("cfo_hourly_local_failed:");
 
 function pick(options, name, fallback) { return typeof options[name] === "function" ? options[name] : fallback; }
 function ownerDate(value) { const parts = new Intl.DateTimeFormat("en", { timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(value); const get = (type) => parts.find((part) => part.type === type).value; return `${get("year")}-${get("month")}-${get("day")}`; }
+function ownerHour(value) { const parts = new Intl.DateTimeFormat("en", { timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", hourCycle: "h23" }).formatToParts(value); const get = (type) => parts.find((part) => part.type === type).value; return `${get("year")}-${get("month")}-${get("day")}T${get("hour")}`; }
 function config(options, env) {
   const value = { uid: options.uid || options.ownerUid || env.LM_CFO_UID || env.LM_UID || env.LM_OWNER_UID, chatId: options.chatId || options.telegramChatId || env.LM_CFO_TELEGRAM_CHAT_ID || env.LM_ADMIN_TELEGRAM_CHAT_ID, telegramToken: options.telegramToken || env.LM_TELEGRAM_BOT_TOKEN, supaUrl: options.supaUrl || env.SUPABASE_URL, supaKey: options.supaKey || env.SUPABASE_SERVICE_ROLE_KEY, uidSecret: env.LM_UID_SECRET, fetchImpl: options.fetchImpl || globalThis.fetch };
   if (Object.values(value).some((item) => typeof item !== "string" && item !== value.fetchImpl) || typeof value.fetchImpl !== "function") throw new Error("config");
@@ -32,13 +33,13 @@ function facts(report) { return JSON.stringify(ordered({ state: report.state, ac
 function sameFacts(left, right) { return facts(left) === facts(right); }
 function validateRow(row, date, render = renderCfoTelegram) {
   const keys = row && typeof row === "object" && !Array.isArray(row) ? Object.keys(row) : [];
-  if (keys.length !== 5 || keys.some((key) => !["public_ref", "reporting_date", "run_id", "revision", "report_payload"].includes(key)) || !UUID.test(row.public_ref) || !UUID.test(row.run_id) || row.reporting_date !== date || !Number.isSafeInteger(row.revision) || row.revision < 1 || !row.report_payload || typeof row.report_payload !== "object") throw new Error("snapshot");
+  if (keys.length !== 6 || keys.some((key) => !["public_ref", "reporting_date", "run_id", "revision", "created_at", "report_payload"].includes(key)) || !UUID.test(row.public_ref) || !UUID.test(row.run_id) || row.reporting_date !== date || !Number.isSafeInteger(row.revision) || row.revision < 1 || typeof row.created_at !== "string" || !rpc.timestamp(row.created_at) || !row.report_payload || typeof row.report_payload !== "object") throw new Error("snapshot");
   if (row.report_payload.reportingDate !== date || row.report_payload.revision !== row.revision) throw new Error("snapshot");
   render({ locale: "ja", view: "summary", snapshot: row.report_payload });
   return row;
 }
 async function latestSnapshot(value, render = renderCfoTelegram) {
-  const endpoint = `${value.supaUrl.replace(/\/+$/, "")}/rest/v1/lm_cfo_daily_snapshots?uid=eq.${encodeURIComponent(value.uid)}&reporting_date=eq.${value.reportingDate}&select=public_ref,reporting_date,run_id,revision,report_payload&order=revision.desc&limit=1`;
+  const endpoint = `${value.supaUrl.replace(/\/+$/, "")}/rest/v1/lm_cfo_daily_snapshots?uid=eq.${encodeURIComponent(value.uid)}&reporting_date=eq.${value.reportingDate}&select=public_ref,reporting_date,run_id,revision,created_at,report_payload&order=revision.desc&limit=1`;
   const response = await value.fetchImpl(endpoint, { method: "GET", headers: { apikey: value.supaKey, Authorization: `Bearer ${value.supaKey}` } });
   if (!response || response.ok !== true || typeof response.json !== "function") throw new Error("snapshot");
   const rows = await response.json();
@@ -70,7 +71,7 @@ async function runHourlyCfo(options = {}) {
     if (!latest && recovery.status === "action_required") return summary("retry", reportingDate, null, false, false, false);
     const nextRevision = latest ? latest.revision + 1 : 1;
     const currentBundle = buildCfoDailyReportFromRecovery({ revision: nextRevision, recovery });
-    if (latest && sameFacts(latest.report_payload, currentBundle.report)) {
+    if (latest && sameFacts(latest.report_payload, currentBundle.report) && ownerHour(new Date(latest.created_at)) === ownerHour(clock)) {
       const delivered = await send({ uid: value.uid, telegramToken: value.telegramToken, chatId: value.chatId, snapshotPublicRef: latest.public_ref, snapshot: latest.report_payload }, rpcOptions);
       if (!delivered || !["sent", "already_sent", "reconcile"].includes(delivered.status)) throw new Error("delivery");
       return summary(delivered.status === "sent" ? "sent" : delivered.status === "reconcile" ? "retry" : "quiet", reportingDate, latest.revision, false, delivered.status === "sent", recovery.status === "recovered");

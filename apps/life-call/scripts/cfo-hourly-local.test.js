@@ -42,7 +42,7 @@ function actionRecovery(kind) { return { reportingDate: DATE, observedAt: CLOCK.
 
 function snapshotRow(publicRef, amountMinor, revision = 1) {
   const report = { ...buildCfoDailyReport({ reportingDate: DATE, moneytreeRead: moneytreeRead(amountMinor) }), revision };
-  return { public_ref: publicRef, reporting_date: DATE, run_id: RUN, revision, report_payload: report };
+  return { public_ref: publicRef, reporting_date: DATE, run_id: RUN, revision, created_at: CLOCK.toISOString(), report_payload: report };
 }
 function reordered(value) { if (Array.isArray(value)) return value.map(reordered); if (value && typeof value === "object") return Object.fromEntries(Object.keys(value).reverse().map((key) => [key, reordered(value[key])])); return value; }
 
@@ -81,6 +81,22 @@ test("unchanged hourly facts pass through durable delivery and already-sent stay
   assert.deepEqual(result, { status: "quiet", reportingDate: DATE, revision: 1, appended: false, delivered: false, recovered: false });
   assert.equal(append, 0);
   assert.equal(deliver, 1);
+});
+
+test("same facts from a prior owner hour append a new revision and deliver it", async () => {
+  const prior = new Date(CLOCK.getTime() - 3600000).toISOString();
+  let appended, delivered;
+  const result = await runHourlyCfo(baseOptions({
+    latestSnapshot: async () => ({ ...snapshotRow(REF1, 100), created_at: prior }),
+    appendCfoDailySnapshotRevision: async (input) => { appended = input; return { public_ref: REF2, reporting_date: DATE, run_id: RUN, revision: 2, supersedes_revision: 1, created_at: CLOCK.toISOString() }; },
+    deliverCfoTelegram: async (input) => { delivered = input; return { status: "sent", messageId: 45 }; },
+  }));
+  assert.equal(appended.revision, 2);
+  assert.equal(appended.supersedesRevision, 1);
+  assert.equal(appended.report.totals.assetsMinor, 100);
+  assert.equal(delivered.snapshotPublicRef, REF2);
+  assert.equal(delivered.snapshot.revision, 2);
+  assert.deepEqual(result, { status: "sent", reportingDate: DATE, revision: 2, appended: true, delivered: true, recovered: false });
 });
 
 test("changed facts append N+1 and deliver that exact revision", async () => {
@@ -128,7 +144,7 @@ test("same-facts delivery reuses the exact snapshot/ref and main exits only for 
 });
 
 test("same-facts JSONB key order stays quiet and deduped", async () => {
-  const persisted = { public_ref: REF1, reporting_date: DATE, run_id: RUN, revision: 1, report_payload: reordered(buildCfoDailyReportFromRecovery({ revision: 1, recovery: actionRecovery("provider_outage") }).report) }; let append = 0; let deliver = 0; let deliveredInput;
+  const persisted = { public_ref: REF1, reporting_date: DATE, run_id: RUN, revision: 1, created_at: CLOCK.toISOString(), report_payload: reordered(buildCfoDailyReportFromRecovery({ revision: 1, recovery: actionRecovery("provider_outage") }).report) }; let append = 0; let deliver = 0; let deliveredInput;
   const result = await runHourlyCfo(baseOptions({ recoverMoneytreeRead: async () => actionRecovery("provider_outage"), latestSnapshot: async () => persisted, appendCfoDailySnapshotRevision: async () => { append += 1; return { public_ref: REF2, reporting_date: DATE, run_id: RUN, revision: 2, supersedes_revision: 1, created_at: CLOCK.toISOString() }; }, deliverCfoTelegram: async (input) => { deliver += 1; deliveredInput = input; return { status: "already_sent" }; } }));
   assert.deepEqual(result, { status: "quiet", reportingDate: DATE, revision: 1, appended: false, delivered: false, recovered: false }); assert.equal(append, 0); assert.equal(deliver, 1); assert.equal(deliveredInput.snapshotPublicRef, REF1); assert.strictEqual(deliveredInput.snapshot, persisted.report_payload);
 });
