@@ -37,10 +37,13 @@ Soft target: 3 files; production +12–24 LOC; tests +25–45 LOC.
 3. The same candidate remains blocked when any second unrelated timed overlap exists.
 4. Missing, uppercase, short, non-string, or wrong hash never bypasses a conflict; malformed raw Connector marker fails the verified inventory closed.
 5. No raw URL/title/location/account/private-property object appears in the public busy interval.
+6. On an active event, present-invalid `extendedProperties` or `private` containers (primitive, null, or array) fail the verified inventory closed; genuinely absent containers remain marker-free and valid.
+7. Cancelled or transparent events are excluded before Connector marker parsing, so a malformed marker on an otherwise excluded event does not invalidate the inventory.
 
 ### GREEN
 
-- Parse the Connector marker from the exact raw Calendar private-property location; accept absent or exact lowercase SHA-256 only, reject malformed present values.
+- Exclude cancelled and transparent events before parsing any Connector marker, preserving the existing exclusion contract.
+- Parse the Connector marker from the exact raw Calendar private-property location; distinguish genuinely absent containers from present-invalid containers, accept absent or exact lowercase SHA-256 only, and reject malformed active-event shapes/values.
 - Add `connector_idempotency` only for a valid marker on timed/all-day intervals; preserve all existing interval fields and verification.
 - In Peatix `defaultCalendarFree`, compute SHA-256 of the already strict canonical URL and ignore only overlapping timed intervals with an exact matching marker.
 - Preserve all existing candidate order, free/open/window gates, audit counts, and unrelated Calendar conflict behavior.
